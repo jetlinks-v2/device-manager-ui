@@ -1,0 +1,16 @@
+{
+  "name": "device-manager-ui",
+  "version": "1.0.0",
+  "description": "设备管理",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jetlinks-v2/device-manager-ui.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jetlinks-v2/device-manager-ui/issues"
+  },
+  "homepage": "https://github.com/jetlinks-v2/device-manager-ui#readme"
+}
