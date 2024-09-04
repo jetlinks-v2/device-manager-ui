@@ -40,8 +40,8 @@
 </template>
 
 <script lang="ts" setup>
-import { useInstanceStore } from '@/store/instance';
-import _ from 'lodash-es';
+import { useInstanceStore } from '../../../../../store/instance';
+import { cloneDeep } from 'lodash-es';
 import Event from './Event/index.vue';
 import Property from './Property/index.vue';
 import { storeToRefs } from 'pinia';
@@ -133,9 +133,9 @@ const onSearch = () => {
         const li = arr.filter((i: any) => {
             return i?.tab.indexOf(value.value) !== -1;
         });
-        tabList.value = _.cloneDeep(li);
+        tabList.value = cloneDeep(li);
     } else {
-        tabList.value = _.cloneDeep(arr);
+        tabList.value = cloneDeep(arr);
     }
     const dt = tabList.value?.[0];
     if (dt) {

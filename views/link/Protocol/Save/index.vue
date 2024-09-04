@@ -89,11 +89,11 @@
 </template>
 <script lang="ts" setup>
 import { onlyMessage } from '@/utils/comm';
-import { getImage } from '@/utils/comm';
 import type { UploadChangeParam, FormInstance } from 'ant-design-vue';
 import FileUpload from './FileUpload.vue';
 import { save, update } from '../../../../api/link/protocol';
 import { FormDataType } from '../type.d';
+import { link } from '../../../../assets'
 
 const loading = ref(false);
 const fileLoading = ref(false);
@@ -112,12 +112,12 @@ const options = [
     {
         label: 'Jar',
         value: 'jar',
-        iconUrl: getImage('/jar.png'),
+        iconUrl: link.jar,
     },
     {
         label: 'Local',
         value: 'local',
-        iconUrl: getImage('/local.png'),
+        iconUrl: link.local,
     },
 ];
 

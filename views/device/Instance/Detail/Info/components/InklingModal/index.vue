@@ -19,9 +19,9 @@
 </template>
 
 <script setup lang='ts' name='InklingModal'>
-import InklingDevice from '@/views/device/components/InklingDevice'
-import { onlyMessage } from '@/utils/comm'
-import { savePluginData, getPluginData } from '@/api/link/plugin'
+import InklingDevice from '../../../../../components/InklingDevice'
+import { onlyMessage } from '@jetlinks-web/utils'
+import { savePluginData, getPluginData } from '../../../../../../../api/link/plugin'
 
 type Emit = {
   (e: 'cancel'): void

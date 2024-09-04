@@ -9,7 +9,7 @@
             <FullPage>
                 <j-pro-table
                     ref="tableRef"
-                    model="TABLE"
+                    mode="TABLE"
                     :columns="columns"
                     :request="query"
                     :defaultParams="{
@@ -17,7 +17,7 @@
                     }"
                     :params="params"
                 >
-                    <template #headerTitle>
+                    <template #headerLeftRender>
                         <j-permission-button
                             type="primary"
                             @click="handleAdd"
@@ -85,7 +85,7 @@
 import { query, queryProduct, remove } from '../../../api/firmware';
 import TaskDrawer from './Task/index.vue';
 import dayjs from 'dayjs';
-import _ from 'lodash-es';
+import { cloneDeep, map } from 'lodash-es';
 import Save from './Save/index.vue';
 import type { FormDataType } from './type';
 import { onlyMessage } from '@/utils/comm';
@@ -239,7 +239,7 @@ const handleAdd = () => {
     visible.value = true;
 };
 const handleEdit = (data: Partial<Record<string, any>>) => {
-    current.value = _.cloneDeep(data);
+    current.value = cloneDeep(data);
     visible.value = true;
 };
 
@@ -272,7 +272,7 @@ onMounted(() => {
         terms: [{ column: 'state', value: 1 }], // 不传参会报错，暂时查询启用状态的，后期会改查全部 todo
     }).then((resp: any) => {
         const list = resp.result.filter((it: any) => {
-            return _.map(it?.features || [], 'id').includes('supportFirmware');
+            return map(it?.features || [], 'id').includes('supportFirmware');
         });
         productOptions.value = list.map((item: any) => ({
             label: item.name,

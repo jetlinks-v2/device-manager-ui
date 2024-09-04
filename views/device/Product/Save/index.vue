@@ -22,7 +22,7 @@
                 <a-row type="flex">
                     <a-col flex="180px">
                         <a-form-item name="photoUrl">
-                            <j-pro-upload
+                            <pro-upload
                                 v-model="form.photoUrl"
                                 :accept="
                                     imageTypes && imageTypes.length
@@ -81,10 +81,10 @@
                 </a-form-item>
                 <a-form-item label="设备类型" name="deviceType">
                     <j-card-select
-                        :value="form.deviceType"
+                        v-model:value="form.deviceType"
                         :options="deviceList"
-                        @change="changeDeviceType"
                         :disabled="productStore.detail?.accessId ? true : false"
+                        @change="changeDeviceType"
                     >
                         <template #title="item">
                             <span>{{ item.title }}</span>
@@ -113,14 +113,15 @@
 </template>
 
 <script lang="ts" setup>
-import { category, queryProductId, addProduct, editProduct } from '../../../api/product';
+import { category, queryProductId, addProduct, editProduct } from '../../../../api/product';
 import { Form } from 'ant-design-vue';
 import DialogTips from '../DialogTips/index.vue';
-import { useProductStore } from '../../../store/product';
-import { filterSelectNode, onlyMessage } from '@/utils/comm';
+import { useProductStore } from '../../../../store/product';
+import { filterSelectNode, encodeQuery } from '@/utils';
+import { onlyMessage } from '@jetlinks-web/utils'
 import { isInput } from '@/utils/regular';
 import type { Rule } from 'ant-design-vue/es/form';
-import encodeQuery from '@/utils/encodeQuery';
+import { device} from '../../../../assets'
 
 const productStore = useProductStore();
 const emit = defineEmits(['success']);
@@ -142,7 +143,7 @@ const visible = ref<boolean>(false);
 const formRef = ref();
 const idDisabled = ref<boolean>(false);
 const useForm = Form.useForm;
-const photoValue = ref('/images/device-product.png');
+const photoValue = ref(device.deviceProduct);
 const imageTypes = reactive([
     'image/jpeg',
     'image/png',
@@ -155,19 +156,19 @@ const deviceList = ref([
     {
         label: '直连设备',
         value: 'device',
-        iconUrl: '/device-type-1.png',
+        iconUrl: device.deviceType1,
         tooltip: '直连物联网平台的设备',
     },
     {
         label: '网关子设备',
         value: 'childrenDevice',
-        iconUrl: '/device-type-2.png',
+        iconUrl: device.deviceType2,
         tooltip: '作为网关的子设备，由网关代理连接到物联网平台',
     },
     {
         label: '网关设备',
         value: 'gateway',
-        iconUrl: '/device/device-type-3.png',
+        iconUrl: device.deviceType3,
         tooltip: '能挂载子设备与平台进行通信的设备',
     },
 ]);
@@ -179,7 +180,7 @@ const form = reactive({
     classifiedName: '',
     deviceType: '',
     describe: undefined,
-    photoUrl: '/device/instance/device-card.png',
+    photoUrl: device.deviceProduct,
 });
 /**
  * 校验id
@@ -191,7 +192,7 @@ const validateInput = async (_rule: Rule, value: string) => {
         } else {
             if (props.isAdd === 1) {
                 const res = await queryProductId(value);
-                if (res.status === 200 && res.result) {
+                if (res.success && res.result) {
                     return Promise.reject('ID重复');
                 } else {
                     return Promise.resolve();
@@ -278,7 +279,7 @@ const show = (data: any) => {
         form.name = '';
         form.classifiedId = undefined;
         form.classifiedName = '';
-        form.photoUrl = '/device/instance/device-card.png';
+        form.photoUrl = device.deviceProduct;
         form.deviceType = '';
         form.describe = undefined;
         form.id = undefined;

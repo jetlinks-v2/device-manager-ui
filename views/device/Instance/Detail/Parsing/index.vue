@@ -148,17 +148,16 @@
 </template>
 
 <script setup lang='ts' name="Parsing">
-// import MonacoEditor from 'device/components/MonacoEditor/index.vue';
 import { useFullscreen } from '@vueuse/core';
-import { useInstanceStore } from '@/store/instance';
+import { useInstanceStore } from '../../../../../store/instance';
 import {
   deviceCode,
   getProtocal,
   testCode,
   saveDeviceCode,
   delDeviceCode, queryCodeTips, queryProductCodeTips,
-} from '@/api/device/instance';
-import { message } from 'jetlinks-ui-components';
+} from '../../../../../api/instance';
+import { message } from 'ant-design-vue';
 import { isBoolean } from 'lodash-es';
 import { onlyMessage } from '@/utils/comm';
 

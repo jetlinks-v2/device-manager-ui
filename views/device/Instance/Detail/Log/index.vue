@@ -8,8 +8,8 @@
     <JProTable
         ref="instanceRefLog"
         :columns="columns"
-        :request="(e: Record<string, any>) => queryLog(instanceStore.current.id, e)"
-        model="TABLE"
+        :request="(e) => queryLog(instanceStore.current.id, e)"
+        mode="TABLE"
         :defaultParams="{ sorts: [{ name: 'timestamp', order: 'desc' }] }"
         :params="params"
         :bodyStyle="{ padding: 0 , minHeight: 'auto' }"
@@ -47,11 +47,10 @@
 </template>
 
 <script lang="ts" setup>
-import type { ActionsType } from 'device/components/Table';
-import { queryLog, queryLogsType } from '@/api/device/instance';
-import { useInstanceStore } from '@/store/instance';
+import { queryLog, queryLogsType } from '../../../../../api/instance';
+import { useInstanceStore } from '../../../../../store/instance';
 import dayjs from 'dayjs';
-import { Modal, Textarea } from 'jetlinks-ui-components';
+import { Modal, Textarea } from 'ant-design-vue';
 
 const params = ref<Record<string, any>>({});
 const instanceStore = useInstanceStore();
@@ -109,7 +108,7 @@ const columns = [
 const getActions = (
     data: Partial<Record<string, any>>,
     type: 'card' | 'table',
-): ActionsType[] => {
+): any[] => {
     if (!data) return [];
     return [
         {

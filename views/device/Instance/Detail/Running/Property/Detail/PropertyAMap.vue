@@ -16,9 +16,9 @@
 </template>
 
 <script lang="ts" setup>
-import { getPropertyData } from '@/api/device/instance';
-import { useInstanceStore } from '@/store/instance';
-import encodeQuery from '@/utils/encodeQuery';
+import { getPropertyData } from '../../../../../../../api/instance';
+import { useInstanceStore } from '../../../../../../../store/instance';
+import { encodeQuery } from '@/utils';
 
 const instanceStore = useInstanceStore();
 

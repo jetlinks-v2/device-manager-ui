@@ -1,5 +1,5 @@
 <template>
-  <DragModal
+  <j-drag-modal
     :width="800"
     :height="modalHeight"
     :title="false"
@@ -67,13 +67,12 @@
         查找到 <span class="table-search-result-total">{{filterArray.length}}</span> 条相关属性
       </div>
     </div>
-  </DragModal>
+  </j-drag-modal>
 </template>
 
 <script setup name="MetadataTableSearch">
-import { DragModal } from 'device/components/Modal'
 import Table from '../../Table.vue'
-import {useTableDataSource, useTableOpenGroup, useTableTool, useGroupOptions} from "device/components/Metadata/Table/context";
+import {useTableDataSource, useTableOpenGroup, useTableTool, useGroupOptions} from "../../context";
 
 const props = defineProps({
   searchKey: {

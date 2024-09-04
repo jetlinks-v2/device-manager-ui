@@ -1,7 +1,7 @@
-import { updateProductThreshold, updateDeviceThreshold ,queryDeviceThreshold, queryProductThreshold , deleteProductThreshold, deleteDeviceThreshold } from '@/api/device/instance'
-import { useRequest } from '@/hook'
-import {useProductStore} from "store/product";
-import {useInstanceStore} from "store/instance";
+import { updateProductThreshold, updateDeviceThreshold ,queryDeviceThreshold, queryProductThreshold , deleteProductThreshold, deleteDeviceThreshold } from '../../../../../../../api/instance'
+import { useRequest } from '@jetlinks-web/hooks'
+import {useProductStore} from "../../../../../../../store/product";
+import {useInstanceStore} from "../../../../../../../store/instance";
 export const useThreshold = (props: Record<string, any>) => {
 
     const productStore = useProductStore();
@@ -16,7 +16,7 @@ export const useThreshold = (props: Record<string, any>) => {
     const { run: updateDeviceRun } = useRequest(updateDeviceThreshold,{ immediate: false})
 
     const { run: deleteProductRun } = useRequest(deleteProductThreshold,{ immediate: false})
-    
+
     const { run: deleteDeviceRun } = useRequest(deleteDeviceThreshold,{ immediate: false})
 
     const { run: queryDevice } = useRequest(queryDeviceThreshold, {
@@ -72,7 +72,7 @@ export const useThreshold = (props: Record<string, any>) => {
                 //     }
                 // })
             },
-            
+
         }
         if(props.target === 'product'){
             updateProductRun(productStore.current.id,props.id,params)

@@ -62,14 +62,14 @@
 </template>
 
 <script setup name="MetadataImport">
-import {TOKEN_KEY, TOKEN_KEY_URL} from '@/utils/variable';
-import {getToken, isFullScreen, LocalStore, onlyMessage} from '@/utils/comm';
+import {TOKEN_KEY, TOKEN_KEY_URL} from '@jetlinks-web/constants';
+import {getToken, LocalStore, onlyMessage, downloadFileByUrl} from '@jetlinks-web/utils';
 import {validate} from './util'
-import { getTemplate, uploadAnalyzeMetadata} from '@/api/device/instance'
-import {getTemplate as getProductTemplate} from '@/api/device/product'
-import {downloadFileByUrl} from "@/utils/utils";
-import {useGroupActive, useTableWrapper} from "device/components/Metadata/Table/context";
-import { useProductStore } from '@/store/product';
+import { isFullScreen } from '@/utils'
+import { getTemplate, uploadAnalyzeMetadata} from '../../../../../../../api/instance'
+import {getTemplate as getProductTemplate} from '../../../../../../../api/product'
+import {useGroupActive, useTableWrapper} from "../../../../../../../components/Metadata/context";
+import { useProductStore } from '../../../../../../../store/product';
 
 const props = defineProps({
   target: {

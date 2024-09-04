@@ -4,6 +4,6 @@
   ></Metadata>
 </template>
 <script setup lang="ts" name="InstanceDetail">
-import Metadata from '@/views/device/components/Metadata/index.vue'
+import Metadata from '../components/Metadata/index.vue'
 </script>
 <style scoped lang="less"></style>

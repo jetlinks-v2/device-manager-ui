@@ -152,10 +152,9 @@ import {
     FileParams,
     EnumParams,
     BooleanParams,
-    ObjectParams,
     ArrayParams,
     DoubleParams,
-} from 'device/components/Metadata/Table';
+} from '../../index';
 import { Form } from 'ant-design-vue';
 
 const props = defineProps({

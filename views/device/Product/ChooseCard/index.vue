@@ -31,8 +31,6 @@
 </template>
 
 <script setup lang="ts">
-import { StatusColorEnum } from '@/utils/consts.ts';
-import type { ActionsType } from 'device/components/Table/index.vue';
 import { PropType } from 'vue';
 
 type EmitProps = {
@@ -40,7 +38,6 @@ type EmitProps = {
     (e: 'click', data: Record<string, any>): void;
 };
 
-type TableActionsType = Partial<ActionsType>;
 
 const emit = defineEmits<EmitProps>();
 

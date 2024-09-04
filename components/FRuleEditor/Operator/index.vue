@@ -110,7 +110,7 @@
             </div>
         </div>
         <div class="right">
-            <Markdown :source="item?.description || ''"></Markdown>
+            <j-markdown :source="item?.description || ''"></j-markdown>
         </div>
     </div>
 </template>
@@ -122,7 +122,6 @@ import { PropertyMetadata } from '../../../views/device/Product/typings';
 import { getOperator } from '../../../api/product';
 import { inject } from 'vue';
 import {useTableWrapper, useTableFullScreen} from "../../../components/Metadata/context";
-import Markdown from 'device/components/Markdown'
 
 const props = defineProps({
     id: String,

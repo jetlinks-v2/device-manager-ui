@@ -5,7 +5,7 @@
                 <a-col :span="6">
                     <TopCard
                         title="产品数量"
-                        :img="getImage('/device/device-product.svg')"
+                        :img="device.deviceProduct"
                         :footer="productFooter"
                         :value="productTotal"
                     ></TopCard>
@@ -13,7 +13,7 @@
                 <a-col :span="6">
                     <TopCard
                         title="设备数量"
-                        :img="getImage('/device/device-number.svg')"
+                        :img="device.deviceNumber"
                         :footer="deviceFooter"
                         :value="deviceTotal"
                     ></TopCard
@@ -79,9 +79,8 @@ import {
     productCount,
     deviceCount,
     dashboard,
-    getGo,
 } from '../../../api/dashboard';
-import encodeQuery from '@/utils/encodeQuery';
+import {encodeQuery} from '@/utils';
 import type { Footer } from './typings';
 import TopCard from './components/TopCard.vue';
 import { useMenuStore } from '@/store/menu';
@@ -89,6 +88,7 @@ import Amap from './components/Amap.vue';
 import { useSystemStore } from '@/store/system';
 import dayjs from 'dayjs'
 import { isNoCommunity } from '@/utils/utils'
+import { device } from "../../../assets";
 
 const system = useSystemStore();
 const AmapKey = system.systemInfo.amap?.apiKey;
@@ -150,7 +150,7 @@ const menuStore = useMenuStore();
  */
 const getProductData = () => {
     // if (menuStore.hasMenu('device/Product')) {
-        productCount().then((res) => {
+        productCount({}).then((res) => {
             if (res.status == 200) {
                 productTotal.value = res.result;
             }

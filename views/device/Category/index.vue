@@ -11,7 +11,7 @@
                 ref="tableRef"
                 :columns="table.columns"
                 :request="queryTree"
-                model="TABLE"
+                mode="TABLE"
                 type="TREE"
                 v-model:expandedRowKeys="expandedRowKeys"
                 :scroll="{ y: 550 }"
@@ -28,7 +28,7 @@
                 :params="params"
                 :loading="tableLoading"
             >
-                <template #headerTitle>
+                <template #headerLeftRender>
                     <j-permission-button
                         type="primary"
                         @click="add"

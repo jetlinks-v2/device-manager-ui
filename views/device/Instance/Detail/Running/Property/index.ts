@@ -1,19 +1,19 @@
-import { getImage } from "@/utils/comm";
+import { running } from "../../../../../../assets";
 
 export const imgMap = new Map<any, any>();
-imgMap.set('txt', getImage('/running/txt.png'));
-imgMap.set('doc', getImage('/running/doc.png'));
-imgMap.set('xls', getImage('/running/xls.png'));
-imgMap.set('ppt', getImage('/running/ppt.png'));
-imgMap.set('docx', getImage('/running/docx.png'));
-imgMap.set('xlsx', getImage('/running/xlsx.png'));
-imgMap.set('pptx', getImage('/running/pptx.png'));
-imgMap.set('pdf', getImage('/running/pdf.png'));
-imgMap.set('img', getImage('/running/img.png'));
-imgMap.set('error', getImage('/running/error.png'));
-imgMap.set('video', getImage('/running/video.png'));
-imgMap.set('other', getImage('/running/other.png'));
-imgMap.set('obj', getImage('/running/obj.png'));
+imgMap.set('txt', running.txt);
+imgMap.set('doc', running.doc);
+imgMap.set('xls', running.xls);
+imgMap.set('ppt', running.ppt);
+imgMap.set('docx', running.docx);
+imgMap.set('xlsx', running.xlsx);
+imgMap.set('pptx', running.pptx);
+imgMap.set('pdf', running.pdf);
+imgMap.set('img', running.img);
+imgMap.set('error', running.error);
+imgMap.set('video', running.video);
+imgMap.set('other', running.other);
+imgMap.set('obj', running.obj);
 
 export const imgList = ['.jpg', '.png', '.swf', '.tiff'];
 export const videoList = ['.m3u8', '.flv', '.mp4', '.rmvb', '.mvb'];

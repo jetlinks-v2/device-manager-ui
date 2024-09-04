@@ -72,8 +72,8 @@
 
 <script setup name="MetadataBaseTableGroup">
 import {Modal} from "ant-design-vue";
-import {randomNumber} from "@/utils/utils";
-import {isFullScreen} from "@/utils/comm";
+import {randomNumber} from "@jetlinks-web/utils";
+import {isFullScreen} from "@/utils";
 import {useTableGroupError, useTableWrapper} from './context'
 
 const props = defineProps({

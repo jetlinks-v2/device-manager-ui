@@ -6,7 +6,7 @@
 </template>
 
 <script setup lang="ts" name="Rule">
-import FRuleEditor from '../../../../../components/FRuleEditor/index.vue';
+import FRuleEditor from '../../../../../../../components/FRuleEditor/index.vue';
 import {Form} from "ant-design-vue";
 
 const formItemContext = Form.useInjectFormItemContext();

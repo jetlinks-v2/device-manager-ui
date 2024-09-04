@@ -351,15 +351,16 @@ import { ProtocolMapping } from '../../data';
 import AccessCard from '../AccessCard/index.vue';
 import { randomString, onlyMessage } from '@jetlinks-web/utils';
 import { useMenuStore } from '@/store/menu';
+import { network } from '../../../../../assets';
 
 const menuStory = useMenuStore();
 const origin = window.location.origin;
-const img1 = getImage('/network/01.png');
-const img2 = getImage('/network/02.jpg');
-const img3 = getImage('/network/03.png');
-const img4 = getImage('/network/04.jpg');
-const img5 = getImage('/network/05-Ctwing.png')
-const img6 = getImage('/network/06-Ctwing.png')
+const img1 = network.network1;
+const img2 = network.network2;
+const img3 = network.network3;
+const img4 = network.network4;
+const img5 = network.network5C
+const img6 = network.network6C
 
 interface FormState {
     apiAddress: string;

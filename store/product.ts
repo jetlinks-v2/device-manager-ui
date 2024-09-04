@@ -1,7 +1,7 @@
 import type { ProductItem } from "../views/device/Product/typings";
 import { defineStore } from "pinia";
 import { detail, getDeviceNumber } from '../api/product'
-import encodeQuery from "@/utils/encodeQuery";
+import {encodeQuery} from "@/utils";
 
 export const useProductStore = defineStore({
   id: 'product',

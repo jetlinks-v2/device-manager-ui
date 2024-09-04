@@ -57,8 +57,8 @@
 </template>
 
 <script setup lang="ts">
-import { useInstanceStore } from '@/store/instance';
-import { execute } from '@/api/device/instance';
+import { useInstanceStore } from '../../../../../../store/instance';
+import { execute } from '../../../../../../api/instance';
 import { onlyMessage } from '@/utils/comm';
 
 const instanceStore = useInstanceStore();

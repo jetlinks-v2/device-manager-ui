@@ -36,8 +36,9 @@
 </template>
 
 <script lang="ts" setup>
-import { useInstanceStore } from '@/store/instance';
+import { useInstanceStore } from '../../../../../../../store/instance';
 import Save from './Save.vue';
+
 const instanceStore = useInstanceStore();
 
 const dataSource = ref<Record<any, any>[]>([]);

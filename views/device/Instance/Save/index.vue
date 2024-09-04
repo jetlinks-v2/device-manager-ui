@@ -13,7 +13,7 @@
                 <a-row type="flex">
                     <a-col flex="180px">
                         <a-form-item name="photoUrl">
-                            <JProUpload accept="image/jpeg,image/png" v-model="modelRef.photoUrl" />
+                            <ProUpload accept="image/jpeg,image/png" v-model="modelRef.photoUrl" />
                         </a-form-item>
                     </a-col>
                     <a-col flex="auto">
@@ -132,9 +132,10 @@
 </template>
 
 <script lang="ts" setup>
-import { queryNoPagingPost } from '@/api/device/product';
-import { isExists, update } from '@/api/device/instance';
-import { getImage, onlyMessage } from '@/utils/comm';
+import { queryNoPagingPost } from '../../../../api/product';
+import { isExists, update } from '../../../../api/instance';
+import { onlyMessage } from '@jetlinks-web/utils';
+import { device} from "../../../../assets";
 
 const emit = defineEmits(['close', 'save']);
 const props = defineProps({
@@ -153,7 +154,7 @@ const modelRef = reactive({
     id: undefined,
     name: '',
     describe: '',
-    photoUrl: getImage('/device/instance/device-card.png'),
+    photoUrl: device.deviceCard,
 });
 
 const vailId = async (_: Record<string, any>, value: string) => {

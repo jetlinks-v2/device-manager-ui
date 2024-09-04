@@ -136,7 +136,7 @@
                 </p>
                 <div class="title">功能图示</div>
                 <div>
-                    <img :src="getImage('/device/matadataMap.jpg')" />
+                    <img :src="device.metadataMap" />
                 </div>
             </j-scrollbar>
         </div>
@@ -145,14 +145,15 @@
 
 <script setup lang='ts' name='MetadataMap'>
 import { storeToRefs } from 'pinia';
-import { getImage, onlyMessage } from '@/utils/comm';
+import { onlyMessage } from '@jetlinks-web/utils';
 import {
     getMetadataMapById,
     metadataMapById,
     getProtocolMetadata,
-} from '@/api/device/instance';
-import { useInstanceStore } from '@/store/instance';
+} from '../../../../../api/instance';
+import { useInstanceStore } from '../../../../../store/instance';
 import { cloneDeep } from 'lodash-es';
+import {device} from "../../../../../assets";
 
 const deviceStore = useInstanceStore();
 const { current: deviceDetail } = storeToRefs(deviceStore);

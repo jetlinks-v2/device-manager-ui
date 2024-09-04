@@ -55,7 +55,7 @@
 </template>
 
 <script lang="ts" setup>
-import { treeMapping, saveMapping } from '@/api/device/instance';
+import { treeMapping, saveMapping } from '../../../../../../api/instance';
 import { onlyMessage } from '@/utils/comm';
 const _props = defineProps({
     type: {

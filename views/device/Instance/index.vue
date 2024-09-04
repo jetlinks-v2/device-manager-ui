@@ -24,8 +24,9 @@
                         : false
                 "
                 :params="params"
+                modeValue="CARD"
             >
-                <template #headerTitle>
+                <template #headerLeftRender>
                     <a-space>
                         <j-permission-button
                             type="primary"
@@ -64,7 +65,7 @@
                                 :height="80"
                                 :src="
                                     slotProps?.photoUrl ||
-                                    getImage('/device/instance/device-card.png')
+                                    device.deviceCard
                                 "
                             />
                         </template>
@@ -204,11 +205,9 @@ import {
     _deploy,
     _undeploy,
     batchUndeployDevice,
-    batchDeployDevice,
     batchDeleteDevice,
     detail,
-} from 'device/api/instance';
-import { getImage } from '@/utils/comm';
+} from '../../../api/instance';
 import { getToken, onlyMessage } from '@jetlinks-web/utils'
 import Import from './Import/modal.vue';
 import Export from './Export/index.vue';
@@ -220,17 +219,18 @@ import {
     queryGatewayList,
     queryNoPagingPost,
     queryOrgThree,
-} from 'device/api/product';
-import { queryTree } from 'device/api/category';
+} from '../../../api/product';
+import { queryTree } from '../../../api/category';
 import { useMenuStore } from '@/store/menu';
 import type { ActionsType } from './typings';
 import dayjs from 'dayjs';
-import BatchDropdown from 'device/components/BatchDropdown/index.vue';
-import type { BatchActionsType } from 'device/components/BatchDropdown/types';
+import BatchDropdown from '@/components/BatchDropdown/index.vue';
+import type { BatchActionsType } from '@/components/BatchDropdown/types';
 import { useRouterParams } from '@jetlinks-web/hooks';
 import { accessConfigTypeFilter } from '@/utils';
 import TagSearch from './components/TagSearch.vue';
 import { Modal } from 'ant-design-vue';
+import { device } from '../../../assets'
 
 
 const instanceRef = ref<Record<string, any>>({});
@@ -555,7 +555,7 @@ const handleAdd = () => {
  * 查看
  */
 const handleView = (id: string) => {
-    menuStory.jumpPage('device/Instance/Detail', { id });
+    menuStory.jumpPage('device/Instance/Detail', { params: { id } });
 };
 
 const getActions = (

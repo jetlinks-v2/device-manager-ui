@@ -49,8 +49,8 @@
 </template>
 
 <script lang="ts" setup>
-import { modify } from '@/api/device/instance';
-import { useInstanceStore } from '@/store/instance';
+import { modify } from '../../../../../../../api/instance';
+import { useInstanceStore } from '../../../../../../../store/instance';
 import { onlyMessage } from '@/utils/comm';
 
 const emit = defineEmits(['close', 'save']);

@@ -9,7 +9,7 @@
             <FullPage>
                 <j-pro-table
                     ref="tableRef"
-                    model="TABLE"
+                    mode="TABLE"
                     :columns="columns"
                     :request="query"
                     :defaultParams="{
@@ -17,7 +17,7 @@
                     }"
                     :params="params"
                 >
-                    <template #headerTitle>
+                    <template #headerLeftRender>
                         <j-permission-button
                             type="primary"
                             @click="handlAdd"

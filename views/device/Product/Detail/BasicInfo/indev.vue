@@ -60,11 +60,12 @@
 </template>
 
 <script lang="ts" setup>
-import { useProductStore } from '../../../../store/product';
+import { useProductStore } from '../../../../../store/product';
 import Save from '../../Save/index.vue';
 import dayjs from 'dayjs';
 import { useRoute } from 'vue-router';
 import { useMenuStore } from '@/store/menu';
+
 const menuStore = useMenuStore();
 const productStore = useProductStore();
 const route = useRoute();

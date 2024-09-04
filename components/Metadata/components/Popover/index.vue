@@ -33,7 +33,7 @@
 
 <script setup name="MetadataPopover">
 import { useMask } from '../utils'
-import {useTableWrapper, useTableFullScreen} from "device/components/Metadata/Table/context";
+import {useTableWrapper, useTableFullScreen} from "../../context";
 
 const props = defineProps({
   placement: {

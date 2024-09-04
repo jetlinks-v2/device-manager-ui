@@ -34,8 +34,8 @@
 </template>
 
 <script lang="ts" setup>
-import { setProperty } from '@/api/device/instance';
-import { useInstanceStore } from '@/store/instance';
+import { setProperty } from '../../../../../../api/instance';
+import { useInstanceStore } from '../../../../../../store/instance';
 import { onlyMessage } from '@/utils/comm';
 
 const props = defineProps({

@@ -35,11 +35,12 @@
 </template>
 
 <script lang='ts' setup name='MetadataModal'>
-import { useProductStore } from '@/store/product';
-import { getImage, onlyMessage } from '@/utils/comm'
+import { useProductStore } from '../../../../../store/product';
+import { onlyMessage } from '@jetlinks-web/utils'
 import { storeToRefs } from 'pinia'
-import { modify, updateDevice } from '@/api/device/product'
-import { savePluginData } from '@/api/link/plugin'
+import { modify, updateDevice } from '../../../../../api/product'
+import { savePluginData } from '../../../../../api/link/plugin'
+import { device } from '../../../../../assets'
 
 type Emit = {
   (e: 'submit'): void
@@ -75,25 +76,25 @@ const options = [
     value: 'intersection',
     label: '取交集',
     subLabel: '仅保留标识一致的属性',
-    iconUrl: getImage('/device/intersection.png'),
+    iconUrl: device.intersection,
   },
   {
     value: 'union',
     label: '取并集',
     subLabel: '保留平台、插件中的所有属性',
-    iconUrl: getImage('/device/union.png'),
+    iconUrl: device.union,
   },
   {
     value: 'ignore',
     label: '忽略',
     subLabel: '仅保留平台中的属性',
-    iconUrl: getImage('/device/ignore.png'),
+    iconUrl: device.ignore,
   },
   {
     value: 'cover',
     label: '覆盖',
     subLabel: '仅保留插件中的属性',
-    iconUrl: getImage('/device/cover.png'),
+    iconUrl: device.cover,
   }
 ]
 

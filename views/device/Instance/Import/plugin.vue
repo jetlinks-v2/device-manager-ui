@@ -9,7 +9,7 @@
 </template>
 
 <script setup lang='ts' name='DeviceImportPlugin'>
-import InklingDevice from '@/views/device/components/InklingDevice'
+import InklingDevice from '../../components/InklingDevice'
 
 type Emit = {
   (e: 'change', data: any[]): void

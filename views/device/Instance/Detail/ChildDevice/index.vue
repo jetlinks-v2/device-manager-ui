@@ -33,7 +33,7 @@
                 onChange: onSelectChange,
             }"
             :params="params"
-            :model="'TABLE'"
+            mode='TABLE'
         >
             <template #rightExtraRender>
                 <a-space>
@@ -122,18 +122,16 @@
 
 <script setup lang="ts">
 import dayjs from 'dayjs';
-import type { ActionsType } from 'device/components/Table';
 import {
     query,
     unbindDevice,
     unbindBatchDevice,
     queryByParent,
     deleteDeviceMapping,
-} from '@/api/device/instance';
-import { useInstanceStore } from '@/store/instance';
+} from '../../../../../api/instance';
+import { useInstanceStore } from '../../../../../store/instance';
 import { storeToRefs } from 'pinia';
 import BindChildDevice from './BindChildDevice/index.vue';
-import { usePermissionStore } from '@/store/permission';
 import SaveChild from './SaveChild/index.vue';
 import { onlyMessage } from '@/utils/comm';
 
@@ -141,10 +139,7 @@ const instanceStore = useInstanceStore();
 const { detail } = storeToRefs(instanceStore);
 const router = useRouter();
 const childVisible = ref(false);
-const permissionStore = usePermissionStore();
-// watchEffect(() => {
-//     console.log(detail.value);
-// });
+
 const statusMap = new Map();
 statusMap.set('online', 'success');
 statusMap.set('offline', 'error');
@@ -226,7 +221,7 @@ const columns = [
     },
 ];
 
-const getActions = (data: Partial<Record<string, any>>): ActionsType[] => {
+const getActions = (data: Partial<Record<string, any>>): any[] => {
     if (!data) return [];
     return [
         {

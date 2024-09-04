@@ -30,8 +30,8 @@
 </template>
 
 <script lang="ts" setup>
-import { getPropertiesInfo, getPropertiesList } from '@/api/device/instance';
-import { useInstanceStore } from '@/store/instance';
+import { getPropertiesInfo, getPropertiesList } from '../../../../../../../api/instance';
+import { useInstanceStore } from '../../../../../../../store/instance';
 import Chart from './Chart.vue';
 import * as echarts from 'echarts';
 import dayjs from 'dayjs';

@@ -50,12 +50,12 @@
 </template>
 
 <script lang="ts" setup>
-import { getProductListNoPage } from '@/api/device/instance';
+import { getProductListNoPage, getEdgeMap, removeEdgeMap } from '../../../../../../api/instance';
 import EdgeMap from '../EdgeMap/index.vue';
-import { useInstanceStore } from '@/store/instance';
+import { useInstanceStore } from '../../../../../../store/instance';
 import { storeToRefs } from 'pinia';
 import { provide } from 'vue';
-import { getEdgeMap, removeEdgeMap } from '@/api/device/instance';
+
 const instanceStore = useInstanceStore();
 const { current } = storeToRefs(instanceStore);
 const props = defineProps(['childData']);

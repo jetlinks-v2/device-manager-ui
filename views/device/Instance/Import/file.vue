@@ -12,7 +12,7 @@
                 <a-upload-dragger
                     v-model:fileList="modelRef.upload"
                     name="file"
-                    :action="FILE_UPLOAD"
+                    :action="FileStaticPath"
                     :headers="{
                         [TOKEN_KEY]: LocalStore.get(TOKEN_KEY),
                     }"
@@ -73,11 +73,10 @@
 
 <script setup lang='ts' name='DeviceImportFile'>
 import {inject,Ref} from 'vue'
-import { FILE_UPLOAD } from '@/api/comm';
-import { TOKEN_KEY } from '@/utils/variable';
-import { LocalStore, onlyMessage } from '@/utils/comm';
-import { downloadFileByUrl } from '@/utils/utils';
-import { deviceImport, templateDownload } from '@/api/device/instance';
+import { FileStaticPath } from '@/api/comm';
+import { TOKEN_KEY } from '@jetlinks-web/constants';
+import { LocalStore, onlyMessage, downloadFileByUrl } from '@jetlinks-web/utils';
+import { deviceImport, templateDownload } from '../../../../api/instance';
 import { EventSourcePolyfill } from 'event-source-polyfill';
 
 const props = defineProps({

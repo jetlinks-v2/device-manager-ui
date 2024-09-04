@@ -57,10 +57,12 @@
 <script lang='ts' setup name='DeviceImport'>
 import {provide} from 'vue'
 import Product from './product.vue'
-import { getImage, onlyMessage } from '@/utils/comm'
+import { onlyMessage } from '@jetlinks-web/utils'
 import File from './file.vue'
 import Plugin from './plugin.vue'
-import { importDeviceByPlugin } from '@/api/device/instance'
+import { importDeviceByPlugin } from '../../../../api/instance'
+import { device } from '../../../../assets'
+
 const emit = defineEmits(['cancel', 'save']);
 const steps = ref(0) // 步骤
 const importData = reactive<{productId?: string, type?: string}>({
@@ -80,7 +82,7 @@ const typeOptions = computed(() => {
       value: 'file',
       label: '文件导入',
       subLabel: '支持上传XLSX、CSV格式文件',
-      iconUrl: getImage('/device/import1.png'),
+      iconUrl: device.import1,
     },
   ]
   if (productDetail.value?.accessProvider === 'plugin_gateway') {
@@ -88,7 +90,7 @@ const typeOptions = computed(() => {
       value: 'plugin',
         label: '插件导入',
       subLabel: '读取插件中的设备信息同步至平台',
-      iconUrl: getImage('/device/import2.png'),
+      iconUrl: device.import2,
     })
   }
   return array

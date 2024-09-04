@@ -19,10 +19,10 @@
 </template>
 
 <script setup lang="ts">
-import { useInstanceStore } from '@/store/instance';
+import { useInstanceStore } from '../../../../../store/instance';
 import Simple from './components/Simple.vue';
 import Advance from './components/Advance.vue';
-import { useMenuStore } from 'store/menu';
+import { useMenuStore } from '@/store';
 
 const menuStory = useMenuStore();
 
@@ -40,10 +40,11 @@ const tabs = {
 const onJump = () => {
     menuStory.jumpPage(
         'device/Product/Detail',
-        {
-            id: instanceStore.current.productId,
+      {
+        params: {
+          id: instanceStore.current.productId,
+          tab: 'Metadata'
         },
-        { key: 'metadata' },
-    );
+      });
 };
 </script>

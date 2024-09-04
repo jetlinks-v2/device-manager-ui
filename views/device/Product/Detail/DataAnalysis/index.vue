@@ -109,15 +109,14 @@
 </template>
 
 <script setup lang='ts' name="DataAnalysis">
-// import MonacoEditor from 'device/components/MonacoEditor/index.vue';
 import { useFullscreen } from '@vueuse/core';
-import { useProductStore } from '@/store/product';
+import { useProductStore } from '../../../../../store/product';
 import {
   productCode,
   getProtocal,
   testCode,
   saveProductCode, queryProductCodeTips,
-} from '@/api/device/instance';
+} from '../../../../../api/instance';
 import { isBoolean } from 'lodash-es';
 import { onlyMessage } from '@/utils/comm';
 

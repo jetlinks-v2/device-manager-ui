@@ -22,7 +22,7 @@
                 ref="bindDeviceRef"
                 :columns="columns"
                 :request="query"
-                model="TABLE"
+                mode="TABLE"
                 :defaultParams="{
                     terms: [
                         {
@@ -90,15 +90,14 @@
 <script setup lang="ts" name="BindChildDevice">
 import {
     query,
-    queryByParent,
     bindDevice,
     queryDeviceMapping,
     saveDeviceMapping,
-} from '@/api/device/instance';
+} from '../../../../../../api/instance';
 import dayjs from 'dayjs';
-import { useInstanceStore } from '@/store/instance';
+import { useInstanceStore } from '../../../../../../store/instance';
 import { storeToRefs } from 'pinia';
-import { onlyMessage } from '@/utils/comm';
+import { onlyMessage } from '@jetlinks-web/utils';
 
 const props = defineProps({
     parentIds: {

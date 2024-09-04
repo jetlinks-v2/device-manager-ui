@@ -1,4 +1,4 @@
-import { getImage } from '@/utils/comm';
+import { diagnose } from '../../../../../../assets'
 import { VNode } from 'vue';
 
 export type ListProps = {
@@ -17,10 +17,10 @@ TextColorMap.set('success', 'green');
 TextColorMap.set('warning', '#FAB247');
 
 export const StatusMap = new Map();
-StatusMap.set('error', getImage('/diagnose/status/error.png'));
-StatusMap.set('success', getImage('/diagnose/status/success.png'));
-StatusMap.set('warning', getImage('/diagnose/status/warning.png'));
-StatusMap.set('loading', getImage('/diagnose/status/loading.png'));
+StatusMap.set('error', diagnose.StatusError);
+StatusMap.set('success', diagnose.StatusSuccess);
+StatusMap.set('warning', diagnose.StatusWarning);
+StatusMap.set('loading', diagnose.StatusLoading);
 
 export const networkInitList: ListProps[] = [
     // {

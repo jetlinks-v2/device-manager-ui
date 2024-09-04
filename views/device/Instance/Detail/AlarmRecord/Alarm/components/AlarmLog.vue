@@ -13,14 +13,14 @@
                     {{ levelMap?.[AlarmData?.level] || AlarmData?.level }}
                 </div>
                 <div>
-                    <BadgeStatus
+                    <j-badge-status
                         :status="AlarmData?.state.value"
                         :statusNames="{
                             warning: 'error',
                             normal: 'default',
                         }"
                     >
-                    </BadgeStatus
+                    </j-badge-status
                     ><span>
                         {{ AlarmData?.state.text }}
                     </span>
@@ -45,10 +45,8 @@
 </template>
 
 <script setup>
-import { queryLevel } from '@/api/rule-engine/config';
-// import Log from '@/views/rule-engine/Alarm/Log/TabComponent/components/Log.vue';
-// import SolveComponent from '@/views/rule-engine/Alarm/Log/SolveComponent/index.vue';
-import { useAlarmLevel } from '@/hook';
+import { useAlarmLevel } from '../../../../../../../hooks';
+
 const props = defineProps({
     data: {
         type: Object,

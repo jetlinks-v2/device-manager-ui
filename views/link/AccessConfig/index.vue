@@ -9,7 +9,7 @@
             <FullPage>
                 <j-pro-table
                     ref="tableRef"
-                    model="CARD"
+                    mode="CARD"
                     :columns="columns"
                     :request="list"
                     :defaultParams="{
@@ -19,7 +19,7 @@
                     :gridColumns="[1, 2]"
                     :params="params"
                 >
-                    <template #headerTitle>
+                    <template #headerLeftRender>
                         <j-permission-button
                             type="primary"
                             @click="handleAdd"
@@ -48,7 +48,7 @@
                             <template #img>
                                 <slot name="img">
                                     <img
-                                        :src="getImage('/device-access.png')"
+                                        :src="device.deviceAccess"
                                     />
                                 </slot>
                             </template>
@@ -184,20 +184,19 @@
     </j-page-container>
 </template>
 <script lang="ts" setup name="AccessConfigPage">
-import type { ActionsType } from 'device/components/Table/index';
-import { getImage } from '@/utils/comm';
 import {
     list,
     getProviders,
     remove,
     undeploy,
     deploy,
-} from '@/api/link/accessConfig';
+} from '../../../api/link/accessConfig';
 import { onlyMessage } from '@/utils/comm';
-import { useMenuStore } from 'store/menu';
-import { accessConfigTypeFilter } from '@/utils/setting';
+import { useMenuStore } from '@/store';
+import { accessConfigTypeFilter } from '@/utils';
 import { cloneDeep } from 'lodash-es';
 import Outline from './Outline/index.vue'
+import { device } from '../../../assets'
 
 const menuStory = useMenuStore();
 const tableRef = ref<Record<string, any>>({});
@@ -273,7 +272,7 @@ const columns = [
     },
 ];
 
-const getActions = (data: Partial<Record<string, any>>): ActionsType[] => {
+const getActions = (data: Partial<Record<string, any>>): any[] => {
     if (!data) return [];
     const state = data.state.value;
     const stateText = state === 'enabled' ? '禁用' : '启用';
@@ -349,12 +348,17 @@ getProvidersList();
 const handleAdd = () => {
     menuStory.jumpPage(
         `link/AccessConfig/Detail`,
-        { id: ':id' },
-        { view: false },
+      {
+        params: { id: ':id' },
+        query: { view: false }
+      },
     );
 };
 const handleEdit = (id: string) => {
-    menuStory.jumpPage(`link/AccessConfig/Detail`, { id }, { view: false });
+    menuStory.jumpPage(`link/AccessConfig/Detail`, {
+      params: { id },
+      query: { view: false }
+    });
 };
 const handleEye = (data: any) => {
     visibleOutline.value = true;

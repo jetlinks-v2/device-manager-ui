@@ -7,7 +7,7 @@
     <JProTable
         ref="deviceAlarm"
         :columns="columns"
-        model="TABLE"
+        mode="TABLE"
         :request="queryInvalidData"
         :defaultParams="{
             sorts: [{ name: 'createTime', order: 'desc' }],
@@ -45,11 +45,12 @@
 </template>
 
 <script setup>
-import { queryInvalidData } from '@/api/rule-engine/log';
-import { useInstanceStore } from '@/store/instance';
-import { useProductStore } from '@/store/product';
+import { queryInvalidData } from '../../../../../../api/rule-engine/log';
+import { useInstanceStore } from '../../../../../../store/instance';
+import { useProductStore } from '../../../../../../store/product';
+import { useMenuStore } from '@/store';
 import dayjs from 'dayjs';
-import { useMenuStore } from 'store/menu';
+
 const props = defineProps({
     goal: {
         type: String,
@@ -119,7 +120,7 @@ const columns = props.goal === 'device' ? [
 ]
 
 const gotoDevice = (id) => {
-    menuStory.jumpPage('device/Instance/Detail', { id, tab: 'Running' });
+    menuStory.jumpPage('device/Instance/Detail', { params: { id, tab: 'Running' }});
 };
 const handleSearch = (e) => {
     params.value = e;

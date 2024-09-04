@@ -93,24 +93,25 @@
         <template #extra>
             <img
                 @click="handleRefresh"
-                :src="getImage('/device/button.png')"
+                :src="device.button"
                 style="margin-right: 20px; cursor: pointer"
             />
         </template>
-        <FullPage>
-            <div style="padding: 24px; height: 100%">
-                <component
-                    :is="tabs[instanceStore.tabActiveKey]"
-                    v-bind="{ type: 'device' }"
-                    @onJump="onTabChange"
-                />
-            </div>
+        <FullPage :fixed="false">
+          <div style="padding: 24px;">
+            <component
+              :is="tabsComponents"
+              v-bind="{ type: 'device' }"
+              @onJump="onTabChange"
+            />
+          </div>
+
         </FullPage>
     </j-page-container>
 </template>
 
 <script lang="ts" setup>
-import { useInstanceStore } from '@/store/instance';
+import { useInstanceStore } from '../../../../store/instance';
 import Info from './Info/index.vue';
 import Running from './Running/index.vue';
 import Metadata from '../../components/Metadata/index.vue';
@@ -126,19 +127,18 @@ import GateWay from './GateWay/index.vue';
 import Log from './Log/index.vue';
 import AlarmRecord from './AlarmRecord/index.vue';
 import Firmware from './Firmware/index.vue';
-import CardManagement from '@/views/iot-card/CardManagement/Detail/index.vue';
-import { _deploy, _disconnect } from '@/api/device/instance';
-import { getImage, onlyMessage } from '@/utils/comm';
+import CardManagement from '../components/IotCard/index.vue';
+import { _deploy, _disconnect } from '../../../../api/instance';
+import { onlyMessage } from '@jetlinks-web/utils';
 import { getWebSocket } from '@/utils/websocket';
-import { useMenuStore } from '@/store/menu';
-import { useRouterParams } from '@/utils/hooks/useParams';
-import { EventEmitter } from '@/utils/utils';
-import { usePermissionStore } from '@/store/permission';
+import { useRouterParams } from '@jetlinks-web/hooks';
+import { EventEmitter } from '@jetlinks-web/utils';
+import { useAuthStore, useSystemStore, useMenuStore } from '@/store';
 import { isNoCommunity } from '@/utils/utils';
-import { useSystem } from '@/store/system';
+import { device } from "../../../../assets";
 
 const menuStory = useMenuStore();
-const { showThreshold } = useSystem();
+const { showThreshold } = useSystemStore();
 const route = useRoute();
 const routerParams = useRouterParams();
 const instanceStore = useInstanceStore();
@@ -195,7 +195,11 @@ const tabs = {
     Firmware,
 };
 
-const permissionStore = usePermissionStore();
+const permissionStore = useAuthStore();
+
+const tabsComponents = computed(() => {
+  return tabs[instanceStore.tabActiveKey]
+})
 const getStatus = (id: string) => {
     statusRef.value = getWebSocket(
         `instance-editor-info-status-${id}`,
@@ -391,8 +395,10 @@ const handleRefresh = async () => {
 
 const jumpProduct = () => {
     menuStory.jumpPage('device/Product/Detail', {
-        id: instanceStore.current?.productId,
-    });
+  params: {
+    id: instanceStore.current?.productId,
+  }
+});
 };
 
 onMounted(() => {

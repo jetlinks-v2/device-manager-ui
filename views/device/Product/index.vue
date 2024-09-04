@@ -13,9 +13,10 @@
                 :defaultParams="{
                     sorts: [{ name: 'createTime', order: 'desc' }],
                 }"
+                modeValue="CARD"
                 :params="params"
             >
-                <template #headerTitle>
+                <template #headerLeftRender>
                     <a-space>
                         <j-permission-button
                             type="primary"
@@ -63,7 +64,7 @@
                                 <img
                                     :src="
                                         slotProps.photoUrl ||
-                                        '/device-product.png'
+                                        device.deviceProduct
                                     "
                                     class="productImg"
                                 />
@@ -194,6 +195,7 @@ import { omit, cloneDeep } from 'lodash-es';
 import Save from './Save/index.vue';
 import { useMenuStore, useAuthStore } from '@/store';
 import { useRouterParams } from '@jetlinks-web/hooks';
+import { device} from '../../../assets'
 /**
  * 表格数据
  */

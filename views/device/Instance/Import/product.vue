@@ -9,7 +9,7 @@
   <div class="alert">请选择产品，本次批量导入的设备将成为该产品的所属设备</div>
   <j-scrollbar :height='400'>
     <j-pro-table
-      model='CARD'
+      mode='CARD'
       :columns='columns'
       :params='params'
       :request='queryProductList'
@@ -45,7 +45,7 @@
         >
           <template #img>
             <slot name="img">
-              <img width='80' height='80' :src="slotProps.photoUrl || getImage('/device-product.png')" />
+              <img width='80' height='80' :src="slotProps.photoUrl || device.deviceProduct" />
             </slot>
           </template>
           <template #content>
@@ -72,11 +72,9 @@
 </template>
 
 <script setup lang='ts' name='Product'>
-import { getProviders, queryGatewayList, queryProductList } from '@/api/device/product'
-import { queryTree } from '@/api/device/category'
-import { getTreeData_api } from '@/api/system/department'
-import { getImage } from '@/utils/comm'
+import { getProviders, queryProductList } from '../../../../api/product'
 import { accessConfigTypeFilter } from '@/utils'
+import { device } from '../../../../assets'
 
 type Emit = {
   (e: 'update:rowKey', data: string): void

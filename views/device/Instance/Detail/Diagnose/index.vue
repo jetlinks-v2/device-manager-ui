@@ -15,7 +15,7 @@
                             style="height: 100%; position: absolute; z-index: 2"
                         />
                         <img
-                            :src="getImage('/diagnose/loading-1.png')"
+                            :src="diagnose.loading1"
                             class="diagnose-loading"
                             style="height: 100%"
                         />
@@ -89,10 +89,10 @@ import {
     headerDescMap,
     progressMap,
 } from './util';
-import { getImage } from '@/utils/comm';
 import Status from './Status/index';
 import Message from './Message/index.vue';
-import { useInstanceStore } from '@/store/instance';
+import { useInstanceStore } from '../../../../../store/instance';
+import {diagnose} from "../../../../../assets";
 
 type TypeProps = 'network' | 'child-device' | 'media' | 'cloud' | 'channel';
 

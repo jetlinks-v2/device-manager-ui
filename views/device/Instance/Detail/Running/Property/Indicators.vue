@@ -94,9 +94,9 @@
 </template>
 
 <script lang="ts" setup>
-import { queryMetric, saveMetric } from '@/api/device/instance';
-import { useInstanceStore } from '@/store/instance';
-import { onlyMessage } from '@/utils/comm';
+import { queryMetric, saveMetric } from '../../../../../../api/instance';
+import { useInstanceStore } from '../../../../../../store/instance';
+import { onlyMessage } from '@jetlinks-web/utils';
 import { isNumber } from 'lodash-es';
 
 const props = defineProps({

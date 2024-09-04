@@ -23,7 +23,7 @@
 </template>
 
 <script lang="ts" setup>
-import { getDeviceNumber } from '@/api/device/instance';
+import { getDeviceNumber } from '../../../../api/instance';
 import { EventSourcePolyfill } from 'event-source-polyfill';
 
 const emit = defineEmits(['close', 'save']);

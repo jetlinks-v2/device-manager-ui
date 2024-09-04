@@ -25,7 +25,7 @@
 </template>
 
 <script lang="ts" setup>
-const emit =  defineEmits(['change','update:value'])
+const emit = defineEmits(['change','update:value'])
 const showTagSearch = ref(false);
 const presentation = ref('');
 const searchValue = ref([{

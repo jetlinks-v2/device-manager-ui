@@ -14,7 +14,7 @@
 import {
     queryCollectorNoPaging,
     queryPointNoPaging,
-} from '@/api/device/instance';
+} from '../../../../../api/instance';
 
 const _props = defineProps({
     modelValue: {

@@ -19,7 +19,7 @@ import {useInjectError, useInjectForm, useTableWrapper} from "./context";
 import {get, isArray } from 'lodash-es'
 import {onBeforeUnmount, computed} from "vue";
 import { useProvideFormItemContext } from 'ant-design-vue/es/form/FormItemContext'
-import {TABLE_FORM_ITEM_ERROR} from "device/components/Metadata/Table/consts";
+import {TABLE_FORM_ITEM_ERROR} from "./consts";
 
 const props = defineProps({
   name: {

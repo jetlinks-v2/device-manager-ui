@@ -40,7 +40,7 @@
 </template>
 
 <script setup name="MetadataTableSort">
-import {useTableTool, useTableWrapper} from "device/components/Metadata/Table/context";
+import {useTableTool, useTableWrapper} from "../../context";
 
 const props = defineProps({
   dataSource: {

@@ -55,9 +55,8 @@
     </a-modal>
 </template>
 <script lang="ts" setup name="DialogTips">
-import { getImage } from '@/utils/comm.ts';
 import { useProductStore } from '../../../../store/product';
-import { useMenuStore } from '@/store/menu';
+import { useMenuStore } from '@/store';
 
 const visible = ref<boolean>(false);
 const productStore = useProductStore();
@@ -81,7 +80,7 @@ const show = (id: string) => {
  * 查看详情
  */
 const showDetail = () => {
-    menuStore.jumpPage('device/Product/Detail', { id: idValue.value });
+    menuStore.jumpPage('device/Product/Detail', { params: { id: idValue.value }});
 };
 defineExpose({
     show: show,

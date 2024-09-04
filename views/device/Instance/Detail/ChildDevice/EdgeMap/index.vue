@@ -122,7 +122,7 @@
 </template>
 
 <script lang="ts" setup>
-import { useInstanceStore } from '@/store/instance';
+import { useInstanceStore } from '../../../../../../store/instance';
 import {
     saveEdgeMap,
     removeEdgeMap,
@@ -130,11 +130,12 @@ import {
     addDevice,
     editDevice,
     saveDeviceMapping,
-} from '@/api/device/instance';
+} from '../../../../../../api/instance';
 import MSelect from './MSelect.vue';
 import PatchMapping from './PatchMapping.vue';
 import { inject } from 'vue';
-import { onlyMessage } from '@/utils/comm';
+import { onlyMessage } from '@jetlinks-web/utils';
+
 const columns = [
     {
         title: '名称',

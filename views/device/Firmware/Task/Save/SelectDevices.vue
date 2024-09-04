@@ -30,7 +30,7 @@
         />
         <j-pro-table
             ref="tableRef"
-            model="TABLE"
+            mode="TABLE"
             :columns="columns"
             :request="queryDetailList"
             :defaultParams="defaultParams"
@@ -42,7 +42,7 @@
             }"
             :params="params"
         >
-            <template #headerTitle>
+            <template #headerLeftRender>
                 <a-checkbox
                     v-if="checkAllData.length !== 0"
                     v-model:checked="state.checkAll"

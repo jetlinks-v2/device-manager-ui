@@ -1,9 +1,9 @@
-import { getImage } from '@/utils/comm';
+import { diagnose } from '../../../../../assets'
 
 export const headerImgMap = new Map();
-headerImgMap.set('loading', getImage('/diagnose/loading-2.png'));
-headerImgMap.set('error', getImage('/diagnose/error.png'));
-headerImgMap.set('success', getImage('/diagnose/success.png'));
+headerImgMap.set('loading', diagnose.loading2);
+headerImgMap.set('error', diagnose.Error);
+headerImgMap.set('success', diagnose.Success);
 
 export const headerColorMap = new Map();
 headerColorMap.set('loading', 'linear-gradient(89.95deg, #E6F5FF 0.03%, #E9EAFF 99.95%)');

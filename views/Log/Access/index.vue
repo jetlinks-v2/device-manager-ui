@@ -3,7 +3,7 @@
         <pro-search :columns="columns" target="search-access" @search="handleSearch" />
         <j-pro-table
             ref="tableRef"
-            model="TABLE"
+            mode="TABLE"
             :columns="columns"
             :request="queryAccess"
             :defaultParams="{

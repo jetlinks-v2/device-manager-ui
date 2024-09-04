@@ -19,7 +19,7 @@
 <script setup name="MetadataType">
 import { selectProps } from 'ant-design-vue/lib/select';
 import defaultOptions from './data';
-import {useTableWrapper} from "device/components/Metadata/Table/context";
+import {useTableWrapper} from "../../context";
 
 const props = defineProps({
   ...selectProps(),

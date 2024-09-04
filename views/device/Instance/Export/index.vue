@@ -48,13 +48,10 @@
 </template>
 
 <script lang="ts" setup>
-import { queryNoPagingPost } from '@/api/device/product';
-import { downloadFileByUrl } from '@/utils/utils';
+import { queryNoPagingPost } from '../../../../api/product';
 import { paramsEncodeQuery } from '@/utils/encodeQuery';
-import { deviceExport , deviceExportPath} from '@/api/device/instance';
-import { getToken } from '@/utils/comm';
-import { TOKEN_KEY } from '@/utils/variable';
-import { LocalStore, onlyMessage } from '@/utils/comm';
+import { LocalStore } from '@jetlinks-web/utils';
+import { TOKEN_KEY } from '@jetlinks-web/constants';
 
 const emit = defineEmits(['close']);
 const props = defineProps({

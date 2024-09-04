@@ -20,7 +20,7 @@
                         <j-ellipsis>{{ text }}</j-ellipsis>
                     </template>
                     <template v-else>
-                        <ValueItem
+                        <j-value-item
                             v-model:modelValue="record.value"
                             :itemType="record.type"
                             :options="
@@ -49,10 +49,10 @@
 </template>
 
 <script lang="ts" setup>
-import { useInstanceStore } from '@/store/instance';
-import _ from 'lodash-es';
-import { saveTags, delTags } from '@/api/device/instance'
-import { onlyMessage } from '@/utils/comm';
+import { useInstanceStore } from '../../../../../../../store/instance';
+import { cloneDeep } from 'lodash-es';
+import { saveTags, delTags } from '../../../../../../../api/instance'
+import { onlyMessage } from '@jetlinks-web/utils';
 
 const emit = defineEmits(['close', 'save']);
 
@@ -80,7 +80,7 @@ const loading = ref(false)
 
 watchEffect(() => {
     const arr = instanceStore.current?.tags || [];
-    dataSource.value = _.cloneDeep(arr);
+    dataSource.value = cloneDeep(arr);
 });
 
 const handleOk = async () => {

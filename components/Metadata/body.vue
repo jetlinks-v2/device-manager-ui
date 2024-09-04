@@ -53,7 +53,7 @@
 <script setup name="MetadataBaseTableBody">
 import ContextMenu from './components/ContextMenu'
 import {useRightMenuContext} from "./context";
-import {randomString} from "@/utils/utils";
+import {randomString} from "@jetlinks-web/utils";
 import {bodyProps} from "./props";
 
 const props = defineProps({

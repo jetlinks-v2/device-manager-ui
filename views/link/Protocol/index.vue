@@ -16,7 +16,7 @@
                     }"
                     :params="params"
                 >
-                    <template #headerTitle>
+                    <template #headerLeftRender>
                         <j-permission-button
                             type="primary"
                             @click="handlAdd"
@@ -37,7 +37,7 @@
                         >
                             <template #img>
                                 <slot name="img">
-                                    <img :src="getImage('/protocol.png')" />
+                                    <img :src="link.protocol" />
                                 </slot>
                             </template>
                             <template #content>
@@ -139,11 +139,11 @@
     </j-page-container>
 </template>
 <script lang="ts" setup name="AccessConfigPage">
-import { getImage } from '@/utils/comm';
 import { list, remove } from '../../../api/link/protocol';
 import { onlyMessage } from '@jetlinks-web/utils';
 import Save from './Save/index.vue';
-import _ from 'lodash-es';
+import { link } from '../../../assets'
+import { cloneDeep } from 'lodash-es';
 
 const tableRef = ref<Record<string, any>>({});
 const params = ref<Record<string, any>>({});
@@ -223,7 +223,7 @@ const getActions = (
             },
             icon: 'EditOutlined',
             onClick: () => {
-                handlEdit(data);
+                handleEdit(data);
             },
         },
         {
@@ -253,12 +253,12 @@ const getActions = (
     return actions;
 };
 
-const handlAdd = () => {
+const handleAdd = () => {
     current.value = {};
     visible.value = true;
 };
-const handlEdit = (data: object) => {
-    current.value = _.cloneDeep(data);
+const handleEdit = (data: object) => {
+    current.value = cloneDeep(data);
     visible.value = true;
 };
 
@@ -274,7 +274,7 @@ const saveChange = (value: object) => {
 watch(
     () => route.query?.save,
     (value) => {
-        value === 'true' && handlAdd();
+        value === 'true' && handleAdd();
     },
     { deep: true, immediate: true },
 );

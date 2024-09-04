@@ -429,15 +429,16 @@ import { update, save, getProtocolList } from '../../../../../api/link/accessCon
 import AccessCard from '../AccessCard/index.vue';
 import { randomString, onlyMessage } from '@jetlinks-web/utils';
 import { ProtocolMapping } from '../../data';
-import { useMenuStore } from '@/store/menu';
+import { useMenuStore } from '@/store';
+import { network } from '../../../../../assets';
 
 const menuStory = useMenuStore();
 const origin = window.location.origin;
-const img5 = getImage('/network/05.jpeg');
-const img6 = getImage('/network/06.png');
-const img7 = getImage('/network/07.jpeg');
-const img8 = getImage('/network/08.png');
-const img9 = getImage('/network/09.png');
+const img5 = network.network5
+const img6 = network.network6
+const img7 = network.network7
+const img8 = network.network8
+const img9 = network.network9
 
 interface FormState {
     apiAddress: string;

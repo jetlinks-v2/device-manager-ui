@@ -118,15 +118,15 @@
 </template>
 
 <script lang="ts" setup>
-import { useInstanceStore } from '@/store/instance';
+import { useInstanceStore } from '../../../../../store/instance';
 import Save from '../../Save/index.vue';
 import Config from './components/Config/index.vue';
 import Tags from './components/Tags/index.vue';
 import Relation from './components/Relation/index.vue';
 import InkingModal from './components/InklingModal';
 import dayjs from 'dayjs';
-import { detail as queryPluginAccessDetail } from '@/api/link/accessConfig';
-import { getPluginData } from '@/api/link/plugin';
+import { detail as queryPluginAccessDetail } from '../../../../../api/link/accessConfig';
+import { getPluginData } from '../../../../../api/link/plugin';
 
 const visible = ref<boolean>(false);
 const inkingVisible = ref<boolean>(false);

@@ -134,15 +134,15 @@
 </template>
 
 <script lang="ts" setup>
-import { useInstanceStore } from '@/store/instance';
-import { ConfigMetadata } from '@/views/device/Product/typings';
+import { useInstanceStore } from '../../../../../../../store/instance';
+import type { ConfigMetadata } from '../../../../../Product/typings';
 import {
     getConfigMetadata,
     _deploy,
     configurationReset,
-} from '@/api/device/instance';
+} from '../../../../../../../api/instance';
 import Save from './Save.vue';
-import { onlyMessage } from '@/utils/comm';
+import { onlyMessage } from '@jetlinks-web/utils';
 
 const instanceStore = useInstanceStore();
 const visible = ref<boolean>(false);

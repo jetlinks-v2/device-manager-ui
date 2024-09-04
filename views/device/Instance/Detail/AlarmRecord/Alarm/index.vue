@@ -8,7 +8,7 @@
     <JProTable
         ref="deviceAlarm"
         :columns="columns"
-        model="TABLE"
+        mode="TABLE"
         :request="queryAlarmRecord"
         :defaultParams="defaultParams"
         :params="params"
@@ -83,14 +83,13 @@
 import {
     queryByDevice as queryAlarmRecord,
     queryPreHandleHistory,
-} from '@/api/rule-engine/log';
-import { useInstanceStore } from 'device/store/instance';
-import { useProductStore } from 'device/store/product';
+} from '../../../../../../api/rule-engine/log';
+import { useInstanceStore } from '../../../../../../store/instance';
+import { useProductStore } from '../../../../../../store/product';
 import dayjs from 'dayjs';
-// import Duration from '@/views/rule-engine/Alarm/Log/components/Duration.vue';
-// import Solve from '@/views/rule-engine/Alarm/Log/SolveComponent/index.vue';
 import AlarmLog from './components/AlarmLog.vue';
-import { useMenuStore } from 'store/menu';
+import { useMenuStore } from '@/store';
+
 const props = defineProps({
     goal: {
         type: String,
@@ -419,7 +418,7 @@ const refreshCurrent = async () => {
 };
 
 const gotoDevice = (id) => {
-    menuStory.jumpPage('device/Instance/Detail', { id, tab: 'Running' });
+    menuStory.jumpPage('device/Instance/Detail', { params: { id, tab: 'Running' }});
 };
 const refresh = () => {
     deviceAlarm.value?.reload();

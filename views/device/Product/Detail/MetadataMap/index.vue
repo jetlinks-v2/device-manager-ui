@@ -127,7 +127,7 @@
                 </p>
                 <div class="title">功能图示</div>
                 <div>
-                    <img :src="getImage('/device/matadataMap.png')" />
+                    <img :src="device.metadataMap" />
                 </div>
             </j-scrollbar>
         </div>
@@ -136,11 +136,12 @@
 
 <script setup lang='ts' name='MetadataMap'>
 import { storeToRefs } from 'pinia';
-import { useProductStore } from '@/store/product';
-import { detail as queryPluginAccessDetail } from '@/api/link/accessConfig';
-import { getPluginData, getProductByPluginId } from '@/api/link/plugin';
-import { getImage, onlyMessage } from '@/utils/comm';
-import { getMetadataMapById, metadataMapById, getProtocolMetadata } from '@/api/device/instance';
+import { device } from '../../../../../assets';
+import { useProductStore } from '../../../../../store/product';
+import { detail as queryPluginAccessDetail } from '../../../../../api/link/accessConfig';
+import { getPluginData, getProductByPluginId } from '../../../../../api/link/plugin';
+import { onlyMessage } from '@/utils/comm';
+import { getMetadataMapById, metadataMapById, getProtocolMetadata } from '../../../../../api/instance';
 import { cloneDeep } from 'lodash-es';
 
 const productStore = useProductStore();

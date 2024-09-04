@@ -130,13 +130,13 @@
 </template>
 
 <script lang="ts" setup>
-import { useInstanceStore } from '@/store/instance';
+import { useInstanceStore } from '../../../../../../store/instance';
 import {
     queryMapping,
     saveMapping,
     removeMapping,
     queryChannelNoPaging,
-} from '@/api/device/instance';
+} from '../../../../../../api/instance';
 import MSelect from '../MSelect.vue';
 import PatchMapping from './PatchMapping.vue';
 import { onlyMessage } from '@/utils/comm';

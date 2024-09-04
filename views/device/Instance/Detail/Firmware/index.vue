@@ -51,12 +51,12 @@
 </template>
 
 <script setup>
-import { useInstanceStore } from 'device/store/instance';
-import { useProductStore } from 'device/store/product';
-import { queryPaginateNot, historyPaginateNot } from 'device/api/firmware';
-
-import Task from 'device/vires/device/Firmware/Task/index.vue';
+import { useInstanceStore } from '../../../../../store/instance';
+import { useProductStore } from '../../../../../store/product';
+import { queryPaginateNot, historyPaginateNot } from '../../../../../api/firmware';
+import Task from '../../../Firmware/Task/index.vue';
 import dayjs from 'dayjs';
+
 const props = defineProps({
     type: {
         type: String,

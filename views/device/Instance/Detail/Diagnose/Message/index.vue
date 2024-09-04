@@ -54,10 +54,10 @@ import Dialog from './Dialog/index.vue';
 import Function from './Function/index.vue';
 import Log from './Log/index.vue';
 import { map } from 'rxjs/operators';
-import { useInstanceStore } from '@/store/instance';
+import { useInstanceStore } from '../../../../../../store/instance';
 import { getWebSocket } from '@/utils/websocket';
-import { randomString } from '@/utils/utils';
-import _ from 'lodash-es';
+import { randomString } from '@jetlinks-web/utils';
+import { cloneDeep } from 'lodash-es';
 
 const message = reactive<MessageType>({
     up: {
@@ -120,7 +120,7 @@ const subscribeLog = () => {
                         status: !flag ? 'error' : 'success',
                     };
                 }
-                const list: any[] = _.cloneDeep(dialogList.value);
+                const list: any[] = cloneDeep(dialogList.value);
                 const t = list.find(
                     (item) =>
                         item.traceId === data.traceId &&
@@ -134,7 +134,7 @@ const subscribeLog = () => {
                         }
                         return item;
                     });
-                    dialogList.value = _.cloneDeep(arr);
+                    dialogList.value = cloneDeep(arr);
                 } else {
                     list.push({
                         key: randomString(),
@@ -143,7 +143,7 @@ const subscribeLog = () => {
                         upstream: data.upstream,
                         list: [data],
                     });
-                    dialogList.value = _.cloneDeep(list);
+                    dialogList.value = cloneDeep(list);
                 }
             }
             const chatBox = document.getElementById('dialog');

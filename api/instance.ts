@@ -60,12 +60,11 @@ export const _delete = (id: string) => request.remove(`/device-instance/${id}`)
  * @param data
  * @returns
  */
-export const _deploy = (id: string) => request.post(`/device-instance/${id}/deploy`)
+export const _deploy = (id: string, data?: any) => request.post(`/device-instance/${id}/deploy`, data)
 
 /**
  * 禁用设备
  * @param id 设备ID
- * @param data
  * @returns
  */
 export const _undeploy = (id: string) => request.post(`/device-instance/${id}/undeploy`)
@@ -151,15 +150,6 @@ export const getConfigMetadata = (id: string) => request.get(`/device-instance/$
  * @returns
  */
 export const _disconnect = (id: string) => request.post(`/device-instance/${id}/disconnect`)
-
-/**
- * 查询用户列表
- * @returns
- */
-export const queryUserListNoPaging = () => request.post(`/user/_query/no-paging`, {
-  paging: false,
-  sorts: [{ name: 'name', order: "asc" }]
-})
 
 /**
  * 保存设备关系

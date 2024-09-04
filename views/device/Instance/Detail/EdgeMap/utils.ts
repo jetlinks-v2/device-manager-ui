@@ -1,4 +1,4 @@
-import { edgeCollector, edgePoint } from "@/api/device/instance";
+import { edgeCollector, edgePoint } from "../../../../../api/instance";
 
 const channelMap = new Map()
 const queryDataList = (_val: string, edgeId: string, type: string) => new Promise(async (resolve) => {

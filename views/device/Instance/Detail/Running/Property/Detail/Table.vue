@@ -71,13 +71,13 @@
 </template>
 
 <script lang="ts" setup>
-import { getPropertyData } from '@/api/device/instance';
-import { useInstanceStore } from '@/store/instance';
-import encodeQuery from '@/utils/encodeQuery';
+import { getPropertyData } from '../../../../../../../api/instance';
+import { useInstanceStore } from '../../../../../../../store/instance';
+import {encodeQuery} from '@/utils';
 import dayjs from 'dayjs';
 import { getType } from '../index';
 import ValueRender from '../ValueRender.vue';
-import JsonViewer from 'vue-json-viewer';
+import JsonViewer from 'vue3-json-viewer';
 
 const _props = defineProps({
     data: {

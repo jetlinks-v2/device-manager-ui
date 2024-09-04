@@ -580,7 +580,7 @@ const metadataChange = () => {
 
 const jumpProduct = () => {
   useMenuStore().jumpPage(
-    'device/Product/Detail', { id: instanceStore.detail.productId, tab: 'Device' }
+    'device/Product/Detail', { params: { id: instanceStore.detail.productId, tab: 'Device' }}
   )
 }
 

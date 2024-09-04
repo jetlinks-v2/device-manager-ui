@@ -25,7 +25,7 @@
                                 },
                             ]"
                         >
-                            <ValueItem
+                            <j-value-item
                                 v-model:modelValue="record.value"
                                 :itemType="record.valueType.type"
 

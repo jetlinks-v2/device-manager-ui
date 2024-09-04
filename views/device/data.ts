@@ -1,4 +1,4 @@
-import { isNoCommunity } from '@/utils/';
+import { isNoCommunity } from '@/utils/utils';
 
 export const DataTypeList: { label: string; value: string }[] = [
   {

@@ -36,7 +36,7 @@
 
 <script setup name="MetadataBaseTableHeader">
 import { SearchModal, Sort } from './components/Search'
-import {useTableTool} from "device/components/Metadata/Table/context";
+import {useTableTool} from "./context";
 
 const props = defineProps({
   columns: {

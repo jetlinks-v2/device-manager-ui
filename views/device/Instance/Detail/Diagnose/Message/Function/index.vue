@@ -125,13 +125,13 @@
 </template>
 
 <script lang="ts" setup>
-import { useInstanceStore } from '@/store/instance';
+import { useInstanceStore } from '../../../../../../../store/instance';
 import EditTable from './EditTable.vue';
 import {
     executeFunctions,
     readProperties,
     settingProperties,
-} from '@/api/device/instance';
+} from '../../../../../../../api/instance';
 
 const instanceStore = useInstanceStore();
 

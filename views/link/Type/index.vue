@@ -17,7 +17,7 @@
                     }"
                     :params="params"
                 >
-                    <template #headerTitle>
+                    <template #headerLeftRender>
                         <j-permission-button
                             type="primary"
                             @click="handlAdd"
@@ -359,15 +359,25 @@ const getActions = (
 };
 
 const handlAdd = () => {
-    menuStory.jumpPage(`link/Type/Detail`, { id: ':id' }, { view: false });
+    menuStory.jumpPage(`link/Type/Detail`, {
+
+      params: { id: ':id' },
+      query: { view: false }
+});
 };
 
 const handlEye = (id: string) => {
-    menuStory.jumpPage(`link/Type/Detail`, { id }, { view: true });
+    menuStory.jumpPage(`link/Type/Detail`, {
+      params: { id },
+      query: { view: true }
+    });
 };
 
 const handlEdit = (id: string) => {
-    menuStory.jumpPage(`link/Type/Detail`, { id }, { view: false });
+    menuStory.jumpPage(`link/Type/Detail`, {
+      params: { id },
+      query: { view: false }
+    });
 };
 
 const getDetails = (slotProps: Partial<Record<string, any>>) => {

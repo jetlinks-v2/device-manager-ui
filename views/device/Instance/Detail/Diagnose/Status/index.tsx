@@ -1,16 +1,15 @@
-import { Badge, Button, Popconfirm, Space } from "jetlinks-ui-components"
-import TitleComponent from 'device/components/TitleComponent/index.vue'
+import { Badge, Button, Space } from "ant-design-vue"
+import TitleComponent from '@/components/TitleComponent/index.vue'
 import styles from './index.module.less'
 import type { ListProps } from './util'
 import { networkInitList, childInitList, cloudInitList, mediaInitList, TextColorMap, StatusMap, modifyArrayList, isExit, gatewayList, urlMap } from './util'
-import { useInstanceStore } from "@/store/instance"
-import { startNetwork, startGateway, getGatewayDetail, queryGatewayState, queryProtocolDetail, detail, queryProductState, queryProductConfig, queryDeviceConfig, _deploy } from '@/api/device/instance'
+import { useInstanceStore } from "../../../../../../store/instance"
+import { startNetwork, startGateway, getGatewayDetail, queryGatewayState, queryProtocolDetail, detail, queryProductState, queryProductConfig, queryDeviceConfig, _deploy } from '../../../../../../api/instance'
 import { PropType, VNode } from "vue"
-import { _deploy as _deployProduct } from "@/api/device/product"
-import _ from "lodash-es"
+import { _deploy as _deployProduct } from "../../../../../../api/product"
+import { uniq, map} from "lodash-es"
 import DiagnosticAdvice from './DiagnosticAdvice'
 import ManualInspection from './ManualInspection'
-import { deployDevice } from "@/api/initHome"
 import { PermissionButton } from '@jetlinks-web/components'
 import { useMenuStore } from "@/store/menu"
 import BindParentDevice from '../../components/BindParentDevice/index.vue'
@@ -63,7 +62,12 @@ const Status = defineComponent({
         }
 
         const jumpAccessConfig = () => {
-            menuStory.jumpPage('device/Product/Detail', { id: unref(device).productId, tab: 'Device' });
+            menuStory.jumpPage('device/Product/Detail', {
+            params: {
+                id: unref(device).productId,
+                tab: 'Device'
+            }
+        });
         };
 
         const jumpDeviceConfig = () => {
@@ -812,7 +816,7 @@ const Status = defineComponent({
                     const _configuration = unref(product)?.configuration || {};
                     response.result.map((item: any, i: number) => {
                         const _list = [...list.value];
-                        if (!_.map(_list, 'key').includes(`product-auth${i}`)) {
+                        if (!map(_list, 'key').includes(`product-auth${i}`)) {
                             list.value = modifyArrayList(
                                 list.value,
                                 {
@@ -826,7 +830,7 @@ const Status = defineComponent({
                                 list.value.length,
                             );
                         }
-                        const properties = _.map(item?.properties, 'property');
+                        const properties = map(item?.properties, 'property');
                         if (unref(device).state?.value === 'online') {
                             setTimeout(() => {
                                 list.value = modifyArrayList(list.value, {
@@ -984,7 +988,7 @@ const Status = defineComponent({
                     const _configuration = _device?.configuration || {};
                     response.result.map((item: any, i: number) => {
                         const _list = [...list.value];
-                        if (!_.map(_list, 'key').includes(`device-auth${i}`)) {
+                        if (!map(_list, 'key').includes(`device-auth${i}`)) {
                             list.value = modifyArrayList(
                                 list.value,
                                 {
@@ -998,7 +1002,7 @@ const Status = defineComponent({
                                 list.value.length,
                             );
                         }
-                        const properties = _.map(item?.properties, 'property');
+                        const properties = map(item?.properties, 'property');
                         if (_device.state?.value === 'online') {
                             setTimeout(() => {
                                 list.value = modifyArrayList(list.value, {
@@ -1596,7 +1600,7 @@ const Status = defineComponent({
 
         watch(() => [list, status], () => {
             if (status.value === 'finish') {
-                const _list = _.uniq(_.map(unref(list), 'status'));
+                const _list = uniq(map(unref(list), 'status'));
                 if (unref(device).state?.value !== 'online') {
                     emit('stateChange', 'error')
                     if (_list[0] === 'success' && _list.length === 1) {
@@ -1606,7 +1610,7 @@ const Status = defineComponent({
                     emit('stateChange', 'success')
                 }
             } else if (status.value === 'loading') {
-                const arr = _.map(unref(list), 'status').filter((i) => i !== 'loading');
+                const arr = map(unref(list), 'status').filter((i) => i !== 'loading');
                 emit('countChange', arr.length)
             }
         }, { deep: true, immediate: true })
@@ -1652,7 +1656,7 @@ const Status = defineComponent({
                                 }
                             }
                             if (unref(device)?.state?.value === 'notActive') {
-                                const resp = await deployDevice(unref(device)?.id || '');
+                                const resp = await _deploy(unref(device)?.id || '');
                                 if (resp.status === 200) {
                                     unref(device).state = { value: 'offline', text: '离线' };
                                     list.value = modifyArrayList(list.value, {
@@ -1690,7 +1694,7 @@ const Status = defineComponent({
                             }
                             if (props.providerType === 'child-device' && unref(device)?.parentId) {
                                 if (unref(parent)?.state?.value === 'notActive') {
-                                    const resp = await deployDevice(unref(device)?.parentId || '');
+                                    const resp = await _deploy(unref(device)?.parentId || '');
                                     if (resp.status === 200) {
                                         list.value = modifyArrayList(list.value, {
                                             key: 'parent-device',

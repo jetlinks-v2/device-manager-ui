@@ -11,17 +11,17 @@
         @cancel="handleCancel"
         :confirmLoading="btnLoading"
     >
-        <j-advanced-search
+        <pro-search
             :columns="columns"
             target="child-device-bind"
-            @search="handleSearch"
             type="simple"
+            @search="handleSearch"
         />
         <JProTable
             ref="bindDeviceRef"
             :columns="columns"
             :request="query"
-            model="TABLE"
+            mode="TABLE"
             :bodyStyle="{ padding: '0 0 0 24px' }"
             :defaultParams="defaultParams"
             :rowSelection="{
@@ -50,7 +50,7 @@
 </template>
 
 <script setup lang="ts">
-import { query, bindDevice } from '@/api/device/instance';
+import { query, bindDevice } from '../../../../../../api/instance';
 import { onlyMessage } from '@/utils/comm';
 import dayjs from 'dayjs';
 

@@ -1,6 +1,7 @@
-import { useInstanceStore } from "@/store/instance";
+import { useInstanceStore } from "../../../../../../store/instance";
 import { useMenuStore } from "@/store/menu";
-import { AIcon, Button, Modal, Descriptions, DescriptionsItem, Space } from "jetlinks-ui-components"
+import { Button, Modal, Descriptions, DescriptionsItem, Space } from "ant-design-vue"
+import { AIcon } from '@jetlinks-web/components'
 import styles from './index.module.less'
 
 const ManualInspection = defineComponent({
@@ -218,9 +219,13 @@ const ManualInspection = defineComponent({
                         if (data.type === 'device') {
                             instanceStore.tabActiveKey = 'Info'
                         } else if (data.type === 'product') {
-                            menuStory.jumpPage('device/Product/Detail', { id: data.productId, tab: 'Device' });
+                            menuStory.jumpPage('device/Product/Detail', { params: { id: data.productId, tab: 'Device' }});
                         } else {
-                            menuStory.jumpPage('link/AccessConfig/Detail', { id: data.configuration?.id });
+                            menuStory.jumpPage('link/AccessConfig/Detail', {
+                            params: {
+                                id: data.configuration?.id
+                            }
+                        });
                         }
                     }}>去修改</Button>
                     <Button onClick={() => {

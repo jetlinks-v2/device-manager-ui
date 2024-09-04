@@ -49,8 +49,8 @@
 <script setup name="Metrics" lang="ts">
 import { defineExpose, provide } from 'vue'
 import MetricValueItem from './ValueItem.vue'
-import BooleanSelect from "@/views/device/components/Metadata/Base/components/Properties/Metrics/BooleanSelect.vue";
-import { EditTable, EditTableFormItem } from 'device/components/Metadata/Table'
+import BooleanSelect from "./BooleanSelect.vue";
+import { EditTable, EditTableFormItem } from '../../../../../../../../components/Metadata'
 
 const props = defineProps({
   value: {

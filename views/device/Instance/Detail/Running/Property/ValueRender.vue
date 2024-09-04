@@ -107,7 +107,7 @@
 </template>
 
 <script lang="ts" setup>
-import { getImage, onlyMessage } from '@/utils/comm';
+import { onlyMessage } from '@jetlinks-web/utils';
 import ValueDetail from './ValueDetail.vue';
 import { getType, imgMap, imgList, videoList, fileList } from './index';
 

@@ -9,7 +9,7 @@
         ref="eventsRef"
         :columns="columns"
         :request="_getEventList"
-        model="TABLE"
+        mode="TABLE"
         :params="params"
         :bodyStyle="{ padding: '0 0 0 24px' }"
     >
@@ -45,9 +45,9 @@
 
 <script lang="ts" setup>
 import dayjs from 'dayjs';
-import { getEventList } from '@/api/device/instance';
-import { useInstanceStore } from '@/store/instance';
-import JsonViewer from 'vue-json-viewer';
+import { getEventList } from '../../../../../../api/instance';
+import { useInstanceStore } from '../../../../../../store/instance';
+import JsonViewer from 'vue3-json-viewer';
 import { cloneDeep } from 'lodash-es';
 
 const events = defineProps({

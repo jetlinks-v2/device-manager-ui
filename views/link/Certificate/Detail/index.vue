@@ -10,7 +10,7 @@
                                 :rules="[{ required: true, message: '请选择证书标准', trigger: 'blur' }]">
                                 <a-radio-group v-model:value="formData.type">
                                     <a-radio-button class="form-radio-button" value="common">
-                                        <img :src="getImage('/certificate.png')" />
+                                        <img :src="link.certificate" />
                                     </a-radio-button>
                                 </a-radio-group>
                             </a-form-item>
@@ -82,7 +82,7 @@
 </template>
 
 <script lang="ts" setup name="CertificateDetail">
-import { getImage } from '@/utils/comm';
+import { link } from '../../../../assets'
 import CertificateFile from './CertificateFile.vue';
 import type { UploadChangeParam } from 'ant-design-vue';
 import { save, update, queryDetail } from '../../../../api/link/certificate';

@@ -4,7 +4,7 @@
         v-if="access.id === undefined || null"
         style="margin-top: 20%; transform: translateY(-50%)"
     >
-        <j-empty :image="simpleImage">
+        <j-empty >
             <template #description>
                 <span
                     v-if="
@@ -304,45 +304,38 @@
 </template>
 
 <script lang="ts" setup name="AccessConfig">
-import { useProductStore } from '@/store/product';
-import { ConfigMetadata } from '@/views/device/Product/typings';
-import { Empty } from 'jetlinks-ui-components';
+import { useProductStore } from '../../../../../store/product';
+import { ConfigMetadata } from '../../typings';
 import Title from '../Title/index.vue';
-import { usePermissionStore } from '@/store/permission';
+import { useAuthStore } from '@/store';
 import { steps, steps1 } from './util';
 import './index.less';
 import {
     getProviders,
-    _deploy,
-    _undeploy,
     queryList,
     getConfigView,
     getConfigMetadata,
     productGuide,
     productGuideSave,
     getStoragList,
-    saveDevice,
     updateDevice,
-    detail,
     modify,
-    getAccessConfig,
-} from '@/api/device/product';
+} from '../../../../../api/product';
 
-import Driver from 'driver.js';
-import 'driver.js/dist/driver.min.css';
+import {driver as Driver} from 'driver.js';
+import 'driver.js/dist/driver.css';
 import { marked } from 'marked';
 import type { TableColumnType } from 'ant-design-vue';
 import { useMenuStore } from '@/store/menu';
-import _ from 'lodash-es';
-import { accessConfigTypeFilter } from '@/utils';
+import { map } from 'lodash-es';
 import AccessModal from './accessModal.vue';
 import MetaDataModal from './metadataModal.vue';
 import {
     getPluginData,
     getProductByPluginId,
     savePluginData,
-} from '@/api/link/plugin';
-import { detail as queryPluginAccessDetail } from '@/api/link/accessConfig';
+} from '../../../../../api/link/plugin';
+import { detail as queryPluginAccessDetail } from '../../../../../api/link/accessConfig';
 import { onlyMessage } from '@/utils/comm';
 import { pick } from 'lodash-es';
 
@@ -350,7 +343,7 @@ const productStore = useProductStore();
 const tableRef = ref();
 const formRef = ref([]);
 const menuStore = useMenuStore();
-const permissionStore = usePermissionStore();
+const permissionStore = useAuthStore();
 const render = new marked.Renderer();
 marked.setOptions({
     renderer: render,
@@ -358,7 +351,6 @@ marked.setOptions({
     pedantic: false,
     snaitize: false,
 });
-const simpleImage = ref(Empty.PRESENTED_IMAGE_SIMPLE);
 const visible = ref<boolean>(false);
 const access = ref<Record<string, any>>({});
 const accessId = ref<string>(productStore.current.accessId);
@@ -652,7 +644,7 @@ const getConfigDetail = (
 
 const modifyArray = (oldData: any[], newData: any[]) => {
     newData.map((item) => {
-        if (!_.map(oldData, 'id').includes(item.id)) {
+        if (!map(oldData, 'id').includes(item.id)) {
             oldData.push(item);
         }
     });

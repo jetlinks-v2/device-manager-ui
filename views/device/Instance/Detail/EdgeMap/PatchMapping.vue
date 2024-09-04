@@ -63,10 +63,11 @@ import {
     edgeChannel,
     edgeCollector,
     edgePoint,
-} from '@/api/device/instance';
-import { useInstanceStore } from '@/store/instance';
+} from '../../../../../api/instance';
+import { useInstanceStore } from '../../../../../store/instance';
 import { message } from 'ant-design-vue/es';
 import type { TreeProps } from 'ant-design-vue';
+
 const _props = defineProps({
     metaData: {
         type: Array,

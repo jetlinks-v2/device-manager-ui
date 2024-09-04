@@ -20,7 +20,7 @@
       :columns="columns"
       :request="handleQuery"
       ref="tableRef"
-      model="CARD"
+      mode="CARD"
       :defaultParams="{
                 ...temp,
                 sorts: accessId ? [
@@ -32,7 +32,7 @@
       :gridColumn="2"
       :gridColumns="[2]"
     >
-      <template #headerTitle>
+      <template #headerLeftRender>
         <j-permission-button
           type="primary"
           @click="add"
@@ -58,7 +58,7 @@
         >
           <template #img>
             <slot name="img">
-              <img :src="getImage('/device-access.png')" />
+              <img :src="device.deviceAccess" />
             </slot>
           </template>
           <template #content>
@@ -125,11 +125,12 @@
 
 <script setup lang='ts' name='accessModal'>
 import type { PropType } from 'vue'
-import { getImage, onlyMessage } from '@/utils/comm';
-import { queryList, getAccessConfig } from '@/api/device/product'
-import { useMenuStore } from '@/store/menu';
-import { getProductByPluginId } from '@/api/link/plugin'
-import { getProviders } from '@/api/link/accessConfig'
+import { onlyMessage } from '@jetlinks-web/utils';
+import { queryList, getAccessConfig } from '../../../../../api/product'
+import { useMenuStore } from '@/store';
+import { getProductByPluginId } from '../../../../../api/link/plugin'
+import { getProviders } from '../../../../../api/link/accessConfig'
+import { device } from '../../../../../assets'
 
 type Emit = {
   (e: 'submit', data: any): void

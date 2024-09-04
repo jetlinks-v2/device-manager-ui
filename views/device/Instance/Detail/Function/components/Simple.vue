@@ -122,9 +122,9 @@
 
 <script setup lang="ts">
 import { ComponentInternalInstance } from 'vue';
-import { useInstanceStore } from '@/store/instance';
-import { execute } from '@/api/device/instance';
-import { onlyMessage } from '@/utils/comm';
+import { useInstanceStore } from '../../../../../../store/instance';
+import { execute } from '../../../../../../api/instance';
+import { onlyMessage } from '@jetlinks-web/utils';
 
 const instanceStore = useInstanceStore();
 const route = useRoute();

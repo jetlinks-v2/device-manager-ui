@@ -124,7 +124,7 @@
                 >应用配置</j-permission-button
             >
         </template>
-        <FullPage>
+        <FullPage :fixed="false">
             <div style="height: 100%; padding: 24px">
                 <component
                     :is="tabs[productStore.tabActiveKey]"
@@ -141,46 +141,33 @@
 </template>
 
 <script lang="ts" setup>
-import { useProductStore } from '@/store/product';
+import { useProductStore } from '../../../../store/product';
 import Info from './BasicInfo/indev.vue';
 import Device from './DeviceAccess/index.vue';
-import Metadata from '../../../device/components/Metadata/index.vue';
+import Metadata from '../../components/Metadata/index.vue';
 import DataAnalysis from './DataAnalysis/index.vue';
 import MetadataMap from './MetadataMap';
-import AlarmRecord from '@/views/device/Instance/Detail/AlarmRecord/index.vue';
-import Firmware from '@/views/device/Instance/Detail/Firmware/index.vue';
+import AlarmRecord from '../../Instance/Detail/AlarmRecord/index.vue';
+import Firmware from '../../Instance/Detail/Firmware/index.vue';
 import {
     _deploy,
     _undeploy,
-    getDeviceNumber,
     getProtocolDetail,
-} from '@/api/device/product';
-import { handleParamsToString, onlyMessage } from '@/utils/comm';
+} from '../../../../api/product';
+import { handleParamsToString  } from '@/utils';
 import { useMenuStore } from '@/store/menu';
-import { useRouterParams } from '@/utils/hooks/useParams';
-import { EventEmitter } from '@/utils/utils';
-import { usePermissionStore } from '@/store/permission';
+import { useRouterParams } from '@jetlinks-web/hooks';
+import { EventEmitter, onlyMessage } from '@jetlinks-web/utils';
+import { useAuthStore, useSystemStore } from '@/store';
 import { isNoCommunity } from '@/utils/utils';
-import { useSystem } from '@/store/system';
 
-const { showThreshold } = useSystem();
-const permissionStore = usePermissionStore();
+const { showThreshold } = useSystemStore();
+const permissionStore = useAuthStore();
 const menuStory = useMenuStore();
 const route = useRoute();
 const checked = ref<boolean>(true);
 const productStore = useProductStore();
 const routerParams = useRouterParams();
-const searchParams = ref({
-    terms1: [
-        {
-            column: 'productId',
-            termType: 'eq',
-            value: productStore.current?.id,
-        },
-    ],
-    terms2: undefined,
-    type: 'and',
-});
 
 const list = ref([
     {
@@ -355,11 +342,12 @@ const jumpDevice = () => {
     };
     menuStory.jumpPage(
         'device/Instance',
-        {},
         {
+          query: {
             target: 'device-instance',
             q: handleParamsToString([searchParams]),
-        },
+          },
+        }
     );
 };
 

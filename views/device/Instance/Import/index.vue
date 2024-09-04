@@ -50,7 +50,7 @@
 </template>
 
 <script lang="ts" setup>
-import { queryNoPagingPost } from '@/api/device/product';
+import { queryNoPagingPost } from '../../../../api/product';
 
 const emit = defineEmits(['close', 'save']);
 const props = defineProps({

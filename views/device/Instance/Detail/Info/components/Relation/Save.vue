@@ -44,8 +44,9 @@
 </template>
 
 <script lang="ts" setup>
-import { queryUserListNoPaging, saveRelations } from '@/api/device/instance';
-import { useInstanceStore } from '@/store/instance';
+import { saveRelations } from '../../../../../../../api/instance';
+import { queryUserListNoPaging } from '@/api/system/user';
+import { useInstanceStore } from '../../../../../../../store/instance';
 import { onlyMessage } from '@/utils/comm';
 
 const emit = defineEmits(['close', 'save']);

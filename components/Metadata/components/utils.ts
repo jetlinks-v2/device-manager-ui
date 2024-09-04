@@ -1,4 +1,4 @@
-import {randomString} from "@/utils/utils";
+import {randomString} from "@jetlinks-web/utils";
 import {Ref} from "vue";
 
 let maskIds: string[] = []
@@ -29,14 +29,14 @@ const bodyHidden = () => {
 
 const getMaskNode = (id: string, warpClassNames: string) => {
     let maskNode = document.querySelector(`#${id}`) as HTMLElement
-   
+
     if (maskNode) {
         return maskNode
     }
 
     maskNode = document.createElement('div')
     maskNode.id = id
-    
+
     updateStyle(maskNode, {
         position: 'fixed',
         top: 0,
@@ -80,13 +80,13 @@ export const useMask = (propVisible: boolean, options: { visibleChange: (visible
         const index = maskIds.findIndex(key => key === maskDomId) // 当前遮罩层下标
         let dom = undefined
         let lastIndex = 0
-        
+
         if (maskIds.length > 0) {
 
             lastIndex = index <= 0 ? 0 : index - 1
 
             const lastMaskId = maskIds[lastIndex]
-    
+
             dom = document.querySelector(`#${lastMaskId}`) as HTMLElement
         }
 

@@ -66,9 +66,10 @@ import {
     edgeCollector,
     edgePoint,
     saveDeviceMapping,
-} from '@/api/device/instance';
-import { onlyMessage } from '@/utils/comm';
+} from '../../../../../../api/instance';
+import { onlyMessage } from '@jetlinks-web/utils';
 import type { TreeProps } from 'ant-design-vue';
+
 const _props = defineProps({
     metaData: {
         type: Array,

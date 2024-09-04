@@ -8,7 +8,7 @@
             :bodyStyle="{ padding: '0 0 0 20px' }"
             :scroll="{y : 450}"
         >
-            <template #headerTitle>
+            <template #headerLeftRender>
                 <a-input-search
                     placeholder="请输入名称"
                     style="width: 300px; margin-bottom: 10px"
@@ -77,19 +77,19 @@
 </template>
 
 <script lang="ts" setup>
-import _, { groupBy, throttle, toArray } from 'lodash-es';
+import { cloneDeep, groupBy, throttle, toArray } from 'lodash-es';
 import { PropertyData } from '../../../typings';
 import PropertyCard from './PropertyCard.vue';
 import ValueRender from './ValueRender.vue';
 import Save from './Save.vue';
 import Detail from './Detail/index.vue';
 import Indicators from './Indicators.vue';
-import { getProperty } from '@/api/device/instance';
-import { useInstanceStore } from '@/store/instance';
+import { getProperty } from '../../../../../../api/instance';
+import { dashboard } from '../../../../../../api/dashboard';
+import { useInstanceStore } from '../../../../../../store/instance';
 import { getWebSocket } from '@/utils/websocket';
 import { map } from 'rxjs/operators';
-import { queryDashboard } from '@/api/comm';
-import { onlyMessage } from '@/utils/comm';
+import { onlyMessage } from '@jetlinks-web/utils';
 
 const columns = [
     {
@@ -278,7 +278,7 @@ const getDashboard = async () => {
         },
     ];
     loading.value = true;
-    const resp: Record<string, any> = await queryDashboard(param);
+    const resp: Record<string, any> = await dashboard(param);
     if (resp.status === 200) {
         const t1 = (resp.result || []).map((item: any) => {
             return {
@@ -309,12 +309,12 @@ const query = (params: Record<string, any>) =>
     new Promise((resolve) => {
         const _from = params.pageIndex * params.pageSize;
         const _to = (params.pageIndex + 1) * params.pageSize;
-        let arr = _.cloneDeep(_dataSource.value);
+        let arr = cloneDeep(_dataSource.value);
         if (params?.name) {
             const li = _dataSource.value.filter((i: any) => {
                 return i?.name.indexOf(params.name) !== -1;
             });
-            arr = _.cloneDeep(li);
+            arr = cloneDeep(li);
         }
         dataSource.value = arr.slice(_from, _to)
         messageCache.clear()

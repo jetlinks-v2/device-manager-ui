@@ -15,7 +15,7 @@
                 }"
                 :params="params"
             >
-                <template #headerTitle>
+                <template #headerLeftRender>
                     <j-permission-button
                         type="primary"
                         @click="handleAdd"
@@ -40,7 +40,7 @@
                             <img
                                 :width="80"
                                 :height="80"
-                                :src="getImage('/plug.png')"
+                                :src="link.plug"
                             />
                         </template>
                         <template #content>
@@ -147,6 +147,7 @@ import SaveModal from './Save.vue';
 import { onlyMessage } from '@jetlinks-web/utils';
 import { queryPage, removeFn, getTypes } from '../../../api/link/plugin';
 import { TypeMap } from './util';
+import { link } from '../../../assets'
 
 const route = useRoute();
 const visible = ref(false);

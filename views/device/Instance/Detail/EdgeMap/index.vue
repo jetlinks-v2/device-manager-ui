@@ -179,19 +179,18 @@
 </template>
 
 <script lang="ts" setup name="EdgeMap">
-import { useInstanceStore } from '@/store/instance';
+import { useInstanceStore } from '../../../../../store/instance';
 import {
     getEdgeMap,
     saveEdgeMap,
     removeEdgeMap,
     edgeChannel,
-} from '@/api/device/instance';
+} from '../../../../../api/instance';
 import MSelect from './MSelect.vue';
 import PatchMapping from './PatchMapping.vue';
 import { onlyMessage } from '@/utils/comm';
 import { cloneDeep } from 'lodash-es';
-import { usePermissionStore } from '@/store/permission';
-import { dataTool } from 'echarts';
+
 const columns = [
     {
         title: '名称',
@@ -230,7 +229,6 @@ const columns = [
     },
 ];
 
-const permissionStore = usePermissionStore();
 
 const data: any = ref([]);
 // const isPermission = permissionStore.hasPermission('device/Instance:update');
