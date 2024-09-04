@@ -47,7 +47,7 @@
 </template>
 
 <script lang="ts" setup name="TopCard">
-import { serverNode } from '@/api/link/dashboard';
+import { serverNode } from '../../../../api/link/dashboard';
 import TopEchartsItemNode from './TopEchartsItemNode.vue';
 import { getWebSocket } from '@/utils/websocket';
 import { map } from 'rxjs/operators';

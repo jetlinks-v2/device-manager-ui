@@ -1,6 +1,6 @@
 <template>
     <div>
-        <pro-search :columns="columns" target="search-system" @search="handleSearch" />
+        <pro-search :columns="columns" target="search-system" noMargin @search="handleSearch" />
         <j-pro-table
             ref="tableRef"
             mode="TABLE"

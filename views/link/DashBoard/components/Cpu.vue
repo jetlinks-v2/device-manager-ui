@@ -63,7 +63,7 @@ import {
     typeDataLine,
     colorCpu
 } from './tool';
-import { DataType } from '../typings';
+import type { DataType } from '../typings';
 import ServerList from './ServerList.vue'
 import Echarts from './echarts.vue'
 
@@ -78,7 +78,6 @@ const props = defineProps({
   }
 })
 
-const chartRef = ref<Record<string, any>>({});
 const loading = ref(false);
 const data = ref<DataType>({
     type: 'hour',

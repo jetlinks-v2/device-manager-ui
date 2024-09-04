@@ -1,82 +1,80 @@
 <template>
     <j-page-container>
-        <FullPage>
-            <a-card>
-                <a-row :gutter="[24, 24]" style="padding: 24px">
-                    <a-col :span="12">
-                        <a-form class="form" layout="vertical" :model="formData" name="basic" :label-col="{ span: 8 }"
-                            :wrapper-col="{ span: 24 }" autocomplete="off" ref="formRef">
-                            <a-form-item label="证书标准" name="type"
-                                :rules="[{ required: true, message: '请选择证书标准', trigger: 'blur' }]">
-                                <a-radio-group v-model:value="formData.type">
-                                    <a-radio-button class="form-radio-button" value="common">
-                                        <img :src="link.certificate" />
-                                    </a-radio-button>
-                                </a-radio-group>
-                            </a-form-item>
-                            <a-form-item label="证书名称" name="name" :rules="[
+        <FullPage :fixed="false">
+          <a-row :gutter="[24, 24]" style="padding: 24px">
+            <a-col :span="12">
+              <a-form class="form" layout="vertical" :model="formData" name="basic" :label-col="{ span: 8 }"
+                      :wrapper-col="{ span: 24 }" autocomplete="off" ref="formRef">
+                <a-form-item label="证书标准" name="type"
+                             :rules="[{ required: true, message: '请选择证书标准', trigger: 'blur' }]">
+                  <a-radio-group v-model:value="formData.type">
+                    <a-radio-button class="form-radio-button" value="common">
+                      <img :src="link.certificate" />
+                    </a-radio-button>
+                  </a-radio-group>
+                </a-form-item>
+                <a-form-item label="证书名称" name="name" :rules="[
                                 { required: true, message: '请输入证书名称', trigger: 'blur' },
                                 { max: 64, message: '最多可输入64个字符' },
                             ]">
-                                <a-input placeholder="请输入证书名称" v-model:value="formData.name" />
-                            </a-form-item>
-                            <a-form-item label="证书文件" :name="['configs','cert']" :rules="[
+                  <a-input placeholder="请输入证书名称" v-model:value="formData.name" />
+                </a-form-item>
+                <a-form-item label="证书文件" :name="['configs','cert']" :rules="[
                                 { required: true, message: '请输入或上传文件', trigger: 'change' },
                             ]">
-                                <CertificateFile name="cert" v-model:modelValue="formData.configs.cert"
-                                    placeholder="请输入证书文件" />
-                            </a-form-item>
-                            <a-form-item label="证书类型" name="mode"
-                                :rules="[{ required: true, message: '请选择证书类型', trigger: 'blur' }]">
-                                <a-radio-group v-model:value="formData.mode" button-style="solid">
-                                    <a-radio-button value="client" style="margin-right: 30px;"
-                                        size="large">客户端</a-radio-button>
-                                    <a-radio-button value="server" size="large">服务端</a-radio-button>
-                                </a-radio-group>
-                            </a-form-item>
-                            <!-- <a-form-item label="认证方式" v-if="formData.mode === 'client'" v-bind="validateInfos.authenticationMethod">
-                                <a-radio-group button-style="solid" v-model:value="formData.authenticationMethod">
-                                    <a-radio-button value="single" style="margin-right: 30px;" size="large">单向认证</a-radio-button>
-                                    <a-radio-button value="binomial" size="large">双向认证</a-radio-button>
-                                </a-radio-group>
-                            </a-form-item> -->
-                            <a-form-item label="证书私钥" v-if="formData.mode !== 'client'" :name="['configs','key']" :rules="[
+                  <CertificateFile name="cert" v-model:modelValue="formData.configs.cert"
+                                   placeholder="请输入证书文件" />
+                </a-form-item>
+                <a-form-item label="证书类型" name="mode"
+                             :rules="[{ required: true, message: '请选择证书类型', trigger: 'blur' }]">
+                  <a-radio-group v-model:value="formData.mode" button-style="solid">
+                    <a-radio-button value="client" style="margin-right: 30px;"
+                                    size="large">客户端</a-radio-button>
+                    <a-radio-button value="server" size="large">服务端</a-radio-button>
+                  </a-radio-group>
+                </a-form-item>
+                <!-- <a-form-item label="认证方式" v-if="formData.mode === 'client'" v-bind="validateInfos.authenticationMethod">
+                    <a-radio-group button-style="solid" v-model:value="formData.authenticationMethod">
+                        <a-radio-button value="single" style="margin-right: 30px;" size="large">单向认证</a-radio-button>
+                        <a-radio-button value="binomial" size="large">双向认证</a-radio-button>
+                    </a-radio-group>
+                </a-form-item> -->
+                <a-form-item label="证书私钥" v-if="formData.mode !== 'client'" :name="['configs','key']" :rules="[
                                 { required: true, message: '请输入或上传文件', trigger: 'change' },
                             ]">
-                                <CertificateFile name="key" v-model:modelValue="formData.configs.key"
-                                    placeholder="请输入证书私钥" />
-                            </a-form-item>
-                            <a-form-item label="说明" name="description" :rules="[{ max: 200, message: '最多可输入200个字符' }]">
-                                <a-textarea placeholder="请输入说明" v-model:value="formData.description" :maxlength="200"
-                                    :rows="3" showCount />
-                            </a-form-item>
+                  <CertificateFile name="key" v-model:modelValue="formData.configs.key"
+                                   placeholder="请输入证书私钥" />
+                </a-form-item>
+                <a-form-item label="说明" name="description" :rules="[{ max: 200, message: '最多可输入200个字符' }]">
+                  <a-textarea placeholder="请输入说明" v-model:value="formData.description" :maxlength="200"
+                              :rows="3" showCount />
+                </a-form-item>
 
-                            <a-form-item>
-                                <a-button v-if="view === 'false'" class="form-submit" html-type="submit" type="primary"
-                                    @click.prevent="onSubmit" :loading="loading">保存</a-button>
-                            </a-form-item>
-                        </a-form>
-                    </a-col>
-                    <a-col :span="12">
-                        <div class="doc">
-                            <h1>1. 概述</h1>
-                            <div>
-                                证书由受信任的数字证书颁发机构CA，在验证服务器身份后颁发，具有服务器身份验证和数据传输加密功能，保障设备与平台间的数据传输安全。配置后可被网络组件引用。
-                            </div>
-                            <h1>2. 配置说明</h1>
-                            <h2>1、证书文件</h2>
-                            <div>
-                                您可以使用文本编辑工具打开PEM格式的证书文件，复制其中的内容并粘贴到该文本框，或者单击该文本框下的上传，并选择存储在本地计算机的证书文件，将文件内容上传到文本框。
-                            </div>
-                            <h2>2、证书私钥</h2>
-                            <div>
-                                填写证书私钥内容的PEM编码。
-                                您可以使用文本编辑工具打开KEY格式的证书私钥文件，复制其中的内容并粘贴到该文本框，或者单击该文本框下的上传并选择存储在本地计算机的证书私钥文件，将文件内容上传到文本框。
-                            </div>
-                        </div>
-                    </a-col>
-                </a-row>
-            </a-card>
+                <a-form-item>
+                  <a-button v-if="view === 'false'" class="form-submit" html-type="submit" type="primary"
+                            @click.prevent="onSubmit" :loading="loading">保存</a-button>
+                </a-form-item>
+              </a-form>
+            </a-col>
+            <a-col :span="12">
+              <div class="doc">
+                <h1>1. 概述</h1>
+                <div>
+                  证书由受信任的数字证书颁发机构CA，在验证服务器身份后颁发，具有服务器身份验证和数据传输加密功能，保障设备与平台间的数据传输安全。配置后可被网络组件引用。
+                </div>
+                <h1>2. 配置说明</h1>
+                <h2>1、证书文件</h2>
+                <div>
+                  您可以使用文本编辑工具打开PEM格式的证书文件，复制其中的内容并粘贴到该文本框，或者单击该文本框下的上传，并选择存储在本地计算机的证书文件，将文件内容上传到文本框。
+                </div>
+                <h2>2、证书私钥</h2>
+                <div>
+                  填写证书私钥内容的PEM编码。
+                  您可以使用文本编辑工具打开KEY格式的证书私钥文件，复制其中的内容并粘贴到该文本框，或者单击该文本框下的上传并选择存储在本地计算机的证书私钥文件，将文件内容上传到文本框。
+                </div>
+              </div>
+            </a-col>
+          </a-row>
         </FullPage>
     </j-page-container>
 </template>

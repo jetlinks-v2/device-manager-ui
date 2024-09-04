@@ -20,7 +20,7 @@
                     <template #headerLeftRender>
                         <j-permission-button
                             type="primary"
-                            @click="handlAdd"
+                            @click="handleAdd"
                             hasPermission="link/Certificate:add"
                         >
                             <template #icon
@@ -113,7 +113,7 @@ const columns = [
         title: '操作',
         key: 'action',
         fixed: 'right',
-        width: 80,
+        width: 100,
         scopedSlots: true,
     },
 ];
@@ -131,7 +131,7 @@ const getActions = (data: Partial<Record<string, any>>): any[] => {
         //     },
         //     icon: 'EyeOutlined',
         //     onClick: async () => {
-        //         handlEye(data.id);
+        //         handleEye(data.id);
         //     },
         // },
         {
@@ -142,7 +142,7 @@ const getActions = (data: Partial<Record<string, any>>): any[] => {
             },
             icon: 'EditOutlined',
             onClick: async () => {
-                handlEdit(data.id);
+                handleEdit(data.id);
             },
         },
         {
@@ -164,20 +164,28 @@ const getActions = (data: Partial<Record<string, any>>): any[] => {
     ];
 };
 
-const handlAdd = () => {
+const handleAdd = () => {
     menuStory.jumpPage(
         `link/Certificate/Detail`,
-        { id: ':id' },
-        { view: false },
+      {
+        params: { id: ':id' },
+        query: { view: false },
+      }
     );
 };
 
-const handlEye = (id: string) => {
-    menuStory.jumpPage(`link/Certificate/Detail`, { id }, { view: true });
+const handleEye = (id: string) => {
+    menuStory.jumpPage(`link/Certificate/Detail`, {
+      params: { id },
+      query: { view: true },
+    });
 };
 
-const handlEdit = (id: string) => {
-    menuStory.jumpPage(`link/Certificate/Detail`, { id }, { view: false });
+const handleEdit = (id: string) => {
+    menuStory.jumpPage(`link/Certificate/Detail`, {
+      params: { id },
+      query: { view: false },
+    });
 };
 
 const handleDelete = (id: string) => {

@@ -16,11 +16,12 @@
                         sorts: [{ name: 'createTime', order: 'desc' }],
                     }"
                     :params="params"
+                    modeValue="CARD"
                 >
                     <template #headerLeftRender>
                         <j-permission-button
                             type="primary"
-                            @click="handlAdd"
+                            @click="handleAdd"
                             hasPermission="link/Type:add"
                         >
                             <template #icon
@@ -41,11 +42,11 @@
                                 enabled: 'processing',
                                 disabled: 'error',
                             }"
-                            @click="handlEye(slotProps.id)"
+                            @click="handleEye(slotProps.id)"
                         >
                             <template #img>
                                 <slot name="img">
-                                    <img :src="'/network.png'" />
+                                    <img :src="network.icon" />
                                 </slot>
                             </template>
                             <template #content>
@@ -177,10 +178,10 @@
     </j-page-container>
 </template>
 <script lang="ts" setup name="TypePage">
-import { getImage } from '@/utils/comm';
 import { supports, query, remove, start, shutdown } from '../../../api/link/type';
 import { onlyMessage } from '@/utils/comm';
 import { useMenuStore } from '@/store';
+import {network} from "../../../assets";
 
 const menuStory = useMenuStore();
 const tableRef = ref<Record<string, any>>({});
@@ -275,7 +276,7 @@ const columns = [
 const getActions = (
     data: Partial<Record<string, any>>,
     type: 'card' | 'table',
-): ActionsType[] => {
+): any[] => {
     if (!data) return [];
     const state = data.state.value;
     const stateText = state === 'enabled' ? '禁用' : '启用';
@@ -288,7 +289,7 @@ const getActions = (
             },
             icon: 'EyeOutlined',
             onClick: async () => {
-                handlEye(data.id);
+                handleEye(data.id);
             },
         },
         {
@@ -299,7 +300,7 @@ const getActions = (
             },
             icon: 'EditOutlined',
             onClick: () => {
-                handlEdit(data.id);
+                handleEdit(data.id);
             },
         },
         {
@@ -358,22 +359,21 @@ const getActions = (
         : actions.filter((item) => item.key !== 'view');
 };
 
-const handlAdd = () => {
+const handleAdd = () => {
     menuStory.jumpPage(`link/Type/Detail`, {
-
       params: { id: ':id' },
       query: { view: false }
 });
 };
 
-const handlEye = (id: string) => {
+const handleEye = (id: string) => {
     menuStory.jumpPage(`link/Type/Detail`, {
       params: { id },
       query: { view: true }
     });
 };
 
-const handlEdit = (id: string) => {
+const handleEdit = (id: string) => {
     menuStory.jumpPage(`link/Type/Detail`, {
       params: { id },
       query: { view: false }

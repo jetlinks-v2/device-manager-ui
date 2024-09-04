@@ -22,8 +22,8 @@
                     <template #headerLeftRender>
                         <j-permission-button
                             type="primary"
-                            @click="handleAdd"
                             hasPermission="link/AccessConfig:add"
+                            @click="handleAdd"
                         >
                             <template #icon
                                 ><AIcon type="PlusOutlined"

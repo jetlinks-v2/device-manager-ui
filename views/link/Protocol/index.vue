@@ -15,11 +15,12 @@
                         sorts: [{ name: 'createTime', order: 'desc' }],
                     }"
                     :params="params"
+                    modeValue="CARD"
                 >
                     <template #headerLeftRender>
                         <j-permission-button
                             type="primary"
-                            @click="handlAdd"
+                            @click="handleAdd"
                             hasPermission="link/Protocol:add"
                         >
                             <template #icon

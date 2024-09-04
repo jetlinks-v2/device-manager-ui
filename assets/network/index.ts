@@ -9,9 +9,11 @@ import network6C from './06-Ctwing.png'
 import network7 from './07.jpeg'
 import network8 from './08.png'
 import network9 from './09.png'
+import icon from './network.png'
 import CTWing from './CTWing.jpg'
 
 export const network = {
+    icon,
     network1,
     network2,
     network3,

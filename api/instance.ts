@@ -31,7 +31,7 @@ export const saveMetadata = (id: string, data: DeviceMetadata) => request.put(`/
  * @param id 设备ID
  * @returns 设备详情
  */
-export const detail = (id: string, _hideError?: any) => request.get<DeviceInstance>(`/device-instance/${id}/detail`, {}, {} , _hideError)
+export const detail = (id: string, hiddenError?: any) => request.get<DeviceInstance>(`/device-instance/${id}/detail`, {}, { hiddenError})
 
 /**
  * 查询数据
@@ -652,7 +652,7 @@ export const queryDeviceThreshold = (productId: string, deviceId: string,  prope
  * @param productId
  * @param propertyId
  */
-export const queryProductThreshold = (productId: string, propertyId: string,hiddenError:boolean) => request.get(`/message/preprocessor/product/${productId}/property/${propertyId}`,{},{},hiddenError)
+export const queryProductThreshold = (productId: string, propertyId: string,hiddenError:boolean) => request.get(`/message/preprocessor/product/${productId}/property/${propertyId}`,{},{ hiddenError })
 
 /**
  * 阈值限制-删除产品物模型的阈值

@@ -1,260 +1,259 @@
 <template>
     <j-page-container>
-        <FullPage>
-            <a-card>
-                <div class="container">
-                    <a-form
-                        :model="formData"
-                        ref="formRef1"
-                        name="basic"
-                        autocomplete="off"
-                        layout="vertical"
-                    >
-                        <a-row :gutter="[24, 0]">
-                            <a-col :span="12">
-                                <a-form-item
-                                    label="名称"
-                                    name="name"
-                                    :rules="Rules.name"
-                                >
-                                    <a-input
-                                        v-model:value="formData.name"
-                                        placeholder="请输入名称"
-                                    />
-                                </a-form-item>
-                            </a-col>
-                            <a-col :span="12">
-                                <a-form-item
-                                    label="类型"
-                                    name="type"
-                                    :rules="Rules.type"
-                                >
-                                    <a-select
-                                        v-model:value="formData.type"
-                                        :options="typeOptions"
-                                        placeholder="请选择类型"
-                                        allowClear
-                                        show-search
-                                        :filter-option="filterOption"
-                                        @change="changeType"
-                                        :disabled="!!NetworkType"
-                                    />
-                                </a-form-item>
-                            </a-col>
-                            <a-col :span="24" v-if="isNoCommunity">
-                                <a-form-item
-                                    name="shareCluster"
-                                    :rules="Rules.shareCluster"
-                                >
-                                    <template #label>
-                                        集群
-                                        <a-tooltip
-                                            title="共享配置:集群下所有节点共用同一配置,独立配置:集群下不同节点使用不同配置"
-                                        >
-                                            <AIcon
-                                                type="QuestionCircleOutlined"
-                                                style="margin-left: 2px"
-                                            />
-                                        </a-tooltip>
-                                    </template>
-                                    <a-radio-group
-                                        v-model:value="formData.shareCluster"
-                                        button-style="solid"
-                                        @change="
+        <FullPage style="padding: 24px">
+          <div class="container">
+            <a-form
+              :model="formData"
+              ref="formRef1"
+              name="basic"
+              autocomplete="off"
+              layout="vertical"
+            >
+              <a-row :gutter="[24, 0]">
+                <a-col :span="12">
+                  <a-form-item
+                    label="名称"
+                    name="name"
+                    :rules="Rules.name"
+                  >
+                    <a-input
+                      v-model:value="formData.name"
+                      placeholder="请输入名称"
+                    />
+                  </a-form-item>
+                </a-col>
+                <a-col :span="12">
+                  <a-form-item
+                    label="类型"
+                    name="type"
+                    :rules="Rules.type"
+                  >
+                    <a-select
+                      v-model:value="formData.type"
+                      :options="typeOptions"
+                      placeholder="请选择类型"
+                      allowClear
+                      show-search
+                      :filter-option="filterOption"
+                      @change="changeType"
+                      :disabled="!!NetworkType"
+                    />
+                  </a-form-item>
+                </a-col>
+                <a-col :span="24" v-if="isNoCommunity">
+                  <a-form-item
+                    name="shareCluster"
+                    :rules="Rules.shareCluster"
+                  >
+                    <template #label>
+                      集群
+                      <a-tooltip
+                        title="共享配置:集群下所有节点共用同一配置,独立配置:集群下不同节点使用不同配置"
+                      >
+                        <AIcon
+                          type="QuestionCircleOutlined"
+                          style="margin-left: 2px"
+                        />
+                      </a-tooltip>
+                    </template>
+                    <a-radio-group
+                      v-model:value="formData.shareCluster"
+                      button-style="solid"
+                      @change="
                                             changeShareCluster(
                                                 formData.shareCluster,
                                             )
                                         "
-                                    >
-                                        <a-radio-button
-                                            :value="true"
-                                            :disabled="
+                    >
+                      <a-radio-button
+                        :value="true"
+                        :disabled="
                                                 formData.type === 'MQTT_CLIENT'
                                             "
-                                            >共享配置</a-radio-button
-                                        >
-                                        <a-radio-button :value="false"
-                                            >独立配置</a-radio-button
-                                        >
-                                    </a-radio-group>
-                                </a-form-item>
-                            </a-col>
-                        </a-row>
-                        <div
-                            v-if="
+                      >共享配置</a-radio-button
+                      >
+                      <a-radio-button :value="false"
+                      >独立配置</a-radio-button
+                      >
+                    </a-radio-group>
+                  </a-form-item>
+                </a-col>
+              </a-row>
+              <div
+                v-if="
                                 !shareCluster &&
                                 dynamicValidateForm.cluster.length === 0
                             "
-                            style="
+                style="
                                 border: 1px #d9d9d9 solid;
                                 margin-bottom: 12px;
                             "
-                        >
-                            <j-empty style="margin-top: 12px" />
-                        </div>
-                        <a-form
-                            ref="formRef2"
-                            layout="vertical"
-                            name="dynamic_form_nest_item"
-                            :model="dynamicValidateForm"
-                            class="form2"
-                        >
-                            <div
-                                v-for="(
+              >
+                <j-empty style="margin-top: 12px" />
+              </div>
+              <a-form
+                ref="formRef2"
+                layout="vertical"
+                name="dynamic_form_nest_item"
+                :model="dynamicValidateForm"
+                class="form2"
+              >
+                <div
+                  v-for="(
                                     cluster, index
                                 ) in dynamicValidateForm.cluster"
-                                :key="cluster.id"
-                            >
-                                <a-collapse
-                                    v-model:activeKey="activeKey"
-                                    :class="[
+                  :key="cluster.id"
+                >
+                  <a-collapse
+                    v-model:activeKey="activeKey"
+                    :class="[
                                         !formData.shareCluster
                                             ? 'collapse'
                                             : 'collapse-panel',
                                     ]"
-                                    :ghost="formData.shareCluster"
-                                    collapsible="header"
-                                >
-                                    <a-collapse-panel
-                                        :key="index + 1"
-                                        :show-arrow="!formData.shareCluster"
-                                    >
-                                        <template #header v-if="!shareCluster">
-                                            <div class="collapse-header">
-                                                {{
-                                                    cluster.serverId
-                                                        ? cluster.serverId
-                                                        : !formData.shareCluster
-                                                        ? `#${
-                                                              index + 1
-                                                          }.配置信息`
-                                                        : ''
-                                                }}
-                                            </div>
-                                        </template>
-                                        <template #extra v-if="!shareCluster">
-                                            <j-permission-button
-                                                danger
-                                                :popConfirm="{
+                    :ghost="formData.shareCluster"
+                    collapsible="header"
+                  >
+                    <a-collapse-panel
+                      :key="index + 1"
+                      :show-arrow="!formData.shareCluster"
+                    >
+                      <template #header v-if="!shareCluster">
+                        <div class="collapse-header">
+                          {{
+                            cluster.serverId
+                              ? cluster.serverId
+                              : !formData.shareCluster
+                                ? `#${
+                                  index + 1
+                                }.配置信息`
+                                : ''
+                          }}
+                        </div>
+                      </template>
+                      <template #extra v-if="!shareCluster">
+                        <j-permission-button
+                          danger
+                          :popConfirm="{
                                                     title: '确认删除？',
                                                     onConfirm: () =>
                                                         removeCluster(cluster),
                                                 }"
-                                                >删除</j-permission-button
-                                            >
-                                        </template>
-                                        <a-row :gutter="[24, 0]">
-                                            <a-col
-                                                :span="12"
-                                                v-if="!shareCluster"
-                                            >
-                                                <a-form-item
-                                                    :name="[
+                        >删除</j-permission-button
+                        >
+                      </template>
+                      <a-row :gutter="[24, 0]">
+                        <a-col
+                          :span="12"
+                          v-if="!shareCluster"
+                        >
+                          <a-form-item
+                            :name="[
                                                         'cluster',
                                                         index,
                                                         'serverId',
                                                     ]"
-                                                    label="节点名称"
-                                                    :rules="Rules.serverId"
-                                                >
-                                                    <a-select
-                                                        v-model:value="
+                            label="节点名称"
+                            :rules="Rules.serverId"
+                          >
+                            <a-select
+                              v-model:value="
                                                             cluster.serverId
                                                         "
-                                                        :options="
+                              :options="
                                                             clustersListIndex[
                                                                 index
                                                             ]
                                                         "
-                                                        placeholder="请选择节点名称"
-                                                        allowClear
-                                                        show-search
-                                                        :filter-option="
+                              placeholder="请选择节点名称"
+                              allowClear
+                              show-search
+                              :filter-option="
                                                             filterOption
                                                         "
-                                                        @change="
+                              @change="
                                                             changeServerId(
                                                                 cluster.serverId,
                                                                 index,
                                                             )
                                                         "
-                                                    >
-                                                    </a-select>
-                                                </a-form-item>
-                                            </a-col>
-                                            <a-col
-                                                :span="12"
-                                                v-if="
+                            >
+                            </a-select>
+                          </a-form-item>
+                        </a-col>
+                        <a-col
+                          :span="12"
+                          v-if="
                                                     isVisible(
                                                         'host',
                                                         formData.type,
                                                     )
                                                 "
-                                            >
-                                                <a-form-item
-                                                    :name="[
+                        >
+                          <a-form-item
+                            :name="[
                                                         'cluster',
                                                         index,
                                                         'configuration',
                                                         'host',
                                                     ]"
-                                                    :rules="Rules.host"
-                                                >
-                                                    <template #label>
-                                                        本地地址
-                                                        <a-tooltip
-                                                            title="绑定到服务器上的网卡地址,绑定到所有网卡:0.0.0.0"
-                                                        >
-                                                            <AIcon
-                                                                type="QuestionCircleOutlined"
-                                                                style="
+                            :rules="Rules.host"
+                          >
+                            <template #label>
+                              本地地址
+                              <a-tooltip
+                                title="绑定到服务器上的网卡地址,绑定到所有网卡:0.0.0.0"
+                              >
+                                <AIcon
+                                  type="QuestionCircleOutlined"
+                                  style="
                                                                     margin-left: 2px;
                                                                 "
-                                                            />
-                                                        </a-tooltip>
-                                                    </template>
-                                                    <!-- <a-select
-                                                        v-model:value="
+                                />
+                              </a-tooltip>
+                            </template>
+                            <!-- <a-select
+                                v-model:value="
+                                    cluster
+                                        .configuration
+                                        .host
+                                "
+                                :options="
+                                    hostOptionsIndex[
+                                        index
+                                    ]
+                                "
+                                placeholder="请选择本地地址"
+                                allowClear
+                                show-search
+                                :disabled="shareCluster"
+                                :filter-option="
+                                    filterOption
+                                "
+                                @change="
+                                    changeHost(
+                                        cluster.serverId,
+                                        cluster
+                                            .configuration
+                                            .host,
+                                        index,
+                                    )
+                                "
+                            >
+                            </a-select> -->
+                            <LocalAddressSelect
+                              v-model:value="
                                                             cluster
                                                                 .configuration
                                                                 .host
                                                         "
-                                                        :options="
-                                                            hostOptionsIndex[
-                                                                index
-                                                            ]
-                                                        "
-                                                        placeholder="请选择本地地址"
-                                                        allowClear
-                                                        show-search
-                                                        :disabled="shareCluster"
-                                                        :filter-option="
-                                                            filterOption
-                                                        "
-                                                        @change="
-                                                            changeHost(
-                                                                cluster.serverId,
-                                                                cluster
-                                                                    .configuration
-                                                                    .host,
-                                                                index,
-                                                            )
-                                                        "
-                                                    >
-                                                    </a-select> -->
-                                                    <LocalAddressSelect
-                                                        v-model:value="
-                                                            cluster
-                                                                .configuration
-                                                                .host
-                                                        "
-                                                        :serverId="
+                              :serverId="
                                                             cluster.serverId
                                                         "
-                                                        :shareCluster="
+                              :shareCluster="
                                                             shareCluster
                                                         "
-                                                        @change="
+                              @change="
                                                             (value) =>
                                                                 changeHost(
                                                                     cluster.serverId,
@@ -262,7 +261,7 @@
                                                                     index,
                                                                 )
                                                         "
-                                                        @valueChange="
+                              @valueChange="
                                                             (value) =>
                                                                 changeHost(
                                                                     cluster.serverId,
@@ -271,398 +270,398 @@
                                                                     true,
                                                                 )
                                                         "
-                                                    />
-                                                </a-form-item>
-                                            </a-col>
-                                            <a-col
-                                                :span="12"
-                                                v-if="
+                            />
+                          </a-form-item>
+                        </a-col>
+                        <a-col
+                          :span="12"
+                          v-if="
                                                     isVisible(
                                                         'port',
                                                         formData.type,
                                                     )
                                                 "
-                                            >
-                                                <a-form-item
-                                                    :name="[
+                        >
+                          <a-form-item
+                            :name="[
                                                         'cluster',
                                                         index,
                                                         'configuration',
                                                         'port',
                                                     ]"
-                                                    :rules="Rules.port"
-                                                >
-                                                    <template #label>
-                                                        本地端口
-                                                        <a-tooltip
-                                                            title="监听指定端口的请求"
-                                                        >
-                                                            <AIcon
-                                                                type="QuestionCircleOutlined"
-                                                                style="
+                            :rules="Rules.port"
+                          >
+                            <template #label>
+                              本地端口
+                              <a-tooltip
+                                title="监听指定端口的请求"
+                              >
+                                <AIcon
+                                  type="QuestionCircleOutlined"
+                                  style="
                                                                     margin-left: 2px;
                                                                 "
-                                                            />
-                                                        </a-tooltip>
-                                                    </template>
-                                                    <a-select
-                                                        v-model:value="
+                                />
+                              </a-tooltip>
+                            </template>
+                            <a-select
+                              v-model:value="
                                                             cluster
                                                                 .configuration
                                                                 .port
                                                         "
-                                                        :options="
+                              :options="
                                                             portOptionsIndex[
                                                                 index
                                                             ]
                                                         "
-                                                        placeholder="请选择本地端口"
-                                                        allowClear
-                                                        show-search
-                                                        :filter-option="
+                              placeholder="请选择本地端口"
+                              allowClear
+                              show-search
+                              :filter-option="
                                                             filterPortOption
                                                         "
-                                                    >
-                                                        <!-- <a-select-option
-                                                          v-for="i in getPortList( portOptionsIndex[
-                                                                index
-                                                            ], cluster
-                                                                .configuration
-                                                                .port)"
-                                                        :value="i.value"
-                                                      >
-                                                        {{ i.label }}
-                                                      </a-select-option> -->
-                                                    </a-select>
-                                                </a-form-item>
-                                            </a-col>
-                                            <a-col
-                                                :span="12"
-                                                v-if="
+                            >
+                              <!-- <a-select-option
+                                v-for="i in getPortList( portOptionsIndex[
+                                      index
+                                  ], cluster
+                                      .configuration
+                                      .port)"
+                              :value="i.value"
+                            >
+                              {{ i.label }}
+                            </a-select-option> -->
+                            </a-select>
+                          </a-form-item>
+                        </a-col>
+                        <a-col
+                          :span="12"
+                          v-if="
                                                     isVisible(
                                                         'publicHost',
                                                         formData.type,
                                                     )
                                                 "
-                                            >
-                                                <a-form-item
-                                                    :name="[
+                        >
+                          <a-form-item
+                            :name="[
                                                         'cluster',
                                                         index,
                                                         'configuration',
 
                                                         'publicHost',
                                                     ]"
-                                                    :rules="Rules.publicHost"
-                                                >
-                                                    <template #label>
-                                                        公网地址
-                                                        <a-tooltip
-                                                            title="对外提供访问的地址,内网环境时填写服务器的内网IP地址"
-                                                        >
-                                                            <AIcon
-                                                                type="QuestionCircleOutlined"
-                                                                style="
+                            :rules="Rules.publicHost"
+                          >
+                            <template #label>
+                              公网地址
+                              <a-tooltip
+                                title="对外提供访问的地址,内网环境时填写服务器的内网IP地址"
+                              >
+                                <AIcon
+                                  type="QuestionCircleOutlined"
+                                  style="
                                                                     margin-left: 2px;
                                                                 "
-                                                            />
-                                                        </a-tooltip>
-                                                    </template>
-                                                    <a-input
-                                                        v-model:value="
+                                />
+                              </a-tooltip>
+                            </template>
+                            <a-input
+                              v-model:value="
                                                             cluster
                                                                 .configuration
                                                                 .publicHost
                                                         "
-                                                        placeholder="请输入公网地址"
-                                                        allowClear
-                                                    />
-                                                </a-form-item>
-                                            </a-col>
-                                            <a-col
-                                                :span="12"
-                                                v-if="
+                              placeholder="请输入公网地址"
+                              allowClear
+                            />
+                          </a-form-item>
+                        </a-col>
+                        <a-col
+                          :span="12"
+                          v-if="
                                                     isVisible(
                                                         'publicPort',
                                                         formData.type,
                                                     )
                                                 "
-                                            >
-                                                <a-form-item
-                                                    :name="[
+                        >
+                          <a-form-item
+                            :name="[
                                                         'cluster',
                                                         index,
                                                         'configuration',
                                                         'publicPort',
                                                     ]"
-                                                    :rules="Rules.publicPort"
-                                                >
-                                                    <template #label>
-                                                        公网端口
-                                                        <a-tooltip
-                                                            title="对外提供访问的端口"
-                                                        >
-                                                            <AIcon
-                                                                type="QuestionCircleOutlined"
-                                                                style="
+                            :rules="Rules.publicPort"
+                          >
+                            <template #label>
+                              公网端口
+                              <a-tooltip
+                                title="对外提供访问的端口"
+                              >
+                                <AIcon
+                                  type="QuestionCircleOutlined"
+                                  style="
                                                                     margin-left: 2px;
                                                                 "
-                                                            />
-                                                        </a-tooltip>
-                                                    </template>
-                                                    <a-input-number
-                                                        style="width: 100%"
-                                                        placeholder="请输入端口"
-                                                        v-model:value="
+                                />
+                              </a-tooltip>
+                            </template>
+                            <a-input-number
+                              style="width: 100%"
+                              placeholder="请输入端口"
+                              v-model:value="
                                                             cluster
                                                                 .configuration
                                                                 .publicPort
                                                         "
-                                                        :min="1"
-                                                        :max="65535"
-                                                    />
-                                                </a-form-item>
-                                            </a-col>
-                                            <a-col
-                                                :span="12"
-                                                v-if="
+                              :min="1"
+                              :max="65535"
+                            />
+                          </a-form-item>
+                        </a-col>
+                        <a-col
+                          :span="12"
+                          v-if="
                                                     isVisible(
                                                         'remoteHost',
                                                         formData.type,
                                                     )
                                                 "
-                                            >
-                                                <a-form-item
-                                                    :name="[
+                        >
+                          <a-form-item
+                            :name="[
                                                         'cluster',
                                                         index,
                                                         'configuration',
                                                         'remoteHost',
                                                     ]"
-                                                    :rules="Rules.remoteHost"
-                                                    label="远程地址"
-                                                >
-                                                    <a-input
-                                                        placeholder="请输入远程地址"
-                                                        v-model:value="
+                            :rules="Rules.remoteHost"
+                            label="远程地址"
+                          >
+                            <a-input
+                              placeholder="请输入远程地址"
+                              v-model:value="
                                                             cluster
                                                                 .configuration
                                                                 .remoteHost
                                                         "
-                                                    />
-                                                </a-form-item>
-                                            </a-col>
-                                            <a-col
-                                                :span="12"
-                                                v-if="
+                            />
+                          </a-form-item>
+                        </a-col>
+                        <a-col
+                          :span="12"
+                          v-if="
                                                     isVisible(
                                                         'remotePort',
                                                         formData.type,
                                                     )
                                                 "
-                                            >
-                                                <a-form-item
-                                                    label="远程端口"
-                                                    :name="[
+                        >
+                          <a-form-item
+                            label="远程端口"
+                            :name="[
                                                         'cluster',
                                                         index,
                                                         'configuration',
                                                         'remotePort',
                                                     ]"
-                                                    :rules="Rules.remotePort"
-                                                >
-                                                    <a-input-number
-                                                        style="width: 100%"
-                                                        placeholder="请输入远程端口"
-                                                        v-model:value="
+                            :rules="Rules.remotePort"
+                          >
+                            <a-input-number
+                              style="width: 100%"
+                              placeholder="请输入远程端口"
+                              v-model:value="
                                                             cluster
                                                                 .configuration
                                                                 .remotePort
                                                         "
-                                                        :min="1"
-                                                        :max="65535"
-                                                    />
-                                                </a-form-item>
-                                            </a-col>
-                                            <a-col
-                                                :span="12"
-                                                v-if="
+                              :min="1"
+                              :max="65535"
+                            />
+                          </a-form-item>
+                        </a-col>
+                        <a-col
+                          :span="12"
+                          v-if="
                                                     isVisible(
                                                         'clientId',
                                                         formData.type,
                                                     )
                                                 "
-                                            >
-                                                <a-form-item
-                                                    label="clientId"
-                                                    :name="[
+                        >
+                          <a-form-item
+                            label="clientId"
+                            :name="[
                                                         'cluster',
                                                         index,
                                                         'configuration',
                                                         'clientId',
                                                     ]"
-                                                    :rules="Rules.clientId"
-                                                >
-                                                    <a-input
-                                                        v-model:value="
+                            :rules="Rules.clientId"
+                          >
+                            <a-input
+                              v-model:value="
                                                             cluster
                                                                 .configuration
                                                                 .clientId
                                                         "
-                                                        placeholder="请输入ClientId"
-                                                    />
-                                                </a-form-item>
-                                            </a-col>
+                              placeholder="请输入ClientId"
+                            />
+                          </a-form-item>
+                        </a-col>
 
-                                            <a-col
-                                                :span="12"
-                                                v-if="
+                        <a-col
+                          :span="12"
+                          v-if="
                                                     isVisible(
                                                         'username',
                                                         formData.type,
                                                     )
                                                 "
-                                            >
-                                                <a-form-item
-                                                    label="用户名"
-                                                    :name="[
+                        >
+                          <a-form-item
+                            label="用户名"
+                            :name="[
                                                         'cluster',
                                                         index,
                                                         'configuration',
                                                         'username',
                                                     ]"
-                                                    :rules="Rules.username"
-                                                >
-                                                    <a-input
-                                                        v-model:value="
+                            :rules="Rules.username"
+                          >
+                            <a-input
+                              v-model:value="
                                                             cluster
                                                                 .configuration
                                                                 .username
                                                         "
-                                                        placeholder="请输入用户名"
-                                                    />
-                                                </a-form-item>
-                                            </a-col>
-                                            <a-col
-                                                :span="12"
-                                                v-if="
+                              placeholder="请输入用户名"
+                            />
+                          </a-form-item>
+                        </a-col>
+                        <a-col
+                          :span="12"
+                          v-if="
                                                     isVisible(
                                                         'password',
                                                         formData.type,
                                                     )
                                                 "
-                                            >
-                                                <a-form-item
-                                                    label="密码"
-                                                    :name="[
+                        >
+                          <a-form-item
+                            label="密码"
+                            :name="[
                                                         'cluster',
                                                         index,
                                                         'configuration',
                                                         'password',
                                                     ]"
-                                                    :rules="Rules.password"
-                                                >
-                                                    <a-input-password
-                                                        v-model:value="
+                            :rules="Rules.password"
+                          >
+                            <a-input-password
+                              v-model:value="
                                                             cluster
                                                                 .configuration
                                                                 .password
                                                         "
-                                                        placeholder="请输入密码"
-                                                    />
-                                                </a-form-item>
-                                            </a-col>
-                                            <a-col
-                                                :span="12"
-                                                v-if="
+                              placeholder="请输入密码"
+                            />
+                          </a-form-item>
+                        </a-col>
+                        <a-col
+                          :span="12"
+                          v-if="
                                                     isVisible(
                                                         'topicPrefix',
                                                         formData.type,
                                                     )
                                                 "
-                                            >
-                                                <a-form-item
-                                                    :name="[
+                        >
+                          <a-form-item
+                            :name="[
                                                         'cluster',
                                                         index,
                                                         'configuration',
                                                         'topicPrefix',
                                                     ]"
-                                                    :rules="Rules.topicPrefix"
-                                                >
-                                                    <template #label>
-                                                        订阅前缀
-                                                        <a-tooltip
-                                                            title="当连接的服务为EMQ时,可能需要使用共享的订阅前缀,如:$queue或$share"
-                                                        >
-                                                            <AIcon
-                                                                type="QuestionCircleOutlined"
-                                                                style="
+                            :rules="Rules.topicPrefix"
+                          >
+                            <template #label>
+                              订阅前缀
+                              <a-tooltip
+                                title="当连接的服务为EMQ时,可能需要使用共享的订阅前缀,如:$queue或$share"
+                              >
+                                <AIcon
+                                  type="QuestionCircleOutlined"
+                                  style="
                                                                     margin-left: 2px;
                                                                 "
-                                                            />
-                                                        </a-tooltip>
-                                                    </template>
-                                                    <a-input
-                                                        v-model:value="
+                                />
+                              </a-tooltip>
+                            </template>
+                            <a-input
+                              v-model:value="
                                                             cluster
                                                                 .configuration
                                                                 .topicPrefix
                                                         "
-                                                        placeholder="请输入订阅前缀"
-                                                    />
-                                                </a-form-item>
-                                            </a-col>
+                              placeholder="请输入订阅前缀"
+                            />
+                          </a-form-item>
+                        </a-col>
 
-                                            <a-col
-                                                :span="12"
-                                                v-if="
+                        <a-col
+                          :span="12"
+                          v-if="
                                                     isVisible(
                                                         'maxMessageSize',
                                                         formData.type,
                                                     )
                                                 "
-                                            >
-                                                <a-form-item
-                                                    :name="[
+                        >
+                          <a-form-item
+                            :name="[
                                                         'cluster',
                                                         index,
                                                         'configuration',
                                                         'maxMessageSize',
                                                     ]"
-                                                    :rules="
+                            :rules="
                                                         Rules.maxMessageSize
                                                     "
-                                                >
-                                                    <template #label>
-                                                        最大消息长度
-                                                        <a-tooltip
-                                                            title="单次收发消息的最大长度,单位:字节;设置过大可能会影响性能"
-                                                        >
-                                                            <AIcon
-                                                                type="QuestionCircleOutlined"
-                                                                style="
+                          >
+                            <template #label>
+                              最大消息长度
+                              <a-tooltip
+                                title="单次收发消息的最大长度,单位:字节;设置过大可能会影响性能"
+                              >
+                                <AIcon
+                                  type="QuestionCircleOutlined"
+                                  style="
                                                                     margin-left: 2px;
                                                                 "
-                                                            />
-                                                        </a-tooltip>
-                                                    </template>
-                                                    <a-input-number
-                                                        style="width: 100%"
-                                                        v-model:value="
+                                />
+                              </a-tooltip>
+                            </template>
+                            <a-input-number
+                              style="width: 100%"
+                              v-model:value="
                                                             cluster
                                                                 .configuration
                                                                 .maxMessageSize
                                                         "
-                                                        placeholder="请输入最大消息长度"
-                                                        :min="1024"
-                                                        :max="1073741824"
-                                                    />
-                                                </a-form-item>
-                                            </a-col>
-                                            <a-col :span="24">
-                                                <a-form-item
-                                                    :label="
+                              placeholder="请输入最大消息长度"
+                              :min="1024"
+                              :max="1073741824"
+                            />
+                          </a-form-item>
+                        </a-col>
+                        <a-col :span="24">
+                          <a-form-item
+                            :label="
                                                         isVisible(
                                                             'secure',
                                                             formData.type,
@@ -670,14 +669,14 @@
                                                             ? '开启DTLS'
                                                             : '开启TLS'
                                                     "
-                                                    :name="[
+                            :name="[
                                                         'cluster',
                                                         index,
                                                         'configuration',
                                                         'secure',
                                                     ]"
-                                                    :rules="Rules.secure"
-                                                    @change="
+                            :rules="Rules.secure"
+                            @change="
                                                         changeSecure(
                                                             cluster
                                                                 .configuration
@@ -685,140 +684,140 @@
                                                             index,
                                                         )
                                                     "
-                                                >
-                                                    <a-radio-group
-                                                        v-model:value="
+                          >
+                            <a-radio-group
+                              v-model:value="
                                                             cluster
                                                                 .configuration
                                                                 .secure
                                                         "
-                                                    >
-                                                        <a-radio :value="true"
-                                                            >是</a-radio
-                                                        >
-                                                        <a-radio :value="false"
-                                                            >否</a-radio
-                                                        >
-                                                    </a-radio-group>
-                                                </a-form-item>
-                                            </a-col>
-                                            <div class="form2-row">
-                                                <a-col
-                                                    :span="12"
-                                                    v-if="
+                            >
+                              <a-radio :value="true"
+                              >是</a-radio
+                              >
+                              <a-radio :value="false"
+                              >否</a-radio
+                              >
+                            </a-radio-group>
+                          </a-form-item>
+                        </a-col>
+                        <div class="form2-row">
+                          <a-col
+                            :span="12"
+                            v-if="
                                                         cluster.configuration
                                                             .secure
                                                     "
-                                                >
-                                                    <a-form-item
-                                                        label="证书"
-                                                        :name="[
+                          >
+                            <a-form-item
+                              label="证书"
+                              :name="[
                                                             'cluster',
                                                             index,
                                                             'configuration',
                                                             'certId',
                                                         ]"
-                                                        :rules="Rules.certId"
-                                                        class="form2-left"
-                                                    >
-                                                        <a-select
-                                                            v-model:value="
+                              :rules="Rules.certId"
+                              class="form2-left"
+                            >
+                              <a-select
+                                v-model:value="
                                                                 cluster
                                                                     .configuration
                                                                     .certId
                                                             "
-                                                            :options="
+                                :options="
                                                                 certIdOptions
                                                             "
-                                                            placeholder="请选择证书"
-                                                            allowClear
-                                                            show-search
-                                                            :filter-option="
+                                placeholder="请选择证书"
+                                allowClear
+                                show-search
+                                :filter-option="
                                                                 filterOption
                                                             "
-                                                        />
-                                                    </a-form-item>
-                                                </a-col>
-                                                <a-col
-                                                    :span="12"
-                                                    v-if="
+                              />
+                            </a-form-item>
+                          </a-col>
+                          <a-col
+                            :span="12"
+                            v-if="
                                                         cluster.configuration
                                                             .secure
                                                     "
-                                                >
-                                                    <a-form-item
-                                                        label="私钥别名"
-                                                        :name="[
+                          >
+                            <a-form-item
+                              label="私钥别名"
+                              :name="[
                                                             'cluster',
                                                             index,
                                                             'configuration',
                                                             'privateKeyAlias',
                                                         ]"
-                                                        :rules="
+                              :rules="
                                                             Rules.privateKeyAlias
                                                         "
-                                                        class="form2-right"
-                                                    >
-                                                        <a-input
-                                                            v-model:value="
+                              class="form2-right"
+                            >
+                              <a-input
+                                v-model:value="
                                                                 cluster
                                                                     .configuration
                                                                     .privateKeyAlias
                                                             "
-                                                            placeholder="请输入私钥别名"
-                                                        />
-                                                    </a-form-item>
-                                                </a-col>
-                                            </div>
+                                placeholder="请输入私钥别名"
+                              />
+                            </a-form-item>
+                          </a-col>
+                        </div>
 
-                                            <a-col
-                                                :span="24"
-                                                v-if="
+                        <a-col
+                          :span="24"
+                          v-if="
                                                     isVisible(
                                                         'parserType',
                                                         formData.type,
                                                     )
                                                 "
-                                            >
-                                                <a-form-item
-                                                    :name="[
+                        >
+                          <a-form-item
+                            :name="[
                                                         'cluster',
                                                         index,
                                                         'configuration',
                                                         'parserType',
                                                     ]"
-                                                    :rules="Rules.parserType"
-                                                >
-                                                    <template #label>
-                                                        粘拆包规则
-                                                        <a-tooltip
-                                                            title="处理TCP粘拆包的方式"
-                                                        >
-                                                            <AIcon
-                                                                type="QuestionCircleOutlined"
-                                                                style="
+                            :rules="Rules.parserType"
+                          >
+                            <template #label>
+                              粘拆包规则
+                              <a-tooltip
+                                title="处理TCP粘拆包的方式"
+                              >
+                                <AIcon
+                                  type="QuestionCircleOutlined"
+                                  style="
                                                                     margin-left: 2px;
                                                                 "
-                                                            />
-                                                        </a-tooltip>
-                                                    </template>
-                                                    <a-select
-                                                        style="width: 48.5%"
-                                                        v-model:value="
+                                />
+                              </a-tooltip>
+                            </template>
+                            <a-select
+                              style="width: 48.5%"
+                              v-model:value="
                                                             cluster
                                                                 .configuration
                                                                 .parserType
                                                         "
-                                                        :options="
+                              :options="
                                                             ParserTypeOptions
                                                         "
-                                                        placeholder="请选择粘拆包规则"
-                                                        allowClear
-                                                        show-search
-                                                        :filter-option="
+                              placeholder="请选择粘拆包规则"
+                              allowClear
+                              show-search
+                              :filter-option="
                                                             filterOption
                                                         "
-                                                        @change="
+                              @change="
                                                             changeParserType(
                                                                 cluster
                                                                     .configuration
@@ -826,13 +825,13 @@
                                                                 index,
                                                             )
                                                         "
-                                                    />
-                                                </a-form-item>
-                                            </a-col>
-                                            <div class="form2-row">
-                                                <a-col
-                                                    :span="12"
-                                                    v-if="
+                            />
+                          </a-form-item>
+                        </a-col>
+                        <div class="form2-row">
+                          <a-col
+                            :span="12"
+                            v-if="
                                                         isVisible(
                                                             'delimited',
                                                             cluster
@@ -840,66 +839,66 @@
                                                                 .parserType,
                                                         )
                                                     "
-                                                >
-                                                    <a-form-item
-                                                        label="分隔符"
-                                                        :name="[
+                          >
+                            <a-form-item
+                              label="分隔符"
+                              :name="[
                                                             'cluster',
                                                             index,
                                                             'configuration',
                                                             'parserConfiguration',
                                                             'delimited',
                                                         ]"
-                                                        :rules="Rules.delimited"
-                                                        class="form2-left"
-                                                    >
-                                                        <a-input
-                                                            v-model:value="
+                              :rules="Rules.delimited"
+                              class="form2-left"
+                            >
+                              <a-input
+                                v-model:value="
                                                                 cluster
                                                                     .configuration
                                                                     .parserConfiguration
                                                                     .delimited
                                                             "
-                                                            placeholder="请输入分隔符"
-                                                        />
-                                                    </a-form-item>
-                                                </a-col>
+                                placeholder="请输入分隔符"
+                              />
+                            </a-form-item>
+                          </a-col>
 
-                                                <!-- <a-col
-                                    :span="24"
-                                    v-if="
-                                        isVisible(
-                                            'lang',
-                                            cluster.configuration
-                                                .parserType,
-                                        )
-                                    "
-                                >
-                                    <a-form-item
-                                        v-show="false"
-                                        label="脚本语言"
-                                        :name="[
-                                            'cluster',
-                                            index,
-                                            'configuration',
-                                            'parserConfiguration',
-                                            'lang',
-                                        ]"
-                                        class="form2-left"
-                                    >
-                                        <a-input
-                                            v-model:value="
-                                                cluster
-                                                    .configuration
-                                                    .parserConfiguration
-                                                    .lang
-                                            "
-                                        />
-                                    </a-form-item>
-                                </a-col> -->
-                                                <a-col
-                                                    :span="24"
-                                                    v-if="
+                          <!-- <a-col
+              :span="24"
+              v-if="
+                  isVisible(
+                      'lang',
+                      cluster.configuration
+                          .parserType,
+                  )
+              "
+          >
+              <a-form-item
+                  v-show="false"
+                  label="脚本语言"
+                  :name="[
+                      'cluster',
+                      index,
+                      'configuration',
+                      'parserConfiguration',
+                      'lang',
+                  ]"
+                  class="form2-left"
+              >
+                  <a-input
+                      v-model:value="
+                          cluster
+                              .configuration
+                              .parserConfiguration
+                              .lang
+                      "
+                  />
+              </a-form-item>
+          </a-col> -->
+                          <a-col
+                            :span="24"
+                            v-if="
                                                         isVisible(
                                                             'script',
                                                             cluster
@@ -907,48 +906,48 @@
                                                                 .parserType,
                                                         )
                                                     "
-                                                >
-                                                    <a-form-item
-                                                        label="解析脚本"
-                                                        :name="[
+                          >
+                            <a-form-item
+                              label="解析脚本"
+                              :name="[
                                                             'cluster',
                                                             index,
                                                             'configuration',
                                                             'parserConfiguration',
                                                             'script',
                                                         ]"
-                                                        :rules="Rules.script"
-                                                        class="form2-left form2-right"
-                                                    >
-                                                        <div
-                                                            style="
+                              :rules="Rules.script"
+                              class="form2-left form2-right"
+                            >
+                              <div
+                                style="
                                                                 width: 100%;
                                                                 height: 400px;
                                                             "
-                                                        >
-                                                            <j-monaco-editor
-                                                                theme="vs"
-                                                                v-model:modelValue="
+                              >
+                                <j-monaco-editor
+                                  theme="vs"
+                                  v-model:modelValue="
                                                                     cluster
                                                                         .configuration
                                                                         .parserConfiguration
                                                                         .script
                                                                 "
-                                                                language="javascript"
-                                                                :init="
+                                  language="javascript"
+                                  :init="
                                                                     editorInit
                                                                 "
-                                                                :registrationTypescript="
+                                  :registrationTypescript="
                                                                     typescriptTip
                                                                 "
-                                                            />
-                                                        </div>
-                                                    </a-form-item>
-                                                </a-col>
+                                />
+                              </div>
+                            </a-form-item>
+                          </a-col>
 
-                                                <a-col
-                                                    :span="12"
-                                                    v-if="
+                          <a-col
+                            :span="12"
+                            v-if="
                                                         isVisible(
                                                             'size',
                                                             cluster
@@ -956,34 +955,34 @@
                                                                 .parserType,
                                                         )
                                                     "
-                                                >
-                                                    <a-form-item
-                                                        label="长度值"
-                                                        :name="[
+                          >
+                            <a-form-item
+                              label="长度值"
+                              :name="[
                                                             'cluster',
                                                             index,
                                                             'configuration',
                                                             'parserConfiguration',
                                                             'size',
                                                         ]"
-                                                        :rules="Rules.size"
-                                                        class="form2-left"
-                                                    >
-                                                        <a-input-number
-                                                            style="width: 100%"
-                                                            v-model:value="
+                              :rules="Rules.size"
+                              class="form2-left"
+                            >
+                              <a-input-number
+                                style="width: 100%"
+                                v-model:value="
                                                                 cluster
                                                                     .configuration
                                                                     .parserConfiguration
                                                                     .size
                                                             "
-                                                            placeholder="请输入长度值"
-                                                        />
-                                                    </a-form-item>
-                                                </a-col>
-                                                <a-col
-                                                    :span="12"
-                                                    v-if="
+                                placeholder="请输入长度值"
+                              />
+                            </a-form-item>
+                          </a-col>
+                          <a-col
+                            :span="12"
+                            v-if="
                                                         isVisible(
                                                             'length',
                                                             cluster
@@ -991,42 +990,42 @@
                                                                 .parserType,
                                                         )
                                                     "
-                                                >
-                                                    <a-form-item
-                                                        label="字节长度"
-                                                        :name="[
+                          >
+                            <a-form-item
+                              label="字节长度"
+                              :name="[
                                                             'cluster',
                                                             index,
                                                             'configuration',
                                                             'parserConfiguration',
                                                             'length',
                                                         ]"
-                                                        :rules="Rules.length"
-                                                        class="form2-left"
-                                                    >
-                                                        <a-select
-                                                            style="width: 100%"
-                                                            v-model:value="
+                              :rules="Rules.length"
+                              class="form2-left"
+                            >
+                              <a-select
+                                style="width: 100%"
+                                v-model:value="
                                                                 cluster
                                                                     .configuration
                                                                     .parserConfiguration
                                                                     .length
                                                             "
-                                                            :options="
+                                :options="
                                                                 LengthOptions
                                                             "
-                                                            placeholder="请选择长度"
-                                                            allowClear
-                                                            show-search
-                                                            :filter-option="
+                                placeholder="请选择长度"
+                                allowClear
+                                show-search
+                                :filter-option="
                                                                 filterOption
                                                             "
-                                                        />
-                                                    </a-form-item>
-                                                </a-col>
-                                                <a-col
-                                                    :span="12"
-                                                    v-if="
+                              />
+                            </a-form-item>
+                          </a-col>
+                          <a-col
+                            :span="12"
+                            v-if="
                                                         isVisible(
                                                             'offset',
                                                             cluster
@@ -1034,36 +1033,36 @@
                                                                 .parserType,
                                                         )
                                                     "
-                                                >
-                                                    <a-form-item
-                                                        label="偏移量"
-                                                        :name="[
+                          >
+                            <a-form-item
+                              label="偏移量"
+                              :name="[
                                                             'cluster',
                                                             index,
                                                             'configuration',
                                                             'parserConfiguration',
                                                             'offset',
                                                         ]"
-                                                        :rules="Rules.offset"
-                                                        class="form2-right"
-                                                    >
-                                                        <a-input-number
-                                                            style="width: 100%"
-                                                            v-model:value="
+                              :rules="Rules.offset"
+                              class="form2-right"
+                            >
+                              <a-input-number
+                                style="width: 100%"
+                                v-model:value="
                                                                 cluster
                                                                     .configuration
                                                                     .parserConfiguration
                                                                     .offset
                                                             "
-                                                            placeholder="请输入偏移量"
-                                                            :min="0"
-                                                            :max="65535"
-                                                        />
-                                                    </a-form-item>
-                                                </a-col>
-                                                <a-col
-                                                    :span="12"
-                                                    v-if="
+                                placeholder="请输入偏移量"
+                                :min="0"
+                                :max="65535"
+                              />
+                            </a-form-item>
+                          </a-col>
+                          <a-col
+                            :span="12"
+                            v-if="
                                                         isVisible(
                                                             'little',
                                                             cluster
@@ -1071,83 +1070,82 @@
                                                                 .parserType,
                                                         )
                                                     "
-                                                >
-                                                    <a-form-item
-                                                        label="大小端"
-                                                        :name="[
+                          >
+                            <a-form-item
+                              label="大小端"
+                              :name="[
                                                             'cluster',
                                                             index,
                                                             'configuration',
                                                             'parserConfiguration',
                                                             'little',
                                                         ]"
-                                                        class="form2-left"
-                                                    >
-                                                        <a-select
-                                                            style="width: 100%"
-                                                            v-model:value="
+                              class="form2-left"
+                            >
+                              <a-select
+                                style="width: 100%"
+                                v-model:value="
                                                                 cluster
                                                                     .configuration
                                                                     .parserConfiguration
                                                                     .little
                                                             "
-                                                            :options="
+                                :options="
                                                                 LittleOptions
                                                             "
-                                                            placeholder="请选择大小端"
-                                                            allowClear
-                                                            show-search
-                                                            :filter-option="
+                                placeholder="请选择大小端"
+                                allowClear
+                                show-search
+                                :filter-option="
                                                                 filterOption
                                                             "
-                                                        />
-                                                    </a-form-item>
-                                                </a-col>
-                                            </div>
-                                        </a-row>
-                                    </a-collapse-panel>
-                                </a-collapse>
-                            </div>
-                            <a-form-item v-if="!shareCluster">
-                                <a-button
-                                    type="primary"
-                                    block
-                                    ghost
-                                    @click="addCluster"
-                                >
-                                    <AIcon type="PlusOutlined" />
-                                    新增
-                                </a-button>
+                              />
                             </a-form-item>
-                        </a-form>
-
-                        <a-row :gutter="[24, 0]">
-                            <a-col :span="24">
-                                <a-form-item label="说明" name="description">
-                                    <a-textarea
-                                        v-model:value="formData.description"
-                                        show-count
-                                        :maxlength="200"
-                                        :rows="4"
-                                    /> </a-form-item
-                            ></a-col>
-                        </a-row>
-                    </a-form>
+                          </a-col>
+                        </div>
+                      </a-row>
+                    </a-collapse-panel>
+                  </a-collapse>
                 </div>
-                <div class="footer">
-                    <j-permission-button
-                        v-if="view === 'false'"
-                        type="primary"
-                        @click="saveData"
-                        :loading="loading"
-                        :hasPermission="`link/Type:${
+                <a-form-item v-if="!shareCluster">
+                  <a-button
+                    type="primary"
+                    block
+                    ghost
+                    @click="addCluster"
+                  >
+                    <AIcon type="PlusOutlined" />
+                    新增
+                  </a-button>
+                </a-form-item>
+              </a-form>
+
+              <a-row :gutter="[24, 0]">
+                <a-col :span="24">
+                  <a-form-item label="说明" name="description">
+                    <a-textarea
+                      v-model:value="formData.description"
+                      show-count
+                      :maxlength="200"
+                      :rows="4"
+                    /> </a-form-item
+                  ></a-col>
+              </a-row>
+            </a-form>
+          </div>
+          <div class="footer">
+            <j-permission-button
+              v-if="view === 'false'"
+              type="primary"
+              @click="saveData"
+              :loading="loading"
+              :hasPermission="`link/Type:${
                             id !== ':id' ? 'update' : 'add'
                         }`"
-                    >
-                        保存
-                    </j-permission-button>
-                </div>
-            </a-card>
+            >
+              保存
+            </j-permission-button>
+          </div>
         </FullPage>
     </j-page-container>
 </template>

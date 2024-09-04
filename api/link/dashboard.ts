@@ -9,3 +9,5 @@ export const getGeo = (data: object) =>
 export const deviceCount = (data: object) =>
     request.get(`/device/instance/_count`, data);
 export const requestNode = () => request.get(`/dashboard/cluster/nodes`);
+
+export const serverNode = () => request.get(`/dashboard/cluster/nodes`);
