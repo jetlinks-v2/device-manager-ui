@@ -10,15 +10,15 @@
     >
         <template #content>
             <j-scrollbar height="350" v-if="showContent">
-                <j-collapse v-model:activeKey="activeKey" v-if="visible">
-                    <j-collapse-panel
+                <a-collapse v-model:activeKey="activeKey" v-if="visible">
+                    <a-collapse-panel
                         v-if="!(props.isProduct && target === 'device')"
                         v-for="(item, index) in config"
                         :key="'store_' + index"
                     >
                         <template #header>
                             {{ item.name }}
-                            <j-tooltip
+                            <a-tooltip
                                 v-if="item.description"
                                 :title="item.description"
                             >
@@ -26,9 +26,9 @@
                                     type="ExclamationCircleOutlined"
                                     style="padding-left: 12px; padding-top: 4px"
                                 />
-                            </j-tooltip>
+                            </a-tooltip>
                         </template>
-                        <j-table
+                        <a-table
                             :columns="columns"
                             :data-source="item.properties"
                             :pagination="false"
@@ -68,9 +68,9 @@
                                     "
                                 />
                             </template>
-                        </j-table>
-                    </j-collapse-panel>
-                    <j-collapse-panel
+                        </a-table>
+                    </a-collapse-panel>
+                    <a-collapse-panel
                         key="metrics"
                         v-if="
                             showMetrics &&
@@ -79,14 +79,14 @@
                     >
                         <template #header>
                             指标配置
-                            <j-tooltip
+                            <a-tooltip
                                 title="场景联动页面可引用指标配置作为触发条件"
                             >
                                 <AIcon
                                     type="ExclamationCircleOutlined"
                                     style="padding-left: 12px; padding-top: 4px"
                                 />
-                            </j-tooltip>
+                            </a-tooltip>
                         </template>
                         <Metrics
                             ref="metricsRef"
@@ -94,8 +94,8 @@
                             :type="props.type"
                             :value="myValue.metrics"
                         />
-                    </j-collapse-panel>
-                    <j-collapse-panel key="extra" v-if="showExtra">
+                    </a-collapse-panel>
+                    <a-collapse-panel key="extra" v-if="showExtra">
                         <template #header>
                             <a-space>
                                 <div>阈值限制</div>
@@ -227,14 +227,14 @@
                                 </div></a-form-item
                             >
                         </a-form>
-                    </j-collapse-panel>
-                </j-collapse>
+                    </a-collapse-panel>
+                </a-collapse>
             </j-scrollbar>
             <div v-else style="padding-top: 24px">
                 <j-empty description="没有动态配置项" />
             </div>
         </template>
-        <PermissionButton
+        <j-permission-button
             key="setting"
             :disabled="disabled"
             :has-permission="hasPermission"
@@ -243,9 +243,9 @@
         >
             <AIcon type="EditOutlined" />
             配置
-        </PermissionButton>
+        </j-permission-button>
     </PopoverModal>
-    <PermissionButton
+    <j-permission-button
         v-else
         key="setting"
         :disabled="disabled"
@@ -255,23 +255,23 @@
     >
         <AIcon type="EditOutlined" />
         配置
-    </PermissionButton>
+    </j-permission-button>
 </template>
 
 <script setup lang="ts" name="OtherSetting">
 import Metrics from './Metrics/Metrics.vue';
 import { watch } from 'vue';
-import { useProductStore } from 'store/product';
-import { useInstanceStore } from 'store/instance';
+import { useProductStore } from '../../../../../../../store/product';
+import { useInstanceStore } from '../../../../../../../store/instance';
 import {
     getMetadataConfig,
     getMetadataDeviceConfig,
-} from '@/api/device/product';
+} from '../../../../../../../api/product';
+import { PopoverModal } from '../../../../../../../components/Metadata';
+import { useTableWrapper } from '../../../../../../../components/Metadata/context';
 import { omit, cloneDeep } from 'lodash-es';
-import { PopoverModal } from '@/components/Metadata/Table';
-import { useTableWrapper } from '@/components/Metadata/Table/context';
 import { useThreshold } from './hooks';
-import { useSystem } from '@/store/system';
+import { useSystemStore } from '@/store';
 
 const props = defineProps({
     value: {
@@ -313,7 +313,7 @@ const props = defineProps({
 
 const type = inject('_metadataType');
 
-const { showThreshold } = useSystem();
+const { showThreshold } = useSystemStore();
 const productStore = useProductStore();
 const deviceStore = useInstanceStore();
 const tableWrapperRef = useTableWrapper();

@@ -20,30 +20,30 @@
                 {{ slotProps.action }}
             </template>
             <template #responseTime="slotProps">
-                <j-tag color="purple">
+                <a-tag color="purple">
                     {{ slotProps.responseTime - slotProps.requestTime }} ms
-                </j-tag>
+                </a-tag>
             </template>
             <template #username="slotProps">
 
-                    <!-- <j-tag color="geekblue"> -->
+                    <!-- <a-tag color="geekblue"> -->
                     <div class="userName">
-                        <Ellipsis style="max-width: 100px;">
+                        <j-ellipsis style="max-width: 100px;">
                         {{ slotProps.context.userName }}
-                    </Ellipsis>
-                     <!-- </j-tag> -->
+                    </j-ellipsis>
+                     <!-- </a-tag> -->
                 </div>
             </template>
 
 
 
             <template #action="slotProps">
-                <j-space :size="16">
+                <a-space :size="16">
                     <template
                             v-for="i in getActions(slotProps)"
                             :key="i.key"
                         >
-                            <PermissionButton
+                            <j-permission-button
                                 :tooltip="{
                                     ...i.tooltip,
                                 }"
@@ -54,64 +54,63 @@
                                 <template #icon
                                     ><AIcon :type="i.icon"
                                 /></template>
-                            </PermissionButton>
+                            </j-permission-button>
                         </template>
-                </j-space>
+                </a-space>
             </template>
         </j-pro-table>
     </div>
-    <j-modal :width="1100" v-model:visible="visible" title="详情">
-        <j-descriptions :data="descriptionsData" title="" bordered :column="2">
-            <j-descriptions-item label="URL">
+    <a-modal :width="1100" v-model:visible="visible" title="详情">
+        <a-descriptions :data="descriptionsData" title="" bordered :column="2">
+            <a-descriptions-item label="URL">
                 {{ descriptionsData?.url }}
-            </j-descriptions-item>
-            <j-descriptions-item label="请求方法">
+            </a-descriptions-item>
+            <a-descriptions-item label="请求方法">
                 {{ descriptionsData?.httpMethod }}
-            </j-descriptions-item>
-            <j-descriptions-item label="动作">
+            </a-descriptions-item>
+            <a-descriptions-item label="动作">
                 {{ descriptionsData?.action }}
-            </j-descriptions-item>
-            <j-descriptions-item label="类名">
+            </a-descriptions-item>
+            <a-descriptions-item label="类名">
                 {{ descriptionsData?.target }}
-            </j-descriptions-item>
-            <j-descriptions-item label="方法名">
+            </a-descriptions-item>
+            <a-descriptions-item label="方法名">
                 {{ descriptionsData?.method }}
-            </j-descriptions-item>
-            <j-descriptions-item label="IP">
+            </a-descriptions-item>
+            <a-descriptions-item label="IP">
                 {{ descriptionsData?.ip }}
-            </j-descriptions-item>
-            <j-descriptions-item label="请求时间">
+            </a-descriptions-item>
+            <a-descriptions-item label="请求时间">
                 {{
                 dayjs(descriptionsData?.requestTime).format(
                         'YYYY-MM-DD HH:mm:ss',
                     )
                 }}
-            </j-descriptions-item>
-            <j-descriptions-item label="请求耗时">
+            </a-descriptions-item>
+            <a-descriptions-item label="请求耗时">
                 {{
                     descriptionsData?.responseTime -
                     descriptionsData?.requestTime +
                     'ms'
                 }}
-            </j-descriptions-item>
-            <j-descriptions-item label="请求头" :span="2">
+            </a-descriptions-item>
+            <a-descriptions-item label="请求头" :span="2">
                 {{ descriptionsData?.httpHeaders }}
-            </j-descriptions-item>
-            <j-descriptions-item label="请求参数" :span="2">
+            </a-descriptions-item>
+            <a-descriptions-item label="请求参数" :span="2">
                 {{ descriptionsData?.parameters }}
-            </j-descriptions-item>
-            <j-descriptions-item label="异常信息" :span="2">
+            </a-descriptions-item>
+            <a-descriptions-item label="异常信息" :span="2">
                 {{ descriptionsData.exception }}
-            </j-descriptions-item>
-        </j-descriptions>
+            </a-descriptions-item>
+        </a-descriptions>
         <template #footer>
-            <j-button type="primary" @click="handleOk">关闭</j-button>
+            <a-button type="primary" @click="handleOk">关闭</a-button>
         </template>
-    </j-modal>
+    </a-modal>
 </template>
 <script lang="ts" setup name="AccessLog">
-import type { ActionsType } from '@/components/Table/index';
-import { queryAccess } from '@/api/link/log';
+import { queryAccess } from '../../../api/link/log';
 import dayjs from 'dayjs';
 import { modifySearchColumnValue } from '@/utils/comm';
 
@@ -236,7 +235,7 @@ const handleOk = (e: MouseEvent) => {
     visible.value = false;
 };
 
-const getActions = (data: Partial<Record<string, any>>): ActionsType[] => {
+const getActions = (data: Partial<Record<string, any>>): any[] => {
     if (!data) {
         return [];
     }

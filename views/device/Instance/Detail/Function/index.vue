@@ -10,10 +10,10 @@
         </template>
     </j-empty>
     <template v-else>
-        <j-tabs v-model:activeKey="activeKey">
-            <j-tab-pane key="Simple" tab="精简模式" />
-            <j-tab-pane key="Advance" tab="高级模式" />
-        </j-tabs>
+        <a-tabs v-model:activeKey="activeKey">
+            <a-tab-pane key="Simple" tab="精简模式" />
+            <a-tab-pane key="Advance" tab="高级模式" />
+        </a-tabs>
         <component :is="tabs[activeKey]" />
     </template>
 </template>

@@ -1,5 +1,5 @@
 <template>
-  <j-modal
+  <a-modal
       visible
       :maskClosable="false"
       title="标签详情"
@@ -7,7 +7,7 @@
       @cancel="cancel"
       @ok="ok"
   >
-    <j-descriptions
+    <a-descriptions
         :column="1"
         :labelStyle="{
           width: '72px',
@@ -31,20 +31,18 @@
       </a-descriptions-item>
       <a-descriptions-item label="读写类型">{{ readTypeText }}</a-descriptions-item>
       <a-descriptions-item v-if="showSetting && data.expands?.storageType" label="存储方式">{{ settingData[data.expands?.storageType] }}</a-descriptions-item>
-    </j-descriptions>
+    </a-descriptions>
     <template #footer>
-      <j-button type="primary" @click="ok">确认</j-button>
+      <a-button type="primary" @click="ok">确认</a-button>
     </template>
-  </j-modal>
+  </a-modal>
 </template>
 
 <script setup lang="ts" name="TagsModal">
-import {OtherConfigInfo} from "@/views/device/components/Metadata/Base/components";
 import {omit} from "lodash-es";
 import {watch} from "vue";
 import JsonView from './JsonView.vue'
-import {getUnit} from "@/api/device/instance";
-import {useStoreType} from "@/views/device/components/Metadata/Base/utils";
+import {useStoreType} from "../utils";
 
 const props = defineProps({
   data: {

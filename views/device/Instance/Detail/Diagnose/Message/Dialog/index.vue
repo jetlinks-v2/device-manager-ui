@@ -16,7 +16,7 @@
                 <div class="dialog-box">
                     <div class="dialog-header">
                         <div class="dialog-title">
-                            <j-badge
+                            <a-badge
                                 :color="
                                     statusColor.get(
                                         item.error ? 'error' : 'success',
@@ -41,7 +41,7 @@
                         class="dialog-editor"
                         v-if="visible.includes(item.key)"
                     >
-                        <j-textarea autoSize :bordered="false" :value="item?.detail" />
+                        <a-textarea autoSize :bordered="false" :value="item?.detail" />
                     </div>
                 </div>
             </div>

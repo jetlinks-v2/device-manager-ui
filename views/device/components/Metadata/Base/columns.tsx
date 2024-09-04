@@ -1,13 +1,9 @@
 import { ColumnProps } from "ant-design-vue/es/table";
-import { DataType } from './components'
-import {MetadataItem, MetadataType} from "@/views/device/Product/typings";
-import { getUnit } from '@/api/device/instance';
+import {MetadataItem, MetadataType} from "../../../Product/typings";
+import { getUnit } from '../../../../../api/instance';
 import {Ref} from "vue";
-import {omit, isObject, groupBy} from "lodash-es";
+import {omit, isObject,} from "lodash-es";
 import { onlyMessage } from "@/utils/comm";
-import {getSourceMap} from "@/views/device/components/Metadata/Base/utils";
-import {getTypeMap} from "components/Metadata/Table/components/Type/data";
-import {getEventLevelMap} from "@/views/device/data";
 interface DataTableColumnProps extends ColumnProps {
   type?: string,
   components?: {

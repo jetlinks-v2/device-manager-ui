@@ -1,5 +1,5 @@
 <template>
-  <j-modal
+  <a-modal
     :width="800"
     :mask-closable="false"
     :visible="true"
@@ -15,7 +15,7 @@
       :pluginId="pluginId"
       :internalId="route.params.id"
     />
-  </j-modal>
+  </a-modal>
 </template>
 
 <script setup lang='ts' name='InklingModal'>

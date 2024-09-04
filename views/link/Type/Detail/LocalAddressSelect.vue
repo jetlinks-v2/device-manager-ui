@@ -1,5 +1,5 @@
 <template>
-    <j-select
+    <a-select
         :value="host"
         :options="options"
         placeholder="请选择本地地址"
@@ -8,12 +8,12 @@
         :disabled="shareCluster"
         @change="changeHost"
     >
-    </j-select>
+    </a-select>
 </template>
 
 <script lang="ts" setup>
-import { resourceClustersById } from "@/api/link/type"
-import { useTypeStore } from "@/store/type"
+import { resourceClustersById } from "../../../../api/link/type"
+import { useTypeStore } from "../../../../store/type"
 import { cloneDeep } from "lodash-es"
 import { storeToRefs } from "pinia"
 

@@ -1,7 +1,7 @@
 <template>
     <div class="device-detail-metadata" style="position: relative">
         <!-- <div class="tips">-->
-        <!--        <j-tooltip :title="instanceStore.detail?.independentMetadata && type === 'device'-->
+        <!--        <a-tooltip :title="instanceStore.detail?.independentMetadata && type === 'device'-->
         <!--        ? '该设备已脱离产品物模型，修改产品物模型对该设备无影响'-->
         <!--        : '设备会默认继承产品的物模型，修改设备物模型后将脱离产品物模型'">-->
         <!--          <div class="ellipsis" style='color: #999;'>-->
@@ -12,9 +12,9 @@
         <!--                : '设备会默认继承产品的物模型，修改设备物模型后将脱离产品物模型'-->
         <!--            }}-->
         <!--          </div>-->
-        <!--        </j-tooltip> -->
+        <!--        </a-tooltip> -->
         <!-- </div> -->
-        <j-tabs
+        <a-tabs
             class="metadataNav"
             :activeKey="tabActiveKey"
             destroyInactiveTabPane
@@ -22,8 +22,8 @@
             @change="tabsChange"
         >
             <template #rightExtra>
-                <j-space>
-                    <PermissionButton
+                <a-space>
+                    <j-permission-button
                         v-if="showReset"
                         key="reload"
                         :hasPermission="`${permission}:update`"
@@ -34,55 +34,55 @@
                         :tooltip="{ title: '重置后将使用产品的物模型配置' }"
                     >
                         重置操作
-                    </PermissionButton>
-                    <PermissionButton
+                    </j-permission-button>
+                    <j-permission-button
                         :hasPermission="`${permission}:update`"
                         @click="visible = true"
                         key="import"
-                        >快速导入</PermissionButton
+                        >快速导入</j-permission-button
                     >
-                    <PermissionButton
+                    <j-permission-button
                         :hasPermission="`${permission}:update`"
                         @click="cat = true"
                         key="tsl"
-                        >物模型TSL</PermissionButton
+                        >物模型TSL</j-permission-button
                     >
-                </j-space>
+                </a-space>
             </template>
             <template #centerExtra>
                 <span class="desc"
                     >设备会默认继承产品的物模型，继承的物模型不支持删改</span
                 >
             </template>
-            <j-tab-pane tab="属性定义" key="properties">
+            <a-tab-pane tab="属性定义" key="properties">
                 <BaseMetadata
                     :target="type"
                     type="properties"
                     :permission="permission"
                 />
-            </j-tab-pane>
-            <j-tab-pane tab="功能定义" key="functions">
+            </a-tab-pane>
+            <a-tab-pane tab="功能定义" key="functions">
                 <BaseMetadata
                     :target="type"
                     type="functions"
                     :permission="permission"
                 />
-            </j-tab-pane>
-            <j-tab-pane tab="事件定义" key="events">
+            </a-tab-pane>
+            <a-tab-pane tab="事件定义" key="events">
                 <BaseMetadata
                     :target="type"
                     type="events"
                     :permission="permission"
                 />
-            </j-tab-pane>
-            <j-tab-pane tab="标签定义" key="tags">
+            </a-tab-pane>
+            <a-tab-pane tab="标签定义" key="tags">
                 <BaseMetadata
                     :target="type"
                     type="tags"
                     :permission="permission"
                 />
-            </j-tab-pane>
-        </j-tabs>
+            </a-tab-pane>
+        </a-tabs>
         <Import
             v-if="visible"
             v-model:visible="visible"
@@ -93,16 +93,14 @@
     </div>
 </template>
 <script setup lang="ts" name="Metadata">
-import PermissionButton from '@/components/PermissionButton/index.vue';
-import { deleteMetadata } from '@/api/device/instance.js';
-import { message } from 'jetlinks-ui-components';
-import { useInstanceStore } from '@/store/instance';
+import { deleteMetadata } from '../../../../api/instance.js';
+import { message } from 'ant-design-vue';
+import { useInstanceStore } from '../../../../store/instance';
 import Import from './Import/index.vue';
 import Cat from './Cat/index.vue';
-// import BaseMetadata from './Base/index.vue'
 import BaseMetadata from './Base/Base.vue';
-import { useMetadataStore } from '@/store/metadata';
-import { EventEmitter } from '@/utils/utils';
+import { useMetadataStore } from '../../../../store/metadata';
+import { EventEmitter } from '@jetlinks-web/utils';
 import { isEqual } from 'lodash-es';
 
 const route = useRoute();

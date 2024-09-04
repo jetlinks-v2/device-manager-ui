@@ -1,5 +1,5 @@
 <template>
-    <page-container
+    <j-page-container
         :tabList="list"
         :tabActiveKey="activeKey"
         @tabChange="onTabChange"
@@ -8,12 +8,12 @@
             <AccessLog v-if="activeKey === '1'" />
             <SystemLog v-else />
         </FullPage>
-    </page-container>
+    </j-page-container>
 </template>
 <script lang="ts" setup name="LogPage">
 import AccessLog from './Access/index.vue';
 import SystemLog from './System/index.vue';
-import { useRouterParams } from '@/utils/hooks/useParams';
+import { useRouterParams } from '@jetlinks-web/hooks';
 
 const routerParams = useRouterParams();
 const activeKey = ref('1');

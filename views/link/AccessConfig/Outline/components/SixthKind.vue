@@ -9,7 +9,8 @@
 </template>
 
 <script setup>
-import { detail } from '@/api/link/accessConfig';
+import { detail } from '../../../../../api/link/accessConfig';
+
 const props = defineProps({
     data: {
         type: Object,

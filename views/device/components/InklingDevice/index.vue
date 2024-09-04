@@ -1,6 +1,6 @@
 <template>
     <div class="inkling-device">
-        <j-spin :spinning="spinning">
+        <a-spin :spinning="spinning">
             <div class="search-box">
                 <div class="search-warp">
                     <j-advanced-search
@@ -13,16 +13,16 @@
                     />
                 </div>
                 <div class="multiple" v-if="multiple">
-                    <j-checkbox @change="checkChange">全选</j-checkbox>
+                    <a-checkbox @change="checkChange">全选</a-checkbox>
                 </div>
             </div>
             <div class="device-list-warp">
                 <j-scrollbar v-if="deviceList.length">
-                    <j-spin :spinning="deviceSpinning">
+                    <a-spin :spinning="deviceSpinning">
                         <div class="device-list-items">
                             <template v-for="item in deviceList">
                                 <template v-if="disabledKeys.includes(item.id)">
-                                    <j-tooltip title="该设备已绑定平台设备">
+                                    <a-tooltip title="该设备已绑定平台设备">
                                         <div
                                             :class="{
                                                 'device-list-item': true,
@@ -48,7 +48,7 @@
                                                 </span>
                                             </div>
                                         </div>
-                                    </j-tooltip>
+                                    </a-tooltip>
                                 </template>
                                 <div
                                     v-else
@@ -80,7 +80,7 @@
                                 </div>
                             </template>
                         </div>
-                    </j-spin>
+                    </a-spin>
                 </j-scrollbar>
                 <j-empty
                     v-else
@@ -111,7 +111,7 @@
                     />
                 </div>
             </div>
-        </j-spin>
+        </a-spin>
     </div>
 </template>
 
@@ -119,9 +119,9 @@
 import {
     getCommandsByAccess,
     getCommandsDevicesByAccessId,
-} from '@/api/link/accessConfig';
+} from '../../../../api/link/accessConfig';
 import { isArray } from 'lodash-es';
-import { getInkingDevices } from '@/api/device/instance';
+import { getInkingDevices } from '../../../../api/instance';
 
 type Emit = {
     (e: 'update:value', data: string | string[]): void;

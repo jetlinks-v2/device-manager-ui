@@ -1,51 +1,51 @@
 <template>
-    <j-spin :spinning="loading" v-if="_metadata?.length">
-        <j-card :bordered="false">
+    <a-spin :spinning="loading" v-if="_metadata?.length">
+        <a-card :bordered="false">
             <template #title>
                 <TitleComponent data="点位映射"></TitleComponent>
             </template>
             <template #extra>
-                <j-space>
-                    <j-button @click="showModal">批量映射</j-button>
-                    <j-button type="primary" @click="onSave"
-                        >保存并应用</j-button
+                <a-space>
+                    <a-button @click="showModal">批量映射</a-button>
+                    <a-button type="primary" @click="onSave"
+                        >保存并应用</a-button
                     >
-                </j-space>
+                </a-space>
             </template>
-            <j-form ref="formRef" :model="modelRef">
-                <j-table :dataSource="modelRef.dataSource" :columns="columns">
+            <a-form ref="formRef" :model="modelRef">
+                <a-table :dataSource="modelRef.dataSource" :columns="columns">
                     <template #headerCell="{ column }">
                         <template v-if="column.key === 'collectorId'">
                             采集器
-                            <j-tooltip title="边缘网关代理的真实物理设备">
+                            <a-tooltip title="边缘网关代理的真实物理设备">
                                 <AIcon type="QuestionCircleOutlined" />
-                            </j-tooltip>
+                            </a-tooltip>
                         </template>
                     </template>
                     <template #bodyCell="{ column, record, index }">
                         <template v-if="column.dataIndex === 'channelId'">
-                            <j-form-item
+                            <a-form-item
                                 :name="['dataSource', index, 'channelId']"
                             >
-                                <j-select
+                                <a-select
                                     style="width: 100%"
                                     v-model:value="record[column.dataIndex]"
                                     placeholder="请选择"
                                     allowClear
                                     :filter-option="filterOption"
                                 >
-                                    <j-select-option
+                                    <a-select-option
                                         v-for="item in channelList"
                                         :key="item.value"
                                         :value="item.value"
                                         :label="item.label"
-                                        >{{ item.label }}</j-select-option
+                                        >{{ item.label }}</a-select-option
                                     >
-                                </j-select>
-                            </j-form-item>
+                                </a-select>
+                            </a-form-item>
                         </template>
                         <template v-if="column.dataIndex === 'collectorId'">
-                            <j-form-item
+                            <a-form-item
                                 :name="['dataSource', index, 'collectorId']"
                                 :rules="[
                                     {
@@ -60,10 +60,10 @@
                                     type="COLLECTOR"
                                     :edgeId="instanceStore.current.id"
                                 />
-                            </j-form-item>
+                            </a-form-item>
                         </template>
                         <template v-if="column.dataIndex === 'pointId'">
-                            <j-form-item
+                            <a-form-item
                                 :name="['dataSource', index, 'pointId']"
                                 :rules="[
                                     {
@@ -78,18 +78,18 @@
                                     type="POINT"
                                     :edgeId="instanceStore.current.id"
                                 />
-                            </j-form-item>
+                            </a-form-item>
                         </template>
                         <template v-if="column.dataIndex === 'id'">
-                            <j-badge
+                            <a-badge
                                 v-if="record[column.dataIndex]"
                                 status="success"
                                 text="已绑定"
                             />
-                            <j-badge v-else status="error" text="未绑定" />
+                            <a-badge v-else status="error" text="未绑定" />
                         </template>
                         <template v-if="column.key === 'action'">
-                            <PermissionButton
+                            <j-permission-button
                                 type="link"
                                 :tooltip="{
                                     title: '解绑',
@@ -100,12 +100,12 @@
                                     onConfirm: () => unbind(record.id),
                                 }"
                                 ><AIcon type="icon-jiebang"
-                            /></PermissionButton>
+                            /></j-permission-button>
                         </template>
                     </template>
-                </j-table>
-            </j-form>
-        </j-card>
+                </a-table>
+            </a-form>
+        </a-card>
         <PatchMapping
             :deviceId="instanceStore.current.parentId"
             v-if="visible"
@@ -115,10 +115,10 @@
             :edgeId="instanceStore.current.id"
             :deviceData="deviceData"
         />
-    </j-spin>
-    <j-card v-else>
+    </a-spin>
+    <a-card v-else>
         <JEmpty description="暂无数据，请配置物模型" style="margin: 10% 0" />
-    </j-card>
+    </a-card>
 </template>
 
 <script lang="ts" setup>

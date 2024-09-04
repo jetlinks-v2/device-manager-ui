@@ -31,18 +31,18 @@
         </EditTableFormItem>
       </template>
       <template #action="{index}">
-        <j-button
+        <a-button
             type="link"
             @click="() => deleteItem(index)"
         >
           <AIcon type="DeleteOutlined" />
-        </j-button>
+        </a-button>
       </template>
     </EditTable>
-    <j-button style="width: 100%;margin-top: 16px;" @click="addItem" >
+    <a-button style="width: 100%;margin-top: 16px;" @click="addItem" >
       <template #icon><AIcon type="PlusOutlined" /></template>
       添加指标值
-    </j-button>
+    </a-button>
   </div>
 </template>
 
@@ -50,7 +50,7 @@
 import { defineExpose, provide } from 'vue'
 import MetricValueItem from './ValueItem.vue'
 import BooleanSelect from "@/views/device/components/Metadata/Base/components/Properties/Metrics/BooleanSelect.vue";
-import { EditTable, EditTableFormItem } from '@/components/Metadata/Table'
+import { EditTable, EditTableFormItem } from 'device/components/Metadata/Table'
 
 const props = defineProps({
   value: {

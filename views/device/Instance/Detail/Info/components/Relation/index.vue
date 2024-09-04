@@ -1,36 +1,36 @@
 <template>
     <div style="margin-top: 20px">
-        <j-descriptions bordered>
+        <a-descriptions bordered>
             <template #title>
                 关系信息
-                <PermissionButton
+                <j-permission-button
                     type="link"
                     @click="visible = true"
                     hasPermission="device/Instance:update"
                 >
-                    <AIcon type="EditOutlined" />编辑<j-tooltip
+                    <AIcon type="EditOutlined" />编辑<a-tooltip
                         title="管理设备与其他业务的关联关系，关系来源于关系配置"
                         ><AIcon type="QuestionCircleOutlined"
-                    /></j-tooltip>
-                </PermissionButton>
+                    /></a-tooltip>
+                </j-permission-button>
             </template>
-            <j-descriptions-item
+            <a-descriptions-item
                 :span="1"
                 v-for="item in dataSource"
                 :key="item.objectId"
             >
                 <template #label>
-                    <Ellipsis>{{ item.relationName }}</Ellipsis>
+                    <j-ellipsis>{{ item.relationName }}</j-ellipsis>
                 </template>
-                <Ellipsis>
+                <j-ellipsis>
                     {{
                         item?.related
                             ? (item?.related || []).map((i) => i.name).join(',')
                             : ''
                     }}
-                </Ellipsis>
-            </j-descriptions-item>
-        </j-descriptions>
+                </j-ellipsis>
+            </a-descriptions-item>
+        </a-descriptions>
         <Save v-if="visible" @save="saveBtn" @close="visible = false" />
     </div>
 </template>

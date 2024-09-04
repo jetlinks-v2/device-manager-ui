@@ -1,17 +1,17 @@
 <template>
-    <j-descriptions bordered>
+    <a-descriptions bordered>
         <template #title>
             设备信息
-            <PermissionButton
+            <j-permission-button
                 type="link"
                 @click="visible = true"
                 hasPermission="device/Instance:update"
             >
                 <template #icon><AIcon type="EditOutlined" /></template>
                 编辑
-            </PermissionButton>
+            </j-permission-button>
         </template>
-        <j-descriptions-item label="设备ID">
+        <a-descriptions-item label="设备ID">
             <div style="display: flex">
                 <div style="flex: 1">
                     <j-ellipsis> {{ instanceStore.current?.id }} </j-ellipsis>
@@ -22,7 +22,7 @@
                         'plugin_gateway'
                     "
                 >
-                    <j-tooltip>
+                    <a-tooltip>
                         <template #title>
                             <p>
                                 通过调用SDK或HTTP请求的方式接入第三方系统设备数据时，第三方系统与平台当前设备对应的设备ID。
@@ -39,55 +39,55 @@
                         <a v-else type="link" @click="inkingVisible = true">
                             已映射
                         </a>
-                    </j-tooltip>
+                    </a-tooltip>
                 </div>
             </div>
-        </j-descriptions-item>
-        <j-descriptions-item label="产品名称">{{
+        </a-descriptions-item>
+        <a-descriptions-item label="产品名称">{{
             instanceStore.current?.productName
-        }}</j-descriptions-item>
-        <j-descriptions-item label="设备类型">{{
+        }}</a-descriptions-item>
+        <a-descriptions-item label="设备类型">{{
             instanceStore.current?.deviceType?.text
-        }}</j-descriptions-item>
-        <j-descriptions-item label="固件版本">{{
+        }}</a-descriptions-item>
+        <a-descriptions-item label="固件版本">{{
             instanceStore.current?.firmwareInfo?.version
-        }}</j-descriptions-item>
-        <j-descriptions-item label="连接协议">{{
+        }}</a-descriptions-item>
+        <a-descriptions-item label="连接协议">{{
             instanceStore.current?.transport
-        }}</j-descriptions-item>
-        <j-descriptions-item label="消息协议">{{
+        }}</a-descriptions-item>
+        <a-descriptions-item label="消息协议">{{
             instanceStore.current?.protocolName
-        }}</j-descriptions-item>
-        <j-descriptions-item label="创建时间">{{
+        }}</a-descriptions-item>
+        <a-descriptions-item label="创建时间">{{
             instanceStore.current?.createTime
                 ? dayjs(instanceStore.current?.createTime).format(
                       'YYYY-MM-DD HH:mm:ss',
                   )
                 : ''
-        }}</j-descriptions-item>
-        <j-descriptions-item label="注册时间">{{
+        }}</a-descriptions-item>
+        <a-descriptions-item label="注册时间">{{
             instanceStore.current?.registerTime
                 ? dayjs(instanceStore.current?.registerTime).format(
                       'YYYY-MM-DD HH:mm:ss',
                   )
                 : ''
-        }}</j-descriptions-item>
-        <j-descriptions-item label="最后上线时间">{{
+        }}</a-descriptions-item>
+        <a-descriptions-item label="最后上线时间">{{
             instanceStore.current?.onlineTime
                 ? dayjs(instanceStore.current?.onlineTime).format(
                       'YYYY-MM-DD HH:mm:ss',
                   )
                 : ''
-        }}</j-descriptions-item>
-        <j-descriptions-item
+        }}</a-descriptions-item>
+        <a-descriptions-item
             label="父设备"
             v-if="instanceStore.current?.deviceType?.value === 'childrenDevice'"
-            >{{ instanceStore.current?.parentId }}</j-descriptions-item
+            >{{ instanceStore.current?.parentId }}</a-descriptions-item
         >
-        <j-descriptions-item label="说明">{{
+        <a-descriptions-item label="说明">{{
             instanceStore.current?.description
-        }}</j-descriptions-item>
-    </j-descriptions>
+        }}</a-descriptions-item>
+    </a-descriptions>
     <Config />
     <Tags
         v-if="

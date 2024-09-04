@@ -1,5 +1,5 @@
-import {useInstanceStore} from "store/instance";
-import type {MetadataType} from "@/views/device/Product/typings";
+import {useInstanceStore} from "../../../../../../store/instance";
+import type {MetadataType} from "../../../../Product/typings";
 
 const limitsMap = new Map<string, any>();
 limitsMap.set('events-add', 'eventNotInsertable');

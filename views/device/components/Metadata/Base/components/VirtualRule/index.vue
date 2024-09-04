@@ -1,5 +1,5 @@
 <template>
-    <j-form ref="formRef" layout="vertical" :model="formData">
+    <a-form ref="formRef" layout="vertical" :model="formData">
         <ReadType
             v-if="source !== 'rule'"
             v-model:value="formData.type"
@@ -7,13 +7,13 @@
             :options="typeOptions"
         />
         <template v-if="source === 'rule'">
-            <j-form-item :name="['virtualRule', 'triggerProperties']" :rules="[{
+            <a-form-item :name="['virtualRule', 'triggerProperties']" :rules="[{
                 required: true,
                 message: '请选择触发属性'
             }]">
                 <template #label>
                     触发属性
-                    <j-tooltip>
+                    <a-tooltip>
                         <template #title>
                             <div>选择当前产品物模型下的属性作为触发属性</div>
                             <div>任意属性值更新时将触发下方计算规则</div>
@@ -22,9 +22,9 @@
                             type="QuestionCircleOutlined"
                             style="margin-left: 2px"
                         />
-                    </j-tooltip>
+                    </a-tooltip>
                 </template>
-                <j-select
+                <a-select
                     v-model:value="formData.virtualRule.triggerProperties"
                     mode="multiple"
                     placeholder="请选择触发属性"
@@ -36,7 +36,7 @@
                        }"
                     :virtual="true"
                 >
-                    <j-select-option
+                    <a-select-option
                         :disabled="
                             formData.virtualRule?.triggerProperties?.length &&
                             !formData.virtualRule.triggerProperties?.includes(
@@ -44,9 +44,9 @@
                             )
                         "
                         value="*"
-                        >任意属性</j-select-option
+                        >任意属性</a-select-option
                     >
-                    <j-select-option
+                    <a-select-option
                         :disabled="
                             formData.virtualRule?.triggerProperties?.includes(
                                 '*',
@@ -54,11 +54,11 @@
                         "
                         v-for="item in options"
                         :key="item?.id"
-                        >{{ item?.name }}</j-select-option
+                        >{{ item?.name }}</a-select-option
                     >
-                </j-select>
-            </j-form-item>
-            <j-form-item
+                </a-select>
+            </a-form-item>
+            <a-form-item
                 :name="['virtualRule', 'script']"
                 label="计算规则"
                 required
@@ -70,8 +70,8 @@
                     :id="value.id"
                     :aggList="aggList"
                 />
-            </j-form-item>
-            <j-form-item
+            </a-form-item>
+            <a-form-item
                 label="窗口"
                 :name="['virtualRule', 'windowType']"
                 :rules="[{
@@ -79,7 +79,7 @@
                     message: '请选择窗口类型'
                 }]"
             >
-                <j-select
+                <a-select
                     show-search
                     placeholder="请选择窗口类型"
                     v-model:value="formData.virtualRule.windowType"
@@ -94,11 +94,11 @@
                      }"
                     @select="windowTypeChange"
                 />
-            </j-form-item>
+            </a-form-item>
             <template
                 v-if="formData.virtualRule?.windowType !== 'undefined'"
             >
-                <j-form-item
+                <a-form-item
                     label="聚合函数"
                     :name="['virtualRule', 'aggType']"
                     :rules="[{
@@ -106,7 +106,7 @@
                         message: '请选择聚合函数'
                     }]"
                 >
-                    <j-select
+                    <a-select
                         placeholder="请选择聚合函数"
                         v-model:value="formData.virtualRule.aggType"
                         :options="aggList"
@@ -115,8 +115,8 @@
                           zIndex: 1071
                        }"
                     />
-                </j-form-item>
-                <j-form-item
+                </a-form-item>
+                <a-form-item
                     :label="
                         formData.virtualRule?.windowType === 'time'
                             ? '窗口长度(s)'
@@ -135,15 +135,15 @@
                         },
                     ]"
                 >
-                    <j-input-number
+                    <a-input-number
                         v-model:value="formData.virtualRule.window.span"
                         :max="999999"
                         :min="1"
                         placeholder="请输入窗口长度"
                         style="width: 100%"
                     />
-                </j-form-item>
-                <j-form-item
+                </a-form-item>
+                <a-form-item
                     :label="
                         formData.virtualRule?.windowType === 'time'
                             ? '步长(s)'
@@ -162,31 +162,28 @@
                         },
                     ]"
                 >
-                    <j-input-number
+                    <a-input-number
                         style="width: 100%"
                         v-model:value="formData.virtualRule.window.every"
                         placeholder="请输入步长"
                         :max="999999"
                         :min="1"
                     />
-                </j-form-item>
+                </a-form-item>
             </template>
         </template>
-    </j-form>
+    </a-form>
 </template>
 
 <script setup lang="ts" name="VirtualRule">
 import Rule from './Rule.vue';
-import { queryDeviceVirtualProperty } from '@/api/device/instance';
-import {
-    queryProductVirtualProperty,
-    getStreamingAggType,
-} from '@/api/device/product';
-import { useInstanceStore } from '@/store/instance';
-import { useProductStore } from '@/store/product';
 import {PropType, Ref} from 'vue';
-import { ReadType } from '@/components/Metadata/components';
-import {useTableWrapper} from "@/components/Metadata/Table/context";
+import { queryProductVirtualProperty, getStreamingAggType } from '../../../../../../../api/product';
+import { queryDeviceVirtualProperty } from '../../../../../../../api/instance';
+import { useInstanceStore } from '../../../../../../../store/instance';
+import { useProductStore } from '../../../../../../../store/product';
+import { ReadType } from '../../../../../../../components/Metadata/components';
+import {useTableWrapper} from "../../../../../../../components/Metadata/context";
 
 type SourceType = 'device' | 'manual' | 'rule';
 

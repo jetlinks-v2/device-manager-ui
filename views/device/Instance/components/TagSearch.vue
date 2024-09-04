@@ -1,27 +1,27 @@
 <template>
-    <j-input @click="show" v-model:value="presentation"> </j-input>
-    <j-modal v-if="showTagSearch" title="筛选条件" visible @cancel="showTagSearch = false" @ok="submitSearch">
-        <j-form layout="vertical">
-            <j-form-item label="设备标签:">
-                <j-row :gutter="16" v-for="(i,index) in searchValue" style="margin-bottom: 10px;">
-                    <j-col :span="10">
-                        <j-input placeholder="请输入标签key" v-model:value="i.key"></j-input>
-                    </j-col>
-                    <j-col :span="10">
-                        <j-input placeholder="请输入标签value" v-model:value="i.value"></j-input>
-                    </j-col>
-                    <j-col :span="4">
-                        <j-button type="link">
+    <a-input @click="show" v-model:value="presentation"> </a-input>
+    <a-modal v-if="showTagSearch" title="筛选条件" visible @cancel="showTagSearch = false" @ok="submitSearch">
+        <a-form layout="vertical">
+            <a-form-item label="设备标签:">
+                <a-row :gutter="16" v-for="(i,index) in searchValue" style="margin-bottom: 10px;">
+                    <a-col :span="10">
+                        <a-input placeholder="请输入标签key" v-model:value="i.key"></a-input>
+                    </a-col>
+                    <a-col :span="10">
+                        <a-input placeholder="请输入标签value" v-model:value="i.value"></a-input>
+                    </a-col>
+                    <a-col :span="4">
+                        <a-button type="link">
                             <template #icon><AIcon type="MinusCircleOutlined" @click="deletePair(index)"/></template>
-                        </j-button>
-                    </j-col>
-                </j-row>
-            </j-form-item>
-            <j-button type="link" @click="addPair">
+                        </a-button>
+                    </a-col>
+                </a-row>
+            </a-form-item>
+            <a-button type="link" @click="addPair">
               添加
-            </j-button>
-        </j-form>
-    </j-modal>
+            </a-button>
+        </a-form>
+    </a-modal>
 </template>
 
 <script lang="ts" setup>

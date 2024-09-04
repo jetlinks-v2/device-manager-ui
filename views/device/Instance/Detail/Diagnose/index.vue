@@ -39,7 +39,7 @@
                 </div>
             </div>
             <div class="diagnose-progress">
-                <j-progress
+                <a-progress
                     :percent="percent"
                     :showInfo="false"
                     size="small"

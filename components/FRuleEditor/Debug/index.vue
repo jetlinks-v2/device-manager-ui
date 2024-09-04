@@ -2,27 +2,27 @@
     <div class="debug-container">
         <div class="top">
             <div class="header">
-                <j-tabs v-model:activeKey="headerType">
+                <a-tabs v-model:activeKey="headerType">
                   <template #rightExtra>
                     <a v-if="virtualRule?.script && isBeginning" @click="beginAction">
                       开始运行
                     </a>
                   </template>
-                    <j-tab-pane key="property">
+                    <a-tab-pane key="property">
                         <template #tab>
                             <span class="title">
                                 属性赋值
                             </span>
                         </template>
-                    </j-tab-pane>
-                    <j-tab-pane key="tag">
+                    </a-tab-pane>
+                    <a-tab-pane key="tag">
                         <template #tab>
                             <span class="title">
                                 标签赋值
                             </span>
                         </template>
-                    </j-tab-pane>
-                </j-tabs>
+                    </a-tab-pane>
+                </a-tabs>
             </div>
             <div class="description">
                 {{
@@ -32,7 +32,7 @@
                 }}
             </div>
             <div class="top-bottom" v-if="headerType === 'property'">
-                <j-table
+                <a-table
                     :columns="columns"
                     :data-source="property"
                     :pagination="false"
@@ -42,7 +42,7 @@
                 >
                     <template #bodyCell="{ column, record, index }">
                         <template v-if="column.key === 'id'">
-                            <j-select
+                            <a-select
                                 showSearch
                                 :options="options"
                                 v-model:value="record.id"
@@ -56,16 +56,16 @@
                             />
                         </template>
                         <template v-if="column.key === 'current'">
-                            <j-input
+                            <a-input
                                 v-model:value="record.current"
                                 size="small"
-                            ></j-input>
+                            ></a-input>
                         </template>
                         <template v-if="column.key === 'last'">
-                            <j-input
+                            <a-input
                                 v-model:value="record.last"
                                 size="small"
-                            ></j-input>
+                            ></a-input>
                         </template>
                         <template v-if="column.key === 'action'">
                             <AIcon
@@ -74,8 +74,8 @@
                             />
                         </template>
                     </template>
-                </j-table>
-                <j-button
+                </a-table>
+                <a-button
                     type="dashed"
                     block
                     style="margin-top: 5px"
@@ -85,10 +85,10 @@
                         <AIcon type="PlusOutlined" />
                     </template>
                     添加条目
-                </j-button>
+                </a-button>
             </div>
             <div class="top-bottom" v-if="headerType === 'tag'">
-                <j-table
+                <a-table
                     :columns="tagColumns"
                     :data-source="tag"
                     :pagination="false"
@@ -98,7 +98,7 @@
                 >
                     <template #bodyCell="{ column, record, index }">
                         <template v-if="column.key === 'id'">
-                            <j-select
+                            <a-select
                                 showSearch
                                 :options="tagOptions"
                                 v-model:value="record.id"
@@ -112,10 +112,10 @@
                             />
                         </template>
                         <template v-if="column.key === 'current'">
-                            <j-input
+                            <a-input
                                 v-model:value="record.current"
                                 size="small"
-                            ></j-input>
+                            ></a-input>
                         </template>
                         <template v-if="column.key === 'action'">
                             <AIcon
@@ -124,8 +124,8 @@
                             />
                         </template>
                     </template>
-                </j-table>
-                <j-button
+                </a-table>
+                <a-button
                     type="dashed"
                     block
                     style="margin-top: 5px"
@@ -135,7 +135,7 @@
                         <AIcon type="PlusOutlined" />
                     </template>
                     添加条目
-                </j-button>
+                </a-button>
             </div>
         </div>
         <div class="bottom">
@@ -166,8 +166,8 @@
                 </div>
             </div>
             <div class="log">
-                <j-descriptions>
-                    <j-descriptions-item
+                <a-descriptions>
+                    <a-descriptions-item
                         v-for="(item, index) in ruleEditorStore.state.log"
                         :key="item.time"
                         :span="3"
@@ -185,24 +185,23 @@
                         <div v-if="!!runningState(index + 1, item._time)">
                             {{ dayjs(item.time).format('HH:mm:ss') }}
                         </div>
-                        <j-tooltip placement="top" :title="item.content">
+                        <a-tooltip placement="top" :title="item.content">
                             {{ item.content }}
-                        </j-tooltip>
-                    </j-descriptions-item>
-                </j-descriptions>
+                        </a-tooltip>
+                    </a-descriptions-item>
+                </a-descriptions>
             </div>
         </div>
     </div>
 </template>
 <script setup lang="ts" name="Debug">
 import { PropType, Ref } from 'vue';
-import { useRuleEditorStore } from '@/store/ruleEditor';
+import { useRuleEditorStore } from '../../../store/ruleEditor';
 import dayjs from 'dayjs';
 import { getWebSocket } from '@/utils/websocket';
-import {useTableWrapper} from "@/components/Metadata/Table/context";
+import {useTableWrapper, useTableFullScreen} from "../../../components/Metadata/context";
 import { onlyMessage } from '@/utils/comm';
 import {message} from "ant-design-vue";
-import { useTableFullScreen} from "@/components/Metadata/Table/context";
 
 const props = defineProps({
     virtualRule: Object as PropType<Record<any, any>>,

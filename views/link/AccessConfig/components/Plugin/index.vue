@@ -1,19 +1,19 @@
 <template>
     <div>
-        <j-steps :current="current">
-            <j-step disabled :key="0" title="选择插件" />
-            <j-step disabled :key="1" title="完成" />
-        </j-steps>
+        <a-steps :current="current">
+            <a-step disabled :key="0" title="选择插件" />
+            <a-step disabled :key="1" title="完成" />
+        </a-steps>
         <div class="steps-content">
             <div class="steps-box" v-if="current === 0">
                 <div class="search">
-                    <j-input-search
+                    <a-input-search
                         allowClear
                         placeholder="请输入"
                         style="width: 300px"
                         @search="pluginSearch"
                     />
-                    <PermissionButton
+                    <j-permission-button
                         v-if="showAddBtn"
                         type="primary"
                         @click="addPlugin"
@@ -21,15 +21,15 @@
                     >
                         <template #icon><AIcon type="PlusOutlined" /></template>
                         新增
-                    </PermissionButton>
+                    </j-permission-button>
                 </div>
                 <j-scrollbar height="480">
-                    <j-row
+                    <a-row
                         :gutter="[24, 24]"
                         style="width: 100%"
                         v-if="pluginList.length > 0"
                     >
-                        <j-col
+                        <a-col
                             :span="8"
                             v-for="item in pluginList"
                             :key="item.id"
@@ -65,8 +65,8 @@
                                     </div>
                                 </template>
                             </AccessCard>
-                        </j-col>
-                    </j-row>
+                        </a-col>
+                    </a-row>
                     <j-empty
                         style="margin-top: 10%"
                         v-else
@@ -81,15 +81,15 @@
                         clientHeight > 900 ? 750 : clientHeight * 0.7
                     }px`"
                 >
-                    <j-row :gutter="[24, 24]">
-                        <j-col :span="16">
+                    <a-row :gutter="[24, 24]">
+                        <a-col :span="16">
                             <title-component data="基本信息" />
-                            <j-form
+                            <a-form
                                 ref="formRef"
                                 :model="formData"
                                 layout="vertical"
                             >
-                                <j-form-item
+                                <a-form-item
                                     label="名称"
                                     :rules="[
                                         {
@@ -104,13 +104,13 @@
                                     ]"
                                     name="name"
                                 >
-                                    <j-input
+                                    <a-input
                                         v-model:value="formData.name"
                                         allowClear
                                         placeholder="请输入名称"
                                     />
-                                </j-form-item>
-                                <j-form-item
+                                </a-form-item>
+                                <a-form-item
                                     label="说明"
                                     :rules="[
                                         {
@@ -120,17 +120,17 @@
                                     ]"
                                     name="description"
                                 >
-                                    <j-textarea
+                                    <a-textarea
                                         placeholder="请输入说明"
                                         :rows="4"
                                         v-model:value="formData.description"
                                         show-count
                                         :maxlength="200"
                                     />
-                                </j-form-item>
+                                </a-form-item>
                                 <template v-if="config.length">
                                     <title-component data="通用配置" />
-                                    <j-form-item
+                                    <a-form-item
                                         v-for="item in config"
                                         :key="item.name"
                                         :name="['configuration', item.name]"
@@ -148,24 +148,24 @@
                                             "
                                             :itemType="item.type"
                                         />
-                                    </j-form-item>
+                                    </a-form-item>
                                 </template>
-                            </j-form>
-                        </j-col>
-                    </j-row>
+                            </a-form>
+                        </a-col>
+                    </a-row>
                 </div>
             </div>
         </div>
         <div class="steps-action">
-            <j-button
+            <a-button
                 v-if="current > 0"
                 @click="prev"
                 style="margin-right: 8px"
             >
                 上一步
-            </j-button>
+            </a-button>
 
-            <PermissionButton
+            <j-permission-button
                 v-if="current === 1 && view === 'false'"
                 type="primary"
                 style="margin-right: 8px"
@@ -176,10 +176,10 @@
                 :loading="loading"
             >
                 保存
-            </PermissionButton>
-            <j-button v-if="current === 0" type="primary" @click="next">
+            </j-permission-button>
+            <a-button v-if="current === 0" type="primary" @click="next">
                 下一步
-            </j-button>
+            </a-button>
         </div>
     </div>
 </template>
@@ -190,12 +190,11 @@ import {
     update,
     getPluginList,
     getPluginConfig,
-} from '@/api/link/accessConfig';
+} from '../../../../../api/link/accessConfig';
 import AccessCard from '../AccessCard/index.vue';
-import { useMenuStore } from 'store/menu';
+import { useMenuStore } from '@/store/menu';
 import { onlyMessage } from '@/utils/comm';
-import { CreteRuleByType } from 'components/Form/rules';
-import { termType } from '@/components/Search/util';
+import { CreteRuleByType } from '../../../components/Form/rules';
 
 const props = defineProps({
     provider: {

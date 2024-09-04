@@ -1,5 +1,5 @@
 import { Badge, Button, Popconfirm, Space } from "jetlinks-ui-components"
-import TitleComponent from '@/components/TitleComponent/index.vue'
+import TitleComponent from 'device/components/TitleComponent/index.vue'
 import styles from './index.module.less'
 import type { ListProps } from './util'
 import { networkInitList, childInitList, cloudInitList, mediaInitList, TextColorMap, StatusMap, modifyArrayList, isExit, gatewayList, urlMap } from './util'
@@ -11,7 +11,7 @@ import _ from "lodash-es"
 import DiagnosticAdvice from './DiagnosticAdvice'
 import ManualInspection from './ManualInspection'
 import { deployDevice } from "@/api/initHome"
-import PermissionButton from '@/components/PermissionButton/index.vue'
+import { PermissionButton } from '@jetlinks-web/components'
 import { useMenuStore } from "@/store/menu"
 import BindParentDevice from '../../components/BindParentDevice/index.vue'
 import { onlyMessage } from "@/utils/comm"
@@ -244,7 +244,7 @@ const Status = defineComponent({
                                                                     }
                                                                 }}>人工检查</Button>网关配置是否已填写正确，若您确定该项无需诊断可
                                                                 <PermissionButton
-                                                                    
+
                                                                     type="link"
                                                                     style="padding: 0"
                                                                     popConfirm={{
@@ -869,7 +869,7 @@ const Status = defineComponent({
                                                             </Button>
                                                             ，若您确定该项无需诊断可
                                                             <PermissionButton
-                                                                type="link" 
+                                                                type="link"
                                                                 style="padding: 0"
                                                                 popConfirm={{
                                                                      title:"确认忽略？",
@@ -932,8 +932,8 @@ const Status = defineComponent({
                                                             </Button>
                                                             产品{item.name}
                                                             配置是否已填写正确,若您确定该项无需诊断可
-                                                            <PermissionButton      
-                                                                type="link" 
+                                                            <PermissionButton
+                                                                type="link"
                                                                 style="padding: 0"
                                                                 popConfirm={
                                                                     {
@@ -953,7 +953,7 @@ const Status = defineComponent({
                                                                         }
                                                                     }
                                                                 }
-                                                                
+
                                                             >
                                                                忽略
                                                             </PermissionButton>
@@ -1105,7 +1105,7 @@ const Status = defineComponent({
                                                             设备{item.name}
                                                             配置是否已填写正确,若您确定该项无需诊断可
                                                             <PermissionButton
-                                                                type="link" 
+                                                                type="link"
                                                                 style="padding: 0"
                                                                 popConfirm={{
                                                                       title:"确认忽略？",
@@ -1183,7 +1183,7 @@ const Status = defineComponent({
                                     </Button>
                                     设备-OneNet配置是否已填写正确,若您确定该项无需诊断可
                                     <PermissionButton
-                                        type="link" 
+                                        type="link"
                                         style="padding: 0"
                                         popConfirm={{
                                             title:"确认忽略？",
@@ -1226,7 +1226,7 @@ const Status = defineComponent({
                                     ，若您确定该项无需诊断可
                                     <PermissionButton
                                         title="确认忽略？"
-                                        type="link" 
+                                        type="link"
                                         style="padding: 0"
                                         onConfirm={() => {
                                             list.value = modifyArrayList(list.value, {
@@ -1301,7 +1301,7 @@ const Status = defineComponent({
                                     </Button>
                                     设备-CTWing配置是否已填写正确,若您确定该项无需诊断可
                                     <PermissionButton
-                                        type="link" 
+                                        type="link"
                                         style="padding: 0"
                                         popConfirm={{
                                             title:"确认忽略？",
@@ -1343,7 +1343,7 @@ const Status = defineComponent({
                                     </Button>
                                     ，若您确定该项无需诊断可
                                     <PermissionButton
-                                        type="link" 
+                                        type="link"
                                         style="padding: 0"
                                         popConfirm={
                                             {
@@ -1360,7 +1360,7 @@ const Status = defineComponent({
                                                 }
                                             }
                                         }
-                                        
+
                                     >
                                         忽略
                                     </PermissionButton>
@@ -1818,7 +1818,7 @@ const Status = defineComponent({
                                                                                 }
                                                                             })
                                                                             return response
-                                                                           
+
                                                                         }
                                                                     }}
                                                                 >

@@ -27,9 +27,9 @@
             }}
         </template>
         <template #sourceName="slotProps">
-            <Ellipsis>
+            <j-ellipsis>
                 设备名称：
-                <span class="deviceId"  @click="() => gotoDevice(slotProps.sourceId)">{{ slotProps.sourceName }}</span></Ellipsis
+                <span class="deviceId"  @click="() => gotoDevice(slotProps.sourceId)">{{ slotProps.sourceName }}</span></j-ellipsis
             >
         </template>
         <template #handleType="slotProps">
@@ -39,9 +39,9 @@
             {{ slotProps?.state?.value === 'normal' ? '已处理' : '告警中' }}
         </template>
         <template #actions="slotProps">
-            <j-space>
+            <a-space>
                 <template v-for="i in getActions(slotProps)" :key="i.key">
-                    <PermissionButton
+                    <j-permission-button
                         :popConfirm="i.popConfirm"
                         :tooltip="{
                             ...i.tooltip,
@@ -56,9 +56,9 @@
                         "
                     >
                         {{ i.text }}
-                    </PermissionButton>
+                    </j-permission-button>
                 </template>
-            </j-space>
+            </a-space>
         </template>
     </JProTable>
     <Solve
@@ -84,11 +84,11 @@ import {
     queryByDevice as queryAlarmRecord,
     queryPreHandleHistory,
 } from '@/api/rule-engine/log';
-import { useInstanceStore } from '@/store/instance';
-import { useProductStore } from '@/store/product';
+import { useInstanceStore } from 'device/store/instance';
+import { useProductStore } from 'device/store/product';
 import dayjs from 'dayjs';
-import Duration from '@/views/rule-engine/Alarm/Log/components/Duration.vue';
-import Solve from '@/views/rule-engine/Alarm/Log/SolveComponent/index.vue';
+// import Duration from '@/views/rule-engine/Alarm/Log/components/Duration.vue';
+// import Solve from '@/views/rule-engine/Alarm/Log/SolveComponent/index.vue';
 import AlarmLog from './components/AlarmLog.vue';
 import { useMenuStore } from 'store/menu';
 const props = defineProps({

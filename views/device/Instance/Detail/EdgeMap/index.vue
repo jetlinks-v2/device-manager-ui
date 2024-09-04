@@ -1,14 +1,14 @@
 <template>
-    <j-spin :spinning="loading" v-if="metadata.properties?.length">
-        <j-card :bordered="false" style="padding: 0">
+    <a-spin :spinning="loading" v-if="metadata.properties?.length">
+        <a-card :bordered="false" style="padding: 0">
             <template #extra>
-                <j-space>
-                    <j-button @click="visible = true">批量映射</j-button>
-                    <j-button type="primary" @click="onSave">保存</j-button>
-                </j-space>
+                <a-space>
+                    <a-button @click="visible = true">批量映射</a-button>
+                    <a-button type="primary" @click="onSave">保存</a-button>
+                </a-space>
             </template>
-            <j-form ref="formRef" :model="modelRef">
-                <j-table
+            <a-form ref="formRef" :model="modelRef">
+                <a-table
                     :dataSource="modelRef.dataSource"
                     :columns="columns"
                     :pagination="false"
@@ -16,9 +16,9 @@
                     <template #headerCell="{ column }">
                         <template v-if="column.key === 'collectorId'">
                             采集器
-                            <j-tooltip title="边缘网关代理的真实物理设备">
+                            <a-tooltip title="边缘网关代理的真实物理设备">
                                 <AIcon type="QuestionCircleOutlined" />
-                            </j-tooltip>
+                            </a-tooltip>
                         </template>
                     </template>
                     <template #bodyCell="{ column, record, index }">
@@ -31,10 +31,10 @@
                             }}</span>
                         </template>
                         <template v-if="column.dataIndex === 'channelId'">
-                            <j-form-item
+                            <a-form-item
                                 :name="['dataSource', index, 'channelId']"
                             >
-                                <j-select
+                                <a-select
                                     style="width: 100%"
                                     v-model:value="record[column.dataIndex]"
                                     placeholder="请选择"
@@ -43,18 +43,18 @@
                                         () => onChannelChange(index, 'channel')
                                     "
                                 >
-                                    <j-select-option
+                                    <a-select-option
                                         v-for="item in channelList"
                                         :key="item.value"
                                         :value="item.value"
                                         :label="item.label"
-                                        >{{ item.label }}</j-select-option
+                                        >{{ item.label }}</a-select-option
                                     >
-                                </j-select>
-                            </j-form-item>
+                                </a-select>
+                            </a-form-item>
                         </template>
                         <template v-if="column.dataIndex === 'collectorId'">
-                            <j-form-item
+                            <a-form-item
                                 :name="['dataSource', index, 'collectorId']"
                                 :rules="[
                                     {
@@ -73,10 +73,10 @@
                                         onChannelChange(index, 'collector')
                                     "
                                 />
-                            </j-form-item>
+                            </a-form-item>
                         </template>
                         <template v-if="column.dataIndex === 'pointId'">
-                            <j-form-item
+                            <a-form-item
                                 :name="['dataSource', index, 'pointId']"
                                 :rules="[
                                     {
@@ -91,22 +91,22 @@
                                     type="POINT"
                                     :edgeId="instanceStore.current.parentId"
                                 />
-                            </j-form-item>
+                            </a-form-item>
                         </template>
                         <template v-if="column.dataIndex === 'id'">
                             <template v-if="record[column.dataIndex]">
-                                <j-badge
+                                <a-badge
                                     v-if="record.state.value === 'enabled'"
                                     status="success"
                                     text="启用"
                                 />
-                                <j-badge v-else status="warning" text="禁用" />
+                                <a-badge v-else status="warning" text="禁用" />
                             </template>
-                            <j-badge v-else status="error" text="未绑定" />
+                            <a-badge v-else status="error" text="未绑定" />
                         </template>
                         <template v-if="column.key === 'action'">
-                            <j-space>
-                                <PermissionButton
+                            <a-space>
+                                <j-permission-button
                                     type="link"
                                     :disabled="!record.id"
                                     :tooltip="{
@@ -119,9 +119,9 @@
                                     hasPermission="device/Instance:update"
                                 >
                                     <AIcon type="icon-jiebang"
-                                /></PermissionButton>
+                                /></j-permission-button>
                                 <template v-if="record.id">
-                                    <PermissionButton
+                                    <j-permission-button
                                         type="link"
                                         hasPermission="device/Instance:update"
                                         :tooltip="{
@@ -148,12 +148,12 @@
                                             v-else
                                             type="PlayCircleOutlined"
                                         />
-                                    </PermissionButton>
+                                    </j-permission-button>
                                 </template>
-                            </j-space>
+                            </a-space>
                         </template>
                     </template>
-                </j-table>
+                </a-table>
                 <div class="pagination">
                     <j-pagination
                         v-model:pageSize="pageSize"
@@ -162,8 +162,8 @@
                         @change="onPageChange"
                     />
                 </div>
-            </j-form>
-        </j-card>
+            </a-form>
+        </a-card>
         <PatchMapping
             :deviceId="instanceStore.current.id"
             v-if="visible"
@@ -172,10 +172,10 @@
             :metaData="metadata.properties"
             :edgeId="instanceStore.current.parentId"
         />
-    </j-spin>
-    <j-card v-else :bordered="false" style="padding: 0">
+    </a-spin>
+    <a-card v-else :bordered="false" style="padding: 0">
         <JEmpty description="暂无数据，请配置物模型" style="margin: 10% 0" />
-    </j-card>
+    </a-card>
 </template>
 
 <script lang="ts" setup name="EdgeMap">

@@ -20,9 +20,10 @@
 </template>
 
 <script setup>
-import { detail, getProtocolList } from '@/api/link/accessConfig';
+import { detail, getProtocolList } from '../../../../../api/link/accessConfig';
 import { ProtocolMapping } from '../../data';
 import AccessCard from '../../components/AccessCard/index.vue';
+
 const props = defineProps({
     data: {
         type: Object,

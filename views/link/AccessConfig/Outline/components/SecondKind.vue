@@ -36,7 +36,7 @@ import {
     getPluginList,
     getPluginConfig,
     detail,
-} from '@/api/link/accessConfig';
+} from '../../../../../api/link/accessConfig';
 import AccessCard from '../../components/AccessCard/index.vue';
 const props = defineProps({
     data: {

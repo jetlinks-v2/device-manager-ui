@@ -1,29 +1,29 @@
 <template>
     <div class="metadata-map">
         <div class="left">
-            <j-space style="margin-bottom: 24px">
-                <j-select
+            <a-space style="margin-bottom: 24px">
+                <a-select
                     @change="onSearchChange"
                     show-search
                     allow-clear
                     placeholder="请选择属性名称"
                     style="width: 250px"
                 >
-                    <j-select-option
+                    <a-select-option
                         :label="item.name"
                         v-for="item in dataSourceCache"
                         :value="item?.id"
                         :key="item?.id"
-                        >{{ item?.name }}</j-select-option
+                        >{{ item?.name }}</a-select-option
                     >
-                </j-select>
-                <j-button type="primary" @click="onSearch"
+                </a-select>
+                <a-button type="primary" @click="onSearch"
                     ><AIcon type="SearchOutlined"
-                /></j-button>
-            </j-space>
+                /></a-button>
+            </a-space>
             <div class="box">
                 <j-scrollbar height="100%">
-                    <j-table
+                    <a-table
                         :columns="columns"
                         :data-source="dataSource"
                         :pagination="false"
@@ -46,16 +46,16 @@
                                     "
                                 >
                                     <span>
-                                        目标属性<j-tooltip
+                                        目标属性<a-tooltip
                                             title="协议包中物模型下的属性"
                                         >
                                             <AIcon
                                                 style="margin-left: 10px"
                                                 type="QuestionCircleOutlined"
                                             />
-                                        </j-tooltip>
+                                        </a-tooltip>
                                     </span>
-                                    <j-tag
+                                    <a-tag
                                         v-if="filterValue !== undefined"
                                         color="#87d068"
                                         closable
@@ -64,21 +64,21 @@
                                             type="ArrowUpOutlined"
                                         /><span>{{
                                             filterValue ? '已映射' : '未映射'
-                                        }}</span></j-tag
+                                        }}</span></a-tag
                                     >
-                                    <j-dropdown v-else>
+                                    <a-dropdown v-else>
                                         <AIcon type="FilterOutlined" />
                                         <template #overlay>
-                                            <j-menu @click="onFilter">
-                                                <j-menu-item :key="true"
-                                                    >置顶已映射数据</j-menu-item
+                                            <a-menu @click="onFilter">
+                                                <a-menu-item :key="true"
+                                                    >置顶已映射数据</a-menu-item
                                                 >
-                                                <j-menu-item :key="false"
-                                                    >置顶未映射数据</j-menu-item
+                                                <a-menu-item :key="false"
+                                                    >置顶未映射数据</a-menu-item
                                                 >
-                                            </j-menu>
+                                            </a-menu>
                                         </template>
-                                    </j-dropdown>
+                                    </a-dropdown>
                                 </div>
                             </template>
                         </template>
@@ -91,14 +91,14 @@
                                 </span>
                             </template>
                             <template v-if="column.dataIndex === 'original'">
-                                <j-select
+                                <a-select
                                     v-model:value="record.original"
                                     style="width: 100%"
                                     allowClear
                                     @change="(id) => onChange(record, id)"
                                     placeholder="请选择"
                                 >
-                                    <j-select-option
+                                    <a-select-option
                                         v-for="(item, index) in targetOptions"
                                         :key="index + '_' + item.id"
                                         :value="item.value"
@@ -110,12 +110,12 @@
                                     >
                                         {{ item.label }} ({{
                                             item.id
-                                        }})</j-select-option
+                                        }})</a-select-option
                                     >
-                                </j-select>
+                                </a-select>
                             </template>
                         </template>
-                    </j-table>
+                    </a-table>
                 </j-scrollbar>
             </div>
         </div>

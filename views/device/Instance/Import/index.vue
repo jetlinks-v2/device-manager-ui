@@ -1,5 +1,5 @@
 <template>
-    <j-modal
+    <a-modal
         :maskClosable="false"
         width="800px"
         :visible="true"
@@ -7,46 +7,46 @@
         @cancel="handleCancel"
     >
         <div style="margin-top: 10px">
-            <j-form :layout="'vertical'">
-                <j-row>
-                    <j-col span="24">
-                        <j-form-item label="产品" required>
-                            <j-select
+            <a-form :layout="'vertical'">
+                <a-row>
+                    <a-col span="24">
+                        <a-form-item label="产品" required>
+                            <a-select
                                 showSearch
                                 v-model:value="modelRef.product"
                                 placeholder="请选择产品"
                             >
-                                <j-select-option
+                                <a-select-option
                                     :value="item.id"
                                     v-for="item in productList"
                                     :key="item.id"
                                     :label="item.name"
-                                    >{{ item.name }}</j-select-option
+                                    >{{ item.name }}</a-select-option
                                 >
-                            </j-select>
-                        </j-form-item>
-                    </j-col>
-                    <j-col span="24">
-                        <j-form-item label="文件格式" v-if="modelRef.product">
+                            </a-select>
+                        </a-form-item>
+                    </a-col>
+                    <a-col span="24">
+                        <a-form-item label="文件格式" v-if="modelRef.product">
                             <FileFormat v-model="modelRef.file" />
-                        </j-form-item>
-                    </j-col>
-                    <j-col span="12">
-                        <j-form-item label="文件上传" v-if="modelRef.product">
+                        </a-form-item>
+                    </a-col>
+                    <a-col span="12">
+                        <a-form-item label="文件上传" v-if="modelRef.product">
                             <NormalUpload
                                 :product="modelRef.product"
                                 v-model="modelRef.upload"
                                 :file="modelRef.file"
                             />
-                        </j-form-item>
-                    </j-col>
-                </j-row>
-            </j-form>
+                        </a-form-item>
+                    </a-col>
+                </a-row>
+            </a-form>
         </div>
         <template #footer>
-            <j-button type="primary" @click="handleSave">关闭</j-button>
+            <a-button type="primary" @click="handleSave">关闭</a-button>
         </template>
-    </j-modal>
+    </a-modal>
 </template>
 
 <script lang="ts" setup>

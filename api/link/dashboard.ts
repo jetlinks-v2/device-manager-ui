@@ -1,11 +1,11 @@
-import server from '@/utils/request';
+import { request } from '@jetlinks-web/core'
 
 export const dashboard = (data: object) =>
-    server.post(`/dashboard/_multi`, data);
+    request.post(`/dashboard/_multi`, data);
 export const productCount = (data: object) =>
-    server.post(`/device-product/_count`, data);
+    request.post(`/device-product/_count`, data);
 export const getGeo = (data: object) =>
-    server.post(`/geo/object/device/_search/geo.json`, data);
+    request.post(`/geo/object/device/_search/geo.json`, data);
 export const deviceCount = (data: object) =>
-    server.get(`/device/instance/_count`, data);
-export const serverNode = () => server.get(`/dashboard/cluster/nodes`);
+    request.get(`/device/instance/_count`, data);
+export const requestNode = () => request.get(`/dashboard/cluster/nodes`);

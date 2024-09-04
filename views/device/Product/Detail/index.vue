@@ -1,5 +1,5 @@
 <template>
-    <page-container
+    <j-page-container
         :tabList="list"
         :tabActiveKey="productStore.tabActiveKey"
         @tabChange="onTabChange"
@@ -8,14 +8,14 @@
         <template #title>
             <div>
                 <div style="display: flex; align-items: center">
-                    <j-tooltip>
+                    <a-tooltip>
                         <template #title>{{
                             productStore.current.name
                         }}</template>
                         <div class="productDetailHead">
                             {{ productStore.current.name }}
                         </div>
-                    </j-tooltip>
+                    </a-tooltip>
                     <div
                         style="margin: -5px 0 0 20px"
                         v-if="
@@ -24,7 +24,7 @@
                             )
                         "
                     >
-                        <PermissionButton
+                        <j-permission-button
                             style="padding: 0"
                             type="text"
                             hasPermission="device/Product:action"
@@ -39,7 +39,7 @@
                                         : handleDeploy,
                             }"
                         >
-                            <j-switch
+                            <a-switch
                                 :checked="productStore.current.state === 1"
                                 checked-children="正常"
                                 un-checked-children="禁用"
@@ -49,12 +49,12 @@
                                     )
                                 "
                             />
-                        </PermissionButton>
+                        </j-permission-button>
                     </div>
                     <div style="margin: -5px 0 0 20px" v-else>
-                        <j-tooltip>
+                        <a-tooltip>
                             <template #title>暂无权限，请联系管理员</template>
-                            <j-switch
+                            <a-switch
                                 v-if="productStore.current.state === 1"
                                 :checked="productStore.current.state === 1"
                                 checked-children="正常"
@@ -65,7 +65,7 @@
                                     )
                                 "
                             />
-                            <j-switch
+                            <a-switch
                                 v-if="productStore.current.state === 0"
                                 :unCheckedValue="
                                     productStore.current.state === 0
@@ -78,15 +78,15 @@
                                     )
                                 "
                             />
-                        </j-tooltip>
+                        </a-tooltip>
                     </div>
                 </div>
             </div>
         </template>
         <template #content>
             <div style="padding-top: 10px">
-                <j-descriptions size="small" :column="4">
-                    <j-descriptions-item
+                <a-descriptions size="small" :column="4">
+                    <a-descriptions-item
                         label="设备数量"
                         :labelStyle="{
                             fontSize: '14px',
@@ -101,13 +101,13 @@
                             productStore.current?.count
                                 ? productStore.current?.count
                                 : 0
-                        }}</span></j-descriptions-item
+                        }}</span></a-descriptions-item
                     >
-                </j-descriptions>
+                </a-descriptions>
             </div>
         </template>
         <template #extra>
-            <PermissionButton
+            <j-permission-button
                 type="primary"
                 :popConfirm="{
                     title: `确认应用配置?`,
@@ -121,7 +121,7 @@
                 "
                 hasPermission="device/Product:update"
                 placement="topRight"
-                >应用配置</PermissionButton
+                >应用配置</j-permission-button
             >
         </template>
         <FullPage>
@@ -137,7 +137,7 @@
                 />
             </div>
         </FullPage>
-    </page-container>
+    </j-page-container>
 </template>
 
 <script lang="ts" setup>

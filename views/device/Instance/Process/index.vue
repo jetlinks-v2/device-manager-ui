@@ -1,5 +1,5 @@
 <template>
-    <j-modal
+    <a-modal
         :maskClosable="false"
         width="800px"
         :visible="true"
@@ -9,17 +9,17 @@
         <div style="margin: 10px 0px 20px 0px; padding-right: 10px;">
             <div v-if="flag">
                 <div>{{ type === 'active' ? '正在启用全部设备' : '正在同步设备状态' }}</div>
-                <j-progress :percent="_percent" />
+                <a-progress :percent="_percent" />
             </div>
             <div v-else>
                 <p>{{ type === 'active' ? '启用' : '同步' }}成功：{{ count }}条</p>
-                <p v-if="type === 'active'">启用失败：{{ errCount }}条<j-tooltip title="实例信息页面中的配置项未完善"><AIcon style="margin-left: 5px" type="QuestionCircleOutlined" /></j-tooltip></p>
+                <p v-if="type === 'active'">启用失败：{{ errCount }}条<a-tooltip title="实例信息页面中的配置项未完善"><AIcon style="margin-left: 5px" type="QuestionCircleOutlined" /></a-tooltip></p>
             </div>
         </div>
         <template #footer>
-            <j-button v-if="!flag" type="primary" @click="handleCancel">完成</j-button>
+            <a-button v-if="!flag" type="primary" @click="handleCancel">完成</a-button>
         </template>
-    </j-modal>
+    </a-modal>
 </template>
 
 <script lang="ts" setup>

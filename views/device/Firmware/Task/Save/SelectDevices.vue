@@ -1,5 +1,5 @@
-<template lang="">
-    <j-input
+<template>
+    <a-input
         placeholder="请选择设备"
         v-model:value="checkLable"
         :disabled="true"
@@ -11,8 +11,8 @@
                 @click="onVisible"
             />
         </template>
-    </j-input>
-    <j-modal
+    </a-input>
+    <a-modal
         v-if="visible"
         title="选择设备"
         ok-text="确认"
@@ -43,7 +43,7 @@
             :params="params"
         >
             <template #headerTitle>
-                <j-checkbox
+                <a-checkbox
                     v-if="checkAllData.length !== 0"
                     v-model:checked="state.checkAll"
                     :indeterminate="state.indeterminate"
@@ -51,13 +51,13 @@
                     style="margin-left: 8px"
                 >
                     全选
-                </j-checkbox>
+                </a-checkbox>
             </template>
             <template #productId="slotProps">
                 <span>{{ slotProps.productName }}</span>
             </template>
             <template #state="slotProps">
-                <j-badge
+                <a-badge
                     :text="slotProps.state?.text"
                     :status="statusMap.get(slotProps.state?.value)"
                 />
@@ -71,13 +71,13 @@
                 }}</span>
             </template>
         </j-pro-table>
-    </j-modal>
+    </a-modal>
 </template>
 <script lang="ts" setup name="SelectDevicesPage">
 import {
     queryDetailListNoPaging,
     queryDetailList,
-} from '@/api/device/firmware';
+} from '../../../../../api/firmware';
 import dayjs from 'dayjs';
 
 type T = any;

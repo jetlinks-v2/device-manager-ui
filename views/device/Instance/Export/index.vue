@@ -1,5 +1,5 @@
 <template>
-    <j-modal
+    <a-modal
         :maskClosable="false"
         width="800px"
         :visible="true"
@@ -14,37 +14,37 @@
             </p>
         </div>
         <div style="margin-top: 20px">
-            <j-form :layout="'vertical'">
-                <j-form-item label="产品">
-                    <j-select
+            <a-form :layout="'vertical'">
+                <a-form-item label="产品">
+                    <a-select
                         show-search
                         :filter-option="filterOption"
                         v-model:value="modelRef.product"
                         placeholder="请选择产品"
                         allowClear
                     >
-                        <j-select-option
+                        <a-select-option
                             :value="item.id"
                             v-for="item in productList"
                             :key="item.id"
                             :label="item.name"
-                            >{{ item.name }}</j-select-option
+                            >{{ item.name }}</a-select-option
                         >
-                    </j-select>
-                </j-form-item>
-                <j-form-item label="文件格式">
-                    <j-radio-group
+                    </a-select>
+                </a-form-item>
+                <a-form-item label="文件格式">
+                    <a-radio-group
                         button-style="solid"
                         v-model:value="modelRef.fileType"
                         placeholder="请选择文件格式"
                     >
-                        <j-radio-button value="xlsx">xlsx</j-radio-button>
-                        <j-radio-button value="csv">csv</j-radio-button>
-                    </j-radio-group>
-                </j-form-item>
-            </j-form>
+                        <a-radio-button value="xlsx">xlsx</a-radio-button>
+                        <a-radio-button value="csv">csv</a-radio-button>
+                    </a-radio-group>
+                </a-form-item>
+            </a-form>
         </div>
-    </j-modal>
+    </a-modal>
 </template>
 
 <script lang="ts" setup>

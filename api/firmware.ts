@@ -1,7 +1,4 @@
 import { request } from '@jetlinks-web/core'
-import { BASE_API } from '@jetlinks-web/constants';
-
-export const FIRMWARE_UPLOAD = `${BASE_API}/file/upload`;
 
 export const save = (data: object) => request.post(`/firmware`, data);
 

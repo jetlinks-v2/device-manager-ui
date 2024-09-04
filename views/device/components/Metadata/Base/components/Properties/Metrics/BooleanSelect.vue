@@ -1,5 +1,5 @@
 <template>
-  <j-select
+  <a-select
       v-model:value="myValue"
       :options="[
           { label: '固定值', value: 'false' },
@@ -14,7 +14,7 @@
 </template>
 
 <script name="BooleanSelect" setup>
-import {useTableWrapper} from "@/components/Metadata/Table/context";
+import {useTableWrapper} from "device/components/Metadata/Table/context";
 
 const props = defineProps({
   value: {

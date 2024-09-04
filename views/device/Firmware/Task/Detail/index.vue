@@ -8,36 +8,36 @@
     >
         <div class="generalInfo">
             <div class="allOperation">
-                <PermissionButton
+                <j-permission-button
                     @click="stopAll"
                     hasPermission="device/Firmware:update"
                     ><template #icon><AIcon type="PauseOutlined" /> </template
                     >全部暂停
-                </PermissionButton>
-                <PermissionButton
+                </j-permission-button>
+                <j-permission-button
                     style="margin-left: 20px"
                     hasPermission="device/Firmware:update"
                     @click="startAll"
                     ><template #icon
                         ><AIcon type="CaretRightOutlined" /> </template
-                    >全部开始</PermissionButton
+                    >全部开始</j-permission-button
                 >
-                <PermissionButton
+                <j-permission-button
                     v-if="data?.mode?.value === 'push'"
                     style="margin-left: 20px"
                     hasPermission="device/Firmware:update"
                     @click="batchRetry"
                     ><template #icon><AIcon type="RedoOutlined" /> </template>
                     批量重试
-                </PermissionButton>
-                <PermissionButton
+                </j-permission-button>
+                <j-permission-button
                     type="text"
                     hasPermission="device/Firmware:update"
                     style="float: right"
                     @click="refreshState"
                     ><template #icon><AIcon type="RedoOutlined" /> </template>
                     刷新状态
-                </PermissionButton>
+                </j-permission-button>
             </div>
             <div class="progress">
                 <div style="width: 90%">
@@ -52,7 +52,7 @@
                 <span class="total">共{{ general.total }}个任务</span>
             </div>
         </div>
-        <j-table
+        <a-table
             :columns="columns"
             :data-source="historyList"
             :pagination="false"
@@ -68,17 +68,17 @@
                         column.dataIndex === 'productName'
                     "
                 >
-                    <Ellipsis style="width: 100%">{{ text }}</Ellipsis>
+                    <j-ellipsis style="width: 100%">{{ text }}</j-ellipsis>
                 </template>
                 <template v-if="column.dataIndex === 'createTime'">
-                    <Ellipsis style="width: 100%">{{
+                    <j-ellipsis style="width: 100%">{{
                         dayjs(text).format('YYYY-MM-DD HH:mm:ss')
-                    }}</Ellipsis></template
+                    }}</j-ellipsis></template
                 >
                 <template v-if="column.dataIndex === 'completeTime'"
-                    ><Ellipsis style="width: 100%">{{
+                    ><j-ellipsis style="width: 100%">{{
                         text ? dayjs(text).format('YYYY-MM-DD HH:mm:ss') : '--'
-                    }}</Ellipsis></template
+                    }}</j-ellipsis></template
                 >
                 <template v-if="column.dataIndex === 'state'">
                     <div class="state">
@@ -117,7 +117,7 @@
                     {{ text || '--' }}
                 </template>
             </template>
-        </j-table>
+        </a-table>
         <template #footer>
             <span class="tip">关闭弹窗不会影响任务执行状态</span>
             <a-button value="large" type="primary" @click="$emit('closeDetail')"
@@ -134,9 +134,10 @@ import {
     startTask,
     startOneTask,
     stopOneTask,
-} from '@/api/device/firmware';
+} from '../../../../../api/firmware';
 import dayjs from 'dayjs';
-import { onlyMessage } from '@/utils/comm';
+import { onlyMessage } from '@jetlinks-web/utils';
+
 const props = defineProps({
     data: {
         type: Object,

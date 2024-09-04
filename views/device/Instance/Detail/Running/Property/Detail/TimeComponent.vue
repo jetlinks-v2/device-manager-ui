@@ -1,22 +1,22 @@
 <template>
-    <j-space>
-        <j-radio-group
+    <a-space>
+        <a-radio-group
             :value="radioValue"
             button-style="solid"
             @change="onRadioChange"
         >
-            <j-radio-button value="today">今日</j-radio-button>
-            <j-radio-button value="week">近一周</j-radio-button>
-            <j-radio-button value="month">近一月</j-radio-button>
-        </j-radio-group>
-        <j-range-picker
+            <a-radio-button value="today">今日</a-radio-button>
+            <a-radio-button value="week">近一周</a-radio-button>
+            <a-radio-button value="month">近一月</a-radio-button>
+        </a-radio-group>
+        <a-range-picker
             show-time
             v-model:value="dateValue"
             :placeholder="['开始时间', '结束时间']"
             @change="onRangeChange"
             :allowClear="false"
         />
-    </j-space>
+    </a-space>
 </template>
 
 <script lang="ts" setup>

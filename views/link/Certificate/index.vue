@@ -1,5 +1,5 @@
 <template>
-    <page-container>
+    <j-page-container>
         <div>
             <pro-search
                 :columns="columns"
@@ -18,7 +18,7 @@
                     :params="params"
                 >
                     <template #headerTitle>
-                        <PermissionButton
+                        <j-permission-button
                             type="primary"
                             @click="handlAdd"
                             hasPermission="link/Certificate:add"
@@ -27,18 +27,18 @@
                                 ><AIcon type="PlusOutlined"
                             /></template>
                             新增
-                        </PermissionButton>
+                        </j-permission-button>
                     </template>
                     <template #type="slotProps">
                         <span>{{ slotProps.type.text }}</span>
                     </template>
                     <template #action="slotProps">
-                        <j-space :size="16">
+                        <a-space :size="16">
                             <template
                                 v-for="i in getActions(slotProps)"
                                 :key="i.key"
                             >
-                                <PermissionButton
+                                <j-permission-button
                                     :disabled="i.disabled"
                                     :popConfirm="i.popConfirm"
                                     :tooltip="{
@@ -53,20 +53,19 @@
                                     <template #icon
                                         ><AIcon :type="i.icon"
                                     /></template>
-                                </PermissionButton>
+                                </j-permission-button>
                             </template>
-                        </j-space>
+                        </a-space>
                     </template>
                 </j-pro-table>
             </FullPage>
         </div>
-    </page-container>
+    </j-page-container>
 </template>
 <script lang="ts" setup name="CertificatePage">
-import type { ActionsType } from '@/components/Table/index';
-import { query, remove } from '@/api/link/certificate';
-import { onlyMessage } from '@/utils/comm';
-import { useMenuStore } from 'store/menu';
+import { query, remove } from '../../../api/link/certificate';
+import { onlyMessage } from '@jetlinks-web/utils';
+import { useMenuStore } from '@/store';
 
 const menuStory = useMenuStore();
 const tableRef = ref<Record<string, any>>({});
@@ -119,7 +118,7 @@ const columns = [
     },
 ];
 
-const getActions = (data: Partial<Record<string, any>>): ActionsType[] => {
+const getActions = (data: Partial<Record<string, any>>): any[] => {
     if (!data) {
         return [];
     }

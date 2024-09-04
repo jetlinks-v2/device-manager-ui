@@ -1,5 +1,5 @@
 <template>
-    <j-modal
+    <a-modal
         :mask-closable="false"
         title="导入物模型"
         destroy-on-close
@@ -22,8 +22,8 @@
                 </template>
             </p>
         </div>
-        <j-form layout="vertical" ref="formRef" :model="formModel">
-            <j-form-item
+        <a-form layout="vertical" ref="formRef" :model="formModel">
+            <a-form-item
                 v-if="type === 'product'"
                 label="导入方式"
                 name="type"
@@ -34,12 +34,12 @@
                     },
                 ]"
             >
-                <j-select v-model:value="formModel.type">
-                    <j-select-option value="copy">拷贝产品</j-select-option>
-                    <j-select-option value="import">导入物模型</j-select-option>
-                </j-select>
-            </j-form-item>
-            <j-form-item
+                <a-select v-model:value="formModel.type">
+                    <a-select-option value="copy">拷贝产品</a-select-option>
+                    <a-select-option value="import">导入物模型</a-select-option>
+                </a-select>
+            </a-form-item>
+            <a-form-item
                 label="选择产品"
                 :rules="[
                     {
@@ -50,15 +50,15 @@
                 name="copy"
                 v-if="formModel.type === 'copy'"
             >
-                <j-select
+                <a-select
                     :options="productList"
                     v-model:value="formModel.copy"
                     option-filter-prop="label"
                     placeholder="请选择产品"
                     showSearch
-                ></j-select>
-            </j-form-item>
-            <j-form-item
+                ></a-select>
+            </a-form-item>
+            <a-form-item
                 label="物模型类型"
                 :rules="[
                     {
@@ -69,19 +69,19 @@
                 name="metadata"
                 v-if="type === 'device' || formModel.type === 'import'"
             >
-                <j-select v-model:value="formModel.metadata">
-                    <!-- <j-select-option value="jetlinks"
-                        >Jetlinks物模型</j-select-option
+                <a-select v-model:value="formModel.metadata">
+                    <!-- <a-select-option value="jetlinks"
+                        >Jetlinks物模型</a-select-option
                     >
-                    <j-select-option value="alink"
-                        >阿里云物模型TSL</j-select-option
+                    <a-select-option value="alink"
+                        >阿里云物模型TSL</a-select-option
                     > -->
-                    <j-select-option v-for="i in codecs" :value="i.id">{{
+                    <a-select-option v-for="i in codecs" :value="i.id">{{
                         i.name
-                    }}</j-select-option>
-                </j-select>
-            </j-form-item>
-            <j-form-item
+                    }}</a-select-option>
+                </a-select>
+            </a-form-item>
+            <a-form-item
                 label="导入类型"
                 :rules="[
                     {
@@ -92,15 +92,15 @@
                 name="metadataType"
                 v-if="type === 'device' || formModel.type === 'import'"
             >
-                <j-select
+                <a-select
                     v-model:value="formModel.metadataType"
                     @change="formModel.import = undefined"
                 >
-                    <j-select-option value="file">文件上传</j-select-option>
-                    <j-select-option value="script">脚本</j-select-option>
-                </j-select>
-            </j-form-item>
-            <j-form-item
+                    <a-select-option value="file">文件上传</a-select-option>
+                    <a-select-option value="script">脚本</a-select-option>
+                </a-select>
+            </a-form-item>
+            <a-form-item
                 v-if="
                     formModel.type === 'import' &&
                     formModel.metadataType === 'file'
@@ -114,9 +114,9 @@
                     },
                 ]"
             >
-                <!-- <j-input v-model:value="formModel.upload">
+                <!-- <a-input v-model:value="formModel.upload">
                     <template #addonAfter>
-                        <j-upload
+                        <a-upload
                             v-model:file-list="fileList"
                             :before-upload="beforeUpload"
                             accept=".json"
@@ -129,30 +129,30 @@
                                 type="UploadOutlined"
                                 class="upload-button"
                             />
-                        </j-upload>
+                        </a-upload>
                     </template>
-                </j-input> -->
-                <j-upload
+                </a-input> -->
+                <a-upload
                     v-model:file-list="fileList"
                     :before-upload="beforeUpload"
                     accept=".json"
                     :show-upload-list="false"
-                    :action="FILE_UPLOAD"
-                    @change="fileChange"
+                    :action="FileStaticPath"
                     :headers="{ [TOKEN_KEY]: getToken() }"
+                    @change="fileChange"
                 >
-                    <j-button>
+                    <a-button>
                         <template #icon
                             ><AIcon type="UploadOutlined"
                         /></template>
                         上传文件
-                    </j-button>
-                </j-upload>
+                    </a-button>
+                </a-upload>
                 <div style="margin-left: 10px; color: rgba(0, 0, 0, 0.6)">
                     支持扩展名：.json
                 </div>
-            </j-form-item>
-            <j-form-item
+            </a-form-item>
+            <a-form-item
                 :rules="[
                     {
                         required: true,
@@ -166,15 +166,15 @@
                 "
             >
                 <template #label>
-                    <j-space>
+                    <a-space>
                         物模型
-                        <j-tooltip title="在编辑器中编写物模型脚本">
+                        <a-tooltip title="在编辑器中编写物模型脚本">
                             <AIcon
                                 type="QuestionCircleOutlined"
                                 style="color: rgb(136, 136, 136)"
                             />
-                        </j-tooltip>
-                    </j-space>
+                        </a-tooltip>
+                    </a-space>
                 </template>
                 <JMonacoEditor
                     v-model:modelValue="formModel.import"
@@ -182,32 +182,32 @@
                     style="height: 300px"
                     lang="json"
                 ></JMonacoEditor>
-            </j-form-item>
-        </j-form>
-    </j-modal>
+            </a-form-item>
+        </a-form>
+    </a-modal>
 </template>
 <script setup lang="ts" name="Import">
-import { getCodecs } from '@/api/device/product';
-import { saveMetadata } from '@/api/device/instance';
+import { saveMetadata } from '../../../../../api/instance';
 import {
     queryNoPagingPost,
     convertMetadata,
     modify,
-} from '@/api/device/product';
+  getCodecs
+} from '../../../../../api/product';
 import type { DefaultOptionType } from 'ant-design-vue/es/select';
 import type {
     UploadProps,
     UploadFile,
     UploadChangeParam,
 } from 'ant-design-vue/es';
-import type { DeviceMetadata } from '@/views/device/Product/typings';
-import { useInstanceStore } from '@/store/instance';
-import { useProductStore } from '@/store/product';
-import { FILE_UPLOAD } from '@/api/comm';
-import { getToken, onlyMessage } from '@/utils/comm';
-import { useMetadataStore } from '@/store/metadata';
+import type { DeviceMetadata } from '../../../Product/typings';
+import { useInstanceStore } from '../../../../../store/instance';
+import { useProductStore } from '../../../../../store/product';
+import {FileStaticPath } from '@/api/comm';
+import { getToken, onlyMessage } from '@jetlinks-web/utils';
+import { useMetadataStore } from '../../../../../store/metadata';
 import { omit } from 'lodash-es';
-import { Modal } from 'jetlinks-ui-components';
+import { Modal } from 'ant-design-vue';
 import { testObject, testType, testAliType, testAliObject } from './valideta';
 
 const route = useRoute();

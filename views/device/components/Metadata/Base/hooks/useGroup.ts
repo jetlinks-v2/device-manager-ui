@@ -1,7 +1,7 @@
 import {provide} from "vue";
 
 type GroupOptionsItemType = { label: string, value: string}
-import { METADATA_GROUP_OPTIONS } from '@/components/Metadata/Table/consts'
+import { METADATA_GROUP_OPTIONS } from '../../../../../../components/Metadata/consts'
 export const useGroup = () => {
 
     const options = ref<GroupOptionsItemType[]>([])

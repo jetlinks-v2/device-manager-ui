@@ -1,5 +1,5 @@
 <template>
-    <j-modal
+    <a-modal
         :maskClosable="false"
         width="600px"
         :visible="true"
@@ -10,10 +10,10 @@
         @cancel="handleCancel"
     >
         <template v-if="['.jpg', '.png'].includes(type)">
-            <j-image :src="value?.formatValue" />
+            <a-image :src="value?.formatValue" />
         </template>
         <template v-else-if="['.flv', '.m3u8', '.mp4'].includes(type)">
-            <LivePlayer :url="value?.formatValue" autoplay />
+            <Player :url="value?.formatValue" autoplay />
         </template>
         <template v-else>
             <JsonViewer
@@ -21,12 +21,11 @@
                 :value="value?.formatValue"
             />
         </template>
-    </j-modal>
+    </a-modal>
 </template>
 
 <script lang="ts" setup>
-import JsonViewer from 'vue-json-viewer';
-import LivePlayer from '@/components/Player/index.vue';
+import JsonViewer from 'vue3-json-viewer';
 
 const _data = defineProps({
     type: {

@@ -32,13 +32,13 @@
             {{ dayjs(slotProps.createTime).format('YYYY-MM-DD HH:mm:ss') }}
         </template>
         <template #thingName="slotProps">
-            <Ellipsis>
+            <j-ellipsis>
                 设备名称：
                 <span
                     class="deviceId"
                      @click="() => gotoDevice(slotProps.thingId)"
                     >{{ slotProps.thingName }}</span
-                ></Ellipsis
+                ></j-ellipsis
             >
         </template>
     </JProTable>

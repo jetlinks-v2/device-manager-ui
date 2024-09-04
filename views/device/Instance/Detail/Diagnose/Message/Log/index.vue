@@ -7,7 +7,7 @@
             <div class="log-box">
                 <div class="log-header">
                     <div class="log-title">
-                        <j-tag color="error">ERROR</j-tag>
+                        <a-tag color="error">ERROR</a-tag>
                         {{ operationMap.get(data.operation) }}
                     </div>
                     <div class="log-time">
@@ -15,7 +15,7 @@
                     </div>
                 </div>
                 <div className="log-editor" v-if="visible">
-                    <j-textarea
+                    <a-textarea
                         autoSize
                         :bordered="false"
                         :value="data?.detail"

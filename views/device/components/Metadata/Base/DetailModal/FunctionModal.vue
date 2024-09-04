@@ -1,5 +1,5 @@
 <template>
-  <j-modal
+  <a-modal
       visible
       title="功能详情"
       width="650px"
@@ -8,7 +8,7 @@
       @cancel="cancel"
       @ok="ok"
   >
-    <j-descriptions
+    <a-descriptions
         :column="1"
         :labelStyle="{
           width: '72px',
@@ -28,16 +28,16 @@
         <JsonView :value="dataTypeTable.output"/>
       </a-descriptions-item>
       <a-descriptions-item v-if="showSetting && data.expands?.storageType" label="存储方式">{{ settingData[data.expands?.storageType] }}</a-descriptions-item>
-    </j-descriptions>
+    </a-descriptions>
     <template #footer>
-      <j-button type="primary" @click="ok">确认</j-button>
+      <a-button type="primary" @click="ok">确认</a-button>
     </template>
-  </j-modal>
+  </a-modal>
 </template>
 
 <script setup lang="ts" name="FunctionModal">
 import JsonView from './JsonView.vue'
-import {useStoreType} from "@/views/device/components/Metadata/Base/utils";
+import {useStoreType} from "../utils";
 
 const props = defineProps({
   data: {

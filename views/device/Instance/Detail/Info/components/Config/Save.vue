@@ -1,5 +1,5 @@
 <template>
-    <j-drawer placement="right" :closable="false" :visible="true">
+    <a-drawer placement="right" :closable="false" :visible="true">
         <template #title>
             <div
                 style="
@@ -15,12 +15,12 @@
                         @click="onClose"
                     />编辑配置</span
                 >
-                <j-button type="primary" @click="saveBtn">保存</j-button>
+                <a-button type="primary" @click="saveBtn">保存</a-button>
             </div>
         </template>
-        <j-form layout="vertical" ref="formRef" :model="modelRef">
+        <a-form layout="vertical" ref="formRef" :model="modelRef">
             <template v-for="(item, index) in props.config || []" :key="index">
-                <j-form-item
+                <a-form-item
                     v-for="i in item.properties"
                     :name="i.property"
                     :key="i.property"
@@ -33,19 +33,19 @@
                 >
                     <template #label>
                         <span style="margin-right: 5px">{{ i.name }}</span>
-                        <j-tooltip v-if="i.description" :title="i.description"
+                        <a-tooltip v-if="i.description" :title="i.description"
                             ><AIcon type="QuestionCircleOutlined"
-                        /></j-tooltip>
+                        /></a-tooltip>
                     </template>
                     <ValueItem
                         v-model:modelValue="modelRef[i.property]"
                         :itemType="i.type.type"
                         :options="getOptions(i)"
                     />
-                </j-form-item>
+                </a-form-item>
             </template>
-        </j-form>
-    </j-drawer>
+        </a-form>
+    </a-drawer>
 </template>
 
 <script lang="ts" setup>

@@ -2,50 +2,50 @@
     <div>
         <TitleComponent data="基本信息">
             <template #extra>
-                <j-button @click="comeBack" style="margin-left: 10px;">返回</j-button>
+                <a-button @click="comeBack" style="margin-left: 10px;">返回</a-button>
             </template>
         </TitleComponent>
-        <j-form layout="vertical" :model="form" ref="formRef">
-            <j-row :gutter="24">
-                <j-col :span="12">
-                    <j-form-item
+        <a-form layout="vertical" :model="form" ref="formRef">
+            <a-row :gutter="24">
+                <a-col :span="12">
+                    <a-form-item
                         label="设备名称"
                         name="name"
                         :rules="{ required: true, message: '请输入设备名称' }"
                     >
-                        <j-input v-model:value="form.name"></j-input>
-                    </j-form-item>
-                </j-col>
-                <j-col :span="12">
-                    <j-form-item
+                        <a-input v-model:value="form.name"></a-input>
+                    </a-form-item>
+                </a-col>
+                <a-col :span="12">
+                    <a-form-item
                         label="产品名称"
                         name="productId"
                         :rules="{ required: true, message: '请选择产品名称' }"
                     >
-                        <j-select
+                        <a-select
                             :disabled="props.childData?.id"
                             @change="selectChange"
                             v-model:value="form.productId"
                         >
-                            <j-select-option
+                            <a-select-option
                                 v-for="i in productList"
                                 :key="i.id"
                                 :value="i.id"
-                                >{{ i.name }}</j-select-option
+                                >{{ i.name }}</a-select-option
                             >
-                        </j-select>
-                    </j-form-item>
-                </j-col>
-            </j-row>
-            <j-row :gutter="24" v-if="visible">
-                <j-col :span="24"
+                        </a-select>
+                    </a-form-item>
+                </a-col>
+            </a-row>
+            <a-row :gutter="24" v-if="visible">
+                <a-col :span="24"
                     ><EdgeMap
                         :productList="productList"
                         @close="comeBack"
                         @getEdgeMap="getEdgeMapData"
-                /></j-col>
-            </j-row>
-        </j-form>
+                /></a-col>
+            </a-row>
+        </a-form>
     </div>
 </template>
 
@@ -84,7 +84,7 @@ const getProductList = async () => {
  */
 const getEdgeMapData = () => {
     if (props.childData?.id) {
-        current.value.parentId = props.childData.id; 
+        current.value.parentId = props.childData.id;
         form.name = props.childData?.name;
         form.productId = props.childData?.productId;
         selectChange(form.productId);

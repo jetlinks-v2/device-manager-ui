@@ -11,13 +11,12 @@
     </div>
 </template>
 
-<script setup lang="ts" name="Guide">
-interface guideProps {
-    title?: string;
-    english?: string;
-}
+<script setup name="Guide">
 
-const props = defineProps<guideProps>();
+const props = defineProps({
+  title: String,
+  english: String
+});
 </script>
 
 <style scoped lang="less">

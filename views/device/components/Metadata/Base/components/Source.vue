@@ -43,7 +43,7 @@
         </template>
       </a-button>
     </PopoverModal>
-    <j-dropdown
+    <a-dropdown
       v-if="myValue === 'rule' && target === 'device' && showReset"
       placement="bottom"
       trigger="click"
@@ -55,8 +55,8 @@
         </template>
       </a-button>
       <template #overlay>
-        <j-menu>
-          <j-menu-item>
+        <a-menu>
+          <a-menu-item>
             <PopoverModal
               v-model:visible="modalVisible"
               :bodyStyle="{
@@ -79,42 +79,42 @@
                   </div>
                 </j-scrollbar>
               </template>
-              <j-button style="padding: 4px 8px" type="link">
+              <a-button style="padding: 4px 8px" type="link">
                 编辑
-              </j-button>
+              </a-button>
             </PopoverModal>
-          </j-menu-item>
-          <j-menu-divider/>
-          <j-menu-item>
+          </a-menu-item>
+          <a-menu-divider/>
+          <a-menu-item>
             <div style="display: flex;">
-              <j-button style="padding: 4px 8px" type="link" @click="resetRules">
+              <a-button style="padding: 4px 8px" type="link" @click="resetRules">
                 重置
-              </j-button>
-              <j-tooltip>
+              </a-button>
+              <a-tooltip>
                 <template #title>重置为产品属性规则</template>
                 <AIcon type="QuestionCircleOutlined" style="margin-top: 10px;"/>
-              </j-tooltip>
+              </a-tooltip>
             </div>
-          </j-menu-item>
-        </j-menu>
+          </a-menu-item>
+        </a-menu>
       </template>
-    </j-dropdown>
+    </a-dropdown>
   </div>
 </template>
 
 <script setup lang="ts" name="MetadataSource">
 import {isNoCommunity} from '@/utils/utils';
 import VirtualRule from './VirtualRule/index.vue';
-import {Form} from 'jetlinks-ui-components';
-import {useInstanceStore} from '@/store/instance';
-import {queryDeviceVirtualProperty, resetRule} from '@/api/device/instance';
+import {Form} from 'ant-design-vue';
+import {useInstanceStore} from '../../../../../../store/instance';
+import {queryDeviceVirtualProperty, resetRule} from '../../../../../../api/instance';
 import {onlyMessage} from '@/utils/comm';
 import {provide, Ref} from 'vue';
-import {queryProductVirtualProperty} from '@/api/device/product';
-import {useProductStore} from '@/store/product';
-import {PopoverModal} from '@/components/Metadata/Table'
-import {useTableWrapper} from "@/components/Metadata/Table/context";
-import {sourceType} from "@/views/device/components/Metadata/Base/utils";
+import {queryProductVirtualProperty} from '../../../../../../api/product';
+import {useProductStore} from '../../../../../../store/product';
+import {PopoverModal} from '../../../../../../components/Metadata'
+import {useTableWrapper} from "../../../../../../components/Metadata/context";
+import {sourceType} from "../utils";
 
 const instanceStore = useInstanceStore();
 const productStore = useProductStore();

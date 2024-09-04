@@ -1,5 +1,5 @@
 <template>
-    <j-modal
+    <a-modal
         :maskClosable="false"
         :visible="true"
         title="编辑指标"
@@ -7,21 +7,21 @@
         @cancel="handleCancel"
         :confirmLoading="loading"
     >
-        <j-alert
+        <a-alert
             message="场景联动页面可引用指标配置触发条件"
             type="warning"
             showIcon
         />
-        <j-form
+        <a-form
             layout="vertical"
             ref="formRef"
             :model="modelRef"
             style="margin-top: 20px"
         >
             <template v-for="(item, index) in modelRef.metrics" :key="index">
-                <j-row type="flex" justify="space-between" :align="'bottom'">
-                    <j-col :span="item.range ? 11 : 24">
-                        <j-form-item
+                <a-row type="flex" justify="space-between" :align="'bottom'">
+                    <a-col :span="item.range ? 11 : 24">
+                        <a-form-item
                             :rules="{
                                 required: true,
                                 message: `请${
@@ -35,7 +35,7 @@
                             :name="['metrics', index, 'value', 0]"
                         >
                             <template #label>
-                                <Ellipsis>{{ item?.name || '指标值' }}</Ellipsis>
+                                <j-ellipsis>{{ item?.name || '指标值' }}</j-ellipsis>
                             </template>
                             <ValueItem
                                 v-model:modelValue="item.value[0]"
@@ -62,12 +62,12 @@
                                         : undefined
                                 "
                             />
-                        </j-form-item>
-                    </j-col>
+                        </a-form-item>
+                    </a-col>
                     <template v-if="item.range">
-                        <j-col><div class="center-icon">~</div></j-col>
-                        <j-col :span="11">
-                            <j-form-item
+                        <a-col><div class="center-icon">~</div></a-col>
+                        <a-col :span="11">
+                            <a-form-item
                                 :name="['metrics', index, 'value', 1]"
                                 :rules="{
                                     required: true,
@@ -84,13 +84,13 @@
                                     v-model:modelValue="item.value[1]"
                                     :itemType="data.valueType?.type"
                                 />
-                            </j-form-item>
-                        </j-col>
+                            </a-form-item>
+                        </a-col>
                     </template>
-                </j-row>
+                </a-row>
             </template>
-        </j-form>
-    </j-modal>
+        </a-form>
+    </a-modal>
 </template>
 
 <script lang="ts" setup>

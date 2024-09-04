@@ -1,14 +1,14 @@
 <template>
     <div class="property-box">
         <div class="property-box-left">
-            <j-input-search
+            <a-input-search
                 v-model:value="value"
                 placeholder="请输入事件名称"
                 style="width: 200px; margin-bottom: 10px"
                 @search="onSearch"
                 :allowClear="true"
             />
-            <j-tabs
+            <a-tabs
                 tab-position="left"
                 style="height: 500px"
                 v-if="tabList.length"
@@ -16,19 +16,19 @@
                 :tabBarStyle="{ width: '200px' }"
                 @change="tabChange"
             >
-                <j-tab-pane v-for="i in tabList" :key="i.key">
+                <a-tab-pane v-for="i in tabList" :key="i.key">
                     <template #tab>
-                        <j-tooltip>
+                        <a-tooltip>
                             <template #title>
                                 {{ i.tab }}
                             </template>
                             <div style="max-width: 150px" class="tabTitle">
                                 {{ i.tab }}
                             </div>
-                        </j-tooltip>
+                        </a-tooltip>
                     </template>
-                </j-tab-pane>
-            </j-tabs>
+                </a-tab-pane>
+            </a-tabs>
             <JEmpty v-else style="margin: 180px 0" />
         </div>
         <div class="property-box-right">

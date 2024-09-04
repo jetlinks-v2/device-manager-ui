@@ -1,8 +1,8 @@
 <template>
     <div>
-        <j-steps class="steps-steps" :current="stepCurrent">
-            <j-step disabled v-for="item in steps" :key="item" :title="item" />
-        </j-steps>
+        <a-steps class="steps-steps" :current="stepCurrent">
+            <a-step disabled v-for="item in steps" :key="item" :title="item" />
+        </a-steps>
         <div class="steps-content">
             <div class="steps-box" v-if="current === 0">
                 <div class="alert">
@@ -10,18 +10,18 @@
                     通过OneNet平台的HTTP推送服务进行数据接入
                 </div>
                 <div style="margin-top: 42px">
-                    <j-row :gutter="[24, 24]">
-                        <j-col :span="16">
-                            <j-form
+                    <a-row :gutter="[24, 24]">
+                        <a-col :span="16">
+                            <a-form
                                 :model="formState"
                                 ref="formRef1"
                                 name="basic"
                                 autocomplete="off"
                                 layout="vertical"
                             >
-                                <j-row :gutter="[24, 24]">
-                                    <j-col :span="24">
-                                        <j-form-item
+                                <a-row :gutter="[24, 24]">
+                                    <a-col :span="24">
+                                        <a-form-item
                                             name="apiAddress"
                                             :rules="[
                                                 {
@@ -31,26 +31,26 @@
                                         >
                                             <template #label>
                                                 接口地址
-                                                <j-tooltip
+                                                <a-tooltip
                                                     title="同步物联网平台设备数据到OneNet"
                                                 >
                                                     <AIcon
                                                         type="QuestionCircleOutlined"
                                                         style="margin-left: 2px"
                                                     />
-                                                </j-tooltip>
+                                                </a-tooltip>
                                             </template>
-                                            <j-input
+                                            <a-input
                                                 v-model:value="
                                                     formState.apiAddress
                                                 "
                                             />
-                                        </j-form-item>
-                                    </j-col>
-                                </j-row>
-                                <j-row :gutter="[24, 24]">
-                                    <j-col :span="24">
-                                        <j-form-item
+                                        </a-form-item>
+                                    </a-col>
+                                </a-row>
+                                <a-row :gutter="[24, 24]">
+                                    <a-col :span="24">
+                                        <a-form-item
                                             label="apiKey"
                                             name="apiKey"
                                             :rules="[
@@ -66,16 +66,16 @@
                                                 },
                                             ]"
                                         >
-                                            <j-input
+                                            <a-input
                                                 v-model:value="formState.apiKey"
                                                 placeholder="请输入apiKey"
                                             />
-                                        </j-form-item>
-                                    </j-col>
-                                </j-row>
-                                <j-row :gutter="[24, 24]">
-                                    <j-col :span="12">
-                                        <j-form-item
+                                        </a-form-item>
+                                    </a-col>
+                                </a-row>
+                                <a-row :gutter="[24, 24]">
+                                    <a-col :span="12">
+                                        <a-form-item
                                             name="validateToken"
                                             :rules="[
                                                 {
@@ -92,25 +92,25 @@
                                         >
                                             <template #label>
                                                 通知Token
-                                                <j-tooltip
+                                                <a-tooltip
                                                     title="OneNet端HTTP推送配置中设置的Token"
                                                 >
                                                     <AIcon
                                                         type="QuestionCircleOutlined"
                                                         style="margin-left: 2px"
                                                     />
-                                                </j-tooltip>
+                                                </a-tooltip>
                                             </template>
-                                            <j-input
+                                            <a-input
                                                 v-model:value="
                                                     formState.validateToken
                                                 "
                                                 placeholder="请输入通知Token"
                                             />
-                                        </j-form-item>
-                                    </j-col>
-                                    <j-col :span="12">
-                                        <j-form-item
+                                        </a-form-item>
+                                    </a-col>
+                                    <a-col :span="12">
+                                        <a-form-item
                                             name="aesKey"
                                             :rules="[
                                                 {
@@ -123,28 +123,28 @@
                                         >
                                             <template #label>
                                                 aesKey
-                                                <j-tooltip
+                                                <a-tooltip
                                                     title="OneNet端生成的消息加密key"
                                                 >
                                                     <AIcon
                                                         type="QuestionCircleOutlined"
                                                         style="margin-left: 2px"
                                                     />
-                                                </j-tooltip>
+                                                </a-tooltip>
                                             </template>
-                                            <j-input
+                                            <a-input
                                                 v-model:value="formState.aesKey"
                                                 placeholder="请输入aesKey"
-                                            /> </j-form-item
-                                    ></j-col>
-                                </j-row>
-                                <j-row :gutter="[24, 24]">
-                                    <j-col :span="24">
-                                        <j-form-item
+                                            /> </a-form-item
+                                    ></a-col>
+                                </a-row>
+                                <a-row :gutter="[24, 24]">
+                                    <a-col :span="24">
+                                        <a-form-item
                                             label="说明"
                                             name="description"
                                         >
-                                            <j-textarea
+                                            <a-textarea
                                                 placeholder="请输入说明"
                                                 :rows="4"
                                                 v-model:value="
@@ -153,11 +153,11 @@
                                                 show-count
                                                 :maxlength="200"
                                             />
-                                        </j-form-item>
-                                    </j-col>
-                                </j-row> </j-form
-                        ></j-col>
-                        <j-col :span="8">
+                                        </a-form-item>
+                                    </a-col>
+                                </a-row> </a-form
+                        ></a-col>
+                        <a-col :span="8">
                             <j-scrollbar height="500">
                                 <div class="doc">
                                     <h1>操作指引：</h1>
@@ -168,7 +168,7 @@
                                         2、获取OneNet平台的产品Key
                                     </div>
                                     <div class="image">
-                                        <j-image width="100%" :src="img5" />
+                                        <a-image width="100%" :src="img5" />
                                     </div>
                                     <div>
                                         3、IOT端创建类型为OneNet的设备接入网关
@@ -177,54 +177,54 @@
                                         4、IOT端创建产品，选中接入方式为OneNet类型的设备接入网关，填写Master-APIkey（OneNet端的产品Key）
                                     </div>
                                     <div class="image">
-                                        <j-image width="100%" :src="img6" />
+                                        <a-image width="100%" :src="img6" />
                                         <div class="desc">填写OneNet网关相关参数</div>
                                     </div>
                                     <div>
                                         5、IOT端添加设备，在设备实例页面为每一台设备设置唯一的IMEI、IMSI码（需与OneNet平台中的值一致）
                                     </div>
                                     <div class="image">
-                                        <j-image width="100%" :src="img7" />
+                                        <a-image width="100%" :src="img7" />
                                     </div>
                                     <h1>HTTP推送配置说明</h1>
                                     <div>
                                         1、点击<b>数据推送&gt;HTTP推送&gt;添加全局推送</b>
                                     </div>
                                     <div class="image">
-                                        <j-image width="100%" :src="img8" />
+                                        <a-image width="100%" :src="img8" />
                                     </div>
                                     <div>
                                         2、填写全局推送相关参数
                                     </div>
                                     <div class="image">
-                                        <j-image width="100%" :src="img9" />
+                                        <a-image width="100%" :src="img9" />
                                     </div>
-                                    <j-descriptions
+                                    <a-descriptions
                                         bordered
                                         size="small"
                                         :column="1"
                                         :labelStyle="{ width: '100px' }"
                                     >
-                                        <j-descriptions-item label="参数"
-                                            >说明</j-descriptions-item
+                                        <a-descriptions-item label="参数"
+                                            >说明</a-descriptions-item
                                         >
-                                        <j-descriptions-item label="推送地址url">
+                                        <a-descriptions-item label="推送地址url">
                                             用于接收OneNet推送设备数据的物联网平台地址:
                                             <div style="word-wrap: break-word">
                                                 {{
                                                     `${origin}/api/one-net/${randomString()}/notify`
                                                 }}
                                             </div>
-                                        </j-descriptions-item>
-                                        <j-descriptions-item label="Token">
+                                        </a-descriptions-item>
+                                        <a-descriptions-item label="Token">
                                             自定义token,可用于验证请求是否来自OneNet
-                                        </j-descriptions-item>
-                                        <j-descriptions-item label="AESKey">
+                                        </a-descriptions-item>
+                                        <a-descriptions-item label="AESKey">
                                             采用AES加密算法对推送的数据进行数据加密，AesKey为加密秘钥
-                                        </j-descriptions-item>
-                                    </j-descriptions>
+                                        </a-descriptions-item>
+                                    </a-descriptions>
 
-                                    <j-alert
+                                    <a-alert
                                         message="注意："
                                         style="margin-top: 15px;"
                                         type="warning"
@@ -235,37 +235,37 @@
                                             <span style="color: red">validate fail: validate token fail.</span>
                                         </span>
                                     </template>
-                                    </j-alert>
+                                    </a-alert>
 
                                     <h1>设备接入网关配置说明</h1>
 
-                                    <j-descriptions
+                                    <a-descriptions
                                         bordered
                                         size="small"
                                         :column="1"
                                         :labelStyle="{ width: '100px' }"
                                     >
-                                        <j-descriptions-item label="参数"
-                                            >说明</j-descriptions-item
+                                        <a-descriptions-item label="参数"
+                                            >说明</a-descriptions-item
                                         >
-                                        <j-descriptions-item label="apiKey"
-                                            >OneNet平台中具体产品的Master-APIkey</j-descriptions-item
+                                        <a-descriptions-item label="apiKey"
+                                            >OneNet平台中具体产品的Master-APIkey</a-descriptions-item
                                         >
-                                        <j-descriptions-item label="通知Token">
+                                        <a-descriptions-item label="通知Token">
                                             填写OneNet数据推送配置中设置的Token
-                                        </j-descriptions-item>
-                                        <j-descriptions-item label="aesKey">
+                                        </a-descriptions-item>
+                                        <a-descriptions-item label="aesKey">
                                             若OneNet数据推送配置了消息加密，此处填写OneNet端数据推送配置中设置的AESkey
-                                        </j-descriptions-item>
-                                    </j-descriptions>
+                                        </a-descriptions-item>
+                                    </a-descriptions>
                                     <h1>其他说明</h1>
                                     <div>
                                         1.在IOT端启用设备时，若OneNet平台没有与之对应的设备，则将在OneNet端自动创建新设备
                                     </div>
                                 </div>
                             </j-scrollbar>
-                        </j-col>
-                    </j-row>
+                        </a-col>
+                    </a-row>
                 </div>
             </div>
         </div>
@@ -276,13 +276,13 @@
                     只能选择HTTP通信方式的协议
                 </div>
                 <div class="search">
-                    <j-input-search
+                    <a-input-search
                         allowClear
                         placeholder="请输入"
                         style="width: 300px"
                         @search="procotolSearch"
                     />
-                    <PermissionButton
+                    <j-permission-button
                         v-if='showAddBtn'
                         type="primary"
                         @click="addProcotol"
@@ -290,15 +290,15 @@
                     >
                         <template #icon><AIcon type="PlusOutlined" /></template>
                         新增
-                    </PermissionButton>
+                    </j-permission-button>
                 </div>
                 <j-scrollbar height="480">
-                    <j-row
+                    <a-row
                         :gutter="[24, 24]"
                         style="width: 100%"
                         v-if="procotolList.length > 0"
                     >
-                        <j-col
+                        <a-col
                             :span="8"
                             v-for="item in procotolList"
                             :key="item.id"
@@ -310,8 +310,8 @@
                                 :data="{ ...item, type: 'protocol' }"
                             >
                             </AccessCard>
-                        </j-col>
-                    </j-row>
+                        </a-col>
+                    </a-row>
                     <j-empty
                         style="margin-top: 10%"
                         v-else
@@ -321,18 +321,18 @@
             </div>
         </div>
         <div v-if="current === 2" class="card-last">
-            <j-row :gutter="[24, 24]">
-                <j-col :span="12">
+            <a-row :gutter="[24, 24]">
+                <a-col :span="12">
                     <title-component data="基本信息" />
                     <div>
-                        <j-form
+                        <a-form
                             :model="formData"
                             name="basic"
                             autocomplete="off"
                             layout="vertical"
                             ref="formRef2"
                         >
-                            <j-form-item
+                            <a-form-item
                                 label="名称"
                                 name="name"
                                 :rules="[
@@ -348,24 +348,24 @@
                                     },
                                 ]"
                             >
-                                <j-input
+                                <a-input
                                     placeholder="请输入名称"
                                     v-model:value="formData.name"
                                 />
-                            </j-form-item>
-                            <j-form-item label="说明" name="description">
-                                <j-textarea
+                            </a-form-item>
+                            <a-form-item label="说明" name="description">
+                                <a-textarea
                                     placeholder="请输入说明"
                                     :rows="4"
                                     v-model:value="formData.description"
                                     show-count
                                     :maxlength="200"
                                 />
-                            </j-form-item>
-                        </j-form>
+                            </a-form-item>
+                        </a-form>
                     </div>
-                </j-col>
-                <j-col :span="12">
+                </a-col>
+                <a-col :span="12">
                     <div class="doc" style="height: 606px">
                         <TitleComponent data="配置概览" />
                         <p>接入方式：{{ provider.name }}</p>
@@ -393,12 +393,12 @@
                             3、添加设备，为每一台设备设置唯一的IMEI、SN、IMSI、PSK码（需与CTWingt平台中填写的值一致，若CTWing平台没有对应的设备，将会通过CTWing平台提供的LWM2M协议自动创建）
                         </p>
                     </div>
-                </j-col>
-            </j-row>
+                </a-col>
+            </a-row>
         </div>
         <div :class="current !== 2 ? 'steps-action' : 'steps-action-save'">
-          <j-button v-if="current > 0" @click="prev" style="margin-right: 8px"> 上一步 </j-button>
-            <PermissionButton
+          <a-button v-if="current > 0" @click="prev" style="margin-right: 8px"> 上一步 </a-button>
+            <j-permission-button
                 style="margin-right: 8px"
                 v-if="current === 2 && view === 'false'"
                 type="primary"
@@ -409,29 +409,27 @@
                 :loading="loading"
             >
                 保存
-            </PermissionButton>
-          <j-button
+            </j-permission-button>
+          <a-button
             v-if="[0, 1].includes(current)"
             type="primary"
 
             @click="next"
           >
             下一步
-          </j-button>
+          </a-button>
 
         </div>
     </div>
 </template>
 
 <script lang="ts" setup name="AccessCloudOneNet">
-import { onlyMessage } from '@/utils/comm';
 import type { FormInstance } from 'ant-design-vue';
-import { update, save, getProtocolList } from '@/api/link/accessConfig';
+import { update, save, getProtocolList } from '../../../../../api/link/accessConfig';
 import AccessCard from '../AccessCard/index.vue';
-import { randomString } from '@/utils/utils';
-import { getImage } from '@/utils/comm';
+import { randomString, onlyMessage } from '@jetlinks-web/utils';
 import { ProtocolMapping } from '../../data';
-import { useMenuStore } from 'store/menu';
+import { useMenuStore } from '@/store/menu';
 
 const menuStory = useMenuStore();
 const origin = window.location.origin;

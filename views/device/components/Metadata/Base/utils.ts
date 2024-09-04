@@ -1,4 +1,4 @@
-import {getMetadataConfig, getMetadataDeviceConfig} from "@/api/device/product";
+import {getMetadataConfig, getMetadataDeviceConfig} from "../../../../../api/product";
 
 export const sourceType = [
     {

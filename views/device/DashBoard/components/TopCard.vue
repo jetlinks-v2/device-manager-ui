@@ -4,12 +4,12 @@
             <div class="content-left">
                 <div class="content-left-title">
                     <span>{{ title }}</span>
-                    <j-tooltip placement="top" v-if="tooltip">
+                    <a-tooltip placement="top" v-if="tooltip">
                         <template #title>
                             <span>{{ tooltip }}</span>
                         </template>
                         <AIcon type="QuestionCircleOutlined" />
-                    </j-tooltip>
+                    </a-tooltip>
                 </div>
                 <div class="content-left-value">{{ value }}</div>
             </div>
@@ -23,7 +23,7 @@
         <div class="top-card-footer">
             <template v-for="(item, index) in footer" :key="index">
                 <span v-if="!item.status">{{ item.title }}</span>
-                <j-badge v-else :text="item.title" :status="item.status" />
+                <a-badge v-else :text="item.title" :status="item.status" />
                 <div class="footer-item-value">{{ item.value }}</div>
             </template>
         </div>
@@ -32,7 +32,7 @@
 
 <script setup lang="ts">
 import { PropType } from 'vue';
-import type { Footer } from '@/views/device/DashBoard/typings'
+import type { Footer } from '../typings'
 
 const props = defineProps({
     title: { type: String, default: '' },

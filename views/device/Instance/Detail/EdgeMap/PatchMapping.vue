@@ -1,5 +1,5 @@
 <template>
-    <j-modal
+    <a-modal
         width="900px"
         title="批量映射"
         visible
@@ -10,10 +10,10 @@
             <div class="map-tree-top">
                 采集器的点位名称与属性名称一致时将自动映射绑定；有多个采集器点位名称与属性名称一致时以第1个采集器的点位数据进行绑定
             </div>
-            <j-spin :spinning="loading">
+            <a-spin :spinning="loading">
                 <div class="map-tree-content">
-                    <j-card class="map-tree-content-card" title="源数据">
-                        <j-tree
+                    <a-card class="map-tree-content-card" title="源数据">
+                        <a-tree
                             checkable
                             :height="300"
                             :tree-data="treeList"
@@ -22,22 +22,22 @@
                             @check="onCheck"
                             v-model:expandedKeys="expandedKeys"
                         />
-                    </j-card>
+                    </a-card>
                     <div style="width: 100px">
-                        <j-button
+                        <a-button
                             :disabled="rightList.length >= leftList.length"
                             @click="onRight"
-                            >加入右侧</j-button
+                            >加入右侧</a-button
                         >
                     </div>
-                    <j-card class="map-tree-content-card" title="采集器">
-                        <j-list
+                    <a-card class="map-tree-content-card" title="采集器">
+                        <a-list
                             size="small"
                             :data-source="rightList"
                             class="map-tree-content-card-list"
                         >
                             <template #renderItem="{ item }">
-                                <j-list-item>
+                                <a-list-item>
                                     {{ item.title }}
                                     <template #actions>
                                         <ConfirmModal
@@ -46,14 +46,14 @@
                                             ><AIcon type="DeleteOutlined"
                                         /></ConfirmModal>
                                     </template>
-                                </j-list-item>
+                                </a-list-item>
                             </template>
-                        </j-list>
-                    </j-card>
+                        </a-list>
+                    </a-card>
                 </div>
-            </j-spin>
+            </a-spin>
         </div>
-    </j-modal>
+    </a-modal>
 </template>
 
 <script lang="ts" setup>

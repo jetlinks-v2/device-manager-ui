@@ -1,16 +1,16 @@
 <template>
-    <j-spin :spinning="loading">
-        <j-input
+    <a-spin :spinning="loading">
+        <a-input
             placeholder="请上传文件"
             v-model:value="value"
             style="width: calc(100% - 100px)"
             :disabled="true"
         />
-        <j-upload
+        <a-upload
             name="file"
             accept=".jar, .zip"
             :multiple="true"
-            :action="PROTOCOL_UPLOAD"
+            :action="FileStaticPath"
             :headers="{
                 [TOKEN_KEY]: LocalStore.get(TOKEN_KEY),
             }"
@@ -19,19 +19,19 @@
             class="upload-box"
             :beforeUpload="beforeUpload"
         >
-            <j-button type="primary">上传jar包</j-button>
-        </j-upload>
-    </j-spin>
+            <a-button type="primary">上传jar包</a-button>
+        </a-upload>
+    </a-spin>
 </template>
 
 <script setup lang="ts" name="FileUpload">
-import { LocalStore } from '@/utils/comm';
-import { TOKEN_KEY } from '@/utils/variable';
-import { PROTOCOL_UPLOAD } from '@/api/link/protocol';
+import { LocalStore } from '@jetlinks-web/utils';
+import { TOKEN_KEY } from '@jetlinks-web/constants';
+import { FileStaticPath } from '@/api/comm';
 import { onlyMessage } from '@/utils/comm';
 import type { UploadChangeParam, UploadProps } from 'ant-design-vue';
-import { notification as Notification } from 'jetlinks-ui-components';
-import { useSystem } from '@/store/system';
+import { notification as Notification } from 'ant-design-vue';
+import { useSystemStore } from '@/store/system';
 
 const emit = defineEmits(['update:modelValue', 'change']);
 
@@ -42,7 +42,7 @@ const props = defineProps({
     },
 });
 
-const paths: string = useSystem().$state.configInfo.paths?.[
+const paths: string = useSystemStore().systemInfo.paths?.[
     'base-path'
 ] as string;
 

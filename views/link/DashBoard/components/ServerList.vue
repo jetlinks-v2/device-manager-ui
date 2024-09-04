@@ -7,7 +7,7 @@
             v-for="(item, index) in options" :key="item" :class="['server-item', myValue.includes(item) ? 'active' : '']"
             @click="() => change(item)"
         >
-          <j-badge :color="myValue.includes(item) ? (Array.isArray(color) ? color[index % 5] : color) : '#a3a3a3'" :text="item" />
+          <a-badge :color="myValue.includes(item) ? (Array.isArray(color) ? color[index % 5] : color) : '#a3a3a3'" :text="item" />
         </div>
       </div>
     </j-scrollbar>

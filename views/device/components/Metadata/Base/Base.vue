@@ -38,9 +38,9 @@
             <div class="extra-copy-tip-context">
               <span> 已复制 </span>
               <template v-if="type === 'properties'">
-                <Ellipsis style="max-width: 120px">
+                <j-ellipsis style="max-width: 120px">
                   {{ copyDetail.groupName }}
-                </Ellipsis>
+                </j-ellipsis>
                 <span >,</span>
               </template>
               <span>
@@ -66,7 +66,7 @@
             </template>
           </a-button>
 
-          <PermissionButton
+          <j-permission-button
               type="primary"
               key="update"
               placement="topRight"
@@ -83,7 +83,7 @@
               @click="handleSaveClick()"
           >
             保存
-          </PermissionButton>
+          </j-permission-button>
         </div>
       </div>
     </template>
@@ -277,30 +277,27 @@ import type {
   MetadataItem,
   MetadataType,
   ProductItem,
-} from '@/views/device/Product/typings';
+} from '../../../Product/typings';
 import type {PropType} from 'vue';
-import {TOKEN_KEY} from '@/utils/variable'
+import type {DeviceInstance} from '../../../Instance/typings';
 import {useRouter, onBeforeRouteUpdate} from 'vue-router'
 import {useMetadata, useOperateLimits, useGroup} from './hooks';
 import {useColumns, useSaveUnit} from './columns';
 import {getMetadataItemByType, limitsMap} from './utils';
 import {Source, OtherSetting} from './components';
-import {saveProductVirtualProperty} from '@/api/device/product';
-import {saveDeviceVirtualProperty} from '@/api/device/instance';
-import {useInstanceStore} from '@/store/instance';
-import {useProductStore} from '@/store/product';
+import {saveProductVirtualProperty} from '../../../../../api/product';
+import {saveDeviceVirtualProperty} from '../../../../../api/instance';
+import {useInstanceStore} from '../../../../../store/instance';
+import {useProductStore} from '../../../../../store/product';
 import {asyncUpdateMetadata, updateMetadata} from '../metadata';
-import {DeviceInstance} from '@/views/device/Instance/typings';
-import {onlyMessage, LocalStore} from '@/utils/comm';
+import {onlyMessage, getToken, EventEmitter } from '@jetlinks-web/utils';
 import {omit} from "lodash-es";
 import {PropertiesModal, FunctionModal, EventModal, TagsModal} from './DetailModal'
-import {Modal} from 'jetlinks-ui-components'
-import {EventEmitter} from "@/utils/utils";
+import {Modal} from 'ant-design-vue'
 import {watch} from "vue";
-import {useSystem} from "@/store/system";
-import {useMenuStore} from "@/store/menu";
+import { useSystemStore, useMenuStore, useAuthStore } from "@/store";
+import {} from "@/store/menu";
 import {storeToRefs} from "pinia";
-import {usePermissionStore} from '@/store/permission';
 import {
   EditTable,
   TypeSelect,
@@ -316,8 +313,8 @@ import {
   GroupSelect,
   EditTableFormItem,
   BooleanSelect
-} from '@/components/Metadata/Table'
-import {EventLevel} from "@/views/device/data";
+} from '../../../../../components/Metadata'
+import {EventLevel} from "../../../data";
 import {message } from "ant-design-vue";
 import { Import } from './components/Import'
 
@@ -338,8 +335,8 @@ const props = defineProps({
 
 const _target = inject<'device' | 'product'>('_metadataType', props.target);
 
-const system = useSystem();
-const {basicLayout} = storeToRefs(system);
+const system = useSystemStore();
+const { layout:basicLayout } = storeToRefs(system);
 const router = useRouter()
 
 const { unitOptions } = useSaveUnit()
@@ -348,7 +345,7 @@ const {data: metadata, noEdit, productNoEdit} = useMetadata(_target, props.type)
 const {data: tagsMetadata} = useMetadata(_target, 'tags')
 const {hasOperate} = useOperateLimits(_target);
 
-const permissionStore = usePermissionStore()
+const permissionStore = useAuthStore()
 const instanceStore = useInstanceStore()
 const productStore = useProductStore()
 
@@ -588,7 +585,7 @@ const jumpProduct = () => {
 }
 
 const parentTabsChange = (next?: Function) => {
-  if (editStatus.value && permissionStore.hasPermission(`${props.permission}:update`) && LocalStore.get(TOKEN_KEY)) {
+  if (editStatus.value && permissionStore.hasPermission(`${props.permission}:update`) && getToken()) {
     const modal = Modal.confirm({
       content: '页面改动数据未保存',
       okText: '保存',
@@ -655,7 +652,7 @@ watch(() => metadata.value, () => {
     }
     if(props.type === 'functions' && !item.output){
       item['output'] = {
-        
+
       }
     }
     return item

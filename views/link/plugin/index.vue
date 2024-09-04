@@ -1,5 +1,5 @@
 <template>
-    <page-container>
+    <j-page-container>
         <pro-search
             :columns="columns"
             target="link-plugin"
@@ -16,14 +16,14 @@
                 :params="params"
             >
                 <template #headerTitle>
-                    <PermissionButton
+                    <j-permission-button
                         type="primary"
                         @click="handleAdd"
                         hasPermission="link/plugin:add"
                     >
                         <template #icon><AIcon type="PlusOutlined" /></template>
                         新增
-                    </PermissionButton>
+                    </j-permission-button>
                 </template>
 
                 <template #card="slotProps">
@@ -46,11 +46,11 @@
                         <template #content>
                             <div>
                                 <div>
-                                    <j-tag class="plugin-version">{{
+                                    <a-tag class="plugin-version">{{
                                         slotProps.version
-                                    }}</j-tag>
+                                    }}</a-tag>
                                 </div>
-                                <Ellipsis
+                                <j-ellipsis
                                     style="
                                         width: calc(100% - 100px);
                                         margin-bottom: 18px;
@@ -64,30 +64,30 @@
                                     >
                                         {{ slotProps.name }}
                                     </span>
-                                </Ellipsis>
+                                </j-ellipsis>
                             </div>
-                            <j-row>
-                                <j-col :span="12">
+                            <a-row>
+                                <a-col :span="12">
                                     <div class="card-item-content-text">
                                         插件ID
                                     </div>
-                                    <Ellipsis style="width: 100%">
+                                    <j-ellipsis style="width: 100%">
                                         {{ slotProps.id }}
-                                    </Ellipsis>
-                                </j-col>
-                                <j-col :span="12">
+                                    </j-ellipsis>
+                                </a-col>
+                                <a-col :span="12">
                                     <div class="card-item-content-text">
                                         插件类型
                                     </div>
-                                    <Ellipsis style="width: 100%">
+                                    <j-ellipsis style="width: 100%">
                                         {{ TypeMap[slotProps.type] }}
-                                    </Ellipsis>
-                                </j-col>
-                            </j-row>
+                                    </j-ellipsis>
+                                </a-col>
+                            </a-row>
                         </template>
 
                         <template #actions="item">
-                            <PermissionButton
+                            <j-permission-button
                                 :disabled="item.disabled"
                                 :popConfirm="item.popConfirm"
                                 :tooltip="{
@@ -104,7 +104,7 @@
                                     <AIcon :type="item.icon" />
                                     <span>{{ item?.text }}</span>
                                 </template>
-                            </PermissionButton>
+                            </j-permission-button>
                         </template>
                     </CardBox>
                 </template>
@@ -112,12 +112,12 @@
                     <span>{{ TypeMap[slotProps.type] }}</span>
                 </template>
                 <template #action="slotProps">
-                    <j-space :size="16">
+                    <a-space :size="16">
                         <template
                             v-for="i in getActions(slotProps)"
                             :key="i.key"
                         >
-                            <PermissionButton
+                            <j-permission-button
                                 :disabled="i.disabled"
                                 :popConfirm="i.popConfirm"
                                 :tooltip="{
@@ -132,20 +132,20 @@
                                 <template #icon
                                     ><AIcon :type="i.icon"
                                 /></template>
-                            </PermissionButton>
+                            </j-permission-button>
                         </template>
-                    </j-space>
+                    </a-space>
                 </template>
             </JProTable>
         </FullPage>
-    </page-container>
+    </j-page-container>
     <SaveModal v-if="visible" :data="editData" @cancel="cancel" @ok="save" />
 </template>
 
 <script setup lang="ts" name="PluginIndex">
 import SaveModal from './Save.vue';
-import { getImage, onlyMessage } from '@/utils/comm';
-import { queryPage, removeFn, getTypes } from '@/api/link/plugin';
+import { onlyMessage } from '@jetlinks-web/utils';
+import { queryPage, removeFn, getTypes } from '../../../api/link/plugin';
 import { TypeMap } from './util';
 
 const route = useRoute();

@@ -1,8 +1,8 @@
 <template>
     <div>
-        <j-steps :current="stepCurrent">
-            <j-step disabled v-for="item in steps" :key="item" :title="item" />
-        </j-steps>
+        <a-steps :current="stepCurrent">
+            <a-step disabled v-for="item in steps" :key="item" :title="item" />
+        </a-steps>
         <div class="steps-content">
             <div class="steps-box" v-if="current === 0">
                 <div class="alert">
@@ -10,13 +10,13 @@
                     选择与设备通信的网络组件
                 </div>
                 <div class="search">
-                    <j-input-search
+                    <a-input-search
                         allowClear
                         placeholder="请输入"
                         style="width: 300px"
                         @search="networkSearch"
                     />
-                    <PermissionButton
+                    <j-permission-button
 
                         type="primary"
                         @click="addNetwork"
@@ -24,15 +24,15 @@
                     >
                         <template #icon><AIcon type="PlusOutlined" /></template>
                         新增
-                    </PermissionButton>
+                    </j-permission-button>
                 </div>
                 <j-scrollbar height="480">
-                    <j-row
+                    <a-row
                         :gutter="[24, 24]"
                         style="width: 100%"
                         v-if="networkList.length > 0"
                     >
-                        <j-col
+                        <a-col
                             :span="8"
                             v-for="item in networkList"
                             :key="item.id"
@@ -50,7 +50,7 @@
                             >
                                 <template #other>
                                     <div class="other">
-                                        <j-tooltip placement="top" :title="addressesTip(item.addresses)">
+                                        <a-tooltip placement="top" :title="addressesTip(item.addresses)">
                                             <div
                                                 v-for="i in (
                                                     item.addresses || []
@@ -58,7 +58,7 @@
                                                 :key="i.address"
                                                 class="item"
                                             >
-                                                <j-badge
+                                                <a-badge
                                                     :status="getColor(i)"
                                                     :text="i.address"
                                                 />
@@ -70,12 +70,12 @@
                                                     >等{{ item.addresses.length }}条</span
                                                 >
                                             </div>
-                                        </j-tooltip>
+                                        </a-tooltip>
                                     </div>
                                 </template>
                             </AccessCard>
-                        </j-col>
-                    </j-row>
+                        </a-col>
+                    </a-row>
                     <j-empty
                         style="margin-top: 10%"
                         v-else
@@ -89,13 +89,13 @@
                     使用选择的消息协议，对网络组件通信数据进行编解码、认证等操作
                 </div>
                 <div class="search">
-                    <j-input-search
+                    <a-input-search
                         allowClear
                         placeholder="请输入"
                         style="width: 300px"
                         @search="procotolSearch"
                     />
-                    <PermissionButton
+                    <j-permission-button
                       v-if='showAddBtn'
                         type="primary"
                         @click="addProcotol"
@@ -104,15 +104,15 @@
                     >
                         <template #icon><AIcon type="PlusOutlined" /></template>
                         新增
-                    </PermissionButton>
+                    </j-permission-button>
                 </div>
                 <j-scrollbar height="480">
-                    <j-row
+                    <a-row
                         :gutter="[24, 24]"
                         style="width: 100%"
                         v-if="procotolList.length > 0"
                     >
-                        <j-col
+                        <a-col
                             :span="8"
                             v-for="item in procotolList"
                             :key="item?.id"
@@ -124,8 +124,8 @@
                                 :data="{ ...item, type: 'protocol' }"
                             >
                             </AccessCard>
-                        </j-col>
-                    </j-row>
+                        </a-col>
+                    </a-row>
                     <j-empty
                         style="margin-top: 10%"
                         v-else
@@ -140,39 +140,39 @@
                         clientHeight > 900 ? 750 : clientHeight * 0.7
                     }px`"
                 >
-                    <j-row :gutter="[24, 24]">
-                        <j-col :span="12">
+                    <a-row :gutter="[24, 24]">
+                        <a-col :span="12">
                             <title-component data="基本信息" />
-                            <j-form
+                            <a-form
                                 ref="formRef"
                                 :model="formData"
                                 layout="vertical"
                             >
-                                <j-form-item
+                                <a-form-item
                                     label="名称"
                                     v-bind="validateInfos.name"
                                 >
-                                    <j-input
+                                    <a-input
                                         v-model:value="formData.name"
                                         allowClear
                                         placeholder="请输入名称"
                                     />
-                                </j-form-item>
-                                <j-form-item
+                                </a-form-item>
+                                <a-form-item
                                     label="说明"
                                     v-bind="validateInfos.description"
                                 >
-                                    <j-textarea
+                                    <a-textarea
                                         placeholder="请输入说明"
                                         :rows="4"
                                         v-model:value="formData.description"
                                         show-count
                                         :maxlength="200"
                                     />
-                                </j-form-item>
-                            </j-form>
-                        </j-col>
-                        <j-col :span="12">
+                                </a-form-item>
+                            </a-form>
+                        </a-col>
+                        <a-col :span="12">
                             <j-scrollbar height="580">
                                 <div class="doc">
                                     <h1>接入方式</h1>
@@ -200,7 +200,7 @@
                                             v-for="i in getNetworkCurrentData()"
                                             :key="i.address"
                                         >
-                                            <j-badge
+                                            <a-badge
                                                 :status="getColor(i)"
                                                 :text="i.address"
                                             />
@@ -223,7 +223,7 @@
                                             }}
                                         </h1>
                                         <j-scrollbar height="400">
-                                            <j-table
+                                            <a-table
                                                 :pagination="false"
                                                 :rowKey="generateUUID()"
                                                 :data-source="
@@ -253,25 +253,25 @@
                                                         {{ getStream(record) }}
                                                     </template>
                                                 </template>
-                                            </j-table>
+                                            </a-table>
                                         </j-scrollbar>
                                     </div>
                                 </div>
                             </j-scrollbar>
-                        </j-col>
-                    </j-row>
+                        </a-col>
+                    </a-row>
                 </div>
             </div>
         </div>
         <div class="steps-action">
-            <j-button
+            <a-button
               v-if="type === 'child-device' ? current > 1 : current > 0"
               style="margin-right: 8px"
               @click="prev"
             >
               上一步
-            </j-button>
-            <PermissionButton
+            </a-button>
+            <j-permission-button
                 v-if="current === 2 && view === 'false'"
                 type="primary"
                 style="margin-right: 8px"
@@ -282,14 +282,14 @@
                 :loading='loading'
             >
                 保存
-            </PermissionButton>
-            <j-button
+            </j-permission-button>
+            <a-button
               v-if="[0, 1].includes(current)"
               type="primary"
               @click="next"
             >
               下一步
-            </j-button>
+            </a-button>
         </div>
     </div>
 </template>
@@ -302,7 +302,7 @@ import {
     save,
     update,
     getChildConfigView,
-} from '@/api/link/accessConfig';
+} from '../../../../../api/link/accessConfig';
 import {
     descriptionList,
     NetworkTypeMapping,
@@ -313,8 +313,8 @@ import {
 import AccessCard from '../AccessCard/index.vue';
 import { Form } from 'ant-design-vue';
 import type { FormInstance, TableColumnType } from 'ant-design-vue';
-import { useMenuStore } from 'store/menu';
-import { onlyMessage } from '@/utils/comm';
+import { useMenuStore } from '@/store/menu';
+import { onlyMessage } from '@jetlinks-web/utils';
 
 const menuStory = useMenuStore();
 function generateUUID() {
@@ -640,10 +640,10 @@ watch(
 const addressesTip = (data:any)=>{
     let tip:any = ''
     data.forEach((item:any)=>{
-        tip =  tip + " " +item.address 
+        tip =  tip + " " +item.address
     })
     return tip
-} 
+}
 </script>
 
 <style lang="less" scoped>

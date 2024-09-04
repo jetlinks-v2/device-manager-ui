@@ -1,14 +1,14 @@
 <template>
     <div class="operator-box">
         <div class="left">
-            <j-input-search
+            <a-input-search
                 @search="search"
                 allow-clear
                 placeholder="搜索关键字"
             />
             <div class="tree">
                 <j-scrollbar>
-                    <j-tree
+                    <a-tree
                         @select="selectTree"
                         :field-names="{ title: 'name', key: 'id' }"
                         auto-expand-parent
@@ -19,7 +19,7 @@
                         <template #title="node">
                             <div class="node">
                                 <div style="max-width: 160px">
-                                    <Ellipsis>{{ node.name }}</Ellipsis>
+                                    <j-ellipsis>{{ node.name }}</j-ellipsis>
                                 </div>
                                 <div
                                     :class="
@@ -28,7 +28,7 @@
                                             : 'add'
                                     "
                                 >
-                                    <j-popover
+                                    <a-popover
                                         v-if="node.type === 'property'"
                                         :overlayStyle="{
                                             zIndex: 1200,
@@ -38,36 +38,36 @@
                                         :getPopupContainer="getPopupContainer"
                                     >
                                         <template #content>
-                                            <j-space direction="vertical">
-                                                <j-tooltip
+                                            <a-space direction="vertical">
+                                                <a-tooltip
                                                     placement="right"
                                                     title="实时值为空时获取上一有效值补齐，实时值不为空则使用实时值"
                                                 >
-                                                    <j-button
+                                                    <a-button
                                                         type="text"
                                                         @click="
                                                             recentClick(node)
                                                         "
                                                     >
                                                         $recent实时值
-                                                    </j-button>
-                                                </j-tooltip>
-                                                <j-tooltip
+                                                    </a-button>
+                                                </a-tooltip>
+                                                <a-tooltip
                                                     placement="right"
                                                     title="实时值的上一有效值"
                                                 >
-                                                    <j-button
+                                                    <a-button
                                                         @click="lastClick(node)"
                                                         type="text"
                                                     >
                                                         上一值
-                                                    </j-button>
-                                                </j-tooltip>
-                                            </j-space>
+                                                    </a-button>
+                                                </a-tooltip>
+                                            </a-space>
                                         </template>
                                         <a class="has-property">添加</a>
-                                    </j-popover>
-                                    <j-popover
+                                    </a-popover>
+                                    <a-popover
                                         v-else-if="node.type === 'tags'"
                                         :overlayStyle="{
                                             zIndex: 1200,
@@ -77,24 +77,24 @@
                                         :getPopupContainer="getPopupContainer"
                                     >
                                         <template #content>
-                                            <j-space direction="vertical">
-                                                <j-tooltip
+                                            <a-space direction="vertical">
+                                                <a-tooltip
                                                     placement="right"
                                                     title="实时值为空时获取上一有效值补齐，实时值不为空则使用实时值"
                                                 >
-                                                    <j-button
+                                                    <a-button
                                                         type="text"
                                                         @click="
                                                             recentTagsClick(node)
                                                         "
                                                     >
                                                         tag实时值
-                                                    </j-button>
-                                                </j-tooltip>
-                                            </j-space>
+                                                    </a-button>
+                                                </a-tooltip>
+                                            </a-space>
                                         </template>
                                         <a class="has-property">添加</a>
-                                    </j-popover>
+                                    </a-popover>
                                     <a
                                         class="no-property"
                                         v-else
@@ -105,7 +105,7 @@
                                 </div>
                             </div>
                         </template>
-                    </j-tree>
+                    </a-tree>
                 </j-scrollbar>
             </div>
         </div>
@@ -115,14 +115,14 @@
     </div>
 </template>
 <script setup lang="ts" name="Operator">
-import { useProductStore } from '@/store/product';
+import { useProductStore } from '../../../store/product';
 import type { OperatorItem } from './typings';
-import { treeFilter } from '@/utils/tree';
-import { PropertyMetadata } from '@/views/device/Product/typings';
-import { getOperator } from '@/api/device/product';
+import { treeFilter } from '../utils';
+import { PropertyMetadata } from '../../../views/device/Product/typings';
+import { getOperator } from '../../../api/product';
 import { inject } from 'vue';
-import {useTableWrapper, useTableFullScreen} from "@/components/Metadata/Table/context";
-import Markdown from '@/components/Markdown'
+import {useTableWrapper, useTableFullScreen} from "../../../components/Metadata/context";
+import Markdown from 'device/components/Markdown'
 
 const props = defineProps({
     id: String,

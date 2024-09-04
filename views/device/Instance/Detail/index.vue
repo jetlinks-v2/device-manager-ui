@@ -1,5 +1,5 @@
 <template>
-    <page-container
+    <j-page-container
         :tabList="list"
         :showBack="true"
         :tabActiveKey="instanceStore.tabActiveKey"
@@ -7,16 +7,16 @@
     >
         <template #title>
             <div style="display: flex; align-items: center">
-                <j-tooltip :title="instanceStore.current?.name">
+                <a-tooltip :title="instanceStore.current?.name">
                     <div class="deviceDetailHead">
                         {{ instanceStore.current?.name }}
                     </div>
-                </j-tooltip>
-                <j-divider type="vertical" />
-                <j-space>
+                </a-tooltip>
+                <a-divider type="vertical" />
+                <a-space>
                     <span style="font-size: 14px; color: rgba(0, 0, 0, 0.85)">
                         状态：
-                        <j-badge
+                        <a-badge
                             :status="
                                 statusMap.get(
                                     instanceStore.current?.state?.value,
@@ -25,7 +25,7 @@
                         />
                         {{ instanceStore.current?.state?.text }}
                     </span>
-                    <PermissionButton
+                    <j-permission-button
                         v-if="
                             instanceStore.current?.state?.value === 'notActive'
                         "
@@ -38,8 +38,8 @@
                         hasPermission="device/Instance:action"
                     >
                         启用设备
-                    </PermissionButton>
-                    <PermissionButton
+                    </j-permission-button>
+                    <j-permission-button
                         v-if="instanceStore.current?.state?.value === 'online'"
                         type="link"
                         style="margin-top: -5px; padding: 0 20px"
@@ -50,8 +50,8 @@
                         hasPermission="device/Instance:action"
                     >
                         断开连接
-                    </PermissionButton>
-                    <j-tooltip
+                    </j-permission-button>
+                    <a-tooltip
                         v-if="
                             instanceStore.current?.accessProvider ===
                                 'child-device' &&
@@ -69,26 +69,26 @@
                             type="QuestionCircleOutlined"
                             style="font-size: 14px"
                         />
-                    </j-tooltip>
-                </j-space>
+                    </a-tooltip>
+                </a-space>
             </div>
         </template>
         <template #content>
-            <j-descriptions size="small" :column="4">
-                <j-descriptions-item label="ID">{{
+            <a-descriptions size="small" :column="4">
+                <a-descriptions-item label="ID">{{
                     instanceStore.current?.id
-                }}</j-descriptions-item>
-                <j-descriptions-item label="所属产品">
-                    <PermissionButton
+                }}</a-descriptions-item>
+                <a-descriptions-item label="所属产品">
+                    <j-permission-button
                         type="link"
                         style="margin-top: -5px; padding: 0"
                         @click="jumpProduct"
                         hasPermission="device/Product:view"
                     >
                         {{ instanceStore.current?.productName }}
-                    </PermissionButton>
-                </j-descriptions-item>
-            </j-descriptions>
+                    </j-permission-button>
+                </a-descriptions-item>
+            </a-descriptions>
         </template>
         <template #extra>
             <img
@@ -106,7 +106,7 @@
                 />
             </div>
         </FullPage>
-    </page-container>
+    </j-page-container>
 </template>
 
 <script lang="ts" setup>

@@ -1,21 +1,21 @@
 <template>
-    <j-card :hoverable="true" class="card-box">
-        <!-- <j-spin :spinning="loading"> -->
+    <a-card :hoverable="true" class="card-box">
+        <!-- <a-spin :spinning="loading"> -->
         <div class="card-container">
             <div class="header">
                 <div class="title">
-                    <Ellipsis style="width: 100%;">
+                    <j-ellipsis style="width: 100%;">
                         {{ _props.data.name }}
-                    </Ellipsis>
+                    </j-ellipsis>
                 </div>
                 <div class="extra">
-                    <j-space :size="16">
+                    <a-space :size="16">
                         <template v-for="i in actions" :key="i.key">
-                            <j-tooltip
+                            <a-tooltip
                                 v-bind="i.tooltip"
                                 v-if="i.key !== 'edit'"
                             >
-                                <j-button
+                                <a-button
                                     style="padding: 0; margin: 0"
                                     type="link"
                                     :disabled="i.disabled"
@@ -25,9 +25,9 @@
                                         :type="i.icon"
                                         style="color: #323130; font-size: 12px"
                                     />
-                                </j-button>
-                            </j-tooltip>
-                            <PermissionButton
+                                </a-button>
+                            </a-tooltip>
+                            <j-permission-button
                                 :disabled="i.disabled"
                                 v-else
                                 :popConfirm="i.popConfirm"
@@ -40,9 +40,9 @@
                                 <template #icon
                                     ><AIcon :type="i.icon" style="color: #323130; font-size: 12px"
                                 /></template>
-                            </PermissionButton>
+                            </j-permission-button>
                         </template>
-                    </j-space>
+                    </a-space>
                 </div>
             </div>
             <div class="value">
@@ -57,8 +57,8 @@
                 </div>
             </div>
         </div>
-        <!-- </j-spin> -->
-    </j-card>
+        <!-- </a-spin> -->
+    </a-card>
 </template>
 
 <script lang="ts" setup>

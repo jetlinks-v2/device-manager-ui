@@ -1,6 +1,6 @@
 <template>
-    <page-container>
-        <j-spin :spinning="loading">
+    <j-page-container>
+        <a-spin :spinning="loading">
           <div v-if="type && id === ':id'">
             <Provider
               @onClick="goProviders"
@@ -8,7 +8,7 @@
             ></Provider>
           </div>
             <FullPage  v-else>
-                <j-card :bordered="false">
+                <a-card :bordered="false">
                     <div>
                         <div class="go-back" v-if="id === ':id'">
                             <a @click="goBack">返回</a>
@@ -60,10 +60,10 @@
                             :data="data"
                         />
                     </div>
-                </j-card>
+                </a-card>
             </FullPage>
-        </j-spin>
-    </page-container>
+        </a-spin>
+    </j-page-container>
 </template>
 
 <script lang="ts" setup name="AccessConfigDetail">
@@ -75,9 +75,9 @@ import Edge from '../components/Edge/index.vue';
 import GateWay from '../components/Edge/geteway.vue';
 import Cloud from '../components/Cloud/index.vue';
 import Plugin from '../components/Plugin/index.vue'
-import { getProviders, detail } from '@/api/link/accessConfig';
-import { accessConfigTypeFilter } from '@/utils/setting';
-import { queryProductList } from '@/api/device/product';
+import { getProviders, detail } from '../../../../api/link/accessConfig';
+import { queryProductList } from '../../../../api/product';
+import { accessConfigTypeFilter } from '@/utils';
 
 const route = useRoute();
 const id = route.params.id as string;

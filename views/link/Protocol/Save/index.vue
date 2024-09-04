@@ -1,11 +1,11 @@
-<template lang="">
-    <j-modal
+<template>
+    <a-modal
         :title="data.id ? '编辑' : '新增'"
         :visible="true"
         width="700px"
         @cancel="handleCancel"
     >
-        <j-form
+        <a-form
             class="form"
             layout="vertical"
             :model="formData"
@@ -13,7 +13,7 @@
             autocomplete="off"
             ref="formRef"
         >
-            <j-form-item
+            <a-form-item
                 label="名称"
                 name="name"
                 :rules="[
@@ -21,12 +21,12 @@
                     { max: 64, message: '最多可输入64个字符' },
                 ]"
             >
-                <j-input
+                <a-input
                     placeholder="请输入名称"
                     v-model:value="formData.name"
                 />
-            </j-form-item>
-            <j-form-item
+            </a-form-item>
+            <a-form-item
                 label="类型"
                 name="type"
                 :rules="[
@@ -40,8 +40,8 @@
                     :column="2"
                     @change="changeType"
                 />
-            </j-form-item>
-            <j-form-item
+            </a-form-item>
+            <a-form-item
                 label="文件地址"
                 :name="['configuration', 'location']"
                 :rules="[
@@ -52,7 +52,7 @@
                     },
                 ]"
             >
-                <j-input
+                <a-input
                     v-if="formData.type === 'local'"
                     placeholder="请输入文件地址"
                     v-model:value="formData.configuration.location"
@@ -61,20 +61,20 @@
                     v-else
                     v-model:modelValue="formData.configuration.location"
                 />
-            </j-form-item>
-            <j-form-item label="说明" name="description">
-                <j-textarea
+            </a-form-item>
+            <a-form-item label="说明" name="description">
+                <a-textarea
                     placeholder="请输入说明"
                     v-model:value="formData.description"
                     :maxlength="200"
                     :rows="3"
                     showCount
                 />
-            </j-form-item>
-        </j-form>
+            </a-form-item>
+        </a-form>
         <template #footer>
-            <j-button key="back" @click="handleCancel">取消</j-button>
-            <PermissionButton
+            <a-button key="back" @click="handleCancel">取消</a-button>
+            <j-permission-button
                 key="submit"
                 type="primary"
                 :loading="loading"
@@ -83,16 +83,16 @@
                 :hasPermission="`link/Protocol:${id ? 'update' : 'add'}`"
             >
                 确认
-            </PermissionButton>
+            </j-permission-button>
         </template>
-    </j-modal>
+    </a-modal>
 </template>
 <script lang="ts" setup>
 import { onlyMessage } from '@/utils/comm';
 import { getImage } from '@/utils/comm';
 import type { UploadChangeParam, FormInstance } from 'ant-design-vue';
 import FileUpload from './FileUpload.vue';
-import { save, update } from '@/api/link/protocol';
+import { save, update } from '../../../../api/link/protocol';
 import { FormDataType } from '../type.d';
 
 const loading = ref(false);

@@ -1,8 +1,8 @@
 <template>
-  <j-button type="link" style="padding-left: 0;" :disabled="disabled">
+  <a-button type="link" style="padding-left: 0;" :disabled="disabled">
     <AIcon type="SettingOutlined" />
     配置
-  </j-button>
+  </a-button>
 </template>
 
 <script setup name="ModelButton">

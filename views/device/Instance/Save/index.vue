@@ -1,5 +1,5 @@
 <template>
-    <j-modal
+    <a-modal
         :maskClosable="false"
         width="650px"
         :visible="true"
@@ -9,15 +9,15 @@
         :confirmLoading="loading"
     >
         <div style="margin-top: 10px">
-            <j-form :layout="'vertical'" ref="formRef" :model="modelRef">
-                <j-row type="flex">
-                    <j-col flex="180px">
-                        <j-form-item name="photoUrl">
+            <a-form :layout="'vertical'" ref="formRef" :model="modelRef">
+                <a-row type="flex">
+                    <a-col flex="180px">
+                        <a-form-item name="photoUrl">
                             <JProUpload accept="image/jpeg,image/png" v-model="modelRef.photoUrl" />
-                        </j-form-item>
-                    </j-col>
-                    <j-col flex="auto">
-                        <j-form-item
+                        </a-form-item>
+                    </a-col>
+                    <a-col flex="auto">
+                        <a-form-item
                             name="id"
                             :rules="[
                                 {
@@ -37,23 +37,23 @@
                             <template #label>
                                 <span>
                                     ID
-                                    <j-tooltip
+                                    <a-tooltip
                                         title="若不填写，系统将自动生成唯一ID"
                                     >
                                         <AIcon
                                             type="QuestionCircleOutlined"
                                             style="margin-left: 2px"
                                         />
-                                    </j-tooltip>
+                                    </a-tooltip>
                                 </span>
                             </template>
-                            <j-input
+                            <a-input
                                 v-model:value="modelRef.id"
                                 placeholder="请输入ID"
                                 :disabled="!!data?.id"
                             />
-                        </j-form-item>
-                        <j-form-item
+                        </a-form-item>
+                        <a-form-item
                             label="名称"
                             name="name"
                             :rules="[
@@ -67,14 +67,14 @@
                                 },
                             ]"
                         >
-                            <j-input
+                            <a-input
                                 v-model:value="modelRef.name"
                                 placeholder="请输入名称"
                             />
-                        </j-form-item>
-                    </j-col>
-                </j-row>
-                <j-form-item
+                        </a-form-item>
+                    </a-col>
+                </a-row>
+                <a-form-item
                     name="productId"
                     :rules="[
                         {
@@ -86,30 +86,30 @@
                     <template #label>
                         <span
                             >所属产品
-                            <j-tooltip title="只能选择“正常”状态的产品">
+                            <a-tooltip title="只能选择“正常”状态的产品">
                                 <AIcon
                                     type="QuestionCircleOutlined"
                                     style="margin-left: 2px"
                                 />
-                            </j-tooltip>
+                            </a-tooltip>
                         </span>
                     </template>
-                    <j-select
+                    <a-select
                         showSearch
                         v-model:value="modelRef.productId"
                         :disabled="!!data?.id"
                         placeholder="请选择状态为“正常”的产品"
                     >
-                        <j-select-option
+                        <a-select-option
                             :value="item.id"
                             v-for="item in productList"
                             :key="item.id"
                             :label="item.name"
-                            >{{ item.name }}</j-select-option
+                            >{{ item.name }}</a-select-option
                         >
-                    </j-select>
-                </j-form-item>
-                <j-form-item
+                    </a-select>
+                </a-form-item>
+                <a-form-item
                     label="说明"
                     name="describe"
                     :rules="[
@@ -119,16 +119,16 @@
                         },
                     ]"
                 >
-                    <j-textarea
+                    <a-textarea
                         v-model:value="modelRef.describe"
                         placeholder="请输入说明"
                         showCount
                         :maxlength="200"
                     />
-                </j-form-item>
-            </j-form>
+                </a-form-item>
+            </a-form>
         </div>
-    </j-modal>
+    </a-modal>
 </template>
 
 <script lang="ts" setup>

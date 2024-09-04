@@ -7,24 +7,24 @@
           {{ item.value }}
         </span>
         <span>
-          <j-dropdown>
+          <a-dropdown>
             <AIcon type="MoreOutlined" />
             <template #overlay>
-              <j-menu>
-                <j-menu-item v-for="item in symbolList.filter((t: SymbolType, i: number) => i > 6)" :key="item.key"
+              <a-menu>
+                <a-menu-item v-for="item in symbolList.filter((t: SymbolType, i: number) => i > 6)" :key="item.key"
                   @click="addOperatorValue(item.value)">
                   {{ item.value }}
-                </j-menu-item>
-              </j-menu>
+                </a-menu-item>
+              </a-menu>
             </template>
-          </j-dropdown>
+          </a-dropdown>
         </span>
       </div>
       <div class="right">
         <span v-if="mode !== 'advance'">
-          <j-tooltip :title="!id ? '请先输入标识' : '设置属性规则'">
+          <a-tooltip :title="!id ? '请先输入标识' : '设置属性规则'">
             <AIcon type="FullscreenOutlined" :class="!id ? 'disabled' : ''" @click="fullscreenClick" />
-          </j-tooltip>
+          </a-tooltip>
         </span>
       </div>
     </div>
@@ -38,9 +38,9 @@
 import {
   queryTypescript,
   queryProductTs
-} from '@/api/device/instance';
-import { useInstanceStore } from '@/store/instance';
-import { useProductStore } from '@/store/product';
+} from '../../../api/instance';
+import { useInstanceStore } from '../../../store/instance';
+import { useProductStore } from '../../../store/product';
 import { cloneDeep } from 'lodash-es';
 import { inject } from 'vue'
 interface Props {
@@ -201,7 +201,7 @@ const queryCode = () => {
       }
     })
   }
-  
+
 }
 
 

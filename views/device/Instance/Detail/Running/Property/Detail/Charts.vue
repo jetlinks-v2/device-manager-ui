@@ -1,32 +1,32 @@
 <template>
-    <j-spin :spinning="loading">
+    <a-spin :spinning="loading">
         <div>
-            <j-space>
+            <a-space>
                 <div>
                     统计周期：
-                    <j-select
+                    <a-select
                         v-model:value="cycle"
                         style="width: 120px"
                         :options="periodOptions"
                     >
-                    </j-select>
+                    </a-select>
                 </div>
                 <div v-if="cycle !== '*' && _type">
                     统计规则：
-                    <j-select v-model:value="agg" style="width: 120px">
-                        <j-select-option value="AVG">平均值</j-select-option>
-                        <j-select-option value="MAX">最大值</j-select-option>
-                        <j-select-option value="MIN">最小值</j-select-option>
-                        <j-select-option value="COUNT">总数</j-select-option>
-                    </j-select>
+                    <a-select v-model:value="agg" style="width: 120px">
+                        <a-select-option value="AVG">平均值</a-select-option>
+                        <a-select-option value="MAX">最大值</a-select-option>
+                        <a-select-option value="MIN">最小值</a-select-option>
+                        <a-select-option value="COUNT">总数</a-select-option>
+                    </a-select>
                 </div>
-            </j-space>
+            </a-space>
         </div>
         <div style="width: 100%; height: 500px">
             <Chart :options="options" v-if="chartsList.length" />
             <JEmpty v-else />
         </div>
-    </j-spin>
+    </a-spin>
 </template>
 
 <script lang="ts" setup>

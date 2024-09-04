@@ -1,7 +1,7 @@
 <template>
     <div class="file">
-        <j-form layout="vertical">
-            <j-form-item>
+        <a-form layout="vertical">
+            <a-form-item>
                 <template #label>
                     <div>
                         文件上传
@@ -30,15 +30,15 @@
                         <span>格式：.xlsx, .csv</span>
                     </div>
                 </a-upload-dragger>
-            </j-form-item>
+            </a-form-item>
             <div style="margin-bottom: 16px">
-                <j-checkbox v-model:checked="modelRef.file.autoDeploy"
-                    >导入并启用</j-checkbox
+                <a-checkbox v-model:checked="modelRef.file.autoDeploy"
+                    >导入并启用</a-checkbox
                 >
             </div>
             <div v-if="importLoading" class="result">
                 <div v-if="flag">
-                    <j-spin size="small" style="margin-right: 10px" />正在导入
+                    <a-spin size="small" style="margin-right: 10px" />正在导入
                 </div>
                 <div v-else>
                     <AIcon
@@ -61,13 +61,13 @@
                     >
                 </div>
             </div>
-            <j-form-item label="下载模板">
+            <a-form-item label="下载模板">
                 <div class="file-download">
-                    <j-button class="btn" @click="downFile('xlsx')">模板格式.xlsx</j-button>
-                    <j-button class="btn" @click="downFile('csv')">模板格式.csv</j-button>
+                    <a-button class="btn" @click="downFile('xlsx')">模板格式.xlsx</a-button>
+                    <a-button class="btn" @click="downFile('csv')">模板格式.csv</a-button>
                 </div>
-            </j-form-item>
-        </j-form>
+            </a-form-item>
+        </a-form>
     </div>
 </template>
 

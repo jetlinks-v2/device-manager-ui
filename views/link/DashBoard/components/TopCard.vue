@@ -2,13 +2,13 @@
     <div>
 
         <div class="dash-board">
-          <j-select
+          <a-select
               v-if="serverNodeOptions.length > 1"
               :options="serverNodeOptions"
               :value="serverId"
               style="width: 300px; margin-bottom: 20px"
               @change="serverIdChange"
-          ></j-select>
+          ></a-select>
           <div class="dash-board-items">
             <div class="dash-board-item">
               <TopEchartsItemNode :value="topValues.cpu" title="CPU使用率" />

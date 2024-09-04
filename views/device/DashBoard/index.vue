@@ -1,42 +1,42 @@
 <template>
-    <page-container>
+    <j-page-container>
         <div class="DashBoardBox">
-            <j-row :gutter="24">
-                <j-col :span="6">
+            <a-row :gutter="24">
+                <a-col :span="6">
                     <TopCard
                         title="产品数量"
                         :img="getImage('/device/device-product.svg')"
                         :footer="productFooter"
                         :value="productTotal"
                     ></TopCard>
-                </j-col>
-                <j-col :span="6">
+                </a-col>
+                <a-col :span="6">
                     <TopCard
                         title="设备数量"
                         :img="getImage('/device/device-number.svg')"
                         :footer="deviceFooter"
                         :value="deviceTotal"
                     ></TopCard
-                ></j-col>
-                <j-col :span="6"
+                ></a-col>
+                <a-col :span="6"
                     ><TopCard
                         title="当前在线"
                         :footer="onlineFooter"
                         :value="deviceOnline"
                     >
                         <Charts :options="onlineOptions"></Charts> </TopCard
-                ></j-col>
-                <j-col :span="6"
+                ></a-col>
+                <a-col :span="6"
                     ><TopCard
                         title="今日设备消息量"
                         :footer="messageFooter"
                         :value="dayMessage"
                     >
                         <Charts :options="TodayDevOptions"></Charts> </TopCard
-                ></j-col>
-            </j-row>
-            <j-row :gutter="24">
-                <j-col :span="24">
+                ></a-col>
+            </a-row>
+            <a-row :gutter="24">
+                <a-col :span="24">
                     <div class="message-card">
                         <Guide title="设备消息">
                             <template #extra>
@@ -56,20 +56,20 @@
                             <Charts :options="devMegOptions"></Charts>
                         </div>
                     </div>
-                </j-col>
-            </j-row>
-            <j-row :span="24" v-if="AmapKey && isNoCommunity">
-                <j-col :span="24">
+                </a-col>
+            </a-row>
+            <a-row :span="24" v-if="AmapKey && isNoCommunity">
+                <a-col :span="24">
                     <div class="device-position">
                         <Guide title="设备分布"></Guide>
                         <div class="device-map">
                             <Amap></Amap>
                         </div>
                     </div>
-                </j-col>
-            </j-row>
+                </a-col>
+            </a-row>
         </div>
-    </page-container>
+    </j-page-container>
 </template>
 <script lang="ts" setup>
 import TimeSelect from './components/TimeSelect.vue';
@@ -80,19 +80,18 @@ import {
     deviceCount,
     dashboard,
     getGo,
-} from '@/api/device/dashboard';
+} from '../../../api/dashboard';
 import encodeQuery from '@/utils/encodeQuery';
-import { getImage } from '@/utils/comm';
-import type { Footer } from '@/views/device/DashBoard/typings';
-import TopCard from '@/views/device/DashBoard/components/TopCard.vue';
+import type { Footer } from './typings';
+import TopCard from './components/TopCard.vue';
 import { useMenuStore } from '@/store/menu';
 import Amap from './components/Amap.vue';
-import { useSystem } from '@/store/system';
+import { useSystemStore } from '@/store/system';
 import dayjs from 'dayjs'
 import { isNoCommunity } from '@/utils/utils'
 
-const system = useSystem();
-const AmapKey = system.$state.configInfo.amap?.apiKey;
+const system = useSystemStore();
+const AmapKey = system.systemInfo.amap?.apiKey;
 let productTotal = ref(0);
 let productFooter = ref<Footer[]>([
     {

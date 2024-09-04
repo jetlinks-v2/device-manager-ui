@@ -6,7 +6,8 @@ const getAsyncRoutesMap = () => {
     const modules = {}
     Object.keys(routerModules).forEach(item => {
         const code = item.replace('./views/', '').replace('/index.vue', '')
-        const key = `${MODULE_CODE}/${code}`
+        const key = `${code}`
+        // const key = `${MODULE_CODE}/${code}` // views下不存在多模块时
         modules[key] = routerModules[item]
     })
 
@@ -15,20 +16,33 @@ const getAsyncRoutesMap = () => {
 
 const getExtraRoutesMap = () => {
     return {
-        [`${MODULE_CODE}/Product`]: {
+        'device/Product': {
             children: [
                 {
                     code: 'Detail',
                     url: '/detail:id',
                     name: '详情信息',
-                    component: () => import('./views/Product/Detail/index.vue')
+                    component: () => import('./views/device/Product/Detail/index.vue')
+                }
+            ]
+        },
+        'device/Instance': {
+            children: [
+                {
+                    code: 'Detail',
+                    url: '/detail:id',
+                    name: '详情信息',
+                    component: () => import('./views/device/Instance/Detail/index.vue')
                 }
             ]
         }
     }
 }
 
+const aliasName = 'device'
+
 export default {
     getAsyncRoutesMap,
-    getExtraRoutesMap
+    getExtraRoutesMap,
+    aliasName
 }

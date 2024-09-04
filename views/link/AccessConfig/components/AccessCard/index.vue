@@ -1,5 +1,5 @@
 <template>
-    <j-card
+    <a-card
         hoverable
         :class="[
             'card-render',
@@ -10,21 +10,21 @@
         @click="checkedChange(data.id)"
     >
         <div class="title">
-            <Ellipsis style="width: calc(100% - 100px); margin-bottom: 24px">
+            <j-ellipsis style="width: calc(100% - 100px); margin-bottom: 24px">
                 {{ data.name }}
-            </Ellipsis>
+            </j-ellipsis>
         </div>
 
         <slot name="other"></slot>
         <div class="desc">
-            <j-tooltip placement="topLeft" :title="data.description">{{
+            <a-tooltip placement="topLeft" :title="data.description">{{
                 data.description
-            }}</j-tooltip>
+            }}</a-tooltip>
         </div>
         <div class="checked-icon">
             <div><a-icon type='CheckOutlined' /></div>
         </div>
-    </j-card>
+    </a-card>
 </template>
 
 <script lang="ts" setup name="AccessCard">

@@ -14,20 +14,20 @@
         :bodyStyle="{ padding: '0 0 0 24px' }"
     >
         <template  v-for="i in objectKey" #[i.key]='slotProps'>
-            <Ellipsis >
+            <j-ellipsis >
                 <span @click="detail(slotProps[i.dataIndex])">{{  JSON.stringify(slotProps[i.dataIndex])}}</span>
-            </Ellipsis>
+            </j-ellipsis>
         </template>
         <template #timestamp="slotProps">
             {{ dayjs(slotProps.timestamp).format('YYYY-MM-DD HH:mm:ss') }}
         </template>
         <template #action="slotProps">
-            <j-button type="link" @click="detail(slotProps)">
+            <a-button type="link" @click="detail(slotProps)">
                 <AIcon type="SearchOutlined" />
-            </j-button>
+            </a-button>
         </template>
     </JProTable>
-    <j-modal
+    <a-modal
         :width="600"
         v-model:visible="visible"
         title="详情"
@@ -38,9 +38,9 @@
             style="max-height: calc(100vh - 400px); overflow: auto"
         />
         <template #footer>
-            <j-button type="primary" @click="visible = false">关闭</j-button>
+            <a-button type="primary" @click="visible = false">关闭</a-button>
         </template>
-    </j-modal>
+    </a-modal>
 </template>
 
 <script lang="ts" setup>

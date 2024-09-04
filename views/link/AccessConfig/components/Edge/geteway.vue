@@ -1,17 +1,17 @@
 <template>
   <div class="card-last">
-    <j-row :gutter="[24, 24]">
-      <j-col :span="12">
+    <a-row :gutter="[24, 24]">
+      <a-col :span="12">
         <title-component data="基本信息" />
         <div>
-          <j-form
+          <a-form
               :model="formState"
               autocomplete="off"
               layout="vertical"
               name="basic"
               @finish="onFinish"
           >
-            <j-form-item
+            <a-form-item
                 :rules="[
                                 {
                                     required: true,
@@ -27,22 +27,22 @@
                 label="名称"
                 name="name"
             >
-              <j-input
+              <a-input
                   v-model:value="formState.name"
                   placeholder="请输入名称"
               />
-            </j-form-item>
-            <j-form-item label="说明" name="description">
-              <j-textarea
+            </a-form-item>
+            <a-form-item label="说明" name="description">
+              <a-textarea
                   v-model:value="formState.description"
                   :maxlength="200"
                   :rows="4"
                   placeholder="请输入说明"
                   show-count
               />
-            </j-form-item>
-            <j-form-item>
-              <PermissionButton
+            </a-form-item>
+            <a-form-item>
+              <j-permission-button
                   v-if="view === 'false'"
                   :hasPermission="`link/AccessConfig:${
                                     id === ':id' ? 'add' : 'update'
@@ -52,12 +52,12 @@
                   :loading="loading"
               >
                 保存
-              </PermissionButton>
-            </j-form-item>
-          </j-form>
+              </j-permission-button>
+            </a-form-item>
+          </a-form>
         </div>
-      </j-col>
-      <j-col :span="12">
+      </a-col>
+      <a-col :span="12">
         <div class="doc" style="height: 600px">
           <TitleComponent data="配置概览" />
           <p>接入方式：{{ provider.name }}</p>
@@ -71,14 +71,14 @@
           <p>3、创建产品，并选中接入方式为数采设备接入</p>
           <p>4、添加设备，单独为每一个设备进行数据点绑定</p>
         </div>
-      </j-col>
-    </j-row>
+      </a-col>
+    </a-row>
   </div>
 </template>
 
 <script lang="ts" name="GateWay" setup>
-import { onlyMessage } from '@/utils/comm';
-import { update, save } from '@/api/link/accessConfig';
+import { onlyMessage } from '@jetlinks-web/utils';
+import { update, save } from '../../../../../api/link/accessConfig';
 import { ProtocolMapping } from '../../data';
 
 interface FormState {

@@ -1,38 +1,38 @@
 <template>
-    <j-spin :spinning="loading">
+    <a-spin :spinning="loading">
         <div class="dash-board">
             <div class="header">
                 <div class="left">
                     <h3 style="width: 80px">网络流量</h3>
-                    <j-radio-group
+                    <a-radio-group
                         button-style="solid"
                         v-model:value="data.type"
                         @change="changeType"
                     >
-                        <j-radio-button value="bytesRead">
+                        <a-radio-button value="bytesRead">
                             上行
-                        </j-radio-button>
-                        <j-radio-button value="bytesSent">
+                        </a-radio-button>
+                        <a-radio-button value="bytesSent">
                             下行
-                        </j-radio-button>
-                    </j-radio-group>
+                        </a-radio-button>
+                    </a-radio-group>
                 </div>
                 <div class="right">
-                    <j-radio-group
+                    <a-radio-group
                         default-value="a"
                         button-style="solid"
                         style="margin-right: 10px"
                         v-model:value="data.time.type"
                     >
-                        <j-radio-button value="hour">
+                        <a-radio-button value="hour">
                             最近1小时
-                        </j-radio-button>
-                        <j-radio-button value="day">
+                        </a-radio-button>
+                        <a-radio-button value="day">
                             最近24小时
-                        </j-radio-button>
-                        <j-radio-button value="week"> 近一周 </j-radio-button>
-                    </j-radio-group>
-                    <j-range-picker
+                        </a-radio-button>
+                        <a-radio-button value="week"> 近一周 </a-radio-button>
+                    </a-radio-group>
+                    <a-range-picker
                         :allowClear="false"
                         :show-time="{ format: 'HH:mm:ss' }"
                         format="YYYY-MM-DD HH:mm:ss"
@@ -42,7 +42,7 @@
                         <template #suffixIcon
                             ><AIcon type="CalendarOutlined"
                         /></template>
-                    </j-range-picker>
+                    </a-range-picker>
                 </div>
             </div>
             <div>
@@ -64,19 +64,17 @@
                 </template>
             </div>
         </div>
-    </j-spin>
+    </a-spin>
 </template>
 
 <script lang="ts" setup name="Network">
-import { dashboard } from '@/api/link/dashboard';
+import { dashboard } from '../../../../api/link/dashboard';
 import {
     getTimeByType,
     typeDataLine,
-    areaStyle,
     colorNetwork,
     networkParams,
-    arrayReverse,
-} from './tool.ts';
+} from './tool';
 import dayjs from 'dayjs';
 import { DataType } from '../typings.d';
 import ServerList from './ServerList.vue';

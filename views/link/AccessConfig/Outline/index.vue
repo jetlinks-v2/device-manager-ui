@@ -7,13 +7,13 @@
     >
         <template #title>
             <div class="drawerTitle">
-                <Ellipsis style="height: 22px; width: calc(100% - 50px)"
-                    ><div>{{ data?.name }}</div></Ellipsis
+                <j-ellipsis style="height: 22px; width: calc(100% - 50px)"
+                    ><div>{{ data?.name }}</div></j-ellipsis
                 >
-                <Ellipsis style="height: 22px; max-width: 650px"
+                <j-ellipsis style="height: 22px; max-width: 650px"
                     ><div class="description">
                         {{ data?.description }}
-                    </div></Ellipsis
+                    </div></j-ellipsis
                 >
             </div>
         </template>

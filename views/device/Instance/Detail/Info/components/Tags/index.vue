@@ -1,27 +1,27 @@
 <template>
     <div style="margin-top: 20px">
-        <j-descriptions bordered>
+        <a-descriptions bordered>
             <template #title>
                 标签
-                <PermissionButton
+                <j-permission-button
                     type="link"
                     @click="visible = true"
                     hasPermission="device/Instance:update"
                 >
                     <AIcon type="EditOutlined" />编辑
-                </PermissionButton>
+                </j-permission-button>
             </template>
-            <j-descriptions-item
+            <a-descriptions-item
                 :span="1"
                 v-for="item in dataSource"
                 :key="item.key"
             >
                 <template #label>
-                    <Ellipsis>{{ `${item.name}（${item.key})` }}</Ellipsis>
+                    <j-ellipsis>{{ `${item.name}（${item.key})` }}</j-ellipsis>
                 </template>
-                <Ellipsis>{{ findName(item) }}</Ellipsis>
-            </j-descriptions-item>
-        </j-descriptions>
+                <j-ellipsis>{{ findName(item) }}</j-ellipsis>
+            </a-descriptions-item>
+        </a-descriptions>
         <Save v-if="visible" @close="visible = false" @save="saveBtn" />
     </div>
 </template>

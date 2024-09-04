@@ -1,13 +1,13 @@
 <template>
-    <j-button @click="visible = true" style="width: 100%" type="dashed">
+    <a-button @click="visible = true" style="width: 100%" type="dashed">
         编辑规则
-    </j-button>
+    </a-button>
     <FRuleEditor v-if="visible" :id="id" :aggList="aggList" :propertiesOptions="propertiesOptions" :value="value" :virtualRule="virtualRule" @close="onClose" @save="onChange" />
 </template>
 
 <script setup lang="ts" name="Rule">
-import FRuleEditor from '@/components/FRuleEditor/index.vue';
-import {Form} from "jetlinks-ui-components";
+import FRuleEditor from '../../../../../components/FRuleEditor/index.vue';
+import {Form} from "ant-design-vue";
 
 const formItemContext = Form.useInjectFormItemContext();
 

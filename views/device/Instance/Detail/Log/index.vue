@@ -18,7 +18,7 @@
             {{ slotProps?.type?.text }}
         </template>
         <template #content="slotProps">
-           <Ellipsis style="width:calc(100% - 20px)">{{ slotProps?.content }}</Ellipsis>
+           <j-ellipsis style="width:calc(100% - 20px)">{{ slotProps?.content }}</j-ellipsis>
         </template>
         <template #timestamp="slotProps">
             {{
@@ -28,26 +28,26 @@
             }}
         </template>
         <template #action="slotProps">
-            <j-space :size="16">
+            <a-space :size="16">
                 <template
                     v-for="i in getActions(slotProps, 'table')"
                     :key="i.key"
                 >
-                    <j-button
+                    <a-button
                         @click="i.onClick"
                         type="link"
                         style="padding: 0px"
                     >
                         <template #icon><AIcon :type="i.icon" /></template>
-                    </j-button>
+                    </a-button>
                 </template>
-            </j-space>
+            </a-space>
         </template>
     </JProTable>
 </template>
 
 <script lang="ts" setup>
-import type { ActionsType } from '@/components/Table';
+import type { ActionsType } from 'device/components/Table';
 import { queryLog, queryLogsType } from '@/api/device/instance';
 import { useInstanceStore } from '@/store/instance';
 import dayjs from 'dayjs';

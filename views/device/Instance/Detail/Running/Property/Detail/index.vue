@@ -1,5 +1,5 @@
 <template>
-    <j-modal
+    <a-modal
         title="详情"
         visible
         width="50vw"
@@ -11,27 +11,27 @@
             <TimeComponent v-model="dateValue" :data="props.data" />
         </div>
         <div>
-            <j-tabs
+            <a-tabs
                 :destroyInactiveTabPane="true"
                 v-model:activeKey="activeKey"
                 style="max-height: 600px; overflow-y: auto"
             >
-                <j-tab-pane key="table" tab="列表">
+                <a-tab-pane key="table" tab="列表">
                     <Table :data="props.data" :time="_getTimes" />
-                </j-tab-pane>
-                <j-tab-pane key="charts" tab="图表">
+                </a-tab-pane>
+                <a-tab-pane key="charts" tab="图表">
                     <Charts :data="props.data" :time="_getTimes" />
-                </j-tab-pane>
-                <j-tab-pane
+                </a-tab-pane>
+                <a-tab-pane
                     key="geo"
                     tab="轨迹"
                     v-if="data?.valueType?.type === 'geoPoint'"
                 >
                     <PropertyAMap :data="props.data" :time="_getTimes" />
-                </j-tab-pane>
-            </j-tabs>
+                </a-tab-pane>
+            </a-tabs>
         </div>
-    </j-modal>
+    </a-modal>
 </template>
 
 <script lang="ts" setup>

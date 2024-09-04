@@ -1,5 +1,5 @@
 <template>
-    <j-drawer placement="right" :closable="false" :visible="true">
+    <a-drawer placement="right" :closable="false" :visible="true">
         <template #title>
             <div
                 style="
@@ -15,32 +15,32 @@
                         @click="onClose"
                     />编辑</span
                 >
-                <j-button type="primary" @click="saveBtn">保存</j-button>
+                <a-button type="primary" @click="saveBtn">保存</a-button>
             </div>
         </template>
-        <j-form layout="vertical" ref="formRef" :model="modelRef">
-            <j-form-item
+        <a-form layout="vertical" ref="formRef" :model="modelRef">
+            <a-form-item
                 :name="item.relation"
                 :label="item.relationName"
                 v-for="(item, index) in dataSource"
                 :key="index"
             >
-                <j-select
+                <a-select
                     showSearch
                     mode="multiple"
                     v-model:value="modelRef[item.relation]"
                     :placeholder="`请选择${item.relationName}`"
                 >
-                    <j-select-option
+                    <a-select-option
                         :value="item.value"
                         v-for="item in userList"
                         :key="item.id"
-                        >{{ item.name }}</j-select-option
+                        >{{ item.name }}</a-select-option
                     >
-                </j-select>
-            </j-form-item>
-        </j-form>
-    </j-drawer>
+                </a-select>
+            </a-form-item>
+        </a-form>
+    </a-drawer>
 </template>
 
 <script lang="ts" setup>

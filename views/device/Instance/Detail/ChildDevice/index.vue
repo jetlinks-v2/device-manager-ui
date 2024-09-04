@@ -11,7 +11,7 @@
             @search="handleSearch"
             class="device-child-device-search"
         />
-        <!-- <j-divider /> -->
+        <!-- <a-divider /> -->
         <JProTable
             ref="childDeviceRef"
             :columns="columns"
@@ -36,8 +36,8 @@
             :model="'TABLE'"
         >
             <template #rightExtraRender>
-                <j-space>
-                    <PermissionButton
+                <a-space>
+                    <j-permission-button
                         type="primary"
                         v-if="
                             detail?.accessProvider === 'official-edge-gateway'
@@ -47,25 +47,25 @@
                             _current = {};
                             childVisible = true;
                         "
-                        >新增并绑定</PermissionButton
+                        >新增并绑定</j-permission-button
                     >
-                    <PermissionButton
+                    <j-permission-button
                         type="primary"
                         @click="visible = true"
                         hasPermission="device/Instance:update"
                     >
-                        绑定</PermissionButton
+                        绑定</j-permission-button
                     >
-                    <PermissionButton
+                    <j-permission-button
                         type="primary"
                         hasPermission="device/Instance:update"
                         :popConfirm="{
                             title: '确认解绑吗？',
                             onConfirm: handleUnBind,
                         }"
-                        >批量解除</PermissionButton
+                        >批量解除</j-permission-button
                     >
-                </j-space>
+                </a-space>
             </template>
             <template #registryTime="slotProps">
                 {{
@@ -77,18 +77,18 @@
                 }}
             </template>
             <template #state="slotProps">
-                <j-badge
+                <a-badge
                     :text="slotProps.state.text"
                     :status="statusMap.get(slotProps.state.value)"
                 />
             </template>
             <template #action="slotProps">
-                <j-space :size="16">
+                <a-space :size="16">
                     <template
                         v-for="i in getActions(slotProps, 'table')"
                         :key="i.key"
                     >
-                        <PermissionButton
+                        <j-permission-button
                             v-if="
                                 i.key !== 'update' ||
                                 detail.accessProvider ===
@@ -107,9 +107,9 @@
                             <template #icon>
                                 <AIcon :type="i.icon" />
                             </template>
-                        </PermissionButton>
+                        </j-permission-button>
                     </template>
-                </j-space>
+                </a-space>
             </template>
         </JProTable>
         <BindChildDevice
@@ -122,7 +122,7 @@
 
 <script setup lang="ts">
 import dayjs from 'dayjs';
-import type { ActionsType } from '@/components/Table';
+import type { ActionsType } from 'device/components/Table';
 import {
     query,
     unbindDevice,

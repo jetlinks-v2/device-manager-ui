@@ -1,5 +1,4 @@
-import { getImage } from '@/utils/comm';
-
+import { access } from '../../../assets'
 const ProtocolMapping = new Map();
 ProtocolMapping.set('websocket-server', 'WebSocket');
 ProtocolMapping.set('http-server-gateway', 'HTTP');
@@ -29,27 +28,27 @@ NetworkTypeMapping.set('tcp-server-gateway', 'TCP_SERVER');
 NetworkTypeMapping.set('official-edge-gateway', 'MQTT_SERVER');
 
 const BackMap = new Map();
-BackMap.set('mqtt-server-gateway', getImage('/access/mqtt.png'));
-BackMap.set('websocket-server', getImage('/access/websocket.png'));
-BackMap.set('modbus-tcp', getImage('/access/modbus.png'));
-BackMap.set('coap-server-gateway', getImage('/access/coap.png'));
-BackMap.set('tcp-server-gateway', getImage('/access/tcp.png'));
-BackMap.set('Ctwing', getImage('/access/ctwing.png'));
-BackMap.set('plugin_gateway', getImage('/access/plugin.png'));
-BackMap.set('child-device', getImage('/access/child-device.png'));
-BackMap.set('opc-ua', getImage('/access/opc-ua.png'));
-BackMap.set('http-server-gateway', getImage('/access/http.png'));
-BackMap.set('fixed-media', getImage('/access/video-device.png'));
-BackMap.set('udp-device-gateway', getImage('/access/udp.png'));
-BackMap.set('OneNet', getImage('/access/onenet.png'));
-BackMap.set('OneNet-platform', getImage('/access/onenet.png'));
-BackMap.set('gb28181-2016', getImage('/access/gb28181.png'));
-BackMap.set('mqtt-client-gateway', getImage('/access/mqtt-broke.png'));
-BackMap.set('edge-child-device', getImage('/access/child-device.png'));
-BackMap.set('official-edge-gateway', getImage('/access/edge.png'));
-BackMap.set('collector-gateway', getImage('/access/collector-gateway.png'));
-BackMap.set('onvif',getImage('/access/onvif.png'));
-BackMap.set('media-plugin',getImage('/access/media-plugin.png'))
+BackMap.set('mqtt-server-gateway', access.Mqtt);
+BackMap.set('websocket-server', access.Websocket);
+BackMap.set('modbus-tcp', access.Modbus);
+BackMap.set('coap-server-gateway', access.Coap);
+BackMap.set('tcp-server-gateway', access.Tcp);
+BackMap.set('Ctwing', access.Ctwing);
+BackMap.set('plugin_gateway', access.Plugin);
+BackMap.set('child-device', access.ChildDevice);
+BackMap.set('opc-ua',access.OpcUa);
+BackMap.set('http-server-gateway', access.Http);
+BackMap.set('fixed-media', access.VideoDevice);
+BackMap.set('udp-device-gateway', access.Udp);
+BackMap.set('OneNet', access.Onenet);
+BackMap.set('OneNet-platform', access.Onenet);
+BackMap.set('gb28181-2016', access.Gb28181);
+BackMap.set('mqtt-client-gateway', access.MqttBroke);
+BackMap.set('edge-child-device', access.ChildDevice);
+BackMap.set('official-edge-gateway', access.Edge);
+BackMap.set('collector-gateway', access.CollectorGateway);
+BackMap.set('onvif', access.Onvif);
+BackMap.set('media-plugin', access.MediaPlugin)
 
 const descriptionList = {
     'udp-device-gateway':

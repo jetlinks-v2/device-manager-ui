@@ -1,13 +1,13 @@
 <template>
-  <j-drawer :mask-closable="false" title="查看物模型" width="700" v-model:visible="_visible" destroy-on-close @close="close">
+  <a-drawer :mask-closable="false" title="查看物模型" width="700" v-model:visible="_visible" destroy-on-close @close="close">
     <template #extra>
-      <j-space>
-        <j-button type="primary" @click="handleExport">
+      <a-space>
+        <a-button type="primary" @click="handleExport">
           导出
-        </j-button>
-      </j-space>
+        </a-button>
+      </a-space>
     </template>
-    <j-spin :spinning="loading">
+    <a-spin :spinning="loading">
       <div class="cat-content">
         <p class="cat-tip">
           物模型是对设备在云端的功能描述，包括设备的属性、服务和事件。物联网平台通过定义一种物的描述语言来描述物模型，称之为
@@ -15,23 +15,23 @@
           组装上报设备的数据。您可以导出完整物模型，用于云端应用开发。
         </p>
       </div>
-      <j-tabs @change="handleConvertMetadata" destroy-inactive-tab-pane>
-        <j-tab-pane v-for="item in codecs" :key="item.id" :tab="item.name">
+      <a-tabs @change="handleConvertMetadata" destroy-inactive-tab-pane>
+        <a-tab-pane v-for="item in codecs" :key="item.id" :tab="item.name">
           <div class="cat-panel">
             <JMonacoEditor v-model="monacoValue" lang="javascript" style="height: 100%" theme="vs"></JMonacoEditor>
           </div>
-        </j-tab-pane>
-      </j-tabs>
-    </j-spin>
-  </j-drawer>
+        </a-tab-pane>
+      </a-tabs>
+    </a-spin>
+  </a-drawer>
 </template>
 <script setup lang="ts" name="Cat">
-import { downloadObject } from '@/utils/utils'
-import { useInstanceStore } from '@/store/instance';
-import { useProductStore } from '@/store/product';
+import { downloadJson } from '@/utils'
+import { useInstanceStore } from '../../../../../store/instance';
+import { useProductStore } from '../../../../../store/product';
 import type { Key } from 'ant-design-vue/es/_util/type';
-import { convertMetadata, getCodecs, detail as productDetail } from '@/api/device/product';
-import { detail } from '@/api/device/instance'
+import { convertMetadata, getCodecs, detail as productDetail } from '../../../../../api/product';
+import { detail } from '../../../../../api/instance'
 import { onlyMessage } from '@/utils/comm';
 import { omit , cloneDeep } from "lodash-es";
 
@@ -75,7 +75,7 @@ const monacoValue = ref()
 
 const handleExport = async () => {
   try {
-    downloadObject(
+    downloadJson(
       JSON.parse(monacoValue.value),
       `${props.type === 'device'
         ? instanceStore.current?.name

@@ -56,7 +56,7 @@
 </template>
 <script lang="ts" setup name="DialogTips">
 import { getImage } from '@/utils/comm.ts';
-import { useProductStore } from '../../../store/product';
+import { useProductStore } from '../../../../store/product';
 import { useMenuStore } from '@/store/menu';
 
 const visible = ref<boolean>(false);

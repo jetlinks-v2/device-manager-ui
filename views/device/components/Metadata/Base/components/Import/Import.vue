@@ -40,8 +40,8 @@
       </a-form-item>
       <a-form-item label="下载模版">
         <div class="file-download">
-          <j-button class="btn" @click="downFile('xlsx')">模板格式.xlsx</j-button>
-          <j-button class="btn" @click="downFile('csv')">模板格式.csv</j-button>
+          <a-button class="btn" @click="downFile('xlsx')">模板格式.xlsx</a-button>
+          <a-button class="btn" @click="downFile('csv')">模板格式.csv</a-button>
         </div>
       </a-form-item>
     </a-form>
@@ -68,7 +68,7 @@ import {validate} from './util'
 import { getTemplate, uploadAnalyzeMetadata} from '@/api/device/instance'
 import {getTemplate as getProductTemplate} from '@/api/device/product'
 import {downloadFileByUrl} from "@/utils/utils";
-import {useGroupActive, useTableWrapper} from "@/components/Metadata/Table/context";
+import {useGroupActive, useTableWrapper} from "device/components/Metadata/Table/context";
 import { useProductStore } from '@/store/product';
 
 const props = defineProps({

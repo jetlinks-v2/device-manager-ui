@@ -10,14 +10,14 @@
                 <template #content>
                     <div class="cardContent">
                         <div class="firmwareHead">
-                            <Ellipsis style="width: 200px">
+                            <j-ellipsis style="width: 200px">
                                 {{ i.name }}
-                            </Ellipsis>
+                            </j-ellipsis>
                         </div>
                         <div class="firmwareDes">
-                            <Ellipsis style="width: 200px">{{
+                            <j-ellipsis style="width: 200px">{{
                                 i.description
-                            }}</Ellipsis>
+                            }}</j-ellipsis>
                         </div>
                         <div class="firmwareFoot">
                             <div>
@@ -51,10 +51,11 @@
 </template>
 
 <script setup>
-import { useInstanceStore } from '@/store/instance';
-import { useProductStore } from '@/store/product';
-import { queryPaginateNot, historyPaginateNot } from '@/api/device/firmware';
-import Task from '@/views/device/Firmware/Task/index.vue';
+import { useInstanceStore } from 'device/store/instance';
+import { useProductStore } from 'device/store/product';
+import { queryPaginateNot, historyPaginateNot } from 'device/api/firmware';
+
+import Task from 'device/vires/device/Firmware/Task/index.vue';
 import dayjs from 'dayjs';
 const props = defineProps({
     type: {

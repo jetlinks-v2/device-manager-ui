@@ -131,7 +131,7 @@
                     </CardBox>
                 </template>
                 <template #state="slotProps">
-                    <j-badge-status
+                    <a-badge-status
                         :text="slotProps.state === 1 ? '正常' : '禁用'"
                         :status="slotProps.state"
                         :statusNames="{
@@ -188,7 +188,7 @@ import {
     _undeploy,
     deleteProduct,
     updateDevice,
-} from '../../api/product';
+} from '../../../api/product';
 import {  downloadJson, accessConfigTypeFilter } from '@/utils';
 import { omit, cloneDeep } from 'lodash-es';
 import Save from './Save/index.vue';

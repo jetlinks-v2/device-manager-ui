@@ -1,6 +1,6 @@
 <template>
     <div>
-        <j-table
+        <a-table
             :columns="columns"
             size="small"
             rowKey="id"
@@ -27,8 +27,8 @@
                     />
                 </template>
                 <template v-else-if="column.key === 'action'">
-                    <j-space>
-                        <j-button
+                    <a-space>
+                        <a-button
                             v-if="
                                 showLoad ||
                                 (!getType(record?.value) &&
@@ -37,16 +37,16 @@
                             type="link"
                             @click="_download(record)"
                             ><AIcon type="DownloadOutlined"
-                        /></j-button>
-                        <j-button type="link" @click="showDetail(record)"
+                        /></a-button>
+                        <a-button type="link" @click="showDetail(record)"
                             ><AIcon type="SearchOutlined"
-                        /></j-button>
-                    </j-space>
+                        /></a-button>
+                    </a-space>
                 </template>
             </template>
-        </j-table>
+        </a-table>
     </div>
-    <j-modal
+    <a-modal
         title="详情"
         :visible="visible"
         @ok="visible = false"
@@ -61,13 +61,13 @@
             :expand-depth="5"
             :value="current.formatValue"
         />
-        <j-textarea
+        <a-textarea
             v-else-if="data?.valueType?.type === 'file'"
             :value="current.formatValue"
             :row="3"
         />
-        <j-input v-else disabled :value="current.formatValue" />
-    </j-modal>
+        <a-input v-else disabled :value="current.formatValue" />
+    </a-modal>
 </template>
 
 <script lang="ts" setup>

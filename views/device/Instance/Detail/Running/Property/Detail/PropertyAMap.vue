@@ -1,18 +1,18 @@
 <template>
-    <j-spin :spinning="loading">
+    <a-spin :spinning="loading">
         <div style="position: relative">
             <div style="position: absolute; right: 0; top: 5px; z-index: 999">
-                <j-space>
-                    <j-button type="primary" @click="onStart">开始动画</j-button>
-                    <j-button type="primary" v-if="!stop" @click="onStop">暂停动画</j-button>
-                    <j-button type="primary" v-else @click="onResume">继续动画</j-button>
-                </j-space>
+                <a-space>
+                    <a-button type="primary" @click="onStart">开始动画</a-button>
+                    <a-button type="primary" v-if="!stop" @click="onStop">暂停动画</a-button>
+                    <a-button type="primary" v-else @click="onResume">继续动画</a-button>
+                </a-space>
             </div>
         </div>
         <AMapComponent style="height: 500px">
             <PathSimplifier :pathData="geoList" ref="amapPath"></PathSimplifier>
         </AMapComponent>
-    </j-spin>
+    </a-spin>
 </template>
 
 <script lang="ts" setup>

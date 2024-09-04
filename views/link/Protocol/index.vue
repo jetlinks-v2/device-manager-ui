@@ -1,5 +1,5 @@
 <template>
-    <page-container>
+    <j-page-container>
         <div>
             <pro-search
                 :columns="columns"
@@ -17,7 +17,7 @@
                     :params="params"
                 >
                     <template #headerTitle>
-                        <PermissionButton
+                        <j-permission-button
                             type="primary"
                             @click="handlAdd"
                             hasPermission="link/Protocol:add"
@@ -26,7 +26,7 @@
                                 ><AIcon type="PlusOutlined"
                             /></template>
                             新增
-                        </PermissionButton>
+                        </j-permission-button>
                     </template>
                     <template #card="slotProps">
                         <CardBox
@@ -42,7 +42,7 @@
                             </template>
                             <template #content>
                                 <div class="card-item-content">
-                                    <Ellipsis style="margin-bottom: 18px">
+                                    <j-ellipsis style="margin-bottom: 18px">
                                         <span
                                             style="
                                                 font-size: 16px;
@@ -51,9 +51,9 @@
                                         >
                                             {{ slotProps.name }}
                                         </span>
-                                    </Ellipsis>
-                                    <j-row class="card-item-content-box">
-                                        <j-col
+                                    </j-ellipsis>
+                                    <a-row class="card-item-content-box">
+                                        <a-col
                                             :span="12"
                                             class="card-item-content-text"
                                         >
@@ -61,32 +61,32 @@
                                                 ID
                                             </div>
                                             <div class="card-item-content-text">
-                                                <j-tooltip>
+                                                <a-tooltip>
                                                     <template #title>{{
                                                         slotProps.id
                                                     }}</template>
                                                     {{ slotProps.id }}
-                                                </j-tooltip>
+                                                </a-tooltip>
                                             </div>
-                                        </j-col>
-                                        <j-col :span="12">
+                                        </a-col>
+                                        <a-col :span="12">
                                             <div class="card-item-content-text">
                                                 类型
                                             </div>
                                             <div class="card-item-content-text">
-                                                <j-tooltip>
+                                                <a-tooltip>
                                                     <template #title>{{
                                                         slotProps.type
                                                     }}</template>
                                                     {{ slotProps.type }}
-                                                </j-tooltip>
+                                                </a-tooltip>
                                             </div>
-                                        </j-col>
-                                    </j-row>
+                                        </a-col>
+                                    </a-row>
                                 </div>
                             </template>
                             <template #actions="item">
-                                <PermissionButton
+                                <j-permission-button
                                     :disabled="item.disabled"
                                     :popConfirm="item.popConfirm"
                                     :tooltip="{
@@ -103,17 +103,17 @@
                                         <AIcon :type="item.icon" />
                                         <span>{{ item?.text }}</span>
                                     </template>
-                                </PermissionButton>
+                                </j-permission-button>
                             </template>
                         </CardBox>
                     </template>
                     <template #action="slotProps">
-                        <j-space :size="16">
+                        <a-space :size="16">
                             <template
                                 v-for="i in getActions(slotProps, 'table')"
                                 :key="i.key"
                             >
-                                <PermissionButton
+                                <j-permission-button
                                     :disabled="i.disabled"
                                     :popConfirm="i.popConfirm"
                                     :tooltip="{
@@ -128,21 +128,20 @@
                                     <template #icon
                                         ><AIcon :type="i.icon"
                                     /></template>
-                                </PermissionButton>
+                                </j-permission-button>
                             </template>
-                        </j-space>
+                        </a-space>
                     </template>
                 </j-pro-table>
             </FullPage>
         </div>
         <Save v-if="visible" :data="current" @change="saveChange" />
-    </page-container>
+    </j-page-container>
 </template>
 <script lang="ts" setup name="AccessConfigPage">
-import type { ActionsType } from '@/components/Table/index';
 import { getImage } from '@/utils/comm';
-import { list, remove } from '@/api/link/protocol';
-import { onlyMessage } from '@/utils/comm';
+import { list, remove } from '../../../api/link/protocol';
+import { onlyMessage } from '@jetlinks-web/utils';
 import Save from './Save/index.vue';
 import _ from 'lodash-es';
 
@@ -213,7 +212,7 @@ const columns = [
 const getActions = (
     data: Partial<Record<string, any>>,
     type: 'card' | 'table',
-): ActionsType[] => {
+): any[] => {
     if (!data) return [];
     const actions = [
         {

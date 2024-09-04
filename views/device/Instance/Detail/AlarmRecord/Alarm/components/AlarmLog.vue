@@ -46,8 +46,8 @@
 
 <script setup>
 import { queryLevel } from '@/api/rule-engine/config';
-import Log from '@/views/rule-engine/Alarm/Log/TabComponent/components/Log.vue';
-import SolveComponent from '@/views/rule-engine/Alarm/Log/SolveComponent/index.vue';
+// import Log from '@/views/rule-engine/Alarm/Log/TabComponent/components/Log.vue';
+// import SolveComponent from '@/views/rule-engine/Alarm/Log/SolveComponent/index.vue';
 import { useAlarmLevel } from '@/hook';
 const props = defineProps({
     data: {

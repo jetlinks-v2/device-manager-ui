@@ -1,53 +1,52 @@
-import server from '@/utils/request';
+import { request } from '@jetlinks-web/core'
+export const getProviders = () => request.get(`/gateway/device/providers`);
 
-export const getProviders = () => server.get(`/gateway/device/providers`);
-
-export const detail = (id: string) => server.get(`/gateway/device/${id}`);
+export const detail = (id: string) => request.get(`/gateway/device/${id}`);
 
 export const getNetworkList = (
     networkType: string,
     include: string,
     data: Object,
 ) =>
-    server.get(
+    request.get(
         `/network/config/${networkType}/_alive?include=${include}`,
         data,
     );
 
 export const getProtocolList = (transport: string, params: Object) =>
-    server.get(`/protocol/supports/${transport ? transport : ''}`, params);
+    request.get(`/protocol/supports/${transport ? transport : ''}`, params);
 
 export const getConfigView = (id: string, transport: string) =>
-    server.get(`/protocol/${id}/transport/${transport}`);
+    request.get(`/protocol/${id}/transport/${transport}`);
 
 export const getChildConfigView = (id: string) =>
-    server.get(`/protocol/${id}/transports`);
+    request.get(`/protocol/${id}/transports`);
 
-export const save = (data: Object) => server.post(`/gateway/device`, data);
+export const save = (data: Object) => request.post(`/gateway/device`, data);
 
-export const update = (data: Object) => server.patch(`/gateway/device`, data);
+export const update = (data: Object) => request.patch(`/gateway/device`, data);
 
 export const list = (data: Object) =>
-    server.post(`/gateway/device/detail/_query`, data);
+    request.post(`/gateway/device/detail/_query`, data);
 
 export const undeploy = (id: string) =>
-    server.post(`/gateway/device/${id}/_shutdown`);
+    request.post(`/gateway/device/${id}/_shutdown`);
 
 export const deploy = (id: string) =>
-    server.post(`/gateway/device/${id}/_startup`);
+    request.post(`/gateway/device/${id}/_startup`);
 
-export const remove = (id: string) => server.remove(`/gateway/device/${id}`);
+export const remove = (id: string) => request.remove(`/gateway/device/${id}`);
 
 export const getResourcesCurrent = () =>
-    server.get(`/network/resources/alive/_current`);
+    request.get(`/network/resources/alive/_current`);
 
 export const getClusters = () =>
-    server.get(`network/resources/clusters`);
+    request.get(`network/resources/clusters`);
 
-export const getPluginList = (data: any) => server.post('/plugin/driver/_query/no-paging', data)
+export const getPluginList = (data: any) => request.post('/plugin/driver/_query/no-paging', data)
 
-export const getPluginConfig = (id: string) => server.get(`/plugin/driver/${id}/description`)
+export const getPluginConfig = (id: string) => request.get(`/plugin/driver/${id}/description`)
 
-export const getCommandsByAccess = (id: string) => server.get(`/gateway/device/${id}/commands`)
+export const getCommandsByAccess = (id: string) => request.get(`/gateway/device/${id}/commands`)
 
-export const getCommandsDevicesByAccessId = (id: string, data: any) => server.post(`/gateway/device/${id}/command/QueryDevicePage`, data)
+export const getCommandsDevicesByAccessId = (id: string, data: any) => request.post(`/gateway/device/${id}/command/QueryDevicePage`, data)

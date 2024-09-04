@@ -13,7 +13,7 @@
         >
             <template #other>
                 <div class="other">
-                    <j-tooltip
+                    <a-tooltip
                         placement="top"
                         :title="addressesTip(network.addresses)"
                     >
@@ -22,12 +22,12 @@
                             :key="i.address"
                             class="item"
                         >
-                            <j-badge :status="getColor(i)" :text="i.address" />
+                            <a-badge :status="getColor(i)" :text="i.address" />
                             <span v-if="(network.addresses || []).length > 1"
                                 >等{{ network.addresses.length }}条</span
                             >
                         </div>
-                    </j-tooltip>
+                    </a-tooltip>
                 </div>
             </template>
         </AccessCard>
@@ -48,7 +48,7 @@
         </TitleComponent>
         <div v-if="config?.routes && config.routes.length > 0">
             <j-scrollbar height="350">
-                <j-table
+                <a-table
                     :pagination="false"
                     :rowKey="generateUUID()"
                     :data-source="config.routes || []"
@@ -61,7 +61,7 @@
                             {{ getStream(record) }}
                         </template>
                     </template>
-                </j-table>
+                </a-table>
             </j-scrollbar>
         </div>
     </div>
@@ -72,7 +72,7 @@ import {
     getNetworkList,
     getProtocolList,
     getConfigView,
-} from '@/api/link/accessConfig';
+} from '../../../../../api/link/accessConfig';
 import {
     NetworkTypeMapping,
     descriptionList,

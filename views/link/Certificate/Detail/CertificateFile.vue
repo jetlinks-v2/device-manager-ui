@@ -1,12 +1,12 @@
 <template>
-    <j-spin :spinning="loading">
-        <j-textarea
+    <a-spin :spinning="loading">
+        <a-textarea
             :rows="4"
             @change="textChange"
             v-model:value="keystoreBase64"
             :placeholder="placeholder"
         />
-        <j-upload
+        <a-upload
             accept=".pem"
             listType="text"
             :action="NETWORK_CERTIFICATE_UPLOAD"
@@ -16,20 +16,20 @@
             :showUploadList="false"
             @change="handleChange"
         >
-            <j-button style="margin-top: 10px">
+            <a-button style="margin-top: 10px">
                 <AIcon type="UploadOutlined" />
-                上传文件</j-button
+                上传文件</a-button
             >
-        </j-upload>
-    </j-spin>
+        </a-upload>
+    </a-spin>
 </template>
 
 <script setup lang="ts" name="CertificateFile">
 import { onlyMessage } from '@/utils/comm';
 import type { UploadChangeParam } from 'ant-design-vue';
-import { LocalStore } from '@/utils/comm';
-import { TOKEN_KEY } from '@/utils/variable';
-import { NETWORK_CERTIFICATE_UPLOAD } from '@/api/link/certificate';
+import { LocalStore } from '@jetlinks-web/utils';
+import { TOKEN_KEY } from '@jetlinks-web/constants';
+import { NETWORK_CERTIFICATE_UPLOAD } from '../../../../api/link/certificate';
 
 const emit = defineEmits(['update:modelValue', 'change']);
 

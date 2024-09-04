@@ -6,18 +6,18 @@
             @click="handleClick"
         >
             <div class="card-content">
-                <j-row :gutter="20">
-                    <j-col :span="10">
+                <a-row :gutter="20">
+                    <a-col :span="10">
                         <!-- 图片 -->
                         <div class="card-item-avatar">
                             <slot name="img"> </slot>
                         </div>
-                    </j-col>
-                    <j-col :span="14">
+                    </a-col>
+                    <a-col :span="14">
                         <!-- 内容 -->
                         <slot name="content"></slot>
-                    </j-col>
-                </j-row>
+                    </a-col>
+                </a-row>
 
                 <!-- 勾选 -->
                 <div v-if="active" class="checked-icon">
@@ -32,7 +32,7 @@
 
 <script setup lang="ts">
 import { StatusColorEnum } from '@/utils/consts.ts';
-import type { ActionsType } from '@/components/Table/index.vue';
+import type { ActionsType } from 'device/components/Table/index.vue';
 import { PropType } from 'vue';
 
 type EmitProps = {

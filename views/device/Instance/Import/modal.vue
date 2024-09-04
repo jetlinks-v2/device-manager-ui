@@ -1,5 +1,5 @@
 <template>
-  <j-modal
+  <a-modal
     :maskClosable="false"
     :visible="visible"
     width="800px"
@@ -15,8 +15,8 @@
         />
       </div>
       <div v-else-if='steps === 1'>
-        <j-form :layout="'vertical'">
-          <j-form-item required label='选择导入方式'>
+        <a-form :layout="'vertical'">
+          <a-form-item required label='选择导入方式'>
             <j-card-select
               :value="[importData.type]"
               :column='typeOptions.length'
@@ -27,8 +27,8 @@
                 <img :src='image' />
               </template>
             </j-card-select>
-          </j-form-item>
-        </j-form>
+          </a-form-item>
+        </a-form>
       </div>
       <div v-else>
         <File v-if='importData.type ==="file"' :product='importData.productId'  />
@@ -36,13 +36,13 @@
       </div>
     </div>
     <template #footer>
-      <j-button v-if='steps === 0' @click='cancel' >取消</j-button>
-      <j-button v-if='steps !== 0' @click='prev' >上一步</j-button>
-      <j-button v-if='steps !== 2' @click='next' type='primary'>下一步</j-button>
-      <j-button v-if='steps === 2' @click='save' type='primary' :disabled="flag">确认</j-button>
+      <a-button v-if='steps === 0' @click='cancel' >取消</a-button>
+      <a-button v-if='steps !== 0' @click='prev' >上一步</a-button>
+      <a-button v-if='steps !== 2' @click='next' type='primary'>下一步</a-button>
+      <a-button v-if='steps === 2' @click='save' type='primary' :disabled="flag">确认</a-button>
     </template>
-  </j-modal>
-  <j-modal
+  </a-modal>
+  <a-modal
     :maskClosable="false"
     :visible="importVisible"
     width="400px"
@@ -51,7 +51,7 @@
     @ok='importCancel'
   >
     <a-icon type='CheckOutlined' style='color: #2F54EB;' /> 已完成 新增设备 <span style='color: #2F54EB;'>{{count}}</span>
-  </j-modal>
+  </a-modal>
 </template>
 
 <script lang='ts' setup name='DeviceImport'>

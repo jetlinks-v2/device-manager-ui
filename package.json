@@ -12,5 +12,8 @@
   "bugs": {
     "url": "https://github.com/jetlinks-v2/device-manager-ui/issues"
   },
-  "homepage": "https://github.com/jetlinks-v2/device-manager-ui#readme"
+  "homepage": "https://github.com/jetlinks-v2/device-manager-ui#readme",
+  "dependencies": {
+    "resize-observer-polyfill": "^1.5.1"
+  }
 }

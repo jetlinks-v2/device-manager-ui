@@ -2,16 +2,16 @@
     <div style="margin-top: 20px" v-if="config.length">
         <div style="display: flex; margin-bottom: 20px; align-items: center">
             <div style="font-size: 16px; font-weight: 700">配置</div>
-            <j-space>
-                <PermissionButton
+            <a-space>
+                <j-permission-button
                     type="link"
                     @click="visible = true"
                     hasPermission="device/Instance:update"
                 >
                     <template #icon><AIcon type="EditOutlined" /></template>
                     编辑
-                </PermissionButton>
-                <PermissionButton
+                </j-permission-button>
+                <j-permission-button
                     type="link"
                     v-if="instanceStore.detail.current?.value !== 'notActive'"
                     :popConfirm="{
@@ -20,12 +20,12 @@
                     }"
                     hasPermission="device/Instance:update"
                 >
-                    <AIcon type="CheckOutlined" />应用配置<j-tooltip
+                    <AIcon type="CheckOutlined" />应用配置<a-tooltip
                         title="修改配置后需重新应用后才能生效。"
                         ><AIcon type="QuestionCircleOutlined"
-                    /></j-tooltip>
-                </PermissionButton>
-                <PermissionButton
+                    /></a-tooltip>
+                </j-permission-button>
+                <j-permission-button
                     type="link"
                     v-if="instanceStore.detail.aloneConfiguration"
                     :popConfirm="{
@@ -34,30 +34,30 @@
                     }"
                     hasPermission="device/Instance:update"
                 >
-                    <AIcon type="SyncOutlined" />恢复默认<j-tooltip
+                    <AIcon type="SyncOutlined" />恢复默认<a-tooltip
                         title="该设备单独编辑过配置信息，点击此将恢复成默认的配置信息，请谨慎操作。"
                         ><AIcon type="QuestionCircleOutlined"
-                    /></j-tooltip>
-                </PermissionButton>
-            </j-space>
+                    /></a-tooltip>
+                </j-permission-button>
+            </a-space>
         </div>
-        <j-descriptions bordered size="small" v-for="i in config" :key="i.name">
+        <a-descriptions bordered size="small" v-for="i in config" :key="i.name">
             <template #title
                 ><h4 style="font-size: 15px">{{ i.name }}</h4></template
             >
-            <j-descriptions-item
+            <a-descriptions-item
                 v-for="item in i.properties"
                 :key="item.property"
             >
                 <template #label>
-                    <Ellipsis style="margin-right: 5px">
+                    <j-ellipsis style="margin-right: 5px">
                         {{ item.name }}
-                        <j-tooltip
+                        <a-tooltip
                             v-if="item.description"
                             :title="item.description"
                             ><AIcon type="QuestionCircleOutlined"
-                        /></j-tooltip>
-                    </Ellipsis>
+                        /></a-tooltip>
+                    </j-ellipsis>
                 </template>
                 <span
                     v-if="
@@ -68,7 +68,7 @@
                     >******</span
                 >
                 <span v-else-if="item.type.type === 'enum'">
-                    <Ellipsis>{{
+                    <j-ellipsis>{{
                         item.type.elements?.find(
                             (i) =>
                                 i.value ===
@@ -76,8 +76,8 @@
                                     item.property
                                 ],
                         )?.text || ''
-                    }}</Ellipsis>
-                    <j-tooltip
+                    }}</j-ellipsis>
+                    <a-tooltip
                         v-if="isExit(item.property)"
                         :title="`有效值:${
                             instanceStore.current?.configuration?.[
@@ -85,10 +85,10 @@
                             ]
                         }`"
                         ><AIcon type="QuestionCircleOutlined"
-                    /></j-tooltip>
+                    /></a-tooltip>
                 </span>
                 <span v-else-if="item.type.type === 'boolean'">
-                    <Ellipsis>{{
+                    <j-ellipsis>{{
                         [
                             {
                                 label: item?.type?.falseText,
@@ -105,14 +105,14 @@
                                     item.property
                                 ],
                         )?.label || ''
-                    }}</Ellipsis>
+                    }}</j-ellipsis>
                 </span>
                 <span v-else>
-                    <Ellipsis>{{
+                    <j-ellipsis>{{
                         instanceStore.current?.configuration?.[item.property] ||
                         ''
-                    }}</Ellipsis>
-                    <j-tooltip
+                    }}</j-ellipsis>
+                    <a-tooltip
                         v-if="isExit(item.property)"
                         :title="`有效值:${
                             instanceStore.current?.configuration?.[
@@ -120,10 +120,10 @@
                             ]
                         }`"
                         ><AIcon type="QuestionCircleOutlined"
-                    /></j-tooltip>
+                    /></a-tooltip>
                 </span>
-            </j-descriptions-item>
-        </j-descriptions>
+            </a-descriptions-item>
+        </a-descriptions>
         <Save
             v-if="visible"
             @save="saveBtn"

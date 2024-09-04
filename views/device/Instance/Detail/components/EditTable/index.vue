@@ -1,14 +1,14 @@
 <template>
-    <j-spin v-if="metadata.properties?.length" :spinning="loading">
-        <j-card :bordered="false" borderStyle="padding: 0">
+    <a-spin v-if="metadata.properties?.length" :spinning="loading">
+        <a-card :bordered="false" borderStyle="padding: 0">
             <template #extra>
-                <j-space>
-                    <j-button @click="visible = true">批量映射</j-button>
-                    <j-button type="primary" @click="onSave">保存</j-button>
-                </j-space>
+                <a-space>
+                    <a-button @click="visible = true">批量映射</a-button>
+                    <a-button type="primary" @click="onSave">保存</a-button>
+                </a-space>
             </template>
-            <j-form ref="formRef" :model="modelRef">
-                <j-table
+            <a-form ref="formRef" :model="modelRef">
+                <a-table
                     :columns="columns"
                     :dataSource="modelRef.dataSource"
                     @change="tableChange"
@@ -16,21 +16,21 @@
                     <template #headerCell="{ column }">
                         <template v-if="column.key === 'collectorId'">
                             采集器
-                            <j-tooltip title="数据采集中配置的真实物理设备">
+                            <a-tooltip title="数据采集中配置的真实物理设备">
                                 <AIcon type="QuestionCircleOutlined" />
-                            </j-tooltip>
+                            </a-tooltip>
                         </template>
                     </template>
                     <template #bodyCell="{ column, record, index }">
                         <template v-if="column.dataIndex === 'channelId'">
-                            <j-form-item
+                            <a-form-item
                                 :name="[
                                     'dataSource',
                                     myCurrent * 10 + index,
                                     'channelId',
                                 ]"
                             >
-                                <j-select
+                                <a-select
                                     style="width: 100%"
                                     v-model:value="record[column.dataIndex]"
                                     placeholder="请选择"
@@ -44,11 +44,11 @@
                                         }
                                     "
                                 >
-                                </j-select>
-                            </j-form-item>
+                                </a-select>
+                            </a-form-item>
                         </template>
                         <template v-if="column.dataIndex === 'collectorId'">
-                            <j-form-item
+                            <a-form-item
                                 :name="[
                                     'dataSource',
                                     myCurrent * 10 + index,
@@ -66,10 +66,10 @@
                                     :id="record.channelId"
                                     type="COLLECTOR"
                                 />
-                            </j-form-item>
+                            </a-form-item>
                         </template>
                         <template v-if="column.dataIndex === 'pointId'">
-                            <j-form-item
+                            <a-form-item
                                 :name="[
                                     'dataSource',
                                     myCurrent * 10 + index,
@@ -87,18 +87,18 @@
                                     :id="record.collectorId"
                                     type="POINT"
                                 />
-                            </j-form-item>
+                            </a-form-item>
                         </template>
                         <template v-if="column.dataIndex === 'id'">
-                            <j-badge
+                            <a-badge
                                 v-if="record[column.dataIndex]"
                                 status="success"
                                 text="已绑定"
                             />
-                            <j-badge v-else status="error" text="未绑定" />
+                            <a-badge v-else status="error" text="未绑定" />
                         </template>
                         <template v-if="column.key === 'action'">
-                            <PermissionButton
+                            <j-permission-button
                                 type="link"
                                 :tooltip="{
                                     title: '解绑',
@@ -109,12 +109,12 @@
                                 }"
                                 :disabled="!record.id"
                                 ><AIcon type="icon-jiebang"
-                            /></PermissionButton>
+                            /></j-permission-button>
                         </template>
                     </template>
-                </j-table>
-            </j-form>
-        </j-card>
+                </a-table>
+            </a-form>
+        </a-card>
         <PatchMapping
             :deviceId="instanceStore.current.id"
             v-if="visible"
@@ -123,10 +123,10 @@
             :type="provider"
             :metaData="modelRef.dataSource"
         />
-    </j-spin>
-    <j-card v-else :bordered="false" borderStyle="padding: 0">
+    </a-spin>
+    <a-card v-else :bordered="false" borderStyle="padding: 0">
         <JEmpty description="暂无数据，请配置物模型" style="margin: 10% 0" />
-    </j-card>
+    </a-card>
 </template>
 
 <script lang="ts" setup>

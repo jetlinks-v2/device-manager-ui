@@ -1,5 +1,5 @@
 <template>
-    <page-container>
+    <j-page-container>
         <pro-search
             :columns="columns"
             target="device-instance"
@@ -26,8 +26,8 @@
                 :params="params"
             >
                 <template #headerTitle>
-                    <j-space>
-                        <PermissionButton
+                    <a-space>
+                        <j-permission-button
                             type="primary"
                             @click="handleAdd"
                             hasPermission="device/Instance:add"
@@ -36,13 +36,13 @@
                                 ><AIcon type="PlusOutlined"
                             /></template>
                             新增
-                        </PermissionButton>
+                        </j-permission-button>
                         <BatchDropdown
                             v-model:isCheck="isCheck"
                             :actions="batchActions"
                             @change="onCheckChange"
                         />
-                    </j-space>
+                    </a-space>
                 </template>
                 <template #card="slotProps">
                     <CardBox
@@ -69,7 +69,7 @@
                             />
                         </template>
                         <template #content>
-                            <Ellipsis
+                            <j-ellipsis
                                 style="
                                     width: calc(100% - 100px);
                                     margin-bottom: 18px;
@@ -78,26 +78,26 @@
                                 <span style="font-size: 16px; font-weight: 600">
                                     {{ slotProps.name }}
                                 </span>
-                            </Ellipsis>
-                            <j-row>
-                                <j-col :span="12">
+                            </j-ellipsis>
+                            <a-row>
+                                <a-col :span="12">
                                     <div class="card-item-content-text">
                                         设备类型
                                     </div>
                                     <div>{{ slotProps.deviceType?.text }}</div>
-                                </j-col>
-                                <j-col :span="12">
+                                </a-col>
+                                <a-col :span="12">
                                     <div class="card-item-content-text">
                                         产品名称
                                     </div>
-                                    <Ellipsis style="width: 100%">
+                                    <j-ellipsis style="width: 100%">
                                         {{ slotProps.productName }}
-                                    </Ellipsis>
-                                </j-col>
-                            </j-row>
+                                    </j-ellipsis>
+                                </a-col>
+                            </a-row>
                         </template>
                         <template #actions="item">
-                            <PermissionButton
+                            <j-permission-button
                                 :disabled="item.disabled"
                                 :popConfirm="item.popConfirm"
                                 :tooltip="{
@@ -114,12 +114,12 @@
                                     <AIcon :type="item.icon" />
                                     <span>{{ item?.text }}</span>
                                 </template>
-                            </PermissionButton>
+                            </j-permission-button>
                         </template>
                     </CardBox>
                 </template>
                 <template #state="slotProps">
-                    <BadgeStatus
+                    <j-badge-status
                         :status="slotProps.state?.value"
                         :text="slotProps.state?.text"
                         :statusNames="{
@@ -139,12 +139,12 @@
                     }}</span>
                 </template>
                 <template #action="slotProps">
-                    <j-space :size="16">
+                    <a-space :size="16">
                         <template
                             v-for="i in getActions(slotProps, 'table')"
                             :key="i.key"
                         >
-                            <PermissionButton
+                            <j-permission-button
                                 :disabled="i.disabled"
                                 :popConfirm="i.popConfirm"
                                 :tooltip="{
@@ -163,13 +163,13 @@
                                 <template #icon
                                     ><AIcon :type="i.icon"
                                 /></template>
-                            </PermissionButton>
+                            </j-permission-button>
                         </template>
-                    </j-space>
+                    </a-space>
                 </template>
             </JProTable>
         </FullPage>
-    </page-container>
+    </j-page-container>
     <Import
         v-if="importVisible"
         @cancel="importVisible = false"
@@ -207,30 +207,32 @@ import {
     batchDeployDevice,
     batchDeleteDevice,
     detail,
-} from '@/api/device/instance';
-import { getImage, LocalStore, onlyMessage } from '@/utils/comm';
+} from 'device/api/instance';
+import { getImage } from '@/utils/comm';
+import { getToken, onlyMessage } from '@jetlinks-web/utils'
 import Import from './Import/modal.vue';
 import Export from './Export/index.vue';
 import Process from './Process/index.vue';
 import Save from './Save/index.vue';
-import { BASE_API_PATH, TOKEN_KEY } from '@/utils/variable';
+import { BASE_API } from '@jetlinks-web/constants'
 import {
     getProviders,
     queryGatewayList,
     queryNoPagingPost,
     queryOrgThree,
-} from '@/api/device/product';
-import { queryTree } from '@/api/device/category';
+} from 'device/api/product';
+import { queryTree } from 'device/api/category';
 import { useMenuStore } from '@/store/menu';
 import type { ActionsType } from './typings';
 import dayjs from 'dayjs';
-import BadgeStatus from '@/components/BadgeStatus/index.vue';
-import BatchDropdown from '@/components/BatchDropdown/index.vue';
-import type { BatchActionsType } from '@/components/BatchDropdown/types';
+import BatchDropdown from 'device/components/BatchDropdown/index.vue';
+import type { BatchActionsType } from 'device/components/BatchDropdown/types';
 import { useRouterParams } from '@jetlinks-web/hooks';
 import { accessConfigTypeFilter } from '@/utils';
 import TagSearch from './components/TagSearch.vue';
 import { Modal } from 'ant-design-vue';
+
+
 const instanceRef = ref<Record<string, any>>({});
 const params = ref<Record<string, any>>({});
 const _selectedRowKeys = ref<string[]>([]);
@@ -721,18 +723,14 @@ const handleGetParams = (p: any) => {
 
 const activeAllDevice = () => {
     type.value = 'active';
-    const activeAPI = `${BASE_API_PATH}/device-instance/deploy?:X_Access_Token=${LocalStore.get(
-        TOKEN_KEY,
-    )}&${handleParams(handleGetParams(params.value))}`;
+    const activeAPI = `${BASE_API}/device-instance/deploy?:X_Access_Token=${getToken()}&${handleParams(handleGetParams(params.value))}`;
     api.value = activeAPI;
     operationVisible.value = true;
 };
 
 const syncDeviceStatus = () => {
     type.value = 'sync';
-    const syncAPI = `${BASE_API_PATH}/device-instance/state/_sync?:X_Access_Token=${LocalStore.get(
-        TOKEN_KEY,
-    )}&${handleParams(params.value)}`;
+    const syncAPI = `${BASE_API}/device-instance/state/_sync?:X_Access_Token=${getToken()}&${handleParams(params.value)}`;
     api.value = syncAPI;
     operationVisible.value = true;
 };

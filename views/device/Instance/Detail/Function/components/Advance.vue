@@ -1,29 +1,29 @@
 <template>
     <div class="advance-wrapper">
         <div style="width: 150px">
-            <j-tabs
+            <a-tabs
                 v-model="activeKey"
                 tab-position="left"
                 :tabBarStyle="{ width: '100%' }"
                 @change="onTabChange"
             >
-                <j-tab-pane v-for="func in newFunctions" :key="func.id">
+                <a-tab-pane v-for="func in newFunctions" :key="func.id">
                     <template #tab>
-                        <j-tooltip>
+                        <a-tooltip>
                             <template #title>
                                 {{ func.name }}
                             </template>
                             <div style="max-width: 100px" class="tabTitle">
                                 {{ func.name }}
                             </div>
-                        </j-tooltip>
+                        </a-tooltip>
                     </template>
-                </j-tab-pane>
-            </j-tabs>
+                </a-tab-pane>
+            </a-tabs>
         </div>
         <div style="flex: 1">
-            <j-row :gutter="30">
-                <j-col :span="15">
+            <a-row :gutter="30">
+                <a-col :span="15">
                     <JMonacoEditor
                         :ref="`monacoEditor${current.id}`"
                         v-model="current.json"
@@ -31,27 +31,27 @@
                         style="height: 400px"
                     />
                     <div class="editor-btn">
-                        <j-space>
-                            <j-button
+                        <a-space>
+                            <a-button
                                 type="primary"
                                 :loading="loading"
                                 @click="handleExecute(current)"
                             >
                                 执行
-                            </j-button>
-                            <j-button type="default" @click="handleClear()">
+                            </a-button>
+                            <a-button type="default" @click="handleClear()">
                                 清空
-                            </j-button>
-                        </j-space>
+                            </a-button>
+                        </a-space>
                     </div>
-                </j-col>
-                <j-col :span="9">
+                </a-col>
+                <a-col :span="9">
                     <h4>执行结果：</h4>
                     <span class="execute-result">
                         {{ executeResult }}
                     </span>
-                </j-col>
-            </j-row>
+                </a-col>
+            </a-row>
         </div>
     </div>
 </template>

@@ -1,5 +1,5 @@
 <template>
-  <j-modal
+  <a-modal
     title="设备接入配置"
     visible
     width="1200px"
@@ -33,11 +33,11 @@
       :gridColumns="[2]"
     >
       <template #headerTitle>
-        <PermissionButton
+        <j-permission-button
           type="primary"
           @click="add"
           hasPermission="link/AccessConfig:add"
-        >新增</PermissionButton
+        >新增</j-permission-button
         >
       </template>
       <template #deviceType="slotProps">
@@ -63,17 +63,17 @@
           </template>
           <template #content>
             <div style="height: 110px">
-              <Ellipsis style="width: calc(100% - 100px)">
+              <j-ellipsis style="width: calc(100% - 100px)">
               <h3 style="font-weight: 600">
                 {{ slotProps.name }}
               </h3>
-            </Ellipsis>
-            <j-row>
-                <j-col :span="12" v-if="slotProps.channelInfo">
+            </j-ellipsis>
+            <a-row>
+                <a-col :span="12" v-if="slotProps.channelInfo">
                   <div class="card-item-content-text">
                     <j-ellipsis>{{ slotProps.channelInfo?.name }}</j-ellipsis>
                   </div>
-                  <Ellipsis style="width: calc(100% - 20px)">
+                  <j-ellipsis style="width: calc(100% - 20px)">
                     <div>
                       {{
                         slotProps.channelInfo?.addresses
@@ -82,15 +82,15 @@
                           : ''
                       }}
                     </div>
-                  </Ellipsis>
-                </j-col>
-                <j-col :span="12">
+                  </j-ellipsis>
+                </a-col>
+                <a-col :span="12">
                   <div class="card-item-content-text">协议</div>
-                  <Ellipsis style="width:calc(100%-20px)"><div>{{ slotProps.protocolDetail?.name }}</div></Ellipsis>
-                </j-col>
-              </j-row>
-              <j-row>
-                <j-col :span="24">
+                  <j-ellipsis style="width:calc(100%-20px)"><div>{{ slotProps.protocolDetail?.name }}</div></j-ellipsis>
+                </a-col>
+              </a-row>
+              <a-row>
+                <a-col :span="24">
                   <j-ellipsis style="width: calc(100% - 50px)">
                     <div class="context-access">
                     {{
@@ -100,14 +100,14 @@
                     }}
                   </div>
                   </j-ellipsis>
-                </j-col>
-              </j-row>
+                </a-col>
+              </a-row>
             </div>
           </template>
         </CardBox>
       </template>
       <template #state="slotProps">
-        <j-badge
+        <a-badge
           :text="slotProps.state.text"
           :status="slotProps.state"
           :statusNames='{
@@ -120,7 +120,7 @@
         <a>{{ slotProps.id }}</a>
       </template>
     </JProTable>
-  </j-modal>
+  </a-modal>
 </template>
 
 <script setup lang='ts' name='accessModal'>

@@ -1,5 +1,5 @@
 <template>
-    <j-modal
+    <a-modal
         :maskClosable="false"
         :visible="true"
         :title="!!data?.id ? '编辑' : '新增'"
@@ -9,38 +9,38 @@
         width="650px"
     >
         <div>
-            <j-form :layout="'vertical'" ref="formRef" :model="modelRef">
-                <j-form-item name="id" :rules="IdRules">
+            <a-form :layout="'vertical'" ref="formRef" :model="modelRef">
+                <a-form-item name="id" :rules="IdRules">
                     <template #label>
                         <span>
                             插件ID
-                            <j-tooltip title="若不填写，系统将自动生成唯一ID">
+                            <a-tooltip title="若不填写，系统将自动生成唯一ID">
                                 <AIcon
                                     type="QuestionCircleOutlined"
                                     style="margin-left: 2px"
                                 />
-                            </j-tooltip>
+                            </a-tooltip>
                         </span>
                     </template>
-                    <j-input
+                    <a-input
                         placeholder="请输入插件ID"
                         v-model:value="modelRef.id"
                         :disabled="!!data.id"
                     />
-                </j-form-item>
-                <j-form-item label="插件名称" name="name" :rules="nameRules">
-                    <j-input
+                </a-form-item>
+                <a-form-item label="插件名称" name="name" :rules="nameRules">
+                    <a-input
                         placeholder="请输入插件名称"
                         v-model:value="modelRef.name"
                     />
-                </j-form-item>
-                <j-form-item label="文件" name="version" :rules="versionRule">
+                </a-form-item>
+                <a-form-item label="文件" name="version" :rules="versionRule">
                     <UploadFile
                         v-model:modelValue="modelRef.version"
                         @change="uploadChange"
                         :fileName="data.filename"
                     />
-                </j-form-item>
+                </a-form-item>
                 <div v-if="modelRef.version" class="file-detail">
                     <div>
                         <span>插件类型：</span>
@@ -55,21 +55,21 @@
                         }}</span>
                     </div>
                 </div>
-                <j-form-item
+                <a-form-item
                     label="描述"
                     name="describe"
                     :rules="Max_Length_200"
                 >
-                    <j-textarea
+                    <a-textarea
                         v-model:value="modelRef.description"
                         placeholder="请输入说明"
                         showCount
                         :maxlength="200"
                     />
-                </j-form-item>
-            </j-form>
+                </a-form-item>
+            </a-form>
         </div>
-    </j-modal>
+    </a-modal>
 </template>
 
 <script setup lang="ts" name="PluginSave">
@@ -78,10 +78,10 @@ import {
     Max_Length_64,
     Max_Length_200,
     RequiredStringFn,
-} from '@/components/Form/rules';
+} from '../components/Form/rules';
 import UploadFile from './UploadFile.vue';
-import { FileUploadResult } from '@/views/link/plugin/typings';
-import { add, update, vailIdFn } from '@/api/link/plugin';
+import { FileUploadResult } from '../plugin/typings';
+import { add, update, vailIdFn } from '../../../api/link/plugin';
 import { TypeMap } from './util';
 import { onlyMessage } from '@/utils/comm';
 

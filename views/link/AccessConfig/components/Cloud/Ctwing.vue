@@ -1,8 +1,8 @@
 <template>
     <div>
-        <j-steps class="steps-steps" :current="stepCurrent">
-            <j-step disabled v-for="item in steps" :key="item" :title="item" />
-        </j-steps>
+        <a-steps class="steps-steps" :current="stepCurrent">
+            <a-step disabled v-for="item in steps" :key="item" :title="item" />
+        </a-steps>
         <div class="steps-content">
             <div class="steps-box" v-if="current === 0">
                 <div class="alert">
@@ -10,18 +10,18 @@
                     通过CTWing平台的HTTP推送服务进行数据接入
                 </div>
                 <div style="margin-top: 42px">
-                    <j-row :gutter="[24, 24]">
-                        <j-col :span="16">
-                            <j-form
+                    <a-row :gutter="[24, 24]">
+                        <a-col :span="16">
+                            <a-form
                                 :model="formState"
                                 ref="formRef1"
                                 name="basic"
                                 autocomplete="off"
                                 layout="vertical"
                             >
-                                <j-row :gutter="[24, 24]">
-                                    <j-col :span="12">
-                                        <j-form-item
+                                <a-row :gutter="[24, 24]">
+                                    <a-col :span="12">
+                                        <a-form-item
                                             label="接口地址"
                                             name="apiAddress"
                                             :rules="[
@@ -30,15 +30,15 @@
                                                 },
                                             ]"
                                         >
-                                            <j-input
+                                            <a-input
                                                 v-model:value="
                                                     formState.apiAddress
                                                 "
                                             />
-                                        </j-form-item>
-                                    </j-col>
-                                    <j-col :span="12">
-                                        <j-form-item
+                                        </a-form-item>
+                                    </a-col>
+                                    <a-col :span="12">
+                                        <a-form-item
                                             label="appKey"
                                             name="appKey"
                                             :rules="[
@@ -54,16 +54,16 @@
                                                 },
                                             ]"
                                         >
-                                            <j-input
+                                            <a-input
                                                 v-model:value="formState.appKey"
                                                 placeholder="请输入appKey"
                                             />
-                                        </j-form-item>
-                                    </j-col>
-                                </j-row>
-                                <j-row :gutter="[24, 24]">
-                                    <j-col :span="12">
-                                        <j-form-item
+                                        </a-form-item>
+                                    </a-col>
+                                </a-row>
+                                <a-row :gutter="[24, 24]">
+                                    <a-col :span="12">
+                                        <a-form-item
                                             label="appSecret"
                                             name="appSecret"
                                             :rules="[
@@ -79,22 +79,22 @@
                                                 },
                                             ]"
                                         >
-                                            <j-input
+                                            <a-input
                                                 v-model:value="
                                                     formState.appSecret
                                                 "
                                                 placeholder="请输入appSecret"
                                             />
-                                        </j-form-item>
-                                    </j-col>
-                                </j-row>
-                                <j-row :gutter="[24, 24]">
-                                    <j-col :span="24">
-                                        <j-form-item
+                                        </a-form-item>
+                                    </a-col>
+                                </a-row>
+                                <a-row :gutter="[24, 24]">
+                                    <a-col :span="24">
+                                        <a-form-item
                                             label="说明"
                                             name="description"
                                         >
-                                            <j-textarea
+                                            <a-textarea
                                                 placeholder="请输入说明"
                                                 :rows="4"
                                                 v-model:value="
@@ -103,11 +103,11 @@
                                                 show-count
                                                 :maxlength="200"
                                             />
-                                        </j-form-item>
-                                    </j-col>
-                                </j-row> </j-form
-                        ></j-col>
-                        <j-col :span="8">
+                                        </a-form-item>
+                                    </a-col>
+                                </a-row> </a-form
+                        ></a-col>
+                        <a-col :span="8">
                             <j-scrollbar height="500">
                                 <div class="doc">
                                     <h1>操作指引：</h1>
@@ -115,7 +115,7 @@
                                         1、CTWing端创建应用、产品、设备；配置完成后查看产品详情。其中产品ID以及Master-APIkey在JetLinks平台配置时会使用。
                                     </div>
                                     <div class="image">
-                                        <j-image width="100%" :src="img1" />
+                                        <a-image width="100%" :src="img1" />
                                     </div>
                                     <div>
                                         2、IOT端创建类型为CTWing的设备接入网关
@@ -132,52 +132,52 @@
                                         3、IOT端创建产品，选中接入方式为CTWing，填写CTWing平台中的产品ID、Master-APIkey。
                                     </div>
                                     <div class="image">
-                                        <j-image width="100%" :src="img2" />
+                                        <a-image width="100%" :src="img2" />
                                     </div>
                                     <div>
                                         4、IOT端添加设备，设备ID需要配置真实设备的IMEI号，配置完成后启用设备（如果启用设备提示错误，请检查CTWing网关参数是否配置正确）。
                                     </div>
                                     <div class="image">
-                                        <j-image width="100%" :src="img3" />
+                                        <a-image width="100%" :src="img3" />
                                     </div>
                                     <div class="image">
-                                        <j-image width="100%" :src="img4" />
+                                        <a-image width="100%" :src="img4" />
                                     </div>
-                                    <j-descriptions
+                                    <a-descriptions
                                         bordered
                                         size="small"
                                         :column="1"
                                         :labelStyle="{ width: '100px' }"
                                     >
-                                        <j-descriptions-item label="参数"
-                                            >说明</j-descriptions-item
+                                        <a-descriptions-item label="参数"
+                                            >说明</a-descriptions-item
                                         >
-                                        <j-descriptions-item label="IMEI"
-                                            >真实设备的IMEI号，需要填写正确，否则推送数据会接收失败</j-descriptions-item
+                                        <a-descriptions-item label="IMEI"
+                                            >真实设备的IMEI号，需要填写正确，否则推送数据会接收失败</a-descriptions-item
                                         >
-                                        <j-descriptions-item label="SN">
+                                        <a-descriptions-item label="SN">
                                             真实设备的SN号
-                                        </j-descriptions-item>
-                                        <j-descriptions-item label="IMSI">
+                                        </a-descriptions-item>
+                                        <a-descriptions-item label="IMSI">
                                             真实设备的IMSI号
-                                        </j-descriptions-item>
-                                        <j-descriptions-item label="PSK">
+                                        </a-descriptions-item>
+                                        <a-descriptions-item label="PSK">
                                             真实设备的PSK，非必填
-                                        </j-descriptions-item>
-                                    </j-descriptions>
+                                        </a-descriptions-item>
+                                    </a-descriptions>
                                     <div class="overLength">
                                         5、CTWing端配置产品/设备/分组级订阅，订阅方URL地址请填写： {{
                                                 `${origin}/api/ctwing/${randomString()}/notify`
                                             }}（此处订阅地址可以在JetLinks平台中配置完成CTWing网关后再填写）。
                                     </div>
                                     <div class="image">
-                                        <j-image width="100%" :src="img5" />
+                                        <a-image width="100%" :src="img5" />
                                     </div>
                                     <div>
                                         6、以上步骤配置完成后，可以触发真实设备进行上数，在平台对应设备详情页查看设备状态。
                                     </div>
                                     <div class="image">
-                                        <j-image width="100%" :src="img6" />
+                                        <a-image width="100%" :src="img6" />
                                     </div>
                                     <h1>
                                         其他说明
@@ -187,8 +187,8 @@
                                     </div>
                                 </div>
                             </j-scrollbar>
-                        </j-col>
-                    </j-row>
+                        </a-col>
+                    </a-row>
                 </div>
             </div>
         </div>
@@ -199,13 +199,13 @@
                     只能选择HTTP通信方式的协议
                 </div>
                 <div class="search">
-                    <j-input-search
+                    <a-input-search
                         allowClear
                         placeholder="请输入"
                         style="width: 300px"
                         @search="procotolSearch"
                     />
-                    <PermissionButton
+                    <j-permission-button
                         v-if='showAddBtn'
                         type="primary"
                         @click="addProcotol"
@@ -213,15 +213,15 @@
                     >
                         <template #icon><AIcon type="PlusOutlined" /></template>
                         新增
-                    </PermissionButton>
+                    </j-permission-button>
                 </div>
                 <j-scrollbar height="480">
-                    <j-row
+                    <a-row
                         :gutter="[24, 24]"
                         style="width: 100%"
                         v-if="procotolList.length > 0"
                     >
-                        <j-col
+                        <a-col
                             :span="8"
                             v-for="item in procotolList"
                             :key="item.id"
@@ -233,8 +233,8 @@
                                 :data="{ ...item, type: 'protocol' }"
                             >
                             </AccessCard>
-                        </j-col>
-                    </j-row>
+                        </a-col>
+                    </a-row>
                     <j-empty
                         style="margin-top: 10%"
                         v-else
@@ -244,17 +244,17 @@
             </div>
         </div>
         <div v-if="current === 2" class="card-last">
-            <j-row :gutter="[24, 24]">
-                <j-col :span="12">
+            <a-row :gutter="[24, 24]">
+                <a-col :span="12">
                     <TitleComponent data="基本信息" />
-                    <j-form
+                    <a-form
                         :model="formData"
                         name="basic"
                         autocomplete="off"
                         layout="vertical"
                         ref="formRef2"
                     >
-                        <j-form-item
+                        <a-form-item
                             label="名称"
                             name="name"
                             :rules="[
@@ -270,23 +270,23 @@
                                 },
                             ]"
                         >
-                            <j-input
+                            <a-input
                                 placeholder="请输入名称"
                                 v-model:value="formData.name"
                             />
-                        </j-form-item>
-                        <j-form-item label="说明" name="description">
-                            <j-textarea
+                        </a-form-item>
+                        <a-form-item label="说明" name="description">
+                            <a-textarea
                                 placeholder="请输入说明"
                                 :rows="4"
                                 v-model:value="formData.description"
                                 show-count
                                 :maxlength="200"
                             />
-                        </j-form-item>
-                    </j-form>
-                </j-col>
-                <j-col :span="12">
+                        </a-form-item>
+                    </a-form>
+                </a-col>
+                <a-col :span="12">
                     <div class="doc" style="height: 606px">
                         <TitleComponent data="配置概览" />
                         <p>接入方式：{{ provider.name }}</p>
@@ -314,13 +314,13 @@
                             3、添加设备，为每一台设备设置唯一的IMEI、IMSI码（需与OneNet平台中填写的值一致，若OneNet平台没有对应的设备，将会通过OneNet平台提供的LWM2M协议自动创建）
                         </p>
                     </div>
-                </j-col>
-            </j-row>
+                </a-col>
+            </a-row>
         </div>
         <div :class="current !== 2 ? 'steps-action' : 'steps-action-save'">
 
-          <j-button v-if="current > 0" @click="prev" style="margin-right: 8px"> 上一步 </j-button>
-            <PermissionButton
+          <a-button v-if="current > 0" @click="prev" style="margin-right: 8px"> 上一步 </a-button>
+            <j-permission-button
                 v-if="current === 2 && view === 'false'"
                 type="primary"
                 style="margin-right: 8px"
@@ -331,28 +331,26 @@
                 :loading="loading"
             >
                 保存
-            </PermissionButton>
-          <j-button
+            </j-permission-button>
+          <a-button
             v-if="[0, 1].includes(current)"
             type="primary"
 
             @click="next"
           >
             下一步
-          </j-button>
+          </a-button>
         </div>
     </div>
 </template>
 
 <script lang="ts" setup name="AccessCloudCtwing">
-import { onlyMessage } from '@/utils/comm';
 import type { FormInstance } from 'ant-design-vue';
-import { update, save, getProtocolList } from '@/api/link/accessConfig';
+import { update, save, getProtocolList } from '../../../../../api/link/accessConfig';
 import { ProtocolMapping } from '../../data';
 import AccessCard from '../AccessCard/index.vue';
-import { randomString } from '@/utils/utils';
-import { getImage } from '@/utils/comm';
-import { useMenuStore } from 'store/menu';
+import { randomString, onlyMessage } from '@jetlinks-web/utils';
+import { useMenuStore } from '@/store/menu';
 
 const menuStory = useMenuStore();
 const origin = window.location.origin;

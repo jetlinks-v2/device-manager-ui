@@ -31,9 +31,8 @@
 </template>
 
 <script lang="ts" setup>
-import AmapComponent from 'components/AMapComponent/AMap.vue';
-import { getGo } from '@/api/device/dashboard';
-import { getImage } from '@/utils/comm';
+import { getGo } from '../../../../api/dashboard';
+
 let point = ref();
 const getMapData = async () => {
     const res = await getGo({

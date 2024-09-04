@@ -1,5 +1,5 @@
 <template>
-    <j-modal
+    <a-modal
         title="编辑标签"
         :width="1000"
         :visible="true"
@@ -7,7 +7,7 @@
         @ok="handleOk"
         @cancel="handleCancel"
     >
-        <j-table
+        <a-table
             rowKey="id"
             :columns="columns"
             :data-source="dataSource"
@@ -17,7 +17,7 @@
             <template #bodyCell="{ column, text, record }">
                 <div style="width: 280px">
                     <template v-if="['key', 'name'].includes(column.dataIndex)">
-                        <Ellipsis>{{ text }}</Ellipsis>
+                        <j-ellipsis>{{ text }}</j-ellipsis>
                     </template>
                     <template v-else>
                         <ValueItem
@@ -44,8 +44,8 @@
                     </template>
                 </div>
             </template>
-        </j-table>
-    </j-modal>
+        </a-table>
+    </a-modal>
 </template>
 
 <script lang="ts" setup>

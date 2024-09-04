@@ -12,7 +12,7 @@
         >
             <template #other>
                 <div class="other">
-                    <j-tooltip
+                    <a-tooltip
                         placement="top"
                         :title="addressesTip(network.addresses)"
                     >
@@ -21,12 +21,12 @@
                             :key="i.address"
                             class="item"
                         >
-                            <j-badge :status="getColor(i)" :text="i.address" />
+                            <a-badge :status="getColor(i)" :text="i.address" />
                             <span v-if="(network.addresses || []).length > 1"
                                 >等{{ item.addresses.length }}条</span
                             >
                         </div>
-                    </j-tooltip>
+                    </a-tooltip>
                 </div>
             </template></AccessCard
         >
@@ -47,7 +47,8 @@ import {
     NetworkTypeMapping,
     ProtocolMapping,
 } from '../../data';
-import { getNetworkList, getProtocolList } from '@/api/link/accessConfig';
+import { getNetworkList, getProtocolList } from '../../../../../api/link/accessConfig';
+
 const props = defineProps({
     data: {
         type: Object,

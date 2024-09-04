@@ -1,13 +1,13 @@
 <template>
-    <j-select allowClear v-model:value="_value" @change="onChange" placeholder="请选择" style="width: 100%" show-search :filter-option="filterOption">
-        <j-select-option
+    <a-select allowClear v-model:value="_value" @change="onChange" placeholder="请选择" style="width: 100%" show-search :filter-option="filterOption">
+        <a-select-option
             v-for="item in list"
             :key="item.id"
             :value="item.id"
             :label="item.name"
-            >{{ item.name }}</j-select-option
+            >{{ item.name }}</a-select-option
         >
-    </j-select>
+    </a-select>
 </template>
 
 <script lang="ts" setup>

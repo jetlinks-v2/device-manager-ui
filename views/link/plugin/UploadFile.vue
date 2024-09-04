@@ -1,5 +1,5 @@
 <template>
-    <j-upload
+    <a-upload
         name="file"
         accept=".jar,.zip"
         :action="uploadFile"
@@ -15,10 +15,10 @@
         @remove="remove"
     >
         <div>
-            <j-button>上传文件</j-button>
+            <a-button>上传文件</a-button>
             <span class="upload-tip">格式要求：.jar .zip</span>
         </div>
-    </j-upload>
+    </a-upload>
     <template v-if="loading">
         <a-spin size="small"/>
         上传中
@@ -26,14 +26,11 @@
 </template>
 
 <script setup lang="ts" name="FileUpload">
-import { LocalStore } from '@/utils/comm';
-import { TOKEN_KEY } from '@/utils/variable';
-import { uploadFile } from '@/api/link/plugin';
-import { onlyMessage } from '@/utils/comm';
+import { LocalStore, onlyMessage } from '@jetlinks-web/utils';
+import { TOKEN_KEY } from '@jetlinks-web/constants';
+import { uploadFile } from '../../../api/link/plugin';
 import type { UploadChangeParam, UploadProps } from 'ant-design-vue';
-import { notification as Notification } from 'jetlinks-ui-components';
-import { useSystem } from '@/store/system';
-import { fileList } from '@/views/device/Instance/Detail/Running/Property/index';
+import { notification as Notification } from 'ant-design-vue';
 
 const emit = defineEmits(['update:modelValue', 'change']);
 
@@ -51,10 +48,6 @@ const props = defineProps({
         default: undefined,
     },
 });
-
-const paths: string = useSystem().$state.configInfo.paths?.[
-    'base-path'
-] as string;
 
 const value = ref(props.modelValue);
 const list = ref<any>(props.fileName ? [{ name: props.fileName }] : []);

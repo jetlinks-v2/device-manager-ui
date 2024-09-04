@@ -1,17 +1,17 @@
 <template>
     <div v-if="type === 'channel'" class="card-last">
-        <j-row :gutter="[24, 24]">
-            <j-col :span="12">
+        <a-row :gutter="[24, 24]">
+            <a-col :span="12">
                 <title-component data="基本信息" />
                 <div>
-                    <j-form
+                    <a-form
                         :model="formState"
                         name="basic"
                         autocomplete="off"
                         layout="vertical"
                         @finish="onFinish"
                     >
-                        <j-form-item
+                        <a-form-item
                             label="名称"
                             name="name"
                             :rules="[
@@ -27,22 +27,22 @@
                                 },
                             ]"
                         >
-                            <j-input
+                            <a-input
                                 placeholder="请输入名称"
                                 v-model:value="formState.name"
                             />
-                        </j-form-item>
-                        <j-form-item label="说明" name="description">
-                            <j-textarea
+                        </a-form-item>
+                        <a-form-item label="说明" name="description">
+                            <a-textarea
                                 placeholder="请输入说明"
                                 :rows="4"
                                 v-model:value="formState.description"
                                 show-count
                                 :maxlength="200"
                             />
-                        </j-form-item>
-                        <j-form-item>
-                            <PermissionButton
+                        </a-form-item>
+                        <a-form-item>
+                            <j-permission-button
                                 v-if="view === 'false'"
                                 type="primary"
                                 html-type="submit"
@@ -52,12 +52,12 @@
                                 :loading="loading"
                             >
                                 保存
-                            </PermissionButton>
-                        </j-form-item>
-                    </j-form>
+                            </j-permission-button>
+                        </a-form-item>
+                    </a-form>
                 </div>
-            </j-col>
-            <j-col :span="12">
+            </a-col>
+            <a-col :span="12">
                 <div class="doc" style="height: 600px">
                     <TitleComponent data="配置概览" />
                     <p>接入方式：{{ provider.name }}</p>
@@ -71,14 +71,14 @@
                     <p>3、创建产品，并选中接入方式为{{ provider.name }}</p>
                     <p>4、添加设备，单独为每一个设备进行数据点绑定</p>
                 </div>
-            </j-col>
-        </j-row>
+            </a-col>
+        </a-row>
     </div>
 </template>
 
 <script lang="ts" setup name="AccessChannel">
-import { onlyMessage } from '@/utils/comm';
-import { update, save } from '@/api/link/accessConfig';
+import { onlyMessage } from '@jetlinks-web/utils';
+import { update, save } from '../../../../../api/link/accessConfig';
 import { ProtocolMapping } from '../../data';
 
 interface FormState {

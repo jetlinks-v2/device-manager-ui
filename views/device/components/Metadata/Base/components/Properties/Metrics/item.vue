@@ -1,11 +1,11 @@
 <template>
-    <j-input
+    <a-input
         v-if="type === 'string'"
         v-model:value="myValue"
         placeholder="请输入"
         @change="change"
     />
-    <j-input-number
+    <a-input-number
         v-else-if="type === 'int'"
         v-model:value="myValue"
         :precision="0"
@@ -15,7 +15,7 @@
         placeholder="请输入"
         @change="change"
     />
-    <j-input-number
+    <a-input-number
         v-else-if="type === 'long'"
         v-model:value="myValue"
         :max="999999999999999"
@@ -25,7 +25,7 @@
         style="width: 100%"
         @change="change"
     />
-    <j-input-number
+    <a-input-number
         v-else-if="['float', 'double'].includes(type)"
         v-model:value="myValue"
         :max="999999999999999"
@@ -34,7 +34,7 @@
         style="width: 100%"
         @change="change"
     />
-    <j-select
+    <a-select
         v-else-if="type === 'boolean'"
         placeholder="请选择"
         v-model:value="myValue"
@@ -46,7 +46,7 @@
         :get-popup-container="(node) => tableWrapperRef || node"
         @change="change"
     />
-    <j-date-picker
+    <a-date-picker
         v-else-if="type === 'date' "
         v-model:value="myValue"
         show-time
@@ -61,7 +61,7 @@
 </template>
 <script setup name="MetricValueItem">
 import { Form } from 'ant-design-vue'
-import {useTableWrapper} from "@/components/Metadata/Table/context";
+import {useTableWrapper} from "../../../../../../../../components/Metadata/context";
 
 const props = defineProps({
     value: {

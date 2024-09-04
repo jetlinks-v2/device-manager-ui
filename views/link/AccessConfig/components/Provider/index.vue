@@ -2,8 +2,8 @@
     <div v-for="items in dataSource" :key="items.type" class="card-items">
         <div class="card-items-container">
             <TitleComponent :data="items.title" style='font-size: 16px;'></TitleComponent>
-            <j-row :gutter="[24, 24]">
-                <j-col :span="12" v-for="item in items.list" :key="item.id">
+            <a-row :gutter="[24, 24]">
+                <a-col :span="12" v-for="item in items.list" :key="item.id">
                     <div class="provider">
                         <div
                             class="card-content-bg1"
@@ -34,20 +34,19 @@
                                 </div>
                             </div>
                             <div class="right">
-                                <j-button type="primary" @click="click(item)"
-                                    >接入</j-button
+                                <a-button type="primary" @click="click(item)"
+                                    >接入</a-button
                                 >
                             </div>
                         </div>
                     </div>
-                </j-col>
-            </j-row>
+                </a-col>
+            </a-row>
         </div>
     </div>
 </template>
 
 <script lang="ts" setup name="AccessConfigProvider">
-import TitleComponent from '@/components/TitleComponent/index.vue';
 import { BackMap } from '../../data';
 
 const props = defineProps({

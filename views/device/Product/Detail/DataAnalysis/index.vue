@@ -4,14 +4,14 @@
         <div class="top">
             <div>
                 脚本语言:
-                <j-select
+                <a-select
                     :defaultValue="'JavaScript'"
                     style="width: 200; margin-left: 5px"
                 >
-                    <j-select-option value="JavaScript"
-                        >JavaScript(ECMAScript 5)</j-select-option
+                    <a-select-option value="JavaScript"
+                        >JavaScript(ECMAScript 5)</a-select-option
                     >
-                </j-select>
+                </a-select>
                 <AIcon
                     type="ExpandOutlined"
                     style="margin-left: 20px"
@@ -41,7 +41,7 @@
                             "
                         >
                             <div style="margin-right: 5px">Topic:</div>
-                            <j-auto-complete
+                            <a-auto-complete
                                 placeholder="请输入Topic"
                                 style="width: 300px"
                                 :options="topicList"
@@ -53,15 +53,15 @@
                         </template>
                         <template v-else>
                             <div style="margin-right: 5px">URL:</div>
-                            <j-input
+                            <a-input
                                 placeholder="请输入URL"
                                 v-model:value="url"
                                 style="width: 300px"
-                            ></j-input>
+                            ></a-input>
                         </template>
                     </div>
                 </div>
-                <j-textarea
+                <a-textarea
                     :rows="5"
                     placeholder="// 二进制数据以0x开头的十六进制输入，字符串数据输入原始字符串"
                     style="margin-top: 10px"
@@ -72,7 +72,7 @@
                 <div class="bottom-title">
                     <div class="bottom-title-text">运行结果</div>
                 </div>
-                <j-textarea
+                <a-textarea
                     :autoSize="{ minRows: 5 }"
                     :style="resStyle"
                     v-model:value="result"
@@ -81,7 +81,7 @@
         </div>
     </div>
     <div style="margin-top: 10px; margin-left: 10px">
-        <PermissionButton
+        <j-permission-button
             type="primary"
             hasPermission="device/Instance:update"
             :loading="loading"
@@ -92,8 +92,8 @@
             }"
         >
             调试
-        </PermissionButton>
-        <PermissionButton
+        </j-permission-button>
+        <j-permission-button
             hasPermission="device/Instance:update"
             :loading="loading"
             :disabled="!isTest"
@@ -104,13 +104,12 @@
             }"
         >
             保存
-        </PermissionButton>
+        </j-permission-button>
     </div>
 </template>
 
 <script setup lang='ts' name="DataAnalysis">
-import PermissionButton from '@/components/PermissionButton/index.vue';
-// import MonacoEditor from '@/components/MonacoEditor/index.vue';
+// import MonacoEditor from 'device/components/MonacoEditor/index.vue';
 import { useFullscreen } from '@vueuse/core';
 import { useProductStore } from '@/store/product';
 import {

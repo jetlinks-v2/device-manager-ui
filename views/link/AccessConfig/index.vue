@@ -1,5 +1,5 @@
 <template>
-    <page-container>
+    <j-page-container>
         <div>
             <pro-search
                 :columns="columns"
@@ -20,7 +20,7 @@
                     :params="params"
                 >
                     <template #headerTitle>
-                        <PermissionButton
+                        <j-permission-button
                             type="primary"
                             @click="handleAdd"
                             hasPermission="link/AccessConfig:add"
@@ -29,7 +29,7 @@
                                 ><AIcon type="PlusOutlined"
                             /></template>
                             新增
-                        </PermissionButton>
+                        </j-permission-button>
                     </template>
                     <template #card="slotProps">
                         <CardBox
@@ -54,18 +54,18 @@
                             </template>
                             <template #content>
                                 <div class="card-item-content">
-                                    <Ellipsis style="width: calc(100% - 100px)">
+                                    <j-ellipsis style="width: calc(100% - 100px)">
                                         <span class="card-title">
                                             {{ slotProps.name }}
                                         </span>
-                                    </Ellipsis>
-                                    <j-row class="card-item-content-box">
-                                        <j-col
+                                    </j-ellipsis>
+                                    <a-row class="card-item-content-box">
+                                        <a-col
                                             :span="12"
                                             v-if="slotProps.channelInfo"
                                             class="card-item-content-text"
                                         >
-                                            <Ellipsis
+                                            <j-ellipsis
                                                 style="
                                                     width: calc(100% - 100px);
                                                 "
@@ -78,8 +78,8 @@
                                                             .name
                                                     }}
                                                 </div>
-                                            </Ellipsis>
-                                            <Ellipsis
+                                            </j-ellipsis>
+                                            <j-ellipsis
                                                 style="
                                                     width: calc(100% - 10px);
                                                     display: flex;
@@ -90,7 +90,7 @@
                                                         .addresses
                                                 "
                                             >
-                                                <j-badge
+                                                <a-badge
                                                     :status="
                                                         getStatus(slotProps)
                                                     "
@@ -102,9 +102,9 @@
                                                             .address
                                                     }}
                                                 </span>
-                                            </Ellipsis>
-                                        </j-col>
-                                        <j-col
+                                            </j-ellipsis>
+                                        </a-col>
+                                        <a-col
                                             :span="12"
                                             v-if="slotProps.protocolDetail"
                                             class="card-item-content-text"
@@ -114,7 +114,7 @@
                                             >
                                                 协议
                                             </div>
-                                            <Ellipsis
+                                            <j-ellipsis
                                                 style="width: calc(100% - 10px)"
                                                 :lineClamp="2"
                                             >
@@ -124,15 +124,15 @@
                                                             .name
                                                     }}
                                                 </div>
-                                            </Ellipsis>
-                                        </j-col>
-                                    </j-row>
-                                    <j-row>
-                                        <j-col
+                                            </j-ellipsis>
+                                        </a-col>
+                                    </a-row>
+                                    <a-row>
+                                        <a-col
                                             :span="24"
                                             class="card-item-content-description"
                                         >
-                                            <j-tooltip>
+                                            <a-tooltip>
                                                 <template #title>
                                                     {{
                                                         getDescription(
@@ -141,14 +141,14 @@
                                                     }}
                                                 </template>
                                                 {{ getDescription(slotProps) }}
-                                            </j-tooltip>
-                                        </j-col>
-                                    </j-row>
+                                            </a-tooltip>
+                                        </a-col>
+                                    </a-row>
                                 </div>
                             </template>
 
                             <template #actions="item">
-                                <PermissionButton
+                                <j-permission-button
                                     :disabled="item.disabled"
                                     :popConfirm="item.popConfirm"
                                     :tooltip="{
@@ -167,12 +167,12 @@
                                         <AIcon :type="item.icon" />
                                         <span>{{ item?.text }}</span>
                                     </template>
-                                </PermissionButton>
+                                </j-permission-button>
                             </template>
                         </CardBox>
                     </template>
                     <template #state="slotProps">
-                        <j-badge
+                        <a-badge
                             :text="slotProps.state.text"
                             :status="statusMap.get(slotProps.state.value)"
                         />
@@ -181,10 +181,10 @@
             </FullPage>
         </div>
         <Outline v-if="visibleOutline" :data="current" @closeDrawer="visibleOutline = false"></Outline>
-    </page-container>
+    </j-page-container>
 </template>
 <script lang="ts" setup name="AccessConfigPage">
-import type { ActionsType } from '@/components/Table/index';
+import type { ActionsType } from 'device/components/Table/index';
 import { getImage } from '@/utils/comm';
 import {
     list,

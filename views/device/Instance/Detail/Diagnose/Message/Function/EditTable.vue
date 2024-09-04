@@ -1,6 +1,6 @@
 <template>
-    <j-form ref="formRef" :model="modelRef">
-        <j-table
+    <a-form ref="formRef" :model="modelRef">
+        <a-table
             :columns="columns"
             :data-source="modelRef.dataSource"
             :pagination="false"
@@ -16,7 +16,7 @@
                         <span>{{ text.type }}</span>
                     </template>
                     <template v-else>
-                        <j-form-item
+                        <a-form-item
                             :name="['dataSource', index, 'value']"
                             :rules="[
                                 {
@@ -28,7 +28,7 @@
                             <ValueItem
                                 v-model:modelValue="record.value"
                                 :itemType="record.valueType.type"
-                                
+
                                 :options="
                                     record.valueType.type === 'enum'
                                         ? (
@@ -47,12 +47,12 @@
                                         : undefined
                                 "
                             />
-                        </j-form-item>
+                        </a-form-item>
                     </template>
                 </div>
             </template>
-        </j-table>
-    </j-form>
+        </a-table>
+    </a-form>
 </template>
 
 <script lang="ts" setup>

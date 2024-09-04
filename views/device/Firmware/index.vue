@@ -1,5 +1,5 @@
 <template>
-    <page-container>
+    <j-page-container>
         <div>
             <pro-search
                 :columns="columns"
@@ -18,7 +18,7 @@
                     :params="params"
                 >
                     <template #headerTitle>
-                        <PermissionButton
+                        <j-permission-button
                             type="primary"
                             @click="handleAdd"
                             hasPermission="device/Firmware:add"
@@ -27,7 +27,7 @@
                                 ><AIcon type="PlusOutlined"
                             /></template>
                             新增
-                        </PermissionButton>
+                        </j-permission-button>
                     </template>
                     <template #productId="slotProps">
                         <span>{{ slotProps.productName }}</span>
@@ -40,12 +40,12 @@
                         }}</span>
                     </template>
                     <template #action="slotProps">
-                        <j-space :size="16">
+                        <a-space :size="16">
                             <template
                                 v-for="i in getActions(slotProps)"
                                 :key="i.key"
                             >
-                                <PermissionButton
+                                <j-permission-button
                                     :disabled="i.disabled"
                                     :popConfirm="i.popConfirm"
                                     :tooltip="{
@@ -60,9 +60,9 @@
                                     <template #icon
                                         ><AIcon :type="i.icon"
                                     /></template>
-                                </PermissionButton>
+                                </j-permission-button>
                             </template>
-                        </j-space>
+                        </a-space>
                     </template>
                 </j-pro-table>
             </FullPage>
@@ -79,11 +79,10 @@
             :productId="productId"
             @close-drawer="showTask = false"
         />
-    </page-container>
+    </j-page-container>
 </template>
 <script lang="ts" setup name="FirmwarePage">
-import type { ActionsType } from '@/components/Table/index';
-import { query, queryProduct, remove } from '@/api/device/firmware';
+import { query, queryProduct, remove } from '../../../api/firmware';
 import TaskDrawer from './Task/index.vue';
 import dayjs from 'dayjs';
 import _ from 'lodash-es';
@@ -183,7 +182,7 @@ const columns = [
     },
 ];
 
-const getActions = (data: Partial<Record<string, any>>): ActionsType[] => {
+const getActions = (data: Partial<Record<string, any>>): any[] => {
     if (!data) {
         return [];
     }

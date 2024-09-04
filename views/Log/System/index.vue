@@ -12,7 +12,7 @@
             :params="params"
         >
             <template #level="slotProps">
-                <j-tag
+                <a-tag
                     :color="
                         slotProps.level === 'WARN'
                             ? 'orange'
@@ -24,7 +24,7 @@
                     "
                 >
                     {{ slotProps.level }}
-                </j-tag>
+                </a-tag>
             </template>
             <template #createTime="slotProps">
                 {{ dayjs(slotProps.createTime).format('YYYY-MM-DD HH:mm:ss') }}
@@ -34,12 +34,12 @@
             </template>
 
             <template #action="slotProps">
-                <j-space :size="16">
+                <a-space :size="16">
                     <template
                             v-for="i in getActions(slotProps)"
                             :key="i.key"
                         >
-                            <PermissionButton
+                            <j-permission-button
                                 :tooltip="{
                                     ...i.tooltip,
                                 }"
@@ -50,13 +50,13 @@
                                 <template #icon
                                     ><AIcon :type="i.icon"
                                 /></template>
-                            </PermissionButton>
+                            </j-permission-button>
                         </template>
-                </j-space>
+                </a-space>
             </template>
         </j-pro-table>
     </div>
-    <j-modal :width="1100" v-model:visible="visible" title="详情">
+    <a-modal :width="1100" v-model:visible="visible" title="详情">
         <div>
             <span class="mr-10">[{{ descriptionsData?.threadName }}]</span>
             <span class="mr-10">{{
@@ -67,7 +67,7 @@
             <span>{{ descriptionsData?.className }}</span>
         </div>
         <div class="mb-10">
-            <j-tag
+            <a-tag
                 :color="
                     descriptionsData?.level === 'WARN'
                         ? 'orange'
@@ -79,26 +79,25 @@
                 "
             >
                 {{ descriptionsData?.level }}
-            </j-tag>
+            </a-tag>
             <span>{{ descriptionsData?.message }}</span>
         </div>
       <div class="warn-content">
         {{ descriptionsData.exceptionStack }}
       </div>
-<!--        <j-textarea-->
+<!--        <a-textarea-->
 <!--            v-model:value=""-->
 <!--            placeholder="暂无数据"-->
 <!--            :auto-size="{ minRows: 24, maxRows: 28 }"-->
 <!--        />-->
         <template #footer>
-            <j-button type="primary" @click="handleOk">关闭</j-button>
+            <a-button type="primary" @click="handleOk">关闭</a-button>
         </template>
-    </j-modal>
+    </a-modal>
 </template>
 <script lang="ts" setup name="SystemLog">
-import type { ActionsType } from '@/components/Table/index';
 import type { SystemLogItem } from '../typings';
-import { querySystem } from '@/api/link/log';
+import { querySystem } from '../../../api/link/log';
 import dayjs from 'dayjs';
 
 import { modifySearchColumnValue } from '@/utils/comm';
@@ -207,7 +206,7 @@ const handleOk = (e: MouseEvent) => {
     visible.value = false;
 };
 
-const getActions = (data: Partial<Record<string, any>>): ActionsType[] => {
+const getActions = (data: Partial<Record<string, any>>): any[] => {
     if (!data) {
         return [];
     }

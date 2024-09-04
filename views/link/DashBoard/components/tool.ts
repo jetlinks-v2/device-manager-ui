@@ -1,21 +1,6 @@
-import dayjs, { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
 import * as echarts from 'echarts';
 
-// export const getInterval = (type: string) => {
-//     switch (type) {
-//         case 'year':
-//             return '30d';
-//         case 'month':
-//         case 'week':
-//             return '1d';
-//         case 'hour':
-//             return '1m';
-//         case 'today':
-//             return '1h';
-//         default:
-//             return '1h';
-//     }
-// };
 export const getTimeFormat = (type: string) => {
     switch (type) {
         case 'year':

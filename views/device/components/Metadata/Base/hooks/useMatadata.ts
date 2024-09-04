@@ -1,7 +1,7 @@
-import {DeviceMetadata, MetadataItem, MetadataType} from "@/views/device/Product/typings";
-import {useInstanceStore} from "store/instance";
-import {useProductStore} from "store/product";
-import type { Ref, ComputedRef } from "vue";
+import {DeviceMetadata, MetadataItem, MetadataType} from "../../../../Product/typings";
+import {useInstanceStore} from "../../../../../../store/instance";
+import {useProductStore} from "../../../../../../store/product";
+import type { Ref } from "vue";
 import { storeToRefs } from 'pinia'
 
 const useMetadata = (type: 'device' | 'product', key?: MetadataType, ): {

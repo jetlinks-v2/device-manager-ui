@@ -11,7 +11,7 @@
                         permissionStore.hasPermission('device/Product:update')
                     "
                 >
-                    请先<j-button type="link" @click="showModal">选择</j-button
+                    请先<a-button type="link" @click="showModal">选择</a-button
                     >设备接入网关，用以提供设备接入能力
                 </span>
                 <span v-else>请联系管理员配置产品接入方式</span>
@@ -19,11 +19,11 @@
         </j-empty>
     </div>
     <div v-else>
-        <j-row :gutter="24">
-            <j-col :span="12">
+        <a-row :gutter="24">
+            <a-col :span="12">
                 <Title data="接入方式">
                     <template #extra>
-                        <PermissionButton
+                        <j-permission-button
                             style="margin: 0 0 0 20px"
                             type="primary"
                             size="small"
@@ -36,7 +36,7 @@
                             hasPermission="device/Product:update"
                         >
                             更换
-                        </PermissionButton>
+                        </j-permission-button>
                     </template>
                 </Title>
                 <div>
@@ -67,55 +67,55 @@
                             v-for="item in access?.channelInfo?.addresses"
                             :key="item.address"
                         >
-                            <j-badge
+                            <a-badge
                                 :color="item.health === -1 ? 'red' : 'green'"
                                 :text="item.address"
                             >
-                            </j-badge>
+                            </a-badge>
                         </div>
                     </div>
                     <div v-else>{{ '暂无连接信息' }}</div>
                 </div>
                 <!--        产品类型        -->
-                <j-form
+                <a-form
                     ref="pluginFormRef"
                     :model="productData"
                     layout="vertical"
                     v-if="productTypes.length"
                 >
-                    <j-form-item
+                    <a-form-item
                         name="id"
                         label="产品类型"
                         :rules="[{ required: true, message: '请选择产品类型' }]"
                     >
-                        <j-select
+                        <a-select
                             v-model:value="productData.id"
                             :options="productTypes"
                             @change="productTypeChange"
                             placeholder="请选择产品类型"
                         />
-                    </j-form-item>
-                </j-form>
+                    </a-form-item>
+                </a-form>
                 <!--        其它接入配置        -->
                 <div v-for="(i,index) in metadata">
                     <Title v-if="i?.name" :data="i?.name" class="config">
                         <template #extra>
-                            <j-tooltip
+                            <a-tooltip
                                 title="此配置来自于产品接入方式所选择的协议"
                             >
                                 <AIcon
                                     type="QuestionCircleOutlined"
                                     style="margin-left: 2px"
                                 />
-                            </j-tooltip>
+                            </a-tooltip>
                         </template>
                     </Title>
-                    <j-form
+                    <a-form
                         ref="formRef"
                         :model="formData.data"
                         layout="vertical"
                     >
-                        <j-form-item
+                        <a-form-item
                             :name="item.property"
                             v-for="item in i?.properties || []"
                             :key="item"
@@ -131,17 +131,17 @@
                                 },
                             ]"
                         >
-                            <j-input
+                            <a-input
                                 placeholder="请输入"
                                 v-if="item.type.type === 'string'"
                                 v-model:value="formData.data[item.property]"
-                            ></j-input>
-                            <j-input-password
+                            ></a-input>
+                            <a-input-password
                                 placeholder="请输入"
                                 v-if="item.type.type === 'password'"
                                 v-model:value="formData.data[item.property]"
-                            ></j-input-password>
-                            <j-select
+                            ></a-input-password>
+                            <a-select
                                 placeholder="请选择"
                                 v-if="
                                     item.type.type === 'enum' ||
@@ -150,7 +150,7 @@
                                 v-model:value="formData.data[item.property]"
                                 :options="getOptions(item)"
                             >
-                                <!-- <j-select-option
+                                <!-- <a-select-option
                                 v-for="el in item?.type?.type === 'enum' &&
                                 item?.type?.elements
                                     ? item?.type?.elements
@@ -159,9 +159,9 @@
                                 :value="el.value"
                             >
                                 {{ el.text }}
-                            </j-select-option> -->
-                            </j-select>
-                            <j-input-number
+                            </a-select-option> -->
+                            </a-select>
+                            <a-input-number
                                 v-if="
                                     ['int', 'float', 'double', 'long'].includes(
                                         item.type.type,
@@ -169,43 +169,43 @@
                                 "
                                 v-model:value="formData.data[item.property]"
                                 placeholder="请输入"
-                            ></j-input-number>
-                        </j-form-item>
-                    </j-form>
+                            ></a-input-number>
+                        </a-form-item>
+                    </a-form>
                 </div>
                 <Title data="存储策略">
                     <template #extra>
-                        <j-tooltip
+                        <a-tooltip
                             title="若修改存储策略,需要手动做数据迁移,平台只能搜索最新存储策略中的数据"
                         >
                             <AIcon
                                 type="QuestionCircleOutlined"
                                 style="margin-left: 2px"
                             />
-                        </j-tooltip>
+                        </a-tooltip>
                     </template>
                 </Title>
-                <j-form layout="vertical">
-                    <j-form-item>
-                        <j-select ref="select" v-model:value="form.storePolicy">
-                            <j-select-option
+                <a-form layout="vertical">
+                    <a-form-item>
+                        <a-select ref="select" v-model:value="form.storePolicy">
+                            <a-select-option
                                 v-for="(item, index) in storageList"
                                 :key="index"
                                 :value="item.id"
-                                >{{ item.name }}</j-select-option
+                                >{{ item.name }}</a-select-option
                             >
-                        </j-select>
-                    </j-form-item>
-                </j-form>
-                <PermissionButton
+                        </a-select>
+                    </a-form-item>
+                </a-form>
+                <j-permission-button
                     type="primary"
                     @click="submitDevice"
                     hasPermission="device/Instance:update"
                     :loading="submitLoading"
-                    >保存</PermissionButton
+                    >保存</j-permission-button
                 >
-            </j-col>
-            <j-col
+            </a-col>
+            <a-col
                 :span="12"
                 v-if="config?.routes && config?.routes?.length > 0"
             >
@@ -219,7 +219,7 @@
                                     : 'URL信息'
                             }}
                         </div>
-                        <j-table
+                        <a-table
                             :columns="
                                 config.id === 'MQTT' ? columnsMQTT : columnsHTTP
                             "
@@ -229,54 +229,54 @@
                         >
                             <template #bodyCell="{ text, column, record }">
                                 <template v-if="column?.key === 'topic'">
-                                    <j-tooltip
+                                    <a-tooltip
                                         placement="topLeft"
                                         :title="text"
                                     >
                                         <div class="ellipsis-style">
                                             {{ text }}
                                         </div>
-                                    </j-tooltip>
+                                    </a-tooltip>
                                 </template>
                                 <template v-if="column?.key === 'stream'">
                                     <div>{{ getStream(record) }}</div>
                                 </template>
                                 <template v-if="column.key === 'description'">
-                                    <j-tooltip
+                                    <a-tooltip
                                         placement="topLeft"
                                         :title="text"
                                     >
                                         <div class="ellipsis-style">
                                             {{ text }}
                                         </div>
-                                    </j-tooltip>
+                                    </a-tooltip>
                                 </template>
                                 <template v-if="column?.key === 'address'">
-                                    <j-tooltip
+                                    <a-tooltip
                                         placement="topLeft"
                                         :title="text"
                                     >
                                         <div class="ellipsis-style">
                                             {{ text }}
                                         </div>
-                                    </j-tooltip>
+                                    </a-tooltip>
                                 </template>
                                 <template v-if="column?.key === 'example'">
-                                    <j-tooltip
+                                    <a-tooltip
                                         placement="topLeft"
                                         :title="text"
                                     >
                                         <div class="ellipsis-style">
                                             {{ text }}
                                         </div>
-                                    </j-tooltip>
+                                    </a-tooltip>
                                 </template>
                             </template>
-                        </j-table>
+                        </a-table>
                     </div>
                 </div>
-            </j-col>
-        </j-row>
+            </a-col>
+        </a-row>
     </div>
     <!-- 选择设备 -->
     <AccessModal

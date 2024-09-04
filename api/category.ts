@@ -1,6 +1,6 @@
 // 产品分类
 import { request } from '@jetlinks-web/core'
-import type { CategoryItem } from '../views/Category/typings'
+import type { CategoryItem } from '../views/device/Category/typings'
 /**
  * 查询产品分类树形数据
  */

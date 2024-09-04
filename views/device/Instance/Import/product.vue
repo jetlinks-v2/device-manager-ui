@@ -50,20 +50,20 @@
           </template>
           <template #content>
             <div style='width: calc(100% - 100px)'>
-              <Ellipsis>
+              <j-ellipsis>
                 <span style="font-size: 16px;font-weight: 600" >
                   {{ slotProps.name }}
                 </span>
-              </Ellipsis>
+              </j-ellipsis>
             </div>
-            <j-row>
-              <j-col :span="12">
+            <a-row>
+              <a-col :span="12">
                 <div class="card-item-content-text">
                   设备类型
                 </div>
                 <div>{{ slotProps?.deviceType?.text }}</div>
-              </j-col>
-            </j-row>
+              </a-col>
+            </a-row>
           </template>
         </CardBox>
       </template>

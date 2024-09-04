@@ -1,5 +1,5 @@
 <template>
-    <j-modal
+    <a-modal
         :zIndex="1072"
         :mask-closable="false"
         visible
@@ -51,19 +51,19 @@
             </div>
         </div>
         <template #footer>
-            <j-space>
-                <j-button @click="handleCancel">取消</j-button>
-                <j-button @click="handleOk" type="primary">确定</j-button>
-            </j-space>
+            <a-space>
+                <a-button @click="handleCancel">取消</a-button>
+                <a-button @click="handleOk" type="primary">确定</a-button>
+            </a-space>
         </template>
-    </j-modal>
+    </a-modal>
 </template>
 <script setup lang="ts" name="FRuleEditor">
 import Editor from './Editor/index.vue';
 import Debug from './Debug/index.vue';
 import Operator from './Operator/index.vue';
 import { cloneDeep } from 'lodash-es';
-import {useTableWrapper} from "@/components/Metadata/Table/context";
+import {useTableWrapper} from "../../components/Metadata/context";
 interface Emits {
     (e: 'save', data: string | undefined): void;
     (e: 'close'): void;

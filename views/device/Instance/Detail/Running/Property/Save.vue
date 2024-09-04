@@ -1,5 +1,5 @@
 <template>
-    <j-modal
+    <a-modal
         :maskClosable="false"
         :visible="true"
         title="编辑"
@@ -7,19 +7,19 @@
         @cancel="handleCancel"
         :confirmLoading="loading"
     >
-        <j-alert
+        <a-alert
             message="当数据来源为设备时，填写的值将下发到设备"
             type="warning"
             showIcon
         />
-        <j-form
+        <a-form
             :rules="rules"
             layout="vertical"
             ref="formRef"
             :model="modelRef"
             style="margin-top: 20px"
         >
-            <j-form-item
+            <a-form-item
                 name="propertyValue"
                 :label="data?.name || '自定义属性'"
             >
@@ -28,9 +28,9 @@
                     :itemType="data?.valueType?.type || data?.dataType"
                     :options="options"
                 />
-            </j-form-item>
-        </j-form>
-    </j-modal>
+            </a-form-item>
+        </a-form>
+    </a-modal>
 </template>
 
 <script lang="ts" setup>

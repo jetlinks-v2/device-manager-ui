@@ -1,7 +1,7 @@
-import server from '@/utils/request';
+import { request } from '@jetlinks-web/core'
 
 export const queryAccess = (data: object) =>
-    server.post(`/logger/access/_query`, data);
+    request.post(`/logger/access/_query`, data);
 
 export const querySystem = (data: object) =>
-    server.post(`/logger/system/_query`, data);
+    request.post(`/logger/system/_query`, data);

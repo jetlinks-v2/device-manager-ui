@@ -7,24 +7,24 @@
         @ok="confirm"
     >
       <template #content>
-        <j-form ref="formRef" :model="formData">
-          <j-form-item v-if="range === false" :rules="[{ validator: typeValidator}]" name="value">
+        <a-form ref="formRef" :model="formData">
+          <a-form-item v-if="range === false" :rules="[{ validator: typeValidator}]" name="value">
             <Item v-model:value="formData.value" :options="options" />
-          </j-form-item>
+          </a-form-item>
           <div v-else class="data-table-boolean-item">
             <div class="data-table-boolean-item--value">
-              <j-form-item :name="['rangeValue', 0]" :rules="[{ required: true, message: '请输入指标值'}]">
+              <a-form-item :name="['rangeValue', 0]" :rules="[{ required: true, message: '请输入指标值'}]">
                 <Item v-model:value="formData.rangeValue[0]" />
-              </j-form-item>
+              </a-form-item>
             </div>
             <div style="line-height: 32px">-</div>
             <div class="data-table-boolean-item--value">
-              <j-form-item :name="['rangeValue', 1]" :rules="[{ required: true, message: '请输入指标值'}, { validator: validator}]">
+              <a-form-item :name="['rangeValue', 1]" :rules="[{ required: true, message: '请输入指标值'}, { validator: validator}]">
                 <Item v-model:value="formData.rangeValue[1]" />
-              </j-form-item>
+              </a-form-item>
             </div>
           </div>
-        </j-form>
+        </a-form>
       </template>
       <a-button type="link" style="padding: 0">
         <template #icon>
@@ -40,9 +40,9 @@
 import { reactive } from 'vue';
 import type { PropType } from 'vue';
 import Item from './item.vue'
-import {Form} from "jetlinks-ui-components";
+import {Form} from "ant-design-vue";
 import { cloneDeep } from "lodash-es";
-import { PopoverModal } from '@/components/Metadata/Table'
+import { PopoverModal } from '../../../../../../../../components/Metadata'
 
 type ValueType = number | Array<number | undefined> | undefined;
 

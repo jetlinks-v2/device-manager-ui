@@ -1,14 +1,9 @@
-import { saveProductMetadata } from "@/api/device/product";
-import { saveMetadata } from "@/api/device/instance";
+import { saveProductMetadata } from "../../../../api/product";
+import { saveMetadata } from "../../../../api/instance";
 import type { DeviceInstance } from "../../Instance/typings";
 import type { DeviceMetadata, MetadataItem, MetadataType, ProductItem } from "../../Product/typings";
-import { omit } from "lodash-es";
 
-const filterProductMetadata = (data: any[], productMetaData: any[]) => {
-  const ids = productMetaData.map((item: any) => item.id)
-  const idsSet = new Set(ids)
-  return data.filter((a) => !idsSet.has(a.id))
-}
+
 /**
  * 更新物模型
  * @param type 物模型类型 "events" | "functions" | "properties" | "tags"
@@ -27,29 +22,7 @@ const filterProductMetadata = (data: any[], productMetaData: any[]) => {
 ): ProductItem | DeviceInstance => {
   if (!data) return data;
   const metadata = JSON.parse(data.metadata || '{}') as DeviceMetadata;
-  // let productMetaData
 
-  // if ((data as DeviceInstance).productMetadata) {
-  //   productMetaData = JSON.parse((data as DeviceInstance).productMetadata)
-  // }
-  //
-  // if (productMetaData) {
-  //   if (productMetaData.properties && productMetaData.properties.length) {
-  //     metadata.properties = filterProductMetadata(item, productMetaData.properties)
-  //   }
-  //   if (productMetaData.functions && productMetaData.functions.length) {
-  //     metadata.functions = filterProductMetadata(item, productMetaData.functions)
-  //   }
-  //   if (productMetaData.events && productMetaData.events.length) {
-  //     metadata.events = filterProductMetadata(item, productMetaData.events)
-  //   }
-  //   if (productMetaData.tags && productMetaData.tags.length) {
-  //     metadata.tags = filterProductMetadata(item, productMetaData.tags)
-  //   }
-  // } else {
-  //   metadata[type] = item as any
-  // }
-  // console.log(metadata, type)
   metadata[type] = (item || []).sort((a, b) => b?.sortsIndex - a?.sortsIndex) as any[]
 
   data.metadata = JSON.stringify(metadata);

@@ -1,5 +1,5 @@
 <template>
-  <j-modal
+  <a-modal
     title="选择处理方式"
     visible
     width="900px"
@@ -14,12 +14,12 @@
       平台
       <span style='font-weight: bold;padding:0 4px;'>物模型</span>
       中已有数据，请选择处理方式。
-      <j-tooltip title='默认采用覆盖的方式处理功能、事件、标签下的数据'>
+      <a-tooltip title='默认采用覆盖的方式处理功能、事件、标签下的数据'>
         <a-icon type='QuestionCircleOutlined' />
-      </j-tooltip>
+      </a-tooltip>
     </div>
-    <j-form :layout="'vertical'" ref='formRef' :model='handleData'>
-      <j-form-item label='处理方式' :rules='[{ required: true, message: "请选择处理方式"}]' >
+    <a-form :layout="'vertical'" ref='formRef' :model='handleData'>
+      <a-form-item label='处理方式' :rules='[{ required: true, message: "请选择处理方式"}]' >
         <j-card-select
           v-model:value="handleData.type"
           :column='4'
@@ -29,9 +29,9 @@
             <img :src='image' />
           </template>
         </j-card-select>
-      </j-form-item>
-    </j-form>
-  </j-modal>
+      </a-form-item>
+    </a-form>
+  </a-modal>
 </template>
 
 <script lang='ts' setup name='MetadataModal'>

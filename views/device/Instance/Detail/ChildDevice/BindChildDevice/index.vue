@@ -1,6 +1,6 @@
 <!-- 绑定设备 -->
 <template>
-    <j-modal
+    <a-modal
         :maskClosable="false"
         width="1000px"
         :visible="true"
@@ -77,14 +77,14 @@
                     }}
                 </template>
                 <template #state="slotProps">
-                    <j-badge
+                    <a-badge
                         :text="slotProps.state.text"
                         :status="statusMap.get(slotProps.state.value)"
                     />
                 </template>
             </JProTable>
         </div>
-    </j-modal>
+    </a-modal>
 </template>
 
 <script setup lang="ts" name="BindChildDevice">

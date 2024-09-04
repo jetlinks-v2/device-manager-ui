@@ -8,21 +8,21 @@
         @close="$emit('closeDrawer')"
     >
         <template #extra>
-            <PermissionButton
+            <j-permission-button
                 v-if=!props?.showPosition
                 type="primary"
                 hasPermission="device/Firmware:add"
                 @click="handleAdd"
             >
                 + 新增任务
-            </PermissionButton>
+            </j-permission-button>
         </template>
         <div v-for="item in taskList" class="task">
             <div class="taskTitle">
                 <div class="taskTitleLeft">
                     <div class="upgradeMode">{{ item?.mode?.text }}</div>
                     <div class="title">
-                        <Ellipsis>{{ item?.name }}</Ellipsis>
+                        <j-ellipsis>{{ item?.name }}</j-ellipsis>
                     </div>
                 </div>
                 <div class="taskTitleRight">
@@ -39,11 +39,11 @@
                             {{ (item?.progress || 0) + '%' }}
                         </span>
                     </div>
-                    <PermissionButton
+                    <j-permission-button
                         type="link"
                         hasPermission="device/Firmware:view"
                         @click="() => taskDetail(item)"
-                        >任务详情</PermissionButton
+                        >任务详情</j-permission-button
                     >
                 </div>
             </div>
@@ -62,9 +62,9 @@
                     item?.deviceId?.length ? '选择设备' : '所有设备'
                 }}</a-descriptions-item>
                 <a-descriptions-item label="说明"
-                    ><Ellipsis style="max-width: 200px;">
+                    ><j-ellipsis style="max-width: 200px;">
                         {{ item?.description || '--' }}
-                    </Ellipsis></a-descriptions-item
+                    </j-ellipsis></a-descriptions-item
                 >
             </a-descriptions>
         </div>
@@ -87,10 +87,11 @@
 </template>
 
 <script setup name="TaskDrawer">
-import { queryTaskPaginateNot } from '@/api/device/firmware';
+import { queryTaskPaginateNot } from '../../../../api/firmware';
 import Save from './Save/index.vue';
 import TaskDetail from './Detail/index.vue';
 import { onlyMessage } from '@/utils/comm';
+
 const emit = defineEmits(['closeDrawer']);
 const props = defineProps({
     firmwareId: {

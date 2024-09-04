@@ -1,13 +1,13 @@
 <!--产品分类 -->
 <template>
-    <page-container>
+    <j-page-container>
         <pro-search
             :columns="query.columns"
             target="category"
             @search="handleSearch"
         />
         <FullPage>
-            <JProTable
+            <j-pro-table
                 ref="tableRef"
                 :columns="table.columns"
                 :request="queryTree"
@@ -29,22 +29,22 @@
                 :loading="tableLoading"
             >
                 <template #headerTitle>
-                    <PermissionButton
+                    <j-permission-button
                         type="primary"
                         @click="add"
                         hasPermission="device/Category:add"
                     >
                         <template #icon><AIcon type="PlusOutlined" /></template>
                         新增
-                    </PermissionButton>
+                    </j-permission-button>
                 </template>
                 <template #action="slotProps">
-                    <j-space :size="16">
+                    <a-space :size="16">
                         <template
                             v-for="i in getActions(slotProps, 'table')"
                             :key="i.key"
                         >
-                            <PermissionButton
+                            <j-permission-button
                                 :disabled="i.disabled"
                                 :popConfirm="i.popConfirm"
                                 :hasPermission="'device/Category:' + i.key"
@@ -59,11 +59,11 @@
                                 <template #icon
                                     ><AIcon :type="i.icon"
                                 /></template>
-                            </PermissionButton>
+                            </j-permission-button>
                         </template>
-                    </j-space>
+                    </a-space>
                 </template>
-            </JProTable>
+            </j-pro-table>
         </FullPage>
         <!-- 新增和编辑弹窗 -->
         <ModifyModal
@@ -74,12 +74,12 @@
             :isChild="isChild"
             @refresh="refresh"
         />
-    </page-container>
+    </j-page-container>
 </template>
 <script lang="ts" name="Category" setup>
-import { queryTree, deleteTree } from '@/api/device/category';
-import type { ActionsType } from '@/components/Table/index.vue';
+import { queryTree, deleteTree } from '../../../api/category';
 import ModifyModal from './components/modifyModal/index.vue';
+
 import { onlyMessage } from '@/utils/comm';
 const expandedRowKeys = ref<any>([]);
 const tableRef = ref<Record<string, any>>({});
@@ -146,7 +146,7 @@ const handleSearch = (e: any) => {
 const getActions = (
     data: Partial<Record<string, any>>,
     type: 'table',
-): ActionsType[] => {
+): any[] => {
     if (!data) return [];
     const actions = [
         {

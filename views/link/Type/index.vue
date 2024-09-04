@@ -1,5 +1,5 @@
 <template>
-    <page-container>
+    <j-page-container>
         <div>
             <pro-search
                 :columns="columns"
@@ -18,7 +18,7 @@
                     :params="params"
                 >
                     <template #headerTitle>
-                        <PermissionButton
+                        <j-permission-button
                             type="primary"
                             @click="handlAdd"
                             hasPermission="link/Type:add"
@@ -27,7 +27,7 @@
                                 ><AIcon type="PlusOutlined"
                             /></template>
                             新增
-                        </PermissionButton>
+                        </j-permission-button>
                     </template>
                     <template #card="slotProps">
                         <CardBox
@@ -45,12 +45,12 @@
                         >
                             <template #img>
                                 <slot name="img">
-                                    <img :src="getImage('/network.png')" />
+                                    <img :src="'/network.png'" />
                                 </slot>
                             </template>
                             <template #content>
                                 <div class="card-item-content">
-                                    <Ellipsis
+                                    <j-ellipsis
                                         style="
                                             width: calc(100% - 100px);
                                             margin-bottom: 20px;
@@ -65,44 +65,44 @@
                                         >
                                             {{ slotProps.name }}
                                         </span>
-                                    </Ellipsis>
-                                    <j-row class="card-item-content-box">
-                                        <j-col :span="8">
+                                    </j-ellipsis>
+                                    <a-row class="card-item-content-box">
+                                        <a-col :span="8">
                                             <div
                                                 class="card-item-content-text-title"
                                             >
                                                 类型
                                             </div>
                                             <div class="card-item-content-text">
-                                                <j-tooltip>
+                                                <a-tooltip>
                                                     <template #title>{{
                                                         slotProps.type
                                                     }}</template>
                                                     {{ slotProps.type }}
-                                                </j-tooltip>
+                                                </a-tooltip>
                                             </div>
-                                        </j-col>
+                                        </a-col>
 
-                                        <j-col :span="16">
+                                        <a-col :span="16">
                                             <div
                                                 class="card-item-content-text-title"
                                             >
                                                 详情
                                             </div>
                                             <div class="card-item-content-text">
-                                                <j-tooltip>
+                                                <a-tooltip>
                                                     <template #title>{{
                                                         getDetails(slotProps)
                                                     }}</template>
                                                     {{ getDetails(slotProps) }}
-                                                </j-tooltip>
+                                                </a-tooltip>
                                             </div>
-                                        </j-col>
-                                    </j-row>
+                                        </a-col>
+                                    </a-row>
                                 </div>
                             </template>
                             <template #actions="item">
-                                <PermissionButton
+                                <j-permission-button
                                     :disabled="item.disabled"
                                     :popConfirm="item.popConfirm"
                                     :tooltip="{
@@ -119,44 +119,44 @@
                                         <AIcon :type="item.icon" />
                                         <span>{{ item?.text }}</span>
                                     </template>
-                                </PermissionButton>
+                                </j-permission-button>
                             </template>
                         </CardBox>
                     </template>
                     <template #action="slotProps">
-                        <j-space :size="16">
+                        <a-space :size="16">
                             <template
                                 v-for="i in getActions(slotProps, 'table')"
                                 :key="i.key"
                             >
-                                <PermissionButton
+                                <j-permission-button
                                     :disabled="i.disabled"
                                     :popConfirm="i.popConfirm"
                                     :tooltip="{
                                         ...i.tooltip,
                                     }"
                                     style="padding: 0px"
-                                    @click="i.onClick"
                                     type="link"
                                     :danger="i.key === 'delete'"
                                     :hasPermission="'link/Type:' + i.key"
+                                    @click="i.onClick"
                                 >
                                     <template #icon
                                         ><AIcon :type="i.icon"
                                     /></template>
-                                </PermissionButton>
+                                </j-permission-button>
                             </template>
-                        </j-space>
+                        </a-space>
                     </template>
                     <template #state="slotProps">
-                        <BadgeStatus
+                        <a-badge-status
                             :text="slotProps.state.text"
                             :status="slotProps.state.value"
                             :statusNames="{
                                 enabled: 'processing',
                                 disabled: 'error',
                             }"
-                        ></BadgeStatus>
+                        ></a-badge-status>
                     </template>
                     <template #shareCluster="slotProps">
                         {{
@@ -174,15 +174,13 @@
                 </j-pro-table>
             </FullPage>
         </div>
-    </page-container>
+    </j-page-container>
 </template>
 <script lang="ts" setup name="TypePage">
-import type { ActionsType } from '@/components/Table/index';
 import { getImage } from '@/utils/comm';
-import { supports, query, remove, start, shutdown } from '@/api/link/type';
+import { supports, query, remove, start, shutdown } from '../../../api/link/type';
 import { onlyMessage } from '@/utils/comm';
-import { useMenuStore } from 'store/menu';
-import BadgeStatus from '@/components/BadgeStatus/index.vue';
+import { useMenuStore } from '@/store';
 
 const menuStory = useMenuStore();
 const tableRef = ref<Record<string, any>>({});

@@ -1,17 +1,17 @@
-import { post, get, remove, patch } from '@/utils/request'
-import { BASE_API_PATH } from '@/utils/variable';
+import { request } from '@jetlinks-web/core'
+import { BASE_API } from '@jetlinks-web/constants';
 
-export const queryPage = (data: any) => post(`/plugin/driver/_query`, data)
+export const queryPage = (data: any) => request.post(`/plugin/driver/_query`, data)
 
-export const uploadFile = `${BASE_API_PATH}/plugin/driver/upload`
+export const uploadFile = `${BASE_API}/plugin/driver/upload`
 
-export const add = (data: any) => post('/plugin/driver', data)
+export const add = (data: any) => request.post('/plugin/driver', data)
 
-export const update = (data: any) => patch('/plugin/driver', data)
+export const update = (data: any) => request.patch('/plugin/driver', data)
 
-export const removeFn = (id: string) => remove(`/plugin/driver/${id}`)
+export const removeFn = (id: string) => request.remove(`/plugin/driver/${id}`)
 
-export const detail = (id: string) => get(`/plugin/driver/${id}`)
+export const detail = (id: string) => request.get(`/plugin/driver/${id}`)
 
 /**
  * 获取插件支持的产品信息
@@ -19,7 +19,7 @@ export const detail = (id: string) => get(`/plugin/driver/${id}`)
  * 即将平台中当前产品与插件中指定的产品绑定，然后把插件的物模型保存到产品并且绑定产品ID映射关系
  * @param id
  */
-export const getProductsById = (id: string) => get(`/plugin/driver/${id}/products`)
+export const getProductsById = (id: string) => request.get(`/plugin/driver/${id}/products`)
 
 /**
  *
@@ -28,14 +28,14 @@ export const getProductsById = (id: string) => get(`/plugin/driver/${id}/product
  * @param internalId 产品或者设备id
  * @param externalId  映射id
  */
-export const savePluginData = (type: string, pluginId: string, internalId: string, externalId: string ) => patch(`/plugin/mapping/${type}/${pluginId}/${internalId}`, externalId, { headers: {'Content-Type': "text/plain"}})
+export const savePluginData = (type: string, pluginId: string, internalId: string, externalId: string ) => request.patch(`/plugin/mapping/${type}/${pluginId}/${internalId}`, externalId, { headers: {'Content-Type': "text/plain"}})
 
-export const getPluginData = (type: string, pluginId: string, internalId: string ) => get(`/plugin/mapping/${type}/${pluginId}/${internalId}`)
+export const getPluginData = (type: string, pluginId: string, internalId: string ) => request.get(`/plugin/mapping/${type}/${pluginId}/${internalId}`)
 
-export const getPublic = (id: string, path: string) => get(`/plugin/driver/${id}/${path}`)
+export const getPublic = (id: string, path: string) => request.get(`/plugin/driver/${id}/${path}`)
 
-export const getTypes = () => get(`/dictionary/internal-plugin-type/items`)
+export const getTypes = () => request.get(`/dictionary/internal-plugin-type/items`)
 
-export const vailIdFn = (id: string ) => get(`/plugin/driver/id/_validate`, { id })
+export const vailIdFn = (id: string ) => request.get(`/plugin/driver/id/_validate`, { id })
 
-export const getProductByPluginId = (id: string) => get(`/plugin/driver/${id}/products`)
+export const getProductByPluginId = (id: string) => request.get(`/plugin/driver/${id}/products`)

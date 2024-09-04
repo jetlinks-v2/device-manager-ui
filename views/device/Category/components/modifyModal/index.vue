@@ -1,6 +1,6 @@
 <!-- 新增编辑弹窗 -->
 <template>
-    <j-modal
+    <a-modal
         v-if="visible"
         :title="props.title"
         :maskClosable="false"
@@ -13,20 +13,20 @@
         cancelText="取消"
         v-bind="layout"
     >
-        <j-form
+        <a-form
             layout="vertical"
             ref="formRef"
             :rules="rules"
             :model="formModel"
         >
-            <j-form-item label="名称" name="name">
-                <j-input
+            <a-form-item label="名称" name="name">
+                <a-input
                     v-model:value="formModel.name"
                     placeholder="请输入名称"
                 />
-            </j-form-item>
-            <j-form-item label="排序" name="sortIndex">
-                <j-input-number
+            </a-form-item>
+            <a-form-item label="排序" name="sortIndex">
+                <a-input-number
                     style="width: 100%"
                     id="inputNumber"
                     v-model:value="formModel.sortIndex"
@@ -34,25 +34,22 @@
                     :max="9999"
                     placeholder="请输入排序"
                 />
-            </j-form-item>
-            <j-form-item label="说明">
-                <j-textarea
+            </a-form-item>
+            <a-form-item label="说明">
+                <a-textarea
                     v-model:value="formModel.description"
                     show-count
                     :maxlength="200"
                     placeholder="请输入说明"
                 />
-            </j-form-item>
-        </j-form>
-    </j-modal>
+            </a-form-item>
+        </a-form>
+    </a-modal>
 </template>
 <script setup lang="ts" name="modifyModal">
 import { PropType } from 'vue';
-import { Form } from 'jetlinks-ui-components';
-import { queryTree, saveTree, updateTree } from '@/api/device/category';
-import { ValidateErrorEntity } from 'ant-design-vue/es/form/interface';
-import { list } from '@/api/iot-card/home';
-import { number } from 'echarts';
+import { Form } from 'ant-design-vue';
+import { queryTree, saveTree, updateTree } from '../../../../../api/category';
 import { onlyMessage } from '@/utils/comm';
 
 const emits = defineEmits(['refresh']);

@@ -1,5 +1,5 @@
 <template>
-    <j-spin :spinning="loading">
+    <a-spin :spinning="loading">
         <JProTable
             ref="tableRef"
             :columns="columns"
@@ -9,7 +9,7 @@
             :scroll="{y : 450}"
         >
             <template #headerTitle>
-                <j-input-search
+                <a-input-search
                     placeholder="请输入名称"
                     style="width: 300px; margin-bottom: 10px"
                     @search="onSearch"
@@ -34,19 +34,19 @@
                 {{ propertyValue[slotProps?.id]?.timeString || '--' }}
             </template>
             <template #action="slotProps">
-                <j-space :size="16">
+                <a-space :size="16">
                     <template v-for="i in getActions(slotProps)" :key="i.key">
-                        <j-tooltip v-bind="i.tooltip" v-if="i.key !== 'edit'">
-                            <j-button
+                        <a-tooltip v-bind="i.tooltip" v-if="i.key !== 'edit'">
+                            <a-button
                                 style="padding: 0"
                                 type="link"
                                 :disabled="i.disabled"
                                 @click="i.onClick && i.onClick(slotProps)"
                             >
                                 <AIcon :type="i.icon" />
-                            </j-button>
-                        </j-tooltip>
-                        <PermissionButton
+                            </a-button>
+                        </a-tooltip>
+                        <j-permission-button
                             :disabled="i.disabled"
                             v-else
                             :popConfirm="i.popConfirm"
@@ -57,12 +57,12 @@
                             :hasPermission="'device/Instance:update'"
                         >
                             <template #icon><AIcon :type="i.icon" /></template>
-                        </PermissionButton>
+                        </j-permission-button>
                     </template>
-                </j-space>
+                </a-space>
             </template>
         </JProTable>
-    </j-spin>
+    </a-spin>
     <Save v-if="editVisible" @close="editVisible = false" :data="currentInfo" />
     <Indicators
         v-if="indicatorVisible"
@@ -263,7 +263,7 @@ const subscribeProperty = () => {
 };
 
 const getDashboard = async () => {
-    if(!dataSource.value?.length) return 
+    if(!dataSource.value?.length) return
     const param = [
         {
             dashboard: 'device',

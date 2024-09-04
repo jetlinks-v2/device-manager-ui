@@ -1,20 +1,20 @@
 <template>
-    <j-row :gutter="24">
-        <j-col :span="16">
-            <j-row :gutter="24" style="margin-bottom: 20px">
-                <j-col :span="12" v-for="item in messageArr" :key="item">
+    <a-row :gutter="24">
+        <a-col :span="16">
+            <a-row :gutter="24" style="margin-bottom: 20px">
+                <a-col :span="12" v-for="item in messageArr" :key="item">
                     <div
                         :style="messageStyleMap.get(item.status)"
                         class="message-status"
                     >
-                        <j-badge
+                        <a-badge
                             :status="messageStatusMap.get(item.status)"
                             style="margin-right: 5px"
                         />
                         <span>{{ item.text }}</span>
                     </div>
-                </j-col>
-            </j-row>
+                </a-col>
+            </a-row>
             <div>
                 <TitleComponent data="调试" />
                 <div class="content">
@@ -26,8 +26,8 @@
                 </div>
                 <div><Function /></div>
             </div>
-        </j-col>
-        <j-col :span="8">
+        </a-col>
+        <a-col :span="8">
             <div class="right-log">
                 <TitleComponent data="日志" />
                 <div class="right-log-box">
@@ -43,8 +43,8 @@
                     </div>
                 </div>
             </div>
-        </j-col>
-    </j-row>
+        </a-col>
+    </a-row>
 </template>
 
 <script lang="ts" setup>

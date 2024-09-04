@@ -7,7 +7,7 @@
       @cancel="cancel"
       @ok="ok"
   >
-    <j-descriptions
+    <a-descriptions
         :column="1"
         :labelStyle="{
           width: '72px',
@@ -36,7 +36,7 @@
             y: 130
         }"
       >
-        <j-table
+        <a-table
           :columns="data.valueType.type === 'object' ? objectColumns : enumColumns"
           :dataSource="data.valueType.type === 'object' ? data.valueType.properties : data.valueType.elements"
           :pagination="false"
@@ -59,7 +59,7 @@
               {{ findTypeItem(record.valueType?.type).label }}
             </j-ellipsis>
           </template>
-        </j-table>
+        </a-table>
       </a-descriptions-item>
       <a-descriptions-item label="属性来源">
         {{ sourceMap[data.expands.source] }}
@@ -69,7 +69,7 @@
       <a-descriptions-item v-if="showSetting && data.expands?.storageType" label="存储方式">{{ settingData[data.expands?.storageType] }}</a-descriptions-item>
       <a-descriptions-item v-if="showMetrics" label="指标配置"></a-descriptions-item>
       <a-descriptions-item v-if="showMetrics">
-        <j-table
+        <a-table
             :columns="metrics.columns"
             :dataSource="metrics.dataSource"
             :pagination="false"
@@ -83,11 +83,11 @@
               {{ record.range === true ? record.value?.join('-') : record.value }}
             </span>
           </template>
-        </j-table>
+        </a-table>
       </a-descriptions-item>
-    </j-descriptions>
+    </a-descriptions>
     <template #footer>
-      <j-button type="primary" @click="ok">确认</j-button>
+      <a-button type="primary" @click="ok">确认</a-button>
     </template>
   </a-modal>
   <RuleDetailModal
@@ -102,15 +102,15 @@
 import {omit} from "lodash-es";
 import {watch} from "vue";
 import JsonView from './JsonView.vue'
-import {TypeStringMap} from "@/views/device/components/Metadata/Base/columns";
-import {useStoreType} from "@/views/device/components/Metadata/Base/utils";
+import {TypeStringMap} from "../columns";
+import {useStoreType} from "../utils";
 import {enumColumns, objectColumns} from './utils'
-import { findTypeItem } from '@/components/Metadata/Table/components/Type/data'
+import { findTypeItem } from '../../../../../../components/Metadata/components/Type/data'
 import RuleDetailModal from '../components/VirtualRule/DetailModal.vue'
-import { queryDeviceVirtualProperty } from '@/api/device/instance';
-import { queryProductVirtualProperty } from '@/api/device/product';
-import {useInstanceStore} from "store/instance";
-import {useProductStore} from "store/product";
+import { queryDeviceVirtualProperty } from '../../../../../../api/instance';
+import { queryProductVirtualProperty } from '../../../../../../api/product';
+import {useInstanceStore} from "../../../../../../store/instance";
+import {useProductStore} from "../../../../../../store/product";
 
 const props = defineProps({
   data: {
