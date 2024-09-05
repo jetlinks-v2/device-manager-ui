@@ -1,6 +1,6 @@
 import { request } from '@jetlinks-web/core'
 import {getToken} from '@jetlinks-web/utils'
-import { BASE_API } from '@jetlinks-web/constants'
+import {BASE_API, TOKEN_KEY_URL} from '@jetlinks-web/constants'
 import type { DeviceInstance } from '../views/device/Instance/typings'
 import type { DeviceMetadata, UnitType } from '../views/device/Product/typings';
 
@@ -105,7 +105,7 @@ export const templateDownload = (productId: string, type: string) => request.get
  * @param type 文件类型
  * @returns
  */
-export const deviceImport = (productId: string, fileUrl: string, autoDeploy: boolean) => `${BASE_API}/device-instance/${productId}/import/_withlog?fileUrl=${fileUrl}&autoDeploy=${autoDeploy}&:X_Access_Token=${getToken()}`
+export const deviceImport = (productId: string, fileUrl: string, autoDeploy: boolean) => `${BASE_API}/device-instance/${productId}/import/_withlog?fileUrl=${fileUrl}&autoDeploy=${autoDeploy}&${TOKEN_KEY_URL}=${getToken()}`
 
 /**
  * 设备导出

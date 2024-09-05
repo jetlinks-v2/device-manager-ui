@@ -213,7 +213,7 @@ import Import from './Import/modal.vue';
 import Export from './Export/index.vue';
 import Process from './Process/index.vue';
 import Save from './Save/index.vue';
-import { BASE_API } from '@jetlinks-web/constants'
+import { BASE_API, TOKEN_KEY_URL } from '@jetlinks-web/constants'
 import {
     getProviders,
     queryGatewayList,
@@ -723,14 +723,14 @@ const handleGetParams = (p: any) => {
 
 const activeAllDevice = () => {
     type.value = 'active';
-    const activeAPI = `${BASE_API}/device-instance/deploy?:X_Access_Token=${getToken()}&${handleParams(handleGetParams(params.value))}`;
+    const activeAPI = `${BASE_API}/device-instance/deploy?${TOKEN_KEY_URL}=${getToken()}&${handleParams(handleGetParams(params.value))}`;
     api.value = activeAPI;
     operationVisible.value = true;
 };
 
 const syncDeviceStatus = () => {
     type.value = 'sync';
-    const syncAPI = `${BASE_API}/device-instance/state/_sync?:X_Access_Token=${getToken()}&${handleParams(params.value)}`;
+    const syncAPI = `${BASE_API}/device-instance/state/_sync?${TOKEN_KEY_URL}=${getToken()}&${handleParams(params.value)}`;
     api.value = syncAPI;
     operationVisible.value = true;
 };
