@@ -787,30 +787,6 @@ export default [
                         supportDataAccess: false
                     },
                     {
-                        code: 'Log',
-                        name: '日志管理',
-                        owner: 'iot',
-                        //parentId: '1-4',
-                        id: 'c340f8977e0d221da893715cab58ae8c',
-                        sortIndex: 4,
-                        url: '/iot/link/Log',
-                        icon: 'icon-rizhifuwu',
-                        showPage: ['system-logger', 'access-logger'],
-                        permissions: [
-                            {
-                                permission: 'system-logger',
-                                actions: ['query'],
-                            },
-                            {
-                                permission: 'access-logger',
-                                actions: ['self-data', 'query'],
-                            },
-                        ],
-                        buttons: [],
-                        accessSupport: { text: "不支持", value: "unsupported" },
-                        supportDataAccess: false
-                    },
-                    {
                         code: 'link/Type',
                         name: '网络组件',
                         owner: 'iot',
@@ -944,72 +920,7 @@ export default [
                         accessSupport: { text: "不支持", value: "unsupported" },
                         supportDataAccess: false
                     },
-                    {
-                        code: 'media/Stream',
-                        name: '流媒体服务',
-                        owner: 'iot',
-                        //parentId: '1-4',
-                        id: '82fd382e97bc132aa1a6cc926d804d48',
-                        sortIndex: 7,
-                        url: '/iot/link/Stream',
-                        icon: 'icon-xuanzetongdao1',
-                        showPage: ['media-server'],
-                        permissions: [],
-                        buttons: [
-                            {
-                                id: 'view',
-                                name: '查看',
-                                permissions: [
-                                    {
-                                        permission: 'media-server',
-                                        actions: ['query'],
-                                    },
-                                ],
-                            },
-                            {
-                                id: 'delete',
-                                name: '删除',
-                                permissions: [
-                                    {
-                                        permission: 'media-server',
-                                        actions: ['query', 'delete'],
-                                    },
-                                ],
-                            },
-                            {
-                                id: 'update',
-                                name: '编辑',
-                                permissions: [
-                                    {
-                                        permission: 'media-server',
-                                        actions: ['query', 'save'],
-                                    },
-                                ],
-                            },
-                            {
-                                id: 'action',
-                                name: '启/禁用',
-                                permissions: [
-                                    {
-                                        permission: 'media-server',
-                                        actions: ['query', 'save'],
-                                    },
-                                ],
-                            },
-                            {
-                                id: 'add',
-                                name: '新增',
-                                permissions: [
-                                    {
-                                        permission: 'media-server',
-                                        actions: ['query', 'save'],
-                                    },
-                                ],
-                            },
-                        ],
-                        accessSupport: { text: "不支持", value: "unsupported" },
-                        supportDataAccess: false
-                    },
+
                     {
                         code: 'device/Firmware',
                         name: '远程升级',
