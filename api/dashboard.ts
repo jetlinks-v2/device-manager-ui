@@ -16,3 +16,5 @@ export const dashboard = (data?:any) => request.post('/dashboard/_multi',data);
  * 地图数据
  */
 export const getGo = (data?:any) => request.post('/geo/object/device/_search/geo.json',data)
+
+export const getDeviceGeoJson = (data?:any) => request.post('/geo/object/device/_search/_page',data)

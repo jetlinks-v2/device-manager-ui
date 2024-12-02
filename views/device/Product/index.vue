@@ -190,12 +190,14 @@ import {
     deleteProduct,
     updateDevice,
 } from '../../../api/product';
-import {  downloadJson, accessConfigTypeFilter } from '@/utils';
+import {  downloadJson, accessConfigTypeFilter, isNoCommunity } from '@/utils';
 import { omit, cloneDeep } from 'lodash-es';
 import Save from './Save/index.vue';
 import { useMenuStore, useAuthStore } from '@/store';
 import { useRouterParams } from '@jetlinks-web/hooks';
 import { device} from '../../../assets'
+import TagSearch from '../Instance/components/TagSearch.vue';
+
 /**
  * 表格数据
  */
@@ -233,6 +235,17 @@ const columns = [
         scopedSlots: true,
         ellipsis: true,
         width: 120,
+    },
+    {
+        key: 'id$dev-instance',
+        dataIndex: 'id$dev-instance',
+        title: '标签',
+        hideInTable: true,
+        search: {
+            type: 'component',
+            components: TagSearch,
+            termOptions: ['eq', 'not'],
+        },
     },
     {
         title: '状态',
@@ -630,6 +643,14 @@ const handleSearch = (e: any) => {
     if (newTerms.terms?.length) {
         newTerms.terms.forEach((a: any) => {
             a.terms = a.terms.map((b: any) => {
+                if (b.column === 'id$dev-instance') {
+                    return {
+                        column: 'id$dev-instance',
+                        options: ['productId'],
+                        value: b.value,
+                        type: b.type
+                    }
+                }
                 if (b.column === 'id$dim-assets') {
                     const value = b.value;
                     b = {
@@ -669,6 +690,48 @@ const routerParams = useRouterParams();
 onMounted(() => {
     if (routerParams.params?.value.save) {
         add();
+    }
+    if (isNoCommunity) {
+        query.columns.splice(query.columns.length - 2, 0, {
+            title: '所属组织',
+            key: 'id$dim-assets',
+            dataIndex: 'id$dim-assets',
+            search: {
+                first: true,
+                type: 'treeSelect',
+                termOptions: ['eq'],
+                options: async () => {
+                    return new Promise((res) => {
+                        queryOrgThree({ paging: false }).then((resp: any) => {
+                            const formatValue = (list: any[]) => {
+                                const _list: any[] = [];
+                                list.forEach((item) => {
+                                    if (item.children) {
+                                        item.children = formatValue(
+                                            item.children,
+                                        );
+                                    }
+                                    _list.push({
+                                        ...item,
+                                        value: JSON.stringify({
+                                            assetType: 'product',
+                                            targets: [
+                                                {
+                                                    type: 'org',
+                                                    id: item.id,
+                                                },
+                                            ],
+                                        }),
+                                    });
+                                });
+                                return _list;
+                            };
+                            res(formatValue(resp.result));
+                        });
+                    });
+                },
+            },
+        });
     }
 });
 </script>

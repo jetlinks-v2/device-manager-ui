@@ -141,14 +141,27 @@ const showDetail = (item: any) => {
 const queryPropertyData = async (params: any) => {
     const resp = await getPropertyData(
         instanceStore.current.id,
-        encodeQuery({
+        _props.data.id,
+        {
             ...params,
-            terms: {
-                property: _props.data.id,
-                timestamp$BTW: _props.time,
-            },
-            sorts: { timestamp: 'desc' },
-        }),
+            sorts: [
+                {
+                    name: 'timestamp',
+                    order: 'desc',
+                },
+            ],
+            terms: [
+                {
+                    terms: [
+                        {
+                            column: 'timestamp',
+                            termType: 'btw',
+                            value: _props.time,
+                        },
+                    ],
+                },
+            ],
+        },
     );
     if (resp.status === 200) {
         dataSource.value = resp.result as any;

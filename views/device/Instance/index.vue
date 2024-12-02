@@ -11,7 +11,7 @@
                 :columns="columns"
                 :request="query"
                 :defaultParams="{
-                    sorts: [{ name: 'createTime', order: 'desc' }],
+                    sorts: [{ name: 'createTime', order: 'desc' }, { name: 'name', order: 'desc'}],
                 }"
                 :rowSelection="
                     isCheck
@@ -227,10 +227,10 @@ import dayjs from 'dayjs';
 import BatchDropdown from '@/components/BatchDropdown/index.vue';
 import type { BatchActionsType } from '@/components/BatchDropdown/types';
 import { useRouterParams } from '@jetlinks-web/hooks';
-import { accessConfigTypeFilter } from '@/utils';
 import TagSearch from './components/TagSearch.vue';
 import { Modal } from 'ant-design-vue';
-import { device } from '../../../assets'
+import { device } from '../../../assets';
+import { isNoCommunity } from '@/utils/utils';
 
 
 const instanceRef = ref<Record<string, any>>({});
@@ -264,7 +264,7 @@ const transformData = (arr: any[]): any[] => {
     }
 };
 
-const columns = [
+const columns = ref([
     {
         title: 'ID',
         dataIndex: 'id',
@@ -346,29 +346,29 @@ const columns = [
                 }),
         },
     },
-    {
-        key: 'accessProvider',
-        title: '网关类型',
-        dataIndex: 'accessProvider',
-        valueType: 'select',
-        hideInTable: true,
-        search: {
-            type: 'select',
-            // rename: 'productId$product-info',
-            options: () =>
-                new Promise((resolve) => {
-                    getProviders().then((resp: any) => {
-                        const data = resp.result || [];
-                        resolve(
-                            accessConfigTypeFilter(data).map((item) => ({
-                                ...item,
-                                value: `accessProvider is ${item.id}`,
-                            })),
-                        );
-                    });
-                }),
-        },
-    },
+    // {
+    //     key: 'accessProvider',
+    //     title: '网关类型',
+    //     dataIndex: 'accessProvider',
+    //     valueType: 'select',
+    //     hideInTable: true,
+    //     search: {
+    //         type: 'select',
+    //         // rename: 'productId$product-info',
+    //         options: () =>
+    //             new Promise((resolve) => {
+    //                 getProviders().then((resp: any) => {
+    //                     const data = resp.result || [];
+    //                     resolve(
+    //                         accessConfigTypeFilter(data).map((item) => ({
+    //                             ...item,
+    //                             value: `accessProvider is ${item.id}`,
+    //                         })),
+    //                     );
+    //                 });
+    //             }),
+    //     },
+    // },
     {
         key: 'accessId',
         dataIndex: 'accessId',
@@ -409,6 +409,17 @@ const columns = [
                 { label: '网关子设备', value: 'childrenDevice' },
                 { label: '网关设备', value: 'gateway' },
             ],
+        },
+    },
+    {
+        key: 'id$dev-tag',
+        dataIndex: 'id$dev-tag',
+        title: '标签',
+        hideInTable: true,
+        search: {
+            type: 'component',
+            components: TagSearch,
+            termOptions: ['eq', 'not'],
         },
     },
     {
@@ -485,7 +496,7 @@ const columns = [
         width: 200,
         scopedSlots: true,
     },
-];
+]);
 
 const paramsFormat = (
     config: Record<string, any>,
@@ -936,4 +947,53 @@ const deleteDevice = async () => {
     }
     deleteState.value = false;
 };
+
+onMounted(() => {
+    if (routerParams.params.value.type === 'add') {
+        handleAdd();
+    }
+    if (routerParams.params.value.type === 'import') {
+        importVisible.value = true;
+    }
+    if (isNoCommunity) {
+        columns.value.splice(columns.value.length - 3,0,{
+            dataIndex: 'id$dim-assets',
+            title: '所属组织',
+            hideInTable: true,
+            search: {
+                type: 'treeSelect',
+                termOptions: ['eq'],
+                options: () =>
+                    new Promise((resolve) => {
+                        queryOrgThree({}).then((resp: any) => {
+                            const formatValue = (list: any[]) => {
+                                const _list: any[] = [];
+                                list.forEach((item) => {
+                                    if (item.children) {
+                                        item.children = formatValue(
+                                            item.children,
+                                        );
+                                    }
+                                    _list.push({
+                                        ...item,
+                                        id: JSON.stringify({
+                                            assetType: 'device',
+                                            targets: [
+                                                {
+                                                    type: 'org',
+                                                    id: item.id,
+                                                },
+                                            ],
+                                        }),
+                                    });
+                                });
+                                return _list;
+                            };
+                            resolve(formatValue(resp.result));
+                        });
+                    }),
+            },
+        });
+    }
+});
 </script>

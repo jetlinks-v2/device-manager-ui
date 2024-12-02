@@ -8,12 +8,17 @@
                         v-model:value="cycle"
                         style="width: 120px"
                         :options="periodOptions"
+                        @change="queryCharts"
                     >
                     </a-select>
                 </div>
                 <div v-if="cycle !== '*' && _type">
                     统计规则：
-                    <a-select v-model:value="agg" style="width: 120px">
+                    <a-select
+                        v-model:value="agg"
+                        style="width: 120px"
+                        @change="queryCharts"
+                    >
                         <a-select-option value="AVG">平均值</a-select-option>
                         <a-select-option value="MAX">最大值</a-select-option>
                         <a-select-option value="MIN">最小值</a-select-option>
@@ -47,7 +52,7 @@ const prop = defineProps({
     },
 });
 
-const cycle = ref<string>();
+const cycle = ref<string>('');
 const agg = ref<string>('AVG');
 const loading = ref<boolean>(false);
 const chartsList = ref<any[]>([]);
@@ -92,8 +97,7 @@ const queryChartsAggList = async () => {
             endTime = dayjs(prop.time[1]).format('YYYY-MM-DD HH:mm:ss');
         }
 
-        const dataList: any[] = [
-        ];
+        const dataList: any[] = [];
         (resp.result as any[]).forEach((i: any) => {
             dataList.push({
                 ...i,
@@ -228,6 +232,14 @@ const getOptions = (arr: any[]) => {
         ],
     };
 };
+
+const queryCharts = () => {
+    if (cycle.value === '*' && _type.value) {
+        queryChartsList();
+    } else {
+        queryChartsAggList();
+    }
+};
 watch(
     () => prop.time,
     (val) => {
@@ -299,23 +311,12 @@ watch(
             ];
             cycle.value = '1d';
         }
+        queryCharts();
     },
     {
         deep: true,
         immediate: true,
     },
-);
-
-watch(
-    () => [cycle.value, agg.value, prop.time],
-    ([newCycle]) => {
-        if (newCycle === '*' && _type.value) {
-            queryChartsList();
-        } else {
-            queryChartsAggList();
-        }
-    },
-    { deep: true, immediate: true },
 );
 
 watchEffect(() => {

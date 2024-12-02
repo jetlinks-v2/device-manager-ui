@@ -31,6 +31,10 @@
       :params="params"
       :gridColumn="2"
       :gridColumns="[2]"
+      :pagination="{
+        pageSizeOptions: ['4', '12', '24', '48'],
+        showSizeChanger: true,
+      }"
     >
       <template #headerLeftRender>
         <j-permission-button
@@ -162,7 +166,7 @@ const checkData = ref()
 const tableRef = ref()
 const loading = ref(false)
 const params = ref<Record<string, any>>({
-  pageSize: 4,
+  // pageSize: 4,
   terms: [],
 })
 

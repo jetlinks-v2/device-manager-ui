@@ -41,7 +41,6 @@ const _emit = defineEmits(['close']);
 const handleCancel = () => {
     _emit('close');
 };
-
 </script>
 
 <style lang="less" scoped>

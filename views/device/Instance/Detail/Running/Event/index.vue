@@ -14,7 +14,7 @@
         :bodyStyle="{ padding: '0 0 0 24px' }"
     >
         <template  v-for="i in objectKey" #[i.key]='slotProps'>
-            <j-ellipsis >
+            <j-ellipsis>
                 <span @click="detail(slotProps[i.dataIndex])">{{  JSON.stringify(slotProps[i.dataIndex])}}</span>
             </j-ellipsis>
         </template>
@@ -53,7 +53,8 @@ import { cloneDeep } from 'lodash-es';
 const events = defineProps({
     data: {
         type: Object,
-        default: () => {},
+        default: () => {
+        },
     },
 });
 const instanceStore = useInstanceStore();
@@ -82,6 +83,23 @@ const visible = ref<boolean>(false);
 const info = ref<Record<string, any>>({});
 const objectKey = ref<Array>([]);
 
+const componentsType = {
+    int: 'number',
+    long: 'number',
+    float: 'number',
+    double: 'number',
+    string: 'string',
+    array: 'string',
+    password: 'string',
+    enum: 'select',
+    boolean: 'select',
+    date: 'date',
+    object: 'string',
+    geoPoint: 'string',
+    file: 'string',
+    time: 'time',
+}
+
 const _getEventList = (_params: any) =>
     getEventList(instanceStore.current.id || '', events.data.id || '', _params);
 
@@ -90,9 +108,9 @@ watchEffect(() => {
     if (events.data?.valueType?.type === 'object') {
         const eventProperties = cloneDeep(events.data.valueType?.properties || [])
         eventProperties.reverse().map((i: any) => {
-            if (i.valueType?.type === 'object') {
+            if (['object', 'array'].includes(i.valueType?.type)) {
                 objectKey.value.push({
-                    key:i.id,
+                    key: i.id,
                     dataIndex: `${i.id}_format`
                 });
                 columns.value.splice(0, 0, {
@@ -100,19 +118,35 @@ watchEffect(() => {
                     title: i.name,
                     dataIndex: `${i.id}_format`,
                     search: {
-                        type: i?.valueType?.type || 'string',
+                        type: 'string',
                         rename: i.id,
                     },
                     scopedSlots: true,
                 });
             } else {
+                const arr = i?.valueType?.type === 'boolean' ? [
+                    {
+                        label: i?.valueType.falseText,
+                        value: i?.valueType.falseValue
+                    },
+                    {
+                        label: i?.valueType.trueText,
+                        value: i?.valueType.trueValue
+                    },
+                ] : (i?.valueType?.elements || []).map(item => {
+                    return {
+                        label: item.text,
+                        value: item.value
+                    }
+                })
                 columns.value.splice(0, 0, {
                     key: i.id,
                     title: i.name,
                     dataIndex: `${i.id}_format`,
                     search: {
-                        type: i?.valueType?.type || 'string',
+                        type: componentsType?.[i?.valueType?.type] || 'string',
                         rename: i.id,
+                        options: arr
                     },
                     ellipsis: true,
                     scopedSlots: true,

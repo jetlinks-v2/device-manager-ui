@@ -13,7 +13,7 @@
                     />
                 </div>
                 <div class="multiple" v-if="multiple">
-                    <a-checkbox @change="checkChange">全选</a-checkbox>
+                    <a-checkbox v-model:checked="checkAll" @change="checkChange">全选</a-checkbox>
                 </div>
             </div>
             <div class="device-list-warp">
@@ -120,7 +120,7 @@ import {
     getCommandsByAccess,
     getCommandsDevicesByAccessId,
 } from '../../../../api/link/accessConfig';
-import { isArray } from 'lodash-es';
+import { cloneDeep, isArray } from 'lodash-es';
 import { getInkingDevices } from '../../../../api/instance';
 
 type Emit = {
@@ -145,12 +145,12 @@ const props = defineProps({
         default: undefined,
     },
     type: {
-      type: String,
-      default: 'device',
+        type: String,
+        default: 'device',
     },
     internalId: {
-      type: String,
-      default: undefined,
+        type: String,
+        default: undefined,
     },
 });
 
@@ -171,7 +171,7 @@ const pageData = reactive({
 const params = ref({
     terms: [],
 });
-
+const checkAll = ref(false);
 const columns = ref([]);
 
 const queryInkingDevices = (data: string[]) => {
@@ -181,9 +181,10 @@ const queryInkingDevices = (data: string[]) => {
             return;
         }
 
-        const res = await getInkingDevices(data,props.accessId);
+        const res = await getInkingDevices(data, props.accessId);
         if (res) {
-          disabledKeys.value = res.result?.map((item) => item.externalId) || [];
+            disabledKeys.value =
+                res.result?.map((item) => item.externalId) || [];
         }
 
         resolve(true);
@@ -224,10 +225,27 @@ const checkChange = (e: any) => {
         emit('update:value', checkKeys.value);
         emit('change', [...checkCache.value.values()]);
     } else {
-        checkCache.value.clear();
-        checkKeys.value = [];
-        emit('update:value', []);
-        emit('change', []);
+        const keys = deviceList.value
+            .filter((item) => {
+                //  过滤已选中和已绑定
+                const type =
+                    checkKeys.value.includes(item.id) &&
+                    !disabledKeys.value.includes(item.id);
+                if (type && checkCache.value.has(item.id)) {
+                    checkCache.value.delete(item.id);
+                }
+                return type;
+            })
+            .map((item) => item.id);
+        // const dealCheck = cloneDeep(checkKeys.value);
+        const dealCheck = checkKeys.value.filter((item) => {
+            return !keys.find((i) => {
+                return i === item;
+            });
+        });
+        checkKeys.value = cloneDeep(dealCheck);
+        emit('update:value', checkKeys.value);
+        emit('change', [...checkCache.value.values()]);
     }
 };
 
@@ -252,13 +270,13 @@ const init = async () => {
             // 获取分页查询条件
             const item = resp.result.find(item => item.id === 'QueryDevicePage');
             if (item) {
-                showPage.value = true
+                showPage.value = true;
                 columns.value = item.expands?.terms?.map((t) => ({
-                  title: t.name,
-                  dataIndex: t.id,
-                  search: {
-                    type: t.valueType.type,
-                  },
+                    title: t.name,
+                    dataIndex: t.id,
+                    search: {
+                        type: t.valueType.type,
+                    },
                 }));
             }
         }
@@ -305,6 +323,18 @@ watch(
         }
     },
     { immediate: true, deep: true },
+);
+
+watch(
+    () => [deviceList.value, checkCache.value],
+    () => {
+        checkAll.value = !deviceList.value.find((i) => {
+            return !checkCache.value.has(i.id);
+        });
+    },
+    {
+        deep: true,
+    },
 );
 
 onMounted(() => {

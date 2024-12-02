@@ -74,6 +74,7 @@ const queryProtocol = async () => {
         {
             'sorts[0].name': 'createTime',
             'sorts[0].order': 'desc',
+            paging: false,
         },
     );
     if (res.success) {

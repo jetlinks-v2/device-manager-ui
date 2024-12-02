@@ -25,7 +25,7 @@
                 </template>
                 <a-row :gutter="30">
                     <a-col :span="15">
-                        <a-form :ref="`${func.id}Ref`" :model="func">
+                        <a-form :ref="(el) => setRefMap(el, func)" :model="func">
                             <a-table
                                 :columns="columns"
                                 :data-source="func.table"
@@ -125,10 +125,10 @@ import { ComponentInternalInstance } from 'vue';
 import { useInstanceStore } from '../../../../../../store/instance';
 import { execute } from '../../../../../../api/instance';
 import { onlyMessage } from '@jetlinks-web/utils';
+import { isNil } from "lodash-es";
 
 const instanceStore = useInstanceStore();
 const route = useRoute();
-const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 const activeKey = ref('');
 const loading = ref<boolean>(false);
@@ -153,68 +153,122 @@ const columns = ref([
 ]);
 
 const executeResult = ref('');
+const RefMap = {}
+
+const newFunctions = computed({
+    get() {
+        const result: any = [];
+        metadata.value.functions?.forEach((func: any) => {
+            const array = [];
+            const tableData = func.inputs || func.properties;
+            for (const tableItem of tableData) {
+                const type = tableItem.valueType ? tableItem.valueType.type : '-';
+                if (type === 'boolean') {
+                    tableItem.valueType.elements = [
+                        {
+                            text: tableItem.valueType.trueText,
+                            value: String(tableItem.valueType.trueValue),
+                        },
+                        {
+                            text: tableItem.valueType.falseText,
+                            value: String(tableItem.valueType.falseValue),
+                        },
+                    ];
+                }
+                array.push({
+                    id: tableItem.id,
+                    name: tableItem.name,
+                    type: type,
+                    format: tableItem.valueType
+                        ? tableItem.valueType.format
+                        : undefined,
+                    options: tableItem.valueType
+                        ? tableItem.valueType.elements
+                        : undefined,
+                    json:
+                        type === 'object'
+                            ? tableItem['json']?.['properties'][0]
+                            : undefined,
+                    value: undefined,
+                    required: tableItem.expands?.required,
+                });
+            }
+
+            result.push({
+                ...func,
+                table: array,
+                executeResult: '',
+            });
+        });
+        // console.log('newFunctions: ', result);
+        return result;
+    },
+    set(e) {
+        return e
+    }
+})
 
 // 设备功能数据处理
-const newFunctions = computed(() => {
-    const result: any = [];
-    metadata.value.functions?.forEach((func: any) => {
-        const array = [];
-        const tableData = func.inputs || func.properties;
-        for (const tableItem of tableData) {
-            const type = tableItem.valueType ? tableItem.valueType.type : '-';
-            if (type === 'boolean') {
-                tableItem.valueType.elements = [
-                    {
-                        text: tableItem.valueType.trueText,
-                        value: String(tableItem.valueType.trueValue),
-                    },
-                    {
-                        text: tableItem.valueType.falseText,
-                        value: String(tableItem.valueType.falseValue),
-                    },
-                ];
-            }
-            array.push({
-                id: tableItem.id,
-                name: tableItem.name,
-                type: type,
-                format: tableItem.valueType
-                    ? tableItem.valueType.format
-                    : undefined,
-                options: tableItem.valueType
-                    ? tableItem.valueType.elements
-                    : undefined,
-                json:
-                    type === 'object'
-                        ? tableItem['json']?.['properties'][0]
-                        : undefined,
-                value: undefined,
-                required: tableItem.expands?.required,
-            });
-        }
-
-        result.push({
-            ...func,
-            table: array,
-            executeResult: '',
-        });
-    });
-    // console.log('newFunctions: ', result);
-    return result;
-});
+// const newFunctions = computed(() => {
+//     const result: any = [];
+//     metadata.value.functions?.forEach((func: any) => {
+//         const array = [];
+//         const tableData = func.inputs || func.properties;
+//         for (const tableItem of tableData) {
+//             const type = tableItem.valueType ? tableItem.valueType.type : '-';
+//             if (type === 'boolean') {
+//                 tableItem.valueType.elements = [
+//                     {
+//                         text: tableItem.valueType.trueText,
+//                         value: String(tableItem.valueType.trueValue),
+//                     },
+//                     {
+//                         text: tableItem.valueType.falseText,
+//                         value: String(tableItem.valueType.falseValue),
+//                     },monacoEditor 页面无法滚动
+//                 ];
+//             }
+//             array.push({
+//                 id: tableItem.id,
+//                 name: tableItem.name,
+//                 type: type,
+//                 format: tableItem.valueType
+//                     ? tableItem.valueType.format
+//                     : undefined,
+//                 options: tableItem.valueType
+//                     ? tableItem.valueType.elements
+//                     : undefined,
+//                 json:
+//                     type === 'object'
+//                         ? tableItem['json']?.['properties'][0]
+//                         : undefined,
+//                 value: undefined,
+//                 required: tableItem.expands?.required,
+//             });
+//         }
+//
+//         result.push({
+//             ...func,
+//             table: array,
+//             executeResult: '',
+//         });
+//     });
+//     // console.log('newFunctions: ', result);
+//     return result;
+// });
 
 /**
  * 执行
  */
 const handleExecute = async (func: any) => {
-    proxy?.$refs[`${func.id}Ref`][0]
+    RefMap[func.id]
         .validate()
         .then(async () => {
             const obj = {};
             func.table.forEach((item: any) => {
                 if (item.type === 'object' && item.value) {
                     obj[item.id] = JSON.parse(item.value);
-                } else {
+                } else if (!isNil(item.value)) {
                     obj[item.id] = item.value;
                 }
             });
@@ -233,7 +287,7 @@ const handleExecute = async (func: any) => {
             if (!success) return;
             onlyMessage('操作成功');
             executeResult.value = result instanceof Array ? result[0] : result;
-            proxy?.$forceUpdate();
+            RefMap[func.id]?.$forceUpdate();
         })
         .catch((err: any) => {
             console.log('err: ', err);
@@ -243,8 +297,18 @@ const handleExecute = async (func: any) => {
  * 清空
  */
 const handleClear = (func: any) => {
+    newFunctions.value = newFunctions.value.map(item => {
+        if (item.id === func.id) {
+            item.table = item.table.map(tItem => {
+                tItem.value = undefined
+                return tItem
+            })
+        }
+        return item
+    })
+
     executeResult.value = '';
-    proxy?.$refs[`${func.id}Ref`][0].resetFields();
+    RefMap[func.id]?.resetFields()
 };
 
 const onTabChange = (_key: string) => {
@@ -252,8 +316,13 @@ const onTabChange = (_key: string) => {
 };
 
 const getPopupContainer = () => {
-  return document.body
+    return document.body
 }
+
+const setRefMap = (el, item) => {
+    RefMap[item.id] = el
+}
+
 </script>
 
 <style lang="less" scoped>

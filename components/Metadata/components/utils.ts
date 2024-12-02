@@ -153,3 +153,10 @@ export const useMask = (propVisible: boolean, options: { visibleChange: (visible
         visibleChange
     }
 }
+
+export const BooleanValueMap = () => ({
+    trueText: '是',
+    trueValue: 'true',
+    falseText: '否',
+    falseValue: 'false',
+})

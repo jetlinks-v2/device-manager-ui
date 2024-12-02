@@ -12,7 +12,19 @@
             </div>
             <a-spin :spinning="loading">
                 <div class="map-tree-content">
-                    <a-card class="map-tree-content-card" title="源数据">
+                    <a-card class="map-tree-content-card">
+                        <template #title>
+                            <div class="map-tree-header">
+                                <span>数据源</span>
+                                <div>
+                                    <a-input placeholder="请输入通道或采集器名称" @change="onSearch">
+                                        <template #suffix>
+                                            <AIcon type="SearchOutlined" />
+                                        </template>
+                                    </a-input>
+                                </div>
+                            </div>
+                        </template>
                         <a-tree
                             checkable
                             :height="300"
@@ -57,6 +69,9 @@
 <script lang="ts" setup>
 import { treeMapping, saveMapping } from '../../../../../../api/instance';
 import { onlyMessage } from '@/utils/comm';
+import { useInstanceStore } from "../../../../../../store/instance";
+import { debounce } from 'lodash-es'
+
 const _props = defineProps({
     type: {
         type: String,
@@ -73,6 +88,7 @@ const _props = defineProps({
 });
 const _emits = defineEmits(['close', 'save']);
 
+const instanceStore = useInstanceStore();
 const checkedKeys = ref<string[]>([]);
 
 const leftList = ref<any[]>([]);
@@ -80,13 +96,18 @@ const rightList = ref<any[]>([]);
 
 const dataSource = ref<any[]>([]);
 const loading = ref<boolean>(false);
+let dataSourceCache
 
 const handleData = (data: any[], type: string, provider?: string) => {
     data.forEach((item) => {
         item.key = item.id;
         item.title = item.name;
         item.checkable = type === 'collectors';
-        provider ? (item.provider = provider) : '';
+
+        if (provider) {
+            item.provider = provider
+        }
+
         if (
             item.collectors &&
             Array.isArray(item.collectors) &&
@@ -98,6 +119,7 @@ const handleData = (data: any[], type: string, provider?: string) => {
                 item.provider,
             );
         }
+
         if (item.points && Array.isArray(item.points) && item.points.length) {
             item.children = handleData(item.points, 'points');
         }
@@ -107,19 +129,17 @@ const handleData = (data: any[], type: string, provider?: string) => {
 
 const handleSearch = async () => {
     loading.value = true;
-    const resp = await treeMapping({
-        // terms: [
-        //     {
-        //         column: 'provider',
-        //         value: _props.type,
-        //     },
-        // ],
-    });
+
+    const params = {}
+
+    const resp = await treeMapping(params);
     loading.value = false;
     if (resp.status === 200) {
-        dataSource.value = handleData(resp.result as any[], 'channel');
+        const _data = handleData(resp.result as any[], 'channel');
+        dataSourceCache = JSON.stringify(_data)
+        dataSource.value = _data
     }
-};
+}
 
 const onCheck = (keys: string[], e: any) => {
     checkedKeys.value = [...keys];
@@ -142,7 +162,7 @@ const handleClick = async () => {
         onlyMessage('请选择采集器', 'warning');
     } else {
         const params: any[] = [];
-        rightList.value.map((item: any) => {
+        rightList.value.forEach((item: any) => {
             const array = (item.children || []).map((element: any) => ({
                 channelId: item.parentId,
                 collectorId: element.collectorId,
@@ -152,16 +172,16 @@ const handleClick = async () => {
                     (i: any) => i.name === element.name,
                 )?.metadataId,
                 provider: item.provider,
+                state: instanceStore.current.state.value == 'notActive' ? 'disabled': null,
             }));
             params.push(...array);
         });
-
-        const filterParms = params.filter((item) => !!item.metadataId);
-        if (filterParms && filterParms.length !== 0) {
+        const filterParams = params.filter((item) => !!item.metadataId);
+        if (filterParams?.length !== 0) {
             const res = await saveMapping(
                 _props.deviceId,
                 _props.type,
-                filterParms,
+                filterParams,
             );
             if (res.status === 200) {
                 onlyMessage('操作成功');
@@ -175,6 +195,31 @@ const handleClick = async () => {
 const handleClose = () => {
     _emits('close');
 };
+
+const treeFilter = (data: any[], value: any, key: string = 'name'): any[] => {
+    if (!data) return []
+
+    return data.filter(item => {
+        if (item[key].includes(value)) {
+            return true
+        }
+
+        // 排除点位的搜索
+        if (item.children && item.children.length && !item.hasOwnProperty('points')) {
+            item.children = treeFilter(item.children || [], value, key)
+            return !!item.children.length
+        }
+
+        return false
+    })
+}
+
+const onSearch = debounce((e) => {
+    // handleSearch()
+    const _data = JSON.parse(dataSourceCache || '[]')
+    const text = e.target.value
+    dataSource.value = text ? treeFilter(_data, e.target.value, 'title') : _data
+}, 300)
 
 watchEffect(() => {
     if (_props.type) {
@@ -198,5 +243,10 @@ watchEffect(() => {
             height: 300px;
         }
     }
+}
+.map-tree-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 </style>

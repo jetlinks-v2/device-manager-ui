@@ -91,16 +91,24 @@
             </a-descriptions>
         </template>
         <template #extra>
-            <img
-                @click="handleRefresh"
-                :src="device.button"
-                style="margin-right: 20px; cursor: pointer"
-            />
+            <a-space>
+                <a-button
+                    @click="onClick"
+                    v-if="_arr.includes(instanceStore.current?.accessProvider || '')"
+                    type="primary" :disabled="instanceStore.current?.state?.value !== 'online'">远程访问
+                </a-button>
+                <img
+                    @click="handleRefresh"
+                    :src="device.button"
+                    style="margin-right: 20px; cursor: pointer"
+                    alt=""
+                />
+            </a-space>
         </template>
         <FullPage :fixed="false">
           <div style="padding: 24px;">
             <component
-              :is="tabsComponents"
+              :is="tabs[instanceStore.tabActiveKey]"
               v-bind="{ type: 'device' }"
               @onJump="onTabChange"
             />
@@ -117,6 +125,7 @@ import Running from './Running/index.vue';
 import Metadata from '../../components/Metadata/index.vue';
 import MetadataMap from './MetadataMap/index.vue';
 import ChildDevice from './ChildDevice/index.vue';
+import Child from './Child/index.vue';
 import Diagnose from './Diagnose/index.vue';
 import Function from './Function/index.vue';
 import Modbus from './Modbus/index.vue';
@@ -127,15 +136,20 @@ import GateWay from './GateWay/index.vue';
 import Log from './Log/index.vue';
 import AlarmRecord from './AlarmRecord/index.vue';
 import Firmware from './Firmware/index.vue';
+import Shadow from './Shadow/index.vue';
+import Terminal from './Terminal/index.vue';
 import CardManagement from '../components/IotCard/index.vue';
 import { _deploy, _disconnect } from '../../../../api/instance';
 import { onlyMessage } from '@jetlinks-web/utils';
+import { openEdgeUrl } from '@/utils/comm';
 import { getWebSocket } from '@/utils/websocket';
 import { useRouterParams } from '@jetlinks-web/hooks';
 import { EventEmitter } from '@jetlinks-web/utils';
-import { useAuthStore, useSystemStore, useMenuStore } from '@/store';
+import { useSystemStore, useMenuStore, useAuthStore} from '@/store';
 import { isNoCommunity } from '@/utils/utils';
 import { device } from "../../../../assets";
+import {getRemoteProxyUrl, getRemoteSystem, getRemoteToken} from "@/modules/data-collector-ui/api/edge/device";
+
 
 const menuStory = useMenuStore();
 const { showThreshold } = useSystemStore();
@@ -181,6 +195,7 @@ const tabs = {
     Metadata,
     Running,
     ChildDevice,
+    Child,
     Diagnose,
     Function,
     Modbus,
@@ -193,13 +208,12 @@ const tabs = {
     AlarmRecord,
     CardManagement,
     Firmware,
+    Shadow,
+    Terminal
 };
 
 const permissionStore = useAuthStore();
-
-const tabsComponents = computed(() => {
-  return tabs[instanceStore.tabActiveKey]
-})
+const _arr = ['agent-device-gateway', 'agent-media-device-gateway']
 const getStatus = (id: string) => {
     statusRef.value = getWebSocket(
         `instance-editor-info-status-${id}`,
@@ -229,6 +243,13 @@ const getDetail = () => {
             key: 'CardManagement',
             tab: '物联网卡',
         });
+    }
+
+    if (instanceStore.current?.features.some(item => item.id === 'deviceShadow-manager') && isNoCommunity) {
+        list.value.push({
+            key: 'Shadow',
+            tab: '设备影子'
+        })
     }
     if (
         permissionStore.hasPermission('device/Firmware:view') &&
@@ -291,13 +312,22 @@ const getDetail = () => {
     }
     if (
         instanceStore.current?.deviceType?.value === 'gateway' &&
-        !keys.includes('ChildDevice')
+        !keys.includes('ChildDevice')&&
+        !keys.includes('Child')
     ) {
-        // 产品类型为网关的情况下才显示此模块
-        list.value.push({
-            key: 'ChildDevice',
-            tab: '子设备',
-        });
+
+        if(instanceStore.current?.accessProvider === 'agent-device-gateway'){
+            list.value.push({
+                key: 'Child',
+                tab: '子设备',
+            });
+        }else{
+            // 产品类型为网关的情况下才显示此模块
+            list.value.push({
+                key: 'ChildDevice',
+                tab: '子设备',
+            });
+        }
     }
     if (
         instanceStore.current?.accessProvider === 'edge-child-device' &&
@@ -316,7 +346,14 @@ const getDetail = () => {
         ) &&
         !keys.includes('MetadataMap')
     ) {
-        list.value.push({ key: 'MetadataMap', tab: '物模型映射' });
+        list.value.push({key: 'MetadataMap', tab: '物模型映射'});
+    }
+
+    if (
+        _arr.includes(instanceStore.current?.accessProvider) &&
+        !keys.includes('Terminal')
+    ) {
+        list.value.push({key: 'Terminal', tab: '远程终端'});
     }
 };
 
@@ -395,11 +432,15 @@ const handleRefresh = async () => {
 
 const jumpProduct = () => {
     menuStory.jumpPage('device/Product/Detail', {
-  params: {
-    id: instanceStore.current?.productId,
-  }
-});
+        id: instanceStore.current?.productId,
+    });
 };
+
+const onClick = async () => {
+    const onClick = async () => {
+        await openEdgeUrl(instanceStore.current.id)
+    }
+}
 
 onMounted(() => {
     getDetailFn();
@@ -416,7 +457,6 @@ onUnmounted(() => {
     max-width: 400px;
     overflow: hidden;
     white-space: nowrap;
-    overflow: hidden;
     text-overflow: ellipsis;
 }
 </style>

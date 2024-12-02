@@ -209,6 +209,7 @@ import { useMetadataStore } from '../../../../../store/metadata';
 import { omit } from 'lodash-es';
 import { Modal } from 'ant-design-vue';
 import { testObject, testType, testAliType, testAliObject } from './valideta';
+import { TOKEN_KEY } from '@jetlinks-web/constants';
 
 const route = useRoute();
 const instanceStore = useInstanceStore();
@@ -827,6 +828,16 @@ const handleImport = async () => {
                     if (res.status === 200) {
                         // const metadata = operateLimits(res.result); // 导入取并集逻辑
                         const metadata = res.result;
+                        Object.keys(metadata).forEach((i: any) => {
+                            if (i === 'properties') {
+                                metadata[i].filter((a: any) => {
+                                    if (a?.expands?.source === 'rule') {
+                                        hasVirtualRule.value = true;
+                                        return;
+                                    }
+                                });
+                            }
+                        });
                         let result;
                         if (props?.type === 'device') {
                             result = await saveMetadata(
@@ -903,6 +914,14 @@ const handleImport = async () => {
                                 });
                             });
                         }
+                        if (i === 'properties') {
+                            _object[i].filter((a: any) => {
+                                if (a?.expands?.source === 'rule') {
+                                    hasVirtualRule.value = true;
+                                    return;
+                                }
+                            });
+                        }
                     });
                     const params = {
                         id,
@@ -937,8 +956,8 @@ const handleImport = async () => {
                     close();
                 } catch (e) {
                     loading.value = false;
-                    if(e?.name === 'AxiosError'){
-                        return
+                    if (e?.name === 'AxiosError') {
+                        return;
                     }
                     onlyMessage(
                         e === 'error'

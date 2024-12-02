@@ -16,6 +16,8 @@ ProtocolMapping.set('opc-ua', 'OPC_UA');
 ProtocolMapping.set('edge-child-device', 'EdgeGateway');
 ProtocolMapping.set('collector-gateway', 'collector-gateway');
 ProtocolMapping.set('official-edge-gateway', 'MQTT');
+ProtocolMapping.set('agent-device-gateway', 'MQTT');
+ProtocolMapping.set('agent-media-device-gateway', 'MQTT');
 
 const NetworkTypeMapping = new Map();
 NetworkTypeMapping.set('websocket-server', 'WEB_SOCKET_SERVER');
@@ -26,6 +28,8 @@ NetworkTypeMapping.set('mqtt-client-gateway', 'MQTT_CLIENT');
 NetworkTypeMapping.set('mqtt-server-gateway', 'MQTT_SERVER');
 NetworkTypeMapping.set('tcp-server-gateway', 'TCP_SERVER');
 NetworkTypeMapping.set('official-edge-gateway', 'MQTT_SERVER');
+NetworkTypeMapping.set('agent-device-gateway', 'MQTT_SERVER');
+NetworkTypeMapping.set('agent-media-device-gateway', 'MQTT_SERVER');
 
 const BackMap = new Map();
 BackMap.set('mqtt-server-gateway', access.Mqtt);
@@ -49,6 +53,8 @@ BackMap.set('official-edge-gateway', access.Edge);
 BackMap.set('collector-gateway', access.CollectorGateway);
 BackMap.set('onvif', access.Onvif);
 BackMap.set('media-plugin', access.MediaPlugin)
+BackMap.set('agent-device-gateway',getImage('/access/agent-device.png'))
+BackMap.set('agent-media-device-gateway',getImage('/access/media-plugin.png'))
 
 const descriptionList = {
     'udp-device-gateway':

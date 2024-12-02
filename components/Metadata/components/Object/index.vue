@@ -9,6 +9,7 @@
             <div style="width: 750px">
                 <EditTable
                     ref="tableRef"
+                    :validateRowKey="true"
                     :columns="myColumns"
                     :dataSource="dataSource"
                     :pagination="false"
@@ -48,7 +49,7 @@
                                 "
                             >
                                 <TypeSelect
-                                    v-model:value="record.valueType.type"
+                                    v-model:value="record.valueType"
                                     style="flex: 1 1 0; min-width: 0"
                                 />
                                 <DoubleParams
@@ -156,6 +157,7 @@ import {
     DoubleParams,
 } from '../../index';
 import { Form } from 'ant-design-vue';
+import { isObject } from 'lodash-es';
 
 const props = defineProps({
     value: {
@@ -336,7 +338,15 @@ watch(
     () => [JSON.stringify(props.value), visible.value],
     (val) => {
         if (visible.value) {
-            dataSource.value = JSON.parse(val[0] || '[]');
+            dataSource.value = JSON.parse(val[0] || '[]').map(item => {
+                item = {
+                    expands: {
+                        required: false,
+                    },
+                    ...item,
+                }
+                return item
+            });
         }
     },
     { immediate: true },

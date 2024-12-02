@@ -24,6 +24,9 @@
         <JsonView :value="dataTypeTable.dataSource"/>
       </a-descriptions-item>
       <a-descriptions-item v-if="showSetting && data.expands?.storageType" label="存储方式">{{ settingData[data.expands?.storageType] }}</a-descriptions-item>
+      <a-descriptions-item label="事件说明" v-if="data.description">
+        <a-textarea :value="data.description" disabled></a-textarea>
+      </a-descriptions-item>
     </a-descriptions>
     <template #footer>
       <a-button type="primary" @click="ok">确认</a-button>

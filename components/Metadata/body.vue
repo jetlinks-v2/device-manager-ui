@@ -102,6 +102,7 @@ const virtualData = computed(()=> {
 // }
 
 const onScroll = () => {
+  if (!viewScrollRef.value) return
   const height = viewScrollRef.value.scrollTop
   const clientHeight = viewScrollRef.value.clientHeight
   const scrollHeight = viewScrollRef.value.scrollHeight

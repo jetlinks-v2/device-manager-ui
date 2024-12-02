@@ -1,39 +1,39 @@
 <template>
     <j-page-container>
         <a-spin :spinning="loading">
-          <div v-if="type && id === ':id'">
-            <Provider
-              @onClick="goProviders"
-              :dataSource="dataSource"
-            ></Provider>
-          </div>
-            <FullPage  v-else>
+            <div v-if="type && id === ':id'">
+                <Provider
+                    @onClick="goProviders"
+                    :dataSource="dataSource"
+                ></Provider>
+            </div>
+            <FullPage v-else>
                 <a-card :bordered="false">
                     <div>
                         <div class="go-back" v-if="id === ':id'">
                             <a @click="goBack">返回</a>
                         </div>
-                      <template v-if="showType === 'network'">
-                        <Plugin
-                            v-if="provider.id === 'plugin_gateway'"
-                            :bindProduct='bindProduct'
-                            :data="data"
-                            :provider="provider"
-                        />
-                        <GateWay
-                            v-else-if="provider.id === 'collector-gateway'"
-                            :bindProduct='bindProduct'
-                            :data="data"
-                            :provider="provider"
-                        />
+                        <template v-if="showType === 'network'">
+                            <Plugin
+                                v-if="provider.id === 'plugin_gateway'"
+                                :bindProduct='bindProduct'
+                                :data="data"
+                                :provider="provider"
+                            />
+                            <GateWay
+                                v-else-if="provider.id === 'collector-gateway'"
+                                :bindProduct='bindProduct'
+                                :data="data"
+                                :provider="provider"
+                            />
 
-                        <Network
-                            v-else
-                            :bindProduct='bindProduct'
-                            :data="data"
-                            :provider="provider"
-                        />
-                      </template>
+                            <Network
+                                v-else
+                                :bindProduct='bindProduct'
+                                :data="data"
+                                :provider="provider"
+                            />
+                        </template>
 
                         <Media
                             v-else-if="showType === 'media'"
@@ -75,9 +75,9 @@ import Edge from '../components/Edge/index.vue';
 import GateWay from '../components/Edge/geteway.vue';
 import Cloud from '../components/Cloud/index.vue';
 import Plugin from '../components/Plugin/index.vue'
-import { getProviders, detail } from '../../../../api/link/accessConfig';
-import { queryProductList } from '../../../../api/product';
-import { accessConfigTypeFilter } from '@/utils';
+import {getProviders, detail} from '../../../../api/link/accessConfig';
+import {queryProductList} from '../../../../api/product';
+import {accessConfigTypeFilter} from '@/utils';
 
 const route = useRoute();
 const id = route.params.id as string;
@@ -94,7 +94,7 @@ const goProviders = (param: any) => {
     showType.value = param.type;
     provider.value = param;
     type.value = false;
-    console.log(showType.value,provider.value)
+    console.log(showType.value, provider.value)
 };
 
 const goBack = () => {
@@ -109,28 +109,32 @@ const TypeMap = new Map([
     ['onvif', 'media'],
     ['media-plugin', 'media'],
     ['OneNet', 'cloud'],
-    ['OneNet-platform','cloud'],
+    ['OneNet-platform', 'cloud'],
     ['Ctwing', 'cloud'],
     ['modbus-tcp', 'channel'],
     ['opc-ua', 'channel'],
     ['official-edge-gateway', 'edge'],
     ['edge-child-device', 'edge'],
     ['network', 'network'],
+    ['agent-device-gateway','network'],
+    ['agent-media-device-gateway','network']
 ]);
 // DataMap后期优化
 const DataMap = new Map();
-DataMap.set('fixed-media', { type: 'media', title: '视频类设备接入' });
-DataMap.set('gb28181-2016', { type: 'media', title: '视频类设备接入' });
-DataMap.set('onvif',{ type: 'media' , title:'视频类设备接入'});
-DataMap.set('media-plugin', { type: 'media', title: '视频类设备接入' });
-DataMap.set('OneNet', { type: 'cloud', title: '云平台接入' });
-DataMap.set('OneNet-platform', { type: 'cloud', title: '云平台接入' });
-DataMap.set('Ctwing', { type: 'cloud', title: '云平台接入' });
-DataMap.set('modbus-tcp', { type: 'channel', title: '通道类设备接入' });
-DataMap.set('opc-ua', { type: 'channel', title: '通道类设备接入' });
-DataMap.set('official-edge-gateway', { type: 'edge', title: '官方接入' });
-DataMap.set('edge-child-device', { type: 'edge', title: '官方接入' });
-DataMap.set('network', { type: 'network', title: '自定义设备接入' });
+DataMap.set('fixed-media', {type: 'media', title: '视频类设备接入'});
+DataMap.set('gb28181-2016', {type: 'media', title: '视频类设备接入'});
+DataMap.set('onvif', {type: 'media', title: '视频类设备接入'});
+DataMap.set('media-plugin', {type: 'media', title: '视频类设备接入'});
+DataMap.set('OneNet', {type: 'cloud', title: '云平台接入'});
+DataMap.set('OneNet-platform', {type: 'cloud', title: '云平台接入'});
+DataMap.set('Ctwing', {type: 'cloud', title: '云平台接入'});
+DataMap.set('modbus-tcp', {type: 'channel', title: '通道类设备接入'});
+DataMap.set('opc-ua', {type: 'channel', title: '通道类设备接入'});
+DataMap.set('official-edge-gateway', {type: 'edge', title: '官方接入'});
+DataMap.set('edge-child-device', {type: 'edge', title: '官方接入'});
+DataMap.set('network', {type: 'network', title: '自定义设备接入'});
+DataMap.set('agent-device-gateway',{ type:'network', title:'Agent代理接入'})
+DataMap.set('agent-media-device-gateway',{ type:'network', title:'Agent代理接入'})
 
 const getTypeList = (result: Record<string, any>) => {
     const list = [];
@@ -139,8 +143,9 @@ const getTypeList = (result: Record<string, any>) => {
     const cloud: any[] = [];
     const channel: any[] = [];
     const edge: any[] = [];
+    const agent: any[] = [];
     result.map((item: any) => {
-        if (item.id === 'fixed-media' || item.id === 'gb28181-2016' || item.id ==='onvif' || item.id === 'media-plugin') {
+        if (item.id === 'fixed-media' || item.id === 'gb28181-2016' || item.id === 'onvif' || item.id === 'media-plugin') {
             item.type = 'media';
             media.push(item);
         } else if (item.id === 'OneNet' || item.id === 'Ctwing' || item.id === 'OneNet-platform') {
@@ -149,7 +154,7 @@ const getTypeList = (result: Record<string, any>) => {
         } else if (item.id === 'modbus-tcp' || item.id === 'opc-ua' || item.id === 'collector-gateway') {
             item.type = 'channel';
             if (item.id === 'collector-gateway') {
-              channel.push(item);
+                channel.push(item);
             }
         } else if (
             item.id === 'official-edge-gateway' ||
@@ -157,38 +162,47 @@ const getTypeList = (result: Record<string, any>) => {
         ) {
             item.type = 'edge';
             edge.push(item);
-        } else {
+        } else if (
+            item.id === 'agent-device-gateway' ||
+            item.id === 'agent-media-device-gateway'
+        ) {
+            item.type = 'network';
+            agent.push(item);
+        }  else {
             item.type = 'network';
             network.push(item);
         }
     });
 
     network.length &&
-        list.push({
-            list: [...network],
-            title: '自定义设备接入',
-        });
+    list.push({
+        list: [...network],
+        title: '自定义设备接入',
+    });
     media.length &&
-        list.push({
-            list: [...media],
-            title: '视频类设备接入',
-        });
+    list.push({
+        list: [...media],
+        title: '视频类设备接入',
+    });
     cloud.length &&
-        list.push({
-            list: [...cloud],
-            title: '云平台接入',
-        });
+    list.push({
+        list: [...cloud],
+        title: '云平台接入',
+    });
     channel.length &&
-        list.push({
-            list: [...channel],
-            title: '通道类设备接入',
-        });
+    list.push({
+        list: [...channel],
+        title: '通道类设备接入',
+    });
     edge.length &&
-        list.push({
-            list: [...edge],
-            title: '官方接入',
-        });
-
+    list.push({
+        list: [...edge],
+        title: '官方接入',
+    });
+    agent.length && list.push({
+        list: [...agent],
+        title: 'Agent代理接入'
+    })
     return list;
 };
 
@@ -213,18 +227,18 @@ const queryProviders = async () => {
  * 检查是否被产品使用
  */
 const checkBindProduct = async (_id: string) => {
-  const resp = await queryProductList({
-    paging: false,
-    terms: [{
-      column: 'accessId',
-      termType: 'eq',
-      value: _id
-    }]
-  })
-  console.log(resp.success && resp.result?.total)
-  if (resp.success && resp.result?.total) {
-    bindProduct.value = true
-  }
+    const resp = await queryProductList({
+        paging: false,
+        terms: [{
+            column: 'accessId',
+            termType: 'eq',
+            value: _id
+        }]
+    })
+    console.log(resp.success && resp.result?.total)
+    if (resp.success && resp.result?.total) {
+        bindProduct.value = true
+    }
 }
 
 const getProvidersData = async () => {

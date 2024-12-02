@@ -36,7 +36,7 @@
                       show-search
                       :filter-option="filterOption"
                       @change="changeType"
-                      :disabled="!!NetworkType"
+                      :disabled="!!NetworkType || id !== ':id'"
                     />
                   </a-form-item>
                 </a-col>

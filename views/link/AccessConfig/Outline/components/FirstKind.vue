@@ -31,39 +31,48 @@
                 </div>
             </template>
         </AccessCard>
-        <TitleComponent data="消息协议" style="margin-top: 20px">
-        </TitleComponent>
-        <AccessCard v-if="protocol" :data="{ ...protocol, type: 'protocol' }">
-        </AccessCard>
-        <TitleComponent
-            v-if="config?.routes && config.routes.length > 0"
-            :data="
+        <template
+            v-if="
+                ![
+                    'agent-device-gateway',
+                    'agent-media-device-gateway',
+                ].includes(data.provider)
+            "
+        >
+            <TitleComponent data="消息协议" style="margin-top: 20px">
+            </TitleComponent>
+            <AccessCard v-if="protocol" :data="{ ...protocol, type: 'protocol' }">
+            </AccessCard>
+            <TitleComponent
+                v-if="config?.routes && config.routes.length > 0"
+                :data="
                 data.provider === 'mqtt-server-gateway' ||
                 data.provider === 'mqtt-client-gateway'
                     ? 'topic'
                     : 'URL信息'
             "
-            style="margin-top: 20px"
-        >
-        </TitleComponent>
-        <div v-if="config?.routes && config.routes.length > 0">
-            <j-scrollbar height="350">
-                <a-table
-                    :pagination="false"
-                    :rowKey="generateUUID()"
-                    :data-source="config.routes || []"
-                    bordered
-                    :columns="config.id === 'MQTT' ? columnsMQTT : columnsHTTP"
-                    :scroll="{ y: 400 }"
-                >
-                    <template #bodyCell="{ column, text, record }">
-                        <template v-if="column.dataIndex === 'stream'">
-                            {{ getStream(record) }}
+                style="margin-top: 20px"
+            >
+            </TitleComponent>
+            <div v-if="config?.routes && config.routes.length > 0">
+                <j-scrollbar height="350">
+                    <a-table
+                        :pagination="false"
+                        :rowKey="generateUUID()"
+                        :data-source="config.routes || []"
+                        bordered
+                        :columns="config.id === 'MQTT' ? columnsMQTT : columnsHTTP"
+                        :scroll="{ y: 400 }"
+                    >
+                        <template #bodyCell="{ column, text, record }">
+                            <template v-if="column.dataIndex === 'stream'">
+                                {{ getStream(record) }}
+                            </template>
                         </template>
-                    </template>
-                </a-table>
-            </j-scrollbar>
-        </div>
+                    </a-table>
+                </j-scrollbar>
+            </div>
+        </template>
     </div>
 </template>
 
@@ -127,6 +136,7 @@ const queryProcotol = async () => {
         {
             'sorts[0].name': 'createTime',
             'sorts[0].order': 'desc',
+            paging: false,
         },
     );
     if (resp.status === 200) {

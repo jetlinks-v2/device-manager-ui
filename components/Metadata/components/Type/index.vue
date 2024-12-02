@@ -1,7 +1,7 @@
 <template>
   <div :class="{'select-no-value': !value}">
     <a-select
-      v-bind="props"
+      v-bind="omit(props, 'value')"
       allow-clear
       :value="myValue"
       style="width: 100%"
@@ -20,33 +20,54 @@
 import { selectProps } from 'ant-design-vue/lib/select';
 import defaultOptions from './data';
 import {useTableWrapper} from "../../context";
+import { BooleanValueMap } from "../utils";
+import {omit} from "lodash-es";
 
 const props = defineProps({
   ...selectProps(),
   filter: {
-    type: Array ,
+    type: Array,
     default: () => [],
-  }
+  },
+  value: {
+    type: Object,
+    default: () => ({
+      type: undefined
+    })
+  },
 });
 
-const emit = defineEmits(['update:value']);
+const emit = defineEmits(['update:value', 'valueChange']);
 
-const myValue = ref(props.value)
+const myValue = ref(props.value.type)
 
 const options = computed(() => {
-  return defaultOptions.filter(item => !props.filter.includes(item.value) )
+  return defaultOptions.filter(item => !props.filter.includes(item.value))
 })
 
 const tableWrapperRef = useTableWrapper()
 const change = (key) => {
   myValue.value = key
-  emit('update:value', key)
+  const extra = {}
+  let newValueType = {type: key}
+
+  if (key === 'boolean') {
+    const BooleanDefaultValue = BooleanValueMap()
+    Object.keys(BooleanDefaultValue).forEach(key => {
+      if (!props.value[key]) {
+        extra[key] = BooleanDefaultValue[key]
+      }
+    })
+    newValueType = Object.assign(newValueType, extra)
+  }
+  emit('update:value', newValueType)
+  emit('valueChange', newValueType)
 }
 
 watch(
   () => props.value,
   (newValue) => {
-    myValue.value = newValue;
+    myValue.value = newValue.type;
   },
 );
 

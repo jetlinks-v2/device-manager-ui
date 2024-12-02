@@ -249,6 +249,41 @@ export const unbindBatchDevice = (deviceId: string, data: Record<string, any>) =
  */
 export const bindDevice = (deviceId: string, data: Record<string, any>) => request.post(`/device/gateway/${deviceId}/bind`, data)
 
+/**
+ * 云端批量禁用设备-云边协同
+ * @param gatewayId 网关设备ID
+ * @param data 云端子设备ID集合
+ * @param params
+ * @returns
+ */
+export const _undeployCloud = (gatewayId: string, data: Record<string, any>,params?:any) => server.post(`/edge/action-sync/${gatewayId}/_undeploy`, data,params)
+
+/**
+ * 云端批量启用设备-云边协同
+ * @param gatewayId 网关设备ID
+ * @param data 云端子设备ID集合
+ * @param params
+ * @returns
+ */
+export const _deployCloud = (gatewayId: string, data: Record<string, any>,params?:any) => server.post(`/edge/action-sync/${gatewayId}/_deploy`, data,params)
+
+/**
+ * 云端批量解绑设备-云边协同
+ * @param gatewayId 网关设备ID
+ * @param data 云端子设备ID集合
+ * @param params
+ * @returns
+ */
+export const _unbindCloud = (gatewayId: string, data: Record<string, any>,params?:any) => server.post(`/edge/action-sync/${gatewayId}/_unbind`, data,params)
+
+/**
+ * 云端批量删除设备-云边协同
+ * @param gatewayId 网关设备ID
+ * @param data 云端子设备ID集合
+ * @param params
+ * @returns
+ */
+export const _deleteCloud = (gatewayId: string, data: Record<string, any>,params?:any) => server.post(`/edge/action-sync/${gatewayId}/_delete`, data,params)
 
 /**
  * 查询是否存在云端映射设备
@@ -503,7 +538,7 @@ export const saveEdgeMap = (deviceId: string, data?: any) => request.post(`/edge
  * @param params
  * @returns
  */
-export const getPropertyData = (deviceId: string, params: Record<string, unknown>) => request.get(`/device-instance/${deviceId}/properties/_query`, params)
+export const getPropertyData = (deviceId: string,property:string, params: Record<string, unknown>) => request.post(`/device/instance/${deviceId}/property/${property}/_query`, params)
 
 /**
  * 聚合查询设备属性
@@ -673,3 +708,16 @@ export const deleteDeviceThreshold = (productId:string,deviceId:string,propertyI
 export const getTemplate = (id: string, format: string) => `${BASE_API}/device/instance/${id}/property-metadata/template.${format}`
 
 export const uploadAnalyzeMetadata = (productId:string,data: any) => request.post(`/device/instance/${productId}/property-metadata/file/analyze`, data)
+
+/**
+ * 设备影子-获取数据
+ * @param id 设备ID
+ */
+export const getDeviceShadow = (id: string) => request.get(`/device/shadow/${id}`)
+
+/**
+ * 物模型事件图片地址代理
+ */
+export const proxyUrl = (deviceId: string, url: string) => request.get(`/edge/device/${deviceId}/_proxy?url=${url}`, {}, { responseType: 'blob' })
+
+export const tagsList = () => request.get('/device-instance/tags/key')
