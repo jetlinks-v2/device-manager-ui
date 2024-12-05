@@ -10,7 +10,7 @@
             </div>
 
             <a-form
-                v-if="type !== 'unbind'"
+                v-if="isMap"
                 layout="vertical"
                 :model="form"
                 ref="formRef"
@@ -84,7 +84,7 @@
                     <div style="width: 200px">
                         <span>
                             {{ title }}失败：{{
-                                cloud.errorMessage.length
+                                edge.errorMessage.length
                             }}
                             条</span
                         >
@@ -153,6 +153,10 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    isMap: {
+        type: Boolean,
+        default: false,
+    }
 });
 const instanceStore = useInstanceStore();
 const typeMap = new Map();
@@ -175,7 +179,7 @@ typeMap.set('deploy', {
 typeMap.set('delete', {
     title: '删除',
     label: '确认删除？',
-    batchLabel: '已启用的设备无法删除，确认删除选中的禁用状态设备？',
+    batchLabel: '确认删除选中的设备？',
 });
 
 const title = computed(() =>
@@ -195,6 +199,10 @@ const options = computed(() => [
     },
 ]);
 
+const isMap = computed(() => {
+    return props.isMap
+})
+
 const edgeId = instanceStore.detail.id;
 const form = reactive({
     way: ['cloud'],
@@ -210,6 +218,7 @@ const edge = reactive({
     successCount: 0,
     errorMessage: [],
 });
+
 const handleResult = (arr) => {
     arr.forEach((item) => {
         if (item.type === 'cloud') {
@@ -242,6 +251,7 @@ const _unbind = async () => {
         }
     }
 };
+
 const onUndeploy = async () => {
     const res =
         form.way[0] === 'cloud'
@@ -270,18 +280,23 @@ const onUndeploy = async () => {
 const onDelete = async () => {
     const res =
         form.way[0] === 'cloud'
-            ? props.batch
-                ? await _deleteCloud(edgeId, props.rows, {
-                      syncEdge: false,
-                  }).finally(() => {
-                      loading.value = false;
-                  })
-                : await _delete(props.rows?.[0]).finally(() => {
-                      loading.value = false;
-                  })
+            ? // ? props.batch
+              //     ? await _deleteCloud(edgeId, props.rows, {
+              //           syncEdge: false,
+              //       }).finally(() => {
+              //           loading.value = false;
+              //       })
+              //     : await _delete(props.rows?.[0]).finally(() => {
+              //           loading.value = false;
+              //       })
+            await _deleteCloud(edgeId, props.rows, {
+                syncEdge: false,
+            }).finally(() => {
+                loading.value = false;
+            })
             : await _deleteCloud(edgeId, props.rows).finally(() => {
-                  loading.value = false;
-              });
+                loading.value = false;
+            });
     if (res.success) {
         if (props.batch) {
             result.value = res.result;

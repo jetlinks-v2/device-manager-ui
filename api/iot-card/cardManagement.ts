@@ -53,7 +53,7 @@ export const unDeployBatch = (data: any) => request.get(`/network/card/_deactiva
  * 复机已停机物联卡(批量)
  * @param data
  */
-export const resumptionBatch = (data: any) => request.get(`/network/card/_resumption/_bitch`, data);
+export const resumptionBatch = (data: any) => request.post(`/network/card/_resumption/_bitch`, data);
 
 /**
  * 同步物联卡状态

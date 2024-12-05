@@ -223,6 +223,7 @@ const defaultColumns = [
         title: '参数标识',
         dataIndex: 'id',
         form: {
+            required: true,
             rules: [
                 {
                     asyncValidator(_, value, ...setting) {
@@ -256,6 +257,7 @@ const defaultColumns = [
         title: '参数名称',
         dataIndex: 'name',
         form: {
+            required: true,
             rules: [
                 {
                     required: true,

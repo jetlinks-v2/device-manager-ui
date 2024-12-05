@@ -23,7 +23,7 @@
                         />
                     </j-tooltip>
                     <a-space>
-                        <PermissionButton
+                        <j-permission-button
                             :tooltip="{
                                 title: '新增并绑定',
                             }"
@@ -31,8 +31,8 @@
                             @click="onClick('add')"
                         >
                             <AIcon type="PlusOutlined" />
-                        </PermissionButton>
-                        <PermissionButton
+                        </j-permission-button>
+                        <j-permission-button
                             :tooltip="{
                                 title: '绑定',
                             }"
@@ -40,13 +40,13 @@
                             @click="onClick('bind')"
                         >
                             <AIcon type="DisconnectOutlined" />
-                        </PermissionButton>
+                        </j-permission-button>
                     </a-space>
                 </div>
                 <pro-search
-                    :columns="columns"
+                    :columns="searchColumns"
                     type="simple"
-                    @search="handleSearch"
+                    @search="onSearch"
                 />
                 <div class="left-list">
                     <div style="min-height: 560px">
@@ -61,7 +61,7 @@
                                         v-for="item in action"
                                         :key="item.key"
                                     >
-                                        <PermissionButton
+                                        <j-permission-button
                                             :disabled="item.disabled"
                                             :popConfirm="item.popConfirm"
                                             :tooltip="{
@@ -76,7 +76,7 @@
                                                 <AIcon :type="item.icon" />
                                                 {{ item.text }}
                                             </template>
-                                        </PermissionButton>
+                                        </j-permission-button>
                                     </a-menu-item>
                                 </a-menu>
                             </template>
@@ -134,6 +134,16 @@
                                     </div>
                                     <div v-else>{{ '自动生成' }}</div>
                                 </template>
+                                <template #name="scopedSlots">
+                                    <j-ellipsis>{{
+                                        scopedSlots.name || '--'
+                                    }}</j-ellipsis>
+                                </template>
+                                <template #productName="scopedSlots">
+                                    <j-ellipsis>{{
+                                        scopedSlots.productName || '--'
+                                    }}</j-ellipsis>
+                                </template>
                                 <template #state="scopedSlots">
                                     <a-tooltip
                                         :title="scopedSlots.MappingError"
@@ -171,7 +181,7 @@
                                             <a-badge
                                                 :status="
                                                     statusMap.get(
-                                                        scopedSlots?.state
+                                                        scopedSlots?.Mapping.state
                                                             ?.value,
                                                     )
                                                 "
@@ -186,14 +196,6 @@
                                         </div>
 
                                         <a-button
-                                            v-if="!scopedSlots.loading"
-                                            type="link"
-                                            @click="onDelete(scopedSlots)"
-                                        >
-                                            <AIcon type="DeleteOutlined" />
-                                        </a-button>
-
-                                        <a-button
                                             v-if="
                                                 !scopedSlots.loading &&
                                                 scopedSlots.MappingStatus ===
@@ -204,10 +206,17 @@
                                             @click="
                                                 scopedSlots.action === 'drop'
                                                     ? onDrop('', scopedSlots)
-                                                    : onDelete(scopedSlots)
+                                                    : onDelete(scopedSlots, 'refresh')
                                             "
                                         >
                                             <AIcon type="RedoOutlined" />
+                                        </a-button>
+                                        <a-button
+                                            v-if="!scopedSlots.loading"
+                                            type="link"
+                                            @click="onDelete(scopedSlots)"
+                                        >
+                                            <AIcon type="DeleteOutlined" />
                                         </a-button>
                                         <a-spin v-if="scopedSlots.loading" />
                                     </div>
@@ -262,41 +271,53 @@
                 </div>
                 <div class="right-list">
                     <template v-if="edgeList.length">
-                        <div
-                            v-for="item in edgeList"
-                            class="right-item"
-                            :draggable="true"
-                            @dragstart="() => onStart(item)"
-                            @click="onDetail(item)"
-                        >
-                            <div class="item-name">
-                                <j-ellipsis>{{ item.name }}</j-ellipsis>
-                            </div>
-                            <div class="item-info">
-                                <span>
-                                    <j-ellipsis>ID:{{ item.id }}</j-ellipsis>
-                                </span>
-                                <span
-                                    style="display: flex; align-items: center"
-                                >
-                                    <j-ellipsis
-                                        >产品:{{ item.productName }}</j-ellipsis
+                        <a-spin :spinning="dropLoading">
+                            <div
+                                v-for="item in edgeList"
+                                class="right-item"
+                                :draggable="true"
+                                @dragstart="() => onStart(item)"
+                                @click="onDetail(item)"
+                            >
+                                <div class="item-name">
+                                    <j-ellipsis>{{ item.name }}</j-ellipsis>
+                                </div>
+                                <div class="item-info">
+                                    <span>
+                                        <j-ellipsis
+                                        >ID:{{ item.id }}</j-ellipsis
+                                        >
+                                    </span>
+                                    <span
+                                        style="
+                                            display: flex;
+                                            align-items: center;
+                                        "
                                     >
-                                    <AIcon
-                                        v-if="item.masterProductId"
-                                        type="CloudOutlined"
-                                        style="color: #4096ff; margin-left: 3px"
-                                    />
-                                </span>
-                                <span>
-                                    <j-ellipsis
+                                        <j-ellipsis
+                                        >产品:{{
+                                                item.productName
+                                            }}</j-ellipsis
+                                        >
+                                        <AIcon
+                                            v-if="item.masterProductId"
+                                            type="CloudOutlined"
+                                            style="
+                                                color: #4096ff;
+                                                margin-left: 3px;
+                                            "
+                                        />
+                                    </span>
+                                    <span>
+                                        <j-ellipsis
                                         >说明:{{
-                                            item.describe || '--'
-                                        }}</j-ellipsis
-                                    >
-                                </span>
+                                                item.describe || '--'
+                                            }}</j-ellipsis
+                                        >
+                                    </span>
+                                </div>
                             </div>
-                        </div>
+                        </a-spin>
                         <div class="right-pagination"></div>
                     </template>
                     <template v-else>
@@ -313,12 +334,18 @@
             <div v-else class="right-fold"></div>
         </div>
         <Save v-if="visible" @close="onClose" />
-        <Bind v-if="bindVisible" :parentIds="parentIds" @change="onClose" />
+        <Bind
+            v-if="bindVisible"
+            :parentIds="parentIds"
+            title="绑定平台设备"
+            @change="onClose"
+        />
         <actionModal
             v-if="actionRef.visible"
             :type="actionRef.type"
             :rows="actionRef.rows"
             :batch="actionRef.batch"
+            :is-map="isMap"
             @close="onClose"
         />
 <!--        <DeviceDetail-->
@@ -335,6 +362,7 @@
 import { stateMap, columns, statusMap } from './data';
 import {
     queryNoPagingPost,
+    getProductListNoPage,
     addDevice,
     editDevice,
     _undeployCloud,
@@ -395,11 +423,86 @@ const edgeVisible = ref(false);
 const edgeCurrent = ref({});
 const editStatus = ref(false);
 const route = useRoute();
+const isMap = ref(false);
+const dropLoading = ref(false);
+const isToDetail = ref(false)
 
 const onSelectChange = (keys) => {
     _selectedRowKeys.value = [...keys];
 };
 
+const searchColumns = [
+    {
+        title: '平台设备名称',
+        dataIndex: 'name',
+        key: 'name',
+        ellipsis: true,
+        search: {
+            type: 'string',
+        },
+    },
+    {
+        title: '平台设备ID',
+        dataIndex: 'id',
+        key: 'id',
+        scopedSlots: true,
+        search: {
+            type: 'string',
+            // defaultTermType: 'eq',
+        },
+    },
+    {
+        title: '所属产品',
+        dataIndex: 'productName',
+        key: 'productName',
+        scopedSlots: true,
+        search: {
+            type: 'select',
+            rename: 'productId',
+            options: () =>
+                new Promise((resolve) => {
+                    getProductListNoPage({
+                        paging: false,
+                        sorts: [{ name: 'createTime', order: 'desc' }],
+                        terms: [
+                            {
+                                termType: 'eq',
+                                column: 'deviceType',
+                                value: 'childrenDevice',
+                            },
+                        ],
+                    }).then((resp) => {
+                        resolve(
+                            resp.result.map((item) => ({
+                                label: item.name,
+                                value: item.id,
+                            })),
+                        );
+                    });
+                }),
+        },
+    },
+    {
+        title: '注册时间',
+        dataIndex: 'registryTime',
+        key: 'registryTime',
+        scopedSlots: true,
+        search: {
+            type: 'date',
+        },
+    },
+
+    {
+        title: '说明',
+        dataIndex: 'describe',
+        key: 'describe',
+        scopedSlots: true,
+        width: 100,
+        search: {
+            type: 'string',
+        },
+    },
+];
 const handleSearch = async (e) => {
     if (instanceStore.detail.id && e) {
         const terms = [
@@ -417,6 +520,8 @@ const handleSearch = async (e) => {
             paging: false,
             sorts: [{ name: 'createTime', order: 'desc' }],
             terms: terms,
+        }).finally(() => {
+            editStatus.value = false;
         });
 
         if (res.success) {
@@ -469,6 +574,12 @@ const handleSearch = async (e) => {
             console.log('res.resulte====', res.result);
         }
     }
+};
+
+const onSearch = (e) => {
+    TabsChange(() => {
+        handleSearch(e);
+    });
 };
 
 const onSaveAll = async (cb) => {
@@ -527,11 +638,13 @@ const onChange = (checked) => {
 };
 
 const onClick = (type) => {
-    if (type === 'add') {
-        visible.value = true;
-    } else {
-        bindVisible.value = true;
-    }
+    TabsChange(() => {
+        if (type === 'add') {
+            visible.value = true;
+        } else {
+            bindVisible.value = true;
+        }
+    });
 };
 
 const handleRow = (e, record) => {
@@ -557,13 +670,18 @@ const getActions = (type, data) => {
             key: 'view',
             text: '解绑',
             tooltip: {
-                title: '解绑',
+                title:
+                    detail.value.state?.value !== 'online'
+                        ? '网关不在线，暂无法操作'
+                        : '解绑',
             },
+            disabled: detail.value.state?.value !== 'online',
             icon: 'DisconnectOutlined',
             onClick: async () => {
                 menuVisible.value = false;
                 actionRef.visible = true;
                 actionRef.type = 'unbind';
+                isMap.value = false;
                 actionRef.rows = [_customRow.value?.id];
             },
         },
@@ -572,16 +690,26 @@ const getActions = (type, data) => {
             key: 'action',
             text: data.state?.value !== 'notActive' ? '禁用' : '启用',
             tooltip: {
-                title: data.state?.value !== 'notActive' ? '禁用' : '启用',
+                title:
+                    detail.value.state?.value !== 'online'
+                        ? '网关不在线，暂无法操作'
+                        : data.state?.value !== 'notActive'
+                            ? '禁用'
+                            : '启用',
             },
+            disabled: detail.value.state?.value !== 'online',
             icon:
                 data.state.value !== 'notActive'
                     ? 'StopOutlined'
                     : 'CheckCircleOutlined',
             onClick: async () => {
+                console.log('data====', data);
                 menuVisible.value = false;
                 actionRef.visible = true;
                 actionRef.rows = [_customRow.value?.id];
+                if (data?.MappingStatus === 'success') {
+                    isMap.value = true;
+                }
                 if (data.state?.value !== 'notActive') {
                     actionRef.type = 'undeploy';
                 } else {
@@ -592,18 +720,25 @@ const getActions = (type, data) => {
         {
             key: 'delete',
             text: '删除',
-            disabled: data.state?.value !== 'notActive',
+            disabled:
+                detail.value.state?.value !== 'online' ||
+                data.state?.value !== 'notActive',
             tooltip: {
                 title:
-                    data.state.value !== 'notActive'
-                        ? '已启用的设备不能删除'
-                        : '删除',
+                    detail.value.state?.value !== 'online'
+                        ? '网关不在线，暂无法操作'
+                        : data.state.value !== 'notActive'
+                            ? '已启用的设备不能删除'
+                            : '删除',
             },
             onClick: async () => {
                 menuVisible.value = false;
                 actionRef.visible = true;
                 actionRef.rows = [_customRow.value?.id];
                 actionRef.type = 'delete';
+                if (data?.MappingStatus === 'success') {
+                    isMap.value = true;
+                }
             },
             icon: 'DeleteOutlined',
         },
@@ -613,10 +748,15 @@ const getActions = (type, data) => {
             key: 'unbind',
             text: '批量解绑',
             tooltip: {
-                title: '批量解绑',
+                title:
+                    detail.value.state?.value === 'online'
+                        ? '批量解绑'
+                        : '网关不在线，暂无法操作',
             },
+            disabled: detail.value.state?.value !== 'online',
             icon: 'DisconnectOutlined',
             onClick: () => {
+                isMap.value = false;
                 if (_checked.value) {
                     menuVisible.value = false;
                     actionRef.visible = true;
@@ -639,10 +779,15 @@ const getActions = (type, data) => {
             key: 'undeploy',
             text: '批量禁用',
             tooltip: {
-                title: '批量禁用',
+                title:
+                    detail.value.state?.value === 'online'
+                        ? '批量禁用'
+                        : '网关不在线，暂无法操作',
             },
+            disabled: detail.value.state?.value !== 'online',
             icon: 'StopOutlined',
             onClick: () => {
+                isMap.value = true;
                 if (_checked.value) {
                     menuVisible.value = false;
                     actionRef.visible = true;
@@ -664,10 +809,15 @@ const getActions = (type, data) => {
             key: 'deploy',
             text: '批量启用',
             tooltip: {
-                title: '批量启用',
+                title:
+                    detail.value.state?.value === 'online'
+                        ? '批量禁用'
+                        : '网关不在线，暂无法操作',
             },
+            disabled: detail.value.state?.value !== 'online',
             icon: 'CheckCircleOutlined',
             onClick: () => {
+                isMap.value = true;
                 if (_checked.value) {
                     menuVisible.value = false;
                     actionRef.visible = true;
@@ -689,9 +839,14 @@ const getActions = (type, data) => {
             key: 'delete',
             text: '批量删除',
             tooltip: {
-                title: '批量删除',
+                title:
+                    detail.value.state?.value === 'online'
+                        ? '批量禁用'
+                        : '网关不在线，暂无法操作',
             },
+            disabled: detail.value.state?.value !== 'online',
             onClick: async () => {
+                isMap.value = true;
                 if (_checked.value) {
                     menuVisible.value = false;
                     actionRef.visible = true;
@@ -729,6 +884,8 @@ const onClose = () => {
     actionRef.visible = false;
     _selectedRowKeys.value = [];
     actionRef.batch = false;
+    isMap.value = false;
+    editStatus.value = false;
     handleRefresh();
 };
 
@@ -741,9 +898,9 @@ const onDetail = (item) => {
 
 const onDetailClose = async () => {
     // edgeVisible.value = false;
-    await instanceStore.refresh(route.params?.id).finally(()=>{
-        edgeVisible.value = false
-    })
+    await instanceStore.refresh(route.params?.id).finally(() => {
+        edgeVisible.value = false;
+    });
 };
 
 const onRightSearch = (e) => {
@@ -758,6 +915,7 @@ const onRightSearch = (e) => {
 //边端未映射
 const getNoMapping = async () => {
     const res = await _queryByEdge(instanceStore.detail.id, {
+        sorts: [{ name: 'createTime', order: 'desc' }],
         terms: [{ column: 'key', value: '', termType: 'isnull' }],
     });
     if (res.success) {
@@ -771,7 +929,10 @@ const handleRefresh = () => {
 };
 
 const onJump = (id) => {
-    menuStory.jumpPage('device/Instance/Detail', { id });
+    isToDetail.value = true;
+    TabsChange(() => {
+        menuStory.jumpPage('device/Instance/Detail', { params: {id} });
+    });
 };
 
 //开始拖拽
@@ -782,6 +943,7 @@ const onStart = (item) => {
 const onDrop = async (e, item) => {
     if (_checked.value) {
         item.loading = true;
+        dropLoading.value = true;
         item.Mapping = _drop.value;
         const res = await _commandByEdge(
             instanceStore.detail.id,
@@ -793,10 +955,17 @@ const onDrop = async (e, item) => {
         )
             .finally(() => {
                 item.loading = false;
+                dropLoading.value = false;
             })
             .catch((e) => {
                 item.MappingStatus = 'error';
                 item.MappingError = e.message;
+                edgeList.value = edgeList.value.filter(
+                    (i) => i.id !== _drop.value.id,
+                );
+                _edgeInitList.value = _edgeInitList.value.filter(
+                    (i) => i.id !== _drop.value.id,
+                );
             });
         if (res.success) {
             item.MappingStatus = 'success';
@@ -871,28 +1040,31 @@ const onDelete = (item) => {
                     }
                 })
                 .finally(() => {
-                    item.loading = false;
-                    // item.MappingStatus = 'error';
+                    item.Mapping = {}
+                    item.MappingStatus = 'none'
+                    setTimeout(() => {
+                        item.loading = false;
+                    }, 500);
                 })
                 .catch((e) => {
                     item.MappingStatus = 'error';
                     item.MappingError = e.message;
                 });
         } else {
+            // console.log('item.Mapping====', item.Mapping);
             edgeList.value.unshift(item.Mapping);
             _edgeInitList.value.unshift(item.Mapping);
-            if (item.Mappingtype === 'auto') {
+            if (item.MappingStatus === 'error') {
+                item.Mapping = {};
+                item.MappingStatus = 'none';
+            } else {
                 _dataSource.value = _dataSource.value.filter(
                     (i) => i.Mapping?.id !== item.Mapping?.id,
                 );
                 _dropList.value = _dropList.value.filter(
-                    (i) => i.id !== item.id,
+                    (i) => i.Mapping?.id !== item.Mapping?.id,
                 );
-            } else {
-                item.Mapping = {};
-                item.MappingStatus = 'none';
             }
-            editStatus.value = true;
         }
     } else {
         edgeList.value.unshift(item.Mapping);
@@ -904,6 +1076,7 @@ const onDelete = (item) => {
             (i) => i.Mapping?.id !== item.Mapping?.id,
         );
     }
+    item.action = 'delete';
 };
 //拖拽自动生成
 const onDropAuto = () => {
@@ -996,12 +1169,17 @@ const TabsChange = (next) => {
             zIndex: 1400,
             closable: true,
             onOk: () => {
-                onSaveAll();
-                next?.();
+                onSaveAll(()=>next?.());
             },
             onCancel: (e) => {
-                modal.destroy();
-                next?.();
+                if (!e.triggerCancel) {
+                    // 取消按钮
+                    modal.destroy();
+                    next?.();
+                } else {
+                    // 右上角取消按钮
+                    modal.destroy();
+                }
             },
         });
     } else {
@@ -1011,12 +1189,20 @@ const TabsChange = (next) => {
 
 onBeforeRouteUpdate((to, from, next) => {
     // 设备管理内路由跳转
-    TabsChange(next);
+    if(isToDetail.value){
+        next;
+    }else{
+        TabsChange(next);
+    }
 });
 
 onBeforeRouteLeave((to, from, next) => {
     // 设备管理外路由跳转
-    TabsChange(next);
+    if(isToDetail.value){
+        next
+    }else{
+        TabsChange(next);
+    }
 });
 
 watch(

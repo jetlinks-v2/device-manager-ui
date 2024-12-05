@@ -30,14 +30,14 @@ export const columns = [
         scopedSlots: true,
         search: {
             type: 'string',
-            defaultTermType: 'eq',
+            // defaultTermType: 'eq',
         },
     },
     {
         title: '平台设备名称',
         dataIndex: 'name',
         key: 'name',
-        ellipsis: true,
+        scopedSlots: true,
         search: {
             type: 'string',
         },
@@ -46,10 +46,7 @@ export const columns = [
         title: '所属产品',
         dataIndex: 'productName',
         key: 'productName',
-        ellipsis: true,
-        search: {
-            type: 'string',
-        },
+        scopedSlots: true,
     },
     {
         title: '注册时间',
@@ -57,7 +54,7 @@ export const columns = [
         key: 'registryTime',
         scopedSlots: true,
         search: {
-            type: 'date',
+            type: 'string',
         },
     },
   
@@ -66,9 +63,6 @@ export const columns = [
         dataIndex: 'describe',
         key: 'describe',
         scopedSlots: true,
-        search: {
-            type: 'string',
-        },
         width: 100,
     },
     {
@@ -77,14 +71,6 @@ export const columns = [
         key: 'state',
         scopedSlots: true,
         width: 70,
-        search: {
-            type: 'select',
-            options: [
-                { label: '禁用', value: 'notActive' },
-                { label: '离线', value: 'offline' },
-                { label: '在线', value: 'online' },
-            ],
-        },
     },
     {
         title: '已映射边端设备',

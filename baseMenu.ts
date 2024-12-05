@@ -493,6 +493,16 @@ export default [
                                     },
                                 ],
                             },
+                            {
+                                id: 'remote',
+                                name: '远程控制',
+                                permissions: [
+                                    {
+                                        permission: 'edge-manager',
+                                        actions: ['remote', 'proxy'],
+                                    },
+                                ],
+                            },
                         ],
                     },
                     {

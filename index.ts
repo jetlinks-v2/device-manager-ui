@@ -20,7 +20,7 @@ const getExtraRoutesMap = () => {
             children: [
                 {
                     code: 'Detail',
-                    url: '/detail:id',
+                    url: '/detail/:id',
                     name: '详情信息',
                     component: () => import('./views/device/Product/Detail/index.vue')
                 }
@@ -30,7 +30,7 @@ const getExtraRoutesMap = () => {
             children: [
                 {
                     code: 'Detail',
-                    url: '/detail:id',
+                    url: '/detail/:id',
                     name: '详情信息',
                     component: () => import('./views/device/Instance/Detail/index.vue')
                 }
@@ -40,7 +40,7 @@ const getExtraRoutesMap = () => {
             children: [
                 {
                     code: 'Detail',
-                    url: '/detail:id',
+                    url: '/detail/:id',
                     name: '详情信息',
                     component: () => import('./views/link/AccessConfig/Detail/index.vue')
                 }
@@ -50,7 +50,7 @@ const getExtraRoutesMap = () => {
             children: [
                 {
                     code: 'Detail',
-                    url: '/detail:id',
+                    url: '/detail/:id',
                     name: '详情信息',
                     component: () => import('./views/link/Certificate/Detail/index.vue')
                 }
@@ -60,7 +60,7 @@ const getExtraRoutesMap = () => {
             children: [
                 {
                     code: 'Detail',
-                    url: '/detail:id',
+                    url: '/detail/:id',
                     name: '详情信息',
                     component: () => import('./views/link/Type/Detail/index.vue')
                 }

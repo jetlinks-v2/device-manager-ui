@@ -1,4 +1,4 @@
-import { DeviceInstance } from "../views/Instance/typings"
+import { DeviceInstance } from "../views/device/Instance/typings"
 import { defineStore } from "pinia"
 import { detail } from '../api/instance'
 

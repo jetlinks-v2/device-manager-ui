@@ -170,13 +170,13 @@ const selectTree = (k: any, info: any) => {
 };
 
 const recentTagsClick = (node:OperatorItem) =>{
-    emit('addOperatorValue',`tag("${node.id}")`)
+    emit('addOperatorValue',`tag("${node.code}")`)
 }
 const recentClick = (node: OperatorItem) => {
-    emit('addOperatorValue', `$recent("${node.id}")`);
+    emit('addOperatorValue', `$recent("${node.code}")`);
 };
 const lastClick = (node: OperatorItem) => {
-    emit('addOperatorValue', `$lastState("${node.id}")`);
+    emit('addOperatorValue', `$lastState("${node.code}")`);
 };
 const addClick = (node: OperatorItem) => {
     emit('addOperatorValue', node.code);
@@ -202,7 +202,8 @@ const getData = async (id?: string) => {
                         : '否';
 
                 return {
-                    id: p.id,
+                    id: 'property' + p.id,
+                    code: p.id,
                     name: p.name,
                     isLeaf: true,
                     description: `### ${p.name}
@@ -221,7 +222,8 @@ const getData = async (id?: string) => {
         code: '',
         isLeaf: false,
         children: tagsMetadata.value.map((i: any) => ({
-            id: i.id,
+            id: 'tags' + i.id,
+            code: i.id,
             name: i.name,
             isLeaf: true,
             description: `### ${i.name}
@@ -232,6 +234,7 @@ const getData = async (id?: string) => {
         })),
     };
     const response = await getOperator();
+    console.log(tags,properties,'test')
     if (response.status === 200) {
         data.value = [
             properties as OperatorItem,

@@ -109,7 +109,7 @@
           <div style="padding: 24px;">
             <component
               :is="tabs[instanceStore.tabActiveKey]"
-              v-bind="{ type: 'device' }"
+              v-bind="{ type: 'device',isRefresh:isRefresh }"
               @onJump="onTabChange"
             />
           </div>
@@ -315,8 +315,8 @@ const getDetail = () => {
         !keys.includes('ChildDevice')&&
         !keys.includes('Child')
     ) {
-
-        if(instanceStore.current?.accessProvider === 'agent-device-gateway'){
+        const providers = ['agent-device-gateway', 'agent-media-device-gateway'];
+        if(providers.includes(instanceStore.current?.accessProvider!)){
             list.value.push({
                 key: 'Child',
                 tab: '子设备',
@@ -432,14 +432,14 @@ const handleRefresh = async () => {
 
 const jumpProduct = () => {
     menuStory.jumpPage('device/Product/Detail', {
-        id: instanceStore.current?.productId,
+      params: {
+        id: instanceStore.current?.productId
+      }
     });
 };
 
 const onClick = async () => {
-    const onClick = async () => {
-        await openEdgeUrl(instanceStore.current.id)
-    }
+  await openEdgeUrl(instanceStore.current.id)
 }
 
 onMounted(() => {
