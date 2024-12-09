@@ -1,15 +1,15 @@
 <template>
     <div class="top">
-        <PermissionButton :hasPermission="true" type="text" @click="copyText" :tooltip="{
+        <j-permission-button :hasPermission="true" type="text" @click="copyText" :tooltip="{
             title: '复制',
         }">
                 <AIcon type="CopyOutlined" />
-        </PermissionButton>
-        <PermissionButton :hasPermission="true" type="text" @click="getShadows" :tooltip="{
+        </j-permission-button>
+        <j-permission-button :hasPermission="true" type="text" @click="getShadows" :tooltip="{
             title: '刷新',
         }">
                 <AIcon type="ReloadOutlined" />
-        </PermissionButton>
+        </j-permission-button>
     </div>
     <JsonViewer :value="data" style="background-color: #fafafa" :expanded="true" :expandDepth="10" deep="4"></JsonViewer>
 </template>
