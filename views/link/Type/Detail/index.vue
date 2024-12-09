@@ -1532,16 +1532,6 @@ const getDetail = () => {
     }
 };
 
-onMounted(() => {
-    getSupports();
-    getCertificates();
-    getResourcesCurrent();
-    if (isNoCommunity) {
-        getResourcesClusters();
-    }
-    getDetail();
-});
-
 watch(
     () => formData.value.shareCluster,
     (value) => {
@@ -1584,6 +1574,21 @@ watch(
     },
     { deep: true, immediate: true },
 );
+
+
+onMounted(async () => {
+    getSupports();
+    getCertificates();
+
+    if (isNoCommunity) {
+        getResourcesClusters();
+    }
+    if (id !== ':id') {
+        getDetail();
+    } else {
+        getResourcesCurrent();
+    }
+});
 </script>
 
 <style lang="less" scoped>

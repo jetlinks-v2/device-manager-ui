@@ -67,6 +67,7 @@ import { getTemplate, uploadAnalyzeMetadata} from '../../../../../../../api/inst
 import {getTemplate as getProductTemplate} from '../../../../../../../api/product'
 import {useGroupActive, useTableWrapper} from "../../../../../../../components/Metadata/context";
 import { useProductStore } from '../../../../../../../store/product';
+import { useInstanceStore } from '@device/store/instance'
 
 const props = defineProps({
     target: {
@@ -80,7 +81,7 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['ok']);
-const { current } = useProductStore();
+const { current } = props.target === 'product' ? useProductStore() : useInstanceStore();
 const visible = ref(false);
 const successCount = ref(0);
 const errorCount = ref(0);
@@ -186,14 +187,12 @@ const beforeUpload = (file) => {
     const isXlsx =
         file.type ===
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-    console.log(isCsv, isXlsx);
     if (!isCsv && !isXlsx) {
         onReject();
-        console.log(isCsv, isXlsx, file.type);
     } else {
         const formData = new FormData();
         formData.append('file', file);
-        uploadAnalyzeMetadata(current.value?.id, formData)
+        uploadAnalyzeMetadata(current?.id, formData)
             .then((res) => {
                 if (res.success) {
                     submitData(res.result);

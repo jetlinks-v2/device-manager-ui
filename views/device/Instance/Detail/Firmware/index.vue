@@ -33,7 +33,11 @@
                                 }}
                             </div>
                         </div>
-                        <div class="version">V {{ i.version }}</div>
+                        <div class="version">
+                            <j-ellipsis style="max-width: 100px">
+                                V {{ i.version }}
+                            </j-ellipsis>
+                        </div>
                     </div>
                     <!-- <div class="mask">查看升级任务</div> -->
                 </template>
@@ -94,8 +98,7 @@ const queryFirmwareList = async () => {
         ],
     });
     if (res.success) {
-        firmwareList.value = res.result;
-    }
+      
     if (props.type === 'device') {
         // 查看固件所属产品下所有的任务 过滤掉不包含该设备的升级任务的固件
         const resp = await historyPaginateNot({
@@ -113,13 +116,17 @@ const queryFirmwareList = async () => {
             ],
         });
         if (resp.success) {
-            firmwareList.value = firmwareList.value.filter((i) => {
-                return resp.result.find((item) => {
-                    return (
-                        i.id === item.firmwareId && current.id === item.deviceId
-                    );
+                firmwareList.value = res.result.filter((i) => {
+                    return resp.result.find((item) => {
+                        return (
+                            i.id === item.firmwareId &&
+                            current.id === item.deviceId
+                        );
+                    });
                 });
-            });
+            }
+        }else{
+            firmwareList.value = res.result;
         }
     }
 };
