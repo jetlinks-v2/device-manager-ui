@@ -3,7 +3,7 @@
         :maskClosable="false"
         width="650px"
         :visible="true"
-        :title="!!data?.id ? '编辑' : '新增'"
+        :title="!!data?.id ? $t('Save.index.902471-0') : $t('Save.index.902471-1')"
         @ok="handleSave"
         @cancel="handleCancel"
         :confirmLoading="loading"
@@ -22,11 +22,11 @@
                             :rules="[
                                 {
                                     pattern: /^[a-zA-Z0-9_\-]+$/,
-                                    message: '请输入英文或者数字或者-或者_',
+                                    message: $t('Save.index.902471-2'),
                                 },
                                 {
                                     max: 64,
-                                    message: '最多输入64个字符',
+                                    message: $t('Save.index.902471-3'),
                                 },
                                 {
                                     validator: vailId,
@@ -38,7 +38,7 @@
                                 <span>
                                     ID
                                     <a-tooltip
-                                        title="若不填写，系统将自动生成唯一ID"
+                                        :title="$t('Save.index.902471-4')"
                                     >
                                         <AIcon
                                             type="QuestionCircleOutlined"
@@ -49,27 +49,27 @@
                             </template>
                             <a-input
                                 v-model:value="modelRef.id"
-                                placeholder="请输入ID"
+                                :placeholder="$t('Save.index.902471-5')"
                                 :disabled="!!data?.id"
                             />
                         </a-form-item>
                         <a-form-item
-                            label="名称"
+                            :label="$t('Save.index.902471-6')"
                             name="name"
                             :rules="[
                                 {
                                     required: true,
-                                    message: '请输入名称',
+                                    message: $t('Save.index.902471-7'),
                                 },
                                 {
                                     max: 64,
-                                    message: '最多输入64个字符',
+                                    message: $t('Save.index.902471-3'),
                                 },
                             ]"
                         >
                             <a-input
                                 v-model:value="modelRef.name"
-                                placeholder="请输入名称"
+                                :placeholder="$t('Save.index.902471-7')"
                             />
                         </a-form-item>
                     </a-col>
@@ -79,14 +79,14 @@
                     :rules="[
                         {
                             required: true,
-                            message: '请选择所属产品',
+                            message: $t('Save.index.902471-8'),
                         },
                     ]"
                 >
                     <template #label>
                         <span
-                            >所属产品
-                            <a-tooltip title="只能选择“正常”状态的产品">
+                            >{{ $t('Save.index.902471-9') }}
+                            <a-tooltip :title="$t('Save.index.902471-10')">
                                 <AIcon
                                     type="QuestionCircleOutlined"
                                     style="margin-left: 2px"
@@ -98,7 +98,7 @@
                         showSearch
                         v-model:value="modelRef.productId"
                         :disabled="!!data?.id"
-                        placeholder="请选择状态为“正常”的产品"
+                        :placeholder="$t('Save.index.902471-11')"
                     >
                         <a-select-option
                             :value="item.id"
@@ -110,18 +110,18 @@
                     </a-select>
                 </a-form-item>
                 <a-form-item
-                    label="说明"
+                    :label="$t('Save.index.902471-12')"
                     name="describe"
                     :rules="[
                         {
                             max: 200,
-                            message: '最多输入200个字符'
+                            message: $t('Save.index.902471-13')
                         },
                     ]"
                 >
                     <a-textarea
                         v-model:value="modelRef.describe"
-                        placeholder="请输入说明"
+                        :placeholder="$t('Save.index.902471-14')"
                         showCount
                         :maxlength="200"
                     />
@@ -136,6 +136,9 @@ import { queryNoPagingPost } from '../../../../api/product';
 import { isExists, update } from '../../../../api/instance';
 import { onlyMessage } from '@jetlinks-web/utils';
 import { device} from "../../../../assets";
+import { useI18n } from 'vue-i18n';
+
+const { t: $t } = useI18n();
 
 const emit = defineEmits(['close', 'save']);
 const props = defineProps({
@@ -161,7 +164,7 @@ const vailId = async (_: Record<string, any>, value: string) => {
     if (!props?.data?.id && value) {
         const resp = await isExists(value);
         if (resp.status === 200 && resp.result) {
-            return Promise.reject('ID重复');
+            return Promise.reject($t('Save.index.902471-15'));
         } else {
             return Promise.resolve();
         }
@@ -217,7 +220,7 @@ const handleSave = () => {
                 loading.value = false;
             });
             if (resp.status === 200) {
-                onlyMessage('操作成功！');
+                onlyMessage($t('Save.index.902471-16'));
                 emit('save');
                 formRef.value.resetFields();
             }

@@ -22,7 +22,7 @@
                         <EditTableFormItem :name="[index, 'id']">
                             <a-input
                                 v-model:value="record.id"
-                                placeholder="请输入标识"
+                                :placeholder="$t('Object.index.371533-0')"
                             />
                         </EditTableFormItem>
                     </template>
@@ -30,7 +30,7 @@
                         <EditTableFormItem :name="[index, 'name']">
                             <a-input
                                 v-model:value="record.name"
-                                placeholder="请输入名称"
+                                :placeholder="$t('Object.index.371533-1')"
                             />
                         </EditTableFormItem>
                     </template>
@@ -124,7 +124,7 @@
                 </EditTable>
                 <a-button style="width: 100%; margin-top: 4px" @click="addItem">
                     <template #icon><AIcon type="PlusOutlined" /></template>
-                    新增
+                    {{ $t('Object.index.371533-2') }}
                 </a-button>
             </div>
         </template>
@@ -158,6 +158,9 @@ import {
 } from '../../index';
 import { Form } from 'ant-design-vue';
 import { isObject } from 'lodash-es';
+import { useI18n } from 'vue-i18n';
+
+const { t: $t } = useI18n();
 
 const props = defineProps({
     value: {
@@ -184,10 +187,10 @@ const validatorConfig = (value, _isObject = false) => {
     }
 
     if (value.type === 'enum' && !value.elements?.length) {
-        return Promise.reject('请添加枚举项');
+        return Promise.reject($t('Object.index.371533-3'));
     }
     if (value.type === 'array' && !value.elementType?.type) {
-        return Promise.reject('请选择元素类型');
+        return Promise.reject($t('Object.index.371533-4'));
     }
 
     // if (_isObject && value.type === 'object' && !value.properties?.length) {
@@ -195,7 +198,7 @@ const validatorConfig = (value, _isObject = false) => {
     // }
 
     if (value.type === 'date' && !value.format) {
-        return Promise.reject('请选择时间格式');
+        return Promise.reject($t('Object.index.371533-5'));
     }
 
     if (
@@ -203,7 +206,7 @@ const validatorConfig = (value, _isObject = false) => {
         (!value.bodyType ||
             (isObject(value.bodyType) && !Object.keys(value.bodyType).length))
     ) {
-        return Promise.reject('请选择文件类型');
+        return Promise.reject($t('Object.index.371533-6'));
     }
 
     return Promise.resolve();
@@ -220,7 +223,7 @@ const visible = ref(false);
 
 const defaultColumns = [
     {
-        title: '参数标识',
+        title: $t('Object.index.371533-7'),
         dataIndex: 'id',
         form: {
             required: true,
@@ -238,44 +241,44 @@ const defaultColumns = [
                             });
 
                             if (isSome) {
-                                return Promise.reject('该标识已存在');
+                                return Promise.reject($t('Object.index.371533-8'));
                             }
                             return Promise.resolve();
                         }
-                        return Promise.reject('请输入标识');
+                        return Promise.reject($t('Object.index.371533-0'));
                     },
                 },
-                { max: 64, message: '最多可输入64个字符' },
+                { max: 64, message: $t('Object.index.371533-9') },
                 {
                     pattern: /^[a-zA-Z0-9_]+$/,
-                    message: '标识只能由数字、字母、下划线组成',
+                    message: $t('Object.index.371533-10'),
                 },
             ],
         },
     },
     {
-        title: '参数名称',
+        title: $t('Object.index.371533-11'),
         dataIndex: 'name',
         form: {
             required: true,
             rules: [
                 {
                     required: true,
-                    message: '请输入名称',
+                    message: $t('Object.index.371533-1'),
                 },
-                { max: 64, message: '最多可输入64个字符' },
+                { max: 64, message: $t('Object.index.371533-9') },
             ],
         },
     },
     props.type === 'functions'
         ? {
-              title: '填写约束',
+              title: $t('Object.index.371533-12'),
               dataIndex: 'expands',
               width: 120,
           }
         : null,
     {
-        title: '数据类型',
+        title: $t('Object.index.371533-13'),
         dataIndex: 'valueType',
         width: 240,
         form: {
@@ -284,7 +287,7 @@ const defaultColumns = [
                 {
                     validator(_, value) {
                         if (!value?.type) {
-                            return Promise.reject('请选择数据类型');
+                            return Promise.reject($t('Object.index.371533-14'));
                         }
                         return validatorConfig(value, true);
                     },
@@ -299,7 +302,7 @@ const myColumns = computed(() => {
         ...defaultColumns.filter((item) => !!item),
         {
             dataIndex: 'action',
-            title: '操作',
+            title: $t('Object.index.371533-15'),
             width: 60,
         },
     ];

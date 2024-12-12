@@ -1,7 +1,7 @@
 <template>
     <a-spin :spinning="loading">
         <a-input
-            placeholder="请上传文件"
+            :placeholder="$t('Import.index.603910-14')"
             v-model:value="value"
             style="width: calc(100% - 100px)"
             :disabled="true"
@@ -19,7 +19,7 @@
             class="upload-box"
             :beforeUpload="beforeUpload"
         >
-            <a-button type="primary">上传jar包</a-button>
+            <a-button type="primary">{{ $t('Save.FileUpload.684757-0') }}</a-button>
         </a-upload>
     </a-spin>
 </template>
@@ -54,7 +54,7 @@ const beforeUpload: UploadProps['beforeUpload'] = (file) => {
     const isFile = ['jar', 'zip'].includes(arr[arr.length - 1]); // file.type === 'application/zip' || file.type === 'application/javj-archive'
     if (!isFile) {
         loading.value = false;
-        onlyMessage('请上传.zip.jar格式的文件', 'error');
+        onlyMessage($t('Save.FileUpload.684757-1'), 'error');
     }
     return isFile;
 };
@@ -67,7 +67,7 @@ const handleChange = async (info: UploadChangeParam) => {
         const f = `${paths || ''}/file/${result.id}?accessKey=${
             result.others.accessKey
         }`;
-        onlyMessage('上传成功！', 'success');
+        onlyMessage($t('Save.FileUpload.684757-2'), 'success');
         value.value = f;
         emit('update:modelValue', f);
         emit('change', f);
@@ -75,8 +75,8 @@ const handleChange = async (info: UploadChangeParam) => {
         if (info.file.error) {
             Notification.error({
                 // key: '403',
-                message: '系统提示',
-                description: '系统未知错误，请反馈给管理员',
+                message: $t('Save.FileUpload.684757-3'),
+                description: $t('Save.FileUpload.684757-4'),
             });
             loading.value = false;
         } else if (info.file.response) {

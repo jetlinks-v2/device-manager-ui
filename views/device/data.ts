@@ -1,57 +1,58 @@
 import { isNoCommunity } from '@/utils/utils';
+import i18n from '@/locales';
 
 export const DataTypeList: { label: string; value: string }[] = [
   {
     value: 'int',
-    label: 'int(整数型)',
+    label: `int(${i18n.global.t('Base.columns.448718-33')})`,
   },
   {
-    value: 'long',
-    label: 'long(长整数型)',
+      value: 'long',
+      label: `long(${i18n.global.t('Base.columns.448718-34')})`,
   },
   {
-    value: 'float',
-    label: 'float(单精度浮点型)',
+      value: 'float',
+      label: `float(${i18n.global.t('Base.columns.448718-35')})`,
   },
   {
-    value: 'double',
-    label: 'double(双精度浮点数)',
+      value: 'double',
+      label: `double(${i18n.global.t('Base.columns.448718-36')})`,
   },
   {
-    value: 'string',
-    label: 'text(字符串)',
+      value: 'string',
+      label: `text(${i18n.global.t('Base.columns.448718-37')})`,
   },
   {
-    value: 'boolean',
-    label: 'boolean(布尔型)',
+      value: 'boolean',
+      label: `boolean(${i18n.global.t('Base.columns.448718-38')})`,
   },
   {
-    value: 'date',
-    label: 'date(时间型)',
+      value: 'date',
+      label: `date(${i18n.global.t('Base.columns.448718-39')})`,
   },
   {
-    value: 'enum',
-    label: 'enum(枚举)',
+      value: 'enum',
+      label: `enum(${i18n.global.t('Base.columns.448718-40')})`,
   },
   {
-    value: 'array',
-    label: 'array(数组)',
+      value: 'array',
+      label: `array(${i18n.global.t('Base.columns.448718-41')})`,
   },
   {
-    value: 'object',
-    label: 'object(结构体)',
+      value: 'object',
+      label: `object(${i18n.global.t('Base.columns.448718-42')})`,
   },
   {
-    value: 'file',
-    label: 'file(文件)',
+      value: 'file',
+      label: `file(${i18n.global.t('Base.columns.448718-43')})`,
   },
   {
-    value: 'password',
-    label: 'password(密码)',
+      value: 'password',
+      label: `password(${i18n.global.t('Base.columns.448718-44')})`,
   },
   {
-    value: 'geoPoint',
-    label: 'geoPoint(地理位置)',
+      value: 'geoPoint',
+      label: `geoPoint(${i18n.global.t('Base.columns.448718-45')})`,
   },
 ];
 
@@ -59,25 +60,25 @@ export const PropertySource: { label: string; value: string }[] = isNoCommunity
   ? [
       {
         value: 'device',
-        label: '设备',
+        label: i18n.global.t('device.data.751276-13'),
       },
       {
         value: 'manual',
-        label: '手动',
+        label: i18n.global.t('device.data.751276-14'),
       },
       {
         value: 'rule',
-        label: '规则',
+        label: i18n.global.t('device.data.751276-15'),
       },
     ]
   : [
       {
         value: 'device',
-        label: '设备',
+        label: i18n.global.t('device.data.751276-13'),
       },
       {
         value: 'manual',
-        label: '手动',
+        label: i18n.global.t('device.data.751276-14'),
       },
     ];
 
@@ -98,16 +99,16 @@ export const FileTypeList: { label: string; value: string }[] = [
 
 export const EventLevel: { label: string; value: string }[] = [
   {
-    label: '普通',
+    label: i18n.global.t('device.data.751276-19'),
     value: 'ordinary',
   },
   {
-    label: '警告',
+    label: i18n.global.t('device.data.751276-20'),
     value: 'warn',
   },
   {
     value: 'urgent',
-    label: '紧急',
+    label: i18n.global.t('device.data.751276-21'),
   },
 ];
 
@@ -143,15 +144,15 @@ export const DateTypeList = [
 
 export const ExpandsTypeList = [
   {
-    label: '读',
+    label: i18n.global.t('device.data.751276-22'),
     value: 'read',
   },
   {
-    label: '写',
+    label: i18n.global.t('device.data.751276-23'),
     value: 'write',
   },
   {
-    label: '上报',
+    label: i18n.global.t('device.data.751276-24'),
     value: 'report',
   },
 ]

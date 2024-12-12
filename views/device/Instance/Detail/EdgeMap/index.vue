@@ -3,8 +3,8 @@
         <a-card :bordered="false" style="padding: 0">
             <template #extra>
                 <a-space>
-                    <a-button @click="visible = true">批量映射</a-button>
-                    <a-button type="primary" @click="onSave">保存</a-button>
+                    <a-button @click="visible = true">{{ $t('EdgeMap.index.378452-0') }}</a-button>
+                    <a-button type="primary" @click="onSave">{{ $t('EdgeMap.index.378452-1') }}</a-button>
                 </a-space>
             </template>
             <a-form ref="formRef" :model="modelRef">
@@ -15,8 +15,8 @@
                 >
                     <template #headerCell="{ column }">
                         <template v-if="column.key === 'collectorId'">
-                            采集器
-                            <a-tooltip title="边缘网关代理的真实物理设备">
+                            {{ $t('EdgeMap.index.378452-2') }}
+                            <a-tooltip :title="$t('EdgeMap.index.378452-3')">
                                 <AIcon type="QuestionCircleOutlined" />
                             </a-tooltip>
                         </template>
@@ -37,7 +37,7 @@
                                 <a-select
                                     style="width: 100%"
                                     v-model:value="record[column.dataIndex]"
-                                    placeholder="请选择"
+                                    :placeholder="$t('EdgeMap.index.378452-4')"
                                     allowClear
                                     @change="
                                         () => onChannelChange(index, 'channel')
@@ -59,7 +59,7 @@
                                 :rules="[
                                     {
                                         required: !!record.channelId,
-                                        message: '请选择采集器',
+                                        message: $t('EdgeMap.index.378452-5'),
                                     },
                                 ]"
                             >
@@ -81,7 +81,7 @@
                                 :rules="[
                                     {
                                         required: !!record.channelId,
-                                        message: '请选择点位',
+                                        message: $t('EdgeMap.index.378452-6'),
                                     },
                                 ]"
                             >
@@ -98,11 +98,11 @@
                                 <a-badge
                                     v-if="record.state.value === 'enabled'"
                                     status="success"
-                                    text="启用"
+                                    :text="$t('EdgeMap.index.378452-7')"
                                 />
-                                <a-badge v-else status="warning" text="禁用" />
+                                <a-badge v-else status="warning" :text="$t('EdgeMap.index.378452-8')" />
                             </template>
-                            <a-badge v-else status="error" text="未绑定" />
+                            <a-badge v-else status="error" :text="$t('EdgeMap.index.378452-9')" />
                         </template>
                         <template v-if="column.key === 'action'">
                             <a-space>
@@ -110,10 +110,10 @@
                                     type="link"
                                     :disabled="!record.id"
                                     :tooltip="{
-                                        title: '解绑',
+                                        title: $t('EdgeMap.index.378452-10'),
                                     }"
                                     :popConfirm="{
-                                        title: '确认解绑？',
+                                        title: $t('EdgeMap.index.378452-11'),
                                         onConfirm: () => unbind(record.id),
                                     }"
                                     hasPermission="device/Instance:update"
@@ -127,14 +127,14 @@
                                         :tooltip="{
                                             title:
                                                 record.state.value === 'enabled'
-                                                    ? '禁用'
-                                                    : '启用',
+                                                    ? $t('EdgeMap.index.378452-8')
+                                                    : $t('EdgeMap.index.378452-7'),
                                         }"
                                         :popConfirm="{
                                             title:
                                                 record.state.value === 'enabled'
-                                                    ? '确认禁用？'
-                                                    : '确认启用?',
+                                                    ? $t('EdgeMap.index.378452-12')
+                                                    : $t('EdgeMap.index.378452-13'),
                                             onConfirm: () => onAction(record),
                                         }"
                                     >
@@ -174,7 +174,7 @@
         />
     </a-spin>
     <a-card v-else :bordered="false" style="padding: 0">
-        <JEmpty description="暂无数据，请配置物模型" style="margin: 10% 0" />
+        <JEmpty :description="$t('EdgeMap.index.378452-14')" style="margin: 10% 0" />
     </a-card>
 </template>
 
@@ -190,40 +190,43 @@ import MSelect from './MSelect.vue';
 import PatchMapping from './PatchMapping.vue';
 import { onlyMessage } from '@/utils/comm';
 import { cloneDeep } from 'lodash-es';
+import { useI18n } from 'vue-i18n';
+
+const { t: $t } = useI18n();
 
 const columns = [
     {
-        title: '名称',
+        title: $t('EdgeMap.index.378452-15'),
         dataIndex: 'metadataName',
         key: 'metadataName',
         width: '20%',
     },
     {
-        title: '通道',
+        title: $t('EdgeMap.index.378452-16'),
         dataIndex: 'channelId',
         key: 'channelId',
         width: '20%',
     },
     {
-        title: '采集器',
+        title: $t('EdgeMap.index.378452-2'),
         dataIndex: 'collectorId',
         key: 'collectorId',
         width: '20%',
     },
     {
-        title: '点位',
+        title: $t('EdgeMap.index.378452-17'),
         key: 'pointId',
         dataIndex: 'pointId',
         width: '20%',
     },
     {
-        title: '状态',
+        title: $t('EdgeMap.index.378452-18'),
         key: 'id',
         dataIndex: 'id',
         width: '10%',
     },
     {
-        title: '操作',
+        title: $t('EdgeMap.index.378452-19'),
         key: 'action',
         width: '10%',
     },
@@ -336,7 +339,7 @@ const unbind = (id: string) => {
         });
         response.then((resp) => {
             if (resp.status === 200) {
-                onlyMessage('操作成功！', 'success');
+                onlyMessage($t('EdgeMap.index.378452-20'), 'success');
                 handleSearch();
             }
         });
@@ -389,7 +392,7 @@ const onSave = () => {
                     submitData,
                 );
                 if (resp.status === 200) {
-                    onlyMessage('操作成功！', 'success');
+                    onlyMessage($t('EdgeMap.index.378452-20'), 'success');
                     onRefresh();
                 }
             }
@@ -420,7 +423,7 @@ const onAction = (record: any) => {
     );
     response.then((resp) => {
         if (resp.status === 200) {
-            onlyMessage('操作成功！', 'success');
+            onlyMessage($t('EdgeMap.index.378452-20'), 'success');
             onRefresh();
         }
     });

@@ -11,7 +11,7 @@
     <template #content>
       <div class="table-sort-content">
         <div class="table-sort-title">
-          排序
+          {{ $t('Search.Sort.467776-0') }}
         </div>
         <div class="table-sort-body">
           <a-table
@@ -28,9 +28,9 @@
         </div>
         <div class="table-sort-footer">
           <a-space :size="16">
-            <a-button type="primary" @click="cleanParams" :disabled="!mySelectedRowKeys.length">清空条件</a-button>
-            <a-button type="primary" ghost @click="onAsc">升序</a-button>
-            <a-button type="primary" ghost @click="onDesc">降序</a-button>
+            <a-button type="primary" @click="cleanParams" :disabled="!mySelectedRowKeys.length">{{ $t('Search.Sort.467776-1') }}</a-button>
+            <a-button type="primary" ghost @click="onAsc">{{ $t('Search.Sort.467776-2') }}</a-button>
+            <a-button type="primary" ghost @click="onDesc">{{ $t('Search.Sort.467776-3') }}</a-button>
           </a-space>
         </div>
       </div>
@@ -41,6 +41,9 @@
 
 <script setup name="MetadataTableSort">
 import {useTableTool, useTableWrapper} from "../../context";
+import { useI18n } from 'vue-i18n';
+
+const { t: $t } = useI18n();
 
 const props = defineProps({
   dataSource: {
@@ -77,11 +80,11 @@ const mySelectedRowKeys = ref([])
 const columns = [
   {
     dataIndex: 'name',
-    title: '名称'
+    title: $t('Search.Sort.467776-4')
   },
   {
     dataIndex: 'total',
-    title: '计数',
+    title: $t('Search.Sort.467776-5'),
     width: 70
   }
 ]

@@ -2,7 +2,7 @@
     <a-modal
         :maskClosable="false"
         :visible="true"
-        :title="!!data?.id ? '编辑' : '新增'"
+        :title="!!data?.id ? $t('plugin.Save.128565-0') : $t('plugin.Save.128565-1')"
         :confirmLoading="loading"
         @ok="handleSave"
         @cancel="handleCancel"
@@ -13,8 +13,8 @@
                 <a-form-item name="id" :rules="IdRules">
                     <template #label>
                         <span>
-                            插件ID
-                            <a-tooltip title="若不填写，系统将自动生成唯一ID">
+                            {{ $t('plugin.Save.128565-2') }}
+                            <a-tooltip :title="$t('plugin.Save.128565-3')">
                                 <AIcon
                                     type="QuestionCircleOutlined"
                                     style="margin-left: 2px"
@@ -23,18 +23,18 @@
                         </span>
                     </template>
                     <a-input
-                        placeholder="请输入插件ID"
+                        :placeholder="$t('plugin.Save.128565-4')"
                         v-model:value="modelRef.id"
                         :disabled="!!data.id"
                     />
                 </a-form-item>
-                <a-form-item label="插件名称" name="name" :rules="nameRules">
+                <a-form-item :label="$t('plugin.Save.128565-5')" name="name" :rules="nameRules">
                     <a-input
-                        placeholder="请输入插件名称"
+                        :placeholder="$t('plugin.Save.128565-6')"
                         v-model:value="modelRef.name"
                     />
                 </a-form-item>
-                <a-form-item label="文件" name="version" :rules="versionRule">
+                <a-form-item :label="$t('plugin.Save.128565-7')" name="version" :rules="versionRule">
                     <UploadFile
                         v-model:modelValue="modelRef.version"
                         @change="uploadChange"
@@ -43,26 +43,26 @@
                 </a-form-item>
                 <div v-if="modelRef.version" class="file-detail">
                     <div>
-                        <span>插件类型：</span>
+                        <span>{{ $t('plugin.Save.128565-8') }}</span>
                         <span class="file-detail-item">{{
                             TypeMap[modelRef.type]
                         }}</span>
                     </div>
                     <div>
-                        <span>版本：</span>
+                        <span>{{ $t('plugin.Save.128565-9') }}</span>
                         <span class="file-detail-item">{{
                             modelRef.version
                         }}</span>
                     </div>
                 </div>
                 <a-form-item
-                    label="描述"
+                    :label="$t('plugin.Save.128565-10')"
                     name="describe"
                     :rules="Max_Length_200"
                 >
                     <a-textarea
                         v-model:value="modelRef.description"
-                        placeholder="请输入说明"
+                        :placeholder="$t('plugin.Save.128565-11')"
                         showCount
                         :maxlength="200"
                     />
@@ -84,7 +84,9 @@ import { FileUploadResult } from '../plugin/typings';
 import { add, update, vailIdFn } from '../../../api/link/plugin';
 import { TypeMap } from './util';
 import { onlyMessage } from '@/utils/comm';
+import { useI18n } from 'vue-i18n';
 
+const { t: $t } = useI18n();
 const props = defineProps({
     data: {
         type: Object,
@@ -103,13 +105,13 @@ const vailId = async (_: any, value: string) => {
         // 新增校验
         const resp = await vailIdFn(value);
         if (resp.success && resp.result && !resp.result.passed) {
-            return Promise.reject('ID重复');
+            return Promise.reject($t('plugin.Save.128565-12'));
         }
     }
     return Promise.resolve();
 };
 
-const nameRules = [RequiredStringFn('插件名称'), ...Max_Length_64];
+const nameRules = [RequiredStringFn($t('plugin.Save.128565-5')), ...Max_Length_64];
 
 const IdRules = [
     ...ID_Rule,
@@ -122,7 +124,7 @@ const IdRules = [
 const versionRule = [
     {
         required: true,
-        message: '请上传文件',
+        message: $t('plugin.Save.128565-13'),
         trigger: 'blur',
     },
     // {
@@ -133,7 +135,7 @@ const versionRule = [
     //       }
     //       return Promise.resolve()
     //     }
-    //     return Promise.reject('请上传文件')
+    //     return Promise.reject($t('plugin.Save.128565-13'))
     //   }
     // }
 ];
@@ -169,7 +171,7 @@ const handleSave = async () => {
               });
         loading.value = false;
         if (resp.success) {
-            onlyMessage('操作成功！');
+            onlyMessage($t('plugin.Save.128565-14'));
             if (route.query.save && (window as any).onTabSaveSuccess) {
                 (window as any).onTabSaveSuccess(resp);
                 setTimeout(() => window.close(), 300);

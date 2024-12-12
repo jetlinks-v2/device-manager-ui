@@ -11,33 +11,33 @@
           ></a-select>
           <div class="dash-board-items">
             <div class="dash-board-item">
-              <TopEchartsItemNode :value="topValues.cpu" title="CPU使用率" />
+              <TopEchartsItemNode :value="topValues.cpu" :title="$t('components.TopCard.472050-0')" />
             </div>
             <div class="dash-board-item">
               <TopEchartsItemNode
-                  :bottom="`总JVM内存 ${topValues.jvmTotal}G`"
+                  :bottom="$t('components.TopCard.472050-1', [topValues.jvmTotal])"
                   :max="topValues.jvmTotal"
                   :value="topValues.jvm"
                   formatter="G"
-                  title="JVM内存"
+                  :title="$t('components.TopCard.472050-2')"
               />
             </div>
             <div class="dash-board-item">
               <TopEchartsItemNode
-                  :bottom="`总磁盘大小 ${topValues.usageTotal}G`"
+                  :bottom="$t('components.TopCard.472050-3', [topValues.usageTotal])"
                   :max="topValues.usageTotal"
                   :value="topValues.usage"
                   formatter="G"
-                  title="磁盘占用"
+                  :title="$t('components.TopCard.472050-4')"
               />
             </div>
             <div class="dash-board-item">
               <TopEchartsItemNode
-                  :bottom="`系统内存 ${topValues.systemUsageTotal}G`"
+                  :bottom="$t('components.TopCard.472050-5', [topValues.systemUsageTotal])"
                   :max="topValues.systemUsageTotal"
                   :value="topValues.systemUsage"
                   formatter="G"
-                  title="系统内存"
+                  :title="$t('components.TopCard.472050-6')"
               />
             </div>
           </div>

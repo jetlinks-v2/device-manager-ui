@@ -5,7 +5,7 @@
       allow-clear
       :value="myValue"
       style="width: 100%"
-      placeholder="请选择数据类型"
+      :placeholder="$t('Type.index.270840-0')"
       :dropdownStyle="{
         zIndex: 1071
       }"

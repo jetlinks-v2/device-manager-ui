@@ -7,7 +7,7 @@
         :destroyInactiveTabPane="true"
     >
         <div class="alarmInfo">
-            <div class="title">告警日志</div>
+            <div class="title">{{ $t('components.AlarmLog.345792-0') }}</div>
             <div class="alarmInfoRight">
                 <div>
                     {{ levelMap?.[AlarmData?.level] || AlarmData?.level }}
@@ -28,7 +28,7 @@
                         v-if="AlarmData?.state.value === 'warning'"
                         type="link"
                         @click="dealAlarm"
-                        >处理</a-button
+                        >{{ $t('components.AlarmLog.345792-1') }}</a-button
                     >
                 </div>
             </div>

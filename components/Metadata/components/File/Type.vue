@@ -1,31 +1,29 @@
 <template>
   <a-form-item
-    label="文件类型"
+    :label="$t('File.Type.998289-0')"
     required
     :name="name"
-    :rules="[{ required: true, message: '请选择文件类型' }]"
+    :rules="[{ required: true, message: $t('File.Type.998289-1') }]"
   >
     <j-check-button
       v-model:value="myValue"
       :options="[
-                { label: 'URL', value: 'url' },
-                { label: 'Base64', value: 'base64' },
-                { label: 'binary', value: 'binary' },
-            ]"
+        { label: 'URL', value: 'url' },
+        { label: 'Base64', value: 'base64' },
+        { label: 'binary', value: 'binary' },
+      ]"
       @change="change"
     />
-
   </a-form-item>
 </template>
 
 <script setup name="MetadataFileType">
-import { ref, watch } from 'vue';
-
+import { ref, watch } from "vue";
 
 const props = defineProps({
   name: {
     type: [String, Array],
-    default: 'bodyType',
+    default: "bodyType",
   },
   value: {
     type: String,
@@ -33,12 +31,12 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['update:value']);
+const emit = defineEmits(["update:value"]);
 
 const myValue = ref(props.value);
 
 const change = () => {
-  emit('update:value', myValue.value);
+  emit("update:value", myValue.value);
 };
 
 watch(
@@ -49,6 +47,4 @@ watch(
 );
 </script>
 
-<style scoped>
-
-</style>
+<style scoped></style>

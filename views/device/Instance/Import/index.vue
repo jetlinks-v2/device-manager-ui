@@ -3,18 +3,18 @@
         :maskClosable="false"
         width="800px"
         :visible="true"
-        title="导入"
+        :title="$t('Import.index.103541-0')"
         @cancel="handleCancel"
     >
         <div style="margin-top: 10px">
             <a-form :layout="'vertical'">
                 <a-row>
                     <a-col span="24">
-                        <a-form-item label="产品" required>
+                        <a-form-item :label="$t('Import.index.103541-1')" required>
                             <a-select
                                 showSearch
                                 v-model:value="modelRef.product"
-                                placeholder="请选择产品"
+                                :placeholder="$t('Import.index.103541-2')"
                             >
                                 <a-select-option
                                     :value="item.id"
@@ -27,12 +27,12 @@
                         </a-form-item>
                     </a-col>
                     <a-col span="24">
-                        <a-form-item label="文件格式" v-if="modelRef.product">
+                        <a-form-item :label="$t('Import.index.103541-3')" v-if="modelRef.product">
                             <FileFormat v-model="modelRef.file" />
                         </a-form-item>
                     </a-col>
                     <a-col span="12">
-                        <a-form-item label="文件上传" v-if="modelRef.product">
+                        <a-form-item :label="$t('Import.index.103541-4')" v-if="modelRef.product">
                             <NormalUpload
                                 :product="modelRef.product"
                                 v-model="modelRef.upload"
@@ -44,7 +44,7 @@
             </a-form>
         </div>
         <template #footer>
-            <a-button type="primary" @click="handleSave">关闭</a-button>
+            <a-button type="primary" @click="handleSave">{{ $t('Import.index.103541-5') }}</a-button>
         </template>
     </a-modal>
 </template>

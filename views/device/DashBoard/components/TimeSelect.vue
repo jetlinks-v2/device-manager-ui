@@ -31,6 +31,7 @@
 <script setup lang="ts">
 import dayjs from 'dayjs';
 import { PropType } from 'vue';
+import i18n from '@/locales';
 
 interface BtnOptions {
     label: string;
@@ -53,10 +54,9 @@ const props = defineProps({
     quickBtnList: {
         type: Array as PropType<BtnOptions[]>,
         default: [
-            { label: '今日', value: 'today' },
-            { label: '近一周', value: 'week' },
-            { label: '近一月', value: 'month' },
-            { label: '近一年', value: 'year' },
+            { label: i18n.global.t('DashBoard.index.954313-5'), value: 'hour' },
+            { label: i18n.global.t('DashBoard.index.954313-6'), value: 'day' },
+            { label: i18n.global.t('DashBoard.index.954313-7'), value: 'week' },
         ],
     },
     type: {

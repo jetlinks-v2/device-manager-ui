@@ -31,8 +31,8 @@
                             :popConfirm="{
                                 title:
                                     productStore.current.state === 1
-                                        ? '确认禁用'
-                                        : '确认启用',
+                                        ? $t('Detail.index.478940-0')
+                                        : $t('Detail.index.478940-1'),
                                 onConfirm:
                                     productStore.current.state === 1
                                         ? handleUndeploy
@@ -41,8 +41,8 @@
                         >
                             <a-switch
                                 :checked="productStore.current.state === 1"
-                                checked-children="正常"
-                                un-checked-children="禁用"
+                                :checked-children="$t('Detail.index.478940-2')"
+                                :un-checked-children="$t('Detail.index.478940-3')"
                                 :disabled="
                                     !permissionStore.hasPermission(
                                         'device/Product:action',
@@ -53,12 +53,12 @@
                     </div>
                     <div style="margin: -5px 0 0 20px" v-else>
                         <a-tooltip>
-                            <template #title>暂无权限，请联系管理员</template>
+                            <template #title>{{ $t('Detail.index.478940-4') }}</template>
                             <a-switch
                                 v-if="productStore.current.state === 1"
                                 :checked="productStore.current.state === 1"
-                                checked-children="正常"
-                                un-checked-children="禁用"
+                                :checked-children="$t('Detail.index.478940-2')"
+                                :un-checked-children="$t('Detail.index.478940-3')"
                                 :disabled="
                                     !permissionStore.hasPermission(
                                         'device/Product:action',
@@ -70,8 +70,8 @@
                                 :unCheckedValue="
                                     productStore.current.state === 0
                                 "
-                                checked-children="正常"
-                                un-checked-children="禁用"
+                                :checked-children="$t('Detail.index.478940-2')"
+                                :un-checked-children="$t('Detail.index.478940-3')"
                                 :disabled="
                                     !permissionStore.hasPermission(
                                         'device/Product:action',
@@ -87,7 +87,7 @@
             <div style="padding-top: 10px">
                 <a-descriptions size="small" :column="4">
                     <a-descriptions-item
-                        label="设备数量"
+                        :label="$t('Detail.index.478940-5')"
                         :labelStyle="{
                             fontSize: '14px',
                             opacity: 0.55,
@@ -110,18 +110,18 @@
             <j-permission-button
                 type="primary"
                 :popConfirm="{
-                    title: `确认应用配置?`,
+                    title: $t('Detail.index.478940-6'),
                     onConfirm: handleDeploy,
                 }"
                 :disabled="productStore.current?.state === 0"
                 :tooltip="
                     productStore.current?.state === 0
-                        ? { title: '请先启用产品' }
+                        ? { title: $t('Detail.index.478940-7') }
                         : undefined
                 "
                 hasPermission="device/Product:update"
                 placement="topRight"
-                >应用配置</j-permission-button
+                >{{ $t('Detail.index.478940-8') }}</j-permission-button
             >
         </template>
         <FullPage :fixed="false">
@@ -160,6 +160,9 @@ import { useRouterParams } from '@jetlinks-web/hooks';
 import { EventEmitter, onlyMessage } from '@jetlinks-web/utils';
 import { useAuthStore, useSystemStore } from '@/store';
 import { isNoCommunity } from '@/utils/utils';
+import { useI18n } from 'vue-i18n';
+
+const { t: $t } = useI18n();
 
 const { showThreshold } = useSystemStore();
 const permissionStore = useAuthStore();
@@ -172,16 +175,16 @@ const routerParams = useRouterParams();
 const list = ref([
     {
         key: 'Info',
-        tab: '配置信息',
+        tab: $t('Detail.index.478940-9'),
     },
     {
         key: 'Metadata',
-        tab: '物模型',
+        tab: $t('Detail.index.478940-10'),
         class: 'objectModel',
     },
     {
         key: 'Device',
-        tab: '设备接入',
+        tab: $t('Detail.index.478940-11'),
     },
 ]);
 
@@ -217,7 +220,7 @@ const handleDeploy = () => {
         const resp = _deploy(productStore.current.id);
         resp.then((res) => {
             if (res.status === 200) {
-                onlyMessage('操作成功！');
+                onlyMessage($t('Detail.index.478940-12'));
                 productStore.refresh(productStore.current.id);
             }
         });
@@ -233,7 +236,7 @@ const handleUndeploy = () => {
         const resp = _undeploy(productStore.current.id);
         resp.then((res) => {
             if (res.status === 200) {
-                onlyMessage('操作成功！');
+                onlyMessage($t('Detail.index.478940-12'));
                 productStore.refresh(productStore.current.id);
             }
         });
@@ -262,16 +265,16 @@ const getProtocol = async () => {
     list.value = [
         {
             key: 'Info',
-            tab: '配置信息',
+            tab: $t('Detail.index.478940-9'),
         },
         {
             key: 'Metadata',
-            tab: '物模型',
+            tab: $t('Detail.index.478940-10'),
             class: 'objectModel',
         },
         {
             key: 'Device',
-            tab: '设备接入',
+            tab: $t('Detail.index.478940-11'),
         },
     ];
     if (productStore.current?.messageProtocol) {
@@ -291,7 +294,7 @@ const getProtocol = async () => {
             if (paring) {
                 list.value.push({
                     key: 'DataAnalysis',
-                    tab: '数据解析',
+                    tab: $t('Detail.index.478940-13'),
                 });
             }
             if (
@@ -301,7 +304,7 @@ const getProtocol = async () => {
             ) {
                 list.value.push({
                     key: 'Firmware',
-                    tab: '远程升级',
+                    tab: $t('Detail.index.478940-14'),
                 });
             }
         }
@@ -314,7 +317,7 @@ const getProtocol = async () => {
                 (item) => item.id === 'diffMetadataSameProduct',
             )
         ) {
-            list.value.push({ key: 'MetadataMap', tab: '物模型映射' });
+            list.value.push({ key: 'MetadataMap', tab: $t('Detail.index.478940-15') });
         }
         if (
             permissionStore.hasPermission(
@@ -325,7 +328,7 @@ const getProtocol = async () => {
         ) {
             list.value.push({
                 key: 'AlarmRecord',
-                tab: '预处理数据',
+                tab: $t('Detail.index.478940-16'),
             });
         }
     }

@@ -1,6 +1,6 @@
 <template>
     <div v-if="data.provider === 'official-edge-gateway'">
-        <TitleComponent data="网络组件" v-if="network"></TitleComponent>
+        <TitleComponent :data="$t('Edge.index.066653-18')" v-if="network"></TitleComponent>
         <AccessCard
             v-if="network"
             :data="{
@@ -22,9 +22,9 @@
                             class="item"
                         >
                             <a-badge :status="getColor(i)" :text="i.address" />
-                            <span v-if="(network.addresses || []).length > 1"
-                                >等{{ item.addresses.length }}条</span
-                            >
+                            <span v-if="(network.addresses || []).length > 1">
+                                {{ $t('components.FifthKind.409083-0', [item.addresses.length]) }}
+                            </span>
                         </div>
                     </a-tooltip>
                 </div>
@@ -32,7 +32,7 @@
         >
     </div>
     <div v-else>
-        <TitleComponent data="消息协议" v-if="protocol"></TitleComponent>
+        <TitleComponent :data="$t('DeviceAccess.index.594346-6')" v-if="protocol"></TitleComponent>
         <AccessCard
             v-if="protocol"
             :data="{ ...protocol, type: 'protocol' }"

@@ -15,7 +15,7 @@
                 <a-divider type="vertical" />
                 <a-space>
                     <span style="font-size: 14px; color: rgba(0, 0, 0, 0.85)">
-                        状态：
+                        {{ $t('Detail.index.957187-0') }}
                         <a-badge
                             :status="
                                 statusMap.get(
@@ -32,24 +32,24 @@
                         type="link"
                         style="margin-top: -5px; padding: 0 20px"
                         :popConfirm="{
-                            title: '确认启用设备',
+                            title: $t('Detail.index.957187-1'),
                             onConfirm: handleAction,
                         }"
                         hasPermission="device/Instance:action"
                     >
-                        启用设备
+                        {{ $t('Detail.index.957187-2') }}
                     </j-permission-button>
                     <j-permission-button
                         v-if="instanceStore.current?.state?.value === 'online'"
                         type="link"
                         style="margin-top: -5px; padding: 0 20px"
                         :popConfirm="{
-                            title: '确认断开连接？',
+                            title: $t('Detail.index.957187-3'),
                             onConfirm: handleDisconnect,
                         }"
                         hasPermission="device/Instance:action"
                     >
-                        断开连接
+                        {{ $t('Detail.index.957187-4') }}
                     </j-permission-button>
                     <a-tooltip
                         v-if="
@@ -61,8 +61,8 @@
                             instanceStore.current?.features?.find(
                                 (item) => item?.id === 'selfManageState',
                             )
-                                ? '该设备的在线状态与父设备(网关设备)保持一致'
-                                : '该设备在线状态由设备自身运行状态决定，不继承父设备（网关设备）的在线状态'
+                                ? $t('Detail.index.957187-7')
+                                : $t('Detail.index.957187-8')
                         "
                     >
                         <AIcon
@@ -78,7 +78,7 @@
                 <a-descriptions-item label="ID">{{
                     instanceStore.current?.id
                 }}</a-descriptions-item>
-                <a-descriptions-item label="所属产品">
+                <a-descriptions-item :label="$t('Detail.index.957187-9')">
                     <j-permission-button
                         type="link"
                         style="margin-top: -5px; padding: 0"
@@ -95,7 +95,7 @@
                 <a-button
                     @click="onClick"
                     v-if="_arr.includes(instanceStore.current?.accessProvider || '')"
-                    type="primary" :disabled="instanceStore.current?.state?.value !== 'online'">远程访问
+                    type="primary" :disabled="instanceStore.current?.state?.value !== 'online'">{{ $t('Detail.index.957187-10') }}
                 </a-button>
                 <img
                     @click="handleRefresh"
@@ -149,8 +149,9 @@ import { useSystemStore, useMenuStore, useAuthStore} from '@/store';
 import { isNoCommunity } from '@/utils/utils';
 import { device } from "../../../../assets";
 import {getRemoteProxyUrl, getRemoteSystem, getRemoteToken} from "@/modules/data-collector-ui/api/edge/device";
+import { useI18n } from 'vue-i18n';
 
-
+const { t: $t } = useI18n();
 const menuStory = useMenuStore();
 const { showThreshold } = useSystemStore();
 const route = useRoute();
@@ -168,23 +169,23 @@ const statusRef = ref();
 const initList = [
     {
         key: 'Info',
-        tab: '实例信息',
+        tab: $t('Detail.index.957187-11'),
     },
     {
         key: 'Running',
-        tab: '运行状态',
+        tab: $t('Detail.index.957187-12'),
     },
     {
         key: 'Metadata',
-        tab: '物模型',
+        tab: $t('Detail.index.957187-13'),
     },
     {
         key: 'Function',
-        tab: '设备功能',
+        tab: $t('Detail.index.957187-14'),
     },
     {
         key: 'Log',
-        tab: '日志管理',
+        tab: $t('Detail.index.957187-15'),
     },
 ];
 
@@ -235,20 +236,20 @@ const getDetail = () => {
     if (permissionStore.hasPermission('rule-engine/Alarm/Log:view') && isNoCommunity && showThreshold) {
         list.value.push({
             key: 'AlarmRecord',
-            tab: '预处理数据',
+            tab: $t('Detail.index.957187-16'),
         });
     }
     if (permissionStore.hasPermission('iot-card/CardManagement:view') && isNoCommunity) {
         list.value.push({
             key: 'CardManagement',
-            tab: '物联网卡',
+            tab: $t('Detail.index.957187-17'),
         });
     }
 
     if (instanceStore.current?.features.some(item => item.id === 'deviceShadow-manager') && isNoCommunity) {
         list.value.push({
             key: 'Shadow',
-            tab: '设备影子'
+            tab: $t('Detail.index.957187-18')
         })
     }
     if (
@@ -259,7 +260,7 @@ const getDetail = () => {
     ) {
         list.value.push({
             key: 'Firmware',
-            tab: '远程升级',
+            tab: $t('Detail.index.957187-19'),
         });
     }
     if (
@@ -269,7 +270,7 @@ const getDetail = () => {
     ) {
         list.value.push({
             key: 'Diagnose',
-            tab: '设备诊断',
+            tab: $t('Detail.index.957187-20'),
         });
     }
     if (
@@ -280,7 +281,7 @@ const getDetail = () => {
     ) {
         list.value.push({
             key: 'Parsing',
-            tab: '数据解析',
+            tab: $t('Detail.index.957187-21'),
         });
     }
     if (
@@ -289,7 +290,7 @@ const getDetail = () => {
     ) {
         list.value.push({
             key: 'Modbus',
-            tab: '数采映射',
+            tab: $t('Detail.index.957187-22'),
         });
     }
     if (
@@ -298,7 +299,7 @@ const getDetail = () => {
     ) {
         list.value.push({
             key: 'OPCUA',
-            tab: '数采映射',
+            tab: $t('Detail.index.957187-22'),
         });
     }
     if (
@@ -307,7 +308,7 @@ const getDetail = () => {
     ) {
         list.value.push({
             key: 'GateWay',
-            tab: '数采映射',
+            tab: $t('Detail.index.957187-22'),
         });
     }
     if (
@@ -319,13 +320,13 @@ const getDetail = () => {
         if(providers.includes(instanceStore.current?.accessProvider!)){
             list.value.push({
                 key: 'Child',
-                tab: '子设备',
+                tab: $t('Detail.index.957187-23'),
             });
         }else{
             // 产品类型为网关的情况下才显示此模块
             list.value.push({
                 key: 'ChildDevice',
-                tab: '子设备',
+                tab: $t('Detail.index.957187-23'),
             });
         }
     }
@@ -336,7 +337,7 @@ const getDetail = () => {
     ) {
         list.value.push({
             key: 'EdgeMap',
-            tab: '边缘端映射',
+            tab: $t('Detail.index.957187-24'),
         });
     }
 
@@ -346,14 +347,14 @@ const getDetail = () => {
         ) &&
         !keys.includes('MetadataMap')
     ) {
-        list.value.push({key: 'MetadataMap', tab: '物模型映射'});
+        list.value.push({key: 'MetadataMap', tab: $t('Detail.index.957187-25')});
     }
 
     if (
         _arr.includes(instanceStore.current?.accessProvider) &&
         !keys.includes('Terminal')
     ) {
-        list.value.push({key: 'Terminal', tab: '远程终端'});
+        list.value.push({key: 'Terminal', tab: $t('Detail.index.957187-26')});
     }
 };
 
@@ -402,7 +403,7 @@ const handleAction = () => {
         const response = _deploy(instanceStore.current?.id);
         response.then((resp) => {
             if (resp.status === 200) {
-                onlyMessage('操作成功！');
+                onlyMessage($t('Detail.index.957187-27'));
                 instanceStore.refresh(instanceStore.current?.id);
             }
         });
@@ -415,7 +416,7 @@ const handleDisconnect = () => {
         const response = _disconnect(instanceStore.current?.id);
         response.then((resp) => {
             if (resp.status === 200) {
-                onlyMessage('操作成功！');
+                onlyMessage($t('Detail.index.957187-27'));
                 instanceStore.refresh(instanceStore.current?.id);
             }
         });
@@ -426,7 +427,7 @@ const handleDisconnect = () => {
 const handleRefresh = async () => {
     if (instanceStore.current?.id) {
         await instanceStore.refresh(instanceStore.current?.id);
-        onlyMessage('操作成功');
+        onlyMessage($t('Detail.index.957187-28'));
     }
 };
 

@@ -1,6 +1,6 @@
 <template>
     <a-button @click="visible = true" style="width: 100%" type="dashed">
-        编辑规则
+        {{ $t('FRuleEditor.index.911643-0') }}
     </a-button>
     <FRuleEditor v-if="visible" :id="id" :aggList="aggList" :propertiesOptions="propertiesOptions" :value="value" :virtualRule="virtualRule" @close="onClose" @save="onChange" />
 </template>

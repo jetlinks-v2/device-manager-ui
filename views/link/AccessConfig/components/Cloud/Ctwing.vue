@@ -7,7 +7,7 @@
             <div class="steps-box" v-if="current === 0">
                 <div class="alert">
                     <AIcon type="InfoCircleOutlined" />
-                    通过CTWing平台的HTTP推送服务进行数据接入
+                    {{ $t('Cloud.Ctwing.076179-0') }}
                 </div>
                 <div style="margin-top: 42px">
                     <a-row :gutter="[24, 24]">
@@ -22,7 +22,7 @@
                                 <a-row :gutter="[24, 24]">
                                     <a-col :span="12">
                                         <a-form-item
-                                            label="接口地址"
+                                            :label="$t('Cloud.Ctwing.076179-1')"
                                             name="apiAddress"
                                             :rules="[
                                                 {
@@ -44,19 +44,19 @@
                                             :rules="[
                                                 {
                                                     required: true,
-                                                    message: '请输入appKey',
+                                                    message: $t('Cloud.Ctwing.076179-2'),
                                                 },
                                                 {
                                                     max: 64,
                                                     message:
-                                                        '最多可输入64个字符',
+                                                        $t('Cloud.Ctwing.076179-3'),
                                                     trigger: 'blur',
                                                 },
                                             ]"
                                         >
                                             <a-input
                                                 v-model:value="formState.appKey"
-                                                placeholder="请输入appKey"
+                                                :placeholder="$t('Cloud.Ctwing.076179-2')"
                                             />
                                         </a-form-item>
                                     </a-col>
@@ -69,12 +69,12 @@
                                             :rules="[
                                                 {
                                                     required: true,
-                                                    message: '请输入appSecret',
+                                                    message: $t('Cloud.Ctwing.076179-4'),
                                                 },
                                                 {
                                                     max: 64,
                                                     message:
-                                                        '最多可输入64个字符',
+                                                        $t('Cloud.Ctwing.076179-3'),
                                                     trigger: 'blur',
                                                 },
                                             ]"
@@ -83,7 +83,7 @@
                                                 v-model:value="
                                                     formState.appSecret
                                                 "
-                                                placeholder="请输入appSecret"
+                                                :placeholder="$t('Cloud.Ctwing.076179-4')"
                                             />
                                         </a-form-item>
                                     </a-col>
@@ -91,11 +91,11 @@
                                 <a-row :gutter="[24, 24]">
                                     <a-col :span="24">
                                         <a-form-item
-                                            label="说明"
+                                            :label="$t('Cloud.Ctwing.076179-5')"
                                             name="description"
                                         >
                                             <a-textarea
-                                                placeholder="请输入说明"
+                                                :placeholder="$t('Cloud.Ctwing.076179-6')"
                                                 :rows="4"
                                                 v-model:value="
                                                     formState.description
@@ -110,15 +110,15 @@
                         <a-col :span="8">
                             <j-scrollbar height="500">
                                 <div class="doc">
-                                    <h1>操作指引：</h1>
+                                    <h1>{{ $t('Cloud.Ctwing.076179-7') }}</h1>
                                     <div>
-                                        1、CTWing端创建应用、产品、设备；配置完成后查看产品详情。其中产品ID以及Master-APIkey在JetLinks平台配置时会使用。
+                                        {{ $t('Cloud.Ctwing.076179-8') }}
                                     </div>
                                     <div class="image">
                                         <a-image width="100%" :src="img1" />
                                     </div>
                                     <div>
-                                        2、IOT端创建类型为CTWing的设备接入网关
+                                        {{ $t('Cloud.Ctwing.076179-9') }}
                                         <!-- <div
                                             class="url"
                                             style="word-wrap: break-word"
@@ -129,13 +129,13 @@
                                         </div> -->
                                     </div>
                                     <div>
-                                        3、IOT端创建产品，选中接入方式为CTWing，填写CTWing平台中的产品ID、Master-APIkey。
+                                        {{ $t('Cloud.Ctwing.076179-10') }}
                                     </div>
                                     <div class="image">
                                         <a-image width="100%" :src="img2" />
                                     </div>
                                     <div>
-                                        4、IOT端添加设备，设备ID需要配置真实设备的IMEI号，配置完成后启用设备（如果启用设备提示错误，请检查CTWing网关参数是否配置正确）。
+                                        {{ $t('Cloud.Ctwing.076179-11') }}
                                     </div>
                                     <div class="image">
                                         <a-image width="100%" :src="img3" />
@@ -149,41 +149,41 @@
                                         :column="1"
                                         :labelStyle="{ width: '100px' }"
                                     >
-                                        <a-descriptions-item label="参数"
-                                            >说明</a-descriptions-item
+                                        <a-descriptions-item :label="$t('Cloud.Ctwing.076179-12')"
+                                            >{{ $t('Cloud.Ctwing.076179-5') }}</a-descriptions-item
                                         >
                                         <a-descriptions-item label="IMEI"
-                                            >真实设备的IMEI号，需要填写正确，否则推送数据会接收失败</a-descriptions-item
+                                            >{{ $t('Cloud.Ctwing.076179-13') }}</a-descriptions-item
                                         >
                                         <a-descriptions-item label="SN">
-                                            真实设备的SN号
+                                            {{ $t('Cloud.Ctwing.076179-14') }}
                                         </a-descriptions-item>
                                         <a-descriptions-item label="IMSI">
-                                            真实设备的IMSI号
+                                            {{ $t('Cloud.Ctwing.076179-15') }}
                                         </a-descriptions-item>
                                         <a-descriptions-item label="PSK">
-                                            真实设备的PSK，非必填
+                                            {{ $t('Cloud.Ctwing.076179-16') }}
                                         </a-descriptions-item>
                                     </a-descriptions>
                                     <div class="overLength">
-                                        5、CTWing端配置产品/设备/分组级订阅，订阅方URL地址请填写： {{
+                                        {{ $t('Cloud.Ctwing.076179-17') }} {{
                                                 `${origin}/api/ctwing/${randomString()}/notify`
-                                            }}（此处订阅地址可以在JetLinks平台中配置完成CTWing网关后再填写）。
+                                            }}{{ $t('Cloud.Ctwing.076179-18') }}
                                     </div>
                                     <div class="image">
                                         <a-image width="100%" :src="img5" />
                                     </div>
                                     <div>
-                                        6、以上步骤配置完成后，可以触发真实设备进行上数，在平台对应设备详情页查看设备状态。
+                                        {{ $t('Cloud.Ctwing.076179-19') }}
                                     </div>
                                     <div class="image">
                                         <a-image width="100%" :src="img6" />
                                     </div>
                                     <h1>
-                                        其他说明
+                                        {{ $t('Cloud.Ctwing.076179-20') }}
                                     </h1>
                                     <div>
-                                        在IOT端启用设备时，若CTWing平台没有与之对应的设备，则将在CTWing端自动创建新设备
+                                        {{ $t('Cloud.Ctwing.076179-21') }}
                                     </div>
                                 </div>
                             </j-scrollbar>
@@ -196,12 +196,12 @@
             <div class="steps-box" v-if="current === 1">
                 <div class="alert">
                     <AIcon type="InfoCircleOutlined" />
-                    只能选择HTTP通信方式的协议
+                    {{ $t('Cloud.Ctwing.076179-22') }}
                 </div>
                 <div class="search">
                     <a-input-search
                         allowClear
-                        placeholder="请输入"
+                        :placeholder="$t('Cloud.Ctwing.076179-23')"
                         style="width: 300px"
                         @search="procotolSearch"
                     />
@@ -212,7 +212,7 @@
                         hasPermission="link/Protocol:add"
                     >
                         <template #icon><AIcon type="PlusOutlined" /></template>
-                        新增
+                        {{ $t('Cloud.Ctwing.076179-24') }}
                     </j-permission-button>
                 </div>
                 <j-scrollbar height="480">
@@ -238,7 +238,7 @@
                     <j-empty
                         style="margin-top: 10%"
                         v-else
-                        description="暂无数据"
+                        :description="$t('Cloud.Ctwing.076179-25')"
                     />
                 </j-scrollbar>
             </div>
@@ -246,7 +246,7 @@
         <div v-if="current === 2" class="card-last">
             <a-row :gutter="[24, 24]">
                 <a-col :span="12">
-                    <TitleComponent data="基本信息" />
+                    <TitleComponent :data="$t('Cloud.Ctwing.076179-26')" />
                     <a-form
                         :model="formData"
                         name="basic"
@@ -255,29 +255,29 @@
                         ref="formRef2"
                     >
                         <a-form-item
-                            label="名称"
+                            :label="$t('Cloud.Ctwing.076179-27')"
                             name="name"
                             :rules="[
                                 {
                                     required: true,
-                                    message: '请输入名称',
+                                    message: $t('Cloud.Ctwing.076179-28'),
                                     trigger: 'blur',
                                 },
                                 {
                                     max: 64,
-                                    message: '最多可输入64个字符',
+                                    message: $t('Cloud.Ctwing.076179-3'),
                                     trigger: 'blur',
                                 },
                             ]"
                         >
                             <a-input
-                                placeholder="请输入名称"
+                                :placeholder="$t('Cloud.Ctwing.076179-28')"
                                 v-model:value="formData.name"
                             />
                         </a-form-item>
-                        <a-form-item label="说明" name="description">
+                        <a-form-item :label="$t('Cloud.Ctwing.076179-5')" name="description">
                             <a-textarea
-                                placeholder="请输入说明"
+                                :placeholder="$t('Cloud.Ctwing.076179-6')"
                                 :rows="4"
                                 v-model:value="formData.description"
                                 show-count
@@ -288,30 +288,30 @@
                 </a-col>
                 <a-col :span="12">
                     <div class="doc" style="height: 606px">
-                        <TitleComponent data="配置概览" />
-                        <p>接入方式：{{ provider.name }}</p>
+                        <TitleComponent :data="$t('Cloud.Ctwing.076179-29')" />
+                        <p>{{ $t('Cloud.Ctwing.076179-30') }}{{ provider.name }}</p>
                         <p>
                             {{ provider.description }}
                         </p>
-                        <p>消息协议：{{ procotolCurrent }}</p>
-                        <TitleComponent data="设备接入指引" />
+                        <p>{{ $t('Cloud.Ctwing.076179-31') }}{{ procotolCurrent }}</p>
+                        <TitleComponent :data="$t('Cloud.Ctwing.076179-32')" />
                         <p>
-                            1、创建类型为{{
+                            {{ $t('Cloud.Ctwing.076179-33') }}{{
                                 props?.provider?.id === 'OneNet'
                                     ? 'OneNet'
                                     : 'CTWing'
-                            }}的设备接入网关
+                            }}{{ $t('Cloud.Ctwing.076179-34') }}
                         </p>
                         <p>
-                            2、创建产品，并选中接入方式为
+                            {{ $t('Cloud.Ctwing.076179-35') }}
                             {{
                                 props?.provider?.id === 'OneNet'
                                     ? 'OneNet'
-                                    : 'CTWing,选中后需填写CTWing平台中的产品ID、Master-APIkey。'
+                                    : $t('Cloud.Ctwing.076179-36')
                             }}
                         </p>
                         <p>
-                            3、添加设备，为每一台设备设置唯一的IMEI、IMSI码（需与OneNet平台中填写的值一致，若OneNet平台没有对应的设备，将会通过OneNet平台提供的LWM2M协议自动创建）
+                            {{ $t('Cloud.Ctwing.076179-37') }}
                         </p>
                     </div>
                 </a-col>
@@ -319,7 +319,7 @@
         </div>
         <div :class="current !== 2 ? 'steps-action' : 'steps-action-save'">
 
-          <a-button v-if="current > 0" @click="prev" style="margin-right: 8px"> 上一步 </a-button>
+          <a-button v-if="current > 0" @click="prev" style="margin-right: 8px"> {{ $t('Cloud.Ctwing.076179-38') }} </a-button>
             <j-permission-button
                 v-if="current === 2 && view === 'false'"
                 type="primary"
@@ -330,7 +330,7 @@
                 }`"
                 :loading="loading"
             >
-                保存
+                {{ $t('Cloud.Ctwing.076179-39') }}
             </j-permission-button>
           <a-button
             v-if="[0, 1].includes(current)"
@@ -338,7 +338,7 @@
 
             @click="next"
           >
-            下一步
+            {{ $t('Cloud.Ctwing.076179-40') }}
           </a-button>
         </div>
     </div>
@@ -352,7 +352,9 @@ import AccessCard from '../AccessCard/index.vue';
 import { randomString, onlyMessage } from '@jetlinks-web/utils';
 import { useMenuStore } from '@/store/menu';
 import { network } from '../../../../../assets';
+import { useI18n } from 'vue-i18n';
 
+const { t: $t } = useI18n();
 const menuStory = useMenuStore();
 const origin = window.location.origin;
 const img1 = network.network1;
@@ -412,7 +414,7 @@ const showAddBtn = computed(() => {
 
 const current = ref(0);
 const stepCurrent = ref(0);
-const steps = ref(['接入配置', '消息协议', '完成']);
+const steps = ref([$t('Cloud.Ctwing.076179-41'), $t('Cloud.Ctwing.076179-42'), $t('Cloud.Ctwing.076179-43')]);
 const procotolList: any = ref([]);
 const allProcotolList = ref([]);
 const procotolCurrent: any = ref('');
@@ -455,7 +457,7 @@ const saveData = async () => {
                   id,
               });
     if (resp.status === 200) {
-        onlyMessage('操作成功', 'success');
+        onlyMessage($t('Cloud.Ctwing.076179-44'), 'success');
         history.back();
         if ((window as any).onTabSaveSuccess) {
             (window as any).onTabSaveSuccess(resp);
@@ -498,7 +500,7 @@ const next = async () => {
         current.value = current.value + 1;
     } else if (current.value === 1) {
         if (!procotolCurrent.value) {
-            onlyMessage('请选择消息协议！', 'error');
+            onlyMessage($t('Cloud.Ctwing.076179-45'), 'error');
         } else {
             current.value = current.value + 1;
         }

@@ -3,7 +3,7 @@
         <div class="property-box-left">
             <a-input-search
                 v-model:value="value"
-                placeholder="请输入事件名称"
+                :placeholder="$t('Running.index.376017-0')"
                 style="width: 200px; margin-bottom: 10px"
                 @search="onSearch"
                 :allowClear="true"
@@ -45,13 +45,15 @@ import { cloneDeep } from 'lodash-es';
 import Event from './Event/index.vue';
 import Property from './Property/index.vue';
 import { storeToRefs } from 'pinia';
+import { useI18n } from 'vue-i18n';
 
+const { t: $t } = useI18n();
 const activeKey = ref<string>('property');
 const tabList = ref<{ key: string; tab: string; type: 'property' | 'event' }[]>(
     [
         {
             key: 'property',
-            tab: '属性',
+            tab: $t('Running.index.376017-1'),
             type: 'property',
         },
     ],
@@ -70,7 +72,7 @@ watch(
     (value) => {
         tabList.value = [{
             key: 'property',
-            tab: '属性',
+            tab: $t('Running.index.376017-1'),
             type: 'property',
         }]
         const metadata = JSON.parse(value?.metadata || '{}');
@@ -117,7 +119,7 @@ const onSearch = () => {
     const arr = [
         {
             key: 'property',
-            tab: '属性',
+            tab: $t('Running.index.376017-1'),
             type: 'property',
         },
         ...events.value.map((item: any) => {

@@ -2,7 +2,7 @@
     <div class="card-last">
         <a-row :gutter="[24, 24]">
             <a-col :span="12">
-                <title-component data="基本信息" />
+                <title-component :data="$t('Media.Onvif.507446-0')" />
                 <div>
                     <a-form
                         :model="formState"
@@ -12,29 +12,29 @@
                         @finish="onFinish"
                     >
                         <a-form-item
-                            label="名称"
+                            :label="$t('Media.Onvif.507446-1')"
                             name="name"
                             :rules="[
                                 {
                                     required: true,
-                                    message: '请输入名称',
+                                    message: $t('Media.Onvif.507446-2'),
                                     trigger: 'blur',
                                 },
                                 {
                                     max: 64,
-                                    message: '最多可输入64个字符',
+                                    message: $t('Media.Onvif.507446-3'),
                                     trigger: 'blur',
                                 },
                             ]"
                         >
                             <a-input
-                                placeholder="请输入名称"
+                                :placeholder="$t('Media.Onvif.507446-2')"
                                 v-model:value="formState.name"
                             />
                         </a-form-item>
-                        <a-form-item label="说明" name="description">
+                        <a-form-item :label="$t('Media.Onvif.507446-4')" name="description">
                             <a-textarea
-                                placeholder="请输入说明"
+                                :placeholder="$t('Media.Onvif.507446-5')"
                                 :rows="4"
                                 v-model:value="formState.description"
                                 show-count
@@ -51,7 +51,7 @@
                                 }`"
                                 :loading="loading"
                             >
-                                保存
+                                {{ $t('Media.Onvif.507446-6') }}
                             </j-permission-button>
                         </a-form-item>
                     </a-form>
@@ -59,13 +59,13 @@
             </a-col>
             <a-col :span="12">
                 <div class="doc">
-                    <h1>Onvif视频接入</h1>
+                    <h1>{{ $t('Media.Onvif.507446-7') }}</h1>
                     <p>
-                        适用于使用RSTP或RTMP固定地址接入的视频设备
+                        {{ $t('Media.Onvif.507446-8') }}
                     </p>
-                    <h1>消息协议</h1>
+                    <h1>{{ $t('Media.Onvif.507446-9') }}</h1>
                     <p>
-                        内置Onvif协议
+                        {{ $t('Media.Onvif.507446-10') }}
                     </p>
                 </div>
             </a-col>
@@ -76,6 +76,9 @@
 <script lang="ts" setup>
 import { onlyMessage } from '@jetlinks-web/utils';
 import { update, save } from '../../../../../api/link/accessConfig';
+import { useI18n } from 'vue-i18n';
+
+const { t: $t } = useI18n();
 interface FormState {
     name: string;
     description: string;
@@ -112,7 +115,7 @@ const onFinish = async (values: any) => {
     const resp =
         id === ':id' ? await save(params) : await update({ ...params, id });
     if (resp.status === 200) {
-        onlyMessage('操作成功', 'success');
+        onlyMessage($t('Media.Onvif.507446-11'), 'success');
 
         if (route.query.save) {
             // @ts-ignore

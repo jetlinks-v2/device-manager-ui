@@ -10,32 +10,32 @@
         <template #icon>
           <AIcon type="PlusSquareOutlined" />
         </template>
-        新增行
+        {{ $t('ContextMenu.menu.906418-0') }}
       </a-menu-item>
       <a-menu-item key="copy">
         <template #icon>
           <AIcon type="icon-copy" />
         </template>
-         复制行
+         {{ $t('ContextMenu.menu.906418-1') }}
       </a-menu-item>
       <a-menu-item key="paste" :disabled="showPaste">
         <template #icon>
           <AIcon type="icon-paste" />
         </template>
-        粘贴行
+        {{ $t('ContextMenu.menu.906418-2') }}
       </a-menu-item>
       <a-menu-item key="detail" :disabled="showDetail">
         <template #icon>
           <AIcon type="icon-chakan" />
         </template>
-        查看详情
+        {{ $t('ContextMenu.menu.906418-3') }}
       </a-menu-item>
       <a-menu-item key="delete" class="danger" :disabled="showDelete">
         <template #icon>
           <AIcon type="DeleteOutlined" />
         </template>
-        删除
-      </a-menu-item>
+        {{ $t('ContextMenu.menu.906418-4') }}
+      </a-menu-item>``
     </a-menu>
   </div>
 </template>

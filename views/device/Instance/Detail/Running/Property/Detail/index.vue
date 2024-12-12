@@ -1,6 +1,6 @@
 <template>
     <a-modal
-        title="详情"
+        :title="$t('Event.index.277611-0')"
         visible
         width="50vw"
         :maskClosable="false"
@@ -16,15 +16,15 @@
                 v-model:activeKey="activeKey"
                 style="max-height: 600px; overflow-y: auto"
             >
-                <a-tab-pane key="table" tab="列表">
+                <a-tab-pane key="table" :tab="$t('Detail.index.256328-0')">
                     <Table :data="props.data" :time="_getTimes" />
                 </a-tab-pane>
-                <a-tab-pane key="charts" tab="图表">
+                <a-tab-pane key="charts" :tab="$t('Detail.index.256328-1')">
                     <Charts :data="props.data" :time="_getTimes" />
                 </a-tab-pane>
                 <a-tab-pane
                     key="geo"
-                    tab="轨迹"
+                    :tab="$t('Detail.index.256328-2')"
                     v-if="data?.valueType?.type === 'geoPoint'"
                 >
                     <PropertyAMap :data="props.data" :time="_getTimes" />

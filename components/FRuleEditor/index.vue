@@ -4,7 +4,7 @@
         :mask-closable="false"
         visible
         width="1300px"
-        title="编辑规则"
+        :title="$t('FRuleEditor.index.911643-0')"
         centered
         :destroyOnClose="true"
         :dialogStyle="{
@@ -16,13 +16,13 @@
         <div class="header" v-if="virtualRule?.windowType && virtualRule?.windowType !== 'undefined'">
             <div class="header-item">
                 {{
-                    virtualRule?.windowType === 'time' ? '时间窗口' : '频次窗口'
+                    virtualRule?.windowType === 'time' ? $t('FRuleEditor.index.911643-1') : $t('FRuleEditor.index.911643-2')
                 }}
             </div>
             <div class="header-item">
-                <div>聚合函数: <span>{{ aggType || '--' }}</span></div>
-                <div>窗口长度(次)：<span>{{ virtualRule?.window?.span || '--' }}</span></div>
-                <div>步长(次): <span>{{ virtualRule?.window?.every || '--' }}</span></div>
+                <div>{{ $t('FRuleEditor.index.911643-3') }} <span>{{ aggType || '--' }}</span></div>
+                <div>{{ $t('FRuleEditor.index.911643-4') }}({{ $t('FRuleEditor.index.911643-5') }})：<span>{{ virtualRule?.window?.span || '--' }}</span></div>
+                <div>{{ $t('FRuleEditor.index.911643-6') }}({{ $t('FRuleEditor.index.911643-5') }}): <span>{{ virtualRule?.window?.every || '--' }}</span></div>
             </div>
         </div>
         <div class="box">
@@ -53,8 +53,8 @@
         </div>
         <template #footer>
             <a-space>
-                <a-button @click="handleCancel">取消</a-button>
-                <a-button @click="handleOk" type="primary">确定</a-button>
+                <a-button @click="handleCancel">{{ $t('FRuleEditor.index.911643-7') }}</a-button>
+                <a-button @click="handleOk" type="primary">{{ $t('FRuleEditor.index.911643-8') }}</a-button>
             </a-space>
         </template>
     </a-modal>
@@ -65,6 +65,9 @@ import Debug from './Debug/index.vue';
 import Operator from './Operator/index.vue';
 import { cloneDeep } from 'lodash-es';
 import {useTableWrapper} from "../../components/Metadata/context";
+import { useI18n } from 'vue-i18n';
+
+const { t: $t } = useI18n();
 interface Emits {
     (e: 'save', data: string | undefined): void;
     (e: 'close'): void;
@@ -112,12 +115,12 @@ const getAllCrud = () => {
     console.log(item)
     const config = item
     tips.value.push({
-      label: `${config.name}$recent实时值`,
+      label: $t('FRuleEditor.index.911643-9', [config.name]),
       insertText:`$recent ("${config.id}")`,
       kind: 18,
     })
     tips.value.push({
-        label: `${config.name}上一值`,
+        label: $t('FRuleEditor.index.911643-10', [config.name]),
         insertText: `$lastState("${config.id}"))`,
         kind: 18
     })

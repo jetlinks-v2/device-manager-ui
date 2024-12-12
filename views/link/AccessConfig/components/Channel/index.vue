@@ -2,7 +2,7 @@
     <div v-if="type === 'channel'" class="card-last">
         <a-row :gutter="[24, 24]">
             <a-col :span="12">
-                <title-component data="基本信息" />
+                <title-component :data="$t('Channel.index.456223-0')" />
                 <div>
                     <a-form
                         :model="formState"
@@ -12,29 +12,29 @@
                         @finish="onFinish"
                     >
                         <a-form-item
-                            label="名称"
+                            :label="$t('Channel.index.456223-1')"
                             name="name"
                             :rules="[
                                 {
                                     required: true,
-                                    message: '请输入名称',
+                                    message: $t('Channel.index.456223-2'),
                                     trigger: 'blur',
                                 },
                                 {
                                     max: 64,
-                                    message: '最多可输入64个字符',
+                                    message: $t('Channel.index.456223-3'),
                                     trigger: 'blur',
                                 },
                             ]"
                         >
                             <a-input
-                                placeholder="请输入名称"
+                                :placeholder="$t('Channel.index.456223-2')"
                                 v-model:value="formState.name"
                             />
                         </a-form-item>
-                        <a-form-item label="说明" name="description">
+                        <a-form-item :label="$t('Channel.index.456223-4')" name="description">
                             <a-textarea
-                                placeholder="请输入说明"
+                                :placeholder="$t('Channel.index.456223-5')"
                                 :rows="4"
                                 v-model:value="formState.description"
                                 show-count
@@ -51,7 +51,7 @@
                                 }`"
                                 :loading="loading"
                             >
-                                保存
+                                {{ $t('Channel.index.456223-6') }}
                             </j-permission-button>
                         </a-form-item>
                     </a-form>
@@ -59,17 +59,17 @@
             </a-col>
             <a-col :span="12">
                 <div class="doc" style="height: 600px">
-                    <TitleComponent data="配置概览" />
-                    <p>接入方式：{{ provider.name }}</p>
+                    <TitleComponent :data="$t('Channel.index.456223-7')" />
+                    <p>{{ $t('Channel.index.456223-8') }}{{ provider.name }}</p>
                     <p>
                         {{ provider.description }}
                     </p>
                     <!-- <p>消息协议：{{ provider.id }}</p> -->
-                    <TitleComponent data="设备接入指引" />
-                    <p>1、配置{{ provider.name }}通道</p>
-                    <p>2、创建{{ provider.name }}设备接入网关</p>
-                    <p>3、创建产品，并选中接入方式为{{ provider.name }}</p>
-                    <p>4、添加设备，单独为每一个设备进行数据点绑定</p>
+                    <TitleComponent :data="$t('Channel.index.456223-9')" />
+                    <p>{{ $t('Channel.index.456223-10') }}{{ provider.name }}{{ $t('Channel.index.456223-11') }}</p>
+                    <p>{{ $t('Channel.index.456223-12') }}{{ provider.name }}{{ $t('Channel.index.456223-13') }}</p>
+                    <p>{{ $t('Channel.index.456223-14') }}{{ provider.name }}</p>
+                    <p>{{ $t('Channel.index.456223-15') }}</p>
                 </div>
             </a-col>
         </a-row>
@@ -80,7 +80,9 @@
 import { onlyMessage } from '@jetlinks-web/utils';
 import { update, save } from '../../../../../api/link/accessConfig';
 import { ProtocolMapping } from '../../data';
+import { useI18n } from 'vue-i18n';
 
+const { t: $t } = useI18n();
 interface FormState {
     name: string;
     description: string;
@@ -120,7 +122,7 @@ const onFinish = async (values: any) => {
     const resp =
         id === ':id' ? await save(params) : await update({ ...params, id });
     if (resp.status === 200) {
-        onlyMessage('操作成功', 'success');
+        onlyMessage($t('Channel.index.456223-16'), 'success');
         history.back();
         if ((window as any).onTabSaveSuccess) {
             (window as any).onTabSaveSuccess(resp);

@@ -13,15 +13,15 @@
       <div class="table-search-header">
         <div>
           <a-space>
-            <span>查找</span>
-            <a-input v-model:value="searchValue" :maxlength="64" placeholder="请输入查找内容" />
-            <a-button type="primary" ghost @click="() => search('all')">查找全部</a-button>
-            <a-button type="primary" ghost @click="() => search('prev')">上一个</a-button>
-            <a-button type="primary" ghost @click="() => search('next')">下一个</a-button>
+            <span>{{ $t('Search.search.746496-0') }}</span>
+            <a-input v-model:value="searchValue" :maxlength="64" :placeholder="$t('Search.search.746496-1')" />
+            <a-button type="primary" ghost @click="() => search('all')">{{ $t('Search.search.746496-2') }}</a-button>
+            <a-button type="primary" ghost @click="() => search('prev')">{{ $t('Search.search.746496-3') }}</a-button>
+            <a-button type="primary" ghost @click="() => search('next')">{{ $t('Search.search.746496-4') }}</a-button>
           </a-space>
         </div>
         <div>
-          <a-button type="primary" @click.stop="onClose">关闭</a-button>
+          <a-button type="primary" @click.stop="onClose">{{ $t('Search.search.746496-5') }}</a-button>
         </div>
       </div>
       <div v-if="visible" style="margin: 12px 0">
@@ -38,13 +38,13 @@
           }"
           :serial="{
             width: openGroup ? 150 : 66,
-            title: '行数'
+            title: $t('Search.search.746496-6')
           }"
         >
           <template #serial="{ record }">
             <span v-if="openGroup">
               <j-ellipsis>
-                {{ record.expands.groupName }} 第 {{ record.__oldSerial }} 行
+                {{ record.expands.groupName }} {{ $t('Search.search.746496-7') }} {{ record.__oldSerial }} {{ $t('Search.search.746496-8') }}
               </j-ellipsis>
             </span>
             <span v-else>
@@ -64,7 +64,7 @@
         </Table>
       </div>
       <div v-if="visible">
-        查找到 <span class="table-search-result-total">{{filterArray.length}}</span> 条相关属性
+        {{ $t('Search.search.746496-9') }} <span class="table-search-result-total">{{filterArray.length}}</span> {{ $t('Search.search.746496-10') }}
       </div>
     </div>
   </j-drag-modal>
@@ -73,6 +73,9 @@
 <script setup name="MetadataTableSearch">
 import Table from '../../Table.vue'
 import {useTableDataSource, useTableOpenGroup, useTableTool, useGroupOptions} from "../../context";
+import { useI18n } from 'vue-i18n';
+
+const { t: $t } = useI18n();
 
 const props = defineProps({
   searchKey: {
@@ -100,11 +103,11 @@ const tableRef = ref()
 
 const columns = [
   {
-    title: '标识',
+    title: $t('Search.search.746496-11'),
     dataIndex: 'id',
   },
   {
-    title: '名称',
+    title: $t('Search.search.746496-12'),
     dataIndex: 'name',
   }
 ]
@@ -200,5 +203,8 @@ const onSelect = (record) => {
 
 .table-search-result-total {
   color: @primary-color;
+}
+:deep(.jetlinks-drag-modal-footer) {
+    display: none;
 }
 </style>

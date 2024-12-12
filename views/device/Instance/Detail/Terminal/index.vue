@@ -73,7 +73,7 @@ const getInitData = () => {
   const topic = '/xterm/setup';
   wsInitRef.value = getWebSocket(id, topic, {}, current.value?.id).subscribe((resp) => {
     if (!resp.payload?.sessionId) {
-      onlyMessage('连接失败')
+      onlyMessage($t('Terminal.index.488144-0'))
     }
     sessionId.value = resp.payload?.sessionId
     termRef.write(resp.payload.output)

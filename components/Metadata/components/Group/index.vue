@@ -2,7 +2,7 @@
   <a-auto-complete
     v-model:value="myValue"
     :options="options"
-    placeholder="请选择分组"
+    :placeholder="$t('Group.index.613328-0')"
     style="width: 100%;"
     :getPopupContainer="(node) => tableWrapperRef || node"
     @search="onSearch"

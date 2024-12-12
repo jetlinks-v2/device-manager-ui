@@ -7,7 +7,7 @@
             <div class="steps-box" v-if="current === 0">
                 <div class="alert">
                     <AIcon type="InfoCircleOutlined" />
-                    通过OneNet平台的HTTP推送服务进行数据接入
+                    {{ $t('Cloud.OneNet.808542-0') }}
                 </div>
                 <div style="margin-top: 42px">
                     <a-row :gutter="[24, 24]">
@@ -30,9 +30,9 @@
                                             ]"
                                         >
                                             <template #label>
-                                                接口地址
+                                                {{ $t('Cloud.OneNet.808542-1') }}
                                                 <a-tooltip
-                                                    title="同步物联网平台设备数据到OneNet"
+                                                    :title="$t('Cloud.OneNet.808542-2')"
                                                 >
                                                     <AIcon
                                                         type="QuestionCircleOutlined"
@@ -56,19 +56,19 @@
                                             :rules="[
                                                 {
                                                     required: true,
-                                                    message: '请输入apiKey',
+                                                    message: $t('Cloud.OneNet.808542-3'),
                                                 },
                                                 {
                                                     max: 64,
                                                     message:
-                                                        '最多可输入64个字符',
+                                                        $t('Cloud.OneNet.808542-4'),
                                                     trigger: 'blur',
                                                 },
                                             ]"
                                         >
                                             <a-input
                                                 v-model:value="formState.apiKey"
-                                                placeholder="请输入apiKey"
+                                                :placeholder="$t('Cloud.OneNet.808542-3')"
                                             />
                                         </a-form-item>
                                     </a-col>
@@ -80,20 +80,20 @@
                                             :rules="[
                                                 {
                                                     required: true,
-                                                    message: '请输入通知Token',
+                                                    message: $t('Cloud.OneNet.808542-5'),
                                                 },
                                                 {
                                                     max: 64,
                                                     message:
-                                                        '最多可输入64个字符',
+                                                        $t('Cloud.OneNet.808542-4'),
                                                     trigger: 'blur',
                                                 },
                                             ]"
                                         >
                                             <template #label>
-                                                通知Token
+                                                {{ $t('Cloud.OneNet.808542-6') }}
                                                 <a-tooltip
-                                                    title="OneNet端HTTP推送配置中设置的Token"
+                                                    :title="$t('Cloud.OneNet.808542-7')"
                                                 >
                                                     <AIcon
                                                         type="QuestionCircleOutlined"
@@ -105,7 +105,7 @@
                                                 v-model:value="
                                                     formState.validateToken
                                                 "
-                                                placeholder="请输入通知Token"
+                                                :placeholder="$t('Cloud.OneNet.808542-5')"
                                             />
                                         </a-form-item>
                                     </a-col>
@@ -116,7 +116,7 @@
                                                 {
                                                     max: 64,
                                                     message:
-                                                        '最多可输入64个字符',
+                                                        $t('Cloud.OneNet.808542-4'),
                                                     trigger: 'blur',
                                                 },
                                             ]"
@@ -124,7 +124,7 @@
                                             <template #label>
                                                 aesKey
                                                 <a-tooltip
-                                                    title="OneNet端生成的消息加密key"
+                                                    :title="$t('Cloud.OneNet.808542-8')"
                                                 >
                                                     <AIcon
                                                         type="QuestionCircleOutlined"
@@ -134,18 +134,18 @@
                                             </template>
                                             <a-input
                                                 v-model:value="formState.aesKey"
-                                                placeholder="请输入aesKey"
+                                                :placeholder="$t('Cloud.OneNet.808542-9')"
                                             /> </a-form-item
                                     ></a-col>
                                 </a-row>
                                 <a-row :gutter="[24, 24]">
                                     <a-col :span="24">
                                         <a-form-item
-                                            label="说明"
+                                            :label="$t('Cloud.OneNet.808542-10')"
                                             name="description"
                                         >
                                             <a-textarea
-                                                placeholder="请输入说明"
+                                                :placeholder="$t('Cloud.OneNet.808542-11')"
                                                 :rows="4"
                                                 v-model:value="
                                                     formState.description
@@ -160,41 +160,41 @@
                         <a-col :span="8">
                             <j-scrollbar height="500">
                                 <div class="doc">
-                                    <h1>操作指引：</h1>
+                                    <h1>{{ $t('Cloud.OneNet.808542-12') }}</h1>
                                     <div>
-                                        1、登录OneNet平台创建产品、设备，并配置HTTP的全局推送
+                                        {{ $t('Cloud.OneNet.808542-13') }}
                                     </div>
                                     <div>
-                                        2、获取OneNet平台的产品Key
+                                        {{ $t('Cloud.OneNet.808542-14') }}
                                     </div>
                                     <div class="image">
                                         <a-image width="100%" :src="img5" />
                                     </div>
                                     <div>
-                                        3、IOT端创建类型为OneNet的设备接入网关
+                                        {{ $t('Cloud.OneNet.808542-15') }}
                                     </div>
                                     <div>
-                                        4、IOT端创建产品，选中接入方式为OneNet类型的设备接入网关，填写Master-APIkey（OneNet端的产品Key）
+                                        {{ $t('Cloud.OneNet.808542-16') }}
                                     </div>
                                     <div class="image">
                                         <a-image width="100%" :src="img6" />
-                                        <div class="desc">填写OneNet网关相关参数</div>
+                                        <div class="desc">{{ $t('Cloud.OneNet.808542-17') }}</div>
                                     </div>
                                     <div>
-                                        5、IOT端添加设备，在设备实例页面为每一台设备设置唯一的IMEI、IMSI码（需与OneNet平台中的值一致）
+                                        {{ $t('Cloud.OneNet.808542-18') }}
                                     </div>
                                     <div class="image">
                                         <a-image width="100%" :src="img7" />
                                     </div>
-                                    <h1>HTTP推送配置说明</h1>
+                                    <h1>{{ $t('Cloud.OneNet.808542-19') }}</h1>
                                     <div>
-                                        1、点击<b>数据推送&gt;HTTP推送&gt;添加全局推送</b>
+                                        {{ $t('Cloud.OneNet.808542-20') }}<b>{{ $t('Cloud.OneNet.808542-21') }}</b>
                                     </div>
                                     <div class="image">
                                         <a-image width="100%" :src="img8" />
                                     </div>
                                     <div>
-                                        2、填写全局推送相关参数
+                                        {{ $t('Cloud.OneNet.808542-22') }}
                                     </div>
                                     <div class="image">
                                         <a-image width="100%" :src="img9" />
@@ -205,11 +205,11 @@
                                         :column="1"
                                         :labelStyle="{ width: '100px' }"
                                     >
-                                        <a-descriptions-item label="参数"
-                                            >说明</a-descriptions-item
+                                        <a-descriptions-item :label="$t('Cloud.OneNet.808542-23')"
+                                            >{{ $t('Cloud.OneNet.808542-10') }}</a-descriptions-item
                                         >
-                                        <a-descriptions-item label="推送地址url">
-                                            用于接收OneNet推送设备数据的物联网平台地址:
+                                        <a-descriptions-item :label="$t('Cloud.OneNet.808542-24')">
+                                            {{ $t('Cloud.OneNet.808542-25') }}
                                             <div style="word-wrap: break-word">
                                                 {{
                                                     `${origin}/api/one-net/${randomString()}/notify`
@@ -217,27 +217,27 @@
                                             </div>
                                         </a-descriptions-item>
                                         <a-descriptions-item label="Token">
-                                            自定义token,可用于验证请求是否来自OneNet
+                                            {{ $t('Cloud.OneNet.808542-26') }}
                                         </a-descriptions-item>
                                         <a-descriptions-item label="AESKey">
-                                            采用AES加密算法对推送的数据进行数据加密，AesKey为加密秘钥
+                                            {{ $t('Cloud.OneNet.808542-27') }}
                                         </a-descriptions-item>
                                     </a-descriptions>
 
                                     <a-alert
-                                        message="注意："
+                                        :message="$t('Cloud.OneNet.808542-28')"
                                         style="margin-top: 15px;"
                                         type="warning"
                                     >
                                     <template #description>
                                         <span>
-                                            开发者在OneNet物联网平台添加全局推送参数前，需要在JetLinks物联网平台添加OneNet接入网关且OneNet接入网关中的通知Token参数需要和OneNet物联网平台全局推送参数中的Token保持一致，否则OneNet物联网平台添加全局推送检验不通过，提示
+                                            {{ $t('Cloud.OneNet.808542-29') }}
                                             <span style="color: red">validate fail: validate token fail.</span>
                                         </span>
                                     </template>
                                     </a-alert>
 
-                                    <h1>设备接入网关配置说明</h1>
+                                    <h1>{{ $t('Cloud.OneNet.808542-30') }}</h1>
 
                                     <a-descriptions
                                         bordered
@@ -245,22 +245,22 @@
                                         :column="1"
                                         :labelStyle="{ width: '100px' }"
                                     >
-                                        <a-descriptions-item label="参数"
-                                            >说明</a-descriptions-item
+                                        <a-descriptions-item :label="$t('Cloud.OneNet.808542-23')"
+                                            >{{ $t('Cloud.OneNet.808542-10') }}</a-descriptions-item
                                         >
                                         <a-descriptions-item label="apiKey"
-                                            >OneNet平台中具体产品的Master-APIkey</a-descriptions-item
+                                            >{{ $t('Cloud.OneNet.808542-31') }}</a-descriptions-item
                                         >
-                                        <a-descriptions-item label="通知Token">
-                                            填写OneNet数据推送配置中设置的Token
+                                        <a-descriptions-item :label="$t('Cloud.OneNet.808542-6')">
+                                            {{ $t('Cloud.OneNet.808542-32') }}
                                         </a-descriptions-item>
                                         <a-descriptions-item label="aesKey">
-                                            若OneNet数据推送配置了消息加密，此处填写OneNet端数据推送配置中设置的AESkey
+                                            {{ $t('Cloud.OneNet.808542-33') }}
                                         </a-descriptions-item>
                                     </a-descriptions>
-                                    <h1>其他说明</h1>
+                                    <h1>{{ $t('Cloud.OneNet.808542-34') }}</h1>
                                     <div>
-                                        1.在IOT端启用设备时，若OneNet平台没有与之对应的设备，则将在OneNet端自动创建新设备
+                                        {{ $t('Cloud.OneNet.808542-35') }}
                                     </div>
                                 </div>
                             </j-scrollbar>
@@ -273,12 +273,12 @@
             <div class="steps-box" v-if="current === 1">
                 <div class="alert">
                     <AIcon type="InfoCircleOutlined" />
-                    只能选择HTTP通信方式的协议
+                    {{ $t('Cloud.OneNet.808542-36') }}
                 </div>
                 <div class="search">
                     <a-input-search
                         allowClear
-                        placeholder="请输入"
+                        :placeholder="$t('Cloud.OneNet.808542-37')"
                         style="width: 300px"
                         @search="procotolSearch"
                     />
@@ -289,7 +289,7 @@
                         hasPermission="link/Protocol:add"
                     >
                         <template #icon><AIcon type="PlusOutlined" /></template>
-                        新增
+                        {{ $t('Cloud.OneNet.808542-38') }}
                     </j-permission-button>
                 </div>
                 <j-scrollbar height="480">
@@ -315,7 +315,7 @@
                     <j-empty
                         style="margin-top: 10%"
                         v-else
-                        description="暂无数据"
+                        :description="$t('Cloud.OneNet.808542-39')"
                     />
                 </j-scrollbar>
             </div>
@@ -323,7 +323,7 @@
         <div v-if="current === 2" class="card-last">
             <a-row :gutter="[24, 24]">
                 <a-col :span="12">
-                    <title-component data="基本信息" />
+                    <title-component :data="$t('Cloud.OneNet.808542-40')" />
                     <div>
                         <a-form
                             :model="formData"
@@ -333,29 +333,29 @@
                             ref="formRef2"
                         >
                             <a-form-item
-                                label="名称"
+                                :label="$t('Cloud.OneNet.808542-41')"
                                 name="name"
                                 :rules="[
                                     {
                                         required: true,
-                                        message: '请输入名称',
+                                        message: $t('Cloud.OneNet.808542-42'),
                                         trigger: 'blur',
                                     },
                                     {
                                         max: 64,
-                                        message: '最多可输入64个字符',
+                                        message: $t('Cloud.OneNet.808542-4'),
                                         trigger: 'blur',
                                     },
                                 ]"
                             >
                                 <a-input
-                                    placeholder="请输入名称"
+                                    :placeholder="$t('Cloud.OneNet.808542-42')"
                                     v-model:value="formData.name"
                                 />
                             </a-form-item>
-                            <a-form-item label="说明" name="description">
+                            <a-form-item :label="$t('Cloud.OneNet.808542-10')" name="description">
                                 <a-textarea
-                                    placeholder="请输入说明"
+                                    :placeholder="$t('Cloud.OneNet.808542-11')"
                                     :rows="4"
                                     v-model:value="formData.description"
                                     show-count
@@ -367,37 +367,37 @@
                 </a-col>
                 <a-col :span="12">
                     <div class="doc" style="height: 606px">
-                        <TitleComponent data="配置概览" />
-                        <p>接入方式：{{ provider.name }}</p>
+                        <TitleComponent :data="$t('Cloud.OneNet.808542-43')" />
+                        <p>{{ $t('Cloud.OneNet.808542-44') }}{{ provider.name }}</p>
                         <p>
                             {{ provider.description }}
                         </p>
-                        <p>消息协议：{{ procotolCurrent }}</p>
-                        <TitleComponent data="设备接入指引" />
+                        <p>{{ $t('Cloud.OneNet.808542-45') }}{{ procotolCurrent }}</p>
+                        <TitleComponent :data="$t('Cloud.OneNet.808542-46')" />
                         <p>
-                            1、创建类型为{{
+                            {{ $t('Cloud.OneNet.808542-47') }}{{
                                 props?.provider?.id === 'OneNet'
                                     ? 'OneNet'
                                     : 'CTWing'
-                            }}的设备接入网关
+                            }}{{ $t('Cloud.OneNet.808542-48') }}
                         </p>
                         <p>
-                            2、创建产品，并选中接入方式为
+                            {{ $t('Cloud.OneNet.808542-49') }}
                             {{
                                 props?.provider?.id === 'OneNet'
                                     ? 'OneNet'
-                                    : 'CTWing,选中后需填写CTWing平台中的产品ID、Master-APIkey。'
+                                    : $t('Cloud.OneNet.808542-50')
                             }}
                         </p>
                         <p>
-                            3、添加设备，为每一台设备设置唯一的IMEI、SN、IMSI、PSK码（需与CTWingt平台中填写的值一致，若CTWing平台没有对应的设备，将会通过CTWing平台提供的LWM2M协议自动创建）
+                            {{ $t('Cloud.OneNet.808542-51') }}
                         </p>
                     </div>
                 </a-col>
             </a-row>
         </div>
         <div :class="current !== 2 ? 'steps-action' : 'steps-action-save'">
-          <a-button v-if="current > 0" @click="prev" style="margin-right: 8px"> 上一步 </a-button>
+          <a-button v-if="current > 0" @click="prev" style="margin-right: 8px"> {{ $t('Cloud.OneNet.808542-52') }} </a-button>
             <j-permission-button
                 style="margin-right: 8px"
                 v-if="current === 2 && view === 'false'"
@@ -408,7 +408,7 @@
                 }`"
                 :loading="loading"
             >
-                保存
+                {{ $t('Cloud.OneNet.808542-53') }}
             </j-permission-button>
           <a-button
             v-if="[0, 1].includes(current)"
@@ -416,7 +416,7 @@
 
             @click="next"
           >
-            下一步
+            {{ $t('Cloud.OneNet.808542-54') }}
           </a-button>
 
         </div>
@@ -431,7 +431,9 @@ import { randomString, onlyMessage } from '@jetlinks-web/utils';
 import { ProtocolMapping } from '../../data';
 import { useMenuStore } from '@/store';
 import { network } from '../../../../../assets';
+import { useI18n } from 'vue-i18n';
 
+const { t: $t } = useI18n();
 const menuStory = useMenuStore();
 const origin = window.location.origin;
 const img5 = network.network5
@@ -489,7 +491,7 @@ const formData = ref<Form>({
 const loading = ref(false)
 const current = ref(0);
 const stepCurrent = ref(0);
-const steps = ref(['接入配置', '消息协议', '完成']);
+const steps = ref([$t('Cloud.OneNet.808542-55'), $t('Cloud.OneNet.808542-56'), $t('Cloud.OneNet.808542-57')]);
 const procotolList: any = ref([]);
 const allProcotolList = ref([]);
 const procotolCurrent: any = ref('');
@@ -537,7 +539,7 @@ const saveData = async () => {
               });
 
     if (resp.status === 200) {
-        onlyMessage('操作成功', 'success');
+        onlyMessage($t('Cloud.OneNet.808542-58'), 'success');
         history.back();
         if ((window as any).onTabSaveSuccess) {
             (window as any).onTabSaveSuccess(resp);
@@ -580,7 +582,7 @@ const next = async () => {
         current.value = current.value + 1;
     } else if (current.value === 1) {
         if (!procotolCurrent.value) {
-            onlyMessage('请选择消息协议！', 'error');
+            onlyMessage($t('Cloud.OneNet.808542-59'), 'error');
         } else {
             current.value = current.value + 1;
         }

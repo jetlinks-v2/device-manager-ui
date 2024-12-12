@@ -31,7 +31,7 @@
 <script setup lang="ts">
 import dayjs from 'dayjs';
 import type { PropType } from 'vue';
-
+import i18n from '@/locales';
 interface BtnOptions {
     label: string;
     value: string;
@@ -53,10 +53,10 @@ const props = defineProps({
     quickBtnList: {
         type: Array as PropType<BtnOptions[]>,
         default: [
-            { label: '今日', value: 'today' },
-            { label: '近一周', value: 'week' },
-            { label: '近一月', value: 'month' },
-            { label: '近一年', value: 'year' },
+            { label: i18n.global.t('IotCard.index.369962-21-1'), value: 'today' },
+            { label: i18n.global.t('IotCard.index.369962-22'), value: 'week' },
+            { label: i18n.global.t('IotCard.index.369962-23'), value: 'month' },
+            { label: i18n.global.t('IotCard.index.369962-24'), value: 'year' },
         ],
     },
     type: {

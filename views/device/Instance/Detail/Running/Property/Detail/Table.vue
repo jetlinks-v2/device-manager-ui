@@ -47,12 +47,12 @@
         </a-table>
     </div>
     <a-modal
-        title="详情"
+        :title="$t('Event.index.277611-0')"
         :visible="visible"
         @ok="visible = false"
         @cancel="visible = false"
     >
-        <div>自定义属性</div>
+        <div>{{ $t('Detail.Table.181708-0') }}</div>
         <JsonViewer
             v-if="
                 data?.valueType?.type === 'object' ||
@@ -78,7 +78,9 @@ import dayjs from 'dayjs';
 import { getType } from '../index';
 import ValueRender from '../ValueRender.vue';
 import JsonViewer from 'vue3-json-viewer';
+import { useI18n } from 'vue-i18n';
 
+const { t: $t } = useI18n();
 const _props = defineProps({
     data: {
         type: Object,
@@ -103,7 +105,7 @@ console.log(_props.data);
 const columns = computed(() => {
     const arr: any[] = [
         {
-            title: '时间',
+            title: $t('Log.index.848256-1'),
             dataIndex: 'timestamp',
             key: 'timestamp',
             ellipsis: true,
@@ -117,7 +119,7 @@ const columns = computed(() => {
     ];
     if (_props.data?.valueType?.type != 'geoPoint') {
         arr.push({
-            title: '操作',
+            title: $t('Product.index.660348-11'),
             dataIndex: 'action',
             key: 'action',
         });

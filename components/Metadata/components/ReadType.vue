@@ -1,11 +1,11 @@
 <template>
   <j-form-item
     name="type"
-    label="读写类型"
+    :label="$t('components.ReadType.885151-0')"
     :rules="[
       {
         required: true,
-        message: '请选择读写类型'
+        message: $t('components.ReadType.885151-1')
       }
     ]"
     style="margin-bottom: 0"

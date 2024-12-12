@@ -1,5 +1,5 @@
 <template>
-    <a-select allowClear v-model:value="_value" @change="onChange" placeholder="请选择" style="width: 100%" show-search :filter-option="filterOption">
+    <a-select allowClear v-model:value="_value" @change="onChange" :placeholder="$t('DeviceAccess.index.594346-12')" style="width: 100%" show-search :filter-option="filterOption">
         <a-select-option
             v-for="item in list"
             :key="item.id"

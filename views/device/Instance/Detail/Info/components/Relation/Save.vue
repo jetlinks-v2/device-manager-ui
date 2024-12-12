@@ -13,9 +13,9 @@
                         type="CloseOutlined"
                         style="margin-right: 5px"
                         @click="onClose"
-                    />编辑</span
+                    />{{$t('Product.index.660348-13')}}</span
                 >
-                <a-button type="primary" @click="saveBtn">保存</a-button>
+                <a-button type="primary" @click="saveBtn">{{ $t('DeviceAccess.index.594346-16') }}</a-button>
             </div>
         </template>
         <a-form layout="vertical" ref="formRef" :model="modelRef">
@@ -48,7 +48,9 @@ import { saveRelations } from '../../../../../../../api/instance';
 import { queryUserListNoPaging } from '@/api/system/user';
 import { useInstanceStore } from '../../../../../../../store/instance';
 import { onlyMessage } from '@/utils/comm';
+import { useI18n } from 'vue-i18n';
 
+const { t: $t } = useI18n();
 const emit = defineEmits(['close', 'save']);
 
 const formRef = ref();
@@ -115,7 +117,7 @@ const saveBtn = () => {
             if(param.length && instanceStore.current.id){
                 const resp = await saveRelations(instanceStore.current.id, param);
                 if (resp.status === 200) {
-                    onlyMessage('操作成功！');
+                    onlyMessage($t('Product.index.660348-18'));
                     emit('save');
                     formRef.value.resetFields();
                 }

@@ -30,7 +30,7 @@
     <a-modal
         :width="600"
         v-model:visible="visible"
-        title="详情"
+        :title="$t('Event.index.277611-0')"
         class="device-running-event-modal"
     >
         <JsonViewer
@@ -38,7 +38,7 @@
             style="max-height: calc(100vh - 400px); overflow: auto"
         />
         <template #footer>
-            <a-button type="primary" @click="visible = false">关闭</a-button>
+            <a-button type="primary" @click="visible = false">{{ $t('Event.index.277611-1') }}</a-button>
         </template>
     </a-modal>
 </template>
@@ -49,7 +49,9 @@ import { getEventList } from '../../../../../../api/instance';
 import { useInstanceStore } from '../../../../../../store/instance';
 import JsonViewer from 'vue3-json-viewer';
 import { cloneDeep } from 'lodash-es';
+import { useI18n } from 'vue-i18n';
 
+const { t: $t } = useI18n();
 const events = defineProps({
     data: {
         type: Object,
@@ -61,7 +63,7 @@ const instanceStore = useInstanceStore();
 
 const defaultColumns = [
     {
-        title: '时间',
+        title: $t('Event.index.277611-2'),
         dataIndex: 'timestamp',
         key: 'timestamp',
         scopedSlots: true,
@@ -71,7 +73,7 @@ const defaultColumns = [
         },
     },
     {
-        title: '操作',
+        title: $t('Event.index.277611-3'),
         dataIndex: 'action',
         key: 'action',
         scopedSlots: true,
@@ -156,7 +158,7 @@ watchEffect(() => {
         });
     } else {
         columns.value.splice(0, 0, {
-            title: '数据',
+            title: $t('Event.index.277611-4'),
             dataIndex: 'value',
         });
     }
@@ -170,13 +172,13 @@ const detail = (_info: any) => {
     info.value = _info;
     visible.value = true;
     // Modal.info({
-    //     title: () => '详情',
+    //     title: () => $t('Event.index.277611-0'),
     //     width: 850,
     //     content: () => h('JsonViewer', {
     //         'expand-depth': 5,
     //         value: _info
     //     }),
-    //     okText: '关闭',
+    //     okText: $t('Event.index.277611-1'),
     // });
 };
 </script>

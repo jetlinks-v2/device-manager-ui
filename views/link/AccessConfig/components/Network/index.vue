@@ -7,12 +7,12 @@
             <div class="steps-box" v-if="current === 0">
                 <div class="alert">
                     <AIcon type="InfoCircleOutlined" />
-                    选择与设备通信的网络组件
+                    {{ $t('Network.index.041705-0') }}
                 </div>
                 <div class="search">
                     <a-input-search
                         allowClear
-                        placeholder="请输入"
+                        :placeholder="$t('Network.index.041705-1')"
                         style="width: 300px"
                         @search="networkSearch"
                     />
@@ -22,7 +22,7 @@
                         hasPermission="link/Type:add"
                     >
                         <template #icon><AIcon type="PlusOutlined" /></template>
-                        新增
+                        {{ $t('Network.index.041705-2') }}
                     </j-permission-button>
                 </div>
                 <j-scrollbar height="480">
@@ -66,7 +66,7 @@
                                                         (item.addresses || [])
                                                             .length > 1
                                                     "
-                                                    >等{{ item.addresses.length }}条</span
+                                                    >{{ $t('Network.index.041705-3') }}{{ item.addresses.length }}{{ $t('Network.index.041705-4') }}</span
                                                 >
                                             </div>
                                         </a-tooltip>
@@ -78,19 +78,19 @@
                     <j-empty
                         style="margin-top: 10%"
                         v-else
-                        description="暂无数据"
+                        :description="$t('Network.index.041705-5')"
                     />
                 </j-scrollbar>
             </div>
             <div class="steps-box" v-else-if="current === 1">
                 <div class="alert">
                     <AIcon type="InfoCircleOutlined" />
-                    使用选择的消息协议，对网络组件通信数据进行编解码、认证等操作
+                    {{ $t('Network.index.041705-6') }}
                 </div>
                 <div class="search">
                     <a-input-search
                         allowClear
-                        placeholder="请输入"
+                        :placeholder="$t('Network.index.041705-1')"
                         style="width: 300px"
                         @search="procotolSearch"
                     />
@@ -102,7 +102,7 @@
                         :disabled="id !== ':id'"
                     >
                         <template #icon><AIcon type="PlusOutlined" /></template>
-                        新增
+                        {{ $t('Network.index.041705-2') }}
                     </j-permission-button>
                 </div>
                 <j-scrollbar height="480">
@@ -128,7 +128,7 @@
                     <j-empty
                         style="margin-top: 10%"
                         v-else
-                        description="暂无数据"
+                        :description="$t('Network.index.041705-5')"
                     />
                 </j-scrollbar>
             </div>
@@ -141,28 +141,28 @@
                 >
                     <a-row :gutter="[24, 24]">
                         <a-col :span="12">
-                            <title-component data="基本信息" />
+                            <title-component :data="$t('Network.index.041705-7')" />
                             <a-form
                                 ref="formRef"
                                 :model="formData"
                                 layout="vertical"
                             >
                                 <a-form-item
-                                    label="名称"
+                                    :label="$t('Network.index.041705-8')"
                                     v-bind="validateInfos.name"
                                 >
                                     <a-input
                                         v-model:value="formData.name"
                                         allowClear
-                                        placeholder="请输入名称"
+                                        :placeholder="$t('Network.index.041705-9')"
                                     />
                                 </a-form-item>
                                 <a-form-item
-                                    label="说明"
+                                    :label="$t('Network.index.041705-10')"
                                     v-bind="validateInfos.description"
                                 >
                                     <a-textarea
-                                        placeholder="请输入说明"
+                                        :placeholder="$t('Network.index.041705-11')"
                                         :rows="4"
                                         v-model:value="formData.description"
                                         show-count
@@ -174,7 +174,7 @@
                         <a-col :span="12">
                             <j-scrollbar height="580">
                                 <div class="doc">
-                                    <h1>接入方式</h1>
+                                    <h1>{{ $t('Network.index.041705-12') }}</h1>
                                     <p>
                                         {{ provider.name }}
                                     </p>
@@ -182,7 +182,7 @@
                                         {{ provider.description }}
                                     </p>
                                     <div v-if="getNetworkCurrent.length">
-                                        <h1>网络组件</h1>
+                                        <h1>{{ $t('Network.index.041705-13') }}</h1>
                                         <p
                                             v-for="i in getNetworkCurrent"
                                             :key="i.address"
@@ -194,7 +194,7 @@
                                         </p>
                                     </div>
                                     <template v-if="!isAgent">
-                                        <h1>消息协议</h1>
+                                        <h1>{{ $t('Network.index.041705-14') }}</h1>
                                         <p>
                                             {{
                                                 procotolList.find(
@@ -222,7 +222,7 @@
                                                     data.provider ===
                                                     'mqtt-client-gateway'
                                                         ? 'topic'
-                                                        : 'URL信息'
+                                                        : $t('Network.index.041705-15')
                                                 }}
                                             </h1>
                                             <j-scrollbar height="400">
@@ -277,7 +277,7 @@
               style="margin-right: 8px"
               @click="prev"
             >
-              上一步
+              {{ $t('Network.index.041705-16') }}
             </a-button>
             <j-permission-button
                 v-if="current === 2 && view === 'false'"
@@ -289,14 +289,14 @@
                 }`"
                 :loading='loading'
             >
-                保存
+                {{ $t('Network.index.041705-17') }}
             </j-permission-button>
             <a-button
               v-if="[0, 1].includes(current)"
               type="primary"
               @click="next"
             >
-              下一步
+              {{ $t('Network.index.041705-18') }}
             </a-button>
         </div>
     </div>
@@ -323,7 +323,9 @@ import { Form } from 'ant-design-vue';
 import type { FormInstance, TableColumnType } from 'ant-design-vue';
 import { useMenuStore } from '@/store/menu';
 import { onlyMessage } from '@jetlinks-web/utils';
+import { useI18n } from 'vue-i18n';
 
+const { t: $t } = useI18n();
 const menuStory = useMenuStore();
 function generateUUID() {
     var d = new Date().getTime();
@@ -367,7 +369,7 @@ const isAgent = ['agent-device-gateway', 'agent-media-device-gateway'].includes(
 const current = ref(0);
 const stepCurrent = ref(0);
 const steps = computed(() => {
-    return !isAgent ? ['网络组件', '消息协议', '完成'] : ['网络组件', '完成'];
+    return !isAgent ? [$t('Network.index.041705-13'), $t('Network.index.041705-14'), $t('Network.index.041705-19')] : [$t('Network.index.041705-13'), $t('Network.index.041705-19')];
 });
 const networkList: any = ref([]);
 const allNetworkList: any = ref([]);
@@ -388,14 +390,14 @@ const { resetFields, validate, validateInfos } = useForm(
     formData,
     reactive({
         name: [
-            { required: true, message: '请输入名称', trigger: 'blur' },
+            { required: true, message: $t('Network.index.041705-9'), trigger: 'blur' },
             {
                 max: 64,
-                message: '最多可输入64个字符',
+                message: $t('Network.index.041705-20'),
                 trigger: 'blur',
             },
         ],
-        description: [{ max: 200, message: '最多可输入200个字符' }],
+        description: [{ max: 200, message: $t('Network.index.041705-21') }],
     }),
 );
 
@@ -468,9 +470,9 @@ const getColor = (i: any) => (i.health === -1 ? 'error' : 'processing');
 
 const getStream = (record: any) => {
     let stream = '';
-    if (record.upstream && record.downstream) stream = '上行、下行';
-    else if (record.upstream) stream = '上行';
-    else if (record.downstream) stream = '下行';
+    if (record.upstream && record.downstream) stream = $t('Network.index.041705-22');
+    else if (record.upstream) stream = $t('Network.index.041705-23');
+    else if (record.downstream) stream = $t('Network.index.041705-24');
     return stream;
 };
 
@@ -529,7 +531,7 @@ const saveData = () => {
                     : await update({ ...params, id });
             loading.value = false
             if (resp.status === 200) {
-                onlyMessage('操作成功', 'success');
+                onlyMessage($t('Network.index.041705-25'), 'success');
                 history.back();
                 if ((window as any).onTabSaveSuccess) {
                     if (resp.result?.id) {
@@ -545,7 +547,7 @@ const saveData = () => {
 const next = async () => {
     if (current.value === 0) {
         if (!networkCurrent.value) {
-            onlyMessage('请选择网络组件！', 'error');
+            onlyMessage($t('Network.index.041705-26'), 'error');
         } else if (isAgent) {
             current.value = 2;
             procotolCurrent.value = props.provider.id;
@@ -555,7 +557,7 @@ const next = async () => {
         }
     } else if (current.value === 1) {
         if (!procotolCurrent.value) {
-            onlyMessage('请选择消息协议！', 'error');
+            onlyMessage($t('Network.index.041705-27'), 'error');
         } else {
             const resp =
                 type !== 'child-device'
@@ -568,7 +570,7 @@ const next = async () => {
                 config.value = resp.result || {};
                 current.value = current.value + 1;
                 const Group = {
-                    title: '分组',
+                    title: $t('Network.index.041705-28'),
                     dataIndex: 'group',
                     key: 'group',
                     ellipsis: true,
@@ -609,9 +611,9 @@ onMounted(() => {
             networkCurrent.value = props.data.channelId;
             queryNetworkList(props.provider.id, networkCurrent.value);
             procotolCurrent.value = props.data.protocol;
-            steps.value = ['网络组件', '消息协议', '完成'];
+            steps.value = [$t('Network.index.041705-13'), $t('Network.index.041705-14'), $t('Network.index.041705-19')];
         } else {
-            steps.value = ['消息协议', '完成'];
+            steps.value = [$t('Network.index.041705-14'), $t('Network.index.041705-19')];
             current.value = 1;
             queryProcotolList(props.provider.id);
         }
@@ -619,10 +621,10 @@ onMounted(() => {
         if (props.provider?.id) {
             if (type !== 'child-device') {
                 queryNetworkList(props.provider.id, '');
-                steps.value = ['网络组件', '消息协议', '完成'];
+                steps.value = [$t('Network.index.041705-13'), $t('Network.index.041705-14'), $t('Network.index.041705-19')];
                 current.value = 0;
             } else {
-                steps.value = ['消息协议', '完成'];
+                steps.value = [$t('Network.index.041705-14'), $t('Network.index.041705-19')];
                 current.value = 1;
                 queryProcotolList(props.provider.id);
             }

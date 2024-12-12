@@ -1,18 +1,18 @@
 <template>
-  <a-drawer :mask-closable="false" title="查看物模型" width="700" v-model:visible="_visible" destroy-on-close @close="close">
+  <a-drawer :mask-closable="false" :title="$t('Cat.index.300353-0')" width="700" v-model:visible="_visible" destroy-on-close @close="close">
     <template #extra>
       <a-space>
         <a-button type="primary" @click="handleExport">
-          导出
+          {{ $t('Cat.index.300353-1') }}
         </a-button>
       </a-space>
     </template>
     <a-spin :spinning="loading">
       <div class="cat-content">
         <p class="cat-tip">
-          物模型是对设备在云端的功能描述，包括设备的属性、服务和事件。物联网平台通过定义一种物的描述语言来描述物模型，称之为
-          TSL（即 Thing Specification Language），采用 JSON 格式，您可以根据 TSL
-          组装上报设备的数据。您可以导出完整物模型，用于云端应用开发。
+          {{ $t('Cat.index.300353-2') }}
+          {{ $t('Cat.index.300353-3') }}
+          {{ $t('Cat.index.300353-4') }}
         </p>
       </div>
       <a-tabs @change="handleConvertMetadata" destroy-inactive-tab-pane>
@@ -34,6 +34,9 @@ import { convertMetadata, getCodecs, detail as productDetail } from '../../../..
 import { detail } from '../../../../../api/instance'
 import { onlyMessage } from '@/utils/comm';
 import { omit , cloneDeep } from "lodash-es";
+import { useI18n } from 'vue-i18n';
+
+const { t: $t } = useI18n();
 
 interface Props {
   visible: boolean;
@@ -77,14 +80,9 @@ const handleExport = async () => {
   try {
     downloadJson(
       JSON.parse(monacoValue.value),
-      `${props.type === 'device'
-        ? instanceStore.current?.name
-        : productStore.current?.name
-      }-物模型`,
-      'YYYY/MM/DD',
-    );
+      $t('Cat.index.300353-5', [props.type === 'device' ? instanceStore.current?.name : productStore.current?.name]),'YYYY/MM/DD');
   } catch (e) {
-    onlyMessage('请先配置物模型', 'error');
+    onlyMessage($t('Cat.index.300353-6'), 'error');
   }
 }
 
@@ -111,7 +109,7 @@ const codecs = ref<{ id: string; name: string }[]>()
 const routeChange = async (id: string) => {
   const res = await getCodecs()
   if (res.status === 200) {
-    codecs.value = [{ id: 'jetlinks', name: '标准物模型' }].concat(res.result)
+    codecs.value = [{ id: 'jetlinks', name: $t('Cat.index.300353-7') }].concat(res.result)
   }
   if (props.type === 'device' && id) {
     detail(id as string).then((resp) => {

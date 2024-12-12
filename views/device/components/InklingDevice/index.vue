@@ -13,7 +13,7 @@
                     />
                 </div>
                 <div class="multiple" v-if="multiple">
-                    <a-checkbox v-model:checked="checkAll" @change="checkChange">全选</a-checkbox>
+                    <a-checkbox v-model:checked="checkAll" @change="checkChange">{{ $t('InklingDevice.index.743184-0') }}</a-checkbox>
                 </div>
             </div>
             <div class="device-list-warp">
@@ -22,7 +22,7 @@
                         <div class="device-list-items">
                             <template v-for="item in deviceList">
                                 <template v-if="disabledKeys.includes(item.id)">
-                                    <a-tooltip title="该设备已绑定平台设备">
+                                    <a-tooltip :title="$t('InklingDevice.index.743184-1')">
                                         <div
                                             :class="{
                                                 'device-list-item': true,
@@ -84,7 +84,7 @@
                 </j-scrollbar>
                 <j-empty
                     v-else
-                    description="暂无数据"
+                    :description="$t('InklingDevice.index.743184-2')"
                     style="padding-top: 24px"
                 />
                 <div class="device-list-pagination">
@@ -100,11 +100,7 @@
                                 const MaxSize =
                                     (pageData.pageIndex + 1) *
                                     pageData.pageSize;
-                                return `第 ${minSize} - ${
-                                    MaxSize > pageData.total
-                                        ? pageData.total
-                                        : MaxSize
-                                } 条/总共 ${pageData.total} 条`;
+                                $t('InklingDevice.index.743184-3', [minSize,MaxSize > pageData.total? pageData.total : MaxSize ,pageData.total]);
                             }
                         "
                         @change="pageChange"

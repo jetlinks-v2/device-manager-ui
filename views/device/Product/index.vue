@@ -26,7 +26,7 @@
                             <template #icon
                                 ><AIcon type="PlusOutlined"
                             /></template>
-                            新增
+                            {{ $t('Product.index.660348-0') }}
                         </j-permission-button>
                         <a-upload
                             name="file"
@@ -37,7 +37,7 @@
                         >
                             <j-permission-button
                                 hasPermission="device/Product:import"
-                                >导入</j-permission-button
+                                >{{ $t('Product.index.660348-1') }}</j-permission-button
                             >
                         </a-upload>
                     </a-space>
@@ -53,7 +53,7 @@
                         :active="_selectedRowKeys.includes(slotProps.id)"
                         :status="slotProps.state"
                         @click="handleView(slotProps.id)"
-                        :statusText="slotProps.state === 1 ? '正常' : '禁用'"
+                        :statusText="slotProps.state === 1 ? $t('Product.index.660348-2') : $t('Product.index.660348-3')"
                         :statusNames="{
                             1: 'processing',
                             0: 'error',
@@ -85,20 +85,20 @@
                             <a-row>
                                 <a-col :span="12">
                                     <div class="card-item-content-text">
-                                        设备类型
+                                        {{ $t('Product.index.660348-4') }}
                                     </div>
                                     <div>{{ slotProps?.deviceType?.text }}</div>
                                 </a-col>
                                 <a-col :span="12">
                                     <div class="card-item-content-text">
-                                        接入方式
+                                        {{ $t('Product.index.660348-5') }}
                                     </div>
                                     <j-ellipsis
                                         ><div>
                                             {{
                                                 slotProps?.accessName
                                                     ? slotProps?.accessName
-                                                    : '未接入'
+                                                    : $t('Product.index.660348-6')
                                             }}
                                         </div></j-ellipsis
                                     >
@@ -133,7 +133,7 @@
                 </template>
                 <template #state="slotProps">
                     <a-badge-status
-                        :text="slotProps.state === 1 ? '正常' : '禁用'"
+                        :text="slotProps.state === 1 ? $t('Product.index.660348-2') : $t('Product.index.660348-3')"
                         :status="slotProps.state"
                         :statusNames="{
                             1: 'processing',
@@ -172,7 +172,7 @@
                 </template>
             </JProTable>
         </FullPage>
-        <!-- 新增、编辑 -->
+        <!-- {{ $t('Product.index.660348-0') }}、{{ $t('Product.index.660348-13') }} -->
         <Save ref="saveRef" :isAdd="isAdd" :title="title" @success="refresh" />
     </j-page-container>
 </template>
@@ -197,6 +197,9 @@ import { useMenuStore, useAuthStore } from '@/store';
 import { useRouterParams } from '@jetlinks-web/hooks';
 import { device} from '../../../assets'
 import TagSearch from '../Instance/components/TagSearch.vue';
+import { useI18n } from 'vue-i18n';
+
+const { t: $t } = useI18n();
 
 /**
  * 表格数据
@@ -215,21 +218,21 @@ const columns = [
         ellipsis: true,
     },
     {
-        title: '产品名称',
+        title: $t('Product.index.660348-7'),
         dataIndex: 'name',
         key: 'name',
         width: 220,
         ellipsis: true,
     },
     {
-        title: '接入方式',
+        title: $t('Product.index.660348-5'),
         dataIndex: 'accessName',
         key: 'accessName',
         width: 220,
         ellipsis: true,
     },
     {
-        title: '设备类型',
+        title: $t('Product.index.660348-4'),
         dataIndex: 'deviceType',
         key: 'deviceType',
         scopedSlots: true,
@@ -239,7 +242,7 @@ const columns = [
     {
         key: 'id$dev-instance',
         dataIndex: 'id$dev-instance',
-        title: '标签',
+        title: $t('Product.index.660348-8'),
         hideInTable: true,
         search: {
             type: 'component',
@@ -248,7 +251,7 @@ const columns = [
         },
     },
     {
-        title: '状态',
+        title: $t('Product.index.660348-9'),
         dataIndex: 'state',
         key: 'state',
         scopedSlots: true,
@@ -256,13 +259,13 @@ const columns = [
         width: 90,
     },
     {
-        title: '说明',
+        title: $t('Product.index.660348-10'),
         dataIndex: 'describe',
         key: 'describe',
         ellipsis: true,
     },
     {
-        title: '操作',
+        title: $t('Product.index.660348-11'),
         key: 'action',
         fixed: 'right',
         width: 200,
@@ -284,9 +287,9 @@ const getActions = (
     const actions = [
         {
             key: 'view',
-            text: '查看',
+            text: $t('Product.index.660348-12'),
             tooltip: {
-                title: '查看',
+                title: $t('Product.index.660348-12'),
             },
             icon: 'EyeOutlined',
             onClick: () => {
@@ -295,13 +298,13 @@ const getActions = (
         },
         {
             key: 'update',
-            text: '编辑',
+            text: $t('Product.index.660348-13'),
             tooltip: {
-                title: '编辑',
+                title: $t('Product.index.660348-13'),
             },
             icon: 'EditOutlined',
             onClick: () => {
-                title.value = '编辑';
+                title.value = $t('Product.index.660348-13');
                 isAdd.value = 2;
                 nextTick(() => {
                     saveRef.value.show(data);
@@ -310,9 +313,9 @@ const getActions = (
         },
         {
             key: 'export',
-            text: '导出',
+            text: $t('Product.index.660348-14'),
             tooltip: {
-                title: '导出',
+                title: $t('Product.index.660348-14'),
             },
 
             icon: 'icon-xiazai',
@@ -326,18 +329,18 @@ const getActions = (
                     'accessProvider',
                     'messageProtocol',
                 ]);
-              downloadJson(extra, data.name + '产品');
+              downloadJson(extra, data.name + $t('Product.index.660348-15'));
             },
         },
         {
             key: 'action',
-            text: data.state !== 0 ? '禁用' : '启用',
+            text: data.state !== 0 ? $t('Product.index.660348-3') : $t('Product.index.660348-16'),
             tooltip: {
-                title: data.state !== 0 ? '禁用' : '启用',
+                title: data.state !== 0 ? $t('Product.index.660348-3') : $t('Product.index.660348-16'),
             },
             icon: data.state !== 0 ? 'StopOutlined' : 'CheckCircleOutlined',
             popConfirm: {
-                title: `确认${data.state !== 0 ? '禁用' : '启用'}?`,
+                title: `确认${data.state !== 0 ? $t('Product.index.660348-3') : $t('Product.index.660348-16')}?`,
                 onConfirm: () => {
                     let response = undefined;
                     if (data.state !== 0) {
@@ -347,10 +350,10 @@ const getActions = (
                     }
                     response.then((res) => {
                         if (res && res.status === 200) {
-                            onlyMessage('操作成功！');
+                            onlyMessage($t('Product.index.660348-18'));
                             tableRef.value?.reload();
                         } else {
-                            onlyMessage('操作失败！', 'error');
+                            onlyMessage($t('Product.index.660348-19'), 'error');
                         }
                     });
                     return response;
@@ -359,21 +362,21 @@ const getActions = (
         },
         {
             key: 'delete',
-            text: '删除',
+            text: $t('Product.index.660348-20'),
             disabled: data.state !== 0,
             tooltip: {
-                title: data.state !== 0 ? '已启用的产品不能删除' : '删除',
+                title: data.state !== 0 ? $t('Product.index.660348-21') : $t('Product.index.660348-20'),
             },
             popConfirm: {
-                title: '确认删除?',
+                title: $t('Product.index.660348-22'),
                 onConfirm: () => {
                     const response = deleteProduct(data.id);
                     response.then((resp) => {
                         if (resp.status === 200) {
-                            onlyMessage('操作成功！');
+                            onlyMessage($t('Product.index.660348-18'));
                             tableRef.value?.reload();
                         } else {
-                            onlyMessage('操作失败！', 'error');
+                            onlyMessage($t('Product.index.660348-19'), 'error');
                         }
                     });
                     return response;
@@ -392,7 +395,7 @@ const getActions = (
  */
 const add = () => {
     isAdd.value = 1;
-    title.value = '新增';
+    title.value = $t('Product.index.660348-0');
     nextTick(() => {
         saveRef.value.show(currentForm.value);
     });
@@ -408,31 +411,31 @@ const beforeUpload = (file: any) => {
         const text = result.target?.result;
         console.log(text);
         if (!file.type.includes('json')) {
-            onlyMessage('请上传json格式文件', 'error');
+            onlyMessage($t('Product.index.660348-23'), 'error');
             return false;
         }
         if (!text) {
-            onlyMessage('文件内容不能为空', 'error');
+            onlyMessage($t('Product.index.660348-24'), 'error');
             return false;
         }
         const data = JSON.parse(text);
         // 设置导入的产品状态为未发布
         data.state = 0;
         if (Array.isArray(data)) {
-            onlyMessage('请上传正确格式文件', 'error');
+            onlyMessage($t('Product.index.660348-25'), 'error');
             return false;
         }
         delete data.state;
         if (!data?.name) {
-            data.name = '产品' + Date.now();
+            data.name = $t('Product.index.660348-15') + Date.now();
         }
         if (!data?.deviceType || JSON.stringify(data?.deviceType) === '{}') {
-            onlyMessage('缺少deviceType字段或对应的值', 'error');
+            onlyMessage($t('Product.index.660348-26'), 'error');
             return false;
         }
         const res = await updateDevice(data);
         if (res.status === 200) {
-            onlyMessage('操作成功');
+            onlyMessage($t('Product.index.660348-27'));
             tableRef.value?.reload();
         }
         return true;
@@ -459,7 +462,7 @@ const tableRef = ref<Record<string, any>>({});
 const query = reactive({
     columns: [
         {
-            title: '名称',
+            title: $t('Product.index.660348-28'),
             dataIndex: 'name',
             key: 'name',
             search: {
@@ -477,7 +480,7 @@ const query = reactive({
             },
         },
         {
-            title: '网关类型',
+            title: $t('Product.index.660348-29'),
             key: 'accessProvider',
             dataIndex: 'accessProvider',
             search: {
@@ -502,7 +505,7 @@ const query = reactive({
             },
         },
         {
-            title: '接入方式',
+            title: $t('Product.index.660348-5'),
             key: 'accessId',
             dataIndex: 'accessId',
             search: {
@@ -524,47 +527,47 @@ const query = reactive({
             },
         },
         {
-            title: '设备类型',
+            title: $t('Product.index.660348-4'),
             key: 'deviceType',
             dataIndex: 'deviceType',
             search: {
                 type: 'select',
                 options: [
                     {
-                        label: '直连设备',
+                        label: $t('Product.index.660348-30'),
                         value: 'device',
                     },
                     {
-                        label: '网关子设备',
+                        label: $t('Product.index.660348-31'),
                         value: 'childrenDevice',
                     },
                     {
-                        label: '网关设备',
+                        label: $t('Product.index.660348-32'),
                         value: 'gateway',
                     },
                 ],
             },
         },
         {
-            title: '状态',
+            title: $t('Product.index.660348-9'),
             key: 'state',
             dataIndex: 'state',
             search: {
                 type: 'select',
                 options: [
                     {
-                        label: '正常',
+                        label: $t('Product.index.660348-2'),
                         value: 1,
                     },
                     {
-                        label: '禁用',
+                        label: $t('Product.index.660348-3'),
                         value: 0,
                     },
                 ],
             },
         },
         {
-            title: '说明',
+            title: $t('Product.index.660348-10'),
             key: 'describe',
             dataIndex: 'describe',
             search: {
@@ -572,7 +575,7 @@ const query = reactive({
             },
         },
         {
-            title: '产品分类',
+            title: $t('Product.index.660348-33'),
             key: 'classified',
             dataIndex: 'classifiedId',
             search: {
@@ -589,7 +592,7 @@ const query = reactive({
             },
         },
         {
-            title: '所属组织',
+            title: $t('Product.index.660348-34'),
             key: 'id$dim-assets',
             dataIndex: 'id$dim-assets',
             search: {
@@ -629,7 +632,7 @@ const query = reactive({
             },
         },
         {
-            title: '操作',
+            title: $t('Product.index.660348-11'),
             key: 'action',
             fixed: 'right',
             width: 250,
@@ -693,7 +696,7 @@ onMounted(() => {
     }
     if (isNoCommunity) {
         query.columns.splice(query.columns.length - 2, 0, {
-            title: '所属组织',
+            title: $t('Product.index.660348-34'),
             key: 'id$dim-assets',
             dataIndex: 'id$dim-assets',
             search: {

@@ -2,13 +2,13 @@
     <a-modal
         :maskClosable="false"
         :visible="true"
-        title="编辑指标"
+        :title="$t('Property.Indicators.505585-0')"
         @ok="handleSave"
         @cancel="handleCancel"
         :confirmLoading="loading"
     >
         <a-alert
-            message="场景联动页面可引用指标配置触发条件"
+            :message="$t('Property.Indicators.505585-1')"
             type="warning"
             showIcon
         />
@@ -24,18 +24,12 @@
                         <a-form-item
                             :rules="{
                                 required: true,
-                                message: `请${
-                                    ['date', 'boolean'].includes(
-                                        data?.valueType?.type,
-                                    )
-                                        ? '选择'
-                                        : '输入'
-                                }指标值`,
+                                message: $t('Property.Indicators.505585-2', [['date', 'boolean'].includes(data?.valueType?.type,) ? $t('Property.Indicators.505585-6'): $t('Property.Indicators.505585-7')]),
                             }"
                             :name="['metrics', index, 'value', 0]"
                         >
                             <template #label>
-                                <j-ellipsis>{{ item?.name || '指标值' }}</j-ellipsis>
+                                <j-ellipsis>{{ item?.name || $t('Property.Indicators.505585-3') }}</j-ellipsis>
                             </template>
                             <ValueItem
                                 v-model:modelValue="item.value[0]"
@@ -71,13 +65,7 @@
                                 :name="['metrics', index, 'value', 1]"
                                 :rules="{
                                     required: true,
-                                    message: `请${
-                                        ['date', 'boolean'].includes(
-                                            data?.valueType?.type,
-                                        )
-                                            ? '选择'
-                                            : '输入'
-                                    }指标值`,
+                                    message: $t('Property.Indicators.505585-2', [['date', 'boolean'].includes(data?.valueType?.type,) ? $t('Property.Indicators.505585-6'): $t('Property.Indicators.505585-7')]),
                                 }"
                             >
                                 <ValueItem
@@ -98,7 +86,9 @@ import { queryMetric, saveMetric } from '../../../../../../api/instance';
 import { useInstanceStore } from '../../../../../../store/instance';
 import { onlyMessage } from '@jetlinks-web/utils';
 import { isNumber } from 'lodash-es';
+import { useI18n } from 'vue-i18n';
 
+const { t: $t } = useI18n();
 const props = defineProps({
     data: {
         type: Object,
@@ -202,7 +192,7 @@ const handleSave = () => {
                 loading.value = false;
             });
             if (resp.status === 200) {
-                onlyMessage('操作成功！');
+                onlyMessage($t('Property.Indicators.505585-5'));
                 emit('close');
                 formRef.value.resetFields();
             }

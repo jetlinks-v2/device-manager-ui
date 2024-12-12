@@ -2,7 +2,7 @@
   <div class="metadata-source">
     <a-select
       v-model:value="myValue"
-      placeholder="请选择来源"
+      :placeholder="$t('components.Source.418270-0')"
       style="flex: 1 1 0;min-width: 0"
       :options="PropertySource"
       :dropdownStyle="{
@@ -80,7 +80,7 @@
                 </j-scrollbar>
               </template>
               <a-button style="padding: 4px 8px" type="link">
-                编辑
+                {{ $t('components.Source.418270-1') }}
               </a-button>
             </PopoverModal>
           </a-menu-item>
@@ -88,10 +88,10 @@
           <a-menu-item>
             <div style="display: flex;">
               <a-button style="padding: 4px 8px" type="link" @click="resetRules">
-                重置
+                {{ $t('components.Source.418270-2') }}
               </a-button>
               <a-tooltip>
-                <template #title>重置为产品属性规则</template>
+                <template #title>{{ $t('components.Source.418270-3') }}</template>
                 <AIcon type="QuestionCircleOutlined" style="margin-top: 10px;"/>
               </a-tooltip>
             </div>
@@ -115,6 +115,9 @@ import {useProductStore} from '../../../../../../store/product';
 import {PopoverModal} from '../../../../../../components/Metadata'
 import {useTableWrapper} from "../../../../../../components/Metadata/context";
 import {sourceType} from "../utils";
+import { useI18n } from 'vue-i18n';
+
+const { t: $t } = useI18n();
 
 const instanceStore = useInstanceStore();
 const productStore = useProductStore();
@@ -234,7 +237,7 @@ const confirm = async () => {
 const resetRules = async () => {
   let res: any = await resetRule(instanceStore.current?.productId, instanceStore.current?.id, [props.record.id])
   if (res.status === 200) {
-    onlyMessage('操作成功！')
+    onlyMessage($t('components.Source.418270-4'))
   }
 }
 const cancel = () => {

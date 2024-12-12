@@ -2,7 +2,7 @@
   <a-modal
       visible
       :maskClosable="false"
-      title="标签详情"
+      :title="$t('DetailModal.TagsModal.986277-0')"
       :getContainer="getPopupContainer"
       @cancel="cancel"
       @ok="ok"
@@ -15,14 +15,14 @@
           justifyContent: 'end'
         }"
     >
-      <a-descriptions-item label="标签标识">{{ data.id }}</a-descriptions-item>
-      <a-descriptions-item label="标签名称">{{ data.name }}</a-descriptions-item>
-      <a-descriptions-item label="标签类型">{{ data.valueType.type }}</a-descriptions-item>
-      <a-descriptions-item v-if="['int', 'long', 'float', 'double'].includes(data.valueType.type)" label="单位">{{ unitLabel }}</a-descriptions-item>
-      <a-descriptions-item v-if="['float', 'double'].includes(data.valueType.type)" label="精度">{{ data.valueType?.scale }}</a-descriptions-item>
-      <a-descriptions-item v-if="['string', 'password'].includes(data.valueType.type)" label="最大长度">{{ data.valueType?.maxLength }}</a-descriptions-item>
-      <a-descriptions-item v-if="data.valueType.type === 'file'" label="文件类型">{{ data.valueType?.bodyType }}</a-descriptions-item>
-      <a-descriptions-item v-if="data.valueType.type === 'date'" label="格式">{{ data.valueType?.format }}</a-descriptions-item>
+      <a-descriptions-item :label="$t('DetailModal.TagsModal.986277-1')">{{ data.id }}</a-descriptions-item>
+      <a-descriptions-item :label="$t('DetailModal.TagsModal.986277-2')">{{ data.name }}</a-descriptions-item>
+      <a-descriptions-item :label="$t('DetailModal.TagsModal.986277-3')">{{ data.valueType.type }}</a-descriptions-item>
+      <a-descriptions-item v-if="['int', 'long', 'float', 'double'].includes(data.valueType.type)" :label="$t('DetailModal.TagsModal.986277-4')">{{ unitLabel }}</a-descriptions-item>
+      <a-descriptions-item v-if="['float', 'double'].includes(data.valueType.type)" :label="$t('DetailModal.TagsModal.986277-5')">{{ data.valueType?.scale }}</a-descriptions-item>
+      <a-descriptions-item v-if="['string', 'password'].includes(data.valueType.type)" :label="$t('DetailModal.TagsModal.986277-6')">{{ data.valueType?.maxLength }}</a-descriptions-item>
+      <a-descriptions-item v-if="data.valueType.type === 'file'" :label="$t('DetailModal.TagsModal.986277-7')">{{ data.valueType?.bodyType }}</a-descriptions-item>
+      <a-descriptions-item v-if="data.valueType.type === 'date'" :label="$t('DetailModal.TagsModal.986277-8')">{{ data.valueType?.format }}</a-descriptions-item>
       <a-descriptions-item
           v-if="
           ['enum', 'object', 'boolean', 'array'].includes(data.valueType.type)"
@@ -30,13 +30,13 @@
         <JsonView :value="dataTypeTable.dataSource"/>
       </a-descriptions-item>
 <!--      <a-descriptions-item label="读写类型">{{ readTypeText }}</a-descriptions-item>-->
-      <a-descriptions-item v-if="showSetting && data.expands?.storageType" label="存储方式">{{ settingData[data.expands?.storageType] }}</a-descriptions-item>
-      <a-descriptions-item label="标签说明" v-if="data.description">
+      <a-descriptions-item v-if="showSetting && data.expands?.storageType" :label="$t('DetailModal.TagsModal.986277-9')">{{ settingData[data.expands?.storageType] }}</a-descriptions-item>
+      <a-descriptions-item :label="$t('DetailModal.TagsModal.986277-10')" v-if="data.description">
         <a-textarea :value="data.description" disabled></a-textarea>
       </a-descriptions-item>
     </a-descriptions>
     <template #footer>
-      <a-button type="primary" @click="ok">确认</a-button>
+      <a-button type="primary" @click="ok">{{ $t('DetailModal.TagsModal.986277-11') }}</a-button>
     </template>
   </a-modal>
 </template>
@@ -46,6 +46,9 @@ import {omit} from "lodash-es";
 import {watch} from "vue";
 import JsonView from './JsonView.vue'
 import {useStoreType} from "../utils";
+import { useI18n } from 'vue-i18n';
+
+const { t: $t } = useI18n();
 
 const props = defineProps({
   data: {
@@ -69,18 +72,18 @@ const props = defineProps({
 const emit = defineEmits(['cancel'])
 
 const sourceMap = {
-  'device': '设备',
-  'manual': '手动',
-  'rule': '规则',
+  'device': $t('DetailModal.TagsModal.986277-12'),
+  'manual': $t('DetailModal.TagsModal.986277-13'),
+  'rule': $t('DetailModal.TagsModal.986277-14'),
 }
 
 const { settingData } = useStoreType(props.type)
 
 const readTypeText = computed(() => {
   const type = {
-    "read": "读",
-    "write": "写",
-    "report": "上报",
+    "read": $t('DetailModal.TagsModal.986277-15'),
+    "write": $t('DetailModal.TagsModal.986277-16'),
+    "report": $t('DetailModal.TagsModal.986277-17'),
   }
 
   return props.data?.expands?.type?.map?.((key: string) => type[key]).join('、')
@@ -102,9 +105,9 @@ const dataTypeTable = reactive<{ columns: any[], dataSource: any }>({
 
 const metrics = reactive<{ columns: any[], dataSource: any }>({
   columns: [
-    { title: '指标标识', dataIndex: 'id' },
-    { title: '指标名称', dataIndex: 'name' },
-    { title: '指标治', dataIndex: 'value' },
+    { title: $t('DetailModal.TagsModal.986277-18'), dataIndex: 'id' },
+    { title: $t('DetailModal.TagsModal.986277-19'), dataIndex: 'name' },
+    { title: $t('DetailModal.TagsModal.986277-20'), dataIndex: 'value' },
   ],
   dataSource: []
 })
@@ -126,9 +129,9 @@ const handleDataTable = (type: string) => {
       break;
     case 'object':
       dataTypeTable.columns = [
-        { title: '标识', dataIndex: 'id', width: 50},
-        { title: '名称', dataIndex: 'name'},
-        { title: '名称', dataIndex: 'name'},
+        { title: $t('DetailModal.TagsModal.986277-21'), dataIndex: 'id', width: 50},
+        { title: $t('DetailModal.TagsModal.986277-22'), dataIndex: 'name'},
+        { title: $t('DetailModal.TagsModal.986277-22'), dataIndex: 'name'},
       ]
       dataTypeTable.dataSource = props.data.valueType?.properties
       break;

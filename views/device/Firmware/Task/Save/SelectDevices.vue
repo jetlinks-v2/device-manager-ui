@@ -1,6 +1,6 @@
 <template>
     <a-input
-        placeholder="请选择设备"
+        :placeholder="$t('Save.SelectDevices.386303-0')"
         v-model:value="checkLable"
         :disabled="true"
     >
@@ -14,9 +14,9 @@
     </a-input>
     <a-modal
         v-if="visible"
-        title="选择设备"
-        ok-text="确认"
-        cancel-text="取消"
+        :title="$t('Save.SelectDevices.386303-1')"
+        :ok-text="$t('Save.SelectDevices.386303-2')"
+        :cancel-text="$t('Save.SelectDevices.386303-3')"
         :visible="true"
         width="80%"
         @cancel="handleCancel"
@@ -50,7 +50,7 @@
                     @change="onCheckAllChange"
                     style="margin-left: 8px"
                 >
-                    全选
+                    {{ $t('Save.SelectDevices.386303-4') }}
                 </a-checkbox>
             </template>
             <template #productId="slotProps">
@@ -79,7 +79,9 @@ import {
     queryDetailList,
 } from '../../../../../api/firmware';
 import dayjs from 'dayjs';
+import { useI18n } from 'vue-i18n';
 
+const { t: $t } = useI18n();
 type T = any;
 const emit = defineEmits(['update:modelValue', 'change']);
 
@@ -146,7 +148,7 @@ const columns = [
         },
     },
     {
-        title: '设备名称',
+        title: $t('Save.SelectDevices.386303-5'),
         key: 'name',
         dataIndex: 'name',
         ellipsis: true,
@@ -155,7 +157,7 @@ const columns = [
         },
     },
     {
-        title: '固件版本',
+        title: $t('Save.SelectDevices.386303-6'),
         dataIndex: 'version',
         key: 'version',
         ellipsis: true,
@@ -165,7 +167,7 @@ const columns = [
         scopedSlots: true,
     },
     {
-        title: '注册时间',
+        title: $t('Save.SelectDevices.386303-7'),
         key: 'registerTime',
         dataIndex: 'registerTime',
         search: {
@@ -176,16 +178,16 @@ const columns = [
         scopedSlots: true,
     },
     {
-        title: '状态',
+        title: $t('Save.SelectDevices.386303-8'),
         dataIndex: 'state',
         key: 'state',
         scopedSlots: true,
         search: {
             type: 'select',
             options: [
-                { label: '在线', value: 'online' },
-                { label: '离线', value: 'offline' },
-                { label: '禁用', value: 'notActive' },
+                { label: $t('Save.SelectDevices.386303-9'), value: 'online' },
+                { label: $t('Save.SelectDevices.386303-10'), value: 'offline' },
+                { label: $t('Save.SelectDevices.386303-11'), value: 'notActive' },
             ],
         },
         width: 150,

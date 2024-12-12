@@ -1,7 +1,7 @@
 <template>
     <div style="margin-top: 20px" v-if="config.length">
         <div style="display: flex; margin-bottom: 20px; align-items: center">
-            <div style="font-size: 16px; font-weight: 700">配置</div>
+            <div style="font-size: 16px; font-weight: 700">{{ $t('Config.index.926765-0') }}</div>
             <a-space>
                 <j-permission-button
                     type="link"
@@ -9,19 +9,19 @@
                     hasPermission="device/Instance:update"
                 >
                     <template #icon><AIcon type="EditOutlined" /></template>
-                    编辑
+                    {{ $t('Config.index.926765-1') }}
                 </j-permission-button>
                 <j-permission-button
                     type="link"
                     v-if="instanceStore.detail.current?.value !== 'notActive'"
                     :popConfirm="{
-                        title: '确认重新应用该配置？',
+                        title: $t('Config.index.926765-2'),
                         onConfirm: deployBtn,
                     }"
                     hasPermission="device/Instance:update"
                 >
-                    <AIcon type="CheckOutlined" />应用配置<a-tooltip
-                        title="修改配置后需重新应用后才能生效。"
+                    <AIcon type="CheckOutlined" />{{ $t('Config.index.926765-3') }}<a-tooltip
+                        :title="$t('Config.index.926765-4')"
                         ><AIcon type="QuestionCircleOutlined"
                     /></a-tooltip>
                 </j-permission-button>
@@ -29,13 +29,13 @@
                     type="link"
                     v-if="instanceStore.detail.aloneConfiguration"
                     :popConfirm="{
-                        title: '确认恢复默认配置？',
+                        title: $t('Config.index.926765-5'),
                         onConfirm: resetBtn,
                     }"
                     hasPermission="device/Instance:update"
                 >
-                    <AIcon type="SyncOutlined" />恢复默认<a-tooltip
-                        title="该设备单独编辑过配置信息，点击此将恢复成默认的配置信息，请谨慎操作。"
+                    <AIcon type="SyncOutlined" />{{ $t('Config.index.926765-6') }}<a-tooltip
+                        :title="$t('Config.index.926765-7')"
                         ><AIcon type="QuestionCircleOutlined"
                     /></a-tooltip>
                 </j-permission-button>
@@ -79,11 +79,7 @@
                     }}</j-ellipsis>
                     <a-tooltip
                         v-if="isExit(item.property)"
-                        :title="`有效值:${
-                            instanceStore.current?.configuration?.[
-                                item.property
-                            ]
-                        }`"
+                        :title="$t('Config.index.926765-8', [instanceStore.current?.configuration?.[item.property]])"
                         ><AIcon type="QuestionCircleOutlined"
                     /></a-tooltip>
                 </span>
@@ -114,11 +110,7 @@
                     }}</j-ellipsis>
                     <a-tooltip
                         v-if="isExit(item.property)"
-                        :title="`有效值:${
-                            instanceStore.current?.configuration?.[
-                                item.property
-                            ]
-                        }`"
+                        :title="$t('Config.index.926765-8', [instanceStore.current?.configuration?.[item.property]])"
                         ><AIcon type="QuestionCircleOutlined"
                     /></a-tooltip>
                 </span>
@@ -177,7 +169,7 @@ const deployBtn = () => {
         const response = _deploy(instanceStore.current.id);
         response.then((resp) => {
             if (resp.status === 200) {
-                onlyMessage('操作成功');
+                onlyMessage($t('Config.index.926765-9'));
                 instanceStore.refresh(instanceStore.current.id);
             }
         });
@@ -190,7 +182,7 @@ const resetBtn = () => {
         const response = configurationReset(instanceStore.current.id);
         response.then((resp) => {
             if (resp.status === 200) {
-                onlyMessage('恢复默认配置成功');
+                onlyMessage($t('Config.index.926765-10'));
                 instanceStore.refresh(instanceStore.current.id);
             }
         });

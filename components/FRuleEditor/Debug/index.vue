@@ -5,20 +5,20 @@
                 <a-tabs v-model:activeKey="headerType">
                   <template #rightExtra>
                     <a v-if="virtualRule?.script && isBeginning" @click="beginAction">
-                      开始运行
+                      {{ $t('Debug.index.853800-0') }}
                     </a>
                   </template>
                     <a-tab-pane key="property">
                         <template #tab>
                             <span class="title">
-                                属性赋值
+                                {{ $t('Debug.index.853800-1') }}
                             </span>
                         </template>
                     </a-tab-pane>
                     <a-tab-pane key="tag">
                         <template #tab>
                             <span class="title">
-                                标签赋值
+                                {{ $t('Debug.index.853800-2') }}
                             </span>
                         </template>
                     </a-tab-pane>
@@ -26,9 +26,7 @@
             </div>
             <div class="description">
                 {{
-                    `请对上方规则使用的${
-                        headerType === 'property' ? '属性' : '标签'
-                    }进行赋值`
+                    $t('Debug.index.853800-3', [headerType === 'property' ? $t('Debug.index.853800-19') : $t('Debug.index.853800-20')])
                 }}
             </div>
             <div class="top-bottom" v-if="headerType === 'property'">
@@ -84,7 +82,7 @@
                     <template #icon>
                         <AIcon type="PlusOutlined" />
                     </template>
-                    添加条目
+                    {{ $t('Debug.index.853800-4') }}
                 </a-button>
             </div>
             <div class="top-bottom" v-if="headerType === 'tag'">
@@ -134,16 +132,16 @@
                     <template #icon>
                         <AIcon type="PlusOutlined" />
                     </template>
-                    添加条目
+                    {{ $t('Debug.index.853800-4') }}
                 </a-button>
             </div>
         </div>
         <div class="bottom">
             <div class="header">
                 <div class="title">
-                    <div>运行结果</div>
+                    <div>{{ $t('Debug.index.853800-5') }}</div>
                     <div v-if="virtualRule?.script && !isBeginning">
-                        正在运行......
+                        {{ $t('Debug.index.853800-6') }}
                     </div>
                 </div>
                 <div class="action">
@@ -152,16 +150,16 @@
                         class="action"
                         @click="runScriptAgain"
                     >
-                        <a>发送数据</a>
+                        <a>{{ $t('Debug.index.853800-7') }}</a>
                     </div>
                     <div v-if="virtualRule?.script && !isBeginning">
 <!--                        <a v-if="isBeginning" @click="beginAction">-->
-<!--                            开始运行-->
+<!--                            {{ $t('Debug.index.853800-0') }}-->
 <!--                        </a>-->
-                        <a v-if="!isBeginning" @click="stopAction"> 停止运行 </a>
+                        <a v-if="!isBeginning" @click="stopAction"> {{ $t('Debug.index.853800-8') }} </a>
                     </div>
                     <div>
-                        <a @click="clearAction"> 清空 </a>
+                        <a @click="clearAction"> {{ $t('Debug.index.853800-9') }} </a>
                     </div>
                 </div>
             </div>
@@ -202,6 +200,9 @@ import { getWebSocket } from '@/utils/websocket';
 import {useTableWrapper, useTableFullScreen} from "../../../components/Metadata/context";
 import { onlyMessage } from '@/utils/comm';
 import {message} from "ant-design-vue";
+import { useI18n } from 'vue-i18n';
+
+const { t: $t } = useI18n();
 
 const props = defineProps({
     virtualRule: Object as PropType<Record<any, any>>,
@@ -225,22 +226,22 @@ const tableWrapperRef = useTableWrapper()
 const fullScreen = useTableFullScreen()
 const columns = [
     {
-        title: '属性名称',
+        title: $t('Debug.index.853800-10'),
         dataIndex: 'id',
         key: 'id',
     },
     {
-        title: '当前值',
+        title: $t('Debug.index.853800-11'),
         dataIndex: 'current',
         key: 'current',
     },
     {
-        title: '上一值',
+        title: $t('Debug.index.853800-12'),
         dataIndex: 'last',
         key: 'last',
     },
     {
-        title: '操作',
+        title: $t('Debug.index.853800-13'),
         key: 'action',
         width: 50,
     },
@@ -248,17 +249,17 @@ const columns = [
 
 const tagColumns = [
     {
-        title: '属性名称',
+        title: $t('Debug.index.853800-10'),
         dataIndex: 'id',
         key: 'id',
     },
     {
-        title: '当前值',
+        title: $t('Debug.index.853800-11'),
         dataIndex: 'current',
         key: 'current',
     },
     {
-        title: '操作',
+        title: $t('Debug.index.853800-13'),
         key: 'action',
         width: 50,
     },
@@ -316,7 +317,7 @@ const runScript = () => {
           return tableWrapperRef.value || document.body
         }
       })
-        onlyMessage('请编辑规则', 'warning');
+        onlyMessage($t('Debug.index.853800-14'), 'warning');
         return;
     }
 
@@ -345,7 +346,7 @@ const runScript = () => {
     }, () => {}, () => {
       ruleEditorStore.state.log.push({
         time: new Date().getTime(),
-        content: '运行结束',
+        content: $t('Debug.index.853800-15'),
         _time: unref(time.value),
       });
       stopAction()
@@ -354,10 +355,10 @@ const runScript = () => {
 
 const runningState = (_index: number, _time: number) => {
     if (props.virtualRule?.windowType === 'time') {
-        return `已运行${_time}秒`;
+        return $t('Debug.index.853800-16', [_time]);
     }
     if (props.virtualRule?.windowType === 'num') {
-        return `第${_index}次运行`;
+        return $t('Debug.index.853800-17', [_index]);
     }
     return false;
 };
@@ -402,7 +403,7 @@ const beginAction = () => {
         return tableWrapperRef.value || document.body
       },
     })
-    return onlyMessage('请填写属性值', 'warning')
+    return onlyMessage($t('Debug.index.853800-18'), 'warning')
   }
     isBeginning.value = false;
     runScript();

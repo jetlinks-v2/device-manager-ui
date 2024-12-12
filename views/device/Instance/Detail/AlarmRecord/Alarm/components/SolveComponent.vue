@@ -1,8 +1,8 @@
 <template>
   <j-modal
-    title="告警处理"
-    okText="确定"
-    cancelText="取消"
+    :title="$t('components.SolveComponent.037595-0')"
+    :okText="$t('components.LogDetail.536180-0')"
+    :cancelText="$t('components.LogDetail.536180-1')"
     visible
     @cancel="handleCancel"
     @ok="handleSave"
@@ -10,13 +10,13 @@
     :confirmLoading="loading"
   >
     <j-form :rules="rules" layout="vertical" ref="formRef" :model="form">
-      <j-form-item label="处理结果" name="describe">
+      <j-form-item :label="$t('components.SolveComponent.037595-1')" name="describe">
         <j-textarea
           :disabled="solveType === 'view'"
           :rows="8"
           :maxlength="200"
           showCount
-          placeholder="请输入处理结果"
+          :placeholder="$t('components.SolveComponent.037595-2')"
           v-model:value="form.describe"
         ></j-textarea>
       </j-form-item>
@@ -27,7 +27,9 @@
 <script lang="ts" setup>
 import { handleLog, handlePreconditioning } from '../../../../../../../api/rule-engine/log';
 import { onlyMessage } from '@jetlinks-web/utils';
+import { useI18n } from 'vue-i18n';
 
+const { t: $t } = useI18n();
 const props = defineProps({
   data: {
     type: Object,
@@ -51,7 +53,7 @@ const rules = {
   describe: [
     {
       required: true,
-      message: '请输入处理结果',
+      message: $t('components.SolveComponent.037595-2'),
     },
   ],
 };
@@ -83,10 +85,10 @@ const handleSave = () => {
         ? await handlePreconditioning(params)
         : await handleLog(params);
       if (res.status === 200) {
-        onlyMessage('操作成功！');
+        onlyMessage($t('components.SolveComponent.037595-3'));
         emit('refresh');
       } else {
-        onlyMessage('操作失败！', 'error');
+        onlyMessage($t('components.SolveComponent.037595-4'), 'error');
       }
       loading.value = false;
     })

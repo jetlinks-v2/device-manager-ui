@@ -30,7 +30,7 @@
             </div>
             <div class="right">
                 <span v-if="mode !== 'advance'">
-                    <a-tooltip :title="!id ? '请先输入标识' : '设置属性规则'">
+                    <a-tooltip :title="!id ? $t('Editor.index.306905-0') : $t('Editor.index.306905-1')">
                         <AIcon
                             type="FullscreenOutlined"
                             :class="!id ? 'disabled' : ''"

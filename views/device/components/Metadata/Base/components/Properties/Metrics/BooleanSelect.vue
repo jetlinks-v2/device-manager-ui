@@ -2,8 +2,8 @@
   <a-select
       v-model:value="myValue"
       :options="[
-          { label: '固定值', value: 'false' },
-          { label: '范围值', value: 'true' },
+          { label: $t('Metrics.BooleanSelect.959643-0'), value: 'false' },
+          { label: $t('Metrics.BooleanSelect.959643-1'), value: 'true' },
       ]"
       :dropdownStyle="{
         zIndex: 1071

@@ -6,7 +6,7 @@
                     @change="onSearchChange"
                     show-search
                     allow-clear
-                    placeholder="请选择属性名称"
+                    :placeholder="$t('MetadataMap.index.431828-0')"
                     style="width: 250px"
                 >
                     <a-select-option
@@ -46,8 +46,8 @@
                                     "
                                 >
                                     <span>
-                                        目标属性<a-tooltip
-                                            title="协议包中物模型下的属性"
+                                        {{ $t('MetadataMap.index.431828-1') }}<a-tooltip
+                                            :title="$t('MetadataMap.index.431828-2')"
                                         >
                                             <AIcon
                                                 style="margin-left: 10px"
@@ -63,7 +63,7 @@
                                         ><AIcon
                                             type="ArrowUpOutlined"
                                         /><span>{{
-                                            filterValue ? '已映射' : '未映射'
+                                            filterValue ? $t('MetadataMap.index.431828-3') : $t('MetadataMap.index.431828-4')
                                         }}</span></a-tag
                                     >
                                     <a-dropdown v-else>
@@ -71,10 +71,10 @@
                                         <template #overlay>
                                             <a-menu @click="onFilter">
                                                 <a-menu-item :key="true"
-                                                    >置顶已映射数据</a-menu-item
+                                                    >{{ $t('MetadataMap.index.431828-5') }}</a-menu-item
                                                 >
                                                 <a-menu-item :key="false"
-                                                    >置顶未映射数据</a-menu-item
+                                                    >{{ $t('MetadataMap.index.431828-6') }}</a-menu-item
                                                 >
                                             </a-menu>
                                         </template>
@@ -96,7 +96,7 @@
                                     style="width: 100%"
                                     allowClear
                                     @change="(id) => onChange(record, id)"
-                                    placeholder="请选择"
+                                    :placeholder="$t('MetadataMap.index.431828-7')"
                                 >
                                     <a-select-option
                                         v-for="(item, index) in targetOptions"
@@ -121,20 +121,20 @@
         </div>
         <div class="right">
             <j-scrollbar>
-                <div class="title">功能说明</div>
+                <div class="title">{{ $t('MetadataMap.index.431828-8') }}</div>
                 <p>
-                    该功能用于将协议包中的
-                    <b>物模型属性标识</b>与
-                    <b>平台物模型属性标识</b
-                    >进行映射,当两方属性标识不一致时，可在当前页面直接修改映射管理，系统将以映射后的物模型属性进行数据处理。
+                    {{ $t('MetadataMap.index.431828-9') }}
+                    <b>{{ $t('MetadataMap.index.431828-10') }}</b>{{ $t('MetadataMap.index.431828-11') }}
+                    <b>{{ $t('MetadataMap.index.431828-12') }}</b
+                    >{{ $t('MetadataMap.index.431828-13') }}
                 </p>
                 <p>
-                    未完成映射的属性标识“目标属性”列数据为空，代表该属性值来源以在平台配置的来源为准。
+                    未完成映射的属性标识“{{ $t('MetadataMap.index.431828-1') }}”列数据为空，代表该属性值来源以在平台配置的来源为准。
                 </p>
                 <p>
-                    数据条背景亮起代表<b>标识一致</b>或<b>已完成映射</b>的属性。
+                    {{ $t('MetadataMap.index.431828-15') }}<b>{{ $t('MetadataMap.index.431828-16') }}</b>{{ $t('MetadataMap.index.431828-17') }}<b>{{ $t('MetadataMap.index.431828-18') }}</b>{{ $t('MetadataMap.index.431828-19') }}
                 </p>
-                <div class="title">功能图示</div>
+                <div class="title">{{ $t('MetadataMap.index.431828-20') }}</div>
                 <div>
                     <img :src="device.metadataMap" />
                 </div>
@@ -154,7 +154,9 @@ import {
 import { useInstanceStore } from '../../../../../store/instance';
 import { cloneDeep } from 'lodash-es';
 import {device} from "../../../../../assets";
+import { useI18n } from 'vue-i18n';
 
+const { t: $t } = useI18n();
 const deviceStore = useInstanceStore();
 const { current: deviceDetail } = storeToRefs(deviceStore);
 const dataSourceCache = ref([]);
@@ -170,16 +172,16 @@ const _delTag = ref<boolean>(false);
 
 const columns = [
     {
-        title: '序号',
+        title: $t('MetadataMap.index.431828-21'),
         dataIndex: 'index',
         width: 100,
     },
     {
-        title: '平台属性',
+        title: $t('MetadataMap.index.431828-22'),
         dataIndex: 'name',
     },
     {
-        title: '目标属性',
+        title: $t('MetadataMap.index.431828-1'),
         dataIndex: 'original',
         width: 250,
     },
@@ -317,7 +319,7 @@ const getMetadata = (): Promise<{ properties: any[] }> => {
 const onMapData = async (arr: any[], flag?: boolean) => {
     const res = await metadataMapById('device', _id, arr);
     if (res.success && flag) {
-        onlyMessage('操作成功');
+        onlyMessage($t('MetadataMap.index.431828-23'));
     }
 };
 

@@ -47,23 +47,23 @@
                             _current = {};
                             childVisible = true;
                         "
-                        >新增并绑定</j-permission-button
+                        >{{ $t('ChildDevice.index.370771-0') }}</j-permission-button
                     >
                     <j-permission-button
                         type="primary"
                         @click="visible = true"
                         hasPermission="device/Instance:update"
                     >
-                        绑定</j-permission-button
+                        {{ $t('ChildDevice.index.370771-1') }}</j-permission-button
                     >
                     <j-permission-button
                         type="primary"
                         hasPermission="device/Instance:update"
                         :popConfirm="{
-                            title: '确认解绑吗？',
+                            title: $t('ChildDevice.index.370771-2'),
                             onConfirm: handleUnBind,
                         }"
-                        >批量解除</j-permission-button
+                        >{{ $t('ChildDevice.index.370771-3') }}</j-permission-button
                     >
                 </a-space>
             </template>
@@ -134,6 +134,9 @@ import { storeToRefs } from 'pinia';
 import BindChildDevice from './BindChildDevice/index.vue';
 import SaveChild from './SaveChild/index.vue';
 import { onlyMessage } from '@/utils/comm';
+import { useI18n } from 'vue-i18n';
+
+const { t: $t } = useI18n();
 
 const instanceStore = useInstanceStore();
 const { detail } = storeToRefs(instanceStore);
@@ -164,7 +167,7 @@ const columns = [
         },
     },
     {
-        title: '设备名称',
+        title: $t('ChildDevice.index.370771-4'),
         dataIndex: 'name',
         key: 'name',
         ellipsis: true,
@@ -173,7 +176,7 @@ const columns = [
         },
     },
     {
-        title: '所属产品',
+        title: $t('ChildDevice.index.370771-5'),
         dataIndex: 'productName',
         key: 'productName',
         search: {
@@ -181,7 +184,7 @@ const columns = [
         },
     },
     {
-        title: '注册时间',
+        title: $t('ChildDevice.index.370771-6'),
         dataIndex: 'registryTime',
         key: 'registryTime',
         scopedSlots: true,
@@ -190,21 +193,21 @@ const columns = [
         },
     },
     {
-        title: '状态',
+        title: $t('ChildDevice.index.370771-7'),
         dataIndex: 'state',
         key: 'state',
         scopedSlots: true,
         search: {
             type: 'select',
             options: [
-                { label: '禁用', value: 'notActive' },
-                { label: '离线', value: 'offline' },
-                { label: '在线', value: 'online' },
+                { label: $t('ChildDevice.index.370771-8'), value: 'notActive' },
+                { label: $t('ChildDevice.index.370771-9'), value: 'offline' },
+                { label: $t('ChildDevice.index.370771-10'), value: 'online' },
             ],
         },
     },
     {
-        title: '说明',
+        title: $t('ChildDevice.index.370771-11'),
         dataIndex: 'describe',
         key: 'describe',
         ellipsis: true,
@@ -213,7 +216,7 @@ const columns = [
         },
     },
     {
-        title: '操作',
+        title: $t('ChildDevice.index.370771-12'),
         key: 'action',
         fixed: 'right',
         width: 200,
@@ -226,9 +229,9 @@ const getActions = (data: Partial<Record<string, any>>): any[] => {
     return [
         {
             key: 'view',
-            text: '查看',
+            text: $t('ChildDevice.index.370771-13'),
             tooltip: {
-                title: '查看',
+                title: $t('ChildDevice.index.370771-13'),
             },
             icon: 'EyeOutlined',
             onClick: () => {
@@ -237,15 +240,15 @@ const getActions = (data: Partial<Record<string, any>>): any[] => {
         },
         {
             key: 'action',
-            text: '解绑',
+            text: $t('ChildDevice.index.370771-14'),
             tooltip: {
-                title: '解绑',
+                title: $t('ChildDevice.index.370771-14'),
             },
             icon: 'DisconnectOutlined',
             popConfirm: {
-                title: '确认解绑吗？',
-                okText: '确定',
-                cancelText: '取消',
+                title: $t('ChildDevice.index.370771-2'),
+                okText: $t('ChildDevice.index.370771-15'),
+                cancelText: $t('ChildDevice.index.370771-16'),
                 onConfirm: async() => {
                     const response = unbindDevice(detail.value.id, data.id, {});
                     if (
@@ -267,7 +270,7 @@ const getActions = (data: Partial<Record<string, any>>): any[] => {
                                 },
                             );
                             childDeviceRef.value?.reload();
-                            onlyMessage('操作成功！');
+                            onlyMessage($t('ChildDevice.index.370771-17'));
                         }
                     });
                     return response
@@ -276,9 +279,9 @@ const getActions = (data: Partial<Record<string, any>>): any[] => {
         },
         {
             key: 'update',
-            text: '编辑',
+            text: $t('ChildDevice.index.370771-18'),
             tooltip: {
-                title: '编辑',
+                title: $t('ChildDevice.index.370771-18'),
             },
             icon: 'EditOutlined',
             onClick: () => {
@@ -314,14 +317,14 @@ const handleUnBind = async () => {
         }
         response.then((resp) => {
             if (resp.status === 200) {
-                onlyMessage('操作成功！');
+                onlyMessage($t('ChildDevice.index.370771-17'));
                 cancelSelect();
                 childDeviceRef.value?.reload();
             }
         });
         return response;
     } else {
-        onlyMessage('请勾选需要解绑的数据', 'warning');
+        onlyMessage($t('ChildDevice.index.370771-19'), 'warning');
     }
 };
 

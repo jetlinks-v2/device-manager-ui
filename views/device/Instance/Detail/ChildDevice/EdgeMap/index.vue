@@ -2,13 +2,13 @@
     <a-spin :spinning="loading" v-if="_metadata?.length">
         <a-card :bordered="false">
             <template #title>
-                <TitleComponent data="点位映射"></TitleComponent>
+                <TitleComponent :data="$t('EdgeMap.index.626301-0')"></TitleComponent>
             </template>
             <template #extra>
                 <a-space>
-                    <a-button @click="showModal">批量映射</a-button>
+                    <a-button @click="showModal">{{ $t('EdgeMap.index.626301-1') }}</a-button>
                     <a-button type="primary" @click="onSave"
-                        >保存并应用</a-button
+                        >{{ $t('EdgeMap.index.626301-2') }}</a-button
                     >
                 </a-space>
             </template>
@@ -16,8 +16,8 @@
                 <a-table :dataSource="modelRef.dataSource" :columns="columns">
                     <template #headerCell="{ column }">
                         <template v-if="column.key === 'collectorId'">
-                            采集器
-                            <a-tooltip title="边缘网关代理的真实物理设备">
+                            {{ $t('EdgeMap.index.626301-3') }}
+                            <a-tooltip :title="$t('EdgeMap.index.626301-4')">
                                 <AIcon type="QuestionCircleOutlined" />
                             </a-tooltip>
                         </template>
@@ -30,7 +30,7 @@
                                 <a-select
                                     style="width: 100%"
                                     v-model:value="record[column.dataIndex]"
-                                    placeholder="请选择"
+                                    :placeholder="$t('EdgeMap.index.626301-5')"
                                     allowClear
                                     :filter-option="filterOption"
                                 >
@@ -50,7 +50,7 @@
                                 :rules="[
                                     {
                                         required: !!record.channelId,
-                                        message: '请选择采集器',
+                                        message: $t('EdgeMap.index.626301-6'),
                                     },
                                 ]"
                             >
@@ -68,7 +68,7 @@
                                 :rules="[
                                     {
                                         required: !!record.channelId,
-                                        message: '请选择点位',
+                                        message: $t('EdgeMap.index.626301-7'),
                                     },
                                 ]"
                             >
@@ -84,19 +84,19 @@
                             <a-badge
                                 v-if="record[column.dataIndex]"
                                 status="success"
-                                text="已绑定"
+                                :text="$t('EdgeMap.index.626301-8')"
                             />
-                            <a-badge v-else status="error" text="未绑定" />
+                            <a-badge v-else status="error" :text="$t('EdgeMap.index.626301-9')" />
                         </template>
                         <template v-if="column.key === 'action'">
                             <j-permission-button
                                 type="link"
                                 :tooltip="{
-                                    title: '解绑',
+                                    title: $t('EdgeMap.index.626301-10'),
                                 }"
                                 :disabled="!record.id"
                                 :popConfirm="{
-                                    title: '确认解绑',
+                                    title: $t('EdgeMap.index.626301-11'),
                                     onConfirm: () => unbind(record.id),
                                 }"
                                 ><AIcon type="icon-jiebang"
@@ -117,7 +117,7 @@
         />
     </a-spin>
     <a-card v-else>
-        <JEmpty description="暂无数据，请配置物模型" style="margin: 10% 0" />
+        <JEmpty :description="$t('EdgeMap.index.626301-12')" style="margin: 10% 0" />
     </a-card>
 </template>
 
@@ -135,40 +135,42 @@ import MSelect from './MSelect.vue';
 import PatchMapping from './PatchMapping.vue';
 import { inject } from 'vue';
 import { onlyMessage } from '@jetlinks-web/utils';
+import { useI18n } from 'vue-i18n';
 
+const { t: $t } = useI18n();
 const columns = [
     {
-        title: '名称',
+        title: $t('EdgeMap.index.626301-13'),
         dataIndex: 'metadataName',
         key: 'metadataName',
         width: '20%',
     },
     {
-        title: '通道',
+        title: $t('EdgeMap.index.626301-14'),
         dataIndex: 'channelId',
         key: 'channelId',
         width: '20%',
     },
     {
-        title: '采集器',
+        title: $t('EdgeMap.index.626301-3'),
         dataIndex: 'collectorId',
         key: 'collectorId',
         width: '20%',
     },
     {
-        title: '点位',
+        title: $t('EdgeMap.index.626301-15'),
         key: 'pointId',
         dataIndex: 'pointId',
         width: '20%',
     },
     {
-        title: '状态',
+        title: $t('EdgeMap.index.626301-16'),
         key: 'id',
         dataIndex: 'id',
         width: '10%',
     },
     {
-        title: '操作',
+        title: $t('EdgeMap.index.626301-17'),
         key: 'action',
         width: '10%',
     },
@@ -225,7 +227,7 @@ const unbind = (id: string) => {
         });
         response.then((resp) => {
             if (resp.status === 200) {
-                onlyMessage('操作成功！');
+                onlyMessage($t('EdgeMap.index.626301-18'));
                 _emit('getEdgeMap');
             }
         });
@@ -250,7 +252,7 @@ const onSave = async () => {
     if (form.value) {
         formRef.value.validateFields().then(async () => {
             if (modelRef.dataSource.length === 0) {
-                onlyMessage('请配置物模型', 'error');
+                onlyMessage($t('EdgeMap.index.626301-19'), 'error');
             } else {
                 channelList.value.forEach((item: any) => {
                     modelRef.dataSource.forEach((i: any) => {
@@ -306,7 +308,7 @@ const onSave = async () => {
 const save = async (item: any) => {
     const res = await saveEdgeMap(instanceStore.current.id, item);
     if (res.status === 200) {
-        onlyMessage('保存成功');
+        onlyMessage($t('EdgeMap.index.626301-20'));
         _emit('close');
     }
 };

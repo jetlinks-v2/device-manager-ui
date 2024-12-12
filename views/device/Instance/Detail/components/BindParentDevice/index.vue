@@ -4,9 +4,9 @@
         :maskClosable="false"
         width="1000px"
         :visible="true"
-        title="绑定父设备"
-        okText="确定"
-        cancelText="取消"
+        :title="$t('BindParentDevice.index.692574-0')"
+        :okText="$t('Save.index.912481-0')"
+        :cancelText="$t('Save.index.912481-1')"
         @ok="handleOk"
         @cancel="handleCancel"
         :confirmLoading="btnLoading"
@@ -53,6 +53,9 @@
 import { query, bindDevice } from '../../../../../../api/instance';
 import { onlyMessage } from '@/utils/comm';
 import dayjs from 'dayjs';
+import { useI18n } from 'vue-i18n';
+
+const { t: $t } = useI18n();
 
 const emit = defineEmits(['cancel', 'ok']);
 
@@ -100,7 +103,7 @@ const columns = [
         },
     },
     {
-        title: '设备名称',
+        title: $t('BindParentDevice.index.692574-1'),
         dataIndex: 'name',
         key: 'name',
         ellipsis: true,
@@ -109,7 +112,7 @@ const columns = [
         },
     },
     {
-        title: '所属产品',
+        title: $t('BindParentDevice.index.692574-2'),
         dataIndex: 'productName',
         key: 'productName',
         search: {
@@ -117,7 +120,7 @@ const columns = [
         },
     },
     {
-        title: '注册时间',
+        title: $t('BindParentDevice.index.692574-3'),
         dataIndex: 'registryTime',
         key: 'registryTime',
         scopedSlots: true,
@@ -126,16 +129,16 @@ const columns = [
         },
     },
     {
-        title: '状态',
+        title: $t('BindParentDevice.index.692574-4'),
         dataIndex: 'state',
         key: 'state',
         scopedSlots: true,
         search: {
             type: 'select',
             options: [
-                { label: '禁用', value: 'notActive' },
-                { label: '离线', value: 'offline' },
-                { label: '在线', value: 'online' },
+                { label: $t('BindParentDevice.index.692574-5'), value: 'notActive' },
+                { label: $t('BindParentDevice.index.692574-6'), value: 'offline' },
+                { label: $t('BindParentDevice.index.692574-7'), value: 'online' },
             ],
         },
     },
@@ -151,7 +154,7 @@ const onSelectChange = (keys: string[]) => {
 
 const handleOk = () => {
     if (_selectedRowKeys.value.length === 0) {
-        onlyMessage('请选择需要绑定的设备', 'warning');
+        onlyMessage($t('BindParentDevice.index.692574-8'), 'warning');
         return;
     }
     btnLoading.value = true;
@@ -159,7 +162,7 @@ const handleOk = () => {
         .then((resp) => {
             if(resp.status === 200){
                 emit('ok', _selectedRowKeys.value[0]);
-                onlyMessage('操作成功');
+                onlyMessage($t('BindParentDevice.index.692574-9'));
             }
         })
         .finally(() => {

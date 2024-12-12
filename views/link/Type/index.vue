@@ -27,7 +27,7 @@
                             <template #icon
                                 ><AIcon type="PlusOutlined"
                             /></template>
-                            新增
+                            {{ $t('Type.index.196842-0') }}
                         </j-permission-button>
                     </template>
                     <template #card="slotProps">
@@ -72,7 +72,7 @@
                                             <div
                                                 class="card-item-content-text-title"
                                             >
-                                                类型
+                                                {{ $t('Type.index.196842-1') }}
                                             </div>
                                             <div class="card-item-content-text">
                                                 <a-tooltip>
@@ -88,7 +88,7 @@
                                             <div
                                                 class="card-item-content-text-title"
                                             >
-                                                详情
+                                                {{ $t('Type.index.196842-2') }}
                                             </div>
                                             <div class="card-item-content-text">
                                                 <a-tooltip>
@@ -162,8 +162,8 @@
                     <template #shareCluster="slotProps">
                         {{
                             slotProps.shareCluster === true
-                                ? '共享配置'
-                                : '独立配置'
+                                ? $t('Type.index.196842-3')
+                                : $t('Type.index.196842-4')
                         }}
                     </template>
                     <template #type="slotProps">
@@ -182,7 +182,9 @@ import { supports, query, remove, start, shutdown } from '../../../api/link/type
 import { onlyMessage } from '@/utils/comm';
 import { useMenuStore } from '@/store';
 import {network} from "../../../assets";
+import { useI18n } from 'vue-i18n';
 
+const { t: $t } = useI18n();
 const menuStory = useMenuStore();
 const tableRef = ref<Record<string, any>>({});
 const params = ref<Record<string, any>>({});
@@ -190,7 +192,7 @@ const options = ref([]);
 
 const columns = [
     {
-        title: '名称',
+        title: $t('Type.index.196842-5'),
         dataIndex: 'name',
         key: 'name',
         ellipsis: true,
@@ -201,7 +203,7 @@ const columns = [
         },
     },
     {
-        title: '类型',
+        title: $t('Type.index.196842-1'),
         dataIndex: 'type',
         key: 'type',
         ellipsis: true,
@@ -219,7 +221,7 @@ const columns = [
         scopedSlots: true,
     },
     {
-        title: '集群',
+        title: $t('Type.index.196842-6'),
         dataIndex: 'shareCluster',
         key: 'shareCluster',
         width: 120,
@@ -228,20 +230,20 @@ const columns = [
         search: {
             type: 'select',
             options: [
-                { label: '共享配置', value: 'true' },
-                { label: '独立配置', value: 'false' },
+                { label: $t('Type.index.196842-3'), value: 'true' },
+                { label: $t('Type.index.196842-4'), value: 'false' },
             ],
         },
     },
     {
-        title: '详情',
+        title: $t('Type.index.196842-2'),
         dataIndex: 'details',
         key: 'details',
         ellipsis: true,
         scopedSlots: true,
     },
     {
-        title: '状态',
+        title: $t('Type.index.196842-7'),
         dataIndex: 'state',
         key: 'state',
         width: 100,
@@ -250,13 +252,13 @@ const columns = [
         search: {
             type: 'select',
             options: [
-                { label: '正常', value: 'enabled' },
-                { label: '禁用', value: 'disabled' },
+                { label: $t('Type.index.196842-8'), value: 'enabled' },
+                { label: $t('Type.index.196842-9'), value: 'disabled' },
             ],
         },
     },
     {
-        title: '说明',
+        title: $t('Type.index.196842-10'),
         dataIndex: 'description',
         key: 'description',
         ellipsis: true,
@@ -265,7 +267,7 @@ const columns = [
         },
     },
     {
-        title: '操作',
+        title: $t('Type.index.196842-11'),
         key: 'action',
         fixed: 'right',
         width: 200,
@@ -279,13 +281,13 @@ const getActions = (
 ): any[] => {
     if (!data) return [];
     const state = data.state.value;
-    const stateText = state === 'enabled' ? '禁用' : '启用';
+    const stateText = state === 'enabled' ? $t('Type.index.196842-9') : $t('Type.index.196842-12');
     const actions = [
         {
             key: 'view',
-            text: '查看',
+            text: $t('Type.index.196842-13'),
             tooltip: {
-                title: '查看',
+                title: $t('Type.index.196842-13'),
             },
             icon: 'EyeOutlined',
             onClick: async () => {
@@ -294,9 +296,9 @@ const getActions = (
         },
         {
             key: 'update',
-            text: '编辑',
+            text: $t('Type.index.196842-14'),
             tooltip: {
-                title: '编辑',
+                title: $t('Type.index.196842-14'),
             },
             icon: 'EditOutlined',
             onClick: () => {
@@ -312,7 +314,7 @@ const getActions = (
             },
             icon: state === 'enabled' ? 'StopOutlined' : 'CheckCircleOutlined',
             popConfirm: {
-                title: `确认${stateText}?`,
+                title: $t('Type.index.196842-15', [stateText]),
                 onConfirm: () => {
                     let response =
                         state === 'enabled'
@@ -320,7 +322,7 @@ const getActions = (
                             : start(data.id);
                     response.then((res) => {
                         if (res.success) {
-                            onlyMessage('操作成功', 'success');
+                            onlyMessage($t('Type.index.196842-16'), 'success');
                             tableRef.value?.reload();
                         }
                     });
@@ -330,19 +332,19 @@ const getActions = (
         },
         {
             key: 'delete',
-            text: '删除',
+            text: $t('Type.index.196842-17'),
             disabled: state === 'enabled',
             tooltip: {
                 title:
-                    state === 'enabled' ? '请先禁用该组件，再删除。' : '删除',
+                    state === 'enabled' ? $t('Type.index.196842-18') : $t('Type.index.196842-17'),
             },
             popConfirm: {
-                title: '确认删除?',
+                title: $t('Type.index.196842-19'),
                 onConfirm: () => {
                     const response: any = remove(data.id);
                     response.then((res:any) => {
                         if (res.status === 200) {
-                            onlyMessage('操作成功', 'success');
+                            onlyMessage($t('Type.index.196842-16'), 'success');
                             tableRef.value.reload();
                         } else {
                             onlyMessage(res?.message, 'error');
@@ -393,11 +395,11 @@ const getDetails = (slotProps: Partial<Record<string, any>>) => {
           ':' +
           (cluster[0].configuration.publicPort ||
               cluster[0].configuration.remotePort);
-    let head = '远程:';
+    let head = $t('Type.index.196842-20');
     if (!!shareCluster) {
-        !!configuration.publicHost && (head = '公网:');
+        !!configuration.publicHost && (head = $t('Type.index.196842-21'));
     } else {
-        !!cluster[0].configuration.publicHos && (head = '公网:');
+        !!cluster[0].configuration.publicHos && (head = $t('Type.index.196842-21'));
     }
     if (!shareCluster && cluster.length > 1) {
         const contentItem2 =
@@ -406,8 +408,8 @@ const getDetails = (slotProps: Partial<Record<string, any>>) => {
             ':' +
             (cluster[0].configuration.publicPort ||
                 cluster[0].configuration.remotePort);
-        let headItme2 = '远程';
-        !!cluster[0].configuration.publicHos && (headItme2 = '公网:');
+        let headItme2 = $t('Type.index.196842-22');
+        !!cluster[0].configuration.publicHos && (headItme2 = $t('Type.index.196842-21'));
         if (cluster.length > 2) {
             return (
                 head +

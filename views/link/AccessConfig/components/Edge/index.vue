@@ -11,12 +11,12 @@
             <div class="steps-box" v-if="current === 0">
                 <div class="alert">
                     <AIcon type="InfoCircleOutlined" />
-                    选择与设备通信的网络组件
+                    {{ $t('Edge.index.066653-0') }}
                 </div>
                 <div class="search">
                     <a-input-search
                         allowClear
-                        placeholder="请输入"
+                        :placeholder="$t('Edge.index.066653-1')"
                         style="width: 300px"
                         @search="networkSearch"
                     />
@@ -26,7 +26,7 @@
                         hasPermission="link/Type:add"
                     >
                         <template #icon><AIcon type="PlusOutlined" /></template>
-                        新增
+                        {{ $t('Edge.index.066653-2') }}
                     </j-permission-button>
                 </div>
                 <j-scrollbar height="480">
@@ -86,7 +86,7 @@
                                                         (item.addresses || [])
                                                             .length > 1
                                                     "
-                                                    >等{{ item.addresses.length }}条</span
+                                                    >{{ $t('Edge.index.066653-3') }}{{ item.addresses.length }}{{ $t('Edge.index.066653-4') }}</span
                                                 >
                                             </div>
                                         </a-tooltip>
@@ -98,7 +98,7 @@
                     <j-empty
                         style="margin-top: 10%"
                         v-else
-                        description="暂无数据"
+                        :description="$t('Edge.index.066653-5')"
                     />
                 </j-scrollbar>
             </div>
@@ -109,7 +109,7 @@
         >
             <a-row :gutter="[24, 24]">
                 <a-col :span="12">
-                    <title-component data="基本信息" />
+                    <title-component :data="$t('Edge.index.066653-6')" />
                     <a-form
                         :model="formState"
                         name="basic"
@@ -119,29 +119,29 @@
                         ref="formRef"
                     >
                         <a-form-item
-                            label="名称"
+                            :label="$t('Edge.index.066653-7')"
                             name="name"
                             :rules="[
                                 {
                                     required: true,
-                                    message: '请输入名称',
+                                    message: $t('Edge.index.066653-8'),
                                     trigger: 'blur',
                                 },
                                 {
                                     max: 64,
-                                    message: '最多可输入64个字符',
+                                    message: $t('Edge.index.066653-9'),
                                     trigger: 'blur',
                                 },
                             ]"
                         >
                             <a-input
-                                placeholder="请输入名称"
+                                :placeholder="$t('Edge.index.066653-8')"
                                 v-model:value="formState.name"
                             />
                         </a-form-item>
-                        <a-form-item label="说明" name="description">
+                        <a-form-item :label="$t('Edge.index.066653-10')" name="description">
                             <a-textarea
-                                placeholder="请输入说明"
+                                :placeholder="$t('Edge.index.066653-11')"
                                 :rows="4"
                                 v-model:value="formState.description"
                                 show-count
@@ -158,19 +158,19 @@
                                 }`"
                                 :loading="loading"
                             >
-                                保存
+                                {{ $t('Edge.index.066653-12') }}
                             </j-permission-button>
                         </a-form-item>
                     </a-form>
                 </a-col>
                 <a-col :span="12">
                     <div class="doc" style="height: 600px">
-                        <TitleComponent data="配置概览" />
-                        <p>接入方式：{{ provider.name }}</p>
+                        <TitleComponent :data="$t('Edge.index.066653-13')" />
+                        <p>{{ $t('Edge.index.066653-14') }}{{ provider.name }}</p>
                         <p>
                             {{ provider.description }}
                         </p>
-                        <p>消息协议：{{ provider.id }}</p>
+                        <p>{{ $t('Edge.index.066653-15') }}{{ provider.id }}</p>
                     </div>
                 </a-col>
             </a-row>
@@ -179,7 +179,7 @@
             v-if="channel !== 'edge-child-device'"
             :class="current !== 1 ? 'steps-action' : 'steps-action-save'"
         >
-            <a-button v-if="current > 0" @click="prev" style="margin-right: 8px"> 上一步 </a-button>
+            <a-button v-if="current > 0" @click="prev" style="margin-right: 8px"> {{ $t('Edge.index.066653-16') }} </a-button>
             <j-permission-button
                 v-if="current === 1 && view === 'false'"
                 type="primary"
@@ -190,14 +190,14 @@
                 }`"
                 :loading="loading"
             >
-                保存
+                {{ $t('Edge.index.066653-12') }}
             </j-permission-button>
             <a-button
               v-if="[0].includes(current)"
 
               @click="next"
             >
-              下一步
+              {{ $t('Edge.index.066653-17') }}
             </a-button>
         </div>
     </div>
@@ -214,7 +214,9 @@ import {
 } from '../../data';
 import AccessCard from '../AccessCard/index.vue';
 import { useMenuStore } from '@/store/menu';
+import { useI18n } from 'vue-i18n';
 
+const { t: $t } = useI18n();
 const menuStory = useMenuStore();
 
 interface FormState {
@@ -249,7 +251,7 @@ const formRef = ref<FormInstance>();
 
 const current = ref(0);
 const stepCurrent = ref(0);
-const steps = ref(['网络组件', '完成']);
+const steps = ref([$t('Edge.index.066653-18'), $t('Edge.index.066653-19')]);
 const networkCurrent: any = ref('');
 const networkList: any = ref([]);
 const allNetworkList: any = ref([]);
@@ -267,7 +269,7 @@ const onFinish = async (values: any) => {
     const resp =
         id === ':id' ? await save(params) : await update({ ...params, id });
     if (resp.status === 200) {
-        onlyMessage('操作成功', 'success');
+        onlyMessage($t('Edge.index.066653-20'), 'success');
         history.back();
         if ((window as any).onTabSaveSuccess) {
             (window as any).onTabSaveSuccess(resp);
@@ -328,7 +330,7 @@ const addNetwork = () => {
 
 const next = async () => {
     if (!networkCurrent.value) {
-        onlyMessage('请选择网络组件！', 'error');
+        onlyMessage($t('Edge.index.066653-21'), 'error');
     } else {
         current.value = current.value + 1;
     }

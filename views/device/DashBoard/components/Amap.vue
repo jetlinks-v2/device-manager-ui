@@ -1,7 +1,7 @@
 <template>
     <div style="width: 100%; height: 500px;position: relative">
         <div class="loading" v-if="loading.value">
-            <a-spin :spinning="loading.value" size="large" tip="点位加载中..." />
+            <a-spin :spinning="loading.value" size="large" :tip="$t('components.Amap.165690-0')" />
         </div>
         <AmapComponent @init="onMapInit">
             <el-amap-marker-cluster

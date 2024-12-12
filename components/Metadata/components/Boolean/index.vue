@@ -27,6 +27,9 @@ import { PopoverModal } from '../index'
 import Item from './Item.vue'
 import {Form} from "ant-design-vue";
 import {BooleanValueMap} from "../utils";
+import { useI18n } from 'vue-i18n';
+
+const { t: $t } = useI18n();
 
 const emit = defineEmits([
   'update:trueText',
@@ -71,9 +74,9 @@ const formRef = ref()
 const visible = ref(false)
 const formData = reactive({
   value: {
-    trueText: props.trueText || '是',
+    trueText: props.trueText || $t('Array.index.399995-3'),
     trueValue: props.trueValue || 'true',
-    falseText: props.falseText || '否',
+    falseText: props.falseText || $t('Array.index.399995-4'),
     falseValue: props.falseValue || 'false',
   }
 })

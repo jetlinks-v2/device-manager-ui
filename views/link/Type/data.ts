@@ -1,3 +1,4 @@
+import i18n from "@/locales";
 export const ParserConfiguration = {
     delimited: '',
     lang: '',
@@ -81,11 +82,11 @@ export const VisibleData = {
 };
 
 export const ParserTypeOptions = [
-    { value: 'DIRECT', label: '不处理' },
-    { value: 'DELIMITED', label: '分隔符' },
-    { value: 'SCRIPT', label: '自定义脚本' },
-    { value: 'FIXED_LENGTH', label: '固定长度' },
-    { value: 'LENGTH_FIELD', label: '长度字段' },
+    { value: 'DIRECT', label: i18n.global.t('Type.data.652947-0') },
+    { value: 'DELIMITED', label: i18n.global.t('Type.data.652947-1') },
+    { value: 'SCRIPT', label: i18n.global.t('Type.data.652947-2') },
+    { value: 'FIXED_LENGTH', label: i18n.global.t('Type.data.652947-3') },
+    { value: 'LENGTH_FIELD', label: i18n.global.t('Type.data.652947-4') },
 ];
 export const LengthOptions = [
     { value: '1', label: '1' },
@@ -95,8 +96,8 @@ export const LengthOptions = [
     { value: '8', label: '8' },
 ];
 export const LittleOptions = [
-    { label: '大端', value: 'false' },
-    { label: '小端', value: 'true' },
+    { label: i18n.global.t('Type.data.652947-5'), value: 'false' },
+    { label: i18n.global.t('Type.data.652947-6'), value: 'true' },
 ];
 
 export const isVisible = (
@@ -127,7 +128,7 @@ const validateAddress = (_rule: any, value: string): Promise<any> => {
         ) {
             return resolve('');
         } else {
-            return value ? reject('请输入正确的IP地址或者域名') : resolve('');
+            return value ? reject(i18n.global.t('Type.data.652947-7')) : resolve('');
         }
     });
 };
@@ -146,123 +147,123 @@ export const Rules = {
     name: [
         {
             required: true,
-            message: '请输入名称',
+            message: i18n.global.t('Type.data.652947-8'),
         },
         {
             max: 64,
-            message: '最多可输入64个字符',
+            message: i18n.global.t('Type.data.652947-9'),
         },
     ],
     type: [
         {
             required: true,
-            message: '请选择类型',
+            message: i18n.global.t('Type.data.652947-10'),
         },
     ],
     shareCluster: [
         {
             required: true,
-            message: '请选择集群',
+            message: i18n.global.t('Type.data.652947-11'),
         },
     ],
     serverId: [
         {
             required: true,
-            message: '请选择节点名称',
+            message: i18n.global.t('Type.data.652947-12'),
         },
     ],
     host: [
         {
             required: true,
-            message: '请选择本地地址',
+            message: i18n.global.t('Type.data.652947-13'),
         },
     ],
     port: [
         {
             required: true,
-            message: '请选择本地端口',
+            message: i18n.global.t('Type.data.652947-14'),
         },
     ],
     publicHost: [
         {
             required: true,
-            message: '请输入公网地址',
+            message: i18n.global.t('Type.data.652947-15'),
         },
         {
             validator: validateAddress,
-            message: '请输入正确的IP地址或者域名',
+            message: i18n.global.t('Type.data.652947-7'),
         },
     ],
     publicPort: [
         {
             required: true,
-            message: '请输入公网端口',
+            message: i18n.global.t('Type.data.652947-16'),
         },
         {
             pattern: Validator.regOnlyNumber,
-            message: '请输入1-65535之间的正整数',
+            message: i18n.global.t('Type.data.652947-17'),
         },
     ],
     remoteHost: [
         {
             required: true,
-            message: '请输入远程地址',
+            message: i18n.global.t('Type.data.652947-18'),
         },
         {
             validator: validateAddress,
-            message: '请输入正确格式的域名或ip',
+            message: i18n.global.t('Type.data.652947-19'),
         },
     ],
     remotePort: [
         {
             required: true,
-            message: '输入远程端口',
+            message: i18n.global.t('Type.data.652947-20'),
         },
         {
             pattern: Validator.regOnlyNumber,
-            message: '请输入1-65535之间的正整数',
+            message: i18n.global.t('Type.data.652947-17'),
         },
     ],
     clientId: [
         {
             required: true,
-            message: '请输入ClientId',
+            message: i18n.global.t('Type.data.652947-21'),
         },
         {
             max: 64,
-            message: '最多可输入64个字符',
+            message: i18n.global.t('Type.data.652947-9'),
         },
     ],
     username: [
         {
             required: true,
-            message: '请输入用户名',
+            message: i18n.global.t('Type.data.652947-22'),
         },
         {
             max: 64,
-            message: '最多可输入64个字符',
+            message: i18n.global.t('Type.data.652947-9'),
         },
     ],
     password: [
         {
             required: true,
-            message: '请输入密码',
+            message: i18n.global.t('Type.data.652947-23'),
         },
         {
             max: 64,
-            message: '最多可输入64个字符',
+            message: i18n.global.t('Type.data.652947-9'),
         },
     ],
     topicPrefix: [
         {
             max: 64,
-            message: '最多可输入64个字符',
+            message: i18n.global.t('Type.data.652947-9'),
         },
     ],
     maxMessageSize: [
         {
             required: true,
-            message: '请输入最大消息长度',
+            message: i18n.global.t('Type.data.652947-24'),
         },
     ],
     secure: [
@@ -273,72 +274,72 @@ export const Rules = {
     certId: [
         {
             required: true,
-            message: '请选择证书',
+            message: i18n.global.t('Type.data.652947-25'),
         },
     ],
     privateKeyAlias: [
         {
             required: true,
-            message: '请输入私钥别名',
+            message: i18n.global.t('Type.data.652947-26'),
         },
         {
             max: 64,
-            message: '最多可输入64个字符',
+            message: i18n.global.t('Type.data.652947-9'),
         },
     ],
     parserType: [
         {
             required: true,
-            message: '请选择粘拆包规则',
+            message: i18n.global.t('Type.data.652947-27'),
         },
     ],
     delimited: [
         {
             required: true,
-            message: '请输入分隔符',
+            message: i18n.global.t('Type.data.652947-28'),
         },
         {
             max: 64,
-            message: '最多可输入64个字符',
+            message: i18n.global.t('Type.data.652947-9'),
         },
     ],
     lang: [
         {
             required: true,
-            message: '请选择脚本语言',
+            message: i18n.global.t('Type.data.652947-29'),
         },
         {
             max: 64,
-            message: '最多可输入64个字符',
+            message: i18n.global.t('Type.data.652947-9'),
         },
     ],
     script: [
         {
             required: true,
-            message: '请输入脚本',
+            message: i18n.global.t('Type.data.652947-30'),
         },
     ],
     size: [
         {
             required: true,
-            message: '请输入长度值',
+            message: i18n.global.t('Type.data.652947-31'),
         },
         {
             validator:sizeValidator,
-            message:'请输入0~65535之间的正整数',
+            message:i18n.global.t('Type.data.652947-32'),
             trigger:'change'
         }
     ],
     length: [
         {
             required: true,
-            message: '请选择长度',
+            message: i18n.global.t('Type.data.652947-33'),
         },
     ],
     offset: [
         {
             pattern: Validator.regOnlyNumber,
-            message: '请输入0-65535之间的正整数',
+            message: i18n.global.t('Type.data.652947-34'),
         },
     ],
 };

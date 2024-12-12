@@ -51,13 +51,15 @@ import { queryLog, queryLogsType } from '../../../../../api/instance';
 import { useInstanceStore } from '../../../../../store/instance';
 import dayjs from 'dayjs';
 import { Modal, Textarea } from 'ant-design-vue';
+import { useI18n } from 'vue-i18n';
 
+const { t: $t } = useI18n();
 const params = ref<Record<string, any>>({});
 const instanceStore = useInstanceStore();
 
 const columns = [
     {
-        title: '类型',
+        title: $t('Log.index.848256-0'),
         dataIndex: 'type',
         key: 'type',
         scopedSlots: true,
@@ -78,7 +80,7 @@ const columns = [
         },
     },
     {
-        title: '时间',
+        title: $t('Log.index.848256-1'),
         dataIndex: 'timestamp',
         key: 'timestamp',
         scopedSlots: true,
@@ -88,7 +90,7 @@ const columns = [
         },
     },
     {
-        title: '内容',
+        title: $t('Log.index.848256-2'),
         dataIndex: 'content',
         key: 'content',
         scopedSlots: true,
@@ -97,7 +99,7 @@ const columns = [
         },
     },
     {
-        title: '操作',
+        title: $t('Log.index.848256-3'),
         key: 'action',
         fixed: 'right',
         width: 250,
@@ -113,9 +115,9 @@ const getActions = (
     return [
         {
             key: 'view',
-            text: '查看',
+            text: $t('Log.index.848256-4'),
             tooltip: {
-                title: '查看',
+                title: $t('Log.index.848256-4'),
             },
             icon: 'SearchOutlined',
             onClick: () => {
@@ -126,7 +128,7 @@ const getActions = (
                     content = data.content;
                 }
                 Modal.info({
-                    title: '详细信息',
+                    title: $t('Log.index.848256-5'),
                     width: 700,
                     content: h(Textarea, {
                         bordered: false,

@@ -1,4 +1,5 @@
 import { diagnose } from '../../../../../assets'
+import i18n from '@/locales';
 
 export const headerImgMap = new Map();
 headerImgMap.set('loading', diagnose.loading2);
@@ -15,14 +16,14 @@ headerColorMap.set('success', 'linear-gradient(89.95deg, #E8F8F7 0.03%, #EBEFFA 
 
 
 export const headerTitleMap = new Map();
-headerTitleMap.set('loading', '正在诊断中');
-headerTitleMap.set('error', '发现连接问题');
-headerTitleMap.set('success', '连接状态正常');
+headerTitleMap.set('loading', i18n.global.t('Diagnose.util.952397-0'));
+headerTitleMap.set('error', i18n.global.t('Diagnose.util.952397-1'));
+headerTitleMap.set('success', i18n.global.t('Diagnose.util.952397-2'));
 
 export const headerDescMap = new Map();
-headerDescMap.set('loading', '已诊断XX个');
-headerDescMap.set('error', '请处理连接异常');
-headerDescMap.set('success', '现在可调试消息通信');
+headerDescMap.set('loading', i18n.global.t('Diagnose.util.952397-3'));
+headerDescMap.set('error', i18n.global.t('Diagnose.util.952397-4'));
+headerDescMap.set('success', i18n.global.t('Diagnose.util.952397-5'));
 
 export const progressMap = new Map();
 progressMap.set('loading', '#597EF7');

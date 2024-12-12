@@ -17,9 +17,9 @@
             >
                 <a-form-item
                     name="way"
-                    :rules="{ required: true, message: '请选择方式' }"
+                    :rules="{ required: true, message: $t('Child.actionModal.664579-0') }"
                 >
-                    <template #label> {{ title }}方式 </template>
+                    <template #label> {{ title }}{{ $t('Child.actionModal.664579-1') }} </template>
                     <j-card-select
                         :showImage="false"
                         v-model:value="form.way"
@@ -36,24 +36,24 @@
         <div v-else-if="loading">
             <div class="loading">
                 <a-spin />
-                {{ title }}中...
+                {{ title }}{{ $t('Child.actionModal.664579-2') }}
             </div>
         </div>
         <template v-else>
             <div class="result">
                 <div class="result-header">
                     <img :src="diagnose.Success" alt=""/>
-                    <div>{{ title }}完成</div>
+                    <div>{{ title }}{{ $t('Child.actionModal.664579-3') }}</div>
                 </div>
                 <a-space :size="24">
-                    <div>云端</div>
-                    <div>{{ title }}成功：{{ cloud.successCount }} 条</div>
+                    <div>{{ $t('Child.actionModal.664579-4') }}</div>
+                    <div>{{ title }}{{ $t('Child.actionModal.664579-5') }}{{ cloud.successCount }} {{ $t('Child.actionModal.664579-6') }}</div>
                     <div style="width: 200px">
                         <span>
-                            {{ title }}失败：{{
+                            {{ title }}{{ $t('Child.actionModal.664579-7') }}{{
                                 cloud.errorMessage.length
                             }}
-                            条</span
+                            {{ $t('Child.actionModal.664579-6') }}</span
                         >
                         <span style="width: 50px">
                             <a-tooltip v-if="cloud.errorMessage.length">
@@ -79,14 +79,14 @@
                     :size="24"
                     style="margin-top: 6px"
                 >
-                    <div>边端</div>
-                    <div>{{ title }}成功：{{ edge.successCount }} 条</div>
+                    <div>{{ $t('Child.actionModal.664579-8') }}</div>
+                    <div>{{ title }}{{ $t('Child.actionModal.664579-5') }}{{ edge.successCount }} {{ $t('Child.actionModal.664579-6') }}</div>
                     <div style="width: 200px">
                         <span>
-                            {{ title }}失败：{{
+                            {{ title }}{{ $t('Child.actionModal.664579-7') }}{{
                                 edge.errorMessage.length
                             }}
-                            条</span
+                            {{ $t('Child.actionModal.664579-6') }}</span
                         >
                         <span style="width: 50px">
                             <a-tooltip v-if="edge.errorMessage.length">
@@ -112,13 +112,13 @@
 
         <template #footer>
             <a-space v-if="result.length === 0">
-                <a-button @click="emits('close')">取消</a-button>
+                <a-button @click="emits('close')">{{ $t('Child.actionModal.664579-9') }}</a-button>
                 <a-button type="primary" :loading="loading" @click="onSave">{{
                     title
                 }}</a-button>
             </a-space>
             <a-button v-else type="primary" @click="emits('close')"
-                >完成</a-button
+                >{{ $t('Child.actionModal.664579-3') }}</a-button
             >
         </template>
     </a-modal>
@@ -137,6 +137,9 @@ import {
 import { useInstanceStore } from '../../../../../store/instance';
 import { onlyMessage } from '@jetlinks-web/utils';
 import { diagnose } from "../../../../../assets";
+import { useI18n } from 'vue-i18n';
+
+const { t: $t } = useI18n();
 
 const emits = defineEmits(['close']);
 const props = defineProps({
@@ -161,40 +164,40 @@ const props = defineProps({
 const instanceStore = useInstanceStore();
 const typeMap = new Map();
 typeMap.set('unbind', {
-    title: '解绑',
-    label: '确认解绑？若存在映射关系，将会删除该设备在边端的绑定关系',
+    title: $t('Child.actionModal.664579-10'),
+    label: $t('Child.actionModal.664579-11'),
     batchLabel:
-        '确认解绑选中的设备？若存在映射关系，将会删除该设备在边端的绑定关系',
+        $t('Child.actionModal.664579-12'),
 });
 typeMap.set('undeploy', {
-    title: '禁用',
-    label: '确认禁用？',
-    batchLabel: '确认禁用选中的设备？',
+    title: $t('Child.actionModal.664579-13'),
+    label: $t('Child.actionModal.664579-14'),
+    batchLabel: $t('Child.actionModal.664579-15'),
 });
 typeMap.set('deploy', {
-    title: '启用',
-    label: '确认启用？',
-    batchLabel: '确认启用选中的设备？',
+    title: $t('Child.actionModal.664579-16'),
+    label: $t('Child.actionModal.664579-17'),
+    batchLabel: $t('Child.actionModal.664579-18'),
 });
 typeMap.set('delete', {
-    title: '删除',
-    label: '确认删除？',
-    batchLabel: '确认删除选中的设备？',
+    title: $t('Child.actionModal.664579-19'),
+    label: $t('Child.actionModal.664579-20'),
+    batchLabel: $t('Child.actionModal.664579-21'),
 });
 
 const title = computed(() =>
     props.batch
-        ? `批量${typeMap.get(props.type).title}`
+        ? $t('Child.actionModal.664579-22', [typeMap.get(props.type).title])
         : typeMap.get(props.type).title,
 );
 
 const options = computed(() => [
     {
-        label: `仅${title.value}平台设备`,
+        label: $t('Child.actionModal.664579-23', [title.value]),
         value: 'cloud',
     },
     {
-        label: `同步${title.value}边端设备`,
+        label: $t('Child.actionModal.664579-24', [title.value]),
         value: 'edge',
     },
 ]);
@@ -246,7 +249,7 @@ const _unbind = async () => {
             result.value = res.result;
             handleResult(res.result);
         } else {
-            onlyMessage('操作成功');
+            onlyMessage($t('Child.actionModal.664579-25'));
             emits('close');
         }
     }
@@ -272,7 +275,7 @@ const onUndeploy = async () => {
             result.value = res.result;
             handleResult(res.result);
         } else {
-            onlyMessage('操作成功');
+            onlyMessage($t('Child.actionModal.664579-25'));
             emits('close');
         }
     }
@@ -302,7 +305,7 @@ const onDelete = async () => {
             result.value = res.result;
             handleResult(res.result);
         } else {
-            onlyMessage('操作成功');
+            onlyMessage($t('Child.actionModal.664579-25'));
             emits('close');
         }
     }
@@ -328,7 +331,7 @@ const onDeploy = async () => {
             result.value = res.result;
             handleResult(res.result);
         } else {
-            onlyMessage('操作成功');
+            onlyMessage($t('Child.actionModal.664579-25'));
             emits('close');
         }
     }

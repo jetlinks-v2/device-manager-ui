@@ -5,14 +5,14 @@
             button-style="solid"
             @change="onRadioChange"
         >
-            <a-radio-button value="today">今日</a-radio-button>
-            <a-radio-button value="week">近一周</a-radio-button>
-            <a-radio-button value="month">近一月</a-radio-button>
+            <a-radio-button value="today">{{$t('IotCard.index.369962-21-1')}}</a-radio-button>
+            <a-radio-button value="week">{{$t('IotCard.index.369962-22')}}</a-radio-button>
+            <a-radio-button value="month">{{$t('IotCard.index.369962-23')}}</a-radio-button>
         </a-radio-group>
         <a-range-picker
             show-time
             v-model:value="dateValue"
-            :placeholder="['开始时间', '结束时间']"
+            :placeholder="[$t('Detail.TimeComponent.778589-0'), $t('Detail.TimeComponent.778589-1')]"
             @change="onRangeChange"
             :allowClear="false"
         />

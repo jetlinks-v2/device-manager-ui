@@ -8,7 +8,7 @@
     </a-button>
     <a-modal
         v-model:visible="visible"
-        title="标签筛选"
+        :title="$t('components.TagSearch.396210-0')"
         :width="600"
         :keyboard="false"
         @cancel="visible = false"
@@ -16,7 +16,7 @@
     >
         <div class="header">
             <a-space :size="16">
-                <span class="title">筛选项</span>
+                <span class="title">{{ $t('components.TagSearch.396210-1') }}</span>
                 <AIcon type="ReloadOutlined" @click="onInit" />
             </a-space>
         </div>
@@ -38,17 +38,17 @@
                                 show-search
                                 :options="options"
                                 :field-names="{
-                      label: 'fullName',
-                      value: 'key'
-                    }"
+                                    label: 'fullName',
+                                    value: 'key'
+                                }"
                                 :filter-option="filterOption"
-                                placeholder="请选装标签"
+                                :placeholder="$t('components.TagSearch.396210-2')"
                                 style="width: 100%"
                                 @change="(key, option) => onTermsChange(key, option, index)"
                             />
                         </div>
                         <div class="value" style="flex: 1 1 0;min-width: 0">
-                            <a-input allow-clear v-model:value="item.value" placeholder="标签值" :maxLength="200" />
+                            <a-input allow-clear v-model:value="item.value" :placeholder="$t('components.TagSearch.396210-3')" :maxLength="200" />
                         </div>
                         <div class="type">
                             <a-button v-if="index === formData.list.length -1" :disabled="formData.list.length >= 10" @click="onAdd">
@@ -60,9 +60,9 @@
                                 v-else
                                 v-model:value="item.type"
                                 :options="[
-                    { label: '并且', value: 'and'},
-                    { label: '或者', value: 'or'},
-                  ]"
+                                    { label: $t('components.TagSearch.396210-4'), value: 'and'},
+                                    { label: $t('components.TagSearch.396210-5'), value: 'or'},
+                                ]"
                             />
                         </div>
                     </div>
@@ -77,6 +77,9 @@ import { useRequest } from '@jetlinks-web/hooks'
 import { tagsList } from '../../../../api/instance'
 import { randomString } from '@jetlinks-web/utils'
 import {cloneDeep} from "lodash-es";
+import { useI18n } from 'vue-i18n';
+
+const { t: $t } = useI18n();
 
 const emit =  defineEmits(['change','update:value'])
 
@@ -128,7 +131,7 @@ const rules = [{
         if (value.length) {
             value.forEach((item) => {
                 if (item.key && !item.value) {
-                    error.push(`【${item.label}】 请输入`)
+                    error.push($t('components.TagSearch.396210-6', [item.label]))
                 }
             })
         }
@@ -143,7 +146,7 @@ const rules = [{
 const searchText = computed(() => {
     const result = listCache.value.filter(item => item.key)
     if (!result.length) {
-        return '点击配置标签筛选范围'
+        return $t('components.TagSearch.396210-7')
     }
     return result.map(item => {
         return `${item.key}-${item.value}`

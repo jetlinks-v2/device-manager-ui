@@ -2,7 +2,7 @@
     <a-select
         :value="host"
         :options="options"
-        placeholder="请选择本地地址"
+        :placeholder="$t('Detail.LocalAddressSelect.884081-0')"
         allowClear
         show-search
         :disabled="shareCluster"

@@ -1,6 +1,6 @@
 <template>
   <Select
-    placeholder="请选择单位"
+    :placeholder="$t('UnitSelect.index.507061-0')"
     style="width: 100%"
     mode="tags"
     v-model:value="myValue"

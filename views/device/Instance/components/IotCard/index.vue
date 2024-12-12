@@ -13,7 +13,7 @@
             <template #title>
               <Guide>
                 <template #title>
-                  <span>基本信息</span>
+                  <span>{{ $t('IotCard.index.369962-0') }}</span>
                   <a-button
                     type="link"
                     @click="
@@ -25,70 +25,70 @@
                                             "
                   >
                     <AIcon type="EditOutlined"></AIcon>
-                    编辑
+                    {{ $t('IotCard.index.369962-1') }}
                   </a-button>
                 </template>
               </Guide>
             </template>
 
-            <a-descriptions-item label="卡号">{{
+            <a-descriptions-item :label="$t('IotCard.index.369962-2')">{{
                 detail.id
               }}</a-descriptions-item>
             <a-descriptions-item label="ICCID">{{
                 detail.iccId
               }}</a-descriptions-item>
-            <a-descriptions-item label="绑定设备">{{
+            <a-descriptions-item :label="$t('IotCard.index.369962-3')">{{
                 detail.deviceName
               }}</a-descriptions-item>
-            <a-descriptions-item label="平台类型">{{
+            <a-descriptions-item :label="$t('IotCard.index.369962-4')">{{
                 platformTypeList.find(
                   (item) =>
                     item.value ===
                     detail.operatorPlatformType?.text,
                 )?.label || detail.operatorPlatformType?.text
               }}</a-descriptions-item>
-            <a-descriptions-item label="平台名称">{{
+            <a-descriptions-item :label="$t('IotCard.index.369962-5')">{{
                 detail.platformConfigName
               }}</a-descriptions-item>
-            <a-descriptions-item label="运营商">{{
+            <a-descriptions-item :label="$t('IotCard.index.369962-6')">{{
                 OperatorList.find(
                   (item) =>
                     item.value === detail.operatorName,
                 )?.label || detail.operatorName
               }}</a-descriptions-item>
-            <a-descriptions-item label="类型">{{
+            <a-descriptions-item :label="$t('IotCard.index.369962-7')">{{
                 detail.cardType?.text
               }}</a-descriptions-item>
-            <a-descriptions-item label="激活日期">{{
+            <a-descriptions-item :label="$t('IotCard.index.369962-8')">{{
                 detail.activationDate
                   ? dayjs(detail.activationDate).format(
                     'YYYY-MM-DD HH:mm:ss',
                   )
                   : ''
               }}</a-descriptions-item>
-            <a-descriptions-item label="更新时间">{{
+            <a-descriptions-item :label="$t('IotCard.index.369962-9')">{{
                 detail.updateTime
                   ? dayjs(detail.updateTime).format(
                     'YYYY-MM-DD HH:mm:ss',
                   )
                   : ''
               }}</a-descriptions-item>
-            <a-descriptions-item label="总流量">{{
+            <a-descriptions-item :label="$t('IotCard.index.369962-10')">{{
                 detail.totalFlow
                   ? detail.totalFlow.toFixed(2) + ' M'
                   : '0 M'
               }}</a-descriptions-item>
-            <a-descriptions-item label="使用流量">{{
+            <a-descriptions-item :label="$t('IotCard.index.369962-11')">{{
                 detail.usedFlow
                   ? detail.usedFlow.toFixed(2) + ' M'
                   : '0 M'
               }}</a-descriptions-item>
-            <a-descriptions-item label="剩余流量">{{
+            <a-descriptions-item :label="$t('IotCard.index.369962-12')">{{
                 detail.residualFlow
                   ? detail.residualFlow.toFixed(2) + ' M'
                   : '0 M'
               }}</a-descriptions-item>
-            <a-descriptions-item label="运营商状态">
+            <a-descriptions-item :label="$t('IotCard.index.369962-13')">
               {{ detail?.cardState?.text }}
               <span
                 v-if="deactivateData.show"
@@ -104,21 +104,21 @@
                                     </a-tooltip>
                                 </span>
             </a-descriptions-item>
-            <a-descriptions-item label="平台状态">
+            <a-descriptions-item :label="$t('IotCard.index.369962-14')">
               {{ detail?.cardStateType?.text }}
             </a-descriptions-item>
-            <a-descriptions-item label="说明">{{
+            <a-descriptions-item :label="$t('IotCard.index.369962-15')">{{
                 detail?.describe
               }}</a-descriptions-item>
           </a-descriptions>
         </a-card>
       </a-col>
       <a-col :span="24">
-        <!-- 流量统计 -->
+        <!-- {{ $t('IotCard.index.369962-16') }} -->
         <a-row :gutter="24">
           <a-col :span="16">
             <div class="card">
-              <Guide title="流量统计">
+              <Guide :title="$t('IotCard.index.369962-16')">
                 <template #extra>
                   <TimeSelect
                     :type="'week'"
@@ -137,7 +137,7 @@
           </a-col>
           <a-col :span="8">
             <div class="card">
-              <Guide title="数据统计" />
+              <Guide :title="$t('IotCard.index.369962-17')" />
               <div
                 class="static-info"
                 style="min-height: 490px"
@@ -148,7 +148,7 @@
                     style="width: 100%"
                   >
                     <div class="label">
-                      昨日流量消耗
+                      {{ $t('IotCard.index.369962-18') }}
                     </div>
                     <a-tooltip placement="bottomLeft">
                       <template #title>
@@ -173,7 +173,7 @@
                     style="width: 100%"
                   >
                     <div class="label">
-                      当月流量消耗
+                      {{ $t('IotCard.index.369962-19') }}
                     </div>
                     <a-tooltip placement="bottomLeft">
                       <template #title>
@@ -198,7 +198,7 @@
                     style="width: 100%"
                   >
                     <div class="label">
-                      本年流量消耗
+                      {{ $t('IotCard.index.369962-20') }}
                     </div>
                     <a-tooltip placement="bottomLeft">
                       <template #title>
@@ -241,6 +241,9 @@ import LineChart from './LineChart.vue';
 import Guide from './Guide.vue';
 import Save from './Save.vue';
 import { OperatorList, platformTypeList } from './data';
+import { useI18n } from 'vue-i18n';
+
+const { t: $t } = useI18n();
 
 const props = defineProps({
   type: {
@@ -271,10 +274,10 @@ const deactivateData = reactive({
 });
 
 const quickBtnList = [
-  { label: '昨日', value: 'yesterday' },
-  { label: '近一周', value: 'week' },
-  { label: '近一月', value: 'month' },
-  { label: '近一年', value: 'year' },
+  { label: $t('IotCard.index.369962-21'), value: 'yesterday' },
+  { label: $t('IotCard.index.369962-22'), value: 'week' },
+  { label: $t('IotCard.index.369962-23'), value: 'month' },
+  { label: $t('IotCard.index.369962-24'), value: 'year' },
 ];
 
 const getDetail = () => {

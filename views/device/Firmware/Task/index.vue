@@ -1,7 +1,7 @@
 <template>
     <a-drawer
         visible
-        title="升级任务"
+        :title="$t('Task.index.219743-0')"
         placement="right"
         :width="700"
         :closable="false"
@@ -14,7 +14,7 @@
                 hasPermission="device/Firmware:add"
                 @click="handleAdd"
             >
-                + 新增任务
+                {{ $t('Task.index.219743-1') }}
             </j-permission-button>
         </template>
         <div v-for="item in taskList" class="task">
@@ -27,7 +27,7 @@
                 </div>
                 <div class="taskTitleRight">
                     <div>
-                        完成比例<span
+                        {{ $t('Task.index.219743-2') }}<span
                             class="progress"
                             :style="{
                                 color:
@@ -43,25 +43,25 @@
                         type="link"
                         hasPermission="device/Firmware:view"
                         @click="() => taskDetail(item)"
-                        >任务详情</j-permission-button
+                        >{{ $t('Task.index.219743-3') }}</j-permission-button
                     >
                 </div>
             </div>
             <a-descriptions bordered :column="2">
                 <a-descriptions-item
                     v-if="item?.mode?.value === 'push'"
-                    label="响应超时时间"
+                    :label="$t('Task.index.219743-4')"
                     >{{
                         item?.responseTimeoutSeconds + 's'
                     }}</a-descriptions-item
                 >
-                <a-descriptions-item label="升级超时时间">{{
+                <a-descriptions-item :label="$t('Task.index.219743-5')">{{
                     item?.timeoutSeconds + 's'
                 }}</a-descriptions-item>
-                <a-descriptions-item label="升级设备">{{
-                    item?.deviceId?.length ? '选择设备' : '所有设备'
+                <a-descriptions-item :label="$t('Task.index.219743-6')">{{
+                    item?.deviceId?.length ? $t('Task.index.219743-7') : $t('Task.index.219743-8')
                 }}</a-descriptions-item>
-                <a-descriptions-item label="说明"
+                <a-descriptions-item :label="$t('Task.index.219743-9')"
                     ><j-ellipsis style="max-width: 200px;">
                         {{ item?.description || '--' }}
                     </j-ellipsis></a-descriptions-item
@@ -91,6 +91,9 @@ import { queryTaskPaginateNot } from '../../../../api/firmware';
 import Save from './Save/index.vue';
 import TaskDetail from './Detail/index.vue';
 import { onlyMessage } from '@/utils/comm';
+import { useI18n } from 'vue-i18n';
+
+const { t: $t } = useI18n();
 
 const emit = defineEmits(['closeDrawer']);
 const props = defineProps({
@@ -155,7 +158,7 @@ const saveChange = (value) => {
     visible.value = false;
     current.value = {};
     if (value) {
-        onlyMessage('操作成功', 'success');
+        onlyMessage($t('Task.index.219743-10'), 'success');
         queryTaskList();
     }
 };

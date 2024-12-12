@@ -10,10 +10,10 @@
                         @change="changeType"
                     >
                         <a-radio-button value="bytesRead">
-                            上行
+                            {{ $t('DeviceAccess.index.594346-26') }}
                         </a-radio-button>
                         <a-radio-button value="bytesSent">
-                            下行
+                            {{ $t('DeviceAccess.index.594346-27') }}
                         </a-radio-button>
                     </a-radio-group>
                 </div>
@@ -25,12 +25,14 @@
                         v-model:value="data.time.type"
                     >
                         <a-radio-button value="hour">
-                            最近1小时
+                            {{ $t('DashBoard.index.954313-5') }}
                         </a-radio-button>
                         <a-radio-button value="day">
-                            最近24小时
+                            {{ $t('DashBoard.index.954313-6') }}
                         </a-radio-button>
-                        <a-radio-button value="week"> 近一周 </a-radio-button>
+                        <a-radio-button value="week">
+                            {{ $t('DashBoard.index.954313-7') }}
+                        </a-radio-button>
                     </a-radio-group>
                     <a-range-picker
                         :allowClear="false"

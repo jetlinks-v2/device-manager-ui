@@ -1,6 +1,6 @@
 <template>
     <a-modal
-        title="编辑标签"
+        :title="$t('Tags.Save.446332-0')"
         :width="1000"
         :visible="true"
         :confirmLoading="loading"
@@ -53,7 +53,9 @@ import { useInstanceStore } from '../../../../../../../store/instance';
 import { cloneDeep } from 'lodash-es';
 import { saveTags, delTags } from '../../../../../../../api/instance';
 import { onlyMessage } from '@jetlinks-web/utils';
+import { useI18n } from 'vue-i18n';
 
+const { t: $t } = useI18n();
 const emit = defineEmits(['close', 'save']);
 
 const columns = [
@@ -63,12 +65,12 @@ const columns = [
         with: '33%',
     },
     {
-        title: '名称',
+        title: $t('Product.index.660348-28'),
         dataIndex: 'name',
         with: '33%',
     },
     {
-        title: '值',
+        title: $t('Properties.OtherSetting.237457-26'),
         dataIndex: 'value',
         with: '34%',
     },
@@ -98,7 +100,7 @@ const handleOk = async () => {
                 loading.value = false
             });
             if (resp.status === 200) {
-                onlyMessage('操作成功！');
+                onlyMessage($t('Product.index.660348-18'));
             }
         }
         const _list = (dataSource.value || []).filter((item: any) => item?.key && (item?.value === undefined || item?.value === null));

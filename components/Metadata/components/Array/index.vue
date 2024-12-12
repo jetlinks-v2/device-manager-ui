@@ -9,7 +9,7 @@
             <div style="width: 450px">
                 <a-form ref="formRef" layout="vertical" :model="formData">
                     <a-form-item
-                        label="元素类型"
+                        :label="$t('Array.index.399995-0')"
                         required
                         name="type"
                         :rules="rules"
@@ -45,11 +45,11 @@
                     />
                     <a-form-item
                         v-else-if="showArray"
-                        label="子元素类型"
+                        :label="$t('Array.index.399995-1')"
                         required
                         :name="['elementType', 'type']"
                         :rules="[
-                            { required: true, message: '请选择子元素类型' },
+                            { required: true, message: $t('Array.index.399995-2') },
                         ]"
                     >
                         <TypeSelect
@@ -83,6 +83,9 @@ import DateItem from '../Date/Item.vue';
 import EnumItem from '../Enum/Item.vue';
 import { cloneDeep, pick } from 'lodash-es';
 import { Form } from 'ant-design-vue';
+import { useI18n } from 'vue-i18n';
+
+const { t: $t } = useI18n();
 
 const emit = defineEmits(['update:value', 'cancel', 'confirm']);
 
@@ -117,9 +120,9 @@ const formData = ref({
         maxLength: props.value?.maxLength || props.value?.expands?.maxLength,
     },
     boolean: {
-        trueText: props.value?.trueText || '是',
+        trueText: props.value?.trueText || $t('Array.index.399995-3'),
         trueValue: props.value?.trueValue || 'true',
-        falseText: props.value?.falseText || '否',
+        falseText: props.value?.falseText || $t('Array.index.399995-4'),
         falseValue: props.value?.falseValue || 'false',
     },
     format: props.value?.format,
@@ -163,7 +166,7 @@ const rules = [
     {
         validator(_, value) {
             if (!value) {
-                return Promise.reject('请选择元素类型');
+                return Promise.reject($t('Array.index.399995-5'));
             }
             return Promise.resolve();
         },
@@ -183,9 +186,9 @@ const initValue = () => {
     formData.value.expands.maxLength =
         props.value?.maxLength || props.value?.expands?.maxLength;
     formData.value.boolean = {
-        trueText: props.value?.trueText || '是',
+        trueText: props.value?.trueText || $t('Array.index.399995-3'),
         trueValue: props.value?.trueValue || 'true',
-        falseText: props.value?.falseText || '否',
+        falseText: props.value?.falseText || $t('Array.index.399995-4'),
         falseValue: props.value?.falseValue || 'false',
     };
     formData.value.format = props.value?.format;

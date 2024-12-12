@@ -1,7 +1,7 @@
 <template>
     <a-modal
         visible
-        title="新增并绑定平台设备"
+        :title="$t('Save.index.126289-0')"
         width="600px"
         @ok="onSave"
         @cancel="emits('close')"
@@ -9,31 +9,31 @@
     >
         <a-form layout="vertical" :model="form" ref="formRef">
             <a-form-item
-                label="设备名称"
+                :label="$t('Save.index.126289-1')"
                 name="name"
                 :rules="[
-                    { required: true, message: '请输入设备名称' },
+                    { required: true, message: $t('Save.index.126289-2') },
                     {
                         max: 64,
-                        message: '最多输入64个字符',
+                        message: $t('Save.index.126289-3'),
                     },
                 ]"
             >
                 <a-input
                     v-model:value="form.name"
-                    placeholder="请输入设备名称"
+                    :placeholder="$t('Save.index.126289-2')"
                 ></a-input>
             </a-form-item>
 
             <a-form-item
-                label="所属产品"
+                :label="$t('Save.index.126289-4')"
                 name="productId"
-                :rules="{ required: true, message: '请选择产品' }"
+                :rules="{ required: true, message: $t('Save.index.126289-5') }"
             >
                 <a-select
                     @change="selectChange"
                     v-model:value="form.productId"
-                    placeholder="请选择产品"
+                    :placeholder="$t('Save.index.126289-5')"
                 >
                     <a-select-option
                         v-for="i in productList"
@@ -53,7 +53,9 @@ import { getProductListNoPage, addDevice } from '../../../../../../api/instance'
 
 import { useInstanceStore } from '../../../../../../store/instance';
 import { onlyMessage } from '@jetlinks-web/utils';
+import { useI18n } from 'vue-i18n';
 
+const { t: $t } = useI18n();
 const emits = defineEmits(['close']);
 
 const instanceStore = useInstanceStore();
@@ -100,7 +102,7 @@ const onSave = async () => {
             loading.value = false;
         });
         if (resp.success) {
-            onlyMessage('操作成功');
+            onlyMessage($t('Save.index.126289-6'));
             emits('close');
         }
     }

@@ -2,13 +2,13 @@
     <a-modal
         :maskClosable="false"
         :visible="true"
-        title="编辑"
+        :title="$t('Product.index.660348-13')"
         @ok="handleSave"
         @cancel="handleCancel"
         :confirmLoading="loading"
     >
         <a-alert
-            message="当数据来源为设备时，填写的值将下发到设备"
+            :message="$t('Property.Save.639194-0')"
             type="warning"
             showIcon
         />
@@ -21,7 +21,7 @@
         >
             <a-form-item
                 name="propertyValue"
-                :label="data?.name || '自定义属性'"
+                :label="data?.name || $t('Detail.Table.181708-0')"
             >
                 <ValueItem
                     v-model:modelValue="modelRef.propertyValue"
@@ -37,7 +37,9 @@
 import { setProperty } from '../../../../../../api/instance';
 import { useInstanceStore } from '../../../../../../store/instance';
 import { onlyMessage } from '@/utils/comm';
+import { useI18n } from 'vue-i18n';
 
+const { t: $t } = useI18n();
 const props = defineProps({
     data: {
         type: Object,
@@ -89,7 +91,7 @@ const rules = {
     propertyValue: [
         {
             required: true,
-            message: '该字段是必填字段',
+            message: $t('Property.Save.639194-1'),
         },
     ],
 };
@@ -105,7 +107,7 @@ const handleSave = () => {
                 loading.value = false;
             });
             if (resp.status === 200) {
-                onlyMessage('操作成功！');
+                onlyMessage($t('Product.index.660348-18'));
                 emit('close');
                 formRef.value.resetFields();
             }

@@ -3,9 +3,9 @@
         :maskClosable="false"
         width="600px"
         :visible="true"
-        title="详情"
-        okText="确定"
-        cancelText="取消"
+        :title="$t('Event.index.277611-0')"
+        :okText="$t('Save.index.912481-0')"
+        :cancelText="$t('Save.index.912481-1')"
         @ok="handleCancel"
         @cancel="handleCancel"
     >

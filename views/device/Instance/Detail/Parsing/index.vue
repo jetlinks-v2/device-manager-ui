@@ -6,32 +6,32 @@
                 <div>
                     <AIcon type="ExclamationCircleOutlined" />
                     <template v-if="topTitle === 'rest'">
-                        当前数据解析内容已脱离产品影响，
+                        {{ $t('Parsing.index.217769-0') }}
                         <j-permission-button
                             type="link"
                             hasPermission="device/Instance:update"
                             @click="rest()"
                         >
-                            重置
+                            {{ $t('Parsing.index.217769-1') }}
                         </j-permission-button>
-                        后将继承产品数据解析内容
+                        {{ $t('Parsing.index.217769-2') }}
                     </template>
                     <template v-else>
-                        当前数据解析内容继承自产品,
+                        {{ $t('Parsing.index.217769-3') }}
                         <j-permission-button
                             type="link"
                             hasPermission="device/Instance:update"
                             @click="readOnly = false"
                             :style="color"
                         >
-                            修改
+                            {{ $t('Parsing.index.217769-4') }}
                         </j-permission-button>
-                        后将脱离产品影响。
+                        {{ $t('Parsing.index.217769-5') }}
                     </template>
                 </div>
             </div>
             <div>
-                脚本语言:
+                {{ $t('Parsing.index.217769-6') }}
                 <a-select
                     :defaultValue="'JavaScript'"
                     style="width: 200px; margin-left: 5px"
@@ -55,7 +55,7 @@
                     () => {
                         message.warning({
                             key: 1,
-                            content: () => '请点击上方修改字样,用以编辑脚本',
+                            content: () => $t('Parsing.index.217769-7'),
                             style: {
                                 marginTop: '260px',
                             },
@@ -75,14 +75,14 @@
         <div class="bottom">
             <div style="width: 49.5%">
                 <div class="bottom-title">
-                    <div class="bottom-title-text">模拟输入</div>
+                    <div class="bottom-title-text">{{ $t('Parsing.index.217769-8') }}</div>
                     <div class="bottom-title-topic">
                         <template
                             v-if="instanceStore.current.transport === 'MQTT'"
                         >
                             <div style="margin-right: 5px">Topic:</div>
                             <a-auto-complete
-                                placeholder="请输入Topic"
+                                :placeholder="$t('Parsing.index.217769-9')"
                                 style="width: 300px"
                                 :options="topicList"
                                 :allowClear="true"
@@ -93,7 +93,7 @@
                         <template v-else>
                             <div style="margin-right: 5px">URL:</div>
                             <a-input
-                                placeholder="请输入URL"
+                                :placeholder="$t('Parsing.index.217769-10')"
                                 v-model:value="url"
                                 style="width: 300px"
                             ></a-input>
@@ -109,7 +109,7 @@
             </div>
             <div style="width: 49.5%">
                 <div class="bottom-title">
-                    <div class="bottom-title-text">运行结果</div>
+                    <div class="bottom-title-text">{{ $t('Parsing.index.217769-11') }}</div>
                 </div>
                 <a-textarea
                     :autoSize="{ minRows: 5 }"
@@ -127,10 +127,10 @@
             :disabled="isDisabled"
             @click="debug()"
             :tooltip="{
-                title: '需输入脚本和模拟数据后再点击',
+                title: $t('Parsing.index.217769-12'),
             }"
         >
-            调试
+            {{ $t('Parsing.index.217769-13') }}
         </j-permission-button>
         <j-permission-button
             hasPermission="device/Instance:update"
@@ -139,10 +139,10 @@
             @click="save()"
             :style="{ marginLeft: '10px' }"
             :tooltip="{
-                title: isTest ? '' : '请先调试',
+                title: isTest ? '' : $t('Parsing.index.217769-14'),
             }"
         >
-            保存
+            {{ $t('Parsing.index.217769-15') }}
         </j-permission-button>
     </div>
 </template>
@@ -160,14 +160,16 @@ import {
 import { message } from 'ant-design-vue';
 import { isBoolean } from 'lodash-es';
 import { onlyMessage } from '@/utils/comm';
+import { useI18n } from 'vue-i18n';
 
+const { t: $t } = useI18n();
 const defaultValue =
-    `//注册设备下行数据监听器,当平台下发指令给设备时,回调将被调用,用于构造下发给设备的报文
+    `//${$t('Parsing.index.217769-20')}
       codec.onDownstream(function(ctx){
 
       });
 
-      //注册设备上行数据监听器,当设备上行数据时,回调将被调用,用于解析设备上报的数据.
+      //${$t('Parsing.index.217769-21')}
       codec.onUpstream(function(ctx){
 
       });
@@ -249,7 +251,7 @@ const rest = async () => {
     );
     if (res.status === 200) {
         getDeviceCode();
-        onlyMessage('操作成功');
+        onlyMessage($t('Parsing.index.217769-16'));
     }
 };
 //获取topic
@@ -327,7 +329,7 @@ const save = async () => {
         item,
     );
     if (res.status === 200) {
-        onlyMessage('保存成功');
+        onlyMessage($t('Parsing.index.217769-17'));
         getDeviceCode();
     }
 };
@@ -348,7 +350,7 @@ const debug = () => {
             });
             isTest.value = true;
         } else {
-            onlyMessage('请输入topic', 'error');
+            onlyMessage($t('Parsing.index.217769-18'), 'error');
         }
     } else {
         if (url.value !== '') {
@@ -365,7 +367,7 @@ const debug = () => {
             });
             isTest.value = true;
         } else {
-            onlyMessage('请输入url', 'error');
+            onlyMessage($t('Parsing.index.217769-19'), 'error');
         }
     }
 };

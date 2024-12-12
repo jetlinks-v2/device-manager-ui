@@ -1,7 +1,7 @@
 <template>
   <a-modal
       visible
-      title="功能详情"
+      :title="$t('DetailModal.FunctionModal.475375-0')"
       width="650px"
       :maskClosable="false"
       :getContainer="getPopupContainer"
@@ -16,24 +16,24 @@
           justifyContent: 'end'
         }"
     >
-      <a-descriptions-item label="功能标识">{{ data.id }}</a-descriptions-item>
-      <a-descriptions-item label="功能名称">{{ data.name }}</a-descriptions-item>
-      <a-descriptions-item label="是否异步">{{ data.async ? '是' : '否' }}</a-descriptions-item>
-      <a-descriptions-item label="输入参数"></a-descriptions-item>
+      <a-descriptions-item :label="$t('DetailModal.FunctionModal.475375-1')">{{ data.id }}</a-descriptions-item>
+      <a-descriptions-item :label="$t('DetailModal.FunctionModal.475375-2')">{{ data.name }}</a-descriptions-item>
+      <a-descriptions-item :label="$t('DetailModal.FunctionModal.475375-3')">{{ data.async ? $t('DetailModal.FunctionModal.475375-4') : $t('DetailModal.FunctionModal.475375-5') }}</a-descriptions-item>
+      <a-descriptions-item :label="$t('DetailModal.FunctionModal.475375-6')"></a-descriptions-item>
       <a-descriptions-item>
         <JsonView :value="dataTypeTable.input"/>
       </a-descriptions-item>
-      <a-descriptions-item label="输出参数"></a-descriptions-item>
+      <a-descriptions-item :label="$t('DetailModal.FunctionModal.475375-7')"></a-descriptions-item>
       <a-descriptions-item>
         <JsonView :value="dataTypeTable.output"/>
       </a-descriptions-item>
-      <a-descriptions-item v-if="showSetting && data.expands?.storageType" label="存储方式">{{ settingData[data.expands?.storageType] }}</a-descriptions-item>
-      <a-descriptions-item label="功能说明" v-if="data.description">
+      <a-descriptions-item v-if="showSetting && data.expands?.storageType" :label="$t('DetailModal.FunctionModal.475375-8')">{{ settingData[data.expands?.storageType] }}</a-descriptions-item>
+      <a-descriptions-item :label="$t('DetailModal.FunctionModal.475375-9')" v-if="data.description">
         <a-textarea :value="data.description" disabled></a-textarea>
       </a-descriptions-item>
     </a-descriptions>
     <template #footer>
-      <a-button type="primary" @click="ok">确认</a-button>
+      <a-button type="primary" @click="ok">{{ $t('DetailModal.FunctionModal.475375-10') }}</a-button>
     </template>
   </a-modal>
 </template>

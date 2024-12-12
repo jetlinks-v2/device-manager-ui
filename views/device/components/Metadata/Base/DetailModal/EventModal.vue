@@ -2,7 +2,7 @@
   <a-modal
       visible
       :maskClosable="false"
-      title="事件详情"
+      :title="$t('DetailModal.EventModal.518397-0')"
       width="650px"
       :getContainer="getPopupContainer"
       @cancel="cancel"
@@ -16,20 +16,20 @@
           justifyContent: 'end'
         }"
     >
-      <a-descriptions-item label="事件标识">{{ data.id }}</a-descriptions-item>
-      <a-descriptions-item label="事件名称">{{ data.name }}</a-descriptions-item>
-      <a-descriptions-item label="事件级别">{{ EventLevel[data.expands.level] }}</a-descriptions-item>
-      <a-descriptions-item label="输出参数"></a-descriptions-item>
+      <a-descriptions-item :label="$t('DetailModal.EventModal.518397-1')">{{ data.id }}</a-descriptions-item>
+      <a-descriptions-item :label="$t('DetailModal.EventModal.518397-2')">{{ data.name }}</a-descriptions-item>
+      <a-descriptions-item :label="$t('DetailModal.EventModal.518397-3')">{{ EventLevel[data.expands.level] }}</a-descriptions-item>
+      <a-descriptions-item :label="$t('DetailModal.EventModal.518397-4')"></a-descriptions-item>
       <a-descriptions-item>
         <JsonView :value="dataTypeTable.dataSource"/>
       </a-descriptions-item>
-      <a-descriptions-item v-if="showSetting && data.expands?.storageType" label="存储方式">{{ settingData[data.expands?.storageType] }}</a-descriptions-item>
-      <a-descriptions-item label="事件说明" v-if="data.description">
+      <a-descriptions-item v-if="showSetting && data.expands?.storageType" :label="$t('DetailModal.EventModal.518397-5')">{{ settingData[data.expands?.storageType] }}</a-descriptions-item>
+      <a-descriptions-item :label="$t('DetailModal.EventModal.518397-6')" v-if="data.description">
         <a-textarea :value="data.description" disabled></a-textarea>
       </a-descriptions-item>
     </a-descriptions>
     <template #footer>
-      <a-button type="primary" @click="ok">确认</a-button>
+      <a-button type="primary" @click="ok">{{ $t('DetailModal.EventModal.518397-7') }}</a-button>
     </template>
   </a-modal>
 </template>
@@ -37,6 +37,9 @@
 <script setup lang="ts" name="EventModal">
 import JsonView from "./JsonView.vue";
 import {useStoreType} from "../utils";
+import { useI18n } from 'vue-i18n';
+
+const { t: $t } = useI18n();
 
 const props = defineProps({
   data: {
@@ -58,9 +61,9 @@ const props = defineProps({
 })
 
 const EventLevel = {
-  ordinary: '普通',
-  warn: '警告',
-  urgent: '紧急'
+  ordinary: $t('DetailModal.EventModal.518397-8'),
+  warn: $t('DetailModal.EventModal.518397-9'),
+  urgent: $t('DetailModal.EventModal.518397-10')
 }
 
 const { settingData } = useStoreType(props.type)

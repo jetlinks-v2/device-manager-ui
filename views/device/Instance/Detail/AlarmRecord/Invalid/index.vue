@@ -33,7 +33,7 @@
         </template>
         <template #thingName="slotProps">
             <j-ellipsis>
-                设备名称：
+                {{ $t('Invalid.index.031367-0') }}
                 <span
                     class="deviceId"
                      @click="() => gotoDevice(slotProps.thingId)"
@@ -50,6 +50,9 @@ import { useInstanceStore } from '../../../../../../store/instance';
 import { useProductStore } from '../../../../../../store/product';
 import { useMenuStore } from '@/store';
 import dayjs from 'dayjs';
+import { useI18n } from 'vue-i18n';
+
+const { t: $t } = useI18n();
 
 const props = defineProps({
     goal: {
@@ -62,7 +65,7 @@ const { current } =
     props.goal === 'device' ? useInstanceStore() : useProductStore();
 const columns = props.goal === 'device' ? [
     {
-        title: '上报时间',
+        title: $t('Invalid.index.031367-1'),
         dataIndex: 'createTime',
         key: 'createTime',
         scopedSlots: true,
@@ -71,12 +74,12 @@ const columns = props.goal === 'device' ? [
         },
     },
     {
-        title: '阈值限制',
+        title: $t('Invalid.index.031367-2'),
         dataIndex: 'description',
         key: 'description',
     },
     {
-        title: '原始值',
+        title: $t('Invalid.index.031367-3'),
         dataIndex: 'value',
         key: 'value',
         search: {
@@ -85,7 +88,7 @@ const columns = props.goal === 'device' ? [
     },
 ] : [
     {
-        title: '上报时间',
+        title: $t('Invalid.index.031367-1'),
         dataIndex: 'createTime',
         key: 'createTime',
         scopedSlots: true,
@@ -94,7 +97,7 @@ const columns = props.goal === 'device' ? [
         },
     },
     {
-        title: '数据源',
+        title: $t('Invalid.index.031367-4'),
         dataIndex: 'thingName',
         key: 'thingName',
         scopedSlots: true,
@@ -103,12 +106,12 @@ const columns = props.goal === 'device' ? [
         },
     },
     {
-        title: '阈值限制',
+        title: $t('Invalid.index.031367-2'),
         dataIndex: 'description',
         key: 'description',
     },
     {
-        title: '原始值',
+        title: $t('Invalid.index.031367-3'),
         dataIndex: 'value',
         key: 'value',
         search: {

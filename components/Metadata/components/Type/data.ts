@@ -1,55 +1,56 @@
+import i18n from "@/locales";
 const type = [
     {
         value: 'int',
-        label: 'int(整数型)',
+        label: `int(${i18n.global.t('Base.columns.448718-33')})`,
     },
     {
         value: 'long',
-        label: 'long(长整数型)',
+        label: `long(${i18n.global.t('Base.columns.448718-34')})`,
     },
     {
         value: 'float',
-        label: 'float(单精度浮点型)',
+        label: `float(${i18n.global.t('Base.columns.448718-35')})`,
     },
     {
         value: 'double',
-        label: 'double(双精度浮点数)',
+        label: `double(${i18n.global.t('Base.columns.448718-36')})`,
     },
     {
         value: 'string',
-        label: 'text(字符串)',
+        label: `text(${i18n.global.t('Base.columns.448718-37')})`,
     },
     {
         value: 'boolean',
-        label: 'boolean(布尔型)',
+        label: `boolean(${i18n.global.t('Base.columns.448718-38')})`,
     },
     {
         value: 'date',
-        label: 'date(时间型)',
+        label: `date(${i18n.global.t('Base.columns.448718-39')})`,
     },
     {
         value: 'enum',
-        label: 'enum(枚举)',
+        label: `enum(${i18n.global.t('Base.columns.448718-40')})`,
     },
     {
         value: 'array',
-        label: 'array(数组)',
+        label: `array(${i18n.global.t('Base.columns.448718-41')})`,
     },
     {
         value: 'object',
-        label: 'object(结构体)',
+        label: `object(${i18n.global.t('Base.columns.448718-42')})`,
     },
     {
         value: 'file',
-        label: 'file(文件)',
+        label: `file(${i18n.global.t('Base.columns.448718-43')})`,
     },
     {
         value: 'password',
-        label: 'password(密码)',
+        label: `password(${i18n.global.t('Base.columns.448718-44')})`,
     },
     {
         value: 'geoPoint',
-        label: 'geoPoint(地理位置)',
+        label: `geoPoint(${i18n.global.t('Base.columns.448718-45')})`,
     },
 ];
 

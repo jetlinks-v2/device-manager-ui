@@ -28,55 +28,55 @@
                         key="reload"
                         :hasPermission="`${permission}:update`"
                         :popConfirm="{
-                            title: '确认重置？',
+                            title: $t('Metadata.index.838029-0'),
                             onConfirm: resetMetadata,
                         }"
-                        :tooltip="{ title: '重置后将使用产品的物模型配置' }"
+                        :tooltip="{ title: $t('Metadata.index.838029-1') }"
                     >
-                        重置操作
+                        {{ $t('Metadata.index.838029-2') }}
                     </j-permission-button>
                     <j-permission-button
                         :hasPermission="`${permission}:update`"
                         @click="visible = true"
                         key="import"
                         v-if="type === 'product'"
-                        >快速导入</j-permission-button
+                        >{{ $t('Metadata.index.838029-3') }}</j-permission-button
                     >
                     <j-permission-button
                         :hasPermission="`${permission}:update`"
                         @click="cat = true"
                         key="tsl"
-                        >物模型TSL</j-permission-button
+                        >{{ $t('Metadata.index.838029-4') }}</j-permission-button
                     >
                 </a-space>
             </template>
             <template #centerExtra>
                 <span class="desc"
-                    >设备会默认继承产品的物模型，继承的物模型不支持删改</span
+                    >{{ $t('Metadata.index.838029-5') }}</span
                 >
             </template>
-            <a-tab-pane tab="属性定义" key="properties">
+            <a-tab-pane :tab="$t('Metadata.index.838029-6')" key="properties">
                 <BaseMetadata
                     :target="type"
                     type="properties"
                     :permission="permission"
                 />
             </a-tab-pane>
-            <a-tab-pane tab="功能定义" key="functions">
+            <a-tab-pane :tab="$t('Metadata.index.838029-7')" key="functions">
                 <BaseMetadata
                     :target="type"
                     type="functions"
                     :permission="permission"
                 />
             </a-tab-pane>
-            <a-tab-pane tab="事件定义" key="events">
+            <a-tab-pane :tab="$t('Metadata.index.838029-8')" key="events">
                 <BaseMetadata
                     :target="type"
                     type="events"
                     :permission="permission"
                 />
             </a-tab-pane>
-            <a-tab-pane tab="标签定义" key="tags">
+            <a-tab-pane :tab="$t('Metadata.index.838029-9')" key="tags">
                 <BaseMetadata
                     :target="type"
                     type="tags"
@@ -103,6 +103,9 @@ import BaseMetadata from './Base/Base.vue';
 import { useMetadataStore } from '../../../../store/metadata';
 import { EventEmitter } from '@jetlinks-web/utils';
 import { isEqual } from 'lodash-es';
+import { useI18n } from 'vue-i18n';
+
+const { t: $t } = useI18n();
 
 const route = useRoute();
 const instanceStore = useInstanceStore();
@@ -140,7 +143,7 @@ const resetMetadata = () => {
     const response = deleteMetadata(id as string);
     response.then((resp) => {
         if (resp.status === 200) {
-            message.info('操作成功');
+            message.info($t('Metadata.index.838029-10'));
             instanceStore.refresh(id as string).then(() => {
                 metadataStore.set('importMetadata', true);
             });

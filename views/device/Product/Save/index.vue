@@ -7,8 +7,8 @@
         v-model:visible="visible"
         @ok="submitData"
         @cancel="close"
-        okText="确定"
-        cancelText="取消"
+        :okText="$t('Save.index.912481-0')"
+        :cancelText="$t('Save.index.912481-1')"
         width="650px"
         :confirmLoading="loading"
     >
@@ -37,7 +37,7 @@
                             <template #label>
                                 <span>ID</span>
                                 <a-tooltip
-                                    title="若不填写，系统将自动生成唯一ID"
+                                    :title="$t('Save.index.912481-2')"
                                 >
                                     <AIcon
                                         type="QuestionCircleOutlined"
@@ -47,23 +47,23 @@
                             </template>
                             <a-input
                                 v-model:value="form.id"
-                                placeholder="请输入ID"
+                                :placeholder="$t('Save.index.912481-3')"
                                 :disabled="idDisabled"
                             />
                         </a-form-item>
-                        <a-form-item label="名称" name="name">
+                        <a-form-item :label="$t('Save.index.912481-4')" name="name">
                             <a-input
                                 v-model:value="form.name"
-                                placeholder="请输入名称"
+                                :placeholder="$t('Save.index.912481-5')"
                             />
                         </a-form-item>
                     </a-col>
                 </a-row>
-                <a-form-item label="产品分类" name="classifiedId">
+                <a-form-item :label="$t('Save.index.912481-6')" name="classifiedId">
                     <a-tree-select
                         showSearch
                         v-model:value="form.classifiedId"
-                        placeholder="请选择产品分类"
+                        :placeholder="$t('Save.index.912481-7')"
                         :tree-data="treeList"
                         @change="valueChange"
                         allow-clear
@@ -79,7 +79,7 @@
                         <template> </template>
                     </a-tree-select>
                 </a-form-item>
-                <a-form-item label="设备类型" name="deviceType">
+                <a-form-item :label="$t('Save.index.912481-8')" name="deviceType">
                     <j-card-select
                         v-model:value="form.deviceType"
                         :options="deviceList"
@@ -97,13 +97,13 @@
                         </template>
                     </j-card-select>
                 </a-form-item>
-                <a-form-item label="说明" name="description">
+                <a-form-item :label="$t('Save.index.912481-9')" name="description">
                     <a-textarea
                         :maxlength="200"
                         showCount
                         :auto-size="{ minRows: 4, maxRows: 5 }"
                         v-model:value="form.describe"
-                        placeholder="请输入说明"
+                        :placeholder="$t('Save.index.912481-10')"
                     />
                 </a-form-item>
             </a-form>
@@ -121,7 +121,10 @@ import { filterSelectNode, encodeQuery } from '@/utils';
 import { onlyMessage } from '@jetlinks-web/utils'
 import { isInput } from '@/utils/regular';
 import type { Rule } from 'ant-design-vue/es/form';
-import { device} from '../../../../assets'
+import { device} from '../../../../assets';
+import { useI18n } from 'vue-i18n';
+
+const { t: $t } = useI18n();
 
 const productStore = useProductStore();
 const emit = defineEmits(['success']);
@@ -154,22 +157,22 @@ const imageTypes = reactive([
 ]);
 const deviceList = ref([
     {
-        label: '直连设备',
+        label: $t('Save.index.912481-11'),
         value: 'device',
         iconUrl: device.deviceType1,
-        tooltip: '直连物联网平台的设备',
+        tooltip: $t('Save.index.912481-12'),
     },
     {
-        label: '网关子设备',
+        label: $t('Save.index.912481-13'),
         value: 'childrenDevice',
         iconUrl: device.deviceType2,
-        tooltip: '作为网关的子设备，由网关代理连接到物联网平台',
+        tooltip: $t('Save.index.912481-14'),
     },
     {
-        label: '网关设备',
+        label: $t('Save.index.912481-15'),
         value: 'gateway',
         iconUrl: device.deviceType3,
-        tooltip: '能挂载子设备与平台进行通信的设备',
+        tooltip: $t('Save.index.912481-16'),
     },
 ]);
 
@@ -188,12 +191,12 @@ const form = reactive({
 const validateInput = async (_rule: Rule, value: string) => {
     if (value) {
         if (!isInput(value)) {
-            return Promise.reject('请输入英文或者数字或者-或者_');
+            return Promise.reject($t('Save.index.912481-17'));
         } else {
             if (props.isAdd === 1) {
                 const res = await queryProductId(value);
                 if (res.success && res.result) {
-                    return Promise.reject('ID重复');
+                    return Promise.reject($t('Save.index.912481-18'));
                 } else {
                     return Promise.resolve();
                 }
@@ -208,7 +211,7 @@ const validateInput = async (_rule: Rule, value: string) => {
  */
 const validateDeviceType = async (_rule: Rule, value: string) => {
     if (!value) {
-        return Promise.reject('请选择设备类型');
+        return Promise.reject($t('Save.index.912481-19'));
     } else {
         return Promise.resolve();
     }
@@ -216,11 +219,11 @@ const validateDeviceType = async (_rule: Rule, value: string) => {
 const rules = reactive({
     id: [
         { validator: validateInput, trigger: 'blur' },
-        { max: 64, message: '最多可输入64位字符', trigger: 'change' },
+        { max: 64, message: $t('Save.index.912481-20'), trigger: 'change' },
     ],
     name: [
-        { required: true, message: '请输入名称', trigger: 'blur' },
-        { max: 64, message: '最多可输入64位字符', trigger: 'change' },
+        { required: true, message: $t('Save.index.912481-5'), trigger: 'blur' },
+        { max: 64, message: $t('Save.index.912481-20'), trigger: 'change' },
     ],
     deviceType: [
         {
@@ -230,7 +233,7 @@ const rules = reactive({
         },
     ],
     description: [
-        { max: 200, message: '最多可输入200位字符', trigger: 'blur' },
+        { max: 200, message: $t('Save.index.912481-21'), trigger: 'blur' },
     ],
 });
 
@@ -315,12 +318,12 @@ const submitData = () => {
                     loading.value = false
                 });
                 if (res.status === 200) {
-                    onlyMessage('保存成功！');
+                    onlyMessage($t('Save.index.912481-22'));
                     visible.value = false;
                     emit('success');
                     dialogRef.value.show(res.result.id);
                 } else {
-                    onlyMessage('操作失败', 'error');
+                    onlyMessage($t('Save.index.912481-23'), 'error');
                 }
             } else if (props.isAdd === 2) {
                 // 编辑
@@ -334,11 +337,11 @@ const submitData = () => {
                   loading.value = false
                 });
                 if (res.status === 200) {
-                    onlyMessage('保存成功！');
+                    onlyMessage($t('Save.index.912481-22'));
                     emit('success');
                     visible.value = false;
                 } else {
-                    onlyMessage('操作失败', 'error');
+                    onlyMessage($t('Save.index.912481-23'), 'error');
                 }
             }
         })

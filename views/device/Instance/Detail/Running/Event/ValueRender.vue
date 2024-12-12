@@ -1,10 +1,10 @@
 <template>
     <a-button type="link" @click="handleCheck">
-        查看
+        {{ $t('Product.index.660348-12') }}
     </a-button>
     <a-modal
         :visible="visible"
-        title="查看"
+        :title="$t('Product.index.660348-12')"
         @cancel="visible = false"
         @ok="visible = false"
     >

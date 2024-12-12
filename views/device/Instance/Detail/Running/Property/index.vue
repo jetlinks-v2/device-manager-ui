@@ -10,7 +10,7 @@
         >
             <template #headerLeftRender>
                 <a-input-search
-                    placeholder="请输入名称"
+                    :placeholder="$t('Save.index.912481-5')"
                     style="width: 300px; margin-bottom: 10px"
                     @search="onSearch"
                     v-model:value="value"
@@ -89,28 +89,30 @@ import { useInstanceStore } from '../../../../../../store/instance';
 import { getWebSocket } from '@/utils/websocket';
 import { map } from 'rxjs/operators';
 import { onlyMessage } from '@jetlinks-web/utils';
+import { useI18n } from 'vue-i18n';
 
+const { t: $t } = useI18n();
 const columns = [
     {
-        title: '名称',
+        title: $t('Product.index.660348-28'),
         dataIndex: 'name',
         key: 'name',
         ellipsis: true
     },
     {
-        title: '值',
+        title: $t('Properties.OtherSetting.237457-26'),
         dataIndex: 'value',
         key: 'value',
         scopedSlots: true,
     },
     {
-        title: '更新时间',
+        title: $t('BasicInfo.indev.028379-6'),
         dataIndex: 'time',
         key: 'time',
         scopedSlots: true,
     },
     {
-        title: '操作',
+        title: $t('Product.index.660348-11'),
         dataIndex: 'action',
         key: 'action',
         scopedSlots: true,
@@ -147,7 +149,7 @@ const getActions = (data: Partial<Record<string, any>>) => {
         arr.push({
             key: 'edit',
             tooltip: {
-                title: '设置属性至设备',
+                title: $t('Property.index.076208-0'),
             },
             icon: 'EditOutlined',
             onClick: () => {
@@ -171,7 +173,7 @@ const getActions = (data: Partial<Record<string, any>>) => {
         arr.push({
             key: 'metrics',
             tooltip: {
-                title: '指标',
+                title: $t('Property.index.076208-1'),
             },
             icon: 'ClockCircleOutlined',
             onClick: () => {
@@ -184,7 +186,7 @@ const getActions = (data: Partial<Record<string, any>>) => {
         arr.push({
             key: 'read',
             tooltip: {
-                title: '获取最新属性值',
+                title: $t('Property.index.076208-2'),
             },
             icon: 'SyncOutlined',
             onClick: async () => {
@@ -194,7 +196,7 @@ const getActions = (data: Partial<Record<string, any>>) => {
                         data.id,
                     );
                     if (resp.status === 200) {
-                        onlyMessage('操作成功！');
+                        onlyMessage($t('Product.index.660348-18'));
                     }
                 }
             },
@@ -202,9 +204,9 @@ const getActions = (data: Partial<Record<string, any>>) => {
     }
     arr.push({
         key: 'detail',
-        text: '详情',
+        text: $t('Event.index.277611-0'),
         tooltip: {
-            title: '详情',
+            title: $t('Event.index.277611-0'),
         },
         icon: 'BarsOutlined',
         onClick: () => {

@@ -35,7 +35,7 @@
                         hasPermission="device/Category:add"
                     >
                         <template #icon><AIcon type="PlusOutlined" /></template>
-                        新增
+                        {{ $t('Category.index.779033-0') }}
                     </j-permission-button>
                 </template>
                 <template #action="slotProps">
@@ -79,8 +79,10 @@
 <script lang="ts" name="Category" setup>
 import { queryTree, deleteTree } from '../../../api/category';
 import ModifyModal from './components/modifyModal/index.vue';
-
 import { onlyMessage } from '@/utils/comm';
+import { useI18n } from 'vue-i18n';
+
+const { t: $t } = useI18n();
 const expandedRowKeys = ref<any>([]);
 const tableRef = ref<Record<string, any>>({});
 const modifyRef = ref();
@@ -95,7 +97,7 @@ const addSortId = ref();
 const query = reactive({
     columns: [
         {
-            title: '名称',
+            title: $t('Category.index.779033-1'),
             dataIndex: 'name',
             key: 'name',
             search: {
@@ -103,7 +105,7 @@ const query = reactive({
             },
         },
         {
-            title: '排序',
+            title: $t('Category.index.779033-2'),
             dataIndex: 'sortIndex',
             key: 'sortIndex',
             search: {
@@ -116,7 +118,7 @@ const query = reactive({
             scopedSlots: true,
         },
         {
-            title: '说明',
+            title: $t('Category.index.779033-3'),
             key: 'description',
             dataIndex: 'description',
             search: {
@@ -124,7 +126,7 @@ const query = reactive({
             },
         },
         {
-            title: '操作',
+            title: $t('Category.index.779033-4'),
             key: 'action',
             fixed: 'right',
             width: 250,
@@ -151,13 +153,13 @@ const getActions = (
     const actions = [
         {
             key: 'update',
-            text: '编辑',
+            text: $t('Category.index.779033-5'),
             tooltip: {
-                title: '编辑',
+                title: $t('Category.index.779033-5'),
             },
             icon: 'EditOutlined',
             onClick: async () => {
-                title.value = '编辑分类';
+                title.value = $t('Category.index.779033-6');
                 isAdd.value = 2;
                 currentForm.value = data;
                 nextTick(() => {
@@ -167,13 +169,13 @@ const getActions = (
         },
         {
             key: 'add',
-            text: '添加子分类',
+            text: $t('Category.index.779033-7'),
             tooltip: {
-                title: '添加子分类',
+                title: $t('Category.index.779033-7'),
             },
             icon: 'PlusCircleOutlined',
             onClick: () => {
-                title.value = '新增子分类';
+                title.value = $t('Category.index.779033-8');
                 isAdd.value = 0;
                 currentForm.value = {};
                 if (data.children && data.children.length > 0) {
@@ -189,22 +191,22 @@ const getActions = (
         },
         {
             key: 'delete',
-            text: '删除',
+            text: $t('Category.index.779033-9'),
             tooltip: {
-                title: '删除',
+                title: $t('Category.index.779033-9'),
             },
             popConfirm: {
-                title: '确认删除?',
+                title: $t('Category.index.779033-10'),
                 okText: ' 确定',
-                cancelText: '取消',
+                cancelText: $t('Category.index.779033-12'),
                 onConfirm: () => {
                     const response = deleteTree(data.id);
                     response.then((resp) => {
                         if (resp.status === 200) {
-                            onlyMessage('操作成功！');
+                            onlyMessage($t('Category.index.779033-13'));
                             tableRef.value.reload();
                         } else {
-                            onlyMessage('操作失败！', 'error');
+                            onlyMessage($t('Category.index.779033-14'), 'error');
                         }
                     });
                     return response
@@ -219,27 +221,27 @@ const getActions = (
 const table = reactive({
     columns: [
         {
-            title: '名称',
+            title: $t('Category.index.779033-1'),
             dataIndex: 'name',
             key: 'name',
             ellipsis: true,
             width: 500,
         },
         {
-            title: '排序',
+            title: $t('Category.index.779033-2'),
             dataIndex: 'sortIndex',
             key: 'sortIndex',
             scopedSlots: true,
             width: 100,
         },
         {
-            title: '说明',
+            title: $t('Category.index.779033-3'),
             dataIndex: 'description',
             key: 'description',
             ellipsis: true,
         },
         {
-            title: '操作',
+            title: $t('Category.index.779033-4'),
             key: 'action',
             fixed: 'right',
             ellipsis: true,
@@ -251,7 +253,7 @@ const table = reactive({
      * 添加产品分类
      */
     add: async () => {
-        title.value = '新增分类';
+        title.value = $t('Category.index.779033-15');
         isAdd.value = 0;
         isChild.value = 3;
         nextTick(() => {

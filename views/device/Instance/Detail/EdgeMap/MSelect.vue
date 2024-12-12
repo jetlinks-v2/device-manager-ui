@@ -3,7 +3,7 @@
         allowClear
         v-model:value="_value"
         @change="onChange"
-        placeholder="请选择"
+        :placeholder="$t('DeviceAccess.index.594346-12')"
         style="width: 100%"
     >
         <a-select-option

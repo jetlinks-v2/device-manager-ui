@@ -3,6 +3,7 @@ import { AIcon } from '@jetlinks-web/components'
 import TitleComponent from '@/components/TitleComponent/index.vue'
 import styles from './index.module.less'
 import _ from "lodash-es";
+import i18n from "@/locales";
 
 const DiagnosticAdvice = defineComponent({
     props: {
@@ -14,7 +15,7 @@ const DiagnosticAdvice = defineComponent({
     emits: ['close'],
     setup(props, { emit }) {
         const { data } = props
-        return () => <Modal visible title="设备诊断" width={1000} onOk={() => {
+        return () => <Modal visible title={i18n.global.t('Status.DiagnosticAdvice.980298-0')} width={1000} onOk={() => {
             emit('close')
         }}
             onCancel={() => {
@@ -22,11 +23,11 @@ const DiagnosticAdvice = defineComponent({
             }}
         >
             <div>
-                <TitleComponent data="诊断建议" />
+                <TitleComponent data={i18n.global.t('Status.DiagnosticAdvice.980298-1')} />
                 <div class={styles.advice}>
                     <div class={styles.alert}>
                         <span style={{ marginRight: 10 }}><AIcon type="InfoCircleOutlined" /></span>
-                        所有诊断均无异常但设备仍未上线，请检查以下内容
+                        {i18n.global.t('Status.DiagnosticAdvice.980298-2')}
                     </div>
                     <div style={{ marginLeft: 10 }}>
                         {
@@ -40,13 +41,13 @@ const DiagnosticAdvice = defineComponent({
                 </div>
             </div>
             <div style={{ marginTop: 15 }}>
-                <TitleComponent data="连接信息" />
+                <TitleComponent data={i18n.global.t('Status.DiagnosticAdvice.980298-3')} />
                 <Descriptions column={2}>
-                    <DescriptionsItem span={1} label="设备ID">
+                    <DescriptionsItem span={1} label={i18n.global.t('Status.DiagnosticAdvice.980298-4')}>
                         {data?.info?.id || ''}
                     </DescriptionsItem>
                     {data?.info?.address?.length > 0 && (
-                        <DescriptionsItem span={1} label="连接地址">
+                        <DescriptionsItem span={1} label={i18n.global.t('Status.DiagnosticAdvice.980298-5')}>
                             <Tooltip
                                 placement="topLeft"
                                 title={

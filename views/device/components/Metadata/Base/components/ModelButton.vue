@@ -1,7 +1,7 @@
 <template>
   <a-button type="link" style="padding-left: 0;" :disabled="disabled">
     <AIcon type="SettingOutlined" />
-    配置
+    {{$t('Base.Base.640395-11')}}
   </a-button>
 </template>
 

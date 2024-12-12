@@ -1,9 +1,9 @@
 <template>
-  <a-form-item label="最大长度" :name="name">
+  <a-form-item :label="$t('String.Item.921514-0')" :name="name">
     <a-input-number
       v-model:value="myValue"
       style="width: 100%"
-      placeholder="请输入0-9999以内的整数"
+      :placeholder="$t('String.Item.921514-1')"
       :precision="0"
       :min="0"
       :max="9999"

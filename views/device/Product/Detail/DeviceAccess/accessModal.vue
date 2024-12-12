@@ -1,10 +1,10 @@
 <template>
   <a-modal
-    title="设备接入配置"
+    :title="$t('DeviceAccess.accessModal.132524-0')"
     visible
     width="1200px"
-    okText="确定"
-    cancelText="取消"
+    :okText="$t('DeviceAccess.accessModal.132524-1')"
+    :cancelText="$t('DeviceAccess.accessModal.132524-2')"
     :confirmLoading='loading'
     :maskClosable="false"
     @ok="submitData"
@@ -41,7 +41,7 @@
           type="primary"
           @click="add"
           hasPermission="link/AccessConfig:add"
-        >新增</j-permission-button
+        >{{ $t('DeviceAccess.accessModal.132524-3') }}</j-permission-button
         >
       </template>
       <template #deviceType="slotProps">
@@ -89,7 +89,7 @@
                   </j-ellipsis>
                 </a-col>
                 <a-col :span="12">
-                  <div class="card-item-content-text">协议</div>
+                  <div class="card-item-content-text">{{ $t('DeviceAccess.accessModal.132524-4') }}</div>
                   <j-ellipsis style="width:calc(100%-20px)"><div>{{ slotProps.protocolDetail?.name }}</div></j-ellipsis>
                 </a-col>
               </a-row>
@@ -135,6 +135,9 @@ import { useMenuStore } from '@/store';
 import { getProductByPluginId } from '../../../../../api/link/plugin'
 import { getProviders } from '../../../../../api/link/accessConfig'
 import { device } from '../../../../../assets'
+import { useI18n } from 'vue-i18n';
+
+const { t: $t } = useI18n();
 
 type Emit = {
   (e: 'submit', data: any): void
@@ -217,7 +220,7 @@ const handleQuery = async (q: any) => {
 
 const columns = [
   {
-    title: '名称',
+    title: $t('DeviceAccess.accessModal.132524-5'),
     dataIndex: 'name',
     key: 'name',
     search: {
@@ -225,7 +228,7 @@ const columns = [
     },
   },
   {
-    title: '网关类型',
+    title: $t('DeviceAccess.accessModal.132524-6'),
     dataIndex: 'provider',
     key: 'provider',
     search: {
@@ -240,25 +243,25 @@ const columns = [
     },
   },
   {
-    title: '状态',
+    title: $t('DeviceAccess.accessModal.132524-7'),
     dataIndex: 'state',
     key: 'state',
     search: {
       type: 'select',
       options: [
         {
-          label: '正常',
+          label: $t('DeviceAccess.accessModal.132524-8'),
           value: 'enabled',
         },
         {
-          label: '禁用',
+          label: $t('DeviceAccess.accessModal.132524-9'),
           value: 'disabled',
         },
       ],
     },
   },
   {
-    title: '说明',
+    title: $t('DeviceAccess.accessModal.132524-10'),
     key: 'description',
     dataIndex: 'description',
     search: {
@@ -301,7 +304,7 @@ const submitData = async () => {
       }
     }
   } else {
-    onlyMessage('请选择接入方式', 'error');
+    onlyMessage($t('DeviceAccess.accessModal.132524-11'), 'error');
   }
 }
 

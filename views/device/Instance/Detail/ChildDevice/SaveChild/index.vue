@@ -1,26 +1,26 @@
 <template>
     <div>
-        <TitleComponent data="基本信息">
+        <TitleComponent :data="$t('SaveChild.index.898555-0')">
             <template #extra>
-                <a-button @click="comeBack" style="margin-left: 10px;">返回</a-button>
+                <a-button @click="comeBack" style="margin-left: 10px;">{{ $t('SaveChild.index.898555-1') }}</a-button>
             </template>
         </TitleComponent>
         <a-form layout="vertical" :model="form" ref="formRef">
             <a-row :gutter="24">
                 <a-col :span="12">
                     <a-form-item
-                        label="设备名称"
+                        :label="$t('SaveChild.index.898555-2')"
                         name="name"
-                        :rules="{ required: true, message: '请输入设备名称' }"
+                        :rules="{ required: true, message: $t('SaveChild.index.898555-3') }"
                     >
                         <a-input v-model:value="form.name"></a-input>
                     </a-form-item>
                 </a-col>
                 <a-col :span="12">
                     <a-form-item
-                        label="产品名称"
+                        :label="$t('SaveChild.index.898555-4')"
                         name="productId"
-                        :rules="{ required: true, message: '请选择产品名称' }"
+                        :rules="{ required: true, message: $t('SaveChild.index.898555-5') }"
                     >
                         <a-select
                             :disabled="props.childData?.id"

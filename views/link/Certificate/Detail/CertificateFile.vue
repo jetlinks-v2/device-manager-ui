@@ -18,7 +18,7 @@
         >
             <a-button style="margin-top: 10px">
                 <AIcon type="UploadOutlined" />
-                上传文件</a-button
+                {{ $t('Import.Import.317604-2') }}</a-button
             >
         </a-upload>
     </a-spin>
@@ -30,7 +30,9 @@ import type { UploadChangeParam } from 'ant-design-vue';
 import { LocalStore } from '@jetlinks-web/utils';
 import { TOKEN_KEY } from '@jetlinks-web/constants';
 import { NETWORK_CERTIFICATE_UPLOAD } from '../../../../api/link/certificate';
+import { useI18n } from 'vue-i18n';
 
+const { t: $t } = useI18n();
 const emit = defineEmits(['update:modelValue', 'change']);
 
 const props = defineProps({
@@ -60,9 +62,9 @@ const handleChange = (info: UploadChangeParam) => {
             keystoreBase64.value = result;
             emit('change', result);
             emit('update:modelValue', result);
-            onlyMessage('上传成功！', 'success');
+            onlyMessage($t('Detail.CertificateFile.588280-0'), 'success');
         } else {
-            onlyMessage('请上传.pem格式的文件', 'error');
+            onlyMessage($t('Detail.CertificateFile.588280-1'), 'error');
         }
         loading.value = false;
     }

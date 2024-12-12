@@ -3,9 +3,9 @@
         <div style="position: relative">
             <div style="position: absolute; right: 0; top: 5px; z-index: 999">
                 <a-space>
-                    <a-button type="primary" @click="onStart">开始动画</a-button>
-                    <a-button type="primary" v-if="!stop" @click="onStop">暂停动画</a-button>
-                    <a-button type="primary" v-else @click="onResume">继续动画</a-button>
+                    <a-button type="primary" @click="onStart">{{ $t('Detail.PropertyAMap.525980-0') }}</a-button>
+                    <a-button type="primary" v-if="!stop" @click="onStop">{{ $t('Detail.PropertyAMap.525980-1') }}</a-button>
+                    <a-button type="primary" v-else @click="onResume">{{ $t('Detail.PropertyAMap.525980-2') }}</a-button>
                 </a-space>
             </div>
         </div>

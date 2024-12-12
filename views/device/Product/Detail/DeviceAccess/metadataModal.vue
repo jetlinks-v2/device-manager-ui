@@ -1,25 +1,25 @@
 <template>
   <a-modal
-    title="选择处理方式"
+    :title="$t('DeviceAccess.metadataModal.306037-0')"
     visible
     width="900px"
-    okText="确定"
-    cancelText="取消"
+    :okText="$t('DeviceAccess.metadataModal.306037-1')"
+    :cancelText="$t('DeviceAccess.metadataModal.306037-2')"
     :confirmLoading='loading'
     @ok="submitData"
     @cancel="cancel"
   >
     <div class='tip'>
       <a-icon type='ExclamationCircleOutlined'/>
-      平台
-      <span style='font-weight: bold;padding:0 4px;'>物模型</span>
-      中已有数据，请选择处理方式。
-      <a-tooltip title='默认采用覆盖的方式处理功能、事件、标签下的数据'>
+      {{ $t('DeviceAccess.metadataModal.306037-3') }}
+      <span style='font-weight: bold;padding:0 4px;'>{{ $t('DeviceAccess.metadataModal.306037-4') }}</span>
+      {{ $t('DeviceAccess.metadataModal.306037-5') }}
+      <a-tooltip :title="$t('DeviceAccess.metadataModal.306037-6')">
         <a-icon type='QuestionCircleOutlined' />
       </a-tooltip>
     </div>
     <a-form :layout="'vertical'" ref='formRef' :model='handleData'>
-      <a-form-item label='处理方式' :rules='[{ required: true, message: "请选择处理方式"}]' >
+      <a-form-item :label="$t('DeviceAccess.metadataModal.306037-7')" :rules="[{ required: true, message: $t('DeviceAccess.metadataModal.306037-8')}]" >
         <j-card-select
           v-model:value="handleData.type"
           :column='4'
@@ -41,6 +41,9 @@ import { storeToRefs } from 'pinia'
 import { modify, updateDevice } from '../../../../../api/product'
 import { savePluginData } from '../../../../../api/link/plugin'
 import { device } from '../../../../../assets'
+import { useI18n } from 'vue-i18n';
+
+const { t: $t } = useI18n();
 
 type Emit = {
   (e: 'submit'): void
@@ -74,26 +77,26 @@ const loading = ref(false)
 const options = [
   {
     value: 'intersection',
-    label: '取交集',
-    subLabel: '仅保留标识一致的属性',
+    label: $t('DeviceAccess.metadataModal.306037-9'),
+    subLabel: $t('DeviceAccess.metadataModal.306037-10'),
     iconUrl: device.intersection,
   },
   {
     value: 'union',
-    label: '取并集',
-    subLabel: '保留平台、插件中的所有属性',
+    label: $t('DeviceAccess.metadataModal.306037-11'),
+    subLabel: $t('DeviceAccess.metadataModal.306037-12'),
     iconUrl: device.union,
   },
   {
     value: 'ignore',
-    label: '忽略',
-    subLabel: '仅保留平台中的属性',
+    label: $t('DeviceAccess.metadataModal.306037-13'),
+    subLabel: $t('DeviceAccess.metadataModal.306037-14'),
     iconUrl: device.ignore,
   },
   {
     value: 'cover',
-    label: '覆盖',
-    subLabel: '仅保留插件中的属性',
+    label: $t('DeviceAccess.metadataModal.306037-15'),
+    subLabel: $t('DeviceAccess.metadataModal.306037-16'),
     iconUrl: device.cover,
   }
 ]
@@ -151,7 +154,7 @@ const updateAccessData = async (id: string, values: any, metadata: string) => {
   });
   loading.value = false
   if (resp.status === 200) {
-    onlyMessage('操作成功！');
+    onlyMessage($t('DeviceAccess.metadataModal.306037-17'));
     productStore.current!.storePolicy = storePolicy;
     if ((window as any).onTabSaveSuccess) {
       if (resp.result) {

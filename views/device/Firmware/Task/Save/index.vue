@@ -1,8 +1,8 @@
 <template>
     <a-modal
-        :title="data.id ? '查看' : '新增' + '任务'"
-        ok-text="确认"
-        cancel-text="取消"
+        :title="data.id ? $t('Save.index.646914-0') : $t('Save.index.646914-1') + $t('Save.index.646914-2')"
+        :ok-text="$t('Save.index.646914-3')"
+        :cancel-text="$t('Save.index.646914-4')"
         :visible="true"
         width="700px"
         :confirm-loading="loading"
@@ -21,22 +21,22 @@
         >
             <a-row :gutter="[24, 0]">
                 <a-col :span="24">
-                    <a-form-item label="任务名称" name="name">
+                    <a-form-item :label="$t('Save.index.646914-5')" name="name">
                         <a-input
-                            placeholder="请输入任务名称"
+                            :placeholder="$t('Save.index.646914-6')"
                             v-model:value="formData.name"
                             :disabled="view"
                     /></a-form-item>
                 </a-col>
                 <a-col :span="24"
-                    ><a-form-item label="推送方式" name="mode">
+                    ><a-form-item :label="$t('Save.index.646914-7')" name="mode">
                         <a-select
                             v-model:value="formData.mode"
                             :options="[
-                                { label: '平台推送', value: 'push' },
-                                { label: '设备拉取', value: 'pull' },
+                                { label: $t('Save.index.646914-8'), value: 'push' },
+                                { label: $t('Save.index.646914-9'), value: 'pull' },
                             ]"
-                            placeholder="请选择推送方式"
+                            :placeholder="$t('Save.index.646914-10')"
                             allowClear
                             show-search
                             :filter-option="filterOption"
@@ -46,11 +46,11 @@
                 ></a-col>
                 <a-col :span="12" v-if="formData.mode === 'push'"
                     ><a-form-item
-                        label="响应超时时间"
+                        :label="$t('Save.index.646914-11')"
                         name="responseTimeoutSeconds"
                     >
                         <a-input-number
-                            placeholder="请输入响应超时时间(秒)"
+                            :placeholder="`${$t('Save.index.646914-12')}(${$t('Save.index.646914-13')})`"
                             style="width: 100%"
                             :min="1"
                             :max="99999"
@@ -62,9 +62,9 @@
                 <a-col
                     :span="formData.mode === 'push' ? 12 : 24"
                     v-if="formData.mode === 'push' || formData.mode === 'pull'"
-                    ><a-form-item label="升级超时时间" name="timeoutSeconds">
+                    ><a-form-item :label="$t('Save.index.646914-14')" name="timeoutSeconds">
                         <a-input-number
-                            placeholder="请输入升级超时时间(秒)"
+                            :placeholder="`${$t('Save.index.646914-15')}(${$t('Save.index.646914-13')})`"
                             style="width: 100%"
                             :min="1"
                             :max="99999"
@@ -74,20 +74,20 @@
                             " /></a-form-item
                 ></a-col>
                 <a-col :span="12" v-if="!!formData.mode"
-                    ><a-form-item label="升级设备" name="releaseType">
+                    ><a-form-item :label="$t('Save.index.646914-16')" name="releaseType">
                         <a-radio-group
                             v-model:value="formData.releaseType"
                             button-style="solid"
                             @change="changeShareCluster"
                             :disabled="view"
                         >
-                            <a-radio value="all">所有设备</a-radio>
-                            <a-radio value="part">选择设备</a-radio>
+                            <a-radio value="all">{{ $t('Save.index.646914-17') }}</a-radio>
+                            <a-radio value="part">{{ $t('Save.index.646914-18') }}</a-radio>
                         </a-radio-group>
                     </a-form-item>
                 </a-col>
                 <a-col :span="12" v-if="formData.releaseType === 'part'">
-                    <a-form-item label="选择设备" name="deviceId">
+                    <a-form-item :label="$t('Save.index.646914-18')" name="deviceId">
                         <SelectDevices
                             v-model:modelValue="formData.deviceId"
                             :data="data"
@@ -95,9 +95,9 @@
                         ></SelectDevices> </a-form-item
                 ></a-col>
                 <a-col :span="24">
-                    <a-form-item label="说明" name="description">
+                    <a-form-item :label="$t('Save.index.646914-19')" name="description">
                         <a-textarea
-                            placeholder="请输入说明"
+                            :placeholder="$t('Save.index.646914-20')"
                             v-model:value="formData.description"
                             :maxlength="200"
                             :rows="3"
@@ -113,6 +113,9 @@
 import { queryProduct, saveTask } from '../../../../../api/firmware';
 import type { FormInstance } from 'ant-design-vue';
 import SelectDevices from './SelectDevices.vue';
+import { useI18n } from 'vue-i18n';
+
+const { t: $t } = useI18n();
 
 const props = defineProps({
     data: {
@@ -152,15 +155,15 @@ const formData: any = ref({
 
 const rules = {
     name: [
-        { required: true, message: '请输入任务名称' },
-        { max: 64, message: '最多可输入64个字符' },
+        { required: true, message: $t('Save.index.646914-6') },
+        { max: 64, message: $t('Save.index.646914-21') },
     ],
-    mode: [{ required: true, message: '请选择推送方式' }],
-    responseTimeoutSeconds: [{ required: true, message: '请输入响应超时时间' }],
-    timeoutSeconds: [{ required: true, message: '请输入升级超时时间' }],
+    mode: [{ required: true, message: $t('Save.index.646914-10') }],
+    responseTimeoutSeconds: [{ required: true, message: $t('Save.index.646914-12') }],
+    timeoutSeconds: [{ required: true, message: $t('Save.index.646914-15') }],
     releaseType: [{ required: true }],
-    deviceId: [{ required: true, message: '请选择设备' }],
-    description: [{ max: 200, message: '最多可输入200个字符' }],
+    deviceId: [{ required: true, message: $t('Save.index.646914-22') }],
+    description: [{ max: 200, message: $t('Save.index.646914-23') }],
 };
 
 const filterOption = (input: string, option: any) => {

@@ -1,6 +1,6 @@
 <template>
     <div>
-        <TitleComponent data="网络组件"> </TitleComponent>
+        <TitleComponent :data="$t('Edge.index.066653-18')"> </TitleComponent>
         <AccessCard
             v-if="network"
             :data="{
@@ -23,9 +23,9 @@
                             class="item"
                         >
                             <a-badge :status="getColor(i)" :text="i.address" />
-                            <span v-if="(network.addresses || []).length > 1"
-                                >等{{ network.addresses.length }}条</span
-                            >
+                            <span v-if="(network.addresses || []).length > 1">
+                                {{ $t('components.FifthKind.409083-0', [item.addresses.length]) }}
+                            </span>
                         </div>
                     </a-tooltip>
                 </div>
@@ -39,7 +39,7 @@
                 ].includes(data.provider)
             "
         >
-            <TitleComponent data="消息协议" style="margin-top: 20px">
+            <TitleComponent :data="$t('DeviceAccess.index.594346-6')" style="margin-top: 20px">
             </TitleComponent>
             <AccessCard v-if="protocol" :data="{ ...protocol, type: 'protocol' }">
             </AccessCard>
@@ -49,7 +49,7 @@
                 data.provider === 'mqtt-server-gateway' ||
                 data.provider === 'mqtt-client-gateway'
                     ? 'topic'
-                    : 'URL信息'
+                    : $t('DeviceAccess.index.594346-17')
             "
                 style="margin-top: 20px"
             >
@@ -95,6 +95,9 @@ const props = defineProps({
         type: Object,
     },
 });
+import { useI18n } from 'vue-i18n';
+
+const { t: $t } = useI18n();
 const network = ref();
 const protocol = ref();
 const config = ref();
@@ -113,9 +116,9 @@ function generateUUID() {
 }
 const getStream = (record) => {
     let stream = '';
-    if (record.upstream && record.downstream) stream = '上行、下行';
-    else if (record.upstream) stream = '上行';
-    else if (record.downstream) stream = '下行';
+    if (record.upstream && record.downstream) stream = `${$t('DeviceAccess.index.594346-26')}、${$t('DeviceAccess.index.594346-27')}`;
+    else if (record.upstream) stream = $t('DeviceAccess.index.594346-26');
+    else if (record.downstream) stream = $t('DeviceAccess.index.594346-27');
     return stream;
 };
 const queryNetwork = async () => {

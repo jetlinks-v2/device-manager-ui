@@ -28,7 +28,7 @@
                             <template #icon
                                 ><AIcon type="PlusOutlined"
                             /></template>
-                            新增
+                            {{ $t('AccessConfig.index.764793-0') }}
                         </j-permission-button>
                     </template>
                     <template #card="slotProps">
@@ -112,7 +112,7 @@
                                             <div
                                                 class="card-item-content-text-title"
                                             >
-                                                协议
+                                                {{ $t('AccessConfig.index.764793-1') }}
                                             </div>
                                             <j-ellipsis
                                                 style="width: calc(100% - 10px)"
@@ -197,7 +197,9 @@ import { accessConfigTypeFilter } from '@/utils';
 import { cloneDeep } from 'lodash-es';
 import Outline from './Outline/index.vue'
 import { device } from '../../../assets'
+import { useI18n } from 'vue-i18n';
 
+const { t: $t } = useI18n();
 const menuStory = useMenuStore();
 const tableRef = ref<Record<string, any>>({});
 const params = ref<Record<string, any>>({});
@@ -211,7 +213,7 @@ statusMap.set('disabled', 'error');
 
 const columns = [
     {
-        title: '名称',
+        title: $t('AccessConfig.index.764793-2'),
         dataIndex: 'name',
         key: 'name',
         search: {
@@ -220,7 +222,7 @@ const columns = [
         // scopedSlots: true,
     },
     {
-        title: '网关类型',
+        title: $t('AccessConfig.index.764793-3'),
         dataIndex: 'provider',
         key: 'provider',
         search: {
@@ -237,18 +239,18 @@ const columns = [
         },
     },
     {
-        title: '状态',
+        title: $t('AccessConfig.index.764793-4'),
         dataIndex: 'state',
         key: 'state',
         search: {
             type: 'select',
             options: [
                 {
-                    label: '禁用',
+                    label: $t('AccessConfig.index.764793-5'),
                     value: 'disabled',
                 },
                 {
-                    label: '正常',
+                    label: $t('AccessConfig.index.764793-6'),
                     value: 'enabled',
                 },
             ],
@@ -256,7 +258,7 @@ const columns = [
         scopedSlots: true,
     },
     {
-        title: '说明',
+        title: $t('AccessConfig.index.764793-7'),
         dataIndex: 'description',
         key: 'description',
         search: {
@@ -264,7 +266,7 @@ const columns = [
         },
     },
     {
-        title: '操作',
+        title: $t('AccessConfig.index.764793-8'),
         key: 'action',
         fixed: 'right',
         width: 200,
@@ -275,13 +277,13 @@ const columns = [
 const getActions = (data: Partial<Record<string, any>>): any[] => {
     if (!data) return [];
     const state = data.state.value;
-    const stateText = state === 'enabled' ? '禁用' : '启用';
+    const stateText = state === 'enabled' ? $t('AccessConfig.index.764793-5') : $t('AccessConfig.index.764793-9');
     return [
         {
             key: 'update',
-            text: '编辑',
+            text: $t('AccessConfig.index.764793-10'),
             tooltip: {
-                title: '编辑',
+                title: $t('AccessConfig.index.764793-10'),
             },
             icon: 'EditOutlined',
             onClick: async () => {
@@ -296,7 +298,7 @@ const getActions = (data: Partial<Record<string, any>>): any[] => {
             },
             icon: state === 'enabled' ? 'StopOutlined' : 'CheckCircleOutlined',
             popConfirm: {
-                title: `确认${stateText}?`,
+                title: $t('AccessConfig.index.764793-11', [stateText]),
                 onConfirm: () => {
                     let response =
                         state === 'enabled'
@@ -304,7 +306,7 @@ const getActions = (data: Partial<Record<string, any>>): any[] => {
                             : deploy(data.id);
                     response.then((res) => {
                         if (res.success) {
-                            onlyMessage('操作成功', 'success');
+                            onlyMessage($t('AccessConfig.index.764793-12'), 'success');
                             tableRef.value?.reload();
                         }
                     });
@@ -314,18 +316,18 @@ const getActions = (data: Partial<Record<string, any>>): any[] => {
         },
         {
             key: 'delete',
-            text: '删除',
+            text: $t('AccessConfig.index.764793-13'),
             disabled: state === 'enabled',
             tooltip: {
-                title: state === 'enabled' ? '请先禁用，再删除' : '删除',
+                title: state === 'enabled' ? $t('AccessConfig.index.764793-14') : $t('AccessConfig.index.764793-13'),
             },
             popConfirm: {
-                title: '确认删除?',
+                title: $t('AccessConfig.index.764793-15'),
                 onConfirm: () => {
                     const response: any = remove(data.id);
                     response.then((res: any) => {
                         if (res.status === 200) {
-                            onlyMessage('操作成功', 'success');
+                            onlyMessage($t('AccessConfig.index.764793-12'), 'success');
                             tableRef.value.reload();
                         } else {
                             onlyMessage(res?.message, 'error');

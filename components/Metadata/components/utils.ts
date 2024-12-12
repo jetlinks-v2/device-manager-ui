@@ -1,5 +1,6 @@
 import {randomString} from "@jetlinks-web/utils";
 import {Ref} from "vue";
+import i18n from "@/locales";
 
 let maskIds: string[] = []
 export const maskNodeClassName = 'popover-mask'
@@ -158,8 +159,8 @@ export const useMask = (propVisible: boolean, options: { visibleChange: (visible
 }
 
 export const BooleanValueMap = () => ({
-    trueText: '是',
+    trueText: i18n.global.t('Array.index.399995-3'),
     trueValue: 'true',
-    falseText: '否',
+    falseText: i18n.global.t('Array.index.399995-4'),
     falseValue: 'false',
 })

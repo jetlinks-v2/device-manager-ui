@@ -1,7 +1,7 @@
 <template>
   <a-modal
     visible
-    title="规则"
+    :title="$t('VirtualRule.DetailModal.541300-0')"
     :maskClosable="false"
     :width="1000"
     :getContainer="getPopupContainer"

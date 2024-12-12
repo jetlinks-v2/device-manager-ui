@@ -1,12 +1,12 @@
 <template>
     <div class="top">
         <j-permission-button :hasPermission="true" type="text" @click="copyText" :tooltip="{
-            title: '复制',
+            title: $t('Shadow.index.897708-0'),
         }">
                 <AIcon type="CopyOutlined" />
         </j-permission-button>
         <j-permission-button :hasPermission="true" type="text" @click="getShadows" :tooltip="{
-            title: '刷新',
+            title: $t('Shadow.index.897708-1'),
         }">
                 <AIcon type="ReloadOutlined" />
         </j-permission-button>
@@ -20,8 +20,9 @@ import { JsonViewer } from 'vue3-json-viewer';
 import { useInstanceStore } from '@/modules/device-manager-ui/store/instance';
 import { onlyMessage } from '@/utils/comm';
 import { getDeviceShadow } from '@/modules/device-manager-ui/api/instance';
+import { useI18n } from 'vue-i18n';
 
-
+const { t: $t } = useI18n();
 const instanceStore = useInstanceStore();
 const data = ref<Record<string, any>>({});
 
@@ -35,7 +36,7 @@ const getShadows = async()=>{
 const copyText = ()=>{
     if(navigator.clipboard){
         navigator.clipboard.writeText(JSON.stringify(data.value))
-        onlyMessage('复制成功！');
+        onlyMessage($t('Shadow.index.897708-2'));
     }else{
         const input = document.createElement('input');
         input.value = JSON.stringify(data.value);
@@ -43,7 +44,7 @@ const copyText = ()=>{
         input.select();
         document.execCommand('copy');
         document.body.removeChild(input);
-        onlyMessage('复制成功！');
+        onlyMessage($t('Shadow.index.897708-2'));
     }
 }
 

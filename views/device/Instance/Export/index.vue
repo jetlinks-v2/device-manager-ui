@@ -3,24 +3,24 @@
         :maskClosable="false"
         width="800px"
         :visible="true"
-        title="导出"
+        :title="$t('Export.index.225315-0')"
         @ok="handleOk"
         @cancel="handleCancel"
     >
         <div style="background-color: rgb(236, 237, 238)">
             <p style="padding: 10px">
                 <AIcon type="ExclamationCircleOutlined" />
-                选择单个产品时可导出其下属设备的详细数据,不选择产品时导出所有设备的基础数据。
+                {{ $t('Export.index.225315-1') }}
             </p>
         </div>
         <div style="margin-top: 20px">
             <a-form :layout="'vertical'">
-                <a-form-item label="产品">
+                <a-form-item :label="$t('Export.index.225315-2')">
                     <a-select
                         show-search
                         :filter-option="filterOption"
                         v-model:value="modelRef.product"
-                        placeholder="请选择产品"
+                        :placeholder="$t('Export.index.225315-3')"
                         allowClear
                     >
                         <a-select-option
@@ -32,11 +32,11 @@
                         >
                     </a-select>
                 </a-form-item>
-                <a-form-item label="文件格式">
+                <a-form-item :label="$t('Export.index.225315-4')">
                     <a-radio-group
                         button-style="solid"
                         v-model:value="modelRef.fileType"
-                        placeholder="请选择文件格式"
+                        :placeholder="$t('Export.index.225315-5')"
                     >
                         <a-radio-button value="xlsx">xlsx</a-radio-button>
                         <a-radio-button value="csv">csv</a-radio-button>

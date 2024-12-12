@@ -1,7 +1,7 @@
 <template>
     <a-modal
         :mask-closable="false"
-        title="导入物模型"
+        :title="$t('Import.index.603910-0')"
         destroy-on-close
         v-model:visible="_visible"
         @cancel="close"
@@ -15,36 +15,36 @@
                     style="margin-right: 5px"
                 />
                 <template v-if="type === 'product'">
-                    导入的物模型会覆盖原来的属性、功能、事件、标签，请谨慎操作。
+                    {{ $t('Import.index.603910-1') }}
                 </template>
                 <template v-else>
-                    导入时会根据标识跳过继承自产品物模型的属性、功能、事件、标签。
+                    {{ $t('Import.index.603910-2') }}
                 </template>
             </p>
         </div>
         <a-form layout="vertical" ref="formRef" :model="formModel">
             <a-form-item
                 v-if="type === 'product'"
-                label="导入方式"
+                :label="$t('Import.index.603910-3')"
                 name="type"
                 :rules="[
                     {
                         required: true,
-                        message: '请选择导入方式',
+                        message: $t('Import.index.603910-4'),
                     },
                 ]"
             >
                 <a-select v-model:value="formModel.type">
-                    <a-select-option value="copy">拷贝产品</a-select-option>
-                    <a-select-option value="import">导入物模型</a-select-option>
+                    <a-select-option value="copy">{{ $t('Import.index.603910-5') }}</a-select-option>
+                    <a-select-option value="import">{{ $t('Import.index.603910-0') }}</a-select-option>
                 </a-select>
             </a-form-item>
             <a-form-item
-                label="选择产品"
+                :label="$t('Import.index.603910-6')"
                 :rules="[
                     {
                         required: true,
-                        message: '请选择产品',
+                        message: $t('Import.index.603910-7'),
                     },
                 ]"
                 name="copy"
@@ -54,16 +54,16 @@
                     :options="productList"
                     v-model:value="formModel.copy"
                     option-filter-prop="label"
-                    placeholder="请选择产品"
+                    :placeholder="$t('Import.index.603910-7')"
                     showSearch
                 ></a-select>
             </a-form-item>
             <a-form-item
-                label="物模型类型"
+                :label="$t('Import.index.603910-8')"
                 :rules="[
                     {
                         required: true,
-                        message: '请选择物模型类型',
+                        message: $t('Import.index.603910-9'),
                     },
                 ]"
                 name="metadata"
@@ -71,7 +71,7 @@
             >
                 <a-select v-model:value="formModel.metadata">
                     <!-- <a-select-option value="jetlinks"
-                        >Jetlinks物模型</a-select-option
+                        >Jetlinks{{ $t('Import.index.603910-18') }}</a-select-option
                     >
                     <a-select-option value="alink"
                         >阿里云物模型TSL</a-select-option
@@ -82,11 +82,11 @@
                 </a-select>
             </a-form-item>
             <a-form-item
-                label="导入类型"
+                :label="$t('Import.index.603910-10')"
                 :rules="[
                     {
                         required: true,
-                        message: '请选择导入类型',
+                        message: $t('Import.index.603910-11'),
                     },
                 ]"
                 name="metadataType"
@@ -96,8 +96,8 @@
                     v-model:value="formModel.metadataType"
                     @change="formModel.import = undefined"
                 >
-                    <a-select-option value="file">文件上传</a-select-option>
-                    <a-select-option value="script">脚本</a-select-option>
+                    <a-select-option value="file">{{ $t('Import.index.603910-12') }}</a-select-option>
+                    <a-select-option value="script">{{ $t('Import.index.603910-13') }}</a-select-option>
                 </a-select>
             </a-form-item>
             <a-form-item
@@ -105,12 +105,12 @@
                     formModel.type === 'import' &&
                     formModel.metadataType === 'file'
                 "
-                label="文件上传"
+                :label="$t('Import.index.603910-12')"
                 name="import"
                 :rules="[
                     {
                         required: true,
-                        message: '请上传文件',
+                        message: $t('Import.index.603910-14'),
                     },
                 ]"
             >
@@ -145,18 +145,18 @@
                         <template #icon
                             ><AIcon type="UploadOutlined"
                         /></template>
-                        上传文件
+                        {{ $t('Import.index.603910-15') }}
                     </a-button>
                 </a-upload>
                 <div style="margin-left: 10px; color: rgba(0, 0, 0, 0.6)">
-                    支持扩展名：.json
+                    {{ $t('Import.index.603910-16') }}
                 </div>
             </a-form-item>
             <a-form-item
                 :rules="[
                     {
                         required: true,
-                        message: '请输入物模型',
+                        message: $t('Import.index.603910-17'),
                     },
                 ]"
                 name="import"
@@ -167,8 +167,8 @@
             >
                 <template #label>
                     <a-space>
-                        物模型
-                        <a-tooltip title="在编辑器中编写物模型脚本">
+                        {{ $t('Import.index.603910-18') }}
+                        <a-tooltip :title="$t('Import.index.603910-19')">
                             <AIcon
                                 type="QuestionCircleOutlined"
                                 style="color: rgb(136, 136, 136)"
@@ -210,6 +210,9 @@ import { omit } from 'lodash-es';
 import { Modal } from 'ant-design-vue';
 import { testObject, testType, testAliType, testAliObject } from './valideta';
 import { TOKEN_KEY } from '@jetlinks-web/constants';
+import { useI18n } from 'vue-i18n';
+
+const { t: $t } = useI18n();
 
 const route = useRoute();
 const instanceStore = useInstanceStore();
@@ -275,20 +278,20 @@ loadData();
 // const handleMadeDataNull = (data:any) =>{
 //    return data?.properties?.some?.((item:any,index:number)=>{
 //                 if(!item?.id){
-//                     onlyMessage(`属性定义第${index + 1}个数组中缺失id属性`,'error');
+//                     onlyMessage($t('Import.index.603910-20', [index + 1]),'error');
 //                     return true
 //                 }
 //                 if(!item?.name){
-//                     onlyMessage(`属性定义第${index + 1}个数组中缺失name属性`,'error');
+//                     onlyMessage($t('Import.index.603910-22', [index + 1]),'error');
 //                     return
 //                 }
 //                 if(!item?.expands?.source){
-//                     onlyMessage(`属性定义第${index + 1}个数组中缺失expands.source属性`,'error');
+//                     onlyMessage($t('Import.index.603910-24', [index + 1]),'error');
 //                     return
 //                 }
 
 //                 if((item?.expands?.source === 'device' ||    item?.expands?.source === 'rule') && !item?.expands?.type){
-//                     onlyMessage(`属性定义第${index + 1}个数组中缺失type属性`,'error');
+//                     onlyMessage($t('Import.index.603910-25', [index + 1]),'error');
 //                     return
 //                 }
 //         }) || false
@@ -299,7 +302,7 @@ const requiredCheck = (data: any) => {
         data.properties.some((item: any, index: number) => {
             if (!item?.id) {
                 onlyMessage(
-                    `属性定义第${index + 1}个数组中缺失id属性`,
+                    $t('Import.index.603910-20', [index + 1]),
                     'error',
                 );
                 check = true;
@@ -307,7 +310,7 @@ const requiredCheck = (data: any) => {
             }
             if (/[\u4e00-\u9fa5]/.test(item.id)) {
                 onlyMessage(
-                    `属性定义第${index + 1}个数组中id属性不能包含中文`,
+                    $t('Import.index.603910-21', [index + 1]),
                     'error',
                 );
                 check = true;
@@ -315,7 +318,7 @@ const requiredCheck = (data: any) => {
             }
             if (!item?.name) {
                 onlyMessage(
-                    `属性定义第${index + 1}个数组中缺失name属性`,
+                    $t('Import.index.603910-22', [index + 1]),
                     'error',
                 );
                 check = true;
@@ -323,7 +326,7 @@ const requiredCheck = (data: any) => {
             }
             if (!item?.valueType?.type) {
                 onlyMessage(
-                    `标签定义第${index + 1}个数组中缺失valueType.type属性`,
+                    $t('Import.index.603910-23', [index + 1]),
                     'error',
                 );
                 check = true;
@@ -333,7 +336,7 @@ const requiredCheck = (data: any) => {
             }
             if (!item?.expands?.source) {
                 onlyMessage(
-                    `属性定义第${index + 1}个数组中缺失expands.source属性`,
+                    $t('Import.index.603910-24', [index + 1]),
                     'error',
                 );
                 check = true;
@@ -345,7 +348,7 @@ const requiredCheck = (data: any) => {
                 !item?.expands?.type
             ) {
                 onlyMessage(
-                    `属性定义第${index + 1}个数组中缺失type属性`,
+                    $t('Import.index.603910-25', [index + 1]),
                     'error',
                 );
                 check = true;
@@ -357,7 +360,7 @@ const requiredCheck = (data: any) => {
         data?.functions.forEach((item: any, index: number) => {
             if (!item?.id) {
                 onlyMessage(
-                    `方法定义第${index + 1}个数组中缺失id属性`,
+                    $t('Import.index.603910-26', [index + 1]),
                     'error',
                 );
                 check = true;
@@ -365,7 +368,7 @@ const requiredCheck = (data: any) => {
             }
             if (/[\u4e00-\u9fa5]/.test(item.id)) {
                 onlyMessage(
-                    `方法定义第${index + 1}个数组中id属性不能包含中文`,
+                    $t('Import.index.603910-27', [index + 1]),
                     'error',
                 );
                 check = true;
@@ -373,7 +376,7 @@ const requiredCheck = (data: any) => {
             }
             if (!item?.name) {
                 onlyMessage(
-                    `方法定义第${index + 1}个数组中缺失name属性`,
+                    $t('Import.index.603910-28', [index + 1]),
                     'error',
                 );
                 check = true;
@@ -400,7 +403,7 @@ const requiredCheck = (data: any) => {
         data?.events.forEach((item: any, index: number) => {
             if (!item?.id) {
                 onlyMessage(
-                    `事件定义第${index + 1}个数组中缺失id属性`,
+                    $t('Import.index.603910-29', [index + 1]),
                     'error',
                 );
                 check = true;
@@ -408,7 +411,7 @@ const requiredCheck = (data: any) => {
             }
             if (/[\u4e00-\u9fa5]/.test(item.id)) {
                 onlyMessage(
-                    `事件定义第${index + 1}个数组中id属性不能包含中文`,
+                    $t('Import.index.603910-30', [index + 1]),
                     'error',
                 );
                 check = true;
@@ -416,7 +419,7 @@ const requiredCheck = (data: any) => {
             }
             if (!item?.name) {
                 onlyMessage(
-                    `事件定义第${index + 1}个数组中缺失name属性`,
+                    $t('Import.index.603910-31', [index + 1]),
                     'error',
                 );
                 check = true;
@@ -429,7 +432,7 @@ const requiredCheck = (data: any) => {
             // }
             if (!item?.valueType?.type) {
                 onlyMessage(
-                    `事件定义第${index + 1}个数组中缺失valueType.type属性`,
+                    $t('Import.index.603910-32', [index + 1]),
                     'error',
                 );
                 check = true;
@@ -437,7 +440,7 @@ const requiredCheck = (data: any) => {
             }
             if (!item?.expands?.level) {
                 onlyMessage(
-                    `事件定义第${index + 1}个数组中缺失expands.level属性`,
+                    $t('Import.index.603910-33', [index + 1]),
                     'error',
                 );
                 check = true;
@@ -448,38 +451,17 @@ const requiredCheck = (data: any) => {
                     item?.valueType?.properties.forEach(
                         (i: any, number: number) => {
                             if (!i?.id) {
-                                onlyMessage(
-                                    `事件定义第${
-                                        index + 1
-                                    }个数组中缺失valueType.properties数组第${
-                                        number + 1
-                                    }项的id属性`,
-                                    'error',
-                                );
+                                onlyMessage($t('Import.index.727422-0', [index + 1,number + 1]),'error');
                                 check = true;
                                 return;
                             }
                             if (!i?.name) {
-                                onlyMessage(
-                                    `事件定义第${
-                                        index + 1
-                                    }个数组中缺失valueType.properties数组第${
-                                        number + 1
-                                    }项的name属性`,
-                                    'error',
-                                );
+                                onlyMessage($t('Import.index.727422-1', [index + 1,number + 1]),'error');
                                 check = true;
                                 return;
                             }
                             if (!i?.valueType?.type) {
-                                onlyMessage(
-                                    `事件定义第${
-                                        index + 1
-                                    }个数组中缺失valueType.properties数组第${
-                                        number + 1
-                                    }项的valueType.type属性`,
-                                    'error',
-                                );
+                                onlyMessage($t('Import.index.727422-2', [index + 1,number + 1]),'error');
                                 check = true;
                                 return;
                             }
@@ -487,9 +469,7 @@ const requiredCheck = (data: any) => {
                     );
                 } else {
                     onlyMessage(
-                        `事件定义第${
-                            index + 1
-                        }个数组中缺失valueType.properties数组`,
+                        $t('Import.index.603910-37', []),
                         'error',
                     );
                     check = true;
@@ -502,7 +482,7 @@ const requiredCheck = (data: any) => {
         data?.tags.forEach((item: any, index: number) => {
             if (!item?.id) {
                 onlyMessage(
-                    `标签定义第${index + 1}个数组中缺失id属性`,
+                    $t('Import.index.603910-38', [index + 1]),
                     'error',
                 );
                 check = true;
@@ -510,7 +490,7 @@ const requiredCheck = (data: any) => {
             }
             if (/[\u4e00-\u9fa5]/.test(item.id)) {
                 onlyMessage(
-                    `标签定义第${index + 1}个数组中id属性不能包含中文`,
+                    $t('Import.index.603910-39', [index + 1]),
                     'error',
                 );
                 check = true;
@@ -518,7 +498,7 @@ const requiredCheck = (data: any) => {
             }
             if (!item?.name) {
                 onlyMessage(
-                    `标签定义第${index + 1}个数组中缺失name属性`,
+                    $t('Import.index.603910-40', [index + 1]),
                     'error',
                 );
                 check = true;
@@ -526,7 +506,7 @@ const requiredCheck = (data: any) => {
             }
             if (!item?.valueType?.type) {
                 onlyMessage(
-                    `标签定义第${index + 1}个数组中缺失valueType.type属性`,
+                    $t('Import.index.603910-23', [index + 1]),
                     'error',
                 );
                 check = true;
@@ -553,7 +533,7 @@ const aliCheck = (data: any) => {
         data.properties.some((item: any, index: number) => {
             if (!item?.identifier) {
                 onlyMessage(
-                    `属性定义第${index + 1}个数组中缺失identifier属性`,
+                    $t('Import.index.603910-41', [index + 1]),
                     'error',
                 );
                 check = true;
@@ -561,7 +541,7 @@ const aliCheck = (data: any) => {
             }
             if (!item?.name) {
                 onlyMessage(
-                    `属性定义第${index + 1}个数组中缺失name属性`,
+                    $t('Import.index.603910-22', [index + 1]),
                     'error',
                 );
                 check = true;
@@ -569,7 +549,7 @@ const aliCheck = (data: any) => {
             }
             if (!item?.dataType?.type) {
                 onlyMessage(
-                    `属性定义第${index + 1}个数组中缺失dataType.type属性`,
+                    $t('Import.index.603910-42', [index + 1]),
                     'error',
                 );
                 check = true;
@@ -583,7 +563,7 @@ const aliCheck = (data: any) => {
         data?.functions.forEach((item: any, index: number) => {
             if (!item?.identifier) {
                 onlyMessage(
-                    `方法定义第${index + 1}个数组中缺失identifier属性`,
+                    $t('Import.index.603910-43', [index + 1]),
                     'error',
                 );
                 check = true;
@@ -591,7 +571,7 @@ const aliCheck = (data: any) => {
             }
             if (!item?.name) {
                 onlyMessage(
-                    `方法定义第${index + 1}个数组中缺失name属性`,
+                    $t('Import.index.603910-28', [index + 1]),
                     'error',
                 );
                 check = true;
@@ -599,7 +579,7 @@ const aliCheck = (data: any) => {
             }
             if (!item?.callType) {
                 onlyMessage(
-                    `方法定义第${index + 1}个数组中缺失callType属性`,
+                    $t('Import.index.603910-44', [index + 1]),
                     'error',
                 );
                 check = true;
@@ -614,7 +594,7 @@ const aliCheck = (data: any) => {
         data?.events.forEach((item: any, index: number) => {
             if (!item?.identifier) {
                 onlyMessage(
-                    `事件定义第${index + 1}个数组中缺失identifier属性`,
+                    $t('Import.index.603910-45', [index + 1]),
                     'error',
                 );
                 check = true;
@@ -622,7 +602,7 @@ const aliCheck = (data: any) => {
             }
             if (!item?.name) {
                 onlyMessage(
-                    `事件定义第${index + 1}个数组中缺失name属性`,
+                    $t('Import.index.603910-31', [index + 1]),
                     'error',
                 );
                 check = true;
@@ -630,7 +610,7 @@ const aliCheck = (data: any) => {
             }
             if (!item?.type) {
                 onlyMessage(
-                    `事件定义第${index + 1}个数组中缺失type属性`,
+                    $t('Import.index.603910-46', [index + 1]),
                     'error',
                 );
                 check = true;
@@ -641,56 +621,32 @@ const aliCheck = (data: any) => {
                     item?.outputData?.forEach((i: any, number: number) => {
                         if (!i?.identifier) {
                             onlyMessage(
-                                `事件定义第${
-                                    index + 1
-                                }个数组中缺失outputData数组第${
-                                    number + 1
-                                }项的id属性`,
-                                'error',
-                            );
+                                $t('Import.index.727422-3', [index + 1,number + 1]),'error');
                             check = true;
                             return;
                         }
                         if (!i?.name) {
                             onlyMessage(
-                                `事件定义第${
-                                    index + 1
-                                }个数组中缺失outputData数组第${
-                                    number + 1
-                                }项的name属性`,
-                                'error',
-                            );
+                                $t('Import.index.727422-4', [index + 1,number + 1]),'error');
                             check = true;
                             return;
                         }
                         if (!i?.dataType?.type) {
                             onlyMessage(
-                                `事件定义第${
-                                    index + 1
-                                }个数组中缺失outputData数组第${
-                                    number + 1
-                                }项的dataType.type属性`,
-                                'error',
-                            );
+                                $t('Import.index.727422-5', [ index + 1,number + 1]),'error');
                             check = true;
                             return;
                         }
                         if (!i?.dataType?.specs) {
                             onlyMessage(
-                                `事件定义第${
-                                    index + 1
-                                }个数组中缺失outputData数组第${
-                                    number + 1
-                                }项的dataType.specs属性`,
-                                'error',
-                            );
+                                $t('Import.index.727422-6', [index + 1,number + 1]),'error');
                             check = true;
                             return;
                         }
                     });
                 } else {
                     onlyMessage(
-                        `事件定义第${index + 1}个数组中缺失outputData数组`,
+                        $t('Import.index.603910-51', [index + 1]),
                         'error',
                     );
                     check = true;
@@ -713,15 +669,15 @@ const beforeUpload: UploadProps['beforeUpload'] = (file) => {
                         ? requiredCheck(data)
                         : aliCheck(data);
                 if (!check) {
-                    onlyMessage('操作成功！');
+                    onlyMessage($t('Import.index.603910-52'));
                     formModel.import = json.target?.result;
                 }
             } else {
-                onlyMessage('文件内容不能为空', 'error');
+                onlyMessage($t('Import.index.603910-53'), 'error');
             }
         };
     } else {
-        onlyMessage('请上传json格式的文件', 'error');
+        onlyMessage($t('Import.index.603910-54'), 'error');
     }
 };
 const fileChange = (info: UploadChangeParam) => {
@@ -851,7 +807,7 @@ const handleImport = async () => {
                             }).catch((err) => err);
                         }
                         if (result.success) {
-                            onlyMessage('导入成功');
+                            onlyMessage($t('Import.index.603910-55'));
                         }
                         loading.value = false;
                     } else {
@@ -868,8 +824,8 @@ const handleImport = async () => {
                 } catch (e) {
                     onlyMessage(
                         e === 'error'
-                            ? '物模型数据不正确'
-                            : '上传json格式的物模型文件',
+                            ? $t('Import.index.603910-56')
+                            : $t('Import.index.603910-57'),
                         'error',
                     );
                 }
@@ -895,7 +851,7 @@ const handleImport = async () => {
                             !!_object?.tags
                         )
                     ) {
-                        onlyMessage('物模型数据不正确', 'error');
+                        onlyMessage($t('Import.index.603910-56'), 'error');
                         loading.value = false;
                         return;
                     }
@@ -937,12 +893,12 @@ const handleImport = async () => {
                     }
                     loading.value = false;
                     if (resp.success) {
-                        onlyMessage('导入成功');
+                        onlyMessage($t('Import.index.603910-55'));
                         if (hasVirtualRule.value) {
                             setTimeout(() => {
                                 Modal.info({
-                                    title: '导入数据存在虚拟属性，请及时添加虚拟属性计算规则。',
-                                    okText: '确认',
+                                    title: $t('Import.index.603910-58'),
+                                    okText: $t('Import.index.603910-59'),
                                 });
                             }, 300);
                         }
@@ -961,8 +917,8 @@ const handleImport = async () => {
                     }
                     onlyMessage(
                         e === 'error'
-                            ? '物模型数据不正确'
-                            : '上传json格式的物模型文件',
+                            ? $t('Import.index.603910-56')
+                            : $t('Import.index.603910-57'),
                         'error',
                     );
                 }
@@ -974,7 +930,7 @@ const handleImport = async () => {
 onMounted(async () => {
     const res = await getCodecs();
     if (res.status === 200) {
-        codecs.value = [{ id: 'jetlinks', name: '标准物模型' }].concat(
+        codecs.value = [{ id: 'jetlinks', name: $t('Import.index.603910-60') }].concat(
             res.result,
         );
     }

@@ -1,7 +1,7 @@
 <template>
     <div>
         <TitleComponent
-            data="接入配置"
+            :data="$t('Cloud.Ctwing.076179-41')"
             v-if="configuration.length"
         ></TitleComponent>
         <a-descriptions bordered :column="1" v-if="configuration.length">
@@ -11,7 +11,7 @@
         </a-descriptions>
         <TitleComponent
             v-if="protocol"
-            data="消息协议"
+            :data="$t('Cloud.Ctwing.076179-42')"
             style="margin-top: 20px"
         ></TitleComponent>
         <AccessCard v-if="protocol" :data="{ ...protocol, type: 'protocol' }">
@@ -23,7 +23,9 @@
 import { detail, getProtocolList } from '../../../../../api/link/accessConfig';
 import { ProtocolMapping } from '../../data';
 import AccessCard from '../../components/AccessCard/index.vue';
+import { useI18n } from 'vue-i18n';
 
+const { t: $t } = useI18n();
 const props = defineProps({
     data: {
         type: Object,
@@ -32,16 +34,16 @@ const props = defineProps({
 const configuration = ref([]);
 const protocol = ref();
 const CtwingMap = new Map();
-CtwingMap.set('apiAddress', '接口地址');
+CtwingMap.set('apiAddress', $t('Cloud.OneNet.808542-1'));
 CtwingMap.set('appKey', 'appKey');
 CtwingMap.set('appSecret', 'appSecret');
-CtwingMap.set('description', '说明');
+CtwingMap.set('description', $t('Cloud.OneNet.808542-10'));
 const OneNetMap = new Map();
-OneNetMap.set('apiAddress', '接口地址');
+OneNetMap.set('apiAddress', $t('Cloud.OneNet.808542-1'));
 OneNetMap.set('apiKey', 'apiKey');
-OneNetMap.set('validateToken', '通知Token');
+OneNetMap.set('validateToken', $t('Cloud.OneNet.808542-6'));
 OneNetMap.set('aesKey', 'aesKey');
-OneNetMap.set('description', '说明');
+OneNetMap.set('description',  $t('Cloud.OneNet.808542-10'));
 const queryDetail = async () => {
     const res = await detail(props.data.id);
     if (res.success) {

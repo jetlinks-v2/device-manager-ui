@@ -1,7 +1,7 @@
 <template>
     <a-modal
         width="900px"
-        title="批量映射"
+        :title="$t('EdgeMap.PatchMapping.356258-0')"
         visible
         @ok="handleClick"
         @cancel="handleClose"
@@ -9,11 +9,11 @@
     >
         <div class="map-tree">
             <div class="map-tree-top">
-                采集器的点位名称与属性名称一致时将自动映射绑定；有多个采集器点位名称与属性名称一致时以第1个采集器的点位数据进行绑定
+                {{ $t('EdgeMap.PatchMapping.356258-1') }}
             </div>
             <a-spin :spinning="loading">
                 <div class="map-tree-content">
-                    <a-card class="map-tree-content-card" title="源数据">
+                    <a-card class="map-tree-content-card" :title="$t('EdgeMap.PatchMapping.356258-2')">
                         <a-tree
                             checkable
                             :height="300"
@@ -28,10 +28,10 @@
                         <a-button
                             :disabled="rightList.length >= leftList.length"
                             @click="onRight"
-                            >加入右侧</a-button
+                            >{{ $t('EdgeMap.PatchMapping.356258-3') }}</a-button
                         >
                     </div>
-                    <a-card class="map-tree-content-card" title="采集器">
+                    <a-card class="map-tree-content-card" :title="$t('EdgeMap.PatchMapping.356258-4')">
                         <a-list
                             size="small"
                             :data-source="rightList"
@@ -42,7 +42,7 @@
                                     {{ item.title }}
                                     <template #actions>
                                         <ConfirmModal
-                                            title="确认删除？"
+                                            :title="$t('EdgeMap.PatchMapping.356258-5')"
                                             :onConfirm="() => _delete(item.key)"
                                             ><AIcon type="DeleteOutlined"
                                         /></ConfirmModal>
@@ -69,7 +69,9 @@ import {
 } from '../../../../../../api/instance';
 import { onlyMessage } from '@jetlinks-web/utils';
 import type { TreeProps } from 'ant-design-vue';
+import { useI18n } from 'vue-i18n';
 
+const { t: $t } = useI18n();
 const _props = defineProps({
     metaData: {
         type: Array,
@@ -210,7 +212,7 @@ const _delete = (_key: string) => {
 const handleClick = async () => {
     confirmLoading.value = true;
     if (!rightList.value.length) {
-        onlyMessage('请选择采集器', 'warning');
+        onlyMessage($t('EdgeMap.PatchMapping.356258-6'), 'warning');
     } else {
         const params: any[] = [];
         rightList.value.map((item: any) => {
@@ -238,11 +240,11 @@ const handleClick = async () => {
                     requestList: filterParms,
                 });
                 if (res.status === 200) {
-                    onlyMessage('操作成功');
+                    onlyMessage($t('EdgeMap.PatchMapping.356258-7'));
                     _emits('save');
                 }
             } else {
-                onlyMessage('暂无对应属性的映射', 'error');
+                onlyMessage($t('EdgeMap.PatchMapping.356258-8'), 'error');
             }
         } else {
             if (filterParms && filterParms.length !== 0) {
@@ -262,12 +264,12 @@ const handleClick = async () => {
                         ],
                     });
                     if (res.status === 200) {
-                        onlyMessage('操作成功');
+                        onlyMessage($t('EdgeMap.PatchMapping.356258-7'));
                         _emits('save');
                     }
                 }
             } else {
-                onlyMessage('暂无对应属性的映射', 'error');
+                onlyMessage($t('EdgeMap.PatchMapping.356258-8'), 'error');
             }
         }
     }

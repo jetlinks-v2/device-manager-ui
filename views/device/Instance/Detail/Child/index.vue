@@ -3,20 +3,20 @@
         <div class="header">
             <div>
                 <a-switch v-model:checked="_checked" @change="onChange" />
-                <span class="header-action-text">实时保存</span>
-                <span class="header-action-desc">实时保存映射关系至边端</span>
+                <span class="header-action-text">{{ $t('Child.index.135369-0') }}</span>
+                <span class="header-action-desc">{{ $t('Child.index.135369-1') }}</span>
             </div>
             <a-space>
                 <a-button v-if="!_checked" type="primary" @click="onSaveAll"
-                    >保存</a-button
+                    >{{ $t('Child.index.135369-2') }}</a-button
                 >
             </a-space>
         </div>
         <div class="content">
             <div class="left">
                 <div class="left-header">
-                    <j-tooltip title="为网关设备下绑定的所有子设备列表">
-                        云端设备列表
+                    <j-tooltip :title="$t('Child.index.135369-3')">
+                        {{ $t('Child.index.135369-4') }}
                         <AIcon
                             type="QuestionCircleOutlined"
                             style="margin-left: 2px; margin-right: 15px"
@@ -25,7 +25,7 @@
                     <a-space>
                         <j-permission-button
                             :tooltip="{
-                                title: '新增并绑定',
+                                title: $t('Child.index.135369-5'),
                             }"
                             type="link"
                             @click="onClick('add')"
@@ -34,7 +34,7 @@
                         </j-permission-button>
                         <j-permission-button
                             :tooltip="{
-                                title: '绑定',
+                                title: $t('Child.index.135369-6'),
                             }"
                             type="link"
                             @click="onClick('bind')"
@@ -60,6 +60,7 @@
                                     <a-menu-item
                                         v-for="item in action"
                                         :key="item.key"
+                                        style="width: 150px;"
                                     >
                                         <j-permission-button
                                             :disabled="item.disabled"
@@ -74,8 +75,8 @@
                                         >
                                             <template #icon>
                                                 <AIcon :type="item.icon" />
-                                                {{ item.text }}
                                             </template>
+                                            {{ item.text }}
                                         </j-permission-button>
                                     </a-menu-item>
                                 </a-menu>
@@ -87,7 +88,7 @@
                                 :noPagination="true"
                                 :params="params"
                                 :model="'TABLE'"
-                                :scroll="{ y: 430 }"
+                                :scroll="{ x: 1500, y: 430 }"
                                 :rowSelection="{
                                     selectedRowKeys: _selectedRowKeys,
                                     onChange: onSelectChange,
@@ -132,7 +133,7 @@
                                             </j-ellipsis>
                                         </a>
                                     </div>
-                                    <div v-else>{{ '自动生成' }}</div>
+                                    <div v-else>{{ $t('Child.index.135369-7') }}</div>
                                 </template>
                                 <template #name="scopedSlots">
                                     <j-ellipsis>{{
@@ -169,7 +170,7 @@
                                         @dragover.prevent
                                         @drop="(e) => onDrop(e, scopedSlots)"
                                     >
-                                        从右侧拖拽卡片至此
+                                        {{ $t('Child.index.135369-8') }}
                                     </div>
                                     <div
                                         v-else
@@ -230,16 +231,16 @@
                         </a-dropdown>
                     </div>
                     <a-space class="left-state">
-                        <a-badge status="success" text="在线" />
-                        <a-badge status="error" text="离线" />
-                        <a-badge status="warning" text="禁用" />
+                        <a-badge status="success" :text="$t('Child.index.135369-9')" />
+                        <a-badge status="error" :text="$t('Child.index.135369-10')" />
+                        <a-badge status="warning" :text="$t('Child.index.135369-11')" />
                     </a-space>
                     <div
                         class="left-bottom"
                         @dragover.prevent
                         @drop="onDropAuto"
                     >
-                        未找到对应云端设备？拖动卡片到此处可在云端创建设备并自动绑定
+                        {{ $t('Child.index.135369-12') }}
                     </div>
                 </div>
             </div>
@@ -259,11 +260,11 @@
             </div>
             <div v-if="!fold" class="right">
                 <div class="right-title">
-                    <span>边端未映射设备列表</span>
+                    <span>{{ $t('Child.index.135369-13') }}</span>
                     <a-input-search
                         v-model:value="_search"
                         style="width: 200px"
-                        placeholder="搜索"
+                        :placeholder="$t('Child.index.135369-14')"
                         enter-button
                         allow-clear
                         @search="onRightSearch"
@@ -295,7 +296,7 @@
                                         "
                                     >
                                         <j-ellipsis
-                                        >产品:{{
+                                        >{{ $t('Child.index.135369-15') }}{{
                                                 item.productName
                                             }}</j-ellipsis
                                         >
@@ -310,7 +311,7 @@
                                     </span>
                                     <span>
                                         <j-ellipsis
-                                        >说明:{{
+                                        >{{ $t('Child.index.135369-16') }}{{
                                                 item.describe || '--'
                                             }}</j-ellipsis
                                         >
@@ -327,7 +328,7 @@
                 <div class="right-bottom">
                     <AIcon type="CloudOutlined" style="color: #4096ff" />
                     <span style="color: #646c73; font-size: 12px">
-                        此标志表示该设备所属产品由云端模板创建，支持直接在云端生成对应设备
+                        {{ $t('Child.index.135369-17') }}
                     </span>
                 </div>
             </div>
@@ -337,7 +338,7 @@
         <Bind
             v-if="bindVisible"
             :parentIds="parentIds"
-            title="绑定平台设备"
+            :title="$t('Child.index.135369-18')"
             @change="onClose"
         />
         <actionModal
@@ -385,6 +386,9 @@ import { Modal } from 'ant-design-vue';
 import { TOKEN_KEY } from '@jetlinks-web/constants';
 import { EventEmitter } from '@jetlinks-web/utils';
 // import DeviceDetail from '@/views/edge/Batch/task/Children/DeviceDetail/index.vue';
+import { useI18n } from 'vue-i18n';
+
+const { t: $t } = useI18n();
 
 const props = defineProps({
     isRefresh: {
@@ -433,7 +437,7 @@ const onSelectChange = (keys) => {
 
 const searchColumns = [
     {
-        title: '平台设备名称',
+        title: $t('Child.index.135369-19'),
         dataIndex: 'name',
         key: 'name',
         ellipsis: true,
@@ -442,7 +446,7 @@ const searchColumns = [
         },
     },
     {
-        title: '平台设备ID',
+        title: $t('Child.index.135369-20'),
         dataIndex: 'id',
         key: 'id',
         scopedSlots: true,
@@ -452,7 +456,7 @@ const searchColumns = [
         },
     },
     {
-        title: '所属产品',
+        title: $t('Child.index.135369-21'),
         dataIndex: 'productName',
         key: 'productName',
         scopedSlots: true,
@@ -483,7 +487,7 @@ const searchColumns = [
         },
     },
     {
-        title: '注册时间',
+        title: $t('Child.index.135369-22'),
         dataIndex: 'registryTime',
         key: 'registryTime',
         scopedSlots: true,
@@ -493,7 +497,7 @@ const searchColumns = [
     },
 
     {
-        title: '说明',
+        title: $t('Child.index.135369-23'),
         dataIndex: 'describe',
         key: 'describe',
         scopedSlots: true,
@@ -627,7 +631,7 @@ const onSaveAll = async (cb) => {
     });
     if (res.success) {
         handleRefresh();
-        onlyMessage('操作成功');
+        onlyMessage($t('Child.index.135369-24'));
     }
 };
 
@@ -668,12 +672,12 @@ const getActions = (type, data) => {
     const actions = [
         {
             key: 'view',
-            text: '解绑',
+            text: $t('Child.index.135369-25'),
             tooltip: {
                 title:
                     detail.value.state?.value !== 'online'
-                        ? '网关不在线，暂无法操作'
-                        : '解绑',
+                        ? $t('Child.index.135369-26')
+                        : $t('Child.index.135369-25'),
             },
             disabled: detail.value.state?.value !== 'online',
             icon: 'DisconnectOutlined',
@@ -688,14 +692,14 @@ const getActions = (type, data) => {
 
         {
             key: 'action',
-            text: data.state?.value !== 'notActive' ? '禁用' : '启用',
+            text: data.state?.value !== 'notActive' ? $t('Child.index.135369-11') : $t('Child.index.135369-27'),
             tooltip: {
                 title:
                     detail.value.state?.value !== 'online'
-                        ? '网关不在线，暂无法操作'
+                        ? $t('Child.index.135369-26')
                         : data.state?.value !== 'notActive'
-                            ? '禁用'
-                            : '启用',
+                            ? $t('Child.index.135369-11')
+                            : $t('Child.index.135369-27'),
             },
             disabled: detail.value.state?.value !== 'online',
             icon:
@@ -719,17 +723,17 @@ const getActions = (type, data) => {
         },
         {
             key: 'delete',
-            text: '删除',
+            text: $t('Child.index.135369-28'),
             disabled:
                 detail.value.state?.value !== 'online' ||
                 data.state?.value !== 'notActive',
             tooltip: {
                 title:
                     detail.value.state?.value !== 'online'
-                        ? '网关不在线，暂无法操作'
+                        ? $t('Child.index.135369-26')
                         : data.state.value !== 'notActive'
-                            ? '已启用的设备不能删除'
-                            : '删除',
+                            ? $t('Child.index.135369-29')
+                            : $t('Child.index.135369-28'),
             },
             onClick: async () => {
                 menuVisible.value = false;
@@ -746,12 +750,12 @@ const getActions = (type, data) => {
     const batchActions = [
         {
             key: 'unbind',
-            text: '批量解绑',
+            text: $t('Child.index.135369-30'),
             tooltip: {
                 title:
                     detail.value.state?.value === 'online'
-                        ? '批量解绑'
-                        : '网关不在线，暂无法操作',
+                        ? $t('Child.index.135369-30')
+                        : $t('Child.index.135369-26'),
             },
             disabled: detail.value.state?.value !== 'online',
             icon: 'DisconnectOutlined',
@@ -777,12 +781,12 @@ const getActions = (type, data) => {
 
         {
             key: 'undeploy',
-            text: '批量禁用',
+            text: $t('Child.index.135369-31'),
             tooltip: {
                 title:
                     detail.value.state?.value === 'online'
-                        ? '批量禁用'
-                        : '网关不在线，暂无法操作',
+                        ? $t('Child.index.135369-31')
+                        : $t('Child.index.135369-26'),
             },
             disabled: detail.value.state?.value !== 'online',
             icon: 'StopOutlined',
@@ -807,12 +811,12 @@ const getActions = (type, data) => {
         },
         {
             key: 'deploy',
-            text: '批量启用',
+            text: $t('Child.index.135369-32'),
             tooltip: {
                 title:
                     detail.value.state?.value === 'online'
-                        ? '批量禁用'
-                        : '网关不在线，暂无法操作',
+                        ? $t('Child.index.135369-31')
+                        : $t('Child.index.135369-26'),
             },
             disabled: detail.value.state?.value !== 'online',
             icon: 'CheckCircleOutlined',
@@ -837,12 +841,12 @@ const getActions = (type, data) => {
         },
         {
             key: 'delete',
-            text: '批量删除',
+            text: $t('Child.index.135369-33'),
             tooltip: {
                 title:
                     detail.value.state?.value === 'online'
-                        ? '批量禁用'
-                        : '网关不在线，暂无法操作',
+                        ? $t('Child.index.135369-31')
+                        : $t('Child.index.135369-26'),
             },
             disabled: detail.value.state?.value !== 'online',
             onClick: async () => {
@@ -1111,13 +1115,13 @@ const onDropAuto = () => {
                         onAuto(obj);
                     }
                 } else {
-                    onlyMessage('云端产品不存在', 'error');
+                    onlyMessage($t('Child.index.135369-34'), 'error');
                 }
             }
         });
     } else {
         onlyMessage(
-            '该设备所属产品不是由云端模板创建，不支持支持直接在云端生成对应设备',
+            $t('Child.index.135369-35'),
             'warning',
         );
     }
@@ -1163,9 +1167,9 @@ const onAuto = async (item) => {
 const TabsChange = (next) => {
     if (editStatus.value && LocalStore.get(TOKEN_KEY)) {
         const modal = Modal.confirm({
-            content: '页面改动数据未保存',
-            okText: '保存',
-            cancelText: '不保存',
+            content: $t('Child.index.135369-36'),
+            okText: $t('Child.index.135369-2'),
+            cancelText: $t('Child.index.135369-37'),
             zIndex: 1400,
             closable: true,
             onOk: () => {

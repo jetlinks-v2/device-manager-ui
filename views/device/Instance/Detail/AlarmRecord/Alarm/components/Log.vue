@@ -14,7 +14,7 @@
       ></template>
       <template v-if="column.dataIndex === 'sourceName'">
         <j-ellipsis>
-          设备名称：
+          {{ $t('components.Log.809848-0') }}
           <span class="deviceId" @click="() => gotoDevice(text)">{{
               text
             }}</span></j-ellipsis
@@ -41,9 +41,9 @@
       class="moreBtn"
       type="link"
       @click="gotoAlarmLog"
-    >查看更多 ></a-button
+    >{{ $t('components.Log.809848-1') }} ></a-button
     >
-    <span v-else-if="dataSource.length">已展示全部数据</span>
+    <span v-else-if="dataSource.length">{{ $t('components.Log.809848-2') }}</span>
   </div>
   <LogDetail v-if="visibleDetail" :data="current" @close="close" />
 </template>
@@ -53,7 +53,9 @@ import { queryLogList ,queryPreconditioningLogList } from '../../../../../../../
 import dayjs from 'dayjs';
 import { useMenuStore } from '@/store';
 import LogDetail from './LogDetail.vue';
+import { useI18n } from 'vue-i18n';
 
+const { t: $t } = useI18n();
 const props = defineProps({
   currentId: {
     type: String,
@@ -75,27 +77,27 @@ const dataSource = ref([]);
 const current = ref();
 const columns = [
   {
-    title: '告警时间',
+    title: $t('components.Log.809848-3'),
     dataIndex: 'alarmTime',
     key: 'alarmTime',
   },
   {
-    title: '触发条件',
+    title: $t('components.Log.809848-4'),
     dataIndex: 'triggerDesc',
     key: 'triggerDesc',
   },
   {
-    title: '告警源',
+    title: $t('components.Log.809848-5'),
     dataIndex: 'sourceName',
     key: 'sourceName',
   },
   {
-    title: '告警原因',
+    title: $t('components.Log.809848-6'),
     dataIndex: 'actualDesc',
     key: 'actualDesc',
   },
   {
-    title: '操作',
+    title: $t('components.Log.809848-7'),
     dataIndex: 'action',
     key: 'action',
     width:100

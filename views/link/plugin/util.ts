@@ -1,8 +1,9 @@
+import i18n from "@/locales";
 export const TypeMap = {
-  'deviceGateway': '设备接入网关',
-  'collector': '数据采集',
-  'ruleEngine':'规则引擎',
-  'standalone':'独立运行',
-  'media':'视频接入网关',
-  'ai': 'AI插件'
+  'deviceGateway': i18n.global.t('plugin.util.039029-0'),
+  'collector': i18n.global.t('plugin.util.039029-1'),
+  'ruleEngine':i18n.global.t('plugin.util.039029-2'),
+  'standalone':i18n.global.t('plugin.util.039029-3'),
+  'media':i18n.global.t('plugin.util.039029-4'),
+  'ai': i18n.global.t('plugin.util.039029-5')
 }

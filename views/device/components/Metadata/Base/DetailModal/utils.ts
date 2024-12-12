@@ -1,14 +1,15 @@
+import i18n from "@/locales";
 export const objectColumns = [
     {
-        title: '参数标识',
+        title: i18n.global.t('DetailModal.utils.585921-0'),
         dataIndex: 'id',
     },
     {
-        title: '参数名称',
+        title: i18n.global.t('DetailModal.utils.585921-1'),
         dataIndex: 'name',
     },
     {
-        title: '参数类型',
+        title: i18n.global.t('DetailModal.utils.585921-2'),
         dataIndex: 'valueType',
     },
 ]

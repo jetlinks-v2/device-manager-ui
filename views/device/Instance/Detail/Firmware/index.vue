@@ -21,11 +21,11 @@
                         </div>
                         <div class="firmwareFoot">
                             <div>
-                                <span class="firmwareFootTitle">签名方式：</span
+                                <span class="firmwareFootTitle">{{ $t('Firmware.index.751928-0') }}</span
                                 >{{ i.signMethod }}
                             </div>
                             <div>
-                                <span class="firmwareFootTitle">创建时间：</span
+                                <span class="firmwareFootTitle">{{ $t('Firmware.index.751928-1') }}</span
                                 >{{
                                     dayjs(i.createTime).format(
                                         'YYYY-MM-DD HH:mm:ss',

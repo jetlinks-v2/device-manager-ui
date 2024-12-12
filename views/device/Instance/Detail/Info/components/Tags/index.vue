@@ -2,13 +2,13 @@
     <div style="margin-top: 20px">
         <a-descriptions bordered>
             <template #title>
-                标签
+                {{$t('Operator.index.745665-15')}}
                 <j-permission-button
                     type="link"
                     @click="visible = true"
                     hasPermission="device/Instance:update"
                 >
-                    <AIcon type="EditOutlined" />编辑
+                    <AIcon type="EditOutlined" />{{ $t('Product.index.660348-13') }}
                 </j-permission-button>
             </template>
             <a-descriptions-item

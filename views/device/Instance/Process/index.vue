@@ -3,21 +3,21 @@
         :maskClosable="false"
         width="800px"
         :visible="true"
-        :title="type === 'active' ? '启用' : '同步'"
+        :title="type === 'active' ? $t('Process.index.911277-0') : $t('Process.index.911277-1')"
         :closable="false"
     >
         <div style="margin: 10px 0px 20px 0px; padding-right: 10px;">
             <div v-if="flag">
-                <div>{{ type === 'active' ? '正在启用全部设备' : '正在同步设备状态' }}</div>
+                <div>{{ type === 'active' ? $t('Process.index.911277-2') : $t('Process.index.911277-3') }}</div>
                 <a-progress :percent="_percent" />
             </div>
             <div v-else>
-                <p>{{ type === 'active' ? '启用' : '同步' }}成功：{{ count }}条</p>
-                <p v-if="type === 'active'">启用失败：{{ errCount }}条<a-tooltip title="实例信息页面中的配置项未完善"><AIcon style="margin-left: 5px" type="QuestionCircleOutlined" /></a-tooltip></p>
+                <p>{{ type === 'active' ? $t('Process.index.911277-0') : $t('Process.index.911277-1') }}{{ $t('Process.index.911277-4') }}{{ count }}{{ $t('Process.index.911277-5') }}</p>
+                <p v-if="type === 'active'">{{ $t('Process.index.911277-6') }}{{ errCount }}{{ $t('Process.index.911277-5') }}<a-tooltip :title="$t('Process.index.911277-7')"><AIcon style="margin-left: 5px" type="QuestionCircleOutlined" /></a-tooltip></p>
             </div>
         </div>
         <template #footer>
-            <a-button v-if="!flag" type="primary" @click="handleCancel">完成</a-button>
+            <a-button v-if="!flag" type="primary" @click="handleCancel">{{ $t('Process.index.911277-8') }}</a-button>
         </template>
     </a-modal>
 </template>

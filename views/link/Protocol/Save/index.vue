@@ -1,6 +1,6 @@
 <template>
     <a-modal
-        :title="data.id ? '编辑' : '新增'"
+        :title="data.id ? $t('Save.index.903552-0') : $t('Save.index.903552-1')"
         :visible="true"
         width="700px"
         @cancel="handleCancel"
@@ -14,23 +14,23 @@
             ref="formRef"
         >
             <a-form-item
-                label="名称"
+                :label="$t('Save.index.903552-2')"
                 name="name"
                 :rules="[
-                    { required: true, message: '请输入名称', trigger: 'blur' },
-                    { max: 64, message: '最多可输入64个字符' },
+                    { required: true, message: $t('Save.index.903552-3'), trigger: 'blur' },
+                    { max: 64, message: $t('Save.index.903552-4') },
                 ]"
             >
                 <a-input
-                    placeholder="请输入名称"
+                    :placeholder="$t('Save.index.903552-3')"
                     v-model:value="formData.name"
                 />
             </a-form-item>
             <a-form-item
-                label="类型"
+                :label="$t('Save.index.903552-5')"
                 name="type"
                 :rules="[
-                    { required: true, message: '请选择类型', trigger: 'blur' },
+                    { required: true, message: $t('Save.index.903552-6'), trigger: 'blur' },
                 ]"
             >
                 <j-card-select
@@ -42,19 +42,19 @@
                 />
             </a-form-item>
             <a-form-item
-                label="文件地址"
+                :label="$t('Save.index.903552-7')"
                 :name="['configuration', 'location']"
                 :rules="[
                     {
                         required: true,
-                        message: '请输入文件地址',
+                        message: $t('Save.index.903552-8'),
                         trigger: 'blur',
                     },
                 ]"
             >
                 <a-input
                     v-if="formData.type === 'local'"
-                    placeholder="请输入文件地址"
+                    :placeholder="$t('Save.index.903552-8')"
                     v-model:value="formData.configuration.location"
                 />
                 <FileUpload
@@ -62,9 +62,9 @@
                     v-model:modelValue="formData.configuration.location"
                 />
             </a-form-item>
-            <a-form-item label="说明" name="description">
+            <a-form-item :label="$t('Save.index.903552-9')" name="description">
                 <a-textarea
-                    placeholder="请输入说明"
+                    :placeholder="$t('Save.index.903552-10')"
                     v-model:value="formData.description"
                     :maxlength="200"
                     :rows="3"
@@ -73,7 +73,7 @@
             </a-form-item>
         </a-form>
         <template #footer>
-            <a-button key="back" @click="handleCancel">取消</a-button>
+            <a-button key="back" @click="handleCancel">{{ $t('Save.index.903552-11') }}</a-button>
             <j-permission-button
                 key="submit"
                 type="primary"
@@ -82,7 +82,7 @@
                 style="margin-left: 8px"
                 :hasPermission="`link/Protocol:${id ? 'update' : 'add'}`"
             >
-                确认
+                {{ $t('Save.index.903552-12') }}
             </j-permission-button>
         </template>
     </a-modal>
@@ -94,7 +94,9 @@ import FileUpload from './FileUpload.vue';
 import { save, update } from '../../../../api/link/protocol';
 import { FormDataType } from '../type.d';
 import { link } from '../../../../assets'
+import { useI18n } from 'vue-i18n';
 
+const { t: $t } = useI18n();
 const loading = ref(false);
 const fileLoading = ref(false);
 const formRef = ref<FormInstance>();
@@ -155,7 +157,7 @@ const onSubmit = async () => {
 const handleChange = (info: UploadChangeParam) => {
     fileLoading.value = true;
     if (info.file.status === 'done') {
-        onlyMessage('上传成功！', 'success');
+        onlyMessage($t('Save.index.903552-13'), 'success');
         const result = info.file.response?.result;
         formData.value.configuration.location = result;
         fileLoading.value = false;

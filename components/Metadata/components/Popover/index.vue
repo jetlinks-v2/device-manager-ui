@@ -19,8 +19,8 @@
         </div>
         <div class="footer">
           <a-space>
-            <a-button v-if="showCancel" size="small" @click="cancel">取消</a-button>
-            <a-button v-if="showOk" type="primary" size="small" @click="submit" :loading="confirmLoading">确认</a-button>
+            <a-button v-if="showCancel" size="small" @click="cancel">{{ $t('Popover.index.047673-0') }}</a-button>
+            <a-button v-if="showOk" type="primary" size="small" @click="submit" :loading="confirmLoading">{{ $t('Popover.index.047673-1') }}</a-button>
           </a-space>
         </div>
       </div>

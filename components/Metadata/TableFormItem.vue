@@ -11,7 +11,7 @@
     <div class="table-form-error-target" ></div>
   </a-tooltip>
   <div :id="eventKey" style="position: relative" :class="{'edit-table-form-has-error': errorMap.message }">
-    <slot />
+    <slot></slot>
   </div>
 </template>
 

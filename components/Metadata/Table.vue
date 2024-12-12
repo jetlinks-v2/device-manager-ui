@@ -70,6 +70,10 @@ import {provide, useAttrs, useSlots} from 'vue'
 import Group from './group.vue'
 import {bodyProps} from "./props";
 import {findIndex, get, sortBy} from 'lodash-es'
+import i18n from '@/locales'
+import { useI18n } from 'vue-i18n';
+
+const { t: $t } = useI18n();
 
 const emit = defineEmits(['scrollDown', 'rightMenuClick', 'editChange', 'groupDelete', 'groupEdit'])
 
@@ -80,7 +84,7 @@ const props = defineProps({
     type: [Object, Boolean],
     default: () => ({
       width: 66,
-      title: '序号'
+      title: i18n.global.t('MetadataMap.index.130045-25')
     })
   },
   validateRowKey: {
@@ -139,7 +143,7 @@ const _dataSource = computed(() => {
       const _groupId = item.expands?.groupId
       if (!_groupId) {
         item.expands.groupId = groupActive.value || defaultGroupId
-        item.expands.groupName = groupActive.label || '分组_1'
+        item.expands.groupName = groupActive.label || $t('Metadata.Table.150159-1')
       }
 
       const _optionsItem = _options.get(item.expands.groupId)
@@ -312,7 +316,7 @@ function onResize({width = 0, height}) {
   if (props.serial) {
     const serial = {
       dataIndex: '__serial',
-      title: props.serial.title || '序号',
+      title: props.serial.title || $t('Metadata.Table.150159-0'),
       customRender: (customData) => {
         if (props.serial?.customRender) {
           return props.serial?.customRender(customData)

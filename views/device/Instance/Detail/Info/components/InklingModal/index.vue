@@ -3,7 +3,7 @@
     :width="800"
     :mask-closable="false"
     :visible="true"
-    title="设备ID映射"
+    :title="$t('InklingModal.index.380043-0')"
     :confirmLoading="loading"
     @ok="handleOk"
     @cancel="handleCancel"
@@ -22,7 +22,9 @@
 import InklingDevice from '../../../../../components/InklingDevice'
 import { onlyMessage } from '@jetlinks-web/utils'
 import { savePluginData, getPluginData } from '../../../../../../../api/link/plugin'
+import { useI18n } from 'vue-i18n';
 
+const { t: $t } = useI18n();
 type Emit = {
   (e: 'cancel'): void
   (e: 'submit', data: string): void
@@ -62,7 +64,7 @@ const handleOk = async () => {
       emit('submit', checkKey.value)
     }
   } else {
-    onlyMessage('请选择设备', 'error')
+    onlyMessage($t('InklingModal.index.380043-1'), 'error')
   }
 }
 

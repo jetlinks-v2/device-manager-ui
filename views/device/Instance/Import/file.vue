@@ -4,8 +4,8 @@
             <a-form-item>
                 <template #label>
                     <div>
-                        文件上传
-                        <div class="alert"><AIcon style="margin-right: 5px;" type="InfoCircleOutlined" />导入系统已存在的设备数据，不会更改已存在设备的所属产品信息</div>
+                        {{ $t('Import.file.677857-0') }}
+                        <div class="alert"><AIcon style="margin-right: 5px;" type="InfoCircleOutlined" />{{ $t('Import.file.677857-1') }}</div>
                     </div>
                 </template>
 
@@ -26,19 +26,19 @@
                 >
                     <div class="dragger-box">
                         <AIcon class="icon" type="PlusCircleFilled" />
-                        <span style="margin: 16px 0 8px 0">点击或拖拽上传文件</span>
-                        <span>格式：.xlsx, .csv</span>
+                        <span style="margin: 16px 0 8px 0">{{ $t('Import.file.677857-2') }}</span>
+                        <span>{{ $t('Import.file.677857-3') }}</span>
                     </div>
                 </a-upload-dragger>
             </a-form-item>
             <div style="margin-bottom: 16px">
                 <a-checkbox v-model:checked="modelRef.file.autoDeploy"
-                    >导入并启用</a-checkbox
+                    >{{ $t('Import.file.677857-4') }}</a-checkbox
                 >
             </div>
             <div v-if="importLoading" class="result">
                 <div v-if="flag">
-                    <a-spin size="small" style="margin-right: 10px" />正在导入
+                    <a-spin size="small" style="margin-right: 10px" />{{ $t('Import.file.677857-5') }}
                 </div>
                 <div v-else>
                     <AIcon
@@ -48,23 +48,23 @@
                             font-size: 16px;
                         "
                         type="CheckCircleOutlined"
-                    />导入完成
+                    />{{ $t('Import.file.677857-6') }}
                 </div>
-                <div>导入成功：{{ count }} 个</div>
+                <div>{{ $t('Import.file.677857-7') }}{{ count }} {{ $t('Import.file.677857-8') }}</div>
                 <div>
-                    导入失败：<span style="color: #ff595e">{{ errCount }}</span>
-                    个<a
+                    {{ $t('Import.file.677857-9') }}<span style="color: #ff595e">{{ errCount }}</span>
+                    {{ $t('Import.file.677857-8') }}<a
                         v-if="errMessage && !flag && errCount > 0"
                         style="margin-left: 20px"
                         @click="downError"
-                        >下载</a
+                        >{{ $t('Import.file.677857-10') }}</a
                     >
                 </div>
             </div>
-            <a-form-item label="下载模板">
+            <a-form-item :label="$t('Import.file.677857-11')">
                 <div class="file-download">
-                    <a-button class="btn" @click="downFile('xlsx')">模板格式.xlsx</a-button>
-                    <a-button class="btn" @click="downFile('csv')">模板格式.csv</a-button>
+                    <a-button class="btn" @click="downFile('xlsx')">{{ $t('Import.file.677857-12') }}</a-button>
+                    <a-button class="btn" @click="downFile('csv')">{{ $t('Import.file.677857-13') }}</a-button>
                 </div>
             </a-form-item>
         </a-form>
@@ -78,7 +78,9 @@ import { TOKEN_KEY } from '@jetlinks-web/constants';
 import { LocalStore, onlyMessage, downloadFileByUrl } from '@jetlinks-web/utils';
 import { deviceImport, templateDownload } from '../../../../api/instance';
 import { EventSourcePolyfill } from 'event-source-polyfill';
+import { useI18n } from 'vue-i18n';
 
+const { t: $t } = useI18n();
 const props = defineProps({
     product: {
         type: String,
@@ -108,7 +110,7 @@ const downFile = async (type: string) => {
     if (res) {
         const blob = new Blob([res], { type: type });
         const url = URL.createObjectURL(blob);
-        downloadFileByUrl(url, `设备导入模板`, type);
+        downloadFileByUrl(url, $t('Import.file.677857-14'), type);
     }
 };
 
@@ -119,7 +121,7 @@ const beforeUpload = (_file: any) => {
         _file.type ===
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
     if (!isCsv && !isXlsx) {
-        onlyMessage('请上传.xlsx或.csv格式文件', 'warning');
+        onlyMessage($t('Import.file.677857-15'), 'warning');
     }
     // if (!isXlsx) {
     //     onlyMessage('请上传.xlsx格式文件', 'warning');
@@ -163,14 +165,14 @@ const submitData = async (fileUrl: string) => {
             disabled.value = false;
         };
         source.onerror = (e: { status: number }) => {
-            if (e.status === 403) errMessage.value = '暂无权限，请联系管理员';
+            if (e.status === 403) errMessage.value = $t('Import.file.677857-16');
             flag.value= false;
             disabled.value = false;
             source.close();
         };
         source.onopen = () => {};
     } else {
-        onlyMessage('请先上传文件', 'error');
+        onlyMessage($t('Import.file.677857-17'), 'error');
     }
 };
 

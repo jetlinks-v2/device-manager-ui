@@ -1,21 +1,21 @@
 <template>
   <a-form-item
-    label="时间格式"
+    :label="$t('Date.Item.884272-0')"
     required
     :name="name"
     :rules="[
-            {
-                required: true,
-                message: '请选择时间格式',
-            },
-      ]"
+      {
+        required: true,
+        message: $t('Date.Item.884272-1'),
+      },
+    ]"
   >
     <j-auto-complete
       v-model:value="date"
       :options="options"
       mode="tags"
-      placeholder="请选择时间格式"
-      :dropdownStyle="{ zIndex: 1072}"
+      :placeholder="$t('Date.Item.884272-1')"
+      :dropdownStyle="{ zIndex: 1072 }"
       :getPopupContainer="(node) => tableWrapperRef || node"
       @change="change"
     />
@@ -23,7 +23,7 @@
 </template>
 
 <script setup name="MetadataDateItem">
-import {useTableWrapper} from "../../context";
+import { useTableWrapper } from "../../context";
 
 const props = defineProps({
   value: {
@@ -32,23 +32,23 @@ const props = defineProps({
   },
   name: {
     type: String,
-    default: 'format',
+    default: "format",
   },
 });
 
-const emit = defineEmits(['update:value']);
+const emit = defineEmits(["update:value"]);
 
 const options = [
-  { label: 'yyyy-MM-dd HH:mm:ss', value: 'yyyy-MM-dd HH:mm:ss' },
-  { label: 'yyyy-MM-dd', value: 'yyyy-MM-dd' },
-  { label: 'hh:mm:ss', value: 'hh:mm:ss' },
+  { label: "yyyy-MM-dd HH:mm:ss", value: "yyyy-MM-dd HH:mm:ss" },
+  { label: "yyyy-MM-dd", value: "yyyy-MM-dd" },
+  { label: "hh:mm:ss", value: "hh:mm:ss" },
 ];
 
 const date = ref(props.value);
 
-const tableWrapperRef = useTableWrapper()
+const tableWrapperRef = useTableWrapper();
 const change = () => {
-  emit('update:value', date.value);
+  emit("update:value", date.value);
 };
 
 watch(
@@ -57,9 +57,6 @@ watch(
     date.value = props.value;
   }
 );
-
 </script>
 
-<style scoped>
-
-</style>
+<style scoped></style>

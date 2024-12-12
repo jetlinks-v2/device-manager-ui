@@ -3,7 +3,7 @@
     :maskClosable="false"
     :visible="visible"
     width="800px"
-    title="批量导入"
+    :title="$t('Import.modal.422832-0')"
     @cancel='cancel'
   >
     <div>
@@ -16,7 +16,7 @@
       </div>
       <div v-else-if='steps === 1'>
         <a-form :layout="'vertical'">
-          <a-form-item required label='选择导入方式'>
+          <a-form-item required :label="$t('Import.modal.422832-1')">
             <j-card-select
               :value="[importData.type]"
               :column='typeOptions.length'
@@ -36,21 +36,21 @@
       </div>
     </div>
     <template #footer>
-      <a-button v-if='steps === 0' @click='cancel' >取消</a-button>
-      <a-button v-if='steps !== 0' @click='prev' >上一步</a-button>
-      <a-button v-if='steps !== 2' @click='next' type='primary'>下一步</a-button>
-      <a-button v-if='steps === 2' @click='save' type='primary' :disabled="flag">确认</a-button>
+      <a-button v-if='steps === 0' @click='cancel' >{{ $t('Import.modal.422832-2') }}</a-button>
+      <a-button v-if='steps !== 0' @click='prev' >{{ $t('Import.modal.422832-3') }}</a-button>
+      <a-button v-if='steps !== 2' @click='next' type='primary'>{{ $t('Import.modal.422832-4') }}</a-button>
+      <a-button v-if='steps === 2' @click='save' type='primary' :disabled="flag">{{ $t('Import.modal.422832-5') }}</a-button>
     </template>
   </a-modal>
   <a-modal
     :maskClosable="false"
     :visible="importVisible"
     width="400px"
-    title="导入完成"
+    :title="$t('Import.modal.422832-6')"
     @cancel='importCancel'
     @ok='importCancel'
   >
-    <a-icon type='CheckOutlined' style='color: #2F54EB;' /> 已完成 新增设备 <span style='color: #2F54EB;'>{{count}}</span>
+    <a-icon type='CheckOutlined' style='color: #2F54EB;' /> {{ $t('Import.modal.422832-7') }} <span style='color: #2F54EB;'>{{count}}</span>
   </a-modal>
 </template>
 
@@ -62,7 +62,9 @@ import File from './file.vue'
 import Plugin from './plugin.vue'
 import { importDeviceByPlugin } from '../../../../api/instance'
 import { device } from '../../../../assets'
+import { useI18n } from 'vue-i18n';
 
+const { t: $t } = useI18n();
 const emit = defineEmits(['cancel', 'save']);
 const steps = ref(0) // 步骤
 const importData = reactive<{productId?: string, type?: string}>({
@@ -80,16 +82,16 @@ const typeOptions = computed(() => {
   const array = [
     {
       value: 'file',
-      label: '文件导入',
-      subLabel: '支持上传XLSX、CSV格式文件',
+      label: $t('Import.modal.422832-8'),
+      subLabel: $t('Import.modal.422832-9'),
       iconUrl: device.import1,
     },
   ]
   if (productDetail.value?.accessProvider === 'plugin_gateway') {
     array.push({
       value: 'plugin',
-        label: '插件导入',
-      subLabel: '读取插件中的设备信息同步至平台',
+        label: $t('Import.modal.422832-10'),
+      subLabel: $t('Import.modal.422832-11'),
       iconUrl: device.import2,
     })
   }
@@ -107,7 +109,7 @@ const productChange = (detail: any) => {
 const next = () => {
   if (steps.value === 0) {
     if (!importData.productId) {
-      return onlyMessage('请选择产品', 'error')
+      return onlyMessage($t('Import.modal.422832-12'), 'error')
     }
     if (productDetail.value?.accessProvider !== 'plugin_gateway') {
       importData.type = 'file'
@@ -117,7 +119,7 @@ const next = () => {
     }
   }
   if (steps.value === 1 && !importData.type) {
-    return onlyMessage('请选择导入方式', 'error')
+    return onlyMessage($t('Import.modal.422832-13'), 'error')
   }
   steps.value += 1
 }
@@ -146,7 +148,7 @@ const save = () => {
     if (deviceList.value.length) {
       importDeviceByPlugin(importData.productId!, deviceList.value).then(res => {
         if (res.success) {
-          onlyMessage('操作成功')
+          onlyMessage($t('Import.modal.422832-14'))
           // cancel()
           visible.value = false
           importVisible.value = true
@@ -154,7 +156,7 @@ const save = () => {
         }
       })
     } else {
-      onlyMessage('请选择设备', 'error')
+      onlyMessage($t('Import.modal.422832-15'), 'error')
     }
   }
 }

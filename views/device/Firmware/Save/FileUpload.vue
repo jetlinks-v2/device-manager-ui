@@ -1,7 +1,7 @@
 <template>
     <a-spin :spinning="loading">
         <a-input
-            placeholder="请上传文件"
+            :placeholder="$t('Save.index.978508-31')"
             v-model:value="fileValue"
             style="width: calc(100% - 110px)"
             @change="fileValueChange"
@@ -20,7 +20,7 @@
             <a-button type="primary">
                 <div>
                     <AIcon type="UploadOutlined" /><span class="upload-text"
-                        >上传文件</span
+                        >{{ $t('Import.Import.317604-2') }}</span
                     >
                 </div>
             </a-button>

@@ -1,17 +1,18 @@
 import {getMetadataConfig, getMetadataDeviceConfig} from "../../../../../api/product";
+import i18n from "@/locales";
 
 export const sourceType = [
     {
         value: 'device',
-        label: '设备',
+        label: i18n.global.t('device.data.751276-13'),
     },
     {
         value: 'manual',
-        label: '手动',
+        label: i18n.global.t('device.data.751276-14'),
     },
     {
         value: 'rule',
-        label: '规则',
+        label: i18n.global.t('device.data.751276-15'),
     },
 ]
 

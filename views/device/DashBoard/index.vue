@@ -4,7 +4,7 @@
             <a-row :gutter="24">
                 <a-col :span="6">
                     <TopCard
-                        title="产品数量"
+                        :title="$t('DashBoard.index.954313-0')"
                         :img="device.deviceProduct"
                         :footer="productFooter"
                         :value="productTotal"
@@ -12,7 +12,7 @@
                 </a-col>
                 <a-col :span="6">
                     <TopCard
-                        title="设备数量"
+                        :title="$t('DashBoard.index.954313-1')"
                         :img="device.deviceNumber"
                         :footer="deviceFooter"
                         :value="deviceTotal"
@@ -20,7 +20,7 @@
                 ></a-col>
                 <a-col :span="6"
                     ><TopCard
-                        title="当前在线"
+                        :title="$t('DashBoard.index.954313-2')"
                         :footer="onlineFooter"
                         :value="deviceOnline"
                     >
@@ -28,7 +28,7 @@
                 ></a-col>
                 <a-col :span="6"
                     ><TopCard
-                        title="今日设备消息量"
+                        :title="$t('DashBoard.index.954313-3')"
                         :footer="messageFooter"
                         :value="dayMessage"
                     >
@@ -38,14 +38,14 @@
             <a-row :gutter="24">
                 <a-col :span="24">
                     <div class="message-card">
-                        <Guide title="设备消息">
+                        <Guide :title="$t('DashBoard.index.954313-4')">
                             <template #extra>
                                 <TimeSelect
                                     key="flow-static"
                                     :quickBtnList="[
-                                        { label: '最近1小时', value: 'hour' },
-                                        { label: '最近24小时', value: 'day' },
-                                        { label: '近一周', value: 'week' },
+                                        { label: $t('DashBoard.index.954313-5'), value: 'hour' },
+                                        { label: $t('DashBoard.index.954313-6'), value: 'day' },
+                                        { label: $t('DashBoard.index.954313-7'), value: 'week' },
                                     ]"
                                     :type="'week'"
                                     @change="getEcharts"
@@ -61,7 +61,7 @@
             <a-row :span="24" v-if="AmapKey && isNoCommunity">
                 <a-col :span="24">
                     <div class="device-position">
-                        <Guide title="设备分布"></Guide>
+                        <Guide :title="$t('DashBoard.index.954313-8')"></Guide>
                         <div class="device-map">
                             <Amap></Amap>
                         </div>
@@ -89,18 +89,21 @@ import { useSystemStore } from '@/store/system';
 import dayjs from 'dayjs'
 import { isNoCommunity } from '@/utils/utils'
 import { device } from "../../../assets";
+import { useI18n } from 'vue-i18n';
+
+const { t: $t } = useI18n();
 
 const system = useSystemStore();
 const AmapKey = system.systemInfo.amap?.apiKey;
 let productTotal = ref(0);
 let productFooter = ref<Footer[]>([
     {
-        title: '正常',
+        title: $t('DashBoard.index.954313-9'),
         value: 0,
         status: 'success',
     },
     {
-        title: '禁用',
+        title: $t('DashBoard.index.954313-10'),
         value: 0,
         status: 'error',
     },
@@ -108,12 +111,12 @@ let productFooter = ref<Footer[]>([
 let deviceTotal = ref(0);
 let deviceFooter = ref<Footer[]>([
     {
-        title: '在线',
+        title: $t('DashBoard.index.954313-11'),
         value: 0,
         status: 'success',
     },
     {
-        title: '离线',
+        title: $t('DashBoard.index.954313-12'),
         value: 0,
         status: 'error',
     },
@@ -121,14 +124,14 @@ let deviceFooter = ref<Footer[]>([
 let deviceOnline = ref(0);
 let onlineFooter = ref<Footer[]>([
     {
-        title: '昨日在线',
+        title: $t('DashBoard.index.954313-13'),
         value: 0,
     },
 ]);
 let dayMessage = ref(0);
 let messageFooter = ref<Footer[]>([
     {
-        title: '当月设备消息量',
+        title: $t('DashBoard.index.954313-14'),
         value: 0,
     },
 ]);
@@ -141,7 +144,7 @@ let devMegOptions = ref<any>({});
 const menuStore = useMenuStore();
 // const quickBtnList = [
 //     { label: '昨日', value: 'yesterday' },
-//     { label: '近一周', value: 'week' },
+//     { label: $t('DashBoard.index.954313-7'), value: 'week' },
 //     { label: '近一月', value: 'month' },
 //     { label: '近一年', value: 'year' },
 // ];
@@ -304,7 +307,7 @@ const setOnlineChartOption = (x: Array<any>, y: Array<number>): void => {
         },
         series: [
             {
-                name: '在线数',
+                name: $t('DashBoard.index.954313-15'),
                 data: y,
                 type: 'line',
                 smooth: true, // 是否平滑曲线
@@ -359,7 +362,7 @@ const setTodayDevChartOption = (x: Array<any>, y: Array<number>): void => {
         },
         series: [
             {
-                name: '消息量',
+                name: $t('DashBoard.index.954313-16'),
                 data: y,
                 type: 'line',
                 smooth: true, // 是否平滑曲线
@@ -417,7 +420,7 @@ const setDevMesChartOption = (
         },
         series: [
             // {
-            //     name: '消息量',
+            //     name: $t('DashBoard.index.954313-16'),
             //     data: y,
             //     type: 'bar',
             //     // type: 'line',
@@ -446,7 +449,7 @@ const setDevMesChartOption = (
             //     // },
             // },
             {
-                name: '消息量',
+                name: $t('DashBoard.index.954313-16'),
                 data: y,
                 // data: percentageY,
                 type: 'line',
@@ -545,7 +548,7 @@ const getDevice = () => {
 
 const getEcharts = (data: any) => {
     let _time = '1m';
-    let format = 'M月dd日 HH:mm';
+    let format = $t('DashBoard.index.954313-17');
     let limit = 12;
     const dt = data.end - data.start;
     const hour = 60 * 60 * 1000;
@@ -562,11 +565,11 @@ const getEcharts = (data: any) => {
     } else if (dt > days && dt < year) {
         limit = Math.abs(Math.ceil(dt / days)) + 1;
         _time = '1d';
-        format = 'M月dd日';
+        format = $t('DashBoard.index.954313-18');
     } else if (dt >= year) {
         limit = Math.abs(Math.floor(dt / months));
         _time = '1M';
-        format = 'yyyy年-M月';
+        format = $t('DashBoard.index.954313-19');
     }
 
     dashboard([
@@ -589,7 +592,7 @@ const getEcharts = (data: any) => {
             const x = res.result
                 .map((item: any) =>
                     _time === '1h'
-                        ? `${item.data.timeString}时`
+                        ? $t('DashBoard.index.954313-20', [item.data.timeString])
                         : item.data.timeString,
                 )
                 .reverse();

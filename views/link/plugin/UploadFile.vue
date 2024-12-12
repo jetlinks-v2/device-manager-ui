@@ -15,13 +15,13 @@
         @remove="remove"
     >
         <div>
-            <a-button>上传文件</a-button>
-            <span class="upload-tip">格式要求：.jar .zip</span>
+            <a-button>{{ $t('plugin.UploadFile.628586-0') }}</a-button>
+            <span class="upload-tip">{{ $t('plugin.UploadFile.628586-1') }}</span>
         </div>
     </a-upload>
     <template v-if="loading">
         <a-spin size="small"/>
-        上传中
+        {{ $t('plugin.UploadFile.628586-2') }}
     </template>
 </template>
 
@@ -31,7 +31,9 @@ import { TOKEN_KEY } from '@jetlinks-web/constants';
 import { uploadFile } from '../../../api/link/plugin';
 import type { UploadChangeParam, UploadProps } from 'ant-design-vue';
 import { notification as Notification } from 'ant-design-vue';
+import { useI18n } from 'vue-i18n';
 
+const { t: $t } = useI18n();
 const emit = defineEmits(['update:modelValue', 'change']);
 
 const props = defineProps({
@@ -63,7 +65,7 @@ const beforeUpload: UploadProps['beforeUpload'] = (file, fl) => {
     const arr = file.name.split('.');
     const isFile = ['jar', 'zip'].includes(arr[arr.length - 1]); // file.type === 'application/zip' || file.type === 'application/javj-archive'
     if (!isFile) {
-        onlyMessage('请上传.jar,.zip格式的文件', 'error');
+        onlyMessage($t('plugin.UploadFile.628586-3'), 'error');
         loading.value = false;
         return false;
     }
@@ -76,7 +78,7 @@ const handleChange = async (info: UploadChangeParam) => {
         loading.value = false;
         const result = info.file.response?.result;
         const f = result.accessUrl;
-        onlyMessage('上传成功！', 'success');
+        onlyMessage($t('plugin.UploadFile.628586-4'), 'success');
         value.value = f;
         fileCache.value = info.fileList;
         emit('update:modelValue', result.version);
@@ -86,7 +88,7 @@ const handleChange = async (info: UploadChangeParam) => {
             list.value = fileCache.value;
             Notification.error({
                 // key: '403',
-                message: '系统提示',
+                message: $t('plugin.UploadFile.628586-5'),
                 description: info.file.response?.message,
             });
             // emit('update:modelValue', { err:'file_upload_error'});

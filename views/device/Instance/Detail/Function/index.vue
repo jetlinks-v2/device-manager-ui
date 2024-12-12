@@ -4,15 +4,15 @@
         style="margin-top: 50px"
     >
         <template #description>
-            请配置对应产品的
-            <!-- <a @click="emits('onJump', 'Metadata')">物模型属性功能</a> -->
-            <a @click="onJump">物模型属性功能</a>
+            {{ $t('Function.index.709787-0') }}
+            <!-- <a @click="emits('onJump', 'Metadata')">{{ $t('Function.index.709787-1') }}</a> -->
+            <a @click="onJump">{{ $t('Function.index.709787-1') }}</a>
         </template>
     </j-empty>
     <template v-else>
         <a-tabs v-model:activeKey="activeKey">
-            <a-tab-pane key="Simple" tab="精简模式" />
-            <a-tab-pane key="Advance" tab="高级模式" />
+            <a-tab-pane key="Simple" :tab="$t('Function.index.709787-2')" />
+            <a-tab-pane key="Advance" :tab="$t('Function.index.709787-3')" />
         </a-tabs>
         <component :is="tabs[activeKey]" />
     </template>

@@ -1,17 +1,17 @@
 <template>
     <a-descriptions bordered>
         <template #title>
-            设备信息
+            {{ $t('Info.index.208636-0') }}
             <j-permission-button
                 type="link"
                 @click="visible = true"
                 hasPermission="device/Instance:update"
             >
                 <template #icon><AIcon type="EditOutlined" /></template>
-                编辑
+                {{ $t('Info.index.208636-1') }}
             </j-permission-button>
         </template>
-        <a-descriptions-item label="设备ID">
+        <a-descriptions-item :label="$t('Info.index.208636-2')">
             <div style="display: flex">
                 <div style="flex: 1">
                     <j-ellipsis> {{ instanceStore.current?.id }} </j-ellipsis>
@@ -25,54 +25,54 @@
                     <a-tooltip>
                         <template #title>
                             <p>
-                                通过调用SDK或HTTP请求的方式接入第三方系统设备数据时，第三方系统与平台当前设备对应的设备ID。
+                                {{ $t('Info.index.208636-3') }}
                             </p>
-                            如双方ID值一致，则无需填写
+                            {{ $t('Info.index.208636-4') }}
                         </template>
                         <a
                             v-if="!inklingDeviceId"
                             type="link"
                             @click="giveAnInkling"
                         >
-                            未映射
+                            {{ $t('Info.index.208636-5') }}
                         </a>
                         <a v-else type="link" @click="inkingVisible = true">
-                            已映射
+                            {{ $t('Info.index.208636-6') }}
                         </a>
                     </a-tooltip>
                 </div>
             </div>
         </a-descriptions-item>
-        <a-descriptions-item label="产品名称">{{
+        <a-descriptions-item :label="$t('Info.index.208636-7')">{{
             instanceStore.current?.productName
         }}</a-descriptions-item>
-        <a-descriptions-item label="设备类型">{{
+        <a-descriptions-item :label="$t('Info.index.208636-8')">{{
             instanceStore.current?.deviceType?.text
         }}</a-descriptions-item>
-        <a-descriptions-item label="固件版本">{{
+        <a-descriptions-item :label="$t('Info.index.208636-9')">{{
             instanceStore.current?.firmwareInfo?.version
         }}</a-descriptions-item>
-        <a-descriptions-item label="连接协议">{{
+        <a-descriptions-item :label="$t('Info.index.208636-10')">{{
             instanceStore.current?.transport
         }}</a-descriptions-item>
-        <a-descriptions-item label="消息协议">{{
+        <a-descriptions-item :label="$t('Info.index.208636-11')">{{
             instanceStore.current?.protocolName
         }}</a-descriptions-item>
-        <a-descriptions-item label="创建时间">{{
+        <a-descriptions-item :label="$t('Info.index.208636-12')">{{
             instanceStore.current?.createTime
                 ? dayjs(instanceStore.current?.createTime).format(
                       'YYYY-MM-DD HH:mm:ss',
                   )
                 : ''
         }}</a-descriptions-item>
-        <a-descriptions-item label="注册时间">{{
+        <a-descriptions-item :label="$t('Info.index.208636-13')">{{
             instanceStore.current?.registerTime
                 ? dayjs(instanceStore.current?.registerTime).format(
                       'YYYY-MM-DD HH:mm:ss',
                   )
                 : ''
         }}</a-descriptions-item>
-        <a-descriptions-item label="最后上线时间">{{
+        <a-descriptions-item :label="$t('Info.index.208636-14')">{{
             instanceStore.current?.onlineTime
                 ? dayjs(instanceStore.current?.onlineTime).format(
                       'YYYY-MM-DD HH:mm:ss',
@@ -80,11 +80,11 @@
                 : ''
         }}</a-descriptions-item>
         <a-descriptions-item
-            label="父设备"
+            :label="$t('Info.index.208636-15')"
             v-if="instanceStore.current?.deviceType?.value === 'childrenDevice'"
             >{{ instanceStore.current?.parentId }}</a-descriptions-item
         >
-        <a-descriptions-item label="说明">{{
+        <a-descriptions-item :label="$t('Info.index.208636-16')">{{
             instanceStore.current?.description
         }}</a-descriptions-item>
     </a-descriptions>

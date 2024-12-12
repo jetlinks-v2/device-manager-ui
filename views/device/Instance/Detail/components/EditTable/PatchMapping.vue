@@ -1,23 +1,23 @@
 <template>
     <a-modal
         width="900px"
-        title="批量映射"
+        :title="$t('EditTable.PatchMapping.974352-0')"
         visible
         @ok="handleClick"
         @cancel="handleClose"
     >
         <div class="map-tree">
             <div class="map-tree-top">
-                采集器的点位名称与属性名称一致时将自动映射绑定；有多个采集器点位名称与属性名称一致时以第1个采集器的点位数据进行绑定
+                {{ $t('EditTable.PatchMapping.974352-1') }}
             </div>
             <a-spin :spinning="loading">
                 <div class="map-tree-content">
                     <a-card class="map-tree-content-card">
                         <template #title>
                             <div class="map-tree-header">
-                                <span>数据源</span>
+                                <span>{{ $t('EditTable.PatchMapping.974352-2') }}</span>
                                 <div>
-                                    <a-input placeholder="请输入通道或采集器名称"   v-model:value="searchValue" @change="onSearch">
+                                    <a-input :placeholder="$t('EditTable.PatchMapping.974352-3')"   v-model:value="searchValue" @change="onSearch">
                                         <template #suffix>
                                             <AIcon type="SearchOutlined" />
                                         </template>
@@ -61,10 +61,10 @@
                         <a-button
                             :disabled="rightList.length >= leftList.length"
                             @click="onRight"
-                            >加入右侧</a-button
+                            >{{ $t('EditTable.PatchMapping.974352-4') }}</a-button
                         >
                     </div>
-                    <a-card class="map-tree-content-card" title="采集器">
+                    <a-card class="map-tree-content-card" :title="$t('EditTable.PatchMapping.974352-5')">
                         <a-list
                             size="small"
                             :data-source="rightList"
@@ -75,7 +75,7 @@
                                     {{ item.title }}
                                     <template #actions>
                                         <ConfirmModal
-                                            title="确认删除？"
+                                            :title="$t('EditTable.PatchMapping.974352-6')"
                                             :onConfirm="() => _delete(item.key)"
                                             ><AIcon type="DeleteOutlined"
                                         /></ConfirmModal>
@@ -94,7 +94,10 @@
 import { treeMapping, saveMapping } from '../../../../../../api/instance';
 import { onlyMessage } from '@/utils/comm';
 import { useInstanceStore } from "../../../../../../store/instance";
-import { debounce } from 'lodash-es'
+import { debounce } from 'lodash-es';
+import { useI18n } from 'vue-i18n';
+
+const { t: $t } = useI18n();
 
 const _props = defineProps({
     type: {
@@ -189,7 +192,7 @@ const _delete = (_key: string) => {
 
 const handleClick = async () => {
     if (!rightList.value.length) {
-        onlyMessage('请选择采集器', 'warning');
+        onlyMessage($t('EditTable.PatchMapping.974352-7'), 'warning');
     } else {
         const params: any[] = [];
         rightList.value.forEach((item: any) => {
@@ -217,11 +220,11 @@ const handleClick = async () => {
                 filterParams,
             );
             if (res.status === 200) {
-                onlyMessage('操作成功');
+                onlyMessage($t('EditTable.PatchMapping.974352-8'));
                 _emits('save');
             }
         } else {
-            onlyMessage('暂无对应属性的映射', 'error');
+            onlyMessage($t('EditTable.PatchMapping.974352-9'), 'error');
         }
     }
 };

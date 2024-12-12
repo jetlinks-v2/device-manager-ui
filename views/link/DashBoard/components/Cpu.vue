@@ -2,7 +2,7 @@
     <a-spin :spinning="loading">
         <div class="dash-board">
             <div class="header">
-                <h3>CPU使用率趋势</h3>
+                <h3>{{ $t('components.Cpu.902885-0') }}</h3>
                 <a-range-picker
                     @change="pickerTimeChange"
                     :allowClear="false"
@@ -21,10 +21,10 @@
                             v-model:value="data.type"
                         >
                           <a-radio-button value="hour">
-                            最近1小时
+                            {{ $t('components.Cpu.902885-1') }}
                           </a-radio-button>
-                          <a-radio-button value="day"> 最近24小时 </a-radio-button>
-                          <a-radio-button value="week"> 近一周 </a-radio-button>
+                          <a-radio-button value="day"> {{ $t('components.Cpu.902885-2') }} </a-radio-button>
+                          <a-radio-button value="week"> {{ $t('components.Cpu.902885-3') }} </a-radio-button>
                         </a-radio-group>
                     </template>
                 </a-range-picker>

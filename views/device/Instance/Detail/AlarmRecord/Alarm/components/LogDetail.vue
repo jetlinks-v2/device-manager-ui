@@ -1,10 +1,10 @@
 <template>
   <a-modal
     visible
-    okText="确定"
-    cancelText="取消"
+    :okText="$t('components.LogDetail.536180-0')"
+    :cancelText="$t('components.LogDetail.536180-1')"
     :width="1000"
-    title="告警日志"
+    :title="$t('components.LogDetail.536180-2')"
     :closable="true"
     @ok="closeModal"
     @cancel="closeModal"
@@ -16,20 +16,20 @@
         }}</span>
     </div>
     <a-descriptions bordered :column="2">
-      <a-descriptions-item label="触发条件" :span="2">{{
+      <a-descriptions-item :label="$t('components.LogDetail.536180-3')" :span="2">{{
           data?.triggerDesc
         }}</a-descriptions-item>
-      <a-descriptions-item label="告警原因" :span="2">{{
+      <a-descriptions-item :label="$t('components.LogDetail.536180-4')" :span="2">{{
           data?.actualDesc
         }}</a-descriptions-item>
-      <a-descriptions-item label="告警源" :span="2">
-        设备ID：<a-button
+      <a-descriptions-item :label="$t('components.LogDetail.536180-5')" :span="2">
+        {{ $t('components.LogDetail.536180-6') }}<a-button
         type="link"
         @click="() => gotoDevice(data?.sourceId)"
       >{{ data?.sourceId }}</a-button
       >
       </a-descriptions-item>
-      <a-descriptions-item label="告警流水" :span="2"
+      <a-descriptions-item :label="$t('components.LogDetail.536180-7')" :span="2"
       ><div style="max-height: 500px; overflow-y: auto">
         <JsonViewer
           :value="JSON.parse(data?.alarmInfo)"

@@ -49,7 +49,7 @@
             </div>
             <div class="bottom">
                 <div style="color: rgba(0, 0, 0, 0.65); font-size: 12px">
-                    更新时间
+                    {{  $t('BasicInfo.indev.028379-6')  }}
                 </div>
                 <div class="time-value">
                     {{ _props?.data?.timeString || '--' }}
