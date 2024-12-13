@@ -366,10 +366,8 @@ import {
     getProductListNoPage,
     addDevice,
     editDevice,
-    _undeployCloud,
-    _deployCloud,
-    _unbindCloud,
-    _deleteCloud,
+    _queryByEdge,
+    _commandByEdge
 } from '../../../../../api/instance';
 import { queryProductList } from '../../../../../api/product';
 import { useInstanceStore } from '../../../../../store/instance';
@@ -377,7 +375,6 @@ import { storeToRefs } from 'pinia';
 import dayjs from 'dayjs';
 import Save from './Save/index.vue';
 import Bind from '../ChildDevice/BindChildDevice/index.vue';
-import { _queryByEdge, _commandByEdge } from '@/modules/data-collector-ui/api/edge/batch';
 import { randomString, onlyMessage, LocalStore } from '@jetlinks-web/utils';
 import { cloneDeep } from 'lodash-es';
 import { useMenuStore } from '@/store/menu';

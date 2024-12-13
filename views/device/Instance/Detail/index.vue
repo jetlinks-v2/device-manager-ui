@@ -141,14 +141,13 @@ import Terminal from './Terminal/index.vue';
 import CardManagement from '../components/IotCard/index.vue';
 import { _deploy, _disconnect } from '../../../../api/instance';
 import { onlyMessage } from '@jetlinks-web/utils';
-import { openEdgeUrl } from '@/utils/comm';
+import { openEdgeUrl } from '../../../../utils/utils';
 import { getWebSocket } from '@/utils/websocket';
 import { useRouterParams } from '@jetlinks-web/hooks';
 import { EventEmitter } from '@jetlinks-web/utils';
 import { useSystemStore, useMenuStore, useAuthStore} from '@/store';
 import { isNoCommunity } from '@/utils/utils';
 import { device } from "../../../../assets";
-import {getRemoteProxyUrl, getRemoteSystem, getRemoteToken} from "@/modules/data-collector-ui/api/edge/device";
 import { useI18n } from 'vue-i18n';
 
 const { t: $t } = useI18n();

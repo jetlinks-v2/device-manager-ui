@@ -17,9 +17,9 @@
 <script setup lang="ts" name="Shadow">
 import 'vue3-json-viewer/dist/index.css';
 import { JsonViewer } from 'vue3-json-viewer';
-import { useInstanceStore } from '@/modules/device-manager-ui/store/instance';
+import { useInstanceStore } from '../../../../../store/instance';
 import { onlyMessage } from '@/utils/comm';
-import { getDeviceShadow } from '@/modules/device-manager-ui/api/instance';
+import { getDeviceShadow } from '../../../../..//api/instance';
 import { useI18n } from 'vue-i18n';
 
 const { t: $t } = useI18n();

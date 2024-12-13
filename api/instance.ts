@@ -721,3 +721,25 @@ export const getDeviceShadow = (id: string) => request.get(`/device/shadow/${id}
 export const proxyUrl = (deviceId: string, url: string) => request.get(`/edge/device/${deviceId}/_proxy?url=${url}`, {}, { responseType: 'blob' })
 
 export const tagsList = () => request.get('/device-instance/tags/key')
+
+export const getRemoteProxyUrl = (deviceId: string) => request.post(`/edge/device/${deviceId}/_proxy/_start?timeoutMinute=10`)
+
+export const getRemoteToken = (deviceId: string, data: any) => request.post(`/edge/device/${deviceId}/token`, data)
+
+export const getRemoteSystem = (deviceId: string, data: any) => request.post(`/edge/device/${deviceId}/_/system/config/scopes`, data)
+
+/**
+ * 访问边端设备列表
+ * @param thingId 边缘网关ID
+ * @param internalId 连接id
+ * @param data
+ */
+export const _queryByEdge = (thingId: string,data:any) => request.post(`/edge/device/${thingId}/_/edge/command/QueryBindInfoList/_execute`,data)
+
+/**
+ * 绑定子设备命令
+ * @param thingId 边缘网关ID
+ * @param commandId 命令ID{BindMasterDevice:绑定单个,BatchBindDevice:批量绑定,UnbindDevice:解绑}
+ * @param data
+ */
+export const _commandByEdge = (thingId: string,commandId:string,data:any) => request.post(`/edge/device/${thingId}/_/edge/command/${commandId}/_execute`,data)

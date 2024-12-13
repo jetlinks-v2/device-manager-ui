@@ -30,7 +30,7 @@ import { recommendList } from '../typing';
 import { useMenuStore } from '@/store';
 import { onlyMessage } from '@jetlinks-web/utils';
 import { useI18n } from 'vue-i18n'
-import {home} from "@/modules/device-manager-ui/assets";
+import {home} from "../../../assets";
 
 const { t: $t } = useI18n()
 const { jumpPage: _jumpPage } = useMenuStore();
