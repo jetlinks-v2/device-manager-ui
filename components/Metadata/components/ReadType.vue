@@ -1,5 +1,5 @@
 <template>
-  <j-form-item
+  <a-form-item
     name="type"
     :label="$t('components.ReadType.885151-0')"
     :rules="[
@@ -17,7 +17,7 @@
       :disabled="disabled"
       @change="onChange"
     />
-  </j-form-item>
+  </a-form-item>
 </template>
 
 <script setup lang="ts" name="ReadType">

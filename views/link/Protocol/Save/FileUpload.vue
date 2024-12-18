@@ -32,7 +32,9 @@ import { onlyMessage } from '@/utils/comm';
 import type { UploadChangeParam, UploadProps } from 'ant-design-vue';
 import { notification as Notification } from 'ant-design-vue';
 import { useSystemStore } from '@/store/system';
+import { useI18n } from 'vue-i18n';
 
+const { t: $t } = useI18n();
 const emit = defineEmits(['update:modelValue', 'change']);
 
 const props = defineProps({
