@@ -140,7 +140,7 @@
                                             !!item.type?.expands?.required
                                         "
                                     >
-                                        <ValueItem
+                                        <j-value-item
                                             v-model:modelValue="
                                                 formData.configuration[
                                                     item.name
