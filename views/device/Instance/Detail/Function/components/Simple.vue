@@ -64,7 +64,7 @@
                                             }"
                                             has-feedback
                                         >
-                                            <ValueItem
+                                            <j-value-item
                                                 :ref="`valueItemRef${record.id}`"
                                                 v-model:modelValue="
                                                     record.value

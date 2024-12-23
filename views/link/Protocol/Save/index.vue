@@ -3,6 +3,7 @@
         :title="data.id ? $t('Save.index.903552-0') : $t('Save.index.903552-1')"
         :visible="true"
         width="700px"
+        :mask-closable="false"
         @cancel="handleCancel"
     >
         <a-form
