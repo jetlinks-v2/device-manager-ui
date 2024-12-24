@@ -1,6 +1,6 @@
 <template>
   <j-page-container>
-    <FullPage style="padding: 24px">
+    <FullPage :fixed="false" style="padding: 24px">
       <div class="container">
         <a-form
           :model="formData"
@@ -827,7 +827,9 @@ import LocalAddressSelect from "./LocalAddressSelect.vue";
 import { isNoCommunity } from "@/utils/utils";
 import { useTypeStore } from "../../../../store/type";
 import { storeToRefs } from "pinia";
+import { useI18n } from "vue-i18n";
 
+const { t: $t } = useI18n();
 const route = useRoute();
 const NetworkType = route.query.type as string;
 const view = NetworkType ? "false" : (route.query.view as string);
