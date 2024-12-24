@@ -4,7 +4,9 @@
             ref="tableRef"
             :columns="columns"
             :request="query"
+            modeValue="CARD"
             :params="_params"
+            :gridColumns="[2]"
             :bodyStyle="{ padding: '0 0 0 20px' }"
             :scroll="{y : 450}"
         >
@@ -326,6 +328,7 @@ const query = (params: Record<string, any>) =>
                 pageSize: params.pageSize || 12,
                 total: arr.length,
             },
+            success: true,
             status: 200,
         });
         getDashboard();
