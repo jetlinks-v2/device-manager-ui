@@ -1,5 +1,5 @@
 <template>
-    <j-modal
+    <a-modal
         :maskClosable="false"
         width="600px"
         :visible="true"
@@ -11,39 +11,39 @@
         :confirmLoading="btnLoading"
     >
         <div style="margin-top: 10px">
-            <j-form
+            <a-form
                 :layout="'vertical'"
                 ref="formRef"
                 :rules="rules"
                 :model="modelRef"
             >
-                <j-form-item :label="$t('IotCard.Save.570033-4')" name="id">
-                    <j-input
+                <a-form-item :label="$t('IotCard.Save.570033-4')" name="id">
+                    <a-input
                         v-model:value="modelRef.id"
                         :placeholder="$t('IotCard.Save.570033-5')"
                         :disabled="type === 'edit'"
-                    ></j-input>
-                </j-form-item>
-                <j-form-item name="iccId">
+                    ></a-input>
+                </a-form-item>
+                <a-form-item name="iccId">
                     <template #label>
                         <span>
                             ICCID
-                            <j-tooltip :title="$t('IotCard.Save.570033-6')">
+                            <a-tooltip :title="$t('IotCard.Save.570033-6')">
                                 <AIcon
                                     type="QuestionCircleOutlined"
                                     style="margin-left: 2px"
                                 />
-                            </j-tooltip>
+                            </a-tooltip>
                         </span>
                     </template>
-                    <j-input
+                    <a-input
                         v-model:value="modelRef.iccId"
                         :placeholder="$t('IotCard.Save.570033-7')"
                         :disabled="type === 'edit'"
                     />
-                </j-form-item>
-                <j-form-item :label="$t('IotCard.Save.570033-8')" name="operatorName">
-                  <j-select
+                </a-form-item>
+                <a-form-item :label="$t('IotCard.Save.570033-8')" name="operatorName">
+                  <a-select
                     allowClear
                     showSearch
                     :filter-option="filterOption"
@@ -55,10 +55,10 @@
                       modelRef.platformConfigId = undefined
                     }'
                   >
-                  </j-select>
-                </j-form-item>
-                <j-form-item :label="$t('IotCard.Save.570033-10')" name="platformConfigId">
-                    <j-select
+                  </a-select>
+                </a-form-item>
+                <a-form-item :label="$t('IotCard.Save.570033-10')" name="platformConfigId">
+                    <a-select
                         showSearch
                         :filter-option="filterOption"
                         :disabled="type === 'edit'"
@@ -67,12 +67,12 @@
                         v-model:value="modelRef.platformConfigId"
                         :placeholder="$t('IotCard.Save.570033-11')"
                     >
-                </j-select>
-                </j-form-item>
+                </a-select>
+                </a-form-item>
 
 
-                <j-form-item :label="$t('IotCard.Save.570033-12')" name="cardType">
-                    <j-select
+                <a-form-item :label="$t('IotCard.Save.570033-12')" name="cardType">
+                    <a-select
                         allowClear
                         showSearch
                         :disabled="type === 'edit'"
@@ -81,19 +81,19 @@
                         v-model:value="modelRef.cardType"
                         :placeholder="$t('IotCard.Save.570033-13')"
                     >
-                    </j-select>
-                </j-form-item>
-                <j-form-item :label="$t('IotCard.Save.570033-14')" name="describe">
-                    <j-textarea
+                    </a-select>
+                </a-form-item>
+                <a-form-item :label="$t('IotCard.Save.570033-14')" name="describe">
+                    <a-textarea
                         v-model:value="modelRef.describe"
                         :placeholder="$t('IotCard.Save.570033-15')"
                         showCount
                         :maxlength="200"
                     />
-                </j-form-item>
-            </j-form>
+                </a-form-item>
+            </a-form>
         </div>
-    </j-modal>
+    </a-modal>
 </template>
 
 <script lang="ts" setup>

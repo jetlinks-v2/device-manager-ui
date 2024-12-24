@@ -17,12 +17,12 @@
                   <a-button
                     type="link"
                     @click="
-                                                () => {
-                                                    visible = true;
-                                                    current = detail;
-                                                    saveType = 'edit';
-                                                }
-                                            "
+                      () => {
+                        visible = true;
+                        current = detail;
+                        saveType = 'edit';
+                      }
+                    "
                   >
                     <AIcon type="EditOutlined"></AIcon>
                     {{ $t('IotCard.index.369962-1') }}
@@ -44,8 +44,8 @@
                 platformTypeList.find(
                   (item) =>
                     item.value ===
-                    detail.operatorPlatformType?.text,
-                )?.label || detail.operatorPlatformType?.text
+                    detail.operatorName,
+                )?.label || detail.operatorName
               }}</a-descriptions-item>
             <a-descriptions-item :label="$t('IotCard.index.369962-5')">{{
                 detail.platformConfigName
@@ -94,15 +94,15 @@
                 v-if="deactivateData.show"
                 style="padding-left: 8px"
               >
-                                    <a-tooltip :title="deactivateData.tip">
-                                        <AIcon
-                                          type="ExclamationCircleOutlined"
-                                          style="
-                                                color: var(--ant-error-color);
-                                            "
-                                        />
-                                    </a-tooltip>
-                                </span>
+                <a-tooltip :title="deactivateData.tip">
+                  <AIcon
+                    type="ExclamationCircleOutlined"
+                    style="
+                          color: var(--ant-error-color);
+                      "
+                  />
+                </a-tooltip>
+              </span>
             </a-descriptions-item>
             <a-descriptions-item :label="$t('IotCard.index.369962-14')">
               {{ detail?.cardStateType?.text }}
@@ -152,9 +152,9 @@
                     </div>
                     <a-tooltip placement="bottomLeft">
                       <template #title>
-                                                    <span
-                                                    >{{ dayTotal }} M</span
-                                                    >
+                        <span>
+                          {{ dayTotal }} M
+                        </span>
                       </template>
                       <div class="value">
                         {{ dayTotal }}
@@ -177,12 +177,9 @@
                     </div>
                     <a-tooltip placement="bottomLeft">
                       <template #title>
-                                                    <span
-                                                    >{{
-                                                        monthTotal
-                                                      }}
-                                                        M</span
-                                                    >
+                        <span>
+                          {{ monthTotal }}M
+                        </span>
                       </template>
                       <div class="value">
                         {{ monthTotal }}
@@ -202,9 +199,9 @@
                     </div>
                     <a-tooltip placement="bottomLeft">
                       <template #title>
-                                                    <span
-                                                    >{{ yearTotal }} M</span
-                                                    >
+                        <span>
+                          {{ yearTotal }} M
+                        </span>
                       </template>
                       <div class="value">
                         {{ yearTotal }}
