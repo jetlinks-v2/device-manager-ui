@@ -180,7 +180,7 @@ const columns = [
         title: $t('Firmware.index.858355-7'),
         key: 'action',
         fixed: 'right',
-        width: 120,
+        width: 150,
         scopedSlots: true,
     },
 ];
