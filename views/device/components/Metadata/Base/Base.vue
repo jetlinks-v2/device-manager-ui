@@ -8,6 +8,7 @@
       :height="560"
       :disableMenu="!hasOperate('add', type)"
       :openGroup="type === 'properties'"
+      :scroll="{x: 'max-content'}"
       :rowSelection="{
         selectedRowKeys: selectedRowKeys
       }"

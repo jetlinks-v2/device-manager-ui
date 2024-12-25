@@ -296,7 +296,7 @@ export const useColumns = (dataSource: Ref<MetadataItem[]>, type?: MetadataType,
     {
       title: i18n.global.t('Base.columns.448718-25'),
       dataIndex: 'other',
-      width: 110,
+      width: i18n.global.locale === 'zh' ? 110 : 170,
     },
   ]);
 
@@ -328,7 +328,7 @@ export const useColumns = (dataSource: Ref<MetadataItem[]>, type?: MetadataType,
     {
       title: i18n.global.t('Base.columns.448718-28'),
       dataIndex: 'output',
-      width: 240,
+      width: 200,
       form: {
         rules: [{
           asyncValidator: async (rule: any, value: any) => {
@@ -359,7 +359,7 @@ export const useColumns = (dataSource: Ref<MetadataItem[]>, type?: MetadataType,
     {
       title: i18n.global.t('Base.columns.448718-25'),
       dataIndex: 'other',
-      width: 120,
+      width: i18n.global.locale === 'zh' ? 120 : 170,
     },
     {
       title: i18n.global.t('Base.columns.448718-29'),
@@ -395,7 +395,7 @@ export const useColumns = (dataSource: Ref<MetadataItem[]>, type?: MetadataType,
     {
       title: i18n.global.t('Base.columns.448718-28'),
       dataIndex: 'valueType',
-      width: 110,
+      width: i18n.global.locale === 'zh' ? 110 : 170,
       form: {
         required: true,
         rules: [{
@@ -418,7 +418,7 @@ export const useColumns = (dataSource: Ref<MetadataItem[]>, type?: MetadataType,
     {
       title: i18n.global.t('Base.columns.448718-25'),
       dataIndex: 'other',
-      width: 120,
+      width: i18n.global.locale === 'zh' ? 120 : 170,
     },
     {
       title: i18n.global.t('Base.columns.448718-29'),
@@ -487,7 +487,7 @@ export const useColumns = (dataSource: Ref<MetadataItem[]>, type?: MetadataType,
     {
       title: i18n.global.t('Base.columns.448718-25'),
       dataIndex: 'other',
-      width: 110,
+      width: i18n.global.locale === 'zh' ? 110 : 170,
     },
     {
       title: i18n.global.t('Base.columns.448718-29'),
