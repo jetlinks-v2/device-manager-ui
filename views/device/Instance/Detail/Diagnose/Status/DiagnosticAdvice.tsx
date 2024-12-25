@@ -1,5 +1,5 @@
-import { Badge, Descriptions, Modal, Tooltip, DescriptionsItem } from "ant-design-vue"
-import { AIcon } from '@jetlinks-web/components'
+import { Badge, Descriptions, Modal, DescriptionsItem } from "ant-design-vue"
+import { AIcon, Ellipsis } from '@jetlinks-web/components'
 import TitleComponent from '@/components/TitleComponent/index.vue'
 import styles from './index.module.less'
 import _ from "lodash-es";
@@ -48,7 +48,7 @@ const DiagnosticAdvice = defineComponent({
                     </DescriptionsItem>
                     {data?.info?.address?.length > 0 && (
                         <DescriptionsItem span={1} label={i18n.global.t('Status.DiagnosticAdvice.980298-5')}>
-                            <Tooltip
+                            <Ellipsis
                                 placement="topLeft"
                                 title={
                                     <div class="serverItem">
@@ -69,7 +69,7 @@ const DiagnosticAdvice = defineComponent({
                                         </div>
                                     ))}
                                 </div>
-                            </Tooltip>
+                            </Ellipsis>
                         </DescriptionsItem>
                     )}
 
@@ -81,9 +81,9 @@ const DiagnosticAdvice = defineComponent({
                                 item?.description ? (
                                     <div>
                                         <span style={{ marginRight: '10px' }}>{item.name}</span>
-                                        <Tooltip title={item.description}>
+                                        <Ellipsis title={item.description}>
                                             <AIcon type="QuestionCircleOutlined" />
-                                        </Tooltip>
+                                        </Ellipsis>
                                     </div>
                                 ) : (
                                     item.name

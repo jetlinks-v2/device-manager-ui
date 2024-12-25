@@ -223,8 +223,9 @@ onUnmounted(() => {
             display: flex;
 
             .diagnose-radio-item {
-                width: 150px;
+                min-width: 150px;
                 height: 35px;
+                padding: 0 10px;
                 margin-right: 8px;
                 color: #00000073;
                 line-height: 35px;

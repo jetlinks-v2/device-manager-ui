@@ -3,6 +3,7 @@ import { useMenuStore } from "@/store/menu";
 import { Button, Modal, Descriptions, DescriptionsItem, Space } from "ant-design-vue"
 import { AIcon } from '@jetlinks-web/components'
 import styles from './index.module.less'
+import i18n from "@/locales";
 
 const ManualInspection = defineComponent({
     props: {
@@ -27,13 +28,13 @@ const ManualInspection = defineComponent({
                         <div style={{ flex: 1 }}>
                             <div class={styles.alert}>
                                 <span style={{ marginRight: '10px' }}><AIcon type="InfoCircleOutlined" /></span>
-                                请检查配置项是否填写正确，若您确定该项无需诊断可
+                                {i18n.global.t('Status.index.565893-69')}
                                 <Button type="link" style="padding: 0"
                                     onClick={() => {
                                         emit('save', data)
                                     }}
                                 >
-                                    忽略
+                                    {i18n.global.t('Status.index.565893-20')}
                                 </Button>
                             </div>
                             <div style={{ marginTop: '10px' }}>
@@ -53,7 +54,7 @@ const ManualInspection = defineComponent({
                             <div
                                 style={{ width: '50%', border: '1px solid #f0f0f0', padding: '10px', borderLeft: 'none' }}
                             >
-                                <h4>诊断项说明</h4>
+                                <h4>{i18n.global.t('Status.index.565893-70')}</h4>
                                 <p>{data?.data?.description}</p>
                             </div>
                         ) : (
@@ -67,26 +68,26 @@ const ManualInspection = defineComponent({
                         <div style={{ flex: 1 }}>
                             <div class={styles.alert}>
                                 <span style={{ marginRight: '10px' }}><AIcon type="InfoCircleOutlined" /></span>
-                                请检查配置项是否填写正确，若您确定该项无需诊断可
+                                {i18n.global.t('Status.index.565893-69')}
                                 <Button type="link" style="padding: 0"
                                     onClick={() => {
                                         emit('save', data)
                                     }}
                                 >
-                                    忽略
+                                    {i18n.global.t('Status.index.565893-20')}
                                 </Button>
                             </div>
                             <div style={{ marginTop: '10px' }}>
                                 <Descriptions title={data?.data?.name} layout="vertical" bordered>
                                     {data.configuration?.provider === 'OneNet' ? (
                                         <>
-                                            <DescriptionsItem label={'接口地址'}>
+                                            <DescriptionsItem label={i18n.global.t('Status.index.565893-71')}>
                                                 {data?.configuration?.configuration?.apiAddress || ''}
                                             </DescriptionsItem>
                                             <DescriptionsItem label={'apiKey'}>
                                                 {data?.configuration?.configuration?.apiKey || ''}
                                             </DescriptionsItem>
-                                            <DescriptionsItem label={'通知Token'}>
+                                            <DescriptionsItem label={i18n.global.t('Status.index.565893-72')}>
                                                 {data?.configuration?.configuration?.validateToken || ''}
                                             </DescriptionsItem>
                                             <DescriptionsItem label={'aesKey'}>
@@ -95,7 +96,7 @@ const ManualInspection = defineComponent({
                                         </>
                                     ) : (
                                         <>
-                                            <DescriptionsItem label={'接口地址'}>
+                                            <DescriptionsItem label={i18n.global.t('Status.index.565893-71')}>
                                                 {data?.configuration?.configuration?.apiAddress || ''}
                                             </DescriptionsItem>
                                             <DescriptionsItem label={'appKey'}>
@@ -113,7 +114,7 @@ const ManualInspection = defineComponent({
                             <div
                                 style={{ width: '50%', border: '1px solid #f0f0f0', padding: '10px', borderLeft: 'none' }}
                             >
-                                <h4>诊断项说明</h4>
+                                <h4>{i18n.global.t('Status.index.565893-70')}</h4>
                                 <p>{data?.configuration?.configuration?.description}</p>
                             </div>
                         ) : (
@@ -127,56 +128,56 @@ const ManualInspection = defineComponent({
                         <div style={{ flex: 1 }}>
                             <div class={styles.alert}>
                                 <span style={{ marginRight: '10px' }}><AIcon type="InfoCircleOutlined" /></span>
-                                请检查配置项是否填写正确，若您确定该项无需诊断可
+                                {i18n.global.t('Status.index.565893-69')}
                                 <Button type="link" style="padding: 0"
                                     onClick={() => {
                                         emit('save', data)
                                     }}
                                 >
-                                    忽略
+                                    {i18n.global.t('Status.index.565893-20')}
                                 </Button>
                             </div>
                             <div style={{ marginTop: '10px' }}>
                                 <Descriptions title={data?.data?.name} layout="vertical" bordered>
                                     {data?.configuration?.configuration?.shareCluster ? (
                                         <>
-                                            <DescriptionsItem label={'SIP 域'}>
+                                            <DescriptionsItem label={i18n.global.t('Status.index.565893-73')}>
                                                 {data?.configuration?.configuration?.domain || ''}
                                             </DescriptionsItem>
                                             <DescriptionsItem label={'SIP ID'}>
                                                 {data?.configuration?.configuration?.sipId || ''}
                                             </DescriptionsItem>
-                                            <DescriptionsItem label={'集群'}>
-                                                {data?.configuration?.configuration?.shareCluster ? '共享配置' : '独立配置'}
+                                            <DescriptionsItem label={i18n.global.t('Status.index.565893-74')}>
+                                                {data?.configuration?.configuration?.shareCluster ? i18n.global.t('Status.index.565893-75') : i18n.global.t('Status.index.565893-76')}
                                             </DescriptionsItem>
-                                            <DescriptionsItem label={'SIP 地址'}>
+                                            <DescriptionsItem label={i18n.global.t('Status.index.565893-77')}>
                                                 {`${data?.configuration?.configuration?.hostPort?.host}:${data?.configuration?.configuration?.hostPort?.port}`}
                                             </DescriptionsItem>
-                                            <DescriptionsItem label={'公网 Host'}>
+                                            <DescriptionsItem label={i18n.global.t('Status.index.565893-78')}>
                                                 {`${data?.configuration?.configuration?.hostPort?.publicHost}:${data?.configuration?.configuration?.hostPort?.publicPort}`}
                                             </DescriptionsItem>
                                         </>
                                     ) : (
                                         <>
-                                            <DescriptionsItem label={'SIP 域'}>
+                                            <DescriptionsItem label={i18n.global.t('Status.index.565893-73')}>
                                                 {data?.configuration?.configuration?.domain || ''}
                                             </DescriptionsItem>
                                             <DescriptionsItem label={'SIP ID'}>
                                                 {data?.configuration?.configuration?.sipId || ''}
                                             </DescriptionsItem>
-                                            <DescriptionsItem label={'集群'}>
-                                                {data?.configuration?.configuration?.shareCluster ? '共享配置' : '独立配置'}
+                                            <DescriptionsItem label={i18n.global.t('Status.index.565893-74')}>
+                                                {data?.configuration?.configuration?.shareCluster ? i18n.global.t('Status.index.565893-75') : i18n.global.t('Status.index.565893-76')}
                                             </DescriptionsItem>
                                             {data?.configuration?.configuration?.cluster.map((i: any, it: number) => (
                                                 <div key={it}>
-                                                    <div>节点{it + 1}</div>
-                                                    <DescriptionsItem label={'节点名称'}>
+                                                    <div>{i18n.global.t('Status.index.565893-79', [it + 1])}</div>
+                                                    <DescriptionsItem label={i18n.global.t('Status.index.565893-80')}>
                                                         {i?.clusterNodeId || ''}
                                                     </DescriptionsItem>
-                                                    <DescriptionsItem label={'SIP 地址'}>
+                                                    <DescriptionsItem label={i18n.global.t('Status.index.565893-77')}>
                                                         {`${i.host}:${i?.port}`}
                                                     </DescriptionsItem>
-                                                    <DescriptionsItem label={'公网 Host'}>
+                                                    <DescriptionsItem label={i18n.global.t('Status.index.565893-78')}>
                                                         {`${i?.publicHost}:${i?.publicPort}`}
                                                     </DescriptionsItem>
                                                 </div>
@@ -190,7 +191,7 @@ const ManualInspection = defineComponent({
                             <div
                                 style={{ width: '50%', border: '1px solid #f0f0f0', padding: '10px', borderLeft: 'none' }}
                             >
-                                <h4>诊断项说明</h4>
+                                <h4>{i18n.global.t('Status.index.565893-70')}</h4>
                                 <p>{data?.configuration?.description}</p>
                             </div>
                         ) : (
@@ -204,7 +205,7 @@ const ManualInspection = defineComponent({
         };
 
         return () => <Modal
-            title="人工检查"
+            title={i18n.global.t('Status.index.565893-17')}
             visible
             width={1000}
             onOk={() => {
@@ -227,10 +228,10 @@ const ManualInspection = defineComponent({
                             }
                         });
                         }
-                    }}>去修改</Button>
+                    }}>{i18n.global.t('Status.index.565893-81')}</Button>
                     <Button onClick={() => {
                         emit('save', data)
-                    }}>确认无误</Button>
+                    }}>{i18n.global.t('Status.index.565893-22')}</Button>
                 </Space>
             }}
         >

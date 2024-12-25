@@ -37,7 +37,7 @@
                             ><AIcon type="QuestionCircleOutlined"
                         /></a-tooltip>
                     </template>
-                    <ValueItem
+                    <j-value-item
                         v-model:modelValue="modelRef[i.property]"
                         :itemType="i.type.type"
                         :options="getOptions(i)"
