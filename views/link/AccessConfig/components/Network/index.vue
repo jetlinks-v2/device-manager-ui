@@ -430,7 +430,7 @@ const queryProcotolList = async (id: string, params = {}) => {
 };
 
 const addNetwork = () => {
-    const url = menuStory.menus['link/Type/Detail']?.path;
+    const url = menuStory.menusMap.get('link/Type/Detail')?.path;
     const tab: any = window.open(
         `${window.location.origin + window.location.pathname}#${url}?type=${
             NetworkTypeMapping.get(props.provider?.id) || ''

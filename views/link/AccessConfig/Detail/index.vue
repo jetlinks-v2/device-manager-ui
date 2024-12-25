@@ -7,7 +7,7 @@
                     :dataSource="dataSource"
                 ></Provider>
             </div>
-            <FullPage v-else>
+            <FullPage :fixed="false" v-else>
                 <a-card :bordered="false">
                     <div>
                         <div class="go-back" v-if="id === ':id'">
