@@ -160,7 +160,7 @@ import { Form } from 'ant-design-vue';
 import { isObject } from 'lodash-es';
 import { useI18n } from 'vue-i18n';
 
-const { t: $t } = useI18n();
+const { t: $t, locale } = useI18n();
 
 const props = defineProps({
     value: {
@@ -303,7 +303,7 @@ const myColumns = computed(() => {
         {
             dataIndex: 'action',
             title: $t('Object.index.371533-15'),
-            width: 60,
+            width: locale.value === 'zh' ? 60 : 100,
         },
     ];
 });

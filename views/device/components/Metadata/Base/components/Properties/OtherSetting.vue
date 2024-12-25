@@ -164,7 +164,7 @@
                         >
                             <a-form-item>
                                 <div class="extra-limit extra-check-group">
-                                    <CardSelect
+                                    <j-card-select
                                         v-model:value="extraForm.type"
                                         :options="[
                                             {

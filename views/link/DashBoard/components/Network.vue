@@ -3,7 +3,7 @@
         <div class="dash-board">
             <div class="header">
                 <div class="left">
-                    <h3 style="width: 80px">网络流量</h3>
+                    <h3 style="width: 120px">{{ $t('DeviceAccess.index.594346-33') }}</h3>
                     <a-radio-group
                         button-style="solid"
                         v-model:value="data.type"

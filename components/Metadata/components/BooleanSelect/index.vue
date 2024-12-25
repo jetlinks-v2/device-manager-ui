@@ -15,6 +15,7 @@
 import {useTableWrapper} from "../../context";
 import {isBoolean} from "lodash-es";
 import { selectProps } from 'ant-design-vue/lib/select'
+import i18n from "@/locales";
 
 const props = defineProps({
   ...selectProps(),
@@ -24,11 +25,11 @@ const props = defineProps({
   },
   trueLabel: {
     type: String,
-    default: '必填',
+    default: i18n.global.t('Function.InputParams.551013-0'),
   },
   falseLabel: {
     type: String,
-    default: '不必填',
+    default: i18n.global.t('Function.InputParams.551013-1'),
   },
   trueValue: {
     type: [Boolean, Number, String],

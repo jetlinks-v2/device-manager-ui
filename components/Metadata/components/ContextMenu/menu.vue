@@ -10,31 +10,31 @@
         <template #icon>
           <AIcon type="PlusSquareOutlined" />
         </template>
-        {{ $t('ContextMenu.menu.906418-0') }}
+        {{ i18n.global.t('ContextMenu.menu.906418-0') }}
       </a-menu-item>
       <a-menu-item key="copy">
         <template #icon>
           <AIcon type="icon-copy" />
         </template>
-         {{ $t('ContextMenu.menu.906418-1') }}
+         {{ i18n.global.t('ContextMenu.menu.906418-1') }}
       </a-menu-item>
       <a-menu-item key="paste" :disabled="showPaste">
         <template #icon>
           <AIcon type="icon-paste" />
         </template>
-        {{ $t('ContextMenu.menu.906418-2') }}
+        {{ i18n.global.t('ContextMenu.menu.906418-2') }}
       </a-menu-item>
       <a-menu-item key="detail" :disabled="showDetail">
         <template #icon>
           <AIcon type="icon-chakan" />
         </template>
-        {{ $t('ContextMenu.menu.906418-3') }}
+        {{ i18n.global.t('ContextMenu.menu.906418-3') }}
       </a-menu-item>
       <a-menu-item key="delete" class="danger" :disabled="showDelete">
         <template #icon>
           <AIcon type="DeleteOutlined" />
         </template>
-        {{ $t('ContextMenu.menu.906418-4') }}
+        {{ i18n.global.t('ContextMenu.menu.906418-4') }}
       </a-menu-item>``
     </a-menu>
   </div>
@@ -42,6 +42,7 @@
 
 <script setup name="MetadataContextMenu">
 import { onMounted, ref, nextTick } from "vue";
+import i18n from "@/locales";
 
 const props = defineProps({
   data: {type: Object, default: () => ({})},
