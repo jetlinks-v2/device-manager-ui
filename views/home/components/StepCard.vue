@@ -47,7 +47,7 @@ const jumpPage = (row: recommendList) => {
     if (row.auth === false) {
         return onlyMessage($t('components.StepCard.926510-0'), 'warning');
     }
-    row.onClick ? row.onClick(row) : _jumpPage(row.linkUrl, row.params);
+    row.onClick ? row.onClick(row) : _jumpPage(row.linkUrl, {params: row.params});
 };
 
 const setCssProperty = () => {
