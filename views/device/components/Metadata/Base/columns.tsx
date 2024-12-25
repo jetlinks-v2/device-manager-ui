@@ -5,7 +5,6 @@ import {Ref} from "vue";
 import {omit, isObject,} from "lodash-es";
 import { onlyMessage } from "@/utils/comm";
 import i18n from "@/locales";
-i18n.global.t
 interface DataTableColumnProps extends ColumnProps {
   type?: string,
   components?: {

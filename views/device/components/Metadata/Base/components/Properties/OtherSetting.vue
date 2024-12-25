@@ -9,7 +9,7 @@
         @cancel="cancel"
     >
         <template #content>
-            <j-scrollbar height="350" v-if="showContent">
+            <div style="height: 350px; overflow-y: auto" v-if="showContent">
                 <a-collapse v-model:activeKey="activeKey" v-if="visible">
                     <a-collapse-panel
                         v-if="!(props.isProduct && target === 'device')"
@@ -252,7 +252,7 @@
                         </a-form>
                     </a-collapse-panel>
                 </a-collapse>
-            </j-scrollbar>
+            </div>
             <div v-else style="padding-top: 24px">
                 <j-empty :description="$t('Properties.OtherSetting.237457-17')" />
             </div>
