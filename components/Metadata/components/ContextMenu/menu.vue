@@ -35,7 +35,7 @@
           <AIcon type="DeleteOutlined" />
         </template>
         {{ i18n.global.t('ContextMenu.menu.906418-4') }}
-      </a-menu-item>``
+      </a-menu-item>
     </a-menu>
   </div>
 </template>

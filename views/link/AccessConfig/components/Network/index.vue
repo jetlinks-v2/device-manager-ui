@@ -172,7 +172,7 @@
                             </a-form>
                         </a-col>
                         <a-col :span="12">
-                            <j-scrollbar height="580">
+                            <div style="height: 400px;overflow: auto">
                                 <div class="doc">
                                     <h1>{{ $t('Network.index.041705-12') }}</h1>
                                     <p>
@@ -225,47 +225,44 @@
                                                         : $t('Network.index.041705-15')
                                                 }}
                                             </h1>
-                                            <j-scrollbar height="400">
-                                                <a-table
-                                                    :pagination="false"
-                                                    :rowKey="generateUUID()"
-                                                    :data-source="
+                                          <a-table
+                                            :pagination="false"
+                                            :rowKey="generateUUID()"
+                                            :data-source="
                                                         config.routes || []
                                                     "
-                                                    bordered
-                                                    :columns="
+                                            bordered
+                                            :columns="
                                                         config.id === 'MQTT'
                                                             ? columnsMQTT
                                                             : columnsHTTP
                                                     "
-                                                    :scroll="{ y: 400 }"
-                                                >
-                                                    <template
-                                                        #bodyCell="{
+                                          >
+                                            <template
+                                              #bodyCell="{
                                                             column,
                                                             text,
                                                             record,
                                                         }"
-                                                    >
-                                                        <template
-                                                            v-if="
+                                            >
+                                              <template
+                                                v-if="
                                                                 column.dataIndex ===
                                                                 'stream'
                                                             "
-                                                        >
-                                                            {{
-                                                                getStream(
-                                                                    record,
-                                                                )
-                                                            }}
-                                                        </template>
-                                                    </template>
-                                                </a-table>
-                                            </j-scrollbar>
+                                              >
+                                                {{
+                                                  getStream(
+                                                    record,
+                                                  )
+                                                }}
+                                              </template>
+                                            </template>
+                                          </a-table>
                                         </div>
                                     </template>
                                 </div>
-                            </j-scrollbar>
+                            </div>
                         </a-col>
                     </a-row>
                 </div>

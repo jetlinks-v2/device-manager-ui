@@ -229,7 +229,7 @@
                                     </div></template
                                 >
                                 <div class="extra-handle extra-check-group">
-                                    <CardSelect
+                                    <j-card-select
                                         v-model:value="extraForm.mode"
                                         :options="[
                                             { label: $t('Properties.OtherSetting.237457-14'), value: 'ignore' },

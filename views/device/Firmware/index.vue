@@ -141,6 +141,7 @@ const columns = [
         dataIndex: 'signMethod',
         key: 'signMethod',
         scopedSlots: true,
+        ellipsis: true,
         search: {
             type: 'select',
             options: [
