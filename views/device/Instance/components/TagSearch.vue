@@ -1,9 +1,9 @@
 <template>
     <a-button style="width: 100%" @click="show">
         <div style="width: 100%;white-space: normal;">
-            <Ellipsis >
+            <j-ellipsis >
                 {{ searchText }}
-            </Ellipsis>
+            </j-ellipsis>
         </div>
     </a-button>
     <a-modal
