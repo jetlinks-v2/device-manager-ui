@@ -172,7 +172,7 @@
                             </a-form>
                         </a-col>
                         <a-col :span="12">
-                            <div style="height: 400px;overflow: auto">
+                            <div style="height: 60vh;overflow: auto">
                                 <div class="doc">
                                     <h1>{{ $t('Network.index.041705-12') }}</h1>
                                     <p>

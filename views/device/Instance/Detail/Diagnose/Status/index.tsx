@@ -1398,6 +1398,7 @@ const Status = defineComponent({
                     item.push(
                         <Badge
                             status="default"
+                            style={{wordBreak: 'break-all'}}
                             text={
                                 (unref(gateway)?.channelInfo?.addresses || []).length > 1 ? (
                                     <>
@@ -1436,6 +1437,7 @@ const Status = defineComponent({
                                 item.push(
                                     <Badge
                                         status="default"
+                                        style={{wordBreak: 'break-all'}}
                                         text={
                                             <span>
                                                 {i18n.global.t('Status.index.565893-58')}
@@ -1455,6 +1457,7 @@ const Status = defineComponent({
                                 item.push(
                                     <Badge
                                         status="default"
+                                        style={{wordBreak: 'break-all'}}
                                         text={
                                             <span>
                                                 {i18n.global.t('Status.index.565893-61', [urlMap.get(unref(device)?.accessProvider) || ''])}
@@ -1477,6 +1480,7 @@ const Status = defineComponent({
                             item.push(
                                 <Badge
                                     status="default"
+                                    style={{wordBreak: 'break-all'}}
                                     text={
                                         <span>
                                             {i18n.global.t('Status.index.565893-62', [' '])}
@@ -1501,6 +1505,7 @@ const Status = defineComponent({
                             item.push(
                                 <Badge
                                     status="default"
+                                    style={{wordBreak: 'break-all'}}
                                     text={
                                         <span>
                                             {i18n.global.t('Status.index.565893-62', [' '])}
@@ -1522,6 +1527,7 @@ const Status = defineComponent({
                     item.push(
                         <Badge
                             status="default"
+                            style={{wordBreak: 'break-all'}}
                             text={i18n.global.t('Status.index.565893-63')}
                         />,
                     );
