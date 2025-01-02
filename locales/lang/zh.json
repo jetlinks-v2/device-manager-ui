@@ -167,6 +167,7 @@
     "DeviceAccess.index.594346-30": "操作成功！",
     "DeviceAccess.index.594346-31": "产品下有设备实例时不能更换接入方式",
     "DeviceAccess.index.594346-32": "停用产品后才可更换接入方式",
+    "DeviceAccess.index.594346-33": "网络流量",
     "DeviceAccess.metadataModal.306037-0": "选择处理方式",
     "DeviceAccess.metadataModal.306037-1": "确定",
     "DeviceAccess.metadataModal.306037-2": "取消",
@@ -2096,5 +2097,6 @@
     "Detail.index.258513-63": "保存",
     "Detail.index.258513-64": "请新增或完善配置",
     "Detail.index.258513-65": "操作成功",
-    "Detail.LocalAddressSelect.884081-0": "请选择本地地址"
+    "Detail.LocalAddressSelect.884081-0": "请选择本地地址",
+    "device-manager-ui.index.106686-0": "详情信息"
 }

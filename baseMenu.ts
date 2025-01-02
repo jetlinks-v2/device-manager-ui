@@ -6,6 +6,7 @@ export default [
             name: {
                 zh_CN: '物联网',
                 en_US: 'IoT',
+                en: 'IoT',
             }
         },
         owner: 'iot',
@@ -22,6 +23,7 @@ export default [
                     name: {
                         zh_CN: '首页',
                         en_US: 'Home',
+                        en: 'Home',
                     }
                 },
                 owner: 'iot',
@@ -63,6 +65,7 @@ export default [
                     name: {
                         zh_CN: '设备管理',
                         en_US: 'Device Management',
+                        en: 'Device Management',
                     }
                 },
                 owner: 'iot',
@@ -81,6 +84,7 @@ export default [
                             name: {
                                 zh_CN: '仪表盘',
                                 en_US: 'Dashboard',
+                                en: 'Dashboard',
                             }
                         },
                         owner: 'iot',
@@ -122,6 +126,7 @@ export default [
                             name: {
                                 zh_CN: '产品',
                                 en_US: 'Product',
+                                en: 'Product',
                             }
                         },
                         owner: 'iot',
@@ -169,6 +174,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '查看',
                                     en_US: 'View',
+                                    en: 'View',
                                 },
                                 permissions: [
                                     {
@@ -191,6 +197,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '编辑',
                                     en_US: 'Edit',
+                                    en: 'Edit',
                                 },
                                 permissions: [
                                     {
@@ -225,6 +232,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '启/禁用',
                                     en_US: 'Enable/Disable',
+                                    en: 'Enable/Disable',
                                 },
                                 permissions: [
                                     {
@@ -247,6 +255,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '导出',
                                     en_US: 'Export',
+                                    en: 'Export',
                                 },
                                 permissions: [
                                     {
@@ -269,6 +278,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '导入',
                                     en_US: 'Import',
+                                    en: 'Import',
                                 },
                                 permissions: [
                                     {
@@ -295,6 +305,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '删除',
                                     en_US: 'Delete',
+                                    en: 'Delete',
                                 },
                                 permissions: [
                                     {
@@ -317,6 +328,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '新增',
                                     en_US: 'Add',
+                                    en: 'Add',
                                 },
                                 permissions: [
                                     {
@@ -348,7 +360,8 @@ export default [
                             name:
                                 {
                                     zh_CN: '设备',
-                                    en_US: 'Device'
+                                    en_US: 'Device',
+                                    en: 'Device',
                                 },
                         },
                         owner: 'iot',
@@ -398,6 +411,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '查看',
                                     en_US: 'View',
+                                    en: 'View',
                                 },
                                 permissions: [
                                     {
@@ -416,6 +430,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '导出',
                                     en_US: 'Export',
+                                    en: 'Export',
                                 },
                                 permissions: [
                                     {
@@ -438,6 +453,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '导入',
                                     en_US: 'Import',
+                                    en: 'Import',
                                 },
                                 permissions: [
                                     {
@@ -464,6 +480,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '编辑',
                                     en_US: 'Edit',
+                                    en: 'Edit',
                                 },
                                 permissions: [
                                     {
@@ -522,6 +539,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '启/禁用',
                                     en_US: 'Enable/Disable',
+                                    en: 'Enable/Disable',
                                 },
                                 permissions: [
                                     {
@@ -544,6 +562,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '删除',
                                     en_US: 'Delete',
+                                    en: 'Delete',
                                 },
                                 permissions: [
                                     {
@@ -566,6 +585,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '新增',
                                     en_US: 'Add',
+                                    en: 'Add',
                                 },
                                 permissions: [
                                     {
@@ -592,6 +612,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '远程控制',
                                     en_US: 'Remote Control',
+                                    en: 'Remote Control',
                                 },
                                 permissions: [
                                     {
@@ -609,6 +630,7 @@ export default [
                             name: {
                                 zh_CN: '产品分类',
                                 en_US: 'Device Category',
+                                en: 'Device Category',
                             }
                         },
                         owner: 'iot',
@@ -629,6 +651,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '查看',
                                     en_US: 'View',
+                                    en: 'View',
                                 },
                                 permissions: [
                                     {
@@ -643,6 +666,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '删除',
                                     en_US: 'Delete',
+                                    en: 'Delete',
                                 },
                                 permissions: [
                                     {
@@ -657,6 +681,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '编辑',
                                     en_US: 'Edit',
+                                    en: 'Edit',
                                 },
                                 permissions: [
                                     {
@@ -671,6 +696,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '新增',
                                     en_US: 'Add',
+                                    en: 'Add',
                                 },
                                 permissions: [
                                     {
@@ -690,6 +716,7 @@ export default [
                     name: {
                         zh_CN: '运维管理',
                         en_US: 'Operation Management',
+                        en: 'Operation Management',
                     }
                 },
                 owner: 'iot',
@@ -707,6 +734,7 @@ export default [
                             name: {
                                 zh_CN: '仪表盘',
                                 en_US: 'Dashboard',
+                                en: 'Dashboard',
                             }
                         },
                         owner: 'iot',
@@ -736,6 +764,7 @@ export default [
                             name: {
                                 zh_CN: '设备接入网关',
                                 en_US: 'Device Access Gateway',
+                                en: 'Device Access Gateway',
                             }
                         },
                         owner: 'iot',
@@ -753,6 +782,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '查看',
                                     en_US: 'View',
+                                    en: 'View',
                                 },
                                 permissions: [
                                     {
@@ -771,6 +801,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '删除',
                                     en_US: 'Delete',
+                                    en: 'Delete',
                                 },
                                 permissions: [
                                     {
@@ -785,6 +816,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '启/禁用',
                                     en_US: 'Enable/Disable',
+                                    en: 'Enable/Disable',
                                 },
                                 permissions: [
                                     {
@@ -799,6 +831,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '新增',
                                     en_US: 'Add',
+                                    en: 'Add',
                                 },
                                 permissions: [
                                     {
@@ -837,6 +870,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '编辑',
                                     en_US: 'Edit',
+                                    en: 'Edit',
                                 },
                                 permissions: [
                                     {
@@ -888,6 +922,7 @@ export default [
                             name: {
                                 zh_CN: '协议管理',
                                 en_US: 'Protocol Management',
+                                en: 'Protocol Management',
                             }
                         },
                         owner: 'iot',
@@ -905,6 +940,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '查看',
                                     en_US: 'View',
+                                    en: 'View',
                                 },
                                 permissions: [
                                     {
@@ -919,6 +955,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '删除',
                                     en_US: 'Delete',
+                                    en: 'Delete',
                                 },
                                 permissions: [
                                     {
@@ -933,6 +970,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '编辑',
                                     en_US: 'Edit',
+                                    en: 'Edit',
                                 },
                                 permissions: [
                                     {
@@ -955,6 +993,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '新增',
                                     en_US: 'Add',
+                                    en: 'Add',
                                 },
                                 permissions: [
                                     {
@@ -982,6 +1021,7 @@ export default [
                             name: {
                                 zh_CN: '网络组件',
                                 en_US: 'Network Component',
+                                en: 'Network Component',
                             }
                         },
                         owner: 'iot',
@@ -999,6 +1039,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '查看',
                                     en_US: 'View',
+                                    en: 'View',
                                 },
                                 permissions: [
                                     {
@@ -1017,6 +1058,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '启/禁用',
                                     en_US: 'Enable/Disable',
+                                    en: 'Enable/Disable',
                                 },
                                 permissions: [
                                     {
@@ -1031,6 +1073,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '删除',
                                     en_US: 'Delete',
+                                    en: 'Delete',
                                 },
                                 permissions: [
                                     {
@@ -1045,6 +1088,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '新增',
                                     en_US: 'Add',
+                                    en: 'Add',
                                 },
                                 permissions: [
                                     {
@@ -1063,6 +1107,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '编辑',
                                     en_US: 'Edit',
+                                    en: 'Edit',
                                 },
                                 permissions: [
                                     {
@@ -1086,6 +1131,7 @@ export default [
                             name: {
                                 zh_CN: '证书管理',
                                 en_US: 'Certificate Management',
+                                en: 'Certificate Management',
                             }
                         },
                         owner: 'iot',
@@ -1103,6 +1149,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '删除',
                                     en_US: 'Delete',
+                                    en: 'Delete',
                                 },
                                 permissions: [
                                     {
@@ -1117,6 +1164,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '编辑',
                                     en_US: 'Edit',
+                                    en: 'Edit',
                                 },
                                 permissions: [
                                     {
@@ -1131,6 +1179,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '新增',
                                     en_US: 'Add',
+                                    en: 'Add',
                                 },
                                 permissions: [
                                     {
@@ -1145,6 +1194,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '查看',
                                     en_US: 'View',
+                                    en: 'View',
                                 },
                                 permissions: [
                                     {
@@ -1165,6 +1215,7 @@ export default [
                             name: {
                                 zh_CN: '远程升级',
                                 en_US: 'Remote Upgrade',
+                                en: 'Remote Upgrade',
                             }
                         },
                         owner: 'iot',
@@ -1182,6 +1233,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '查看',
                                     en_US: 'View',
+                                    en: 'View',
                                 },
                                 permissions: [
                                     {
@@ -1204,6 +1256,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '编辑',
                                     en_US: 'Edit',
+                                    en: 'Edit',
                                 },
                                 permissions: [
                                     {
@@ -1234,6 +1287,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '删除',
                                     en_US: 'Delete',
+                                    en: 'Delete',
                                 },
                                 permissions: [
                                     {
@@ -1252,6 +1306,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '新增',
                                     en_US: 'Add',
+                                    en: 'Add',
                                 },
                                 permissions: [
                                     {
@@ -1289,6 +1344,7 @@ export default [
                             name: {
                                 zh_CN: '插件管理',
                                 en_US: 'Plugin Manager',
+                                en: 'Plugin Manager',
                             }
                         },
                         owner: 'iot',
@@ -1311,6 +1367,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '查看',
                                     en_US: 'View',
+                                    en: 'View',
                                 },
                                 permissions: [
                                     {
@@ -1325,6 +1382,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '编辑',
                                     en_US: 'Edit',
+                                    en: 'Edit',
                                 },
                                 permissions: [
                                     {
@@ -1339,6 +1397,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '删除',
                                     en_US: 'Delete',
+                                    en: 'Delete',
                                 },
                                 permissions: [
                                     {
@@ -1353,6 +1412,7 @@ export default [
                                 i18nMessages: {
                                     zh_CN: '新增',
                                     en_US: 'Add',
+                                    en: 'Add',
                                 },
                                 permissions: [
                                     {
@@ -1377,6 +1437,7 @@ export default [
             name: {
                 zh_CN: '系统管理',
                 en_US: 'System Management',
+                en: 'System Management',
             }
         },
         owner: 'iot',
@@ -1394,6 +1455,7 @@ export default [
                     name: {
                         zh_CN: '关系配置',
                         en_US: 'Relationship Configuration',
+                        en: 'Relationship Configuration',
                     }
                 },
                 owner: 'iot',
@@ -1411,6 +1473,7 @@ export default [
                         i18nMessages: {
                             zh_CN: '编辑',
                             en_US: 'Edit',
+                            en: 'Edit',
                         },
                         permissions: [
                             {
@@ -1425,6 +1488,7 @@ export default [
                         i18nMessages: {
                             zh_CN: '删除',
                             en_US: 'Delete',
+                            en: 'Delete',
                         },
                         permissions: [
                             {
@@ -1439,6 +1503,7 @@ export default [
                         i18nMessages: {
                             zh_CN: '查看',
                             en_US: 'View',
+                            en: 'View',
                         },
                         permissions: [
                             {
@@ -1453,6 +1518,7 @@ export default [
                         i18nMessages: {
                             zh_CN: '新增',
                             en_US: 'Add',
+                            en: 'Add',
                         },
                         permissions: [
                             {
