@@ -173,7 +173,7 @@
                         </a-col>
                         <a-col :span="12">
                             <div style="height: 60vh;overflow: auto">
-                                <div class="doc">
+                                <div>
                                     <h1>{{ $t('Network.index.041705-12') }}</h1>
                                     <p>
                                         {{ provider.name }}
