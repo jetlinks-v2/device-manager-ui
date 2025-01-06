@@ -1,4 +1,5 @@
 const routerModules = import.meta.glob('./views/**/index.vue')
+import { defineAsyncComponent } from 'vue';
 import i18n from "@/locales";
 
 const MODULE_CODE = 'device'
@@ -70,10 +71,28 @@ const getExtraRoutesMap = () => {
     }
 }
 
+const getComponents = () => {
+    return {
+        'department': [
+            {
+                name: 'product',
+                label: 'Department.index.945805-0',
+                component:  defineAsyncComponent(() => import('./views/department/product/index.vue'))
+            },
+            {
+                name: 'device',
+                label: 'Department.index.945805-1',
+                component: defineAsyncComponent(() => import('./views/department/device/index.vue'))
+            },
+        ]
+    }
+}
+
 const aliasName = 'device'
 
 export default {
     getAsyncRoutesMap,
     getExtraRoutesMap,
+    getComponents,
     aliasName
 }

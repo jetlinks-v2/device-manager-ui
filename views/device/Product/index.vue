@@ -691,7 +691,7 @@ const handleSearch = (e: any) => {
 const routerParams = useRouterParams();
 
 onMounted(() => {
-    if (routerParams.params?.value.save) {
+    if (routerParams.params.value?.save) {
         add();
     }
     if (isNoCommunity) {
