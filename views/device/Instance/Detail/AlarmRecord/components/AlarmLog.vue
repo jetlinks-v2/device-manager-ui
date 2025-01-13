@@ -45,7 +45,9 @@
 </template>
 
 <script setup>
-import { useAlarmLevel } from '../../../../../../../hooks';
+import { useAlarmLevel } from '../../../../../../hooks';
+import SolveComponent from './SolveComponent.vue';
+import Log from './Log.vue';
 
 const props = defineProps({
     data: {

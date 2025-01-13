@@ -553,7 +553,7 @@ const confirm = () => {
                     expands.otherEdit = true;
                     emit('update:value', {
                         ...props.value,
-                        ...expands,
+                        expands,
                     });
                     emit('change');
                     modalVisible.value = false;
@@ -563,7 +563,7 @@ const confirm = () => {
                 expands.otherEdit = true;
                 emit('update:value', {
                     ...props.value,
-                    ...expands,
+                    expands,
                 });
                 emit('change');
                 modalVisible.value = false;

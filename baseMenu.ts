@@ -608,11 +608,11 @@ export default [
                             },
                             {
                                 id: 'remote',
-                                name: '远程控制',
+                                name: '远程访问',
                                 i18nMessages: {
-                                    zh_CN: '远程控制',
-                                    en_US: 'Remote Control',
-                                    en: 'Remote Control',
+                                    zh_CN: '远程访问',
+                                    en_US: 'Remote Interview',
+                                    en: 'Remote Interview',
                                 },
                                 permissions: [
                                     {

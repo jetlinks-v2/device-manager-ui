@@ -25,7 +25,7 @@
 </template>
 
 <script lang="ts" setup>
-import { handleLog, handlePreconditioning } from '../../../../../../../api/rule-engine/log';
+import { handleLog, handlePreconditioning } from '@device/api/rule-engine/log';
 import { onlyMessage } from '@jetlinks-web/utils';
 import { useI18n } from 'vue-i18n';
 

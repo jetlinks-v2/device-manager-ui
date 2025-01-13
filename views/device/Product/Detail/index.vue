@@ -147,8 +147,9 @@ import Device from './DeviceAccess/index.vue';
 import Metadata from '../../components/Metadata/index.vue';
 import DataAnalysis from './DataAnalysis/index.vue';
 import MetadataMap from './MetadataMap';
-import AlarmRecord from '../../Instance/Detail/AlarmRecord/index.vue';
-import Firmware from '../../Instance/Detail/Firmware/index.vue';
+import AlarmRecord from '@device/views/device/Instance/Detail/AlarmRecord/index.vue';
+import Invalid from '@device/views/device/Instance/Detail/Invalid/index.vue'
+import Firmware from '@device/views/device/Instance/Detail/Firmware/index.vue';
 import {
     _deploy,
     _undeploy,
@@ -196,6 +197,7 @@ const tabs = {
     MetadataMap,
     AlarmRecord,
     Firmware,
+    Invalid
 };
 
 const onBack = () => {
@@ -326,10 +328,13 @@ const getProtocol = async () => {
             isNoCommunity &&
             showThreshold
         ) {
-            list.value.push({
+            list.value.push(...[{
                 key: 'AlarmRecord',
                 tab: $t('Detail.index.478940-16'),
-            });
+            },{
+                key: 'Invalid',
+                tab: $t('Detail.index.478940-17')
+            }]);
         }
     }
 };

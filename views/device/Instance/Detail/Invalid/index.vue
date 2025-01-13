@@ -45,9 +45,9 @@
 </template>
 
 <script setup>
-import { queryInvalidData } from '../../../../../../api/rule-engine/log';
-import { useInstanceStore } from '../../../../../../store/instance';
-import { useProductStore } from '../../../../../../store/product';
+import { queryInvalidData } from '@device/api/rule-engine/log';
+import { useInstanceStore } from '@device/store/instance';
+import { useProductStore } from '@device/store/product';
 import { useMenuStore } from '@/store';
 import dayjs from 'dayjs';
 import { useI18n } from 'vue-i18n';
