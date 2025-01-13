@@ -253,7 +253,7 @@ const formModel = reactive<Record<string, any>>({
 const fileList = ref<UploadFile[]>([]);
 const hasVirtualRule = ref(false);
 const formRef = ref();
-
+const productMetadataMap = new Map()
 const productList = ref<DefaultOptionType[]>([]);
 
 const loadData = async () => {
@@ -265,11 +265,14 @@ const loadData = async () => {
     })) as any;
     productList.value = product.result
         .filter((i: any) => i?.metadata)
-        .map((item: any) => ({
+        .map((item: any) => {
+            productMetadataMap.set(item.id,item.metadata)
+            return {
             label: item.name,
-            value: item.metadata,
+            value: item.id,
             key: item.id,
-        })) as DefaultOptionType[];
+        }
+        }) as DefaultOptionType[];
 };
 loadData();
 
@@ -832,7 +835,7 @@ const handleImport = async () => {
             } else {
                 try {
                     const _object = JSON.parse(
-                        data[data?.type === 'copy' ? 'copy' : 'import'] || '{}',
+                        (data?.type === 'copy' ? productMetadataMap.get(data.copy) : data.import) || '{}'
                     );
                     if (data?.type !== 'copy') {
                         Object.keys(_object)?.forEach((i: any) => {

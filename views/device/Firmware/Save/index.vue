@@ -349,7 +349,7 @@ const { resetFields, validate, validateInfos } = useForm(
         signMethod: [{ required: true, message: $t('Save.index.978508-13') }],
         sign: [
             { required: true, message: $t('Save.index.978508-16') },
-            { validator: validatorSign },
+            // { validator: validatorSign },
         ],
         url: [{ required: true, message: $t('Save.index.978508-31') }],
         description: [{ max: 200, message: $t('Save.index.978508-32') }],
