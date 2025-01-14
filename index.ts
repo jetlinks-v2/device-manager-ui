@@ -25,6 +25,12 @@ const getExtraRoutesMap = () => {
                     url: '/detail/:id',
                     name: i18n.global.t('device-manager-ui.index.106686-0'),
                     component: () => import('./views/device/Product/Detail/index.vue')
+                },
+                {
+                    code: 'QuickCreate',
+                    url: '/QuickCreate',
+                    name: i18n.global.t('device-manager-ui.index.106686-1'),
+                    component: () => import('./views/resource/QuickCreate/index.vue')
                 }
             ]
         },
@@ -65,6 +71,16 @@ const getExtraRoutesMap = () => {
                     url: '/detail/:id',
                     name: i18n.global.t('device-manager-ui.index.106686-0'),
                     component: () => import('./views/link/Type/Detail/index.vue')
+                }
+            ]
+        },
+        'resource/Resource': {
+            children: [
+                {
+                    code: 'Detail',
+                    url: '/detail/:id',
+                    name: i18n.global.t('device-manager-ui.index.106686-0'),
+                    component: () => import('./views/resource/Resource/Detail/index.vue')
                 }
             ]
         }

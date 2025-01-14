@@ -121,7 +121,7 @@ import { filterSelectNode, encodeQuery } from '@/utils';
 import { onlyMessage } from '@jetlinks-web/utils'
 import { isInput } from '@/utils/regular';
 import type { Rule } from 'ant-design-vue/es/form';
-import { device} from '../../../../assets';
+import { device } from '../../../../assets';
 import { useI18n } from 'vue-i18n';
 
 const { t: $t } = useI18n();
@@ -132,7 +132,7 @@ const emit = defineEmits(['success']);
 const props = defineProps({
     title: {
         type: String,
-        defult: '',
+        default: '',
     },
     isAdd: {
         type: Number,
