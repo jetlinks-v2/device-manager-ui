@@ -10,9 +10,6 @@
             <div class="title">{{ $t('components.AlarmLog.345792-0') }}</div>
             <div class="alarmInfoRight">
                 <div>
-                    {{ levelMap?.[AlarmData?.level] || AlarmData?.level }}
-                </div>
-                <div>
                     <j-badge-status
                         :status="AlarmData?.state.value"
                         :statusNames="{
@@ -45,7 +42,6 @@
 </template>
 
 <script setup>
-import { useAlarmLevel } from '../../../../../../hooks';
 import SolveComponent from './SolveComponent.vue';
 import Log from './Log.vue';
 
@@ -60,7 +56,6 @@ const props = defineProps({
     }
 });
 const emit = defineEmits(['closeDrawer', 'refreshTable']);
-const { levelMap } = useAlarmLevel();
 const solveVisible = ref(false);
 const AlarmData = computed(()=>{
     return props.data

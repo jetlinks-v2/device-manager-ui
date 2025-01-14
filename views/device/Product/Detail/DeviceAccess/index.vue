@@ -904,7 +904,7 @@ const updateAccessData = async (id: string, values: any) => {
     };
     submitLoading.value = true;
     const updateDeviceResp = await updateDevice(accessObj).catch(() => {
-        success: false;
+        submitLoading.value = false
     });
 
     if (!updateDeviceResp.success) {
