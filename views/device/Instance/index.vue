@@ -532,15 +532,6 @@ const paramsFormat = (
     }
 };
 
-onMounted(() => {
-    if (routerParams.params.value.type === 'add') {
-        handleAdd();
-    }
-    if (routerParams.params.value.type === 'import') {
-        importVisible.value = true;
-    }
-});
-
 const handleParams = (config: Record<string, any>) => {
     const _terms: Record<string, any> = {};
     paramsFormat(config, _terms);
@@ -949,10 +940,10 @@ const deleteDevice = async () => {
 };
 
 onMounted(() => {
-    if (routerParams.params.value.type === 'add') {
+    if (routerParams.params.value?.type === 'add') {
         handleAdd();
     }
-    if (routerParams.params.value.type === 'import') {
+    if (routerParams.params.value?.type === 'import') {
         importVisible.value = true;
     }
     if (isNoCommunity) {
