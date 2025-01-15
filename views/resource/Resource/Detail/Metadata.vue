@@ -15,7 +15,7 @@ const eventLevelMap = arrayToObj(EventLevel, { key: 'value', value: 'label'})
 const dataTypeTableMap = arrayToObj(DataTypeList, { key: 'value', value: 'label'})
 
 const getSourceStr = (types) => {
-  return sourceType.filter(item => !types?.includes(item.value) || false ).map(item => item.label).join(',')
+  return sourceType.filter(item => types?.includes(item.value) || false ).map(item => item.label).join(',')
 }
 
 const activeKey = ref('properties')
