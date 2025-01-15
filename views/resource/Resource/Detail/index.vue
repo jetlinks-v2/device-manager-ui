@@ -1,9 +1,9 @@
 <template>
-    <page-container :showBack="true">
+    <j-page-container :showBack="true">
         <template #title>
             <div>资源详情</div>
         </template>
-        <FullPage>
+        <FullPage :fixed="false">
             <!-- {{ detail.metadata }} -->
             <div class="resource-detail">
                 <div class="detail-header">
@@ -170,7 +170,7 @@
             :data="detail"
             @close="onClose"
         />
-    </page-container>
+    </j-page-container>
 </template>
 
 <script setup name="Detail">

@@ -416,4 +416,6 @@ export const networkAndProtocol = ['mqtt-server-gateway','websocket-server','coa
 
 export const reuseByProtocol = ['mqtt-server-gateway','websocket-server','coap-server-gateway','tcp-server-gateway','http-server-gateway','udp-device-gateway','mqtt-client-gateway','child-device']
 
+export const reuse = ['fixed-media','onvif','collector-gateway']
+
 export default typeMap

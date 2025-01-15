@@ -15,13 +15,14 @@
             <div>
               <span>已选择产品</span>
               <a-button type="link" @click="emits('reselection')"
-                >重新选择</a-button
+              >重新选择
+              </a-button
               >
             </div>
           </template>
           <template #description>
             <div class="resource">
-              <img src="" alt="" />
+              <img src="" alt=""/>
               <div>
                 {{ data?.name }}
               </div>
@@ -40,28 +41,29 @@
               <span style="margin-right: 8px">接入配置</span>
               <a-space>
                 <a-button
-                  v-if="advancedMode"
-                  type="link"
-                  @click="restoreDefault"
+                    v-if="advancedMode"
+                    type="link"
+                    @click="restoreDefault"
                 >
                   恢复默认
                 </a-button>
                 <a-button
-                  v-if="!visibleAdvanceMode && !advancedMode"
-                  type="link"
-                  @click="showAdvancedMode"
-                  >高级模式</a-button
+                    v-if="!visibleAdvanceMode && !advancedMode"
+                    type="link"
+                    @click="showAdvancedMode"
+                >高级模式
+                </a-button
                 >
               </a-space>
             </div>
           </template>
           <template #description>
             <div
-              v-if="!visibleAdvanceMode"
-              :class="{ accessConfig: true, unmet: unmet }"
+                v-if="!visibleAdvanceMode"
+                :class="{ accessConfig: true, unmet: unmet }"
             >
               <template v-if="!unmet">
-                <img :src="BackMap.get(accessData?.provider)" alt="" />
+                <img :src="BackMap.get(accessData?.provider)" alt=""/>
                 <div style="margin-left: 24px">
                   <div class="accessName">
                     {{ accessName }}
@@ -72,17 +74,17 @@
                         网络:
                         {{
                           accessData.provider === "mqtt-client-gateway"
-                            ? network.configuration?.remoteHost +
+                              ? network.configuration?.remoteHost +
                               ":" +
                               network.configuration?.remotePort
-                            : network.configuration?.host +
+                              : network.configuration?.host +
                               ":" +
                               network.configuration?.port
                         }}
                       </div>
                     </a-col>
                     <a-col
-                      v-if="
+                        v-if="
                         ['network', 'OneNet', 'Ctwing'].includes(
                           accessData.channel
                         ) &&
@@ -103,74 +105,75 @@
               <div v-else>
                 {{
                   accessConfig.provider === "mqtt-client-gateway"
-                    ? "MQTT Broker接入请点击高级模式配置"
-                    : "未满足条件,请点击高级模式"
+                      ? "MQTT Broker接入请点击高级模式配置"
+                      : "未满足条件,请点击高级模式"
                 }}
               </div>
             </div>
             <AdvanceMode
-              v-else
-              :randomString="randomString"
-              :accessList="data?.accessInfos"
-              :descriptions="accessDescriptions"
-              @submit="advanceComplete"
-              @quit="visibleAdvanceMode = false"
+                v-else
+                :randomString="randomString"
+                :accessList="data?.accessInfos"
+                :descriptions="accessDescriptions"
+                @submit="advanceComplete"
+                @quit="visibleAdvanceMode = false"
             />
           </template>
         </a-step>
         <a-step title="完善产品信息">
           <template #description v-if="!unmet && !visibleAdvanceMode">
             <PerfectInfo
-              :data="data"
-              :protocol="protocol"
-              :plugin="plugin"
-              :network="network"
-              :accessData="accessData"
-              :metadata="metadataData"
-              :advancedMode="advancedMode"
-              @cancel="emits('reselection')"
+                :data="data"
+                :protocol="protocol"
+                :plugin="plugin"
+                :network="network"
+                :accessData="accessData"
+                :metadata="metadataData"
+                :advancedMode="advancedMode"
+                @cancel="emits('reselection')"
             />
           </template>
         </a-step>
       </a-steps>
     </div>
     <Metadata
-      v-if="metadataVisible"
-      :metadata="metadata"
-      :data="metadataData"
-      @close="metadataVisible = false"
-      @complete="generateMetadata"
+        v-if="metadataVisible"
+        :metadata="metadata"
+        :data="metadataData"
+        @close="metadataVisible = false"
+        @complete="generateMetadata"
     />
   </div>
 </template>
 
 <script setup>
-import { cloneDeep, omit } from "lodash-es";
+import {cloneDeep, omit} from "lodash-es";
 import Metadata from "./components/Metadata.vue";
 import {
   queryNetWorkConfig,
   queryAliveNetWork,
   queryNetWork,
 } from "@device/api/resource/quickCreate";
-import { BackMap } from "@device/views/link/AccessConfig/data.ts";
+import {BackMap} from "@device/views/link/AccessConfig/data.ts";
 import {
   getResourcesCurrent,
   getProtocolList,
   list as getAccessConfigList,
 } from "@device/api/link/accessConfig";
-import { NetworkTypeMapping } from "./data";
-import { UDPList, TCPList } from "./data";
+import {NetworkTypeMapping, reuse} from "./data";
+import {UDPList, TCPList} from "./data";
 import AdvanceMode from "./components/AdvanceMode.vue";
-import { getProviders } from "@device/api/product.ts";
+import {getProviders} from "@device/api/product.ts";
 import PerfectInfo from "./components/PerfectInfo/index.vue";
-import { gatewayType, networkAndProtocol, reuseByProtocol } from "./data";
-import { ProtocolMapping } from "./components/Protocol/data";
-import { access } from "@/modules/device-manager-ui/assets";
+import {gatewayType, networkAndProtocol, reuseByProtocol} from "./data";
+import {ProtocolMapping} from "./components/Protocol/data";
+import {access} from "@/modules/device-manager-ui/assets";
 
 const props = defineProps({
   data: {
     type: Object,
-    default: () => {},
+    default: () => {
+    },
   },
 });
 const emits = defineEmits(["reselection"]);
@@ -260,7 +263,7 @@ const restoreDefault = () => {
 //查询有可以复用的网络组件
 const getUseableNetWork = async () => {
   const res = await queryAliveNetWork(
-    NetworkTypeMapping.get(accessConfig.value.provider)
+      NetworkTypeMapping.get(accessConfig.value.provider)
   );
   if (res.success && res.result.length) {
     const networkId = res.result[0].id;
@@ -295,8 +298,8 @@ const queryAvailablePort = async () => {
       host = req.result.localAddress || "0.0.0.0";
     }
     const _ports = filterConfigByType(
-      res.result,
-      NetworkTypeMapping.get(accessConfig.value.provider)
+        res.result,
+        NetworkTypeMapping.get(accessConfig.value.provider)
     );
     const _host = _ports.find((item) => item.host === host);
     const ports = _host?.ports?.map((p) => {
@@ -312,9 +315,9 @@ const queryAvailablePort = async () => {
       network.value.type = NetworkTypeMapping.get(accessConfig.value.provider);
       network.value.shareCluster = true;
       network.value.name =
-        accessConfig.value.provider?.split("-")?.[0] +
-        "网络组件" +
-        randomString.value;
+          accessConfig.value.provider?.split("-")?.[0] +
+          "网络组件" +
+          randomString.value;
       defaultNetwork.value = cloneDeep(network.value);
     }
   }
@@ -343,12 +346,12 @@ const advanceComplete = (data, name) => {
 //查询协议是否已经存在平台中
 const protocolExist = async (id) => {
   const resp = await getProtocolList(
-    ProtocolMapping.get(accessConfig.value?.provider),
-    {
-      "sorts[0].name": "createTime",
-      "sorts[0].order": "desc",
-      paging: false,
-    }
+      ProtocolMapping.get(accessConfig.value?.provider),
+      {
+        "sorts[0].name": "createTime",
+        "sorts[0].order": "desc",
+        paging: false,
+      }
   );
   if (resp.status === 200) {
     return resp.result.find((i) => {
@@ -380,8 +383,8 @@ const queryNetworkByAccess = async (networkId) => {
 };
 
 //平台如果已有协议反查使用该协议的设备接入网关
-const queryExistAccess = async (protocolId) => {
-  const params = {
+const queryExistAccess = async (_params, type) => {
+  const params = type === 'protocol' ? {
     sorts: [
       {
         name: "createTime",
@@ -393,9 +396,28 @@ const queryExistAccess = async (protocolId) => {
         terms: [
           {
             type: "or",
-            value: protocolId,
+            value: _params,
             termType: "eq",
             column: "protocol",
+          },
+        ],
+      },
+    ],
+  } : {
+    sorts: [
+      {
+        name: "createTime",
+        order: "desc",
+      },
+    ],
+    terms: [
+      {
+        terms: [
+          {
+            type: "or",
+            value: _params,
+            termType: "eq",
+            column: "provider",
           },
         ],
       },
@@ -404,7 +426,7 @@ const queryExistAccess = async (protocolId) => {
   const res = await getAccessConfigList(params);
   if (res.success && res.result.data.length) {
     accessData.value = res.result.data.filter((i) => {
-     return i.provider === accessConfig.value.provider;
+      return i.provider === accessConfig.value.provider;
     })[0];
     accessData.value.gatewayType = gatewayType.get(accessConfig.value.provider);
     if (networkAndProtocol.includes(accessData.value.provider)) {
@@ -420,16 +442,22 @@ const queryExistAccess = async (protocolId) => {
 const getDefault = async () => {
   accessName.value = accessConfig.value.provider?.split("-")?.[0];
   if (accessConfig.value?.bindInfo) {
+    if (reuse.includes(accessConfig.value.provider)) {
+      const status = await queryExistAccess(accessConfig.value.provider, 'protocol');
+      if (status) {
+        return;
+      }
+    }
     if (["network", "OneNet", "Ctwing"].includes(accessConfig.value.channel)) {
       const data =
-        accessConfig.value.bindInfo.filter((i) => {
-          return i.defaultAccess;
-        })?.[0] || {};
+          accessConfig.value.bindInfo.filter((i) => {
+            return i.defaultAccess;
+          })?.[0] || {};
       if (JSON.stringify(data) !== "{}") {
         const existProtocol = await protocolExist(data.id);
         protocol.value = existProtocol
-          ? existProtocol
-          : {
+            ? existProtocol
+            : {
               ...omit(data, ["id"]),
               type: "jar",
               configuration: {
@@ -440,17 +468,17 @@ const getDefault = async () => {
             };
 
         if (
-          existProtocol &&
-          reuseByProtocol.includes(accessConfig.value.provider)
+            existProtocol &&
+            reuseByProtocol.includes(accessConfig.value.provider)
         ) {
-          const status = await queryExistAccess(existProtocol.id);
+          const status = await queryExistAccess(existProtocol.id, 'protocol');
           if (status) {
             return;
           }
         }
         if (
-          accessConfig.value?.channel === "network" &&
-          accessConfig.value.provider !== "mqtt-client-gateway"
+            accessConfig.value?.channel === "network" &&
+            accessConfig.value.provider !== "mqtt-client-gateway"
         ) {
           const data = await getUseableNetWork();
           if (data) {
@@ -463,9 +491,9 @@ const getDefault = async () => {
       }
     } else if (accessConfig.value?.channel === "plugin") {
       const data =
-        accessConfig.value.bindInfo.filter((i) => {
-          return i.defaultAccess;
-        })?.[0] || {};
+          accessConfig.value.bindInfo.filter((i) => {
+            return i.defaultAccess;
+          })?.[0] || {};
       if (JSON.stringify(data) !== "{}") {
         plugin.value = {
           ...omit(data, ["id"]),
@@ -481,23 +509,23 @@ const getDefault = async () => {
   }
   accessData.value = {
     name:
-      accessConfig.value.provider?.split("-")?.[0] +
-      "网关" +
-      randomString.value,
+        accessConfig.value.provider?.split("-")?.[0] +
+        "网关" +
+        randomString.value,
     ...omit(accessConfig.value, ["bindInfo", "defaultAccess"]),
     gatewayType: gatewayType.get(accessConfig.value.provider),
   };
 };
 
 watch(
-  () => [unmet.value, visibleAdvanceMode.value],
-  () => {
-    if (!unmet.value && !visibleAdvanceMode.value) {
-      current.value = 2;
-    } else {
-      current.value = 1;
+    () => [unmet.value, visibleAdvanceMode.value],
+    () => {
+      if (!unmet.value && !visibleAdvanceMode.value) {
+        current.value = 2;
+      } else {
+        current.value = 1;
+      }
     }
-  }
 );
 
 onMounted(async () => {
@@ -506,9 +534,9 @@ onMounted(async () => {
   metadata.value = JSON.parse(props.data?.metadata || "{}");
   metadataData.value = cloneDeep(metadata.value);
   accessConfig.value =
-    props.data?.accessInfos?.filter((i) => {
-      return i.defaultAccess;
-    })?.[0] || {};
+      props.data?.accessInfos?.filter((i) => {
+        return i.defaultAccess;
+      })?.[0] || {};
   getDefault();
 });
 </script>

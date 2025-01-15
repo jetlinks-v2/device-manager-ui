@@ -63,7 +63,7 @@ const onItemClick = (record) => {
     </Search>
     <j-pro-table
       ref="tableRef"
-      model="CARD"
+      mode="CARD"
       style="padding: 0;background: transparent"
       :type="type"
       :gridColumns="gridColumns"
