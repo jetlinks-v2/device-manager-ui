@@ -412,4 +412,8 @@ export const gatewayType = new Map([
 ]);
 
 
+export const networkAndProtocol = ['mqtt-server-gateway','websocket-server','coap-server-gateway','tcp-server-gateway','http-server-gateway','udp-device-gateway','mqtt-client-gateway']
+
+export const reuseByProtocol = ['mqtt-server-gateway','websocket-server','coap-server-gateway','tcp-server-gateway','http-server-gateway','udp-device-gateway','mqtt-client-gateway','child-device']
+
 export default typeMap
