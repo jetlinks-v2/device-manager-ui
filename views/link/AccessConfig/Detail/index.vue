@@ -75,8 +75,8 @@ import Edge from '../components/Edge/index.vue';
 import GateWay from '../components/Edge/geteway.vue';
 import Cloud from '../components/Cloud/index.vue';
 import Plugin from '../components/Plugin/index.vue'
-import {getProviders, detail} from '../../../../api/link/accessConfig';
-import {queryProductList} from '../../../../api/product';
+import {getProviders, detail} from '@device/api/link/accessConfig';
+import {queryProductList} from '@device/api/product';
 import {accessConfigTypeFilter} from '@/utils';
 import { useI18n } from 'vue-i18n';
 
@@ -96,7 +96,6 @@ const goProviders = (param: any) => {
     showType.value = param.type;
     provider.value = param;
     type.value = false;
-    console.log(showType.value, provider.value)
 };
 
 const goBack = () => {

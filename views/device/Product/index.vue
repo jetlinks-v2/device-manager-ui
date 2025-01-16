@@ -200,6 +200,7 @@ import { useMenuStore, useAuthStore } from '@/store';
 import { useRouterParams } from '@jetlinks-web/hooks';
 import { device} from '../../../assets'
 import TagSearch from '../Instance/components/TagSearch.vue';
+import { accessType } from '@device/views/device/data'
 import { useI18n } from 'vue-i18n';
 
 const { t: $t } = useI18n();
@@ -495,10 +496,7 @@ const query = reactive({
                             resolve(
                                 accessConfigTypeFilter(data).filter(
                                     (i: any) => {
-                                        return (
-                                            i.id !== 'modbus-tcp' &&
-                                            i.id !== 'opc-ua'
-                                        );
+                                        return accessType.includes(i.value)
                                     },
                                 ),
                             );
