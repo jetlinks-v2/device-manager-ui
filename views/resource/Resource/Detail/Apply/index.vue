@@ -64,8 +64,8 @@ const menuStory = useMenuStore();
 const typeList = [
     {
         value: 'create',
-        label: '快捷创建',
-        subLabel: '引用该资源在IOT或网关中创建产品',
+        label: '快捷新增',
+        subLabel: '引用该资源在IOT或网关中新增产品',
         iconUrl: device.deviceCard,
     },
     {

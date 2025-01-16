@@ -543,6 +543,8 @@ onMounted(async () => {
 <style lang="less" scoped>
 .container {
   padding: 10px 20px;
+  height: 100%;
+  overflow: auto;
 }
 
 .title {

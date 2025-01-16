@@ -1,4 +1,4 @@
-<template>
+  <template>
     <div class="steps-box">
         <div class="alert">
             <AIcon type="InfoCircleOutlined" />
