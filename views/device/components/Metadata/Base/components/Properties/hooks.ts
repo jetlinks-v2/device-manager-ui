@@ -22,14 +22,18 @@ export const useThreshold = (props: Record<string, any>) => {
     const { run: queryDevice } = useRequest(queryDeviceThreshold, {
         immediate: false,
         onSuccess(res) {
-            handleDetail(res.result)
+            if(res.result) {
+                handleDetail(res.result)
+            }
         }
     })
 
     const { run: queryProduct } = useRequest(queryProductThreshold, {
         immediate: false,
         onSuccess(res) {
-            handleDetail(res.result)
+            if(res.result) {
+                handleDetail(res.result)
+            }
         }
     })
 

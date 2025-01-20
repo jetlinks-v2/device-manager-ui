@@ -64,7 +64,8 @@
                                                 _disabled(record.property),
                                         }"
                                     >
-                                        <value-item
+                                        <j-value-item
+                                            style="width: 100%"
                                             v-model:modelValue="
                                                 configValue[record.property]
                                             "
@@ -72,9 +73,10 @@
                                                 item.properties[index].type
                                                     ?.type
                                             "
+
                                             :extra="{
                                                 dropdownStyle: {
-                                                    zIndex: 1071,
+                                                    zIndex: 9999,
                                                 },
                                                 popupStyle: {
                                                     zIndex: 1071,
