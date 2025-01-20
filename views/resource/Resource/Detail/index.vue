@@ -66,6 +66,7 @@
                   :onCanplay='onCanplay'
                   :poster='item.coverUrl.url'></LivePlayer>
             </div>
+
           </div>
         </a-carousel>
       </div>
