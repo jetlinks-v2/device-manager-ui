@@ -11,6 +11,7 @@
             v-if="taskList.length"
             :taskList="taskList"
             :resourceVersionMap="resourceVersionMap"
+            :source="source"
             @refresh="getTaskList"
         />
         <List

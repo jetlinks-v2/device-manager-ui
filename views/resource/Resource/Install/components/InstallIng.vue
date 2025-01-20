@@ -8,20 +8,12 @@
           已完成{{ getStatusNumber('success') }}
         </div>
         <div>
+          <AIcon :type="statusIcon.get('failed')" class="icon"/>
+          已失败{{ getStatusNumber('failed') }}
+        </div>
+        <div>
           <AIcon :type="statusIcon.get('installing')" class="icon"/>
           安装中{{ getStatusNumber('installing') }}
-        </div>
-        <div>
-          <AIcon :type="statusIcon.get('canceled')" class="icon"/>
-          已暂停{{ getStatusNumber('canceled') }}
-        </div>
-        <div>
-          <AIcon :type="statusIcon.get('failed')" class="icon"/>
-          失败{{ getStatusNumber('failed') }}
-        </div>
-        <div v-if="source === 'cloud'">
-          <AIcon :type="statusIcon.get('downloading')" class="icon"/>
-          下载中{{ getStatusNumber('downloading') }}
         </div>
         <div>
           <AIcon
@@ -30,7 +22,15 @@
           />
           等待安装{{ getStatusNumber('waiting_install') }}
         </div>
+        <div>
+          <AIcon :type="statusIcon.get('canceled')" class="icon"/>
+          已暂停{{ getStatusNumber('canceled') }}
+        </div>
         <template v-if="source === 'cloud'">
+          <div>
+            <AIcon :type="statusIcon.get('downloading')" class="icon"/>
+            下载中{{ getStatusNumber('downloading') }}
+          </div>
           <div>
             <AIcon
                 :type="statusIcon.get('waiting_download')"
