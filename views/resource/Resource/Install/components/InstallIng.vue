@@ -236,6 +236,7 @@ const getStatusNumber = (type) => {
 
 const startAll = async () => {
   const resp = await deployTask({
+    type: props.source,
     states: ['canceled', 'failed'],
   });
   if (resp.success) {
