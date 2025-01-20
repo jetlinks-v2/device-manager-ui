@@ -29,11 +29,11 @@
                 <template #card="slotProps">
                     <CardBox
                         :value="slotProps"
-                        :showStatus="false"
                         :actions="getActions(slotProps)"
                         :statusNames="{
                             processing: 'processing',
                         }"
+                        @click="()=>viewDetail(slotProps)"
                         status="processing"
                     >
                         <template #img>
@@ -140,6 +140,7 @@
         </FullPage>
     </j-page-container>
     <SaveModal v-if="visible" :data="editData" @cancel="cancel" @ok="save" />
+    <Detail v-if="visibleDetail" :data="editData" @close="visibleDetail = false" />
 </template>
 
 <script setup lang="ts" name="PluginIndex">
@@ -149,6 +150,7 @@ import { queryPage, removeFn, getTypes } from '../../../api/link/plugin';
 import { TypeMap } from './util';
 import { link } from '../../../assets'
 import { useI18n } from 'vue-i18n';
+import Detail from './Detail.vue';
 
 const { t: $t } = useI18n();
 const route = useRoute();
@@ -156,6 +158,7 @@ const visible = ref(false);
 const params = ref<any>();
 const editData = ref();
 const instanceRef = ref();
+const visibleDetail = ref(false);
 
 const columns = [
     {
@@ -252,6 +255,11 @@ const cancel = () => {
     visible.value = false;
     editData.value = undefined;
 };
+
+const viewDetail = (data:any) =>{
+  visibleDetail.value = true;
+  editData.value = data;
+}
 
 const getActions = (data: any) => {
     return [
