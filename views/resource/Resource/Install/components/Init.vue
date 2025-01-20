@@ -49,6 +49,7 @@
                 <List
                     v-if="fileList.length"
                     :source="source"
+                    :loading="loading"
                     v-model:value="fileList"
                     :resourceVersionMap="resourceVersionMap"
                     @cancel="emits('close')"

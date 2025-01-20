@@ -84,7 +84,7 @@
     <div style="display: flex; justify-content: center; margin-top: 8px">
         <a-space>
             <a-button @click.stop="emits('cancel')">取消</a-button>
-            <a-button @click.stop="onInstall" type="primary">全部安装</a-button>
+            <a-button @click.stop="onInstall" type="primary" :disabled="loading">全部安装</a-button>
         </a-space>
     </div>
 </template>
@@ -109,6 +109,10 @@ const props = defineProps({
         type: Object,
         default: () => {},
     },
+    loading:{
+      type: Boolean,
+      default: false,
+    }
 });
 const emits = defineEmits(['update:value', 'cancel', 'refresh']);
 const imageMap = new Map([
