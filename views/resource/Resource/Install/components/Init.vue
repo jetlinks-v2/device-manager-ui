@@ -96,7 +96,7 @@ const handleChange = ({ file }) => {
         emits('update:source', source.value);
     }
     if(file.status === 'error') {
-      onlyMessage('上传失败','error');
+      onlyMessage('资源包异常上传失败！','error');
       loading.value = false;
     }
 };
