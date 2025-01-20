@@ -96,7 +96,7 @@ watch(
         }
         resourceVersionMap.value.clear();
         const resourceIds = list?.map((i) => {
-            return i.resourcesId;
+            return i.resourcesId || i.id;
         });
         getVersion(resourceIds);
     },

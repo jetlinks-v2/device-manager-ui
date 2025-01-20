@@ -258,8 +258,8 @@ const onPause = async (item) => {
 };
 
 const onDetail = async (data) => {
-  menuStory.jumpPage('link/Resource/Detail', {
-    query: {
+  menuStory.jumpPage('resource/Resource/Detail', {
+    params: {
       id: data.resourceDetails?.releaseDetail?.resourcesId,
     }
   });
