@@ -65,7 +65,7 @@
                   >
                     <div
                         class="resource"
-                        @click="() => chooseResource(i)"
+                        @click="() => chooseResource(i.id)"
                     >
                       <img
                           :src="
@@ -122,6 +122,8 @@ import {resource} from '@device/assets/resource';
 import {treeFilter} from '@device/utils/tree';
 import {cloneDeep} from 'lodash-es';
 
+const route = useRoute();
+const _id = route.query?.id;
 const imageMap = new Map([
   ['device', resource.deviceDefaultImage],
   ['collector', resource.collectorDefaultImage],
@@ -187,13 +189,13 @@ const select = (key) => {
   selectedClassification.value = key;
 };
 
-const chooseResource = async (data) => {
+const chooseResource = async (id) => {
   const res = await queryTemplateDetail({
     terms: [
       {
         column: 'id',
         termType: 'eq',
-        value: data.id,
+        value: id,
       },
     ],
   });
@@ -275,6 +277,9 @@ watch(
 );
 
 onMounted(() => {
+  if(_id){
+    chooseResource(_id)
+  }
   getClassificationType();
 });
 </script>

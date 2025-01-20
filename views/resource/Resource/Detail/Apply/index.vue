@@ -94,10 +94,11 @@ const onStep = () => {
         onlyMessage('请选择更新方式', 'warning');
         return;
     }
-    console.log('type.value====', type.value);
-    if (type.value[0] === 'create') {
+    if (type.value === 'create') {
         menuStory.jumpPage('device/Product/QuickCreate', {
-            id: props.data.id,
+            query:{
+              id: props.data.id,
+            }
         });
     } else {
         step.value = 1;
@@ -127,8 +128,9 @@ const getProtocolList = async () => {
             console.log('now====', res.result);
             console.log('new====', resp.result);
             const arr = res.result.map((item: any) => {
+
                 const obj = resp.result?.find(
-                    (i: any) => i.id === item.configuration.sourceId,
+                    (i: any) => i.id === item?.configuration?.sourceId,
                 );
                 if (obj) {
                     item.newProtocol = obj;
@@ -138,8 +140,11 @@ const getProtocolList = async () => {
 
             protocolList.value = arr.filter(
                 (item: any) =>
-                    item.configuration.version !== item.newProtocol.version,
+                {
+                  return item?.configuration?.version !== item?.newProtocol?.version
+                }
             );
+
         }
     }
 };
