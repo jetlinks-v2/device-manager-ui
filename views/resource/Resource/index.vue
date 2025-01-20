@@ -2,7 +2,7 @@
     <j-page-container>
         <FullPage>
             <div class="container">
-                <ResourceTable @itemClick="toDetail">
+                <ResourceTable  ref="tableRef" @itemClick="toDetail">
                     <template #title>
                         <a-space>
                             <span>我的资源</span>
@@ -15,7 +15,7 @@
                 </ResourceTable>
                 <Install
                     v-if="showInstallModal"
-                    @close="showInstallModal = false"
+                    @close="closeInstall"
                 />
             </div>
         </FullPage>
@@ -29,11 +29,18 @@ import { useMenuStore } from "@/store";
 const menuStory = useMenuStore();
 const showInstallModal = ref(false);
 
+const tableRef = ref(null);
+
 const toDetail = (record) => {
     menuStory.jumpPage('resource/Resource/Detail',{
         params: { id: record.id },
     });
 };
+
+const closeInstall = () => {
+  showInstallModal.value = false;
+  tableRef.value?.refresh();
+}
 </script>
 <style lang="less" scoped>
 .container {

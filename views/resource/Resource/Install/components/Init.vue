@@ -63,6 +63,7 @@
 import { _queryResourceCloud, RESOURCE_UPLOAD } from '@device/api/resource/resource';
 import { TOKEN_KEY } from '@jetlinks-web/constants';
 import { LocalStore } from '@jetlinks-web/utils';
+import { onlyMessage } from "@jetlinks-web/utils";
 import List from './List.vue';
 const props = defineProps({
     source: {
@@ -93,6 +94,10 @@ const handleChange = ({ file }) => {
         fileList.value = [...fileList.value, ...(file.response?.result || [])];
         emits('update:value', fileList.value);
         emits('update:source', source.value);
+    }
+    if(file.status === 'error') {
+      onlyMessage('上传失败','error');
+      loading.value = false;
     }
 };
 
