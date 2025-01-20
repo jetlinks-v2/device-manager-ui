@@ -60,7 +60,6 @@ defineExpose({refresh})
 
 <template>
   <div class="resource-table-warp">
-
     <Search v-if="showSearch" v-model:value="params">
       <template #titleRender>
         <slot name="title">

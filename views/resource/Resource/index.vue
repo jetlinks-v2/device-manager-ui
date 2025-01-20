@@ -1,40 +1,42 @@
 <template>
-    <j-page-container>
-        <FullPage>
-            <div class="container">
-                <ResourceTable  ref="tableRef" @itemClick="toDetail">
-                    <template #title>
-                        <a-space>
-                            <span>我的资源</span>
-                            <a-button @click="showInstallModal = true"
-                                >安装</a-button
-                            >
-                            <!-- <a-button @click="toDetail">详情</a-button> -->
-                        </a-space>
-                    </template>
-                </ResourceTable>
-                <Install
-                    v-if="showInstallModal"
-                    @close="closeInstall"
-                />
-            </div>
-        </FullPage>
-    </j-page-container>
+  <j-page-container>
+    <FullPage :fixed="false">
+      <div class="container">
+        <ResourceTable ref="tableRef" @itemClick="toDetail">
+          <template #title>
+            <a-space>
+              <span>我的资源</span>
+              <a-button @click="showInstallModal = true"
+              >安装
+              </a-button
+              >
+              <!-- <a-button @click="toDetail">详情</a-button> -->
+            </a-space>
+          </template>
+        </ResourceTable>
+        <Install
+            v-if="showInstallModal"
+            @close="closeInstall"
+        />
+      </div>
+    </FullPage>
+  </j-page-container>
 </template>
 
 <script setup>
 import Install from './Install/index.vue';
-import { ResourceTable } from '@device/components/ResourceTable/index.ts'
-import { useMenuStore } from "@/store";
+import {ResourceTable} from '@device/components/ResourceTable/index.ts'
+import {useMenuStore} from "@/store";
+
 const menuStory = useMenuStore();
 const showInstallModal = ref(false);
 
 const tableRef = ref(null);
 
 const toDetail = (record) => {
-    menuStory.jumpPage('resource/Resource/Detail',{
-        params: { id: record.id },
-    });
+  menuStory.jumpPage('resource/Resource/Detail', {
+    params: {id: record.id},
+  });
 };
 
 const closeInstall = () => {
@@ -44,6 +46,7 @@ const closeInstall = () => {
 </script>
 <style lang="less" scoped>
 .container {
-    padding: 20px;
+  padding: 20px;
+  height: 100%;
 }
 </style>
