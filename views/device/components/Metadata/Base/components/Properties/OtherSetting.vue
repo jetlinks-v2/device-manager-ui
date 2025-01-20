@@ -74,9 +74,9 @@
                                                     ?.type
                                             "
 
-                                            :extra="{
+                                            :extraProps="{
                                                 dropdownStyle: {
-                                                    zIndex: 9999,
+                                                    zIndex: 1071,
                                                 },
                                                 popupStyle: {
                                                     zIndex: 1071,
