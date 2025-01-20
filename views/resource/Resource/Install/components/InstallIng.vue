@@ -40,20 +40,20 @@
           </div>
         </template>
       </a-space>
-      <a-button @click="pauseAll" type="primary" v-if="controlStatue">
+      <a-button @click="pauseAll" :disabled="allComplete" type="primary" v-if="controlStatue">
         <template #icon>
           <AIcon type="PauseOutlined"></AIcon>
         </template>
         全部暂停
       </a-button>
       <a-space v-else>
-        <a-button @click="startAll" type="primary">
+        <a-button @click="startAll" :disabled="allComplete" type="primary">
           <template #icon>
             <AIcon type="CaretRightOutlined"></AIcon>
           </template>
           全部开始
         </a-button>
-        <a-button @click="removeAll" type="primary">
+        <a-button @click="removeAll" :disabled="allComplete" type="primary">
           <template #icon>
             <AIcon type="DeleteOutlined"></AIcon>
           </template>
@@ -206,6 +206,12 @@ const controlStatue = computed(() => {
     return ['success', 'failed', 'canceled'].includes(i?.state?.value);
   });
 });
+
+const allComplete = computed(() => {
+  return Object.values(status.value).every((i) => {
+    return i?.state?.value === 'success';
+  })
+})
 
 const pauseAll = async () => {
   const arr = map(
