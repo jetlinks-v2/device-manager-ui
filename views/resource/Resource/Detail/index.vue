@@ -12,9 +12,19 @@
             <img :src="detail.photoUrl?.url || imageMap.get(detail.type?.value)"/>
           </div>
           <div class="header-title-center">
-            <j-ellipsis>
-              {{ detail.name }}
-            </j-ellipsis>
+            <!--            <j-ellipsis>-->
+            <!--              {{ detail.name }}-->
+            <!--            </j-ellipsis>-->
+            <div class='header-title-text fz-32 fw-b'>
+              <DetailHeaderTitle :data='detail'/>
+            </div>
+            <div class='header-tags'>
+              <div class='tags-item' style="font-size: 14px" v-for='item in typeList'>
+                <j-ellipsis>
+                  {{ item }}
+                </j-ellipsis>
+              </div>
+            </div>
           </div>
           <div class="header-type">
             {{ detail.type?.text || '--' }}
@@ -103,8 +113,15 @@
       </div>
       <div class="detail-version mb-16" v-if="detail.version">
         <p class="module-title">适用型号</p>
-        <div>
-          {{ detail.version }}
+        <div class='model-list' v-for='item in detail.model'>
+          <div class='item-name fz-18'>
+            {{ item.name }}
+          </div>
+          <div class='doc-items'>
+            <div class='doc-item fc-600' v-for='child in item.children'>
+              {{ child.name }}
+            </div>
+          </div>
         </div>
       </div>
       <div class="detail-info mb-16">
@@ -185,6 +202,7 @@ import Metadata from './Metadata.vue';
 import dayjs from 'dayjs';
 import {resource} from '@device/assets/resource'
 import LivePlayer from '@/components/Player/index.vue';
+import DetailHeaderTitle from './components/title.vue'
 
 
 const imageMap = new Map([
@@ -228,6 +246,15 @@ const viewsList = computed(() => {
   }
   return arr;
 });
+
+const typeList = computed(() => {
+  return detail.value.classification?.reduce((pre, cur) => {
+    if (cur.children) {
+      pre.push(...cur.children.map(item => item.name))
+    }
+    return pre
+  }, []) || []
+})
 
 const getDetail = async (id) => {
   const res = await detailResource(id);
@@ -306,10 +333,22 @@ watch(
 </script>
 
 <style lang="less" scoped>
+.resource-detail-warp {
+  background-color: #fff;
+  min-height: 100%;
+
+  .resource-detail-center {
+    padding: 40px 0 0;
+    margin: 0 auto;
+    width: 63.38%;
+  }
+}
+
 .resource-detail {
   padding: 12px;
   overflow: auto;
   background: #fff;
+
   .detail-header {
     margin-bottom: 18px;
 
@@ -320,6 +359,8 @@ watch(
       margin-bottom: 12px;
 
       .header-title-img {
+        background-color: @font-gray-50;
+
         img {
           width: 80px;
           height: 80px;
@@ -345,12 +386,13 @@ watch(
     .header-tags {
       display: flex;
       gap: 16px;
+      flex-wrap: wrap;
 
       .tags-item {
-        padding: 2px 8px;
+        padding: 4px 12px;
         border-radius: 4px;
-        color: #fff;
-        background-color: @primary-color;
+        color: var(--ant-primary-color);
+        background-color: #e7f1ff;
         max-width: 120px;
       }
     }
@@ -400,9 +442,23 @@ watch(
 
   .doc-items {
     display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
 
     .doc-item {
-      font-size: 18px;
+      font-size: 16px;
+      border-radius: 6px;
+      padding: 8px 24px;
+      border: 1px solid @font-gray-300;
+    }
+  }
+
+  .model-list {
+    display: flex;
+    gap: 12px;
+
+    .item-name {
+      padding-top: 8px;
     }
   }
 
@@ -419,9 +475,16 @@ watch(
     margin-bottom: 40px;
   }
 
+  .detail-version {
+    .model-list {
+      margin-bottom: 16px;
+    }
+  }
+
   .recommend {
     padding-top: 24px;
     border-top: 1px solid @font-gray-400;
+    margin-bottom: 24px;
   }
 
   .metadata-warp {
@@ -439,19 +502,19 @@ watch(
 
     &.show {
       height: 415px;
-      transition: height 0.5s;
+      transition: height .5s;
 
       .metadata-center {
-        transition: transform 0.5s 0.15s;
+        transition: transform .5s .15s;
         transform: translateY(0);
       }
     }
 
     &.hidden {
-      transition: height 0.5s 0.15s;
+      transition: height .5s .15s;
 
       .metadata-center {
-        transition: transform 0.5s;
+        transition: transform .5s;
         transform: translateY(-415px);
       }
     }
@@ -463,7 +526,17 @@ watch(
     }
   }
 }
+.model-list {
+  display: flex;
+  gap: 12px;
 
+  .item-name {
+    padding-top: 8px;
+  }
+}
+.fz-18{
+  font-size: 18px;
+}
 :deep(.ant-carousel) {
   .slick-dots {
     position: relative;
@@ -471,16 +544,45 @@ watch(
   }
 
   .slick-slide {
-    img,
-    & video {
-      border: 5px solid #fff;
+    img, & video {
+      border: 1px solid #fff;
       display: block;
       margin: auto;
     }
   }
 
-  .slick-arrow {
-    display: none !important;
+  .slick-thumb {
+    bottom: 0;
+    margin-top: 12px;
+
+    li {
+      width: 104px !important;
+      height: 83px;
+
+      > div {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+
+        &:hover {
+          background-color: @font-gray-200;
+        }
+
+        img, & video {
+          max-height: 100%;
+          display: block;
+          width: 104px;
+        }
+      }
+
+      &.slick-active {
+        width: 104px;
+        img, & img {
+          filter: grayscale(0%);
+        }
+      }
+    }
   }
 
   .slick-arrow.custom-slick-arrow {
