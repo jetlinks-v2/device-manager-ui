@@ -9,7 +9,7 @@
         @ok="emits('close')"
     >
     <div class="ht_40">
-        <div v-if="showUpdata" class="content">
+        <div v-if="showUpdate" class="content">
             <div class="title">
                 <div><a-badge status="success" />检测到有新版本</div>
                 <a-button type="primary" @click="onUpdate">更新</a-button>
@@ -21,14 +21,16 @@
         </div>
         <div class="noUpdate" v-else><a-badge status="success" />当前已是最新版本</div>
     </div>
+      <Install v-if="showUpdateModal" @close="closeUpdateModal"/>
     </a-modal>
 </template>
 
 <script setup name="Update">
 import { checkUpdate,_latest,installResource } from '@device/api/resource/resource';
 import { onlyMessage } from '@jetlinks-web/utils';
+import Install from '@device/views/resource/Resource/Install/index.vue'
 
-const emits = defineEmits(['close']);
+const emits = defineEmits(['close','refresh']);
 
 const props = defineProps({
     data: {
@@ -36,12 +38,13 @@ const props = defineProps({
         default: () => ({}),
     },
 });
-const showUpdata = ref(false);
+const showUpdate = ref(false);
+const showUpdateModal = ref(false)
 const info = ref({});
 const getUpdate = async () => {
     const res = await checkUpdate(props.data.id);
     if(res.success){
-        showUpdata.value = res.result;
+        showUpdate.value = res.result;
         if(res.result){
             const resp = await _latest(props.data.id);
             if(resp.success){
@@ -59,10 +62,14 @@ const onUpdate = async() => {
         }]
     });
     if(res.success){
-        onlyMessage('操作成功')
-        emits('close')
+        showUpdateModal.value = true;
     }
 };
+
+const closeUpdateModal = () =>{
+  showUpdateModal.value = false;
+  emits('refresh')
+}
 
 onMounted(() => {
     getUpdate();

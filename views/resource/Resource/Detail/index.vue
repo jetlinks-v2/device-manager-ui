@@ -179,7 +179,7 @@
       </div>
     </div>
     <!--        </FullPage>-->
-    <Update v-if="visible" :data="detail" @close="onClose"/>
+    <Update v-if="visible" :data="detail" @refresh="refresh" @close="onClose"/>
     <Apply
         v-if="visibleApply"
         :data="detail"
@@ -315,6 +315,11 @@ const onCanplay = () => {
       }
     }, 300)
   }
+}
+
+const refresh = () => {
+  getDetail(_id)
+  visible.value = false
 }
 
 
