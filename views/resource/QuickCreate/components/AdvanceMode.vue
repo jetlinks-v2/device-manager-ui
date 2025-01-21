@@ -14,7 +14,7 @@
                         <img :src="BackMap.get(i?.provider)" alt="" />
                         <div style="margin-left: 20px">
                             <div class="cardName">
-                                {{ i?.provider + '网关' }}
+                                {{ providers.get(i?.provider) }}
                             </div>
                             <div class="cardDes">
                                 {{ descriptions?.get(i?.provider) }}
@@ -30,7 +30,7 @@
                     <img :src="BackMap.get(accessConfig?.provider)" alt="" />
                     <div style="margin-left: 20px">
                         <div class="cardName">
-                            {{ accessConfig?.provider + '网关' }}
+                            {{ providers.get(accessConfig.provider) }}
                         </div>
                         <div class="cardDes">
                             {{ descriptions?.get(accessConfig?.provider) }}
@@ -231,6 +231,7 @@ import { onlyMessage } from '@jetlinks-web/utils';
 import { omit } from 'lodash-es';
 import { gatewayType } from '../data';
 import { link } from '@device/assets/link/index.ts'
+import { getProviders } from '@device/api/product'
 const props = defineProps({
     accessList: {
         type: Array,
@@ -246,6 +247,8 @@ const props = defineProps({
     },
 });
 const emits = defineEmits(['quit', 'submit']);
+//设备接入网关类型数据
+const providers = ref(new Map())
 const accessConfig = ref();
 const network = ref();
 const protocol = ref();
@@ -307,6 +310,15 @@ const selectResourceProtocol = (data) => {
     };
     selectedProtocolID.value = data.id;
 };
+
+const queryAccessType = async () => {
+  const res = await getProviders();
+  if(res.success) {
+    res.result.forEach((i)=>{
+      providers.value.set(i.id,i.name)
+    });
+  }
+}
 
 const selectResourcePlugin = (data) => {
     plugin.value = {
@@ -438,6 +450,10 @@ const submitDada = () => {
     }
     emits('submit',data,accessName);
 };
+
+onMounted(() => {
+  queryAccessType()
+})
 </script>
 <style lang="less" scoped>
 .container {
