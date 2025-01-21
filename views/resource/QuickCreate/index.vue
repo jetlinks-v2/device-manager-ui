@@ -95,7 +95,7 @@
                     </div>
                   </a-col>
                 </a-row>
-                <a-empty v-else></a-empty>
+                <j-empty v-else></j-empty>
               </div>
             </div>
           </div>
@@ -230,7 +230,23 @@ const getTemplateList = async () => {
           value: ['device', 'protocol'],
         },
       ];
-  if (activeKey.value) {
+  if (selectedClassification.value) {
+    terms.push({
+      "column": "id$resource-bind",
+      "value": [
+        {
+          "column": "key$resources-classification",
+          "value": [
+            {
+              "column": "id",
+              "value": selectedClassification.value
+            }
+          ]
+        }
+      ],
+      "type": "and"
+    });
+  } else if (activeKey.value) {
     terms.push({
       column: 'id$resource-bind',
       value: [
@@ -244,13 +260,6 @@ const getTemplateList = async () => {
           ],
         },
       ],
-    });
-  }
-  if (selectedClassification.value) {
-    terms.push({
-      column: 'id',
-      termType: 'resource-bind$classification',
-      value: [selectedClassification.value],
     });
   }
   const params = {
@@ -277,7 +286,7 @@ watch(
 );
 
 onMounted(() => {
-  if(_id){
+  if (_id) {
     chooseResource(_id)
   }
   getClassificationType();
