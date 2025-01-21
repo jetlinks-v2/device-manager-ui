@@ -402,10 +402,10 @@ const getOptions = (i: any) => {
     }
     return undefined;
 };
-const fun = () => {
-    console.log(formData.data, productStore.current?.configuration);
-};
-fun();
+// const fun = () => {
+//     console.log(formData.data, productStore.current?.configuration);
+// };
+// fun();
 // 产品类型
 const productTypes = ref([]);
 const productData = reactive({
@@ -716,17 +716,17 @@ const checkAccess = async (data: any) => {
             ? marked(config.value.document)
             : '';
         getGuide(!!data.metadata.length); //
-
-        if (data.access?.transportDetail?.metadata) {
-            const metadata = JSON.parse(data.access?.transportDetail?.metadata);
-            productData.metadata = pick(metadata, [
-                'functions',
-                'properties',
-                'events',
-                'tags',
-            ]);
-        }
     }
+
+  if (data.access?.transportDetail?.metadata) {
+    const _metadata = JSON.parse(data.access?.transportDetail?.metadata);
+    productData.metadata = pick(_metadata, [
+      'functions',
+      'properties',
+      'events',
+      'tags',
+    ]);
+  }
 };
 
 const productTypeChange = (id: string, items: any) => {
