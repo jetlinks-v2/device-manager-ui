@@ -80,7 +80,7 @@ const props = defineProps({
         default: () => {},
     },
 });
-const emits = defineEmits(['update:value', 'update:source', 'close']);
+const emits = defineEmits(['update:value', 'update:source', 'close','getByCloudError']);
 const fileList = ref([]);
 const uploadFile = ref([]);
 const loading = ref(false);
@@ -104,6 +104,7 @@ const handleChange = ({ file }) => {
 
 const getResourceByCloud = async () => {
     source.value = 'cloud';
+
     const res = await _queryResourceCloud({
         paging: false,
         sorts: [
@@ -119,11 +120,13 @@ const getResourceByCloud = async () => {
                 value: 'success',
             },
         ],
+    }).catch((err)=>{
+      emits('getByCloudError',err.response?.data?.message)
+      emits('update:source', source.value);
     });
-    if (res.success) {
+    if (res?.success) {
         fileList.value = res.result;
         emits('update:value', fileList.value);
-        emits('update:source', source.value);
     }
 };
 

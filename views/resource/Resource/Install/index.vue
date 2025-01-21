@@ -20,12 +20,13 @@
         ref="listRef"
         v-model:value="fileList"
         :resourceVersionMap="resourceVersionMap"
+        :errMessage="errMessage"
         @cancel="emits('close')"
         @refresh="getTaskList"
     />
     <template v-else>
       <Init v-model:source="source" v-model:value="fileList" :resourceVersionMap="resourceVersionMap"
-            @close="emits('close')" @refresh="getTaskList"/>
+            @close="emits('close')" @refresh="getTaskList" @getByCloudError="getByCloudError"/>
     </template>
   </a-modal>
 </template>
@@ -61,6 +62,7 @@ const getTaskList = async () => {
 };
 
 const resourceVersionMap = ref(new Map());
+const errMessage = ref('');
 
 const getVersion = async (ids) => {
   const params = {
@@ -86,6 +88,10 @@ const getVersion = async (ids) => {
     listRef.value?.compareVersion()
   }
 };
+
+const getByCloudError = (err)=>{
+  errMessage.value = err
+}
 
 watch(
     () => [fileList.value, taskList.value],
