@@ -26,9 +26,6 @@
               </div>
             </div>
           </div>
-          <div class="header-type">
-            {{ detail.type?.text || '--' }}
-          </div>
           <div class="header-title-collect">
             <a-space>
               <a-button @click="visible = true"
@@ -37,6 +34,7 @@
               >
               <a-button @click="onApply">应用资源</a-button>
             </a-space>
+            <div class="createdProductNumber">已创建产品：{{ count}}</div>
           </div>
         </div>
         <div class="header-tags">
@@ -197,13 +195,12 @@
 import Update from './Update/index.vue';
 import Apply from './Apply/index.vue';
 import ApplyCollector from './ApplyCollector/index.vue';
-import {detailResource} from '@device/api/resource/resource';
+import {detailResource , _queryProtocol} from '@device/api/resource/resource';
 import Metadata from './Metadata.vue';
 import dayjs from 'dayjs';
 import {resource} from '@device/assets/resource'
 import LivePlayer from '@/components/Player/index.vue';
 import DetailHeaderTitle from './components/title.vue'
-
 
 const imageMap = new Map([
   ['device', resource.deviceDefaultImage],
@@ -222,7 +219,7 @@ const detail = ref({
 const _id = route.params?.id;
 const metadataVisible = ref(false);
 const emptyValue = '--';
-
+const count = ref(0);
 const viewsList = computed(() => {
   const arr = [];
 
@@ -255,6 +252,14 @@ const typeList = computed(() => {
     return pre
   }, []) || []
 })
+
+// 受协议影响的产品
+const getProtocol = async () => {
+  const res = await _queryProtocol(_id, {});
+  if (res.success) {
+    count.value = res.result.total;
+  }
+};
 
 const getDetail = async (id) => {
   const res = await detailResource(id);
@@ -328,6 +333,7 @@ watch(
     () => {
       if (_id) {
         getDetail(_id);
+        getProtocol()
       }
     },
     {
@@ -378,7 +384,10 @@ watch(
         flex: 1 1 0;
         min-width: 0;
       }
-
+      .createdProductNumber{
+        margin-top: 18px;
+        text-align: right;
+      }
       .header-type {
         margin: 0 16px;
         padding: 6px 12px;
