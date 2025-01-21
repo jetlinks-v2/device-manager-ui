@@ -1,32 +1,33 @@
 <template>
-    <a-modal
-        title="安装资源"
-        visible
+  <a-modal
+      title="安装资源"
+      visible
+      @cancel="emits('close')"
+      :maskClosable="false"
+      :width="1000"
+      :footer="null"
+  >
+    <InstallIng
+        v-if="taskList.length"
+        :taskList="taskList"
+        :resourceVersionMap="resourceVersionMap"
+        :source="source"
+        @refresh="getTaskList"
+    />
+    <List
+        :source="source"
+        ref="listRef"
+        v-else-if="source === 'cloud'"
+        v-model:value="fileList"
+        :resourceVersionMap="resourceVersionMap"
         @cancel="emits('close')"
-        :maskClosable="false"
-        :width="1000"
-        :footer="null"
-    >
-        <InstallIng
-            v-if="taskList.length"
-            :taskList="taskList"
-            :resourceVersionMap="resourceVersionMap"
-            :source="source"
-            @refresh="getTaskList"
-        />
-        <List
-            :source="source"
-            ref="listRef"
-            v-else-if="source === 'cloud'"
-            v-model:value="fileList"
-            :resourceVersionMap="resourceVersionMap"
-            @cancel="emits('close')"
-            @refresh="getTaskList"
-        />
-        <template v-else>
-            <Init v-model:source="source" v-model:value="fileList" :resourceVersionMap="resourceVersionMap" @close="emits('close')" @refresh="getTaskList"/>
-        </template>
-    </a-modal>
+        @refresh="getTaskList"
+    />
+    <template v-else>
+      <Init v-model:source="source" v-model:value="fileList" :resourceVersionMap="resourceVersionMap"
+            @close="emits('close')" @refresh="getTaskList"/>
+    </template>
+  </a-modal>
 </template>
 
 <script setup>
@@ -34,8 +35,8 @@ import Init from './components/Init.vue';
 import List from './components/List.vue';
 import InstallIng from './components/InstallIng.vue';
 import {
-    queryTaskListNoPaging,
-    _queryTemplateNoPaging,
+  queryTaskListNoPaging,
+  _queryTemplateNoPaging,
 } from '@device/api/resource/resource';
 
 const emits = defineEmits(['close']);
@@ -45,66 +46,69 @@ const fileList = ref([]);
 const taskList = ref([]);
 
 const getTaskList = async () => {
-    const resp = await queryTaskListNoPaging({
-        terms: [
-            {
-                column: 'state',
-                termType: 'not',
-                value: 'success',
-            },
-        ],
-    });
-    if (resp.success) {
-        taskList.value = resp.result;
-    }
+  const resp = await queryTaskListNoPaging({
+    terms: [
+      {
+        column: 'state',
+        termType: 'not',
+        value: 'success',
+      },
+    ],
+  });
+  if (resp.success) {
+    taskList.value = resp.result;
+  }
 };
 
 const resourceVersionMap = ref(new Map());
 
 const getVersion = async (ids) => {
-    const params = {
-        paging: false,
+  const params = {
+    paging: false,
+    terms: [
+      {
         terms: [
-            {
-                terms: [
-                    {
-                        type: 'or',
-                        value: ids,
-                        termType: 'in',
-                        column: 'id',
-                    },
-                ],
-            },
+          {
+            type: 'or',
+            value: ids,
+            termType: 'in',
+            column: 'id',
+          },
         ],
-    };
-    const res = await _queryTemplateNoPaging(params);
-    if (res.success) {
-        res.result.forEach((i) => {
-            resourceVersionMap.value.set(i.id, i.version);
-        });
-        listRef.value?.compareVersion()
-    }
+      },
+    ],
+  };
+  const res = await _queryTemplateNoPaging(params);
+  if (res.success) {
+    res.result.forEach((i) => {
+      resourceVersionMap.value.set(i.id, i.version);
+    });
+    listRef.value?.compareVersion()
+  }
 };
 
 watch(
     () => [fileList.value, taskList.value],
     () => {
-        let list;
-        if (taskList.value.length) {
-            list = taskList.value;
-        } else {
-            list = fileList.value;
-        }
-        resourceVersionMap.value.clear();
-        const resourceIds = list?.map((i) => {
-            return i.resourcesId || i.id;
+      let resourceIds = []
+      if (taskList.value.length) {
+        resourceIds = taskList.value.map((i) => {
+          return i.resourceDetails?.id || i.resourceDetails?.releaseDetail?.resourcesId
+        })
+      } else {
+        resourceIds = fileList.value?.map((i) => {
+          return i.id;
         });
-        getVersion(resourceIds);
-    },
+      }
+      resourceVersionMap.value.clear();
+      getVersion(resourceIds);
+    }, {
+      deep: true
+    }
 );
 
 onMounted(() => {
-    getTaskList();
+  getTaskList();
 });
 </script>
 <style lang="less" scoped></style>

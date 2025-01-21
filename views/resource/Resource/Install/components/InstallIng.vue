@@ -152,9 +152,9 @@
               <div class="installStatue">
                 {{ computedVersion(resourceVersionMap, i) }}
               </div>
-              <div v-if="resourceVersionMap.has(i.resourcesId)">
+              <div v-if="resourceVersionMap.has(i.resourcesId || i?.resourceDetails?.id || i.resourceDetails?.releaseDetail?.resourcesId)">
                 (当前版本:{{
-                  resourceVersionMap.get(i.resourcesId)
+                  resourceVersionMap?.get(i.resourcesId || i?.resourceDetails?.id || i.resourceDetails?.releaseDetail?.resourcesId)
                 }})
               </div>
             </div>
@@ -332,6 +332,7 @@ watch(
       immediate: true,
     },
 );
+
 
 onUnmounted(() => {
   if (wsRef) {

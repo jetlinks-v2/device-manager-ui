@@ -25,7 +25,7 @@ statusColor.set('waiting_install', '')
 statusColor.set('waiting_download', '')
 
 export const computedVersion = (resourceVersionMap:any,data:any) => {
-    const resourcesId = data?.resourcesId || data?.releaseDetail?.resourcesId
+    const resourcesId = data?.resourcesId || data?.resourceDetails?.id || data?.resourceDetails?.releaseDetail?.resourcesId
     if (resourceVersionMap.has(resourcesId)) {
         return resourceVersionMap.get(resourcesId) === data.version
             ? '同版本覆盖'
