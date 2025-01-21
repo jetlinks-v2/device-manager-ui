@@ -1,5 +1,5 @@
 <script setup name="Metadata">
-import { getMetadataColumns,DataTypeList, EventLevel, sourceType,arrayToObj } from './utils'
+import { DataTypeList, EventLevel, sourceType,arrayToObj } from './utils'
 import VirtualScroll from '@device/components/VirtualScroll/index.vue'
 
 const props = defineProps({
