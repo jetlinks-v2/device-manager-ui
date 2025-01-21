@@ -29,7 +29,7 @@
                   v-model:value="searchValue"
               >
                 <template #suffix>
-                  <AIcon type="SearchOutlined"/>
+                  <AIcon  type="SearchOutlined"/>
                 </template>
               </a-input>
               <SearchTree
@@ -50,7 +50,7 @@
                     v-model:value="searchParams"
                 >
                   <template #suffix>
-                    <AIcon type="SearchOutlined"/>
+                    <AIcon @click="getTemplateList" type="SearchOutlined"/>
                   </template>
                 </a-input>
               </div>
@@ -229,7 +229,7 @@ const getTemplateList = async () => {
         {
           column: 'name',
           termType: 'like',
-          type: 'or',
+          type: 'and',
           value: `%${searchParams.value}%`,
         },
       ]
@@ -289,7 +289,7 @@ const getTemplateList = async () => {
 };
 
 watch(
-    () => [selectedClassification.value, searchParams.value, activeKey.value],
+    () => [selectedClassification.value, activeKey.value],
     () => {
       getTemplateList();
     },
@@ -300,7 +300,6 @@ watch(() => [searchValue.value, JSON.stringify(treeData.value)], () => {
     const arr1 = []
     getExpands(treeData.value, arr1)
     expandedKeys.value = arr1
-    console.log(arr1,'arr1')
   }
 }, {
   immediate: true

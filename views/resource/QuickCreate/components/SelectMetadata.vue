@@ -42,7 +42,7 @@
 
 <script setup>
 import {cloneDeep} from 'lodash-es';
-import {DataTypeList, EventLevel, sourceType, arrayToObj} from './utils'
+import {DataTypeList, EventLevel, sourceType, arrayToObj} from '@device/views/resource/Resource/Detail/utils'
 
 const props = defineProps({
   data: {
