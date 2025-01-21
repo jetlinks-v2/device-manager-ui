@@ -98,9 +98,9 @@ watch(
         })
         source.value = taskList.value[0]?.type?.value;
       } else {
-        // fileList.value?.forEach((i) => {
-        //    i.resourcesId && resourceIds.push(i.resourcesId);
-        // });
+        fileList.value?.forEach((i) => {
+           i.resourcesId && resourceIds.push(i.resourcesId) || i.id && resourceIds.push(i.id);
+        });
       }
       resourceVersionMap.value.clear();
       if(resourceIds.length) {

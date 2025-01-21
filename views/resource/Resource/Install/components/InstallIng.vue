@@ -176,6 +176,7 @@ import {statusIcon, computedVersion} from '@device/views/resource/Resource/Insta
 import {map} from 'lodash-es';
 import {useMenuStore} from '@/store/menu';
 import {resource} from '@device/assets/resource';
+import { inject } from "vue";
 
 const props = defineProps({
   taskList: {
@@ -192,6 +193,7 @@ const props = defineProps({
     },
   },
 });
+const closeUpdateModal = inject('closeUpdateModal');
 const emits = defineEmits(['refresh']);
 const menuStory = useMenuStore();
 const imageMap = new Map([
@@ -268,6 +270,10 @@ const onPause = async (item) => {
 };
 
 const onDetail = async (data) => {
+  if(closeUpdateModal){
+    closeUpdateModal();
+    return
+  }
   menuStory.jumpPage('resource/Resource/Detail', {
     params: {
       id: data.resourceDetails?.releaseDetail?.resourcesId,

@@ -21,7 +21,7 @@
         </div>
         <div class="noUpdate" v-else><a-badge status="success" />当前已是最新版本</div>
     </div>
-      <Install v-if="showUpdateModal" @close="closeUpdateModal"/>
+      <Install v-if="showUpdateModal"  @close="closeUpdateModal"/>
     </a-modal>
 </template>
 
@@ -29,6 +29,7 @@
 import { checkUpdate,_latest,installResource } from '@device/api/resource/resource';
 import { onlyMessage } from '@jetlinks-web/utils';
 import Install from '@device/views/resource/Resource/Install/index.vue'
+import { provide } from "vue";
 
 const emits = defineEmits(['close','refresh']);
 
@@ -38,6 +39,7 @@ const props = defineProps({
         default: () => ({}),
     },
 });
+
 const showUpdate = ref(false);
 const showUpdateModal = ref(false)
 const info = ref({});
@@ -70,6 +72,8 @@ const closeUpdateModal = () =>{
   showUpdateModal.value = false;
   emits('refresh')
 }
+
+provide('closeUpdateModal',closeUpdateModal)
 
 onMounted(() => {
     getUpdate();

@@ -150,7 +150,7 @@ const onInstall = async () => {
 
 const compareVersion = async () => {
     fileList.value = props.value.filter((i) => {
-        const resourcesId = i?.resourcesId || i?.releaseDetail?.resourcesId;
+        const resourcesId = i?.resourcesId || i?.releaseDetail?.resourcesId
         if (props.resourceVersionMap.has(resourcesId)) {
             return props.resourceVersionMap.get(resourcesId) !== i.version;
         } else {
