@@ -15,9 +15,9 @@
         @refresh="getTaskList"
     />
     <List
+        v-else-if="source === 'cloud'"
         :source="source"
         ref="listRef"
-        v-else-if="source === 'cloud'"
         v-model:value="fileList"
         :resourceVersionMap="resourceVersionMap"
         @cancel="emits('close')"
@@ -92,16 +92,24 @@ watch(
     () => {
       let resourceIds = []
       if (taskList.value.length) {
-        resourceIds = taskList.value.map((i) => {
-          return i.resourceDetails?.id || i.resourceDetails?.releaseDetail?.resourcesId
+         taskList.value.forEach((i) => {
+           const _id = i.resourceDetails?.id || i.resourceDetails?.releaseDetail?.resourcesId
+           _id && resourceIds.push(_id);
         })
+        source.value = taskList.value[0]?.type?.value;
       } else {
-        resourceIds = fileList.value?.map((i) => {
-          return i.id;
-        });
+        // fileList.value?.forEach((i) => {
+        //    i.resourcesId && resourceIds.push(i.resourcesId);
+        // });
       }
       resourceVersionMap.value.clear();
-      getVersion(resourceIds);
+      if(resourceIds.length) {
+        getVersion(resourceIds);
+      }else{
+        nextTick(()=>{
+          listRef.value?.compareVersion()
+        })
+      }
     }, {
       deep: true
     }

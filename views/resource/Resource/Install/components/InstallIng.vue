@@ -214,17 +214,20 @@ const allComplete = computed(() => {
 })
 
 const pauseAll = async () => {
-  const arr = map(
-      props.taskList.filter((i) =>
-          [
-            'installing',
-            'downloading',
-            'waiting_install',
-            'waiting_download',
-          ].includes(i.state.value),
-      ),
-      'id',
+  const arr = []
+      Object.entries(status.value).forEach((i) =>
+      {
+        if( [
+          'installing',
+          'downloading',
+          'waiting_install',
+          'waiting_download',
+        ].includes(i?.[1].state.value)){
+          arr.push(i[0])
+        }
+      }
   );
+  console.log(arr,'test')
   const resp = await stopTask(arr);
   if (resp.success) {
   }

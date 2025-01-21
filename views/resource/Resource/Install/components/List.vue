@@ -162,7 +162,7 @@ const compareVersion = async () => {
 defineExpose({compareVersion})
 
 watch(
-    () => props.value,
+    () => [props.value,props.resourceVersionMap],
     () => {
         if (props.source === 'local') {
             fileList.value = cloneDeep(props.value);
