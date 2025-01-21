@@ -1,4 +1,5 @@
 <template>
+  <div class="event_container">
     <pro-search
         class="device-running-search"
         :columns="columns"
@@ -41,6 +42,7 @@
             <a-button type="primary" @click="visible = false">{{ $t('Event.index.277611-1') }}</a-button>
         </template>
     </a-modal>
+  </div>
 </template>
 
 <script lang="ts" setup>
@@ -104,7 +106,7 @@ const componentsType = {
 }
 
 const _getEventList = (_params: any) =>
-    getEventList(instanceStore.current.id || '', events.data.id || '', _params);
+   getEventList(instanceStore.current.id || '', events.data.id || '', _params);
 
 watchEffect(() => {
     columns.value = [...defaultColumns];
@@ -194,5 +196,8 @@ const detail = (_info: any) => {
     .ant-modal-body {
         padding: 0 20px;
     }
+}
+.event_container{
+  padding-bottom: 20px;
 }
 </style>

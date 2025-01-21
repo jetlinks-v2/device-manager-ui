@@ -159,8 +159,6 @@ const tabChange = (key: string) => {
 <style lang="less" scoped>
 .property-box {
     display: flex;
-    overflow: hidden;
-    min-height: 100%;
     .property-box-left {
         width: 200px;
 
