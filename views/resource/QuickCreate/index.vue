@@ -34,6 +34,7 @@
               </a-input>
               <SearchTree
                   :data="treeData"
+                  :expandedKeys="expandedKeys"
                   @select="select"
               />
             </div>
@@ -140,7 +141,7 @@ const allTreeData = ref([]);
 const selectedClassification = ref();
 const selectedResource = ref(undefined);
 const resourceData = ref([]);
-
+const expandedKeys = ref([]);
 const treeData = computed(() => {
   const arr = cloneDeep(allTreeData.value)
   if (searchValue.value) {
@@ -152,6 +153,15 @@ const treeData = computed(() => {
   }
   return arr
 })
+
+const getExpands = (arr, dt) => {
+  arr.map(item => {
+    dt.push(item.id)
+    if(item?.children?.length){
+      getExpands(item.children, dt)
+    }
+  })
+}
 
 const getClassificationType = async () => {
   const res = await queryClassificationType();
@@ -284,6 +294,17 @@ watch(
       getTemplateList();
     },
 );
+
+watch(() => [searchValue.value, JSON.stringify(treeData.value)], () => {
+  if (searchValue.value && treeData.value?.length) {
+    const arr1 = []
+    getExpands(treeData.value, arr1)
+    expandedKeys.value = arr1
+    console.log(arr1,'arr1')
+  }
+}, {
+  immediate: true
+})
 
 onMounted(() => {
   if (_id) {
