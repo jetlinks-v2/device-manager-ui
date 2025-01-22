@@ -242,7 +242,7 @@ const deviceList = [
 const configuration = ref([]);
 
 const form = ref({
-  name: '',
+  name: props.data?.name ? props.data.name + '快捷创建'  : '',
   deviceType: '',
   storePolicy: '',
   configuration: {},
