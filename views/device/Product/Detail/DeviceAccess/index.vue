@@ -144,35 +144,8 @@
                   </a-tooltip>
                 </div>
               </template>
-              <a-input
-                  :placeholder="$t('DeviceAccess.index.594346-13')"
-                  v-if="item.type.type === 'string'"
-                  v-model:value="formData.data[item.property]"
-              ></a-input>
-              <a-input-password
-                  :placeholder="$t('DeviceAccess.index.594346-13')"
-                  v-if="item.type.type === 'password'"
-                  v-model:value="formData.data[item.property]"
-              ></a-input-password>
-              <a-select
-                  :placeholder="$t('DeviceAccess.index.594346-12')"
-                  v-if="
-                                    item.type.type === 'enum' ||
-                                    item.type.type === 'boolean'
-                                "
-                  v-model:value="formData.data[item.property]"
-                  :options="getOptions(item)"
-              >
-              </a-select>
-              <a-input-number
-                  v-if="
-                                    ['int', 'float', 'double', 'long'].includes(
-                                        item.type.type,
-                                    )
-                                "
-                  v-model:value="formData.data[item.property]"
-                  :placeholder="$t('DeviceAccess.index.594346-13')"
-              ></a-input-number>
+              <j-value-item :itemType="item.type.type" v-model:value="formData.data[item.property]"
+                            :options="getOptions(item)"></j-value-item>
             </a-form-item>
           </a-form>
         </div>
