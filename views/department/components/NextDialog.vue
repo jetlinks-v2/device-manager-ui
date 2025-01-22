@@ -13,10 +13,8 @@
 </template>
 
 <script setup lang="ts">
-import { useDepartmentStore } from '@/store/department'
 
 const emits = defineEmits(['confirm','update:visible']);
-const departmentStore = useDepartmentStore();
 const props = defineProps<{
     visible: boolean;
 }>();
@@ -27,7 +25,6 @@ const handleOk = () => {
 };
 
 const cancel = () => {
-//   departmentStore.setProductId()
   emits('update:visible',false)
 }
 

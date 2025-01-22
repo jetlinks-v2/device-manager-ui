@@ -234,7 +234,7 @@ import {
   unBindDeviceOrProduct_api,
   getDeviceProduct_api,
   getBindingsPermission,
-} from '@/api/system/department';
+} from '../../../api/department';
 import {intersection} from 'lodash-es';
 
 import type {dictType} from '../typings';

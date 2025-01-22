@@ -113,7 +113,7 @@ import {
     getDeviceList_api,
     bindDeviceOrProductList_api,
     getBindingsPermission,
-} from '@/api/system/department';
+} from '../../../api/department';
 import { dictType } from '../typings';
 import { useDepartmentStore } from '@/store/department';
 import dayjs from 'dayjs';

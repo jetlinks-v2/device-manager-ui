@@ -255,7 +255,7 @@ import {
     getPermissionDict_api,
     unBindDeviceOrProduct_api,
     getBindingsPermission,
-} from '@/api/system/department';
+} from '../../../api/department';
 import { intersection } from 'lodash-es';
 import { useDepartmentStore } from '@/store/department';
 import {systemImg} from "@/assets";
