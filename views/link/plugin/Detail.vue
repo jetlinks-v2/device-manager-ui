@@ -12,7 +12,7 @@
           TypeMap[info.type] || '--'
         }}</a-descriptions-item>
       <a-descriptions-item label="创建时间">{{
-          dayjs(info.createTime).format('YYYY-MM-DD HH:mm:ss') || '--'
+          info.createTime ? dayjs(info.createTime).format('YYYY-MM-DD HH:mm:ss') : '--'
         }}</a-descriptions-item>
       <a-descriptions-item label="创建方式">
         {{ info?.configuration?.autoCreate ? '自动创建' : '手动创建' }}
