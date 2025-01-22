@@ -402,7 +402,7 @@ const createProduct = async () => {
         const res = await quickCreateProduct(data);
         if (res.success) {
           onlyMessage('操作成功');
-          menuStory.jumpPage('device/Product');
+          menuStory.jumpPage('device/Product',{});
         }
       })
       .catch((err) => {

@@ -278,7 +278,6 @@ defineExpose({
 watch(
     () => props.accessData,
     () => {
-        console.log(props.accessData)
         netWorkType.value = NetworkTypeMapping.get(props.accessData.provider)
     },
     {

@@ -394,7 +394,7 @@ const submitDada = () => {
             '网关' +
             props.randomString,
         ...omit(accessConfig.value, ['bindInfo', 'defaultAccess']),
-        gatewayType: gatewayType.get(accessConfig.value.provider),
+        gatewayType: accessConfig.value.provider,
     };
     if (accessConfig.value.channel === 'network') {
         if (

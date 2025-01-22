@@ -104,7 +104,6 @@ const handleChange = ({ file }) => {
 
 const getResourceByCloud = async () => {
     source.value = 'cloud';
-
     const res = await _queryResourceCloud({
         paging: false,
         sorts: [
@@ -127,6 +126,7 @@ const getResourceByCloud = async () => {
     if (res?.success) {
         fileList.value = res.result;
         emits('update:value', fileList.value);
+        emits('update:source', source.value);
     }
 };
 

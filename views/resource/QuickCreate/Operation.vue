@@ -167,7 +167,6 @@ import {getProviders} from "@device/api/product.ts";
 import PerfectInfo from "./components/PerfectInfo/index.vue";
 import {gatewayType, networkAndProtocol, reuseByProtocol} from "./data";
 import {ProtocolMapping} from "./components/Protocol/data";
-import {access} from "@/modules/device-manager-ui/assets";
 
 const props = defineProps({
   data: {
@@ -261,7 +260,7 @@ const restoreDefault = () => {
 };
 
 //查询有可以复用的网络组件
-const getUseableNetWork = async () => {
+const getUseAbleNetWork = async () => {
   const res = await queryAliveNetWork(
       NetworkTypeMapping.get(accessConfig.value.provider)
   );
@@ -428,7 +427,7 @@ const queryExistAccess = async (_params, type) => {
     accessData.value = res.result.data.filter((i) => {
       return i.provider === accessConfig.value.provider;
     })[0];
-    accessData.value.gatewayType = gatewayType.get(accessConfig.value.provider);
+    accessData.value.gatewayType = accessConfig.value.provider;
     if (networkAndProtocol.includes(accessData.value.provider)) {
       queryNetworkByAccess(accessData.value.channelId);
     }
@@ -480,7 +479,7 @@ const getDefault = async () => {
             accessConfig.value?.channel === "network" &&
             accessConfig.value.provider !== "mqtt-client-gateway"
         ) {
-          const data = await getUseableNetWork();
+          const data = await getUseAbleNetWork();
           if (data) {
             network.value = data;
             defaultNetwork.value = cloneDeep(network.value);
@@ -513,7 +512,7 @@ const getDefault = async () => {
         "网关" +
         randomString.value,
     ...omit(accessConfig.value, ["bindInfo", "defaultAccess"]),
-    gatewayType: gatewayType.get(accessConfig.value.provider),
+    gatewayType: accessConfig.value.provider,
   };
 };
 
