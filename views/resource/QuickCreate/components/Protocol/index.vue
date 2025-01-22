@@ -47,7 +47,7 @@ const protocolList = ref([])
 const allProtocolList = ref([])
 const addVisible = ref(false)
 const protocolCurrent = ref()
-const protocolSearch = () => {
+const protocolSearch = (value) => {
     protocolList.value = value
         ? allProtocolList.value.filter(
             (i) =>
@@ -74,7 +74,7 @@ const queryProtocolList = async () => {
     }
 };
 
-const saveChange = () =>{
+const saveChange = (value) =>{
     addVisible.value = false;
     if (value) {
         onlyMessage('操作成功', 'success');
