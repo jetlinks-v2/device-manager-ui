@@ -64,7 +64,8 @@
                                                 _disabled(record.property),
                                         }"
                                     >
-                                        <value-item
+                                        <j-value-item
+                                            style="width: 100%"
                                             v-model:modelValue="
                                                 configValue[record.property]
                                             "
@@ -72,7 +73,8 @@
                                                 item.properties[index].type
                                                     ?.type
                                             "
-                                            :extra="{
+
+                                            :extraProps="{
                                                 dropdownStyle: {
                                                     zIndex: 1071,
                                                 },
@@ -553,7 +555,7 @@ const confirm = () => {
                     expands.otherEdit = true;
                     emit('update:value', {
                         ...props.value,
-                        ...expands,
+                        expands,
                     });
                     emit('change');
                     modalVisible.value = false;
@@ -563,7 +565,7 @@ const confirm = () => {
                 expands.otherEdit = true;
                 emit('update:value', {
                     ...props.value,
-                    ...expands,
+                    expands,
                 });
                 emit('change');
                 modalVisible.value = false;

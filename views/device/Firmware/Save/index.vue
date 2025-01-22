@@ -110,6 +110,11 @@
                             /> </a-form-item
                     ></a-col>
                     <a-col :span="24">
+                        <a-form-item :label="$t('Save.index.978508-35')" v-bind="validateInfos.size">
+                            <a-input-number style="width: 100%;" v-model:value="formData.size" :placeholder="$t('Save.index.978508-34')" :min="0" addon-after="b"></a-input-number>
+                        </a-form-item>
+                    </a-col>
+                    <a-col :span="24">
                         <a-form-item
                             :label="$t('Save.index.978508-18')"
                             v-bind="validateInfos.properties"
@@ -271,6 +276,7 @@ const formData: any = ref({
     url: '',
     properties: [],
     description: '',
+    size: ''
 });
 
 const extraValue: any = ref({});
@@ -346,10 +352,15 @@ const { resetFields, validate, validateInfos } = useForm(
             { validator: validatorVersionOrder, trigger: 'blur' },
             { validator: validatorVersionValue, trigger: 'change' },
         ],
+        size:[
+            {
+                required: true, message: $t('Save.index.978508-34')
+            }
+        ],
         signMethod: [{ required: true, message: $t('Save.index.978508-13') }],
         sign: [
             { required: true, message: $t('Save.index.978508-16') },
-            { validator: validatorSign },
+            // { validator: validatorSign },
         ],
         url: [{ required: true, message: $t('Save.index.978508-31') }],
         description: [{ max: 200, message: $t('Save.index.978508-32') }],
@@ -369,13 +380,10 @@ const handleOk = async () => {
                 (item: any) => item?.value === res.productId,
             );
             const productName = product?.label || props.data?.url;
-            const size = extraValue.value?.length || props.data?.size;
-
             const params = {
                 ...toRaw(formData.value),
                 properties: !!properties ? properties : [],
                 productName,
-                size,
             };
             loading.value = true;
             const response = !id
@@ -400,6 +408,7 @@ const handleCancel = () => {
 const changeSignMethod = () => {
     formData.value.sign = '';
     formData.value.url = '';
+    formData.value.size = undefined
 };
 
 watch(
@@ -407,14 +416,17 @@ watch(
     (value) => {
         if (value.id) {
             formData.value = value;
-            dynamicValidateForm.properties = value.properties;
+            dynamicValidateForm.properties = value.properties 
         }
     },
     { immediate: true, deep: true },
 );
 watch(
     () => extraValue.value,
-    () => validate('sign'),
+    () => {
+        validate('sign')
+        formData.value.size = extraValue.value?.length
+    },
     { deep: true },
 );
 </script>

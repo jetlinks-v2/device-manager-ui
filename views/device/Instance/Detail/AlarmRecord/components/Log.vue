@@ -49,7 +49,7 @@
 </template>
 
 <script setup>
-import { queryLogList ,queryPreconditioningLogList } from '../../../../../../../api/rule-engine/log';
+import { queryLogList ,queryPreconditioningLogList } from '@device/api/rule-engine/log';
 import dayjs from 'dayjs';
 import { useMenuStore } from '@/store';
 import LogDetail from './LogDetail.vue';

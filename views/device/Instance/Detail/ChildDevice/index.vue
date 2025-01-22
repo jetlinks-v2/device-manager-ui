@@ -35,7 +35,7 @@
             :params="params"
             mode='TABLE'
         >
-            <template #rightExtraRender>
+            <template #headerRightRender>
                 <a-space>
                     <j-permission-button
                         type="primary"

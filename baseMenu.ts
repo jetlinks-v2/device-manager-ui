@@ -55,7 +55,7 @@ export default [
                         actions: ['query'],
                     },
                 ],
-                accessSupport: { text: "不支持", value: "unsupported" },
+                accessSupport: {text: "不支持", value: "unsupported"},
                 supportDataAccess: false
             },
             {
@@ -116,7 +116,7 @@ export default [
                                 actions: ['query'],
                             },
                         ],
-                        accessSupport: { text: "不支持", value: "unsupported" },
+                        accessSupport: {text: "不支持", value: "unsupported"},
                         supportDataAccess: false
                     },
                     {
@@ -350,7 +350,7 @@ export default [
                                 ],
                             },
                         ],
-                        accessSupport: { text: "支持", value: "support" },
+                        accessSupport: {text: "支持", value: "support"},
                         supportDataAccess: true
                     },
                     {
@@ -370,7 +370,7 @@ export default [
                         url: '/iot/device/Instance',
                         icon: 'icon-shebei',
                         sortIndex: 3,
-                        accessSupport: { text: "支持", value: "support" },
+                        accessSupport: {text: "支持", value: "support"},
                         supportDataAccess: true,
                         assetType: 'device',
                         showPage: ['device-instance'],
@@ -608,11 +608,11 @@ export default [
                             },
                             {
                                 id: 'remote',
-                                name: '远程控制',
+                                name: '远程访问',
                                 i18nMessages: {
-                                    zh_CN: '远程控制',
-                                    en_US: 'Remote Control',
-                                    en: 'Remote Control',
+                                    zh_CN: '远程访问',
+                                    en_US: 'Remote Interview',
+                                    en: 'Remote Interview',
                                 },
                                 permissions: [
                                     {
@@ -639,7 +639,7 @@ export default [
                         sortIndex: 4,
                         url: '/iot/device/Category',
                         icon: 'icon-chanpinfenlei',
-                        accessSupport: { text: "支持", value: "support" },
+                        accessSupport: {text: "支持", value: "support"},
                         supportDataAccess: true,
                         assetType: 'deviceCategory',
                         showPage: ['device-category'],
@@ -754,7 +754,7 @@ export default [
                                 actions: ['query'],
                             },
                         ],
-                        accessSupport: { text: "不支持", value: "unsupported" },
+                        accessSupport: {text: "不支持", value: "unsupported"},
                         supportDataAccess: false
                     },
                     {
@@ -912,7 +912,7 @@ export default [
                                 ],
                             },
                         ],
-                        accessSupport: { text: "不支持", value: "unsupported" },
+                        accessSupport: {text: "不支持", value: "unsupported"},
                         supportDataAccess: false
                     },
                     {
@@ -1011,7 +1011,7 @@ export default [
                                 ],
                             },
                         ],
-                        accessSupport: { text: "不支持", value: "unsupported" },
+                        accessSupport: {text: "不支持", value: "unsupported"},
                         supportDataAccess: false
                     },
                     {
@@ -1121,7 +1121,7 @@ export default [
                                 ],
                             },
                         ],
-                        accessSupport: { text: "不支持", value: "unsupported" },
+                        accessSupport: {text: "不支持", value: "unsupported"},
                         supportDataAccess: false
                     },
                     {
@@ -1204,7 +1204,7 @@ export default [
                                 ],
                             },
                         ],
-                        accessSupport: { text: "不支持", value: "unsupported" },
+                        accessSupport: {text: "不支持", value: "unsupported"},
                         supportDataAccess: false
                     },
 
@@ -1333,7 +1333,7 @@ export default [
                             },
 
                         ],
-                        accessSupport: { text: "间接支持", value: "indirect" },
+                        accessSupport: {text: "间接支持", value: "indirect"},
                         supportDataAccess: false,
                         indirectMenus: ['8ddbb67de5f65514105d47b448bfd70e']
                     },
@@ -1423,9 +1423,45 @@ export default [
                             },
 
                         ],
-                        accessSupport: { text: "不支持", value: "unsupported" },
+                        accessSupport: {text: "不支持", value: "unsupported"},
                         supportDataAccess: false,
                     },
+                    {
+                        "sortIndex": 11,
+                        "owner": "iot",
+                        "name": "资源库",
+                        i18nMessages: {
+                            name: {
+                                zh_CN: '资源库',
+                                en_US: 'Resource library',
+                                en: 'Resource library',
+                            }
+                        },
+                        "code": "resource/Resource",
+                        "describe": "",
+                        "url": "/iot/link/resource",
+                        "icon": "SnippetsOutlined",
+                        showPage: ['entity-template'],
+                        "permissions": [
+                            {
+                                "permission": "entity-template",
+                                "actions": [
+                                    "query"
+                                ]
+                            }
+                        ],
+                        "accessSupport": {
+                            "text": "不支持",
+                            "value": "unsupported"
+                        },
+                        "indirectMenus": [],
+                        "options": {
+                            "show": true
+                        },
+                        "creatorId": "1d77fc74a6239c0770bd329d1b3e5722",
+                        "createTime": 1734315746729,
+                        "supportDataAccess": false
+                    }
                 ],
             },
         ],
@@ -1528,7 +1564,7 @@ export default [
                         ],
                     },
                 ],
-                accessSupport: { text: "不支持", value: "unsupported" },
+                accessSupport: {text: "不支持", value: "unsupported"},
                 supportDataAccess: false
             },
         ]

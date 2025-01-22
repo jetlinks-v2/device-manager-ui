@@ -76,7 +76,7 @@
                                                         value: item.value,
                                                     }))
                                                 "
-                                                :extra="{
+                                                :extraProps="{
                                                       style: {
                                                         zIndex: 1030
                                                       }

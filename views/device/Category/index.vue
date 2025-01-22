@@ -222,8 +222,8 @@ const table = reactive({
     columns: [
         {
             title: $t('Category.index.779033-1'),
-            dataIndex: 'name',
-            key: 'name',
+            dataIndex: 'i18nName',
+            key: 'i18nName',
             ellipsis: true,
             width: 500,
         },

@@ -253,7 +253,7 @@ const formModel = reactive<Record<string, any>>({
 const fileList = ref<UploadFile[]>([]);
 const hasVirtualRule = ref(false);
 const formRef = ref();
-
+const productMetadataMap = new Map()
 const productList = ref<DefaultOptionType[]>([]);
 
 const loadData = async () => {
@@ -265,11 +265,14 @@ const loadData = async () => {
     })) as any;
     productList.value = product.result
         .filter((i: any) => i?.metadata)
-        .map((item: any) => ({
+        .map((item: any) => {
+            productMetadataMap.set(item.id,item.metadata)
+            return {
             label: item.name,
-            value: item.metadata,
+            value: item.id,
             key: item.id,
-        })) as DefaultOptionType[];
+        }
+        }) as DefaultOptionType[];
 };
 loadData();
 
@@ -832,15 +835,17 @@ const handleImport = async () => {
             } else {
                 try {
                     const _object = JSON.parse(
-                        data[data?.type === 'copy' ? 'copy' : 'import'] || '{}',
+                        (data?.type === 'copy' ? productMetadataMap.get(data.copy) : data.import) || '{}'
                     );
                     if (data?.type !== 'copy') {
-                        Object.keys(_object).forEach((i: any) => {
+                        Object.keys(_object)?.forEach((i: any) => {
                             const map = new Map();
-                            _object[i].forEach((item: any) =>
+                            if(Array.isArray(_object[i])){
+                                _object[i]?.forEach((item: any) =>
                                 map.set(item.id, item),
                             );
-                            _object[i] = [...map.values()];
+                                _object[i] = [...map.values()];
+                            }
                         });
                     }
                     if (
@@ -860,9 +865,9 @@ const handleImport = async () => {
                     //     _object as DeviceMetadata,
                     // );
                     // console.log(copyOperateLimits,_object); // 导入取并集逻辑
-                    Object.keys(_object).forEach((i: any) => {
+                    Object.keys(_object)?.forEach((i: any) => {
                         if (i === 'functions') {
-                            _object[i].forEach((a: any) => {
+                            _object[i]?.forEach((a: any) => {
                                 a?.inputs?.forEach((item: any) => {
                                     item.expands = {
                                         required: false,
@@ -871,7 +876,7 @@ const handleImport = async () => {
                             });
                         }
                         if (i === 'properties') {
-                            _object[i].filter((a: any) => {
+                            _object[i]?.filter((a: any) => {
                                 if (a?.expands?.source === 'rule') {
                                     hasVirtualRule.value = true;
                                     return;

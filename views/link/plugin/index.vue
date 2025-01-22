@@ -1,61 +1,64 @@
 <template>
-    <j-page-container>
-        <pro-search
-            :columns="columns"
-            target="link-plugin"
-            @search="handleSearch"
-        />
-        <FullPage>
-            <JProTable
-                ref="instanceRef"
-                :columns="columns"
-                :request="queryPage"
-                :defaultParams="{
+  <j-page-container>
+    <pro-search
+        :columns="columns"
+        target="link-plugin"
+        @search="handleSearch"
+    />
+    <FullPage>
+      <JProTable
+          ref="instanceRef"
+          :columns="columns"
+          :request="queryPage"
+          :defaultParams="{
                     sorts: [{ name: 'createTime', order: 'desc' }],
                 }"
-                :params="params"
-            >
-                <template #headerLeftRender>
-                    <j-permission-button
-                        type="primary"
-                        @click="handleAdd"
-                        hasPermission="link/plugin:add"
-                    >
-                        <template #icon><AIcon type="PlusOutlined" /></template>
-                        {{ $t('plugin.index.293829-0') }}
-                    </j-permission-button>
-                </template>
+          :params="params"
+      >
+        <template #headerLeftRender>
+          <j-permission-button
+              type="primary"
+              @click="handleAdd"
+              hasPermission="link/plugin:add"
+          >
+            <template #icon>
+              <AIcon type="PlusOutlined"/>
+            </template>
+            {{ $t('plugin.index.293829-0') }}
+          </j-permission-button>
+        </template>
 
-                <template #card="slotProps">
-                    <CardBox
-                        :value="slotProps"
-                        :showStatus="false"
-                        :actions="getActions(slotProps)"
-                        :statusNames="{
+        <template #card="slotProps">
+          <CardBox
+              :value="slotProps"
+              :actions="getActions(slotProps,'card')"
+              :statusNames="{
                             processing: 'processing',
                         }"
-                        status="processing"
-                    >
-                        <template #img>
-                            <img
-                                :width="80"
-                                :height="80"
-                                :src="link.plug"
-                            />
-                        </template>
-                        <template #content>
-                            <div>
-                                <div>
-                                    <a-tag class="plugin-version">{{
-                                        slotProps.version
-                                    }}</a-tag>
-                                </div>
-                                <j-ellipsis
-                                    style="
+              @click="()=>viewDetail(slotProps)"
+              status="processing"
+          >
+            <template #img>
+              <img
+                  :width="80"
+                  :height="80"
+                  :src="link.plug"
+              />
+            </template>
+            <template #content>
+              <div>
+                <div>
+                  <a-tag class="plugin-version">{{
+                      slotProps.version
+                    }}
+                  </a-tag>
+                </div>
+                <j-ellipsis
+                    style="
                                         width: calc(100% - 100px);
                                         margin-bottom: 18px;
                                     "
-                                >
+                >
                                     <span
                                         style="
                                             font-size: 16px;
@@ -64,244 +67,270 @@
                                     >
                                         {{ slotProps.name }}
                                     </span>
-                                </j-ellipsis>
-                            </div>
-                            <a-row>
-                                <a-col :span="12">
-                                    <div class="card-item-content-text">
-                                        {{ $t('plugin.index.293829-1') }}
-                                    </div>
-                                    <j-ellipsis style="width: 100%">
-                                        {{ slotProps.id }}
-                                    </j-ellipsis>
-                                </a-col>
-                                <a-col :span="12">
-                                    <div class="card-item-content-text">
-                                        {{ $t('plugin.index.293829-2') }}
-                                    </div>
-                                    <j-ellipsis style="width: 100%">
-                                        {{ TypeMap[slotProps.type] }}
-                                    </j-ellipsis>
-                                </a-col>
-                            </a-row>
-                        </template>
+                </j-ellipsis>
+              </div>
+              <a-row>
+                <a-col :span="12">
+                  <div class="card-item-content-text">
+                    {{ $t('plugin.index.293829-1') }}
+                  </div>
+                  <j-ellipsis style="width: 100%">
+                    {{ slotProps.id }}
+                  </j-ellipsis>
+                </a-col>
+                <a-col :span="12">
+                  <div class="card-item-content-text">
+                    {{ $t('plugin.index.293829-2') }}
+                  </div>
+                  <j-ellipsis style="width: 100%">
+                    {{ TypeMap[slotProps.type] }}
+                  </j-ellipsis>
+                </a-col>
+              </a-row>
+            </template>
 
-                        <template #actions="item">
-                            <j-permission-button
-                                :disabled="item.disabled"
-                                :popConfirm="item.popConfirm"
-                                :tooltip="{
+            <template #actions="item">
+              <j-permission-button
+                  :disabled="item.disabled"
+                  :popConfirm="item.popConfirm"
+                  :tooltip="{
                                     ...item.tooltip,
                                 }"
-                                @click="item.onClick"
-                                :hasPermission="'link/plugin:' + item.key"
-                            >
-                                <AIcon
-                                    type="DeleteOutlined"
-                                    v-if="item.key === 'delete'"
-                                />
-                                <template v-else>
-                                    <AIcon :type="item.icon" />
-                                    <span>{{ item?.text }}</span>
-                                </template>
-                            </j-permission-button>
-                        </template>
-                    </CardBox>
+                  @click="item.onClick"
+                  :hasPermission="'link/plugin:' + item.key"
+              >
+                <AIcon
+                    type="DeleteOutlined"
+                    v-if="item.key === 'delete'"
+                />
+                <template v-else>
+                  <AIcon :type="item.icon"/>
+                  <span>{{ item?.text }}</span>
                 </template>
-                <template #type="slotProps">
-                    <span>{{ TypeMap[slotProps.type] }}</span>
-                </template>
-                <template #action="slotProps">
-                    <a-space :size="16">
-                        <template
-                            v-for="i in getActions(slotProps)"
-                            :key="i.key"
-                        >
-                            <j-permission-button
-                                :disabled="i.disabled"
-                                :popConfirm="i.popConfirm"
-                                :tooltip="{
+              </j-permission-button>
+            </template>
+          </CardBox>
+        </template>
+        <template #type="slotProps">
+          <span>{{ TypeMap[slotProps.type] }}</span>
+        </template>
+        <template #action="slotProps">
+          <a-space :size="16">
+            <template
+                v-for="i in getActions(slotProps,'table')"
+                :key="i.key"
+            >
+              <j-permission-button
+                  :disabled="i.disabled"
+                  :popConfirm="i.popConfirm"
+                  :tooltip="{
                                     ...i.tooltip,
                                 }"
-                                @click="i.onClick"
-                                type="link"
-                                :danger="i.key === 'delete'"
-                                style="padding: 0 5px"
-                                :hasPermission="'link/plugin:' + i.key"
-                            >
-                                <template #icon
-                                    ><AIcon :type="i.icon"
-                                /></template>
-                            </j-permission-button>
-                        </template>
-                    </a-space>
+                  @click="i.onClick"
+                  type="link"
+                  :danger="i.key === 'delete'"
+                  style="padding: 0 5px"
+                  :hasPermission="'link/plugin:' + i.key"
+              >
+                <template #icon
+                >
+                  <AIcon :type="i.icon"
+                  />
                 </template>
-            </JProTable>
-        </FullPage>
-    </j-page-container>
-    <SaveModal v-if="visible" :data="editData" @cancel="cancel" @ok="save" />
+              </j-permission-button>
+            </template>
+          </a-space>
+        </template>
+      </JProTable>
+    </FullPage>
+  </j-page-container>
+  <SaveModal v-if="visible" :data="editData" @cancel="cancel" @ok="save"/>
+  <Detail v-if="visibleDetail" :data="editData" @close="visibleDetail = false"/>
 </template>
 
 <script setup lang="ts" name="PluginIndex">
 import SaveModal from './Save.vue';
-import { onlyMessage } from '@jetlinks-web/utils';
-import { queryPage, removeFn, getTypes } from '../../../api/link/plugin';
-import { TypeMap } from './util';
-import { link } from '../../../assets'
-import { useI18n } from 'vue-i18n';
+import {onlyMessage} from '@jetlinks-web/utils';
+import {queryPage, removeFn, getTypes} from '../../../api/link/plugin';
+import {TypeMap} from './util';
+import {link} from '../../../assets'
+import {useI18n} from 'vue-i18n';
+import Detail from './Detail.vue';
 
-const { t: $t } = useI18n();
+const {t: $t} = useI18n();
 const route = useRoute();
 const visible = ref(false);
 const params = ref<any>();
 const editData = ref();
 const instanceRef = ref();
+const visibleDetail = ref(false);
 
 const columns = [
-    {
-        title: $t('plugin.index.293829-1'),
-        dataIndex: 'id',
-        key: 'type',
-        fixed: 'left',
-        width: 200,
-        ellipsis: true,
-        search: {
-            type: 'input',
-        },
+  {
+    title: $t('plugin.index.293829-1'),
+    dataIndex: 'id',
+    key: 'type',
+    fixed: 'left',
+    width: 200,
+    ellipsis: true,
+    search: {
+      type: 'input',
     },
-    {
-        title: $t('plugin.index.293829-3'),
-        dataIndex: 'name',
-        key: 'type',
-        fixed: 'left',
-        width: 200,
-        ellipsis: true,
-        search: {
-            type: 'input',
-        },
+  },
+  {
+    title: $t('plugin.index.293829-3'),
+    dataIndex: 'name',
+    key: 'type',
+    fixed: 'left',
+    width: 200,
+    ellipsis: true,
+    search: {
+      type: 'input',
     },
-    {
-        title: $t('plugin.index.293829-4'),
-        dataIndex: 'version',
-        key: 'version',
-        ellipsis: true,
+  },
+  {
+    title: $t('plugin.index.293829-4'),
+    dataIndex: 'version',
+    key: 'version',
+    ellipsis: true,
+  },
+  {
+    title: $t('plugin.index.293829-2'),
+    dataIndex: 'type',
+    key: 'type',
+    ellipsis: true,
+    scopedSlots: true,
+    search: {
+      type: 'select',
+      options: () => {
+        return new Promise((resolve) => {
+          getTypes().then((res) => {
+            resolve(
+                res.result?.map((item) => ({
+                  ...item,
+                  label: item.text,
+                })),
+            );
+          });
+        });
+      },
     },
-    {
-        title: $t('plugin.index.293829-2'),
-        dataIndex: 'type',
-        key: 'type',
-        ellipsis: true,
-        scopedSlots: true,
-        search: {
-            type: 'select',
-            options: () => {
-                return new Promise((resolve) => {
-                    getTypes().then((res) => {
-                        resolve(
-                            res.result?.map((item) => ({
-                                ...item,
-                                label: item.text,
-                            })),
-                        );
-                    });
-                });
-            },
-        },
+  },
+  {
+    title: $t('plugin.index.293829-5'),
+    dataIndex: 'filename',
+    key: 'filename',
+    ellipsis: true,
+  },
+  {
+    title: $t('plugin.index.293829-6'),
+    dataIndex: 'description',
+    key: 'description',
+    ellipsis: true,
+    search: {
+      type: 'string',
     },
-    {
-        title: $t('plugin.index.293829-5'),
-        dataIndex: 'filename',
-        key: 'filename',
-        ellipsis: true,
-    },
-    {
-        title: $t('plugin.index.293829-6'),
-        dataIndex: 'description',
-        key: 'description',
-        ellipsis: true,
-        search: {
-            type: 'string',
-        },
-    },
-    {
-        title: $t('plugin.index.293829-7'),
-        key: 'action',
-        fixed: 'right',
-        width: 120,
-        scopedSlots: true,
-    },
+  },
+  {
+    title: $t('plugin.index.293829-7'),
+    key: 'action',
+    fixed: 'right',
+    width: 120,
+    scopedSlots: true,
+  },
 ];
 
 const handleAdd = () => {
-    editData.value = {};
-    visible.value = true;
+  editData.value = {};
+  visible.value = true;
 };
 
 const handleSearch = (p: any) => {
-    params.value = p;
+  params.value = p;
 };
 
 const save = () => {
-    if (instanceRef.value) {
-        instanceRef.value?.reload();
-    }
-    visible.value = false;
+  if (instanceRef.value) {
+    instanceRef.value?.reload();
+  }
+  visible.value = false;
 };
 
 const cancel = () => {
-    visible.value = false;
-    editData.value = undefined;
+  visible.value = false;
+  editData.value = undefined;
 };
 
-const getActions = (data: any) => {
-    return [
-        {
-            key: 'update',
-            text: $t('plugin.index.293829-8'),
-            tooltip: {
-                title: $t('plugin.index.293829-8'),
-            },
-            icon: 'EditOutlined',
-            onClick: () => {
-                visible.value = true;
-                editData.value = data;
-            },
+const viewDetail = (data: any) => {
+  visibleDetail.value = true;
+  editData.value = data;
+}
+
+const getActions = (data: any,type :string) => {
+  if (!data) {
+    return [];
+  }
+  const actions =  [
+    {
+      key: 'update',
+      text: $t('plugin.index.293829-8'),
+      tooltip: {
+        title: $t('plugin.index.293829-8'),
+      },
+      icon: 'EditOutlined',
+      onClick: () => {
+        visible.value = true;
+        editData.value = data;
+      },
+    }, {
+      key: 'view',
+      text: $t('plugin.index.293829-13'),
+      tooltip: {
+        title: $t('plugin.index.293829-13'),
+      },
+      icon: 'EyeOutlined',
+      onClick: () => {
+        viewDetail(data);
+      },
+    },
+    {
+      key: 'delete',
+      text: $t('plugin.index.293829-9'),
+      tooltip: {
+        title: $t('plugin.index.293829-9'),
+      },
+      popConfirm: {
+        title: $t('plugin.index.293829-10'),
+        onConfirm: () => {
+          const response = removeFn(data.id);
+          response.then((resp) => {
+            if (resp.status === 200) {
+              onlyMessage($t('plugin.index.293829-11'));
+              instanceRef.value?.reload();
+            } else {
+              onlyMessage(resp?.message || $t('plugin.index.293829-12'), 'error');
+            }
+          });
+          return response;
         },
-        {
-            key: 'delete',
-            text: $t('plugin.index.293829-9'),
-            tooltip: {
-                title: $t('plugin.index.293829-9'),
-            },
-            popConfirm: {
-                title: $t('plugin.index.293829-10'),
-                onConfirm: () => {
-                    const response = removeFn(data.id);
-                    response.then((resp) => {
-                        if (resp.status === 200) {
-                            onlyMessage($t('plugin.index.293829-11'));
-                            instanceRef.value?.reload();
-                        } else {
-                            onlyMessage(resp?.message || $t('plugin.index.293829-12'), 'error');
-                        }
-                    });
-                    return response;
-                },
-            },
-            icon: 'DeleteOutlined',
-        },
-    ];
+      },
+      icon: 'DeleteOutlined',
+    },
+  ];
+  if (type === 'card')
+    return actions.filter((i: any) => i.key !== 'view');
+  return actions;
 };
 
 onMounted(() => {
-    if (route.query.save) {
-        visible.value = true;
-    }
+  if (route.query.save) {
+    visible.value = true;
+  }
 });
 </script>
 
 <style scoped lang="less">
 .plugin-version {
-    border-radius: 4px;
+  border-radius: 4px;
 }
 </style>

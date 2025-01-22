@@ -115,6 +115,7 @@
     "Detail.index.478940-14": "远程升级",
     "Detail.index.478940-15": "物模型映射",
     "Detail.index.478940-16": "预处理数据",
+    "Detail.index.478940-17": "无效数据",
     "BasicInfo.indev.028379-0": "配置信息",
     "BasicInfo.indev.028379-1": "产品分类",
     "BasicInfo.indev.028379-2": "设备类型",
@@ -779,6 +780,8 @@
     "Save.index.978508-31": "请上传文件",
     "Save.index.978508-32": "最多可输入200个字符",
     "Save.index.978508-33": "操作成功",
+    "Save.index.978508-34": "请输入文件大小",
+    "Save.index.978508-35": "文件大小",
     "Task.index.219743-0": "升级任务",
     "Task.index.219743-1": "+ 新增任务",
     "Task.index.219743-2": "完成比例",
@@ -1462,6 +1465,7 @@
     "Detail.index.957187-26": "远程终端",
     "Detail.index.957187-27": "操作成功！",
     "Detail.index.957187-28": "操作成功",
+    "Detail.index.957187-29": "无效数据",
     "Export.index.225315-0": "导出",
     "Export.index.225315-1": "选择单个产品时可导出其下属设备的详细数据,不选择产品时导出所有设备的基础数据。",
     "Export.index.225315-2": "产品",
@@ -1920,6 +1924,7 @@
     "plugin.index.293829-10": "确认删除?",
     "plugin.index.293829-11": "操作成功！",
     "plugin.index.293829-12": "操作失败！",
+    "plugin.index.293829-13": "查看",
     "plugin.Save.128565-0": "编辑",
     "plugin.Save.128565-1": "新增",
     "plugin.Save.128565-2": "插件ID",
@@ -2100,5 +2105,6 @@
     "Detail.index.258513-64": "请新增或完善配置",
     "Detail.index.258513-65": "操作成功",
     "Detail.LocalAddressSelect.884081-0": "请选择本地地址",
-    "device-manager-ui.index.106686-0": "详情信息"
+    "device-manager-ui.index.106686-0": "详情信息",
+    "device-manager-ui.index.106686-1": "快捷新增"
 }
