@@ -144,7 +144,7 @@
                   </a-tooltip>
                 </div>
               </template>
-              <j-value-item :itemType="item.type.type" v-model:value="formData.data[item.property]"
+              <j-value-item :itemType="item.type.type" v-model:modelValue="formData.data[item.property]"
                             :options="getOptions(item)"></j-value-item>
             </a-form-item>
           </a-form>
@@ -664,16 +664,6 @@ const checkAccess = async (data: any) => {
     metadata.value = metadata.value.map((i: any) => {
       i.properties = i?.properties.filter((item: any) => {
         return item.name !== '流传输模式'
-        // if (
-        //     item.name === $t('DeviceAccess.index.594346-29') &&
-        //     (!productStore.current?.configuration ||
-        //         !productStore.current?.configuration.hasOwnProperty(
-        //             item.property,
-        //         ))
-        // ) {
-        //     formData.data[item.property] =
-        //         item.type.expands?.defaultValue;
-        // }
       })
       return i
     });
