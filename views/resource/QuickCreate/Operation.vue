@@ -114,7 +114,7 @@
                 v-else
                 :randomString="randomString"
                 :accessList="data?.accessInfos"
-                :descriptions="accessDescriptions"
+                :providers="providers"
                 @submit="advanceComplete"
                 @quit="visibleAdvanceMode = false"
             />
@@ -205,8 +205,9 @@ const generateString = () => {
 const protocol = ref({});
 //资源库选中插件
 const plugin = ref({});
-//设备接入网管描述
-const accessDescriptions = ref(new Map());
+//设备接入网关类型
+const providers = ref(new Map());
+
 //选中使用的网络组件
 const network = ref({});
 //默认创建的网络组件
@@ -326,7 +327,7 @@ const getDescription = async () => {
   const res = await getProviders();
   if (res.success) {
     res.result.forEach((i) => {
-      accessDescriptions.value.set(i.id, i.description);
+      providers.value.set(i.id, i);
     });
   }
 };
@@ -439,7 +440,7 @@ const queryExistAccess = async (_params, type) => {
 
 //获取默认协议或插件
 const getDefault = async () => {
-  accessName.value = accessConfig.value.provider?.split("-")?.[0];
+  accessName.value = providers.value?.get(accessConfig.value.provider)?.name;
   if (accessConfig.value?.bindInfo) {
     if (reuse.includes(accessConfig.value.provider)) {
       const status = await queryExistAccess(accessConfig.value.provider, 'protocol');
@@ -528,7 +529,7 @@ watch(
 );
 
 onMounted(async () => {
-  getDescription();
+  await getDescription();
   generateString();
   metadata.value = JSON.parse(props.data?.metadata || "{}");
   metadataData.value = cloneDeep(metadata.value);
