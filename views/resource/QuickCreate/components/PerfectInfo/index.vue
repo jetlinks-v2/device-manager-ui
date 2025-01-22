@@ -244,7 +244,7 @@ const configuration = ref([]);
 const form = ref({
   name: props.data?.name ? props.data.name + '快捷创建'  : '',
   deviceType: '',
-  storePolicy: '',
+  storePolicy: 'default-row',
   configuration: {},
   metadata: undefined,
 });
