@@ -86,7 +86,7 @@
                     <a-col
                         v-if="
                         ['network', 'OneNet', 'Ctwing'].includes(
-                          accessData.channel
+                          accessData?.channel
                         ) &&
                         ![
                           'agent-media-device-gateway',
@@ -96,7 +96,7 @@
                     >
                       <div>协议: {{ protocol?.name }}</div>
                     </a-col>
-                    <a-col v-if="accessData.channel === 'plugin'">
+                    <a-col v-if="accessData?.channel === 'plugin'">
                       <div>插件: {{ plugin?.name }}</div>
                     </a-col>
                   </a-row>
@@ -425,14 +425,17 @@ const queryExistAccess = async (_params, type) => {
   };
   const res = await getAccessConfigList(params);
   if (res.success && res.result.data.length) {
-    accessData.value = res.result.data.filter((i) => {
+    const _arr = res.result.data.filter((i) => {
       return i.provider === accessConfig.value.provider;
-    })[0];
-    accessData.value.gatewayType = accessConfig.value.provider;
-    if (networkAndProtocol.includes(accessData.value.provider)) {
-      queryNetworkByAccess(accessData.value.channelId);
+    });
+    if (_arr.length) {
+      accessData.value = _arr[0];
+      accessData.value.gatewayType = accessConfig.value.provider;
+      if (networkAndProtocol.includes(accessData.value.provider)) {
+        queryNetworkByAccess(accessData.value.channelId);
+      }
+      return true;
     }
-    return true;
   } else {
     return false;
   }
