@@ -72,24 +72,24 @@
                                     </span>
                                 </Ellipsis>
                             </div>
-                            <j-row>
-                                <j-col :span="12">
+                            <a-row>
+                                <a-col :span="12">
                                     <div class="card-item-content-text">
                                         设备类型
                                     </div>
                                     <Ellipsis>{{
                                         slotProps.deviceType?.text
                                     }}</Ellipsis>
-                                </j-col>
-                                <j-col :span="12">
+                                </a-col>
+                                <a-col :span="12">
                                     <div class="card-item-content-text">
                                         接入方式
                                     </div>
                                     <Ellipsis>{{
                                         slotProps?.accessName || '未接入'
                                     }}</Ellipsis>
-                                </j-col>
-                            </j-row>
+                                </a-col>
+                            </a-row>
                         </template>
                     </CardBox>
                 </template>
