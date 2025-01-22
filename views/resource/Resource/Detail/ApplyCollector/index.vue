@@ -36,7 +36,7 @@
                     </a-space>
                 </div>
             </div>
-            <a-empty v-else></a-empty>
+            <j-empty v-else description="当前生产环境已是最新版本，无需更新"> </j-empty>
             <div class="footer">
                 提示：此操作会为您将数采插件替换为资源库中新版本数采，可能会影响已创建的采集器，请谨慎操作
             </div>
