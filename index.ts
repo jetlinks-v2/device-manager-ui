@@ -100,7 +100,7 @@ const getComponents = () => {
                 label: 'Department.index.945805-1',
                 component: defineAsyncComponent(() => import('./views/department/device/index.vue'))
             },
-        ]
+        ],
     }
 }
 

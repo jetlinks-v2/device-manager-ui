@@ -6,7 +6,7 @@
         @cancel="onCancel"
     >
         <template #content>
-            <div style="width: 450px">
+            <div style="width: 560px">
                 <a-form ref="formRef" layout="vertical" :model="formData">
                     <a-form-item
                         :label="$t('Array.index.399995-0')"
@@ -42,6 +42,11 @@
                         ref="enumTableRef"
                         v-else-if="showEnum"
                         v-model:value="formData.enum.elements"
+                    />
+                    <ObjectItem
+                      ref="tableRef"
+                      v-else-if="showObject && showObjectItem"
+                      v-model:value="formData.properties"
                     />
                     <a-form-item
                         v-else-if="showArray"
@@ -81,6 +86,7 @@ import StringItem from '../String/Item.vue';
 import BooleanItem from '../Boolean/Item.vue';
 import DateItem from '../Date/Item.vue';
 import EnumItem from '../Enum/Item.vue';
+import ObjectItem from '../Object/Item.vue';
 import { cloneDeep, pick } from 'lodash-es';
 import { Form } from 'ant-design-vue';
 import { useI18n } from 'vue-i18n';
@@ -106,12 +112,17 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    showObjectItem: {
+      type: Boolean,
+      default: false
+    }
 });
 
 const formItemContext = Form.useInjectFormItemContext();
 
 const formRef = ref();
 const enumTableRef = ref();
+const tableRef = ref();
 const visible = ref(false);
 const formData = ref({
     type: props.value?.type,
@@ -136,6 +147,7 @@ const formData = ref({
             : {
                 type: undefined,
             },
+    properties: props.value?.properties || [],
 });
 
 const showDouble = computed(() => {
@@ -160,6 +172,10 @@ const showEnum = computed(() => {
 
 const showArray = computed(() => {
     return formData.value.type === 'array';
+});
+
+const showObject = computed(() => {
+    return formData.value.type === 'object';
 });
 
 const rules = [
@@ -203,6 +219,7 @@ const initValue = () => {
             : {
                 type: undefined,
             };
+    formData.value.properties = props.value.properties || []
 };
 
 const handleValue = (type, data) => {
@@ -225,6 +242,9 @@ const handleValue = (type, data) => {
         case 'date':
             newObject = pick(data, 'format');
             break;
+        case 'object':
+            newObject = pick(data, 'properties');
+          break;
         case 'array':
             newObject = pick(data, 'elementType');
     }
@@ -238,10 +258,16 @@ const handleValue = (type, data) => {
 const onOk = async () => {
     const data = await formRef.value.validate();
     let enumTable = true;
+    let tableData = true;
     if (enumTableRef.value) {
         enumTable = !!(await enumTableRef.value.validate());
     }
-    if (data && enumTable) {
+
+    if (tableRef.value) {
+        tableData = await tableRef.value.validate();
+        formData.value.properties = tableData
+    }
+    if (data && (enumTable || tableData)) {
         visible.value = false;
         const _value = handleValue(formData.value.type, formData.value);
         emit('update:value', _value);
