@@ -335,7 +335,7 @@ const handleClick = (data: any) => {
 const add = () => {
   const url = menuStore.hasMenu('link/AccessConfig/Detail');
   if (url) {
-    const tab: any = window.open(`${window.location.origin + window.location.pathname}#${menuStore.menusMap.get('link/AccessConfig/Detail')?.path}?view=false`);
+    const tab: any = window.open(`${window.location.origin + window.location.pathname}#${menuStore.menusMap.get('link/AccessConfig/Detail')?.path}?view=false&save=true`);
     tab.onTabSaveSuccess = (value: any) => {
       if (value.status === 200) {
         tableRef.value.reload();
