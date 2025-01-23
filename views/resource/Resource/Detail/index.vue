@@ -257,7 +257,7 @@ const typeList = computed(() => {
 const getProtocol = async () => {
   const res = await _queryProtocol(_id, {});
   if (res.success) {
-    count.value = res.result.total;
+    count.value = res.result?.total || 0;
   }
 };
 

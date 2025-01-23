@@ -27,9 +27,11 @@
             <AIcon type="InfoCircleOutlined"/>
             由于OneNet平台接入特性，快捷新增完成后请在该产品设备接入tab中完善OneNet平台设备配置
           </div>
-          <div v-if="['fixed-media','gb28181-2016','agent-media-device-gateway','agent-device-gateway'].includes(accessData.provider)" class="alert">
+          <div
+              v-if="['fixed-media','gb28181-2016','agent-media-device-gateway','agent-device-gateway'].includes(accessData.provider)"
+              class="alert">
             <AIcon type="InfoCircleOutlined"/>
-            由于{{providers.get(accessData.provider)?.name}}的特性，快捷新增完成后请在该产品设备接入tab中完善相关配置
+            由于{{ providers.get(accessData.provider)?.name }}的特性，快捷新增完成后请在该产品设备接入tab中完善相关配置
           </div>
           <a-input v-model:value="form.name"></a-input>
         </a-form-item>
@@ -75,34 +77,8 @@
                         },
                     ]"
         >
-          <a-input
-              placeholder="请输入"
-              v-if="i.type.type === 'string'"
-              v-model:value="form.configuration[i.property]"
-          ></a-input>
-          <a-input-password
-              placeholder="请输入"
-              v-if="i.type.type === 'password'"
-              v-model:value="form.configuration[i.property]"
-          ></a-input-password>
-          <a-select
-              placeholder="请选择"
-              v-if="
-                            i.type.type === 'enum' || i.type.type === 'boolean'
-                        "
-              v-model:value="form.configuration[i.property]"
-              :options="getOptions(i)"
-          >
-          </a-select>
-          <a-input-number
-              v-if="
-                            ['int', 'float', 'double', 'long'].includes(
-                                i.type.type,
-                            )
-                        "
-              v-model:value="form.configuration[i.property]"
-              placeholder="请输入"
-          ></a-input-number>
+          <j-value-item v-model:value="form.configuration[i.property]" :itemType="i.type.type"
+                        :options="getOptions(i)"></j-value-item>
         </a-form-item>
         <a-form-item label="存储策略" required name="storePolicy">
           <a-select ref="select" v-model:value="form.storePolicy">
@@ -122,10 +98,33 @@
         v-if="
                 ['gb28181-2016', 'Ctwing', 'OneNet-platform'].includes(
                     accessData.provider,
-                )
+                ) || accessData.channel === 'plugin'
             "
     >
       <div>网关配置</div>
+      <div v-if="accessData.channel === 'plugin'">
+        <a-form :model="accessConfiguration"  layout="vertical">
+          <a-form-item
+              v-for="i in pluginConfiguration"
+              :name="i.property"
+              :key="i"
+              :label="i.name"
+              :rules="[
+                        {
+                            required: !!i?.type?.expands?.required,
+                            message: `${
+                                i.type.type === 'enum' || 'boolean'
+                                    ? '请选择'
+                                    : '请输入'
+                            }${i.name}`,
+                        },
+                    ]"
+          >
+            <j-value-item v-model:modelValue="accessConfiguration[i.property]" :itemType="i.type.type"
+                          :options="getOptions(i)"></j-value-item>
+          </a-form-item>
+        </a-form>
+      </div>
       <GB28181
           ref="accessRef"
           v-if="accessData.provider === 'gb28181-2016'"
@@ -170,7 +169,7 @@ import OneNet from './OneNet/index.vue';
 import Network from './Network/index.vue';
 import {useMenuStore} from '@/store/menu';
 import {device} from '@device/assets/device';
-
+import {omit} from 'lodash';
 import {useI18n} from 'vue-i18n';
 
 const {t: $t} = useI18n();
@@ -209,9 +208,10 @@ const props = defineProps({
     default: () => {
     },
   },
-  providers:{
-    type:Object,
-    default: () => {}
+  providers: {
+    type: Object,
+    default: () => {
+    }
   }
 });
 
@@ -250,12 +250,16 @@ const deviceList = [
 const configuration = ref([]);
 
 const form = ref({
-  name: props.data?.name ? props.data.name + '快捷创建'  : '',
+  name: props.data?.name ? props.data.name + '快捷创建' : '',
   deviceType: '',
   storePolicy: 'default-row',
   configuration: {},
   metadata: undefined,
 });
+
+const pluginConfiguration = ref([]);
+
+const accessConfiguration = ref({})
 
 const deviceOptions = computed(() => {
   return deviceList.filter((i) => {
@@ -319,7 +323,7 @@ const createProduct = async () => {
           ...form.value,
           transportProtocol: props.accessData.transport,
           metadata: JSON.stringify(props.metadata),
-        };
+        }
         let data;
         if (props.accessData.channel === 'network') {
           if (
@@ -380,7 +384,10 @@ const createProduct = async () => {
         } else if (props.accessData.channel === 'plugin') {
           data = {
             resourceId: props.data.id,
-            gateway: props.accessData,
+            gateway: {
+              ...props.accessData,
+              configuration: accessConfiguration.value
+            },
             plugin: props.plugin,
             product,
           };
@@ -410,7 +417,7 @@ const createProduct = async () => {
         const res = await quickCreateProduct(data);
         if (res.success) {
           onlyMessage('操作成功');
-          menuStory.jumpPage('device/Product',{});
+          menuStory.jumpPage('device/Product', {});
         }
       })
       .catch((err) => {
@@ -443,10 +450,10 @@ const getConfigurationByPlugin = async () => {
   if (res.success) {
     res.result?.others?.configMetadata?.properties.forEach((item) => {
       if (item.name === '流传输模式') {
-        form.value.configuration[item.property] =
+        accessConfiguration[item.property] =
             item.type.expands?.defaultValue;
       }
-      configuration.value.push(item);
+      pluginConfiguration.value.push(item);
     });
   }
 };
