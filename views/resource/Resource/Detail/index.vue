@@ -195,7 +195,7 @@
 import Update from './Update/index.vue';
 import Apply from './Apply/index.vue';
 import ApplyCollector from './ApplyCollector/index.vue';
-import {detailResource , _queryProtocol} from '@device/api/resource/resource';
+import {detailResource , _queryProductNoPaging} from '@device/api/resource/resource';
 import Metadata from './Metadata.vue';
 import dayjs from 'dayjs';
 import {resource} from '@device/assets/resource'
@@ -254,10 +254,10 @@ const typeList = computed(() => {
 })
 
 // 受协议影响的产品
-const getProtocol = async () => {
-  const res = await _queryProtocol(_id, {});
+const getProductNumber = async () => {
+  const res = await _queryProductNoPaging(_id, {});
   if (res.success) {
-    count.value = res.result?.total || 0;
+    count.value = res.result.length || 0;
   }
 };
 
@@ -333,7 +333,7 @@ watch(
     () => {
       if (_id) {
         getDetail(_id);
-        getProtocol()
+        getProductNumber()
       }
     },
     {
