@@ -14,7 +14,7 @@
       </div>
       <div v-else>
         <div v-if="errorMessage" class="error">
-          <AIcon style="font-size: 100px;margin: 24px 0" type="GlobalOutlined"></AIcon>
+          <AIcon style="font-size: 100px;margin: 24px 0" type="icon-a-rongqi2737"></AIcon>
           <div >{{ errorMessage }}</div>
         </div>
         <template v-else>
@@ -67,7 +67,7 @@ const getUpdate = async () => {
     errorMessage.value = e?.response?.data?.message
     loading.value = false
   });
-  if (res.success) {
+  if (res?.success) {
     loading.value = false
     showUpdate.value = res.result;
     if (res.result) {

@@ -80,7 +80,8 @@
       </div>
     </template>
     <div v-else-if="errMessage" class="errMessage">
-      {{ errMessage }}
+      <AIcon style="font-size: 100px;margin: 24px 0" type="icon-a-rongqi2737"></AIcon>
+      <div>{{ errMessage }}</div>
     </div>
     <j-empty v-else class="empty"></j-empty>
   </div>
@@ -232,7 +233,7 @@ watch(
   transform: translate(-50%, -50%);
 }
 .errMessage{
-  margin-top: 20%;
+  margin-top: 24px;
   text-align: center;
 }
 </style>
