@@ -31,6 +31,8 @@ import { getProtocolList } from '@device/api/link/accessConfig';
 import { queryProtocolDetail } from '@device/api/resource/quickCreate';
 import { ProtocolMapping } from './data';
 import Save from '@device/views/link/Protocol/Save/index.vue'
+import { onlyMessage } from "@jetlinks-web/utils";
+
 const props = defineProps({
     type: {
         type: String,

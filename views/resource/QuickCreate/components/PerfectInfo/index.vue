@@ -27,6 +27,10 @@
             <AIcon type="InfoCircleOutlined"/>
             由于OneNet平台接入特性，快捷新增完成后请在该产品设备接入tab中完善OneNet平台设备配置
           </div>
+          <div v-if="['fixed-media','gb28181-2016','agent-media-device-gateway','agent-device-gateway'].includes(accessData.provider)" class="alert">
+            <AIcon type="InfoCircleOutlined"/>
+            由于{{providers.get(accessData.provider)?.name}}的特性，快捷新增完成后请在该产品设备接入tab中完善相关配置
+          </div>
           <a-input v-model:value="form.name"></a-input>
         </a-form-item>
         <a-form-item
@@ -205,6 +209,10 @@ const props = defineProps({
     default: () => {
     },
   },
+  providers:{
+    type:Object,
+    default: () => {}
+  }
 });
 
 const emits = defineEmits(['cancel']);

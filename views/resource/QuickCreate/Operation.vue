@@ -126,6 +126,7 @@
                 :data="data"
                 :protocol="protocol"
                 :plugin="plugin"
+                :providers="providers"
                 :network="network"
                 :accessData="accessData"
                 :metadata="metadataData"
