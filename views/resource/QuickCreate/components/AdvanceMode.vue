@@ -42,14 +42,14 @@
       <div>
         <div
             v-if="
-                        ['network', 'OneNet', 'Ctwing'].includes(
+                        ['network', 'OneNet', 'Ctwing','child-device'].includes(
                             accessConfig.channel,
                         )
                     "
         >
           <div
               v-if="
-                            !['OneNet', 'Ctwing'].includes(accessConfig.channel)
+                            !['OneNet', 'Ctwing','child-device'].includes(accessConfig.channel)
                         "
           >
             <Title data="网络组件">
@@ -269,7 +269,7 @@ const protocolList = computed(() => {
   const resource = accessConfig.value.bindInfo.some((i) => {
     return i.id === protocol.value?.id;
   });
-  return resource || !protocol.value?.id
+  return (resource || !protocol.value?.id)
       ? accessConfig.value.bindInfo
       : [protocol.value];
 });
@@ -442,7 +442,7 @@ const submitDada = async() => {
         protocol: protocolData,
       };
     }
-  } else if (['OneNet', 'Ctwing'].includes(accessConfig.value.channel)) {
+  } else if (['OneNet', 'Ctwing','child-device'].includes(accessConfig.value.channel)) {
     if (!protocol.value) {
       onlyMessage('请选择协议', 'error');
       return;
@@ -466,7 +466,6 @@ const submitDada = async() => {
       gateway,
     };
   }
-  console.log(data,'data')
   emits('submit', data, accessName);
 };
 

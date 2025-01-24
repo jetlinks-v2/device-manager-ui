@@ -85,7 +85,7 @@
                     </a-col>
                     <a-col
                         v-if="
-                        ['network', 'OneNet', 'Ctwing'].includes(
+                        ['network', 'OneNet', 'Ctwing','child-device'].includes(
                           accessData?.channel
                         ) &&
                         ![
@@ -452,7 +452,7 @@ const getDefault = async () => {
         return;
       }
     }
-    if (["network", "OneNet", "Ctwing"].includes(accessConfig.value.channel)) {
+    if (["network", "OneNet", "Ctwing",'child-device'].includes(accessConfig.value.channel)) {
       const data =
           accessConfig.value.bindInfo.filter((i) => {
             return i.defaultAccess;

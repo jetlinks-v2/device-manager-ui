@@ -367,7 +367,7 @@ const createProduct = async () => {
             };
           }
         } else if (
-            ['OneNet', 'Ctwing'].includes(props.accessData.channel)
+            ['OneNet', 'Ctwing','child-device'].includes(props.accessData.channel)
         ) {
           data = {
             resourceId: props.data.id,
@@ -484,7 +484,7 @@ watch(
       });
 
       if (
-          ['network', 'OneNet', 'Ctwing'].includes(
+          ['network', 'OneNet', 'Ctwing','child-device'].includes(
               props.accessData.channel,
           ) &&
           !['agent-media-device-gateway', 'agent-device-gateway'].includes(
