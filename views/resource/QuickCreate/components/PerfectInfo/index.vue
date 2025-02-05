@@ -77,7 +77,7 @@
                         },
                     ]"
         >
-          <j-value-item v-model:value="form.configuration[i.property]" :itemType="i.type.type"
+          <j-value-item v-model:modelValue="form.configuration[i.property]" :itemType="i.type.type"
                         :options="getOptions(i)"></j-value-item>
         </a-form-item>
         <a-form-item label="存储策略" required name="storePolicy">
@@ -169,7 +169,6 @@ import OneNet from './OneNet/index.vue';
 import Network from './Network/index.vue';
 import {useMenuStore} from '@/store/menu';
 import {device} from '@device/assets/device';
-import {omit} from 'lodash';
 import {useI18n} from 'vue-i18n';
 
 const {t: $t} = useI18n();
