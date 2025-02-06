@@ -34,7 +34,7 @@
               >
               <a-button @click="onApply">应用资源</a-button>
             </a-space>
-            <div class="createdProductNumber">已创建产品：{{ count}}</div>
+            <div class="createdProductNumber">已创建产品：{{ count }}</div>
           </div>
         </div>
         <div class="header-tags">
@@ -147,8 +147,10 @@
                 v-if="detail.type.value !== 'collector'"
             >
               <a-space>
-                <span> 已就绪 </span>
+                <span> {{ hasMetadata ?
+                   '已就绪' : '无'}} </span>
                 <AIcon
+                    v-if="hasMetadata"
                     :type="
                                             metadataVisible
                                                 ? 'EyeOutlined'
@@ -195,7 +197,7 @@
 import Update from './Update/index.vue';
 import Apply from './Apply/index.vue';
 import ApplyCollector from './ApplyCollector/index.vue';
-import {detailResource , _queryProductNoPaging} from '@device/api/resource/resource';
+import {detailResource, _queryProductNoPaging} from '@device/api/resource/resource';
 import Metadata from './Metadata.vue';
 import dayjs from 'dayjs';
 import {resource} from '@device/assets/resource'
@@ -253,6 +255,12 @@ const typeList = computed(() => {
   }, []) || []
 })
 
+//是否有物模型
+const hasMetadata = computed(() => {
+  const metadata =  JSON.parse(detail.value.metadata || '{}');
+  console.log(metadata,'metadata');
+  return metadata?.events?.length ||  metadata?.functions?.length || metadata?.properties?.length || metadata?.tags?.length;
+})
 // 受协议影响的产品
 const getProductNumber = async () => {
   const res = await _queryProductNoPaging(_id, {});
@@ -384,10 +392,12 @@ watch(
         flex: 1 1 0;
         min-width: 0;
       }
-      .createdProductNumber{
+
+      .createdProductNumber {
         margin-top: 18px;
         text-align: right;
       }
+
       .header-type {
         margin: 0 16px;
         padding: 6px 12px;
@@ -540,6 +550,7 @@ watch(
     }
   }
 }
+
 .model-list {
   display: flex;
   gap: 12px;
@@ -548,9 +559,11 @@ watch(
     padding-top: 8px;
   }
 }
-.fz-18{
+
+.fz-18 {
   font-size: 18px;
 }
+
 :deep(.ant-carousel) {
   .slick-dots {
     position: relative;
@@ -592,6 +605,7 @@ watch(
 
       &.slick-active {
         width: 104px;
+
         img, & img {
           filter: grayscale(0%);
         }
