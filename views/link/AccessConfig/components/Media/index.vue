@@ -146,7 +146,7 @@ const onFinish = async (values: any) => {
         if (route.query.save) {
             // @ts-ignore
             if ((window as any).onTabSaveSuccess) {
-                (window as any).onTabSaveSuccess(resp.result);
+                (window as any).onTabSaveSuccess(resp);
                 setTimeout(() => window.close(), 300);
             }
         } else {

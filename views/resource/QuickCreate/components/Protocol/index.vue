@@ -31,6 +31,8 @@ import { getProtocolList } from '@device/api/link/accessConfig';
 import { queryProtocolDetail } from '@device/api/resource/quickCreate';
 import { ProtocolMapping } from './data';
 import Save from '@device/views/link/Protocol/Save/index.vue'
+import { onlyMessage } from "@jetlinks-web/utils";
+
 const props = defineProps({
     type: {
         type: String,
@@ -47,7 +49,7 @@ const protocolList = ref([])
 const allProtocolList = ref([])
 const addVisible = ref(false)
 const protocolCurrent = ref()
-const protocolSearch = () => {
+const protocolSearch = (value) => {
     protocolList.value = value
         ? allProtocolList.value.filter(
             (i) =>
@@ -74,7 +76,7 @@ const queryProtocolList = async () => {
     }
 };
 
-const saveChange = () =>{
+const saveChange = (value) =>{
     addVisible.value = false;
     if (value) {
         onlyMessage('操作成功', 'success');
