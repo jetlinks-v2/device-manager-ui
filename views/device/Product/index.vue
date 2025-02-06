@@ -598,46 +598,6 @@ const query = reactive({
       },
     },
     {
-      title: $t('Product.index.660348-34'),
-      key: 'id$dim-assets',
-      dataIndex: 'id$dim-assets',
-      search: {
-        first: true,
-        type: 'treeSelect',
-        termOptions: ['eq'],
-        options: async () => {
-          return new Promise((res) => {
-            queryOrgThree({paging: false}).then((resp: any) => {
-              const formatValue = (list: any[]) => {
-                const _list: any[] = [];
-                list.forEach((item) => {
-                  if (item.children) {
-                    item.children = formatValue(
-                        item.children,
-                    );
-                  }
-                  _list.push({
-                    ...item,
-                    value: JSON.stringify({
-                      assetType: 'product',
-                      targets: [
-                        {
-                          type: 'org',
-                          id: item.id,
-                        },
-                      ],
-                    }),
-                  });
-                });
-                return _list;
-              };
-              res(formatValue(resp.result));
-            });
-          });
-        },
-      },
-    },
-    {
       title: $t('Product.index.660348-11'),
       key: 'action',
       fixed: 'right',

@@ -425,53 +425,6 @@ const columns = ref([
         },
     },
     {
-        dataIndex: 'id$dim-assets',
-        title: $t('Instance.index.133466-16'),
-        hideInTable: true,
-        search: {
-            type: 'treeSelect',
-            termOptions: ['eq'],
-            // handleValue(v) {
-            //   return {
-            //     assetType: 'device',
-            //     targets: [
-            //       {
-            //         type: 'org',
-            //         id: v,
-            //       },
-            //     ],
-            //   }
-            // },
-            options: () =>
-                new Promise((resolve) => {
-                    queryOrgThree({}).then((resp: any) => {
-                        const formatValue = (list: any[]) => {
-                            const _list: any[] = [];
-                            list.forEach((item) => {
-                                if (item.children) {
-                                    item.children = formatValue(item.children);
-                                }
-                                _list.push({
-                                    ...item,
-                                    id: JSON.stringify({
-                                        assetType: 'device',
-                                        targets: [
-                                            {
-                                                type: 'org',
-                                                id: item.id,
-                                            },
-                                        ],
-                                    }),
-                                });
-                            });
-                            return _list;
-                        };
-                        resolve(formatValue(resp.result));
-                    });
-                }),
-        },
-    },
-    {
         key: 'id$dev-tag',
         dataIndex: 'id$dev-tag',
         title: $t('Instance.index.133466-17'),
