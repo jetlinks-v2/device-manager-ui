@@ -10,6 +10,7 @@
           ref="instanceRef"
           :columns="columns"
           :request="queryPage"
+          modeValue="CARD"
           :defaultParams="{
                     sorts: [{ name: 'createTime', order: 'desc' }],
                 }"
@@ -170,8 +171,6 @@ const columns = [
     title: $t('plugin.index.293829-1'),
     dataIndex: 'id',
     key: 'type',
-    fixed: 'left',
-    width: 200,
     ellipsis: true,
     search: {
       type: 'input',
@@ -181,8 +180,6 @@ const columns = [
     title: $t('plugin.index.293829-3'),
     dataIndex: 'name',
     key: 'type',
-    fixed: 'left',
-    width: 200,
     ellipsis: true,
     search: {
       type: 'input',
@@ -234,8 +231,7 @@ const columns = [
   {
     title: $t('plugin.index.293829-7'),
     key: 'action',
-    fixed: 'right',
-    width: 120,
+    width: 160,
     scopedSlots: true,
   },
 ];

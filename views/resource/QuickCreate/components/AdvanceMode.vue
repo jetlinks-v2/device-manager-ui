@@ -42,14 +42,14 @@
       <div>
         <div
             v-if="
-                        ['network', 'OneNet', 'Ctwing'].includes(
+                        ['network', 'OneNet', 'Ctwing','child-device'].includes(
                             accessConfig.channel,
                         )
                     "
         >
           <div
               v-if="
-                            !['OneNet', 'Ctwing'].includes(accessConfig.channel)
+                            !['OneNet', 'Ctwing','child-device'].includes(accessConfig.channel)
                         "
           >
             <Title data="网络组件">
@@ -235,6 +235,8 @@ import {onlyMessage} from '@jetlinks-web/utils';
 import {omit} from 'lodash-es';
 import {gatewayType} from '../data';
 import {link} from '@device/assets/link/index.ts'
+import  { getProtocolList } from "@device/api/link/accessConfig"
+import {ProtocolMapping} from "@/modules/device-manager-ui/views/resource/QuickCreate/components/Protocol/data";
 
 const props = defineProps({
   accessList: {
@@ -267,7 +269,7 @@ const protocolList = computed(() => {
   const resource = accessConfig.value.bindInfo.some((i) => {
     return i.id === protocol.value?.id;
   });
-  return resource || !protocol.value?.id
+  return (resource || !protocol.value?.id)
       ? accessConfig.value.bindInfo
       : [protocol.value];
 });
@@ -301,7 +303,26 @@ const selectedPlugin = (data) => {
   selectedPluginID.value = '';
 };
 
-const selectResourceProtocol = (data) => {
+//查询协议是否在平台已存在
+const queryExistProtocol = async () =>{
+  const resp = await getProtocolList(
+      ProtocolMapping.get(accessConfig.value?.provider),
+      {
+        "sorts[0].name": "createTime",
+        "sorts[0].order": "desc",
+        paging: false,
+      }
+  );
+  if (resp.status === 200) {
+    const ExistProtocol =  resp.result.find((i) => {
+      return i?.configuration?.sourceId === protocol.value.configuration?.sourceId;
+    });
+    return  ExistProtocol ?  ExistProtocol : protocol.value
+  }
+}
+
+
+const selectResourceProtocol = async(data) => {
   protocol.value = {
     ...omit(data, ['id']),
     type: 'jar',
@@ -380,7 +401,7 @@ const getDetails = (slotProps) => {
   return head + headers + content;
 };
 
-const submitDada = () => {
+const submitDada = async() => {
   let data;
   const accessName = props.providers?.get(accessConfig.value.provider)?.name
   const gateway = {
@@ -414,19 +435,21 @@ const submitDada = () => {
         onlyMessage('请选择协议', 'error');
         return;
       }
+      const protocolData = await queryExistProtocol()
       data = {
         network: network.value,
         gateway,
-        protocol: protocol.value,
+        protocol: protocolData,
       };
     }
-  } else if (['OneNet', 'Ctwing'].includes(accessConfig.value.channel)) {
+  } else if (['OneNet', 'Ctwing','child-device'].includes(accessConfig.value.channel)) {
     if (!protocol.value) {
       onlyMessage('请选择协议', 'error');
       return;
     }
+    const protocolData = await queryExistProtocol()
     data = {
-      protocol: protocol.value,
+      protocol: protocolData,
       gateway,
     };
   } else if (accessConfig.value.channel === 'plugin') {

@@ -1,5 +1,5 @@
 <template>
-    <j-select
+    <a-select
         :value="host"
         :options="options"
         placeholder="请选择本地地址"
@@ -8,7 +8,7 @@
         :disabled="shareCluster"
         @change="changeHost"
     >
-    </j-select>
+    </a-select>
 </template>
 
 <script lang="ts" setup>

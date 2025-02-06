@@ -25,7 +25,7 @@
         <div class="content">
             <j-pro-table
                 ref="actionRef"
-                model="CARD"
+                mode="CARD"
                 :columns="columns"
                 :params="params"
                 :request="
@@ -34,7 +34,7 @@
                             ? _queryProduct(_id, e)
                             : _queryProtocol(_id, e)
                 "
-                :gridColumn="2"
+                :gridColumns="[2]"
                 :bodyStyle="{
                     paddingRight: 0,
                     paddingLeft: 0,
@@ -72,24 +72,24 @@
                                     </span>
                                 </Ellipsis>
                             </div>
-                            <j-row>
-                                <j-col :span="12">
+                            <a-row>
+                                <a-col :span="12">
                                     <div class="card-item-content-text">
                                         设备类型
                                     </div>
                                     <Ellipsis>{{
                                         slotProps.deviceType?.text
                                     }}</Ellipsis>
-                                </j-col>
-                                <j-col :span="12">
+                                </a-col>
+                                <a-col :span="12">
                                     <div class="card-item-content-text">
                                         接入方式
                                     </div>
                                     <Ellipsis>{{
                                         slotProps?.accessName || '未接入'
                                     }}</Ellipsis>
-                                </j-col>
-                            </j-row>
+                                </a-col>
+                            </a-row>
                         </template>
                     </CardBox>
                 </template>
@@ -140,37 +140,6 @@ const columns = [
             first: true,
         },
     },
-    // {
-    //     title: '网关类型',
-    //     dataIndex: 'accessProvider',
-    //     width: 150,
-    //     ellipsis: true,
-    //     hideInTable: true,
-    //     search: {
-    //         type: 'select',
-    //         options: () =>
-    //             getProviders().then((resp: any) => {
-    //                 const data = resp.result || [];
-    //                 return accessConfigTypeFilter(data);
-    //             }),
-    //     },
-    // },
-    // {
-    //     title: '接入方式',
-    //     dataIndex: 'accessName',
-    //     width: 150,
-    //     ellipsis: true,
-    //     search: {
-    //         type: 'select',
-    //         options: () =>
-    //             queryGatewayList().then((resp: any) =>
-    //                 resp.result.map((item: any) => ({
-    //                     label: item.name,
-    //                     value: item.id,
-    //                 })),
-    //             ),
-    //     },
-    // },
     {
         title: '设备类型',
         dataIndex: 'deviceType',
@@ -202,67 +171,6 @@ const columns = [
         ellipsis: true,
         width: 300,
     },
-    // {
-    //     dataIndex: 'classifiedId',
-    //     title: '分类',
-    //     hideInTable: true,
-    //     search: {
-    //         type: 'treeSelect',
-    //         options: () => {
-    //             return new Promise((res) => {
-    //                 queryTree({ paging: false }).then((resp) => {
-    //                     res(resp.result);
-    //                 });
-    //             });
-    //         },
-    //         componentProps: {
-    //             fieldNames: {
-    //                 label: 'name',
-    //                 value: 'id',
-    //             },
-    //         },
-    //     },
-    // },
-    // {
-    //     dataIndex: 'id$dim-assets',
-    //     key: 'id$dim-assets',
-    //     title: '所属组织',
-    //     hideInTable: true,
-    //     search: {
-    //         type: 'treeSelect',
-    //         componentProps: {
-    //             fieldNames: {
-    //                 label: 'name',
-    //                 value: 'value',
-    //             },
-    //         },
-    //         options: () =>
-    //             new Promise((resolve) => {
-    //                 getTreeData_api({ paging: false }).then((resp: any) => {
-    //                     const formatValue = (list: any[]) => {
-    //                         return list.map((item: any) => {
-    //                             if (item.children) {
-    //                                 item.children = formatValue(item.children);
-    //                             }
-    //                             return {
-    //                                 ...item,
-    //                                 value: JSON.stringify({
-    //                                     assetType: 'product',
-    //                                     targets: [
-    //                                         {
-    //                                             type: 'org',
-    //                                             id: item.id,
-    //                                         },
-    //                                     ],
-    //                                 }),
-    //                             };
-    //                         });
-    //                     };
-    //                     resolve(formatValue(resp.result) || []);
-    //                 });
-    //             }),
-    //     },
-    // },
 ];
 </script>
 
@@ -276,6 +184,6 @@ const columns = [
 }
 .content {
     height: 70vh;
-    overflow-y: auto;
+    padding: 0 10px;
 }
 </style>

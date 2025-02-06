@@ -12,10 +12,10 @@
                 <a-space>
                     <a-tooltip>
                         <template #title>
-                            <div>取并集：仅保留标识一致的属性</div>
-                            <div>取交集：保留平台、资源中的所有属性</div>
-                            <div>忽略：保留资源中的所有属性</div>
-                            <div>覆盖：仅保留平台中的属性</div>
+                            <div>取并集：保留平台、资源中的所有属性</div>
+                            <div>取交集：仅保留标识一致的属性</div>
+                            <div>忽略：仅保留平台中的属性</div>
+                            <div>覆盖：保留资源中的所有属性</div>
                         </template>
                         <AIcon
                             type="QuestionCircleOutlined"

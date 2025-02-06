@@ -80,7 +80,8 @@
       </div>
     </template>
     <div v-else-if="errMessage" class="errMessage">
-      {{ errMessage }}
+      <AIcon style="font-size: 100px;margin: 24px 0" type="icon-a-rongqi2737"></AIcon>
+      <div>{{ errMessage }}</div>
     </div>
     <j-empty v-else class="empty"></j-empty>
   </div>
@@ -133,6 +134,7 @@ const imageMap = new Map([
 const fileList = ref([]);
 const removeFile = (index) => {
   fileList.value.splice(index, 1);
+  emits('update:value', fileList.value);
 };
 
 const onInstall = async () => {
@@ -231,7 +233,7 @@ watch(
   transform: translate(-50%, -50%);
 }
 .errMessage{
-  margin-top: 20%;
+  margin-top: 24px;
   text-align: center;
 }
 </style>
