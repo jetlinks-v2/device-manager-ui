@@ -280,7 +280,6 @@ const findProvidersByProvider = (provider: string) => {
  */
 const submitData = async () => {
   if (selectedRowKeys.value.length) {
-
     if (checkData.value.channel === 'plugin') {
       const resp = await getProductByPluginId(checkData.value.channelId).catch(() => ({ success: false, result: []}))
       const metadataResp = await getAccessConfig(props.productId!, checkData.value.id).catch(() => ({ success: false, result: {}}))

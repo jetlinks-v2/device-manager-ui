@@ -427,6 +427,7 @@ const queryExistAccess = async (_params, type) => {
   const res = await getAccessConfigList(params);
   if (res.success && res.result.data.length) {
     const _arr = res.result.data.filter((i) => {
+    accessData.value = res.result.data.filter((i) => {
       return i.provider === accessConfig.value.provider;
     });
     if (_arr.length) {
