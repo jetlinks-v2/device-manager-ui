@@ -427,20 +427,20 @@ const queryExistAccess = async (_params, type) => {
   const res = await getAccessConfigList(params);
   if (res.success && res.result.data.length) {
     const _arr = res.result.data.filter((i) => {
-    accessData.value = res.result.data.filter((i) => {
-      return i.provider === accessConfig.value.provider;
-    });
-    if (_arr.length) {
-      accessData.value = _arr[0];
-      accessData.value.gatewayType = accessConfig.value.provider;
-      if (networkAndProtocol.includes(accessData.value.provider)) {
-        queryNetworkByAccess(accessData.value.channelId);
+      accessData.value = res.result.data.filter((i) => {
+        return i.provider === accessConfig.value.provider;
+      });
+      if (_arr.length) {
+        accessData.value = _arr[0];
+        accessData.value.gatewayType = accessConfig.value.provider;
+        if (networkAndProtocol.includes(accessData.value.provider)) {
+          queryNetworkByAccess(accessData.value.channelId);
+        }
+        return true;
       }
-      return true;
+    } else {
+      return false;
     }
-  } else {
-    return false;
-  }
 };
 
 //获取默认协议或插件
