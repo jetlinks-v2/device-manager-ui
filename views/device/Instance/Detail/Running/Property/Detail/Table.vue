@@ -77,7 +77,7 @@ import {encodeQuery} from '@/utils';
 import dayjs from 'dayjs';
 import { getType } from '../index';
 import ValueRender from '../ValueRender.vue';
-import JsonViewer from 'vue3-json-viewer';
+import { JsonViewer } from 'vue3-json-viewer';
 import { useI18n } from 'vue-i18n';
 
 const { t: $t } = useI18n();
