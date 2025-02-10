@@ -25,7 +25,7 @@
 </template>
 
 <script lang="ts" setup>
-import JsonViewer from 'vue3-json-viewer';
+import { JsonViewer } from 'vue3-json-viewer';
 
 const _data = defineProps({
     type: {
