@@ -123,6 +123,8 @@ import { getOperator } from '../../../api/product';
 import { inject } from 'vue';
 import {useTableWrapper, useTableFullScreen} from "../../../components/Metadata/context";
 import { useI18n } from 'vue-i18n';
+import {langKey} from "@/utils/consts";
+import { cloneDeep } from 'lodash-es'
 
 const {t: $t} = useI18n();
 
@@ -135,6 +137,9 @@ interface Emits {
     (e: 'addOperatorValue', data: string): void;
 }
 const emit = defineEmits<Emits>();
+//获取浏览器语言
+const language = (navigator.language || 'en').toLocaleLowerCase()
+const localLanguage = localStorage.getItem(langKey) || language.split('-')[0] || 'en'
 const item = ref<Partial<OperatorItem>>();
 const data = ref<OperatorItem[]>([]);
 const dataRef = ref<OperatorItem[]>([]);
@@ -186,6 +191,21 @@ const addClick = (node: OperatorItem) => {
 };
 
 const productStore = useProductStore();
+
+const dealOperator = (data:any) =>{
+  return data.map((item: any) => {
+    const newItem = cloneDeep(item);
+    if(newItem.i18nMessages){
+      newItem.name = item.i18nMessages.name[localLanguage];
+      newItem.description = item.i18nMessages.description[localLanguage];
+      if(newItem.children) {
+        newItem.children = dealOperator(newItem.children);
+      }
+    }
+    return newItem;
+  })
+}
+
 
 const getData = async (id?: string) => {
     // const metadata = productStore.current.metadata || '{}';
@@ -239,15 +259,17 @@ const getData = async (id?: string) => {
     const response = await getOperator();
     console.log(tags,properties,'test')
     if (response.status === 200) {
+        const operator = dealOperator(response.result)
+        console.log(operator,'operator')
         data.value = [
             properties as OperatorItem,
             tags as any,
-            ...response.result,
+            ...operator,
         ];
         dataRef.value = [
             properties as OperatorItem,
             tags as any,
-            ...response.result,
+            ...operator,
         ];
     }
 };
