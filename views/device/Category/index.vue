@@ -38,6 +38,9 @@
                         {{ $t('Category.index.779033-0') }}
                     </j-permission-button>
                 </template>
+              <template #name="slotProps">
+                <j-ellipsis>{{ slotProps?.i18nName || slotProps?.name }}</j-ellipsis>
+              </template>
                 <template #action="slotProps">
                     <a-space :size="16">
                         <template
@@ -222,9 +225,9 @@ const table = reactive({
     columns: [
         {
             title: $t('Category.index.779033-1'),
-            dataIndex: 'i18nName',
-            key: 'i18nName',
-            ellipsis: true,
+            dataIndex: 'name',
+            key: 'name',
+            scopedSlots: true,
             width: 500,
         },
         {
