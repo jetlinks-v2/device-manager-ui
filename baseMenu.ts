@@ -1441,13 +1441,33 @@ export default [
                         "describe": "",
                         "url": "/iot/link/resource",
                         "icon": "SnippetsOutlined",
-                        showPage: ['entity-template'],
+                        showPage: [
+                          'resources-instance',
+                          'resources-install-task',
+                          'resources-library',
+                          'resources-classification',
+                          'resources-classification-type'
+                        ],
                         "permissions": [
                             {
-                                "permission": "entity-template",
-                                "actions": [
-                                    "query"
-                                ]
+                                "permission": "resources-instance",
+                                "actions": ["query", "save", 'delete']
+                            },
+                            {
+                                "permission": "resources-install-task",
+                                "actions": ["query", "save", 'delete']
+                            },
+                            {
+                                "permission": "resources-library",
+                                "actions": ["query", "save"]
+                            },
+                            {
+                                "permission": "resources-classification",
+                                "actions": ["query", "save", "delete"]
+                            },
+                            {
+                                "permission": "resources-classification-type",
+                                "actions": ["query", "save", "delete"]
                             }
                         ],
                         "accessSupport": {
