@@ -4,6 +4,9 @@
         :visible="true"
         :title="!!data?.id ? $t('plugin.Save.128565-0') : $t('plugin.Save.128565-1')"
         :confirmLoading="loading"
+        :okButtonProps="{
+          disabled: uploading
+        }"
         @ok="handleSave"
         @cancel="handleCancel"
         width="650px"
@@ -37,6 +40,7 @@
                 <a-form-item :label="$t('plugin.Save.128565-7')" name="version" :rules="versionRule">
                     <UploadFile
                         v-model:modelValue="modelRef.version"
+                        v-model:uploading="uploading"
                         @change="uploadChange"
                         :fileName="data.filename"
                     />
@@ -99,6 +103,7 @@ const route = useRoute();
 const formRef = ref();
 const fileType = ref(props.data.type);
 const loading = ref(false);
+const uploading = ref(false)
 
 const vailId = async (_: any, value: string) => {
     if (!props.data.id && value) {
