@@ -62,10 +62,21 @@ const showUpdateModal = ref(false);
 const loading = ref(true)
 const errorMessage = ref('')
 const info = ref({});
+
+//隐藏notification通知框
+const hideNotification = () => {
+  const el = document.getElementsByClassName('ant-notification');
+  for (let i = 0; i < el.length; i++) {
+    el[i].innerHTML = '';
+  }
+};
 const getUpdate = async () => {
   const res = await checkUpdate(props.data.id).catch(e => {
-    errorMessage.value = e?.response?.data?.message
-    loading.value = false
+    if(e.status === 404) {
+      errorMessage.value = e?.response?.data?.message
+      loading.value = false
+      hideNotification()
+    }
   });
   if (res?.success) {
     loading.value = false
