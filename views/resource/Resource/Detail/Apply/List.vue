@@ -4,24 +4,24 @@
             <div class="header">
                 <a-space :size="12">
                     <AIcon type="AppstoreOutlined" style="font-size: 18px" />
-                    <span style="font-size: 20px">物模型</span>
+                    <span style="font-size: 20px">{{ $t('Apply.List.326977-0') }}</span>
                     <span @click="handleClick('metadata')"
-                        >受影响的产品: <span style="color: #1890ff; "> {{ productList.length }} </span></span
+                        >{{ $t('Apply.List.326977-1') }} <span style="color: #1890ff; "> {{ productList.length }} </span></span
                     >
                 </a-space>
                 <a-space>
                     <a-tooltip>
                         <template #title>
-                            <div>取并集：保留平台、资源中的所有属性</div>
-                            <div>取交集：仅保留标识一致的属性</div>
-                            <div>忽略：仅保留平台中的属性</div>
-                            <div>覆盖：保留资源中的所有属性</div>
+                            <div>{{ $t('Apply.List.326977-2') }}</div>
+                            <div>{{ $t('Apply.List.326977-3') }}</div>
+                            <div>{{ $t('Apply.List.326977-4') }}</div>
+                            <div>{{ $t('Apply.List.326977-5') }}</div>
                         </template>
                         <AIcon
                             type="QuestionCircleOutlined"
                             style="margin-left: 2px"
                         />
-                        处理方式说明
+                        {{ $t('Apply.List.326977-6') }}
                     </a-tooltip>
                 </a-space>
             </div>
@@ -36,10 +36,10 @@
                     v-model:value="productList[index]"
                     :resourceMetadata="resourceMetadata"
                     :options="[
-                        { label: '取交集', value: 'intersection' },
-                        { label: '取并集', value: 'union' },
-                        { label: '忽略', value: 'ignore' },
-                        { label: '覆盖', value: 'cover' },
+                        { label: $t('Apply.List.326977-7'), value: 'intersection' },
+                        { label: $t('Apply.List.326977-8'), value: 'union' },
+                        { label: $t('Apply.List.326977-9'), value: 'ignore' },
+                        { label: $t('Apply.List.326977-10'), value: 'cover' },
                     ]"
                 >
                     <template #leftRender>
@@ -61,7 +61,7 @@
                 </CardItem>
             </div>
             <div class="expand-btn" @click="expand = !expand">
-                {{ expand ? '收起' : '展开' }}
+                {{ expand ? $t('Apply.List.326977-11') : $t('Apply.List.326977-12') }}
             </div>
         </div>
         <Product v-if="visible" @close="visible = false" />

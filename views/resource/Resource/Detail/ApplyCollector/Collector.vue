@@ -15,9 +15,9 @@
                         type="ArrowLeftOutlined"
                         style="font-size: 18px; margin-bottom: 12px"
                     />
-                    返回
+                    {{ $t('ApplyCollector.Collector.789174-0') }}
                 </div>
-                <div class="title">受影响的采集器</div>
+                <div class="title">{{ $t('ApplyCollector.Collector.789174-1') }}</div>
             </div>
         </template>
         <pro-search :columns="columns" type="simple" @search="handleSearch" />
@@ -74,7 +74,7 @@
                             <j-row>
                                 <j-col :span="12">
                                     <div class="card-item-content-text">
-                                        所属通道
+                                        {{ $t('ApplyCollector.Collector.789174-2') }}
                                     </div>
                                     <Ellipsis>{{
                                         slotProps.channelName
@@ -82,7 +82,7 @@
                                 </j-col>
                                 <j-col :span="12">
                                     <div class="card-item-content-text">
-                                        说明
+                                        {{ $t('ApplyCollector.Collector.789174-3') }}
                                     </div>
                                     <Ellipsis>{{
                                         slotProps?.description || '--'
@@ -102,7 +102,9 @@ import { device } from '@device/assets/device/index.ts'
 import {
     _queryCollector,
 } from '@device/api/resource/resource';
+import { useI18n } from 'vue-i18n';
 
+const { t: $t } = useI18n();
 const emits = defineEmits(['close']);
 
 const params = ref({});
@@ -124,7 +126,7 @@ const columns = [
         },
     },
     {
-        title: '名称',
+        title: $t('ApplyCollector.Collector.789174-4'),
         dataIndex: 'name',
         width: 200,
         ellipsis: true,
@@ -134,14 +136,14 @@ const columns = [
         },
     },
     {
-        title: '状态',
+        title: $t('ApplyCollector.Collector.789174-5'),
         dataIndex: 'state',
         width: '90px',
         search: {
             type: 'select',
             options: [
-                { label: '禁用', value: 'disabled' },
-                { label: '正常', value: 'enabled' },
+                { label: $t('ApplyCollector.Collector.789174-6'), value: 'disabled' },
+                { label: $t('ApplyCollector.Collector.789174-7'), value: 'enabled' },
             ],
         },
     },

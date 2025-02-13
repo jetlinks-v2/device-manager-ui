@@ -15,9 +15,9 @@
                         type="ArrowLeftOutlined"
                         style="font-size: 18px; margin-bottom: 12px"
                     />
-                    返回
+                    {{ $t('Apply.Product.773301-0') }}
                 </div>
-                <div class="title">受影响的产品</div>
+                <div class="title">{{ $t('Apply.Product.773301-1') }}</div>
             </div>
         </template>
         <pro-search :columns="columns" type="simple" @search="handleSearch" />
@@ -44,7 +44,7 @@
                     <CardBox
                         :value="slotProps"
                         :status="String(slotProps.state)"
-                        :statusText="slotProps.state === 1 ? '正常' : '禁用'"
+                        :statusText="slotProps.state === 1 ? $t('Apply.Product.773301-2') : $t('Apply.Product.773301-3')"
                         :statusNames="{ '1': 'processing', '0': 'error' }"
                     >
                         <template #img>
@@ -75,7 +75,7 @@
                             <a-row>
                                 <a-col :span="12">
                                     <div class="card-item-content-text">
-                                        设备类型
+                                        {{ $t('Apply.Product.773301-4') }}
                                     </div>
                                     <Ellipsis>{{
                                         slotProps.deviceType?.text
@@ -83,10 +83,10 @@
                                 </a-col>
                                 <a-col :span="12">
                                     <div class="card-item-content-text">
-                                        接入方式
+                                        {{ $t('Apply.Product.773301-5') }}
                                     </div>
                                     <Ellipsis>{{
-                                        slotProps?.accessName || '未接入'
+                                        slotProps?.accessName || $t('Apply.Product.773301-6')
                                     }}</Ellipsis>
                                 </a-col>
                             </a-row>
@@ -102,8 +102,10 @@
 import { queryTree } from '@device/api/device/category';
 import { getTreeData_api } from '@/api/system/department';
 import { _queryProduct, _queryProtocol } from '@device/api/resource/resource';
-import { device } from '@device/assets/device/index.ts'
+import { device } from '@device/assets/device/index.ts';
+import { useI18n } from 'vue-i18n';
 
+const { t: $t } = useI18n();
 const emits = defineEmits(['close']);
 const props = defineProps({
     type: {
@@ -131,7 +133,7 @@ const columns = [
         },
     },
     {
-        title: '名称',
+        title: $t('Apply.Product.773301-7'),
         dataIndex: 'name',
         width: 200,
         ellipsis: true,
@@ -141,32 +143,32 @@ const columns = [
         },
     },
     {
-        title: '设备类型',
+        title: $t('Apply.Product.773301-4'),
         dataIndex: 'deviceType',
         width: 150,
         search: {
             type: 'select',
             options: [
-                { label: '直连设备', value: 'device' },
-                { label: '网关子设备', value: 'childrenDevice' },
-                { label: '网关设备', value: 'gateway' },
+                { label: $t('Apply.Product.773301-8'), value: 'device' },
+                { label: $t('Apply.Product.773301-9'), value: 'childrenDevice' },
+                { label: $t('Apply.Product.773301-10'), value: 'gateway' },
             ],
         },
     },
     {
-        title: '状态',
+        title: $t('Apply.Product.773301-11'),
         dataIndex: 'state',
         width: '90px',
         search: {
             type: 'select',
             options: [
-                { label: '禁用', value: 0 },
-                { label: '正常', value: 1 },
+                { label: $t('Apply.Product.773301-3'), value: 0 },
+                { label: $t('Apply.Product.773301-2'), value: 1 },
             ],
         },
     },
     {
-        title: '说明',
+        title: $t('Apply.Product.773301-12'),
         dataIndex: 'describe',
         ellipsis: true,
         width: 300,

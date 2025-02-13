@@ -34,9 +34,9 @@
                                 </div>
                             </div>
                             <div class="right">
-                                <a-button type="primary" @click="click(item)"
-                                    >接入</a-button
-                                >
+                                <a-button type="primary" @click="click(item)">
+                                  {{$t('provider.index.8501947-0')}}
+                                </a-button>
                             </div>
                         </div>
                     </div>

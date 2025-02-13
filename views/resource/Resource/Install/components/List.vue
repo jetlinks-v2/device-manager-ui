@@ -42,7 +42,7 @@
             </div>
             <div class="control">
               <a-button @click.stop="() => removeFile(index)"
-              >移除
+              >{{ $t('components.List.748732-0') }}
               </a-button
               >
             </div>
@@ -63,7 +63,7 @@
                                           )
                                 "
               >
-                (当前版本:{{
+                ({{ $t('components.List.748732-1') }}{{
                   i.resourcesId
                       ? resourceVersionMap.get(i.resourcesId)
                       : resourceVersionMap.get(
@@ -88,8 +88,8 @@
   <a-divider/>
   <div style="display: flex; justify-content: center; margin-top: 8px">
     <a-space>
-      <a-button @click.stop="emits('cancel')">取消</a-button>
-      <a-button @click.stop="onInstall" type="primary" :disabled="loading || !fileList.length">全部安装</a-button>
+      <a-button @click.stop="emits('cancel')">{{ $t('components.List.748732-2') }}</a-button>
+      <a-button @click.stop="onInstall" type="primary" :disabled="loading || !fileList.length">{{ $t('components.List.748732-3') }}</a-button>
     </a-space>
   </div>
 </template>

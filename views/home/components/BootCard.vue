@@ -46,7 +46,7 @@ const { cardData, cardTitle } = toRefs(props);
 
 const jumpPage = (item: bootConfig) => {
     if (item.auth === undefined || item.auth) {
-        _jumpPage(item.link, item.params);
+        _jumpPage(item.link, {params: item.params});
     } else {
         onlyMessage($t('components.BootCard.926510-0'), 'warning');
     }

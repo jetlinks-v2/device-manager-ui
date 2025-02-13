@@ -5,9 +5,9 @@
         <ResourceTable ref="tableRef" @itemClick="toDetail">
           <template #title>
             <a-space>
-              <span>我的资源</span>
+              <span>{{ $t('Resource.index.304912-0') }}</span>
               <a-button @click="showInstallModal = true"
-              >安装
+              >{{ $t('Resource.index.304912-1') }}
               </a-button
               >
               <!-- <a-button @click="toDetail">详情</a-button> -->

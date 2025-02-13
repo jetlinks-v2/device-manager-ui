@@ -1,7 +1,7 @@
 <template>
     <div class="device-count-container">
         <h5 class="title">{{ $t('components.DeviceCountCard.926510-0') }}</h5>
-        <span class="detail" @click="jumpPage('device/DashBoard')"> {{ $t('components.DeviceCountCard.926510-1') }} </span>
+        <span class="detail" @click="jumpPage('device/DashBoard', {})"> {{ $t('components.DeviceCountCard.926510-1') }} </span>
 
         <div class="box-list">
             <div class="box-item">

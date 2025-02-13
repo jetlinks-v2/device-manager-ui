@@ -2,41 +2,41 @@
   <div class="container">
     <div class="header">
       <a-space>
-        <div>共{{ taskList?.length || 0 }}个资源</div>
+        <div>{{$t('Apply.installing.6794613-0', [taskList?.length || 0])}}</div>
         <div>
           <AIcon :type="statusIcon.get('success')" class="icon"/>
-          已完成{{ getStatusNumber('success') }}
+          {{$t('Apply.installing.6794613-1')}}{{ getStatusNumber('success') }}
         </div>
         <div>
           <AIcon :type="statusIcon.get('failed')" class="icon"/>
-          已失败{{ getStatusNumber('failed') }}
+          {{$t('Apply.installing.6794613-2')}}{{ getStatusNumber('failed') }}
         </div>
         <div>
           <AIcon :type="statusIcon.get('installing')" class="icon"/>
-          安装中{{ getStatusNumber('installing') }}
+          {{$t('Apply.installing.6794613-3')}}{{ getStatusNumber('installing') }}
         </div>
         <div>
           <AIcon
               :type="statusIcon.get('waiting_install')"
               class="icon"
           />
-          等待安装{{ getStatusNumber('waiting_install') }}
+          {{$t('Apply.installing.6794613-4')}}{{ getStatusNumber('waiting_install') }}
         </div>
         <div>
           <AIcon :type="statusIcon.get('canceled')" class="icon"/>
-          已暂停{{ getStatusNumber('canceled') }}
+          {{$t('Apply.installing.6794613-5')}}{{ getStatusNumber('canceled') }}
         </div>
         <template v-if="source === 'cloud'">
           <div>
             <AIcon :type="statusIcon.get('downloading')" class="icon"/>
-            下载中{{ getStatusNumber('downloading') }}
+            {{$t('Apply.installing.6794613-6')}}{{ getStatusNumber('downloading') }}
           </div>
           <div>
             <AIcon
                 :type="statusIcon.get('waiting_download')"
                 class="icon"
             />
-            等待下载{{ getStatusNumber('waiting_download') }}
+            {{$t('Apply.installing.6794613-7')}}{{ getStatusNumber('waiting_download') }}
           </div>
         </template>
       </a-space>
@@ -44,20 +44,20 @@
         <template #icon>
           <AIcon type="PauseOutlined"></AIcon>
         </template>
-        全部暂停
+        {{$t('Apply.installing.6794613-8')}}
       </a-button>
       <a-space v-else>
         <a-button @click="startAll" :disabled="allComplete" type="primary">
           <template #icon>
             <AIcon type="CaretRightOutlined"></AIcon>
           </template>
-          全部开始
+          {{$t('Apply.installing.6794613-9')}}
         </a-button>
         <a-button @click="removeAll" :disabled="allComplete" type="primary">
           <template #icon>
             <AIcon type="DeleteOutlined"></AIcon>
           </template>
-          全部移除
+          {{$t('Apply.installing.6794613-10')}}
         </a-button>
       </a-space>
     </div>
@@ -107,7 +107,7 @@
               <a-button
                   v-if="status[i.id]?.state?.value === 'success'"
                   @click="onDetail(i)"
-              >查看详情
+              >{{$t('Apply.installing.6794613-11')}}
               </a-button
               >
               <a-button
@@ -117,13 +117,13 @@
                                     )
                                 "
                   @click="onPause(i)"
-              >暂停
+              >{{$t('Apply.installing.6794613-12')}}
               </a-button
               >
               <a-button
                   v-if="status[i.id]?.state?.value === 'canceled'"
                   @click="onBegin(i)"
-              >开始
+              >{{$t('Apply.installing.6794613-13')}}
               </a-button
               >
               <a-button
@@ -134,13 +134,13 @@
                                     ].includes(status[i.id]?.state?.value)
                                 "
                   @click="onDelete(i)"
-              >移除
+              >{{$t('Apply.installing.6794613-14')}}
               </a-button
               >
               <a-button
                   v-if="status[i.id]?.state?.value === 'failed'"
                   @click="onReload(i)"
-              >重装
+              >{{$t('Apply.installing.6794613-15')}}
               </a-button
               >
             </a-space>
@@ -153,7 +153,7 @@
                 {{ computedVersion(resourceVersionMap, i) }}
               </div>
               <div v-if="resourceVersionMap.has(i.resourcesId || i?.resourceDetails?.id || i.resourceDetails?.releaseDetail?.resourcesId)">
-                (当前版本:{{
+                ({{$t('Apply.installing.6794613-16')}}:{{
                   resourceVersionMap?.get(i.resourcesId || i?.resourceDetails?.id || i.resourceDetails?.releaseDetail?.resourcesId)
                 }})
               </div>

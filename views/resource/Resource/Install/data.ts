@@ -5,6 +5,7 @@
 // 下载中：downloading
 // 等待安装：waiting_install
 // 等待下载：waiting_download
+import i18n from '@/locales'
 
 export const statusIcon = new Map()
 statusIcon.set('success', 'CheckCircleFilled')
@@ -28,9 +29,9 @@ export const computedVersion = (resourceVersionMap:any,data:any) => {
     const resourcesId = data?.resourcesId || data?.resourceDetails?.id || data?.resourceDetails?.releaseDetail?.resourcesId || data?.releaseDetail?.resourcesId
     if (resourceVersionMap.has(resourcesId)) {
         return resourceVersionMap.get(resourcesId) === data?.version || resourceVersionMap.get(resourcesId) === data?.resourceDetails?.version
-            ? '同版本覆盖'
-            : '版本更新';
+            ? i18n.global.t('Install.data.733160-0')
+            : i18n.global.t('Install.data.733160-1');
     } else {
-        return '首次安装';
+        return i18n.global.t('Install.data.733160-2');
     }
 };

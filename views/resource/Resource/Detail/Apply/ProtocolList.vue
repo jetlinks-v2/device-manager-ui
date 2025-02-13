@@ -3,9 +3,9 @@
     <div class="header">
       <a-space :size="12">
         <AIcon type="AppstoreOutlined" style="font-size: 18px" />
-        <span style="font-size: 20px">消息协议</span>
+        <span style="font-size: 20px">{{ $t('Apply.ProtocolList.294910-0') }}</span>
         <span @click="handleClick('metadata')"
-          >受影响的产品: <span style="color: #1890ff"> {{ count }} </span></span
+          >{{ $t('Apply.ProtocolList.294910-1') }} <span style="color: #1890ff"> {{ count }} </span></span
         >
       </a-space>
     </div>
@@ -15,14 +15,14 @@
         type="protocol"
         v-model:value="protocolList[index]"
         :options="[
-          { label: '更新', value: 'cover' },
-          { label: '忽略', value: 'ignore' },
+          { label: $t('Apply.ProtocolList.294910-2'), value: 'cover' },
+          { label: $t('Apply.ProtocolList.294910-3'), value: 'ignore' },
         ]"
       >
         <template #leftRender>
           <a-space :size="12" align="end">
             <div>
-              <div style="color: #00000080">当前协议</div>
+              <div style="color: #00000080">{{ $t('Apply.ProtocolList.294910-4') }}</div>
               <div class="protocol-item">
                 <div class="protocol-item-img">
                   <img :src="device.deviceCard" />
@@ -46,7 +46,7 @@
               />
             </div>
             <div>
-              <div style="color: #00000080">新版协议</div>
+              <div style="color: #00000080">{{ $t('Apply.ProtocolList.294910-5') }}</div>
               <div class="protocol-item">
                 <div class="protocol-item-img">
                   <img :src="device.deviceCard" />

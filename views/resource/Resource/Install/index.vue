@@ -1,6 +1,6 @@
 <template>
   <a-modal
-      title="安装资源"
+      :title="$t('Install.index.299206-0')"
       visible
       @cancel="emits('close')"
       :maskClosable="false"

@@ -1,6 +1,6 @@
 <template>
     <a-modal
-        title="应用资源"
+        :title="$t('Apply.index.663043-0')"
         visible
         :centered="true"
         @cancel="emits('close')"
@@ -33,11 +33,11 @@
 
         <template #footer>
             <a-space>
-                <a-button @click="emits('close')">取消</a-button>
+                <a-button @click="emits('close')">{{ $t('Apply.index.663043-1') }}</a-button>
                 <a-button v-if="step === 0" type="primary" @click="onStep"
-                    >下一步</a-button
+                    >{{ $t('Apply.index.663043-2') }}</a-button
                 >
-                <a-button v-else type="primary" @click="onSave">确定</a-button>
+                <a-button v-else type="primary" @click="onSave">{{ $t('Apply.index.663043-3') }}</a-button>
             </a-space>
         </template>
     </a-modal>
@@ -59,19 +59,22 @@ import {
 } from '@device/api/resource/resource';
 import { useMenuStore } from '@/store/menu';
 import { device } from '@device/assets/device/index.ts'
+import { useI18n } from 'vue-i18n';
+
+const { t: $t } = useI18n();
 const emits = defineEmits(['close']);
 const menuStory = useMenuStore();
 const typeList = [
     {
         value: 'create',
-        label: '快捷新增',
-        subLabel: '引用该资源在IOT或网关中新增产品',
+        label: $t('Apply.index.663043-4'),
+        subLabel: $t('Apply.index.663043-5'),
         iconUrl: device.deviceCard,
     },
     {
         value: 'update',
-        label: '快捷更新',
-        subLabel: '快捷更新使用该资源创建的物模型、协议或插件',
+        label: $t('Apply.index.663043-6'),
+        subLabel: $t('Apply.index.663043-7'),
         iconUrl: device.deviceCard,
     },
 ];
@@ -91,7 +94,7 @@ const protocolList = ref<any>([]);
 
 const onStep = () => {
     if (!type.value) {
-        onlyMessage('请选择更新方式', 'warning');
+        onlyMessage($t('Apply.index.663043-8'), 'warning');
         return;
     }
     if (type.value === 'create') {
@@ -154,11 +157,11 @@ const onSave = async () => {
     const _newProtocol = protocolList.value.filter((i: any) => i.handle);
   
     if (!_new.length) {
-        onlyMessage('请先选择处理方式', 'warning');
+        onlyMessage($t('Apply.index.663043-9'), 'warning');
         return;
     }
     if (!_newProtocol.length && protocolList.length > 0) {
-        onlyMessage('请先选择处理方式', 'warning');
+        onlyMessage($t('Apply.index.663043-9'), 'warning');
         return;
     }
     if (_new.length) {
@@ -184,7 +187,7 @@ const onSave = async () => {
         await saveProtocol(arr);
     }
     emits('close');
-    onlyMessage('保存成功', 'success');
+    onlyMessage($t('Apply.index.663043-10'), 'success');
 };
 </script>
 
