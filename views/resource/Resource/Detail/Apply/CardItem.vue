@@ -13,7 +13,7 @@
                                 : 'DoubleLeftOutlined'
                         "
                     />
-                    处理方式：
+                    {{ $t('Apply.CardItem.186507-0') }}
                 </div>
                 <div
                     v-for="item in options"

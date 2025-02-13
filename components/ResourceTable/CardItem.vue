@@ -69,7 +69,7 @@ import { resource } from '@device/assets/resource'
       class="table-item-version item-position-absolute"
       :class="{'charge': record.charge}"
     >
-      {{ record.charge ?  '付费资源' : '限时免费' }}
+      {{ record.charge ?  $t('ResourceTable.CardItem.777348-0') : $t('ResourceTable.CardItem.777348-1') }}
     </div>
   </div>
 </template>

@@ -7,7 +7,7 @@
                 type="primary"
                 @click="getResourceByCloud"
             >
-                从云端获取
+                {{ $t('components.Init.399777-0') }}
             </a-button>
             <div class="upload">
                 <a-spin :spinning="loading">
@@ -39,7 +39,7 @@
                                 />
                                 <div class="tips">
                                     <div>
-                                        拖放安装资源或者点击上方按钮从本地文件中选取资源安装;
+                                        {{ $t('components.Init.399777-1') }}
                                     </div>
                                 </div>
                             </div>
@@ -66,6 +66,9 @@ import { TOKEN_KEY } from '@jetlinks-web/constants';
 import { LocalStore } from '@jetlinks-web/utils';
 import { onlyMessage } from "@jetlinks-web/utils";
 import List from './List.vue';
+import { useI18n } from 'vue-i18n';
+
+const { t: $t } = useI18n();
 const props = defineProps({
     source: {
         type: String,
@@ -97,7 +100,7 @@ const handleChange = ({ file }) => {
         emits('update:source', source.value);
     }
     if(file.status === 'error') {
-      onlyMessage('资源包异常上传失败！','error');
+      onlyMessage($t('components.Init.399777-2'),'error');
       loading.value = false;
     }
 };

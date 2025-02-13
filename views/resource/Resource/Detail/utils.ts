@@ -1,3 +1,4 @@
+import i18n from '@/locales'
 export const EventEmitter = {
     list: {},
     subscribe: function(events: string[], fn: Function) {
@@ -38,15 +39,15 @@ export const EventEmitter = {
 export const sourceType = [
     {
         value: 'device',
-        label: '设备',
+        label: i18n.global.t('Detail.utils.226827-0'),
     },
     {
         value: 'manual',
-        label: '手动',
+        label: i18n.global.t('Detail.utils.226827-1'),
     },
     {
         value: 'rule',
-        label: '规则',
+        label: i18n.global.t('Detail.utils.226827-2'),
     },
 ]
 
@@ -221,15 +222,15 @@ export const DataTypeList: { label: string; value: string }[] = [
 export const PropertySource: { label: string; value: string }[] = [
     {
         value: 'device',
-        label: '设备',
+        label: i18n.global.t('Detail.utils.226827-0'),
     },
     {
         value: 'manual',
-        label: '手动',
+        label: i18n.global.t('Detail.utils.226827-1'),
     },
     {
         value: 'rule',
-        label: '规则',
+        label: i18n.global.t('Detail.utils.226827-2'),
     },
 ]
 
@@ -251,16 +252,16 @@ export const FileTypeList: { label: string; value: string }[] = [
 
 export const EventLevel: { label: string; value: string }[] = [
     {
-        label: '普通',
+        label: i18n.global.t('Detail.utils.226827-19'),
         value: 'ordinary',
     },
     {
-        label: '警告',
+        label: i18n.global.t('Detail.utils.226827-20'),
         value: 'warn',
     },
     {
         value: 'urgent',
-        label: '紧急',
+        label: i18n.global.t('Detail.utils.226827-21'),
     },
 ];
 
@@ -284,15 +285,15 @@ export const DateTypeList = [
 
 export const ExpandsTypeList = [
     {
-        label: '读',
+        label: i18n.global.t('Detail.utils.226827-22'),
         value: 'read',
     },
     {
-        label: '写',
+        label: i18n.global.t('Detail.utils.226827-23'),
         value: 'write',
     },
     {
-        label: '上报',
+        label: i18n.global.t('Detail.utils.226827-24'),
         value: 'report',
     },
 ]
@@ -300,11 +301,11 @@ export const ExpandsTypeList = [
 export const getMetadataColumns = (type: string) => {
     const baseColumns: any[] = [
       {
-        title: '标识',
+        title: i18n.global.t('Detail.utils.226827-25'),
         dataIndex: 'id',
       },
       {
-        title: '名称',
+        title: i18n.global.t('Detail.utils.226827-26'),
         dataIndex: 'name',
       }
     ]
@@ -312,17 +313,17 @@ export const getMetadataColumns = (type: string) => {
     if (type === 'properties') {
       baseColumns.push(...[
         {
-          title: '数据类型',
+          title: i18n.global.t('Detail.utils.226827-27'),
           dataIndex: 'valueType',
           width: 260,
         },
         {
-          title: '属性来源',
+          title: i18n.global.t('Detail.utils.226827-28'),
           dataIndex: 'expands',
           width: 220,
         },
         {
-          title: '其它配置',
+          title: i18n.global.t('Detail.utils.226827-29'),
           dataIndex: 'other',
           width: 110,
         },
@@ -332,22 +333,22 @@ export const getMetadataColumns = (type: string) => {
     if (type === 'functions') {
       baseColumns.push(...[
         {
-          title: '是否异步',
+          title: i18n.global.t('Detail.utils.226827-30'),
           dataIndex: 'async',
           width: 120,
         },
         {
-          title: '输入参数',
+          title: i18n.global.t('Detail.utils.226827-31'),
           dataIndex: 'inputs',
           width: 110,
         },
         {
-          title: '输出参数',
+          title: i18n.global.t('Detail.utils.226827-32'),
           dataIndex: 'output',
           width: 240,
         },
         {
-          title: '其它配置',
+          title: i18n.global.t('Detail.utils.226827-29'),
           dataIndex: 'other',
           width: 120,
         },
@@ -357,17 +358,17 @@ export const getMetadataColumns = (type: string) => {
     if (type === 'events') {
       baseColumns.push(...[
         {
-          title: '事件级别',
+          title: i18n.global.t('Detail.utils.226827-33'),
           dataIndex: 'expands',
           width: 150,
         },
         {
-          title: '输出参数',
+          title: i18n.global.t('Detail.utils.226827-32'),
           dataIndex: 'valueType',
           width: 240,
         },
         {
-          title: '其它配置',
+          title: i18n.global.t('Detail.utils.226827-29'),
           dataIndex: 'other',
           width: 120,
         },
@@ -377,12 +378,12 @@ export const getMetadataColumns = (type: string) => {
     if (type === 'tags') {
       baseColumns.push(...[
         {
-          title: '数据类型',
+          title: i18n.global.t('Detail.utils.226827-27'),
           dataIndex: 'valueType',
           width: 240,
         },
         {
-          title: '其它配置',
+          title: i18n.global.t('Detail.utils.226827-29'),
           dataIndex: 'other',
           width: 120,
         },
@@ -390,7 +391,7 @@ export const getMetadataColumns = (type: string) => {
     }
   
     baseColumns.push({
-      title: '说明',
+      title: i18n.global.t('Detail.utils.226827-34'),
       dataIndex: 'description',
     })
     return baseColumns

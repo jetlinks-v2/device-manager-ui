@@ -1,6 +1,6 @@
 <template>
     <a-modal
-        title="应用资源"
+        :title="$t('ApplyCollector.index.312040-0')"
         visible
         :centered="true"
         @cancel="emits('close')"
@@ -11,9 +11,9 @@
             <div class="header">
                 <a-space :size="12">
                     <AIcon type="AppstoreOutlined" style="font-size: 16px" />
-                    <span style="font-size: 18px">数采</span>
+                    <span style="font-size: 18px">{{ $t('ApplyCollector.index.312040-1') }}</span>
                     <span @click="handleClick"
-                        >受影响的采集器:
+                        >{{ $t('ApplyCollector.index.312040-2') }}
                         <span style="color: #1890ff">{{
                             _dataSource.length
                         }}</span></span
@@ -36,9 +36,9 @@
                     </a-space>
                 </div>
             </div>
-            <j-empty v-else description="当前生产环境已是最新版本，无需更新"> </j-empty>
+            <j-empty v-else :description="$t('ApplyCollector.index.312040-3')"> </j-empty>
             <div class="footer">
-                提示：此操作会为您将数采插件替换为资源库中新版本数采，可能会影响已创建的采集器，请谨慎操作
+                {{ $t('ApplyCollector.index.312040-4') }}
             </div>
         </div>
         <Collector v-if="visible" @close="visible = false" />
