@@ -9,7 +9,7 @@
       <div class='search-right'>
         <div class='search-content'>
           <div class='search-result-tag'>
-            <div class='tag-all'>已选:</div>
+            <div class='tag-all'>{{ $t('Search.Search.673421-0') }}</div>
             <div class='tag-text'>
               <j-ellipsis>
                 <span v-for='item in text' class='tag-text-item'>{{ item }}</span>
@@ -27,7 +27,7 @@
             </div>
           </div>
           <div class='search-input'>
-            <a-input placeholder='请输入关键词' v-model:value='searchValue' :maxlength='64' allow-clear
+            <a-input :placeholder="$t('Search.Search.673421-1')" v-model:value='searchValue' :maxlength='64' allow-clear
                      @change='onChange'>
               <template #suffix>
                 <AIcon type='SearchOutlined' @click='onSearch' />
@@ -42,7 +42,7 @@
       <div class='search-params-top'>
         <slot name='providerRender' :onParamsChange='onProviderRenderChange'>
           <ParamsOptions
-              title='类型'
+              :title="$t('Search.Search.673421-2')"
               :options='providerOptions'
               :fieldNames="{
             label: 'text',
@@ -52,7 +52,7 @@
           />
         </slot>
         <ParamsOptions
-            title='分类'
+            :title="$t('Search.Search.673421-3')"
             :options='classifyTypeOptions'
             :fieldNames="{
           label: 'name',
@@ -77,7 +77,9 @@ import ClassifyOptions from './ClassifyOptions.vue'
 import { useRequest } from '@jetlinks-web/hooks'
 import { ResourceApi } from '@device/api/resource/resource'
 import { cloneDeep, omit } from 'lodash-es'
+import { useI18n } from 'vue-i18n'
 
+const { t: $t } = useI18n()
 const props = defineProps({
   style: {
     type: Object,
@@ -97,7 +99,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:value', 'search'])
 
-const text = ref(['全部'])
+const text = ref([$t('Search.Search.673421-4')])
 
 const showParams = ref(false)
 const hiddenParams = ref(true)
@@ -218,7 +220,7 @@ const onSearch = () => {
 const handleData = () => {
   const array = paramsArray.filter((item, index) => item.value !== 'all' && !(index === 1 && optionsArray.value.length > 0)).map(item => item.label)
   const arr = [...array, ...optionsArray.value]
-  text.value = arr.length ? arr : ['全部']
+  text.value = arr.length ? arr : [$t('Search.Search.673421-4')]
 }
 
 const onProviderRenderChange = (params, v, r, index = 0) => {

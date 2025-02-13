@@ -1,6 +1,6 @@
 <template>
   <a-modal
-      title="检查更新"
+      :title="$t('Update.index.815518-0')"
       visible
       @cancel="emits('close')"
       :maskClosable="false"
@@ -22,18 +22,18 @@
             <div class="title">
               <div>
                 <a-badge status="success"/>
-                检测到有新版本
+                {{ $t('Update.index.815518-1') }}
               </div>
-              <a-button type="primary" @click="onUpdate">更新</a-button>
+              <a-button type="primary" @click="onUpdate">{{ $t('Update.index.815518-2') }}</a-button>
             </div>
             <div class="log">
-              <h3>新版本 {{ info.version }}</h3>
+              <h3>{{ $t('Update.index.815518-3') }} {{ info.version }}</h3>
               <p>{{ info.describe }}</p>
             </div>
           </div>
           <div class="noUpdate" v-else>
             <a-badge status="success"/>
-            当前已是最新版本
+            {{ $t('Update.index.815518-4') }}
           </div>
         </template>
       </div>

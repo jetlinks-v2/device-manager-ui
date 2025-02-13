@@ -1,7 +1,7 @@
 <template>
   <j-page-container :showBack="true">
     <template #title>
-      <div>资源详情</div>
+      <div>{{ $t('Detail.index.473126-0') }}</div>
     </template>
     <!--        <FullPage :fixed="false">-->
     <!-- {{ detail.metadata }} -->
@@ -29,12 +29,12 @@
           <div class="header-title-collect">
             <a-space>
               <a-button @click="visible = true"
-              >检查更新
+              >{{ $t('Detail.index.473126-1') }}
               </a-button
               >
-              <a-button @click="onApply">应用资源</a-button>
+              <a-button @click="onApply">{{ $t('Detail.index.473126-2') }}</a-button>
             </a-space>
-            <div class="createdProductNumber">已创建产品：{{ count }}</div>
+            <div class="createdProductNumber">{{ $t('Detail.index.473126-3') }}{{ count }}</div>
           </div>
         </div>
         <div class="header-tags">
@@ -79,7 +79,7 @@
         </a-carousel>
       </div>
       <div class="detail-desc mb-16" v-if="detail.describe">
-        <p class="module-title">描述</p>
+        <p class="module-title">{{ $t('Detail.index.473126-4') }}</p>
         <div>
           {{ detail.describe }}
         </div>
@@ -88,13 +88,13 @@
           class="detail-access mb-16"
           v-if="detail?.type?.value === 'device' && detail.source?.length"
       >
-        <p class="module-title">接入途径</p>
+        <p class="module-title">{{ $t('Detail.index.473126-5') }}</p>
         <div class="access-item" v-for="item in detail.source">
           {{ item }}
         </div>
       </div>
       <div class="detail-doc mb-16" v-if="detail.docUrl?.length">
-        <p class="module-title">技术文档</p>
+        <p class="module-title">{{ $t('Detail.index.473126-6') }}</p>
         <div class="doc-items">
           <div class="doc-item" v-for="item in detail.docUrl">
             <a-space>
@@ -110,7 +110,7 @@
         </div>
       </div>
       <div class="detail-version mb-16" v-if="detail.version">
-        <p class="module-title">适用型号</p>
+        <p class="module-title">{{ $t('Detail.index.473126-7') }}</p>
         <div class='model-list' v-for='item in detail.model'>
           <div class='item-name fz-18'>
             {{ item.name }}
@@ -123,17 +123,17 @@
         </div>
       </div>
       <div class="detail-info mb-16">
-        <p class="module-title">详情</p>
+        <p class="module-title">{{ $t('Detail.index.473126-8') }}</p>
         <div class="detail-info-center">
           <a-descriptions layout="vertical" :column="3">
-            <a-descriptions-item label="版本">
+            <a-descriptions-item :label="$t('Detail.index.473126-9')">
               {{
                 detail.version
                     ? detail.version
                     : emptyValue
               }}
             </a-descriptions-item>
-            <a-descriptions-item label="更新时间">
+            <a-descriptions-item :label="$t('Detail.index.473126-10')">
               {{
                 detail.modifyTime
                     ? dayjs(detail.modifyTime).format(
@@ -143,12 +143,12 @@
               }}
             </a-descriptions-item>
             <a-descriptions-item
-                label="物模型"
+                :label="$t('Detail.index.473126-11')"
                 v-if="detail.type.value !== 'collector'"
             >
               <a-space>
                 <span> {{ hasMetadata ?
-                   '已就绪' : '无'}} </span>
+                   $t('Detail.index.473126-12') : $t('Detail.index.473126-13')}} </span>
                 <AIcon
                     v-if="hasMetadata"
                     :type="

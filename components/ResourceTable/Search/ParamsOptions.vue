@@ -1,4 +1,7 @@
 <script setup name="ParamsOptions">
+import { useI18n } from 'vue-i18n'
+
+const { t: $t } = useI18n()
   const props = defineProps({
     title: {
       type: String
@@ -42,7 +45,7 @@
     const array = handleFieldNames(props.options)
     if (props.showAll) {
       return [
-        { label: '全部', value: 'all' },
+        { label: $t('Search.ParamsOptions.357176-0'), value: 'all' },
         ...array
       ]
     }

@@ -1,7 +1,9 @@
 <script setup name="Metadata">
 import { DataTypeList, EventLevel, sourceType,arrayToObj } from './utils'
 import VirtualScroll from '@device/components/VirtualScroll/index.vue'
+import { useI18n } from 'vue-i18n'
 
+const { t: $t } = useI18n()
 const props = defineProps({
   metadata: {
     type: Object,
@@ -23,19 +25,19 @@ const activeKey = ref('properties')
 const tabs = [
   {
     key: 'properties',
-    tab: '属性定义'
+    tab: $t('Detail.Metadata.301519-0')
   },
   {
     key: 'functions',
-    tab: '功能定义'
+    tab: $t('Detail.Metadata.301519-1')
   },
   {
     key: 'events',
-    tab: '事件定义'
+    tab: $t('Detail.Metadata.301519-2')
   },
   {
     key: 'tags',
-    tab: '标签定义'
+    tab: $t('Detail.Metadata.301519-3')
   }
 ]
 const searchValue = ref()
@@ -68,7 +70,7 @@ onMounted(() => {
         </div>
       </div>
       <div>
-        <a-input-search allowClear placeholder='请输入关键词' v-model:value='searchValue' @search='onSearch' />
+        <a-input-search allowClear :placeholder="$t('Detail.Metadata.301519-4')" v-model:value='searchValue' @search='onSearch' />
       </div>
     </div>
     <div class='wrap'>
@@ -83,22 +85,22 @@ onMounted(() => {
               </div>
               <div class='text'>
                 <j-ellipsis>
-                  标识: {{ record.id }}
+                  {{ $t('Detail.Metadata.301519-5') }} {{ record.id }}
                 </j-ellipsis>
               </div>
               <template v-if='activeKey !== "events" && activeKey !== "functions"'>
                 <div class='text' style='width: 260px'>
-                  数据类型：{{ dataTypeTableMap[record?.valueType?.type] }}
+                  {{ $t('Detail.Metadata.301519-6') }}{{ dataTypeTableMap[record?.valueType?.type] }}
                 </div>
               </template>
               <template v-if='activeKey === "properties"'>
-                <div class='text'>属性来源 ：{{ getSourceStr(record.expands?.source) }}</div>
+                <div class='text'>{{ $t('Detail.Metadata.301519-7') }}{{ getSourceStr(record.expands?.source) }}</div>
               </template>
               <template v-if='activeKey === "functions"'>
-                <div class='text'>是否异步 ：{{ record.async ? '是' : '否' }}</div>
+                <div class='text'>{{ $t('Detail.Metadata.301519-8') }}{{ record.async ? $t('Detail.Metadata.301519-9') : $t('Detail.Metadata.301519-10') }}</div>
               </template>
               <template v-if='activeKey === "events"'>
-                <div class='text'>事件级别 ：{{ eventLevelMap[record.expands?.level] }}</div>
+                <div class='text'>{{ $t('Detail.Metadata.301519-11') }}{{ eventLevelMap[record.expands?.level] }}</div>
               </template>
             </div>
           </template>
