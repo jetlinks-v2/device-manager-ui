@@ -437,9 +437,7 @@ const guide = (data: any) => {
 /**
  * 显示引导页
  */
-const driver = new
-
-({
+const driver = new Driver({
   allowClose: false,
   doneBtnText: $t('DeviceAccess.index.594346-18'),
   closeBtnText: $t('DeviceAccess.index.594346-19'),
