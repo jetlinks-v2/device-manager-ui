@@ -138,7 +138,7 @@ const submitNetWork = async() =>{
                 terms: [
                     {
                         type: 'or',
-                        value: networkCurrent.value.id,
+                        value: networkCurrent.value?.id,
                         termType: 'eq',
                         column: 'id',
                     },
@@ -148,7 +148,6 @@ const submitNetWork = async() =>{
     };
     const resp = await queryNetWork(params);
     if (resp.success && resp.result) {
-        console.log(resp.result[0],'data')
         emits('selectedNetWork', resp.result[0])
     }
 }
@@ -170,5 +169,12 @@ onMounted(() => {
     padding: 10px 20px;
     max-height: 400px;
     overflow: auto;
+}
+
+.other {
+  .item {
+    white-space: nowrap;
+    margin-top: 16px;
+  }
 }
 </style>

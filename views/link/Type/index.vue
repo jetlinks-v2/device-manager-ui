@@ -392,6 +392,7 @@ const getDetails = (slotProps: Partial<Record<string, any>>) => {
   const {typeObject, shareCluster, configuration, cluster} = slotProps;
   const headers =
       typeObject.name.replace(/[^j-zA-Z]/g, '').toLowerCase() + '://';
+
   const content = !!shareCluster
       ? (configuration.publicHost || configuration.remoteHost) +
       ':' +
@@ -405,7 +406,7 @@ const getDetails = (slotProps: Partial<Record<string, any>>) => {
   if (!!shareCluster) {
     !!configuration.publicHost && (head = $t('Type.index.196842-21'));
   } else {
-    !!cluster[0].configuration.publicHos && (head = $t('Type.index.196842-21'));
+    !!cluster[0].configuration.publicHost && (head = $t('Type.index.196842-21'));
   }
   if (!shareCluster && cluster.length > 1) {
     const contentItem2 =
@@ -415,7 +416,7 @@ const getDetails = (slotProps: Partial<Record<string, any>>) => {
         (cluster[0].configuration.publicPort ||
             cluster[0].configuration.remotePort);
     let headItme2 = $t('Type.index.196842-22');
-    !!cluster[0].configuration.publicHos && (headItme2 = $t('Type.index.196842-21'));
+    !!cluster[0].configuration.publicHost && (headItme2 = $t('Type.index.196842-21'));
     if (cluster.length > 2) {
       return (
           head +

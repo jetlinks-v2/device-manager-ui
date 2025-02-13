@@ -12,9 +12,12 @@
             v-model:expanded-keys="_expanedKeys"
             @select="select"
         >
+          <template #title="dt">
+            <j-ellipsis>{{dt.name}}</j-ellipsis>
+          </template>
         </a-tree>
         <div  v-else style="margin-top: 20%">
-          <j-empty></j-empty>
+          <j-empty />
         </div>
     </div>
 </template>

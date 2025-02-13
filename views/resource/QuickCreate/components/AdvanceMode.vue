@@ -52,7 +52,7 @@
                             !['OneNet', 'Ctwing','child-device'].includes(accessConfig.channel)
                         "
           >
-            <Title data="网络组件">
+            <TitleComponent data="网络组件">
               <template #extra>
                 <a-button
                     type="link"
@@ -61,7 +61,7 @@
                 </a-button
                 >
               </template>
-            </Title>
+            </TitleComponent>
             <a-row :gutter="[12, 12]">
               <a-col :span="8" v-if="network">
                 <div
@@ -114,7 +114,7 @@
                             ].includes(accessConfig.provider)
                         "
           >
-            <Title data="协议">
+            <TitleComponent data="协议">
               <template #extra>
                 <a-button
                     type="link"
@@ -123,7 +123,7 @@
                 </a-button
                 >
               </template>
-            </Title>
+            </TitleComponent>
             <a-row :gutter="[12, 12]">
               <template v-if="protocolList.length">
                 <a-col :span="8" v-for="i in protocolList">
@@ -145,6 +145,9 @@
                       <div class="cardName">
                         {{ i.name }}
                       </div>
+                      <div v-if="i.version" style="margin-top: 20px">
+                        <a-tag>{{'v' + i.version}}</a-tag>
+                      </div>
                     </div>
                   </div>
                 </a-col>
@@ -161,7 +164,7 @@
           </div>
         </div>
         <div v-if="accessConfig.channel === 'plugin'">
-          <Title data="插件">
+          <TitleComponent data="插件">
             <template #extra>
               <a-button
                   type="link"
@@ -170,7 +173,7 @@
               </a-button
               >
             </template>
-          </Title>
+          </TitleComponent>
           <a-row :gutter="[12, 12]">
             <a-col :span="8" v-for="i in pluginList">
               <div
@@ -187,6 +190,9 @@
                 <div style="margin-left: 20px">
                   <div class="cardName">
                     {{ i.name }}
+                  </div>
+                  <div v-if="i.version" style="margin-top: 20px">
+                    <a-tag>{{'v' + i.version}}</a-tag>
                   </div>
                 </div>
               </div>
@@ -229,14 +235,13 @@
 import {BackMap} from '@device/views/link/AccessConfig/data';
 import Network from './NetWork/index.vue';
 import Protocol from './Protocol/index.vue';
-import Title from './Title/index.vue';
 import Plugin from './Plugin/index.vue';
 import {onlyMessage} from '@jetlinks-web/utils';
 import {omit} from 'lodash-es';
-import {gatewayType} from '../data';
 import {link} from '@device/assets/link/index.ts'
 import  { getProtocolList } from "@device/api/link/accessConfig"
-import {ProtocolMapping} from "@/modules/device-manager-ui/views/resource/QuickCreate/components/Protocol/data";
+import {ProtocolMapping} from "./Protocol/data";
+import TitleComponent from '@device/components/TitleComponent/index.vue'
 
 const props = defineProps({
   accessList: {
@@ -371,7 +376,7 @@ const getDetails = (slotProps) => {
   if (!!shareCluster) {
     !!configuration.publicHost && (head = '公网:');
   } else {
-    !!cluster[0].configuration.publicHos && (head = '公网:');
+    !!cluster[0].configuration.publicHost && (head = '公网:');
   }
   if (!shareCluster && cluster.length > 1) {
     const contentItem2 =
@@ -381,7 +386,7 @@ const getDetails = (slotProps) => {
         (cluster[0].configuration.publicPort ||
             cluster[0].configuration.remotePort);
     let headItme2 = '远程';
-    !!cluster[0].configuration.publicHos && (headItme2 = '公网:');
+    !!cluster[0].configuration.publicHost && (headItme2 = '公网:');
     if (cluster.length > 2) {
       return (
           head +

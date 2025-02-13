@@ -15,7 +15,13 @@
             <a-row :gutter="[12, 12]" v-if="protocolList.length > 0">
                 <a-col v-for="item in protocolList" :key="item.id" :span="8">
                     <AccessCard @checkedChange="protocolChange" :checked="protocolCurrent?.id"
-                        :data="{ ...item, type: 'protocol' }"></AccessCard>
+                        :data="{ ...item, type: 'protocol' }">
+                      <template #other>
+                        <div v-if="item.configuration.version" style="margin-top: 20px">
+                          <a-tag>{{'v' + item.configuration.version}}</a-tag>
+                        </div>
+                      </template>
+                    </AccessCard>
                 </a-col>
             </a-row>
             <a-empty v-else style="margin-top: 10%" description="暂无数据" />
@@ -89,7 +95,7 @@ const submitData = async() =>{
     if(res.success){
         emits('selectedProtocol', res.result)
     }
-    
+
 }
 
 onMounted(() => {

@@ -16,7 +16,7 @@
                     terms: [
                         {
                             column:
-                                props.goal === 'device'
+                                props.type === 'device'
                                     ? 'thingId'
                                     : 'templateId',
                             value: current.id,
@@ -55,15 +55,15 @@ import { useI18n } from 'vue-i18n';
 const { t: $t } = useI18n();
 
 const props = defineProps({
-    goal: {
+  type: {
         type: String,
         default: 'device',
     },
 });
 const menuStory = useMenuStore();
 const { current } =
-    props.goal === 'device' ? useInstanceStore() : useProductStore();
-const columns = props.goal === 'device' ? [
+    props.type === 'device' ? useInstanceStore() : useProductStore();
+const columns = props.type === 'device' ? [
     {
         title: $t('Invalid.index.031367-1'),
         dataIndex: 'createTime',

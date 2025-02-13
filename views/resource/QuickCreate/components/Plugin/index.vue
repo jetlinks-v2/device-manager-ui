@@ -4,18 +4,24 @@
         <div class="header">
             <a-input-search allowClear style="margin-right: 8px;" placeholder="请输入"
                 @search="pluginSearch"></a-input-search>
-            <PermissionButton type="primary" @click="addVisible = true" hasPermission="link/plugin:add">
+            <j-permission-button type="primary" @click="addVisible = true" hasPermission="link/plugin:add">
                 <template #icon>
                     <AIcon type="PlusOutlined" />
                 </template>
                 新增
-            </PermissionButton>
+            </j-permission-button>
         </div>
         <div class="content">
             <a-row :gutter="[12, 12]" v-if="pluginList.length > 0">
                 <a-col v-for="item in pluginList" :key="item.id" :span="8">
                     <AccessCard @checkedChange="pluginChange" :checked="pluginCurrent?.id"
-                        :data="{ ...item, type: 'plugin' }"></AccessCard>
+                        :data="{ ...item, type: 'plugin' }">
+                      <template #other>
+                        <div v-if="item.version" style="margin-top: 20px">
+                          <a-tag>{{'v' + item.version}}</a-tag>
+                        </div>
+                      </template>
+                    </AccessCard>
                 </a-col>
             </a-row>
             <a-empty v-else style="margin-top: 10%" description="暂无数据" />
