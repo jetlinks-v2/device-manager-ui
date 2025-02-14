@@ -15,7 +15,7 @@
       @remove="remove"
   >
     <div>
-      <a-button>{{ $t('plugin.UploadFile.628586-0') }}</a-button>
+      <a-button :disabled="uploading">{{ $t('plugin.UploadFile.628586-0') }}</a-button>
       <span class="upload-tip">{{ $t('plugin.UploadFile.628586-1') }}</span>
     </div>
   </a-upload>
