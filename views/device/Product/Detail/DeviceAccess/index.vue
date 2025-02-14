@@ -692,16 +692,15 @@ const checkAccess = async (data: any) => {
         ? marked(config.value.document)
         : '';
     getGuide(!!data.metadata.length); //
-
-    if (data.access?.transportDetail?.metadata) {
-      const metadata = JSON.parse(data.access?.transportDetail?.metadata);
-      productData.metadata = pick(metadata, [
-        'functions',
-        'properties',
-        'events',
-        'tags',
-      ]);
-    }
+  }
+  if (data.access?.transportDetail?.metadata) {
+    const metadata = JSON.parse(data.access?.transportDetail?.metadata);
+    productData.metadata = pick(metadata, [
+      'functions',
+      'properties',
+      'events',
+      'tags',
+    ]);
   }
 };
 
