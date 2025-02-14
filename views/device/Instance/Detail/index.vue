@@ -105,16 +105,15 @@
                 />
             </a-space>
         </template>
-        <FullPage :fixed="false">
-          <div style="padding: 24px;">
+        <full-page>
+          <div style="height: 100%; padding: 24px;overflow-y: auto">
             <component
               :is="tabs[instanceStore.tabActiveKey]"
               v-bind="{ type: 'device',isRefresh:isRefresh }"
               @onJump="onTabChange"
             />
           </div>
-
-        </FullPage>
+        </full-page>
     </j-page-container>
 </template>
 

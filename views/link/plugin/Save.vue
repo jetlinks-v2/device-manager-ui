@@ -3,10 +3,7 @@
         :maskClosable="false"
         :visible="true"
         :title="!!data?.id ? $t('plugin.Save.128565-0') : $t('plugin.Save.128565-1')"
-        :confirmLoading="loading"
-        :okButtonProps="{
-          disabled: uploading
-        }"
+        :confirmLoading="loading || uploading"
         @ok="handleSave"
         @cancel="handleCancel"
         width="650px"

@@ -134,15 +134,15 @@ statusMap.set('offline', 'error');
 statusMap.set('notActive', 'warning');
 
 const columns = [
-    {
-        title: $t('BindChildDevice.index.146415-1'),
-        dataIndex: 'name',
-        key: 'name',
-        ellipsis: true,
-        search: {
-            type: 'string',
-        },
-    },
+    // {
+    //     title: $t('BindChildDevice.index.146415-1'),
+    //     dataIndex: 'name',
+    //     key: 'name',
+    //     ellipsis: true,
+    //     search: {
+    //         type: 'string',
+    //     },
+    // },
     {
         title: 'ID',
         dataIndex: 'id',

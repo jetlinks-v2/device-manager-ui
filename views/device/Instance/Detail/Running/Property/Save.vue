@@ -23,7 +23,7 @@
                 name="propertyValue"
                 :label="data?.name || $t('Detail.Table.181708-0')"
             >
-                <ValueItem
+                <j-value-item
                     v-model:modelValue="modelRef.propertyValue"
                     :itemType="data?.valueType?.type || data?.dataType"
                     :options="options"

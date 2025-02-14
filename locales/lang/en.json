@@ -1806,6 +1806,14 @@
     "Plugin.index.626239-20": "Please {0} {1}",
     "Plugin.index.626239-21": "Please select a plugin!",
     "Plugin.index.626239-22": "Operation successful",
+
+    "Plugin.index.626239-23": "Basic Information",
+    "Plugin.index.626239-24": "Creation method",
+    "Plugin.index.626239-25": "Auto create",
+    "Plugin.index.626239-26": "Manually created",
+    "Plugin.index.626239-27": "Resources of the type Sachet in the repository will be installed automatically for you. For the normal operation of the system, editing and deletion of automatically installed resources are not allowed at this time.",
+    "Plugin.index.626239-28": "Manual creation refers to the way users autonomously create plugins in the plugin management page",
+
     "Detail.index.308483-0": "return",
     "Detail.index.308483-1": "Video device access",
     "Detail.index.308483-2": "Cloud platform access",

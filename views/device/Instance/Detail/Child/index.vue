@@ -1,304 +1,313 @@
 <template>
     <div class="container">
-        <div class="header">
-            <div>
-                <a-switch v-model:checked="_checked" @change="onChange" />
-                <span class="header-action-text">{{ $t('Child.index.135369-0') }}</span>
-                <span class="header-action-desc">{{ $t('Child.index.135369-1') }}</span>
-            </div>
-            <a-space>
-                <a-button v-if="!_checked" type="primary" @click="onSaveAll"
-                    >{{ $t('Child.index.135369-2') }}</a-button
-                >
-            </a-space>
+      <div class="header">
+        <div>
+          <a-switch v-model:checked="_checked" @change="onChange"/>
+          <span class="header-action-text">{{ $t('Child.index.135369-0') }}</span>
+          <span class="header-action-desc">{{ $t('Child.index.135369-1') }}</span>
         </div>
-        <div class="content">
-            <div class="left">
-                <div class="left-header">
-                    <j-tooltip :title="$t('Child.index.135369-3')">
-                        {{ $t('Child.index.135369-4') }}
-                        <AIcon
-                            type="QuestionCircleOutlined"
-                            style="margin-left: 2px; margin-right: 15px"
-                        />
-                    </j-tooltip>
-                    <a-space>
-                        <j-permission-button
-                            :tooltip="{
+        <a-space>
+          <a-button v-if="!_checked" type="primary" @click="onSaveAll"
+          >{{ $t('Child.index.135369-2') }}
+          </a-button
+          >
+        </a-space>
+      </div>
+      <div class="content">
+        <div class="left">
+          <div class="left-header">
+            <j-tooltip :title="$t('Child.index.135369-3')">
+              {{ $t('Child.index.135369-4') }}
+              <AIcon
+                  type="QuestionCircleOutlined"
+                  style="margin-left: 2px; margin-right: 15px"
+              />
+            </j-tooltip>
+            <a-space>
+              <j-permission-button
+                  :tooltip="{
                                 title: $t('Child.index.135369-5'),
                             }"
-                            type="link"
-                            @click="onClick('add')"
-                        >
-                            <AIcon type="PlusOutlined" />
-                        </j-permission-button>
-                        <j-permission-button
-                            :tooltip="{
+                  type="link"
+                  @click="onClick('add')"
+              >
+                <AIcon type="PlusOutlined"/>
+              </j-permission-button>
+              <j-permission-button
+                  :tooltip="{
                                 title: $t('Child.index.135369-6'),
                             }"
-                            type="link"
-                            @click="onClick('bind')"
-                        >
-                            <AIcon type="DisconnectOutlined" />
-                        </j-permission-button>
-                    </a-space>
-                </div>
-                <pro-search
-                    :columns="searchColumns"
-                    type="simple"
-                    @search="onSearch"
-                />
-                <div class="left-list">
-                    <div style="min-height: 560px">
-                        <a-dropdown
-                            :trigger="['contextmenu']"
-                            :visible="menuVisible"
-                            @visible-change="handleVisible"
-                        >
-                            <template #overlay v-if="_customRow.id">
-                                <a-menu>
-                                    <a-menu-item
-                                        v-for="item in action"
-                                        :key="item.key"
-                                        style="width: 150px;"
-                                    >
-                                        <j-permission-button
-                                            :disabled="item.disabled"
-                                            :popConfirm="item.popConfirm"
-                                            :tooltip="{
+                  type="link"
+                  @click="onClick('bind')"
+              >
+                <AIcon type="DisconnectOutlined"/>
+              </j-permission-button>
+            </a-space>
+          </div>
+          <pro-search
+              :columns="searchColumns"
+              type="simple"
+              @search="onSearch"
+              style="margin-bottom: 0"
+          />
+          <div class="left-list">
+            <div style="height: calc(100% - 106px);overflow-y: auto">
+              <a-dropdown
+                  :trigger="['contextmenu']"
+                  :visible="menuVisible"
+                  @visible-change="handleVisible"
+              >
+                <template #overlay v-if="_customRow.id">
+                  <a-menu>
+                    <a-menu-item
+                        v-for="item in action"
+                        :key="item.key"
+                        style="width: 150px;"
+                    >
+                      <j-permission-button
+                          :disabled="item.disabled"
+                          :popConfirm="item.popConfirm"
+                          :tooltip="{
                                                 ...item.tooltip,
                                             }"
-                                            @click="item.onClick"
-                                            type="link"
-                                            style="padding: 0 5px"
-                                            :danger="item.key === 'delete'"
-                                        >
-                                            <template #icon>
-                                                <AIcon :type="item.icon" />
-                                            </template>
-                                            {{ item.text }}
-                                        </j-permission-button>
-                                    </a-menu-item>
-                                </a-menu>
-                            </template>
-                            <JProTable
-                                ref="childDeviceRef"
-                                :columns="columns"
-                                :dataSource="_dataSource"
-                                :noPagination="true"
-                                :params="params"
-                                :model="'TABLE'"
-                                :scroll="{ x: 1500, y: 430 }"
-                                :rowSelection="{
+                          @click="item.onClick"
+                          type="link"
+                          style="padding: 0 5px"
+                          :danger="item.key === 'delete'"
+                      >
+                        <template #icon>
+                          <AIcon :type="item.icon"/>
+                        </template>
+                        {{ item.text }}
+                      </j-permission-button>
+                    </a-menu-item>
+                  </a-menu>
+                </template>
+                <JProTable
+                    ref="childDeviceRef"
+                    :columns="columns"
+                    :dataSource="_dataSource"
+                    :noPagination="true"
+                    :params="params"
+                    :mode="'TABLE'"
+                    :scroll="{ x: 1500, y: 430 }"
+                    :rowSelection="{
                                     selectedRowKeys: _selectedRowKeys,
                                     onChange: onSelectChange,
                                 }"
-                                :customRow="
+                    :customRow="
                                     (record) => ({
                                         onContextmenu: (e) =>
                                             handleRow(e, record),
                                     })
                                 "
-                            >
-                                <template #registryTime="slotProps">
-                                    <j-ellipsis>
-                                        {{
-                                            slotProps.registryTime
-                                                ? dayjs(
-                                                      slotProps.registryTime,
-                                                  ).format(
-                                                      'YYYY-MM-DD HH:mm:ss',
-                                                  )
-                                                : '--'
-                                        }}</j-ellipsis
-                                    >
-                                </template>
-                                <template #id="scopedSlots">
-                                    <div
-                                        v-if="
+                >
+                  <template #registryTime="slotProps">
+                    <j-ellipsis>
+                      {{
+                        slotProps.registryTime
+                            ? dayjs(
+                                slotProps.registryTime,
+                            ).format(
+                                'YYYY-MM-DD HH:mm:ss',
+                            )
+                            : '--'
+                      }}
+                    </j-ellipsis
+                    >
+                  </template>
+                  <template #id="scopedSlots">
+                    <div
+                        v-if="
                                             scopedSlots.Mappingtype !== 'auto'
                                         "
-                                        class="renderId"
-                                    >
-                                        <a-badge
-                                            :status="
+                        class="renderId"
+                    >
+                      <a-badge
+                          :status="
                                                 statusMap.get(
                                                     scopedSlots.state.value,
                                                 )
                                             "
-                                        />
-                                        <a @click="onJump(scopedSlots.id)">
-                                            <j-ellipsis style="width: 100px">
-                                                {{ scopedSlots?.id }}
-                                            </j-ellipsis>
-                                        </a>
-                                    </div>
-                                    <div v-else>{{ $t('Child.index.135369-7') }}</div>
-                                </template>
-                                <template #name="scopedSlots">
-                                    <j-ellipsis>{{
-                                        scopedSlots.name || '--'
-                                    }}</j-ellipsis>
-                                </template>
-                                <template #productName="scopedSlots">
-                                    <j-ellipsis>{{
-                                        scopedSlots.productName || '--'
-                                    }}</j-ellipsis>
-                                </template>
-                                <template #state="scopedSlots">
-                                    <a-tooltip
-                                        :title="scopedSlots.MappingError"
-                                    >
-                                        <a-tag
-                                            :color="
+                      />
+                      <a @click="onJump(scopedSlots.id)">
+                        <j-ellipsis style="width: 100px">
+                          {{ scopedSlots?.id }}
+                        </j-ellipsis>
+                      </a>
+                    </div>
+                    <div v-else>{{ $t('Child.index.135369-7') }}</div>
+                  </template>
+                  <template #name="scopedSlots">
+                    <j-ellipsis>{{
+                        scopedSlots.name || '--'
+                      }}
+                    </j-ellipsis>
+                  </template>
+                  <template #productName="scopedSlots">
+                    <j-ellipsis>{{
+                        scopedSlots.productName || '--'
+                      }}
+                    </j-ellipsis>
+                  </template>
+                  <template #state="scopedSlots">
+                    <a-tooltip
+                        :title="scopedSlots.MappingError"
+                    >
+                      <a-tag
+                          :color="
                                                 stateMap.get(
                                                     scopedSlots.MappingStatus,
                                                 )?.status
                                             "
-                                            >{{
-                                                stateMap.get(
-                                                    scopedSlots.MappingStatus,
-                                                )?.text
-                                            }}</a-tag
-                                        >
-                                    </a-tooltip>
-                                </template>
-                                <template #action="scopedSlots">
-                                    <div
-                                        v-if="!scopedSlots?.Mapping?.id"
-                                        class="left-drag"
-                                        @dragover.prevent
-                                        @drop="(e) => onDrop(e, scopedSlots)"
-                                    >
-                                        {{ $t('Child.index.135369-8') }}
-                                    </div>
-                                    <div
-                                        v-else
-                                        class="left-map"
-                                        @dragover.prevent
-                                        @drop="(e) => onCover(e, scopedSlots)"
-                                    >
-                                        <div style="display: flex">
-                                            <a-badge
-                                                :status="
+                      >{{
+                          stateMap.get(
+                              scopedSlots.MappingStatus,
+                          )?.text
+                        }}
+                      </a-tag
+                      >
+                    </a-tooltip>
+                  </template>
+                  <template #action="scopedSlots">
+                    <div
+                        v-if="!scopedSlots?.Mapping?.id"
+                        class="left-drag"
+                        @dragover.prevent
+                        @drop="(e) => onDrop(e, scopedSlots)"
+                    >
+                      {{ $t('Child.index.135369-8') }}
+                    </div>
+                    <div
+                        v-else
+                        class="left-map"
+                        @dragover.prevent
+                        @drop="(e) => onCover(e, scopedSlots)"
+                    >
+                      <div style="display: flex">
+                        <a-badge
+                            :status="
                                                     statusMap.get(
                                                         scopedSlots?.Mapping.state
                                                             ?.value,
                                                     )
                                                 "
-                                            />
-                                            <j-ellipsis>
-                                                {{
-                                                    scopedSlots.Mapping.name
-                                                }}({{
-                                                    scopedSlots.Mapping.id
-                                                }})</j-ellipsis
-                                            >
-                                        </div>
+                        />
+                        <j-ellipsis>
+                          {{
+                            scopedSlots.Mapping.name
+                          }}({{
+                            scopedSlots.Mapping.id
+                          }})
+                        </j-ellipsis
+                        >
+                      </div>
 
-                                        <a-button
-                                            v-if="
+                      <a-button
+                          v-if="
                                                 !scopedSlots.loading &&
                                                 scopedSlots.MappingStatus ===
                                                     'error'
                                             "
-                                            type="link"
-                                            style="padding: 0"
-                                            @click="
+                          type="link"
+                          style="padding: 0"
+                          @click="
                                                 scopedSlots.action === 'drop'
                                                     ? onDrop('', scopedSlots)
                                                     : onDelete(scopedSlots, 'refresh')
                                             "
-                                        >
-                                            <AIcon type="RedoOutlined" />
-                                        </a-button>
-                                        <a-button
-                                            v-if="!scopedSlots.loading"
-                                            type="link"
-                                            @click="onDelete(scopedSlots)"
-                                        >
-                                            <AIcon type="DeleteOutlined" />
-                                        </a-button>
-                                        <a-spin v-if="scopedSlots.loading" />
-                                    </div>
-                                </template>
-                                <template #describe="scopedSlots">
-                                    <j-ellipsis>{{
-                                        scopedSlots.describe || '--'
-                                    }}</j-ellipsis></template
-                                >
-                            </JProTable>
-                        </a-dropdown>
+                      >
+                        <AIcon type="RedoOutlined"/>
+                      </a-button>
+                      <a-button
+                          v-if="!scopedSlots.loading"
+                          type="link"
+                          @click="onDelete(scopedSlots)"
+                      >
+                        <AIcon type="DeleteOutlined"/>
+                      </a-button>
+                      <a-spin v-if="scopedSlots.loading"/>
                     </div>
-                    <a-space class="left-state">
-                        <a-badge status="success" :text="$t('Child.index.135369-9')" />
-                        <a-badge status="error" :text="$t('Child.index.135369-10')" />
-                        <a-badge status="warning" :text="$t('Child.index.135369-11')" />
-                    </a-space>
-                    <div
-                        class="left-bottom"
-                        @dragover.prevent
-                        @drop="onDropAuto"
-                    >
-                        {{ $t('Child.index.135369-12') }}
-                    </div>
-                </div>
+                  </template>
+                  <template #describe="scopedSlots">
+                    <j-ellipsis>{{
+                        scopedSlots.describe || '--'
+                      }}
+                    </j-ellipsis>
+                  </template
+                  >
+                </JProTable>
+              </a-dropdown>
             </div>
-            <div class="fold">
-                <div
-                    class="fold-item"
-                    :style="fold ? { left: '12px' } : { left: '8px' }"
-                    @click="onFold"
-                >
-                    <AIcon
-                        :type="
+            <a-space class="left-state">
+              <a-badge status="success" :text="$t('Child.index.135369-9')"/>
+              <a-badge status="error" :text="$t('Child.index.135369-10')"/>
+              <a-badge status="warning" :text="$t('Child.index.135369-11')"/>
+            </a-space>
+            <div
+                class="left-bottom"
+                @dragover.prevent
+                @drop="onDropAuto"
+            >
+              {{ $t('Child.index.135369-12') }}
+            </div>
+          </div>
+        </div>
+        <div class="fold">
+          <div
+              class="fold-item"
+              :style="fold ? { left: '12px' } : { left: '8px' }"
+              @click="onFold"
+          >
+            <AIcon
+                :type="
                             fold ? 'CaretLeftOutlined' : 'CaretRightOutlined'
                         "
-                        style="font-size: 24px"
-                    />
-                </div>
-            </div>
-            <div v-if="!fold" class="right">
-                <div class="right-title">
-                    <span>{{ $t('Child.index.135369-13') }}</span>
-                    <a-input-search
-                        v-model:value="_search"
-                        style="width: 200px"
-                        :placeholder="$t('Child.index.135369-14')"
-                        enter-button
-                        allow-clear
-                        @search="onRightSearch"
-                    />
-                </div>
-                <div class="right-list">
-                    <template v-if="edgeList.length">
-                        <a-spin :spinning="dropLoading">
-                            <div
-                                v-for="item in edgeList"
-                                class="right-item"
-                                :draggable="true"
-                                @dragstart="() => onStart(item)"
-                                @click="onDetail(item)"
-                            >
-                                <div class="item-name">
-                                    <j-ellipsis>{{ item.name }}</j-ellipsis>
-                                </div>
-                                <div class="item-info">
+                style="font-size: 24px"
+            />
+          </div>
+        </div>
+        <div v-if="!fold" class="right">
+          <div class="right-title">
+            <span>{{ $t('Child.index.135369-13') }}</span>
+            <a-input-search
+                v-model:value="_search"
+                style="width: 200px"
+                :placeholder="$t('Child.index.135369-14')"
+                enter-button
+                allow-clear
+                @search="onRightSearch"
+            />
+          </div>
+          <div class="right-list">
+            <template v-if="edgeList.length">
+              <a-spin :spinning="dropLoading">
+                <div
+                    v-for="item in edgeList"
+                    class="right-item"
+                    :draggable="true"
+                    @dragstart="() => onStart(item)"
+                    @click="onDetail(item)"
+                >
+                  <div class="item-name">
+                    <j-ellipsis>{{ item.name }}</j-ellipsis>
+                  </div>
+                  <div class="item-info">
                                     <span>
                                         <j-ellipsis
                                         >ID:{{ item.id }}</j-ellipsis
                                         >
                                     </span>
-                                    <span
-                                        style="
+                    <span
+                        style="
                                             display: flex;
                                             align-items: center;
                                         "
-                                    >
+                    >
                                         <j-ellipsis
                                         >{{ $t('Child.index.135369-15') }}{{
-                                                item.productName
-                                            }}</j-ellipsis
+                                            item.productName
+                                          }}</j-ellipsis
                                         >
                                         <AIcon
                                             v-if="item.masterProductId"
@@ -309,31 +318,32 @@
                                             "
                                         />
                                     </span>
-                                    <span>
+                    <span>
                                         <j-ellipsis
                                         >{{ $t('Child.index.135369-16') }}{{
-                                                item.describe || '--'
-                                            }}</j-ellipsis
+                                            item.describe || '--'
+                                          }}</j-ellipsis
                                         >
                                     </span>
-                                </div>
-                            </div>
-                        </a-spin>
-                        <div class="right-pagination"></div>
-                    </template>
-                    <template v-else>
-                        <j-empty style="margin-top: 50%" />
-                    </template>
+                  </div>
                 </div>
-                <div class="right-bottom">
-                    <AIcon type="CloudOutlined" style="color: #4096ff" />
-                    <span style="color: #646c73; font-size: 12px">
+              </a-spin>
+              <div class="right-pagination"></div>
+            </template>
+            <template v-else>
+              <j-empty style="margin-top: 50%"/>
+            </template>
+          </div>
+          <div class="right-bottom">
+            <AIcon type="CloudOutlined" style="color: #4096ff"/>
+            <span style="color: #646c73; font-size: 12px">
                         {{ $t('Child.index.135369-17') }}
                     </span>
-                </div>
-            </div>
-            <div v-else class="right-fold"></div>
+          </div>
         </div>
+        <div v-else class="right-fold"></div>
+      </div>
+    </div>
         <Save v-if="visible" @close="onClose" />
         <Bind
             v-if="bindVisible"
@@ -356,7 +366,6 @@
 <!--            :edgeId="route.params.id"-->
 <!--            @close="onDetailClose"-->
 <!--        />-->
-    </div>
 </template>
 
 <script setup name="Child">
