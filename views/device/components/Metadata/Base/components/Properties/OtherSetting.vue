@@ -546,6 +546,7 @@ const confirm = () => {
             const expands = {
                 ...(configValue.value || {}),
             };
+
             if (metrics) {
                 expands.metrics = metrics;
             }
@@ -618,7 +619,7 @@ watch(
     () => modalVisible.value,
     async () => {
         if (modalVisible.value) {
-            configValue.value = omit(props.value, [
+            configValue.value = omit(props.value.expands, [
                 'source',
                 'type',
                 'metrics',

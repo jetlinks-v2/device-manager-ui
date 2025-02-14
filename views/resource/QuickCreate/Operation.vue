@@ -71,16 +71,16 @@
                   <a-row :gutter="[12, 12]">
                     <a-col v-if="accessData.channel === 'network'">
                       <div>
-                        网络:
-                        {{
-                          accessData.provider === "mqtt-client-gateway"
-                              ? network.configuration?.remoteHost +
-                              ":" +
-                              network.configuration?.remotePort
-                              : network.configuration?.host +
-                              ":" +
-                              network.configuration?.port
-                        }}
+                        网络: {{getDetails(network)}}
+<!--                        {{-->
+<!--                          accessData.provider === "mqtt-client-gateway"-->
+<!--                              ? network.configuration?.remoteHost +-->
+<!--                              ":" +-->
+<!--                              network.configuration?.remotePort-->
+<!--                              : network.configuration?.host +-->
+<!--                              ":" +-->
+<!--                              network.configuration?.port-->
+<!--                        }}-->
                       </div>
                     </a-col>
                     <a-col
@@ -94,7 +94,7 @@
                         ].includes(accessData.provider)
                       "
                     >
-                      <div>协议: {{ protocol?.name }}</div>
+                      <div>协议: {{ protocol?.name + ` ${protocol.configuration?.version ? 'v' + protocol.configuration.version : ''}` }}</div>
                     </a-col>
                     <a-col v-if="accessData?.channel === 'plugin'">
                       <div>插件: {{ plugin?.name }}</div>
@@ -201,6 +201,22 @@ const generateString = () => {
   let randomNum2 = numbers[Math.floor(Math.random() * numbers.length)];
   randomString.value = randomLetter + randomNum1 + randomNum2;
 };
+
+const getDetails = (slotProps) => {
+  const {typeObject, shareCluster, configuration, cluster} = slotProps;
+  const headers =
+      typeObject.name.replace(/[^j-zA-Z]/g, '').toLowerCase() + '://';
+  const content = !!shareCluster
+      ? (configuration.publicHost || configuration.remoteHost) +
+      ':' +
+      (configuration.publicPort || configuration.remotePort)
+      : (cluster[0].configuration.publicHost ||
+          cluster[0].configuration.remoteHost) +
+      ':' +
+      (cluster[0].configuration.publicPort ||
+          cluster[0].configuration.remotePort);
+  return headers + content
+}
 
 //资源库选中协议
 const protocol = ref({});

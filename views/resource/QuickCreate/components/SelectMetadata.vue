@@ -15,22 +15,34 @@
         <div v-for="i in metadataData" :key="i.id"
              :class="{ 'metadataItem': true, 'selected': selectedMap.has(i.id) }"
              @click="() => chooseMetadata(i)">
-          <div>{{ i.name }}</div>
+          <j-ellipsis>{{ i.name }}</j-ellipsis>
           <div class="metadataItemContent">
-            <div class="text">标识：{{ i.id }}</div>
+            <div class="text">
+              <div class="label">标识：</div>
+              <j-ellipsis>{{ i.id }}</j-ellipsis>
+            </div>
             <template v-if='activeKey !== "events" && activeKey !== "functions"'>
-              <div  class="text">
-                数据类型：{{ dataTypeTableMap[i?.valueType?.type] }}
+              <div class="text">
+                <div class="label">数据类型：</div>
+                <j-ellipsis>{{ dataTypeTableMap[i?.valueType?.type] }}</j-ellipsis>
               </div>
             </template>
             <template v-if='activeKey === "properties"'>
-              <div class='text'>属性来源 ：{{ getSourceStr(i.expands?.source) }}</div>
+              <div class='text'>
+                <div class="label">属性来源：</div>
+                <j-ellipsis>{{ getSourceStr(i.expands?.source) }}</j-ellipsis>
+              </div>
             </template>
             <template v-if='activeKey === "functions"'>
-              <div class='text'>是否异步 ：{{ i.async ? '是' : '否' }}</div>
+              <div class='text'>
+                <div class="label">是否异步：</div>
+                <j-ellipsis>{{ i.async ? '是' : '否' }}</j-ellipsis>
+              </div>
             </template>
             <template v-if='activeKey === "events"'>
-              <div class='text'>事件级别 ：{{ eventLevelMap[i.expands?.level] }}</div>
+              <div class='text'>
+                <div class="label">事件级别:</div>
+                <j-ellipsis>{{ eventLevelMap[i.expands?.level] }}</j-ellipsis></div>
             </template>
           </div>
         </div>
@@ -164,6 +176,14 @@ onMounted(() => {
   .metadataItemContent{
     display: flex;
     gap: 16px;
+
+    .text {
+      display: flex;
+      min-width: 120px;
+      .label {
+        white-space: nowrap;
+      }
+    }
   }
 }
 </style>

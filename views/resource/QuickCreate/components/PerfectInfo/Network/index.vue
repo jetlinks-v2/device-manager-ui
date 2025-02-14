@@ -22,7 +22,9 @@
             </a-col>
             <template v-if="formData.secure">
                 <a-col :span="12">
-                    <a-form-item label="证书" name="certId">
+                    <a-form-item label="证书" name="certId" :rules="[
+                        { required: formData.secure, message: '请选择证书' }
+                    ]">
                         <a-select
                             v-model:value="formData.certId"
                             :options="certIdOptions"
@@ -34,6 +36,9 @@
                 </a-col>
                 <a-col :span="12">
                     <a-form-item label="私钥别名" name="privateKeyAlias"
+                                 :rules="[
+                        { required: formData.secure, message: '请输入私钥别名' }
+                    ]"
                         ><a-input
                             v-model:value="formData.privateKeyAlias"
                             placeholder="请输入私钥别名"

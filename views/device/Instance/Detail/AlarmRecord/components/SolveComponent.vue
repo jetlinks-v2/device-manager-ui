@@ -1,5 +1,5 @@
 <template>
-  <j-modal
+  <a-modal
     :title="$t('components.SolveComponent.037595-0')"
     :okText="$t('components.LogDetail.536180-0')"
     :cancelText="$t('components.LogDetail.536180-1')"
@@ -9,19 +9,19 @@
     destroyOnClose
     :confirmLoading="loading"
   >
-    <j-form :rules="rules" layout="vertical" ref="formRef" :model="form">
-      <j-form-item :label="$t('components.SolveComponent.037595-1')" name="describe">
-        <j-textarea
+    <a-form :rules="rules" layout="vertical" ref="formRef" :model="form">
+      <a-form-item :label="$t('components.SolveComponent.037595-1')" name="describe">
+        <a-textarea
           :disabled="solveType === 'view'"
           :rows="8"
           :maxlength="200"
           showCount
           :placeholder="$t('components.SolveComponent.037595-2')"
           v-model:value="form.describe"
-        ></j-textarea>
-      </j-form-item>
-    </j-form>
-  </j-modal>
+        ></a-textarea>
+      </a-form-item>
+    </a-form>
+  </a-modal>
 </template>
 
 <script lang="ts" setup>
