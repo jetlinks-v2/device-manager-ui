@@ -1,6 +1,6 @@
 <template>
     <a-modal
-        width="900px"
+        width="1000px"
         :title="$t('EditTable.PatchMapping.974352-0')"
         visible
         @ok="handleClick"
@@ -57,7 +57,7 @@
                         </a-tree>
                         <j-empty v-else style="margin-top: 16px"></j-empty>
                     </a-card>
-                    <div style="width: 100px">
+                    <div>
                         <a-button
                             :disabled="rightList.length >= leftList.length"
                             @click="onRight"

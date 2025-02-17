@@ -653,7 +653,7 @@ const Status = defineComponent({
                         product.value = response.result
                         let _item: ListProps | undefined = undefined
                         const state = response.result?.state
-                        _item = { 
+                        _item = {
                             key: 'product',
                             name: i18n.global.t('Status.index.565893-30'),
                             desc: i18n.global.t('Status.index.565893-31'),
