@@ -9,7 +9,7 @@
         :width="1000"
     >
         <div class="content">
-            <div v-if="step === 0" style="height: 100%;display: flex;justify-content: center;align-items: center">
+            <div v-if="step === 0" class="type">
                 <j-card-select
                     :column="2"
                     v-model:value="type"
@@ -202,5 +202,11 @@ const onSave = async () => {
     height: 60vh;
     overflow-y: auto;
     overflow-x: hidden;
+  .type {
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
 }
 </style>
