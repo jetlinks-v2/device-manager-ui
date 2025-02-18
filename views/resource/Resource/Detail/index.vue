@@ -21,7 +21,7 @@
             <div class='header-tags'>
               <div class='tags-item' style="font-size: 14px" v-for='item in typeList'>
                 <j-ellipsis>
-                  {{ item }}
+                  {{ dataMap.get(item.id)?.fullname || item.name }}
                 </j-ellipsis>
               </div>
             </div>
@@ -203,12 +203,14 @@ import dayjs from 'dayjs';
 import {resource} from '@device/assets/resource'
 import LivePlayer from '@/components/Player/index.vue';
 import DetailHeaderTitle from './components/title.vue'
+import { omit, cloneDeep } from "lodash-es";
 
 const imageMap = new Map([
   ['device', resource.deviceDefaultImage],
   ['collector', resource.collectorDefaultImage],
   ['protocol', resource.protocolDefaultImage]
 ])
+const dataMap = new Map();
 const route = useRoute();
 const visible = ref(false);
 const visibleApply = ref(false);
@@ -249,12 +251,35 @@ const viewsList = computed(() => {
 const typeList = computed(() => {
   return detail.value.classification?.reduce((pre, cur) => {
     if (cur.children) {
-      pre.push(...cur.children.map(item => item.name))
+      pre.push(...cur.children.map(item => item))
     }
     return pre
   }, []) || []
 })
 
+const handleData = (arr) => {
+  arr.map(i => {
+    if (i.children?.length) {
+      i.children.map(item => {
+        handleTreeMap(item?.classificationTree || [], '')
+      })
+    }
+  })
+}
+const handleTreeMap = (arr, parentName) => {
+  const _name = parentName ? parentName + '/' : ''
+  arr.filter(i => i?.id).map((item) => {
+    if (!dataMap.get(item.id)) {
+      dataMap.set(item.id, {
+        ...omit(cloneDeep(item), ['children']),
+        fullname: _name + item.name
+      })
+    }
+    if (item.children) {
+      handleTreeMap(item.children, _name + item.name)
+    }
+  })
+}
 //是否有物模型
 const hasMetadata = computed(() => {
   const metadata =  JSON.parse(detail.value.metadata || '{}');
@@ -273,6 +298,7 @@ const getDetail = async (id) => {
   const res = await detailResource(id);
   if (res.success) {
     detail.value = res.result;
+    handleData(detail.value?.classification || [])
   }
 };
 
