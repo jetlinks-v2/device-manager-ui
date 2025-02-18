@@ -5,7 +5,7 @@
             <div class="header">
                 <div class="title">
                     <j-ellipsis style="width: 100%;">
-                        {{ _props.data.name }}
+                        {{ data.name }}
                     </j-ellipsis>
                 </div>
                 <div class="extra">
@@ -62,6 +62,7 @@
 
 <script lang="ts" setup>
 import ValueRender from './ValueRender.vue';
+
 const _props = defineProps({
     data: {
         type: Object,
@@ -77,7 +78,7 @@ const _props = defineProps({
 // watchEffect(() => {
 //     if (_props.data) {
 //         console.log(_props.data)
-//         loading.value = false;
+//         // loading.value = false;
 //     }
 // });
 </script>

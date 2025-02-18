@@ -2054,7 +2054,7 @@
     "Detail.index.258513-5": "Shared configuration: all nodes in the cluster share the same configuration, independent configuration: different nodes in the cluster use different configurations",
     "Detail.index.258513-6": "Shared configuration",
     "Detail.index.258513-7": "Independent configuration",
-    "Detail.index.258513-8": "0 configuration information",
+    "Detail.index.258513-8": "#{0} configuration information",
     "Detail.index.258513-9": "Are you sure to delete?",
     "Detail.index.258513-10": "delete",
     "Detail.index.258513-11": "Node Name",
