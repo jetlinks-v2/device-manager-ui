@@ -138,7 +138,7 @@
           </CardBox>
         </template>
         <template #state="slotProps">
-          <a-badge-status
+          <j-badge-status
               :text="slotProps.state === 1 ? $t('Product.index.660348-2') : $t('Product.index.660348-3')"
               :status="slotProps.state"
               :statusNames="{

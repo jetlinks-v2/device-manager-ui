@@ -61,7 +61,7 @@
                         </template>
                         <template #content>
                             <div style="width: calc(100% - 100px)">
-                                <Ellipsis>
+                                <j-ellipsis>
                                     <span
                                         style="
                                             font-size: 16px;
@@ -70,7 +70,7 @@
                                     >
                                         {{ slotProps.name }}
                                     </span>
-                                </Ellipsis>
+                                </j-ellipsis>
                             </div>
                             <a-row>
                                 <a-col :span="12">

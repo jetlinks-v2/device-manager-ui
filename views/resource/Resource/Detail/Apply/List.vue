@@ -47,7 +47,7 @@
                             <div class="render-img">
                                 <img
                                     :src="
-                                        item.img ||
+                                        item.photoUrl ||
                                         device.deviceCard
                                     "
                                 />

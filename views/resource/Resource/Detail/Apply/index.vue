@@ -3,19 +3,26 @@
         :title="$t('Apply.index.663043-0')"
         visible
         :centered="true"
+        :confirm-loading="loading"
         @cancel="emits('close')"
         :maskClosable="false"
         :width="1000"
     >
         <div class="content">
-            <div v-if="step === 0" style="margin-top: 15%">
+            <div v-if="step === 0" class="type">
                 <j-card-select
                     :column="2"
                     v-model:value="type"
                     :options="typeList"
                 >
-                    <template #image="{ image }">
-                        <img :src="image" />
+                    <template #itemRender="{ node }">
+                        <a-space align="center">
+                          <AIcon :type="node.iconUrl" style="font-size: 60px"></AIcon>
+                          <div>
+                            <p>{{node.label}}</p>
+                            <p>{{node.subLabel}}</p>
+                          </div>
+                        </a-space>
                     </template>
                 </j-card-select>
             </div>
@@ -69,13 +76,13 @@ const typeList = [
         value: 'create',
         label: $t('Apply.index.663043-4'),
         subLabel: $t('Apply.index.663043-5'),
-        iconUrl: device.deviceCard,
+        iconUrl: 'AppstoreAddOutlined',
     },
     {
         value: 'update',
         label: $t('Apply.index.663043-6'),
         subLabel: $t('Apply.index.663043-7'),
-        iconUrl: device.deviceCard,
+        iconUrl: 'SyncOutlined',
     },
 ];
 
@@ -91,6 +98,7 @@ const step = ref(0);
 const productList = ref<any>([]);
 const resourceMetadata = ref();
 const protocolList = ref<any>([]);
+const loading = ref(false);
 
 const onStep = () => {
     if (!type.value) {
@@ -155,21 +163,18 @@ const getProtocolList = async () => {
 const onSave = async () => {
     const _new = productList.value.filter((i: any) => i.newMetaData);
     const _newProtocol = protocolList.value.filter((i: any) => i.handle);
-  
-    if (!_new.length) {
+    if (!_new.length && (!_newProtocol.length && protocolList.value.length > 0)) {
         onlyMessage($t('Apply.index.663043-9'), 'warning');
         return;
     }
-    if (!_newProtocol.length && protocolList.length > 0) {
-        onlyMessage($t('Apply.index.663043-9'), 'warning');
-        return;
-    }
+    loading.value = true;
+    const requestList = []
     if (_new.length) {
         const _data = productList.value.map((item: any) => ({
             ...item,
             metadata: JSON.stringify(item.newMetaData),
         }));
-       await saveProduct(_data);
+        requestList.push(saveProduct(_data));
     }
     if (_newProtocol.length) {
         const arr = protocolList.value
@@ -184,8 +189,9 @@ const onSave = async () => {
                     sourceId: item.configuration.sourceId,
                 },
             }));
-        await saveProtocol(arr);
+        arr.length && requestList.push(saveProtocol(arr));
     }
+    const res = await Promise.all(requestList).finally(() => (loading.value = false));
     emits('close');
     onlyMessage($t('Apply.index.663043-10'), 'success');
 };
@@ -196,5 +202,11 @@ const onSave = async () => {
     height: 60vh;
     overflow-y: auto;
     overflow-x: hidden;
+  .type {
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
 }
 </style>
