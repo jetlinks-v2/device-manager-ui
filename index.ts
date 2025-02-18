@@ -102,6 +102,14 @@ const getComponents = () => {
                 component: defineAsyncComponent(() => import('./views/department/device/index.vue'))
             },
         ],
+        'initHome': [
+            {
+                name: 'initData',
+                label: 'init-home.index.011072-23',
+                subLabel: 'init-home.index.011072-24',
+                component: defineAsyncComponent(() => import('./views/initData/index.vue'))
+            }
+        ]
     }
 }
 
