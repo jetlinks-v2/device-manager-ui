@@ -3,17 +3,17 @@
         <div class="loading" v-if="loading.value">
             <a-spin :spinning="loading.value" size="large" :tip="$t('components.Amap.165690-0')" />
         </div>
-        <AmapComponent @init="onMapInit">
+        <a-map-component @init="onMapInit">
             <el-amap-marker-cluster
                 :points="deviceList"
                 :extraOptions="extraOptions"
                 @click="onClick"
             />
-        </AmapComponent>
+        </a-map-component>
     </div>
 </template>
 
-<script lang="ts" setup name="DashBoardMap">
+<script setup name="DashBoardMap">
 import {ElAmapMarkerCluster} from "@vuemap/vue-amap";
 import { getCenterPoint } from "../../../../utils/map";
 import { EventSourcePolyfill } from 'event-source-polyfill';
@@ -74,7 +74,7 @@ const queryDeviceGeoJson = async () => {
         )}&filter.paging=false`
     )
 
-    source.onmessage = (e: any) => {
+    source.onmessage = (e) => {
         const result = JSON.parse(e.data);
         const features = result.features
         const arr = []
