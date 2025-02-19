@@ -304,11 +304,11 @@ const defaultParams = computed(() => {
                 value: current.value.id,
                 termType: 'eq',
               },
-              {
-                column: 'alarmConfigSource',
-                value: 'device-property-preprocessor',
-                termType: 'eq',
-              },
+              // {
+              //   column: 'alarmConfigSource',
+              //   value: 'device-property-preprocessor',
+              //   termType: 'eq',
+              // },
             ],
             type: 'and',
           },
@@ -329,11 +329,11 @@ const defaultParams = computed(() => {
                   },
                 ],
               },
-              {
-                column: 'alarmConfigSource',
-                value: 'device-property-preprocessor',
-                termType: 'eq',
-              },
+              // {
+              //   column: 'alarmConfigSource',
+              //   value: 'device-property-preprocessor',
+              //   termType: 'eq',
+              // },
             ],
             type: 'and',
           },
@@ -419,11 +419,11 @@ const refreshCurrent = async () => {
         termType: 'eq',
         value: currentAlarm.value.id,
       },
-      {
-        column: 'alarmConfigSource',
-        value: 'device-property-preprocessor',
-        termType: 'eq',
-      },
+      // {
+      //   column: 'alarmConfigSource',
+      //   value: 'device-property-preprocessor',
+      //   termType: 'eq',
+      // },
     ],
   });
   if (res.success && res.result?.data?.length) {

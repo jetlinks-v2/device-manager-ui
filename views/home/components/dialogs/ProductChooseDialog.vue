@@ -46,7 +46,7 @@ const form = reactive({
 
 const productList = ref<[productItem] | []>([]);
 const getOptions = () => {
-  getProductListNoPage().then(({ result }: any) => {
+  getProductListNoPage({ paging: false }).then(({ result }: any) => {
         productList.value = result
             .filter((i: any) => !i?.accessId)
             .map((item: { name: any; id: any }) => ({

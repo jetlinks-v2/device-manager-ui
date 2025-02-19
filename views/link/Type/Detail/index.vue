@@ -1195,8 +1195,9 @@ watch(
     value ? getPortOptions(configRef.value) : (portOptionsIndex.value[0] = []);
     updateClustersListIndex();
   },
-  { deep: true }
+  { deep: true, immediate: true }
 );
+
 watch(
   () => dynamicValidateForm.cluster?.length,
   () => {
@@ -1224,11 +1225,13 @@ onMounted(async () => {
   if (isNoCommunity) {
     getResourcesClusters();
   }
+  getResourcesCurrent();
   if (id !== ":id") {
     getDetail();
-  } else {
-    getResourcesCurrent();
   }
+  // else {
+  // getResourcesCurrent();
+  // }
 });
 </script>
 
