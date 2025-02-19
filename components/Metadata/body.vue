@@ -19,11 +19,11 @@
             @click.stop="() => rowClick(item)"
         >
           <div
-              v-for="column in columns"
+              v-for="(column, index) in columns"
               class="metadata-edit-table-cell"
               :style="{
                 width: `${column.width}px`,
-                left: `${column.left}px`,
+                left: `${column.left || 200 * index}px`,
               }"
           >
             <div v-if="column.dataIndex === '__serial'" class="body-cell-box">
