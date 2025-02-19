@@ -58,10 +58,6 @@ const isExpand = ref(true);
 const _data = ref();
 
 const onSelect = (item) => {
-    if(_selectKey.value === item.value) {
-      _selectKey.value = '';
-      return;
-    }
     _selectKey.value = item.value;
 
     if (props.type === 'metadata') {
