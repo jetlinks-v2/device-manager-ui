@@ -15,8 +15,8 @@
         type="protocol"
         v-model:value="protocolList[index]"
         :options="[
-          { label: $t('Apply.ProtocolList.294910-2'), value: 'cover' },
-          { label: $t('Apply.ProtocolList.294910-3'), value: 'ignore' },
+          { label: $t('Apply.ProtocolList.294910-2'), value: 'cover', icon: 'SyncOutlined' },
+          { label: $t('Apply.ProtocolList.294910-3'), value: 'ignore', icon: 'icon-hulve' },
         ]"
       >
         <template #leftRender>
