@@ -101,9 +101,9 @@
                 ) || accessData.channel === 'plugin'
             "
     >
-      <div>网关配置</div>
+      <div v-if="['Ctwing', 'gb28181-2016', 'OneNet-platform'].includes(accessData.provide) || accessData.channel === 'plugin'">网关配置</div>
       <div v-if="accessData.channel === 'plugin'">
-        <a-form :model="accessConfiguration"  layout="vertical">
+        <a-form :model="accessConfiguration" layout="vertical">
           <a-form-item
               v-for="i in pluginConfiguration"
               :name="i.property"
@@ -366,7 +366,7 @@ const createProduct = async () => {
             };
           }
         } else if (
-            ['OneNet', 'Ctwing','child-device'].includes(props.accessData.channel)
+            ['OneNet', 'Ctwing', 'child-device'].includes(props.accessData.channel)
         ) {
           data = {
             resourceId: props.data.id,
@@ -483,7 +483,7 @@ watch(
       });
 
       if (
-          ['network', 'OneNet', 'Ctwing','child-device'].includes(
+          ['network', 'OneNet', 'Ctwing', 'child-device'].includes(
               props.accessData.channel,
           ) &&
           !['agent-media-device-gateway', 'agent-device-gateway'].includes(
