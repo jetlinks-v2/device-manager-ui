@@ -34,7 +34,7 @@
               >
               <a-button @click="onApply">{{ $t('Detail.index.473126-2') }}</a-button>
             </a-space>
-            <div class="createdProductNumber">{{ $t('Detail.index.473126-3') }}{{ count }}</div>
+            <div class="createdProductNumber">{{ $t('Detail.index.473126-3') }}<a-button @click="onJump" type="link">{{ count }}</a-button></div>
           </div>
         </div>
         <div class="header-tags">
@@ -290,6 +290,7 @@ const hasMetadata = computed(() => {
 const getProductNumber = async () => {
   const res = await _queryProductNoPaging(_id, {});
   if (res.success) {
+    console.log(res.result, 'res.result')
     count.value = res.result.length || 0;
   }
 };
@@ -359,6 +360,10 @@ const onCanplay = () => {
 const refresh = () => {
   getDetail(_id)
   visible.value = false
+}
+
+const onJump = () => {
+
 }
 
 

@@ -211,21 +211,21 @@
   <Network
       v-if="visibleAddNetwork"
       :type="accessConfig?.provider"
-      :selectedNetWork="network"
+      :data="network"
       @selectedNetWork="selectedNetWork"
       @close="visibleAddNetwork = false"
   />
   <Protocol
       v-if="visibleAddProtocol"
       :type="accessConfig?.provider"
-      :selectedNetWork="protocol"
+      :data="protocol"
       @selectedProtocol="selectedProtocol"
       @close="visibleAddProtocol = false"
   />
   <Plugin
       v-if="visibleAddPlugin"
       :type="accessConfig?.provider"
-      :selectedNetWork="plugin"
+      :data="plugin"
       @selectedPlugin="selectedPlugin"
       @close="visibleAddPlugin = false"
   />
@@ -361,8 +361,12 @@ const quitAdvanceMode = () => {
 //获取网络组件地址
 const getDetails = (slotProps) => {
   const {typeObject, shareCluster, configuration, cluster} = slotProps;
-  const headers =
+  let headers =
       typeObject.name.replace(/[^j-zA-Z]/g, '').toLowerCase() + '://';
+  const flag = slotProps.configuration?.secure || cluster?.[0]?.configuration?.secure
+  if(['MQTT_CLIENT', 'MQTT_SERVER'].includes(typeObject.value) && flag){
+    headers = 'mqtts://'
+  }
   const content = !!shareCluster
       ? (configuration.publicHost || configuration.remoteHost) +
       ':' +

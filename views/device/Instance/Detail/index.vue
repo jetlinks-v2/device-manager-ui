@@ -239,7 +239,7 @@ const getDetail = () => {
             tab: $t('Detail.index.957187-16'),
         },{
             key: 'Invalid',
-            tab: $t('Detail.index.957187-24')
+            tab: $t('Detail.index.957187-29')
         }]);
     }
     if (permissionStore.hasPermission('iot-card/CardManagement:view') && isNoCommunity) {
@@ -249,7 +249,7 @@ const getDetail = () => {
         });
     }
 
-    if (instanceStore.current?.features.some(item => item.id === 'deviceShadow-manager') && isNoCommunity) {
+    if (instanceStore.current?.features?.some(item => item.id === 'deviceShadow-manager') && isNoCommunity) {
         list.value.push({
             key: 'Shadow',
             tab: $t('Detail.index.957187-18')

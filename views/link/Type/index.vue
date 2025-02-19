@@ -390,8 +390,11 @@ const handleEdit = (id: string) => {
 
 const getDetails = (slotProps: Partial<Record<string, any>>) => {
   const {typeObject, shareCluster, configuration, cluster} = slotProps;
-  const headers =
-      typeObject.name.replace(/[^j-zA-Z]/g, '').toLowerCase() + '://';
+  let headers = typeObject.name.replace(/[^j-zA-Z]/g, '').toLowerCase() + '://';
+  const flag = slotProps.configuration?.secure || cluster?.[0]?.configuration?.secure
+  if(['MQTT_CLIENT', 'MQTT_SERVER'].includes(typeObject.value) && flag){
+    headers = 'mqtts://'
+  }
 
   const content = !!shareCluster
       ? (configuration.publicHost || configuration.remoteHost) +

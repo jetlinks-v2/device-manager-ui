@@ -364,7 +364,7 @@ const visible = ref(false);
 const modalVisible = ref(false);
 
 const config = ref<any>([]);
-const configValue = ref(props.value?.expands || {});
+const configValue = ref(props.value || {});
 
 const extraForm = reactive({
     limit: {
@@ -550,6 +550,8 @@ const confirm = () => {
             if (metrics) {
                 expands.metrics = metrics;
             }
+
+            console.log(expands, 'expands')
             if (showExtra.value && extraForm.type) {
                 ThresholdRef.value?.validate().then(async () => {
                     await thresholdUpdate(extraForm);
@@ -619,7 +621,7 @@ watch(
     () => modalVisible.value,
     async () => {
         if (modalVisible.value) {
-            configValue.value = omit(props.value.expands, [
+            configValue.value = omit(props.value, [
                 'source',
                 'type',
                 'metrics',
