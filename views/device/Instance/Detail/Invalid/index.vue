@@ -3,6 +3,8 @@
         :columns="columns"
         target="device-instance"
         @search="handleSearch"
+        type="simple"
+        style="margin: 0; padding-bottom: 0;"
     ></pro-search>
     <JProTable
         ref="deviceAlarm"
@@ -28,7 +30,8 @@
             ],
         }"
         :params="params"
-        ><template #createTime="slotProps">
+    >
+        <template #createTime="slotProps">
             {{ dayjs(slotProps.createTime).format('YYYY-MM-DD HH:mm:ss') }}
         </template>
         <template #thingName="slotProps">
