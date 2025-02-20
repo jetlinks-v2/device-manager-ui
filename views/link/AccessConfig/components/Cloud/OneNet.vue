@@ -563,7 +563,7 @@ const queryProcotolList = async (id: string, params = {}) => {
 };
 
 const addProcotol = () => {
-    const url = menuStory.menus['link/Protocol']?.path;
+    const url = menuStory.getMenu('link/Protocol')?.path;
     const tab: any = window.open(
         `${window.location.origin + window.location.pathname}#${url}?save=true`,
     );

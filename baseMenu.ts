@@ -1437,6 +1437,7 @@ export default [
                                 en: 'Resource library',
                             }
                         },
+                        id: "cab894761bb00fb1c35746b510914cdb",
                         "code": "resource/Resource",
                         "describe": "",
                         "url": "/iot/link/resource",
@@ -1474,12 +1475,6 @@ export default [
                             "text": "不支持",
                             "value": "unsupported"
                         },
-                        "indirectMenus": [],
-                        "options": {
-                            "show": true
-                        },
-                        "creatorId": "1d77fc74a6239c0770bd329d1b3e5722",
-                        "createTime": 1734315746729,
                         "supportDataAccess": false
                     }
                 ],

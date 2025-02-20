@@ -381,7 +381,7 @@ const addNetwork = () => {
 };
 
 const addProcotol = () => {
-  const url = menuStory.menus["link/Protocol"]?.path;
+  const url = menuStory.getMenu("link/Protocol")?.path;
   const tab: any = window.open(
     `${window.location.origin + window.location.pathname}#${url}?save=true`
   );
@@ -527,8 +527,13 @@ const next = async () => {
     }
   }
 };
+
 const prev = () => {
-  current.value = current.value - 1;
+  if(isAgent) {
+    current.value = 0;
+  } else {
+    current.value = current.value - 1;
+  }
 };
 
 onMounted(() => {

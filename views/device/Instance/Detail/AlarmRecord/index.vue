@@ -4,6 +4,7 @@
       target="device-instance"
       type="simple"
       @search="handleSearch"
+      style="margin: 0; padding-bottom: 0;"
   />
   <div v-if="current?.id">
     <JProTable
@@ -94,6 +95,7 @@ import AlarmLog from './components/AlarmLog.vue';
 import {useMenuStore} from '@/store';
 import {useI18n} from 'vue-i18n';
 import SolveComponent from './components/SolveComponent.vue'
+import Duration from './components/Duration.vue'
 
 const {t: $t} = useI18n();
 
@@ -121,12 +123,14 @@ const columns =
               type: 'date',
             },
             scopedSlots: true,
+            width: 180
           },
           {
             title: $t('Alarm.index.101383-4'),
             dataIndex: 'duration',
             key: 'duration',
             scopedSlots: true,
+            ellipsis: true
           },
           {
             title: $t('Alarm.index.101383-5'),
@@ -138,6 +142,7 @@ const columns =
             title: $t('Alarm.index.101383-6'),
             dataIndex: 'actualDesc',
             key: 'actualDesc',
+            ellipsis: true
           },
           {
             title: $t('Alarm.index.101383-7'),
@@ -147,6 +152,7 @@ const columns =
               type: 'date',
             },
             scopedSlots: true,
+            width: 180
           },
 
           {
@@ -192,6 +198,8 @@ const columns =
             dataIndex: 'actions',
             key: 'actions',
             scopedSlots: true,
+            fixed: 'right',
+            width: 160,
           },
         ]
         : [
@@ -202,12 +210,14 @@ const columns =
             search: {
               type: 'date',
             },
+            width: 180,
             scopedSlots: true,
           },
           {
             title: $t('Alarm.index.101383-4'),
             dataIndex: 'duration',
             key: 'duration',
+            ellipsis: true,
             scopedSlots: true,
           },
           {
@@ -229,6 +239,7 @@ const columns =
             title: $t('Alarm.index.101383-6'),
             dataIndex: 'actualDesc',
             key: 'actualDesc',
+            ellipsis: true
           },
           {
             title: $t('Alarm.index.101383-7'),
@@ -238,6 +249,7 @@ const columns =
               type: 'date',
             },
             scopedSlots: true,
+            width: 180
           },
 
           {
@@ -282,6 +294,8 @@ const columns =
             title: $t('Alarm.index.101383-12'),
             dataIndex: 'actions',
             key: 'actions',
+            fixed: 'right',
+            width: 160,
             scopedSlots: true,
           },
         ];
