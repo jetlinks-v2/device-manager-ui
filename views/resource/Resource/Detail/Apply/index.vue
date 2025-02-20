@@ -163,7 +163,7 @@ const getProtocolList = async () => {
 const onSave = async () => {
     const _new = productList.value.filter((i: any) => i.newMetaData);
     const _newProtocol = protocolList.value.filter((i: any) => i.handle);
-    if (!_new.length && (!_newProtocol.length && protocolList.value.length > 0)) {
+    if (!_new.length && !_newProtocol.length) {
         onlyMessage($t('Apply.index.663043-9'), 'warning');
         return;
     }

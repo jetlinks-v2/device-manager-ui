@@ -36,10 +36,10 @@
                     v-model:value="productList[index]"
                     :resourceMetadata="resourceMetadata"
                     :options="[
-                        { label: $t('Apply.List.326977-7'), value: 'intersection' },
-                        { label: $t('Apply.List.326977-8'), value: 'union' },
-                        { label: $t('Apply.List.326977-9'), value: 'ignore' },
-                        { label: $t('Apply.List.326977-10'), value: 'cover' },
+                        { label: $t('Apply.List.326977-7'), value: 'intersection', icon: 'icon-jiaoji' },
+                        { label: $t('Apply.List.326977-8'), value: 'union', icon: 'icon-hebing' },
+                        { label: $t('Apply.List.326977-9'), value: 'ignore', icon: 'icon-hulve' },
+                        { label: $t('Apply.List.326977-10'), value: 'cover', icon: 'icon-fugai' },
                     ]"
                 >
                     <template #leftRender>
@@ -53,14 +53,16 @@
                                 />
                             </div>
                             <div>
-                                <div>{{ item.name }}</div>
+                                <j-ellipsis>
+                                  <div>{{ item.name }}</div>
+                                </j-ellipsis>
                                 <div>{{ item.id }}</div>
                             </div>
                         </a-space>
                     </template>
                 </CardItem>
             </div>
-            <div class="expand-btn" @click="expand = !expand">
+            <div v-if="productList.length > 2" class="expand-btn" @click="expand = !expand">
                 {{ expand ? $t('Apply.List.326977-11') : $t('Apply.List.326977-12') }}
             </div>
         </div>

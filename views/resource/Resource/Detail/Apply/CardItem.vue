@@ -22,10 +22,11 @@
                         active: item.value === _selectKey,
                         expand: !isExpand && item.value !== _selectKey,
                     }"
+                    :key="item.value"
                     @click.stop="onSelect(item)"
                 >
                     <span style="margin-right: 6px">{{ item.label }}</span>
-                    <AIcon type="AppstoreOutlined" />
+                    <AIcon :type="item.icon" />
                 </div>
             </div>
         </div>
@@ -57,10 +58,6 @@ const isExpand = ref(true);
 const _data = ref();
 
 const onSelect = (item) => {
-    if(_selectKey.value === item.value) {
-      _selectKey.value = '';
-      return;
-    }
     _selectKey.value = item.value;
 
     if (props.type === 'metadata') {
@@ -199,6 +196,8 @@ watch(
     border: 1px solid #eee;
     border-radius: 6px;
     background-color: #fff;
+    justify-content: space-between;
+    gap: 20px;
     .left {
         flex: 1;
     }
