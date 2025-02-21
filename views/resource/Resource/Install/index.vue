@@ -45,6 +45,7 @@ const source = ref('');
 const listRef = ref()
 const fileList = ref([]);
 const taskList = ref([]);
+const route = useRoute();
 
 const getTaskList = async () => {
   const resp = await queryTaskListNoPaging({
@@ -54,6 +55,11 @@ const getTaskList = async () => {
         termType: 'not',
         value: 'success',
       },
+      {
+        column: 'resourcesId',
+        termType: 'eq',
+        value: route.params?.id,
+      }
     ],
   });
   if (resp.success) {

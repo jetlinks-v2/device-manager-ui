@@ -44,7 +44,6 @@
 
 <script setup name="Update">
 import {checkUpdate, _latest, installResource} from '@device/api/resource/resource';
-import {onlyMessage} from '@jetlinks-web/utils';
 import Install from '@device/views/resource/Resource/Install/index.vue'
 import {provide} from "vue";
 
