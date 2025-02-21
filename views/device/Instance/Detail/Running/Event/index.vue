@@ -5,6 +5,7 @@
         :columns="columns"
         target="device-instance-running-events"
         @search="handleSearch"
+        type="simple"
     />
     <JProTable
         ref="eventsRef"
