@@ -127,7 +127,12 @@
                                             </j-ellipsis>
                                         </a-col>
                                     </a-row>
-                                    <a-row>
+                                    <div class="card-item-content-description">
+                                        <j-ellipsis :lineClamp="2" style="width: calc(100% - 10px)">
+                                            {{ getDescription(slotProps) }}
+                                        </j-ellipsis>
+                                    </div>
+                                    <!-- <a-row>
                                         <a-col
                                             :span="24"
                                             class="card-item-content-description"
@@ -142,8 +147,9 @@
                                                 </template>
                                                 {{ getDescription(slotProps) }}
                                             </a-tooltip>
+                                        
                                         </a-col>
-                                    </a-row>
+                                    </a-row> -->
                                 </div>
                             </template>
 
@@ -432,14 +438,13 @@ const handleSearch = (e: any) => {
         opacity: 0.75;
     }
     .card-item-content-description {
-        font-style: normal;
-        font-weight: 400;
+        // font-style: normal;
         font-size: 12px;
-        line-height: 20px;
+        // line-height: 20px;
         color: #666666;
-        overflow: hidden; //超出的文本隐藏
-        text-overflow: ellipsis; //溢出用省略号显示
-        white-space: nowrap; //溢出不换行
+        // overflow: hidden; //超出的文本隐藏
+        // text-overflow: ellipsis; //溢出用省略号显示
+        // white-space: nowrap; //溢出不换行
     }
 }
 </style>

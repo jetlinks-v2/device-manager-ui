@@ -14,6 +14,7 @@
                     :column="2"
                     v-model:value="type"
                     :options="typeList"
+                    :disabled="!permission"
                 >
                     <template #itemRender="{ node }">
                         <a-space align="center">
@@ -64,11 +65,12 @@ import {
     _queryProtocolNowNoPaging,
     _queryProductNoPaging,
 } from '@device/api/resource/resource';
-import { useMenuStore } from '@/store/menu';
-import { device } from '@device/assets/device/index.ts'
+import { useMenuStore, useAuthStore } from '@/store';
 import { useI18n } from 'vue-i18n';
 
 const { t: $t } = useI18n();
+const permission = useAuthStore().hasPermission(`device/Product:add`);
+
 const emits = defineEmits(['close']);
 const menuStory = useMenuStore();
 const typeList = [

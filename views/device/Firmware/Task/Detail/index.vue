@@ -215,6 +215,14 @@ const queryHistoryList = async () => {
                     },
                 ],
             },
+            {
+                terms: [
+                    {
+                        column: 'deviceId',
+                        value: props?.deviceId,
+                    },
+                ],
+            },
         ],
     };
     const res = await historyPaginateNot(params);

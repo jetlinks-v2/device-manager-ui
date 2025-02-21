@@ -221,6 +221,18 @@ const columns =
             scopedSlots: true,
           },
           {
+            title: $t('Detail.index.478940-18'),
+            dataIndex: 'alarmName',
+            key: 'alarmName',
+            ellipsis: true,
+          },
+          {
+            title: $t('Detail.index.478940-19'),
+            dataIndex: 'level',
+            key: 'level',
+            ellipsis: true,
+          },
+          {
             title: $t('Alarm.index.101383-5'),
             dataIndex: 'triggerDesc',
             key: 'triggerDesc',
@@ -231,6 +243,7 @@ const columns =
             dataIndex: 'sourceName',
             key: 'sourceName',
             scopedSlots: true,
+            width: 100,
             search: {
               type: 'string',
             },
@@ -251,11 +264,11 @@ const columns =
             scopedSlots: true,
             width: 180
           },
-
           {
             title: $t('Alarm.index.101383-8'),
             dataIndex: 'handleType',
             key: 'handleType',
+            width: 100,
             search: {
               type: 'select',
               options: [
@@ -275,6 +288,7 @@ const columns =
             title: $t('Alarm.index.101383-11'),
             dataIndex: 'state',
             key: 'state',
+            width: 100,
             search: {
               type: 'select',
               options: [

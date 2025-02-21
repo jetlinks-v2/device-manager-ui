@@ -86,11 +86,11 @@ const columns = [
     dataIndex: 'triggerDesc',
     key: 'triggerDesc',
   },
-  {
-    title: $t('components.Log.809848-5'),
-    dataIndex: 'sourceName',
-    key: 'sourceName',
-  },
+  // {
+  //   title: $t('components.Log.809848-5'),
+  //   dataIndex: 'sourceName',
+  //   key: 'sourceName',
+  // },
   {
     title: $t('components.Log.809848-6'),
     dataIndex: 'actualDesc',
