@@ -145,10 +145,9 @@ const getProtocolList = async () => {
                 );
                 if (obj) {
                     item.newProtocol = obj;
-                    return item;
                 }
+                return item;
             });
-
             protocolList.value = arr.filter(
                 (item: any) =>
                 {

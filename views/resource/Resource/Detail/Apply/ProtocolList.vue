@@ -93,7 +93,7 @@ const count = ref(0);
 
 // 受协议影响的产品
 const getProtocol = async () => {
-  const res = await _queryProtocol(_id, {});
+  const res = await _queryProtocol(_id, { terms: [{column: 'messageProtocol', termType: 'in', value: props.protocolList.map(item => item.id)}] });
   if (res.success) {
     count.value = res.result.total;
   }
