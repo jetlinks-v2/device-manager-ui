@@ -149,7 +149,7 @@
                                                 </template>
                                                 {{ getDescription(slotProps) }}
                                             </a-tooltip>
-                                        
+
                                         </a-col>
                                     </a-row> -->
                                 </div>
