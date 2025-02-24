@@ -70,6 +70,7 @@ import { useI18n } from 'vue-i18n';
 
 const { t: $t } = useI18n();
 const permission = useAuthStore().hasPermission(`device/Product:add`);
+const permission1 = useAuthStore().hasPermission(`device/Product:update`);
 
 const emits = defineEmits(['close']);
 const menuStory = useMenuStore();
@@ -79,12 +80,14 @@ const typeList = [
         label: $t('Apply.index.663043-4'),
         subLabel: $t('Apply.index.663043-5'),
         iconUrl: 'AppstoreAddOutlined',
+        disabled: !permission,
     },
     {
         value: 'update',
         label: $t('Apply.index.663043-6'),
         subLabel: $t('Apply.index.663043-7'),
         iconUrl: 'SyncOutlined',
+        disabled: !permission1,
     },
 ];
 
