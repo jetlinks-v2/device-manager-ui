@@ -218,18 +218,21 @@ const columns =
             dataIndex: 'duration',
             key: 'duration',
             ellipsis: true,
+            width: 100,
             scopedSlots: true,
           },
           {
             title: $t('Detail.index.478940-18'),
             dataIndex: 'alarmName',
             key: 'alarmName',
+            width: 100,
             ellipsis: true,
           },
           {
             title: $t('Detail.index.478940-19'),
             dataIndex: 'level',
             key: 'level',
+            width: 100,
             ellipsis: true,
           },
           {

@@ -127,11 +127,13 @@
                                             </j-ellipsis>
                                         </a-col>
                                     </a-row>
-                                    <div class="card-item-content-description">
-                                        <j-ellipsis :lineClamp="2" style="width: calc(100% - 10px)">
-                                            {{ getDescription(slotProps) }}
-                                        </j-ellipsis>
-                                    </div>
+                                    <a-row class="card-item-content-description">
+                                        <a-col :span="24">
+                                            <j-ellipsis :lineClamp="2" style="width: calc(100% - 10px)">
+                                                {{ getDescription(slotProps) }}
+                                            </j-ellipsis>
+                                        </a-col>
+                                    </a-row>
                                     <!-- <a-row>
                                         <a-col
                                             :span="24"
@@ -419,7 +421,11 @@ const handleSearch = (e: any) => {
 }
 
 .card-item-content {
-    min-height: 100px;
+    height: 120px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+
     .card-title {
         font-size: 18px;
         font-weight: 800;
@@ -427,15 +433,13 @@ const handleSearch = (e: any) => {
     }
 
     .card-item-content-box {
-        min-height: 50px;
-    }
-
-    .card-item-content-text-title {
-        font-style: normal;
-        font-weight: 400;
-        font-size: 12px;
-        color: rgba(0, 0, 0, 0.75);
-        opacity: 0.75;
+        .card-item-content-text-title {
+            font-style: normal;
+            font-weight: 400;
+            font-size: 12px;
+            color: rgba(0, 0, 0, 0.75);
+            opacity: 0.75;
+        }
     }
     .card-item-content-description {
         // font-style: normal;
