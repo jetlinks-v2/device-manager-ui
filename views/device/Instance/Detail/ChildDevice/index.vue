@@ -10,6 +10,7 @@
             target="child-device"
             @search="handleSearch"
             class="device-child-device-search"
+            type="simple"
         />
         <!-- <a-divider /> -->
         <JProTable

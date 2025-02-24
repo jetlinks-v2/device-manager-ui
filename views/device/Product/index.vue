@@ -30,7 +30,12 @@
               </template>
               {{ $t('Product.index.660348-0') }}
             </j-permission-button>
-            <a-button @click="menuStory.jumpPage('device/Product/QuickCreate',{});">快捷新增</a-button>
+            <j-permission-button 
+              hasPermission="device/Product:add" 
+              @click="menuStory.jumpPage('device/Product/QuickCreate',{});"
+            >
+              {{ $t('Product.index.660348-35') }}
+            </j-permission-button>
             <a-upload
                 name="file"
                 accept=".json"

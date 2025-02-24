@@ -38,6 +38,7 @@
                                     show-search
                                     :filter-option="filterOption"
                                     :options="channelList"
+                                    @change="onChannelChange(index, 'channel')"
                                     @select="
                                         (_, option) => {
                                             record.provider = option.provider;
@@ -65,6 +66,7 @@
                                     v-model="record[column.dataIndex]"
                                     :id="record.channelId"
                                     type="COLLECTOR"
+                                    @change="onChannelChange(index, 'collector')"
                                 />
                             </a-form-item>
                         </template>
@@ -206,6 +208,15 @@ const modelRef = reactive({
 
 const formRef = ref();
 const visible = ref<boolean>(false);
+
+const onChannelChange = (_index: number, type: 'collector' | 'channel') => {
+    if (type === 'channel') {
+        modelRef.dataSource[_index].collectorId = undefined;
+        modelRef.dataSource[_index].pointId = undefined;
+    } else {
+        modelRef.dataSource[_index].pointId = undefined;
+    }
+};
 
 const getChannel = async () => {
     const resp: any = await queryChannelNoPaging({
