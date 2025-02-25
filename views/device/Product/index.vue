@@ -11,8 +11,8 @@
           :request="queryProductList"
           ref="tableRef"
           :defaultParams="{
-                    sorts: [{ name: 'createTime', order: 'desc' }],
-                }"
+              sorts: [{ name: 'createTime', order: 'desc' }],
+          }"
           modeValue="CARD"
           :params="params"
       >
@@ -612,10 +612,14 @@ const query = reactive({
   ],
 });
 const saveRef = ref();
+
 const handleSearch = (e: any) => {
+  console.log(e, 'e')
   const newTerms = cloneDeep(e);
   if (newTerms.terms?.length) {
+    console.log(newTerms, 'newTerms')
     newTerms.terms.forEach((a: any) => {
+      console.log(a, 'a')
       a.terms = a.terms.map((b: any) => {
         if (b.column === 'id$dev-instance') {
           return {
@@ -664,6 +668,19 @@ const routerParams = useRouterParams();
 onMounted(() => {
   if (routerParams.params.value?.save) {
     add();
+  }
+  if(routerParams.params.value?.resourceId){
+    setTimeout(() => {
+      params.value = {
+        terms: [
+          {
+            column: 'id$in-res-quick$product',  
+            value: routerParams.params.value.resourceId,
+            type: 'and'
+          }
+        ]
+      }
+    })
   }
   if (isNoCommunity) {
     query.columns.splice(query.columns.length - 2, 0, {

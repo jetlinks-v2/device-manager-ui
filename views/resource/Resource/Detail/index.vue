@@ -220,6 +220,7 @@ import {resource} from '@device/assets/resource'
 import DetailHeaderTitle from './components/title.vue'
 import {omit, cloneDeep} from "lodash-es";
 import ModelItem from "./ModelItem.vue";
+import { useMenuStore } from '@/store/menu';
 
 const imageMap = new Map([
   ['device', resource.deviceDefaultImage],
@@ -231,6 +232,7 @@ const route = useRoute();
 const visible = ref(false);
 const visibleApply = ref(false);
 const visibleCollector = ref(false);
+const menuStore = useMenuStore();
 
 const backgroundObj = {
   '1866398366079029248': '#FEEFD0',
@@ -362,7 +364,7 @@ const refresh = () => {
 }
 
 const onJump = () => {
-
+  menuStore.jumpPage("device/Product", { params: { resourceId: _id} });
 }
 
 watch(
