@@ -30,8 +30,8 @@
               </template>
               {{ $t('Product.index.660348-0') }}
             </j-permission-button>
-            <j-permission-button 
-              hasPermission="device/Product:add" 
+            <j-permission-button
+              hasPermission="device/Product:add"
               @click="menuStory.jumpPage('device/Product/QuickCreate',{});"
             >
               {{ $t('Product.index.660348-35') }}
@@ -674,10 +674,15 @@ onMounted(() => {
       params.value = {
         terms: [
           {
-            column: 'id$in-res-quick$product',  
-            value: routerParams.params.value.resourceId,
-            type: 'and'
+            "column": "id$product-info",
+            "value": [
+              {
+                "column": "messageProtocol$in-res-quick$protocol",
+                "value": [routerParams.params.value.resourceId]
+              }
+            ]
           }
+
         ]
       }
     })

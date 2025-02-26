@@ -72,6 +72,8 @@ const { t: $t } = useI18n();
 const permission = useAuthStore().hasPermission(`device/Product:add`);
 const permission1 = useAuthStore().hasPermission(`device/Product:update`);
 
+console.log(permission, permission1)
+
 const emits = defineEmits(['close']);
 const menuStory = useMenuStore();
 const typeList = [
