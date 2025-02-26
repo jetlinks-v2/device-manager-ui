@@ -85,7 +85,7 @@
 
 <script setup>
 import {
-  queryByDevice as queryAlarmRecord,
+  query as queryAlarmRecord,
   queryPreHandleHistory,
 } from '@device/api/rule-engine/log';
 import {useInstanceStore} from '@device/store/instance';
@@ -331,7 +331,7 @@ const defaultParams = computed(() => {
           {
             terms: [
               {
-                column: 'targetId',
+                column: 'sourceId',
                 value: current.value.id,
                 termType: 'eq',
               },
@@ -351,10 +351,10 @@ const defaultParams = computed(() => {
           {
             terms: [
               {
-                column: 'targetId$dev-instance',
+                column: 'sourceId$dev-instance',
                 value: [
                   {
-                    column: 'product_id',
+                    column: 'productId',
                     value: current.value.id,
                     termType: 'eq',
                   },

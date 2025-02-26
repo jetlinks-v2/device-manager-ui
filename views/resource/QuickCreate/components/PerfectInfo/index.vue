@@ -134,7 +134,7 @@
     </div>
     <div
         class="configuration"
-        v-if="!advancedMode && accessData.channel === 'network'"
+        v-if="!advancedMode && accessData.channel === 'network' && !network.id"
     >
       <div>网络组件配置</div>
       <Network ref="networkRef" :accessData="accessData"/>
