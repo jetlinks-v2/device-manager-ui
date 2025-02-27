@@ -423,7 +423,7 @@ const beforeUpload = (file: any) => {
   reader.readAsText(file);
   reader.onload = async (result) => {
     const text = result.target?.result;
-    console.log(text);
+    // console.log(text);
     if (!file.type.includes('json')) {
       onlyMessage($t('Product.index.660348-23'), 'error');
       return false;
@@ -674,15 +674,9 @@ onMounted(() => {
       params.value = {
         terms: [
           {
-            "column": "id$product-info",
-            "value": [
-              {
-                "column": "messageProtocol$in-res-quick$protocol",
-                "value": [routerParams.params.value.resourceId]
-              }
-            ]
+            "column": "id$in-res-quick$product",
+            "value": [routerParams.params.value.resourceId]
           }
-
         ]
       }
     })
