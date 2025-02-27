@@ -35,6 +35,7 @@
                             : _queryProtocol(_id, e)
                 "
                 :gridColumns="[2]"
+                :defaultParams="defaultParams"
                 :bodyStyle="{
                     paddingRight: 0,
                     paddingLeft: 0,
@@ -112,7 +113,13 @@ const props = defineProps({
         type: String,
         default: 'metadata',
     },
+    protocolList: {
+        type: Array,
+        default: () => [],
+    }
 });
+
+const defaultParams = props.type === 'metadata' ? {} : { terms: [{column: 'messageProtocol', termType: 'in', value: props.protocolList.map(item => item.id)}] };
 
 const route = useRoute();
 const _id = route.params?.id;

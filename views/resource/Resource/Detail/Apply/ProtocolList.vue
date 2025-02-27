@@ -67,7 +67,7 @@
         </template>
       </CardItem>
     </div>
-    <Product v-if="visible" type="protocol" @close="visible = false" />
+    <Product v-if="visible" :protocolList="protocolList" type="protocol" @close="visible = false" />
   </div>
 </template>
 

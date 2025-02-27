@@ -19,7 +19,10 @@
               <DetailHeaderTitle :data='detail'/>
             </div>
             <div class='header-tags'>
-              <div class='tags-item' style="font-size: 14px" v-for='item in typeList'>
+              <div class='tags-item' style="font-size: 14px" v-for='item in typeList' :style='{
+                  color: colorObj?.[item.classificationId],
+                  backgroundColor: backgroundObj?.[item.classificationId]
+                }'>
                 <j-ellipsis>
                   {{ dataMap.get(item.id)?.fullname || item.name }}
                 </j-ellipsis>
@@ -210,6 +213,18 @@ const imageMap = new Map([
   ['collector', resource.collectorDefaultImage],
   ['protocol', resource.protocolDefaultImage]
 ])
+
+const backgroundObj = {
+  '1866398366079029248': '#FEEFD0',
+  '1866398366091612161': '#EAF7F2',
+  '1866398366091612160': '#E7F1FF'
+}
+
+const colorObj = {
+  '1866398366079029248': '#FAAD14',
+  '1866398366091612161': '#34B57C',
+  '1866398366091612160': '#1677FF'
+}
 const dataMap = new Map();
 const route = useRoute();
 const visible = ref(false);
