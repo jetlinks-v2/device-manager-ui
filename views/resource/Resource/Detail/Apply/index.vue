@@ -14,7 +14,6 @@
                     :column="2"
                     v-model:value="type"
                     :options="typeList"
-                    :disabled="!permission"
                 >
                     <template #itemRender="{ node }">
                         <a-space align="center">
@@ -72,26 +71,26 @@ const { t: $t } = useI18n();
 const permission = useAuthStore().hasPermission(`device/Product:add`);
 const permission1 = useAuthStore().hasPermission(`device/Product:update`);
 
-console.log(permission, permission1)
-
 const emits = defineEmits(['close']);
 const menuStory = useMenuStore();
-const typeList = [
+const typeList = computed(() => {
+  return [
     {
-        value: 'create',
-        label: $t('Apply.index.663043-4'),
-        subLabel: $t('Apply.index.663043-5'),
-        iconUrl: 'AppstoreAddOutlined',
-        disabled: !permission,
+      value: 'create',
+      label: $t('Apply.index.663043-4'),
+      subLabel: $t('Apply.index.663043-5'),
+      iconUrl: 'AppstoreAddOutlined',
+      disabled: !permission,
     },
     {
-        value: 'update',
-        label: $t('Apply.index.663043-6'),
-        subLabel: $t('Apply.index.663043-7'),
-        iconUrl: 'SyncOutlined',
-        disabled: !permission1,
+      value: 'update',
+      label: $t('Apply.index.663043-6'),
+      subLabel: $t('Apply.index.663043-7'),
+      iconUrl: 'SyncOutlined',
+      disabled: !permission1,
     },
-];
+  ]
+});
 
 const props = defineProps({
     data: {
