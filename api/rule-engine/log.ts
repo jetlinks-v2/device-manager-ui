@@ -67,12 +67,19 @@ export const queryHandleHistory = (data:any) => request.post('/alarm/record/hand
 /**
  * 获取预处理数据告警处理结果
  */
-export const queryPreHandleHistory = (recordId:any,data:any) => request.post(`/alarm/record/handle-history/device/${recordId}/_query`,data)
+// export const queryPreHandleHistory = (recordId:any,data:any) => request.post(`/alarm/record/handle-history/device/${recordId}/_query`,data)
+export const queryPreHandleHistory = (recordId:any,data:any) => request.post(`/alarm/record/${recordId}/handle-history/_query`,data)
 
 /**
  * 获取告警日志（新）
  */
-export const queryLogList = (alarmConfigId:any,data:any) => request.post(`/alarm/history/${alarmConfigId}/_query`,data)
+export const queryLogList = (alarmConfigId:any,data:any) => request.post(`/alarm/history/alarm-record/${alarmConfigId}/_query`,data)
+
+
+/**
+ * 获取告警日志（新）
+ */
+// export const queryLogList = (alarmConfigId:any,data:any) => request.post(`/alarm/history/${alarmConfigId}/_query`,data)
 
 /**
  * 获取预处理数据告警日志

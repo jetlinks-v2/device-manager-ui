@@ -377,6 +377,13 @@ const handleSearch = (e) => {
 const queryHandle = async (id) => {
   const res = await queryPreHandleHistory(id, {
     sorts: [{name: 'handleTime', order: 'desc'}],
+    terms: [
+      {
+        columns: 'alarmRecordId',
+        termType: 'eq',
+        value: id
+      }
+    ]
   });
   if (res.status === 200 && res.result?.data.length) {
     handleDescription.value = res.result.data?.[0]?.description;
