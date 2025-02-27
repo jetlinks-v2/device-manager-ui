@@ -14,6 +14,7 @@
                     :column="2"
                     v-model:value="type"
                     :options="typeList"
+                    :disabled="!permission"
                 >
                     <template #itemRender="{ node }">
                         <a-space align="center">
@@ -64,11 +65,15 @@ import {
     _queryProtocolNowNoPaging,
     _queryProductNoPaging,
 } from '@device/api/resource/resource';
-import { useMenuStore } from '@/store/menu';
-import { device } from '@device/assets/device/index.ts'
+import { useMenuStore, useAuthStore } from '@/store';
 import { useI18n } from 'vue-i18n';
 
 const { t: $t } = useI18n();
+const permission = useAuthStore().hasPermission(`device/Product:add`);
+const permission1 = useAuthStore().hasPermission(`device/Product:update`);
+
+console.log(permission, permission1)
+
 const emits = defineEmits(['close']);
 const menuStory = useMenuStore();
 const typeList = [
@@ -77,12 +82,14 @@ const typeList = [
         label: $t('Apply.index.663043-4'),
         subLabel: $t('Apply.index.663043-5'),
         iconUrl: 'AppstoreAddOutlined',
+        disabled: !permission,
     },
     {
         value: 'update',
         label: $t('Apply.index.663043-6'),
         subLabel: $t('Apply.index.663043-7'),
         iconUrl: 'SyncOutlined',
+        disabled: !permission1,
     },
 ];
 

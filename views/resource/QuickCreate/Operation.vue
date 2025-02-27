@@ -170,10 +170,9 @@ import {gatewayType, networkAndProtocol, reuseByProtocol} from "./data";
 import {ProtocolMapping} from "./components/Protocol/data";
 
 const props = defineProps({
-  data: {
+  data: { // 资源
     type: Object,
-    default: () => {
-    },
+    default: () => ({})
   },
 });
 const emits = defineEmits(["reselection"]);
@@ -193,6 +192,7 @@ const unmet = computed(() => {
 const accessConfig = ref({});
 const accessData = ref({});
 const randomString = ref();
+
 const generateString = () => {
   const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   const numbers = "0123456789";
@@ -468,11 +468,11 @@ const getDefault = async () => {
         return;
       }
     }
-    if (["network", "OneNet", "Ctwing",'child-device'].includes(accessConfig.value.channel)) {
-      const data =
+    const data =
           accessConfig.value.bindInfo.filter((i) => {
             return i.defaultAccess;
           })?.[0] || {};
+    if (["network", "OneNet", "Ctwing",'child-device'].includes(accessConfig.value.channel)) {
       if (JSON.stringify(data) !== "{}") {
         const existProtocol = await protocolExist(data.id);
         protocol.value = existProtocol
@@ -510,10 +510,6 @@ const getDefault = async () => {
         }
       }
     } else if (accessConfig.value?.channel === "plugin") {
-      const data =
-          accessConfig.value.bindInfo.filter((i) => {
-            return i.defaultAccess;
-          })?.[0] || {};
       if (JSON.stringify(data) !== "{}") {
         plugin.value = {
           ...omit(data, ["id"]),
@@ -527,6 +523,7 @@ const getDefault = async () => {
       }
     }
   }
+
   accessData.value = {
     name:
         accessConfig.value.provider?.split("-")?.[0] +
@@ -549,14 +546,19 @@ watch(
 );
 
 onMounted(async () => {
+  // 查询接入方式
   await getDescription();
+  // 生成随机数
   generateString();
+  // 物模型
   metadata.value = JSON.parse(props.data?.metadata || "{}");
   metadataData.value = cloneDeep(metadata.value);
+  // 获取默认接入配置
   accessConfig.value =
       props.data?.accessInfos?.filter((i) => {
         return i.defaultAccess;
       })?.[0] || {};
+  // 默认接入方式
   getDefault();
 });
 </script>

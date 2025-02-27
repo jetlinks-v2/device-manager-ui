@@ -314,7 +314,7 @@ const saveData = async () => {
 };
 
 const addNetwork = () => {
-    const url = menuStory.menus['link/Type/Detail']?.path;
+    const url = menuStory.getMenu('link/Type/Detail')?.path;
     const tab: any = window.open(
         `${window.location.origin + window.location.pathname}#${url}?type=${
             NetworkTypeMapping.get(props.provider?.id) || ''

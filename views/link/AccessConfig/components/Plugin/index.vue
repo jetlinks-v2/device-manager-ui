@@ -319,7 +319,7 @@ const AccessChange = (id: string) => {
 };
 
 const addPlugin = () => {
-    const url = menuStory.menus['link/plugin']?.path;
+    const url = menuStory.getMenu('link/plugin')?.path;
     const wd: any = window.open(
         `${window.location.origin + window.location.pathname}#${url}?save=true`,
     );

@@ -4,6 +4,7 @@
       target="device-instance"
       type="simple"
       @search="handleSearch"
+      style="margin: 0; padding-bottom: 0;"
   />
   <div v-if="current?.id">
     <JProTable
@@ -84,7 +85,7 @@
 
 <script setup>
 import {
-  queryByDevice as queryAlarmRecord,
+  query as queryAlarmRecord,
   queryPreHandleHistory,
 } from '@device/api/rule-engine/log';
 import {useInstanceStore} from '@device/store/instance';
@@ -94,6 +95,7 @@ import AlarmLog from './components/AlarmLog.vue';
 import {useMenuStore} from '@/store';
 import {useI18n} from 'vue-i18n';
 import SolveComponent from './components/SolveComponent.vue'
+import Duration from './components/Duration.vue'
 
 const {t: $t} = useI18n();
 
@@ -121,12 +123,14 @@ const columns =
               type: 'date',
             },
             scopedSlots: true,
+            width: 180
           },
           {
             title: $t('Alarm.index.101383-4'),
             dataIndex: 'duration',
             key: 'duration',
             scopedSlots: true,
+            ellipsis: true
           },
           {
             title: $t('Alarm.index.101383-5'),
@@ -138,6 +142,7 @@ const columns =
             title: $t('Alarm.index.101383-6'),
             dataIndex: 'actualDesc',
             key: 'actualDesc',
+            ellipsis: true
           },
           {
             title: $t('Alarm.index.101383-7'),
@@ -147,6 +152,7 @@ const columns =
               type: 'date',
             },
             scopedSlots: true,
+            width: 180
           },
 
           {
@@ -192,6 +198,8 @@ const columns =
             dataIndex: 'actions',
             key: 'actions',
             scopedSlots: true,
+            fixed: 'right',
+            width: 160,
           },
         ]
         : [
@@ -202,13 +210,30 @@ const columns =
             search: {
               type: 'date',
             },
+            width: 180,
             scopedSlots: true,
           },
           {
             title: $t('Alarm.index.101383-4'),
             dataIndex: 'duration',
             key: 'duration',
+            ellipsis: true,
+            width: 100,
             scopedSlots: true,
+          },
+          {
+            title: $t('Detail.index.478940-18'),
+            dataIndex: 'alarmName',
+            key: 'alarmName',
+            width: 100,
+            ellipsis: true,
+          },
+          {
+            title: $t('Detail.index.478940-19'),
+            dataIndex: 'level',
+            key: 'level',
+            width: 100,
+            ellipsis: true,
           },
           {
             title: $t('Alarm.index.101383-5'),
@@ -221,6 +246,7 @@ const columns =
             dataIndex: 'sourceName',
             key: 'sourceName',
             scopedSlots: true,
+            width: 100,
             search: {
               type: 'string',
             },
@@ -229,6 +255,7 @@ const columns =
             title: $t('Alarm.index.101383-6'),
             dataIndex: 'actualDesc',
             key: 'actualDesc',
+            ellipsis: true
           },
           {
             title: $t('Alarm.index.101383-7'),
@@ -238,12 +265,13 @@ const columns =
               type: 'date',
             },
             scopedSlots: true,
+            width: 180
           },
-
           {
             title: $t('Alarm.index.101383-8'),
             dataIndex: 'handleType',
             key: 'handleType',
+            width: 100,
             search: {
               type: 'select',
               options: [
@@ -263,6 +291,7 @@ const columns =
             title: $t('Alarm.index.101383-11'),
             dataIndex: 'state',
             key: 'state',
+            width: 100,
             search: {
               type: 'select',
               options: [
@@ -282,6 +311,8 @@ const columns =
             title: $t('Alarm.index.101383-12'),
             dataIndex: 'actions',
             key: 'actions',
+            fixed: 'right',
+            width: 160,
             scopedSlots: true,
           },
         ];
@@ -300,15 +331,15 @@ const defaultParams = computed(() => {
           {
             terms: [
               {
-                column: 'targetId',
+                column: 'sourceId',
                 value: current.value.id,
                 termType: 'eq',
               },
-              {
-                column: 'alarmConfigSource',
-                value: 'device-property-preprocessor',
-                termType: 'eq',
-              },
+              // {
+              //   column: 'alarmConfigSource',
+              //   value: 'device-property-preprocessor',
+              //   termType: 'eq',
+              // },
             ],
             type: 'and',
           },
@@ -320,20 +351,20 @@ const defaultParams = computed(() => {
           {
             terms: [
               {
-                column: 'targetId$dev-instance',
+                column: 'sourceId$dev-instance',
                 value: [
                   {
-                    column: 'product_id',
+                    column: 'productId',
                     value: current.value.id,
                     termType: 'eq',
                   },
                 ],
               },
-              {
-                column: 'alarmConfigSource',
-                value: 'device-property-preprocessor',
-                termType: 'eq',
-              },
+              // {
+              //   column: 'alarmConfigSource',
+              //   value: 'device-property-preprocessor',
+              //   termType: 'eq',
+              // },
             ],
             type: 'and',
           },
@@ -419,11 +450,11 @@ const refreshCurrent = async () => {
         termType: 'eq',
         value: currentAlarm.value.id,
       },
-      {
-        column: 'alarmConfigSource',
-        value: 'device-property-preprocessor',
-        termType: 'eq',
-      },
+      // {
+      //   column: 'alarmConfigSource',
+      //   value: 'device-property-preprocessor',
+      //   termType: 'eq',
+      // },
     ],
   });
   if (res.success && res.result?.data?.length) {

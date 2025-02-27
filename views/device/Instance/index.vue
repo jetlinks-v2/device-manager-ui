@@ -413,6 +413,17 @@ const columns = ref([
             ],
         },
     },
+    // {
+    //     key: 'id$tag',
+    //     dataIndex: 'id$tag',
+    //     title: $t('Instance.index.133466-17'),
+    //     hideInTable: true,
+    //     search: {
+    //         type: 'component',
+    //         components: TagSearch,
+    //         termOptions: ['eq', 'not'],
+    //     },
+    // },
     {
         key: 'id$dev-tag',
         dataIndex: 'id$dev-tag',
@@ -422,17 +433,6 @@ const columns = ref([
             type: 'component',
             components: TagSearch,
             termOptions: ['eq', 'not'],
-        },
-    },
-    {
-        key: 'id$dev-tag',
-        dataIndex: 'id$dev-tag',
-        title: $t('Instance.index.133466-17'),
-        hideInTable: true,
-        search: {
-            type: 'component',
-            components: TagSearch,
-            termOptions: ['eq'],
         },
     },
     {

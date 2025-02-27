@@ -3,185 +3,198 @@
     <template #title>
       <div>{{ $t('Detail.index.473126-0') }}</div>
     </template>
-    <!--        <FullPage :fixed="false">-->
-    <!-- {{ detail.metadata }} -->
-    <div class="resource-detail">
-      <div class="detail-header">
-        <div class="header-title">
-          <div class="header-title-img">
-            <img :src="detail.photoUrl?.url || imageMap.get(detail.type?.value)"/>
-          </div>
-          <div class="header-title-center">
-            <!--            <j-ellipsis>-->
-            <!--              {{ detail.name }}-->
-            <!--            </j-ellipsis>-->
-            <div class='header-title-text fz-32 fw-b'>
-              <DetailHeaderTitle :data='detail'/>
+    <FullPage>
+      <div class="resource-detail">
+        <div class="detail-header">
+          <div class="header-title">
+            <div class="header-title-img">
+              <img :src="detail.photoUrl?.url || imageMap.get(detail.type?.value)"/>
             </div>
-            <div class='header-tags'>
-              <div class='tags-item' style="font-size: 14px" v-for='item in typeList' :style='{
+            <div class="header-title-center">
+              <!--            <j-ellipsis>-->
+              <!--              {{ detail.name }}-->
+              <!--            </j-ellipsis>-->
+              <div class='header-title-text fz-32 fw-b'>
+                <DetailHeaderTitle :data='detail'/>
+              </div>
+              <div class='header-tags'>
+                <div class='tags-item' v-for='item in typeList' :style='{
                   color: colorObj?.[item.classificationId],
-                  backgroundColor: backgroundObj?.[item.classificationId]
+                  backgroundColor: backgroundObj?.[item.classificationId],
+                  fontSize: "14px"
                 }'>
-                <j-ellipsis>
-                  {{ dataMap.get(item.id)?.fullname || item.name }}
-                </j-ellipsis>
+                  <j-ellipsis>
+                    {{ dataMap.get(item.id)?.fullname || item.name }}
+                  </j-ellipsis>
+                </div>
+              </div>
+            </div>
+            <div class="header-title-collect">
+              <a-space>
+                <a-button @click="visible = true"
+                >{{ $t('Detail.index.473126-1') }}
+                </a-button
+                >
+                <a-button @click="onApply">{{ $t('Detail.index.473126-2') }}</a-button>
+              </a-space>
+              <div class="createdProductNumber">{{ $t('Detail.index.473126-3') }}
+                <a-button @click="onJump" type="link">{{ count }}</a-button>
               </div>
             </div>
           </div>
-          <div class="header-title-collect">
-            <a-space>
-              <a-button @click="visible = true"
-              >{{ $t('Detail.index.473126-1') }}
-              </a-button
-              >
-              <a-button @click="onApply">{{ $t('Detail.index.473126-2') }}</a-button>
-            </a-space>
-            <div class="createdProductNumber">{{ $t('Detail.index.473126-3') }}<a-button @click="onJump" type="link">{{ count }}</a-button></div>
+          <div class="header-tags">
+            <div class="tags-item" v-for="item in detail.tags">
+              {{ item }}
+            </div>
           </div>
         </div>
-        <div class="header-tags">
-          <div class="tags-item" v-for="item in detail.tags">
+        <div class='detail-preview mb-40' v-if='viewsList.length'>
+          <a-carousel
+              ref='carouselRef'
+              arrows
+              :autoplaySpeed='1000'
+              :dots='viewsList.length > 1'
+              dots-class='slick-dots slick-thumb'
+          >
+            <template #prevArrow>
+              <div class='custom-slick-arrow'>
+                <AIcon type='LeftOutlined' />
+              </div>
+            </template>
+            <template #nextArrow>
+              <div class='custom-slick-arrow'>
+                <AIcon type='RightOutlined' />
+              </div>
+            </template>
+            <template #customPaging='record'>
+              <div>
+                <img
+                    :src="viewsList[record.i].type === 'img' ? viewsList[record.i].url : viewsList[record.i].coverUrl"
+                    crossorigin='anonymous'
+                />
+              </div>
+            </template>
+            <div class='detail-preview-item' v-for='item in viewsList' :key='item.url'>
+              <a-image v-if="item.type === 'img'" :src='item.url' />
+              <video v-else class='preview-video' controls :poster='item.coverUrl'>
+                <source :src='item.url' type='video/mp4'>
+                Your browser does not support the video tag.
+              </video>
+              <!--              <Player-->
+              <!--                v-else-->
+              <!--                class='preview-video'-->
+              <!--                ref='videoRef'-->
+              <!--                :url='item.url'-->
+              <!--                :onLoadeddata='onLoadeddata'-->
+              <!--                :onCanplay='onCanplay'-->
+              <!--                :poster='item.coverUrl'-->
+              <!--              />-->
+            </div>
+          </a-carousel>
+        </div>
+        <div class="detail-desc mb-16" v-if="detail.describe">
+          <p class="module-title">{{ $t('Detail.index.473126-4') }}</p>
+          <div>
+            {{ detail.describe }}
+          </div>
+        </div>
+        <div
+            class="detail-access mb-16"
+            v-if="detail?.type?.value === 'device' && detail.source?.length"
+        >
+          <p class="module-title">{{ $t('Detail.index.473126-5') }}</p>
+          <div class="access-item" v-for="item in detail.source">
             {{ item }}
           </div>
         </div>
-      </div>
-      <div class="detail-preview mb-40" v-if="viewsList.length">
-        <a-carousel arrows dots-class="slick-dots slick-thumb">
-          <template #prevArrow>
-            <div class="custom-slick-arrow">
-              <AIcon type='LeftOutlined'/>
-            </div>
-          </template>
-          <template #nextArrow>
-            <div class="custom-slick-arrow">
-              <AIcon type='RightOutlined'/>
-            </div>
-          </template>
-          <template #customPaging="record">
-            <a>
-              <img
-                  v-if="viewsList[record.i].type === 'img' || viewsList[record.i]?.coverUrl?.url"
-                  :src="viewsList[record.i].type === 'img' ? viewsList[record.i].url : viewsList[record.i].coverUrl.url"
-              />
-            </a>
-          </template>
-          <div class='detail-preview-item' v-for="item in viewsList" :key="item.url">
-            <img v-if="item.type === 'img'" :src="item.url"/>
-            <div v-else class="video">
-              <LivePlayer
-                  class='preview-video'
-                  ref='videoRef'
-                  :url='item.url'
-                  :onLoadeddata='onLoadeddata'
-                  :onCanplay='onCanplay'
-                  :poster='item.coverUrl.url'></LivePlayer>
-            </div>
-
-          </div>
-        </a-carousel>
-      </div>
-      <div class="detail-desc mb-16" v-if="detail.describe">
-        <p class="module-title">{{ $t('Detail.index.473126-4') }}</p>
-        <div>
-          {{ detail.describe }}
-        </div>
-      </div>
-      <div
-          class="detail-access mb-16"
-          v-if="detail?.type?.value === 'device' && detail.source?.length"
-      >
-        <p class="module-title">{{ $t('Detail.index.473126-5') }}</p>
-        <div class="access-item" v-for="item in detail.source">
-          {{ item }}
-        </div>
-      </div>
-      <div class="detail-doc mb-16" v-if="detail.docUrl?.length">
-        <p class="module-title">{{ $t('Detail.index.473126-6') }}</p>
-        <div class="doc-items">
-          <div class="doc-item" v-for="item in detail.docUrl">
-            <a-space>
-              <AIcon type="FileTextOutlined"/>
-              <a-button
-                  type="link"
-                  @click="() => onDownFile(item)"
-              >{{ item.name }}
-              </a-button
-              >
-            </a-space>
-          </div>
-        </div>
-      </div>
-      <div class="detail-version mb-16" v-if="detail.version">
-        <p class="module-title">{{ $t('Detail.index.473126-7') }}</p>
-        <div class='model-list' v-for='item in detail.model'>
-          <div class='item-name fz-18'>
-            {{ item.name }}
-          </div>
-          <div class='doc-items'>
-            <div class='doc-item fc-600' v-for='child in item.children'>
-              {{ child.name }}
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="detail-info mb-16">
-        <p class="module-title">{{ $t('Detail.index.473126-8') }}</p>
-        <div class="detail-info-center">
-          <a-descriptions layout="vertical" :column="3">
-            <a-descriptions-item :label="$t('Detail.index.473126-9')">
-              {{
-                detail.version
-                    ? detail.version
-                    : emptyValue
-              }}
-            </a-descriptions-item>
-            <a-descriptions-item :label="$t('Detail.index.473126-10')">
-              {{
-                detail.modifyTime
-                    ? dayjs(detail.modifyTime).format(
-                        'YYYY-MM-DD HH:mm:ss',
-                    )
-                    : emptyValue
-              }}
-            </a-descriptions-item>
-            <a-descriptions-item
-                :label="$t('Detail.index.473126-11')"
-                v-if="detail.type.value !== 'collector'"
-            >
+        <div class="detail-doc mb-16" v-if="detail.docUrl?.length">
+          <p class="module-title">{{ $t('Detail.index.473126-6') }}</p>
+          <div class="doc-items">
+            <div class="doc-item" v-for="item in detail.docUrl">
               <a-space>
-                <span> {{ hasMetadata ?
-                   $t('Detail.index.473126-12') : $t('Detail.index.473126-13')}} </span>
-                <AIcon
-                    v-if="hasMetadata"
-                    :type="
+                <AIcon type="FileTextOutlined"/>
+                <a-button
+                    type="link"
+                    @click="() => onDownFile(item)"
+                >{{ item.name }}
+                </a-button
+                >
+              </a-space>
+            </div>
+          </div>
+        </div>
+        <div class="detail-version mb-16" v-if="detail.version">
+          <p class='module-title'>{{ $t('Detail.index.473126-7') }}
+            <a-tooltip :title="$t('Detail.index.473126-7-1')">
+              <AIcon type='QuestionCircleOutlined' />
+            </a-tooltip>
+          </p>
+          <div v-if='detail.model?.length'>
+            <div class='model-list' v-for='item in detail.model'>
+              <ModelItem :value='item' />
+            </div>
+          </div>
+          <div v-else>--</div>
+        </div>
+        <div class="detail-info mb-16">
+          <p class="module-title">{{ $t('Detail.index.473126-8') }}</p>
+          <div class="detail-info-center">
+            <a-descriptions layout="vertical" :column="3">
+              <a-descriptions-item :label="$t('Detail.index.473126-9')">
+                {{
+                  detail.version
+                      ? detail.version
+                      : emptyValue
+                }}
+              </a-descriptions-item>
+              <a-descriptions-item :label="$t('Detail.index.473126-10')">
+                {{
+                  detail.modifyTime
+                      ? dayjs(detail.modifyTime).format(
+                          'YYYY-MM-DD HH:mm:ss',
+                      )
+                      : emptyValue
+                }}
+              </a-descriptions-item>
+              <a-descriptions-item
+                  :label="$t('Detail.index.473126-11')"
+                  v-if="detail.type.value !== 'collector'"
+              >
+                <a-space>
+                <span> {{
+                    hasMetadata ?
+                        $t('Detail.index.473126-12') : $t('Detail.index.473126-13')
+                  }} </span>
+                  <AIcon
+                      v-if="hasMetadata"
+                      :type="
                                             metadataVisible
                                                 ? 'EyeOutlined'
                                                 : 'EyeInvisibleOutlined'
                                         "
-                    @click="showMetadata"
-                />
-              </a-space>
-            </a-descriptions-item>
-          </a-descriptions>
-        </div>
-        <div
-            :class="{
+                      @click="showMetadata"
+                  />
+                </a-space>
+              </a-descriptions-item>
+            </a-descriptions>
+          </div>
+          <div
+              :class="{
                             'metadata-warp': true,
                             show: metadataVisible,
                             hidden: !metadataVisible,
                         }"
-        >
-          <div class="metadata-center">
-            <Metadata
-                v-if="metadataVisible"
-                :metadata="JSON.parse(detail.metadata || '{}')"
-            />
+          >
+            <div class="metadata-center">
+              <Metadata
+                  v-if="metadataVisible"
+                  :metadata="JSON.parse(detail.metadata || '{}')"
+              />
+            </div>
           </div>
         </div>
       </div>
-    </div>
-    <!--        </FullPage>-->
+    </FullPage>
     <Update v-if="visible" :data="detail" @refresh="refresh" @close="onClose"/>
     <Apply
         v-if="visibleApply"
@@ -204,15 +217,22 @@ import {detailResource, _queryProductNoPaging} from '@device/api/resource/resour
 import Metadata from './Metadata.vue';
 import dayjs from 'dayjs';
 import {resource} from '@device/assets/resource'
-import LivePlayer from '@/components/Player/index.vue';
 import DetailHeaderTitle from './components/title.vue'
-import { omit, cloneDeep } from "lodash-es";
+import {omit, cloneDeep} from "lodash-es";
+import ModelItem from "./ModelItem.vue";
+import { useMenuStore } from '@/store/menu';
 
 const imageMap = new Map([
   ['device', resource.deviceDefaultImage],
   ['collector', resource.collectorDefaultImage],
   ['protocol', resource.protocolDefaultImage]
 ])
+const dataMap = new Map();
+const route = useRoute();
+const visible = ref(false);
+const visibleApply = ref(false);
+const visibleCollector = ref(false);
+const menuStore = useMenuStore();
 
 const backgroundObj = {
   '1866398366079029248': '#FEEFD0',
@@ -225,11 +245,6 @@ const colorObj = {
   '1866398366091612161': '#34B57C',
   '1866398366091612160': '#1677FF'
 }
-const dataMap = new Map();
-const route = useRoute();
-const visible = ref(false);
-const visibleApply = ref(false);
-const visibleCollector = ref(false);
 const detail = ref({
   type: {},
   access: [],
@@ -239,29 +254,32 @@ const _id = route.params?.id;
 const metadataVisible = ref(false);
 const emptyValue = '--';
 const count = ref(0);
-const viewsList = computed(() => {
-  const arr = [];
+const viewsList = ref([])
 
-  if (detail.value.videoUrl) {
+const handlePic = () => {
+  const arr = []
+
+  if (detail.value.videoUrl?.url) {
     let obj = {
       ...detail.value.videoUrl,
-      type: 'video',
-    };
-
-    if (detail.value.coverUrl) {
-      obj.coverUrl = detail.value.coverUrl;
+      type: 'video'
     }
 
-    arr.push(obj);
+    if (detail.value.coverUrl?.url) {
+      obj.coverUrl = detail.value.coverUrl.url
+    }
+
+    arr.push(obj)
+  } else if (detail.value.coverUrl?.url) {
+    arr.push({ ...detail.value.coverUrl, type: 'img' })
   }
 
   if (detail.value.loopPicUrl) {
-    arr.push(
-        ...detail.value.loopPicUrl.map((src) => ({...src, type: 'img'})),
-    );
+    arr.push(...detail.value.loopPicUrl.map(src => ({ ...src, type: 'img' })))
   }
-  return arr;
-});
+
+  viewsList.value = arr
+}
 
 const typeList = computed(() => {
   return detail.value.classification?.reduce((pre, cur) => {
@@ -297,15 +315,13 @@ const handleTreeMap = (arr, parentName) => {
 }
 //是否有物模型
 const hasMetadata = computed(() => {
-  const metadata =  JSON.parse(detail.value.metadata || '{}');
-  console.log(metadata,'metadata');
-  return metadata?.events?.length ||  metadata?.functions?.length || metadata?.properties?.length || metadata?.tags?.length;
+  const metadata = JSON.parse(detail.value.metadata || '{}');
+  return metadata?.events?.length || metadata?.functions?.length || metadata?.properties?.length || metadata?.tags?.length;
 })
 // 受协议影响的产品
 const getProductNumber = async () => {
   const res = await _queryProductNoPaging(_id, {});
   if (res.success) {
-    console.log(res.result, 'res.result')
     count.value = res.result.length || 0;
   }
 };
@@ -315,6 +331,7 @@ const getDetail = async (id) => {
   if (res.success) {
     detail.value = res.result;
     handleData(detail.value?.classification || [])
+    handlePic()
   }
 };
 
@@ -341,46 +358,14 @@ const onClose = () => {
   getDetail(_id);
 }
 
-
-const onLoadeddata = () => {
-  if (!viewsList.value[0].coverUrl) {
-    const video = document.querySelector('video')
-    video.currentTime = 1
-  }
-}
-
-
-const onCanplay = () => {
-  console.log(viewsList.value[0].coverUrl, 'test')
-  if (!viewsList.value[0].coverUrl) {
-    setTimeout(() => {
-      const video = document.querySelector('.slick-active video')
-
-      const canvas = document.createElement('canvas')
-      canvas.width = video.videoWidth
-      canvas.height = video.videoHeight
-
-      const ctx = canvas.getContext('2d')
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
-
-      try {
-        viewsList.value[0].coverUrl = canvas.toDataURL('image/png')
-      } catch (e) {
-        console.error(e)
-      }
-    }, 300)
-  }
-}
-
 const refresh = () => {
   getDetail(_id)
   visible.value = false
 }
 
 const onJump = () => {
-
+  menuStore.jumpPage("device/Product", { params: { resourceId: _id} });
 }
-
 
 watch(
     () => _id,
@@ -410,8 +395,9 @@ watch(
 }
 
 .resource-detail {
-  padding: 12px;
-  overflow: auto;
+  padding: 24px;
+  height: 100%;
+  overflow-y: auto;
   background: #fff;
 
   .detail-header {
@@ -470,19 +456,24 @@ watch(
 
   .detail-preview {
     width: 904px;
-    margin: 0 auto;
 
     .detail-preview-item {
       height: 510px;
       border-radius: 6px;
 
-      .video {
-        height: 100%;
-      }
-
       img, & video {
         height: 100%;
         max-width: 100%;
+      }
+
+      :deep(.ant-image) {
+        width: 100%;
+        height: 100%;
+
+        img {
+          height: 100% !important;
+          max-width: 100% !important;
+        }
       }
     }
   }
@@ -490,19 +481,16 @@ watch(
   .access-item {
     position: relative;
     padding-left: 20px;
-    font-size: 16px;
-    color: @font-gray-600;
 
     &::after {
       position: absolute;
       content: ' ';
-      width: 14px;
-      height: 14px;
+      width: 8px;
+      height: 8px;
       left: 0;
-      top: 50%;
-      transform: translateY(-50%);
+      top: 8px;
       border-radius: 50%;
-      background-color: @success-color;
+      background-color: @primary-color;
     }
 
     &:not(:last-child) {

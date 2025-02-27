@@ -101,9 +101,9 @@
                 ) || accessData.channel === 'plugin'
             "
     >
-      <div>网关配置</div>
+      <div v-if="['Ctwing', 'gb28181-2016', 'OneNet-platform'].includes(accessData.provide) || accessData.channel === 'plugin'">网关配置</div>
       <div v-if="accessData.channel === 'plugin'">
-        <a-form :model="accessConfiguration"  layout="vertical">
+        <a-form :model="accessConfiguration" layout="vertical">
           <a-form-item
               v-for="i in pluginConfiguration"
               :name="i.property"
@@ -134,7 +134,7 @@
     </div>
     <div
         class="configuration"
-        v-if="!advancedMode && accessData.channel === 'network'"
+        v-if="!advancedMode && accessData.channel === 'network' && !network.id"
     >
       <div>网络组件配置</div>
       <Network ref="networkRef" :accessData="accessData"/>
@@ -366,7 +366,7 @@ const createProduct = async () => {
             };
           }
         } else if (
-            ['OneNet', 'Ctwing','child-device'].includes(props.accessData.channel)
+            ['OneNet', 'Ctwing', 'child-device'].includes(props.accessData.channel)
         ) {
           data = {
             resourceId: props.data.id,
@@ -413,7 +413,10 @@ const createProduct = async () => {
             product,
           };
         }
-        const res = await quickCreateProduct(data);
+
+        const res = await quickCreateProduct(data).catch(() => {
+          loading.value = false;
+        });
         if (res.success) {
           onlyMessage('操作成功');
           menuStory.jumpPage('device/Product', {});
@@ -483,7 +486,7 @@ watch(
       });
 
       if (
-          ['network', 'OneNet', 'Ctwing','child-device'].includes(
+          ['network', 'OneNet', 'Ctwing', 'child-device'].includes(
               props.accessData.channel,
           ) &&
           !['agent-media-device-gateway', 'agent-device-gateway'].includes(

@@ -127,7 +127,14 @@
                                             </j-ellipsis>
                                         </a-col>
                                     </a-row>
-                                    <a-row>
+                                    <a-row class="card-item-content-description">
+                                        <a-col :span="24">
+                                            <j-ellipsis :lineClamp="2" style="width: calc(100% - 10px)">
+                                                {{ getDescription(slotProps) }}
+                                            </j-ellipsis>
+                                        </a-col>
+                                    </a-row>
+                                    <!-- <a-row>
                                         <a-col
                                             :span="24"
                                             class="card-item-content-description"
@@ -142,8 +149,9 @@
                                                 </template>
                                                 {{ getDescription(slotProps) }}
                                             </a-tooltip>
+
                                         </a-col>
-                                    </a-row>
+                                    </a-row> -->
                                 </div>
                             </template>
 
@@ -413,7 +421,11 @@ const handleSearch = (e: any) => {
 }
 
 .card-item-content {
-    min-height: 100px;
+    height: 120px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+
     .card-title {
         font-size: 18px;
         font-weight: 800;
@@ -421,25 +433,22 @@ const handleSearch = (e: any) => {
     }
 
     .card-item-content-box {
-        min-height: 50px;
-    }
-
-    .card-item-content-text-title {
-        font-style: normal;
-        font-weight: 400;
-        font-size: 12px;
-        color: rgba(0, 0, 0, 0.75);
-        opacity: 0.75;
+        .card-item-content-text-title {
+            font-style: normal;
+            font-weight: 400;
+            font-size: 12px;
+            color: rgba(0, 0, 0, 0.75);
+            opacity: 0.75;
+        }
     }
     .card-item-content-description {
-        font-style: normal;
-        font-weight: 400;
+        // font-style: normal;
         font-size: 12px;
-        line-height: 20px;
+        // line-height: 20px;
         color: #666666;
-        overflow: hidden; //超出的文本隐藏
-        text-overflow: ellipsis; //溢出用省略号显示
-        white-space: nowrap; //溢出不换行
+        // overflow: hidden; //超出的文本隐藏
+        // text-overflow: ellipsis; //溢出用省略号显示
+        // white-space: nowrap; //溢出不换行
     }
 }
 </style>

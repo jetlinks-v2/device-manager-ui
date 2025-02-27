@@ -11,8 +11,8 @@
           :request="queryProductList"
           ref="tableRef"
           :defaultParams="{
-                    sorts: [{ name: 'createTime', order: 'desc' }],
-                }"
+              sorts: [{ name: 'createTime', order: 'desc' }],
+          }"
           modeValue="CARD"
           :params="params"
       >
@@ -30,7 +30,12 @@
               </template>
               {{ $t('Product.index.660348-0') }}
             </j-permission-button>
-            <a-button @click="menuStory.jumpPage('device/Product/QuickCreate',{});">快捷新增</a-button>
+            <j-permission-button
+              hasPermission="device/Product:add"
+              @click="menuStory.jumpPage('device/Product/QuickCreate',{});"
+            >
+              {{ $t('Product.index.660348-35') }}
+            </j-permission-button>
             <a-upload
                 name="file"
                 accept=".json"
@@ -607,10 +612,14 @@ const query = reactive({
   ],
 });
 const saveRef = ref();
+
 const handleSearch = (e: any) => {
+  console.log(e, 'e')
   const newTerms = cloneDeep(e);
   if (newTerms.terms?.length) {
+    console.log(newTerms, 'newTerms')
     newTerms.terms.forEach((a: any) => {
+      console.log(a, 'a')
       a.terms = a.terms.map((b: any) => {
         if (b.column === 'id$dev-instance') {
           return {
@@ -659,6 +668,24 @@ const routerParams = useRouterParams();
 onMounted(() => {
   if (routerParams.params.value?.save) {
     add();
+  }
+  if(routerParams.params.value?.resourceId){
+    setTimeout(() => {
+      params.value = {
+        terms: [
+          {
+            "column": "id$product-info",
+            "value": [
+              {
+                "column": "messageProtocol$in-res-quick$protocol",
+                "value": [routerParams.params.value.resourceId]
+              }
+            ]
+          }
+
+        ]
+      }
+    })
   }
   if (isNoCommunity) {
     query.columns.splice(query.columns.length - 2, 0, {
