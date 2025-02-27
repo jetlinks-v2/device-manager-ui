@@ -674,15 +674,9 @@ onMounted(() => {
       params.value = {
         terms: [
           {
-            "column": "id$product-info",
-            "value": [
-              {
-                "column": "messageProtocol$in-res-quick$protocol",
-                "value": [routerParams.params.value.resourceId]
-              }
-            ]
+            "column": "id$in-res-quick$product",
+            "value": [routerParams.params.value.resourceId]
           }
-
         ]
       }
     })
