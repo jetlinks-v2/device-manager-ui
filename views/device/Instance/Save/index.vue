@@ -99,6 +99,7 @@
                         v-model:value="modelRef.productId"
                         :disabled="!!data?.id"
                         :placeholder="$t('Save.index.902471-11')"
+                        option-filter-prop="label"
                     >
                         <a-select-option
                             :value="item.id"
