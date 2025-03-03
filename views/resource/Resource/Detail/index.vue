@@ -37,7 +37,7 @@
                 >
                 <a-button @click="onApply">{{ $t('Detail.index.473126-2') }}</a-button>
               </a-space>
-              <div class="createdProductNumber">{{ $t('Detail.index.473126-3') }}
+              <div v-if="detail?.type.value !== 'collector'" class="createdProductNumber">{{ $t('Detail.index.473126-3') }}
                 <a-button @click="onJump" type="link">{{ count }}</a-button>
               </div>
             </div>

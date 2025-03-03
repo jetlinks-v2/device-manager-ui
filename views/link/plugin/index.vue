@@ -271,8 +271,9 @@ const getActions = (data: any,type :string) => {
       key: 'update',
       text: $t('plugin.index.293829-8'),
       tooltip: {
-        title: $t('plugin.index.293829-8'),
+        title: (data?.configuration?.sourceId || data?.configuration?.autoCreate) ? $t('plugin.index.293829-14', [$t('plugin.index.293829-8')]) : $t('plugin.index.293829-8'),
       },
+      disabled: data?.configuration?.sourceId || data?.configuration?.autoCreate,
       icon: 'EditOutlined',
       onClick: () => {
         visible.value = true;
@@ -293,8 +294,9 @@ const getActions = (data: any,type :string) => {
       key: 'delete',
       text: $t('plugin.index.293829-9'),
       tooltip: {
-        title: $t('plugin.index.293829-9'),
+        title: (data?.configuration?.sourceId || data?.configuration?.autoCreate) ? $t('plugin.index.293829-14', [$t('plugin.index.293829-9')]) : $t('plugin.index.293829-9'),
       },
+      disabled: data?.configuration?.sourceId || data?.configuration?.autoCreate,
       popConfirm: {
         title: $t('plugin.index.293829-10'),
         onConfirm: () => {

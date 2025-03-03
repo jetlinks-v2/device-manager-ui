@@ -9,7 +9,7 @@
         >
       </a-space>
     </div>
-    <div class="protocol-items">
+    <div v-if="!!protocolList.length" class="protocol-items">
       <CardItem
         v-for="(item, index) in protocolList"
         type="protocol"
@@ -67,6 +67,7 @@
         </template>
       </CardItem>
     </div>
+    <j-empty v-else></j-empty>
     <Product v-if="visible" :protocolList="protocolList" type="protocol" @close="visible = false" />
   </div>
 </template>
