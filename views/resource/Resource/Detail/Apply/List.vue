@@ -26,6 +26,7 @@
                 </a-space>
             </div>
             <div
+                v-if="!!productList.length"
                 :class="{
                     items: true,
                     'items-expand': expand,
@@ -62,6 +63,7 @@
                     </template>
                 </CardItem>
             </div>
+            <j-empty v-else></j-empty>
             <div v-if="productList.length > 2" class="expand-btn" @click="expand = !expand">
                 {{ expand ? $t('Apply.List.326977-11') : $t('Apply.List.326977-12') }}
             </div>

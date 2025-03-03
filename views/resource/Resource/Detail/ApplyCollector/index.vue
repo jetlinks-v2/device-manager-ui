@@ -37,7 +37,7 @@
                 </div>
             </div>
             <j-empty v-else :description="$t('ApplyCollector.index.312040-3')"> </j-empty>
-            <div class="footer">
+            <div v-if="_dataSource.length" class="footer">
                 {{ $t('ApplyCollector.index.312040-4') }}
             </div>
         </div>
