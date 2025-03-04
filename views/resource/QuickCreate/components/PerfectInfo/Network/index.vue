@@ -184,7 +184,7 @@ import {
     Rules,
 } from '../../../data';
 import { certificates } from '@device/api/link/type';
-import { NetworkTypeMapping } from '../../Network/data.ts';
+import { NetworkTypeMapping } from '../../NetWork/data.ts';
 import { cloneDeep } from 'lodash-es';
 import { defineExpose } from 'vue';
 const props = defineProps({
