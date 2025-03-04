@@ -36,7 +36,7 @@
 
 <script lang="ts" setup name="AccessCard">
 
-import {link} from "@/modules/device-manager-ui/assets";
+import {link} from "@device/assets";
 
 const emit = defineEmits(['checkedChange']);
 
