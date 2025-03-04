@@ -1,5 +1,6 @@
 {
   "name": "device-manager-ui",
+  "id": "device-manager",
   "version": "1.0.0",
   "description": "设备管理",
   "main": "index.js",
