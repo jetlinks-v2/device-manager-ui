@@ -153,7 +153,7 @@
           />
         </template>
         <template #action="slotProps">
-          <a-space :size="16">
+          <a-space>
             <template
                 v-for="i in getActions(slotProps, 'table')"
                 :key="i.key"
@@ -170,7 +170,7 @@
                                     ...i.tooltip,
                                 }"
                   type="link"
-                  style="padding: 0px"
+                  style="padding: 0; margin: 0"
                   :danger="i.key === 'delete'"
                   @click="i.onClick"
               >
@@ -282,7 +282,7 @@ const columns = [
     title: $t('Product.index.660348-11'),
     key: 'action',
     fixed: 'right',
-    width: 200,
+    width: 250,
     scopedSlots: true,
     ellipsis: true,
   },
