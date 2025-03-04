@@ -20,10 +20,16 @@
                         <j-ellipsis>{{ text }}</j-ellipsis>
                     </template>
                     <template v-else>
-                        <j-value-item
-                            v-model:modelValue="record.value"
-                            :itemType="record.type"
-                            :options="
+                        <SelectAMap
+                            v-if="record.type === 'geoPoint'"
+                            v-model:point="record.value"
+                        />
+                        <template v-else>
+                          <j-value-item
+                              v-model:modelValue="record.value"
+                              :itemType="record.type"
+                              style="width: 100%"
+                              :options="
                                 record.type === 'enum'
                                     ? (record?.dataType?.elements || []).map(
                                           (item) => {
@@ -40,7 +46,8 @@
                                       ]
                                     : undefined
                             "
-                        />
+                          />
+                        </template>
                     </template>
                 </div>
             </template>

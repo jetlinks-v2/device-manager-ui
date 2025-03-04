@@ -29,11 +29,14 @@
         }}
       </template>
       <template #sourceName="slotProps">
-        <j-ellipsis>
-          {{ $t('Alarm.index.101383-0') }}
-          <span class="deviceId" @click="() => gotoDevice(slotProps.sourceId)">{{ slotProps.sourceName }}</span>
-        </j-ellipsis
-        >
+        <div class="sourceName">
+          <div class="name">{{ $t('Alarm.index.101383-0') }}</div>
+          <div class="deviceId" @click="() => gotoDevice(slotProps.sourceId)">
+            <j-ellipsis>
+              {{ slotProps.sourceName }}
+            </j-ellipsis>
+          </div>
+        </div>
       </template>
       <template #handleType="slotProps">
         {{ slotProps?.handleType?.text || '--' }}
@@ -246,7 +249,7 @@ const columns =
             dataIndex: 'sourceName',
             key: 'sourceName',
             scopedSlots: true,
-            width: 100,
+            width: 200,
             search: {
               type: 'string',
             },
@@ -485,5 +488,14 @@ const solveRefresh = () => {
 .deviceId {
   cursor: pointer;
   color: #4096ff;
+}
+
+.sourceName {
+  display: flex;
+
+  .name {
+    width: 100px;
+    white-space: nowrap;
+  }
 }
 </style>

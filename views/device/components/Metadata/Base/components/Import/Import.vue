@@ -46,11 +46,11 @@
             </a-form-item>
             <a-form-item :label="$t('Import.Import.317604-5')">
                 <div class="file-download">
-                    <j-button class="btn" @click="downFile('xlsx')"
-                    >{{ $t('Import.Import.317604-6') }}</j-button
+                    <a-button class="btn" @click="downFile('xlsx')"
+                    >{{ $t('Import.Import.317604-6') }}</a-button
                     >
-                    <j-button class="btn" @click="downFile('csv')"
-                    >{{ $t('Import.Import.317604-7') }}</j-button
+                    <a-button class="btn" @click="downFile('csv')"
+                    >{{ $t('Import.Import.317604-7') }}</a-button
                     >
                 </div>
             </a-form-item>

@@ -156,14 +156,14 @@
             </a-space>
           </template>
           <template #state="slotProps">
-            <a-badge-status
+            <j-badge-status
                 :text="slotProps.state.text"
                 :status="slotProps.state.value"
                 :statusNames="{
                                 enabled: 'processing',
                                 disabled: 'error',
                             }"
-            ></a-badge-status>
+            ></j-badge-status>
           </template>
           <template #shareCluster="slotProps">
             {{

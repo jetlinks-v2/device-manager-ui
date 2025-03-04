@@ -14,12 +14,12 @@
         }}</span
       ></template>
       <template v-if="column.dataIndex === 'sourceName'">
-        <j-ellipsis>
-          {{ $t('components.Log.809848-0') }}
-          <span class="deviceId" @click="() => gotoDevice(text)">{{
-              text
-            }}</span></j-ellipsis
-        >
+          <div class="sourceName">
+            <div class="name">{{ $t('components.Log.809848-0') }}</div>
+            <div @click="() => gotoDevice(record.sourceId)" class="deviceId">
+              <j-ellipsis>{{ text }}</j-ellipsis>
+            </div>
+          </div>
       </template>
       <template
           v-if="
@@ -186,5 +186,14 @@ onMounted(() => {
 .deviceId {
   cursor: pointer;
   color: #4096FF;
+}
+
+.sourceName {
+  display: flex;
+
+  .name {
+    width: 100px;
+    white-space: nowrap;
+  }
 }
 </style>

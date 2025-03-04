@@ -1,4 +1,4 @@
-<template>
+ <template>
     <SaveChild
         v-if="childVisible"
         @close-child-save="closeChildSave"

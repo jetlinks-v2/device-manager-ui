@@ -558,7 +558,7 @@ const aliCheck = (data: any) => {
                 check = true;
                 return;
             } else {
-                testAliType(item, index);
+              check = testAliType(item, index);
             }
         });
     }
@@ -589,7 +589,7 @@ const aliCheck = (data: any) => {
                 return;
             }
             if (item?.inputData) {
-                testAliObject(item.inputData, index);
+              check = testAliObject(item.inputData, index);
             }
         });
     }
@@ -671,6 +671,8 @@ const beforeUpload: UploadProps['beforeUpload'] = (file) => {
                     formModel.metadata === 'jetlinks'
                         ? requiredCheck(data)
                         : aliCheck(data);
+
+                console.log(check, 'check')
                 if (!check) {
                     onlyMessage($t('Import.index.603910-52'));
                     formModel.import = json.target?.result;

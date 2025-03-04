@@ -414,11 +414,14 @@ watch(() => instanceStore.current?.id, () => {
     .edit {
       flex: 1;
       min-height: 0;
-      //height: 550px;
+      position: relative;
       border: 1px solid #dcdcdc;
 
       .edit-only {
-        //height: 550px;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
         position: absolute;
         z-index: 1;
         background-color: #eeeeee70;
