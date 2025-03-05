@@ -164,7 +164,7 @@ const getExpands = (arr, dt) => {
 }
 
 const getClassificationType = async () => {
-  const res = await queryClassificationType();
+  const res = await queryClassificationType({sorts: [{ name: 'order', order: 'asc' }]});
   if (res.success) {
     classificationType.value = res.result;
     activeKey.value = res.result?.[0]?.id;

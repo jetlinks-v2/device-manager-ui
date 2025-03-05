@@ -1,6 +1,6 @@
 <template>
   <div class="metadata-base">
-  <EditTable
+    <EditTable
       v-if="!heavyLoad"
       ref="tableRef"
       :data-source="dataSource"
@@ -250,33 +250,33 @@
     <div>
       {{ $t('Base.Base.640395-15') }} <span class="metadata-result-total">{{ effectiveDataLength }}</span> {{ $t('Base.Base.640395-16') }}
     </div>
-  <PropertiesModal
-      v-if="type === 'properties' && detailData.visible"
-      :data="detailData.data"
-      :type="target"
-      :getPopupContainer="getPopupContainer"
-      :unitOptions="unitOptions"
-      @cancel="cancelDetailModal"
-  />
-  <FunctionModal
-      v-else-if="type === 'functions' && detailData.visible"
-      :data="detailData.data"
-      :getPopupContainer="getPopupContainer"
-      @cancel="cancelDetailModal"
-  />
-  <EventModal
-      v-else-if="type === 'events' && detailData.visible"
-      :data="detailData.data"
-      :getPopupContainer="getPopupContainer"
-      @cancel="cancelDetailModal"
-  />
-  <TagsModal
-      v-else-if="type === 'tags' && detailData.visible"
-      :data="detailData.data"
-      :getPopupContainer="getPopupContainer"
-      :unitOptions="unitOptions"
-      @cancel="cancelDetailModal"
-  />
+    <PropertiesModal
+        v-if="type === 'properties' && detailData.visible"
+        :data="detailData.data"
+        :type="target"
+        :getPopupContainer="getPopupContainer"
+        :unitOptions="unitOptions"
+        @cancel="cancelDetailModal"
+    />
+    <FunctionModal
+        v-else-if="type === 'functions' && detailData.visible"
+        :data="detailData.data"
+        :getPopupContainer="getPopupContainer"
+        @cancel="cancelDetailModal"
+    />
+    <EventModal
+        v-else-if="type === 'events' && detailData.visible"
+        :data="detailData.data"
+        :getPopupContainer="getPopupContainer"
+        @cancel="cancelDetailModal"
+    />
+    <TagsModal
+        v-else-if="type === 'tags' && detailData.visible"
+        :data="detailData.data"
+        :getPopupContainer="getPopupContainer"
+        :unitOptions="unitOptions"
+        @cancel="cancelDetailModal"
+    />
   </div>
 </template>
 
@@ -712,7 +712,7 @@ const onTypeChange = (index) => {
   justify-content: space-between;
   padding: 8px 24px;
   background-color: #fff;
-  box-shadow: 0px 6px 16px 0px rgba(0, 0, 0, 0.08),0px 3px 6px -4px rgba(0, 0, 0, 0.12),0px 9px 28px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 0.08),0 3px 6px -4px rgba(0, 0, 0, 0.12),0px 9px 28px 8px rgba(0, 0, 0, 0.05);
   font-size: 14px;
   transform: translateX(-150px);
 
@@ -738,7 +738,7 @@ const onTypeChange = (index) => {
   font-size: 22px;
   color: #6f6f6f;
   justify-content: center;
-  align-items: center
+  align-items: center;
 }
 
 .metadata-base {

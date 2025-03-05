@@ -184,14 +184,14 @@
                     }}
                 </template>
                 <template #state="slotProps">
-                    <BadgeStatus
+                    <j-badge-status
                         :status="slotProps.state.value"
                         :text="slotProps.state.text"
                         :statusNames="{
                             online: 'processing',
                             offline: 'error',
                         }"
-                    ></BadgeStatus>
+                    ></j-badge-status>
                 </template>
                 <template #action="slotProps">
                     <a-space :size="16">
