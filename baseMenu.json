@@ -1879,7 +1879,8 @@
                   "save",
                   "delete"
                 ]
-              }
+              },
+              {"permission": "resources-cloud", "actions": ["query"]}
             ],
             "accessSupport": {
               "text": "不支持",
