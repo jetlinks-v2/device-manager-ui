@@ -25,6 +25,7 @@
           :groupKey="groupActive.value"
           :openGroup="openGroup"
           :rowSelection="rowSelection"
+          :readonly="readonly"
           @scrollDown="onScrollDown"
         >
         <template v-for="(_, name) in slots" #[name]="slotData">
@@ -37,6 +38,7 @@
         v-if="dataSource.length && openGroup"
         v-model:activeKey="groupActive.value"
         :options="groupOptions"
+        :readonly="readonly"
         @add="addGroup"
         @delete="groupDelete"
         @edit="groupEdit"
@@ -91,6 +93,10 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
+  readonly: {
+    type: Boolean,
+    default: false
+  }
 })
 
 const slots = useSlots()

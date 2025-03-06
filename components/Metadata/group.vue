@@ -1,12 +1,13 @@
 <template>
   <div class="table-group-warp">
-    <a-tabs type="editable-card" v-model:activeKey="myActiveKey" @edit="onAdd" @change="change">
+    <a-tabs type="editable-card" v-model:activeKey="myActiveKey" @edit="onAdd" :hideAdd="readonly" @change="change">
       <a-tab-pane v-for="item in options" :key="item.value" :closable="false">
         <template #tab>
           <a-dropdown
             v-if="myActiveKey === item.value"
             :trigger="['click']"
             :getPopupContainer="(node) => tableWrapperRef || node"
+            :disabled="readonly"
           >
             <template #overlay>
               <a-menu @click="(e) => { menuClick(e, item)}">
@@ -86,6 +87,10 @@ const props = defineProps({
   activeKey: {
     type: String,
     default: undefined
+  },
+  readonly: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -104,6 +109,7 @@ const formData = reactive({
 })
 
 const onAdd = (targetKey, action) => {
+  // if(props.readonly) return
   if (action === 'add') {
     type.value = 'add'
     // 获取上一个包含 “分组_” 的信息
@@ -167,6 +173,7 @@ const change = () => {
 }
 
 const menuClick = (e, record) => {
+  if(props.readonly) return
   if (e.key === 'edit') {
     onEdit(record)
   } else {

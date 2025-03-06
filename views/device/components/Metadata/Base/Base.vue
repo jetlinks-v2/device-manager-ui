@@ -12,6 +12,7 @@
       :rowSelection="{
         selectedRowKeys: selectedRowKeys
       }"
+      :readonly="hasOperate('add', type)"
       @scrollDown="scrollDown"
       @rightMenuClick="rightMenuClick"
       @groupEdit="groupEdit"
@@ -91,7 +92,7 @@
         <div>
          {{ $t('Base.Base.640395-7') }}
         </div>
-        <div>
+        <div style="pointer-events: auto">
           <a-button type="link" @click="jumpProduct" style="font-size: 20px;">{{ $t('Base.Base.640395-8') }}</a-button>
         </div>
       </div>
@@ -299,7 +300,7 @@ import {useInstanceStore} from '../../../../../store/instance';
 import {useProductStore} from '../../../../../store/product';
 import {asyncUpdateMetadata, updateMetadata} from '../metadata';
 import {onlyMessage, getToken, EventEmitter } from '@jetlinks-web/utils';
-import {omit} from "lodash-es";
+import {map, omit} from "lodash-es";
 import {PropertiesModal, FunctionModal, EventModal, TagsModal} from './DetailModal'
 import {Modal} from 'ant-design-vue'
 import {watch} from "vue";
@@ -739,6 +740,8 @@ const onTypeChange = (index) => {
   color: #6f6f6f;
   justify-content: center;
   align-items: center;
+  pointer-events: none;
+  z-index: 5;
 }
 
 .metadata-base {
