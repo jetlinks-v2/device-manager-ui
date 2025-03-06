@@ -614,7 +614,7 @@ const query = reactive({
 const saveRef = ref();
 
 const handleSearch = (e: any) => {
-  console.log(e, 'e')
+  // console.log(e, 'e')
   const newTerms = cloneDeep(e);
   if (newTerms.terms?.length) {
     console.log(newTerms, 'newTerms')
