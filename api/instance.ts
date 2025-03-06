@@ -582,7 +582,7 @@ export const saveProductCode = (productId: string, data: Record<string, unknown>
  * @param deviceId
  * @returns
  */
-export const deviceCode = (productId: string, deviceId: string) => request.get(`device/transparent-codec/${productId}/${deviceId}`)
+export const deviceCode = (productId: string, deviceId: string) => request.get(`/device/transparent-codec/${productId}/${deviceId}`)
 /**
  * 保存设备解析规则
  * @param productId
