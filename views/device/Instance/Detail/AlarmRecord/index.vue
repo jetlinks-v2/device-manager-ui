@@ -1,10 +1,14 @@
 <template>
+  <div style='margin-bottom: 16px' v-if="type === 'product'">
+    <AIcon type="InfoCircleOutlined" style="margin-right: 3px" />
+    展示该产品下设备关联的「产品」和「设备」类型的所有告警记录
+  </div>
   <pro-search
       :columns="columns"
       target="device-instance"
       type="simple"
       @search="handleSearch"
-      style="margin: 0; padding-bottom: 0;"
+      style="padding: 0;"
   />
   <div v-if="current?.id">
     <JProTable
@@ -14,6 +18,7 @@
         :request="queryAlarmRecord"
         :defaultParams="defaultParams"
         :params="params"
+        style="padding: 0"
     >
       <template #alarmTime="slotProps">
         {{ dayjs(slotProps.alarmTime).format('YYYY-MM-DD HH:mm:ss') }}
@@ -40,6 +45,9 @@
       </template>
       <template #handleType="slotProps">
         {{ slotProps?.handleType?.text || '--' }}
+      </template>
+      <template #level="slotProps">
+        {{slotProps?.level ? levelList.find(i => i.level === slotProps?.level)?.i18nMessages?.[localLanguage] : '--' }}
       </template>
       <template #state="slotProps">
         {{ slotProps?.state?.value === 'normal' ? $t('Alarm.index.101383-1') : $t('Alarm.index.101383-2') }}
@@ -99,6 +107,8 @@ import {useMenuStore} from '@/store';
 import {useI18n} from 'vue-i18n';
 import SolveComponent from './components/SolveComponent.vue'
 import Duration from './components/Duration.vue'
+import {queryLevel} from "@/modules/device-manager-ui/api/rule-engine/config";
+import {langKey} from "@/utils/consts";
 
 const {t: $t} = useI18n();
 
@@ -115,6 +125,7 @@ const current = computed(() => {
   return props.type === 'device' ? device.current : product.current
 })
 
+const localLanguage = localStorage.getItem(langKey)  || 'zh'
 const columns =
     props.type === 'device'
         ? [
@@ -237,6 +248,7 @@ const columns =
             key: 'level',
             width: 100,
             ellipsis: true,
+            scopedSlots: true,
           },
           {
             title: $t('Alarm.index.101383-5'),
@@ -326,52 +338,57 @@ const solveVisible = ref(false);
 const solveType = ref('handle');
 const currentAlarm = ref();
 const visibleDrawer = ref(false);
+const levelList = ref([]);
 const defaultParams = computed(() => {
   return props.type === 'device'
       ? {
         sorts: [{name: 'alarmTime', order: 'desc'}],
-        terms: [
+        "terms": [
           {
-            terms: [
+            "terms": [
               {
-                column: 'sourceId',
-                value: current.value.id,
-                termType: 'eq',
+                "column": "sourceId",
+                "value": current.value.id,
+                "termType": "eq"
               },
-              // {
-              //   column: 'alarmConfigSource',
-              //   value: 'device-property-preprocessor',
-              //   termType: 'eq',
-              // },
+              {
+                "column": "targetType",
+                "value": "device",
+                "termType": "eq"
+              }
             ],
-            type: 'and',
-          },
-        ],
+            "type": "and"
+          }
+        ]
       }
       : {
         sorts: [{name: 'alarmTime', order: 'desc'}],
-        terms: [
+
+        "terms": [
           {
-            terms: [
+            "terms": [
               {
-                column: 'sourceId$dev-instance',
-                value: [
+                "column": "sourceId$dev-instance",
+                "value": [
                   {
-                    column: 'productId',
-                    value: current.value.id,
-                    termType: 'eq',
-                  },
-                ],
+                    "column": "productId",
+                    "value": current.value.id,
+                    "termType": "eq"
+                  }
+                ]
               },
-              // {
-              //   column: 'alarmConfigSource',
-              //   value: 'device-property-preprocessor',
-              //   termType: 'eq',
-              // },
+              {
+                "column": "targetType",
+                "value": [
+                  "device",
+                  "product"
+                ],
+                "termType": "in"
+              }
             ],
-            type: 'and',
-          },
-        ],
+            "type": "and"
+          }
+        ]
       };
 })
 const handleSearch = (e) => {
@@ -483,6 +500,15 @@ const solveRefresh = () => {
   solveVisible.value = false;
   refresh();
 };
+
+const getLevelList = async () => {
+  const resp = await queryLevel()
+  if(resp.success){
+    levelList.value = resp.result?.levels || []
+  }
+}
+
+getLevelList()
 </script>
 <style lang="less" scoped>
 .deviceId {
