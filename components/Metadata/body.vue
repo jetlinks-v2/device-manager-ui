@@ -19,11 +19,11 @@
             @click.stop="() => rowClick(item)"
         >
           <div
-              v-for="(column, index) in columns"
+              v-for="(column, __index) in columns"
               class="metadata-edit-table-cell"
               :style="{
                 width: `${column.width}px`,
-                left: `${column.left || 200 * index}px`,
+                left: `${column.left || 200 * __index}px`,
               }"
           >
             <div v-if="column.dataIndex === '__serial'" class="body-cell-box">
@@ -38,6 +38,7 @@
             </div>
           </div>
         </div>
+        <div class="readonly-mask" v-if="readonly"></div>
       </div>
     </div>
   </div>
@@ -61,6 +62,10 @@ const props = defineProps({
   groupKey: {
     type: [String, Number],
     default: undefined
+  },
+  readonly: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -91,6 +96,7 @@ const virtualData = computed(()=> {
   if (tableCenterRef.value) {
     tableCenterRef.value.style.webkitTransform  =  `translate3d(0, ${virtualRang.start * props.cellHeight}px, 0)`
   }
+  // console.log(array, 'arry')
   return array
 })
 // const updateVirtualData = (start, end) => {
@@ -108,7 +114,6 @@ const onScroll = () => {
   const scrollHeight = viewScrollRef.value.scrollHeight
 
   const _index = Math.round(height / props.cellHeight) - 1
-
 
   const start = _index < 0 ? 0 : _index
   const end = start + maxLen.value + 4
@@ -274,6 +279,15 @@ defineExpose({
         padding: 0 12px;
         position: relative;
       }
+    }
+
+    .readonly-mask {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 4;
     }
   }
 }
