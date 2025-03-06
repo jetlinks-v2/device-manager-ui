@@ -96,7 +96,7 @@ const virtualData = computed(()=> {
   if (tableCenterRef.value) {
     tableCenterRef.value.style.webkitTransform  =  `translate3d(0, ${virtualRang.start * props.cellHeight}px, 0)`
   }
-  console.log(array, 'arry')
+  // console.log(array, 'arry')
   return array
 })
 // const updateVirtualData = (start, end) => {
