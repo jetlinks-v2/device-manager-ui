@@ -670,9 +670,8 @@ const beforeUpload: UploadProps['beforeUpload'] = (file) => {
                 let check =
                     formModel.metadata === 'jetlinks'
                         ? requiredCheck(data)
-                        : aliCheck(data);
+                        : false // aliCheck(data);
 
-                console.log(check, 'check')
                 if (!check) {
                     onlyMessage($t('Import.index.603910-52'));
                     formModel.import = json.target?.result;
@@ -762,13 +761,12 @@ const handleImport = async () => {
             check =
                 formModel.metadata === 'jetlinks'
                     ? requiredCheck(JSON.parse(formModel.import))
-                    : aliCheck(JSON.parse(formModel.import));
+                    : false // aliCheck(JSON.parse(formModel.import));
         }
         if (!check) {
             const { id } = route.params || {};
             if (data.metadata === 'alink') {
                 try {
-                    console.log(JSON.parse(data.import))
                     const _import = omit(JSON.parse(data.import), [
                         'schema',
                         'profile',

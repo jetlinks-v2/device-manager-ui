@@ -45,6 +45,7 @@ export const testType = (data:any,index:number,isArray?:boolean,isObject?:boolea
             return true
         }
     }
+    return false
 }
 export const testObject = (data:any,index:number)=>{
     let check = false
@@ -113,6 +114,7 @@ export const testAliType = (data:any,index:number,isArray?:boolean,isObject?:boo
             return true
         }
     }
+    return false
 }
 
 export const testAliObject = (data:any,index:number)=>{
