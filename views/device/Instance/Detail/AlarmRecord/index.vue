@@ -107,7 +107,7 @@ import {useMenuStore} from '@/store';
 import {useI18n} from 'vue-i18n';
 import SolveComponent from './components/SolveComponent.vue'
 import Duration from './components/Duration.vue'
-import {queryLevel} from "@/modules/device-manager-ui/api/rule-engine/config";
+import {queryLevel} from "@device/api/rule-engine/config";
 import {langKey} from "@/utils/consts";
 
 const {t: $t} = useI18n();
