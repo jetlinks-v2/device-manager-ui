@@ -55,7 +55,7 @@ import Function from './Function/index.vue';
 import Log from './Log/index.vue';
 import { map } from 'rxjs/operators';
 import { useInstanceStore } from '../../../../../../store/instance';
-import { getWebSocket } from '@/utils/websocket';
+import { wsClient } from '@jetlinks-web/core';
 import { randomString } from '@jetlinks-web/utils';
 import { cloneDeep } from 'lodash-es';
 import { useI18n } from 'vue-i18n';
@@ -90,7 +90,7 @@ const messageArr = computed(() => {
 const subscribeLog = () => {
     const id = `device-debug-${instanceStore.current?.id}`;
     const topic = `/debug/device/${instanceStore.current?.id}/trace`;
-    diagnoseRef.value = getWebSocket(id, topic, {})
+    diagnoseRef.value = wsClient.getWebSocket(id, topic, {})
         ?.pipe(map((res: any) => res.payload))
         .subscribe((payload) => {
             if (payload.type === 'log') {

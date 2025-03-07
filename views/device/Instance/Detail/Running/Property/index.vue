@@ -88,7 +88,7 @@ import Indicators from './Indicators.vue';
 import { getProperty } from '../../../../../../api/instance';
 import { dashboard } from '../../../../../../api/dashboard';
 import { useInstanceStore } from '../../../../../../store/instance';
-import { getWebSocket } from '@/utils/websocket';
+import { wsClient } from '@jetlinks-web/core';
 import { map } from 'rxjs/operators';
 import { onlyMessage } from '@jetlinks-web/utils';
 import { useI18n } from 'vue-i18n';
@@ -240,7 +240,7 @@ const subscribeProperty = () => {
         instanceStore.current.productId
     }-${dataSource.value.map((i: Record<string, any>) => i.id).join('-')}`;
     const topic = `/dashboard/device/${instanceStore.current.productId}/properties/realTime`;
-    subRef.value = getWebSocket(id, topic, {
+    subRef.value = wsClient.getWebSocket(id, topic, {
         deviceId: instanceStore.current.id,
         properties: dataSource.value.map((i: Record<string, any>) => i.id),
         history: 1,

@@ -169,11 +169,10 @@
 </template>
 
 <script setup>
-import {getWebSocket} from '@/utils/websocket';
+import {wsClient} from '@jetlinks-web/core';
 import Status from './Status.vue';
 import {delTask, deployTask, stopTask} from '@device/api/resource/resource';
 import {statusIcon, computedVersion} from '@device/views/resource/Resource/Install/data';
-import {map} from 'lodash-es';
 import {useMenuStore} from '@/store/menu';
 import {resource} from '@device/assets/resource';
 import { inject } from "vue";
@@ -311,7 +310,7 @@ const onReload = async (item) => {
 };
 
 const installTask = () => {
-  wsRef = getWebSocket(
+  wsRef = wsClient.getWebSocket(
       `resources-install-state-subscriber`,
       `/resources/install/*`,
       {},

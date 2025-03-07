@@ -142,7 +142,7 @@ import CardManagement from '../components/IotCard/index.vue';
 import { _deploy, _disconnect } from '../../../../api/instance';
 import { onlyMessage } from '@jetlinks-web/utils';
 import { openEdgeUrl } from '../../../../utils/utils';
-import { getWebSocket } from '@/utils/websocket';
+import { wsClient } from '@jetlinks-web/core';
 import { useRouterParams } from '@jetlinks-web/hooks';
 import { EventEmitter } from '@jetlinks-web/utils';
 import { useSystemStore, useMenuStore, useAuthStore} from '@/store';
@@ -216,7 +216,7 @@ const tabs = {
 const permissionStore = useAuthStore();
 const _arr = ['agent-device-gateway', 'agent-media-device-gateway']
 const getStatus = (id: string) => {
-    statusRef.value = getWebSocket(
+    statusRef.value = wsClient.getWebSocket(
         `instance-editor-info-status-${id}`,
         `/dashboard/device/status/change/realTime`,
         {
