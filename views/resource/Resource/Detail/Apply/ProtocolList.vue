@@ -67,7 +67,9 @@
         </template>
       </CardItem>
     </div>
-    <j-empty v-else></j-empty>
+    <div style="padding: 100px 0;" v-else>
+      <j-empty  />
+    </div>
     <Product v-if="visible" :protocolList="protocolList" type="protocol" @close="visible = false" />
   </div>
 </template>
