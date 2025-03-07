@@ -129,17 +129,17 @@ const checkedChange = (data: any) => {
 }
 
 .access-media {
-  background: url('../../../../assets/images/resource/access-media.png') no-repeat;
+  background: url('../../../../assets/resource/access-media.png') no-repeat;
   background-position: bottom right;
 }
 
 .access-network, .access-plugin {
-  background: url('../../../../assets/images/resource/access-network.png') no-repeat;
+  background: url('../../../../assets/resource/access-network.png') no-repeat;
   background-position: bottom right;
 }
 
 .access-protocol {
-  background: url('../../../../assets/images/resource/access-protocol.png') no-repeat;
+  background: url('../../../../assets/resource/access-protocol.png') no-repeat;
   background-position: bottom right;
 }
 </style>
