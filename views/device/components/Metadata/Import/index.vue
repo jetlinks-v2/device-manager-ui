@@ -558,7 +558,7 @@ const aliCheck = (data: any) => {
                 check = true;
                 return;
             } else {
-                testAliType(item, index);
+              check = testAliType(item, index);
             }
         });
     }
@@ -589,7 +589,7 @@ const aliCheck = (data: any) => {
                 return;
             }
             if (item?.inputData) {
-                testAliObject(item.inputData, index);
+              check = testAliObject(item.inputData, index);
             }
         });
     }
@@ -670,7 +670,8 @@ const beforeUpload: UploadProps['beforeUpload'] = (file) => {
                 let check =
                     formModel.metadata === 'jetlinks'
                         ? requiredCheck(data)
-                        : aliCheck(data);
+                        : false // aliCheck(data);
+
                 if (!check) {
                     onlyMessage($t('Import.index.603910-52'));
                     formModel.import = json.target?.result;
@@ -760,13 +761,12 @@ const handleImport = async () => {
             check =
                 formModel.metadata === 'jetlinks'
                     ? requiredCheck(JSON.parse(formModel.import))
-                    : aliCheck(JSON.parse(formModel.import));
+                    : false // aliCheck(JSON.parse(formModel.import));
         }
         if (!check) {
             const { id } = route.params || {};
             if (data.metadata === 'alink') {
                 try {
-                    console.log(JSON.parse(data.import))
                     const _import = omit(JSON.parse(data.import), [
                         'schema',
                         'profile',

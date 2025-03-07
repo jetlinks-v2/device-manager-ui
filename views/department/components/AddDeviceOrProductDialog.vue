@@ -39,7 +39,10 @@
                 selectedRowKeys: table._selectedRowKeys.value,
                 onSelect: table.onSelectChange,
                 onSelectNone: table.cancelSelect,
-                onSelectAll: selectAll
+                onSelectAll: selectAll,
+                getCheckboxProps: (record) => ({
+                  disabled: !record.permissionList?.length
+                }),
             }"
             :columns="columns"
             style="max-height: 500px; overflow:auto"
@@ -74,7 +77,7 @@
                                 <div class="card-item-content-text">
                                     {{ $t('components.AddDeviceOrProductDialog.314014-5') }}
                                 </div>
-                                <div style="cursor: pointer" class="card-item-content-value"
+                                <div style="cursor: pointer; height: 30px" class="card-item-content-value"
                                     @click="(e) => e.stopPropagation()">
                                     <a-checkbox-group v-model:value="slotProps.selectPermissions
                                         " :options="slotProps.permissionList" />
@@ -91,11 +94,11 @@
                 </div>
             </template>
             <template #state="slotProps">
-                <j-badgeStatus :status="slotProps.state.value" :text="slotProps.state.text" :statusNames="{
+                <j-badge-status :status="slotProps.state.value" :text="slotProps.state.text" :statusNames="{
                     online: 'processing',
                     offline: 'error',
                     notActive: 'warning',
-                }"></j-badgeStatus>
+                }"></j-badge-status>
             </template>
             <template #registryTime="slotProps">
                 <span>{{
@@ -148,7 +151,7 @@ const confirm = () => {
         assetIdList: [item.id],
         // 保存时, 过滤没有的权限
         permission: item.selectPermissions.filter((f: any) =>
-            item.permissionList.map((m: any) => m.value).includes(f),
+            (item.permissionList || []).map((m: any) => m.value).includes(f),
         ),
     }));
 
@@ -231,17 +234,19 @@ const table: any = {
                         // fix: bug#10756
                         item.selectPermissions = n[1];
                         // 禁用单独勾选
-                        item.permissionList.forEach((permission: any) => {
+                        (item.permissionList || []).forEach((permission: any) => {
                             permission.disabled = true;
                         });
                     } else {
                         // 取消批量设置
                         // 放开自己权限的勾选限制，查看为必选
-                        item.permissionList.forEach((permission: any) => {
+                        (item.permissionList || []).forEach((permission: any) => {
                             permission.disabled = permission.value === 'read';
                         });
                     }
                 });
+
+                console.log(table.selectedRows, 'table.selectedRows')
                 // 取消勾选时触发
                 if (nValue && nValue.length < oValue.length) {
                     // 拿到取消选中的项的id
@@ -329,7 +334,7 @@ const table: any = {
                                     label: m.name,
                                     value: m.id,
                                     disabled: true,
-                                }));
+                                })) || [];
                             item.selectPermissions = ['read'];
                             // 资产排序
                             item.permissionList = item.permissionList
@@ -340,6 +345,7 @@ const table: any = {
                                     };
                                 })
                                 ?.sort((a: any, b: any) => a.idx - b.idx);
+
                             // 产品的状态进行转换处理
                             if (props.assetType === 'product') {
                                 item.state = {
@@ -456,7 +462,8 @@ const selectChange = (record: any,selected: boolean,selectedRows: any,) => {
     table._selectedRowKeys.value = [...arr.values()]
 };
 
-const selectAll = (selected: Boolean, selectedRows: any,changeRows:any) => {
+const selectAll = (selected: boolean, selectedRows: any,changeRows:any) => {
+  console.log(changeRows, 'changeRows')
     if (selected) {
             changeRows.map((i: any) => {
                 if (!table._selectedRowKeys.value.includes(i.id)) {

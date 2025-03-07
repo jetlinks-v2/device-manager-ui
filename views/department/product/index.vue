@@ -13,10 +13,6 @@
                 :gridColumn="2"
                 :gridColumns="[2]"
                 modeValue="CARD"
-                :scroll="{
-                    x: 'max-content',
-                    y: 610,
-                }"
                 :params="queryParams"
                 :rowSelection="{
                     selectedRowKeys: tableData._selectedRowKeys,
@@ -184,14 +180,14 @@
                     }}
                 </template>
                 <template #state="slotProps">
-                    <BadgeStatus
+                    <j-badge-status
                         :status="slotProps.state.value"
                         :text="slotProps.state.text"
                         :statusNames="{
                             online: 'processing',
                             offline: 'error',
                         }"
-                    ></BadgeStatus>
+                    ></j-badge-status>
                 </template>
                 <template #action="slotProps">
                     <a-space :size="16">
@@ -298,14 +294,13 @@ const columns = [
         key: 'permission',
         ellipsis: true,
         scopedSlots: true,
-        width: 200,
+        width: 300,
     },
     {
         title: $t('product.index.083446-7'),
         dataIndex: 'describe',
         key: 'describe',
-        ellipsis: true,
-        width: 100
+        ellipsis: true
     },
     {
         title: $t('product.index.083446-8'),
@@ -328,7 +323,6 @@ const columns = [
         },
         scopedSlots: true,
     },
-
     {
         title: $t('product.index.083446-11'),
         dataIndex: 'action',

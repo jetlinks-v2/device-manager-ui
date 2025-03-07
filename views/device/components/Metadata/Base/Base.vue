@@ -1,6 +1,6 @@
 <template>
   <div class="metadata-base">
-  <EditTable
+    <EditTable
       v-if="!heavyLoad"
       ref="tableRef"
       :data-source="dataSource"
@@ -12,6 +12,7 @@
       :rowSelection="{
         selectedRowKeys: selectedRowKeys
       }"
+      :readonly="hasOperate('add', type)"
       @scrollDown="scrollDown"
       @rightMenuClick="rightMenuClick"
       @groupEdit="groupEdit"
@@ -91,7 +92,7 @@
         <div>
          {{ $t('Base.Base.640395-7') }}
         </div>
-        <div>
+        <div style="pointer-events: auto">
           <a-button type="link" @click="jumpProduct" style="font-size: 20px;">{{ $t('Base.Base.640395-8') }}</a-button>
         </div>
       </div>
@@ -250,33 +251,33 @@
     <div>
       {{ $t('Base.Base.640395-15') }} <span class="metadata-result-total">{{ effectiveDataLength }}</span> {{ $t('Base.Base.640395-16') }}
     </div>
-  <PropertiesModal
-      v-if="type === 'properties' && detailData.visible"
-      :data="detailData.data"
-      :type="target"
-      :getPopupContainer="getPopupContainer"
-      :unitOptions="unitOptions"
-      @cancel="cancelDetailModal"
-  />
-  <FunctionModal
-      v-else-if="type === 'functions' && detailData.visible"
-      :data="detailData.data"
-      :getPopupContainer="getPopupContainer"
-      @cancel="cancelDetailModal"
-  />
-  <EventModal
-      v-else-if="type === 'events' && detailData.visible"
-      :data="detailData.data"
-      :getPopupContainer="getPopupContainer"
-      @cancel="cancelDetailModal"
-  />
-  <TagsModal
-      v-else-if="type === 'tags' && detailData.visible"
-      :data="detailData.data"
-      :getPopupContainer="getPopupContainer"
-      :unitOptions="unitOptions"
-      @cancel="cancelDetailModal"
-  />
+    <PropertiesModal
+        v-if="type === 'properties' && detailData.visible"
+        :data="detailData.data"
+        :type="target"
+        :getPopupContainer="getPopupContainer"
+        :unitOptions="unitOptions"
+        @cancel="cancelDetailModal"
+    />
+    <FunctionModal
+        v-else-if="type === 'functions' && detailData.visible"
+        :data="detailData.data"
+        :getPopupContainer="getPopupContainer"
+        @cancel="cancelDetailModal"
+    />
+    <EventModal
+        v-else-if="type === 'events' && detailData.visible"
+        :data="detailData.data"
+        :getPopupContainer="getPopupContainer"
+        @cancel="cancelDetailModal"
+    />
+    <TagsModal
+        v-else-if="type === 'tags' && detailData.visible"
+        :data="detailData.data"
+        :getPopupContainer="getPopupContainer"
+        :unitOptions="unitOptions"
+        @cancel="cancelDetailModal"
+    />
   </div>
 </template>
 
@@ -299,7 +300,7 @@ import {useInstanceStore} from '../../../../../store/instance';
 import {useProductStore} from '../../../../../store/product';
 import {asyncUpdateMetadata, updateMetadata} from '../metadata';
 import {onlyMessage, getToken, EventEmitter } from '@jetlinks-web/utils';
-import {omit} from "lodash-es";
+import {map, omit} from "lodash-es";
 import {PropertiesModal, FunctionModal, EventModal, TagsModal} from './DetailModal'
 import {Modal} from 'ant-design-vue'
 import {watch} from "vue";
@@ -712,7 +713,7 @@ const onTypeChange = (index) => {
   justify-content: space-between;
   padding: 8px 24px;
   background-color: #fff;
-  box-shadow: 0px 6px 16px 0px rgba(0, 0, 0, 0.08),0px 3px 6px -4px rgba(0, 0, 0, 0.12),0px 9px 28px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 0.08),0 3px 6px -4px rgba(0, 0, 0, 0.12),0px 9px 28px 8px rgba(0, 0, 0, 0.05);
   font-size: 14px;
   transform: translateX(-150px);
 
@@ -738,7 +739,9 @@ const onTypeChange = (index) => {
   font-size: 22px;
   color: #6f6f6f;
   justify-content: center;
-  align-items: center
+  align-items: center;
+  pointer-events: none;
+  z-index: 5;
 }
 
 .metadata-base {

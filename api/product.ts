@@ -1,5 +1,5 @@
 import { request } from '@jetlinks-web/core'
-import type { DeviceMetadata, ProductItem, DepartmentItem, MetadataType  } from '../views/Product/typings'
+import type { DeviceMetadata, ProductItem, DepartmentItem, MetadataType  } from '../views/device/Product/typings'
 import type { OperatorItem } from '../components/FRuleEditor/Operator/typings'
 import {BASE_API} from "@jetlinks-web/constants";
 

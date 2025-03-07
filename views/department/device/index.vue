@@ -13,16 +13,15 @@
         modeValue="CARD"
         :gridColumn="2"
         :gridColumns="[2]"
-        :scroll="{
-                    x: 'max-content',
-                    y:610,
-                }"
         :params="queryParams"
         :rowSelection="{
                     selectedRowKeys: table._selectedRowKeys.value,
                     onSelect: table.onSelect,
                     onSelectAll: table.onSelectAll,
-                    onSelectNone: table.cancelSelect
+                    onSelectNone: table.cancelSelect,
+                    getCheckboxProps: (record) => ({
+                      disabled: !record.permissionList?.length
+                    }),
                 }"
         :columns="columns"
       >

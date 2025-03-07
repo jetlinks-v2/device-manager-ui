@@ -76,7 +76,7 @@ export const validateItem = (item: Record<string, any>): boolean => {
         console.log('validateItem - error', item)
         return false
     }
-    console.log(item.valueType.type)
+    // console.log(item.valueType.type)
 
     return handleValidate(item.valueType.type, item)
 
@@ -106,5 +106,5 @@ export const validate = (importMetadata: Array<Record<string, any>>, metadata: A
         validateCallBack?.(isValidate)
     }
 
-    return [...metadata, ...copyMetadata]
+    return [...metadata, ...copyMetadata.reverse()] // 保持原有顺序
 }

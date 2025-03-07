@@ -2,14 +2,14 @@
 <template>
     <j-page-container>
         <pro-search
-            :columns="query.columns"
+            :columns="columns"
             target="category"
             @search="handleSearch"
         />
         <FullPage :fixed="false">
             <j-pro-table
                 ref="tableRef"
-                :columns="table.columns"
+                :columns="columns"
                 :request="queryTree"
                 mode="TABLE"
                 type="TREE"
@@ -42,7 +42,7 @@
                 <j-ellipsis>{{ slotProps?.i18nName || slotProps?.name }}</j-ellipsis>
               </template>
                 <template #action="slotProps">
-                    <a-space :size="16">
+                    <a-space>
                         <template
                             v-for="i in getActions(slotProps, 'table')"
                             :key="i.key"
@@ -56,7 +56,7 @@
                                 }"
                                 @click="i.onClick"
                                 type="link"
-                                style="padding: 0px"
+                                style="padding: 0; margin: 0"
                                 :danger="i.key === 'delete'"
                             >
                                 <template #icon
@@ -89,7 +89,6 @@ const { t: $t } = useI18n();
 const expandedRowKeys = ref<any>([]);
 const tableRef = ref<Record<string, any>>({});
 const modifyRef = ref();
-const dataSource = ref<any>([]);
 const currentForm = ref({});
 const title = ref('');
 const isAdd = ref(0);
@@ -97,47 +96,50 @@ const isChild = ref(0);
 const tableLoading = ref(false);
 const addSortId = ref();
 // 筛选
-const query = reactive({
-    columns: [
-        {
-            title: $t('Category.index.779033-1'),
-            dataIndex: 'name',
-            key: 'name',
-            search: {
-                type: 'string',
+const columns = [
+    {
+        title: $t('Category.index.779033-1'),
+        dataIndex: 'name',
+        key: 'name',
+        search: {
+            type: 'string',
+        },
+        ellipsis: true,
+    },
+    {
+        title: $t('Category.index.779033-2'),
+        dataIndex: 'sortIndex',
+        key: 'sortIndex',
+        search: {
+            type: 'number',
+            componentProps: {
+                precision: 0,
+                min: 1,
             },
         },
-        {
-            title: $t('Category.index.779033-2'),
-            dataIndex: 'sortIndex',
-            key: 'sortIndex',
-            search: {
-                type: 'number',
-                componentProps: {
-                    precision: 0,
-                    min: 1,
-                },
-            },
-            scopedSlots: true,
+        ellipsis: true,
+        scopedSlots: true,
+    },
+    {
+        title: $t('Category.index.779033-3'),
+        key: 'description',
+        dataIndex: 'description',
+        ellipsis: true,
+        search: {
+            type: 'string',
         },
-        {
-            title: $t('Category.index.779033-3'),
-            key: 'description',
-            dataIndex: 'description',
-            search: {
-                type: 'string',
-            },
-        },
-        {
-            title: $t('Category.index.779033-4'),
-            key: 'action',
-            fixed: 'right',
-            width: 250,
-            scopedSlots: true,
-        },
-    ],
-});
-let params = ref();
+    },
+    {
+        title: $t('Category.index.779033-4'),
+        key: 'action',
+        dataIndex: 'action',
+        fixed: 'right',
+        width: 200,
+        scopedSlots: true,
+    },
+]
+
+const params = ref();
 /**
  * 搜索
  */
@@ -149,8 +151,7 @@ const handleSearch = (e: any) => {
  * 操作栏按钮
  */
 const getActions = (
-    data: Partial<Record<string, any>>,
-    type: 'table',
+    data: Partial<Record<string, any>>
 ): any[] => {
     if (!data) return [];
     const actions = [
@@ -222,36 +223,36 @@ const getActions = (
 };
 
 const table = reactive({
-    columns: [
-        {
-            title: $t('Category.index.779033-1'),
-            dataIndex: 'name',
-            key: 'name',
-            scopedSlots: true,
-            width: 500,
-        },
-        {
-            title: $t('Category.index.779033-2'),
-            dataIndex: 'sortIndex',
-            key: 'sortIndex',
-            scopedSlots: true,
-            width: 100,
-        },
-        {
-            title: $t('Category.index.779033-3'),
-            dataIndex: 'description',
-            key: 'description',
-            ellipsis: true,
-        },
-        {
-            title: $t('Category.index.779033-4'),
-            key: 'action',
-            fixed: 'right',
-            ellipsis: true,
-            scopedSlots: true,
-            width: 120,
-        },
-    ],
+    // columns: [
+    //     {
+    //         title: $t('Category.index.779033-1'),
+    //         dataIndex: 'name',
+    //         key: 'name',
+    //         scopedSlots: true,
+    //         width: 500,
+    //     },
+    //     {
+    //         title: $t('Category.index.779033-2'),
+    //         dataIndex: 'sortIndex',
+    //         key: 'sortIndex',
+    //         scopedSlots: true,
+    //         width: 100,
+    //     },
+    //     {
+    //         title: $t('Category.index.779033-3'),
+    //         dataIndex: 'description',
+    //         key: 'description',
+    //         ellipsis: true,
+    //     },
+    //     {
+    //         title: $t('Category.index.779033-4'),
+    //         key: 'action',
+    //         fixed: 'right',
+    //         ellipsis: true,
+    //         scopedSlots: true,
+    //         width: 120,
+    //     },
+    // ],
     /**
      * 添加产品分类
      */
@@ -270,11 +271,10 @@ const table = reactive({
         if (isAdd.value === 0 && isChild.value !== 3) {
             expandedRowKeys.value.push(addSortId.value);
         }
-        console.log(expandedRowKeys.value);
         tableRef.value.reload();
     },
 });
-const { add, columns, refresh } = toRefs(table);
+const { add, refresh } = toRefs(table);
 /**
  * 初始化
  */

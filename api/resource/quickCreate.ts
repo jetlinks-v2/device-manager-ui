@@ -1,6 +1,6 @@
 import { request } from "@jetlinks-web/core";
 
-export const queryClassificationType = () => request.post('/resources/classification-type/_query/no-paging');
+export const queryClassificationType = (data: any) => request.post('/resources/classification-type/_query/no-paging',data);
 
 export const queryClassification = (data:any) => request.post('/resources/classification/_all/tree',data)
 
