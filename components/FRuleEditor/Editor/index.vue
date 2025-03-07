@@ -41,7 +41,7 @@
             </div>
         </div>
         <div class="editor">
-            <j-monaco-editor
+            <monaco-editor
                 v-if="loading"
                 v-model:model-value="_value"
                 theme="vs"
