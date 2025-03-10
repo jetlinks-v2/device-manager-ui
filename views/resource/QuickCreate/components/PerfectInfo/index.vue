@@ -257,6 +257,7 @@ const form = ref({
 });
 
 const pluginConfiguration = ref([]);
+const pluginType = ref({})
 
 const accessConfiguration = ref({})
 
@@ -387,7 +388,10 @@ const createProduct = async () => {
               ...props.accessData,
               configuration: accessConfiguration.value
             },
-            plugin: props.plugin,
+            plugin: {
+              ...props.plugin,
+              type: pluginType.value?.value || props.plugin.type
+            },
             product,
           };
         } else if (
@@ -458,6 +462,7 @@ const getConfigurationByPlugin = async () => {
       pluginConfiguration.value.push(item);
     });
   }
+  pluginType.value = res.result?.type;
 };
 
 //获取国标类型的配置项
