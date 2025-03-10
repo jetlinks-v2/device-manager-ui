@@ -3,7 +3,7 @@
     <div class="header">
       <a-space :size="12">
         <AIcon type="AppstoreOutlined" style="font-size: 18px" />
-        <span style="font-size: 20px">{{ $t('Apply.ProtocolList.294910-0') }}</span>
+        <span style="font-size: 20px">{{ type === 'plugin' ? $t('Apply.ProtocolList.294910-6') : $t('Apply.ProtocolList.294910-0') }}</span>
         <span @click="handleClick('metadata')"
           >{{ $t('Apply.ProtocolList.294910-1') }} <span style="color: #1890ff"> {{ count }} </span></span
         >
@@ -22,7 +22,7 @@
         <template #leftRender>
           <a-space :size="12" align="end">
             <div>
-              <div style="color: #00000080">{{ $t('Apply.ProtocolList.294910-4') }}</div>
+              <div style="color: #00000080">{{ type === 'plugin' ? $t('Apply.ProtocolList.294910-7') : $t('Apply.ProtocolList.294910-4') }}</div>
               <div class="protocol-item">
                 <div class="protocol-item-img">
                   <img :src="device.deviceCard" />
@@ -46,7 +46,7 @@
               />
             </div>
             <div>
-              <div style="color: #00000080">{{ $t('Apply.ProtocolList.294910-5') }}</div>
+              <div style="color: #00000080">{{ type === 'plugin' ? $t('Apply.ProtocolList.294910-8') : $t('Apply.ProtocolList.294910-5') }}</div>
               <div class="protocol-item">
                 <div class="protocol-item-img">
                   <img :src="device.deviceCard" />
@@ -85,6 +85,10 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  type: {
+    type: String,
+    default: 'protocol' // plugin
+  }
 });
 
 const route = useRoute();
