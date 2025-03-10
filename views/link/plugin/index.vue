@@ -84,7 +84,7 @@
                     {{ $t('plugin.index.293829-2') }}
                   </div>
                   <j-ellipsis style="width: 100%">
-                    {{ TypeMap[slotProps.type] }}
+                    {{ TypeMap[slotProps.type] || '--' }}
                   </j-ellipsis>
                 </a-col>
               </a-row>
@@ -113,7 +113,7 @@
           </CardBox>
         </template>
         <template #type="slotProps">
-          <span>{{ TypeMap[slotProps.type] }}</span>
+          <span>{{ TypeMap[slotProps.type] || '--' }}</span>
         </template>
         <template #action="slotProps">
           <a-space :size="16">
