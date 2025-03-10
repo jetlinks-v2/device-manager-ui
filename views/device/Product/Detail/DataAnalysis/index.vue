@@ -20,7 +20,7 @@
             </div>
         </div>
         <div class="edit" ref="el">
-            <j-monaco-editor
+            <monaco-editor
                 language="javascript"
                 style="height: 100%"
                 theme="vs"

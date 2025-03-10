@@ -9,7 +9,7 @@ import {Terminal} from '@xterm/xterm';
 import '@xterm/xterm/css/xterm.css'
 import {FitAddon} from "@xterm/addon-fit/src/FitAddon";
 import {debounce} from "lodash-es";
-import {randomString, onlyMessage, getToken} from "@jetlinks-web/utils";
+import {randomString, onlyMessage} from "@jetlinks-web/utils";
 import {useInstanceStore} from "../../../../../store/instance";
 import {storeToRefs} from "pinia";
 import {getWebSocket} from "./websocket";
@@ -19,7 +19,6 @@ const wsInitRef = ref()
 const terminal = ref()
 const sessionId = ref()
 const fitAddon = new FitAddon();
-const token = getToken()
 const instanceStore = useInstanceStore();
 const { current } = storeToRefs(instanceStore);
 
