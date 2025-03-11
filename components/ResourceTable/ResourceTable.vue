@@ -3,6 +3,7 @@ import { _queryTemplate } from '@device/api/resource/resource.ts';
 import Search from './Search/Search.vue';
 import { ResourceCardItem } from '@device/components/ResourceTable'
 import { defineExpose }  from 'vue'
+
 const props = defineProps({
   request: Function,
   title: String,
@@ -39,7 +40,6 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['itemClick'])
-
 const tableRef = ref(null)
 
 const columns = []
@@ -54,8 +54,12 @@ const refresh = () =>{
   tableRef.value?.reload()
 }
 
-defineExpose({refresh})
+// watchEffect(() => {
+//   // search.value = encodeURI(JSON.stringify({terms}))
+//   console.log(params.value)
+// })
 
+defineExpose({refresh})
 </script>
 
 <template>
