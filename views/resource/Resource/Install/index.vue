@@ -40,6 +40,12 @@ import {
   _queryTemplateNoPaging,
 } from '@device/api/resource/resource';
 
+const props = defineProps({
+  task: {
+    type: Array,
+    default: () => []
+  }
+})
 const emits = defineEmits(['close']);
 const source = ref('');
 const listRef = ref()
@@ -95,7 +101,7 @@ const getVersion = async (ids) => {
   }
 };
 
-const getByCloudError = (err)=>{
+const getByCloudError = (err) => {
   errMessage.value = err
 }
 
@@ -127,8 +133,18 @@ watch(
     }
 );
 
-onMounted(() => {
-  getTaskList();
-});
+watch(
+    () => props.task?.length,
+    (val) => {
+      if(val){
+        taskList.value = props.task
+      } else {
+        getTaskList();
+      }
+    },
+    {
+      immediate: true
+    }
+)
 </script>
 <style lang="less" scoped></style>

@@ -49,7 +49,7 @@
 <script lang="ts" setup name="TopCard">
 import { serverNode } from '../../../../api/link/dashboard';
 import TopEchartsItemNode from './TopEchartsItemNode.vue';
-import { getWebSocket } from '@/utils/websocket';
+import { wsClient } from '@jetlinks-web/core';
 import { map } from 'rxjs/operators';
 import { isNoCommunity } from '@/utils/utils'
 
@@ -83,7 +83,7 @@ const getData = () => {
     const topic = '/dashboard/systemMonitor/stats/info/realTime';
     unSub()
 
-    wsRef.value = getWebSocket(id, topic, {
+    wsRef.value = wsClient.getWebSocket(id, topic, {
         type: 'all',
         serverNodeId: serverId.value,
         interval: '1s',

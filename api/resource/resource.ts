@@ -25,11 +25,7 @@ export const _queryProtocol = (id: string, data: any) => request.post(`/resource
 export const _queryProtocolNoPag = (id: string, data: any) => request.post(`/resources/library/${id}/protocol/affected/product/_query/no-paging`, data)
 
 //应用资源协议列表
-export const _queryProtocolNow = (id: string,data:any) => request.post(`/resources/library/${id}/affected/protocol/_query`,data)
-export const _queryProtocolNowNoPaging = (id: string,data:any) => request.post(`/resources/library/${id}/affected/protocol/_query/no-paging`,data)
-
-// //当前资源的最新版本协议列表
-// export const _queryProtocolNew = (id: string,data:any) => request.post(`/resources/library/${id}/protocol/current/_query`,data)
+export const _queryNowNoPaging = (id: string,type: string, data:any) => request.post(`/resources/library/${id}/affected/${type}/_query/no-paging`,data)
 
 /**
  * 保存产品
@@ -40,14 +36,12 @@ export const saveProduct = (data: Record<string, unknown>) => request.patch('/de
 
 //更新协议
 export const saveProtocol = (data: Object) => request.patch(`/protocol`, data);
-export const _queryProtocolResource = (id: string, data: any) => request.post(`/resources/library/${id}/affected/protocol/_query`, data)
 
 //当前资源的最新版本协议列表
-export const _queryProtocolNew = (id: string,) => request.get(`/resources/library/${id}/protocol/current/_query`)
+export const _queryNew = (id: string, type: string) => request.get(`/resources/library/${id}/${type}/current/_query`)
 
 //获取云端我的资源信息
 export const _queryResourceCloud = (data:any) => request.post('/resources/cloud',data)
-// export const _queryResourceCloud = () => request.get('/resources/cloud')
 
 //获取资源库信息
 export const _queryTemplate = (data: any) => request.post('/resources/instance/detail/_query', data)

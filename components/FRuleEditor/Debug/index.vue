@@ -196,7 +196,7 @@
 import { PropType, Ref } from 'vue';
 import { useRuleEditorStore } from '../../../store/ruleEditor';
 import dayjs from 'dayjs';
-import { getWebSocket } from '@/utils/websocket';
+import { wsClient } from '@jetlinks-web/core';
 import {useTableWrapper, useTableFullScreen} from "../../../components/Metadata/context";
 import { onlyMessage } from '@/utils/comm';
 import {message} from "ant-design-vue";
@@ -321,7 +321,7 @@ const runScript = () => {
         return;
     }
 
-    ws.value = getWebSocket(
+    ws.value = wsClient.getWebSocket(
         `virtual-property-debug-${props.id}-${new Date().getTime()}`,
         '/virtual-property-debug',
         {
@@ -375,7 +375,7 @@ const runScriptAgain = async () => {
     });
     console.log('runScriptAgain', _properties, propertiesList)
 
-    wsAgain.value = getWebSocket(
+    wsAgain.value = wsClient.getWebSocket(
         `virtual-property-debug-${props.id}-${new Date().getTime()}`,
         '/virtual-property-debug',
         {

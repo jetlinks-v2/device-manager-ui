@@ -34,7 +34,8 @@ export const getPluginData = (type: string, pluginId: string, internalId: string
 
 export const getPublic = (id: string, path: string) => request.get(`/plugin/driver/${id}/${path}`)
 
-export const getTypes = () => request.get(`/dictionary/internal-plugin-type/items`)
+// export const getTypes = () => request.get(`/dictionary/internal-plugin-type/items`)
+export const getTypes = () => request.get(`/plugin/driver/types`)
 
 export const vailIdFn = (id: string ) => request.get(`/plugin/driver/id/_validate`, { id })
 

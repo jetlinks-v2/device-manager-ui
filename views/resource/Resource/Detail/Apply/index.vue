@@ -34,6 +34,12 @@
                 <ProtocolList
                     v-if="protocolList.length"
                     :protocolList="protocolList"
+                    type="protocol"
+                />
+                <ProtocolList
+                    v-if="pluginList.length"
+                    :protocolList="pluginList"
+                    type="plugin"
                 />
             </div>
         </div>
@@ -55,13 +61,10 @@ import { onlyMessage } from '@jetlinks-web/utils';
 import List from './List.vue';
 import ProtocolList from './ProtocolList.vue';
 import {
-    _queryProduct,
     saveProduct,
     saveProtocol,
-    _queryProtocolNew,
-    _queryProtocolNow,
-    _queryProtocol,
-    _queryProtocolNowNoPaging,
+    _queryNew,
+    _queryNowNoPaging,
     _queryProductNoPaging,
 } from '@device/api/resource/resource';
 import { useMenuStore, useAuthStore } from '@/store';
@@ -102,6 +105,7 @@ const props = defineProps({
 const type = ref();
 const step = ref(0);
 const productList = ref<any>([]);
+const pluginList = ref<any>([]);
 const resourceMetadata = ref();
 const protocolList = ref<any>([]);
 const loading = ref(false);
@@ -121,6 +125,7 @@ const onStep = () => {
         step.value = 1;
         getProduct();
         getProtocolList();
+        getPluginList()
     }
 };
 
@@ -134,35 +139,41 @@ const getProduct = async () => {
     }
 };
 
+
+const matchArray = (arr, newArr) => {
+  const _arr = arr.map((item: any) => {
+    const obj = newArr?.find((i: any) => i.id === item?.configuration?.sourceId,);
+    if (obj) {
+      item.newProtocol = obj;
+      return item;
+    }
+    return false
+  });
+  return _arr.filter((item: any) => item && item?.configuration?.version !== item?.newProtocol?.version);
+}
 // 获取当前协议
 const getProtocolList = async () => {
-    const res: any = await _queryProtocolNowNoPaging(props.data.id, {
+    const res: any = await _queryNowNoPaging(props.data.id, 'protocol', {
         paging: false,
     });
     if (res.success) {
-        const resp: any = await _queryProtocolNew(props.data.id);
+        const resp: any = await _queryNew(props.data.id, 'protocol');
         if (resp.success) {
-            console.log('now====', res.result);
-            console.log('new====', resp.result);
-            const arr = res.result.map((item: any) => {
-
-                const obj = resp.result?.find(
-                    (i: any) => i.id === item?.configuration?.sourceId,
-                );
-                if (obj) {
-                    item.newProtocol = obj;
-                }
-                return item;
-            });
-            protocolList.value = arr.filter(
-                (item: any) =>
-                {
-                  return item?.configuration?.version !== item?.newProtocol?.version
-                }
-            );
-
+            protocolList.value = matchArray(res.result, resp.result)
         }
     }
+};
+
+const getPluginList = async () => {
+  const res: any = await _queryNowNoPaging(props.data.id, 'plugin', {
+    paging: false,
+  });
+  if (res.success) {
+    const resp: any = await _queryNew(props.data.id, 'plugin');
+    if (resp.success) {
+      pluginList.value = matchArray(res.result, resp.result)
+    }
+  }
 };
 
 const onSave = async () => {

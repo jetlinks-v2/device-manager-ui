@@ -64,7 +64,7 @@
                     }
                 "
           ></div>
-          <j-monaco-editor
+          <monaco-editor
               language="javascript"
               style="height: 100%"
               theme="vs"

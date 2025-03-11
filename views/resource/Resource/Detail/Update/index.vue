@@ -38,12 +38,12 @@
         </template>
       </div>
     </div>
-    <Install v-if="showUpdateModal" @close="closeUpdateModal"/>
+    <Install v-if="showUpdateModal" :task="taskList" @close="closeUpdateModal"/>
   </a-modal>
 </template>
 
 <script setup name="Update">
-import {checkUpdate, _latest, installResource} from '@device/api/resource/resource';
+import {checkUpdate, _latest, installResource, queryTaskListNoPaging} from '@device/api/resource/resource';
 import Install from '@device/views/resource/Resource/Install/index.vue'
 import {provide} from "vue";
 
@@ -56,11 +56,13 @@ const props = defineProps({
   },
 });
 
+const route = useRoute();
 const showUpdate = ref(false);
 const showUpdateModal = ref(false);
 const loading = ref(true)
 const errorMessage = ref('')
 const info = ref({});
+const taskList = ref([])
 
 //隐藏notification通知框
 const hideNotification = () => {
@@ -69,6 +71,7 @@ const hideNotification = () => {
     el[i].innerHTML = '';
   }
 };
+
 const getUpdate = async () => {
   const res = await checkUpdate(props.data.id).catch(e => {
     if(e.status === 404) {
@@ -78,13 +81,41 @@ const getUpdate = async () => {
     }
   });
   if (res?.success) {
-    loading.value = false
     showUpdate.value = res.result;
     if (res.result) {
-      const resp = await _latest(props.data.id);
+      const resp = await _latest(props.data.id).finally(() => loading.value = false);
       if (resp.success) {
         info.value = resp.result
       }
+    } else {
+      loading.value = false
+    }
+  } else {
+    loading.value = false
+  }
+};
+
+const getTaskList = async () => {
+  const resp = await queryTaskListNoPaging({
+    terms: [
+      {
+        column: 'state',
+        termType: 'not',
+        value: 'success',
+      },
+      {
+        column: 'resourcesId',
+        termType: 'eq',
+        value: route.params?.id,
+      }
+    ],
+  });
+  if (resp.success) {
+    taskList.value = resp.result;
+    if(taskList.value.length){
+      showUpdateModal.value = true;
+    } else {
+      getUpdate();
     }
   }
 };
@@ -109,7 +140,8 @@ const closeUpdateModal = () => {
 provide('closeUpdateModal', closeUpdateModal)
 
 onMounted(() => {
-  getUpdate();
+  // 先查是否有没有执行完成的任务, 然后再查有新的更新不
+  getTaskList()
 });
 
 </script>

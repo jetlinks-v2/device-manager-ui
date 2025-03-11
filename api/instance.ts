@@ -256,7 +256,7 @@ export const bindDevice = (deviceId: string, data: Record<string, any>) => reque
  * @param params
  * @returns
  */
-export const _undeployCloud = (gatewayId: string, data: Record<string, any>,params?:any) => server.post(`/edge/action-sync/${gatewayId}/_undeploy`, data,params)
+export const _undeployCloud = (gatewayId: string, data: Record<string, any>,params?:any) => request.post(`/edge/action-sync/${gatewayId}/_undeploy`, data,params)
 
 /**
  * 云端批量启用设备-云边协同
@@ -265,7 +265,7 @@ export const _undeployCloud = (gatewayId: string, data: Record<string, any>,para
  * @param params
  * @returns
  */
-export const _deployCloud = (gatewayId: string, data: Record<string, any>,params?:any) => server.post(`/edge/action-sync/${gatewayId}/_deploy`, data,params)
+export const _deployCloud = (gatewayId: string, data: Record<string, any>,params?:any) => request.post(`/edge/action-sync/${gatewayId}/_deploy`, data,params)
 
 /**
  * 云端批量解绑设备-云边协同
@@ -274,7 +274,7 @@ export const _deployCloud = (gatewayId: string, data: Record<string, any>,params
  * @param params
  * @returns
  */
-export const _unbindCloud = (gatewayId: string, data: Record<string, any>,params?:any) => server.post(`/edge/action-sync/${gatewayId}/_unbind`, data,params)
+export const _unbindCloud = (gatewayId: string, data: Record<string, any>,params?:any) => request.post(`/edge/action-sync/${gatewayId}/_unbind`, data,params)
 
 /**
  * 云端批量删除设备-云边协同
@@ -283,7 +283,7 @@ export const _unbindCloud = (gatewayId: string, data: Record<string, any>,params
  * @param params
  * @returns
  */
-export const _deleteCloud = (gatewayId: string, data: Record<string, any>,params?:any) => server.post(`/edge/action-sync/${gatewayId}/_delete`, data,params)
+export const _deleteCloud = (gatewayId: string, data: Record<string, any>,params?:any) => request.post(`/edge/action-sync/${gatewayId}/_delete`, data,params)
 
 /**
  * 查询是否存在云端映射设备

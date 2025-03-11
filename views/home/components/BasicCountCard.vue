@@ -31,7 +31,7 @@
 </template>
 
 <script setup lang="ts">
-import { getWebSocket } from '@/utils/websocket';
+import { wsClient } from '@jetlinks-web/core';
 import Pie from './Pie.vue';
 import { map } from 'rxjs/operators';
 import { useMenuStore } from '@/store';
@@ -44,7 +44,7 @@ const jvm = ref(0);
 
 const { jumpPage } = useMenuStore();
 
-const cpuSocket = getWebSocket(
+const cpuSocket = wsClient.getWebSocket(
     'operations-statistics-system-info-cpu-realTime',
     '/dashboard/systemMonitor/stats/info/realTime',
     {
@@ -57,7 +57,7 @@ const cpuSocket = getWebSocket(
     .subscribe((resp: any) => {
         cpu.value = resp.value?.systemUsage || 0;
     });
-const jvmSocket = getWebSocket(
+const jvmSocket = wsClient.getWebSocket(
     `operations-statistics-system-info-memory-realTime`,
     `/dashboard/systemMonitor/stats/info/realTime`,
     {

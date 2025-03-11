@@ -9,7 +9,7 @@
     @cancel="emit('cancel')"
   >
     <div class="rule-detail-warp">
-      <j-monaco-editor
+      <monaco-editor
         :model-value="value" theme="vs" ref="editor" language="javascript" :readOnly="true"
       />
     </div>
