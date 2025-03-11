@@ -18,7 +18,7 @@
       <a-tabs @change="handleConvertMetadata" destroy-inactive-tab-pane>
         <a-tab-pane v-for="item in codecs" :key="item.id" :tab="item.name">
           <div class="cat-panel">
-            <JMonacoEditor v-model="monacoValue" lang="javascript" style="height: 100%" theme="vs"></JMonacoEditor>
+            <monaco-editor v-model="monacoValue" lang="javascript" style="height: 100%" theme="vs"></monaco-editor>
           </div>
         </a-tab-pane>
       </a-tabs>
