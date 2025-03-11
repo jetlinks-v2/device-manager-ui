@@ -208,7 +208,7 @@ const isMap = computed(() => {
 
 const edgeId = instanceStore.detail.id;
 const form = reactive({
-    way: ['cloud'],
+    way: 'cloud',
 });
 const formRef = ref();
 const result = ref([]);
