@@ -492,7 +492,7 @@
     "VirtualRule.index.946602-19": "写",
     "VirtualRule.index.946602-20": "上报",
     "VirtualRule.index.946602-21": "读",
-    "Properties.OtherSetting.237457-0": "字段冲突，请重新配置",
+    "Properties.OtherSetting.237457-0": "该字段与系统内置字段冲突，请避免以下字段:系统内置字段:",
     "Properties.OtherSetting.237457-1": "指标配置",
     "Properties.OtherSetting.237457-2": "场景联动页面可引用指标配置作为触发条件",
     "Properties.OtherSetting.237457-3": "阈值限制",
