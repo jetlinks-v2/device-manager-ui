@@ -100,7 +100,7 @@ const count = ref(0);
 
 // 受协议影响的产品
 const getProtocol = async () => {
-  const res = await _queryProtocol(_id, props.type !== 'plugin' ?{
+  const res = await _queryProtocol(_id, props.type, props.type !== 'plugin' ?{
         terms: [
             {
               column: 'messageProtocol',
