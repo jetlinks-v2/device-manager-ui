@@ -75,7 +75,7 @@
                     </div>
                 </a-space>
                 <a-space
-                    v-if="form.way[0] === 'edge'"
+                    v-if="form.way === 'edge'"
                     :size="24"
                     style="margin-top: 6px"
                 >
@@ -257,7 +257,7 @@ const _unbind = async () => {
 
 const onUndeploy = async () => {
     const res =
-        form.way[0] === 'cloud'
+        form.way === 'cloud'
             ? props.batch
                 ? await _undeployCloud(edgeId, props.rows, {
                       syncEdge: false,
@@ -282,7 +282,7 @@ const onUndeploy = async () => {
 };
 const onDelete = async () => {
     const res =
-        form.way[0] === 'cloud'
+        form.way === 'cloud'
             ? // ? props.batch
               //     ? await _deleteCloud(edgeId, props.rows, {
               //           syncEdge: false,
@@ -313,7 +313,7 @@ const onDelete = async () => {
 
 const onDeploy = async () => {
     const res =
-        form.way[0] === 'cloud'
+        form.way === 'cloud'
             ? props.batch
                 ? await _deployCloud(edgeId, props.rows, {
                       syncEdge: false,
