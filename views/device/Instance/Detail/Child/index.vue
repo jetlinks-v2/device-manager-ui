@@ -131,7 +131,7 @@
                                             "
                       />
                       <a @click="onJump(scopedSlots.id)">
-                        <j-ellipsis style="width: 100px">
+                        <j-ellipsis>
                           {{ scopedSlots?.id }}
                         </j-ellipsis>
                       </a>
@@ -331,7 +331,14 @@
               <div class="right-pagination"></div>
             </template>
             <template v-else>
-              <j-empty style="margin-top: 50%"/>
+              <div style="margin-top: 30%">
+                <j-empty>
+                    <template #description>
+                        <p>暂无数据</p>
+                        <span style="color: #999">请点击右上角「刷新按钮」，同步网关状态</span>
+                    </template>
+                </j-empty>
+              </div>
             </template>
           </div>
           <div class="right-bottom">
@@ -537,27 +544,29 @@ const handleSearch = async (e) => {
         if (res.success) {
             try {
                 const resp = await _queryByEdge(instanceStore.detail.id, {
+                    sorts: [{ name: '_bind.createTime', order: 'asc' }],
                     terms: [{ column: 'key', value: '', termType: 'notnull' }],
                 });
                 if (resp.success) {
                     _dropList.value = [...resp.result];
                     _bindInitList.value = [...resp.result];
                 }
-                _dataSource.value = res.result.map((item) => {
+                _dataSource.value = [];
+                res.result.forEach((item) => {
                     const isMap = _dropList.value?.find(
                         (i) => i.id === item.id || i.mappingId === item.id,
                     );
                     if (isMap?.id) {
-                        return {
+                        _dataSource.value.unshift({
                             ...item,
                             MappingStatus: 'success',
                             Mapping: isMap,
-                        };
+                        }) ;
                     } else {
-                        return {
+                        _dataSource.value.push({
                             ...item,
                             MappingStatus: 'none',
-                        };
+                        })
                     }
                 });
             } catch (error) {
