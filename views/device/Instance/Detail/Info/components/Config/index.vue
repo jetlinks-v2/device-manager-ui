@@ -135,7 +135,9 @@ import {
 } from '../../../../../../../api/instance';
 import Save from './Save.vue';
 import { onlyMessage } from '@jetlinks-web/utils';
+import { useI18n } from 'vue-i18n';
 
+const { t: $t } = useI18n();
 const instanceStore = useInstanceStore();
 const visible = ref<boolean>(false);
 const config = ref<ConfigMetadata[]>([]);
