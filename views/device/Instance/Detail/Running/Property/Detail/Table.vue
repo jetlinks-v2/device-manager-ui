@@ -52,7 +52,7 @@
         @ok="visible = false"
         @cancel="visible = false"
     >
-        <div>{{ $t('Detail.Table.181708-0') }}</div>
+        <div>{{ current?.propertyName }}</div>
         <JsonViewer
             v-if="
                 data?.valueType?.type === 'object' ||
@@ -116,6 +116,12 @@ const columns = computed(() => {
             key: 'value',
             ellipsis: true,
         },
+        {
+            title: $t('Log.index.848256-6'),
+            dataIndex: 'originValue',
+            key: 'originValue',
+            ellipsis: true,
+        }
     ];
     if (_props.data?.valueType?.type != 'geoPoint') {
         arr.push({
