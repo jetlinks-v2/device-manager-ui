@@ -41,10 +41,8 @@
                 </j-permission-button>
             </a-space>
         </div>
-        <a-descriptions bordered size="small" v-for="i in config" :key="i.name">
-            <template #title
-                ><h4 style="font-size: 15px">{{ i.name }}</h4></template
-            >
+        <a-descriptions :labelStyle="{width: '150px'}" bordered v-for="i in config" :key="i.name">
+            <template #title><h4 style="font-size: 15px">{{ i.name }}</h4></template>
             <a-descriptions-item
                 v-for="item in i.properties"
                 :key="item.property"

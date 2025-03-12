@@ -62,12 +62,13 @@ watch(
     .choose-view {
         width: 100%;
         padding: 0 9%;
-        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
 
         .btn {
             display: flex;
             justify-content: flex-end;
-            margin-top: 68px;
         }
     }
 }

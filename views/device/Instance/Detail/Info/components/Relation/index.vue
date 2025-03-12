@@ -1,6 +1,6 @@
 <template>
     <div style="margin-top: 20px">
-        <a-descriptions bordered>
+        <a-descriptions bordered :labelStyle="{width: '150px'}">
             <template #title>
                 {{ $t('Relation.index.878714-0') }}
                 <j-permission-button

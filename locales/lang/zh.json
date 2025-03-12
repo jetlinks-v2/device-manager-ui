@@ -2262,6 +2262,7 @@
     "Install.data.733160-0": "同版本覆盖",
     "Install.data.733160-1": "版本更新",
     "Install.data.733160-2": "首次安装",
+    "Install.data.733160-3": "版本降级",
     "components.Init.399777-0": "从云端获取",
     "components.Init.399777-1": "拖放安装资源或者点击上方按钮从本地文件中选取资源安装;",
     "components.Init.399777-2": "资源包异常上传失败！",
