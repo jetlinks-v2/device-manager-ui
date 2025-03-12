@@ -1,5 +1,6 @@
 <template>
     <div>
+        <pro-search :columns="columns" @search="handleSearch"></pro-search>
         <a-table
             :columns="columns"
             size="small"
@@ -14,12 +15,20 @@
                 total: dataSource?.total || 0,
                 pageSizeOptions: ['12', '24', '48', '96'],
             }"
+            :scroll="{y: 400}"
         >
             <template #bodyCell="{ column, record }">
                 <template v-if="column.key === 'timestamp'">
                     {{ dayjs(record.timestamp).format('YYYY-MM-DD HH:mm:ss') }}
                 </template>
                 <template v-if="column.key === 'value'">
+                    <ValueRender
+                        type="table"
+                        :data="_props.data"
+                        :value="{ ...record }"
+                    />
+                </template>
+                <template v-if="column.key === 'numberValue'">
                     <ValueRender
                         type="table"
                         :data="_props.data"
@@ -101,7 +110,18 @@ const dataSource = ref({
 });
 const current = ref<any>({});
 const visible = ref<boolean>(false);
-console.log(_props.data);
+const params = ref();
+const valueType = {
+    int: 'number',
+    float: 'number',
+    short: 'number',
+    double: 'number',
+    string: 'string',
+    boolean: 'select',
+    long: 'number',
+    date: 'date',
+    enum: 'select'
+}
 const columns = computed(() => {
     const arr: any[] = [
         {
@@ -109,20 +129,43 @@ const columns = computed(() => {
             dataIndex: 'timestamp',
             key: 'timestamp',
             ellipsis: true,
+            search: {
+                type: 'date'
+            }
         },
         {
             title: _props.data?.name || '',
-            dataIndex: 'value',
-            key: 'value',
+            dataIndex: ['int', 'float', 'short', 'double'].includes(_props.data.valueType?.type) ? 'numberValue' : 'value',
+            key: ['int', 'float', 'short', 'double'].includes(_props.data.valueType?.type) ? 'numberValue' : 'value',
             ellipsis: true,
+            search: {
+                type: valueType[_props.data?.valueType?.type as keyof typeof valueType] || 'string',
+                options: _props.data.valueType.type === 'boolean'
+                    ? [
+                        {
+                            label: _props.data?.valueType?.trueText,
+                            value: _props.data?.valueType?.trueValue
+                        },
+                        {
+                            label: _props.data?.valueType?.falseText,
+                            value: _props.data?.valueType?.falseValue
+                        }
+                    ]
+                    : _props.data?.valueType?.elements?.map((item: any) => {
+                        return {label: item.text, value: item.value}
+                    })
+            }
         },
-        {
+        
+    ];
+    if(['int', 'float', 'short', 'double'].includes(_props.data.valueType?.type)) {
+        arr.push({
             title: $t('Log.index.848256-6'),
             dataIndex: 'originValue',
             key: 'originValue',
             ellipsis: true,
-        }
-    ];
+        })
+    }
     if (_props.data?.valueType?.type != 'geoPoint') {
         arr.push({
             title: $t('Product.index.660348-11'),
@@ -141,12 +184,21 @@ const showLoad = computed(() => {
     );
 });
 
+const handleSearch = (e: any) => {
+    params.value = e;
+    if(e) {
+        queryPropertyData({
+            pageSize: dataSource.value.pageSize || 12,
+            pageIndex: 0,
+        }, e)
+    }
+}
 const showDetail = (item: any) => {
     visible.value = true;
     current.value = item;
 };
 
-const queryPropertyData = async (params: any) => {
+const queryPropertyData = async (params: any, terms?: any) => {
     const resp = await getPropertyData(
         instanceStore.current.id,
         _props.data.id,
@@ -168,6 +220,7 @@ const queryPropertyData = async (params: any) => {
                         },
                     ],
                 },
+                terms ? {...terms} : {}
             ],
         },
     );
@@ -195,7 +248,7 @@ const onChange = (page: any) => {
     queryPropertyData({
         pageSize: page.pageSize,
         pageIndex: Number(page.current) - 1 || 0,
-    });
+    }, params.value);
 };
 
 const _download = (record: any) => {
@@ -224,5 +277,8 @@ const _download = (record: any) => {
 }
 :deep(.ant-pagination-jump-prev) {
     display: none !important;
+}
+:deep(.JSearch-warp) {
+    padding: 0 !important;
 }
 </style>
