@@ -2308,5 +2308,7 @@
     "init-home.index.011072-21": "MQTT产品",
     "init-home.index.011072-22": "MQTT设备",
     "init-home.index.011072-23": "初始化数据",
-    "init-home.index.011072-24": "初始化设备接入示例数据"
+    "init-home.index.011072-24": "初始化设备接入示例数据",
+    "child.index.5495434-0": "暂无数据",
+    "child.index.5495434-1": "请点击右上角「刷新按钮」，同步网关状态"
 }
