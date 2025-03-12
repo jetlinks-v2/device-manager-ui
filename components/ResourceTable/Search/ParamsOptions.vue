@@ -1,65 +1,78 @@
 <script setup name="ParamsOptions">
-import { useI18n } from 'vue-i18n'
+import {useI18n} from 'vue-i18n'
 
-const { t: $t } = useI18n()
-  const props = defineProps({
-    title: {
-      type: String
-    },
-    options: {
-      type: Array,
-      default: () => []
-    },
-    showAll: {
-      type: Boolean,
-      default: true
-    },
-    value: {
-      type: [String, Number],
-      default: undefined
-    },
-    fieldNames: {
-      type: Object,
-      default: () => ({
-        label: 'label',
-        value: 'value'
-      })
-    }
-  })
-
-  const emit = defineEmits(['change', 'update:value'])
-
-  const activeKey = ref(props.showAll ? 'all' : undefined)
-
-  const handleFieldNames = (array) => {
-    return array.map(item => {
-      return {
-        ...item,
-        label: item[props.fieldNames.label || 'label'],
-        value: item[props.fieldNames.value || 'value']
-      }
+const {t: $t} = useI18n()
+const props = defineProps({
+  title: {
+    type: String
+  },
+  options: {
+    type: Array,
+    default: () => []
+  },
+  showAll: {
+    type: Boolean,
+    default: true
+  },
+  value: {
+    type: [String, Number],
+    default: undefined
+  },
+  fieldNames: {
+    type: Object,
+    default: () => ({
+      label: 'label',
+      value: 'value'
     })
   }
+})
 
-  const _options = computed(() => {
-    const array = handleFieldNames(props.options)
-    if (props.showAll) {
-      return [
-        { label: $t('Search.ParamsOptions.357176-0'), value: 'all' },
-        ...array
-      ]
+const emit = defineEmits(['change', 'update:value'])
+
+const activeKey = ref(props.showAll ? 'all' : undefined)
+
+const handleFieldNames = (array) => {
+  return array.map(item => {
+    return {
+      ...item,
+      label: item[props.fieldNames.label || 'label'],
+      value: item[props.fieldNames.value || 'value']
     }
-    return array
   })
+}
 
-  const onChange = (record, e) => {
-    e.stopPropagation()
-    if (activeKey.value !== record.value) {
-      activeKey.value = record.value
-      emit('update:value', record.value)
-      emit('change', record.value, record)
-    }
+const _options = computed(() => {
+  const array = handleFieldNames(props.options)
+  if (props.showAll) {
+    return [
+      {label: $t('Search.ParamsOptions.357176-0'), value: 'all'},
+      ...array
+    ]
   }
+  return array
+})
+
+const onChange = (record, e) => {
+  e.stopPropagation()
+  if (activeKey.value !== record.value) {
+    activeKey.value = record.value
+    emit('update:value', record.value)
+    emit('change', record.value, record)
+  }
+}
+
+watch(
+    () => props.value,
+    (v1) => {
+      if(v1){
+        activeKey.value = v1;
+      }
+    },
+    {
+      immediate: true,
+      deep: true
+    }
+)
 </script>
 
 <template>
@@ -69,12 +82,12 @@ const { t: $t } = useI18n()
     </div>
     <div class="params-list">
       <div
-        :class="{
+          :class="{
           'params-item': true,
           'active': item.value === activeKey
         }"
-        v-for="item in _options"
-        @click="(e) => onChange(item, e)"
+          v-for="item in _options"
+          @click="(e) => onChange(item, e)"
       >
         {{ item.label }}
       </div>

@@ -70,7 +70,7 @@
     <div style="padding: 100px 0;" v-else>
       <j-empty  />
     </div>
-    <Product v-if="visible" :protocolList="protocolList" type="protocol" @close="visible = false" />
+    <Product v-if="visible" :protocolList="protocolList" :type="type" @close="visible = false" />
   </div>
 </template>
 
@@ -95,16 +95,33 @@ const route = useRoute();
 const _id = route.params?.id as any;
 
 const visible = ref(false);
-const productList = ref<any>([]);
+// const productList = ref<any>([]);
 const count = ref(0);
 
 // 受协议影响的产品
 const getProtocol = async () => {
-  const res = await _queryProtocol(_id, { terms: [{column: 'messageProtocol', termType: 'in', value: props.protocolList.map(item => item.id)}] });
+  const res = await _queryProtocol(_id, props.type, props.type !== 'plugin' ? {
+        terms: [
+            {
+              column: 'messageProtocol',
+              termType: 'in',
+              value: props.protocolList.map(item => item.id)
+            }
+        ]
+      } :
+      {
+        "terms": [
+          {
+            "column": "access_id$prod-plugin",
+            value: props.protocolList.map(item => item.id),
+            "type": "and"
+          }
+        ]
+      }
+  );
   if (res.success) {
     count.value = res.result.total;
   }
-  // await _queryProtocolNoPag(_id, { paging: false });
 };
 const handleClick = (type: any) => {
   visible.value = true;

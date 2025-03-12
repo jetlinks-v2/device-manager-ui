@@ -49,9 +49,16 @@
                                         placement="topRight"
                                     >
                                         <template #title>
-                                            <span style="color: #1d2129"
-                                            >{{ $t('Properties.OtherSetting.237457-0') }}</span
-                                            >
+                                            <div style="color: #1A1A1A; padding: 12px">
+                                              {{ $t('Properties.OtherSetting.237457-0') }}
+                                              <div style="display: flex; flex-wrap: wrap; gap: 4px 8px; margin-top: 8px">
+                                                <div
+                                                    style="background-color: #F0F0F0; padding: 4px 8px; border-radius: 4px;color: #777777;"
+                                                    v-for="item in conflictData" :key="item">
+                                                {{item}}
+                                              </div>
+                                              </div>
+                                            </div>
                                         </template>
                                         <div
                                             class="table-form-error-target"

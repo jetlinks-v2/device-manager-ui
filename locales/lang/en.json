@@ -492,7 +492,7 @@
     "VirtualRule.index.946602-19": "write",
     "VirtualRule.index.946602-20": "Report",
     "VirtualRule.index.946602-21": "read",
-    "Properties.OtherSetting.237457-0": "Field conflict, please reconfigure",
+    "Properties.OtherSetting.237457-0": "This field conflicts with a system built-in field, avoid the following fields:System Built-in Fields.",
     "Properties.OtherSetting.237457-1": "Indicator configuration",
     "Properties.OtherSetting.237457-2": "The scene linkage page can reference indicator configuration as a triggering condition",
     "Properties.OtherSetting.237457-3": "Threshold limit",

@@ -10,6 +10,10 @@ const props = defineProps({
   type: {
     type: String,
     default: ''
+  },
+  value: {
+    type: Array,
+    default: []
   }
 })
 
@@ -39,6 +43,15 @@ watch(() => props.type, () => {
 }, {
   immediate: true,
   deep: true
+})
+
+watch(() => props.value, (val) => {
+  if(val.length){
+    selectKeys.value = new Set([...val])
+  }
+}, {
+  deep: true,
+  immediate: true
 })
 </script>
 

@@ -7,29 +7,32 @@
         @ok="handleOk"
         @cancel="handleCancel"
     >
-        <a-table
-            rowKey="id"
-            :columns="columns"
-            :data-source="dataSource"
-            bordered
-            :pagination="false"
-        >
+        <div style="max-height: 500px; overflow-y: auto">
+          <a-table
+              rowKey="id"
+              :columns="columns"
+              :data-source="dataSource"
+              bordered
+              :pagination="false"
+          >
             <template #bodyCell="{ column, text, record }">
-                <div style="width: 280px">
-                    <template v-if="['key', 'name'].includes(column.dataIndex)">
-                        <j-ellipsis>{{ text }}</j-ellipsis>
-                    </template>
-                    <template v-else>
-                        <SelectAMap
-                            v-if="record.type === 'geoPoint'"
-                            v-model:point="record.value"
-                        />
-                        <template v-else>
-                          <j-value-item
-                              v-model:modelValue="record.value"
-                              :itemType="record.type"
-                              style="width: 100%"
-                              :options="
+              <div style="width: 280px">
+                <template v-if="['key', 'name'].includes(column.dataIndex)">
+                  <j-ellipsis>{{ text }}</j-ellipsis>
+                </template>
+                <template v-else>
+                  <SelectAMap
+                      v-if="record.type === 'geoPoint'"
+                      v-model:point="record.value"
+                  />
+                  <template v-else>
+                    <j-value-item
+                        v-model:modelValue="record.value"
+                        :itemType="record.type === 'array' ? 'object' : record.type"
+                        :action="FileStaticPath"
+                        style="width: 100%"
+                        :headers="{ [TOKEN_KEY]: getToken() }"
+                        :options="
                                 record.type === 'enum'
                                     ? (record?.dataType?.elements || []).map(
                                           (item) => {
@@ -46,12 +49,13 @@
                                       ]
                                     : undefined
                             "
-                          />
-                        </template>
-                    </template>
-                </div>
+                    />
+                  </template>
+                </template>
+              </div>
             </template>
-        </a-table>
+          </a-table>
+        </div>
     </a-modal>
 </template>
 
@@ -59,8 +63,10 @@
 import { useInstanceStore } from '../../../../../../../store/instance';
 import { cloneDeep } from 'lodash-es';
 import { saveTags, delTags } from '../../../../../../../api/instance';
-import { onlyMessage } from '@jetlinks-web/utils';
+import {getToken, onlyMessage} from '@jetlinks-web/utils';
 import { useI18n } from 'vue-i18n';
+import {FileStaticPath} from "@device/api/comm";
+import {TOKEN_KEY} from "@jetlinks-web/constants";
 
 const { t: $t } = useI18n();
 const emit = defineEmits(['close', 'save']);

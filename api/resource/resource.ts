@@ -21,7 +21,7 @@ export const _queryProductNoPaging = (id: string,data:any) => request.post(`reso
 //应用资源受影响采集器列表
 export const _queryCollector = (id: string, data: any) => request.post(`resources/library/${id}/affected/collector/_query`, data)
 //应用资源受协议影响的产品列表
-export const _queryProtocol = (id: string, data: any) => request.post(`/resources/library/${id}/protocol/affected/product/_query`, data)
+export const _queryProtocol = (id: string,type: string, data: any) => request.post(`/resources/library/${id}/${type}/affected/product/_query`, data)
 export const _queryProtocolNoPag = (id: string, data: any) => request.post(`/resources/library/${id}/protocol/affected/product/_query/no-paging`, data)
 
 //应用资源协议列表
