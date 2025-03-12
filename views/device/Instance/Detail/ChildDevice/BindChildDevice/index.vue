@@ -96,8 +96,10 @@ import {
     bindDevice,
     queryDeviceMapping,
     saveDeviceMapping,
-    queryNoPagingPost,
 } from '../../../../../../api/instance';
+import {
+    queryNoPagingPost,
+} from '@device/api/product'
 import dayjs from 'dayjs';
 import { useInstanceStore } from '../../../../../../store/instance';
 import { storeToRefs } from 'pinia';
