@@ -12,30 +12,32 @@
             :columns="columns"
             @search="(params)=>queryParams = {...params}"
         />
-        <j-pro-table
-            mode="TABLE"
-            :request="query"
-            :columns="columns"
-            :params="queryParams"
-            :defaultParams="{ sorts: [{ name: 'createTime', order: 'desc' }] }"
-            :rowSelection="{
+        <div style="height: 500px; overflow-y: auto">
+          <j-pro-table
+              mode="TABLE"
+              :request="query"
+              :columns="columns"
+              :params="queryParams"
+              :defaultParams="{ sorts: [{ name: 'createTime', order: 'desc' }] }"
+              :rowSelection="{
                 selectedRowKeys: selectedKeys,
                 onChange: (keys:string[])=>selectedKeys = keys,
                 type: 'radio',
             }"
-        >
+          >
             <template #registryTime="slotProps">
                 <span>{{
-                    dayjs(slotProps.registryTime).format('YYYY-MM-DD HH:mm:ss')
-                }}</span>
+                    slotProps.registryTime ? dayjs(slotProps.registryTime).format('YYYY-MM-DD HH:mm:ss') : '--'
+                  }}</span>
             </template>
             <template #state="slotProps">
-                <StatusLabel
-                    :status-value="slotProps.state.value"
-                    :status-label="slotProps.state.text"
-                />
+              <StatusLabel
+                  :status-value="slotProps.state.value"
+                  :status-label="slotProps.state.text"
+              />
             </template>
-        </j-pro-table>
+          </j-pro-table>
+        </div>
     </a-modal>
 </template>
 

@@ -1,5 +1,5 @@
 <template>
-    <a-descriptions bordered>
+    <a-descriptions :labelStyle="{width: '150px'}" bordered>
         <template #title>
             {{ $t('Info.index.208636-0') }}
             <j-permission-button
@@ -43,9 +43,11 @@
                 </div>
             </div>
         </a-descriptions-item>
-        <a-descriptions-item :label="$t('Info.index.208636-7')">{{
-            instanceStore.current?.productName
-        }}</a-descriptions-item>
+        <a-descriptions-item :label="$t('Info.index.208636-7')">
+          <j-ellipsis>{{
+              instanceStore.current?.productName
+            }}</j-ellipsis>
+        </a-descriptions-item>
         <a-descriptions-item :label="$t('Info.index.208636-8')">{{
             instanceStore.current?.deviceType?.text
         }}</a-descriptions-item>

@@ -2261,6 +2261,7 @@
     "Install.data.733160-0": "Same version coverage",
     "Install.data.733160-1": "Version update",
     "Install.data.733160-2": "First installation",
+    "Install.data.733160-3": "Version downgrade",
     "components.Init.399777-0": "Get from the cloud",
     "components.Init.399777-1": "Drag and drop installation resources or click the button above to select resources from local files for installation;",
     "components.Init.399777-2": "Resource package upload failed due to abnormal conditions!",

@@ -95,7 +95,7 @@
 </template>
 
 <script setup>
-import {_queryTemplateNoPaging, installResource} from '@device/api/resource/resource';
+import {installResource} from '@device/api/resource/resource';
 import {cloneDeep} from 'lodash-es';
 import {computedVersion} from '../data';
 import {resource} from '@device/assets/resource';

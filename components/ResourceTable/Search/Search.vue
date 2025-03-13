@@ -306,25 +306,16 @@ const handleTypeSearch = (record) => {
 
 const handleClassifyChildrenSearch = (keys) => {
   const array = map(keys, 'value')
-  const _value = keys.length ? [
-        {
-          column: 'key$resources-classification-child',
-          termType: 'in',
-          value: array
-        }
-      ] :
-      [
-        {
-          column: 'key$resources-classification',
-          value: oldClassifyType
-        }
-      ]
+  const _value = [
+    {
+      column: 'key$resources-classification-child',
+      termType: 'in',
+      value: array
+    }
+  ]
   searchParams[1] = {
     column: 'id$resource-bind',
-    value: [{
-      column: 'key$resources-classification',
-      value: _value
-    }]
+    value: _value
   }
 }
 // 处理分类
