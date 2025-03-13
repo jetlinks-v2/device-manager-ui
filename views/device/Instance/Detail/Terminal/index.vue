@@ -12,7 +12,9 @@ import {debounce} from "lodash-es";
 import {randomString, onlyMessage} from "@jetlinks-web/utils";
 import {useInstanceStore} from "../../../../../store/instance";
 import {storeToRefs} from "pinia";
-import {getWebSocket} from "./websocket";
+import { WebSocketClient } from '@jetlinks-web/core'
+import {BASE_API, TOKEN_KEY_URL} from "@jetlinks-web/constants";
+import { getToken } from '@jetlinks-web/utils';
 
 const wsRef = ref()
 const wsInitRef = ref()
@@ -23,17 +25,22 @@ const instanceStore = useInstanceStore();
 const { current } = storeToRefs(instanceStore);
 
 let termRef
-const url = ref()
+let websocket = new WebSocketClient();
+const protocol = window.location.protocol === "https:" ? "wss://" : "ws://";
+const host = document.location.host;
+const token = getToken()
+const url = `${protocol}${host}${BASE_API}/edge/device/${current.value?.id}/_ws/messaging/${token}?${TOKEN_KEY_URL}=${token}`;
+
 
 const getData = (input = '') => {
   const id = 'terminal_' + randomString(8);
   const topic = '/xterm/data';
 
-  wsRef.value = getWebSocket(id, topic, {
+  wsRef.value = websocket.getWebSocket(id, topic, {
     sessionId: sessionId.value,
     _ignore_complete: true,
     input
-  }, current.value?.id).subscribe();
+  }).subscribe();
 }
 
 const initTerm = () => {
@@ -70,7 +77,7 @@ const initTerm = () => {
 const getInitData = () => {
   const id = 'terminal_' + randomString(8);
   const topic = '/xterm/setup';
-  wsInitRef.value = getWebSocket(id, topic, {}, current.value?.id).subscribe((resp) => {
+  wsInitRef.value = websocket.getWebSocket(id, topic, {}).subscribe((resp) => {
     if (!resp.payload?.sessionId) {
       onlyMessage($t('Terminal.index.488144-0'))
     }
@@ -109,8 +116,18 @@ const unSub = () => {
 
 onUnmounted(() => {
   unSub()
+  websocket?.disconnect()
   removeResizeListener()
 })
+
+watch(() => current.value, () => {
+  if(current.value?.state?.value === 'online') {
+    websocket?.initWebSocket(url);
+    websocket?.connect()
+  } else {
+    websocket?.disconnect()
+  }
+}, {immediate: true})
 </script>
 
 <style scoped lang="less">
