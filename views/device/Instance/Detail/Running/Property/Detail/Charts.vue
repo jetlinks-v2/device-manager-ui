@@ -41,6 +41,7 @@ import Chart from './Chart.vue';
 import * as echarts from 'echarts';
 import dayjs from 'dayjs';
 import { useI18n } from 'vue-i18n';
+import { isNaN } from 'lodash-es';
 
 const { t: $t } = useI18n();
 const prop = defineProps({
@@ -224,10 +225,15 @@ const getOptions = (arr: any[]) => {
                 const left = pt[0] - 80;
                 return [left, '10%'];
             },
+            valueFormatter: (value: any) => {
+                return value || '--'
+            }
         },
         series: [
             {
-                data: arr.map((i: any) => i.value),
+                data: arr.map((i: any) => {
+                    return typeof i.value === 'number' && !isNaN(i.value) ? Number(i.value).toFixed(2) : i.value
+                }), //如果是数字保留两位小数
                 type: 'line',
                 areaStyle: {},
             },
