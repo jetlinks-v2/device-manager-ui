@@ -61,7 +61,6 @@ const onSelect = (item) => {
     _selectKey.value = item.value;
 
     if (props.type === 'metadata') {
-        console.log('resourceMetadata====',props.resourceMetadata);
         handleChange(item.value);
     } else {
         emit('update:value', {

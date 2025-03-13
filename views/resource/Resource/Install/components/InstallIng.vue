@@ -228,7 +228,6 @@ const pauseAll = async () => {
         }
       }
   );
-  console.log(arr,'test')
   const resp = await stopTask(arr);
   if (resp.success) {
   }

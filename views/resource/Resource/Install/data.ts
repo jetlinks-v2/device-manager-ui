@@ -56,7 +56,7 @@ function compareVersions(v1: string, v2: string) {
 export const computedVersion = (resourceVersionMap:any,data:any) => {
     const resourcesId = data?.resourcesId || data?.resourceDetails?.id || data?.resourceDetails?.releaseDetail?.resourcesId || data?.releaseDetail?.resourcesId
     if (resourceVersionMap.has(resourcesId)) {
-        const nowVersion = data?.version || data?.resourceDetails?.version
+        const nowVersion = data?.version || data?.resourceDetails?.version || data?.resourceDetails?.releaseDetail?.version
         const oldVersion = resourceVersionMap.get(resourcesId)
         const flag = compareVersions(nowVersion, oldVersion)
         if(flag === 0){

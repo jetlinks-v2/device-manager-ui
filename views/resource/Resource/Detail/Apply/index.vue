@@ -61,7 +61,8 @@ import { onlyMessage } from '@jetlinks-web/utils';
 import List from './List.vue';
 import ProtocolList from './ProtocolList.vue';
 import {
-    saveProduct,
+  saveProduct,
+    savePlugin,
     saveProtocol,
     _queryNew,
     _queryNowNoPaging,
@@ -177,9 +178,14 @@ const getPluginList = async () => {
 };
 
 const onSave = async () => {
+    // 物模型
     const _new = productList.value.filter((i: any) => i.newMetaData);
+    // 协议
     const _newProtocol = protocolList.value.filter((i: any) => i.handle);
-    if (!_new.length && !_newProtocol.length) {
+    // 插件
+    const _newPlugin = pluginList.value.filter((i: any) => i.handle);
+
+    if (!_new.length && !_newProtocol.length && !_newPlugin.length) {
         onlyMessage($t('Apply.index.663043-9'), 'warning');
         return;
     }
@@ -195,7 +201,7 @@ const onSave = async () => {
     if (_newProtocol.length) {
         const arr = protocolList.value
             .filter((i: any) => i.handle === 'cover')
-            .map((item) => ({
+            .map((item: any) => ({
                 id: item.id,
                 name: item.newProtocol.name,
                 type: 'jar',
@@ -207,9 +213,28 @@ const onSave = async () => {
             }));
         arr.length && requestList.push(saveProtocol(arr));
     }
+
+    if(_newPlugin.length){
+      const arr = pluginList.value
+          .filter((i: any) => i.handle === 'cover')
+          .map((item: any) => ({
+            ...item,
+            id: item.id,
+            name: item.newProtocol.name,
+            configuration: {
+              location: item.newProtocol.location,
+              version: item.newProtocol.version,
+              sourceId: item.configuration.sourceId,
+            },
+          }));
+      arr.length && requestList.push(savePlugin(arr));
+    }
     const res = await Promise.all(requestList).finally(() => (loading.value = false));
-    emits('close');
-    onlyMessage($t('Apply.index.663043-10'), 'success');
+    const result = res.every((i: any) => i.success)
+    if(result) {
+      emits('close');
+      onlyMessage($t('Apply.index.663043-10'), 'success');
+    }
 };
 </script>
 
