@@ -1258,6 +1258,10 @@ onUnmounted(() => {
     editStatus.value = false;
     EventEmitter.unSubscribe(['ChildTabs'], TabsChange);
 });
+
+defineExpose({
+    handleRefresh
+})
 </script>
 
 <style lang="less" scoped>

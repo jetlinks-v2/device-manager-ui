@@ -108,6 +108,7 @@
         <full-page>
           <div style="height: 100%; padding: 24px;overflow-y: auto">
             <component
+              ref="componentRef"
               :is="tabs[instanceStore.tabActiveKey]"
               v-bind="{ type: 'device',isRefresh:isRefresh }"
               @onJump="onTabChange"
@@ -164,6 +165,7 @@ statusMap.set('offline', 'error');
 statusMap.set('notActive', 'warning');
 
 const statusRef = ref();
+const componentRef = ref();
 
 const initList = [
     {
@@ -431,6 +433,9 @@ const handleRefresh = async () => {
     if (instanceStore.current?.id) {
         await instanceStore.refresh(instanceStore.current?.id);
         onlyMessage($t('Detail.index.957187-28'));
+    }
+    if(instanceStore.tabActiveKey === 'Child') {
+        componentRef.value?.handleRefresh();
     }
 };
 
