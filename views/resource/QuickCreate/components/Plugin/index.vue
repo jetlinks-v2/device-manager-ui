@@ -1,5 +1,5 @@
 <template>
-    <a-modal visible title="协议" :width="1000" :maskClosable="false" @ok="emits('selectedPlugin', pluginCurrent)"
+    <a-modal visible title="协议" :width="1000" :maskClosable="false" @ok="onSave"
         @cancel="emits('close')">
         <div class="header">
             <a-input-search allowClear style="margin-right: 8px;" placeholder="请输入"
@@ -35,6 +35,7 @@ import { cloneDeep } from 'lodash-es';
 import AccessCard from '../AccessCard/index.vue'
 import { getPluginList } from '@device/api/link/accessConfig';
 import Save from '@device/views/link/plugin/Save.vue'
+import {onlyMessage} from "@jetlinks-web/utils";
 const props = defineProps({
     type: {
         type: String,
@@ -90,7 +91,15 @@ const pluginChange = (data) => {
     pluginCurrent.value = data
 }
 
-const saveChange = () => {
+const onSave = () => {
+  if(pluginCurrent.value?.id){
+    emits('selectedPlugin', pluginCurrent.value)
+  } else {
+    onlyMessage('请选择插件', 'error');
+  }
+}
+
+const saveChange = (value) => {
     visible.value = false;
     if (value) {
         onlyMessage('操作成功', 'success');

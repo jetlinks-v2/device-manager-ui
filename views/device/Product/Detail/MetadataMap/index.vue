@@ -2,7 +2,7 @@
     <div class="metadata-map">
         <div class="left">
           <a-space style="margin-bottom: 24px">
-                <a-select @change="onSearchChange" show-search allow-clear :placeholder="$t('MetadataMap.index.360809-0')" style="width: 250px;">
+                <a-select @change="onSearchChange" show-search allow-clear :placeholder="$t('MetadataMap.index.130045-0')" style="width: 250px;">
                     <a-select-option :label="item.name" v-for="item in dataSourceCache" :value="item?.id" :key="item?.id">{{item?.name}}</a-select-option>
                 </a-select>
                 <a-button type="primary" @click="onSearch"><AIcon type="SearchOutlined" /></a-button>
@@ -32,8 +32,8 @@
                                     "
                                 >
                                     <span>
-                                        {{ $t('MetadataMap.index.360809-1') }}<a-tooltip
-                                            :title="$t('MetadataMap.index.360809-2')"
+                                        {{ $t('MetadataMap.index.130045-1') }}<a-tooltip
+                                            :title="$t('MetadataMap.index.130045-2')"
                                         >
                                             <AIcon
                                                 style="margin-left: 10px"
@@ -49,7 +49,7 @@
                                         ><AIcon
                                             type="ArrowUpOutlined"
                                         /><span>{{
-                                            filterValue ? $t('MetadataMap.index.360809-3') : $t('MetadataMap.index.360809-4')
+                                            filterValue ? $t('MetadataMap.index.130045-3') : $t('MetadataMap.index.130045-4')
                                         }}</span></a-tag
                                     >
                                     <a-dropdown v-else>
@@ -57,10 +57,10 @@
                                         <template #overlay>
                                             <a-menu @click="onFilter">
                                                 <a-menu-item :key="true"
-                                                    >{{ $t('MetadataMap.index.360809-5') }}</a-menu-item
+                                                    >{{ $t('MetadataMap.index.130045-5') }}</a-menu-item
                                                 >
                                                 <a-menu-item :key="false"
-                                                    >{{ $t('MetadataMap.index.360809-6') }}</a-menu-item
+                                                    >{{ $t('MetadataMap.index.130045-6') }}</a-menu-item
                                                 >
                                             </a-menu>
                                         </template>
@@ -95,7 +95,7 @@
                                                 selectedPluginKeys.includes(
                                                     item.id,
                                                 )
-                                                    ? $t('MetadataMap.index.360809-7')
+                                                    ? $t('MetadataMap.index.130045-7')
                                                     : ''
                                             "
                                         >
@@ -111,21 +111,21 @@
         </div>
         <div class="right">
             <j-scrollbar>
-                <div class="title">{{ $t('MetadataMap.index.360809-8') }}</div>
+                <div class="title">{{ $t('MetadataMap.index.130045-8') }}</div>
                 <p>
-                    {{ $t('MetadataMap.index.360809-9') }}
-                    <b>{{ $t('MetadataMap.index.360809-10') }}</b>{{ $t('MetadataMap.index.360809-11') }}
-                    <b>{{ $t('MetadataMap.index.360809-12') }}</b
-                    >{{ $t('MetadataMap.index.360809-13') }}
-                    <b>{{ $t('MetadataMap.index.360809-14') }}</b>{{ $t('MetadataMap.index.360809-15') }}<b>{{ $t('MetadataMap.index.360809-16') }}</b>{{ $t('MetadataMap.index.360809-17') }}
+                    {{ $t('MetadataMap.index.130045-9') }}
+                    <b>{{ $t('MetadataMap.index.130045-10') }}</b>{{ $t('MetadataMap.index.130045-11') }}
+                    <b>{{ $t('MetadataMap.index.130045-12') }}</b
+                    >{{ $t('MetadataMap.index.130045-13') }}
+                    <b>{{ $t('MetadataMap.index.130045-14') }}</b>{{ $t('MetadataMap.index.130045-15') }}<b>{{ $t('MetadataMap.index.130045-16') }}</b>{{ $t('MetadataMap.index.130045-17') }}
                 </p>
                 <p>
-                    {{ $t('MetadataMap.index.360809-18') }}
+                    {{ $t('MetadataMap.index.130045-18') }}
                 </p>
                 <p>
-                    {{ $t('MetadataMap.index.360809-19') }}<b>{{ $t('MetadataMap.index.360809-20') }}</b>{{ $t('MetadataMap.index.360809-21') }}<b>{{ $t('MetadataMap.index.360809-22') }}</b>{{ $t('MetadataMap.index.360809-23') }}
+                    {{ $t('MetadataMap.index.130045-19') }}<b>{{ $t('MetadataMap.index.130045-20') }}</b>{{ $t('MetadataMap.index.130045-21') }}<b>{{ $t('MetadataMap.index.130045-22') }}</b>{{ $t('MetadataMap.index.130045-23') }}
                 </p>
-                <div class="title">{{ $t('MetadataMap.index.360809-24') }}</div>
+                <div class="title">{{ $t('MetadataMap.index.130045-24') }}</div>
                 <div>
                     <img :src="device.metadataMap" />
                 </div>
@@ -164,16 +164,16 @@ const _delTag = ref<boolean>(false);
 
 const columns = [
     {
-        title: $t('MetadataMap.index.360809-25'),
+        title: $t('MetadataMap.index.130045-25'),
         dataIndex: 'index',
         width: 100,
     },
     {
-        title: $t('MetadataMap.index.360809-26'),
+        title: $t('MetadataMap.index.130045-26'),
         dataIndex: 'name',
     },
     {
-        title: $t('MetadataMap.index.360809-1'),
+        title: $t('MetadataMap.index.130045-1'),
         dataIndex: 'plugin',
         width: 250,
         // sorter: tableFilter

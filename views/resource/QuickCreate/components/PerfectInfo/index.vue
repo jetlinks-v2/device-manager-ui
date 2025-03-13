@@ -418,15 +418,13 @@ const createProduct = async () => {
           };
         }
 
-        console.log(data, 'data')
-
-        // const res = await quickCreateProduct(data).catch(() => {
-        //   loading.value = false;
-        // });
-        // if (res.success) {
-        //   onlyMessage('操作成功');
-        //   menuStory.jumpPage('device/Product', {});
-        // }
+        const res = await quickCreateProduct(data).catch(() => {
+          loading.value = false;
+        });
+        if (res.success) {
+          onlyMessage('操作成功');
+          menuStory.jumpPage('device/Product', {});
+        }
       })
       .catch((err) => {
         loading.value = false;
