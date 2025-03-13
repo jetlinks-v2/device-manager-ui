@@ -36,6 +36,8 @@ export const saveProduct = (data: Record<string, unknown>) => request.patch('/de
 
 //更新协议
 export const saveProtocol = (data: Object) => request.patch(`/protocol`, data);
+// 更新插件
+export const savePlugin = (data: Object) => request.patch('/plugin/driver', data)
 
 //当前资源的最新版本协议列表
 export const _queryNew = (id: string, type: string) => request.get(`/resources/library/${id}/${type}/current/_query`)

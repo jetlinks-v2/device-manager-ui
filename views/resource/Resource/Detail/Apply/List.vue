@@ -12,8 +12,8 @@
                 <a-space>
                     <a-tooltip>
                         <template #title>
-                            <div>{{ $t('Apply.List.326977-2') }}</div>
                             <div>{{ $t('Apply.List.326977-3') }}</div>
+                            <div>{{ $t('Apply.List.326977-2') }}</div>
                             <div>{{ $t('Apply.List.326977-4') }}</div>
                             <div>{{ $t('Apply.List.326977-5') }}</div>
                         </template>
@@ -77,7 +77,7 @@
 <script setup lang="ts" name="List">
 import CardItem from './CardItem.vue';
 import Product from './Product.vue';
-import { device } from '@device/assets/device/index.ts'
+import { device } from '@device/assets/device'
 
 const props = defineProps({
     productList: {
