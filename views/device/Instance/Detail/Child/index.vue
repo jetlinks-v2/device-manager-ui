@@ -544,7 +544,7 @@ const handleSearch = async (e) => {
         if (res.success) {
             try {
                 const resp = await _queryByEdge(instanceStore.detail.id, {
-                    sorts: [{ name: '_bind.createTime', order: 'asc' }],
+                    sorts: [{ name: '_bind.createTime', order: 'desc' }],
                     terms: [{ column: 'key', value: '', termType: 'notnull' }],
                 });
                 if (resp.success) {
@@ -552,17 +552,24 @@ const handleSearch = async (e) => {
                     _bindInitList.value = [...resp.result];
                 }
                 _dataSource.value = [];
+                _dropList.value?.forEach((i) => {
+                    const isMap = res.result.find(
+                        (item) => i.id === item.id || i.mappingId === item.id,
+                    );
+                    if(isMap?.id) {
+                        _dataSource.value.push({
+                            ...isMap,
+                            MappingStatus: 'success',
+                            Mapping: i,
+                        })
+                    }
+                })
+                
                 res.result.forEach((item) => {
                     const isMap = _dropList.value?.find(
                         (i) => i.id === item.id || i.mappingId === item.id,
                     );
-                    if (isMap?.id) {
-                        _dataSource.value.unshift({
-                            ...item,
-                            MappingStatus: 'success',
-                            Mapping: isMap,
-                        }) ;
-                    } else {
+                    if (!isMap?.id) {
                         _dataSource.value.push({
                             ...item,
                             MappingStatus: 'none',
@@ -642,7 +649,7 @@ const onSaveAll = async (cb) => {
             bindInfo: _arr,
         },
     ).finally(() => {
-        cb && cb?.();
+        cb && (typeof cb === 'function' && cb?.());
     });
     if (res.success) {
         handleRefresh();
@@ -993,9 +1000,12 @@ const onDrop = async (e, item) => {
             item.MappingStatus = 'error';
         }
     } else {
-        item.Mapping = _drop.value;
-        item.MappingStatus = 'warning';
-        item.action = 'drop';
+        const _data = _dataSource.value.find((i) => i.id === item.id);
+        if(_data) {
+            _data.Mapping = _drop.value;
+            _data.MappingStatus = 'warning';
+            _data.action = 'drop';
+        }
         edgeList.value = edgeList.value.filter((i) => i.id !== _drop.value.id);
         _edgeInitList.value = _edgeInitList.value.filter(
             (i) => i.id !== _drop.value.id,
@@ -1077,8 +1087,13 @@ const onDelete = (item) => {
                 item.Mapping = {};
                 item.MappingStatus = 'none';
             } else {
-                _dataSource.value = _dataSource.value.filter(
-                    (i) => i.Mapping?.id !== item.Mapping?.id,
+                _dataSource.value?.forEach(
+                    (i) => {
+                        if(i.Mapping?.id === item.Mapping?.id) {
+                            i.Mapping = {};
+                            i.MappingStatus = 'none';
+                        }
+                    },
                 );
                 _dropList.value = _dropList.value.filter(
                     (i) => i.Mapping?.id !== item.Mapping?.id,
@@ -1243,6 +1258,10 @@ onUnmounted(() => {
     editStatus.value = false;
     EventEmitter.unSubscribe(['ChildTabs'], TabsChange);
 });
+
+defineExpose({
+    handleRefresh
+})
 </script>
 
 <style lang="less" scoped>

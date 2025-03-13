@@ -2308,5 +2308,7 @@
     "init-home.index.011072-21": "MQTT product",
     "init-home.index.011072-22": "MQTT device",
     "init-home.index.011072-23": "Initialize data",
-    "init-home.index.011072-24": "Initialize device access sample data"
+    "init-home.index.011072-24": "Initialize device access sample data",
+    "child.index.5495434-0": "No Data",
+    "child.index.5495434-1": "Click the 'Refresh' button in the upper right corner to synchronize the gateway status"
 }
