@@ -91,11 +91,14 @@ const saveChange = (value) =>{
 }
 
 const submitData = async() =>{
+  if(protocolCurrent.value?.id){
     const res = await queryProtocolDetail(protocolCurrent.value.id)
     if(res.success){
-        emits('selectedProtocol', res.result)
+      emits('selectedProtocol', res.result)
     }
-
+  } else {
+    onlyMessage('请选择协议', 'error');
+  }
 }
 
 onMounted(() => {

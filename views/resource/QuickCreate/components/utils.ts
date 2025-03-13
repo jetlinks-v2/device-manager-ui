@@ -308,7 +308,7 @@ export const getMetadataColumns = (type: string) => {
         dataIndex: 'name',
       }
     ]
-  
+
     if (type === 'properties') {
       baseColumns.push(...[
         {
@@ -328,7 +328,7 @@ export const getMetadataColumns = (type: string) => {
         },
       ])
     }
-  
+
     if (type === 'functions') {
       baseColumns.push(...[
         {
@@ -353,7 +353,7 @@ export const getMetadataColumns = (type: string) => {
         },
       ])
     }
-  
+
     if (type === 'events') {
       baseColumns.push(...[
         {
@@ -373,7 +373,7 @@ export const getMetadataColumns = (type: string) => {
         },
       ])
     }
-  
+
     if (type === 'tags') {
       baseColumns.push(...[
         {
@@ -388,16 +388,16 @@ export const getMetadataColumns = (type: string) => {
         },
       ])
     }
-  
+
     baseColumns.push({
       title: '说明',
       dataIndex: 'description',
     })
     return baseColumns
   }
-  export const arrayToObj = (array: any[], fieldNames: Record<string, string>): Record<string, any> => {
+export const arrayToObj = (array: any[], fieldNames: Record<string, string>): Record<string, any> => {
     return array.reduce((prev, next) => {
       prev[next[fieldNames.key || 'key']] = next[fieldNames.value || 'value']
       return prev
     }, {})
-  }
+}
