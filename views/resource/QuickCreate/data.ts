@@ -1,3 +1,6 @@
+import {ProtocolMapping} from "./components/Protocol/data";
+import {getProtocolList, getPluginList} from "@device/api/link/accessConfig";
+
 const typeMap = new Map([
     ['int','int(整数型)'],
     ['long','long(长整型)'],
@@ -417,5 +420,34 @@ export const networkAndProtocol = ['mqtt-server-gateway','websocket-server','coa
 export const reuseByProtocol = ['mqtt-server-gateway','websocket-server','coap-server-gateway','tcp-server-gateway','http-server-gateway','udp-device-gateway','mqtt-client-gateway','child-device']
 
 export const reuse = ['fixed-media','onvif','collector-gateway']
+
+
+// 查询协议是否在平台已存在
+export const queryExistProtocol = async (provider, data) =>{
+    const resp = await getProtocolList(
+        ProtocolMapping.get(provider),
+        {
+            "sorts[0].name": "createTime",
+            "sorts[0].order": "desc",
+            paging: false,
+        }
+    );
+    if (resp.success) {
+        const ExistProtocol = resp.result.find((i) => {
+            return i.configuration?.sourceId === data.id && i.configuration?.version === data?.version;
+        });
+        return  ExistProtocol ?  ExistProtocol : data
+    }
+}
+
+// 查询协议是否已被创建
+export const queryExitPlugin = async (data) => {
+    const resp = await getPluginList({});
+    if(resp.success){
+        const dt = (resp.result || []).find(i => i.configuration?.sourceId === data.id && i?.version === data?.version)
+        return dt
+    }
+    return false
+}
 
 export default typeMap

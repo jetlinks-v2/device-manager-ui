@@ -237,11 +237,10 @@ import Network from './NetWork/index.vue';
 import Protocol from './Protocol/index.vue';
 import Plugin from './Plugin/index.vue';
 import {onlyMessage} from '@jetlinks-web/utils';
-import {omit} from 'lodash-es';
+import {cloneDeep, omit} from 'lodash-es';
 import {link} from '@device/assets/link/index.ts'
-import  { getProtocolList } from "@device/api/link/accessConfig"
-import {ProtocolMapping} from "./Protocol/data";
 import TitleComponent from '@device/components/TitleComponent/index.vue'
+import {queryExistProtocol, queryExitPlugin} from "../data";
 
 const props = defineProps({
   accessList: {
@@ -308,49 +307,14 @@ const selectedPlugin = (data) => {
   selectedPluginID.value = '';
 };
 
-//查询协议是否在平台已存在
-const queryExistProtocol = async () =>{
-  const resp = await getProtocolList(
-      ProtocolMapping.get(accessConfig.value?.provider),
-      {
-        "sorts[0].name": "createTime",
-        "sorts[0].order": "desc",
-        paging: false,
-      }
-  );
-  if (resp.status === 200) {
-    const ExistProtocol =  resp.result.find((i) => {
-      return i?.configuration?.sourceId === protocol.value.configuration?.sourceId;
-    });
-    return  ExistProtocol ?  ExistProtocol : protocol.value
-  }
-}
-
-
 const selectResourceProtocol = async(data) => {
-  protocol.value = {
-    ...omit(data, ['id']),
-    type: 'jar',
-    configuration: {
-      location: data.url,
-      sourceId: data.id,
-      version: data.version,
-    },
-  };
+  protocol.value = data
   selectedProtocolID.value = data.id;
 };
 
 
 const selectResourcePlugin = (data) => {
-  plugin.value = {
-    ...omit(data, ['id']),
-    provider: 'jar',
-    configuration: {
-      location: data.url,
-      sourceId: data.id,
-      version: data.version,
-    },
-  };
+  plugin.value = data
   selectedPluginID.value = data.id;
 };
 
@@ -410,6 +374,27 @@ const getDetails = (slotProps) => {
   return head + headers + content;
 };
 
+const getProtocol = async () => {
+  let _protocol = cloneDeep(protocol.value)
+  if(selectedProtocolID.value){
+    const protocolData = await queryExistProtocol(accessConfig.value?.provider, protocol.value)
+    if(protocolData){
+      _protocol = protocolData
+    } else {
+      _protocol = {
+        ...omit(protocol.value, 'id'),
+        type: 'jar',
+        configuration: {
+          location: protocol.value.url,
+          sourceId: protocol.value.id,
+          version: protocol.value.version,
+        },
+      };
+    }
+  }
+  return _protocol
+}
+
 const submitDada = async() => {
   let data;
   const accessName = props.providers?.get(accessConfig.value.provider)?.name
@@ -444,11 +429,11 @@ const submitDada = async() => {
         onlyMessage('请选择协议', 'error');
         return;
       }
-      const protocolData = await queryExistProtocol()
+      const protocolData = await getProtocol()
       data = {
         network: network.value,
         gateway,
-        protocol: protocolData,
+        protocol: protocolData
       };
     }
   } else if (['OneNet', 'Ctwing','child-device'].includes(accessConfig.value.channel)) {
@@ -456,7 +441,7 @@ const submitDada = async() => {
       onlyMessage('请选择协议', 'error');
       return;
     }
-    const protocolData = await queryExistProtocol()
+    const protocolData = await getProtocol()
     data = {
       protocol: protocolData,
       gateway,
@@ -466,15 +451,34 @@ const submitDada = async() => {
       onlyMessage('请选择插件', 'error');
       return;
     }
+    let _plugin = cloneDeep(plugin.value)
+    // 选择的是资源的插件， 需要判断是否已安装
+    if(selectedPluginID.value){
+      const pluginData = await queryExitPlugin(_plugin)
+      if(pluginData){
+        _plugin = pluginData
+      } else {
+        _plugin = {
+          ...omit(plugin.value, ['id']),
+          provider: 'jar',
+          configuration: {
+            location: plugin.value.url,
+            sourceId: plugin.value.id,
+            version: plugin.value.version,
+          },
+        };
+      }
+    }
     data = {
       gateway,
-      plugin: plugin.value,
+      plugin: _plugin
     };
   } else {
     data = {
       gateway,
     };
   }
+
   emits('submit', data, accessName);
 };
 
