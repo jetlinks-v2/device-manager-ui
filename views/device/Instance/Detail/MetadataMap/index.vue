@@ -102,12 +102,12 @@
                                         v-for="(item, index) in targetOptions"
                                         :key="index + '_' + item.id"
                                         :value="item.value"
-                                        :disabled="
+                                    >
+<!--                                      :disabled="
                                             selectedOriginalKeys.includes(
                                                 item.id,
                                             )
-                                        "
-                                    >
+                                        "-->
                                         {{ item.label }} ({{
                                             item.id
                                         }})</a-select-option
