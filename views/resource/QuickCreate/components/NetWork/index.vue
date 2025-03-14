@@ -82,6 +82,7 @@ import AccessCard from '../AccessCard/index.vue';
 import { cloneDeep } from 'lodash-es';
 import { NetworkTypeMapping, descriptionList } from './data';
 import AddNetWork from './AddNetWork.vue';
+import {onlyMessage} from "@jetlinks-web/utils";
 const props = defineProps({
     type: {
         type: String,
@@ -132,6 +133,7 @@ const checkedChange = (data) => {
 };
 
 const submitNetWork = async() =>{
+  if(networkCurrent.value?.id){
     const params = {
         terms: [
             {
@@ -150,6 +152,9 @@ const submitNetWork = async() =>{
     if (resp.success && resp.result) {
         emits('selectedNetWork', resp.result[0])
     }
+  } else {
+    onlyMessage('请选择网络组件', 'error');
+  }
 }
 
 

@@ -101,7 +101,7 @@
                 ) || accessData.channel === 'plugin'
             "
     >
-      <div v-if="['Ctwing', 'gb28181-2016', 'OneNet-platform'].includes(accessData.provide) || accessData.channel === 'plugin'">网关配置</div>
+      <div v-if="['Ctwing', 'gb28181-2016', 'OneNet-platform'].includes(accessData.provide) || (accessData.channel === 'plugin' && pluginConfiguration.length)">网关配置</div>
       <div v-if="accessData.channel === 'plugin'">
         <a-form :model="accessConfiguration" layout="vertical">
           <a-form-item

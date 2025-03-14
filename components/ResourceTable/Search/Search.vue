@@ -306,25 +306,16 @@ const handleTypeSearch = (record) => {
 
 const handleClassifyChildrenSearch = (keys) => {
   const array = map(keys, 'value')
-  const _value = keys.length ? [
-        {
-          column: 'key$resources-classification-child',
-          termType: 'in',
-          value: array
-        }
-      ] :
-      [
-        {
-          column: 'key$resources-classification',
-          value: oldClassifyType
-        }
-      ]
+  const _value = [
+    {
+      column: 'key$resources-classification-child',
+      termType: 'in',
+      value: array
+    }
+  ]
   searchParams[1] = {
     column: 'id$resource-bind',
-    value: [{
-      column: 'key$resources-classification',
-      value: _value
-    }]
+    value: _value
   }
 }
 // 处理分类
@@ -365,7 +356,6 @@ const handleClassifySearch = (record, children) => {
 }
 // 处理数据回显
 const handleSearchData = (_params) => {
-  console.log(_params, '_params')
   const arr = []
   // 处理name
   handleNameSearch(_params.name)
@@ -412,6 +402,7 @@ watch(
         _searchParams.classificationChildren = map(_params.classificationChildren || [], 'value')
         searchValue.value = _params.name;
       } else {
+        text.value = [$t('Search.Search.673421-4')]
         emit('update:value', {})
         emit('search', {})
       }

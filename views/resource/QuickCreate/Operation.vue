@@ -72,15 +72,6 @@
                     <a-col v-if="accessData.channel === 'network'">
                       <div>
                         网络: {{getDetails(network)}}
-<!--                        {{-->
-<!--                          accessData.provider === "mqtt-client-gateway"-->
-<!--                              ? network.configuration?.remoteHost +-->
-<!--                              ":" +-->
-<!--                              network.configuration?.remotePort-->
-<!--                              : network.configuration?.host +-->
-<!--                              ":" +-->
-<!--                              network.configuration?.port-->
-<!--                        }}-->
                       </div>
                     </a-col>
                     <a-col
@@ -158,16 +149,14 @@ import {
 import {BackMap} from "@device/views/link/AccessConfig/data.ts";
 import {
   getResourcesCurrent,
-  getProtocolList,
   list as getAccessConfigList,
 } from "@device/api/link/accessConfig";
-import {NetworkTypeMapping, reuse} from "./data";
+import {NetworkTypeMapping, queryExitPlugin, reuse, queryExistProtocol} from "./data";
 import {UDPList, TCPList} from "./data";
 import AdvanceMode from "./components/AdvanceMode.vue";
 import {getProviders} from "@device/api/product.ts";
 import PerfectInfo from "./components/PerfectInfo/index.vue";
-import {gatewayType, networkAndProtocol, reuseByProtocol} from "./data";
-import {ProtocolMapping} from "./components/Protocol/data";
+import {networkAndProtocol, reuseByProtocol} from "./data";
 
 const props = defineProps({
   data: { // 资源
@@ -204,8 +193,8 @@ const generateString = () => {
 
 const getDetails = (slotProps) => {
   const {typeObject, shareCluster, configuration, cluster} = slotProps;
-  const headers =
-      typeObject.name.replace(/[^j-zA-Z]/g, '').toLowerCase() + '://';
+  const _secure = configuration?.secure ? 's' : '';
+  const headers = typeObject.name.replace(/[^j-zA-Z]/g, '').toLowerCase() + _secure + '://';
   const content = !!shareCluster
       ? (configuration.publicHost || configuration.remoteHost) +
       ':' +
@@ -360,23 +349,6 @@ const advanceComplete = (data, name) => {
   accessName.value = name;
 };
 
-//查询协议是否已经存在平台中
-const protocolExist = async (id) => {
-  const resp = await getProtocolList(
-      ProtocolMapping.get(accessConfig.value?.provider),
-      {
-        "sorts[0].name": "createTime",
-        "sorts[0].order": "desc",
-        paging: false,
-      }
-  );
-  if (resp.status === 200) {
-    return resp.result.find((i) => {
-      return i?.configuration?.sourceId === id;
-    });
-  }
-};
-
 //根据平台已有设备接入网关查询网络组件
 const queryNetworkByAccess = async (networkId) => {
   const params = {
@@ -468,13 +440,11 @@ const getDefault = async () => {
         return;
       }
     }
-    const data =
-          accessConfig.value.bindInfo.filter((i) => {
-            return i.defaultAccess;
-          })?.[0] || {};
+    const data = (accessConfig.value.bindInfo || []).find(i => i.defaultAccess) || {};
+    // 协议
     if (["network", "OneNet", "Ctwing",'child-device'].includes(accessConfig.value.channel)) {
       if (JSON.stringify(data) !== "{}") {
-        const existProtocol = await protocolExist(data.id);
+        const existProtocol = await queryExistProtocol(accessConfig.value?.provider, data);
         protocol.value = existProtocol
             ? existProtocol
             : {
@@ -509,9 +479,10 @@ const getDefault = async () => {
           }
         }
       }
-    } else if (accessConfig.value?.channel === "plugin") {
+    } else if (accessConfig.value?.channel === "plugin") { // 插件
       if (JSON.stringify(data) !== "{}") {
-        plugin.value = {
+        const existPlugin = await queryExitPlugin(data)
+        plugin.value = existPlugin ? existPlugin : {
           ...omit(data, ["id"]),
           provider: "jar",
           configuration: {
@@ -525,10 +496,7 @@ const getDefault = async () => {
   }
 
   accessData.value = {
-    name:
-        accessConfig.value.provider?.split("-")?.[0] +
-        "网关" +
-        randomString.value,
+    name: accessConfig.value.provider?.split("-")?.[0] + "网关" + randomString.value,
     ...omit(accessConfig.value, ["bindInfo", "defaultAccess"]),
     gatewayType: accessConfig.value.provider,
   };
@@ -554,10 +522,7 @@ onMounted(async () => {
   metadata.value = JSON.parse(props.data?.metadata || "{}");
   metadataData.value = cloneDeep(metadata.value);
   // 获取默认接入配置
-  accessConfig.value =
-      props.data?.accessInfos?.filter((i) => {
-        return i.defaultAccess;
-      })?.[0] || {};
+  accessConfig.value = (props.data?.accessInfos || []).find(i => i.defaultAccess) || {};
   // 默认接入方式
   getDefault();
 });

@@ -15,7 +15,6 @@
   },
   "homepage": "https://github.com/jetlinks-v2/device-manager-ui#readme",
   "dependencies": {
-    "@jetlinks-web/components": "^2.4.10",
     "async-validator": "^4.2.5",
     "driver.js": "^1.3.1",
     "resize-observer-polyfill": "^1.5.1",

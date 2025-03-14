@@ -73,7 +73,7 @@
       <div v-for="i in taskList" :key="i.id" class="fileList">
         <img
             :src="
-                        i.resourceDetails.releaseDetail?.photoUrl?.url ||
+                        i.resourceDetails?.photoUrl?.url || i.resourceDetails.releaseDetail?.photoUrl?.url ||
                         imageMap.get(
                             i.resourceDetails?.releaseDetail?.resourcesType
                                 ?.value,
@@ -228,7 +228,6 @@ const pauseAll = async () => {
         }
       }
   );
-  console.log(arr,'test')
   const resp = await stopTask(arr);
   if (resp.success) {
   }
