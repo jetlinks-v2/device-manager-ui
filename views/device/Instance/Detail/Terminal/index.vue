@@ -12,9 +12,7 @@ import {debounce} from "lodash-es";
 import {randomString, onlyMessage} from "@jetlinks-web/utils";
 import {useInstanceStore} from "../../../../../store/instance";
 import {storeToRefs} from "pinia";
-import { WebSocketClient } from '@jetlinks-web/core'
-import {BASE_API, TOKEN_KEY_URL} from "@jetlinks-web/constants";
-import { getToken } from '@jetlinks-web/utils';
+import {getWebSocket, closeWs} from "./websocket";
 
 const wsRef = ref()
 const wsInitRef = ref()
@@ -22,25 +20,20 @@ const terminal = ref()
 const sessionId = ref()
 const fitAddon = new FitAddon();
 const instanceStore = useInstanceStore();
-const { current } = storeToRefs(instanceStore);
+const { current, tabActiveKey } = storeToRefs(instanceStore);
 
 let termRef
-let websocket = new WebSocketClient();
-const protocol = window.location.protocol === "https:" ? "wss://" : "ws://";
-const host = document.location.host;
-const token = getToken()
-const url = `${protocol}${host}${BASE_API}/edge/device/${current.value?.id}/_ws/messaging/${token}?${TOKEN_KEY_URL}=${token}`;
-
+const url = ref()
 
 const getData = (input = '') => {
   const id = 'terminal_' + randomString(8);
   const topic = '/xterm/data';
 
-  wsRef.value = websocket.getWebSocket(id, topic, {
+  wsRef.value = getWebSocket(id, topic, {
     sessionId: sessionId.value,
     _ignore_complete: true,
     input
-  }).subscribe();
+  }, current.value?.id).subscribe();
 }
 
 const initTerm = () => {
@@ -77,7 +70,7 @@ const initTerm = () => {
 const getInitData = () => {
   const id = 'terminal_' + randomString(8);
   const topic = '/xterm/setup';
-  wsInitRef.value = websocket.getWebSocket(id, topic, {}).subscribe((resp) => {
+  wsInitRef.value = getWebSocket(id, topic, {}, current.value?.id).subscribe((resp) => {
     if (!resp.payload?.sessionId) {
       onlyMessage($t('Terminal.index.488144-0'))
     }
@@ -98,10 +91,14 @@ const removeResizeListener = () => {
 }
 
 onMounted(() => {
-  getInitData()
-  nextTick(() => {
-    initTerm()
-  })
+  if(current.value?.state?.value === 'online') {
+    setTimeout(() => {
+      getInitData()
+    }, 500)
+    nextTick(() => {
+      initTerm()
+    })
+  }
   onTerminalResize()
 });
 
@@ -114,20 +111,14 @@ const unSub = () => {
   }
 }
 
-onUnmounted(() => {
+onBeforeUnmount(() => {
   unSub()
-  websocket?.disconnect()
+  setTimeout(() => {
+    closeWs()
+  }, 1000)
   removeResizeListener()
 })
 
-watch(() => current.value, () => {
-  if(current.value?.state?.value === 'online') {
-    websocket?.initWebSocket(url);
-    websocket?.connect()
-  } else {
-    websocket?.disconnect()
-  }
-}, {immediate: true})
 </script>
 
 <style scoped lang="less">

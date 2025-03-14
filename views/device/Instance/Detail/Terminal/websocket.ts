@@ -12,6 +12,7 @@ const total = 100 // 重连总次数
 const subs = {}
 const timeout = 5000
 const tempQueue: any[] = [] // websocket未连接上时，缓存消息列
+let isManualClose = false;  //是否主动关闭连接
 
 export const initWebSocket = (id: string) => {
     const token = getToken()
@@ -37,6 +38,9 @@ export const initWebSocket = (id: string) => {
 
         ws.onclose = () => {
             ws = null
+            if(isManualClose) {
+                return
+            }
             reconnect(id)
         }
 
@@ -73,7 +77,7 @@ export const getWebSocket = (id: string, topic: string, parameter: Record<string
     if (!subs[id]) {
         subs[id] = []
     }
-
+    isManualClose = false;
     subs[id].push({
         next(val: Record<string, any>) {
             subscriber.next(val)
@@ -106,6 +110,8 @@ export const closeWs = () => {
     if (ws) {
         ws.close()
         timer && clearInterval(timer)
+        isManualClose = true
+        ws = null
     }
 }
 
