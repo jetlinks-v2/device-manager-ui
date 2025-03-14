@@ -83,24 +83,26 @@
                                     allowClear
                                     @change="(id) => pluginChange(record, id)"
                                 >
+<!--                                  :disabled="
+                                            selectedPluginKeys.includes(item.id)
+                                        "-->
                                     <a-select-option
                                         v-for="(item, index) in pluginOptions"
                                         :key="index + '_' + item.id"
                                         :value="item.value"
-                                        :disabled="
-                                            selectedPluginKeys.includes(item.id)
-                                        "
-                                        ><a-tooltip
-                                            :title="
-                                                selectedPluginKeys.includes(
-                                                    item.id,
-                                                )
-                                                    ? $t('MetadataMap.index.130045-7')
-                                                    : ''
-                                            "
                                         >
+<!--                                      <a-tooltip-->
+<!--                                            :title="-->
+<!--                                                selectedPluginKeys.includes(-->
+<!--                                                    item.id,-->
+<!--                                                )-->
+<!--                                                    ? $t('MetadataMap.index.130045-7')-->
+<!--                                                    : ''-->
+<!--                                            "-->
+<!--                                        >-->
                                             {{ item.label }} ({{ item.id }})
-                                        </a-tooltip></a-select-option
+<!--                                        </a-tooltip>-->
+                                    </a-select-option
                                     >
                                 </a-select>
                             </template>
