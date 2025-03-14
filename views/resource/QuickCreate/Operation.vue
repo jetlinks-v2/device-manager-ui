@@ -151,12 +151,10 @@ import {
   getResourcesCurrent,
   list as getAccessConfigList,
 } from "@device/api/link/accessConfig";
-import {NetworkTypeMapping, queryExitPlugin, reuse, queryExistProtocol} from "./data";
-import {UDPList, TCPList} from "./data";
+import {networkAndProtocol, reuseByProtocol, NetworkTypeMapping, reuse, queryExistProtocol, handlePluginData, UDPList, TCPList} from "./data";
 import AdvanceMode from "./components/AdvanceMode.vue";
 import {getProviders} from "@device/api/product.ts";
 import PerfectInfo from "./components/PerfectInfo/index.vue";
-import {networkAndProtocol, reuseByProtocol} from "./data";
 
 const props = defineProps({
   data: { // 资源
@@ -481,16 +479,7 @@ const getDefault = async () => {
       }
     } else if (accessConfig.value?.channel === "plugin") { // 插件
       if (JSON.stringify(data) !== "{}") {
-        const existPlugin = await queryExitPlugin(data)
-        plugin.value = existPlugin ? existPlugin : {
-          ...omit(data, ["id"]),
-          provider: "jar",
-          configuration: {
-            location: data.url,
-            sourceId: data.id,
-            version: data.version,
-          },
-        };
+        plugin.value = await handlePluginData(accessConfig.value, data)
       }
     }
   }

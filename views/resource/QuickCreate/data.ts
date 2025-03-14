@@ -1,20 +1,26 @@
 import {ProtocolMapping} from "./components/Protocol/data";
-import {getProtocolList, getPluginList} from "@device/api/link/accessConfig";
+import {
+    getProtocolList,
+    getPluginList,
+    list as getAccessConfigList,
+    getResourcesCurrent
+} from "@device/api/link/accessConfig";
+import {cloneDeep, omit} from "lodash-es";
 
 const typeMap = new Map([
-    ['int','int(整数型)'],
-    ['long','long(长整型)'],
-    ['float','float(单精度浮点型)'],
-    ['double','double(双精度浮点数)'],
-    ['string','text(字符串)'],
-    ['boolean','boolean(布尔型)'],
-    ['date','date(时间型)'],
-    ['enum','enum(枚举)'],
-    ['array','array(数组)'],
-    ['object','object(结构体)'],
-    ['file','file(文件)'],
-    ['password','password(密码)'],
-    ['geoPoint','geoPoint(地理位置)']
+    ['int', 'int(整数型)'],
+    ['long', 'long(长整型)'],
+    ['float', 'float(单精度浮点型)'],
+    ['double', 'double(双精度浮点数)'],
+    ['string', 'text(字符串)'],
+    ['boolean', 'boolean(布尔型)'],
+    ['date', 'date(时间型)'],
+    ['enum', 'enum(枚举)'],
+    ['array', 'array(数组)'],
+    ['object', 'object(结构体)'],
+    ['file', 'file(文件)'],
+    ['password', 'password(密码)'],
+    ['geoPoint', 'geoPoint(地理位置)']
 ])
 
 export const ParserConfiguration = {
@@ -100,22 +106,22 @@ export const VisibleData = {
 };
 
 export const ParserTypeOptions = [
-    { value: 'DIRECT', label: '不处理' },
-    { value: 'DELIMITED', label: '分隔符' },
-    { value: 'SCRIPT', label: '自定义脚本' },
-    { value: 'FIXED_LENGTH', label: '固定长度' },
-    { value: 'LENGTH_FIELD', label: '长度字段' },
+    {value: 'DIRECT', label: '不处理'},
+    {value: 'DELIMITED', label: '分隔符'},
+    {value: 'SCRIPT', label: '自定义脚本'},
+    {value: 'FIXED_LENGTH', label: '固定长度'},
+    {value: 'LENGTH_FIELD', label: '长度字段'},
 ];
 export const LengthOptions = [
-    { value: '1', label: '1' },
-    { value: '2', label: '2' },
-    { value: '3', label: '3' },
-    { value: '4', label: '4' },
-    { value: '8', label: '8' },
+    {value: '1', label: '1'},
+    {value: '2', label: '2'},
+    {value: '3', label: '3'},
+    {value: '4', label: '4'},
+    {value: '8', label: '8'},
 ];
 export const LittleOptions = [
-    { label: '大端', value: 'false' },
-    { label: '小端', value: 'true' },
+    {label: '大端', value: 'false'},
+    {label: '小端', value: 'true'},
 ];
 
 export const isVisible = (
@@ -130,7 +136,7 @@ export const Validator = {
     regIPv6: new RegExp(/^\s*((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))(%.+)?\s*$/),
     regDomain: new RegExp(
         // /^https?:\/\/(([a-zA-Z0-9_-])+(\.)?)*(:\d+)?(\/((\.)?(\?)?=?&?[a-zA-Z0-9_-](\?)?)*)*$/i,
-      /^[a-zA-Z0-9]+([\-\.]{1}[a-zA-Z0-9]+)*\.[a-zA-Z]{2,}$/
+        /^[a-zA-Z0-9]+([\-\.]{1}[a-zA-Z0-9]+)*\.[a-zA-Z]{2,}$/
     ),
     regOnlyNumber: new RegExp(/^\d+$/),
 };
@@ -151,12 +157,12 @@ const validateAddress = (_rule: any, value: string): Promise<any> => {
     });
 };
 
-const sizeValidator = (_rule:any, value: number):Promise<any> =>{
-    return new Promise(async(resolve,reject)=>{
+const sizeValidator = (_rule: any, value: number): Promise<any> => {
+    return new Promise(async (resolve, reject) => {
         const posReg = /^[1-9]\d*$/;
-        if(posReg.test(value.toString()) && value > 0 && value <=65535 ){
+        if (posReg.test(value.toString()) && value > 0 && value <= 65535) {
             return resolve('');
-        }else {
+        } else {
             return reject(_rule.message);
         }
     })
@@ -343,9 +349,9 @@ export const Rules = {
             message: '请输入长度值',
         },
         {
-            validator:sizeValidator,
-            message:'请输入0~65535之间的正整数',
-            trigger:'change'
+            validator: sizeValidator,
+            message: '请输入0~65535之间的正整数',
+            trigger: 'change'
         }
     ],
     length: [
@@ -376,8 +382,8 @@ export const ProvideTypeMap = new Map([
     ['official-edge-gateway', 'edge'],
     ['edge-child-device', 'edge'],
     ['network', 'network'],
-    ['agent-device-gateway','network'],
-    ['agent-media-device-gateway','network']
+    ['agent-device-gateway', 'network'],
+    ['agent-media-device-gateway', 'network']
 ]);
 
 export const NetworkTypeMapping = new Map();
@@ -394,36 +400,37 @@ NetworkTypeMapping.set('agent-media-device-gateway', 'MQTT_SERVER');
 
 
 export const gatewayType = new Map([
-    ["mqtt-server-gateway","mqtt_server_gateway"],
-    ["mqtt-client-gateway","mqtt_client_gateway"],
-    ["coap-server-gateway","coap_server_gateway"],
-    ["tcp-server-gateway","tcp_server_gateway"],
-    ["udp-device-gateway","udp_device_gateway"],
-    ["http-server-gateway","http_server_gateway"],
-    ["websocket-server","websocket_server"],
-    ["plugin_gateway","plugin_gateway"],
-    ["child-device","child_device"],
-    ["fixed-media","fixed_media"],
-    ["onvif","onvif"],
-    ["gb28181-2016","gb28181_2016"],
-    ["media-plugin","media_plugin"],
-    ["OneNet-platform","oneNet_platform"],
-    ["Ctwing","ctwing"],
-    ["collector-gateway","collector_gateway"],
-    ["agent-device-gateway","agent_device_gateway"],
-    ["agent-media-device-gateway","agent_media_device_gateway"],
+    ["mqtt-server-gateway", "mqtt_server_gateway"],
+    ["mqtt-client-gateway", "mqtt_client_gateway"],
+    ["coap-server-gateway", "coap_server_gateway"],
+    ["tcp-server-gateway", "tcp_server_gateway"],
+    ["udp-device-gateway", "udp_device_gateway"],
+    ["http-server-gateway", "http_server_gateway"],
+    ["websocket-server", "websocket_server"],
+    ["plugin_gateway", "plugin_gateway"],
+    ["child-device", "child_device"],
+    ["fixed-media", "fixed_media"],
+    ["onvif", "onvif"],
+    ["gb28181-2016", "gb28181_2016"],
+    ["media-plugin", "media_plugin"],
+    ["OneNet-platform", "oneNet_platform"],
+    ["Ctwing", "ctwing"],
+    ["collector-gateway", "collector_gateway"],
+    ["agent-device-gateway", "agent_device_gateway"],
+    ["agent-media-device-gateway", "agent_media_device_gateway"],
 ]);
 
 
-export const networkAndProtocol = ['mqtt-server-gateway','websocket-server','coap-server-gateway','tcp-server-gateway','http-server-gateway','udp-device-gateway','mqtt-client-gateway']
+export const networkAndProtocol = ['mqtt-server-gateway', 'websocket-server', 'coap-server-gateway', 'tcp-server-gateway', 'http-server-gateway', 'udp-device-gateway', 'mqtt-client-gateway']
 
-export const reuseByProtocol = ['mqtt-server-gateway','websocket-server','coap-server-gateway','tcp-server-gateway','http-server-gateway','udp-device-gateway','mqtt-client-gateway','child-device']
+export const reuseByProtocol = ['mqtt-server-gateway', 'websocket-server', 'coap-server-gateway', 'tcp-server-gateway', 'http-server-gateway', 'udp-device-gateway', 'mqtt-client-gateway', 'child-device']
 
-export const reuse = ['fixed-media','onvif','collector-gateway']
+// 直接复用，如果存在
+export const reuse = ['fixed-media', 'onvif', 'collector-gateway']
 
 
 // 查询协议是否在平台已存在
-export const queryExistProtocol = async (provider, data) =>{
+export const queryExistProtocol = async (provider: any, data: any) => {
     const resp = await getProtocolList(
         ProtocolMapping.get(provider),
         {
@@ -433,21 +440,38 @@ export const queryExistProtocol = async (provider, data) =>{
         }
     );
     if (resp.success) {
-        const ExistProtocol = resp.result.find((i) => {
+        const ExistProtocol = resp.result.find((i: any) => {
             return i.configuration?.sourceId === data.id && i.configuration?.version === data?.version;
         });
-        return  ExistProtocol ?  ExistProtocol : data
+        return ExistProtocol ? ExistProtocol : data
     }
 }
 
 // 查询协议是否已被创建
-export const queryExitPlugin = async (data) => {
+export const queryExitPlugin = async (data: any) => {
     const resp = await getPluginList({});
-    if(resp.success){
-        const dt = (resp.result || []).find(i => i.configuration?.sourceId === data.id && i?.version === data?.version)
+    if (resp.success) {
+        const dt = (resp.result || []).find((i: any) => i.configuration?.sourceId === data.id && i?.version === data?.version)
         return dt
     }
     return false
+}
+
+// 处理插件
+export const handlePluginData = async (resourceAccess: any, chooseAccess: any) => {
+    let existPlugin;
+    if (resourceAccess.provider === "media-plugin") {
+        existPlugin = await queryExitPlugin(chooseAccess)
+    }
+    return existPlugin ? existPlugin : {
+        ...omit(chooseAccess, ["id"]),
+        provider: "jar",
+        configuration: {
+            location: chooseAccess.url,
+            sourceId: chooseAccess.id,
+            version: chooseAccess.version,
+        },
+    }
 }
 
 export default typeMap

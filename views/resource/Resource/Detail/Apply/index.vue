@@ -143,8 +143,9 @@ const getProduct = async () => {
 
 const matchArray = (arr, newArr) => {
   const _arr = arr.map((item: any) => {
-    const obj = newArr?.find((i: any) => i.id === item?.configuration?.sourceId,);
+    const obj = newArr?.find((i: any) => i.id === item?.configuration?.sourceId);
     if (obj) {
+      console.log(item, obj)
       item.newProtocol = obj;
       return item;
     }

@@ -332,7 +332,7 @@ const getMetadata = (): Promise<{ properties: any[] }> => {
 const onMapData = async (arr: any[], flag?: boolean) => {
     const res = await metadataMapById('product', productDetail.value?.id, arr);
     if (res.success && flag) {
-        onlyMessage($t('MetadataMap.index.360809-27'));
+        onlyMessage($t('MetadataMap.index.130045-27'));
     }
 };
 

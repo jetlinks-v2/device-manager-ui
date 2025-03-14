@@ -240,7 +240,7 @@ import {onlyMessage} from '@jetlinks-web/utils';
 import {cloneDeep, omit} from 'lodash-es';
 import {link} from '@device/assets/link/index.ts'
 import TitleComponent from '@device/components/TitleComponent/index.vue'
-import {queryExistProtocol, queryExitPlugin} from "../data";
+import {handlePluginData, queryExistProtocol} from "../data";
 
 const props = defineProps({
   accessList: {
@@ -397,7 +397,7 @@ const getProtocol = async () => {
 
 const submitDada = async() => {
   let data;
-  const accessName = props.providers?.get(accessConfig.value.provider)?.name
+  const accessName = props.providers?.get(accessConfig.value.provider)?.name;
   const gateway = {
     name:
         accessConfig.value.provider?.split('-')?.[0] +
@@ -406,25 +406,32 @@ const submitDada = async() => {
     ...omit(accessConfig.value, ['bindInfo', 'defaultAccess']),
     gatewayType: accessConfig.value.provider,
   };
-  if (accessConfig.value.channel === 'network') {
-    if (
-        ['agent-media-device-gateway', 'agent-device-gateway'].includes(
-            accessConfig.value.provider,
-        )
-    ) {
-      if (!network.value) {
-        onlyMessage('请选择网络组件', 'error');
-        return;
-      }
+
+  if (accessConfig.value.channel === 'plugin') {
+    if (!plugin.value) {
+      onlyMessage('请选择插件', 'error');
+      return;
+    }
+    let _plugin = cloneDeep(plugin.value)
+    if(selectedPluginID.value){
+      _plugin = await handlePluginData(accessConfig.value, plugin.value)
+    }
+    data = {
+      gateway,
+      plugin: _plugin
+    };
+  } else if (accessConfig.value.channel === 'network') {
+    if (!network.value) {
+      onlyMessage('请选择网络组件', 'error');
+      return;
+    }
+    // 只需要选择网络组件
+    if (['agent-media-device-gateway', 'agent-device-gateway'].includes(accessConfig.value.provider)) {
       data = {
         gateway,
         network: network.value,
       };
     } else {
-      if (!network.value) {
-        onlyMessage('请选择网络组件', 'error');
-        return;
-      }
       if (!protocol.value) {
         onlyMessage('请选择协议', 'error');
         return;
@@ -446,34 +453,8 @@ const submitDada = async() => {
       protocol: protocolData,
       gateway,
     };
-  } else if (accessConfig.value.channel === 'plugin') {
-    if (!plugin.value) {
-      onlyMessage('请选择插件', 'error');
-      return;
-    }
-    let _plugin = cloneDeep(plugin.value)
-    // 选择的是资源的插件， 需要判断是否已安装
-    if(selectedPluginID.value){
-      const pluginData = await queryExitPlugin(_plugin)
-      if(pluginData){
-        _plugin = pluginData
-      } else {
-        _plugin = {
-          ...omit(plugin.value, ['id']),
-          provider: 'jar',
-          configuration: {
-            location: plugin.value.url,
-            sourceId: plugin.value.id,
-            version: plugin.value.version,
-          },
-        };
-      }
-    }
-    data = {
-      gateway,
-      plugin: _plugin
-    };
   } else {
+    // 'fixed-media', 'onvif', 'collector-gateway',
     data = {
       gateway,
     };
