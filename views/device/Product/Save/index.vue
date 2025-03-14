@@ -270,7 +270,7 @@ const show = (data: any) => {
     if (props.isAdd === 2) {
         productStore.refresh(data.id);
         form.name = data.name;
-        form.classifiedId = data.classifiedId;
+        form.classifiedId = data.classifiedId || undefined;
         form.classifiedName = data.classifiedName;
         form.photoUrl = data.photoUrl || photoValue.value;
         form.deviceType = data.deviceType.value;
@@ -317,7 +317,7 @@ const submitData = () => {
                 const res = await addProduct(form).finally(()=>{
                     loading.value = false
                 });
-                if (res.status === 200) {
+                if (res.success) {
                     onlyMessage($t('Save.index.912481-22'));
                     visible.value = false;
                     emit('success');
@@ -327,16 +327,12 @@ const submitData = () => {
                 }
             } else if (props.isAdd === 2) {
                 // 编辑
-                form.classifiedId
-                    ? form.classifiedId
-                    : (form.classifiedId = ''); // 产品分类不选传空字符串
-                form.classifiedName
-                    ? form.classifiedName
-                    : (form.classifiedName = '');
+                form.classifiedId = form.classifiedId || ''
+                form.classifiedName = form.classifiedName || ''
                 const res = await editProduct(form).finally(() => {
                   loading.value = false
                 });
-                if (res.status === 200) {
+                if (res.success) {
                     onlyMessage($t('Save.index.912481-22'));
                     emit('success');
                     visible.value = false;
