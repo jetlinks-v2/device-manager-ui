@@ -12,7 +12,7 @@ import {debounce} from "lodash-es";
 import {randomString, onlyMessage} from "@jetlinks-web/utils";
 import {useInstanceStore} from "../../../../../store/instance";
 import {storeToRefs} from "pinia";
-import {getWebSocket} from "./websocket";
+import {getWebSocket, closeWs} from "./websocket";
 
 const wsRef = ref()
 const wsInitRef = ref()
@@ -20,7 +20,7 @@ const terminal = ref()
 const sessionId = ref()
 const fitAddon = new FitAddon();
 const instanceStore = useInstanceStore();
-const { current } = storeToRefs(instanceStore);
+const { current, tabActiveKey } = storeToRefs(instanceStore);
 
 let termRef
 const url = ref()
@@ -91,10 +91,14 @@ const removeResizeListener = () => {
 }
 
 onMounted(() => {
-  getInitData()
-  nextTick(() => {
-    initTerm()
-  })
+  if(current.value?.state?.value === 'online') {
+    setTimeout(() => {
+      getInitData()
+    }, 500)
+    nextTick(() => {
+      initTerm()
+    })
+  }
   onTerminalResize()
 });
 
@@ -107,10 +111,14 @@ const unSub = () => {
   }
 }
 
-onUnmounted(() => {
+onBeforeUnmount(() => {
   unSub()
+  setTimeout(() => {
+    closeWs()
+  }, 1000)
   removeResizeListener()
 })
+
 </script>
 
 <style scoped lang="less">
