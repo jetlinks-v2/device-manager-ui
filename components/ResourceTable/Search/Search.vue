@@ -64,7 +64,7 @@
         />
       </div>
       <ClassifyOptions
-          v-if='classifyOptions?.length'
+          v-if='classifyOptions?.length && _searchParams.classification !== "all"'
           :options='classifyOptions'
           @change='onClassifyChange'
           :type='oldClassifyType'
@@ -223,6 +223,7 @@ const onParamsChange = (value, record, index) => {
   const isValueAll = value === 'all'
   if (index === 1) {
     _paramsObj.classificationChildren = []
+    classifyOptions.value = []
   }
   if (isValueAll) {
     _paramsObj[!isType ? 'classification' : 'type'] = undefined
@@ -356,6 +357,7 @@ const handleClassifySearch = (record, children) => {
 }
 // 处理数据回显
 const handleSearchData = (_params) => {
+  console.log(_params, '_params')
   const arr = []
   // 处理name
   handleNameSearch(_params.name)
@@ -401,6 +403,13 @@ watch(
         _searchParams.classification = _params.classification?.value || 'all';
         _searchParams.classificationChildren = map(_params.classificationChildren || [], 'value')
         searchValue.value = _params.name;
+
+        if(!_paramsObj.name && !_paramsObj.classification && !_paramsObj.classificationChildren?.length && !_paramsObj.type){
+          _paramsObj.name = _params.name;
+          _paramsObj.classification = _params.classification;
+          _paramsObj.classificationChildren = _params.classificationChildren || [];
+          _paramsObj.type = _params.type;
+        }
       } else {
         text.value = [$t('Search.Search.673421-4')]
         emit('update:value', {})
