@@ -3,7 +3,7 @@
         :tabList="list"
         :tabActiveKey="productStore.tabActiveKey"
         @tabChange="onTabChange"
-        showBack="true"
+        :showBack="true"
     >
         <template #title>
             <div>

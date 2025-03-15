@@ -202,21 +202,25 @@ const selectedPluginKeys = computed(() => {
 
 const getMetadataMapData = () => {
     return new Promise((resolve) => {
+      if(productDetail.value?.id){
         getMetadataMapById('product', productDetail.value?.id).then((res) => {
-            if (res.success) {
-                resolve(
-                    res.result
-                        ?.filter((item) => item.customMapping)
-                        ?.map((item) => {
-                            return {
-                                id: item.metadataId,
-                                pluginId: item.originalId,
-                                customMapping: item?.customMapping,
-                            };
-                        }) || [],
-                );
-            }
+          if (res.success) {
+            resolve(
+                res.result
+                    ?.filter((item) => item.customMapping)
+                    ?.map((item) => {
+                      return {
+                        id: item.metadataId,
+                        pluginId: item.originalId,
+                        customMapping: item?.customMapping,
+                      };
+                    }) || [],
+            );
+          }
         });
+      } else {
+        resolve([])
+      }
     });
 };
 
