@@ -179,8 +179,8 @@ const submitData = async (fileUrl: string) => {
 const uploadChange = async (info: Record<string, any>) => {
     disabled.value = true;
     if (info.file.status === 'done') {
-        const resp: any = info.file.response || { result: '' };
-        await submitData(resp?.result || '');
+        const resp: any = info.file.response?.result || { accessUrl: '' };
+        await submitData(resp?.accessUrl || '');
     }else{
         disabled.value = false;
     }

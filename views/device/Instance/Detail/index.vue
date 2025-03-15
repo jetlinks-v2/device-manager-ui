@@ -110,7 +110,7 @@
             <component
               ref="componentRef"
               :is="tabs[instanceStore.tabActiveKey]"
-              v-bind="{ type: 'device',isRefresh:isRefresh }"
+              v-bind="{ type: 'device',isRefresh: isRefresh }"
               @onJump="onTabChange"
             />
           </div>
@@ -191,7 +191,7 @@ const initList = [
 ];
 
 const list = ref([...initList]);
-
+const isRefresh = ref(false)
 const tabs = {
     Info,
     Metadata,
