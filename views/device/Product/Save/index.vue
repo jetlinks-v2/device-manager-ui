@@ -86,14 +86,19 @@
                         :disabled="productStore.detail?.accessId ? true : false"
                         @change="changeDeviceType"
                     >
-                        <template #title="item">
-                            <span>{{ item.title }}</span>
-                            <a-tooltip :title="item.option.tooltip"
-                                ><AIcon
-                                    type="QuestionCircleOutlined"
-                                    style="margin-left: 2px"
-                                />
-                            </a-tooltip>
+                        <template #itemRender="{node}">
+                            <div class="select-item">
+                                <div>
+                                    <span>{{ node.label }}</span>
+                                    <a-tooltip :title="node.tooltip"
+                                        ><AIcon
+                                            type="QuestionCircleOutlined"
+                                            style="margin-left: 2px"
+                                        />
+                                    </a-tooltip>
+                                </div>
+                                <img :src="node.iconUrl" alt="">
+                            </div>
                         </template>
                     </j-card-select>
                 </a-form-item>
@@ -359,6 +364,11 @@ defineExpose({
 .card-style {
     position: relative;
     top: 19px;
+}
+.select-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 .upload-image-warp-logo {
     display: flex;
