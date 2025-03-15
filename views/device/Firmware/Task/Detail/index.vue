@@ -45,7 +45,7 @@
                     <a-progress
                         style="width: 90%; margin-left: 20px"
                         :strokeWidth="10"
-                        :percent="general.percent"
+                        :percent="Number(general.percent.toFixed(2))"
                         :format="(percent) => `${percent}%`"
                     ></a-progress>
                 </div>
