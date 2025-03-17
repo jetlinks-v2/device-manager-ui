@@ -13,7 +13,7 @@
       </template>
       <template #name="{ record, index }">
         <EditTableFormItem :name="[index, 'name']">
-          <a-input v-model:value="record.name" placeholder="$t('Object.index.371533-1')"/>
+          <a-input v-model:value="record.name" :placeholder="$t('Object.index.371533-1')"/>
         </EditTableFormItem>
       </template>
       <template #range="{record}">

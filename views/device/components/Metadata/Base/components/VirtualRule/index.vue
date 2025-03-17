@@ -15,8 +15,9 @@
                     {{ $t('VirtualRule.index.946602-1') }}
                     <a-tooltip>
                         <template #title>
-                            <div>{{ $t('VirtualRule.index.946602-2') }}</div>
-                            <div>{{ $t('VirtualRule.index.946602-3') }}</div>
+                            <div>
+                              {{ $t('VirtualRule.index.946602-2') }}；{{ $t('VirtualRule.index.946602-3') }}
+                            </div>
                         </template>
                         <AIcon
                             type="QuestionCircleOutlined"

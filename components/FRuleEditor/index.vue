@@ -109,10 +109,10 @@ const getAllCrud = () => {
   const list = cloneDeep(props.propertiesOptions)?.filter((i:any)=>
     props?.id !== i.id
   )
-  console.log(list,'list')
+  // console.log(list,'list')
   // 转化为语法提示
   list.forEach(item => {
-    console.log(item)
+    // console.log(item)
     const config = item
     tips.value.push({
       label: $t('FRuleEditor.index.911643-9', [config.name]),
