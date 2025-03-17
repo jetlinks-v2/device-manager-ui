@@ -246,7 +246,7 @@ defineExpose({
             />
             <StringParams
               v-else-if="
-                                          record.valueType.type === 'string'
+                                          ['string', 'password'].includes(record.valueType.type)
                                       "
               v-model:value="record.valueType"
               placement="topRight"

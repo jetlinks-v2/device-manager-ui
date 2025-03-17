@@ -823,9 +823,9 @@ const saveBtn = () => {
 
 const dealSearchValue = (item: any) => {
     let value: any = '';
-    console.log(item);
+    // console.log(item);
     item.value.forEach((i: any, index: number) => {
-        console.log(i);
+        // console.log(i);
         if (index > 0) {
             value += ',' + i.slice((item.column + ' is ').length);
         } else {
