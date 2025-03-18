@@ -38,9 +38,9 @@
                                     >
                                         <span>{{ record.type }}</span>
                                         <a-tooltip
-                                            v-if="record.type === 'object'"
+                                            v-if="['object', 'array'].includes(record.type)"
                                         >
-                                            <template slot="title">
+                                            <template #title>
                                                 {{ $t('components.Simple.448047-1') }}
                                             </template>
 
@@ -62,14 +62,18 @@
                                                 required: record.required,
                                                 message: $t('components.Simple.448047-2'),
                                             }"
-                                            has-feedback
                                         >
+                                            <SelectAMap
+                                                v-if="record.type === 'geoPoint'"
+                                                v-model:point="record.value"
+                                            />
                                             <j-value-item
+                                                v-else
                                                 :ref="`valueItemRef${record.id}`"
                                                 v-model:modelValue="
                                                     record.value
                                                 "
-                                                :itemType="record.type"
+                                                :itemType="record.type === 'array' ? 'object' : (record.type === 'file' ? 'string' : record.type)"
                                                 :options="
                                                     (record?.options || []).map((item:any) => ({
                                                         label: item.text,
@@ -78,7 +82,8 @@
                                                 "
                                                 :extraProps="{
                                                       style: {
-                                                        zIndex: 1030
+                                                        zIndex: 1030,
+                                                        width: '100%'
                                                       }
                                                 }"
                                             />

@@ -26,7 +26,7 @@
         {{ $t('components.LogDetail.536180-6') }}<a-button
         type="link"
         @click="() => gotoDevice(data?.sourceId)"
-      >{{ data?.sourceId }}</a-button
+      >{{ data?.sourceName }}</a-button
       >
       </a-descriptions-item>
       <a-descriptions-item :label="$t('components.LogDetail.536180-7')" :span="2"
