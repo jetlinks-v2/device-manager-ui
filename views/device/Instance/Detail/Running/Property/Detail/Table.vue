@@ -1,6 +1,6 @@
 <template>
     <div>
-        <pro-search :columns="columns" @search="handleSearch"></pro-search>
+        <pro-search type="simple" :columns="columns" @search="handleSearch"></pro-search>
         <a-table
             :columns="columns"
             size="small"
@@ -156,7 +156,7 @@ const columns = computed(() => {
                     })
             }
         },
-        
+
     ];
     if(['int', 'float', 'short', 'double'].includes(_props.data.valueType?.type)) {
         arr.push({

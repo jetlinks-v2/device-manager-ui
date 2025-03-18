@@ -80,7 +80,7 @@
               {{ index + 1 }}
             </span>
             <span v-if="column.dataIndex === 'value'">
-              {{ record.range === true ? record.value?.join('-') : record.value }}
+              <j-ellipsis>{{ record.range === true ? record.value?.join('-') : record.value }}</j-ellipsis>
             </span>
           </template>
         </a-table>
@@ -135,7 +135,6 @@ const props = defineProps({
 
 const emit = defineEmits(['cancel'])
 
-const route = useRoute()
 const instanceStore = useInstanceStore();
 const productStore = useProductStore();
 const { settingData } = useStoreType(props.type)
@@ -179,9 +178,9 @@ const dataTypeTable = reactive<{ columns: any[], dataSource: any }>({
 const metrics = reactive<{ columns: any[], dataSource: any }>({
   columns: [
     { title: $t('DetailModal.PropertiesModal.254343-21'), dataIndex: 'serial', width: 60 },
-    { title: $t('DetailModal.PropertiesModal.254343-22'), dataIndex: 'id' },
-    { title: $t('DetailModal.PropertiesModal.254343-23'), dataIndex: 'name' },
-    { title: $t('DetailModal.PropertiesModal.254343-24'), dataIndex: 'value' },
+    { title: $t('DetailModal.PropertiesModal.254343-22'), dataIndex: 'id', ellipsis: true },
+    { title: $t('DetailModal.PropertiesModal.254343-23'), dataIndex: 'name', ellipsis: true },
+    { title: $t('DetailModal.PropertiesModal.254343-24'), dataIndex: 'value', width: 150 },
   ],
   dataSource: []
 })

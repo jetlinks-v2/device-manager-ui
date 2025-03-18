@@ -64,7 +64,7 @@
                 type="link"
                 style="padding: 0 5px"
                 :hasPermission="
-                            i.key == 'solve'
+                            i.key === 'solve'
                                 ? 'rule-engine/Alarm/Log:action'
                                 : 'rule-engine/Alarm/Log:view'
                         "

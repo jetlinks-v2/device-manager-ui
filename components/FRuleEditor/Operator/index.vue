@@ -232,8 +232,8 @@ const getData = async (id?: string) => {
                     description: `### ${p.name}
                 \n ${$t('Operator.index.745665-16')}: ${p.id}
                 \n ${$t('Operator.index.745665-17')}: ${p.valueType?.type}
-                \n ${$t('Operator.index.745665-18')}: ${readOnly}
-                \n ${$t('Operator.index.745665-19')}: `,
+                \n ${$t('Operator.index.745665-18')}: ${readOnly}`,
+                    // \n ${$t('Operator.index.745665-19')}:
                     type: 'property',
                 };
             }),
