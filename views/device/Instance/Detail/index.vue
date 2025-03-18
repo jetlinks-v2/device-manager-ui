@@ -394,13 +394,17 @@ const getDetailFn = async () => {
 };
 
 const onTabChange = (e: string) => {
-    if (instanceStore.tabActiveKey === 'Metadata') {
-        EventEmitter.emit('MetadataTabs', () => {
-            instanceStore.tabActiveKey = e;
-        });
-    } else {
-        instanceStore.tabActiveKey = e;
-    }
+  if (instanceStore.tabActiveKey === 'Metadata') {
+    EventEmitter.emit('MetadataTabs', () => {
+      instanceStore.tabActiveKey = e;
+    });
+  } else if(instanceStore.tabActiveKey === 'Child') {
+    EventEmitter.emit('ChildTabs', () => {
+      instanceStore.tabActiveKey = e;
+    });
+  }else {
+    instanceStore.tabActiveKey = e;
+  }
 };
 
 const handleAction = () => {
