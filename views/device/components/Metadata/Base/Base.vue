@@ -125,7 +125,7 @@
               v-model:trueValue="record.valueType.trueValue"
               :disabled="record.expands?.isProduct"
           />
-          <ObjectParams v-else-if="record.valueType.type === 'object'" v-model:value="record.valueType.properties" :disabled="record.expands?.isProduct"/>
+          <ObjectParams v-else-if="record.valueType.type === 'object'" v-model:value="record.valueType.properties" :disabled="record.expands?.isProduct" :showObjectItem="true"/>
           <ArrayParams v-else-if="record.valueType.type === 'array'" v-model:value="record.valueType.elementType" :disabled="record.expands?.isProduct" :showObjectItem="true"/>
         </div>
         <div v-else-if="type === 'events'">
