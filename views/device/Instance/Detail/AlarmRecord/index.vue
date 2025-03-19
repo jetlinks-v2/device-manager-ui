@@ -1,7 +1,7 @@
 <template>
   <div style='margin-bottom: 16px' v-if="type === 'product'">
     <AIcon type="InfoCircleOutlined" style="margin-right: 3px" />
-    展示该产品下设备关联的「产品」和「设备」类型的所有告警记录
+    {{ $t('Alarm.index.101383-17') }}
   </div>
   <pro-search
       :columns="columns"
@@ -47,7 +47,7 @@
         {{ slotProps?.handleType?.text || '--' }}
       </template>
       <template #level="slotProps">
-        {{slotProps?.level ? levelList.find(i => i.level === slotProps?.level)?.i18nMessages?.[localLanguage] : '--' }}
+        {{getLevelData(slotProps) }}
       </template>
       <template #state="slotProps">
         {{ slotProps?.state?.value === 'normal' ? $t('Alarm.index.101383-1') : $t('Alarm.index.101383-2') }}
@@ -261,7 +261,7 @@ const columns =
             dataIndex: 'sourceName',
             key: 'sourceName',
             scopedSlots: true,
-            width: 200,
+            width: 250,
             search: {
               type: 'string',
             },
@@ -394,6 +394,11 @@ const defaultParams = computed(() => {
 const handleSearch = (e) => {
   params.value = e;
 };
+
+const getLevelData = (slotProps) => {
+  const dt = levelList.value.find(i => i.level === slotProps?.level);
+  return dt ? (dt?.i18nMessages?.[localLanguage] || dt.title) : '--'
+}
 const queryHandle = async (id) => {
   const res = await queryPreHandleHistory(id, {
     sorts: [{name: 'handleTime', order: 'desc'}],
@@ -520,7 +525,6 @@ getLevelList()
   display: flex;
 
   .name {
-    width: 100px;
     white-space: nowrap;
   }
 }
