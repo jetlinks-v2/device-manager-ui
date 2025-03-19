@@ -48,7 +48,7 @@
               </j-ellipsis>
             </span>
             <span v-else>
-              {{ record.__serial }}
+              {{ record.__oldSerial }}
             </span>
           </template>
           <template #id="{ record }">
@@ -167,7 +167,7 @@ const search = (key) => {
     tableRef.value?.scrollToByIndex(searchIndex.value - 1)
   }
 
-  if (filterArray.value.length > 1) {
+  if (filterArray.value.length >= 1) {
     selectedRowKeys.value = [searchItem.id]
     selectedTableRow(searchItem)
   } else {
