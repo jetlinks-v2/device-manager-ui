@@ -1053,7 +1053,7 @@ const onCover = async (e, item) => {
 
 const onDelete = (item) => {
     item.action = 'delete';
-    if (item.id) {
+    if (item.id && item.parentId) {
         if (_checked.value) {
             item.loading = true;
 
