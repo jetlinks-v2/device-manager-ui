@@ -73,7 +73,7 @@
                     <div class="bottom-title-text">{{ $t('DataAnalysis.index.571961-4') }}</div>
                 </div>
                 <a-textarea
-                    :autoSize="{ minRows: 5 }"
+                    :rows="5"
                     :style="resStyle"
                     v-model:value="result"
                 />
@@ -162,7 +162,7 @@ const resStyle = computed(() =>
           },
 );
 
-const isDisabled = computed(() => simulation.value === '');
+const isDisabled = computed(() => !simulation.value || !editorValue.value);
 
 const result = computed(() =>
     resultValue.value.success
@@ -295,9 +295,11 @@ const debug = () => {
 };
 
 onMounted(() => {
+  if(productStore.current.id){
     getProductCode();
     getTopic();
-  queryCodeTips()
+    queryCodeTips()
+  }
 });
 </script>
 
