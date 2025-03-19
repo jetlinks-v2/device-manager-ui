@@ -295,9 +295,11 @@ const debug = () => {
 };
 
 onMounted(() => {
+  if(productStore.current.id){
     getProductCode();
     getTopic();
-  queryCodeTips()
+    queryCodeTips()
+  }
 });
 </script>
 
