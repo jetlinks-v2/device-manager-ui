@@ -97,12 +97,17 @@
                     v-if="_arr.includes(instanceStore.current?.accessProvider || '')"
                     type="primary" :disabled="instanceStore.current?.state?.value !== 'online'">{{ $t('Detail.index.957187-10') }}
                 </a-button>
+
+              <a-tooltip
+                :title="$t('Detail.index.957187-30')"
+              >
                 <img
                     @click="handleRefresh"
                     :src="device.button"
                     style="margin-right: 20px; cursor: pointer"
                     alt=""
                 />
+              </a-tooltip>
             </a-space>
         </template>
         <full-page>
