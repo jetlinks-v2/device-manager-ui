@@ -27,7 +27,7 @@ const onChange = (val) => {
 }
 
 watch(() => props.value, (val) => {
-  _value.value = val || ['view'];
+  _value.value = val.length ? val : ['view'];
 }, {
   deep: true,
   immediate: true
