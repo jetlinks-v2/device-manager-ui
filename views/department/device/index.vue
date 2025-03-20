@@ -319,6 +319,7 @@ const columns = [
     key: 'registryTime',
     ellipsis: true,
     scopedSlots: true,
+    width: 200,
     search: {
       type: 'date',
     },

@@ -81,6 +81,11 @@
                                     @click="(e) => e.stopPropagation()">
                                     <a-checkbox-group v-model:value="slotProps.selectPermissions
                                         " :options="slotProps.permissionList" />
+<!--                                  <ButtonCheckBox-->
+<!--                                      :options="slotProps.permissionList"-->
+<!--                                      :value="table.selectedRows.find(i => i.id === slotProps.id)?.selectPermissions || []"-->
+<!--                                      @change="(val) => onChange(val, slotProps)"-->
+<!--                                  />-->
                                 </div>
                             </a-col>
                         </a-row>
@@ -91,6 +96,11 @@
             <template #permission="slotProps">
                 <div style="cursor: pointer" class="card-item-content-value" @click="(e) => e.stopPropagation()">
                     <a-checkbox-group v-model:value="slotProps.selectPermissions" :options="slotProps.permissionList" />
+<!--                  <ButtonCheckBox-->
+<!--                      :options="slotProps.permissionList"-->
+<!--                      :value="table.selectedRows.find(i => i.id === slotProps.id)?.selectPermissions || []"-->
+<!--                      @change="(val) => onChange(val, slotProps)"-->
+<!--                  />-->
                 </div>
             </template>
             <template #state="slotProps">
@@ -122,6 +132,7 @@ import { useDepartmentStore } from '@/store/department';
 import dayjs from 'dayjs';
 import { systemImg } from '@/assets/index'
 import { useI18n } from 'vue-i18n';
+// import ButtonCheckBox from './ButtonCheckBox.vue'
 
 const { t: $t } = useI18n();
 const departmentStore = useDepartmentStore();
