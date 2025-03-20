@@ -957,6 +957,7 @@ const handleRefresh = () => {
 const onJump = (id) => {
     isToDetail.value = true;
     TabsChange(() => {
+        window.location.hash = route.path.replace(`/${route.params.id}`, `/${id}`)
         menuStory.jumpPage('device/Instance/Detail', { params: {id} });
     });
 };
@@ -1110,7 +1111,6 @@ const onDelete = (item) => {
             (i) => i.Mapping?.id !== item.Mapping?.id,
         );
     }
-    item.action = 'delete';
 };
 //拖拽自动生成
 const onDropAuto = () => {
