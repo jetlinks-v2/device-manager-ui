@@ -18,7 +18,7 @@
         <slot name="other"></slot>
         <div class="desc">
             <a-tooltip placement="topLeft" :title="data.description">{{
-                data.description
+                data.description || $t('Plugin.index.626239-29')
             }}</a-tooltip>
         </div>
         <div class="checked-icon">
@@ -28,9 +28,10 @@
 </template>
 
 <script lang="ts" setup name="AccessCard">
+import {useI18n} from "vue-i18n";
 
 const emit = defineEmits(['checkedChange']);
-
+const { t: $t } = useI18n();
 const props = defineProps({
     checked: {
         type: String,
