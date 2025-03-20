@@ -18,7 +18,7 @@
         <a-form :layout="'vertical'">
           <a-form-item required :label="$t('Import.modal.422832-1')">
             <j-card-select
-              :value="[importData.type]"
+              :value="importData.type"
               :column='typeOptions.length'
               :options="typeOptions"
               @change='typeChange'
@@ -98,8 +98,8 @@ const typeOptions = computed(() => {
   return array
 })
 
-const typeChange = (types: string[]) => {
-  importData.type = types[0]
+const typeChange = (types: string) => {
+  importData.type = types
 }
 
 const productChange = (detail: any) => {
