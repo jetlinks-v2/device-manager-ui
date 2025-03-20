@@ -143,7 +143,7 @@ const hideVirtualRule = (metadata: string) => {
 }
 
 onMounted(() => {
-  routeChange(route.params.id as string)
+  routeChange(instanceStore.current?.id as string)
 })
 
 watch(
