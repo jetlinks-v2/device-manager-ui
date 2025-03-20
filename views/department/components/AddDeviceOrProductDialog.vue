@@ -41,7 +41,7 @@
                 onSelectNone: table.cancelSelect,
                 onSelectAll: selectAll,
                 getCheckboxProps: (record) => ({
-                  disabled: !record.permissionList?.length
+                  disabled: !(record.permissionList?.length && record.permissionList.find((item: any) => item.value === 'share'))
                 }),
             }"
             :columns="columns"
@@ -465,26 +465,6 @@ const table: any = {
     },
 };
 table.init();
-// const selectRow = (rows: any[], check: boolean) => {
-//     const okRows = rows.filter(
-//         (item) =>
-//             !!item.permissionList.find(
-//                 (permiss: any) => permiss.value === 'share',
-//             ),
-//     );
-//     table.selectedRows = okRows;
-//     table._selectedRowKeys.value = okRows.map((item) => item.id);
-// };
-// fix: bug#10749
-const selectChange = (record: any,selected: boolean,selectedRows: any,) => {
-    const arr = new Set(table._selectedRowKeys.value);
-    if(selected){
-        arr.add(record.id)
-    }else{
-        arr.delete(record.id)
-    }
-    table._selectedRowKeys.value = [...arr.values()]
-};
 
 const selectAll = (selected: boolean, selectedRows: any,changeRows:any) => {
     if (selected) {
