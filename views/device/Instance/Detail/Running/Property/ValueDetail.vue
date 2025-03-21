@@ -13,7 +13,9 @@
             <a-image :src="value?.formatValue" />
         </template>
         <template v-else-if="['.flv', '.m3u8', '.mp4'].includes(type)">
-            <Player :url="value?.formatValue" autoplay />
+            <div style="height: 300px">
+              <Player :url="value?.formatValue" autoplay :live="false" />
+            </div>
         </template>
         <template v-else>
             <JsonViewer

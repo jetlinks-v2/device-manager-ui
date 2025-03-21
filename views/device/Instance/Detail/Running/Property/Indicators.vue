@@ -89,6 +89,7 @@ import { useInstanceStore } from '../../../../../../store/instance';
 import { onlyMessage } from '@jetlinks-web/utils';
 import { isNumber } from 'lodash-es';
 import { useI18n } from 'vue-i18n';
+import dayjs from "dayjs";
 
 const { t: $t } = useI18n();
 const props = defineProps({
@@ -120,7 +121,7 @@ watch(
         if (newVal && instanceStore.current.id) {
             queryMetric(instanceStore.current.id, props.data.id).then(
                 (resp) => {
-                    if (resp.status === 200) {
+                    if (resp.success) {
                         if (
                             Array.isArray(resp?.result) &&
                             resp?.result.length
@@ -131,7 +132,9 @@ watch(
                                     : (isNumber(item?.value) ? [item.value] : item?.value?.split(','))
                                 return {
                                     ...item,
-                                    value: val,
+                                    value: val.map((i: any) => {
+                                      return props.data.valueType.type === 'date' ? dayjs(i) : i
+                                    }),
                                 };
                             });
                             modelRef.metrics = list as any;
@@ -162,7 +165,9 @@ watch(
                                         : item?.value?.split(',');
                                     return {
                                         ...item,
-                                        value: val,
+                                      value: val.map((i: any) => {
+                                        return props.data.valueType.type === 'date' ? dayjs(i) : i
+                                      }),
                                     };
                                 });
                             }
@@ -181,9 +186,15 @@ const handleSave = () => {
         .then(async (_data: any) => {
             loading.value = true;
             const list = (toRaw(modelRef)?.metrics || []).map((item: any) => {
+              let value = item.value
+              if(props.data.valueType?.type === 'date'){
+                value = item.value.map((i: any) => {
+                  return dayjs(i).format('YYYY-MM-DD HH:mm:ss')
+                })
+              }
                 return {
                     ...item,
-                    value: item.value.join(','),
+                    value: value.join(','),
                 };
             });
             const resp = await saveMetric(
@@ -196,7 +207,6 @@ const handleSave = () => {
             if (resp.status === 200) {
                 onlyMessage($t('Property.Indicators.505585-5'));
                 emit('close');
-                formRef.value.resetFields();
             }
         })
         .catch((err: any) => {

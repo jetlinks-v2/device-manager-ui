@@ -347,7 +347,7 @@ const table = {
         watch(
             () => props.parentId,
             () => {
-                table.refresh();
+              table.refresh();
             },
         );
     },
