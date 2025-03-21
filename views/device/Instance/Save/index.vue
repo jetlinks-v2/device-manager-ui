@@ -159,7 +159,7 @@ const modelRef = reactive({
     id: undefined,
     name: '',
     describe: '',
-    photoUrl: props.data?.devicePhotoUrl || device.deviceCard,
+    photoUrl: props.data.devicePhotoUrl || device.deviceCard,
 });
 
 const vailId = async (_: Record<string, any>, value: string) => {
