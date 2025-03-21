@@ -1,5 +1,5 @@
 <template>
-    <div class="device-detail-metadata" style="position: relative">
+    <div class="device-detail-metadata" ref="metadataRef" style="position: relative">
         <!-- <div class="tips">-->
         <!--        <a-tooltip :title="instanceStore.detail?.independentMetadata && type === 'device'-->
         <!--        ? '该设备已脱离产品物模型，修改产品物模型对该设备无影响'-->
@@ -50,11 +50,6 @@
                     >
                 </a-space>
             </template>
-            <template #centerExtra>
-                <span class="desc"
-                    >{{ $t('Metadata.index.838029-5') }}</span
-                >
-            </template>
             <a-tab-pane :tab="$t('Metadata.index.838029-6')" key="properties">
                 <BaseMetadata
                     :target="type"
@@ -84,6 +79,14 @@
                 />
             </a-tab-pane>
         </a-tabs>
+        <teleport v-if="content" :to="content">
+          <div
+            class="center-extra-content"
+            :style="{ width: centerExtraWidth }"
+          >
+            <span class="desc">{{ $t('Metadata.index.838029-5') }}</span >
+          </div>
+        </teleport>
         <Import
             v-if="visible"
             v-model:visible="visible"
@@ -104,6 +107,7 @@ import { useMetadataStore } from '../../../../store/metadata';
 import { EventEmitter } from '@jetlinks-web/utils';
 import { isEqual } from 'lodash-es';
 import { useI18n } from 'vue-i18n';
+import { useElementSize } from '@vueuse/core';
 
 const { t: $t } = useI18n();
 
@@ -122,6 +126,10 @@ const permission = computed(() =>
 const visible = ref(false);
 const cat = ref(false);
 const tabActiveKey = ref('properties');
+const metadataRef = ref()
+const content = ref()
+const centerExtraWidth = ref();
+const { width } = useElementSize(metadataRef);
 
 provide('_metadataType', props.type);
 
@@ -157,6 +165,22 @@ const tabsChange = (e: string) => {
         tabActiveKey.value = e;
     });
 };
+
+watch(
+  width,
+  () => {
+    if (metadataRef.value) {
+      centerExtraWidth.value =
+        metadataRef.value.querySelector('.ant-tabs-nav-wrap').clientWidth -
+        metadataRef.value.querySelector('.ant-tabs-nav-list').clientWidth -
+        10 +
+        'px';
+      content.value = metadataRef.value.querySelector('.ant-tabs-nav-wrap');
+    }
+  },
+  { immediate: true },
+);
+
 </script>
 <style scoped lang="less">
 .device-detail-metadata {
@@ -180,6 +204,9 @@ const tabsChange = (e: string) => {
         display: inline-block;
         margin-top: 12px;
         margin-left: 5px;
+    }
+    .center-extra-content {
+      overflow: hidden;
     }
 }
 </style>
