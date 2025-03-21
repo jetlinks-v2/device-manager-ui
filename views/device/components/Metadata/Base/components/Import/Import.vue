@@ -1,10 +1,22 @@
 <template>
-    <a-button type="primary" ghost @click="showImport">
-        <template #icon>
-            <AIcon type="DownloadOutlined" />
-        </template>
-        {{ $t('Import.Import.317604-0') }}
-    </a-button>
+    <j-permission-button
+        type="primary"
+        key="import"
+        ghost
+        :disabled="disabled"
+        :hasPermission="`${permission}:update`"
+        :tooltip="{
+            title: disabled
+                ? $t('Base.Base.640395-5')
+                : '',
+        }"
+        @click="showImport"
+    >
+      <template #icon>
+        <AIcon type="DownloadOutlined" />
+      </template>
+      {{ $t('Import.Import.317604-0') }}
+    </j-permission-button>
     <a-modal
         v-if="visible"
         visible
@@ -81,6 +93,18 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
+    type: {
+      type: String,
+      default: undefined,
+    },
+  disabled: {
+      type: Boolean,
+      default: false,
+    },
+  permission: {
+    type: [String, Array],
+    default: undefined,
+  },
 });
 
 const emit = defineEmits(['ok']);
@@ -195,7 +219,7 @@ const beforeUpload = (file) => {
     } else {
         const formData = new FormData();
         formData.append('file', file);
-        uploadAnalyzeMetadata(current?.id, formData)
+        uploadAnalyzeMetadata(props.target === 'product' ? current?.id : current.productId, formData)
             .then((res) => {
                 if (res.success) {
                     submitData(res.result);

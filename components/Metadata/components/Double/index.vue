@@ -53,7 +53,7 @@ const formRef = ref()
 const visible = ref(false)
 const formData = reactive({
   unit: props.value?.unit,
-  scale: props.value?.scale || 0, // 精度
+  scale: (!props.value?.scale && props.value?.scale !== 0) ? props.value?.scale : (['float', 'double'].includes(props.value.type) ? 2 : 0), // 精度
 });
 
 const onOk = async () => {
@@ -81,7 +81,7 @@ const onCancel = () => {
 
 watch(() => props.value, (newValue) => {
   formData.unit = props.value?.unit;
-  formData.scale = props.value?.scale || 0;
+  formData.scale = (!props.value?.scale && props.value?.scale !== 0) ? props.value?.scale : (['float', 'double'].includes(props.value.type) ? 2 : 0);
 })
 </script>
 

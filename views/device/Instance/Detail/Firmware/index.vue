@@ -49,7 +49,7 @@
         v-if="visibleTask"
         :firmwareId="firmwareId"
         showPosition="detail"
-        :deviceId="props.type === 'device' ? current.id : ''"
+        :deviceId="props.type === 'device' ? current.id : undefined"
         @close-drawer="visibleTask = false"
     />
 </template>
@@ -98,7 +98,7 @@ const queryFirmwareList = async () => {
         ],
     });
     if (res.success) {
-      
+
     if (props.type === 'device') {
         // 查看固件所属产品下所有的任务 过滤掉不包含该设备的升级任务的固件
         const resp = await historyPaginateNot({

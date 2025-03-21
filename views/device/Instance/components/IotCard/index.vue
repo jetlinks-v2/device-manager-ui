@@ -14,8 +14,9 @@
               <Guide>
                 <template #title>
                   <span>{{ $t('IotCard.index.369962-0') }}</span>
-                  <a-button
+                  <j-permission-button
                     type="link"
+                    hasPermission="iot-card/CardManagement:update"
                     @click="
                       () => {
                         visible = true;
@@ -26,7 +27,7 @@
                   >
                     <AIcon type="EditOutlined"></AIcon>
                     {{ $t('IotCard.index.369962-1') }}
-                  </a-button>
+                  </j-permission-button>
                 </template>
               </Guide>
             </template>

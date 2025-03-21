@@ -180,7 +180,7 @@ const columns = computed(() => {
 const showLoad = computed(() => {
     return (
         _props.data.valueType?.type === 'file' &&
-        _props.data?.valueType?.bodyType === 'Binary(二进制)'
+        _props.data?.valueType?.bodyType === 'binary'
     );
 });
 
@@ -244,10 +244,10 @@ watch(
     },
 );
 
-const onChange = (page: any) => {
+const onChange = (_page: any) => {
     queryPropertyData({
-        pageSize: page.pageSize,
-        pageIndex: Number(page.current) - 1 || 0,
+        pageSize: _page.pageSize,
+        pageIndex: dataSource.value.pageSize === _page.pageSize ? (_page.current ? _page.current - 1 : 0) : 0,
     }, params.value);
 };
 
