@@ -192,7 +192,7 @@ const generateString = () => {
 const getDetails = (slotProps) => {
   const {typeObject, shareCluster, configuration, cluster} = slotProps;
   const _secure = configuration?.secure ? 's' : '';
-  const headers = typeObject.name.replace(/[^j-zA-Z]/g, '').toLowerCase() + _secure + '://';
+  const headers = typeObject.name.replace(/[^a-zA-Z]/g, '').toLowerCase() + _secure + '://';
   const content = !!shareCluster
       ? (configuration.publicHost || configuration.remoteHost) +
       ':' +

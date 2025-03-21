@@ -97,12 +97,17 @@
                     v-if="_arr.includes(instanceStore.current?.accessProvider || '')"
                     type="primary" :disabled="instanceStore.current?.state?.value !== 'online'">{{ $t('Detail.index.957187-10') }}
                 </a-button>
+
+              <a-tooltip
+                :title="$t('Detail.index.957187-30')"
+              >
                 <img
                     @click="handleRefresh"
                     :src="device.button"
                     style="margin-right: 20px; cursor: pointer"
                     alt=""
                 />
+              </a-tooltip>
             </a-space>
         </template>
         <full-page>
@@ -394,13 +399,17 @@ const getDetailFn = async () => {
 };
 
 const onTabChange = (e: string) => {
-    if (instanceStore.tabActiveKey === 'Metadata') {
-        EventEmitter.emit('MetadataTabs', () => {
-            instanceStore.tabActiveKey = e;
-        });
-    } else {
-        instanceStore.tabActiveKey = e;
-    }
+  if (instanceStore.tabActiveKey === 'Metadata') {
+    EventEmitter.emit('MetadataTabs', () => {
+      instanceStore.tabActiveKey = e;
+    });
+  } else if(instanceStore.tabActiveKey === 'Child') {
+    EventEmitter.emit('ChildTabs', () => {
+      instanceStore.tabActiveKey = e;
+    });
+  }else {
+    instanceStore.tabActiveKey = e;
+  }
 };
 
 const handleAction = () => {

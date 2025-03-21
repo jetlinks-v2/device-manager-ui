@@ -16,13 +16,13 @@
       <div class="content">
         <div class="left">
           <div class="left-header">
-            <j-tooltip :title="$t('Child.index.135369-3')">
+            <a-tooltip :title="$t('Child.index.135369-3')">
               {{ $t('Child.index.135369-4') }}
               <AIcon
                   type="QuestionCircleOutlined"
                   style="margin-left: 2px; margin-right: 15px"
               />
-            </j-tooltip>
+            </a-tooltip>
             <a-space>
               <j-permission-button
                   :tooltip="{
@@ -564,7 +564,7 @@ const handleSearch = async (e) => {
                         })
                     }
                 })
-                
+
                 res.result.forEach((item) => {
                     const isMap = _dropList.value?.find(
                         (i) => i.id === item.id || i.mappingId === item.id,
@@ -1038,11 +1038,18 @@ const onCover = async (e, item) => {
             item.MappingStatus = 'error';
         }
     } else {
-        item.Mapping = {
-            ..._drop.value,
-        };
-        item.MappingStatus = 'warning';
-        item.action = 'drop';
+        // item.Mapping = {
+        //     ..._drop.value,
+        // };
+        // item.MappingStatus = 'warning';
+        // item.action = 'drop';
+        _dataSource.value.forEach(i => {
+          if(i.id === item.id){
+            i.Mapping = _drop.value;
+            i.MappingStatus = 'warning';
+            i.action = 'drop';
+          }
+        })
         edgeList.value.unshift(coverData);
         edgeList.value = edgeList.value.filter((i) => i.id !== _drop.value.id);
         _edgeInitList.value = _edgeInitList.value.filter(

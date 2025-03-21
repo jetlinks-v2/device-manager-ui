@@ -28,7 +28,7 @@
                   <template v-else>
                     <j-value-item
                         v-model:modelValue="record.value"
-                        :itemType="record.type === 'array' ? 'object' : record.type"
+                        :itemType="record.type === 'array' ? 'object' : (record.type === 'file' ? 'string' : record.type)"
                         :action="FileStaticPath"
                         style="width: 100%"
                         :headers="{ [TOKEN_KEY]: getToken() }"

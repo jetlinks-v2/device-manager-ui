@@ -37,19 +37,17 @@
             selectedRowKeys: selectedRowKeys
           }"
           :serial="{
-            width: openGroup ? 150 : 66,
+            width: openGroup ? 150 : 100,
             title: $t('Search.search.746496-6')
           }"
         >
           <template #serial="{ record }">
-            <span v-if="openGroup">
-              <j-ellipsis>
-                {{ record.expands.groupName }} {{ $t('Search.search.746496-7') }} {{ record.__oldSerial }} {{ $t('Search.search.746496-8') }}
-              </j-ellipsis>
-            </span>
-            <span v-else>
-              {{ record.__serial }}
-            </span>
+            <j-ellipsis>
+                <span v-if="openGroup">
+                  {{ record.expands.groupName }}
+                </span>
+              {{ $t('Search.search.746496-7') }} {{ record.__oldSerial }} {{ $t('Search.search.746496-8') }}
+            </j-ellipsis>
           </template>
           <template #id="{ record }">
             <j-ellipsis>
@@ -167,7 +165,7 @@ const search = (key) => {
     tableRef.value?.scrollToByIndex(searchIndex.value - 1)
   }
 
-  if (filterArray.value.length > 1) {
+  if (filterArray.value.length >= 1) {
     selectedRowKeys.value = [searchItem.id]
     selectedTableRow(searchItem)
   } else {

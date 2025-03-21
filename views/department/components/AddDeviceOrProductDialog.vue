@@ -41,20 +41,27 @@
                 onSelectNone: table.cancelSelect,
                 onSelectAll: selectAll,
                 getCheckboxProps: (record) => ({
-                  disabled: !record.permissionList?.length
+                  disabled: !(record.permissionList?.length && record.permissionList.find((item: any) => item.value === 'share'))
                 }),
             }"
             :columns="columns"
             style="max-height: 500px; overflow:auto"
         >
             <template #card="slotProps">
-                <CardBox :value="slotProps" :actions="[{ key: 1 }]" v-bind="slotProps" :active="table._selectedRowKeys.value.includes(slotProps.id)
-                    " @click="table.onSelectChange" :status="slotProps.state?.value"
-                    :statusText="slotProps.state?.text" :statusNames="{
+                <CardBox
+                    :value="slotProps"
+                    :actions="[{ key: 1 }]"
+                    v-bind="slotProps"
+                    :active="table._selectedRowKeys.value.includes(slotProps.id)
+                    " @click="table.onSelectChange"
+                    :status="slotProps.state?.value"
+                    :statusText="slotProps.state?.text"
+                    :statusNames="{
                         online: 'processing',
                         offline: 'error',
                         notActive: 'warning',
-                    }">
+                    }"
+                >
                     <template #img>
                         <slot name="img">
                             <img :src="systemImg.deviceProductImg" style="cursor: pointer" alt=""/>
@@ -79,8 +86,13 @@
                                 </div>
                                 <div style="cursor: pointer; height: 30px" class="card-item-content-value"
                                     @click="(e) => e.stopPropagation()">
-                                    <a-checkbox-group v-model:value="slotProps.selectPermissions
-                                        " :options="slotProps.permissionList" />
+<!--                                    <a-checkbox-group v-model:value="slotProps.selectPermissions-->
+<!--                                        " :options="slotProps.permissionList" />-->
+                                  <ButtonCheckBox
+                                      :options="slotProps.permissionList"
+                                      :value="table.selectedRows.find(i => i.id === slotProps.id)?.selectPermissions || []"
+                                      @change="(val) => onChange(val, slotProps)"
+                                  />
                                 </div>
                             </a-col>
                         </a-row>
@@ -90,7 +102,12 @@
 
             <template #permission="slotProps">
                 <div style="cursor: pointer" class="card-item-content-value" @click="(e) => e.stopPropagation()">
-                    <a-checkbox-group v-model:value="slotProps.selectPermissions" :options="slotProps.permissionList" />
+<!--                    <a-checkbox-group v-model:value="slotProps.selectPermissions" :options="slotProps.permissionList" />-->
+                  <ButtonCheckBox
+                      :options="slotProps.permissionList"
+                      :value="table.selectedRows.find(i => i.id === slotProps.id)?.selectPermissions || []"
+                      @change="(val) => onChange(val, slotProps)"
+                  />
                 </div>
             </template>
             <template #state="slotProps">
@@ -102,7 +119,7 @@
             </template>
             <template #registryTime="slotProps">
                 <span>{{
-                    dayjs(slotProps.registryTime).format('YYYY-MM-DD HH:mm:ss')
+                    slotProps.registryTime ? dayjs(slotProps.registryTime).format('YYYY-MM-DD HH:mm:ss') : "--"
                 }}</span>
             </template>
         </j-pro-table>
@@ -122,6 +139,7 @@ import { useDepartmentStore } from '@/store/department';
 import dayjs from 'dayjs';
 import { systemImg } from '@/assets/index'
 import { useI18n } from 'vue-i18n';
+import ButtonCheckBox from './ButtonCheckBox.vue'
 
 const { t: $t } = useI18n();
 const departmentStore = useDepartmentStore();
@@ -173,7 +191,7 @@ const confirm = () => {
             loading.value = false;
         });
 };
-
+const queryParams = ref({});
 const bulkBool = ref<boolean>(true);
 const bulkList = ref<string[]>(['read']);
 const options = computed(() =>
@@ -213,7 +231,14 @@ const searchColumns = computed(() => {
     })
 })
 
-const queryParams = ref({});
+const onChange = (val: string[], record: any) => {
+  table.selectedRows.forEach((i: any) => {
+    if(i.id === record.id){
+      i.selectPermissions = val
+    }
+  })
+}
+
 const table: any = {
     _selectedRowKeys: ref<string[]>([]), // 选中项的id
     backRowKeys: [] as string[], // 旧选中项的id
@@ -246,7 +271,6 @@ const table: any = {
                     }
                 });
 
-                console.log(table.selectedRows, 'table.selectedRows')
                 // 取消勾选时触发
                 if (nValue && nValue.length < oValue.length) {
                     // 拿到取消选中的项的id
@@ -441,29 +465,8 @@ const table: any = {
     },
 };
 table.init();
-// const selectRow = (rows: any[], check: boolean) => {
-//     const okRows = rows.filter(
-//         (item) =>
-//             !!item.permissionList.find(
-//                 (permiss: any) => permiss.value === 'share',
-//             ),
-//     );
-//     table.selectedRows = okRows;
-//     table._selectedRowKeys.value = okRows.map((item) => item.id);
-// };
-// fix: bug#10749
-const selectChange = (record: any,selected: boolean,selectedRows: any,) => {
-    const arr = new Set(table._selectedRowKeys.value);
-    if(selected){
-        arr.add(record.id)
-    }else{
-        arr.delete(record.id)
-    }
-    table._selectedRowKeys.value = [...arr.values()]
-};
 
 const selectAll = (selected: boolean, selectedRows: any,changeRows:any) => {
-  console.log(changeRows, 'changeRows')
     if (selected) {
             changeRows.map((i: any) => {
                 if (!table._selectedRowKeys.value.includes(i.id)) {
@@ -487,7 +490,6 @@ const selectAll = (selected: boolean, selectedRows: any,changeRows:any) => {
 }
 const cancel = () => {
     departmentStore.setProductId(undefined)
-    console.log(departmentStore.productId)
     emits('update:visible', false)
 }
 

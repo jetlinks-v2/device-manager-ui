@@ -638,11 +638,11 @@ const getGuide = async (isDriver1: boolean = false) => {
     return;
   } else {
     if (isDriver1) {
-      driver1.defineSteps(steps1);
-      driver1.start();
+      driver1.setSteps(steps1);
+      driver1.drive();
     } else {
-      driver.defineSteps(steps);
-      driver.start();
+      driver.setSteps(steps);
+      driver.drive();
     }
   }
 };

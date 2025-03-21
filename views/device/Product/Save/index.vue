@@ -124,7 +124,7 @@ import DialogTips from '../DialogTips/index.vue';
 import { useProductStore } from '../../../../store/product';
 import { filterSelectNode, encodeQuery } from '@/utils';
 import { onlyMessage } from '@jetlinks-web/utils'
-import { isInput } from '@/utils/regular';
+import { isInput } from '@device/utils/utils';
 import type { Rule } from 'ant-design-vue/es/form';
 import { device } from '../../../../assets';
 import { useI18n } from 'vue-i18n';

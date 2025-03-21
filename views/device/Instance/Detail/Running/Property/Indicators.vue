@@ -31,9 +31,10 @@
                             <template #label>
                                 <j-ellipsis>{{ item?.name || $t('Property.Indicators.505585-3') }}</j-ellipsis>
                             </template>
-                            <ValueItem
+                            <j-value-item
                                 v-model:modelValue="item.value[0]"
                                 :itemType="data.valueType?.type"
+                                style="width: 100%"
                                 :options="
                                     data.valueType?.type === 'boolean'
                                         ? [
@@ -68,9 +69,10 @@
                                     message: $t('Property.Indicators.505585-2', [['date', 'boolean'].includes(data?.valueType?.type,) ? $t('Property.Indicators.505585-6'): $t('Property.Indicators.505585-7')]),
                                 }"
                             >
-                                <ValueItem
+                                <j-value-item
                                     v-model:modelValue="item.value[1]"
                                     :itemType="data.valueType?.type"
+                                    style="width: 100%"
                                 />
                             </a-form-item>
                         </a-col>

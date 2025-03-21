@@ -16,7 +16,7 @@
                                 v-if="i.key !== 'edit'"
                             >
                                 <a-button
-                                    style="padding: 0; margin: 0"
+                                    style="padding: 0;"
                                     type="link"
                                     :disabled="i.disabled"
                                     @click="i.onClick && i.onClick(data)"
@@ -34,7 +34,8 @@
                                 :tooltip="i.tooltip"
                                 @click="i.onClick && i.onClick(slotProps)"
                                 type="link"
-                                style="padding: 0px"
+                                size="small"
+                                style="padding: 0;"
                             >
                                 <template #icon
                                     ><AIcon :type="i.icon" style="color: #323130; font-size: 12px"

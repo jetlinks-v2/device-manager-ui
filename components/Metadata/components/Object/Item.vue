@@ -234,6 +234,7 @@ defineExpose({
             <TypeSelect
               v-model:value="record.valueType"
               style="flex: 1 1 0; min-width: 0"
+              :filter="showObjectItem ? [] : ['object', 'array']"
             />
             <DoubleParams
               v-if="
@@ -246,7 +247,7 @@ defineExpose({
             />
             <StringParams
               v-else-if="
-                                          record.valueType.type === 'string'
+                                          ['string', 'password'].includes(record.valueType.type)
                                       "
               v-model:value="record.valueType"
               placement="topRight"
@@ -283,10 +284,7 @@ defineExpose({
               placement="topRight"
             />
             <ArrayParams
-              v-else-if="
-                                          record.valueType.type === 'array'
-                                      "
-              :showObjectItem="showObjectItem"
+              v-else-if="record.valueType.type === 'array'"
               v-model:value="record.valueType.elementType"
               placement="topRight"
             />
