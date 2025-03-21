@@ -74,8 +74,8 @@ const productList = ref<Record<string, any>[]>([]);
 watch(
     () => props.data,
     () => {
-        queryNoPagingPost({ paging: false }).then((resp) => {
-            if (resp.status === 200) {
+        queryNoPagingPost({ paging: false, sorts: [{ name: 'createTime', order: 'desc' }] }).then((resp) => {
+            if (resp.success) {
                 productList.value = resp.result as Record<string, any>[];
             }
         });

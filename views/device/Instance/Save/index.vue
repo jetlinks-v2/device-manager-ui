@@ -138,6 +138,7 @@ import { isExists, update } from '../../../../api/instance';
 import { onlyMessage } from '@jetlinks-web/utils';
 import { device} from "../../../../assets";
 import { useI18n } from 'vue-i18n';
+import { isInput } from '@device/utils/utils';
 
 const { t: $t } = useI18n();
 
@@ -163,8 +164,12 @@ const modelRef = reactive({
 
 const vailId = async (_: Record<string, any>, value: string) => {
     if (!props?.data?.id && value) {
+        if (!isInput(value)) {
+          return Promise.reject($t('Save.index.912481-17'));
+        }
+
         const resp = await isExists(value);
-        if (resp.status === 200 && resp.result) {
+        if (resp.success && resp.result) {
             return Promise.reject($t('Save.index.902471-15'));
         } else {
             return Promise.resolve();
