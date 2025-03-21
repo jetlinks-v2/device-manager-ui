@@ -27,6 +27,8 @@
               :target="target"
               :metadata="dataSource"
               @ok="importMetadata"
+              :permission="permission"
+              :disabled="hasOperate('add', type)"
             />
             <span v-if="searchData.show">
               {{ $t('Base.Base.640395-0') }}
