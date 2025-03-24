@@ -5,6 +5,7 @@
             target="category-product"
             noMargin
             @search="(params:any)=>queryParams = {...params}"
+            ref="searchRef"
         />
         <FullPage :extraHeight="24">
             <j-pro-table
@@ -335,6 +336,7 @@ const columns = [
 const queryParams = ref({});
 
 const tableRef = ref();
+const searchRef = ref();
 const tableData = reactive({
     _selectedRowKeys: [] as string[],
     selectedRows: [] as any[],
@@ -347,7 +349,8 @@ const table = {
         watch(
             () => props.parentId,
             () => {
-                table.refresh();
+              table.refresh();
+              searchRef.value?.reset?.()
             },
         );
     },

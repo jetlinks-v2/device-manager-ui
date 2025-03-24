@@ -180,13 +180,13 @@ const columns = computed(() => {
 const showLoad = computed(() => {
     return (
         _props.data.valueType?.type === 'file' &&
-        _props.data?.valueType?.bodyType === 'Binary(二进制)'
+        _props.data?.valueType?.bodyType === 'binary'
     );
 });
 
 const handleSearch = (e: any) => {
     params.value = e;
-    if(e) {
+    if(e && _props.time?.length) {
         queryPropertyData({
             pageSize: dataSource.value.pageSize || 12,
             pageIndex: 0,
@@ -228,6 +228,7 @@ const queryPropertyData = async (params: any, terms?: any) => {
         dataSource.value = resp.result as any;
     }
 };
+
 watch(
     () => [_props.data.id, _props.time],
     ([newVal]) => {
@@ -244,10 +245,10 @@ watch(
     },
 );
 
-const onChange = (page: any) => {
+const onChange = (_page: any) => {
     queryPropertyData({
-        pageSize: page.pageSize,
-        pageIndex: Number(page.current) - 1 || 0,
+        pageSize: _page.pageSize,
+        pageIndex: dataSource.value.pageSize === _page.pageSize ? (_page.current ? _page.current - 1 : 0) : 0,
     }, params.value);
 };
 

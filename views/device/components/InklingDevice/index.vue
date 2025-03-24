@@ -367,6 +367,7 @@ onMounted(() => {
 }
 
 .device-list-warp {
+  height: 400px;
     .device-list-items {
         .device-list-item {
             padding: 10px 16px;

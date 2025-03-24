@@ -14,7 +14,7 @@
             <a-tabs
                 :destroyInactiveTabPane="true"
                 v-model:activeKey="activeKey"
-                style="max-height: 600px; overflow-y: auto"
+                style="max-height: 620px; overflow-y: auto"
             >
                 <a-tab-pane key="table" :tab="$t('Detail.index.256328-0')">
                     <Table :data="props.data" :time="_getTimes" />

@@ -8,7 +8,7 @@
         </div>
         <div v-else-if="_data.data?.valueType?.type === 'file'">
             <template v-if="data?.valueType?.bodyType === 'base64'">
-                <div :class="valueClass" v-if="!!getType(value?.formatValue)">
+                <div :class="valueClass" v-if="!!_type">
                     <img :src="imgMap.get(_type)" @error="onError" />
                 </div>
                 <div v-else :class="valueClass">
@@ -138,6 +138,10 @@ const _types = ref<string>('');
 const visible = ref<boolean>(false);
 const temp = ref<boolean>(false);
 
+const _type = computed(() => {
+  return getType(_data.value?.formatValue)
+})
+
 const onError = (e: any) => {
     e.target.src = imgMap.get('other');
 };
@@ -146,7 +150,6 @@ const imgError = (e: any) => {
     e.target.src = imgMap.get('error');
     temp.value = true;
 };
-
 const getDetail = (_type: string) => {
     const value = _data.value;
     let flag: string = '';

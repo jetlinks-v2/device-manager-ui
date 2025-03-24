@@ -4,7 +4,7 @@ import {
   ArrayParams,
   BooleanParams, DateParams, DoubleParams, EditTable,
   EditTableFormItem, EnumParams,
-  FileParams,
+  FileParams, IntegerParams,
   StringParams, TypeSelect
 } from "../../index";
 import {isObject} from "lodash-es";
@@ -236,19 +236,21 @@ defineExpose({
               style="flex: 1 1 0; min-width: 0"
               :filter="showObjectItem ? [] : ['object', 'array']"
             />
+            <IntegerParams
+                v-if="['int', 'long'].includes(record.valueType.type)"
+                v-model:value="record.valueType.unit"
+            />
             <DoubleParams
-              v-if="
-                                          ['float', 'double'].includes(
-                                              record.valueType.type,
-                                          )
-                                      "
+              v-else-if="
+                  ['float', 'double'].includes(
+                      record.valueType.type,
+                  )
+              "
               v-model:value="record.valueType"
               placement="topRight"
             />
             <StringParams
-              v-else-if="
-                                          ['string', 'password'].includes(record.valueType.type)
-                                      "
+              v-else-if="['string', 'password'].includes(record.valueType.type)"
               v-model:value="record.valueType"
               placement="topRight"
             />
@@ -268,19 +270,11 @@ defineExpose({
               placement="topRight"
             />
             <BooleanParams
-              v-else-if="
-                                          record.valueType.type === 'boolean'
-                                      "
-              v-model:falseText="
-                                          record.valueType.falseText
-                                      "
-              v-model:falseValue="
-                                          record.valueType.falseValue
-                                      "
+              v-else-if="record.valueType.type === 'boolean'"
+              v-model:falseText="record.valueType.falseText"
+              v-model:falseValue="record.valueType.falseValue"
               v-model:trueText="record.valueType.trueText"
-              v-model:trueValue="
-                                          record.valueType.trueValue
-                                      "
+              v-model:trueValue="record.valueType.trueValue"
               placement="topRight"
             />
             <ArrayParams
