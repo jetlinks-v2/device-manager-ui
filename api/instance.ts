@@ -108,6 +108,14 @@ export const templateDownload = (productId: string, type: string) => request.get
 export const deviceImport = (productId: string, fileUrl: string, autoDeploy: boolean) => `${BASE_API}/device-instance/${productId}/import/_withlog?fileUrl=${fileUrl}&autoDeploy=${autoDeploy}&${TOKEN_KEY_URL}=${getToken()}`
 
 /**
+ * 插件设备导入
+ * @param productId 产品id
+ * @param type 文件类型
+ * @returns
+ */
+export const pluginDeviceImport = (productId: string, fileUrl: string, autoDeploy: boolean) => `${BASE_API}/device/instance/plugin/${productId}/import/_withlog?fileUrl=${fileUrl}&autoDeploy=${autoDeploy}&${TOKEN_KEY_URL}=${getToken()}`
+
+/**
  * 设备导出
  * @param productId 产品id
  * @param type 文件类型

@@ -140,10 +140,18 @@ const onTabChange = (_key: string) => {
  */
 const handleExecute = async (func: any) => {
     loading.value = true;
+    let funcJson = '';
+    try {
+        funcJson = JSON.parse(func.json || '{}')
+    } catch (e) {
+        loading.value = false;
+        onlyMessage($t('components.Advance.648416-4'), 'error');
+        return; 
+    }
     const resp: any = await execute(
         route.params.id as string,
         func.id,
-        JSON.parse(func.json),
+        funcJson,
     )
         .catch(() => {
             loading.value = false;
