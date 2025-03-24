@@ -76,7 +76,7 @@ import {inject,Ref} from 'vue'
 import { FileStaticPath } from '@/api/comm';
 import { TOKEN_KEY } from '@jetlinks-web/constants';
 import { LocalStore, onlyMessage, downloadFileByUrl } from '@jetlinks-web/utils';
-import { deviceImport, templateDownload } from '../../../../api/instance';
+import { deviceImport, pluginDeviceImport, templateDownload } from '../../../../api/instance';
 import { EventSourcePolyfill } from 'event-source-polyfill';
 import { useI18n } from 'vue-i18n';
 
@@ -86,6 +86,10 @@ const props = defineProps({
         type: String,
         default: undefined,
     },
+    accessProvider: {
+        type: String,
+        default: undefined, 
+    }
 });
 
 const modelRef = reactive({
@@ -146,7 +150,9 @@ const submitData = async (fileUrl: string) => {
         let dt = 0;
         let et = 0;
         const source = new EventSourcePolyfill(
-            deviceImport(props.product!, fileUrl, autoDeploy),
+            props.accessProvider === 'plugin_gateway'
+            ? pluginDeviceImport(props.product!, fileUrl, autoDeploy)
+            : deviceImport(props.product!, fileUrl, autoDeploy),
         );
         source.onmessage = (e: any) => {
             const res = JSON.parse(e.data);

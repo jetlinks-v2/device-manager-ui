@@ -31,7 +31,7 @@
         </a-form>
       </div>
       <div v-else>
-        <File v-if='importData.type ==="file"' :product='importData.productId'  />
+        <File v-if='importData.type ==="file"' :product='importData.productId' :accessProvider="productDetail?.accessProvider"  />
         <Plugin v-else :accessId='productDetail.accessId'  @change='pluginChange'/>
       </div>
     </div>
