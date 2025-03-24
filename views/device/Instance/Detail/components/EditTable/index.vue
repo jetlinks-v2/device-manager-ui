@@ -337,4 +337,7 @@ const onSave = () => {
 :deep(.ant-form-item) {
     margin: 0 !important;
 }
+:deep(.ant-pagination-item) {
+  display: none !important;
+}
 </style>

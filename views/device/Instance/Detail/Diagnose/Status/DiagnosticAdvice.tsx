@@ -79,7 +79,7 @@ const DiagnosticAdvice = defineComponent({
                             span={1}
                             label={
                                 item?.description ? (
-                                    <div>
+                                    <div style={{display: "flex"}}>
                                         <span style={{ marginRight: '10px' }}>{item.name}</span>
                                         <Ellipsis title={item.description}>
                                             <AIcon type="QuestionCircleOutlined" />

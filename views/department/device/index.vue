@@ -5,6 +5,7 @@
       target="category-device"
       noMargin
       @search="(params:any)=>queryParams = {...params}"
+      ref="searchRef"
     />
     <FullPage>
       <j-pro-table
@@ -350,6 +351,7 @@ const columns = [
 const queryParams = ref({});
 
 const tableRef = ref();
+const searchRef = ref();
 const table = {
   _selectedRowKeys: ref<string[]>([]),
   selectedRows: [] as any[],
@@ -362,6 +364,7 @@ const table = {
       () => props.parentId,
       () => {
         table.refresh();
+        searchRef.value?.reset?.()
       },
     );
   },

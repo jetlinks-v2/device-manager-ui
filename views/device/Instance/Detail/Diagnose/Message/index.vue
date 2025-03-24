@@ -200,11 +200,7 @@ onUnmounted(() => {
         height: calc(100% - 40px);
         width: 100%;
         .right-log-box-empty {
-            height: 100%;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            margin-top: 200px;
         }
     }
 }

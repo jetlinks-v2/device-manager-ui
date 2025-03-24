@@ -129,27 +129,25 @@ const Status = defineComponent({
                                                             hasPermission="link/Type:action"
                                                             popConfirm={{
                                                                 title: i18n.global.t('Status.index.565893-5'),
-                                                                onConfirm:  () => {
-                                                                    const response =  startNetwork(
+                                                                onConfirm: async () => {
+                                                                    const _response = await startNetwork(
                                                                         unref(gateway)?.channelId,
                                                                     );
-                                                                    response.then((res)=>{
-                                                                        if (res.status === 200) {
-                                                                            onlyMessage(i18n.global.t('Status.index.565893-6'));
-                                                                            list.value = modifyArrayList(
-                                                                                list.value,
-                                                                                {
-                                                                                    key: 'network',
-                                                                                    name: i18n.global.t('Status.index.565893-0'),
-                                                                                    desc: i18n.global.t('Status.index.565893-1'),
-                                                                                    status: 'success',
-                                                                                    text: i18n.global.t('Status.index.565893-2'),
-                                                                                    info: null,
-                                                                                },
-                                                                            );
-                                                                        }
-                                                                    })
-                                                                  return response
+                                                                    if (_response.success) {
+                                                                        onlyMessage(i18n.global.t('Status.index.565893-6'));
+                                                                        list.value = modifyArrayList(
+                                                                            list.value,
+                                                                            {
+                                                                                key: 'network',
+                                                                                name: i18n.global.t('Status.index.565893-0'),
+                                                                                desc: i18n.global.t('Status.index.565893-1'),
+                                                                                status: 'success',
+                                                                                text: i18n.global.t('Status.index.565893-2'),
+                                                                                info: null,
+                                                                            },
+                                                                        );
+                                                                    }
+                                                                  return _response
                                                                 }
                                                             }}
                                                         >
@@ -302,30 +300,28 @@ const Status = defineComponent({
                                                     status="default"
                                                     text={<span>{i18n.global.t('Status.index.565893-21')}
                                                         <PermissionButton
-                                                            hasPermission="link/Type:action"
+                                                            hasPermission="link/AccessConfig:action"
                                                             type="link"
                                                             style="padding: 0"
                                                             popConfirm={{
                                                                 title: i18n.global.t('Status.index.565893-5'),
-                                                                onConfirm:  () => {
-                                                                    const response =  startGateway(unref(device).accessId || '');
-                                                                    response.then((resp)=>{
-                                                                        if (resp.status === 200) {
-                                                                            onlyMessage(i18n.global.t('Status.index.565893-6'));
-                                                                            list.value = modifyArrayList(
-                                                                                list.value,
-                                                                                {
-                                                                                    key: 'gateway',
-                                                                                    name: i18n.global.t('Status.index.565893-14'),
-                                                                                    desc: desc,
-                                                                                    status: 'success',
-                                                                                    text: i18n.global.t('Status.index.565893-2'),
-                                                                                    info: null,
-                                                                                },
-                                                                            );
-                                                                        }
-                                                                    })
-                                                                    return response
+                                                                onConfirm:  async () => {
+                                                                    const _response =  await startGateway(unref(device).accessId || '');
+                                                                    if (_response.status === 200) {
+                                                                        onlyMessage(i18n.global.t('Status.index.565893-6'));
+                                                                        list.value = modifyArrayList(
+                                                                            list.value,
+                                                                            {
+                                                                                key: 'gateway',
+                                                                                name: i18n.global.t('Status.index.565893-14'),
+                                                                                desc: desc,
+                                                                                status: 'success',
+                                                                                text: i18n.global.t('Status.index.565893-2'),
+                                                                                info: null,
+                                                                            },
+                                                                        );
+                                                                    }
+                                                                    return _response
                                                                 }
                                                             }}
                                                         >
@@ -444,25 +440,23 @@ const Status = defineComponent({
                                                         style="padding: 0"
                                                         popConfirm={{
                                                             title: i18n.global.t('Status.index.565893-5'),
-                                                            onConfirm:  () => {
-                                                                const response =  startGateway(unref(device).accessId || '');
-                                                                response.then((resp)=>{
-                                                                    if (resp.status === 200) {
-                                                                        onlyMessage(i18n.global.t('Status.index.565893-6'));
-                                                                        list.value = modifyArrayList(
-                                                                            list.value,
-                                                                            {
-                                                                                key: 'gateway',
-                                                                                name: i18n.global.t('Status.index.565893-14'),
-                                                                                desc: desc,
-                                                                                status: 'success',
-                                                                                text: i18n.global.t('Status.index.565893-2'),
-                                                                                info: null,
-                                                                            },
-                                                                        );
-                                                                    }
-                                                                })
-                                                                return response
+                                                            onConfirm: async () => {
+                                                                const _response =  await startGateway(unref(device).accessId || '');
+                                                                if (_response.status === 200) {
+                                                                    onlyMessage(i18n.global.t('Status.index.565893-6'));
+                                                                    list.value = modifyArrayList(
+                                                                        list.value,
+                                                                        {
+                                                                            key: 'gateway',
+                                                                            name: i18n.global.t('Status.index.565893-14'),
+                                                                            desc: desc,
+                                                                            status: 'success',
+                                                                            text: i18n.global.t('Status.index.565893-2'),
+                                                                            info: null,
+                                                                        },
+                                                                    );
+                                                                }
+                                                                return _response
                                                             }
                                                         }}
                                                     >
@@ -561,25 +555,23 @@ const Status = defineComponent({
                                                             style="padding: 0"
                                                             popConfirm={{
                                                                 title: i18n.global.t('Status.index.565893-5'),
-                                                                onConfirm: () => {
-                                                                    const response =  _deploy(response?.result?.id || '');
-                                                                    response.then((resp)=>{
-                                                                        if (resp.status === 200) {
-                                                                            onlyMessage(i18n.global.t('Status.index.565893-6'));
-                                                                            list.value = modifyArrayList(
-                                                                                list.value,
-                                                                                {
-                                                                                    key: 'parent-device',
-                                                                                    name: i18n.global.t('Status.index.565893-23'),
-                                                                                    desc: i18n.global.t('Status.index.565893-24'),
-                                                                                    status: 'success',
-                                                                                    text: i18n.global.t('Status.index.565893-2'),
-                                                                                    info: null,
-                                                                                },
-                                                                            );
-                                                                        }
-                                                                    })
-                                                                   return response
+                                                                onConfirm: async () => {
+                                                                    const _response =  await _deploy(response?.result?.id || '');
+                                                                    if (_response.success) {
+                                                                        onlyMessage(i18n.global.t('Status.index.565893-6'));
+                                                                        list.value = modifyArrayList(
+                                                                            list.value,
+                                                                            {
+                                                                                key: 'parent-device',
+                                                                                name: i18n.global.t('Status.index.565893-23'),
+                                                                                desc: i18n.global.t('Status.index.565893-24'),
+                                                                                status: 'success',
+                                                                                text: i18n.global.t('Status.index.565893-2'),
+                                                                                info: null,
+                                                                            },
+                                                                        );
+                                                                    }
+                                                                   return _response
                                                                 }
                                                             }}
                                                         >
@@ -674,25 +666,23 @@ const Status = defineComponent({
                                                             style="padding: 0"
                                                             popConfirm={{
                                                                 title: i18n.global.t('Status.index.565893-5'),
-                                                                onConfirm:  () => {
-                                                                    const response =  _deployProduct(unref(device).productId || '');
-                                                                    response.then((resp)=>{
-                                                                        if (resp.status === 200) {
-                                                                            onlyMessage(i18n.global.t('Status.index.565893-6'));
-                                                                            list.value = modifyArrayList(
-                                                                                list.value,
-                                                                                {
-                                                                                    key: 'product',
-                                                                                    name: i18n.global.t('Status.index.565893-30'),
-                                                                                    desc: i18n.global.t('Status.index.565893-31'),
-                                                                                    status: 'success',
-                                                                                    text: i18n.global.t('Status.index.565893-2'),
-                                                                                    info: null,
-                                                                                },
-                                                                            );
-                                                                        }
-                                                                    })
-                                                                   return response
+                                                                onConfirm: async () => {
+                                                                    const _response = await  _deployProduct(unref(device).productId || '');
+                                                                    if (_response.status === 200) {
+                                                                        onlyMessage(i18n.global.t('Status.index.565893-6'));
+                                                                        list.value = modifyArrayList(
+                                                                            list.value,
+                                                                            {
+                                                                                key: 'product',
+                                                                                name: i18n.global.t('Status.index.565893-30'),
+                                                                                desc: i18n.global.t('Status.index.565893-31'),
+                                                                                status: 'success',
+                                                                                text: i18n.global.t('Status.index.565893-2'),
+                                                                                info: null,
+                                                                            },
+                                                                        );
+                                                                    }
+                                                                   return _response
                                                                 }
                                                             }}
                                                         >
@@ -755,26 +745,24 @@ const Status = defineComponent({
                                                     style="padding: 0"
                                                     popConfirm={{
                                                         title: i18n.global.t('Status.index.565893-5'),
-                                                        onConfirm:  () => {
-                                                            const response =  _deploy(unref(device)?.id || '');
-                                                            response.then((resp)=>{
-                                                                if (resp.status === 200) {
-                                                                    instanceStore.current.state = { value: 'offline', text: i18n.global.t('Status.index.565893-37') }
-                                                                    onlyMessage(i18n.global.t('Status.index.565893-6'));
-                                                                    list.value = modifyArrayList(
-                                                                        list.value,
-                                                                        {
-                                                                            key: 'device',
-                                                                            name: i18n.global.t('Status.index.565893-34'),
-                                                                            desc: i18n.global.t('Status.index.565893-35'),
-                                                                            status: 'success',
-                                                                            text: i18n.global.t('Status.index.565893-2'),
-                                                                            info: null,
-                                                                        },
-                                                                    );
-                                                                }
-                                                            })
-                                                           return response
+                                                        onConfirm: async () => {
+                                                            const _response = await _deploy(unref(device)?.id || '');
+                                                            if (_response.success) {
+                                                                instanceStore.current.state = { value: 'offline', text: i18n.global.t('Status.index.565893-37') }
+                                                                onlyMessage(i18n.global.t('Status.index.565893-6'));
+                                                                list.value = modifyArrayList(
+                                                                    list.value,
+                                                                    {
+                                                                        key: 'device',
+                                                                        name: i18n.global.t('Status.index.565893-34'),
+                                                                        desc: i18n.global.t('Status.index.565893-35'),
+                                                                        status: 'success',
+                                                                        text: i18n.global.t('Status.index.565893-2'),
+                                                                        info: null,
+                                                                    },
+                                                                );
+                                                            }
+                                                            return _response
                                                         }
                                                     }}
                                                 >
@@ -1807,26 +1795,23 @@ const Status = defineComponent({
                                                                     style="padding: 0"
                                                                     popConfirm={{
                                                                         title: i18n.global.t('Status.index.565893-5'),
-                                                                        onConfirm:  () => {
-                                                                            const response =  _deploy(response?.result?.id || '');
-                                                                            response.then((resp)=>{
-                                                                                if (resp.status === 200) {
-                                                                                    onlyMessage(i18n.global.t('Status.index.565893-6'));
-                                                                                    list.value = modifyArrayList(
-                                                                                        list.value,
-                                                                                        {
-                                                                                            key: 'parent-device',
-                                                                                            name: i18n.global.t('Status.index.565893-23'),
-                                                                                            desc: i18n.global.t('Status.index.565893-24'),
-                                                                                            status: 'success',
-                                                                                            text: i18n.global.t('Status.index.565893-2'),
-                                                                                            info: null,
-                                                                                        },
-                                                                                    );
-                                                                                }
-                                                                            })
-                                                                            return response
-
+                                                                        onConfirm:  async () => {
+                                                                            const _response = await  _deploy(response?.result?.id || '');
+                                                                            if (_response.success) {
+                                                                                onlyMessage(i18n.global.t('Status.index.565893-6'));
+                                                                                list.value = modifyArrayList(
+                                                                                    list.value,
+                                                                                    {
+                                                                                        key: 'parent-device',
+                                                                                        name: i18n.global.t('Status.index.565893-23'),
+                                                                                        desc: i18n.global.t('Status.index.565893-24'),
+                                                                                        status: 'success',
+                                                                                        text: i18n.global.t('Status.index.565893-2'),
+                                                                                        info: null,
+                                                                                    },
+                                                                                );
+                                                                            }
+                                                                            return _response
                                                                         }
                                                                     }}
                                                                 >
