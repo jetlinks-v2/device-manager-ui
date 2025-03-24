@@ -29,6 +29,7 @@
 import { UnitSelect, PopoverModal } from '../index'
 import ScaleItem from './ScaleItem.vue'
 import {Form} from "ant-design-vue";
+import {useI18n} from "vue-i18n";
 
 const emit = defineEmits(['update:value', 'cancel', 'confirm']);
 
@@ -46,14 +47,14 @@ const props = defineProps({
     default:false
   }
 });
-
+const { t: $t } = useI18n();
 const formItemContext = Form.useInjectFormItemContext();
 
 const formRef = ref()
 const visible = ref(false)
 const formData = reactive({
   unit: props.value?.unit,
-  scale: (!props.value?.scale && props.value?.scale !== 0) ? props.value?.scale : (['float', 'double'].includes(props.value.type) ? 2 : 0), // 精度
+  scale: props.value?.scale || 2 // 精度
 });
 
 const onOk = async () => {
@@ -75,13 +76,16 @@ const onOk = async () => {
 const onCancel = () => {
   formRef.value?.resetFields();
   formData.unit = props.value?.unit;
-  formData.scale = props.value?.scale || 0;
+  formData.scale = props.value?.scale || 2;
   emit('cancel');
 }
 
-watch(() => props.value, (newValue) => {
+watch(() => props.value, () => {
   formData.unit = props.value?.unit;
-  formData.scale = (!props.value?.scale && props.value?.scale !== 0) ? props.value?.scale : (['float', 'double'].includes(props.value.type) ? 2 : 0);
+  formData.scale = props.value?.scale || 2;
+}, {
+  immediate: true,
+  deep: true
 })
 </script>
 

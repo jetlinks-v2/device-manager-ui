@@ -28,7 +28,7 @@
                             <j-value-item
                                 v-model:modelValue="record.value"
                                 :itemType="record.valueType.type"
-
+                                style="width: 100%"
                                 :options="
                                     record.valueType.type === 'enum'
                                         ? (
@@ -98,9 +98,12 @@ const modelRef = reactive<{
 
 const formRef = ref<any>(null);
 
-watchEffect(() => {
-    modelRef.dataSource = _props?.modelValue || []
-    console.log(modelRef.dataSource);
+watch(() => _props?.modelValue, () => {
+  modelRef.dataSource = _props?.modelValue || [];
+  formRef.value?.clearValidate?.();
+}, {
+  deep: true,
+  immediate: true
 })
 
 const onSave = () =>

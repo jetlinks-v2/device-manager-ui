@@ -186,7 +186,7 @@ const showLoad = computed(() => {
 
 const handleSearch = (e: any) => {
     params.value = e;
-    if(e) {
+    if(e && _props.time?.length) {
         queryPropertyData({
             pageSize: dataSource.value.pageSize || 12,
             pageIndex: 0,
@@ -228,6 +228,7 @@ const queryPropertyData = async (params: any, terms?: any) => {
         dataSource.value = resp.result as any;
     }
 };
+
 watch(
     () => [_props.data.id, _props.time],
     ([newVal]) => {

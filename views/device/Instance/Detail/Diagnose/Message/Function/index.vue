@@ -132,7 +132,9 @@ import {
     readProperties,
     settingProperties,
 } from '../../../../../../../api/instance';
+import {useI18n} from "vue-i18n";
 
+const { t: $t } = useI18n();
 const instanceStore = useInstanceStore();
 
 const formRef = ref();

@@ -94,14 +94,16 @@ export const validate = (importMetadata: Array<Record<string, any>>, metadata: A
         const isValidate = validateItem(item)
 
         if (isValidate) {
-            // 与设备物模型属性id一致：覆盖
-            if (metadataMap.has(item.id)) {
-                metadata.splice(metadataMap.get(item.id), 1, item)
-                importMetadata.splice(i, 1)
-            } else {
+            // 与设备物模型属性id一致：覆盖  #35238 不覆盖
+            // if (metadataMap.has(item.id)) {
+            //     metadata.splice(metadataMap.get(item.id), 1, item)
+            //     importMetadata.splice(i, 1)
+            // } else {
+            //     copyMetadata.push(item)
+            // }
+            if (!metadataMap.has(item.id)){
                 copyMetadata.push(item)
             }
-
         }
         validateCallBack?.(isValidate)
     }
