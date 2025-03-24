@@ -12,6 +12,15 @@
                     :columns="columns"
                     :dataSource="modelRef.dataSource"
                     @change="tableChange"
+                    :pagination="{
+                            total: modelRef.dataSource.length,
+                            current: myCurrent + 1,
+                            pageSize: pageSize,
+                            pageSizeOptions: ['12', '24', '48', '96'],
+                            showSizeChanger: true,
+                            hideOnSinglePage: false,
+                            showTotal: (total: number, range: number) => $t('SyncUser.index.935207-3', [range[0],range[1],total]),
+                        }"
                 >
                     <template #headerCell="{ column }">
                         <template v-if="column.key === 'collectorId'">
@@ -185,6 +194,7 @@ const columns = [
 ];
 
 const myCurrent = ref(0);
+const pageSize = ref(12);
 
 const filterOption = (input: string, option: any) => {
     return option.label.toLowerCase().indexOf(input.toLowerCase()) >= 0;
@@ -275,7 +285,8 @@ const handleSearch = async () => {
 };
 
 const tableChange = (pagination: { current: number }) => {
-    myCurrent.value = pagination.current - 1;
+    myCurrent.value = pageSize.value !== pagination.pageSize ? 0 : pagination.current - 1;
+    pageSize.value = pagination.pageSize || 12
 };
 
 const unbind = (id: string) => {
