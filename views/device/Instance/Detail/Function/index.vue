@@ -10,8 +10,7 @@
                 <a @click="onJump">{{ $t('Function.index.709787-1') }}</a>
             </template>
             <template v-else>
-                {{ $t('Function.index.709787-0-1') }}
-                {{ $t('Function.index.709787-1') }}
+                {{ $t('Function.index.709787-0-1') }}{{ $t('Function.index.709787-1') }}
             </template>
         </template>
     </j-empty>
