@@ -432,6 +432,9 @@ const columns = ref([
         search: {
             type: 'component',
             components: TagSearch,
+            componentProps: {
+                data: params.value,
+            },
             termOptions: ['eq', 'not'],
         },
     },
@@ -863,6 +866,13 @@ const handleSearch = (_params: any) => {
                         ? dealSearchValue(item2)
                         : item2.value,
                 };
+            }
+            if(item2.column === 'id$dev-tag') {
+                item2 = {
+                    terms: [
+                        ...item2.value.map(i => i)
+                    ]
+                }
             }
             return item2;
         });

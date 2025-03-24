@@ -83,7 +83,12 @@ const { t: $t } = useI18n();
 
 const emit =  defineEmits(['change','update:value'])
 
-
+const props = defineProps({
+    value: {
+        type: Array,
+        default: () => []
+    }
+})
 
 const { data: options, run } = useRequest(tagsList,
     {
@@ -249,6 +254,16 @@ const filterOption = (input, option) => {
     return option.fullName.toLowerCase().indexOf(input.toLowerCase()) >= 0;
 };
 
+watch(() => props.value, (val) => {
+    if(val) {
+        props.value.forEach((item, index) => {
+            formData.list[index].key = item.value?.[0].key
+            formData.list[index].value = item.value?.[0].value
+            formData.list[index].type = item.type
+        })
+        listCache.value = cloneDeep(formData.list)
+    }
+}, {immediate: true})
 </script>
 <style lang="less" scoped>
 .header {
