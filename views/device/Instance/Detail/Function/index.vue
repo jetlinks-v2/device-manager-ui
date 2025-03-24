@@ -4,9 +4,15 @@
         style="margin-top: 50px"
     >
         <template #description>
-            {{ $t('Function.index.709787-0') }}
-            <!-- <a @click="emits('onJump', 'Metadata')">{{ $t('Function.index.709787-1') }}</a> -->
-            <a @click="onJump">{{ $t('Function.index.709787-1') }}</a>
+            <template v-if="hasPerm">
+                {{ $t('Function.index.709787-0') }}
+                <!-- <a @click="emits('onJump', 'Metadata')">{{ $t('Function.index.709787-1') }}</a> -->
+                <a @click="onJump">{{ $t('Function.index.709787-1') }}</a>
+            </template>
+            <template v-else>
+                {{ $t('Function.index.709787-0-1') }}
+                {{ $t('Function.index.709787-1') }}
+            </template>
         </template>
     </j-empty>
     <template v-else>
@@ -23,8 +29,12 @@ import { useInstanceStore } from '../../../../../store/instance';
 import Simple from './components/Simple.vue';
 import Advance from './components/Advance.vue';
 import { useMenuStore } from '@/store';
+import { usePermission } from '@jetlinks-web/hooks'
 
 const menuStory = useMenuStore();
+const { hasPerm } = usePermission(
+  `device/Product:update`,
+)
 
 const instanceStore = useInstanceStore();
 // const emits = defineEmits(['onJump']);
