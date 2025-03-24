@@ -108,5 +108,6 @@ export const validate = (importMetadata: Array<Record<string, any>>, metadata: A
         validateCallBack?.(isValidate)
     }
 
+    console.log(copyMetadata, metadata)
     return [...metadata, ...copyMetadata.reverse()] // 保持原有顺序
 }
