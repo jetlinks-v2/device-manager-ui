@@ -150,7 +150,7 @@ const submitData = async (metadataStr) => {
         const _metadataObject = JSON.parse(metadataStr || '{}');
         const properties = _metadataObject.properties;
         const _metadata = props.metadata.filter(
-            (item) => item.id && !item.expands?.isProduct,
+            (item) => item.id //&& !item.expands?.isProduct,
         );
         const result = properties.map((item) => {
             if (item.expands) {
@@ -172,6 +172,7 @@ const submitData = async (metadataStr) => {
                 errorCount.value += 1;
             }
         });
+        console.log(submitMetadata, 'submitMetadata')
     } else {
         onlyMessage($t('Import.Import.317604-8'), 'error');
         showUploadList.value = false;
