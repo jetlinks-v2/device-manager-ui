@@ -122,6 +122,6 @@ defineExpose({ onSave });
 <style lang="less" scoped>
 :deep(.ant-form-item) {
     margin: 0 !important;
-    height: 30px;
+    height: 38px;
 }
 </style>
