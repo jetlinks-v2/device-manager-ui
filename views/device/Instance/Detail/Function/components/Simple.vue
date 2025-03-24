@@ -82,7 +82,7 @@
                                                 "
                                                 :extraProps="{
                                                       style: {
-                                                        zIndex: 1030,
+                                                        zIndex: 999,
                                                         width: '100%'
                                                       }
                                                 }"
