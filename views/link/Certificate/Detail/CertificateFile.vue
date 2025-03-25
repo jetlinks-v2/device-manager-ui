@@ -7,7 +7,7 @@
             :placeholder="placeholder"
         />
         <a-upload
-            accept=".pem"
+            accept=".key"
             listType="text"
             :action="NETWORK_CERTIFICATE_UPLOAD"
             :headers="{
