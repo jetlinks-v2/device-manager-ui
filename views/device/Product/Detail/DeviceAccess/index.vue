@@ -300,8 +300,8 @@ import {
   modify,
 } from '../../../../../api/product';
 
-import {driver as Driver} from 'driver.js';
-import 'driver.js/dist/driver.css';
+import Driver from 'driver.js';
+import 'driver.js/dist/driver.min.css';
 import {marked} from 'marked';
 import type {TableColumnType} from 'ant-design-vue';
 import {useMenuStore} from '@/store/menu';
@@ -638,11 +638,11 @@ const getGuide = async (isDriver1: boolean = false) => {
     return;
   } else {
     if (isDriver1) {
-      driver1.setSteps(steps1);
-      driver1.drive();
+      driver1.defineSteps(steps1);
+      driver1.start();
     } else {
-      driver.setSteps(steps);
-      driver.drive();
+      driver.defineSteps(steps);
+      driver.start();
     }
   }
 };
