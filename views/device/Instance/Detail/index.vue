@@ -369,11 +369,11 @@ const getDetail = () => {
 };
 
 const initPage = async (newId: any) => {
+    instanceStore.tabActiveKey = 'Info';
     await instanceStore.refresh(String(newId));
     getStatus(String(newId));
     list.value = [...initList];
     getDetail();
-    instanceStore.tabActiveKey = 'Info';
 };
 
 onBeforeRouteUpdate((to: any) => {
@@ -387,15 +387,17 @@ onBeforeRouteUpdate((to: any) => {
 
 const getDetailFn = async () => {
     const _id = route.params?.id;
+    instanceStore.tabActiveKey = routerParams.params.value.tab || 'Info';
     if (_id) {
         await instanceStore.refresh(String(_id));
         getStatus(String(_id));
         list.value = [...initList];
         getDetail();
-        instanceStore.tabActiveKey = routerParams.params.value.tab || 'Info';
-    } else {
-        instanceStore.tabActiveKey = routerParams.params.value.tab || 'Info';
+        // instanceStore.tabActiveKey = routerParams.params.value.tab || 'Info';
     }
+    // else {
+    //     instanceStore.tabActiveKey = routerParams.params.value.tab || 'Info';
+    // }
 };
 
 const onTabChange = (e: string) => {
