@@ -143,6 +143,9 @@ const handleExecute = async (func: any) => {
     let funcJson = '';
     try {
         funcJson = JSON.parse(func.json || '{}')
+        if(typeof funcJson !== 'object') {
+            throw new Error('')
+        }
     } catch (e) {
         loading.value = false;
         onlyMessage($t('components.Advance.648416-4'), 'error');
