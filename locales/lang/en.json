@@ -1865,7 +1865,7 @@
     "AccessConfig.index.764793-14": "Please disable first, then delete",
     "AccessConfig.index.764793-15": "Are you sure to delete?",
     "Detail.CertificateFile.588280-0": "Upload successful!",
-    "Detail.CertificateFile.588280-1": "Please upload a file in. pem format",
+    "Detail.CertificateFile.588280-1": "Please upload a file in {0} format",
     "Detail.index.247061-0": "Certificate standards",
     "Detail.index.247061-1": "Please select the certificate standard",
     "Detail.index.247061-2": "Certificate Name",

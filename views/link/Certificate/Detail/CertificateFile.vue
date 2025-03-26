@@ -7,7 +7,7 @@
             :placeholder="placeholder"
         />
         <a-upload
-            accept=".key"
+            :accept="accept"
             listType="text"
             :action="NETWORK_CERTIFICATE_UPLOAD"
             :headers="{
@@ -48,6 +48,10 @@ const props = defineProps({
         type: String,
         default: () => '',
     },
+    accept: {
+      type: String,
+      default: '.key'
+    }
 });
 
 const keystoreBase64 = ref(props.modelValue);
@@ -58,13 +62,13 @@ const handleChange = (info: UploadChangeParam) => {
     if (info.file.status === 'done') {
         const result = info.file.response?.result;
         const reg = new RegExp(/\.key$/i);
-        if (reg.test(info.file.name)) {
+        if (info.file.name.endsWith(props.accept)) {
             keystoreBase64.value = result;
             emit('change', result);
             emit('update:modelValue', result);
             onlyMessage($t('Detail.CertificateFile.588280-0'), 'success');
         } else {
-            onlyMessage($t('Detail.CertificateFile.588280-1'), 'error');
+            onlyMessage($t('Detail.CertificateFile.588280-1', [props.accept]), 'error');
         }
         loading.value = false;
     }

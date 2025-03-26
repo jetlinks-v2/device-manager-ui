@@ -1865,7 +1865,7 @@
     "AccessConfig.index.764793-14": "请先禁用，再删除",
     "AccessConfig.index.764793-15": "确认删除?",
     "Detail.CertificateFile.588280-0": "上传成功！",
-    "Detail.CertificateFile.588280-1": "请上传.pem格式的文件",
+    "Detail.CertificateFile.588280-1": "请上传{0}格式的文件",
     "Detail.index.247061-0": "证书标准",
     "Detail.index.247061-1": "请选择证书标准",
     "Detail.index.247061-2": "证书名称",
