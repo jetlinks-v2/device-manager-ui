@@ -7,7 +7,7 @@
             :placeholder="placeholder"
         />
         <a-upload
-            accept=".pem"
+            accept=".key"
             listType="text"
             :action="NETWORK_CERTIFICATE_UPLOAD"
             :headers="{
@@ -57,7 +57,7 @@ const handleChange = (info: UploadChangeParam) => {
     loading.value = true;
     if (info.file.status === 'done') {
         const result = info.file.response?.result;
-        const reg = new RegExp(/\.pem$/i);
+        const reg = new RegExp(/\.key$/i);
         if (reg.test(info.file.name)) {
             keystoreBase64.value = result;
             emit('change', result);
