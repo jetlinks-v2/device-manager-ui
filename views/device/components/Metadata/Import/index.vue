@@ -871,6 +871,7 @@ const handleImport = async () => {
                                 a?.inputs?.forEach((item: any) => {
                                     item.expands = {
                                         required: false,
+                                        ...(item.expands || {})
                                     };
                                 });
                             });
