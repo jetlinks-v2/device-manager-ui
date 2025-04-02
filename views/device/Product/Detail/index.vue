@@ -325,16 +325,18 @@ const getProtocol = async () => {
             permissionStore.hasPermission(
                 'rule-engine/Alarm/Configuration:view',
             ) &&
-            isNoCommunity &&
             showThreshold
         ) {
-            list.value.push(...[{
+            list.value.push({
                 key: 'AlarmRecord',
                 tab: $t('Detail.index.478940-16'),
-            },{
-                key: 'Invalid',
-                tab: $t('Detail.index.478940-17')
-            }]);
+            });
+            if( isNoCommunity ){
+                list.value.push({
+                  key: 'Invalid',
+                  tab: $t('Detail.index.478940-17')
+                }) 
+            }
         }
     }
 };
