@@ -240,14 +240,17 @@ const getStatus = (id: string) => {
 
 const getDetail = () => {
     const keys = list.value.map((i) => i.key);
-    if (permissionStore.hasPermission('rule-engine/Alarm/Log:view') && isNoCommunity && showThreshold) {
-        list.value.push(...[{
-            key: 'AlarmRecord',
-            tab: $t('Detail.index.957187-16'),
-        },{
+    if (permissionStore.hasPermission('rule-engine/Alarm/Log:view') && showThreshold) {
+        list.value.push({
+          key: 'AlarmRecord',
+          tab: $t('Detail.index.957187-16'),
+        });
+        if(isNoCommunity) {
+          list.value.push({
             key: 'Invalid',
             tab: $t('Detail.index.957187-29')
-        }]);
+          }); 
+        }
     }
     if (permissionStore.hasPermission('iot-card/CardManagement:view') && isNoCommunity) {
         list.value.push({
