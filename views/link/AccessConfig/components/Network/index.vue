@@ -266,9 +266,9 @@ import { useI18n } from "vue-i18n";
 const { t: $t } = useI18n();
 const menuStory = useMenuStore();
 function generateUUID() {
-  var d = new Date().getTime();
+  let d = new Date().getTime();
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
-    var r = (d + Math.random() * 16) % 16 | 0;
+    let r = (d + Math.random() * 16) % 16 | 0;
     d = Math.floor(d / 16);
     return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
   });
@@ -298,7 +298,7 @@ const id = route.params.id as string;
 const formRef = ref<FormInstance>();
 const useForm = Form.useForm;
 const isAgent = ["agent-device-gateway", "agent-media-device-gateway"].includes(
-  props.provider.id
+  props.provider.id,
 );
 
 const current = ref(0);
@@ -338,7 +338,7 @@ const { resetFields, validate, validateInfos } = useForm(
       },
     ],
     description: [{ max: 200, message: $t("Network.index.041705-21") }],
-  })
+  }),
 );
 
 const showAddBtn = computed(() => {
@@ -370,7 +370,7 @@ const addNetwork = () => {
   const tab: any = window.open(
     `${window.location.origin + window.location.pathname}#${url}?type=${
       NetworkTypeMapping.get(props.provider?.id) || ""
-    }`
+    }`,
   );
   tab.onTabSaveSuccess = (value: any) => {
     if (value.success) {
@@ -383,7 +383,7 @@ const addNetwork = () => {
 const addProcotol = () => {
   const url = menuStory.getMenu("link/Protocol")?.path;
   const tab: any = window.open(
-    `${window.location.origin + window.location.pathname}#${url}?save=true`
+    `${window.location.origin + window.location.pathname}#${url}?save=true`,
   );
   tab.onTabSaveSuccess = (value: any) => {
     if (value.success) {
@@ -422,7 +422,7 @@ const networkSearch = (value: string) => {
     ? allNetworkList.value.filter(
         (i: any) =>
           i.name &&
-          i.name.toLocaleLowerCase().includes(value.toLocaleLowerCase())
+          i.name.toLocaleLowerCase().includes(value.toLocaleLowerCase()),
       )
     : allNetworkList.value;
 };
@@ -437,7 +437,7 @@ const procotolSearch = (value: string) => {
     ? allProcotolList.value.filter(
         (i: any) =>
           i.name &&
-          i.name.toLocaleLowerCase().includes(value.toLocaleLowerCase())
+          i.name.toLocaleLowerCase().includes(value.toLocaleLowerCase()),
       )
     : allProcotolList.value;
 };
@@ -494,7 +494,7 @@ const next = async () => {
         type !== "child-device"
           ? await getConfigView(
               procotolCurrent.value,
-              ProtocolMapping.get(props.provider.id)
+              ProtocolMapping.get(props.provider.id),
             )
           : await getChildConfigView(procotolCurrent.value);
       if (resp.status === 200) {
@@ -529,7 +529,7 @@ const next = async () => {
 };
 
 const prev = () => {
-  if(isAgent) {
+  if (isAgent) {
     current.value = 0;
   } else {
     current.value = current.value - 1;
@@ -540,7 +540,7 @@ onMounted(() => {
   if (props.data && props.data.id) {
     if (
       ["agent-device-gateway", "agent-media-device-gateway"].includes(
-        props.data.provider
+        props.data.provider,
       )
     ) {
       steps.value = [
@@ -573,7 +573,7 @@ onMounted(() => {
     if (props.provider?.id) {
       if (
         ["agent-device-gateway", "agent-media-device-gateway"].includes(
-          props.provider.id
+          props.provider.id,
         )
       ) {
         queryNetworkList(props.provider.id, "");
@@ -620,7 +620,7 @@ watch(
   {
     deep: true,
     immediate: true,
-  }
+  },
 );
 
 const addressesTip = (data: any) => {
