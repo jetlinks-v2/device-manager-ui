@@ -126,7 +126,6 @@
 </template>
 
 <script setup lang="ts">
-import { ComponentInternalInstance } from 'vue';
 import { useInstanceStore } from '../../../../../../store/instance';
 import { execute } from '../../../../../../api/instance';
 import { onlyMessage } from '@jetlinks-web/utils';
