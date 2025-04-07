@@ -1,39 +1,38 @@
 <script setup>
-import { resource } from '@device/assets/resource'
-  const props = defineProps({
-    record: Object,
-    active: Boolean,
-    showCharge: {
-      type:Boolean,
-      default: true
-    }
-  })
+import { resource } from "@device/assets/resource";
+const props = defineProps({
+  record: Object,
+  active: Boolean,
+  showCharge: {
+    type: Boolean,
+    default: true,
+  },
+});
 
-  const classNames = computed(() =>{
-    return {
-      'resource-table-item': true,
-      'active': props.active
-    }
-  })
+const classNames = computed(() => {
+  return {
+    "resource-table-item": true,
+    active: props.active,
+  };
+});
 
-  const typeColor = {
-      device: '#1677FF',
-      collector: '#52C41A', // 数采
-      protocol: '#FAAD14', // 协议
-  }
+const typeColor = {
+  device: "#1677FF",
+  collector: "#52C41A", // 数采
+  protocol: "#FAAD14", // 协议
+};
 
-  const icon = {
-    device: 'icon-a-rongqi21',
-    collector: 'icon-rongqi3',
-    protocol: 'icon-a-rongqi11'
-  }
+const icon = {
+  device: "icon-a-rongqi21",
+  collector: "icon-rongqi3",
+  protocol: "icon-a-rongqi11",
+};
 
-  const imageMap = new Map([
-    ['device',resource.deviceDefaultImage],
-    ['collector',resource.collectorDefaultImage],
-    ['protocol',resource.protocolDefaultImage]
-  ])
-
+const imageMap = new Map([
+  ["device", resource.deviceDefaultImage],
+  ["collector", resource.collectorDefaultImage],
+  ["protocol", resource.protocolDefaultImage],
+]);
 </script>
 
 <template>
@@ -44,15 +43,18 @@ import { resource } from '@device/assets/resource'
       </div>
       <div class="item-center-bottom">
         <div class="table-item-title fz-16">
-          <j-ellipsis >
+          <j-ellipsis>
             {{ record.name }}
           </j-ellipsis>
         </div>
         <div class="table-item-tag">
           <a-space>
-            <AIcon :type="icon[record.type?.value]" :style="{ color: typeColor[record.type?.value]}" />
+            <AIcon
+              :type="icon[record.type?.value]"
+              :style="{ color: typeColor[record.type?.value] }"
+            />
             <span class="fc-600">
-              {{ record.type?.text || '-' }}
+              {{ record.type?.text || "-" }}
             </span>
           </a-space>
         </div>
@@ -67,9 +69,13 @@ import { resource } from '@device/assets/resource'
     <div
       v-if="showCharge"
       class="table-item-version item-position-absolute"
-      :class="{'charge': record.charge}"
+      :class="{ charge: record.charge }"
     >
-      {{ record.charge ?  $t('ResourceTable.CardItem.777348-0') : $t('ResourceTable.CardItem.777348-1') }}
+      {{
+        record.charge
+          ? $t("ResourceTable.CardItem.777348-0")
+          : $t("ResourceTable.CardItem.777348-1")
+      }}
     </div>
   </div>
 </template>
@@ -78,14 +84,14 @@ import { resource } from '@device/assets/resource'
 .resource-table-item {
   position: relative;
   width: 100%;
-  transition: all .2s;
+  transition: all 0.2s;
   border-radius: 8px;
   cursor: pointer;
   height: 348px;
-  border: 2px solid transparent;
+  //border: 2px solid transparent;
   color: @font-gray-900;
   background-color: #fff;
-  border: 1px solid #EFF0F1;
+  border: 1px solid #eff0f1;
   .item-center {
     padding: 12px;
   }
@@ -124,7 +130,7 @@ import { resource } from '@device/assets/resource'
     border-radius: 4px;
     overflow: hidden;
 
-    >img {
+    > img {
       height: 194px;
       width: 100%;
     }
@@ -139,8 +145,8 @@ import { resource } from '@device/assets/resource'
     color: #ff4d4f;
 
     .charge {
-      background-color: #FBEBD1;
-      color: #A6845F;
+      background-color: #fbebd1;
+      color: #a6845f;
     }
   }
 }

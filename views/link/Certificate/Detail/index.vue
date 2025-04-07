@@ -22,7 +22,7 @@
                 <a-form-item :label="$t('Detail.index.247061-5')" :name="['configs','cert']" :rules="[
                                 { required: true, message: $t('Detail.index.247061-6'), trigger: 'change' },
                             ]">
-                  <CertificateFile name="cert" v-model:modelValue="formData.configs.cert"
+                  <CertificateFile name="cert" accept=".pem" v-model:modelValue="formData.configs.cert"
                                    :placeholder="$t('Detail.index.247061-7')" />
                 </a-form-item>
                 <a-form-item :label="$t('Detail.index.247061-8')" name="mode"
