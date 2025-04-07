@@ -289,8 +289,9 @@
                     @dragstart="() => onStart(item)"
                     @click="onDetail(item)"
                 >
-                  <div class="item-name">
-                    <j-ellipsis>{{ item.name }}</j-ellipsis>
+                  <div class="item-header">
+                    <div class="item-name"><j-ellipsis>{{ item.name }}</j-ellipsis></div>
+<!--                    <div class="item-tag">节点名称XXXX</div>-->
                   </div>
                   <div class="item-info">
                                     <span>
@@ -595,9 +596,6 @@ const handleSearch = async (e) => {
                     }
                 });
             }
-
-            console.log('_dataSource.value====', _dataSource.value);
-            console.log('res.resulte====', res.result);
         }
     }
 };
@@ -729,7 +727,6 @@ const getActions = (type, data) => {
                     ? 'StopOutlined'
                     : 'CheckCircleOutlined',
             onClick: async () => {
-                console.log('data====', data);
                 menuVisible.value = false;
                 actionRef.visible = true;
                 actionRef.rows = [_customRow.value?.id];
@@ -1088,7 +1085,6 @@ const onDelete = (item) => {
                     item.MappingError = e.message;
                 });
         } else {
-            // console.log('item.Mapping====', item.Mapping);
             edgeList.value.unshift(item.Mapping);
             _edgeInitList.value.unshift(item.Mapping);
             if (item.MappingStatus === 'error') {
@@ -1265,6 +1261,10 @@ onUnmounted(() => {
     editStatus.value = false;
     EventEmitter.unSubscribe(['ChildTabs'], TabsChange);
 });
+
+watchEffect(() => {
+  console.log(edgeList.value, '123')
+})
 
 defineExpose({
     handleRefresh

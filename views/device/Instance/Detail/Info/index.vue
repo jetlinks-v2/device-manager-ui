@@ -52,8 +52,12 @@
             instanceStore.current?.deviceType?.text
         }}</a-descriptions-item>
         <a-descriptions-item :label="$t('Info.index.208636-9')">{{
-            instanceStore.current?.firmwareInfo?.version
-        }}</a-descriptions-item>
+            instanceStore.current?.firmwareInfo?.version || '--'
+        }}
+          <a-tooltip :title="$t('Info.index.208636-17')">
+            <AIcon type="QuestionCircleOutlined" />
+          </a-tooltip>
+        </a-descriptions-item>
         <a-descriptions-item :label="$t('Info.index.208636-10')">{{
             instanceStore.current?.transport
         }}</a-descriptions-item>
@@ -129,7 +133,9 @@ import InkingModal from './components/InklingModal';
 import dayjs from 'dayjs';
 import { detail as queryPluginAccessDetail } from '../../../../../api/link/accessConfig';
 import { getPluginData } from '../../../../../api/link/plugin';
+import {useI18n} from "vue-i18n";
 
+const { t: $t } = useI18n();
 const visible = ref<boolean>(false);
 const inkingVisible = ref<boolean>(false);
 const instanceStore = useInstanceStore();

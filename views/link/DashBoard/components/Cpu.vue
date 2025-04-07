@@ -66,6 +66,7 @@ import {
 import type { DataType } from '../typings';
 import ServerList from './ServerList.vue'
 import Echarts from './echarts.vue'
+import {useI18n} from "vue-i18n";
 
 const props = defineProps({
   serviceId: {
@@ -77,7 +78,7 @@ const props = defineProps({
     default: false
   }
 })
-
+const { t: $t } = useI18n();
 const loading = ref(false);
 const data = ref<DataType>({
     type: 'hour',
@@ -135,7 +136,7 @@ const echartsOptions = computed(() => {
 })
 const getCPUEcharts = async (val: any) => {
     loading.value = true;
-    const res: any = await dashboard(defaultParamsData('cpu', val));
+    const res: any = await dashboard(defaultParamsData('cpu', val)).catch(() => { loading.value = false })
     if (res.success) {
         const _cpuOptions = {};
         const _cpuXAxis = new Set();

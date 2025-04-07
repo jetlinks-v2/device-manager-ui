@@ -1322,6 +1322,7 @@
     "Info.index.208636-14": "Last online time",
     "Info.index.208636-15": "Father device",
     "Info.index.208636-16": "Description",
+    "Info.index.208636-17": "Only the firmware version issued by the platform is shown here, the edge gateway may upgrade the firmware locally and the actual version may not be the same as the version shown on the platform.",
     "Config.index.926765-0": "to configure",
     "Config.index.926765-1": "edit",
     "Config.index.926765-2": "Are you sure to reapply this configuration?",

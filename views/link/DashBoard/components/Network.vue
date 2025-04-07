@@ -81,6 +81,7 @@ import dayjs from 'dayjs';
 import { DataType } from '../typings.d';
 import ServerList from './ServerList.vue';
 import Echarts from './echarts.vue';
+import {useI18n} from "vue-i18n";
 
 const props = defineProps({
     serviceId: {
@@ -88,7 +89,7 @@ const props = defineProps({
         default: undefined,
     },
 });
-
+const { t: $t } = useI18n();
 const chartRef = ref<Record<string, any>>({});
 const loading = ref(false);
 const data = ref<DataType>({
@@ -115,7 +116,7 @@ const changeType = (value: any) => {
 };
 const getNetworkEcharts = async (val: any) => {
     loading.value = true;
-    const resp: any = await dashboard(networkParams(val));
+    const resp: any = await dashboard(networkParams(val)).catch(() => { loading.value = false; })
     if (resp.success) {
         const _networkOptions = {};
         const _networkXAxis = new Set();

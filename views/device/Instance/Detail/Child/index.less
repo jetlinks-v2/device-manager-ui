@@ -144,11 +144,22 @@
                     background-color: #f8f9fa;
                     margin-bottom: 10px;
                     padding: 12px;
-                    .item-name {
-                        font-size: 16px;
+                    .item-header {
+                        display: flex;
+                        gap: 12px;
                         margin-bottom: 6px;
-                        color: #1f2429;
-                        width: 90%;
+
+                        .item-name {
+                            color: #1f2429;
+                            font-size: 16px;
+                        }
+
+                        .item-tag {
+                            background-color: #FFFFFF;
+                            color: @primary-color;
+                            border-radius: 12px;
+                            padding: 0 12px;
+                        }
                     }
                     .item-info {
                         display: flex;
