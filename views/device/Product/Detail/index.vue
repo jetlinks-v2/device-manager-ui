@@ -142,14 +142,6 @@
 
 <script lang="ts" setup>
 import { useProductStore } from '../../../../store/product';
-import Info from './BasicInfo/indev.vue';
-import Device from './DeviceAccess/index.vue';
-import Metadata from '../../components/Metadata/index.vue';
-import DataAnalysis from './DataAnalysis/index.vue';
-import MetadataMap from './MetadataMap';
-import AlarmRecord from '@device/views/device/Instance/Detail/AlarmRecord/index.vue';
-import Invalid from '@device/views/device/Instance/Detail/Invalid/index.vue'
-import Firmware from '@device/views/device/Instance/Detail/Firmware/index.vue';
 import {
     _deploy,
     _undeploy,
@@ -162,6 +154,7 @@ import { EventEmitter, onlyMessage } from '@jetlinks-web/utils';
 import { useAuthStore, useSystemStore } from '@/store';
 import { isNoCommunity } from '@/utils/utils';
 import { useI18n } from 'vue-i18n';
+import { tabs } from './asyncComponent'
 
 const { t: $t } = useI18n();
 
@@ -169,7 +162,6 @@ const { showThreshold } = useSystemStore();
 const permissionStore = useAuthStore();
 const menuStory = useMenuStore();
 const route = useRoute();
-const checked = ref<boolean>(true);
 const productStore = useProductStore();
 const routerParams = useRouterParams();
 
@@ -188,21 +180,6 @@ const list = ref([
         tab: $t('Detail.index.478940-11'),
     },
 ]);
-
-const tabs = {
-    Info,
-    Metadata,
-    Device,
-    DataAnalysis,
-    MetadataMap,
-    AlarmRecord,
-    Firmware,
-    Invalid
-};
-
-const onBack = () => {
-    history.back();
-};
 
 const onTabChange = (e: string) => {
     if (productStore.tabActiveKey === 'Metadata') {
@@ -335,7 +312,7 @@ const getProtocol = async () => {
                 list.value.push({
                   key: 'Invalid',
                   tab: $t('Detail.index.478940-17')
-                }) 
+                })
             }
         }
     }
