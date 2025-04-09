@@ -66,6 +66,7 @@ import {
 import { DataType } from '../typings';
 import ServerList from './ServerList.vue'
 import Echarts from './echarts.vue'
+import {useI18n} from "vue-i18n";
 
 const props = defineProps({
   serviceId: {
@@ -77,7 +78,7 @@ const props = defineProps({
     default: false
   }
 })
-
+const { t: $t } = useI18n();
 const chartRef = ref<Record<string, any>>({});
 const loading = ref(false);
 const data = ref<DataType>({
@@ -99,7 +100,7 @@ const pickerTimeChange = () => {
 
 const getJVMEcharts = async (val: any) => {
     loading.value = true;
-    const res: any = await dashboard(defaultParamsData('jvm', val));
+    const res: any = await dashboard(defaultParamsData('jvm', val)).catch(() => { loading.value = false })
     if (res.success) {
         const _jvmOptions = {};
         const _jvmXAxis = new Set();
