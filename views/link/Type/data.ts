@@ -30,7 +30,7 @@ export const Configuration = {
 
 export const FormStates = {
     name: '',
-    type: 'UDP',
+    type: '',
     shareCluster: true,
     description: '',
 };
