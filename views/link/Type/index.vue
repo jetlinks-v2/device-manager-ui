@@ -189,6 +189,7 @@ import {onlyMessage} from '@/utils/comm';
 import {useMenuStore} from '@/store';
 import {network} from "../../../assets";
 import {useI18n} from 'vue-i18n';
+import { isNoCommunity } from '@/utils/utils';
 
 const {t: $t} = useI18n();
 const menuStory = useMenuStore();
@@ -225,21 +226,6 @@ const columns = [
       },
     },
     scopedSlots: true,
-  },
-  {
-    title: $t('Type.index.196842-6'),
-    dataIndex: 'shareCluster',
-    key: 'shareCluster',
-    width: 120,
-    ellipsis: true,
-    scopedSlots: true,
-    search: {
-      type: 'select',
-      options: [
-        {label: $t('Type.index.196842-3'), value: 'true'},
-        {label: $t('Type.index.196842-4'), value: 'false'},
-      ],
-    },
   },
   {
     title: $t('Type.index.196842-2'),
@@ -281,6 +267,23 @@ const columns = [
   },
 ];
 
+if(isNoCommunity) {
+  columns.splice(2, 0,   {
+    title: $t('Type.index.196842-6'),
+    dataIndex: 'shareCluster',
+    key: 'shareCluster',
+    width: 120,
+    ellipsis: true,
+    scopedSlots: true,
+    search: {
+      type: 'select',
+      options: [
+        {label: $t('Type.index.196842-3'), value: 'true'},
+        {label: $t('Type.index.196842-4'), value: 'false'},
+      ],
+    },
+  },)
+}
 const getActions = (
     data: Partial<Record<string, any>>,
     type: 'card' | 'table',
