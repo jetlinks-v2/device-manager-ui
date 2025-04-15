@@ -27,6 +27,7 @@
           v-model:value="formModel.sortIndex"
           :min="1"
           :max="9999"
+          :precision="0"
           :placeholder="$t('modifyModal.index.177674-5')"
         />
       </a-form-item>
@@ -96,7 +97,6 @@ const rules = ref({
     {
       required: true,
       message: $t("modifyModal.index.177674-3"),
-      trigger: "blur",
     },
     {
       max: 64,
@@ -107,12 +107,6 @@ const rules = ref({
     {
       required: true,
       message: $t("modifyModal.index.177674-5"),
-      trigger: "blur",
-    },
-    {
-      pattern: /^\d+$/,
-      message: $t("modifyModal.index.177674-9"),
-      trigger: "change",
     },
   ],
 });

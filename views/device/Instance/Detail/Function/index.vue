@@ -32,7 +32,7 @@ import { usePermission } from '@jetlinks-web/hooks'
 
 const menuStory = useMenuStore();
 const { hasPerm } = usePermission(
-  `device/Product:update`,
+  ref(`device/Product:update`),
 )
 
 const instanceStore = useInstanceStore();
