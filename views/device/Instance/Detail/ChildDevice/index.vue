@@ -86,7 +86,7 @@
             <template #action="slotProps">
                 <a-space :size="16">
                     <template
-                        v-for="i in getActions(slotProps, 'table')"
+                        v-for="i in getActions(slotProps)"
                         :key="i.key"
                     >
                         <j-permission-button
@@ -135,12 +135,13 @@ import BindChildDevice from './BindChildDevice/index.vue';
 import SaveChild from './SaveChild/index.vue';
 import { onlyMessage } from '@/utils/comm';
 import { useI18n } from 'vue-i18n';
+import {useMenuStore} from "@/store";
 
 const { t: $t } = useI18n();
 
 const instanceStore = useInstanceStore();
 const { detail } = storeToRefs(instanceStore);
-const router = useRouter();
+const menuStore = useMenuStore();
 const childVisible = ref(false);
 
 const statusMap = new Map();
@@ -235,7 +236,7 @@ const getActions = (data: Partial<Record<string, any>>): any[] => {
             },
             icon: 'EyeOutlined',
             onClick: () => {
-                router.push('/iot/device/instance/detail/' + data.id);
+              menuStore.jumpPage('device/Instance/Detail', { params: { id: data.id } });
             },
         },
         {

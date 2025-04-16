@@ -67,6 +67,7 @@ import {getToken, onlyMessage} from '@jetlinks-web/utils';
 import { useI18n } from 'vue-i18n';
 import {FileStaticPath} from "@device/api/comm";
 import {TOKEN_KEY} from "@jetlinks-web/constants";
+import dayjs from "dayjs";
 
 const { t: $t } = useI18n();
 const emit = defineEmits(['close', 'save']);
@@ -93,10 +94,18 @@ const instanceStore = useInstanceStore();
 const dataSource = ref<Record<any, any>[]>([]);
 const loading = ref(false)
 
-watchEffect(() => {
-    const arr = instanceStore.current?.tags || [];
-    dataSource.value = cloneDeep(arr);
-});
+onMounted(() => {
+  const arr = instanceStore.current?.tags || [];
+  dataSource.value = cloneDeep(arr).map((i: any) => {
+    if(i.type === 'date' && i.value){
+      return {
+        ...i,
+        value: dayjs(i.value)
+      }
+    }
+    return i
+  });
+})
 
 const handleOk = async () => {
     if (dataSource.value.length) {
@@ -105,7 +114,10 @@ const handleOk = async () => {
             .filter((item: any) => item?.key && (item?.value !== undefined && item?.value !== null))
             .map((i: any) => {
                 const { dataType, ...extra } = i;
-                return { ...extra };
+                return {
+                  ...extra,
+                  value: i.type === 'date' ? dayjs(i.value).format('YYYY-MM-DD HH:mm:ss') : i.value
+                };
             });
         if (list.length) {
             // 填值
