@@ -82,7 +82,6 @@
 <script lang="ts" setup>
 import { getPropertyData } from '../../../../../../../api/instance';
 import { useInstanceStore } from '../../../../../../../store/instance';
-import {encodeQuery} from '@/utils';
 import dayjs from 'dayjs';
 import { getType } from '../index';
 import ValueRender from '../ValueRender.vue';

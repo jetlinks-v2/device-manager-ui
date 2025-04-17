@@ -125,26 +125,6 @@
 
 <script lang="ts" setup>
 import { useInstanceStore } from '../../../../store/instance';
-import Info from './Info/index.vue';
-import Running from './Running/index.vue';
-import Metadata from '../../components/Metadata/index.vue';
-import MetadataMap from './MetadataMap/index.vue';
-import ChildDevice from './ChildDevice/index.vue';
-import Child from './Child/index.vue';
-import Diagnose from './Diagnose/index.vue';
-import Function from './Function/index.vue';
-import Modbus from './Modbus/index.vue';
-import OPCUA from './OPCUA/index.vue';
-import EdgeMap from './EdgeMap/index.vue';
-import Parsing from './Parsing/index.vue';
-import GateWay from './GateWay/index.vue';
-import Log from './Log/index.vue';
-import AlarmRecord from './AlarmRecord/index.vue';
-import Invalid from './Invalid/index.vue'
-import Firmware from './Firmware/index.vue';
-import Shadow from './Shadow/index.vue';
-import Terminal from './Terminal/index.vue';
-import CardManagement from '../components/IotCard/index.vue';
 import { _deploy, _disconnect } from '../../../../api/instance';
 import { onlyMessage } from '@jetlinks-web/utils';
 import { openEdgeUrl } from '../../../../utils/utils';
@@ -155,6 +135,7 @@ import { useSystemStore, useMenuStore, useAuthStore} from '@/store';
 import { isNoCommunity } from '@/utils/utils';
 import { device } from "../../../../assets";
 import { useI18n } from 'vue-i18n';
+import { tabs } from './asyncComponent'
 
 const { t: $t } = useI18n();
 const menuStory = useMenuStore();
@@ -197,28 +178,6 @@ const initList = [
 
 const list = ref([...initList]);
 const isRefresh = ref(false)
-const tabs = {
-    Info,
-    Metadata,
-    Running,
-    ChildDevice,
-    Child,
-    Diagnose,
-    Function,
-    Modbus,
-    OPCUA,
-    EdgeMap,
-    Parsing,
-    Log,
-    MetadataMap,
-    GateWay,
-    AlarmRecord,
-    CardManagement,
-    Firmware,
-    Shadow,
-    Terminal,
-    Invalid
-};
 
 const permissionStore = useAuthStore();
 const _arr = ['agent-device-gateway', 'agent-media-device-gateway']
@@ -249,7 +208,7 @@ const getDetail = () => {
           list.value.push({
             key: 'Invalid',
             tab: $t('Detail.index.957187-29')
-          }); 
+          });
         }
     }
     if (permissionStore.hasPermission('iot-card/CardManagement:view') && isNoCommunity) {

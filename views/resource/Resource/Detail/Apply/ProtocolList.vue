@@ -78,7 +78,7 @@
 import { device } from "@device/assets/device/index.ts";
 import CardItem from "./CardItem.vue";
 import Product from "./Product.vue";
-import { _queryProtocol, _queryProtocolNoPag } from "@device/api/resource/resource.ts";
+import { _queryProtocol } from "@device/api/resource/resource.ts";
 
 const props = defineProps({
   protocolList: {

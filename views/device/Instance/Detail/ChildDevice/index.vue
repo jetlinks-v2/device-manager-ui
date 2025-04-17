@@ -127,7 +127,6 @@ import {
     query,
     unbindDevice,
     unbindBatchDevice,
-    queryByParent,
     deleteDeviceMapping,
 } from '../../../../../api/instance';
 import { useInstanceStore } from '../../../../../store/instance';

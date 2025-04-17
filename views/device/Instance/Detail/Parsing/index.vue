@@ -157,7 +157,7 @@ import {
   getProtocal,
   testCode,
   saveDeviceCode,
-  delDeviceCode, queryCodeTips, queryProductCodeTips,
+  delDeviceCode, queryCodeTips,
 } from '../../../../../api/instance';
 import { message } from 'ant-design-vue';
 import { isBoolean } from 'lodash-es';

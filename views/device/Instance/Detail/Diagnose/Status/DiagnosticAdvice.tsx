@@ -2,7 +2,7 @@ import { Badge, Descriptions, Modal, DescriptionsItem } from "ant-design-vue"
 import { AIcon, Ellipsis } from '@jetlinks-web/components'
 import TitleComponent from '@/components/TitleComponent/index.vue'
 import styles from './index.module.less'
-import _ from "lodash-es";
+import { map, flatten} from "lodash-es";
 import i18n from "@/locales";
 
 const DiagnosticAdvice = defineComponent({
@@ -73,7 +73,7 @@ const DiagnosticAdvice = defineComponent({
                         </DescriptionsItem>
                     )}
 
-                    {(_.flatten(_.map(data?.info?.config, 'properties')) || []).map((item: any, index: number) => (
+                    {(flatten(map(data?.info?.config, 'properties')) || []).map((item: any, index: number) => (
                         <DescriptionsItem
                             key={index}
                             span={1}

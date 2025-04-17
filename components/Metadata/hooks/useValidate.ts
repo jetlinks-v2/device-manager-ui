@@ -1,4 +1,4 @@
-import {Ref, watch} from "vue";
+import {Ref} from "vue";
 import Schema from "async-validator";
 import {handlePureRecord, collectValidateRules} from "../utils";
 import type {ColumnsType } from "../utils";

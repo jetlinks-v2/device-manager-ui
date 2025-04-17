@@ -215,7 +215,6 @@ import Process from './Process/index.vue';
 import Save from './Save/index.vue';
 import { BASE_API, TOKEN_KEY_URL } from '@jetlinks-web/constants'
 import {
-    getProviders,
     queryGatewayList,
     queryNoPagingPost,
     queryOrgThree,
