@@ -331,10 +331,12 @@ const getDetail = () => {
 };
 
 const initPage = async (newId: any) => {
+    // 刷新整个页面，防止前一个数据还有残留
     instanceStore.tabActiveKey = 'Info';
+    list.value = [...initList];
+    instanceStore.setCurrent({ id: newId })
     await instanceStore.refresh(String(newId));
     getStatus(String(newId));
-    list.value = [...initList];
     getDetail();
 };
 
@@ -343,6 +345,7 @@ onBeforeRouteUpdate((to: any) => {
         to.params?.id !== instanceStore.current.id &&
         to.name === 'device/Instance/Detail'
     ) {
+      // location.reload()
         initPage(to.params?.id);
     }
 });

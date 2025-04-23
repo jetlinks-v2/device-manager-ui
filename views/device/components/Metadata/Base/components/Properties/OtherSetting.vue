@@ -305,6 +305,7 @@ import { omit, cloneDeep } from 'lodash-es';
 import { useThreshold } from './hooks';
 import { useSystemStore } from '@/store';
 import { useI18n } from 'vue-i18n';
+import {isNoCommunity} from "@/utils";
 
 const { t: $t } = useI18n();
 
@@ -423,7 +424,7 @@ const showExtra = computed(() => {
     return (
         ['int', 'long', 'float', 'double'].includes(props.type as any) &&
         props.metadataType === 'properties' &&
-        showThreshold
+        showThreshold && isNoCommunity
     );
 });
 
