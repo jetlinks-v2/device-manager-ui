@@ -29,6 +29,7 @@
               {{ $t("Product.index.660348-0") }}
             </j-permission-button>
             <j-permission-button
+              v-if="isNoCommunity"
               hasPermission="device/Product:add"
               @click="menuStory.jumpPage('device/Product/QuickCreate', {})"
             >
