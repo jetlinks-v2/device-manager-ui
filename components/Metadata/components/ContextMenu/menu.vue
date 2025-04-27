@@ -5,44 +5,46 @@
     tabindex="-1"
     @blur="close"
   >
-    <a-menu @click="clickFunc">
-      <a-menu-item key="add">
+    <Menu @click="clickFunc">
+      <MenuItem key="add">
         <template #icon>
           <AIcon type="PlusSquareOutlined" />
         </template>
         {{ i18n.global.t('ContextMenu.menu.906418-0') }}
-      </a-menu-item>
-      <a-menu-item key="copy">
+      </MenuItem>
+      <MenuItem key="copy">
         <template #icon>
           <AIcon type="icon-copy" />
         </template>
          {{ i18n.global.t('ContextMenu.menu.906418-1') }}
-      </a-menu-item>
-      <a-menu-item key="paste" :disabled="showPaste">
+      </MenuItem>
+      <MenuItem key="paste" :disabled="showPaste">
         <template #icon>
           <AIcon type="icon-paste" />
         </template>
         {{ i18n.global.t('ContextMenu.menu.906418-2') }}
-      </a-menu-item>
-      <a-menu-item key="detail" :disabled="showDetail">
+      </MenuItem>
+      <MenuItem key="detail" :disabled="showDetail">
         <template #icon>
           <AIcon type="icon-chakan" />
         </template>
         {{ i18n.global.t('ContextMenu.menu.906418-3') }}
-      </a-menu-item>
-      <a-menu-item key="delete" class="danger" :disabled="showDelete">
+      </MenuItem>
+      <MenuItem key="delete" class="danger" :disabled="showDelete">
         <template #icon>
           <AIcon type="DeleteOutlined" />
         </template>
         {{ i18n.global.t('ContextMenu.menu.906418-4') }}
-      </a-menu-item>
-    </a-menu>
+      </MenuItem>
+    </Menu>
   </div>
 </template>
 
 <script setup name="MetadataContextMenu">
 import { onMounted, ref, nextTick } from "vue";
 import i18n from "@/locales";
+import { Menu, MenuItem} from 'ant-design-vue'
+import {AIcon } from '@jetlinks-web/components'
 
 const props = defineProps({
   data: {type: Object, default: () => ({})},
@@ -88,7 +90,7 @@ onMounted(async () => {
 
 </script>
 
-<style scoped lang="less">
+<style lang="less">
 .metadata-context-menu{
   position: fixed;
   box-shadow: 0 0 12px rgba(0, 0, 0 ,.2);
@@ -97,12 +99,14 @@ onMounted(async () => {
   width: 192px;
   padding: 4px;
   background-color: #fff;
-  :deep(.ant-menu) {
+  .ant-menu {
     border-right: none;
 
     .ant-menu-item {
       margin: 0;
       height: 32px;
+      display: flex;
+      align-items: center;
 
       &.danger {
         color: @error-color;
@@ -110,7 +114,7 @@ onMounted(async () => {
     }
   }
 
-  :deep(.ant-menu-item-active) {
+  .ant-menu-item-active {
     background-color: var(--ant-primary-1);;
   }
 }
