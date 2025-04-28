@@ -442,19 +442,17 @@ const getDefault = async () => {
     // 协议
     if (["network", "OneNet", "Ctwing",'child-device'].includes(accessConfig.value.channel)) {
       if (JSON.stringify(data) !== "{}") {
-        const existProtocol = await queryExistProtocol(accessConfig.value?.provider, data);
+        const _data = {
+          ...omit(data, ["id"]),
+          type: "jar",
+          configuration: {
+            location: data.url,
+            sourceId: data.id,
+            version: data.version,
+          },
+        }
+        const existProtocol = await queryExistProtocol(accessConfig.value?.provider, _data);
         protocol.value = existProtocol
-            ? existProtocol
-            : {
-              ...omit(data, ["id"]),
-              type: "jar",
-              configuration: {
-                location: data.url,
-                sourceId: data.id,
-                version: data.version,
-              },
-            };
-
         if (
             existProtocol &&
             reuseByProtocol.includes(accessConfig.value.provider)
