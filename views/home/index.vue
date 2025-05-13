@@ -46,7 +46,7 @@ import InitHome from './components/InitHome/index.vue';
 import DeviceHome from './components/DeviceHome/index.vue';
 import DevOpsHome from './components/DevOpsHome/index.vue';
 import ComprehensiveHome from './components/ComprehensiveHome/index.vue';
-import Api from '@/views/system/Platforms/Api/index.vue';
+import Api from './components/Api/index.vue';
 import { useUserStore } from '@/store';
 
 import { isNoCommunity } from '@/utils/utils';
