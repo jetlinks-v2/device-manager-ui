@@ -13,6 +13,7 @@
         selectedRowKeys: selectedRowKeys,
       }"
       :readonly="hasOperate('add', type)"
+      :target="_target"
       @scrollDown="scrollDown"
       @rightMenuClick="rightMenuClick"
       @groupEdit="groupEdit"
@@ -161,7 +162,7 @@
             />
             <FileParams
               v-else-if="record.valueType.type === 'file'"
-              v-model:value="record.valueType.bodyType"
+              v-model:value="record.valueType"
               :disabled="record.expands?.isProduct"
             />
             <EnumParams
@@ -181,17 +182,17 @@
               v-else-if="record.valueType.type === 'object'"
               v-model:value="record.valueType.properties"
               :disabled="record.expands?.isProduct"
-              :showObjectItem="true"
+              :level="2"
             />
             <ArrayParams
               v-else-if="record.valueType.type === 'array'"
               v-model:value="record.valueType.elementType"
               :disabled="record.expands?.isProduct"
-              :showObjectItem="true"
+              :level="2"
             />
           </div>
           <div v-else-if="type === 'events'">
-            <ObjectParams v-model:value="record.valueType.properties">
+            <ObjectParams v-model:value="record.valueType.properties" :level="2">
               <a-button
                 type="primary"
                 :disabled="record.expands?.isProduct"
@@ -278,7 +279,7 @@
       </template>
       <template #inputs="{ record, index }">
         <EditTableFormItem :name="[index, 'inputs']" @change="metadataChange">
-          <ObjectParams v-model:value="record.inputs" :type="type">
+          <ObjectParams v-model:value="record.inputs" :type="type" :level="2">
             <a-button type="primary" :disabled="record.expands?.isProduct">
               <template #icon>
                 <AIcon
@@ -323,7 +324,7 @@
             />
             <FileParams
               v-else-if="record.output.type === 'file'"
-              v-model:value="record.output.bodyType"
+              v-model:value="record.output"
               :disabled="record.expands?.isProduct"
             />
             <EnumParams
@@ -343,11 +344,13 @@
               v-else-if="record.output.type === 'object'"
               v-model:value="record.output.properties"
               :disabled="record.expands?.isProduct"
+              :level="2"
             />
             <ArrayParams
               v-else-if="record.output.type === 'array'"
               v-model:value="record.output.elementType"
               :disabled="record.expands?.isProduct"
+              :level="2"
             />
           </div>
         </EditTableFormItem>
@@ -370,6 +373,7 @@
           <ObjectParams
             v-model:value="record.valueType.properties"
             :disabled="record.expands?.isProduct"
+            :level="1"
           />
         </EditTableFormItem>
       </template>
@@ -805,10 +809,11 @@ const fullToggle = (type: boolean, cb: Function) => {
   _isFullscreen.value = !type;
 };
 
-const groupEdit = (record: { value: string; label: string }) => {
+const groupEdit = (record: { value: string; label: string, oldValue: string }) => {
   dataSource.value.forEach((item) => {
-    if (item.expands?.groupId === record.value) {
+    if (item.expands?.groupId === record.oldValue) {
       item.expands.groupName = record.label;
+      item.expands.groupId = record.value;
     }
   });
 };
