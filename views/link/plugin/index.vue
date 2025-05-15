@@ -33,11 +33,8 @@
           <CardBox
               :value="slotProps"
               :actions="getActions(slotProps,'card')"
-              :statusNames="{
-                            processing: 'processing',
-                        }"
+              :showStatus="false"
               @click="()=>viewDetail(slotProps)"
-              status="processing"
           >
             <template #img>
               <img
