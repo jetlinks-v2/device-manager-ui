@@ -128,9 +128,9 @@
                     <b>{{ $t('MetadataMap.index.431828-12') }}</b
                     >{{ $t('MetadataMap.index.431828-13') }}
                 </p>
-                <p>
-                    未完成映射的属性标识“{{ $t('MetadataMap.index.431828-1') }}”列数据为空，代表该属性值来源以在平台配置的来源为准。
-                </p>
+              <p>
+                {{ $t('MetadataMap.index.130045-18') }}
+              </p>
                 <p>
                     {{ $t('MetadataMap.index.431828-15') }}<b>{{ $t('MetadataMap.index.431828-16') }}</b>{{ $t('MetadataMap.index.431828-17') }}<b>{{ $t('MetadataMap.index.431828-18') }}</b>{{ $t('MetadataMap.index.431828-19') }}
                 </p>
