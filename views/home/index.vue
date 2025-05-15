@@ -78,7 +78,7 @@ const setCurrentView = () => {
 if (isNoCommunity) {
     // 判断是否是api用户   不是则获取选中的视图
     getMe_api().then((resp: any) => {
-        if (resp && resp.status === 200) {
+        if (resp.success) {
             const isApiUser = resp.result.dimensions.find(
                 (item: any) =>
                     item.type === 'api-client' || item.type.id === 'api-client',

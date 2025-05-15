@@ -44,9 +44,9 @@
 </template>
 
 <script lang="ts" setup>
-import { saveRelations } from '../../../../../../../api/instance';
-import { queryUserListNoPaging } from '@/api/system/user';
-import { useInstanceStore } from '../../../../../../../store/instance';
+import { saveRelations } from '@device/api/instance';
+import { queryUserListNoPaging } from '@device/api/user';
+import { useInstanceStore } from '@device/store/instance';
 import { onlyMessage } from '@/utils/comm';
 import { useI18n } from 'vue-i18n';
 
