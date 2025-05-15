@@ -89,7 +89,7 @@
             <template #img>
               <slot name="img">
                 <img
-                  :src="systemImg.deviceProductImg"
+                  :src="deviceProductImg"
                   style="cursor: pointer"
                   alt=""
                 />
@@ -237,7 +237,7 @@ import {intersection} from 'lodash-es';
 import type {dictType} from '../typings';
 import {useDepartmentStore} from '@/store/department';
 import dayjs from 'dayjs';
-import {systemImg} from "@/assets";
+import deviceProductImg from "@device/assets/deviceProductImg.png";
 import { useI18n } from 'vue-i18n';
 
 const { t: $t } = useI18n();
