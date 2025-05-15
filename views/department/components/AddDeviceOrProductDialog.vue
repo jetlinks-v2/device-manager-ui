@@ -137,7 +137,7 @@ import {
 import { dictType } from '../typings';
 import { useDepartmentStore } from '@/store/department';
 import dayjs from 'dayjs';
-import deviceProductImg from "@device/assets/deviceProductImg.png";
+import deviceProductImg from "@device/assets/device-product.png";
 import { useI18n } from 'vue-i18n';
 import ButtonCheckBox from './ButtonCheckBox.vue'
 

@@ -255,7 +255,7 @@ import {
 } from '../../../api/department';
 import { intersection } from 'lodash-es';
 import { useDepartmentStore } from '@/store/department';
-import deviceProductImg from "@device/assets/deviceProductImg.png";
+import deviceProductImg from "@device/assets/device-product.png";
 import { useI18n } from 'vue-i18n';
 
 const { t: $t } = useI18n();
