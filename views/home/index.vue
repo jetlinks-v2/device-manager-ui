@@ -46,7 +46,7 @@ import InitHome from './components/InitHome/index.vue';
 import DeviceHome from './components/DeviceHome/index.vue';
 import DevOpsHome from './components/DevOpsHome/index.vue';
 import ComprehensiveHome from './components/ComprehensiveHome/index.vue';
-import Api from '@/views/system/Platforms/Api/index.vue';
+import Api from './components/Api/index.vue';
 import { useUserStore } from '@/store';
 
 import { isNoCommunity } from '@/utils/utils';
@@ -78,7 +78,7 @@ const setCurrentView = () => {
 if (isNoCommunity) {
     // 判断是否是api用户   不是则获取选中的视图
     getMe_api().then((resp: any) => {
-        if (resp && resp.status === 200) {
+        if (resp.success) {
             const isApiUser = resp.result.dimensions.find(
                 (item: any) =>
                     item.type === 'api-client' || item.type.id === 'api-client',

@@ -6,6 +6,6 @@ export const tabs = {
   DataAnalysis: defineAsyncComponent(() => import('./DataAnalysis/index.vue')),
   MetadataMap: defineAsyncComponent(() => import('./MetadataMap')),
   AlarmRecord: defineAsyncComponent(() => import('../../Instance/Detail/AlarmRecord/index.vue')),
-  Firmware: defineAsyncComponent(() => import('../../Instance/Detail/Invalid/index.vue')),
-  Invalid: defineAsyncComponent(() => import('../../Instance/Detail/Firmware/index.vue')),
+  Firmware: defineAsyncComponent(() => import('../../Instance/Detail/Firmware/index.vue')),
+  Invalid: defineAsyncComponent(() => import('../../Instance/Detail/Invalid/index.vue')),
 };
