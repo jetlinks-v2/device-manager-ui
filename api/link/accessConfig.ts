@@ -41,7 +41,7 @@ export const getResourcesCurrent = () =>
     request.get(`/network/resources/alive/_current`);
 
 export const getClusters = () =>
-    request.get(`network/resources/clusters`);
+    request.get(`/network/resources/clusters`);
 
 export const getPluginList = (data: any) => request.post('/plugin/driver/_query/no-paging', data)
 
