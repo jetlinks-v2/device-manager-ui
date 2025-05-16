@@ -62,36 +62,56 @@
               </a-space>
             </div>
             <div class="allOperation">
-                <j-permission-button
-                    @click="stopAll"
-                    hasPermission="device/Firmware:update"
-                    ><template #icon><AIcon type="PauseOutlined" /> </template
-                    >{{ $t('Detail.index.805835-1') }}
-                </j-permission-button>
-                <j-permission-button
-                    style="margin-left: 20px"
-                    hasPermission="device/Firmware:update"
-                    @click="startAll"
-                    ><template #icon
-                        ><AIcon type="CaretRightOutlined" /> </template
-                    >{{ $t('Detail.index.805835-2') }}</j-permission-button
-                >
-                <j-permission-button
-                    v-if="data?.mode?.value === 'push'"
-                    style="margin-left: 20px"
-                    hasPermission="device/Firmware:update"
-                    @click="batchRetry"
-                    ><template #icon><AIcon type="RedoOutlined" /> </template>
-                    {{ $t('Detail.index.805835-3') }}
-                </j-permission-button>
-                <j-permission-button
-                    type="text"
-                    hasPermission="device/Firmware:update"
-                    style="float: right"
-                    @click="refreshState"
-                    ><template #icon><AIcon type="RedoOutlined" /> </template>
-                    {{ $t('Detail.index.805835-4') }}
-                </j-permission-button>
+                <a-space>
+                    <template v-if="types === 'product'">
+                      <j-permission-button
+                          @click="stopAll"
+                          hasPermission="device/Firmware:update"
+                          ><template #icon><AIcon type="PauseOutlined" /> </template
+                          >{{ $t('Detail.index.805835-1') }}
+                      </j-permission-button>
+                      <j-permission-button
+                          hasPermission="device/Firmware:update"
+                          @click="startAll"
+                          ><template #icon
+                              ><AIcon type="CaretRightOutlined" /> </template
+                          >{{ $t('Detail.index.805835-2') }}</j-permission-button
+                      >
+                      <j-permission-button
+                          v-if="data?.mode?.value === 'push'"
+                          hasPermission="device/Firmware:update"
+                          @click="batchRetry"
+                          ><template #icon><AIcon type="RedoOutlined" /> </template>
+                          {{ $t('Detail.index.805835-3') }}
+                      </j-permission-button>
+                    </template>
+                    <j-permission-button
+                        hasPermission="device/Firmware:update"
+                        @click="refreshState"
+                        ><template #icon><AIcon type="RedoOutlined" /> </template>
+                        {{ $t('Detail.index.805835-4') }}
+                    </j-permission-button>
+                </a-space>
+                <a-space style="float: right">
+                  <j-permission-button
+                      v-if="types === 'product'"
+                      hasPermission="device/Firmware:update"
+                      style="float: right"
+                      danger
+                      :popConfirm="{
+                          title: $t('Instance.index.133466-3'),
+                          onConfirm: () => {
+                              emit('delete', data.id)
+                          }
+                      }"
+                      ><template #icon><AIcon type="DeleteOutlined" /> </template>
+                      {{ $t('Save.index.646914-24') }}
+                  </j-permission-button>
+                  <div v-if="types === 'device'">
+                    <AIcon type="InfoCircleOutlined"></AIcon>
+                    已过滤仅展示本设备的升级子任务，不包含其他设备升级情况
+                  </div>
+                </a-space>
             </div>
         </div>
         <a-table
@@ -223,60 +243,70 @@ const props = defineProps({
     taskState: {
         type: Array,
         default: () => [],
+    },
+    types: {
+        type: String,
+        default: 'product',
     }
 });
 const emit = defineEmits(['closeDetail', 'refresh', 'delete']);
-const columns = [
-    {
-        title: $t('Status.DiagnosticAdvice.980298-4'),
-        dataIndex: 'id',
-        key: 'id',
-        ellipsis: true,
-        width: 150
-    },
-    {
-        title: $t('Detail.index.805835-10'),
-        dataIndex: 'deviceName',
-        key: 'deviceName',
-    },
-    {
-        title: $t('Detail.index.805835-11'),
-        dataIndex: 'productName',
-        key: 'productName',
-    },
-    {
-        title: $t('Task.index.219743-4'),
-        key: 'responseTimeoutSeconds',
-        dataIndex: 'responseTimeoutSeconds',
-    },
-    {
-        title: $t('Task.index.219743-5'),
-        key: 'timeoutSeconds',
-        dataIndex: 'timeoutSeconds',
-    },
-    {
-        title: $t('Detail.index.805835-13'),
-        key: 'completeTime',
-        dataIndex: 'completeTime',
-    },
-    {
-        title: $t('Detail.index.805835-14'),
-        key: 'version',
-        dataIndex: 'version',
-        width: 100,
-    },
-    {
-        title: $t('Detail.index.805835-15'),
-        dataIndex: 'state',
-        width: 300,
-        key: 'state',
-    },
-    {
-        title: $t('Product.index.660348-11'),
-        key: 'action',
-        dataIndex: 'action'
+const columns = computed(() => {
+    const arr = [
+        {
+            title: $t('Status.DiagnosticAdvice.980298-4'),
+            dataIndex: 'id',
+            key: 'id',
+            ellipsis: true,
+            width: 150
+        },
+        {
+            title: $t('Detail.index.805835-10'),
+            dataIndex: 'deviceName',
+            key: 'deviceName',
+        },
+        {
+            title: $t('Detail.index.805835-11'),
+            dataIndex: 'productName',
+            key: 'productName',
+        },
+        {
+            title: $t('Task.index.219743-4'),
+            key: 'responseTimeoutSeconds',
+            dataIndex: 'responseTimeoutSeconds',
+        },
+        {
+            title: $t('Task.index.219743-5'),
+            key: 'timeoutSeconds',
+            dataIndex: 'timeoutSeconds',
+        },
+        {
+            title: $t('Detail.index.805835-13'),
+            key: 'completeTime',
+            dataIndex: 'completeTime',
+        },
+        {
+            title: $t('Detail.index.805835-14'),
+            key: 'version',
+            dataIndex: 'version',
+            width: 100,
+        },
+        {
+            title: $t('Detail.index.805835-15'),
+            dataIndex: 'state',
+            width: 300,
+            key: 'state',
+        },
+        {
+            title: $t('Product.index.660348-11'),
+            key: 'action',
+            dataIndex: 'action'
+        }
+    ]
+    if(props.data.mode?.value === 'pull') {
+        arr.splice(3, 1)
     }
-];
+    return arr;
+});
 
 //列表数据
 const historyList = ref();
@@ -316,7 +346,7 @@ const progressStyles = computed(() => {
     }, '')
 
     return {
-        'background-image': 'linear-gradient(90deg,' + bgi + '#EFF0F1 0, #EFF0F1 100%)'
+        'background-image': 'linear-gradient(270deg,' + bgi + '#EFF0F1 0, #EFF0F1 100%)'
     }
 })
 

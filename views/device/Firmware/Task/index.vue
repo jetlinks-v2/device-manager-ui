@@ -9,7 +9,7 @@
     >
         <template #extra>
             <j-permission-button
-                v-if=!props?.showPosition
+                v-if="!props?.showPosition"
                 type="primary"
                 hasPermission="device/Firmware:add"
                 @click="handleAdd"
@@ -17,6 +17,16 @@
                 {{ $t('Task.index.219743-1') }}
             </j-permission-button>
         </template>
+        <div class="search-box">
+            <a-space>
+                <a-select
+                    v-model:value="searchItem.state"
+                    :options="stateOptions"
+                    style="width: 100px;text-align: left;"
+                />
+                <a-input-search v-model:value="searchItem.name" allow-clear :placeholder="$t('Save.index.646914-6')" @search="handleSearch"></a-input-search>
+            </a-space>
+        </div>
         <div v-for="item in taskList" class="log-card-item-warp" :key="item.id" @click="taskDetail(item)">
           <div class="content">
             <div class="item-body">
@@ -41,7 +51,7 @@
                   <div>
                     {{ dayjs(item.createTime).format('YYYY-MM-DD HH:mm:ss') }}
                   </div>
-                  <a-dropdown>
+                  <a-dropdown v-if="type === 'product'">
                     <a-button type="text">
                       <AIcon type="EllipsisOutlined"></AIcon>
                     </a-button>
@@ -122,6 +132,7 @@
     <TaskDetail
         v-if="detailVisible"
         :taskState="taskState"
+        :types="type"
         @close-detail="closeDetail"
         @refresh="queryTaskList"
         @delete="(id) => handleDeleteTask(id)"
@@ -155,8 +166,36 @@ const props = defineProps({
     },
     deviceId:{
         type:String
+    },
+    type: {
+        type: String,
+        default: 'product',
     }
 });
+
+const searchItem = reactive({
+    name: '',
+    state: 'all',
+});
+
+const stateOptions = [
+    {
+        label: $t('log.index.741299-3'),
+        value: 'all',
+    },
+    {
+        label: $t('log.index.741299-4'),
+        value: 'complete',
+    },
+    {
+        label: $t('log.index.741299-5'),
+        value: 'running',
+    },
+    {
+        label: $t('log.index.741299-6'),
+        value: 'incomplete',
+    },
+];
 
 const colorMap = {
   'waiting': 'primary',
@@ -213,6 +252,7 @@ const options = computed(() => {
   }
 })
 const taskList = ref([]);
+const params = ref({});
 const visible = ref(false);
 const detailVisible = ref(false);
 const current = ref();
@@ -233,6 +273,9 @@ const queryTaskList = async () => {
             },
         ],
     };
+    if(params.value.terms?.length){
+        param.terms = param.terms.concat(params.value.terms);
+    }
     const res = await queryTaskPaginateNot(param);
     if (res.status === 200) {
         if(props?.deviceId){
@@ -250,6 +293,33 @@ const queryTaskList = async () => {
         }
     }
 };
+
+const handleSearch = () => {
+    const terms = [];
+    if (searchItem.state !== 'all') {
+        terms.push({
+            column: 'state',
+            value: searchItem.state,
+            type: 'and',
+        });
+    }
+    if (searchItem.name) {
+        terms.push({
+            column:'name',
+            value: `%${searchItem.name}%`,
+            termType: 'like',
+        });
+    }
+    params.value = {
+        terms: terms.length ? [
+            {
+                terms,
+                type: 'and',
+            },
+        ] : undefined,
+    };
+    queryTaskList();
+}
 const handleAdd = () => {
     visible.value = true;
     current.value = {};
@@ -284,6 +354,10 @@ onMounted(() => {
 });
 </script>
 <style lang="less" scoped>
+.search-box {
+  text-align: right;
+  margin-bottom: 16px;
+}
 .task {
     margin-bottom: 20px;
 }

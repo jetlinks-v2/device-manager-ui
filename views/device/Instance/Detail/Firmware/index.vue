@@ -48,6 +48,7 @@
     <Task
         v-if="visibleTask"
         :firmwareId="firmwareId"
+        :type="type"
         showPosition="detail"
         :deviceId="props.type === 'device' ? current.id : undefined"
         @close-drawer="visibleTask = false"
