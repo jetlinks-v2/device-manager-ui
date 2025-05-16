@@ -66,3 +66,6 @@ export const queryDetailList = (data: Record<string, unknown>) =>
 
 export const queryDetailListNoPaging = (data: Record<string, unknown>) =>
     request.post(`/device-instance/detail/_query/no-paging`, data);
+
+export const deleteHistory = (id: string) => 
+    request.remove(`/firmware/upgrade/history/${id}`);

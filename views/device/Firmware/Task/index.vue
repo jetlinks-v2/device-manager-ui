@@ -17,56 +17,97 @@
                 {{ $t('Task.index.219743-1') }}
             </j-permission-button>
         </template>
-        <div v-for="item in taskList" class="task">
-            <div class="taskTitle">
-                <div class="taskTitleLeft">
-                    <div class="upgradeMode">{{ item?.mode?.text }}</div>
-                    <div class="title">
-                        <j-ellipsis>{{ item?.name }}</j-ellipsis>
-                    </div>
-                </div>
-                <div class="taskTitleRight">
-                    <div>
-                        {{ $t('Task.index.219743-2') }}<span
-                            class="progress"
-                            :style="{
-                                color:
-                                    item?.progress === 100
-                                        ? '#52C41A'
-                                        : '#FF4D4F',
+        <div v-for="item in taskList" class="log-card-item-warp" :key="item.id" @click="taskDetail(item)">
+          <div class="content">
+            <div class="item-body">
+              <div class="body-header">
+                <a-space>
+                  <div class="header-title">
+                    <j-ellipsis>
+                      {{ item.name || '--' }}
+                    </j-ellipsis>
+                  </div>
+                  <div class="header-status bg-color-200">
+                    <j-badge-status
+                      :text="item.state?.text"
+                      :status="item.state?.value"
+                      :statusNames="{
+                        ...colorMap,
+                      }"
+                    ></j-badge-status>
+                  </div>
+                </a-space>
+                <a-space>
+                  <div>
+                    {{ dayjs(item.createTime).format('YYYY-MM-DD HH:mm:ss') }}
+                  </div>
+                  <a-dropdown>
+                    <a-button type="text">
+                      <AIcon type="EllipsisOutlined"></AIcon>
+                    </a-button>
+                    <template #overlay>
+                      <a-menu>
+                        <a-menu-item>
+                          <j-permission-button 
+                            type="link" 
+                            danger block 
+                            :popConfirm="{
+                              title: '确认删除？',
+                              onConfirm: () => {
+                                handleDeleteTask(item.id)
+                              }
                             }"
-                        >
-                            {{ (item?.progress || 0) + '%' }}
-                        </span>
-                    </div>
-                    <j-permission-button
-                        type="link"
-                        hasPermission="device/Firmware:view"
-                        @click="() => taskDetail(item)"
-                        >{{ $t('Task.index.219743-3') }}</j-permission-button
-                    >
+                          >删除任务</j-permission-button>
+                        </a-menu-item>
+                      </a-menu>
+                    </template>
+                  </a-dropdown>
+                </a-space>
+              </div>
+              <div class="body-detail">
+                <div class="detail-desc">
+                  <div class="detail-value text-color-600">
+                    <j-ellipsis>
+                      {{ item.description || '--' }}
+                    </j-ellipsis>
+                  </div>
                 </div>
+              </div>
+              <div class="body-count bg-color-200">
+                <div>
+                  <a-space>
+                    <AIcon type="icon-chanpin1" style="font-size: 16px"/>
+                    <label class="text-color-500">{{ $t('Save.index.646914-7') }}</label>
+                    <span class="text-color-900">{{ item.mode?.text }}</span>
+                  </a-space>
+                </div>
+              </div>
+              <div class="body-progress">
+                <div class="progress--warp bg-color-200">
+                  <div v-for="item in options(item)" :style="{ width: item.per + '%', background: item.bgc }" :key="item.type"></div>
+                </div>
+              </div>
+              <div class="body-status">
+                <div v-for="item in options(item)" class="status-item" :key="item.type">
+                  <AIcon :type="item.icon" :style="{color: item.color}"></AIcon>
+                  <label>
+                    {{ item.label }}
+                  </label>
+                  <span>
+                    {{ item.value }}
+                  </span>
+                </div>
+                <div class="status-item last-item">
+                  <label>
+                    {{ $t('Record.Card.931797-4') }}
+                  </label>
+                  <span class="text-color-900">
+                    {{ item.total }}
+                  </span>
+                </div>
+              </div>
             </div>
-            <a-descriptions bordered :column="2">
-                <a-descriptions-item
-                    v-if="item?.mode?.value === 'push'"
-                    :label="$t('Task.index.219743-4')"
-                    >{{
-                        item?.responseTimeoutSeconds + 's'
-                    }}</a-descriptions-item
-                >
-                <a-descriptions-item :label="$t('Task.index.219743-5')">{{
-                    item?.timeoutSeconds + 's'
-                }}</a-descriptions-item>
-                <a-descriptions-item :label="$t('Task.index.219743-6')">{{
-                    item?.deviceId?.length ? $t('Task.index.219743-7') : $t('Task.index.219743-8')
-                }}</a-descriptions-item>
-                <a-descriptions-item :label="$t('Task.index.219743-9')"
-                    ><j-ellipsis style="max-width: 200px;">
-                        {{ item?.description || '--' }}
-                    </j-ellipsis></a-descriptions-item
-                >
-            </a-descriptions>
+          </div>
         </div>
         <JEmpty v-if="taskList.length === 0"></JEmpty>
     </a-drawer>
@@ -79,19 +120,22 @@
     ></Save>
     <TaskDetail
         v-if="detailVisible"
+        :taskState="taskState"
         @close-detail="closeDetail"
         @refresh="queryTaskList"
+        @delete="(id) => handleDeleteTask(id)"
         :deviceId="props.deviceId"
         :data="currentTask"
     />
 </template>
 
 <script setup name="TaskDrawer">
-import { queryTaskPaginateNot } from '../../../../api/firmware';
+import { queryTaskPaginateNot, deleteTask } from '../../../../api/firmware';
 import Save from './Save/index.vue';
 import TaskDetail from './Detail/index.vue';
 import { onlyMessage } from '@/utils/comm';
 import { useI18n } from 'vue-i18n';
+import dayjs from 'dayjs'
 
 const { t: $t } = useI18n();
 
@@ -112,6 +156,61 @@ const props = defineProps({
         type:String
     }
 });
+
+const colorMap = {
+  'waiting': 'primary',
+  'processing': 'success',
+  'failed':'error',
+  'success':'success'
+}
+
+const iconMap = {
+  'success': 'CheckCircleFilled',
+  'canceled': 'PauseCircleFilled',
+  'waiting': 'icon-paiduizhong',
+  'failed': 'InfoCircleFilled',
+}
+
+const taskState = [
+  {
+    label: $t('Detail.index.805835-17'),
+    value: 'success',
+  },
+  {
+    label: $t('Detail.index.805835-18'),
+    value:'failed',
+  },
+  {
+    label: $t('Detail.index.805835-19'),
+    value:'processing',
+  },
+  {
+    label: $t('Detail.index.805835-20'),
+    value:'canceled', 
+  },
+  {
+    label: $t('Detail.index.805835-21'),
+    value:'waiting',
+  },
+]
+
+const options = computed(() => {
+  return (val) => {
+    return taskState.filter(item => {
+      return val[item.value]
+    }).map(item => {
+      return {  
+        label: item.label,
+        type: item.value,
+        value: val[item.value],
+        icon: iconMap[item.value],
+        per: Math.round(parseFloat(val[item.value] / val.total) * 100),
+        bgc: `var(--ant-${colorMap[item.value]}-color)`,
+        color: `${colorMap[item.value] ? `var(--ant-${colorMap[item.value]}-color)` : '#646C73'}`
+      }
+    })
+  }
+})
 const taskList = ref([]);
 const visible = ref(false);
 const detailVisible = ref(false);
@@ -166,6 +265,15 @@ const taskDetail = (data) => {
     detailVisible.value = true;
     currentTask.value = data;
 };
+
+const handleDeleteTask = async (id) => {
+    const res = await deleteTask(id);
+    if (res.status === 200) {
+        detailVisible.value = false;
+        onlyMessage($t('Task.index.219743-10'));
+        queryTaskList();
+    }
+};
 const closeDetail = () => {
     detailVisible.value = false;
     queryTaskList();
@@ -207,5 +315,106 @@ onMounted(() => {
         color: #1a1a1a;
         max-width: 300px;
     }
+}
+.log-card-item-warp {
+  background-color: @font-gray-50;
+  border: 1px solid @font-gray-200;
+  border-radius: 6px;
+  width: 100%;
+  margin-bottom: 20px;
+  cursor: pointer;
+  .content {
+    padding: 16px;
+
+    .body-header {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+      align-items: center;
+      justify-content: space-between;
+      .header-title {
+        font-size: 16px;
+        color: @font-gray-900;
+        font-weight: 500;
+        max-width: 300px;
+      }
+
+      .header-status {
+        padding: 2px 8px;
+        border-radius: 4px;
+      }
+
+      .header-action {
+        margin-left: auto;
+      }
+    }
+
+    .body-detail {
+      display: flex;
+      gap: 32px;
+      margin-bottom: 16px;
+
+      .detail-desc {
+        display: flex;
+        gap: 16px;
+        width: 66.66%;
+      }
+
+      .detail-time {
+        display: flex;
+        width: 33.33%;
+      }
+
+      .detail-title {
+        max-width: 60px;
+        white-space: nowrap;
+        margin-right: 10px;
+      }
+
+      .detail-value {
+        flex: 1 1 0;
+        min-width: 0;
+
+      }
+    }
+
+    .body-count {
+      margin-bottom: 16px;
+      display: flex;
+      padding: 8px 24px;
+      border-radius: 6px;
+
+      > div {
+        flex: 1;
+        min-width: 0;
+      }
+    }
+
+    .body-progress {
+      margin-bottom: 12px;
+    }
+
+    .body-status {
+      display: flex;
+      gap: 16px;
+      .status-item {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .last-item {
+        margin-left: auto;
+      }
+    }
+
+    .progress--warp {
+      height: 6px;
+      position: relative;
+      border-radius: 4px;
+      overflow: hidden;
+      display: flex;
+    }
+  }
 }
 </style>
