@@ -52,12 +52,13 @@
                             type="link" 
                             danger block 
                             :popConfirm="{
-                              title: '确认删除？',
+                              title: $t('Instance.index.133466-3'),
                               onConfirm: () => {
                                 handleDeleteTask(item.id)
                               }
                             }"
-                          >删除任务</j-permission-button>
+                            hasPermission="device/Firmware:update"
+                          >{{ $t('Save.index.646914-24') }}</j-permission-button>
                         </a-menu-item>
                       </a-menu>
                     </template>
