@@ -64,7 +64,7 @@
                 >
                     <template #img>
                         <slot name="img">
-                            <img :src="systemImg.deviceProductImg" style="cursor: pointer" alt=""/>
+                            <img :src="deviceProductImg" style="cursor: pointer" alt=""/>
                         </slot>
                     </template>
                     <template #content>
@@ -137,7 +137,7 @@ import {
 import { dictType } from '../typings';
 import { useDepartmentStore } from '@/store/department';
 import dayjs from 'dayjs';
-import { systemImg } from '@/assets/index'
+import deviceProductImg from "@device/assets/device-product.png";
 import { useI18n } from 'vue-i18n';
 import ButtonCheckBox from './ButtonCheckBox.vue'
 

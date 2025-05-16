@@ -7,7 +7,7 @@
  根据visible标识对数据进行递归过滤，得到最后的数据
  */
 
-import _ from 'lodash-es';
+import { cloneDeep } from 'lodash-es';
 
 export type TreeNode = {
   id: string;
@@ -23,7 +23,7 @@ export type TreeNode = {
  *	filterType 过滤参数名
  */
 export function treeFilter(data: TreeNode[], filter: string, filterType: string): TreeNode[] {
-  const _data = _.cloneDeep(data);
+  const _data = cloneDeep(data);
   const traverse = (item: TreeNode[]) => {
     item.forEach((child) => {
       child.visible = filterMethod(filter, child, filterType);

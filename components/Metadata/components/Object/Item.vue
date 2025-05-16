@@ -27,9 +27,9 @@ const props = defineProps({
     type: String,
     default: 'properties',
   },
-  showObjectItem: {
-    type: Boolean,
-    default:false
+  level: {
+    type: Number,
+    default: 1
   }
 });
 
@@ -47,6 +47,10 @@ const validatorConfig = (value, _isObject = false) => {
   if (value.type === 'array' && !value.elementType?.type) {
     return Promise.reject($t('Object.index.371533-4'));
   }
+
+  // if (value.type === 'object' && !value.properties?.length) {
+  //   return Promise.reject($t('Object.index.371533-4'));
+  // }
 
   if (value.type === 'date' && !value.format) {
     return Promise.reject($t('Object.index.371533-5'));
@@ -234,7 +238,7 @@ defineExpose({
             <TypeSelect
               v-model:value="record.valueType"
               style="flex: 1 1 0; min-width: 0"
-              :filter="showObjectItem ? [] : ['object', 'array']"
+              :filter="level <= 2 ? [] : ['object', 'array']"
             />
             <IntegerParams
                 v-if="['int', 'long'].includes(record.valueType.type)"
@@ -261,7 +265,7 @@ defineExpose({
             />
             <FileParams
               v-else-if="record.valueType.type === 'file'"
-              v-model:value="record.valueType.bodyType"
+              v-model:value="record.valueType"
               placement="topRight"
             />
             <EnumParams
@@ -281,6 +285,7 @@ defineExpose({
               v-else-if="record.valueType.type === 'array'"
               v-model:value="record.valueType.elementType"
               placement="topRight"
+              :level="level + 1"
             />
           </div>
         </EditTableFormItem>

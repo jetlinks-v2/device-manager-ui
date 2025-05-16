@@ -12,7 +12,7 @@
                   ref="tableRef"
                   :value="myValue"
                   :type="type"
-                  :showObjectItem="showObjectItem"
+                  :level="level"
                 />
             </div>
         </template>
@@ -51,9 +51,9 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
-    showObjectItem: {
-      type: Boolean,
-      default:false
+    level: {
+      type: Number,
+      default: 1
     }
 });
 
