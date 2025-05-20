@@ -11,13 +11,13 @@
           <Type v-model:value="formData.bodyType" name="bodyType"/>
           <a-form-item
               name="mediaType"
-              :rules="[{ required: true, message: $t('File.Type.998289-1') }]"
-              :label="$t('File.Type.998289-0')"
+              :rules="[{ required: true, message: $t('Export.index.225315-5') }]"
+              :label="$t('Export.index.225315-4')"
           >
             <JTreeSelect
                 v-model:value="formData.mediaType"
                 :options="typeOptions"
-                :placeholder="$t('File.Type.998289-1')"
+                :placeholder="$t('Export.index.225315-5')"
             />
           </a-form-item>
         </a-form>
