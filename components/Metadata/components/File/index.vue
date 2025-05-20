@@ -1,14 +1,25 @@
 <template>
   <PopoverModal
-    v-model:visible="visible"
-    :placement="placement"
-    @ok="onOk"
-    @cancel="onCancel"
+      v-model:visible="visible"
+      :placement="placement"
+      @ok="onOk"
+      @cancel="onCancel"
   >
     <template #content>
       <div style="width: 250px">
         <a-form ref="formRef" :model="formData" layout="vertical">
-          <Type v-model:value="formData.bodyType" name="bodyType" />
+          <Type v-model:value="formData.bodyType" name="bodyType"/>
+          <a-form-item
+              name="mediaType"
+              :rules="[{ required: true, message: $t('File.Type.998289-1') }]"
+              :label="$t('File.Type.998289-0')"
+          >
+            <JTreeSelect
+                v-model:value="formData.mediaType"
+                :options="typeOptions"
+                :placeholder="$t('File.Type.998289-1')"
+            />
+          </a-form-item>
         </a-form>
       </div>
     </template>
@@ -24,14 +35,16 @@
 
 <script setup name="MetadataFile">
 import Type from './Type.vue'
-import { PopoverModal } from '../index'
+import {PopoverModal} from '../index'
 import {Form} from "ant-design-vue";
+import {getFileType} from "@/modules/device-manager-ui/api/product";
+import JTreeSelect from './JTreeSelect.vue';
 
 const emit = defineEmits(['update:value', 'confirm', 'cancel']);
 const props = defineProps({
   value: {
-    type: String,
-    default: undefined,
+    type: Object,
+    default: () => ({bodyType: undefined, mediaType: undefined}),
   },
   placement: {
     type: String,
@@ -39,40 +52,70 @@ const props = defineProps({
   },
   disabled: {
     type: Boolean,
-    default:false
+    default: false
   }
 });
 
 const formItemContext = Form.useInjectFormItemContext();
-
 const formRef = ref();
 const formData = reactive({
-  bodyType: props.value,
+  bodyType: undefined,
+  mediaType: undefined
 });
 
 const visible = ref(false)
+
+const typeOptions = ref([])
 
 const onOk = async () => {
   const data = await formRef.value.validate()
   if (data) {
     visible.value = false
-    emit('update:value', formData.bodyType)
-    emit('onOk', formData.bodyType)
+    const dt = {...props.value, ...formData}
+    emit('update:value', dt)
+    emit('onOk', dt)
     formItemContext.onFieldChange()
   }
 }
 
 const onCancel = () => {
   formRef.value?.resetFields();
-  formData.bodyType = props.value;
+  formData.bodyType = props.value.bodyType;
+  formData.mediaType = props.value.mediaType;
   emit('cancel');
 }
 
+const queryList = () => {
+  getFileType().then((resp) => {
+    if(resp.success){
+      typeOptions.value = resp.result.map((item) => {
+        return {
+          value: item.text,
+          mediaType: item.mediaType,
+          options: item.suffix?.map((it) => {
+            return {
+              mediaType: item.mediaType,
+              value: it,
+            }
+          })
+        }
+      })
+    }
+  })
+}
+
 watch(
-  () => props.value,
-  () => {
-    formData.bodyType = props.value;
-  },
+    () => visible.value,
+    (val) => {
+      if(val){
+        queryList();
+        formData.bodyType = props.value.bodyType;
+        formData.mediaType = props.value.mediaType;
+      }
+    },
+    {
+      immediate: true
+    }
 );
 </script>
 

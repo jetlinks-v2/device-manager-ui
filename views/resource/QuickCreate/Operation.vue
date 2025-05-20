@@ -454,7 +454,7 @@ const getDefault = async () => {
         const existProtocol = await queryExistProtocol(accessConfig.value?.provider, _data);
         protocol.value = existProtocol
         if (
-            existProtocol &&
+            existProtocol.id &&
             reuseByProtocol.includes(accessConfig.value.provider)
         ) {
           const status = await queryExistAccess(existProtocol.id, 'protocol');

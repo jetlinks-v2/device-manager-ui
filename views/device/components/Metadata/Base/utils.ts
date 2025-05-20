@@ -39,7 +39,8 @@ export const getMetadataItemByType = (type: string) => {
         item = Object.assign(item, {
             expands: {
                 source: 'device',
-                group: undefined
+                group: undefined,
+                type: ['report']
             },
             valueType: {
                 type: undefined,

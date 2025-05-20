@@ -100,6 +100,7 @@
                         :disabled="!!data?.id"
                         :placeholder="$t('Save.index.902471-11')"
                         option-filter-prop="label"
+                        @change="onChange"
                     >
                         <a-select-option
                             :value="item.id"
@@ -178,6 +179,13 @@ const vailId = async (_: Record<string, any>, value: string) => {
         return Promise.resolve();
     }
 };
+
+const onChange = (val: any) => {
+  const item = productList.value.find(i => i.id === val)
+  if(!props.data?.id){
+    modelRef.photoUrl = item?.photoUrl || device.deviceCard
+  }
+}
 
 watch(
     () => props.data,

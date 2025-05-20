@@ -433,7 +433,7 @@ import { useMetadata, useOperateLimits, useGroup } from "./hooks";
 import { useColumns, useSaveUnit } from "./columns";
 import { getMetadataItemByType, limitsMap } from "./utils";
 import { Source, OtherSetting } from "./components";
-import { saveProductVirtualProperty } from "../../../../../api/product";
+import {saveProductVirtualProperty} from "../../../../../api/product";
 import { saveDeviceVirtualProperty } from "../../../../../api/instance";
 import { useInstanceStore } from "../../../../../store/instance";
 import { useProductStore } from "../../../../../store/product";
