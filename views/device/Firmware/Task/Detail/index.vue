@@ -160,7 +160,7 @@
                     <template v-if="['waiting', 'running'].includes(record.state.value)">
                         <j-permission-button
                             type="link"
-                            hasPermission="device/Firmware:update"
+                            :hasPermission="record.hasEditPermission"
                             @click="stopUpgrades(record.id)"
                         >
                             <template #icon>
@@ -171,7 +171,7 @@
                     <template v-if="record.state.value === 'canceled'">
                         <j-permission-button
                             type="link"
-                            hasPermission="device/Firmware:update"
+                            :hasPermission="record.hasEditPermission"
                             @click="startUpgrades(record.id)"
                         >
                             <template #icon>
@@ -182,7 +182,7 @@
                     <template v-if="record.state.value === 'failed'">
                       <j-permission-button
                             type="link"
-                            hasPermission="device/Firmware:update"
+                            :hasPermission="record.hasEditPermission"
                             @click="startUpgrades(record.id)"
                         >
                             <template #icon>
@@ -193,7 +193,7 @@
                     <j-permission-button
                       type="link"
                       danger
-                      hasPermission="device/Firmware:update"
+                      :hasPermission="record.hasDeletePermission"
                       :popConfirm="{
                         title: $t('Instance.index.133466-3'),
                         onConfirm: () => {
@@ -254,8 +254,8 @@ const columns = computed(() => {
     const arr = [
         {
             title: $t('Status.DiagnosticAdvice.980298-4'),
-            dataIndex: 'id',
-            key: 'id',
+            dataIndex: 'deviceId',
+            key: 'deviceId',
             ellipsis: true,
             width: 150
         },

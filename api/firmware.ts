@@ -31,7 +31,7 @@ export const history = (data: Record<string, unknown>) =>
     request.post(`/firmware/upgrade/history/_query`, data);
 
 export const historyPaginateNot =(data:Record<string,unknown>) =>
-    request.post('/firmware/upgrade/history/_query/no-paging',data)
+    request.post('/firmware/upgrade/history/detail/_query/no-paging',data)
 
 
 export const historyCount = (data: Record<string, unknown>) =>
