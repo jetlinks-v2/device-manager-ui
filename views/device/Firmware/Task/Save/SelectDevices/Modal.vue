@@ -5,21 +5,25 @@
       :ok-text="$t('Save.SelectDevices.386303-2')"
       :cancel-text="$t('Save.SelectDevices.386303-3')"
       :visible="true"
-      width="80%"
+      width="1000px"
       @cancel="handleCancel"
       @ok="handleOk"
   >
-    <j-card-select :showImage="false" v-model:value="activeKey" :options="options" :column="3" />
-
-    <div style="margin-top: 24px;">
-      <Org v-if="activeKey === 'org'" :data="data" :product-id="productId" />
-      <Table v-else :data="data" :product-id="productId" />
+    <div class="tab">
+      <div @click="activeKey = item.key" v-for="item in tabList" :key="item.key" class="tab-item" :class="{'active': item.key === activeKey }">
+        <h3>{{item.tab}}</h3>
+        <div class="desc"><j-ellipsis>{{item.desc}}</j-ellipsis></div>
+      </div>
+    </div>
+    <div style="height: 500px; margin-top: 16px; display: flex; flex-direction: column">
+      <component :is="tabObj[activeKey]" ref="componentRef" :key="activeKey" />
     </div>
   </a-modal>
 </template>
-<script setup name="SelectDevicesModal">
+<script setup>
 import { useI18n } from 'vue-i18n';
-import Table from './Table.vue';
+import Self from './Self.vue';
+import All from './All.vue';
 import Org from './Org.vue';
 
 const { t: $t } = useI18n();
@@ -35,28 +39,66 @@ const props = defineProps({
     default: '',
   },
 });
-const activeKey = ref('')
+const activeKey = ref('Self')
+const componentRef = ref();
 
-const options = [
+const tabObj = {
+  'Self': Self,
+  'All': All,
+  'Org': Org
+}
+
+const tabList = [
   {
-    label: '自定义',
-    value: 'self',
+    key: 'Self',
+    tab: $t('Save.SelectDevices.386303-12'),
+    desc: $t('Save.SelectDevices.386303-13')
   },
   {
-    label: '全部',
-    value: 'all',
+    key: 'All',
+    tab: $t('Save.SelectDevices.386303-14'),
+    desc: $t('Save.SelectDevices.386303-15')
   },
   {
-    label: '按组织',
-    value: 'org',
+    key: 'Org',
+    tab: $t('Save.SelectDevices.386303-16'),
+    desc: $t('Save.SelectDevices.386303-17')
   }
 ]
 
-const handleOk = () => {
-
+const handleOk = async () => {
+  const resp = await componentRef.value?.onSave?.()
+  if(resp){
+    emit('save', resp, activeKey.value)
+  }
 };
+
 
 const handleCancel = () => {
-
+  emit('close')
 };
 </script>
+
+<style lang="less" scoped>
+.tab {
+  display: flex;
+  gap: 24px;
+
+  .tab-item {
+    border-top: 4px solid lightgrey;
+    width: 210px;
+    padding: 12px;
+    cursor: pointer;
+
+    .desc {
+      font-size: 12px;
+      color: rgba(0, 0, 0, .7);
+    }
+  }
+
+  .active {
+    border-color: @primary-color;
+    background-color: @primary-1;
+  }
+}
+</style>

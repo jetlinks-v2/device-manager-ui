@@ -190,10 +190,10 @@ const dataSource = inject<Ref<any[]>>('metadataSource')
 // });
 
 const updateValue = (data: any) => {
-  console.log('updateValue',{
-    ...(props.value || {}),
-    ...data,
-  })
+  // console.log('updateValue',{
+  //   ...(props.value || {}),
+  //   ...data,
+  // })
   emit('update:value', {
     ...(props.value || {}),
     ...data,
@@ -205,7 +205,7 @@ const onChange = (keys: SourceType) => {
   myValue.value = keys;
   updateValue({
     source: keys,
-    type: keys === 'manual' ? ['write'] : keys === 'rule' ? ['report'] : [],
+    type: keys === 'manual' ? ['write'] : ['report'],
   });
 };
 

@@ -1,20 +1,21 @@
 <template>
-  <a-input
-      :placeholder="$t('Save.SelectDevices.386303-0')"
-      v-model:value="checkAble"
-      :disabled="true"
-  >
-    <template #addonAfter>
-      <AIcon
-          :class="data.view ? 'disabled' : ''"
-          type="EditOutlined"
-          @click="onVisible"
-      />
-    </template>
-  </a-input>
-  <Modal v-if="visible" :data="data" :product-id="productId" />
+<!--    <a-input-->
+<!--        :placeholder="$t('Save.SelectDevices.386303-0')"-->
+<!--        v-model:value="checkAble"-->
+<!--        :disabled="true"-->
+<!--    >-->
+<!--        <template #addonAfter>-->
+<!--            <AIcon-->
+<!--                :class="data.view ? 'disabled' : ''"-->
+<!--                type="EditOutlined"-->
+<!--                @click="onVisible"-->
+<!--            />-->
+<!--        </template>-->
+<!--    </a-input>-->
+  <a-button type="text" @click="onVisible"><AIcon type="EditOutlined" /></a-button>
+  <Modal v-if="visible" @close="visible = false" @save="handleOk" />
 </template>
-<script lang="ts" setup name="SelectDevicesPage">
+<script setup>
 import { useI18n } from 'vue-i18n';
 import Modal from './Modal.vue';
 
@@ -22,28 +23,59 @@ const { t: $t } = useI18n();
 const emit = defineEmits(['update:modelValue', 'change']);
 
 const props = defineProps({
-  data: {
-    type: Object,
-    default: () => {},
-  },
-  productId: {
-    type: String,
-    default: '',
-  },
+    data: {
+        type: Object,
+        default: () => {},
+    },
+    productId: {
+        type: String,
+        default: '',
+    },
 });
+
 const visible = ref(false);
-const checkAble = ref();
-const onVisible = () => {
-  if(!props.data.view){
-    visible.value = true
+
+const handleOk = (dt, type) => {
+  let terms = {}
+  if(type === 'Self'){
+    terms = [
+      {
+        column: "deviceId",
+        termsType: "in",
+        value: dt
+      }
+    ]
+  } else if(type === 'All'){
+    terms = dt?.terms || []
+  } else if(type === 'Org') {
+    terms = [
+      {
+        column: "id$dim-assets",
+        value: JSON.stringify({
+          assetType: 'device',
+          targets: [
+            {
+              type: 'org',
+              id: dt,
+            },
+          ],
+        })
+      }
+    ]
   }
+  emit('update:modelValue', terms);
+  emit('change', terms);
+  visible.value = false;
 };
 
+const onVisible = () => {
+    !props.data.view && (visible.value = true);
+};
 </script>
 
 <style lang="less" scoped>
 .disabled {
-  pointer-events: auto !important;
-  cursor: not-allowed !important;
+    pointer-events: auto !important;
+    cursor: not-allowed !important;
 }
 </style>

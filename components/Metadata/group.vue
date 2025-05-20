@@ -20,10 +20,12 @@
               </a-menu>
             </template>
             <div class="table-group-error-warp">
-              <div>
-                {{ item.label }} ({{ item.effective}})
+              <div class="table-group-error-warp-label">
+                <j-ellipsis>{{ item.label }}</j-ellipsis> ({{ item.effective}})
               </div>
-              <div class="table-group-error-warp-value">{{item.value}}</div>
+              <div class="table-group-error-warp-value">
+                <j-ellipsis>{{item.value}}</j-ellipsis>
+              </div>
               <a-tooltip
                 v-if="errorMap[item.value]"
                 color="#ffffff"
@@ -38,10 +40,12 @@
             </div>
           </a-dropdown>
           <div v-else class="table-group-error-warp">
-            <div>
-              {{ item.label }} ({{ item.effective}})
+            <div class="table-group-error-warp-label">
+              <j-ellipsis>{{ item.label }}</j-ellipsis> ({{ item.effective}})
             </div>
-            <div class="table-group-error-warp-value">{{item.value}}</div>
+            <div class="table-group-error-warp-value">
+              <j-ellipsis>{{item.value}}</j-ellipsis>
+            </div>
             <a-tooltip
               v-if="errorMap[item.value]"
               color="#ffffff"
@@ -69,7 +73,7 @@
         <a-form-item :label="$t('Metadata.group.497268-9')" name="label" :rules="[{ required: true, message: $t('Metadata.group.497268-4')}, { max: 16, message: $t('Metadata.group.497268-5')}]">
           <a-input v-model:value="formData.label" :placeholder="$t('Metadata.group.497268-4')"/>
         </a-form-item>
-        <a-form-item :label="$t('Metadata.group.497268-10')" name="value" :rules="[
+        <a-form-item :label="$t('Metadata.group.497268-10')" name="value" validate-first :rules="[
             { required: true, message: $t('Metadata.group.497268-11')},
             { pattern: /^[a-zA-Z0-9_\-]+$/, message: $t('Save.index.902471-2')},
             { max: 64, message: $t('Save.index.912481-20')},
@@ -294,8 +298,16 @@ watch(() => props.activeKey, (val) => {
     border-right-width: 0;
     border-bottom-width: 0;
   }
+  &-label {
+    max-width: 220px;
+    white-space: normal;
+    display: flex;
+  }
+
   &-value {
     font-size: 12px;
+    max-width: 200px;
+    white-space: normal;
   }
 }
 </style>
