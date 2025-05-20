@@ -112,7 +112,7 @@
 <script lang="ts" setup name="TaskPage">
 import { queryProduct, saveTask } from '../../../../../api/firmware';
 import type { FormInstance } from 'ant-design-vue';
-import SelectDevices from './SelectDevices/index.vue';
+import SelectDevices from './SelectDevices.vue';
 import { useI18n } from 'vue-i18n';
 
 const { t: $t } = useI18n();
