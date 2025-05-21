@@ -161,6 +161,7 @@ const columns = [
         dataIndex: 'metadataName',
         key: 'metadataName',
         width: '20%',
+        ellipsis: true
     },
     {
         title: $t('EditTable.index.478060-13'),
@@ -185,10 +186,12 @@ const columns = [
         key: 'id',
         dataIndex: 'id',
         width: '10%',
+        ellipsis: true
     },
     {
         title: $t('EditTable.index.478060-16'),
         key: 'action',
+        fixed: 'right',
         width: '10%',
     },
 ];
@@ -208,7 +211,7 @@ const props = defineProps({
 });
 
 const instanceStore = useInstanceStore();
-const metadata = JSON.parse(instanceStore.current?.metadata || '{}');
+const metadata = computed(() => JSON.parse(instanceStore.current?.metadata || '{}'));
 const loading = ref<boolean>(false);
 const channelList = ref([]);
 
@@ -255,7 +258,7 @@ const handleSearch = async () => {
     loading.value = true;
     getChannel();
     const _metadata =
-        metadata.properties?.map?.((item: any) => ({
+        metadata.value.properties?.map?.((item: any) => ({
             metadataId: item.id,
             metadataName: `${item.name}(${item.id})`,
             metadataType: 'property',
@@ -326,7 +329,6 @@ const onSave = () => {
                 return item;
             });
             if (arr && arr.length !== 0) {
-                console.log(arr);
                 const resp = await saveMapping(
                     instanceStore.current.id,
                     props.provider,

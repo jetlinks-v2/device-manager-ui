@@ -87,9 +87,9 @@
                     </a-form-item>
                 </a-col>
                 <a-col :span="12" v-if="formData.releaseType === 'part'">
-                    <a-form-item :label="$t('Save.index.646914-18')" name="deviceId">
+                    <a-form-item :label="$t('Save.index.646914-18')" name="terms">
                         <SelectDevices
-                            v-model:modelValue="formData.deviceId"
+                            v-model:modelValue="formData.terms"
                             :data="data"
                             :productId="productId"
                         ></SelectDevices> </a-form-item
@@ -110,7 +110,7 @@
     </a-modal>
 </template>
 <script lang="ts" setup name="TaskPage">
-import { queryProduct, saveTask } from '../../../../../api/firmware';
+import { queryProduct, saveTask } from '@device/api/firmware';
 import type { FormInstance } from 'ant-design-vue';
 import SelectDevices from './SelectDevices.vue';
 import { useI18n } from 'vue-i18n';
@@ -149,7 +149,7 @@ const formData: any = ref({
     responseTimeoutSeconds: '',
     timeoutSeconds: '',
     releaseType: 'all',
-    deviceId: undefined,
+    terms: undefined,
     description: '',
 });
 
@@ -162,13 +162,17 @@ const rules = {
     responseTimeoutSeconds: [{ required: true, message: $t('Save.index.646914-12') }],
     timeoutSeconds: [{ required: true, message: $t('Save.index.646914-15') }],
     releaseType: [{ required: true }],
-    deviceId: [{ required: true, message: $t('Save.index.646914-22') }],
+    terms: [{ required: true, message: $t('Save.index.646914-22') }],
     description: [{ max: 200, message: $t('Save.index.646914-23') }],
 };
 
 const filterOption = (input: string, option: any) => {
     return option.label.toLowerCase().indexOf(input.toLowerCase()) >= 0;
 };
+
+const changeMode = () => {
+
+}
 
 const onSubmit = async () => {
     const params = await formRef.value?.validate();
@@ -191,7 +195,7 @@ const handleCancel = () => {
 };
 
 const changeShareCluster = () => {
-    formData.value.deviceId = undefined;
+    formData.value.terms = undefined;
 };
 
 onMounted(() => {
@@ -213,7 +217,7 @@ watch(
             formData.value = {
                 ...value,
                 mode: value.mode.value,
-                releaseType: value?.deviceId ? 'part' : 'all',
+                releaseType: value?.terms ? 'part' : 'all',
             };
         }
     },

@@ -127,7 +127,7 @@
 import { useInstanceStore } from '../../../../store/instance';
 import { _deploy, _disconnect } from '../../../../api/instance';
 import { onlyMessage } from '@jetlinks-web/utils';
-import { openEdgeUrl } from '../../../../utils/utils';
+import { openEdgeUrl } from '@/utils/utils';
 import { wsClient } from '@jetlinks-web/core';
 import { useRouterParams } from '@jetlinks-web/hooks';
 import { EventEmitter } from '@jetlinks-web/utils';

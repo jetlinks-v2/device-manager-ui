@@ -222,5 +222,8 @@ export const queryProductVirtualProperty = (productId: string, propertyId: strin
 
 export const getTemplate = (id: string, format: string) => `${BASE_API}/device/product/${id}/property-metadata/template.${format}`
 
+export const getFileType = () => request.get(`/file/media/types`)
+
+
 
 

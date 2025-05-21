@@ -21,7 +21,7 @@ export const providers = () => request.get(`/gateway/device/providers`);
 export const resourcesCurrent = () =>
     request.get(`/network/resources/alive/_current`);
 
-export const resourceClusters = () => request.get(`network/resources/clusters`);
+export const resourceClusters = () => request.get(`/network/resources/clusters`);
 
 export const resourceClustersById = (id: string) =>
     request.get(`/network/resources/alive/${id}`);

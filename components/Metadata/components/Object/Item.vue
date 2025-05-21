@@ -4,7 +4,7 @@ import {
   ArrayParams,
   BooleanParams, DateParams, DoubleParams, EditTable,
   EditTableFormItem, EnumParams,
-  FileParams, IntegerParams,
+  FileParams, IntegerParams, ObjectParams,
   StringParams, TypeSelect
 } from "../../index";
 import {isObject} from "lodash-es";
@@ -48,9 +48,9 @@ const validatorConfig = (value, _isObject = false) => {
     return Promise.reject($t('Object.index.371533-4'));
   }
 
-  // if (value.type === 'object' && !value.properties?.length) {
-  //   return Promise.reject($t('Object.index.371533-4'));
-  // }
+  if (value.type === 'object' && !value.properties?.length) {
+    return Promise.reject($t('Object.index.371533-4'));
+  }
 
   if (value.type === 'date' && !value.format) {
     return Promise.reject($t('Object.index.371533-5'));
@@ -286,6 +286,12 @@ defineExpose({
               v-model:value="record.valueType.elementType"
               placement="topRight"
               :level="level + 1"
+            />
+            <ObjectParams
+                v-else-if="record.valueType.type === 'object'"
+                v-model:value="record.valueType.properties"
+                placement="topRight"
+                :level="level + 1"
             />
           </div>
         </EditTableFormItem>

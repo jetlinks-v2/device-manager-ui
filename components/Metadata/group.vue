@@ -1,10 +1,10 @@
 <template>
   <div class="table-group-warp">
-    <a-tabs type="editable-card" v-model:activeKey="myActiveKey" @edit="onAdd" :hideAdd="readonly" @change="change">
+    <a-tabs type="editable-card" v-model:activeKey="myActiveKey" @edit="onAdd" :hideAdd="target === 'device' || readonly" @change="change">
       <a-tab-pane v-for="item in options" :key="item.value" :closable="false">
         <template #tab>
           <a-dropdown
-            v-if="myActiveKey === item.value"
+            v-if="target !== 'device' && myActiveKey === item.value"
             :trigger="['click']"
             :getPopupContainer="(node) => tableWrapperRef || node"
             :disabled="readonly"
@@ -20,7 +20,12 @@
               </a-menu>
             </template>
             <div class="table-group-error-warp">
-              {{ item.label }} ({{ item.effective}})
+              <div class="table-group-error-warp-label">
+                <j-ellipsis>{{ item.label }}</j-ellipsis> ({{ item.effective}})
+              </div>
+              <div class="table-group-error-warp-value">
+                <j-ellipsis>{{item.value}}</j-ellipsis>
+              </div>
               <a-tooltip
                 v-if="errorMap[item.value]"
                 color="#ffffff"
@@ -35,7 +40,12 @@
             </div>
           </a-dropdown>
           <div v-else class="table-group-error-warp">
-            {{ item.label }} ({{ item.effective}})
+            <div class="table-group-error-warp-label">
+              <j-ellipsis>{{ item.label }}</j-ellipsis> ({{ item.effective}})
+            </div>
+            <div class="table-group-error-warp-value">
+              <j-ellipsis>{{item.value}}</j-ellipsis>
+            </div>
             <a-tooltip
               v-if="errorMap[item.value]"
               color="#ffffff"
@@ -59,9 +69,21 @@
       @cancel="onCancel"
       @ok="onOk"
     >
-      <a-form ref="formRef" :model="formData" @finish="onOk">
-        <a-form-item name="label" :rules="[{ required: true, message: $t('Metadata.group.497268-4')}, { max: 16, message: $t('Metadata.group.497268-5')}]">
+      <a-form ref="formRef" :model="formData" @finish="onOk" layout="vertical">
+        <a-form-item :label="$t('Metadata.group.497268-9')" name="label" :rules="[{ required: true, message: $t('Metadata.group.497268-4')}, { max: 16, message: $t('Metadata.group.497268-5')}]">
           <a-input v-model:value="formData.label" :placeholder="$t('Metadata.group.497268-4')"/>
+        </a-form-item>
+        <a-form-item :label="$t('Metadata.group.497268-10')" name="value" validate-first :rules="[
+            { required: true, message: $t('Metadata.group.497268-11')},
+            { pattern: /^[a-zA-Z0-9_\-]+$/, message: $t('Save.index.902471-2')},
+            { max: 64, message: $t('Save.index.912481-20')},
+            { max: 64, message: $t('Save.index.912481-20')},
+            {
+                                    validator: vailId,
+                                    trigger: 'blur',
+                                },
+            ]">
+          <a-input v-model:value="formData.value" :placeholder="$t('Metadata.group.497268-11')"/>
         </a-form-item>
         <a-form-item v-show="false">
           <a-button html-type="submit"></a-button>
@@ -77,6 +99,7 @@ import {randomNumber} from "@jetlinks-web/utils";
 import {isFullScreen} from "@/utils";
 import {useTableGroupError, useTableWrapper} from './context'
 import { useI18n } from 'vue-i18n';
+import {cloneDeep} from "lodash-es";
 
 const { t: $t } = useI18n();
 const props = defineProps({
@@ -91,7 +114,11 @@ const props = defineProps({
   readonly: {
     type: Boolean,
     default: false
-  }
+  },
+  target: {
+    type: String,
+    default: "product",
+  },
 })
 
 const emit = defineEmits(['delete', 'edit', 'add', 'change', 'update:activeKey'])
@@ -105,8 +132,22 @@ const addIndex = ref(0)
 
 const formRef = ref()
 const formData = reactive({
-  label: undefined
+  label: undefined,
+  value: undefined,
+  oldValue: undefined
 })
+
+const vailId = async (_, value) => {
+  if(formData.oldValue === value){
+    return Promise.resolve();
+  }
+  const dt = props.options.find(item => item.value === value)
+  if(dt){
+    return Promise.reject($t('Metadata.group.497268-12'));
+  } else {
+    return Promise.resolve();
+  }
+};
 
 const onAdd = (targetKey, action) => {
   // if(props.readonly) return
@@ -139,6 +180,8 @@ const onEdit = (record) => {
   visible.value = true
   type.value = 'edit'
   formData.label = record.label
+  formData.value = record.value
+  formData.oldValue = record.value
 }
 
 
@@ -147,8 +190,7 @@ const onCancel = () => {
   visible.value = false
 }
 const onOk = () => {
-  const data = { ...formData }
-
+  const data = cloneDeep(formData)
   if (type.value === 'add') {
     data.value = 'group_'+randomNumber()
     myActiveKey.value = data.value
@@ -158,7 +200,6 @@ const onOk = () => {
     visible.value = false
   } else {
     formRef.value.validate().then(() => {
-      data.value = myActiveKey.value
       emit(type.value, data)
       emit('change', data.value, data.label)
       visible.value = false
@@ -256,6 +297,17 @@ watch(() => props.activeKey, (val) => {
     border-top-color: @error-color;
     border-right-width: 0;
     border-bottom-width: 0;
+  }
+  &-label {
+    max-width: 220px;
+    white-space: normal;
+    display: flex;
+  }
+
+  &-value {
+    font-size: 12px;
+    max-width: 200px;
+    white-space: normal;
   }
 }
 </style>

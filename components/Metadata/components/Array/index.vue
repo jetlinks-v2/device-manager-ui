@@ -46,7 +46,7 @@
                     />
                     <ObjectItem
                       ref="tableRef"
-                      v-else-if="showObject && level < 2"
+                      v-else-if="showObject && level <= 2"
                       v-model:value="formData.properties"
                       :level="level + 1"
                     />
