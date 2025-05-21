@@ -89,7 +89,7 @@
                 <a-col :span="12" v-if="formData.releaseType === 'part'">
                     <a-form-item :label="$t('Save.index.646914-18')" name="terms">
                         <SelectDevices
-                            v-model:modelValue="formData.terms"
+                            v-model="formData.terms"
                             :data="data"
                             :productId="productId"
                         ></SelectDevices> </a-form-item
@@ -112,7 +112,7 @@
 <script lang="ts" setup name="TaskPage">
 import { queryProduct, saveTask } from '@device/api/firmware';
 import type { FormInstance } from 'ant-design-vue';
-import SelectDevices from './SelectDevices.vue';
+import SelectDevices from './SelectDevices/index.vue';
 import { useI18n } from 'vue-i18n';
 
 const { t: $t } = useI18n();
@@ -140,7 +140,6 @@ const productOptions = ref([]);
 const emit = defineEmits(['change']);
 
 const firmwareId = props.firmwareId;
-const productId = props.productId;
 const view = props.data.view;
 
 const formData: any = ref({
@@ -180,7 +179,7 @@ const onSubmit = async () => {
     const resp = await saveTask({
         ...params,
         firmwareId,
-        productId,
+        productId: props.productId,
     }).finally(() => {
         loading.value = false;
     });

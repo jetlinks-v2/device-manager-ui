@@ -27,10 +27,21 @@
 <script setup>
 import {getTreeData_api} from "@/api/system/department";
 import {useI18n} from "vue-i18n";
-import {getDeviceNumber} from "@device/api/instance";
 import {onlyMessage} from "@jetlinks-web/utils";
+import {queryDetailList} from "@device/api/firmware";
 
-const { t: $t } = useI18n();
+const props = defineProps({
+  productId: {
+    type: String,
+    default: '',
+  },
+  data: {
+    type: Object,
+    default: () => ({})
+  },
+});
+
+const {t: $t} = useI18n();
 const columns = [
   {
     title: $t('Save.index.902471-6'),
@@ -45,7 +56,7 @@ const columns = [
     title: $t('Search.Sort.467776-0'),
     dataIndex: 'sortIndex',
     key: 'sortIndex',
-    ellipsis: true,
+    width: 200
   },
 ]
 const _selectedRowKeys = ref([])
@@ -59,8 +70,8 @@ const onChange = (e) => {
   _selectedRowKeys.value = e
   deviceCount.value = 0
   // 查询组织下面的设备数量
-  if(e.length > 0){
-    getDeviceNumber({
+  if (e.length > 0) {
+    queryDetailList({
       terms: [
         {
           column: "id$dim-assets",
@@ -73,20 +84,39 @@ const onChange = (e) => {
               },
             ],
           })
+        },
+        {
+          column: 'productId',
+          value: props.productId,
+          type: 'and',
         }
       ]
-    }).then(res => {
-      if(res.success){
-        deviceCount.value = res?.result || 0
+    }, {permission: 'save'}).then(res => {
+      if (res.success) {
+        deviceCount.value = res?.result?.total || 0
       }
     })
   }
 }
 
+watch(
+    () => props.data,
+    (val) => {
+      if(val?.[0]?.value){
+        const id = JSON.parse(val?.[0]?.value || '{}')?.targets?.[0]?.id
+        _selectedRowKeys.value = id ? [id] : []
+      }
+    },
+    {
+      immediate: true,
+      deep: true,
+    }
+);
+
 const onSave = () => {
   return new Promise((resolve) => {
     // 判断设备的数量
-    if(deviceCount.value > 0){
+    if (deviceCount.value > 0) {
       resolve(_selectedRowKeys.value?.[0]);
     } else {
       onlyMessage($t('Save.SelectDevices.386303-19'), 'error')
@@ -94,7 +124,7 @@ const onSave = () => {
   });
 };
 
-defineExpose({ onSave })
+defineExpose({onSave})
 </script>
 
 <style lang="less" scoped>
