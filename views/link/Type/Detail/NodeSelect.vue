@@ -1,6 +1,6 @@
 <template>
-  <a-button style="width: 100%" @click="show">
-    <div style="width: 100%; white-space: normal">
+  <a-button block @click="show">
+    <div>
       <j-ellipsis>
         {{ searchText }}
       </j-ellipsis>
