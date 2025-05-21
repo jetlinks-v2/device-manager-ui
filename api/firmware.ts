@@ -31,7 +31,7 @@ export const history = (data: Record<string, unknown>) =>
     request.post(`/firmware/upgrade/history/_query`, data);
 
 export const historyPaginateNot =(data:Record<string,unknown>) =>
-    request.post('/firmware/upgrade/history/_query/no-paging',data)
+    request.post('/firmware/upgrade/history/detail/_query/no-paging',data)
 
 
 export const historyCount = (data: Record<string, unknown>) =>
@@ -67,3 +67,6 @@ export const queryDetailList = (data: Record<string, unknown>, params?: Record<s
 
 export const queryDetailListNoPaging = (data: Record<string, unknown>) =>
     request.post(`/device-instance/detail/_query/no-paging`, data);
+
+export const deleteHistory = (id: string) => 
+    request.remove(`/firmware/upgrade/history/${id}`);

@@ -113,11 +113,11 @@
                   <a-row :gutter="[24, 0]">
                     <a-col :span="12" v-if="!shareCluster">
                       <a-form-item
-                        :name="['cluster', index, 'serverId']"
+                        :name="['cluster', index, 'tagsFilter']"
                         :label="$t('Detail.index.258513-11')"
-                        :rules="Rules.serverId"
+                        :rules="Rules.tagsFilter"
                       >
-                        <a-select
+                        <!-- <a-select
                           v-model:value="cluster.serverId"
                           :options="clustersListIndex[index]"
                           :placeholder="$t('Detail.index.258513-12')"
@@ -126,7 +126,8 @@
                           :filter-option="filterOption"
                           @change="changeServerId(cluster.serverId, index)"
                         >
-                        </a-select>
+                        </a-select> -->
+                        <NodeSelect :tagList="tagList" :tagValueObj="tagValueObj" :value="cluster.tagsFilter" @change="(data) => handleChangeCluster(index, data)"/>
                       </a-form-item>
                     </a-col>
                     <a-col :span="12" v-if="isVisible('host', formData.type)">
@@ -822,11 +823,12 @@ import {
   UDPList,
 } from "../data";
 import { cloneDeep } from "lodash-es";
-import type { FormData2Type, FormDataType } from "../type";
+import type { TagsFilterType, FormData2Type, FormDataType } from "../type";
 import LocalAddressSelect from "./LocalAddressSelect.vue";
 import { isNoCommunity } from "@/utils/utils";
 import { useTypeStore } from "../../../../store/type";
 import { storeToRefs } from "pinia";
+import NodeSelect from "./NodeSelect.vue";
 import { useI18n } from "vue-i18n";
 
 const { t: $t } = useI18n();
@@ -853,6 +855,8 @@ const portOptionsIndex: any = ref([]);
 // let portOptionsConst: any = [];
 const certIdOptions = ref([]);
 const configClustersList = ref<any[]>([]);
+const tagList = ref<{label: string, value: string}[]>([]);
+const tagValueObj = ref<Record<string, any>>({});
 
 const typescriptTip = reactive({
   typescript: "",
@@ -883,8 +887,12 @@ const editorInit = (editor: any, monaco: any) => {
 };
 
 const dynamicValidateForm = reactive<{ cluster: FormData2Type[] }>({
-  cluster: [{ ...cloneDeep(FormStates2), id: "1" }],
+  cluster: [{ ...cloneDeep(FormStates2), id: "1", index: 1 }],
 });
+
+const handleChangeCluster = (index: number, data: TagsFilterType[]) => {
+  dynamicValidateForm.cluster[index]!.tagsFilter = cloneDeep(data);
+}
 
 const removeCluster = (item: FormData2Type) => {
   let index = dynamicValidateForm.cluster.indexOf(item);
@@ -897,6 +905,7 @@ const addCluster = () => {
   const id = Date.now();
   dynamicValidateForm.cluster.push({
     ...cloneDeep(FormStates2),
+    index: dynamicValidateForm.cluster.length,
     id,
   });
   activeKey.value = [...activeKey.value, id.toString()];
@@ -950,12 +959,12 @@ const getPortOptions = (portOptions: any, index = 0) => {
 const changeShareCluster = (value: boolean) => {
   shareCluster.value = value;
   activeKey.value = ["1"];
-  dynamicValidateForm.cluster = [{ ...cloneDeep(FormStates2), id: "1" }];
+  dynamicValidateForm.cluster = [{ ...cloneDeep(FormStates2), id: "1", index: 1 }];
 };
 
 const changeType = (value: string) => {
   getResourcesCurrent();
-  dynamicValidateForm.cluster = [{ ...cloneDeep(FormStates2), id: "1" }];
+  dynamicValidateForm.cluster = [{ ...cloneDeep(FormStates2), id: "1", index: 1 }];
   if (value !== "MQTT_CLIENT") {
     const { configuration } = dynamicValidateForm.cluster[0];
     value && (configuration.host = "0.0.0.0");
@@ -1066,7 +1075,7 @@ const saveData = async () => {
   const { configuration } = formRef2Data?.cluster[0];
   const params = shareCluster.value
     ? { ...formData.value, configuration }
-    : { ...formData.value, ...formRef2Data };
+    : { ...formData.value, ...dynamicValidateForm };
 
   loading.value = true;
   const resp: any =
@@ -1133,6 +1142,23 @@ const getResourcesClusters = () => {
   resourceClusters().then((resp) => {
     if (resp.status === 200) {
       configClustersList.value = resp.result as any[];
+      configClustersList.value.forEach(item => {
+        for(let key in item.tags) {
+          if(tagList.value.findIndex(val => val.value === key) === -1) {
+            tagList.value.push({
+              label: key,
+              value: key
+            })
+          }
+          if(!tagValueObj.value[key]) {
+            tagValueObj.value[key] = [{value: item.tags[key]}];
+          } else if(tagValueObj.value[key]?.findIndex(val => val.value === item.tags[key]) === -1) {
+            tagValueObj.value[key]?.push({
+              value: item.tags[key]
+            })
+          }
+        }
+      })
     }
   });
 };
