@@ -16,7 +16,7 @@
       </div>
     </div>
     <div style="height: 500px; margin-top: 16px; display: flex; flex-direction: column">
-      <component :is="tabObj[activeKey]" ref="componentRef" :key="activeKey" />
+      <component :is="tabObj[activeKey]" :productId="productId" ref="componentRef" :data="data" :key="activeKey" />
     </div>
   </a-modal>
 </template>
@@ -32,7 +32,7 @@ const emit = defineEmits(['save', 'close']);
 const props = defineProps({
   data: {
     type: Object,
-    default: () => {},
+    default: () => ({})
   },
   productId: {
     type: String,
@@ -73,10 +73,30 @@ const handleOk = async () => {
   }
 };
 
-
 const handleCancel = () => {
   emit('close')
 };
+
+watch(
+    () => props.data,
+    (val) => {
+      if(val && val.length > 0){
+        if(val?.[0]?.column === 'id$dim-assets'){
+          activeKey.value = 'Org'
+        } else if(val?.[0]?.column === 'deviceId'){
+          activeKey.value = 'Self'
+        } else {
+          activeKey.value = 'All'
+        }
+      } else {
+        activeKey.value = 'Self'
+      }
+    },
+    {
+      immediate: true,
+      deep: true,
+    }
+);
 </script>
 
 <style lang="less" scoped>
