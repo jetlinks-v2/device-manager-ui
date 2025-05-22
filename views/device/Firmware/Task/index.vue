@@ -184,16 +184,20 @@ const stateOptions = [
         value: 'all',
     },
     {
+        label: $t('log.index.741299-7'),
+        value: 'waiting',
+    },
+    {
         label: $t('log.index.741299-4'),
-        value: 'complete',
+        value: 'successful',
     },
     {
         label: $t('log.index.741299-5'),
-        value: 'running',
+        value: 'processing',
     },
     {
         label: $t('log.index.741299-6'),
-        value: 'incomplete',
+        value: 'canceled',
     },
 ];
 
