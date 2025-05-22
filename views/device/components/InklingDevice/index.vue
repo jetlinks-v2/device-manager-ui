@@ -17,7 +17,7 @@
                 </div>
             </div>
             <div class="device-list-warp">
-                <j-scrollbar v-if="deviceList.length">
+                <template v-if="deviceList.length">
                     <a-spin :spinning="deviceSpinning">
                         <div class="device-list-items">
                             <template v-for="item in deviceList">
@@ -41,10 +41,10 @@
                                                 <span
                                                     class="title-name no-tooltip"
                                                 >
-                                                    {{ item.name }}
+                                                    {{ item.id }}
                                                 </span>
                                                 <span class="title-id">
-                                                    ({{ item.id }})
+                                                    ({{ item.name }})
                                                 </span>
                                             </div>
                                         </div>
@@ -64,12 +64,12 @@
                                     <div class="item-title">
                                         <span class="title-name">
                                             <j-ellipsis>
-                                                {{ item.name }}
+                                                {{ item.id }}
                                             </j-ellipsis>
                                         </span>
                                         <span class="title-id">
                                             <j-ellipsis>
-                                                ({{ item.id }})
+                                                ({{ item.name }})
                                             </j-ellipsis>
                                         </span>
                                     </div>
@@ -81,30 +81,29 @@
                             </template>
                         </div>
                     </a-spin>
-                </j-scrollbar>
+                </template>
                 <j-empty
                     v-else
                     :description="$t('InklingDevice.index.743184-2')"
                     style="padding-top: 24px"
                 />
                 <div class="device-list-pagination">
-                    <j-pagination
-                        v-if="showPage"
-                        :total="pageData.total"
-                        :current="pageData.pageIndex + 1"
-                        :pageSize="pageData.pageSize"
-                        :show-total="
-                            () => {
-                                const minSize =
-                                    pageData.pageIndex * pageData.pageSize + 1;
-                                const MaxSize =
-                                    (pageData.pageIndex + 1) *
-                                    pageData.pageSize;
-                                $t('InklingDevice.index.743184-3', [minSize,MaxSize > pageData.total? pageData.total : MaxSize ,pageData.total]);
-                            }
-                        "
-                        @change="pageChange"
-                    />
+                  <a-pagination
+                      v-if="showPage"
+                      :showQuickJumper="false"
+                      :showSizeChanger="false"
+                      :total="pageData.total"
+                      :current="pageData.pageIndex + 1"
+                      :pageSize="pageData.pageSize"
+                      :pageSizeOptions="['20', '40', '60', '100']"
+                      :showTotal=" (num) => {
+                            const minSize = pageData.pageIndex * pageData.pageSize + 1;;
+                            const MaxSize = (pageData.pageIndex + 1) * pageData.pageSize;
+                            return $t('InklingDevice.index.743184-3', [minSize, MaxSize > num ? num : MaxSize, num]);
+                        }
+                      "
+                      @change="onChange"
+                  ></a-pagination>
                 </div>
             </div>
         </a-spin>
@@ -354,7 +353,6 @@ onMounted(() => {
     :deep(.device-inkling) {
         padding: 0;
         margin: 0;
-        padding-bottom: 0;
     }
 
     .search-warp {
@@ -375,6 +373,7 @@ onMounted(() => {
             border-bottom: 1px solid #f0f0f0;
             display: flex;
             justify-content: space-between;
+            cursor: pointer;
 
             > .item-title {
                 display: flex;
