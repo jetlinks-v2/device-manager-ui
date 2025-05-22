@@ -642,6 +642,12 @@ export const getMetadataMapById = (type: 'device' | 'product', productId: string
 
 export const getInkingDevices = (data: string[],accessId:any) => request.post(`/plugin/mapping/device/${accessId}/_all`, data)
 
+/**
+ * 解除映射
+ * @param id
+ */
+export const unbindInkingDevices = (id: string) => request.remove(`/plugin/mapping/${id}`)
+
 export const getProtocolMetadata = (id: string, transport: string) => request.get(`/protocol/${id}/${transport}/metadata`)
 
 /**

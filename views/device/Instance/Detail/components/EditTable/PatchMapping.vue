@@ -5,6 +5,7 @@
       visible
       @ok="handleClick"
       @cancel="handleClose"
+      :confirmLoading="_loading"
   >
     <div class="map-tree">
       <div class="map-tree-top">
@@ -12,7 +13,7 @@
       </div>
       <div style="margin-top: 16px">
               <span style="margin-right: 12px">
-                {{$t('EditTable.PatchMapping.974352-10')}}<a-tooltip :title="$t('若无对应物模型，则根据数采点位名称自动创建物模型并映射')"><AIcon
+                {{$t('EditTable.PatchMapping.974352-10')}}<a-tooltip :title="$t('EditTable.PatchMapping.974352-11')"><AIcon
                   type="QuestionCircleOutlined"/></a-tooltip>
               </span>
         <a-switch v-model:checked="checked"/>
@@ -139,6 +140,7 @@ const rightList = ref<any[]>([]);
 const expandedKeys = ref<any[]>([]);
 const dataSource = ref<any[]>([]);
 const loading = ref<boolean>(false);
+const _loading = ref<boolean>(false);
 const checked = ref(false)
 let dataSourceCache;
 
@@ -249,7 +251,7 @@ const handleClick = async () => {
           metadata.splice(_index, 1)
           filterParams.push({...obj})
         } else {
-          params.push({...obj, name: element.name})
+          params.push({...obj, name: element.name, dataType: element.codecInfo?.dataType || {}})
         }
       });
     });
@@ -265,7 +267,7 @@ const handleClick = async () => {
             type: ['report']
           },
           valueType: {
-            type: 'int', // todo: 需要梳理
+            type: (i.dataType?.type && i.dataType?.type !== 'short') ? i.dataType?.type : 'int',
             expands: {}
           }
         }
@@ -274,27 +276,36 @@ const handleClick = async () => {
       // 新建物模型属性
       const newData: any[] = [...properties,..._metadataList]
       let _data = updateMetadata('properties', newData, instanceStore.current);
-      const result = await asyncUpdateMetadata('device', _data)
-      if (result.success) {
+      _loading.value = true
+      const result = await asyncUpdateMetadata('device', _data).catch(() => {
+        _loading.value = false
+      })
+      if (result?.success) {
         // 保存数据
         const _params = handleMetadata(_metadataList, params)
         const res = await saveMapping(
             _props.deviceId,
             _props.type,
             [..._params, ...filterParams],
-        );
+        ).catch(() => {
+          _loading.value = false
+        })
         if (res.success) {
           onlyMessage($t('EditTable.PatchMapping.974352-8'));
           _emits('save');
         }
+        _loading.value = false
       }
     } else {
       if (filterParams?.length !== 0) {
+        _loading.value = true
         const res = await saveMapping(
             _props.deviceId,
             _props.type,
             filterParams,
-        );
+        ).finally(() => {
+          _loading.value = false
+        })
         if (res.success) {
           onlyMessage($t('EditTable.PatchMapping.974352-8'));
           _emits('save');

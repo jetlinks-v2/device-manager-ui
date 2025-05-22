@@ -22,7 +22,8 @@
             <template #card="slotProps">
                 <PropertyCard
                     :data="{ ...slotProps, ...propertyValue[slotProps?.id] }"
-                    :actions="getActions(slotProps)"
+                    :actions="getActions(slotProps, 'card')"
+                    @click="onView(slotProps)"
                 />
             </template>
             <template #value="slotProps">
@@ -37,7 +38,7 @@
             </template>
             <template #action="slotProps">
                 <a-space :size="16">
-                    <template v-for="i in getActions(slotProps)" :key="i.key">
+                    <template v-for="i in getActions(slotProps, 'table')" :key="i.key">
                         <a-tooltip v-bind="i.tooltip" v-if="i.key !== 'edit'">
                             <a-button
                                 style="padding: 0"
@@ -96,6 +97,12 @@ import { useI18n } from 'vue-i18n';
 const { t: $t } = useI18n();
 const columns = [
     {
+      title: 'ID',
+      dataIndex: 'id',
+      key: 'id',
+      ellipsis: true
+    },
+    {
         title: $t('Product.index.660348-28'),
         dataIndex: 'name',
         key: 'name',
@@ -145,7 +152,12 @@ const subRef = ref();
 
 // const list = ref<any[]>([]);
 
-const getActions = (data: Partial<Record<string, any>>) => {
+const onView = (data) => {
+  detailVisible.value = true;
+  currentInfo.value = data;
+}
+
+const getActions = (data: Partial<Record<string, any>>, type: 'card' | 'table') => {
     const arr = [];
     if (data.expands?.type?.includes('write')) {
         arr.push({
@@ -204,18 +216,19 @@ const getActions = (data: Partial<Record<string, any>>) => {
             },
         });
     }
-    arr.push({
+    if(type === 'table'){
+      arr.push({
         key: 'detail',
         text: $t('Event.index.277611-0'),
         tooltip: {
-            title: $t('Event.index.277611-0'),
+          title: $t('Event.index.277611-0'),
         },
         icon: 'BarsOutlined',
         onClick: () => {
-            detailVisible.value = true;
-            currentInfo.value = data;
+          onView(data)
         },
-    });
+      });
+    }
     return arr;
 };
 
@@ -281,8 +294,10 @@ const getDashboard = async () => {
         },
     ];
     loading.value = true;
-    const resp: Record<string, any> = await dashboard(param);
-    if (resp.status === 200) {
+    const resp: Record<string, any> = await dashboard(param).catch(() => {
+        loading.value = false;
+    })
+    if (resp.success) {
         const t1 = (resp.result || []).map((item: any) => {
             return {
                 timeString: item.data?.timeString,
@@ -340,7 +355,6 @@ watch(
         if (newVal.length) {
             _dataSource.value = newVal as PropertyData[];
             _params.name = '';
-            console.log(tableRef.value,'ref')
             tableRef.value?.reload()
         }
     },

@@ -108,7 +108,9 @@ watch(
     () => visible.value,
     (val) => {
       if(val){
-        queryList();
+        if(typeOptions.value.length === 0){
+          queryList();
+        }
         formData.bodyType = props.value.bodyType;
         formData.mediaType = props.value.mediaType;
       }
