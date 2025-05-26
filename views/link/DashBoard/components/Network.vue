@@ -78,7 +78,7 @@ import {
     networkParams,
 } from './tool';
 import dayjs from 'dayjs';
-import { DataType } from '../typings.d';
+import { DataType } from '../typings';
 import ServerList from './ServerList.vue';
 import Echarts from './echarts.vue';
 import {useI18n} from "vue-i18n";

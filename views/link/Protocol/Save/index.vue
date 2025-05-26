@@ -93,7 +93,7 @@ import { onlyMessage } from '@/utils/comm';
 import type { UploadChangeParam, FormInstance } from 'ant-design-vue';
 import FileUpload from './FileUpload.vue';
 import { save, update } from '../../../../api/link/protocol';
-import { FormDataType } from '../type.d';
+import { FormDataType } from '../type';
 import { link } from '../../../../assets'
 import { useI18n } from 'vue-i18n';
 

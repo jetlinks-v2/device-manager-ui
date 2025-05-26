@@ -129,7 +129,7 @@ import Save from '../../Save/index.vue';
 import Config from './components/Config/index.vue';
 import Tags from './components/Tags/index.vue';
 import Relation from './components/Relation/index.vue';
-import InkingModal from './components/InklingModal';
+import InkingModal from './components/InklingModal/index';
 import dayjs from 'dayjs';
 import { detail as queryPluginAccessDetail } from '../../../../../api/link/accessConfig';
 import { getPluginData } from '../../../../../api/link/plugin';

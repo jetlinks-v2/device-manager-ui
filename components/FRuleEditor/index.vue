@@ -64,7 +64,7 @@ import Editor from './Editor/index.vue';
 import Debug from './Debug/index.vue';
 import Operator from './Operator/index.vue';
 import { cloneDeep } from 'lodash-es';
-import {useTableWrapper} from "../../components/Metadata/context";
+import {useTableWrapper} from "../Metadata/context";
 import { useI18n } from 'vue-i18n';
 
 const { t: $t } = useI18n();

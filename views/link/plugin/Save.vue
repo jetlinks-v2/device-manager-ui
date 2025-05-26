@@ -81,7 +81,7 @@ import {
     RequiredStringFn,
 } from '../components/Form/rules';
 import UploadFile from './UploadFile.vue';
-import { FileUploadResult } from '../plugin/typings';
+import { FileUploadResult } from './typings';
 import { add, update, vailIdFn } from '../../../api/link/plugin';
 import { TypeMap } from './util';
 import { onlyMessage } from '@/utils/comm';

@@ -19,7 +19,7 @@
 </template>
 
 <script setup lang='ts' name='InklingModal'>
-import InklingDevice from '../../../../../components/InklingDevice'
+import InklingDevice from '../../../../../components/InklingDevice/index'
 import { onlyMessage } from '@jetlinks-web/utils'
 import { savePluginData, getPluginData } from '../../../../../../../api/link/plugin'
 import { useI18n } from 'vue-i18n';

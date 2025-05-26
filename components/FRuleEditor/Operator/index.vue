@@ -121,7 +121,7 @@ import { treeFilter } from '../utils';
 import { PropertyMetadata } from '../../../views/device/Product/typings';
 import { getOperator } from '../../../api/product';
 import { inject } from 'vue';
-import {useTableWrapper, useTableFullScreen} from "../../../components/Metadata/context";
+import {useTableWrapper, useTableFullScreen} from "../../Metadata/context";
 import { useI18n } from 'vue-i18n';
 import {langKey} from "@/utils/consts";
 import { cloneDeep } from 'lodash-es'

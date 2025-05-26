@@ -89,7 +89,7 @@ import {
     headerDescMap,
     progressMap,
 } from './util';
-import Status from './Status/index';
+import Status from './Status';
 import Message from './Message/index.vue';
 import { useInstanceStore } from '../../../../../store/instance';
 import {diagnose} from "../../../../../assets";
