@@ -89,7 +89,9 @@
 <!--                                    <a-checkbox-group v-model:value="slotProps.selectPermissions-->
 <!--                                        " :options="slotProps.permissionList" />-->
                                   <ButtonCheckBox
+                                      :bulkBool="bulkBool"
                                       :options="slotProps.permissionList"
+                                      :selected="table.selectedRows.some(i => i.id === slotProps.id)"
                                       :value="table.selectedRows.find(i => i.id === slotProps.id)?.selectPermissions || []"
                                       @change="(val) => onChange(val, slotProps)"
                                   />
@@ -104,7 +106,9 @@
                 <div style="cursor: pointer" class="card-item-content-value" @click="(e) => e.stopPropagation()">
 <!--                    <a-checkbox-group v-model:value="slotProps.selectPermissions" :options="slotProps.permissionList" />-->
                   <ButtonCheckBox
+                      :bulkBool="bulkBool"
                       :options="slotProps.permissionList"
+                      :selected="table.selectedRows.some(i => i.id === slotProps.id)"
                       :value="table.selectedRows.find(i => i.id === slotProps.id)?.selectPermissions || []"
                       @change="(val) => onChange(val, slotProps)"
                   />
