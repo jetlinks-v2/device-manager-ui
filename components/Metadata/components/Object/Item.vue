@@ -5,7 +5,7 @@ import {
   BooleanParams, DateParams, DoubleParams, EditTable,
   EditTableFormItem, EnumParams,
   FileParams, IntegerParams,
-  StringParams, TypeSelect
+  StringParams, TypeSelect, ObjectParams
 } from "../../index";
 import {isObject} from "lodash-es";
 import { useI18n } from 'vue-i18n';
@@ -27,9 +27,9 @@ const props = defineProps({
     type: String,
     default: 'properties',
   },
-  showObjectItem: {
-    type: Boolean,
-    default:false
+  level: {
+    type: Number,
+    default: 1
   }
 });
 
@@ -45,6 +45,10 @@ const validatorConfig = (value, _isObject = false) => {
     return Promise.reject($t('Object.index.371533-3'));
   }
   if (value.type === 'array' && !value.elementType?.type) {
+    return Promise.reject($t('Object.index.371533-4'));
+  }
+
+  if (value.type === 'object' && !value.properties?.length) {
     return Promise.reject($t('Object.index.371533-4'));
   }
 
@@ -234,7 +238,7 @@ defineExpose({
             <TypeSelect
               v-model:value="record.valueType"
               style="flex: 1 1 0; min-width: 0"
-              :filter="showObjectItem ? [] : ['object', 'array']"
+              :filter="level <= 2 ? [] : ['object', 'array']"
             />
             <IntegerParams
                 v-if="['int', 'long'].includes(record.valueType.type)"
@@ -281,6 +285,13 @@ defineExpose({
               v-else-if="record.valueType.type === 'array'"
               v-model:value="record.valueType.elementType"
               placement="topRight"
+              :level="level + 1"
+            />
+            <ObjectParams
+                v-else-if="record.valueType.type === 'object'"
+                v-model:value="record.valueType.properties"
+                placement="topRight"
+                :level="level + 1"
             />
           </div>
         </EditTableFormItem>

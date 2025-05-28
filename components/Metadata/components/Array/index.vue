@@ -18,7 +18,7 @@
                         <ArrayTypeSelect
                             v-model:value="formData.type"
                             :data="formData"
-                            :filter="showObjectItem ? [] : ['object', 'array']"
+                            :filter="level <= 2 ? [] : ['object', 'array']"
                             @changeFormData="TypeChange"
                         />
                     </a-form-item>
@@ -46,8 +46,9 @@
                     />
                     <ObjectItem
                       ref="tableRef"
-                      v-else-if="showObject"
+                      v-else-if="showObject && level <= 2"
                       v-model:value="formData.properties"
+                      :level="level + 1"
                     />
                     <a-form-item
                         v-else-if="showArray"
@@ -113,10 +114,10 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
-    showObjectItem: {
-      type: Boolean,
-      default: false
-    },
+    level: {
+      type: Number,
+      default: 1
+    }
 });
 
 const formItemContext = Form.useInjectFormItemContext();

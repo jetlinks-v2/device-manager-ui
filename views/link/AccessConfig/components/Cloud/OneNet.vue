@@ -376,7 +376,7 @@
                         <TitleComponent :data="$t('Cloud.OneNet.808542-46')" />
                         <p>
                             {{ $t('Cloud.OneNet.808542-47') }}{{
-                                props?.provider?.id === 'OneNet'
+                                ['OneNet', 'OneNet-platform'].includes(props?.provider?.id)
                                     ? 'OneNet'
                                     : 'CTWing'
                             }}{{ $t('Cloud.OneNet.808542-48') }}
@@ -384,7 +384,7 @@
                         <p>
                             {{ $t('Cloud.OneNet.808542-49') }}
                             {{
-                                props?.provider?.id === 'OneNet'
+                                ['OneNet', 'OneNet-platform'].includes(props?.provider?.id)
                                     ? 'OneNet'
                                     : $t('Cloud.OneNet.808542-50')
                             }}

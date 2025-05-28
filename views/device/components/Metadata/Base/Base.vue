@@ -181,17 +181,17 @@
               v-else-if="record.valueType.type === 'object'"
               v-model:value="record.valueType.properties"
               :disabled="record.expands?.isProduct"
-              :showObjectItem="true"
+              :level="2"
             />
             <ArrayParams
               v-else-if="record.valueType.type === 'array'"
               v-model:value="record.valueType.elementType"
               :disabled="record.expands?.isProduct"
-              :showObjectItem="true"
+              :level="2"
             />
           </div>
           <div v-else-if="type === 'events'">
-            <ObjectParams v-model:value="record.valueType.properties">
+            <ObjectParams v-model:value="record.valueType.properties" :level="2">
               <a-button
                 type="primary"
                 :disabled="record.expands?.isProduct"
@@ -278,7 +278,7 @@
       </template>
       <template #inputs="{ record, index }">
         <EditTableFormItem :name="[index, 'inputs']" @change="metadataChange">
-          <ObjectParams v-model:value="record.inputs" :type="type">
+          <ObjectParams v-model:value="record.inputs" :type="type" :level="2">
             <a-button type="primary" :disabled="record.expands?.isProduct">
               <template #icon>
                 <AIcon
@@ -343,11 +343,13 @@
               v-else-if="record.output.type === 'object'"
               v-model:value="record.output.properties"
               :disabled="record.expands?.isProduct"
+              :level="2"
             />
             <ArrayParams
               v-else-if="record.output.type === 'array'"
               v-model:value="record.output.elementType"
               :disabled="record.expands?.isProduct"
+              :level="2"
             />
           </div>
         </EditTableFormItem>
@@ -370,6 +372,7 @@
           <ObjectParams
             v-model:value="record.valueType.properties"
             :disabled="record.expands?.isProduct"
+            :level="1"
           />
         </EditTableFormItem>
       </template>
