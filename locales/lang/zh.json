@@ -1641,7 +1641,7 @@
     "Cloud.OneNet.808542-18": "5、IOT端添加设备，在设备实例页面为每一台设备设置唯一的IMEI、IMSI码（需与OneNet平台中的值一致）",
     "Cloud.OneNet.808542-19": "HTTP推送配置说明",
     "Cloud.OneNet.808542-20": "1、点击",
-    "Cloud.OneNet.808542-21": "数据推送&gt;HTTP推送&gt;添加全局推送",
+    "Cloud.OneNet.808542-21": "数据推送>HTTP推送>添加全局推送",
     "Cloud.OneNet.808542-22": "2、填写全局推送相关参数",
     "Cloud.OneNet.808542-23": "参数",
     "Cloud.OneNet.808542-24": "推送地址url",
