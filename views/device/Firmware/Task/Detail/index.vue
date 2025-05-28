@@ -7,49 +7,111 @@
         :maskClosable="false"
     >
         <div class="generalInfo">
-            <div class="allOperation">
-                <j-permission-button
-                    @click="stopAll"
-                    hasPermission="device/Firmware:update"
-                    ><template #icon><AIcon type="PauseOutlined" /> </template
-                    >{{ $t('Detail.index.805835-1') }}
-                </j-permission-button>
-                <j-permission-button
-                    style="margin-left: 20px"
-                    hasPermission="device/Firmware:update"
-                    @click="startAll"
-                    ><template #icon
-                        ><AIcon type="CaretRightOutlined" /> </template
-                    >{{ $t('Detail.index.805835-2') }}</j-permission-button
-                >
-                <j-permission-button
-                    v-if="data?.mode?.value === 'push'"
-                    style="margin-left: 20px"
-                    hasPermission="device/Firmware:update"
-                    @click="batchRetry"
-                    ><template #icon><AIcon type="RedoOutlined" /> </template>
-                    {{ $t('Detail.index.805835-3') }}
-                </j-permission-button>
-                <j-permission-button
-                    type="text"
-                    hasPermission="device/Firmware:update"
-                    style="float: right"
-                    @click="refreshState"
-                    ><template #icon><AIcon type="RedoOutlined" /> </template>
-                    {{ $t('Detail.index.805835-4') }}
-                </j-permission-button>
+            <div class="body-header">
+                <a-space>
+                  <div class="header-title">
+                      <j-ellipsis>
+                          {{ data.name || '--' }}
+                      </j-ellipsis>
+                  </div>
+                  <div class="header-status bg-color-200">
+                      <j-badge-status
+                          :text="data.state?.text"
+                          :status="data.state?.value"
+                          :statusNames="{
+                            ...colorMap,
+                          }"
+                      ></j-badge-status>
+                  </div>
+                </a-space>
+                <a-space>
+                  <div>
+                    {{ dayjs(data.createTime).format('YYYY-MM-DD HH:mm:ss') }}
+                  </div>
+                  <div class="body-count bg-color-200">
+                  <div>
+                    <a-space>
+                      <AIcon type="icon-chanpin1" style="font-size: 16px"/>
+                      <label class="text-color-500">{{ $t('Save.index.646914-7') }}</label>
+                      <span class="text-color-900">{{ data.mode?.text }}</span>
+                    </a-space>
+                  </div>
+                </div>
+                </a-space>
+            </div>
+            <div>
+                <j-ellipsis>{{ data.description }}</j-ellipsis>
             </div>
             <div class="progress">
-                <div style="width: 90%">
-                    <span>{{ $t('Detail.index.805835-5') }}</span>
-                    <a-progress
-                        style="width: 90%; margin-left: 20px"
-                        :strokeWidth="10"
-                        :percent="Number(general.percent.toFixed(2))"
-                        :format="(percent) => `${percent}%`"
-                    ></a-progress>
+                <div style="width: 100%">
+                    <div class="progress--warp" :style="progressStyles">
+                    </div>
                 </div>
-                <span class="total">{{ $t('Detail.index.805835-6') }}{{ general.total }}{{ $t('Detail.index.805835-7') }}</span>
+            </div>
+            <div style="margin-bottom: 16px">
+              <a-space size="large">
+                <a-space v-for="item in taskState.filter(item => data[item.value])" :key="item.value">
+                  <AIcon :type="iconMap[item.value]" :style="{color: `${colorMap[item.value] ? `var(--ant-${colorMap[item.value]}-color)` : '#646C73'}`}"></AIcon>
+                  <label>
+                    {{ item.label }}
+                  </label>
+                  <span>
+                    {{ data[item.value] }}
+                  </span>
+                </a-space>
+              </a-space>
+            </div>
+            <div class="allOperation">
+                <a-space>
+                    <template v-if="types === 'product'">
+                      <j-permission-button
+                          @click="stopAll"
+                          hasPermission="device/Firmware:update"
+                          ><template #icon><AIcon type="PauseOutlined" /> </template
+                          >{{ $t('Detail.index.805835-1') }}
+                      </j-permission-button>
+                      <j-permission-button
+                          hasPermission="device/Firmware:update"
+                          @click="startAll"
+                          ><template #icon
+                              ><AIcon type="CaretRightOutlined" /> </template
+                          >{{ $t('Detail.index.805835-2') }}</j-permission-button
+                      >
+                      <j-permission-button
+                          v-if="data?.mode?.value === 'push'"
+                          hasPermission="device/Firmware:update"
+                          @click="batchRetry"
+                          ><template #icon><AIcon type="RedoOutlined" /> </template>
+                          {{ $t('Detail.index.805835-3') }}
+                      </j-permission-button>
+                    </template>
+                    <j-permission-button
+                        hasPermission="device/Firmware:update"
+                        @click="refreshState"
+                        ><template #icon><AIcon type="RedoOutlined" /> </template>
+                        {{ $t('Detail.index.805835-4') }}
+                    </j-permission-button>
+                </a-space>
+                <a-space style="float: right">
+                  <j-permission-button
+                      v-if="types === 'product'"
+                      hasPermission="device/Firmware:update"
+                      style="float: right"
+                      danger
+                      :popConfirm="{
+                          title: $t('Instance.index.133466-3'),
+                          onConfirm: () => {
+                              emit('delete', data.id)
+                          }
+                      }"
+                      ><template #icon><AIcon type="DeleteOutlined" /> </template>
+                      {{ $t('Save.index.646914-24') }}
+                  </j-permission-button>
+                  <div v-if="types === 'device'">
+                    <AIcon type="InfoCircleOutlined"></AIcon>
+                    已过滤仅展示本设备的升级子任务，不包含其他设备升级情况
+                  </div>
+                </a-space>
             </div>
         </div>
         <a-table
@@ -81,42 +143,68 @@
                     }}</j-ellipsis></template
                 >
                 <template v-if="column.dataIndex === 'state'">
-                    <div class="state">
-                        <a-progress
-                            type="circle"
-                            style="margin-right: 10px"
-                            :width="20"
-                            :showInfo="false"
-                            trailColor="#f0f0f0"
-                            :percent="
-                                text?.value === 'failed'
-                                    ? '100'
-                                    : record?.progress
-                            "
-                            :status="
-                                text?.value === 'failed' ? 'exception' : ''
-                            "
-                        />
-                        <div v-if="text?.value === 'processing' || text?.value === 'success'">
-                            {{ record?.progress + '%' }}
-                        </div>
-                        <div v-if="text?.value === 'failed'">
-                            {{ text?.text + '：' + record?.errorReason }}
-                        </div>
-                        <div
-                            v-if="
-                                text?.value === 'waiting' ||
-                                text?.value === 'canceled'
-                            "
-                        >
-                            {{ text?.text }}
-                        </div>
-                    </div>
+                    <span :style="{color: `${colorMap[text.value] ? `var(--ant-${colorMap[text.value]}-color)` : '#646C73'}`}">
+                        <a-space>
+                            <AIcon :type="iconMap[text.value]"></AIcon>
+                            <span>{{ text.text }}</span>
+                        </a-space>
+                        <span v-if="text.value === 'failed'">：{{ record.errorReason }}</span>
+                    </span>
                 </template>
                 <template v-if="column.dataIndex === 'version'">
                     <j-ellipsis>
                         {{ text || '--' }}
                     </j-ellipsis>
+                </template>
+                <template v-if="column.dataIndex ==='action'">
+                    <template v-if="['waiting', 'running'].includes(record.state.value)">
+                        <j-permission-button
+                            type="link"
+                            :hasPermission="record.hasEditPermission"
+                            @click="stopUpgrades(record.id)"
+                        >
+                            <template #icon>
+                                <AIcon type="PauseCircleOutlined" />
+                            </template>
+                        </j-permission-button>
+                    </template>
+                    <template v-if="record.state.value === 'canceled'">
+                        <j-permission-button
+                            type="link"
+                            :hasPermission="record.hasEditPermission"
+                            @click="startUpgrades(record.id)"
+                        >
+                            <template #icon>
+                                <AIcon type="PlayCircleOutlined" />
+                            </template>
+                        </j-permission-button>
+                    </template>
+                    <template v-if="record.state.value === 'failed'">
+                      <j-permission-button
+                            type="link"
+                            :hasPermission="record.hasEditPermission"
+                            @click="startUpgrades(record.id)"
+                        >
+                            <template #icon>
+                                <AIcon type="RedoOutlined" />
+                            </template>
+                        </j-permission-button>
+                    </template>
+                    <j-permission-button
+                      type="link"
+                      danger
+                      :hasPermission="record.hasDeletePermission"
+                      :popConfirm="{
+                        title: $t('Instance.index.133466-3'),
+                        onConfirm: () => {
+                          deleteUpgrades(record.id)
+                        }
+                      }"
+                    >
+                      <template #icon>
+                        <AIcon type="DeleteOutlined"></AIcon>
+                      </template>
+                    </j-permission-button>
                 </template>
             </template>
         </a-table>
@@ -136,6 +224,7 @@ import {
     startTask,
     startOneTask,
     stopOneTask,
+    deleteHistory
 } from '../../../../../api/firmware';
 import dayjs from 'dayjs';
 import { onlyMessage } from '@jetlinks-web/utils';
@@ -151,43 +240,74 @@ const props = defineProps({
     deviceId: {
         type: String,
     },
+    taskState: {
+        type: Array,
+        default: () => [],
+    },
+    types: {
+        type: String,
+        default: 'product',
+    }
 });
-const emit = defineEmits(['closeDetail', 'refresh']);
-const columns = [
-    {
-        title: $t('Detail.index.805835-10'),
-        dataIndex: 'deviceName',
-        key: 'deviceName',
-    },
-    {
-        title: $t('Detail.index.805835-11'),
-        dataIndex: 'productName',
-        key: 'productName',
-    },
-    {
-        title: $t('Detail.index.805835-12'),
-        key: 'createTime',
-        dataIndex: 'createTime',
-        width: 200,
-    },
-    {
-        title: $t('Detail.index.805835-13'),
-        key: 'completeTime',
-        dataIndex: 'completeTime',
-    },
-    {
-        title: $t('Detail.index.805835-14'),
-        key: 'version',
-        dataIndex: 'version',
-        width: 100,
-    },
-    {
-        title: $t('Detail.index.805835-15'),
-        dataIndex: 'state',
-        width: 300,
-        key: 'state',
-    },
-];
+const emit = defineEmits(['closeDetail', 'refresh', 'delete']);
+const columns = computed(() => {
+    const arr = [
+        {
+            title: $t('Status.DiagnosticAdvice.980298-4'),
+            dataIndex: 'deviceId',
+            key: 'deviceId',
+            ellipsis: true,
+            width: 150
+        },
+        {
+            title: $t('Detail.index.805835-10'),
+            dataIndex: 'deviceName',
+            key: 'deviceName',
+        },
+        {
+            title: $t('Detail.index.805835-11'),
+            dataIndex: 'productName',
+            key: 'productName',
+        },
+        {
+            title: $t('Task.index.219743-4'),
+            key: 'responseTimeoutSeconds',
+            dataIndex: 'responseTimeoutSeconds',
+        },
+        {
+            title: $t('Task.index.219743-5'),
+            key: 'timeoutSeconds',
+            dataIndex: 'timeoutSeconds',
+        },
+        {
+            title: $t('Detail.index.805835-13'),
+            key: 'completeTime',
+            dataIndex: 'completeTime',
+        },
+        {
+            title: $t('Detail.index.805835-14'),
+            key: 'version',
+            dataIndex: 'version',
+            width: 100,
+        },
+        {
+            title: $t('Detail.index.805835-15'),
+            dataIndex: 'state',
+            width: 300,
+            key: 'state',
+        },
+        {
+            title: $t('Product.index.660348-11'),
+            key: 'action',
+            dataIndex: 'action'
+        }
+    ]
+    if(props.data.mode?.value === 'pull') {
+        arr.splice(3, 1)
+    }
+    return arr;
+});
+
 //列表数据
 const historyList = ref();
 //总进度
@@ -198,6 +318,38 @@ const general = reactive({
 const rowClassName = (record, index) => {
     return record.deviceId === props.deviceId ? 'heightLightRow' : '';
 };
+
+const colorMap = {
+  'waiting': 'primary',
+  'processing': 'success',
+  'failed':'error',
+  'success':'success'
+}
+
+const iconMap = {
+  'success': 'CheckCircleFilled',
+  'canceled': 'PauseCircleFilled',
+  'waiting': 'icon-paiduizhong',
+  'failed': 'InfoCircleFilled',
+}
+
+const progressStyles = computed(() => {
+    const value = {
+        'success': ((props.data?.success || 0) / props.data?.total) * 100,
+        'error': ((props.data?.failed || 0) / props.data?.total) * 100,
+        'primary': ((props.data?.waiting || 0) / props.data?.total) * 100,
+    }
+    const bgi = Object.keys(value).reduce((prev, key, index) => {
+        const v = Object.values(value).splice(0, index + 1).reduce((a, b) => a + b, 0)
+        prev += `var(--ant-${key}-color) 0, var(--ant-${key}-color) ${v}%,`
+        return prev
+    }, '')
+
+    return {
+        'background-image': 'linear-gradient(270deg,' + bgi + '#EFF0F1 0, #EFF0F1 100%)'
+    }
+})
+
 //查询任务升级记录列表
 const queryHistoryList = async () => {
     const params = {
@@ -205,6 +357,7 @@ const queryHistoryList = async () => {
         sorts: [
             { name: 'createTime', order: 'desc' },
             { name: 'upgradeTime', order: 'desc' },
+            { name: 'id', order: 'desc' }
         ],
         terms: [
             {
@@ -291,6 +444,18 @@ const stopUpgrades = async (id) => {
     }
 };
 
+//删除某个记录
+const deleteUpgrades = async (id) => {
+  if(historyList.value.length === 1) {
+    emit('delete', props.data.id)
+    return;
+  }
+  const res = await deleteHistory(id);
+  if (res.success) {
+      refreshState();
+  }
+};
+
 onMounted(() => {
     queryHistoryList();
 });
@@ -313,6 +478,43 @@ onMounted(() => {
 }
 .state {
     display: flex;
+}
+.progress--warp {
+    height: 6px;
+    border-radius: 3px;
+    position: relative;
+    margin: 16px 0;
+}
+.body-header {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    align-items: center;
+    justify-content: space-between;
+    .header-title {
+      font-size: 16px;
+      color: @font-gray-900;
+      font-weight: 500;
+      max-width: 300px;
+    }
+
+    .header-status {
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .header-action {
+      margin-left: auto;
+    }
+    .body-count {
+        display: flex;
+        padding: 8px 24px;
+        border-radius: 6px;
+        > div {
+            flex: 1;
+            min-width: 0;
+        }
+    }
 }
 </style>
 <style>
