@@ -24,10 +24,11 @@
         <div style="flex: 1">
             <a-row :gutter="30">
                 <a-col :span="15">
-                    <JMonacoEditor
+                    <monaco-editor
                         :ref="`monacoEditor${current.id}`"
                         v-model="current.json"
                         theme="vs-dark"
+                        language="json"
                         style="height: 400px"
                     />
                     <div class="editor-btn">
@@ -149,7 +150,7 @@ const handleExecute = async (func: any) => {
     } catch (e) {
         loading.value = false;
         onlyMessage($t('components.Advance.648416-4'), 'error');
-        return; 
+        return;
     }
     const resp: any = await execute(
         route.params.id as string,
