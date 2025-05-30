@@ -15,3 +15,8 @@ export const getDataExchange = (type:'consume' | 'producer') => request.get(`/al
  * 保存告警数据输出
  */
 export const saveOutputData = (data:any) => request.patch('/alarm/config/data-exchange',data);
+
+/**
+ * 获取配置类型
+ */
+export const getTargetTypes = () => request.get('/alarm/config/target-type/supports');

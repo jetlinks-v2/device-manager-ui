@@ -1887,6 +1887,32 @@
               "value": "unsupported"
             },
             "supportDataAccess": false
+          },
+          {
+            "sortIndex": 12,
+            "owner": "iot",
+            "name": "数据订阅",
+            "i18nMessages": {
+              "name": {
+                "zh_CN": "数据订阅",
+                "en_US": "Data subscriptions",
+                "en": "Data subscriptions"
+              }
+            },
+            "id": "cab894761bb00fb1c35746b5109156ty",
+            "code": "link/DataSubscriptions",
+            "url": "/iot/link/DataSubscriptions",
+            "icon": "MessageOutlined",
+            "showPage": [],
+            "permissions": [],
+            "buttons": [
+
+            ],
+            "accessSupport": {
+              "text": "不支持",
+              "value": "unsupported"
+            },
+            "supportDataAccess": false
           }
         ]
       }
