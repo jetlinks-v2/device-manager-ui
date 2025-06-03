@@ -93,8 +93,12 @@
                     </j-permission-button>
                 </a-space>
                 <a-space style="float: right">
+                  <div v-if="types !== 'device'">
+                    <AIcon type="InfoCircleOutlined"></AIcon>
+                    部分设备仅拥有只读权限，批量操作将对这些设备无效
+                  </div>
                   <j-permission-button
-                      v-if="types === 'product'"
+                      v-if="types === 'firmware'"
                       hasPermission="device/Firmware:update"
                       style="float: right"
                       danger
