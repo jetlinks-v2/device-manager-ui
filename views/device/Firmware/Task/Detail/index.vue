@@ -149,6 +149,7 @@
                             <span>{{ text.text }}</span>
                         </a-space>
                         <span v-if="text.value === 'failed'">：{{ record.errorReason }}</span>
+                        <span v-else-if="text.value !== 'waiting'">：{{ record.progress }}%</span>
                     </span>
                 </template>
                 <template v-if="column.dataIndex === 'version'">
@@ -193,6 +194,7 @@
                     <j-permission-button
                       type="link"
                       danger
+                      :disabled="['waiting', 'processing'].includes(record.state.value)"
                       :hasPermission="record.hasDeletePermission"
                       :popConfirm="{
                         title: $t('Instance.index.133466-3'),
