@@ -93,8 +93,12 @@
                     </j-permission-button>
                 </a-space>
                 <a-space style="float: right">
+                  <div v-if="types !== 'device'">
+                    <AIcon type="InfoCircleOutlined"></AIcon>
+                    部分设备仅拥有只读权限，批量操作将对这些设备无效
+                  </div>
                   <j-permission-button
-                      v-if="types === 'product'"
+                      v-if="types === 'firmware'"
                       hasPermission="device/Firmware:update"
                       style="float: right"
                       danger
@@ -149,6 +153,7 @@
                             <span>{{ text.text }}</span>
                         </a-space>
                         <span v-if="text.value === 'failed'">：{{ record.errorReason }}</span>
+                        <span v-else-if="text.value !== 'waiting'">：{{ record.progress }}%</span>
                     </span>
                 </template>
                 <template v-if="column.dataIndex === 'version'">
@@ -193,6 +198,7 @@
                     <j-permission-button
                       type="link"
                       danger
+                      :disabled="['waiting', 'processing'].includes(record.state.value)"
                       :hasPermission="record.hasDeletePermission"
                       :popConfirm="{
                         title: $t('Instance.index.133466-3'),
