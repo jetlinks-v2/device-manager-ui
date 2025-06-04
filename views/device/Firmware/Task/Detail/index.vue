@@ -63,7 +63,7 @@
             </div>
             <div class="allOperation">
                 <a-space>
-                    <template v-if="types === 'product'">
+                    <template v-if="['product', 'firmware'].includes(types)">
                       <j-permission-button
                           @click="stopAll"
                           hasPermission="device/Firmware:update"
