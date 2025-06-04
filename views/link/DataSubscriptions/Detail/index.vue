@@ -1,41 +1,63 @@
 <template>
-  <a-drawer visible :width="900" :mask="false">
+  <a-drawer visible :width="900" :mask="false" @close="emits('close')">
     <template #closeIcon>
-      <AIcon type="MenuUnfoldOutlined" />
+      <AIcon type="MenuUnfoldOutlined"/>
     </template>
     <template #title>
       <div class="header">
-        <div><AIcon type="icon-shebei" /></div>
-        <div>A传感器设备属性</div>
-        <AIcon type="EditOutlined" />
+        <div>
+          <AIcon type="icon-shebei"/>
+        </div>
+        <EditInput :value="data.name" @save="(val) => onSave(val, 'name')">{{ data.name }}</EditInput>
         <a-tag>禁用</a-tag>
       </div>
     </template>
     <template #extra>
       <a-space>
-        <a-button type="link" danger>
-          <AIcon type="DeleteOutlined"/>
-        </a-button>
+        <template
+            v-for="i in getActions({})"
+            :key="i.key"
+        >
+          <j-permission-button
+              :disabled="i.disabled"
+              :popConfirm="i.popConfirm"
+              :tooltip="i.tooltip"
+              @click="i.onClick"
+              type="link"
+              style="padding: 0 5px"
+              :danger="i.key === 'delete'"
+              :hasPermission="'device/Instance:' + i.key"
+          >
+            <template #icon>
+              <AIcon :type="i.icon" />
+            </template>
+          </j-permission-button>
+        </template>
       </a-space>
     </template>
-   <div class="content">
-     <div class="top-content">
-       <div class="top-content-item">
-         <div class="top-content-item-label">订阅类型</div>
-         <div class="top-content-item-type"><AIcon type="icon-shebei1" />设备数据</div>
-       </div>
-       <div class="top-content-item">
-         <div class="top-content-item-label">说明</div>
-         <div class="top-content-item-desc">--<AIcon type="EditOutlined" /></div>
-       </div>
-     </div>
-     <a-tabs v-model:activeKey="activeKey">
-       <a-tab-pane v-for="item in tabList" :key="item.key" :tab="item.tab"/>
-     </a-tabs>
-     <div class="tabs-content">
-       <component :is="components[activeKey]" :data="data"/>
-     </div>
-   </div>
+    <div class="content">
+      <div class="top-content">
+        <div class="top-content-item">
+          <div class="top-content-item-label">订阅类型</div>
+          <div class="top-content-item-type">
+            <AIcon type="icon-shebei1"/>
+            设备数据
+          </div>
+        </div>
+        <div class="top-content-item">
+          <div class="top-content-item-label">说明</div>
+          <div class="top-content-item-desc">
+            <EditInput :value="data.description" @save="(val) => onSave(val, 'description')">{{ data.description || '--' }}</EditInput>
+          </div>
+        </div>
+      </div>
+      <a-tabs v-model:activeKey="activeKey">
+        <a-tab-pane v-for="item in tabList" :key="item.key" :tab="item.tab"/>
+      </a-tabs>
+      <div class="tabs-content">
+        <component :is="components[activeKey]" :data="data"/>
+      </div>
+    </div>
   </a-drawer>
 </template>
 
@@ -44,6 +66,8 @@ import Subscription from './Subscription/index.vue'
 import PushConfig from './PushConfig/index.vue'
 import PushLog from './PushLog/index.vue'
 import DataMonitor from './DataMonitor/index.vue'
+import EditInput from './components/EditInput.vue'
+import {useI18n} from "vue-i18n";
 
 const props = defineProps({
   data: {
@@ -52,7 +76,7 @@ const props = defineProps({
   },
 })
 const emits = defineEmits(['close'])
-
+const {t: $t} = useI18n();
 const tabList = [
   {
     key: 'Subscription',
@@ -79,6 +103,49 @@ const components = {
   PushConfig,
   PushLog,
   DataMonitor
+}
+
+const getActions = (data) => {
+  return [
+    {
+      key: 'action',
+      text: data.state?.value !== 'notActive' ? $t('Instance.index.133466-7') : $t('Instance.index.133466-22'),
+      tooltip: {
+        title: data.state?.value !== 'notActive' ? $t('Instance.index.133466-7') : $t('Instance.index.133466-22'),
+      },
+      icon:
+          data.state?.value !== 'notActive'
+              ? 'StopOutlined'
+              : 'CheckCircleOutlined',
+
+      popConfirm: {
+        title: `${$t('Instance.index.133466-23', [data.state?.value !== 'notActive' ? $t('Instance.index.133466-7') : $t('Instance.index.133466-22')])}`,
+        onConfirm: async () => {
+
+        },
+      },
+    },
+    {
+      key: 'delete',
+      text: $t('Instance.index.133466-26'),
+      disabled: data.state?.value !== 'notActive',
+      tooltip: {
+        placement: 'bottomLeft',
+        title:
+            data.state?.value !== 'notActive'
+                ? $t('Instance.index.133466-27')
+                : $t('Instance.index.133466-26'),
+      },
+      onClick: async () => {
+
+      },
+      icon: 'DeleteOutlined',
+    },
+  ]
+}
+
+const onSave = (val, key) => {
+  console.log(val, key)
 }
 </script>
 

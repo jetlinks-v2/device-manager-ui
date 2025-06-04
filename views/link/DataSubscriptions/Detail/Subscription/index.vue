@@ -39,6 +39,29 @@ const props = defineProps({
 const isEmpty = ref(false)
 const visible = ref(false)
 
+const description = [
+  {
+    key: '_self',
+    label: '自定义',
+    desc: '该模式下仅推送下列设备数据，设备列表固定，不随设备增减自动更新，需手动维护'
+  },
+  {
+    key: 'all',
+    label: '全部',
+    desc: '该模式下推送当前用户数据权限范围内所有设备数据，当新增/删除设备时，订阅设备列表实时同步更新'
+  },
+  {
+    key: 'org',
+    label: '按组织',
+    desc: '该模式下推送已选择 {组织节点名称} 共 X 个组织下的全部设备数据，当组织内新增/移除设备时，订阅设备列表实时同步更新'
+  },
+  {
+    key: 'product',
+    label: '按产品',
+    desc: '该模式下推送已选择  {产品名称}  共 X 个产品下的全部设备数据，当新增/删除设备时，订阅设备列表实时同步更新'
+  }
+]
+
 const onConfig = () => {
   visible.value = true
 }

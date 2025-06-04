@@ -36,17 +36,31 @@
         <template #createTime="slotProps">
           <span>{{ slotProps.createTime ? dayjs(slotProps.createTime).format('YYYY-MM-DD HH:mm:ss') : '--' }}</span>
         </template>
+        <template #action="slotProps">
+          <j-permission-button
+              :tooltip="{
+                                   title: '详情'
+                                }"
+              @click="onClick(slotProps)"
+              type="link"
+              style="padding: 0 5px"
+          >
+            <template #icon>
+              <AIcon type="EyeOutlined" />
+            </template>
+          </j-permission-button>
+        </template>
       </j-pro-table>
     </div>
   </div>
+  <Detail :data="current.data" v-if="current.visible" @close="current.visible = false" />
 </template>
 
 <script setup>
 import {useI18n} from 'vue-i18n';
 import dayjs from "dayjs";
-import {onlyMessage} from "@jetlinks-web/utils";
+import Detail from "./Detail.vue";
 import {query} from "@device/api/instance";
-import {queryNoPagingPost} from "@/modules/device-manager-ui/api/product";
 
 const {t: $t} = useI18n();
 const emit = defineEmits(['update:modelValue', 'change']);
@@ -60,6 +74,10 @@ const props = defineProps({
 
 const params = ref({});
 const tableRef = ref()
+const current = reactive({
+  visible: false,
+  data: {},
+})
 
 const statusMap = new Map();
 statusMap.set('online', 'processing');
@@ -72,14 +90,13 @@ const columns = [
     key: 'id',
     dataIndex: 'id',
     fixed: 'left',
-    width: 200,
     ellipsis: true,
     search: {
       type: 'string',
     },
   },
   {
-    title: $t('Save.SelectDevices.386303-5'),
+    title: '推送时间',
     key: 'name',
     dataIndex: 'name',
     ellipsis: true,
@@ -88,38 +105,26 @@ const columns = [
     },
   },
   {
-    title: $t('Instance.index.133466-2'),
+    title: '推送地址',
     dataIndex: 'productName',
     key: 'productName',
     ellipsis: true,
     search: {
-      type: 'select',
-      rename: 'productId',
-      options: () =>
-          new Promise((resolve) => {
-            queryNoPagingPost({paging: false}).then((resp) => {
-              resolve(
-                  resp.result.map((item) => ({
-                    label: item.name,
-                    value: item.id,
-                  })),
-              );
-            });
-          }),
-    },
+      type: 'string',
+    }
   },
   {
-    title: $t('Save.SelectDevices.386303-7'),
+    title: '推送方式',
     key: 'createTime',
     dataIndex: 'createTime',
     search: {
       type: 'date',
     },
-    width: 200,
+    ellipsis: true,
     scopedSlots: true,
   },
   {
-    title: $t('Save.SelectDevices.386303-8'),
+    title: '状态',
     dataIndex: 'state',
     key: 'state',
     scopedSlots: true,
@@ -133,10 +138,32 @@ const columns = [
     },
     width: 150,
   },
+  {
+    title: '耗时',
+    dataIndex: 'createTime',
+    key: 'createTime',
+    search: {
+      type: 'date',
+    },
+    ellipsis: true,
+    scopedSlots: true,
+  },
+  {
+    title: '操作',
+    key: 'action',
+    fixed: 'right',
+    width: 100,
+    scopedSlots: true,
+  },
 ]
 const handleSearch = (e) => {
   params.value = e
 };
+
+const onClick = (dt) => {
+  current.data = dt
+  current.visible = true
+}
 </script>
 
 <style lang="less" scoped>

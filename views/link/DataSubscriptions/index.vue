@@ -28,6 +28,11 @@
             {{ $t('plugin.index.293829-0') }}
           </j-permission-button>
         </template>
+        <template #name="slotProps">
+          <div class="data-name" @click="viewDetail(slotProps)">
+            {{ slotProps.name }}
+          </div>
+        </template>
         <template #type="slotProps">
           123
         </template>
@@ -62,11 +67,10 @@
     </FullPage>
   </j-page-container>
   <Save v-if="saveData.visible" @close="saveData.visible = false"/>
-  <Detail v-if="detailData.visible"/>
+  <Detail :data="detailData.data" v-if="detailData.visible" @close="detailData.visible = false"/>
 </template>
 
 <script setup name="DataSubscriptions">
-import {onlyMessage} from '@jetlinks-web/utils';
 import {queryPage, removeFn, getTypes} from '@device/api/link/plugin';
 import {useI18n} from 'vue-i18n';
 import Save from './Save/index.vue'
@@ -93,6 +97,7 @@ const columns = [
     search: {
       type: 'input',
     },
+    scopedSlots: true,
   },
   {
     title: '状态',
@@ -150,17 +155,6 @@ const getActions = (data) => {
   }
   return [
     {
-      key: 'view',
-      text: $t('plugin.index.293829-13'),
-      tooltip: {
-        title: $t('plugin.index.293829-13'),
-      },
-      icon: 'EyeOutlined',
-      onClick: () => {
-        viewDetail(data);
-      },
-    },
-    {
       key: 'action',
       text: $t('plugin.index.293829-8'),
       tooltip: {
@@ -201,7 +195,10 @@ const getActions = (data) => {
 </script>
 
 <style scoped lang="less">
-.plugin-version {
-  border-radius: 4px;
+.data-name {
+  &:hover {
+    color: @primary-color;
+    cursor: pointer;
+  }
 }
 </style>

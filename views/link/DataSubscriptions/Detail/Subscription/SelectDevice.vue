@@ -78,6 +78,7 @@ const columns = [
     ellipsis: true,
     search: {
       type: 'string',
+      first: true,
     },
   },
   {
