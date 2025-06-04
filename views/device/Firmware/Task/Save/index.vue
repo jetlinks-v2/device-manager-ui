@@ -107,8 +107,7 @@
                 :data="data"
                 :productId="productId"
             ></SelectDevices>
-          </a-form-item
-          >
+          </a-form-item>
         </a-col>
         <a-col :span="24">
           <a-form-item :label="$t('Save.index.646914-19')" name="description">
