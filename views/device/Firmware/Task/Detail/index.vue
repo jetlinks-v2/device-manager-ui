@@ -95,12 +95,13 @@
                 <a-space style="float: right">
                   <div v-if="types !== 'device'">
                     <AIcon type="InfoCircleOutlined"></AIcon>
-                    部分设备仅拥有只读权限，批量操作将对这些设备无效
+                    {{ $t('Firmware.index.858355-13') }}
                   </div>
                   <j-permission-button
                       v-if="types === 'firmware'"
                       hasPermission="device/Firmware:update"
                       style="float: right"
+                      :disabled="historyList?.some(item => ['waiting', 'processing'].includes(item.state?.value))"
                       danger
                       :popConfirm="{
                           title: $t('Instance.index.133466-3'),
@@ -113,7 +114,7 @@
                   </j-permission-button>
                   <div v-if="types === 'device'">
                     <AIcon type="InfoCircleOutlined"></AIcon>
-                    已过滤仅展示本设备的升级子任务，不包含其他设备升级情况
+                    {{ $t('Firmware.index.858355-14') }}
                   </div>
                 </a-space>
             </div>
