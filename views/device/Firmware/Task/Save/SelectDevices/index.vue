@@ -50,8 +50,8 @@ const handleOk = (dt, type) => {
   if (type === 'Self') {
     terms = [
       {
-        column: "deviceId",
-        termsType: "in",
+        column: "id",
+        termType: "in",
         value: dt
       }
     ]
