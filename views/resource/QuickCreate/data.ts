@@ -449,7 +449,7 @@ export const queryExistProtocol = async (provider: any, data: any) => {
   if (resp.success) {
     const ExistProtocol = resp.result.find((i: any) => {
       return (
-        i.configuration?.sourceId === data.id &&
+        (i.configuration?.sourceId === (data.id || data.configuration?.sourceId)) &&
         i.configuration?.version === data?.version
       );
     });

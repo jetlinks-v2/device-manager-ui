@@ -16,8 +16,7 @@
               <span>已选择产品</span>
               <a-button type="link" @click="emits('reselection')"
               >重新选择
-              </a-button
-              >
+              </a-button>
             </div>
           </template>
           <template #description>
