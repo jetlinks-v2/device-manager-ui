@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="header">
-      <div class="title">推送数据量趋势图</div>
+      <div class="title">{{ $t('DataSubscriptions.Detail.index.697323-49') }}</div>
       <JDashboardTimeSelect
           type="hour"
           :quickBtnList="[

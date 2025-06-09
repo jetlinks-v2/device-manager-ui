@@ -38,14 +38,14 @@
     <div class="content">
       <div class="top-content">
         <div class="top-content-item">
-          <div class="top-content-item-label">订阅类型</div>
+          <div class="top-content-item-label">{{$t('DataSubscriptions.index.411661-3')}}</div>
           <div class="top-content-item-type">
             <AIcon type="icon-shebei1"/>
             设备数据
           </div>
         </div>
         <div class="top-content-item">
-          <div class="top-content-item-label">说明</div>
+          <div class="top-content-item-label">{{$t('DataSubscriptions.index.411661-5')}}</div>
           <div class="top-content-item-desc">
             <EditInput :value="data.description" @save="(val) => onSave(val, 'description')">{{ data.description || '--' }}</EditInput>
           </div>
@@ -77,22 +77,23 @@ const props = defineProps({
 })
 const emits = defineEmits(['close'])
 const {t: $t} = useI18n();
+
 const tabList = [
   {
     key: 'Subscription',
-    tab: '订阅配置',
+    tab: $t('DataSubscriptions.Detail.index.697323-0'),
   },
   {
     key: 'PushConfig',
-    tab: '推送配置',
+    tab: $t('DataSubscriptions.Detail.index.697323-1'),
   },
   {
     key: 'PushLog',
-    tab: '推送记录',
+    tab: $t('DataSubscriptions.Detail.index.697323-2'),
   },
   {
     key: 'DataMonitor',
-    tab: '数据监控',
+    tab: $t('DataSubscriptions.Detail.index.697323-3'),
   }
 ]
 

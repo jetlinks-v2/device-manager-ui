@@ -2,21 +2,21 @@
   <div v-if="!tabList.length" class="empty-box">
     <j-empty>
       <template #description>
-        <div class="text">暂无数据</div>
-        <div class="desc">点击打开「新增推动地址」对话框</div>
+        <div class="text">{{ $t('DataSubscriptions.Detail.index.697323-5') }}</div>
+        <div class="desc">{{ $t('DataSubscriptions.Detail.index.697323-6') }}</div>
       </template>
-      <a-button type="primary" @click="onAdd">新增</a-button>
+      <a-button type="primary" @click="onAdd">{{ $t('Product.index.660348-0') }}</a-button>
     </j-empty>
   </div>
   <div v-else class="push-config-content">
-    <div class="title">推送地址</div>
+    <div class="title">{{ $t('DataSubscriptions.Detail.index.697323-32') }}</div>
     <a-tabs v-model:activeKey="activeKey" type="editable-card" @edit="onEdit">
       <a-tab-pane v-for="item in tabList" :key="item.key" :closable="false">
         <template #tab>
           <div class="tab-item">
             <div>{{item.title}}</div>
             <a-tag>HTTP</a-tag>
-            <a-popconfirm :title="item.state ? '确认禁用？' : '确认启用？'" @confirm="onAction(item.state)">
+            <a-popconfirm :title="item.state ? $t('Detail.index.478940-0') : $t('Detail.index.478940-1')" @confirm="onAction(item.state)">
               <a-switch :checked="item.state" size="small" />
             </a-popconfirm>
             <a-dropdown>
@@ -25,11 +25,11 @@
                 <a-menu @click="(e) => handleMenuClick(e, item)">
                   <a-menu-item key="edit">
                     <AIcon type="EditOutlined" />
-                    编辑
+                    {{$t('Product.index.660348-13')}}
                   </a-menu-item>
                   <a-menu-item key="delete">
                     <AIcon type="DeleteOutlined" />
-                    删除
+                    {{$t('Product.index.660348-20')}}
                   </a-menu-item>
                 </a-menu>
               </template>
@@ -39,22 +39,22 @@
       </a-tab-pane>
     </a-tabs>
     <div>
-      <div class="title">详情信息</div>
+      <div class="title">{{ $t('DataSubscriptions.Detail.index.697323-33') }}</div>
       <div class="desc">
         <div class="desc-item">
-          <div class="desc-item-label">地址</div>
+          <div class="desc-item-label">{{$t('DataSubscriptions.Detail.index.697323-38')}}</div>
           <div class="desc-item-value">192.168.135.223</div>
         </div>
         <div class="desc-item">
-          <div class="desc-item-label">推送地址</div>
+          <div class="desc-item-label">{{$t('DataSubscriptions.index.411661-4')}}</div>
           <div class="desc-item-value">POST</div>
         </div>
         <div class="desc-item">
-          <div class="desc-item-label">说明</div>
+          <div class="desc-item-label">{{ $t('DataSubscriptions.index.411661-5') }}</div>
           <div class="desc-item-value">--</div>
         </div>
       </div>
-      <div class="title">推送示例<a-tooltip title="根据上方随选推送方式动态变化"><AIcon
+      <div class="title">{{ $t('DataSubscriptions.Detail.index.697323-34') }}<a-tooltip :title="$t('DataSubscriptions.Detail.index.697323-35')"><AIcon
           type="QuestionCircleOutlined"
           style="color: #a6a6a6; margin-left: 10px"
       /></a-tooltip></div>
@@ -66,13 +66,14 @@
 
 <script setup>
 import Save from './Save.vue'
+import {useI18n} from "vue-i18n";
 const props = defineProps({
   data: {
     type: Object,
     default: () => ({}),
   },
 })
-
+const {t: $t} = useI18n();
 const tabList = ref([
   { title: 'Tab 1', key: '1', state: true },
   { title: 'Tab 2', key: '2', state: false },

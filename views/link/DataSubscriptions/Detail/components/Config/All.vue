@@ -3,8 +3,8 @@
     <img :src="dataSubscriptions.allIconImg" :width="126" />
     <div class="desc">
       {{ data.type !== 'device' ?
-        '该模式下推送当前用户数据权限范围内所有告警数据，包含告警配置告警，属性阈值告警，数采点位告警等' :
-        '该模式下推送当前用户数据权限范围内所有设备数据，当新增/删除设备时，订阅设备列表实时同步更新。'
+        $t('DataSubscriptions.Detail.index.697323-30') :
+        $t('DataSubscriptions.Detail.index.697323-31')
       }}
     </div>
   </div>
@@ -12,6 +12,7 @@
 
 <script setup>
 import {dataSubscriptions} from '@device/assets/data-subscriptions'
+import {useI18n} from "vue-i18n";
 
 const props = defineProps({
   data: {
@@ -19,6 +20,7 @@ const props = defineProps({
     default: () => ({type: 'device'}),
   },
 })
+const {t: $t} = useI18n();
 </script>
 
 <style lang="less" scoped>

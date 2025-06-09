@@ -1,5 +1,5 @@
 <template>
-  <a-drawer :width="500" visible title="新增数据订阅" @close="emits('close')">
+  <a-drawer :width="500" visible :title="$t('DataSubscriptions.Save.index.818621-0')" @close="emits('close')">
     <template v-if="!selectType">
       <div v-for="item in list" :key="item.id" class="card-item" @click="onSelected(item.id)"
            :class="{disabled: item.disabled}">
@@ -15,9 +15,9 @@
     <template v-else>
       <div class="alert">
         <AIcon type="InfoCircleFilled" style="color: #2F54EB;"/>
-        <div>订阅模式</div>
+        <div>{{ $t('DataSubscriptions.Save.index.818621-1') }}</div>
         <div style="color: #1A1A1A">{{ list.find(i => i.id === selectType)?.name}}</div>
-        <a-button type="link" @click="onReload">重新选择</a-button>
+        <a-button type="link" @click="onReload">{{ $t('DataSubscriptions.Save.index.818621-2') }}</a-button>
       </div>
       <a-form layout="vertical" :model="modelRef" ref="formRef">
         <a-form-item
@@ -60,8 +60,8 @@
     </template>
     <template #footer v-if="!!selectType">
       <a-space>
-        <a-button :loading="loading" @click="onSave" type="primary">保存</a-button>
-        <a-button @click="emits('close')">取消</a-button>
+        <a-button :loading="loading" @click="onSave" type="primary">{{ $t('Save.index.912481-0') }}</a-button>
+        <a-button @click="emits('close')">{{ $t('Save.index.912481-1') }}</a-button>
       </a-space>
     </template>
   </a-drawer>
@@ -78,20 +78,20 @@ const {t: $t} = useI18n();
 const list = [
   {
     id: 'device',
-    name: '设备数据',
-    desc: '主动推送属性/功能/事件/状态变化数据到第三方平台',
+    name: $t('DataSubscriptions.Save.index.818621-3'),
+    desc: $t('DataSubscriptions.Save.index.818621-4'),
     img: dataSubscriptions.deviceImg,
   },
   {
     id: 'alarm',
-    name: '告警数据',
-    desc: '主动推送告警异常数据到第三方平台',
+    name: $t('DataSubscriptions.Save.index.818621-5'),
+    desc: $t('DataSubscriptions.Save.index.818621-6'),
     img: dataSubscriptions.alarmImg,
   },
   {
     id: 'more',
-    name: '敬请期待',
-    desc: '更多订阅类型开发中',
+    name: $t('DataSubscriptions.Save.index.818621-7'),
+    desc: $t('DataSubscriptions.Save.index.818621-8'),
     img: dataSubscriptions.moreImg,
     disabled: true
   }
@@ -105,6 +105,7 @@ const modelRef = reactive({
   describe: '',
 })
 const onSelected = (id) => {
+  if(id !== 'more') return
   selectType.value = id
 }
 

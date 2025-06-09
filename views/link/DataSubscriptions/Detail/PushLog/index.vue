@@ -1,8 +1,8 @@
 <template>
   <div style="display: flex; flex-direction: column; height: 100%; gap: 16px;">
 
-    <div class="top-num">队列数量 <span>34346</span></div>
-    <div class="list-title">推送列表
+    <div class="top-num">{{ $t('DataSubscriptions.Detail.index.697323-39') }} <span>34346</span></div>
+    <div class="list-title">{{ $t('DataSubscriptions.Detail.index.697323-40') }}
       <a-tag>345</a-tag>
     </div>
     <pro-search
@@ -39,7 +39,7 @@
         <template #action="slotProps">
           <j-permission-button
               :tooltip="{
-                                   title: '详情'
+                                   title: $t('DataSubscriptions.Detail.index.697323-53')
                                 }"
               @click="onClick(slotProps)"
               type="link"
@@ -96,7 +96,7 @@ const columns = [
     },
   },
   {
-    title: '推送时间',
+    title: $t('DataSubscriptions.Detail.index.697323-41'),
     key: 'name',
     dataIndex: 'name',
     ellipsis: true,
@@ -105,7 +105,7 @@ const columns = [
     },
   },
   {
-    title: '推送地址',
+    title: $t('DataSubscriptions.Detail.index.697323-32'),
     dataIndex: 'productName',
     key: 'productName',
     ellipsis: true,
@@ -114,7 +114,7 @@ const columns = [
     }
   },
   {
-    title: '推送方式',
+    title: $t('DataSubscriptions.Detail.index.697323-36'),
     key: 'createTime',
     dataIndex: 'createTime',
     search: {
@@ -124,7 +124,7 @@ const columns = [
     scopedSlots: true,
   },
   {
-    title: '状态',
+    title: $t('DataSubscriptions.Detail.index.697323-44'),
     dataIndex: 'state',
     key: 'state',
     scopedSlots: true,
@@ -139,7 +139,7 @@ const columns = [
     width: 150,
   },
   {
-    title: '耗时',
+    title: $t('DataSubscriptions.Detail.index.697323-42'),
     dataIndex: 'createTime',
     key: 'createTime',
     search: {
@@ -149,7 +149,7 @@ const columns = [
     scopedSlots: true,
   },
   {
-    title: '操作',
+    title: $t('Product.index.660348-11'),
     key: 'action',
     fixed: 'right',
     width: 100,

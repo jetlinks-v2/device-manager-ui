@@ -1,8 +1,8 @@
 <template>
   <div>
     <div class="title">
-      历史推送耗时占比
-      <a-tooltip title="仅计算成功推送的数据">
+      {{ $t('DataSubscriptions.Detail.index.697323-51') }}
+      <a-tooltip :title="$t('DataSubscriptions.Detail.index.697323-52')">
         <AIcon
             type="QuestionCircleOutlined"
             style="color: #a6a6a6"
@@ -16,6 +16,9 @@
 </template>
 
 <script setup>
+import {useI18n} from "vue-i18n";
+
+const {t: $t} = useI18n();
 const echartsOptions = {
   tooltip: {
     trigger: 'item',

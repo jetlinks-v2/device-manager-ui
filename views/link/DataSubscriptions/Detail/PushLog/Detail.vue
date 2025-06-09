@@ -1,28 +1,28 @@
 <template>
-  <a-modal :width="900" visible title="推送详情" @cancel="emit('close')">
+  <a-modal :width="900" visible :title="$t('DataSubscriptions.Detail.index.697323-54')" @cancel="emit('close')">
     <a-descriptions :labelStyle="{width: '200px'}" title="" bordered :column="1">
       <a-descriptions-item label="ID">
         {{ data?.url }}
       </a-descriptions-item>
-      <a-descriptions-item label="推送时间">
+      <a-descriptions-item :label="$t('DataSubscriptions.Detail.index.697323-41')">
         {{ data?.httpMethod }}
       </a-descriptions-item>
-      <a-descriptions-item label="目标地址">
+      <a-descriptions-item :label="$t('DataSubscriptions.Detail.index.697323-43')">
         {{ data?.action }}
       </a-descriptions-item>
-      <a-descriptions-item label="推送方式">
+      <a-descriptions-item :label="$t('DataSubscriptions.Detail.index.697323-36')">
         {{ data?.target }}
       </a-descriptions-item>
-      <a-descriptions-item label="状态">
+      <a-descriptions-item :label="$t('DataSubscriptions.Detail.index.697323-44')">
         {{ data?.method }}
       </a-descriptions-item>
-      <a-descriptions-item label="耗时">
+      <a-descriptions-item :label="$t('DataSubscriptions.Detail.index.697323-42')">
         {{ data?.ip }}
       </a-descriptions-item>
-      <a-descriptions-item label="重试次数">
+      <a-descriptions-item :label="$t('DataSubscriptions.Detail.index.697323-45')">
         {{ data?.parameters }}
       </a-descriptions-item>
-      <a-descriptions-item label="错误信息">
+      <a-descriptions-item :label="$t('DataSubscriptions.Detail.index.697323-46')">
         {{ data.exception }}
       </a-descriptions-item>
     </a-descriptions>

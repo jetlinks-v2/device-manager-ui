@@ -1,8 +1,8 @@
 <template>
   <div>
-    <div class="title">历史推送统计占比</div>
+    <div class="title">{{ $t('DataSubscriptions.Detail.index.697323-50') }}</div>
     <div class="box">
-      <div style="height: 250px; flex: 1; min-width: 0;">
+      <div style="height: 250px; flex: 1; min-width: 0;background-color: #7f7f7f">
         <JEcharts :options="option"/>
       </div>
       <div class="right">
@@ -21,21 +21,34 @@
 
 <script setup>
 import 'echarts-liquidfill'
+import {useI18n} from "vue-i18n";
 
+const {t: $t} = useI18n();
 const option = {
   series: [{
     type: 'liquidFill',
-    data: [0.6, 0.5, 0.4, 0.3],
+    data: [0.6, 0.5, 0.3],
     label: {
       show: true,
       color: '#294D99',
       insideColor: '#fff',
-      fontSize: 50,
+      fontSize: 30,
       fontWeight: 'bold',
-
       align: 'center',
       baseline: 'middle',
-      position: 'inside'
+      position: 'inside',
+    },
+    animationDuration: 0,
+    animationDurationUpdate: 2000,
+    animationEasingUpdate: 'cubicOut',
+    outline: {
+      show: true,
+      borderDistance: 10,
+      itemStyle: {
+        borderColor: '#C3C7CB',
+        borderWidth: 1,
+        shadowColor: 'none'
+      }
     },
   }]
 };

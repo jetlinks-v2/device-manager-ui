@@ -90,7 +90,7 @@ const detailData = reactive({
 
 const columns = [
   {
-    title: '名称',
+    title: $t('DataSubscriptions.index.411661-1'),
     dataIndex: 'name',
     key: 'name',
     ellipsis: true,
@@ -100,26 +100,26 @@ const columns = [
     scopedSlots: true,
   },
   {
-    title: '状态',
+    title: $t('DataSubscriptions.index.411661-2'),
     dataIndex: 'version',
     key: 'version',
     ellipsis: true,
   },
   {
-    title: '订阅类型',
+    title: $t('DataSubscriptions.index.411661-3'),
     dataIndex: 'type',
     key: 'type',
     ellipsis: true,
     scopedSlots: true,
   },
   {
-    title: '推送地址',
+    title: $t('DataSubscriptions.index.411661-4'),
     dataIndex: 'filename',
     key: 'filename',
     ellipsis: true,
   },
   {
-    title: '说明',
+    title: $t('DataSubscriptions.index.411661-5'),
     dataIndex: 'description',
     key: 'description',
     ellipsis: true,
@@ -128,7 +128,7 @@ const columns = [
     },
   },
   {
-    title: $t('plugin.index.293829-7'),
+    title: $t('DataSubscriptions.index.411661-6'),
     key: 'action',
     width: 160,
     scopedSlots: true,

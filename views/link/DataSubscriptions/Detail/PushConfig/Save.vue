@@ -1,23 +1,23 @@
 <template>
-  <a-modal visible :title="data.id ? '新增推送地址' : '编辑推送地址'" @cancel="emit('close')" @ok="onSave" :confirm-loading="loading">
+  <a-modal visible :title="data.id ? $t('DataSubscriptions.Detail.index.697323-55') : $t('DataSubscriptions.Detail.index.697323-56')" @cancel="emit('close')" @ok="onSave" :confirm-loading="loading">
     <a-form ref="formRef" :model="formData" layout="vertical">
       <a-form-item
-          label="名称"
+          :label="$t('Save.index.912481-4')"
           name="name"
           :rules="[
-             {required: true, message: '请输入名称'},
+             {required: true, message: $t('Save.index.912481-5')},
              {
                 max: 64,
                 message: $t('Save.index.5349810-3'),
              },
           ]"
       >
-        <a-input v-model:value="formData.name" placeholder="请输入名称"/>
+        <a-input v-model:value="formData.name" :placeholder="$t('Save.index.912481-5')"/>
       </a-form-item>
-      <a-form-item label="推送方式" name="way">
+      <a-form-item :label="$t('DataSubscriptions.Detail.index.697323-36')" name="way">
         <a-select
             v-model:value="formData.way"
-            placeholder="请选择推送方式"
+            :placeholder="$t('Save.index.646914-10')"
             option-label-prop="label"
         >
           <a-select-option value="HTTP" label="HTTP">
@@ -28,10 +28,10 @@
           </a-select-option>
         </a-select>
       </a-form-item>
-      <a-form-item label="推送类型" name="type" :rules="[{required: true, message: '请选择推送类型'}]">
+      <a-form-item :label="$t('DataSubscriptions.Detail.index.697323-37')" name="type" :rules="[{required: true, message: $t('DataSubscriptions.Detail.index.697323-37-1')}]">
         <a-select
             v-model:value="formData.type"
-            placeholder="请选择推送类型"
+            :placeholder="$t('DataSubscriptions.Detail.index.697323-37-1')"
             allow-clear
         >
           <a-select-option value="get">GET</a-select-option>
@@ -41,42 +41,42 @@
         </a-select>
       </a-form-item>
       <a-form-item
-          label="地址"
+          :label="$t('DataSubscriptions.Detail.index.697323-38')"
           name="address"
           :rules="[
-              {required: true, message: '请输入地址'},
+              {required: true, message: $t('DataSubscriptions.Detail.index.697323-38-1')},
               {
                 max: 256,
-                message: '256',
+                message: $t('Form.rules.242792-0', 256),
              },
           ]"
       >
-        <a-input v-model:value="formData.address" placeholder="请输入地址" />
+        <a-input v-model:value="formData.address" :placeholder="$t('DataSubscriptions.Detail.index.697323-38-1')" />
       </a-form-item>
       <a-form-item
           label="token"
           name="token"
           :rules="[
-             {required: true, message: '请输入token'},
+             {required: true, message: $t('DataSubscriptions.Detail.index.697323-57')},
              {
                 max: 32,
-                message: '32',
+                message: $t('Form.rules.242792-0', 32),
              },
           ]"
       >
-        <a-input v-model:value="formData.token" placeholder="请输入token" />
+        <a-input v-model:value="formData.token" :placeholder="$t('DataSubscriptions.Detail.index.697323-57')" />
       </a-form-item>
       <a-form-item
-          label="说明"
+          :label="$t('DataSubscriptions.index.411661-5')"
           name="description"
           :rules="[
              {
                 max: 200,
-                message: '200',
+                message: $t('Save.index.902471-13'),
              }
           ]"
       >
-        <a-textarea placeholder="请输入说明" v-model:value="formData.description"/>
+        <a-textarea :placeholder="$t('Save.index.902471-14')" v-model:value="formData.description"/>
       </a-form-item>
     </a-form>
   </a-modal>

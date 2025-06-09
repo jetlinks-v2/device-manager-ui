@@ -2,19 +2,19 @@
   <div v-if="isEmpty" class="empty-box">
     <j-empty>
       <template #description>
-        <div class="text">暂无数据</div>
-        <div class="desc">请点击[配置]按钮配置订阅数据</div>
+        <div class="text">{{ $t('DataSubscriptions.Detail.index.697323-5') }}</div>
+        <div class="desc">{{ $t('DataSubscriptions.Detail.index.697323-6') }}</div>
       </template>
-      <a-button type="primary" @click="onConfig">配置</a-button>
+      <a-button type="primary" @click="onConfig">{{ $t('DataSubscriptions.Detail.index.697323-7') }}</a-button>
     </j-empty>
   </div>
   <div v-else style="display: flex; flex-direction: column; height: 100%; gap: 16px; ">
     <div class="sub-content">
       <a-space>
         <AIcon style="color: #1677FF" type="InfoCircleFilled"/>
-        <div style="color: #777777;">订阅模式</div>
+        <div style="color: #777777;">{{ $t('DataSubscriptions.Detail.index.697323-8') }}</div>
         <div>{{'自定义'}}</div>
-        <a-button type="link" @click="onConfig">重新配置</a-button>
+        <a-button type="link" @click="onConfig">{{ $t('DataSubscriptions.Detail.index.697323-9') }}</a-button>
       </a-space>
       <div>该模式下仅推送下列设备数据，，设备列表固定，不随设备增减自动更新，需手动维护</div>
     </div>
@@ -28,6 +28,7 @@
 <script setup>
 import Config from '../components/Config/index.vue';
 import SelectDevice from './SelectDevice.vue'
+import {useI18n} from "vue-i18n";
 
 const props = defineProps({
   data: {
@@ -38,6 +39,8 @@ const props = defineProps({
 
 const isEmpty = ref(false)
 const visible = ref(false)
+
+const {t: $t} = useI18n();
 
 const description = [
   {
