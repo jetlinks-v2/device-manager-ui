@@ -77,6 +77,7 @@
             v-if="showTask"
             :firmwareId="firmwareId"
             :productId="productId"
+            type="firmware"
             @close-drawer="showTask = false"
         />
     </j-page-container>
