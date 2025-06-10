@@ -165,6 +165,9 @@
                         <j-permission-button
                             type="link"
                             :hasPermission="record.hasEditPermission"
+                            :tooltip="{
+                                title: $t('Task.index.219743-11')
+                            }"
                             @click="stopUpgrades(record.id)"
                         >
                             <template #icon>
@@ -176,6 +179,9 @@
                         <j-permission-button
                             type="link"
                             :hasPermission="record.hasEditPermission"
+                            :tooltip="{
+                                title: $t('Task.index.219743-12')
+                            }"
                             @click="startUpgrades(record.id)"
                         >
                             <template #icon>
@@ -186,6 +192,9 @@
                     <template v-if="record.state.value === 'failed'">
                       <j-permission-button
                             type="link"
+                            :tooltip="{
+                                title: $t('Task.index.219743-13')
+                            }"
                             :hasPermission="record.hasEditPermission"
                             @click="startUpgrades(record.id)"
                         >
@@ -199,6 +208,9 @@
                       danger
                       :disabled="['waiting', 'processing'].includes(record.state.value)"
                       :hasPermission="record.hasDeletePermission"
+                      :tooltip="{
+                        title: $t('Task.index.219743-14')
+                      }"
                       :popConfirm="{
                         title: $t('Instance.index.133466-3'),
                         onConfirm: () => {
