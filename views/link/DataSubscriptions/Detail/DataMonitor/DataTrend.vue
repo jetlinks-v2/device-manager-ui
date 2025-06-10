@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="header">
-      <div class="title">{{ $t('DataSubscriptions.Detail.index.697323-49') }}</div>
+      <div class="title _title">{{ $t('DataSubscriptions.Detail.index.697323-49') }}</div>
       <JDashboardTimeSelect
           type="hour"
           :quickBtnList="[
@@ -99,5 +99,10 @@ watch(
   display: flex;
   justify-content: space-between;
   align-items: center;
+
+  ._title {
+    flex: 1;
+    min-width: 0;
+  }
 }
 </style>

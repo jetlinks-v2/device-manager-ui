@@ -2422,5 +2422,7 @@
     "DataSubscriptions.Detail.index.697323-54": "Push Details",
     "DataSubscriptions.Detail.index.697323-55": "Add Push URL",
     "DataSubscriptions.Detail.index.697323-56": "Edit Push URL",
-    "DataSubscriptions.Detail.index.697323-57": "Please enter token"
+    "DataSubscriptions.Detail.index.697323-57": "Please enter token",
+    "DataSubscriptions.Detail.index.697323-58": "Number of successful pushes",
+    "DataSubscriptions.Detail.index.697323-59": "Number of failed pushes"
 }
