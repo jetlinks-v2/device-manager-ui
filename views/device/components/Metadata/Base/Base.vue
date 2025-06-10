@@ -446,7 +446,7 @@ import {
   EventModal,
   TagsModal,
 } from "./DetailModal";
-import {Modal, notification} from "ant-design-vue";
+import { Modal } from "ant-design-vue";
 import { watch } from "vue";
 import { useSystemStore, useMenuStore, useAuthStore } from "@/store";
 import { storeToRefs } from "pinia";
@@ -807,12 +807,6 @@ const parentTabsChange = (next?: Function) => {
 const fullToggle = (type: boolean, cb: Function) => {
   cb();
   _isFullscreen.value = !type;
-  notification.destroy()
-  notification.config({
-    getContainer() {
-      return getPopupContainer();
-    },
-  });
 };
 
 const groupEdit = (record: { value: string; label: string, oldValue: string }) => {
@@ -838,12 +832,6 @@ EventEmitter.subscribe(["MetadataTabs"], parentTabsChange);
 
 onUnmounted(() => {
   message.config({
-    getContainer() {
-      return document.body;
-    },
-  });
-  notification.destroy()
-  notification.config({
     getContainer() {
       return document.body;
     },

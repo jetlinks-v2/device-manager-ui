@@ -40,8 +40,8 @@ export const historyCount = (data: Record<string, unknown>) =>
 export const startTask = (id: string, data: string[]) =>
     request.post(`/firmware/upgrade/task/${id}/_start`, data);
 
-export const stopTask = (id: string, data: string[]) =>
-    request.post(`/firmware/upgrade/task/${id}/_stop`, data);
+export const stopTask = (id: string) =>
+    request.post(`/firmware/upgrade/task/${id}/_stop`);
 
 export const startOneTask = (data: string[]) =>
     request.post(`/firmware/upgrade/task/_start`, data);

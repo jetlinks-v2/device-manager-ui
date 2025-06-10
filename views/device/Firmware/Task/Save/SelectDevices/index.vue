@@ -20,11 +20,9 @@
 <script setup>
 // import {useI18n} from 'vue-i18n';
 import Modal from './Modal.vue';
-import {Form} from "ant-design-vue";
 
 // const {t: $t} = useI18n();
 const emit = defineEmits(['update:modelValue', 'change']);
-const formItemContext = Form.useInjectFormItemContext();
 
 const props = defineProps({
   modelValue: {
@@ -50,8 +48,8 @@ const handleOk = (dt, type) => {
   if (type === 'Self') {
     terms = [
       {
-        column: "id",
-        termType: "in",
+        column: "deviceId",
+        termsType: "in",
         value: dt
       }
     ]
@@ -73,10 +71,8 @@ const handleOk = (dt, type) => {
       }
     ]
   }
-
   emit('update:modelValue', terms);
   emit('change', terms);
-  formItemContext.onFieldChange()
   visible.value = false;
 };
 

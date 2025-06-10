@@ -168,7 +168,7 @@
                   <div v-if="getNetworkCurrent.length">
                     <h1>{{ $t("Network.index.041705-13") }}</h1>
                     <p v-for="i in getNetworkCurrent" :key="i.address">
-                      <a-badge :status="getColor(i)" :text="i.address" />
+                      <j-badge :status="getColor(i)" :text="i.address" />
                     </p>
                   </div>
                   <template v-if="!isAgent">
