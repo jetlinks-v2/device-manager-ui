@@ -51,7 +51,7 @@
                   <div>
                     {{ dayjs(item.createTime).format('YYYY-MM-DD HH:mm:ss') }}
                   </div>
-                  <a-dropdown v-if="['firmware', 'product'].includes(type)">
+                  <a-dropdown v-if="type === 'product'">
                     <a-button type="text">
                       <AIcon type="EllipsisOutlined"></AIcon>
                     </a-button>
@@ -60,7 +60,6 @@
                         <a-menu-item>
                           <j-permission-button 
                             type="link" 
-                            :disabled="item.waiting || item.processing"
                             danger block 
                             :popConfirm="{
                               title: $t('Instance.index.133466-3'),
@@ -204,13 +203,12 @@ const stateOptions = [
 
 const colorMap = {
   'waiting': 'primary',
-  'processing': 'warning',
-  'failed': 'error',
-  'success': 'success', 
+  'processing': 'success',
+  'failed':'error',
+  'success':'success'
 }
 
 const iconMap = {
-  'processing': 'ClockCircleFilled',
   'success': 'CheckCircleFilled',
   'canceled': 'PauseCircleFilled',
   'waiting': 'icon-paiduizhong',
@@ -218,10 +216,6 @@ const iconMap = {
 }
 
 const taskState = [
-  {
-    label: $t('Detail.index.805835-20'),
-    value:'canceled', 
-  },
   {
     label: $t('Detail.index.805835-17'),
     value: 'success',
@@ -233,6 +227,10 @@ const taskState = [
   {
     label: $t('Detail.index.805835-19'),
     value:'processing',
+  },
+  {
+    label: $t('Detail.index.805835-20'),
+    value:'canceled', 
   },
   {
     label: $t('Detail.index.805835-21'),
