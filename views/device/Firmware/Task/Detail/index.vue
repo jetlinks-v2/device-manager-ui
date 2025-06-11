@@ -63,22 +63,24 @@
             </div>
             <div class="allOperation">
                 <a-space>
-                    <template v-if="types === 'product'">
+                    <template v-if="['product', 'firmware'].includes(types)">
                       <j-permission-button
                           @click="stopAll"
+                          :disabled="!historyList?.some(item => item.state?.value === 'waiting')"
                           hasPermission="device/Firmware:update"
                           ><template #icon><AIcon type="PauseOutlined" /> </template
                           >{{ $t('Detail.index.805835-1') }}
                       </j-permission-button>
                       <j-permission-button
                           hasPermission="device/Firmware:update"
+                          :disabled="!historyList?.some(item => item.state?.value === 'canceled')"
                           @click="startAll"
                           ><template #icon
                               ><AIcon type="CaretRightOutlined" /> </template
                           >{{ $t('Detail.index.805835-2') }}</j-permission-button
                       >
                       <j-permission-button
-                          v-if="data?.mode?.value === 'push'"
+                          :disabled="!historyList?.some(item => item.state?.value === 'failed')"
                           hasPermission="device/Firmware:update"
                           @click="batchRetry"
                           ><template #icon><AIcon type="RedoOutlined" /> </template>
@@ -94,9 +96,10 @@
                 </a-space>
                 <a-space style="float: right">
                   <j-permission-button
-                      v-if="types === 'product'"
+                      v-if="types === 'firmware'"
                       hasPermission="device/Firmware:update"
                       style="float: right"
+                      :disabled="historyList?.some(item => ['waiting', 'processing'].includes(item.state?.value))"
                       danger
                       :popConfirm="{
                           title: $t('Instance.index.133466-3'),
@@ -109,7 +112,7 @@
                   </j-permission-button>
                   <div v-if="types === 'device'">
                     <AIcon type="InfoCircleOutlined"></AIcon>
-                    已过滤仅展示本设备的升级子任务，不包含其他设备升级情况
+                    {{ $t('Firmware.index.858355-14') }}
                   </div>
                 </a-space>
             </div>
@@ -149,6 +152,7 @@
                             <span>{{ text.text }}</span>
                         </a-space>
                         <span v-if="text.value === 'failed'">：{{ record.errorReason }}</span>
+                        <span v-else-if="!['waiting', 'canceled'].includes(text.value)">：{{ record.progress }}%</span>
                     </span>
                 </template>
                 <template v-if="column.dataIndex === 'version'">
@@ -161,6 +165,9 @@
                         <j-permission-button
                             type="link"
                             :hasPermission="record.hasEditPermission"
+                            :tooltip="{
+                                title: $t('Task.index.219743-11')
+                            }"
                             @click="stopUpgrades(record.id)"
                         >
                             <template #icon>
@@ -172,6 +179,9 @@
                         <j-permission-button
                             type="link"
                             :hasPermission="record.hasEditPermission"
+                            :tooltip="{
+                                title: $t('Task.index.219743-12')
+                            }"
                             @click="startUpgrades(record.id)"
                         >
                             <template #icon>
@@ -182,6 +192,9 @@
                     <template v-if="record.state.value === 'failed'">
                       <j-permission-button
                             type="link"
+                            :tooltip="{
+                                title: $t('Task.index.219743-13')
+                            }"
                             :hasPermission="record.hasEditPermission"
                             @click="startUpgrades(record.id)"
                         >
@@ -193,7 +206,11 @@
                     <j-permission-button
                       type="link"
                       danger
+                      :disabled="['waiting', 'processing'].includes(record.state.value)"
                       :hasPermission="record.hasDeletePermission"
+                      :tooltip="{
+                        title: $t('Task.index.219743-14')
+                      }"
                       :popConfirm="{
                         title: $t('Instance.index.133466-3'),
                         onConfirm: () => {
@@ -321,12 +338,13 @@ const rowClassName = (record, index) => {
 
 const colorMap = {
   'waiting': 'primary',
-  'processing': 'success',
-  'failed':'error',
-  'success':'success'
+  'processing': 'warning',
+  'failed': 'error',
+  'success': 'success',
 }
 
 const iconMap = {
+  'processing': 'ClockCircleFilled',
   'success': 'CheckCircleFilled',
   'canceled': 'PauseCircleFilled',
   'waiting': 'icon-paiduizhong',
@@ -335,9 +353,10 @@ const iconMap = {
 
 const progressStyles = computed(() => {
     const value = {
+        'primary': ((props.data?.waiting || 0) / props.data?.total) * 100,
         'success': ((props.data?.success || 0) / props.data?.total) * 100,
         'error': ((props.data?.failed || 0) / props.data?.total) * 100,
-        'primary': ((props.data?.waiting || 0) / props.data?.total) * 100,
+        'warning': ((props.data?.processing || 0) / props.data?.total) * 100,
     }
     const bgi = Object.keys(value).reduce((prev, key, index) => {
         const v = Object.values(value).splice(0, index + 1).reduce((a, b) => a + b, 0)
@@ -400,7 +419,7 @@ const startAll = async () => {
     //     props.data?.mode?.value === 'push'
     //         ? ['canceled', 'failed']
     //         : ['canceled'];
-    const res = await startTask(props.data.id,  ['canceled', 'failed']);
+    const res = await startTask(props.data.id,  ['canceled']);
     if (res.success) {
         onlyMessage($t('Detail.index.805835-16'), 'success');
         queryHistoryList();
@@ -418,7 +437,7 @@ const batchRetry = async () => {
 };
 //全部停止
 const stopAll = async () => {
-    const res = await stopTask(props.data.id);
+    const res = await stopOneTask(historyList.value.filter(item => item.state.value === 'waiting').map(item => item.id));
     if (res.success) {
         onlyMessage($t('Detail.index.805835-16'), 'success');
         queryHistoryList();

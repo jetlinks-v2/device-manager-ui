@@ -10,7 +10,7 @@
       :options="[
         { label: 'URL', value: 'url' },
         { label: 'Base64', value: 'base64' },
-        // { label: 'binary', value: 'binary' },
+        { label: 'binary', value: 'binary' },
       ]"
       @change="change"
     />

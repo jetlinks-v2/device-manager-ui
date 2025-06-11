@@ -300,7 +300,7 @@ const getProtocol = async () => {
         }
         if (
             permissionStore.hasPermission(
-                'rule-engine/Alarm/Configuration:view',
+                'rule-engine/Alarm/Log:view',
             ) &&
             showThreshold
         ) {
