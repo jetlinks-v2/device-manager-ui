@@ -37,7 +37,7 @@
 import Type from './Type.vue'
 import {PopoverModal} from '../index'
 import {Form} from "ant-design-vue";
-import {getFileType} from "@/modules/device-manager-ui/api/product";
+import {getFileType} from "@device/api/product";
 import JTreeSelect from './JTreeSelect.vue';
 
 const emit = defineEmits(['update:value', 'confirm', 'cancel']);

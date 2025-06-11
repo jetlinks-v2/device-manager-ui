@@ -112,7 +112,7 @@ import {randomString} from "@jetlinks-web/utils";
 import {
   asyncUpdateMetadata,
   updateMetadata
-} from "@/modules/device-manager-ui/views/device/components/Metadata/metadata";
+} from "@device/views/device/components/Metadata/metadata";
 
 const {t: $t} = useI18n();
 
