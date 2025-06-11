@@ -437,7 +437,7 @@ const batchRetry = async () => {
 };
 //全部停止
 const stopAll = async () => {
-    const res = await stopTask(props.data.id, ['waiting']);
+    const res = await stopOneTask(historyList.value.filter(item => item.state.value === 'waiting').map(item => item.id));
     if (res.success) {
         onlyMessage($t('Detail.index.805835-16'), 'success');
         queryHistoryList();
