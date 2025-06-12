@@ -5,7 +5,7 @@
     </template>
     <template #title>
       <div class="header">
-        <div>
+        <div class="icon">
           <AIcon type="icon-shebei"/>
         </div>
         <EditInput :value="data.name" @save="(val) => onSave(val, 'name')">{{ data.name }}</EditInput>
@@ -45,9 +45,17 @@
           </div>
         </div>
         <div class="top-content-item">
+          <div class="top-content-item-label">{{$t('DataSubscriptions.index.411661-7')}}</div>
+          <div class="top-content-item-desc">
+            <j-ellipsis>XXX用户</j-ellipsis>
+          </div>
+        </div>
+        <div class="top-content-item">
           <div class="top-content-item-label">{{$t('DataSubscriptions.index.411661-5')}}</div>
           <div class="top-content-item-desc">
-            <EditInput :value="data.description" @save="(val) => onSave(val, 'description')">{{ data.description || '--' }}</EditInput>
+            <EditInput :value="data.description" @save="(val) => onSave(val, 'description')">
+              <j-ellipsis>{{ data.description || '--' }}</j-ellipsis>
+            </EditInput>
           </div>
         </div>
       </div>
@@ -157,9 +165,20 @@ const onSave = (val, key) => {
   height: 100%;
 }
 
-.header, .top-content {
+.header {
   display: flex;
   align-items: center;
+  gap: 16px;
+
+  .icon {
+    color: @primary-color;
+  }
+
+}
+
+.top-content {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px
 }
 

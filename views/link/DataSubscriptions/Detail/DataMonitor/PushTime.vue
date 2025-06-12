@@ -13,9 +13,15 @@
       <JEcharts :options="echartsOptions"/>
     </div>
     <div class="legend">
-      <div class="item"><div class="icon"></div>低延迟  &lt;100ms <span>34.3%</span></div>
-      <div class="item"><div class="icon icon1"></div>中延迟  100ms-1s <span>34.3%</span></div>
-      <div class="item"><div class="icon icon2"></div>高延迟  &gt;100ms <span>34.3%</span></div>
+      <div class="item">
+        <div class="icon"></div>
+        低延迟 &lt;100ms <span>34.3%</span></div>
+      <div class="item">
+        <div class="icon icon1"></div>
+        中延迟 100ms-1s <span>34.3%</span></div>
+      <div class="item">
+        <div class="icon icon2"></div>
+        高延迟 &gt;100ms <span>34.3%</span></div>
     </div>
   </div>
 </template>
@@ -28,31 +34,28 @@ const echartsOptions = {
   tooltip: {
     trigger: 'item',
   },
-  // legend: {
-  //   top: 'bottom'
-  // },
+  title: {
+    text: '45ms',
+    subtext: '平均耗时',
+    fontSize: 20,
+    left: 'center',
+    top: 'center',
+  },
   series: [
     {
-      name: 'Access From',
       type: 'pie',
       radius: ['40%', '70%'],
-      label: {
-        show: false,
-      },
-      // emphasis: {
-      //   label: {
-      //     show: false,
-      //     // fontSize: 20,
-      //     // fontWeight: 'bold'
-      //   }
-      // },
       labelLine: {
         show: false
       },
+      label: {
+        show: false,
+      },
+      color: ['#0080FE', '#C3C7CB', '#E4E6E7'],
       data: [
-        { value: 1048, name: '低延迟' },
-        { value: 735, name: '中延迟' },
-        { value: 580, name: '高延迟' }
+        {value: 1048, name: '低延迟'},
+        {value: 735, name: '中延迟'},
+        {value: 580, name: '高延迟'}
       ]
     }
   ]

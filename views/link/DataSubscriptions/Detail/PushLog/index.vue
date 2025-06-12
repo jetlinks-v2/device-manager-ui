@@ -1,6 +1,5 @@
 <template>
   <div style="display: flex; flex-direction: column; height: 100%; gap: 16px;">
-
     <div class="top-num">{{ $t('DataSubscriptions.Detail.index.697323-39') }} <span>34346</span></div>
     <div class="list-title">{{ $t('DataSubscriptions.Detail.index.697323-40') }}
       <a-tag>345</a-tag>
@@ -9,7 +8,7 @@
         :columns="columns"
         target="data-subscription-select-device"
         @search="handleSearch"
-        style="padding: 0"
+        style="padding: 0; margin: 0"
         type="simple"
     />
     <div style="flex: 1; min-height: 0">

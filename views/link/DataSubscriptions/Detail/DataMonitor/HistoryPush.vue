@@ -25,50 +25,21 @@ import {useI18n} from "vue-i18n";
 
 const {t: $t} = useI18n();
 const option = {
-  grid: {
-    top: '10px',
-    bottom: '10px',
-    left: '10px',
-    right: '10px',
-  },
   series: [{
     type: 'liquidFill',
-    data: [ {
-      value: 0.8,
-      itemStyle: {
-        color: 'rgba(22, 119, 255)',
-        opacity: 0.4
-      },
-    }, {
-      value: 0.6,
-      itemStyle: {
-        color: 'rgba(22, 119, 255)',
-        opacity: 0.6
-      }
-    }, {
-      value: 0.4,
-      itemStyle: {
-        color: 'rgba(22, 119, 255)',
-        opacity: 0.8
-      }
-    }],
+    data: [0.8, 0.6, 0.4],
+    color: ['#E6F4FF', '#91CAFF', '#1677FF'],
+    itemStyle: {
+      shadowBlur: 0
+    },
     label: {
       show: true,
-      color: '#294D99',
-      insideColor: '#fff',
-      fontSize: 30,
-      // fontWeight: 'bold',
-      // align: 'center',
-      // baseline: 'middle',
-      // position: 'inside',
-      // formatter: '{a}\n{b}\nValue: {c}',
+      fontSize: 20,
+      formatter: '97.52%\n\n推送成功率',
     },
     backgroundStyle: {
-      color: 'white'
+      color: 'rgba(22, 119, 255, 0)',
     },
-    animationDuration: 0,
-    animationDurationUpdate: 2000,
-    animationEasingUpdate: 'cubicOut',
     outline: {
       show: true,
       borderDistance: 10,
