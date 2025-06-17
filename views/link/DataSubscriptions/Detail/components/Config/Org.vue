@@ -1,5 +1,5 @@
 <template>
-  <a-alert :message="$t('Save.SelectDevices.386303-18', [deviceCount])"/>
+  <!--  <a-alert :message="$t('Save.SelectDevices.386303-18', [deviceCount])"/>-->
   <pro-search
       :columns="columns"
       @search="handleSearch"
@@ -14,9 +14,10 @@
         :request="getTreeData_api"
         :bodyStyle="{padding: 0}"
         :params="params"
-        :alertShow="false"
         :rowSelection="{
           selectedRowKeys: _selectedRowKeys,
+          onSelect: onSelectChange,
+          onSelectAll: onSelectAllChange,
           onChange: onChange,
       }"
     />
@@ -28,11 +29,12 @@ import {getTreeData_api} from "@/api/system/department";
 import {useI18n} from "vue-i18n";
 import {onlyMessage} from "@jetlinks-web/utils";
 import {queryDetailList} from "@device/api/firmware";
+import {map} from "lodash-es";
 
 const props = defineProps({
-  data: {
-    type: Object,
-    default: () => ({})
+  value: {
+    type: Array,
+    default: () => []
   },
 });
 
@@ -55,66 +57,68 @@ const columns = [
   },
 ]
 const _selectedRowKeys = ref([])
-const deviceCount = ref(0)
+const _selectedRowRows = ref([])
 const params = ref({});
 const handleSearch = (e) => {
   params.value = e
 }
 
-const onChange = (e) => {
-  _selectedRowKeys.value = e
-  deviceCount.value = 0
-  // 查询组织下面的设备数量
-  if (e.length > 0) {
-    // queryDetailList({
-    //   terms: [
-    //     {
-    //       column: "id$dim-assets",
-    //       value: JSON.stringify({
-    //         assetType: 'device',
-    //         targets: [
-    //           {
-    //             type: 'org',
-    //             id: e?.[0],
-    //           },
-    //         ],
-    //       })
-    //     },
-    //     {
-    //       column: 'productId',
-    //       value: props.productId,
-    //       type: 'and',
-    //     }
-    //   ]
-    // }, {permission: 'save'}).then(res => {
-    //   if (res.success) {
-    //     deviceCount.value = res?.result?.total || 0
-    //   }
-    // })
+const onSelectChange = (record, selected, selectedRows) => {
+  if (selected) {
+    _selectedRowRows.value = selectedRows
+  } else {
+    _selectedRowRows.value = _selectedRowRows.value.filter((item) => item.id !== record?.id);
   }
-}
+  _selectedRowKeys.value = map(_selectedRowRows.value, 'id')
+};
 
-watch(
-    () => props.data,
-    (val) => {
-      // if(val?.[0]?.value){
-      //   const id = JSON.parse(val?.[0]?.value || '{}')?.targets?.[0]?.id
-      //   _selectedRowKeys.value = id ? [id] : []
-      // }
-    },
-    {
-      immediate: true,
-      deep: true,
-    }
-);
+const onSelectAllChange = (selected, selectedRows, changeRows) => {
+  if(selected){
+    _selectedRowRows.value = [..._selectedRowRows.value, ...selectedRows]
+  } else {
+    _selectedRowRows.value = _selectedRowRows.value.filter((item) => !map(changeRows, 'id').includes(item.id))
+  }
+  _selectedRowKeys.value = map(_selectedRowRows.value, 'id')
+};
+
+
+const onChange = (selectedRowKeys) => {
+  if (selectedRowKeys.length === 0) {
+    _selectedRowKeys.value = [];
+    _selectedRowRows.value = [];
+  }
+};
+
+watch(() => props.value, (val) => {
+  _selectedRowKeys.value = val
+}, {
+  immediate: true,
+  deep: true,
+})
 
 const onSave = () => {
   return new Promise((resolve) => {
-    // 判断设备的数量
-    if (deviceCount.value > 0) {
-      resolve(_selectedRowKeys.value?.[0]);
+    if (_selectedRowKeys.value.length > 0) {
+      resolve({
+        terms: [{
+          column: "id$dim-assets",
+          value: JSON.stringify({
+            assetType: 'device',
+            targets: [
+              {
+                type: 'org',
+                id: _selectedRowKeys.value
+              },
+            ],
+          })
+        }],
+        options: {
+          orgName: ''
+        }
+      })
     } else {
-      onlyMessage($t('Save.SelectDevices.386303-19'), 'error')
+      onlyMessage($t('DataSubscriptions.Detail.index.697323-60'), 'error')
+      resolve(false)
     }
   });
 };

@@ -1,10 +1,11 @@
 <template>
   <div class="all-content">
-    <img :src="dataSubscriptions.allIconImg" :width="126" />
+    <img :src="dataSubscriptions.allIconImg" :width="126"/>
     <div class="desc">
-      {{ data.type !== 'device' ?
-        $t('DataSubscriptions.Detail.index.697323-30') :
-        $t('DataSubscriptions.Detail.index.697323-31')
+      {{
+        data.type !== 'device' ?
+            $t('DataSubscriptions.Detail.index.697323-30') :
+            $t('DataSubscriptions.Detail.index.697323-31')
       }}
     </div>
   </div>
@@ -13,6 +14,7 @@
 <script setup>
 import {dataSubscriptions} from '@device/assets/data-subscriptions'
 import {useI18n} from "vue-i18n";
+import {onlyMessage} from "@jetlinks-web/utils";
 
 const props = defineProps({
   data: {
@@ -21,6 +23,16 @@ const props = defineProps({
   },
 })
 const {t: $t} = useI18n();
+
+const onSave = () => {
+  return new Promise((resolve) => {
+    resolve({
+      terms: []
+    })
+  });
+};
+
+defineExpose({onSave})
 </script>
 
 <style lang="less" scoped>
@@ -35,6 +47,7 @@ const {t: $t} = useI18n();
     margin-bottom: 16px;
   }
 }
+
 .desc {
   color: #777777;
   width: 40%;

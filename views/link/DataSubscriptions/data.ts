@@ -1,8 +1,9 @@
 import {dataSubscriptions} from '@device/assets/data-subscriptions'
 import i18n from "@/locales";
+
 const $t = i18n.global.t
 export const subscriptionMode = {
-    device: [
+    "device": [
         {
             label: $t('DataSubscriptions.Detail.index.697323-10'),
             value: '_Self',
@@ -28,7 +29,7 @@ export const subscriptionMode = {
             img: dataSubscriptions.productImg,
         },
     ],
-    alarm: [
+    "alarm": [
         {
             label: $t('DataSubscriptions.Detail.index.697323-12'),
             value: 'All',
@@ -50,10 +51,10 @@ export const subscriptionMode = {
     ]
 }
 
-export const getSubscriptionModeDesc = (type: string, name: string, num: number) => {
+export const getSubscriptionModeDesc = (provider: string, type: string, name: string, num: number) => {
     const obj = {
         '_Self': $t('DataSubscriptions.Detail.index.697323-23'),
-        'DeviceAll': $t('DataSubscriptions.Detail.index.697323-24'),
+        'All': $t('DataSubscriptions.Detail.index.697323-24'),
         'AlarmAll': $t('DataSubscriptions.Detail.index.697323-25'),
         'Org': $t('DataSubscriptions.Detail.index.697323-26', [name, num]),
         'Product': $t('DataSubscriptions.Detail.index.697323-27', [name, num]),
@@ -61,5 +62,18 @@ export const getSubscriptionModeDesc = (type: string, name: string, num: number)
         'AlarmLevel': $t('DataSubscriptions.Detail.index.697323-29', [name, num]),
     }
 
+    if (provider === 'alarm' && type === 'All') {
+        return obj.AlarmAll
+    }
     return obj?.[type] || '--'
+}
+
+export const providerIcon = {
+    'device': 'icon-shebei',
+    'alarm': 'AlertOutlined',
+}
+
+export const providerImg = {
+    'device': dataSubscriptions.deviceImg,
+    'alarm': dataSubscriptions.alarmImg
 }

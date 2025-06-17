@@ -14,6 +14,7 @@
         :request="query"
         :defaultParams="{
             sorts: [{ name: 'createTime', order: 'desc' }, { name: 'name', order: 'desc'}],
+            terms: data.configuration.terms
         }"
         :params="params"
         :bodyStyle="{padding: 0}"

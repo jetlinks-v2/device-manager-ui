@@ -101,14 +101,15 @@ import {onlyMessage} from "@jetlinks-web/utils";
 import {device} from "@device/assets";
 import {query} from "@device/api/instance";
 import {queryNoPagingPost} from "@/modules/device-manager-ui/api/product";
+import {map} from "lodash-es";
 
 const {t: $t} = useI18n();
 const emit = defineEmits(['update:modelValue', 'change']);
 
 const props = defineProps({
-  data: {
-    type: Object,
-    default: () => ({})
+  value: {
+    type: Array,
+    default: () => []
   },
 });
 
@@ -192,35 +193,25 @@ const columns = [
 
 const handleClick = (dt) => {
   if (_selectedRowKeys.value.includes(dt.id)) {
-    const _index = _selectedRowKeys.value.findIndex((i) => i === dt.id);
-    _selectedRowKeys.value.splice(_index, 1);
+    _selectedRowKeys.value = _selectedRowKeys.value.filter((item) => item !== dt?.id);
   } else {
     _selectedRowKeys.value = [..._selectedRowKeys.value, dt.id];
   }
 }
-
-const getSelectedRowsKey = (selectedRows) => {
-  return selectedRows.map((item) => item?.id).filter((i) => !!i);
-}
-
-const getSetRowKey = (selectedRows) => {
-  return new Set([..._selectedRowKeys.value, ...getSelectedRowsKey(selectedRows)])
-};
 const onSelectChange = (record, selected, selectedRows) => {
   if (selected) {
-    _selectedRowKeys.value = [...getSetRowKey(selectedRows)]
+    _selectedRowKeys.value = map(selectedRows, 'id')
   } else {
     _selectedRowKeys.value = _selectedRowKeys.value.filter((item) => item !== record?.id);
   }
 };
 
 const onSelectAllChange = (selected, selectedRows, changeRows) => {
-  const unRowsKeys = getSelectedRowsKey(changeRows);
-  _selectedRowKeys.value = selected
-      ? [...getSetRowKey(selectedRows)]
-      : _selectedRowKeys.value
-          .concat(unRowsKeys)
-          .filter((item) => !unRowsKeys.includes(item));
+  if (selected) {
+    _selectedRowKeys.value = [..._selectedRowKeys.value, ...map(selectedRows, 'id')]
+  } else {
+    _selectedRowKeys.value = _selectedRowKeys.value.filter((item) => !map(changeRows, 'id').includes(item))
+  }
 };
 
 
@@ -238,13 +229,28 @@ const onSave = () => {
   return new Promise((resolve) => {
     // 判断设备数据，并返回
     if (_selectedRowKeys.value.length > 0) {
-      resolve(_selectedRowKeys.value)
+      resolve({
+        terms: [
+          {
+            column: 'id',
+            value: _selectedRowKeys.value,
+            termType: 'in',
+          }
+        ]
+      })
     } else {
       onlyMessage($t('Save.SelectDevices.386303-19'), 'error')
       resolve(false)
     }
   });
 };
+
+watch(() => props.value, (val) => {
+  _selectedRowKeys.value = val
+}, {
+  immediate: true,
+  deep: true,
+})
 
 defineExpose({onSave})
 </script>

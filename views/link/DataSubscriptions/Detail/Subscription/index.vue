@@ -13,57 +13,77 @@
       <a-space>
         <AIcon style="color: #1677FF" type="InfoCircleFilled"/>
         <div style="color: #777777;">{{ $t('DataSubscriptions.Detail.index.697323-8') }}</div>
-        <div>{{'自定义'}}</div>
+        <div>{{ _subscriptionMode?.label || '--' }}</div>
         <a-button type="link" @click="onConfig">{{ $t('DataSubscriptions.Detail.index.697323-9') }}</a-button>
       </a-space>
-      <div>该模式下仅推送下列设备数据，，设备列表固定，不随设备增减自动更新，需手动维护</div>
+      <div>{{ description || '--' }}</div>
     </div>
-    <div v-if="data.type !== 'device'" style="flex: 1; min-height: 0; display: flex; flex-direction: column">
-      <SelectDevice :data="data" />
+    <div v-if="data.provider === 'device'" style="flex: 1; min-height: 0; display: flex; flex-direction: column">
+      <SelectDevice :data="data"/>
     </div>
   </div>
-  <Config v-if="visible" @close="visible = false" />
+  <Config
+      v-if="visible"
+      @close="visible = false"
+      @save="onSave"
+      :data="data"
+      :subscriptionMode="_configuration.options?.subscriptionMode"
+      :termsValue="termsValue"
+  />
 </template>
 
 <script setup>
 import Config from '../components/Config/index.vue';
 import SelectDevice from './SelectDevice.vue'
 import {useI18n} from "vue-i18n";
+import {getSubscriptionModeDesc, subscriptionMode} from "@/modules/device-manager-ui/views/link/DataSubscriptions/data";
 
 const props = defineProps({
   data: {
     type: Object,
-    default: () => ({type: 'device'}),
+    default: () => ({provider: 'device'}),
   },
 })
+const emits = defineEmits(['refresh'])
 
-const isEmpty = ref(false)
 const visible = ref(false)
 
 const {t: $t} = useI18n();
 
-const description = [
-  {
-    key: '_self',
-    label: '自定义',
-    desc: '该模式下仅推送下列设备数据，设备列表固定，不随设备增减自动更新，需手动维护'
-  },
-  {
-    key: 'all',
-    label: '全部',
-    desc: '该模式下推送当前用户数据权限范围内所有设备数据，当新增/删除设备时，订阅设备列表实时同步更新'
-  },
-  {
-    key: 'org',
-    label: '按组织',
-    desc: '该模式下推送已选择 {组织节点名称} 共 X 个组织下的全部设备数据，当组织内新增/移除设备时，订阅设备列表实时同步更新'
-  },
-  {
-    key: 'product',
-    label: '按产品',
-    desc: '该模式下推送已选择  {产品名称}  共 X 个产品下的全部设备数据，当新增/删除设备时，订阅设备列表实时同步更新'
+const _configuration = computed(() => {
+  return props.data.configuration || {}
+})
+
+const isEmpty = computed(() => {
+  return !_configuration.value?.options?.subscriptionMode
+})
+
+const _subscriptionMode = computed(() => {
+  return subscriptionMode[props.data.provider || "device"].find(item => item.value === _configuration.value.options?.subscriptionMode)
+})
+
+const termsValue = computed(() => {
+  const _terms = _configuration.value.terms
+  const _mode = _configuration.value.options?.subscriptionMode
+  if (!!_mode) {
+    if (['_Self', 'Product', 'AlarmType', 'AlarmLevel'].includes(_mode)) { // 自定义
+      return _terms?.[0]?.value || []
+    }
+    if (_mode === 'Org') {
+      return JSON.parse(_terms?.[0]?.value || '{}').targets?.[0]?.id || []
+    }
   }
-]
+  return []
+})
+
+const description = computed(() => {
+  return getSubscriptionModeDesc(props.data.provider, _subscriptionMode.value.value, _configuration.value?.options?.productName, termsValue.value.length)
+})
+
+const onSave = () => {
+  visible.value = false
+  emits('refresh')
+}
 
 const onConfig = () => {
   visible.value = true

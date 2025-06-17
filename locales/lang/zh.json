@@ -2426,5 +2426,6 @@
     "DataSubscriptions.Detail.index.697323-56": "编辑推送地址",
     "DataSubscriptions.Detail.index.697323-57": "请输入token",
     "DataSubscriptions.Detail.index.697323-58": "推送成功数",
-    "DataSubscriptions.Detail.index.697323-59": "推送失败数"
+    "DataSubscriptions.Detail.index.697323-59": "推送失败数",
+    "DataSubscriptions.Detail.index.697323-60": "至少选择一个数据"
 }

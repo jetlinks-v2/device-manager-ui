@@ -1,11 +1,11 @@
 <template>
   <a-drawer :width="500" visible :title="$t('DataSubscriptions.Save.index.818621-0')" @close="emits('close')">
     <template v-if="!selectType">
-      <div v-for="item in list" :key="item.id" class="card-item" @click="onSelected(item.id)"
+      <div v-for="item in list" :key="item.provider" class="card-item" @click="onSelected(item.provider)"
            :class="{disabled: item.disabled}">
         <div class="card-item-left">
           <h3>{{ item.name }}</h3>
-          <p>{{ item.desc }}</p>
+          <p>{{ item.description }}</p>
         </div>
         <div class="card-item-img">
           <img :src="item.img"/>
@@ -16,7 +16,7 @@
       <div class="alert">
         <AIcon type="InfoCircleFilled" style="color: #2F54EB;"/>
         <div>{{ $t('DataSubscriptions.Save.index.818621-1') }}</div>
-        <div style="color: #1A1A1A">{{ list.find(i => i.id === selectType)?.name}}</div>
+        <div style="color: #1A1A1A">{{ list.find(i => i.provider === selectType)?.name }}</div>
         <a-button type="link" @click="onReload">{{ $t('DataSubscriptions.Save.index.818621-2') }}</a-button>
       </div>
       <a-form layout="vertical" :model="modelRef" ref="formRef">
@@ -41,7 +41,7 @@
         </a-form-item>
         <a-form-item
             :label="$t('Save.index.902471-12')"
-            name="describe"
+            name="description"
             :rules="[
                 {
                     max: 200,
@@ -50,7 +50,7 @@
             ]"
         >
           <a-textarea
-              v-model:value="modelRef.describe"
+              v-model:value="modelRef.description"
               :placeholder="$t('Save.index.902471-14')"
               showCount
               :maxlength="200"
@@ -70,42 +70,27 @@
 <script setup>
 import {dataSubscriptions} from '@device/assets/data-subscriptions';
 import {useI18n} from "vue-i18n";
+import {queryProviders, save} from "@device/api/link/dataSubscriptions";
+import {providerImg} from "../data";
+import {onlyMessage} from "@jetlinks-web/utils";
 
 const props = defineProps({})
 const emits = defineEmits(['close', 'save'])
 
 const {t: $t} = useI18n();
-const list = [
-  {
-    id: 'device',
-    name: $t('DataSubscriptions.Save.index.818621-3'),
-    desc: $t('DataSubscriptions.Save.index.818621-4'),
-    img: dataSubscriptions.deviceImg,
-  },
-  {
-    id: 'alarm',
-    name: $t('DataSubscriptions.Save.index.818621-5'),
-    desc: $t('DataSubscriptions.Save.index.818621-6'),
-    img: dataSubscriptions.alarmImg,
-  },
-  {
-    id: 'more',
-    name: $t('DataSubscriptions.Save.index.818621-7'),
-    desc: $t('DataSubscriptions.Save.index.818621-8'),
-    img: dataSubscriptions.moreImg,
-    disabled: true
-  }
-]
+const list = ref([])
 const selectType = ref()
 const formRef = ref()
 const loading = ref()
 
 const modelRef = reactive({
   name: undefined,
-  describe: '',
+  description: undefined,
+  providerInfo: undefined,
+  provider: undefined
 })
 const onSelected = (id) => {
-  if(id !== 'more') return
+  if (id === 'more') return
   selectType.value = id
 }
 
@@ -113,11 +98,40 @@ const onReload = () => {
   selectType.value = undefined
 }
 
-const onSave = () => {
-  formRef.value.validate(async (dt) => {
-    console.log(dt)
-  })
+const onSave = async () => {
+  const resp = await formRef.value.validate()
+  if (resp) {
+    const data = {
+      ...modelRef,
+      provider: selectType.value,
+    }
+    loading.value = true
+    const response = await save(data).finally(() => {
+      loading.value = false
+    })
+    if(response.success) {
+      emits('save')
+      onlyMessage($t('Product.index.660348-18'))
+    }
+  }
 }
+
+onMounted(() => {
+  queryProviders().then(resp => {
+    if (resp.success) {
+      list.value = resp.result.map(item => ({
+        ...item, img: providerImg[item.provider]
+      }))
+      list.value.push({
+        provider: 'more',
+        name: $t('DataSubscriptions.Save.index.818621-7'),
+        description: $t('DataSubscriptions.Save.index.818621-8'),
+        img: dataSubscriptions.moreImg,
+        disabled: true
+      })
+    }
+  })
+})
 </script>
 
 <style lang="less" scoped>

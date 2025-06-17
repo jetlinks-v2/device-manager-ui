@@ -9,7 +9,7 @@
       <JProTable
           ref="instanceRef"
           :columns="columns"
-          :request="queryPage"
+          :request="query"
           mode="TABLE"
           :defaultParams="{
                     sorts: [{ name: 'createTime', order: 'desc' }],
@@ -33,8 +33,13 @@
             {{ slotProps.name }}
           </div>
         </template>
-        <template #type="slotProps">
-          123
+        <template #state="slotProps">
+          <a-tag :color="slotProps.state.value === 'enabled' ? 'success' : 'error'">{{slotProps.state?.text}}</a-tag>
+        </template>
+        <template #provider="slotProps">
+          <div class="provider-box">
+            <AIcon :type="providerIcon[slotProps.provider]" />{{ slotProps.providerInfo?.name }}
+          </div>
         </template>
         <template #action="slotProps">
           <a-space :size="16">
@@ -45,19 +50,15 @@
               <j-permission-button
                   :disabled="i.disabled"
                   :popConfirm="i.popConfirm"
-                  :tooltip="{
-                                    ...i.tooltip,
-                                }"
+                  :tooltip="i.tooltip"
                   @click="i.onClick"
                   type="link"
                   :danger="i.key === 'delete'"
                   style="padding: 0 5px"
-                  :hasPermission="'link/plugin:' + i.key"
+                  :hasPermission="true"
               >
-                <template #icon
-                >
-                  <AIcon :type="i.icon"
-                  />
+                <template #icon>
+                  <AIcon :type="i.icon" />
                 </template>
               </j-permission-button>
             </template>
@@ -66,15 +67,17 @@
       </JProTable>
     </FullPage>
   </j-page-container>
-  <Save v-if="saveData.visible" @close="saveData.visible = false"/>
-  <Detail :data="detailData.data" v-if="detailData.visible" @close="detailData.visible = false"/>
+  <Save v-if="saveData.visible" @close="saveData.visible = false" @save="onSave"/>
+  <Detail :data="detailData.data" @refresh="onRefresh" v-if="detailData.visible" @close="detailData.visible = false"/>
 </template>
 
 <script setup name="DataSubscriptions">
-import {queryPage, removeFn, getTypes} from '@device/api/link/plugin';
+import {query, remove, queryProviders} from '@device/api/link/dataSubscriptions';
 import {useI18n} from 'vue-i18n';
 import Save from './Save/index.vue'
 import Detail from './Detail/index.vue'
+import {providerIcon} from "./data";
+import {onlyMessage} from "@jetlinks-web/utils";
 
 const {t: $t} = useI18n();
 const params = ref({});
@@ -95,28 +98,51 @@ const columns = [
     key: 'name',
     ellipsis: true,
     search: {
-      type: 'input',
+      type: 'string',
     },
     scopedSlots: true,
   },
   {
     title: $t('DataSubscriptions.index.411661-2'),
-    dataIndex: 'version',
-    key: 'version',
-    ellipsis: true,
+    dataIndex: 'state',
+    key: 'state',
+    scopedSlots: true,
+    search: {
+      type: 'select',
+      options: [
+        {
+          label: $t('AccessConfig.index.764793-5'),
+          value: 'disabled',
+        },
+        {
+          label: $t('Type.index.196842-12'),
+          value: 'enabled',
+        },
+      ],
+    },
   },
   {
     title: $t('DataSubscriptions.index.411661-3'),
-    dataIndex: 'type',
-    key: 'type',
+    dataIndex: 'provider',
+    key: 'provider',
     ellipsis: true,
     scopedSlots: true,
+    search: {
+      type: 'select',
+      options: async () => {
+        const res = await queryProviders();
+        return res.result.map((item) => ({ ...item, label: item.name, value: item.provider }));
+      },
+    },
   },
   {
     title: $t('DataSubscriptions.index.411661-4'),
     dataIndex: 'filename',
     key: 'filename',
     ellipsis: true,
+    search: {
+      type: 'string',
+    },
   },
   {
     title: $t('DataSubscriptions.index.411661-5'),
@@ -149,43 +175,66 @@ const viewDetail = (data) => {
   detailData.data = data;
 }
 
+const onRefresh = () => {
+  instanceRef.value.reload?.();
+}
+
+const onSave = () => {
+  saveData.visible = false;
+  onRefresh()
+}
+
 const getActions = (data) => {
   if (!data) {
     return [];
   }
+  const state = data.state.value;
+  const stateText = state === 'enabled' ? $t('AccessConfig.index.764793-5') : $t('AccessConfig.index.764793-9');
   return [
     {
       key: 'action',
-      text: $t('plugin.index.293829-8'),
+      text: stateText,
       tooltip: {
-        title: (data?.configuration?.sourceId || data?.configuration?.autoCreate) ? $t('plugin.index.293829-14', [$t('plugin.index.293829-8')]) : $t('plugin.index.293829-8'),
+        title: stateText,
       },
-      disabled: data?.configuration?.sourceId || data?.configuration?.autoCreate,
-      icon: 'EditOutlined',
-      onClick: () => {
-
+      icon: state === 'enabled' ? 'StopOutlined' : 'CheckCircleOutlined',
+      popConfirm: {
+        title: $t('AccessConfig.index.764793-11', [stateText]),
+        onConfirm: () => {
+          // let response =
+          //     state === 'enabled'
+          //         ? undeploy(data.id)
+          //         : deploy(data.id);
+          // response.then((res) => {
+          //   if (res.success) {
+          //     onlyMessage($t('AccessConfig.index.764793-12'), 'success');
+          //     tableRef.value?.reload();
+          //   }
+          // });
+          // return response;
+        },
       },
     },
     {
       key: 'delete',
-      text: $t('plugin.index.293829-9'),
+      text: $t('AccessConfig.index.764793-13'),
+      disabled: state === 'enabled',
       tooltip: {
-        title: (data?.configuration?.sourceId || data?.configuration?.autoCreate) ? $t('plugin.index.293829-14', [$t('plugin.index.293829-9')]) : $t('plugin.index.293829-9'),
+        title: state === 'enabled' ? $t('AccessConfig.index.764793-14') : $t('AccessConfig.index.764793-13'),
       },
-      disabled: data?.configuration?.sourceId || data?.configuration?.autoCreate,
       popConfirm: {
-        title: $t('plugin.index.293829-10'),
+        title: $t('AccessConfig.index.764793-15'),
         onConfirm: () => {
-          // const response = removeFn(data.id);
-          // response.then((resp) => {
-          //   if (resp.status === 200) {
-          //     onlyMessage($t('plugin.index.293829-11'));
-          //     instanceRef.value?.reload();
-          //   } else {
-          //     onlyMessage(resp?.message || $t('plugin.index.293829-12'), 'error');
-          //   }
-          // });
-          // return response;
+          const response = remove(data.id);
+          response.then((res) => {
+            if (res.success) {
+              onlyMessage($t('AccessConfig.index.764793-12'), 'success');
+              tableRef.value.reload();
+            } else {
+              onlyMessage(res?.message, 'error');
+            }
+          });
+          return response
         },
       },
       icon: 'DeleteOutlined',
@@ -200,5 +249,16 @@ const getActions = (data) => {
     color: @primary-color;
     cursor: pointer;
   }
+}
+
+.provider-box {
+  background-color: #F5F5F5;
+  padding: 8px 24px;
+  border-radius: 51px;
+  gap: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 124px;
 }
 </style>

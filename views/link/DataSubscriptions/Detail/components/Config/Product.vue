@@ -1,115 +1,123 @@
 <template>
-    <pro-search
+  <pro-search
+      :columns="columns"
+      target="product-manage"
+      @search="handleSearch"
+      style="padding: 0"
+  />
+  <div style="flex: 1; min-height: 0">
+    <JProTable
         :columns="columns"
-        target="product-manage"
-        @search="handleSearch"
-        style="padding: 0"
-    />
-    <div style="flex: 1; min-height: 0">
-      <JProTable
-          :columns="columns"
-          :request="queryProductList"
-          ref="tableRef"
-          :defaultParams="{
+        :request="queryProductList"
+        ref="tableRef"
+        :defaultParams="{
             sorts: [{ name: 'createTime', order: 'desc' }],
           }"
-          modeValue="TABLE"
-          :params="params"
-          :gridColumns="[3]"
-          :bodyStyle="{padding: 0}"
-          :rowSelection="{
+        modeValue="TABLE"
+        :params="params"
+        :gridColumns="[3]"
+        :bodyStyle="{padding: 0}"
+        :rowSelection="{
             selectedRowKeys: _selectedRowKeys,
             onSelect: onSelectChange,
             onSelectAll: onSelectAllChange,
             onChange: onChange,
           }"
-      >
-        <template #deviceType="slotProps">
-          <div>{{ slotProps.deviceType.text }}</div>
-        </template>
-        <template #card="slotProps">
-          <CardBox
-              :value="slotProps"
-              v-bind="slotProps"
-              :active="_selectedRowKeys.includes(slotProps.id)"
-              :status="slotProps.state"
-              @click="handleClick(slotProps)"
-              :statusText="
+    >
+      <template #deviceType="slotProps">
+        <div>{{ slotProps.deviceType.text }}</div>
+      </template>
+      <template #card="slotProps">
+        <CardBox
+            :value="slotProps"
+            v-bind="slotProps"
+            :active="_selectedRowKeys.includes(slotProps.id)"
+            :status="slotProps.state"
+            @click="handleClick(slotProps)"
+            :statusText="
               slotProps.state === 1
                 ? $t('Product.index.660348-2')
                 : $t('Product.index.660348-3')
             "
-              :statusNames="{
+            :statusNames="{
                 1: 'processing',
                 0: 'error',
               }"
-          >
-            <template #img>
-              <slot name="img">
-                <img
-                    :src="slotProps.photoUrl || device.deviceProduct"
-                    class="productImg"
-                />
-              </slot>
-            </template>
-            <template #content>
-              <j-ellipsis style="width: calc(100% - 100px); margin-bottom: 18px"
-              ><span style="font-weight: 600; font-size: 16px">
+        >
+          <template #img>
+            <slot name="img">
+              <img
+                  :src="slotProps.photoUrl || device.deviceProduct"
+                  class="productImg"
+              />
+            </slot>
+          </template>
+          <template #content>
+            <j-ellipsis style="width: calc(100% - 100px); margin-bottom: 18px"
+            ><span style="font-weight: 600; font-size: 16px">
                   {{ slotProps.name }}
                 </span></j-ellipsis
-              >
-              <a-row>
-                <a-col :span="12">
-                  <div class="card-item-content-text">
-                    {{ $t("Product.index.660348-4") }}
+            >
+            <a-row>
+              <a-col :span="12">
+                <div class="card-item-content-text">
+                  {{ $t("Product.index.660348-4") }}
+                </div>
+                <div>{{ slotProps?.deviceType?.text }}</div>
+              </a-col>
+              <a-col :span="12">
+                <div class="card-item-content-text">
+                  {{ $t("Product.index.660348-5") }}
+                </div>
+                <j-ellipsis>
+                  <div>
+                    {{
+                      slotProps?.accessName
+                          ? slotProps?.accessName
+                          : $t("Product.index.660348-6")
+                    }}
                   </div>
-                  <div>{{ slotProps?.deviceType?.text }}</div>
-                </a-col>
-                <a-col :span="12">
-                  <div class="card-item-content-text">
-                    {{ $t("Product.index.660348-5") }}
-                  </div>
-                  <j-ellipsis>
-                    <div>
-                      {{
-                        slotProps?.accessName
-                            ? slotProps?.accessName
-                            : $t("Product.index.660348-6")
-                      }}
-                    </div>
-                  </j-ellipsis>
-                </a-col>
-              </a-row>
-            </template>
-          </CardBox>
-        </template>
-        <template #state="slotProps">
-          <j-badge-status
-              :text="
+                </j-ellipsis>
+              </a-col>
+            </a-row>
+          </template>
+        </CardBox>
+      </template>
+      <template #state="slotProps">
+        <j-badge-status
+            :text="
               slotProps.state === 1
                 ? $t('Product.index.660348-2')
                 : $t('Product.index.660348-3')
             "
-              :status="slotProps.state"
-              :statusNames="{
+            :status="slotProps.state"
+            :statusNames="{
               1: 'processing',
               0: 'error',
             }"
-          />
-        </template>
-      </JProTable>
-    </div>
+        />
+      </template>
+    </JProTable>
+  </div>
 </template>
 
 <script setup>
 import {
   queryProductList,
 } from "@device/api/product";
-import { useAuthStore } from "@/store";
-import { device } from "@device/assets";
-import { useI18n } from "vue-i18n";
+import {device} from "@device/assets";
+import {useI18n} from "vue-i18n";
+import {onlyMessage} from "@jetlinks-web/utils";
+import {map} from "lodash-es";
 
-const { t: $t } = useI18n();
+const props = defineProps({
+  value: {
+    type: Array,
+    default: () => []
+  },
+});
+
+const {t: $t} = useI18n();
 
 const params = ref({});
 const tableRef = ref({});
@@ -159,59 +167,79 @@ const columns = [
     ellipsis: true,
   },
 ];
-const permission = useAuthStore().hasPermission(`device/Product:import`);
 const _selectedRowKeys = ref([]);
+const _selectedRowRows = ref([]);
 
 const handleClick = (dt) => {
   if (_selectedRowKeys.value.includes(dt.id)) {
-    const _index = _selectedRowKeys.value.findIndex((i) => i === dt.id);
-    _selectedRowKeys.value.splice(_index, 1);
+    _selectedRowRows.value = _selectedRowRows.value.filter((item) => item.id !== dt?.id);
   } else {
-    _selectedRowKeys.value = [..._selectedRowKeys.value, dt.id];
+    _selectedRowRows.value = [..._selectedRowRows.value, dt];
   }
+  _selectedRowKeys.value = map(_selectedRowRows.value, 'id')
 }
 
-const getSelectedRowsKey = (selectedRows) => {
-  return selectedRows.map((item) => item?.id).filter((i) => !!i);
-}
-
-const getSetRowKey = (selectedRows) => {
-  return new Set([..._selectedRowKeys.value, ...getSelectedRowsKey(selectedRows)])
-};
 const onSelectChange = (record, selected, selectedRows) => {
   if (selected) {
-    _selectedRowKeys.value = [...getSetRowKey(selectedRows)]
+    _selectedRowRows.value = selectedRows
   } else {
-    _selectedRowKeys.value = _selectedRowKeys.value.filter((item) => item !== record?.id);
+    _selectedRowRows.value = _selectedRowRows.value.filter((item) => item.id !== record?.id);
   }
+  _selectedRowKeys.value = map(_selectedRowRows.value, 'id')
 };
 
 const onSelectAllChange = (selected, selectedRows, changeRows) => {
-  const unRowsKeys = getSelectedRowsKey(changeRows);
-  _selectedRowKeys.value = selected
-      ? [...getSetRowKey(selectedRows)]
-      : _selectedRowKeys.value
-          .concat(unRowsKeys)
-          .filter((item) => !unRowsKeys.includes(item));
+  if (selected) {
+    _selectedRowRows.value = [..._selectedRowRows.value, ...selectedRows]
+  } else {
+    _selectedRowRows.value = _selectedRowRows.value.filter((item) => !map(changeRows, 'id').includes(item.id))
+  }
+  _selectedRowKeys.value = map(_selectedRowRows.value, 'id')
 };
 
 
 const onChange = (selectedRowKeys) => {
   if (selectedRowKeys.length === 0) {
     _selectedRowKeys.value = [];
+    _selectedRowRows.value = [];
   }
-};
-
-/**
- * 刷新数据
- */
-const refresh = () => {
-  tableRef.value?.reload();
 };
 
 const handleSearch = (e) => {
   params.value = e;
 };
+
+const onSave = () => {
+  return new Promise((resolve) => {
+    // 判断设备数据，并返回
+    if (_selectedRowKeys.value.length > 0) {
+      resolve({
+        terms: [
+          {
+            column: 'productId',
+            value: _selectedRowKeys.value,
+            termType: 'in',
+          }
+        ],
+        options: {
+          productName: map(_selectedRowRows.value, 'name').join(',')
+        }
+      })
+    } else {
+      onlyMessage($t('DataSubscriptions.Detail.index.697323-60'), 'error')
+      resolve(false)
+    }
+  });
+};
+
+watch(() => props.value, (val) => {
+  _selectedRowKeys.value = val
+}, {
+  immediate: true,
+  deep: true,
+})
+
+defineExpose({onSave})
 </script>
 
 <style lang="less" scoped>

@@ -6,10 +6,10 @@
     <template #title>
       <div class="header">
         <div class="icon">
-          <AIcon type="icon-shebei"/>
+          <AIcon :type="providerIcon[info.provider]"/>
         </div>
-        <EditInput :value="data.name" @save="(val) => onSave(val, 'name')">{{ data.name }}</EditInput>
-        <a-tag>禁用</a-tag>
+        <EditInput :value="info.name" @save="(val) => onSave(val, 'name')">{{ info.name }}</EditInput>
+        <a-tag :color="info.state?.value === 'enabled' ? 'success' : 'error'">{{info.state?.text}}</a-tag>
       </div>
     </template>
     <template #extra>
@@ -41,20 +41,20 @@
           <div class="top-content-item-label">{{$t('DataSubscriptions.index.411661-3')}}</div>
           <div class="top-content-item-type">
             <AIcon type="icon-shebei1"/>
-            设备数据
+            {{ info.providerInfo?.name || info.provider || '--' }}
           </div>
         </div>
         <div class="top-content-item">
           <div class="top-content-item-label">{{$t('DataSubscriptions.index.411661-7')}}</div>
           <div class="top-content-item-desc">
-            <j-ellipsis>XXX用户</j-ellipsis>
+            <j-ellipsis>{{ info.modifierName || '--' }}</j-ellipsis>
           </div>
         </div>
         <div class="top-content-item">
           <div class="top-content-item-label">{{$t('DataSubscriptions.index.411661-5')}}</div>
           <div class="top-content-item-desc">
-            <EditInput :value="data.description" @save="(val) => onSave(val, 'description')">
-              <j-ellipsis>{{ data.description || '--' }}</j-ellipsis>
+            <EditInput :value="info.description" @save="(val) => onSave(val, 'description')">
+              <j-ellipsis>{{ info.description || '--' }}</j-ellipsis>
             </EditInput>
           </div>
         </div>
@@ -63,7 +63,7 @@
         <a-tab-pane v-for="item in tabList" :key="item.key" :tab="item.tab"/>
       </a-tabs>
       <div class="tabs-content">
-        <component :is="components[activeKey]" :data="data"/>
+        <component :is="components[activeKey]" :data="info" @refresh="getDetail(data.id)"/>
       </div>
     </div>
   </a-drawer>
@@ -76,6 +76,9 @@ import PushLog from './PushLog/index.vue'
 import DataMonitor from './DataMonitor/index.vue'
 import EditInput from './components/EditInput.vue'
 import {useI18n} from "vue-i18n";
+import {modify, remove, queryDetailById} from "@device/api/link/dataSubscriptions";
+import {onlyMessage} from "@jetlinks-web/utils";
+import {providerIcon} from "../data";
 
 const props = defineProps({
   data: {
@@ -83,7 +86,7 @@ const props = defineProps({
     default: () => ({}),
   },
 })
-const emits = defineEmits(['close'])
+const emits = defineEmits(['close', 'refresh'])
 const {t: $t} = useI18n();
 
 const tabList = [
@@ -114,48 +117,92 @@ const components = {
   DataMonitor
 }
 
-const getActions = (data) => {
+const info = ref(props.data)
+
+const getActions = (_data) => {
+  const state = _data.state?.value;
+  const stateText = state === 'enabled' ? $t('AccessConfig.index.764793-5') : $t('AccessConfig.index.764793-9');
   return [
     {
       key: 'action',
-      text: data.state?.value !== 'notActive' ? $t('Instance.index.133466-7') : $t('Instance.index.133466-22'),
+      text: stateText,
       tooltip: {
-        title: data.state?.value !== 'notActive' ? $t('Instance.index.133466-7') : $t('Instance.index.133466-22'),
+        title: stateText,
       },
-      icon:
-          data.state?.value !== 'notActive'
-              ? 'StopOutlined'
-              : 'CheckCircleOutlined',
-
+      icon: state === 'enabled' ? 'StopOutlined' : 'CheckCircleOutlined',
       popConfirm: {
-        title: `${$t('Instance.index.133466-23', [data.state?.value !== 'notActive' ? $t('Instance.index.133466-7') : $t('Instance.index.133466-22')])}`,
-        onConfirm: async () => {
-
+        title: $t('AccessConfig.index.764793-11', [stateText]),
+        onConfirm: () => {
+          // let response =
+          //     state === 'enabled'
+          //         ? undeploy(data.id)
+          //         : deploy(data.id);
+          // response.then((res) => {
+          //   if (res.success) {
+          //     onlyMessage($t('AccessConfig.index.764793-12'), 'success');
+          //     tableRef.value?.reload();
+          //   }
+          // });
+          // return response;
         },
       },
     },
     {
       key: 'delete',
-      text: $t('Instance.index.133466-26'),
-      disabled: data.state?.value !== 'notActive',
+      text: $t('AccessConfig.index.764793-13'),
+      disabled: state === 'enabled',
       tooltip: {
-        placement: 'bottomLeft',
-        title:
-            data.state?.value !== 'notActive'
-                ? $t('Instance.index.133466-27')
-                : $t('Instance.index.133466-26'),
+        title: state === 'enabled' ? $t('AccessConfig.index.764793-14') : $t('AccessConfig.index.764793-13'),
       },
-      onClick: async () => {
-
+      popConfirm: {
+        title: $t('AccessConfig.index.764793-15'),
+        onConfirm: () => {
+          const response = remove(data.id);
+          response.then((res) => {
+            if (res.success) {
+              onlyMessage($t('AccessConfig.index.764793-12'), 'success');
+              tableRef.value.reload();
+            } else {
+              onlyMessage(res?.message, 'error');
+            }
+          });
+          return response
+        },
       },
       icon: 'DeleteOutlined',
     },
-  ]
+  ];
 }
 
-const onSave = (val, key) => {
-  console.log(val, key)
+const getDetail = async (id) => {
+  const response = await queryDetailById(id);
+  if(response.success){
+    info.value = {
+      ...props.data,
+      ...response.result
+    };
+  }
 }
+
+const onSave = async (val, key) => {
+  const obj = {
+    [key]: val
+  }
+  const resp = await modify(props.data.id, obj)
+  if(resp.success) {
+    onlyMessage($t('Product.index.660348-18'))
+    emits('refresh')
+    getDetail(props.data.id)
+  }
+}
+
+watch(() => props.data?.id, (val) => {
+  if(val){
+    getDetail(val)
+  }
+}, {
+  immediate: true
+})
 </script>
 
 <style lang="less" scoped>
@@ -173,7 +220,6 @@ const onSave = (val, key) => {
   .icon {
     color: @primary-color;
   }
-
 }
 
 .top-content {
@@ -189,6 +235,7 @@ const onSave = (val, key) => {
 
   &-label {
     color: #777777;
+    white-space: nowrap;
   }
 
   &-type {
