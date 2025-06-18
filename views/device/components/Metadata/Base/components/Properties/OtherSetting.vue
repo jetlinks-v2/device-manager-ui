@@ -88,13 +88,9 @@
                                                 popupStyle: {
                                                     zIndex: 1071,
                                                 },
-                                                disabled:
-                                                    _disabled(record.property),
+                                                disabled: _disabled(record.property),
+                                                getPopupContainer: (node) => tableWrapperRef || node
                                             }"
-                                            :getPopupContainer="
-                                                (node) =>
-                                                    tableWrapperRef || node
-                                            "
                                             :options="getOptions(item, index)"
                                         />
                                     </div>
