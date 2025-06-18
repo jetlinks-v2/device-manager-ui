@@ -41,6 +41,11 @@
             <AIcon :type="providerIcon[slotProps.provider]" />{{ slotProps.providerInfo?.name }}
           </div>
         </template>
+        <template #url="slotProps">
+          <div style="white-space: normal;">
+            <j-ellipsis>{{ (slotProps.configuration?.writers || []).map(i => i.url).join(',') || '--' }}</j-ellipsis>
+          </div>
+        </template>
         <template #action="slotProps">
           <a-space :size="16">
             <template
@@ -137,12 +142,14 @@ const columns = [
   },
   {
     title: $t('DataSubscriptions.index.411661-4'),
-    dataIndex: 'filename',
-    key: 'filename',
+    dataIndex: 'url',
+    key: 'url',
     ellipsis: true,
+    width: 200,
     search: {
       type: 'string',
     },
+    scopedSlots: true,
   },
   {
     title: $t('DataSubscriptions.index.411661-5'),

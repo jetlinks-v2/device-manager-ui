@@ -15,3 +15,6 @@ export const remove = (id: any) => request.remove(`/data/messaging/${id}`);
 export const queryProviders = () => request.get(`/data/messaging/subscriber/providers`);
 // 获取推送类型
 export const queryWriterProviders = () => request.get(`/data/messaging/writer/providers`);
+
+export const queryWriterConfigType = () => request.get(`/dictionary/http-write-type/items`);
+

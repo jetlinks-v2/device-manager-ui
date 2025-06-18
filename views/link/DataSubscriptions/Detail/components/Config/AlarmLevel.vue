@@ -54,7 +54,7 @@ const onSave = () => {
         }
       ],
       options: {
-        levelName: levelList.value.filter(i => selected.value.includes(i.value)).map(i => i.label).join(',')
+        name: levelList.value.filter(i => selected.value.includes(i.value)).map(i => i.label).join(',')
       }
     })
   });

@@ -77,7 +77,7 @@ const termsValue = computed(() => {
 })
 
 const description = computed(() => {
-  return getSubscriptionModeDesc(props.data.provider, _subscriptionMode.value.value, _configuration.value?.options?.productName, termsValue.value.length)
+  return getSubscriptionModeDesc(props.data.provider, _subscriptionMode.value.value, _configuration.value?.options?.name, termsValue.value.length)
 })
 
 const onSave = () => {

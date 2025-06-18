@@ -1,124 +1,188 @@
 <template>
-  <a-modal visible :title="data.id ? $t('DataSubscriptions.Detail.index.697323-55') : $t('DataSubscriptions.Detail.index.697323-56')" @cancel="emit('close')" @ok="onSave" :confirm-loading="loading">
+  <a-modal
+    visible
+    :title="
+      data.name
+        ? $t('DataSubscriptions.Detail.index.697323-55')
+        : $t('DataSubscriptions.Detail.index.697323-56')
+    "
+    @cancel="emit('close')"
+    @ok="onSave"
+    :confirm-loading="loading"
+  >
     <a-form ref="formRef" :model="formData" layout="vertical">
       <a-form-item
-          :label="$t('Save.index.912481-4')"
-          name="name"
-          :rules="[
-             {required: true, message: $t('Save.index.912481-5')},
-             {
-                max: 64,
-                message: $t('Save.index.5349810-3'),
-             },
-          ]"
+        :label="$t('Save.index.912481-4')"
+        name="name"
+        :rules="[
+          { required: true, message: $t('Save.index.912481-5') },
+          {
+            max: 64,
+            message: $t('Save.index.5349810-3'),
+          },
+        ]"
       >
-        <a-input v-model:value="formData.name" :placeholder="$t('Save.index.912481-5')"/>
+        <a-input
+          v-model:value="formData.name"
+          :placeholder="$t('Save.index.912481-5')"
+        />
       </a-form-item>
-      <a-form-item :label="$t('DataSubscriptions.Detail.index.697323-36')" name="way">
+      <a-form-item
+        :label="$t('DataSubscriptions.Detail.index.697323-36')"
+        name="provider"
+      >
         <a-select
-            v-model:value="formData.way"
-            :placeholder="$t('Save.index.646914-10')"
-            option-label-prop="label"
+          v-model:value="formData.provider"
+          :placeholder="$t('Save.index.646914-10')"
+          option-label-prop="label"
+          @change="onProviderChange"
         >
-          <a-select-option value="HTTP" label="HTTP">
-            <div aria-label="HTTP" class="way-item">
+          <a-select-option v-for="item in providerList" :key="item.provider" :value="item.provider" :label="item.name">
+            <div :aria-label="item.name" class="way-item">
               <AIcon type="MacCommandOutlined" class="icon" />
-              <div>HTTP</div>
+              <div>{{item.name}}</div>
             </div>
           </a-select-option>
         </a-select>
       </a-form-item>
-      <a-form-item :label="$t('DataSubscriptions.Detail.index.697323-37')" name="type" :rules="[{required: true, message: $t('DataSubscriptions.Detail.index.697323-37-1')}]">
+      <a-form-item
+        :label="$t('DataSubscriptions.Detail.index.697323-37')"
+        name="type"
+        :rules="[
+          {
+            required: true,
+            message: $t('DataSubscriptions.Detail.index.697323-37-1'),
+          },
+        ]"
+      >
         <a-select
-            v-model:value="formData.type"
-            :placeholder="$t('DataSubscriptions.Detail.index.697323-37-1')"
-            allow-clear
+          v-model:value="formData.type"
+          :placeholder="$t('DataSubscriptions.Detail.index.697323-37-1')"
+          allow-clear
         >
-          <a-select-option value="get">GET</a-select-option>
-          <a-select-option value="post">POST</a-select-option>
-          <a-select-option value="patch">PATCH</a-select-option>
-          <a-select-option value="delete">DELETE</a-select-option>
+          <a-select-option v-for="item in typeList" :key="item.value" :value="item.value">{{ item.text }}</a-select-option>
         </a-select>
       </a-form-item>
       <a-form-item
-          :label="$t('DataSubscriptions.Detail.index.697323-38')"
-          name="address"
-          :rules="[
-              {required: true, message: $t('DataSubscriptions.Detail.index.697323-38-1')},
-              {
-                max: 256,
-                message: $t('Form.rules.242792-0', 256),
-             },
-          ]"
+        :label="$t('DataSubscriptions.Detail.index.697323-38')"
+        name="url"
+        :rules="[
+          {
+            required: true,
+            message: $t('DataSubscriptions.Detail.index.697323-38-1'),
+          },
+          {
+            max: 256,
+            message: $t('Form.rules.242792-0', [256]),
+          },
+        ]"
       >
-        <a-input v-model:value="formData.address" :placeholder="$t('DataSubscriptions.Detail.index.697323-38-1')" />
+        <a-input
+          v-model:value="formData.url"
+          :placeholder="$t('DataSubscriptions.Detail.index.697323-38-1')"
+        />
       </a-form-item>
       <a-form-item
-          label="token"
-          name="token"
-          :rules="[
-             {required: true, message: $t('DataSubscriptions.Detail.index.697323-57')},
-             {
-                max: 32,
-                message: $t('Form.rules.242792-0', 32),
-             },
-          ]"
+        label="token"
+        name="token"
+        :rules="[
+          {
+            required: true,
+            message: $t('DataSubscriptions.Detail.index.697323-57'),
+          },
+          {
+            max: 32,
+            message: $t('Form.rules.242792-0', [32]),
+          },
+        ]"
       >
-        <a-input v-model:value="formData.token" :placeholder="$t('DataSubscriptions.Detail.index.697323-57')" />
+        <a-input
+          v-model:value="formData.token"
+          :placeholder="$t('DataSubscriptions.Detail.index.697323-57')"
+        />
       </a-form-item>
       <a-form-item
-          :label="$t('DataSubscriptions.index.411661-5')"
-          name="description"
-          :rules="[
-             {
-                max: 200,
-                message: $t('Save.index.902471-13'),
-             }
-          ]"
+        :label="$t('DataSubscriptions.index.411661-5')"
+        name="description"
+        :rules="[
+          {
+            max: 200,
+            message: $t('Save.index.902471-13'),
+          },
+        ]"
       >
-        <a-textarea :placeholder="$t('Save.index.902471-14')" v-model:value="formData.description"/>
+        <a-textarea
+          :placeholder="$t('Save.index.902471-14')"
+          v-model:value="formData.description"
+        />
       </a-form-item>
     </a-form>
   </a-modal>
 </template>
 
 <script setup>
-import {useI18n} from "vue-i18n";
+import { useI18n } from "vue-i18n";
+import {queryWriterConfigType} from "@device/api/link/dataSubscriptions";
 
 const props = defineProps({
   data: {
     type: Object,
     default: () => ({}),
   },
-})
+  providerList: {
+    type: Array,
+    default: []
+  }
+});
 
-const emit = defineEmits(['close', 'save'])
-const {t: $t} = useI18n();
+const emit = defineEmits(["close", "save"]);
+const { t: $t } = useI18n();
 
-const loading = ref(false)
-const formRef = ref()
+const loading = ref(false);
+const formRef = ref();
 const formData = reactive({
   name: undefined,
-  way: 'HTTP',
+  provider: undefined,
+  state: undefined,
   type: undefined,
-  address: undefined,
-  token: undefined,
+  url: undefined,
   description: undefined,
-})
+  index: 0
+});
+
+const typeList = ref([]);
+
+const getWriterConfigType = async () => {
+  if (!formData.provider) return;
+  const resp = await queryWriterConfigType(formData.provider);
+  if (resp.status === 200) {
+    typeList.value = resp.result;
+  }
+};
+
+const onProviderChange = () => {
+  formData.type = undefined;
+  getWriterConfigType();
+};
 
 const onSave = async () => {
-  const resp = await formRef.value.validate()
-  if(resp){
-    loading.value = true
-    emit('save', formData)
+  const resp = await formRef.value.validate();
+  if (resp) {
+    loading.value = true;
+    await emit("save", formData, !!props.data.name)
+    loading.value = false;
   }
-}
+};
 
-watch(() => JSON.stringify(props.data), () => {
-  Object.assign(formData, props.data)
-}, {
-  immediate: true,
-})
+watch(
+  () => JSON.stringify(props.data),
+  () => {
+    Object.assign(formData, props.data);
+  },
+  {
+    immediate: true,
+  }
+);
 </script>
 
 <style lang="less" scoped>
@@ -126,7 +190,7 @@ watch(() => JSON.stringify(props.data), () => {
   display: flex;
   align-items: center;
   gap: 16px;
-  border: 1px solid #D9D9D9;
+  border: 1px solid #d9d9d9;
   padding: 6px;
   .icon {
     font-size: 24px;

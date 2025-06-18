@@ -222,7 +222,7 @@ const onSave = () => {
           }
         ],
         options: {
-          productName: map(_selectedRowRows.value, 'name').join(',')
+          name: map(_selectedRowRows.value, 'name').join(',')
         }
       })
     } else {

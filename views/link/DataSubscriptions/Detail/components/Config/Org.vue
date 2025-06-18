@@ -113,7 +113,7 @@ const onSave = () => {
           })
         }],
         options: {
-          orgName: ''
+          name: _selectedRowRows.value.filter(i => _selectedRowKeys.value.includes(i.id)).map(i => i.name).join(',')
         }
       })
     } else {
