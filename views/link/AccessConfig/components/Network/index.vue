@@ -260,7 +260,7 @@ import AccessCard from "../AccessCard/index.vue";
 import { Form } from "ant-design-vue";
 import type { FormInstance, TableColumnType } from "ant-design-vue";
 import { useMenuStore } from "@/store/menu";
-import { onlyMessage } from "@jetlinks-web/utils";
+import { onlyMessage, randomString } from "@jetlinks-web/utils";
 import { useI18n } from "vue-i18n";
 
 const { t: $t } = useI18n();
@@ -367,28 +367,34 @@ const queryProcotolList = async (id: string, params = {}) => {
 
 const addNetwork = () => {
   const url = menuStory.menusMap.get("link/Type/Detail")?.path;
+  const sourceId = `network_add_${randomString()}`; // 唯一标识
   const tab: any = window.open(
     `${window.location.origin + window.location.pathname}#${url}?type=${
       NetworkTypeMapping.get(props.provider?.id) || ""
-    }`,
+    }&sourceId=${sourceId}`,
   );
-  tab.onTabSaveSuccess = (value: any) => {
-    if (value.success) {
-      networkCurrent.value = value.result.id;
-      queryNetworkList(props.provider?.id, networkCurrent.value || "");
+  tab.onTabSaveSuccess = (_sourceId: string, value: any) => {
+    if (sourceId === _sourceId) {
+      if (value.success) {
+        networkCurrent.value = value.result.id;
+        queryNetworkList(props.provider?.id, networkCurrent.value || "");
+      }
     }
   };
 };
 
 const addProcotol = () => {
   const url = menuStory.getMenu("link/Protocol")?.path;
+  const sourceId = `protocol_add_${randomString()}`; // 唯一标识
   const tab: any = window.open(
-    `${window.location.origin + window.location.pathname}#${url}?save=true`,
+    `${window.location.origin + window.location.pathname}#${url}?save=true&sourceId=${sourceId}`,
   );
-  tab.onTabSaveSuccess = (value: any) => {
-    if (value.success) {
-      procotolCurrent.value = value.result?.id;
-      queryProcotolList(props.provider?.id);
+  tab.onTabSaveSuccess = (_sourceId: string, value: any) => {
+    if (sourceId === _sourceId) {
+      if (value.success) {
+        procotolCurrent.value = value.result?.id;
+        queryProcotolList(props.provider?.id);
+      }
     }
   };
 };
@@ -464,9 +470,10 @@ const saveData = () => {
       if (resp.status === 200) {
         onlyMessage($t("Network.index.041705-25"), "success");
         history.back();
-        if ((window as any).onTabSaveSuccess) {
+        const sourceId = route.query?.sourceId;
+        if ((window as any).onTabSaveSuccess && sourceId) {
           if (resp.result?.id) {
-            (window as any).onTabSaveSuccess(resp);
+            (window as any).onTabSaveSuccess(sourceId, resp);
             setTimeout(() => window.close(), 300);
           }
         }

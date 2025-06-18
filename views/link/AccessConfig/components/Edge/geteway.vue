@@ -124,8 +124,9 @@ const onFinish = async (values: any) => {
   if (resp.status === 200) {
     onlyMessage($t('Edge.geteway.598238-14'), "success");
     history.back();
-    if ((window as any).onTabSaveSuccess) {
-      (window as any).onTabSaveSuccess(resp);
+    const sourceId = route.query?.sourceId;
+    if ((window as any).onTabSaveSuccess && sourceId) {
+      (window as any).onTabSaveSuccess(sourceId, resp);
       setTimeout(() => window.close(), 300);
     }
   }
