@@ -1077,10 +1077,11 @@ const saveData = async () => {
   if (resp?.status === 200) {
     onlyMessage($t('Detail.index.258513-65'), "success");
     history.back();
-    if ((window as any).onTabSaveSuccess) {
+    const sourceId = route.query?.sourceId as string;
+    if ((window as any).onTabSaveSuccess && sourceId) {
       if (resp.result?.id) {
         start(resp.result?.id).then(() => {
-          (window as any).onTabSaveSuccess(resp);
+          (window as any).onTabSaveSuccess(sourceId, resp);
           setTimeout(() => window.close(), 300);
         });
       }

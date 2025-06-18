@@ -174,8 +174,9 @@ const handleSave = async () => {
         loading.value = false;
         if (resp.success) {
             onlyMessage($t('plugin.Save.128565-14'));
-            if (route.query.save && (window as any).onTabSaveSuccess) {
-                (window as any).onTabSaveSuccess(resp);
+            const sourceId = route.query?.sourceId;
+            if (route.query.save && (window as any).onTabSaveSuccess && sourceId) {
+                (window as any).onTabSaveSuccess(sourceId, resp);
                 setTimeout(() => window.close(), 300);
                 return;
             }

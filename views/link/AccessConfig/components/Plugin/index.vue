@@ -380,9 +380,10 @@ const saveData = () => {
             if (resp.success) {
                 onlyMessage($t('Plugin.index.626239-22'), 'success');
                 history.back();
-                if ((window as any).onTabSaveSuccess) {
+                const sourceId = route.query?.sourceId;
+                if ((window as any).onTabSaveSuccess && sourceId) {
                     if (resp.result?.id) {
-                        (window as any).onTabSaveSuccess(resp);
+                        (window as any).onTabSaveSuccess(sourceId, resp);
                         setTimeout(() => window.close(), 300);
                     }
                 }
