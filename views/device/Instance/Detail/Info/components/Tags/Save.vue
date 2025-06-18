@@ -111,7 +111,7 @@ const handleOk = async () => {
     if (dataSource.value.length) {
         loading.value = true
         const list = (dataSource.value || [])
-            .filter((item: any) => item?.key && (item?.value !== undefined && item?.value !== null))
+            .filter((item: any) => item?.key && (item?.value !== undefined && item?.value !== null && item.value !== ''))
             .map((i: any) => {
                 const { dataType, ...extra } = i;
                 return {
@@ -128,7 +128,7 @@ const handleOk = async () => {
                 onlyMessage($t('Product.index.660348-18'));
             }
         }
-        const _list = (dataSource.value || []).filter((item: any) => item?.key && (item?.value === undefined || item?.value === null));
+        const _list = (dataSource.value || []).filter((item: any) => item?.key && (item?.value === undefined || item?.value === null || item.value !== ''));
         if (_list.length) {
             // 删除值
             _list.map(async (item: any) => {
