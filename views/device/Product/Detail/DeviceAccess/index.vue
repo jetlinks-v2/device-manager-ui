@@ -283,7 +283,7 @@ import { pick } from "lodash-es";
 import { useI18n } from "vue-i18n";
 
 const { t: $t } = useI18n();
-
+const route = useRoute();
 const productStore = useProductStore();
 const tableRef = ref();
 const formRef = ref([]);
@@ -857,9 +857,10 @@ const updateAccessData = async (id: string, values: any) => {
   if (resp.status === 200) {
     onlyMessage($t("DeviceAccess.index.594346-30"));
     productStore.current!.storePolicy = storePolicy;
-    if ((window as any).onTabSaveSuccess) {
+    const sourceId = route.query?.sourceId;
+    if ((window as any).onTabSaveSuccess && sourceId) {
       if (resp.result) {
-        (window as any).onTabSaveSuccess(resp);
+        (window as any).onTabSaveSuccess(sourceId, resp);
         setTimeout(() => window.close(), 300);
       }
     } else {
