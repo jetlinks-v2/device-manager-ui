@@ -129,7 +129,7 @@
 
 <script setup lang='ts' name='accessModal'>
 import type { PropType } from 'vue'
-import { onlyMessage } from '@jetlinks-web/utils';
+import { onlyMessage, randomString } from '@jetlinks-web/utils';
 import { queryList, getAccessConfig } from '../../../../../api/product'
 import { useMenuStore } from '@/store';
 import { getProductByPluginId } from '../../../../../api/link/plugin'
@@ -334,9 +334,10 @@ const handleClick = (data: any) => {
 const add = () => {
   const url = menuStore.hasMenu('link/AccessConfig/Detail');
   if (url) {
-    const tab: any = window.open(`${window.location.origin + window.location.pathname}#${menuStore.menusMap.get('link/AccessConfig/Detail')?.path}?view=false&save=true`);
-    tab.onTabSaveSuccess = (value: any) => {
-      if (value.status === 200) {
+    const sourceId = `accessConfig_add_${randomString()}`; // 唯一标识
+    const tab: any = window.open(`${window.location.origin + window.location.pathname}#${menuStore.menusMap.get('link/AccessConfig/Detail')?.path}?view=false&save=true&sourceId=${sourceId}`);
+    tab.onTabSaveSuccess = (_sourceId: string, value: any) => {
+      if (sourceId === _sourceId) {
         tableRef.value.reload();
         handleClick(value.result);
       }
