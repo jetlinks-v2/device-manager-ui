@@ -315,7 +315,7 @@ const current = ref({
 });
 //存储数据
 const form = reactive<Record<string, any>>({
-  storePolicy: "default-row" || productStore.current?.storePolicy || "",
+  storePolicy: productStore.current?.storePolicy || "none",
 });
 // 表单数据
 const formData = reactive<Record<string, any>>({
@@ -760,8 +760,9 @@ const getData = async (accessId?: string) => {
     }
   }
   getStoragList().then((resp: any) => {
-    if (resp.status === 200) {
+    if (resp.success) {
       storageList.value = resp.result;
+      form.storePolicy = resp.result[0]?.id || 'none';
     }
   });
 };
