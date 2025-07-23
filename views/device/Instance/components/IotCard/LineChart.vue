@@ -57,7 +57,7 @@ const createChart = () => {
                 {
                     show: props.showX,
                     boundaryGap: false,
-                    data: props.chartData.map((m: any) => m.date),
+                    data: props.chartData.map((m: any) => m.timeString),
                 },
             ],
             yAxis: [

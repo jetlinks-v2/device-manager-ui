@@ -124,3 +124,6 @@ export const recharge = (data: any) => request.post(`/network/card/_recharge`, d
 export const queryCount = (data: any) => request.post(`/network/card/_count`,data)
 
 export const queryDeactivate = (id: string) => request.get(`/network/card/${id}/stop/reason`)
+
+export const querySyncLog = (data: any) => request.post(`/network/card/flow/sync/_log`, data)
+
