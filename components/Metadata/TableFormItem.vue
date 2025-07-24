@@ -43,7 +43,8 @@ let hideTimer
 
 const eventKey = computed(() => {
   const names = isArray(props.name) ? props.name : [props.name]
-  return names.join('-')
+  const [index, ...extra] = names
+  return `${index}-${extra.join('.')}`
 })
 
 const errorMap = reactive({
