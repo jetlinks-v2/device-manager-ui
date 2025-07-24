@@ -75,21 +75,39 @@
                   )
                   : ''
               }}</a-descriptions-item>
-            <a-descriptions-item :label="$t('IotCard.index.369962-10')">{{
-                detail.totalFlow
-                  ? detail.totalFlow.toFixed(2) + ' M'
-                  : '0 M'
-              }}</a-descriptions-item>
+            <a-descriptions-item :label="$t('IotCard.index.369962-10')">
+              <template v-if="detail.comboType?.value === 'pool'">
+                {{
+                  detail.poolTotalFlow ? detail.poolTotalFlow.toFixed(2) + " M" : "0 M"
+                }}
+              </template>
+              <template v-else>
+                {{
+                  detail.totalFlow ? detail.totalFlow.toFixed(2) + " M" : "0 M"
+                }}
+              </template>
+            </a-descriptions-item>
             <a-descriptions-item :label="$t('IotCard.index.369962-11')">{{
                 detail.usedFlow
                   ? detail.usedFlow.toFixed(2) + ' M'
                   : '0 M'
               }}</a-descriptions-item>
-            <a-descriptions-item :label="$t('IotCard.index.369962-12')">{{
-                detail.residualFlow
-                  ? detail.residualFlow.toFixed(2) + ' M'
-                  : '0 M'
-              }}</a-descriptions-item>
+            <a-descriptions-item :label="$t('IotCard.index.369962-12')">
+              <template v-if="detail.comboType?.value === 'pool'">
+                {{
+                  detail.poolResidualFlow
+                      ? detail.poolResidualFlow.toFixed(2) + " M"
+                      : "0 M"
+                }}
+              </template>
+              <template v-else>
+                {{
+                  detail.residualFlow
+                      ? detail.residualFlow.toFixed(2) + " M"
+                      : "0 M"
+                }}
+              </template>
+            </a-descriptions-item>
             <a-descriptions-item :label="$t('Detail.index.427958-13')">
               {{ detail?.cardState?.text }}
               <span v-if="deactivateData.show" style="padding-left: 8px">
@@ -155,9 +173,15 @@
             <a-descriptions-item :label="$t('Detail.index.427958-27')">
               <div style="display: flex; gap: 10px; align-items: center">
                 <div style="min-width: 60px">
-                  {{
-                    !detail?.flowError ? $t('CardManagement.index.427944-50') : $t('CardManagement.index.427944-19')
-                  }}
+                  <template v-if="detail.flowError === true">
+                    {{ $t('CardManagement.index.427944-19') }}
+                  </template>
+                  <template v-else-if="detail.flowError === false">
+                    {{ $t('CardManagement.index.427944-50') }}
+                  </template>
+                  <template v-else>
+                    {{$t('CardManagement.index.427944-18')}}
+                  </template>
                 </div>
                 <div
                     style="
@@ -329,7 +353,7 @@ import dayjs from 'dayjs';
 import type { CardManagement } from './typing';
 import {
   queryDeactivate,
-  queryDetail,
+  queryDetailById,
   query,
 } from '../../../../../api/iot-card/cardManagement';
 import TimeSelect from './TimeSelect.vue';
@@ -341,7 +365,7 @@ import { useI18n } from 'vue-i18n';
 import {dashboard} from "@device/api/dashboard";
 import {map} from "lodash-es";
 import RealTimeMap from "./RealTimeMap.vue";
-import {getPositionById} from "@device/api/iot-card/realtimePositioning";
+import {getPositionById, queryLocationById} from "@device/api/iot-card/realtimePositioning";
 import SyncRecord from "./SyncRecord/index.vue";
 import {useMenuStore} from "@/store";
 
@@ -400,7 +424,7 @@ const onClick = () => {
 }
 
 const getDetail = () => {
-  queryDetail(cardId.value).then((resp: any) => {
+  queryDetailById(cardId.value).then((resp: any) => {
     if (resp.success) {
       detail.value = resp.result;
 
@@ -412,6 +436,10 @@ const getDetail = () => {
             deactivateData.tip = deacResp.result.message.toString();
           }
         });
+      }
+
+      if(detail.value.platformType?.value !== 'unicom'){
+        getPositionsHistory(cardId.value)
       }
     }
   });
@@ -738,6 +766,16 @@ const getEcharts = async (data: any) => {
 const getPositions = async (id: string) => {
   loading.value = true
   const res: any = await getPositionById(id).finally(() => {
+    loading.value = false
+  })
+  if (res.success) {
+    marks.value = res.result.error === false ? [res.result] : []
+  }
+}
+
+const getPositionsHistory = async (id: string) => {
+  loading.value = true
+  const res: any = await queryLocationById(id).finally(() => {
     loading.value = false
   })
   if (res.success) {
