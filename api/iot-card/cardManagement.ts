@@ -109,6 +109,7 @@ export const edit = (data: any) => request.put(`/network/card/${data.id}`, data)
  * @param id
  */
 export const queryDetail = (id: any) => request.get(`/network/card/${id}`);
+export const queryDetailById = (id: any) => request.get(`/network/card/detail/${id}`);
 
 /**
  * 查询物联卡充值缴费日志

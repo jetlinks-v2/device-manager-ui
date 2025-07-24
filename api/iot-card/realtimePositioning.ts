@@ -7,3 +7,5 @@ export const queryBatchPosition = (data: any) => request.post(`/network/card/_lo
 
 // 获取卡定位记录
 export const queryPositionRecord = (data: any) => request.post(`/network/card/location/record/_query`, data)
+
+export const queryLocationById = (cardId: string)=> request.get(`/network/card/location/record/${cardId}/_query`);
