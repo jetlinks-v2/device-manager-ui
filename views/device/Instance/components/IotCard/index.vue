@@ -368,6 +368,7 @@ import RealTimeMap from "./RealTimeMap.vue";
 import {getPositionById, queryLocationById} from "@device/api/iot-card/realtimePositioning";
 import SyncRecord from "./SyncRecord/index.vue";
 import {useMenuStore} from "@/store";
+import {onlyMessage} from "@jetlinks-web/utils";
 
 const { t: $t } = useI18n();
 
@@ -770,6 +771,9 @@ const getPositions = async (id: string) => {
   })
   if (res.success) {
     marks.value = res.result.error === false ? [res.result] : []
+    if(res.result.error){
+      onlyMessage(res.result.errorMessage, 'error')
+    }
   }
 }
 

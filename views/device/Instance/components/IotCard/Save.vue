@@ -71,18 +71,18 @@
                 </a-form-item>
 
 
-                <a-form-item :label="$t('IotCard.Save.570033-12')" name="cardType">
-                    <a-select
-                        allowClear
-                        showSearch
-                        :disabled="type === 'edit'"
-                        :filter-option="filterOption"
-                        :options="TypeList"
-                        v-model:value="modelRef.cardType"
-                        :placeholder="$t('IotCard.Save.570033-13')"
-                    >
-                    </a-select>
-                </a-form-item>
+<!--                <a-form-item :label="$t('IotCard.Save.570033-12')" name="cardType">-->
+<!--                    <a-select-->
+<!--                        allowClear-->
+<!--                        showSearch-->
+<!--                        :disabled="type === 'edit'"-->
+<!--                        :filter-option="filterOption"-->
+<!--                        :options="TypeList"-->
+<!--                        v-model:value="modelRef.cardType"-->
+<!--                        :placeholder="$t('IotCard.Save.570033-13')"-->
+<!--                    >-->
+<!--                    </a-select>-->
+<!--                </a-form-item>-->
                 <a-form-item :label="$t('IotCard.Save.570033-14')" name="describe">
                     <a-textarea
                         v-model:value="modelRef.describe"
