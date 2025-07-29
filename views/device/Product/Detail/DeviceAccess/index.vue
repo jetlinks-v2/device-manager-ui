@@ -762,7 +762,7 @@ const getData = async (accessId?: string) => {
   getStoragList().then((resp: any) => {
     if (resp.success) {
       storageList.value = resp.result;
-      form.storePolicy = resp.result[0]?.id || 'none';
+      form.storePolicy = productStore.current?.storePolicy ||resp.result[0]?.id || 'none';
     }
   });
 };
