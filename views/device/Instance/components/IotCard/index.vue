@@ -771,8 +771,8 @@ const getPositions = async (id: string) => {
   })
   if (res.success) {
     marks.value = res.result.error === false ? [res.result] : []
-    if(res.result.error){
-      onlyMessage(res.result.errorMessage, 'error')
+    if(!res.result || res.result.error){
+      onlyMessage($t('RealtimePositioning.index.390590-14'), 'error')
     }
   }
 }

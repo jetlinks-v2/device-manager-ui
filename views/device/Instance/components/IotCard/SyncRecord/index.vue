@@ -19,17 +19,17 @@
           mode="TABLE"
           style="padding: 0"
       >
-        <template #headerCell="{ column }">
-          <template v-if="column.key === 'usedFlow'">
-            {{$t('Detail.index.427958-11')}}
-            <a-tooltip :title="data.comboType?.value !== 'pool' ? $t('CardManagement.index.427944-84') : $t('CardManagement.index.427944-85')">
-              <AIcon
-                  type="ExclamationCircleOutlined"
-                  style="padding-left: 12px;"
-              />
-            </a-tooltip>
-          </template>
-        </template>
+<!--        <template #headerCell="{ column }">-->
+<!--          <template v-if="column.key === 'usedFlow'">-->
+<!--            {{$t('Detail.index.427958-11')}}-->
+<!--            <a-tooltip :title="data.comboType?.value !== 'pool' ? $t('CardManagement.index.427944-84') : $t('CardManagement.index.427944-85')">-->
+<!--              <AIcon-->
+<!--                  type="ExclamationCircleOutlined"-->
+<!--                  style="padding-left: 12px;"-->
+<!--              />-->
+<!--            </a-tooltip>-->
+<!--          </template>-->
+<!--        </template>-->
         <template #responseTime="slotProps">
           {{slotProps.responseTime ? dayjs(slotProps.responseTime).format('YYYY-MM-DD HH:mm:ss') : "--"}}
         </template>
