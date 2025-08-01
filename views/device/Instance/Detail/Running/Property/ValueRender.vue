@@ -160,7 +160,7 @@ const getDetail = (_type: string) => {
             onlyMessage($t('Property.ValueRender.865445-1'), 'error');
         } else {
             flag =
-                ['.jpg', '.png'].find((item) =>
+                ['.jpg', '.png', '.jpeg'].find((item) =>
                     value?.formatValue.includes(item),
                 ) || '--';
             _types.value = flag;

@@ -9,7 +9,7 @@
         @ok="handleCancel"
         @cancel="handleCancel"
     >
-        <template v-if="['.jpg', '.png'].includes(type)">
+        <template v-if="['.jpg', '.png', '.jpeg'].includes(type)">
             <a-image :src="value?.formatValue" />
         </template>
         <template v-else-if="['.flv', '.m3u8', '.mp4'].includes(type)">
