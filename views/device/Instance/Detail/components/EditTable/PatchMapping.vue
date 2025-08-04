@@ -76,25 +76,40 @@
             >
           </div>
           <a-card class="map-tree-content-card" :title="$t('EditTable.PatchMapping.974352-5')">
-            <a-list
-                size="small"
-                :data-source="rightList"
-                class="map-tree-content-card-list"
-            >
-              <template #renderItem="{ item }">
-                <a-list-item>
-                  <j-ellipsis>{{ item.title }}</j-ellipsis>
-                  <template #actions>
+            <!--            <a-list-->
+            <!--                size="small"-->
+            <!--                :data-source="rightList"-->
+            <!--                class="map-tree-content-card-list"-->
+            <!--            >-->
+            <!--              <template #renderItem="{ item }">-->
+            <!--                <a-list-item>-->
+            <!--                  {{ item.title }}-->
+            <!--                  <template #actions>-->
+            <!--                    <ConfirmModal-->
+            <!--                        :title="$t('EditTable.PatchMapping.974352-6')"-->
+            <!--                        :onConfirm="() => _delete(item.key)"-->
+            <!--                    >-->
+            <!--                      <AIcon type="DeleteOutlined" />-->
+            <!--                    </ConfirmModal>-->
+            <!--                  </template>-->
+            <!--                </a-list-item>-->
+            <!--              </template>-->
+            <!--            </a-list>-->
+            <div style="height: 300px">
+              <VirtualScroll :data="rightList" :itemHeight="40">
+                <template #renderItem="item">
+                  <div class="right-list-item">
+                    <div>{{ item?.title }}</div>
                     <ConfirmModal
                         :title="$t('EditTable.PatchMapping.974352-6')"
                         :onConfirm="() => _delete(item.key)"
                     >
-                      <AIcon type="DeleteOutlined" />
+                      <AIcon type="DeleteOutlined"/>
                     </ConfirmModal>
-                  </template>
-                </a-list-item>
-              </template>
-            </a-list>
+                  </div>
+                </template>
+              </VirtualScroll>
+            </div>
           </a-card>
         </div>
       </a-spin>
@@ -112,7 +127,7 @@ import {randomString} from "@jetlinks-web/utils";
 import {
   asyncUpdateMetadata,
   updateMetadata
-} from "@/modules/device-manager-ui/views/device/components/Metadata/metadata";
+} from "@device/views/device/components/Metadata/metadata";
 
 const {t: $t} = useI18n();
 

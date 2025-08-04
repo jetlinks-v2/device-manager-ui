@@ -31,7 +31,7 @@ export const history = (data: Record<string, unknown>) =>
     request.post(`/firmware/upgrade/history/_query`, data);
 
 export const historyPaginateNot =(data:Record<string,unknown>) =>
-    request.post('/firmware/upgrade/history/_query/no-paging',data)
+    request.post('/firmware/upgrade/history/detail/_query/no-paging',data)
 
 
 export const historyCount = (data: Record<string, unknown>) =>
@@ -40,8 +40,8 @@ export const historyCount = (data: Record<string, unknown>) =>
 export const startTask = (id: string, data: string[]) =>
     request.post(`/firmware/upgrade/task/${id}/_start`, data);
 
-export const stopTask = (id: string) =>
-    request.post(`/firmware/upgrade/task/${id}/_stop`);
+export const stopTask = (id: string, data: string[]) =>
+    request.post(`/firmware/upgrade/task/${id}/_stop`, data);
 
 export const startOneTask = (data: string[]) =>
     request.post(`/firmware/upgrade/task/_start`, data);
@@ -61,8 +61,12 @@ export const validateVersion = (
     versionOrder: number | string,
 ) => request.get(`/firmware/${productId}/${versionOrder}/exists`);
 
-export const queryDetailList = (data: Record<string, unknown>) =>
-    request.post(`/device-instance/detail/_query`, data);
+export const queryDetailList = (data: Record<string, unknown>, params?: Record<string, unknown>) => {
+    return request.post(`/device-instance/detail/_query`, data, {params});
+}
 
 export const queryDetailListNoPaging = (data: Record<string, unknown>) =>
     request.post(`/device-instance/detail/_query/no-paging`, data);
+
+export const deleteHistory = (id: string) => 
+    request.remove(`/firmware/upgrade/history/${id}`);

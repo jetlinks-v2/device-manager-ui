@@ -1,9 +1,20 @@
 <template>
-  <DeviceTable ref="tableRef" type="Self" />
+  <DeviceTable ref="tableRef" type="Self" :productId="productId" :data="data" />
 </template>
 
 <script setup>
 import DeviceTable from './DeviceTable.vue';
+
+const props = defineProps({
+  productId: {
+    type: String,
+    default: '',
+  },
+  data: {
+    type: Object,
+    default: () => ({})
+  },
+});
 
 const tableRef = ref()
 const onSave = () => {

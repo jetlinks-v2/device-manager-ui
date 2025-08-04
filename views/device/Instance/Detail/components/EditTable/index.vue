@@ -35,7 +35,7 @@
                             <a-form-item
                                 :name="[
                                     'dataSource',
-                                    myCurrent * 10 + index,
+                                    myCurrent * pageSize + index,
                                     'channelId',
                                 ]"
                             >
@@ -61,7 +61,7 @@
                             <a-form-item
                                 :name="[
                                     'dataSource',
-                                    myCurrent * 10 + index,
+                                    myCurrent * pageSize + index,
                                     'collectorId',
                                 ]"
                                 :rules="[
@@ -83,7 +83,7 @@
                             <a-form-item
                                 :name="[
                                     'dataSource',
-                                    myCurrent * 10 + index,
+                                    myCurrent * pageSize + index,
                                     'pointId',
                                 ]"
                                 :rules="[

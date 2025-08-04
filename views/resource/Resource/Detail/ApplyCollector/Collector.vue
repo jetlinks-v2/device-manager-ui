@@ -43,7 +43,7 @@
                         :statusNames="{
                             enabled: 'processing',
                             disabled: 'error',
-                       
+
                         }"
                     >
                         <template #img>
@@ -71,24 +71,24 @@
                                     </span>
                                 </Ellipsis>
                             </div>
-                            <j-row>
-                                <j-col :span="12">
+                            <a-row>
+                                <a-col :span="12">
                                     <div class="card-item-content-text">
                                         {{ $t('ApplyCollector.Collector.789174-2') }}
                                     </div>
                                     <Ellipsis>{{
                                         slotProps.channelName
                                     }}</Ellipsis>
-                                </j-col>
-                                <j-col :span="12">
+                                </a-col>
+                                <a-col :span="12">
                                     <div class="card-item-content-text">
                                         {{ $t('ApplyCollector.Collector.789174-3') }}
                                     </div>
                                     <Ellipsis>{{
                                         slotProps?.description || '--'
                                     }}</Ellipsis>
-                                </j-col>
-                            </j-row>
+                                </a-col>
+                            </a-row>
                         </template>
                     </CardBox>
                 </template>

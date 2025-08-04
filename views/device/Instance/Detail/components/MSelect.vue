@@ -15,7 +15,9 @@ import {
   queryCollectorNoPaging,
   queryPointNoPaging,
 } from '../../../../../api/instance';
+import {Form} from "ant-design-vue";
 
+const formItemContext = Form.useInjectFormItemContext();
 const _props = defineProps({
   modelValue: {
     type: String,
@@ -49,6 +51,7 @@ watchEffect(() => {
 
 const onChange = (_val: string) => {
   emit('update:modelValue', _val);
+  formItemContext.onFieldChange();
 };
 
 const getCollector = async (_val: string) => {

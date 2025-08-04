@@ -107,7 +107,7 @@ const props = defineProps({
         default: () => {},
     },
 });
-
+const route = useRoute();
 const emit = defineEmits(['change']);
 
 const id = props.data.id;
@@ -145,9 +145,10 @@ const onSubmit = async () => {
         : await update({ ...props.data, ...data }).catch(() => {});
     if (response?.status === 200) {
         emit('change', response?.status === 200);
-        if ((window as any).onTabSaveSuccess) {
+        const sourceId = route.query?.sourceId as string;
+        if ((window as any).onTabSaveSuccess && sourceId) {
             if (response.result?.id) {
-                (window as any).onTabSaveSuccess(response);
+                (window as any).onTabSaveSuccess(sourceId, response);
                 setTimeout(() => window.close(), 300);
             }
         }

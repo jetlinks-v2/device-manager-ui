@@ -10,7 +10,7 @@
         ref="tableRef"
         mode="TABLE"
         :columns="columns"
-        :request="queryDetailList"
+        :request="(e) => queryDetailList(e, {permission: 'save'})"
         :defaultParams="defaultParams"
         :params="params"
         :bodyStyle="{padding: 0}"
@@ -31,7 +31,7 @@
         />
       </template>
       <template #version="slotProps">
-        <span>{{ slotProps.firmwareInfo?.version || '' }}</span>
+        <span>{{ slotProps.firmwareInfo?.version || '--' }}</span>
       </template>
       <template #registerTime="slotProps">
         <span>{{slotProps.registerTime ? dayjs(slotProps.registerTime).format('YYYY-MM-DD HH:mm:ss') : '--' }}</span>
@@ -45,6 +45,7 @@ import { queryDetailList } from '@device/api/firmware';
 import {useI18n} from 'vue-i18n';
 import dayjs from "dayjs";
 import {onlyMessage} from "@jetlinks-web/utils";
+import {useRouteQuery} from "@vueuse/router/index";
 
 const {t: $t} = useI18n();
 const emit = defineEmits(['update:modelValue', 'change']);
@@ -67,13 +68,15 @@ const props = defineProps({
 const params = ref({});
 const _selectedRowKeys = ref([]);
 const tableRef = ref()
+const search = useRouteQuery('q')
+const searchTarget = useRouteQuery('target')
 
 const defaultParams = {
-  context: {
-    includeTags: false,
-    includeBind: false,
-    includeRelations: false,
-  },
+  // context: {
+  //   includeTags: false,
+  //   includeBind: false,
+  //   includeRelations: false,
+  // },
   terms: props.productId ? [
     {
       terms: [
@@ -199,17 +202,35 @@ const handleSearch = (e) => {
   params.value = {terms: newParams || []};
 };
 
+watch(
+    () => props.data,
+    (val) => {
+      if(val.length){
+        if(val?.[0]?.column === 'deviceId'){
+          _selectedRowKeys.value = val?.[0]?.value || []
+        } else {
+          // 加到搜索中
+          search.value = encodeURI(JSON.stringify({val}))
+          searchTarget.value = 'firmware-search-select-device' + props.type
+        }
+      }
+    },
+    {
+      immediate: true,
+      deep: true,
+    }
+);
+
 const onSave = () => {
   return new Promise((resolve) => {
     // 判断设备数据，并返回
-    if(props.type === 'Self') {
-      if(_selectedRowKeys.value.length > 0) {
-        resolve(_selectedRowKeys.value)
-      }
+    if(props.type === 'Self' && _selectedRowKeys.value.length > 0) {
+      resolve(_selectedRowKeys.value)
     } else if(props.type === 'All' && tableRef.value?.dataSource?.length > 0) {
       resolve(params.value)
     } else {
       onlyMessage($t('Save.SelectDevices.386303-19'), 'error')
+      resolve(false)
     }
   });
 };

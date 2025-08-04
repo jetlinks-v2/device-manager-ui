@@ -161,6 +161,23 @@ const isExtendsProduct = (id: string, productKeys: string, type: string) => {
 
 export const useColumns = (dataSource: Ref<MetadataItem[]>, type?: MetadataType, target?: 'device' | 'product', noEdit?: Ref<any>, productNoEdit?: Ref<any>) => {
 
+  // 存储 ID 到索引的 Map
+  const idToIndicesMap = new Map<any, Set<number>>();
+
+
+  // 构建/重建 Map 的函数
+  const buildIdMap = (data: any[]) => {
+    idToIndicesMap.clear(); // 每次重建前清空 Map
+    data.forEach((item, index) => {
+      if (item.id !== undefined && item.id !== null) { // 确保 id 存在且有效
+        if (!idToIndicesMap.has(item.id)) {
+          idToIndicesMap.set(item.id, new Set());
+        }
+        idToIndicesMap.get(item.id)!.add(index);
+      }
+    });
+  };
+
   const BaseColumns: DataTableColumnProps[] = [
     {
       title: i18n.global.t('Base.columns.448718-14'),
@@ -171,12 +188,17 @@ export const useColumns = (dataSource: Ref<MetadataItem[]>, type?: MetadataType,
           asyncValidator(rule:any,value: any, ...setting: any) {
             if (value) {
               const option = setting[2]
+              const currentIndex = option.index;
 
-              const isSome = dataSource.value.some((item) => {
-                return item.__dataIndex !== option.index && item.id && item.id === value
-              })
-              if (isSome) {
-                return Promise.reject(i18n.global.t('Base.columns.448718-15'))
+              if (idToIndicesMap.has(value)) {
+                const indicesWithThisId = idToIndicesMap.get(value)!;
+
+                // 检查除了当前项之外，是否有其他项使用了相同的 ID
+                const isDuplicate = Array.from(indicesWithThisId).some(idx => idx !== currentIndex);
+
+                if (isDuplicate) {
+                  return Promise.reject(i18n.global.t('Base.columns.448718-15'));
+                }
               }
             }
               return Promise.resolve()
@@ -518,6 +540,10 @@ export const useColumns = (dataSource: Ref<MetadataItem[]>, type?: MetadataType,
         break ;
     }
   }, { immediate: true })
+
+  watch(() => JSON.stringify(dataSource.value), () => {
+    buildIdMap(dataSource.value)
+  },{ immediate: true})
 
   return {columns}
 }

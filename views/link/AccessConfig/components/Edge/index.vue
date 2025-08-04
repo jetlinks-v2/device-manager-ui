@@ -204,7 +204,7 @@
 </template>
 
 <script lang="ts" setup name="AccessEdge">
-import { onlyMessage } from '@jetlinks-web/utils';
+import { onlyMessage, randomString } from '@jetlinks-web/utils';
 import type { FormInstance } from 'ant-design-vue';
 import { update, save, getNetworkList } from '../../../../../api/link/accessConfig';
 import {
@@ -271,8 +271,9 @@ const onFinish = async (values: any) => {
     if (resp.status === 200) {
         onlyMessage($t('Edge.index.066653-20'), 'success');
         history.back();
-        if ((window as any).onTabSaveSuccess) {
-            (window as any).onTabSaveSuccess(resp);
+        const sourceId = route.query?.sourceId;
+        if ((window as any).onTabSaveSuccess && sourceId) {
+            (window as any).onTabSaveSuccess(sourceId, resp);
             setTimeout(() => window.close(), 300);
         }
     }
@@ -315,13 +316,14 @@ const saveData = async () => {
 
 const addNetwork = () => {
     const url = menuStory.getMenu('link/Type/Detail')?.path;
+    const sourceId = `network_add_${randomString()}`; // 唯一标识
     const tab: any = window.open(
         `${window.location.origin + window.location.pathname}#${url}?type=${
             NetworkTypeMapping.get(props.provider?.id) || ''
-        }`,
+        }&sourceId=${sourceId}`,
     );
-    tab.onTabSaveSuccess = (value: any) => {
-        if (value.success) {
+    tab.onTabSaveSuccess = (_sourceId: string, value: any) => {
+        if (sourceId === _sourceId) {
             networkCurrent.value = value.result.id;
             queryNetworkList(props.provider?.id, networkCurrent.value || '');
         }

@@ -147,6 +147,7 @@
                                                 ]
                                             "
                                             :itemType="item.type"
+                                            :options="item.options"
                                         />
                                     </a-form-item>
                                 </template>
@@ -281,6 +282,23 @@ const getRules = (item: any) => {
     return rules;
 };
 
+const handleOptions = (record) => {
+  const type = record.type
+  const options = []
+
+  if (type === 'boolean') {
+    options.push({
+      label: record.falseText,
+      value: record.falseValue,
+    },{
+      label: record.trueText,
+      value: record.trueValue,
+    });
+  }
+
+  return options;
+}
+
 const queryPluginConfig = (id: string, update: boolean = true) => {
     getPluginConfig(id).then((res) => {
         if (res.success) {
@@ -295,6 +313,7 @@ const queryPluginConfig = (id: string, update: boolean = true) => {
                     name: item.property,
                     type: item.type?.type || 'string',
                     rules: getRules(item),
+                    options: handleOptions(item.type)
                 };
             });
         }
@@ -380,9 +399,10 @@ const saveData = () => {
             if (resp.success) {
                 onlyMessage($t('Plugin.index.626239-22'), 'success');
                 history.back();
-                if ((window as any).onTabSaveSuccess) {
+                const sourceId = route.query?.sourceId;
+                if ((window as any).onTabSaveSuccess && sourceId) {
                     if (resp.result?.id) {
-                        (window as any).onTabSaveSuccess(resp);
+                        (window as any).onTabSaveSuccess(sourceId, resp);
                         setTimeout(() => window.close(), 300);
                     }
                 }

@@ -434,7 +434,7 @@ const columns = ref([
             componentProps: {
                 data: params.value,
             },
-            termOptions: ['eq', 'not'],
+            termOptions: ['eq'],
         },
     },
     {

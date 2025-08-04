@@ -4,7 +4,7 @@
       <a-tab-pane v-for="item in options" :key="item.value" :closable="false">
         <template #tab>
           <a-dropdown
-            v-if="target !== 'device' && myActiveKey === item.value"
+            v-if="myActiveKey === item.value"
             :trigger="['click']"
             :getPopupContainer="(node) => tableWrapperRef || node"
             :disabled="readonly"
@@ -23,9 +23,9 @@
               <div class="table-group-error-warp-label">
                 <j-ellipsis>{{ item.label }}</j-ellipsis> ({{ item.effective}})
               </div>
-              <div class="table-group-error-warp-value">
-                <j-ellipsis>{{item.value}}</j-ellipsis>
-              </div>
+<!--              <div class="table-group-error-warp-value">-->
+<!--                <j-ellipsis>{{item.value}}</j-ellipsis>-->
+<!--              </div>-->
               <a-tooltip
                 v-if="errorMap[item.value]"
                 color="#ffffff"
@@ -43,9 +43,9 @@
             <div class="table-group-error-warp-label">
               <j-ellipsis>{{ item.label }}</j-ellipsis> ({{ item.effective}})
             </div>
-            <div class="table-group-error-warp-value">
-              <j-ellipsis>{{item.value}}</j-ellipsis>
-            </div>
+<!--            <div class="table-group-error-warp-value">-->
+<!--              <j-ellipsis>{{item.value}}</j-ellipsis>-->
+<!--            </div>-->
             <a-tooltip
               v-if="errorMap[item.value]"
               color="#ffffff"

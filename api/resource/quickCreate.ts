@@ -10,7 +10,7 @@ export const queryPluginConfiguration = (data:any) => request.post(`/plugin/driv
 
 export const queryProtocolConfiguration = (type:string,data:any) => request.post(`protocol/convert?transport=${type}`,data)
 
-export const queryGB28181Configuration = () => request.get('/protocol/fixed-media/transports')
+export const queryGB28181Configuration = () => request.get('/protocol/gb28181-2016/transports')
 
 export const queryNetWork = (data: any) => request.post(`/network/config/_query/no-paging`, data);
 
