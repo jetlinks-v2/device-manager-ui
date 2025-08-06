@@ -51,7 +51,7 @@
 import { queryNoPagingPost } from '../../../../api/product';
 import { paramsEncodeQuery } from '@/utils/encodeQuery';
 import { LocalStore } from '@jetlinks-web/utils';
-import { TOKEN_KEY, TOKEN_KEY_URL } from '@jetlinks-web/constants';
+import {BASE_API, TOKEN_KEY, TOKEN_KEY_URL} from '@jetlinks-web/constants';
 
 const emit = defineEmits(['close']);
 const props = defineProps({
@@ -120,7 +120,10 @@ const handleOk = async () => {
         urlParams.append(key, _params[key])
       }
     })
-    const url =  modelRef.product ?  `${origin}/api/device-instance/${modelRef.product}/export.xlsx?${TOKEN_KEY_URL}=${LocalStore.get(TOKEN_KEY)}&${urlParams}` :  `${origin}/api/device-instance/export.xlsx?${TOKEN_KEY_URL}=${LocalStore.get(TOKEN_KEY)}&${urlParams}`
+    const token = LocalStore.get(TOKEN_KEY);
+    const baseUrl = `${origin}${BASE_API}/device-instance`;
+    const path = modelRef.product ? `/${modelRef.product}/export.xlsx` : `/export.xlsx`;
+    const url = `${baseUrl}${path}?${TOKEN_KEY_URL}=${token}&${urlParams}`;
     window.open(url)
     emit('close');
 
