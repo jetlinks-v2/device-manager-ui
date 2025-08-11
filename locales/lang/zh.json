@@ -2466,5 +2466,15 @@
     "components.EditDialog.375810-15": "新增",
     "components.EditDialog.375810-16": "操作成功",
     "components.EditDialog.375810-17": "标识只能由数字、字母、下划线、中划线组成",
-    "components.EditDialog.375810-18": "不能使用相同的关系名称"
+    "components.EditDialog.375810-18": "不能使用相同的关系名称",
+    "Record.Card.931797-4": "任务总数",
+    "log.index.741299-0": "操作类型",
+    "log.index.741299-1": "涉及网关",
+    "log.index.741299-2": "创建时间",
+    "log.index.741299-3": "全部任务",
+    "log.index.741299-4": "全部完成",
+    "log.index.741299-5": "进行中",
+    "log.index.741299-6": "未完成",
+    "log.index.741299-7": "等待升级"
+
 }
