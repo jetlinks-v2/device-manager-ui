@@ -339,12 +339,10 @@
                                     {
                                         required: true,
                                         message: $t('Cloud.OneNet.808542-42'),
-                                        trigger: 'blur',
                                     },
                                     {
                                         max: 64,
                                         message: $t('Cloud.OneNet.808542-4'),
-                                        trigger: 'blur',
                                     },
                                 ]"
                             >

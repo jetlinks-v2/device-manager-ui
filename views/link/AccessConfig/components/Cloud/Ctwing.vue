@@ -261,12 +261,10 @@
                                 {
                                     required: true,
                                     message: $t('Cloud.Ctwing.076179-28'),
-                                    trigger: 'blur',
                                 },
                                 {
                                     max: 64,
                                     message: $t('Cloud.Ctwing.076179-3'),
-                                    trigger: 'blur',
                                 },
                             ]"
                         >

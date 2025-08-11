@@ -125,12 +125,10 @@
                                 {
                                     required: true,
                                     message: $t('Edge.index.066653-8'),
-                                    trigger: 'blur',
                                 },
                                 {
                                     max: 64,
                                     message: $t('Edge.index.066653-9'),
-                                    trigger: 'blur',
                                 },
                             ]"
                         >

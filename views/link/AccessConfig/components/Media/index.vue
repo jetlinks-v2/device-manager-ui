@@ -19,12 +19,10 @@
                                     {
                                         required: true,
                                         message: $t('Media.index.962215-2'),
-                                        trigger: 'blur',
                                     },
                                     {
                                         max: 64,
                                         message: $t('Media.index.962215-3'),
-                                        trigger: 'blur',
                                     },
                                 ]"
                             >

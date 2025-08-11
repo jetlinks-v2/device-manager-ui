@@ -83,8 +83,7 @@
                     <j-card-select
                         v-model:value="form.deviceType"
                         :options="deviceList"
-                        :disabled="productStore.detail?.accessId ? true : false"
-                        @change="changeDeviceType"
+                        :disabled="!!productStore.detail?.accessId"
                     >
                         <template #itemRender="{node}">
                             <div class="select-item">
@@ -352,10 +351,6 @@ const submitData = () => {
  * 初始化
  */
 queryProductTree();
-
-const changeDeviceType = (value: Array<string>) => {
-    form.deviceType = value[0];
-};
 defineExpose({
     show: show,
 });
