@@ -88,7 +88,7 @@
                     style="padding-top: 24px"
                 />
                 <div class="device-list-pagination">
-                    <j-pagination
+                    <a-pagination
                         v-if="showPage"
                         :total="pageData.total"
                         :current="pageData.pageIndex + 1"
