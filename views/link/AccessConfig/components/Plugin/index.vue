@@ -95,7 +95,6 @@
                                         {
                                             required: true,
                                             message: $t('Plugin.index.626239-9'),
-                                            trigger: 'blur',
                                         },
                                         {
                                             max: 64,

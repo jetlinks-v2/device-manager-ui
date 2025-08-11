@@ -18,12 +18,10 @@
                                 {
                                     required: true,
                                     message: $t('Channel.index.456223-2'),
-                                    trigger: 'blur',
                                 },
                                 {
                                     max: 64,
                                     message: $t('Channel.index.456223-3'),
-                                    trigger: 'blur',
                                 },
                             ]"
                         >

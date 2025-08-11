@@ -16,12 +16,10 @@
                 {
                   required: true,
                   message: $t('Edge.geteway.598238-1'),
-                  trigger: 'blur',
                 },
                 {
                   max: 64,
                   message: $t('Edge.geteway.598238-2'),
-                  trigger: 'blur',
                 },
               ]"
               :label="$t('Edge.geteway.598238-3')"

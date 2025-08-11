@@ -329,12 +329,10 @@ const { resetFields, validate, validateInfos } = useForm(
       {
         required: true,
         message: $t("Network.index.041705-9"),
-        trigger: "blur",
       },
       {
         max: 64,
         message: $t("Network.index.041705-20"),
-        trigger: "blur",
       },
     ],
     description: [{ max: 200, message: $t("Network.index.041705-21") }],
