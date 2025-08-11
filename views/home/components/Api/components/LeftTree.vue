@@ -51,7 +51,7 @@ const getTreeData = () => {
             ...item,
             key: item.url,
         }));
-        const allPromise = tree.map((item) => getTreeTwo_api(item.name));
+        const allPromise = tree.map((item) => getTreeTwo_api(item.url));
         // 若类型不为api，根据不同类型添加得到不同的过滤数组
         if (props.mode === 'appManger') allPromise.push(apiOperations_api());
         else if (props.mode === 'home')
