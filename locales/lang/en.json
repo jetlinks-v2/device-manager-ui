@@ -2465,5 +2465,14 @@
     "components.EditDialog.375810-15": "Add",
     "components.EditDialog.375810-16": "Operation successful",
     "components.EditDialog.375810-17": "Identifier can only contain numbers, letters, underscores, and hyphens",
-    "components.EditDialog.375810-18": "Cannot use the same relationship name"
+    "components.EditDialog.375810-18": "Cannot use the same relationship name",
+    "Record.Card.931797-4": "Total number of tasks",
+    "log.index.741299-0": "Operation type",
+    "log.index.741299-1": "Involving gateway",
+    "log.index.741299-2": "Creation time",
+    "log.index.741299-3": "All tasks",
+    "log.index.741299-4": "All completed",
+    "log.index.741299-5": "In Progress",
+    "log.index.741299-6": "Incomplete",
+    "log.index.741299-7": "Waiting"
 }
