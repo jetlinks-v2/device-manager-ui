@@ -96,7 +96,7 @@ const props = defineProps({
 const {t: $t} = useI18n();
 const markerPoints = ref([])
 const windowPosition = ref({})
-const center = ref([116.418261, 39.921984]);
+const center = ref();
 const visible = ref(props.isShow)
 const history = reactive({
   visible: false,
