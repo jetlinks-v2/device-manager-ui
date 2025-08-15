@@ -87,25 +87,27 @@
                     :description="$t('InklingDevice.index.743184-2')"
                     style="padding-top: 24px"
                 />
-                <div class="device-list-pagination">
-                    <a-pagination
-                        v-if="showPage"
-                        :total="pageData.total"
-                        :current="pageData.pageIndex + 1"
-                        :pageSize="pageData.pageSize"
-                        :show-total="
-                            () => {
-                                const minSize =
-                                    pageData.pageIndex * pageData.pageSize + 1;
-                                const MaxSize =
-                                    (pageData.pageIndex + 1) *
-                                    pageData.pageSize;
-                                $t('InklingDevice.index.743184-3', [minSize,MaxSize > pageData.total? pageData.total : MaxSize ,pageData.total]);
-                            }
-                        "
-                        @change="pageChange"
-                    />
-                </div>
+
+            </div>
+            <div class="device-list-pagination">
+              <a-pagination
+                v-if="showPage"
+
+                :total="pageData.total"
+                :current="pageData.pageIndex + 1"
+                :pageSize="pageData.pageSize"
+                :show-total="
+                              () => {
+                                  const minSize =
+                                      pageData.pageIndex * pageData.pageSize + 1;
+                                  const MaxSize =
+                                      (pageData.pageIndex + 1) *
+                                      pageData.pageSize;
+                                  $t('InklingDevice.index.743184-3', [minSize,MaxSize > pageData.total? pageData.total : MaxSize ,pageData.total]);
+                              }
+                          "
+                @change="pageChange"
+              />
             </div>
         </a-spin>
     </div>
@@ -118,6 +120,8 @@ import {
 } from '../../../../api/link/accessConfig';
 import { cloneDeep, isArray } from 'lodash-es';
 import { getInkingDevices } from '../../../../api/instance';
+import { useI18n } from 'vue-i18n';
+
 
 type Emit = {
     (e: 'update:value', data: string | string[]): void;
@@ -151,7 +155,7 @@ const props = defineProps({
 });
 
 const emit = defineEmits<Emit>();
-
+const { t: $t } = useI18n();
 const spinning = ref(true);
 const deviceSpinning = ref(false);
 const deviceList = ref([]);
@@ -428,5 +432,16 @@ onMounted(() => {
         margin-top: 24px;
         text-align: right;
     }
+}
+
+.device-list-pagination {
+  text-align: right;
+
+  :deep(.ant-pagination-item) {
+    & .ant-pagination-jump-prev,
+    & .ant-pagination-jump-next {
+      display: none;
+    }
+  }
 }
 </style>
