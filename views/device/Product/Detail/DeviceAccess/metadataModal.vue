@@ -114,13 +114,10 @@ const flatObj = (obj: any, result: any) => {
 
 
 const updateAccessData = async (id: string, values: any, metadata: string) => {
-  // const result: any = {};
-  // flatObj(values, result);
-  // const { storePolicy, ...extra } = result;
   const { storePolicy, ...extra } = values;
   // 更新选择设备(设备接入)
   const accessObj = {
-    ...productDetail.value,
+    // ...productDetail.value,
     metadata: JSON.stringify(metadata),
     transportProtocol: props.access?.transport,
     protocolName: props.access?.protocolDetail?.name,
@@ -128,14 +125,16 @@ const updateAccessData = async (id: string, values: any, metadata: string) => {
     accessName: props.access?.name,
     accessProvider: props.access?.provider,
     messageProtocol: props.access?.protocol,
+    configuration: { ...extra },
+    storePolicy: storePolicy,
   }
-  loading.value = true
-  const updateDeviceResp = await updateDevice(accessObj)
-
-  if (!updateDeviceResp.success) {
-    loading.value = false
-    return
-  }
+  // loading.value = true
+  // const updateDeviceResp = await updateDevice(accessObj)
+  //
+  // if (!updateDeviceResp.success) {
+  //   loading.value = false
+  //   return
+  // }
 
   if (props.access?.provider === 'plugin_gateway' && props.data.productTypeId) {
     await savePluginData(
@@ -149,8 +148,7 @@ const updateAccessData = async (id: string, values: any, metadata: string) => {
   // 更新产品配置信息
   const resp = await modify(id || '', {
     id: id,
-    configuration: { ...extra },
-    storePolicy: storePolicy,
+    ...accessObj
   });
   loading.value = false
   if (resp.status === 200) {
