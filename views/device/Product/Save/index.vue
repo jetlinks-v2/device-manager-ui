@@ -223,11 +223,11 @@ const validateDeviceType = async (_rule: Rule, value: string) => {
 const rules = reactive({
     id: [
         { validator: validateInput, trigger: 'blur' },
-        { max: 64, message: $t('Save.index.912481-20'), trigger: 'change' },
+        { max: 64, message: $t('Save.index.912481-20') },
     ],
     name: [
-        { required: true, message: $t('Save.index.912481-5'), trigger: 'blur' },
-        { max: 64, message: $t('Save.index.912481-20'), trigger: 'change' },
+        { required: true, message: $t('Save.index.912481-5') },
+        { max: 64, message: $t('Save.index.912481-20') },
     ],
     deviceType: [
         {
@@ -236,7 +236,7 @@ const rules = reactive({
         },
     ],
     description: [
-        { max: 200, message: $t('Save.index.912481-21'), trigger: 'blur' },
+        { max: 200, message: $t('Save.index.912481-21') },
     ],
 });
 

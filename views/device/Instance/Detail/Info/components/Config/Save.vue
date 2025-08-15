@@ -19,7 +19,7 @@
             </div>
         </template>
         <a-form layout="vertical" ref="formRef" :model="modelRef">
-            <template v-for="(item, index) in props.config || []" :key="index">
+            <template v-for="(item, index) in config || []" :key="index">
                 <a-form-item
                     v-for="i in item.properties"
                     :name="i.property"
@@ -41,6 +41,7 @@
                         v-model:modelValue="modelRef[i.property]"
                         :itemType="i.type.type"
                         :options="getOptions(i)"
+                        :extraProps="i.type.expands || {}"
                     />
                 </a-form-item>
             </template>
@@ -49,8 +50,8 @@
 </template>
 
 <script lang="ts" setup>
-import { modify } from '../../../../../../../api/instance';
-import { useInstanceStore } from '../../../../../../../store/instance';
+import { modify } from '@device/api/instance';
+import { useInstanceStore } from '@device/store/instance';
 import { onlyMessage } from '@/utils/comm';
 import { useI18n } from 'vue-i18n';
 
@@ -91,6 +92,7 @@ const getOptions = (i: any) => {
     }
     return undefined;
 };
+
 watchEffect(() => {
     const obj = instanceStore.current?.configuration;
     if (obj && Object.keys(obj).length) {

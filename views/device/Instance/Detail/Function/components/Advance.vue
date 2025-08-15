@@ -30,6 +30,7 @@
                         theme="vs-dark"
                         style="height: 400px"
                     />
+                    <p v-if="errorMessage" class="ant-form-item-explain-error">{{ errorMessage }}</p>
                     <div class="editor-btn">
                         <a-space>
                             <a-button
@@ -57,10 +58,11 @@
 </template>
 
 <script setup lang="ts">
-import { useInstanceStore } from '../../../../../../store/instance';
-import { execute } from '../../../../../../api/instance';
+import { useInstanceStore } from '@device/store/instance';
+import { execute } from '@device/api/instance';
 import { onlyMessage } from '@/utils/comm';
 import { useI18n } from 'vue-i18n';
+import {map} from "lodash-es";
 
 const { t: $t } = useI18n();
 const instanceStore = useInstanceStore();
@@ -72,6 +74,7 @@ const loading = ref<boolean>(false);
 const metadata = computed(() => JSON.parse(instanceStore.detail.metadata));
 const current = ref<any>({});
 const executeResult = ref<string>('');
+const errorMessage = ref()
 
 const newFunctions = ref<any[]>([]);
 
@@ -135,6 +138,17 @@ const onTabChange = (_key: string) => {
     current.value = { ..._item };
 };
 
+const onValidator = (funcJson: any, func: any) => {
+  errorMessage.value = undefined
+  const dt = func.inputs.filter((i: any) => {
+    return i.expands?.required && (funcJson[i.id] === undefined || funcJson[i.id] === '' || funcJson[i.id] === null)
+  })
+  if(dt.length){
+    errorMessage.value = `请输入${map(dt, 'name').join(',')}`
+  }
+  return !!dt.length
+}
+
 /**
  * 执行
  */
@@ -149,23 +163,29 @@ const handleExecute = async (func: any) => {
     } catch (e) {
         loading.value = false;
         onlyMessage($t('components.Advance.648416-4'), 'error');
-        return; 
+        return;
     }
-    const resp: any = await execute(
-        route.params.id as string,
-        func.id,
-        funcJson,
-    )
-        .catch(() => {
+    // 判断是否有值是否需要必填
+    const valid = onValidator(funcJson, func)
+    if(!valid){
+      const resp: any = await execute(
+          route.params.id as string,
+          func.id,
+          funcJson,
+      )
+          .catch(() => {
             loading.value = false;
-        })
-        .finally(() => {
+          })
+          .finally(() => {
             loading.value = false;
-        });
-    if (resp.success) {
+          });
+      if (resp.success) {
         executeResult.value =
             resp?.result instanceof Array ? resp?.result?.[0] : resp.result;
         onlyMessage($t('components.Advance.648416-3'));
+      }
+    } else {
+      loading.value = false;
     }
 };
 /**

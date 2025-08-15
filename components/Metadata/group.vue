@@ -7,7 +7,7 @@
             v-if="myActiveKey === item.value"
             :trigger="['click']"
             :getPopupContainer="(node) => tableWrapperRef || node"
-            :disabled="readonly"
+            :disabled="readonly || target === 'device'"
           >
             <template #overlay>
               <a-menu @click="(e) => { menuClick(e, item)}">
@@ -62,7 +62,8 @@
       </a-tab-pane>
     </a-tabs>
     <a-modal
-      :visible="visible"
+        v-if="visible"
+      :visible="true"
       :title="$t('Metadata.group.497268-3')"
       :maskClosable="false"
       :getContainer="modalContainer"
@@ -76,7 +77,6 @@
         <a-form-item :label="$t('Metadata.group.497268-10')" name="value" validate-first :rules="[
             { required: true, message: $t('Metadata.group.497268-11')},
             { pattern: /^[a-zA-Z0-9_\-]+$/, message: $t('Save.index.902471-2')},
-            { max: 64, message: $t('Save.index.912481-20')},
             { max: 64, message: $t('Save.index.912481-20')},
             {
                                     validator: vailId,
@@ -186,8 +186,8 @@ const onEdit = (record) => {
 
 
 const onCancel = () => {
-  formRef.value.resetFields()
   visible.value = false
+  formRef.value.resetFields()
 }
 const onOk = () => {
   const data = cloneDeep(formData)

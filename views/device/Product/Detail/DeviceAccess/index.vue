@@ -1,17 +1,18 @@
 <!-- 设备接入 -->
 <template>
   <div
-    v-if="access.id === undefined || null"
-    style="margin-top: 20%; transform: translateY(-50%)"
+      v-if="access.id === undefined || null"
+      style="margin-top: 20%; transform: translateY(-50%)"
   >
     <j-empty>
       <template #description>
         <span v-if="permissionStore.hasPermission('device/Product:update')">
-          {{ $t("DeviceAccess.index.594346-0")
+          {{
+            $t("DeviceAccess.index.594346-0")
           }}<a-button type="link" @click="showModal">{{
             $t("DeviceAccess.index.594346-1")
           }}</a-button
-          >{{ $t("DeviceAccess.index.594346-2") }}
+        >{{ $t("DeviceAccess.index.594346-2") }}
         </span>
         <span v-else>{{ $t("DeviceAccess.index.594346-3") }}</span>
       </template>
@@ -23,16 +24,16 @@
         <Title :data="$t('DeviceAccess.index.594346-4')">
           <template #extra>
             <j-permission-button
-              style="margin: 0 0 0 20px"
-              type="primary"
-              size="small"
-              :tooltip="{
+                style="margin: 0 0 0 20px"
+                type="primary"
+                size="small"
+                :tooltip="{
                 title: tooltip,
               }"
-              :disabled="checkDisabled"
-              ghost
-              @click="showDevice"
-              hasPermission="device/Product:update"
+                :disabled="checkDisabled"
+                ghost
+                @click="showDevice"
+                hasPermission="device/Product:update"
             >
               {{ $t("DeviceAccess.index.594346-5") }}
             </j-permission-button>
@@ -46,7 +47,7 @@
             {{
               access?.description ||
               dataSource.find((item) => item?.id === access?.provider)
-                ?.description
+                  ?.description
             }}
           </div>
         </div>
@@ -62,12 +63,12 @@
           <Title :data="$t('DeviceAccess.index.594346-7')"></Title>
           <div v-if="access?.channelInfo?.addresses.length > 0">
             <div
-              v-for="item in access?.channelInfo?.addresses"
-              :key="item.address"
+                v-for="item in access?.channelInfo?.addresses"
+                :key="item.address"
             >
               <a-badge
-                :color="item.health === -1 ? 'red' : 'green'"
-                :text="item.address"
+                  :color="item.health === -1 ? 'red' : 'green'"
+                  :text="item.address"
               >
               </a-badge>
             </div>
@@ -76,41 +77,41 @@
         </div>
         <!--        {{ $t('DeviceAccess.index.594346-9') }}        -->
         <a-form
-          ref="pluginFormRef"
-          :model="productData"
-          layout="vertical"
-          v-if="productTypes.length"
+            ref="pluginFormRef"
+            :model="productData"
+            layout="vertical"
+            v-if="productTypes.length"
         >
           <a-form-item
-            name="id"
-            :label="$t('DeviceAccess.index.594346-9')"
-            :rules="[
+              name="id"
+              :label="$t('DeviceAccess.index.594346-9')"
+              :rules="[
               { required: true, message: $t('DeviceAccess.index.594346-10') },
             ]"
           >
             <a-select
-              v-model:value="productData.id"
-              :options="productTypes"
-              @change="productTypeChange"
-              :placeholder="$t('DeviceAccess.index.594346-10')"
+                v-model:value="productData.id"
+                :options="productTypes"
+                @change="productTypeChange"
+                :placeholder="$t('DeviceAccess.index.594346-10')"
             />
           </a-form-item>
         </a-form>
         <!--        其它接入配置        -->
-        <div v-for="(i, index) in metadata">
+        <div v-for="(i, index) in metadata" :key="i.name + index">
           <Title v-if="i?.name" :data="i?.name" class="config">
             <template #extra>
               <a-tooltip :title="$t('DeviceAccess.index.594346-11')">
-                <AIcon type="QuestionCircleOutlined" style="margin-left: 2px" />
+                <AIcon type="QuestionCircleOutlined" style="margin-left: 2px"/>
               </a-tooltip>
             </template>
           </Title>
           <a-form ref="formRef" :model="formData.data" layout="vertical">
             <a-form-item
-              :name="item.property"
-              v-for="item in i?.properties || []"
-              :key="item"
-              :rules="[
+                :name="item.property"
+                v-for="item in i?.properties || []"
+                :key="item"
+                :rules="[
                 {
                   required: !!item?.type?.expands?.required,
                   message: `${
@@ -125,14 +126,14 @@
                 <div>
                   {{ item.name }}
                   <a-tooltip v-if="item.description" :title="item.description">
-                    <AIcon type="QuestionCircleOutlined" />
+                    <AIcon type="QuestionCircleOutlined"/>
                   </a-tooltip>
                 </div>
               </template>
               <j-value-item
-                :itemType="item.type.type"
-                v-model:modelValue="formData.data[item.property]"
-                :options="getOptions(item)"
+                  :itemType="item.type.type"
+                  v-model:modelValue="formData.data[item.property]"
+                  :options="getOptions(item)"
               ></j-value-item>
             </a-form-item>
           </a-form>
@@ -140,7 +141,7 @@
         <Title :data="$t('DeviceAccess.index.594346-14')">
           <template #extra>
             <a-tooltip :title="$t('DeviceAccess.index.594346-15')">
-              <AIcon type="QuestionCircleOutlined" style="margin-left: 2px" />
+              <AIcon type="QuestionCircleOutlined" style="margin-left: 2px"/>
             </a-tooltip>
           </template>
         </Title>
@@ -148,20 +149,20 @@
           <a-form-item>
             <a-select ref="select" v-model:value="form.storePolicy">
               <a-select-option
-                v-for="(item, index) in storageList"
-                :key="index"
-                :value="item.id"
-                >{{ item.name }}
+                  v-for="(item, index) in storageList"
+                  :key="index"
+                  :value="item.id"
+              >{{ item.name }}
               </a-select-option>
             </a-select>
           </a-form-item>
         </a-form>
         <j-permission-button
-          type="primary"
-          @click="submitDevice"
-          hasPermission="device/Instance:update"
-          :loading="submitLoading"
-          >{{ $t("DeviceAccess.index.594346-16") }}
+            type="primary"
+            @click="submitDevice"
+            hasPermission="device/Instance:update"
+            :loading="submitLoading"
+        >{{ $t("DeviceAccess.index.594346-16") }}
         </j-permission-button>
       </a-col>
       <a-col :span="12" v-if="config?.routes && config?.routes?.length > 0">
@@ -171,15 +172,15 @@
               {{
                 access?.provider === "mqtt-server-gateway" ||
                 access?.provider === "mqtt-client-gateway"
-                  ? "topic"
-                  : $t("DeviceAccess.index.594346-17")
+                    ? "topic"
+                    : $t("DeviceAccess.index.594346-17")
               }}
             </div>
             <a-table
-              :columns="config.id === 'MQTT' ? columnsMQTT : columnsHTTP"
-              :data-source="config?.routes"
-              :pagination="false"
-              :scroll="{ y: 500 }"
+                :columns="config.id === 'MQTT' ? columnsMQTT : columnsHTTP"
+                :data-source="config?.routes"
+                :pagination="false"
+                :scroll="{ y: 500 }"
             >
               <template #bodyCell="{ text, column, record }">
                 <template v-if="column?.key === 'topic'">
@@ -222,35 +223,35 @@
   </div>
   <!-- 选择设备 -->
   <AccessModal
-    v-if="visible"
-    :product-id="productStore.current.id"
-    :deviceType="productStore.current.deviceType"
-    :accessId="accessId"
-    :providersList="dataSource"
-    @cancel="visible = false"
-    @submit="checkAccess"
+      v-if="visible"
+      :product-id="productStore.current.id"
+      :deviceType="productStore.current.deviceType"
+      :accessId="accessId"
+      :providersList="dataSource"
+      @cancel="visible = false"
+      @submit="checkAccess"
   />
   <!-- 物模型处理方式 -->
   <MetaDataModal
-    v-if="metadataVisible"
-    :metadata="productData.metadata"
-    :access="access"
-    :data="metadataModalCacheData"
-    @cancel="
+      v-if="metadataVisible"
+      :metadata="productData.metadata"
+      :access="access"
+      :data="metadataModalCacheData"
+      @cancel="
       () => {
         (metadataVisible = false), (metadataModalCacheData = {});
       }
     "
-    @submit="MetaDataModalSubmit"
+      @submit="MetaDataModalSubmit"
   />
 </template>
 
 <script lang="ts" setup name="AccessConfig">
-import { useProductStore } from "../../../../../store/product";
-import { ConfigMetadata } from "../../typings";
+import {useProductStore} from "../../../../../store/product";
+import {ConfigMetadata} from "../../typings";
 import Title from "../Title/index.vue";
-import { useAuthStore } from "@/store";
-import { steps, steps1 } from "./util";
+import {useAuthStore} from "@/store";
+import {steps, steps1} from "./util";
 import "./index.less";
 import {
   getProviders,
@@ -266,10 +267,10 @@ import {
 
 import Driver from "driver.js";
 import "driver.js/dist/driver.min.css";
-import { marked } from "marked";
-import type { TableColumnType } from "ant-design-vue";
-import { useMenuStore } from "@/store/menu";
-import { map } from "lodash-es";
+import {marked} from "marked";
+import type {TableColumnType} from "ant-design-vue";
+import {useMenuStore} from "@/store/menu";
+import {map} from "lodash-es";
 import AccessModal from "./accessModal.vue";
 import MetaDataModal from "./metadataModal.vue";
 import {
@@ -277,12 +278,12 @@ import {
   getProductByPluginId,
   savePluginData,
 } from "../../../../../api/link/plugin";
-import { detail as queryPluginAccessDetail } from "../../../../../api/link/accessConfig";
-import { onlyMessage } from "@/utils/comm";
-import { pick } from "lodash-es";
-import { useI18n } from "vue-i18n";
+import {detail as queryPluginAccessDetail} from "../../../../../api/link/accessConfig";
+import {onlyMessage} from "@/utils/comm";
+import {pick} from "lodash-es";
+import {useI18n} from "vue-i18n";
 
-const { t: $t } = useI18n();
+const {t: $t} = useI18n();
 const route = useRoute();
 const productStore = useProductStore();
 const tableRef = ref();
@@ -300,7 +301,7 @@ const visible = ref<boolean>(false);
 const access = ref<Record<string, any>>({});
 const accessId = ref<string>(productStore.current.accessId);
 const config = ref<any>({});
-const metadata = ref<ConfigMetadata[]>([{ properties: [] }]);
+const metadata = ref<ConfigMetadata[]>([{properties: []}]);
 const dataSource = ref<string[]>([]);
 const storageList = ref<any[]>([]);
 const markdownToHtml = shallowRef("");
@@ -315,7 +316,7 @@ const current = ref({
 });
 //存储数据
 const form = reactive<Record<string, any>>({
-  storePolicy: productStore.current?.storePolicy || "none",
+  storePolicy: "none",
 });
 // 表单数据
 const formData = reactive<Record<string, any>>({
@@ -390,7 +391,7 @@ const search = (e: any) => {
   };
 };
 
-const stepsRef = reactive({ current: 0 });
+const stepsRef = reactive({current: 0});
 
 /**
  * 保存引导页数据
@@ -462,7 +463,7 @@ const ColumnsMQTT = [
     ellipsis: true,
     align: "center",
     width: 100,
-    scopedSlots: { customRender: "stream" },
+    scopedSlots: {customRender: "stream"},
   },
   {
     title: $t("DeviceAccess.index.594346-23"),
@@ -553,7 +554,7 @@ const handleColumns = () => {
       const arr = list.filter((res: any) => res.group === record.group);
 
       const isRowIndex =
-        rowIndex === 0 || list[rowIndex - 1].group !== record.group;
+          rowIndex === 0 || list[rowIndex - 1].group !== record.group;
       isRowIndex && (obj.rowSpan = arr.length);
 
       return obj;
@@ -567,8 +568,8 @@ const handleColumns = () => {
  * 查询协议信息
  */
 const getConfigDetail = (
-  messageProtocol: string,
-  transportProtocol: string,
+    messageProtocol: string,
+    transportProtocol: string,
 ) => {
   getConfigView(messageProtocol, transportProtocol).then((resp) => {
     if (resp.status === 200) {
@@ -588,7 +589,7 @@ const modifyArray = (oldData: any[], newData: any[]) => {
     }
   });
   return oldData.map((item, index) => {
-    return { ...item, sortsIndex: index };
+    return {...item, sortsIndex: index};
   });
 };
 /**
@@ -626,9 +627,9 @@ const checkAccess = async (data: any) => {
     metadata.value = metadata.value.map((i: any) => {
       i.properties = i?.properties.filter((item: any) => {
         if (
-          item.name === "流传输模式" &&
-          (!productStore.current?.configuration ||
-            !productStore.current?.configuration.hasOwnProperty(item.property))
+            item.name === "流传输模式" &&
+            (!productStore.current?.configuration ||
+                !productStore.current?.configuration.hasOwnProperty(item.property))
         ) {
           formData.data[item.property] = item.type.expands?.defaultValue;
         }
@@ -648,8 +649,8 @@ const checkAccess = async (data: any) => {
   } else {
     handleColumns();
     markdownToHtml.value = config.value?.document
-      ? marked(config.value.document)
-      : "";
+        ? marked(config.value.document)
+        : "";
     getGuide(!!data.metadata.length); //
   }
   if (data.access?.transportDetail?.metadata) {
@@ -665,8 +666,8 @@ const checkAccess = async (data: any) => {
 
 const productTypeChange = (id: string, items: any) => {
   productData.metadata = items?.metadata
-    ? pick(items.metadata, ["functions", "properties", "events", "tags"])
-    : {};
+      ? pick(items.metadata, ["functions", "properties", "events", "tags"])
+      : {};
 };
 
 /**
@@ -680,39 +681,37 @@ const getProvidersList = async () => {
 /**
  * 查询保存数据信息
  */
-const getData = async (accessId?: string) => {
-  const _accessId = accessId || productStore.current?.accessId;
-  if (productStore.current?.id) {
-    getConfigMetadata(productStore.current?.id).then((resp: any) => {
-      metadata.value = resp?.result || [
-        {
-          properties: [],
-        },
-      ];
-      // 流传输模式 初始为udp模式
-      if (metadata.value.length) {
-        metadata.value = metadata.value.map((i: any) => {
-          i.properties = i?.properties.filter((item: any) => {
-            if (
+const getData = async () => {
+  const _accessId = productStore.current?.accessId;
+  getConfigMetadata(productStore.current?.id).then((resp: any) => {
+    metadata.value = resp?.result || [
+      {
+        properties: [],
+      },
+    ];
+    // 流传输模式 初始为udp模式
+    if (metadata.value.length) {
+      metadata.value = metadata.value.map((i: any) => {
+        i.properties = i?.properties.filter((item: any) => {
+          if (
               item.name === "流传输模式" &&
               (!productStore.current?.configuration ||
-                !productStore.current?.configuration.hasOwnProperty(
-                  item.property,
-                ))
-            ) {
-              formData.data[item.property] = item.type.expands?.defaultValue;
-            }
-            return item.name !== "流传输模式";
-          });
-          return i;
+                  !productStore.current?.configuration.hasOwnProperty(
+                      item.property,
+                  ))
+          ) {
+            formData.data[item.property] = item.type.expands?.defaultValue;
+          }
+          return item.name !== "流传输模式";
         });
-      }
-      if (accessId) {
-        // 切换接入方式之后获取是否显示引导
-        getGuide(resp?.result.length); //
-      }
-    });
-  }
+        return i;
+      });
+    }
+    if (accessId) {
+      // 切换接入方式之后获取是否显示引导
+      getGuide(resp?.result.length); //
+    }
+  });
   if (_accessId) {
     // 有设备接入
     // const metadataResp = await getConfigMetadata(productStore.current!.id)
@@ -725,12 +724,12 @@ const getData = async (accessId?: string) => {
         //
         if (res.success) {
           const pluginRes = await getPluginData(
-            "product",
-            _accessId,
-            productStore.current?.id,
+              "product",
+              _accessId,
+              productStore.current?.id,
           );
           const resp = await getProductByPluginId(res.result.channelId).catch(
-            () => ({ success: false, result: [] }),
+              () => ({success: false, result: []}),
           );
           if (resp.success) {
             productTypes.value = resp.result.map((item) => {
@@ -754,15 +753,15 @@ const getData = async (accessId?: string) => {
       });
     } else {
       getConfigDetail(
-        productStore.current?.messageProtocol || "",
-        productStore.current?.transportProtocol || "",
+          productStore.current?.messageProtocol || "",
+          productStore.current?.transportProtocol || "",
       );
     }
   }
   getStoragList().then((resp: any) => {
     if (resp.success) {
       storageList.value = resp.result;
-      form.storePolicy = productStore.current?.storePolicy ||resp.result[0]?.id || 'none';
+      form.storePolicy = productStore.current?.storePolicy || resp.result[0]?.id || 'none';
     }
   });
 };
@@ -782,19 +781,19 @@ const submitDevice = async () => {
   const res = await Promise.all(allValidate);
   // const res = await formRef.value.validate();
   if (!res) return;
-  const values = { storePolicy: form.storePolicy, ...formData.data };
+  const values = {storePolicy: form.storePolicy, ...formData.data};
   const id = productStore.current?.id;
   // 该产品是否有物模型，有则弹窗进行处理
   const _metadata = JSON.parse(productStore.current?.metadata || "{}");
   if (
-    (_metadata.properties?.length ||
-      _metadata.events?.length ||
-      _metadata.functions?.length ||
-      _metadata.tags?.length) &&
-    (productData.metadata?.properties?.length ||
-      productData.metadata?.events?.length ||
-      productData.metadata?.functions?.length ||
-      productData.metadata?.tags?.length)
+      (_metadata.properties?.length ||
+          _metadata.events?.length ||
+          _metadata.functions?.length ||
+          _metadata.tags?.length) &&
+      (productData.metadata?.properties?.length ||
+          productData.metadata?.events?.length ||
+          productData.metadata?.functions?.length ||
+          productData.metadata?.tags?.length)
   ) {
     metadataModalCacheData.value = {
       id,
@@ -808,10 +807,7 @@ const submitDevice = async () => {
 };
 
 const updateAccessData = async (id: string, values: any) => {
-  const result: any = {};
-  //   flatObj(values, result);
-  //   const { storePolicy, ...extra } = result;
-  const { storePolicy, ...extra } = values;
+  const {storePolicy, ...extra} = values;
   // 产品有物模型，设备接入没有，取产品物模型；设备接入有物模型，产品没有，取设备接入的物模型；否则取空字符串；不能为undefined或者null
   let _metadata = "";
   if (productStore.current?.metadata) {
@@ -821,7 +817,7 @@ const updateAccessData = async (id: string, values: any) => {
   }
   // 更新选择设备(设备接入)
   const accessObj = {
-    ...productStore.current,
+    // ...productStore.current,
     metadata: _metadata,
     transportProtocol: access.value?.transport,
     protocolName: access.value?.protocolDetail?.name,
@@ -829,29 +825,22 @@ const updateAccessData = async (id: string, values: any) => {
     accessName: access.value?.name,
     accessProvider: access.value?.provider,
     messageProtocol: access.value?.protocol,
+    configuration: {...extra},
+    storePolicy: storePolicy,
   };
-  submitLoading.value = true;
-  const updateDeviceResp = await updateDevice(accessObj).catch(() => {
-    submitLoading.value = false;
-  });
-
-  if (!updateDeviceResp.success) {
-    submitLoading.value = false;
-  }
 
   if (access.value?.provider === "plugin_gateway" && productData.id) {
     await savePluginData(
-      "product",
-      access.value?.id,
-      productStore.current.id,
-      productData.id,
+        "product",
+        access.value?.id,
+        productStore.current.id,
+        productData.id,
     ).catch(() => ({}));
   }
   // 更新产品配置信息
   const resp = await modify(id || "", {
     id: id,
-    configuration: { ...extra },
-    storePolicy: storePolicy,
+    ...accessObj,
   }).finally(() => {
     submitLoading.value = false;
   });
@@ -891,14 +880,6 @@ const MetaDataModalSubmit = () => {
 };
 
 getProvidersList();
-/**
- * 初始化
- */
-watchEffect(() => {
-  if (productStore.current?.storePolicy) {
-    form.storePolicy = productStore.current!.storePolicy;
-  }
-});
 
 const tooltip = computed(() => {
   if (productStore.current?.count > 0) {
@@ -917,15 +898,18 @@ const checkDisabled = computed(() => {
   return false;
 });
 
-nextTick(() => {
-  getData();
-});
 watch(
-  () => productStore.current,
-  () => {
-    getData();
-    formData.data = productStore.current?.configuration || {};
-  },
+    () => productStore.current?.id,
+    (val) => {
+      if(val){
+        getData();
+        formData.data = productStore.current?.configuration || {};
+      }
+    },
+    {
+      deep: true,
+      immediate: true
+    }
 );
 </script>
 <style lang="less" scoped>

@@ -918,7 +918,7 @@ onMounted(() => {
                 termOptions: ['eq'],
                 options: () =>
                     new Promise((resolve) => {
-                        queryOrgThree({}).then((resp: any) => {
+                        queryOrgThree({paging: false}).then((resp: any) => {
                             const formatValue = (list: any[]) => {
                                 const _list: any[] = [];
                                 list.forEach((item) => {

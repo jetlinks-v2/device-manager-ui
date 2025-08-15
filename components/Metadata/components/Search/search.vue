@@ -14,7 +14,7 @@
         <div>
           <a-space>
             <span>{{ $t('Search.search.746496-0') }}</span>
-            <a-input v-model:value="searchValue" :maxlength="64" :placeholder="$t('Search.search.746496-1')" />
+            <a-input allow-clear v-model:value="searchValue" :maxlength="64" :placeholder="$t('Search.search.746496-1')" />
             <a-button type="primary" ghost @click="() => search('all')">{{ $t('Search.search.746496-2') }}</a-button>
             <a-button type="primary" ghost @click="() => search('prev')">{{ $t('Search.search.746496-3') }}</a-button>
             <a-button type="primary" ghost @click="() => search('next')">{{ $t('Search.search.746496-4') }}</a-button>
@@ -119,10 +119,11 @@ const selectedTableRow = (record) => {
 }
 
 const handleFilterArray = () => {
+  const str = searchValue.value ? searchValue.value : undefined
   const cloneDataSource = JSON.parse(JSON.stringify(dataSource.value || '[]')).map(item => Object.assign(item, { __oldSerial: item.__serial}))
   const _filterArray = cloneDataSource.filter(item => {
     if (item[props.searchKey]) {
-      return item[props.searchKey].includes(searchValue.value)
+      return item[props.searchKey].includes(str)
     }
     return false
   })
