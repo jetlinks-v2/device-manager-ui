@@ -109,6 +109,7 @@ export const edit = (data: any) => request.put(`/network/card/${data.id}`, data)
  * @param id
  */
 export const queryDetail = (id: any) => request.get(`/network/card/${id}`);
+export const queryDetailById = (id: any) => request.get(`/network/card/detail/${id}`);
 
 /**
  * 查询物联卡充值缴费日志
@@ -124,3 +125,6 @@ export const recharge = (data: any) => request.post(`/network/card/_recharge`, d
 export const queryCount = (data: any) => request.post(`/network/card/_count`,data)
 
 export const queryDeactivate = (id: string) => request.get(`/network/card/${id}/stop/reason`)
+
+export const querySyncLog = (data: any) => request.post(`/network/card/flow/sync/_log`, data)
+
