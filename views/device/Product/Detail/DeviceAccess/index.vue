@@ -98,7 +98,7 @@
           </a-form-item>
         </a-form>
         <!--        其它接入配置        -->
-        <div v-for="(i, index) in metadata" :key="i.name + index">
+        <div v-for="i in metadata">
           <Title v-if="i?.name" :data="i?.name" class="config">
             <template #extra>
               <a-tooltip :title="$t('DeviceAccess.index.594346-11')">
