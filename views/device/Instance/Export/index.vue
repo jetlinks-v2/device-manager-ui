@@ -122,7 +122,7 @@ const handleOk = async () => {
     })
     const token = LocalStore.get(TOKEN_KEY);
     const baseUrl = `${origin}${BASE_API}/device-instance`;
-    const path = modelRef.product ? `/${modelRef.product}/export.xlsx` : `/export.xlsx`;
+    const path = modelRef.product ? `/${modelRef.product}/export.${modelRef.fileType}` : `/export.${modelRef.fileType}`;
     const url = `${baseUrl}${path}?${TOKEN_KEY_URL}=${token}&${urlParams}`;
     window.open(url)
     emit('close');
