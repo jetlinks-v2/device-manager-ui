@@ -1,6 +1,6 @@
 <template>
     <a-drawer
-        visible
+        open
         :closable="false"
         @close="$emit('closeDrawer')"
         :width="700"

@@ -1,7 +1,7 @@
 <template>
     <a-modal
         :maskClosable="false"
-        :visible="true"
+        :open="true"
         :title="$t('Product.index.660348-13')"
         @ok="handleSave"
         @cancel="handleCancel"

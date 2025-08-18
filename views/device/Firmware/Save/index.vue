@@ -3,7 +3,7 @@
         :title="data.id ? $t('Save.index.978508-0') : $t('Save.index.978508-1')"
         :ok-text="$t('Save.index.978508-2')"
         :cancel-text="$t('Save.index.978508-3')"
-        :visible="true"
+        :open="true"
         width="700px"
         :confirm-loading="loading"
         :maskClosable="false"

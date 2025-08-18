@@ -2,7 +2,7 @@
     <a-modal
         :maskClosable="false"
         width="600px"
-        :visible="true"
+        :open="true"
         :title="type === 'add' ? $t('IotCard.Save.570033-0') : $t('IotCard.Save.570033-1')"
         :okText="$t('IotCard.Save.570033-2')"
         :cancelText="$t('IotCard.Save.570033-3')"

@@ -15,7 +15,7 @@ const DiagnosticAdvice = defineComponent({
     emits: ['close'],
     setup(props, { emit }) {
         const { data } = props
-        return () => <Modal visible title={i18n.global.t('Status.DiagnosticAdvice.980298-0')} width={1000} onOk={() => {
+        return () => <Modal open title={i18n.global.t('Status.DiagnosticAdvice.980298-0')} width={1000} onOk={() => {
             emit('close')
         }}
             onCancel={() => {

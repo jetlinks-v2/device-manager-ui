@@ -1,7 +1,7 @@
 <template>
     <a-modal
         :title="$t('Event.index.277611-0')"
-        visible
+        open
         width="50vw"
         :maskClosable="false"
         @ok="onCancel"

@@ -7,7 +7,7 @@
         </div>
     </a-button>
     <a-modal
-        v-model:visible="visible"
+        v-model:open="visible"
         :title="$t('components.TagSearch.396210-0')"
         :width="600"
         :keyboard="false"

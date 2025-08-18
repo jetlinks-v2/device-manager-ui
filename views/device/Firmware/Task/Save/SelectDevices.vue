@@ -17,7 +17,7 @@
         :title="$t('Save.SelectDevices.386303-1')"
         :ok-text="$t('Save.SelectDevices.386303-2')"
         :cancel-text="$t('Save.SelectDevices.386303-3')"
-        :visible="true"
+        :open="true"
         width="80%"
         @cancel="handleCancel"
         @ok="handleOk"

@@ -19,7 +19,7 @@
     </j-permission-button>
     <a-modal
         v-if="visible"
-        visible
+        open
         :title="$t('Import.Import.317604-1')"
         :width="600"
         :keyboard="false"

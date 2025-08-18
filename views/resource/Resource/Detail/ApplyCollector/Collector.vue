@@ -1,6 +1,6 @@
 <template>
     <a-modal
-        visible
+        open
         :centered="true"
         @cancel="emits('close')"
         :maskClosable="false"

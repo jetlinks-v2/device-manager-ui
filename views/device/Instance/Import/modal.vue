@@ -1,7 +1,7 @@
 <template>
   <a-modal
     :maskClosable="false"
-    :visible="visible"
+    :open="visible"
     width="800px"
     :title="$t('Import.modal.422832-0')"
     @cancel='cancel'
@@ -44,7 +44,7 @@
   </a-modal>
   <a-modal
     :maskClosable="false"
-    :visible="importVisible"
+    :open="importVisible"
     width="400px"
     :title="$t('Import.modal.422832-6')"
     @cancel='importCancel'

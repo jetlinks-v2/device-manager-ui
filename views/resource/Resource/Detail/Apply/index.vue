@@ -1,7 +1,7 @@
 <template>
     <a-modal
         :title="$t('Apply.index.663043-0')"
-        visible
+        open
         :centered="true"
         :confirm-loading="loading"
         @cancel="emits('close')"

@@ -1,6 +1,6 @@
 <template>
     <a-modal
-        visible
+        open
         :title="$t('Detail.index.805835-0')"
         :width="1200"
         :closable="false"

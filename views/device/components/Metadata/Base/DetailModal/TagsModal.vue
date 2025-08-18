@@ -1,6 +1,6 @@
 <template>
   <a-modal
-      visible
+      open
       :maskClosable="false"
       :title="$t('DetailModal.TagsModal.986277-0')"
       :getContainer="getPopupContainer"

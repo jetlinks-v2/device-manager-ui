@@ -54,7 +54,7 @@
             <div style="height: calc(100% - 106px);overflow-y: auto">
               <a-dropdown
                   :trigger="['contextmenu']"
-                  :visible="menuVisible"
+                  :open="menuVisible"
                   @visible-change="handleVisible"
               >
                 <template #overlay v-if="_customRow.id">

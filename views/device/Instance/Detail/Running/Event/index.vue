@@ -31,7 +31,7 @@
     </JProTable>
     <a-modal
         :width="600"
-        v-model:visible="visible"
+        v-model:open="visible"
         :title="$t('Event.index.277611-0')"
         class="device-running-event-modal"
     >

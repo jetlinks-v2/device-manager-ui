@@ -1,6 +1,6 @@
 <template>
   <a-modal
-      visible
+      open
       :title="$t('DetailModal.FunctionModal.475375-0')"
       width="650px"
       :maskClosable="false"

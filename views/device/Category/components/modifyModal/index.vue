@@ -5,7 +5,7 @@
     :title="props.title"
     :maskClosable="false"
     destroy-on-close
-    visible
+    open
     @ok="submitData"
     @cancel="close"
     :confirmLoading="loading"

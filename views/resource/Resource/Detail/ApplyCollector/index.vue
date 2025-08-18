@@ -1,7 +1,7 @@
 <template>
     <a-modal
         :title="$t('ApplyCollector.index.312040-0')"
-        visible
+        open
         :centered="true"
         @cancel="emits('close')"
         :maskClosable="false"

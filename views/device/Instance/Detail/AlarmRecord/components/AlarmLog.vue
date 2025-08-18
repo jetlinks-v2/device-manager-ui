@@ -1,6 +1,6 @@
 <template>
     <a-drawer
-        visible
+        open
         :closable="false"
         width="1000"
         @close="closeDrawer"

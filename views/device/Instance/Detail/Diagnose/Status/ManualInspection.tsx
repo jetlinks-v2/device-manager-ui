@@ -206,7 +206,7 @@ const ManualInspection = defineComponent({
 
         return () => <Modal
             title={i18n.global.t('Status.index.565893-17')}
-            visible
+            open
             width={1000}
             onOk={() => {
                 emit('save', data)

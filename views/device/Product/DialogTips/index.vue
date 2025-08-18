@@ -3,7 +3,7 @@
     <a-modal
         :maskClosable="false"
         destroy-on-close
-        v-model:visible="visible"
+        v-model:open="visible"
         @cancel="cancel"
         v-bind="layout"
         width="650px"

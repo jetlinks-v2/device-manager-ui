@@ -1,6 +1,6 @@
 <template>
     <a-modal
-        visible
+        open
         :title="$t('Save.index.126289-0')"
         width="600px"
         @ok="onSave"

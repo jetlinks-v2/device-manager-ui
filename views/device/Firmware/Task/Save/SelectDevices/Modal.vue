@@ -1,10 +1,9 @@
 <template>
   <a-modal
-      visible
+      open
       :title="$t('Save.SelectDevices.386303-1')"
       :ok-text="$t('Save.SelectDevices.386303-2')"
       :cancel-text="$t('Save.SelectDevices.386303-3')"
-      :visible="true"
       width="1000px"
       @cancel="handleCancel"
       @ok="handleOk"

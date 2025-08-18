@@ -2,7 +2,7 @@
   <a-modal
     title="新增"
     :width="1000"
-    visible
+    open
     @cancel="emits('close')"
     @ok="saveData"
   >

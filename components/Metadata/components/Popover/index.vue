@@ -1,7 +1,7 @@
 <template>
   <a-popover
     trigger="click"
-    :visible="visible"
+    :open="visible"
     :overlay-class-name="{
       [warpClassNames]: true,
       'metadata-table-popover-warp': true

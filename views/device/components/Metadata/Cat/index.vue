@@ -1,5 +1,5 @@
 <template>
-  <a-drawer :mask-closable="false" :title="$t('Cat.index.300353-0')" width="700" v-model:visible="_visible" destroy-on-close @close="close">
+  <a-drawer :mask-closable="false" :title="$t('Cat.index.300353-0')" width="700" v-model:open="_visible" destroy-on-close @close="close">
     <template #extra>
       <a-space>
         <a-button type="primary" @click="handleExport">

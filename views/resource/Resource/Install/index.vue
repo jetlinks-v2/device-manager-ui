@@ -1,7 +1,7 @@
 <template>
   <a-modal
       :title="$t('Install.index.299206-0')"
-      visible
+      open
       @cancel="emits('close')"
       :maskClosable="false"
       :width="1000"

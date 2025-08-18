@@ -1,5 +1,5 @@
 <template>
-    <a-modal title="编辑物模型" visible :width="600" :maskClosable="false" @ok="submitData" @cancel="emits('close')">
+    <a-modal title="编辑物模型" open :width="600" :maskClosable="false" @ok="submitData" @cancel="emits('close')">
         <a-tabs v-model:activeKey="activeKey">
             <a-tab-pane key="property" tab="属性" v-if="metadataData.properties">
                 <SelectMetadata v-model:value="metadataData.properties" :data="metadata?.properties" activeKey="properties"/>

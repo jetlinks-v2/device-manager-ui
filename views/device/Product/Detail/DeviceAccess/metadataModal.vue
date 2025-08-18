@@ -1,7 +1,7 @@
 <template>
   <a-modal
     :title="$t('DeviceAccess.metadataModal.306037-0')"
-    visible
+    open
     width="900px"
     :okText="$t('DeviceAccess.metadataModal.306037-1')"
     :cancelText="$t('DeviceAccess.metadataModal.306037-2')"

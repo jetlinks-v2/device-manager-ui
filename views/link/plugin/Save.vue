@@ -1,7 +1,7 @@
 <template>
     <a-modal
         :maskClosable="false"
-        :visible="true"
+        :open="true"
         :title="!!data?.id ? $t('plugin.Save.128565-0') : $t('plugin.Save.128565-1')"
         :confirmLoading="loading || uploading"
         @ok="handleSave"
