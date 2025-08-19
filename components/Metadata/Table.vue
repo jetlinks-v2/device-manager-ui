@@ -39,6 +39,7 @@
         v-model:activeKey="groupActive.value"
         :options="groupOptions"
         :readonly="readonly"
+        :target="target"
         @add="addGroup"
         @delete="groupDelete"
         @edit="groupEdit"
@@ -96,7 +97,11 @@ const props = defineProps({
   readonly: {
     type: Boolean,
     default: false
-  }
+  },
+  target: {
+    type: String,
+    default: "product",
+  },
 })
 
 const slots = useSlots()

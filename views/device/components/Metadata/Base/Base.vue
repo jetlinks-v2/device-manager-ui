@@ -13,6 +13,7 @@
         selectedRowKeys: selectedRowKeys,
       }"
       :readonly="hasOperate('add', type)"
+      :target="_target"
       @scrollDown="scrollDown"
       @rightMenuClick="rightMenuClick"
       @groupEdit="groupEdit"
