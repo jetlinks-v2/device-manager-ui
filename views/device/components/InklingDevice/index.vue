@@ -434,7 +434,8 @@ onMounted(() => {
 .device-list-pagination {
   text-align: right;
 
-  :deep(.ant-pagination-item) {
+  :deep(.ant-pagination) {
+    .ant-pagination-item,
     & .ant-pagination-jump-prev,
     & .ant-pagination-jump-next {
       display: none;
