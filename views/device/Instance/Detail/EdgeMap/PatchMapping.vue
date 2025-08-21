@@ -2,7 +2,7 @@
     <a-modal
         width="900px"
         :title="$t('EdgeMap.PatchMapping.313384-0')"
-        visible
+        open
         @ok="handleClick"
         @cancel="handleClose"
     >

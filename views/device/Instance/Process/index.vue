@@ -2,7 +2,7 @@
     <a-modal
         :maskClosable="false"
         width="800px"
-        :visible="true"
+        :open="true"
         :title="type === 'active' ? $t('Process.index.911277-0') : $t('Process.index.911277-1')"
         :closable="false"
     >

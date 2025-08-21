@@ -1,5 +1,5 @@
 <template>
-  <a-drawer :width="850" :maskClosable="true" visible @close="emits('close')" :closable="false">
+  <a-drawer :width="850" :maskClosable="true" open @close="emits('close')" :closable="false">
     <div class="drawer">
       <div style="margin-bottom: 12px">
         <a-button type="link" @click="onClick(data.cardId)" size="small" style="padding: 0">

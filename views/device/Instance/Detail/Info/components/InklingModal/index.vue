@@ -2,7 +2,7 @@
   <a-modal
     :width="800"
     :mask-closable="false"
-    :visible="true"
+    :open="true"
     :title="$t('InklingModal.index.380043-0')"
     :confirmLoading="loading"
     @ok="handleOk"

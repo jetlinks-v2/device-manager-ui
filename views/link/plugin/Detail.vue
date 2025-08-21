@@ -1,5 +1,5 @@
 <template>
-  <a-drawer visible :title="data.name" :width="600">
+  <a-drawer open :title="data.name" :width="600">
     <TitleComponent :data="$t('Plugin.index.626239-23')" />
     <a-descriptions :column="2">
       <a-descriptions-item label="ID">{{

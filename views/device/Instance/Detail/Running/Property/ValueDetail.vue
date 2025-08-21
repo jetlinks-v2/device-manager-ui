@@ -2,7 +2,7 @@
     <a-modal
         :maskClosable="false"
         width="600px"
-        :visible="true"
+        :open="true"
         :title="$t('Event.index.277611-0')"
         :okText="$t('Save.index.912481-0')"
         :cancelText="$t('Save.index.912481-1')"

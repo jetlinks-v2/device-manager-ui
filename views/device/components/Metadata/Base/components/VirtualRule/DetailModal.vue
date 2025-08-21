@@ -1,6 +1,6 @@
 <template>
   <a-modal
-    visible
+    open
     :title="$t('VirtualRule.DetailModal.541300-0')"
     :maskClosable="false"
     :width="1000"

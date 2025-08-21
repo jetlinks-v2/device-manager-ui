@@ -1,7 +1,7 @@
 <template>
     <a-modal
         :maskClosable="false"
-        :visible="true"
+        :open="true"
         :title="$t('Property.Indicators.505585-0')"
         @ok="handleSave"
         @cancel="handleCancel"

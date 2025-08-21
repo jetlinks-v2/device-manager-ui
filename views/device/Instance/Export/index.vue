@@ -2,7 +2,7 @@
     <a-modal
         :maskClosable="false"
         width="800px"
-        :visible="true"
+        :open="true"
         :title="$t('Export.index.225315-0')"
         @ok="handleOk"
         @cancel="handleCancel"

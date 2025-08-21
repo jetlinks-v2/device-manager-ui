@@ -62,7 +62,7 @@
       </a-tab-pane>
     </a-tabs>
     <a-modal
-      :visible="visible"
+      :open="visible"
       :title="$t('Metadata.group.497268-3')"
       :maskClosable="false"
       :getContainer="modalContainer"

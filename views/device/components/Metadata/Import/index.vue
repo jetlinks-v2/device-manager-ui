@@ -3,7 +3,7 @@
         :mask-closable="false"
         :title="$t('Import.index.603910-0')"
         destroy-on-close
-        v-model:visible="_visible"
+        v-model:open="_visible"
         @cancel="close"
         @ok="handleImport"
         :confirm-loading="loading"

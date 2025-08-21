@@ -1,6 +1,6 @@
 <template>
     <a-modal
-        visible
+        open
         :title="$t('dialogs.ProductChooseDialog.926510-0')"
         width="700px"
         @ok="confirm"

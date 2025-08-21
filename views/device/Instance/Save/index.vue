@@ -2,7 +2,7 @@
     <a-modal
         :maskClosable="false"
         width="650px"
-        :visible="true"
+        :open="true"
         :title="!!data?.id ? $t('Save.index.902471-0') : $t('Save.index.902471-1')"
         @ok="handleSave"
         @cancel="handleCancel"

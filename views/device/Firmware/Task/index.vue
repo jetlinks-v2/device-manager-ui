@@ -1,6 +1,6 @@
 <template>
     <a-drawer
-        visible
+        open
         :title="$t('Task.index.219743-0')"
         placement="right"
         :width="700"

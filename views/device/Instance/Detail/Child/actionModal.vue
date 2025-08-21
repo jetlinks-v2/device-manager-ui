@@ -1,5 +1,5 @@
 <template>
-  <a-modal visible :title="title" width="600px" @cancel="emits('close')">
+  <a-modal open :title="title" width="600px" @cancel="emits('close')">
     <template v-if="result.length === 0 && !loading">
       <div style="margin-bottom: 12px">
         {{ batch ? typeMap.get(type).batchLabel : typeMap.get(type).label }}

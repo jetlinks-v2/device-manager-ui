@@ -1,7 +1,7 @@
 <template>
   <a-modal
       :title="$t('Update.index.815518-0')"
-      visible
+      open
       @cancel="emits('close')"
       :maskClosable="false"
       :width="600"

@@ -2,7 +2,7 @@
   <a-modal
       width="1000px"
       :title="$t('EditTable.PatchMapping.974352-0')"
-      visible
+      open
       @ok="handleClick"
       @cancel="handleClose"
   >

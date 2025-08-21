@@ -1,7 +1,7 @@
 <template>
     <a-modal
         title="网络组件"
-        visible
+        open
         :width="1000"
         :maskClosable="false"
         @ok="submitNetWork"

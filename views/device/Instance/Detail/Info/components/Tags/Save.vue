@@ -2,7 +2,7 @@
     <a-modal
         :title="$t('Tags.Save.446332-0')"
         :width="1000"
-        :visible="true"
+        :open="true"
         :confirmLoading="loading"
         @ok="handleOk"
         @cancel="handleCancel"

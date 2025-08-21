@@ -1,5 +1,5 @@
 <template>
-  <a-drawer placement="right" :closable="false" :visible="true">
+  <a-drawer placement="right" :closable="false" :open="true">
     <template #title>
       <div
           style="

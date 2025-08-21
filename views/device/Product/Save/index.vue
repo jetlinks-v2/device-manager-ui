@@ -4,7 +4,7 @@
         :title="props.title"
         :maskClosable="false"
         destroy-on-close
-        v-model:visible="visible"
+        v-model:open="visible"
         @ok="submitData"
         @cancel="close"
         :okText="$t('Save.index.912481-0')"

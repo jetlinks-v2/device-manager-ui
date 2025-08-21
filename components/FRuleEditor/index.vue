@@ -2,7 +2,7 @@
     <a-modal
         :zIndex="1072"
         :mask-closable="false"
-        visible
+        open
         width="1300px"
         :title="$t('FRuleEditor.index.911643-0')"
         centered

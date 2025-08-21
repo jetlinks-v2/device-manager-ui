@@ -1,5 +1,5 @@
 <template>
-    <a-modal visible title="协议" :width="1000" :maskClosable="false" @ok="onSave"
+    <a-modal open title="协议" :width="1000" :maskClosable="false" @ok="onSave"
         @cancel="emits('close')">
         <div class="header">
             <a-input-search allowClear style="margin-right: 8px;" placeholder="请输入"

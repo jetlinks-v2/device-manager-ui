@@ -3,7 +3,7 @@
         {{ $t('Product.index.660348-12') }}
     </a-button>
     <a-modal
-        :visible="visible"
+        :open="visible"
         :title="$t('Product.index.660348-12')"
         @cancel="visible = false"
         @ok="visible = false"

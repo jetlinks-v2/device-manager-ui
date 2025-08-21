@@ -1,6 +1,6 @@
 <template>
   <a-modal
-      visible
+      open
       :maskClosable="false"
       :title="$t('DetailModal.EventModal.518397-0')"
       width="650px"

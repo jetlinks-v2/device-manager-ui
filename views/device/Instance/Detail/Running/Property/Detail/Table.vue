@@ -57,7 +57,7 @@
     </div>
     <a-modal
         :title="$t('Event.index.277611-0')"
-        :visible="visible"
+        :open="visible"
         @ok="visible = false"
         @cancel="visible = false"
     >
