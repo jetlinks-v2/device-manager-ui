@@ -50,3 +50,9 @@ export const getPluginConfig = (id: string) => request.get(`/plugin/driver/${id}
 export const getCommandsByAccess = (id: string) => request.get(`/gateway/device/${id}/commands`)
 
 export const getCommandsDevicesByAccessId = (id: string, data: any) => request.post(`/gateway/device/${id}/command/QueryDevicePage`, data)
+
+/**
+ * 复合网关-获取已选择的接入网关的详情
+ * @param data 复合网关配置中的gateways数组
+ */
+export const getCompositeProviderDetail = (data: any[]) => request.post(`/gateway/device/detail/config`, data)
