@@ -117,6 +117,13 @@ const onFinish = async (values: any) => {
     transport: ProtocolMapping.get(providerId),
     channel: props.provider.channel,
   };
+  if(route.query.provider && (window as any).onTabSaveSuccess) {
+    (window as any).onTabSaveSuccess(route.query.sourceId, {...params})
+    setTimeout(() => {
+      window.close()
+    }, 300)
+    return
+  }
   const resp =
     id === ":id" ? await save(params) : await update({ ...params, id });
   if (resp.status === 200) {

@@ -63,6 +63,7 @@
             :data="data"
         />
         <SixthKind v-if="data.provider === 'gb28181-2016'" :data="data" />
+        <SeventhKind v-if="data.provider === 'composite-device-gateway'" :data="data" />
     </a-drawer>
 </template>
 
@@ -73,6 +74,7 @@ import ThirdKind from './components/ThirdKind.vue';
 import FourthKind from './components/FourthKind.vue';
 import FifthKind from './components/FifthKind.vue';
 import SixthKind from './components/SixthKind.vue';
+import SeventhKind from './components/SeventhKind.vue';
 const props = defineProps({
     data: {
         type: Object,
