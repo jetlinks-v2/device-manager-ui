@@ -117,7 +117,8 @@
 
 <script lang="ts" setup>
 import { onlyMessage } from '@/utils/comm';
-import { getImage, regular } from '@jetlinks-web/utils'
+import { regular } from '@jetlinks-web/utils'
+import { getImage } from '@/utils'
 import {
     saveNetwork,
     getResourcesCurrent,
