@@ -176,6 +176,8 @@
                             >
                             </a-select> -->
                         <LocalAddressSelect
+                          :clusterTagFilter="dynamicValidateForm.cluster[index].tagsFilter"
+                          :clusters="configClustersList"
                           v-model:value="cluster.configuration.host"
                           :serverId="cluster.serverId"
                           :shareCluster="shareCluster"
@@ -1060,10 +1062,19 @@ const changeHost = (
 ) => {
   if (dynamicValidateForm.cluster?.[index]) {
     const { configuration } = dynamicValidateForm.cluster?.[index];
+    const _serverId = !shareCluster.value ? configClustersList.value.find(item => {
+      if(dynamicValidateForm.cluster?.[index]?.tagsFilter) {
+        for(let tag of dynamicValidateForm.cluster?.[index]?.tagsFilter) {
+          if(item.tags[tag.column] === tag.value) {
+            return true
+          }
+        }
+      }
+    })?.id : undefined
     if (!flag) {
       configuration.port = undefined;
     }
-    const checked = resourcesClusters.value?.[serverId || ""];
+    const checked = resourcesClusters.value?.[_serverId || ""];
     if (checked) {
       getPortOptions(checked, index);
     }

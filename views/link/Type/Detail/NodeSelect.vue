@@ -1,11 +1,9 @@
 <template>
-  <a-button style="width: 100%" @click="show">
-    <div style="width: 100%; white-space: normal">
-      <j-ellipsis>
-        {{ searchText }}
-      </j-ellipsis>
-    </div>
-  </a-button>
+  <div class="node-select" @click="show">
+    <j-ellipsis>
+      {{ searchText }}
+    </j-ellipsis>
+  </div>
   <a-modal
     title="节点筛选"
     :visible="visible"
@@ -45,6 +43,7 @@
                 :filter-option="filterOption"
                 :placeholder="$t('components.TagSearch.396210-2')"
                 style="width: 100%"
+                @change="(val) => handleChangeColumn(index, value)"
               />
             </div>
             <div class="value" style="flex: 1 1 0; min-width: 0">
@@ -83,7 +82,7 @@
 </template>
 
 <script setup>
-import { randomString } from "@jetlinks-web/utils";
+import { onlyMessage, randomString } from "@jetlinks-web/utils";
 import { omit } from "lodash-es";
 import { useI18n } from "vue-i18n";
 
@@ -146,7 +145,7 @@ const rules = [{
         if (value.length) {
             value.forEach((item) => {
                 if (item.column && !item.value) {
-                    error.push($t('components.TagSearch.396210-6', [item.label]))
+                    error.push($t('components.TagSearch.396210-6', [item.column]))
                 }
             })
         }
@@ -171,6 +170,10 @@ const onDelete = (index) =>{
     formData.list.splice(index,1)
 }
 
+const handleChangeColumn = (index, value) => {
+  formData.list[index].value = undefined
+}
+
 const handleCancel = () => {
   visible.value = false;
   formData.list.forEach((item, index) => {
@@ -186,9 +189,9 @@ const handleCancel = () => {
   })
 }
 const handleOk = () => {
-  const result = formData.list.filter(item => item.column)
+  const result = formData.list.filter(item => item.column && item.value)
   if (!result.length) {
-    return $t('点击配置节点筛选范围')
+    return onlyMessage('请配置节点筛选范围', 'warning')
   }
   searchText.value = result.map(item => {
     return `${item.column}-${item.value}`
@@ -232,6 +235,14 @@ watch(() => visible.value, (val) => {
 <style lang="less" scoped>
 .header {
     padding-bottom: 8px;
+}
+.node-select {
+  width: 100%;
+  border: 1px solid #d9d9d9;
+  cursor: pointer;
+  padding: 4px 8px;
+  text-align: center;
+  background-color: #fff;
 }
 .node-item {
     display: flex;
