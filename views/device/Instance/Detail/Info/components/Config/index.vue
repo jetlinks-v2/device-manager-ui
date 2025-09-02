@@ -237,15 +237,13 @@ const { data: providers } = useRequest(getProviders, {
     immediate: true,
 })
 
-const { data: access } = useRequest(list, {
-    defaultParams: {
-        terms: [
-            { column: 'id', value: instanceStore.current.accessId }
-        ]
-    },
+const { run: runList, data: access } = useRequest(list, {
+    immediate: false,
     onSuccess: (resp) => {
-        run(resp.result.data?.[0].configuration?.gateways)
-        return resp.result.data?.[0]
+        if(resp.result?.data?.[0].provider === 'composite-device-gateway') {
+            run(resp.result.data?.[0].configuration?.gateways)
+            return resp.result.data?.[0]
+        }
     }
 })
 
@@ -303,6 +301,11 @@ watch(
             config.value = resp?.result as ConfigMetadata[];
           }
         });
+        runList({
+        terms: [
+                { column: 'id', value: instanceStore.current.accessId }
+            ]
+        })
       }
     },
     { immediate: true },
