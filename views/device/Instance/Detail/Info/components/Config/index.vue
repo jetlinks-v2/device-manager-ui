@@ -203,6 +203,8 @@
             @save="saveBtn"
             @close="visible = false"
             :config="config"
+            :gatewaysDetail="gatewaysDetail"
+            :access="access"
         />
     </div>
 </template>
@@ -295,18 +297,18 @@ const saveBtn = () => {
 watch(
     () => instanceStore.current.id,
     (val) => {
-      if (val) {
-        getConfigMetadata(val).then((resp) => {
-          if (resp.status === 200) {
-            config.value = resp?.result as ConfigMetadata[];
-          }
-        });
-        runList({
-        terms: [
-                { column: 'id', value: instanceStore.current.accessId }
-            ]
-        })
-      }
+        if (val) {
+            getConfigMetadata(val).then((resp) => {
+                if (resp.status === 200) {
+                    config.value = resp?.result as ConfigMetadata[];
+                }
+            });
+            runList({
+                terms: [
+                    { column: 'id', value: instanceStore.current.accessId }
+                ]
+            })
+        }
     },
     { immediate: true },
 );

@@ -19,7 +19,37 @@
             </div>
         </template>
         <a-form layout="vertical" ref="formRef" :model="modelRef">
-            <template v-for="(item, index) in props.config || []" :key="index">
+            <a-collapse v-if="access.provider === 'composite-device-gateway'" v-model:activeKey="activeKey">
+                <a-collapse-panel v-for="gateway in gatewaysDetail" :key="gateway.id" :header="gateway.name">
+                    <template v-for="(item, index) in gateway.transportDetail.allConfig || []" :key="index">
+                        <a-form-item
+                            v-for="i in item.properties"
+                            :name="i.property"
+                            :key="i.property"
+                            :required="!!i.type.expands?.required"
+                            :rules="
+                                !!i.type.expands?.required
+                                    ? [{ required: true, message: $t('Config.Save.696838-2', [i.name]) }]
+                                    : []
+                            "
+                        >
+                            <template #label>
+                                <span style="margin-right: 5px">{{ i.name }}</span>
+                                <a-tooltip v-if="i.description" :title="i.description"
+                                    ><AIcon type="QuestionCircleOutlined"
+                                /></a-tooltip>
+                            </template>
+                            <j-value-item
+                                v-model:modelValue="modelRef[i.property]"
+                                :itemType="i.type.type"
+                                :options="getOptions(i)"
+                                :extraProps="i.type.expands || {}"
+                            />
+                        </a-form-item>
+                    </template>
+                </a-collapse-panel>
+            </a-collapse>
+            <template v-else v-for="(item, index) in config || []" :key="index">
                 <a-form-item
                     v-for="i in item.properties"
                     :name="i.property"
@@ -67,7 +97,17 @@ const props = defineProps({
         type: Array,
         default: [],
     },
+    gatewaysDetail: {
+        type: Array,
+        default: () => [],
+    },
+    access: {
+        type: Object,
+        default: () => {},
+    }
 });
+
+const activeKey = ref(props.gatewaysDetail?.map((item) => item.id));
 
 const getOptions = (i: any) => {
     if (i.type.type === 'enum') {
