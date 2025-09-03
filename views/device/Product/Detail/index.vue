@@ -165,21 +165,27 @@ const route = useRoute();
 const productStore = useProductStore();
 const routerParams = useRouterParams();
 
-const list = ref([
-    {
-        key: 'Info',
-        tab: $t('Detail.index.478940-9'),
-    },
-    {
-        key: 'Metadata',
-        tab: $t('Detail.index.478940-10'),
-        class: 'objectModel',
-    },
-    {
-        key: 'Device',
-        tab: $t('Detail.index.478940-11'),
-    },
-]);
+const initList = [
+  {
+    key: 'Info',
+    tab: $t('Detail.index.478940-9'),
+  },
+  {
+    key: 'Metadata',
+    tab: $t('Detail.index.478940-10'),
+    class: 'objectModel',
+  },
+  {
+    key: 'Device',
+    tab: $t('Detail.index.478940-11'),
+  },
+  {
+    key: 'DeviceList',
+    tab: $t('Detail.index.478940-20'),
+  }
+]
+
+const list = ref(initList);
 
 const onTabChange = (e: string) => {
     if (productStore.tabActiveKey === 'Metadata') {
@@ -241,21 +247,7 @@ const handleUndeploy = () => {
  * 是否显示数据解析模块
  */
 const getProtocol = async () => {
-    list.value = [
-        {
-            key: 'Info',
-            tab: $t('Detail.index.478940-9'),
-        },
-        {
-            key: 'Metadata',
-            tab: $t('Detail.index.478940-10'),
-            class: 'objectModel',
-        },
-        {
-            key: 'Device',
-            tab: $t('Detail.index.478940-11'),
-        },
-    ];
+    list.value = initList
     if (productStore.current?.messageProtocol) {
         const res: any = await getProtocolDetail(
             productStore.current?.messageProtocol,

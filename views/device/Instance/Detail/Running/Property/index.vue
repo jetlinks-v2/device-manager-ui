@@ -340,7 +340,6 @@ watch(
         if (newVal.length) {
             _dataSource.value = newVal as PropertyData[];
             _params.name = '';
-            console.log(tableRef.value,'ref')
             tableRef.value?.reload()
         }
     },
