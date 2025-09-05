@@ -467,7 +467,7 @@ const handleSave = async () => {
       transport: 'composite',
       configuration: {
         gateways: choosenProviderList.value.map(item => {
-          return omit(item, ['channelInfo', 'protocolDetail'])
+          return omit(item, ['channelInfo', 'protocolDetail', 'transportDetail'])
         })
       }
     }

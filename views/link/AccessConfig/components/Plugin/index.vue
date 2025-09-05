@@ -378,7 +378,7 @@ const saveData = () => {
                 protocol:
                     props.provider.id === 'media-plugin'
                         ? props.provider.id
-                        : 'plugin',
+                        : 'plugin_gateway',
                 channel: 'plugin', // 网络组件
                 channelId: AccessCurrent.value,
                 provider: props.provider.id,
