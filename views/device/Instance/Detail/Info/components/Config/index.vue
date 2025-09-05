@@ -1,5 +1,5 @@
 <template>
-    <div style="margin-top: 20px" v-if="config.length">
+    <div style="margin-top: 20px" v-if="config.length || gatewaysDetail?.length">
         <div style="display: flex; margin-bottom: 20px; align-items: center">
             <div style="font-size: 16px; font-weight: 700">{{ $t('Config.index.926765-0') }}</div>
             <a-space>
@@ -47,79 +47,82 @@
                     <template #extra>
                         {{ providers?.find(i => i.id === item.provider)?.description }}
                     </template>
-                    <a-descriptions :labelStyle="{width: '150px'}" bordered v-for="i in item.transportDetail.allConfig" :key="i.name">
-                        <template #title><h4 style="font-size: 15px">{{ i.name }}</h4></template>
-                        <a-descriptions-item
-                            v-for="item in i.properties"
-                            :key="item.property"
-                        >
-                            <template #label>
-                                <j-ellipsis style="margin-right: 5px">
-                                    {{ item.name }}
+                    <template v-if="item.transportDetail?.allConfig?.length">
+                        <a-descriptions :labelStyle="{width: '150px'}" bordered v-for="i in item.transportDetail.allConfig" :key="i.name">
+                            <template #title><h4 style="font-size: 15px">{{ i.name }}</h4></template>
+                            <a-descriptions-item
+                                v-for="item in i.properties"
+                                :key="item.property"
+                            >
+                                <template #label>
+                                    <j-ellipsis style="margin-right: 5px">
+                                        {{ item.name }}
+                                        <a-tooltip
+                                            v-if="item.description"
+                                            :title="item.description"
+                                            ><AIcon type="QuestionCircleOutlined"
+                                        /></a-tooltip>
+                                    </j-ellipsis>
+                                </template>
+                                <span
+                                    v-if="
+                                        item.type.type === 'password' &&
+                                        instanceStore.current?.configuration?.[item.property]
+                                            ?.length > 0
+                                    "
+                                    >******</span
+                                >
+                                <span v-else-if="item.type.type === 'enum'">
+                                    <j-ellipsis>{{
+                                        item.type.elements?.find(
+                                            (i) =>
+                                                i.value ===
+                                                instanceStore.current?.configuration?.[
+                                                    item.property
+                                                ],
+                                        )?.text || ''
+                                    }}</j-ellipsis>
                                     <a-tooltip
-                                        v-if="item.description"
-                                        :title="item.description"
+                                        v-if="isExit(item.property)"
+                                        :title="$t('Config.index.926765-8', [instanceStore.current?.configuration?.[item.property]])"
                                         ><AIcon type="QuestionCircleOutlined"
                                     /></a-tooltip>
-                                </j-ellipsis>
-                            </template>
-                            <span
-                                v-if="
-                                    item.type.type === 'password' &&
-                                    instanceStore.current?.configuration?.[item.property]
-                                        ?.length > 0
-                                "
-                                >******</span
-                            >
-                            <span v-else-if="item.type.type === 'enum'">
-                                <j-ellipsis>{{
-                                    item.type.elements?.find(
-                                        (i) =>
-                                            i.value ===
-                                            instanceStore.current?.configuration?.[
-                                                item.property
-                                            ],
-                                    )?.text || ''
-                                }}</j-ellipsis>
-                                <a-tooltip
-                                    v-if="isExit(item.property)"
-                                    :title="$t('Config.index.926765-8', [instanceStore.current?.configuration?.[item.property]])"
-                                    ><AIcon type="QuestionCircleOutlined"
-                                /></a-tooltip>
-                            </span>
-                            <span v-else-if="item.type.type === 'boolean'">
-                                <j-ellipsis>{{
-                                    [
-                                        {
-                                            label: item?.type?.falseText,
-                                            value: item?.type?.falseValue,
-                                        },
-                                        {
-                                            label: item?.type?.trueText,
-                                            value: item?.type?.trueValue,
-                                        },
-                                    ].find(
-                                        (i) =>
-                                            i.value ===
-                                            instanceStore.current?.configuration?.[
-                                                item.property
-                                            ],
-                                    )?.label || ''
-                                }}</j-ellipsis>
-                            </span>
-                            <span v-else>
-                                <j-ellipsis>{{
-                                    instanceStore.current?.configuration?.[item.property] ||
-                                    ''
-                                }}</j-ellipsis>
-                                <a-tooltip
-                                    v-if="isExit(item.property)"
-                                    :title="$t('Config.index.926765-8', [instanceStore.current?.configuration?.[item.property]])"
-                                    ><AIcon type="QuestionCircleOutlined"
-                                /></a-tooltip>
-                            </span>
-                        </a-descriptions-item>
-                    </a-descriptions>
+                                </span>
+                                <span v-else-if="item.type.type === 'boolean'">
+                                    <j-ellipsis>{{
+                                        [
+                                            {
+                                                label: item?.type?.falseText,
+                                                value: item?.type?.falseValue,
+                                            },
+                                            {
+                                                label: item?.type?.trueText,
+                                                value: item?.type?.trueValue,
+                                            },
+                                        ].find(
+                                            (i) =>
+                                                i.value ===
+                                                instanceStore.current?.configuration?.[
+                                                    item.property
+                                                ],
+                                        )?.label || ''
+                                    }}</j-ellipsis>
+                                </span>
+                                <span v-else>
+                                    <j-ellipsis>{{
+                                        instanceStore.current?.configuration?.[item.property] ||
+                                        ''
+                                    }}</j-ellipsis>
+                                    <a-tooltip
+                                        v-if="isExit(item.property)"
+                                        :title="$t('Config.index.926765-8', [instanceStore.current?.configuration?.[item.property]])"
+                                        ><AIcon type="QuestionCircleOutlined"
+                                    /></a-tooltip>
+                                </span>
+                            </a-descriptions-item>
+                        </a-descriptions>
+                    </template>
+                    <j-empty v-else :description="$t('Config.index.926765-11')"></j-empty>
                 </a-collapse-panel>
             </a-collapse>
         </template>
