@@ -99,7 +99,7 @@
                                                     {{
                                                         slotProps.channelInfo
                                                             .addresses[0]
-                                                            .address
+                                                            ?.address
                                                     }}
                                                 </span>
                                             </j-ellipsis>
@@ -384,7 +384,7 @@ const getDescription = (slotProps: Record<string, any>) =>
           )?.description;
 
 const getStatus = (slotProps: Record<string, any>) =>
-    slotProps.channelInfo.addresses[0].health === -1 ? 'error' : 'processing';
+    slotProps.channelInfo.addresses[0]?.health === -1 ? 'error' : 'processing';
 
 /**
  * 搜索

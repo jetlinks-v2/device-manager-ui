@@ -21,7 +21,7 @@
         <a-form layout="vertical" ref="formRef" :model="modelRef">
             <a-collapse v-if="access.provider === 'composite-device-gateway'" v-model:activeKey="activeKey">
                 <a-collapse-panel v-for="gateway in gatewaysDetail" :key="gateway.id" :header="gateway.name">
-                    <template v-for="(item, index) in gateway.transportDetail.allConfig || []" :key="index">
+                    <template v-if="gateway.transportDetail?.allConfig?.length" v-for="(item, index) in gateway.transportDetail.allConfig || []" :key="index">
                         <a-form-item
                             v-for="i in item.properties"
                             :name="i.property"
@@ -47,6 +47,7 @@
                             />
                         </a-form-item>
                     </template>
+                    <j-empty v-else :description="$t('Config.index.926765-11')"></j-empty>
                 </a-collapse-panel>
             </a-collapse>
             <template v-else v-for="(item, index) in config || []" :key="index">
