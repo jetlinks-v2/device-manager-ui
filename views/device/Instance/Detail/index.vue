@@ -174,6 +174,10 @@ const initList = [
         key: 'Log',
         tab: $t('Detail.index.957187-15'),
     },
+    {
+        key: 'DeviceRelationship',
+        tab: '设备关系',
+    },
 ];
 
 const list = ref([...initList]);

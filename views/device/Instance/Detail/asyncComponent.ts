@@ -19,4 +19,5 @@ export const tabs = {
   Shadow: defineAsyncComponent(() => import('./Shadow/index.vue')),
   Terminal: defineAsyncComponent(() => import('./Terminal/index.vue')),
   Invalid: defineAsyncComponent(() => import('./Invalid/index.vue')),
+  DeviceRelationship: defineAsyncComponent(() => import('./DeviceRelationship/index.vue')),
 };
