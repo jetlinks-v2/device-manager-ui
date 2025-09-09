@@ -19,6 +19,7 @@ import Udp from './udp.png'
 import VideoDevice from './video-device.png'
 import Websocket from './websocket.png'
 import AgentDevice from './agent-device.png'
+import Composite from './composite.png'
 
 
 export const access = {
@@ -42,5 +43,6 @@ export const access = {
     Udp,
     VideoDevice,
     Websocket,
-    AgentDevice
+    AgentDevice,
+    Composite
 }
