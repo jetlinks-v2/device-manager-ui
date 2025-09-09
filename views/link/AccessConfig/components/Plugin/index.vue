@@ -379,13 +379,22 @@ const saveData = () => {
                 protocol:
                     props.provider.id === 'media-plugin'
                         ? props.provider.id
-                        : 'plugin',
+                        : 'plugin_gateway',
                 channel: 'plugin', // 网络组件
                 channelId: AccessCurrent.value,
                 provider: props.provider.id,
                 transport: 'plugin',
             };
-
+            if(route.query.provider && (window as any).onTabSaveSuccess) {
+                (window as any).onTabSaveSuccess(route.query.sourceId, {
+                    ...params,
+                    protocolDetail: pluginList.value.find((i: any) => i.id === AccessCurrent.value),
+                })
+                setTimeout(() => {
+                window.close()
+                }, 300)
+                return
+            }
             loading.value = true;
             const resp =
                 paramsId === ':id'

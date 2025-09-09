@@ -463,6 +463,21 @@ const saveData = () => {
             ? "Gateway"
             : ProtocolMapping.get(props.provider.id),
       };
+      if(route.query.provider && (window as any).onTabSaveSuccess) {
+        try {
+          (window as any).onTabSaveSuccess(route.query.sourceId, {
+            ...params,
+            channelInfo: networkList.value.find((i: any) => i.id === networkCurrent.value),
+            protocolDetail: procotolList.value.find((i: any) => i.id === procotolCurrent.value),
+          })
+          setTimeout(() => {
+            window.close()
+          }, 300)
+        } catch (error) {
+          console.log(error)
+        }
+        return
+      }
       loading.value = true;
       const resp =
         id === ":id" ? await save(params) : await update({ ...params, id });
