@@ -82,6 +82,7 @@ import {
   getNetworkList,
   getProtocolList,
   getConfigView,
+  getNetworkComponentList,
 } from "../../../../../api/link/accessConfig";
 import {
   NetworkTypeMapping,
@@ -121,11 +122,9 @@ const getStream = (record) => {
   return stream;
 };
 const queryNetwork = async () => {
-  const resp = await getNetworkList(
-    NetworkTypeMapping.get(props.data?.provider),
-    props.data?.channelId,
-    {},
-  );
+  const resp = NetworkTypeMapping.get(props.data?.provider) instanceof Array ? await getNetworkComponentList({
+    networkTypes: NetworkTypeMapping.get(props.data?.provider),
+  }, props.data?.channelId) : await getNetworkList(NetworkTypeMapping.get(props.data?.provider), props.data?.channelId, );
   if (resp.status === 200) {
     network.value = resp.result.find((i) => {
       return i.id === props.data?.channelId;

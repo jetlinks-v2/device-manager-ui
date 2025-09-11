@@ -248,6 +248,7 @@ import {
   save,
   update,
   getChildConfigView,
+  getNetworkComponentList
 } from "../../../../../api/link/accessConfig";
 import {
   descriptionList,
@@ -346,7 +347,9 @@ const showAddBtn = computed(() => {
 });
 
 const queryNetworkList = async (id: string, include: string, data = {}) => {
-  const resp = await getNetworkList(NetworkTypeMapping.get(id), include, data);
+  const resp = NetworkTypeMapping.get(id) instanceof Array ? await getNetworkComponentList({
+    networkTypes: NetworkTypeMapping.get(id),
+  }, include) : await getNetworkList(NetworkTypeMapping.get(id), include, data);
   if (resp.status === 200) {
     networkList.value = resp.result;
     allNetworkList.value = resp.result;
