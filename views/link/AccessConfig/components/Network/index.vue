@@ -180,7 +180,7 @@
                       }}
                     </p>
                     <p v-if="config.document">
-                      <Markdown :source="config.document" />
+                      <JMarkdown :source="config.document" />
                     </p>
                     <div v-if="config.routes && config.routes.length > 0">
                       <h1>
