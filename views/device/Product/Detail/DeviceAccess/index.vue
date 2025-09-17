@@ -997,9 +997,7 @@ watch(() => access.value?.id, (val) => {
     getCompositeProviderDetail(access.value?.configuration?.gateways).then((res: any) => {
       if (res.success) {
         access.value.configuration.gateways = res.result;
-        activeKey.value = res.result.map(item => {
-          return item.id;
-        })
+        activeKey.value = [res.result?.[0].id]
       }
     })
   }
