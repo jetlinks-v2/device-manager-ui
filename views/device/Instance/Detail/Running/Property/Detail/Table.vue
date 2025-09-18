@@ -28,6 +28,13 @@
                         :value="{ ...record }"
                     />
                 </template>
+                <template v-if="column.key === data?.id">
+                    <ValueRender
+                        type="table"
+                        :data="_props.data"
+                        :value="{ ...record }"
+                    />
+                </template>
                 <template v-if="column.key === 'numberValue'">
                     <ValueRender
                         type="table"
