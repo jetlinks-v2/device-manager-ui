@@ -234,7 +234,7 @@ const activeKey = ref<string[]>([]);
 const { run, data: gatewaysDetail } = useRequest(getCompositeProviderDetail, {
     immediate: false,
     onSuccess: (resp) => {
-        activeKey.value = resp.result?.map(i => i.id) || []
+        activeKey.value = [resp.result?.[0].id]
     }
 })
 
