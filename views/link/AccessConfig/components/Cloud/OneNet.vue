@@ -432,6 +432,7 @@ import { ProtocolMapping } from '../../data';
 import { useMenuStore } from '@/store';
 import { network } from '../../../../../assets';
 import { useI18n } from 'vue-i18n';
+import { useTabSaveSuccess, useTabSaveSuccessBack } from '@/hooks'
 
 const { t: $t } = useI18n();
 const menuStory = useMenuStore();
@@ -500,6 +501,15 @@ const showAddBtn = computed(() => {
   return route.query.view === 'false' && !props.bindProduct
 })
 
+const { onOpen } = useTabSaveSuccess('link/Protocol', {
+  onSuccess(value) {
+    procotolCurrent.value = value.result?.id;
+    queryProcotolList(props.provider?.id);
+  }
+})
+
+const { onBack } = useTabSaveSuccessBack()
+
 const procotolChange = (id: string) => {
     procotolCurrent.value = id;
 };
@@ -541,11 +551,7 @@ const saveData = async () => {
     if (resp.status === 200) {
         onlyMessage($t('Cloud.OneNet.808542-58'), 'success');
         history.back();
-        const sourceId = route.query?.sourceId;
-        if ((window as any).onTabSaveSuccess && sourceId) {
-            (window as any).onTabSaveSuccess(sourceId, resp);
-            setTimeout(() => window.close(), 300);
-        }
+        onBack(resp)
     }
     loading.value =false
 };
@@ -564,17 +570,9 @@ const queryProcotolList = async (id: string, params = {}) => {
 };
 
 const addProcotol = () => {
-    const url = menuStory.getMenu('link/Protocol')?.path;
-    const sourceId = `protocol_add_${randomString()}`; // 唯一标识
-    const tab: any = window.open(
-        `${window.location.origin + window.location.pathname}#${url}?save=true&sourceId=${sourceId}`,
-    );
-    tab.onTabSaveSuccess = (_sourceId: string, value: any) => {
-        if (sourceId === _sourceId) {
-            procotolCurrent.value = value.result?.id;
-            queryProcotolList(props.provider?.id);
-        }
-    };
+  onOpen({
+    save: true
+  })
 };
 
 const next = async () => {

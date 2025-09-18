@@ -42,6 +42,7 @@ import { modify, updateDevice } from '../../../../../api/product'
 import { savePluginData } from '../../../../../api/link/plugin'
 import { device } from '../../../../../assets'
 import { useI18n } from 'vue-i18n';
+import { useTabSaveSuccessBack } from '@/hooks'
 
 const { t: $t } = useI18n();
 const route = useRoute();
@@ -131,6 +132,7 @@ const updateAccessData = async (id: string, values: any, metadata: string) => {
   }
   loading.value = true
   const updateDeviceResp = await updateDevice(accessObj)
+  const { onBack } = useTabSaveSuccessBack()
 
   if (!updateDeviceResp.success) {
     loading.value = false
@@ -156,13 +158,9 @@ const updateAccessData = async (id: string, values: any, metadata: string) => {
   if (resp.status === 200) {
     onlyMessage($t('DeviceAccess.metadataModal.306037-17'));
     productStore.current!.storePolicy = storePolicy;
-    const sourceId = route.query?.sourceId;
-    if ((window as any).onTabSaveSuccess && sourceId) {
-      if (resp.result) {
-        (window as any).onTabSaveSuccess(sourceId, resp);
-        setTimeout(() => window.close(), 300);
-      }
-    } else {
+    const isTabBack = onBack(resp, { onBefore: () => !!resp.result })
+
+    if (!isTabBack) {
       await productStore.getDetail(productDetail.value.id)
       emit('submit')
     }

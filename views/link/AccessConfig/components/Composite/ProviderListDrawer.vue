@@ -42,6 +42,7 @@
 <script setup lang="ts">
 import { BackMap } from '../../data'
 import { randomString } from '@jetlinks-web/utils'
+import { useTabSaveSuccess } from '@/hooks'
 
 const props = defineProps({
   otherProvider: {
@@ -52,16 +53,17 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'save'])
 
-const handleClick = (item) => {
-  const sourceId = `accessConfig_${randomString()}`
-  const tab = window.open(`${origin}/#/iot/link/accessConfig/detail/:id?view=false&provider=${JSON.stringify(item)}&sourceId=${sourceId}`)
-  if(tab) {
-    tab.onTabSaveSuccess = (_sourceId: string, _data: any) => {
-      if(sourceId === _sourceId) {
-        emit('save', _data)
-      }
-    }
+const { onOpen } = useTabSaveSuccess('link/AccessConfig/Detail', {
+  onSuccess(value) {
+    emit('save', value)
   }
+})
+
+const handleClick = (item: any) => {
+  onOpen({
+    view: false,
+    provider: JSON.stringify(item)
+  })
 }
 </script>
 

@@ -361,6 +361,7 @@ import {detail as queryPluginAccessDetail, getCompositeProviderDetail} from "../
 import {onlyMessage} from "@/utils/comm";
 import {pick} from "lodash-es";
 import {useI18n} from "vue-i18n";
+import { useTabSaveSuccessBack } from '@/hooks'
 
 const { t: $t } = useI18n();
 const route = useRoute();
@@ -436,6 +437,8 @@ const metadataVisible = ref(false);
 const metadataModalCacheData = ref();
 
 const submitLoading = ref(false);
+
+const { onBack } = useTabSaveSuccessBack()
 /**
  * 显示弹窗
  */
@@ -939,13 +942,8 @@ const updateAccessData = async (id: string, values: any) => {
   if (resp.status === 200) {
     onlyMessage($t("DeviceAccess.index.594346-30"));
     productStore.current!.storePolicy = storePolicy;
-    const sourceId = route.query?.sourceId;
-    if ((window as any).onTabSaveSuccess && sourceId) {
-      if (resp.result) {
-        (window as any).onTabSaveSuccess(sourceId, resp);
-        setTimeout(() => window.close(), 300);
-      }
-    } else {
+    const isTabBack = onBack(resp)
+    if (!isTabBack) {
       getDetailInfo();
     }
   }

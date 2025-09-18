@@ -155,7 +155,7 @@
           <a-col :span="12">
             <title-component :data="$t('Composite.index.636069-3')"></title-component>
             <a-form ref="formRef" :model="formData" layout="vertical">
-              <a-form-item :label="$t('Composite.index.636069-4')" name="name" 
+              <a-form-item :label="$t('Composite.index.636069-4')" name="name"
                 :rules="[
                   { required: true, message: $t('Composite.index.636069-5') },
                   { max: 64, message: $t('Composite.index.636069-6') },
@@ -313,6 +313,7 @@ import { useRequest } from '@jetlinks-web/hooks';
 import Outline from '../../Outline/index.vue'
 import { BackMap } from '../../data'
 import { useI18n } from 'vue-i18n'
+import { useTabSaveSuccess } from '@/hooks'
 
 const { t: $t } = useI18n()
 const props = defineProps({
@@ -351,6 +352,17 @@ const formData = reactive({
   description: '',
 })
 
+const { onOpen } = useTabSaveSuccess('link/AccessConfig/Detail', {
+  onSuccess(value) {
+    choosenProviderList.value = choosenProviderList.value.map((item: Record<string, any>) => {
+      if(item.id === value.id) {
+        return value
+      }
+      return item
+    })
+  }
+})
+
 const { loading, run: saveRun } = useRequest(id === ':id' ? save : update,
   {
     immediate: false,
@@ -372,6 +384,7 @@ const getStatus = (slotProps: Record<string, any>) =>
   slotProps.channelInfo.addresses[0].health === -1 ? 'error' : 'processing';
 
 const clientHeight = document.body.clientHeight;
+
 const getActions = (item: any) => {
   return [
     {
@@ -382,24 +395,19 @@ const getActions = (item: any) => {
       },
       icon: 'EditOutlined',
       onClick: () => {
-        const sourceId = `accessConfig_${randomString()}`
         const providerInfo = props.otherProvider?.find(
           (va: Record<string, any>) => va.id === item.provider,
         )
-        const tab = window.open(`${origin}/#/iot/link/accessConfig/detail/${item.id}?view=false&data=${JSON.stringify(omit(item, ['channelInfo', 'protocolDetail', 'transportDetail']))}&provider=${JSON.stringify(providerInfo)}&sourceId=${sourceId}`)
-        if(tab) {
-          tab.onTabSaveSuccess = (_sourceId: string, _data: any) => {
-            if(sourceId === _sourceId) {
-              // emit('save', _data)
-              choosenProviderList.value = choosenProviderList.value.map((item: Record<string, any>) => {
-                if(item.id === _data.id) {
-                  return _data
-                }
-                return item
-              })
-            }
+
+        onOpen({
+          view: false,
+          data: JSON.stringify(omit(item, ['channelInfo', 'protocolDetail', 'transportDetail'])),
+          provider: JSON.stringify(providerInfo)
+        }, {
+          menuParams: {
+            id: item.id,
           }
-        }
+        })
       }
     },
     {
