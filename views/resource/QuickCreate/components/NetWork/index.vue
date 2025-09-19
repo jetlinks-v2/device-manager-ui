@@ -77,7 +77,7 @@
 </template>
 
 <script setup>
-import { queryNetWork,queryAliveNetWork } from '@device/api/resource/quickCreate';
+import { queryNetWork,queryAliveNetWork } from '@device-manager-ui/api/resource/quickCreate';
 import AccessCard from '../AccessCard/index.vue';
 import { cloneDeep } from 'lodash-es';
 import { NetworkTypeMapping, descriptionList } from './data';

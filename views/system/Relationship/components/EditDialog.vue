@@ -122,7 +122,7 @@ import {
   addRelation_api,
   editRelation_api,
   validateField,
-} from "@device/api/system/relationship";
+} from "@device-manager-ui/api/system/relationship";
 import { dictItemType } from "../typing";
 import { onlyMessage } from "@/utils/comm";
 import { useI18n } from "vue-i18n";

@@ -128,7 +128,7 @@ import {
     saveDevice,
     changeDeploy,
     deployDevice,
-} from '@device/api/initHome';
+} from '@device-manager-ui/api/initHome';
 import type { Rule } from 'ant-design-vue/es/form';
 import { useI18n } from 'vue-i18n';
 

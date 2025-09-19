@@ -41,7 +41,7 @@
 </template>
 
 <script setup>
-import { queryDetailList } from '@device/api/firmware';
+import { queryDetailList } from '@device-manager-ui/api/firmware';
 import {useI18n} from 'vue-i18n';
 import dayjs from "dayjs";
 import {onlyMessage} from "@jetlinks-web/utils";

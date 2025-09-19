@@ -75,8 +75,8 @@
 </template>
 
 <script setup>
-import markerImg from '@device/assets/iot-card/realtime-positioning/marker.png'
-import InfoImg from '@device/assets/iot-card/realtime-positioning/info.png'
+import markerImg from '@device-manager-ui/assets/iot-card/realtime-positioning/marker.png'
+import InfoImg from '@device-manager-ui/assets/iot-card/realtime-positioning/info.png'
 import HistoryList from "./HistoryList.vue";
 import {useI18n} from "vue-i18n";
 import dayjs from 'dayjs'

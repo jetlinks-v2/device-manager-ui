@@ -304,8 +304,8 @@
 <script setup lang="ts">
 import type { PropType } from 'vue';
 import ProviderListDrawer from './ProviderListDrawer.vue'
-import { save, update, getCompositeProviderDetail } from '@device/api/link/accessConfig'
-import { device } from '@device/assets'
+import { save, update, getCompositeProviderDetail } from '@device-manager-ui/api/link/accessConfig'
+import { device } from '@device-manager-ui/assets'
 import { onlyMessage } from '@jetlinks-web/utils';
 import { randomString } from '@jetlinks-web/utils';
 import { omit } from 'lodash-es';

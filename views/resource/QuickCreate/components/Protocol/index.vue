@@ -33,10 +33,10 @@
 <script setup>
 import { cloneDeep } from 'lodash-es';
 import AccessCard from '../AccessCard/index.vue'
-import { getProtocolList } from '@device/api/link/accessConfig';
-import { queryProtocolDetail } from '@device/api/resource/quickCreate';
+import { getProtocolList } from '@device-manager-ui/api/link/accessConfig';
+import { queryProtocolDetail } from '@device-manager-ui/api/resource/quickCreate';
 import { ProtocolMapping } from './data';
-import Save from '@device/views/link/Protocol/Save/index.vue'
+import Save from '@device-manager-ui/views/link/Protocol/Save/index.vue'
 import { onlyMessage } from "@jetlinks-web/utils";
 
 const props = defineProps({
