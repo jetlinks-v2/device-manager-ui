@@ -197,6 +197,7 @@ import { useMenuStore } from '@/store/menu';
 import { onlyMessage } from '@/utils/comm';
 import { CreteRuleByType } from '../../../components/Form/rules';
 import { useI18n } from 'vue-i18n';
+import { useTabSaveSuccessBack } from '@/hooks'
 
 const { t: $t } = useI18n();
 const props = defineProps({
@@ -233,6 +234,7 @@ const formData = reactive({
 const formRef = ref();
 
 const config = ref<any>([]);
+const { onBack } = useTabSaveSuccessBack()
 
 const queryPlugin = (params = {}) => {
     getPluginList({
@@ -379,13 +381,19 @@ const saveData = () => {
                 protocol:
                     props.provider.id === 'media-plugin'
                         ? props.provider.id
-                        : 'plugin',
+                        : 'plugin_gateway',
                 channel: 'plugin', // 网络组件
                 channelId: AccessCurrent.value,
                 provider: props.provider.id,
                 transport: 'plugin',
             };
-
+            if(route.query.provider) {
+                onBack({
+                  ...params,
+                  protocolDetail: pluginList.value.find((i: any) => i.id === AccessCurrent.value),
+                })
+                return
+            }
             loading.value = true;
             const resp =
                 paramsId === ':id'
@@ -399,13 +407,7 @@ const saveData = () => {
             if (resp.success) {
                 onlyMessage($t('Plugin.index.626239-22'), 'success');
                 history.back();
-                const sourceId = route.query?.sourceId;
-                if ((window as any).onTabSaveSuccess && sourceId) {
-                    if (resp.result?.id) {
-                        (window as any).onTabSaveSuccess(sourceId, resp);
-                        setTimeout(() => window.close(), 300);
-                    }
-                }
+                onBack(resp)
             }
         }
     });

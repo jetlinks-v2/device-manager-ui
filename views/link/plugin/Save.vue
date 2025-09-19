@@ -86,6 +86,7 @@ import { add, update, vailIdFn } from '../../../api/link/plugin';
 import { TypeMap } from './util';
 import { onlyMessage } from '@/utils/comm';
 import { useI18n } from 'vue-i18n';
+import { useTabSaveSuccessBack } from '@/hooks'
 
 const { t: $t } = useI18n();
 const props = defineProps({
@@ -101,6 +102,8 @@ const formRef = ref();
 const fileType = ref(props.data.type);
 const loading = ref(false);
 const uploading = ref(false)
+
+const { onBack } = useTabSaveSuccessBack()
 
 const vailId = async (_: any, value: string) => {
     if (!props.data.id && value) {
@@ -174,12 +177,7 @@ const handleSave = async () => {
         loading.value = false;
         if (resp.success) {
             onlyMessage($t('plugin.Save.128565-14'));
-            const sourceId = route.query?.sourceId;
-            if (route.query.save && (window as any).onTabSaveSuccess && sourceId) {
-                (window as any).onTabSaveSuccess(sourceId, resp);
-                setTimeout(() => window.close(), 300);
-                return;
-            }
+            onBack(resp)
             emit('ok');
             formRef.value.resetFields();
         }

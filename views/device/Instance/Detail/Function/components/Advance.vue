@@ -24,7 +24,7 @@
         <div style="flex: 1">
             <a-row :gutter="30">
                 <a-col :span="15">
-                    <JMonacoEditor
+                    <MonacoEditor
                         :ref="`monacoEditor${current.id}`"
                         v-model="current.json"
                         theme="vs-dark"

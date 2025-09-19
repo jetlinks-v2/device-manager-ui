@@ -215,6 +215,7 @@ import {
 import AccessCard from '../AccessCard/index.vue';
 import { useMenuStore } from '@/store/menu';
 import { useI18n } from 'vue-i18n';
+import { useTabSaveSuccess, useTabSaveSuccessBack } from '@/hooks'
 
 const { t: $t } = useI18n();
 const menuStory = useMenuStore();
@@ -256,6 +257,15 @@ const networkCurrent: any = ref('');
 const networkList: any = ref([]);
 const allNetworkList: any = ref([]);
 
+const { onBack } = useTabSaveSuccessBack()
+
+const { onOpen } = useTabSaveSuccess('link/Type/Detail', {
+  onSuccess(value) {
+    networkCurrent.value = value.result.id;
+    queryNetworkList(props.provider?.id, networkCurrent.value || '');
+  }
+})
+
 const onFinish = async (values: any) => {
     loading.value = true
     const providerId = props.provider.id;
@@ -271,11 +281,7 @@ const onFinish = async (values: any) => {
     if (resp.status === 200) {
         onlyMessage($t('Edge.index.066653-20'), 'success');
         history.back();
-        const sourceId = route.query?.sourceId;
-        if ((window as any).onTabSaveSuccess && sourceId) {
-            (window as any).onTabSaveSuccess(sourceId, resp);
-            setTimeout(() => window.close(), 300);
-        }
+        onBack(resp)
     }
     loading.value = false
 };
@@ -315,19 +321,9 @@ const saveData = async () => {
 };
 
 const addNetwork = () => {
-    const url = menuStory.getMenu('link/Type/Detail')?.path;
-    const sourceId = `network_add_${randomString()}`; // 唯一标识
-    const tab: any = window.open(
-        `${window.location.origin + window.location.pathname}#${url}?type=${
-            NetworkTypeMapping.get(props.provider?.id) || ''
-        }&sourceId=${sourceId}`,
-    );
-    tab.onTabSaveSuccess = (_sourceId: string, value: any) => {
-        if (sourceId === _sourceId) {
-            networkCurrent.value = value.result.id;
-            queryNetworkList(props.provider?.id, networkCurrent.value || '');
-        }
-    };
+  onOpen({
+    type: NetworkTypeMapping.get(props.provider?.id) || ''
+  })
 };
 
 const next = async () => {

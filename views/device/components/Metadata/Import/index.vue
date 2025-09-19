@@ -176,12 +176,12 @@
                         </a-tooltip>
                     </a-space>
                 </template>
-                <JMonacoEditor
+                <MonacoEditor
                     v-model:modelValue="formModel.import"
                     theme="vs"
                     style="height: 300px"
                     lang="json"
-                ></JMonacoEditor>
+                ></MonacoEditor>
             </a-form-item>
         </a-form>
     </a-modal>

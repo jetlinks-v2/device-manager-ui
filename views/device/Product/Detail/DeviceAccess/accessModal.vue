@@ -136,6 +136,7 @@ import { getProductByPluginId } from '../../../../../api/link/plugin'
 import { getProviders } from '../../../../../api/link/accessConfig'
 import { device } from '../../../../../assets'
 import { useI18n } from 'vue-i18n';
+import { useTabSaveSuccess } from '@/hooks'
 
 const { t: $t } = useI18n();
 
@@ -174,6 +175,13 @@ const params = ref<Record<string, any>>({
 })
 
 const selectedRowKeys = ref<string[]>(props.accessId ? [props.accessId] : [])
+
+const { onOpen } = useTabSaveSuccess('link/AccessConfig/Detail', {
+  async onSuccess(value) {
+    tableRef.value.reload();
+    handleClick(value.result);
+  }
+})
 
 const getDescription = (slotProps: Record<string, any>) =>
   slotProps.description
@@ -332,17 +340,10 @@ const handleClick = (data: any) => {
  * 打开标签新增
  */
 const add = () => {
-  const url = menuStore.hasMenu('link/AccessConfig/Detail');
-  if (url) {
-    const sourceId = `accessConfig_add_${randomString()}`; // 唯一标识
-    const tab: any = window.open(`${window.location.origin + window.location.pathname}#${menuStore.menusMap.get('link/AccessConfig/Detail')?.path}?view=false&save=true&sourceId=${sourceId}`);
-    tab.onTabSaveSuccess = (_sourceId: string, value: any) => {
-      if (sourceId === _sourceId) {
-        tableRef.value.reload();
-        handleClick(value.result);
-      }
-    };
-  }
+  onOpen({
+    view: false,
+    save: true
+  })
 };
 
 </script>

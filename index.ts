@@ -1,9 +1,9 @@
-const routerModules = import.meta.glob('./views/**/index.vue')
 import { defineAsyncComponent } from 'vue';
 import i18n from "@/locales";
+import { moduleRegistry } from '@/utils/module-registry';
+import registerSetting from './register'
 
-const MODULE_CODE = 'device'
-
+const routerModules = import.meta.glob('./views/**/index.vue')
 
 const getAsyncRoutesMap = () => {
     const modules = {}
@@ -113,11 +113,14 @@ const getComponents = () => {
     }
 }
 
-const aliasName = 'device'
+const register = () => {
+    moduleRegistry.register('device-manager-ui', registerSetting)
+}
+
 
 export default {
     getAsyncRoutesMap,
     getExtraRoutesMap,
     getComponents,
-    aliasName
+    register
 }

@@ -50,93 +50,173 @@
             }}
           </div>
         </div>
-        <div class="item-style">
-          <Title :data="$t('DeviceAccess.index.594346-6')"></Title>
-          <div>
-            {{ access?.protocolDetail?.name }}
+        <template v-if="access?.provider === 'composite-device-gateway'">
+          <div style="margin: 16px 0">
+              <a-collapse v-model:activeKey="activeKey">
+                <a-collapse-panel
+                  v-for="item in access?.configuration?.gateways"
+                  :key="item.id" :header="item.name"
+                >
+                  <template #extra>
+                    {{ dataSource.find((i) => i?.id === item?.provider)?.description }}
+                  </template>
+                  <div class="item-style">
+                    <Title :data="$t('DeviceAccess.index.594346-6')"></Title>
+                    <div>
+                      {{ item?.protocolDetail?.name }}
+                    </div>
+                    <!-- 显示md文件内容 -->
+                    <div v-if="item?.transportDetail?.document" v-html="marked(item?.transportDetail?.document)"></div>
+                  </div>
+                  <div class="item-style">
+                    <Title :data="$t('DeviceAccess.index.594346-7')"></Title>
+                    <div v-if="item?.channelInfo?.addresses.length > 0">
+                      <div
+                        v-for="channel in item?.channelInfo?.addresses"
+                        :key="channel.address"
+                      >
+                        <a-badge
+                          :color="channel.health === -1 ? 'red' : 'green'"
+                          :text="channel.address"
+                        >
+                        </a-badge>
+                      </div>
+                    </div>
+                    <div v-else>{{ $t("DeviceAccess.index.594346-8") }}</div>
+                  </div>
+                  <div v-for="(i, index) in item?.transportDetail?.allConfig">
+                    <Title v-if="i?.name" :data="i?.name" class="config">
+                      <template #extra>
+                        <a-tooltip :title="$t('DeviceAccess.index.594346-11')">
+                          <AIcon type="QuestionCircleOutlined" style="margin-left: 2px"/>
+                        </a-tooltip>
+                      </template>
+                    </Title>
+                      <a-form ref="formRef" :model="formData.data" layout="vertical">
+                        <a-form-item
+                          :name="item.property"
+                          v-for="item in i?.properties || []"
+                          :key="item"
+                          :rules="[
+                          {
+                            required: !!item?.type?.expands?.required,
+                            message: `${
+                              item.type.type === 'enum' || 'boolean'
+                                ? $t('DeviceAccess.index.594346-12')
+                                : $t('DeviceAccess.index.594346-13')
+                            }${item.name}`,
+                          },
+                        ]"
+                      >
+                        <template #label>
+                          <div>
+                            {{ item.name }}
+                            <a-tooltip v-if="item.description" :title="item.description">
+                              <AIcon type="QuestionCircleOutlined"/>
+                            </a-tooltip>
+                          </div>
+                        </template>
+                        <j-value-item
+                            :itemType="item.type.type"
+                            v-model:modelValue="formData.data[item.property]"
+                            :options="getOptions(item)"
+                        ></j-value-item>
+                        </a-form-item>
+                      </a-form>
+                  </div>
+                </a-collapse-panel>
+              </a-collapse>
           </div>
-          <!-- 显示md文件内容 -->
-          <div v-if="config?.document" v-html="markdownToHtml"></div>
-        </div>
-        <div class="item-style">
-          <Title :data="$t('DeviceAccess.index.594346-7')"></Title>
-          <div v-if="access?.channelInfo?.addresses.length > 0">
-            <div
-              v-for="item in access?.channelInfo?.addresses"
-              :key="item.address"
-            >
-              <a-badge
-                :color="item.health === -1 ? 'red' : 'green'"
-                :text="item.address"
-              >
-              </a-badge>
+        </template>
+        <template v-else>
+          <div class="item-style">
+            <Title :data="$t('DeviceAccess.index.594346-6')"></Title>
+            <div>
+              {{ access?.protocolDetail?.name }}
             </div>
+            <!-- 显示md文件内容 -->
+            <div v-if="config?.document" v-html="markdownToHtml"></div>
           </div>
-          <div v-else>{{ $t("DeviceAccess.index.594346-8") }}</div>
-        </div>
-        <!--        {{ $t('DeviceAccess.index.594346-9') }}        -->
-        <a-form
-          ref="pluginFormRef"
-          :model="productData"
-          layout="vertical"
-          v-if="productTypes.length"
-        >
-          <a-form-item
-            name="id"
-            :label="$t('DeviceAccess.index.594346-9')"
-            :rules="[
-              { required: true, message: $t('DeviceAccess.index.594346-10') },
-            ]"
+          <div class="item-style">
+            <Title :data="$t('DeviceAccess.index.594346-7')"></Title>
+            <div v-if="access?.channelInfo?.addresses.length > 0">
+              <div
+                  v-for="item in access?.channelInfo?.addresses"
+                  :key="item.address"
+              >
+                <a-badge
+                    :color="item.health === -1 ? 'red' : 'green'"
+                    :text="item.address"
+                >
+                </a-badge>
+              </div>
+            </div>
+            <div v-else>{{ $t("DeviceAccess.index.594346-8") }}</div>
+          </div>
+          <!--        {{ $t('DeviceAccess.index.594346-9') }}        -->
+          <a-form
+              ref="pluginFormRef"
+              :model="productData"
+              layout="vertical"
+              v-if="productTypes.length"
           >
-            <a-select
-              v-model:value="productData.id"
-              :options="productTypes"
-              @change="productTypeChange"
-              :placeholder="$t('DeviceAccess.index.594346-10')"
-            />
-          </a-form-item>
-        </a-form>
-        <!--        其它接入配置        -->
-        <div v-for="(i, index) in metadata">
-          <Title v-if="i?.name" :data="i?.name" class="config">
-            <template #extra>
-              <a-tooltip :title="$t('DeviceAccess.index.594346-11')">
-                <AIcon type="QuestionCircleOutlined" style="margin-left: 2px" />
-              </a-tooltip>
-            </template>
-          </Title>
-          <a-form ref="formRef" :model="formData.data" layout="vertical">
             <a-form-item
-              :name="item.property"
-              v-for="item in i?.properties || []"
-              :key="item"
-              :rules="[
-                {
-                  required: !!item?.type?.expands?.required,
-                  message: `${
-                    item.type.type === 'enum' || 'boolean'
-                      ? $t('DeviceAccess.index.594346-12')
-                      : $t('DeviceAccess.index.594346-13')
-                  }${item.name}`,
-                },
+                name="id"
+                :label="$t('DeviceAccess.index.594346-9')"
+                :rules="[
+                { required: true, message: $t('DeviceAccess.index.594346-10') },
               ]"
             >
-              <template #label>
-                <div>
-                  {{ item.name }}
-                  <a-tooltip v-if="item.description" :title="item.description">
-                    <AIcon type="QuestionCircleOutlined" />
-                  </a-tooltip>
-                </div>
-              </template>
-              <j-value-item
-                :itemType="item.type.type"
-                v-model:modelValue="formData.data[item.property]"
-                :options="getOptions(item)"
-              ></j-value-item>
+              <a-select
+                  v-model:value="productData.id"
+                  :options="productTypes"
+                  @change="productTypeChange"
+                  :placeholder="$t('DeviceAccess.index.594346-10')"
+              />
             </a-form-item>
           </a-form>
-        </div>
+          <!--        其它接入配置        -->
+          <div v-for="(i, index) in metadata">
+            <Title v-if="i?.name" :data="i?.name" class="config">
+              <template #extra>
+                <a-tooltip :title="$t('DeviceAccess.index.594346-11')">
+                  <AIcon type="QuestionCircleOutlined" style="margin-left: 2px"/>
+                </a-tooltip>
+              </template>
+            </Title>
+            <a-form ref="formRef" :model="formData.data" layout="vertical">
+              <a-form-item
+                  :name="item.property"
+                  v-for="item in i?.properties || []"
+                  :key="item"
+                  :rules="[
+                  {
+                    required: !!item?.type?.expands?.required,
+                    message: `${
+                      item.type.type === 'enum' || 'boolean'
+                        ? $t('DeviceAccess.index.594346-12')
+                        : $t('DeviceAccess.index.594346-13')
+                    }${item.name}`,
+                  },
+                ]"
+              >
+                <template #label>
+                  <div>
+                    {{ item.name }}
+                    <a-tooltip v-if="item.description" :title="item.description">
+                      <AIcon type="QuestionCircleOutlined"/>
+                    </a-tooltip>
+                  </div>
+                </template>
+                <j-value-item
+                    :itemType="item.type.type"
+                    v-model:modelValue="formData.data[item.property]"
+                    :options="getOptions(item)"
+                ></j-value-item>
+              </a-form-item>
+            </a-form>
+          </div>
+        </template>
         <Title :data="$t('DeviceAccess.index.594346-14')">
           <template #extra>
             <a-tooltip :title="$t('DeviceAccess.index.594346-15')">
@@ -277,10 +357,11 @@ import {
   getProductByPluginId,
   savePluginData,
 } from "../../../../../api/link/plugin";
-import { detail as queryPluginAccessDetail } from "../../../../../api/link/accessConfig";
-import { onlyMessage } from "@/utils/comm";
-import { pick } from "lodash-es";
-import { useI18n } from "vue-i18n";
+import {detail as queryPluginAccessDetail, getCompositeProviderDetail} from "../../../../../api/link/accessConfig";
+import {onlyMessage} from "@/utils/comm";
+import {pick} from "lodash-es";
+import {useI18n} from "vue-i18n";
+import { useTabSaveSuccessBack } from '@/hooks'
 
 const { t: $t } = useI18n();
 const route = useRoute();
@@ -304,6 +385,7 @@ const metadata = ref<ConfigMetadata[]>([{ properties: [] }]);
 const dataSource = ref<string[]>([]);
 const storageList = ref<any[]>([]);
 const markdownToHtml = shallowRef("");
+const activeKey = ref('');
 const current = ref({
   id: productStore.current?.accessId,
   name: productStore.current?.accessName,
@@ -355,6 +437,8 @@ const metadataVisible = ref(false);
 const metadataModalCacheData = ref();
 
 const submitLoading = ref(false);
+
+const { onBack } = useTabSaveSuccessBack()
 /**
  * 显示弹窗
  */
@@ -858,13 +942,8 @@ const updateAccessData = async (id: string, values: any) => {
   if (resp.status === 200) {
     onlyMessage($t("DeviceAccess.index.594346-30"));
     productStore.current!.storePolicy = storePolicy;
-    const sourceId = route.query?.sourceId;
-    if ((window as any).onTabSaveSuccess && sourceId) {
-      if (resp.result) {
-        (window as any).onTabSaveSuccess(sourceId, resp);
-        setTimeout(() => window.close(), 300);
-      }
-    } else {
+    const isTabBack = onBack(resp)
+    if (!isTabBack) {
       getDetailInfo();
     }
   }
@@ -921,12 +1000,31 @@ nextTick(() => {
   getData();
 });
 watch(
-  () => productStore.current,
-  () => {
-    getData();
-    formData.data = productStore.current?.configuration || {};
-  },
+    () => productStore.current?.id,
+    (val) => {
+      if(val){
+        getData();
+        formData.data = productStore.current?.configuration || {};
+      }
+    },
+    {
+      deep: true,
+      immediate: true
+    }
 );
+
+watch(() => access.value?.id, (val) => {
+  if(access.value?.provider === 'composite-device-gateway') {
+    getCompositeProviderDetail(access.value?.configuration?.gateways).then((res: any) => {
+      if (res.success) {
+        access.value.configuration.gateways = res.result;
+        activeKey.value = res.result.map(item => {
+          return item.id;
+        })
+      }
+    })
+  }
+})
 </script>
 <style lang="less" scoped>
 .item-style {
