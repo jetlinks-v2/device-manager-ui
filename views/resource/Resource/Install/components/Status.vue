@@ -5,7 +5,7 @@
 </template>
 
 <script setup>
-import {statusColor, statusIcon} from "@device/views/resource/Resource/Install/data";
+import {statusColor, statusIcon} from "@device-manager-ui/views/resource/Resource/Install/data";
 
 const props = defineProps({
   value: {

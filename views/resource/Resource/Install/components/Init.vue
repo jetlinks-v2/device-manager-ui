@@ -61,7 +61,7 @@
 </template>
 
 <script setup>
-import { _queryResourceCloud, RESOURCE_UPLOAD } from '@device/api/resource/resource';
+import { _queryResourceCloud, RESOURCE_UPLOAD } from '@device-manager-ui/api/resource/resource';
 import { TOKEN_KEY } from '@jetlinks-web/constants';
 import { LocalStore } from '@jetlinks-web/utils';
 import { onlyMessage } from "@jetlinks-web/utils";

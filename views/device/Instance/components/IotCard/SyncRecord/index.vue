@@ -64,7 +64,7 @@
 </template>
 
 <script setup>
-import {querySyncLog} from "@device/api/iot-card/cardManagement";
+import {querySyncLog} from "@device-manager-ui/api/iot-card/cardManagement";
 import {useI18n} from "vue-i18n";
 import dayjs from "dayjs";
 

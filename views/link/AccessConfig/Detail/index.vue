@@ -79,8 +79,8 @@ import Edge from '../components/Edge/index.vue';
 import GateWay from '../components/Edge/geteway.vue';
 import Cloud from '../components/Cloud/index.vue';
 import Plugin from '../components/Plugin/index.vue'
-import {getProviders, detail} from '@device/api/link/accessConfig';
-import {queryProductList} from '@device/api/product';
+import {getProviders, detail} from '@device-manager-ui/api/link/accessConfig';
+import {queryProductList} from '@device-manager-ui/api/product';
 import {accessConfigTypeFilter} from '@/utils';
 import { useI18n } from 'vue-i18n';
 import Composite from '../components/Composite/index.vue';

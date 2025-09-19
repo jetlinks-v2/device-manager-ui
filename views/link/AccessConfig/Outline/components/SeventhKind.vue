@@ -76,7 +76,7 @@
 </template>
 
 <script setup lang="ts">
-import { getCompositeProviderDetail } from '@device/api/link/accessConfig';
+import { getCompositeProviderDetail } from '@device-manager-ui/api/link/accessConfig';
 import { BackMap } from '../../data'
 import Outline from '../index.vue'
 

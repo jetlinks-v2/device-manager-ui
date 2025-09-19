@@ -65,7 +65,7 @@ import { cloneDeep } from 'lodash-es';
 import { saveTags, delTags } from '../../../../../../../api/instance';
 import {getToken, onlyMessage} from '@jetlinks-web/utils';
 import { useI18n } from 'vue-i18n';
-import {FileStaticPath} from "@device/api/comm";
+import {FileStaticPath} from "@device-manager-ui/api/comm";
 import {TOKEN_KEY} from "@jetlinks-web/constants";
 import dayjs from "dayjs";
 

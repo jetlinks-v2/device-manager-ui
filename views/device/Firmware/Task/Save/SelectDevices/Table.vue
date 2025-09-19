@@ -53,7 +53,7 @@
 </template>
 
 <script setup>
-import {queryDetailList} from "@device/api/firmware";
+import {queryDetailList} from "@device-manager-ui/api/firmware";
 import dayjs from "dayjs";
 import {useI18n} from "vue-i18n";
 

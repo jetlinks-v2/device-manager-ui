@@ -1,5 +1,5 @@
 
-import { queryNoPagingPost } from '@device/api/product'
+import { queryNoPagingPost } from '@device-manager-ui/api/product'
 
 export default {
   apis: {

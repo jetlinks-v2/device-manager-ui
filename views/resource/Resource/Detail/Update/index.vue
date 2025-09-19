@@ -43,8 +43,8 @@
 </template>
 
 <script setup name="Update">
-import {checkUpdate, _latest, installResource, queryTaskListNoPaging} from '@device/api/resource/resource';
-import Install from '@device/views/resource/Resource/Install/index.vue'
+import {checkUpdate, _latest, installResource, queryTaskListNoPaging} from '@device-manager-ui/api/resource/resource';
+import Install from '@device-manager-ui/views/resource/Resource/Install/index.vue'
 import {provide} from "vue";
 
 const emits = defineEmits(['close', 'refresh']);

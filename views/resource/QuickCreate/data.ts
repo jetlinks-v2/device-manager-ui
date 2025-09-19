@@ -1,5 +1,5 @@
 import { ProtocolMapping } from "./components/Protocol/data";
-import { getProtocolList, getPluginList } from "@device/api/link/accessConfig";
+import { getProtocolList, getPluginList } from "@device-manager-ui/api/link/accessConfig";
 import { omit } from "lodash-es";
 
 const typeMap = new Map([
