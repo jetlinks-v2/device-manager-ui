@@ -183,7 +183,7 @@ import {
     LittleOptions,
     Rules,
 } from '../../../data';
-import { certificates } from '@device/api/link/type';
+import { certificates } from '@device-manager-ui/api/link/type';
 import { NetworkTypeMapping } from '../../NetWork/data.ts';
 import { cloneDeep } from 'lodash-es';
 import { defineExpose } from 'vue';

@@ -1,7 +1,7 @@
 <script setup>
-import { _queryTemplate } from '@device/api/resource/resource.ts';
+import { _queryTemplate } from '@device-manager-ui/api/resource/resource.ts';
 import Search from './Search/Search.vue';
-import { ResourceCardItem } from '@device/components/ResourceTable'
+import { ResourceCardItem } from '@device-manager-ui/components/ResourceTable'
 import { defineExpose }  from 'vue'
 
 const props = defineProps({

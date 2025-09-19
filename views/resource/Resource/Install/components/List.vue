@@ -95,10 +95,10 @@
 </template>
 
 <script setup>
-import {installResource} from '@device/api/resource/resource';
+import {installResource} from '@device-manager-ui/api/resource/resource';
 import {cloneDeep} from 'lodash-es';
 import {computedVersion} from '../data';
-import {resource} from '@device/assets/resource';
+import {resource} from '@device-manager-ui/assets/resource';
 import {omit} from 'lodash-es';
 import {defineExpose} from 'vue'
 

@@ -1,4 +1,4 @@
-import { getObjectList_api } from '@device/api/system/relationship';
+import { getObjectList_api } from '@device-manager-ui/api/system/relationship';
 export const useRelationTypes = () => {
     //关联方列表
     const relationTypes = ref([]);

@@ -73,7 +73,7 @@
 import {
   getRelationshipList_api,
   delRelation_api,
-} from "@device/api/system/relationship";
+} from "@device-manager-ui/api/system/relationship";
 import EditDialog from "./components/EditDialog.vue";
 import { onlyMessage } from "@/utils/comm";
 import { useI18n } from "vue-i18n";

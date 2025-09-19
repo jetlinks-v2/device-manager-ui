@@ -1,6 +1,6 @@
 <script setup name="Metadata">
 import { DataTypeList, EventLevel, sourceType,arrayToObj } from './utils'
-import VirtualScroll from '@device/components/VirtualScroll/index.vue'
+import VirtualScroll from '@device-manager-ui/components/VirtualScroll/index.vue'
 import { useI18n } from 'vue-i18n'
 
 const { t: $t } = useI18n()

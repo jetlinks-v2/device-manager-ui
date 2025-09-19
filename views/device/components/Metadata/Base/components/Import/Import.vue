@@ -79,7 +79,7 @@ import { getTemplate, uploadAnalyzeMetadata} from '../../../../../../../api/inst
 import {getTemplate as getProductTemplate} from '../../../../../../../api/product'
 import {useGroupActive, useTableWrapper} from "../../../../../../../components/Metadata/context";
 import { useProductStore } from '../../../../../../../store/product';
-import { useInstanceStore } from '@device/store/instance';
+import { useInstanceStore } from '@device-manager-ui/store/instance';
 import { useI18n } from 'vue-i18n';
 
 const { t: $t } = useI18n();

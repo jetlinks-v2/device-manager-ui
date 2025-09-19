@@ -213,14 +213,14 @@
 </template>
 
 <script lang="ts" setup>
-import { useInstanceStore } from '@device/store/instance';
+import { useInstanceStore } from '@device-manager-ui/store/instance';
 import type { ConfigMetadata } from '../../../../../Product/typings';
 import {
     getConfigMetadata,
     _deploy,
     configurationReset,
-} from '@device/api/instance';
-import { getCompositeProviderDetail, list, getProviders } from '@device/api/link/accessConfig';
+} from '@device-manager-ui/api/instance';
+import { getCompositeProviderDetail, list, getProviders } from '@device-manager-ui/api/link/accessConfig';
 import Save from './Save.vue';
 import { onlyMessage } from '@jetlinks-web/utils';
 import { useI18n } from 'vue-i18n';

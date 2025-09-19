@@ -98,10 +98,10 @@
 </template>
 
 <script setup lang="ts" name="Product">
-import { device } from '@device/assets/device/index.ts'
+import { device } from '@device-manager-ui/assets/device/index.ts'
 import {
     _queryCollector,
-} from '@device/api/resource/resource';
+} from '@device-manager-ui/api/resource/resource';
 import { useI18n } from 'vue-i18n';
 
 const { t: $t } = useI18n();

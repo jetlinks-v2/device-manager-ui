@@ -47,8 +47,8 @@
 
 <script setup name="ApplyCollector">
 import Collector from './Collector.vue';
-import { device } from '@device/assets/device/index.ts'
-import { _queryCollector } from '@device/api/resource/resource';
+import { device } from '@device-manager-ui/assets/device/index.ts'
+import { _queryCollector } from '@device-manager-ui/api/resource/resource';
 
 const emits = defineEmits(['close']);
 

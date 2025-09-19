@@ -33,8 +33,8 @@
 <script setup>
 import { cloneDeep } from 'lodash-es';
 import AccessCard from '../AccessCard/index.vue'
-import { getPluginList } from '@device/api/link/accessConfig';
-import Save from '@device/views/link/plugin/Save.vue'
+import { getPluginList } from '@device-manager-ui/api/link/accessConfig';
+import Save from '@device-manager-ui/views/link/plugin/Save.vue'
 import {onlyMessage} from "@jetlinks-web/utils";
 const props = defineProps({
     type: {

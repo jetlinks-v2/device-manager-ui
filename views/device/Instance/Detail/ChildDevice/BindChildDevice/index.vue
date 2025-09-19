@@ -99,7 +99,7 @@ import {
 } from '../../../../../../api/instance';
 import {
     queryNoPagingPost,
-} from '@device/api/product'
+} from '@device-manager-ui/api/product'
 import dayjs from 'dayjs';
 import { useInstanceStore } from '../../../../../../store/instance';
 import { storeToRefs } from 'pinia';

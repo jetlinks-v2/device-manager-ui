@@ -27,7 +27,7 @@
 <script setup lang="ts" name="FileUpload">
 import { LocalStore, onlyMessage } from '@jetlinks-web/utils';
 import { TOKEN_KEY } from '@jetlinks-web/constants';
-import { FileStaticPath } from '@device/api/comm';
+import { FileStaticPath } from '@device-manager-ui/api/comm';
 import type { UploadChangeParam, UploadProps } from 'ant-design-vue';
 import { notification as Notification } from 'ant-design-vue';
 import { useSystemStore } from '@/store/system';

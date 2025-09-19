@@ -28,7 +28,7 @@
 import {getTreeData_api} from "@/api/system/department";
 import {useI18n} from "vue-i18n";
 import {onlyMessage} from "@jetlinks-web/utils";
-import {queryDetailList} from "@device/api/firmware";
+import {queryDetailList} from "@device-manager-ui/api/firmware";
 
 const props = defineProps({
   productId: {
