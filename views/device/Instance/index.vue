@@ -678,16 +678,23 @@ const handleGetParams = (p: any) => {
     return p;
 };
 
+
 const activeAllDevice = () => {
     type.value = 'active';
-    const activeAPI = `${BASE_API}/device-instance/deploy?${TOKEN_KEY_URL}=${getToken()}&${handleParams(handleGetParams(params.value))}`;
+    let activeAPI = `${BASE_API}/device-instance/deploy?${TOKEN_KEY_URL}=${getToken()}`;
+    if (params.value?.terms) {
+      activeAPI += `&${handleParams(handleGetParams(params.value))}`;
+    }
     api.value = activeAPI;
     operationVisible.value = true;
 };
 
 const syncDeviceStatus = () => {
     type.value = 'sync';
-    const syncAPI = `${BASE_API}/device-instance/state/_sync?${TOKEN_KEY_URL}=${getToken()}&${handleParams(params.value)}`;
+    let syncAPI = `${BASE_API}/device-instance/state/_sync?${TOKEN_KEY_URL}=${getToken()}`;
+    if (params.value) {
+      syncAPI += `&${handleParams(params.value)}`;
+    }
     api.value = syncAPI;
     operationVisible.value = true;
 };
