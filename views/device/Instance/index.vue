@@ -231,6 +231,7 @@ import { Modal } from 'ant-design-vue';
 import { device } from '../../../assets';
 import { isNoCommunity } from '@/utils/utils';
 import { useI18n } from 'vue-i18n';
+import { useTermOptions } from '@jetlinks-web/components/es/Search/hooks/useTermOptions'
 
 const { t: $t } = useI18n();
 
@@ -264,6 +265,8 @@ const transformData = (arr: any[]): any[] => {
         return [];
     }
 };
+
+const { termOptions } = useTermOptions({ pick: ['eq']})
 
 const columns = ref([
     {
@@ -434,7 +437,7 @@ const columns = ref([
             componentProps: {
                 data: params.value,
             },
-            termOptions: ['eq'],
+            termOptions: termOptions,
         },
     },
     {
@@ -922,7 +925,7 @@ onMounted(() => {
             hideInTable: true,
             search: {
                 type: 'treeSelect',
-                termOptions: ['eq'],
+                termOptions: termOptions,
                 options: () =>
                     new Promise((resolve) => {
                         queryOrgThree({}).then((resp: any) => {
