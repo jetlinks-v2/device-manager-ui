@@ -236,6 +236,7 @@ const confirm = async () => {
 // }
 const resetRules = async () => {
   let res: any = await resetRule(instanceStore.current?.productId, instanceStore.current?.id, [props.record.id])
+  await instanceStore.refresh(instanceStore.current?.id) //重置规则后，需要刷新设备详情，重新获取物模型，否则会导致切换tab后点击保存，会把重置之前的规则带上保存
   if (res.status === 200) {
     onlyMessage($t('components.Source.418270-4'))
   }
