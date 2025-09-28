@@ -72,7 +72,11 @@
                 {{ slotProps.name }}
               </h3>
             </j-ellipsis>
-            <a-row>
+            <div v-if="slotProps.provider === 'composite-device-gateway'">
+              {{ $t('Composite.index.636069-9') }}
+            </div>
+            <template v-else>
+              <a-row>
                 <a-col :span="12" v-if="slotProps.channelInfo">
                   <div class="card-item-content-text">
                     <j-ellipsis>{{ slotProps.channelInfo?.name }}</j-ellipsis>
@@ -106,6 +110,7 @@
                   </j-ellipsis>
                 </a-col>
               </a-row>
+            </template>
             </div>
           </template>
         </CardBox>
