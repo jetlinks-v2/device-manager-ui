@@ -60,9 +60,8 @@
                         }"
                     >
                         <template #img>
-                            <img
-                                :width="80"
-                                :height="80"
+                            <Image
+                                class="card-list-img-80"
                                 :src="
                                     slotProps?.photoUrl ||
                                     device.deviceCard

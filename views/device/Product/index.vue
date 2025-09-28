@@ -71,9 +71,9 @@
           >
             <template #img>
               <slot name="img">
-                <img
+                <Image
                   :src="slotProps.photoUrl || device.deviceProduct"
-                  class="productImg"
+                  class="card-list-img-80"
                 />
               </slot>
             </template>
