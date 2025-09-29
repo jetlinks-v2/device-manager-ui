@@ -63,9 +63,9 @@
           >
             <template #img>
               <slot name="img">
-                <img
+                <Image
                   :src="slotProps.photoUrl || device.deviceProduct"
-                  class="productImg"
+                  class="card-list-img-80"
                 />
               </slot>
             </template>
@@ -161,7 +161,7 @@
     </FullPage>
     <!-- {{ $t('Product.index.660348-0') }}、{{ $t('Product.index.660348-13') }} -->
     <Save ref="saveRef" :isAdd="isAdd" :title="title" @success="refresh" />
-    
+
     <!-- 同步缓存确认弹窗 -->
      <a-modal
        v-model:visible="syncCacheVisible"
@@ -172,7 +172,7 @@
      >
        <p>缓存丢失导致产品底层数据与配置异常，可能导致设备数据无法正常上报，请点击「开始」按钮刷新数据</p>
      </a-modal>
-    
+
     <!-- 同步进度弹窗 -->
      <a-modal
        v-model:visible="syncProgressVisible"
@@ -182,7 +182,7 @@
      >
        <div style="text-align: center;">
          <a-progress :percent="syncProgress" :status="syncCompleted ? 'success' : 'active'" />
-         <p style="margin-top: 16px;">{{ syncProgressText }}</p>       
+         <p style="margin-top: 16px;">{{ syncProgressText }}</p>
        </div>
        <template #footer>
          <a-button v-if="syncCompleted" type="primary" @click="handleSyncProgressClose">
@@ -216,6 +216,7 @@ import { device } from "../../../assets";
 import TagSearch from "../Instance/components/TagSearch.vue";
 import { accessType } from "../data";
 import { useI18n } from "vue-i18n";
+import { useTermOptions } from '@jetlinks-web/components/es/Search/hooks/useTermOptions'
 import BatchDropdown from "@/components/BatchDropdown/index.vue";
 
 const { t: $t } = useI18n();
@@ -227,6 +228,9 @@ const menuStory = useMenuStore();
 const isAdd = ref<number>(0);
 const title = ref<string>("");
 const params = ref<Record<string, any>>({});
+const { termOptions } = useTermOptions({ pick: ['eq', 'not']})
+const { termOptions: dimAssetsTermOptions } = useTermOptions({ pick: ['eq']})
+
 const columns = [
   {
     title: "ID",
@@ -266,7 +270,8 @@ const columns = [
     search: {
       type: "component",
       components: TagSearch,
-      termOptions: ["eq", "not"],
+      termOptions: termOptions,
+      defaultTermType: 'eq'
     },
   },
   {
@@ -795,7 +800,7 @@ onMounted(() => {
       search: {
         first: true,
         type: "treeSelect",
-        termOptions: ["eq"],
+        termOptions: dimAssetsTermOptions,
         options: async () => {
           return new Promise((res) => {
             queryOrgThree({ paging: false }).then((resp: any) => {

@@ -139,7 +139,7 @@ import { isExists, update } from '../../../../api/instance';
 import { onlyMessage } from '@jetlinks-web/utils';
 import { device} from "../../../../assets";
 import { useI18n } from 'vue-i18n';
-import { isInput } from '@device/utils/utils';
+import { isInput } from '@device-manager-ui/utils/utils';
 
 const { t: $t } = useI18n();
 

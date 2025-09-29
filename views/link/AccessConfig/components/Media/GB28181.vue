@@ -513,6 +513,7 @@ import { isNumber } from 'lodash-es';
 import type { Rule } from 'ant-design-vue/es/form';
 import { testIpv4_6 } from '@/utils/validate';
 import { useI18n } from 'vue-i18n';
+import { useTabSaveSuccessBack } from '@/hooks'
 
 const { t: $t } = useI18n();
 interface Form2 {
@@ -588,6 +589,8 @@ const clustersList = ref([]);
 const dynamicValidateForm = reactive<{ cluster: Form2[] }>({
     cluster: [],
 });
+
+const { onBack } = useTabSaveSuccessBack()
 
 const rules = {
   publicPort: [
@@ -686,11 +689,7 @@ const saveData = () => {
             onlyMessage($t('Media.GB28181.666483-41'), 'success');
             if (route.query.save) {
                 // @ts-ignore
-                const sourceId = route.query?.sourceId;
-               if((window as any).onTabSaveSuccess && sourceId){
-                (window as any).onTabSaveSuccess(sourceId, resp);
-                setTimeout(() => window.close(), 300);
-               }
+              onBack(rsp)
             } else {
                 history.back();
             }

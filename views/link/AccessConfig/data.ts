@@ -56,6 +56,7 @@ BackMap.set('onvif', access.Onvif);
 BackMap.set('media-plugin', access.MediaPlugin)
 BackMap.set('agent-device-gateway', access.AgentDevice)
 BackMap.set('agent-media-device-gateway', access.MediaPlugin)
+BackMap.set('composite-device-gateway', access.Composite)
 
 const descriptionList = {
     'udp-device-gateway':

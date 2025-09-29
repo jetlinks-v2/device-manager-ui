@@ -98,16 +98,16 @@
 import {
   query as queryAlarmRecord,
   queryPreHandleHistory,
-} from '@device/api/rule-engine/log';
-import {useInstanceStore} from '@device/store/instance';
-import {useProductStore} from '@device/store/product';
+} from '@device-manager-ui/api/rule-engine/log';
+import {useInstanceStore} from '@device-manager-ui/store/instance';
+import {useProductStore} from '@device-manager-ui/store/product';
 import dayjs from 'dayjs';
 import AlarmLog from './components/AlarmLog.vue';
 import {useMenuStore} from '@/store';
 import {useI18n} from 'vue-i18n';
 import SolveComponent from './components/SolveComponent.vue'
 import Duration from './components/Duration.vue'
-import {queryLevel} from "@device/api/rule-engine/config";
+import {queryLevel} from "@device-manager-ui/api/rule-engine/config";
 import {langKey} from "@/utils/consts";
 
 const {t: $t} = useI18n();

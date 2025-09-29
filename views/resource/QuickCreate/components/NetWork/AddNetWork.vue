@@ -728,7 +728,7 @@ import {
   certificates,
   resourceClusters,
   getTs,
-} from "@device/api/link/type.ts";
+} from "@device-manager-ui/api/link/type.ts";
 import {
   ParserConfiguration,
   FormStates,
@@ -745,7 +745,7 @@ import { cloneDeep } from "lodash-es";
 import type { FormData2Type, FormDataType } from "../../type.ts";
 import LocalAddressSelect from "./LocalAddressSelect.vue";
 import { isNoCommunity } from "@/utils/utils";
-import { useTypeStore } from "@device/store/type";
+import { useTypeStore } from "@device-manager-ui/store/type";
 import { storeToRefs } from "pinia";
 
 const props = defineProps({

@@ -77,7 +77,7 @@
 <script setup lang="ts" name="List">
 import CardItem from './CardItem.vue';
 import Product from './Product.vue';
-import { device } from '@device/assets/device'
+import { device } from '@device-manager-ui/assets/device'
 
 const props = defineProps({
     productList: {

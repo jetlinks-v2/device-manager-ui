@@ -102,8 +102,8 @@
 </template>
 
 <script setup lang="ts" name="Product">
-import {_queryProduct, _queryProtocol} from '@device/api/resource/resource';
-import {device} from '@device/assets/device/index.ts';
+import {_queryProduct, _queryProtocol} from '@device-manager-ui/api/resource/resource';
+import {device} from '@device-manager-ui/assets/device/index.ts';
 import {useI18n} from 'vue-i18n';
 
 const {t: $t} = useI18n();

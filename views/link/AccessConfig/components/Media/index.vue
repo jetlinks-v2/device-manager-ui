@@ -98,6 +98,7 @@ import Onvif from './Onvif.vue';
 import Plugin from '../Plugin/index.vue';
 import { update, save } from '../../../../../api/link/accessConfig';
 import { useI18n } from 'vue-i18n';
+import { useTabSaveSuccessBack } from '@/hooks'
 
 const { t: $t } = useI18n();
 interface FormState {
@@ -130,6 +131,8 @@ const formState = ref<FormState>({
     name: '',
     description: '',
 });
+const { onBack } = useTabSaveSuccessBack()
+
 const onFinish = async (values: any) => {
     loading.value = true;
     const params = {
@@ -145,11 +148,7 @@ const onFinish = async (values: any) => {
 
         if (route.query.save) {
             // @ts-ignore
-            const sourceId = route.query?.sourceId;
-            if ((window as any).onTabSaveSuccess && sourceId) {
-                (window as any).onTabSaveSuccess(sourceId, resp);
-                setTimeout(() => window.close(), 300);
-            }
+            onBack(resp)
         } else {
             history.back();
         }

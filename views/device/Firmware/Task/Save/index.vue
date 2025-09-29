@@ -127,7 +127,7 @@
   </a-modal>
 </template>
 <script lang="ts" setup name="TaskPage">
-import {queryProduct, saveTask} from '@device/api/firmware';
+import {queryProduct, saveTask} from '@device-manager-ui/api/firmware';
 import type {FormInstance} from 'ant-design-vue';
 import SelectDevices from './SelectDevices/index.vue';
 import {useI18n} from 'vue-i18n';

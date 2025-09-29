@@ -75,10 +75,10 @@
 </template>
 
 <script setup lang="ts" name="List">
-import { device } from "@device/assets/device/index.ts";
+import { device } from "@device-manager-ui/assets/device/index.ts";
 import CardItem from "./CardItem.vue";
 import Product from "./Product.vue";
-import { _queryProtocol } from "@device/api/resource/resource.ts";
+import { _queryProtocol } from "@device-manager-ui/api/resource/resource.ts";
 
 const props = defineProps({
   protocolList: {
