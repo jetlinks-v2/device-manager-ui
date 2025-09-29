@@ -26,7 +26,7 @@ import {
     getApiGranted_api,
     getTreeOne_api,
     getTreeTwo_api,
-} from '@device/api/apiPage';
+} from '@device-manager-ui/api/apiPage';
 import type { modeType, treeNodeTpye } from '../typing';
 import { useDepartmentStore } from '@/store/department';
 import { useI18n } from 'vue-i18n';

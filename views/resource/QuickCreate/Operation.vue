@@ -144,15 +144,15 @@ import {
   queryNetWorkConfig,
   queryAliveNetWork,
   queryNetWork,
-} from "@device/api/resource/quickCreate";
-import {BackMap} from "@device/views/link/AccessConfig/data.ts";
+} from "@device-manager-ui/api/resource/quickCreate";
+import {BackMap} from "@device-manager-ui/views/link/AccessConfig/data.ts";
 import {
   getResourcesCurrent,
   list as getAccessConfigList,
-} from "@device/api/link/accessConfig";
+} from "@device-manager-ui/api/link/accessConfig";
 import {networkAndProtocol, reuseByProtocol, NetworkTypeMapping, reuse, queryExistProtocol, handlePluginData, UDPList, TCPList} from "./data";
 import AdvanceMode from "./components/AdvanceMode.vue";
-import {getProviders} from "@device/api/product.ts";
+import {getProviders} from "@device-manager-ui/api/product.ts";
 import PerfectInfo from "./components/PerfectInfo/index.vue";
 
 const props = defineProps({

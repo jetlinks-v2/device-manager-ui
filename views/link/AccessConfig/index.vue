@@ -59,81 +59,90 @@
                                             {{ slotProps.name }}
                                         </span>
                                     </j-ellipsis>
-                                    <a-row class="card-item-content-box">
-                                        <a-col
-                                            :span="12"
-                                            v-if="slotProps.channelInfo"
-                                            class="card-item-content-text"
-                                        >
-                                            <j-ellipsis
-                                                style="
-                                                    width: calc(100% - 100px);
-                                                "
+                                    <template v-if="slotProps.provider !== 'composite-device-gateway'">
+                                        <a-row class="card-item-content-box">
+                                            <a-col
+                                                :span="12"
+                                                v-if="slotProps.channelInfo"
+                                                class="card-item-content-text"
+                                            >
+                                                <j-ellipsis
+                                                    style="
+                                                        width: calc(100% - 100px);
+                                                    "
+                                                >
+                                                    <div
+                                                        class="card-item-content-text-title"
+                                                    >
+                                                        {{
+                                                            slotProps.channelInfo
+                                                                .name
+                                                        }}
+                                                    </div>
+                                                </j-ellipsis>
+                                                <j-ellipsis
+                                                    style="
+                                                        width: calc(100% - 10px);
+                                                        display: flex;
+                                                        margin-top: 4px;
+                                                    "
+                                                    v-if="
+                                                        slotProps.channelInfo
+                                                            .addresses
+                                                    "
+                                                >
+                                                    <a-badge
+                                                        :status="
+                                                            getStatus(slotProps)
+                                                        "
+                                                    />
+                                                    <span>
+                                                        {{
+                                                            slotProps.channelInfo
+                                                                .addresses[0]
+                                                                ?.address
+                                                        }}
+                                                    </span>
+                                                </j-ellipsis>
+                                            </a-col>
+                                            <a-col
+                                                :span="12"
+                                                v-if="slotProps.protocolDetail"
+                                                class="card-item-content-text"
                                             >
                                                 <div
                                                     class="card-item-content-text-title"
                                                 >
-                                                    {{
-                                                        slotProps.channelInfo
-                                                            .name
-                                                    }}
+                                                    {{ $t('AccessConfig.index.764793-1') }}
                                                 </div>
-                                            </j-ellipsis>
-                                            <j-ellipsis
-                                                style="
-                                                    width: calc(100% - 10px);
-                                                    display: flex;
-                                                    margin-top: 4px;
-                                                "
-                                                v-if="
-                                                    slotProps.channelInfo
-                                                        .addresses
-                                                "
-                                            >
-                                                <a-badge
-                                                    :status="
-                                                        getStatus(slotProps)
-                                                    "
-                                                />
-                                                <span>
-                                                    {{
-                                                        slotProps.channelInfo
-                                                            .addresses[0]
-                                                            .address
-                                                    }}
-                                                </span>
-                                            </j-ellipsis>
-                                        </a-col>
-                                        <a-col
-                                            :span="12"
-                                            v-if="slotProps.protocolDetail"
-                                            class="card-item-content-text"
-                                        >
-                                            <div
-                                                class="card-item-content-text-title"
-                                            >
-                                                {{ $t('AccessConfig.index.764793-1') }}
-                                            </div>
-                                            <j-ellipsis
-                                                style="width: calc(100% - 10px)"
-                                                :lineClamp="2"
-                                            >
-                                                <div>
-                                                    {{
-                                                        slotProps.protocolDetail
-                                                            .name
-                                                    }}
-                                                </div>
-                                            </j-ellipsis>
-                                        </a-col>
-                                    </a-row>
-                                    <a-row class="card-item-content-description">
-                                        <a-col :span="24">
-                                            <j-ellipsis :lineClamp="2" style="width: calc(100% - 10px)">
-                                                {{ getDescription(slotProps) }}
-                                            </j-ellipsis>
-                                        </a-col>
-                                    </a-row>
+                                                <j-ellipsis
+                                                    style="width: calc(100% - 10px)"
+                                                    :lineClamp="2"
+                                                >
+                                                    <div>
+                                                        {{
+                                                            slotProps.protocolDetail
+                                                                .name
+                                                        }}
+                                                    </div>
+                                                </j-ellipsis>
+                                            </a-col>
+                                        </a-row>
+                                        <a-row class="card-item-content-description">
+                                            <a-col :span="24">
+                                                <j-ellipsis :lineClamp="2" style="width: calc(100% - 10px)">
+                                                    {{ getDescription(slotProps) }}
+                                                </j-ellipsis>
+                                            </a-col>
+                                        </a-row>
+                                    </template>
+                                    <template v-else>
+                                        <a-row class="card-item-content-box">
+                                            <a-col :span="24" class="card-item-content-text">
+                                                <span>点击查看子网关配置信息</span>
+                                            </a-col>
+                                        </a-row>
+                                    </template>
                                     <!-- <a-row>
                                         <a-col
                                             :span="24"
@@ -384,7 +393,7 @@ const getDescription = (slotProps: Record<string, any>) =>
           )?.description;
 
 const getStatus = (slotProps: Record<string, any>) =>
-    slotProps.channelInfo.addresses[0].health === -1 ? 'error' : 'processing';
+    slotProps.channelInfo.addresses[0]?.health === -1 ? 'error' : 'processing';
 
 /**
  * 搜索

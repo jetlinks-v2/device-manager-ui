@@ -71,9 +71,9 @@
           >
             <template #img>
               <slot name="img">
-                <img
+                <Image
                   :src="slotProps.photoUrl || device.deviceProduct"
-                  class="productImg"
+                  class="card-list-img-80"
                 />
               </slot>
             </template>
@@ -194,6 +194,7 @@ import { device } from "../../../assets";
 import TagSearch from "../Instance/components/TagSearch.vue";
 import { accessType } from "../data";
 import { useI18n } from "vue-i18n";
+import { useTermOptions } from '@jetlinks-web/components/es/Search/hooks/useTermOptions'
 
 const { t: $t } = useI18n();
 
@@ -204,6 +205,9 @@ const menuStory = useMenuStore();
 const isAdd = ref<number>(0);
 const title = ref<string>("");
 const params = ref<Record<string, any>>({});
+const { termOptions } = useTermOptions({ pick: ['eq', 'not']})
+const { termOptions: dimAssetsTermOptions } = useTermOptions({ pick: ['eq']})
+
 const columns = [
   {
     title: "ID",
@@ -243,7 +247,8 @@ const columns = [
     search: {
       type: "component",
       components: TagSearch,
-      termOptions: ["eq", "not"],
+      termOptions: termOptions,
+      defaultTermType: 'eq'
     },
   },
   {
@@ -677,7 +682,7 @@ onMounted(() => {
       search: {
         first: true,
         type: "treeSelect",
-        termOptions: ["eq"],
+        termOptions: dimAssetsTermOptions,
         options: async () => {
           return new Promise((res) => {
             queryOrgThree({ paging: false }).then((resp: any) => {

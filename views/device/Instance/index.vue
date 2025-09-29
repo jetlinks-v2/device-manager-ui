@@ -60,9 +60,8 @@
                         }"
                     >
                         <template #img>
-                            <img
-                                :width="80"
-                                :height="80"
+                            <Image
+                                class="card-list-img-80"
                                 :src="
                                     slotProps?.photoUrl ||
                                     device.deviceCard
@@ -231,6 +230,7 @@ import { Modal } from 'ant-design-vue';
 import { device } from '../../../assets';
 import { isNoCommunity } from '@/utils/utils';
 import { useI18n } from 'vue-i18n';
+import { useTermOptions } from '@jetlinks-web/components/es/Search/hooks/useTermOptions'
 
 const { t: $t } = useI18n();
 
@@ -264,6 +264,8 @@ const transformData = (arr: any[]): any[] => {
         return [];
     }
 };
+
+const { termOptions } = useTermOptions({ pick: ['eq']})
 
 const columns = ref([
     {
@@ -434,7 +436,7 @@ const columns = ref([
             componentProps: {
                 data: params.value,
             },
-            termOptions: ['eq'],
+            termOptions: termOptions,
         },
     },
     {
@@ -678,16 +680,23 @@ const handleGetParams = (p: any) => {
     return p;
 };
 
+
 const activeAllDevice = () => {
     type.value = 'active';
-    const activeAPI = `${BASE_API}/device-instance/deploy?${TOKEN_KEY_URL}=${getToken()}&${handleParams(handleGetParams(params.value))}`;
+    let activeAPI = `${BASE_API}/device-instance/deploy?${TOKEN_KEY_URL}=${getToken()}`;
+    if (params.value?.terms) {
+      activeAPI += `&${handleParams(handleGetParams(params.value))}`;
+    }
     api.value = activeAPI;
     operationVisible.value = true;
 };
 
 const syncDeviceStatus = () => {
     type.value = 'sync';
-    const syncAPI = `${BASE_API}/device-instance/state/_sync?${TOKEN_KEY_URL}=${getToken()}&${handleParams(params.value)}`;
+    let syncAPI = `${BASE_API}/device-instance/state/_sync?${TOKEN_KEY_URL}=${getToken()}`;
+    if (params.value) {
+      syncAPI += `&${handleParams(params.value)}`;
+    }
     api.value = syncAPI;
     operationVisible.value = true;
 };
@@ -915,7 +924,7 @@ onMounted(() => {
             hideInTable: true,
             search: {
                 type: 'treeSelect',
-                termOptions: ['eq'],
+                termOptions: termOptions,
                 options: () =>
                     new Promise((resolve) => {
                         queryOrgThree({}).then((resp: any) => {

@@ -203,12 +203,12 @@
                         allowClear
                         :placeholder="$t('Cloud.Ctwing.076179-23')"
                         style="width: 300px"
-                        @search="procotolSearch"
+                        @search="protocolSearch"
                     />
                     <j-permission-button
                         v-if='showAddBtn'
                         type="primary"
-                        @click="addProcotol"
+                        @click="addProtocol"
                         hasPermission="link/Protocol:add"
                     >
                         <template #icon><AIcon type="PlusOutlined" /></template>
@@ -219,16 +219,16 @@
                     <a-row
                         :gutter="[24, 24]"
                         style="width: 100%"
-                        v-if="procotolList.length > 0"
+                        v-if="protocolList.length > 0"
                     >
                         <a-col
                             :span="8"
-                            v-for="item in procotolList"
+                            v-for="item in protocolList"
                             :key="item.id"
                         >
                             <AccessCard
-                                @checkedChange="procotolChange"
-                                :checked="procotolCurrent"
+                                @checkedChange="protocolChange"
+                                :checked="protocolCurrent"
                                 :disabled='!showAddBtn'
                                 :data="{ ...item, type: 'protocol' }"
                             >
@@ -293,7 +293,7 @@
                         <p>
                             {{ provider.description }}
                         </p>
-                        <p>{{ $t('Cloud.Ctwing.076179-31') }}{{ procotolCurrent }}</p>
+                        <p>{{ $t('Cloud.Ctwing.076179-31') }}{{ protocolCurrent }}</p>
                         <TitleComponent :data="$t('Cloud.Ctwing.076179-32')" />
                         <p>
                             {{ $t('Cloud.Ctwing.076179-33') }}{{
@@ -353,6 +353,7 @@ import { randomString, onlyMessage } from '@jetlinks-web/utils';
 import { useMenuStore } from '@/store/menu';
 import { network } from '../../../../../assets';
 import { useI18n } from 'vue-i18n';
+import { useTabSaveSuccess, useTabSaveSuccessBack } from '@/hooks'
 
 const { t: $t } = useI18n();
 const menuStory = useMenuStore();
@@ -415,24 +416,33 @@ const showAddBtn = computed(() => {
 const current = ref(0);
 const stepCurrent = ref(0);
 const steps = ref([$t('Cloud.Ctwing.076179-41'), $t('Cloud.Ctwing.076179-42'), $t('Cloud.Ctwing.076179-43')]);
-const procotolList: any = ref([]);
-const allProcotolList = ref([]);
-const procotolCurrent: any = ref('');
+const protocolList: any = ref([]);
+const allProtocolList = ref([]);
+const protocolCurrent: any = ref('');
 
-const procotolChange = (id: string) => {
-    procotolCurrent.value = id;
+const { onOpen } = useTabSaveSuccess('link/Protocol', {
+  onSuccess(value) {
+    protocolCurrent.value = value.result?.id;
+    queryProtocolList(props.provider?.id);
+  }
+})
+
+const { onBack } = useTabSaveSuccessBack()
+
+const protocolChange = (id: string) => {
+    protocolCurrent.value = id;
 };
 
-const procotolSearch = (value: string) => {
-    procotolList.value = value
-        ? allProcotolList.value.filter(
+const protocolSearch = (value: string) => {
+    protocolList.value = value
+        ? allProtocolList.value.filter(
               (i: any) =>
                   i.name &&
                   i.name
                       .toLocaleLowerCase()
                       .includes(value.toLocaleLowerCase()),
           )
-        : allProcotolList.value;
+        : allProtocolList.value;
 };
 
 const saveData = async () => {
@@ -442,9 +452,9 @@ const saveData = async () => {
         ...data,
         configuration: {
             ...formState.value,
-            protocol: procotolCurrent.value,
+            protocol: protocolCurrent.value,
         },
-        protocol: procotolCurrent.value,
+        protocol: protocolCurrent.value,
         provider: props.provider.id,
         transport: 'HTTP',
     };
@@ -459,16 +469,12 @@ const saveData = async () => {
     if (resp.status === 200) {
         onlyMessage($t('Cloud.Ctwing.076179-44'), 'success');
         history.back();
-        const sourceId = route.query?.sourceId;
-        if ((window as any).onTabSaveSuccess && sourceId) {
-            (window as any).onTabSaveSuccess(sourceId, resp);
-            setTimeout(() => window.close(), 300);
-        }
+        onBack(resp)
     }
     loading.value = false
 };
 
-const queryProcotolList = async (id: string, params = {}) => {
+const queryProtocolList = async (id: string, params = {}) => {
     const resp: any = await getProtocolList(ProtocolMapping.get(id), {
         ...params,
         'sorts[0].name': 'createTime',
@@ -476,32 +482,24 @@ const queryProcotolList = async (id: string, params = {}) => {
         paging: false,
     });
     if (resp.status === 200) {
-        procotolList.value = resp.result;
-        allProcotolList.value = resp.result;
+        protocolList.value = resp.result;
+        allProtocolList.value = resp.result;
     }
 };
 
-const addProcotol = () => {
-    const url = menuStory.getMenu('link/Protocol')?.path;
-    const sourceId = `protocol_add_${randomString()}`; // 唯一标识
-    const tab: any = window.open(
-        `${window.location.origin + window.location.pathname}#${url}?save=true&sourceId=${sourceId}`,
-    );
-    tab.onTabSaveSuccess = (_sourceId: string, value: any) => {
-        if (sourceId === _sourceId) {
-            procotolCurrent.value = value.result?.id;
-            queryProcotolList(props.provider?.id);
-        }
-    };
+const addProtocol = () => {
+    onOpen({
+      save: true
+    })
 };
 
 const next = async () => {
     if (current.value === 0) {
         await formRef1.value?.validate();
-        queryProcotolList(props.provider.id);
+        queryProtocolList(props.provider.id);
         current.value = current.value + 1;
     } else if (current.value === 1) {
-        if (!procotolCurrent.value) {
+        if (!protocolCurrent.value) {
             onlyMessage($t('Cloud.Ctwing.076179-45'), 'error');
         } else {
             current.value = current.value + 1;
@@ -516,7 +514,7 @@ const prev = () => {
 onMounted(() => {
     if (id !== ':id') {
         formState.value = props.data.configuration;
-        procotolCurrent.value = props.data.protocol;
+        protocolCurrent.value = props.data.protocol;
         formData.value = {
             name: props.data.name,
             description: props.data.description,

@@ -55,7 +55,7 @@
 </template>
 
 <script setup>
-import {queryLogList} from '@device/api/rule-engine/log';
+import {queryLogList} from '@device-manager-ui/api/rule-engine/log';
 import dayjs from 'dayjs';
 import {useMenuStore} from '@/store';
 import LogDetail from './LogDetail.vue';

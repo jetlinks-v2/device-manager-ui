@@ -1,5 +1,5 @@
 <script setup name='ClassifyOptions'>
-import { brandClassifyId } from '@device/components/ResourceTable/Search/data'
+import { brandClassifyId } from '@device-manager-ui/components/ResourceTable/Search/data'
 import { omit } from 'lodash-es'
 
 const props = defineProps({

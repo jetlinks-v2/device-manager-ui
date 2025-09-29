@@ -828,6 +828,7 @@ import { isNoCommunity } from "@/utils/utils";
 import { useTypeStore } from "../../../../store/type";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
+import { useTabSaveSuccessBack } from '@/hooks'
 
 const { t: $t } = useI18n();
 const route = useRoute();
@@ -857,6 +858,8 @@ const configClustersList = ref<any[]>([]);
 const typescriptTip = reactive({
   typescript: "",
 });
+
+const { onBack } = useTabSaveSuccessBack()
 
 const editorInit = (editor: any, monaco: any) => {
   monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
@@ -1077,6 +1080,11 @@ const saveData = async () => {
   if (resp?.status === 200) {
     onlyMessage($t('Detail.index.258513-65'), "success");
     history.back();
+    onBack(resp, {
+      onBefore: () => {
+        return start(resp.result?.id).then(() => true).catch(() => false);
+      }
+    })
     const sourceId = route.query?.sourceId as string;
     if ((window as any).onTabSaveSuccess && sourceId) {
       if (resp.result?.id) {
@@ -1098,7 +1106,7 @@ const getSupports = async () => {
     }));
     if (
       !typeOptions.value.every((item: any) => item.value === "UDP") &&
-      !NetworkType && 
+      !NetworkType &&
       id === ':id'
     ) {
       formData.value.type = typeOptions.value[0].value;
