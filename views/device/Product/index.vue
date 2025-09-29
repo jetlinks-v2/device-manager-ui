@@ -35,17 +35,9 @@
             >
               {{ $t("Product.index.660348-35") }}
             </j-permission-button>
-            <a-upload
-              name="file"
-              accept=".json"
-              :showUploadList="false"
-              :before-upload="beforeUpload"
-              :disabled="!permission"
-            >
-              <j-permission-button hasPermission="device/Product:import"
-                >{{ $t("Product.index.660348-1") }}
-              </j-permission-button>
-            </a-upload>
+            <BatchDropdown
+              :actions="batchActions"
+            />
           </a-space>
         </template>
         <template #deviceType="slotProps">
@@ -169,6 +161,35 @@
     </FullPage>
     <!-- {{ $t('Product.index.660348-0') }}、{{ $t('Product.index.660348-13') }} -->
     <Save ref="saveRef" :isAdd="isAdd" :title="title" @success="refresh" />
+    
+    <!-- 同步缓存确认弹窗 -->
+     <a-modal
+       v-model:visible="syncCacheVisible"
+       title="同步缓存"
+       ok-text="开始"
+       @ok="handleSyncCache"
+       @cancel="syncCacheVisible = false"
+     >
+       <p>缓存丢失导致产品底层数据与配置异常，可能导致设备数据无法正常上报，请点击「开始」按钮刷新数据</p>
+     </a-modal>
+    
+    <!-- 同步进度弹窗 -->
+     <a-modal
+       v-model:visible="syncProgressVisible"
+       title="同步进度"
+       :closable="false"
+       :maskClosable="false"
+     >
+       <div style="text-align: center;">
+         <a-progress :percent="syncProgress" :status="syncCompleted ? 'success' : 'active'" />
+         <p style="margin-top: 16px;">{{ syncProgressText }}</p>       
+       </div>
+       <template #footer>
+         <a-button v-if="syncCompleted" type="primary" @click="handleSyncProgressClose">
+            完成
+         </a-button>
+       </template>
+     </a-modal>
   </j-page-container>
 </template>
 
@@ -184,6 +205,7 @@ import {
   _undeploy,
   deleteProduct,
   updateDevice,
+  syncProductCache,
 } from "../../../api/product";
 import { downloadJson, accessConfigTypeFilter, isNoCommunity } from "@/utils";
 import { omit, cloneDeep } from "lodash-es";
@@ -194,6 +216,7 @@ import { device } from "../../../assets";
 import TagSearch from "../Instance/components/TagSearch.vue";
 import { accessType } from "../data";
 import { useI18n } from "vue-i18n";
+import BatchDropdown from "@/components/BatchDropdown/index.vue";
 
 const { t: $t } = useI18n();
 
@@ -272,6 +295,43 @@ const columns = [
 const permission = useAuthStore().hasPermission(`device/Product:import`);
 const _selectedRowKeys = ref<string[]>([]);
 const currentForm = ref({});
+const syncCacheVisible = ref(false);
+const syncProgressVisible = ref(false);
+const syncProgress = ref(0);
+const syncCompleted = ref(false);
+const syncProgressText = ref('正在同步缓存...');
+
+// 批量操作配置
+const batchActions = ref([
+  {
+    key: 'import',
+    text: $t("Product.index.660348-1"),
+    icon: 'UploadOutlined',
+    permission: 'device/Product:import',
+    onClick: () => {
+      // 触发文件选择
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+      input.onchange = (e: any) => {
+        const file = e.target.files[0];
+        if (file) {
+          beforeUpload(file);
+        }
+      };
+      input.click();
+    }
+  },
+  {
+    key: 'syncCache',
+    text: '同步缓存',
+    icon: 'SyncOutlined',
+    permission: 'device/Product:update',
+    onClick: () => {
+      syncCacheVisible.value = true;
+    }
+  }
+]);
 
 const getActions = (
   data: Partial<Record<string, any>>,
@@ -405,6 +465,10 @@ const add = () => {
   });
 };
 
+const handleAdd = () => {
+  add();
+};
+
 /**
  * 导入
  */
@@ -412,7 +476,7 @@ const beforeUpload = (file: any) => {
   const reader = new FileReader();
   reader.readAsText(file);
   reader.onload = async (result) => {
-    const text = result.target?.result;
+    const text = result.target?.result as string;
     // console.log(text);
     if (!file.type.includes("json")) {
       onlyMessage($t("Product.index.660348-23"), "error");
@@ -600,6 +664,60 @@ const query = reactive({
   ],
 });
 const saveRef = ref();
+const fileRef = ref();
+
+const handleFileChange = (event: any) => {
+  const file = event.target.files[0];
+  if (file) {
+    beforeUpload(file);
+  }
+};
+
+// 同步缓存处理函数
+const handleSyncCache = async () => {
+  syncCacheVisible.value = false;
+  syncProgressVisible.value = true;
+  syncProgress.value = 0;
+  syncCompleted.value = false;
+  syncProgressText.value = '正在同步缓存...';
+
+  try {
+    const response = syncProductCache();
+    response.subscribe({
+      next: (data: any) => {
+        if (data.progress !== undefined) {
+          syncProgress.value = data.progress;
+        }
+        if (data.total && data.success) {
+          const percent = Math.round((data.success / data.total) * 100);
+          syncProgress.value = percent;
+        }
+      },
+      error: (error: any) => {
+        console.error('同步缓存失败:', error);
+        onlyMessage('同步缓存失败', 'error');
+        syncProgressVisible.value = false;
+      },
+      complete: () => {
+        syncProgress.value = 100;
+        syncCompleted.value = true;
+        syncProgressText.value = '同步完成';
+        onlyMessage('缓存同步完成', 'success');
+      }
+    });
+  } catch (error) {
+    console.error('同步缓存失败:', error);
+    onlyMessage('同步缓存失败', 'error');
+    syncProgressVisible.value = false;
+  }
+};
+
+const handleSyncProgressClose = () => {
+  syncProgressVisible.value = false;
+  syncProgress.value = 0;
+  syncCompleted.value = false;
+  syncProgressText.value = '正在同步缓存...';
+};
 
 const handleSearch = (e: any) => {
   // console.log(e, 'e')
