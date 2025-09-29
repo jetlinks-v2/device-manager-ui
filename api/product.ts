@@ -1,4 +1,4 @@
-import { request } from '@jetlinks-web/core'
+import { request, ndJson } from '@jetlinks-web/core'
 import type { DeviceMetadata, ProductItem, DepartmentItem, MetadataType  } from '../views/device/Product/typings'
 import type { OperatorItem } from '../components/FRuleEditor/Operator/typings'
 import {BASE_API} from "@jetlinks-web/constants";
@@ -224,6 +224,16 @@ export const getTemplate = (id: string, format: string) => `${BASE_API}/device/p
 
 export const getFileType = () => request.get(`/file/media/types`)
 
+/**
+ * 同步产品缓存
+ * @returns
+ */
+export const syncProductCache = () => ndJson.post('/device/product/batch/_deploy')
+
+/**
+ * 获取产品数量
+ */
+export const getProductCount = (data: any) => request.post('/device/product/_count', data)
 
 
 
