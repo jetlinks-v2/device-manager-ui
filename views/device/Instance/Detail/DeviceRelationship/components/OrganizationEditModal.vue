@@ -16,10 +16,11 @@
         </div>
         <div class="batch-actions">
           <span>{{ t('DeviceRelationship.OrganizationEditModal.532167-2') }}</span>
-          <a-checkbox-group v-model:value="batchActions" :options="actionOptions"/>
+          <a-checkbox-group v-model:value="batchActions" :options="actionOptions" @change="handleBatchActionsChange"/>
           <a-switch
               v-model:checked="enableBatchActions"
               size="small"
+              @change="handleEnableBatchActionsChange"
           />
         </div>
       </div>
@@ -42,7 +43,9 @@
                 :tree-data="organizationTree"
                 :field-names="{ children: 'children', title: 'name', key: 'id' }"
                 checkable
+                :checkStrictly="true"
                 :show-icon="false"
+                @check="handleCheckedKeysChange"
             >
               <template #title="{ name }">
                 <span>{{ name }}</span>
@@ -55,7 +58,7 @@
           <div class="section-title">{{ t('DeviceRelationship.OrganizationEditModal.532167-4') }}</div>
           <div class="selected-items">
             <div
-                v-for="item in selectedGroups"
+                v-for="item in checkedMaps"
                 :key="item.id"
                 class="selected-item"
             >
@@ -63,6 +66,7 @@
                 <div style="margin-bottom: 10px">{{ item.name }}</div>
                 <a-checkbox-group
                     v-model:value="item.actions"
+                    :disabled="enableBatchActions"
                     :options="actionOptions"
                 />
               </div>
@@ -88,90 +92,44 @@
 <script lang="ts" setup>
 import {ref, reactive, computed, watch} from 'vue'
 import { useI18n } from 'vue-i18n'
+import { getTreeData_api } from '@authentication-manager-ui/api/system/department'
+import { bindDeviceToOrg } from '@device-manager-ui/api/instance'
+import { useRequest } from '@jetlinks-web/hooks'
+import { omit } from 'lodash-es'
+import { useInstanceStore } from '@device-manager-ui/store/instance'
 
 const { t } = useI18n()
 
-const emit = defineEmits(['close', 'save'])
+const props = defineProps({
+  bindOrgList: {
+    type: Array,
+    default: () => []
+  }
+})
 
+const emit = defineEmits(['close', 'save'])
+const instanceStore = useInstanceStore()
+
+const { data: organizationTree, loading: loadingOrganization } = useRequest(getTreeData_api)
 const loading = ref(false)
 const searchText = ref('')
-const checkedKeys = ref<string[]>(['1'])
-const batchActions = ref<string[]>(['view', 'edit'])
-const enableBatchActions = ref(true)
+const checkedKeys = ref<{checked: string[], halfChecked: string[]}>({
+  checked: props.bindOrgList.map(item => item.id),
+  halfChecked: []
+})
+const checkedMaps = ref<Record<string, any>[]>(props.bindOrgList.map(item => ({...item})))
+const batchActions = ref<string[]>(['read'])
+const enableBatchActions = ref(false)
 
 const actionOptions = computed(() => [
-  {label: t('DeviceRelationship.index.710824-8'), value: 'view'},
-  {label: t('DeviceRelationship.index.710824-9'), value: 'edit'},
+  {label: t('DeviceRelationship.index.710824-8'), value: 'read', disabled: true},
+  {label: t('DeviceRelationship.index.710824-9'), value: 'save'},
   {label: t('DeviceRelationship.index.710824-10'), value: 'delete'},
   {label: t('DeviceRelationship.index.710824-11'), value: 'share'}
 ])
 
-const organizationTree = ref([
-  {
-    id: '1',
-    name: '产品研发部',
-    children: [
-      {
-        id: '2',
-        name: '开发部'
-      },
-      {
-        id: '3',
-        name: '项目部',
-        children: [
-          {
-            id: '4',
-            name: '东北项目部',
-            children: []
-          },
-          {
-            id: '5',
-            name: '西南项目部',
-            children: [
-              {id: '6', name: '规则分部门'},
-              {id: '7', name: 'Tree item'},
-              {id: '8', name: 'Tree item'},
-              {id: '9', name: 'Tree item'},
-              {id: '10', name: 'Tree item'},
-              {id: '11', name: 'Tree item'},
-              {id: '12', name: 'Tree item'}
-            ]
-          }
-        ]
-      }
-    ]
-  },
-  {
-    id: '13',
-    name: '总管理经办',
-    children: [
-      {id: '14', name: 'Tree item'}
-    ]
-  }
-])
 
-const selectedGroups = ref([
-  {
-    id: '1',
-    name: '物联网基地',
-    actions: ['view', 'edit']
-  },
-  {
-    id: '2',
-    name: '传感器设备',
-    actions: ['view', 'edit']
-  },
-  {
-    id: '3',
-    name: '物联网基地',
-    actions: ['view', 'edit']
-  },
-  {
-    id: '4',
-    name: '物联网基地',
-    actions: ['view', 'edit']
-  }
-])
+const selectedGroups = ref([])
 
 const handleCancel = () => {
   emit('close')
@@ -182,7 +140,15 @@ const handleOk = async () => {
 
   try {
     // 模拟保存请求
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    const res = await bindDeviceToOrg(checkedMaps.value.map(item => {
+      return {
+        assetType: 'device',
+        targetId: item.id,
+        assetIdList: [instanceStore.current.id],
+        targetType: 'org',
+        permission: item.actions
+      }
+    }))
 
     emit('save', {
       checkedKeys: checkedKeys.value,
@@ -195,11 +161,46 @@ const handleOk = async () => {
 }
 
 const removeItem = (id: string) => {
-  const index = selectedGroups.value.findIndex(item => item.id === id)
+  const index = checkedMaps.value.findIndex(item => item.id === id)
   if (index > -1) {
-    selectedGroups.value.splice(index, 1)
+    checkedMaps.value.splice(index, 1)
+    checkedKeys.value.checked = checkedKeys.value.checked.filter(item => item !== id)
   }
 }
+
+const handleBatchActionsChange = (val: string[]) => {
+  if(enableBatchActions.value) {
+    checkedMaps.value.forEach(item => {
+      item.actions = val
+    })
+  }
+}
+
+const handleCheckedKeysChange = (selectedKeys, e) => {
+  if(e.checked) {
+    checkedMaps.value.push({
+      ...omit(e.node.dataRef, ['children']),
+      actions: enableBatchActions.value ? batchActions.value : ['read']
+    })
+  } else {
+    checkedMaps.value = checkedMaps.value.filter(item => item.id !== e.node.dataRef.id)
+  }
+}
+
+const handleEnableBatchActionsChange = (val: boolean) => {
+  enableBatchActions.value = val
+  if(val) {
+    checkedMaps.value.forEach(item => {
+      item.actions = batchActions.value
+    })
+  } else {
+    checkedMaps.value.forEach(item => {
+      item.actions = ['read']
+    })
+  }
+}
+
+
 
 // 监听树选择变化，更新已选分组
 watch(checkedKeys, (newKeys) => {

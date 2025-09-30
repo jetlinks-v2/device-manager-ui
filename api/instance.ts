@@ -751,3 +751,28 @@ export const _queryByEdge = (thingId: string,data:any) => request.post(`/edge/de
  * @param data
  */
 export const _commandByEdge = (thingId: string,commandId:string,data:any) => request.post(`/edge/device/${thingId}/_/edge/command/${commandId}/_execute`,data)
+
+/**
+ * 获取关系用户
+ * @param data 
+ * @returns 
+ */
+export const getRelationUsers = (data: any) => request.post(`/relation/_query/no-paging`, data)
+
+/**
+ * 获取不分页组织列表
+ */
+export const getOrgList = (data: any) => request.post(`/organization/_query/no-paging`, data)
+
+/**
+ * 绑定设备到组织
+ */
+export const bindDeviceToOrg = (data: any) => request.post(`assets/bind/device`, data)
+
+/**
+ * 获取资产所绑定的组织列表权限
+ * @param assetType 资产类型
+ * @param assetId 资产ID
+ * @param targetType 目标类型
+ */
+export const getBindOrgAuthList = (assetType: string, assetId: string, targetType: string, data: string[] = []) => request.post(`/assets/bindings/${assetType}/${assetId}/${targetType}/target/_query`, data)
