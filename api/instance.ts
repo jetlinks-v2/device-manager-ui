@@ -1,4 +1,4 @@
-import { request } from '@jetlinks-web/core'
+import { request, ndJson } from '@jetlinks-web/core'
 import {getToken} from '@jetlinks-web/utils'
 import {BASE_API, TOKEN_KEY_URL} from '@jetlinks-web/constants'
 import type { DeviceInstance } from '../views/device/Instance/typings'
@@ -751,3 +751,17 @@ export const _queryByEdge = (thingId: string,data:any) => request.post(`/edge/de
  * @param data
  */
 export const _commandByEdge = (thingId: string,commandId:string,data:any) => request.post(`/edge/device/${thingId}/_/edge/command/${commandId}/_execute`,data)
+
+/**
+ * 下载数采映射导入模版
+ * @param format 文件格式
+ */
+export const downloadAnalyzeMetadataTemplate = (format: string) => request.get(`/device/instance/download/point/mapping/template.${format}`, {}, { responseType: 'blob' })
+
+/**
+ * 导入物模型映射
+ * @param deviceId 设备ID
+ * @param fileUrl 文件URL
+ * @param autoCreate 是否自动创建
+ */
+export const importAnalyzeMetadata = (deviceId: string, fileUrl: string, autoCreate: boolean) => ndJson.get(`/device/instance/${deviceId}/property/point/import?fileUrl=${fileUrl}&autoCreate=${autoCreate}`)

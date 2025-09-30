@@ -142,7 +142,11 @@
     <BatchImport
         v-if="importVisible"
         :width="750"
+        :downloadUrlBuilder="downloadAnalyzeMetadataTemplate"
+        :request="(fileUrl) => importAnalyzeMetadata(instanceStore.current.id, fileUrl, autoCreate)"
         message="1.若平台中不存在匹配的采集器点位，则自动跳过该条数据，不会覆盖<br />2.若需根据点位自动创建物模型，请在上传文件前启用该选项。上传后再修改将无效"
+        @close="importVisible = false"
+        @save="handleImportSuccess"
     >
         <template #content>
             <a-space>
@@ -150,20 +154,22 @@
                 <a-tooltip title="若无对应物模型，则自动创建物模型并映射">
                     <AIcon type="QuestionCircleOutlined"/>
                 </a-tooltip>
-                <a-switch></a-switch>
+                <a-switch v-model:checked="autoCreate"></a-switch>
             </a-space>
         </template>
     </BatchImport>
 </template>
 
 <script lang="ts" setup>
-import { useInstanceStore } from '../../../../../../store/instance';
+import { useInstanceStore } from '@device-manager-ui/store/instance';
 import {
     queryMapping,
     saveMapping,
     removeMapping,
     queryChannelNoPaging,
-} from '../../../../../../api/instance';
+    downloadAnalyzeMetadataTemplate,
+    importAnalyzeMetadata
+} from '@device-manager-ui/api/instance';
 import MSelect from '../MSelect.vue';
 import PatchMapping from './PatchMapping.vue';
 import { onlyMessage } from '@/utils/comm';
@@ -213,6 +219,7 @@ const columns = [
     },
 ];
 
+const autoCreate = ref(false)
 const importVisible = ref(false)
 const myCurrent = ref(0);
 const pageSize = ref(12);
@@ -329,6 +336,11 @@ const onPatchBind = () => {
     visible.value = false;
     handleSearch();
 };
+
+// 导入数采映射成功
+const handleImportSuccess = () => {
+    handleSearch();
+}
 
 onMounted(() => {
     handleSearch();
