@@ -55,7 +55,7 @@
             </template>
             <template #actions="{ item, level }">
               <a-tag
-                v-for="permission in bindOrgAuthList.find(it => it.targetId === item.id || item.key)?.grantedPermissions || []"
+                v-for="permission in bindOrgAuthList?.find(it => it.targetId === item.id || item.key)?.grantedPermissions || []"
                 :key="permission"
               >
                 {{ permission }}
@@ -153,7 +153,21 @@ const loading = reactive({
 const organizationData = ref<any[]>([])
 const groupData = ref<any[]>([])
 
-const { data: organizationList, loading: loadingOrganization, reload: reloadOrganizationList } = useRequest(getTreeData_api)
+const { data: organizationList, loading: loadingOrganization, reload: reloadOrganizationList } = useRequest(getTreeData_api, {
+  defaultParams: {
+    paging: false,
+    sorts: [
+      {
+        name: "sortIndex",
+        order: "asc"
+      },
+      {
+        name: "name",
+        order: "asc"
+      }
+    ]
+  }
+})
 
 const { data: bindOrgAuthList, reload: reloadBindOrgAuthList } = useRequest(getBindOrgAuthList, {
   defaultParams: ['device', instanceStore.current?.id || '', 'org']

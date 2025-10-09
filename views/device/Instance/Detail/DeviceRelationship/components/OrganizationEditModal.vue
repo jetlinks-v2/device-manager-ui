@@ -110,7 +110,21 @@ const props = defineProps({
 const emit = defineEmits(['close', 'save'])
 const instanceStore = useInstanceStore()
 
-const { data: organizationTree, loading: loadingOrganization } = useRequest(getTreeData_api)
+const { data: organizationTree, loading: loadingOrganization } = useRequest(getTreeData_api, {
+  defaultParams: {
+    paging: false,
+    sorts: [
+      {
+        name: "sortIndex",
+        order: "asc"
+      },
+      {
+        name: "name",
+        order: "asc"
+      }
+    ]
+  }
+})
 const loading = ref(false)
 const searchText = ref('')
 const checkedKeys = ref<{checked: string[], halfChecked: string[]}>({
@@ -259,7 +273,7 @@ watch(checkedKeys, (newKeys) => {
         }
 
         .tree-container {
-          height: calc(100% - 60px);
+          height: 480px;
           overflow-y: auto;
         }
       }

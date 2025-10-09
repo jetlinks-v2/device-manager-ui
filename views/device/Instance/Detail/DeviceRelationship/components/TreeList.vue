@@ -9,7 +9,9 @@
             <a-radio-button value="tree">{{ t('DeviceRelationship.TreeList.234567-0') }}</a-radio-button>
             <a-radio-button value="flat">{{ t('DeviceRelationship.TreeList.234567-1') }}</a-radio-button>
           </a-radio-group>
-          <slot name="extra-controls"></slot>
+          <a-tooltip :title="expandAll ? '收起' : '展开'">
+            <AIcon v-if="currentView === 'tree'" :type="expandAll ? 'MenuFoldOutlined' : 'MenuUnfoldOutlined'" class="list-icon" @click="handleExpandAll"/>
+          </a-tooltip>
         </div>
       </div>
       <div class="header-right">
@@ -96,6 +98,7 @@ const emit = defineEmits<{
 
 const currentView = ref(props.defaultView)
 const expandedKeys = ref<string[]>([])
+const expandAll = ref(false)
 
 // 树形数据
 const treeData = computed(() => props.data || [])
@@ -137,6 +140,28 @@ const flatData = computed(() => {
 const handleExpand = (expandedKeysValue: string[]) => {
   expandedKeys.value = expandedKeysValue
 }
+
+// 处理展开所有节点
+const handleExpandAll = () => {
+  expandAll.value = !expandAll.value
+  if (expandAll.value) {
+    const getAllKeys = (items: any[]): string[] => {
+      const keys: string[] = []
+      items.forEach(item => {
+        if (item.children?.length) {
+          keys.push(item[props.keyField])
+          keys.push(...getAllKeys(item.children))
+        }
+      })
+      return keys
+    }
+    expandedKeys.value = getAllKeys(treeData.value)
+  } else {
+    expandedKeys.value = []
+  }
+}
+
+
 
 // 视图切换
 const handleViewChange = () => {
