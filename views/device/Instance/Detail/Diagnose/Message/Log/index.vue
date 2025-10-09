@@ -49,7 +49,15 @@ const props = defineProps({
         type: Object,
         default: () => {},
     },
+    isCollapse: {
+        type: Boolean,
+        default: false,
+    },
 });
+
+watch(() => props.isCollapse, (val) => {
+    visible.value = !val;
+})
 </script>
 
 <style lang="less" scoped>
