@@ -109,7 +109,7 @@ const props = defineProps({
     }
 });
 
-const activeKey = ref(props.gatewaysDetail?.map((item) => item.id));
+const activeKey = ref([props.gatewaysDetail?.[0]?.id]);
 
 const getOptions = (i: any) => {
     if (i.type.type === 'enum') {
