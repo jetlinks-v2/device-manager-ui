@@ -97,6 +97,7 @@ import { bindDeviceToOrg } from '@device-manager-ui/api/instance'
 import { useRequest } from '@jetlinks-web/hooks'
 import { omit } from 'lodash-es'
 import { useInstanceStore } from '@device-manager-ui/store/instance'
+import { onlyMessage } from '@jetlinks-web/utils'
 
 const { t } = useI18n()
 
@@ -163,7 +164,9 @@ const handleOk = async () => {
         permission: item.actions
       }
     }))
-
+    if(res.success) {
+      onlyMessage('操作成功')
+    }
     emit('save', {
       checkedKeys: checkedKeys.value,
       selectedGroups: selectedGroups.value,

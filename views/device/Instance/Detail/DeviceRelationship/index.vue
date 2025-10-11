@@ -8,7 +8,9 @@
             <div class="section-title">
               <TitleComponent data="正向关系">
                 <template #extra>
-                  <AIcon type="QuestionCircleOutlined" class="help-icon"/>
+                  <a-tooltip title="管理设备与其他业务的关联关系，关系来源于关系配置">
+                    <AIcon type="QuestionCircleOutlined" class="help-icon"/>
+                  </a-tooltip>
                 </template>
               </TitleComponent>
             </div>
@@ -58,7 +60,7 @@
                 v-for="permission in bindOrgAuthList?.find(it => it.targetId === item.id || item.key)?.grantedPermissions || []"
                 :key="permission"
               >
-                {{ permission }}
+                {{ permissionMap[permission] }} 
               </a-tag>
             </template>
             <template #empty>
@@ -149,6 +151,13 @@ const loading = reactive({
   organizations: false,
   groups: false
 })
+
+const permissionMap = {
+  'read': '查看',
+  'save': '编辑',
+  'delete': '删除',
+  'share': '共享',
+}
 
 const organizationData = ref<any[]>([])
 const groupData = ref<any[]>([])
@@ -272,6 +281,7 @@ const handleSaveOrganization = () => {
   showOrganizationModal.value = false
   reloadOrganizationList()
   reloadBindOrgList()
+  reloadBindOrgAuthList()
 }
 
 const handleSaveGroup = () => {
@@ -381,6 +391,7 @@ onMounted(() => {
 
           .help-icon {
             color: #999;
+            margin-left: 8px;
           }
         }
 

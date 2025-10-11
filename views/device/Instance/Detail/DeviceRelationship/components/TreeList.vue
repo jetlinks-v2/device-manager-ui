@@ -168,7 +168,7 @@ const handleViewChange = () => {
   emit('viewChange', currentView.value)
 }
 
-// 默认展开所有节点
+// 默认折叠所有节点
 onMounted(() => {
   const getAllKeys = (items: any[]): string[] => {
     const keys: string[] = []
@@ -181,7 +181,6 @@ onMounted(() => {
     return keys
   }
 
-  expandedKeys.value = getAllKeys(treeData.value)
 })
 
 watch(() => props.data, (newVal) => {
