@@ -75,6 +75,7 @@ const handleData = reactive({
   type: undefined
 })
 const loading = ref(false)
+const { onBack } = useTabSaveSuccessBack()
 const options = [
   {
     value: 'intersection',
@@ -132,7 +133,6 @@ const updateAccessData = async (id: string, values: any, metadata: string) => {
   }
   loading.value = true
   const updateDeviceResp = await updateDevice(accessObj)
-  const { onBack } = useTabSaveSuccessBack()
 
   if (!updateDeviceResp.success) {
     loading.value = false
@@ -158,7 +158,7 @@ const updateAccessData = async (id: string, values: any, metadata: string) => {
   if (resp.status === 200) {
     onlyMessage($t('DeviceAccess.metadataModal.306037-17'));
     productStore.current!.storePolicy = storePolicy;
-    const isTabBack = onBack(resp, { onBefore: () => !!resp.result })
+    const isTabBack = await onBack(resp, { onBefore: () => !!resp.result })
 
     if (!isTabBack) {
       await productStore.getDetail(productDetail.value.id)
@@ -172,7 +172,7 @@ const submitData = () => {
   formRef.value.validate().then((res) => {
     if (res) {
       let metadata = JSON.parse(productDetail.value?.metadata || '{}') // 产品物模型
-      switch (handleData.type![0]) {
+      switch (handleData.type) {
         case 'intersection': // 交集
           metadata.properties = IntersectionFn(metadata.properties, props.metadata.properties)
           metadata.events = IntersectionFn(metadata.events, props.metadata.events)

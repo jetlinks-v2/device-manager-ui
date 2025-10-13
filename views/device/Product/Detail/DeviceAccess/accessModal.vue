@@ -1,47 +1,48 @@
 <template>
   <a-modal
-    :title="$t('DeviceAccess.accessModal.132524-0')"
-    open
-    width="1200px"
-    :okText="$t('DeviceAccess.accessModal.132524-1')"
-    :cancelText="$t('DeviceAccess.accessModal.132524-2')"
-    :confirmLoading='loading'
-    :maskClosable="false"
-    @ok="submitData"
-    @cancel="cancel"
+      :title="$t('DeviceAccess.accessModal.132524-0')"
+      open
+      width="1200px"
+      :okText="$t('DeviceAccess.accessModal.132524-1')"
+      :cancelText="$t('DeviceAccess.accessModal.132524-2')"
+      :confirmLoading='loading'
+      :maskClosable="false"
+      @ok="submitData"
+      @cancel="cancel"
   >
     <pro-search
-      :columns="columns"
-      target="deviceModal"
-      @search="handleSearch"
-      type="simple"
+        :columns="columns"
+        target="deviceModal"
+        @search="handleSearch"
+        type="simple"
     />
     <JProTable
-      :columns="columns"
-      :request="handleQuery"
-      ref="tableRef"
-      mode="CARD"
-      :defaultParams="{
+        :columns="columns"
+        :request="handleQuery"
+        ref="tableRef"
+        mode="CARD"
+        :defaultParams="{
                 ...temp,
                 sorts: accessId ? [
                     { name: 'id', value: accessId },
                     { name: 'createTime', order: 'desc' },
                 ] : [{ name: 'createTime', order: 'desc' }],
             }"
-      :params="params"
-      :gridColumn="2"
-      :gridColumns="[2]"
-      :pagination="{
+        :params="params"
+        :gridColumn="2"
+        :gridColumns="[2]"
+        :pagination="{
         pageSizeOptions: ['4', '12', '24', '48'],
         showSizeChanger: true,
       }"
     >
       <template #headerLeftRender>
         <j-permission-button
-          type="primary"
-          @click="add"
-          hasPermission="link/AccessConfig:add"
-        >{{ $t('DeviceAccess.accessModal.132524-3') }}</j-permission-button
+            type="primary"
+            @click="add"
+            hasPermission="link/AccessConfig:add"
+        >{{ $t('DeviceAccess.accessModal.132524-3') }}
+        </j-permission-button
         >
       </template>
       <template #deviceType="slotProps">
@@ -49,30 +50,30 @@
       </template>
       <template #card="slotProps">
         <CardBox
-          :value="slotProps"
-          @click="handleClick"
-          v-bind="slotProps"
-          :active="selectedRowKeys.includes(slotProps.id)"
-          :status="slotProps.state.value"
-          :statusText="slotProps.state.text"
-          :statusNames="{
+            :value="slotProps"
+            @click="handleClick"
+            v-bind="slotProps"
+            :active="selectedRowKeys.includes(slotProps.id)"
+            :status="slotProps.state.value"
+            :statusText="slotProps.state.text"
+            :statusNames="{
                         enabled: 'processing',
                         disabled: 'error',
                     }"
         >
           <template #img>
             <slot name="img">
-              <img :src="device.deviceAccess" />
+              <img :src="device.deviceAccess"/>
             </slot>
           </template>
           <template #content>
             <div style="height: 110px">
-              <j-ellipsis style="width: calc(100% - 100px)">
-              <h3 style="font-weight: 600">
-                {{ slotProps.name }}
-              </h3>
-            </j-ellipsis>
-            <a-row>
+              <j-ellipsis style="width: calc(100% - 100px); margin-bottom: 18px"
+              ><span style="font-weight: 600; font-size: 16px">
+                  {{ slotProps.name }}
+                </span></j-ellipsis
+              >
+              <a-row>
                 <a-col :span="12" v-if="slotProps.channelInfo">
                   <div class="card-item-content-text">
                     <j-ellipsis>{{ slotProps.channelInfo?.name }}</j-ellipsis>
@@ -81,28 +82,30 @@
                     <div>
                       {{
                         slotProps.channelInfo?.addresses
-                          ? slotProps.channelInfo
-                            ?.addresses[0].address
-                          : ''
+                            ? slotProps.channelInfo
+                                ?.addresses[0].address
+                            : ''
                       }}
                     </div>
                   </j-ellipsis>
                 </a-col>
                 <a-col :span="12">
                   <div class="card-item-content-text">{{ $t('DeviceAccess.accessModal.132524-4') }}</div>
-                  <j-ellipsis style="width:calc(100%-20px)"><div>{{ slotProps.protocolDetail?.name }}</div></j-ellipsis>
+                  <j-ellipsis style="width:calc(100%-20px)">
+                    <div>{{ slotProps.protocolDetail?.name }}</div>
+                  </j-ellipsis>
                 </a-col>
               </a-row>
               <a-row>
                 <a-col :span="24">
                   <j-ellipsis style="width: calc(100% - 50px)">
                     <div class="context-access">
-                    {{
+                      {{
                         getDescription(
-                          slotProps,
+                            slotProps,
                         )
-                    }}
-                  </div>
+                      }}
+                    </div>
                   </j-ellipsis>
                 </a-col>
               </a-row>
@@ -112,9 +115,9 @@
       </template>
       <template #state="slotProps">
         <a-badge
-          :text="slotProps.state.text"
-          :status="slotProps.state"
-          :statusNames='{
+            :text="slotProps.state.text"
+            :status="slotProps.state"
+            :statusNames='{
             "enabled": "processing",
             "disabled": "error",
           }'
@@ -128,17 +131,17 @@
 </template>
 
 <script setup lang='ts' name='accessModal'>
-import type { PropType } from 'vue'
-import { onlyMessage, randomString } from '@jetlinks-web/utils';
-import { queryList, getAccessConfig } from '../../../../../api/product'
-import { useMenuStore } from '@/store';
-import { getProductByPluginId } from '../../../../../api/link/plugin'
-import { getProviders } from '../../../../../api/link/accessConfig'
-import { device } from '../../../../../assets'
-import { useI18n } from 'vue-i18n';
-import { useTabSaveSuccess } from '@/hooks'
+import type {PropType} from 'vue'
+import {onlyMessage, randomString} from '@jetlinks-web/utils';
+import {queryList, getAccessConfig} from '../../../../../api/product'
+import {useMenuStore} from '@/store';
+import {getProductByPluginId} from '../../../../../api/link/plugin'
+import {getProviders} from '../../../../../api/link/accessConfig'
+import {device} from '../../../../../assets'
+import {useI18n} from 'vue-i18n';
+import {useTabSaveSuccess} from '@/hooks'
 
-const { t: $t } = useI18n();
+const {t: $t} = useI18n();
 
 type Emit = {
   (e: 'submit', data: any): void
@@ -176,7 +179,7 @@ const params = ref<Record<string, any>>({
 
 const selectedRowKeys = ref<string[]>(props.accessId ? [props.accessId] : [])
 
-const { onOpen } = useTabSaveSuccess('link/AccessConfig/Detail', {
+const {onOpen} = useTabSaveSuccess('link/AccessConfig/Detail', {
   async onSuccess(value) {
     tableRef.value.reload();
     handleClick(value.result);
@@ -184,36 +187,36 @@ const { onOpen } = useTabSaveSuccess('link/AccessConfig/Detail', {
 })
 
 const getDescription = (slotProps: Record<string, any>) =>
-  slotProps.description
-    ? slotProps.description
-    : props.providersList?.find(
-      (item: Record<string, any>) => item.id === slotProps.provider,
-    )?.description;
+    slotProps.description
+        ? slotProps.description
+        : props.providersList?.find(
+            (item: Record<string, any>) => item.id === slotProps.provider,
+        )?.description;
 /**
  * 查询条件
  */
 const temp = {
   ...params.value,
   terms:
-    props.deviceType === 'childrenDevice'
-      ? [
-        ...params.value.terms,
-        {
-          terms: [
+      props.deviceType === 'childrenDevice'
+          ? [
+            ...params.value.terms,
             {
-              column: 'provider',
-              termType: 'in',
-              value: 'child-device,edge-child-device',
+              terms: [
+                {
+                  column: 'provider',
+                  termType: 'in',
+                  value: 'child-device,edge-child-device',
+                },
+              ],
             },
-          ],
-        },
-      ]
-      : [...params.value?.terms],
+          ]
+          : [...params.value?.terms],
 };
 
 const handleQuery = async (q: any) => {
   const resp = await queryList(q)
-  const _data  = (resp.result as any)?.data as any[]
+  const _data = (resp.result as any)?.data as any[]
   if (_data?.length) {
     const _checkItem = _data.find(item => item.id === selectedRowKeys.value[0])
     if (_checkItem) {
@@ -244,7 +247,7 @@ const columns = [
       options: () => {
         return new Promise(resolve => {
           getProviders().then(res => {
-            resolve(res.result?.map((item: any) => ({ ...item, label: item.name, value: item.id })) || [])
+            resolve(res.result?.map((item: any) => ({...item, label: item.name, value: item.id})) || [])
           })
         })
       },
@@ -289,8 +292,8 @@ const findProvidersByProvider = (provider: string) => {
 const submitData = async () => {
   if (selectedRowKeys.value.length) {
     if (checkData.value.channel === 'plugin') {
-      const resp = await getProductByPluginId(checkData.value.channelId).catch(() => ({ success: false, result: []}))
-      const metadataResp = await getAccessConfig(props.productId!, checkData.value.id).catch(() => ({ success: false, result: {}}))
+      const resp = await getProductByPluginId(checkData.value.channelId).catch(() => ({success: false, result: []}))
+      const metadataResp = await getAccessConfig(props.productId!, checkData.value.id).catch(() => ({success: false, result: {}}))
 
       emit('submit', {
         access: {...checkData.value},
@@ -298,8 +301,8 @@ const submitData = async () => {
         metadata: metadataResp.result
       })
     } else {
-      loading.value= true
-      const resp = await getAccessConfig(props.productId!, checkData.value.id).catch(() => ({ success: false, result: {}}))
+      loading.value = true
+      const resp = await getAccessConfig(props.productId!, checkData.value.id).catch(() => ({success: false, result: {}}))
       // 返回外部组件需要的数据
       loading.value = false
       if (resp.success) {

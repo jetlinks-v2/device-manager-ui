@@ -51,7 +51,9 @@
           :class="{ 'sub-sub-item': item.isBind }"
         >
           <div class="item-content">
-            <span class="item-name">{{ item.title }}</span>
+            <j-ellipsis>
+              <span class="item-name">{{ item.title }}</span>
+            </j-ellipsis>
           </div>
           <div class="item-actions" v-if="item.isBind">
             <slot name="actions" :item="item" :level="item.level || 0"></slot>
@@ -123,11 +125,13 @@ const treeNodeData = computed(() => {
 const flatData = computed(() => {
   const result: any[] = []
 
-  const flatten = (items: any[], level = 0) => {
+  const flatten = (items: any[], level = 0, parentName = '') => {
     items.forEach(item => {
-      result.push({ ...item, level })
+      // 处理子节点名称
+      const childName = parentName ? `${parentName} / ${item.title}` : item.title
+      result.push({ ...item, level, title: childName })
       if (item.children?.length) {
-        flatten(item.children, level + 1)
+        flatten(item.children, level + 1, childName)
       }
     })
   }
