@@ -28,6 +28,13 @@
                         :value="{ ...record }"
                     />
                 </template>
+                <template v-if="column.key === data?.id">
+                    <ValueRender
+                        type="table"
+                        :data="_props.data"
+                        :value="{ ...record }"
+                    />
+                </template>
                 <template v-if="column.key === 'numberValue'">
                     <ValueRender
                         type="table"
@@ -81,6 +88,7 @@
 
 <script lang="ts" setup>
 import { getPropertyData } from '../../../../../../../api/instance';
+import { detail } from '@device/api/product'
 import { useInstanceStore } from '../../../../../../../store/instance';
 import dayjs from 'dayjs';
 import { getType } from '../index';
@@ -121,6 +129,17 @@ const valueType = {
     date: 'date',
     enum: 'select'
 }
+
+const productInfo = ref<any>({});
+//获取产品信息，读取产品的存储类型
+async function getProductInfo() {
+    const res = await detail(instanceStore.current.productId)
+    if(res.success) {
+      productInfo.value = res.result;
+    }
+}
+
+getProductInfo();
 const columns = computed(() => {
     const arr: any[] = [
         {
@@ -134,8 +153,8 @@ const columns = computed(() => {
         },
         {
             title: _props.data?.name || '',
-            dataIndex: ['int', 'float', 'short', 'double'].includes(_props.data.valueType?.type) ? 'numberValue' : 'value',
-            key: ['int', 'float', 'short', 'double'].includes(_props.data.valueType?.type) ? 'numberValue' : 'value',
+            dataIndex: productInfo.value?.storePolicy?.includes('column') ? _props.data?.id : ['int', 'float', 'short', 'double'].includes(_props.data.valueType?.type) ? 'numberValue' : 'value',
+            key: productInfo.value?.storePolicy?.includes('column') ? _props.data?.id : ['int', 'float', 'short', 'double'].includes(_props.data.valueType?.type) ? 'numberValue' : 'value',
             ellipsis: true,
             search: {
                 type: valueType[_props.data?.valueType?.type as keyof typeof valueType] || 'string',

@@ -26,7 +26,11 @@
                                 :data="data"
                                 :provider="provider"
                             />
-
+                            <Composite 
+                                v-else-if="provider.id === 'composite-device-gateway'"
+                                :data="data"
+                                :otherProvider="compositeProvider"
+                            />
                             <Network
                                 v-else
                                 :bindProduct='bindProduct'
@@ -79,6 +83,7 @@ import {getProviders, detail} from '@device/api/link/accessConfig';
 import {queryProductList} from '@device/api/product';
 import {accessConfigTypeFilter} from '@/utils';
 import { useI18n } from 'vue-i18n';
+import Composite from '../components/Composite/index.vue';
 
 const { t: $t } = useI18n();
 const route = useRoute();
@@ -102,6 +107,18 @@ const goBack = () => {
     provider.value = {};
     type.value = true;
 };
+
+const compositeProvider = computed(() => {
+    const arr: any[] = []
+    dataSource.value.forEach((item: any) => {
+        item.list?.forEach((item: any) => {
+            if(item.type === 'network' && !['composite-device-gateway', 'plugin_gateway'].includes(item.id) ) {
+                arr.push(item)
+            }
+        })
+    })
+    return arr
+});
 
 //network
 const TypeMap = new Map([
@@ -243,18 +260,13 @@ const checkBindProduct = async (_id: string) => {
 }
 
 const getProvidersData = async () => {
-    if (id !== ':id') {
+    if (id !== ':id' && !route.query.provider) {
         checkBindProduct(id)
         getProviders().then((response: any) => {
             if (response.status === 200) {
                 const _data = response.result || [];
-                const list = getTypeList(
+                dataSource.value = getTypeList(
                     accessConfigTypeFilter(_data as any[]),
-                );
-                dataSource.value = list.filter(
-                    (item: any) =>
-                        item.channel === 'network' ||
-                        item.channel === 'child-device',
                 );
                 detail(id).then((resp: any) => {
                     if (resp.status === 200) {
@@ -279,11 +291,26 @@ const getProvidersData = async () => {
             loading.value = false;
         });
     } else {
-        type.value = true;
-        queryProviders();
+        type.value = route.query.provider ? false : true;
+        !route.query.data && queryProviders();
         loading.value = false;
     }
 };
+
+watch(() => route.query.provider, (val) => {
+    if(val) {
+        const _data = JSON.parse(val as string)
+        type.value = false;
+        showType.value = _data.type
+        provider.value = _data
+    }
+}, {immediate: true})
+
+watch(() => route.query.data, (val) => {
+    if(val) {
+        data.value = JSON.parse(val as string)
+    }
+}, {immediate: true})
 
 onMounted(() => {
     loading.value = true;

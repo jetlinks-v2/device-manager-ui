@@ -92,20 +92,12 @@
             <div class="device-list-pagination">
               <a-pagination
                 v-if="showPage"
-
+                showSizeChanger
                 :total="pageData.total"
+                :pageSizeOptions="['12', '24', '48', '96']"
                 :current="pageData.pageIndex + 1"
                 :pageSize="pageData.pageSize"
-                :show-total="
-                              () => {
-                                  const minSize =
-                                      pageData.pageIndex * pageData.pageSize + 1;
-                                  const MaxSize =
-                                      (pageData.pageIndex + 1) *
-                                      pageData.pageSize;
-                                  $t('InklingDevice.index.743184-3', [minSize,MaxSize > pageData.total? pageData.total : MaxSize ,pageData.total]);
-                              }
-                          "
+                :show-total="_showTotal"
                 @change="pageChange"
               />
             </div>
@@ -121,7 +113,6 @@ import {
 import { cloneDeep, isArray } from 'lodash-es';
 import { getInkingDevices } from '../../../../api/instance';
 import { useI18n } from 'vue-i18n';
-
 
 type Emit = {
     (e: 'update:value', data: string | string[]): void;
@@ -164,7 +155,7 @@ const checkKeys = ref<string[]>([]);
 const checkCache = ref<Map<string, any>>(new Map());
 const showPage = ref(false);
 const pageData = reactive({
-    pageSize: 10,
+    pageSize: 12,
     pageIndex: 0,
     total: 0,
 });
@@ -309,6 +300,12 @@ const deviceClick = (id: string, option: any) => {
     }
 };
 
+const _showTotal = () => {
+  const minSize = pageData.pageIndex * pageData.pageSize + 1;
+  const MaxSize = (pageData.pageIndex + 1) * pageData.pageSize;
+  return $t('InklingDevice.index.743184-3', [minSize,MaxSize > pageData.total? pageData.total : MaxSize ,pageData.total]);
+}
+
 watch(
     () => props.value,
     (newValue) => {
@@ -437,7 +434,8 @@ onMounted(() => {
 .device-list-pagination {
   text-align: right;
 
-  :deep(.ant-pagination-item) {
+  :deep(.ant-pagination) {
+    .ant-pagination-item,
     & .ant-pagination-jump-prev,
     & .ant-pagination-jump-next {
       display: none;
