@@ -51,7 +51,6 @@
           </div>
         </div>
         <template v-if="access?.provider === 'composite-device-gateway'">
-          {{ activeKey}}
           <div style="margin: 16px 0">
               <a-collapse v-model:activeKey="activeKey">
                 <a-collapse-panel
