@@ -106,6 +106,7 @@ onMounted(() => {
 onUnmounted(() => {
   aiStore.hideAiButton()
 })
+
 </script>
 
 <style lang="less" scoped>
