@@ -73,29 +73,31 @@
                   {{ slotProps.name }}
                 </span></j-ellipsis
               >
-              <a-row>
-                <a-col :span="12" v-if="slotProps.channelInfo">
-                  <div class="card-item-content-text">
-                    <j-ellipsis>{{ slotProps.channelInfo?.name }}</j-ellipsis>
-                  </div>
-                  <j-ellipsis style="width: calc(100% - 20px)">
-                    <div>
-                      {{
-                        slotProps.channelInfo?.addresses
-                            ? slotProps.channelInfo
-                                ?.addresses[0].address
-                            : ''
-                      }}
+              <template v-if="slotProps.provider !== 'composite-device-gateway'">
+                <a-row>
+                  <a-col :span="12" v-if="slotProps.channelInfo">
+                    <div class="card-item-content-text">
+                      <j-ellipsis>{{ slotProps.channelInfo?.name }}</j-ellipsis>
                     </div>
-                  </j-ellipsis>
-                </a-col>
-                <a-col :span="12">
-                  <div class="card-item-content-text">{{ $t('DeviceAccess.accessModal.132524-4') }}</div>
-                  <j-ellipsis style="width:calc(100%-20px)">
-                    <div>{{ slotProps.protocolDetail?.name }}</div>
-                  </j-ellipsis>
-                </a-col>
-              </a-row>
+                    <j-ellipsis style="width: calc(100% - 20px)">
+                      <div>
+                        {{
+                          slotProps.channelInfo?.addresses
+                              ? slotProps.channelInfo
+                                  ?.addresses[0].address
+                              : ''
+                        }}
+                      </div>
+                    </j-ellipsis>
+                  </a-col>
+                  <a-col :span="12">
+                    <div class="card-item-content-text">{{ $t('DeviceAccess.accessModal.132524-4') }}</div>
+                    <j-ellipsis style="width:calc(100%-20px)">
+                      <div>{{ slotProps.protocolDetail?.name }}</div>
+                    </j-ellipsis>
+                  </a-col>
+                </a-row>
+              </template>
               <a-row>
                 <a-col :span="24">
                   <j-ellipsis style="width: calc(100% - 50px)">

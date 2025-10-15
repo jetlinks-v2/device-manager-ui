@@ -56,10 +56,45 @@ export const useThreshold = (props: Record<string, any>) => {
         const params = {
             thingType: 'device',
             provider: 'simple',
-            configuration:{
+            // configuration:{
+            //     matcher:{
+            //         provider: data.type,
+            //         configuration:{
+            //             max: data.limit.upper,
+            //             min: data.limit.lower,
+            //             not: true
+            //         }
+            //     },
+            //     processors: data.mode === 'record-alarm' ? [
+            //         {
+            //             "provider": "device-record",
+            //             "configuration": {}
+            //         },
+            //         {
+            //             "provider": "device-alarm",
+            //             "configuration": {}
+            //         }
+            //     ] : [{
+            //         provider: data.mode,
+            //         configuration:{}
+            //     }]
+            //     // data.mode.map((i:any)=>{
+            //     //     return  {
+            //     //         provider: i,
+            //     //         configuration:{}
+            //     //     }
+            //     // })
+            //     // data.mode.map((i:any)=>{
+            //     //     return  {
+            //     //         provider: i,
+            //     //         configuration:{}
+            //     //     }
+            //     // })
+            // },
+            configuration: {
                 matcher:{
                     provider: data.type,
-                    configuration:{
+                    configuration: data.type === 'file-matcher' ? {} : {
                         max: data.limit.upper,
                         min: data.limit.lower,
                         not: true
@@ -78,20 +113,7 @@ export const useThreshold = (props: Record<string, any>) => {
                     provider: data.mode,
                     configuration:{}
                 }]
-                // data.mode.map((i:any)=>{
-                //     return  {
-                //         provider: i,
-                //         configuration:{}
-                //     }
-                // })
-                // data.mode.map((i:any)=>{
-                //     return  {
-                //         provider: i,
-                //         configuration:{}
-                //     }
-                // })
             },
-
         }
         if(props.target === 'product'){
             updateProductRun(productStore.current.id,props.id,params)
