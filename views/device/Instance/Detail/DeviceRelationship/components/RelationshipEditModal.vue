@@ -1,84 +1,83 @@
 <template>
     <a-modal
         :open="true"
-        :title="t('DeviceRelationship.RelationshipEditModal.789342-0')"
+        :title="$t('DeviceRelationship.RelationshipEditModal.789342-0')"
         width="600px"
         @cancel="handleCancel"
         @ok="handleOk"
         :confirm-loading="loading"
     >
-        <a-form
-            ref="formRef"
-            :model="formData"
-            layout="vertical"
-            class="relationship-form"
-        >
-            <a-form-item :label="t('DeviceRelationship.RelationshipEditModal.789342-1')" name="owner">
+        <a-form layout="vertical" ref="formRef" :model="modelRef">
+            <a-form-item
+                :name="item.relation"
+                :label="item.relationName"
+                v-for="(item, index) in dataSource"
+                :key="index"
+            >
                 <a-select
-                    v-model:value="formData.owner"
-                    :placeholder="t('DeviceRelationship.RelationshipEditModal.789342-2')"
-                    allow-clear
+                    showSearch
+                    mode="multiple"
+                    v-model:value="modelRef[item.relation]"
+                    :placeholder="`请选择${item.relationName}`"
                 >
-                    <a-select-option value="张珊强">张珊强</a-select-option>
-                    <a-select-option value="李四">李四</a-select-option>
-                    <a-select-option value="王五">王五</a-select-option>
+                <a-select-option
+                    :value="item.value"
+                    v-for="item in _userList"
+                    :key="item.id"
+                    :disabled="item.extra"
+                >{{ item.name }}
+                </a-select-option
+                >
                 </a-select>
             </a-form-item>
-
-            <a-form-item label="父子级关系" name="parentChild">
-                <a-select
-                    v-model:value="formData.parentChild"
-                    :placeholder="t('DeviceRelationship.RelationshipEditModal.789342-2')"
-                    allow-clear
-                >
-                    <a-select-option value="parent">父设备</a-select-option>
-                    <a-select-option value="child">子设备</a-select-option>
-                </a-select>
-            </a-form-item>
-
-            <a-form-item label="网关接入关系" name="gateway">
-                <a-select
-                    v-model:value="formData.gateway"
-                    :placeholder="t('DeviceRelationship.RelationshipEditModal.789342-2')"
-                    allow-clear
-                >
-                    <a-select-option value="gateway1">网关1</a-select-option>
-                    <a-select-option value="gateway2">网关2</a-select-option>
-                </a-select>
-            </a-form-item>
-
-            <a-form-item label="上下游归属关系设备" name="upstream">
-                <a-select
-                    v-model:value="formData.upstream"
-                    :placeholder="t('DeviceRelationship.RelationshipEditModal.789342-2')"
-                    allow-clear
-                >
-                    <a-select-option value="device1">设备1</a-select-option>
-                    <a-select-option value="device2">设备2</a-select-option>
-                </a-select>
-            </a-form-item>
-
-            <a-form-item label="逆向设备关系" name="reverse">
-                <a-select
-                    v-model:value="formData.reverse"
-                    :placeholder="t('DeviceRelationship.RelationshipEditModal.789342-2')"
-                    allow-clear
-                >
-                    <a-select-option value="reverse1">逆向关系1</a-select-option>
-                    <a-select-option value="reverse2">逆向关系2</a-select-option>
-                </a-select>
-            </a-form-item>
-        </a-form>
+            </a-form>
     </a-modal>
 </template>
 
 <script lang="ts" setup>
-import { ref, reactive } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { queryUserListNoPaging } from '@/api/system/user';
+import { useRequest } from '@jetlinks-web/hooks'
+import { useInstanceStore } from '@device-manager-ui/store/instance';
+import { map } from 'lodash-es';
+import { saveRelations, getRelationUsers } from '@device-manager-ui/api/instance';
+import { onlyMessage } from '@jetlinks-web/utils';
 
-const { t } = useI18n()
+const { t: $t } = useI18n()
 
+
+const dataSource = ref<Record<any, any>[]>([]);
+const allData = ref<any[]>([])
+const modelRef = reactive<any>({});
+const instanceStore = useInstanceStore();
 const emit = defineEmits(['close', 'save'])
+
+const _userList = computed(() => {
+    console.log(userList.value)
+    const arr = allData.value.filter(i => {
+        return !map(userList.value || [], 'id').includes(i.id)
+    })
+    return [...userList.value || [], ...arr]
+})
+
+const { data: relations } = useRequest(getRelationUsers)
+
+const { data: userList } = useRequest(queryUserListNoPaging, {
+    onSuccess: (res) => {
+        return (res.result as Record<string, any>[]).map(
+          (item) => {
+            return {
+              ...item,
+              label: item.name,
+              value: JSON.stringify({
+                id: item.id,
+                name: item.name,
+              }),
+            };
+          },
+      )
+    }
+})
 
 const loading = ref(false)
 const formRef = ref()
@@ -95,21 +94,65 @@ const handleCancel = () => {
     emit('close')
 }
 
-const handleOk = async () => {
-    try {
-        await formRef.value?.validate()
-        loading.value = true
-
-        // 模拟保存请求
-        await new Promise(resolve => setTimeout(resolve, 1000))
-
-        emit('save', formData)
-        loading.value = false
-    } catch (error) {
-        loading.value = false
-        console.error(t('DeviceRelationship.RelationshipEditModal.789342-3'), error)
+const handleOk = () => {
+  formRef.value.validate().then(async () => {
+    loading.value = true
+    const values = toRaw(modelRef);
+    if (Object.keys(values).length > 0) {
+      const param: any[] = [];
+      Object.keys(values).forEach((key) => {
+        const item = dataSource.value.find((i) => i.relation === key);
+        const items = (values[key] || []).map((i: string) =>
+            JSON.parse(i),
+        );
+        if (item) {
+          param.push({
+            relatedType: 'user',
+            relation: item.relation,
+            description: '',
+            related: [...items],
+          });
+        }
+      });
+      if (param.length && instanceStore.current.id) {
+        const resp = await saveRelations(instanceStore.current.id, param).finally(() => {
+          loading.value = false
+        });
+        if (resp.status === 200) {
+          onlyMessage($t('Product.index.660348-18'));
+          emit('save');
+          formRef.value.resetFields();
+        }
+      }
     }
-}
+  });
+};
+
+watch(
+    () => instanceStore.current?.relations,
+    () => {
+      allData.value = [];
+      const arr = (instanceStore.current?.relations || [])
+      dataSource.value = arr as Record<any, any>[];
+      arr.map((item) => {
+        modelRef[item.relation] = [];
+        (item?.related || []).map(i => {
+          const _item = JSON.stringify(i);
+          modelRef[item.relation].push(_item)
+          if(!map(allData.value, 'id').includes(i.id)){
+            allData.value.push({
+              ...i,
+              label: i.name,
+              value: _item,
+              extra: true
+            })
+          }
+        })
+      });
+    }, {
+      deep: true,
+      immediate: true
+    })
 </script>
 
 <style lang="less" scoped>

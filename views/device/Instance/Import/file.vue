@@ -88,7 +88,7 @@ const props = defineProps({
     },
     accessProvider: {
         type: String,
-        default: undefined, 
+        default: undefined,
     }
 });
 
@@ -223,15 +223,15 @@ const uploadChange = async (info: Record<string, any>) => {
     }
 
     .dragger-box {
-        margin: 46px 0;
-        display: flex;
-        flex-direction: column;
-        color: #666666;
-
-        .icon {
-            font-size: 30px;
-            color: @primary-color;
-        }
+      margin: 46px 0;
+      display: flex;
+      flex-direction: column;
+      color: #666666;
+      align-items: center;
+      .icon {
+        font-size: 30px;
+        color: @primary-color;
+      }
     }
 
     .result {

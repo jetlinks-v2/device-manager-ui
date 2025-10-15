@@ -527,7 +527,8 @@
                 "actions": [
                   "query"
                 ]
-              }
+              },
+              {"permission": "system-monitor", "actions": ["query"]}
             ],
             "buttons": [
               {

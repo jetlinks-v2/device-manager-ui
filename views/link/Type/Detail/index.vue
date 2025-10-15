@@ -1223,6 +1223,10 @@ watch(
       const { cluster } = dynamicValidateForm;
       formData.value.type = value;
       cluster[0].configuration.host = "0.0.0.0";
+      if (value === "MQTT_CLIENT" && isNoCommunity) {
+        formData.value.shareCluster = false;
+        changeShareCluster(formData.value.shareCluster);
+      }
     }
   },
   { deep: true, immediate: true }

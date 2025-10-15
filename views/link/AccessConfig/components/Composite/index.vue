@@ -489,7 +489,7 @@ const closeDrawer = () => {
 
 const handleAddProvider = (data: any) => {
   choosenProviderList.value?.unshift({
-      id: data.id || `${props.data.id || generateId}-${choosenProviderList.value?.length + 1}`,
+      id: data.id || randomString(8),
       ...data
   });
   providerListVisible.value = false;

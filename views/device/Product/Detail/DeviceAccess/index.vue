@@ -942,7 +942,7 @@ const updateAccessData = async (id: string, values: any) => {
   if (resp.status === 200) {
     onlyMessage($t("DeviceAccess.index.594346-30"));
     productStore.current!.storePolicy = storePolicy;
-    const isTabBack = onBack(resp)
+    const isTabBack = await onBack(resp)
     if (!isTabBack) {
       getDetailInfo();
     }
@@ -967,6 +967,7 @@ const getDetailInfo = async () => {
 const MetaDataModalSubmit = () => {
   // 跳转物模型标签
   productStore.tabActiveKey = "Metadata";
+  metadataVisible.value = false;
 };
 
 getProvidersList();

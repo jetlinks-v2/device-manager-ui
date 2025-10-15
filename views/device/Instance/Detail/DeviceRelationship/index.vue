@@ -8,7 +8,9 @@
             <div class="section-title">
               <TitleComponent data="正向关系">
                 <template #extra>
-                  <AIcon type="QuestionCircleOutlined" class="help-icon"/>
+                  <a-tooltip title="管理设备与其他业务的关联关系，关系来源于关系配置">
+                    <AIcon type="QuestionCircleOutlined" class="help-icon"/>
+                  </a-tooltip>
                 </template>
               </TitleComponent>
             </div>
@@ -21,10 +23,10 @@
             <div
               v-for="item in relationshipData"
               :key="item.objectId"
-              class="relation-item"
+              :class="{'relation-item': true, 'relation-item-unrelated': !item.related}"
             >
               <div class="relation-label">{{ item.relationName }}</div>
-              <div class="relation-value">{{ item.relation }}</div>
+              <div class="relation-value">{{ item.related?.map(it => it.name).join('、') }}</div>
             </div>
           </div>
         </div>
@@ -43,21 +45,22 @@
         <div class="section-content">
           <TreeList
             :data="organizationTreeData"
-            :loading="loading.organizations"
+            :loading="loadingOrganization"
+            :bindOrgList="bindOrgList"
             @view-change="handleOrganizationViewChange"
           >
             <template #extra-controls>
               <AIcon type="UnorderedListOutlined" class="list-icon"/>
             </template>
             <template #header-extra>
-              <div class="organization-count">已加入组织节点 <span class="count-num">{{ organizationCount }}</span></div>
+              <div class="organization-count">已加入组织节点 <span class="count-num">{{ bindOrgList?.length }}</span></div>
             </template>
             <template #actions="{ item, level }">
               <a-tag
-                v-for="action in item.actions || getDefaultActions()"
-                :key="action.type"
+                v-for="permission in bindOrgAuthList?.find(it => it.targetId === item.id || item.key)?.grantedPermissions || []"
+                :key="permission"
               >
-                {{ action.label }}
+                {{ permissionMap[permission] }} 
               </a-tag>
             </template>
             <template #empty>
@@ -68,7 +71,7 @@
       </div>
 
       <!-- 分组部分 -->
-      <div class="section-card">
+      <!-- <div class="section-card">
         <div class="section-header">
           <div class="header-left">
             <div class="section-title">
@@ -100,7 +103,7 @@
             </template>
           </TreeList>
         </div>
-      </div>
+      </div> -->
     </div>
   </div>
 
@@ -112,6 +115,7 @@
 
   <OrganizationEditModal
       v-if="showOrganizationModal"
+      :bindOrgList="bindOrgListWithAuth"
       @close="showOrganizationModal = false"
       @save="handleSaveOrganization"
   />
@@ -129,7 +133,10 @@ import RelationshipEditModal from './components/RelationshipEditModal.vue'
 import OrganizationEditModal from './components/OrganizationEditModal.vue'
 import GroupEditModal from './components/GroupEditModal.vue'
 import TreeList from './components/TreeList.vue'
-import {useInstanceStore} from "@device/store/instance";
+import {useInstanceStore} from "@device-manager-ui/store/instance";
+import { getTreeData_api } from '@authentication-manager-ui/api/system/department'
+import { getOrgList, getBindOrgAuthList } from '@device-manager-ui/api/instance'
+import { useRequest } from '@jetlinks-web/hooks'
 
 const instanceStore = useInstanceStore();
 const treeView = ref('tree')
@@ -145,91 +152,64 @@ const loading = reactive({
   groups: false
 })
 
+const permissionMap = {
+  'read': '查看',
+  'save': '编辑',
+  'delete': '删除',
+  'share': '共享',
+}
+
 const organizationData = ref<any[]>([])
 const groupData = ref<any[]>([])
 
-// 树形数据结构
-const organizationTreeData = computed(() => [
-  {
-    id: '1',
-    name: '产品开发部',
-    actions: [
-      { type: 'view', label: '查看' },
-      { type: 'edit', label: '编辑' },
-      { type: 'delete', label: '删除' },
-      { type: 'share', label: '共享' }
-    ],
-    children: [
+const { data: organizationList, loading: loadingOrganization, reload: reloadOrganizationList } = useRequest(getTreeData_api, {
+  defaultParams: {
+    paging: false,
+    sorts: [
       {
-        id: '2',
-        name: '开发部'
+        name: "sortIndex",
+        order: "asc"
       },
       {
-        id: '3',
-        name: '项目部',
-        children: [
-          {
-            id: '4',
-            name: '东北项目部',
-            actions: [
-              { type: 'view', label: '查看' },
-              { type: 'share', label: '共享' }
-            ]
-          },
-          {
-            id: '5',
-            name: '西南项目部',
-            children: [
-              {
-                id: '6',
-                name: '四川分部门',
-                actions: [
-                  { type: 'view', label: '查看' },
-                  { type: 'share', label: '共享' },
-                  { type: 'delete', label: '删除' }
-                ]
-              },
-              {
-                id: '7',
-                name: '重庆分部门',
-                actions: [
-                  { type: 'view', label: '查看' },
-                  { type: 'share', label: '共享' },
-                  { type: 'delete', label: '删除' }
-                ]
-              },
-              {
-                id: '8',
-                name: '云南分部门',
-                actions: [
-                  { type: 'view', label: '查看' },
-                  { type: 'share', label: '共享' },
-                  { type: 'delete', label: '删除' }
-                ]
-              },
-              {
-                id: '9',
-                name: '贵州分部门',
-                actions: [
-                  { type: 'view', label: '查看' },
-                  { type: 'share', label: '共享' },
-                  { type: 'delete', label: '删除' }
-                ]
-              },
-              {
-                id: '10',
-                name: '广西分部门',
-                actions: [
-                  { type: 'view', label: '查看' }
-                ]
-              }
-            ]
-          }
-        ]
+        name: "name",
+        order: "asc"
       }
     ]
   }
-])
+})
+
+const { data: bindOrgAuthList, reload: reloadBindOrgAuthList } = useRequest(getBindOrgAuthList, {
+  defaultParams: ['device', instanceStore.current?.id || '', 'org']
+})
+
+const { data: bindOrgList, reload: reloadBindOrgList } = useRequest(getOrgList, {
+  defaultParams: {
+    terms: [
+      {
+        column: 'id',
+        termType: 'assets-dim',
+        value: {
+          assetType: 'device',
+          assetIds: [
+            instanceStore.current?.id
+          ],
+          dimensionType: 'org'
+        }
+      }
+    ]
+  }
+})
+
+const bindOrgListWithAuth = computed(() => {
+  return bindOrgList.value?.map(it => ({
+    ...it,
+    actions: bindOrgAuthList.value?.find(auth => auth.targetId === it.id)?.grantedPermissions || []
+  })) || []
+})
+// 树形数据结构
+const organizationTreeData = computed(() => {
+  return organizationList.value || []
+})
 
 const groupTreeData = computed(() => [
   {
@@ -254,9 +234,14 @@ const groupTreeData = computed(() => [
 
 // 统计数据
 const relationshipData = computed(() => instanceStore.current?.relations)
-const relationCount = computed(() => 0)
-const organizationCount = computed(() => 8) // 根据实际数据计算
-const groupCount = computed(() => 2) // 根据实际数据计算
+const relationCount = computed(() => {
+  return relationshipData.value?.reduce((acc, cur) => {
+    if(cur.related) {
+      acc++
+    }
+    return acc
+  }, 0)
+})
 
 // 视图切换事件
 const handleOrganizationViewChange = (view: 'tree' | 'flat') => {
@@ -289,10 +274,14 @@ const handleEditGroup = () => {
 
 const handleSaveRelationship = () => {
   showRelationshipModal.value = false
+  instanceStore.refresh(instanceStore.current?.id || '')
 }
 
 const handleSaveOrganization = () => {
   showOrganizationModal.value = false
+  reloadOrganizationList()
+  reloadBindOrgList()
+  reloadBindOrgAuthList()
 }
 
 const handleSaveGroup = () => {
@@ -402,6 +391,7 @@ onMounted(() => {
 
           .help-icon {
             color: #999;
+            margin-left: 8px;
           }
         }
 
@@ -455,7 +445,10 @@ onMounted(() => {
           padding: 10px;
           background-color: #F1F7FF;
           border: 1px solid #BAE0FF;
-
+          &.relation-item-unrelated {
+            background-color: #F0F0F0;
+            border-color: #F0F0F0;
+          }
           &:not(:last-child) {
             margin-bottom: 10px;
           }
