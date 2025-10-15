@@ -131,7 +131,7 @@ import { openEdgeUrl } from '@/utils/utils';
 import { wsClient } from '@jetlinks-web/core';
 import { useRouterParams } from '@jetlinks-web/hooks';
 import { EventEmitter } from '@jetlinks-web/utils';
-import { useSystemStore, useMenuStore, useAuthStore} from '@/store';
+import {useSystemStore, useMenuStore, useAuthStore, useAIStore} from '@/store';
 import { isNoCommunity } from '@/utils/utils';
 import { device } from "../../../../assets";
 import { useI18n } from 'vue-i18n';
@@ -182,7 +182,7 @@ const initList = [
 
 const list = ref([...initList]);
 const isRefresh = ref(false)
-
+const aiStore = useAIStore()
 const permissionStore = useAuthStore();
 const _arr = ['agent-device-gateway', 'agent-media-device-gateway']
 const getStatus = (id: string) => {
@@ -433,11 +433,13 @@ const onClick = async () => {
 
 onMounted(() => {
     getDetailFn();
+  aiStore.queryAgent('deviceDetailChat')
 });
 
 onUnmounted(() => {
     instanceStore.current = {} as any;
     statusRef.value && statusRef.value.unsubscribe();
+  aiStore.hideAiButton()
 });
 </script>
 

@@ -47,7 +47,7 @@ import DeviceHome from './components/DeviceHome/index.vue';
 import DevOpsHome from './components/DevOpsHome/index.vue';
 import ComprehensiveHome from './components/ComprehensiveHome/index.vue';
 import Api from './components/Api/index.vue';
-import { useUserStore } from '@/store';
+import {useAIStore, useUserStore} from '@/store';
 
 import { isNoCommunity } from '@/utils/utils';
 import { getMe_api, getView_api } from '@/api/account/center';
@@ -60,6 +60,7 @@ const currentView = ref<string>('');
 const clientId = useUserStore().userInfo.id;
 const secureKey = ref<string>('');
 const showKey = ref(false);
+const aiStore = useAIStore()
 // 获取选择的视图
 const setCurrentView = () => {
     getView_api().then(({ status, result }: any) => {
@@ -97,6 +98,14 @@ if (isNoCommunity) {
 } else {
     setCurrentView();
 }
+
+onMounted(() => {
+  aiStore.queryAgent('iotHome')
+})
+
+onUnmounted(() => {
+  aiStore.hideAiButton()
+})
 </script>
 
 <style lang="less" scoped>
