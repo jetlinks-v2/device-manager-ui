@@ -107,7 +107,7 @@
               <AccessCard
                 @checkedChange="procotolChange"
                 :checked="procotolCurrent"
-                :disabled="!showAddBtn"
+                :disabled="!showAddBtn || id !== ':id'"
                 :data="{ ...item, type: 'protocol' }"
               >
               </AccessCard>
@@ -595,6 +595,7 @@ onMounted(() => {
   } else {
     if (props.provider?.id) {
       if (
+        // console.log('props.provider====',props.provider)
         ["agent-device-gateway", "agent-media-device-gateway"].includes(
           props.provider.id,
         )

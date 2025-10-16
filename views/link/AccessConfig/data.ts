@@ -22,7 +22,7 @@ ProtocolMapping.set('agent-media-device-gateway', 'MQTT');
 
 const NetworkTypeMapping = new Map();
 NetworkTypeMapping.set('websocket-server', 'WEB_SOCKET_SERVER');
-NetworkTypeMapping.set('http-server-gateway', ['HTTP_SERVER', 'MQTT_SERVER']);
+NetworkTypeMapping.set('http-server-gateway', ['HTTP_SERVER']);
 NetworkTypeMapping.set('udp-device-gateway', 'UDP');
 NetworkTypeMapping.set('coap-server-gateway', 'COAP_SERVER');
 NetworkTypeMapping.set('mqtt-client-gateway', 'MQTT_CLIENT');
