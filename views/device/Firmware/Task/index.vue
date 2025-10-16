@@ -96,12 +96,12 @@
               </div>
               <div class="body-progress">
                 <div class="progress--warp bg-color-200">
-                  <div v-for="item in options(item)" :style="{ width: item.per + '%', background: item.bgc }" :key="item.type"></div>
+                  <div v-for="item in options(item)" :class="`progress-item-${item.bgc}`"  :style="{ width: item.per + '%'}" :key="item.type"></div>
                 </div>
               </div>
               <div class="body-status">
                 <div v-for="item in options(item)" class="status-item" :key="item.type">
-                  <AIcon :type="item.icon" :style="{color: item.color}"></AIcon>
+                  <AIcon :class="`status-item-${item.color}`" :type="item.icon"></AIcon>
                   <label>
                     {{ item.label }}
                   </label>
@@ -251,8 +251,10 @@ const options = computed(() => {
         value: val[item.value],
         icon: iconMap[item.value],
         per: Math.round(parseFloat(val[item.value] / val.total) * 100),
-        bgc: `var(--ant-${colorMap[item.value]}-color)`,
-        color: `${colorMap[item.value] ? `var(--ant-${colorMap[item.value]}-color)` : '#646C73'}`
+        bgc:  colorMap[item.value],
+        color: colorMap[item.value],
+        // bgc: `var(--ant-${colorMap[item.value]}-color)`,
+        // color: `${colorMap[item.value] ? `var(--ant-${colorMap[item.value]}-color)` : '#646C73'}`
       }
     })
   }
@@ -482,6 +484,18 @@ onMounted(() => {
         display: flex;
         gap: 12px;
         align-items: center;
+        .status-item-success {
+          color: var(--ant-success-color);
+        }
+        .status-item-error {
+          color: var(--ant-error-color);
+        }
+        .status-item-primary {
+          color: var(--ant-primary-color);
+        }
+        .status-item-warning {
+          color: var(--ant-warning-color);
+        }
       }
 
       .last-item {
@@ -495,6 +509,20 @@ onMounted(() => {
       border-radius: 4px;
       overflow: hidden;
       display: flex;
+      // background-color: var(--ant-error-color);
+      .progress-item-success {
+        background-color: var(--ant-success-color);
+      }
+      .progress-item-error {
+        background-color: var(--ant-error-color);
+      }
+      .progress-item-primary {
+        background-color: var(--ant-primary-color);
+      }
+      .progress-item-warning {
+        background-color: var(--ant-warning-color);
+      }
+
     }
   }
 }
