@@ -61,6 +61,7 @@
                 <FileUpload
                     v-else
                     v-model:modelValue="formData.configuration.location"
+                    @change="handleFileUploadChange"
                 />
             </a-form-item>
             <a-form-item :label="$t('Save.index.903552-9')" name="description">
@@ -164,6 +165,10 @@ const handleChange = (info: UploadChangeParam) => {
         formData.value.configuration.location = result;
         fileLoading.value = false;
     }
+};
+
+const handleFileUploadChange = () => {
+    formRef.value?.validate()
 };
 
 const handleOk = () => {
