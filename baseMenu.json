@@ -528,7 +528,8 @@
                   "query"
                 ]
               },
-              {"permission": "system-monitor", "actions": ["query"]}
+              {"permission": "system-monitor", "actions": ["query"]},
+              {"permission": "device-gateway-manager", "actions": ["save"]}
             ],
             "buttons": [
               {
