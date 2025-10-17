@@ -133,7 +133,6 @@
                   ]"
                 >
                   <div class="form-label"></div>
-
                   <a-select
                     v-model:value="formState.hostPort.port"
                     :options="sipList"
@@ -258,10 +257,9 @@
                             />
                           </a-tooltip>
                         </template>
-
                         <a-select
                           v-model:value="cluster.host"
-                          :options="sipListOption"
+                          :options="sipMap.get(cluster.clusterNodeId)?.sipListOption || []"
                           :placeholder="$t('Media.GB28181.666483-22')"
                           allowClear
                           show-search
@@ -288,7 +286,10 @@
                           :filter-option="filterOption"
                         >
                           <a-select-option
-                            v-for="i in getSipListOption(sipListIndex[index], cluster.port)"
+                            v-for="i in getSipListOption(
+                              sipMap.get(cluster.clusterNodeId)?.sipListIndex || [],
+                              cluster.port
+                            )"
                             :value="i.value"
                           >
                             {{ i.label }}
@@ -481,6 +482,7 @@
 import { Form } from 'ant-design-vue'
 import type { FormInstance } from 'ant-design-vue'
 import { getResourcesCurrent, getClusters, update, save } from '../../../../../api/link/accessConfig'
+import { resourceClustersById, allResources } from '../../../../../api/link/type'
 import { onlyMessage } from '@jetlinks-web/utils'
 import { isNumber } from 'lodash-es'
 import type { Rule } from 'ant-design-vue/es/form'
@@ -558,6 +560,8 @@ const sipListOption = ref([])
 const sipList = ref([])
 const sipListIndex: any = ref([])
 const clustersList = ref([])
+// 所有的网关节点
+const sipMap = new Map()
 
 const dynamicValidateForm = reactive<{ cluster: Form2[] }>({
   cluster: []
@@ -732,45 +736,104 @@ const getSipListOption = (list: any[], id: string) => {
   return (list || []).filter((item) => item.value === id || !keys.includes(item.value))
 }
 
-onMounted(() => {
-  getResourcesCurrent().then((resp) => {
-    if (resp.status === 200) {
-      sipListConst = resp.result
-      sipListOption.value = sipListConst.map((i: any) => ({
-        value: i.host,
-        label: i.host
-      }))
-      sipList.value = sipListConst
-        .find((i: any) => i.host === '0.0.0.0')
-        ?.portList.map((i: any) => {
-          return {
-            value: JSON.stringify({
-              host: '0.0.0.0',
-              port: i.port
-            }),
-            label: `${i.transports.join('/')} (${i.port})`
-          }
-        })
-
-      dynamicValidateForm.cluster.forEach((cluster, index) => {
-        if (cluster.host) {
-          const value = cluster.host
-          sipListIndex.value[index] = sipListConst
-            .find((i: any) => i.host === value)
-            ?.portList.map((i: any) => {
-              return {
-                value: JSON.stringify({
-                  host: value,
-                  port: i.port
-                }),
-                label: `${i.transports.join('/')} (${i.port})`
-              }
-            })
-        }
-      })
+const handleIntersection = (arr: any[]) => {
+  let intersection = []
+  if (arr && arr.length > 0) {
+    // 获取第一个节点的portList作为基准
+    intersection = arr[0].portList || []
+    for (let i = 1; i < arr.length; i++) {
+      const currentPortList = arr[i].portList || []
+      intersection = intersection.filter((port1) =>
+        currentPortList.some(
+          (port2) =>
+            port1.port === port2.port &&
+            JSON.stringify(port1.transports.sort()) === JSON.stringify(port2.transports.sort())
+        )
+      )
     }
-  })
+  }
+  return intersection
+}
 
+const getResources = async () => {
+  const resp = await allResources()
+  if (resp.status === 200) {
+    const arr = resp.result?.filter((i: any) => i.host === '0.0.0.0')
+    sipList.value = handleIntersection(arr).map((i: any) => {
+      return {
+        value: JSON.stringify({
+          host: '0.0.0.0',
+          port: i.port
+        }),
+        label: `${i.transports.join('/')} (${i.port})`
+      }
+    })
+    arr.forEach((i: any) => {
+      const id = i.clusterNodeId
+      const obj = {
+        sipListOption: [
+          {
+            value: i.host,
+            label: i.host
+          }
+        ],
+        sipListIndex: i.portList.map((i: any) => ({
+          value: JSON.stringify({
+            host: i.host,
+            port: i.port
+          }),
+          label: `${i.transports.join('/')} (${i.port})`
+        }))
+      }
+      sipMap.set(id, obj)
+    })
+
+    console.log('sipMap====', sipMap)
+  }
+}
+onMounted(async () => {
+  // getResourcesCurrent().then((resp) => {
+  //   if (resp.status === 200) {
+  //     sipListConst = resp.result
+  //     sipListOption.value = sipListConst.map((i: any) => ({
+  //       value: i.host,
+  //       label: i.host
+  //     }))
+  //     sipList.value = sipListConst
+  //       .find((i: any) => i.host === '0.0.0.0')
+  //       ?.portList.map((i: any) => {
+  //         return {
+  //           value: JSON.stringify({
+  //             host: '0.0.0.0',
+  //             port: i.port
+  //           }),
+  //           label: `${i.transports.join('/')} (${i.port})`
+  //         }
+  //       })
+
+  //     dynamicValidateForm.cluster.forEach((cluster, index) => {
+  //       if (cluster.host) {
+  //         const value = cluster.host
+  //         sipListIndex.value[index] = sipListConst
+  //           .find((i: any) => i.host === value)
+  //           ?.portList.map((i: any) => {
+  //             return {
+  //               value: JSON.stringify({
+  //                 host: value,
+  //                 port: i.port
+  //               }),
+  //               label: `${i.transports.join('/')} (${i.port})`
+  //             }
+  //           })
+  //       }
+  //     })
+  //   }
+  // })
+  
+  // 先获取资源数据，确保sipMap被正确填充
+  await getResources()
+
+  // 并行获取集群数据
   getClusters().then((resp: any) => {
     if (resp.status === 200) {
       const list = resp.result.map((i: any) => ({
@@ -781,6 +844,7 @@ onMounted(() => {
     }
   })
 
+  // 在sipMap数据准备好后，再恢复表单数据
   if (id !== ':id') {
     const { configuration, name, description = '' } = props.data
     formData.value = { name, description }
