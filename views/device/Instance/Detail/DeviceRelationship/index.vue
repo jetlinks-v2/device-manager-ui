@@ -60,7 +60,7 @@
                 v-for="permission in bindOrgAuthList?.find(it => it.targetId === item.id || item.key)?.grantedPermissions || []"
                 :key="permission"
               >
-                {{ permissionMap[permission] }} 
+                {{ permissionMap[permission] }}
               </a-tag>
             </template>
             <template #empty>
@@ -211,26 +211,26 @@ const organizationTreeData = computed(() => {
   return organizationList.value || []
 })
 
-const groupTreeData = computed(() => [
-  {
-    id: '1',
-    name: '智慧工厂',
-    children: [
-      {
-        id: '2',
-        name: '重庆/月亮湾项目'
-      },
-      {
-        id: '3',
-        name: '重庆月亮湾项目'
-      }
-    ]
-  },
-  {
-    id: '4',
-    name: '物联网产品基地/A栋/5楼'
-  }
-])
+// const groupTreeData = computed(() => [
+//   {
+//     id: '1',
+//     name: '智慧工厂',
+//     children: [
+//       {
+//         id: '2',
+//         name: '重庆/月亮湾项目'
+//       },
+//       {
+//         id: '3',
+//         name: '重庆月亮湾项目'
+//       }
+//     ]
+//   },
+//   {
+//     id: '4',
+//     name: '物联网产品基地/A栋/5楼'
+//   }
+// ])
 
 // 统计数据
 const relationshipData = computed(() => instanceStore.current?.relations)

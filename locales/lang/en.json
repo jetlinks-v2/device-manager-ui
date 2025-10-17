@@ -2510,7 +2510,7 @@
     "DeviceRelationship.OrganizationEditModal.532167-1": "Each node selection is device independent, selecting a node will not select its child or parent nodes",
     "DeviceRelationship.OrganizationEditModal.532167-2": "Batch Configuration",
     "DeviceRelationship.OrganizationEditModal.532167-3": "Please enter",
-    "DeviceRelationship.OrganizationEditModal.532167-4": "Selected Groups",
+    "DeviceRelationship.OrganizationEditModal.532167-4": "Selected organization",
     "DeviceRelationship.RelationshipEditModal.789342-0": "Edit Relationship",
     "DeviceRelationship.RelationshipEditModal.789342-1": "Assigned Manager",
     "DeviceRelationship.RelationshipEditModal.789342-2": "Please select",

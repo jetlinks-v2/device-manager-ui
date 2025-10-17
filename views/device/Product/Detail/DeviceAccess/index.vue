@@ -189,16 +189,7 @@
                   :name="item.property"
                   v-for="item in i?.properties || []"
                   :key="item"
-                  :rules="[
-                  {
-                    required: !!item?.type?.expands?.required,
-                    message: `${
-                      item.type.type === 'enum' || 'boolean'
-                        ? $t('DeviceAccess.index.594346-12')
-                        : $t('DeviceAccess.index.594346-13')
-                    }${item.name}`,
-                  },
-                ]"
+                  :rules="getRules(item)"
               >
                 <template #label>
                   <div>
@@ -663,6 +654,27 @@ const getConfigDetail = (
       }
     }
   });
+};
+
+const getRules = (item: any) => {
+  const rules = [];
+  if (item?.type?.expands?.required) {
+    rules.push({
+      required: true,
+      message: `${
+        item.type.type === "enum" || item.type.type === "boolean"
+          ? $t("DeviceAccess.index.594346-12")
+          : $t("DeviceAccess.index.594346-13")
+      }${item.name}`,
+    });
+  }
+  if (item?.type?.expands?.maxLength) {
+    rules.push({
+      max: item.type.expands.maxLength,
+      message: `最多可输入${item.type.expands.maxLength}个字符`,
+    });
+  }
+  return rules;
 };
 
 const modifyArray = (oldData: any[], newData: any[]) => {

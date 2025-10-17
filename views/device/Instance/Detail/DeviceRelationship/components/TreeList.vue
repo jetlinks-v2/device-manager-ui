@@ -187,21 +187,21 @@ onMounted(() => {
 
 })
 
-watch(() => props.data, (newVal) => {
-  if (newVal.length) {
-    const getAllKeys = (items: any[]): string[] => {
-    const keys: string[] = []
-      items.forEach(item => {
-        if (item.children?.length) {
-          keys.push(item[props.keyField])
-          keys.push(...getAllKeys(item.children))
-        }
-      })
-      return keys
-    }
-    expandedKeys.value = getAllKeys(treeData.value)
-  }
-})
+// watch(() => props.data, (newVal) => {
+//   if (newVal.length) {
+//     const getAllKeys = (items: any[]): string[] => {
+//     const keys: string[] = []
+//       items.forEach(item => {
+//         if (item.children?.length) {
+//           keys.push(item[props.keyField])
+//           keys.push(...getAllKeys(item.children))
+//         }
+//       })
+//       return keys
+//     }
+//     expandedKeys.value = [] //getAllKeys(treeData.value)
+//   }
+// })
 </script>
 
 <style lang="less" scoped>

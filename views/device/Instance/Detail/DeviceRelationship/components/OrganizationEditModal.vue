@@ -56,7 +56,7 @@
 
         <div class="right-section">
           <div class="section-title">{{ t('DeviceRelationship.OrganizationEditModal.532167-4') }}</div>
-          <div class="selected-items">
+          <div class="selected-items" v-if="checkedMaps.length > 0">
             <div
                 v-for="item in checkedMaps"
                 :key="item.id"
@@ -82,6 +82,9 @@
                 </a-button>
               </div>
             </div>
+          </div>
+          <div v-else style="height: 200px; margin-top: 20px">
+            <j-empty />
           </div>
         </div>
       </div>
@@ -151,8 +154,11 @@ const handleCancel = () => {
 }
 
 const handleOk = async () => {
+  if (checkedMaps.value.length === 0) {
+    onlyMessage('请选择组织', 'error')
+    return
+  }
   loading.value = true
-
   try {
     // 模拟保存请求
     const res = await bindDeviceToOrg(checkedMaps.value.map(item => {

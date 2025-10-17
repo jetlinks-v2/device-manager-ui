@@ -186,6 +186,9 @@ const aiStore = useAIStore()
 const permissionStore = useAuthStore();
 const _arr = ['agent-device-gateway', 'agent-media-device-gateway']
 const getStatus = (id: string) => {
+    if(statusRef.value){
+      statusRef.value.unsubscribe();
+    }
     statusRef.value = wsClient.getWebSocket(
         `instance-editor-info-status-${id}`,
         `/dashboard/device/status/change/realTime`,
@@ -431,15 +434,15 @@ const onClick = async () => {
   await openEdgeUrl(instanceStore.current.id)
 }
 
-onMounted(() => {
-    getDetailFn();
-  aiStore.queryAgent('deviceDetailChat')
+onMounted(async () => {
+    await getDetailFn();
+    aiStore.queryAgent('deviceDetailChat', {deviceId: instanceStore.current?.id})
 });
 
 onUnmounted(() => {
     instanceStore.current = {} as any;
     statusRef.value && statusRef.value.unsubscribe();
-  aiStore.hideAiButton()
+    aiStore.hideAiButton()
 });
 </script>
 

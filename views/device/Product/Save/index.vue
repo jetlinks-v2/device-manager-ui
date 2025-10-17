@@ -234,7 +234,6 @@ const rules = reactive({
         {
             required: true,
             validator: validateDeviceType,
-            trigger: 'blur',
         },
     ],
     description: [
