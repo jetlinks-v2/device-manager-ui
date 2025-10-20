@@ -42,6 +42,9 @@ const props = defineProps({
   options: {
     type: Array as PropType<Array<{label: string, value: string}>>,
     default: () => []
+  },
+  formRef: {
+    type: Object
   }
 })
 
@@ -54,6 +57,7 @@ const onChange = (keys: Array<string>) =>{
   myValue.value = keys
   emit('update:value', keys)
   emit('change', keys)
+  props.formRef?.validate(['type'])
 }
 
 watch(() => props.value, () => {

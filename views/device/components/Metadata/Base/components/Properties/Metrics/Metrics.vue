@@ -138,7 +138,7 @@ const columns: any = [
       rules: [
         {
           asyncValidator(rule:any,value: any) {
-            if (isNil(value) || (Array.isArray(value) && value.some(item => !item))) {
+            if (isNil(value) || (Array.isArray(value) && value.some(item => item !== 0 && !item))) {
               return Promise.reject($t('Metrics.Metrics.112798-9'))
             }
             return Promise.resolve()
