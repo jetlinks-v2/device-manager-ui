@@ -86,7 +86,13 @@ const handleSyncCache = async () => {
     const response = syncProductCache();
     response.subscribe({
       next: (data: any) => {
-        syncNumber.value++
+        data.result.map((i: any) => {
+          if(i.success){
+            syncNumber.value += i.total
+          } else {
+            syncNumber.value += 1
+          }
+        })
         syncProgress.value = (syncNumber.value / total.value) * 100
       },
       error: (error: any) => {

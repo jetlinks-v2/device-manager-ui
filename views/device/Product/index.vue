@@ -654,9 +654,7 @@ const handleSearch = (e: any) => {
   // console.log(e, 'e')
   const newTerms = cloneDeep(e);
   if (newTerms.terms?.length) {
-    console.log(newTerms, "newTerms");
     newTerms.terms.forEach((a: any) => {
-      console.log(a, "a");
       a.terms = a.terms.map((b: any) => {
         if (b.column === "id$dev-instance") {
           return {
@@ -669,6 +667,7 @@ const handleSearch = (e: any) => {
         if (b.column === "id$dim-assets") {
           const value = b.value;
           b = {
+            ...b,
             column: "id",
             termType: "dim-assets",
             value: {

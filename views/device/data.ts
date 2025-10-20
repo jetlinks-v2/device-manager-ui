@@ -176,4 +176,6 @@ export const accessType = [
     'gb28181-2016',
     'collector-gateway',
     'mqtt-client-gateway',
-    'OneNet']
+    'OneNet',
+    'composite-device-gateway'
+]
