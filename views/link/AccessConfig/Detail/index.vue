@@ -112,7 +112,7 @@ const compositeProvider = computed(() => {
     const arr: any[] = []
     dataSource.value.forEach((item: any) => {
         item.list?.forEach((item: any) => {
-            if(item.type === 'network' && !['composite-device-gateway', 'plugin_gateway'].includes(item.id) ) {
+            if(item.type === 'network' && !['composite-device-gateway', 'plugin_gateway','agent-device-gateway','agent-media-device-gateway'].includes(item.id) ) {
                 arr.push(item)
             }
         })

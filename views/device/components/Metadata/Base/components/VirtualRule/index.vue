@@ -5,6 +5,7 @@
             v-model:value="formData.type"
             :disabled="source !== 'device'"
             :options="typeOptions"
+            :formRef="formRef"
         />
         <template v-if="source === 'rule'">
             <a-form-item :name="['virtualRule', 'triggerProperties']" :rules="[{

@@ -61,7 +61,7 @@ const props = defineProps({
   },
   title: {
     type: String,
-    defult: "",
+    default: "",
   },
   isAdd: {
     type: Number,
@@ -177,6 +177,7 @@ const submitData = async () => {
  * 显示弹窗
  */
 const show = async (row: any) => {
+  console.log(props.isChild, props.isAdd, row)
   //新增
   if (props.isAdd === 0) {
     if (props.isChild === 1) {
@@ -231,6 +232,7 @@ const show = async (row: any) => {
     };
     visible.value = true;
   }
+  console.log(formModel.value, 'formModel.value')
 };
 
 /**

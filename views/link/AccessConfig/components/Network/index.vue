@@ -107,7 +107,7 @@
               <AccessCard
                 @checkedChange="procotolChange"
                 :checked="procotolCurrent"
-                :disabled="!showAddBtn"
+                :disabled="!showAddBtn || id !== ':id'"
                 :data="{ ...item, type: 'protocol' }"
               >
               </AccessCard>
@@ -248,6 +248,7 @@ import {
   save,
   update,
   getChildConfigView,
+  getNetworkComponentList
 } from "../../../../../api/link/accessConfig";
 import {
   descriptionList,
@@ -367,7 +368,9 @@ const showAddBtn = computed(() => {
 });
 
 const queryNetworkList = async (id: string, include: string, data = {}) => {
-  const resp = await getNetworkList(NetworkTypeMapping.get(id), include, data);
+  const resp = NetworkTypeMapping.get(id) instanceof Array ? await getNetworkComponentList({
+    networkTypes: NetworkTypeMapping.get(id),
+  }, include) : await getNetworkList(NetworkTypeMapping.get(id), include, data);
   if (resp.status === 200) {
     networkList.value = resp.result;
     allNetworkList.value = resp.result;
@@ -447,6 +450,21 @@ const procotolSearch = (value: string) => {
     : allProcotolList.value;
 };
 
+const transport = computed(() => {
+  if (props.provider?.id === "child-device") {
+    return "Gateway";
+  }
+  if (['agent-device-gateway', 'agent-media-device-gateway'].includes(props.provider?.id)) {
+    const network = allNetworkList.value.find((i: any) => i.id === networkCurrent.value);
+    if(network?.type === 'HTTP_SERVER') {
+      return 'HTTP';
+    } else if(network?.type === 'MQTT_SERVER') {
+      return 'MQTT';
+    }
+  }
+  return ProtocolMapping.get(props.provider.id);
+});
+
 const saveData = () => {
   validate()
     .then(async (values) => {
@@ -457,10 +475,7 @@ const saveData = () => {
         channel: "network", // 网络组件
         channelId: networkCurrent.value,
         provider: props.provider.id,
-        transport:
-          props.provider?.id === "child-device"
-            ? "Gateway"
-            : ProtocolMapping.get(props.provider.id),
+        transport: transport.value,
       };
       if(route.query.provider ) {
         onBack({
@@ -580,6 +595,7 @@ onMounted(() => {
   } else {
     if (props.provider?.id) {
       if (
+        // console.log('props.provider====',props.provider)
         ["agent-device-gateway", "agent-media-device-gateway"].includes(
           props.provider.id,
         )

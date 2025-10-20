@@ -123,23 +123,69 @@
                             :value="myValue.metrics"
                         />
                     </a-collapse-panel>
-                    <a-collapse-panel key="extra" v-if="showExtra || showExtraFile" :header="$t('Properties.OtherSetting.237457-28')">
-                      <CardItem
-                          v-if="showExtra"
-                          :value="show.limit"
-                          :title="$t('Properties.OtherSetting.237457-29')"
-                          :tip="$t('Properties.OtherSetting.237457-31')"
-                          @change="onChange"
-                      >
+                    <a-collapse-panel key="extra" v-if="showExtra">
+                        <template #header>
+                            <a-space>
+                                <div>{{ $t('Properties.OtherSetting.237457-3') }}</div>
+                                <template
+                                    v-if="
+                                        props.isProduct && target === 'device'
+                                    "
+                                >
+                                    <a-button
+                                        type="link"
+                                        style="padding: 0 4px; height: 22px"
+                                        @click="(e) => resetThreshold(e)"
+                                    >
+                                        <template #icon>
+                                            <AIcon type="RedoOutlined" />
+                                        </template>
+                                        {{ $t('Properties.OtherSetting.237457-4') }}
+                                    </a-button>
+                                    <a-tooltip>
+                                        <template #title
+                                            >{{ $t('Properties.OtherSetting.237457-5') }}</template
+                                        >
+                                        <AIcon type="QuestionCircleOutlined" />
+                                    </a-tooltip>
+                                </template>
+                                <a-button
+                                    v-else
+                                    type="link"
+                                    style="padding: 0 4px; height: 22px"
+                                    @click="(e) => resetThreshold(e)"
+                                >
+                                    <template #icon>
+                                        <AIcon type="RedoOutlined" />
+                                    </template>
+                                    {{ $t('Properties.OtherSetting.237457-6') }}
+                                </a-button>
+                            </a-space>
+                        </template>
                         <a-form
                             :model="extraForm"
-                            ref="ThresholdRef"
                             layout="vertical"
+                            ref="ThresholdRef"
                         >
-                          <a-form-item
-                              v-if="extraForm.type"
-                              name="limit"
-                              :rules="[
+                            <a-form-item>
+                                <div class="extra-limit extra-check-group">
+                                    <j-card-select
+                                        v-model:value="extraForm.type"
+                                        :options="[
+                                            {
+                                                label: $t('Properties.OtherSetting.237457-7'),
+                                                value: 'number-range',
+                                            },
+                                        ]"
+                                        :showImage="false"
+                                        @select="limitSelect"
+                                    />
+                                </div>
+                            </a-form-item>
+                            <a-form-item
+                                v-if="extraForm.type"
+                                name="limit"
+                                :rules="[
                                     {
                                         required: true,
                                         message: $t('Properties.OtherSetting.237457-8'),
@@ -149,84 +195,66 @@
                                         trigger: 'change',
                                     },
                                 ]"
-                          >
-                            <template #label
                             >
-                              <div class="extra-title">
-                                {{ $t('Properties.OtherSetting.237457-9') }}
-                              </div>
-                            </template
-                            >
-                            <a-space
-                                v-if="extraForm.type === 'number-range'"
-                            >
-                              <a-input-number
-                                  v-model:value="extraForm.limit.lower"
-                                  style="width: 178px"
-                                  :placeholder="$t('Properties.OtherSetting.237457-10')"
-                              />
-                              <span>~</span>
-                              <a-input-number
-                                  v-model:value="extraForm.limit.upper"
-                                  style="width: 178px"
-                                  :min="extraForm.limit.lower"
-                                  :placeholder="$t('Properties.OtherSetting.237457-11')"
-                              />
-                            </a-space>
-                          </a-form-item>
-                          <a-form-item
-                              v-if="extraForm.type"
-                              name="mode"
-                              :rules="[
+                                <template #label
+                                    ><div class="extra-title">
+                                        {{ $t('Properties.OtherSetting.237457-9') }}
+                                    </div></template
+                                >
+                                <a-space
+                                    v-if="extraForm.type === 'number-range'"
+                                >
+                                    <a-input-number
+                                        v-model:value="extraForm.limit.lower"
+                                        style="width: 178px"
+                                        :placeholder="$t('Properties.OtherSetting.237457-10')"
+                                    />
+                                    <span>~</span>
+                                    <a-input-number
+                                        v-model:value="extraForm.limit.upper"
+                                        style="width: 178px"
+                                        :min="extraForm.limit.lower"
+                                        :placeholder="$t('Properties.OtherSetting.237457-11')"
+                                    />
+                                </a-space>
+                            </a-form-item>
+                            <a-form-item
+                                v-if="extraForm.type"
+                                name="mode"
+                                :rules="[
                                     {
                                         required: true,
                                         message: $t('Properties.OtherSetting.237457-12'),
                                     },
                                 ]"
-                          >
-                            <template #label>
-                              <div class="extra-title">
-                                {{ $t('Properties.OtherSetting.237457-13') }}
-                              </div>
-                            </template
                             >
-                            <div class="extra-handle extra-check-group">
-                              <j-card-select
-                                  v-model:value="extraForm.mode"
-                                  :column="4"
-                                  :options="[
-                            { label: $t('Properties.OtherSetting.237457-14'), value: 'ignore' },
-                            {
-                                label: $t('Properties.OtherSetting.237457-15'),
-                                value: 'device-record',
-                            },
-                            {
-                                label: $t('Properties.OtherSetting.237457-16'),
-                                value: 'device-alarm',
-                            },
-                            {
-                                label: $t('Properties.OtherSetting.237457-33'),
-                                value: 'record-alarm',
-                            },
-                        ]"
-                                  :showImage="false"
-                              />
-                              <div style="margin: 8px 0">
-                                {{ handleTip }}
-                              </div>
-                            </div>
-                          </a-form-item
-                          >
+                                <template #label>
+                                    <div class="extra-title">
+                                        {{ $t('Properties.OtherSetting.237457-13') }}
+                                    </div></template
+                                >
+                                <div class="extra-handle extra-check-group">
+                                    <j-card-select
+                                        v-model:value="extraForm.mode"
+                                        :options="[
+                                            { label: $t('Properties.OtherSetting.237457-14'), value: 'ignore' },
+                                            {
+                                                label: $t('Properties.OtherSetting.237457-15'),
+                                                value: 'device-record',
+                                            },
+                                            {
+                                                label: $t('Properties.OtherSetting.237457-16'),
+                                                value: 'device-alarm',
+                                            },
+                                        ]"
+                                        :showImage="false"
+                                    />
+                                    <div style="margin: 8px 0">
+                                        {{ handleTip }}
+                                    </div>
+                                </div></a-form-item
+                            >
                         </a-form>
-                      </CardItem>
-                      <div style="margin-top: 16px" v-if="showExtraFile">
-                        <CardItem
-                            @change="onFileChange"
-                            :value="show.file"
-                            :title="$t('Properties.OtherSetting.237457-30')"
-                            :tip="$t('Properties.OtherSetting.237457-32')"
-                        />
-                      </div>
                     </a-collapse-panel>
                 </a-collapse>
             </div>
@@ -274,7 +302,6 @@ import { useThreshold } from './hooks';
 import { useSystemStore } from '@/store';
 import { useI18n } from 'vue-i18n';
 import {isNoCommunity} from "@/utils";
-import CardItem from './components/CardItem.vue'
 
 const { t: $t } = useI18n();
 
@@ -335,11 +362,7 @@ const emit = defineEmits(['update:value', 'change']);
 const ThresholdRef = ref();
 const activeKey = ref();
 const metricsRef = ref();
-const show = reactive({
-  file: false,
-  limit: false,
-  preprocess: false,
-})
+
 const myValue = ref(props.value);
 const visible = ref(false);
 const modalVisible = ref(false);
@@ -348,12 +371,12 @@ const config = ref<any>([]);
 const configValue = ref(props.value || {});
 
 const extraForm = reactive({
-  limit: {
-    upper: 0,
-    lower: 0,
-  },
-  mode: 'ignore',
-  type: '',
+    limit: {
+        upper: 0,
+        lower: 0,
+    },
+    mode: 'ignore',
+    type: '',
 });
 
 const typeMap = {
@@ -364,30 +387,21 @@ const typeMap = {
 };
 
 const handleTip = computed(() => {
-  if (extraForm.mode === 'ignore') {
-    return $t('Properties.OtherSetting.237457-19');
-  } else if (extraForm.mode === 'device-record') {
-    return $t('Properties.OtherSetting.237457-20');
-  } else if (extraForm.mode === 'record-alarm') {
-    return $t('Properties.OtherSetting.237457-34')
-  }
-  return $t('Properties.OtherSetting.237457-21');
+    if (extraForm.mode === 'ignore') {
+        return $t('Properties.OtherSetting.237457-19');
+    } else if (extraForm.mode === 'device-record') {
+        return $t('Properties.OtherSetting.237457-20');
+    }
+    return $t('Properties.OtherSetting.237457-21');
 });
 
-// const showContent = computed(() => {
-//     if (props.isProduct && props.target === 'device') {
-//         // 继承的物模型
-//         return showExtra.value;
-//     }
-//
-//     return (showMetrics.value || config.value.length > 0) && props.id;
-// });
-
 const showContent = computed(() => {
-  if (props.isProduct) {
-    return showExtra.value || showExtraFile.value;
-  }
-  return (showMetrics.value || config.value.length > 0 || (showExtra.value || showExtraFile.value)) && props.id;
+    if (props.isProduct && props.target === 'device') {
+        // 继承的物模型
+        return showExtra.value;
+    }
+
+    return (showMetrics.value || config.value.length > 0) && props.id;
 });
 
 const showMetrics = computed(() => {
@@ -408,14 +422,6 @@ const showExtra = computed(() => {
         props.metadataType === 'properties' &&
         showThreshold && isNoCommunity
     );
-});
-
-const showExtraFile = computed(() => {
-  return (
-      ['file'].includes(props.type as any) &&
-      props.metadataType === 'properties' &&
-      showThreshold && isNoCommunity
-  );
 });
 
 const booleanOptions = ref([
@@ -445,51 +451,30 @@ const popContainer = (e) => {
     return e;
 };
 
-// const limitSelect = (keys: string[], key: string, isSelected: boolean) => {
-//     if (!isSelected) {
-//         // 删除
-//         if (key === 'number-range') {
-//             extraForm.limit.lower = 0;
-//             extraForm.limit.upper = 0;
-//         }
-//     }
-//
-//     if (keys.length === 0) {
-//         extraForm.mode = 'ignore';
-//     }
-// };
+const limitSelect = (keys: string[], key: string, isSelected: boolean) => {
+    if (!isSelected) {
+        // 删除
+        if (key === 'number-range') {
+            extraForm.limit.lower = 0;
+            extraForm.limit.upper = 0;
+        }
+    }
 
-const onChange = async (val: boolean) => {
-  if (val) {
-    extraForm.type = 'number-range'
-  } else {
-    await resetThreshold('number')
-  }
-  show.limit = val
-}
-
-const onFileChange = async (val: boolean) => {
-  if (!val) {
-    await resetThreshold('file')
-  }
-  show.file = val
-}
+    if (keys.length === 0) {
+        extraForm.mode = 'ignore';
+    }
+};
 const resetValue = () => {
     extraForm.mode = 'ignore';
     extraForm.type = '';
     extraForm.limit.lower = 0;
     extraForm.limit.upper = 0;
 };
-const resetThreshold = async (type: string) => {
-  if (type === 'number') {
-    resetValue();
-  }
-  if (thresholdDetail.value && !!Object.keys(thresholdDetail.value).length) {
+const resetThreshold = async (e: any) => {
+    e.stopPropagation();
     await thresholdDelete();
-    setTimeout(() => { // 后端删除了，还是会返回数据
-      thresholdDetailQuery();
-    }, 500);
-  }
+    resetValue();
+    thresholdDetailQuery();
 };
 
 const validateLimit = (_: any, value: any) => {
@@ -570,41 +555,29 @@ const confirm = () => {
                 expands.metrics = metrics;
             }
 
-          if (showExtra.value || (showExtraFile.value && show.file)) {
-            let obj = undefined
+            console.log(expands, 'expands')
             if (showExtra.value && extraForm.type) {
-              const _threshold = ThresholdRef.value?.validate()
-              if (_threshold) {
-                obj = {
-                  ...extraForm,
-                  configuration: {
-                    max: extraForm.limit.upper,
-                    min: extraForm.limit.lower,
-                    not: true
-                  }
-                }
-              } else {
-                reject(false);
-              }
-            } else if (showExtraFile.value && show.file) {
-              obj = {
-                type: "file-matcher",
-                configuration: {},
-                mode: "file-storage"
-              }
+                ThresholdRef.value?.validate().then(async () => {
+                    await thresholdUpdate(extraForm);
+                    expands.otherEdit = true;
+                    emit('update:value', {
+                        ...props.value,
+                        ...expands,
+                    });
+                    emit('change');
+                    modalVisible.value = false;
+                    resolve(true);
+                });
+            } else {
+                expands.otherEdit = true;
+                emit('update:value', {
+                    ...props.value,
+                    ...expands,
+                });
+                emit('change');
+                modalVisible.value = false;
+                resolve(true);
             }
-            if (obj) {
-              await thresholdUpdate(obj);
-            }
-          }
-          expands.otherEdit = true;
-          emit('update:value', {
-            ...props.value,
-            ...expands,
-          });
-          emit('change');
-          modalVisible.value = false;
-          resolve(true);
         } catch (err) {
             reject(false);
         }
@@ -659,7 +632,7 @@ watch(
                 'required',
             ]);
             getConfig();
-            if (showExtra.value || showExtraFile.value) {
+            if (showExtra.value) {
                 thresholdDetailQuery();
             }
         }
@@ -678,18 +651,9 @@ watch(
             thresholdDetail.value &&
             JSON.stringify(thresholdDetail.value) !== '{}'
         ) {
-          show.limit = false
-          show.file = false
-          if (thresholdDetail.value?.type === 'number-range') {
             extraForm.mode = thresholdDetail.value?.mode;
             extraForm.type = thresholdDetail.value?.type || '';
             extraForm.limit = thresholdDetail.value?.limit;
-            show.limit = true
-          }
-
-          if (thresholdDetail.value?.type === 'file-matcher') {
-            show.file = true
-          }
         }
     },
     { immediate: true, deep: true },

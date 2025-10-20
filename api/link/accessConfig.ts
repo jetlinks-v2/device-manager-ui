@@ -13,6 +13,12 @@ export const getNetworkList = (
         data,
     );
 
+/**
+ * 查询多类型的网络组件列表接口
+ */
+export const getNetworkComponentList = (data: Record<string, any>, include: Object) =>
+    request.post(`/network/config/_alive?include=${include}`, data);
+
 export const getProtocolList = (transport: string, params: Object) =>
     request.get(`/protocol/supports/${transport ? transport : ''}`, params);
 

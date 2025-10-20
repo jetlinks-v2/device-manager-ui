@@ -20,18 +20,17 @@
         </template>
         <a-form layout="vertical" ref="formRef" :model="modelRef">
             <a-collapse v-if="access.provider === 'composite-device-gateway'" v-model:activeKey="activeKey">
-                <a-collapse-panel v-for="gateway in gatewaysDetail" :key="gateway.id" :header="gateway.name">
+                <a-collapse-panel v-for="gateway in gatewaysDetail" :key="gateway.id">
+                  <template #header>
+                    <j-ellipsis>{{ gateway.name }}</j-ellipsis>
+                  </template>
                     <template v-if="gateway.transportDetail?.allConfig?.length" v-for="(item, index) in gateway.transportDetail.allConfig || []" :key="index">
                         <a-form-item
                             v-for="i in item.properties"
                             :name="i.property"
                             :key="i.property"
                             :required="!!i.type.expands?.required"
-                            :rules="
-                                !!i.type.expands?.required
-                                    ? [{ required: true, message: $t('Config.Save.696838-2', [i.name]) }]
-                                    : []
-                            "
+                            :rules="getRules(i)"
                         >
                             <template #label>
                                 <span style="margin-right: 5px">{{ i.name }}</span>
@@ -56,11 +55,7 @@
                     :name="i.property"
                     :key="i.property"
                     :required="!!i.type.expands?.required"
-                    :rules="
-                        !!i.type.expands?.required
-                            ? [{ required: true, message: $t('Config.Save.696838-2', [i.name]) }]
-                            : []
-                    "
+                    :rules="getRules(i)"
                 >
                     <template #label>
                         <span style="margin-right: 5px">{{ i.name }}</span>
@@ -84,6 +79,7 @@ import { modify } from '../../../../../../../api/instance';
 import { useInstanceStore } from '../../../../../../../store/instance';
 import { onlyMessage } from '@/utils/comm';
 import { useI18n } from 'vue-i18n';
+import {map, uniqBy} from "lodash-es";
 
 const { t: $t } = useI18n();
 const emit = defineEmits(['close', 'save']);
@@ -108,7 +104,7 @@ const props = defineProps({
     }
 });
 
-const activeKey = ref(props.gatewaysDetail?.map((item) => item.id));
+const activeKey = ref(props.gatewaysDetail?.[0]?.id);
 
 const getOptions = (i: any) => {
     if (i.type.type === 'enum') {
@@ -132,18 +128,63 @@ const getOptions = (i: any) => {
     }
     return undefined;
 };
-watchEffect(() => {
-    const obj = instanceStore.current?.configuration;
-    if (obj && Object.keys(obj).length) {
-        (props?.config || []).map((item: any) => {
-            if (Array.isArray(item.properties) && item?.properties.length) {
-                item.properties.map((i: any) => {
-                    modelRef[i.property] = obj[i.property];
-                });
-            }
-        });
+
+const getRules = (item: any) => {
+  const rules = [];
+  if (item?.type?.expands?.required) {
+    rules.push({
+      required: true,
+      message: `${
+          item.type.type === "enum" || item.type.type === "boolean"
+              ? $t("DeviceAccess.index.594346-12")
+              : $t("DeviceAccess.index.594346-13")
+      }${item.name}`,
+    });
+  }
+  if (item?.type?.expands?.maxLength) {
+    rules.push({
+      max: item.type.expands.maxLength,
+      message: `最多可输入${item.type.expands.maxLength}个字符`,
+    });
+  }
+  return rules;
+};
+// watchEffect(() => {
+//     const obj = instanceStore.current?.configuration;
+//     if (obj && Object.keys(obj).length) {
+//         (props?.config || []).map((item: any) => {
+//             if (Array.isArray(item.properties) && item?.properties.length) {
+//                 item.properties.map((i: any) => {
+//                     modelRef[i.property] = obj[i.property];
+//                 });
+//             }
+//         });
+//     }
+// });
+
+const handleValue = (arr = [], obj = {}) => {
+  arr.map((item: any) => {
+    if (Array.isArray(item.properties) && item?.properties.length) {
+      item.properties.map((i: any) => {
+        modelRef[i.property] = obj[i.property];
+      });
     }
-});
+  });
+}
+
+watch(() => instanceStore.current?.configuration, (obj) => {
+  if (obj && Object.keys(obj).length) {
+    if(props.access?.provider === 'composite-device-gateway'){
+      (props.gatewaysDetail || []).map((item: any) => {
+        handleValue(item.transportDetail.allConfig, obj)
+      });
+    } else {
+      handleValue(props.config, obj)
+    }
+  }
+}, {
+  immediate: true
+})
 
 const onClose = () => {
     emit('close');

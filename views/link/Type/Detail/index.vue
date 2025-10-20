@@ -802,6 +802,7 @@ import {
   save,
   detail,
   resourcesCurrent,
+  allResources,
   supports,
   certificates,
   start,
@@ -941,13 +942,38 @@ const filterConfigByType = (data: any[], type: string) => {
 const getPortOptions = (portOptions: any, index = 0) => {
   if (!portOptions) return;
   const type = formData.value.type;
-  const host = dynamicValidateForm.cluster[index].configuration.host;
   const _port = filterConfigByType(cloneDeep(portOptions), type);
-  const _host = _port.find((item: any) => item.host === host);
-  portOptionsIndex.value[index] = _host?.ports?.map((p: any) => ({
-    label: p,
-    value: p,
-  }));
+  
+  if (shareCluster.value) {
+    // 当shareCluster为true时，计算所有主机端口的交集
+    if (_port && _port.length > 0) {
+      // 获取第一个主机的端口作为基准
+      let intersection = _port[0].ports || [];
+      
+      // 计算所有主机端口的交集
+      for (let i = 1; i < _port.length; i++) {
+        const currentPorts = _port[i].ports || [];
+        intersection = intersection.filter((port: any) => 
+          currentPorts.includes(port)
+        );
+      }
+      
+      portOptionsIndex.value[index] = intersection.map((p: any) => ({
+        label: p,
+        value: p,
+      }));
+    } else {
+      portOptionsIndex.value[index] = [];
+    }
+  } else {
+    // 当shareCluster为false时，使用原有逻辑
+    const host = dynamicValidateForm.cluster[index].configuration.host;
+    const _host = _port.find((item: any) => item.host === host);
+    portOptionsIndex.value[index] = _host?.ports?.map((p: any) => ({
+      label: p,
+      value: p,
+    }));
+  }
 };
 
 const changeShareCluster = (value: boolean) => {
@@ -1124,11 +1150,11 @@ const getCertificates = async () => {
   }
 };
 
-const getResourcesCurrent = () => {
-  resourcesCurrent().then((resp: any) => {
+const getResourcesCurrent =async () => {
+  allResources().then((resp: any) => {
     if (resp.status === 200) {
       _typeStore.setConfigRef(resp.result || []);
-
+      
       const clusterNodeId = resp.result?.[0]?.clusterNodeId;
       const _resourcesClusters = cloneDeep(resourcesClusters.value || {});
       _resourcesClusters[clusterNodeId] = resp.result;
@@ -1223,6 +1249,10 @@ watch(
       const { cluster } = dynamicValidateForm;
       formData.value.type = value;
       cluster[0].configuration.host = "0.0.0.0";
+      if (value === "MQTT_CLIENT" && isNoCommunity) {
+        formData.value.shareCluster = false;
+        changeShareCluster(formData.value.shareCluster);
+      }
     }
   },
   { deep: true, immediate: true }
@@ -1235,7 +1265,7 @@ onMounted(async () => {
   if (isNoCommunity) {
     getResourcesClusters();
   }
-  getResourcesCurrent();
+  await getResourcesCurrent();
   if (id !== ":id") {
     getDetail();
   }

@@ -131,7 +131,7 @@ import { openEdgeUrl } from '@/utils/utils';
 import { wsClient } from '@jetlinks-web/core';
 import { useRouterParams } from '@jetlinks-web/hooks';
 import { EventEmitter } from '@jetlinks-web/utils';
-import { useSystemStore, useMenuStore, useAuthStore} from '@/store';
+import {useSystemStore, useMenuStore, useAuthStore, useAIStore} from '@/store';
 import { isNoCommunity } from '@/utils/utils';
 import { device } from "../../../../assets";
 import { useI18n } from 'vue-i18n';
@@ -174,14 +174,21 @@ const initList = [
         key: 'Log',
         tab: $t('Detail.index.957187-15'),
     },
+    {
+        key: 'DeviceRelationship',
+        tab: '设备关系',
+    },
 ];
 
 const list = ref([...initList]);
 const isRefresh = ref(false)
-
+const aiStore = useAIStore()
 const permissionStore = useAuthStore();
 const _arr = ['agent-device-gateway', 'agent-media-device-gateway']
 const getStatus = (id: string) => {
+    if(statusRef.value){
+      statusRef.value.unsubscribe();
+    }
     statusRef.value = wsClient.getWebSocket(
         `instance-editor-info-status-${id}`,
         `/dashboard/device/status/change/realTime`,
@@ -427,13 +434,15 @@ const onClick = async () => {
   await openEdgeUrl(instanceStore.current.id)
 }
 
-onMounted(() => {
-    getDetailFn();
+onMounted(async () => {
+    await getDetailFn();
+    aiStore.queryAgent('deviceDetailChat', {deviceId: instanceStore.current?.id})
 });
 
 onUnmounted(() => {
     instanceStore.current = {} as any;
     statusRef.value && statusRef.value.unsubscribe();
+    aiStore.hideAiButton()
 });
 </script>
 
