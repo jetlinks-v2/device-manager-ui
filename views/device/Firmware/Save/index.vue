@@ -165,8 +165,7 @@
                                     </a-form-item>
                                     <a-form-item
                                         :label="index === 0 && $t('Save.index.978508-21')"
-                                        class="formRef-form-item"
-                                        style="width: 10%"
+                                        class="formRef-form-item-action"
                                     >
                                         <j-permission-button
                                             type="text"
@@ -462,6 +461,9 @@ watch(
         .formRef-form-item {
             width: 47%;
             padding-right: 10px;
+        }
+        .formRef-form-item-action {
+            width: 10%;
         }
     }
     .formRef-form-item-add {

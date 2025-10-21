@@ -37,6 +37,10 @@ const props = defineProps({
     type: String,
     default: '',
   },
+  type: {
+    type: String,
+    default: 'Self',
+  },
 });
 const activeKey = ref('Self')
 const componentRef = ref();
@@ -77,19 +81,9 @@ const handleCancel = () => {
 };
 
 watch(
-    () => props.data,
+    () => props.type,
     (val) => {
-      if(val && val.length > 0){
-        if(val?.[0]?.column === 'id$dim-assets'){
-          activeKey.value = 'Org'
-        } else if(val?.[0]?.column === 'id'){
-          activeKey.value = 'Self'
-        } else {
-          activeKey.value = 'All'
-        }
-      } else {
-        activeKey.value = 'Self'
-      }
+      activeKey.value = val
     },
     {
       immediate: true,

@@ -1141,8 +1141,13 @@ const getSupports = async () => {
 };
 
 const getCertificates = async () => {
-  const resp: any = await certificates();
-  if (resp.status === 200) {
+  const resp: any = await certificates({
+    paging: false,
+    sorts: [
+      { name: 'createTime', order: 'desc' }
+    ]
+  });
+  if (resp.success) {
     certIdOptions.value = resp.result.map((i: any) => ({
       value: i.id,
       label: i.name,
