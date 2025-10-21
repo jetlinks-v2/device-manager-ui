@@ -6,22 +6,28 @@
       type="simple"
       style="padding: 0; margin: 16px 0"
   />
-  <div style="min-height: 0; flex: 1">
-    <j-pro-table
-        mode="TABLE"
-        type="TREE"
-        :columns="columns"
-        :request="getTreeData_api"
-        :bodyStyle="{padding: 0}"
-        :params="params"
-        :alertShow="false"
-        :rowSelection="{
-          selectedRowKeys: _selectedRowKeys,
-          onChange: onChange,
-          type: 'radio'
+  <j-pro-table
+      mode="TABLE"
+      type="TREE"
+      :columns="columns"
+      :request="getTreeData_api"
+      :bodyStyle="{padding: 0}"
+      :params="params"
+      :alertShow="false"
+      :height="300"
+      :defaultParams="{
+        paging: false,
+        sort: [
+          { name: 'sortIndex', order: 'asc' },
+          { name: 'createTime', order: 'desc' }
+        ]
       }"
-    />
-  </div>
+      :rowSelection="{
+        selectedRowKeys: _selectedRowKeys,
+        onChange: onChange,
+        type: 'radio'
+    }"
+  />
 </template>
 
 <script setup>
@@ -71,40 +77,46 @@ const onChange = (e) => {
   deviceCount.value = 0
   // 查询组织下面的设备数量
   if (e.length > 0) {
-    queryDetailList({
-      terms: [
-        {
-          column: "id$dim-assets",
-          value: JSON.stringify({
-            assetType: 'device',
-            targets: [
-              {
-                type: 'org',
-                id: e?.[0],
-              },
-            ],
-          })
-        },
-        {
-          column: 'productId',
-          value: props.productId,
-          type: 'and',
-        }
-      ]
-    }, {permission: 'save'}).then(res => {
-      if (res.success) {
-        deviceCount.value = res?.result?.total || 0
-      }
-    })
+    getDevice(e)
   }
+}
+
+// 查询组织下面的设备数量
+const getDevice = (e) => {
+  queryDetailList({
+    terms: [
+      {
+        column: "id$dim-assets",
+        value: JSON.stringify({
+          assetType: 'device',
+          targets: [
+            {
+              type: 'org',
+              id: e?.[0],
+            },
+          ],
+        })
+      },
+      {
+        column: 'productId',
+        value: props.productId,
+        type: 'and',
+      }
+    ]
+  }, {permission: 'save'}).then(res => {
+    if (res.success) {
+      deviceCount.value = res?.result?.total || 0
+    }
+  })
 }
 
 watch(
     () => props.data,
     (val) => {
-      if(val?.[0]?.value){
+      if(val?.[0]?.value && val?.[0]?.column === 'id$dim-assets'){
         const id = JSON.parse(val?.[0]?.value || '{}')?.targets?.[0]?.id
         _selectedRowKeys.value = id ? [id] : []
+        getDevice(_selectedRowKeys.value)
       }
     },
     {

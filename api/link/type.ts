@@ -28,8 +28,8 @@ export const resourceClustersById = (id: string) =>
 
 export const allResources = () => request.get(`/network/resources/alive/_all`);
 
-export const certificates = () =>
-    request.get(`/network/certificate/_query/no-paging?paging=false`);
+export const certificates = (data: any = {}) =>
+    request.post(`/network/certificate/_query/no-paging?paging=false`, data);
 
 export const save = (data: Object) => request.post(`/network/config`, data);
 

@@ -90,7 +90,7 @@
                 @change="changeShareCluster"
                 :disabled="view"
             >
-              <a-radio value="all">{{ $t('Save.index.646914-17') }}</a-radio>
+              <a-radio value="all">{{ $t('Save.index.646914-17') }}({{ deviceNumber || 0 }})</a-radio>
               <a-radio value="part">{{ $t('Save.index.646914-18') }}</a-radio>
             </a-radio-group>
           </a-form-item>
@@ -128,9 +128,12 @@
 </template>
 <script lang="ts" setup name="TaskPage">
 import {queryProduct, saveTask} from '@device-manager-ui/api/firmware';
+import { getDeviceNumber } from '@device-manager-ui/api/instance';
 import type {FormInstance} from 'ant-design-vue';
 import SelectDevices from './SelectDevices/index.vue';
 import {useI18n} from 'vue-i18n';
+import { useRequest } from '@jetlinks-web/hooks';
+import { onlyMessage } from '@jetlinks-web/utils';
 
 const {t: $t} = useI18n();
 
@@ -152,6 +155,16 @@ const props = defineProps({
 
 const formRef = ref<FormInstance>();
 
+const { data: deviceNumber } = useRequest(getDeviceNumber, {
+  defaultParams: {
+    terms: [
+      {
+        column: 'productId',
+        value: props.productId,
+      }
+    ]
+  }
+});
 const route = useRoute();
 const loading = ref(false);
 const productOptions = ref([]);
@@ -213,6 +226,9 @@ const changeMode = () => {
 
 const onSubmit = async () => {
   const params = await formRef.value?.validate();
+  if (formData.value.releaseType === 'all' && !deviceNumber.value) {
+    return onlyMessage($t('Save.index.646914-25') , 'error');
+  }
   loading.value = true;
   const resp = await saveTask({
     ...params,
