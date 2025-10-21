@@ -175,7 +175,7 @@ const opsBootConfig: bootConfig[] = [
     {
         english: 'STEP2',
         label: $t('ComprehensiveHome.index.926510-19'),
-        link: 'Log',
+        link: 'system/Log',
         params: {
             tab: 'system',
         },
@@ -220,7 +220,7 @@ const opsStepDetails: recommendList[] = [
         title: $t('ComprehensiveHome.index.926510-29'),
         details: $t('ComprehensiveHome.index.926510-30'),
         iconUrl: home.Frame4528,
-        linkUrl: 'Log',
+        linkUrl: 'system/Log',
         params: {
             tab: 'system',
         },
