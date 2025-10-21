@@ -206,7 +206,7 @@ watch(
     () => props.data,
     (val) => {
       if(val.length){
-        if(val?.[0]?.column === 'deviceId'){
+        if(val?.[0]?.column === 'id'){
           _selectedRowKeys.value = val?.[0]?.value || []
         } else {
           // 加到搜索中
