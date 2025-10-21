@@ -154,10 +154,10 @@ const handleCancel = () => {
 }
 
 const handleOk = async () => {
-  if (checkedMaps.value.length === 0) {
-    onlyMessage('请选择组织', 'error')
-    return
-  }
+  // if (checkedMaps.value.length === 0) {
+  //   onlyMessage('请选择组织', 'error')
+  //   return
+  // }
   loading.value = true
   try {
     // 模拟保存请求
