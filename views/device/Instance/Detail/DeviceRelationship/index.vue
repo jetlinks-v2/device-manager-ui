@@ -137,6 +137,7 @@ import {useInstanceStore} from "@device-manager-ui/store/instance";
 import { getTreeData_api } from '@authentication-manager-ui/api/system/department'
 import { getOrgList, getBindOrgAuthList } from '@device-manager-ui/api/instance'
 import { useRequest } from '@jetlinks-web/hooks'
+import {getBindingsPermission} from "@device-manager-ui/api/department";
 
 const instanceStore = useInstanceStore();
 const treeView = ref('tree')
@@ -309,15 +310,15 @@ const fetchOrganizationData = async () => {
   try {
     loading.organizations = true
     // 获取设备组织绑定信息
-    // const response = await getBindingsPermission('device', [props.deviceId])
-    // if (response.success && response.result) {
-    //   organizationData.value = response.result.map((item: any) => ({
-    //     id: item.targetId,
-    //     name: item.targetName || item.target,
-    //     type: item.targetType,
-    //     actions: parseActions(item.permissions || [])
-    //   }))
-    // }
+    const response = await getBindingsPermission('device', [props.deviceId])
+    if (response.success && response.result) {
+      organizationData.value = response.result.map((item: any) => ({
+        id: item.targetId,
+        name: item.targetName || item.target,
+        type: item.targetType,
+        actions: parseActions(item.permissions || [])
+      }))
+    }
   } catch (error) {
     console.error('获取组织数据失败:', error)
   } finally {
