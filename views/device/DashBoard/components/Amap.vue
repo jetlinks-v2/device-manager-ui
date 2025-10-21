@@ -20,6 +20,7 @@ import { EventSourcePolyfill } from 'event-source-polyfill';
 import { TOKEN_KEY } from "@jetlinks-web/constants";
 import { LocalStore } from "@jetlinks-web/utils";
 import markerPng from '@device-manager-ui/assets/marker.png'
+import { debounce } from 'lodash-es'
 
 const BASE_API_PATH = import.meta.env.VITE_APP_BASE_API
 const deviceList = ref([])
@@ -68,6 +69,12 @@ const extraOptions = {
     }, // 自定义非聚合点样式
 }
 
+const closeLoading = debounce(() => {
+  loading.value = false
+  source.close();
+  console.log('close loading')
+}, 1000)
+
 const queryDeviceGeoJson = async () => {
     source = new EventSourcePolyfill(
         `${BASE_API_PATH}/geo/object/device/_search/geo.json?:X_Access_Token=${LocalStore.get(
@@ -90,6 +97,7 @@ const queryDeviceGeoJson = async () => {
             })
         })
         deviceList.value.push(...arr)
+        closeLoading()
     }
 
     source.onerror = (e) => {

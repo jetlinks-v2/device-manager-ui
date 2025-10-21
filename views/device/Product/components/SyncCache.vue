@@ -1,7 +1,7 @@
 <template>
   <!-- 同步缓存确认弹窗 -->
   <a-modal
-    v-model:visible="syncCacheVisible"
+    v-model:open="syncCacheVisible"
     title="同步缓存"
     ok-text="开始"
     @ok="handleSyncCache"
@@ -12,7 +12,7 @@
 
   <!-- 同步进度弹窗 -->
   <a-modal
-    v-model:visible="syncProgressVisible"
+    v-model:open="syncProgressVisible"
     title="同步进度"
     :closable="false"
     :maskClosable="false"

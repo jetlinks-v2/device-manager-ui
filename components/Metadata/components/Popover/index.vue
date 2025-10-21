@@ -1,5 +1,6 @@
 <template>
   <a-popover
+    :placement="placement"
     trigger="click"
     :open="visible"
     :overlay-class-name="{

@@ -55,7 +55,7 @@
               <a-dropdown
                   :trigger="['contextmenu']"
                   :open="menuVisible"
-                  @visible-change="handleVisible"
+                  @open-change="handleVisible"
               >
                 <template #overlay v-if="_customRow.id">
                   <a-menu>
