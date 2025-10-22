@@ -768,6 +768,7 @@ export const getOrgList = (data: any) => request.post(`/organization/_query/no-p
  * 绑定设备到组织
  */
 export const bindDeviceToOrg = (data: any) => request.post(`/assets/bind/device`, data)
+export const bindDeviceToOrgAll = (assetType: string, assetId: string, data: any) => request.post(`/assets/bind/${assetType}/${assetId}/_all`, data)
 
 /**
  * 获取资产所绑定的组织列表权限
