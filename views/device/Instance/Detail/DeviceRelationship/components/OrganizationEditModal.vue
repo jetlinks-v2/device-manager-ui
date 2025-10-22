@@ -93,10 +93,9 @@
 </template>
 
 <script lang="ts" setup>
-import {ref, reactive, computed, watch} from 'vue'
 import { useI18n } from 'vue-i18n'
 import { getTreeData_api } from '@authentication-manager-ui/api/system/department'
-import { bindDeviceToOrg } from '@device-manager-ui/api/instance'
+import {bindDeviceToOrgAll} from '@device-manager-ui/api/instance'
 import { useRequest } from '@jetlinks-web/hooks'
 import { omit } from 'lodash-es'
 import { useInstanceStore } from '@device-manager-ui/store/instance'
@@ -161,7 +160,7 @@ const handleOk = async () => {
   loading.value = true
   try {
     // 模拟保存请求
-    const res = await bindDeviceToOrg(checkedMaps.value.map(item => {
+    const res = await bindDeviceToOrgAll('device', instanceStore.current.id, checkedMaps.value.map(item => {
       return {
         assetType: 'device',
         targetId: item.id,
