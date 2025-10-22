@@ -342,4 +342,18 @@ export const Rules = {
             message: i18n.global.t('Type.data.652947-34'),
         },
     ],
+    tagsFilter: [
+        {
+            required: true,
+            message: i18n.global.t('Type.data.652947-12'),
+        },
+        {
+          validator: (_rule: any, value: any) => {
+            if (value?.length === 0) {
+              return Promise.reject(i18n.global.t('Type.data.652947-12'));
+            }
+            return Promise.resolve();
+          },
+        }
+    ]
 };

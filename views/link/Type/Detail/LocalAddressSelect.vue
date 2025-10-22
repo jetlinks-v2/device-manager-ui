@@ -32,8 +32,16 @@ const props = defineProps({
     serverId: {
         type: String,
         default: undefined
-    }
-})
+    },
+    clusterTagFilter: {
+        type: Array,
+        default: () => [],
+    },
+    clusters: {
+        type: Array,
+        default: () => [],
+    },
+});
 
 const emit = defineEmits(['update:value', 'change', 'valueChange'])
 
@@ -65,8 +73,20 @@ const getResourcesClustersById = async (id: string) => {
 
 watchEffect(() => {
     host.value = props.value
-    if(!props.shareCluster && props.serverId){
-        getResourcesClustersById(props.serverId)
+    // if(!props.shareCluster && props.serverId){
+    //     getResourcesClustersById(props.serverId)
+    // }
+    if(props.clusterTagFilter) {
+      const _serverId = props.clusters.find(item => {
+        for(let tag of props.clusterTagFilter) {
+          if(item.tags[tag.column] === tag.value) {
+            return true
+          }
+        }
+      })?.id
+      if(_serverId) {
+        getResourcesClustersById(_serverId)
+      }
     }
     emit('valueChange', props.value)
 })

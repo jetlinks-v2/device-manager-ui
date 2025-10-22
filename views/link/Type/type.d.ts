@@ -31,8 +31,18 @@ export interface FormDataType {
     shareCluster: boolean;
     description: string;
 }
+
+export interface TagsFilterType {
+    column: string;
+    termType: string;
+    value: string;
+    terms: TagsFilterType[]
+    type: string;
+}
 export interface FormData2Type {
     id?: number | string;
     serverId?: string | undefined;
+    index: number;
+    tagsFilter?: TagsFilterType[];
     configuration: ConfigurationType;
 }
