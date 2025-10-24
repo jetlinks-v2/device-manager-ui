@@ -60,6 +60,7 @@ import { useInstanceStore } from '../../../store/instance';
 import { useProductStore } from '../../../store/product';
 import { cloneDeep } from 'lodash-es';
 import { inject } from 'vue';
+import * as monaco from 'monaco-editor'
 interface Props {
     mode?: 'advance' | 'simple';
     id?: string;
@@ -96,25 +97,13 @@ const registrationTips = ref<any>({
 const editorInit = (editor: any, monaco: any) => {
     monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
         noSemanticValidation: true,
-        noSyntaxValidation: false,
+        noSyntaxValidation: true,
     });
 
     // compiler options
     monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
-        allowJs: true,
-        checkJs: true,
-        allowNonTsExtensions: true,
-        target: monaco.languages.typescript.ScriptTarget.ESNext,
-        strictNullChecks: false,
-        strictPropertyInitialization: true,
-        strictFunctionTypes: true,
-        strictBindCallApply: true,
-        useDefineForClassFields: true, //permit class static fields with private name to have initializer
-        moduleResolution:
-        monaco.languages.typescript.ModuleResolutionKind.NodeJs,
-        module: monaco.languages.typescript.ModuleKind.CommonJS,
-        typeRoots: ['types'],
-        lib: ['esnext'],
+      noLib: true,
+      allowNonTsExtensions: true,
     });
 };
 
@@ -202,7 +191,12 @@ const _value = computed({
 
 const loading = ref(false);
 const queryCode = () => {
-    registrationTips.value.suggestions = cloneDeep(props.tips);
+    registrationTips.value.suggestions = [...(props.tips || []), {
+      label: 'for (for loop)',
+      kind: monaco.languages.CompletionItemKind.Snippet,
+      insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+      insertText: 'for (let i = 0; i < ${1:len}; i++) {\n\t$0\n}'
+    }];
     let id = '';
     if (target === 'device') {
         id = instanceStore.current.id;
