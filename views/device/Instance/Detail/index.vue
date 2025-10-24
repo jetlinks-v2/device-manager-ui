@@ -94,7 +94,7 @@
             <a-space>
                 <a-button
                     @click="onClick"
-                    v-if="_arr.includes(instanceStore.current?.accessProvider || '')"
+                    v-if="_arr.includes(instanceStore.current?.accessProvider || '') && userStore.isAdmin"
                     type="primary" :disabled="instanceStore.current?.state?.value !== 'online'">{{ $t('Detail.index.957187-10') }}
                 </a-button>
 
@@ -131,7 +131,7 @@ import { openEdgeUrl } from '@/utils/utils';
 import { wsClient } from '@jetlinks-web/core';
 import { useRouterParams } from '@jetlinks-web/hooks';
 import { EventEmitter } from '@jetlinks-web/utils';
-import {useSystemStore, useMenuStore, useAuthStore, useAIStore} from '@/store';
+import { useSystemStore, useMenuStore, useAuthStore, useAIStore, useUserStore } from '@/store'
 import { isNoCommunity } from '@/utils/utils';
 import { device } from "../../../../assets";
 import { useI18n } from 'vue-i18n';
@@ -139,6 +139,7 @@ import { tabs } from './asyncComponent'
 
 const { t: $t } = useI18n();
 const menuStory = useMenuStore();
+const userStore = useUserStore();
 const { showThreshold } = useSystemStore();
 const route = useRoute();
 const routerParams = useRouterParams();
