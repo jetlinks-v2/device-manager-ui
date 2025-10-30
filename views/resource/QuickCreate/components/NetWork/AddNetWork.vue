@@ -557,7 +557,7 @@
                           class="form2-left form2-right"
                         >
                           <div style="width: 100%; height: 400px">
-                            <a-monaco-editor
+                            <monaco-editor
                               theme="vs"
                               v-model:modelValue="
                                 cluster.configuration.parserConfiguration.script
