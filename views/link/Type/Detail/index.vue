@@ -27,8 +27,8 @@
                   allowClear
                   show-search
                   :filter-option="filterOption"
+                  :disabled="typeDisabled || id !== ':id'"
                   @change="changeType"
-                  :disabled="!!NetworkType || id !== ':id'"
                 />
               </a-form-item>
             </a-col>
@@ -866,6 +866,13 @@ const typescriptTip = reactive({
   typescript: "",
 });
 
+const typeDisabled = computed(() => {
+  if (route.query.type) {
+    return !route.query.type.includes(',');
+  }
+  return false
+})
+
 const { onBack } = useTabSaveSuccessBack()
 
 const editorInit = (editor: any, monaco: any) => {
@@ -954,21 +961,21 @@ const getPortOptions = (portOptions: any, index = 0) => {
   if (!portOptions) return;
   const type = formData.value.type;
   const _port = filterConfigByType(cloneDeep(portOptions), type);
-  
+
   if (shareCluster.value) {
     // 当shareCluster为true时，计算所有主机端口的交集
     if (_port && _port.length > 0) {
       // 获取第一个主机的端口作为基准
       let intersection = _port[0].ports || [];
-      
+
       // 计算所有主机端口的交集
       for (let i = 1; i < _port.length; i++) {
         const currentPorts = _port[i].ports || [];
-        intersection = intersection.filter((port: any) => 
+        intersection = intersection.filter((port: any) =>
           currentPorts.includes(port)
         );
       }
-      
+
       portOptionsIndex.value[index] = intersection.map((p: any) => ({
         label: p,
         value: p,
@@ -1146,7 +1153,14 @@ const saveData = async () => {
 const getSupports = async () => {
   const res: any = await supports();
   if (res.status === 200) {
-    typeOptions.value = res.result.map((item: any) => ({
+    const queryTypeArr = route.query.type?.includes(',') && route.query.type.split(',')
+    typeOptions.value = res.result.filter(item => {
+      console.log(queryTypeArr)
+      if (queryTypeArr) {
+        return queryTypeArr.includes(item.id);
+      }
+      return true
+    }).map((item: any) => ({
       label: item.name,
       value: item.id,
     }));
@@ -1179,7 +1193,7 @@ const getResourcesCurrent =async () => {
   allResources().then((resp: any) => {
     if (resp.status === 200) {
       _typeStore.setConfigRef(resp.result || []);
-      
+
       const clusterNodeId = resp.result?.[0]?.clusterNodeId;
       const _resourcesClusters = cloneDeep(resourcesClusters.value || {});
       _resourcesClusters[clusterNodeId] = resp.result;
@@ -1287,11 +1301,16 @@ watch(
 watch(
   () => NetworkType,
   (value) => {
-    if (value) {
+    let _value = value
+    if (value && value.includes(',')) {
+      const arr = value.split(',');
+      _value = arr[0]
+    }
+    if (_value) {
       const { cluster } = dynamicValidateForm;
-      formData.value.type = value;
+      formData.value.type = _value;
       cluster[0].configuration.host = "0.0.0.0";
-      if (value === "MQTT_CLIENT" && isNoCommunity) {
+      if (_value === "MQTT_CLIENT" && isNoCommunity) {
         formData.value.shareCluster = false;
         changeShareCluster(formData.value.shareCluster);
       }
