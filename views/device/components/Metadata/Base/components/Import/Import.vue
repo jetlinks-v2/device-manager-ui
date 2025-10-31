@@ -45,7 +45,9 @@
                     @drop="handleDrop"
                 >
                     <div class="dragger-box">
+                      <div>
                         <AIcon class="icon" type="PlusCircleFilled" />
+                      </div>
                         <span style="margin: 16px 0 8px 0"
                         >{{ $t('Import.Import.317604-3') }}</span
                         >
