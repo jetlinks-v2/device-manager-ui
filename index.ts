@@ -90,30 +90,11 @@ const getExtraRoutesMap = () => {
 
 const getComponents = () => {
     return {
-        'department': [
-            {
-                name: 'product',
-                label: 'Department.index.945805-0',
-                component:  defineAsyncComponent(() => import('./views/department/product/index.vue'))
-            },
-            {
-                name: 'device',
-                label: 'Department.index.945805-1',
-                component: defineAsyncComponent(() => import('./views/department/device/index.vue'))
-            },
-        ],
-        'initHome': [
-            {
-                name: 'initData',
-                label: 'init-home.index.011072-23',
-                subLabel: 'init-home.index.011072-24',
-                component: defineAsyncComponent(() => import('./views/initData/index.vue'))
-            }
-        ]
     }
 }
 
 const register = () => {
+    console.log(registerSetting)
     moduleRegistry.register('device-manager-ui', registerSetting)
 }
 
