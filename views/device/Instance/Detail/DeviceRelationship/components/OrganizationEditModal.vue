@@ -94,14 +94,15 @@
 
 <script lang="ts" setup>
 import { useI18n } from 'vue-i18n'
-import { getTreeData_api } from '@authentication-manager-ui/api/system/department'
 import {bindDeviceToOrgAll} from '@device-manager-ui/api/instance'
 import { useRequest } from '@jetlinks-web/hooks'
 import { omit } from 'lodash-es'
 import { useInstanceStore } from '@device-manager-ui/store/instance'
 import { onlyMessage } from '@jetlinks-web/utils'
+import { moduleRegistry } from '@/utils/module-registry'
 
 const { t } = useI18n()
+const getTreeData_api = moduleRegistry.getResourceItem('authentication-manager-ui', 'apis', 'getTreeData_api')
 
 const props = defineProps({
   bindOrgList: {
