@@ -17,16 +17,19 @@
           :params="params"
       >
         <template #headerLeftRender>
-          <j-permission-button
-              type="primary"
-              @click="handleAdd"
-              hasPermission="link/plugin:add"
-          >
-            <template #icon>
-              <AIcon type="PlusOutlined"/>
-            </template>
-            {{ $t('plugin.index.293829-0') }}
-          </j-permission-button>
+          <a-space>
+            <slot name="headerLeftRender" />
+            <j-permission-button
+                type="primary"
+                @click="handleAdd"
+                :hasPermission="`${permissionKey}:add`"
+            >
+              <template #icon>
+                <AIcon type="PlusOutlined"/>
+              </template>
+              {{ $t('plugin.index.293829-0') }}
+            </j-permission-button>
+          </a-space>
         </template>
 
         <template #card="slotProps">
@@ -95,7 +98,7 @@
                                     ...item.tooltip,
                                 }"
                   @click="item.onClick"
-                  :hasPermission="'link/plugin:' + item.key"
+                  :hasPermission="permissionKey + ':' + item.key"
               >
                 <AIcon
                     type="DeleteOutlined"
@@ -128,7 +131,7 @@
                   type="link"
                   :danger="i.key === 'delete'"
                   style="padding: 0 5px"
-                  :hasPermission="'link/plugin:' + i.key"
+                  :hasPermission="permissionKey + ':' + i.key"
               >
                 <template #icon
                 >
@@ -154,6 +157,8 @@ import {TypeMap} from './util';
 import {link} from '../../../assets'
 import {useI18n} from 'vue-i18n';
 import Detail from './Detail.vue';
+import { usePluginPermission } from '@device-manager-ui/hooks/usePermission'
+import { mergeObjectArrays } from '@/utils'
 
 const {t: $t} = useI18n();
 const route = useRoute();
@@ -162,6 +167,7 @@ const params = ref<any>();
 const editData = ref();
 const instanceRef = ref();
 const visibleDetail = ref(false);
+const permissionKey = usePluginPermission()
 
 const columns = [
   {
@@ -263,7 +269,12 @@ const getActions = (data: any,type :string) => {
   if (!data) {
     return [];
   }
-  const actions =  [
+
+  const parentGetActions = inject('getActions', {}).getActions;
+
+  const parentActions = parentGetActions?.(data) || []
+
+  let actions =  [
     {
       key: 'update',
       text: $t('plugin.index.293829-8'),
@@ -312,6 +323,11 @@ const getActions = (data: any,type :string) => {
       icon: 'DeleteOutlined',
     },
   ];
+
+  if (parentActions && parentActions.length > 0) {
+    actions = mergeObjectArrays(actions, parentActions);
+  }
+
   if (type === 'card')
     return actions.filter((i: any) => i.key !== 'view');
   return actions;
@@ -321,6 +337,9 @@ onMounted(() => {
   if (route.query.save) {
     visible.value = true;
   }
+
+  const parentTableRef = inject('tableRef')
+  parentTableRef.initTableRef?.(instanceRef.value)
 });
 </script>
 
