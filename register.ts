@@ -7,7 +7,7 @@ export default {
   },
   components: {
     AccessCard: defineAsyncComponent(() => import('./views/link/AccessConfig/components/AccessCard/index.vue')),
-    pluginPage: defineAsyncComponent(() => import('./views/link/plugin/index.vue')),
+    pluginPage: defineAsyncComponent(() => import('./views/link/plugin/Content.vue')),
 
   },
   hooks: {
