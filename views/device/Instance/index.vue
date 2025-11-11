@@ -28,7 +28,9 @@
             >
                 <template #headerLeftRender>
                     <a-space>
+                        <slot name="instanceAdd"></slot>
                         <j-permission-button
+                            v-if="!slots.instanceAdd"
                             type="primary"
                             @click="handleAdd"
                             hasPermission="device/Instance:add"
@@ -231,9 +233,11 @@ import { device } from '../../../assets';
 import { isNoCommunity } from '@/utils/utils';
 import { useI18n } from 'vue-i18n';
 import { useTermOptions } from '@jetlinks-web/components/es/Search/hooks/useTermOptions'
+import { mergeObjectArrays } from '@/utils';
 
 const { t: $t } = useI18n();
 
+const slots = useSlots();
 const instanceRef = ref<Record<string, any>>({});
 const params = ref<Record<string, any>>({});
 const _selectedRowKeys = ref<string[]>([]);
@@ -523,8 +527,10 @@ const getActions = (
     data: Partial<Record<string, any>>,
     type: 'card' | 'table',
 ): ActionsType[] => {
+    const parentGetActions = inject('getActions', {}).getActions;
+    const parentActions = parentGetActions?.(data) || []
     if (!data) return [];
-    const actions = [
+    let actions = [
         {
             key: 'view',
             text: $t('Instance.index.133466-20'),
@@ -615,6 +621,9 @@ const getActions = (
             icon: 'DeleteOutlined',
         },
     ];
+    if (parentActions && parentActions.length > 0) {
+        actions = mergeObjectArrays(actions, parentActions);
+    }
     if (type === 'card')
         return actions.filter((i: ActionsType) => i.key !== 'view');
     return actions;
@@ -746,86 +755,93 @@ const disabledSelectedDevice = () => {
     return response;
 };
 
-const batchActions: BatchActionsType[] = [
-    {
-        key: 'export',
-        text: $t('Instance.index.133466-30'),
-        permission: 'device/Instance:export',
-        icon: 'ExportOutlined',
-        onClick: () => {
-            exportVisible.value = true;
-        },
-    },
-    {
-        key: 'import',
-        text: $t('Instance.index.133466-31'),
-        permission: 'device/Instance:import',
-        icon: 'ImportOutlined',
-        onClick: () => {
-            importVisible.value = true;
-        },
-    },
-    {
-        key: 'activeAll',
-        text: $t('Instance.index.133466-32'),
-        ghost: true,
-        type: 'primary',
-        permission: 'device/Instance:action',
-        icon: 'CheckCircleOutlined',
-        popConfirm: {
-            title: $t('Instance.index.133466-33'),
-            onConfirm: activeAllDevice,
-        },
-    },
-    {
-        key: 'sync',
-        text: $t('Instance.index.133466-34'),
-        type: 'primary',
-        ghost: true,
-        icon: 'SyncOutlined',
-        onClick: syncDeviceStatus,
-    },
-    {
-        key: 'delete',
-        text: $t('Instance.index.133466-35'),
-        danger: true,
-        permission: 'device/Instance:delete',
-        icon: 'DeleteOutlined',
-        selected: {
-            popConfirm: {
-                title: $t('Instance.index.133466-36'),
-                onConfirm: delSelectedDevice,
+const batchActions = computed((): BatchActionsType[] => {
+    let actions = [
+        {
+            key: 'export',
+            text: $t('Instance.index.133466-30'),
+            permission: 'device/Instance:export',
+            icon: 'ExportOutlined',
+            onClick: () => {
+                exportVisible.value = true;
             },
         },
-    },
-    // {
-    //     key: 'active',
-    //     text: '激活选中设备',
-    //     ghost: true,
-    //     type: 'primary',
-    //     icon: 'CheckOutlined',
-    //     permission: 'device/Instance:action',
-    //     selected: {
-    //         popConfirm: {
-    //             title: '确认激活选中设备',
-    //             onConfirm: activeSelectedDevice,
-    //         },
-    //     },
-    // },
-    {
-        key: 'disable',
-        text: $t('Instance.index.133466-37'),
-        danger: true,
-        icon: 'StopOutlined',
-        permission: 'device/Instance:action',
-        selected: {
-            popConfirm: {
-                title: $t('Instance.index.133466-38'),
-                onConfirm: disabledSelectedDevice,
+        {
+            key: 'import',
+            text: $t('Instance.index.133466-31'),
+            permission: 'device/Instance:import',
+            icon: 'ImportOutlined',
+            onClick: () => {
+                importVisible.value = true;
             },
         },
-    },
-];
+        {
+            key: 'activeAll',
+            text: $t('Instance.index.133466-32'),
+            ghost: true,
+            type: 'primary',
+            permission: 'device/Instance:action',
+            icon: 'CheckCircleOutlined',
+            popConfirm: {
+                title: $t('Instance.index.133466-33'),
+                onConfirm: activeAllDevice,
+            },
+        },
+        {
+            key: 'sync',
+            text: $t('Instance.index.133466-34'),
+            type: 'primary',
+            ghost: true,
+            icon: 'SyncOutlined',
+            onClick: syncDeviceStatus,
+        },
+        {
+            key: 'delete',
+            text: $t('Instance.index.133466-35'),
+            danger: true,
+            permission: 'device/Instance:delete',
+            icon: 'DeleteOutlined',
+            selected: {
+                popConfirm: {
+                    title: $t('Instance.index.133466-36'),
+                    onConfirm: delSelectedDevice,
+                },
+            },
+        },
+        // {
+        //     key: 'active',
+        //     text: '激活选中设备',
+        //     ghost: true,
+        //     type: 'primary',
+        //     icon: 'CheckOutlined',
+        //     permission: 'device/Instance:action',
+        //     selected: {
+        //         popConfirm: {
+        //             title: '确认激活选中设备',
+        //             onConfirm: activeSelectedDevice,
+        //         },
+        //     },
+        // },
+        {
+            key: 'disable',
+            text: $t('Instance.index.133466-37'),
+            danger: true,
+            icon: 'StopOutlined',
+            permission: 'device/Instance:action',
+            selected: {
+                popConfirm: {
+                    title: $t('Instance.index.133466-38'),
+                    onConfirm: disabledSelectedDevice,
+                },
+            },
+        },
+    ]
+    const parentActions = inject('getActions', {}).batchActions
+    if(parentActions && parentActions.length > 0) {
+        actions = mergeObjectArrays(actions, parentActions)
+    }
+    return actions
+});
 
 const saveBtn = () => {
     visible.value = false;
@@ -958,4 +974,10 @@ onMounted(() => {
         });
     }
 });
+
+defineExpose({
+    reload: () => instanceRef.value?.reload(),
+    activeAllDevice,
+    disabledSelectedDevice
+})
 </script>

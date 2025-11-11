@@ -1,6 +1,6 @@
 <template>
     <j-page-container
-        :tabList="list"
+        :tabList="tabList || list"
         :showBack="true"
         :tabActiveKey="instanceStore.tabActiveKey"
         @tabChange="onTabChange"
@@ -25,9 +25,11 @@
                         />
                         {{ instanceStore.current?.state?.text }}
                     </span>
+                    <slot v-if="instanceStore.current?.state?.value === 'notActive'" name="activeDevice"></slot>
                     <j-permission-button
                         v-if="
                             instanceStore.current?.state?.value === 'notActive'
+                            && !slots.activeDevice
                         "
                         type="link"
                         style="margin-top: -5px; padding: 0 20px"
@@ -39,8 +41,9 @@
                     >
                         {{ $t('Detail.index.957187-2') }}
                     </j-permission-button>
+                    <slot v-if="instanceStore.current?.state?.value === 'online'" name="activeDevice"></slot>
                     <j-permission-button
-                        v-if="instanceStore.current?.state?.value === 'online'"
+                        v-if="instanceStore.current?.state?.value === 'online' && !slots.disconnect"
                         type="link"
                         style="margin-top: -5px; padding: 0 20px"
                         :popConfirm="{
@@ -79,7 +82,9 @@
                     instanceStore.current?.id
                 }}</a-descriptions-item>
                 <a-descriptions-item :label="$t('Detail.index.957187-9')">
+                    <slot name="productName"></slot>
                     <j-permission-button
+                        v-if="!slots.productName"
                         type="link"
                         style="margin-top: -5px; padding: 0"
                         @click="jumpProduct"
@@ -144,6 +149,7 @@ const { showThreshold } = useSystemStore();
 const route = useRoute();
 const routerParams = useRouterParams();
 const instanceStore = useInstanceStore();
+const slots = useSlots();
 
 const statusMap = new Map();
 
@@ -153,6 +159,7 @@ statusMap.set('notActive', 'warning');
 
 const statusRef = ref();
 const componentRef = ref();
+const tabList = inject('tabList', [])
 
 const initList = [
     {
@@ -445,6 +452,12 @@ onUnmounted(() => {
     statusRef.value && statusRef.value.unsubscribe();
     aiStore.hideAiButton()
 });
+
+defineExpose({
+    handleAction,
+    handleDisconnect,
+    jumpProduct
+})
 </script>
 
 <style lang="less" scoped>

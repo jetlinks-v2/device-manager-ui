@@ -59,7 +59,7 @@
                         </a-form-item>
                     </a-col>
                 </a-row>
-                <a-form-item :label="$t('Save.index.912481-6')" name="classifiedId">
+                <a-form-item v-if="type === 'iot'" :label="$t('Save.index.912481-6')" name="classifiedId">
                     <a-tree-select
                         showSearch
                         v-model:value="form.classifiedId"
@@ -79,7 +79,7 @@
                         <template> </template>
                     </a-tree-select>
                 </a-form-item>
-                <a-form-item :label="$t('Save.index.912481-8')" name="deviceType">
+                <a-form-item v-if="type === 'iot'" :label="$t('Save.index.912481-8')" name="deviceType">
                     <j-card-select
                         v-model:value="form.deviceType"
                         :options="deviceList"
@@ -102,6 +102,42 @@
                         </template>
                     </j-card-select>
                 </a-form-item>
+                <a-form-item v-if="type === 'edge'" label="添加方式" name="type">
+                    <j-card-select
+                        :showImage="false"
+                        v-model:value="form.type"
+                        :disabled="isAdd === 2"
+                        :options="[
+                        {
+                            label: '自定义添加',
+                            value: 'custom',
+                            describe: '自定义从空白新增',
+                        },
+                        {
+                            label: '模板添加',
+                            value: 'template',
+                            describe: '从云端选择已有产品物模型',
+                        },
+                        ]"
+                        :column="2"
+                        @change="typeChange"
+                    />
+                    <div style="margin-top: 1rem; display: flex; gap: .75rem" v-if="form.type === 'template'">
+                        <a-input
+                            v-model:value="productName"
+                            :disabled="true"
+                            placeholder="请选择模板"
+                        >
+                        </a-input>
+                        <a-button
+                            @click="visibleClouds = true"
+                            type="primary"
+                            :disabled="isAdd === 2"
+                        >
+                            选择
+                        </a-button>
+                    </div>
+                    </a-form-item>
                 <a-form-item :label="$t('Save.index.912481-9')" name="description">
                     <a-textarea
                         :maxlength="200"
@@ -114,6 +150,11 @@
             </a-form>
         </div>
     </a-modal>
+    <SaveProductCloud
+        v-if="visibleClouds"
+        @close="visibleClouds = false"
+        @submit="choseCloudsProduct"
+    />
     <DialogTips ref="dialogRef" />
 </template>
 
@@ -128,6 +169,8 @@ import { isInput } from '@device-manager-ui/utils/utils';
 import type { Rule } from 'ant-design-vue/es/form';
 import { device } from '../../../../assets';
 import { useI18n } from 'vue-i18n';
+import { moduleRegistry } from '@/utils/module-registry';
+import { omit } from 'lodash-es';
 
 const { t: $t } = useI18n();
 
@@ -143,7 +186,13 @@ const props = defineProps({
         type: Number,
         default: 0,
     },
+    type: {
+        type: String,
+    }
 });
+const SaveProductCloud = ref(); //边端保存组件
+const visibleClouds = ref();
+const productName = ref();
 const loading = ref<boolean>(false);
 const dialogRef = ref();
 const treeList = ref<Record<string, any>[]>([]);
@@ -189,6 +238,10 @@ const form = reactive({
     deviceType: '',
     describe: undefined,
     photoUrl: device.deviceProduct,
+    type: 'custom',
+    masterProductId: undefined,
+    edgeMasterId: undefined,
+    metadata: undefined
 });
 /**
  * 校验id
@@ -221,6 +274,22 @@ const validateDeviceType = async (_rule: Rule, value: string) => {
         return Promise.resolve();
     }
 };
+
+/**
+ * 来自模板添加校验
+ */
+const validateType = async (_rule, value) => {
+  if (value === "template") {
+    if (productName.value) {
+      return Promise.resolve("");
+    } else {
+      return Promise.reject("请选择模板");
+    }
+  } else {
+    return Promise.resolve("");
+  }
+};
+
 const rules = reactive({
     id: [
         { validator: validateInput, trigger: 'blur' },
@@ -239,10 +308,25 @@ const rules = reactive({
     description: [
         { max: 200, message: $t('Save.index.912481-21'), trigger: 'blur' },
     ],
+    type: [
+        {
+            required: true,
+            message: "请选择添加类型",
+            trigger: "blur",
+        },
+        {
+            validator: validateType,
+            trigger: "change",
+        },
+    ],
 });
 
 const valueChange = (value: string, label: string) => {
     form.classifiedName = label[0];
+};
+
+const typeChange = () => {
+  formRef.value?.clearValidate();
 };
 /**
  * 查询产品分类
@@ -270,7 +354,7 @@ const dealProductTree = (arr: any) => {
 /**
  * 显示弹窗
  */
-const show = (data: any) => {
+const show = async (data: any) => {
     if (props.isAdd === 2) {
         productStore.refresh(data.id);
         form.name = data.name;
@@ -281,16 +365,41 @@ const show = (data: any) => {
         form.describe = data.describe;
         form.id = data.id;
         idDisabled.value = true;
+        form.type =
+        data?.masterProductId && data?.edgeMasterId
+            ? "template"
+            : "custom";
+        if (form.type === "template") {
+        const queryCloudsProduct = moduleRegistry.getResourceItem('jetlinks-edge-ui', 'apis', 'queryCloudsProduct')
+        const res = await queryCloudsProduct(data?.edgeMasterId, {
+            terms: [
+            {
+                type: "or",
+                value: data?.masterProductId,
+                termType: "eq",
+                column: "id",
+            },
+            ],
+        }).catch(() => {
+            productName.value = data?.masterProductId;
+        });
+        if (res.success) {
+            productName.value =
+            res.result?.data[0]?.name || data?.masterProductId;
+        }
+        }
     } else if (props.isAdd === 1) {
         productStore.reSet();
         form.name = '';
         form.classifiedId = undefined;
         form.classifiedName = '';
         form.photoUrl = device.deviceProduct;
-        form.deviceType = '';
+        form.deviceType = props.type === 'edge' ? 'childrenDevice' : '';
         form.describe = undefined;
         form.id = undefined;
         idDisabled.value = false;
+        form.type = 'custom';
+        productName.value = '';
     }
     visible.value = true;
 };
@@ -305,6 +414,15 @@ const { resetFields, validate, validateInfos, clearValidate } = useForm(
     form,
     rules,
 );
+//边端新增产品从云端选择产品
+const choseCloudsProduct = (data) => {
+    form.masterProductId = data.masterProductId;
+    form.edgeMasterId = data.edgeMasterId;
+    productName.value = data.productName;
+    form.metadata = data.metadata;
+    formRef.value.validateFields('type')
+    visibleClouds.value = false;
+};
 /**
  * 提交表单数据
  */
@@ -318,7 +436,7 @@ const submitData = () => {
                 if (form.id === '') {
                     form.id = undefined;
                 }
-                const res = await addProduct(form).finally(()=>{
+                const res = await addProduct(omit(toRaw(form), "type")).finally(()=>{
                     loading.value = false
                 });
                 if (res.success) {
@@ -355,6 +473,12 @@ queryProductTree();
 const changeDeviceType = (value: Array<string>) => {
     form.deviceType = value[0];
 };
+
+onMounted(() => {
+    if(props.type === 'edge') {
+        SaveProductCloud.value = moduleRegistry.getResourceItem('jetlinks-edge-ui', 'components', 'SaveProductCloud')
+    }
+})
 defineExpose({
     show: show,
 });

@@ -112,6 +112,24 @@
                     </a-select>
                 </a-form-item>
                 <a-form-item
+                    v-if="instancePageType === 'edge'"
+                    :name="['configuration', 'type']"
+                    label="创建方式"
+                >
+                <j-card-select
+                    :showImage="false"
+                    v-model:value="modelRef.configuration.type"
+                    :disabled="data.id"
+                    :options="[
+                        { label: '本地创建', value: 'local' },
+                        { label: '云端同步创建', value: 'cloud', disabled: (!modelRef.productId || !modelRef.masterProductId) || disabled  },
+                    ]"
+                    :column="3"
+                />
+                <div class="text" v-if="modelRef.configuration?.type === 'local'">仅在本地创建设备</div>
+                <div class="text" v-if="modelRef.configuration?.type === 'cloud'">本地设备创建成功后，将会自动在云端自动创建相应设备，并自动映射</div>
+                </a-form-item>
+                <a-form-item
                     :label="$t('Save.index.902471-12')"
                     name="describe"
                     :rules="[
@@ -140,10 +158,12 @@ import { onlyMessage } from '@jetlinks-web/utils';
 import { device} from "../../../../assets";
 import { useI18n } from 'vue-i18n';
 import { isInput } from '@device-manager-ui/utils/utils';
+import { moduleRegistry } from '@/utils/module-registry';
 
 const { t: $t } = useI18n();
 
 const emit = defineEmits(['close', 'save']);
+const instancePageType = inject('type', 'iot')
 const props = defineProps({
     data: {
         type: Object,
@@ -160,6 +180,11 @@ const modelRef = reactive({
     id: undefined,
     name: '',
     describe: '',
+    configuration: {
+        type: 'local',
+    },
+    masterProductId: undefined,
+    masterId: undefined,
     photoUrl: props.data.devicePhotoUrl || device.deviceCard,
 });
 
@@ -182,6 +207,9 @@ const vailId = async (_: Record<string, any>, value: string) => {
 
 const onChange = (val: any) => {
   const item = productList.value.find(i => i.id === val)
+  modelRef.masterProductId = item.masterProductId
+  modelRef.masterId = item.edgeMasterId
+  modelRef.configuration.type = 'local'
   if(!props.data?.id){
     modelRef.photoUrl = item?.photoUrl || device.deviceCard
   }
@@ -226,17 +254,33 @@ const handleSave = () => {
         .validate()
         .then(async (_data: any) => {
             loading.value = true;
-            const obj = { ..._data };
+            const obj = { ...modelRef };
             if (!obj.id) {
                 delete obj.id;
             }
             const resp = await update(obj).finally(() => {
                 loading.value = false;
             });
-            if (resp.status === 200) {
-                onlyMessage($t('Save.index.902471-16'));
-                emit('save');
-                formRef.value.resetFields();
+            if (resp.success) {
+                if (!props.data?.id && obj.configuration?.type === 'cloud' && resp.result?.id && obj.masterProductId) {
+                    debugger
+                    const deviceCloudSave = moduleRegistry.getResourceItem('jetlinks-edge-ui', 'apis', 'deviceCloudSave')
+                    const response = await deviceCloudSave({
+                        masterProductId: modelRef.masterProductId,
+                        deviceId: resp.result?.id,
+                        masterId: modelRef.masterId,
+                        masterDeviceName: resp.result?.name,
+                        masterAutoCreate: true
+                    }).finally(() => {
+                        emit('save', !props.data.id, resp.result);
+                    })
+                    if (response.success) {
+                        onlyMessage('操作成功！');
+                    }
+                } else {
+                    onlyMessage('操作成功！');
+                    emit('save', !isEdit.value, resp.result);
+                }
             }
         })
         .catch((err: any) => {

@@ -29,7 +29,7 @@
               {{ $t("Product.index.660348-0") }}
             </j-permission-button>
             <j-permission-button
-              v-if="isNoCommunity"
+              v-if="isNoCommunity && type === 'iot'"
               hasPermission="device/Product:add"
               @click="menuStory.jumpPage('device/Product/QuickCreate', {})"
             >
@@ -106,7 +106,7 @@
                   ...item.tooltip,
                 }"
                 @click="item.onClick"
-                :hasPermission="
+                :hasPermission="item.permission ||
                   item.key === 'view' ? true : 'device/Product:' + item.key
                 "
               >
@@ -139,7 +139,7 @@
               <j-permission-button
                 :disabled="i.disabled"
                 :popConfirm="i.popConfirm"
-                :hasPermission="
+                :hasPermission="i.permission || 
                   i.key === 'view' ? true : 'device/Product:' + i.key
                 "
                 :tooltip="{
@@ -160,7 +160,7 @@
       </JProTable>
     </FullPage>
     <!-- {{ $t('Product.index.660348-0') }}、{{ $t('Product.index.660348-13') }} -->
-    <Save ref="saveRef" :isAdd="isAdd" :title="title" @success="refresh" />
+    <Save ref="saveRef" :isAdd="isAdd" :type="type" :title="title" @success="refresh" ></Save>
 
     <!-- 同步缓存组件 -->
     <SyncCache v-if="syncCacheVisible" :params="params" @success="refresh" @close="syncCacheVisible = false"/>
@@ -180,7 +180,7 @@ import {
   deleteProduct,
   updateDevice,
 } from "../../../api/product";
-import { downloadJson, accessConfigTypeFilter, isNoCommunity } from "@/utils";
+import { downloadJson, accessConfigTypeFilter, isNoCommunity, mergeObjectArrays } from "@/utils";
 import { omit, cloneDeep } from "lodash-es";
 import Save from "./Save/index.vue";
 import SyncCache from "./components/SyncCache.vue";
@@ -195,6 +195,13 @@ import BatchDropdown from "@/components/BatchDropdown/index.vue";
 
 const { t: $t } = useI18n();
 
+const slots = useSlots();
+const props = defineProps({
+  type: {
+    type: String,
+    default: 'iot'
+  }
+})
 /**
  * 表格数据
  */
@@ -277,36 +284,41 @@ const currentForm = ref({});
 const syncCacheVisible = ref(false)
 
 // 批量操作配置
-const batchActions = ref([
-  {
-    key: 'import',
-    text: $t("Product.index.660348-1"),
-    icon: 'UploadOutlined',
-    permission: 'device/Product:import',
-    onClick: () => {
-      // 触发文件选择
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = '.json';
-      input.onchange = (e: any) => {
-        const file = e.target.files[0];
-        if (file) {
-          beforeUpload(file);
-        }
-      };
-      input.click();
+const batchActions = computed(() => {
+  const arr = [
+    {
+      key: 'import',
+      text: $t("Product.index.660348-1"),
+      icon: 'UploadOutlined',
+      permission: props.type === 'iot' ? 'device/Product:import' : true,
+      onClick: () => {
+        // 触发文件选择
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = (e: any) => {
+          const file = e.target.files[0];
+          if (file) {
+            beforeUpload(file);
+          }
+        };
+        input.click();
+      }
     }
-  },
-  {
-    key: 'syncCache',
-    text: '同步缓存',
-    icon: 'SyncOutlined',
-    permission: 'device/Product:update',
-    onClick: () => {
-      syncCacheVisible.value = true;
-    }
+  ]
+  if(props.type === 'iot') {
+    arr.push({
+      key: 'syncCache',
+      text: '同步缓存',
+      icon: 'SyncOutlined',
+      permission: 'device/Product:update',
+      onClick: () => {
+        syncCacheVisible.value = true;
+      }
+    })
   }
-]);
+  return arr
+});
 
 const getActions = (
   data: Partial<Record<string, any>>,
@@ -315,7 +327,9 @@ const getActions = (
   if (!data) {
     return [];
   }
-  const actions = [
+  const parentGetActions = inject('getActions', {}).getActions;
+  const parentActions = parentGetActions?.(data);
+  let actions = [
     {
       key: "view",
       text: $t("Product.index.660348-12"),
@@ -425,6 +439,9 @@ const getActions = (
       icon: "DeleteOutlined",
     },
   ];
+  if (parentActions && parentActions.length > 0) {
+    actions = mergeObjectArrays(actions, parentActions)
+  }
   if (type === "card") return actions.filter((i: any) => i.key !== "view");
   return actions;
 };
