@@ -299,9 +299,9 @@ const getProtocol = async () => {
             list.value.push({ key: 'MetadataMap', tab: $t('Detail.index.478940-15') });
         }
         if (
-            permissionStore.hasPermission(
+            (permissionStore.hasPermission(
                 'rule-engine/Alarm/Log:view',
-            ) &&
+            ) || menuStory.hasMenu('alarm/records')) &&
             showThreshold
         ) {
             list.value.push({
