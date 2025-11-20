@@ -791,3 +791,8 @@ export const downloadAnalyzeMetadataTemplate = (format: string) => request.get(`
  * @param autoCreate 是否自动创建
  */
 export const importAnalyzeMetadata = (deviceId: string, fileUrl: string, autoCreate: boolean) => ndJson.get(`/device/instance/${deviceId}/property/point/import?fileUrl=${fileUrl}&autoCreate=${autoCreate}`)
+
+/**
+ * 创建云端设备
+ */
+export const deviceCloudSave = (data: any) => request.post(`/edge/command/BindMasterDevice/_execute`, data)

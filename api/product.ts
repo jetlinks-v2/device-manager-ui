@@ -235,5 +235,10 @@ export const syncProductCache = () => ndJson.post('/device/product/batch/_deploy
  */
 export const getProductCount = (data: any) => request.post('/device/product/_count', data)
 
+//查询北向连接列表不分页
+export const queryNorthList = (data:Object) => request.post(`/edge/master/detail/_query/no-paging`,data)
 
-
+/**
+ * 查询云端产品列表
+ */
+export const queryCloudsProduct = (masterId:string,data:any) => request.post(`/edge/master/${masterId}/command/deviceService:product/QueryPager`,data)

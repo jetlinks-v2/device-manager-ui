@@ -171,6 +171,7 @@ import { device } from '../../../../assets';
 import { useI18n } from 'vue-i18n';
 import { moduleRegistry } from '@/utils/module-registry';
 import { omit } from 'lodash-es';
+import SaveProductCloud from './SaveProductCloud.vue';
 
 const { t: $t } = useI18n();
 
@@ -190,7 +191,6 @@ const props = defineProps({
         type: String,
     }
 });
-const SaveProductCloud = ref(); //边端保存组件
 const visibleClouds = ref();
 const productName = ref();
 const loading = ref<boolean>(false);
@@ -474,11 +474,6 @@ const changeDeviceType = (value: Array<string>) => {
     form.deviceType = value[0];
 };
 
-onMounted(() => {
-    if(props.type === 'edge') {
-        SaveProductCloud.value = moduleRegistry.getResourceItem('jetlinks-edge-ui', 'components', 'SaveProductCloud')
-    }
-})
 defineExpose({
     show: show,
 });
