@@ -59,7 +59,6 @@
                 { column: 'state', value: 1 },
               ],
             }"
-            :getImage="getImage"
             :imageStyle="{
               width: '2.5rem',
               height: '2.5rem',
@@ -92,7 +91,6 @@
 
 <script setup>
 import { queryNorthList, queryCloudsProduct, getProviders } from "@device-manager-ui/api/product";
-import { productImages } from "@/assets";
 const emits = defineEmits(["close", "submit"]);
 const northList = ref([]);
 const northCurrent = ref();
@@ -101,7 +99,6 @@ const selectedRowKeys = ref([]);
 const tableRef = ref();
 const params = ref({});
 const providers = ref([]);
-const getImage = (record) => record?.photoUrl || productImages.product;
 
 const columns = computed(() => {
   return [
