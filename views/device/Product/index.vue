@@ -139,7 +139,7 @@
               <j-permission-button
                 :disabled="i.disabled"
                 :popConfirm="i.popConfirm"
-                :hasPermission="i.permission || 
+                :hasPermission="i.permission ||
                   i.key === 'view' ? true : 'device/Product:' + i.key
                 "
                 :tooltip="{
@@ -192,16 +192,12 @@ import { accessType } from "../data";
 import { useI18n } from "vue-i18n";
 import { useTermOptions } from '@jetlinks-web/components/es/Search/hooks/useTermOptions'
 import BatchDropdown from "@/components/BatchDropdown/index.vue";
+import { useMircoAppData } from '@/hooks/useMircoApp'
 
 const { t: $t } = useI18n();
 
 const slots = useSlots();
-const props = defineProps({
-  type: {
-    type: String,
-    default: 'iot'
-  }
-})
+const { data: type } = useMircoAppData('platformName')
 /**
  * 表格数据
  */
@@ -290,7 +286,7 @@ const batchActions = computed(() => {
       key: 'import',
       text: $t("Product.index.660348-1"),
       icon: 'UploadOutlined',
-      permission: props.type === 'iot' ? 'device/Product:import' : true,
+      permission: type === 'iot' ? 'device/Product:import' : true,
       onClick: () => {
         // 触发文件选择
         const input = document.createElement('input');
@@ -306,7 +302,7 @@ const batchActions = computed(() => {
       }
     }
   ]
-  if(props.type === 'iot') {
+  if(type === 'iot') {
     arr.push({
       key: 'syncCache',
       text: '同步缓存',
@@ -365,7 +361,6 @@ const getActions = (
 
       icon: "icon-xiazai",
       onClick: () => {
-        console.log(data);
         const extra = omit(data, [
           "transportProtocol",
           "protocolName",
