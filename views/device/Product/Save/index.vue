@@ -159,17 +159,16 @@
 </template>
 
 <script lang="ts" setup>
-import { category, queryProductId, addProduct, editProduct } from '../../../../api/product';
+import { category, queryProductId, addProduct, editProduct, queryCloudsProduct } from '@device-manager-ui/api/product';
 import { Form } from 'ant-design-vue';
 import DialogTips from '../DialogTips/index.vue';
-import { useProductStore } from '../../../../store/product';
+import { useProductStore } from '@device-manager-ui/store/product';
 import { filterSelectNode, encodeQuery } from '@/utils';
 import { onlyMessage } from '@jetlinks-web/utils'
 import { isInput } from '@device-manager-ui/utils/utils';
 import type { Rule } from 'ant-design-vue/es/form';
-import { device } from '../../../../assets';
+import { device } from '@device-manager-ui/assets';
 import { useI18n } from 'vue-i18n';
-import { moduleRegistry } from '@/utils/module-registry';
 import { omit } from 'lodash-es';
 import SaveProductCloud from './SaveProductCloud.vue';
 
@@ -370,7 +369,6 @@ const show = async (data: any) => {
             ? "template"
             : "custom";
         if (form.type === "template") {
-        const queryCloudsProduct = moduleRegistry.getResourceItem('jetlinks-edge-ui', 'apis', 'queryCloudsProduct')
         const res = await queryCloudsProduct(data?.edgeMasterId, {
             terms: [
             {
