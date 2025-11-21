@@ -1,6 +1,6 @@
 <template>
     <j-page-container
-        :tabList="tabList || list"
+        :tabList="list"
         :showBack="true"
         :tabActiveKey="instanceStore.tabActiveKey"
         @tabChange="onTabChange"
@@ -141,6 +141,9 @@ import { isNoCommunity } from '@/utils/utils';
 import { device } from "../../../../assets";
 import { useI18n } from 'vue-i18n';
 import { tabs } from './asyncComponent'
+import { useMircoAppData } from '@/hooks/useMircoApp';
+
+const { data: platform } = useMircoAppData('platformName')
 
 const { t: $t } = useI18n();
 const menuStory = useMenuStore();
@@ -159,7 +162,6 @@ statusMap.set('notActive', 'warning');
 
 const statusRef = ref();
 const componentRef = ref();
-const tabList = inject('tabList', [])
 
 const initList = [
     {
@@ -182,13 +184,9 @@ const initList = [
         key: 'Log',
         tab: $t('Detail.index.957187-15'),
     },
-    {
-        key: 'DeviceRelationship',
-        tab: '设备关系',
-    },
 ];
 
-const list = ref([...initList]);
+const list = ref([...initList, ]);
 const isRefresh = ref(false)
 const aiStore = useAIStore()
 const permissionStore = useAuthStore();
@@ -213,6 +211,12 @@ const getStatus = (id: string) => {
 };
 
 const getDetail = () => {
+    if(platform !== 'edge'){
+        list.value.push({
+            key: 'DeviceRelationship',
+            tab: $t('Detail.index.957187-22'),
+        });
+    }
     const keys = list.value.map((i) => i.key);
     if (permissionStore.hasPermission('rule-engine/Alarm/Log:view') && showThreshold) {
         list.value.push({
