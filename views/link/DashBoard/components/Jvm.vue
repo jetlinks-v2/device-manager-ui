@@ -36,7 +36,7 @@
                 />
               <template v-else>
                 <div style="height: 300px">
-                  <Echarts
+                  <JEcharts
                       :options="echartsOptions"
                   />
                 </div>
