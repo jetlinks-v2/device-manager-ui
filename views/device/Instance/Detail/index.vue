@@ -214,7 +214,7 @@ const getDetail = () => {
     if(platform !== 'edge'){
         list.value.push({
             key: 'DeviceRelationship',
-            tab: $t('Detail.index.957187-22'),
+            tab: $t('Detail.index.957187-31'),
         });
     }
     const keys = list.value.map((i) => i.key);
