@@ -35,7 +35,7 @@
             <a-form-item :label="$t('Import.Import.317604-2')">
                 <a-upload-dragger
                     name="file"
-                    :headers="{ [TOKEN_KEY]: LocalStore.get(TOKEN_KEY) }"
+                    :headers="getUploadHeaders()"
                     :maxCount="1"
                     :accept="'.xlsx,.csv'"
                     :showUploadList="showUploadList"
@@ -45,7 +45,9 @@
                     @drop="handleDrop"
                 >
                     <div class="dragger-box">
+                      <div>
                         <AIcon class="icon" type="PlusCircleFilled" />
+                      </div>
                         <span style="margin: 16px 0 8px 0"
                         >{{ $t('Import.Import.317604-3') }}</span
                         >
@@ -71,10 +73,10 @@
 </template>
 
 <script setup name="MetadataImport">
-import {TOKEN_KEY, TOKEN_KEY_URL} from '@jetlinks-web/constants';
-import {getToken, LocalStore, onlyMessage, downloadFileByUrl} from '@jetlinks-web/utils';
+import {TOKEN_KEY_URL} from '@jetlinks-web/constants';
+import {getToken, onlyMessage, downloadFileByUrl} from '@jetlinks-web/utils';
 import {validate} from './util'
-import { isFullScreen } from '@/utils'
+import {getUploadHeaders, isFullScreen} from '@/utils'
 import { getTemplate, uploadAnalyzeMetadata} from '../../../../../../../api/instance'
 import {getTemplate as getProductTemplate} from '../../../../../../../api/product'
 import {useGroupActive, useTableWrapper} from "../../../../../../../components/Metadata/context";

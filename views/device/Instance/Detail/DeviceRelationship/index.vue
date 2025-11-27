@@ -134,11 +134,11 @@ import OrganizationEditModal from './components/OrganizationEditModal.vue'
 import GroupEditModal from './components/GroupEditModal.vue'
 import TreeList from './components/TreeList.vue'
 import {useInstanceStore} from "@device-manager-ui/store/instance";
-import { getTreeData_api } from '@authentication-manager-ui/api/system/department'
 import { getOrgList, getBindOrgAuthList } from '@device-manager-ui/api/instance'
 import { useRequest } from '@jetlinks-web/hooks'
-import {getBindingsPermission} from "@device-manager-ui/api/department";
+import { moduleRegistry } from '@/utils/module-registry'
 
+const getTreeData_api = moduleRegistry.getResourceItem('authentication-manager-ui', 'apis', 'getTreeData_api')
 const instanceStore = useInstanceStore();
 const treeView = ref('tree')
 const groupTreeView = ref(true)

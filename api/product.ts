@@ -1,7 +1,7 @@
 import { request, ndJson } from '@jetlinks-web/core'
 import type { DeviceMetadata, ProductItem, DepartmentItem, MetadataType  } from '../views/device/Product/typings'
 import type { OperatorItem } from '../components/FRuleEditor/Operator/typings'
-import {BASE_API} from "@jetlinks-web/constants";
+import {getBaseApi} from "@/utils";
 
 /**
  * 根据条件查询产品（不带翻页）
@@ -220,7 +220,7 @@ export const saveProductVirtualProperty = (productId: string, data: any[]) => re
 
 export const queryProductVirtualProperty = (productId: string, propertyId: string) => request.get(`/virtual/property/product/${productId}/${propertyId}`)
 
-export const getTemplate = (id: string, format: string) => `${BASE_API}/device/product/${id}/property-metadata/template.${format}`
+export const getTemplate = (id: string, format: string) => `${getBaseApi()}/device/product/${id}/property-metadata/template.${format}`
 
 export const getFileType = () => request.get(`/file/media/types`)
 
@@ -235,5 +235,10 @@ export const syncProductCache = () => ndJson.post('/device/product/batch/_deploy
  */
 export const getProductCount = (data: any) => request.post('/device/product/_count', data)
 
+//查询北向连接列表不分页
+export const queryNorthList = (data:Object) => request.post(`/edge/master/detail/_query/no-paging`,data)
 
-
+/**
+ * 查询云端产品列表
+ */
+export const queryCloudsProduct = (masterId:string,data:any) => request.post(`/edge/master/${masterId}/command/deviceService:product/QueryPager`,data)

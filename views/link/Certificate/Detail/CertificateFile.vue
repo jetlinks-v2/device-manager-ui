@@ -9,10 +9,8 @@
         <a-upload
             :accept="accept"
             listType="text"
-            :action="NETWORK_CERTIFICATE_UPLOAD"
-            :headers="{
-                [TOKEN_KEY]: LocalStore.get(TOKEN_KEY),
-            }"
+            :action="NETWORK_CERTIFICATE_UPLOAD()"
+            :headers="getUploadHeaders()"
             :showUploadList="false"
             @change="handleChange"
         >
@@ -25,10 +23,8 @@
 </template>
 
 <script setup lang="ts" name="CertificateFile">
-import { onlyMessage } from '@/utils/comm';
+import {getUploadHeaders, onlyMessage} from '@/utils/comm';
 import type { UploadChangeParam } from 'ant-design-vue';
-import { LocalStore } from '@jetlinks-web/utils';
-import { TOKEN_KEY } from '@jetlinks-web/constants';
 import { NETWORK_CERTIFICATE_UPLOAD } from '../../../../api/link/certificate';
 import { useI18n } from 'vue-i18n';
 

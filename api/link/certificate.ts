@@ -1,8 +1,7 @@
 import { request } from '@jetlinks-web/core'
-import { BASE_API } from '@jetlinks-web/constants';
+import {getBaseApi} from "@/utils";
 
-export const NETWORK_CERTIFICATE_UPLOAD = `${BASE_API}/network/certificate/upload`;
-
+export const NETWORK_CERTIFICATE_UPLOAD = () => `${getBaseApi()}/network/certificate/upload`;
 
 export const save = (data: object) => request.post(`/network/certificate`, data);
 
