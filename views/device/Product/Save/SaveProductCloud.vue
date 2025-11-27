@@ -45,7 +45,7 @@
           target="device-product-cloud"
           @search="handleSearch"
         ></pro-search>
-        <div style="height: calc(100% - 3rem)">
+        <div style="height: calc(100% - 3rem);">
           <j-pro-table
             mode="TABLE"
             :request="queryProduct"
@@ -70,6 +70,7 @@
               type: 'radio',
             }"
             ref="tableRef"
+            style="box-sizing: border-box;"
             >
               <template #state="record">
                 <j-badge-status
@@ -212,9 +213,10 @@ onMounted(() => {
 <style lang="less" scoped>
 .container {
   display: flex;
+  gap: 16px;
+
   .container_left {
-    flex: 1;
-    //border: 0.0625rem solid #ededed;
+    width: 300px;
     padding: 0.25rem;
     overflow: auto;
     .northItem {
@@ -232,9 +234,9 @@ onMounted(() => {
     }
   }
   .container_right {
-    flex: 3;
-    padding: 1rem;
-    overflow: auto;
+    flex: 1;
+    min-width: 0;
+    //padding: 1rem;
     height: 100%;
   }
 }
