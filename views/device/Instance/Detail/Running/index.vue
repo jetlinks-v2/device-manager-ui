@@ -32,7 +32,7 @@
             <JEmpty v-else style="margin: 180px 0" />
         </div>
         <div class="property-box-right">
-            <Event v-if="type === 'event'" :data="data" />
+            <Event v-if="type === 'event'" :data="data" :key="activeKey"/>
             <Property v-else-if="type === 'property'" :data="properties" />
             <JEmpty v-else style="margin: 220px 0" />
         </div>
