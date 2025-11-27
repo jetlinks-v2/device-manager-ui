@@ -137,7 +137,7 @@
                     :before-upload="beforeUpload"
                     accept=".json"
                     :show-upload-list="false"
-                    :action="FileStaticPath"
+                    :action="FileStaticPath()"
                     :headers="{ [TOKEN_KEY]: getToken() }"
                     @change="fileChange"
                 >

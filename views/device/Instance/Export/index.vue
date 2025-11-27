@@ -120,7 +120,7 @@ const handleOk = async () => {
         urlParams.append(key, _params[key])
       }
     })
-    const url =  modelRef.product ?  `${origin}/api/device-instance/${modelRef.product}/export.xlsx?${TOKEN_KEY_URL}=${LocalStore.get(TOKEN_KEY)}&${urlParams}` :  `${origin}/api/device-instance/export.xlsx?${TOKEN_KEY_URL}=${LocalStore.get(TOKEN_KEY)}&${urlParams}`
+    const url =  modelRef.product ?  `${origin}/api/device-instance/${modelRef.product}/export.xlsx?${TOKEN_KEY_URL}=${getToken()}&${urlParams}` :  `${origin}/api/device-instance/export.xlsx?${TOKEN_KEY_URL}=${LocalStore.get(TOKEN_KEY)}&${urlParams}`
     window.open(url)
     emit('close');
 

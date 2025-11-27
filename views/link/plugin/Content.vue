@@ -337,7 +337,7 @@ onMounted(() => {
   }
 
   const parentTableRef = inject('tableRef')
-  parentTableRef.initTableRef?.(instanceRef.value)
+  parentTableRef?.initTableRef?.(instanceRef.value)
 });
 </script>
 

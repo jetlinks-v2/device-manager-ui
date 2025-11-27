@@ -1,7 +1,8 @@
 import { Observable } from 'rxjs'
-import { BASE_API } from '@jetlinks-web/constants';
 import { notification } from 'ant-design-vue';
 import { getToken } from '@jetlinks-web/utils';
+import {getBaseApi} from "@/utils";
+import {TOKEN_KEY_URL} from "@jetlinks-web/constants";
 
 let ws: any = null
 let count = 0 // 重连计数
@@ -20,7 +21,7 @@ export const initWebSocket = (id: string) => {
     if (ws) {
         return ws
     }
-    const url = `${document.location.protocol.replace('http', 'ws')}//${document.location.host}${BASE_API}/edge/device/${id}/_ws/messaging/${token}?:X_Access_Token=${token}`;
+    const url = `${document.location.protocol.replace('http', 'ws')}//${document.location.host}${getBaseApi()}/edge/device/${id}/_ws/messaging/${token}?${TOKEN_KEY_URL}=${token}`;
     if (count < total) {
         count += 1
         ws = new WebSocket(url)

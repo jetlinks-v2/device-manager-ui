@@ -1,8 +1,9 @@
 import { request, ndJson } from '@jetlinks-web/core'
 import {getToken} from '@jetlinks-web/utils'
-import {BASE_API, TOKEN_KEY_URL} from '@jetlinks-web/constants'
+import {TOKEN_KEY_URL} from '@jetlinks-web/constants'
 import type { DeviceInstance } from '../views/device/Instance/typings'
 import type { DeviceMetadata, UnitType } from '../views/device/Product/typings';
+import {getBaseApi} from "@/utils";
 
 /**
  * 重置设备继承产品的物模型规则
@@ -96,7 +97,7 @@ export const batchDeleteDevice = (data: string[]) => request.put(`/device-instan
  * @param type 文件类型
  * @returns
  */
-export const deviceTemplateDownload = (productId: string, type: string) => `${BASE_API}/device-instance/${productId}/template.${type}`
+export const deviceTemplateDownload = (productId: string, type: string) => `${getBaseApi()}/device-instance/${productId}/template.${type}`
 
 export const templateDownload = (productId: string, type: string) => request.get(`/device-instance/${productId}/template.${type}`, {}, { responseType: 'blob' })
 /**
@@ -105,7 +106,7 @@ export const templateDownload = (productId: string, type: string) => request.get
  * @param type 文件类型
  * @returns
  */
-export const deviceImport = (productId: string, fileUrl: string, autoDeploy: boolean) => `${BASE_API}/device-instance/${productId}/import/_withlog?fileUrl=${fileUrl}&autoDeploy=${autoDeploy}&${TOKEN_KEY_URL}=${getToken()}`
+export const deviceImport = (productId: string, fileUrl: string, autoDeploy: boolean) => `${getBaseApi()}/device-instance/${productId}/import/_withlog?fileUrl=${fileUrl}&autoDeploy=${autoDeploy}&${TOKEN_KEY_URL}=${getToken()}`
 
 /**
  * 插件设备导入
@@ -113,7 +114,7 @@ export const deviceImport = (productId: string, fileUrl: string, autoDeploy: boo
  * @param type 文件类型
  * @returns
  */
-export const pluginDeviceImport = (productId: string, fileUrl: string, autoDeploy: boolean) => `${BASE_API}/device/instance/plugin/${productId}/import/_withlog?fileUrl=${fileUrl}&autoDeploy=${autoDeploy}&${TOKEN_KEY_URL}=${getToken()}`
+export const pluginDeviceImport = (productId: string, fileUrl: string, autoDeploy: boolean) => `${getBaseApi()}/device/instance/plugin/${productId}/import/_withlog?fileUrl=${fileUrl}&autoDeploy=${autoDeploy}&${TOKEN_KEY_URL}=${getToken()}`
 
 /**
  * 设备导出
@@ -122,7 +123,7 @@ export const pluginDeviceImport = (productId: string, fileUrl: string, autoDeplo
  * @returns
  */
 export const deviceExport = (productId: string, type: string, params?: any) => request.get(`/device-instance${!!productId ? `/${productId}` : ''}/export.${type}`, params, {responseType: 'blob'})
-export const deviceExportPath = (productId: string, type: string) => (`${BASE_API}/device-instance${!!productId ? `/${productId}` : ''}/export.${type}`)
+export const deviceExportPath = (productId: string, type: string) => (`${getBaseApi()}/device-instance${!!productId ? `/${productId}` : ''}/export.${type}`)
 /**
  * 验证设备ID是否重复
  * @param id 设备id
@@ -713,7 +714,7 @@ export const deleteProductThreshold = (productId:string,propertyId:string,data:a
  */
 export const deleteDeviceThreshold = (productId:string,deviceId:string,propertyId:string,data:any) => request.remove(`/message/preprocessor/device/${productId}/${deviceId}/property/${propertyId}`,data)
 
-export const getTemplate = (id: string, format: string) => `${BASE_API}/device/instance/${id}/property-metadata/template.${format}`
+export const getTemplate = (id: string, format: string) => `${getBaseApi()}/device/instance/${id}/property-metadata/template.${format}`
 
 export const uploadAnalyzeMetadata = (productId:string,data: any) => request.post(`/device/instance/${productId}/property-metadata/file/analyze`, data)
 

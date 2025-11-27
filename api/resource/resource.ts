@@ -1,7 +1,7 @@
 import { request } from '@jetlinks-web/core'
-const BASE_API_PATH = import.meta.env.VITE_APP_BASE_API
+import {getBaseApi} from "@/utils";
 
-export const RESOURCE_UPLOAD = `${BASE_API_PATH}/resources/install/task/_upload`;
+export const RESOURCE_UPLOAD = () => `${getBaseApi()}/resources/install/task/_upload`;
 
 export const queryCollector = (data: any) =>
     request.post(`/data-collect/collector/_query`, data);

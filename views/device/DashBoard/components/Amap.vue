@@ -17,12 +17,12 @@
 import {ElAmapMarkerCluster} from "@vuemap/vue-amap";
 import { getCenterPoint } from "../../../../utils/map";
 import { EventSourcePolyfill } from 'event-source-polyfill';
-import { TOKEN_KEY } from "@jetlinks-web/constants";
+import {TOKEN_KEY, TOKEN_KEY_URL} from "@jetlinks-web/constants";
 import { LocalStore } from "@jetlinks-web/utils";
 import markerPng from '@device-manager-ui/assets/marker.png'
 import { debounce } from 'lodash-es'
+import {getBaseApi} from "@/utils";
 
-const BASE_API_PATH = import.meta.env.VITE_APP_BASE_API
 const deviceList = ref([])
 const _pageSize = 5000
 const loading = reactive({
@@ -77,7 +77,7 @@ const closeLoading = debounce(() => {
 
 const queryDeviceGeoJson = async () => {
     source = new EventSourcePolyfill(
-        `${BASE_API_PATH}/geo/object/device/_search/geo.json?:X_Access_Token=${LocalStore.get(
+        `${getBaseApi()}/geo/object/device/_search/geo.json?${TOKEN_KEY_URL}=${LocalStore.get(
             TOKEN_KEY,
         )}&filter.paging=false`
     )

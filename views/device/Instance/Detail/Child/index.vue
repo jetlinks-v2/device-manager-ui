@@ -392,14 +392,12 @@ import { storeToRefs } from 'pinia';
 import dayjs from 'dayjs';
 import Save from './Save/index.vue';
 import Bind from '../ChildDevice/BindChildDevice/index.vue';
-import { randomString, onlyMessage, LocalStore } from '@jetlinks-web/utils';
+import {randomString, onlyMessage, getToken} from '@jetlinks-web/utils';
 import { cloneDeep } from 'lodash-es';
 import { useMenuStore } from '@/store/menu';
 import actionModal from './actionModal.vue';
 import { Modal } from 'ant-design-vue';
-import { TOKEN_KEY } from '@jetlinks-web/constants';
 import { EventEmitter } from '@jetlinks-web/utils';
-// import DeviceDetail from '@/views/edge/Batch/task/Children/DeviceDetail/index.vue';
 import { useI18n } from 'vue-i18n';
 
 const { t: $t } = useI18n();
@@ -1198,7 +1196,7 @@ const onAuto = async (item) => {
 
 //离开页面
 const TabsChange = (next) => {
-    if (editStatus.value && LocalStore.get(TOKEN_KEY)) {
+    if (editStatus.value && getToken()) {
         const modal = Modal.confirm({
             content: $t('Child.index.135369-36'),
             okText: $t('Child.index.135369-2'),

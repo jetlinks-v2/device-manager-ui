@@ -10,10 +10,8 @@
             name="file"
             accept=".jar, .zip"
             :multiple="true"
-            :action="FileStaticPath"
-            :headers="{
-                [TOKEN_KEY]: LocalStore.get(TOKEN_KEY),
-            }"
+            :action="FileStaticPath()"
+            :headers="getUploadHeaders()"
             @change="handleChange"
             :showUploadList="false"
             class="upload-box"
@@ -25,13 +23,13 @@
 </template>
 
 <script setup lang="ts" name="FileUpload">
-import { LocalStore, onlyMessage } from '@jetlinks-web/utils';
-import { TOKEN_KEY } from '@jetlinks-web/constants';
-import { FileStaticPath } from '@device-manager-ui/api/comm';
+import { onlyMessage } from '@jetlinks-web/utils';
+import { FileStaticPath } from '@/api/comm';
 import type { UploadChangeParam, UploadProps } from 'ant-design-vue';
 import { notification as Notification } from 'ant-design-vue';
 import { useSystemStore } from '@/store/system';
 import { useI18n } from 'vue-i18n';
+import {getUploadHeaders} from "@/utils";
 
 const { t: $t } = useI18n();
 const emit = defineEmits(['update:modelValue', 'change']);
