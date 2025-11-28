@@ -171,19 +171,19 @@ const columns = [
   {
     title: $t('plugin.index.293829-1'),
     dataIndex: 'id',
-    key: 'type',
+    key: 'id',
     ellipsis: true,
     search: {
-      type: 'input',
+      type: 'string',
     },
   },
   {
     title: $t('plugin.index.293829-3'),
     dataIndex: 'name',
-    key: 'type',
+    key: 'name',
     ellipsis: true,
     search: {
-      type: 'input',
+      type: 'string',
     },
   },
   {
