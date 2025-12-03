@@ -90,7 +90,8 @@
                     :noPagination="true"
                     :params="params"
                     :mode="'TABLE'"
-                    :scroll="{ x: 1500, y: 430 }"
+                    type="TREE"
+                    :scroll="{ x: 1500 }"
                     :rowSelection="{
                                     selectedRowKeys: _selectedRowKeys,
                                     onChange: onSelectChange,
@@ -101,6 +102,7 @@
                                             handleRow(e, record),
                                     })
                                 "
+                                :height="430"
                 >
                   <template #registryTime="slotProps">
                     <j-ellipsis>
