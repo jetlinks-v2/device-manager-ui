@@ -89,7 +89,7 @@ import dayjs from 'dayjs';
 import { cloneDeep, map } from 'lodash-es';
 import Save from './Save/index.vue';
 import type { FormDataType } from './type';
-import { onlyMessage } from '@/utils/comm';
+import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import { useI18n } from 'vue-i18n';
 
 const { t: $t } = useI18n();

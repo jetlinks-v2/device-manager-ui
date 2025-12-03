@@ -124,7 +124,7 @@ import {
   validateField,
 } from "@device-manager-ui/api/system/relationship";
 import { dictItemType } from "../typing";
-import { onlyMessage } from "@/utils/comm";
+import { onlyMessage } from "@jetlinks-web-core/utils/comm";
 import { useI18n } from "vue-i18n";
 import { useRelationTypes } from "../hooks/useRelationTypes";
 

@@ -15,7 +15,7 @@
 import {useTableWrapper} from "../../context";
 import {isBoolean} from "lodash-es";
 import { selectProps } from 'ant-design-vue/lib/select'
-import i18n from "@/locales";
+import i18n from "@jetlinks-web-core/locales";
 
 const props = defineProps({
   ...selectProps(),

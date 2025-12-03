@@ -245,7 +245,7 @@
 import AddDeviceOrProductDialog from '../components/AddDeviceOrProductDialog.vue';
 import EditPermissionDialog from '../components/EditPermissionDialog.vue';
 import NextDialog from '../components/NextDialog.vue';
-import { onlyMessage } from '@/utils/comm';
+import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import {
     getDeviceOrProductList_api,
     getPermission_api,
@@ -254,7 +254,7 @@ import {
     getBindingsPermission,
 } from '../../../api/department';
 import { intersection } from 'lodash-es';
-import { useDepartmentStore } from '@/store/department';
+import { useDepartmentStore } from '@jetlinks-web-core/store/department';
 import deviceProductImg from "@device-manager-ui/assets/device-product.png";
 import { useI18n } from 'vue-i18n';
 

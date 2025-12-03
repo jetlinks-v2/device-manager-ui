@@ -47,9 +47,9 @@
 
 <script lang="ts" setup>
 import {saveRelations} from '../../../../../../../api/instance';
-import {queryUserListNoPaging} from '@/api/system/user';
+import {queryUserListNoPaging} from '@jetlinks-web-core/api/system/user';
 import {useInstanceStore} from '../../../../../../../store/instance';
-import {onlyMessage} from '@/utils/comm';
+import {onlyMessage} from '@jetlinks-web-core/utils/comm';
 import {useI18n} from 'vue-i18n';
 import {map} from "lodash-es";
 

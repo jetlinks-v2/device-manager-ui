@@ -320,7 +320,7 @@
 import { useProductStore } from "../../../../../store/product";
 import { ConfigMetadata } from "../../typings";
 import Title from "../Title/index.vue";
-import { useAuthStore } from "@/store";
+import { useAuthStore } from "@jetlinks-web-core/store";
 import { steps, steps1 } from "./util";
 import "./index.less";
 import {
@@ -339,7 +339,7 @@ import Driver from "driver.js";
 import "driver.js/dist/driver.min.css";
 import { marked } from "marked";
 import type { TableColumnType } from "ant-design-vue";
-import { useMenuStore } from "@/store/menu";
+import { useMenuStore } from "@jetlinks-web-core/store/menu";
 import { map } from "lodash-es";
 import AccessModal from "./accessModal.vue";
 import MetaDataModal from "./metadataModal.vue";
@@ -349,10 +349,10 @@ import {
   savePluginData,
 } from "../../../../../api/link/plugin";
 import {detail as queryPluginAccessDetail, getCompositeProviderDetail} from "../../../../../api/link/accessConfig";
-import {onlyMessage} from "@/utils/comm";
+import {onlyMessage} from "@jetlinks-web-core/utils/comm";
 import {pick} from "lodash-es";
 import {useI18n} from "vue-i18n";
-import { useTabSaveSuccessBack } from '@/hooks'
+import { useTabSaveSuccessBack } from '@jetlinks-web-core/hooks'
 
 const { t: $t } = useI18n();
 const route = useRoute();

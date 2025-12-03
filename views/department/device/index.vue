@@ -223,7 +223,7 @@
 <script setup lang="ts" name="device">
 import AddDeviceOrProductDialog from '../components/AddDeviceOrProductDialog.vue';
 import EditPermissionDialog from '../components/EditPermissionDialog.vue';
-import {onlyMessage} from '@/utils/comm';
+import {onlyMessage} from '@jetlinks-web-core/utils/comm';
 import {
   getDeviceList_api,
   getPermission_api,
@@ -235,7 +235,7 @@ import {
 import {intersection} from 'lodash-es';
 
 import type {dictType} from '../typings';
-import {useDepartmentStore} from '@/store/department';
+import {useDepartmentStore} from '@jetlinks-web-core/store/department';
 import dayjs from 'dayjs';
 import deviceProductImg from "@device-manager-ui/assets/device-product.png";
 import { useI18n } from 'vue-i18n';

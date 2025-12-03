@@ -27,7 +27,7 @@
 import { useInstanceStore } from '../../../../../store/instance';
 import Simple from './components/Simple.vue';
 import Advance from './components/Advance.vue';
-import { useMenuStore } from '@/store';
+import { useMenuStore } from '@jetlinks-web-core/store';
 import { usePermission } from '@jetlinks-web/hooks'
 
 const menuStory = useMenuStore();

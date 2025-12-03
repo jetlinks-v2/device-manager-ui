@@ -51,7 +51,7 @@
 
 <script setup lang="ts">
 import { query, bindDevice } from '../../../../../../api/instance';
-import { onlyMessage } from '@/utils/comm';
+import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import dayjs from 'dayjs';
 import { useI18n } from 'vue-i18n';
 

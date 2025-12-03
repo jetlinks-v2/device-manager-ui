@@ -59,7 +59,7 @@
 <script setup lang="ts">
 import { useInstanceStore } from '../../../../../../store/instance';
 import { execute } from '../../../../../../api/instance';
-import { onlyMessage } from '@/utils/comm';
+import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import { useI18n } from 'vue-i18n';
 
 const { t: $t } = useI18n();
@@ -149,7 +149,7 @@ const handleExecute = async (func: any) => {
     } catch (e) {
         loading.value = false;
         onlyMessage($t('components.Advance.648416-4'), 'error');
-        return; 
+        return;
     }
     const resp: any = await execute(
         route.params.id as string,

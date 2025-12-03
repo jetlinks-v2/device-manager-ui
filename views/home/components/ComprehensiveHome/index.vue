@@ -56,7 +56,7 @@ import BasicCountCard from '../BasicCountCard.vue';
 import PlatformPicCard from '../PlatformPicCard.vue';
 import StepCard from '../StepCard.vue';
 
-import { useAuthStore, useMenuStore } from '@/store';
+import { useAuthStore, useMenuStore } from '@jetlinks-web-core/store';
 import { recommendList, bootConfig } from '../../typing';
 import { useI18n } from 'vue-i18n'
 import { home } from '../../../../assets'

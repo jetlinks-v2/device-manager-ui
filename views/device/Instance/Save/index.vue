@@ -158,8 +158,8 @@ import { onlyMessage } from '@jetlinks-web/utils';
 import { device} from "../../../../assets";
 import { useI18n } from 'vue-i18n';
 import { isInput } from '@device-manager-ui/utils/utils';
-import { moduleRegistry } from '@/utils/module-registry';
-import { useMircoAppData } from '@/hooks/useMircoApp';
+import { moduleRegistry } from '@jetlinks-web-core/utils/module-registry';
+import { useMircoAppData } from '@jetlinks-web-core/hooks/useMircoApp';
 import { deviceCloudSave } from '@device-manager-ui/api/instance'
 
 const { data: instancePageType } = useMircoAppData('platformName')

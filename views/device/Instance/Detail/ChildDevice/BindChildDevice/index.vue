@@ -104,7 +104,7 @@ import dayjs from 'dayjs';
 import { useInstanceStore } from '../../../../../../store/instance';
 import { storeToRefs } from 'pinia';
 import { onlyMessage } from '@jetlinks-web/utils';
-import i18n from '@/locales';
+import i18n from '@jetlinks-web-core/locales';
 import { useI18n } from 'vue-i18n';
 
 const { t: $t } = useI18n();

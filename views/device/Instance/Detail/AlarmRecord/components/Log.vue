@@ -57,7 +57,7 @@
 <script setup>
 import {queryLogList} from '@device-manager-ui/api/rule-engine/log';
 import dayjs from 'dayjs';
-import {useMenuStore} from '@/store';
+import {useMenuStore} from '@jetlinks-web-core/store';
 import LogDetail from './LogDetail.vue';
 import {useI18n} from 'vue-i18n';
 

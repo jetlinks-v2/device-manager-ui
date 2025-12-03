@@ -76,7 +76,7 @@
 import {TOKEN_KEY, TOKEN_KEY_URL} from '@jetlinks-web/constants';
 import {getToken, LocalStore, onlyMessage, downloadFileByUrl} from '@jetlinks-web/utils';
 import {validate} from './util'
-import { isFullScreen } from '@/utils'
+import { isFullScreen } from '@jetlinks-web-core/utils'
 import { getTemplate, uploadAnalyzeMetadata} from '../../../../../../../api/instance'
 import {getTemplate as getProductTemplate} from '../../../../../../../api/product'
 import {useGroupActive, useTableWrapper} from "../../../../../../../components/Metadata/context";

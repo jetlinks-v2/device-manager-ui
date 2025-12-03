@@ -80,14 +80,14 @@ import {
     deviceCount,
     dashboard,
 } from '../../../api/dashboard';
-import {encodeQuery} from '@/utils';
+import {encodeQuery} from '@jetlinks-web-core/utils';
 import type { Footer } from './typings';
 import TopCard from './components/TopCard.vue';
-import { useMenuStore } from '@/store/menu';
+import { useMenuStore } from '@jetlinks-web-core/store/menu';
 import Amap from './components/Amap.vue';
-import { useSystemStore } from '@/store/system';
+import { useSystemStore } from '@jetlinks-web-core/store/system';
 import dayjs from 'dayjs'
-import { isNoCommunity } from '@/utils/utils'
+import { isNoCommunity } from '@jetlinks-web-core/utils/utils'
 import { device } from "../../../assets";
 import { useI18n } from 'vue-i18n';
 

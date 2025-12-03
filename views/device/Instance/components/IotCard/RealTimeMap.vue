@@ -80,7 +80,7 @@ import InfoImg from '@device-manager-ui/assets/iot-card/realtime-positioning/inf
 import HistoryList from "./HistoryList.vue";
 import {useI18n} from "vue-i18n";
 import dayjs from 'dayjs'
-import {useMenuStore} from "@/store";
+import {useMenuStore} from "@jetlinks-web-core/store";
 
 const props = defineProps({
   marks: {

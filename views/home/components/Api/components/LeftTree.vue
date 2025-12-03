@@ -28,7 +28,7 @@ import {
     getTreeTwo_api,
 } from '@device-manager-ui/api/apiPage';
 import type { modeType, treeNodeTpye } from '../typing';
-import { useDepartmentStore } from '@/store/department';
+import { useDepartmentStore } from '@jetlinks-web-core/store/department';
 import { useI18n } from 'vue-i18n';
 
 const { t: $t } = useI18n();

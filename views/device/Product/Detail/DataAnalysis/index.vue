@@ -118,7 +118,7 @@ import {
   saveProductCode, queryProductCodeTips,
 } from '../../../../../api/instance';
 import { isBoolean } from 'lodash-es';
-import { onlyMessage } from '@/utils/comm';
+import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import { useI18n } from 'vue-i18n';
 
 const { t: $t } = useI18n();

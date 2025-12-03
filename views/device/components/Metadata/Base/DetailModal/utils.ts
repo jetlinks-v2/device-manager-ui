@@ -1,4 +1,4 @@
-import i18n from "@/locales";
+import i18n from "@jetlinks-web-core/locales";
 export const objectColumns = [
     {
         title: i18n.global.t('DetailModal.utils.585921-0'),

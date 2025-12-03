@@ -56,7 +56,7 @@
 </template>
 <script lang="ts" setup name="DialogTips">
 import { useProductStore } from '../../../../store/product';
-import { useMenuStore } from '@/store';
+import { useMenuStore } from '@jetlinks-web-core/store';
 
 const visible = ref<boolean>(false);
 const productStore = useProductStore();

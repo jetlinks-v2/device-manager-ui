@@ -1,6 +1,6 @@
 import {randomString} from "@jetlinks-web/utils";
 import {Ref} from "vue";
-import i18n from "@/locales";
+import i18n from "@jetlinks-web-core/locales";
 
 let maskIds: string[] = []
 export const maskNodeClassName = 'popover-mask'

@@ -299,9 +299,9 @@ import { PopoverModal } from '../../../../../../../components/Metadata';
 import { useTableWrapper } from '../../../../../../../components/Metadata/context';
 import { omit, cloneDeep } from 'lodash-es';
 import { useThreshold } from './hooks';
-import { useSystemStore } from '@/store';
+import { useSystemStore } from '@jetlinks-web-core/store';
 import { useI18n } from 'vue-i18n';
-import {isNoCommunity} from "@/utils";
+import {isNoCommunity} from "@jetlinks-web-core/utils";
 
 const { t: $t } = useI18n();
 

@@ -26,7 +26,7 @@
 <script setup>
 import Install from './Install/index.vue';
 import {ResourceTable} from '@device-manager-ui/components/ResourceTable/index.ts'
-import {useMenuStore} from "@/store";
+import {useMenuStore} from "@jetlinks-web-core/store";
 
 const menuStory = useMenuStore();
 const showInstallModal = ref(false);

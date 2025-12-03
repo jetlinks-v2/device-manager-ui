@@ -198,7 +198,7 @@ import { useRuleEditorStore } from '../../../store/ruleEditor';
 import dayjs from 'dayjs';
 import { wsClient } from '@jetlinks-web/core';
 import {useTableWrapper, useTableFullScreen} from "../../../components/Metadata/context";
-import { onlyMessage } from '@/utils/comm';
+import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import {message} from "ant-design-vue";
 import { useI18n } from 'vue-i18n';
 

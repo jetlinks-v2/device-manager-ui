@@ -370,7 +370,7 @@ import {map} from "lodash-es";
 import RealTimeMap from "./RealTimeMap.vue";
 import {getPositionById, queryLocationById} from "@device-manager-ui/api/iot-card/realtimePositioning";
 import SyncRecord from "./SyncRecord/index.vue";
-import {useMenuStore} from "@/store";
+import {useMenuStore} from "@jetlinks-web-core/store";
 import {onlyMessage} from "@jetlinks-web/utils";
 
 const { t: $t } = useI18n();

@@ -98,7 +98,7 @@ import Onvif from './Onvif.vue';
 import Plugin from '../Plugin/index.vue';
 import { update, save } from '../../../../../api/link/accessConfig';
 import { useI18n } from 'vue-i18n';
-import { useTabSaveSuccessBack } from '@/hooks'
+import { useTabSaveSuccessBack } from '@jetlinks-web-core/hooks'
 
 const { t: $t } = useI18n();
 interface FormState {

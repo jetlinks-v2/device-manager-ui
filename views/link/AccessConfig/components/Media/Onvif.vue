@@ -77,7 +77,7 @@
 import { onlyMessage } from '@jetlinks-web/utils';
 import { update, save } from '../../../../../api/link/accessConfig';
 import { useI18n } from 'vue-i18n';
-import { useTabSaveSuccessBack } from '@/hooks'
+import { useTabSaveSuccessBack } from '@jetlinks-web-core/hooks'
 
 const { t: $t } = useI18n();
 interface FormState {

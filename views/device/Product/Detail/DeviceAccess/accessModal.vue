@@ -136,12 +136,12 @@
 import type {PropType} from 'vue'
 import {onlyMessage, randomString} from '@jetlinks-web/utils';
 import {queryList, getAccessConfig} from '../../../../../api/product'
-import {useMenuStore} from '@/store';
+import {useMenuStore} from '@jetlinks-web-core/store';
 import {getProductByPluginId} from '../../../../../api/link/plugin'
 import {getProviders} from '../../../../../api/link/accessConfig'
 import {device} from '../../../../../assets'
 import {useI18n} from 'vue-i18n';
-import {useTabSaveSuccess} from '@/hooks'
+import {useTabSaveSuccess} from '@jetlinks-web-core/hooks'
 
 const {t: $t} = useI18n();
 

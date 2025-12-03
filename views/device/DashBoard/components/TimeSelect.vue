@@ -31,7 +31,7 @@
 <script setup lang="ts">
 import dayjs from 'dayjs';
 import { PropType } from 'vue';
-import i18n from '@/locales';
+import i18n from '@jetlinks-web-core/locales';
 
 interface BtnOptions {
     label: string;

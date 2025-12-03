@@ -828,12 +828,12 @@ import {
 import { cloneDeep } from "lodash-es";
 import type { TagsFilterType, FormData2Type, FormDataType } from "../type";
 import LocalAddressSelect from "./LocalAddressSelect.vue";
-import { isNoCommunity } from "@/utils/utils";
+import { isNoCommunity } from "@jetlinks-web-core/utils/utils";
 import { useTypeStore } from "../../../../store/type";
 import { storeToRefs } from "pinia";
 import NodeSelect from "./NodeSelect.vue";
 import { useI18n } from "vue-i18n";
-import { useTabSaveSuccessBack } from '@/hooks'
+import { useTabSaveSuccessBack } from '@jetlinks-web-core/hooks'
 
 const { t: $t } = useI18n();
 const route = useRoute();

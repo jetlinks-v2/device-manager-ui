@@ -73,7 +73,7 @@
 
 <script setup lang='ts' name='Product'>
 import { getProviders, queryProductList } from '../../../../api/product'
-import { accessConfigTypeFilter } from '@/utils'
+import { accessConfigTypeFilter } from '@jetlinks-web-core/utils'
 import { device } from '../../../../assets'
 import { useI18n } from 'vue-i18n';
 

@@ -220,7 +220,7 @@ import {resource} from '@device-manager-ui/assets/resource'
 import DetailHeaderTitle from './components/title.vue'
 import {omit, cloneDeep} from "lodash-es";
 import ModelItem from "./ModelItem.vue";
-import { useMenuStore } from '@/store/menu';
+import { useMenuStore } from '@jetlinks-web-core/store/menu';
 
 const imageMap = new Map([
   ['device', resource.deviceDefaultImage],

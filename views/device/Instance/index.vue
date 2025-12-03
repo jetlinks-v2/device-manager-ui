@@ -221,19 +221,19 @@ import {
     queryOrgThree,
 } from '../../../api/product';
 import { queryTree } from '../../../api/category';
-import { useMenuStore } from '@/store/menu';
+import { useMenuStore } from '@jetlinks-web-core/store/menu';
 import type { ActionsType } from './typings';
 import dayjs from 'dayjs';
-import BatchDropdown from '@/components/BatchDropdown/index.vue';
-import type { BatchActionsType } from '@/components/BatchDropdown/types';
+import BatchDropdown from '@jetlinks-web-core/components/BatchDropdown/index.vue';
+import type { BatchActionsType } from '@jetlinks-web-core/components/BatchDropdown/types';
 import { useRouterParams } from '@jetlinks-web/hooks';
 import TagSearch from './components/TagSearch.vue';
 import { Modal } from 'ant-design-vue';
 import { device } from '../../../assets';
-import { isNoCommunity } from '@/utils/utils';
+import { isNoCommunity } from '@jetlinks-web-core/utils/utils';
 import { useI18n } from 'vue-i18n';
 import { useTermOptions } from '@jetlinks-web/components/es/Search/hooks/useTermOptions'
-import { mergeObjectArrays } from '@/utils';
+import { mergeObjectArrays } from '@jetlinks-web-core/utils';
 
 const { t: $t } = useI18n();
 

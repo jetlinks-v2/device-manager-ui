@@ -29,9 +29,9 @@
                     <j-value-item
                         v-model:modelValue="record.value"
                         :itemType="record.type === 'array' ? 'object' : (record.type === 'file' ? 'string' : record.type)"
-                        :action="FileStaticPath"
+                        :action="FileStaticPath()"
                         style="width: 100%"
-                        :headers="{ [TOKEN_KEY]: getToken() }"
+                        :headers="getUploadHeaders()"
                         :options="
                                 record.type === 'enum'
                                     ? (record?.dataType?.elements || []).map(
@@ -60,14 +60,15 @@
 </template>
 
 <script lang="ts" setup>
-import { useInstanceStore } from '../../../../../../../store/instance';
+import { useInstanceStore } from '@device-manager-ui/store/instance';
 import { cloneDeep } from 'lodash-es';
-import { saveTags, delTags } from '../../../../../../../api/instance';
+import { saveTags, delTags } from '@device-manager-ui/api/instance';
 import {getToken, onlyMessage} from '@jetlinks-web/utils';
 import { useI18n } from 'vue-i18n';
-import {FileStaticPath} from "@device-manager-ui/api/comm";
+import {FileStaticPath} from "@jetlinks-web-core/api/comm";
 import {TOKEN_KEY} from "@jetlinks-web/constants";
 import dayjs from "dayjs";
+import { getUploadHeaders } from '@jetlinks-web-core/utils'
 
 const { t: $t } = useI18n();
 const emit = defineEmits(['close', 'save']);

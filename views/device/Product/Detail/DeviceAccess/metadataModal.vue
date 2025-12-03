@@ -42,7 +42,7 @@ import { modify, updateDevice } from '../../../../../api/product'
 import { savePluginData } from '../../../../../api/link/plugin'
 import { device } from '../../../../../assets'
 import { useI18n } from 'vue-i18n';
-import { useTabSaveSuccessBack } from '@/hooks'
+import { useTabSaveSuccessBack } from '@jetlinks-web-core/hooks'
 
 const { t: $t } = useI18n();
 const route = useRoute();

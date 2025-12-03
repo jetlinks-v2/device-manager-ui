@@ -3,8 +3,8 @@ import {MetadataItem, MetadataType} from "../../../Product/typings";
 import { getUnit } from '../../../../../api/instance';
 import {Ref} from "vue";
 import {omit, isObject,} from "lodash-es";
-import { onlyMessage } from "@/utils/comm";
-import i18n from "@/locales";
+import { onlyMessage } from "@jetlinks-web-core/utils/comm";
+import i18n from "@jetlinks-web-core/locales";
 interface DataTableColumnProps extends ColumnProps {
   type?: string,
   components?: {

@@ -1,9 +1,9 @@
 import { Badge, Descriptions, Modal, DescriptionsItem } from "ant-design-vue"
 import { AIcon, Ellipsis } from '@jetlinks-web/components'
-import TitleComponent from '@/components/TitleComponent/index.vue'
+import TitleComponent from '@jetlinks-web-core/components/TitleComponent/index.vue'
 import styles from './index.module.less'
 import { map, flatten} from "lodash-es";
-import i18n from "@/locales";
+import i18n from "@jetlinks-web-core/locales";
 
 const DiagnosticAdvice = defineComponent({
     props: {

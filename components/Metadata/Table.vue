@@ -73,7 +73,7 @@ import {provide, useAttrs, useSlots} from 'vue'
 import Group from './group.vue'
 import {bodyProps} from "./props";
 import {findIndex, get, sortBy} from 'lodash-es'
-import i18n from '@/locales'
+import i18n from '@jetlinks-web-core/locales'
 import { useI18n } from 'vue-i18n';
 
 const { t: $t } = useI18n();

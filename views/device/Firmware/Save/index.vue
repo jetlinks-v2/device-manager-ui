@@ -220,7 +220,7 @@ import {
 } from '../../../../api/firmware';
 import type { FormInstance } from 'ant-design-vue';
 import type { Properties } from '../type';
-import { onlyMessage } from '@/utils/comm';
+import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import { useI18n } from 'vue-i18n';
 
 const { t: $t } = useI18n();
@@ -415,7 +415,7 @@ watch(
     (value) => {
         if (value.id) {
             formData.value = value;
-            dynamicValidateForm.properties = value.properties 
+            dynamicValidateForm.properties = value.properties
         }
     },
     { immediate: true, deep: true },

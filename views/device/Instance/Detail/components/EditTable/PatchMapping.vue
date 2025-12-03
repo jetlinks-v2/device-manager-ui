@@ -110,7 +110,7 @@
 
 <script lang="ts" setup>
 import {treeMapping, saveMapping} from '../../../../../../api/instance';
-import {onlyMessage} from '@/utils/comm';
+import {onlyMessage} from '@jetlinks-web-core/utils/comm';
 import {useInstanceStore} from "../../../../../../store/instance";
 import {debounce} from 'lodash-es';
 import {useI18n} from 'vue-i18n';

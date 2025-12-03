@@ -208,9 +208,9 @@ import {
     undeploy,
     deploy,
 } from '../../../api/link/accessConfig';
-import { onlyMessage } from '@/utils/comm';
-import { useMenuStore } from '@/store';
-import { accessConfigTypeFilter } from '@/utils';
+import { onlyMessage } from '@jetlinks-web-core/utils/comm';
+import { useMenuStore } from '@jetlinks-web-core/store';
+import { accessConfigTypeFilter } from '@jetlinks-web-core/utils';
 import { cloneDeep } from 'lodash-es';
 import Outline from './Outline/index.vue'
 import { device } from '../../../assets'

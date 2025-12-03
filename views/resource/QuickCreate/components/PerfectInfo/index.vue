@@ -167,7 +167,7 @@ import GB28181 from './GB28181/index.vue';
 import Ctwing from './Ctwing/index.vue';
 import OneNet from './OneNet/index.vue';
 import Network from './Network/index.vue';
-import {useMenuStore} from '@/store/menu';
+import {useMenuStore} from '@jetlinks-web-core/store/menu';
 import {device} from '@device-manager-ui/assets/device';
 import {useI18n} from 'vue-i18n';
 

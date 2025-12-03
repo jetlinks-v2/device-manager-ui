@@ -25,7 +25,7 @@
 </template>
 
 <script setup lang="ts" name="CertificateFile">
-import { onlyMessage } from '@/utils/comm';
+import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import type { UploadChangeParam } from 'ant-design-vue';
 import { LocalStore } from '@jetlinks-web/utils';
 import { TOKEN_KEY } from '@jetlinks-web/constants';

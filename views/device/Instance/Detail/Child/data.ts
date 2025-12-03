@@ -1,4 +1,4 @@
-import i18n from "@/locales";
+import i18n from "@jetlinks-web-core/locales";
 export const stateMap = new Map();
 stateMap.set('success', {
     text: i18n.global.t('Child.data.449454-0'),
@@ -58,7 +58,7 @@ export const columns = [
             type: 'string',
         },
     },
-  
+
     {
         title: i18n.global.t('Child.data.449454-8'),
         dataIndex: 'describe',

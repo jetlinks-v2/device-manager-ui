@@ -26,7 +26,7 @@
                                 :data="data"
                                 :provider="provider"
                             />
-                            <Composite 
+                            <Composite
                                 v-else-if="provider.id === 'composite-device-gateway'"
                                 :data="data"
                                 :otherProvider="compositeProvider"
@@ -81,7 +81,7 @@ import Cloud from '../components/Cloud/index.vue';
 import Plugin from '../components/Plugin/index.vue'
 import {getProviders, detail} from '@device-manager-ui/api/link/accessConfig';
 import {queryProductList} from '@device-manager-ui/api/product';
-import {accessConfigTypeFilter} from '@/utils';
+import {accessConfigTypeFilter} from '@jetlinks-web-core/utils';
 import { useI18n } from 'vue-i18n';
 import Composite from '../components/Composite/index.vue';
 

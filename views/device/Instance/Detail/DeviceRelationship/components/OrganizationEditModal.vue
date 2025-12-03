@@ -99,7 +99,7 @@ import { useRequest } from '@jetlinks-web/hooks'
 import { omit } from 'lodash-es'
 import { useInstanceStore } from '@device-manager-ui/store/instance'
 import { onlyMessage } from '@jetlinks-web/utils'
-import { moduleRegistry } from '@/utils/module-registry'
+import { moduleRegistry } from '@jetlinks-web-core/utils/module-registry'
 
 const { t } = useI18n()
 const getTreeData_api = moduleRegistry.getResourceItem('authentication-manager-ui', 'apis', 'getTreeData_api')

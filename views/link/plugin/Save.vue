@@ -84,9 +84,9 @@ import UploadFile from './UploadFile.vue';
 import { FileUploadResult } from '../plugin/typings';
 import { add, update, vailIdFn } from '../../../api/link/plugin';
 import { TypeMap } from './util';
-import { onlyMessage } from '@/utils/comm';
+import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import { useI18n } from 'vue-i18n';
-import { useTabSaveSuccessBack } from '@/hooks'
+import { useTabSaveSuccessBack } from '@jetlinks-web-core/hooks'
 
 const { t: $t } = useI18n();
 const props = defineProps({

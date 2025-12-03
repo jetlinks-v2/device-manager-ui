@@ -448,7 +448,7 @@ import {
 } from "./DetailModal";
 import {Modal, notification} from "ant-design-vue";
 import { watch } from "vue";
-import { useSystemStore, useMenuStore, useAuthStore } from "@/store";
+import { useSystemStore, useMenuStore, useAuthStore } from "@jetlinks-web-core/store";
 import { storeToRefs } from "pinia";
 import {
   EditTable,

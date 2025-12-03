@@ -36,7 +36,7 @@
 <script lang="ts" setup>
 import { setProperty } from '../../../../../../api/instance';
 import { useInstanceStore } from '../../../../../../store/instance';
-import { onlyMessage } from '@/utils/comm';
+import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import { useI18n } from 'vue-i18n';
 
 const { t: $t } = useI18n();

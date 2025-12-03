@@ -18,7 +18,7 @@
 import 'vue3-json-viewer/dist/index.css';
 import { JsonViewer } from 'vue3-json-viewer';
 import { useInstanceStore } from '../../../../../store/instance';
-import { onlyMessage } from '@/utils/comm';
+import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import { getDeviceShadow } from '../../../../../api/instance';
 import { useI18n } from 'vue-i18n';
 

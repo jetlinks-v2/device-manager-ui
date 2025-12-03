@@ -1,5 +1,5 @@
-import {isNoCommunity} from '@/utils/utils';
-import i18n from '@/locales';
+import {isNoCommunity} from '@jetlinks-web-core/utils/utils';
+import i18n from '@jetlinks-web-core/locales';
 
 export const DataTypeList: { label: string; value: string }[] = [
     {

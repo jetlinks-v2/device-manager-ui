@@ -51,7 +51,7 @@
 import { queryInvalidData } from '@device-manager-ui/api/rule-engine/log';
 import { useInstanceStore } from '@device-manager-ui/store/instance';
 import { useProductStore } from '@device-manager-ui/store/product';
-import { useMenuStore } from '@/store';
+import { useMenuStore } from '@jetlinks-web-core/store';
 import dayjs from 'dayjs';
 import { useI18n } from 'vue-i18n';
 

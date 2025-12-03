@@ -49,7 +49,7 @@
 
 <script lang="ts" setup>
 import { queryNoPagingPost } from '../../../../api/product';
-import { paramsEncodeQuery } from '@/utils/encodeQuery';
+import { paramsEncodeQuery } from '@jetlinks-web-core/utils/encodeQuery';
 import { LocalStore } from '@jetlinks-web/utils';
 import { TOKEN_KEY, TOKEN_KEY_URL } from '@jetlinks-web/constants';
 

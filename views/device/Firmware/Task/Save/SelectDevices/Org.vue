@@ -31,7 +31,7 @@
 </template>
 
 <script setup>
-import {getTreeData_api} from "@/api/system/department";
+import {getTreeData_api} from "@jetlinks-web-core/api/system/department";
 import {useI18n} from "vue-i18n";
 import {onlyMessage} from "@jetlinks-web/utils";
 import {queryDetailList} from "@device-manager-ui/api/firmware";

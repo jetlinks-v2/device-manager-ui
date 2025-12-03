@@ -36,7 +36,7 @@
 
 <script lang="ts" setup>
 import { useI18n } from 'vue-i18n'
-import { queryUserListNoPaging } from '@/api/system/user';
+import { queryUserListNoPaging } from '@jetlinks-web-core/api/system/user';
 import { useRequest } from '@jetlinks-web/hooks'
 import { useInstanceStore } from '@device-manager-ui/store/instance';
 import { map } from 'lodash-es';

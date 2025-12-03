@@ -68,7 +68,7 @@ import {
     _queryNowNoPaging,
     _queryProductNoPaging,
 } from '@device-manager-ui/api/resource/resource';
-import { useMenuStore, useAuthStore } from '@/store';
+import { useMenuStore, useAuthStore } from '@jetlinks-web-core/store';
 import { useI18n } from 'vue-i18n';
 
 const { t: $t } = useI18n();

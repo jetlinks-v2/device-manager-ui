@@ -1,4 +1,4 @@
-import i18n from "@/locales";
+import i18n from "@jetlinks-web-core/locales";
 const MaxLengthStringFn = (len: number = 64) => ({
   max: len,
   message: i18n.global.t('Form.rules.242792-0', [len]),

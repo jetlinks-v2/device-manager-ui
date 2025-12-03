@@ -75,7 +75,7 @@ import {
   delRelation_api,
 } from "@device-manager-ui/api/system/relationship";
 import EditDialog from "./components/EditDialog.vue";
-import { onlyMessage } from "@/utils/comm";
+import { onlyMessage } from "@jetlinks-web-core/utils/comm";
 import { useI18n } from "vue-i18n";
 import { useRelationTypes } from "./hooks/useRelationTypes";
 

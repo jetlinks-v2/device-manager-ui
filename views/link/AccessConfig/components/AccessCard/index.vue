@@ -117,15 +117,15 @@ const checkedChange = (id: string) => {
   }
 }
 .access-media {
-    background: url('/images/access-media.png') no-repeat;
+    background: url('@device-manager-ui/assets/access-media.png') no-repeat;
     background-position: bottom right;
 }
 .access-network, .access-plugin {
-    background: url('/images/access-network.png') no-repeat;
+    background: url('@device-manager-ui/assets/access-network.png') no-repeat;
     background-position: bottom right;
 }
 .access-protocol {
-    background: url('/images/access-protocol.png') no-repeat;
+    background: url('@device-manager-ui/assets/access-protocol.png') no-repeat;
     background-position: bottom right;
 }
 </style>

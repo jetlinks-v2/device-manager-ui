@@ -133,9 +133,9 @@ import { useInstanceStore } from '../../../../../store/instance';
 import { storeToRefs } from 'pinia';
 import BindChildDevice from './BindChildDevice/index.vue';
 import SaveChild from './SaveChild/index.vue';
-import { onlyMessage } from '@/utils/comm';
+import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import { useI18n } from 'vue-i18n';
-import {useMenuStore} from "@/store";
+import {useMenuStore} from "@jetlinks-web-core/store";
 
 const { t: $t } = useI18n();
 

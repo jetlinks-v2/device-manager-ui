@@ -193,11 +193,11 @@ import {
     getPluginConfig,
 } from '../../../../../api/link/accessConfig';
 import AccessCard from '../AccessCard/index.vue';
-import { useMenuStore } from '@/store/menu';
-import { onlyMessage } from '@/utils/comm';
+import { useMenuStore } from '@jetlinks-web-core/store/menu';
+import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import { CreteRuleByType } from '../../../components/Form/rules';
 import { useI18n } from 'vue-i18n';
-import { useTabSaveSuccessBack } from '@/hooks'
+import { useTabSaveSuccessBack } from '@jetlinks-web-core/hooks'
 
 const { t: $t } = useI18n();
 const props = defineProps({

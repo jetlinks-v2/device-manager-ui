@@ -185,11 +185,11 @@
 </template>
 <script lang="ts" setup name="TypePage">
 import {supports, query, remove, start, shutdown} from '../../../api/link/type';
-import {onlyMessage} from '@/utils/comm';
-import {useMenuStore} from '@/store';
+import {onlyMessage} from '@jetlinks-web-core/utils/comm';
+import {useMenuStore} from '@jetlinks-web-core/store';
 import {network} from "../../../assets";
 import {useI18n} from 'vue-i18n';
-import { isNoCommunity } from '@/utils/utils';
+import { isNoCommunity } from '@jetlinks-web-core/utils/utils';
 
 const {t: $t} = useI18n();
 const menuStory = useMenuStore();

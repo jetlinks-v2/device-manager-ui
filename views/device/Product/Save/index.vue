@@ -163,7 +163,7 @@ import { category, queryProductId, addProduct, editProduct, queryCloudsProduct }
 import { Form } from 'ant-design-vue';
 import DialogTips from '../DialogTips/index.vue';
 import { useProductStore } from '@device-manager-ui/store/product';
-import { filterSelectNode, encodeQuery } from '@/utils';
+import { filterSelectNode, encodeQuery } from '@jetlinks-web-core/utils';
 import { onlyMessage } from '@jetlinks-web/utils'
 import { isInput } from '@device-manager-ui/utils/utils';
 import type { Rule } from 'ant-design-vue/es/form';

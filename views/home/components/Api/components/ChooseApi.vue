@@ -40,7 +40,7 @@ import {
     updateOperations_api,
 } from '@device-manager-ui/api/apiPage';
 import { modeType } from '../typing';
-import { useDepartmentStore } from '@/store/department';
+import { useDepartmentStore } from '@jetlinks-web-core/store/department';
 import { onlyMessage } from "@jetlinks-web/utils";
 import { uniqBy } from 'lodash-es';
 import { useI18n } from 'vue-i18n';

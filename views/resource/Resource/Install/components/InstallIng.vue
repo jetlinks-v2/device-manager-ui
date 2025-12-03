@@ -173,7 +173,7 @@ import {wsClient} from '@jetlinks-web/core';
 import Status from './Status.vue';
 import {delTask, deployTask, stopTask} from '@device-manager-ui/api/resource/resource';
 import {statusIcon, computedVersion} from '@device-manager-ui/views/resource/Resource/Install/data';
-import {useMenuStore} from '@/store/menu';
+import {useMenuStore} from '@jetlinks-web-core/store/menu';
 import {resource} from '@device-manager-ui/assets/resource';
 import { inject } from "vue";
 

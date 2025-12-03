@@ -1,6 +1,6 @@
 import { diagnose } from '../../../../../../assets'
 import { VNode } from 'vue';
-import i18n from '@/locales';
+import i18n from '@jetlinks-web-core/locales';
 
 export type ListProps = {
     key: string;

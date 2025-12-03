@@ -142,7 +142,7 @@ import { device } from '../../../../../assets';
 import { useProductStore } from '../../../../../store/product';
 import { detail as queryPluginAccessDetail } from '../../../../../api/link/accessConfig';
 import { getPluginData, getProductByPluginId } from '../../../../../api/link/plugin';
-import { onlyMessage } from '@/utils/comm';
+import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import { getMetadataMapById, metadataMapById, getProtocolMetadata } from '../../../../../api/instance';
 import { cloneDeep } from 'lodash-es';
 import { useI18n } from 'vue-i18n';

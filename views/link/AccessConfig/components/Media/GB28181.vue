@@ -486,9 +486,9 @@ import { resourceClustersById, allResources } from '../../../../../api/link/type
 import { onlyMessage } from '@jetlinks-web/utils'
 import { isNumber } from 'lodash-es'
 import type { Rule } from 'ant-design-vue/es/form'
-import { testIpv4_6 } from '@/utils/validate'
+import { testIpv4_6 } from '@jetlinks-web-core/utils/validate'
 import { useI18n } from 'vue-i18n'
-import { useTabSaveSuccessBack } from '@/hooks'
+import { useTabSaveSuccessBack } from '@jetlinks-web-core/hooks'
 
 const { t: $t } = useI18n()
 interface Form2 {
@@ -829,7 +829,7 @@ onMounted(async () => {
   //     })
   //   }
   // })
-  
+
   // 先获取资源数据，确保sipMap被正确填充
   await getResources()
 

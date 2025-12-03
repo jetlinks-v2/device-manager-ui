@@ -85,7 +85,8 @@ import CertificateFile from './CertificateFile.vue';
 import type { UploadChangeParam } from 'ant-design-vue';
 import { save, update, queryDetail } from '../../../../api/link/certificate';
 import { FormDataType, TypeObjType } from '../type';
-import { onlyMessage } from '@/utils/comm';
+import { onlyMessage } from '@jetlinks-web-core/utils/comm';
+import { useMenuStore } from '@jetlinks-web-core/store/menu'
 import { useI18n } from 'vue-i18n';
 
 const { t: $t } = useI18n();
@@ -93,6 +94,7 @@ const router = useRouter();
 const route = useRoute();
 const view = route.query.view as string;
 const id = route.params.id as string;
+const menuStore = useMenuStore();
 
 const formRef = ref()
 const fileLoading = ref(false);
@@ -148,7 +150,7 @@ const onSubmit = () => {
                     : await update({ ...params, id }).catch(() => { });
             if (response?.status === 200) {
                 onlyMessage($t('Detail.index.247061-26'), 'success');
-                router.push('/iot/link/certificate');
+              menuStore.jumpPage('link/Certificate')
             }
             loading.value = false;
         })

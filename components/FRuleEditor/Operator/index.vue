@@ -123,7 +123,7 @@ import { getOperator } from '../../../api/product';
 import { inject } from 'vue';
 import {useTableWrapper, useTableFullScreen} from "../../../components/Metadata/context";
 import { useI18n } from 'vue-i18n';
-import {langKey} from "@/utils/consts";
+import {langKey} from "@jetlinks-web-core/utils/consts";
 import { cloneDeep } from 'lodash-es'
 
 const {t: $t} = useI18n();

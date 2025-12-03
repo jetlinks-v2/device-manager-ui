@@ -1,4 +1,4 @@
-import type { TreeNode } from '@/utils/tree';
+import type { TreeNode } from '@jetlinks-web-core/utils/tree';
 
 interface OperatorItem extends TreeNode {
   id: string;

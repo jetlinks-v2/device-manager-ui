@@ -180,19 +180,19 @@ import {
   deleteProduct,
   updateDevice,
 } from "../../../api/product";
-import { downloadJson, accessConfigTypeFilter, isNoCommunity, mergeObjectArrays } from "@/utils";
+import { downloadJson, accessConfigTypeFilter, isNoCommunity, mergeObjectArrays } from "@jetlinks-web-core/utils";
 import { omit, cloneDeep } from "lodash-es";
 import Save from "./Save/index.vue";
 import SyncCache from "./components/SyncCache.vue";
-import { useMenuStore, useAuthStore } from "@/store";
+import { useMenuStore, useAuthStore } from "@jetlinks-web-core/store";
 import { useRouterParams } from "@jetlinks-web/hooks";
 import { device } from "../../../assets";
 import TagSearch from "../Instance/components/TagSearch.vue";
 import { accessType } from "../data";
 import { useI18n } from "vue-i18n";
 import { useTermOptions } from '@jetlinks-web/components/es/Search/hooks/useTermOptions'
-import BatchDropdown from "@/components/BatchDropdown/index.vue";
-import { useMircoAppData } from '@/hooks/useMircoApp'
+import BatchDropdown from "@jetlinks-web-core/components/BatchDropdown/index.vue";
+import { useMircoAppData } from '@jetlinks-web-core/hooks/useMircoApp'
 
 const { t: $t } = useI18n();
 

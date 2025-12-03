@@ -172,9 +172,9 @@ import {
 } from '@device-manager-ui/api/instance';
 import MSelect from '../MSelect.vue';
 import PatchMapping from './PatchMapping.vue';
-import { onlyMessage } from '@/utils/comm';
+import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import { useI18n } from 'vue-i18n';
-import BatchImport from '@/components/BatchImport/index.vue';
+import BatchImport from '@jetlinks-web-core/components/BatchImport/index.vue';
 
 const { t: $t } = useI18n();
 

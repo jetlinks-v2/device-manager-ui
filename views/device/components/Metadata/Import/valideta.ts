@@ -1,4 +1,4 @@
-import { onlyMessage } from "@/utils/comm"
+import { onlyMessage } from "@jetlinks-web-core/utils/comm"
 export const testProperties = (data:any) =>{
 
 }

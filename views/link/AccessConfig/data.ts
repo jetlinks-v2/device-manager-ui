@@ -1,5 +1,5 @@
 import { access } from '../../../assets'
-import i18n from '@/locales';
+import i18n from '@jetlinks-web-core/locales';
 const ProtocolMapping = new Map();
 ProtocolMapping.set('websocket-server', 'WebSocket');
 ProtocolMapping.set('http-server-gateway', 'HTTP');

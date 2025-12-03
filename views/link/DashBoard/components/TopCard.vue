@@ -51,7 +51,7 @@ import { serverNode } from '../../../../api/link/dashboard';
 import TopEchartsItemNode from './TopEchartsItemNode.vue';
 import { wsClient } from '@jetlinks-web/core';
 import { map } from 'rxjs/operators';
-import { isNoCommunity } from '@/utils/utils'
+import { isNoCommunity } from '@jetlinks-web-core/utils/utils'
 
 const serverId = ref();
 const serverNodeOptions = ref<Array<any>>([]);

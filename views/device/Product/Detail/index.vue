@@ -147,12 +147,12 @@ import {
     _undeploy,
     getProtocolDetail,
 } from '../../../../api/product';
-import { handleParamsToString  } from '@/utils';
-import { useMenuStore } from '@/store/menu';
+import { handleParamsToString  } from '@jetlinks-web-core/utils';
+import { useMenuStore } from '@jetlinks-web-core/store/menu';
 import { useRouterParams } from '@jetlinks-web/hooks';
 import { EventEmitter, onlyMessage } from '@jetlinks-web/utils';
-import { useAuthStore, useSystemStore } from '@/store';
-import { isNoCommunity } from '@/utils/utils';
+import { useAuthStore, useSystemStore } from '@jetlinks-web-core/store';
+import { isNoCommunity } from '@jetlinks-web-core/utils/utils';
 import { useI18n } from 'vue-i18n';
 import { tabs } from './asyncComponent'
 

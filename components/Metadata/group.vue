@@ -96,7 +96,7 @@
 <script setup name="MetadataBaseTableGroup">
 import {Modal} from "ant-design-vue";
 import {randomNumber} from "@jetlinks-web/utils";
-import {isFullScreen} from "@/utils";
+import {isFullScreen} from "@jetlinks-web-core/utils";
 import {useTableGroupError, useTableWrapper} from './context'
 import { useI18n } from 'vue-i18n';
 import {cloneDeep} from "lodash-es";

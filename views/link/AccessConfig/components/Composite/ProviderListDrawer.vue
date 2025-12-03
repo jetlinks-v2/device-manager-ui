@@ -42,7 +42,7 @@
 <script setup lang="ts">
 import { BackMap } from '../../data'
 import { randomString } from '@jetlinks-web/utils'
-import { useTabSaveSuccess } from '@/hooks'
+import { useTabSaveSuccess } from '@jetlinks-web-core/hooks'
 
 const props = defineProps({
   otherProvider: {

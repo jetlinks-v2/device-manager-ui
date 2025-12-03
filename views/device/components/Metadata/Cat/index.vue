@@ -26,13 +26,13 @@
   </a-drawer>
 </template>
 <script setup lang="ts" name="Cat">
-import { downloadJson } from '@/utils'
+import { downloadJson } from '@jetlinks-web-core/utils'
 import { useInstanceStore } from '../../../../../store/instance';
 import { useProductStore } from '../../../../../store/product';
 import type { Key } from 'ant-design-vue/es/_util/type';
 import { convertMetadata, getCodecs, detail as productDetail } from '../../../../../api/product';
 import { detail } from '../../../../../api/instance'
-import { onlyMessage } from '@/utils/comm';
+import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import { omit , cloneDeep } from "lodash-es";
 import { useI18n } from 'vue-i18n';
 

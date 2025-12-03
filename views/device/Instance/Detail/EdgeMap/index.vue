@@ -188,7 +188,7 @@ import {
 } from '../../../../../api/instance';
 import MSelect from './MSelect.vue';
 import PatchMapping from './PatchMapping.vue';
-import { onlyMessage } from '@/utils/comm';
+import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import { cloneDeep } from 'lodash-es';
 import { useI18n } from 'vue-i18n';
 

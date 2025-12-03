@@ -12,9 +12,9 @@
 </template>
 
 <script lang="ts" setup>
-import { setView_api } from '@/api/account/center';
-import { useUserStore } from '@/store';
-import HomeView from '@/components/HomeView/index.vue';
+import { setView_api } from '@jetlinks-web-core/api/account/center';
+import { useUserStore } from '@jetlinks-web-core/store';
+import HomeView from '@jetlinks-web-core/components/HomeView/index.vue';
 import { useI18n } from 'vue-i18n'
 
 const { t: $t } = useI18n()

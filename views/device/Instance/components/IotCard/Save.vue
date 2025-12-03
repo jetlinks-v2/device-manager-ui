@@ -103,7 +103,7 @@ import {
     add,
     edit,
 } from '../../../../../api/iot-card/cardManagement';
-import { onlyMessage } from '@/utils/comm';
+import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import { OperatorList, TypeList } from './data';
 import { useI18n } from 'vue-i18n';
 

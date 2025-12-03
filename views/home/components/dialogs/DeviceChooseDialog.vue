@@ -45,7 +45,7 @@
 import StatusLabel from '../StatusLabel.vue';
 import { query } from '../../../../api/instance';
 import dayjs from 'dayjs';
-import { onlyMessage } from '@/utils/comm';
+import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import { useI18n } from 'vue-i18n'
 
 const { t: $t } = useI18n()

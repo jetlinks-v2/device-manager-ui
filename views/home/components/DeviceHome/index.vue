@@ -43,9 +43,9 @@ import PlatformPicCard from '../PlatformPicCard.vue';
 import StepCard from '../StepCard.vue';
 import { home } from '../../../../assets'
 
-import { useAuthStore } from '@/store';
+import { useAuthStore } from '@jetlinks-web-core/store';
 import { bootConfig, recommendList } from '../../typing';
-import { useMenuStore } from '@/store/menu';
+import { useMenuStore } from '@jetlinks-web-core/store/menu';
 import { useI18n } from 'vue-i18n'
 
 const { t: $t } = useI18n()

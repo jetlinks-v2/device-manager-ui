@@ -16,7 +16,7 @@ import TopCard from './components/TopCard.vue';
 import Network from './components/Network.vue';
 import Cpu from './components/Cpu.vue';
 import Jvm from './components/Jvm.vue';
-import { isNoCommunity } from '@/utils/utils'
+import { isNoCommunity } from '@jetlinks-web-core/utils/utils'
 
 const serviceId = ref<string | undefined>()
 

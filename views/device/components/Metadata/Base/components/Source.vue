@@ -103,12 +103,12 @@
 </template>
 
 <script setup lang="ts" name="MetadataSource">
-import {isNoCommunity} from '@/utils/utils';
+import {isNoCommunity} from '@jetlinks-web-core/utils/utils';
 import VirtualRule from './VirtualRule/index.vue';
 import {Form} from 'ant-design-vue';
 import {useInstanceStore} from '../../../../../../store/instance';
 import {queryDeviceVirtualProperty, resetRule} from '../../../../../../api/instance';
-import {onlyMessage} from '@/utils/comm';
+import {onlyMessage} from '@jetlinks-web-core/utils/comm';
 import {provide, Ref} from 'vue';
 import {queryProductVirtualProperty} from '../../../../../../api/product';
 import {useProductStore} from '../../../../../../store/product';

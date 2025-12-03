@@ -1,4 +1,4 @@
-import type { BaseItem, State } from '@/utils/typings';
+import type { BaseItem, State } from '@jetlinks-web-core/utils/typings';
 
 type DeviceType = {
   text: string;

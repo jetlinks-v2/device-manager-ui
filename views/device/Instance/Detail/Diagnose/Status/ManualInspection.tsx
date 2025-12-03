@@ -1,9 +1,9 @@
 import { useInstanceStore } from "../../../../../../store/instance";
-import { useMenuStore } from "@/store/menu";
+import { useMenuStore } from "@jetlinks-web-core/store/menu";
 import { Button, Modal, Descriptions, DescriptionsItem, Space } from "ant-design-vue"
 import { AIcon } from '@jetlinks-web/components'
 import styles from './index.module.less'
-import i18n from "@/locales";
+import i18n from "@jetlinks-web-core/locales";
 
 const ManualInspection = defineComponent({
     props: {

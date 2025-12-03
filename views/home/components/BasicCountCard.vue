@@ -34,7 +34,7 @@
 import { wsClient } from '@jetlinks-web/core';
 import Pie from './Pie.vue';
 import { map } from 'rxjs/operators';
-import { useMenuStore } from '@/store';
+import { useMenuStore } from '@jetlinks-web-core/store';
 import { useI18n } from 'vue-i18n'
 import { home } from '../../../assets'
 

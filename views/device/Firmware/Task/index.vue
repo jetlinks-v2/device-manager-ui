@@ -58,10 +58,10 @@
                     <template #overlay>
                       <a-menu>
                         <a-menu-item>
-                          <j-permission-button 
-                            type="link" 
+                          <j-permission-button
+                            type="link"
                             :disabled="item.waiting || item.processing"
-                            danger block 
+                            danger block
                             :popConfirm="{
                               title: $t('Instance.index.133466-3'),
                               onConfirm: () => {
@@ -146,7 +146,7 @@
 import { queryTaskPaginateNot, deleteTask } from '../../../../api/firmware';
 import Save from './Save/index.vue';
 import TaskDetail from './Detail/index.vue';
-import { onlyMessage } from '@/utils/comm';
+import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import { useI18n } from 'vue-i18n';
 import dayjs from 'dayjs'
 
@@ -206,7 +206,7 @@ const colorMap = {
   'waiting': 'primary',
   'processing': 'warning',
   'failed': 'error',
-  'success': 'success', 
+  'success': 'success',
 }
 
 const iconMap = {
@@ -220,7 +220,7 @@ const iconMap = {
 const taskState = [
   {
     label: $t('Detail.index.805835-20'),
-    value:'canceled', 
+    value:'canceled',
   },
   {
     label: $t('Detail.index.805835-17'),
@@ -245,7 +245,7 @@ const options = computed(() => {
     return taskState.filter(item => {
       return val[item.value]
     }).map(item => {
-      return {  
+      return {
         label: item.label,
         type: item.value,
         value: val[item.value],

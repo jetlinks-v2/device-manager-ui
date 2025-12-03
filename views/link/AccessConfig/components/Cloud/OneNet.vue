@@ -429,10 +429,10 @@ import { update, save, getProtocolList } from '../../../../../api/link/accessCon
 import AccessCard from '../AccessCard/index.vue';
 import { randomString, onlyMessage } from '@jetlinks-web/utils';
 import { ProtocolMapping } from '../../data';
-import { useMenuStore } from '@/store';
+import { useMenuStore } from '@jetlinks-web-core/store';
 import { network } from '../../../../../assets';
 import { useI18n } from 'vue-i18n';
-import { useTabSaveSuccess, useTabSaveSuccessBack } from '@/hooks'
+import { useTabSaveSuccess, useTabSaveSuccessBack } from '@jetlinks-web-core/hooks'
 
 const { t: $t } = useI18n();
 const menuStory = useMenuStore();

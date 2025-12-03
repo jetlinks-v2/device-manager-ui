@@ -1,5 +1,5 @@
 import { diagnose } from '../../../../../assets'
-import i18n from '@/locales';
+import i18n from '@jetlinks-web-core/locales';
 
 export const headerImgMap = new Map();
 headerImgMap.set('loading', diagnose.loading2);

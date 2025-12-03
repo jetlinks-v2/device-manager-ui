@@ -1,5 +1,5 @@
 import { iotCard } from '../../../../../assets';
-import i18n from '@/locales';
+import i18n from '@jetlinks-web-core/locales';
 
 // 平台类型
 export const platformTypeList = [

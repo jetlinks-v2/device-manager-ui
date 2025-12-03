@@ -137,8 +137,8 @@
                     :before-upload="beforeUpload"
                     accept=".json"
                     :show-upload-list="false"
-                    :action="FileStaticPath"
-                    :headers="{ [TOKEN_KEY]: getToken() }"
+                    :action="FileStaticPath()"
+                    :headers="getUploadHeaders()"
                     @change="fileChange"
                 >
                     <a-button>
@@ -203,14 +203,14 @@ import type {
 import type { DeviceMetadata } from '../../../Product/typings';
 import { useInstanceStore } from '../../../../../store/instance';
 import { useProductStore } from '../../../../../store/product';
-import {FileStaticPath } from '@/api/comm';
-import { getToken, onlyMessage } from '@jetlinks-web/utils';
+import {FileStaticPath } from '@jetlinks-web-core/api/comm';
+import { onlyMessage } from '@jetlinks-web/utils';
 import { useMetadataStore } from '../../../../../store/metadata';
 import { omit } from 'lodash-es';
 import { Modal } from 'ant-design-vue';
 import { testObject, testType, testAliType, testAliObject } from './valideta';
-import { TOKEN_KEY } from '@jetlinks-web/constants';
 import { useI18n } from 'vue-i18n';
+import { getUploadHeaders } from '@jetlinks-web-core/utils'
 
 const { t: $t } = useI18n();
 

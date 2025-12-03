@@ -4,6 +4,10 @@
   "version": "1.0.0",
   "description": "设备管理",
   "main": "index.js",
+  "scripts": {
+    "dev": "pnpm --filter jetlinks-ui-core dev -- --module-name device-manager",
+    "build": "pnpm --filter jetlinks-ui-core build -- --module-name device-manager"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/jetlinks-v2/device-manager-ui.git"

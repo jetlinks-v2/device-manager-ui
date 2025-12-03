@@ -1,4 +1,4 @@
-import i18n from "@/locales";
+import i18n from "@jetlinks-web-core/locales";
 export const TypeMap = {
   'deviceGateway': i18n.global.t('plugin.util.039029-0'),
   'collector': i18n.global.t('plugin.util.039029-1'),

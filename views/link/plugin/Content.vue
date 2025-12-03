@@ -156,7 +156,7 @@ import {link} from '../../../assets'
 import {useI18n} from 'vue-i18n';
 import Detail from './Detail.vue';
 import { usePluginPermission } from '@device-manager-ui/hooks/usePermission'
-import { mergeObjectArrays } from '@/utils'
+import { mergeObjectArrays } from '@jetlinks-web-core/utils'
 
 const {t: $t} = useI18n();
 const route = useRoute();

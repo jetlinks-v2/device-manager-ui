@@ -1,6 +1,6 @@
 import { defineAsyncComponent } from 'vue';
-import i18n from "@/locales";
-import { moduleRegistry } from '@/utils/module-registry';
+import i18n from "@jetlinks-web-core/locales";
+import { moduleRegistry } from '@jetlinks-web-core/utils/module-registry';
 import registerSetting from './register'
 
 const routerModules = import.meta.glob('./views/**/index.vue')

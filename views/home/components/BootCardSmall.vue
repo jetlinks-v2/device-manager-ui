@@ -26,7 +26,7 @@
 
 <script setup lang="ts">
 import type { bootConfig } from '../typing';
-import { useMenuStore } from '@/store';
+import { useMenuStore } from '@jetlinks-web-core/store';
 import { onlyMessage } from '@jetlinks-web/utils';
 import { useI18n } from 'vue-i18n'
 import { home } from '../../../assets'

@@ -1,5 +1,5 @@
 import { Badge, Button, Space } from "ant-design-vue"
-import TitleComponent from '@/components/TitleComponent/index.vue'
+import TitleComponent from '@jetlinks-web-core/components/TitleComponent/index.vue'
 import styles from './index.module.less'
 import type { ListProps } from './util'
 import { networkInitList, childInitList, cloudInitList, mediaInitList, TextColorMap, StatusMap, modifyArrayList, isExit, gatewayList, urlMap } from './util'
@@ -11,10 +11,10 @@ import { uniq, map} from "lodash-es"
 import DiagnosticAdvice from './DiagnosticAdvice'
 import ManualInspection from './ManualInspection'
 import { PermissionButton } from '@jetlinks-web/components'
-import { useMenuStore } from "@/store/menu"
+import { useMenuStore } from "@jetlinks-web-core/store/menu"
 import BindParentDevice from '../../components/BindParentDevice/index.vue'
-import { onlyMessage } from "@/utils/comm"
-import i18n from "@/locales";
+import { onlyMessage } from "@jetlinks-web-core/utils/comm"
+import i18n from "@jetlinks-web-core/locales";
 
 type TypeProps = 'network' | 'child-device' | 'media' | 'cloud' | 'channel'
 

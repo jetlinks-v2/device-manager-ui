@@ -47,11 +47,11 @@ import DeviceHome from './components/DeviceHome/index.vue';
 import DevOpsHome from './components/DevOpsHome/index.vue';
 import ComprehensiveHome from './components/ComprehensiveHome/index.vue';
 import Api from './components/Api/index.vue';
-import {useAIStore, useUserStore} from '@/store';
+import {useAIStore, useUserStore} from '@jetlinks-web-core/store';
 
-import { isNoCommunity } from '@/utils/utils';
-import { getMe_api, getView_api } from '@/api/account/center';
-import { getAppInfo_api } from '@/api/system/apply';
+import { isNoCommunity } from '@jetlinks-web-core/utils/utils';
+import { getMe_api, getView_api } from '@jetlinks-web-core/api/account/center';
+import { getAppInfo_api } from '@jetlinks-web-core/api/system/apply';
 import { useI18n } from 'vue-i18n'
 
 const { t: $t } = useI18n()

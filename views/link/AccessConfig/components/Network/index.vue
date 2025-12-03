@@ -260,10 +260,10 @@ import {
 import AccessCard from "../AccessCard/index.vue";
 import { Form } from "ant-design-vue";
 import type { FormInstance, TableColumnType } from "ant-design-vue";
-import { useMenuStore } from "@/store/menu";
+import { useMenuStore } from "@jetlinks-web-core/store/menu";
 import { onlyMessage, randomString } from "@jetlinks-web/utils";
 import { useI18n } from "vue-i18n";
-import { useTabSaveSuccess, useTabSaveSuccessBack } from '@/hooks'
+import { useTabSaveSuccess, useTabSaveSuccessBack } from '@jetlinks-web-core/hooks'
 
 const { t: $t } = useI18n();
 const menuStory = useMenuStore();

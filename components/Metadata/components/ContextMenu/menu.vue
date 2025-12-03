@@ -42,7 +42,7 @@
 
 <script setup name="MetadataContextMenu">
 import { onMounted, ref, nextTick } from "vue";
-import i18n from "@/locales";
+import i18n from "@jetlinks-web-core/locales";
 import { Menu, MenuItem} from 'ant-design-vue'
 import {AIcon } from '@jetlinks-web/components'
 

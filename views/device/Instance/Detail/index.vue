@@ -132,16 +132,15 @@
 import { useInstanceStore } from '../../../../store/instance';
 import { _deploy, _disconnect } from '../../../../api/instance';
 import { onlyMessage } from '@jetlinks-web/utils';
-import { openEdgeUrl } from '@/utils/utils';
+import { openEdgeUrl, isNoCommunity } from '@jetlinks-web-core/utils/utils';
 import { wsClient } from '@jetlinks-web/core';
 import { useRouterParams } from '@jetlinks-web/hooks';
 import { EventEmitter } from '@jetlinks-web/utils';
-import { useSystemStore, useMenuStore, useAuthStore, useAIStore, useUserStore } from '@/store'
-import { isNoCommunity } from '@/utils/utils';
+import { useSystemStore, useMenuStore, useAuthStore, useAIStore, useUserStore } from '@jetlinks-web-core/store'
 import { device } from "../../../../assets";
 import { useI18n } from 'vue-i18n';
 import { tabs } from './asyncComponent'
-import { useMircoAppData } from '@/hooks/useMircoApp';
+import { useMircoAppData } from '@jetlinks-web-core/hooks/useMircoApp';
 
 const { data: platform } = useMircoAppData('platformName')
 

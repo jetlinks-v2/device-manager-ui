@@ -136,7 +136,7 @@ import TreeList from './components/TreeList.vue'
 import {useInstanceStore} from "@device-manager-ui/store/instance";
 import { getOrgList, getBindOrgAuthList } from '@device-manager-ui/api/instance'
 import { useRequest } from '@jetlinks-web/hooks'
-import { moduleRegistry } from '@/utils/module-registry'
+import { moduleRegistry } from '@jetlinks-web-core/utils/module-registry'
 
 const getTreeData_api = moduleRegistry.getResourceItem('authentication-manager-ui', 'apis', 'getTreeData_api')
 const instanceStore = useInstanceStore();

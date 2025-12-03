@@ -103,12 +103,12 @@ import {useInstanceStore} from '@device-manager-ui/store/instance';
 import {useProductStore} from '@device-manager-ui/store/product';
 import dayjs from 'dayjs';
 import AlarmLog from './components/AlarmLog.vue';
-import {useMenuStore} from '@/store';
+import {useMenuStore} from '@jetlinks-web-core/store';
 import {useI18n} from 'vue-i18n';
 import SolveComponent from './components/SolveComponent.vue'
 import Duration from './components/Duration.vue'
 import {queryLevel} from "@device-manager-ui/api/rule-engine/config";
-import {langKey} from "@/utils/consts";
+import {langKey} from "@jetlinks-web-core/utils/consts";
 
 const {t: $t} = useI18n();
 

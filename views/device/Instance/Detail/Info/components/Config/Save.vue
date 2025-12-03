@@ -77,7 +77,7 @@
 <script lang="ts" setup>
 import { modify } from '../../../../../../../api/instance';
 import { useInstanceStore } from '../../../../../../../store/instance';
-import { onlyMessage } from '@/utils/comm';
+import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import { useI18n } from 'vue-i18n';
 import {map, uniqBy} from "lodash-es";
 

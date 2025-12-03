@@ -5,7 +5,7 @@
 // 下载中：downloading
 // 等待安装：waiting_install
 // 等待下载：waiting_download
-import i18n from '@/locales'
+import i18n from '@jetlinks-web-core/locales'
 
 export const statusIcon = new Map()
 statusIcon.set('success', 'CheckCircleFilled')

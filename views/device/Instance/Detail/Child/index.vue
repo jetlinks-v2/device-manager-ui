@@ -394,12 +394,11 @@ import Save from './Save/index.vue';
 import Bind from '../ChildDevice/BindChildDevice/index.vue';
 import { randomString, onlyMessage, LocalStore } from '@jetlinks-web/utils';
 import { cloneDeep } from 'lodash-es';
-import { useMenuStore } from '@/store/menu';
+import { useMenuStore } from '@jetlinks-web-core/store/menu';
 import actionModal from './actionModal.vue';
 import { Modal } from 'ant-design-vue';
 import { TOKEN_KEY } from '@jetlinks-web/constants';
 import { EventEmitter } from '@jetlinks-web/utils';
-// import DeviceDetail from '@/views/edge/Batch/task/Children/DeviceDetail/index.vue';
 import { useI18n } from 'vue-i18n';
 
 const { t: $t } = useI18n();

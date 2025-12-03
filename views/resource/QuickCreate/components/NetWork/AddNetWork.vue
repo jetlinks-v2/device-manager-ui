@@ -744,7 +744,7 @@ import {
 import { cloneDeep } from "lodash-es";
 import type { FormData2Type, FormDataType } from "../../type.ts";
 import LocalAddressSelect from "./LocalAddressSelect.vue";
-import { isNoCommunity } from "@/utils/utils";
+import { isNoCommunity } from "@jetlinks-web-core/utils/utils";
 import { useTypeStore } from "@device-manager-ui/store/type";
 import { storeToRefs } from "pinia";
 
