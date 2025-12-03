@@ -15,11 +15,9 @@
                         v-model:fileList="uploadFile"
                         name="file"
                         :multiple="true"
-                        :headers="{
-                            [TOKEN_KEY]: LocalStore.get(TOKEN_KEY),
-                        }"
+                        :headers="getUploadHeaders()"
                         :showUploadList="false"
-                        :action="RESOURCE_UPLOAD"
+                        :action="RESOURCE_UPLOAD()"
                         @change="handleChange"
                         @drop="handleDrop"
                     >
@@ -62,11 +60,10 @@
 
 <script setup>
 import { _queryResourceCloud, RESOURCE_UPLOAD } from '@device-manager-ui/api/resource/resource';
-import { TOKEN_KEY } from '@jetlinks-web/constants';
-import { LocalStore } from '@jetlinks-web/utils';
 import { onlyMessage } from "@jetlinks-web/utils";
 import List from './List.vue';
 import { useI18n } from 'vue-i18n';
+import {getUploadHeaders} from "@/utils";
 
 const { t: $t } = useI18n();
 const props = defineProps({

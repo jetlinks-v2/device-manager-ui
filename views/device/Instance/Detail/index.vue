@@ -159,6 +159,11 @@ statusMap.set('online', 'success');
 statusMap.set('offline', 'error');
 statusMap.set('notActive', 'warning');
 
+const statusTextMap = new Map();
+statusTextMap.set('online', $t('DashBoard.index.954313-11'));
+statusTextMap.set('offline', $t('DashBoard.index.954313-12'));
+statusTextMap.set('notActive', $t('DashBoard.index.954313-10'));
+
 const statusRef = ref();
 const componentRef = ref();
 
@@ -204,7 +209,12 @@ const getStatus = (id: string) => {
         if (
             message.payload?.value?.type !== instanceStore.current?.state.value
         ) {
-            instanceStore.refresh(id);
+            // instanceStore.refresh(id);
+          // 调用detail接口无法实时更新状态，所以这里手动更新
+            instanceStore.setState({
+              value: message.payload?.value?.type,
+              text: statusTextMap.get(message.payload?.value?.type) || '',
+            });
         }
     });
 };
@@ -213,7 +223,7 @@ const getDetail = () => {
     if(platform !== 'edge'){
         list.value.push({
             key: 'DeviceRelationship',
-            tab: $t('Detail.index.957187-22'),
+            tab: $t('Detail.index.957187-31'),
         });
     }
     const keys = list.value.map((i) => i.key);

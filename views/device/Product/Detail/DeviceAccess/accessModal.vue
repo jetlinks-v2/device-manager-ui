@@ -15,6 +15,7 @@
         target="deviceModal"
         @search="handleSearch"
         type="simple"
+        style="padding: 0"
     />
     <JProTable
         :columns="columns"
@@ -29,12 +30,12 @@
                 ] : [{ name: 'createTime', order: 'desc' }],
             }"
         :params="params"
-        :gridColumn="2"
         :gridColumns="[2]"
         :pagination="{
         pageSizeOptions: ['4', '12', '24', '48'],
         showSizeChanger: true,
       }"
+        style="padding: 0"
     >
       <template #headerLeftRender>
         <j-permission-button

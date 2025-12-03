@@ -2,9 +2,9 @@
   <a-upload
       name="file"
       accept=".jar,.zip"
-      :action="uploadFile"
+      :action="uploadFile()"
       :headers="{
-            [TOKEN_KEY]: LocalStore.get(TOKEN_KEY),
+            [TOKEN_KEY]: getToken(),
         }"
       @change="handleChange"
       class="upload-box"
@@ -26,7 +26,7 @@
 </template>
 
 <script setup lang="ts" name="FileUpload">
-import {LocalStore, onlyMessage} from '@jetlinks-web/utils';
+import {getToken, onlyMessage} from '@jetlinks-web/utils';
 import {TOKEN_KEY} from '@jetlinks-web/constants';
 import {uploadFile} from '../../../api/link/plugin';
 import type {UploadChangeParam, UploadProps} from 'ant-design-vue';

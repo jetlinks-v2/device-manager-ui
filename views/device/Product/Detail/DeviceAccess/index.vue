@@ -322,7 +322,7 @@ import { ConfigMetadata } from "../../typings";
 import Title from "../Title/index.vue";
 import { useAuthStore } from "@jetlinks-web-core/store";
 import { steps, steps1 } from "./util";
-import "./index.less";
+// import "./index.less";
 import {
   getProviders,
   queryList,
@@ -1038,6 +1038,8 @@ watch(() => access.value?.id, (val) => {
 })
 </script>
 <style lang="less" scoped>
+@import "./index.less";
+
 .item-style {
   margin-bottom: 10px;
 }

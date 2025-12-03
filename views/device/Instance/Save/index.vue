@@ -272,14 +272,14 @@ const handleSave = () => {
                         masterDeviceName: resp.result?.name,
                         masterAutoCreate: true
                     }).finally(() => {
-                        emit('save', !props.data.id, resp.result);
+                        emit('save', !props.data?.id, resp.result);
                     })
                     if (response.success) {
                         onlyMessage('操作成功！');
                     }
                 } else {
                     onlyMessage('操作成功！');
-                    emit('save', !isEdit.value, resp.result);
+                    emit('save', !props.data?.id, resp.result);
                 }
             }
         })

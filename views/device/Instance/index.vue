@@ -214,7 +214,7 @@ import Import from './Import/modal.vue';
 import Export from './Export/index.vue';
 import Process from './Process/index.vue';
 import Save from './Save/index.vue';
-import { BASE_API, TOKEN_KEY_URL } from '@jetlinks-web/constants'
+import { TOKEN_KEY_URL } from '@jetlinks-web/constants'
 import {
     queryGatewayList,
     queryNoPagingPost,
@@ -233,7 +233,7 @@ import { device } from '../../../assets';
 import { isNoCommunity } from '@jetlinks-web-core/utils/utils';
 import { useI18n } from 'vue-i18n';
 import { useTermOptions } from '@jetlinks-web/components/es/Search/hooks/useTermOptions'
-import { mergeObjectArrays } from '@jetlinks-web-core/utils';
+import { mergeObjectArrays, getBaseApi } from '@jetlinks-web-core/utils';
 
 const { t: $t } = useI18n();
 
@@ -692,7 +692,7 @@ const handleGetParams = (p: any) => {
 
 const activeAllDevice = () => {
     type.value = 'active';
-    let activeAPI = `${BASE_API}/device-instance/deploy?${TOKEN_KEY_URL}=${getToken()}`;
+    let activeAPI = `${getBaseApi()}/device-instance/deploy?${TOKEN_KEY_URL}=${getToken()}`;
     if (params.value?.terms) {
       activeAPI += `&${handleParams(handleGetParams(params.value))}`;
     }
@@ -702,7 +702,7 @@ const activeAllDevice = () => {
 
 const syncDeviceStatus = () => {
     type.value = 'sync';
-    let syncAPI = `${BASE_API}/device-instance/state/_sync?${TOKEN_KEY_URL}=${getToken()}`;
+    let syncAPI = `${getBaseApi()}/device-instance/state/_sync?${TOKEN_KEY_URL}=${getToken()}`;
     if (params.value) {
       syncAPI += `&${handleParams(params.value)}`;
     }

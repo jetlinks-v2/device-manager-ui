@@ -11,13 +11,11 @@
     ]"
   >
     <j-auto-complete
-      v-model:value="date"
+      v-model:value="_value"
       :options="options"
-      mode="tags"
       :placeholder="$t('Date.Item.884272-1')"
       :dropdownStyle="{ zIndex: 1072 }"
       :getPopupContainer="(node) => tableWrapperRef || node"
-      @change="change"
     />
   </a-form-item>
 </template>
@@ -44,19 +42,12 @@ const options = [
   { label: "hh:mm:ss", value: "hh:mm:ss" },
 ];
 
-const date = ref(props.value);
+const _value = computed({
+  get: () => props.value || undefined,
+  set: (val) => emit('update:value', val),
+});
 
 const tableWrapperRef = useTableWrapper();
-const change = () => {
-  emit("update:value", date.value);
-};
-
-watch(
-  () => props.value,
-  () => {
-    date.value = props.value;
-  }
-);
 </script>
 
 <style scoped></style>

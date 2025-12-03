@@ -1,9 +1,9 @@
 import { request } from '@jetlinks-web/core'
-import { BASE_API } from '@jetlinks-web/constants';
+import {getBaseApi} from "@/utils";
 
 export const queryPage = (data: any) => request.post(`/plugin/driver/_query`, data)
 
-export const uploadFile = `${BASE_API}/plugin/driver/upload`
+export const uploadFile = () => `${getBaseApi()}/plugin/driver/upload`
 
 export const add = (data: any) => request.post('/plugin/driver', data)
 

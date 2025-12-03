@@ -5,5 +5,5 @@ export const TypeMap = {
   'ruleEngine':i18n.global.t('plugin.util.039029-2'),
   'standalone':i18n.global.t('plugin.util.039029-3'),
   'media':i18n.global.t('plugin.util.039029-4'),
-  'ai': i18n.global.t('plugin.util.039029-5')
+  'ai': 'AI'
 }

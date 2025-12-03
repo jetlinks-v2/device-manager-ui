@@ -14,6 +14,13 @@ export const useInstanceStore = defineStore({
       this.current = current
       this.detail = current
     },
+    setState(state: {
+      value: string;
+      text: string;
+    }) {
+      this.current.state = state
+      this.detail.state = state
+    },
     async refresh(id: string) {
       const resp: any = await detail(id)
       if(resp.status === 200){
