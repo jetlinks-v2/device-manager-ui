@@ -22,7 +22,7 @@
               <a-badge :status="getColor(i)" :text="i.address" />
               <span v-if="(network.addresses || []).length > 1">
                 {{
-                  $t("components.FifthKind.409083-0", [item.addresses.length])
+                  $t("components.FifthKind.409083-0", [network.addresses.length])
                 }}
               </span>
             </div>
