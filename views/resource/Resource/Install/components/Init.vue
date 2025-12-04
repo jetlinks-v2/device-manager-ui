@@ -63,7 +63,7 @@ import { _queryResourceCloud, RESOURCE_UPLOAD } from '@device-manager-ui/api/res
 import { onlyMessage } from "@jetlinks-web/utils";
 import List from './List.vue';
 import { useI18n } from 'vue-i18n';
-import {getUploadHeaders} from "@/utils";
+import {getUploadHeaders} from "@jetlinks-web-core/utils";
 
 const { t: $t } = useI18n();
 const props = defineProps({

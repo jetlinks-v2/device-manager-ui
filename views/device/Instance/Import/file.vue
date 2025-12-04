@@ -76,7 +76,7 @@ import { onlyMessage, downloadFileByUrl } from '@jetlinks-web/utils';
 import { deviceImport, pluginDeviceImport, templateDownload } from '../../../../api/instance';
 import { EventSourcePolyfill } from 'event-source-polyfill';
 import { useI18n } from 'vue-i18n';
-import {getUploadHeaders} from "@/utils";
+import {getUploadHeaders} from "@jetlinks-web-core/utils";
 
 const { t: $t } = useI18n();
 const props = defineProps({

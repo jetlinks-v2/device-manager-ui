@@ -21,7 +21,7 @@ import {TOKEN_KEY, TOKEN_KEY_URL} from "@jetlinks-web/constants";
 import { LocalStore } from "@jetlinks-web/utils";
 import markerPng from '@device-manager-ui/assets/marker.png'
 import { debounce } from 'lodash-es'
-import {getBaseApi} from "@/utils";
+import {getBaseApi} from "@jetlinks-web-core/utils";
 
 const deviceList = ref([])
 const _pageSize = 5000

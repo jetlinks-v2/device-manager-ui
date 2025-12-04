@@ -1,5 +1,5 @@
 import { request } from '@jetlinks-web/core'
-import {getBaseApi} from "@/utils";
+import {getBaseApi} from "@jetlinks-web-core/utils";
 
 export const RESOURCE_UPLOAD = () => `${getBaseApi()}/resources/install/task/_upload`;
 

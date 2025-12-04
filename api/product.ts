@@ -1,7 +1,7 @@
 import { request, ndJson } from '@jetlinks-web/core'
 import type { DeviceMetadata, ProductItem, DepartmentItem, MetadataType  } from '../views/device/Product/typings'
 import type { OperatorItem } from '../components/FRuleEditor/Operator/typings'
-import {getBaseApi} from "@/utils";
+import {getBaseApi} from "@jetlinks-web-core/utils";
 
 /**
  * 根据条件查询产品（不带翻页）

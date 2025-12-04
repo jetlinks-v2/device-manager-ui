@@ -1,5 +1,5 @@
 import { request } from '@jetlinks-web/core'
-import {getBaseApi} from "@/utils";
+import {getBaseApi} from "@jetlinks-web-core/utils";
 
 export const NETWORK_CERTIFICATE_UPLOAD = () => `${getBaseApi()}/network/certificate/upload`;
 

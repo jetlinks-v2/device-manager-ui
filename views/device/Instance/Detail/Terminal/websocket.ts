@@ -1,7 +1,7 @@
 import { Observable } from 'rxjs'
 import { notification } from 'ant-design-vue';
 import { getToken } from '@jetlinks-web/utils';
-import {getBaseApi} from "@/utils";
+import {getBaseApi} from "@jetlinks-web-core/utils";
 import {TOKEN_KEY_URL} from "@jetlinks-web/constants";
 
 let ws: any = null

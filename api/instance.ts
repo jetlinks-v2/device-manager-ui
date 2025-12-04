@@ -3,7 +3,7 @@ import {getToken} from '@jetlinks-web/utils'
 import {TOKEN_KEY_URL} from '@jetlinks-web/constants'
 import type { DeviceInstance } from '../views/device/Instance/typings'
 import type { DeviceMetadata, UnitType } from '../views/device/Product/typings';
-import {getBaseApi} from "@/utils";
+import {getBaseApi} from "@jetlinks-web-core/utils";
 
 /**
  * 重置设备继承产品的物模型规则
