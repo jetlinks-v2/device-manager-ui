@@ -9,7 +9,12 @@
         <div v-else-if="_data.data?.valueType?.type === 'file'">
             <template v-if="data?.valueType?.bodyType === 'base64'">
                 <div :class="valueClass" v-if="!!_type">
-                    <img :src="imgMap.get(_type)" @error="onError" />
+                    <img
+                        v-if="_type === 'img'"
+                        :src="value?.formatValue"
+                        @error="onError"
+                    />
+                    <img v-else :src="imgMap.get(_type)" @error="onError" />
                 </div>
                 <div v-else :class="valueClass">
                     <img :src="imgMap.get('other')" />
