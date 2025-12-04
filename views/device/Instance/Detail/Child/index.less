@@ -21,7 +21,9 @@
     .content {
         display: flex;
         height: calc(100% - 30px);
-
+        :deep(.virtual-table-row-expand-icon) {
+            display: none !important;
+        }
         .left {
             flex: 1 1 0;
             min-width: 0;
@@ -45,8 +47,9 @@
             .left-list {
                 height: calc(100% - 86px);
                 overflow-y: auto;
+                
                 .renderId {
-                    display: flex;
+                    display: inline-flex;
                 }
 
                 .left-drag {

@@ -88,7 +88,7 @@
 
 <script lang="ts" setup>
 import { getPropertyData } from '../../../../../../../api/instance';
-import { detail } from '@device/api/product'
+import { detail } from '@device-manager-ui/api/product'
 import { useInstanceStore } from '../../../../../../../store/instance';
 import dayjs from 'dayjs';
 import { getType } from '../index';
