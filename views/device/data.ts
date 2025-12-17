@@ -157,6 +157,13 @@ export const ExpandsTypeList = [
     },
 ]
 
+
+export const deviceStateList = [
+    { label: i18n.global.t('Instance.index.133466-7'), value: 'notActive' },
+    { label: i18n.global.t('Instance.index.133466-8'), value: 'offline' },
+    { label: i18n.global.t('Instance.index.133466-9'), value: 'online' },
+]
+
 export const accessType = [
     'mqtt-server-gateway',
     'websocket-server',
