@@ -234,6 +234,7 @@ import { isNoCommunity } from '@jetlinks-web-core/utils/utils';
 import { useI18n } from 'vue-i18n';
 import { useTermOptions } from '@jetlinks-web/components/es/Search/hooks/useTermOptions'
 import { mergeObjectArrays, getBaseApi } from '@jetlinks-web-core/utils';
+import {deviceStateList} from "@device/views/device/data";
 
 const { t: $t } = useI18n();
 
@@ -330,11 +331,7 @@ const columns = ref([
         scopedSlots: true,
         search: {
             type: 'select',
-            options: [
-                { label: $t('Instance.index.133466-7'), value: 'notActive' },
-                { label: $t('Instance.index.133466-8'), value: 'offline' },
-                { label: $t('Instance.index.133466-9'), value: 'online' },
-            ],
+            options: deviceStateList,
         },
     },
     {
