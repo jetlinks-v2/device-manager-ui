@@ -9,17 +9,21 @@
         <div v-else-if="_data.data?.valueType?.type === 'file'">
             <template v-if="data?.valueType?.bodyType === 'base64'">
                 <div :class="valueClass" v-if="!!_type">
-                    <img :src="imgMap.get(_type)" @error="onError" />
+                    <Image
+                        v-if="_type === 'img'"
+                        :src="value?.formatValue"
+                    />
+                    <Image v-else :src="imgMap.get(_type)"/>
                 </div>
                 <div v-else :class="valueClass">
-                    <img :src="imgMap.get('other')" />
+                    <Image :src="imgMap.get('other')" />
                 </div>
             </template>
             <div
                 v-else-if="data?.valueType?.bodyType === $t('Detail.Table.181708-1')"
                 :class="valueClass"
             >
-                <img :src="imgMap.get('other')" />
+                <Image :src="imgMap.get('other')" />
             </div>
             <template v-else>
                 <template
@@ -30,7 +34,7 @@
                     "
                 >
                     <div :class="valueClass" @click="getDetail('img')">
-                        <img :src="value?.formatValue" @error="imgError" />
+                        <Image :src="value?.formatValue" />
                     </div>
                 </template>
                 <template
@@ -41,7 +45,7 @@
                     "
                 >
                     <div :class="valueClass" @click="getDetail('video')">
-                        <img :src="imgMap.get('video')" />
+                        <Image :src="imgMap.get('video')" />
                     </div>
                 </template>
                 <template
@@ -52,7 +56,7 @@
                     "
                 >
                     <div :class="valueClass">
-                        <img
+                        <Image
                             :src="
                                 imgMap.get(
                                     fileList
@@ -67,7 +71,7 @@
                 </template>
                 <template v-else>
                     <div :class="valueClass">
-                        <img :src="imgMap.get('other')" />
+                        <Image :src="imgMap.get('other')" />
                     </div>
                 </template>
             </template>
@@ -77,7 +81,7 @@
             @click="getDetail('obj')"
             :class="valueClass"
         >
-            <img :src="imgMap.get('obj')" />
+            <Image :src="imgMap.get('obj')" />
         </div>
         <div
             v-else-if="
@@ -142,14 +146,6 @@ const _type = computed(() => {
   return getType(_data.value?.formatValue)
 })
 
-const onError = (e: any) => {
-    e.target.src = imgMap.get('other');
-};
-
-const imgError = (e: any) => {
-    e.target.src = imgMap.get('error');
-    temp.value = true;
-};
 const getDetail = (_type: string) => {
     const value = _data.value;
     let flag: string = '';
@@ -207,14 +203,22 @@ const getDetail = (_type: string) => {
         white-space: nowrap;
         text-overflow: ellipsis;
 
-        img {
-            width: 60px;
+        :deep(.image-container) {
+            width: 100%;
+            height: 100%;
+            img {
+                width: 60px;
+            }
         }
     }
 
     .otherValue {
-        img {
-            width: 40px;
+        :deep(.image-container) {
+            width: 100%;
+            height: 100%;
+            img {
+                width: 40px;
+            }
         }
     }
 }
