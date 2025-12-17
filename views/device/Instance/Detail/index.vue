@@ -136,6 +136,7 @@ import { isNoCommunity } from '@/utils/utils';
 import { device } from "../../../../assets";
 import { useI18n } from 'vue-i18n';
 import { tabs } from './asyncComponent'
+import {deviceStateList} from "@device/views/device/data";
 
 const { t: $t } = useI18n();
 const menuStory = useMenuStore();
@@ -197,10 +198,13 @@ const getStatus = (id: string) => {
             deviceId: id,
         },
     ).subscribe((message: any) => {
+        const type = message.payload?.value?.type
         if (
-            message.payload?.value?.type !== instanceStore.current?.state.value
+          type !== instanceStore.current?.state.value
         ) {
-            instanceStore.refresh(id);
+            // instanceStore.refresh(id);
+          instanceStore.current.state.value = type
+          instanceStore.current.state.text = deviceStateList.find(item => item.value === type)?.label || '--'
         }
     });
 };
