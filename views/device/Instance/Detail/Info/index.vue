@@ -101,12 +101,12 @@
             instanceStore.current?.tags.length > 0
         "
     />
-    <Relation
+    <!-- <Relation
         v-if="
             instanceStore.current?.relations &&
             instanceStore.current?.relations.length > 0
         "
-    />
+    /> -->
     <Save
         v-if="visible"
         :data="instanceStore.current"
