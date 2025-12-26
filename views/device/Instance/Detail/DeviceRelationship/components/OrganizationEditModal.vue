@@ -161,7 +161,7 @@ const handleOk = async () => {
   loading.value = true
   try {
     // 模拟保存请求
-    const res = await bindDeviceToOrgAll('device', instanceStore.current.id, checkedMaps.value.map(item => {
+    const res = await bindDeviceToOrgAll('device', instanceStore.current.id, 'org', checkedMaps.value.map(item => {
       return {
         assetType: 'device',
         targetId: item.id,

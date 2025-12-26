@@ -28,6 +28,10 @@
         <div style="flex: 1">
             <a-row :gutter="30">
                 <a-col :span="15">
+                    <div class="description">
+                        <span class="description-title">说明</span>
+                        <j-ellipsis style="width: 80%;">{{ current.description || '--' }}</j-ellipsis>             
+                    </div>
                     <MonacoEditor
                         :ref="`monacoEditor${current.id}`"
                         v-model="current.json"
@@ -212,6 +216,17 @@ const handleClear = () => {
         width: 100%;
         max-height: 450px;
         overflow: auto;
+    }
+    .description {
+        margin-bottom: 10px;
+        padding: 8px 11px;
+        border: 1px solid #d9d9d9;
+        border-radius: 2px;
+        display: flex;
+        .description-title {
+            color: #777777;
+            margin-right: 24px;
+        }
     }
 }
 .tabTitle {
