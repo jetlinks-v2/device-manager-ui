@@ -758,10 +758,19 @@ const handleImport = async () => {
             (props.type === 'device' || formModel.type === 'import') &&
             formModel.metadataType === 'script'
         ) {
-            check =
-                formModel.metadata === 'jetlinks'
-                    ? requiredCheck(JSON.parse(formModel.import))
-                    : false // aliCheck(JSON.parse(formModel.import));
+            try {
+              check =
+                  formModel.metadata === 'jetlinks'
+                      ? requiredCheck(JSON.parse(formModel.import))
+                      : false // aliCheck(JSON.parse(formModel.import));
+            }catch (e) {
+              onlyMessage(
+                  e === 'error'
+                      ? $t('Import.index.603910-56')
+                      : $t('Import.index.603910-57'),
+                  'error',
+              );
+            }
         }
         if (!check) {
             const { id } = route.params || {};
