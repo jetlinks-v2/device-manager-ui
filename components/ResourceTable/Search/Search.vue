@@ -78,7 +78,7 @@
 import ParamsOptions from './ParamsOptions.vue'
 import ClassifyOptions from './ClassifyOptions.vue'
 import {useRequest} from '@jetlinks-web/hooks'
-import {ResourceApi} from '@device/api/resource/resource'
+import {ResourceApi} from '@device-manager-ui/api/resource/resource'
 import {cloneDeep, map, omit} from 'lodash-es'
 import {useI18n} from 'vue-i18n'
 import {useRouteQuery} from "@vueuse/router";

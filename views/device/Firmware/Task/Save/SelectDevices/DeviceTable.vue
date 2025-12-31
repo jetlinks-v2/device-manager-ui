@@ -41,7 +41,7 @@
 </template>
 
 <script setup>
-import { queryDetailList } from '@device/api/firmware';
+import { queryDetailList } from '@device-manager-ui/api/firmware';
 import {useI18n} from 'vue-i18n';
 import dayjs from "dayjs";
 import {onlyMessage} from "@jetlinks-web/utils";
@@ -206,7 +206,7 @@ watch(
     () => props.data,
     (val) => {
       if(val.length){
-        if(val?.[0]?.column === 'deviceId'){
+        if(val?.[0]?.column === 'id'){
           _selectedRowKeys.value = val?.[0]?.value || []
         } else {
           // 加到搜索中

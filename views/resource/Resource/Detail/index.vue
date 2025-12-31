@@ -213,10 +213,10 @@
 import Update from './Update/index.vue';
 import Apply from './Apply/index.vue';
 import ApplyCollector from './ApplyCollector/index.vue';
-import {detailResource, _queryProductNoPaging} from '@device/api/resource/resource';
+import {detailResource, _queryProductNoPaging} from '@device-manager-ui/api/resource/resource';
 import Metadata from './Metadata.vue';
 import dayjs from 'dayjs';
-import {resource} from '@device/assets/resource'
+import {resource} from '@device-manager-ui/assets/resource'
 import DetailHeaderTitle from './components/title.vue'
 import {omit, cloneDeep} from "lodash-es";
 import ModelItem from "./ModelItem.vue";

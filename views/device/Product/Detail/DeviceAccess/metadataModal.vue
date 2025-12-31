@@ -42,6 +42,7 @@ import { modify, updateDevice } from '../../../../../api/product'
 import { savePluginData } from '../../../../../api/link/plugin'
 import { device } from '../../../../../assets'
 import { useI18n } from 'vue-i18n';
+import { useTabSaveSuccessBack } from '@/hooks'
 
 const { t: $t } = useI18n();
 const route = useRoute();
@@ -74,6 +75,7 @@ const handleData = reactive({
   type: undefined
 })
 const loading = ref(false)
+const { onBack } = useTabSaveSuccessBack()
 const options = [
   {
     value: 'intersection',
@@ -156,13 +158,9 @@ const updateAccessData = async (id: string, values: any, metadata: string) => {
   if (resp.status === 200) {
     onlyMessage($t('DeviceAccess.metadataModal.306037-17'));
     productStore.current!.storePolicy = storePolicy;
-    const sourceId = route.query?.sourceId;
-    if ((window as any).onTabSaveSuccess && sourceId) {
-      if (resp.result) {
-        (window as any).onTabSaveSuccess(sourceId, resp);
-        setTimeout(() => window.close(), 300);
-      }
-    } else {
+    const isTabBack = await onBack(resp, { onBefore: () => !!resp.result })
+
+    if (!isTabBack) {
       await productStore.getDetail(productDetail.value.id)
       emit('submit')
     }
@@ -174,7 +172,7 @@ const submitData = () => {
   formRef.value.validate().then((res) => {
     if (res) {
       let metadata = JSON.parse(productDetail.value?.metadata || '{}') // 产品物模型
-      switch (handleData.type![0]) {
+      switch (handleData.type) {
         case 'intersection': // 交集
           metadata.properties = IntersectionFn(metadata.properties, props.metadata.properties)
           metadata.events = IntersectionFn(metadata.events, props.metadata.events)

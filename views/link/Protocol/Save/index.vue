@@ -61,6 +61,7 @@
                 <FileUpload
                     v-else
                     v-model:modelValue="formData.configuration.location"
+                    @change="handleFileUploadChange"
                 />
             </a-form-item>
             <a-form-item :label="$t('Save.index.903552-9')" name="description">
@@ -96,6 +97,7 @@ import { save, update } from '../../../../api/link/protocol';
 import { FormDataType } from '../type.d';
 import { link } from '../../../../assets'
 import { useI18n } from 'vue-i18n';
+import { useTabSaveSuccessBack } from '@/hooks'
 
 const { t: $t } = useI18n();
 const loading = ref(false);
@@ -132,6 +134,9 @@ const formData = ref<FormDataType>({
     },
     description: '',
 });
+
+const { onBack } = useTabSaveSuccessBack()
+
 const changeType = (value: Array<string>) => {
     formData.value.type = value[0];
     formData.value.configuration.location = '';
@@ -145,12 +150,8 @@ const onSubmit = async () => {
         : await update({ ...props.data, ...data }).catch(() => {});
     if (response?.status === 200) {
         emit('change', response?.status === 200);
-        const sourceId = route.query?.sourceId as string;
-        if ((window as any).onTabSaveSuccess && sourceId) {
-            if (response.result?.id) {
-                (window as any).onTabSaveSuccess(sourceId, response);
-                setTimeout(() => window.close(), 300);
-            }
+        if (response.result?.id) {
+          onBack(response)
         }
     }
     loading.value = false;
@@ -164,6 +165,10 @@ const handleChange = (info: UploadChangeParam) => {
         formData.value.configuration.location = result;
         fileLoading.value = false;
     }
+};
+
+const handleFileUploadChange = () => {
+    formRef.value?.validate()
 };
 
 const handleOk = () => {

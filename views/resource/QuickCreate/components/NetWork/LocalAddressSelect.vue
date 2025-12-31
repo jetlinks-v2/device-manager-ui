@@ -12,8 +12,8 @@
 </template>
 
 <script lang="ts" setup>
-import { resourceClustersById } from "@device/api/link/type"
-import { useTypeStore } from "@device/store/type"
+import { resourceClustersById } from "@device-manager-ui/api/link/type"
+import { useTypeStore } from "@device-manager-ui/store/type"
 import { cloneDeep } from "lodash-es"
 import { storeToRefs } from "pinia"
 

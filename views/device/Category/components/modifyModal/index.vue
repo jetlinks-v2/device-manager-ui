@@ -61,7 +61,7 @@ const props = defineProps({
   },
   title: {
     type: String,
-    defult: "",
+    default: "",
   },
   isAdd: {
     type: Number,
@@ -181,8 +181,8 @@ const show = async (row: any) => {
   if (props.isAdd === 0) {
     if (props.isChild === 1) {
       addObj.value = row;
-      if (row.children && row.children.length > 0) {
-        childArr.value = row.children.sort(compare("sortIndex"));
+      if (row._children && row._children.length > 0) {
+        childArr.value = row._children.sort(compare("sortIndex"));
         formModel.value = {
           name: "",
           sortIndex:
@@ -231,6 +231,7 @@ const show = async (row: any) => {
     };
     visible.value = true;
   }
+  console.log(formModel.value, 'formModel.value')
 };
 
 /**

@@ -38,7 +38,7 @@ import InstallIng from './components/InstallIng.vue';
 import {
   queryTaskListNoPaging,
   _queryTemplateNoPaging,
-} from '@device/api/resource/resource';
+} from '@device-manager-ui/api/resource/resource';
 
 const props = defineProps({
   task: {

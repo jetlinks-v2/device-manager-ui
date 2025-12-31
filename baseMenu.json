@@ -527,7 +527,9 @@
                 "actions": [
                   "query"
                 ]
-              }
+              },
+              {"permission": "system-monitor", "actions": ["query"]},
+              {"permission": "device-gateway-manager", "actions": ["save"]}
             ],
             "buttons": [
               {
@@ -549,6 +551,12 @@
                     "permission": "device-instance",
                     "actions": [
                       "query"
+                    ]
+                  },
+                  {
+                    "permission": "assets-bind",
+                    "actions": [
+                      "bind-all"
                     ]
                   }
                 ]

@@ -232,14 +232,14 @@
 </template>
 
 <script setup>
-import {BackMap} from '@device/views/link/AccessConfig/data';
+import {BackMap} from '@device-manager-ui/views/link/AccessConfig/data';
 import Network from './NetWork/index.vue';
 import Protocol from './Protocol/index.vue';
 import Plugin from './Plugin/index.vue';
 import {onlyMessage} from '@jetlinks-web/utils';
 import {cloneDeep, omit} from 'lodash-es';
-import {link} from '@device/assets/link/index.ts'
-import TitleComponent from '@device/components/TitleComponent/index.vue'
+import {link} from '@device-manager-ui/assets/link/index.ts'
+import TitleComponent from '@device-manager-ui/components/TitleComponent/index.vue'
 import {handlePluginData, queryExistProtocol} from "../data";
 
 const props = defineProps({

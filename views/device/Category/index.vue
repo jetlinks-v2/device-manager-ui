@@ -182,7 +182,7 @@ const getActions = (
                 title.value = $t('Category.index.779033-8');
                 isAdd.value = 0;
                 currentForm.value = {};
-                if (data.children && data.children.length > 0) {
+                if (data._children && data._children.length > 0) {
                     isChild.value = 1;
                 } else {
                     isChild.value = 2;

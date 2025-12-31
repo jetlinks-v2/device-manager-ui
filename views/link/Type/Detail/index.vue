@@ -27,8 +27,8 @@
                   allowClear
                   show-search
                   :filter-option="filterOption"
+                  :disabled="typeDisabled || id !== ':id'"
                   @change="changeType"
-                  :disabled="!!NetworkType || id !== ':id'"
                 />
               </a-form-item>
             </a-col>
@@ -113,11 +113,11 @@
                   <a-row :gutter="[24, 0]">
                     <a-col :span="12" v-if="!shareCluster">
                       <a-form-item
-                        :name="['cluster', index, 'serverId']"
+                        :name="['cluster', index, 'tagsFilter']"
                         :label="$t('Detail.index.258513-11')"
-                        :rules="Rules.serverId"
+                        :rules="Rules.tagsFilter"
                       >
-                        <a-select
+                        <!-- <a-select
                           v-model:value="cluster.serverId"
                           :options="clustersListIndex[index]"
                           :placeholder="$t('Detail.index.258513-12')"
@@ -126,7 +126,8 @@
                           :filter-option="filterOption"
                           @change="changeServerId(cluster.serverId, index)"
                         >
-                        </a-select>
+                        </a-select> -->
+                        <NodeSelect :tagList="tagList" :tagValueObj="tagValueObj" :value="cluster.tagsFilter" @change="(data) => handleChangeCluster(index, data)"/>
                       </a-form-item>
                     </a-col>
                     <a-col :span="12" v-if="isVisible('host', formData.type)">
@@ -175,6 +176,8 @@
                             >
                             </a-select> -->
                         <LocalAddressSelect
+                          :clusterTagFilter="dynamicValidateForm.cluster[index].tagsFilter"
+                          :clusters="configClustersList"
                           v-model:value="cluster.configuration.host"
                           :serverId="cluster.serverId"
                           :shareCluster="shareCluster"
@@ -802,6 +805,7 @@ import {
   save,
   detail,
   resourcesCurrent,
+  allResources,
   supports,
   certificates,
   start,
@@ -822,12 +826,14 @@ import {
   UDPList,
 } from "../data";
 import { cloneDeep } from "lodash-es";
-import type { FormData2Type, FormDataType } from "../type";
+import type { TagsFilterType, FormData2Type, FormDataType } from "../type";
 import LocalAddressSelect from "./LocalAddressSelect.vue";
 import { isNoCommunity } from "@/utils/utils";
 import { useTypeStore } from "../../../../store/type";
 import { storeToRefs } from "pinia";
+import NodeSelect from "./NodeSelect.vue";
 import { useI18n } from "vue-i18n";
+import { useTabSaveSuccessBack } from '@/hooks'
 
 const { t: $t } = useI18n();
 const route = useRoute();
@@ -853,10 +859,21 @@ const portOptionsIndex: any = ref([]);
 // let portOptionsConst: any = [];
 const certIdOptions = ref([]);
 const configClustersList = ref<any[]>([]);
+const tagList = ref<{label: string, value: string}[]>([]);
+const tagValueObj = ref<Record<string, any>>({});
 
 const typescriptTip = reactive({
   typescript: "",
 });
+
+const typeDisabled = computed(() => {
+  if (route.query.type) {
+    return !route.query.type.includes(',');
+  }
+  return false
+})
+
+const { onBack } = useTabSaveSuccessBack()
 
 const editorInit = (editor: any, monaco: any) => {
   monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
@@ -883,8 +900,12 @@ const editorInit = (editor: any, monaco: any) => {
 };
 
 const dynamicValidateForm = reactive<{ cluster: FormData2Type[] }>({
-  cluster: [{ ...cloneDeep(FormStates2), id: "1" }],
+  cluster: [{ ...cloneDeep(FormStates2), id: "1", index: 1 }],
 });
+
+const handleChangeCluster = (index: number, data: TagsFilterType[]) => {
+  dynamicValidateForm.cluster[index]!.tagsFilter = cloneDeep(data);
+}
 
 const removeCluster = (item: FormData2Type) => {
   let index = dynamicValidateForm.cluster.indexOf(item);
@@ -897,6 +918,7 @@ const addCluster = () => {
   const id = Date.now();
   dynamicValidateForm.cluster.push({
     ...cloneDeep(FormStates2),
+    index: dynamicValidateForm.cluster.length,
     id,
   });
   activeKey.value = [...activeKey.value, id.toString()];
@@ -938,24 +960,49 @@ const filterConfigByType = (data: any[], type: string) => {
 const getPortOptions = (portOptions: any, index = 0) => {
   if (!portOptions) return;
   const type = formData.value.type;
-  const host = dynamicValidateForm.cluster[index].configuration.host;
   const _port = filterConfigByType(cloneDeep(portOptions), type);
-  const _host = _port.find((item: any) => item.host === host);
-  portOptionsIndex.value[index] = _host?.ports?.map((p: any) => ({
-    label: p,
-    value: p,
-  }));
+
+  if (shareCluster.value) {
+    // 当shareCluster为true时，计算所有主机端口的交集
+    if (_port && _port.length > 0) {
+      // 获取第一个主机的端口作为基准
+      let intersection = _port[0].ports || [];
+
+      // 计算所有主机端口的交集
+      for (let i = 1; i < _port.length; i++) {
+        const currentPorts = _port[i].ports || [];
+        intersection = intersection.filter((port: any) =>
+          currentPorts.includes(port)
+        );
+      }
+
+      portOptionsIndex.value[index] = intersection.map((p: any) => ({
+        label: p,
+        value: p,
+      }));
+    } else {
+      portOptionsIndex.value[index] = [];
+    }
+  } else {
+    // 当shareCluster为false时，使用原有逻辑
+    const host = dynamicValidateForm.cluster[index].configuration.host;
+    const _host = _port.find((item: any) => item.host === host);
+    portOptionsIndex.value[index] = _host?.ports?.map((p: any) => ({
+      label: p,
+      value: p,
+    }));
+  }
 };
 
 const changeShareCluster = (value: boolean) => {
   shareCluster.value = value;
   activeKey.value = ["1"];
-  dynamicValidateForm.cluster = [{ ...cloneDeep(FormStates2), id: "1" }];
+  dynamicValidateForm.cluster = [{ ...cloneDeep(FormStates2), id: "1", index: 1 }];
 };
 
 const changeType = (value: string) => {
   getResourcesCurrent();
-  dynamicValidateForm.cluster = [{ ...cloneDeep(FormStates2), id: "1" }];
+  dynamicValidateForm.cluster = [{ ...cloneDeep(FormStates2), id: "1", index: 1 }];
   if (value !== "MQTT_CLIENT") {
     const { configuration } = dynamicValidateForm.cluster[0];
     value && (configuration.host = "0.0.0.0");
@@ -1022,10 +1069,19 @@ const changeHost = (
 ) => {
   if (dynamicValidateForm.cluster?.[index]) {
     const { configuration } = dynamicValidateForm.cluster?.[index];
+    const _serverId = !shareCluster.value ? configClustersList.value.find(item => {
+      if(dynamicValidateForm.cluster?.[index]?.tagsFilter) {
+        for(let tag of dynamicValidateForm.cluster?.[index]?.tagsFilter) {
+          if(item.tags[tag.column] === tag.value) {
+            return true
+          }
+        }
+      }
+    })?.id : undefined
     if (!flag) {
       configuration.port = undefined;
     }
-    const checked = resourcesClusters.value?.[serverId || ""];
+    const checked = resourcesClusters.value?.[_serverId || ""];
     if (checked) {
       getPortOptions(checked, index);
     }
@@ -1066,7 +1122,7 @@ const saveData = async () => {
   const { configuration } = formRef2Data?.cluster[0];
   const params = shareCluster.value
     ? { ...formData.value, configuration }
-    : { ...formData.value, ...formRef2Data };
+    : { ...formData.value, ...dynamicValidateForm };
 
   loading.value = true;
   const resp: any =
@@ -1077,6 +1133,11 @@ const saveData = async () => {
   if (resp?.status === 200) {
     onlyMessage($t('Detail.index.258513-65'), "success");
     history.back();
+    onBack(resp, {
+      onBefore: () => {
+        return start(resp.result?.id).then(() => true).catch(() => false);
+      }
+    })
     const sourceId = route.query?.sourceId as string;
     if ((window as any).onTabSaveSuccess && sourceId) {
       if (resp.result?.id) {
@@ -1092,13 +1153,20 @@ const saveData = async () => {
 const getSupports = async () => {
   const res: any = await supports();
   if (res.status === 200) {
-    typeOptions.value = res.result.map((item: any) => ({
+    const queryTypeArr = route.query.type?.includes(',') && route.query.type.split(',')
+    typeOptions.value = res.result.filter(item => {
+      console.log(queryTypeArr)
+      if (queryTypeArr) {
+        return queryTypeArr.includes(item.id);
+      }
+      return true
+    }).map((item: any) => ({
       label: item.name,
       value: item.id,
     }));
     if (
       !typeOptions.value.every((item: any) => item.value === "UDP") &&
-      !NetworkType && 
+      !NetworkType &&
       id === ':id'
     ) {
       formData.value.type = typeOptions.value[0].value;
@@ -1107,8 +1175,13 @@ const getSupports = async () => {
 };
 
 const getCertificates = async () => {
-  const resp: any = await certificates();
-  if (resp.status === 200) {
+  const resp: any = await certificates({
+    paging: false,
+    sorts: [
+      { name: 'createTime', order: 'desc' }
+    ]
+  });
+  if (resp.success) {
     certIdOptions.value = resp.result.map((i: any) => ({
       value: i.id,
       label: i.name,
@@ -1116,8 +1189,8 @@ const getCertificates = async () => {
   }
 };
 
-const getResourcesCurrent = () => {
-  resourcesCurrent().then((resp: any) => {
+const getResourcesCurrent =async () => {
+  allResources().then((resp: any) => {
     if (resp.status === 200) {
       _typeStore.setConfigRef(resp.result || []);
 
@@ -1134,6 +1207,23 @@ const getResourcesClusters = () => {
   resourceClusters().then((resp) => {
     if (resp.status === 200) {
       configClustersList.value = resp.result as any[];
+      configClustersList.value.forEach(item => {
+        for(let key in item.tags) {
+          if(tagList.value.findIndex(val => val.value === key) === -1) {
+            tagList.value.push({
+              label: key,
+              value: key
+            })
+          }
+          if(!tagValueObj.value[key]) {
+            tagValueObj.value[key] = [{value: item.tags[key]}];
+          } else if(tagValueObj.value[key]?.findIndex(val => val.value === item.tags[key]) === -1) {
+            tagValueObj.value[key]?.push({
+              value: item.tags[key]
+            })
+          }
+        }
+      })
     }
   });
 };
@@ -1211,10 +1301,19 @@ watch(
 watch(
   () => NetworkType,
   (value) => {
-    if (value) {
+    let _value = value
+    if (value && value.includes(',')) {
+      const arr = value.split(',');
+      _value = arr[0]
+    }
+    if (_value) {
       const { cluster } = dynamicValidateForm;
-      formData.value.type = value;
+      formData.value.type = _value;
       cluster[0].configuration.host = "0.0.0.0";
+      if (_value === "MQTT_CLIENT" && isNoCommunity) {
+        formData.value.shareCluster = false;
+        changeShareCluster(formData.value.shareCluster);
+      }
     }
   },
   { deep: true, immediate: true }
@@ -1227,7 +1326,7 @@ onMounted(async () => {
   if (isNoCommunity) {
     getResourcesClusters();
   }
-  getResourcesCurrent();
+  await getResourcesCurrent();
   if (id !== ":id") {
     getDetail();
   }

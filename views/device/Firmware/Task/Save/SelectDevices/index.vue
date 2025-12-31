@@ -15,7 +15,7 @@
   <a-button :type="selected ? 'link' : 'text'" @click="onVisible">
     <AIcon type="EditOutlined"/>
   </a-button>
-  <Modal :data="modelValue" :productId="productId" v-if="visible" @close="visible = false" @save="handleOk"/>
+  <Modal :data="modelValue" :productId="productId" :type="selectType" v-if="visible" @close="visible = false" @save="handleOk"/>
 </template>
 <script setup>
 // import {useI18n} from 'vue-i18n';
@@ -41,12 +41,14 @@ const props = defineProps({
   },
 });
 
+const selectType = ref('Self')
 const visible = ref(false);
 const selected = computed(() => {
   return props.modelValue
 })
 const handleOk = (dt, type) => {
   let terms = {}
+  selectType.value = type
   if (type === 'Self') {
     terms = [
       {

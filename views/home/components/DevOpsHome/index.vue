@@ -41,7 +41,7 @@ const opsBootConfig: bootConfig[] = [
     {
         english: 'STEP2',
         label: $t('DevOpsHome.index.926510-4'),
-        link: 'Log',
+        link: 'system/Log',
         params: {
             tab: 'system',
         },
@@ -82,7 +82,7 @@ const opsStepDetails: recommendList[] = [
         title: $t('DevOpsHome.index.926510-14'),
         details: $t('DevOpsHome.index.926510-15'),
         iconUrl: home.Frame4528,
-        linkUrl: 'Log',
+        linkUrl: 'system/Log',
         params: {
             tab: 'system',
         },

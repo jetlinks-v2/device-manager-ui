@@ -67,7 +67,7 @@ import {
     _queryNew,
     _queryNowNoPaging,
     _queryProductNoPaging,
-} from '@device/api/resource/resource';
+} from '@device-manager-ui/api/resource/resource';
 import { useMenuStore, useAuthStore } from '@/store';
 import { useI18n } from 'vue-i18n';
 

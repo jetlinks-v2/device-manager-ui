@@ -29,23 +29,15 @@
               {{ $t("Product.index.660348-0") }}
             </j-permission-button>
             <j-permission-button
-              v-if="isNoCommunity"
+              v-if="isNoCommunity && menuStory.hasMenu('resource/Resource')"
               hasPermission="device/Product:add"
               @click="menuStory.jumpPage('device/Product/QuickCreate', {})"
             >
               {{ $t("Product.index.660348-35") }}
             </j-permission-button>
-            <a-upload
-              name="file"
-              accept=".json"
-              :showUploadList="false"
-              :before-upload="beforeUpload"
-              :disabled="!permission"
-            >
-              <j-permission-button hasPermission="device/Product:import"
-                >{{ $t("Product.index.660348-1") }}
-              </j-permission-button>
-            </a-upload>
+            <BatchDropdown
+              :actions="batchActions"
+            />
           </a-space>
         </template>
         <template #deviceType="slotProps">
@@ -71,9 +63,9 @@
           >
             <template #img>
               <slot name="img">
-                <img
+                <Image
                   :src="slotProps.photoUrl || device.deviceProduct"
-                  class="productImg"
+                  class="card-list-img-80"
                 />
               </slot>
             </template>
@@ -169,6 +161,9 @@
     </FullPage>
     <!-- {{ $t('Product.index.660348-0') }}、{{ $t('Product.index.660348-13') }} -->
     <Save ref="saveRef" :isAdd="isAdd" :title="title" @success="refresh" />
+
+    <!-- 同步缓存组件 -->
+    <SyncCache v-if="syncCacheVisible" :params="params" @success="refresh" @close="syncCacheVisible = false"/>
   </j-page-container>
 </template>
 
@@ -188,12 +183,15 @@ import {
 import { downloadJson, accessConfigTypeFilter, isNoCommunity } from "@/utils";
 import { omit, cloneDeep } from "lodash-es";
 import Save from "./Save/index.vue";
+import SyncCache from "./components/SyncCache.vue";
 import { useMenuStore, useAuthStore } from "@/store";
 import { useRouterParams } from "@jetlinks-web/hooks";
 import { device } from "../../../assets";
 import TagSearch from "../Instance/components/TagSearch.vue";
 import { accessType } from "../data";
 import { useI18n } from "vue-i18n";
+import { useTermOptions } from '@jetlinks-web/components/es/Search/hooks/useTermOptions'
+import BatchDropdown from "@/components/BatchDropdown/index.vue";
 
 const { t: $t } = useI18n();
 
@@ -204,6 +202,9 @@ const menuStory = useMenuStore();
 const isAdd = ref<number>(0);
 const title = ref<string>("");
 const params = ref<Record<string, any>>({});
+const { termOptions } = useTermOptions({ pick: ['eq', 'not']})
+const { termOptions: dimAssetsTermOptions } = useTermOptions({ pick: ['eq']})
+
 const columns = [
   {
     title: "ID",
@@ -243,7 +244,8 @@ const columns = [
     search: {
       type: "component",
       components: TagSearch,
-      termOptions: ["eq", "not"],
+      termOptions: termOptions,
+      defaultTermType: 'eq'
     },
   },
   {
@@ -272,6 +274,39 @@ const columns = [
 const permission = useAuthStore().hasPermission(`device/Product:import`);
 const _selectedRowKeys = ref<string[]>([]);
 const currentForm = ref({});
+const syncCacheVisible = ref(false)
+
+// 批量操作配置
+const batchActions = ref([
+  {
+    key: 'import',
+    text: $t("Product.index.660348-1"),
+    icon: 'UploadOutlined',
+    permission: 'device/Product:import',
+    onClick: () => {
+      // 触发文件选择
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+      input.onchange = (e: any) => {
+        const file = e.target.files[0];
+        if (file) {
+          beforeUpload(file);
+        }
+      };
+      input.click();
+    }
+  },
+  {
+    key: 'syncCache',
+    text: '同步缓存',
+    icon: 'SyncOutlined',
+    permission: 'device/Product:update',
+    onClick: () => {
+      syncCacheVisible.value = true;
+    }
+  }
+]);
 
 const getActions = (
   data: Partial<Record<string, any>>,
@@ -405,6 +440,10 @@ const add = () => {
   });
 };
 
+const handleAdd = () => {
+  add();
+};
+
 /**
  * 导入
  */
@@ -412,7 +451,7 @@ const beforeUpload = (file: any) => {
   const reader = new FileReader();
   reader.readAsText(file);
   reader.onload = async (result) => {
-    const text = result.target?.result;
+    const text = result.target?.result as string;
     // console.log(text);
     if (!file.type.includes("json")) {
       onlyMessage($t("Product.index.660348-23"), "error");
@@ -600,14 +639,22 @@ const query = reactive({
   ],
 });
 const saveRef = ref();
+const fileRef = ref();
+
+const handleFileChange = (event: any) => {
+  const file = event.target.files[0];
+  if (file) {
+    beforeUpload(file);
+  }
+};
+
+
 
 const handleSearch = (e: any) => {
   // console.log(e, 'e')
   const newTerms = cloneDeep(e);
   if (newTerms.terms?.length) {
-    console.log(newTerms, "newTerms");
     newTerms.terms.forEach((a: any) => {
-      console.log(a, "a");
       a.terms = a.terms.map((b: any) => {
         if (b.column === "id$dev-instance") {
           return {
@@ -620,6 +667,7 @@ const handleSearch = (e: any) => {
         if (b.column === "id$dim-assets") {
           const value = b.value;
           b = {
+            ...b,
             column: "id",
             termType: "dim-assets",
             value: {
@@ -677,7 +725,7 @@ onMounted(() => {
       search: {
         first: true,
         type: "treeSelect",
-        termOptions: ["eq"],
+        termOptions: dimAssetsTermOptions,
         options: async () => {
           return new Promise((res) => {
             queryOrgThree({ paging: false }).then((resp: any) => {

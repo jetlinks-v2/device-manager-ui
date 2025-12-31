@@ -200,9 +200,12 @@
             <a-descriptions-item :label="$t('Detail.index.427958-32')">
               <a @click="onClick">{{ detail.poolAlias || detail.poolName }}</a>
             </a-descriptions-item>
-            <a-descriptions-item :label="$t('Detail.index.427958-28')">{{
-                '--'
-              }}
+            <a-descriptions-item :label="$t('Detail.index.427958-28')">
+              <j-ellipsis>
+                {{
+                  marks[0]?.longitude &&marks[0]?.latitude ? `${marks[0]?.location}` : '--'
+                }}
+              </j-ellipsis>
             </a-descriptions-item>
             <a-descriptions-item :label="$t('IotCard.index.369962-15')">{{
                 detail?.describe
@@ -362,10 +365,10 @@ import Guide from './Guide.vue';
 import Save from './Save.vue';
 import { OperatorList, platformTypeList } from './data';
 import { useI18n } from 'vue-i18n';
-import {dashboard} from "@device/api/dashboard";
+import {dashboard} from "@device-manager-ui/api/dashboard";
 import {map} from "lodash-es";
 import RealTimeMap from "./RealTimeMap.vue";
-import {getPositionById, queryLocationById} from "@device/api/iot-card/realtimePositioning";
+import {getPositionById, queryLocationById} from "@device-manager-ui/api/iot-card/realtimePositioning";
 import SyncRecord from "./SyncRecord/index.vue";
 import {useMenuStore} from "@/store";
 import {onlyMessage} from "@jetlinks-web/utils";

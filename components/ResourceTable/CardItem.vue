@@ -1,5 +1,5 @@
 <script setup>
-import { resource } from "@device/assets/resource";
+import { resource } from "@device-manager-ui/assets/resource";
 const props = defineProps({
   record: Object,
   active: Boolean,

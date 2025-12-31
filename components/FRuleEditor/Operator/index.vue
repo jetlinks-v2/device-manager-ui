@@ -192,17 +192,25 @@ const addClick = (node: OperatorItem) => {
 
 const productStore = useProductStore();
 
-const dealOperator = (data:any) =>{
-  return data.map((item: any) => {
-    const newItem = cloneDeep(item);
-    if(newItem.i18nMessages){
-      newItem.name = item.i18nMessages.name[localLanguage];
-      newItem.description = item.i18nMessages.description[localLanguage];
-      if(newItem.children) {
-        newItem.children = dealOperator(newItem.children);
+const dealOperator = (data:any, keys: string[]) =>{
+  return data.filter(item => {
+
+    if(item.i18nMessages){
+      item.name = item.i18nMessages.name[localLanguage];
+      item.description = item.i18nMessages.description[localLanguage];
+    }
+
+    if (keys.includes(item.id)) {
+      return true;
+    } else if (item.children?.length) {
+      item.children = dealOperator(item.children, keys)
+
+      if (item.children.length) {
+        return true
       }
     }
-    return newItem;
+
+    return false;
   })
 }
 
@@ -257,10 +265,10 @@ const getData = async (id?: string) => {
         })),
     };
     const response = await getOperator();
-    console.log(tags,properties,'test')
+
     if (response.status === 200) {
-        const operator = dealOperator(response.result)
-        console.log(operator,'operator')
+        const operator = dealOperator(response.result, ['in-function'])
+
         data.value = [
             properties as OperatorItem,
             tags as any,

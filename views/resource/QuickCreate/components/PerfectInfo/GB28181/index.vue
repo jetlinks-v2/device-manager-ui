@@ -95,7 +95,7 @@
 </template>
 
 <script setup>
-import { getResourcesCurrent } from '@device/api/link/accessConfig';
+import { getResourcesCurrent } from '@device-manager-ui/api/link/accessConfig';
 import { defineExpose } from 'vue';
 const formRef = ref()
 const rules = {

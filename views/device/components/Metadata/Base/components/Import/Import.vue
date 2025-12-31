@@ -45,7 +45,9 @@
                     @drop="handleDrop"
                 >
                     <div class="dragger-box">
+                      <div>
                         <AIcon class="icon" type="PlusCircleFilled" />
+                      </div>
                         <span style="margin: 16px 0 8px 0"
                         >{{ $t('Import.Import.317604-3') }}</span
                         >
@@ -79,7 +81,7 @@ import { getTemplate, uploadAnalyzeMetadata} from '../../../../../../../api/inst
 import {getTemplate as getProductTemplate} from '../../../../../../../api/product'
 import {useGroupActive, useTableWrapper} from "../../../../../../../components/Metadata/context";
 import { useProductStore } from '../../../../../../../store/product';
-import { useInstanceStore } from '@device/store/instance';
+import { useInstanceStore } from '@device-manager-ui/store/instance';
 import { useI18n } from 'vue-i18n';
 
 const { t: $t } = useI18n();

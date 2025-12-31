@@ -101,7 +101,7 @@
                 ) || accessData.channel === 'plugin'
             "
     >
-      <div v-if="['Ctwing', 'gb28181-2016', 'OneNet-platform'].includes(accessData.provide) || (accessData.channel === 'plugin' && pluginConfiguration.length)">网关配置</div>
+      <div v-if="['Ctwing', 'gb28181-2016', 'OneNet-platform'].includes(accessData.provider) || (accessData.channel === 'plugin' && pluginConfiguration.length)">网关配置</div>
       <div v-if="accessData.channel === 'plugin'">
         <a-form :model="accessConfiguration" layout="vertical">
           <a-form-item
@@ -160,15 +160,15 @@ import {
   queryProtocolConfiguration,
   quickCreateProduct,
   queryGB28181Configuration,
-} from '@device/api/resource/quickCreate';
-import {getStoragList} from '@device/api/product';
+} from '@device-manager-ui/api/resource/quickCreate';
+import {getStoragList} from '@device-manager-ui/api/product';
 import {onlyMessage} from '@jetlinks-web/utils'
 import GB28181 from './GB28181/index.vue';
 import Ctwing from './Ctwing/index.vue';
 import OneNet from './OneNet/index.vue';
 import Network from './Network/index.vue';
 import {useMenuStore} from '@/store/menu';
-import {device} from '@device/assets/device';
+import {device} from '@device-manager-ui/assets/device';
 import {useI18n} from 'vue-i18n';
 
 const {t: $t} = useI18n();

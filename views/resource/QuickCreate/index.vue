@@ -116,11 +116,11 @@ import SearchTree from './components/SearchTree.vue';
 import {
   queryClassificationType,
   queryClassification,
-} from '@device/api/resource/quickCreate.ts';
-import {queryTemplate, queryTemplateDetail} from '@device/api/resource/quickCreate.ts';
+} from '@device-manager-ui/api/resource/quickCreate.ts';
+import {queryTemplate, queryTemplateDetail} from '@device-manager-ui/api/resource/quickCreate.ts';
 import Operation from './Operation.vue';
-import {resource} from '@device/assets/resource';
-import {treeFilter} from '@device/utils/tree';
+import {resource} from '@device-manager-ui/assets/resource';
+import {treeFilter} from '@device-manager-ui/utils/tree';
 import {cloneDeep} from 'lodash-es';
 
 const route = useRoute();
