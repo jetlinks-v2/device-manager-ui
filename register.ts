@@ -1,5 +1,5 @@
 import { queryNoPagingPost } from '@device-manager-ui/api/product'
-import { queryNoPagingPost as queryInstanceNoPage } from '@device-manager-ui/api/instance'
+import { queryNoPagingPost as queryInstanceNoPage, query } from '@device-manager-ui/api/instance'
 import { usePluginPermissionContext } from '@device-manager-ui/hooks/usePermission'
 import { useInstanceStore } from '@device-manager-ui/store/instance'
 
@@ -7,6 +7,7 @@ export default {
   apis: {
     productNoPage: queryNoPagingPost,
     instanceNoPage: queryInstanceNoPage,
+    instancePage: query,
   },
   components: {
     AccessCard: defineAsyncComponent(() => import('./views/link/AccessConfig/components/AccessCard/index.vue')),
