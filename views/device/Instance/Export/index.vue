@@ -50,8 +50,9 @@
 <script lang="ts" setup>
 import { queryNoPagingPost } from '../../../../api/product';
 import { paramsEncodeQuery } from '@jetlinks-web-core/utils/encodeQuery';
-import { LocalStore } from '@jetlinks-web/utils';
+import { LocalStore, getToken } from '@jetlinks-web/utils';
 import { TOKEN_KEY, TOKEN_KEY_URL } from '@jetlinks-web/constants';
+import { getBaseApi } from '@jetlinks-web-core/utils'
 
 const emit = defineEmits(['close']);
 const props = defineProps({
@@ -120,7 +121,10 @@ const handleOk = async () => {
         urlParams.append(key, _params[key])
       }
     })
-    const url =  modelRef.product ?  `${origin}/api/device-instance/${modelRef.product}/export.xlsx?${TOKEN_KEY_URL}=${getToken()}&${urlParams}` :  `${origin}/api/device-instance/export.xlsx?${TOKEN_KEY_URL}=${LocalStore.get(TOKEN_KEY)}&${urlParams}`
+    const base_url = `${origin}${getBaseApi()}/device-instance`
+    const product_url = modelRef.product ? `/${modelRef.product}` : ''
+
+    const url =  `${base_url}${product_url}/export.xlsx?${TOKEN_KEY_URL}=${getToken()}&${urlParams}`
     window.open(url)
     emit('close');
 
