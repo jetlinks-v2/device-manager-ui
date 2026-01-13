@@ -54,7 +54,7 @@
                 />
                 <template v-else>
                     <div style="height: 300px">
-                        <JEcharts :options="echartsOptions" />
+                        <JEcharts :option="echartsOptions" />
                     </div>
 
                     <ServerList
