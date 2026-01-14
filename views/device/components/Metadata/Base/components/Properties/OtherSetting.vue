@@ -100,10 +100,7 @@
                     </a-collapse-panel>
                     <a-collapse-panel
                         key="metrics"
-                        v-if="
-                            showMetrics &&
-                            !(props.isProduct && target === 'device')
-                        "
+                        v-if="showMetrics"
                     >
                         <template #header>
                             {{ $t('Properties.OtherSetting.237457-1') }}
