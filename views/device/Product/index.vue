@@ -29,7 +29,7 @@
               {{ $t("Product.index.660348-0") }}
             </j-permission-button>
             <j-permission-button
-              v-if="isNoCommunity"
+              v-if="sourceMenu && isNoCommunity"
               hasPermission="device/Product:add"
               @click="menuStory.jumpPage('device/Product/QuickCreate', {})"
             >
@@ -270,6 +270,7 @@ const columns = [
   },
 ];
 const permission = useAuthStore().hasPermission(`device/Product:import`);
+const sourceMenu = menuStory.hasMenu(`resource/Resource`);
 const _selectedRowKeys = ref<string[]>([]);
 const currentForm = ref({});
 
