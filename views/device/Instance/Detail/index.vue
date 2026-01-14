@@ -136,7 +136,7 @@ import { isNoCommunity } from '@/utils/utils';
 import { device } from "../../../../assets";
 import { useI18n } from 'vue-i18n';
 import { tabs } from './asyncComponent'
-import {deviceStateList} from "@device/views/device/data";
+import {deviceStateList} from "@device-manager-ui/views/device/data";
 
 const { t: $t } = useI18n();
 const menuStory = useMenuStore();
