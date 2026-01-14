@@ -235,6 +235,7 @@ import { useI18n } from 'vue-i18n';
 import { useTermOptions } from '@jetlinks-web/components/es/Search/hooks/useTermOptions'
 import { mergeObjectArrays, getBaseApi } from '@jetlinks-web-core/utils';
 import {deviceStateList} from "@device/views/device/data";
+import {deviceStateList} from "@device-manager-ui/views/device/data";
 
 const { t: $t } = useI18n();
 

@@ -147,6 +147,7 @@ import { useMircoAppData } from '@jetlinks-web-core/hooks/useMircoApp';
 import { useRegistryOptions } from '@jetlinks-web-core/hooks'
 
 const { data: platform } = useMircoAppData('platformName')
+import {deviceStateList} from "@device-manager-ui/views/device/data";
 
 const { t: $t } = useI18n();
 const menuStory = useMenuStore();
