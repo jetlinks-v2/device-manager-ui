@@ -113,7 +113,7 @@ const columns = [
 const selectedTableRow = (record) => {
   tableTool.scrollTo({
     ...record,
-    __serial: record.__serial - 1
+    __serial: record.__oldSerial - 1
   })
   tableTool.selected([record.id])
 }
