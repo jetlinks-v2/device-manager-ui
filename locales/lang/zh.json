@@ -2519,5 +2519,7 @@
     "DeviceRelationship.RelationshipEditModal.789342-3": "表单验证失败:",
     "DeviceRelationship.TreeList.234567-0": "树形视图",
     "DeviceRelationship.TreeList.234567-1": "平铺视图",
-    "DeviceRelationship.TreeList.234567-2": "暂无数据"
+    "DeviceRelationship.TreeList.234567-2": "暂无数据",
+    "Detail.NodeSelect.141135-0": "点击配置节点筛选范围",
+    "Detail.NodeSelect.141135-1": "请配置节点筛选范围"
 }

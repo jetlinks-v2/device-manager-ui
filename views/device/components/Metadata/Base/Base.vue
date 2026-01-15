@@ -241,7 +241,7 @@
         </EditTableFormItem>
       </template>
       <template #other="{ record }">
-        <div>
+        <div style='z-index: 6; position: relative'>
           <OtherSetting
             v-model:value="record.expands"
             :type="

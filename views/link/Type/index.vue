@@ -416,13 +416,13 @@ const getDetails = (slotProps: Partial<Record<string, any>>) => {
   }
   if (!shareCluster && cluster.length > 1) {
     const contentItem2 =
-        (cluster[0].configuration.publicHost ||
-            cluster[0].configuration.remoteHost) +
+        (cluster[1].configuration.publicHost ||
+            cluster[1].configuration.remoteHost) +
         ':' +
-        (cluster[0].configuration.publicPort ||
-            cluster[0].configuration.remotePort);
+        (cluster[1].configuration.publicPort ||
+            cluster[1].configuration.remotePort);
     let headItme2 = $t('Type.index.196842-22');
-    !!cluster[0].configuration.publicHost && (headItme2 = $t('Type.index.196842-21'));
+    !!cluster[1].configuration.publicHost && (headItme2 = $t('Type.index.196842-21'));
     if (cluster.length > 2) {
       return (
           head +
