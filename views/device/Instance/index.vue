@@ -252,19 +252,6 @@ const modalVisible = ref(false);
 const deleteDeviceId = ref('');
 const deleteState = ref(false);
 const deleteTip = ref($t('Instance.index.133466-3'));
-const transformData = (arr: any[]): any[] => {
-    if (Array.isArray(arr) && arr.length) {
-        return (arr || []).map((item: any) => {
-            return {
-                ...item,
-                id: `classifiedId is ${item.id}`,
-                children: transformData(item.children),
-            };
-        });
-    } else {
-        return [];
-    }
-};
 
 const { termOptions } = useTermOptions({ pick: ['eq']})
 
@@ -341,7 +328,7 @@ const columns = ref([
             options: () =>
                 new Promise((resolve) => {
                     queryTree({ paging: false }).then((resp: any) => {
-                        resolve(transformData(resp.result));
+                        resolve(resp.result);
                     });
                 }),
         },
@@ -858,7 +845,7 @@ const handleSearch = (_params: any) => {
 
             if (
                 item2.column &&
-                ['classifiedId', 'accessId', 'accessProvider'].includes(
+                ['accessId', 'accessProvider'].includes(
                     item2.column,
                 )
             ) {
@@ -871,6 +858,16 @@ const handleSearch = (_params: any) => {
                         ? dealSearchValue(item2)
                         : item2.value,
                 };
+            }
+            if( item2.column === 'classifiedId') {
+                item2 = {
+                    value: [{
+                        column: 'classifiedId',
+                        termType: Array.isArray(item2.value) ? 'in' : 'eq',
+                        value: item2.value
+                    }],
+                    column: 'productId$product-info$in',
+                }
             }
             if(item2.column === 'id$dev-tag') {
                 item2 = {
