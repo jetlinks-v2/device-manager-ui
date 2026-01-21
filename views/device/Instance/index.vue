@@ -257,7 +257,7 @@ const transformData = (arr: any[]): any[] => {
         return (arr || []).map((item: any) => {
             return {
                 ...item,
-                id: `classifiedId is ${item.id}`,
+                id: item.id,
                 children: transformData(item.children),
             };
         });
@@ -830,18 +830,11 @@ const saveBtn = () => {
 };
 
 const dealSearchValue = (item: any) => {
-    let value: any = '';
-    // console.log(item);
-    item.value.forEach((i: any, index: number) => {
-        // console.log(i);
-        if (index > 0) {
-            value += ',' + i.slice((item.column + ' is ').length);
-        } else {
-            value +=
-                item.column + ' in ' + i.slice((item.column + ' is ').length);
-        }
-    });
-    return value;
+    return [{
+      column: item.column,
+      termType: 'in',
+      value: item.value
+    }];
 };
 const handleSearch = (_params: any) => {
     // params.value = _params;
