@@ -256,6 +256,19 @@ const modalVisible = ref(false);
 const deleteDeviceId = ref('');
 const deleteState = ref(false);
 const deleteTip = ref($t('Instance.index.133466-3'));
+const transformData = (arr: any[]): any[] => {
+    if (Array.isArray(arr) && arr.length) {
+        return (arr || []).map((item: any) => {
+            return {
+                ...item,
+                id: item.id,
+                children: transformData(item.children),
+            };
+        });
+    } else {
+        return [];
+    }
+};
 
 const { termOptions } = useTermOptions({ pick: ['eq']})
 
@@ -332,7 +345,7 @@ const columns = ref([
             options: () =>
                 new Promise((resolve) => {
                     queryTree({ paging: false }).then((resp: any) => {
-                        resolve(resp.result);
+                        resolve(transformData(resp.result));
                     });
                 }),
         },
@@ -833,18 +846,11 @@ const saveBtn = () => {
 };
 
 const dealSearchValue = (item: any) => {
-    let value: any = '';
-    // console.log(item);
-    item.value.forEach((i: any, index: number) => {
-        // console.log(i);
-        if (index > 0) {
-            value += ',' + i.slice((item.column + ' is ').length);
-        } else {
-            value +=
-                item.column + ' in ' + i.slice((item.column + ' is ').length);
-        }
-    });
-    return value;
+    return [{
+      column: item.column,
+      termType: 'in',
+      value: item.value
+    }];
 };
 const handleSearch = (_params: any) => {
     // params.value = _params;
@@ -861,7 +867,7 @@ const handleSearch = (_params: any) => {
 
             if (
                 item2.column &&
-                ['accessId', 'accessProvider'].includes(
+                ['classifiedId', 'accessId', 'accessProvider'].includes(
                     item2.column,
                 )
             ) {
