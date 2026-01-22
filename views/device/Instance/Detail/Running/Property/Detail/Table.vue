@@ -147,7 +147,7 @@ async function getProductInfo() {
 
 getProductInfo()
 const columns = computed(() => {
-  const _storePolicy = productInfo.value?.storePolicyConfiguration?.forProperty ? productInfo.value?.storePolicyConfiguration.forProperty : productInfo.value?.storePolicy
+  const oropertyoueryById = (productInfo.value.features || []).find((i: any) => i.id === 'oropertyoueryById')
   const arr: any[] = [
     {
       title: $t('Log.index.848256-1'),
@@ -160,8 +160,8 @@ const columns = computed(() => {
     },
     {
       title: _props.data?.name || '',
-      dataIndex: _storePolicy?.includes('column') ? _props.data?.id : ['int', 'float', 'short', 'double'].includes(_props.data.valueType?.type) ? 'numberValue' : 'value',
-      key: _storePolicy?.includes('column') ? _props.data?.id : ['int', 'float', 'short', 'double'].includes(_props.data.valueType?.type) ? 'numberValue' : 'value',
+      dataIndex: !!oropertyoueryById ? _props.data?.id : ['int', 'float', 'short', 'double'].includes(_props.data.valueType?.type) ? 'numberValue' : 'value',
+      key: !!oropertyoueryById ? _props.data?.id : ['int', 'float', 'short', 'double'].includes(_props.data.valueType?.type) ? 'numberValue' : 'value',
       ellipsis: true,
       search: {
         type: valueType[_props.data?.valueType?.type as keyof typeof valueType] || 'string',
