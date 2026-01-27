@@ -48,7 +48,7 @@ export const useThreshold = (props: Record<string, any>) => {
             // mode: data.configuration.processors.map((i:any)=>{
             //     return i.provider
             // })
-            mode: data.configuration.processors[0].provider
+            mode: data.configuration.processors?.length > 1 ? 'record-alarm' : data.configuration.processors[0].provider
         }
     }
 
