@@ -86,7 +86,6 @@ const defaultColumns = [
   }
 ]
 
-// const columns = ref<Array<Record<string, any>>>([...defaultColumns])
 const params = ref<Record<string, any>>({})
 const visible = ref<boolean>(false)
 const info = ref<Record<string, any>>({})
@@ -109,20 +108,10 @@ const componentsType = {
   time: 'time'
 }
 
-const productInfo = ref<any>({})
-
-//获取产品信息，读取产品的存储类型
-async function getProductInfo() {
-  const res = await queryDetailById(instanceStore.current.productId)
-  if (res.success) {
-    productInfo.value = res.result
-  }
-}
-
 const _getEventList = (_params: any) => getEventList(instanceStore.current.id || '', props.data.id || '', _params)
 
 const columns = computed(() => {
-  const eventNotQueryable = (productInfo.value.features || []).find((i: any) => i.id === 'eventNotQueryable')
+  const eventNotQueryable = (instanceStore.current.features || []).find((i: any) => i.id === 'eventNotQueryable')
   const arr = []
   if (props.data?.valueType?.type === 'object') {
     const eventProperties = cloneDeep(props.data.valueType?.properties || [])
@@ -192,8 +181,6 @@ const detail = (_info: any) => {
   info.value = _info
   visible.value = true
 }
-
-getProductInfo()
 </script>
 
 <style lang='less'>

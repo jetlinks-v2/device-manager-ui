@@ -92,7 +92,6 @@
 
 <script lang='ts' setup>
 import { getPropertyData } from '../../../../../../../api/instance'
-import { queryDetailById } from '@device-manager-ui/api/product'
 import { useInstanceStore } from '../../../../../../../store/instance'
 import dayjs from 'dayjs'
 import { getType } from '../index'
@@ -135,19 +134,8 @@ const valueType = {
   enum: 'select'
 }
 
-const productInfo = ref<any>({})
-
-//获取产品信息，读取产品的存储类型
-async function getProductInfo() {
-  const res = await queryDetailById(instanceStore.current.productId)
-  if (res.success) {
-    productInfo.value = res.result
-  }
-}
-
-getProductInfo()
 const columns = computed(() => {
-  const oropertyoueryById = (productInfo.value.features || []).find((i: any) => i.id === 'oropertyoueryById')
+  const oropertyoueryById = (instanceStore.current.features || []).find((i: any) => i.id === 'oropertyoueryById')
   const arr: any[] = [
     {
       title: $t('Log.index.848256-1'),
