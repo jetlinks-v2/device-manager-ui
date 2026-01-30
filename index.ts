@@ -103,5 +103,6 @@ export default {
     getAsyncRoutesMap,
     getExtraRoutesMap,
     getComponents,
-    register
+    register,
+    priority: -100
 }
