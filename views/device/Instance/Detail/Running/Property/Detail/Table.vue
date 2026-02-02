@@ -136,7 +136,6 @@ const valueType = {
 
 const columns = computed(() => {
   const propertyQueryById = (instanceStore.current.features || []).find((i: any) => i.id === 'propertyQueryById')
-  console.log(propertyQueryById)
   const arr: any[] = [
     {
       title: $t('Log.index.848256-1'),
