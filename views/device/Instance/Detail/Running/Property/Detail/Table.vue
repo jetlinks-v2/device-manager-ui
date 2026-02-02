@@ -135,7 +135,7 @@ const valueType = {
 }
 
 const columns = computed(() => {
-  const oropertyoueryById = (instanceStore.current.features || []).find((i: any) => i.id === 'oropertyoueryById')
+  const propertyQueryById = (instanceStore.current.features || []).find((i: any) => i.id === 'propertyQueryById')
   const arr: any[] = [
     {
       title: $t('Log.index.848256-1'),
@@ -148,8 +148,8 @@ const columns = computed(() => {
     },
     {
       title: _props.data?.name || '',
-      dataIndex: !!oropertyoueryById ? _props.data?.id : ['int', 'float', 'short', 'double'].includes(_props.data.valueType?.type) ? 'numberValue' : 'value',
-      key: !!oropertyoueryById ? _props.data?.id : ['int', 'float', 'short', 'double'].includes(_props.data.valueType?.type) ? 'numberValue' : 'value',
+      dataIndex: !!propertyQueryById ? _props.data?.id : ['int', 'float', 'short', 'double'].includes(_props.data.valueType?.type) ? 'numberValue' : 'value',
+      key: !!propertyQueryById ? _props.data?.id : ['int', 'float', 'short', 'double'].includes(_props.data.valueType?.type) ? 'numberValue' : 'value',
       ellipsis: true,
       search: {
         type: valueType[_props.data?.valueType?.type as keyof typeof valueType] || 'string',
