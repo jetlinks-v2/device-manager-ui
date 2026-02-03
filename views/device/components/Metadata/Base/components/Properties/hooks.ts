@@ -1,4 +1,12 @@
-import { updateProductThreshold, updateDeviceThreshold ,queryDeviceThreshold, queryProductThreshold , deleteProductThreshold, deleteDeviceThreshold } from '../../../../../../../api/instance'
+import {
+    updateProductThreshold,
+    updateDeviceThreshold,
+    queryDeviceThreshold,
+    queryProductThreshold,
+    deleteProductThreshold,
+    deleteDeviceThreshold,
+    queryMetric, saveMetric
+} from '../../../../../../../api/instance'
 import { useRequest } from '@jetlinks-web/hooks'
 import {useProductStore} from "../../../../../../../store/product";
 import {useInstanceStore} from "../../../../../../../store/instance";
@@ -7,9 +15,7 @@ export const useThreshold = (props: Record<string, any>) => {
     const productStore = useProductStore();
     const deviceStore = useInstanceStore();
 
-    const thresholdDetail = ref({
-
-    })
+    const thresholdDetail = ref({})
 
     const { run: updateProductRun } = useRequest(updateProductThreshold, { immediate: false })
 
@@ -143,5 +149,50 @@ export const useThreshold = (props: Record<string, any>) => {
         thresholdDelete,
         thresholdDetailQuery,
         thresholdDetail
+    }
+}
+
+
+export const useMetrics = (props: any) => {
+    const deviceStore = useInstanceStore();
+    const metrics = ref([])
+
+    const metricsQuery = async () => {
+        if (props.target === 'product') {
+            metrics.value = props.record?.expands?.metrics || []
+        }
+        if (props.target === 'device' && props.record.id) {
+            if(props.record.id){
+                const resp = await queryMetric(deviceStore.current.id, props.record.id)
+                if(resp.success){
+                    metrics.value = resp.result || []
+                }
+            }
+            // 如果是新增的数据该怎么办
+            const arr = props.record?.expands?.metrics || []
+            if(arr.length > 0 && metrics.value.length === 0) {
+                metrics.value = arr
+            }
+        }
+    }
+
+    const metricsUpdate = async (arr = []) => {
+        if(props.target === 'device'){
+            const resp = await saveMetric(
+              deviceStore.current.id || '',
+              props.record.id || '',
+              arr,
+            )
+            if(resp.success){
+
+            }
+        }
+
+    }
+
+    return {
+        metrics,
+        metricsUpdate,
+        metricsQuery
     }
 }
