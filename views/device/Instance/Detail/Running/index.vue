@@ -10,7 +10,7 @@
             />
             <a-tabs
                 tab-position="left"
-                style="height: 500px"
+                style="height: calc(100% - 32px)"
                 v-if="tabList.length"
                 v-model:activeKey="activeKey"
                 :tabBarStyle="{ width: '200px' }"
@@ -159,15 +159,22 @@ const tabChange = (key: string) => {
 <style lang="less" scoped>
 .property-box {
     display: flex;
+    height: 100%;
+
     .property-box-left {
         width: 200px;
-
-        // :deep(.jet-tabs) {
-        //     height: 100%;
-        // }
+      height: 100%;
     }
     .property-box-right {
         flex: 1;
+        min-width: 0;
+        height: 100%;
+      :deep(.ant-spin-nested-loading) {
+        height: 100%;
+        .ant-spin-container {
+          height: 100%;
+        }
+      }
     }
 }
 .tabTitle {

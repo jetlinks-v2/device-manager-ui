@@ -8,43 +8,46 @@
       type='simple'
       ref='searchRef'
     />
-    <JProTable
-      ref='eventsRef'
-      :columns='columns'
-      :request='_getEventList'
-      mode='TABLE'
-      :params='params'
-      :bodyStyle="{ padding: '0 0 0 24px' }"
-    >
-      <template v-for='i in objectKey' #[i.key]='slotProps'>
-        <j-ellipsis>
-          <span @click='detail(slotProps[i.dataIndex])'>{{ JSON.stringify(slotProps[i.dataIndex]) }}</span>
-        </j-ellipsis>
-      </template>
-      <template #timestamp='slotProps'>
-        {{ dayjs(slotProps.timestamp).format('YYYY-MM-DD HH:mm:ss') }}
-      </template>
-      <template #action='slotProps'>
-        <a-button type='link' @click='detail(slotProps)'>
-          <AIcon type='SearchOutlined' />
-        </a-button>
-      </template>
-    </JProTable>
-    <a-modal
-      :width='600'
-      v-model:open='visible'
-      :title="$t('Event.index.277611-0')"
-      class='device-running-event-modal'
-    >
-      <JsonViewer
-        :value='info'
-        style='max-height: calc(100vh - 400px); overflow: auto'
-      />
-      <template #footer>
-        <a-button type='primary' @click='visible = false'>{{ $t('Event.index.277611-1') }}</a-button>
-      </template>
-    </a-modal>
+    <div style='min-height: 0; flex: 1;'>
+      <JProTable
+        ref='eventsRef'
+        :columns='columns'
+        :request='_getEventList'
+        mode='TABLE'
+        :params='params'
+        :bodyStyle="{ padding: '0 0 0 24px' }"
+        :scroll="{ x: 'max-content' }"
+      >
+        <template v-for='i in objectKey' #[i.key]='slotProps'>
+          <j-ellipsis>
+            <span @click='detail(slotProps[i.dataIndex])'>{{ JSON.stringify(slotProps[i.dataIndex]) }}</span>
+          </j-ellipsis>
+        </template>
+        <template #timestamp='slotProps'>
+          {{ dayjs(slotProps.timestamp).format('YYYY-MM-DD HH:mm:ss') }}
+        </template>
+        <template #action='slotProps'>
+          <a-button type='link' @click='detail(slotProps)'>
+            <AIcon type='SearchOutlined' />
+          </a-button>
+        </template>
+      </JProTable>
+    </div>
   </div>
+  <a-modal
+    :width='600'
+    v-model:open='visible'
+    :title="$t('Event.index.277611-0')"
+    class='device-running-event-modal'
+  >
+    <JsonViewer
+      :value='info'
+      style='max-height: calc(100vh - 400px); overflow: auto'
+    />
+    <template #footer>
+      <a-button type='primary' @click='visible = false'>{{ $t('Event.index.277611-1') }}</a-button>
+    </template>
+  </a-modal>
 </template>
 
 <script lang='ts' setup>
@@ -82,7 +85,9 @@ const defaultColumns = [
     title: $t('Event.index.277611-3'),
     dataIndex: 'action',
     key: 'action',
-    scopedSlots: true
+    scopedSlots: true,
+    fixed: 'right',
+    width: 100
   }
 ]
 
@@ -197,6 +202,8 @@ const detail = (_info: any) => {
 }
 
 .event_container {
-  padding-bottom: 20px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 </style>
