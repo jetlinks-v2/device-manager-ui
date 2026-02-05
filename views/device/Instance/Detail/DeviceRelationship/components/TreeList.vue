@@ -30,6 +30,7 @@
           :field-names="{ children: 'children', title: 'title', key: 'key' }"
           @expand="handleExpand"
           block-node
+          :height='400'
         >
           <template #title="{ dataRef }">
             <div class="tree-node-content" :class="{'bind': dataRef.isBind}">
@@ -44,21 +45,39 @@
 
       <!-- 平铺视图 -->
       <div v-else class="flat-view">
-        <div
-          v-for="item in flatData"
-          :key="item[keyField]"
-          class="flat-item"
-          :class="{ 'sub-sub-item': item.isBind }"
-        >
-          <div class="item-content">
-            <j-ellipsis>
-              <span class="item-name">{{ item.title }}</span>
-            </j-ellipsis>
-          </div>
-          <div class="item-actions" v-if="item.isBind">
-            <slot name="actions" :item="item" :level="item.level || 0"></slot>
-          </div>
-        </div>
+<!--        <div-->
+<!--          v-for="item in flatData"-->
+<!--          :key="item[keyField]"-->
+<!--          class="flat-item"-->
+<!--          :class="{ 'sub-sub-item': item.isBind }"-->
+<!--        >-->
+<!--          <div class="item-content">-->
+<!--            <j-ellipsis>-->
+<!--              <span class="item-name">{{ item.title }}</span>-->
+<!--            </j-ellipsis>-->
+<!--          </div>-->
+<!--          <div class="item-actions" v-if="item.isBind">-->
+<!--            <slot name="actions" :item="item" :level="item.level || 0"></slot>-->
+<!--          </div>-->
+<!--        </div>-->
+        <VirtualScroll :data="flatData" :itemHeight="40">
+          <template #renderItem="item">
+            <div
+              :key="item[keyField]"
+              class="flat-item"
+              :class="{ 'sub-sub-item': item.isBind }"
+            >
+              <div class="item-content">
+                <j-ellipsis>
+                  <span class="item-name">{{ item.title }}</span>
+                </j-ellipsis>
+              </div>
+              <div class="item-actions" v-if="item.isBind">
+                <slot name="actions" :item="item" :level="item.level || 0"></slot>
+              </div>
+            </div>
+          </template>
+        </VirtualScroll>
       </div>
 
       <!-- 无数据状态 -->
@@ -299,6 +318,9 @@ onMounted(() => {
     }
 
     .flat-view {
+      height: 100%;
+      overflow-y: auto;
+
       .flat-item {
         display: flex;
         align-items: center;
