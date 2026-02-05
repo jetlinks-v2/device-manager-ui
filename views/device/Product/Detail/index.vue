@@ -256,96 +256,65 @@ const getProtocol = async () => {
             tab: $t('Detail.index.478940-11'),
         },
     ];
-    // if (productStore.current?.messageProtocol) {
-    //     const res: any = await getProtocolDetail(
-    //         productStore.current?.messageProtocol,
-    //     );
-    //     if (res.status === 200) {
-    //         const transport = res.result?.transports?.find((item: any) => {
-    //             return item.id === productStore.current?.transportProtocol;
-    //         });
-    //         const paring = transport?.features?.find(
-    //             (item: any) => item.id === 'transparentCodec',
-    //         );
-    //         const supportFirmware = transport?.features?.find(
-    //             (item: any) => item.id === 'supportFirmware',
-    //         );
-    //
-    //         if (paring) {
-    //             list.value.push({
-    //                 key: 'DataAnalysis',
-    //                 tab: $t('Detail.index.478940-13'),
-    //             });
-    //         }
-    //         if (
-    //             supportFirmware &&
-    //             permissionStore.hasPermission('device/Firmware:view') &&
-    //             isNoCommunity
-    //         ) {
-    //             list.value.push({
-    //                 key: 'Firmware',
-    //                 tab: $t('Detail.index.478940-14'),
-    //             });
-    //         }
-    //         if (
-    //           transport?.features.find(
-    //             (item) => item.id === 'diffMetadataSameProduct',
-    //           )
-    //         ) {
-    //           list.value.push({ key: 'MetadataMap', tab: $t('Detail.index.478940-15') });
-    //         }
-    //     }
-    //     //当前设备接入选择的协议
-    //     // const protocol = res.result?.transports.find(
-    //     //     (item) => item.id === productStore.current.transportProtocol,
-    //     // );
-    // }
-    const features =  productStore.current?.features || []
-    const paring = features?.find(
-      (item: any) => item.id === 'transparentCodec',
-    );
-    if (paring) {
-      list.value.push({
-        key: 'DataAnalysis',
-        tab: $t('Detail.index.478940-13'),
-      });
-    }
-      const supportFirmware = features?.find(
-        (item: any) => item.id === 'supportFirmware',
-      );
-    if (
-      supportFirmware &&
-      permissionStore.hasPermission('device/Firmware:view') &&
-      isNoCommunity
-    ) {
-      list.value.push({
-        key: 'Firmware',
-        tab: $t('Detail.index.478940-14'),
-      });
-    }
-    if (
-      features.find(
-        (item: any) => item.id === 'diffMetadataSameProduct',
-      )
-    ) {
-      list.value.push({ key: 'MetadataMap', tab: $t('Detail.index.478940-15') });
-    }
-    if (
-      permissionStore.hasPermission(
-        'rule-engine/Alarm/Log:view',
-      ) &&
-      showThreshold
-    ) {
-      list.value.push({
-        key: 'AlarmRecord',
-        tab: $t('Detail.index.478940-16'),
-      });
-      if( isNoCommunity ){
-        list.value.push({
-          key: 'Invalid',
-          tab: $t('Detail.index.478940-17')
-        })
-      }
+    if (productStore.current?.messageProtocol) {
+        const res: any = await getProtocolDetail(
+            productStore.current?.messageProtocol,
+        );
+        if (res.status === 200) {
+            const transport = res.result?.transports?.find((item: any) => {
+                return item.id === productStore.current?.transportProtocol;
+            });
+            const paring = transport?.features?.find(
+                (item: any) => item.id === 'transparentCodec',
+            );
+            const supportFirmware = transport?.features?.find(
+                (item: any) => item.id === 'supportFirmware',
+            );
+            if (paring) {
+                list.value.push({
+                    key: 'DataAnalysis',
+                    tab: $t('Detail.index.478940-13'),
+                });
+            }
+            if (
+                supportFirmware &&
+                permissionStore.hasPermission('device/Firmware:view') &&
+                isNoCommunity
+            ) {
+                list.value.push({
+                    key: 'Firmware',
+                    tab: $t('Detail.index.478940-14'),
+                });
+            }
+        }
+        //当前设备接入选择的协议
+        const protocol = res.result?.transports.find(
+            (item) => item.id === productStore.current.transportProtocol,
+        );
+        if (
+            protocol?.features.find(
+                (item) => item.id === 'diffMetadataSameProduct',
+            )
+        ) {
+            list.value.push({ key: 'MetadataMap', tab: $t('Detail.index.478940-15') });
+        }
+        if (
+            permissionStore.hasPermission(
+                'rule-engine/Alarm/Log:view',
+            ) &&
+            showThreshold
+        ) {
+            list.value.push({
+                key: 'AlarmRecord',
+                tab: $t('Detail.index.478940-16'),
+            });
+            if( isNoCommunity ){
+                list.value.push({
+                  key: 'Invalid',
+                  tab: $t('Detail.index.478940-17')
+                })
+            }
+        }
     }
 };
 /**

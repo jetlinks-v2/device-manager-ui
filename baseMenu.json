@@ -552,6 +552,12 @@
                     "actions": [
                       "query"
                     ]
+                  },
+                  {
+                    "permission": "assets-bind",
+                    "actions": [
+                      "bind-all"
+                    ]
                   }
                 ]
               },
@@ -704,12 +710,6 @@
                     "permission": "dashboard",
                     "actions": [
                       "query"
-                    ]
-                  },
-                  {
-                    "permission": "assets-bind",
-                    "actions": [
-                      "bind-all"
                     ]
                   }
                 ]

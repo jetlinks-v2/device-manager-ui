@@ -1,6 +1,6 @@
 import type { ProductItem } from "../views/device/Product/typings";
 import { defineStore } from "pinia";
-import { getDeviceNumber, queryDetailList } from '../api/product'
+import { detail, getDeviceNumber } from '../api/product'
 import {encodeQuery} from "@/utils";
 
 export const useProductStore = defineStore({
@@ -16,22 +16,12 @@ export const useProductStore = defineStore({
       this.detail = current
     },
     async getDetail(id: string) {
-      // 改成这个接口的原因是为了查询features
-      const resp = await queryDetailList({
-        "pageSize":1,
-        "terms":[
-          {
-            "column": "id",
-            "value": id
-          }
-        ]
-      })
+      const resp = await detail(id)
       if (resp.status === 200) {
-        const obj = resp.result?.data?.[0] || {}
         this.current = {
-          ...this.current,...obj
+          ...this.current,...resp.result
         }
-        this.detail = obj
+        this.detail = resp.result
       }
     },
     async refresh(id: string) {

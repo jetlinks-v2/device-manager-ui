@@ -39,7 +39,6 @@
           </div>
           <div class="tree-container">
             <a-tree
-              v-if='organizationTree?.length > 0'
                 v-model:checkedKeys="checkedKeys"
                 :tree-data="organizationTree"
                 :field-names="{ children: 'children', title: 'name', key: 'id' }"
@@ -47,15 +46,11 @@
                 :checkStrictly="true"
                 :show-icon="false"
                 @check="handleCheckedKeysChange"
-                :height='420'
             >
               <template #title="{ name }">
                 <span>{{ name }}</span>
               </template>
             </a-tree>
-            <div v-else style='margin-top: 100px'>
-              <j-empty />
-            </div>
           </div>
         </div>
 
