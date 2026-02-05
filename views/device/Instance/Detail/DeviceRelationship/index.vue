@@ -22,7 +22,7 @@
             <div>{{ $t('DeviceRelationship.index.710824-1') }}</div>
             <div class="count-num">{{ relationCount }}</div>
           </div>
-          <div class="relation-list">
+          <div class="relation-list" v-if='relationshipData.length > 0'>
             <div
               v-for="item in relationshipData"
               :key="item.objectId"
@@ -31,6 +31,9 @@
               <div class="relation-label">{{ item.relationName }}</div>
               <div class="relation-value">{{ item.related?.map(it => it.name).join('、') }}</div>
             </div>
+          </div>
+          <div v-else style='margin-top: 50px'>
+            <j-empty />
           </div>
         </div>
       </div>
@@ -246,7 +249,7 @@ const organizationTreeData = computed(() => {
 // ])
 
 // 统计数据
-const relationshipData = computed(() => instanceStore.current?.relations)
+const relationshipData = computed(() => instanceStore.current?.relations || [])
 const relationCount = computed(() => {
   return relationshipData.value?.reduce((acc, cur) => {
     if(cur.related) {
