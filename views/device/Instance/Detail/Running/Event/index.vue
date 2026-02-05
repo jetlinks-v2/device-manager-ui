@@ -57,8 +57,6 @@ import { useInstanceStore } from '../../../../../../store/instance'
 import { JsonViewer } from 'vue3-json-viewer'
 import { cloneDeep } from 'lodash-es'
 import { useI18n } from 'vue-i18n'
-import { queryDetailById } from '@device-manager-ui/api/product'
-import { randomString } from '@jetlinks-web/utils'
 
 const { t: $t } = useI18n()
 const props = defineProps({

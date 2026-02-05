@@ -15,7 +15,14 @@
               </TitleComponent>
             </div>
           </div>
-          <AIcon type="FormOutlined" class="edit-icon" @click="handleEditRelationship"/>
+          <j-permission-button
+            hasPermission="device/Instance:update"
+            type="text"
+            @click="handleEditRelationship"
+            class="edit-icon"
+          >
+            <AIcon type="FormOutlined"/>
+          </j-permission-button>
         </div>
         <div class="section-content">
           <div class="relation-count"><div>已配置关系</div> <div class="count-num">{{ relationCount }}</div></div>
@@ -43,7 +50,14 @@
               <TitleComponent data="组织"/>
             </div>
           </div>
-          <AIcon type="FormOutlined" class="edit-icon" @click="handleEditOrganization"/>
+          <j-permission-button
+            hasPermission="device/Instance:update"
+            type="text"
+            @click="handleEditOrganization"
+            class="edit-icon"
+          >
+            <AIcon type="FormOutlined"/>
+          </j-permission-button>
         </div>
         <div class="section-content">
           <TreeList
