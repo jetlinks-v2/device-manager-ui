@@ -16,12 +16,22 @@ export const useProductStore = defineStore({
       this.detail = current
     },
     async getDetail(id: string) {
-      const resp = await detail(id)
+      // 改成这个接口的原因是为了查询features
+      const resp = await queryDetailList({
+        "pageSize":1,
+        "terms":[
+          {
+            "column": "id",
+            "value": id
+          }
+        ]
+      })
       if (resp.status === 200) {
+        const obj = resp.result?.data?.[0] || {}
         this.current = {
-          ...this.current,...resp.result
+          ...this.current,...obj
         }
-        this.detail = resp.result
+        this.detail = obj
       }
     },
     async refresh(id: string) {

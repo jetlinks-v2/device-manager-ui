@@ -541,7 +541,15 @@
                   },
                   {
                     "permission": "dashboard",
-                    "actions": ["query"]
+                    "actions": [
+                      "query"
+                    ]
+                  },
+                  {
+                    "permission": "assets-bind",
+                    "actions": [
+                      "bind-all"
+                    ]
                   }
                 ]
               },
