@@ -84,62 +84,49 @@
 </template>
 
 <script lang="ts" setup>
-import {getPropertyData} from '../../../../../../../api/instance';
-import {queryDetailById} from '../../../../../../../api/product';
-import {useInstanceStore} from '../../../../../../../store/instance';
+import { getPropertyData } from '../../../../../../../api/instance';
+import { useInstanceStore } from '../../../../../../../store/instance';
 import dayjs from 'dayjs';
-import {getType} from '../index';
+import { getType } from '../index';
 import ValueRender from '../ValueRender.vue';
-import {JsonViewer} from 'vue3-json-viewer';
-import {useI18n} from 'vue-i18n';
+import { JsonViewer } from 'vue3-json-viewer';
+import { useI18n } from 'vue-i18n';
 
-const {t: $t} = useI18n();
+const { t: $t } = useI18n();
 const _props = defineProps({
-  data: {
-    type: Object,
-    default: () => {
+    data: {
+        type: Object,
+        default: () => {},
     },
-  },
-  time: {
-    type: Array,
-    default: () => [],
-  },
+    time: {
+        type: Array,
+        default: () => [],
+    },
 });
 
 const instanceStore = useInstanceStore();
 const dataSource = ref({
-  pageIndex: 0,
-  pageSize: 12,
-  data: [],
-  total: 0,
+    pageIndex: 0,
+    pageSize: 12,
+    data: [],
+    total: 0,
 });
 const current = ref<any>({});
 const visible = ref<boolean>(false);
 const params = ref();
 const valueType = {
-  int: 'number',
-  float: 'number',
-  short: 'number',
-  double: 'number',
-  string: 'string',
-  boolean: 'select',
-  long: 'number',
-  date: 'date',
-  enum: 'select'
+    int: 'number',
+    float: 'number',
+    short: 'number',
+    double: 'number',
+    string: 'string',
+    boolean: 'select',
+    long: 'number',
+    date: 'date',
+    enum: 'select'
 }
-
-const productInfo = ref<any>({})
-
-async function getProductInfo() {
-  const res = await queryDetailById(instanceStore.current.productId)
-  if (res.success) {
-    productInfo.value = res.result
-  }
-}
-
-getProductInfo()
 const columns = computed(() => {
-  const oropertyoueryById = (productInfo.value.features || []).find((i: any) => i.id === 'oropertyoueryById')
+  const propertyQueryById = (instanceStore.current.features || []).find((i: any) => i.id === 'propertyQueryById')
   const arr: any[] = [
     {
       title: $t('Log.index.848256-1'),
@@ -152,8 +139,8 @@ const columns = computed(() => {
     },
     {
       title: _props.data?.name || '',
-      dataIndex: !!oropertyoueryById ? _props.data?.id : ['int', 'float', 'short', 'double'].includes(_props.data.valueType?.type) ? 'numberValue' : 'value',
-      key: !!oropertyoueryById ? _props.data?.id : ['int', 'float', 'short', 'double'].includes(_props.data.valueType?.type) ? 'numberValue' : 'value',
+      dataIndex: !!propertyQueryById ? _props.data?.id : ['int', 'float', 'short', 'double'].includes(_props.data.valueType?.type) ? 'numberValue' : 'value',
+      key: !!propertyQueryById ? _props.data?.id : ['int', 'float', 'short', 'double'].includes(_props.data.valueType?.type) ? 'numberValue' : 'value',
       ellipsis: true,
       search: {
         type: valueType[_props.data?.valueType?.type as keyof typeof valueType] || 'string',
@@ -174,132 +161,129 @@ const columns = computed(() => {
       }
     },
 
-  ];
-  if (['int', 'float', 'short', 'double'].includes(_props.data.valueType?.type)) {
-    arr.push({
-      title: $t('Log.index.848256-6'),
-      dataIndex: 'originValue',
-      key: 'originValue',
-      ellipsis: true,
-    })
-  }
-  if (_props.data?.valueType?.type != 'geoPoint') {
-    arr.push({
-      title: $t('Product.index.660348-11'),
-      dataIndex: 'action',
-      key: 'action',
-    });
-  }
+    ];
+    if(['int', 'float', 'short', 'double'].includes(_props.data.valueType?.type)) {
+        arr.push({
+            title: $t('Log.index.848256-6'),
+            dataIndex: 'originValue',
+            key: 'originValue',
+            ellipsis: true,
+        })
+    }
+    if (_props.data?.valueType?.type != 'geoPoint') {
+        arr.push({
+            title: $t('Product.index.660348-11'),
+            dataIndex: 'action',
+            key: 'action',
+        });
+    }
 
-  return arr;
+    return arr;
 });
 
 const showLoad = computed(() => {
-  return (
-      _props.data.valueType?.type === 'file' &&
-      _props.data?.valueType?.bodyType === 'binary'
-  );
+    return (
+        _props.data.valueType?.type === 'file' &&
+        _props.data?.valueType?.bodyType === 'binary'
+    );
 });
 
 const handleSearch = (e: any) => {
-  params.value = e;
-  if (e && _props.time?.length) {
-    queryPropertyData({
-      pageSize: dataSource.value.pageSize || 12,
-      pageIndex: 0,
-    }, e)
-  }
+    params.value = e;
+    if(e && _props.time?.length) {
+        queryPropertyData({
+            pageSize: dataSource.value.pageSize || 12,
+            pageIndex: 0,
+        }, e)
+    }
 }
 const showDetail = (item: any) => {
-  visible.value = true;
-  current.value = item;
+    visible.value = true;
+    current.value = item;
 };
 
 const queryPropertyData = async (params: any, terms?: any) => {
-  const resp = await getPropertyData(
-      instanceStore.current.id,
-      _props.data.id,
-      {
-        ...params,
-        sorts: [
-          {
-            name: 'timestamp',
-            order: 'desc',
-          },
-        ],
-        terms: [
-          {
-            terms: [
-              {
-                column: 'timestamp',
-                termType: 'btw',
-                value: _props.time,
-              },
+    const resp = await getPropertyData(
+        instanceStore.current.id,
+        _props.data.id,
+        {
+            ...params,
+            sorts: [
+                {
+                    name: 'timestamp',
+                    order: 'desc',
+                },
             ],
-          },
-          terms ? {...terms} : {}
-        ],
-      },
-  );
-  if (resp.status === 200) {
-    dataSource.value = resp.result as any;
-  }
+            terms: [
+                {
+                    terms: [
+                        {
+                            column: 'timestamp',
+                            termType: 'btw',
+                            value: _props.time,
+                        },
+                    ],
+                },
+                terms ? {...terms} : {}
+            ],
+        },
+    );
+    if (resp.status === 200) {
+        dataSource.value = resp.result as any;
+    }
 };
 
 watch(
     () => [_props.data.id, _props.time],
     ([newVal]) => {
-      if (newVal && _props.time?.length) {
-        queryPropertyData({
-          pageSize: 12,
-          pageIndex: 0,
-        });
-      }
+        if (newVal && _props.time?.length) {
+            queryPropertyData({
+                pageSize: 12,
+                pageIndex: 0,
+            });
+        }
     },
     {
-      deep: true,
-      immediate: true,
+        deep: true,
+        immediate: true,
     },
 );
 
 const onChange = (_page: any) => {
-  queryPropertyData({
-    pageSize: _page.pageSize,
-    pageIndex: dataSource.value.pageSize === _page.pageSize ? (_page.current ? _page.current - 1 : 0) : 0,
-  }, params.value);
+    queryPropertyData({
+        pageSize: _page.pageSize,
+        pageIndex: dataSource.value.pageSize === _page.pageSize ? (_page.current ? _page.current - 1 : 0) : 0,
+    }, params.value);
 };
 
 const _download = (record: any) => {
-  const downNode = document.createElement('a');
-  downNode.download = `${instanceStore.current.name}-${
-      _props.data.name
-  }${dayjs(new Date().getTime()).format('YYYY-MM-DD-HH-mm-ss')}.txt`;
-  downNode.style.display = 'none';
-  //字符串内容转成Blob地址
-  const blob = new Blob([record.value]);
-  downNode.href = URL.createObjectURL(blob);
-  //触发点击
-  document.body.appendChild(downNode);
-  downNode.click();
-  //移除
-  document.body.removeChild(downNode);
+    const downNode = document.createElement('a');
+    downNode.download = `${instanceStore.current.name}-${
+        _props.data.name
+    }${dayjs(new Date().getTime()).format('YYYY-MM-DD-HH-mm-ss')}.txt`;
+    downNode.style.display = 'none';
+    //字符串内容转成Blob地址
+    const blob = new Blob([record.value]);
+    downNode.href = URL.createObjectURL(blob);
+    //触发点击
+    document.body.appendChild(downNode);
+    downNode.click();
+    //移除
+    document.body.removeChild(downNode);
 };
 </script>
 
 <style lang="less" scoped>
 :deep(.ant-pagination-item) {
-  display: none !important;
+    display: none !important;
 }
-
 :deep(.ant-pagination-jump-next) {
-  display: none !important;
+    display: none !important;
 }
-
 :deep(.ant-pagination-jump-prev) {
-  display: none !important;
+    display: none !important;
 }
-
 :deep(.JSearch-warp) {
-  padding: 0 !important;
+    padding: 0 !important;
 }
 </style>
