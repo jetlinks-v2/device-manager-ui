@@ -19,6 +19,8 @@
         :scroll="{ x: 'max-content' }"
       >
         <template v-for='i in objectKey' #[i.key]='slotProps'>
+          hhhhh
+          {{i.dataIndex}}
           <j-ellipsis>
             <span @click='detail(slotProps[i.dataIndex])'>{{ JSON.stringify(slotProps[i.dataIndex]) }}</span>
           </j-ellipsis>
@@ -55,7 +57,7 @@ import dayjs from 'dayjs'
 import { getEventList } from '../../../../../../api/instance'
 import { useInstanceStore } from '../../../../../../store/instance'
 import { JsonViewer } from 'vue3-json-viewer'
-import { cloneDeep } from 'lodash-es'
+import { cloneDeep, omit } from 'lodash-es'
 import { useI18n } from 'vue-i18n'
 
 const { t: $t } = useI18n()
@@ -116,7 +118,7 @@ const _getEventList = (_params: any) => getEventList(instanceStore.current.id ||
 const columns = computed(() => {
   const eventNotQueryable = (instanceStore.current.features || []).find((i: any) => i.id === 'eventNotQueryable')
   const arr = []
-  if (props.data?.valueType?.type === 'object') {
+  if (!eventNotQueryable && props.data?.valueType?.type === 'object') {
     const eventProperties = cloneDeep(props.data.valueType?.properties || [])
     eventProperties.reverse().map((i: any) => {
       const obj = {
@@ -131,11 +133,9 @@ const columns = computed(() => {
           key: i.id,
           dataIndex: `${i.id}_format`
         })
-        if (!eventNotQueryable) {
-          obj.search = {
-            type: 'string',
-            rename: i.id
-          }
+        obj.search = {
+          type: 'string',
+          rename: i.id
         }
       } else {
         const __arr = i?.valueType?.type === 'boolean' ? [
@@ -161,7 +161,6 @@ const columns = computed(() => {
           }
         }
       }
-      console.log(eventNotQueryable, obj)
       arr.push(obj)
     })
   } else {
@@ -181,7 +180,7 @@ const handleSearch = (_params: any) => {
 }
 
 const detail = (_info: any) => {
-  info.value = _info
+  info.value = omit(_info, ['column', 'key', 'index'])
   visible.value = true
 }
 </script>
