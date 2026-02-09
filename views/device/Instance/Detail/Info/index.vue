@@ -1,9 +1,15 @@
 <template>
-    <a-descriptions :labelStyle="{width: '150px'}" bordered>
+    <a-card class="info-card" :bordered="true">
         <template #title>
-            {{ $t('Info.index.208636-0') }}
+            <div class="card-title">
+                <AIcon type="InfoCircleOutlined" class="card-icon" />
+                <span>{{ $t('Info.index.208636-0') }}</span>
+            </div>
+        </template>
+        <template #extra>
             <j-permission-button
                 type="link"
+                class="edit-button"
                 @click="visible = true"
                 hasPermission="device/Instance:update"
             >
@@ -11,6 +17,7 @@
                 {{ $t('Info.index.208636-1') }}
             </j-permission-button>
         </template>
+        <a-descriptions class="compact-descriptions" :labelStyle="{width: '120px'}" bordered size="small">
         <a-descriptions-item :label="$t('Info.index.208636-2')">
             <div style="display: flex">
                 <div style="flex: 1">
@@ -93,20 +100,22 @@
         <a-descriptions-item :label="$t('Info.index.208636-16')">{{
             instanceStore.current?.description
         }}</a-descriptions-item>
-    </a-descriptions>
+        </a-descriptions>
+    </a-card>
     <Config />
+    <Principal ref="principalRef" />
     <Tags
         v-if="
             instanceStore.current?.tags &&
             instanceStore.current?.tags.length > 0
         "
     />
-    <Relation
+    <!-- <Relation
         v-if="
             instanceStore.current?.relations &&
             instanceStore.current?.relations.length > 0
         "
-    />
+    /> -->
     <Save
         v-if="visible"
         :data="instanceStore.current"
@@ -127,6 +136,7 @@
 import { useInstanceStore } from '../../../../../store/instance';
 import Save from '../../Save/index.vue';
 import Config from './components/Config/index.vue';
+import Principal from './components/Principal/index.vue';
 import Tags from './components/Tags/index.vue';
 import Relation from './components/Relation/index.vue';
 import InkingModal from './components/InklingModal';
@@ -141,17 +151,48 @@ const inkingVisible = ref<boolean>(false);
 const instanceStore = useInstanceStore();
 const inklingDeviceId = ref();
 const channelId = ref();
+const principalRef = ref();
 
 const saveBtn = () => {
     if (instanceStore.current?.id) {
-        instanceStore.refresh(instanceStore.current?.id);
+        const refreshPromise = instanceStore.refresh(instanceStore.current?.id);
+        if (refreshPromise && typeof refreshPromise.then === 'function') {
+            refreshPromise.then(() => {
+                // 刷新接入身份信息
+                if (principalRef.value?.refresh) {
+                    principalRef.value.refresh();
+                }
+            });
+        } else {
+            // 如果不是 Promise，直接调用刷新
+            setTimeout(() => {
+                if (principalRef.value?.refresh) {
+                    principalRef.value.refresh();
+                }
+            }, 100);
+        }
     }
     visible.value = false;
 };
 
 const saveInkling = (id: string) => {
     if (instanceStore.current?.id) {
-        instanceStore.refresh(instanceStore.current?.id);
+        const refreshPromise = instanceStore.refresh(instanceStore.current?.id);
+        if (refreshPromise && typeof refreshPromise.then === 'function') {
+            refreshPromise.then(() => {
+                // 刷新接入身份信息
+                if (principalRef.value?.refresh) {
+                    principalRef.value.refresh();
+                }
+            });
+        } else {
+            // 如果不是 Promise，直接调用刷新
+            setTimeout(() => {
+                if (principalRef.value?.refresh) {
+                    principalRef.value.refresh();
+                }
+            }, 100);
+        }
     }
     channelId.value = id;
     queryInkling();
@@ -198,3 +239,66 @@ watch(
     { immediate: true },
 );
 </script>
+
+<style lang="less" scoped>
+.info-card {
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s ease;
+    border: 1px solid #f0f0f0;
+    margin-bottom: 16px;
+
+    &:hover {
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+        border-color: #d9d9d9;
+    }
+
+    :deep(.ant-card-head) {
+        border-bottom: 1px solid #f0f0f0;
+        padding: 12px 24px;
+        min-height: 48px;
+    }
+
+    :deep(.ant-card-body) {
+        padding: 16px 20px;
+    }
+}
+
+.compact-descriptions {
+    :deep(.ant-descriptions-item-label) {
+        font-size: 13px;
+        padding: 8px 12px;
+    }
+
+    :deep(.ant-descriptions-item-content) {
+        font-size: 13px;
+        padding: 8px 12px;
+    }
+
+    :deep(.ant-descriptions-row) {
+        > td {
+            padding-bottom: 8px;
+        }
+    }
+}
+
+.card-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.85);
+
+    .card-icon {
+        color: #1890ff;
+        font-size: 16px;
+    }
+}
+
+.edit-button {
+    padding: 0;
+    height: auto;
+    font-size: 14px;
+}
+</style>
