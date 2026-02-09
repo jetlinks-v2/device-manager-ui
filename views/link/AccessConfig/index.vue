@@ -96,13 +96,20 @@
                                                             getStatus(slotProps)
                                                         "
                                                     />
-                                                    <span>
-                                                        {{
-                                                            slotProps.channelInfo
-                                                                .addresses[0]
-                                                                ?.address
-                                                        }}
-                                                    </span>
+                                                    <a-tooltip placement="top" :title="addressesTip(slotProps.channelInfo.addresses)">
+                                                        <div
+                                                            v-for="i in (slotProps.channelInfo.addresses || []).slice(0, 1)"
+                                                            :key="i.address"
+                                                            class="item"
+                                                        >
+                                                        <span>{{ i.address }}</span>
+                                                        <span v-if="(slotProps.channelInfo.addresses || []).length > 1">
+                                                            {{
+                                                            $t("components.FifthKind.409083-0", [slotProps.channelInfo.addresses.length])
+                                                            }}
+                                                        </span>
+                                                        </div>
+                                                    </a-tooltip>
                                                 </j-ellipsis>
                                             </a-col>
                                             <a-col
@@ -420,6 +427,13 @@ const handleSearch = (e: any) => {
         });
     }
     params.value = newTerms;
+};
+const addressesTip = (data) => {
+  let tip = "";
+  data.forEach((item) => {
+    tip = tip + " " + item.address;
+  });
+  return tip;
 };
 </script>
 <style lang="less" scoped>
