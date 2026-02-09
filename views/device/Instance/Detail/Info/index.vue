@@ -102,7 +102,7 @@
         }}</a-descriptions-item>
         </a-descriptions>
     </a-card>
-    <Config />
+    <Config @saved="handleConfigSaved" />
     <Principal ref="principalRef" />
     <Tags
         v-if="
@@ -173,6 +173,13 @@ const saveBtn = () => {
         }
     }
     visible.value = false;
+};
+
+// 配置保存后，仅刷新接入身份信息（配置组件内部已经刷新了实例详情）
+const handleConfigSaved = () => {
+    if (principalRef.value?.refresh) {
+        principalRef.value.refresh();
+    }
 };
 
 const saveInkling = (id: string) => {

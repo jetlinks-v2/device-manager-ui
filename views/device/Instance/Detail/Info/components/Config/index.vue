@@ -234,6 +234,13 @@ import { onlyMessage } from '@jetlinks-web/utils';
 import { useI18n } from 'vue-i18n';
 import { useRequest } from '@jetlinks-web/hooks';
 
+const emit = defineEmits<{
+    /**
+     * 配置保存成功（包括刷新实例信息之后）
+     */
+    (e: 'saved'): void
+}>()
+
 const { t: $t } = useI18n();
 const instanceStore = useInstanceStore();
 const visible = ref<boolean>(false);
@@ -300,7 +307,18 @@ const resetBtn = () => {
 const saveBtn = () => {
     visible.value = false;
     if (instanceStore.current.id) {
-        instanceStore.refresh(instanceStore.current.id);
+        const refreshPromise = instanceStore.refresh(instanceStore.current.id);
+        // 兼容 refresh 返回 Promise 或非 Promise 的情况
+        if (refreshPromise && typeof (refreshPromise as any).then === 'function') {
+            (refreshPromise as Promise<any>).then(() => {
+                emit('saved');
+            });
+        } else {
+            // 非异步刷新，短暂延迟后通知父组件
+            setTimeout(() => emit('saved'), 0);
+        }
+    } else {
+        emit('saved');
     }
 };
 

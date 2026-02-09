@@ -834,3 +834,11 @@ export const existsDevicePrincipalSupport = () =>
  * @returns
  */
 export const resetDevicePrincipal = (deviceId: string) => request.post(`/device/principal/${deviceId}/_reset`)
+
+/**
+ * 创建云端设备（边缘接入绑定）
+ * @param data 请求参数
+ */
+export const deviceCloudSave = (data: any) =>
+  request.post(`/edge/command/BindMasterDevice/_execute`, data)
+
