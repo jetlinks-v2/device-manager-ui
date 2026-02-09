@@ -39,7 +39,7 @@ const emit = defineEmits(["update:value"]);
 const options = [
   { label: "yyyy-MM-dd HH:mm:ss", value: "yyyy-MM-dd HH:mm:ss" },
   { label: "yyyy-MM-dd", value: "yyyy-MM-dd" },
-  { label: "hh:mm:ss", value: "hh:mm:ss" },
+  { label: "HH:mm:ss", value: "HH:mm:ss" },
 ];
 
 const _value = computed({
