@@ -171,6 +171,7 @@ import { device } from '@device-manager-ui/assets';
 import { useI18n } from 'vue-i18n';
 import { omit } from 'lodash-es';
 import SaveProductCloud from './SaveProductCloud.vue';
+import { ensureVisualizationDashboardProject } from '@device-manager-ui/utils/dashboardProject';
 
 const { t: $t } = useI18n();
 
@@ -421,6 +422,25 @@ const choseCloudsProduct = (data) => {
     formRef.value.validateFields('type')
     visibleClouds.value = false;
 };
+
+const ensureProductDashboardProject = async (productId: string) => {
+    try {
+        await ensureVisualizationDashboardProject({
+            entityId: productId,
+            projectName: String(form.name || ''),
+            groupId: productId,
+            groupName: String(form.name || ''),
+            configuration: {
+                initDataConfigured: true,
+                productDashboard: true,
+                productId,
+            },
+        });
+    } catch (e) {
+        console.warn('创建产品仪表盘项目失败(可忽略):', e);
+        onlyMessage('产品创建成功，但仪表盘项目创建失败', 'warning');
+    }
+};
 /**
  * 提交表单数据
  */
@@ -438,6 +458,10 @@ const submitData = () => {
                     loading.value = false
                 });
                 if (res.success) {
+                    // 新增产品成功后，同步创建产品仪表盘项目（失败不阻断）
+                    if (res.result?.id) {
+                        await ensureProductDashboardProject(String(res.result.id));
+                    }
                     onlyMessage($t('Save.index.912481-22'));
                     visible.value = false;
                     emit('success');

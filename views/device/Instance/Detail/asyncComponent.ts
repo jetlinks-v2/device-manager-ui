@@ -20,4 +20,5 @@ export const tabs = {
   Terminal: defineAsyncComponent(() => import('./Terminal/index.vue')),
   Invalid: defineAsyncComponent(() => import('./Invalid/index.vue')),
   DeviceRelationship: defineAsyncComponent(() => import('./DeviceRelationship/index.vue')),
+  Dashboard: defineAsyncComponent(() => import('./Dashboard/index.vue')),
 };

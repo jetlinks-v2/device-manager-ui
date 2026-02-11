@@ -116,7 +116,7 @@
             </a-space>
         </template>
         <full-page>
-          <div style="height: 100%; padding: 24px;overflow-y: auto">
+          <div :style="contentStyle">
             <component
               ref="componentRef"
               :is="tabs[instanceStore.tabActiveKey]"
@@ -195,6 +195,22 @@ const isRefresh = ref(false)
 const aiStore = useAIStore()
 const permissionStore = useAuthStore();
 const _arr = ['agent-device-gateway', 'agent-media-device-gateway']
+
+const contentStyle = computed(() => {
+  if (instanceStore.tabActiveKey === 'Dashboard') {
+    return {
+      height: '100%',
+      padding: '0',
+      overflow: 'hidden'
+    } as any
+  }
+  return {
+    height: '100%',
+    padding: '24px',
+    overflowY: 'auto'
+  } as any
+})
+
 const getStatus = (id: string) => {
     if(statusRef.value){
       statusRef.value.unsubscribe();
@@ -355,6 +371,11 @@ const getDetail = () => {
         !keys.includes('Terminal')
     ) {
         list.value.push({key: 'Terminal', tab: $t('Detail.index.957187-26')});
+    }
+
+    // 仪表盘
+    if (!list.value.some((i) => i.key === 'Dashboard')) {
+      list.value.push({ key: 'Dashboard', tab: '仪表盘' })
     }
 };
 

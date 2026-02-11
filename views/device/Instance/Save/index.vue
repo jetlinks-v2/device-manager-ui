@@ -158,9 +158,9 @@ import { onlyMessage } from '@jetlinks-web/utils';
 import { device} from "../../../../assets";
 import { useI18n } from 'vue-i18n';
 import { isInput } from '@device-manager-ui/utils/utils';
-import { moduleRegistry } from '@jetlinks-web-core/utils/module-registry';
 import { useMircoAppData } from '@jetlinks-web-core/hooks/useMircoApp';
 import { deviceCloudSave } from '@device-manager-ui/api/instance'
+import { ensureVisualizationDashboardProject } from '@device-manager-ui/utils/dashboardProject';
 
 const { data: instancePageType } = useMircoAppData('platformName')
 const { t: $t } = useI18n();
@@ -206,6 +206,27 @@ const vailId = async (_: Record<string, any>, value: string) => {
         return Promise.resolve();
     }
 };
+
+const ensureDeviceDashboardProject = async (device: any) => {
+  try {
+    if (!device?.id || !modelRef.productId) return
+    const product = productList.value.find((i) => i.id === modelRef.productId)
+    await ensureVisualizationDashboardProject({
+      entityId: device.id,
+      projectName: device.name,
+      groupId: String(modelRef.productId),
+      groupName: product?.name,
+      configuration: {
+        initDataConfigured: true,
+        deviceDashboard: true,
+        deviceId: device.id
+      }
+    })
+  } catch (e) {
+    console.warn('创建设备仪表盘项目失败(可忽略):', e)
+    onlyMessage('设备创建成功，但仪表盘项目创建失败', 'warning')
+  }
+}
 
 const onChange = (val: any) => {
   const item = productList.value.find(i => i.id === val)
@@ -264,6 +285,9 @@ const handleSave = () => {
                 loading.value = false;
             });
             if (resp.success) {
+                if (!props.data?.id && resp.result?.id) {
+                    await ensureDeviceDashboardProject(resp.result);
+                }
                 if (!props.data?.id && obj.configuration?.type === 'cloud' && resp.result?.id && obj.masterProductId) {
                     const response = await deviceCloudSave({
                         masterProductId: modelRef.masterProductId,
