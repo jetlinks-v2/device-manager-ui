@@ -28,6 +28,7 @@
 </template>
 
 <script setup lang="ts">
+import { useInstanceStore } from '@device-manager-ui/store/instance'
 import { moduleRegistry } from '@jetlinks-web-core/utils/module-registry'
 
 const props = withDefaults(
@@ -44,8 +45,10 @@ const props = withDefaults(
 const loading = ref(false)
 const dashboardDraftId = ref('')
 const PreviewComp = shallowRef<any>(null)
+const instanceStore = useInstanceStore()
+const route = useRoute()
 
-const projectId = computed(() => (props.targetId ? `project_${props.targetId}` : ''))
+const projectId = computed(() => `project_${instanceStore.current.productId || route.params.id}`)
 
 const reload = async () => {
   if (!projectId.value) {

@@ -1,10 +1,7 @@
 <template>
-  <DashboardPreviewTab :targetId="deviceId" />
+  <DashboardPreviewTab />
 </template>
 
 <script setup lang="ts">
 import DashboardPreviewTab from '../../../components/DashboardPreviewTab/index.vue'
-
-const route = useRoute()
-const deviceId = computed(() => String(route.params.id || ''))
 </script>
