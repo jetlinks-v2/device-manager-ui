@@ -3,7 +3,7 @@ import {getToken} from '@jetlinks-web/utils'
 import {TOKEN_KEY_URL} from '@jetlinks-web/constants'
 import type { DeviceInstance } from '../views/device/Instance/typings'
 import type { DeviceMetadata, UnitType } from '../views/device/Product/typings';
-import {getBaseApi} from "@jetlinks-web-core/utils";
+import {getBaseApi} from "@/utils";
 
 /**
  * 重置设备继承产品的物模型规则
@@ -769,7 +769,7 @@ export const getOrgList = (data: any) => request.post(`/organization/_query/no-p
  * 绑定设备到组织
  */
 export const bindDeviceToOrg = (data: any) => request.post(`/assets/bind/device`, data)
-export const bindDeviceToOrgAll = (assetType: string, assetId: string, data: any) => request.post(`/assets/bind/${assetType}/${assetId}/_all`, data)
+export const bindDeviceToOrgAll = (assetType: string, assetId: string, targetType: string, data: any) => request.post(`/assets/bind/${assetType}/${assetId}/${targetType}/_all`, data)
 
 /**
  * 获取资产所绑定的组织列表权限
@@ -794,6 +794,51 @@ export const downloadAnalyzeMetadataTemplate = (format: string) => request.get(`
 export const importAnalyzeMetadata = (deviceId: string, fileUrl: string, autoCreate: boolean) => ndJson.get(`/device/instance/${deviceId}/property/point/import?fileUrl=${fileUrl}&autoCreate=${autoCreate}`)
 
 /**
- * 创建云端设备
+ * 获取设备接入身份信息
+ * @param deviceId 设备ID
+ * @returns 设备身份信息列表
  */
-export const deviceCloudSave = (data: any) => request.post(`/edge/command/BindMasterDevice/_execute`, data)
+export const getDevicePrincipal = (deviceId: string) => request.get<Array<{
+    id: string;
+    deviceId: string;
+    metadata?: {
+        name?: string;
+        description?: string;
+        type?: string;
+    };
+    identity: {
+        type: string;
+        identifier: string;
+        name?: string;
+    };
+    credential: {
+        type: 'token' | 'password';
+        content: {
+            token?: string;
+            username?: string;
+            password?: string;
+        };
+    };
+}>>(`/device/principal/${deviceId}`)
+
+/**
+ * 是否支持设备接入身份
+ * @returns boolean
+ */
+export const existsDevicePrincipalSupport = () =>
+  request.get<boolean>(`/command-supports/service/deviceService:principal/exists`)
+
+/**
+ * 重置设备接入身份
+ * @param deviceId 设备ID
+ * @returns
+ */
+export const resetDevicePrincipal = (deviceId: string) => request.post(`/device/principal/${deviceId}/_reset`)
+
+/**
+ * 创建云端设备（边缘接入绑定）
+ * @param data 请求参数
+ */
+export const deviceCloudSave = (data: any) =>
+  request.post(`/edge/command/BindMasterDevice/_execute`, data)
+
