@@ -1,6 +1,6 @@
 <template>
     <j-page-container
-        :tabList="list"
+        :tabList="mergedOptions"
         :showBack="true"
         :tabActiveKey="instanceStore.tabActiveKey"
         @tabChange="onTabChange"
@@ -117,12 +117,15 @@
         </template>
         <full-page>
           <div :style="contentStyle">
-            <component
-              ref="componentRef"
-              :is="tabs[instanceStore.tabActiveKey]"
-              v-bind="{ type: 'device',isRefresh: isRefresh }"
-              @onJump="onTabChange"
-            />
+            <RegistryComponent code="detail-tabs" :activeKey="instanceStore.tabActiveKey">
+              <component
+                ref="componentRef"
+                :key="instanceStore.tabActiveKey"
+                :is="tabs[instanceStore.tabActiveKey]"
+                v-bind="{ type: 'device',isRefresh: isRefresh }"
+                @onJump="onTabChange"
+              />
+            </RegistryComponent>
           </div>
         </full-page>
     </j-page-container>
@@ -141,6 +144,7 @@ import { device } from "../../../../assets";
 import { useI18n } from 'vue-i18n';
 import { tabs } from './asyncComponent'
 import { useMircoAppData } from '@jetlinks-web-core/hooks/useMircoApp';
+import { useRegistryOptions } from '@jetlinks-web-core/hooks'
 
 const { data: platform } = useMircoAppData('platformName')
 
@@ -194,6 +198,8 @@ const list = ref([...initList, ]);
 const isRefresh = ref(false)
 const aiStore = useAIStore()
 const permissionStore = useAuthStore();
+const { mergedOptions } = useRegistryOptions({ baseOptions: list, code: 'detail-tabs' })
+
 const _arr = ['agent-device-gateway', 'agent-media-device-gateway']
 
 const contentStyle = computed(() => {
