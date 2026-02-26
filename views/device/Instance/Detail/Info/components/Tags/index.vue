@@ -66,6 +66,6 @@ const findName = (item: any) => {
     const _element = arr?.find((a: any) => a.value === item.value)
     name = _element?.text
   }
-  return name || item.value
+  return name || item.formatValue || item.value
 }
 </script>
