@@ -9,10 +9,14 @@
         <a-tabs
             v-model="activeKey"
             tab-position="left"
+            :style="{ height: '400px' }"
             @change="onTabChange"
             :destroyInactiveTabPane="true"
         >
-            <a-tab-pane v-for="func in newFunctions" :key="func.id">
+            <template #leftExtra>
+                <a-input-search v-model:value="serchName" allow-clear placeholder="请输入名称"></a-input-search>
+            </template>
+            <a-tab-pane v-for="func in filteredFunctions" :key="func.id">
                 <template #tab>
                     <a-tooltip>
                         <template #title>
@@ -30,6 +34,7 @@
                                 :columns="columns"
                                 :data-source="func.table"
                                 :pagination="false"
+                                :scroll="{y: '400px'}"
                                 rowKey="id"
                             >
                                 <template #bodyCell="{ column, record, index }">
@@ -138,6 +143,7 @@ const route = useRoute();
 
 const activeKey = ref('');
 const loading = ref<boolean>(false);
+const serchName = ref('')
 // 物模型数据
 const metadata = computed(() => JSON.parse(instanceStore.detail.metadata));
 const columns = ref([
@@ -161,6 +167,9 @@ const columns = ref([
 const executeResult = ref('');
 const RefMap = {}
 
+const filteredFunctions = computed(() => {
+    return newFunctions.value.filter((func: any) => func.name.includes(serchName.value))
+})
 const newFunctions = computed({
     get() {
         const result: any = [];
@@ -328,6 +337,14 @@ const getPopupContainer = () => {
 const setRefMap = (el, item) => {
     RefMap[item.id] = el
 }
+
+watch(
+    () => serchName.value,
+    (newVal) => {
+        activeKey.value = filteredFunctions.value?.[0]?.id || '';
+        onTabChange(activeKey.value)
+    }
+)
 
 </script>
 

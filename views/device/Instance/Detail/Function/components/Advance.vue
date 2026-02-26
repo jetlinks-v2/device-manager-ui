@@ -5,9 +5,13 @@
                 v-model="activeKey"
                 tab-position="left"
                 :tabBarStyle="{ width: '100%' }"
+                :style="{ height: '400px' }"
                 @change="onTabChange"
             >
-                <a-tab-pane v-for="func in newFunctions" :key="func.id">
+                <template #leftExtra>
+                    <a-input-search v-model:value="serchName" allow-clear placeholder="请输入名称"></a-input-search>
+                </template>
+                <a-tab-pane v-for="func in filteredFunctions" :key="func.id">
                     <template #tab>
                         <a-tooltip>
                             <template #title>
@@ -67,6 +71,7 @@ const instanceStore = useInstanceStore();
 const route = useRoute();
 
 const activeKey = ref('');
+const serchName = ref('')
 const loading = ref<boolean>(false);
 // 物模型数据
 const metadata = computed(() => JSON.parse(instanceStore.detail.metadata));
@@ -74,6 +79,10 @@ const current = ref<any>({});
 const executeResult = ref<string>('');
 
 const newFunctions = ref<any[]>([]);
+
+const filteredFunctions = computed(() => {
+    return newFunctions.value.filter((func: any) => func.name.includes(serchName.value))
+})
 
 /**
  * 根据数据类型, 赋初始值
@@ -129,6 +138,14 @@ watch(
         deep: true,
     },
 );
+
+watch(
+    () => serchName.value,
+    (newVal) => {
+        activeKey.value = filteredFunctions.value?.[0]?.id || '';
+        onTabChange(activeKey.value)
+    }
+)
 
 const onTabChange = (_key: string) => {
     const _item = newFunctions.value.find((item: any) => item.id === _key);

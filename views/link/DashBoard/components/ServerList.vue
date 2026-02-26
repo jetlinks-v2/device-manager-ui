@@ -7,7 +7,8 @@
             v-for="(item, index) in options" :key="item" :class="['server-item', myValue.includes(item) ? 'active' : '']"
             @click="() => change(item)"
         >
-          <a-badge :color="myValue.includes(item) ? (Array.isArray(color) ? color[index % 5] : color) : '#a3a3a3'" :text="item" />
+          <a-badge :color="myValue.includes(item) ? (Array.isArray(color) ? color[index % 5] : color) : '#a3a3a3'" />
+          <j-ellipsis>{{ item }}</j-ellipsis>
         </div>
       </div>
     </j-scrollbar>
@@ -62,6 +63,8 @@ watch(() => JSON.stringify(props.value), () => {
     gap: 24px;
 
     .server-item {
+      min-width: 100px;
+      display: flex;
       cursor: pointer;
       :deep(.ant-badge-status-text) {
         color: #a3a3a3;
