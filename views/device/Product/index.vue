@@ -35,6 +35,9 @@
             >
               {{ $t("Product.index.660348-35") }}
             </j-permission-button>
+            <RegistryComponent code="productAddButton", @save="refresh">
+              <DeviceData key="data" />
+            </RegistryComponent>
             <BatchDropdown
               :actions="batchActions"
             />
