@@ -1,10 +1,16 @@
 <template>
-    <div style="margin-top: 20px" v-if="config.length || gatewaysDetail?.length">
-        <div style="display: flex; margin-bottom: 20px; align-items: center">
-            <div style="font-size: 16px; font-weight: 700">{{ $t('Config.index.926765-0') }}</div>
+    <a-card class="config-card" :bordered="true" v-if="config.length || gatewaysDetail?.length">
+        <template #title>
+            <div class="card-title">
+                <AIcon type="SettingOutlined" class="card-icon" />
+                <span>{{ $t('Config.index.926765-0') }}</span>
+            </div>
+        </template>
+        <template #extra>
             <a-space>
                 <j-permission-button
                     type="link"
+                    class="action-button"
                     @click="visible = true"
                     hasPermission="device/Instance:update"
                 >
@@ -13,6 +19,7 @@
                 </j-permission-button>
                 <j-permission-button
                     type="link"
+                    class="action-button"
                     v-if="instanceStore.detail.current?.value !== 'notActive'"
                     :popConfirm="{
                         title: $t('Config.index.926765-2'),
@@ -27,6 +34,7 @@
                 </j-permission-button>
                 <j-permission-button
                     type="link"
+                    class="action-button"
                     v-if="instanceStore.detail.aloneConfiguration"
                     :popConfirm="{
                         title: $t('Config.index.926765-5'),
@@ -40,7 +48,7 @@
                     /></a-tooltip>
                 </j-permission-button>
             </a-space>
-        </div>
+        </template>
         <template v-if="access?.provider === 'composite-device-gateway'">
             <a-collapse v-model:activeKey="activeKey">
                 <a-collapse-panel v-for="item in gatewaysDetail" :header="item.name" :key="item.id">
@@ -48,7 +56,7 @@
                         {{ providers?.find(i => i.id === item.provider)?.description }}
                     </template>
                     <template v-if="item.transportDetail?.allConfig?.length">
-                        <a-descriptions :labelStyle="{width: '150px'}" bordered v-for="i in item.transportDetail.allConfig" :key="i.name">
+                        <a-descriptions class="compact-descriptions" :labelStyle="{width: '120px'}" bordered size="small" v-for="i in item.transportDetail.allConfig" :key="i.name">
                             <template #title><h4 style="font-size: 15px">{{ i.name }}</h4></template>
                             <a-descriptions-item
                                 v-for="item in i.properties"
@@ -127,7 +135,7 @@
             </a-collapse>
         </template>
         <template v-else>
-            <a-descriptions :labelStyle="{width: '150px'}" bordered v-for="i in config" :key="i.name">
+            <a-descriptions class="compact-descriptions" :labelStyle="{width: '120px'}" bordered size="small" v-for="i in config" :key="i.name">
                 <template #title><h4 style="font-size: 15px">{{ i.name }}</h4></template>
                 <a-descriptions-item
                     v-for="item in i.properties"
@@ -209,7 +217,7 @@
             :gatewaysDetail="gatewaysDetail"
             :access="access"
         />
-    </div>
+    </a-card>
 </template>
 
 <script lang="ts" setup>
@@ -225,6 +233,13 @@ import Save from './Save.vue';
 import { onlyMessage } from '@jetlinks-web/utils';
 import { useI18n } from 'vue-i18n';
 import { useRequest } from '@jetlinks-web/hooks';
+
+const emit = defineEmits<{
+    /**
+     * 配置保存成功（包括刷新实例信息之后）
+     */
+    (e: 'saved'): void
+}>()
 
 const { t: $t } = useI18n();
 const instanceStore = useInstanceStore();
@@ -292,7 +307,18 @@ const resetBtn = () => {
 const saveBtn = () => {
     visible.value = false;
     if (instanceStore.current.id) {
-        instanceStore.refresh(instanceStore.current.id);
+        const refreshPromise = instanceStore.refresh(instanceStore.current.id);
+        // 兼容 refresh 返回 Promise 或非 Promise 的情况
+        if (refreshPromise && typeof (refreshPromise as any).then === 'function') {
+            (refreshPromise as Promise<any>).then(() => {
+                emit('saved');
+            });
+        } else {
+            // 非异步刷新，短暂延迟后通知父组件
+            setTimeout(() => emit('saved'), 0);
+        }
+    } else {
+        emit('saved');
     }
 };
 
@@ -318,3 +344,72 @@ watch(
 
 
 </script>
+
+<style lang="less" scoped>
+.config-card {
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s ease;
+    border: 1px solid #f0f0f0;
+    margin-top: 16px;
+    margin-bottom: 16px;
+
+    &:hover {
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+        border-color: #d9d9d9;
+    }
+
+    :deep(.ant-card-head) {
+        border-bottom: 1px solid #f0f0f0;
+        padding: 12px 24px;
+        min-height: 48px;
+    }
+
+    :deep(.ant-card-body) {
+        padding: 16px 20px;
+    }
+}
+
+.compact-descriptions {
+    :deep(.ant-descriptions-item-label) {
+        font-size: 13px;
+        padding: 8px 12px;
+    }
+
+    :deep(.ant-descriptions-item-content) {
+        font-size: 13px;
+        padding: 8px 12px;
+    }
+
+    :deep(.ant-descriptions-row) {
+        > td {
+            padding-bottom: 8px;
+        }
+    }
+
+    :deep(h4) {
+        font-size: 14px;
+        margin-bottom: 12px;
+    }
+}
+
+.card-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.85);
+
+    .card-icon {
+        color: #1890ff;
+        font-size: 16px;
+    }
+}
+
+.action-button {
+    padding: 0;
+    height: auto;
+    font-size: 14px;
+}
+</style>
