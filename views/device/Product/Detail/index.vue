@@ -98,7 +98,7 @@
         {{ $t('Detail.index.478940-8') }}
       </j-permission-button>
     </template>
-    <FullPage :fixed="productStore.tabActiveKey === 'Dashboard'">
+    <FullPage>
       <div :style="contentStyle">
         <component
           :is="tabs[productStore.tabActiveKey]"
