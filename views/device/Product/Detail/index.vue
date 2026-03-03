@@ -158,7 +158,7 @@ const contentStyle = computed(() => {
   return {
     height: '100%',
     padding: '24px',
-    overflow: 'auto'
+    overflowY: 'auto'
   } as any
 })
 

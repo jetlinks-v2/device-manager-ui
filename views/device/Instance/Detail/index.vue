@@ -112,7 +112,10 @@
       </a-space>
     </template>
     <full-page>
-      <div :style="contentStyle">
+      <div
+        :style="contentStyle"
+        class="device-detail-content-wrap"
+      >
         <RegistryComponent
           code="detail-tabs"
           :activeKey="instanceStore.tabActiveKey"
@@ -481,5 +484,10 @@ defineExpose({
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+.device-detail-content-wrap {
+  :deep(> div) {
+    height: 100%;
+  }
 }
 </style>
