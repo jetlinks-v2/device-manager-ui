@@ -14,6 +14,7 @@
       <component
         :is="PreviewComp"
         :draftId="dashboardDraftId"
+        :targetId="targetId"
         embedded
         :showHeader="false"
       />
