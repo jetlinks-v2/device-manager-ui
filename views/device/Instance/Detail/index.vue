@@ -149,6 +149,7 @@ import { useMircoAppData } from '@jetlinks-web-core/hooks/useMircoApp'
 import { useRegistryOptions } from '@jetlinks-web-core/hooks'
 
 const { data: platform } = useMircoAppData('platformName')
+import {deviceStateList} from "@device-manager-ui/views/device/data";
 
 const { t: $t } = useI18n()
 const menuStory = useMenuStore()
@@ -174,27 +175,31 @@ const statusRef = ref()
 const componentRef = ref()
 
 const initList = [
-  {
-    key: 'Info',
-    tab: $t('Detail.index.957187-11')
-  },
-  {
-    key: 'Running',
-    tab: $t('Detail.index.957187-12')
-  },
-  {
-    key: 'Metadata',
-    tab: $t('Detail.index.957187-13')
-  },
-  {
-    key: 'Function',
-    tab: $t('Detail.index.957187-14')
-  },
-  {
-    key: 'Log',
-    tab: $t('Detail.index.957187-15')
-  }
-]
+    {
+        key: 'Info',
+        tab: $t('Detail.index.957187-11'),
+    },
+    {
+        key: 'Running',
+        tab: $t('Detail.index.957187-12'),
+    },
+    {
+        key: 'Metadata',
+        tab: $t('Detail.index.957187-13'),
+    },
+    {
+        key: 'Function',
+        tab: $t('Detail.index.957187-14'),
+    },
+    {
+        key: 'Log',
+        tab: $t('Detail.index.957187-15'),
+    },
+    {
+        key: 'DeviceRelationship',
+        tab: '设备关系',
+    },
+];
 
 const list = ref([...initList])
 const isRefresh = ref(false)

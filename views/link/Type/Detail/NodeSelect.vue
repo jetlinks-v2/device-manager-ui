@@ -102,7 +102,7 @@ const props = defineProps({
   }
 })
 const emit = defineEmits(["change"]);
-const searchText = ref("点击配置节点筛选范围");
+const searchText = ref($t("Detail.NodeSelect.141135-0"));
 const visible = ref(false);
 const show = () => {
   visible.value = true;
@@ -168,6 +168,8 @@ const onAdd = () =>{
 
 const onDelete = (index) =>{
     formData.list.splice(index,1)
+
+    formRef.value.validate()
 }
 
 const handleChangeColumn = (index, value) => {
@@ -189,15 +191,17 @@ const handleCancel = () => {
   })
 }
 const handleOk = () => {
-  const result = formData.list.filter(item => item.column && item.value)
-  if (!result.length) {
-    return onlyMessage('请配置节点筛选范围', 'warning')
-  }
-  searchText.value = result.map(item => {
-    return `${item.column}-${item.value}`
-  }).join(';')
-  visible.value = false;
-  emit('change', result.map(item => omit(item, 'id')))
+  formRef.value.validate().then(() => {
+    const result = formData.list.filter(item => item.column && item.value)
+    if (!result.length) {
+      return onlyMessage($t('Detail.NodeSelect.141135-1'), 'warning')
+    }
+    searchText.value = result.map(item => {
+      return `${item.column}-${item.value}`
+    }).join(';')
+    visible.value = false;
+    emit('change', result.map(item => omit(item, 'id')))
+  })
 }
 
 watch(() => props.value, (val) => {
@@ -209,7 +213,7 @@ watch(() => props.value, (val) => {
     })
     const result = formData.list.filter(item => item.column)
     if (!result.length) {
-      return $t('点击配置节点筛选范围')
+      return $t('Detail.NodeSelect.141135-0')
     }
     searchText.value = result.map(item => {
       return `${item.column}-${item.value}`
@@ -225,7 +229,7 @@ watch(() => visible.value, (val) => {
   })
   const result = formData.list.filter(item => item.column)
   if (!result.length) {
-    return $t('点击配置节点筛选范围')
+    return $t('Detail.NodeSelect.141135-0')
   }
   searchText.value = result.map(item => {
     return `${item.column}-${item.value}`
