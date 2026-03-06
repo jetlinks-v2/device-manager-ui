@@ -9,10 +9,14 @@
         <a-tabs
             v-model="activeKey"
             tab-position="left"
+            :style="{ height: '400px' }"
             @change="onTabChange"
             :destroyInactiveTabPane="true"
         >
-            <a-tab-pane v-for="func in newFunctions" :key="func.id">
+            <template #leftExtra>
+                <a-input-search v-model:value="serchName" allow-clear placeholder="请输入名称"></a-input-search>
+            </template>
+            <a-tab-pane v-for="func in filteredFunctions" :key="func.id">
                 <template #tab>
                     <a-tooltip>
                         <template #title>
@@ -25,11 +29,16 @@
                 </template>
                 <a-row :gutter="30">
                     <a-col :span="15">
+                        <div class="description">
+                            <span class="description-title">说明</span>
+                            <j-ellipsis style="width: 80%;">{{ func.description || '--' }}</j-ellipsis>             
+                        </div>
                         <a-form :ref="(el) => setRefMap(el, func)" :model="func">
                             <a-table
                                 :columns="columns"
                                 :data-source="func.table"
                                 :pagination="false"
+                                :scroll="{y: '400px'}"
                                 rowKey="id"
                             >
                                 <template #bodyCell="{ column, record, index }">
@@ -138,6 +147,7 @@ const route = useRoute();
 
 const activeKey = ref('');
 const loading = ref<boolean>(false);
+const serchName = ref('')
 // 物模型数据
 const metadata = computed(() => JSON.parse(instanceStore.detail.metadata));
 const columns = ref([
@@ -161,6 +171,9 @@ const columns = ref([
 const executeResult = ref('');
 const RefMap = {}
 
+const filteredFunctions = computed(() => {
+    return newFunctions.value.filter((func: any) => func.name.includes(serchName.value))
+})
 const newFunctions = computed({
     get() {
         const result: any = [];
@@ -329,6 +342,14 @@ const setRefMap = (el, item) => {
     RefMap[item.id] = el
 }
 
+watch(
+    () => serchName.value,
+    (newVal) => {
+        activeKey.value = filteredFunctions.value?.[0]?.id || '';
+        onTabChange(activeKey.value)
+    }
+)
+
 </script>
 
 <style lang="less" scoped>
@@ -356,6 +377,17 @@ const setRefMap = (el, item) => {
         width: 100%;
         max-height: 450px;
         overflow: auto;
+    }
+    .description {
+        margin-bottom: 10px;
+        padding: 8px 11px;
+        border: 1px solid #d9d9d9;
+        border-radius: 2px;
+        display: flex;
+        .description-title {
+            color: #777777;
+            margin-right: 24px;
+        }
     }
 }
 .tabTitle {

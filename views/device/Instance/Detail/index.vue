@@ -147,6 +147,7 @@ import { useMircoAppData } from '@jetlinks-web-core/hooks/useMircoApp';
 import { useRegistryOptions } from '@jetlinks-web-core/hooks'
 
 const { data: platform } = useMircoAppData('platformName')
+import {deviceStateList} from "@device-manager-ui/views/device/data";
 
 const { t: $t } = useI18n();
 const menuStory = useMenuStore();
@@ -191,6 +192,10 @@ const initList = [
     {
         key: 'Log',
         tab: $t('Detail.index.957187-15'),
+    },
+    {
+        key: 'DeviceRelationship',
+        tab: '设备关系',
     },
 ];
 

@@ -92,6 +92,7 @@
 
 <script lang='ts' setup>
 import { getPropertyData } from '../../../../../../../api/instance'
+import { queryDetailById } from '@device-manager-ui/api/product'
 import { useInstanceStore } from '../../../../../../../store/instance'
 import dayjs from 'dayjs'
 import { getType } from '../index'
@@ -134,8 +135,19 @@ const valueType = {
   enum: 'select'
 }
 
+const productInfo = ref<any>({})
+
+//获取产品信息，读取产品的存储类型
+async function getProductInfo() {
+  const res = await queryDetailById(instanceStore.current.productId)
+  if (res.success) {
+    productInfo.value = res.result
+  }
+}
+
+getProductInfo()
 const columns = computed(() => {
-  const propertyQueryById = (instanceStore.current.features || []).find((i: any) => i.id === 'propertyQueryById')
+  const _storePolicy = productInfo.value?.storePolicyConfiguration?.forProperty ? productInfo.value?.storePolicyConfiguration.forProperty : productInfo.value?.storePolicy
   const arr: any[] = [
     {
       title: $t('Log.index.848256-1'),
@@ -148,8 +160,8 @@ const columns = computed(() => {
     },
     {
       title: _props.data?.name || '',
-      dataIndex: !!propertyQueryById ? _props.data?.id : ['int', 'float', 'short', 'double'].includes(_props.data.valueType?.type) ? 'numberValue' : 'value',
-      key: !!propertyQueryById ? _props.data?.id : ['int', 'float', 'short', 'double'].includes(_props.data.valueType?.type) ? 'numberValue' : 'value',
+      dataIndex: _storePolicy?.includes('column') ? _props.data?.id : ['int', 'float', 'short', 'double'].includes(_props.data.valueType?.type) ? 'numberValue' : 'value',
+      key: _storePolicy?.includes('column') ? _props.data?.id : ['int', 'float', 'short', 'double'].includes(_props.data.valueType?.type) ? 'numberValue' : 'value',
       ellipsis: true,
       search: {
         type: valueType[_props.data?.valueType?.type as keyof typeof valueType] || 'string',

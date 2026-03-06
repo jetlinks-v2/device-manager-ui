@@ -6,9 +6,9 @@
         <div class="section-header">
           <div class="header-left">
             <div class="section-title">
-              <TitleComponent data="正向关系">
+              <TitleComponent :data="$t('DeviceRelationship.index.710824-0')">
                 <template #extra>
-                  <a-tooltip title="管理设备与其他业务的关联关系，关系来源于关系配置">
+                  <a-tooltip :title="$t('DeviceRelationship.index.710824-12')">
                     <AIcon type="QuestionCircleOutlined" class="help-icon"/>
                   </a-tooltip>
                 </template>
@@ -18,7 +18,10 @@
           <AIcon type="FormOutlined" class="edit-icon" @click="handleEditRelationship"/>
         </div>
         <div class="section-content">
-          <div class="relation-count"><div>已配置关系</div> <div class="count-num">{{ relationCount }}</div></div>
+          <div class="relation-count">
+            <div>{{ $t('DeviceRelationship.index.710824-1') }}</div>
+            <div class="count-num">{{ relationCount }}</div>
+          </div>
           <div class="relation-list">
             <div
               v-for="item in relationshipData"
@@ -37,7 +40,7 @@
         <div class="section-header">
           <div class="header-left">
             <div class="section-title">
-              <TitleComponent data="组织"/>
+              <TitleComponent :data="$t('DeviceRelationship.index.710824-2')" />
             </div>
           </div>
           <AIcon type="FormOutlined" class="edit-icon" @click="handleEditOrganization"/>
@@ -53,7 +56,10 @@
               <AIcon type="UnorderedListOutlined" class="list-icon"/>
             </template>
             <template #header-extra>
-              <div class="organization-count">已加入组织节点 <span class="count-num">{{ bindOrgList?.length }}</span></div>
+              <div class="organization-count">
+                {{ $t('DeviceRelationship.index.710824-3') }}
+                <span class="count-num">{{ bindOrgList?.length }}</span>
+              </div>
             </template>
             <template #actions="{ item, level }">
               <a-tag
@@ -64,18 +70,18 @@
               </a-tag>
             </template>
             <template #empty>
-              <div class="empty-text">暂无组织数据</div>
+              <div class="empty-text">{{ $t('DeviceRelationship.index.710824-4') }}</div>
             </template>
           </TreeList>
         </div>
       </div>
 
-      <!-- 分组部分 -->
+      <!-- 分组部分（暂未启用，如需启用请同步补全国际化文案）
       <!-- <div class="section-card">
         <div class="section-header">
           <div class="header-left">
             <div class="section-title">
-              <TitleComponent data="分组">
+              <TitleComponent :data="$t('DeviceRelationship.index.710824-5')">
                 <template #extra>
                   <AIcon type="QuestionCircleOutlined" class="help-icon"/>
                 </template>
@@ -91,15 +97,18 @@
             @view-change="handleGroupViewChange"
           >
             <template #header-extra>
-              <div class="group-count">已加入组织节点 <span class="count-num">{{ groupCount }}</span></div>
+              <div class="group-count">
+                {{ $t('DeviceRelationship.index.710824-6') }}
+                <span class="count-num">{{ groupCount }}</span>
+              </div>
             </template>
             <template #actions="{ item, level }">
               <a-button type="text" size="small" class="action-view">
-                查看
+                {{ $t('DeviceRelationship.index.710824-8') }}
               </a-button>
             </template>
             <template #empty>
-              <div class="empty-text">暂无分组数据</div>
+              <div class="empty-text">{{ $t('DeviceRelationship.index.710824-7') }}</div>
             </template>
           </TreeList>
         </div>
@@ -133,10 +142,13 @@ import RelationshipEditModal from './components/RelationshipEditModal.vue'
 import OrganizationEditModal from './components/OrganizationEditModal.vue'
 import GroupEditModal from './components/GroupEditModal.vue'
 import TreeList from './components/TreeList.vue'
-import {useInstanceStore} from "@device-manager-ui/store/instance";
+import { useInstanceStore } from '@device-manager-ui/store/instance';
 import { getOrgList, getBindOrgAuthList } from '@device-manager-ui/api/instance'
 import { useRequest } from '@jetlinks-web/hooks'
 import { moduleRegistry } from '@jetlinks-web-core/utils/module-registry'
+import { useI18n } from 'vue-i18n'
+
+const { t: $t } = useI18n()
 
 const getTreeData_api = moduleRegistry.getResourceItem('authentication-manager-ui', 'apis', 'getTreeData_api')
 const instanceStore = useInstanceStore();
@@ -154,10 +166,10 @@ const loading = reactive({
 })
 
 const permissionMap = {
-  'read': '查看',
-  'save': '编辑',
-  'delete': '删除',
-  'share': '共享',
+  read: $t('DeviceRelationship.index.710824-8'),
+  save: $t('DeviceRelationship.index.710824-9'),
+  delete: $t('DeviceRelationship.index.710824-10'),
+  share: $t('DeviceRelationship.index.710824-11'),
 }
 
 const organizationData = ref<any[]>([])
@@ -255,10 +267,10 @@ const handleGroupViewChange = (view: 'tree' | 'flat') => {
 
 // 默认操作按钮
 const getDefaultActions = () => [
-  { type: 'view', label: '查看' },
-  { type: 'edit', label: '编辑' },
-  { type: 'delete', label: '删除' },
-  { type: 'share', label: '共享' }
+  { type: 'view', label: $t('DeviceRelationship.index.710824-8') },
+  { type: 'edit', label: $t('DeviceRelationship.index.710824-9') },
+  { type: 'delete', label: $t('DeviceRelationship.index.710824-10') },
+  { type: 'share', label: $t('DeviceRelationship.index.710824-11') }
 ]
 
 const handleEditRelationship = () => {
