@@ -671,6 +671,10 @@ const getDetail = () => {
         key: 'Invalid',
         tab: $t('Detail.index.957187-29')
       })
+      list.value.push({
+        key: 'Threshold',
+        tab: $t('Detail.index.957187-42')
+      })
     }
   }
   if (permissionStore.hasPermission('iot-card/CardManagement:view') && isNoCommunity) {

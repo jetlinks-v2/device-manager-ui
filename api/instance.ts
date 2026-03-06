@@ -727,11 +727,45 @@ export const updateDeviceThreshold = (productId:string,deviceId:string,propertyI
 export const queryDeviceThreshold = (productId: string, deviceId: string,  propertyId: string) => request.get(`/message/preprocessor/device/${productId}/${deviceId}/property/${propertyId}`)
 
 /**
+ * 阈值限制-设备物模型阈值分页查询
+ * @param productId
+ * @param deviceId
+ * @param data
+ */
+export const queryDeviceThresholdPage = (productId: string, deviceId: string, data: Record<string, any>) =>
+  request.post(`/message/preprocessor/device/${productId}/${deviceId}/property/_query`, data)
+
+/**
+ * 阈值限制-设备物模型阈值列表（不分页）
+ * @param productId
+ * @param deviceId
+ * @param data
+ */
+export const queryDeviceThresholdList = (productId: string, deviceId: string, data: Record<string, any>) =>
+  request.post(`/message/preprocessor/product/${productId}/${deviceId}/property/_list`, data)
+
+/**
  * 阈值限制-产品物模型阈值限制
  * @param productId
  * @param propertyId
  */
 export const queryProductThreshold = (productId: string, propertyId: string,hiddenError:boolean) => request.get(`/message/preprocessor/product/${productId}/property/${propertyId}`,{},{ hiddenError })
+
+/**
+ * 阈值限制-产品物模型阈值分页查询
+ * @param productId
+ * @param data
+ */
+export const queryProductThresholdPage = (productId: string, data: Record<string, any>) =>
+  request.post(`/message/preprocessor/product/${productId}/property/_query`, data)
+
+/**
+ * 阈值限制-产品物模型阈值列表（不分页）
+ * @param productId
+ * @param data
+ */
+export const queryProductThresholdList = (productId: string, data: Record<string, any>) =>
+  request.post(`/message/preprocessor/product/${productId}/property/_list`, data)
 
 /**
  * 阈值限制-删除产品物模型的阈值
