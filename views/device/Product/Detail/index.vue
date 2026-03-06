@@ -313,6 +313,10 @@ const getProtocol = async () => {
                   key: 'Invalid',
                   tab: $t('Detail.index.478940-17')
                 })
+              list.value.push({
+                key: 'Threshold',
+                tab: $t('Detail.index.478940-20'),
+              });
             }
         }
     }
