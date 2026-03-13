@@ -2,12 +2,12 @@
   <div>
     <pro-search type='simple' :columns='columns' @search='handleSearch'></pro-search>
     <a-table
-      :columns='columns'
-      size='small'
-      rowKey='id'
-      :dataSource='dataSource?.data'
-      @change='onChange'
-      :pagination="{
+        :columns='columns'
+        size='small'
+        rowKey='id'
+        :dataSource='dataSource?.data'
+        @change='onChange'
+        :pagination="{
                 current: (dataSource?.pageIndex || 0) + 1,
                 pageSize: dataSource?.pageSize || 12,
                 showSizeChanger: true,
@@ -15,7 +15,7 @@
                 total: dataSource?.total || 0,
                 pageSizeOptions: ['12', '24', '48', '96'],
             }"
-      :scroll='{y: 400}'
+        :scroll='{y: 400}'
     >
       <template #bodyCell='{ column, record }'>
         <template v-if="column.key === 'timestamp'">
@@ -23,35 +23,35 @@
         </template>
         <template v-if="column.key === 'value'">
           <ValueRender
-            type='table'
-            :data='_props.data'
-            :value='{ ...record }'
+              type='table'
+              :data='_props.data'
+              :value='{ ...record }'
           />
         </template>
         <template v-if='column.key === data?.id'>
           <ValueRender
-            type='table'
-            :data='_props.data'
-            :value='{ ...record }'
+              type='table'
+              :data='_props.data'
+              :value='{ ...record }'
           />
         </template>
         <template v-if="column.key === 'numberValue'">
           <ValueRender
-            type='table'
-            :data='_props.data'
-            :value='{ ...record }'
+              type='table'
+              :data='_props.data'
+              :value='{ ...record }'
           />
         </template>
         <template v-else-if="column.key === 'action'">
           <a-space>
             <a-button
-              v-if="
+                v-if="
                                 showLoad ||
                                 (!getType(record?.value) &&
                                     data?.valueType?.bodyType === 'base64')
                             "
-              type='link'
-              @click='_download(record)'
+                type='link'
+                @click='_download(record)'
             >
               <AIcon type='DownloadOutlined'
               />
@@ -67,24 +67,24 @@
     </a-table>
   </div>
   <a-modal
-    :title="$t('Event.index.277611-0')"
-    :open='visible'
-    @ok='visible = false'
-    @cancel='visible = false'
+      :title="$t('Event.index.277611-0')"
+      :open='visible'
+      @ok='visible = false'
+      @cancel='visible = false'
   >
     <div>{{ current?.propertyName }}</div>
     <JsonViewer
-      v-if="
+        v-if="
                 data?.valueType?.type === 'object' ||
                 data?.valueType?.type === 'array'
             "
-      :expand-depth='5'
-      :value='current.formatValue'
+        :expand-depth='5'
+        :value='current.formatValue'
     />
     <a-textarea
-      v-else-if="data?.valueType?.type === 'file'"
-      :value='current.formatValue'
-      :row='3'
+        v-else-if="data?.valueType?.type === 'file'"
+        :value='current.formatValue'
+        :row='3'
     />
     <a-input v-else disabled :value='current.formatValue' />
   </a-modal>
@@ -92,7 +92,6 @@
 
 <script lang='ts' setup>
 import { getPropertyData } from '../../../../../../../api/instance'
-import { queryDetailById } from '@device-manager-ui/api/product'
 import { useInstanceStore } from '../../../../../../../store/instance'
 import dayjs from 'dayjs'
 import { getType } from '../index'
@@ -135,19 +134,8 @@ const valueType = {
   enum: 'select'
 }
 
-const productInfo = ref<any>({})
-
-//获取产品信息，读取产品的存储类型
-async function getProductInfo() {
-  const res = await queryDetailById(instanceStore.current.productId)
-  if (res.success) {
-    productInfo.value = res.result
-  }
-}
-
-getProductInfo()
 const columns = computed(() => {
-  const _storePolicy = productInfo.value?.storePolicyConfiguration?.forProperty ? productInfo.value?.storePolicyConfiguration.forProperty : productInfo.value?.storePolicy
+  const propertyQueryById = (instanceStore.current.features || []).find((i: any) => i.id === 'propertyQueryById')
   const arr: any[] = [
     {
       title: $t('Log.index.848256-1'),
@@ -160,25 +148,25 @@ const columns = computed(() => {
     },
     {
       title: _props.data?.name || '',
-      dataIndex: _storePolicy?.includes('column') ? _props.data?.id : ['int', 'float', 'short', 'double'].includes(_props.data.valueType?.type) ? 'numberValue' : 'value',
-      key: _storePolicy?.includes('column') ? _props.data?.id : ['int', 'float', 'short', 'double'].includes(_props.data.valueType?.type) ? 'numberValue' : 'value',
+      dataIndex: !!propertyQueryById ? _props.data?.id : ['int', 'float', 'short', 'double'].includes(_props.data.valueType?.type) ? 'numberValue' : 'value',
+      key: !!propertyQueryById ? _props.data?.id : ['int', 'float', 'short', 'double'].includes(_props.data.valueType?.type) ? 'numberValue' : 'value',
       ellipsis: true,
       search: {
         type: valueType[_props.data?.valueType?.type as keyof typeof valueType] || 'string',
         options: _props.data.valueType.type === 'boolean'
-          ? [
-            {
-              label: _props.data?.valueType?.trueText,
-              value: _props.data?.valueType?.trueValue
-            },
-            {
-              label: _props.data?.valueType?.falseText,
-              value: _props.data?.valueType?.falseValue
-            }
-          ]
-          : _props.data?.valueType?.elements?.map((item: any) => {
-            return { label: item.text, value: item.value }
-          })
+            ? [
+              {
+                label: _props.data?.valueType?.trueText,
+                value: _props.data?.valueType?.trueValue
+              },
+              {
+                label: _props.data?.valueType?.falseText,
+                value: _props.data?.valueType?.falseValue
+              }
+            ]
+            : _props.data?.valueType?.elements?.map((item: any) => {
+              return { label: item.text, value: item.value }
+            })
       }
     }
 
@@ -204,8 +192,8 @@ const columns = computed(() => {
 
 const showLoad = computed(() => {
   return (
-    _props.data.valueType?.type === 'file' &&
-    _props.data?.valueType?.bodyType === 'binary'
+      _props.data.valueType?.type === 'file' &&
+      _props.data?.valueType?.bodyType === 'binary'
   )
 })
 
@@ -225,29 +213,29 @@ const showDetail = (item: any) => {
 
 const queryPropertyData = async (params: any, terms?: any) => {
   const resp = await getPropertyData(
-    instanceStore.current.id,
-    _props.data.id,
-    {
-      ...params,
-      sorts: [
-        {
-          name: 'timestamp',
-          order: 'desc'
-        }
-      ],
-      terms: [
-        {
-          terms: [
-            {
-              column: 'timestamp',
-              termType: 'btw',
-              value: _props.time
-            }
-          ]
-        },
-        terms ? { ...terms } : {}
-      ]
-    }
+      instanceStore.current.id,
+      _props.data.id,
+      {
+        ...params,
+        sorts: [
+          {
+            name: 'timestamp',
+            order: 'desc'
+          }
+        ],
+        terms: [
+          {
+            terms: [
+              {
+                column: 'timestamp',
+                termType: 'btw',
+                value: _props.time
+              }
+            ]
+          },
+          terms ? { ...terms } : {}
+        ]
+      }
   )
   if (resp.status === 200) {
     dataSource.value = resp.result as any
@@ -255,19 +243,19 @@ const queryPropertyData = async (params: any, terms?: any) => {
 }
 
 watch(
-  () => [_props.data.id, _props.time],
-  ([newVal]) => {
-    if (newVal && _props.time?.length) {
-      queryPropertyData({
-        pageSize: 12,
-        pageIndex: 0
-      })
+    () => [_props.data.id, _props.time],
+    ([newVal]) => {
+      if (newVal && _props.time?.length) {
+        queryPropertyData({
+          pageSize: 12,
+          pageIndex: 0
+        })
+      }
+    },
+    {
+      deep: true,
+      immediate: true
     }
-  },
-  {
-    deep: true,
-    immediate: true
-  }
 )
 
 const onChange = (_page: any) => {
@@ -280,7 +268,7 @@ const onChange = (_page: any) => {
 const _download = (record: any) => {
   const downNode = document.createElement('a')
   downNode.download = `${instanceStore.current.name}-${
-    _props.data.name
+      _props.data.name
   }${dayjs(new Date().getTime()).format('YYYY-MM-DD-HH-mm-ss')}.txt`
   downNode.style.display = 'none'
   //字符串内容转成Blob地址
