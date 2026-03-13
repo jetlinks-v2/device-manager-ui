@@ -114,20 +114,20 @@
                 <a-form-item
                     v-if="instancePageType === 'edge'"
                     :name="['configuration', 'type']"
-                    label="创建方式"
+                    :label="$t('Plugin.index.626239-24')"
                 >
                 <j-card-select
                     :showImage="false"
                     v-model:value="modelRef.configuration.type"
                     :disabled="data.id"
                     :options="[
-                        { label: '本地创建', value: 'local' },
-                        { label: '云端同步创建', value: 'cloud', disabled: (!modelRef.productId || !modelRef.masterProductId)  },
+                        { label: $t('Save.index.902471-17'), value: 'local' },
+                        { label: $t('Save.index.902471-18'), value: 'cloud', disabled: (!modelRef.productId || !modelRef.masterProductId)  },
                     ]"
                     :column="3"
                 />
-                <div class="text" v-if="modelRef.configuration?.type === 'local'">仅在本地创建设备</div>
-                <div class="text" v-if="modelRef.configuration?.type === 'cloud'">本地设备创建成功后，将会自动在云端自动创建相应设备，并自动映射</div>
+                <div class="text" v-if="modelRef.configuration?.type === 'local'">{{ $t('Save.index.902471-19') }}</div>
+                <div class="text" v-if="modelRef.configuration?.type === 'cloud'">{{ $t('Save.index.902471-20') }}</div>
                 </a-form-item>
                 <a-form-item
                     :label="$t('Save.index.902471-12')"
@@ -279,10 +279,10 @@ const handleSave = () => {
                         emit('save', !props.data?.id, resp.result);
                     })
                     if (response.success) {
-                        onlyMessage('操作成功！');
+                        onlyMessage($t('Save.index.902471-16'));
                     }
                 } else {
-                    onlyMessage('操作成功！');
+                    onlyMessage($t('Save.index.902471-16'));
                     emit('save', !props.data?.id, resp.result);
                 }
             }
