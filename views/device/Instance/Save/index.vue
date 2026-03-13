@@ -155,17 +155,18 @@
 import { queryNoPagingPost } from '../../../../api/product';
 import { isExists, update } from '../../../../api/instance';
 import { onlyMessage } from '@jetlinks-web/utils';
-import { device} from "../../../../assets";
+import { device } from "../../../../assets";
 import { useI18n } from 'vue-i18n';
 import { isInput } from '@device-manager-ui/utils/utils';
 import { moduleRegistry } from '@jetlinks-web-core/utils/module-registry';
 import { useMircoAppData } from '@jetlinks-web-core/hooks/useMircoApp';
 import { deviceCloudSave } from '@device-manager-ui/api/instance'
+import { ensureVisualizationDashboardProject } from '@device-manager-ui/utils/dashboardProject'
 
 const { data: instancePageType } = useMircoAppData('platformName')
-const { t: $t } = useI18n();
+const { t: $t } = useI18n()
 
-const emit = defineEmits(['close', 'save']);
+const emit = defineEmits(['close', 'save'])
 const props = defineProps({
     data: {
         type: Object,
@@ -179,7 +180,7 @@ const props = defineProps({
 const productList = ref<Record<string, any>[]>([]);
 const loading = ref<boolean>(false);
 
-const formRef = ref();
+const formRef = ref()
 
 const modelRef = reactive({
     productId: undefined,
@@ -195,100 +196,124 @@ const modelRef = reactive({
 });
 
 const vailId = async (_: Record<string, any>, value: string) => {
-    if (!props?.data?.id && value) {
-        if (!isInput(value)) {
-          return Promise.reject($t('Save.index.912481-17'));
-        }
-
-        const resp = await isExists(value);
-        if (resp.success && resp.result) {
-            return Promise.reject($t('Save.index.902471-15'));
-        } else {
-            return Promise.resolve();
-        }
-    } else {
-        return Promise.resolve();
+  if (!props?.data?.id && value) {
+    if (!isInput(value)) {
+      return Promise.reject($t('Save.index.912481-17'))
     }
-};
+
+    const resp = await isExists(value)
+    if (resp.success && resp.result) {
+      return Promise.reject($t('Save.index.902471-15'))
+    } else {
+      return Promise.resolve()
+    }
+  } else {
+    return Promise.resolve()
+  }
+}
+
+const ensureDeviceDashboardProject = async (device: any) => {
+  try {
+    if (!device?.id || !modelRef.productId) return
+    const product = productList.value.find((i) => i.id === modelRef.productId)
+    await ensureVisualizationDashboardProject({
+      entityId: device.id,
+      projectName: device.name,
+      groupId: String(modelRef.productId),
+      groupName: product?.name,
+      configuration: {
+        initDataConfigured: true,
+        deviceDashboard: true,
+        deviceId: device.id
+      }
+    })
+  } catch (e) {
+    console.warn($t('device.InstanceSave.101004-0'), e)
+    onlyMessage($t('device.InstanceSave.101004-1'), 'warning')
+  }
+}
 
 const onChange = (val: any) => {
-  const item = productList.value.find(i => i.id === val)
+  const item = productList.value.find((i) => i.id === val)
   modelRef.masterProductId = item.masterProductId
   modelRef.masterId = item.edgeMasterId
   modelRef.configuration.type = 'local'
-  if(!props.data?.id){
+  if (!props.data?.id) {
     modelRef.photoUrl = item?.photoUrl || device.deviceCard
   }
 }
 
 watch(
-    () => props.data,
-    (newValue) => {
-        queryNoPagingPost({
-            paging: false,
-            sorts: [{ name: 'createTime', order: 'desc' }],
-            terms: [
-                {
-                    terms: [
-                        {
-                            termType: 'eq',
-                            column: 'state',
-                            value: 1,
-                        },
-                    ],
-                },
-            ],
-        }).then((resp) => {
-            if (resp.status === 200) {
-                productList.value = resp.result as Record<string, any>[];
+  () => props.data,
+  (newValue) => {
+    queryNoPagingPost({
+      paging: false,
+      sorts: [{ name: 'createTime', order: 'desc' }],
+      terms: [
+        {
+          terms: [
+            {
+              termType: 'eq',
+              column: 'state',
+              value: 1
             }
-        });
-        Object.assign(modelRef, newValue);
-        // description 和 describe 处理
-        modelRef.describe = newValue?.describe || newValue?.description
-    },
-    { immediate: true, deep: true },
-);
+          ]
+        }
+      ]
+    }).then((resp) => {
+      if (resp.status === 200) {
+        productList.value = resp.result as Record<string, any>[]
+      }
+    })
+    Object.assign(modelRef, newValue)
+    // description 和 describe 处理
+    modelRef.describe = newValue?.describe || newValue?.description
+  },
+  { immediate: true, deep: true }
+)
 
 const handleCancel = () => {
-    emit('close');
-    formRef.value.resetFields();
-};
+  emit('close')
+  formRef.value.resetFields()
+}
 
 const handleSave = () => {
-    formRef.value
-        .validate()
-        .then(async (_data: any) => {
-            loading.value = true;
-            const obj = { ...modelRef };
-            if (!obj.id) {
-                delete obj.id;
-            }
-            const resp = await update(obj).finally(() => {
-                loading.value = false;
-            });
-            if (resp.success) {
-                if (!props.data?.id && obj.configuration?.type === 'cloud' && resp.result?.id && obj.masterProductId) {
-                    const response = await deviceCloudSave({
-                        masterProductId: modelRef.masterProductId,
-                        deviceId: resp.result?.id,
-                        masterId: modelRef.masterId,
-                        masterDeviceName: resp.result?.name,
-                        masterAutoCreate: true
-                    }).finally(() => {
-                        emit('save', !props.data?.id, resp.result);
-                    })
-                    if (response.success) {
-                        onlyMessage($t('Save.index.902471-16'));
-                    }
-                } else {
-                    onlyMessage($t('Save.index.902471-16'));
-                    emit('save', !props.data?.id, resp.result);
-                }
-            }
-        })
-        .catch((err: any) => {
-            console.log('error', err);
-        });
-};
+  formRef.value
+    .validate()
+    .then(async (_data: any) => {
+      loading.value = true
+      const obj = { ...modelRef }
+      if (!obj.id) {
+        delete obj.id
+      }
+      const resp = await update(obj).finally(() => {
+        loading.value = false
+      })
+      if (resp.success) {
+        if (!props.data?.id && resp.result?.id) {
+          await ensureDeviceDashboardProject(resp.result)
+        }
+        if (!props.data?.id && obj.configuration?.type === 'cloud' && resp.result?.id && obj.masterProductId) {
+          const response = await deviceCloudSave({
+            masterProductId: modelRef.masterProductId,
+            deviceId: resp.result?.id,
+            masterId: modelRef.masterId,
+            masterDeviceName: resp.result?.name,
+            masterAutoCreate: true
+          }).finally(() => {
+            emit('save', !props.data?.id, resp.result)
+          })
+          if (response.success) {
+            onlyMessage($t('Save.index.902471-16'))
+          }
+        } else {
+          onlyMessage($t('Save.index.902471-16'))
+          emit('save', !props.data?.id, resp.result)
+        }
+      }
+    })
+    .catch((err: any) => {
+      console.log('error', err)
+    })
+}
 </script>

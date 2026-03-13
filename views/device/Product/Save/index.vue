@@ -102,21 +102,21 @@
                         </template>
                     </j-card-select>
                 </a-form-item>
-                <a-form-item v-if="type === 'edge'" label="添加方式" name="type">
+                <a-form-item v-if="type === 'edge'" :label="$t('device.ProductSave.101005-2')" name="type">
                     <j-card-select
                         :showImage="false"
                         v-model:value="form.type"
                         :disabled="isAdd === 2"
                         :options="[
                         {
-                            label: '自定义添加',
+                            label: $t('device.ProductSave.101005-3'),
                             value: 'custom',
-                            describe: '自定义从空白新增',
+                            describe: $t('device.ProductSave.101005-4'),
                         },
                         {
-                            label: '模板添加',
+                            label: $t('device.ProductSave.101005-5'),
                             value: 'template',
-                            describe: '从云端选择已有产品物模型',
+                            describe: $t('device.ProductSave.101005-6'),
                         },
                         ]"
                         :column="2"
@@ -126,7 +126,7 @@
                         <a-input
                             v-model:value="productName"
                             :disabled="true"
-                            placeholder="请选择模板"
+                            :placeholder="$t('device.ProductSave.101005-7')"
                         >
                         </a-input>
                         <a-button
@@ -134,7 +134,7 @@
                             type="primary"
                             :disabled="isAdd === 2"
                         >
-                            选择
+                            {{ $t('device.ProductSave.101005-8') }}
                         </a-button>
                     </div>
                 </a-form-item>
@@ -171,6 +171,7 @@ import { device } from '@device-manager-ui/assets';
 import { useI18n } from 'vue-i18n';
 import { omit } from 'lodash-es';
 import SaveProductCloud from './SaveProductCloud.vue';
+import { ensureVisualizationDashboardProject } from '@device-manager-ui/utils/dashboardProject';
 
 const { t: $t } = useI18n();
 
@@ -286,7 +287,7 @@ const validateType = async (_rule, value) => {
     if (productName.value) {
       return Promise.resolve("");
     } else {
-      return Promise.reject("请选择模板");
+      return Promise.reject($t('device.ProductSave.101005-7'));
     }
   } else {
     return Promise.resolve("");
@@ -314,7 +315,7 @@ const rules = reactive({
     type: [
         {
             required: true,
-            message: "请选择添加类型",
+            message: $t('device.ProductSave.101005-9'),
             trigger: "blur",
         },
         {
@@ -426,6 +427,25 @@ const choseCloudsProduct = (data) => {
     formRef.value.validateFields('type')
     visibleClouds.value = false;
 };
+
+const ensureProductDashboardProject = async (productId: string) => {
+    try {
+        await ensureVisualizationDashboardProject({
+            entityId: productId,
+            projectName: String(form.name || ''),
+            groupId: productId,
+            groupName: String(form.name || ''),
+            configuration: {
+                initDataConfigured: true,
+                productDashboard: true,
+                productId,
+            },
+        });
+    } catch (e) {
+        console.warn($t('device.ProductSave.101005-0'), e);
+        onlyMessage($t('device.ProductSave.101005-1'), 'warning');
+    }
+};
 /**
  * 提交表单数据
  */
@@ -443,6 +463,10 @@ const submitData = () => {
                     loading.value = false
                 });
                 if (res.success) {
+                    // 新增产品成功后，同步创建产品仪表盘项目（失败不阻断）
+                    if (res.result?.id) {
+                        await ensureProductDashboardProject(String(res.result.id));
+                    }
                     onlyMessage($t('Save.index.912481-22'));
                     visible.value = false;
                     emit('success');
