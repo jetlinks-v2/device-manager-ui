@@ -121,6 +121,7 @@ import { useAuthStore, useSystemStore } from '@jetlinks-web-core/store'
 import { isNoCommunity } from '@jetlinks-web-core/utils/utils'
 import { useI18n } from 'vue-i18n'
 import { tabs } from './asyncComponent'
+import { isApplyDashboard } from '@device-manager-ui/utils/dashboardProject'
 
 const { t: $t } = useI18n()
 
@@ -281,7 +282,7 @@ const getProtocol = async () => {
   }
 
   // 产品仪表盘（展示该产品下设备对应的仪表盘项目）
-  if (!list.value.some((i) => i.key === 'Dashboard')) {
+  if (isApplyDashboard() && !list.value.some((i) => i.key === 'Dashboard')) {
     list.value.push({ key: 'Dashboard', tab: $t('Detail.index.478940-20') })
   }
 }
