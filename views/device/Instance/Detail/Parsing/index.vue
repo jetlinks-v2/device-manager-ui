@@ -413,7 +413,7 @@ watch(() => instanceStore.current?.id, () => {
 
     .edit {
       flex: 1;
-      min-height: 0;
+      min-height: 340px;
       position: relative;
       border: 1px solid #dcdcdc;
 

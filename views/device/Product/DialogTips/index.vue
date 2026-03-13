@@ -5,7 +5,6 @@
         destroy-on-close
         v-model:open="visible"
         @cancel="cancel"
-        v-bind="layout"
         width="650px"
     >
         <template #title>

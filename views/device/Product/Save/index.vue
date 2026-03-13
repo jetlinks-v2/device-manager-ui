@@ -48,7 +48,7 @@
                             <a-input
                                 v-model:value="form.id"
                                 :placeholder="$t('Save.index.912481-3')"
-                                :disabled="idDisabled"
+                                :disabled="idDisabled || !showId"
                             />
                         </a-form-item>
                         <a-form-item :label="$t('Save.index.912481-4')" name="name">
@@ -189,7 +189,11 @@ const props = defineProps({
     },
     type: {
         type: String,
-    }
+    },
+  showId: {
+      type: Boolean,
+      default: true,
+  }
 });
 const visibleClouds = ref();
 const productName = ref();
@@ -355,6 +359,7 @@ const dealProductTree = (arr: any) => {
  * 显示弹窗
  */
 const show = async (data: any) => {
+  debugger
     if (props.isAdd === 2) {
         productStore.refresh(data.id);
         form.name = data.name;
