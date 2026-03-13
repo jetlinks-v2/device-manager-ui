@@ -358,7 +358,6 @@ const dealProductTree = (arr: any) => {
  * 显示弹窗
  */
 const show = async (data: any) => {
-  debugger
     if (props.isAdd === 2) {
         productStore.refresh(data.id);
         form.name = data.name;
