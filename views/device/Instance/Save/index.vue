@@ -9,7 +9,7 @@
         :confirmLoading="loading"
     >
         <div style="margin-top: 10px">
-            <a-form :layout="'vertical'" ref="formRef" :model="modelRef">
+            <a-form layout="vertical" ref="formRef" :model="modelRef">
                 <a-row type="flex">
                     <a-col flex="180px">
                         <a-form-item name="photoUrl">
@@ -50,7 +50,7 @@
                             <a-input
                                 v-model:value="modelRef.id"
                                 :placeholder="$t('Save.index.902471-5')"
-                                :disabled="!!data?.id"
+                                :disabled="!!data?.id || !showId"
                             />
                         </a-form-item>
                         <a-form-item
@@ -122,7 +122,7 @@
                     :disabled="data.id"
                     :options="[
                         { label: '本地创建', value: 'local' },
-                        { label: '云端同步创建', value: 'cloud', disabled: (!modelRef.productId || !modelRef.masterProductId) || disabled  },
+                        { label: '云端同步创建', value: 'cloud', disabled: (!modelRef.productId || !modelRef.masterProductId)  },
                     ]"
                     :column="3"
                 />
@@ -171,6 +171,10 @@ const props = defineProps({
         type: Object,
         default: undefined,
     },
+   showId: {
+      type: Boolean,
+     default: true,
+   }
 });
 const productList = ref<Record<string, any>[]>([]);
 const loading = ref<boolean>(false);
@@ -187,7 +191,7 @@ const modelRef = reactive({
     },
     masterProductId: undefined,
     masterId: undefined,
-    photoUrl: props.data.devicePhotoUrl || device.deviceCard,
+    photoUrl: props.data?.devicePhotoUrl || device.deviceCard,
 });
 
 const vailId = async (_: Record<string, any>, value: string) => {

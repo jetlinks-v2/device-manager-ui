@@ -27,11 +27,12 @@
                 modeValue="CARD"
             >
                 <template #headerLeftRender>
-                    <a-space>
+                    <RegistryComponent code="addTool" is="a-space" @save="saveBtn">
                         <slot name="instanceAdd"></slot>
                         <j-permission-button
                             v-if="!slots.instanceAdd"
                             type="primary"
+                            key="add"
                             @click="handleAdd"
                             hasPermission="device/Instance:add"
                         >
@@ -41,11 +42,12 @@
                             {{ $t('Instance.index.133466-0') }}
                         </j-permission-button>
                         <BatchDropdown
+                            key="batch"
                             v-model:isCheck="isCheck"
                             :actions="batchActions"
                             @change="onCheckChange"
                         />
-                    </a-space>
+                    </RegistryComponent>
                 </template>
                 <template #card="slotProps">
                     <CardBox
