@@ -367,7 +367,7 @@ const getDetail = () => {
 
   // 仪表盘
   if (!list.value.some((i) => i.key === 'Dashboard')) {
-    list.value.push({ key: 'Dashboard', tab: '仪表盘' })
+    list.value.push({ key: 'Dashboard', tab: $t('Detail.index.957187-32') })
   }
 }
 

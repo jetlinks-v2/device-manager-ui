@@ -282,7 +282,7 @@ const getProtocol = async () => {
 
   // 产品仪表盘（展示该产品下设备对应的仪表盘项目）
   if (!list.value.some((i) => i.key === 'Dashboard')) {
-    list.value.push({ key: 'Dashboard', tab: '仪表盘' })
+    list.value.push({ key: 'Dashboard', tab: $t('Detail.index.478940-20') })
   }
 }
 /**

@@ -22,7 +22,7 @@
 
     <a-empty
       v-else
-      :description="emptyText"
+      :description="emptyText || $t('device.DashboardPreviewTab.101001-0')"
       class="state state-center"
     />
   </div>
@@ -31,6 +31,9 @@
 <script setup lang="ts">
 import { useInstanceStore } from '@device-manager-ui/store/instance'
 import { moduleRegistry } from '@jetlinks-web-core/utils/module-registry'
+import { useI18n } from 'vue-i18n'
+
+const { t: $t } = useI18n()
 
 const props = withDefaults(
   defineProps<{
@@ -39,7 +42,7 @@ const props = withDefaults(
   }>(),
   {
     targetId: '',
-    emptyText: '暂无仪表盘'
+    emptyText: ''
   }
 )
 
@@ -75,7 +78,7 @@ const reload = async () => {
 
     dashboardDraftId.value = res?.result?.data?.[0]?.draftId || ''
   } catch (e: any) {
-    console.warn('加载失败', e)
+    console.warn($t('device.DashboardPreviewTab.101001-1'), e)
   } finally {
     loading.value = false
   }

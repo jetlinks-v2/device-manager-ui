@@ -228,8 +228,8 @@ const ensureDeviceDashboardProject = async (device: any) => {
       }
     })
   } catch (e) {
-    console.warn('创建设备仪表盘项目失败(可忽略):', e)
-    onlyMessage('设备创建成功，但仪表盘项目创建失败', 'warning')
+    console.warn($t('device.InstanceSave.101004-0'), e)
+    onlyMessage($t('device.InstanceSave.101004-1'), 'warning')
   }
 }
 
