@@ -158,7 +158,6 @@ const onSelect = (data) => {
 };
 
 const onSelectNone = () => {
-  debugger
   selectedRowKeys.value = [];
   productCurrent.value = {}
 }
