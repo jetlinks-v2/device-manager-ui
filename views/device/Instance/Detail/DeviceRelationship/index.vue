@@ -15,14 +15,21 @@
               </TitleComponent>
             </div>
           </div>
-          <AIcon type="FormOutlined" class="edit-icon" @click="handleEditRelationship"/>
+          <j-permission-button
+            hasPermission="device/Instance:update"
+            type="text"
+            @click="handleEditRelationship"
+            class="edit-icon"
+          >
+            <AIcon type="FormOutlined"/>
+          </j-permission-button>
         </div>
         <div class="section-content">
           <div class="relation-count">
             <div>{{ $t('DeviceRelationship.index.710824-1') }}</div>
             <div class="count-num">{{ relationCount }}</div>
           </div>
-          <div class="relation-list">
+          <div class="relation-list" v-if='relationshipData.length > 0'>
             <div
               v-for="item in relationshipData"
               :key="item.objectId"
@@ -31,6 +38,9 @@
               <div class="relation-label">{{ item.relationName }}</div>
               <div class="relation-value">{{ item.related?.map(it => it.name).join('、') }}</div>
             </div>
+          </div>
+          <div v-else style='margin-top: 50px'>
+            <j-empty />
           </div>
         </div>
       </div>
@@ -43,7 +53,14 @@
               <TitleComponent :data="$t('DeviceRelationship.index.710824-2')" />
             </div>
           </div>
-          <AIcon type="FormOutlined" class="edit-icon" @click="handleEditOrganization"/>
+          <j-permission-button
+            hasPermission="device/Instance:update"
+            type="text"
+            @click="handleEditOrganization"
+            class="edit-icon"
+          >
+            <AIcon type="FormOutlined"/>
+          </j-permission-button>
         </div>
         <div class="section-content">
           <TreeList
@@ -246,7 +263,7 @@ const organizationTreeData = computed(() => {
 // ])
 
 // 统计数据
-const relationshipData = computed(() => instanceStore.current?.relations)
+const relationshipData = computed(() => instanceStore.current?.relations || [])
 const relationCount = computed(() => {
   return relationshipData.value?.reduce((acc, cur) => {
     if(cur.related) {

@@ -1,4 +1,5 @@
 import { moduleRegistry } from '@jetlinks-web-core/utils/module-registry'
+import { useAuthStore } from '@jetlinks-web-core/store/auth'
 
 export type EnsureVisualizationDashboardProjectParams = {
   entityId: string
@@ -8,10 +9,20 @@ export type EnsureVisualizationDashboardProjectParams = {
   configuration: Record<string, any>
 }
 
+//是否应用仪表盘
+export const isApplyDashboard = () => {
+  const isSaaS = import.meta.env.VITE_APP_ENVIRONMENT === 'saas'
+  const authStore = useAuthStore()
+  const permissions = authStore.getPermission('visualization-project:add')
+  if (isSaaS && !permissions) return false
+  return true
+}
+
 export const ensureVisualizationDashboardProject = async (params: EnsureVisualizationDashboardProjectParams) => {
   if (!moduleRegistry.hasModule('visualization-manager-ui')) return
 
   const apis: any = moduleRegistry.getResource('visualization-manager-ui', 'apis')
+  if (!isApplyDashboard()) return
   const ensureFn = apis?.ensureDashboardProject as
     | undefined
     | ((p: EnsureVisualizationDashboardProjectParams) => Promise<any>)

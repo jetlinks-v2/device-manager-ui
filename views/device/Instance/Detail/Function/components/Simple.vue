@@ -82,6 +82,7 @@
                                                 v-model:modelValue="
                                                     record.value
                                                 "
+                                                valueFormat="YYYY-MM-DD HH:mm:ss"
                                                 :itemType="record.type === 'array' ? 'object' : (record.type === 'file' ? 'string' : record.type)"
                                                 :options="
                                                     (record?.options || []).map((item:any) => ({
