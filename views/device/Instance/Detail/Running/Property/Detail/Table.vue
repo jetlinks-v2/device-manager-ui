@@ -154,19 +154,19 @@ const columns = computed(() => {
       search: {
         type: valueType[_props.data?.valueType?.type as keyof typeof valueType] || 'string',
         options: _props.data.valueType.type === 'boolean'
-            ? [
-              {
-                label: _props.data?.valueType?.trueText,
-                value: _props.data?.valueType?.trueValue
-              },
-              {
-                label: _props.data?.valueType?.falseText,
-                value: _props.data?.valueType?.falseValue
-              }
-            ]
-            : _props.data?.valueType?.elements?.map((item: any) => {
-              return { label: item.text, value: item.value }
-            })
+          ? [
+            {
+              label: _props.data?.valueType?.trueText,
+              value: _props.data?.valueType?.trueValue
+            },
+            {
+              label: _props.data?.valueType?.falseText,
+              value: _props.data?.valueType?.falseValue
+            }
+          ]
+          : _props.data?.valueType?.elements?.map((item: any) => {
+            return { label: item.text, value: item.value }
+          })
       }
     }
 

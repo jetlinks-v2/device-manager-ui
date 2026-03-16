@@ -792,6 +792,7 @@ export const downloadAnalyzeMetadataTemplate = (format: string) => request.get(`
  * @param autoCreate 是否自动创建
  */
 export const importAnalyzeMetadata = (deviceId: string, fileUrl: string, autoCreate: boolean) => ndJson.get(`/device/instance/${deviceId}/property/point/import?fileUrl=${fileUrl}&autoCreate=${autoCreate}`)
+export const queryPropertyMetric = (deviceId: string, data: any) => request.post(`/device-instance/${deviceId}/metric/properties`, data)
 
 /**
  * 获取设备接入身份信息
