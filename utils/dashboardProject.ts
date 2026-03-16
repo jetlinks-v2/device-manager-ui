@@ -11,10 +11,9 @@ export type EnsureVisualizationDashboardProjectParams = {
 
 //是否应用仪表盘
 export const isApplyDashboard = () => {
-  const isSaaS = import.meta.env.VITE_APP_ENVIRONMENT === 'saas'
   const authStore = useAuthStore()
-  const permissions = authStore.getPermission('visualization-project:add')
-  if (isSaaS && !permissions) return false
+  const permissions = authStore.hasPermission('view/dashboard:add')
+  if (!permissions) return false
   return true
 }
 
