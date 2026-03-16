@@ -9,4 +9,5 @@ export const tabs = {
   Firmware: defineAsyncComponent(() => import('../../Instance/Detail/Firmware/index.vue')),
   Invalid: defineAsyncComponent(() => import('../../Instance/Detail/Invalid/index.vue')),
   Threshold: defineAsyncComponent(() => import('./Threshold/index.vue')),
+  Dashboard: defineAsyncComponent(() => import('./Dashboard/index.vue')),
 };

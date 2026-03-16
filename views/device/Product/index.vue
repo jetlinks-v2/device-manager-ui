@@ -17,9 +17,10 @@
         :params="params"
       >
         <template #headerLeftRender>
-          <a-space>
+          <RegistryComponent is="a-space" code="productAddButton" @save="refresh">
             <j-permission-button
               type="primary"
+              key="add"
               @click="add"
               hasPermission="device/Product:add"
             >
@@ -29,16 +30,19 @@
               {{ $t("Product.index.660348-0") }}
             </j-permission-button>
             <j-permission-button
-              v-if="!sourceMenu && isNoCommunity && type === 'iot'"
+                key="quick"
+              v-if="sourceMenu && isNoCommunity && type === 'iot'"
               hasPermission="device/Product:add"
               @click="menuStory.jumpPage('device/Product/QuickCreate', {})"
             >
               {{ $t("Product.index.660348-35") }}
             </j-permission-button>
+
             <BatchDropdown
+                key="batch"
               :actions="batchActions"
             />
-          </a-space>
+            </RegistryComponent>
         </template>
         <template #deviceType="slotProps">
           <div>{{ slotProps.deviceType.text }}</div>
