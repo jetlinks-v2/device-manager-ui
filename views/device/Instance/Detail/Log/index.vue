@@ -4,7 +4,7 @@
         target="device-instance-log"
         @search="handleSearch"
         class="device-log-search"
-        type="simple"
+        :saveButton='false'
     />
     <JProTable
         ref="instanceRefLog"
