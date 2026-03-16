@@ -214,7 +214,7 @@ import Import from './Import/modal.vue';
 import Export from './Export/index.vue';
 import Process from './Process/index.vue';
 import Save from './Save/index.vue';
-import { TOKEN_KEY_URL } from '@jetlinks-web/constants'
+import { BASE_API, TOKEN_KEY_URL } from '@jetlinks-web/constants'
 import {
     queryGatewayList,
     queryNoPagingPost,
@@ -394,7 +394,7 @@ const columns = ref([
                         resolve(
                             resp.result.map((item: any) => ({
                                 label: item.name,
-                                value: `accessId is ${item.id}`,
+                                value: item.id // `accessId is ${item.id}`,
                             })),
                         );
                     });
@@ -437,6 +437,7 @@ const columns = ref([
             componentProps: {
                 data: params.value,
             },
+            defaultTermType: 'eq',
             termOptions: termOptions,
         },
     },
@@ -871,25 +872,20 @@ const handleSearch = (_params: any) => {
                     item2.column,
                 )
             ) {
-                const oldTermType = item2.termType;
-                delete item2.termType;
+                // const oldTermType = item2.termType;
+                // delete item2.termType;
                 return {
-                    ...item2,
-                    column: `productId$product-info$${oldTermType}`,
-                    value: Array.isArray(item2.value)
-                        ? dealSearchValue(item2)
-                        : item2.value,
-                };
-            }
-            if( item2.column === 'classifiedId') {
-                item2 = {
+                    type: item2.type,
+                    column: `productId$product-info`, //$${oldTermType}
                     value: [{
-                        column: 'classifiedId',
-                        termType: Array.isArray(item2.value) ? 'in' : 'eq',
-                        value: item2.value
-                    }],
-                    column: 'productId$product-info$in',
-                }
+                      column: item2.column,
+                      termType: item2.termType,
+                      value: item2.value
+                    }]
+                    // value: Array.isArray(item2.value)
+                    //     ? dealSearchValue(item2)
+                    //     : item2.value,
+                };
             }
             if(item2.column === 'id$dev-tag') {
                 item2 = {
