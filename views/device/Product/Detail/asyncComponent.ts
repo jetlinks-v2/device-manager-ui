@@ -8,4 +8,5 @@ export const tabs = {
   AlarmRecord: defineAsyncComponent(() => import('../../Instance/Detail/AlarmRecord/index.vue')),
   Firmware: defineAsyncComponent(() => import('../../Instance/Detail/Firmware/index.vue')),
   Invalid: defineAsyncComponent(() => import('../../Instance/Detail/Invalid/index.vue')),
+  Dashboard: defineAsyncComponent(() => import('./Dashboard/index.vue')),
 };
