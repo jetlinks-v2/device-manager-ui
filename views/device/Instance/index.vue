@@ -237,6 +237,7 @@ import { useI18n } from 'vue-i18n';
 import { useTermOptions } from '@jetlinks-web/components/es/Search/hooks/useTermOptions'
 import { mergeObjectArrays, getBaseApi } from '@jetlinks-web-core/utils';
 import {deviceStateList} from "@device-manager-ui/views/device/data";
+import { isCloud } from '@jetlinks-web-core/utils/consts'
 
 const { t: $t } = useI18n();
 
@@ -767,15 +768,6 @@ const batchActions = computed((): BatchActionsType[] => {
             },
         },
         {
-            key: 'import',
-            text: $t('Instance.index.133466-31'),
-            permission: 'device/Instance:import',
-            icon: 'ImportOutlined',
-            onClick: () => {
-                importVisible.value = true;
-            },
-        },
-        {
             key: 'activeAll',
             text: $t('Instance.index.133466-32'),
             ghost: true,
@@ -836,6 +828,17 @@ const batchActions = computed((): BatchActionsType[] => {
             },
         },
     ]
+    if(isCloud){
+      actions.unshift({
+        key: 'import',
+        text: $t('Instance.index.133466-31'),
+        permission: 'device/Instance:import',
+        icon: 'ImportOutlined',
+        onClick: () => {
+          importVisible.value = true;
+        },
+      })
+    }
     const parentActions = inject('getActions', {}).batchActions
     if(parentActions && parentActions.length > 0) {
         actions = mergeObjectArrays(actions, parentActions)
