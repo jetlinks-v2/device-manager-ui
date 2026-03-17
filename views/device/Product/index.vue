@@ -197,6 +197,7 @@ import { useI18n } from "vue-i18n";
 import { useTermOptions } from '@jetlinks-web/components/es/Search/hooks/useTermOptions'
 import BatchDropdown from "@jetlinks-web-core/components/BatchDropdown/index.vue";
 import { useMircoAppData } from '@jetlinks-web-core/hooks/useMircoApp'
+import { isCloud } from '@jetlinks-web-core/utils/consts'
 
 const { t: $t } = useI18n();
 
@@ -286,8 +287,9 @@ const syncCacheVisible = ref(false)
 
 // 批量操作配置
 const batchActions = computed(() => {
-  const arr = [
-    {
+  const arr = []
+  if(isCloud){
+    arr.push({
       key: 'import',
       text: $t("Product.index.660348-1"),
       icon: 'UploadOutlined',
@@ -305,8 +307,8 @@ const batchActions = computed(() => {
         };
         input.click();
       }
-    }
-  ]
+    })
+  }
   if(type === 'iot') {
     arr.push({
       key: 'syncCache',
