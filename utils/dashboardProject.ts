@@ -10,12 +10,7 @@ export type EnsureVisualizationDashboardProjectParams = {
 }
 
 //是否应用仪表盘
-export const isApplyDashboard = () => {
-  const authStore = useAuthStore()
-  const permissions = authStore.hasPermission('view/dashboard:add')
-  if (!permissions) return false
-  return true
-}
+export const isApplyDashboard = () => useAuthStore().hasPermission('view/dashboard:add')
 
 export const ensureVisualizationDashboardProject = async (params: EnsureVisualizationDashboardProjectParams) => {
   if (!moduleRegistry.hasModule('visualization-manager-ui')) return
