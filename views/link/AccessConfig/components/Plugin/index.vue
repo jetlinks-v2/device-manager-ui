@@ -298,6 +298,15 @@ const handleOptions = (record) => {
     });
   }
 
+  if (type === 'enum') {
+    record.elements.forEach(element => {
+      options.push({
+        label: element.text,
+        value: element.value,
+      })
+    })
+  }
+
   return options;
 }
 
