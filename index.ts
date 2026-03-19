@@ -2,6 +2,7 @@ import { defineAsyncComponent } from 'vue';
 import i18n from "@/locales";
 import { moduleRegistry } from '@/utils/module-registry';
 import registerSetting from './register'
+import baseMenu from './baseMenu.json'
 
 const routerModules = import.meta.glob('./views/**/index.vue')
 
@@ -84,6 +85,16 @@ const getExtraRoutesMap = () => {
                     component: () => import('./views/resource/Resource/Detail/index.vue')
                 }
             ]
+        },
+        'device/WorkstationResource/Workstation': {
+            children: [
+                {
+                    code: 'Detail',
+                    url: '/detail/:id',
+                    name: '详情',
+                    component: () => import('./views/device/WorkstationResource/Workstation/DetailPage.vue')
+                }
+            ]
         }
     }
 }
@@ -117,10 +128,29 @@ const register = () => {
     moduleRegistry.register('device-manager-ui', registerSetting)
 }
 
+const buildIconMap = (nodes: any[], map: Map<string, string> = new Map()) => {
+    for (const n of nodes) {
+        if (n.code && n.icon) map.set(n.code, n.icon)
+        if (n.children?.length) buildIconMap(n.children, map)
+    }
+    return map
+}
+
+const patchMenuIcons = (menuResult: any[]) => {
+    const iconMap = buildIconMap(baseMenu as any[])
+    const patch = (nodes: any[]) => {
+        for (const n of nodes) {
+            if (n.code && iconMap.has(n.code)) n.icon = iconMap.get(n.code)
+            if (n.children?.length) patch(n.children)
+        }
+    }
+    patch(menuResult)
+}
 
 export default {
     getAsyncRoutesMap,
     getExtraRoutesMap,
     getComponents,
-    register
+    register,
+    patchMenuIcons
 }

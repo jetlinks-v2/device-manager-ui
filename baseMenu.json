@@ -528,8 +528,18 @@
                   "query"
                 ]
               },
-              {"permission": "system-monitor", "actions": ["query"]},
-              {"permission": "device-gateway-manager", "actions": ["save"]}
+              {
+                "permission": "system-monitor",
+                "actions": [
+                  "query"
+                ]
+              },
+              {
+                "permission": "device-gateway-manager",
+                "actions": [
+                  "save"
+                ]
+              }
             ],
             "buttons": [
               {
@@ -832,7 +842,6 @@
             ]
           },
           {
-            "code": "device/Category",
             "name": "产品分类",
             "i18nMessages": {
               "name": {
@@ -933,6 +942,349 @@
         ]
       },
       {
+        "code": "workstation",
+        "name": "工位管理",
+        "i18nMessages": {
+          "name": {
+            "zh_CN": "工位管理",
+            "en_US": "Workstation Management",
+            "en": "Workstation Management"
+          }
+        },
+        "owner": "iot",
+        "id": "ws-management-root-001",
+        "url": "/iot/workstation",
+        "icon": "ClusterOutlined",
+        "sortIndex": 4,
+        "permissions": [],
+        "showPage": [],
+        "accessSupport": {
+          "text": "不支持",
+          "value": "unsupported"
+        },
+        "supportDataAccess": false,
+        "children": [
+          {
+            "code": "device/WorkstationResource/Area",
+            "name": "区域管理",
+            "i18nMessages": {
+              "name": {
+                "zh_CN": "区域管理",
+                "en_US": "Area Management",
+                "en": "Area Management"
+              }
+            },
+            "owner": "iot",
+            "id": "ws-area-001",
+            "url": "/iot/workstation/Area",
+            "icon": "ApartmentOutlined",
+            "sortIndex": 1,
+            "showPage": [
+              "resource_work_area"
+            ],
+            "permissions": [
+              {
+                "permission": "resource_work_area",
+                "actions": [
+                  "query"
+                ]
+              },
+              {
+                "permission": "resource_dashboard",
+                "actions": [
+                  "query"
+                ]
+              }
+            ],
+            "accessSupport": {
+              "text": "不支持",
+              "value": "unsupported"
+            },
+            "supportDataAccess": false,
+            "buttons": [
+              {
+                "id": "view",
+                "name": "查看",
+                "i18nMessages": {
+                  "zh_CN": "查看",
+                  "en_US": "View",
+                  "en": "View"
+                },
+                "permissions": [
+                  {
+                    "permission": "resource_work_area",
+                    "actions": [
+                      "query"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "add",
+                "name": "新增",
+                "i18nMessages": {
+                  "zh_CN": "新增",
+                  "en_US": "Add",
+                  "en": "Add"
+                },
+                "permissions": [
+                  {
+                    "permission": "resource_work_area",
+                    "actions": [
+                      "query",
+                      "save"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "update",
+                "name": "编辑",
+                "i18nMessages": {
+                  "zh_CN": "编辑",
+                  "en_US": "Edit",
+                  "en": "Edit"
+                },
+                "permissions": [
+                  {
+                    "permission": "resource_work_area",
+                    "actions": [
+                      "query",
+                      "save"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "delete",
+                "name": "删除",
+                "i18nMessages": {
+                  "zh_CN": "删除",
+                  "en_US": "Delete",
+                  "en": "Delete"
+                },
+                "permissions": [
+                  {
+                    "permission": "resource_work_area",
+                    "actions": [
+                      "query",
+                      "delete"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "dashboard",
+                "name": "工位资源统计",
+                "i18nMessages": {
+                  "zh_CN": "工位资源统计",
+                  "en_US": "Dashboard",
+                  "en": "Dashboard"
+                },
+                "permissions": [
+                  {
+                    "permission": "resource_dashboard",
+                    "actions": [
+                      "query"
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "code": "device/WorkstationResource/Workstation",
+            "name": "工位管理",
+            "i18nMessages": {
+              "name": {
+                "zh_CN": "工位管理",
+                "en_US": "Workstation",
+                "en": "Workstation"
+              }
+            },
+            "owner": "iot",
+            "id": "ws-workstation-001",
+            "url": "/iot/workstation/Workstation",
+            "icon": "ClusterOutlined",
+            "sortIndex": 2,
+            "showPage": [
+              "resource_workstation"
+            ],
+            "permissions": [
+              {
+                "permission": "resource_workstation",
+                "actions": [
+                  "query"
+                ]
+              },
+              {
+                "permission": "device_instance",
+                "actions": [
+                  "query"
+                ]
+              },
+              {
+                "permission": "resource_dashboard",
+                "actions": [
+                  "query"
+                ]
+              }
+            ],
+            "buttons": [
+              {
+                "id": "view",
+                "name": "查看",
+                "i18nMessages": {
+                  "zh_CN": "查看",
+                  "en_US": "View",
+                  "en": "View"
+                },
+                "permissions": [
+                  {
+                    "permission": "resource_workstation",
+                    "actions": [
+                      "query"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "add",
+                "name": "新增",
+                "i18nMessages": {
+                  "zh_CN": "新增",
+                  "en_US": "Add",
+                  "en": "Add"
+                },
+                "permissions": [
+                  {
+                    "permission": "resource_workstation",
+                    "actions": [
+                      "query",
+                      "save"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "update",
+                "name": "编辑",
+                "i18nMessages": {
+                  "zh_CN": "编辑",
+                  "en_US": "Edit",
+                  "en": "Edit"
+                },
+                "permissions": [
+                  {
+                    "permission": "resource_workstation",
+                    "actions": [
+                      "query",
+                      "save"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "delete",
+                "name": "删除",
+                "i18nMessages": {
+                  "zh_CN": "删除",
+                  "en_US": "Delete",
+                  "en": "Delete"
+                },
+                "permissions": [
+                  {
+                    "permission": "resource_workstation",
+                    "actions": [
+                      "query",
+                      "delete"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "control",
+                "name": "控制下发",
+                "i18nMessages": {
+                  "zh_CN": "控制下发",
+                  "en_US": "Control",
+                  "en": "Control"
+                },
+                "permissions": [
+                  {
+                    "permission": "resource_workstation",
+                    "actions": [
+                      "control"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "device-lock",
+                "name": "设备占用管理",
+                "i18nMessages": {
+                  "zh_CN": "设备占用管理",
+                  "en_US": "Device Lock",
+                  "en": "Device Lock"
+                },
+                "permissions": [
+                  {
+                    "permission": "resource_device_lock",
+                    "actions": [
+                      "query",
+                      "save",
+                      "delete",
+                      "apply",
+                      "release"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "control-log",
+                "name": "工位控制日志",
+                "i18nMessages": {
+                  "zh_CN": "工位控制日志",
+                  "en_US": "Control Log",
+                  "en": "Control Log"
+                },
+                "permissions": [
+                  {
+                    "permission": "resource_control_log",
+                    "actions": [
+                      "query"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "dashboard",
+                "name": "工位资源统计",
+                "i18nMessages": {
+                  "zh_CN": "工位资源统计",
+                  "en_US": "Dashboard",
+                  "en": "Dashboard"
+                },
+                "permissions": [
+                  {
+                    "permission": "resource_dashboard",
+                    "actions": [
+                      "query"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "accessSupport": {
+              "text": "不支持",
+              "value": "unsupported"
+            },
+            "supportDataAccess": false,
+            "children": []
+          }
+        ]
+      },
+      {
         "code": "link",
         "name": "运维管理",
         "i18nMessages": {
@@ -947,7 +1299,7 @@
         "url": "/iot/link",
         "icon": "icon-yunweiguanli-1",
         "permissions": [],
-        "sortIndex": 4,
+        "sortIndex": 5,
         "children": [
           {
             "code": "link/DashBoard",
@@ -1888,7 +2240,12 @@
                   "delete"
                 ]
               },
-              {"permission": "resources-cloud", "actions": ["query"]}
+              {
+                "permission": "resources-cloud",
+                "actions": [
+                  "query"
+                ]
+              }
             ],
             "accessSupport": {
               "text": "不支持",
