@@ -53,7 +53,6 @@ import { paramsEncodeQuery } from '@jetlinks-web-core/utils/encodeQuery';
 import { LocalStore, getToken } from '@jetlinks-web/utils';
 import { TOKEN_KEY, TOKEN_KEY_URL } from '@jetlinks-web/constants';
 import { getBaseApi } from '@jetlinks-web-core/utils'
-import { isCloud } from '@jetlinks-web-core/utils/consts'
 
 const emit = defineEmits(['close']);
 const props = defineProps({
@@ -122,8 +121,7 @@ const handleOk = async () => {
         urlParams.append(key, _params[key])
       }
     })
-    const _url = isCloud ? '/device-instance' : '/device/principal'
-    const base_url = `${origin}${getBaseApi()}${_url}`
+    const base_url = `${origin}${getBaseApi()}/device-instance`
     const product_url = modelRef.product ? `/${modelRef.product}` : ''
 
     const url =  `${base_url}${product_url}/export.xlsx?${TOKEN_KEY_URL}=${getToken()}&${urlParams}`

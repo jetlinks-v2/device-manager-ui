@@ -237,7 +237,7 @@ import { useI18n } from 'vue-i18n';
 import { useTermOptions } from '@jetlinks-web/components/es/Search/hooks/useTermOptions'
 import { mergeObjectArrays, getBaseApi } from '@jetlinks-web-core/utils';
 import {deviceStateList} from "@device-manager-ui/views/device/data";
-import { isCloud } from '@jetlinks-web-core/utils/consts'
+import {isSass} from '@jetlinks-web-core/utils/consts'
 
 const { t: $t } = useI18n();
 
@@ -828,7 +828,7 @@ const batchActions = computed((): BatchActionsType[] => {
             },
         },
     ]
-    if(isCloud){
+    if(!isSass){
       actions.unshift({
         key: 'import',
         text: $t('Instance.index.133466-31'),

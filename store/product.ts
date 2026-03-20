@@ -1,6 +1,6 @@
 import type { ProductItem } from "../views/device/Product/typings";
 import { defineStore } from "pinia";
-import { detail, getDeviceNumber } from '../api/product'
+import { queryDetailList, getDeviceNumber } from '../api/product'
 import {encodeQuery} from "@jetlinks-web-core/utils";
 
 export const useProductStore = defineStore({
