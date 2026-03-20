@@ -842,6 +842,7 @@
             ]
           },
           {
+            "code": "device/Category",
             "name": "产品分类",
             "i18nMessages": {
               "name": {
