@@ -19,8 +19,6 @@
         :scroll="{ x: 'max-content' }"
       >
         <template v-for='i in objectKey' #[i.key]='slotProps'>
-          hhhhh
-          {{i.dataIndex}}
           <j-ellipsis>
             <span @click='detail(slotProps[i.dataIndex])'>{{ JSON.stringify(slotProps[i.dataIndex]) }}</span>
           </j-ellipsis>
