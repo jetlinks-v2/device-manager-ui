@@ -642,22 +642,22 @@ const onSelectChange = (item: any, state: boolean) => {
 };
 
 const selectAll = (selected: Boolean, selectedRows: any, changeRows: any) => {
-    if (selected) {
-        changeRows.map((i: any) => {
-            if (!_selectedRowKeys.value.includes(i.id)) {
-                _selectedRowKeys.value.push(i.id);
-            }
-        });
-    } else {
-        const arr = changeRows.map((item: any) => item.id);
-        const _ids: string[] = [];
-        _selectedRowKeys.value.map((i: any) => {
-            if (!arr.includes(i)) {
-                _ids.push(i);
-            }
-        });
-        _selectedRowKeys.value = _ids;
-    }
+  if (selected) {
+    changeRows.map((i: any) => {
+      if (!_selectedRowKeys.value.includes(i.id)) {
+        _selectedRowKeys.value.push(i.id);
+      }
+    });
+  } else {
+    const arr = changeRows.map((item: any) => item.id);
+    const _ids: string[] = [];
+    _selectedRowKeys.value.map((i: any) => {
+      if (!arr.includes(i)) {
+        _ids.push(i);
+      }
+    });
+    _selectedRowKeys.value = _ids;
+  }
 };
 
 const handleClick = (dt: any) => {

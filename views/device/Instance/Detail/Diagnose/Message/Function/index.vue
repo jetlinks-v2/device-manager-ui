@@ -15,6 +15,7 @@
                             v-model:value="modelRef.type"
                             show-search
                             :filter-option="filterOption"
+                            @change='onChange'
                         >
                             <a-select-option value="READ_PROPERTY"
                                 >{{ $t('Function.index.125063-0') }}</a-select-option
@@ -86,7 +87,7 @@
                             @change="funcChange"
                         >
                             <a-select-option
-                                v-for="i in metadata?.functions || []"
+                                v-for="i in _properties"
                                 :key="i.id"
                                 :value="i.id"
                                 :label="i.name"
@@ -161,6 +162,23 @@ const modelRef = reactive({
 const metadata = computed(() => {
     return JSON.parse(instanceStore.current?.metadata || '{}');
 });
+
+const _properties = computed(() => {
+  const obj = {
+    'WRITE_PROPERTY': 'write',
+    'READ_PROPERTY': 'read',
+  }
+  return (metadata.value?.properties || []).filter((i: any) => {
+    return (i.expands.type || []).includes(obj[modelRef.type])
+  })
+})
+
+const onChange = () => {
+  modelRef.properties = undefined
+  modelRef.function = undefined
+  modelRef.propertyValue = undefined
+  modelRef.inputs = []
+}
 
 const funcChange = (val: string) => {
     if (val) {
