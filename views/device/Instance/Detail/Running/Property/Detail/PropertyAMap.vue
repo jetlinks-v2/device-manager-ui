@@ -70,7 +70,7 @@ const query = async () => {
             sorts: [
                 {
                     name: 'timestamp',
-                    value: 'asc',
+                    order: 'asc',
                 },
             ],
             terms: [
