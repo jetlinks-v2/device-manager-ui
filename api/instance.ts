@@ -608,6 +608,12 @@ export const saveDeviceCode = (productId: string, deviceId: string, data: Record
  */
 export const testCode = (data: Record<string, unknown>) => request.post(`/device/transparent-codec/decode-test`, data)
 /**
+ * 编码测试（模拟平台 → 设备）
+ * @param data
+ * @returns
+ */
+export const encodeTest = (data: Record<string, unknown>) => request.post(`/device/transparent-codec/encode-test`, data)
+/**
  * 删除设备解析规则
  * @param productId
  * @param deviceId
