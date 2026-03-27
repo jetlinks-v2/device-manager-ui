@@ -1,6 +1,10 @@
 
 <template>
   <div class="parsing">
+    <div v-if="parsingInitializing" class="parsing-loading-wrap">
+      <a-spin size="large" tip="加载解析配置中…" />
+    </div>
+    <template v-else>
     <div class="parsing-type-bar">
       <div class="parsing-type-bar-left">
         <a-dropdown trigger="click" placement="bottomLeft">
@@ -69,6 +73,7 @@
         />
       </div>
     </div>
+    </template>
   </div>
 </template>
 
@@ -85,6 +90,8 @@ const modbusMappingRef = ref<InstanceType<typeof ModbusMapping> | null>(null);
 const scriptCodecRef = ref<InstanceType<typeof ScriptTransparentCodec> | null>(null);
 
 const parsingReloading = ref(false);
+/** 首次进入：等拉取透明编解码配置后再渲染类型与表单，避免先显示默认「脚本解析」再切换 */
+const parsingInitializing = ref(true);
 
 async function onTopReload() {
   parsingReloading.value = true;
@@ -133,20 +140,38 @@ function onRuleTypeMenuClick(info: { key: string | number }) {
 }
 
 const getDeviceCode = async () => {
-  const res: any = await deviceCode(instanceStore.current.productId, instanceStore.current.id);
+  const pid = instanceStore.current?.productId;
+  const did = instanceStore.current?.id;
+  if (!pid || !did) {
+    codecState.value = null;
+    ruleType.value = 'javascript';
+    return;
+  }
+  const res: any = await deviceCode(pid, did);
   if (res.status === 200) {
     codecState.value = res.result ?? null;
     ruleType.value = res.result?.provider === 'modbus' ? 'modbus' : 'javascript';
   }
 };
 
+async function loadParsingConfig() {
+  if (!instanceStore.current?.id || !instanceStore.current?.productId) {
+    codecState.value = null;
+    ruleType.value = 'javascript';
+    parsingInitializing.value = false;
+    return;
+  }
+  parsingInitializing.value = true;
+  try {
+    await getDeviceCode();
+  } finally {
+    parsingInitializing.value = false;
+  }
+}
+
 watch(
-  () => instanceStore.current?.id,
-  () => {
-    if (instanceStore.current?.id) {
-      getDeviceCode();
-    }
-  },
+  () => [instanceStore.current?.id, instanceStore.current?.productId] as const,
+  () => loadParsingConfig(),
   { immediate: true },
 );
 </script>
@@ -156,6 +181,17 @@ watch(
   height: 100%;
   display: flex;
   flex-direction: column;
+  position: relative;
+}
+
+.parsing-loading-wrap {
+  flex: 1;
+  min-height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 4px;
 }
 
 .parsing-type-bar {

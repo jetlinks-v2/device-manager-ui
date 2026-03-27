@@ -198,7 +198,7 @@ export const configurationReset = (deviceId: string) => request.put(`/device-ins
  * @param data
  * @returns
  */
-export const getEventList = (deviceId: string, eventId: string, data: Record<string, any>) => request.post(`/device-instance/${deviceId}/event/${eventId}?format=true`, data)
+export const getEventList = (deviceId: string, eventId: string, data: Record<string, any>) => request.post(`/device-instance/${deviceId}/event/${eventId}`, data)
 
 /**
  * 设置属性至设备
@@ -848,4 +848,3 @@ export const resetDevicePrincipal = (deviceId: string) => request.post(`/device/
  */
 export const deviceCloudSave = (data: any) =>
   request.post(`/edge/command/BindMasterDevice/_execute`, data)
-

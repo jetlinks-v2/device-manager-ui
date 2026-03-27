@@ -1595,6 +1595,8 @@
     "Property.ValueRender.865445-2": "Currently only supports playing. mp4 FLV,. m3u8 format video",
     "Running.index.376017-0": "Please enter the event name",
     "Running.index.376017-1": "attribute",
+    "Running.Property.376017-2": "All",
+    "Running.Property.376017-3": "Default Group",
     "Shadow.index.897708-0": "copy",
     "Shadow.index.897708-1": "Refresh",
     "Shadow.index.897708-2": "Copy successful!",
