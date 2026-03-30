@@ -59,19 +59,23 @@
                     </template>
                 </j-pro-table>
             </FullPage>
+            <SaveModal v-model:open="dialog.visible" :id="dialog.id" @success="tableRef.reload()" />
         </div>
     </j-page-container>
 </template>
 <script lang="ts" setup name="CertificatePage">
-import { query, remove } from '../../../api/link/certificate';
+import SaveModal from './SaveModal.vue';
+import { querySecrecy as query, remove } from '../../../api/link/certificate'
 import { onlyMessage } from '@jetlinks-web/utils';
-import { useMenuStore } from '@/store';
 import { useI18n } from 'vue-i18n';
 
 const { t: $t } = useI18n();
-const menuStory = useMenuStore();
 const tableRef = ref<Record<string, any>>({});
 const params = ref<Record<string, any>>({});
+const dialog = reactive({
+  visible: false,
+  id: ':id',
+});
 
 const columns = [
     {
@@ -125,17 +129,6 @@ const getActions = (data: Partial<Record<string, any>>): any[] => {
         return [];
     }
     return [
-        // {
-        //     key: 'view',
-        //     text: '查看',
-        //     tooltip: {
-        //         title: '查看',
-        //     },
-        //     icon: 'EyeOutlined',
-        //     onClick: async () => {
-        //         handleEye(data.id);
-        //     },
-        // },
         {
             key: 'update',
             text: $t('Certificate.index.646549-6'),
@@ -155,7 +148,7 @@ const getActions = (data: Partial<Record<string, any>>): any[] => {
             },
             popConfirm: {
                 title: $t('Certificate.index.646549-8'),
-                okText: ' 确定',
+                okText: '确定',
                 cancelText: $t('Certificate.index.646549-10'),
                 onConfirm: async () => {
                     return handleDelete(data.id);
@@ -167,27 +160,13 @@ const getActions = (data: Partial<Record<string, any>>): any[] => {
 };
 
 const handleAdd = () => {
-    menuStory.jumpPage(
-        `link/Certificate/Detail`,
-      {
-        params: { id: ':id' },
-        query: { view: false },
-      }
-    );
-};
-
-const handleEye = (id: string) => {
-    menuStory.jumpPage(`link/Certificate/Detail`, {
-      params: { id },
-      query: { view: true },
-    });
+  dialog.id = ':id';
+  dialog.visible = true;
 };
 
 const handleEdit = (id: string) => {
-    menuStory.jumpPage(`link/Certificate/Detail`, {
-      params: { id },
-      query: { view: false },
-    });
+  dialog.id = id;
+  dialog.visible = true;
 };
 
 const handleDelete = (id: string) => {
@@ -198,13 +177,9 @@ const handleDelete = (id: string) => {
             tableRef.value.reload();
         }
     });
-    return response
+    return response;
 };
 
-/**
- * 搜索
- * @param params
- */
 const handleSearch = (e: any) => {
     params.value = e;
 };
