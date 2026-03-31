@@ -16,80 +16,101 @@
       </div>
 
       <template v-else-if="access?.id">
-        <!-- item 列表：接入方式 / 接入地址（无外层卡片） -->
-        <a-list
-          class="access-item-list"
-          item-layout="vertical"
-          :split="true"
-          size="small"
+        <div
+          class="access-guide-layout"
+          :class="{ 'access-guide-layout--with-doc': showProtocolDoc }"
         >
-          <a-list-item class="access-list-item">
-            <a-list-item-meta>
-              <template #title>
-                <div class="access-meta-title">
-                  <div
-                    class="title-before"
-                    aria-hidden="true"
-                  />
-                  <span>{{ $t('DeviceAccess.index.594346-4') }}</span>
-                </div>
-              </template>
-              <template #description>
-                  <div class="item-style">
+          <!-- 左侧：接入方式 / 接入地址 / 配置 / 身份 -->
+          <div class="access-guide-main">
+            <a-list
+              class="access-item-list"
+              item-layout="vertical"
+              :split="true"
+              size="small"
+            >
+              <a-list-item class="access-list-item">
+                <a-list-item-meta>
+                  <template #title>
+                    <div class="access-meta-title">
+                      <div
+                        class="title-before"
+                        aria-hidden="true"
+                      />
+                      <span>{{ $t('DeviceAccess.index.594346-4') }}</span>
+                    </div>
+                  </template>
+                  <template #description>
+                    <div class="item-style">
                       <div>{{ access?.name }}</div>
                       <div>{{ access?.description || providerDesc }}</div>
-                  </div>
-              </template>
-            </a-list-item-meta>
-          </a-list-item>
+                    </div>
+                  </template>
+                </a-list-item-meta>
+              </a-list-item>
 
-          <a-list-item class="access-list-item">
-            <a-list-item-meta>
-              <template #title>
-                <div class="access-meta-title">
-                  <div
-                    class="title-before"
-                    aria-hidden="true"
-                  />
-                  <span>{{ $t('InstanceDeviceAccess.itemAccessAddress') }}</span>
-                </div>
-              </template>
-              <template #description>
-                  <div v-if="access?.channelInfo?.addresses?.length > 0">
+              <a-list-item class="access-list-item">
+                <a-list-item-meta>
+                  <template #title>
+                    <div class="access-meta-title">
                       <div
-                          v-for="addr in access?.channelInfo?.addresses"
-                          :key="addr.address"
+                        class="title-before"
+                        aria-hidden="true"
+                      />
+                      <span>{{ $t('InstanceDeviceAccess.itemAccessAddress') }}</span>
+                    </div>
+                  </template>
+                  <template #description>
+                    <div v-if="access?.channelInfo?.addresses?.length > 0">
+                      <div
+                        v-for="addr in access?.channelInfo?.addresses"
+                        :key="addr.address"
                       >
-                          <a-badge
-                              :color="addr.health === -1 ? 'red' : 'green'"
-                              :text="addr.address"
-                          />
+                        <a-badge
+                          :color="addr.health === -1 ? 'red' : 'green'"
+                          :text="addr.address"
+                        />
                       </div>
-                  </div>
-                  <div v-else>
+                    </div>
+                    <div v-else>
                       {{ $t('DeviceAccess.index.594346-8') }}
-                  </div>
-              </template>
-            </a-list-item-meta>
-          </a-list-item>
+                    </div>
+                  </template>
+                </a-list-item-meta>
+              </a-list-item>
 
-          <Config
-            variant="item"
-            @saved="onConfigSaved"
-          />
-          <Principal
-            variant="item"
-            ref="principalRef"
-          />
-        </a-list>
+              <Config
+                variant="item"
+                @saved="onConfigSaved"
+              />
+              <Principal
+                variant="item"
+                ref="principalRef"
+              />
+            </a-list>
+          </div>
 
+          <!-- 右侧：协议返回的 Markdown 说明（getConfigView document） -->
+          <aside
+            v-if="showProtocolDoc"
+            class="access-guide-doc"
+          >
+            <div class="access-guide-doc__sticky">
+              <div class="access-guide-doc__title">
+                {{ $t('InstanceDeviceAccess.952800-34') }}
+              </div>
+              <div
+                class="access-guide-doc__body markdown-body"
+                v-html="markdownToHtml"
+              />
+            </div>
+          </aside>
+        </div>
       </template>
     </a-spin>
   </div>
 </template>
 
 <script lang="ts" setup>
-import Title from '../../../Product/Detail/Title/index.vue'
 import Config from '../Info/components/Config/index.vue'
 import Principal from '../Info/components/Principal/index.vue'
 import {
@@ -122,6 +143,8 @@ const columnsMQTT = ref<TableColumnType[]>([])
 const columnsHTTP = ref<TableColumnType[]>([])
 
 const principalRef = ref<{ refresh?: () => void } | null>(null)
+
+const showProtocolDoc = computed(() => !!markdownToHtml.value)
 
 const hasRoutesTable = computed(
   () => !!(config.value?.routes && config.value.routes.length > 0),
@@ -318,6 +341,125 @@ watch(
   max-width: 100%;
   padding: 0;
   overflow-x: hidden;
+}
+
+.access-guide-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+}
+
+.access-guide-main {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 有协议说明时：左右等宽，说明区与接入配置列对齐，不横向挤占身份等表单项 */
+.access-guide-layout--with-doc .access-guide-main {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.access-guide-doc {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: none;
+}
+
+.access-guide-doc__sticky {
+  position: sticky;
+  top: 0;
+  max-height: calc(100vh - 220px);
+  overflow: auto;
+  padding: 12px 14px;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.access-guide-doc__title {
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f0f0f0;
+  color: rgba(0, 0, 0, 0.85);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.access-guide-doc__body {
+  font-size: 13px;
+  line-height: 1.65;
+  color: rgba(0, 0, 0, 0.75);
+  word-break: break-word;
+}
+
+.access-guide-doc__body :deep(h1),
+.access-guide-doc__body :deep(h2),
+.access-guide-doc__body :deep(h3) {
+  margin: 0.75em 0 0.4em;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.88);
+}
+
+.access-guide-doc__body :deep(p) {
+  margin: 0.45em 0;
+}
+
+.access-guide-doc__body :deep(ul),
+.access-guide-doc__body :deep(ol) {
+  padding-left: 1.25em;
+  margin: 0.4em 0;
+}
+
+.access-guide-doc__body :deep(pre) {
+  padding: 8px 10px;
+  overflow-x: auto;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.04);
+  font-size: 12px;
+}
+
+.access-guide-doc__body :deep(code) {
+  padding: 0 4px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.06);
+  font-size: 12px;
+}
+
+.access-guide-doc__body :deep(pre code) {
+  padding: 0;
+  background: transparent;
+}
+
+.access-guide-doc__body :deep(table) {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.access-guide-doc__body :deep(th),
+.access-guide-doc__body :deep(td) {
+  padding: 6px 8px;
+  border: 1px solid #f0f0f0;
+}
+
+@media (max-width: 992px) {
+  .access-guide-layout--with-doc {
+    flex-direction: column;
+  }
+
+  .access-guide-doc {
+    flex: 1 1 auto;
+    max-width: 100%;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .access-guide-doc__sticky {
+    max-height: none;
+  }
 }
 
 .access-item-list {

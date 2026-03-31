@@ -134,7 +134,19 @@
                 <TracePayloadViewer
                   v-if="stepPanelExpanded(ev.key)"
                   :content="ev.detail"
+                  :has-error="!!ev.error"
+                  :error-text="resolveTraceErrorText(ev)"
                   toolbar-mode="minimal"
+                />
+              </div>
+              <div
+                v-if="ev.error && resolveTraceErrorText(ev)"
+                class="wf-error-message"
+              >
+                <a-alert
+                  type="error"
+                  show-icon
+                  :message="resolveTraceErrorText(ev)"
                 />
               </div>
             </a-collapse-panel>
@@ -330,6 +342,38 @@ function logLevelTagText(ev: { logLevel?: string }): string {
 function logLevelTagColor(ev: { logLevel?: string }): string {
   const lv = normalizeLogLevel(ev.logLevel)
   return lv ? antTagColorForLogLevel(lv) : 'default'
+}
+
+function resolveTraceErrorText(ev: Record<string, any>): string {
+  if (!ev?.error) return ''
+  const direct = [
+    ev.errorMessage,
+    ev.message,
+    ev.reason,
+    ev.cause,
+    ev.exception,
+    ev.stackTrace,
+  ].find((v) => typeof v === 'string' && v.trim())
+  if (direct) return String(direct).trim()
+
+  const d = ev.detail
+  if (typeof d === 'string' && d.trim()) {
+    const t = d.trim()
+    try {
+      const parsed = JSON.parse(t) as Record<string, unknown>
+      const fromJson = [
+        parsed.errorMessage,
+        parsed.message,
+        parsed.reason,
+        parsed.cause,
+        parsed.exception,
+      ].find((v) => typeof v === 'string' && String(v).trim())
+      if (fromJson) return String(fromJson).trim()
+    } catch {
+      // detail 不是 JSON 时忽略
+    }
+  }
+  return ''
 }
 </script>
 
@@ -599,5 +643,19 @@ function logLevelTagColor(ev: { logLevel?: string }): string {
 .wf-detail {
   margin-top: 2px;
   min-width: 0;
+}
+
+.wf-error-message {
+  margin-top: 6px;
+
+  :deep(.ant-alert) {
+    padding: 6px 8px;
+  }
+
+  :deep(.ant-alert-message) {
+    font-size: 12px;
+    line-height: 1.45;
+    word-break: break-word;
+  }
 }
 </style>

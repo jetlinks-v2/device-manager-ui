@@ -13,7 +13,7 @@ export const MAX_TRACE_PAYLOAD_CHARS = 32000
 export type DeviceMessageInfo = {
   messageType: string
   deviceId?: string
-  properties?: Record<string, unknown>
+  properties?: Record<string, unknown> | string[]
   propertyIds?: string[]
   functionId?: string
   inputs?: unknown
@@ -134,6 +134,9 @@ export function extractDeviceMessageInfo(
   const o = parsed as Record<string, unknown>
   const mt = o.messageType ?? o.message_type
   if (typeof mt !== 'string' || !mt) return null
+  const propertyIdsFromArray = Array.isArray(o.properties)
+    ? (o.properties as unknown[]).filter((x): x is string => typeof x === 'string')
+    : undefined
   return {
     messageType: mt,
     deviceId: typeof o.deviceId === 'string' ? o.deviceId : undefined,
@@ -141,9 +144,11 @@ export function extractDeviceMessageInfo(
       o.properties && typeof o.properties === 'object' && !Array.isArray(o.properties)
         ? (o.properties as Record<string, unknown>)
         : undefined,
-    propertyIds: Array.isArray(o.propertyIds)
-      ? (o.propertyIds as string[]).filter((x) => typeof x === 'string')
-      : undefined,
+    // READ_PROPERTY 常见结构：properties: ['temp1', ...]
+    propertyIds:
+      (Array.isArray(o.propertyIds)
+        ? (o.propertyIds as unknown[]).filter((x): x is string => typeof x === 'string')
+        : undefined) || propertyIdsFromArray,
     functionId: typeof o.functionId === 'string' ? o.functionId : undefined,
     inputs: o.inputs,
     output: o.output,
@@ -230,6 +235,7 @@ export function countPropertyEntriesFromDeviceInfo(info: DeviceMessageInfo): num
   if (info.properties && typeof info.properties === 'object' && !Array.isArray(info.properties)) {
     return Object.keys(info.properties).length
   }
+  if (Array.isArray(info.properties)) return info.properties.length
   if (info.propertyIds?.length) return info.propertyIds.length
   return 0
 }

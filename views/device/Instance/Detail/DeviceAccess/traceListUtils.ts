@@ -184,10 +184,16 @@ function deriveFlowKind(
   nonLogSorted: TraceEventItem[],
   isUpstream: boolean | null,
 ): TraceFlowKind {
-  if (isUpstream === true) return 'uplink'
-  if (isUpstream === false) return 'downlink'
   const firstDecode = nonLogSorted.findIndex((e) => e.operation === 'decode')
   const firstEncode = nonLogSorted.findIndex((e) => e.operation === 'encode')
+  const firstRequest = nonLogSorted.findIndex((e) => e.operation === 'request')
+  const firstResponse = nonLogSorted.findIndex((e) => e.operation === 'response')
+  // request/response 方向语义最强：链路变化后应优先按当前步骤重算
+  if (firstRequest >= 0 && (firstResponse < 0 || firstRequest <= firstResponse)) return 'downlink'
+  if (firstResponse >= 0 && (firstRequest < 0 || firstResponse < firstRequest)) return 'uplink'
+  // 无 request/response 时，再使用分组级方向提示
+  if (isUpstream === true) return 'uplink'
+  if (isUpstream === false) return 'downlink'
   if (firstDecode >= 0 && (firstEncode < 0 || firstDecode < firstEncode)) return 'uplink'
   if (firstEncode >= 0 && (firstDecode < 0 || firstEncode < firstDecode)) return 'downlink'
   return 'unknown'
@@ -225,6 +231,10 @@ export function summarizeTraceGroup(
       isUpstream = anyFirst.upstream
     } else if (typeof anyFirst.downstream === 'boolean') {
       isUpstream = !anyFirst.downstream
+    } else if (firstNonLog.operation === 'request') {
+      isUpstream = false
+    } else if (firstNonLog.operation === 'response') {
+      isUpstream = true
     } else if (firstNonLog.operation === 'decode') {
       // 无显式标记时，decode 视为上行、encode 视为下行（兼容旧链路）
       isUpstream = true

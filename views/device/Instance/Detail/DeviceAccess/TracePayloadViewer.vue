@@ -11,6 +11,11 @@
           <a-space wrap size="small">
             <a-tag :color="formatTagColor(section.format)">{{ formatLabel(section.format) }}</a-tag>
             <template v-if="section.deviceInfo && canStructured(section)">
+              <a-tag v-if="showErrorHint" color="error">{{ $t('InstanceDeviceAccess.952800-22') }}</a-tag>
+              <a-tooltip v-if="showErrorHint && errorText" :title="errorText">
+                <span class="payload-error-text">{{ errorText }}</span>
+              </a-tooltip>
+              <span v-if="showErrorHint" class="payload-sep">|</span>
               <a-segmented
                 size="small"
                 :value="sectionModes[sIdx] ?? 'structured'"
@@ -57,6 +62,11 @@
         >
           <a-space wrap size="small">
             <template v-if="section.deviceInfo && canStructured(section)">
+              <a-tag v-if="showErrorHint" color="error">{{ $t('InstanceDeviceAccess.952800-22') }}</a-tag>
+              <a-tooltip v-if="showErrorHint && errorText" :title="errorText">
+                <span class="payload-error-text">{{ errorText }}</span>
+              </a-tooltip>
+              <span v-if="showErrorHint" class="payload-sep">|</span>
               <a-segmented
                 size="small"
                 :value="sectionModes[sIdx] ?? 'structured'"
@@ -131,10 +141,12 @@ const props = withDefaults(
   defineProps<{
     content: string
     maxChars?: number
+    hasError?: boolean
+    errorText?: string
     /** full：类型+复制+切换；minimal：顶栏仅切换，复制悬浮在正文区右上角 */
     toolbarMode?: 'full' | 'minimal'
   }>(),
-  { maxChars: MAX_TRACE_PAYLOAD_CHARS, toolbarMode: 'full' },
+  { maxChars: MAX_TRACE_PAYLOAD_CHARS, toolbarMode: 'full', hasError: false, errorText: '' },
 )
 
 type Section = {
@@ -213,6 +225,8 @@ const hexSegmentOptions = computed(() => [
   { label: $t('InstanceDeviceAccess.payloadView.hexDump'), value: 'dump' },
   { label: $t('InstanceDeviceAccess.payloadView.hexStream'), value: 'stream' },
 ])
+
+const showErrorHint = computed(() => !!props.hasError)
 
 function formatTagColor(fmt: TracePayloadFormat): string {
   const map: Partial<Record<TracePayloadFormat, string>> = {
@@ -356,6 +370,22 @@ async function copySection(text: string) {
 .copy-btn {
   padding: 0 4px;
   color: rgba(0, 0, 0, 0.45);
+  font-size: 11px;
+}
+
+.payload-error-text {
+  display: inline-block;
+  max-width: min(42vw, 420px);
+  overflow: hidden;
+  color: #e50012;
+  font-size: 11px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+.payload-sep {
+  color: rgba(0, 0, 0, 0.3);
   font-size: 11px;
 }
 

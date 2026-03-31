@@ -1,5 +1,8 @@
 <template>
   <div class="trace-chain-list">
+    <div class="trace-chain-layout">
+      <TraceDebugPanel class="trace-chain-layout__debug" @trace-match="onTraceMatch" />
+      <div class="trace-chain-layout__main">
     <div class="trace-hint">
       <p class="trace-hint__text">
         <InfoCircleOutlined class="trace-hint__icon" aria-hidden="true" />
@@ -26,8 +29,10 @@
           ]"
           type="button"
           class="trace-item"
+          :data-trace-key="row.traceKey"
           :class="[
             { 'trace-item--selected': selectedKey === row.traceKey },
+            { 'trace-item--matched': matchedFlashKey === row.traceKey },
             `trace-item--flow-${row.flowKind}`,
           ]"
           @click="openDetail(row.traceKey)"
@@ -47,11 +52,7 @@
               <BranchesOutlined v-else aria-hidden="true" />
             </span>
             <span class="trace-item__chain" :title="chainTitle(row)">
-              <template v-for="(seg, si) in chainSegments(row)" :key="`${row.traceKey}-seg-${si}`">
-                <span v-if="si > 0" class="trace-item__chain-sep">→</span>
-                <span class="trace-item__chain-part">{{ seg.label }}</span>
-                <span v-if="seg.repeat" class="trace-item__chain-repeat">({{ seg.repeat }})</span>
-              </template>
+              {{ chainLine(row) }}
             </span>
           </div>
           <div class="trace-item__payload-line">
@@ -94,6 +95,8 @@
         </j-empty>
       </div>
     </div>
+      </div>
+    </div>
 
     <TraceChainDetailDrawer
       v-model:open="detailOpen"
@@ -109,13 +112,12 @@ import { antTagColorForLogLevel } from './traceLogLevel'
 import {
   buildTraceRows,
   findGroupByKey,
-  parseChainSegmentsFromText,
   pickRawPayloadDetail,
   sortedEvents,
-  truncateText,
   type TraceListRow,
 } from './traceListUtils'
 import TraceChainDetailDrawer from './TraceChainDetailDrawer.vue'
+import TraceDebugPanel from './TraceDebugPanel.vue'
 import {
   ArrowDownOutlined,
   ArrowUpOutlined,
@@ -125,7 +127,7 @@ import {
   RightOutlined,
 } from '@ant-design/icons-vue'
 import dayjs from 'dayjs'
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const { t: $t } = useI18n()
@@ -167,6 +169,15 @@ watch(
 const detailOpen = ref(false)
 const detailGroup = ref<TraceGroup | null>(null)
 const selectedKey = ref<string | null>(null)
+const selectedTraceId = ref<string | null>(null)
+const pendingTraceIds = ref<string[]>([])
+const matchedFlashKey = ref<string | null>(null)
+let matchedFlashTimer: ReturnType<typeof setTimeout> | null = null
+
+onBeforeUnmount(() => {
+  if (matchedFlashTimer) clearTimeout(matchedFlashTimer)
+  matchedFlashTimer = null
+})
 
 const labelOp = createTraceOperationLabel($t)
 
@@ -176,7 +187,7 @@ const rows = computed(() => buildTraceRows(props.traceGroups, labelOp))
 const chainLine = (row: TraceListRow): string => {
   const chain = row.spanChainText?.trim()
   if (chain && chain !== '—') {
-    return truncateText(chain, 140)
+    return chain
   }
   if (row.messageTypeRaw) {
     const key = `InstanceDeviceAccess.msgType.${row.messageTypeRaw}`
@@ -191,9 +202,6 @@ const chainTitle = (row: TraceListRow): string => {
   if (chain && chain !== '—') return chain
   return chainLine(row)
 }
-
-/** 链路步骤拆段（含连续合并后的次数样式） */
-const chainSegments = (row: TraceListRow) => parseChainSegmentsFromText(chainLine(row))
 
 const flowAriaLabel = (row: TraceListRow): string => {
   if (row.flowKind === 'uplink') return $t('InstanceDeviceAccess.flowUplink')
@@ -225,21 +233,109 @@ const fullPayloadTitle = (row: TraceListRow) => {
 
 const openDetail = (traceKey: string) => {
   selectedKey.value = traceKey
-  detailGroup.value = findGroupByKey(props.traceGroups, traceKey) || null
+  const g = findGroupByKey(props.traceGroups, traceKey) || null
+  detailGroup.value = g
+  selectedTraceId.value = g?.traceId || null
   detailOpen.value = true
+}
+
+function flashMatched(traceKey: string) {
+  matchedFlashKey.value = traceKey
+  if (matchedFlashTimer) clearTimeout(matchedFlashTimer)
+  matchedFlashTimer = setTimeout(() => {
+    if (matchedFlashKey.value === traceKey) {
+      matchedFlashKey.value = null
+    }
+  }, 1800)
+}
+
+async function focusMatchedGroup(group: TraceGroup, byTraceId?: string) {
+  selectedKey.value = group.key
+  detailGroup.value = group
+  selectedTraceId.value = normalizeTraceId(byTraceId || group.traceId) || null
+  detailOpen.value = true
+  flashMatched(group.key)
+  await nextTick()
+  const el = document.querySelector(`[data-trace-key="${group.key}"]`) as HTMLElement | null
+  el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+}
+
+function normalizeTraceId(v: string | undefined): string {
+  if (!v) return ''
+  return String(v).replace(/[^0-9a-fA-F]/g, '').toLowerCase()
+}
+
+function findGroupByTraceId(traceId: string): TraceGroup | null {
+  const normalized = normalizeTraceId(traceId)
+  if (!normalized) return null
+  const found = props.traceGroups.find((g) => {
+    if (normalizeTraceId(g.traceId) === normalized) return true
+    const extra = g.traceIds || []
+    return extra.some((id) => normalizeTraceId(id) === normalized)
+  })
+  return found || null
+}
+
+function onTraceMatch(traceId: string) {
+  const g = findGroupByTraceId(traceId)
+  if (!g) {
+    const normalized = normalizeTraceId(traceId)
+    if (!normalized) return
+    if (!pendingTraceIds.value.includes(normalized)) {
+      pendingTraceIds.value.push(normalized)
+    }
+    return
+  }
+  const normalized = normalizeTraceId(traceId)
+  if (normalized) {
+    pendingTraceIds.value = pendingTraceIds.value.filter((id) => id !== normalized)
+  }
+  focusMatchedGroup(g, normalized || undefined)
 }
 
 watch(detailOpen, (v) => {
   if (!v) {
     selectedKey.value = null
+    selectedTraceId.value = null
   }
 })
 
 watch(
   () => props.traceGroups,
   () => {
+    if (pendingTraceIds.value.length) {
+      let matchedGroup: TraceGroup | null = null
+      const remain: string[] = []
+      for (const tid of pendingTraceIds.value) {
+        const g = findGroupByTraceId(tid)
+        if (g && !matchedGroup) {
+          matchedGroup = g
+          continue
+        }
+        if (!g) remain.push(tid)
+      }
+      pendingTraceIds.value = remain
+      if (matchedGroup) {
+        focusMatchedGroup(matchedGroup)
+      }
+    }
     if (detailOpen.value && selectedKey.value) {
-      detailGroup.value = findGroupByKey(props.traceGroups, selectedKey.value) || null
+      const byKey = findGroupByKey(props.traceGroups, selectedKey.value) || null
+      if (byKey) {
+        detailGroup.value = byKey
+      } else if (selectedTraceId.value) {
+        // 分组合并后 key 可能变化，按 traceId 重新定位当前选中链路
+        const relocated = findGroupByTraceId(selectedTraceId.value)
+        if (relocated) {
+          selectedKey.value = relocated.key
+          detailGroup.value = relocated
+          flashMatched(relocated.key)
+        } else {
+          detailGroup.value = null
+        }
+      } else {
+        detailGroup.value = null
+      }
     }
   },
   { deep: true },
@@ -247,6 +343,45 @@ watch(
 </script>
 
 <style lang="less" scoped>
+.trace-chain-layout {
+  display: flex;
+  flex: 1;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 12px;
+  min-height: 0;
+  min-width: 0;
+}
+
+.trace-chain-layout__debug {
+  flex: 0 0 288px;
+  flex-shrink: 0;
+  width: 288px;
+  max-width: min(288px, 100%);
+  min-width: 0;
+  align-self: stretch;
+}
+
+.trace-chain-layout__main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
+@media (max-width: 992px) {
+  .trace-chain-layout {
+    flex-direction: column;
+  }
+
+  .trace-chain-layout__debug {
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: none;
+  }
+}
+
 .trace-chain-list {
   display: flex;
   flex: 1;
@@ -321,13 +456,13 @@ watch(
 
 .trace-list-body {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
   gap: 6px;
   padding-right: 2px;
-  max-height: 420px;
 }
 
 .trace-item {
@@ -369,6 +504,21 @@ watch(
   &--selected {
     border-color: var(--ant-color-primary, #1890ff);
     background: rgba(24, 144, 255, 0.05);
+    box-shadow: 0 0 0 1px rgba(24, 144, 255, 0.12);
+  }
+
+  &--matched {
+    animation: trace-match-flash 1.8s ease;
+  }
+}
+
+@keyframes trace-match-flash {
+  0% {
+    box-shadow:
+      0 0 0 2px rgba(22, 119, 255, 0.35),
+      0 0 0 8px rgba(22, 119, 255, 0.12);
+  }
+  100% {
     box-shadow: 0 0 0 1px rgba(24, 144, 255, 0.12);
   }
 }
@@ -428,9 +578,7 @@ watch(
 }
 
 .trace-item__chain {
-  display: inline-flex;
-  flex-wrap: nowrap;
-  align-items: baseline;
+  display: inline-block;
   min-width: 0;
   flex: 1;
   overflow: hidden;
@@ -440,31 +588,6 @@ watch(
   color: var(--trace-text);
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.trace-item__chain-sep {
-  flex-shrink: 0;
-  margin: 0 3px;
-  color: var(--trace-text-tertiary);
-  font-size: 11px;
-  font-weight: 500;
-}
-
-.trace-item__chain-part {
-  flex-shrink: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.trace-item__chain-repeat {
-  flex-shrink: 0;
-  margin-left: 1px;
-  color: var(--ant-color-primary, #1677ff);
-  font-size: 11px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  opacity: 0.88;
 }
 
 .trace-item__payload-line {

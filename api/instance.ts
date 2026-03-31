@@ -406,6 +406,14 @@ export const getUnit = () => request.get<UnitType[]>(`/protocol/units`)
 export const executeFunctions = (deviceId: string, functionId: string, data: any) => request.post(`/device/invoked/${deviceId}/function/${functionId}`, data)
 
 /**
+ * 统一发送设备指令（READ_PROPERTY / WRITE_PROPERTY / INVOKE_FUNCTION 等）
+ * @param deviceId 设备ID
+ * @param data 指令报文
+ */
+export const sendDeviceMessage = (deviceId: string, data: Record<string, any>) =>
+  request.post(`/device/instance/${deviceId}/message`, data)
+
+/**
  * 读取属性
  * @param deviceId 设备id
  * @param data
