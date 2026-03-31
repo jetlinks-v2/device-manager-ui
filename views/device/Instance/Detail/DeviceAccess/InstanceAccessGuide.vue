@@ -120,9 +120,11 @@ import {
   getProviders,
 } from '../../../../../api/product'
 import { getCompositeProviderDetail } from '../../../../../api/link/accessConfig'
+import { getDevicePrincipal } from '../../../../../api/instance'
 import { useInstanceStore } from '../../../../../store/instance'
 import { useMenuStore } from '@jetlinks-web-core/store/menu'
 import { marked } from 'marked'
+import dayjs from 'dayjs'
 import type { TableColumnType } from 'ant-design-vue'
 import { useI18n } from 'vue-i18n'
 
@@ -143,6 +145,7 @@ const columnsMQTT = ref<TableColumnType[]>([])
 const columnsHTTP = ref<TableColumnType[]>([])
 
 const principalRef = ref<{ refresh?: () => void } | null>(null)
+const principalList = ref<Array<Record<string, any>>>([])
 
 const showProtocolDoc = computed(() => !!markdownToHtml.value)
 
@@ -227,13 +230,231 @@ const handleColumns = () => {
   columnsHTTP.value = [Group, ...ColumnsHTTP]
 }
 
+function getByPath(source: Record<string, any> | undefined, path: string): unknown {
+  if (!source || !path) return undefined
+  const segments = path
+    .split('.')
+    .map((s) => s.trim())
+    .filter(Boolean)
+  if (!segments.length) return undefined
+  let cur: any = source
+  for (const key of segments) {
+    if (cur == null || typeof cur !== 'object' || !(key in cur)) {
+      return undefined
+    }
+    cur = cur[key]
+  }
+  return cur
+}
+
+function splitByPipe(input: string): string[] {
+  const out: string[] = []
+  let buf = ''
+  let quote: '"' | "'" | null = null
+  let depth = 0
+  for (let i = 0; i < input.length; i++) {
+    const ch = input[i]
+    if (quote) {
+      buf += ch
+      if (ch === quote && input[i - 1] !== '\\') quote = null
+      continue
+    }
+    if (ch === '"' || ch === "'") {
+      quote = ch as '"' | "'"
+      buf += ch
+      continue
+    }
+    if (ch === '(') {
+      depth += 1
+      buf += ch
+      continue
+    }
+    if (ch === ')') {
+      depth = Math.max(0, depth - 1)
+      buf += ch
+      continue
+    }
+    if (ch === '|' && depth === 0) {
+      out.push(buf.trim())
+      buf = ''
+      continue
+    }
+    buf += ch
+  }
+  out.push(buf.trim())
+  return out.filter(Boolean)
+}
+
+function splitArgs(input: string): string[] {
+  const out: string[] = []
+  let buf = ''
+  let quote: '"' | "'" | null = null
+  for (let i = 0; i < input.length; i++) {
+    const ch = input[i]
+    if (quote) {
+      buf += ch
+      if (ch === quote && input[i - 1] !== '\\') quote = null
+      continue
+    }
+    if (ch === '"' || ch === "'") {
+      quote = ch as '"' | "'"
+      buf += ch
+      continue
+    }
+    if (ch === ',') {
+      out.push(buf.trim())
+      buf = ''
+      continue
+    }
+    buf += ch
+  }
+  if (buf.trim()) out.push(buf.trim())
+  return out
+}
+
+function parseLiteral(input: string): unknown {
+  const text = String(input || '').trim()
+  if (!text) return ''
+  if (
+    (text.startsWith('"') && text.endsWith('"')) ||
+    (text.startsWith("'") && text.endsWith("'"))
+  ) {
+    return text.slice(1, -1).replace(/\\n/g, '\n').replace(/\\t/g, '\t')
+  }
+  if (text === 'true') return true
+  if (text === 'false') return false
+  if (text === 'null') return null
+  const n = Number(text)
+  if (!Number.isNaN(n) && /^-?\d+(\.\d+)?$/.test(text)) return n
+  return text
+}
+
+function formatBytes(value: unknown, digits = 2): string {
+  const num = Number(value)
+  if (!Number.isFinite(num)) return ''
+  if (num < 1024) return `${Math.round(num)} B`
+  if (num < 1024 * 1024) return `${(num / 1024).toFixed(digits)} KB`
+  if (num < 1024 * 1024 * 1024) return `${(num / (1024 * 1024)).toFixed(digits)} MB`
+  return `${(num / (1024 * 1024 * 1024)).toFixed(digits)} GB`
+}
+
+function applyFilter(name: string, value: unknown, args: unknown[]): unknown {
+  switch (name) {
+    case 'date': {
+      if (value == null || value === '') return ''
+      const fmt = String(args[0] ?? 'YYYY-MM-DD HH:mm:ss')
+      const d = dayjs(value as any)
+      return d.isValid() ? d.format(fmt) : ''
+    }
+    case 'bytes': {
+      const digits = Number(args[0] ?? 2)
+      return formatBytes(value, Number.isFinite(digits) ? digits : 2)
+    }
+    case 'json': {
+      const space = Number(args[0] ?? 2)
+      try {
+        return JSON.stringify(value, null, Number.isFinite(space) ? space : 2)
+      } catch {
+        return ''
+      }
+    }
+    case 'upper':
+      return value == null ? '' : String(value).toUpperCase()
+    case 'lower':
+      return value == null ? '' : String(value).toLowerCase()
+    default:
+      return value
+  }
+}
+
+function toTemplateText(value: unknown): string {
+  if (value === undefined || value === null) return ''
+  if (typeof value === 'object') {
+    try {
+      return JSON.stringify(value)
+    } catch {
+      return ''
+    }
+  }
+  return String(value)
+}
+
+function resolveTemplateExpr(
+  expr: string,
+  context: Record<string, any>,
+  missing: Set<string>,
+): string {
+  const parts = splitByPipe(expr)
+  const base = parts[0] || ''
+  const idx = base.indexOf('?:')
+  const path = (idx >= 0 ? base.slice(0, idx) : base).trim()
+  const defaultText = idx >= 0 ? base.slice(idx + 2).trim() : ''
+
+  let value = getByPath(context, path)
+  if (value === undefined || value === null || value === '') {
+    if (defaultText) {
+      value = parseLiteral(defaultText)
+    } else {
+      missing.add(path)
+      value = ''
+    }
+  }
+
+  for (let i = 1; i < parts.length; i++) {
+    const token = parts[i]
+    const m = /^([a-zA-Z_][\w-]*)(?:\((.*)\))?$/.exec(token)
+    if (!m) continue
+    const filterName = m[1]
+    const argText = (m[2] || '').trim()
+    const args = argText ? splitArgs(argText).map(parseLiteral) : []
+    value = applyFilter(filterName, value, args)
+  }
+  return toTemplateText(value)
+}
+
+function renderDocumentWithBuiltins(doc?: string): string {
+  if (!doc) return ''
+  const firstPrincipal = principalList.value[0] || {}
+  const principal = {
+    ...firstPrincipal,
+    identityType: firstPrincipal?.identity?.type,
+    identifier: firstPrincipal?.identity?.identifier,
+    credentialType: firstPrincipal?.credential?.type,
+    token: firstPrincipal?.credential?.content?.token,
+    username: firstPrincipal?.credential?.content?.username,
+    password: firstPrincipal?.credential?.content?.password,
+  }
+  const context = {
+    device: instanceStore.current || {},
+    access: access.value || {},
+    config: config.value || {},
+    principal,
+    principals: principalList.value || [],
+  }
+  const missing = new Set<string>()
+  const rendered = doc.replace(/\$\{([^}]+)\}/g, (_, rawExpr: string) => {
+    const expr = String(rawExpr || '').trim()
+    if (!expr) return ''
+    return resolveTemplateExpr(expr, context as Record<string, any>, missing)
+  })
+  if (import.meta.env.DEV && missing.size) {
+    console.warn('[InstanceAccessGuide] missing markdown template vars:', [...missing])
+  }
+  return rendered
+}
+
+function refreshMarkdownDocument() {
+  const rendered = renderDocumentWithBuiltins(config.value?.document)
+  markdownToHtml.value = rendered ? marked(rendered) : ''
+}
+
 const loadConfigDetail = (messageProtocol: string, transportProtocol: string) => {
   if (!messageProtocol || !transportProtocol) return
   getConfigView(messageProtocol, transportProtocol).then((resp: any) => {
     if (resp.status === 200) {
       config.value = resp.result
       handleColumns()
-      markdownToHtml.value = config.value?.document ? marked(config.value.document) : ''
+      refreshMarkdownDocument()
     }
   })
 }
@@ -277,10 +498,23 @@ const load = async () => {
   access.value = {}
   config.value = {}
   markdownToHtml.value = ''
+  principalList.value = []
   compositeActive.value = []
   compositeActiveAddress.value = []
   try {
     const inst = instanceStore.current
+    if (inst?.id) {
+      getDevicePrincipal(inst.id).then((resp: any) => {
+        if (resp?.status === 200) {
+          principalList.value = resp.result || []
+          if (config.value?.document) {
+            refreshMarkdownDocument()
+          }
+        }
+      }).catch(() => {
+        principalList.value = []
+      })
+    }
     let accessId = inst.accessId
     if (!accessId && inst.productId) {
       const pr: any = await productDetail(inst.productId)
@@ -329,6 +563,16 @@ watch(
     }
     if (first && compositeActiveAddress.value.length === 0) {
       compositeActiveAddress.value = [first]
+    }
+  },
+  { deep: true },
+)
+
+watch(
+  () => principalList.value,
+  () => {
+    if (config.value?.document) {
+      refreshMarkdownDocument()
     }
   },
   { deep: true },

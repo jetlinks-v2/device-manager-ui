@@ -12,7 +12,7 @@
           <a-button
             type="link"
             size="small"
-            style="padding: 0 4px"
+            class="session-diagnose-btn"
             @click="diagnoseOpen = true"
           >
             {{ $t('InstanceDeviceAccess.952800-1') }}
@@ -494,8 +494,19 @@ onUnmounted(() => {
 
 .offline-alert {
   flex-shrink: 0;
+  :deep(.ant-alert) {
+    padding: 6px 10px;
+  }
+
+  :deep(.ant-alert-icon) {
+    font-size: 13px;
+    margin-inline-end: 6px;
+  }
+
   :deep(.ant-alert-message) {
     width: 100%;
+    font-size: 12px;
+    line-height: 1.45;
   }
 }
 
@@ -560,26 +571,52 @@ onUnmounted(() => {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  font-size: 12px;
+  font-size: 11px;
+  line-height: 1.4;
   color: rgba(0, 0, 0, 0.65);
+}
+
+.session-diagnose-btn {
+  padding: 0 4px !important;
+  height: 18px !important;
+  font-size: 11px !important;
+  line-height: 18px !important;
 }
 
 .session-conn-switch {
   margin-left: 6px;
   color: rgba(0, 0, 0, 0.55);
+  width: 20px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 20px;
+
+  :deep(.anticon) {
+    font-size: 11px;
+    line-height: 1;
+  }
 }
 
 .session-refresh-btn {
   margin-left: 4px;
   color: rgba(0, 0, 0, 0.55);
-  width: 22px;
-  min-width: 22px;
-  height: 22px;
+  width: 20px;
+  min-width: 20px;
+  height: 20px;
   padding: 0 !important;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex: 0 0 22px;
+  flex: 0 0 20px;
+
+  :deep(.anticon) {
+    font-size: 11px;
+    line-height: 1;
+  }
 }
 
 

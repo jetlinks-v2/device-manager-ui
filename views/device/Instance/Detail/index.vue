@@ -1,6 +1,6 @@
 <template>
   <j-page-container
-    :tabList="mergedOptions"
+    :tabList="orderedOptions"
     :showBack="true"
     :tabActiveKey="instanceStore.tabActiveKey"
     @tabChange="onTabChange"
@@ -207,6 +207,27 @@ const isRefresh = ref(false)
 const aiStore = useAIStore()
 const permissionStore = useAuthStore()
 const { mergedOptions } = useRegistryOptions({ baseOptions: list, code: 'detail-tabs' })
+
+const orderedOptions = computed(() => {
+  const source = (mergedOptions as any)?.value || []
+  if (!Array.isArray(source) || !source.length) return source
+
+  const infoIdx = source.findIndex((item: any) => item?.key === 'Info')
+  if (infoIdx < 0) return source
+
+  const preferredOrder = ['DeviceDetail', 'Diagnose', 'DeviceAccess']
+  const movableSet = new Set(preferredOrder)
+  const movable = source.filter((item: any) => movableSet.has(item?.key))
+  if (!movable.length) return source
+
+  // 保留原有顺序，同时确保可识别项按优先级插入「实例详情」后
+  movable.sort((a: any, b: any) => preferredOrder.indexOf(a?.key) - preferredOrder.indexOf(b?.key))
+  const rest = source.filter((item: any) => !movableSet.has(item?.key))
+  const nextInfoIdx = rest.findIndex((item: any) => item?.key === 'Info')
+  if (nextInfoIdx < 0) return source
+
+  return [...rest.slice(0, nextInfoIdx + 1), ...movable, ...rest.slice(nextInfoIdx + 1)]
+})
 
 const _arr = ['agent-device-gateway', 'agent-media-device-gateway']
 
