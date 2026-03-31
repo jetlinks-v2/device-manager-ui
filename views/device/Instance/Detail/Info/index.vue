@@ -1,21 +1,24 @@
 <template>
     <a-card class="info-card" :bordered="true">
         <template #title>
-            <div class="card-title">
-                <AIcon type="InfoCircleOutlined" class="card-icon" />
-                <span>{{ $t('Info.index.208636-0') }}</span>
+            <div class="card-title has-title-before">
+                <div
+                    class="title-before"
+                    aria-hidden="true"
+                />
+                <span class="card-title__text">{{ $t('Info.index.208636-0') }}</span>
+                <span class="card-title__actions">
+                    <j-permission-button
+                        type="link"
+                        class="edit-button"
+                        @click="visible = true"
+                        hasPermission="device/Instance:update"
+                    >
+                        <template #icon><AIcon type="EditOutlined" /></template>
+                        {{ $t('Info.index.208636-1') }}
+                    </j-permission-button>
+                </span>
             </div>
-        </template>
-        <template #extra>
-            <j-permission-button
-                type="link"
-                class="edit-button"
-                @click="visible = true"
-                hasPermission="device/Instance:update"
-            >
-                <template #icon><AIcon type="EditOutlined" /></template>
-                {{ $t('Info.index.208636-1') }}
-            </j-permission-button>
         </template>
         <a-descriptions class="compact-descriptions" :labelStyle="{width: '120px'}" bordered size="small">
         <a-descriptions-item :label="$t('Info.index.208636-2')">
@@ -67,9 +70,6 @@
         </a-descriptions-item>
         <a-descriptions-item :label="$t('Info.index.208636-10')">{{
             instanceStore.current?.transport
-        }}</a-descriptions-item>
-        <a-descriptions-item :label="$t('Info.index.208636-11')">{{
-            instanceStore.current?.protocolName
         }}</a-descriptions-item>
         <a-descriptions-item :label="$t('Info.index.208636-12')">{{
             instanceStore.current?.createTime
@@ -292,14 +292,30 @@ watch(
 .card-title {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 8px;
     font-size: 15px;
     font-weight: 500;
     color: rgba(0, 0, 0, 0.85);
 
-    .card-icon {
-        color: #1890ff;
-        font-size: 16px;
+    &.has-title-before {
+        position: relative;
+        padding-left: 10px;
+
+        > .title-before {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 16px;
+            background-color: @primary-color;
+            border-radius: 0 3px 3px 0;
+        }
+
+        .card-title__actions {
+            flex-shrink: 0;
+        }
     }
 }
 

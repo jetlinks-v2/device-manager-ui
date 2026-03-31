@@ -64,6 +64,7 @@ operationMap.set('request', $t('Dialog.index.786817-4'));
 operationMap.set('response', $t('Dialog.index.786817-5'));
 operationMap.set('downstream', $t('Dialog.index.786817-6'));
 operationMap.set('upstream', $t('Dialog.index.786817-7'));
+operationMap.set('handle', $t('Dialog.index.786817-8'));
 
 const statusColor = new Map();
 statusColor.set('error', '#E50012');

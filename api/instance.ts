@@ -414,6 +414,12 @@ export const executeFunctions = (deviceId: string, functionId: string, data: any
 export const readProperties = (deviceId: string, data: any) => request.post(`/device/instance/${deviceId}/properties/_read`, data)
 
 /**
+ * 获取设备会话信息
+ * @param deviceId 设备id
+ */
+export const getDeviceSessions = (deviceId: string) => request.get(`/device/instance/${deviceId}/sessions`)
+
+/**
  * 设置属性
  * @param deviceId 设备id
  * @param data

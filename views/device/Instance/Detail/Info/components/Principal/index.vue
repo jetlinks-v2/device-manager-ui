@@ -1,27 +1,33 @@
 <template>
-    <div class="principal-container" v-if="principalList.length > 0">
+    <div
+        class="principal-container"
+        v-if="variant === 'card' && principalList.length > 0"
+    >
         <a-card class="principal-card" :bordered="true">
             <template #title>
-                <div class="card-title">
-                    <AIcon type="SafetyOutlined" class="card-icon" />
-                    <span>{{ $t('Principal.index.100001-0') }}</span>
+                <div class="card-title has-title-before">
+                    <div
+                        class="title-before"
+                        aria-hidden="true"
+                    />
+                    <span class="card-title__text">{{ $t('Principal.index.100001-0') }}</span>
+                    <span class="card-title__actions">
+                        <a-popconfirm
+                            :title="$t('Principal.index.100001-5')"
+                            placement="bottomRight"
+                            @confirm="handleReset"
+                        >
+                            <j-permission-button
+                                type="link"
+                                class="reset-button"
+                                hasPermission="device/Instance:update"
+                            >
+                                <template #icon><AIcon type="SyncOutlined" /></template>
+                                {{ $t('Principal.index.100001-6') }}
+                            </j-permission-button>
+                        </a-popconfirm>
+                    </span>
                 </div>
-            </template>
-            <template #extra>
-                <a-popconfirm
-                    :title="$t('Principal.index.100001-5')"
-                    placement="bottomRight"
-                    @confirm="handleReset"
-                >
-                    <j-permission-button
-                        type="link"
-                        class="reset-button"
-                        hasPermission="device/Instance:update"
-                    >
-                        <template #icon><AIcon type="SyncOutlined" /></template>
-                        {{ $t('Principal.index.100001-6') }}
-                    </j-permission-button>
-                </a-popconfirm>
             </template>
             <div class="principal-rows">
                 <div
@@ -132,6 +138,150 @@
             </div>
         </a-card>
     </div>
+
+    <a-list-item
+        v-else-if="variant === 'item' && principalList.length > 0"
+        class="access-list-item principal-item"
+    >
+        <a-list-item-meta>
+            <template #title>
+                <div class="plain-item-head has-title-before">
+                    <div class="plain-item-head__left">
+                        <div
+                            class="title-before"
+                            aria-hidden="true"
+                        />
+                        <span class="plain-item-title">{{ $t('Principal.index.100001-0') }}</span>
+                        <span class="plain-item-head__actions">
+                            <a-popconfirm
+                                :title="$t('Principal.index.100001-5')"
+                                placement="bottomRight"
+                                @confirm="handleReset"
+                            >
+                                <j-permission-button
+                                    type="link"
+                                    class="reset-button"
+                                    hasPermission="device/Instance:update"
+                                >
+                                    <template #icon><AIcon type="SyncOutlined" /></template>
+                                    {{ $t('Principal.index.100001-6') }}
+                                </j-permission-button>
+                            </a-popconfirm>
+                        </span>
+                    </div>
+                </div>
+            </template>
+            <template #description>
+                <div class="principal-rows">
+                    <div
+                        class="principal-row"
+                        v-for="(principal, index) in principalList"
+                        :key="principal.id || index"
+                    >
+                        <template v-if="principal.metadata?.name || principal.metadata?.description">
+                            <a-tag class="metadata-tag">
+                                <span class="metadata-name">
+                                    {{ principal.metadata?.name || $t('Principal.index.100001-0') }}
+                                </span>
+                                <a-tooltip
+                                    v-if="principal.metadata?.description"
+                                    :title="principal.metadata.description"
+                                >
+                                    <AIcon type="QuestionCircleOutlined" class="description-icon" />
+                                </a-tooltip>
+                            </a-tag>
+                        </template>
+
+                        <div class="info-field">
+                            <AIcon type="IdcardOutlined" class="field-icon" />
+                            <span class="field-label">{{ $t('Principal.index.100001-1') }}</span>
+                            <a-tag class="field-value-tag">
+                                <j-ellipsis class="field-text">{{ principal.identity?.identifier || '--' }}</j-ellipsis>
+                                <a-tooltip
+                                    :title="copySuccessMap[`identity-${principal.id || index}`] ? $t('Principal.index.100001-8') : ''"
+                                    :open="copySuccessMap[`identity-${principal.id || index}`]"
+                                    placement="top"
+                                >
+                                    <span
+                                        class="copy-icon-wrapper"
+                                        @click.stop.prevent="copyToClipboard(principal.identity?.identifier || '', `identity-${principal.id || index}`)"
+                                    >
+                                        <AIcon
+                                            type="CopyOutlined"
+                                            class="copy-icon"
+                                        />
+                                    </span>
+                                </a-tooltip>
+                            </a-tag>
+                        </div>
+
+                        <template v-if="principal.credential?.type?.toLowerCase() === 'token'">
+                            <div class="info-field">
+                                <AIcon type="KeyOutlined" class="field-icon" />
+                                <span class="field-label">{{ $t('Principal.index.100001-2') }}</span>
+                                <a-tooltip
+                                    :title="copySuccessMap[`token-${principal.id || index}`] ? $t('Principal.index.100001-8') : ''"
+                                    :open="copySuccessMap[`token-${principal.id || index}`]"
+                                    placement="top"
+                                >
+                                    <a-tag
+                                        class="field-value-tag clickable-tag"
+                                        @click.stop.prevent="copyToClipboard(principal.credential?.content?.token || '', `token-${principal.id || index}`)"
+                                    >
+                                        <j-ellipsis class="field-text">{{ $t('Principal.index.100001-11') }}</j-ellipsis>
+                                    </a-tag>
+                                </a-tooltip>
+                            </div>
+                        </template>
+
+                        <template v-else-if="principal.credential?.type?.toLowerCase() === 'password'">
+                            <div class="info-field">
+                                <AIcon type="UserOutlined" class="field-icon" />
+                                <span class="field-label">{{ $t('Principal.index.100001-3') }}</span>
+                                <a-tooltip
+                                    :title="copySuccessMap[`username-${principal.id || index}`] ? $t('Principal.index.100001-8') : ''"
+                                    :open="copySuccessMap[`username-${principal.id || index}`]"
+                                    placement="top"
+                                >
+                                    <a-tag
+                                        class="field-value-tag clickable-tag"
+                                        @click.stop.prevent="copyToClipboard(principal.credential?.content?.username || '', `username-${principal.id || index}`)"
+                                    >
+                                        <j-ellipsis class="field-text">
+                                            {{ principal.credential?.content?.username ? $t('Principal.index.100001-11') : '--' }}
+                                        </j-ellipsis>
+                                    </a-tag>
+                                </a-tooltip>
+                            </div>
+                            <div class="info-field">
+                                <AIcon type="LockOutlined" class="field-icon" />
+                                <span class="field-label">{{ $t('Principal.index.100001-4') }}</span>
+                                <a-tooltip
+                                    :title="copySuccessMap[`password-${principal.id || index}`] ? $t('Principal.index.100001-8') : ''"
+                                    :open="copySuccessMap[`password-${principal.id || index}`]"
+                                    placement="top"
+                                >
+                                    <a-tag
+                                        class="field-value-tag clickable-tag"
+                                        @click.stop.prevent="copyToClipboard(principal.credential?.content?.password || '', `password-${principal.id || index}`)"
+                                    >
+                                        <j-ellipsis class="field-text">
+                                            {{ principal.credential?.content?.password ? $t('Principal.index.100001-11') : '--' }}
+                                        </j-ellipsis>
+                                    </a-tag>
+                                </a-tooltip>
+                            </div>
+                        </template>
+
+                        <div
+                            class="row-divider"
+                            v-if="index < principalList.length - 1"
+                        ></div>
+                    </div>
+                </div>
+            </template>
+        </a-list-item-meta>
+    </a-list-item>
 </template>
 
 <script lang="ts" setup>
@@ -140,6 +290,13 @@ import { getDevicePrincipal, resetDevicePrincipal, existsDevicePrincipalSupport 
 import { useI18n } from 'vue-i18n';
 import { onlyMessage } from '@jetlinks-web/utils';
 import useClipboard from 'vue-clipboard3';
+
+withDefaults(
+    defineProps<{
+        variant?: 'card' | 'item'
+    }>(),
+    { variant: 'card' },
+)
 
 const { t: $t } = useI18n();
 const instanceStore = useInstanceStore();
@@ -270,6 +427,53 @@ defineExpose({
     margin-top: 24px;
 }
 
+.plain-item-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+
+    &__left {
+        position: relative;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px 12px;
+        padding-left: 10px;
+        min-height: 22px;
+        flex: 1;
+        min-width: 0;
+
+        > .title-before {
+            position: absolute;
+            left: 0;
+            top: 2px;
+            width: 4px;
+            height: calc(100% - 4px);
+            min-height: 14px;
+            background-color: @primary-color;
+            border-radius: 0 3px 3px 0;
+        }
+
+        .plain-item-head__actions {
+            flex-shrink: 0;
+        }
+    }
+}
+
+.plain-item-title {
+    font-weight: 600;
+    font-size: 16px;
+    color: rgba(0, 0, 0, 0.85);
+}
+
+.principal-item {
+    :deep(.ant-list-item-meta-title) {
+        width: 100%;
+    }
+}
+
 .reset-button {
     padding: 0;
     height: auto;
@@ -306,10 +510,27 @@ defineExpose({
     font-weight: 500;
     color: rgba(0, 0, 0, 0.85);
 
-    .card-icon {
-        color: #1890ff;
-        font-size: 16px;
+    &.has-title-before {
+        position: relative;
+        flex-wrap: wrap;
+        padding-left: 10px;
+
+        > .title-before {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 16px;
+            background-color: @primary-color;
+            border-radius: 0 3px 3px 0;
+        }
+
+        .card-title__actions {
+            flex-shrink: 0;
+        }
     }
+
 }
 
 .metadata-tag {
