@@ -65,7 +65,7 @@
 </template>
 <script lang="ts" setup name="CertificatePage">
 import SaveModal from './SaveModal.vue';
-import { querySecrecy as query, remove } from '../../../api/link/certificate'
+import {query, remove } from '../../../api/link/certificate'
 import { onlyMessage } from '@jetlinks-web/utils';
 import { useI18n } from 'vue-i18n';
 
