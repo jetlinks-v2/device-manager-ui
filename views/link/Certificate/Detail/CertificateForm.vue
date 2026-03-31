@@ -33,21 +33,20 @@
           <a-input v-model:value="formData.name" :placeholder="$t('Detail.index.247061-3')" />
         </a-form-item>
         <a-form-item
+          v-if="props.id === ':id' || formData.configs?.cert"
           :label="$t('Detail.index.247061-5')"
           :name="['configs', 'cert']"
           :rules="props.id === ':id' ? [{ required: true, message: $t('Detail.index.247061-6'), trigger: 'change' }] : []"
         >
           <CertificateFile
-            v-if="props.id === ':id'"
             name="cert"
             accept=".pem"
             v-model:modelValue="formData.configs.cert"
             :placeholder="$t('Detail.index.247061-7')"
           />
-          <span v-else>******</span>
         </a-form-item>
         <a-form-item
-          v-if="props.id === ':id'"
+          v-if="props.id === ':id' || formData.configs?.cert"
           :label="$t('Detail.index.247061-8')"
           name="mode"
           :rules="[{ required: true, message: $t('Detail.index.247061-9'), trigger: 'blur' }]"
@@ -62,18 +61,16 @@
           </a-radio-group>
         </a-form-item>
         <a-form-item
-          v-if="formData.mode !== 'client'"
+          v-if="formData.mode !== 'client' && (props.id === ':id' || formData.configs?.cert)"
           :label="$t('Detail.index.247061-12')"
           :name="['configs', 'key']"
           :rules="props.id === ':id' ? [{ required: true, message: $t('Detail.index.247061-6'), trigger: 'change' }] : []"
         >
           <CertificateFile
-            v-if="props.id === ':id'"
             name="key"
             v-model:modelValue="formData.configs.key"
             :placeholder="$t('Detail.index.247061-13')"
           />
-          <span v-else>******</span>
         </a-form-item>
         <a-form-item
           :label="$t('Detail.index.247061-14')"
@@ -122,7 +119,7 @@ import { computed, ref, watch, toRaw } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { link } from '../../../../assets';
 import { onlyMessage } from '@jetlinks-web/utils';
-import { save, updateSecrecy, querySecrecyDetail } from '../../../../api/link/certificate';
+import { save, update, queryDetail } from '../../../../api/link/certificate';
 import CertificateFile from './CertificateFile.vue';
 import type { FormDataType, TypeObjType } from '../type';
 
@@ -174,16 +171,16 @@ const loadDetail = async (id: string) => {
   }
 
   loading.value = true;
-  const res: any = await querySecrecyDetail(id).catch(() => undefined);
+  const res: any = await queryDetail(id).catch(() => undefined);
   if (res?.success) {
     const result: any = res.result;
     const type = result.type.value as TypeObjType;
     formData.value = {
       ...result,
-      configs: {
+      configs: result.configs ? {
         key: result.configs.key,
-        cert: result.configs?.cert ? result.configs?.cert : result.configs?.trust,
-      },
+        cert: result.configs.cert ? result.configs.cert : result.configs.trust,
+      } : null,
       mode: result.mode.value,
       authenticationMethod: result.authenticationMethod?.value,
       type,
@@ -211,7 +208,7 @@ const onSubmit = async () => {
     const response =
       props.id === ':id'
         ? await save(params).catch(() => undefined)
-        : await updateSecrecy({ ...params, id: props.id }).catch(() => undefined);
+        : await update({ ...params, id: props.id }).catch(() => undefined);
 
     if (response?.status === 200) {
       onlyMessage($t('Detail.index.247061-26'), 'success');
