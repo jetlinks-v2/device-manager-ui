@@ -9,7 +9,7 @@
         {{ $t('InstanceDeviceAccess.952800-20') }}
       </p>
       <span class="trace-hint__count" aria-live="polite">
-        {{ $t('InstanceDeviceAccess.traceHintCount', { n: traceReceivedTotal }) }}
+        {{ $t('InstanceDeviceAccess.traceHintCount', { n: receivedTotal }) }}
       </span>
     </div>
     <div class="list-wrap">
@@ -22,6 +22,8 @@
             row.lastTime,
             row.flowKind,
             row.payloadPreview,
+            row.firstOpLabel,
+            row.messageTypeRaw,
             row.lastLogPreview,
             row.hasError,
             row.spanChainText,
@@ -51,16 +53,21 @@
               <ArrowDownOutlined v-else-if="row.flowKind === 'downlink'" aria-hidden="true" />
               <BranchesOutlined v-else aria-hidden="true" />
             </span>
-            <span class="trace-item__chain" :title="chainTitle(row)">
-              {{ chainLine(row) }}
+            <span class="trace-item__chain" :title="listPrimaryLine(row)">
+              {{ listPrimaryLine(row) }}
             </span>
           </div>
           <div class="trace-item__payload-line">
-            <span class="trace-item__plabel">{{ $t('InstanceDeviceAccess.traceListRaw') }}</span>
+            <span class="trace-item__plabel">{{
+              row.payloadPreview?.trim()
+                ? $t('InstanceDeviceAccess.traceListRaw')
+                : $t('InstanceDeviceAccess.traceListDesc')
+            }}</span>
             <span
               class="trace-item__pval"
+              :class="{ 'trace-item__pval--hint': !row.payloadPreview?.trim() }"
               :title="fullPayloadTitle(row)"
-            >{{ row.payloadPreview || $t('InstanceDeviceAccess.952800-25') }}</span>
+            >{{ payloadOrHintLine(row) }}</span>
             <template v-if="row.lastLogPreview">
               <span class="trace-item__psep">|</span>
               <a-tag
@@ -134,37 +141,10 @@ const { t: $t } = useI18n()
 
 const props = defineProps<{
   traceGroups: TraceGroup[]
-  /** 切换设备时重置「已收到」计数 */
   deviceId?: string
+  /** 由父级 useTraceReceivedTotal 提供的累加条数（与 Tab 角标一致） */
+  receivedTotal: number
 }>()
-
-/** 本会话内累计收到的不同链路条数（去重 key，列表被裁剪后计数不减少） */
-const traceReceivedTotal = ref(0)
-const seenTraceKeys = new Set<string>()
-
-function ingestNewTraceKeys(groups: TraceGroup[]) {
-  for (const g of groups) {
-    if (!seenTraceKeys.has(g.key)) {
-      seenTraceKeys.add(g.key)
-      traceReceivedTotal.value += 1
-    }
-  }
-}
-
-watch(
-  () => props.traceGroups,
-  (groups) => ingestNewTraceKeys(groups),
-  { deep: true, immediate: true },
-)
-
-watch(
-  () => props.deviceId,
-  () => {
-    seenTraceKeys.clear()
-    traceReceivedTotal.value = 0
-    ingestNewTraceKeys(props.traceGroups)
-  },
-)
 
 const detailOpen = ref(false)
 const detailGroup = ref<TraceGroup | null>(null)
@@ -183,24 +163,39 @@ const labelOp = createTraceOperationLabel($t)
 
 const rows = computed(() => buildTraceRows(props.traceGroups, labelOp))
 
-/** 列表主文案：链路步骤（decode → …）；无链时用消息类型兜底 */
-const chainLine = (row: TraceListRow): string => {
+/** 消息类型展示名（与 InstanceDeviceAccess.msgType.* 对齐） */
+const messageTypeLabel = (row: TraceListRow): string => {
+  if (!row.messageTypeRaw) return ''
+  const key = `InstanceDeviceAccess.msgType.${row.messageTypeRaw}`
+  const tr = $t(key)
+  return tr !== key ? tr : row.messageTypeRaw
+}
+
+/**
+ * 首行：链路步骤 + messageType（如 decode → 身份识别 · 上线）
+ * 无步骤链时仅用消息类型兜底
+ */
+const listPrimaryLine = (row: TraceListRow): string => {
   const chain = row.spanChainText?.trim()
-  if (chain && chain !== '—') {
-    return chain
-  }
-  if (row.messageTypeRaw) {
-    const key = `InstanceDeviceAccess.msgType.${row.messageTypeRaw}`
-    const tr = $t(key)
-    return tr !== key ? tr : row.messageTypeRaw
-  }
+  const hasChain = chain && chain !== '—'
+  const mt = messageTypeLabel(row)
+  if (hasChain && mt) return `${chain} · ${mt}`
+  if (hasChain) return chain as string
+  if (mt) return mt
   return '—'
 }
 
-const chainTitle = (row: TraceListRow): string => {
-  const chain = row.spanChainText?.trim()
-  if (chain && chain !== '—') return chain
-  return chainLine(row)
+/** 第二行：有原始报文则展示报文；否则展示「首条操作 · 消息类型」说明 */
+const payloadOrHintLine = (row: TraceListRow): string => {
+  const p = row.payloadPreview?.trim()
+  if (p) return p
+  const mt = messageTypeLabel(row)
+  const first = row.firstOpLabel && row.firstOpLabel !== '—' ? row.firstOpLabel : ''
+  if (first && mt) return `${first} · ${mt}`
+  if (mt) return mt
+  if (first) return first
+  if (row.lastOpLabel && row.lastOpLabel !== '—') return row.lastOpLabel
+  return '—'
 }
 
 const flowAriaLabel = (row: TraceListRow): string => {
@@ -222,13 +217,16 @@ const formatTime = (t: number) => {
   return dayjs(t).format('HH:mm:ss')
 }
 
-/** title 展示未截断的原始报文（从分组事件重算） */
+/** title：有报文时展示完整原始内容；无报文时与「说明」行一致 */
 const fullPayloadTitle = (row: TraceListRow) => {
-  const g = findGroupByKey(props.traceGroups, row.traceKey)
-  if (!g) return row.payloadPreview || undefined
-  const nonLog = sortedEvents(g).filter((e) => e.type !== 'log')
-  const raw = pickRawPayloadDetail(nonLog, row.flowKind)
-  return raw ? String(raw) : row.payloadPreview || undefined
+  if (row.payloadPreview?.trim()) {
+    const g = findGroupByKey(props.traceGroups, row.traceKey)
+    if (!g) return row.payloadPreview
+    const nonLog = sortedEvents(g).filter((e) => e.type !== 'log')
+    const raw = pickRawPayloadDetail(nonLog, row.flowKind)
+    return raw ? String(raw) : row.payloadPreview
+  }
+  return payloadOrHintLine(row)
 }
 
 const openDetail = (traceKey: string) => {
@@ -633,6 +631,11 @@ watch(
 .trace-item__pval--log {
   flex: 0.85;
   color: var(--trace-text-tertiary);
+}
+
+.trace-item__pval--hint {
+  font-family: inherit;
+  color: var(--trace-text-secondary);
 }
 
 .trace-item__meta {

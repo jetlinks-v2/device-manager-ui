@@ -132,12 +132,32 @@
       <a-tab-pane
         key="trace"
         class="device-access-tab-pane device-access-tab-pane--trace"
-        :tab="$t('InstanceDeviceAccess.952800-32')"
       >
+        <template #tab>
+          <span class="trace-tab-label">
+            <span>{{ $t('InstanceDeviceAccess.952800-32') }}</span>
+            <a-badge
+              class="trace-tab-badge"
+              :count="traceReceivedTotal"
+              :overflow-count="999"
+              :show-zero="true"
+              :number-style="{
+                minWidth: '18px',
+                height: '18px',
+                lineHeight: '18px',
+                padding: '0 5px',
+                fontSize: '11px',
+                borderRadius: '9px',
+                boxShadow: 'none',
+              }"
+            />
+          </span>
+        </template>
         <div class="tab-pane-inner tab-pane-inner--trace">
           <TraceChainList
             :trace-groups="traceGroups"
             :device-id="deviceId"
+            :received-total="traceReceivedTotal"
           />
         </div>
       </a-tab-pane>
@@ -164,6 +184,7 @@ import Status from '../Diagnose/Status/index'
 import InstanceAccessGuide from './InstanceAccessGuide.vue'
 import TraceChainList from './TraceChainList.vue'
 import { useDeviceTraceLog } from './composables/useDeviceTraceLog'
+import { useTraceReceivedTotal } from './composables/useTraceReceivedTotal'
 import { useInstanceStore } from '../../../../../store/instance'
 import { getDeviceSessions } from '../../../../../api/instance'
 import { onlyMessage } from '@jetlinks-web/utils'
@@ -173,6 +194,12 @@ const instanceStore = useInstanceStore()
 const deviceId = computed(() => instanceStore.current?.id)
 
 const { traceGroups, subscribe, unsubscribe, clear } = useDeviceTraceLog(deviceId)
+
+/** 累加收到的链路数（去重 key，非当前表格条数） */
+const { traceReceivedTotal, resetTraceReceivedTotal } = useTraceReceivedTotal(
+  traceGroups,
+  deviceId,
+)
 
 const isSubscribed = ref(true)
 const diagnoseOpen = ref(false)
@@ -387,16 +414,25 @@ const providerType = computed(() => {
 })
 
 const onClearTrace = () => {
+  resetTraceReceivedTotal()
   clear()
+}
+
+/** 进入设备接入页即订阅（含接入配置 Tab）；未暂停且有 deviceId 即建立链路 WebSocket，与在线/离线无关 */
+function ensureTraceSubscription() {
+  if (!isSubscribed.value) return
+  if (!deviceId.value) return
+  subscribe()
 }
 
 const onToggleSubscribe = () => {
   if (isSubscribed.value) {
     unsubscribe()
+    isSubscribed.value = false
   } else {
-    subscribe()
+    isSubscribed.value = true
+    ensureTraceSubscription()
   }
-  isSubscribed.value = !isSubscribed.value
 }
 
 const SESSION_AUTO_REFRESH_INTERVAL_MS = 1000
@@ -432,7 +468,7 @@ onMounted(() => {
     innerTab.value = 'trace'
     loadSessions()
   }
-  subscribe()
+  ensureTraceSubscription()
 })
 
 watch(
@@ -450,6 +486,7 @@ watch(
         clearTimeout(sessionAutoRefreshTimer)
         sessionAutoRefreshTimer = null
       }
+      // 离线不调用 subscribe()：subscribe 内部会先 unsubscribe，易造成断订；链路 Tab 上保持原订阅即可
     }
   },
 )
@@ -465,13 +502,9 @@ watch(
 )
 
 watch(deviceId, (id, prev) => {
-  if (prev === undefined) return
-  if (id && id !== prev) {
-    clear()
-    if (isSubscribed.value) {
-      subscribe()
-    }
-  }
+  if (!id || id === prev) return
+  clear()
+  ensureTraceSubscription()
 })
 
 onUnmounted(() => {
@@ -546,6 +579,21 @@ onUnmounted(() => {
 
 .trace-tab-actions {
   flex-shrink: 0;
+}
+
+.trace-tab-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  vertical-align: middle;
+}
+
+.trace-tab-badge {
+  line-height: 1;
+
+  :deep(.ant-badge-count) {
+    box-shadow: none;
+  }
 }
 
 .tab-pane-inner {

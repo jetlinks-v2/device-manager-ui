@@ -1,4 +1,5 @@
 import type { TraceEventItem, TraceGroup } from './composables/useDeviceTraceLog'
+import { normalizeMessageTypeKey } from './messageTypeLabels'
 import { compareTraceEvents, eventMaxComparableMs } from './traceOperationLabels'
 import { normalizeLogLevel } from './traceLogLevel'
 
@@ -23,6 +24,8 @@ export type TraceListRow = {
   lastLogLevel?: string
   /** 最后一跳非 log 步骤名 */
   lastOpLabel: string
+  /** 首条非 log 步骤名（与 messageType 组合为无报文时的说明） */
+  firstOpLabel: string
   hasError: boolean
   spanCount: number
   logCount: number
@@ -86,6 +89,11 @@ export function pickRawPayloadDetail(
     'request',
     'response',
     'handle',
+    'principal',
+    'connection',
+    'sessionCreated',
+    'sessionClosed',
+    'disconnect',
     'decode',
     'encode',
     'downstream',
@@ -126,19 +134,27 @@ function tryParseDetailMessageType(detail?: string): string | undefined {
   return undefined
 }
 
-/** 从链路事件中提取 messageType（字段或 detail JSON） */
+/** 从链路事件中提取 messageType（字段或 detail JSON），并规范为 MessageType 枚举名 */
 export function pickMessageTypeFromEvents(evs: TraceEventItem[]): string | undefined {
   for (const e of evs) {
     if (e.type === 'log') continue
     const ex = e as Record<string, unknown>
     const mt0 = ex.messageType
-    if (typeof mt0 === 'string' && mt0.trim()) return mt0.trim()
+    if (typeof mt0 === 'string' && mt0.trim()) {
+      return normalizeMessageTypeKey(mt0.trim()) ?? mt0.trim()
+    }
     const msg = ex.message as { messageType?: string } | undefined
     if (msg?.messageType && typeof msg.messageType === 'string' && msg.messageType.trim()) {
-      return msg.messageType.trim()
+      const m = msg.messageType.trim()
+      return normalizeMessageTypeKey(m) ?? m
     }
     const fromDetail = tryParseDetailMessageType(e.detail)
-    if (fromDetail) return fromDetail
+    if (fromDetail) return normalizeMessageTypeKey(fromDetail) ?? fromDetail
+  }
+  for (const e of evs) {
+    if (e.type !== 'log') continue
+    const fromDetail = tryParseDetailMessageType(e.detail)
+    if (fromDetail) return normalizeMessageTypeKey(fromDetail) ?? fromDetail
   }
   return undefined
 }
@@ -273,6 +289,7 @@ export function summarizeTraceGroup(
     lastLogPreview: truncateRawPreview(firstLineOnlyForListPreview(lastLog?.detail), 180),
     lastLogLevel: lastLog?.logLevel ? normalizeLogLevel(lastLog.logLevel) : undefined,
     lastOpLabel: lastNonLog ? opLabel(lastNonLog.operation) : '—',
+    firstOpLabel: firstNonLog ? opLabel(firstNonLog.operation) : '—',
     hasError: evs.some((e) => e.error),
     spanCount: nonLogSorted.length,
     logCount: logs.length,

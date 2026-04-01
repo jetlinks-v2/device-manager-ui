@@ -192,11 +192,16 @@ export function eventMaxComparableMs(ev: TraceEventItem): number {
 
 /**
  * 与后端 Trace 操作常量一致，通过 i18n 展示。
+ * principal：身份识别；auth：设备认证；disconnect/sessionCreated/sessionClosed：连接与会话生命周期。
  */
 export function createTraceOperationLabel(t: (key: string) => string) {
   const keys: Record<string, string> = {
     connection: 'Dialog.index.786817-0',
+    disconnect: 'Dialog.index.786817-10',
+    sessionCreated: 'Dialog.index.786817-11',
+    sessionClosed: 'Dialog.index.786817-12',
     auth: 'Dialog.index.786817-1',
+    principal: 'Dialog.index.786817-9',
     decode: 'Dialog.index.786817-2',
     encode: 'Dialog.index.786817-3',
     request: 'Dialog.index.786817-4',

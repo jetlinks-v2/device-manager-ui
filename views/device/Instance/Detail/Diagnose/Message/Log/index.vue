@@ -34,7 +34,11 @@ const { t: $t } = useI18n();
 
 const operationMap = new Map();
 operationMap.set('connection', $t('Dialog.index.786817-0'));
+operationMap.set('disconnect', $t('Dialog.index.786817-10'));
+operationMap.set('sessionCreated', $t('Dialog.index.786817-11'));
+operationMap.set('sessionClosed', $t('Dialog.index.786817-12'));
 operationMap.set('auth', $t('Dialog.index.786817-1'));
+operationMap.set('principal', $t('Dialog.index.786817-9'));
 operationMap.set('decode', $t('Dialog.index.786817-2'));
 operationMap.set('encode', $t('Dialog.index.786817-3'));
 operationMap.set('request', $t('Dialog.index.786817-4'));

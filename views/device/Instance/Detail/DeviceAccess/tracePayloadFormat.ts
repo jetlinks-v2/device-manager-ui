@@ -1,3 +1,5 @@
+import { normalizeMessageTypeKey } from './messageTypeLabels'
+
 /** 与后端 EncodedMessage / ByteBufUtil.prettyHexDump、JSON、HTTP 等展示形态对齐的粗分类 */
 export type TracePayloadFormat =
   | 'hex_dump'
@@ -132,8 +134,9 @@ export function extractDeviceMessageInfo(
 ): DeviceMessageInfo | null {
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null
   const o = parsed as Record<string, unknown>
-  const mt = o.messageType ?? o.message_type
-  if (typeof mt !== 'string' || !mt) return null
+  const mtRaw = o.messageType ?? o.message_type
+  if (typeof mtRaw !== 'string' || !mtRaw) return null
+  const mt = normalizeMessageTypeKey(mtRaw.trim()) ?? mtRaw.trim()
   const propertyIdsFromArray = Array.isArray(o.properties)
     ? (o.properties as unknown[]).filter((x): x is string => typeof x === 'string')
     : undefined
@@ -177,7 +180,11 @@ export function isFunctionRelatedMessage(msg: DeviceMessageInfo): boolean {
 }
 
 export function isEventRelatedMessage(msg: DeviceMessageInfo): boolean {
-  return msg.messageType === 'EVENT_REPORT' || !!msg.event
+  return (
+    msg.messageType === 'EVENT' ||
+    msg.messageType === 'EVENT_REPORT' ||
+    !!msg.event
+  )
 }
 
 export function detectPayloadFormat(text: string): TracePayloadFormat {
@@ -202,6 +209,85 @@ export function prettyJsonString(obj: unknown): string {
   } catch {
     return String(obj)
   }
+}
+
+/**
+ * 从 trace 步骤 detail 中解析 `attrs.session` / `attributes.session`（DeviceSessionInfo 等）。
+ * 深度遍历对象与多段文本，兼容嵌套 detail、message、字符串内 JSON。
+ */
+function findAttrsSessionDeep(obj: unknown, depth = 0): unknown | null {
+  if (depth > 14) return null
+  if (obj == null) return null
+  if (typeof obj === 'string') {
+    const inner = tryParseJson(obj.trim())
+    return inner ? findAttrsSessionDeep(inner, depth + 1) : null
+  }
+  if (typeof obj !== 'object') return null
+  if (Array.isArray(obj)) {
+    for (const item of obj) {
+      const hit = findAttrsSessionDeep(item, depth + 1)
+      if (hit != null) return hit
+    }
+    return null
+  }
+  const o = obj as Record<string, unknown>
+  const bag = o.attrs ?? o.attributes
+  if (bag && typeof bag === 'object' && !Array.isArray(bag)) {
+    const s = (bag as Record<string, unknown>).session
+    if (s != null) return s
+  }
+  if (typeof o.detail === 'string') {
+    const inner = tryParseJson(o.detail)
+    const hit = inner ? findAttrsSessionDeep(inner, depth + 1) : null
+    if (hit != null) return hit
+  } else if (o.detail && typeof o.detail === 'object') {
+    const hit = findAttrsSessionDeep(o.detail, depth + 1)
+    if (hit != null) return hit
+  }
+  if (o.message && typeof o.message === 'object') {
+    const hit = findAttrsSessionDeep(o.message, depth + 1)
+    if (hit != null) return hit
+  }
+  for (const v of Object.values(o)) {
+    if (v != null && typeof v === 'object') {
+      const hit = findAttrsSessionDeep(v, depth + 1)
+      if (hit != null) return hit
+    }
+  }
+  return null
+}
+
+export function extractAttrsSessionFromTraceDetail(detail: string | undefined): unknown | null {
+  if (detail == null || !String(detail).trim()) return null
+  const sections = splitTracePayloadSections(detail)
+  const list = sections.length ? sections : [detail]
+  for (const raw of list) {
+    const parsed = tryParseJson(String(raw).trim())
+    if (parsed == null) continue
+    const hit = findAttrsSessionDeep(parsed)
+    if (hit != null) return hit
+  }
+  return null
+}
+
+/** 会话信息：默认仅展示连接地址（DeviceSessionInfo.address 等） */
+export function formatSessionAddressDisplay(session: unknown): string {
+  if (session == null) return ''
+  if (typeof session === 'string') return session.trim()
+  if (typeof session === 'object' && !Array.isArray(session)) {
+    const o = session as Record<string, unknown>
+    const a = o.address ?? o.serverAddress ?? o.remoteAddress
+    if (typeof a === 'string') return a.trim()
+    if (a != null && typeof a !== 'object') return String(a).trim()
+  }
+  return ''
+}
+
+/** 完整 session 对象 JSON（如需「展开」等扩展能力时使用） */
+export function formatSessionAttrsDisplay(session: unknown): string {
+  if (session == null) return ''
+  if (typeof session === 'string') return session
+  return prettyJsonString(session)
 }
 
 /** 详情卡片标题行：与 TracePayloadViewer 首段相同的格式识别（用于标签展示） */

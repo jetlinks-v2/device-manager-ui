@@ -130,9 +130,18 @@
                 v-if="ev.detail"
                 class="wf-detail"
               >
-                <!-- 仅展开时挂载解析器，步骤多时显著降 CPU；步骤 ≤20 默认已展开 -->
+                <div
+                  v-if="sessionBlockText(ev)"
+                  class="wf-session-block"
+                >
+                  <div class="wf-session-block__title">
+                    {{ $t('InstanceDeviceAccess.traceDrawer.sessionInfo') }}
+                  </div>
+                  <pre class="wf-session-block__pre">{{ sessionBlockText(ev) }}</pre>
+                </div>
+                <!-- 仅展开时挂载解析器；会话步骤仅展示 address 时不重复展示同一段 -->
                 <TracePayloadViewer
-                  v-if="stepPanelExpanded(ev.key)"
+                  v-if="stepPanelExpanded(ev.key) && !hidePayloadWhenSessionLineShown(ev)"
                   :content="ev.detail"
                   :has-error="!!ev.error"
                   :error-text="resolveTraceErrorText(ev)"
@@ -158,7 +167,7 @@
 </template>
 
 <script lang="ts" setup>
-import type { TraceGroup } from './composables/useDeviceTraceLog'
+import type { TraceEventItem, TraceGroup } from './composables/useDeviceTraceLog'
 import {
   computeGroupWallElapsedMs,
   createTraceOperationLabel,
@@ -171,6 +180,9 @@ import { sortedEvents, summarizeTraceGroup } from './traceListUtils'
 import TracePayloadViewer from './TracePayloadViewer.vue'
 import {
   countPropertyEntriesFromDeviceInfo,
+  extractAttrsSessionFromTraceDetail,
+  formatSessionAddressDisplay,
+  formatSessionAttrsDisplay,
   getFirstSectionPayloadMeta,
   isEventRelatedMessage,
   isPropertyRelatedMessage,
@@ -342,6 +354,59 @@ function logLevelTagText(ev: { logLevel?: string }): string {
 function logLevelTagColor(ev: { logLevel?: string }): string {
   const lv = normalizeLogLevel(ev.logLevel)
   return lv ? antTagColorForLogLevel(lv) : 'default'
+}
+
+/** 仅这些步骤在「无 JSON、仅一行文本」时可能为服务端压缩后的连接地址，可展示在会话区 */
+const SESSION_RELATED_OPERATIONS = new Set([
+  'connection',
+  'disconnect',
+  'sessionCreated',
+  'sessionClosed',
+])
+
+function isLikelyHexOrBinaryPayload(t: string): boolean {
+  const s = t.trim()
+  if (s.length < 32) return false
+  return /^[0-9a-fA-F\s]+$/i.test(s)
+}
+
+/**
+ * 仅在 attrs.session 或连接/会话类步骤的地址行时展示「会话信息」；
+ * 避免 decode/handle/encode 等非会话步骤的纯文本被误标为会话。
+ */
+function sessionBlockText(ev: TraceEventItem): string | null {
+  const detail = ev.detail
+  if (!detail?.trim()) return null
+  if (ev.type === 'log') return null
+
+  const op = ev.operation
+
+  const fromAttrs = extractAttrsSessionFromTraceDetail(detail)
+  if (fromAttrs != null) {
+    const line = formatSessionAddressDisplay(fromAttrs).trim()
+    if (line) return line
+    if (op && SESSION_RELATED_OPERATIONS.has(op)) {
+      const full = formatSessionAttrsDisplay(fromAttrs).trim()
+      if (full) return full
+    }
+  }
+
+  const t = detail.trim()
+  if (t.startsWith('{') || t.startsWith('[')) return null
+
+  if (op && SESSION_RELATED_OPERATIONS.has(op)) {
+    if (t.length <= 512 && !/\r|\n/.test(t) && !isLikelyHexOrBinaryPayload(t)) {
+      return t
+    }
+  }
+  return null
+}
+
+/** 会话区已展示与 detail 完全相同的单行内容时不再重复挂载报文查看器 */
+function hidePayloadWhenSessionLineShown(ev: TraceEventItem): boolean {
+  const line = sessionBlockText(ev)
+  const d = ev.detail?.trim()
+  return !!(line && d === line)
 }
 
 function resolveTraceErrorText(ev: Record<string, any>): string {
@@ -643,6 +708,33 @@ function resolveTraceErrorText(ev: Record<string, any>): string {
 .wf-detail {
   margin-top: 2px;
   min-width: 0;
+}
+
+.wf-session-block {
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.wf-session-block__title {
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.75);
+}
+
+.wf-session-block__pre {
+  margin: 0;
+  max-height: 280px;
+  overflow: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: rgba(0, 0, 0, 0.82);
 }
 
 .wf-error-message {

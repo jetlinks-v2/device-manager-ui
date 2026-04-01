@@ -2,6 +2,7 @@ import { map } from 'rxjs/operators'
 import { wsClient } from '@jetlinks-web/core'
 import { randomString } from '@jetlinks-web/utils'
 import { ref, type Ref } from 'vue'
+import { formatSessionAddressDisplay } from '../tracePayloadFormat'
 import {
   MAX_TRACE_GROUPS,
   trimGroupEventsToLimit,
@@ -146,10 +147,20 @@ function normalizeTraceDetail(detail: unknown): { detailText: string; fallbackMe
     : isPlainObject(detail.attributes)
       ? detail.attributes
       : undefined
+  const fallbackMessage = extractErrorTextFromEvents(detail.events)
+
+  // attrs.session（DeviceSessionInfo）：默认只展示 address，不整段 stringify detail
+  if (attrs && isPlainObject(attrs) && attrs.session != null) {
+    const line = formatSessionAddressDisplay(attrs.session)
+    return {
+      detailText: line,
+      fallbackMessage,
+    }
+  }
+
   // 后端 detail 改为 {attrs,events} 后，仅识别 attrs 中可展示报文；
   // 若无法识别则返回空，前端不渲染报文块。
   const detailText = extractPayloadTextFromAttrs(attrs)
-  const fallbackMessage = extractErrorTextFromEvents(detail.events)
   return { detailText, fallbackMessage }
 }
 
