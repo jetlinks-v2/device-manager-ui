@@ -269,7 +269,9 @@
                 </a-tooltip>
                 <a-input-number
                   v-model:value="record.scaleFactor"
-                  :step="0.001"
+                  string-mode
+                  :precision="15"
+                  :step="1e-12"
                   size="small"
                   :controls="false"
                   :bordered="false"
@@ -1101,7 +1103,9 @@
                   <div class="mm-drawer-mini-lbl">缩放因子</div>
                   <a-input-number
                     v-model:value="drawerForm.scaleFactor"
-                    :step="0.001"
+                    string-mode
+                    :precision="15"
+                    :step="1e-12"
                     style="width: 100%"
                   />
                 </a-col>
@@ -1592,8 +1596,10 @@ watch(readEncodeProps, schedulePersistModbusDebugDraft, { deep: true });
 
 // ==================== Static Options ====================
 /**
- * 与 jetlinks-core {@code org.jetlinks.core.codec.Codecs} 静态注册的 Codec#getId() 一致（另有 Q7_9、ieee754_float64 为类文件存在项，若运行时报未注册需在平台侧注册）。
- * title：选中框展示；desc：下拉第二行说明；bits：字区总位宽须严格相等；arrayElementBits：数组型元素位宽，总位宽须为其整数倍。
+ * 与 jetlinks-core {@code org.jetlinks.core.codec.Codecs} 静态注册的 Codec#getId() 一致。
+ * title：选中框展示；desc：下拉第二行说明；bits：标量类型与映射总位宽（寄存器数×16）精确匹配；
+ * registerBitsAligned：数据字节非整字对齐时，按占用寄存器总位宽匹配（如 7 字节 BCD 对应 4 寄存器=64 位）；
+ * arrayElementBits：数组元素位宽，总位宽须为其整数倍且 ≥ 元素位宽。
  */
 interface CodecSelectOption {
   value: string;
@@ -1601,6 +1607,11 @@ interface CodecSelectOption {
   desc: string;
   /** 标量：与映射总位宽（寄存器数×16）精确匹配 */
   bits?: number;
+  /**
+   * 标量：按完整寄存器位宽匹配（与 bits 二选一参与过滤）。
+   * 例：bcd_date_time_7 为 7 字节数据，Modbus 常读 4 寄存器（64 位）。
+   */
+  registerBitsAligned?: number;
   /** 数组：总位宽为元素位宽的整数倍且 ≥ 元素位宽 */
   arrayElementBits?: number;
 }
@@ -1665,7 +1676,7 @@ const codecGroupOptions: Array<{ label: string; options: CodecSelectOption[] }> 
       {
         value: 'ieee754_float64',
         title: 'ieee754_float64',
-        desc: 'IEEE754 双精度，8 字节（4 个寄存器）。高精度测量；请确认平台已注册此 id（与 float32 区分）。',
+        desc: 'IEEE754 双精度，8 字节（4 个寄存器）。高精度测量、累计量等。',
         bits: 64,
       },
     ],
@@ -1688,7 +1699,7 @@ const codecGroupOptions: Array<{ label: string; options: CodecSelectOption[] }> 
       {
         value: 'Q7_9',
         title: 'Q7_9',
-        desc: 'Q7.9 定点，2 字节。7 位整数 + 9 位小数（源码在 core，默认 Codecs 未注册时需自行注册）。',
+        desc: 'Q7.9 定点，2 字节。7 位整数 + 9 位小数，范围约 -64～64。',
         bits: 16,
       },
       {
@@ -1739,6 +1750,12 @@ const codecGroupOptions: Array<{ label: string; options: CodecSelectOption[] }> 
         bits: 32,
       },
       {
+        value: 'bcd_48',
+        title: 'bcd_48',
+        desc: '6 字节 Packed BCD 长整型（如电力仪表地址 12 位十进制），3 个寄存器。',
+        bits: 48,
+      },
+      {
         value: 'unpacked_bcd_16',
         title: 'unpacked_bcd_16',
         desc: '2 字节 Unpacked BCD，每字节一位十进制数字。',
@@ -1756,10 +1773,28 @@ const codecGroupOptions: Array<{ label: string; options: CodecSelectOption[] }> 
     label: 'BCD 日期时间',
     options: [
       {
+        value: 'bcd_date_time_6',
+        title: 'bcd_date_time_6',
+        desc: '6 字节 BCD 日期时间（YYMMDDHHmmss），3 个寄存器。',
+        bits: 48,
+      },
+      {
+        value: 'bcd_date_time_7',
+        title: 'bcd_date_time_7',
+        desc: '7 字节 BCD 日期时间（含星期等）。读 4 寄存器（8 字节）时取缓冲区前 7 字节解析。',
+        registerBitsAligned: 64,
+      },
+      {
         value: 'bcd_date_time_8',
         title: 'bcd_date_time_8',
         desc: '8 字节 BCD 日期时间（年 + 月日 + 时分 + 秒），4 个寄存器对齐。',
         bits: 64,
+      },
+      {
+        value: 'bcd_date_4',
+        title: 'bcd_date_4',
+        desc: '4 字节 BCD 日期（YYYYMMDD），2 个寄存器。',
+        bits: 32,
       },
       {
         value: 'bcd_date_time_12',
@@ -1803,6 +1838,7 @@ const codecGroupOptions: Array<{ label: string; options: CodecSelectOption[] }> 
       },
       { value: 'Q1_15_array', title: 'Q1_15_array', desc: 'Q1.15 定点数组。', arrayElementBits: 16 },
       { value: 'Q1_31_array', title: 'Q1_31_array', desc: 'Q1.31 定点数组。', arrayElementBits: 32 },
+      { value: 'Q7_9_array', title: 'Q7_9_array', desc: 'Q7.9 定点数组。', arrayElementBits: 16 },
       { value: 'Q8_8_array', title: 'Q8_8_array', desc: 'Q8.8 定点数组。', arrayElementBits: 16 },
       { value: 'Q15_1_array', title: 'Q15_1_array', desc: 'Q15.1 定点数组。', arrayElementBits: 16 },
       { value: 'Q31_1_array', title: 'Q31_1_array', desc: 'Q31.1 定点数组。', arrayElementBits: 32 },
@@ -1815,6 +1851,13 @@ const codecGroupOptions: Array<{ label: string; options: CodecSelectOption[] }> 
       { value: 'bcd_8_array', title: 'bcd_8_array', desc: 'bcd_8 数组。', arrayElementBits: 8 },
       { value: 'bcd_16_array', title: 'bcd_16_array', desc: 'bcd_16 数组。', arrayElementBits: 16 },
       { value: 'bcd_32_array', title: 'bcd_32_array', desc: 'bcd_32 数组。', arrayElementBits: 32 },
+      { value: 'bcd_48_array', title: 'bcd_48_array', desc: 'bcd_48 数组。', arrayElementBits: 48 },
+      {
+        value: 'bcd_date_4_array',
+        title: 'bcd_date_4_array',
+        desc: 'bcd_date_4 数组（LocalDate 序列）。',
+        arrayElementBits: 32,
+      },
       {
         value: 'unpacked_bcd_16_array',
         title: 'unpacked_bcd_16_array',
@@ -2050,6 +2093,16 @@ function filterEncodeReadPropOption(input: string, option: { label?: string; val
   return label.includes(q) || value.includes(q);
 }
 
+/** a-input-number（含 stringMode）可能为 number | string，统一为有限数字供保存与后端 JSON */
+function toFiniteNumberOr(v: unknown, fallback: number): number {
+  if (typeof v === 'number' && Number.isFinite(v)) return v;
+  if (typeof v === 'string' && v.trim() !== '') {
+    const n = Number(v);
+    if (Number.isFinite(n)) return n;
+  }
+  return fallback;
+}
+
 // 与后端 ModbusThingsMapping 一致：仅 thingId + properties（寄存器定义内嵌在每条 property.register）
 const configObject = computed(() => {
   if (!mappings.value.length) return null;
@@ -2071,6 +2124,8 @@ const configObject = computed(() => {
         : layoutLogicalToBackend(normalizeLayoutToLogical(m.layout, layoutWc), layoutWc);
 
       if (!existing || parsed.count > (existing.registerCount || 0)) {
+        const sfFallback = existing ? existing.scaleFactor : 1;
+        const scFallback = existing ? existing.scale : -1;
         regMap.set(key, {
           key: {
             slaveId: parsed.slaveId,
@@ -2080,18 +2135,8 @@ const configObject = computed(() => {
           registerCount: Math.max(parsed.count, existing ? existing.registerCount : 0),
           codec: normalizeCodecId(m.codec || (existing ? existing.codec : '')),
           layout,
-          scaleFactor:
-            typeof m.scaleFactor === 'number'
-              ? m.scaleFactor
-              : existing
-              ? existing.scaleFactor
-              : 1,
-          scale:
-            typeof m.scale === 'number'
-              ? m.scale
-              : existing
-              ? existing.scale
-              : -1,
+          scaleFactor: toFiniteNumberOr(m.scaleFactor, sfFallback),
+          scale: Math.round(toFiniteNumberOr(m.scale, scFallback)),
         });
       }
     }
@@ -2376,6 +2421,9 @@ const getCodecOptionsForCount = (registerStr: string) => {
 /** 字寄存器区：按映射总位宽过滤；bit_array / lsb_bit_array 始终可选（按字拆位） */
 const codecOptionMatchesWordWidth = (opt: CodecSelectOption, targetBits: number) => {
   if (opt.value === 'bit_array' || opt.value === 'lsb_bit_array') return true;
+  if (typeof opt.registerBitsAligned === 'number') {
+    return targetBits === opt.registerBitsAligned;
+  }
   if (typeof opt.arrayElementBits === 'number') {
     return targetBits >= opt.arrayElementBits && targetBits % opt.arrayElementBits === 0;
   }
@@ -2795,11 +2843,16 @@ const isNumericCodec = (codec: string) => {
 };
 
 /** 表格内联编辑：缩放因子失焦/变更后归一化，与抽屉逻辑一致 */
-const onTableScaleFactorChange = (record: ModbusSimpleMapping, v: number | null) => {
-  if (v == null || Number.isNaN(Number(v))) {
+const onTableScaleFactorChange = (record: ModbusSimpleMapping, v: number | string | null) => {
+  if (v == null || v === '') {
+    record.scaleFactor = 1;
+    return;
+  }
+  const n = typeof v === 'string' ? Number(v) : v;
+  if (Number.isNaN(n)) {
     record.scaleFactor = 1;
   } else {
-    record.scaleFactor = Number(v);
+    record.scaleFactor = n;
   }
 };
 
@@ -2887,8 +2940,8 @@ const confirmDrawer = () => {
       registerStr: drawerForm.registerStr,
       codec: normalizeCodecId(drawerForm.codec),
       layout: drawerForm.layout,
-      scaleFactor: drawerForm.scaleFactor,
-      scale: drawerForm.scale,
+      scaleFactor: toFiniteNumberOr(drawerForm.scaleFactor, 1),
+      scale: Math.round(toFiniteNumberOr(drawerForm.scale, -1)),
       useMaskWrite: drawerForm.useMaskWrite === true,
       readable: drawerForm.readable,
       writable: drawerForm.writable,
@@ -2964,8 +3017,8 @@ const reconstructMappings = (mapping: any): ModbusSimpleMapping[] => {
       registerStr,
       codec: normalizeCodecId(reg?.codec ?? ''),
       layout: normalizeLayoutToLogical(reg?.layout ?? '', layoutWc),
-      scaleFactor: reg?.scaleFactor ?? 1,
-      scale: reg?.scale ?? -1,
+      scaleFactor: toFiniteNumberOr(reg?.scaleFactor, 1),
+      scale: Math.round(toFiniteNumberOr(reg?.scale, -1)),
       bitLength: typeof prop.bitLength === 'number' && prop.bitLength > 0 ? prop.bitLength : undefined,
       useMaskWrite: prop.useMaskWrite === true,
       readable: prop.readable ?? true,
