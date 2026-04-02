@@ -147,6 +147,15 @@ export const update = (data: Partial<DeviceInstance>) => data.id ? request.patch
 export const modify = (id: string, data: Partial<DeviceInstance>) => request.put(`/device-instance/${id}`, data)
 
 /**
+ * 根据设备ID修改设备信息（设备实例接口）
+ * @param deviceId 设备ID
+ * @param data 设备信息
+ * @returns
+ */
+export const modifyByDeviceId = (deviceId: string, data: Partial<DeviceInstance>) =>
+  request.put(`/device/instance/${deviceId}`, data)
+
+/**
  * 获取配置信息
  * @param id 设备id
  * @returns

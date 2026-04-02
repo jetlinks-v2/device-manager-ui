@@ -99,8 +99,10 @@
                 {{ $t('InstanceDeviceAccess.952800-34') }}
               </div>
               <div
+                ref="protocolDocBodyRef"
                 class="access-guide-doc__body markdown-body"
                 v-html="markdownToHtml"
+                @click="onProtocolDocClick"
               />
             </div>
           </aside>
@@ -127,8 +129,11 @@ import { marked } from 'marked'
 import dayjs from 'dayjs'
 import type { TableColumnType } from 'ant-design-vue'
 import { useI18n } from 'vue-i18n'
+import { onlyMessage } from '@jetlinks-web/utils'
+import useClipboard from 'vue-clipboard3'
 
 const { t: $t } = useI18n()
+const { toClipboard } = useClipboard()
 const instanceStore = useInstanceStore()
 const menuStore = useMenuStore()
 
@@ -145,6 +150,7 @@ const columnsMQTT = ref<TableColumnType[]>([])
 const columnsHTTP = ref<TableColumnType[]>([])
 
 const principalRef = ref<{ refresh?: () => void } | null>(null)
+const protocolDocBodyRef = ref<HTMLElement | null>(null)
 const principalList = ref<Array<Record<string, any>>>([])
 
 const showProtocolDoc = computed(() => !!markdownToHtml.value)
@@ -443,9 +449,48 @@ function renderDocumentWithBuiltins(doc?: string): string {
   return rendered
 }
 
+/**
+ * 协议说明 Markdown 内可声明「点击复制」：
+ * - 推荐：`<a href="#" data-copy="实际要复制的文本">点击复制</a>`（不会跳转）
+ * - 兼容：`<span copy-content="实际要复制的文本">复制</span>`（与 data-copy 等价）
+ * - 仅写 `data-copy=""` 时，会回退为复制元素可见文本
+ * `${...}` 占位符在 marked 之前已由 renderDocumentWithBuiltins 替换。
+ */
 function refreshMarkdownDocument() {
   const rendered = renderDocumentWithBuiltins(config.value?.document)
   markdownToHtml.value = rendered ? marked(rendered) : ''
+}
+
+/** 从协议说明区点击带 data-copy / copy-content 的元素时写入剪贴板 */
+async function copyProtocolDocText(text: string) {
+  if (!text.trim()) {
+    onlyMessage($t('InstanceDeviceAccess.952800-35'), 'warning')
+    return
+  }
+  try {
+    await toClipboard(text)
+    onlyMessage($t('InstanceDeviceAccess.952800-7'))
+  } catch {
+    onlyMessage($t('InstanceDeviceAccess.952800-36'), 'error')
+  }
+}
+
+function onProtocolDocClick(e: MouseEvent) {
+  const root = protocolDocBodyRef.value
+  if (!root) return
+  const t = e.target
+  if (!t || !(t instanceof Element)) return
+  const el = t.closest('[data-copy], [copy-content]')
+  if (!el || !root.contains(el)) return
+  e.preventDefault()
+  e.stopPropagation()
+  const hasData = el.hasAttribute('data-copy')
+  const attrRaw = hasData
+    ? (el.getAttribute('data-copy') ?? '')
+    : (el.getAttribute('copy-content') ?? '')
+  const visible = (el.textContent || '').trim()
+  const text = attrRaw.trim() ? attrRaw : visible
+  void copyProtocolDocText(text)
 }
 
 const loadConfigDetail = (messageProtocol: string, transportProtocol: string) => {
@@ -675,6 +720,15 @@ watch(
 .access-guide-doc__body :deep(pre code) {
   padding: 0;
   background: transparent;
+}
+
+/* 协议说明内「点击复制」：由 data-copy / copy-content 标记 */
+.access-guide-doc__body :deep([data-copy]),
+.access-guide-doc__body :deep([copy-content]) {
+  cursor: pointer;
+  color: @primary-color;
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
 }
 
 .access-guide-doc__body :deep(table) {
