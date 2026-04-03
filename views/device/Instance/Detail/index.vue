@@ -661,6 +661,7 @@ const getStatus = (id: string) => {
 }
 
 const getDetail = () => {
+  list.value = [...initList];
   if (platform !== 'edge') {
     list.value.push({
       key: 'DeviceRelationship',
@@ -793,7 +794,6 @@ const initPage = async (newId: any) => {
   try {
     // 刷新整个页面，防止前一个数据还有残留
     instanceStore.tabActiveKey = 'Running'
-    list.value = [...initList]
     instanceStore.setCurrent({ id: newId })
     await instanceStore.refresh(String(newId))
     getStatus(String(newId))
@@ -819,7 +819,6 @@ const getDetailFn = async () => {
     if (_id) {
       await instanceStore.refresh(String(_id))
       getStatus(String(_id))
-      list.value = [...initList]
       getDetail()
       instanceStore.tabActiveKey = resolveDefaultTabKey(tab)
     }
