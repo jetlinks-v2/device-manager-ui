@@ -432,7 +432,7 @@
                   },
                   {
                     "permission": "assets-bind",
-                    "actions": ["bind-all"]
+                    "actions": ["bind-all", "query"]
                   }
                 ]
               },
