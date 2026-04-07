@@ -14,6 +14,7 @@
             <a-auto-complete
               v-model:value="tab.inputUrl"
               :options="getBrowserHistoryOptions(tab.inputUrl)"
+              :default-active-first-option="false"
               @select="(value) => onBrowserHistorySelect(tab.key, value)"
               class="browser-url-auto"
               style="width: 100%"
@@ -25,7 +26,7 @@
                 @update:value="(value) => onBrowserInputChange(tab.key, value)"
                 @focus="onBrowserInputFocus(tab.key)"
                 @blur="onBrowserInputBlur(tab.key)"
-                @pressEnter="handleOpenBrowser(tab.key)"
+                @keydown.enter.prevent="handleOpenBrowser(tab.key)"
               />
             </a-auto-complete>
             <a-button
@@ -245,6 +246,7 @@ const startBrowserLoadDetect = (key: string) => {
     if (tab.loading) {
       tab.error = $t('Terminal.index.remote-17') as string
       tab.loading = false
+      tab.syncLocked = false
       onlyMessage($t('Terminal.index.remote-17') as string, 'error')
     }
     browserDetectPending[key] = false
@@ -355,12 +357,14 @@ const handleOpenBrowser = async (key?: string) => {
   if (!tab) return
   try {
     tab.isEditing = false
-    tab.syncLocked = false
+    // 导航完成前禁止 syncIframeActualUrl 用旧 iframe 地址覆盖地址栏（回车/访问与历史选中一致）
+    tab.syncLocked = true
     tab.loading = true
     tab.error = ''
     const targetUrl = parseInputUrl(tab)
     if (!targetUrl) {
       tab.loading = false
+      tab.syncLocked = false
       return
     }
     // 每次点击「访问」都强制重新申请密钥，避免旧 key 过期后无法刷新
@@ -368,6 +372,7 @@ const handleOpenBrowser = async (key?: string) => {
     if (!proxyKey.value) {
       tab.error = $t('Terminal.index.remote-6') as string
       tab.loading = false
+      tab.syncLocked = false
       return
     }
     saveBrowserHistory(targetUrl.href)
@@ -388,6 +393,7 @@ const handleOpenBrowser = async (key?: string) => {
   } catch (_e) {
     tab.error = $t('Terminal.index.remote-7') as string
     tab.loading = false
+    tab.syncLocked = false
   }
 }
 
@@ -469,6 +475,11 @@ const handleBrowserFrameLoad = (key: string) => {
   } catch (_e) {
     tab.loading = false
     clearBrowserLoadDetect(key)
+  } finally {
+    // 若未再次进入 loading（子流程里会改 src 并置 loading），允许地址栏与 iframe 同步
+    if (!tab.loading) {
+      tab.syncLocked = false
+    }
   }
 }
 

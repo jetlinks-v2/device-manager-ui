@@ -1639,6 +1639,7 @@
     "Terminal.index.remote-30": "VNC 密码（可选）",
     "Terminal.index.remote-31": "设备离线，无法使用远程桌面",
     "Terminal.index.remote-33": "远程桌面连接失败",
+    "Terminal.index.remote-58": "连接超时，请检查主机、端口及设备网络后重试",
     "Terminal.index.remote-34": "未登录或令牌无效，请重新登录",
     "Terminal.index.remote-35": "认证",
     "Terminal.index.remote-36": "远程桌面需要认证，请输入凭据后继续",

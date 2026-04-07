@@ -1639,6 +1639,7 @@
     "Terminal.index.remote-30": "VNC password (optional)",
     "Terminal.index.remote-31": "Device is offline, remote desktop is unavailable",
     "Terminal.index.remote-33": "Remote desktop connection failed",
+    "Terminal.index.remote-58": "Connection timed out. Check host, port, and device network, then try again.",
     "Terminal.index.remote-34": "Not logged in or token invalid, please sign in again",
     "Terminal.index.remote-35": "Authentication",
     "Terminal.index.remote-36": "Remote desktop authentication is required, please enter credentials to continue",

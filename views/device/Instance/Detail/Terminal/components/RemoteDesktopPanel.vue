@@ -40,6 +40,9 @@
               :disabled="connecting"
             />
           </div>
+          <div v-if="connectionError" class="addr-os-error" role="alert">
+            {{ connectionError }}
+          </div>
           <div class="addr-os-footer">
             <a-tooltip :title="$t('Terminal.index.remote-48')">
               <button type="button" class="addr-os-icon-btn" tabindex="-1">
@@ -226,6 +229,8 @@ const vncPort = ref<number>(5900)
 const connecting = ref(false)
 const disconnecting = ref(false)
 const connected = ref(false)
+/** 连接失败时在地址卡片内展示，避免仅依赖 Toast 或长时间卡在「连接中」 */
+const connectionError = ref('')
 const authModalVisible = ref(false)
 const authSubmitting = ref(false)
 const authUsername = ref('')
@@ -243,6 +248,39 @@ let contentResizeObserver: ResizeObserver | null = null
 let visibilityObserver: IntersectionObserver | null = null
 /** 设备切换、离线、卸载等主动断开时不提示「连接失败」 */
 let suppressDisconnectError = false
+/** 建立会话超时（WebSocket/VNC 握手无响应时避免一直卡在「连接中」） */
+const CONNECT_TIMEOUT_MS = 20000
+let connectTimeoutId: ReturnType<typeof setTimeout> | null = null
+
+const clearConnectTimeout = () => {
+  if (connectTimeoutId) {
+    clearTimeout(connectTimeoutId)
+    connectTimeoutId = null
+  }
+}
+
+const scheduleConnectTimeout = () => {
+  clearConnectTimeout()
+  connectTimeoutId = setTimeout(() => {
+    connectTimeoutId = null
+    if (!connecting.value || connected.value) return
+    const msg = $t('Terminal.index.remote-58') as string
+    connectionError.value = msg
+    onlyMessage(msg, 'error')
+    if (rfb) {
+      suppressDisconnectError = true
+      try {
+        rfb.disconnect()
+      } catch (_e) {
+        rfb = null
+        clearScreen()
+        connecting.value = false
+      }
+    } else {
+      connecting.value = false
+    }
+  }, CONNECT_TIMEOUT_MS)
+}
 
 const needUsername = computed(() => credentialTypes.value.includes('username'))
 const needPassword = computed(() => credentialTypes.value.includes('password'))
@@ -446,6 +484,7 @@ const clearScreen = () => {
 }
 
 const onRfbDisconnect = (e: CustomEvent<{ clean: boolean }>) => {
+  clearConnectTimeout()
   rfb = null
   clearScreen()
   connected.value = false
@@ -457,12 +496,17 @@ const onRfbDisconnect = (e: CustomEvent<{ clean: boolean }>) => {
   credentialTypes.value = []
   const skipMsg = suppressDisconnectError
   suppressDisconnectError = false
-  if (!skipMsg && !e.detail?.clean) {
-    onlyMessage($t('Terminal.index.remote-33') as string, 'error')
+  // noVNC：服务端/网络导致 WebSocket 关闭时，connected 分支可能不会走 _fail，detail.clean 仍为 true，
+  // 仅靠 !clean 会漏提示。除主动断开（suppressDisconnectError）外，一律按连接失败提示。
+  if (!skipMsg) {
+    const msg = $t('Terminal.index.remote-33') as string
+    connectionError.value = msg
+    onlyMessage(msg, 'error')
   }
 }
 
 const onCredentialsRequired = (e: CustomEvent<{ types?: string[] }>) => {
+  clearConnectTimeout()
   connecting.value = false
   credentialTypes.value = Array.isArray(e.detail?.types) ? e.detail.types : ['password']
   authUsername.value = ''
@@ -522,15 +566,37 @@ const cancelCredentials = () => {
   }
 }
 
+const onRfbSecurityFailure = () => {
+  clearConnectTimeout()
+  const msg = $t('Terminal.index.remote-33') as string
+  connectionError.value = msg
+  onlyMessage(msg, 'error')
+  suppressDisconnectError = true
+  connecting.value = false
+  if (rfb) {
+    try {
+      rfb.disconnect()
+    } catch (_e) {
+      rfb = null
+      clearScreen()
+    }
+  }
+}
+
 const handleConnect = () => {
   if (!canConnect.value || rfb) return
+  connectionError.value = ''
   if (!getToken()) {
-    onlyMessage($t('Terminal.index.remote-34') as string, 'error')
+    const msg = $t('Terminal.index.remote-34') as string
+    connectionError.value = msg
+    onlyMessage(msg, 'error')
     return
   }
   const wsUrl = buildTcpProxyWsUrl()
   if (!wsUrl) {
-    onlyMessage($t('Terminal.index.remote-34') as string, 'error')
+    const msg = $t('Terminal.index.remote-34') as string
+    connectionError.value = msg
+    onlyMessage(msg, 'error')
     return
   }
   const el = screenContainerRef.value
@@ -543,18 +609,25 @@ const handleConnect = () => {
     rfb.resizeSession = true
     rfb.clipViewport = false
 
+    scheduleConnectTimeout()
     rfb.addEventListener('connect', () => {
+      clearConnectTimeout()
+      connectionError.value = ''
       connecting.value = false
       connected.value = true
       applyViewMode()
     })
     rfb.addEventListener('credentialsrequired', onCredentialsRequired as EventListener)
+    rfb.addEventListener('securityfailure', onRfbSecurityFailure as EventListener)
     rfb.addEventListener('disconnect', onRfbDisconnect as EventListener)
   } catch (_e) {
+    clearConnectTimeout()
     connecting.value = false
     rfb = null
     clearScreen()
-    onlyMessage($t('Terminal.index.remote-33') as string, 'error')
+    const msg = $t('Terminal.index.remote-33') as string
+    connectionError.value = msg
+    onlyMessage(msg, 'error')
   }
 }
 
@@ -565,6 +638,7 @@ const handleDisconnect = () => {
   disconnecting.value = true
   try {
     suppressDisconnectError = true
+    connectionError.value = ''
     rfb.disconnect()
   } catch (_e) {
     rfb = null
@@ -692,9 +766,11 @@ watch(connected, (v) => {
 
 watch([vncHost, vncPort], () => {
   saveTarget()
+  connectionError.value = ''
 })
 
 onBeforeUnmount(() => {
+  clearConnectTimeout()
   window.removeEventListener('pointermove', onDockPointerMove)
   window.removeEventListener('pointerup', onDockPointerEnd)
   document.removeEventListener('fullscreenchange', onFullscreenChange)
@@ -810,6 +886,17 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.addr-os-error {
+  margin-top: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #ffccc7;
+  background: rgba(255, 77, 79, 0.14);
+  border: 1px solid rgba(255, 120, 120, 0.4);
 }
 
 .addr-os-sep {
