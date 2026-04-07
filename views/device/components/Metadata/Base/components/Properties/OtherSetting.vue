@@ -331,7 +331,7 @@ const {
 
 const { metrics, metricsQuery, metricsUpdate } = useMetrics(props)
 
-const emit = defineEmits(['update:value', 'change'])
+const emit = defineEmits(['update:value', 'save'])
 
 const ThresholdRef = ref()
 const activeKey = ref()
@@ -607,7 +607,7 @@ const confirm = () => {
         ...props.value,
         ...expands
       })
-      emit('change')
+      emit('save')
       modalVisible.value = false
       resolve(true)
     } catch (err) {
