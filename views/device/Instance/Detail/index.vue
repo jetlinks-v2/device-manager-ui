@@ -1,12 +1,17 @@
 <template>
+  <div
+    class="device-detail-page-wrap"
+    :class="{ 'device-detail-page-wrap--tab-skeleton': detailPageLoading }"
+  >
   <j-page-container
-    :tabList="orderedOptions"
+    :tabList="pageContainerTabList"
     :showBack="false"
-    :tabActiveKey="instanceStore.tabActiveKey"
+    :tabActiveKey="pageContainerTabActiveKey"
     @tabChange="onTabChange"
   >
     <template #title>
-      <div class="device-detail-title-row">
+      <DeviceDetailFishboneSkeleton v-if="detailPageLoading" mode="title" />
+      <div v-else class="device-detail-title-row">
         <div class="device-detail-title-main">
           <div class="device-detail-name-wrap">
             <button
@@ -243,7 +248,11 @@
       </div>
     </template>
     <template #extra>
-      <a-space>
+      <div v-if="detailPageLoading" class="device-detail-extra-skeleton">
+        <div class="device-detail-extra-skeleton__btn" />
+        <div class="device-detail-extra-skeleton__icon" />
+      </div>
+      <a-space v-else>
         <a-button
           @click="onClick"
           v-if="_arr.includes(instanceStore.current?.accessProvider || '') && userStore.isAdmin"
@@ -278,7 +287,11 @@
     @change="handlePhotoFileSelected"
   />
     <full-page>
+      <div v-if="detailPageLoading" class="device-detail-content-wrap device-detail-content-wrap--skeleton">
+        <DeviceDetailFishboneSkeleton mode="page" />
+      </div>
       <div
+        v-else
         :style="contentStyle"
         class="device-detail-content-wrap"
       >
@@ -297,6 +310,7 @@
       </div>
     </full-page>
   </j-page-container>
+  </div>
   <TagsSave
     v-if="tagsPanelVisible"
     @close="tagsPanelVisible = false"
@@ -307,6 +321,7 @@
 <script lang="ts" setup>
 import TagsSave from './Info/components/Tags/Save.vue'
 import PhotoSave from './PhotoSave.vue'
+import DeviceDetailFishboneSkeleton from './DeviceDetailFishboneSkeleton.vue'
 import { useInstanceStore } from '../../../../store/instance'
 import { _deploy, _disconnect, modifyByDeviceId } from '../../../../api/instance'
 import { getBase64ByImg, onlyMessage } from '@jetlinks-web/utils'
@@ -360,6 +375,17 @@ const avatarError = ref(false)
 const TAG_PREVIEW_COUNT = 3
 const tagsPopoverOpen = ref(false)
 const tagsPanelVisible = ref(false)
+/** 首屏详情未返回前展示鱼骨骨架屏 */
+const detailPageLoading = ref(true)
+
+/** 详情加载完成前 Tab 项未知：用占位 key + 鱼骨样式代替真实标签 */
+const SKELETON_TAB_COUNT = 12
+const SKELETON_TAB_FIRST_KEY = '__deviceDetailSkTab0'
+const skeletonTabList = Array.from({ length: SKELETON_TAB_COUNT }, (_, i) => ({
+  key: `__deviceDetailSkTab${i}`,
+  /** 占位，实际由 CSS 显示为闪烁条 */
+  tab: '\u00A0'
+}))
 
 const deviceTags = computed(() => {
   const t = instanceStore.current?.tags
@@ -571,6 +597,14 @@ const orderedOptions = computed(() => {
   ].filter((item: any) => item?.key !== 'Info')
 })
 
+const pageContainerTabList = computed(() =>
+  detailPageLoading.value ? skeletonTabList : orderedOptions.value
+)
+
+const pageContainerTabActiveKey = computed(() =>
+  detailPageLoading.value ? SKELETON_TAB_FIRST_KEY : instanceStore.tabActiveKey
+)
+
 const resolveDefaultTabKey = (requestedTab?: string) => {
   const keys = (list.value || [])
     .map((i: any) => i?.key)
@@ -755,14 +789,19 @@ const getDetail = () => {
 }
 
 const initPage = async (newId: any) => {
-  // 刷新整个页面，防止前一个数据还有残留
-  instanceStore.tabActiveKey = 'Running'
-  list.value = [...initList]
-  instanceStore.setCurrent({ id: newId })
-  await instanceStore.refresh(String(newId))
-  getStatus(String(newId))
-  getDetail()
-  instanceStore.tabActiveKey = resolveDefaultTabKey()
+  detailPageLoading.value = true
+  try {
+    // 刷新整个页面，防止前一个数据还有残留
+    instanceStore.tabActiveKey = 'Running'
+    list.value = [...initList]
+    instanceStore.setCurrent({ id: newId })
+    await instanceStore.refresh(String(newId))
+    getStatus(String(newId))
+    getDetail()
+    instanceStore.tabActiveKey = resolveDefaultTabKey()
+  } finally {
+    detailPageLoading.value = false
+  }
 }
 
 onBeforeRouteUpdate((to: any) => {
@@ -773,22 +812,24 @@ onBeforeRouteUpdate((to: any) => {
 })
 
 const getDetailFn = async () => {
-  const _id = route.params?.id
-  const tab = routerParams.params.value.tab
-  if (_id) {
-    await instanceStore.refresh(String(_id))
-    getStatus(String(_id))
-    list.value = [...initList]
-    getDetail()
-    instanceStore.tabActiveKey = resolveDefaultTabKey(tab)
-    // instanceStore.tabActiveKey = routerParams.params.value.tab || 'Info';
+  detailPageLoading.value = true
+  try {
+    const _id = route.params?.id
+    const tab = routerParams.params.value.tab
+    if (_id) {
+      await instanceStore.refresh(String(_id))
+      getStatus(String(_id))
+      list.value = [...initList]
+      getDetail()
+      instanceStore.tabActiveKey = resolveDefaultTabKey(tab)
+    }
+  } finally {
+    detailPageLoading.value = false
   }
-  // else {
-  //     instanceStore.tabActiveKey = routerParams.params.value.tab || 'Info';
-  // }
 }
 
 const onTabChange = (e: string) => {
+  if (detailPageLoading.value) return
   if (instanceStore.tabActiveKey === 'Metadata') {
     EventEmitter.emit('MetadataTabs', () => {
       instanceStore.tabActiveKey = e
@@ -1270,6 +1311,180 @@ defineExpose({
 .device-detail-content-wrap {
   :deep(> div) {
     height: 100%;
+  }
+}
+
+.device-detail-content-wrap--skeleton {
+  min-height: 420px;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+@keyframes device-detail-extra-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.device-detail-extra-skeleton {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.device-detail-extra-skeleton__btn,
+.device-detail-extra-skeleton__icon {
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.06) 0%,
+    rgba(0, 0, 0, 0.1) 50%,
+    rgba(0, 0, 0, 0.06) 100%
+  );
+  background-size: 200% 100%;
+  animation: device-detail-extra-shimmer 1.35s ease-in-out infinite;
+}
+
+.device-detail-extra-skeleton__btn {
+  width: 88px;
+  height: 32px;
+}
+
+.device-detail-extra-skeleton__icon {
+  width: 28px;
+  height: 28px;
+  margin-right: 8px;
+  border-radius: 4px;
+}
+
+/* Tab 鱼骨骨架：详情未返回前标签数量/文案未知，用占位 Tab + 脊柱/肋条视觉 */
+@keyframes device-detail-tab-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.device-detail-page-wrap {
+  min-width: 0;
+  width: 100%;
+}
+
+.device-detail-page-wrap--tab-skeleton {
+  :deep(.ant-tabs-nav) {
+    position: relative;
+    margin-bottom: 0 !important;
+  }
+
+  :deep(.ant-tabs-nav-wrap) {
+    position: relative;
+    padding-top: 10px;
+    &::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      height: 2px;
+      border-radius: 1px;
+      background: linear-gradient(
+        90deg,
+        rgba(22, 119, 255, 0.4) 0%,
+        rgba(22, 119, 255, 0.1) 45%,
+        rgba(22, 119, 255, 0.35) 100%
+      );
+      pointer-events: none;
+    }
+  }
+
+  :deep(.ant-tabs-tab) {
+    position: relative;
+    &::before {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 2px;
+      width: 1px;
+      height: 7px;
+      transform: translateX(-50%);
+      background: rgba(22, 119, 255, 0.22);
+      border-radius: 1px;
+      pointer-events: none;
+    }
+  }
+
+  :deep(.ant-tabs-tab-btn) {
+    color: transparent !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+    min-height: 14px;
+    padding: 0 4px !important;
+    display: inline-block;
+    border-radius: 4px;
+    background: linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.06) 0%,
+      rgba(0, 0, 0, 0.11) 50%,
+      rgba(0, 0, 0, 0.06) 100%
+    );
+    background-size: 200% 100%;
+    animation: device-detail-tab-shimmer 1.35s ease-in-out infinite;
+  }
+
+  :deep(.ant-tabs-tab:nth-child(1) .ant-tabs-tab-btn) {
+    min-width: 52px;
+  }
+  :deep(.ant-tabs-tab:nth-child(2) .ant-tabs-tab-btn) {
+    min-width: 72px;
+  }
+  :deep(.ant-tabs-tab:nth-child(3) .ant-tabs-tab-btn) {
+    min-width: 64px;
+  }
+  :deep(.ant-tabs-tab:nth-child(4) .ant-tabs-tab-btn) {
+    min-width: 48px;
+  }
+  :deep(.ant-tabs-tab:nth-child(5) .ant-tabs-tab-btn) {
+    min-width: 80px;
+  }
+  :deep(.ant-tabs-tab:nth-child(6) .ant-tabs-tab-btn) {
+    min-width: 56px;
+  }
+  :deep(.ant-tabs-tab:nth-child(7) .ant-tabs-tab-btn) {
+    min-width: 68px;
+  }
+  :deep(.ant-tabs-tab:nth-child(8) .ant-tabs-tab-btn) {
+    min-width: 44px;
+  }
+  :deep(.ant-tabs-tab:nth-child(9) .ant-tabs-tab-btn) {
+    min-width: 76px;
+  }
+  :deep(.ant-tabs-tab:nth-child(10) .ant-tabs-tab-btn) {
+    min-width: 60px;
+  }
+  :deep(.ant-tabs-tab:nth-child(11) .ant-tabs-tab-btn) {
+    min-width: 52px;
+  }
+  :deep(.ant-tabs-tab:nth-child(12) .ant-tabs-tab-btn) {
+    min-width: 70px;
+  }
+
+  :deep(.ant-tabs-tab-active .ant-tabs-tab-btn) {
+    background: linear-gradient(
+      90deg,
+      rgba(22, 119, 255, 0.2) 0%,
+      rgba(22, 119, 255, 0.32) 50%,
+      rgba(22, 119, 255, 0.2) 100%
+    );
+    background-size: 200% 100%;
+  }
+
+  :deep(.ant-tabs-ink-bar) {
+    background: rgba(22, 119, 255, 0.5) !important;
   }
 }
 </style>
