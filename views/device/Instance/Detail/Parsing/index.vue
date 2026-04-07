@@ -7,18 +7,22 @@
     <template v-else>
     <div class="parsing-type-bar">
       <div class="parsing-type-bar-left">
-        <a-dropdown trigger="click" placement="bottomLeft">
+        <a-dropdown v-if="parsingCodecMenuItems.length > 1" trigger="click" placement="bottomLeft">
           <button type="button" class="parsing-type-trigger">
             <span class="parsing-type-trigger-text">{{ currentTypeLabel }}</span>
             <AIcon type="DownOutlined" class="parsing-type-trigger-caret" />
           </button>
           <template #overlay>
             <a-menu :selected-keys="[ruleType]" class="parsing-type-menu" @click="onRuleTypeMenuClick">
-              <a-menu-item key="javascript">脚本解析</a-menu-item>
-              <a-menu-item key="modbus">Modbus 映射</a-menu-item>
+              <a-menu-item v-for="opt in parsingCodecMenuItems" :key="opt.ruleKey">
+                {{ opt.label }}
+              </a-menu-item>
             </a-menu>
           </template>
         </a-dropdown>
+        <div v-else class="parsing-type-trigger parsing-type-trigger-static">
+          <span class="parsing-type-trigger-text">{{ currentTypeLabel }}</span>
+        </div>
         <span class="parsing-type-desc">{{ currentTypeDesc }}</span>
       </div>
       <div class="parsing-type-bar-actions">
@@ -82,7 +86,7 @@ import { ReloadOutlined, SaveOutlined } from '@ant-design/icons-vue';
 import { useInstanceStore } from '../../../../../store/instance';
 import ModbusMapping from './ModbusMapping.vue';
 import ScriptTransparentCodec from './ScriptTransparentCodec.vue';
-import { deviceCode } from '../../../../../api/instance';
+import { deviceCode, getTransparentCodecSupports } from '../../../../../api/instance';
 
 const instanceStore = useInstanceStore();
 
@@ -114,9 +118,15 @@ function onScriptSave() {
   scriptCodecRef.value?.saveCodec();
 }
 
-/** 与透明消息编解码配置 provider 一致：jsr223 / modbus */
+/** 与透明消息编解码配置 provider 一致：jsr223 → 脚本页、modbus → Modbus 页 */
 const ruleType = ref<'javascript' | 'modbus'>('javascript');
 const codecState = ref<Record<string, any> | null>(null);
+
+/** 后端 provider id → 本页已实现的解析方式（仅展示有对应 UI 的项） */
+const PROVIDER_UI_RULE: Record<string, 'javascript' | 'modbus'> = {
+  jsr223: 'javascript',
+  modbus: 'modbus',
+};
 
 /** 面向使用人员的说明（不涉及实现细节） */
 const TYPE_DESC: Record<'javascript' | 'modbus', string> = {
@@ -128,6 +138,56 @@ const TYPE_LABEL: Record<'javascript' | 'modbus', string> = {
   javascript: '脚本解析',
   modbus: 'Modbus 映射',
 };
+
+/** 仅按后端返回的 provider id 过滤；展示名一律用前端 TYPE_LABEL */
+const parsingCodecSupports = ref<Array<{ id: string }>>([]);
+
+const parsingCodecMenuItems = computed(() =>
+  parsingCodecSupports.value.map((s) => {
+    const ruleKey = PROVIDER_UI_RULE[s.id]!;
+    return {
+      ruleKey,
+      label: TYPE_LABEL[ruleKey],
+    };
+  }),
+);
+
+function providerToRuleType(provider: string | undefined): 'javascript' | 'modbus' {
+  return provider === 'modbus' ? 'modbus' : 'javascript';
+}
+
+function pickRuleTypeFromProvider(
+  provider: string | undefined,
+  supports: Array<{ id: string }>,
+): 'javascript' | 'modbus' {
+  const preferred = providerToRuleType(provider);
+  const allowedIds = new Set(supports.map((s) => s.id));
+  const preferredProvider = preferred === 'modbus' ? 'modbus' : 'jsr223';
+  if (allowedIds.has(preferredProvider)) {
+    return preferred;
+  }
+  const first = supports[0]?.id;
+  if (first && PROVIDER_UI_RULE[first]) {
+    return PROVIDER_UI_RULE[first];
+  }
+  return 'javascript';
+}
+
+async function loadCodecSupports() {
+  try {
+    const res: any = await getTransparentCodecSupports();
+    const raw = res.status === 200 && Array.isArray(res.result) ? res.result : [];
+    const filtered = raw
+      .filter((s: any) => s?.id && PROVIDER_UI_RULE[s.id])
+      .map((s: any) => ({ id: String(s.id) }));
+    parsingCodecSupports.value =
+      filtered.length > 0
+        ? filtered
+        : [{ id: 'jsr223' }, { id: 'modbus' }];
+  } catch {
+    parsingCodecSupports.value = [{ id: 'jsr223' }, { id: 'modbus' }];
+  }
+}
 
 const currentTypeLabel = computed(() => TYPE_LABEL[ruleType.value]);
 const currentTypeDesc = computed(() => TYPE_DESC[ruleType.value]);
@@ -144,13 +204,13 @@ const getDeviceCode = async () => {
   const did = instanceStore.current?.id;
   if (!pid || !did) {
     codecState.value = null;
-    ruleType.value = 'javascript';
+    ruleType.value = pickRuleTypeFromProvider(undefined, parsingCodecSupports.value);
     return;
   }
   const res: any = await deviceCode(pid, did);
   if (res.status === 200) {
     codecState.value = res.result ?? null;
-    ruleType.value = res.result?.provider === 'modbus' ? 'modbus' : 'javascript';
+    ruleType.value = pickRuleTypeFromProvider(res.result?.provider, parsingCodecSupports.value);
   }
 };
 
@@ -163,6 +223,7 @@ async function loadParsingConfig() {
   }
   parsingInitializing.value = true;
   try {
+    await loadCodecSupports();
     await getDeviceCode();
   } finally {
     parsingInitializing.value = false;
@@ -260,6 +321,10 @@ watch(
 .parsing-type-trigger:focus-visible {
   outline: 2px solid rgba(65, 94, 209, 0.35);
   outline-offset: 1px;
+}
+
+.parsing-type-trigger-static {
+  cursor: default;
 }
 
 .parsing-type-menu {

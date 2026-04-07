@@ -597,6 +597,12 @@ export const getPropertiesList = (deviceId: string, property: string, data: Reco
 export const getProtocal = (id: string, transport: string) => request.get(`/protocol/${id}/transport/${transport}`)
 
 /**
+ * 获取透传消息支持的解析提供商（对应 TransparentMessageCodecController#getCodecs）
+ */
+export const getTransparentCodecSupports = () =>
+  request.post<Array<{ id: string; name: string }>>(`/device/transparent-codec/supports`)
+
+/**
  * 获取产品解析规则
  * @param productId
  * @returns
