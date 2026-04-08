@@ -11,13 +11,30 @@
       :scroll='{y : 450}'
     >
       <template #headerLeftRender>
-        <a-input-search
-          :placeholder="$t('Save.index.912481-5')"
-          style='width: 300px; margin-bottom: 10px'
-          @search='onSearch'
-          v-model:value='value'
-          :allowClear='true'
-        />
+        <div class='property-header-filters'>
+          <div v-if='showGroupSwitch' class='property-group-switch'>
+            <a-radio-group
+              v-model:value='_params.groupId'
+              size='small'
+              button-style='solid'
+            >
+              <a-radio-button
+                v-for='item in groupOptions'
+                :key='item.value'
+                :value='item.value'
+              >
+                {{ item.label }}（{{ item.count }}）
+              </a-radio-button>
+            </a-radio-group>
+          </div>
+          <a-input-search
+            :placeholder="$t('Save.index.912481-5')"
+            style='width: 300px'
+            @search='onSearch'
+            v-model:value='value'
+            :allowClear='true'
+          />
+        </div>
       </template>
       <template #card='slotProps'>
         <PropertyCard
@@ -140,11 +157,61 @@ const indicatorVisible = ref<boolean>(false) // 指标
 const loading = ref<boolean>(false)
 const propertyValue = ref<Record<string, any>>({})
 const _params = reactive({
-  name: ''
+  name: '',
+  groupId: '__all__'
 })
 const tableRef = ref()
 const subRef = ref()
 const metric = ref([])
+const ALL_GROUP_KEY = '__all__'
+const DEFAULT_GROUP_KEY = '__default__'
+
+type PropertyGroupOption = {
+  label: string
+  value: string
+  count: number
+}
+
+const getPropertyGroup = (item: Partial<PropertyData> = {}) => {
+  const expands = item?.expands || {}
+
+  return {
+    id: expands.groupId || DEFAULT_GROUP_KEY,
+    name: expands.groupName || $t('Running.Property.376017-3')
+  }
+}
+
+const propertyGroups = computed<PropertyGroupOption[]>(() => {
+  const groups = new Map<string, PropertyGroupOption>()
+
+  ;(_data.data || []).forEach((item: PropertyData) => {
+    const group = getPropertyGroup(item)
+    const current = groups.get(group.id)
+
+    if (current) {
+      current.count += 1
+    } else {
+      groups.set(group.id, {
+        label: group.name,
+        value: group.id,
+        count: 1
+      })
+    }
+  })
+
+  return [...groups.values()]
+})
+
+const groupOptions = computed<PropertyGroupOption[]>(() => [
+  {
+    label: $t('Running.Property.376017-2'),
+    value: ALL_GROUP_KEY,
+    count: (_data.data || []).length
+  },
+  ...propertyGroups.value
+])
+
+const showGroupSwitch = computed(() => propertyGroups.value.length > 1)
 
 // const list = ref<any[]>([]);
 
@@ -269,7 +336,11 @@ const subscribeProperty = () => {
 }
 
 const getDashboard = async () => {
-  if (!dataSource.value?.length) return
+  if (!dataSource.value?.length) {
+    subRef.value && subRef.value?.unsubscribe()
+    loading.value = false
+    return
+  }
   const param = [
     {
       dashboard: 'device',
@@ -316,8 +387,13 @@ const query = (params: Record<string, any>) =>
     const _from = params.pageIndex * params.pageSize
     const _to = (params.pageIndex + 1) * params.pageSize
     let arr = cloneDeep(_dataSource.value)
+    if (params?.groupId && params.groupId !== ALL_GROUP_KEY) {
+      arr = arr.filter((item: PropertyData) => {
+        return getPropertyGroup(item).id === params.groupId
+      })
+    }
     if (params?.name) {
-      const li = _dataSource.value.filter((i: any) => {
+      const li = arr.filter((i: any) => {
         return i?.name.indexOf(params.name) !== -1
       })
       arr = cloneDeep(li)
@@ -350,7 +426,19 @@ watch(
     if (newVal.length) {
       _dataSource.value = newVal as PropertyData[]
       _params.name = ''
+      const hasCurrentGroup = propertyGroups.value.some(
+        (item) => item.value === _params.groupId
+      )
+      if (_params.groupId !== ALL_GROUP_KEY && !hasCurrentGroup) {
+        _params.groupId = ALL_GROUP_KEY
+      }
       getMetric(newVal.map(i => i.id))
+      tableRef.value?.reload()
+    } else {
+      _dataSource.value = []
+      _params.name = ''
+      _params.groupId = ALL_GROUP_KEY
+      metric.value = []
       tableRef.value?.reload()
     }
   },
@@ -370,4 +458,32 @@ onUnmounted(() => {
 </script>
 
 <style scoped lang='less'>
+.property-header-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 10px;
+}
+
+.property-group-switch {
+  overflow-x: auto;
+  padding-right: 16px;
+
+  :deep(.ant-radio-group) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  :deep(.ant-radio-button-wrapper) {
+    border-inline-start-width: 1px;
+    border-radius: 16px;
+  }
+
+  :deep(.ant-radio-button-wrapper:not(:first-child)) {
+    &::before {
+      display: none;
+    }
+  }
+}
 </style>
