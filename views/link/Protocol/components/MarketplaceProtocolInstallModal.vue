@@ -4,6 +4,8 @@
     :title="title"
     width="960px"
     :mask-closable="false"
+    :closable="canCloseByCancel"
+    :keyboard="canCloseByCancel"
     :footer="null"
     destroy-on-close
     @cancel="handleClose"
@@ -17,6 +19,7 @@
           <MarketplaceResourcePicker
             v-model="selectedId"
             v-model:version="selectedVersion"
+            :default-keyword="defaultKeyword"
             panel-height="100%"
             enable-version-select
             :type-options="[{ label: typeLabel, value: protocolType }]"
@@ -46,10 +49,8 @@
           </div>
         </div>
         <div class="mp-install__actions">
-          <!-- 安装成功：不自动关闭，由用户选择返回或继续添加 -->
           <template v-if="installSucceededOnce && progressStatus === 'success' && !installing">
-            <a-button @click="handleClose">{{ backAfterSuccessText }}</a-button>
-            <a-button type="primary" @click="handleContinueAdd">{{ continueAddText }}</a-button>
+            <a-button type="primary" @click="handleSuccessConfirm">{{ confirmText }}</a-button>
           </template>
           <template v-else-if="progressStatus === 'exception'">
             <a-button @click="handleClose">{{ cancelText }}</a-button>
@@ -92,6 +93,12 @@ import {
   type ProgressStatePayload,
 } from '../../../../utils/streamCapabilityInstall'
 
+type MarketplaceInstallSuccessPayload = {
+  dataId?: string
+  installedResource?: Record<string, unknown>
+  upgraded: boolean
+}
+
 const props = withDefaults(
   defineProps<{
     visible: boolean
@@ -99,6 +106,8 @@ const props = withDefaults(
     protocolType?: string
     /** 透传安装/升级请求 body（如 name、description；编辑协议时含 id） */
     installPayload?: Record<string, unknown>
+    /** 打开时预填到能力搜索框中的关键字（编辑协议时可传 pkgId） */
+    defaultKeyword?: string
     /**
      * 从协议编辑页打开：主按钮文案为「确认」而非「安装」，且不出现「升级」字样；
      * 已安装资源时直接走升级流，不再弹出安装/升级二选一。
@@ -108,13 +117,14 @@ const props = withDefaults(
   {
     protocolType: 'protocol',
     installPayload: () => ({}),
+    defaultKeyword: '',
     protocolEditMode: false,
   },
 )
 
 const emit = defineEmits<{
   (e: 'update:visible', v: boolean): void
-  (e: 'success'): void
+  (e: 'success', payload?: MarketplaceInstallSuccessPayload): void
 }>()
 
 const { t } = useI18n()
@@ -130,12 +140,7 @@ const installText = computed(() =>
     ? t('Save.index.marketplaceInstallConfirm', '确认')
     : t('Save.index.marketplaceInstallBtn', '安装'),
 )
-const backAfterSuccessText = computed(() =>
-  t('Save.index.marketplaceInstallBackAfterSuccess', '返回'),
-)
-const continueAddText = computed(() =>
-  t('Save.index.marketplaceInstallContinueAdd', '继续添加'),
-)
+const confirmText = computed(() => t('Save.index.marketplaceInstallConfirm', '确认'))
 const retryPickText = computed(() =>
   t('Save.index.marketplaceInstallRetryPick', '重新选择'),
 )
@@ -160,16 +165,20 @@ const pickerLabels = computed(() => ({
   noResourceTypes: t('Save.index.marketplacePickerNoTypes', '暂无类型'),
   version: t('Save.index.marketplaceInstallVersion', '版本'),
   versionPlaceholder: t('Save.index.marketplaceInstallVersionPh', '请选择版本'),
-  viewReleaseNotes: t('Save.index.marketplaceViewReleaseNotes', '查看发布说明'),
-  releaseNotesTitle: t('Save.index.marketplaceReleaseNotesTitle', '发布说明'),
+  viewReleaseNotes: t('Save.index.marketplaceViewReleaseNotes', '查看版本说明'),
+  releaseNotesTitle: t('Save.index.marketplaceReleaseNotesTitle', '版本说明'),
+  viewDocument: t('Save.index.marketplaceViewDocument', '查看文档'),
+  resourceDocumentTitle: t('Save.index.marketplaceResourceDocumentTitle', '资源文档'),
+  versionSummary: t('Save.index.marketplaceVersionSummary', '版本摘要'),
 }))
 
 const step = ref<'pick' | 'progress'>('pick')
 const selectedId = ref<string | undefined>(undefined)
 const selectedVersion = ref<string | undefined>(undefined)
 const installing = ref(false)
-/** 本次弹窗内是否至少成功完成过一次安装（关闭或点「返回」时通知父级刷新） */
+/** 本次弹窗内是否已完成安装/升级，确认后再将结果回传给调用方 */
 const installSucceededOnce = ref(false)
+const lastSuccessPayload = ref<MarketplaceInstallSuccessPayload>()
 const logLines = ref<string[]>([])
 const progressPercent = ref(0)
 const progressStatus = ref<'active' | 'success' | 'exception' | 'normal'>('active')
@@ -181,6 +190,9 @@ const installChoiceVisible = ref(false)
 const canInstall = computed(
   () => Boolean(selectedId.value && selectedVersion.value && !installing.value),
 )
+const canCloseByCancel = computed(
+  () => !installing.value && !(installSucceededOnce.value && progressStatus.value === 'success'),
+)
 
 const hasInstalledResources = computed(() => installedResources.value.length > 0)
 
@@ -189,6 +201,39 @@ function unwrapInstalledList(res: any): any[] {
   if (res?.success === false) return []
   const r = res?.result ?? res?.data
   return Array.isArray(r) ? r : []
+}
+
+function extractInstalledResource(state?: ProgressStatePayload): Record<string, unknown> | undefined {
+  if (!state) return undefined
+  const candidates = [state.data, state.extra]
+  for (const candidate of candidates) {
+    if (candidate && typeof candidate === 'object' && !Array.isArray(candidate)) {
+      return candidate as Record<string, unknown>
+    }
+  }
+  return undefined
+}
+
+function extractInstalledDataId(state?: ProgressStatePayload): string | undefined {
+  const installedResource = extractInstalledResource(state)
+  const raw =
+    installedResource?.dataId ??
+    installedResource?.id ??
+    ((installedResource?.data as Record<string, unknown> | undefined)?.dataId as string | undefined) ??
+    ((installedResource?.result as Record<string, unknown> | undefined)?.dataId as string | undefined)
+
+  return raw != null && raw !== '' ? String(raw) : undefined
+}
+
+function buildSuccessPayload(
+  state: ProgressStatePayload | undefined,
+  upgraded: boolean,
+): MarketplaceInstallSuccessPayload {
+  return {
+    dataId: extractInstalledDataId(state),
+    installedResource: extractInstalledResource(state),
+    upgraded,
+  }
 }
 
 watch(
@@ -201,6 +246,7 @@ watch(
       installedResources.value = []
       installChoiceVisible.value = false
       installSucceededOnce.value = false
+      lastSuccessPayload.value = undefined
       logLines.value = []
       progressPercent.value = 0
       progressStatus.value = 'active'
@@ -244,6 +290,7 @@ async function startInstall(useUpgrade: boolean) {
   logLines.value = []
   progressPercent.value = 0
   progressStatus.value = 'active'
+  lastSuccessPayload.value = undefined
   let finished = false
   const stream = useUpgrade ? streamCapabilityUpgrade : streamCapabilityInstall
   try {
@@ -262,6 +309,7 @@ async function startInstall(useUpgrade: boolean) {
           progressPercent.value = 100
           progressStatus.value = 'success'
           installSucceededOnce.value = true
+          lastSuccessPayload.value = buildSuccessPayload(state, useUpgrade)
           onlyMessage(t('Save.index.marketplaceInstallOk', '安装成功'), 'success')
         }
         if (st === 'error') {
@@ -274,6 +322,7 @@ async function startInstall(useUpgrade: boolean) {
       progressPercent.value = 100
       progressStatus.value = 'success'
       installSucceededOnce.value = true
+      lastSuccessPayload.value = buildSuccessPayload(undefined, useUpgrade)
       onlyMessage(t('Save.index.marketplaceInstallOk', '安装成功'), 'success')
     }
   } catch (e: any) {
@@ -285,28 +334,23 @@ async function startInstall(useUpgrade: boolean) {
   }
 }
 
-/** 继续从能力市场选择并安装/升级其他协议，不关闭弹窗、不通知父级 */
-function handleContinueAdd() {
-  step.value = 'pick'
-  selectedId.value = undefined
-  selectedVersion.value = undefined
-  installedResources.value = []
-  logLines.value = []
-  progressPercent.value = 0
-  progressStatus.value = 'active'
-}
-
 function backToPick() {
   step.value = 'pick'
   progressPercent.value = 0
   progressStatus.value = 'active'
 }
 
-function handleClose() {
-  if (installSucceededOnce.value) {
-    emit('success')
-  }
+function handleSuccessConfirm() {
+  const payload = lastSuccessPayload.value
   installSucceededOnce.value = false
+  lastSuccessPayload.value = undefined
+  emit('update:visible', false)
+  emit('success', payload)
+}
+
+function handleClose() {
+  installSucceededOnce.value = false
+  lastSuccessPayload.value = undefined
   emit('update:visible', false)
 }
 </script>

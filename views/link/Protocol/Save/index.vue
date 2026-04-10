@@ -78,12 +78,20 @@
                     @change="handleFileUploadChange"
                 />
             </a-form-item>
-            <a-form-item v-else :label="$t('Save.index.marketplaceInstallSection', '能力市场')">
-                <p v-if="typeHint('marketplace')" class="protocol-type-hint">
-                    {{ typeHint('marketplace') }}
-                </p>
+            <a-form-item v-else class="marketplace-install-item">
+                <div v-if="protocolId && hasMarketplacePackage" class="marketplace-package-panel">
+                    <div class="marketplace-package-panel__label">
+                        {{ $t('Save.index.marketplaceCurrentPackage', '当前协议包') }}
+                    </div>
+                    <div class="marketplace-package-panel__value">
+                        <span class="marketplace-package-panel__name">{{ marketplacePackageName }}</span>
+                        <span v-if="marketplacePackageVersion" class="marketplace-package-panel__version">
+                            {{ marketplacePackageVersion }}
+                        </span>
+                    </div>
+                </div>
                 <a-button type="primary" class="marketplace-open-btn" @click="openMarketplaceInstall">
-                    {{ $t('Save.index.marketplaceInstallOpenBtn', '从能力市场安装') }}
+                    {{ $t('Save.index.marketplaceInstallOpenBtn', '从能力市场安装协议包') }}
                 </a-button>
             </a-form-item>
             <a-form-item :label="$t('Save.index.903552-9')" name="description">
@@ -115,6 +123,7 @@
         v-model:visible="marketplaceInstallVisible"
         :install-payload="installPayload"
         :protocol-edit-mode="!!protocolId"
+        :default-keyword="marketplacePackageId"
         @success="onMarketplaceInstallSuccess"
     />
 </template>
@@ -131,6 +140,7 @@ import { useTabSaveSuccessBack } from '@jetlinks-web-core/hooks'
 import { useProtocolTypeProviders } from '../useProtocolTypeProviders';
 import { protocolTypeFontIcon } from '../protocolTypeAssets';
 import { PROTOCOL_TYPE_ORDER } from '../protocolTypes';
+import { cloneDeep } from 'lodash-es';
 
 const { t: $t } = useI18n();
 const loading = ref(false);
@@ -144,11 +154,30 @@ const props = defineProps({
 });
 const emit = defineEmits(['change']);
 
-const protocolId = computed(() => (props.data as any)?.id as string | undefined);
+const editingRecord = ref<Record<string, any>>({});
+const protocolId = computed(() => editingRecord.value?.id as string | undefined);
 
 const { supportedTypes, typeLabel, coerceType, typeHint } = useProtocolTypeProviders();
 
 const marketplaceInstallVisible = ref(false);
+const marketplacePackageId = computed(() => {
+    if (!protocolId.value) return '';
+    const pkgId = formData.value.configuration?.pkgId;
+    return typeof pkgId === 'string' ? pkgId.trim() : '';
+});
+const marketplacePackageName = computed(() => {
+    if (!protocolId.value) return '';
+    const pkgName = formData.value.configuration?.pkgName;
+    return typeof pkgName === 'string' ? pkgName.trim() : '';
+});
+const marketplacePackageVersion = computed(() => {
+    if (!protocolId.value) return '';
+    const pkgVersion = formData.value.configuration?.pkgVersion;
+    return typeof pkgVersion === 'string' ? pkgVersion.trim() : '';
+});
+const hasMarketplacePackage = computed(
+    () => !!(marketplacePackageName.value || marketplacePackageVersion.value),
+);
 
 const installPayload = computed(() => ({
     name: formData.value.name,
@@ -184,6 +213,46 @@ function currentTypeId(): string | undefined {
         return typeof x === 'string' ? x : x?.value;
     }
     return undefined;
+}
+
+function createEmptyFormData(): FormDataType {
+    return {
+        type: 'jar',
+        name: '',
+        configuration: {
+            location: '',
+        },
+        description: '',
+    };
+}
+
+function normalizeTypeForForm(rawType: unknown): FormDataType['type'] {
+    if (Array.isArray(rawType)) {
+        return rawType
+            .map((item: any) => (typeof item === 'string' ? item : item?.value))
+            .filter((item) => item != null);
+    }
+    if (typeof rawType === 'string') {
+        return rawType;
+    }
+    if ((rawType as any)?.value != null) {
+        return String((rawType as any).value);
+    }
+    return 'jar';
+}
+
+function applyProtocolData(value?: Record<string, any>) {
+    const nextRecord = cloneDeep(value || {});
+    editingRecord.value = nextRecord;
+    formData.value = {
+        ...createEmptyFormData(),
+        ...nextRecord,
+        type: normalizeTypeForForm(nextRecord?.type),
+        configuration: {
+            location: '',
+            ...(nextRecord?.configuration || {}),
+        },
+    };
 }
 
 const isMarketplaceType = computed(() => currentTypeId() === 'marketplace');
@@ -312,15 +381,7 @@ const handleCancel = () => {
 watch(
     () => props.data,
     (value: any) => {
-        if (value?.id) {
-            formData.value = value as FormDataType;
-            const t = value.type;
-            if (Array.isArray(t) && t?.[0]?.value != null) {
-                formData.value.type = value.type.map((i: any) => i.value);
-            } else if (typeof t === 'string') {
-                formData.value.type = t;
-            }
-        }
+        applyProtocolData(value);
     },
     { immediate: true, deep: true },
 );
@@ -374,8 +435,51 @@ watch(
 .protocol-type-inline-icon {
     font-size: 16px;
 }
+.marketplace-install-item :deep(.ant-form-item-control-input-content) {
+    display: flex;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+}
+.marketplace-package-panel {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(22, 119, 255, 0.12);
+    background: linear-gradient(180deg, rgba(22, 119, 255, 0.06), rgba(22, 119, 255, 0.02));
+}
+.marketplace-package-panel__label {
+    margin-bottom: 6px;
+    color: rgba(0, 0, 0, 0.45);
+    font-size: 12px;
+    line-height: 1.2;
+}
+.marketplace-package-panel__value {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+.marketplace-package-panel__name {
+    color: rgba(0, 0, 0, 0.88);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+.marketplace-package-panel__version {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(22, 119, 255, 0.08);
+    color: #0958d9;
+    font-size: 12px;
+    line-height: 18px;
+}
 .marketplace-open-btn {
-    margin-top: 4px;
+    margin-top: 0;
+    display: inline-flex;
+    align-items: center;
 }
 .form {
     .form-upload-button {

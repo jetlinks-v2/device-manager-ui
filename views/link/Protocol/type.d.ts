@@ -3,6 +3,9 @@ export interface FormDataType {
     name: string;
     configuration: {
         location: string;
+        pkgId?: string;
+        pkgName?: string;
+        pkgVersion?: string;
     };
     description: string;
 }
