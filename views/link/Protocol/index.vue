@@ -79,16 +79,18 @@
                                             >
                                                 <a-tooltip>
                                                     <template #title>{{
-                                                        typeLabel(slotProps.type)
+                                                        typeLabel(normalizeRowType(slotProps.type))
                                                     }}</template>
                                                     <span class="protocol-type-cell-inner">
-                                                        <img
-                                                            v-if="typeIconUrl(slotProps.type)"
-                                                            class="protocol-type-icon"
-                                                            :src="typeIconUrl(slotProps.type)"
-                                                            alt=""
+                                                        <AIcon
+                                                            :type="
+                                                                protocolTypeFontIcon(
+                                                                    normalizeRowType(slotProps.type),
+                                                                )
+                                                            "
+                                                            class="protocol-type-font-icon"
                                                         />
-                                                        {{ typeLabel(slotProps.type) }}
+                                                        {{ typeLabel(normalizeRowType(slotProps.type)) }}
                                                     </span>
                                                 </a-tooltip>
                                             </div>
@@ -158,9 +160,25 @@ import { cloneDeep } from 'lodash-es';
 import { useI18n } from 'vue-i18n';
 import { computed } from 'vue';
 import { useProtocolTypeProviders } from './useProtocolTypeProviders';
+import { protocolTypeFontIcon } from './protocolTypeAssets';
 
 const { t: $t } = useI18n();
-const { typeFilterOptions, typeLabel, typeIconUrl } = useProtocolTypeProviders();
+const { typeFilterOptions, typeLabel } = useProtocolTypeProviders();
+
+/** 与 Save 表单一致：列表行 type 可能为 string / 数组 / { value } */
+function normalizeRowType(raw: unknown): string | undefined {
+    if (raw == null || raw === '') return undefined;
+    if (typeof raw === 'string') return raw;
+    if (Array.isArray(raw) && raw.length) {
+        const x = raw[0] as any;
+        return typeof x === 'string' ? x : x?.value != null ? String(x.value) : undefined;
+    }
+    if (typeof raw === 'object' && (raw as any)?.value != null) {
+        return String((raw as any).value);
+    }
+    return String(raw);
+}
+
 const tableRef = ref<Record<string, any>>({});
 const params = ref<Record<string, any>>({});
 const route = useRoute();
@@ -314,11 +332,10 @@ const handleSearch = (e: any) => {
         gap: 6px;
         max-width: 100%;
     }
-    .protocol-type-icon {
-        width: 18px;
-        height: 18px;
-        object-fit: contain;
+    .protocol-type-font-icon {
+        font-size: 16px;
         flex-shrink: 0;
+        color: rgba(0, 0, 0, 0.65);
     }
 }
 </style>
