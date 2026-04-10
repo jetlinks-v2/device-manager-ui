@@ -1,0 +1,369 @@
+<template>
+  <a-modal
+    :open="visible"
+    :title="title"
+    width="960px"
+    :mask-closable="false"
+    :footer="null"
+    destroy-on-close
+    @cancel="handleClose"
+  >
+    <div class="mp-install">
+      <div v-if="step === 'pick'" class="mp-install__pick">
+        <a-alert type="info" show-icon class="mp-install__tip">
+          <template #message>{{ tip }}</template>
+        </a-alert>
+        <div class="mp-install__picker-wrap">
+          <MarketplaceResourcePicker
+            v-model="selectedId"
+            v-model:version="selectedVersion"
+            panel-height="100%"
+            enable-version-select
+            :type-options="[{ label: typeLabel, value: protocolType }]"
+            :show-type-tabs="false"
+            :default-type="protocolType"
+            selection-mode="single"
+            :labels="pickerLabels"
+          />
+        </div>
+        <div class="mp-install__actions">
+          <a-button @click="handleClose">{{ cancelText }}</a-button>
+          <a-button
+            type="primary"
+            :disabled="!canInstall"
+            :loading="installing"
+            @click="onClickInstallOrPrompt"
+          >
+            {{ installText }}
+          </a-button>
+        </div>
+      </div>
+      <div v-else class="mp-install__progress">
+        <a-progress :percent="progressPercent" :status="progressStatus" />
+        <div class="mp-install__log-wrap">
+          <div class="mp-install__log">
+            <div v-for="(line, i) in logLines" :key="i" class="mp-install__log-line">{{ line }}</div>
+          </div>
+        </div>
+        <div class="mp-install__actions">
+          <!-- 安装成功：不自动关闭，由用户选择返回或继续添加 -->
+          <template v-if="installSucceededOnce && progressStatus === 'success' && !installing">
+            <a-button @click="handleClose">{{ backAfterSuccessText }}</a-button>
+            <a-button type="primary" @click="handleContinueAdd">{{ continueAddText }}</a-button>
+          </template>
+          <template v-else-if="progressStatus === 'exception'">
+            <a-button @click="handleClose">{{ cancelText }}</a-button>
+            <a-button type="primary" @click="backToPick">{{ retryPickText }}</a-button>
+          </template>
+          <template v-else>
+            <a-button :disabled="installing" @click="handleClose">{{ cancelText }}</a-button>
+          </template>
+        </div>
+      </div>
+    </div>
+  </a-modal>
+
+  <a-modal
+    v-model:open="installChoiceVisible"
+    :title="choiceTitle"
+    :mask-closable="false"
+    :footer="null"
+    width="480px"
+    @cancel="installChoiceVisible = false"
+  >
+    <p class="mp-install__choice-msg">{{ choiceMessage }}</p>
+    <div class="mp-install__choice-actions">
+      <a-button @click="installChoiceVisible = false">{{ choiceCancel }}</a-button>
+      <a-button :loading="installing" @click="runInstallStream(false)">{{ choiceInstall }}</a-button>
+      <a-button type="primary" :loading="installing" @click="runInstallStream(true)">{{ choiceUpgrade }}</a-button>
+    </div>
+  </a-modal>
+</template>
+
+<script setup lang="ts">
+import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { onlyMessage } from '@jetlinks-web/utils'
+import { MarketplaceResourcePicker } from '@jetlinks-web-core/components/MarketplaceResourcePicker'
+import { listInstalledMarketplaceResources } from '../../../../api/link/protocol'
+import {
+  streamCapabilityInstall,
+  streamCapabilityUpgrade,
+  type ProgressStatePayload,
+} from '../../../../utils/streamCapabilityInstall'
+
+const props = withDefaults(
+  defineProps<{
+    visible: boolean
+    /** 能力市场资源类型，协议固定为 protocol */
+    protocolType?: string
+    /** 透传安装/升级请求 body（如 name、description；编辑协议时含 id） */
+    installPayload?: Record<string, unknown>
+    /**
+     * 从协议编辑页打开：主按钮文案为「确认」而非「安装」，且不出现「升级」字样；
+     * 已安装资源时直接走升级流，不再弹出安装/升级二选一。
+     */
+    protocolEditMode?: boolean
+  }>(),
+  {
+    protocolType: 'protocol',
+    installPayload: () => ({}),
+    protocolEditMode: false,
+  },
+)
+
+const emit = defineEmits<{
+  (e: 'update:visible', v: boolean): void
+  (e: 'success'): void
+}>()
+
+const { t } = useI18n()
+
+const title = computed(() => t('Save.index.marketplaceInstallTitle', '从能力市场安装协议'))
+const tip = computed(() =>
+  t('Save.index.marketplaceInstallTip', '请选择协议能力并选择版本后安装'),
+)
+const typeLabel = computed(() => t('Save.index.marketplaceInstallTypeLabel', '协议'))
+const cancelText = computed(() => t('Save.index.903552-11'))
+const installText = computed(() =>
+  props.protocolEditMode
+    ? t('Save.index.marketplaceInstallConfirm', '确认')
+    : t('Save.index.marketplaceInstallBtn', '安装'),
+)
+const backAfterSuccessText = computed(() =>
+  t('Save.index.marketplaceInstallBackAfterSuccess', '返回'),
+)
+const continueAddText = computed(() =>
+  t('Save.index.marketplaceInstallContinueAdd', '继续添加'),
+)
+const retryPickText = computed(() =>
+  t('Save.index.marketplaceInstallRetryPick', '重新选择'),
+)
+const choiceTitle = computed(() =>
+  t('Save.index.marketplaceInstallChoiceTitle', '检测到已安装资源'),
+)
+const choiceMessage = computed(() =>
+  t(
+    'Save.index.marketplaceInstallChoiceMsg',
+    '当前能力在本地已有安装记录，请选择重新安装或升级到所选版本。',
+  ),
+)
+const choiceCancel = computed(() => t('Save.index.marketplaceInstallChoiceCancel', '取消'))
+const choiceInstall = computed(() => t('Save.index.marketplaceInstallChoiceInstall', '安装'))
+const choiceUpgrade = computed(() => t('Save.index.marketplaceInstallChoiceUpgrade', '升级'))
+
+const pickerLabels = computed(() => ({
+  all: t('Save.index.marketplacePickerAll', '全部'),
+  tags: t('Save.index.marketplacePickerTags', '标签'),
+  searchPlaceholder: t('Save.index.marketplacePickerSearch', '搜索'),
+  empty: t('Save.index.marketplacePickerEmpty', '暂无能力'),
+  noResourceTypes: t('Save.index.marketplacePickerNoTypes', '暂无类型'),
+  version: t('Save.index.marketplaceInstallVersion', '版本'),
+  versionPlaceholder: t('Save.index.marketplaceInstallVersionPh', '请选择版本'),
+  viewReleaseNotes: t('Save.index.marketplaceViewReleaseNotes', '查看发布说明'),
+  releaseNotesTitle: t('Save.index.marketplaceReleaseNotesTitle', '发布说明'),
+}))
+
+const step = ref<'pick' | 'progress'>('pick')
+const selectedId = ref<string | undefined>(undefined)
+const selectedVersion = ref<string | undefined>(undefined)
+const installing = ref(false)
+/** 本次弹窗内是否至少成功完成过一次安装（关闭或点「返回」时通知父级刷新） */
+const installSucceededOnce = ref(false)
+const logLines = ref<string[]>([])
+const progressPercent = ref(0)
+const progressStatus = ref<'active' | 'success' | 'exception' | 'normal'>('active')
+
+/** MarketplaceClientController#listInstalled 返回的已安装资源 */
+const installedResources = ref<any[]>([])
+const installChoiceVisible = ref(false)
+
+const canInstall = computed(
+  () => Boolean(selectedId.value && selectedVersion.value && !installing.value),
+)
+
+const hasInstalledResources = computed(() => installedResources.value.length > 0)
+
+function unwrapInstalledList(res: any): any[] {
+  if (Array.isArray(res)) return res
+  if (res?.success === false) return []
+  const r = res?.result ?? res?.data
+  return Array.isArray(r) ? r : []
+}
+
+watch(
+  () => props.visible,
+  (v) => {
+    if (v) {
+      step.value = 'pick'
+      selectedId.value = undefined
+      selectedVersion.value = undefined
+      installedResources.value = []
+      installChoiceVisible.value = false
+      installSucceededOnce.value = false
+      logLines.value = []
+      progressPercent.value = 0
+      progressStatus.value = 'active'
+    }
+  },
+)
+
+watch(selectedId, async (capId) => {
+  installedResources.value = []
+  if (!capId) return
+  try {
+    const res: any = await listInstalledMarketplaceResources(props.protocolType, capId, [])
+    installedResources.value = unwrapInstalledList(res)
+  } catch {
+    installedResources.value = []
+  }
+})
+
+function onClickInstallOrPrompt() {
+  if (!selectedId.value || !selectedVersion.value) return
+  if (props.protocolEditMode) {
+    runInstallStream(hasInstalledResources.value)
+    return
+  }
+  if (hasInstalledResources.value) {
+    installChoiceVisible.value = true
+    return
+  }
+  runInstallStream(false)
+}
+
+function runInstallStream(useUpgrade: boolean) {
+  installChoiceVisible.value = false
+  startInstall(useUpgrade)
+}
+
+async function startInstall(useUpgrade: boolean) {
+  if (!selectedId.value || !selectedVersion.value) return
+  installing.value = true
+  step.value = 'progress'
+  logLines.value = []
+  progressPercent.value = 0
+  progressStatus.value = 'active'
+  let finished = false
+  const stream = useUpgrade ? streamCapabilityUpgrade : streamCapabilityInstall
+  try {
+    await stream(
+      selectedId.value,
+      selectedVersion.value,
+      { ...(props.installPayload || {}) },
+      (state: ProgressStatePayload) => {
+        const st = String(state.type || '').toLowerCase() as ProgressStatePayload['type']
+        if (state.message) logLines.value.push(state.message)
+        if (st === 'progress') {
+          progressPercent.value = Math.min(95, progressPercent.value + 5)
+        }
+        if (st === 'success' && !finished) {
+          finished = true
+          progressPercent.value = 100
+          progressStatus.value = 'success'
+          installSucceededOnce.value = true
+          onlyMessage(t('Save.index.marketplaceInstallOk', '安装成功'), 'success')
+        }
+        if (st === 'error') {
+          progressStatus.value = 'exception'
+          onlyMessage(state.message || 'error', 'error')
+        }
+      },
+    )
+    if (!finished && progressStatus.value === 'active') {
+      progressPercent.value = 100
+      progressStatus.value = 'success'
+      installSucceededOnce.value = true
+      onlyMessage(t('Save.index.marketplaceInstallOk', '安装成功'), 'success')
+    }
+  } catch (e: any) {
+    progressStatus.value = 'exception'
+    logLines.value.push(String(e?.message || e))
+    onlyMessage(e?.message || 'install failed', 'error')
+  } finally {
+    installing.value = false
+  }
+}
+
+/** 继续从能力市场选择并安装/升级其他协议，不关闭弹窗、不通知父级 */
+function handleContinueAdd() {
+  step.value = 'pick'
+  selectedId.value = undefined
+  selectedVersion.value = undefined
+  installedResources.value = []
+  logLines.value = []
+  progressPercent.value = 0
+  progressStatus.value = 'active'
+}
+
+function backToPick() {
+  step.value = 'pick'
+  progressPercent.value = 0
+  progressStatus.value = 'active'
+}
+
+function handleClose() {
+  if (installSucceededOnce.value) {
+    emit('success')
+  }
+  installSucceededOnce.value = false
+  emit('update:visible', false)
+}
+</script>
+
+<style scoped lang="less">
+.mp-install__pick {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.mp-install__tip {
+  margin-bottom: 0;
+}
+.mp-install__picker-wrap {
+  height: 520px;
+  max-height: min(520px, calc(100vh - 200px));
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 8px;
+  padding: 8px;
+  background: #fafafa;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.mp-install__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+.mp-install__log-wrap {
+  max-height: 360px;
+  margin-top: 12px;
+  overflow: auto;
+}
+.mp-install__log {
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.mp-install__log-line {
+  padding: 2px 0;
+  border-bottom: 1px dashed rgba(0, 0, 0, 0.06);
+}
+.mp-install__choice-msg {
+  margin: 0 0 8px;
+  color: rgba(0, 0, 0, 0.65);
+  line-height: 1.6;
+}
+.mp-install__choice-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+</style>

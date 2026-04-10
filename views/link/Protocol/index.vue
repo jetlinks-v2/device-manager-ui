@@ -74,12 +74,22 @@
                                             <div class="card-item-content-text">
                                                 {{ $t('Protocol.index.437945-1') }}
                                             </div>
-                                            <div class="card-item-content-text">
+                                            <div
+                                                class="card-item-content-text protocol-type-cell"
+                                            >
                                                 <a-tooltip>
                                                     <template #title>{{
-                                                        slotProps.type
+                                                        typeLabel(slotProps.type)
                                                     }}</template>
-                                                    {{ slotProps.type }}
+                                                    <span class="protocol-type-cell-inner">
+                                                        <img
+                                                            v-if="typeIconUrl(slotProps.type)"
+                                                            class="protocol-type-icon"
+                                                            :src="typeIconUrl(slotProps.type)"
+                                                            alt=""
+                                                        />
+                                                        {{ typeLabel(slotProps.type) }}
+                                                    </span>
                                                 </a-tooltip>
                                             </div>
                                         </a-col>
@@ -146,15 +156,18 @@ import Save from './Save/index.vue';
 import { link } from '../../../assets'
 import { cloneDeep } from 'lodash-es';
 import { useI18n } from 'vue-i18n';
+import { computed } from 'vue';
+import { useProtocolTypeProviders } from './useProtocolTypeProviders';
 
 const { t: $t } = useI18n();
+const { typeFilterOptions, typeLabel, typeIconUrl } = useProtocolTypeProviders();
 const tableRef = ref<Record<string, any>>({});
 const params = ref<Record<string, any>>({});
 const route = useRoute();
 const visible = ref(false);
 const current = ref({});
 
-const columns = [
+const columns = computed(() => [
     {
         title: 'ID',
         dataIndex: 'id',
@@ -181,16 +194,7 @@ const columns = [
         key: 'type',
         search: {
             type: 'select',
-            options: [
-                {
-                    label: 'jar',
-                    value: 'jar',
-                },
-                {
-                    label: 'local',
-                    value: 'local',
-                },
-            ],
+            options: typeFilterOptions.value,
         },
         scopedSlots: true,
     },
@@ -210,7 +214,7 @@ const columns = [
         width: 100,
         scopedSlots: true,
     },
-];
+]);
 
 const getActions = (
     data: Partial<Record<string, any>>,
@@ -303,6 +307,18 @@ const handleSearch = (e: any) => {
         overflow: hidden; //超出的文本隐藏
         text-overflow: ellipsis; //溢出用省略号显示
         white-space: nowrap; //溢出不换行
+    }
+    .protocol-type-cell-inner {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        max-width: 100%;
+    }
+    .protocol-type-icon {
+        width: 18px;
+        height: 18px;
+        object-fit: contain;
+        flex-shrink: 0;
     }
 }
 </style>
