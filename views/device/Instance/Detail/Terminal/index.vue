@@ -1,129 +1,137 @@
 <template>
-  <div style="height: 100%; background-color: #000">
-    <div class="terminal" ref="terminal"></div>
+  <div class="remote-access-wrap">
+    <div class="remote-access-side">
+      <a-menu
+        v-model:selectedKeys="modeSelectedKeys"
+        mode="inline"
+        class="mode-menu"
+        @select="onModeSelect"
+      >
+        <a-menu-item key="terminal">
+          <AIcon type="CodeOutlined" />
+          <span>{{ $t('Terminal.index.remote-0') }}</span>
+          <a-tooltip :title="$t('Terminal.index.remote-22')">
+            <AIcon type="QuestionCircleOutlined" class="mode-help-icon" />
+          </a-tooltip>
+        </a-menu-item>
+        <a-menu-item key="browser">
+          <AIcon type="GlobalOutlined" />
+          <span>{{ $t('Terminal.index.remote-1') }}</span>
+          <a-tooltip :title="$t('Terminal.index.remote-23')">
+            <AIcon type="QuestionCircleOutlined" class="mode-help-icon" />
+          </a-tooltip>
+        </a-menu-item>
+        <a-menu-item key="remoteDesktop">
+          <AIcon type="DesktopOutlined" />
+          <span>{{ $t('Terminal.index.remote-24') }}</span>
+          <a-tooltip :title="$t('Terminal.index.remote-25')">
+            <AIcon type="QuestionCircleOutlined" class="mode-help-icon" />
+          </a-tooltip>
+        </a-menu-item>
+      </a-menu>
+    </div>
+    <div class="remote-access-main">
+      <TerminalPanel
+        ref="terminalPanelRef"
+        v-show="accessMode === 'terminal'"
+        :device-id="current?.id || ''"
+        :online="current?.state?.value === 'online'"
+      />
+      <BrowserPanel v-show="accessMode === 'browser'" :device-id="current?.id || ''" />
+      <RemoteDesktopPanel
+        v-show="accessMode === 'remoteDesktop'"
+        :device-id="current?.id || ''"
+        :online="current?.state?.value === 'online'"
+      />
+    </div>
   </div>
 </template>
 
-<script setup name="Terminal">
-import {Terminal} from '@xterm/xterm';
-import '@xterm/xterm/css/xterm.css'
-import {FitAddon} from "@xterm/addon-fit/src/FitAddon";
-import {debounce} from "lodash-es";
-import {randomString, onlyMessage} from "@jetlinks-web/utils";
-import {useInstanceStore} from "../../../../../store/instance";
-import {storeToRefs} from "pinia";
-import {getWebSocket, closeWs} from "./websocket";
+<script setup lang="ts" name="Terminal">
+import { useInstanceStore } from "../../../../../store/instance";
+import { storeToRefs } from "pinia";
+import TerminalPanel from "./components/TerminalPanel.vue";
+import BrowserPanel from "./components/BrowserPanel.vue";
+import RemoteDesktopPanel from "./components/RemoteDesktopPanel.vue";
 
-const wsRef = ref()
-const wsInitRef = ref()
-const terminal = ref()
-const sessionId = ref()
-const fitAddon = new FitAddon();
 const instanceStore = useInstanceStore();
-const { current, tabActiveKey } = storeToRefs(instanceStore);
+const { current } = storeToRefs(instanceStore);
+const accessMode = ref<'terminal' | 'browser' | 'remoteDesktop'>('terminal')
+const modeSelectedKeys = ref<string[]>(['terminal'])
+const terminalPanelRef = ref<any>()
 
-let termRef
-const url = ref()
-
-const getData = (input = '') => {
-  const id = 'terminal_' + randomString(8);
-  const topic = '/xterm/data';
-
-  wsRef.value = getWebSocket(id, topic, {
-    sessionId: sessionId.value,
-    _ignore_complete: true,
-    input
-  }, current.value?.id).subscribe();
+const onModeSelect = ({ key }: { key: string }) => {
+  accessMode.value = key as 'terminal' | 'browser' | 'remoteDesktop'
 }
 
-const initTerm = () => {
-  termRef = new Terminal({
-    rendererType: "canvas", //渲染类型
-    convertEol: true, //启用时，光标将设置为下一行的开头
-    disableStdin: false, //是否应禁用输入。
-    cursorStyle: "underline", //光标样式
-    cursorBlink: true, //光标闪烁
-    cols: 100,
-    rows: 45,
-    theme: {
-      foreground: "#14e264", //字体
-      cursor: "help", //设置光标
-      lineHeight: 16
-    },
-    bellStyle: 'sound',
-    rightClickSelectsWord: true,
-    screenReaderMode: true,
-    allowProposedApi: true,
-    LogLevel: 'debug',
-  });
-
-  termRef.loadAddon(fitAddon);
-  termRef.open(terminal.value);
-  // 不能初始化的时候fit,需要等terminal准备就绪,可以设置延时操作
-  setTimeout(() => {
-    fitAddon.fit()
-  }, 5)
-  termRef.onData((data) => {
-    getData(data)
-  })
-}
-const getInitData = () => {
-  const id = 'terminal_' + randomString(8);
-  const topic = '/xterm/setup';
-  wsInitRef.value = getWebSocket(id, topic, {}, current.value?.id).subscribe((resp) => {
-    if (!resp.payload?.sessionId) {
-      onlyMessage($t('Terminal.index.488144-0'))
-    }
-    sessionId.value = resp.payload?.sessionId
-    termRef.write(resp.payload.output)
-  });
-}
-
-const fitTerm = () => {
-  fitAddon.fit()
-}
-const onResize = debounce(() => fitTerm(), 500)
-const onTerminalResize = () => {
-  window.addEventListener('resize', onResize)
-}
-const removeResizeListener = () => {
-  window.removeEventListener('resize', onResize)
-}
-
-onMounted(() => {
-  if(current.value?.state?.value === 'online') {
-    setTimeout(() => {
-      getInitData()
-    }, 500)
-    nextTick(() => {
-      initTerm()
-    })
+watch(accessMode, (val) => {
+  modeSelectedKeys.value = [val]
+  if (val === 'terminal') {
+    terminalPanelRef.value?.fitAfterVisible?.()
   }
-  onTerminalResize()
-});
-
-const unSub = () => {
-  if (wsRef.value) {
-    wsRef.value.unsubscribe()
-  }
-  if (wsInitRef.value) {
-    wsInitRef.value.unsubscribe()
-  }
-}
-
-onBeforeUnmount(() => {
-  unSub()
-  setTimeout(() => {
-    closeWs()
-  }, 1000)
-  removeResizeListener()
 })
-
 </script>
 
 <style scoped lang="less">
-.terminal {
-  width: 100%;
+.remote-access-wrap {
   height: 100%;
+  display: flex;
+  gap: 0;
+  border: 1px solid #f0f0f0;
+  border-radius: 12px;
+  border-right: none;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  overflow: hidden;
+}
+
+.remote-access-side {
+  width: 180px;
+  flex: 0 0 180px;
+  padding-top: 10px;
+  padding-left: 12px;
+  padding-right: 12px;
+  border-right: none;
+  position: relative;
+}
+
+.remote-access-side::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 1px;
+  height: 100%;
+  background: #f0f0f0;
+  pointer-events: none;
+}
+
+.mode-menu {
+  border-inline-end: none !important;
+}
+
+.mode-help-icon {
+  margin-left: 6px;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.35);
+}
+
+.remote-access-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 选中项融入左侧面板：蓝色底色 + 左内描边，不与菜单整体边界割裂 */
+.mode-menu :deep(.ant-menu-item) {
+  border-radius: 0;
+}
+
+.mode-menu :deep(.ant-menu-item-selected) {
+  background: rgba(22, 119, 255, 0.08) !important;
+  box-shadow: inset 3px 0 0 rgba(22, 119, 255, 0.85);
+  margin-right: -1px !important; /* 覆盖分割线，避免割裂感 */
+  padding-right: 0 !important;
 }
 </style>

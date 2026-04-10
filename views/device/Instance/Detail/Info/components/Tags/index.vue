@@ -1,20 +1,23 @@
 <template>
     <a-card class="tags-card" :bordered="true">
         <template #title>
-            <div class="card-title">
-                <AIcon type="TagsOutlined" class="card-icon" />
-                <span>{{$t('Operator.index.745665-15')}}</span>
+            <div class="card-title has-title-before">
+                <div
+                    class="title-before"
+                    aria-hidden="true"
+                />
+                <span class="card-title__text">{{$t('Operator.index.745665-15')}}</span>
+                <span class="card-title__actions">
+                    <j-permission-button
+                        type="link"
+                        class="edit-button"
+                        @click="visible = true"
+                        hasPermission="device/Instance:update"
+                    >
+                        <AIcon type="EditOutlined" />{{ $t('Product.index.660348-13') }}
+                    </j-permission-button>
+                </span>
             </div>
-        </template>
-        <template #extra>
-            <j-permission-button
-                type="link"
-                class="edit-button"
-                @click="visible = true"
-                hasPermission="device/Instance:update"
-            >
-                <AIcon type="EditOutlined" />{{ $t('Product.index.660348-13') }}
-            </j-permission-button>
         </template>
         <a-descriptions class="compact-descriptions" bordered :labelStyle="{width: '120px'}" size="small">
             <a-descriptions-item
@@ -122,14 +125,30 @@ const findName = (item: any) => {
 .card-title {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 8px;
     font-size: 15px;
     font-weight: 500;
     color: rgba(0, 0, 0, 0.85);
 
-    .card-icon {
-        color: #1890ff;
-        font-size: 16px;
+    &.has-title-before {
+        position: relative;
+        padding-left: 10px;
+
+        > .title-before {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 16px;
+            background-color: @primary-color;
+            border-radius: 0 3px 3px 0;
+        }
+
+        .card-title__actions {
+            flex-shrink: 0;
+        }
     }
 }
 

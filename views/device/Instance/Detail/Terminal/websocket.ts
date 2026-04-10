@@ -107,6 +107,18 @@ export const getWebSocket = (id: string, topic: string, parameter: Record<string
     }
 })
 
+export const sendWebSocketMessage = (id: string, topic: string, parameter: Record<string, any>, deviceId: string) => {
+    const msg = JSON.stringify({ id, topic, parameter, type: 'sub' })
+    const thisWs = initWebSocket(deviceId)
+    if (thisWs) {
+        if (thisWs.readyState === WebSocket.OPEN) {
+            thisWs.send(msg)
+        } else {
+            tempQueue.push(msg)
+        }
+    }
+}
+
 export const closeWs = () => {
     if (ws) {
         ws.close()

@@ -65,8 +65,6 @@
                     <div>
                       {{ item?.protocolDetail?.name }}
                     </div>
-                    <!-- 显示md文件内容 -->
-                    <div v-if="item?.transportDetail?.document" v-html="marked(item?.transportDetail?.document)"></div>
                   </div>
                   <div class="item-style">
                     <Title :data="$t('DeviceAccess.index.594346-7')"></Title>
@@ -134,8 +132,6 @@
             <div>
               {{ access?.protocolDetail?.name }}
             </div>
-            <!-- 显示md文件内容 -->
-            <div v-if="config?.document" v-html="markdownToHtml"></div>
           </div>
           <div class="item-style">
             <Title :data="$t('DeviceAccess.index.594346-7')"></Title>
@@ -235,60 +231,6 @@
           >{{ $t("DeviceAccess.index.594346-16") }}
         </j-permission-button>
       </a-col>
-      <a-col :span="12" v-if="config?.routes && config?.routes?.length > 0">
-        <div class="info">
-          <div>
-            <div style="font-weight: 600; margin: 0 0 10px 0">
-              {{
-                access?.provider === "mqtt-server-gateway" ||
-                access?.provider === "mqtt-client-gateway"
-                  ? "topic"
-                  : $t("DeviceAccess.index.594346-17")
-              }}
-            </div>
-            <a-table
-              :columns="config.id === 'MQTT' ? columnsMQTT : columnsHTTP"
-              :data-source="config?.routes"
-              :pagination="false"
-              :scroll="{ y: 500 }"
-            >
-              <template #bodyCell="{ text, column, record }">
-                <template v-if="column?.key === 'topic'">
-                  <a-tooltip placement="topLeft" :title="text">
-                    <div class="ellipsis-style">
-                      {{ text }}
-                    </div>
-                  </a-tooltip>
-                </template>
-                <template v-if="column?.key === 'stream'">
-                  <div>{{ getStream(record) }}</div>
-                </template>
-                <template v-if="column.key === 'description'">
-                  <a-tooltip placement="topLeft" :title="text">
-                    <div class="ellipsis-style">
-                      {{ text }}
-                    </div>
-                  </a-tooltip>
-                </template>
-                <template v-if="column?.key === 'address'">
-                  <a-tooltip placement="topLeft" :title="text">
-                    <div class="ellipsis-style">
-                      {{ text }}
-                    </div>
-                  </a-tooltip>
-                </template>
-                <template v-if="column?.key === 'example'">
-                  <a-tooltip placement="topLeft" :title="text">
-                    <div class="ellipsis-style">
-                      {{ text }}
-                    </div>
-                  </a-tooltip>
-                </template>
-              </template>
-            </a-table>
-          </div>
-        </div>
-      </a-col>
     </a-row>
   </div>
   <!-- 选择设备 -->
@@ -337,8 +279,6 @@ import {
 
 import Driver from "driver.js";
 import "driver.js/dist/driver.min.css";
-import { marked } from "marked";
-import type { TableColumnType } from "ant-design-vue";
 import { useMenuStore } from "@jetlinks-web-core/store/menu";
 import { map } from "lodash-es";
 import AccessModal from "./accessModal.vue";
@@ -361,13 +301,6 @@ const tableRef = ref();
 const formRef = ref([]);
 const menuStore = useMenuStore();
 const permissionStore = useAuthStore();
-const render = new marked.Renderer();
-marked.setOptions({
-  renderer: render,
-  gfm: true,
-  pedantic: false,
-  snaitize: false,
-});
 const visible = ref<boolean>(false);
 const access = ref<Record<string, any>>({});
 const accessId = ref<string>(productStore.current.accessId);
@@ -375,7 +308,6 @@ const config = ref<any>({});
 const metadata = ref<ConfigMetadata[]>([{ properties: [] }]);
 const dataSource = ref<string[]>([]);
 const storageList = ref<any[]>([]);
-const markdownToHtml = shallowRef("");
 const activeKey = ref('');
 const current = ref({
   id: productStore.current?.accessId,
@@ -522,67 +454,6 @@ const driver1 = new Driver({
   },
 });
 
-let columnsMQTT = ref(<TableColumnType>[]);
-const ColumnsMQTT = [
-  {
-    title: "topic",
-    dataIndex: "topic",
-    key: "topic",
-    ellipsis: true,
-  },
-  {
-    title: $t("DeviceAccess.index.594346-22"),
-    dataIndex: "stream",
-    key: "stream",
-    ellipsis: true,
-    align: "center",
-    width: 100,
-    scopedSlots: { customRender: "stream" },
-  },
-  {
-    title: $t("DeviceAccess.index.594346-23"),
-    dataIndex: "description",
-    key: "description",
-    ellipsis: true,
-  },
-];
-const columnsHTTP = ref(<TableColumnType>[]);
-const ColumnsHTTP = [
-  {
-    title: $t("DeviceAccess.index.594346-24"),
-    dataIndex: "address",
-    key: "address",
-    ellipsis: true,
-    // scopedSlots: { customRender: 'address' },
-  },
-  {
-    title: $t("DeviceAccess.index.594346-25"),
-    dataIndex: "example",
-    key: "example",
-    ellipsis: true,
-    // scopedSlots: { customRender: 'example' },
-  },
-  {
-    title: $t("DeviceAccess.index.594346-23"),
-    dataIndex: "description",
-    key: "description",
-    ellipsis: true,
-    // scopedSlots: { customRender: 'description' },
-  },
-];
-/**
- * 获取上下行数据
- */
-const getStream = (record: any) => {
-  const list = [];
-  if (record?.upstream) {
-    list.push($t("DeviceAccess.index.594346-26"));
-  }
-  if (record?.downstream) {
-    list.push($t("DeviceAccess.index.594346-27"));
-  }
-  return `${list.join(",")}`;
-};
 /**
  * 查询接入方式
  */
@@ -610,34 +481,6 @@ const queryAccessDetail = async (id: string) => {
   });
 };
 
-const handleColumns = () => {
-  const Group = {
-    title: $t("DeviceAccess.index.594346-28"),
-    dataIndex: "group",
-    key: "group",
-    ellipsis: true,
-    align: "center",
-    width: 100,
-    customCell: (record: any, rowIndex: number) => {
-      const obj = {
-        children: record,
-        rowSpan: 0,
-      };
-      const list = config.value?.routes || [];
-
-      const arr = list.filter((res: any) => res.group === record.group);
-
-      const isRowIndex =
-        rowIndex === 0 || list[rowIndex - 1].group !== record.group;
-      isRowIndex && (obj.rowSpan = arr.length);
-
-      return obj;
-    },
-  };
-  columnsMQTT.value = [Group, ...ColumnsMQTT];
-  columnsHTTP.value = [Group, ...ColumnsHTTP];
-};
-
 /**
  * 查询协议信息
  */
@@ -648,10 +491,6 @@ const getConfigDetail = (
   getConfigView(messageProtocol, transportProtocol).then((resp) => {
     if (resp.status === 200) {
       config.value = resp.result;
-      handleColumns();
-      if (config.value?.document) {
-        markdownToHtml.value = marked(config.value.document);
-      }
     }
   });
 };
@@ -735,17 +574,12 @@ const checkAccess = async (data: any) => {
   }
   if (data.access.channel === "plugin") {
     // 插件设备
-    markdownToHtml.value = "";
     productTypes.value = data.productTypes.map((item) => ({
       ...item,
       label: item.name,
       value: item.id,
     }));
   } else {
-    handleColumns();
-    markdownToHtml.value = config.value?.document
-      ? marked(config.value.document)
-      : "";
     getGuide(!!data.metadata.length); //
   }
   if (data.access?.transportDetail?.metadata) {

@@ -147,6 +147,15 @@ export const update = (data: Partial<DeviceInstance>) => data.id ? request.patch
 export const modify = (id: string, data: Partial<DeviceInstance>) => request.put(`/device-instance/${id}`, data)
 
 /**
+ * 根据设备ID修改设备信息（设备实例接口）
+ * @param deviceId 设备ID
+ * @param data 设备信息
+ * @returns
+ */
+export const modifyByDeviceId = (deviceId: string, data: Partial<DeviceInstance>) =>
+  request.put(`/device/instance/${deviceId}`, data)
+
+/**
  * 获取配置信息
  * @param id 设备id
  * @returns
@@ -198,7 +207,7 @@ export const configurationReset = (deviceId: string) => request.put(`/device-ins
  * @param data
  * @returns
  */
-export const getEventList = (deviceId: string, eventId: string, data: Record<string, any>) => request.post(`/device-instance/${deviceId}/event/${eventId}?format=true`, data)
+export const getEventList = (deviceId: string, eventId: string, data: Record<string, any>) => request.post(`/device-instance/${deviceId}/event/${eventId}`, data)
 
 /**
  * 设置属性至设备
@@ -406,12 +415,26 @@ export const getUnit = () => request.get<UnitType[]>(`/protocol/units`)
 export const executeFunctions = (deviceId: string, functionId: string, data: any) => request.post(`/device/invoked/${deviceId}/function/${functionId}`, data)
 
 /**
+ * 统一发送设备指令（READ_PROPERTY / WRITE_PROPERTY / INVOKE_FUNCTION 等）
+ * @param deviceId 设备ID
+ * @param data 指令报文
+ */
+export const sendDeviceMessage = (deviceId: string, data: Record<string, any>) =>
+  request.post(`/device/instance/${deviceId}/message`, data)
+
+/**
  * 读取属性
  * @param deviceId 设备id
  * @param data
  * @returns
  */
 export const readProperties = (deviceId: string, data: any) => request.post(`/device/instance/${deviceId}/properties/_read`, data)
+
+/**
+ * 获取设备会话信息
+ * @param deviceId 设备id
+ */
+export const getDeviceSessions = (deviceId: string) => request.get(`/device/instance/${deviceId}/sessions`)
 
 /**
  * 设置属性
@@ -574,6 +597,12 @@ export const getPropertiesList = (deviceId: string, property: string, data: Reco
 export const getProtocal = (id: string, transport: string) => request.get(`/protocol/${id}/transport/${transport}`)
 
 /**
+ * 获取透传消息支持的解析提供商（对应 TransparentMessageCodecController#getCodecs）
+ */
+export const getTransparentCodecSupports = () =>
+  request.post<Array<{ id: string; name: string }>>(`/device/transparent-codec/supports`)
+
+/**
  * 获取产品解析规则
  * @param productId
  * @returns
@@ -607,6 +636,12 @@ export const saveDeviceCode = (productId: string, deviceId: string, data: Record
  * @returns
  */
 export const testCode = (data: Record<string, unknown>) => request.post(`/device/transparent-codec/decode-test`, data)
+/**
+ * 编码测试（模拟平台 → 设备）
+ * @param data
+ * @returns
+ */
+export const encodeTest = (data: Record<string, unknown>) => request.post(`/device/transparent-codec/encode-test`, data)
 /**
  * 删除设备解析规则
  * @param productId
@@ -842,4 +877,3 @@ export const resetDevicePrincipal = (deviceId: string) => request.post(`/device/
  */
 export const deviceCloudSave = (data: any) =>
   request.post(`/edge/command/BindMasterDevice/_execute`, data)
-
