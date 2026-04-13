@@ -59,85 +59,63 @@
                         </a-form-item>
                     </a-col>
                 </a-row>
-                <a-form-item v-if="type === 'iot'" :label="$t('Save.index.912481-6')" name="classifiedId">
-                    <a-tree-select
-                        showSearch
-                        v-model:value="form.classifiedId"
-                        :placeholder="$t('Save.index.912481-7')"
-                        :tree-data="treeList"
-                        @change="valueChange"
-                        allow-clear
-                        :fieldNames="{
-                            label: 'name',
-                            value: 'id',
-                            children: 'children',
-                        }"
-                        :filterTreeNode="
-                            (v, option) => filterSelectNode(v, option, 'name')
-                        "
-                    >
-                        <template> </template>
-                    </a-tree-select>
-                </a-form-item>
-                <a-form-item v-if="type === 'iot'" :label="$t('Save.index.912481-8')" name="deviceType">
-                    <j-card-select
-                        v-model:value="form.deviceType"
-                        :options="deviceList"
-                        :disabled="productStore.detail?.accessId ? true : false"
-                        @change="changeDeviceType"
-                    >
-                        <template #itemRender="{node}">
-                            <div class="select-item">
-                                <div>
-                                    <span>{{ node.label }}</span>
-                                    <a-tooltip :title="node.tooltip"
-                                        ><AIcon
-                                            type="QuestionCircleOutlined"
-                                            style="margin-left: 2px"
-                                        />
-                                    </a-tooltip>
-                                </div>
-                                <img :src="node.iconUrl" alt="">
-                            </div>
-                        </template>
-                    </j-card-select>
-                </a-form-item>
-                <a-form-item v-if="type === 'edge'" :label="$t('device.ProductSave.101005-2')" name="type">
-                    <j-card-select
-                        :showImage="false"
-                        v-model:value="form.type"
-                        :disabled="isAdd === 2"
-                        :options="[
-                        {
-                            label: $t('device.ProductSave.101005-3'),
-                            value: 'custom',
-                            describe: $t('device.ProductSave.101005-4'),
-                        },
-                        {
-                            label: $t('device.ProductSave.101005-5'),
-                            value: 'template',
-                            describe: $t('device.ProductSave.101005-6'),
-                        },
-                        ]"
-                        :column="2"
-                        @change="typeChange"
-                    />
-                    <div style="margin-top: 1rem; display: flex; gap: .75rem" v-if="form.type === 'template'">
-                        <a-input
-                            v-model:value="productName"
-                            :disabled="true"
-                            :placeholder="$t('device.ProductSave.101005-7')"
-                        >
-                        </a-input>
-                        <a-button
-                            @click="visibleClouds = true"
-                            type="primary"
-                            :disabled="isAdd === 2"
-                        >
-                            {{ $t('device.ProductSave.101005-8') }}
-                        </a-button>
+                
+                <RegistryComponent
+                    code="productSave"
+                    v-bind="{ value: form.type, isAdd: isAdd, defaultProductName: productName }"
+                    v-model:value="form.type"
+                    :isAdd="props.isAdd"
+                    :defaultProductName="productName"
+                    @change="typeChange"
+                    @submit="choseCloudsProduct"
+                >
+                    <div key="type">
+                        <a-form-item :label="$t('Save.index.912481-6')" name="classifiedId">
+                            <a-tree-select
+                                showSearch
+                                v-model:value="form.classifiedId"
+                                :placeholder="$t('Save.index.912481-7')"
+                                :tree-data="treeList"
+                                @change="valueChange"
+                                allow-clear
+                                :fieldNames="{
+                                    label: 'name',
+                                    value: 'id',
+                                    children: 'children',
+                                }"
+                                :filterTreeNode="
+                                    (v, option) => filterSelectNode(v, option, 'name')
+                                "
+                            >
+                                <template> </template>
+                            </a-tree-select>
+                        </a-form-item>
+                        <a-form-item :label="$t('Save.index.912481-8')" name="deviceType">
+                            <j-card-select
+                                v-model:value="form.deviceType"
+                                :options="deviceList"
+                                :disabled="productStore.detail?.accessId ? true : false"
+                                @change="changeDeviceType"
+                            >
+                                <template #itemRender="{node}">
+                                    <div class="select-item">
+                                        <div>
+                                            <span>{{ node.label }}</span>
+                                            <a-tooltip :title="node.tooltip"
+                                                ><AIcon
+                                                    type="QuestionCircleOutlined"
+                                                    style="margin-left: 2px"
+                                                />
+                                            </a-tooltip>
+                                        </div>
+                                        <img :src="node.iconUrl" alt="">
+                                    </div>
+                                </template>
+                            </j-card-select>
+                        </a-form-item>
                     </div>
-                </a-form-item>
+                </RegistryComponent>
+                
                 <a-form-item :label="$t('Save.index.912481-9')" name="description">
                     <a-textarea
                         :maxlength="200"
@@ -187,13 +165,10 @@ const props = defineProps({
         type: Number,
         default: 0,
     },
-    type: {
-        type: String,
-    },
-  showId: {
-      type: Boolean,
-      default: true,
-  }
+    showId: {
+        type: Boolean,
+        default: true,
+    }
 });
 const visibleClouds = ref();
 const productName = ref();
@@ -397,7 +372,7 @@ const show = async (data: any) => {
         form.classifiedId = undefined;
         form.classifiedName = '';
         form.photoUrl = device.deviceProduct;
-        form.deviceType = props.type === 'edge' ? 'childrenDevice' : '';
+        form.deviceType = '';
         form.describe = undefined;
         form.id = undefined;
         idDisabled.value = false;
@@ -423,6 +398,7 @@ const choseCloudsProduct = (data) => {
     form.edgeMasterId = data.edgeMasterId;
     productName.value = data.productName;
     form.metadata = data.metadata;
+    form.deviceType = 'childrenDevice';
     formRef.value.validateFields('type')
     visibleClouds.value = false;
 };

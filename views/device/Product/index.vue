@@ -31,7 +31,7 @@
             </j-permission-button>
             <j-permission-button
                 key="quick"
-              v-if="sourceMenu && isNoCommunity && type === 'iot'"
+              v-if="sourceMenu && isNoCommunity"
               hasPermission="device/Product:add"
               @click="menuStory.jumpPage('device/Product/QuickCreate', {})"
             >
@@ -164,7 +164,7 @@
       </JProTable>
     </FullPage>
     <!-- {{ $t('Product.index.660348-0') }}、{{ $t('Product.index.660348-13') }} -->
-    <Save ref="saveRef" :isAdd="isAdd" :type="type" :title="title" @success="refresh" ></Save>
+    <Save ref="saveRef" :isAdd="isAdd" :title="title" @success="refresh" ></Save>
 
     <!-- 同步缓存组件 -->
     <SyncCache v-if="syncCacheVisible" :params="params" @success="refresh" @close="syncCacheVisible = false"/>
@@ -196,13 +196,11 @@ import { accessType } from "../data";
 import { useI18n } from "vue-i18n";
 import { useTermOptions } from '@jetlinks-web/components/es/Search/hooks/useTermOptions'
 import BatchDropdown from "@jetlinks-web-core/components/BatchDropdown/index.vue";
-import { useMircoAppData } from '@jetlinks-web-core/hooks/useMircoApp'
 import {isSass} from '@jetlinks-web-core/utils/consts'
 
 const { t: $t } = useI18n();
 
 const slots = useSlots();
-const { data: type } = useMircoAppData('platformName')
 /**
  * 表格数据
  */
@@ -286,42 +284,36 @@ const currentForm = ref({});
 const syncCacheVisible = ref(false)
 
 // 批量操作配置
-const batchActions = computed(() => {
-  const arr = []
-  if(!isSass){
-    arr.push({
-      key: 'import',
-      text: $t("Product.index.660348-1"),
-      icon: 'UploadOutlined',
-      permission: type === 'iot' ? 'device/Product:import' : true,
-      onClick: () => {
-        // 触发文件选择
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.json';
-        input.onchange = (e: any) => {
-          const file = e.target.files[0];
-          if (file) {
-            beforeUpload(file);
-          }
-        };
-        input.click();
-      }
-    })
+const batchActions = ref([
+  {
+    key: 'import',
+    text: $t("Product.index.660348-1"),
+    icon: 'UploadOutlined',
+    permission: 'device/Product:import',
+    onClick: () => {
+      // 触发文件选择
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+      input.onchange = (e: any) => {
+        const file = e.target.files[0];
+        if (file) {
+          beforeUpload(file);
+        }
+      };
+      input.click();
+    }
+  },
+  {
+    key: 'syncCache',
+    text: '同步缓存',
+    icon: 'SyncOutlined',
+    permission: 'device/Product:update',
+    onClick: () => {
+      syncCacheVisible.value = true;
+    }
   }
-  if(type === 'iot') {
-    arr.push({
-      key: 'syncCache',
-      text: '同步缓存',
-      icon: 'SyncOutlined',
-      permission: 'device/Product:update',
-      onClick: () => {
-        syncCacheVisible.value = true;
-      }
-    })
-  }
-  return arr
-});
+]);
 
 const getActions = (
   data: Partial<Record<string, any>>,
