@@ -2520,5 +2520,6 @@
     "DeviceRelationship.TreeList.234567-1": "Flat View",
     "DeviceRelationship.TreeList.234567-2": "No Data",
     "Detail.NodeSelect.141135-0": "Click on the Configuration node to filter the scope",
-    "Detail.NodeSelect.141135-1": "Please configure the node filtering range"
+    "Detail.NodeSelect.141135-1": "Please configure the node filtering range",
+    "log.index.741299-7": "Waiting"
 }
