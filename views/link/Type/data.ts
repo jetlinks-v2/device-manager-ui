@@ -21,7 +21,7 @@ export const Configuration = {
     username: '',
     password: '',
     topicPrefix: '',
-    maxMessageSize: 8192,
+    maxMessageSize: 819200,
     certId: undefined,
     privateKeyAlias: '',
     clientId: '',
