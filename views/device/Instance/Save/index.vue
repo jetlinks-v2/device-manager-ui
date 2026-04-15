@@ -190,6 +190,7 @@ import { isInput } from '@device-manager-ui/utils/utils'
 import { moduleRegistry } from '@jetlinks-web-core/utils/module-registry'
 import { deviceCloudSave } from '@device-manager-ui/api/instance'
 import { ensureVisualizationDashboardProject } from '@device-manager-ui/utils/dashboardProject'
+import {isSaaS} from "@jetlinks-web-core/utils/consts";
 
 const { t: $t } = useI18n()
 
@@ -241,7 +242,7 @@ const vailId = async (_: Record<string, any>, value: string) => {
 
 const ensureDeviceDashboardProject = async (device: any) => {
   try {
-    if (!device?.id || !modelRef.productId) return
+    if ((!device?.id || !modelRef.productId) && !isSaaS) return
     const product = productList.value.find((i) => i.id === modelRef.productId)
     await ensureVisualizationDashboardProject({
       entityId: device.id,

@@ -4,7 +4,7 @@
       :title="$t('Save.SelectDevices.386303-1')"
       :ok-text="$t('Save.SelectDevices.386303-2')"
       :cancel-text="$t('Save.SelectDevices.386303-3')"
-      width="1000px"
+      width="1200px"
       @cancel="handleCancel"
       @ok="handleOk"
   >

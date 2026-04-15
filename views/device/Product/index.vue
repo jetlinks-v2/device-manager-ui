@@ -196,7 +196,7 @@ import { accessType } from "../data";
 import { useI18n } from "vue-i18n";
 import { useTermOptions } from '@jetlinks-web/components/es/Search/hooks/useTermOptions'
 import BatchDropdown from "@jetlinks-web-core/components/BatchDropdown/index.vue";
-import {isSass} from '@jetlinks-web-core/utils/consts'
+import {isSaaS} from '@jetlinks-web-core/utils/consts'
 
 const { t: $t } = useI18n();
 
@@ -284,36 +284,40 @@ const currentForm = ref({});
 const syncCacheVisible = ref(false)
 
 // 批量操作配置
-const batchActions = ref([
-  {
-    key: 'import',
-    text: $t("Product.index.660348-1"),
-    icon: 'UploadOutlined',
-    permission: 'device/Product:import',
-    onClick: () => {
-      // 触发文件选择
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = '.json';
-      input.onchange = (e: any) => {
-        const file = e.target.files[0];
-        if (file) {
-          beforeUpload(file);
-        }
-      };
-      input.click();
-    }
-  },
-  {
-    key: 'syncCache',
-    text: '同步缓存',
-    icon: 'SyncOutlined',
-    permission: 'device/Product:update',
-    onClick: () => {
-      syncCacheVisible.value = true;
-    }
+const batchActions = computed(() => {
+  const arr = []
+  if(!isSaaS){
+    arr.push({
+      key: 'import',
+      text: $t("Product.index.660348-1"),
+      icon: 'UploadOutlined',
+      permission: type === 'iot' ? 'device/Product:import' : true,
+      onClick: () => {
+        // 触发文件选择
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = (e: any) => {
+          const file = e.target.files[0];
+          if (file) {
+            beforeUpload(file);
+          }
+        };
+        input.click();
+      }
+    },
+    {
+      key: 'syncCache',
+      text: '同步缓存',
+      icon: 'SyncOutlined',
+      permission: 'device/Product:update',
+      onClick: () => {
+        syncCacheVisible.value = true;
+      }
+    })
   }
-]);
+  return arr
+});
 
 const getActions = (
   data: Partial<Record<string, any>>,
