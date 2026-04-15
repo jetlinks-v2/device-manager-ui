@@ -1,5 +1,5 @@
 export interface FormDataType {
-    type: string | array<string>;
+    type: string | Array<string>;
     name: string;
     configuration: {
         location: string;
