@@ -28,6 +28,20 @@
             <AIcon type="QuestionCircleOutlined" class="mode-help-icon" />
           </a-tooltip>
         </a-menu-item>
+        <a-menu-item key="fileManager">
+          <AIcon type="FolderOpenOutlined" />
+          <span>{{ $t('Terminal.index.remote-99') }}</span>
+          <a-tooltip :title="$t('Terminal.index.remote-100')">
+            <AIcon type="QuestionCircleOutlined" class="mode-help-icon" />
+          </a-tooltip>
+        </a-menu-item>
+        <a-menu-item key="networkDebug">
+          <AIcon type="ApiOutlined" />
+          <span>{{ $t('Terminal.index.remote-59') }}</span>
+          <a-tooltip :title="$t('Terminal.index.remote-60')">
+            <AIcon type="QuestionCircleOutlined" class="mode-help-icon" />
+          </a-tooltip>
+        </a-menu-item>
       </a-menu>
     </div>
     <div class="remote-access-main">
@@ -43,6 +57,16 @@
         :device-id="current?.id || ''"
         :online="current?.state?.value === 'online'"
       />
+      <FileManagerPanel
+        v-show="accessMode === 'fileManager'"
+        :device-id="current?.id || ''"
+        :online="current?.state?.value === 'online'"
+      />
+      <NetworkDebugPanel
+        v-show="accessMode === 'networkDebug'"
+        :device-id="current?.id || ''"
+        :online="current?.state?.value === 'online'"
+      />
     </div>
   </div>
 </template>
@@ -53,15 +77,17 @@ import { storeToRefs } from "pinia";
 import TerminalPanel from "./components/TerminalPanel.vue";
 import BrowserPanel from "./components/BrowserPanel.vue";
 import RemoteDesktopPanel from "./components/RemoteDesktopPanel.vue";
+import FileManagerPanel from "./components/FileManagerPanel.vue";
+import NetworkDebugPanel from "./components/NetworkDebugPanel.vue";
 
 const instanceStore = useInstanceStore();
 const { current } = storeToRefs(instanceStore);
-const accessMode = ref<'terminal' | 'browser' | 'remoteDesktop'>('terminal')
+const accessMode = ref<'terminal' | 'browser' | 'remoteDesktop' | 'fileManager' | 'networkDebug'>('terminal')
 const modeSelectedKeys = ref<string[]>(['terminal'])
 const terminalPanelRef = ref<any>()
 
 const onModeSelect = ({ key }: { key: string }) => {
-  accessMode.value = key as 'terminal' | 'browser' | 'remoteDesktop'
+  accessMode.value = key as 'terminal' | 'browser' | 'remoteDesktop' | 'fileManager' | 'networkDebug'
 }
 
 watch(accessMode, (val) => {

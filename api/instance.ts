@@ -772,6 +772,80 @@ export const getRemoteToken = (deviceId: string, data: any) => request.post(`/ed
 
 export const getRemoteSystem = (deviceId: string, data: any) => request.post(`/edge/device/${deviceId}/_/system/config/scopes`, data)
 
+export type EdgeSpeedTestParams = {
+    byteLength?: number
+    random?: boolean
+    duration?: number
+    duplex?: boolean
+    concurrency?: number
+}
+
+export type RemoteSystemFileInfo = {
+    path: string
+    name: string
+    mediaType?: string | {
+        type?: string
+        subtype?: string
+    }
+    directory: boolean
+    size: number
+    permission?: string[]
+    canWrite: boolean
+    createTime: number
+    modifyTime: number
+}
+
+export const speedTestByEdge = (deviceId: string, params: EdgeSpeedTestParams = {}) => {
+    const search = new URLSearchParams()
+    Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+            search.set(key, String(value))
+        }
+    })
+    return ndJson.get(`/edge/device/${deviceId}/speed-test?${search.toString()}`)
+}
+
+const remoteSystemFileCommand = (deviceId: string, commandId: string, data: Record<string, any> = {}) =>
+    request.post(`/edge/device/${deviceId}/_/file/system/command/${commandId}/_execute`, data)
+
+export const getRemoteSystemWorkingDirectory = (deviceId: string) =>
+    remoteSystemFileCommand(deviceId, 'SystemFileWorkingDirectory')
+
+export const listRemoteSystemFiles = (deviceId: string, data: Record<string, any>) =>
+    remoteSystemFileCommand(deviceId, 'SystemFileList', data)
+
+export const createRemoteSystemDirectory = (deviceId: string, path: string) =>
+    remoteSystemFileCommand(deviceId, 'SystemFileCreateDirectory', { path })
+
+export const moveRemoteSystemFile = (
+    deviceId: string,
+    data: {
+        fromPath: string
+        toPath: string
+        copy?: boolean
+    },
+) => remoteSystemFileCommand(deviceId, 'SystemFileMove', data)
+
+export const deleteRemoteSystemFile = (deviceId: string, path: string) =>
+    remoteSystemFileCommand(deviceId, 'SystemFileDelete', { path })
+
+export const uploadRemoteSystemFile = (
+    deviceId: string,
+    path: string,
+    data: FormData,
+    options: Record<string, any> = {},
+) => request.post(
+    `/edge/device/${deviceId}/_/file/system/upload?path=${encodeURIComponent(path)}`,
+    data,
+    {
+        timeout: 0,
+        ...options,
+    },
+)
+
+export const downloadRemoteSystemFile = (deviceId: string, fileName: string) =>
+    request.get(`/edge/device/${deviceId}/_/file/system/download?fileName=${encodeURIComponent(fileName)}`, {}, { responseType: 'blob' })
+
 /**
  * 访问边端设备列表
  * @param thingId 边缘网关ID

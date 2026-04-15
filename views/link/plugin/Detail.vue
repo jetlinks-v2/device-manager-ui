@@ -9,7 +9,7 @@
           info.version || '--'
         }}</a-descriptions-item>
       <a-descriptions-item :label="$t('plugin.index.293829-2')">{{
-          TypeMap[info.type] || '--'
+          getPluginTypeLabel(info.type)
         }}</a-descriptions-item>
       <a-descriptions-item :label="$t('Firmware.index.858355-5')">{{
           info.createTime ? dayjs(info.createTime).format('YYYY-MM-DD HH:mm:ss') : '--'
@@ -29,7 +29,7 @@
 </template>
 
 <script setup lang="ts" name="Detail">
-import { TypeMap } from './util';
+import { getPluginTypeLabel } from './util';
 import dayjs from 'dayjs';
 import {useI18n} from "vue-i18n";
 const props = defineProps({

@@ -3,6 +3,7 @@
     :open="visible"
     :title="title"
     width="960px"
+    :z-index="MARKETPLACE_MODAL_Z_INDEX"
     :mask-closable="false"
     :closable="canCloseByCancel"
     :keyboard="canCloseByCancel"
@@ -67,6 +68,7 @@
   <a-modal
     v-model:open="installChoiceVisible"
     :title="choiceTitle"
+    :z-index="MARKETPLACE_CHOICE_MODAL_Z_INDEX"
     :mask-closable="false"
     :footer="null"
     width="480px"
@@ -128,6 +130,8 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const MARKETPLACE_MODAL_Z_INDEX = 1100
+const MARKETPLACE_CHOICE_MODAL_Z_INDEX = 1110
 
 const title = computed(() => t('Save.index.marketplaceInstallTitle', '从能力市场安装协议'))
 const tip = computed(() =>

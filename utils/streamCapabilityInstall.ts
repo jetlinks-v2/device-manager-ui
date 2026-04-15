@@ -9,6 +9,35 @@ export type ProgressStatePayload = {
 
 type StreamOp = '_install' | '_upgrade'
 
+function extractErrorMessage(payload: unknown): string | undefined {
+  if (!payload) {
+    return undefined
+  }
+  if (typeof payload === 'string') {
+    const text = payload.trim()
+    if (!text) {
+      return undefined
+    }
+    try {
+      return extractErrorMessage(JSON.parse(text)) || text
+    } catch {
+      return text
+    }
+  }
+  if (typeof payload === 'object') {
+    const data = payload as Record<string, any>
+    return (
+      data.message ||
+      data.msg ||
+      data.error_description ||
+      data.error?.message ||
+      data.result?.message ||
+      data.data?.message
+    )
+  }
+  return String(payload)
+}
+
 async function streamCapabilityProgress(
   capabilityId: string,
   version: string,
@@ -41,7 +70,7 @@ async function streamCapabilityProgress(
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')
-    throw new Error(text || `HTTP ${res.status}`)
+    throw new Error(extractErrorMessage(text) || `HTTP ${res.status}`)
   }
 
   const reader = res.body?.getReader()
