@@ -13,88 +13,103 @@
       </span>
     </div>
     <div class="list-wrap">
-      <div v-if="rows.length" class="trace-list-body">
-        <button
-          v-for="row in rows"
-          :key="row.traceKey"
-          v-memo="[
-            row.traceKey,
-            row.lastTime,
-            row.flowKind,
-            row.payloadPreview,
-            row.firstOpLabel,
-            row.messageTypeRaw,
-            row.lastLogPreview,
-            row.hasError,
-            row.spanChainText,
-            selectedKey === row.traceKey,
-          ]"
-          type="button"
-          class="trace-item"
-          :data-trace-key="row.traceKey"
-          :class="[
-            { 'trace-item--selected': selectedKey === row.traceKey },
-            { 'trace-item--matched': matchedFlashKey === row.traceKey },
-            `trace-item--flow-${row.flowKind}`,
-          ]"
-          @click="openDetail(row.traceKey)"
+      <div
+        v-if="rows.length"
+        ref="listRef"
+        class="trace-list-body"
+        @scroll.passive="onListScroll"
+      >
+        <div
+          class="trace-list-virtual"
+          :style="{ height: `${totalVirtualHeight}px` }"
         >
-          <div class="trace-item__flow-line">
-            <span
-              class="flow-dir"
-              :class="{
-                'flow-dir--up': row.flowKind === 'uplink',
-                'flow-dir--down': row.flowKind === 'downlink',
-                'flow-dir--unknown': row.flowKind === 'unknown',
-              }"
-              :aria-label="flowAriaLabel(row)"
+          <div
+            class="trace-list-virtual__window"
+            :style="{ transform: `translate3d(0, ${virtualOffsetY}px, 0)` }"
+          >
+            <button
+              v-for="row in visibleRows"
+              :key="row.traceKey"
+              v-memo="[
+                row.traceKey,
+                row.lastTime,
+                row.flowKind,
+                row.payloadPreview,
+                row.firstOpLabel,
+                row.messageTypeRaw,
+                row.lastLogPreview,
+                row.hasError,
+                row.spanChainText,
+                selectedKey === row.traceKey,
+              ]"
+              type="button"
+              class="trace-item"
+              :data-trace-key="row.traceKey"
+              :class="[
+                { 'trace-item--selected': selectedKey === row.traceKey },
+                { 'trace-item--matched': matchedFlashKey === row.traceKey },
+                `trace-item--flow-${row.flowKind}`,
+              ]"
+              @click="openDetail(row.traceKey)"
             >
-              <ArrowUpOutlined v-if="row.flowKind === 'uplink'" aria-hidden="true" />
-              <ArrowDownOutlined v-else-if="row.flowKind === 'downlink'" aria-hidden="true" />
-              <BranchesOutlined v-else aria-hidden="true" />
-            </span>
-            <span class="trace-item__chain" :title="listPrimaryLine(row)">
-              {{ listPrimaryLine(row) }}
-            </span>
+              <div class="trace-item__flow-line">
+                <span
+                  class="flow-dir"
+                  :class="{
+                    'flow-dir--up': row.flowKind === 'uplink',
+                    'flow-dir--down': row.flowKind === 'downlink',
+                    'flow-dir--unknown': row.flowKind === 'unknown',
+                  }"
+                  :aria-label="flowAriaLabel(row)"
+                >
+                  <ArrowUpOutlined v-if="row.flowKind === 'uplink'" aria-hidden="true" />
+                  <ArrowDownOutlined v-else-if="row.flowKind === 'downlink'" aria-hidden="true" />
+                  <BranchesOutlined v-else aria-hidden="true" />
+                </span>
+                <span class="trace-item__chain" :title="listPrimaryLine(row)">
+                  {{ listPrimaryLine(row) }}
+                </span>
+              </div>
+              <div class="trace-item__payload-line">
+                <span class="trace-item__plabel">{{
+                  row.payloadPreview?.trim()
+                    ? $t('InstanceDeviceAccess.traceListRaw')
+                    : $t('InstanceDeviceAccess.traceListDesc')
+                }}</span>
+                <span
+                  class="trace-item__pval"
+                  :class="{ 'trace-item__pval--hint': !row.payloadPreview?.trim() }"
+                  :title="fullPayloadTitle(row)"
+                >{{ payloadOrHintLine(row) }}</span>
+                <template v-if="row.lastLogPreview">
+                  <span class="trace-item__psep">|</span>
+                  <a-tag
+                    :color="lastLogLevelTagColor(row)"
+                    class="trace-item__log-tag"
+                  >
+                    {{ lastLogLevelLabel(row) }}
+                  </a-tag>
+                  <span class="trace-item__pval trace-item__pval--log" :title="row.lastLogPreview">{{
+                    row.lastLogPreview
+                  }}</span>
+                </template>
+              </div>
+              <div class="trace-item__meta">
+                <a-tag :color="row.hasError ? 'error' : 'success'" class="meta-tag">
+                  {{ row.hasError ? $t('InstanceDeviceAccess.952800-22') : $t('InstanceDeviceAccess.952800-21') }}
+                </a-tag>
+                <span class="meta-time">
+                  <ClockCircleOutlined class="meta-time__icon" aria-hidden="true" />
+                  {{ formatTime(row.lastTime) }}
+                </span>
+                <a-button type="link" size="small" class="meta-action" @click.stop="openDetail(row.traceKey)">
+                  {{ $t('InstanceDeviceAccess.952800-24') }}
+                  <RightOutlined class="meta-action__arrow" aria-hidden="true" />
+                </a-button>
+              </div>
+            </button>
           </div>
-          <div class="trace-item__payload-line">
-            <span class="trace-item__plabel">{{
-              row.payloadPreview?.trim()
-                ? $t('InstanceDeviceAccess.traceListRaw')
-                : $t('InstanceDeviceAccess.traceListDesc')
-            }}</span>
-            <span
-              class="trace-item__pval"
-              :class="{ 'trace-item__pval--hint': !row.payloadPreview?.trim() }"
-              :title="fullPayloadTitle(row)"
-            >{{ payloadOrHintLine(row) }}</span>
-            <template v-if="row.lastLogPreview">
-              <span class="trace-item__psep">|</span>
-              <a-tag
-                :color="lastLogLevelTagColor(row)"
-                class="trace-item__log-tag"
-              >
-                {{ lastLogLevelLabel(row) }}
-              </a-tag>
-              <span class="trace-item__pval trace-item__pval--log" :title="row.lastLogPreview">{{
-                row.lastLogPreview
-              }}</span>
-            </template>
-          </div>
-          <div class="trace-item__meta">
-            <a-tag :color="row.hasError ? 'error' : 'success'" class="meta-tag">
-              {{ row.hasError ? $t('InstanceDeviceAccess.952800-22') : $t('InstanceDeviceAccess.952800-21') }}
-            </a-tag>
-            <span class="meta-time">
-              <ClockCircleOutlined class="meta-time__icon" aria-hidden="true" />
-              {{ formatTime(row.lastTime) }}
-            </span>
-            <a-button type="link" size="small" class="meta-action" @click.stop="openDetail(row.traceKey)">
-              {{ $t('InstanceDeviceAccess.952800-24') }}
-              <RightOutlined class="meta-action__arrow" aria-hidden="true" />
-            </a-button>
-          </div>
-        </button>
+        </div>
       </div>
       <div v-else class="trace-empty">
         <j-empty>
@@ -118,6 +133,7 @@ import { createTraceOperationLabel } from './traceOperationLabels'
 import { antTagColorForLogLevel } from './traceLogLevel'
 import {
   buildTraceRows,
+  cloneTraceGroup,
   findGroupByKey,
   pickRawPayloadDetail,
   sortedEvents,
@@ -134,7 +150,7 @@ import {
   RightOutlined,
 } from '@ant-design/icons-vue'
 import dayjs from 'dayjs'
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const { t: $t } = useI18n()
@@ -152,16 +168,95 @@ const selectedKey = ref<string | null>(null)
 const selectedTraceId = ref<string | null>(null)
 const pendingTraceIds = ref<string[]>([])
 const matchedFlashKey = ref<string | null>(null)
+const listRef = ref<HTMLElement | null>(null)
+const listViewportHeight = ref(0)
+const listScrollTop = ref(0)
+const rowHeight = ref(64)
 let matchedFlashTimer: ReturnType<typeof setTimeout> | null = null
+let listResizeObserver: ResizeObserver | null = null
+
+const TRACE_ROW_GAP = 6
+const TRACE_ROW_BUFFER = 8
 
 onBeforeUnmount(() => {
   if (matchedFlashTimer) clearTimeout(matchedFlashTimer)
   matchedFlashTimer = null
+  listResizeObserver?.disconnect()
+  listResizeObserver = null
 })
 
 const labelOp = createTraceOperationLabel($t)
 
 const rows = computed(() => buildTraceRows(props.traceGroups, labelOp))
+const traceGroupsToken = computed(() =>
+  props.traceGroups.map((group) => `${group.key}:${group.version ?? 0}`).join('|'),
+)
+const itemFullHeight = computed(() => rowHeight.value + TRACE_ROW_GAP)
+const visibleCount = computed(() => {
+  const viewport = listViewportHeight.value || itemFullHeight.value * 10
+  return Math.max(12, Math.ceil(viewport / itemFullHeight.value) + TRACE_ROW_BUFFER * 2)
+})
+const visibleStartIndex = computed(() =>
+  Math.max(0, Math.floor(listScrollTop.value / itemFullHeight.value) - TRACE_ROW_BUFFER),
+)
+const visibleEndIndex = computed(() =>
+  Math.min(rows.value.length, visibleStartIndex.value + visibleCount.value),
+)
+const visibleRows = computed(() => rows.value.slice(visibleStartIndex.value, visibleEndIndex.value))
+const virtualOffsetY = computed(() => visibleStartIndex.value * itemFullHeight.value)
+const totalVirtualHeight = computed(() =>
+  rows.value.length ? rows.value.length * itemFullHeight.value - TRACE_ROW_GAP : 0,
+)
+
+function syncListViewport() {
+  listViewportHeight.value = listRef.value?.clientHeight || 0
+}
+
+function onListScroll(event: Event) {
+  listScrollTop.value = (event.target as HTMLElement | null)?.scrollTop || 0
+}
+
+function measureTraceItemHeight() {
+  const height = listRef.value?.querySelector<HTMLElement>('.trace-item')?.offsetHeight || 0
+  if (height > 0 && Math.abs(height - rowHeight.value) > 1) {
+    rowHeight.value = height
+  }
+}
+
+function scheduleListMeasure() {
+  void nextTick(() => {
+    syncListViewport()
+    measureTraceItemHeight()
+  })
+}
+
+function bindListResizeObserver() {
+  listResizeObserver?.disconnect()
+  listResizeObserver = null
+  if (typeof ResizeObserver === 'undefined' || !listRef.value) return
+  listResizeObserver = new ResizeObserver(() => {
+    syncListViewport()
+    measureTraceItemHeight()
+  })
+  listResizeObserver.observe(listRef.value)
+}
+
+function scrollTraceRowIntoView(traceKey: string, behavior: ScrollBehavior = 'smooth') {
+  const index = rows.value.findIndex((row) => row.traceKey === traceKey)
+  if (index < 0 || !listRef.value) return
+  const viewport = listViewportHeight.value || listRef.value.clientHeight
+  const top = index * itemFullHeight.value
+  const bottom = top + itemFullHeight.value
+  const viewTop = listRef.value.scrollTop
+  const viewBottom = viewTop + viewport
+  if (top >= viewTop && bottom <= viewBottom) return
+  const nextTop = top < viewTop ? Math.max(0, top - TRACE_ROW_GAP) : Math.max(0, bottom - viewport)
+  listRef.value.scrollTo({ top: nextTop, behavior })
+}
+
+function updateDetailGroup(group: TraceGroup | null) {
+  detailGroup.value = group ? cloneTraceGroup(group) : null
+}
 
 /** 消息类型展示名（与 InstanceDeviceAccess.msgType.* 对齐） */
 const messageTypeLabel = (row: TraceListRow): string => {
@@ -232,8 +327,9 @@ const fullPayloadTitle = (row: TraceListRow) => {
 const openDetail = (traceKey: string) => {
   selectedKey.value = traceKey
   const g = findGroupByKey(props.traceGroups, traceKey) || null
-  detailGroup.value = g
-  selectedTraceId.value = g?.traceId || null
+  if (!g) return
+  updateDetailGroup(g)
+  selectedTraceId.value = normalizeTraceId(g.traceId) || null
   detailOpen.value = true
 }
 
@@ -249,18 +345,19 @@ function flashMatched(traceKey: string) {
 
 async function focusMatchedGroup(group: TraceGroup, byTraceId?: string) {
   selectedKey.value = group.key
-  detailGroup.value = group
+  updateDetailGroup(group)
   selectedTraceId.value = normalizeTraceId(byTraceId || group.traceId) || null
   detailOpen.value = true
   flashMatched(group.key)
   await nextTick()
-  const el = document.querySelector(`[data-trace-key="${group.key}"]`) as HTMLElement | null
-  el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  scrollTraceRowIntoView(group.key)
 }
 
 function normalizeTraceId(v: string | undefined): string {
   if (!v) return ''
-  return String(v).replace(/[^0-9a-fA-F]/g, '').toLowerCase()
+  const text = String(v).trim()
+  if (!text || text === '_no_trace_') return ''
+  return text.replace(/[^0-9a-fA-F]/g, '').toLowerCase()
 }
 
 function findGroupByTraceId(traceId: string): TraceGroup | null {
@@ -295,12 +392,17 @@ watch(detailOpen, (v) => {
   if (!v) {
     selectedKey.value = null
     selectedTraceId.value = null
+    detailGroup.value = null
   }
 })
 
 watch(
-  () => props.traceGroups,
+  traceGroupsToken,
   () => {
+    if (!rows.value.length) {
+      listScrollTop.value = 0
+    }
+    scheduleListMeasure()
     if (pendingTraceIds.value.length) {
       let matchedGroup: TraceGroup | null = null
       const remain: string[] = []
@@ -317,27 +419,64 @@ watch(
         focusMatchedGroup(matchedGroup)
       }
     }
+    if (!props.traceGroups.length && detailOpen.value) {
+      detailOpen.value = false
+      return
+    }
     if (detailOpen.value && selectedKey.value) {
       const byKey = findGroupByKey(props.traceGroups, selectedKey.value) || null
       if (byKey) {
-        detailGroup.value = byKey
+        updateDetailGroup(byKey)
       } else if (selectedTraceId.value) {
         // 分组合并后 key 可能变化，按 traceId 重新定位当前选中链路
         const relocated = findGroupByTraceId(selectedTraceId.value)
         if (relocated) {
           selectedKey.value = relocated.key
-          detailGroup.value = relocated
+          updateDetailGroup(relocated)
           flashMatched(relocated.key)
-        } else {
-          detailGroup.value = null
+          void nextTick(() => scrollTraceRowIntoView(relocated.key, 'auto'))
         }
-      } else {
-        detailGroup.value = null
       }
     }
   },
-  { deep: true },
+  { immediate: true },
 )
+
+watch(
+  () => props.deviceId,
+  () => {
+    listScrollTop.value = 0
+    if (!detailOpen.value) {
+      detailGroup.value = null
+      selectedKey.value = null
+      selectedTraceId.value = null
+      return
+    }
+    detailOpen.value = false
+  },
+)
+
+watch(
+  () => rows.value.length,
+  () => {
+    if (!rows.value.length && listRef.value) {
+      listRef.value.scrollTop = 0
+    }
+    scheduleListMeasure()
+  },
+  { flush: 'post' },
+)
+
+watch(listRef, () => {
+  bindListResizeObserver()
+  scheduleListMeasure()
+})
+
+onMounted(() => {
+  syncListViewport()
+  bindListResizeObserver()
+  scheduleListMeasure()
+})
 </script>
 
 <style lang="less" scoped>
@@ -457,10 +596,22 @@ watch(
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
+  position: relative;
+  padding-right: 2px;
+}
+
+.trace-list-virtual {
+  position: relative;
+  min-height: 100%;
+}
+
+.trace-list-virtual__window {
+  position: absolute;
+  inset: 0 0 auto;
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding-right: 2px;
+  will-change: transform;
 }
 
 .trace-item {

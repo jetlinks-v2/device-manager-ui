@@ -1,5 +1,5 @@
 import { ref, watch, type Ref } from 'vue'
-import type { TraceGroup } from '../traceListUtils'
+import type { TraceGroup } from './useDeviceTraceLog'
 
 /**
  * 本会话内累计收到的不同链路条数（按 traceGroup.key 去重；列表裁剪后计数不减少）。
@@ -21,9 +21,9 @@ export function useTraceReceivedTotal(
   }
 
   watch(
-    () => traceGroups.value,
-    (groups) => ingestNewTraceKeys(groups),
-    { deep: true, immediate: true },
+    () => traceGroups.value.map((group) => group.key).join('|'),
+    () => ingestNewTraceKeys(traceGroups.value),
+    { immediate: true },
   )
 
   watch(
