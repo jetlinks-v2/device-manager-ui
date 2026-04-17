@@ -119,26 +119,39 @@ const getNetworkEcharts = async (val: any) => {
     const resp: any = await dashboard(networkParams(val)).catch(() => { loading.value = false; })
     if (resp.success) {
         const _networkOptions = {};
-        const _networkXAxis = new Set();
+        const _networkXAxis = new Map();
         if (resp.result.length) {
             isEmpty.value = false;
             const filterArray = resp.result;
             // const filterArray = resp.result.filter((item : any) => item.data?.clusterNodeId === props.serviceId)
             filterArray.forEach((item: any) => {
                 const value = item.data.value;
-                const _data: Array<any> = [];
                 const nodeID = item.data.clusterNodeId;
-                value.forEach((item: any) => {
-                    _data.push(item.value);
-                    _networkXAxis.add(item.timeString);
+                if (!_networkOptions[nodeID]) {
+                    _networkOptions[nodeID] = {};
+                }
+                value.forEach((current: any) => {
+                    _networkOptions[nodeID][current.timeString] = current.value;
+                    _networkXAxis.set(current.timeString, current.timestamp);
                 });
-                _networkOptions[nodeID] = {
-                    _data: _networkOptions[nodeID]
-                        ? _networkOptions[nodeID]._data.concat(_data)
-                        : _data,
-                };
             });
-            handleNetworkOptions(_networkOptions, [..._networkXAxis.keys()]);
+            const _sortedXAxis = [..._networkXAxis.entries()]
+                .sort((a: any, b: any) => a[1] - b[1])
+                .map((item: any) => item[0]);
+
+            const _alignedNetworkOptions = Object.keys(_networkOptions).reduce(
+                (result: any, key: string) => {
+                    result[key] = {
+                        _data: _sortedXAxis.map((timeKey: string) =>
+                            _networkOptions[key][timeKey] ?? null,
+                        ),
+                    };
+                    return result;
+                },
+                {},
+            );
+
+            handleNetworkOptions(_alignedNetworkOptions, _sortedXAxis);
         } else {
             handleNetworkOptions([], []);
             isEmpty.value = true;
@@ -150,6 +163,14 @@ const getNetworkEcharts = async (val: any) => {
 };
 
 const formatterData = (value: any) => {
+    if (
+        value === null ||
+        value === undefined ||
+        value === '-' ||
+        Number.isNaN(value)
+    ) {
+        return '--';
+    }
     let _data = '';
     const kb = 1024;
     const mb = kb ** 2;
@@ -170,7 +191,13 @@ const formatterData = (value: any) => {
 const networkValueRender = (obj: any) => {
     // const { value } = obj;
     let data: any = '';
-    obj.forEach((item: any, index: number) => {
+    const validItems = obj.filter((item: any) =>
+        item?.value !== null &&
+        item?.value !== undefined &&
+        item?.value !== '-' &&
+        !Number.isNaN(item?.value),
+    );
+    validItems.forEach((item: any, index: number) => {
         const { value } = item;
         if (index === 0) {
             data += `${item?.axisValueLabel}<br />${item?.marker}${
@@ -182,7 +209,7 @@ const networkValueRender = (obj: any) => {
             } &nbsp; ${formatterData(value)}<br />`;
         }
     });
-    return data;
+    return data || obj?.[0]?.axisValueLabel || '';
     // return `${obj?.axisValueLabel}<br />${obj?.marker}${
     //     obj?.seriesName
     // } &nbsp; ${formatterData(value)}`;

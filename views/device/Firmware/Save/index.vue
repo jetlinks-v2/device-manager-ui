@@ -111,7 +111,7 @@
                     ></a-col>
                     <a-col :span="24">
                         <a-form-item :label="$t('Save.index.978508-35')" v-bind="validateInfos.size">
-                            <a-input-number style="width: 100%;" v-model:value="formData.size" :placeholder="$t('Save.index.978508-34')" :min="0" addon-after="b"></a-input-number>
+                            <a-input-number style="width: 100%;" v-model:value="formData.size" :placeholder="$t('Save.index.978508-34')" :min="0" addon-after="Byte"></a-input-number>
                         </a-form-item>
                     </a-col>
                     <a-col :span="24">

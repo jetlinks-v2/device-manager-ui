@@ -261,7 +261,7 @@
                 record.valueType?.type,
               )
             "
-            @change="metadataChange"
+            @save="saveOtherSetting"
           />
         </div>
       </template>
@@ -763,6 +763,12 @@ const handleSaveClick = async (next?: Function) => {
 
 const metadataChange = () => {
   editStatus.value = true;
+};
+
+const saveOtherSetting = async () => {
+  editStatus.value = true;
+  await nextTick();
+  await handleSaveClick();
 };
 
 const jumpProduct = () => {

@@ -504,11 +504,11 @@ const buildPayload = () => {
         isFileEditor.value
           ? [{ provider: 'file-storage', configuration: {} }]
           : editor.form.mode === 'record-alarm'
-          ? [
+            ? [
               { provider: 'device-record', configuration: {} },
               { provider: 'device-alarm', configuration: {} },
             ]
-          : [{ provider: editor.form.mode, configuration: {} }],
+            : [{ provider: editor.form.mode, configuration: {} }],
     },
   };
 };

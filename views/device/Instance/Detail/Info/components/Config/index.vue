@@ -1,53 +1,59 @@
 <template>
-    <a-card class="config-card" :bordered="true" v-if="config.length || gatewaysDetail?.length">
+    <template v-if="config.length || gatewaysDetail?.length">
+        <a-card
+            v-if="variant === 'card'"
+            class="config-card"
+            :bordered="true"
+        >
         <template #title>
-            <div class="card-title">
-                <AIcon type="SettingOutlined" class="card-icon" />
-                <span>{{ $t('Config.index.926765-0') }}</span>
+            <div class="card-title has-title-before">
+                <div
+                    class="title-before"
+                    aria-hidden="true"
+                />
+                <span class="card-title__text">{{ $t('Config.index.926765-0') }}</span>
+                <a-space class="card-title__actions">
+                    <j-permission-button
+                        type="link"
+                        class="action-button"
+                        @click="visible = true"
+                        hasPermission="device/Instance:update"
+                    >
+                        <template #icon><AIcon type="EditOutlined" /></template>
+                        {{ $t('Config.index.926765-1') }}
+                    </j-permission-button>
+                    <j-permission-button
+                        type="link"
+                        class="action-button"
+                        v-if="instanceStore.detail.current?.value !== 'notActive'"
+                        :popConfirm="{
+                            title: $t('Config.index.926765-2'),
+                            onConfirm: deployBtn,
+                        }"
+                        hasPermission="device/Instance:update"
+                    >
+                        <AIcon type="CheckOutlined" />{{ $t('Config.index.926765-3') }}<a-tooltip
+                            :title="$t('Config.index.926765-4')"
+                            ><AIcon type="QuestionCircleOutlined"
+                        /></a-tooltip>
+                    </j-permission-button>
+                    <j-permission-button
+                        type="link"
+                        class="action-button"
+                        v-if="instanceStore.detail.aloneConfiguration"
+                        :popConfirm="{
+                            title: $t('Config.index.926765-5'),
+                            onConfirm: resetBtn,
+                        }"
+                        hasPermission="device/Instance:update"
+                    >
+                        <AIcon type="SyncOutlined" />{{ $t('Config.index.926765-6') }}<a-tooltip
+                            :title="$t('Config.index.926765-7')"
+                            ><AIcon type="QuestionCircleOutlined"
+                        /></a-tooltip>
+                    </j-permission-button>
+                </a-space>
             </div>
-        </template>
-        <template #extra>
-            <a-space>
-                <j-permission-button
-                    type="link"
-                    class="action-button"
-                    @click="visible = true"
-                    hasPermission="device/Instance:update"
-                >
-                    <template #icon><AIcon type="EditOutlined" /></template>
-                    {{ $t('Config.index.926765-1') }}
-                </j-permission-button>
-                <j-permission-button
-                    type="link"
-                    class="action-button"
-                    v-if="instanceStore.detail.current?.value !== 'notActive'"
-                    :popConfirm="{
-                        title: $t('Config.index.926765-2'),
-                        onConfirm: deployBtn,
-                    }"
-                    hasPermission="device/Instance:update"
-                >
-                    <AIcon type="CheckOutlined" />{{ $t('Config.index.926765-3') }}<a-tooltip
-                        :title="$t('Config.index.926765-4')"
-                        ><AIcon type="QuestionCircleOutlined"
-                    /></a-tooltip>
-                </j-permission-button>
-                <j-permission-button
-                    type="link"
-                    class="action-button"
-                    v-if="instanceStore.detail.aloneConfiguration"
-                    :popConfirm="{
-                        title: $t('Config.index.926765-5'),
-                        onConfirm: resetBtn,
-                    }"
-                    hasPermission="device/Instance:update"
-                >
-                    <AIcon type="SyncOutlined" />{{ $t('Config.index.926765-6') }}<a-tooltip
-                        :title="$t('Config.index.926765-7')"
-                        ><AIcon type="QuestionCircleOutlined"
-                    /></a-tooltip>
-                </j-permission-button>
-            </a-space>
         </template>
         <template v-if="access?.provider === 'composite-device-gateway'">
             <a-collapse v-model:activeKey="activeKey">
@@ -57,7 +63,7 @@
                     </template>
                     <template v-if="item.transportDetail?.allConfig?.length">
                         <a-descriptions class="compact-descriptions" :labelStyle="{width: '120px'}" bordered size="small" v-for="i in item.transportDetail.allConfig" :key="i.name">
-                            <template #title><h4 style="font-size: 15px">{{ i.name }}</h4></template>
+                            <template #title><h4 class="config-group-title">{{ i.name }}</h4></template>
                             <a-descriptions-item
                                 v-for="item in i.properties"
                                 :key="item.property"
@@ -136,7 +142,7 @@
         </template>
         <template v-else>
             <a-descriptions class="compact-descriptions" :labelStyle="{width: '120px'}" bordered size="small" v-for="i in config" :key="i.name">
-                <template #title><h4 style="font-size: 15px">{{ i.name }}</h4></template>
+                <template #title><h4 class="config-group-title">{{ i.name }}</h4></template>
                 <a-descriptions-item
                     v-for="item in i.properties"
                     :key="item.property"
@@ -209,6 +215,230 @@
                 </a-descriptions-item>
             </a-descriptions>
         </template>
+        </a-card>
+
+        <a-list-item
+            v-else
+            class="access-list-item config-item"
+        >
+            <a-list-item-meta>
+                <template #title>
+                    <div class="plain-item-head has-title-before">
+                        <div class="plain-item-head__left">
+                            <div
+                                class="title-before"
+                                aria-hidden="true"
+                            />
+                            <span class="plain-item-title">{{ $t('Config.index.926765-0') }}</span>
+                            <a-space class="plain-item-head__actions">
+                                <j-permission-button
+                                    type="link"
+                                    class="action-button"
+                                    @click="visible = true"
+                                    hasPermission="device/Instance:update"
+                                >
+                                    <template #icon><AIcon type="EditOutlined" /></template>
+                                    {{ $t('Config.index.926765-1') }}
+                                </j-permission-button>
+                                <j-permission-button
+                                    type="link"
+                                    class="action-button"
+                                    v-if="instanceStore.detail.current?.value !== 'notActive'"
+                                    :popConfirm="{
+                                        title: $t('Config.index.926765-2'),
+                                        onConfirm: deployBtn,
+                                    }"
+                                    hasPermission="device/Instance:update"
+                                >
+                                    <AIcon type="CheckOutlined" />{{ $t('Config.index.926765-3') }}<a-tooltip
+                                        :title="$t('Config.index.926765-4')"
+                                        ><AIcon type="QuestionCircleOutlined"
+                                    /></a-tooltip>
+                                </j-permission-button>
+                                <j-permission-button
+                                    type="link"
+                                    class="action-button"
+                                    v-if="instanceStore.detail.aloneConfiguration"
+                                    :popConfirm="{
+                                        title: $t('Config.index.926765-5'),
+                                        onConfirm: resetBtn,
+                                    }"
+                                    hasPermission="device/Instance:update"
+                                >
+                                    <AIcon type="SyncOutlined" />{{ $t('Config.index.926765-6') }}<a-tooltip
+                                        :title="$t('Config.index.926765-7')"
+                                        ><AIcon type="QuestionCircleOutlined"
+                                    /></a-tooltip>
+                                </j-permission-button>
+                            </a-space>
+                        </div>
+                    </div>
+                </template>
+                <template #description>
+                    <template v-if="access?.provider === 'composite-device-gateway'">
+                        <a-collapse v-model:activeKey="activeKey">
+                            <a-collapse-panel v-for="item in gatewaysDetail" :header="item.name" :key="item.id">
+                                <template #extra>
+                                    {{ providers?.find(i => i.id === item.provider)?.description }}
+                                </template>
+                                <template v-if="item.transportDetail?.allConfig?.length">
+                                    <a-descriptions class="compact-descriptions" :labelStyle="{width: '120px'}" bordered size="small" v-for="i in item.transportDetail.allConfig" :key="i.name">
+                                        <template #title><h4 class="config-group-title">{{ i.name }}</h4></template>
+                                        <a-descriptions-item
+                                            v-for="item in i.properties"
+                                            :key="item.property"
+                                        >
+                                            <template #label>
+                                                <j-ellipsis style="margin-right: 5px">
+                                                    {{ item.name }}
+                                                    <a-tooltip
+                                                        v-if="item.description"
+                                                        :title="item.description"
+                                                        ><AIcon type="QuestionCircleOutlined"
+                                                    /></a-tooltip>
+                                                </j-ellipsis>
+                                            </template>
+                                            <span
+                                                v-if="
+                                                    item.type.type === 'password' &&
+                                                    instanceStore.current?.configuration?.[item.property]
+                                                        ?.length > 0
+                                                "
+                                                >******</span
+                                            >
+                                            <span v-else-if="item.type.type === 'enum'">
+                                                <j-ellipsis>{{
+                                                    item.type.elements?.find(
+                                                        (i) =>
+                                                            i.value ===
+                                                            instanceStore.current?.configuration?.[
+                                                                item.property
+                                                            ],
+                                                    )?.text || ''
+                                                }}</j-ellipsis>
+                                                <a-tooltip
+                                                    v-if="isExit(item.property)"
+                                                    :title="$t('Config.index.926765-8', [instanceStore.current?.configuration?.[item.property]])"
+                                                    ><AIcon type="QuestionCircleOutlined"
+                                                /></a-tooltip>
+                                            </span>
+                                            <span v-else-if="item.type.type === 'boolean'">
+                                                <j-ellipsis>{{
+                                                    [
+                                                        {
+                                                            label: item?.type?.falseText,
+                                                            value: item?.type?.falseValue,
+                                                        },
+                                                        {
+                                                            label: item?.type?.trueText,
+                                                            value: item?.type?.trueValue,
+                                                        },
+                                                    ].find(
+                                                        (i) =>
+                                                            i.value ===
+                                                            instanceStore.current?.configuration?.[
+                                                                item.property
+                                                            ],
+                                                    )?.label || ''
+                                                }}</j-ellipsis>
+                                            </span>
+                                            <span v-else>
+                                                <j-ellipsis>{{
+                                                    instanceStore.current?.configuration?.[item.property] ||
+                                                    ''
+                                                }}</j-ellipsis>
+                                                <a-tooltip
+                                                    v-if="isExit(item.property)"
+                                                    :title="$t('Config.index.926765-8', [instanceStore.current?.configuration?.[item.property]])"
+                                                    ><AIcon type="QuestionCircleOutlined"
+                                                /></a-tooltip>
+                                            </span>
+                                        </a-descriptions-item>
+                                    </a-descriptions>
+                                </template>
+                                <j-empty v-else :description="$t('Config.index.926765-11')"></j-empty>
+                            </a-collapse-panel>
+                        </a-collapse>
+                    </template>
+                    <template v-else>
+                        <a-descriptions class="compact-descriptions" :labelStyle="{width: '120px'}" bordered size="small" v-for="i in config" :key="i.name">
+                            <template #title><h4 class="config-group-title">{{ i.name }}</h4></template>
+                            <a-descriptions-item
+                                v-for="item in i.properties"
+                                :key="item.property"
+                            >
+                                <template #label>
+                                    <j-ellipsis style="margin-right: 5px">
+                                        {{ item.name }}
+                                        <a-tooltip
+                                            v-if="item.description"
+                                            :title="item.description"
+                                            ><AIcon type="QuestionCircleOutlined"
+                                        /></a-tooltip>
+                                    </j-ellipsis>
+                                </template>
+                                <span
+                                    v-if="
+                                        item.type.type === 'password' &&
+                                        instanceStore.current?.configuration?.[item.property]
+                                            ?.length > 0
+                                    "
+                                    >******</span
+                                >
+                                <span v-else-if="item.type.type === 'enum'">
+                                    <j-ellipsis>{{
+                                        item.type.elements?.find(
+                                            (i) =>
+                                                i.value ===
+                                                instanceStore.current?.configuration?.[
+                                                    item.property
+                                                ],
+                                        )?.text || ''
+                                    }}</j-ellipsis>
+                                    <a-tooltip
+                                        v-if="isExit(item.property)"
+                                        :title="$t('Config.index.926765-8', [instanceStore.current?.configuration?.[item.property]])"
+                                        ><AIcon type="QuestionCircleOutlined"
+                                    /></a-tooltip>
+                                </span>
+                                <span v-else-if="item.type.type === 'boolean'">
+                                    <j-ellipsis>{{
+                                        [
+                                            {
+                                                label: item?.type?.falseText,
+                                                value: item?.type?.falseValue,
+                                            },
+                                            {
+                                                label: item?.type?.trueText,
+                                                value: item?.type?.trueValue,
+                                            },
+                                        ].find(
+                                            (i) =>
+                                                i.value ===
+                                                instanceStore.current?.configuration?.[
+                                                    item.property
+                                                ],
+                                        )?.label || ''
+                                    }}</j-ellipsis>
+                                </span>
+                                <span v-else>
+                                    <j-ellipsis>{{
+                                        instanceStore.current?.configuration?.[item.property] ||
+                                        ''
+                                    }}</j-ellipsis>
+                                    <a-tooltip
+                                        v-if="isExit(item.property)"
+                                        :title="$t('Config.index.926765-8', [instanceStore.current?.configuration?.[item.property]])"
+                                        ><AIcon type="QuestionCircleOutlined"
+                                    /></a-tooltip>
+                                </span>
+                            </a-descriptions-item>
+                        </a-descriptions>
+                    </template>
+                </template>
+            </a-list-item-meta>
+        </a-list-item>
+    </template>
         <Save
             v-if="visible"
             @save="saveBtn"
@@ -217,7 +447,6 @@
             :gatewaysDetail="gatewaysDetail"
             :access="access"
         />
-    </a-card>
 </template>
 
 <script lang="ts" setup>
@@ -240,6 +469,14 @@ const emit = defineEmits<{
      */
     (e: 'saved'): void
 }>()
+
+withDefaults(
+    defineProps<{
+        /** card：实例信息页；item：设备接入等列表内纯条目 */
+        variant?: 'card' | 'item'
+    }>(),
+    { variant: 'card' },
+)
 
 const { t: $t } = useI18n();
 const instanceStore = useInstanceStore();
@@ -372,12 +609,12 @@ watch(
 
 .compact-descriptions {
     :deep(.ant-descriptions-item-label) {
-        font-size: 13px;
+        font-size: 14px;
         padding: 8px 12px;
     }
 
     :deep(.ant-descriptions-item-content) {
-        font-size: 13px;
+        font-size: 15px;
         padding: 8px 12px;
     }
 
@@ -387,9 +624,11 @@ watch(
         }
     }
 
-    :deep(h4) {
-        font-size: 14px;
-        margin-bottom: 12px;
+    :deep(.config-group-title) {
+        font-size: 12px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: rgba(0, 0, 0, 0.55);
     }
 }
 
@@ -401,15 +640,79 @@ watch(
     font-weight: 500;
     color: rgba(0, 0, 0, 0.85);
 
-    .card-icon {
-        color: #1890ff;
-        font-size: 16px;
+    &.has-title-before {
+        position: relative;
+        flex-wrap: wrap;
+        padding-left: 10px;
+
+        > .title-before {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 16px;
+            background-color: @primary-color;
+            border-radius: 0 3px 3px 0;
+        }
+
+        .card-title__actions {
+            flex-shrink: 0;
+        }
     }
+
 }
 
 .action-button {
     padding: 0;
     height: auto;
     font-size: 14px;
+}
+
+.plain-item-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+
+    &__left {
+        position: relative;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px 12px;
+        padding-left: 10px;
+        min-height: 22px;
+        flex: 1;
+        min-width: 0;
+
+        > .title-before {
+            position: absolute;
+            left: 0;
+            top: 2px;
+            width: 4px;
+            height: calc(100% - 4px);
+            min-height: 14px;
+            background-color: @primary-color;
+            border-radius: 0 3px 3px 0;
+        }
+
+        .plain-item-head__actions {
+            flex-shrink: 0;
+        }
+    }
+}
+
+.plain-item-title {
+    font-weight: 600;
+    font-size: 16px;
+    color: rgba(0, 0, 0, 0.85);
+}
+
+.config-item {
+    :deep(.ant-list-item-meta-title) {
+        width: 100%;
+    }
 }
 </style>

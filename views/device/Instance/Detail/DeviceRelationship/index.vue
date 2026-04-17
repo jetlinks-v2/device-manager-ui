@@ -2,38 +2,50 @@
   <div class="device-relationship">
     <div class="sections-container">
       <!-- 正向关系部分 -->
-      <div class="section-card">
-        <div class="section-header">
-          <div class="header-left">
-            <div class="section-title">
-              <TitleComponent :data="$t('DeviceRelationship.index.710824-0')">
-                <template #extra>
-                  <a-tooltip :title="$t('DeviceRelationship.index.710824-12')">
-                    <AIcon type="QuestionCircleOutlined" class="help-icon"/>
-                  </a-tooltip>
-                </template>
-              </TitleComponent>
+      <template v-if='isRelation'>
+        <div class="section-card">
+          <div class="section-header">
+            <div class="header-left">
+              <div class="section-title">
+                <TitleComponent :data="$t('DeviceRelationship.index.710824-0')">
+                  <template #extra>
+                    <a-tooltip :title="$t('DeviceRelationship.index.710824-12')">
+                      <AIcon type="QuestionCircleOutlined" class="help-icon"/>
+                    </a-tooltip>
+                  </template>
+                </TitleComponent>
+              </div>
             </div>
-          </div>
-          <AIcon type="FormOutlined" class="edit-icon" @click="handleEditRelationship"/>
-        </div>
-        <div class="section-content">
-          <div class="relation-count">
-            <div>{{ $t('DeviceRelationship.index.710824-1') }}</div>
-            <div class="count-num">{{ relationCount }}</div>
-          </div>
-          <div class="relation-list">
-            <div
-              v-for="item in relationshipData"
-              :key="item.objectId"
-              :class="{'relation-item': true, 'relation-item-unrelated': !item.related}"
+            <j-permission-button
+              hasPermission="device/Instance:update"
+              type="text"
+              @click="handleEditRelationship"
+              class="edit-icon"
             >
-              <div class="relation-label">{{ item.relationName }}</div>
-              <div class="relation-value">{{ item.related?.map(it => it.name).join('、') }}</div>
+              <AIcon type="FormOutlined"/>
+            </j-permission-button>
+          </div>
+          <div class="section-content">
+            <div class="relation-count">
+              <div>{{ $t('DeviceRelationship.index.710824-1') }}</div>
+              <div class="count-num">{{ relationCount }}</div>
+            </div>
+            <div class="relation-list" v-if='relationshipData.length > 0'>
+              <div
+                v-for="item in relationshipData"
+                :key="item.objectId"
+                :class="{'relation-item': true, 'relation-item-unrelated': !item.related}"
+              >
+                <div class="relation-label">{{ item.relationName }}</div>
+                <div class="relation-value">{{ item.related?.map(it => it.name).join('、') }}</div>
+              </div>
+            </div>
+            <div v-else style='margin-top: 50px'>
+              <j-empty />
             </div>
           </div>
         </div>
-      </div>
+      </template>
 
       <!-- 组织部分 -->
       <div class="section-card">
@@ -43,7 +55,14 @@
               <TitleComponent :data="$t('DeviceRelationship.index.710824-2')" />
             </div>
           </div>
-          <AIcon type="FormOutlined" class="edit-icon" @click="handleEditOrganization"/>
+          <j-permission-button
+            hasPermission="device/Instance:update"
+            type="text"
+            @click="handleEditOrganization"
+            class="edit-icon"
+          >
+            <AIcon type="FormOutlined"/>
+          </j-permission-button>
         </div>
         <div class="section-content">
           <TreeList
@@ -76,7 +95,7 @@
         </div>
       </div>
 
-      <!-- 分组部分（暂未启用，如需启用请同步补全国际化文案）
+      <!-- 分组部分（暂未启用，如需启用请同步补全国际化文案）-->
       <!-- <div class="section-card">
         <div class="section-header">
           <div class="header-left">
@@ -147,6 +166,7 @@ import { getOrgList, getBindOrgAuthList } from '@device-manager-ui/api/instance'
 import { useRequest } from '@jetlinks-web/hooks'
 import { moduleRegistry } from '@jetlinks-web-core/utils/module-registry'
 import { useI18n } from 'vue-i18n'
+import { useMenuStore } from '@jetlinks-web-core/store'
 
 const { t: $t } = useI18n()
 
@@ -171,9 +191,14 @@ const permissionMap = {
   delete: $t('DeviceRelationship.index.710824-10'),
   share: $t('DeviceRelationship.index.710824-11'),
 }
+const menuStore = useMenuStore();
 
 const organizationData = ref<any[]>([])
 const groupData = ref<any[]>([])
+
+const isRelation = computed(() => {
+  return menuStore.hasMenu('system/Relationship')
+})
 
 const { data: organizationList, loading: loadingOrganization, reload: reloadOrganizationList } = useRequest(getTreeData_api, {
   defaultParams: {
@@ -246,7 +271,7 @@ const organizationTreeData = computed(() => {
 // ])
 
 // 统计数据
-const relationshipData = computed(() => instanceStore.current?.relations)
+const relationshipData = computed(() => instanceStore.current?.relations || [])
 const relationCount = computed(() => {
   return relationshipData.value?.reduce((acc, cur) => {
     if(cur.related) {

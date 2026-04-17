@@ -31,41 +31,27 @@
         "url": "/iot/home",
         "icon": "icon-zhihuishequ",
         "sortIndex": 1,
-        "showPage": [
-          "dashboard",
-          "device-instance",
-          "device-product"
-        ],
+        "showPage": ["dashboard", "device-instance", "device-product"],
         "permissions": [
           {
             "permission": "device-product",
-            "actions": [
-              "query"
-            ]
+            "actions": ["query"]
           },
           {
             "permission": "device-instance",
-            "actions": [
-              "query"
-            ]
+            "actions": ["query"]
           },
           {
             "permission": "dashboard",
-            "actions": [
-              "query"
-            ]
+            "actions": ["query"]
           },
           {
             "permission": "system_config",
-            "actions": [
-              "query"
-            ]
+            "actions": ["query"]
           },
           {
             "permission": "open-api",
-            "actions": [
-              "query"
-            ]
+            "actions": ["query"]
           }
         ],
         "accessSupport": {
@@ -107,41 +93,27 @@
             "url": "/iot/device/DashBoard",
             "icon": "icon-keshihua",
             "sortIndex": 1,
-            "showPage": [
-              "dashboard",
-              "device-product",
-              "device-instance"
-            ],
+            "showPage": ["dashboard", "device-product", "device-instance"],
             "permissions": [
               {
                 "permission": "device-product",
-                "actions": [
-                  "query"
-                ]
+                "actions": ["query"]
               },
               {
                 "permission": "dashboard",
-                "actions": [
-                  "query"
-                ]
+                "actions": ["query"]
               },
               {
                 "permission": "device-instance",
-                "actions": [
-                  "query"
-                ]
+                "actions": ["query"]
               },
               {
                 "permission": "geo-manager",
-                "actions": [
-                  "find-geo"
-                ]
+                "actions": ["find-geo"]
               },
               {
                 "permission": "system_config",
-                "actions": [
-                  "query"
-                ]
+                "actions": ["query"]
               }
             ],
             "accessSupport": {
@@ -166,53 +138,35 @@
             "icon": "icon-chanpin",
             "sortIndex": 2,
             "assetType": "product",
-            "showPage": [
-              "device-product"
-            ],
+            "showPage": ["device-product"],
             "permissions": [
               {
                 "permission": "transparent-codec",
-                "actions": [
-                  "query",
-                  "save"
-                ]
+                "actions": ["query", "save"]
               },
               {
                 "permission": "network-config",
-                "actions": [
-                  "query"
-                ]
+                "actions": ["query"]
               },
               {
                 "permission": "file",
-                "actions": [
-                  "upload-static"
-                ]
+                "actions": ["upload-static"]
               },
               {
                 "permission": "device-product",
-                "actions": [
-                  "query"
-                ]
+                "actions": ["query"]
               },
               {
                 "permission": "device-category",
-                "actions": [
-                  "query"
-                ]
+                "actions": ["query"]
               },
               {
                 "permission": "device-mapping",
-                "actions": [
-                  "query",
-                  "save"
-                ]
+                "actions": ["query", "save"]
               },
               {
                 "permission": "device-instance",
-                "actions": [
-                  "query"
-                ]
+                "actions": ["query"]
               }
             ],
             "buttons": [
@@ -227,21 +181,15 @@
                 "permissions": [
                   {
                     "permission": "protocol-supports",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "device-product",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "device-gateway",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   }
                 ]
               },
@@ -256,40 +204,27 @@
                 "permissions": [
                   {
                     "permission": "protocol-supports",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "file",
-                    "actions": [
-                      "upload-static"
-                    ]
+                    "actions": ["upload-static"]
                   },
                   {
                     "permission": "device-gateway",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "device-mapping",
-                    "actions": [
-                      "query",
-                      "save"
-                    ]
+                    "actions": ["query", "save"]
                   },
                   {
                     "permission": "device-instance",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "device-product",
-                    "actions": [
-                      "save"
-                    ]
+                    "actions": ["save"]
                   }
                 ]
               },
@@ -304,22 +239,15 @@
                 "permissions": [
                   {
                     "permission": "device-product",
-                    "actions": [
-                      "query",
-                      "save"
-                    ]
+                    "actions": ["query", "save"]
                   },
                   {
                     "permission": "device-gateway",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "protocol-supports",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   }
                 ]
               },
@@ -334,21 +262,15 @@
                 "permissions": [
                   {
                     "permission": "device-product",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "protocol-supports",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "device-gateway",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   }
                 ]
               },
@@ -363,28 +285,19 @@
                 "permissions": [
                   {
                     "permission": "protocol-supports",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "file",
-                    "actions": [
-                      "upload-static"
-                    ]
+                    "actions": ["upload-static"]
                   },
                   {
                     "permission": "device-product",
-                    "actions": [
-                      "query",
-                      "save"
-                    ]
+                    "actions": ["query", "save"]
                   },
                   {
                     "permission": "device-gateway",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   }
                 ]
               },
@@ -399,21 +312,15 @@
                 "permissions": [
                   {
                     "permission": "device-product",
-                    "actions": [
-                      "delete"
-                    ]
+                    "actions": ["delete"]
                   },
                   {
                     "permission": "device-gateway",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "protocol-supports",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   }
                 ]
               },
@@ -428,28 +335,19 @@
                 "permissions": [
                   {
                     "permission": "protocol-supports",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "file",
-                    "actions": [
-                      "upload-static"
-                    ]
+                    "actions": ["upload-static"]
                   },
                   {
                     "permission": "device-product",
-                    "actions": [
-                      "query",
-                      "save"
-                    ]
+                    "actions": ["query", "save"]
                   },
                   {
                     "permission": "device-gateway",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   }
                 ]
               }
@@ -481,55 +379,38 @@
             },
             "supportDataAccess": true,
             "assetType": "device",
-            "showPage": [
-              "device-instance"
-            ],
+            "showPage": ["device-instance"],
             "permissions": [
               {
                 "permission": "transparent-codec",
-                "actions": [
-                  "query"
-                ]
+                "actions": ["query"]
               },
               {
                 "permission": "protocol-supports",
-                "actions": [
-                  "query"
-                ]
+                "actions": ["query"]
               },
               {
                 "permission": "device-api",
-                "actions": [
-                  "query-device-events"
-                ]
+                "actions": ["query-device-events"]
               },
               {
                 "permission": "things-collector",
-                "actions": [
-                  "save",
-                  "delete"
-                ]
+                "actions": ["save", "delete"]
               },
               {
                 "permission": "edge-operations",
-                "actions": [
-                  "invoke"
-                ]
+                "actions": ["invoke"]
               },
               {
                 "permission": "device-gateway",
-                "actions": [
-                  "query"
-                ]
+                "actions": ["query"]
               },
               {
                 "permission": "system_config",
-                "actions": [
-                  "query"
-                ]
+                "actions": ["query"]
               },
-              {"permission": "system-monitor", "actions": ["query"]},
-              {"permission": "device-gateway-manager", "actions": ["save"]}
+              { "permission": "system-monitor", "actions": ["query"] },
+              { "permission": "device-gateway-manager", "actions": ["save"] }
             ],
             "buttons": [
               {
@@ -543,21 +424,15 @@
                 "permissions": [
                   {
                     "permission": "device-product",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "device-instance",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "assets-bind",
-                    "actions": [
-                      "bind-all"
-                    ]
+                    "actions": ["bind-all", "query"]
                   }
                 ]
               },
@@ -572,22 +447,15 @@
                 "permissions": [
                   {
                     "permission": "device-gateway",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "device-product",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "device-instance",
-                    "actions": [
-                      "query",
-                      "export"
-                    ]
+                    "actions": ["query", "export"]
                   }
                 ]
               },
@@ -602,28 +470,19 @@
                 "permissions": [
                   {
                     "permission": "device-gateway",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "device-product",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "device-instance",
-                    "actions": [
-                      "import",
-                      "query"
-                    ]
+                    "actions": ["import", "query"]
                   },
                   {
                     "permission": "file",
-                    "actions": [
-                      "upload-static"
-                    ]
+                    "actions": ["upload-static"]
                   }
                 ]
               },
@@ -638,78 +497,58 @@
                 "permissions": [
                   {
                     "permission": "file",
-                    "actions": [
-                      "upload-static"
-                    ]
+                    "actions": ["upload-static"]
                   },
                   {
                     "permission": "visualization",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "organization",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "device-opt-api",
-                    "actions": [
-                      "read-property",
-                      "invoke-function",
-                      "write-property"
-                    ]
+                    "actions": ["read-property", "invoke-function", "write-property"]
                   },
                   {
                     "permission": "device-gateway",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "dictionary",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "device-category",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "device-mapping",
-                    "actions": [
-                      "query",
-                      "save"
-                    ]
+                    "actions": ["query", "save"]
                   },
                   {
                     "permission": "device-instance",
-                    "actions": [
-                      "query",
-                      "save"
-                    ]
+                    "actions": ["query", "save"]
                   },
                   {
                     "permission": "device-product",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "media-server",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "dashboard",
                     "actions": [
                       "query"
+                    ]
+                  },
+                  {
+                    "permission": "assets-bind",
+                    "actions": [
+                      "bind-all"
                     ]
                   }
                 ]
@@ -725,23 +564,15 @@
                 "permissions": [
                   {
                     "permission": "device-gateway",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "device-product",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "device-instance",
-                    "actions": [
-                      "enable",
-                      "disable",
-                      "query"
-                    ]
+                    "actions": ["enable", "disable", "query"]
                   }
                 ]
               },
@@ -756,22 +587,15 @@
                 "permissions": [
                   {
                     "permission": "device-product",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "device-instance",
-                    "actions": [
-                      "query",
-                      "delete"
-                    ]
+                    "actions": ["query", "delete"]
                   },
                   {
                     "permission": "device-gateway",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   }
                 ]
               },
@@ -786,28 +610,23 @@
                 "permissions": [
                   {
                     "permission": "file",
-                    "actions": [
-                      "upload-static"
-                    ]
+                    "actions": ["upload-static"]
                   },
                   {
                     "permission": "device-product",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "device-instance",
-                    "actions": [
-                      "query",
-                      "save"
-                    ]
+                    "actions": ["query", "save"]
                   },
                   {
                     "permission": "device-gateway",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
+                  },
+                  {
+                    "permission": "visualization-project",
+                    "actions": ["add", "save"]
                   }
                 ]
               },
@@ -822,10 +641,7 @@
                 "permissions": [
                   {
                     "permission": "edge-manager",
-                    "actions": [
-                      "remote",
-                      "proxy"
-                    ]
+                    "actions": ["remote", "proxy"]
                   }
                 ]
               }
@@ -852,9 +668,7 @@
             },
             "supportDataAccess": true,
             "assetType": "deviceCategory",
-            "showPage": [
-              "device-category"
-            ],
+            "showPage": ["device-category"],
             "permissions": [],
             "buttons": [
               {
@@ -868,9 +682,7 @@
                 "permissions": [
                   {
                     "permission": "device-category",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   }
                 ]
               },
@@ -885,10 +697,7 @@
                 "permissions": [
                   {
                     "permission": "device-category",
-                    "actions": [
-                      "query",
-                      "delete"
-                    ]
+                    "actions": ["query", "delete"]
                   }
                 ]
               },
@@ -903,10 +712,7 @@
                 "permissions": [
                   {
                     "permission": "device-category",
-                    "actions": [
-                      "query",
-                      "save"
-                    ]
+                    "actions": ["query", "save"]
                   }
                 ]
               },
@@ -921,10 +727,11 @@
                 "permissions": [
                   {
                     "permission": "device-category",
-                    "actions": [
-                      "query",
-                      "save"
-                    ]
+                    "actions": ["query", "save"]
+                  },
+                  {
+                    "permission": "visualization-project",
+                    "actions": ["add", "save"]
                   }
                 ]
               }
@@ -964,22 +771,15 @@
             "sortIndex": 1,
             "url": "/iot/link/dashboard",
             "icon": "icon-keshihua",
-            "showPage": [
-              "dashboard",
-              "network-config"
-            ],
+            "showPage": ["dashboard", "network-config"],
             "permissions": [
               {
                 "permission": "network-config",
-                "actions": [
-                  "query"
-                ]
+                "actions": ["query"]
               },
               {
                 "permission": "dashboard",
-                "actions": [
-                  "query"
-                ]
+                "actions": ["query"]
               }
             ],
             "accessSupport": {
@@ -1003,9 +803,7 @@
             "sortIndex": 2,
             "url": "/iot/link/accessConfig",
             "icon": "icon-wangguanzishebei",
-            "showPage": [
-              "device-gateway"
-            ],
+            "showPage": ["device-gateway"],
             "permissions": [],
             "buttons": [
               {
@@ -1019,15 +817,11 @@
                 "permissions": [
                   {
                     "permission": "device-gateway",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "network-config",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   }
                 ]
               },
@@ -1042,10 +836,7 @@
                 "permissions": [
                   {
                     "permission": "device-gateway",
-                    "actions": [
-                      "query",
-                      "delete"
-                    ]
+                    "actions": ["query", "delete"]
                   }
                 ]
               },
@@ -1060,10 +851,7 @@
                 "permissions": [
                   {
                     "permission": "device-gateway",
-                    "actions": [
-                      "query",
-                      "save"
-                    ]
+                    "actions": ["query", "save"]
                   }
                 ]
               },
@@ -1078,50 +866,31 @@
                 "permissions": [
                   {
                     "permission": "protocol-supports",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "opc-point",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "network-config",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "device-gateway",
-                    "actions": [
-                      "query",
-                      "save"
-                    ]
+                    "actions": ["query", "save"]
                   },
                   {
                     "permission": "opc-client",
-                    "actions": [
-                      "query",
-                      "save",
-                      "delete"
-                    ]
+                    "actions": ["query", "save", "delete"]
                   },
                   {
                     "permission": "opc-device-bind",
-                    "actions": [
-                      "query",
-                      "save",
-                      "delete"
-                    ]
+                    "actions": ["query", "save", "delete"]
                   },
                   {
                     "permission": "gb28181-cascade",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   }
                 ]
               },
@@ -1136,58 +905,39 @@
                 "permissions": [
                   {
                     "permission": "protocol-supports",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "opc-point",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "certificate",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "network-config",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "media-gateway",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "device-gateway",
-                    "actions": [
-                      "query",
-                      "save"
-                    ]
+                    "actions": ["query", "save"]
                   },
                   {
                     "permission": "opc-client",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "opc-device-bind",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "gb28181-cascade",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   }
                 ]
               }
@@ -1213,9 +963,7 @@
             "sortIndex": 3,
             "url": "/iot/link/protocol",
             "icon": "icon-tongzhiguanli",
-            "showPage": [
-              "protocol-supports"
-            ],
+            "showPage": ["protocol-supports"],
             "permissions": [],
             "buttons": [
               {
@@ -1229,9 +977,7 @@
                 "permissions": [
                   {
                     "permission": "protocol-supports",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   }
                 ]
               },
@@ -1246,10 +992,7 @@
                 "permissions": [
                   {
                     "permission": "protocol-supports",
-                    "actions": [
-                      "query",
-                      "delete"
-                    ]
+                    "actions": ["query", "delete"]
                   }
                 ]
               },
@@ -1264,22 +1007,15 @@
                 "permissions": [
                   {
                     "permission": "protocol-supports",
-                    "actions": [
-                      "query",
-                      "save"
-                    ]
+                    "actions": ["query", "save"]
                   },
                   {
                     "permission": "file",
-                    "actions": [
-                      "upload-static"
-                    ]
+                    "actions": ["upload-static"]
                   },
                   {
                     "permission": "system_config",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   }
                 ]
               },
@@ -1294,22 +1030,15 @@
                 "permissions": [
                   {
                     "permission": "protocol-supports",
-                    "actions": [
-                      "query",
-                      "save"
-                    ]
+                    "actions": ["query", "save"]
                   },
                   {
                     "permission": "file",
-                    "actions": [
-                      "upload-static"
-                    ]
+                    "actions": ["upload-static"]
                   },
                   {
                     "permission": "system_config",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   }
                 ]
               }
@@ -1335,9 +1064,7 @@
             "sortIndex": 5,
             "url": "/iot/link/type",
             "icon": "icon-wangluozujian",
-            "showPage": [
-              "network-config"
-            ],
+            "showPage": ["network-config"],
             "permissions": [],
             "buttons": [
               {
@@ -1351,15 +1078,11 @@
                 "permissions": [
                   {
                     "permission": "network-config",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "certificate",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   }
                 ]
               },
@@ -1374,11 +1097,7 @@
                 "permissions": [
                   {
                     "permission": "network-config",
-                    "actions": [
-                      "query",
-                      "save",
-                      "action"
-                    ]
+                    "actions": ["query", "save", "action"]
                   }
                 ]
               },
@@ -1393,10 +1112,7 @@
                 "permissions": [
                   {
                     "permission": "network-config",
-                    "actions": [
-                      "query",
-                      "delete"
-                    ]
+                    "actions": ["query", "delete"]
                   }
                 ]
               },
@@ -1411,16 +1127,11 @@
                 "permissions": [
                   {
                     "permission": "network-config",
-                    "actions": [
-                      "query",
-                      "save"
-                    ]
+                    "actions": ["query", "save"]
                   },
                   {
                     "permission": "certificate",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   }
                 ]
               },
@@ -1435,16 +1146,11 @@
                 "permissions": [
                   {
                     "permission": "network-config",
-                    "actions": [
-                      "query",
-                      "save"
-                    ]
+                    "actions": ["query", "save"]
                   },
                   {
                     "permission": "certificate",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   }
                 ]
               }
@@ -1470,9 +1176,7 @@
             "sortIndex": 6,
             "url": "/iot/link/Certificate",
             "icon": "icon-zhengshuguanli",
-            "showPage": [
-              "certificate"
-            ],
+            "showPage": ["certificate"],
             "permissions": [],
             "buttons": [
               {
@@ -1486,10 +1190,7 @@
                 "permissions": [
                   {
                     "permission": "certificate",
-                    "actions": [
-                      "query",
-                      "delete"
-                    ]
+                    "actions": ["query", "delete"]
                   }
                 ]
               },
@@ -1504,10 +1205,7 @@
                 "permissions": [
                   {
                     "permission": "certificate",
-                    "actions": [
-                      "query",
-                      "save"
-                    ]
+                    "actions": ["query", "save"]
                   }
                 ]
               },
@@ -1522,10 +1220,7 @@
                 "permissions": [
                   {
                     "permission": "certificate",
-                    "actions": [
-                      "query",
-                      "save"
-                    ]
+                    "actions": ["query", "save"]
                   }
                 ]
               },
@@ -1540,9 +1235,7 @@
                 "permissions": [
                   {
                     "permission": "certificate",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   }
                 ]
               }
@@ -1568,9 +1261,7 @@
             "sortIndex": 9,
             "url": "/iot/link/firmware",
             "icon": "icon-yuanchengshengji",
-            "showPage": [
-              "firmware-manager"
-            ],
+            "showPage": ["firmware-manager"],
             "permissions": [],
             "buttons": [
               {
@@ -1584,21 +1275,15 @@
                 "permissions": [
                   {
                     "permission": "firmware-upgrade-task-manager",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "firmware-manager",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "device-instance",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   }
                 ]
               },
@@ -1613,35 +1298,23 @@
                 "permissions": [
                   {
                     "permission": "device-product",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "device-instance",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "firmware-upgrade-task-manager",
-                    "actions": [
-                      "query",
-                      "save",
-                      "deploy"
-                    ]
+                    "actions": ["query", "save", "deploy"]
                   },
                   {
                     "permission": "firmware-manager",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "system_config",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   }
                 ]
               },
@@ -1656,16 +1329,11 @@
                 "permissions": [
                   {
                     "permission": "firmware-manager",
-                    "actions": [
-                      "query",
-                      "delete"
-                    ]
+                    "actions": ["query", "delete"]
                   },
                   {
                     "permission": "firmware-upgrade-task-manager",
-                    "actions": [
-                      "delete"
-                    ]
+                    "actions": ["delete"]
                   }
                 ]
               },
@@ -1680,36 +1348,23 @@
                 "permissions": [
                   {
                     "permission": "firmware-manager",
-                    "actions": [
-                      "query",
-                      "save"
-                    ]
+                    "actions": ["query", "save"]
                   },
                   {
                     "permission": "device-product",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "system_config",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "device-instance",
-                    "actions": [
-                      "query"
-                    ]
+                    "actions": ["query"]
                   },
                   {
                     "permission": "firmware-upgrade-task-manager",
-                    "actions": [
-                      "query",
-                      "save",
-                      "deploy"
-                    ]
+                    "actions": ["query", "save", "deploy"]
                   }
                 ]
               }
@@ -1719,9 +1374,7 @@
               "value": "indirect"
             },
             "supportDataAccess": false,
-            "indirectMenus": [
-              "8ddbb67de5f65514105d47b448bfd70e"
-            ]
+            "indirectMenus": ["8ddbb67de5f65514105d47b448bfd70e"]
           },
           {
             "code": "link/plugin",
@@ -1738,15 +1391,11 @@
             "sortIndex": 10,
             "url": "/iot/link/plugin",
             "icon": "BoxPlotOutlined",
-            "showPage": [
-              "plugin-driver"
-            ],
+            "showPage": ["plugin-driver"],
             "permissions": [
               {
                 "permission": "plugin-driver",
-                "actions": [
-                  "query"
-                ]
+                "actions": ["query"]
               }
             ],
             "buttons": [
@@ -1761,9 +1410,7 @@
                 "permissions": [
                   {
                     "permission": "plugin-driver",
-                    "actions": [
-                      "view"
-                    ]
+                    "actions": ["view"]
                   }
                 ]
               },
@@ -1778,9 +1425,7 @@
                 "permissions": [
                   {
                     "permission": "plugin-driver",
-                    "actions": [
-                      "save"
-                    ]
+                    "actions": ["save"]
                   }
                 ]
               },
@@ -1795,9 +1440,7 @@
                 "permissions": [
                   {
                     "permission": "plugin-driver",
-                    "actions": [
-                      "delete"
-                    ]
+                    "actions": ["delete"]
                   }
                 ]
               },
@@ -1812,9 +1455,7 @@
                 "permissions": [
                   {
                     "permission": "plugin-driver",
-                    "actions": [
-                      "save"
-                    ]
+                    "actions": ["save"]
                   }
                 ]
               }
@@ -1851,44 +1492,25 @@
             "permissions": [
               {
                 "permission": "resources-instance",
-                "actions": [
-                  "query",
-                  "save",
-                  "delete"
-                ]
+                "actions": ["query", "save", "delete"]
               },
               {
                 "permission": "resources-install-task",
-                "actions": [
-                  "query",
-                  "save",
-                  "delete"
-                ]
+                "actions": ["query", "save", "delete"]
               },
               {
                 "permission": "resources-library",
-                "actions": [
-                  "query",
-                  "save"
-                ]
+                "actions": ["query", "save"]
               },
               {
                 "permission": "resources-classification",
-                "actions": [
-                  "query",
-                  "save",
-                  "delete"
-                ]
+                "actions": ["query", "save", "delete"]
               },
               {
                 "permission": "resources-classification-type",
-                "actions": [
-                  "query",
-                  "save",
-                  "delete"
-                ]
+                "actions": ["query", "save", "delete"]
               },
-              {"permission": "resources-cloud", "actions": ["query"]}
+              { "permission": "resources-cloud", "actions": ["query"] }
             ],
             "accessSupport": {
               "text": "不支持",
@@ -1933,9 +1555,7 @@
         "sortIndex": 7,
         "url": "/system/Relationship",
         "icon": "icon-shuxingpeizhi",
-        "showPage": [
-          "relation"
-        ],
+        "showPage": ["relation"],
         "permissions": [],
         "buttons": [
           {
@@ -1949,10 +1569,7 @@
             "permissions": [
               {
                 "permission": "relation",
-                "actions": [
-                  "query",
-                  "save"
-                ]
+                "actions": ["query", "save"]
               }
             ]
           },
@@ -1967,10 +1584,7 @@
             "permissions": [
               {
                 "permission": "relation",
-                "actions": [
-                  "query",
-                  "delete"
-                ]
+                "actions": ["query", "delete"]
               }
             ]
           },
@@ -1985,9 +1599,7 @@
             "permissions": [
               {
                 "permission": "relation",
-                "actions": [
-                  "query"
-                ]
+                "actions": ["query"]
               }
             ]
           },
@@ -2002,10 +1614,7 @@
             "permissions": [
               {
                 "permission": "relation",
-                "actions": [
-                  "query",
-                  "save"
-                ]
+                "actions": ["query", "save"]
               }
             ]
           }

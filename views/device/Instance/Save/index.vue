@@ -117,38 +117,47 @@
             </a-select-option>
           </a-select>
         </a-form-item>
-        <a-form-item
-          v-if="instancePageType === 'edge'"
-          :name="['configuration', 'type']"
-          :label="$t('Plugin.index.626239-24')"
+        <RegistryComponent
+          code="instanceSave"
+          v-model:value="modelRef.configuration.type"
+          :productId="modelRef.productId"
+          :masterProductId="modelRef.masterProductId"
+          :type="modelRef.configuration.type"
+          :disabled="!!data.id"
         >
-          <j-card-select
-            :showImage="false"
-            v-model:value="modelRef.configuration.type"
-            :disabled="data.id"
-            :options="[
-              { label: $t('Save.index.902471-17'), value: 'local' },
-              {
-                label: $t('Save.index.902471-18'),
-                value: 'cloud',
-                disabled: !modelRef.productId || !modelRef.masterProductId
-              }
-            ]"
-            :column="3"
-          />
-          <div
-            class="text"
-            v-if="modelRef.configuration?.type === 'local'"
+          <a-form-item
+            key="type"
+            :name="['configuration', 'type']"
+            :label="$t('Plugin.index.626239-24')"
           >
-            {{ $t('Save.index.902471-19') }}
-          </div>
-          <div
-            class="text"
-            v-if="modelRef.configuration?.type === 'cloud'"
-          >
-            {{ $t('Save.index.902471-20') }}
-          </div>
-        </a-form-item>
+            <j-card-select
+              :showImage="false"
+              v-model:value="modelRef.configuration.type"
+              :disabled="data.id"
+              :options="[
+                { label: $t('Save.index.902471-17'), value: 'local' },
+                {
+                  label: $t('Save.index.902471-18'),
+                  value: 'cloud',
+                  disabled: !modelRef.productId || !modelRef.masterProductId
+                }
+              ]"
+              :column="3"
+            />
+            <div
+              class="text"
+              v-if="modelRef.configuration?.type === 'local'"
+            >
+              {{ $t('Save.index.902471-19') }}
+            </div>
+            <div
+              class="text"
+              v-if="modelRef.configuration?.type === 'cloud'"
+            >
+              {{ $t('Save.index.902471-20') }}
+            </div>
+          </a-form-item>
+        </RegistryComponent>
         <a-form-item
           :label="$t('Save.index.902471-12')"
           name="describe"
@@ -179,11 +188,10 @@ import { device } from '../../../../assets'
 import { useI18n } from 'vue-i18n'
 import { isInput } from '@device-manager-ui/utils/utils'
 import { moduleRegistry } from '@jetlinks-web-core/utils/module-registry'
-import { useMircoAppData } from '@jetlinks-web-core/hooks/useMircoApp'
 import { deviceCloudSave } from '@device-manager-ui/api/instance'
 import { ensureVisualizationDashboardProject } from '@device-manager-ui/utils/dashboardProject'
+import {isSaaS} from "@jetlinks-web-core/utils/consts";
 
-const { data: instancePageType } = useMircoAppData('platformName')
 const { t: $t } = useI18n()
 
 const emit = defineEmits(['close', 'save'])
@@ -234,7 +242,7 @@ const vailId = async (_: Record<string, any>, value: string) => {
 
 const ensureDeviceDashboardProject = async (device: any) => {
   try {
-    if (!device?.id || !modelRef.productId) return
+    if ((!device?.id || !modelRef.productId) && !isSaaS) return
     const product = productList.value.find((i) => i.id === modelRef.productId)
     await ensureVisualizationDashboardProject({
       entityId: device.id,
