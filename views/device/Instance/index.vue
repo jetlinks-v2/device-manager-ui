@@ -259,6 +259,7 @@ const modalVisible = ref(false);
 const deleteDeviceId = ref('');
 const deleteState = ref(false);
 const deleteTip = ref($t('Instance.index.133466-3'));
+const hasDepartmentMenu = menuStory.hasMenu('system/Department')
 const transformData = (arr: any[]): any[] => {
     if (Array.isArray(arr) && arr.length) {
         return (arr || []).map((item: any) => {
@@ -934,7 +935,7 @@ onMounted(() => {
     if (routerParams.params.value?.type === 'import') {
         importVisible.value = true;
     }
-    if (isNoCommunity) {
+    if (isNoCommunity && hasDepartmentMenu) {
         columns.value.splice(columns.value.length - 3,0,{
             dataIndex: 'id$dim-assets',
             title: $t('Instance.index.133466-16'),

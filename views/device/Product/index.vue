@@ -31,7 +31,7 @@
             </j-permission-button>
             <j-permission-button
                 key="quick"
-              v-if="sourceMenu && isNoCommunity"
+              v-if="hasSourceMenu && isNoCommunity"
               hasPermission="device/Product:add"
               @click="menuStory.jumpPage('device/Product/QuickCreate', {})"
             >
@@ -278,7 +278,8 @@ const columns = [
   },
 ];
 const permission = useAuthStore().hasPermission(`device/Product:import`);
-const sourceMenu = menuStory.hasMenu(`resource/Resource`);
+const hasSourceMenu = menuStory.hasMenu(`resource/Resource`);
+const hasDepartmentMenu = menuStory.hasMenu('system/Department');
 const _selectedRowKeys = ref<string[]>([]);
 const currentForm = ref({});
 const syncCacheVisible = ref(false)
@@ -291,7 +292,7 @@ const batchActions = computed(() => {
       key: 'import',
       text: $t("Product.index.660348-1"),
       icon: 'UploadOutlined',
-      permission: type === 'iot' ? 'device/Product:import' : true,
+      permission: 'device/Product:import',
       onClick: () => {
         // 触发文件选择
         const input = document.createElement('input');
@@ -732,7 +733,7 @@ onMounted(() => {
       };
     });
   }
-  if (isNoCommunity) {
+  if (isNoCommunity && hasDepartmentMenu) {
     query.columns.splice(query.columns.length - 2, 0, {
       title: $t("Product.index.660348-34"),
       key: "id$dim-assets",
