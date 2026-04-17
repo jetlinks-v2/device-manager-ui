@@ -336,6 +336,7 @@ import { useI18n } from 'vue-i18n'
 import { tabs } from './asyncComponent'
 import { useMircoAppData } from '@jetlinks-web-core/hooks/useMircoApp'
 import { useRegistryOptions } from '@jetlinks-web-core/hooks'
+import { isSaaS } from '@jetlinks-web-core/utils/consts'
 
 const { data: platform } = useMircoAppData('platformName')
 import { deviceStateList } from '@device-manager-ui/views/device/data'
@@ -723,7 +724,11 @@ const getDetail = () => {
       tab: $t('Detail.index.957187-21')
     })
   }
-  if (instanceStore.current?.protocol === 'modbus-tcp' && !keys.includes('Modbus')) {
+  if (
+    instanceStore.current?.protocol === 'modbus-tcp' &&
+    (!isSaaS || !instanceStore.current?.features?.find((item: any) => item?.id === 'transparentCodec')) &&
+    !keys.includes('Modbus')
+  ) {
     list.value.push({
       key: 'Modbus',
       tab: $t('Detail.index.957187-22')

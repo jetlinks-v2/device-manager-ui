@@ -83,6 +83,7 @@
 
 <script setup lang="ts" name="Parsing">
 import { ReloadOutlined, SaveOutlined } from '@ant-design/icons-vue';
+import { isSaaS } from '@jetlinks-web-core/utils/consts';
 import { useInstanceStore } from '../../../../../store/instance';
 import ModbusMapping from './ModbusMapping.vue';
 import ScriptTransparentCodec from './ScriptTransparentCodec.vue';
@@ -119,7 +120,7 @@ function onScriptSave() {
 }
 
 /** 与透明消息编解码配置 provider 一致：jsr223 → 脚本页、modbus → Modbus 页 */
-const ruleType = ref<'javascript' | 'modbus'>('javascript');
+const ruleType = ref<'javascript' | 'modbus'>(isSaaS ? 'modbus' : 'javascript');
 const codecState = ref<Record<string, any> | null>(null);
 
 /** 后端 provider id → 本页已实现的解析方式（仅展示有对应 UI 的项） */
@@ -153,6 +154,9 @@ const parsingCodecMenuItems = computed(() =>
 );
 
 function providerToRuleType(provider: string | undefined): 'javascript' | 'modbus' {
+  if (isSaaS) {
+    return 'modbus';
+  }
   return provider === 'modbus' ? 'modbus' : 'javascript';
 }
 
@@ -178,14 +182,14 @@ async function loadCodecSupports() {
     const res: any = await getTransparentCodecSupports();
     const raw = res.status === 200 && Array.isArray(res.result) ? res.result : [];
     const filtered = raw
-      .filter((s: any) => s?.id && PROVIDER_UI_RULE[s.id])
+      .filter((s: any) => s?.id && PROVIDER_UI_RULE[s.id] && (!isSaaS || s.id === 'modbus'))
       .map((s: any) => ({ id: String(s.id) }));
     parsingCodecSupports.value =
       filtered.length > 0
         ? filtered
-        : [{ id: 'jsr223' }, { id: 'modbus' }];
+        : (isSaaS ? [{ id: 'modbus' }] : [{ id: 'jsr223' }, { id: 'modbus' }]);
   } catch {
-    parsingCodecSupports.value = [{ id: 'jsr223' }, { id: 'modbus' }];
+    parsingCodecSupports.value = isSaaS ? [{ id: 'modbus' }] : [{ id: 'jsr223' }, { id: 'modbus' }];
   }
 }
 
@@ -204,7 +208,7 @@ const getDeviceCode = async () => {
   const did = instanceStore.current?.id;
   if (!pid || !did) {
     codecState.value = null;
-    ruleType.value = pickRuleTypeFromProvider(undefined, parsingCodecSupports.value);
+    ruleType.value = isSaaS ? 'modbus' : pickRuleTypeFromProvider(undefined, parsingCodecSupports.value);
     return;
   }
   const res: any = await deviceCode(pid, did);
@@ -217,7 +221,7 @@ const getDeviceCode = async () => {
 async function loadParsingConfig() {
   if (!instanceStore.current?.id || !instanceStore.current?.productId) {
     codecState.value = null;
-    ruleType.value = 'javascript';
+    ruleType.value = isSaaS ? 'modbus' : 'javascript';
     parsingInitializing.value = false;
     return;
   }

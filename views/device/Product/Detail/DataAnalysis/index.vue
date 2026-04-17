@@ -1,6 +1,12 @@
 
 <template>
-    <div>
+    <a-result
+        v-if="isSaaS"
+        status="info"
+        :title="$t('device.product.detail.dataAnalysis.saas.title') || fallbackTitle"
+        :sub-title="$t('device.product.detail.dataAnalysis.saas.subtitle') || fallbackSubtitle"
+    />
+    <div v-else>
         <div class="top">
             <div>
                 {{ $t('DataAnalysis.index.571961-0') }}
@@ -119,9 +125,13 @@ import {
 } from '../../../../../api/instance';
 import { isBoolean } from 'lodash-es';
 import { onlyMessage } from '@jetlinks-web-core/utils/comm';
+import { isSaaS } from '@jetlinks-web-core/utils/consts';
 import { useI18n } from 'vue-i18n';
 
 const { t: $t } = useI18n();
+const fallbackTitle = '\u4EC5\u4FDD\u7559 Modbus \u6620\u5C04';
+const fallbackSubtitle =
+    'SaaS \u73AF\u5883\u5DF2\u5C4F\u853D\u811A\u672C\u89E3\u6790\u3002\u5982\u9700\u914D\u7F6E Modbus \u6620\u5C04\uFF0C\u8BF7\u5728\u8BBE\u5907\u8BE6\u60C5\u7684\u201C\u6570\u636E\u89E3\u6790\u201D\u6807\u7B7E\u9875\u8FDB\u884C\u64CD\u4F5C\u3002';
 
 const defaultValue =
     `//注册设备下行数据监听器,当平台下发指令给设备时,回调将被调用,用于构造下发给设备的报文

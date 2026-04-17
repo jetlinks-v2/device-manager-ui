@@ -119,6 +119,7 @@ import { useRouterParams } from '@jetlinks-web/hooks'
 import { EventEmitter, onlyMessage } from '@jetlinks-web/utils'
 import { useAuthStore, useSystemStore } from '@jetlinks-web-core/store'
 import { isNoCommunity } from '@jetlinks-web-core/utils/utils'
+import { isSaaS } from '@jetlinks-web-core/utils/consts'
 import { useI18n } from 'vue-i18n'
 import { tabs } from './asyncComponent'
 import { isApplyDashboard } from '@device-manager-ui/utils/dashboardProject'
@@ -131,6 +132,11 @@ const menuStory = useMenuStore()
 const route = useRoute()
 const productStore = useProductStore()
 const routerParams = useRouterParams()
+const isModbusProduct = computed(() => {
+  const messageProtocol = String(productStore.current?.messageProtocol || '').toLowerCase()
+  const transportProtocol = String(productStore.current?.transportProtocol || '').toLowerCase()
+  return messageProtocol === 'modbus-tcp' || transportProtocol === 'modbus-tcp'
+})
 
 const list = ref([
   {
@@ -243,7 +249,7 @@ const getProtocol = async () => {
     const paring = features?.find(
       (item: any) => item.id === 'transparentCodec',
     );
-    if (paring) {
+    if (paring && (!isSaaS || isModbusProduct.value)) {
       list.value.push({
         key: 'DataAnalysis',
         tab: $t('Detail.index.478940-13'),
