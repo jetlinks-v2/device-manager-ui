@@ -31,7 +31,7 @@
             </j-permission-button>
             <j-permission-button
                 key="quick"
-              v-if="sourceMenu && isNoCommunity && type === 'iot'"
+              v-if="hasSourceMenu && isNoCommunity"
               hasPermission="device/Product:add"
               @click="menuStory.jumpPage('device/Product/QuickCreate', {})"
             >
@@ -164,7 +164,7 @@
       </JProTable>
     </FullPage>
     <!-- {{ $t('Product.index.660348-0') }}、{{ $t('Product.index.660348-13') }} -->
-    <Save ref="saveRef" :isAdd="isAdd" :type="type" :title="title" @success="refresh" ></Save>
+    <Save ref="saveRef" :isAdd="isAdd" :title="title" @success="refresh" ></Save>
 
     <!-- 同步缓存组件 -->
     <SyncCache v-if="syncCacheVisible" :params="params" @success="refresh" @close="syncCacheVisible = false"/>
@@ -196,13 +196,11 @@ import { accessType } from "../data";
 import { useI18n } from "vue-i18n";
 import { useTermOptions } from '@jetlinks-web/components/es/Search/hooks/useTermOptions'
 import BatchDropdown from "@jetlinks-web-core/components/BatchDropdown/index.vue";
-import { useMircoAppData } from '@jetlinks-web-core/hooks/useMircoApp'
 import {isSaaS} from '@jetlinks-web-core/utils/consts'
 
 const { t: $t } = useI18n();
 
 const slots = useSlots();
-const { data: type } = useMircoAppData('platformName')
 /**
  * 表格数据
  */
@@ -280,7 +278,8 @@ const columns = [
   },
 ];
 const permission = useAuthStore().hasPermission(`device/Product:import`);
-const sourceMenu = menuStory.hasMenu(`resource/Resource`);
+const hasSourceMenu = menuStory.hasMenu(`resource/Resource`);
+const hasDepartmentMenu = menuStory.hasMenu('system/Department');
 const _selectedRowKeys = ref<string[]>([]);
 const currentForm = ref({});
 const syncCacheVisible = ref(false)
@@ -293,7 +292,7 @@ const batchActions = computed(() => {
       key: 'import',
       text: $t("Product.index.660348-1"),
       icon: 'UploadOutlined',
-      permission: type === 'iot' ? 'device/Product:import' : true,
+      permission: 'device/Product:import',
       onClick: () => {
         // 触发文件选择
         const input = document.createElement('input');
@@ -307,10 +306,8 @@ const batchActions = computed(() => {
         };
         input.click();
       }
-    })
-  }
-  if(type === 'iot') {
-    arr.push({
+    },
+    {
       key: 'syncCache',
       text: '同步缓存',
       icon: 'SyncOutlined',
@@ -736,7 +733,7 @@ onMounted(() => {
       };
     });
   }
-  if (isNoCommunity) {
+  if (isNoCommunity && hasDepartmentMenu) {
     query.columns.splice(query.columns.length - 2, 0, {
       title: $t("Product.index.660348-34"),
       key: "id$dim-assets",

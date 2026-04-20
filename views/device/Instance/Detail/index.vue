@@ -334,11 +334,9 @@ import { useSystemStore, useMenuStore, useAuthStore, useAIStore, useUserStore } 
 import { device } from '../../../../assets'
 import { useI18n } from 'vue-i18n'
 import { tabs } from './asyncComponent'
-import { useMircoAppData } from '@jetlinks-web-core/hooks/useMircoApp'
 import { useRegistryOptions } from '@jetlinks-web-core/hooks'
 import { isSaaS } from '@jetlinks-web-core/utils/consts'
 
-const { data: platform } = useMircoAppData('platformName')
 import { deviceStateList } from '@device-manager-ui/views/device/data'
 import { isApplyDashboard } from '@device-manager-ui/utils/dashboardProject'
 
@@ -538,11 +536,11 @@ const initList = [
   {
     key: 'Log',
     tab: $t('Detail.index.957187-15')
+  },
+  {
+    key: 'DeviceRelationship',
+    tab: $t('Detail.index.957187-31')
   }
-  // {
-  //     key: 'DeviceRelationship',
-  //     tab: '设备关系',
-  // },
 ]
 
 const list = ref([...initList])
@@ -663,12 +661,6 @@ const getStatus = (id: string) => {
 
 const getDetail = () => {
   list.value = [...initList];
-  if (platform !== 'edge') {
-    list.value.push({
-      key: 'DeviceRelationship',
-      tab: $t('Detail.index.957187-31')
-    })
-  }
   const keys = list.value.map((i) => i.key)
   if (permissionStore.hasPermission('rule-engine/Alarm/Log:view') && showThreshold) {
     list.value.push({
