@@ -7,3 +7,10 @@ export const TypeMap = {
   'media':i18n.global.t('plugin.util.039029-4'),
   'ai': 'AI'
 }
+
+export const getPluginTypeLabel = (type?: string) => {
+  if (!type) {
+    return '--'
+  }
+  return TypeMap[type] || type
+}

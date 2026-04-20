@@ -5,6 +5,7 @@ import plugin from '../plug.png'
 import local from '../local.png'
 import protocol from '../protocol.png'
 import network from '../network.png'
+import marketplace from '../plug.png'
 
 export const link = {
     certificate,
@@ -13,5 +14,7 @@ export const link = {
     plugin,
     local,
     protocol,
-    network
+    network,
+    /** 能力市场（暂复用 plug 图标） */
+    marketplace,
 }
