@@ -15,6 +15,7 @@
         :is="PreviewComp"
         :draftId="dashboardDraftId"
         :targetId="targetId"
+        :componentScope="componentScope"
         embedded
         :showHeader="false"
       />
@@ -53,6 +54,11 @@ const instanceStore = useInstanceStore()
 const route = useRoute()
 
 const projectId = computed(() => `project_${instanceStore.current.productId || route.params.id}`)
+
+const componentScope = {
+  includeDefaults: true,
+  modules: ['device-manager-ui', 'rule-engine-manager-ui'],
+} as const
 
 const reload = async () => {
   if (!projectId.value) {

@@ -16,10 +16,10 @@
 </template>
 
 <script lang="ts" setup>
-import { getPropertyData } from '../../../../../../../api/instance';
-import { useInstanceStore } from '../../../../../../../store/instance';
+import { getPropertyData } from '@device-manager-ui/api/instance';
+import {useDeviceDetail} from "../useDeviceDetail";
 
-const instanceStore = useInstanceStore();
+const instanceStore = useDeviceDetail();
 
 const prop = defineProps({
     data: {
@@ -55,7 +55,7 @@ const onResume = () => {
 const query = async () => {
     loading.value = true;
     const resp = await getPropertyData(
-        instanceStore.current.id,
+        instanceStore.value.id,
         // encodeQuery({
         //     paging: false,
         //     terms: {
