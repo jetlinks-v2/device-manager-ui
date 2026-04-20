@@ -35,8 +35,8 @@
 </template>
 
 <script lang="ts" setup>
-import { getPropertiesInfo, getPropertiesList } from '../../../../../../../api/instance';
-import { useInstanceStore } from '../../../../../../../store/instance';
+import { getPropertiesInfo, getPropertiesList } from '@device-manager-ui/api/instance';
+import {useDeviceDetail} from "../useDeviceDetail";
 import Chart from './Chart.vue';
 import * as echarts from 'echarts';
 import dayjs from 'dayjs';
@@ -59,7 +59,7 @@ const cycle = ref<string>('');
 const agg = ref<string>('AVG');
 const loading = ref<boolean>(false);
 const chartsList = ref<any[]>([]);
-const instanceStore = useInstanceStore();
+const instanceStore = useDeviceDetail();
 const periodOptions = ref<any>([]);
 const options = ref({});
 const list = ['int', 'float', 'double', 'long'];
@@ -72,7 +72,7 @@ const _type = computed(() => {
 
 const queryChartsAggList = async () => {
     loading.value = true;
-    const resp = await getPropertiesInfo(instanceStore.current.id, {
+    const resp = await getPropertiesInfo(instanceStore.value.id, {
         columns: [
             {
                 property: prop.data.id,
@@ -136,7 +136,7 @@ const queryChartsAggList = async () => {
 const queryChartsList = async () => {
     loading.value = true;
     const resp = await getPropertiesList(
-        instanceStore.current.id,
+        instanceStore.value.id,
         prop.data.id,
         {
             paging: false,

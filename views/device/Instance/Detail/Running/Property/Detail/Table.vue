@@ -91,13 +91,13 @@
 </template>
 
 <script lang='ts' setup>
-import { getPropertyData } from '../../../../../../../api/instance'
-import { useInstanceStore } from '../../../../../../../store/instance'
+import { getPropertyData } from '@device-manager-ui/api/instance'
 import dayjs from 'dayjs'
 import { getType } from '../index'
 import ValueRender from '../ValueRender.vue'
 import { JsonViewer } from 'vue3-json-viewer'
 import { useI18n } from 'vue-i18n'
+import {useDeviceDetail} from "../useDeviceDetail";
 
 const { t: $t } = useI18n()
 const _props = defineProps({
@@ -112,7 +112,7 @@ const _props = defineProps({
   }
 })
 
-const instanceStore = useInstanceStore()
+const instanceStore = useDeviceDetail()
 const dataSource = ref({
   pageIndex: 0,
   pageSize: 12,
@@ -135,7 +135,7 @@ const valueType = {
 }
 
 const columns = computed(() => {
-  const propertyQueryById = (instanceStore.current.features || []).find((i: any) => i.id === 'propertyQueryById')
+  const propertyQueryById = (instanceStore.value.features || []).find((i: any) => i.id === 'propertyQueryById')
   const arr: any[] = [
     {
       title: $t('Log.index.848256-1'),
@@ -213,7 +213,7 @@ const showDetail = (item: any) => {
 
 const queryPropertyData = async (params: any, terms?: any) => {
   const resp = await getPropertyData(
-      instanceStore.current.id,
+      instanceStore.value.id,
       _props.data.id,
       {
         ...params,
@@ -267,7 +267,7 @@ const onChange = (_page: any) => {
 
 const _download = (record: any) => {
   const downNode = document.createElement('a')
-  downNode.download = `${instanceStore.current.name}-${
+  downNode.download = `${instanceStore.value.name}-${
       _props.data.name
   }${dayjs(new Date().getTime()).format('YYYY-MM-DD-HH-mm-ss')}.txt`
   downNode.style.display = 'none'

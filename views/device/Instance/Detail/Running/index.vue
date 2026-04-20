@@ -32,9 +32,33 @@
             <JEmpty v-else style="margin: 180px 0" />
         </div>
         <div class="property-box-right">
-            <Event v-if="type === 'event'" :data="data" :key="activeKey"/>
-            <Property v-else-if="type === 'property'" :data="properties" />
-            <JEmpty v-else style="margin: 220px 0" />
+            <a-alert
+                v-if="showNoneStorageTip"
+                type="warning"
+                show-icon
+                class="property-box-right__storage-alert"
+            >
+                <template #message>
+                    <span>
+                        {{ $t('Running.index.storagePolicyNonePrefix') }}
+                        <button
+                            v-if="canJumpProductConfig"
+                            type="button"
+                            class="property-box-right__storage-link"
+                            @click="jumpProductConfig"
+                        >
+                            {{ $t('Running.index.storagePolicyLink') }}
+                        </button>
+                        <span v-else>{{ $t('Running.index.storagePolicyLink') }}</span>
+                        {{ $t('Running.index.storagePolicyNoneSuffix') }}
+                    </span>
+                </template>
+            </a-alert>
+            <div class="property-box-right__content">
+                <Event v-if="type === 'event'" :data="data" :key="activeKey"/>
+                <Property v-else-if="type === 'property'" :data="properties" />
+                <JEmpty v-else style="margin: 220px 0" />
+            </div>
         </div>
     </div>
 </template>
@@ -46,6 +70,9 @@ import Event from './Event/index.vue';
 import Property from './Property/index.vue';
 import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
+import { detail as queryProductDetail } from '../../../../../api/product';
+import { useMenuStore } from '@jetlinks-web-core/store/menu';
+import { useAuthStore } from '@jetlinks-web-core/store';
 
 const { t: $t } = useI18n();
 const activeKey = ref<string>('property');
@@ -62,10 +89,19 @@ const type = ref<string>('property');
 const data = ref<Record<string, any>>({});
 const value = ref<string>('');
 const instanceStore = useInstanceStore();
+const menuStore = useMenuStore();
+const permissionStore = useAuthStore();
 const { current } = storeToRefs(instanceStore);
 
 const properties: any = ref(undefined);
 const events: any = ref(undefined);
+const productStorePolicy = ref<string | undefined>(undefined);
+const showNoneStorageTip = computed(() => productStorePolicy.value === 'none');
+const canJumpProductConfig = computed(
+    () => permissionStore.hasPermission('device/Product:view') && !!current.value?.productId,
+);
+
+let productStorePolicyRequest = 0;
 
 watch(
     () => current.value,
@@ -92,6 +128,31 @@ watch(
     {
         immediate: true,
         deep: true,
+    },
+);
+
+watch(
+    () => current.value?.productId,
+    async (productId) => {
+        const requestId = ++productStorePolicyRequest;
+        productStorePolicy.value = undefined;
+
+        if (!productId) {
+            return;
+        }
+
+        const resp: any = await queryProductDetail(productId);
+
+        if (requestId !== productStorePolicyRequest) {
+            return;
+        }
+
+        if (resp.status === 200) {
+            productStorePolicy.value = resp.result?.storePolicy;
+        }
+    },
+    {
+        immediate: true,
     },
 );
 // watch(
@@ -154,6 +215,19 @@ const tabChange = (key: string) => {
         type.value = dt.type;
     }
 };
+
+const jumpProductConfig = () => {
+    if (!current.value?.productId || !canJumpProductConfig.value) {
+        return;
+    }
+
+    menuStore.jumpPage('device/Product/Detail', {
+        params: {
+            id: current.value.productId,
+            tab: 'Device',
+        },
+    });
+};
 </script>
 
 <style lang="less" scoped>
@@ -169,6 +243,29 @@ const tabChange = (key: string) => {
         flex: 1;
         min-width: 0;
         height: 100%;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+
+      &__storage-alert {
+        margin-bottom: 16px;
+      }
+
+      &__storage-link {
+        padding: 0;
+        border: 0;
+        background: transparent;
+        font: inherit;
+        color: #1677ff;
+        cursor: pointer;
+        text-decoration: underline;
+      }
+
+      &__content {
+        flex: 1;
+        min-height: 0;
+      }
+
       :deep(.ant-spin-nested-loading) {
         height: 100%;
         .ant-spin-container {

@@ -727,11 +727,45 @@ export const updateDeviceThreshold = (productId:string,deviceId:string,propertyI
 export const queryDeviceThreshold = (productId: string, deviceId: string,  propertyId: string) => request.get(`/message/preprocessor/device/${productId}/${deviceId}/property/${propertyId}`)
 
 /**
+ * 阈值限制-设备物模型阈值分页查询
+ * @param productId
+ * @param deviceId
+ * @param data
+ */
+export const queryDeviceThresholdPage = (productId: string, deviceId: string, data: Record<string, any>) =>
+  request.post(`/message/preprocessor/device/${productId}/${deviceId}/property/_query`, data)
+
+/**
+ * 阈值限制-设备物模型阈值列表（不分页）
+ * @param productId
+ * @param deviceId
+ * @param data
+ */
+export const queryDeviceThresholdList = (productId: string, deviceId: string, data: Record<string, any>) =>
+  request.post(`/message/preprocessor/product/${productId}/${deviceId}/property/_list`, data)
+
+/**
  * 阈值限制-产品物模型阈值限制
  * @param productId
  * @param propertyId
  */
 export const queryProductThreshold = (productId: string, propertyId: string,hiddenError:boolean) => request.get(`/message/preprocessor/product/${productId}/property/${propertyId}`,{},{ hiddenError })
+
+/**
+ * 阈值限制-产品物模型阈值分页查询
+ * @param productId
+ * @param data
+ */
+export const queryProductThresholdPage = (productId: string, data: Record<string, any>) =>
+  request.post(`/message/preprocessor/product/${productId}/property/_query`, data)
+
+/**
+ * 阈值限制-产品物模型阈值列表（不分页）
+ * @param productId
+ * @param data
+ */
+export const queryProductThresholdList = (productId: string, data: Record<string, any>) =>
+  request.post(`/message/preprocessor/product/${productId}/property/_list`, data)
 
 /**
  * 阈值限制-删除产品物模型的阈值
@@ -771,6 +805,80 @@ export const getRemoteProxyUrl = (deviceId: string) => request.post(`/edge/devic
 export const getRemoteToken = (deviceId: string, data: any) => request.post(`/edge/device/${deviceId}/token`, data)
 
 export const getRemoteSystem = (deviceId: string, data: any) => request.post(`/edge/device/${deviceId}/_/system/config/scopes`, data)
+
+export type EdgeSpeedTestParams = {
+    byteLength?: number
+    random?: boolean
+    duration?: number
+    duplex?: boolean
+    concurrency?: number
+}
+
+export type RemoteSystemFileInfo = {
+    path: string
+    name: string
+    mediaType?: string | {
+        type?: string
+        subtype?: string
+    }
+    directory: boolean
+    size: number
+    permission?: string[]
+    canWrite: boolean
+    createTime: number
+    modifyTime: number
+}
+
+export const speedTestByEdge = (deviceId: string, params: EdgeSpeedTestParams = {}) => {
+    const search = new URLSearchParams()
+    Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+            search.set(key, String(value))
+        }
+    })
+    return ndJson.get(`/edge/device/${deviceId}/speed-test?${search.toString()}`)
+}
+
+const remoteSystemFileCommand = (deviceId: string, commandId: string, data: Record<string, any> = {}) =>
+    request.post(`/edge/device/${deviceId}/_/file/system/command/${commandId}/_execute`, data)
+
+export const getRemoteSystemWorkingDirectory = (deviceId: string) =>
+    remoteSystemFileCommand(deviceId, 'SystemFileWorkingDirectory')
+
+export const listRemoteSystemFiles = (deviceId: string, data: Record<string, any>) =>
+    remoteSystemFileCommand(deviceId, 'SystemFileList', data)
+
+export const createRemoteSystemDirectory = (deviceId: string, path: string) =>
+    remoteSystemFileCommand(deviceId, 'SystemFileCreateDirectory', { path })
+
+export const moveRemoteSystemFile = (
+    deviceId: string,
+    data: {
+        fromPath: string
+        toPath: string
+        copy?: boolean
+    },
+) => remoteSystemFileCommand(deviceId, 'SystemFileMove', data)
+
+export const deleteRemoteSystemFile = (deviceId: string, path: string) =>
+    remoteSystemFileCommand(deviceId, 'SystemFileDelete', { path })
+
+export const uploadRemoteSystemFile = (
+    deviceId: string,
+    path: string,
+    data: FormData,
+    options: Record<string, any> = {},
+) => request.post(
+    `/edge/device/${deviceId}/_/file/system/upload?path=${encodeURIComponent(path)}`,
+    data,
+    {
+        timeout: 0,
+        ...options,
+    },
+)
+
+export const downloadRemoteSystemFile = (deviceId: string, fileName: string) =>
+    request.get(`/edge/device/${deviceId}/_/file/system/download?fileName=${encodeURIComponent(fileName)}`, {}, { responseType: 'blob' })
 
 /**
  * 访问边端设备列表

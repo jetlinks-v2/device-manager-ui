@@ -37,6 +37,26 @@ export const getPublic = (id: string, path: string) => request.get(`/plugin/driv
 // export const getTypes = () => request.get(`/dictionary/internal-plugin-type/items`)
 export const getTypes = () => request.get(`/plugin/driver/types`)
 
+/**
+ * 当前环境支持的插件安装方式（jar / marketplace 等），用于前端过滤来源选项。
+ * 返回结构：result 为字符串数组，如 ["jar","marketplace"]
+ */
+export const getProviders = () => request.get(`/plugin/driver/providers`)
+
 export const vailIdFn = (id: string ) => request.get(`/plugin/driver/id/_validate`, { id })
 
 export const getProductByPluginId = (id: string) => request.get(`/plugin/driver/${id}/products`)
+
+/**
+ * POST /marketplace/capabilities/{type}/{capId}/installed
+ * body: 资源 id 列表（可为空数组）
+ */
+export const listInstalledMarketplaceResources = (
+    type: string,
+    capId: string,
+    resourceIds: string[],
+) =>
+    request.post(
+        `/marketplace/capabilities/${encodeURIComponent(type)}/${encodeURIComponent(capId)}/installed`,
+        resourceIds,
+    )

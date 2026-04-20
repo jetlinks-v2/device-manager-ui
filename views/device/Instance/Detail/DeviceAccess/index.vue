@@ -492,13 +492,12 @@ watch(
 )
 
 watch(
-  () => traceGroups.value,
-  (groups) => {
-    if (!groups?.length) return
+  () => traceGroups.value.map((group) => `${group.key}:${group.version ?? 0}`).join('|'),
+  () => {
+    if (!traceGroups.value.length) return
     // 通信链路收到数据后，节流刷新 sessions（最大间隔 1 秒）
     scheduleSessionAutoRefresh()
   },
-  { deep: true },
 )
 
 watch(deviceId, (id, prev) => {
