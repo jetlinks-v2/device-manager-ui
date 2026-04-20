@@ -58,6 +58,11 @@ const props = defineProps({
 const value = ref(props.modelValue);
 const list = ref<any>(props.fileName ? [{name: props.fileName}] : []);
 const fileCache = ref();
+
+const getUploadErrorMessage = (response: any) => {
+  return response?.message || response?.result?.message || $t('plugin.UploadFile.628586-5');
+};
+
 const remove = () => {
   list.value = [];
   emit('update:modelValue', '');
@@ -78,8 +83,18 @@ const beforeUpload: UploadProps['beforeUpload'] = (file, fl) => {
 const handleChange = async (info: UploadChangeParam) => {
   emit('update:uploading', true);
   if (info.file.status === 'done') {
+    const response = info.file.response;
+    const result = response?.result;
+    if (response?.success === false || !result) {
+      list.value = fileCache.value || [];
+      Notification.error({
+        message: $t('plugin.UploadFile.628586-5'),
+        description: getUploadErrorMessage(response),
+      });
+      emit('update:uploading', false);
+      return;
+    }
     emit('update:uploading', false);
-    const result = info.file.response?.result;
     const f = result.accessUrl;
     onlyMessage($t('plugin.UploadFile.628586-4'), 'success');
     value.value = f;
@@ -92,7 +107,7 @@ const handleChange = async (info: UploadChangeParam) => {
       Notification.error({
         // key: '403',
         message: $t('plugin.UploadFile.628586-5'),
-        description: info.file.response?.message,
+        description: getUploadErrorMessage(info.file.response),
       });
       // emit('update:modelValue', { err:'file_upload_error'});
       emit('update:uploading', false);

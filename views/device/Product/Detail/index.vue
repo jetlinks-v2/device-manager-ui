@@ -112,7 +112,7 @@
 
 <script lang="ts" setup>
 import { useProductStore } from '../../../../store/product'
-import { _deploy, _undeploy, getProtocolDetail } from '../../../../api/product'
+import { _deploy, _undeploy } from '../../../../api/product'
 import { handleParamsToString } from '@jetlinks-web-core/utils'
 import { useMenuStore } from '@jetlinks-web-core/store/menu'
 import { useRouterParams } from '@jetlinks-web/hooks'
@@ -223,75 +223,65 @@ const handleUndeploy = () => {
  * 是否显示数据解析模块
  */
 const getProtocol = async () => {
-    list.value = [
-        {
-            key: 'Info',
-            tab: $t('Detail.index.478940-9'),
-        },
-        {
-            key: 'Metadata',
-            tab: $t('Detail.index.478940-10'),
-            class: 'objectModel',
-        },
-        {
-            key: 'Device',
-            tab: $t('Detail.index.478940-11'),
-        },
-    ];
+  list.value = [
+    {
+      key: 'Info',
+      tab: $t('Detail.index.478940-9')
+    },
+    {
+      key: 'Metadata',
+      tab: $t('Detail.index.478940-10'),
+      class: 'objectModel'
+    },
+    {
+      key: 'Device',
+      tab: $t('Detail.index.478940-11')
+    }
+  ]
 
-    const features =  productStore.current?.features || []
-    const paring = features?.find(
-      (item: any) => item.id === 'transparentCodec',
-    );
-    if (paring) {
+  const features = productStore.current?.features || []
+  const paring = features.find((item: any) => item.id === 'transparentCodec')
+  if (paring) {
+    list.value.push({
+      key: 'DataAnalysis',
+      tab: $t('Detail.index.478940-13')
+    })
+  }
+
+  const supportFirmware = features.find((item: any) => item.id === 'supportFirmware')
+  if (supportFirmware && permissionStore.hasPermission('device/Firmware:view') && isNoCommunity) {
+    list.value.push({
+      key: 'Firmware',
+      tab: $t('Detail.index.478940-14')
+    })
+  }
+
+  if (features.find((item: any) => item.id === 'diffMetadataSameProduct')) {
+    list.value.push({ key: 'MetadataMap', tab: $t('Detail.index.478940-15') })
+  }
+
+  if (permissionStore.hasPermission('rule-engine/Alarm/Log:view') && showThreshold) {
+    list.value.push({
+      key: 'AlarmRecord',
+      tab: $t('Detail.index.478940-16')
+    })
+    if (isNoCommunity) {
       list.value.push({
-        key: 'DataAnalysis',
-        tab: $t('Detail.index.478940-13'),
-      });
-    }
-      const supportFirmware = features?.find(
-        (item: any) => item.id === 'supportFirmware',
-      );
-    if (
-      supportFirmware &&
-      permissionStore.hasPermission('device/Firmware:view') &&
-      isNoCommunity
-    ) {
+        key: 'Invalid',
+        tab: $t('Detail.index.478940-17')
+      })
       list.value.push({
-        key: 'Firmware',
-        tab: $t('Detail.index.478940-14'),
-      });
+        key: 'Threshold',
+        tab: $t('Detail.index.478940-21')
+      })
     }
-    if (
-      features.find(
-        (item: any) => item.id === 'diffMetadataSameProduct',
-      )
-    ) {
-      list.value.push({ key: 'MetadataMap', tab: $t('Detail.index.478940-15') });
-    }
-    if (
-      permissionStore.hasPermission(
-        'rule-engine/Alarm/Log:view',
-      ) &&
-      showThreshold
-    ) {
-      list.value.push({
-        key: 'AlarmRecord',
-        tab: $t('Detail.index.478940-16'),
-      });
-      if( isNoCommunity ){
-        list.value.push({
-          key: 'Invalid',
-          tab: $t('Detail.index.478940-17')
-        })
-      }
-    }
+  }
 
   // 产品仪表盘（展示该产品下设备对应的仪表盘项目）
   if (isApplyDashboard() && !list.value.some((i) => i.key === 'Dashboard')) {
     list.value.push({ key: 'Dashboard', tab: $t('Detail.index.478940-20') })
   }
-};
+}
 /**
  * 详情页跳转到设备页
  */

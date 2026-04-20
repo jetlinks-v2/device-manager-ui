@@ -38,6 +38,7 @@ export type TraceGroup = {
   messageId?: string
   upstream?: boolean
   downstream?: boolean
+  version?: number
   events: TraceEventItem[]
 }
 
@@ -302,6 +303,10 @@ function buildEventItem(payload: TraceEventItem): TraceEventItem {
   }
 }
 
+function markTraceGroupUpdated(group: TraceGroup): void {
+  group.version = (typeof group.version === 'number' ? group.version : 0) + 1
+}
+
 export function useDeviceTraceLog(deviceId: Ref<string | undefined>) {
   const traceGroups = ref<TraceGroup[]>([])
   let socketSub: { unsubscribe: () => void } | undefined
@@ -455,6 +460,7 @@ export function useDeviceTraceLog(deviceId: Ref<string | undefined>) {
           ...(mid ? { messageId: mid } : {}),
           upstream: ev.upstream,
           downstream: ev.downstream,
+          version: 0,
           events: [ev],
         }
         traceGroups.value.push(newGroup)
@@ -474,6 +480,7 @@ export function useDeviceTraceLog(deviceId: Ref<string | undefined>) {
       dedupeGroupEvents(g)
       g.events.sort(compareTraceEvents)
       trimGroupEventsToLimit(g)
+      markTraceGroupUpdated(g)
     }
 
     if (traceGroups.value.length > MAX_TRACE_GROUPS) {

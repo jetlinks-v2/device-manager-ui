@@ -32,6 +32,20 @@ export type TraceListRow = {
   lastTime: number
 }
 
+const traceRowCache = new WeakMap<TraceGroup, { version: number; row: TraceListRow }>()
+
+function traceGroupVersion(group: TraceGroup): number {
+  return typeof group.version === 'number' ? group.version : 0
+}
+
+export function cloneTraceGroup(group: TraceGroup): TraceGroup {
+  return {
+    ...group,
+    traceIds: group.traceIds ? [...group.traceIds] : undefined,
+    events: group.events.map((event) => ({ ...event })),
+  }
+}
+
 export function truncateText(s: string | undefined, max: number) {
   if (!s) return ''
   const t = String(s).trim()
@@ -302,7 +316,16 @@ export function buildTraceRows(
   opLabel: (op?: string) => string,
 ): TraceListRow[] {
   return groups
-    .map((g) => summarizeTraceGroup(g, opLabel))
+    .map((g) => {
+      const version = traceGroupVersion(g)
+      const cached = traceRowCache.get(g)
+      if (cached && cached.version === version) {
+        return cached.row
+      }
+      const row = summarizeTraceGroup(g, opLabel)
+      traceRowCache.set(g, { version, row })
+      return row
+    })
     .sort((a, b) => b.lastTime - a.lastTime)
 }
 
@@ -318,8 +341,8 @@ export function sortedEvents(group: TraceGroup): TraceGroup['events'] {
   return [...group.events].sort(compareTraceEvents)
 }
 
-/** WebSocket 推送上限，减轻内存与 DOM（列表 + 抽屉时间轴） */
-export const MAX_TRACE_GROUPS = 50
+/** WebSocket 推送上限；列表已做窗口化渲染，这里可以保留更多历史链路。 */
+export const MAX_TRACE_GROUPS = 200
 export const MAX_EVENTS_PER_TRACE_GROUP = 300
 
 /** 单 trace 内仅保留时间轴上最近一段事件（去掉最早一批） */

@@ -84,7 +84,7 @@
                   {{ $t('plugin.index.293829-2') }}
                 </div>
                 <j-ellipsis style="width: 100%">
-                  {{ TypeMap[slotProps.type] || '--' }}
+                  {{ getPluginTypeLabel(slotProps.type) }}
                 </j-ellipsis>
               </a-col>
             </a-row>
@@ -113,7 +113,7 @@
         </CardBox>
       </template>
       <template #type="slotProps">
-        <span>{{ TypeMap[slotProps.type] || '--' }}</span>
+        <span>{{ getPluginTypeLabel(slotProps.type) }}</span>
       </template>
       <template #action="slotProps">
         <a-space :size="16">
@@ -151,7 +151,7 @@
 import SaveModal from './Save.vue';
 import {onlyMessage} from '@jetlinks-web/utils';
 import {queryPage, removeFn, getTypes} from '../../../api/link/plugin';
-import {TypeMap} from './util';
+import {getPluginTypeLabel} from './util';
 import {link} from '../../../assets'
 import {useI18n} from 'vue-i18n';
 import Detail from './Detail.vue';
