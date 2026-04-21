@@ -21,8 +21,9 @@
 </template>
 
 <script setup lang="ts">
-import { useDashboardData } from '../../../../hooks/useDashboardData'
-import { useGridLayout } from '../../../../hooks/useGridLayout'
+import {moduleRegistry} from "@jetlinks-web-core/utils/module-registry";
+
+const { useDashboardData, useGridLayout } = moduleRegistry.getResource('visualization-dashboard-ui', 'hooks')
 
 const props = defineProps({
   info: {

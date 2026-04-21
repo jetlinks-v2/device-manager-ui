@@ -27,9 +27,10 @@
 </template>
 
 <script setup lang="ts" name="SwitchOne">
-import { useControl } from '@visualization-dashboard-ui/hooks/useControl'
-import { useDashboardData } from '../../../../hooks/useDashboardData'
-import { useGridLayout } from '../../../../hooks/useGridLayout'
+import {moduleRegistry} from "@jetlinks-web-core/utils/module-registry";
+
+const { useDashboardData, useGridLayout, useControl } = moduleRegistry.getResource('visualization-dashboard-ui', 'hooks')
+
 
 const props = defineProps({
   info: {

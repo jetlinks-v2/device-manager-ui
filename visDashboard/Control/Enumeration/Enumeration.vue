@@ -29,8 +29,10 @@
 </template>
 
 <script setup lang="ts" name="Enumeration">
-import { useDashboardData } from '../../../../hooks/useDashboardData'
-import { useControl } from '@visualization-dashboard-ui/hooks/useControl'
+import {moduleRegistry} from "@jetlinks-web-core/utils/module-registry";
+
+const { useDashboardData, useControl } = moduleRegistry.getResource('visualization-dashboard-ui', 'hooks')
+
 const props = defineProps({
   info: {
     type: Object,

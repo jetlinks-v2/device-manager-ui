@@ -44,7 +44,9 @@
 </template>
 
 <script setup lang="ts">
-import { useDeviceListData } from '../../../../hooks/useDeviceListData'
+import {moduleRegistry} from "@jetlinks-web-core/utils/module-registry";
+
+const { useDeviceListData } = moduleRegistry.getResource('visualization-dashboard-ui', 'hooks')
 
 const props = defineProps({
   info: {

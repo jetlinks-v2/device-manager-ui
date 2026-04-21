@@ -28,7 +28,7 @@
       </div>
       <div class="content-right">
         <img
-          :src="config.img || imgLoadFail"
+          :src="config.img"
           alt=""
           draggable="false"
         />
@@ -76,8 +76,10 @@
 
 <script setup lang="ts">
 import { cloneDeep } from 'lodash-es'
-import { getImageByType } from '../../../../utils/commonUtils'
-import imgLoadFail from '@visualization-dashboard-ui/assets/svg/imgLoadFail.svg'
+
+import {moduleRegistry} from "@jetlinks-web-core/utils/module-registry";
+
+const { getImageByType } = moduleRegistry.getResource('visualization-dashboard-ui', 'utils')
 
 const props = defineProps({
   type: {
