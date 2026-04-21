@@ -123,7 +123,7 @@
           :productId="modelRef.productId"
           :masterProductId="modelRef.masterProductId"
           :type="modelRef.configuration.type"
-          :disabled="!!data.id"
+          :disabled="!!data?.id"
         >
         </RegistryComponent>
         <a-form-item
