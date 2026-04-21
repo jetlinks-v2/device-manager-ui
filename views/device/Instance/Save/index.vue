@@ -125,38 +125,6 @@
           :type="modelRef.configuration.type"
           :disabled="!!data.id"
         >
-          <a-form-item
-            key="type"
-            :name="['configuration', 'type']"
-            :label="$t('Plugin.index.626239-24')"
-          >
-            <j-card-select
-              :showImage="false"
-              v-model:value="modelRef.configuration.type"
-              :disabled="data.id"
-              :options="[
-                { label: $t('Save.index.902471-17'), value: 'local' },
-                {
-                  label: $t('Save.index.902471-18'),
-                  value: 'cloud',
-                  disabled: !modelRef.productId || !modelRef.masterProductId
-                }
-              ]"
-              :column="3"
-            />
-            <div
-              class="text"
-              v-if="modelRef.configuration?.type === 'local'"
-            >
-              {{ $t('Save.index.902471-19') }}
-            </div>
-            <div
-              class="text"
-              v-if="modelRef.configuration?.type === 'cloud'"
-            >
-              {{ $t('Save.index.902471-20') }}
-            </div>
-          </a-form-item>
         </RegistryComponent>
         <a-form-item
           :label="$t('Save.index.902471-12')"
