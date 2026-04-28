@@ -1,85 +1,94 @@
 <template>
   <div
-    class="property-progress"
+    class="property-enum"
     :style="style"
   >
     <div
-      class="property-progress__title"
+      class="property-enum__title"
       :style="titleStyle"
       :title="displayTitle"
     >
       {{ displayTitle }}
     </div>
 
-    <div class="property-progress__body">
+    <div class="property-enum__body">
       <div
-        class="property-progress__value"
-        :style="valueStyle"
+        v-if="enumOptions.length"
+        class="property-enum__options"
+        :style="optionsStyle"
       >
-        {{ displayValue }}
-        <span
-          v-if="displayUnit"
-          class="property-progress__unit"
-          :style="unitStyle"
+        <div
+          v-for="option in enumOptions"
+          :key="String(option.value)"
+          class="property-enum__option"
+          :class="{
+            'property-enum__option--active': isOptionActive(option.value),
+            'property-enum__option--disabled': props.isEdit || !canExecute
+          }"
+          :style="getOptionStyle(option.value)"
+          @click="handleOptionClick(option.value)"
         >
-          {{ displayUnit }}
-        </span>
+          <AIcon
+            :type="config.icon || 'RocketOutlined'"
+            class="property-enum__option-icon"
+            :style="iconStyle"
+          />
+          <span>{{ option.text }}</span>
+        </div>
       </div>
 
-      <div class="property-progress__bar-wrap">
-        <div
-          class="property-progress__bar"
-          :style="{ backgroundColor: config.trailColor || '#f0f0f0' }"
-        >
-          <div
-            class="property-progress__bar-inner"
-            :style="{
-              width: `${progressPercent}%`,
-              backgroundColor: config.progressColor || '#0f766e'
-            }"
-          />
-        </div>
-        <div class="property-progress__range">
-          <span>{{ minValue }}</span>
-          <span>{{ maxValue }}</span>
-        </div>
-      </div>
+      <a-empty
+        v-else
+        :image="Empty.PRESENTED_IMAGE_SIMPLE"
+        description="暂无枚举项"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { PropType } from 'vue'
+import { Empty } from 'ant-design-vue'
 import { dashboard } from '@device-manager-ui/api/dashboard'
-import { detail } from '@device-manager-ui/api/instance'
+import { detail, executeFunctions } from '@device-manager-ui/api/instance'
 import { useInstanceStore } from '@device-manager-ui/store/instance'
 import { useProductStore } from '@device-manager-ui/store/product'
 import { wsClient } from '@jetlinks-web/core'
+import { onlyMessage } from '@jetlinks-web/utils'
 import { debounce, throttle } from 'lodash-es'
 import { map } from 'rxjs/operators'
 
 defineOptions({
-  name: 'PropertyProgress'
+  name: 'PropertyEnum'
 })
 
-interface PropertyProgressComponentConfig {
+interface EnumItem {
+  text?: string
+  label?: string
+  value?: string | number | boolean
+}
+
+interface PropertyEnumComponentConfig {
   title?: string
   titleColor?: string
   titleFontSize?: number
-  value?: string | number | null
+  icon?: string
+  iconColor?: string
+  iconSize?: number
   valueColor?: string
   valueFontSize?: number
-  unit?: string
-  unitColor?: string
-  unitFontSize?: number
-  progressColor?: string
-  trailColor?: string
-  minValue?: number | string
-  maxValue?: number | string
+  activeColor?: string
+  inactiveColor?: string
+  activeTextColor?: string
+  inactiveTextColor?: string
+  borderColor?: string
+  borderRadius?: number
   deviceId?: string
   deviceName?: string
   propertyId?: string
   propertyName?: string
+  functionId?: string
+  paramId?: string
 }
 
 interface DashboardCardInfo {
@@ -113,14 +122,18 @@ const propertyValue = ref<Record<string, any>>({})
 const dataSource = ref<Record<string, any>[]>([])
 const subRef = ref<any>()
 const messageCache = new Map<string, Record<string, any>>()
+const pendingValue = ref<unknown>()
+const isUserSelecting = ref(false)
 
-const config = computed<PropertyProgressComponentConfig>(() => {
-  return (props.info?.componentProps?.propertyProgress as PropertyProgressComponentConfig) || {}
+const config = computed<PropertyEnumComponentConfig>(() => {
+  return (props.info?.componentProps?.propertyEnum as PropertyEnumComponentConfig) || {}
 })
 
 const isProduct = computed(() => route.name === 'device/Product/Detail')
 const targetDeviceId = computed(() => String(config.value.deviceId || ''))
-const runtimeDeviceId = computed(() => (isProduct.value ? targetDeviceId.value : String(instanceStore.current.id || '')))
+const runtimeDeviceId = computed(() =>
+  isProduct.value ? targetDeviceId.value : String(instanceStore.current.id || '')
+)
 
 const propertyMap = computed(() => {
   try {
@@ -145,13 +158,16 @@ const selectedProperty = computed(() => {
 
 const propertyValueType = computed(() => selectedProperty.value?.valueType || {})
 
-const displayTitle = computed(() => {
-  const propertyTitle =
-    config.value.propertyName ||
-    selectedProperty.value?.name ||
-    config.value.title ||
-    'Progress bar'
+const enumOptions = computed(() => {
+  const elements = propertyValueType.value?.elements || []
+  return (elements as EnumItem[]).map((item) => ({
+    text: item.text ?? item.label ?? String(item.value ?? ''),
+    value: item.value
+  }))
+})
 
+const displayTitle = computed(() => {
+  const propertyTitle = config.value.propertyName || selectedProperty.value?.name || config.value.title || 'Enum'
   const deviceName = config.value.deviceName || runtimeDeviceName.value
 
   return deviceName ? `${deviceName}(${propertyTitle})` : propertyTitle
@@ -163,42 +179,15 @@ const rawValue = computed(() => {
   return valueData?.value
 })
 
-const displayValue = computed(() => {
-  const value = rawValue.value
-
-  if (value === undefined || value === null || value === '') {
-    const fallback = config.value.value
-    if (fallback === undefined || fallback === null || fallback === '') {
-      return '--'
-    }
-    return String(fallback)
+const currentValue = computed(() => {
+  if (isUserSelecting.value && pendingValue.value !== undefined) {
+    return pendingValue.value
   }
-
-  return String(value)
+  return rawValue.value
 })
 
-const displayUnit = computed(() => config.value.unit || propertyValueType.value?.unit || '')
-
-const resolveNumber = (value: unknown, fallback: number) => {
-  const numberValue = Number(value)
-  return Number.isFinite(numberValue) ? numberValue : fallback
-}
-
-const minValue = computed(() => {
-  const metadataMin = propertyValueType.value?.min ?? propertyValueType.value?.expands?.min
-  return resolveNumber(config.value.minValue ?? metadataMin, 0)
-})
-
-const maxValue = computed(() => {
-  const metadataMax = propertyValueType.value?.max ?? propertyValueType.value?.expands?.max
-  const max = resolveNumber(config.value.maxValue ?? metadataMax, 100)
-  return max === minValue.value ? minValue.value + 100 : max
-})
-
-const progressPercent = computed(() => {
-  const numberValue = resolveNumber(rawValue.value ?? config.value.value, minValue.value)
-  const percent = ((numberValue - minValue.value) / (maxValue.value - minValue.value)) * 100
-  return Math.min(100, Math.max(0, Number.isFinite(percent) ? percent : 0))
+const canExecute = computed(() => {
+  return Boolean(runtimeDeviceId.value && config.value.functionId && config.value.paramId)
 })
 
 const titleStyle = computed(() => ({
@@ -206,15 +195,27 @@ const titleStyle = computed(() => ({
   fontSize: `${Number(config.value.titleFontSize || 16)}px`
 }))
 
-const valueStyle = computed(() => ({
-  color: config.value.valueColor || 'rgba(0, 0, 0, 0.88)',
-  fontSize: `${Number(config.value.valueFontSize || 24)}px`
+const optionsStyle = computed(() => ({
+  '--property-enum-border-color': config.value.borderColor || '#0f766e',
+  '--property-enum-border-radius': `${Number(config.value.borderRadius || 8)}px`
 }))
 
-const unitStyle = computed(() => ({
-  color: config.value.unitColor || valueStyle.value.color,
-  fontSize: `${Number(config.value.unitFontSize || 12)}px`
+const iconStyle = computed(() => ({
+  color: config.value.iconColor || 'currentColor',
+  fontSize: `${Number(config.value.iconSize || 16)}px`
 }))
+
+const isOptionActive = (value: unknown) => String(currentValue.value) === String(value)
+
+const getOptionStyle = (value: unknown) => {
+  const active = isOptionActive(value)
+
+  return {
+    backgroundColor: active ? config.value.activeColor || '#0f766e' : config.value.inactiveColor || '#ffffff',
+    color: active ? config.value.activeTextColor || '#ffffff' : config.value.inactiveTextColor || 'rgba(0, 0, 0, 0.88)',
+    fontSize: `${Number(config.value.valueFontSize || 18)}px`
+  }
+}
 
 const valueChange = (arr: Record<string, any>[]) => {
   ;(arr || [])
@@ -238,7 +239,7 @@ const subscribeProperty = () => {
   }
 
   const propertyIds = dataSource.value.map((item) => item.id)
-  const id = `property-progress-${runtimeDeviceId.value}-${runtimeProductId.value}-${propertyIds.join('-')}`
+  const id = `property-enum-${runtimeDeviceId.value}-${runtimeProductId.value}-${propertyIds.join('-')}`
   const topic = `/dashboard/device/${runtimeProductId.value}/properties/realTime`
 
   subRef.value = wsClient
@@ -328,6 +329,8 @@ const handleProperty = debounce(async () => {
   subRef.value && subRef.value?.unsubscribe()
   messageCache.clear()
   propertyValue.value = {}
+  pendingValue.value = undefined
+  isUserSelecting.value = false
 
   await resolveMetadata()
 
@@ -340,10 +343,62 @@ const handleProperty = debounce(async () => {
   }
 }, 300)
 
+const executeFunc = async (value: unknown) => {
+  const deviceId = runtimeDeviceId.value
+  const functionId = String(config.value.functionId || '')
+  const paramId = String(config.value.paramId || '')
+
+  if (!deviceId || !functionId || !paramId || props.isEdit) {
+    return
+  }
+
+  try {
+    const res = await executeFunctions(deviceId, functionId, {
+      [paramId]: value
+    })
+
+    if (res.status === 200) {
+      onlyMessage('操作成功')
+    }
+  } catch (e) {
+    onlyMessage('操作失败', 'error')
+    throw e
+  }
+}
+
+const handleOptionClick = async (value: unknown) => {
+  if (props.isEdit || !canExecute.value || isOptionActive(value)) {
+    return
+  }
+
+  isUserSelecting.value = true
+  pendingValue.value = value
+
+  try {
+    await executeFunc(value)
+  } catch (e) {
+    pendingValue.value = rawValue.value
+  } finally {
+    setTimeout(() => {
+      isUserSelecting.value = false
+      pendingValue.value = undefined
+    }, 500)
+  }
+}
+
 onUnmounted(() => {
   handleProperty.cancel()
+  throttleFn.cancel()
   subRef.value && subRef.value?.unsubscribe()
 })
+
+watch(
+  rawValue,
+  () => {
+    if (isUserSelecting.value) return
+    pendingValue.value = undefined
+  }
+)
 
 watch(
   () => [props.info, targetDeviceId.value, runtimeDeviceId.value, config.value.propertyId],
@@ -355,19 +410,19 @@ watch(
 </script>
 
 <style scoped lang="less">
-.property-progress {
+.property-enum {
   width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: center;
   box-sizing: border-box;
   padding: 12px;
   background-color: #fff;
   overflow: hidden;
 }
 
-.property-progress__title {
+.property-enum__title {
   width: 100%;
   min-height: 22px;
   line-height: 1.4;
@@ -377,46 +432,60 @@ watch(
   text-overflow: ellipsis;
 }
 
-.property-progress__body {
-  width: 100%;
-}
-
-.property-progress__value {
+.property-enum__body {
   display: flex;
-  align-items: baseline;
-  line-height: 1;
-  font-weight: 700;
-  white-space: nowrap;
+  flex-direction: column;
+  gap: 12px;
+  justify-content: center;
+  flex: 1;
+  align-items: center;
 }
 
-.property-progress__unit {
-  margin-left: 4px;
-  font-weight: 500;
-}
-
-.property-progress__bar-wrap {
-  margin-top: 14px;
-}
-
-.property-progress__bar {
-  width: 100%;
-  height: 4px;
-  border-radius: 2px;
+.property-enum__options {
+  display: flex;
+  align-items: stretch;
+  width: fit-content;
+  max-width: 100%;
+  border: 1px solid var(--property-enum-border-color);
+  border-radius: var(--property-enum-border-radius);
   overflow: hidden;
+  box-shadow: 0 4px 12px rgba(15, 118, 110, 0.15);
 }
 
-.property-progress__bar-inner {
-  height: 100%;
-  border-radius: inherit;
-  transition: width 0.3s ease;
+.property-enum__option {
+  min-width: 96px;
+  max-width: 180px;
+  padding: 12px 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
 }
 
-.property-progress__range {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 6px;
-  color: rgba(0, 0, 0, 0.45);
-  font-size: 12px;
+.property-enum__option + .property-enum__option {
+  border-left: 1px solid rgba(15, 118, 110, 0.16);
+}
+
+.property-enum__option:hover {
+  filter: brightness(0.98);
+}
+
+.property-enum__option--active {
+  box-shadow: inset 0 0 0 1px transparent;
+}
+
+.property-enum__option--disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.property-enum__option-icon {
   line-height: 1;
 }
 </style>

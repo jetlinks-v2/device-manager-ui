@@ -56,8 +56,6 @@
       />
     </config-item>
 
-
-
     <config-item label="属性值样式">
       <div class="card-container-row">
         <ColorPicker
@@ -97,22 +95,6 @@
         />
       </div>
     </config-item>
-    <!-- <config-item label="默认值">
-      <a-input
-        v-model:value="config.value"
-        placeholder="请输入默认值"
-        style="width: 100%"
-        @change="onChange"
-      />
-    </config-item>
-    <config-item label="标题">
-      <a-input
-        v-model:value="config.title"
-        placeholder="请输入标题"
-        style="width: 100%"
-        @change="onChange"
-      />
-    </config-item> -->
     <config-item
       v-if="isProduct"
       label="设备"
@@ -272,6 +254,9 @@ watch(
   gap: 12px;
   display: flex;
   flex-direction: column;
+  :deep(.config-form-item-content) {
+    padding: 0;
+  }
 }
 
 .card-container-row {

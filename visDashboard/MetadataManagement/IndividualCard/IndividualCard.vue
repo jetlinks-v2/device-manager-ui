@@ -157,7 +157,7 @@ const displayValue = computed(() => {
   if (value === undefined || value === null || value === '') {
     const fallback = config.value.value
     if (fallback === undefined || fallback === null || fallback === '') {
-      return 'N/A'
+      return '--'
     }
     return String(fallback)
   }

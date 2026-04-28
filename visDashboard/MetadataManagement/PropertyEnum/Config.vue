@@ -1,5 +1,73 @@
 <template>
   <div class="card-container">
+
+   
+    <config-item label="属性">
+      <a-select
+        v-model:value="config.propertyId"
+        :options="propertyOptions"
+        placeholder="请选择属性(enum)"
+        optionFilterProp="label"
+        style="width: 100%"
+        popupClassName="is-dark"
+        @change="onPropertyChange"
+      />
+    </config-item>
+
+    <config-item label="功能">
+      <a-select
+        v-model:value="config.functionId"
+        :options="functionOptions"
+        placeholder="请选择功能"
+        optionFilterProp="label"
+        style="width: 100%"
+        popupClassName="is-dark"
+        @change="onFunctionChange"
+      />
+    </config-item>
+
+    <config-item
+      v-if="config.functionId"
+      label="参数"
+    >
+      <a-select
+        v-model:value="config.paramId"
+        :options="paramOptions"
+        placeholder="请选择参数(enum)"
+        optionFilterProp="label"
+        style="width: 100%"
+        popupClassName="is-dark"
+        @change="onChange"
+      />
+    </config-item>
+     <a-divider />
+         <config-item label="图标">
+      <IconLibrary
+        v-model:type="config.icon"
+        @change="onChange"
+      />
+    </config-item>
+
+    <config-item label="图标样式">
+      <div class="card-container-row">
+        <ColorPicker
+          v-model:value="config.iconColor"
+          :isInput="false"
+          style="margin-right: 6px"
+          theme="white"
+          @change="onChange"
+        />
+        <a-input-number
+          v-model:value="config.iconSize"
+          :min="12"
+          :max="48"
+          :precision="0"
+          style="flex: 1"
+          @change="onChange"
+        />
+      </div>
+    </config-item>
+
     <config-item label="标题样式">
       <div class="card-container-row">
         <ColorPicker
@@ -20,7 +88,7 @@
       </div>
     </config-item>
 
-    <config-item label="状态文字样式">
+    <config-item label="枚举值样式">
       <div class="card-container-row">
         <ColorPicker
           v-model:value="config.valueColor"
@@ -32,7 +100,7 @@
         <a-input-number
           v-model:value="config.valueFontSize"
           :min="12"
-          :max="80"
+          :max="48"
           :precision="0"
           style="flex: 1"
           @change="onChange"
@@ -40,36 +108,66 @@
       </div>
     </config-item>
 
-    <config-item label="开启文案">
-      <a-input
-        v-model:value="config.trueLabel"
+    <div class="color-grid">
+      <config-item label="选中背景色">
+        <ColorPicker
+          v-model:value="config.activeColor"
+          :isInput="false"
+          theme="white"
+          @change="onChange"
+        />
+      </config-item>
+
+      <config-item
+        label="未选中背景色"
+        label-width="90px"
+      >
+        <ColorPicker
+          v-model:value="config.inactiveColor"
+          :isInput="false"
+          theme="white"
+          @change="onChange"
+        />
+      </config-item>
+
+      <config-item label="选中文字色">
+        <ColorPicker
+          v-model:value="config.activeTextColor"
+          :isInput="false"
+          theme="white"
+          @change="onChange"
+        />
+      </config-item>
+
+      <config-item
+        label="未选中文字色"
+        label-width="90px"
+      >
+        <ColorPicker
+          v-model:value="config.inactiveTextColor"
+          :isInput="false"
+          theme="white"
+          @change="onChange"
+        />
+      </config-item>
+
+      <config-item label="边框颜色">
+        <ColorPicker
+          v-model:value="config.borderColor"
+          :isInput="false"
+          theme="white"
+          @change="onChange"
+        />
+      </config-item>
+    </div>
+
+    <config-item label="圆角">
+      <a-input-number
+        v-model:value="config.borderRadius"
+        :min="0"
+        :max="24"
+        :precision="0"
         style="width: 100%"
-        @change="onChange"
-      />
-    </config-item>
-
-    <config-item label="关闭文案">
-      <a-input
-        v-model:value="config.falseLabel"
-        style="width: 100%"
-        @change="onChange"
-      />
-    </config-item>
-
-    <config-item label="开启颜色">
-      <ColorPicker
-        v-model:value="config.activeColor"
-        :isInput="false"
-        theme="white"
-        @change="onChange"
-      />
-    </config-item>
-
-    <config-item label="关闭颜色">
-      <ColorPicker
-        v-model:value="config.inactiveColor"
-        :isInput="false"
-        theme="white"
         @change="onChange"
       />
     </config-item>
@@ -88,55 +186,17 @@
         @change="onDeviceChange"
       />
     </config-item>
-
-    <config-item label="属性">
-      <a-select
-        v-model:value="config.propertyId"
-        :options="typeOptions"
-        placeholder="请选择属性"
-        optionFilterProp="label"
-        style="width: 100%"
-        popupClassName="is-dark"
-        @change="onTypeChange"
-      />
-    </config-item>
-
-    <config-item label="功能">
-      <a-select
-        v-model:value="config.functionId"
-        :options="functionOptions"
-        placeholder="请选择功能"
-        optionFilterProp="label"
-        style="width: 100%"
-        popupClassName="is-dark"
-        @change="onFunctionChange"
-      />
-    </config-item>
-
-    <config-item
-      label="参数"
-      v-if="config.functionId"
-    >
-      <a-select
-        v-model:value="config.paramId"
-        :options="paramOptions"
-        placeholder="请选择参数(Boolean)"
-        optionFilterProp="label"
-        style="width: 100%"
-        popupClassName="is-dark"
-        @change="onChange"
-      />
-    </config-item>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { cloneDeep, throttle } from 'lodash-es'
 import { moduleRegistry } from '@jetlinks-web-core/utils/module-registry'
+import IconLibrary from '@jetlinks-web-core/components/IconLibrary/index.vue'
 import { useProductStore } from '@device-manager-ui/store/product'
 import { useInstanceStore } from '@device-manager-ui/store/instance'
 import { queryNoPagingPost } from '@device-manager-ui/api/instance'
-import { propertySwitchConfig } from './config'
+import { propertyEnumConfig } from './config'
 
 const { ConfigItem, ColorPicker } = moduleRegistry.getResource('visualization-designer-ui', 'components')
 
@@ -147,7 +207,7 @@ const props = defineProps({
   },
   type: {
     type: String,
-    default: 'propertySwitch'
+    default: 'propertyEnum'
   }
 })
 
@@ -177,7 +237,9 @@ const strToJson = (str: string, key: string = 'properties') => {
   }
 }
 
-const typeOptions = computed(() => {
+const isEnumType = (item: any) => String(item?.valueType?.type || '').toLowerCase() === 'enum'
+
+const propertyOptions = computed(() => {
   try {
     let properties = []
     if (isProduct.value) {
@@ -189,12 +251,14 @@ const typeOptions = computed(() => {
     } else {
       properties = strToJson(instanceStore.current.metadata || instanceStore.detail.metadata)
     }
-    console.log('properties', properties)
-    return properties.map((item: any) => ({
-      ...item,
-      label: item.name,
-      value: item.id
-    }))
+
+    return properties
+      .filter((item: any) => isEnumType(item))
+      .map((item: any) => ({
+        ...item,
+        label: item.name,
+        value: item.id
+      }))
   } catch (e) {
     return []
   }
@@ -212,6 +276,7 @@ const functionOptions = computed(() => {
     } else {
       functions = strToJson(instanceStore.current.metadata || instanceStore.detail.metadata, 'functions')
     }
+
     return functions.map((item: any) => ({
       ...item,
       label: item.name,
@@ -228,30 +293,28 @@ const paramOptions = computed(() => {
 
   const currentFunction = functionOptions.value.find((item: any) => item.value === functionId)
   const inputs = currentFunction?.inputs || []
-  return inputs.map((item: any) => {
-    const type = String(item?.valueType?.type || '').toLowerCase()
-    const isBoolean = type === 'boolean'
-    return {
+
+  return inputs
+    .filter((item: any) => isEnumType(item))
+    .map((item: any) => ({
       ...item,
       label: item.name,
-      value: item.id,
-      disabled: !isBoolean
-    }
-  })
+      value: item.id
+    }))
 })
 
 const onDeviceChange = (value: string, option: any) => {
   config.value.deviceId = value
   config.value.deviceName = option?.label || ''
-  config.value.propertyId = ''
+  config.value.propertyId = undefined
   config.value.propertyName = ''
   config.value.functionId = undefined
   config.value.paramId = undefined
   emitChange()
 }
 
-const onTypeChange = (value: string) => {
-  const option = typeOptions.value.find((item: any) => item.value === value)
+const onPropertyChange = (value: string) => {
+  const option = propertyOptions.value.find((item: any) => item.value === value)
   config.value.propertyId = value
   config.value.propertyName = option?.label || ''
   emitChange()
@@ -286,7 +349,7 @@ watch(
   () => props.configData?.componentProps?.[props.type],
   (newVal) => {
     config.value = cloneDeep({
-      ...propertySwitchConfig.componentProps.propertySwitch,
+      ...propertyEnumConfig.componentProps.propertyEnum,
       ...(newVal || {})
     })
   },
@@ -300,11 +363,20 @@ watch(
   gap: 12px;
   display: flex;
   flex-direction: column;
+  :deep(.config-form-item-content) {
+    padding: 0;
+  }
 }
 
 .card-container-row {
   width: 100%;
   display: flex;
   align-items: center;
+}
+
+.color-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
 </style>

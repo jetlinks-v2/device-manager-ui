@@ -241,6 +241,9 @@ watch(
   gap: 12px;
   display: flex;
   flex-direction: column;
+   :deep(.config-form-item-content) {
+    padding: 0;
+  }
 }
 
 .card-container-row {
