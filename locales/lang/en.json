@@ -3025,5 +3025,6 @@
     "Detail.NodeSelect.141135-1": "Please configure the node filtering range",
     "Running.index.storagePolicyNonePrefix": "The current product ",
     "Running.index.storagePolicyLink": "storage policy",
-    "Running.index.storagePolicyNoneSuffix": " is set to No Storage. Only real-time reported data is shown."
+    "Running.index.storagePolicyNoneSuffix": " is set to No Storage. Only real-time reported data is shown.",
+    "log.index.741299-7": "Waiting"
 }

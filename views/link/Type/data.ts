@@ -21,7 +21,7 @@ export const Configuration = {
     username: '',
     password: '',
     topicPrefix: '',
-    maxMessageSize: 8192,
+    maxMessageSize: 819200,
     certId: undefined,
     privateKeyAlias: '',
     clientId: '',
@@ -135,7 +135,7 @@ const validateAddress = (_rule: any, value: string): Promise<any> => {
 
 const sizeValidator = (_rule:any, value: number):Promise<any> =>{
     return new Promise(async(resolve,reject)=>{
-        const posReg = /^[1-9]\d*$/;
+        const posReg = /^[0-9]\d*$/;
         // 38819 可以输入0
         if(posReg.test(value.toString()) && value >= 0 && value <=65535 ){
             return resolve('');
