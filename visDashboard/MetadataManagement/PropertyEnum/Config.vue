@@ -1,8 +1,6 @@
 <template>
-  <div class="card-container">
-
-   
-    <config-item label="属性">
+  <div class="card-container">    <div class="card-header">
+      <config-item label="属性">
       <a-select
         v-model:value="config.propertyId"
         :options="propertyOptions"
@@ -14,7 +12,7 @@
       />
     </config-item>
 
-    <config-item label="功能">
+      <config-item label="功能">
       <a-select
         v-model:value="config.functionId"
         :options="functionOptions"
@@ -26,7 +24,7 @@
       />
     </config-item>
 
-    <config-item
+      <config-item
       v-if="config.functionId"
       label="参数"
     >
@@ -40,8 +38,25 @@
         @change="onChange"
       />
     </config-item>
-     <a-divider />
-         <config-item label="图标">
+
+      <config-item
+      v-if="isProduct"
+      label="设备"
+    >
+      <a-select
+        v-model:value="config.deviceId"
+        :options="deviceOptions"
+        placeholder="请选择设备"
+        optionFilterProp="label"
+        style="width: 100%"
+        popupClassName="is-dark"
+        @change="onDeviceChange"
+      />
+    </config-item>
+    
+    </div>
+    <a-divider />
+    <config-item label="图标">
       <IconLibrary
         v-model:type="config.icon"
         @change="onChange"
@@ -108,8 +123,7 @@
       </div>
     </config-item>
 
-    <div class="color-grid">
-      <config-item label="选中背景色">
+    <config-item label="选中背景色">
         <ColorPicker
           v-model:value="config.activeColor"
           :isInput="false"
@@ -118,7 +132,7 @@
         />
       </config-item>
 
-      <config-item
+    <config-item
         label="未选中背景色"
         label-width="90px"
       >
@@ -130,7 +144,7 @@
         />
       </config-item>
 
-      <config-item label="选中文字色">
+    <config-item label="选中文字色">
         <ColorPicker
           v-model:value="config.activeTextColor"
           :isInput="false"
@@ -139,7 +153,7 @@
         />
       </config-item>
 
-      <config-item
+    <config-item
         label="未选中文字色"
         label-width="90px"
       >
@@ -151,7 +165,7 @@
         />
       </config-item>
 
-      <config-item label="边框颜色">
+    <config-item label="边框颜色">
         <ColorPicker
           v-model:value="config.borderColor"
           :isInput="false"
@@ -159,7 +173,6 @@
           @change="onChange"
         />
       </config-item>
-    </div>
 
     <config-item label="圆角">
       <a-input-number
@@ -169,21 +182,6 @@
         :precision="0"
         style="width: 100%"
         @change="onChange"
-      />
-    </config-item>
-
-    <config-item
-      v-if="isProduct"
-      label="设备"
-    >
-      <a-select
-        v-model:value="config.deviceId"
-        :options="deviceOptions"
-        placeholder="请选择设备"
-        optionFilterProp="label"
-        style="width: 100%"
-        popupClassName="is-dark"
-        @change="onDeviceChange"
       />
     </config-item>
   </div>
@@ -359,10 +357,22 @@ watch(
 
 <style lang="less" scoped>
 .card-container {
+  .card-header {
+    gap: 12px;
+    display: flex;
+    flex-direction: column;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: #f7f9fc;
+  }
   color: #fff;
   gap: 12px;
   display: flex;
   flex-direction: column;
+  :deep(.ant-divider-horizontal) {
+    margin: 0;
+    margin-bottom: 12px;
+  }
   :deep(.config-form-item-content) {
     padding: 0;
   }

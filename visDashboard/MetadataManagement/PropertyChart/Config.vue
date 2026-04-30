@@ -1,5 +1,34 @@
 <template>
-  <div class="card-container">
+  <div class="card-container">    <div class="card-header">
+      <config-item
+      v-if="isProduct"
+      label="设备"
+    >
+      <a-select
+        v-model:value="config.deviceId"
+        :options="deviceOptions"
+        placeholder="请选择设备"
+        optionFilterProp="label"
+        style="width: 100%"
+        popupClassName="is-dark"
+        @change="onDeviceChange"
+      />
+    </config-item>
+
+      <config-item label="属性">
+      <a-select
+        v-model:value="config.propertyId"
+        :options="typeOptions"
+        placeholder="请选择属性"
+        optionFilterProp="label"
+        style="width: 100%"
+        popupClassName="is-dark"
+        @change="onTypeChange"
+      />
+    </config-item>
+    
+    </div>
+    <a-divider />
     <config-item label="标题样式">
       <div class="card-container-row">
         <ColorPicker
@@ -86,33 +115,6 @@
         :precision="0"
         style="width: 100%"
         @change="onChange"
-      />
-    </config-item>
-
-    <config-item
-      v-if="isProduct"
-      label="设备"
-    >
-      <a-select
-        v-model:value="config.deviceId"
-        :options="deviceOptions"
-        placeholder="请选择设备"
-        optionFilterProp="label"
-        style="width: 100%"
-        popupClassName="is-dark"
-        @change="onDeviceChange"
-      />
-    </config-item>
-
-    <config-item label="属性">
-      <a-select
-        v-model:value="config.propertyId"
-        :options="typeOptions"
-        placeholder="请选择属性"
-        optionFilterProp="label"
-        style="width: 100%"
-        popupClassName="is-dark"
-        @change="onTypeChange"
       />
     </config-item>
   </div>
@@ -237,10 +239,22 @@ watch(
 
 <style lang="less" scoped>
 .card-container {
+  .card-header {
+    gap: 12px;
+    display: flex;
+    flex-direction: column;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: #f7f9fc;
+  }
   color: #fff;
   gap: 12px;
   display: flex;
   flex-direction: column;
+  :deep(.ant-divider-horizontal) {
+    margin: 0;
+    margin-bottom: 12px;
+  }
    :deep(.config-form-item-content) {
     padding: 0;
   }

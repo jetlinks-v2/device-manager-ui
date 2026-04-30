@@ -1,5 +1,6 @@
 ﻿<template>
   <div class="card-container">
+    <div class="card-header">
     <config-item
       v-if="isProduct"
       label="设备"
@@ -28,6 +29,8 @@
         @change="onPropertiesChange"
       />
     </config-item>
+    </div>
+    <a-divider />
 
     <config-item label="最小值">
       <a-input-number
@@ -217,6 +220,18 @@ watch(
   gap: 12px;
   display: flex;
   flex-direction: column;
+  .card-header {
+    gap: 12px;
+    display: flex;
+    flex-direction: column;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: #f7f9fc;
+  }
+    :deep(.ant-divider-horizontal) {
+    margin: 0;
+    margin-bottom: 12px;
+  }
 
   :deep(.config-form-item-content) {
     padding: 0;

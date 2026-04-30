@@ -107,6 +107,14 @@ defineExpose({
 .dashboard-preview-tab {
   width: 100%;
   height: 100%;
+  :deep(.unified-drawer .list-container .lazy-image-container){
+    // width: 90px !important;
+    img{
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover;
+    }
+  }
 }
 
 .preview-host {

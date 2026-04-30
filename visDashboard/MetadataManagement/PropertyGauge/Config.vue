@@ -1,31 +1,34 @@
-﻿<template>
+<template>
   <div class="card-container">
-    <config-item
-      v-if="isProduct"
-      label="设备"
-    >
-      <a-select
-        v-model:value="config.deviceId"
-        :options="deviceOptions"
-        placeholder="请选择设备"
-        optionFilterProp="label"
-        style="width: 100%"
-        popupClassName="is-dark"
-        @change="onDeviceChange"
-      />
-    </config-item>
+    <div class="card-header">
+      <config-item
+        v-if="isProduct"
+        label="设备"
+      >
+        <a-select
+          v-model:value="config.deviceId"
+          :options="deviceOptions"
+          placeholder="请选择设备"
+          optionFilterProp="label"
+          style="width: 100%"
+          popupClassName="is-dark"
+          @change="onDeviceChange"
+        />
+      </config-item>
 
-    <config-item label="属性">
-      <a-select
-        v-model:value="config.propertyId"
-        :options="typeOptions"
-        placeholder="请选择属性"
-        optionFilterProp="label"
-        style="width: 100%"
-        popupClassName="is-dark"
-        @change="onTypeChange"
-      />
-    </config-item>
+      <config-item label="属性">
+        <a-select
+          v-model:value="config.propertyId"
+          :options="typeOptions"
+          placeholder="请选择属性"
+          optionFilterProp="label"
+          style="width: 100%"
+          popupClassName="is-dark"
+          @change="onTypeChange"
+        />
+      </config-item>
+    </div>
+    <a-divider />
     <config-item label="标题">
       <a-input
         v-model:value="config.title"
@@ -83,6 +86,7 @@
         @change="onChange"
       />
     </config-item>
+
     <config-item label="单位字体">
       <div class="card-container-row">
         <ColorPicker
@@ -138,6 +142,7 @@
         @change="onChange"
       />
     </config-item>
+
     <config-item label="起始色">
       <ColorPicker
         v-model:value="config.progressStartColor"
@@ -146,6 +151,7 @@
         @change="onChange"
       />
     </config-item>
+
     <config-item label="结束色">
       <ColorPicker
         v-model:value="config.progressEndColor"
@@ -154,8 +160,6 @@
         @change="onChange"
       />
     </config-item>
-
-    
   </div>
 </template>
 
@@ -278,10 +282,22 @@ watch(
 
 <style lang="less" scoped>
 .card-container {
+  .card-header {
+    gap: 12px;
+    display: flex;
+    flex-direction: column;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: #f7f9fc;
+  }
   color: #fff;
   gap: 12px;
   display: flex;
   flex-direction: column;
+  :deep(.ant-divider-horizontal) {
+    margin: 0;
+    margin-bottom: 12px;
+  }
 
   :deep(.config-form-item-content) {
     padding: 0;
