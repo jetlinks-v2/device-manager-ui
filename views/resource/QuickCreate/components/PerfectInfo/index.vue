@@ -260,6 +260,7 @@ const pluginConfiguration = ref([]);
 const pluginType = ref({})
 
 const accessConfiguration = ref({})
+const configurationRequestId = ref(0);
 
 const deviceOptions = computed(() => {
   return deviceList.filter((i) => {
@@ -431,12 +432,23 @@ const createProduct = async () => {
       });
 };
 
+const resetDynamicConfiguration = () => {
+  configuration.value = [];
+  pluginConfiguration.value = [];
+  form.value.configuration = {};
+  accessConfiguration.value = {};
+  pluginType.value = {};
+};
+
 //从协议中获取配置项
-const getConfigurationByProtocol = async () => {
+const getConfigurationByProtocol = async (requestId) => {
   const res = await queryProtocolConfiguration(props.accessData.transport, {
     ...props.protocol,
     type: 'jar',
   });
+  if (requestId !== configurationRequestId.value) {
+    return;
+  }
   if (res.success) {
     res.result?.transports?.forEach((i) => {
       i.configs.properties.forEach((item) => {
@@ -451,12 +463,15 @@ const getConfigurationByProtocol = async () => {
 };
 
 //从插件中获取配置项
-const getConfigurationByPlugin = async () => {
+const getConfigurationByPlugin = async (requestId) => {
   const res = await queryPluginConfiguration(props.plugin);
+  if (requestId !== configurationRequestId.value) {
+    return;
+  }
   if (res.success) {
     res.result?.others?.configMetadata?.properties.forEach((item) => {
       if (item.name === '流传输模式') {
-        accessConfiguration[item.property] =
+        accessConfiguration.value[item.property] =
             item.type.expands?.defaultValue;
       }
       pluginConfiguration.value.push(item);
@@ -466,8 +481,11 @@ const getConfigurationByPlugin = async () => {
 };
 
 //获取国标类型的配置项
-const getConfigurationByGB28181 = async () => {
+const getConfigurationByGB28181 = async (requestId) => {
   const res = await queryGB28181Configuration();
+  if (requestId !== configurationRequestId.value) {
+    return;
+  }
   if (res.success) {
     res.result?.forEach((i) => {
       i.configs.properties.forEach((item) => {
@@ -484,6 +502,10 @@ const getConfigurationByGB28181 = async () => {
 watch(
     () => props.accessData,
     () => {
+      const requestId = configurationRequestId.value + 1;
+      configurationRequestId.value = requestId;
+      resetDynamicConfiguration();
+
       getStoragList().then((resp) => {
         if (resp.status === 200) {
           storageList.value = resp.result;
@@ -492,17 +514,17 @@ watch(
 
       if (
           ['network', 'OneNet', 'Ctwing', 'child-device'].includes(
-              props.accessData.channel,
+          props.accessData.channel,
           ) &&
           !['agent-media-device-gateway', 'agent-device-gateway'].includes(
               props.accessData.provider,
           )
       ) {
-        getConfigurationByProtocol();
+        getConfigurationByProtocol(requestId);
       } else if (props.accessData.channel === 'plugin') {
-        getConfigurationByPlugin();
+        getConfigurationByPlugin(requestId);
       } else if (props.accessData.provider === 'gb28181-2016') {
-        getConfigurationByGB28181();
+        getConfigurationByGB28181(requestId);
       }
     },
     {

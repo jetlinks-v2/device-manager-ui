@@ -3026,5 +3026,6 @@
     "Detail.NodeSelect.141135-1": "请配置节点筛选范围",
     "Running.index.storagePolicyNonePrefix": "当前",
     "Running.index.storagePolicyLink": "产品存储策略",
-    "Running.index.storagePolicyNoneSuffix": "为不存储，仅展示实时上报的数据。"
+    "Running.index.storagePolicyNoneSuffix": "为不存储，仅展示实时上报的数据。",
+    "log.index.741299-7": "等待升级"
 }
