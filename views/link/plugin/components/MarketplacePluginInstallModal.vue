@@ -92,6 +92,7 @@ import { listInstalledMarketplaceResources } from '../../../../api/link/plugin'
 import {
   streamCapabilityInstall,
   streamCapabilityUpgrade,
+  type CapabilityInstallRequestPayload,
   type ProgressStatePayload,
 } from '../../../../utils/streamCapabilityInstall'
 
@@ -298,10 +299,13 @@ async function startInstall(useUpgrade: boolean) {
   let finished = false
   const stream = useUpgrade ? streamCapabilityUpgrade : streamCapabilityInstall
   try {
+    const request: CapabilityInstallRequestPayload = {
+      configuration: { ...(props.installPayload || {}) },
+    }
     await stream(
       selectedId.value,
       selectedVersion.value,
-      { ...(props.installPayload || {}) },
+      request,
       (state: ProgressStatePayload) => {
         const st = String(state.type || '').toLowerCase() as ProgressStatePayload['type']
         if (state.message) logLines.value.push(state.message)

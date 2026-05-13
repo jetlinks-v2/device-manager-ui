@@ -7,6 +7,14 @@ export type ProgressStatePayload = {
   extra?: unknown
 }
 
+export type CapabilityInstallRequestPayload = {
+  configuration?: Record<string, unknown>
+  upgrade?: {
+    targetDataIds?: string[]
+    removeAbsentResources?: boolean
+  }
+}
+
 type StreamOp = '_install' | '_upgrade'
 
 function extractErrorMessage(payload: unknown): string | undefined {
@@ -41,7 +49,7 @@ function extractErrorMessage(payload: unknown): string | undefined {
 async function streamCapabilityProgress(
   capabilityId: string,
   version: string,
-  configuration: Record<string, unknown>,
+  request: CapabilityInstallRequestPayload,
   onLine: (state: ProgressStatePayload) => void,
   op: StreamOp,
 ): Promise<void> {
@@ -64,7 +72,7 @@ async function streamCapabilityProgress(
   const res = await fetch(path, {
     method: 'POST',
     headers,
-    body: JSON.stringify(configuration ?? {}),
+    body: JSON.stringify(request ?? {}),
     credentials: 'include',
   })
 
@@ -122,10 +130,10 @@ async function streamCapabilityProgress(
 export async function streamCapabilityInstall(
   capabilityId: string,
   version: string,
-  configuration: Record<string, unknown>,
+  request: CapabilityInstallRequestPayload,
   onLine: (state: ProgressStatePayload) => void,
 ): Promise<void> {
-  return streamCapabilityProgress(capabilityId, version, configuration, onLine, '_install')
+  return streamCapabilityProgress(capabilityId, version, request, onLine, '_install')
 }
 
 /**
@@ -135,8 +143,8 @@ export async function streamCapabilityInstall(
 export async function streamCapabilityUpgrade(
   capabilityId: string,
   version: string,
-  configuration: Record<string, unknown>,
+  request: CapabilityInstallRequestPayload,
   onLine: (state: ProgressStatePayload) => void,
 ): Promise<void> {
-  return streamCapabilityProgress(capabilityId, version, configuration, onLine, '_upgrade')
+  return streamCapabilityProgress(capabilityId, version, request, onLine, '_upgrade')
 }
