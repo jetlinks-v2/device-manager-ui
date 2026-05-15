@@ -80,7 +80,7 @@
               <a-collapse
                 v-model:activeKey="activeKey"
                 :class="[
-                  !formData.shareCluster ? 'collapse' : 'collapse-panel',
+                  !formData.shareCluster ? 'cluster-collapse' : 'collapse-panel',
                 ]"
                 :ghost="formData.shareCluster"
                 collapsible="header"
@@ -1376,7 +1376,7 @@ onMounted(async () => {
   }
 }
 
-.collapse {
+.cluster-collapse {
   margin-bottom: 20px;
   background: #f4f4f4;
   :deep(.ant-collapse-header-text) {
