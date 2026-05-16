@@ -470,7 +470,6 @@ function resolveTraceErrorText(ev: Record<string, any>): string {
 
   .trace-id {
     margin: 0 !important;
-    font-family: monospace;
     font-size: 13px;
   }
 }
@@ -729,7 +728,6 @@ function resolveTraceErrorText(ev: Record<string, any>): string {
   margin: 0;
   max-height: 280px;
   overflow: auto;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 11px;
   line-height: 1.45;
   white-space: pre-wrap;

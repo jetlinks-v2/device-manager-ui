@@ -550,7 +550,6 @@ onMounted(() => {
   background: var(--ant-color-fill-quaternary, rgba(0, 0, 0, 0.02));
   border: 1px solid var(--ant-color-border-secondary, rgba(0, 0, 0, 0.06));
   color: var(--trace-text-secondary);
-  font-family: var(--trace-font-sans);
   font-size: 12px;
   font-weight: 400;
   letter-spacing: 0.01em;
@@ -635,7 +634,6 @@ onMounted(() => {
     box-shadow 0.18s ease,
     background 0.18s ease,
     transform 0.15s ease;
-  font-family: var(--trace-font-sans);
   font-size: 13px;
   color: var(--trace-text);
   line-height: 1.35;
@@ -773,7 +771,6 @@ onMounted(() => {
   flex: 1;
   min-width: 0;
   overflow: hidden;
-  font-family: var(--trace-font-mono);
   color: var(--trace-text);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -785,7 +782,6 @@ onMounted(() => {
 }
 
 .trace-item__pval--hint {
-  font-family: inherit;
   color: var(--trace-text-secondary);
 }
 
@@ -809,7 +805,6 @@ onMounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  font-family: var(--trace-font-mono);
   font-size: 10px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;

@@ -779,7 +779,7 @@
                       v-model:value="item.value"
                       placeholder="输入模拟值"
                       size="small"
-                      style="width: 140px; font-family: monospace"
+                      style="width: 140px; "
                     />
                     <a-button type="link" size="small" danger @click="removeEncodeInput(idx)">
                       <template #icon><CloseOutlined /></template>
@@ -5119,7 +5119,6 @@ defineExpose({
     flex-shrink: 0;
     font-size: 11px;
     color: rgba(0, 0, 0, 0.45);
-    font-family: 'Consolas', 'Monaco', monospace;
   }
 }
 
@@ -5157,7 +5156,6 @@ defineExpose({
   flex-shrink: 0;
   font-size: 12px;
   color: rgba(0, 0, 0, 0.38);
-  font-family: 'Consolas', 'Monaco', monospace;
 }
 
 .mm-prop-ac--ghost :deep(.ant-input),
@@ -5195,7 +5193,6 @@ defineExpose({
   border-radius: 3px;
   font-size: 10px;
   font-weight: 700;
-  font-family: 'Consolas', 'Monaco', monospace;
   line-height: 15px;
   flex-shrink: 0;
   white-space: nowrap;
@@ -5208,7 +5205,6 @@ defineExpose({
 }
 
 .reg-addr-val {
-  font-family: 'Consolas', 'Monaco', monospace;
   font-weight: 600;
   font-size: 11px;
   color: rgba(0, 0, 0, 0.82);
@@ -5280,7 +5276,6 @@ defineExpose({
 }
 
 .reg-fc-badge {
-  font-family: 'Consolas', 'Monaco', monospace;
   font-size: 9px;
   padding: 0 3px;
   background: rgba(0, 0, 0, 0.04);
@@ -5298,7 +5293,6 @@ defineExpose({
 
 // FC格式 inline 展示（用于 Row1 中 FC 代码）
 .reg-fc-inline {
-  font-family: 'Consolas', 'Monaco', monospace;
   font-size: 10px;
   font-weight: 600;
   color: rgba(0, 0, 0, 0.5);
@@ -5322,7 +5316,6 @@ defineExpose({
 
 // Row2 中小号地址值（PLC 交叉解释）
 .reg-addr-val-sm {
-  font-family: 'Consolas', 'Monaco', monospace;
   font-size: 10px;
   color: rgba(0, 0, 0, 0.55);
   white-space: nowrap;
@@ -5683,7 +5676,6 @@ defineExpose({
   line-height: 1.5;
   word-break: break-all;
   color: rgba(0, 0, 0, 0.85);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .decode-debug-grid {
@@ -5712,7 +5704,6 @@ defineExpose({
 }
 
 .decode-textarea {
-  font-family: Consolas, 'Courier New', monospace;
   font-size: 12px;
 }
 
@@ -5876,7 +5867,7 @@ defineExpose({
 }
 
 .mp-hex-box {
-  font-family: Consolas, monospace;
+
   font-size: 10px;
   line-height: 1.35;
   padding: 4px 6px;
@@ -5903,11 +5894,11 @@ defineExpose({
   border: 1px solid #e8e8e8;
   border-radius: 2px;
   color: rgba(0, 0, 0, 0.65);
-  font-family: Consolas, monospace;
+
 }
 
 .mp-coil-bits {
-  font-family: Consolas, monospace;
+
   font-size: 10px;
   color: rgba(0, 0, 0, 0.55);
   max-height: 56px;
@@ -5954,7 +5945,7 @@ defineExpose({
 }
 
 .mp-mono {
-  font-family: Consolas, monospace;
+
 }
 
 .fill-modal-tip {
@@ -6080,7 +6071,6 @@ defineExpose({
   color: rgba(0, 0, 0, 0.38);
   line-height: 1.2;
   margin-bottom: 2px;
-  font-family: ui-monospace, monospace;
 }
 
 .dvm-byte-strip--plain {
@@ -6257,7 +6247,6 @@ defineExpose({
   font-size: 9px;
   line-height: 1;
   color: rgba(0, 0, 0, 0.38);
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   user-select: none;
 }
 
@@ -6339,7 +6328,6 @@ defineExpose({
   font-size: 9px;
   line-height: 1.2;
   color: rgba(0, 0, 0, 0.38);
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   user-select: none;
 }
 
@@ -6389,8 +6377,7 @@ defineExpose({
 
 .dvm-byte-hex {
   text-align: center;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 10px;
+  font-size: 12px;
   padding: 2px 1px;
   border-radius: 2px;
   border: 1px solid transparent;
@@ -6518,7 +6505,6 @@ defineExpose({
 }
 
 .dvm-prop-val {
-  font-family: ui-monospace, monospace;
   color: rgba(0, 0, 0, 0.82);
   word-break: break-word;
   flex: 1 1 120px;
@@ -6533,10 +6519,6 @@ defineExpose({
   font-size: 9px;
   color: rgba(0, 0, 0, 0.42);
   padding-left: 13px;
-}
-
-.dvm-prop-range {
-  font-family: ui-monospace, monospace;
 }
 
 .dvm-prop-reg {
@@ -6724,8 +6706,7 @@ defineExpose({
 .dvm-fallback-v {
   flex: 1 1 auto;
   word-break: break-word;
-  font-family: ui-monospace, monospace;
-  font-size: 10px;
+  font-size: 12px;
   color: rgba(0, 0, 0, 0.78);
 }
 
@@ -6755,7 +6736,6 @@ defineExpose({
 }
 
 .debug-output {
-  font-family: Consolas, 'Courier New', monospace;
   font-size: 12px;
   margin: 0;
   white-space: pre-wrap;
@@ -6797,7 +6777,7 @@ defineExpose({
     padding: 0 3px;
     border-radius: 2px;
     font-size: 11px;
-    font-family: Consolas, monospace;
+
   }
 }
 
@@ -6861,7 +6841,6 @@ defineExpose({
     font-size: 12px;
     line-height: 1.35;
     color: rgba(0, 0, 0, 0.88);
-    font-family: 'Consolas', 'Monaco', monospace;
   }
 
   .mm-codec-opt-desc {

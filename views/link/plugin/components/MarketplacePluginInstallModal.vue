@@ -396,7 +396,6 @@ function handleClose() {
   overflow: auto;
 }
 .mp-install__log {
-  font-family: ui-monospace, monospace;
   font-size: 12px;
   line-height: 1.5;
   white-space: pre-wrap;

@@ -283,7 +283,6 @@ watch(
   :deep(.ant-form-item-label) > label:before {
     color: #ff4d4f;
     content: "*";
-    font-family: SimSun, sans-serif;
     font-size: 14px;
     margin-right: 4px;
   }

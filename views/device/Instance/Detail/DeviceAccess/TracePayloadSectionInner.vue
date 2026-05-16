@@ -307,7 +307,6 @@ const structuredSummary = computed(() => {
   padding: 0 3px;
   font-size: 10px;
   line-height: 1.3;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   color: rgba(0, 0, 0, 0.45);
   background: rgba(0, 0, 0, 0.04);
   border-radius: 2px;
@@ -387,7 +386,6 @@ const structuredSummary = computed(() => {
   white-space: pre-wrap;
   word-break: break-word;
   color: rgba(0, 0, 0, 0.85);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   background: rgba(0, 0, 0, 0.02);
   border: 1px solid rgba(0, 0, 0, 0.06);
   border-radius: 6px;
@@ -428,7 +426,6 @@ const structuredSummary = computed(() => {
 }
 
 .hex-stream-pre {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 10px;
   line-height: 1.5;
   white-space: pre;
@@ -436,7 +433,6 @@ const structuredSummary = computed(() => {
 }
 
 .json-pre {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 11px;
 }
 

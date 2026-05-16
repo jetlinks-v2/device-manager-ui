@@ -2215,8 +2215,7 @@ watch(
 
 .file-manager-panel__row-permission-code {
   min-width: 0;
-  font-family: Menlo, Monaco, Consolas, monospace;
-  font-size: 11px;
+  font-size: 12px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
