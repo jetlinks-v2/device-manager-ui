@@ -532,9 +532,6 @@ onMounted(() => {
   --trace-text: var(--ant-color-text, rgba(0, 0, 0, 0.88));
   --trace-text-secondary: var(--ant-color-text-secondary, rgba(0, 0, 0, 0.55));
   --trace-text-tertiary: var(--ant-color-text-tertiary, rgba(0, 0, 0, 0.38));
-  --trace-font-sans: var(--ant-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, sans-serif);
-  --trace-font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .trace-hint {
