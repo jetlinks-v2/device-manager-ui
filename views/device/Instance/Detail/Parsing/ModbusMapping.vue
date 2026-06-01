@@ -199,6 +199,9 @@
                 </div>
               </div>
               <div v-else-if="record.registerStr" class="reg-hint-error">格式错误</div>
+              <div v-else class="reg-format-tip">
+                可写成 <code>从机地址:寄存器地址</code>，如 <code>2:40001</code>；不填默认 <code>1</code>
+              </div>
             </template>
           </div>
         </template>
@@ -1018,6 +1021,9 @@
                 </div>
               </div>
               <div v-else-if="drawerForm.registerStr" class="reg-hint-error">格式错误</div>
+              <div v-else class="reg-format-tip reg-format-tip--drawer">
+                可组合从机地址：<code>从机地址:寄存器地址</code>，如 <code>2:40001</code>、<code>2:3_0</code>；省略时默认从机地址为 <code>1</code>
+              </div>
             </template>
           </div>
           <div class="form-help modbus-addr-guide">
@@ -5176,6 +5182,39 @@ defineExpose({
   display: flex;
   flex-direction: column;
   gap: 1px;
+}
+
+.reg-format-tip {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px 4px;
+  max-width: 100%;
+  margin-top: 2px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #f6f8fa;
+  color: rgba(0, 0, 0, 0.48);
+  font-size: 10px;
+  line-height: 16px;
+}
+
+.reg-format-tip code {
+  padding: 0 3px;
+  border-radius: 3px;
+  background: rgba(22, 119, 255, 0.08);
+  color: #1677ff;
+  font-size: 10px;
+  line-height: 14px;
+}
+
+.reg-format-tip--drawer {
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.reg-format-tip--drawer code {
+  font-size: 12px;
 }
 
 .reg-hint-row1 {
