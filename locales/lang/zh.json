@@ -1984,7 +1984,7 @@
     "Parsing.mod.example.status": "状态位寄存器",
     "Parsing.mod.register.title": "Modbus 点位配置",
     "Parsing.mod.register.add": "新增点位",
-    "Parsing.mod.register.slaveId": "从站ID",
+    "Parsing.mod.register.slaveId": "从机地址",
     "Parsing.mod.register.type": "寄存器类型",
     "Parsing.mod.register.address": "起始地址",
     "Parsing.mod.register.count": "寄存器数量",

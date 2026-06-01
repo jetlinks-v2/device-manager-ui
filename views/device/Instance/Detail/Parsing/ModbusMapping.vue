@@ -115,7 +115,7 @@
         <template v-else-if="column.key === 'register'">
           <a-input
             v-model:value="record.registerStr"
-            placeholder="如 40001  或  3_0"
+            placeholder="如 40001、3_0、2:40001"
             size="small"
             @change="() => onRegisterStrChange(record)"
           />
@@ -138,7 +138,7 @@
                     <span class="reg-fc-inline">{{ hint.fcCode }}</span>
                     <span class="reg-addr-val">addr {{ hint.modbusAddr }}<template v-if="hint.modbusAddrEnd !== undefined"> ~ {{ hint.modbusAddrEnd }}</template></span>
                   </template>
-                  <span v-if="hint.slaveId" class="reg-slave">从站 {{ hint.slaveId }}</span>
+                  <span v-if="hint.slaveId" class="reg-slave">从机地址 {{ hint.slaveId }}</span>
                 </div>
                 <!-- Row2：交叉解释（另一种地址表示） + 寄存器数/字节数 -->
                 <div class="reg-hint-row2">
@@ -361,7 +361,7 @@
                     class="decode-sim-addr-input"
                     size="small"
                     allow-clear
-                    placeholder="40001 / 3_0-7"
+                    placeholder="40001 / 3_0-7 / 2:40001"
                   />
                   <code
                     class="decode-sim-hex-preview"
@@ -957,7 +957,7 @@
         <a-form-item label="寄存器地址">
           <a-input
             v-model:value="drawerForm.registerStr"
-            placeholder="如 40001  或  3_0  或  2:40001"
+            placeholder="如 40001、3_0、2:40001"
             @change="onDrawerRegisterChange"
           />
           <div class="drawer-reg-hint">
@@ -976,7 +976,7 @@
                     <span class="reg-fc-inline">{{ hint.fcCode }}</span>
                     <span class="reg-addr-val">addr {{ hint.modbusAddr }}<template v-if="hint.modbusAddrEnd !== undefined"> ~ {{ hint.modbusAddrEnd }}</template></span>
                   </template>
-                  <span v-if="hint.slaveId" class="reg-slave">从站 {{ hint.slaveId }}</span>
+                  <span v-if="hint.slaveId" class="reg-slave">从机地址 {{ hint.slaveId }}</span>
                 </div>
                 <div class="reg-hint-row2">
                   <template v-if="hint.inputFormat === 'plc'">
@@ -1029,6 +1029,7 @@
               <li><b>4x 保持寄存器</b> <code>40001</code> 起 — 读 <code>FC03</code>，写单寄存器 <code>FC06</code>，写多寄存器（功能码 <code>0x10</code>，常称 FC16），字内按位写可选用掩码写（功能码 <code>0x16</code>，FC22）。同样 <b>16 位/地址</b>。</li>
               <li><b>地址换算</b>：PLC 显示地址 = 区首 + Modbus 数据地址 + 1。例：<code>40001</code> → 4x 区首偏移 0 → 报文中起始地址为 <code>0</code>。</li>
               <li><b>范围写法</b>：<code>40001-40002</code> 表示 2 个<b>字</b>；<code>00001-00008</code> 表示 8 个<b>位</b>。<code>3_0-1</code> 与 <code>40001-40002</code> 等价。</li>
+              <li><b>从机地址</b>：在寄存器地址前追加从机地址前缀，例如 <code>2:40001</code>、<code>2:3_0</code>。</li>
               <li><b>与部分 PLC 软件</b>：有的 HMI 以「字节」显示线圈区，与本处「Modbus 位地址」可能差系数，请以设备手册为准对照。</li>
             </ul>
             <div class="guide-foot">填写范围后，列表会按区类型筛选：线圈/离散单点选「单点布尔」，多点选「布尔数组」（默认与报文一致）；寄存器区按总位数匹配 16、32、64… 位及数组规则。</div>
@@ -2249,7 +2250,7 @@ const parseStd5Digit = (val: number): { type: string; address: number } | null =
  *   3_0            FC格式单地址（FC03 地址0，1个寄存器）
  *   3_0-2          FC格式范围（FC03 地址0～2，共3个寄存器）
  *   3_0_7          FC格式 + 位索引（字区内 bool 读单寄存器第7位）
- *   2:40001-40002  从站2 + 标准地址范围
+ *   2:40001-40002  从机地址2 + 标准地址范围
  *   3_0@5          FC格式 + 数组元素下标
  *   40001*2        旧格式（仍兼容，但推荐改用范围写法）
  */
@@ -2271,7 +2272,7 @@ const doParseRegisterStr = (str: string): ParsedRegister | null => {
     s = s.slice(0, starIdx).trim();
   }
 
-  // 2. 从站 ID 前缀："2:..."
+  // 2. 从机地址前缀："2:..."
   if (s.includes(':')) {
     const colonIdx = s.indexOf(':');
     slaveId = parseInt(s.slice(0, colonIdx));
@@ -2455,8 +2456,8 @@ const getRegisterHint = (str: string): string => {
 
   const parts: string[] = [];
 
-  // 从站（非默认才显示）
-  if (res.slaveId !== 1) parts.push(`从站 ${res.slaveId}`);
+  // 从机地址（非默认才显示）
+  if (res.slaveId !== 1) parts.push(`从机地址 ${res.slaveId}`);
 
   // 类型 + 功能码（工业标准简称）
   parts.push(getTypeLabel(res.type));
