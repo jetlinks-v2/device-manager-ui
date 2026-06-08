@@ -3,7 +3,7 @@
     <a-card :bordered="false" borderStyle="padding: 0">
       <template #extra>
         <a-space>
-          <a-button @click="importVisible = true">导入</a-button>
+          <a-button @click="importVisible = true">{{ $t('EditTable.index.478060-21') }}</a-button>
           <a-button @click="visible = true">{{ $t('EditTable.index.478060-0') }}</a-button>
           <a-button type="primary" @click="onSave">{{ $t('EditTable.index.478060-1') }}</a-button>
         </a-space>
@@ -165,14 +165,14 @@
     :width="750"
     :downloadUrlBuilder="downloadAnalyzeMetadataTemplate"
     :request="(fileUrl) => importAnalyzeMetadata(instanceStore.current.id, fileUrl, autoCreate)"
-    message="1.若平台中不存在匹配的采集器点位，则自动跳过该条数据，不会覆盖<br />2.若需根据点位自动创建物模型，请在上传文件前启用该选项。上传后再修改将无效"
+    :message="`${$t('EditTable.index.478060-22')}<br />${$t('EditTable.index.478060-23')}`"
     @close="importVisible = false"
     @save="handleImportSuccess"
   >
     <template #content>
       <a-space>
-        <span>根据数采点位自动创建物模型</span>
-        <a-tooltip title="若无对应物模型，则自动创建物模型并映射">
+        <span>{{ $t('EditTable.PatchMapping.974352-10') }}</span>
+        <a-tooltip :title="$t('EditTable.PatchMapping.974352-11')">
           <AIcon type="QuestionCircleOutlined"/>
         </a-tooltip>
         <a-switch v-model:checked="autoCreate"></a-switch>
