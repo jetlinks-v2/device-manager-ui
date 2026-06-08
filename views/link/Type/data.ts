@@ -112,19 +112,68 @@ export const Validator = {
     regIPv6: new RegExp(/^\s*((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))(%.+)?\s*$/),
     regDomain: new RegExp(
         // /^https?:\/\/(([a-zA-Z0-9_-])+(\.)?)*(:\d+)?(\/((\.)?(\?)?=?&?[a-zA-Z0-9_-](\?)?)*)*$/i,
-      /^[a-zA-Z0-9]+([\-\.]{1}[a-zA-Z0-9]+)*\.[a-zA-Z]{2,}$/
+        /^(?=.{1,253}$)(?=.*[a-zA-Z])[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/i
     ),
     regOnlyNumber: new RegExp(/^\d+$/),
 };
 
+const isValidPort = (port: string): boolean => {
+    const portNumber = Number(port);
+
+    return Validator.regOnlyNumber.test(port) && portNumber >= 1 && portNumber <= 65535;
+};
+
+const getAddressHost = (value: string): string => {
+    if (!value || /\s/.test(value)) {
+        return '';
+    }
+
+    // 兼容历史配置中误用反斜杠的协议写法，仅用于校验解析，不改写原始配置值。
+    const normalizedValue = value.replace(/^(https?):\\+/i, '$1://');
+    const addressWithoutProtocol = normalizedValue.replace(/^(https?|ftp):\/\//i, '');
+    const hostWithPort = addressWithoutProtocol.split(/[/?#]/)[0];
+
+    if (!hostWithPort) {
+        return '';
+    }
+
+    if (hostWithPort.startsWith('[')) {
+        const bracketEndIndex = hostWithPort.indexOf(']');
+
+        if (bracketEndIndex === -1) {
+            return '';
+        }
+
+        const host = hostWithPort.slice(1, bracketEndIndex);
+        const rest = hostWithPort.slice(bracketEndIndex + 1);
+
+        if (!host || (rest && (!rest.startsWith(':') || !isValidPort(rest.slice(1))))) {
+            return '';
+        }
+
+        return host;
+    }
+
+    const [host, port, ...extraPortSegments] = hostWithPort.split(':');
+
+    if (!host || extraPortSegments.length || (port !== undefined && !isValidPort(port))) {
+        return '';
+    }
+
+    return host;
+};
+
 const validateAddress = (_rule: any, value: string): Promise<any> => {
-    return new Promise(async (resolve, reject) => {
-        const _domainStr = value
-        const _domain = _domainStr.replace(/^(https?|ftp):\/\/(www\.)?/i, '')
+    return new Promise((resolve, reject) => {
+        const address = (value || '').trim();
+        const host = getAddressHost(address);
+
         if (
-            Validator.regIpv4.test(value) ||
-            Validator.regIPv6.test(value) ||
-            Validator.regDomain.test(_domain)
+            Validator.regIpv4.test(address) ||
+            Validator.regIPv6.test(address) ||
+            Validator.regIpv4.test(host) ||
+            Validator.regIPv6.test(host) ||
+            Validator.regDomain.test(host)
         ) {
             return resolve('');
         } else {
