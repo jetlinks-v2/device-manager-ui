@@ -122,7 +122,7 @@ import {
   getProviders,
 } from '../../../../../api/product'
 import { getCompositeProviderDetail } from '../../../../../api/link/accessConfig'
-import { getDevicePrincipal } from '../../../../../api/instance'
+import { existsDevicePrincipalSupport, getDevicePrincipal } from '../../../../../api/instance'
 import { useInstanceStore } from '../../../../../store/instance'
 import { useMenuStore } from '@jetlinks-web-core/store/menu'
 import { marked } from 'marked'
@@ -152,6 +152,8 @@ const columnsHTTP = ref<TableColumnType[]>([])
 const principalRef = ref<{ refresh?: () => void } | null>(null)
 const protocolDocBodyRef = ref<HTMLElement | null>(null)
 const principalList = ref<Array<Record<string, any>>>([])
+const supportPrincipal = ref<boolean | null>(null)
+const currentDeviceId = ref<string | undefined>()
 
 const showProtocolDoc = computed(() => !!markdownToHtml.value)
 
@@ -163,6 +165,53 @@ const providerDesc = computed(() => {
   const p = access.value?.provider
   return dataSource.value.find((item: any) => item?.id === p)?.description || ''
 })
+
+const loadPrincipal = async (deviceId?: string) => {
+  if (!deviceId) {
+    principalList.value = []
+    currentDeviceId.value = undefined
+    return
+  }
+
+  if (currentDeviceId.value !== deviceId) {
+    supportPrincipal.value = null
+    currentDeviceId.value = deviceId
+  }
+
+  if (supportPrincipal.value === false) {
+    principalList.value = []
+    return
+  }
+
+  if (supportPrincipal.value === null) {
+    try {
+      const supportResp = await existsDevicePrincipalSupport()
+      if (supportResp?.status === 200 && supportResp.result) {
+        supportPrincipal.value = true
+      } else {
+        supportPrincipal.value = false
+        principalList.value = []
+        return
+      }
+    } catch {
+      supportPrincipal.value = false
+      principalList.value = []
+      return
+    }
+  }
+
+  try {
+    const resp: any = await getDevicePrincipal(deviceId)
+    if (resp?.status === 200) {
+      principalList.value = resp.result || []
+      if (config.value?.document) {
+        refreshMarkdownDocument()
+      }
+    }
+  } catch {
+    principalList.value = []
+  }
+}
 
 const ColumnsMQTT: TableColumnType[] = [
   { title: 'topic', dataIndex: 'topic', key: 'topic', ellipsis: true, width: '28%' },
@@ -548,18 +597,7 @@ const load = async () => {
   compositeActiveAddress.value = []
   try {
     const inst = instanceStore.current
-    if (inst?.id) {
-      getDevicePrincipal(inst.id).then((resp: any) => {
-        if (resp?.status === 200) {
-          principalList.value = resp.result || []
-          if (config.value?.document) {
-            refreshMarkdownDocument()
-          }
-        }
-      }).catch(() => {
-        principalList.value = []
-      })
-    }
+    await loadPrincipal(inst?.id)
     let accessId = inst.accessId
     if (!accessId && inst.productId) {
       const pr: any = await productDetail(inst.productId)
