@@ -117,7 +117,7 @@ import { handleParamsToString } from '@jetlinks-web-core/utils'
 import { useMenuStore } from '@jetlinks-web-core/store/menu'
 import { useRouterParams } from '@jetlinks-web/hooks'
 import { EventEmitter, onlyMessage } from '@jetlinks-web/utils'
-import { useAuthStore, useSystemStore } from '@jetlinks-web-core/store'
+import { useAIStore, useAuthStore, useSystemStore } from '@jetlinks-web-core/store'
 import { isNoCommunity } from '@jetlinks-web-core/utils/utils'
 import { useI18n } from 'vue-i18n'
 import { tabs } from './asyncComponent'
@@ -130,6 +130,7 @@ const permissionStore = useAuthStore()
 const menuStory = useMenuStore()
 const route = useRoute()
 const productStore = useProductStore()
+const aiStore = useAIStore()
 const routerParams = useRouterParams()
 
 const list = ref([
@@ -310,6 +311,18 @@ const jumpDevice = () => {
   })
 }
 
+const syncProductAiAgent = (productId?: string | string[]) => {
+  const id = String(Array.isArray(productId) ? productId[0] : productId || '').trim()
+  if (!id) return
+  aiStore.queryAgent('productDetailChat', {
+    productId: id,
+    subjectType: 'product',
+    subjectId: id,
+    subject: { type: 'product', id },
+    scope: [{ type: 'product', id }]
+  })
+}
+
 watch(
   () => productStore.current,
   () => {
@@ -333,6 +346,20 @@ onMounted(() => {
   productStore.reSet()
   productStore.refresh(route.params.id as string)
   productStore.tabActiveKey = routerParams.params?.value.tab || 'Info'
+  syncProductAiAgent(route.params.id as string)
+})
+
+onBeforeRouteUpdate((to: any) => {
+  if (to.params?.id !== productStore.current.id && to.name === 'device/Product/Detail') {
+    productStore.reSet()
+    productStore.refresh(to.params.id as string)
+    productStore.tabActiveKey = routerParams.params?.value.tab || 'Info'
+    syncProductAiAgent(to.params.id as string)
+  }
+})
+
+onUnmounted(() => {
+  aiStore.hideAiButton()
 })
 </script>
 <style scoped lang="less">

@@ -789,6 +789,18 @@ const getDetail = () => {
   }
 }
 
+const syncDeviceAiAgent = (deviceId?: string) => {
+  const id = String(deviceId || '').trim()
+  if (!id) return
+  aiStore.queryAgent('deviceDetailChat', {
+    deviceId: id,
+    subjectType: 'device',
+    subjectId: id,
+    subject: { type: 'device', id },
+    scope: [{ type: 'device', id }]
+  })
+}
+
 const initPage = async (newId: any) => {
   detailPageLoading.value = true
   try {
@@ -799,6 +811,7 @@ const initPage = async (newId: any) => {
     getStatus(String(newId))
     getDetail()
     instanceStore.tabActiveKey = resolveDefaultTabKey()
+    syncDeviceAiAgent(String(newId))
   } finally {
     detailPageLoading.value = false
   }
@@ -821,6 +834,7 @@ const getDetailFn = async () => {
       getStatus(String(_id))
       getDetail()
       instanceStore.tabActiveKey = resolveDefaultTabKey(tab)
+      syncDeviceAiAgent(String(_id))
     }
   } finally {
     detailPageLoading.value = false
@@ -951,7 +965,6 @@ const onClick = async () => {
 onMounted(async () => {
   await getDetailFn()
   editableName.value = instanceStore.current?.name || ''
-  aiStore.queryAgent('deviceDetailChat', { deviceId: instanceStore.current?.id })
 })
 
 watch(
