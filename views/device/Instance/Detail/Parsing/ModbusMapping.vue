@@ -10,6 +10,10 @@
             <a-radio-button value="TCP">TCP</a-radio-button>
             <a-radio-button value="RTU">RTU</a-radio-button>
           </a-radio-group>
+          <a-button size="small" class="mm-template-btn" :loading="applyingTemplate" @click="applyCurrentParserTemplate">
+            <template #icon><AppstoreOutlined /></template>
+            使用模版
+          </a-button>
           <span class="mm-link-type-hint">解析与编码：TCP 含 MBAP；RTU 含 CRC；PDU 为裸 PDU（与历史默认一致）</span>
         </div>
         <div ref="tableScrollEl" class="mm-table-scroll">
@@ -1242,9 +1246,11 @@ import {
   ExclamationCircleOutlined,
   ReloadOutlined,
   DownOutlined,
+  AppstoreOutlined,
 } from '@ant-design/icons-vue';
 import { useInstanceStore } from '../../../../../store/instance';
 import { deviceCode, saveDeviceCode, testCode, encodeTest } from '../../../../../api/instance';
+import { queryInstalledDeviceLibraryParserTemplate } from './deviceLibraryParserTemplate';
 
 const props = defineProps<{
   thingId?: string;
@@ -1438,6 +1444,7 @@ const modbusLinkType = ref<'PDU' | 'TCP' | 'RTU'>('PDU');
 const mappings = ref<ModbusSimpleMapping[]>([]);
 const loading = ref(false);
 const saving = ref(false);
+const applyingTemplate = ref(false);
 
 /** 属性列 AutoComplete 焦点行（用于收起态「名称 + id」叠层） */
 const focusedPropertyIndex = ref<number | null>(null);
@@ -2981,6 +2988,112 @@ const copyMapping = (index: number) => {
   const copy = { ...mappings.value[index] };
   mappings.value.splice(index + 1, 0, copy);
 };
+
+async function applyCurrentParserTemplate() {
+  const pId = props.productId || instanceStore.current?.productId;
+  if (!pId) {
+    message.warning('未找到产品信息');
+    return;
+  }
+
+  applyingTemplate.value = true;
+  try {
+    const template = await queryInstalledDeviceLibraryParserTemplate(pId);
+    if (!template) {
+      message.warning('未找到已安装的设备库模版');
+      return;
+    }
+    if (template.parserType && template.parserType.toLowerCase() !== 'modbus') {
+      message.warning('设备库模版不是 Modbus 数据解析');
+      return;
+    }
+
+    modbusLinkType.value = normalizeModbusLinkType(template.modbusLinkType);
+
+    const templateMappings = Array.isArray(template.mappings) ? template.mappings : [];
+    const rows = templateMappings.map(toModbusSimpleMapping).filter((row) => row.property && row.registerStr);
+    if (!rows.length) {
+      message.warning('设备库未配置点位映射');
+      return;
+    }
+
+    const knownKeys = new Set(mappings.value.map(mappingDuplicateKey).filter(Boolean));
+    const appendRows: ModbusSimpleMapping[] = [];
+    let skipped = 0;
+    rows.forEach((row) => {
+      autoFillLayout(row);
+      const key = mappingDuplicateKey(row);
+      if (key && knownKeys.has(key)) {
+        skipped += 1;
+        return;
+      }
+      if (key) knownKeys.add(key);
+      appendRows.push(row);
+    });
+
+    if (appendRows.length) {
+      mappings.value = [...mappings.value, ...appendRows];
+      message.success(
+        skipped
+          ? `已应用模版，新增 ${appendRows.length} 个点位，跳过 ${skipped} 个重复点位，请确认后保存配置`
+          : `已应用模版，新增 ${appendRows.length} 个点位，请确认后保存配置`,
+      );
+    } else {
+      message.info('模版点位均已存在，已同步链路类型，请确认后保存配置');
+    }
+  } catch (error: any) {
+    message.error(error?.message || '应用设备库模版失败');
+  } finally {
+    applyingTemplate.value = false;
+  }
+}
+
+function toModbusSimpleMapping(item: Record<string, unknown>): ModbusSimpleMapping {
+  const property = firstTemplateString(item.property);
+  const metaProp = metadataProperties.value.find((p) => p.id === property);
+  const bitLength = Number(item.bitLength);
+
+  return {
+    property,
+    propertyName: metaProp?.name || firstTemplateString(item.name, item.propertyName) || undefined,
+    propertyDataType: metaProp?.valueType?.type,
+    registerStr: firstTemplateString(item.register, item.registerStr),
+    codec: normalizeCodecId(firstTemplateString(item.codec)),
+    layout: firstTemplateString(item.layout),
+    scaleFactor: toFiniteNumberOr(item.scaleFactor, 1),
+    scale: Math.round(toFiniteNumberOr(item.scale, -1)),
+    bitLength: Number.isFinite(bitLength) && bitLength > 0 ? bitLength : undefined,
+    useMaskWrite: item.useMaskWrite === true,
+    readable: normalizeTemplateReadable(item.access, item.readable),
+    writable: normalizeTemplateWritable(item.access, item.writable),
+  };
+}
+
+function mappingDuplicateKey(item: ModbusSimpleMapping) {
+  const property = item.property.trim();
+  const register = item.registerStr.trim().toLowerCase();
+  return property && register ? `${property}::${register}` : '';
+}
+
+function normalizeTemplateReadable(access: unknown, readable: unknown) {
+  if (typeof readable === 'boolean') return readable;
+  if (access === 'write') return false;
+  return true;
+}
+
+function normalizeTemplateWritable(access: unknown, writable: unknown) {
+  if (typeof writable === 'boolean') return writable;
+  if (access === 'read') return false;
+  return true;
+}
+
+function firstTemplateString(...values: unknown[]) {
+  for (const value of values) {
+    const text = value == null ? '' : String(value).trim();
+    if (text) return text;
+  }
+  return '';
+}
 
 // ==================== API: Load/Save ====================
 function normalizeModbusLinkType(v: unknown): 'PDU' | 'TCP' | 'RTU' {
