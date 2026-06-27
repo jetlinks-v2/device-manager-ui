@@ -547,6 +547,20 @@ const isRefresh = ref(false)
 const aiStore = useAIStore()
 const permissionStore = useAuthStore()
 const { mergedOptions } = useRegistryOptions({ baseOptions: list, code: 'detail-tabs' })
+const DEVICE_AGENT_SUBJECT_TYPE = 'device'
+
+const syncDeviceDetailAgent = () => {
+  const deviceId = instanceStore.current?.id
+  if (!deviceId) return
+
+  const deviceName = instanceStore.current?.name
+  void aiStore.queryAgent('deviceDetailChat', {
+    deviceId,
+    subjectType: DEVICE_AGENT_SUBJECT_TYPE,
+    subjectId: deviceId,
+    ...(deviceName ? { deviceName, subjectName: deviceName } : {})
+  })
+}
 
 const orderedOptions = computed(() => {
   const source = (mergedOptions as any)?.value || []
@@ -795,6 +809,7 @@ const initPage = async (newId: any) => {
     getStatus(String(newId))
     getDetail()
     instanceStore.tabActiveKey = resolveDefaultTabKey()
+    syncDeviceDetailAgent()
   } finally {
     detailPageLoading.value = false
   }
@@ -817,6 +832,7 @@ const getDetailFn = async () => {
       getStatus(String(_id))
       getDetail()
       instanceStore.tabActiveKey = resolveDefaultTabKey(tab)
+      syncDeviceDetailAgent()
     }
   } finally {
     detailPageLoading.value = false
@@ -947,7 +963,6 @@ const onClick = async () => {
 onMounted(async () => {
   await getDetailFn()
   editableName.value = instanceStore.current?.name || ''
-  aiStore.queryAgent('deviceDetailChat', { deviceId: instanceStore.current?.id })
 })
 
 watch(
