@@ -338,6 +338,7 @@ import { useRegistryOptions } from '@jetlinks-web-core/hooks'
 
 import { deviceStateList } from '@device-manager-ui/views/device/data'
 import { isApplyDashboard } from '@device-manager-ui/utils/dashboardProject'
+import { createDeviceDetailClientToolRuntime } from './clientTools'
 
 const { t: $t } = useI18n()
 const menuStory = useMenuStore()
@@ -548,6 +549,17 @@ const aiStore = useAIStore()
 const permissionStore = useAuthStore()
 const { mergedOptions } = useRegistryOptions({ baseOptions: list, code: 'detail-tabs' })
 const DEVICE_AGENT_SUBJECT_TYPE = 'device'
+const DEVICE_DETAIL_AGENT_SYSTEM_PROMPT = [
+  '你是设备详情页内的设备问数与诊断助手。',
+  '当前会话的 subject 就是页面打开的设备，已通过 subjectType=device、subjectId、deviceId 和 deviceName 提供；用户没有明确要求其它设备时，不要再追问设备 ID。',
+  '用户用自然语言询问设备是否正常、最近状态、CPU/内存/磁盘/JVM、属性趋势、物模型字段、告警/日志、上下行链路、边缘网关文件或远程目录时，应主动使用当前页面提供的客户端工具获取证据，再回答。',
+  '用户提到今日、今天、昨天、最近N小时、最近N天、本周、本月等时间范围时，优先把原始时间表达传入时间型客户端工具的 timeRange 参数，或转换为 startTime/endTime。',
+  '用户询问告警、报警、异常恢复、告警原因或告警中状态时，必须优先查询平台告警记录；物模型字段或属性历史只能作为补充佐证，不作为告警事实的首选来源。',
+  '当用户要求导出、保存、生成报告，或查询结果可能较大时，优先使用业务工具自身的 writeToPath 参数把完整结果写入当前会话文件容器，再用返回的 fs:// 引用回复；不需要调用独立文件系统工具。',
+  '不要要求用户说出工具名，也不要把工具 ID 当作操作说明展示给用户；如不确定某类数据可用性，可先调用客户端工具说明了解能力边界。',
+  '诊断结论需要区分“已验证事实、异常迹象、建议动作、无法确认的限制”，不要编造未查询到的数据。'
+].join('\n')
+const deviceDetailClientToolRuntime = createDeviceDetailClientToolRuntime(() => instanceStore.current || {})
 
 const syncDeviceDetailAgent = () => {
   const deviceId = instanceStore.current?.id
@@ -558,6 +570,11 @@ const syncDeviceDetailAgent = () => {
     deviceId,
     subjectType: DEVICE_AGENT_SUBJECT_TYPE,
     subjectId: deviceId,
+    clientTools: deviceDetailClientToolRuntime.clientTools,
+    clientToolHandler: deviceDetailClientToolRuntime.handleClientToolCall,
+    clientToolsName: deviceDetailClientToolRuntime.clientToolsName,
+    clientToolsDescription: deviceDetailClientToolRuntime.clientToolsDescription,
+    systemPrompt: DEVICE_DETAIL_AGENT_SYSTEM_PROMPT,
     ...(deviceName ? { deviceName, subjectName: deviceName } : {})
   })
 }
