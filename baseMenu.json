@@ -402,6 +402,18 @@
                 "actions": ["invoke"]
               },
               {
+                "permission": "ai-agent-deploy",
+                "actions": ["use"]
+              },
+              {
+                "permission": "ai-agent-session-file",
+                "actions": ["query", "saveFile", "deleteFile"]
+              },
+              {
+                "permission": "alarm-record",
+                "actions": ["query"]
+              },
+              {
                 "permission": "device-gateway",
                 "actions": ["query"]
               },
@@ -429,6 +441,10 @@
                   {
                     "permission": "device-instance",
                     "actions": ["query"]
+                  },
+                  {
+                    "permission": "ai-agent-session-file",
+                    "actions": ["query", "saveFile", "deleteFile"]
                   },
                   {
                     "permission": "assets-bind",

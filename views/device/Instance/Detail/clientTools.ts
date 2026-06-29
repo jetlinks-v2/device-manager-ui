@@ -17,6 +17,10 @@ import {
   type AiClientToolCall,
   type AiClientToolRuntime
 } from '@jetlinks-web-core/layout/components/AiChat/clientTools'
+import {
+  DEVICE_DETAIL_SELECTOR_SCOPE,
+  registerDeviceDetailSelectorTools
+} from './selectorTools'
 
 type DeviceDetailRecord = Record<string, any>
 type RemoteSystemFileRecord = Record<string, any>
@@ -98,6 +102,22 @@ const truncateText = (value: unknown, maxLength = 4000) => {
   if (value === undefined || value === null) return value
   const text = typeof value === 'string' ? value : safeStringify(value)
   return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text
+}
+
+const safeToolPart = async <T>(
+  runner: () => Promise<T> | T
+): Promise<{ ok: true; data: T } | { ok: false; error: ReturnType<typeof normalizeToolError> }> => {
+  try {
+    return {
+      ok: true,
+      data: await runner()
+    }
+  } catch (error) {
+    return {
+      ok: false,
+      error: normalizeToolError(error)
+    }
+  }
 }
 
 interface ResolvedTimeRange {
@@ -688,11 +708,67 @@ const writeToolResultToSessionFile = async (
   }
 }
 
-const buildDeviceLogTerms = (args: Record<string, any>) => [
-  ...buildTimeTerms(args),
-  ...(args.type ? [{ column: 'type', value: args.type }] : []),
-  ...(args.keyword ? [{ column: 'content', termType: 'like', value: args.keyword }] : [])
-]
+const DEVICE_ONLINE_OFFLINE_TYPES = ['online', 'offline'] as const
+
+const normalizeDeviceLogTypeToken = (value: unknown) => {
+  const raw = String(value ?? '').trim()
+  if (!raw) return undefined
+  const normalized = raw.toLowerCase().replace(/[\s_\-./|,，、]+/g, '')
+  const alias = ({
+    online: 'online',
+    on: 'online',
+    up: 'online',
+    connect: 'online',
+    connected: 'online',
+    '上线': 'online',
+    '在线': 'online',
+    '接入': 'online',
+    offline: 'offline',
+    off: 'offline',
+    down: 'offline',
+    disconnect: 'offline',
+    disconnected: 'offline',
+    '离线': 'offline',
+    '下线': 'offline',
+    '断开': 'offline',
+  } as Record<string, string>)[normalized]
+  if (alias) return alias
+  if (['上下线', '上线离线', '在线离线', '上下线记录', '上下线日志', 'onlineoffline', 'both'].includes(normalized)) {
+    return DEVICE_ONLINE_OFFLINE_TYPES
+  }
+  return raw
+}
+
+const normalizeDeviceLogTypes = (value: unknown) => {
+  const values = Array.isArray(value)
+    ? value
+    : String(value ?? '')
+      .split(/[,\s，、/|]+/)
+      .filter(Boolean)
+  const normalized = values.flatMap((item) => {
+    const type = normalizeDeviceLogTypeToken(item)
+    return Array.isArray(type) ? type : (type ? [type] : [])
+  })
+  return Array.from(new Set(normalized))
+}
+
+const normalizeOnlineOfflineTypes = (value: unknown) => {
+  const types = normalizeDeviceLogTypes(value)
+    .filter((type): type is typeof DEVICE_ONLINE_OFFLINE_TYPES[number] => (
+      DEVICE_ONLINE_OFFLINE_TYPES.includes(type as any)
+    ))
+  return types.length ? types : [...DEVICE_ONLINE_OFFLINE_TYPES]
+}
+
+const buildDeviceLogTerms = (args: Record<string, any>, resolved = resolveTimeRange(args)) => {
+  const types = normalizeDeviceLogTypes(args.type ?? args.types)
+  const typeTerm = buildSimpleTerm('type', types.length > 1 ? types : types[0])
+  return [
+    ...buildTimeTerms(args, 'timestamp', resolved),
+    ...(typeTerm ? [typeTerm] : []),
+    ...(args.keyword ? [{ column: 'content', termType: 'like', value: String(args.keyword).trim() }] : [])
+  ]
+}
 
 const normalizeTracePayload = (payload: Record<string, any>) => ({
   type: payload?.type,
@@ -822,8 +898,10 @@ const captureDeviceTrace = (deviceId: string, seconds: number, limit: number) =>
 
 export const createDeviceDetailClientToolRuntime = (
   getDevice: () => DeviceDetailRecord
-): AiClientToolRuntime => createAiClientToolRuntime<DeviceClientToolContext>(
-  defineAiClientTools<DeviceClientToolContext>([
+): AiClientToolRuntime => {
+  registerDeviceDetailSelectorTools()
+  return createAiClientToolRuntime<DeviceClientToolContext>(
+    defineAiClientTools<DeviceClientToolContext>([
     {
       id: 'device_access_summary',
       name: 'device_access_summary',
@@ -833,10 +911,12 @@ export const createDeviceDetailClientToolRuntime = (
       execute: async (_args, context) => {
         const deviceId = getDeviceId(context)
         if (!deviceId) throw new Error('deviceId missing')
-        const [sessionsResp, principalResp] = await Promise.all([
-          getDeviceSessions(deviceId),
-          getDevicePrincipal(deviceId)
+        const [sessionsResult, principalResult] = await Promise.all([
+          safeToolPart(() => getDeviceSessions(deviceId)),
+          safeToolPart(() => getDevicePrincipal(deviceId))
         ])
+        const sessions = sessionsResult.ok ? responseResult(sessionsResult.data) || [] : []
+        const principals = principalResult.ok ? responseResult(principalResult.data) || [] : []
         return {
           device: {
             id: context.device.id,
@@ -849,8 +929,13 @@ export const createDeviceDetailClientToolRuntime = (
             deviceType: context.device.deviceType,
             registryTime: context.device.registryTime
           },
-          sessions: responseResult(sessionsResp) || [],
-          principals: responseResult(principalResp) || []
+          sessions,
+          principals,
+          partial: !sessionsResult.ok || !principalResult.ok,
+          errors: {
+            sessions: sessionsResult.ok ? undefined : sessionsResult.error,
+            principals: principalResult.ok ? undefined : principalResult.error
+          }
         }
       }
     },
@@ -1200,14 +1285,112 @@ export const createDeviceDetailClientToolRuntime = (
       }
     },
     {
-      id: 'device_logs_summary',
-      name: 'device_logs_summary',
-      description: '统计当前设备日志数量，并返回少量最新日志样本。',
+      id: 'device_online_offline_summary',
+      name: 'device_online_offline_summary',
+      description: '统计当前设备在指定时间范围内的上线和离线日志数量，并返回少量最新上下线样本。',
       inputs: [
         {
           id: 'type',
           name: 'type',
-          description: '日志类型，可为空。',
+          description: '统计范围：both/online/offline，也支持“上下线/上线/离线”；默认 both。',
+          required: false,
+          valueType: 'string'
+        },
+        {
+          id: 'startTime',
+          name: 'startTime',
+          description: START_TIME_DESCRIPTION,
+          required: false,
+          valueType: 'string'
+        },
+        {
+          id: 'endTime',
+          name: 'endTime',
+          description: END_TIME_DESCRIPTION,
+          required: false,
+          valueType: 'string'
+        },
+        timeRangeInput(),
+        {
+          id: 'sampleLimit',
+          name: 'sampleLimit',
+          description: '返回最新上下线样本条数，默认5，最大10。',
+          required: false,
+          valueType: 'int'
+        }
+      ],
+      output: { type: 'object' },
+      help: '设备上下线统计。用户问“上下线数量”“今天上线几次”“最近离线几次”“在线离线记录数量”时优先使用此工具；它会分别统计 online/offline 的 total，并只返回少量样本。',
+      execute: async (args, context) => {
+        const deviceId = getDeviceId(context)
+        if (!deviceId) throw new Error('deviceId missing')
+        const sampleLimit = clampNumber(args.sampleLimit, 1, 10, 5)
+        const timeRange = resolveTimeRange(args)
+        const types = normalizeOnlineOfflineTypes(args.type)
+        const buildTermsByTypes = (targetTypes: string[]) => {
+          const typeTerm = buildSimpleTerm('type', targetTypes.length > 1 ? targetTypes : targetTypes[0])
+          return [
+            ...buildTimeTerms(args, 'timestamp', timeRange),
+            ...(typeTerm ? [typeTerm] : [])
+          ]
+        }
+
+        const [onlineResult, offlineResult, sampleResult] = await Promise.all([
+          types.includes('online')
+            ? queryLog(deviceId, {
+              paging: true,
+              pageIndex: 0,
+              pageSize: 1,
+              sorts: [{ name: 'timestamp', order: 'desc' }],
+              terms: buildTermsByTypes(['online'])
+            })
+            : Promise.resolve(undefined),
+          types.includes('offline')
+            ? queryLog(deviceId, {
+              paging: true,
+              pageIndex: 0,
+              pageSize: 1,
+              sorts: [{ name: 'timestamp', order: 'desc' }],
+              terms: buildTermsByTypes(['offline'])
+            })
+            : Promise.resolve(undefined),
+          queryLog(deviceId, {
+            paging: true,
+            pageIndex: 0,
+            pageSize: sampleLimit,
+            sorts: [{ name: 'timestamp', order: 'desc' }],
+            terms: buildTermsByTypes(types)
+          })
+        ])
+        const online = onlineResult ? normalizePagedList(onlineResult).total : undefined
+        const offline = offlineResult ? normalizePagedList(offlineResult).total : undefined
+        const samples = normalizePagedList(sampleResult)
+        const counts = {
+          ...(online !== undefined ? { online } : {}),
+          ...(offline !== undefined ? { offline } : {})
+        }
+        return {
+          deviceId,
+          source: 'device-log',
+          types,
+          timeRange: describeResolvedTimeRange(timeRange),
+          onlineCount: online,
+          offlineCount: offline,
+          total: Object.values(counts).reduce((sum, count) => sum + Number(count || 0), 0),
+          returned: samples.data.length,
+          samples: samples.data.map(normalizeDeviceLogRecord)
+        }
+      }
+    },
+    {
+      id: 'device_logs_summary',
+      name: 'device_logs_summary',
+      description: '统计当前设备日志数量，并返回少量最新日志样本；上下线数量优先使用 device_online_offline_summary。',
+      inputs: [
+        {
+          id: 'type',
+          name: 'type',
+          description: '日志类型，可为空；上线/在线会归一为 online，离线/下线会归一为 offline，上下线会归一为 online/offline。',
           required: false,
           valueType: 'string'
         },
@@ -1242,22 +1425,25 @@ export const createDeviceDetailClientToolRuntime = (
         }
       ],
       output: { type: 'object' },
-      help: '设备日志统计。用户问“最近有没有上报/错误/日志”“日志多少条”“这段时间是否有通信”时优先使用此工具；只返回 total 和少量 samples，避免把整页日志回传给模型。',
+      help: '设备日志统计。用户问“最近有没有上报/错误/日志”“日志多少条”“这段时间是否有通信”时使用此工具；如果问题是“上下线数量/上线几次/离线几次”，优先使用 device_online_offline_summary。只返回 total 和少量 samples，避免把整页日志回传给模型。',
       execute: async (args, context) => {
         const deviceId = getDeviceId(context)
         if (!deviceId) throw new Error('deviceId missing')
         const sampleLimit = clampNumber(args.sampleLimit, 1, 10, 3)
+        const timeRange = resolveTimeRange(args)
+        const types = normalizeDeviceLogTypes(args.type ?? args.types)
         const resp = await queryLog(deviceId, {
           paging: true,
           pageIndex: 0,
           pageSize: sampleLimit,
           sorts: [{ name: 'timestamp', order: 'desc' }],
-          terms: buildDeviceLogTerms(args)
+          terms: buildDeviceLogTerms(args, timeRange)
         })
         const result = normalizePagedList(resp)
         return {
           deviceId,
-          type: args.type || undefined,
+          type: types.length > 1 ? types : types[0],
+          timeRange: describeResolvedTimeRange(timeRange),
           keyword: String(args.keyword || '').trim() || undefined,
           total: result.total,
           returned: result.data.length,
@@ -1273,7 +1459,7 @@ export const createDeviceDetailClientToolRuntime = (
         {
           id: 'type',
           name: 'type',
-          description: '日志类型，可为空。',
+          description: '日志类型，可为空；上线/在线会归一为 online，离线/下线会归一为 offline，上下线会归一为 online/offline。',
           required: false,
           valueType: 'string'
         },
@@ -1308,21 +1494,25 @@ export const createDeviceDetailClientToolRuntime = (
         }
       ]),
       output: { type: 'object' },
-      help: '查询设备日志样本。需要查看少量原始日志内容时使用；如果只是问有没有、多少条、最近是否有通信，优先使用 device_logs_summary。需要保存完整日志样本时传 writeToPath。',
+      help: '查询设备日志样本。需要查看少量原始日志内容时使用；如果只是问有没有、多少条、最近是否有通信，优先使用 device_logs_summary；上下线数量优先使用 device_online_offline_summary。需要保存完整日志样本时传 writeToPath。',
       execute: async (args, context, call) => {
         const deviceId = getDeviceId(context)
         if (!deviceId) throw new Error('deviceId missing')
         const limit = clampNumber(args.limit, 1, 20, 10)
+        const timeRange = resolveTimeRange(args)
+        const types = normalizeDeviceLogTypes(args.type ?? args.types)
         const resp = await queryLog(deviceId, {
           paging: true,
           pageIndex: 0,
           pageSize: limit,
           sorts: [{ name: 'timestamp', order: 'desc' }],
-          terms: buildDeviceLogTerms(args)
+          terms: buildDeviceLogTerms(args, timeRange)
         })
         const paged = normalizePagedList(resp)
         const result = {
           deviceId,
+          type: types.length > 1 ? types : types[0],
+          timeRange: describeResolvedTimeRange(timeRange),
           total: paged.total,
           returned: paged.data.length,
           data: paged.data.map(normalizeDeviceLogRecord)
@@ -1330,6 +1520,8 @@ export const createDeviceDetailClientToolRuntime = (
         return writeToolResultToSessionFile(args, call, result, {
           summary: {
             deviceId,
+            type: result.type,
+            timeRange: result.timeRange,
             total: paged.total,
             returned: paged.data.length
           }
@@ -1505,10 +1697,12 @@ export const createDeviceDetailClientToolRuntime = (
         })
       }
     }
-  ]),
-  {
-    toolsName: 'device-detail-client-tools',
-    toolsDescription: '设备详情页提供的当前设备问数与诊断工具。可用于自然语言问题中的在线状态、接入会话、物模型、属性快照与统计、平台告警记录、日志统计与少量样本、边缘网关远程文件片段和实时链路样本分析；普通用户无需知道工具名，日志/属性优先用 summary 工具回答有没有和多少条。部分明细工具支持 writeToPath，可把完整结果写入当前会话文件容器并返回 fs:// 引用；不需要调用独立文件系统工具。',
-    getContext: () => ({ device: getDevice() || {} })
-  }
-)
+    ]),
+    {
+      toolsName: 'device-detail-client-tools',
+      toolsDescription: '设备详情页提供的当前设备问数与诊断工具。可用于自然语言问题中的在线状态、接入会话、物模型、属性快照与统计、平台告警记录、上下线统计、日志统计与少量样本、边缘网关远程文件片段和实时链路样本分析；普通用户无需知道工具名，日志/属性优先用 summary 工具回答有没有和多少条。需要选择其它设备时可使用动态注册的 selector 工具获取候选设备；当前设备默认来自 subject。部分明细工具支持 writeToPath，可把完整结果写入当前会话文件容器并返回 fs:// 引用；不需要调用独立文件系统工具。',
+      registeredToolScopes: DEVICE_DETAIL_SELECTOR_SCOPE,
+      getContext: () => ({ device: getDevice() || {} })
+    }
+  )
+}
