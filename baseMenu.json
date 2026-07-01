@@ -443,6 +443,10 @@
                     "actions": ["query"]
                   },
                   {
+                    "permission": "device-document-bind",
+                    "actions": ["query"]
+                  },
+                  {
                     "permission": "ai-agent-session-file",
                     "actions": ["query", "saveFile", "deleteFile"]
                   },
@@ -548,6 +552,10 @@
                     "actions": ["query", "save"]
                   },
                   {
+                    "permission": "device-document-bind",
+                    "actions": ["query", "save"]
+                  },
+                  {
                     "permission": "device-product",
                     "actions": ["query"]
                   },
@@ -610,6 +618,10 @@
                     "actions": ["query", "delete"]
                   },
                   {
+                    "permission": "device-document-bind",
+                    "actions": ["query", "delete"]
+                  },
+                  {
                     "permission": "device-gateway",
                     "actions": ["query"]
                   }
@@ -634,6 +646,10 @@
                   },
                   {
                     "permission": "device-instance",
+                    "actions": ["query", "save"]
+                  },
+                  {
+                    "permission": "device-document-bind",
                     "actions": ["query", "save"]
                   },
                   {

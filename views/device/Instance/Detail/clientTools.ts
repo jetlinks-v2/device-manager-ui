@@ -2,8 +2,6 @@ import { map } from 'rxjs/operators'
 import { wsClient } from '@jetlinks-web/core'
 import {
   downloadRemoteSystemFile,
-  getDevicePrincipal,
-  getDeviceSessions,
   getProperty,
   getPropertyData,
   getRemoteSystemWorkingDirectory,
@@ -21,6 +19,11 @@ import {
   DEVICE_DETAIL_SELECTOR_SCOPE,
   registerDeviceDetailSelectorTools
 } from './selectorTools'
+import { createDevicePropertyAggregateTool } from './propertyAggregateTool'
+import { createDeviceDocumentClientTools } from './documentTool'
+import { createDeviceAccessClientTools } from './accessTool'
+import { createDeviceEventClientTools } from './eventTool'
+import { createDeviceFunctionClientTools } from './functionTool'
 
 type DeviceDetailRecord = Record<string, any>
 type RemoteSystemFileRecord = Record<string, any>
@@ -125,20 +128,10 @@ interface ResolvedTimeRange {
   end?: number
 }
 
-const TIME_RANGE_DESCRIPTION = '时间范围，支持“今日/今天/昨天/最近24小时/近7天/本周/本月”等自然语言，也支持毫秒时间戳或可解析时间字符串。'
-const START_TIME_DESCRIPTION = '开始时间，支持毫秒时间戳、可解析时间字符串，或“今日/今天/昨天/最近24小时/近7天/本周/本月”等自然语言。'
-const END_TIME_DESCRIPTION = '结束时间，支持毫秒时间戳、可解析时间字符串，或“今日/今天/昨天/最近24小时/近7天/本周/本月”等自然语言。'
-
-const toTimeValue = (value: unknown) => {
-  if (value === undefined || value === null || value === '') return undefined
-  if (typeof value === 'number' && Number.isFinite(value)) return value
-  if (value instanceof Date) {
-    const timestamp = value.getTime()
-    return Number.isFinite(timestamp) ? timestamp : undefined
-  }
-  const timestamp = new Date(String(value)).getTime()
-  return Number.isFinite(timestamp) ? timestamp : undefined
-}
+const TIME_INPUT_EXAMPLES = '今日/今天/昨天/最近24小时/近7天/本周/本月、now、now-1d、now/d、2020-10-01||+1d'
+const TIME_RANGE_DESCRIPTION = `时间范围，支持“${TIME_INPUT_EXAMPLES}”等自然语言或 JetLinks 时间表达式，也支持毫秒时间戳、可解析时间字符串，或后端时间工具返回的 {start/end/from/to/startTime/endTime}。`
+const START_TIME_DESCRIPTION = `开始时间，支持毫秒时间戳、可解析时间字符串、“${TIME_INPUT_EXAMPLES}”等自然语言或 JetLinks 时间表达式。`
+const END_TIME_DESCRIPTION = `结束时间，支持毫秒时间戳、可解析时间字符串、“${TIME_INPUT_EXAMPLES}”等自然语言或 JetLinks 时间表达式。`
 
 const startOfDay = (date = new Date()) => {
   const value = new Date(date)
@@ -173,6 +166,117 @@ const addMonths = (timestamp: number, months: number) => {
 }
 
 const endOfPreviousMillisecond = (timestamp: number) => Math.max(0, timestamp - 1)
+
+const parseLocalDateTime = (value: string) => {
+  const matched = value.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2})(?::(\d{1,2})(?::(\d{1,2})(?:\.(\d{1,3}))?)?)?)?$/)
+  if (!matched) return undefined
+
+  const [, year, month, day, hour = '0', minute = '0', second = '0', millisecond = '0'] = matched
+  const date = new Date(
+    Number(year),
+    Number(month) - 1,
+    Number(day),
+    Number(hour),
+    Number(minute),
+    Number(second),
+    Number(millisecond.padEnd(3, '0'))
+  )
+  const timestamp = date.getTime()
+  return Number.isFinite(timestamp) ? timestamp : undefined
+}
+
+const parsePlainTimeValue = (value: unknown) => {
+  if (value === undefined || value === null || value === '') return undefined
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  if (value instanceof Date) {
+    const timestamp = value.getTime()
+    return Number.isFinite(timestamp) ? timestamp : undefined
+  }
+
+  const raw = String(value).trim()
+  if (!raw) return undefined
+  if (/^-?\d+(?:\.\d+)?$/.test(raw)) {
+    const timestamp = Number(raw)
+    return Number.isFinite(timestamp) ? timestamp : undefined
+  }
+
+  const localDateTime = parseLocalDateTime(raw)
+  if (localDateTime !== undefined) return localDateTime
+
+  const timestamp = new Date(raw).getTime()
+  return Number.isFinite(timestamp) ? timestamp : undefined
+}
+
+const applyDateMath = (mathString: string, baseTime: number) => {
+  let value = new Date(baseTime)
+  for (let index = 0; index < mathString.length;) {
+    const operator = mathString.charAt(index++)
+    const round = operator === '/'
+    const sign = operator === '-' ? -1 : 1
+    if (!round && operator !== '+' && operator !== '-') return undefined
+    if (index >= mathString.length) return undefined
+
+    const numberStart = index
+    while (index < mathString.length && /\d/.test(mathString.charAt(index))) {
+      index += 1
+    }
+    const amount = numberStart === index ? 1 : Number(mathString.slice(numberStart, index))
+    if (!Number.isFinite(amount) || amount <= 0 || index >= mathString.length) return undefined
+
+    const unit = mathString.charAt(index++)
+    if (round && amount !== 1) return undefined
+
+    if (round) {
+      if (unit === 'y') value = new Date(value.getFullYear(), 0, 1)
+      else if (unit === 'M') value = new Date(value.getFullYear(), value.getMonth(), 1)
+      else if (unit === 'w') {
+        const day = value.getDay() || 7
+        value = new Date(value.getFullYear(), value.getMonth(), value.getDate() - day + 1)
+      } else if (unit === 'd') value = new Date(value.getFullYear(), value.getMonth(), value.getDate())
+      else if (unit === 'h' || unit === 'H') value = new Date(value.getFullYear(), value.getMonth(), value.getDate(), value.getHours())
+      else if (unit === 'm') value = new Date(value.getFullYear(), value.getMonth(), value.getDate(), value.getHours(), value.getMinutes())
+      else if (unit === 's') value = new Date(value.getFullYear(), value.getMonth(), value.getDate(), value.getHours(), value.getMinutes(), value.getSeconds())
+      else return undefined
+      continue
+    }
+
+    const next = new Date(value)
+    if (unit === 'y') next.setFullYear(next.getFullYear() + sign * amount)
+    else if (unit === 'M') next.setMonth(next.getMonth() + sign * amount)
+    else if (unit === 'w') next.setDate(next.getDate() + sign * amount * 7)
+    else if (unit === 'd') next.setDate(next.getDate() + sign * amount)
+    else if (unit === 'h' || unit === 'H') next.setHours(next.getHours() + sign * amount)
+    else if (unit === 'm') next.setMinutes(next.getMinutes() + sign * amount)
+    else if (unit === 's') next.setSeconds(next.getSeconds() + sign * amount)
+    else return undefined
+    value = next
+  }
+
+  const timestamp = value.getTime()
+  return Number.isFinite(timestamp) ? timestamp : undefined
+}
+
+const parseDateMathValue = (value: unknown) => {
+  if (value === undefined || value === null || value === '' || typeof value === 'object') return undefined
+
+  const raw = String(value).trim()
+  if (!raw) return undefined
+
+  const compact = raw.replace(/\s+/g, '')
+  const nowMatched = compact.match(/^now(?:\(\))?(.*)$/i)
+  if (nowMatched) {
+    return applyDateMath(nowMatched[1] || '', Date.now())
+  }
+
+  const separatorIndex = raw.indexOf('||')
+  if (separatorIndex < 0) return undefined
+
+  const base = parsePlainTimeValue(raw.slice(0, separatorIndex).trim())
+  if (base === undefined) return undefined
+  return applyDateMath(raw.slice(separatorIndex + 2).replace(/\s+/g, ''), base)
+}
+
+const toTimeValue = (value: unknown) => parseDateMathValue(value) ?? parsePlainTimeValue(value)
 
 const normalizeRelativeTimeRange = (value: unknown): ResolvedTimeRange | undefined => {
   if (value === undefined || value === null || value === '') return undefined
@@ -243,21 +347,34 @@ const normalizeRelativeTimeRange = (value: unknown): ResolvedTimeRange | undefin
   return unitMs ? { start: now - amount * unitMs, end: now } : undefined
 }
 
+const resolveTimePoint = (value: unknown, boundary: 'start' | 'end') => {
+  const timestamp = toTimeValue(value)
+  if (timestamp !== undefined) return timestamp
+  const range = normalizeRelativeTimeRange(value)
+  return boundary === 'end' ? range?.end : range?.start
+}
+
 const toTimeRangeValue = (value: unknown): ResolvedTimeRange | undefined => {
   const relative = normalizeRelativeTimeRange(value)
   if (relative) return relative
 
   if (Array.isArray(value)) {
-    const start = toTimeValue(value[0])
-    const end = toTimeValue(value[1])
+    const start = resolveTimePoint(value[0], 'start')
+    const end = resolveTimePoint(value[1], 'end')
     return start === undefined && end === undefined ? undefined : { start, end }
   }
 
   if (value && typeof value === 'object') {
     const record = value as Record<string, any>
-    const start = toTimeValue(record.start ?? record.from ?? record.startTime)
-    const end = toTimeValue(record.end ?? record.to ?? record.endTime)
-    return start === undefined && end === undefined ? undefined : { start, end }
+    const startValue = record.start ?? record.from ?? record.startTime ?? record.begin ?? record.beginTime ?? record.windowStartTime ?? record.window_start_time
+    const endValue = record.end ?? record.to ?? record.endTime ?? record.finish ?? record.finishTime ?? record.windowEndTime ?? record.window_end_time
+    const start = resolveTimePoint(startValue, 'start')
+    const end = resolveTimePoint(endValue, 'end')
+    if (start !== undefined || end !== undefined) return { start, end }
+
+    const nested = [record.timeRange, record.range, record.result, record.data]
+      .find((item) => item && item !== value)
+    return nested ? toTimeRangeValue(nested) : undefined
   }
 
   const timestamp = toTimeValue(value)
@@ -274,8 +391,8 @@ const resolveTimeRange = (args: Record<string, any>): ResolvedTimeRange => {
   const range = toTimeRangeValue(getTimeRangeArg(args))
   const startRange = normalizeRelativeTimeRange(args.startTime)
   const endRange = normalizeRelativeTimeRange(args.endTime)
-  const start = toTimeValue(args.startTime) ?? startRange?.start ?? range?.start ?? (!args.startTime ? endRange?.start : undefined)
-  const end = toTimeValue(args.endTime) ?? endRange?.end ?? startRange?.end ?? range?.end
+  const start = resolveTimePoint(args.startTime, 'start') ?? range?.start ?? (!args.startTime ? endRange?.start : undefined)
+  const end = resolveTimePoint(args.endTime, 'end') ?? startRange?.end ?? range?.end
   if (start !== undefined && end !== undefined && start > end) {
     return { start: end, end: start }
   }
@@ -455,9 +572,97 @@ const fuzzySearchMetadata = (metadata: Record<string, any>, keyword: string, typ
 const normalizePagedList = (response: any) => {
   const result = responseResult(response) || {}
   const list = result.data || result.records || result.result || (Array.isArray(result) ? result : [])
+  const hasTotal = result.total !== undefined || result.count !== undefined
   return {
     data: Array.isArray(list) ? list : [],
-    total: Number(result.total ?? result.count ?? (Array.isArray(list) ? list.length : 0))
+    total: Number(result.total ?? result.count ?? (Array.isArray(list) ? list.length : 0)),
+    hasTotal
+  }
+}
+
+interface CollectPagedToolDataOptions<T> {
+  args: Record<string, any>
+  call?: AiClientToolCall
+  inlineLimit: number
+  pageSize?: number
+  defaultWriteLimit?: number
+  maxWriteLimit?: number
+  fetchPage: (pageIndex: number, pageSize: number) => Promise<any>
+  normalizeRecord: (record: Record<string, any>) => T
+}
+
+// 普通对话只取预览页；传 writeToPath 时才分页采集，避免大结果直接走 WebSocket。
+const collectPagedToolData = async <T = any>({
+  args,
+  call,
+  inlineLimit,
+  pageSize,
+  defaultWriteLimit,
+  maxWriteLimit,
+  fetchPage,
+  normalizeRecord
+}: CollectPagedToolDataOptions<T>) => {
+  const writeMode = isWriteToPathEnabled(args)
+  const writeLimit = writeMode
+    ? resolveWriteRecordLimit(args, defaultWriteLimit, maxWriteLimit)
+    : undefined
+  const targetLimit = writeMode
+    ? writeLimit!.limit
+    : inlineLimit
+  const actualPageSize = Math.max(1, Math.min(targetLimit, pageSize ?? (writeMode ? 500 : inlineLimit)))
+  const data: T[] = []
+  let total = 0
+  let totalKnown = false
+  let returned = 0
+  let fileWrite: ToolSessionFileWriteSummary | undefined
+  let fileAppend = false
+
+  for (let pageIndex = 0; returned < targetLimit; pageIndex += 1) {
+    const page = normalizePagedList(await fetchPage(pageIndex, actualPageSize))
+    if (pageIndex === 0) {
+      total = page.total
+      totalKnown = page.hasTotal
+    }
+    const remaining = targetLimit - returned
+    const normalizedPage = page.data.slice(0, remaining).map(normalizeRecord)
+    returned += normalizedPage.length
+
+    if (writeMode && call) {
+      if (normalizedPage.length) {
+        fileWrite = await writeNdjsonRecordsToSessionFile(args, call, normalizedPage, { append: fileAppend })
+        fileAppend = true
+      }
+      if (data.length < inlineLimit) {
+        data.push(...normalizedPage.slice(0, inlineLimit - data.length))
+      }
+    } else {
+      data.push(...normalizedPage)
+    }
+
+    if (
+      !writeMode
+      || !page.data.length
+      || page.data.length < actualPageSize
+      || (page.hasTotal && total > 0 && returned >= total)
+    ) {
+      break
+    }
+  }
+
+  if (writeMode && call && !fileWrite) {
+    fileWrite = await writeNdjsonRecordsToSessionFile(args, call, [], { append: false })
+  }
+
+  const resolvedTotal = totalKnown ? total : returned
+  return {
+    total: resolvedTotal,
+    returned,
+    truncated: totalKnown ? resolvedTotal > returned : (!writeLimit?.unlimited && returned >= targetLimit),
+    writeMode,
+    writeLimit: writeMode && !writeLimit?.unlimited ? targetLimit : undefined,
+    writeLimitUnlimited: writeMode ? !!writeLimit?.unlimited : undefined,
+    file: fileWrite,
+    data
   }
 }
 
@@ -664,7 +869,7 @@ const normalizeDeviceLogRecord = (item: Record<string, any>) => ({
 const writeToPathInput = {
   id: 'writeToPath',
   name: 'writeToPath',
-  description: '可选。需要保存完整查询结果时，传入会话文件相对路径，如 reports/property-history.json；工具会写入当前会话文件容器并返回 fs:// 引用。',
+  description: '可选。需要保存较大或完整查询结果时，传入会话文件相对路径，如 reports/property-history.jsonl 或 reports/metadata.md；分页明细工具会按 JSONL/NDJSON 逐页追加到当前会话文件容器并返回 fs:// 引用和 inputPath，非分页工具按自身内容格式写入。后续对大数据做过滤/聚合/排序/图表时优先用 dataset_materialize(format=jsonl) + dataset_query，不要用 text_regex_extract。',
   required: false,
   valueType: 'string'
 }
@@ -673,7 +878,182 @@ const withWriteToPathInput = (inputs: any[]) => [...inputs, writeToPathInput]
 
 const normalizeWriteToPath = (value: unknown) => String(value || '').trim()
 
+const DEFAULT_WRITE_RECORD_LIMIT = 100000
+const MAX_WRITE_RECORD_LIMIT = 1000000
+const UNLIMITED_WRITE_RECORD_LIMIT = Number.MAX_SAFE_INTEGER
+
+const writeLimitInput = () => ({
+  id: 'writeLimit',
+  name: 'writeLimit',
+  description: `传 writeToPath 时最多写入多少条记录，默认${DEFAULT_WRITE_RECORD_LIMIT}，最大${MAX_WRITE_RECORD_LIMIT}；传 0、-1、all 或 unlimited 表示不按前端条数截断，仅受接口分页结束和会话文件配额限制；分页明细会写入 JSONL/NDJSON，limit 仍只控制内联预览。`,
+  required: false,
+  valueType: 'int'
+})
+
+const isWriteToPathEnabled = (args: Record<string, any>) => !!normalizeWriteToPath(args.writeToPath)
+
+const isUnlimitedWriteRecordLimit = (value: unknown) => {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) && value <= 0
+  }
+  const raw = String(value ?? '').trim().toLowerCase()
+  return ['0', '-1', 'all', 'full', 'unlimited', 'none', 'false'].includes(raw)
+}
+
+const resolveWriteRecordLimit = (
+  args: Record<string, any>,
+  defaultValue = DEFAULT_WRITE_RECORD_LIMIT,
+  maxValue = MAX_WRITE_RECORD_LIMIT
+) => {
+  const value = args.writeLimit ?? args.fileLimit ?? args.maxRecords
+  // JSONL 写文件已经避开 WebSocket 大报文；显式导出完整数据时，不再用前端行数上限截断。
+  if (isUnlimitedWriteRecordLimit(value)) {
+    return {
+      limit: UNLIMITED_WRITE_RECORD_LIMIT,
+      unlimited: true
+    }
+  }
+  return {
+    limit: clampNumber(value, 1, maxValue, defaultValue),
+    unlimited: false
+  }
+}
+
 const stringifyToolResult = (value: unknown) => JSON.stringify(value, null, 2)
+
+const isJsonSessionFilePath = (path: string) => /\.json$/i.test(path)
+const isNdjsonSessionFilePath = (path: string) => /\.(ndjson|jsonl)$/i.test(path)
+
+interface ToolSessionFileWriteSummary {
+  writeToPath: string
+  requestedWriteToPath?: string
+  inputPath: string
+  uri: string
+  markdownLink: string
+  format: 'jsonl'
+  file?: Record<string, any>
+  contentOmitted: true
+  structuredDataHint: Record<string, any>
+  protocolHint: string
+  nextAction: string
+}
+
+const normalizeNdjsonWritePath = (path: string) => {
+  const normalized = normalizeWriteToPath(path)
+  if (!normalized) return normalized
+  if (isNdjsonSessionFilePath(normalized)) return normalized
+  if (isJsonSessionFilePath(normalized)) {
+    return normalized.replace(/\.json$/i, '.jsonl')
+  }
+  return `${normalized.replace(/[/.]+$/g, '') || 'result'}.jsonl`
+}
+
+const normalizeSessionFileInfo = (
+  file: Record<string, any> | undefined,
+  filePath: string,
+  fallbackSize = 0
+) => ({
+  ...(file || {}),
+  path: String(file?.path || filePath || '').trim(),
+  size: Number(file?.size ?? fallbackSize)
+})
+
+const resolveSessionFileUri = (
+  sessionFiles: Record<string, any>,
+  filePath: string,
+  file?: Record<string, any>
+) => String(
+  file?.uri
+  || (typeof sessionFiles.toUri === 'function' ? sessionFiles.toUri(filePath) : '')
+  || `fs://${filePath}`
+).trim()
+
+const createSessionFileWriteSummary = (
+  sessionFiles: Record<string, any>,
+  requestedPath: string,
+  filePath: string,
+  file?: Record<string, any>
+): ToolSessionFileWriteSummary => {
+  const normalizedFile = normalizeSessionFileInfo(file, filePath)
+  const actualPath = String(normalizedFile.path || filePath).trim()
+  const fileUri = resolveSessionFileUri(sessionFiles, actualPath, normalizedFile)
+  const fileName = actualPath.split('/').filter(Boolean).pop() || actualPath || 'result.jsonl'
+  const nextAction = `如果要继续过滤、聚合、排序、抽取轨迹或生成图表，优先调用 dataset_materialize(inputPath="${actualPath}", format="jsonl") 后使用 dataset_query 或图表工具；不要用 text_regex_extract 或脚本解析大文本。`
+  return {
+    writeToPath: actualPath,
+    ...(requestedPath && requestedPath !== actualPath ? { requestedWriteToPath: requestedPath } : {}),
+    inputPath: actualPath,
+    uri: fileUri,
+    markdownLink: `[${fileName}](${fileUri})`,
+    format: 'jsonl',
+    structuredDataHint: {
+      format: 'jsonl',
+      inputPath: actualPath,
+      preferredWorkflow: 'dataset_materialize(format=jsonl) -> dataset_schema -> dataset_query -> chart_echarts2svg/report',
+      nextAction
+    },
+    protocolHint: '会话文件展示必须使用 fs:// 引用，不要改写为 file://、http:// 或本地路径；调用后端文件/数据集工具时使用 inputPath 相对路径。',
+    file: normalizedFile,
+    contentOmitted: true,
+    nextAction
+  }
+}
+
+const writeSessionFileTextChunk = async (
+  sessionFiles: Record<string, any>,
+  filePath: string,
+  content: string,
+  append: boolean
+) => {
+  if (typeof sessionFiles.upload === 'function') {
+    return sessionFiles.upload(filePath, new Blob([content], { type: 'application/x-ndjson;charset=UTF-8' }), {
+      append,
+      charset: 'UTF-8'
+    })
+  }
+  if (append && typeof sessionFiles.appendText === 'function') {
+    return sessionFiles.appendText(filePath, content, { charset: 'UTF-8' })
+  }
+  if (typeof sessionFiles.writeText === 'function') {
+    return sessionFiles.writeText(filePath, content, { append, charset: 'UTF-8' })
+  }
+  throw new Error('session file api unavailable for writeToPath')
+}
+
+const writeNdjsonRecordsToSessionFile = async <T = any>(
+  args: Record<string, any>,
+  call: AiClientToolCall,
+  records: T[],
+  options: { append: boolean }
+) => {
+  const requestedPath = normalizeWriteToPath(args.writeToPath)
+  const filePath = normalizeNdjsonWritePath(requestedPath)
+  if (!filePath) {
+    throw new Error('writeToPath missing')
+  }
+  const sessionFiles = call.sessionFiles
+  if (!sessionFiles) {
+    throw new Error('session file api unavailable for writeToPath')
+  }
+
+  // 大结果按 JSONL/NDJSON 分块追加，避免把完整数组放进内存或 WebSocket 工具结果。
+  const content = records.length
+    ? `${records.map((record) => JSON.stringify(record)).join('\n')}\n`
+    : ''
+  const file = await writeSessionFileTextChunk(sessionFiles, filePath, content, options.append)
+  return createSessionFileWriteSummary(sessionFiles, requestedPath, filePath, file)
+}
+
+const writeRecordsToSessionFile = async <T = any>(
+  args: Record<string, any>,
+  call: AiClientToolCall,
+  records: T[]
+) => {
+  if (!isWriteToPathEnabled(args)) {
+    return undefined
+  }
+  return writeNdjsonRecordsToSessionFile(args, call, records, { append: false })
+}
 
 const writeToolResultToSessionFile = async (
   args: Record<string, any>,
@@ -689,22 +1069,37 @@ const writeToolResultToSessionFile = async (
     return result
   }
   const sessionFiles = call.sessionFiles
-  if (!sessionFiles || typeof sessionFiles.writeText !== 'function') {
+  if (!sessionFiles || (typeof sessionFiles.writeText !== 'function' && typeof sessionFiles.upload !== 'function')) {
     throw new Error('session file api unavailable for writeToPath')
   }
 
-  const file = await sessionFiles.writeText(
-    writeToPath,
-    options.content ?? stringifyToolResult(result),
-    { charset: 'UTF-8' }
-  )
+  const content = options.content ?? stringifyToolResult(result)
+  const file = typeof sessionFiles.upload === 'function'
+    ? await sessionFiles.upload(writeToPath, content, { append: false, charset: 'UTF-8' })
+    : await sessionFiles.writeText(writeToPath, content, { charset: 'UTF-8' })
+  const filePath = String(file.path || writeToPath || '').trim()
+  const fileUri = String(file.uri || (typeof sessionFiles.toUri === 'function' ? sessionFiles.toUri(filePath) : '') || `fs://${filePath}`).trim()
+  const fileName = filePath.split('/').filter(Boolean).pop() || filePath || 'result'
+  const structuredDataHint = isJsonSessionFilePath(filePath)
+    ? {
+        format: 'json',
+        inputPath: filePath,
+        preferredWorkflow: 'dataset_materialize -> dataset_schema -> dataset_query -> chart_echarts2svg/report',
+        nextAction: `如果要继续过滤、聚合、排序、抽取轨迹或生成图表，优先调用 dataset_materialize(inputPath="${filePath}", jsonPath="$.data") 后使用 dataset_query 或图表工具；只读取少量字段时才用 json_query_path；不要用 text_regex_extract 处理 JSON。`
+      }
+    : undefined
 
   return {
     ...(options.summary || {}),
     writeToPath,
+    inputPath: filePath,
+    uri: fileUri,
+    markdownLink: `[${fileName}](${fileUri})`,
+    protocolHint: '会话文件展示必须使用 fs:// 引用，不要改写为 file://、http:// 或本地路径；调用后端文件/数据集工具时使用 inputPath 相对路径。',
+    ...(structuredDataHint ? { structuredDataHint } : {}),
     file,
     contentOmitted: true,
-    nextAction: `完整结果已写入 ${file.uri || writeToPath}`
+    nextAction: structuredDataHint?.nextAction || `查询结果已写入 ${fileUri}`
   }
 }
 
@@ -902,43 +1297,15 @@ export const createDeviceDetailClientToolRuntime = (
   registerDeviceDetailSelectorTools()
   return createAiClientToolRuntime<DeviceClientToolContext>(
     defineAiClientTools<DeviceClientToolContext>([
-    {
-      id: 'device_access_summary',
-      name: 'device_access_summary',
-      description: '获取当前设备的接入、状态、会话和身份凭证概览，用于判断设备是否在线、通过什么协议接入。',
-      inputs: [],
-      help: '返回当前设备详情、在线状态、接入方式、会话列表和设备接入身份摘要。适合回答“这个设备怎么接入”“当前是否在线”“会话是什么”。',
-      execute: async (_args, context) => {
-        const deviceId = getDeviceId(context)
-        if (!deviceId) throw new Error('deviceId missing')
-        const [sessionsResult, principalResult] = await Promise.all([
-          safeToolPart(() => getDeviceSessions(deviceId)),
-          safeToolPart(() => getDevicePrincipal(deviceId))
-        ])
-        const sessions = sessionsResult.ok ? responseResult(sessionsResult.data) || [] : []
-        const principals = principalResult.ok ? responseResult(principalResult.data) || [] : []
-        return {
-          device: {
-            id: context.device.id,
-            name: context.device.name,
-            productId: context.device.productId,
-            productName: context.device.productName,
-            state: context.device.state,
-            protocol: context.device.protocol,
-            accessProvider: context.device.accessProvider,
-            deviceType: context.device.deviceType,
-            registryTime: context.device.registryTime
-          },
-          sessions,
-          principals,
-          partial: !sessionsResult.ok || !principalResult.ok,
-          errors: {
-            sessions: sessionsResult.ok ? undefined : sessionsResult.error,
-            principals: principalResult.ok ? undefined : principalResult.error
-          }
-        }
-      }
-    },
+    ...createDeviceAccessClientTools({
+      clampNumber,
+      responseResult,
+      compactInlineValue,
+      stringifyToolResult,
+      withWriteToPathInput,
+      writeToolResultToSessionFile,
+      getDeviceId
+    }),
     {
       id: 'device_metadata_markdown',
       name: 'device_metadata_markdown',
@@ -954,28 +1321,34 @@ export const createDeviceDetailClientToolRuntime = (
         {
           id: 'limit',
           name: 'limit',
-          description: '每个分类最多返回多少条，默认40，最大120。',
+          description: '内联预览每个分类最多返回多少条，默认40，最大120；传 writeToPath 时完整物模型写入文件。',
           required: false,
           valueType: 'int'
         }
       ]),
       output: { type: 'object' },
-      help: '获取物模型 Markdown。section=properties 只看属性；section=functions 只看功能；section=events 只看事件；默认 all。需要保存完整 Markdown 时传 writeToPath。',
+      help: '获取物模型 Markdown。section=properties 只看属性；section=functions 只看功能；section=events 只看事件；默认 all。需要保存完整 Markdown 时传 writeToPath，limit 只控制内联预览。',
       execute: async (args, context, call) => {
         const section = normalizeMetadataSection(args.section)
-        const limit = clampNumber(args.limit, 1, 120, 40)
-        const markdown = buildMetadataMarkdown(context, section, limit)
+        const inlineLimit = clampNumber(args.limit, 1, 120, 40)
+        const markdown = buildMetadataMarkdown(context, section, inlineLimit)
+        const fullMarkdown = isWriteToPathEnabled(args)
+          ? buildMetadataMarkdown(context, section, Number.MAX_SAFE_INTEGER)
+          : markdown
         const result = {
           deviceId: getDeviceId(context),
           section,
           markdown
         }
         return writeToolResultToSessionFile(args, call, result, {
-          content: markdown,
+          content: fullMarkdown,
           summary: {
             deviceId: result.deviceId,
             section,
-            format: 'markdown'
+            format: 'markdown',
+            fullResultWritten: true,
+            inlinePreviewLimit: inlineLimit,
+            markdownPreview: markdown
           }
         })
       }
@@ -1123,6 +1496,58 @@ export const createDeviceDetailClientToolRuntime = (
         }
       }
     },
+    createDevicePropertyAggregateTool({
+      clampNumber,
+      asArray,
+      responseResult,
+      resolveTimeRange,
+      describeResolvedTimeRange,
+      dataTypeText,
+      compactInlineValue,
+      stringifyToolResult,
+      withWriteToPathInput,
+      writeToolResultToSessionFile,
+      writeRecordsToSessionFile,
+      timeRangeInput,
+      startTimeDescription: START_TIME_DESCRIPTION,
+      endTimeDescription: END_TIME_DESCRIPTION,
+      getDeviceId,
+      getMetadata
+    }),
+    ...createDeviceDocumentClientTools({
+      clampNumber,
+      asArray,
+      responseResult,
+      compactInlineValue,
+      stringifyToolResult,
+      withWriteToPathInput,
+      writeToolResultToSessionFile,
+      getDeviceId
+    }),
+    ...createDeviceEventClientTools({
+      clampNumber,
+      asArray,
+      responseResult,
+      resolveTimeRange,
+      describeResolvedTimeRange,
+      compactInlineValue,
+      withWriteToPathInput,
+      writeLimitInput,
+      collectPagedToolData,
+      writeToolResultToSessionFile,
+      timeRangeInput,
+      startTimeDescription: START_TIME_DESCRIPTION,
+      endTimeDescription: END_TIME_DESCRIPTION,
+      getDeviceId,
+      getMetadata
+    }),
+    ...createDeviceFunctionClientTools({
+      asArray,
+      responseResult,
+      compactInlineValue,
+      getDeviceId,
+      getMetadata
+    }),
     {
       id: 'device_property_history',
       name: 'device_property_history',
@@ -1153,43 +1578,86 @@ export const createDeviceDetailClientToolRuntime = (
         {
           id: 'limit',
           name: 'limit',
-          description: '返回样本条数，默认20，最大50。',
+          description: '内联预览样本条数，默认20，最大50；传 writeToPath 时完整/大批量结果写入文件。',
           required: false,
           valueType: 'int'
-        }
+        },
+        writeLimitInput()
       ]),
       output: { type: 'object' },
-      help: '查询单个属性历史样本。用于“最近20条温度数据”这类确实需要明细的问题；如果只是问有没有、多少条，优先使用 device_property_history_summary。需要保存完整样本时传 writeToPath。',
+      help: '查询单个属性历史样本。用于“最近20条温度数据”这类确实需要明细的问题；如果只是问有没有、多少条，优先使用 device_property_history_summary。需要保存大范围样本时传 writeToPath，建议优先使用 .jsonl 路径，也兼容 .ndjson，工具会逐页追加 JSONL/NDJSON；limit 只控制内联预览，writeLimit 控制文件写入条数，完整导出可传 writeLimit=0。',
       execute: async (args, context, call) => {
         const deviceId = getDeviceId(context)
         const propertyId = String(args.propertyId || '').trim()
         if (!deviceId) throw new Error('deviceId missing')
         if (!propertyId) throw new Error('propertyId missing')
-        const limit = clampNumber(args.limit, 1, 50, 20)
+        const inlineLimit = clampNumber(args.limit, 1, 50, 20)
         const timeRange = resolveTimeRange(args)
-        const resp = await getPropertyData(deviceId, propertyId, {
-          paging: true,
-          pageIndex: 0,
-          pageSize: limit,
-          sorts: [{ name: 'timestamp', order: 'desc' }],
-          terms: buildTimeTerms(args, 'timestamp', timeRange)
+        const collected = await collectPagedToolData({
+          args,
+          call,
+          inlineLimit,
+          fetchPage: (pageIndex, pageSize) => getPropertyData(deviceId, propertyId, {
+            paging: true,
+            pageIndex,
+            pageSize,
+            sorts: [{ name: 'timestamp', order: 'desc' }],
+            terms: buildTimeTerms(args, 'timestamp', timeRange)
+          }),
+          normalizeRecord: (item) => normalizePropertyHistoryRecord(item, propertyId)
         })
-        const paged = normalizePagedList(resp)
-        const result = {
+        const previewData = collected.data.slice(0, inlineLimit)
+        const base = {
           deviceId,
           propertyId,
           timeRange: describeResolvedTimeRange(timeRange),
-          total: paged.total,
-          returned: paged.data.length,
-          data: paged.data.map((item: Record<string, any>) => normalizePropertyHistoryRecord(item, propertyId))
+          total: collected.total
+        }
+        const result = {
+          ...base,
+          returned: previewData.length,
+          truncated: collected.total > previewData.length,
+          nextAction: collected.total > previewData.length ? '结果已截断，可传 writeToPath 保存更多历史样本。' : undefined,
+          data: previewData
+        }
+        if (collected.file) {
+          return {
+            ...base,
+            ...collected.file,
+            returned: collected.returned,
+            truncated: collected.truncated,
+            fullResultWritten: !collected.truncated,
+            writeLimit: collected.writeLimit,
+            writeLimitUnlimited: collected.writeLimitUnlimited,
+            writeLimitExceeded: collected.truncated,
+            inlinePreviewLimit: inlineLimit,
+            inlinePreviewReturned: previewData.length,
+            inlinePreviewTruncated: collected.returned > previewData.length,
+            dataPreview: previewData
+          }
+        }
+        const fullResult = {
+          ...base,
+          returned: collected.returned,
+          truncated: collected.truncated,
+          writeLimit: collected.writeLimit,
+          writeLimitUnlimited: collected.writeLimitUnlimited,
+          data: collected.data
         }
         return writeToolResultToSessionFile(args, call, result, {
+          content: stringifyToolResult(fullResult),
           summary: {
-            deviceId,
-            propertyId,
-            timeRange: describeResolvedTimeRange(timeRange),
-            total: paged.total,
-            returned: paged.data.length
+            ...base,
+            returned: collected.returned,
+            truncated: collected.truncated,
+            fullResultWritten: !collected.truncated,
+            writeLimit: collected.writeLimit,
+            writeLimitUnlimited: collected.writeLimitUnlimited,
+            writeLimitExceeded: collected.truncated,
+            inlinePreviewLimit: inlineLimit,
+            inlinePreviewReturned: previewData.length,
+            inlinePreviewTruncated: collected.data.length > previewData.length,
+            dataPreview: previewData
           }
         })
       }
@@ -1245,41 +1713,84 @@ export const createDeviceDetailClientToolRuntime = (
         {
           id: 'limit',
           name: 'limit',
-          description: '返回条数，默认20，最大50。',
+          description: '内联预览条数，默认20，最大50；传 writeToPath 时更多告警记录写入文件。',
           required: false,
           valueType: 'int'
-        }
+        },
+        writeLimitInput()
       ]),
       output: { type: 'object' },
-      help: '查询平台告警记录。用户问“有没有告警”“报警中吗”“最近告警原因”“某时间段告警”时优先使用此工具；物模型中的 alarmRecord 或属性历史只能作为补充解释，不作为告警事实的首选来源。需要保存完整告警列表时传 writeToPath。',
+      help: '查询平台告警记录。用户问“有没有告警”“报警中吗”“最近告警原因”“某时间段告警”时优先使用此工具；物模型中的 alarmRecord 或属性历史只能作为补充解释，不作为告警事实的首选来源。需要保存大范围告警列表时传 writeToPath，建议优先使用 .jsonl 路径，也兼容 .ndjson，工具会逐页追加 JSONL/NDJSON；limit 只控制内联预览，writeLimit 控制文件写入条数，完整导出可传 writeLimit=0。',
       execute: async (args, context, call) => {
         const deviceId = getDeviceId(context)
         if (!deviceId) throw new Error('deviceId missing')
-        const limit = clampNumber(args.limit, 1, 50, 20)
-        const resp = await queryDeviceAlarmRecord({
-          paging: true,
-          pageIndex: 0,
-          pageSize: limit,
-          sorts: [{ name: 'alarmTime', order: 'desc' }],
-          terms: buildDeviceAlarmTerms(deviceId, args)
+        const inlineLimit = clampNumber(args.limit, 1, 50, 20)
+        const collected = await collectPagedToolData({
+          args,
+          call,
+          inlineLimit,
+          fetchPage: (pageIndex, pageSize) => queryDeviceAlarmRecord({
+            paging: true,
+            pageIndex,
+            pageSize,
+            sorts: [{ name: 'alarmTime', order: 'desc' }],
+            terms: buildDeviceAlarmTerms(deviceId, args)
+          }),
+          normalizeRecord: normalizeAlarmRecord
         })
-        const paged = normalizePagedList(resp)
-        const result = {
+        const previewData = collected.data.slice(0, inlineLimit)
+        const base = {
           deviceId,
           source: 'platform-alarm-record',
           state: normalizeAlarmState(args.state || (toBoolean(args.onlyActive) ? 'warning' : undefined)),
           keyword: String(args.keyword || '').trim() || undefined,
-          total: paged.total,
-          data: paged.data.map(normalizeAlarmRecord)
+          total: collected.total
+        }
+        const result = {
+          ...base,
+          returned: previewData.length,
+          truncated: collected.total > previewData.length,
+          nextAction: collected.total > previewData.length ? '结果已截断，可传 writeToPath 保存更多告警记录。' : undefined,
+          data: previewData
+        }
+        if (collected.file) {
+          return {
+            ...base,
+            ...collected.file,
+            returned: collected.returned,
+            truncated: collected.truncated,
+            fullResultWritten: !collected.truncated,
+            writeLimit: collected.writeLimit,
+            writeLimitUnlimited: collected.writeLimitUnlimited,
+            writeLimitExceeded: collected.truncated,
+            inlinePreviewLimit: inlineLimit,
+            inlinePreviewReturned: previewData.length,
+            inlinePreviewTruncated: collected.returned > previewData.length,
+            dataPreview: previewData
+          }
+        }
+        const fullResult = {
+          ...base,
+          returned: collected.returned,
+          truncated: collected.truncated,
+          writeLimit: collected.writeLimit,
+          writeLimitUnlimited: collected.writeLimitUnlimited,
+          data: collected.data
         }
         return writeToolResultToSessionFile(args, call, result, {
+          content: stringifyToolResult(fullResult),
           summary: {
-            deviceId,
-            source: 'platform-alarm-record',
-            state: result.state,
-            keyword: result.keyword,
-            total: paged.total,
-            returned: paged.data.length
+            ...base,
+            returned: collected.returned,
+            truncated: collected.truncated,
+            fullResultWritten: !collected.truncated,
+            writeLimit: collected.writeLimit,
+            writeLimitUnlimited: collected.writeLimitUnlimited,
+            writeLimitExceeded: collected.truncated,
+            inlinePreviewLimit: inlineLimit,
+            inlinePreviewReturned: previewData.length,
+            inlinePreviewTruncated: collected.data.length > previewData.length,
+            dataPreview: previewData
           }
         })
       }
@@ -1488,42 +1999,85 @@ export const createDeviceDetailClientToolRuntime = (
         {
           id: 'limit',
           name: 'limit',
-          description: '返回样本条数，默认10，最大20。',
+          description: '内联预览样本条数，默认10，最大20；传 writeToPath 时更多日志样本写入文件。',
           required: false,
           valueType: 'int'
-        }
+        },
+        writeLimitInput()
       ]),
       output: { type: 'object' },
-      help: '查询设备日志样本。需要查看少量原始日志内容时使用；如果只是问有没有、多少条、最近是否有通信，优先使用 device_logs_summary；上下线数量优先使用 device_online_offline_summary。需要保存完整日志样本时传 writeToPath。',
+      help: '查询设备日志样本。需要查看少量原始日志内容时使用；如果只是问有没有、多少条、最近是否有通信，优先使用 device_logs_summary；上下线数量优先使用 device_online_offline_summary。需要保存大范围日志样本时传 writeToPath，建议优先使用 .jsonl 路径，也兼容 .ndjson，工具会逐页追加 JSONL/NDJSON；limit 只控制内联预览，writeLimit 控制文件写入条数，完整导出可传 writeLimit=0。',
       execute: async (args, context, call) => {
         const deviceId = getDeviceId(context)
         if (!deviceId) throw new Error('deviceId missing')
-        const limit = clampNumber(args.limit, 1, 20, 10)
+        const inlineLimit = clampNumber(args.limit, 1, 20, 10)
         const timeRange = resolveTimeRange(args)
         const types = normalizeDeviceLogTypes(args.type ?? args.types)
-        const resp = await queryLog(deviceId, {
-          paging: true,
-          pageIndex: 0,
-          pageSize: limit,
-          sorts: [{ name: 'timestamp', order: 'desc' }],
-          terms: buildDeviceLogTerms(args, timeRange)
+        const collected = await collectPagedToolData({
+          args,
+          call,
+          inlineLimit,
+          fetchPage: (pageIndex, pageSize) => queryLog(deviceId, {
+            paging: true,
+            pageIndex,
+            pageSize,
+            sorts: [{ name: 'timestamp', order: 'desc' }],
+            terms: buildDeviceLogTerms(args, timeRange)
+          }),
+          normalizeRecord: normalizeDeviceLogRecord
         })
-        const paged = normalizePagedList(resp)
-        const result = {
+        const previewData = collected.data.slice(0, inlineLimit)
+        const base = {
           deviceId,
           type: types.length > 1 ? types : types[0],
           timeRange: describeResolvedTimeRange(timeRange),
-          total: paged.total,
-          returned: paged.data.length,
-          data: paged.data.map(normalizeDeviceLogRecord)
+          total: collected.total
+        }
+        const result = {
+          ...base,
+          returned: previewData.length,
+          truncated: collected.total > previewData.length,
+          nextAction: collected.total > previewData.length ? '结果已截断，可传 writeToPath 保存更多日志样本。' : undefined,
+          data: previewData
+        }
+        if (collected.file) {
+          return {
+            ...base,
+            ...collected.file,
+            returned: collected.returned,
+            truncated: collected.truncated,
+            fullResultWritten: !collected.truncated,
+            writeLimit: collected.writeLimit,
+            writeLimitUnlimited: collected.writeLimitUnlimited,
+            writeLimitExceeded: collected.truncated,
+            inlinePreviewLimit: inlineLimit,
+            inlinePreviewReturned: previewData.length,
+            inlinePreviewTruncated: collected.returned > previewData.length,
+            dataPreview: previewData
+          }
+        }
+        const fullResult = {
+          ...base,
+          returned: collected.returned,
+          truncated: collected.truncated,
+          writeLimit: collected.writeLimit,
+          writeLimitUnlimited: collected.writeLimitUnlimited,
+          data: collected.data
         }
         return writeToolResultToSessionFile(args, call, result, {
+          content: stringifyToolResult(fullResult),
           summary: {
-            deviceId,
-            type: result.type,
-            timeRange: result.timeRange,
-            total: paged.total,
-            returned: paged.data.length
+            ...base,
+            returned: collected.returned,
+            truncated: collected.truncated,
+            fullResultWritten: !collected.truncated,
+            writeLimit: collected.writeLimit,
+            writeLimitUnlimited: collected.writeLimitUnlimited,
+            writeLimitExceeded: collected.truncated,
+            inlinePreviewLimit: inlineLimit,
+            inlinePreviewReturned: previewData.length,
+            inlinePreviewTruncated: collected.data.length > previewData.length,
+            dataPreview: previewData
           }
         })
       }
@@ -1700,7 +2254,7 @@ export const createDeviceDetailClientToolRuntime = (
     ]),
     {
       toolsName: 'device-detail-client-tools',
-      toolsDescription: '设备详情页提供的当前设备问数与诊断工具。可用于自然语言问题中的在线状态、接入会话、物模型、属性快照与统计、平台告警记录、上下线统计、日志统计与少量样本、边缘网关远程文件片段和实时链路样本分析；普通用户无需知道工具名，日志/属性优先用 summary 工具回答有没有和多少条。需要选择其它设备时可使用动态注册的 selector 工具获取候选设备；当前设备默认来自 subject。部分明细工具支持 writeToPath，可把完整结果写入当前会话文件容器并返回 fs:// 引用；不需要调用独立文件系统工具。',
+      toolsDescription: '设备详情页提供的当前设备问数与诊断工具。可用于自然语言问题中的在线状态、接入配置、接入地址、认证字段、协议说明、接入会话、物模型、属性快照、属性聚合趋势、事件上报数据、设备文档与维修知识库、平台告警记录、上下线统计、日志统计与少量样本、边缘网关远程文件片段和实时链路样本分析；普通用户无需知道工具名，接入指南、协议说明、认证失败、连接地址等问题优先用 device_access_summary 获取设备接入 Tab 中的配置、身份、协议说明和在线连接证据，日志/属性/事件优先用 summary、aggregate 或 event 工具回答有没有、多少条、平均/最大/最小、首次/末次/去重计数和趋势。设备文档问题优先用 device_documents_query 查找当前设备和所属产品文档，或用 device_document_reference 定位 platform-file-id 与 url/fileUrl；文档正文不要通过前端工具读取，需由后端 fs_download 或统一文件/文档通道导入或挂载到会话文件容器后再按 inputPath 分析。需要选择其它设备时可使用动态注册的 selector 工具获取候选设备；当前设备默认来自 subject。只有用户明确要求下发/调用/执行设备功能时，才可使用 device_function_invoke，并且会在下发前要求用户确认。部分明细工具支持 writeToPath，可把较大或完整结果写入当前会话文件容器并返回 fs:// 引用和 inputPath；分页明细和聚合结果默认写 JSONL/NDJSON，建议优先使用 .jsonl 路径，也兼容 .ndjson，limit 只控制内联预览，writeLimit 控制分页类工具写入文件的记录数，完整导出可传 writeLimit=0；若返回 writeLimitExceeded/truncated，需要向用户说明结果受上限影响并建议缩小时间范围、提高 writeLimit 或使用 writeLimit=0 完整导出；对写入的 JSONL/NDJSON 继续过滤、聚合、排序、抽取轨迹或生成图表时，优先用 dataset_materialize(format=jsonl) + dataset_query 或 chart_echarts2svg，不要用 text_regex_extract 或脚本解析大文本。',
       registeredToolScopes: DEVICE_DETAIL_SELECTOR_SCOPE,
       getContext: () => ({ device: getDevice() || {} })
     }

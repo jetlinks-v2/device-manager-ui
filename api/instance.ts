@@ -194,6 +194,38 @@ export const saveTags = (id: string, data: Record<string, any>) => request.patch
 export const delTags = (deviceId: string, id: string) => request.remove(`/device/instance/${deviceId}/tag/${id}`)
 
 /**
+ * 查询设备文档绑定
+ * @param deviceId 设备ID
+ * @param data 查询参数
+ */
+export const queryDeviceDocuments = (deviceId: string, data: Record<string, any>) =>
+  request.post(`/device/instance/${deviceId}/documents/_query`, data)
+
+/**
+ * 保存设备文档绑定
+ * @param deviceId 设备ID
+ * @param data 文档绑定列表
+ */
+export const saveDeviceDocuments = (deviceId: string, data: Record<string, any>[]) =>
+  request.patch(`/device/instance/${deviceId}/documents`, data)
+
+/**
+ * 删除设备文档绑定
+ * @param deviceId 设备ID
+ * @param id 文档绑定ID
+ */
+export const deleteDeviceDocument = (deviceId: string, id: string) =>
+  request.remove(`/device/instance/${deviceId}/documents/${encodeURIComponent(id)}`)
+
+/**
+ * 查询产品文档绑定
+ * @param productId 产品ID
+ * @param data 查询参数
+ */
+export const queryProductDocuments = (productId: string, data: Record<string, any>) =>
+  request.post(`/device/product/${productId}/documents/_query`, data)
+
+/**
  * 恢复默认配置
  * @param deviceId 设备id
  * @returns

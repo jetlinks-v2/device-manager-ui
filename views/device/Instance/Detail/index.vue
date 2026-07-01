@@ -339,6 +339,7 @@ import { useRegistryOptions } from '@jetlinks-web-core/hooks'
 import { deviceStateList } from '@device-manager-ui/views/device/data'
 import { isApplyDashboard } from '@device-manager-ui/utils/dashboardProject'
 import { createDeviceDetailClientToolRuntime } from './clientTools'
+import type { AgentConversationMarkdownLinkHandler } from '@jetlinks-ai-agent-ui/components/AgentConversation/types'
 
 const { t: $t } = useI18n()
 const menuStory = useMenuStore()
@@ -540,6 +541,10 @@ const initList = [
   {
     key: 'DeviceRelationship',
     tab: $t('Detail.index.957187-31')
+  },
+  {
+    key: 'DeviceDocument',
+    tab: $t('Detail.index.957187-43')
   }
 ]
 
@@ -549,36 +554,285 @@ const aiStore = useAIStore()
 const permissionStore = useAuthStore()
 const { mergedOptions } = useRegistryOptions({ baseOptions: list, code: 'detail-tabs' })
 const DEVICE_AGENT_SUBJECT_TYPE = 'device'
-const DEVICE_DETAIL_AGENT_SYSTEM_PROMPT = [
+const DEVICE_REMOTE_FILE_ACCESS_PROVIDERS = new Set([
+  'agent-device-gateway',
+  'agent-media-device-gateway'
+])
+const DEVICE_DETAIL_AGENT_SYSTEM_PROMPT_LINES = [
   '你是设备详情页内的设备问数与诊断助手。',
   '当前会话的 subject 就是页面打开的设备，已通过 subjectType=device、subjectId、deviceId 和 deviceName 提供；用户没有明确要求其它设备时，不要再追问设备 ID。',
-  '用户用自然语言询问设备是否正常、最近状态、CPU/内存/磁盘/JVM、属性趋势、物模型字段、告警/日志、上下行链路、边缘网关文件或远程目录时，应主动使用当前页面提供的客户端工具获取证据，再回答。',
-  '用户提到今日、今天、昨天、最近N小时、最近N天、本周、本月等时间范围时，优先把原始时间表达传入时间型客户端工具的 timeRange 参数，或转换为 startTime/endTime。',
+  '用户用自然语言询问设备是否正常、最近状态、CPU/内存/磁盘/JVM、属性趋势、物模型字段、设备文档、维修知识库、接入指南、告警/日志、上下行链路或远程调试时，应主动使用当前页面提供的客户端工具获取证据，再回答。',
+  '用户提到今日、今天、昨天、最近N小时、最近N天、本周、本月、now-1d、now/d 等时间范围时，优先把原始时间表达直接传入时间型客户端工具的 timeRange 参数，不需要先调用后端时间表达式转换工具；如果已经得到 {start/end/from/to/startTime/endTime} 形式的时间对象，也可以作为 timeRange 或拆成 startTime/endTime 传入。',
   '用户询问告警、报警、异常恢复、告警原因或告警中状态时，必须优先查询平台告警记录；物模型字段或属性历史只能作为补充佐证，不作为告警事实的首选来源。',
   '用户明确要求选择其它设备、按条件挑设备或跨设备对比时，可先调用设备 selector 工具返回候选，再让用户确认目标设备；未明确要求时仍使用当前 subject 设备。',
-  '当用户要求导出、保存、生成报告，或查询结果可能较大时，优先使用业务工具自身的 writeToPath 参数把完整结果写入当前会话文件容器，再用返回的 fs:// 引用回复；不需要调用独立文件系统工具。',
+  '当用户要求导出、保存、生成报告，或查询结果可能较大（例如整天每分钟、长时间历史、批量告警/日志/事件）时，优先使用业务工具自身的 writeToPath 参数把较大或完整结果写入当前会话文件容器；分页明细和聚合结果默认写 JSONL/NDJSON，建议优先使用 .jsonl 路径，也兼容 .ndjson；再用工具返回的 markdownLink 或 fs:// 引用回复。会话文件协议只能是 fs://，不要改写为 file://、http:// 或本地路径；此时 limit 只控制内联预览，writeLimit 控制文件写入记录数，完整导出可传 writeLimit=0；如果返回 writeLimitExceeded/truncated，需要说明结果受上限影响并建议缩小时间范围、提高 writeLimit 或使用 writeLimit=0 完整导出。',
+  '客户端工具写入 JSONL/NDJSON 文件后，如需继续过滤、聚合、排序、抽取轨迹、生成图表或报告数据，优先使用返回的 inputPath 调用 dataset_materialize(format=jsonl)，再用 dataset_query 或 chart_echarts2svg；只有普通 JSON 小文件少量取字段时才用 json_query_path；不要用 text_regex_extract 或脚本解析大文本。',
   '如果客户端工具返回 ok=false、partial=true 或 errors 字段，应直接基于错误信息说明当前账号权限不足、接口失败或数据不可用，不要空回复，也不要继续重复调用同一个失败工具。',
   '不要要求用户说出工具名，也不要把工具 ID 当作操作说明展示给用户；如不确定某类数据可用性，可先调用客户端工具说明了解能力边界。',
   '诊断结论需要区分“已验证事实、异常迹象、建议动作、无法确认的限制”，不要编造未查询到的数据。'
-].join('\n')
+]
 const deviceDetailClientToolRuntime = createDeviceDetailClientToolRuntime(() => instanceStore.current || {})
 
-const syncDeviceDetailAgent = () => {
+const normalizeDeviceAgentTabAliasKey = (value?: string) => (
+  String(value || '').trim().replace(/[\s_-]+/g, '').toLowerCase()
+)
+const DEVICE_AGENT_TAB_ALIASES: Record<string, string> = {
+  info: 'Info',
+  instanceinfo: 'Info',
+  detail: 'Info',
+  详情: 'Info',
+  实例信息: 'Info',
+  running: 'Running',
+  status: 'Running',
+  property: 'Running',
+  properties: 'Running',
+  运行状态: 'Running',
+  属性: 'Running',
+  metadata: 'Metadata',
+  thingmodel: 'Metadata',
+  物模型: 'Metadata',
+  function: 'Function',
+  functions: 'Function',
+  devicefunction: 'Function',
+  设备功能: 'Function',
+  log: 'Log',
+  logs: 'Log',
+  日志: 'Log',
+  日志管理: 'Log',
+  alarm: 'AlarmRecord',
+  alarms: 'AlarmRecord',
+  alarmrecord: 'AlarmRecord',
+  告警: 'AlarmRecord',
+  告警记录: 'AlarmRecord',
+  deviceaccess: 'Diagnose',
+  access: 'Diagnose',
+  diagnose: 'Diagnose',
+  设备接入: 'Diagnose',
+  device_document: 'DeviceDocument',
+  devicedocument: 'DeviceDocument',
+  document: 'DeviceDocument',
+  documents: 'DeviceDocument',
+  设备文档: 'DeviceDocument',
+  文档: 'DeviceDocument',
+  devicerelationship: 'DeviceRelationship',
+  relationship: 'DeviceRelationship',
+  relation: 'DeviceRelationship',
+  设备关系: 'DeviceRelationship',
+  invalid: 'Invalid',
+  invaliddata: 'Invalid',
+  无效数据: 'Invalid',
+  threshold: 'Threshold',
+  thresholdconfig: 'Threshold',
+  阈值配置: 'Threshold',
+  dashboard: 'Dashboard',
+  仪表盘: 'Dashboard',
+  child: 'Child',
+  childdevice: 'ChildDevice',
+  子设备: 'ChildDevice',
+  parsing: 'Parsing',
+  数据解析: 'Parsing',
+  metadatamap: 'MetadataMap',
+  物模型映射: 'MetadataMap',
+  terminal: 'Terminal',
+  远程调试: 'Terminal',
+  shadow: 'Shadow',
+  设备影子: 'Shadow',
+  firmware: 'Firmware',
+  远程升级: 'Firmware',
+}
+const DEVICE_AGENT_KNOWN_TABS = new Set(Object.values(DEVICE_AGENT_TAB_ALIASES))
+
+const isDeviceRemoteFileSupported = () => (
+  DEVICE_REMOTE_FILE_ACCESS_PROVIDERS.has(String(instanceStore.current?.accessProvider || ''))
+)
+
+const getDeviceAgentVisibleTabs = () => {
+  const source = (orderedOptions as any)?.value || []
+  return (Array.isArray(source) ? source : [])
+    .filter((item: any) => item?.key && item.key !== 'Info' && tabs[item.key as keyof typeof tabs])
+    .map((item: any) => ({
+      key: String(item.key),
+      label: String(item.tab || item.label || item.title || item.key),
+    }))
+}
+
+const isDeviceAgentExistingTab = (tabKey?: string) => {
+  if (!tabKey) return false
+  return getDeviceAgentVisibleTabs().some((item) => item.key === tabKey)
+}
+
+const resolveDeviceAgentCurrentTabByLabel = (value?: string) => {
+  const normalized = normalizeDeviceAgentTabAliasKey(value)
+  if (!normalized) return ''
+  return getDeviceAgentVisibleTabs().find((item) => (
+    normalizeDeviceAgentTabAliasKey(item.key) === normalized
+    || normalizeDeviceAgentTabAliasKey(item.label) === normalized
+  ))?.key || ''
+}
+
+const normalizeDeviceAgentTabKey = (value?: string) => {
+  const raw = String(value || '').trim()
+  if (!raw) return ''
+  const normalized = normalizeDeviceAgentTabAliasKey(raw)
+  return DEVICE_AGENT_TAB_ALIASES[normalized] || resolveDeviceAgentCurrentTabByLabel(raw) || raw
+}
+
+const buildDeviceDetailAgentTabPrompt = () => {
+  const visibleTabs = getDeviceAgentVisibleTabs()
+  const links = visibleTabs
+    .map((item) => `[${item.label}](#tab=${encodeURIComponent(item.key)})`)
+    .join('、')
+  const labels = visibleTabs.map((item) => item.label).join('、')
+
+  return links
+    ? `当前设备详情页已显示的一级选项卡只有：${labels}。需要引导用户查看页面数据或用户询问“有哪些选项卡/能跳转哪里”时，只输出这些当前可见选项卡链接：${links}。Markdown 链接文本必须使用选项卡名称本身，不要把“边缘网关远程文件、文件管理、终端、抓包”等选项卡内部功能包装成 #tab 链接；未列出的选项卡或内部功能表示当前账号、设备类型或版本暂不支持直接跳转。`
+    : '当前设备详情页暂未加载出可跳转选项卡；如需引导用户查看页面数据，应先说明暂不可确认页面选项卡。'
+}
+
+const buildDeviceDetailAgentSystemPrompt = () => {
+  const lines = [...DEVICE_DETAIL_AGENT_SYSTEM_PROMPT_LINES]
+  if (isDeviceRemoteFileSupported()) {
+    lines.splice(lines.length - 1, 0, '当前设备支持边缘网关远程文件能力；只有用户明确询问远程目录、远程文件或网关文件时，才使用对应客户端工具取证。')
+  } else {
+    lines.splice(lines.length - 1, 0, '当前设备未暴露边缘网关远程文件能力；不要输出“边缘网关远程文件”“远程文件管理”等能力入口或链接。')
+  }
+  lines.splice(lines.length - 1, 0, buildDeviceDetailAgentTabPrompt())
+  return lines.join('\n')
+}
+
+const getDeviceDetailClientTools = () => {
+  const tools = deviceDetailClientToolRuntime.clientTools || []
+  if (isDeviceRemoteFileSupported()) return tools
+  return tools.filter((tool: any) => !String(tool?.id || tool?.name || '').startsWith('edge_remote_file_'))
+}
+
+const buildDeviceDetailClientToolsDescription = () => {
+  const remoteText = isDeviceRemoteFileSupported()
+    ? '当前设备支持边缘网关远程文件片段读取；只有用户明确询问远程目录、远程文件或网关文件时才使用相关工具。'
+    : '当前设备未暴露边缘网关远程文件能力，不要使用或提示远程文件管理相关工具。'
+  return [
+    '设备详情页提供的当前设备问数与诊断工具。可用于自然语言问题中的在线状态、接入配置、接入地址、认证字段、协议说明、接入会话、物模型、属性快照、属性聚合趋势、事件上报数据、设备文档与维修知识库、平台告警记录、上下线统计、日志统计与少量样本、实时链路样本分析。',
+    remoteText,
+    '普通用户无需知道工具名；接入指南、协议说明、认证失败、连接地址等问题优先用接入工具获取设备接入 Tab 中的配置、身份、协议说明和在线连接证据；日志/属性/事件优先用 summary、aggregate 或 event 工具回答有没有、多少条、平均/最大/最小、首次/末次/去重计数和趋势。',
+    '设备文档问题优先查找当前设备和所属产品文档，或定位 platform-file-id 与 url/fileUrl；文档正文不要通过前端工具读取，需由后端 fs_download 或统一文件/文档通道导入或挂载到会话文件容器后再按 inputPath 分析。',
+    '需要选择其它设备时可使用动态注册的 selector 工具获取候选设备；当前设备默认来自 subject。只有用户明确要求下发/调用/执行设备功能时，才可使用功能调用工具，并且会在下发前要求用户确认。',
+    '部分明细工具支持 writeToPath，可把较大或完整结果写入当前会话文件容器并返回 markdownLink、fs:// 引用和 inputPath；分页明细和聚合结果默认写 JSONL/NDJSON，建议优先使用 .jsonl 路径，也兼容 .ndjson；会话文件协议只能是 fs://，不要改写为 file://、http:// 或本地路径；limit 只控制内联预览，writeLimit 控制分页类工具写入文件的记录数，完整导出可传 writeLimit=0；若返回 writeLimitExceeded/truncated，需要向用户说明结果受上限影响并建议缩小时间范围、提高 writeLimit 或使用 writeLimit=0 完整导出；对写入的 JSONL/NDJSON 继续过滤、聚合、排序、抽取轨迹或生成图表时，优先用 dataset_materialize(format=jsonl) + dataset_query 或 chart_echarts2svg，不要用 text_regex_extract 或脚本解析大文本；只有普通 JSON 小文件少量取字段时才用 json_query_path。'
+  ].join('')
+}
+
+const buildDeviceDetailAgentParameters = () => {
   const deviceId = instanceStore.current?.id
-  if (!deviceId) return
+  if (!deviceId) return undefined
 
   const deviceName = instanceStore.current?.name
-  void aiStore.queryAgent('deviceDetailChat', {
+  return {
     deviceId,
     subjectType: DEVICE_AGENT_SUBJECT_TYPE,
     subjectId: deviceId,
-    clientTools: deviceDetailClientToolRuntime.clientTools,
+    clientTools: getDeviceDetailClientTools(),
     clientToolHandler: deviceDetailClientToolRuntime.handleClientToolCall,
     clientToolsName: deviceDetailClientToolRuntime.clientToolsName,
-    clientToolsDescription: deviceDetailClientToolRuntime.clientToolsDescription,
-    systemPrompt: DEVICE_DETAIL_AGENT_SYSTEM_PROMPT,
+    clientToolsDescription: buildDeviceDetailClientToolsDescription(),
+    markdownLinkHandler: handleDeviceAgentMarkdownLink,
+    systemPrompt: buildDeviceDetailAgentSystemPrompt(),
     ...(deviceName ? { deviceName, subjectName: deviceName } : {})
-  })
+  }
+}
+
+const resolveDeviceAgentLinkTab = (href: string) => {
+  const raw = String(href || '').trim()
+  if (!raw) return ''
+
+  if (raw.startsWith('#')) {
+    const fragment = raw.slice(1)
+    const params = new URLSearchParams(fragment.includes('=') ? fragment : `tab=${fragment}`)
+    return normalizeDeviceAgentTabKey(params.get('tab') || params.get('deviceTab') || fragment)
+  }
+
+  if (/^https?:\/\//i.test(raw)) {
+    try {
+      const url = new URL(raw)
+      if (url.origin === window.location.origin && url.hash) {
+        return resolveDeviceAgentLinkTab(url.hash)
+      }
+    } catch {
+      return ''
+    }
+  }
+
+  if (/^tab:\/\//i.test(raw)) {
+    return normalizeDeviceAgentTabKey(raw.replace(/^tab:\/\//i, '').split(/[?#]/)[0])
+  }
+
+  const match = raw.match(/^jetlinks:\/\/device-detail\/tab\/([^?#]+)/i)
+  if (match?.[1]) {
+    try {
+      return normalizeDeviceAgentTabKey(decodeURIComponent(match[1]))
+    } catch {
+      return normalizeDeviceAgentTabKey(match[1])
+    }
+  }
+
+  if (!/^[a-z][a-z0-9+.-]*:/i.test(raw)) {
+    const tabKey = normalizeDeviceAgentTabKey(raw)
+    if (isDeviceAgentExistingTab(tabKey) || DEVICE_AGENT_KNOWN_TABS.has(tabKey)) {
+      return tabKey
+    }
+  }
+
+  return ''
+}
+
+const isDeviceAgentTabLink = (href: string) => {
+  const raw = String(href || '').trim()
+  if (/^tab:\/\//i.test(raw) || /^jetlinks:\/\/device-detail\/tab\//i.test(raw)) {
+    return true
+  }
+  if (!raw.startsWith('#')) {
+    const tabKey = normalizeDeviceAgentTabKey(raw)
+    return isDeviceAgentExistingTab(tabKey)
+  }
+  const fragment = raw.slice(1)
+  if (fragment.includes('=')) {
+    const params = new URLSearchParams(fragment)
+    const tabKey = normalizeDeviceAgentTabKey(params.get('tab') || params.get('deviceTab') || '')
+    return !!tabKey && isDeviceAgentExistingTab(tabKey)
+  }
+  const tabKey = normalizeDeviceAgentTabKey(fragment)
+  return isDeviceAgentExistingTab(tabKey)
+}
+
+const handleDeviceAgentMarkdownLink: AgentConversationMarkdownLinkHandler = ({ href, event }) => {
+  const targetTab = resolveDeviceAgentLinkTab(href)
+  if (!targetTab) return false
+
+  const exists = pageContainerTabList.value.some((item: any) => item?.key === targetTab)
+  if (!exists) {
+    return isDeviceAgentTabLink(href)
+  }
+
+  event.preventDefault()
+  if (exists) {
+    onTabChange(targetTab)
+  }
+  return true
+}
+
+const syncDeviceDetailAgent = () => {
+  const parameters = buildDeviceDetailAgentParameters()
+  if (!parameters) return
+  void aiStore.queryAgent('deviceDetailChat', parameters)
+    .then(refreshDeviceDetailAgentParameters)
+}
+
+const refreshDeviceDetailAgentParameters = () => {
+  const parameters = buildDeviceDetailAgentParameters()
+  if (!parameters || !aiStore.agentList.length) return
+  if (aiStore.parameters?.deviceId !== parameters.deviceId) return
+  aiStore.parameters = {
+    ...aiStore.parameters,
+    ...parameters
+  }
 }
 
 const orderedOptions = computed(() => {
@@ -993,6 +1247,18 @@ watch(
     tagsPanelVisible.value = false
     avatarError.value = false
   }
+)
+
+watch(
+  () => [
+    instanceStore.current?.id,
+    instanceStore.current?.accessProvider,
+    getDeviceAgentVisibleTabs().map((item) => `${item.key}:${item.label}`).join('|')
+  ],
+  () => {
+    refreshDeviceDetailAgentParameters()
+  },
+  { flush: 'post' }
 )
 
 onUnmounted(() => {
