@@ -339,7 +339,10 @@ import { useRegistryOptions } from '@jetlinks-web-core/hooks'
 import { deviceStateList } from '@device-manager-ui/views/device/data'
 import { isApplyDashboard } from '@device-manager-ui/utils/dashboardProject'
 import { createDeviceDetailClientToolRuntime } from './clientTools'
-import type { AgentConversationMarkdownLinkHandler } from '@jetlinks-ai-agent-ui/components/AgentConversation/types'
+import type {
+  AgentConversationMarkdownLinkHandler,
+  AgentConversationWorkflowGuide,
+} from '@jetlinks-ai-agent-ui/components/AgentConversation/types'
 
 const { t: $t } = useI18n()
 const menuStory = useMenuStore()
@@ -561,17 +564,172 @@ const DEVICE_REMOTE_FILE_ACCESS_PROVIDERS = new Set([
 const DEVICE_DETAIL_AGENT_SYSTEM_PROMPT_LINES = [
   '你是设备详情页内的设备问数与诊断助手。',
   '当前会话的 subject 就是页面打开的设备，已通过 subjectType=device、subjectId、deviceId 和 deviceName 提供；用户没有明确要求其它设备时，不要再追问设备 ID。',
-  '用户用自然语言询问设备是否正常、最近状态、CPU/内存/磁盘/JVM、属性趋势、物模型字段、设备文档、维修知识库、接入指南、告警/日志、上下行链路或远程调试时，应主动使用当前页面提供的客户端工具获取证据，再回答。',
+  '用户询问设备状态、运行数据、告警、日志、接入、文档、功能或调试问题时，先使用当前页面提供的客户端工具获取证据，再回答。',
+  '宽泛、多步骤、诊断、排障或不确定先后顺序的问题，先获取匹配工作流说明，再按流程继续取证；不要把候选字段列表当最终答案。',
+  '回复面向普通用户，不要暴露内部执行步骤、工具名、工作流指引、字段匹配、模型结构读取或“我先/接下来调用”的过程描述；直接给出分析结果、证据摘要和建议。',
+  '最终回复直接输出 Markdown：标题、表格、列表和建议链接都直接写原文；不要用三反引号代码围栏包裹 Markdown 正文，包括语言名为 markdown、md、text 或空语言的围栏。只有代码、JSON、日志原文才使用代码块。下一步建议用 Markdown 链接，例如 [查看今日告警](#prompt=查看今日告警)，不要把建议问题放进代码块。',
   '用户提到今日、今天、昨天、最近N小时、最近N天、本周、本月、now-1d、now/d 等时间范围时，优先把原始时间表达直接传入时间型客户端工具的 timeRange 参数，不需要先调用后端时间表达式转换工具；如果已经得到 {start/end/from/to/startTime/endTime} 形式的时间对象，也可以作为 timeRange 或拆成 startTime/endTime 传入。',
-  '用户询问告警、报警、异常恢复、告警原因或告警中状态时，必须优先查询平台告警记录；物模型字段或属性历史只能作为补充佐证，不作为告警事实的首选来源。',
+  '告警问题以平台告警记录为首选事实源；其它运行数据只作为补充佐证。',
   '用户明确要求选择其它设备、按条件挑设备或跨设备对比时，可先调用设备 selector 工具返回候选，再让用户确认目标设备；未明确要求时仍使用当前 subject 设备。',
-  '当用户要求导出、保存、生成报告，或查询结果可能较大（例如整天每分钟、长时间历史、批量告警/日志/事件）时，优先使用业务工具自身的 writeToPath 参数把较大或完整结果写入当前会话文件容器；分页明细和聚合结果默认写 JSONL/NDJSON，建议优先使用 .jsonl 路径，也兼容 .ndjson；再用工具返回的 markdownLink 或 fs:// 引用回复。会话文件协议只能是 fs://，不要改写为 file://、http:// 或本地路径；此时 limit 只控制内联预览，writeLimit 控制文件写入记录数，完整导出可传 writeLimit=0；如果返回 writeLimitExceeded/truncated，需要说明结果受上限影响并建议缩小时间范围、提高 writeLimit 或使用 writeLimit=0 完整导出。',
-  '客户端工具写入 JSONL/NDJSON 文件后，如需继续过滤、聚合、排序、抽取轨迹、生成图表或报告数据，优先使用返回的 inputPath 调用 dataset_materialize(format=jsonl)，再用 dataset_query 或 chart_echarts2svg；只有普通 JSON 小文件少量取字段时才用 json_query_path；不要用 text_regex_extract 或脚本解析大文本。',
+  '导出、报告或生成图表时，先用当前设备业务工具完成取数或聚合；需要完整结果时给业务工具传 writeToPath，并通过 markdownLink 或 fs:// 引用回复。数据集工具只用于已写入文件后的二次过滤、整理或制图，不要用它替代首次取数。',
   '如果客户端工具返回 ok=false、partial=true 或 errors 字段，应直接基于错误信息说明当前账号权限不足、接口失败或数据不可用，不要空回复，也不要继续重复调用同一个失败工具。',
-  '不要要求用户说出工具名，也不要把工具 ID 当作操作说明展示给用户；如不确定某类数据可用性，可先调用客户端工具说明了解能力边界。',
   '诊断结论需要区分“已验证事实、异常迹象、建议动作、无法确认的限制”，不要编造未查询到的数据。'
 ]
 const deviceDetailClientToolRuntime = createDeviceDetailClientToolRuntime(() => instanceStore.current || {})
+
+const DEVICE_DETAIL_AGENT_WORKFLOW_GUIDES: AgentConversationWorkflowGuide[] = [
+  {
+    id: 'device-today-operation',
+    name: '今日运行分析',
+    description: '分析设备今天是否运行正常，覆盖告警、上下线、关键属性最新值和趋势。',
+    scenarios: ['分析今日运行情况', '是否正常', '全面检查', '帮我看看', '最近状态'],
+    keywords: ['今日', '今天', '运行', '正常', '全面', '状态', '分析'],
+    priority: 100,
+    steps: [
+      {
+        title: '识别关键运行指标',
+        description: '根据设备属性定义的名称、标识、说明和数据类型识别本设备已有的关键运行指标；不要预设固定字段，只保留实际匹配到的属性。',
+        tools: ['device_metadata_markdown', 'device_metadata_search'],
+        inputs: { section: 'properties' },
+      },
+      {
+        title: '查询今日平台告警',
+        tools: ['device_alarm_records_query'],
+        inputs: { timeRange: '今天' },
+      },
+      {
+        title: '统计今日上下线',
+        tools: ['device_online_offline_summary'],
+        inputs: { timeRange: '今天', type: 'both' },
+      },
+      {
+        title: '读取关键属性最新值',
+        description: '对已匹配属性直接批量读取；没有匹配到运行指标时说明当前设备未暴露相关属性。',
+        tools: ['device_latest_properties'],
+        inputs: { propertyIds: 'matched-property-ids' },
+      },
+      {
+        title: '按需查看趋势',
+        description: '用户问“今日运行/是否正常”时，优先对已匹配的数值型指标按小时聚合，趋势不足时说明数据限制。',
+        tools: ['device_property_aggregate'],
+        inputs: { propertyIds: 'matched-property-ids', timeRange: '今天', interval: '1h' },
+      },
+    ],
+    output: ['已验证事实', '异常迹象', '建议动作', '无法确认的限制'],
+    notes: ['不要让用户先选择属性；不要把属性候选列表当最终答案。'],
+  },
+  {
+    id: 'device-offline-diagnosis',
+    name: '离线原因分析',
+    description: '设备离线时，按接入配置、上下线记录、日志、告警和链路样本排查原因。',
+    scenarios: ['分析离线原因', '为什么离线', '设备不上线', '连接失败', '认证失败'],
+    keywords: ['离线', '下线', '不上线', '连接失败', '认证失败', '断开'],
+    priority: 90,
+    steps: [
+      {
+        title: '获取接入配置和会话证据',
+        tools: ['device_access_summary'],
+      },
+      {
+        title: '统计最近上下线',
+        tools: ['device_online_offline_summary'],
+        inputs: { timeRange: '最近24小时', type: 'both' },
+      },
+      {
+        title: '查看最近通信日志',
+        tools: ['device_logs_summary'],
+        inputs: { timeRange: '最近24小时' },
+      },
+      {
+        title: '查询平台告警',
+        tools: ['device_alarm_records_query'],
+        inputs: { timeRange: '最近24小时' },
+      },
+      {
+        title: '需要链路细节时抓取实时样本',
+        tools: ['device_trace_capture'],
+        tips: ['只有需要连接、认证、上报、下发、编解码证据时再使用。'],
+      },
+    ],
+    output: ['最可能原因', '已验证证据', '下一步处理动作', '仍需现场确认的信息'],
+  },
+  {
+    id: 'device-bring-online',
+    name: '上线接入指导',
+    description: '回答如何让设备上线、接入地址、认证字段、协议说明和首次上线检查。',
+    scenarios: ['如何让设备上线', '设备怎么接入', '接入地址是什么', '认证字段', '首次上线'],
+    keywords: ['上线', '接入', '地址', '认证', '协议', '首次'],
+    priority: 80,
+    steps: [
+      {
+        title: '获取接入配置',
+        tools: ['device_access_summary'],
+      },
+      {
+        title: '查找接入文档',
+        tools: ['device_documents_query', 'device_document_reference'],
+      },
+      {
+        title: '结合最近上线/离线和日志判断是否已尝试接入',
+        tools: ['device_online_offline_summary', 'device_logs_summary'],
+        inputs: { timeRange: '最近24小时' },
+      },
+    ],
+    output: ['接入地址与认证要点', '上线前检查项', '如果仍不上线的排查顺序'],
+  },
+  {
+    id: 'device-property-trend',
+    name: '属性趋势分析',
+    description: '分析用户指定或设备属性定义中匹配到的指标趋势。',
+    scenarios: ['分析属性趋势', '运行指标趋势', '使用率情况', '状态趋势'],
+    keywords: ['属性', '趋势', '指标', '使用率', '变化', '统计'],
+    priority: 70,
+    steps: [
+      {
+        title: '确认属性标识',
+        tools: ['device_metadata_search', 'device_metadata_markdown'],
+      },
+      {
+        title: '读取最新值',
+        tools: ['device_latest_properties'],
+        inputs: { propertyIds: 'matched-property-ids' },
+      },
+      {
+        title: '聚合趋势',
+        description: '导出或生成趋势图时，也先用该工具完成聚合取数；需要完整数据时传 writeToPath，之后仅在二次加工或渲染图片时使用数据集/图表工具。',
+        tools: ['device_property_aggregate'],
+        inputs: { propertyIds: 'matched-property-ids', timeRange: 'user-time-range-or-今天' },
+      },
+    ],
+    output: ['最新值', '趋势变化', '峰值/均值/低值', '数据缺口'],
+  },
+  {
+    id: 'device-alarm-diagnosis',
+    name: '告警排查',
+    description: '优先以平台告警记录为事实来源，再用日志、属性或上下线记录佐证。',
+    scenarios: ['查看今日告警', '有没有告警', '告警原因', '报警中吗', '异常恢复'],
+    keywords: ['告警', '报警', '异常', '恢复', 'warning'],
+    priority: 75,
+    steps: [
+      {
+        title: '查询平台告警记录',
+        tools: ['device_alarm_records_query'],
+        inputs: { timeRange: 'user-time-range-or-今天' },
+      },
+      {
+        title: '补充通信和上下线证据',
+        tools: ['device_logs_summary', 'device_online_offline_summary'],
+        inputs: { timeRange: 'same-as-alarm-query' },
+      },
+      {
+        title: '必要时查询相关属性或事件',
+        tools: ['device_metadata_search', 'device_property_history_summary', 'device_event_history_query'],
+      },
+    ],
+    output: ['告警状态', '触发原因', '恢复情况', '建议处理动作'],
+    notes: ['设备属性、事件或日志只能作为补充解释，不作为告警事实的首选来源。'],
+  },
+]
 
 const normalizeDeviceAgentTabAliasKey = (value?: string) => (
   String(value || '').trim().replace(/[\s_-]+/g, '').toLowerCase()
@@ -711,13 +869,63 @@ const buildDeviceDetailClientToolsDescription = () => {
     ? '当前设备支持边缘网关远程文件片段读取；只有用户明确询问远程目录、远程文件或网关文件时才使用相关工具。'
     : '当前设备未暴露边缘网关远程文件能力，不要使用或提示远程文件管理相关工具。'
   return [
-    '设备详情页提供的当前设备问数与诊断工具。可用于自然语言问题中的在线状态、接入配置、接入地址、认证字段、协议说明、接入会话、物模型、属性快照、属性聚合趋势、事件上报数据、设备文档与维修知识库、平台告警记录、上下线统计、日志统计与少量样本、实时链路样本分析。',
+    '设备详情页提供当前设备的状态、接入、模型字段、属性、事件、文档、告警、上下线、日志和链路样本工具。',
     remoteText,
-    '普通用户无需知道工具名；接入指南、协议说明、认证失败、连接地址等问题优先用接入工具获取设备接入 Tab 中的配置、身份、协议说明和在线连接证据；日志/属性/事件优先用 summary、aggregate 或 event 工具回答有没有、多少条、平均/最大/最小、首次/末次/去重计数和趋势。',
-    '设备文档问题优先查找当前设备和所属产品文档，或定位 platform-file-id 与 url/fileUrl；文档正文不要通过前端工具读取，需由后端 fs_download 或统一文件/文档通道导入或挂载到会话文件容器后再按 inputPath 分析。',
-    '需要选择其它设备时可使用动态注册的 selector 工具获取候选设备；当前设备默认来自 subject。只有用户明确要求下发/调用/执行设备功能时，才可使用功能调用工具，并且会在下发前要求用户确认。',
-    '部分明细工具支持 writeToPath，可把较大或完整结果写入当前会话文件容器并返回 markdownLink、fs:// 引用和 inputPath；分页明细和聚合结果默认写 JSONL/NDJSON，建议优先使用 .jsonl 路径，也兼容 .ndjson；会话文件协议只能是 fs://，不要改写为 file://、http:// 或本地路径；limit 只控制内联预览，writeLimit 控制分页类工具写入文件的记录数，完整导出可传 writeLimit=0；若返回 writeLimitExceeded/truncated，需要向用户说明结果受上限影响并建议缩小时间范围、提高 writeLimit 或使用 writeLimit=0 完整导出；对写入的 JSONL/NDJSON 继续过滤、聚合、排序、抽取轨迹或生成图表时，优先用 dataset_materialize(format=jsonl) + dataset_query 或 chart_echarts2svg，不要用 text_regex_extract 或脚本解析大文本；只有普通 JSON 小文件少量取字段时才用 json_query_path。'
-  ].join('')
+    '宽泛、多步骤或排障类问题按内置流程选择合适工具取证；普通用户无需知道工具名。',
+    '当前设备默认来自 subject；只有用户明确要求其它设备时才使用 selector，只有明确要求下发/调用/执行设备功能时才使用功能调用工具。',
+    '明细较大、导出、报告或生成图表时，先用设备业务工具取数或聚合；数据集工具只用于已写入文件后的二次加工。'
+  ].join('\n')
+}
+
+const deviceDetailAgentPromptConfigs = {
+  online: {
+    opening: 'DeviceDetail.agent.opening.online',
+    prompts: [
+      'DeviceDetail.agent.prompt.online.todayStatus',
+      'DeviceDetail.agent.prompt.online.alarm',
+      'DeviceDetail.agent.prompt.online.propertyTrend'
+    ]
+  },
+  offline: {
+    opening: 'DeviceDetail.agent.opening.offline',
+    prompts: [
+      'DeviceDetail.agent.prompt.offline.bringOnline',
+      'DeviceDetail.agent.prompt.offline.reason',
+      'DeviceDetail.agent.prompt.offline.history'
+    ]
+  },
+  notActive: {
+    opening: 'DeviceDetail.agent.opening.notActive',
+    prompts: [
+      'DeviceDetail.agent.prompt.notActive.activate',
+      'DeviceDetail.agent.prompt.notActive.accessConfig',
+      'DeviceDetail.agent.prompt.notActive.firstOnline'
+    ]
+  },
+  default: {
+    opening: 'DeviceDetail.agent.opening.default',
+    prompts: [
+      'DeviceDetail.agent.prompt.default.status',
+      'DeviceDetail.agent.prompt.default.alarm',
+      'DeviceDetail.agent.prompt.default.accessConfig'
+    ]
+  }
+} as const
+
+const getDeviceDetailAgentPromptConfig = () => {
+  const state = String(instanceStore.current?.state?.value || '')
+  if (state === 'online' || state === 'offline' || state === 'notActive') {
+    return deviceDetailAgentPromptConfigs[state]
+  }
+  return deviceDetailAgentPromptConfigs.default
+}
+
+const buildDeviceDetailAgentOpeningStatement = () => {
+  return $t(getDeviceDetailAgentPromptConfig().opening)
+}
+
+const buildDeviceDetailAgentPromptExamples = () => {
+  return getDeviceDetailAgentPromptConfig().prompts.map((key) => $t(key))
 }
 
 const buildDeviceDetailAgentParameters = () => {
@@ -733,8 +941,11 @@ const buildDeviceDetailAgentParameters = () => {
     clientToolHandler: deviceDetailClientToolRuntime.handleClientToolCall,
     clientToolsName: deviceDetailClientToolRuntime.clientToolsName,
     clientToolsDescription: buildDeviceDetailClientToolsDescription(),
+    workflowGuides: DEVICE_DETAIL_AGENT_WORKFLOW_GUIDES,
     markdownLinkHandler: handleDeviceAgentMarkdownLink,
     systemPrompt: buildDeviceDetailAgentSystemPrompt(),
+    openingStatement: buildDeviceDetailAgentOpeningStatement(),
+    promptExamples: buildDeviceDetailAgentPromptExamples(),
     ...(deviceName ? { deviceName, subjectName: deviceName } : {})
   }
 }
@@ -1252,6 +1463,8 @@ watch(
 watch(
   () => [
     instanceStore.current?.id,
+    instanceStore.current?.name,
+    instanceStore.current?.state?.value,
     instanceStore.current?.accessProvider,
     getDeviceAgentVisibleTabs().map((item) => `${item.key}:${item.label}`).join('|')
   ],

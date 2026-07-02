@@ -978,7 +978,7 @@ const createSessionFileWriteSummary = (
   const actualPath = String(normalizedFile.path || filePath).trim()
   const fileUri = resolveSessionFileUri(sessionFiles, actualPath, normalizedFile)
   const fileName = actualPath.split('/').filter(Boolean).pop() || actualPath || 'result.jsonl'
-  const nextAction = `如果要继续过滤、聚合、排序、抽取轨迹或生成图表，优先调用 dataset_materialize(inputPath="${actualPath}", format="jsonl") 后使用 dataset_query 或图表工具；不要用 text_regex_extract 或脚本解析大文本。`
+  const nextAction = `已完成业务工具取数并写入 ${fileUri}。只有需要对这个已写入文件做二次过滤、排序、抽取轨迹或制图时，才调用 dataset_materialize(inputPath="${actualPath}", format="jsonl") 后使用 dataset_query 或图表工具；不要用 dataset 查询替代设备属性聚合、告警、日志等业务工具的首次取数。`
   return {
     writeToPath: actualPath,
     ...(requestedPath && requestedPath !== actualPath ? { requestedWriteToPath: requestedPath } : {}),
@@ -989,7 +989,7 @@ const createSessionFileWriteSummary = (
     structuredDataHint: {
       format: 'jsonl',
       inputPath: actualPath,
-      preferredWorkflow: 'dataset_materialize(format=jsonl) -> dataset_schema -> dataset_query -> chart_echarts2svg/report',
+      preferredWorkflow: 'business_tool(writeToPath) -> optional dataset_materialize/dataset_query for secondary processing -> optional chart/report',
       nextAction
     },
     protocolHint: '会话文件展示必须使用 fs:// 引用，不要改写为 file://、http:// 或本地路径；调用后端文件/数据集工具时使用 inputPath 相对路径。',
@@ -1084,8 +1084,8 @@ const writeToolResultToSessionFile = async (
     ? {
         format: 'json',
         inputPath: filePath,
-        preferredWorkflow: 'dataset_materialize -> dataset_schema -> dataset_query -> chart_echarts2svg/report',
-        nextAction: `如果要继续过滤、聚合、排序、抽取轨迹或生成图表，优先调用 dataset_materialize(inputPath="${filePath}", jsonPath="$.data") 后使用 dataset_query 或图表工具；只读取少量字段时才用 json_query_path；不要用 text_regex_extract 处理 JSON。`
+        preferredWorkflow: 'business_tool(writeToPath) -> optional dataset_materialize/dataset_query for secondary processing -> optional chart/report',
+        nextAction: `已完成业务工具取数并写入 ${fileUri}。只有需要对这个已写入文件做二次过滤、排序、抽取轨迹或制图时，才调用 dataset_materialize(inputPath="${filePath}", jsonPath="$.data") 后使用 dataset_query 或图表工具；只读取少量字段时才用 json_query_path；不要用 dataset 查询替代设备属性聚合、告警、日志等业务工具的首次取数。`
       }
     : undefined
 
