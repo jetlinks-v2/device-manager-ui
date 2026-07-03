@@ -3166,6 +3166,7 @@
     "DeviceDetail.agent.opening.offline": "The device is offline. Start with access configuration, online/offline history, and recent communication logs.",
     "DeviceDetail.agent.opening.notActive": "The device is not activated yet. Check the access configuration and complete the first connection.",
     "DeviceDetail.agent.opening.default": "You can analyze this device's status, access configuration, logs, and alarms.",
+    "DeviceDetail.agent.conversationTitle": "Device Detail Agent",
     "DeviceDetail.agent.bubbleTooltip": "Open device-specific agent",
     "DeviceDetail.agent.prompt.online.todayStatus": "Analyze today's operation",
     "DeviceDetail.agent.prompt.online.alarm": "Check today's alarms",

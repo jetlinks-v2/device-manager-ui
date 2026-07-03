@@ -950,6 +950,7 @@ const buildDeviceDetailAgentParameters = () => {
     systemPrompt: buildDeviceDetailAgentSystemPrompt(),
     openingStatement: buildDeviceDetailAgentOpeningStatement(),
     promptExamples: buildDeviceDetailAgentPromptExamples(),
+    conversationTitle: $t('DeviceDetail.agent.conversationTitle'),
     bubbleIcon: 'HddOutlined',
     bubbleIconBadge: 'MessageOutlined',
     bubbleClassName: 'ai-float-btn-wrapper--device-agent',

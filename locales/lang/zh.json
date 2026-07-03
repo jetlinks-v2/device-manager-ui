@@ -3167,6 +3167,7 @@
     "DeviceDetail.agent.opening.offline": "设备当前离线，可以先排查接入配置、上下线记录和最近通信日志。",
     "DeviceDetail.agent.opening.notActive": "设备尚未激活，可以查看接入配置并完成首次上线。",
     "DeviceDetail.agent.opening.default": "可以围绕当前设备分析运行状态、接入配置、日志和告警。",
+    "DeviceDetail.agent.conversationTitle": "设备详情助手",
     "DeviceDetail.agent.bubbleTooltip": "打开设备专用智能体",
     "DeviceDetail.agent.prompt.online.todayStatus": "分析今日运行情况",
     "DeviceDetail.agent.prompt.online.alarm": "查看今日告警",
