@@ -58,6 +58,13 @@ export const queryHistoryLogList = (alarmConfigId: string, data:any) => request.
  */
 export const queryHistoryList = (data:any) => request.post('/alarm/history/_query',data);
 
+/**
+ * 按告警目标统计告警日志数量
+ */
+export const queryHistoryCount = (targetType: string, targetId: string, data:any) => (
+  request.post(`/alarm/history/${targetType}/_count?targetId=${encodeURIComponent(targetId)}`, data)
+);
+
 
 /**
  * 获取告警处理结果

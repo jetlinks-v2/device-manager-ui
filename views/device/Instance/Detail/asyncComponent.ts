@@ -21,5 +21,6 @@ export const tabs = {
   Invalid: defineAsyncComponent(() => import('./Invalid/index.vue')),
   Threshold: defineAsyncComponent(() => import('./Threshold/index.vue')),
   DeviceRelationship: defineAsyncComponent(() => import('./DeviceRelationship/index.vue')),
+  DeviceDocument: defineAsyncComponent(() => import('./DeviceDocument/index.vue')),
   Dashboard: defineAsyncComponent(() => import('./Dashboard/index.vue')),
 };

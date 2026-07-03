@@ -47,7 +47,7 @@ import DeviceHome from './components/DeviceHome/index.vue';
 import DevOpsHome from './components/DevOpsHome/index.vue';
 import ComprehensiveHome from './components/ComprehensiveHome/index.vue';
 import Api from './components/Api/index.vue';
-import {useAIStore, useUserStore} from '@jetlinks-web-core/store';
+import { useUserStore } from '@jetlinks-web-core/store';
 
 import { isNoCommunity } from '@jetlinks-web-core/utils/utils';
 import { getMe_api, getView_api } from '@jetlinks-web-core/api/account/center';
@@ -60,7 +60,7 @@ const currentView = ref<string>('');
 const clientId = useUserStore().userInfo.id;
 const secureKey = ref<string>('');
 const showKey = ref(false);
-const aiStore = useAIStore()
+
 // 获取选择的视图
 const setCurrentView = () => {
     getView_api().then(({ status, result }: any) => {
@@ -98,14 +98,6 @@ if (isNoCommunity) {
 } else {
     setCurrentView();
 }
-
-onMounted(() => {
-  aiStore.queryAgent('iotHome')
-})
-
-onUnmounted(() => {
-  aiStore.hideAiButton()
-})
 
 </script>
 

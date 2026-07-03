@@ -90,8 +90,11 @@ import dayjs from 'dayjs'
 import { isNoCommunity } from '@jetlinks-web-core/utils/utils'
 import { device } from "../../../assets";
 import { useI18n } from 'vue-i18n';
+import { useHomeAgentCapabilityProvider } from '@jetlinks-web-core/layout/components/AiChat/useHomeAgentCapabilityProvider';
+import { deviceDashboardHomeAgentProvider } from './homeAgentProvider';
 
 const { t: $t } = useI18n();
+useHomeAgentCapabilityProvider(deviceDashboardHomeAgentProvider);
 
 const system = useSystemStore();
 const AmapKey = system.systemInfo.amap?.apiKey;

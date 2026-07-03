@@ -402,6 +402,18 @@
                 "actions": ["invoke"]
               },
               {
+                "permission": "ai-agent-deploy",
+                "actions": ["use"]
+              },
+              {
+                "permission": "ai-agent-session-file",
+                "actions": ["query", "saveFile", "deleteFile"]
+              },
+              {
+                "permission": "alarm-record",
+                "actions": ["query"]
+              },
+              {
                 "permission": "device-gateway",
                 "actions": ["query"]
               },
@@ -429,6 +441,14 @@
                   {
                     "permission": "device-instance",
                     "actions": ["query"]
+                  },
+                  {
+                    "permission": "device-document-bind",
+                    "actions": ["query"]
+                  },
+                  {
+                    "permission": "ai-agent-session-file",
+                    "actions": ["query", "saveFile", "deleteFile"]
                   },
                   {
                     "permission": "assets-bind",
@@ -532,6 +552,10 @@
                     "actions": ["query", "save"]
                   },
                   {
+                    "permission": "device-document-bind",
+                    "actions": ["query", "save"]
+                  },
+                  {
                     "permission": "device-product",
                     "actions": ["query"]
                   },
@@ -594,6 +618,10 @@
                     "actions": ["query", "delete"]
                   },
                   {
+                    "permission": "device-document-bind",
+                    "actions": ["query", "delete"]
+                  },
+                  {
                     "permission": "device-gateway",
                     "actions": ["query"]
                   }
@@ -618,6 +646,10 @@
                   },
                   {
                     "permission": "device-instance",
+                    "actions": ["query", "save"]
+                  },
+                  {
+                    "permission": "device-document-bind",
                     "actions": ["query", "save"]
                   },
                   {

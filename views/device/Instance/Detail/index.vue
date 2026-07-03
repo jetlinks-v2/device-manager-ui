@@ -338,6 +338,11 @@ import { useRegistryOptions } from '@jetlinks-web-core/hooks'
 
 import { deviceStateList } from '@device-manager-ui/views/device/data'
 import { isApplyDashboard } from '@device-manager-ui/utils/dashboardProject'
+import { createDeviceDetailClientToolRuntime } from './clientTools'
+import type {
+  AgentConversationMarkdownLinkHandler,
+  AgentConversationWorkflowGuide,
+} from '@jetlinks-ai-agent-ui/components/AgentConversation/types'
 
 const { t: $t } = useI18n()
 const menuStory = useMenuStore()
@@ -539,6 +544,10 @@ const initList = [
   {
     key: 'DeviceRelationship',
     tab: $t('Detail.index.957187-31')
+  },
+  {
+    key: 'DeviceDocument',
+    tab: $t('Detail.index.957187-43')
   }
 ]
 
@@ -547,6 +556,504 @@ const isRefresh = ref(false)
 const aiStore = useAIStore()
 const permissionStore = useAuthStore()
 const { mergedOptions } = useRegistryOptions({ baseOptions: list, code: 'detail-tabs' })
+const DEVICE_AGENT_SUBJECT_TYPE = 'device'
+const DEVICE_REMOTE_FILE_ACCESS_PROVIDERS = new Set([
+  'agent-device-gateway',
+  'agent-media-device-gateway'
+])
+const DEVICE_DETAIL_AGENT_SYSTEM_PROMPT_LINES = [
+  '你是设备详情页内的设备问数与诊断助手。',
+  '当前会话的 subject 就是页面打开的设备，已通过 subjectType=device、subjectId、deviceId 和 deviceName 提供；用户没有明确要求其它设备时，不要再追问设备 ID。',
+  '当前会话可通过客户端工具读取该设备的状态、运行数据、告警、日志、接入、文档、功能和调试证据。',
+  '多步骤诊断可以先用一句业务侧说明承接，例如“我会先确认设备状态、近期数据和异常记录，再给出判断与建议。”',
+  '下一步建议可以输出 Markdown 链接，例如 [查看今日告警](#prompt=查看今日告警)，让用户一键填充到输入框。',
+  '设备告警中，当前状态来自告警记录，触发次数和历史时间线来自告警日志。',
+  '用户明确要求选择其它设备、按条件挑设备或跨设备对比时，可使用设备选择能力；未明确要求时仍使用当前 subject 设备。'
+]
+const deviceDetailClientToolRuntime = createDeviceDetailClientToolRuntime(() => instanceStore.current || {})
+
+const DEVICE_DETAIL_AGENT_WORKFLOW_GUIDES: AgentConversationWorkflowGuide[] = [
+  {
+    id: 'device-today-operation',
+    name: '今日运行分析',
+    description: '分析设备今天是否运行正常，覆盖告警、上下线、关键属性最新值和趋势。',
+    scenarios: ['分析今日运行情况', '是否正常', '全面检查', '帮我看看', '最近状态'],
+    keywords: ['今日', '今天', '运行', '正常', '全面', '状态', '分析'],
+    priority: 100,
+    steps: [
+      {
+        title: '识别关键运行指标',
+        description: '根据设备属性定义的名称、标识、说明和数据类型识别本设备已有的关键运行指标；不要预设固定字段，只保留实际匹配到的属性。',
+        tools: ['device_metadata_markdown', 'device_metadata_search'],
+        inputs: { section: 'properties' },
+      },
+      {
+        title: '查询今日平台告警',
+        tools: ['device_alarm_records_query'],
+        inputs: { timeRange: '今天' },
+      },
+      {
+        title: '统计今日告警触发历史',
+        tools: ['device_alarm_history_summary'],
+        inputs: { timeRange: '今天' },
+      },
+      {
+        title: '统计今日上下线',
+        tools: ['device_online_offline_summary'],
+        inputs: { timeRange: '今天', type: 'both' },
+      },
+      {
+        title: '读取关键属性最新值',
+        description: '对已匹配属性直接批量读取；没有匹配到运行指标时说明当前设备未暴露相关属性。',
+        tools: ['device_latest_properties'],
+        inputs: { propertyIds: 'matched-property-ids' },
+      },
+      {
+        title: '按需查看趋势',
+        description: '用户问“今日运行/是否正常”时，优先对已匹配的数值型指标按小时聚合，趋势不足时说明数据限制。',
+        tools: ['device_property_aggregate'],
+        inputs: { propertyIds: 'matched-property-ids', timeRange: '今天', interval: '1h' },
+      },
+    ],
+    output: ['已验证事实', '异常迹象', '建议动作', '无法确认的限制'],
+    notes: ['不要让用户先选择属性；不要把属性候选列表当最终答案。'],
+  },
+  {
+    id: 'device-offline-diagnosis',
+    name: '离线原因分析',
+    description: '设备离线时，按接入配置、上下线记录、日志、告警和链路样本排查原因。',
+    scenarios: ['分析离线原因', '为什么离线', '设备不上线', '连接失败', '认证失败'],
+    keywords: ['离线', '下线', '不上线', '连接失败', '认证失败', '断开'],
+    priority: 90,
+    steps: [
+      {
+        title: '获取接入配置和会话证据',
+        tools: ['device_access_summary'],
+      },
+      {
+        title: '统计最近上下线',
+        tools: ['device_online_offline_summary'],
+        inputs: { timeRange: '最近24小时', type: 'both' },
+      },
+      {
+        title: '查看最近通信日志',
+        tools: ['device_logs_summary'],
+        inputs: { timeRange: '最近24小时' },
+      },
+      {
+        title: '查询平台告警',
+        tools: ['device_alarm_records_query', 'device_alarm_history_summary'],
+        inputs: { timeRange: '最近24小时' },
+      },
+      {
+        title: '需要链路细节时抓取实时样本',
+        tools: ['device_trace_capture'],
+        tips: ['只有需要连接、认证、上报、下发、编解码证据时再使用。'],
+      },
+    ],
+    output: ['最可能原因', '已验证证据', '下一步处理动作', '仍需现场确认的信息'],
+  },
+  {
+    id: 'device-bring-online',
+    name: '上线接入指导',
+    description: '回答如何让设备上线、接入地址、认证字段、协议说明和首次上线检查。',
+    scenarios: ['如何让设备上线', '设备怎么接入', '接入地址是什么', '认证字段', '首次上线'],
+    keywords: ['上线', '接入', '地址', '认证', '协议', '首次'],
+    priority: 80,
+    steps: [
+      {
+        title: '获取接入配置',
+        tools: ['device_access_summary'],
+      },
+      {
+        title: '查找接入文档',
+        tools: ['device_documents_query', 'device_document_reference'],
+      },
+      {
+        title: '结合最近上线/离线和日志判断是否已尝试接入',
+        tools: ['device_online_offline_summary', 'device_logs_summary'],
+        inputs: { timeRange: '最近24小时' },
+      },
+    ],
+    output: ['接入地址与认证要点', '上线前检查项', '如果仍不上线的排查顺序'],
+  },
+  {
+    id: 'device-property-trend',
+    name: '属性趋势分析',
+    description: '分析用户指定或设备属性定义中匹配到的指标趋势。',
+    scenarios: ['分析属性趋势', '运行指标趋势', '使用率情况', '状态趋势'],
+    keywords: ['属性', '趋势', '指标', '使用率', '变化', '统计'],
+    priority: 70,
+    steps: [
+      {
+        title: '确认属性标识',
+        tools: ['device_metadata_search', 'device_metadata_markdown'],
+      },
+      {
+        title: '读取最新值',
+        tools: ['device_latest_properties'],
+        inputs: { propertyIds: 'matched-property-ids' },
+      },
+      {
+        title: '聚合趋势',
+        description: '导出或生成趋势图时，也先用该工具完成聚合取数；需要完整数据时传 writeToPath，之后仅在二次加工或渲染图片时使用数据集/图表工具。',
+        tools: ['device_property_aggregate'],
+        inputs: { propertyIds: 'matched-property-ids', timeRange: 'user-time-range-or-今天' },
+      },
+    ],
+    output: ['最新值', '趋势变化', '峰值/均值/低值', '数据缺口'],
+  },
+  {
+    id: 'device-alarm-diagnosis',
+    name: '告警排查',
+    description: '当前告警状态看平台告警记录；触发次数和历史时间线看告警日志，再用通信日志、属性或上下线记录佐证。',
+    scenarios: ['查看今日告警', '有没有告警', '告警原因', '报警中吗', '异常恢复', '告警触发几次', '告警历史数量'],
+    keywords: ['告警', '报警', '异常', '恢复', 'warning'],
+    priority: 75,
+    steps: [
+      {
+        title: '查询平台告警记录',
+        tools: ['device_alarm_records_query'],
+        inputs: { timeRange: 'user-time-range-or-今天' },
+      },
+      {
+        title: '统计告警日志触发历史',
+        tools: ['device_alarm_history_summary'],
+        inputs: { timeRange: 'same-as-alarm-query' },
+      },
+      {
+        title: '补充通信和上下线证据',
+        tools: ['device_logs_summary', 'device_online_offline_summary'],
+        inputs: { timeRange: 'same-as-alarm-query' },
+      },
+      {
+        title: '必要时查询相关属性或事件',
+        tools: ['device_metadata_search', 'device_property_history_summary', 'device_event_history_query'],
+      },
+    ],
+    output: ['告警状态', '触发次数', '触发原因', '恢复情况', '建议处理动作'],
+    notes: ['单个告警只会保留一条告警记录；历史触发次数必须来自告警日志。设备属性、事件或通信日志只能作为补充解释。'],
+  },
+]
+
+const normalizeDeviceAgentTabAliasKey = (value?: string) => (
+  String(value || '').trim().replace(/[\s_-]+/g, '').toLowerCase()
+)
+const DEVICE_AGENT_TAB_ALIASES: Record<string, string> = {
+  info: 'Info',
+  instanceinfo: 'Info',
+  detail: 'Info',
+  详情: 'Info',
+  实例信息: 'Info',
+  running: 'Running',
+  status: 'Running',
+  property: 'Running',
+  properties: 'Running',
+  运行状态: 'Running',
+  属性: 'Running',
+  metadata: 'Metadata',
+  thingmodel: 'Metadata',
+  物模型: 'Metadata',
+  function: 'Function',
+  functions: 'Function',
+  devicefunction: 'Function',
+  设备功能: 'Function',
+  log: 'Log',
+  logs: 'Log',
+  日志: 'Log',
+  日志管理: 'Log',
+  alarm: 'AlarmRecord',
+  alarms: 'AlarmRecord',
+  alarmrecord: 'AlarmRecord',
+  告警: 'AlarmRecord',
+  告警记录: 'AlarmRecord',
+  deviceaccess: 'Diagnose',
+  access: 'Diagnose',
+  diagnose: 'Diagnose',
+  设备接入: 'Diagnose',
+  device_document: 'DeviceDocument',
+  devicedocument: 'DeviceDocument',
+  document: 'DeviceDocument',
+  documents: 'DeviceDocument',
+  设备文档: 'DeviceDocument',
+  文档: 'DeviceDocument',
+  devicerelationship: 'DeviceRelationship',
+  relationship: 'DeviceRelationship',
+  relation: 'DeviceRelationship',
+  设备关系: 'DeviceRelationship',
+  invalid: 'Invalid',
+  invaliddata: 'Invalid',
+  无效数据: 'Invalid',
+  threshold: 'Threshold',
+  thresholdconfig: 'Threshold',
+  阈值配置: 'Threshold',
+  dashboard: 'Dashboard',
+  仪表盘: 'Dashboard',
+  child: 'Child',
+  childdevice: 'ChildDevice',
+  子设备: 'ChildDevice',
+  parsing: 'Parsing',
+  数据解析: 'Parsing',
+  metadatamap: 'MetadataMap',
+  物模型映射: 'MetadataMap',
+  terminal: 'Terminal',
+  远程调试: 'Terminal',
+  shadow: 'Shadow',
+  设备影子: 'Shadow',
+  firmware: 'Firmware',
+  远程升级: 'Firmware',
+}
+const DEVICE_AGENT_KNOWN_TABS = new Set(Object.values(DEVICE_AGENT_TAB_ALIASES))
+
+const isDeviceRemoteFileSupported = () => (
+  DEVICE_REMOTE_FILE_ACCESS_PROVIDERS.has(String(instanceStore.current?.accessProvider || ''))
+)
+
+const getDeviceAgentVisibleTabs = () => {
+  const source = (orderedOptions as any)?.value || []
+  return (Array.isArray(source) ? source : [])
+    .filter((item: any) => item?.key && item.key !== 'Info' && tabs[item.key as keyof typeof tabs])
+    .map((item: any) => ({
+      key: String(item.key),
+      label: String(item.tab || item.label || item.title || item.key),
+    }))
+}
+
+const isDeviceAgentExistingTab = (tabKey?: string) => {
+  if (!tabKey) return false
+  return getDeviceAgentVisibleTabs().some((item) => item.key === tabKey)
+}
+
+const resolveDeviceAgentCurrentTabByLabel = (value?: string) => {
+  const normalized = normalizeDeviceAgentTabAliasKey(value)
+  if (!normalized) return ''
+  return getDeviceAgentVisibleTabs().find((item) => (
+    normalizeDeviceAgentTabAliasKey(item.key) === normalized
+    || normalizeDeviceAgentTabAliasKey(item.label) === normalized
+  ))?.key || ''
+}
+
+const normalizeDeviceAgentTabKey = (value?: string) => {
+  const raw = String(value || '').trim()
+  if (!raw) return ''
+  const normalized = normalizeDeviceAgentTabAliasKey(raw)
+  return DEVICE_AGENT_TAB_ALIASES[normalized] || resolveDeviceAgentCurrentTabByLabel(raw) || raw
+}
+
+const buildDeviceDetailAgentTabPrompt = () => {
+  const visibleTabs = getDeviceAgentVisibleTabs()
+  const links = visibleTabs
+    .map((item) => `[${item.label}](#tab=${encodeURIComponent(item.key)})`)
+    .join('、')
+
+  return links
+    ? `当前设备详情页可跳转的一级选项卡：${links}。未列出的选项卡表示当前账号、设备类型或版本暂不支持直接跳转。`
+    : '当前设备详情页暂未加载出可跳转选项卡；如需引导用户查看页面数据，应先说明暂不可确认页面选项卡。'
+}
+
+const buildDeviceDetailAgentSystemPrompt = () => {
+  const lines = [...DEVICE_DETAIL_AGENT_SYSTEM_PROMPT_LINES]
+  if (isDeviceRemoteFileSupported()) {
+    lines.splice(lines.length - 1, 0, '当前设备支持边缘网关远程文件能力，可用于远程目录、远程文件或网关文件相关问题。')
+  } else {
+    lines.splice(lines.length - 1, 0, '当前设备未暴露边缘网关远程文件能力，相关入口暂不可用。')
+  }
+  lines.splice(lines.length - 1, 0, buildDeviceDetailAgentTabPrompt())
+  return lines.join('\n')
+}
+
+const getDeviceDetailClientTools = () => {
+  const tools = deviceDetailClientToolRuntime.clientTools || []
+  if (isDeviceRemoteFileSupported()) return tools
+  return tools.filter((tool: any) => !String(tool?.id || tool?.name || '').startsWith('edge_remote_file_'))
+}
+
+const buildDeviceDetailClientToolsDescription = () => {
+  const remoteText = isDeviceRemoteFileSupported()
+    ? '当前设备支持边缘网关远程文件片段读取，可用于远程目录、远程文件或网关文件问题。'
+    : '当前设备未暴露边缘网关远程文件能力。'
+  return [
+    '设备详情页提供当前设备的状态、接入、模型字段、属性、事件、文档、告警记录、告警日志、上下线、通信日志和链路样本工具。',
+    remoteText,
+    '宽泛、多步骤或排障类问题可结合工作流指导选择工具。',
+    '当前设备默认来自 subject；设备选择能力用于其它设备或跨设备对比，功能调用工具用于下发、调用或执行设备功能。',
+    '明细较大、导出、报告或图表可由设备业务工具写入会话文件，数据集工具适合已写入文件后的二次加工。'
+  ].join('\n')
+}
+
+const deviceDetailAgentPromptConfigs = {
+  online: {
+    opening: 'DeviceDetail.agent.opening.online',
+    prompts: [
+      'DeviceDetail.agent.prompt.online.todayStatus',
+      'DeviceDetail.agent.prompt.online.alarm',
+      'DeviceDetail.agent.prompt.online.propertyTrend'
+    ]
+  },
+  offline: {
+    opening: 'DeviceDetail.agent.opening.offline',
+    prompts: [
+      'DeviceDetail.agent.prompt.offline.bringOnline',
+      'DeviceDetail.agent.prompt.offline.reason',
+      'DeviceDetail.agent.prompt.offline.history'
+    ]
+  },
+  notActive: {
+    opening: 'DeviceDetail.agent.opening.notActive',
+    prompts: [
+      'DeviceDetail.agent.prompt.notActive.activate',
+      'DeviceDetail.agent.prompt.notActive.accessConfig',
+      'DeviceDetail.agent.prompt.notActive.firstOnline'
+    ]
+  },
+  default: {
+    opening: 'DeviceDetail.agent.opening.default',
+    prompts: [
+      'DeviceDetail.agent.prompt.default.status',
+      'DeviceDetail.agent.prompt.default.alarm',
+      'DeviceDetail.agent.prompt.default.accessConfig'
+    ]
+  }
+} as const
+
+const getDeviceDetailAgentPromptConfig = () => {
+  const state = String(instanceStore.current?.state?.value || '')
+  if (state === 'online' || state === 'offline' || state === 'notActive') {
+    return deviceDetailAgentPromptConfigs[state]
+  }
+  return deviceDetailAgentPromptConfigs.default
+}
+
+const buildDeviceDetailAgentOpeningStatement = () => {
+  return $t(getDeviceDetailAgentPromptConfig().opening)
+}
+
+const buildDeviceDetailAgentPromptExamples = () => {
+  return getDeviceDetailAgentPromptConfig().prompts.map((key) => $t(key))
+}
+
+const buildDeviceDetailAgentParameters = () => {
+  const deviceId = instanceStore.current?.id
+  if (!deviceId) return undefined
+
+  const deviceName = instanceStore.current?.name
+  return {
+    deviceId,
+    subjectType: DEVICE_AGENT_SUBJECT_TYPE,
+    subjectId: deviceId,
+    clientTools: getDeviceDetailClientTools(),
+    clientToolHandler: deviceDetailClientToolRuntime.handleClientToolCall,
+    clientToolsName: deviceDetailClientToolRuntime.clientToolsName,
+    clientToolsDescription: buildDeviceDetailClientToolsDescription(),
+    workflowGuides: DEVICE_DETAIL_AGENT_WORKFLOW_GUIDES,
+    markdownLinkHandler: handleDeviceAgentMarkdownLink,
+    systemPrompt: buildDeviceDetailAgentSystemPrompt(),
+    openingStatement: buildDeviceDetailAgentOpeningStatement(),
+    promptExamples: buildDeviceDetailAgentPromptExamples(),
+    conversationTitle: $t('DeviceDetail.agent.conversationTitle'),
+    bubbleIcon: 'HddOutlined',
+    bubbleIconBadge: 'MessageOutlined',
+    bubbleClassName: 'ai-float-btn-wrapper--device-agent',
+    bubbleTooltip: $t('DeviceDetail.agent.bubbleTooltip'),
+    ...(deviceName ? { deviceName, subjectName: deviceName } : {})
+  }
+}
+
+const resolveDeviceAgentLinkTab = (href: string) => {
+  const raw = String(href || '').trim()
+  if (!raw) return ''
+
+  if (raw.startsWith('#')) {
+    const fragment = raw.slice(1)
+    const params = new URLSearchParams(fragment.includes('=') ? fragment : `tab=${fragment}`)
+    return normalizeDeviceAgentTabKey(params.get('tab') || params.get('deviceTab') || fragment)
+  }
+
+  if (/^https?:\/\//i.test(raw)) {
+    try {
+      const url = new URL(raw)
+      if (url.origin === window.location.origin && url.hash) {
+        return resolveDeviceAgentLinkTab(url.hash)
+      }
+    } catch {
+      return ''
+    }
+  }
+
+  if (/^tab:\/\//i.test(raw)) {
+    return normalizeDeviceAgentTabKey(raw.replace(/^tab:\/\//i, '').split(/[?#]/)[0])
+  }
+
+  const match = raw.match(/^jetlinks:\/\/device-detail\/tab\/([^?#]+)/i)
+  if (match?.[1]) {
+    try {
+      return normalizeDeviceAgentTabKey(decodeURIComponent(match[1]))
+    } catch {
+      return normalizeDeviceAgentTabKey(match[1])
+    }
+  }
+
+  if (!/^[a-z][a-z0-9+.-]*:/i.test(raw)) {
+    const tabKey = normalizeDeviceAgentTabKey(raw)
+    if (isDeviceAgentExistingTab(tabKey) || DEVICE_AGENT_KNOWN_TABS.has(tabKey)) {
+      return tabKey
+    }
+  }
+
+  return ''
+}
+
+const isDeviceAgentTabLink = (href: string) => {
+  const raw = String(href || '').trim()
+  if (/^tab:\/\//i.test(raw) || /^jetlinks:\/\/device-detail\/tab\//i.test(raw)) {
+    return true
+  }
+  if (!raw.startsWith('#')) {
+    const tabKey = normalizeDeviceAgentTabKey(raw)
+    return isDeviceAgentExistingTab(tabKey)
+  }
+  const fragment = raw.slice(1)
+  if (fragment.includes('=')) {
+    const params = new URLSearchParams(fragment)
+    const tabKey = normalizeDeviceAgentTabKey(params.get('tab') || params.get('deviceTab') || '')
+    return !!tabKey && isDeviceAgentExistingTab(tabKey)
+  }
+  const tabKey = normalizeDeviceAgentTabKey(fragment)
+  return isDeviceAgentExistingTab(tabKey)
+}
+
+const handleDeviceAgentMarkdownLink: AgentConversationMarkdownLinkHandler = ({ href, event }) => {
+  const targetTab = resolveDeviceAgentLinkTab(href)
+  if (!targetTab) return false
+
+  const exists = pageContainerTabList.value.some((item: any) => item?.key === targetTab)
+  if (!exists) {
+    return isDeviceAgentTabLink(href)
+  }
+
+  event.preventDefault()
+  if (exists) {
+    onTabChange(targetTab)
+  }
+  return true
+}
+
+const syncDeviceDetailAgent = () => {
+  const parameters = buildDeviceDetailAgentParameters()
+  if (!parameters) return
+  void aiStore.queryAgent('deviceDetailChat', parameters)
+    .then(refreshDeviceDetailAgentParameters)
+}
+
+const refreshDeviceDetailAgentParameters = () => {
+  const parameters = buildDeviceDetailAgentParameters()
+  if (!parameters || !aiStore.agentList.length) return
+  if (aiStore.parameters?.deviceId !== parameters.deviceId) return
+  aiStore.parameters = {
+    ...aiStore.parameters,
+    ...parameters
+  }
+}
 
 const orderedOptions = computed(() => {
   const source = (mergedOptions as any)?.value || []
@@ -795,6 +1302,7 @@ const initPage = async (newId: any) => {
     getStatus(String(newId))
     getDetail()
     instanceStore.tabActiveKey = resolveDefaultTabKey()
+    syncDeviceDetailAgent()
   } finally {
     detailPageLoading.value = false
   }
@@ -817,6 +1325,7 @@ const getDetailFn = async () => {
       getStatus(String(_id))
       getDetail()
       instanceStore.tabActiveKey = resolveDefaultTabKey(tab)
+      syncDeviceDetailAgent()
     }
   } finally {
     detailPageLoading.value = false
@@ -947,7 +1456,6 @@ const onClick = async () => {
 onMounted(async () => {
   await getDetailFn()
   editableName.value = instanceStore.current?.name || ''
-  aiStore.queryAgent('deviceDetailChat', { deviceId: instanceStore.current?.id })
 })
 
 watch(
@@ -959,6 +1467,20 @@ watch(
     tagsPanelVisible.value = false
     avatarError.value = false
   }
+)
+
+watch(
+  () => [
+    instanceStore.current?.id,
+    instanceStore.current?.name,
+    instanceStore.current?.state?.value,
+    instanceStore.current?.accessProvider,
+    getDeviceAgentVisibleTabs().map((item) => `${item.key}:${item.label}`).join('|')
+  ],
+  () => {
+    refreshDeviceDetailAgentParameters()
+  },
+  { flush: 'post' }
 )
 
 onUnmounted(() => {

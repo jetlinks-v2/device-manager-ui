@@ -96,7 +96,8 @@
 
 <script setup>
 import {
-  query as queryAlarmRecord,
+  query as queryAlarmRecordAll,
+  queryByDevice as queryDeviceAlarmRecord,
   queryPreHandleHistory,
 } from '@device-manager-ui/api/rule-engine/log';
 import {useInstanceStore} from '@device-manager-ui/store/instance';
@@ -124,6 +125,11 @@ const menuStory = useMenuStore();
 const current = computed(() => {
   return props.type === 'device' ? device.current : product.current
 })
+
+// 设备详情页与 AI 诊断工具统一使用设备维度告警记录查询，产品详情仍保留混合目标查询。
+const queryAlarmRecord = (params) => (
+  props.type === 'device' ? queryDeviceAlarmRecord(params) : queryAlarmRecordAll(params)
+);
 
 const localLanguage = localStorage.getItem(langKey)  || 'zh'
 const columns =
