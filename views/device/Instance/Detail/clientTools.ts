@@ -8,7 +8,6 @@ import {
   listRemoteSystemFiles,
   queryLog
 } from '../../../../api/instance'
-import { queryByDevice as queryDeviceAlarmRecord } from '../../../../api/rule-engine/log'
 import {
   createAiClientToolRuntime,
   defineAiClientTools,
@@ -24,6 +23,7 @@ import { createDeviceDocumentClientTools } from './documentTool'
 import { createDeviceAccessClientTools } from './accessTool'
 import { createDeviceEventClientTools } from './eventTool'
 import { createDeviceFunctionClientTools } from './functionTool'
+import { createDeviceAlarmClientTools } from './alarmTool'
 
 type DeviceDetailRecord = Record<string, any>
 type RemoteSystemFileRecord = Record<string, any>
@@ -680,37 +680,6 @@ const enumText = (value: any) => {
   return value
 }
 
-const normalizeAlarmState = (value: unknown) => {
-  const raw = String(value ?? '').trim().toLowerCase()
-  if (!raw) return undefined
-  return ({
-    alarm: 'warning',
-    active: 'warning',
-    warning: 'warning',
-    processing: 'warning',
-    abnormal: 'warning',
-    '告警': 'warning',
-    '报警': 'warning',
-    '告警中': 'warning',
-    '报警中': 'warning',
-    '异常': 'warning',
-    normal: 'normal',
-    recovered: 'normal',
-    resolved: 'normal',
-    closed: 'normal',
-    '正常': 'normal',
-    '已恢复': 'normal',
-    '恢复': 'normal',
-    '已处理': 'normal'
-  } as Record<string, string>)[raw] || raw
-}
-
-const toBoolean = (value: unknown) => {
-  if (typeof value === 'boolean') return value
-  const raw = String(value ?? '').trim().toLowerCase()
-  return ['true', '1', 'yes', 'y', '只看告警中', '告警中'].includes(raw)
-}
-
 const buildSimpleTerm = (column: string, value: unknown) => {
   if (value === undefined || value === null || value === '') return undefined
   if (Array.isArray(value)) {
@@ -719,67 +688,6 @@ const buildSimpleTerm = (column: string, value: unknown) => {
   }
   return { column, termType: 'eq', value }
 }
-
-const buildDeviceAlarmTerms = (deviceId: string, args: Record<string, any>) => {
-  const state = normalizeAlarmState(args.state || (toBoolean(args.onlyActive) ? 'warning' : undefined))
-  const keyword = String(args.keyword || '').trim()
-  const terms: any[] = [
-    {
-      terms: [
-        { column: 'sourceId', value: deviceId, termType: 'eq' },
-        { column: 'targetType', value: 'device', termType: 'eq' }
-      ],
-      type: 'and'
-    },
-    ...buildTimeTerms(args, 'alarmTime')
-  ]
-
-  const stateTerm = buildSimpleTerm('state', state)
-  if (stateTerm) terms.push(stateTerm)
-
-  const levelTerm = buildSimpleTerm('level', args.level)
-  if (levelTerm) terms.push(levelTerm)
-
-  if (keyword) {
-    terms.push({
-      type: 'or',
-      terms: [
-        { column: 'alarmName', termType: 'like', value: keyword },
-        { column: 'triggerDesc', termType: 'like', value: keyword },
-        { column: 'actualDesc', termType: 'like', value: keyword },
-        { column: 'sourceName', termType: 'like', value: keyword }
-      ]
-    })
-  }
-
-  return terms
-}
-
-const normalizeAlarmRecord = (item: Record<string, any>) => ({
-  id: item.id,
-  alarmName: item.alarmName || item.name,
-  level: item.level,
-  state: {
-    value: enumValue(item.state),
-    text: enumText(item.state)
-  },
-  alarmTime: item.alarmTime,
-  lastAlarmTime: item.lastAlarmTime,
-  duration: item.duration,
-  triggerDesc: item.triggerDesc,
-  actualDesc: item.actualDesc,
-  sourceId: item.sourceId,
-  sourceName: item.sourceName,
-  targetId: item.targetId,
-  targetType: item.targetType,
-  handleTime: item.handleTime,
-  handleType: item.handleType
-    ? {
-        value: enumValue(item.handleType),
-        text: enumText(item.handleType)
-      }
-    : undefined
-})
 
 const ensureRemoteFileSupported = (context: DeviceClientToolContext) => {
   const deviceId = getDeviceId(context)
@@ -1548,6 +1456,22 @@ export const createDeviceDetailClientToolRuntime = (
       getDeviceId,
       getMetadata
     }),
+    ...createDeviceAlarmClientTools({
+      clampNumber,
+      asArray,
+      responseResult,
+      resolveTimeRange,
+      describeResolvedTimeRange,
+      compactInlineValue,
+      withWriteToPathInput,
+      writeLimitInput,
+      collectPagedToolData,
+      writeToolResultToSessionFile,
+      timeRangeInput,
+      startTimeDescription: START_TIME_DESCRIPTION,
+      endTimeDescription: END_TIME_DESCRIPTION,
+      getDeviceId
+    }),
     {
       id: 'device_property_history',
       name: 'device_property_history',
@@ -1618,139 +1542,6 @@ export const createDeviceDetailClientToolRuntime = (
           returned: previewData.length,
           truncated: collected.total > previewData.length,
           nextAction: collected.total > previewData.length ? '结果已截断，可传 writeToPath 保存更多历史样本。' : undefined,
-          data: previewData
-        }
-        if (collected.file) {
-          return {
-            ...base,
-            ...collected.file,
-            returned: collected.returned,
-            truncated: collected.truncated,
-            fullResultWritten: !collected.truncated,
-            writeLimit: collected.writeLimit,
-            writeLimitUnlimited: collected.writeLimitUnlimited,
-            writeLimitExceeded: collected.truncated,
-            inlinePreviewLimit: inlineLimit,
-            inlinePreviewReturned: previewData.length,
-            inlinePreviewTruncated: collected.returned > previewData.length,
-            dataPreview: previewData
-          }
-        }
-        const fullResult = {
-          ...base,
-          returned: collected.returned,
-          truncated: collected.truncated,
-          writeLimit: collected.writeLimit,
-          writeLimitUnlimited: collected.writeLimitUnlimited,
-          data: collected.data
-        }
-        return writeToolResultToSessionFile(args, call, result, {
-          content: stringifyToolResult(fullResult),
-          summary: {
-            ...base,
-            returned: collected.returned,
-            truncated: collected.truncated,
-            fullResultWritten: !collected.truncated,
-            writeLimit: collected.writeLimit,
-            writeLimitUnlimited: collected.writeLimitUnlimited,
-            writeLimitExceeded: collected.truncated,
-            inlinePreviewLimit: inlineLimit,
-            inlinePreviewReturned: previewData.length,
-            inlinePreviewTruncated: collected.data.length > previewData.length,
-            dataPreview: previewData
-          }
-        })
-      }
-    },
-    {
-      id: 'device_alarm_records_query',
-      name: 'device_alarm_records_query',
-      description: '查询平台告警中心中与当前设备关联的告警记录，是回答设备告警/报警问题的首选事实来源。',
-      inputs: withWriteToPathInput([
-        {
-          id: 'state',
-          name: 'state',
-          description: '告警状态：warning 表示告警中，normal 表示已恢复/正常；为空查询全部。',
-          required: false,
-          valueType: 'string'
-        },
-        {
-          id: 'onlyActive',
-          name: 'onlyActive',
-          description: '是否只查询告警中的记录；为 true 时等同 state=warning。',
-          required: false,
-          valueType: 'boolean'
-        },
-        {
-          id: 'level',
-          name: 'level',
-          description: '告警级别，可传单个级别或级别数组。',
-          required: false,
-          valueType: 'string'
-        },
-        {
-          id: 'keyword',
-          name: 'keyword',
-          description: '按告警名称、触发描述、告警原因或告警源模糊搜索。',
-          required: false,
-          valueType: 'string'
-        },
-        {
-          id: 'startTime',
-          name: 'startTime',
-          description: START_TIME_DESCRIPTION,
-          required: false,
-          valueType: 'string'
-        },
-        {
-          id: 'endTime',
-          name: 'endTime',
-          description: END_TIME_DESCRIPTION,
-          required: false,
-          valueType: 'string'
-        },
-        timeRangeInput(),
-        {
-          id: 'limit',
-          name: 'limit',
-          description: '内联预览条数，默认20，最大50；传 writeToPath 时更多告警记录写入文件。',
-          required: false,
-          valueType: 'int'
-        },
-        writeLimitInput()
-      ]),
-      output: { type: 'object' },
-      help: '查询平台告警记录。用户问“有没有告警”“报警中吗”“最近告警原因”“某时间段告警”时优先使用此工具；物模型中的 alarmRecord 或属性历史只能作为补充解释，不作为告警事实的首选来源。需要保存大范围告警列表时传 writeToPath，建议优先使用 .jsonl 路径，也兼容 .ndjson，工具会逐页追加 JSONL/NDJSON；limit 只控制内联预览，writeLimit 控制文件写入条数，完整导出可传 writeLimit=0。',
-      execute: async (args, context, call) => {
-        const deviceId = getDeviceId(context)
-        if (!deviceId) throw new Error('deviceId missing')
-        const inlineLimit = clampNumber(args.limit, 1, 50, 20)
-        const collected = await collectPagedToolData({
-          args,
-          call,
-          inlineLimit,
-          fetchPage: (pageIndex, pageSize) => queryDeviceAlarmRecord({
-            paging: true,
-            pageIndex,
-            pageSize,
-            sorts: [{ name: 'alarmTime', order: 'desc' }],
-            terms: buildDeviceAlarmTerms(deviceId, args)
-          }),
-          normalizeRecord: normalizeAlarmRecord
-        })
-        const previewData = collected.data.slice(0, inlineLimit)
-        const base = {
-          deviceId,
-          source: 'platform-alarm-record',
-          state: normalizeAlarmState(args.state || (toBoolean(args.onlyActive) ? 'warning' : undefined)),
-          keyword: String(args.keyword || '').trim() || undefined,
-          total: collected.total
-        }
-        const result = {
-          ...base,
-          returned: previewData.length,
-          truncated: collected.total > previewData.length,
-          nextAction: collected.total > previewData.length ? '结果已截断，可传 writeToPath 保存更多告警记录。' : undefined,
           data: previewData
         }
         if (collected.file) {

@@ -569,7 +569,7 @@ const DEVICE_DETAIL_AGENT_SYSTEM_PROMPT_LINES = [
   '回复面向普通用户，不要暴露内部执行步骤、工具名、工作流指引、字段匹配、模型结构读取或“我先/接下来调用”的过程描述；直接给出分析结果、证据摘要和建议。',
   '最终回复直接输出 Markdown：标题、表格、列表和建议链接都直接写原文；不要用三反引号代码围栏包裹 Markdown 正文，包括语言名为 markdown、md、text 或空语言的围栏。只有代码、JSON、日志原文才使用代码块。下一步建议用 Markdown 链接，例如 [查看今日告警](#prompt=查看今日告警)，不要把建议问题放进代码块。',
   '用户提到今日、今天、昨天、最近N小时、最近N天、本周、本月、now-1d、now/d 等时间范围时，优先把原始时间表达直接传入时间型客户端工具的 timeRange 参数，不需要先调用后端时间表达式转换工具；如果已经得到 {start/end/from/to/startTime/endTime} 形式的时间对象，也可以作为 timeRange 或拆成 startTime/endTime 传入。',
-  '告警问题以平台告警记录为首选事实源；其它运行数据只作为补充佐证。',
+  '告警当前状态、有哪些告警、是否恢复，以平台告警记录为首选事实源；告警触发次数、历史数量、发生时间列表必须查询告警日志，不要把告警记录条数当成触发次数。',
   '用户明确要求选择其它设备、按条件挑设备或跨设备对比时，可先调用设备 selector 工具返回候选，再让用户确认目标设备；未明确要求时仍使用当前 subject 设备。',
   '导出、报告或生成图表时，先用当前设备业务工具完成取数或聚合；需要完整结果时给业务工具传 writeToPath，并通过 markdownLink 或 fs:// 引用回复。数据集工具只用于已写入文件后的二次过滤、整理或制图，不要用它替代首次取数。',
   '如果客户端工具返回 ok=false、partial=true 或 errors 字段，应直接基于错误信息说明当前账号权限不足、接口失败或数据不可用，不要空回复，也不要继续重复调用同一个失败工具。',
@@ -595,6 +595,11 @@ const DEVICE_DETAIL_AGENT_WORKFLOW_GUIDES: AgentConversationWorkflowGuide[] = [
       {
         title: '查询今日平台告警',
         tools: ['device_alarm_records_query'],
+        inputs: { timeRange: '今天' },
+      },
+      {
+        title: '统计今日告警触发历史',
+        tools: ['device_alarm_history_summary'],
         inputs: { timeRange: '今天' },
       },
       {
@@ -642,7 +647,7 @@ const DEVICE_DETAIL_AGENT_WORKFLOW_GUIDES: AgentConversationWorkflowGuide[] = [
       },
       {
         title: '查询平台告警',
-        tools: ['device_alarm_records_query'],
+        tools: ['device_alarm_records_query', 'device_alarm_history_summary'],
         inputs: { timeRange: '最近24小时' },
       },
       {
@@ -706,8 +711,8 @@ const DEVICE_DETAIL_AGENT_WORKFLOW_GUIDES: AgentConversationWorkflowGuide[] = [
   {
     id: 'device-alarm-diagnosis',
     name: '告警排查',
-    description: '优先以平台告警记录为事实来源，再用日志、属性或上下线记录佐证。',
-    scenarios: ['查看今日告警', '有没有告警', '告警原因', '报警中吗', '异常恢复'],
+    description: '当前告警状态看平台告警记录；触发次数和历史时间线看告警日志，再用通信日志、属性或上下线记录佐证。',
+    scenarios: ['查看今日告警', '有没有告警', '告警原因', '报警中吗', '异常恢复', '告警触发几次', '告警历史数量'],
     keywords: ['告警', '报警', '异常', '恢复', 'warning'],
     priority: 75,
     steps: [
@@ -715,6 +720,11 @@ const DEVICE_DETAIL_AGENT_WORKFLOW_GUIDES: AgentConversationWorkflowGuide[] = [
         title: '查询平台告警记录',
         tools: ['device_alarm_records_query'],
         inputs: { timeRange: 'user-time-range-or-今天' },
+      },
+      {
+        title: '统计告警日志触发历史',
+        tools: ['device_alarm_history_summary'],
+        inputs: { timeRange: 'same-as-alarm-query' },
       },
       {
         title: '补充通信和上下线证据',
@@ -726,8 +736,8 @@ const DEVICE_DETAIL_AGENT_WORKFLOW_GUIDES: AgentConversationWorkflowGuide[] = [
         tools: ['device_metadata_search', 'device_property_history_summary', 'device_event_history_query'],
       },
     ],
-    output: ['告警状态', '触发原因', '恢复情况', '建议处理动作'],
-    notes: ['设备属性、事件或日志只能作为补充解释，不作为告警事实的首选来源。'],
+    output: ['告警状态', '触发次数', '触发原因', '恢复情况', '建议处理动作'],
+    notes: ['单个告警只会保留一条告警记录；历史触发次数必须来自告警日志。设备属性、事件或通信日志只能作为补充解释。'],
   },
 ]
 
@@ -869,7 +879,7 @@ const buildDeviceDetailClientToolsDescription = () => {
     ? '当前设备支持边缘网关远程文件片段读取；只有用户明确询问远程目录、远程文件或网关文件时才使用相关工具。'
     : '当前设备未暴露边缘网关远程文件能力，不要使用或提示远程文件管理相关工具。'
   return [
-    '设备详情页提供当前设备的状态、接入、模型字段、属性、事件、文档、告警、上下线、日志和链路样本工具。',
+    '设备详情页提供当前设备的状态、接入、模型字段、属性、事件、文档、告警记录、告警日志、上下线、通信日志和链路样本工具。',
     remoteText,
     '宽泛、多步骤或排障类问题按内置流程选择合适工具取证；普通用户无需知道工具名。',
     '当前设备默认来自 subject；只有用户明确要求其它设备时才使用 selector，只有明确要求下发/调用/执行设备功能时才使用功能调用工具。',
