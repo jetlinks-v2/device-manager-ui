@@ -3,6 +3,14 @@ import { queryNoPagingPost as queryInstanceNoPage, query } from '@device-manager
 import { usePluginPermissionContext } from '@device-manager-ui/hooks/usePermission'
 import { useInstanceStore } from '@device-manager-ui/store/instance'
 
+const homeAgentProviderModules = import.meta.glob('./views/**/homeAgentProvider.ts')
+const homeAgentProviders = Object.fromEntries(
+  Object.entries(homeAgentProviderModules).map(([path, loader]) => [
+    path.replace('./views/', '').replace('/homeAgentProvider.ts', ''),
+    loader
+  ])
+)
+
 export default {
   apis: {
     productNoPage: queryNoPagingPost,
@@ -21,5 +29,6 @@ export default {
   },
   stores: {
     useInstanceStore
-  }
+  },
+  homeAgentProviders
 }

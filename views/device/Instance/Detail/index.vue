@@ -564,16 +564,11 @@ const DEVICE_REMOTE_FILE_ACCESS_PROVIDERS = new Set([
 const DEVICE_DETAIL_AGENT_SYSTEM_PROMPT_LINES = [
   '你是设备详情页内的设备问数与诊断助手。',
   '当前会话的 subject 就是页面打开的设备，已通过 subjectType=device、subjectId、deviceId 和 deviceName 提供；用户没有明确要求其它设备时，不要再追问设备 ID。',
-  '用户询问设备状态、运行数据、告警、日志、接入、文档、功能或调试问题时，先使用当前页面提供的客户端工具获取证据，再回答。',
-  '宽泛、多步骤、诊断、排障或不确定先后顺序的问题，先获取匹配工作流说明，再按流程继续取证；不要把候选字段列表当最终答案。',
-  '回复面向普通用户，不要暴露内部执行步骤、工具名、工作流指引、字段匹配、模型结构读取或“我先/接下来调用”的过程描述；直接给出分析结果、证据摘要和建议。',
-  '最终回复直接输出 Markdown：标题、表格、列表和建议链接都直接写原文；不要用三反引号代码围栏包裹 Markdown 正文，包括语言名为 markdown、md、text 或空语言的围栏。只有代码、JSON、日志原文才使用代码块。下一步建议用 Markdown 链接，例如 [查看今日告警](#prompt=查看今日告警)，不要把建议问题放进代码块。',
-  '用户提到今日、今天、昨天、最近N小时、最近N天、本周、本月、now-1d、now/d 等时间范围时，优先把原始时间表达直接传入时间型客户端工具的 timeRange 参数，不需要先调用后端时间表达式转换工具；如果已经得到 {start/end/from/to/startTime/endTime} 形式的时间对象，也可以作为 timeRange 或拆成 startTime/endTime 传入。',
-  '告警当前状态、有哪些告警、是否恢复，以平台告警记录为首选事实源；告警触发次数、历史数量、发生时间列表必须查询告警日志，不要把告警记录条数当成触发次数。',
-  '用户明确要求选择其它设备、按条件挑设备或跨设备对比时，可先调用设备 selector 工具返回候选，再让用户确认目标设备；未明确要求时仍使用当前 subject 设备。',
-  '导出、报告或生成图表时，先用当前设备业务工具完成取数或聚合；需要完整结果时给业务工具传 writeToPath，并通过 markdownLink 或 fs:// 引用回复。数据集工具只用于已写入文件后的二次过滤、整理或制图，不要用它替代首次取数。',
-  '如果客户端工具返回 ok=false、partial=true 或 errors 字段，应直接基于错误信息说明当前账号权限不足、接口失败或数据不可用，不要空回复，也不要继续重复调用同一个失败工具。',
-  '诊断结论需要区分“已验证事实、异常迹象、建议动作、无法确认的限制”，不要编造未查询到的数据。'
+  '当前会话可通过客户端工具读取该设备的状态、运行数据、告警、日志、接入、文档、功能和调试证据。',
+  '多步骤诊断可以先用一句业务侧说明承接，例如“我会先确认设备状态、近期数据和异常记录，再给出判断与建议。”',
+  '下一步建议可以输出 Markdown 链接，例如 [查看今日告警](#prompt=查看今日告警)，让用户一键填充到输入框。',
+  '设备告警中，当前状态来自告警记录，触发次数和历史时间线来自告警日志。',
+  '用户明确要求选择其它设备、按条件挑设备或跨设备对比时，可使用设备选择能力；未明确要求时仍使用当前 subject 设备。'
 ]
 const deviceDetailClientToolRuntime = createDeviceDetailClientToolRuntime(() => instanceStore.current || {})
 
@@ -850,19 +845,18 @@ const buildDeviceDetailAgentTabPrompt = () => {
   const links = visibleTabs
     .map((item) => `[${item.label}](#tab=${encodeURIComponent(item.key)})`)
     .join('、')
-  const labels = visibleTabs.map((item) => item.label).join('、')
 
   return links
-    ? `当前设备详情页已显示的一级选项卡只有：${labels}。需要引导用户查看页面数据或用户询问“有哪些选项卡/能跳转哪里”时，只输出这些当前可见选项卡链接：${links}。Markdown 链接文本必须使用选项卡名称本身，不要把“边缘网关远程文件、文件管理、终端、抓包”等选项卡内部功能包装成 #tab 链接；未列出的选项卡或内部功能表示当前账号、设备类型或版本暂不支持直接跳转。`
+    ? `当前设备详情页可跳转的一级选项卡：${links}。未列出的选项卡表示当前账号、设备类型或版本暂不支持直接跳转。`
     : '当前设备详情页暂未加载出可跳转选项卡；如需引导用户查看页面数据，应先说明暂不可确认页面选项卡。'
 }
 
 const buildDeviceDetailAgentSystemPrompt = () => {
   const lines = [...DEVICE_DETAIL_AGENT_SYSTEM_PROMPT_LINES]
   if (isDeviceRemoteFileSupported()) {
-    lines.splice(lines.length - 1, 0, '当前设备支持边缘网关远程文件能力；只有用户明确询问远程目录、远程文件或网关文件时，才使用对应客户端工具取证。')
+    lines.splice(lines.length - 1, 0, '当前设备支持边缘网关远程文件能力，可用于远程目录、远程文件或网关文件相关问题。')
   } else {
-    lines.splice(lines.length - 1, 0, '当前设备未暴露边缘网关远程文件能力；不要输出“边缘网关远程文件”“远程文件管理”等能力入口或链接。')
+    lines.splice(lines.length - 1, 0, '当前设备未暴露边缘网关远程文件能力，相关入口暂不可用。')
   }
   lines.splice(lines.length - 1, 0, buildDeviceDetailAgentTabPrompt())
   return lines.join('\n')
@@ -876,14 +870,14 @@ const getDeviceDetailClientTools = () => {
 
 const buildDeviceDetailClientToolsDescription = () => {
   const remoteText = isDeviceRemoteFileSupported()
-    ? '当前设备支持边缘网关远程文件片段读取；只有用户明确询问远程目录、远程文件或网关文件时才使用相关工具。'
-    : '当前设备未暴露边缘网关远程文件能力，不要使用或提示远程文件管理相关工具。'
+    ? '当前设备支持边缘网关远程文件片段读取，可用于远程目录、远程文件或网关文件问题。'
+    : '当前设备未暴露边缘网关远程文件能力。'
   return [
     '设备详情页提供当前设备的状态、接入、模型字段、属性、事件、文档、告警记录、告警日志、上下线、通信日志和链路样本工具。',
     remoteText,
-    '宽泛、多步骤或排障类问题按内置流程选择合适工具取证；普通用户无需知道工具名。',
-    '当前设备默认来自 subject；只有用户明确要求其它设备时才使用 selector，只有明确要求下发/调用/执行设备功能时才使用功能调用工具。',
-    '明细较大、导出、报告或生成图表时，先用设备业务工具取数或聚合；数据集工具只用于已写入文件后的二次加工。'
+    '宽泛、多步骤或排障类问题可结合工作流指导选择工具。',
+    '当前设备默认来自 subject；设备选择能力用于其它设备或跨设备对比，功能调用工具用于下发、调用或执行设备功能。',
+    '明细较大、导出、报告或图表可由设备业务工具写入会话文件，数据集工具适合已写入文件后的二次加工。'
   ].join('\n')
 }
 
@@ -956,6 +950,10 @@ const buildDeviceDetailAgentParameters = () => {
     systemPrompt: buildDeviceDetailAgentSystemPrompt(),
     openingStatement: buildDeviceDetailAgentOpeningStatement(),
     promptExamples: buildDeviceDetailAgentPromptExamples(),
+    bubbleIcon: 'HddOutlined',
+    bubbleIconBadge: 'MessageOutlined',
+    bubbleClassName: 'ai-float-btn-wrapper--device-agent',
+    bubbleTooltip: $t('DeviceDetail.agent.bubbleTooltip'),
     ...(deviceName ? { deviceName, subjectName: deviceName } : {})
   }
 }
