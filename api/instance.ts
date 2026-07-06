@@ -454,6 +454,18 @@ export const executeFunctions = (deviceId: string, functionId: string, data: any
 export const sendDeviceMessage = (deviceId: string, data: Record<string, any>) =>
   request.post(`/device/instance/${deviceId}/message`, data)
 
+export const getDebugLogConfig = (deviceId: string) =>
+  request.get(`/device/debug/log/${deviceId}/config`)
+
+export const enableDebugLog = (deviceId: string) =>
+  request.post(`/device/debug/log/${deviceId}/_enable`)
+
+export const disableDebugLog = (deviceId: string) =>
+  request.post(`/device/debug/log/${deviceId}/_disable`)
+
+export const queryDebugLogList = (deviceId: string, data: Record<string, any>) =>
+  request.post(`/device/debug/log/${deviceId}/_query`, data)
+
 /**
  * 读取属性
  * @param deviceId 设备id

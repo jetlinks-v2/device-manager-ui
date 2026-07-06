@@ -549,6 +549,7 @@ export function useDeviceTraceLog(deviceId: Ref<string | undefined>) {
 
   return {
     traceGroups,
+    appendTracePayload: pushOrMergeGroup,
     subscribe,
     unsubscribe,
     clear,

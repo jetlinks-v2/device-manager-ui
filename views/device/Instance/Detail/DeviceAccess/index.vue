@@ -106,6 +106,40 @@
               {{ $t('components.Source.418270-2') }}
             </a-button>
           </a-popconfirm>
+          <a-segmented
+            v-model:value="traceMode"
+            size="small"
+            class="trace-mode-switch"
+            :options="traceModeOptions"
+            @change="handleTraceModeChange"
+          />
+          <a-button
+            size="small"
+            @click="codecSimulatorOpen = true"
+          >
+            <AIcon type="ExperimentOutlined" />
+            {{ $t('InstanceDeviceAccess.codecDebug.title') }}
+          </a-button>
+          <span class="trace-save-switch">
+            {{ $t('InstanceDeviceAccess.debugLog.save') }}
+            <a-tooltip :title="$t('InstanceDeviceAccess.debugLog.saveTip')">
+              <AIcon type="QuestionCircleOutlined" class="trace-save-switch__help" />
+            </a-tooltip>
+            <a-popconfirm
+              :title="debugLogConfig.deviceEnabled
+                ? $t('InstanceDeviceAccess.debugLog.disableConfirm')
+                : $t('InstanceDeviceAccess.debugLog.enableConfirm')"
+              :disabled="!debugLogConfig.enabled || debugLogLoading"
+              @confirm="toggleDebugLog(!debugLogConfig.deviceEnabled)"
+            >
+              <a-switch
+                size="small"
+                :checked="debugLogConfig.deviceEnabled"
+                :disabled="!debugLogConfig.enabled"
+                :loading="debugLogLoading"
+              />
+            </a-popconfirm>
+          </span>
           <a-button
             type="primary"
             size="small"
@@ -138,7 +172,7 @@
             <span>{{ $t('InstanceDeviceAccess.952800-32') }}</span>
             <a-badge
               class="trace-tab-badge"
-              :count="traceReceivedTotal"
+              :count="displayedTraceTotal"
               :overflow-count="999"
               :show-zero="true"
               :number-style="{
@@ -154,11 +188,15 @@
           </span>
         </template>
         <div class="tab-pane-inner tab-pane-inner--trace">
-          <TraceChainList
-            :trace-groups="traceGroups"
-            :device-id="deviceId"
-            :received-total="traceReceivedTotal"
-          />
+            <TraceChainList
+              :trace-groups="traceGroups"
+              :device-id="deviceId"
+              :received-total="displayedTraceTotal"
+              :mode="traceMode"
+              :history-loading="debugHistoryLoading"
+              :history-has-more="historyHasMore"
+              @history-load-more="loadDebugHistory"
+            />
         </div>
       </a-tab-pane>
     </a-tabs>
@@ -175,6 +213,16 @@
         :provider-type="providerType"
       />
     </a-drawer>
+    <a-drawer
+      v-model:open="codecSimulatorOpen"
+      :width="1180"
+      :title="$t('InstanceDeviceAccess.codecDebug.title')"
+      destroy-on-close
+      placement="right"
+      :body-style="{ padding: 0, height: '100%' }"
+    >
+      <CodecSimulatorPanel v-if="codecSimulatorOpen" />
+    </a-drawer>
   </div>
 </template>
 
@@ -183,26 +231,61 @@ import dayjs from 'dayjs'
 import Status from '../Diagnose/Status/index'
 import InstanceAccessGuide from './InstanceAccessGuide.vue'
 import TraceChainList from './TraceChainList.vue'
+import CodecSimulatorPanel from './CodecSimulatorPanel.vue'
 import { useDeviceTraceLog } from './composables/useDeviceTraceLog'
 import { useTraceReceivedTotal } from './composables/useTraceReceivedTotal'
 import { useInstanceStore } from '../../../../../store/instance'
-import { getDeviceSessions } from '../../../../../api/instance'
-import { onlyMessage } from '@jetlinks-web/utils'
+import {
+  disableDebugLog,
+  enableDebugLog,
+  getDebugLogConfig,
+  getDeviceSessions,
+  queryDebugLogList,
+} from '../../../../../api/instance'
+import { onlyMessage, randomString } from '@jetlinks-web/utils'
+import { useI18n } from 'vue-i18n'
 
 const instanceStore = useInstanceStore()
+const { t: $t } = useI18n()
 
 const deviceId = computed(() => instanceStore.current?.id)
 
-const { traceGroups, subscribe, unsubscribe, clear } = useDeviceTraceLog(deviceId)
+const realtimeTrace = useDeviceTraceLog(deviceId)
+const historyTrace = useDeviceTraceLog(deviceId)
+const traceMode = ref<'realtime' | 'history'>('realtime')
+const traceGroups = computed(() =>
+  traceMode.value === 'history'
+    ? historyTrace.traceGroups.value
+    : realtimeTrace.traceGroups.value,
+)
+const traceModeOptions = computed(() => [
+  { label: $t('InstanceDeviceAccess.debugLog.realtimeMode'), value: 'realtime' },
+  { label: $t('InstanceDeviceAccess.debugLog.historyMode'), value: 'history' },
+])
 
 /** 累加收到的链路数（去重 key，非当前表格条数） */
 const { traceReceivedTotal, resetTraceReceivedTotal } = useTraceReceivedTotal(
-  traceGroups,
+  realtimeTrace.traceGroups,
   deviceId,
+)
+const displayedTraceTotal = computed(() =>
+  traceMode.value === 'history'
+    ? historyTrace.traceGroups.value.length
+    : traceReceivedTotal.value,
 )
 
 const isSubscribed = ref(true)
 const diagnoseOpen = ref(false)
+const codecSimulatorOpen = ref(false)
+const debugLogLoading = ref(false)
+const debugHistoryLoading = ref(false)
+const historyPageIndex = ref(0)
+const historyHasMore = ref(true)
+const historySnapshotTime = ref<number | null>(null)
+const debugLogConfig = reactive({
+  enabled: false,
+  deviceEnabled: false,
+})
 
 const isOnline = computed(
   () => instanceStore.current?.state?.value === 'online',
@@ -414,20 +497,119 @@ const providerType = computed(() => {
 })
 
 const onClearTrace = () => {
+  if (traceMode.value === 'history') {
+    resetHistoryTrace()
+    return
+  }
   resetTraceReceivedTotal()
-  clear()
+  realtimeTrace.clear()
+}
+
+const loadDebugLogConfig = async () => {
+  if (!deviceId.value) return
+  const resp: any = await getDebugLogConfig(deviceId.value)
+  const result = resp?.result || {}
+  debugLogConfig.enabled = !!result.enabled
+  debugLogConfig.deviceEnabled = !!result.deviceEnabled
+}
+
+const toggleDebugLog = async (checked: boolean) => {
+  if (!deviceId.value) return
+  debugLogLoading.value = true
+  try {
+    const resp: any = checked
+      ? await enableDebugLog(deviceId.value)
+      : await disableDebugLog(deviceId.value)
+    if (resp?.status === 200) {
+      debugLogConfig.deviceEnabled = checked
+      onlyMessage(
+        checked
+          ? $t('InstanceDeviceAccess.debugLog.enabled')
+          : $t('InstanceDeviceAccess.debugLog.disabled'),
+      )
+    }
+  } finally {
+    debugLogLoading.value = false
+  }
+}
+
+const resetHistoryTrace = () => {
+  historyTrace.clear()
+  historyPageIndex.value = 0
+  historyHasMore.value = true
+  historySnapshotTime.value = null
+}
+
+const buildHistoryTerms = () => {
+  if (!historySnapshotTime.value) return []
+  return [
+    {
+      column: 'startTime',
+      termType: 'lte',
+      value: historySnapshotTime.value,
+    },
+  ]
+}
+
+const appendHistoryRecords = (records: any[]) => {
+  records.reverse().forEach((item: any) => {
+    historyTrace.appendTracePayload({
+      key: randomString(),
+      ...item,
+    })
+  })
+}
+
+const loadDebugHistory = async () => {
+  if (!deviceId.value) return
+  if (debugHistoryLoading.value || !historyHasMore.value) return
+  if (!historySnapshotTime.value) {
+    historySnapshotTime.value = Date.now()
+  }
+  debugHistoryLoading.value = true
+  try {
+    const pageIndex = historyPageIndex.value
+    const resp: any = await queryDebugLogList(deviceId.value, {
+      pageIndex,
+      pageSize: 50,
+      terms: buildHistoryTerms(),
+      sorts: [
+        { name: 'startTime', order: 'desc' },
+        { name: 'endTime', order: 'desc' },
+      ],
+    })
+    const result = resp?.result || {}
+    const list = result.data || []
+    appendHistoryRecords(list)
+    const total = Number(result.total)
+    historyHasMore.value = Number.isFinite(total)
+      ? (pageIndex + 1) * 50 < total
+      : list.length >= 50
+    historyPageIndex.value = pageIndex + 1
+    if (pageIndex === 0) {
+      onlyMessage($t('InstanceDeviceAccess.debugLog.historyLoaded'))
+    }
+  } finally {
+    debugHistoryLoading.value = false
+  }
+}
+
+const handleTraceModeChange = (value: 'realtime' | 'history') => {
+  if (value === 'history' && historyPageIndex.value === 0) {
+    loadDebugHistory()
+  }
 }
 
 /** 进入设备接入页即订阅（含接入配置 Tab）；未暂停且有 deviceId 即建立链路 WebSocket，与在线/离线无关 */
 function ensureTraceSubscription() {
   if (!isSubscribed.value) return
   if (!deviceId.value) return
-  subscribe()
+  realtimeTrace.subscribe()
 }
 
 const onToggleSubscribe = () => {
   if (isSubscribed.value) {
-    unsubscribe()
+    realtimeTrace.unsubscribe()
     isSubscribed.value = false
   } else {
     isSubscribed.value = true
@@ -468,6 +650,7 @@ onMounted(() => {
     innerTab.value = 'trace'
     loadSessions()
   }
+  loadDebugLogConfig()
   ensureTraceSubscription()
 })
 
@@ -502,7 +685,10 @@ watch(
 
 watch(deviceId, (id, prev) => {
   if (!id || id === prev) return
-  clear()
+  realtimeTrace.clear()
+  resetHistoryTrace()
+  traceMode.value = 'realtime'
+  loadDebugLogConfig()
   ensureTraceSubscription()
 })
 
@@ -511,7 +697,7 @@ onUnmounted(() => {
     clearTimeout(sessionAutoRefreshTimer)
     sessionAutoRefreshTimer = null
   }
-  unsubscribe()
+  realtimeTrace.unsubscribe()
 })
 </script>
 
@@ -578,6 +764,38 @@ onUnmounted(() => {
 
 .trace-tab-actions {
   flex-shrink: 0;
+}
+
+.trace-mode-switch {
+  padding: 2px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.04);
+
+  :deep(.ant-segmented-item) {
+    min-width: 72px;
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.65);
+  }
+
+  :deep(.ant-segmented-item-selected) {
+    color: rgba(0, 0, 0, 0.88);
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+}
+
+.trace-save-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.trace-save-switch__help {
+  color: rgba(0, 0, 0, 0.45);
+  cursor: help;
 }
 
 .trace-tab-label {
