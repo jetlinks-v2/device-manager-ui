@@ -163,6 +163,7 @@ export const createDeviceFunctionClientTools = (
       content: (args, context) => buildConfirmContent(deps, args, context),
       okText: '确认调用',
       cancelText: '取消',
+      localConfirmation: false,
       when: (args, context) => canInvokeFunction(deps, context, args)
     },
     inputs: [
@@ -189,7 +190,7 @@ export const createDeviceFunctionClientTools = (
       }
     ],
     output: { type: 'object' },
-    help: '调用设备功能。先用 device_metadata_search 搜索 functions 或传 keyword 让工具匹配；工具会校验必填参数，真正调用前会弹出用户确认。不要把查询类问题误用为功能调用，只有用户明确要求下发/调用/执行设备功能时才使用。',
+    help: '调用当前设备物模型中定义的功能，用于设备执行动作或实时返回功能结果。用户说获取、读取或查询某项信息时，若该信息不是平台已有的属性、历史、事件、日志、告警或文档，而是匹配到物模型 functions 的功能返回结果，也属于功能调用意图；先用 device_metadata_search 搜索 functions 或传 keyword 匹配。工具会校验必填参数，真正调用前会弹出用户确认。',
     execute: async (args, context) => {
       const deviceId = deps.getDeviceId(context)
       if (!deviceId) throw new Error('deviceId missing')

@@ -774,6 +774,110 @@ const normalizeDeviceLogRecord = (item: Record<string, any>) => ({
   content: compactInlineValue(item.content, 1600)
 })
 
+const normalizeTraceDirection = (payload: Record<string, any>) => {
+  if (payload?.upstream === true) return 'upstream'
+  if (payload?.downstream === true) return 'downstream'
+  const operation = String(payload?.operation || '').trim().toLowerCase()
+  if (['upstream', 'decode', 'request'].includes(operation)) return 'upstream'
+  if (['downstream', 'encode', 'response'].includes(operation)) return 'downstream'
+  return undefined
+}
+
+const normalizeTraceSignatureText = (value: unknown, maxLength = 320) => (
+  String(compactInlineValue(value, maxLength) ?? '')
+    .replace(/\s+/g, ' ')
+    .trim()
+)
+
+const buildTraceSignature = (item: Record<string, any>) => ([
+  item.direction || '',
+  item.type || '',
+  item.operation || '',
+  item.logLevel || '',
+  normalizeTraceSignatureText(item.message),
+  normalizeTraceSignatureText(item.error),
+  normalizeTraceSignatureText(item.detail),
+  normalizeTraceSignatureText(item.upstream),
+  normalizeTraceSignatureText(item.downstream)
+].join('|').toLowerCase())
+
+const incrementCounter = (target: Record<string, number>, key?: unknown) => {
+  const normalized = String(key || 'unknown').trim() || 'unknown'
+  target[normalized] = (target[normalized] || 0) + 1
+}
+
+const counterToSortedList = (counter: Record<string, number>, limit = 12) => (
+  Object.entries(counter)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([name, count]) => ({ name, count }))
+)
+
+const createTraceAccumulator = (sampleLimit: number) => {
+  const MAX_TRACE_SIGNATURES = 500
+  const samples: Record<string, any>[] = []
+  const signatures = new Map<string, { count: number; sample: Record<string, any> }>()
+  const byDirection: Record<string, number> = {}
+  const byType: Record<string, number> = {}
+  const byOperation: Record<string, number> = {}
+  const byLogLevel: Record<string, number> = {}
+  let receivedCount = 0
+  let overflowEventCount = 0
+
+  const ingest = (item: Record<string, any>) => {
+    receivedCount += 1
+    incrementCounter(byDirection, item.direction)
+    incrementCounter(byType, item.type)
+    incrementCounter(byOperation, item.operation)
+    incrementCounter(byLogLevel, item.logLevel)
+
+    const signature = buildTraceSignature(item)
+    const existing = signatures.get(signature)
+    if (existing) {
+      existing.count += 1
+    } else if (signatures.size < MAX_TRACE_SIGNATURES) {
+      signatures.set(signature, { count: 1, sample: item })
+      if (samples.length < sampleLimit) {
+        samples.push(item)
+      }
+    } else {
+      overflowEventCount += 1
+    }
+  }
+
+  const toResult = () => {
+    const topSignatures = Array.from(signatures.values())
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 12)
+      .map((item) => ({
+        count: item.count,
+        direction: item.sample.direction,
+        type: item.sample.type,
+        operation: item.sample.operation,
+        logLevel: item.sample.logLevel,
+        message: compactInlineValue(item.sample.message || item.sample.error || item.sample.detail, 360)
+      }))
+
+    const trackedEventCount = Array.from(signatures.values()).reduce((total, item) => total + item.count, 0)
+    return {
+      receivedCount,
+      sampleCount: samples.length,
+      trackedSignatureCount: signatures.size,
+      duplicateCount: Math.max(0, trackedEventCount - signatures.size),
+      overflowEventCount,
+      dedupeRule: '按 direction/type/operation/logLevel 与 message/detail/error/upstream/downstream 摘要去重；timestamp、traceId、spanId 只用于定位，不参与语义去重。',
+      byDirection: counterToSortedList(byDirection),
+      byType: counterToSortedList(byType),
+      byOperation: counterToSortedList(byOperation),
+      byLogLevel: counterToSortedList(byLogLevel),
+      topSignatures,
+      samples
+    }
+  }
+
+  return { ingest, toResult }
+}
+
 const writeToPathInput = {
   id: 'writeToPath',
   name: 'writeToPath',
@@ -1080,6 +1184,8 @@ const normalizeTracePayload = (payload: Record<string, any>) => ({
   traceId: payload?.traceId,
   spanId: payload?.spanId,
   parentSpanId: payload?.parentSpanId,
+  messageId: payload?.messageId,
+  direction: normalizeTraceDirection(payload),
   timestamp: payload?.timestamp,
   startTime: payload?.startTime,
   endTime: payload?.endTime,
@@ -1144,10 +1250,12 @@ const readLatestProperty = async (deviceId: string, propertyId: string) => {
   }
 }
 
-const captureDeviceTrace = (deviceId: string, seconds: number, limit: number) => new Promise((resolve, reject) => {
+const captureDeviceTrace = (deviceId: string, seconds: number, limit: number, maxEvents: number) => new Promise((resolve, reject) => {
   const duration = clampNumber(seconds, 1, 15, 5) * 1000
-  const maxCount = clampNumber(limit, 1, 30, 10)
-  const items: any[] = []
+  const sampleLimit = clampNumber(limit, 1, 30, 10)
+  const eventLimit = clampNumber(maxEvents, sampleLimit, 2000, Math.max(sampleLimit, 300))
+  const records: any[] = []
+  const accumulator = createTraceAccumulator(sampleLimit)
   let finished = false
   let sub: { unsubscribe: () => void } | undefined
   let timer: ReturnType<typeof setTimeout> | undefined
@@ -1165,11 +1273,16 @@ const captureDeviceTrace = (deviceId: string, seconds: number, limit: number) =>
     if (finished) return
     finished = true
     cleanup()
+    const analysis = accumulator.toResult()
     resolve({
       deviceId,
       reason,
-      count: items.length,
-      data: items
+      durationSeconds: duration / 1000,
+      maxEvents: eventLimit,
+      count: analysis.receivedCount,
+      analysis,
+      data: analysis.samples,
+      records
     })
   }
 
@@ -1192,9 +1305,11 @@ const captureDeviceTrace = (deviceId: string, seconds: number, limit: number) =>
   sub = socket
     .pipe(map((res: any) => (res != null && res.payload !== undefined ? res.payload : res)))
     .subscribe((payload: any) => {
-      items.push(normalizeTracePayload(payload))
-      if (items.length >= maxCount) {
-        finish('limit')
+      const item = normalizeTracePayload(payload)
+      records.push(item)
+      accumulator.ingest(item)
+      if (records.length >= eventLimit) {
+        finish('maxEvents')
       }
     }, fail)
 })
@@ -2010,42 +2125,74 @@ export const createDeviceDetailClientToolRuntime = (
     {
       id: 'device_trace_capture',
       name: 'device_trace_capture',
-      description: '订阅并抓取当前设备实时链路、协议日志和诊断数据。',
+      description: '订阅并抓取当前设备实时链路、协议日志和诊断数据，并自动返回统计、语义去重摘要和代表样本。',
       inputs: withWriteToPathInput([
         {
           id: 'seconds',
           name: 'seconds',
-          description: '抓取秒数，默认5，最大15。',
+          description: '抓取秒数，默认5，最大15。抓包分析、下发后观察、连接/认证复现场景要先启动抓包，再在该时间窗口内触发后续操作或等待设备通信。',
           required: false,
           valueType: 'int'
         },
         {
           id: 'limit',
           name: 'limit',
-          description: '最多抓取条数，默认10，最大30。',
+          description: '内联返回的代表样本条数，默认10，最大30；不代表抓包总量。',
+          required: false,
+          valueType: 'int'
+        },
+        {
+          id: 'maxEvents',
+          name: 'maxEvents',
+          description: '本次抓包最多接收的事件数，默认300，最大2000；高频设备可适当调大，达到上限会停止并返回 maxEvents。',
           required: false,
           valueType: 'int'
         }
       ]),
       output: { type: 'object' },
-      help: '实时抓取设备接入链路样本。用于排查连接、认证、上报、下发、编解码等问题；工具会压缩上下行报文和错误详情，若设备当前无通信，可能返回空数组。需要保存完整抓包结果时传 writeToPath。',
+      help: '实时抓取设备接入链路样本。用于排查连接、认证、上报、下发、编解码等问题。抓包是时间窗口能力：涉及“抓包分析、下发后看报文、重连/认证复现、等待上报”的任务，必须先启动 device_trace_capture，并在抓包窗口内并行触发后续操作或等待设备通信；不要先完成下发/复现再抓包。工具默认按 direction/type/operation/logLevel 与报文摘要做语义去重，返回统计、重复数量、topSignatures 和少量代表样本；大量数据需要保存完整事件时传 writeToPath，完整事件会写 JSONL，内联结果只保留摘要。',
       execute: async (args, context, call) => {
         const deviceId = getDeviceId(context)
         if (!deviceId) throw new Error('deviceId missing')
-        const result = await captureDeviceTrace(deviceId, Number(args.seconds || 5), Number(args.limit || 10)) as Record<string, any>
-        return writeToolResultToSessionFile(args, call, result, {
-          summary: {
-            deviceId,
-            reason: result.reason,
-            count: result.count
-          }
-        })
+        const captured = await captureDeviceTrace(
+          deviceId,
+          Number(args.seconds || 5),
+          Number(args.limit || 10),
+          Number(args.maxEvents || 300)
+        ) as Record<string, any>
+        const records = asArray<Record<string, any>>(captured.records)
+        const result = {
+          ...captured,
+          records: undefined
+        }
+        delete result.records
+
+        const fileSummary = isWriteToPathEnabled(args)
+          ? await writeRecordsToSessionFile(args, call, records)
+          : undefined
+
+        return {
+          ...result,
+          ...(fileSummary ? {
+            traceFile: fileSummary,
+            nextAction: `已返回抓包统计和去重代表样本，完整事件已写入 ${fileSummary.uri}。若需要继续按字段过滤、聚合或制图，使用 dataset_materialize(inputPath="${fileSummary.inputPath}", format="jsonl") 后再处理。`
+          } : {})
+        }
       }
     }
     ]),
     {
       toolsName: 'device-detail-client-tools',
-      toolsDescription: '设备详情页提供的当前设备问数与诊断工具。可用于自然语言问题中的在线状态、接入配置、接入地址、认证字段、协议说明、接入会话、物模型、属性快照、属性聚合趋势、事件上报数据、设备文档与维修知识库、平台告警记录、上下线统计、日志统计与少量样本、边缘网关远程文件片段和实时链路样本分析；普通用户无需知道工具名，接入指南、协议说明、认证失败、连接地址等问题优先用 device_access_summary 获取设备接入 Tab 中的配置、身份、协议说明和在线连接证据，日志/属性/事件优先用 summary、aggregate 或 event 工具回答有没有、多少条、平均/最大/最小、首次/末次/去重计数和趋势。设备文档问题优先用 device_documents_query 查找当前设备和所属产品文档，或用 device_document_reference 定位 platform-file-id 与 url/fileUrl；文档正文不要通过前端工具读取，需由后端 fs_download 或统一文件/文档通道导入或挂载到会话文件容器后再按 inputPath 分析。需要选择其它设备时可使用动态注册的 selector 工具获取候选设备；当前设备默认来自 subject。只有用户明确要求下发/调用/执行设备功能时，才可使用 device_function_invoke，并且会在下发前要求用户确认。部分明细工具支持 writeToPath，可把较大或完整结果写入当前会话文件容器并返回 fs:// 引用和 inputPath；分页明细和聚合结果默认写 JSONL/NDJSON，建议优先使用 .jsonl 路径，也兼容 .ndjson，limit 只控制内联预览，writeLimit 控制分页类工具写入文件的记录数，完整导出可传 writeLimit=0；若返回 writeLimitExceeded/truncated，需要向用户说明结果受上限影响并建议缩小时间范围、提高 writeLimit 或使用 writeLimit=0 完整导出；对写入的 JSONL/NDJSON 继续过滤、聚合、排序、抽取轨迹或生成图表时，优先用 dataset_materialize(format=jsonl) + dataset_query 或 chart_echarts2svg，不要用 text_regex_extract 或脚本解析大文本。',
+      toolsDescription: [
+        '设备详情页提供当前设备的状态、接入、模型字段、属性、事件、文档、告警记录、告警日志、上下线、通信日志、边缘网关远程文件片段和实时链路样本分析工具。',
+        '普通用户无需知道工具名；接入指南、协议说明、认证失败、连接地址等问题优先用 device_access_summary，日志/属性/事件优先用 summary、aggregate 或 event 工具回答有没有、多少条、平均/最大/最小、首次/末次/去重计数和趋势。',
+        '抓包、实时链路、上报/下发报文、连接或认证复现场景必须先启动 device_trace_capture；需要触发下发、重连或上报时，在抓包窗口内并行触发，不要事后抓包。device_trace_capture 会自动返回统计、语义去重摘要、topSignatures 和代表样本，完整事件需要传 writeToPath 写入 JSONL。',
+        '用户说获取、读取或查询某项设备信息时，先判断数据来源：平台已有的属性、历史、事件、日志、告警和文档走对应查询工具；若该信息命中物模型功能且需要设备返回结果，则可使用 device_function_invoke 并在下发前要求用户确认，不要只说明物模型中存在该功能。',
+        '设备文档问题优先用 device_documents_query 查找当前设备和所属产品文档，或用 device_document_reference 定位 platform-file-id 与 url/fileUrl；文档正文不要通过前端工具读取，需由后端 fs_download 或统一文件/文档通道导入或挂载到会话文件容器后再按 inputPath 分析。',
+        '需要选择其它设备时可使用动态注册的 selector 工具获取候选设备；当前设备默认来自 subject。',
+        '部分明细工具支持 writeToPath，可把较大或完整结果写入当前会话文件容器并返回 fs:// 引用和 inputPath；分页明细和聚合结果默认写 JSONL/NDJSON，limit 只控制内联预览，writeLimit 控制分页类工具写入文件的记录数，完整导出可传 writeLimit=0。',
+        '若返回 writeLimitExceeded/truncated，需要向用户说明结果受上限影响并建议缩小时间范围、提高 writeLimit 或使用 writeLimit=0 完整导出；对写入的 JSONL/NDJSON 继续过滤、聚合、排序、抽取轨迹或生成图表时，优先用 dataset_materialize(format=jsonl) + dataset_query 或 chart_echarts2svg，不要用 text_regex_extract 或脚本解析大文本。'
+      ].join('\n'),
       registeredToolScopes: DEVICE_DETAIL_SELECTOR_SCOPE,
       getContext: () => ({ device: getDevice() || {} })
     }

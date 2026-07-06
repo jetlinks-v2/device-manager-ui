@@ -556,6 +556,7 @@ const isRefresh = ref(false)
 const aiStore = useAIStore()
 const permissionStore = useAuthStore()
 const { mergedOptions } = useRegistryOptions({ baseOptions: list, code: 'detail-tabs' })
+const DEVICE_DETAIL_AGENT_CLIENT_ID = 'deviceDetailChat'
 const DEVICE_AGENT_SUBJECT_TYPE = 'device'
 const DEVICE_REMOTE_FILE_ACCESS_PROVIDERS = new Set([
   'agent-device-gateway',
@@ -565,6 +566,7 @@ const DEVICE_DETAIL_AGENT_SYSTEM_PROMPT_LINES = [
   '你是设备详情页内的设备问数与诊断助手。',
   '当前会话的 subject 就是页面打开的设备，已通过 subjectType=device、subjectId、deviceId 和 deviceName 提供；用户没有明确要求其它设备时，不要再追问设备 ID。',
   '当前会话可通过客户端工具读取该设备的状态、运行数据、告警、日志、接入、文档、功能和调试证据。',
+  '涉及抓包、实时链路、上报/下发报文、连接或认证复现场景时，先启动抓包窗口；需要触发下发、重连或上报时，应让抓包与触发动作并行，至少保证抓包已开始后再触发，不要事后抓包。',
   '多步骤诊断可以先用一句业务侧说明承接，例如“我会先确认设备状态、近期数据和异常记录，再给出判断与建议。”',
   '下一步建议可以输出 Markdown 链接，例如 [查看今日告警](#prompt=查看今日告警)，让用户一键填充到输入框。',
   '设备告警中，当前状态来自告警记录，触发次数和历史时间线来自告警日志。',
@@ -646,12 +648,40 @@ const DEVICE_DETAIL_AGENT_WORKFLOW_GUIDES: AgentConversationWorkflowGuide[] = [
         inputs: { timeRange: '最近24小时' },
       },
       {
-        title: '需要链路细节时抓取实时样本',
+        title: '需要链路细节时先启动实时抓包',
         tools: ['device_trace_capture'],
-        tips: ['只有需要连接、认证、上报、下发、编解码证据时再使用。'],
+        tips: ['只有需要连接、认证、上报、下发、编解码证据时再使用。抓包必须先开始；若还要重连、下发或等待上报，应在抓包窗口内并行触发。'],
       },
     ],
     output: ['最可能原因', '已验证证据', '下一步处理动作', '仍需现场确认的信息'],
+  },
+  {
+    id: 'device-trace-diagnosis',
+    name: '抓包链路分析',
+    description: '分析实时链路、上下行报文、下发后响应、连接认证和编解码异常。',
+    scenarios: ['抓包分析', '看报文', '分析上报报文', '下发后有没有响应', '编解码失败', '认证报文', '链路诊断'],
+    keywords: ['抓包', '报文', '链路', '上报', '下发', '响应', '编解码', '认证', 'trace'],
+    priority: 95,
+    steps: [
+      {
+        title: '先启动抓包窗口',
+        description: '抓包是实时窗口。先启动 device_trace_capture，再在窗口内触发下发、重连、认证复现或等待设备上报；不要先触发动作再抓包。',
+        tools: ['device_trace_capture'],
+        inputs: { seconds: '按用户场景选择，默认5秒；复现较慢可增加到10-15秒', maxEvents: '高频场景可调大' },
+      },
+      {
+        title: '并行触发或等待业务动作',
+        description: '如果用户要求观察下发、功能调用、重连或上报，应在抓包已开始后并行触发对应动作；需要用户或设备侧操作时，先说明请在抓包窗口内操作。',
+        tools: ['device_function_invoke', 'device_access_summary'],
+      },
+      {
+        title: '整理抓包结果',
+        description: '优先使用工具返回的统计、去重摘要、topSignatures 和代表样本判断方向；大量事件已写入文件时，再按 inputPath 做二次过滤或聚合。',
+        tools: ['device_trace_capture'],
+      },
+    ],
+    output: ['抓到的通信概况', '上下行方向和关键报文', '重复/高频模式', '异常或缺失环节', '下一步复现建议'],
+    notes: ['device_trace_capture 会自动统计和按语义去重；不要把所有原始报文逐条复述给用户。'],
   },
   {
     id: 'device-bring-online',
@@ -876,7 +906,9 @@ const buildDeviceDetailClientToolsDescription = () => {
     '设备详情页提供当前设备的状态、接入、模型字段、属性、事件、文档、告警记录、告警日志、上下线、通信日志和链路样本工具。',
     remoteText,
     '宽泛、多步骤或排障类问题可结合工作流指导选择工具。',
-    '当前设备默认来自 subject；设备选择能力用于其它设备或跨设备对比，功能调用工具用于下发、调用或执行设备功能。',
+    '当前设备默认来自 subject；设备选择能力用于其它设备或跨设备对比。',
+    '用户说获取、读取或查询某项设备信息时，先判断数据来源：平台已有的属性、历史、事件、日志、告警和文档走对应查询工具；若该信息命中物模型功能且需要设备返回结果，则通过功能调用工具在确认后获取，不要只解释模型里存在该功能。',
+    '抓包、实时链路、上报/下发报文、连接或认证复现场景必须先启动抓包；需要触发下发、重连或上报时，在抓包窗口内并行触发，不要事后抓包。device_trace_capture 会自动返回统计、语义去重摘要和代表样本。',
     '明细较大、导出、报告或图表可由设备业务工具写入会话文件，数据集工具适合已写入文件后的二次加工。'
   ].join('\n')
 }
@@ -958,6 +990,19 @@ const buildDeviceDetailAgentParameters = () => {
     ...(deviceName ? { deviceName, subjectName: deviceName } : {})
   }
 }
+
+const prepareDeviceDetailAgent = (deviceId?: unknown) => {
+  const id = String(deviceId || '').trim()
+  aiStore.prepareAgentConversation(DEVICE_DETAIL_AGENT_CLIENT_ID, id
+    ? {
+        deviceId: id,
+        subjectType: DEVICE_AGENT_SUBJECT_TYPE,
+        subjectId: id
+      }
+    : {})
+}
+
+prepareDeviceDetailAgent(route.params?.id)
 
 const resolveDeviceAgentLinkTab = (href: string) => {
   const raw = String(href || '').trim()
@@ -1041,7 +1086,7 @@ const handleDeviceAgentMarkdownLink: AgentConversationMarkdownLinkHandler = ({ h
 const syncDeviceDetailAgent = () => {
   const parameters = buildDeviceDetailAgentParameters()
   if (!parameters) return
-  void aiStore.queryAgent('deviceDetailChat', parameters)
+  void aiStore.queryAgent(DEVICE_DETAIL_AGENT_CLIENT_ID, parameters)
     .then(refreshDeviceDetailAgentParameters)
 }
 
@@ -1311,6 +1356,7 @@ const initPage = async (newId: any) => {
 onBeforeRouteUpdate((to: any) => {
   if (to.params?.id !== instanceStore.current.id && to.name === 'device/Instance/Detail') {
     // location.reload()
+    prepareDeviceDetailAgent(to.params?.id)
     initPage(to.params?.id)
   }
 })
@@ -1486,7 +1532,7 @@ watch(
 onUnmounted(() => {
   instanceStore.current = {} as any
   statusRef.value && statusRef.value.unsubscribe()
-  aiStore.hideAiButton()
+  aiStore.releaseAgentConversation(DEVICE_DETAIL_AGENT_CLIENT_ID)
 })
 
 defineExpose({

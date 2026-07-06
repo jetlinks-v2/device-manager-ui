@@ -415,6 +415,8 @@ const createDeviceInstanceTools = (): AiClientToolDefinition<HomeAgentCapability
   {
     id: DEVICE_INSTANCE_SEARCH_TOOL,
     name: DEVICE_INSTANCE_SEARCH_TOOL,
+    displayName: i18n.global.t('Instance.homeAgent.tool.search.displayName'),
+    progressText: i18n.global.t('Instance.homeAgent.tool.search.progressText'),
     description: i18n.global.t('Instance.homeAgent.tool.search.description'),
     help: i18n.global.t('Instance.homeAgent.tool.search.help'),
     inputs: [
