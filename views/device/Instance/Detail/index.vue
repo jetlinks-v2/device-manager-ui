@@ -146,6 +146,7 @@
                 {{ instanceStore.current?.id }}
               </span>
             </a-tooltip>
+	          <DeviceIdMapping class="device-detail-meta__mapping" />
             <span
               class="device-detail-meta__sep"
               aria-hidden="true"
@@ -322,6 +323,7 @@
 import TagsSave from './Info/components/Tags/Save.vue'
 import PhotoSave from './PhotoSave.vue'
 import DeviceDetailFishboneSkeleton from './DeviceDetailFishboneSkeleton.vue'
+import DeviceIdMapping from './components/DeviceIdMapping.vue'
 import { useInstanceStore } from '../../../../store/instance'
 import { _deploy, _disconnect, modifyByDeviceId } from '../../../../api/instance'
 import { getBase64ByImg, onlyMessage } from '@jetlinks-web/utils'
