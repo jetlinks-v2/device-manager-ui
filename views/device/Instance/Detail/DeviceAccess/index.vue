@@ -107,6 +107,7 @@
             </a-button>
           </a-popconfirm>
           <a-segmented
+            v-if="debugLogSupport"
             v-model:value="traceMode"
             size="small"
             class="trace-mode-switch"
@@ -114,13 +115,14 @@
             @change="handleTraceModeChange"
           />
           <a-button
+            v-if="codecSimulateSupport"
             size="small"
             @click="codecSimulatorOpen = true"
           >
             <AIcon type="ExperimentOutlined" />
             {{ $t('InstanceDeviceAccess.codecDebug.title') }}
           </a-button>
-          <span class="trace-save-switch">
+          <span v-if="debugLogSupport" class="trace-save-switch">
             {{ $t('InstanceDeviceAccess.debugLog.save') }}
             <a-tooltip :title="$t('InstanceDeviceAccess.debugLog.saveTip')">
               <AIcon type="QuestionCircleOutlined" class="trace-save-switch__help" />
@@ -214,6 +216,7 @@
       />
     </a-drawer>
     <a-drawer
+      v-if="codecSimulateSupport"
       v-model:open="codecSimulatorOpen"
       :width="1180"
       :title="$t('InstanceDeviceAccess.codecDebug.title')"
@@ -238,6 +241,8 @@ import { useInstanceStore } from '../../../../../store/instance'
 import {
   disableDebugLog,
   enableDebugLog,
+  existsDeviceCodecSimulateSupport,
+  existsDeviceDebugLogSupport,
   getDebugLogConfig,
   getDeviceSessions,
   queryDebugLogList,
@@ -277,6 +282,8 @@ const displayedTraceTotal = computed(() =>
 const isSubscribed = ref(true)
 const diagnoseOpen = ref(false)
 const codecSimulatorOpen = ref(false)
+const debugLogSupport = ref(false)
+const codecSimulateSupport = ref(false)
 const debugLogLoading = ref(false)
 const debugHistoryLoading = ref(false)
 const historyPageIndex = ref(0)
@@ -506,15 +513,32 @@ const onClearTrace = () => {
 }
 
 const loadDebugLogConfig = async () => {
-  if (!deviceId.value) return
+  if (!deviceId.value || !debugLogSupport.value) return
   const resp: any = await getDebugLogConfig(deviceId.value)
   const result = resp?.result || {}
   debugLogConfig.enabled = !!result.enabled
   debugLogConfig.deviceEnabled = !!result.deviceEnabled
 }
 
+const loadDeviceDebugSupport = async () => {
+  const [debugLogResp, codecSimulateResp]: any[] = await Promise.all([
+    existsDeviceDebugLogSupport(),
+    existsDeviceCodecSimulateSupport(),
+  ])
+  debugLogSupport.value = debugLogResp?.status === 200 && !!debugLogResp.result
+  codecSimulateSupport.value = codecSimulateResp?.status === 200 && !!codecSimulateResp.result
+  if (!debugLogSupport.value) {
+    traceMode.value = 'realtime'
+    debugLogConfig.enabled = false
+    debugLogConfig.deviceEnabled = false
+  }
+  if (!codecSimulateSupport.value) {
+    codecSimulatorOpen.value = false
+  }
+}
+
 const toggleDebugLog = async (checked: boolean) => {
-  if (!deviceId.value) return
+  if (!deviceId.value || !debugLogSupport.value) return
   debugLogLoading.value = true
   try {
     const resp: any = checked
@@ -561,7 +585,7 @@ const appendHistoryRecords = (records: any[]) => {
 }
 
 const loadDebugHistory = async () => {
-  if (!deviceId.value) return
+  if (!deviceId.value || !debugLogSupport.value) return
   if (debugHistoryLoading.value || !historyHasMore.value) return
   if (!historySnapshotTime.value) {
     historySnapshotTime.value = Date.now()
@@ -595,6 +619,10 @@ const loadDebugHistory = async () => {
 }
 
 const handleTraceModeChange = (value: 'realtime' | 'history') => {
+  if (value === 'history' && !debugLogSupport.value) {
+    traceMode.value = 'realtime'
+    return
+  }
   if (value === 'history' && historyPageIndex.value === 0) {
     loadDebugHistory()
   }
@@ -650,7 +678,7 @@ onMounted(() => {
     innerTab.value = 'trace'
     loadSessions()
   }
-  loadDebugLogConfig()
+  loadDeviceDebugSupport().then(loadDebugLogConfig)
   ensureTraceSubscription()
 })
 
@@ -688,7 +716,7 @@ watch(deviceId, (id, prev) => {
   realtimeTrace.clear()
   resetHistoryTrace()
   traceMode.value = 'realtime'
-  loadDebugLogConfig()
+  loadDeviceDebugSupport().then(loadDebugLogConfig)
   ensureTraceSubscription()
 })
 

@@ -466,6 +466,12 @@ export const disableDebugLog = (deviceId: string) =>
 export const queryDebugLogList = (deviceId: string, data: Record<string, any>) =>
   request.post(`/device/debug/log/${deviceId}/_query`, data)
 
+export const existsDeviceDebugLogSupport = () =>
+  request.get<boolean>(`/command-supports/service/deviceService:debug-log/exists`)
+
+export const existsDeviceCodecSimulateSupport = () =>
+  request.get<boolean>(`/command-supports/service/deviceService:codec-simulate/exists`)
+
 /**
  * 读取属性
  * @param deviceId 设备id
