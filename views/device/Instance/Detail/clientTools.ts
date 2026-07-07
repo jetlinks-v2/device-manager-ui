@@ -24,6 +24,7 @@ import { createDeviceAccessClientTools } from './accessTool'
 import { createDeviceEventClientTools } from './eventTool'
 import { createDeviceFunctionClientTools } from './functionTool'
 import { createDeviceAlarmClientTools } from './alarmTool'
+import { createEdgeDiagnosisClientTools } from './edgeDiagnosisTool'
 
 type DeviceDetailRecord = Record<string, any>
 type RemoteSystemFileRecord = Record<string, any>
@@ -1585,6 +1586,13 @@ export const createDeviceDetailClientToolRuntime = (
       timeRangeInput,
       startTimeDescription: START_TIME_DESCRIPTION,
       endTimeDescription: END_TIME_DESCRIPTION,
+      getDeviceId
+    }),
+    ...createEdgeDiagnosisClientTools({
+      clampNumber,
+      asArray,
+      responseResult,
+      compactInlineValue,
       getDeviceId
     }),
     {

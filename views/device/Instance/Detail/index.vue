@@ -339,6 +339,13 @@ import { useRegistryOptions } from '@jetlinks-web-core/hooks'
 import { deviceStateList } from '@device-manager-ui/views/device/data'
 import { isApplyDashboard } from '@device-manager-ui/utils/dashboardProject'
 import { createDeviceDetailClientToolRuntime } from './clientTools'
+import {
+  EDGE_DIAGNOSIS_SYSTEM_PROMPT_LINES,
+  EDGE_DIAGNOSIS_WORKFLOW_GUIDES,
+  buildEdgeDiagnosisClientToolsDescription,
+  isEdgeDiagnosisToolId
+} from './agentDiagnosisManual'
+import { isEdgeDiagnosisAccessProvider } from './edgeDiagnosisTool'
 import type {
   AgentConversationMarkdownLinkHandler,
   AgentConversationWorkflowGuide,
@@ -558,10 +565,6 @@ const permissionStore = useAuthStore()
 const { mergedOptions } = useRegistryOptions({ baseOptions: list, code: 'detail-tabs' })
 const DEVICE_DETAIL_AGENT_CLIENT_ID = 'deviceDetailChat'
 const DEVICE_AGENT_SUBJECT_TYPE = 'device'
-const DEVICE_REMOTE_FILE_ACCESS_PROVIDERS = new Set([
-  'agent-device-gateway',
-  'agent-media-device-gateway'
-])
 const DEVICE_DETAIL_AGENT_SYSTEM_PROMPT_LINES = [
   '你是设备详情页内的设备问数与诊断助手。',
   '当前会话的 subject 就是页面打开的设备，已通过 subjectType=device、subjectId、deviceId 和 deviceName 提供；用户没有明确要求其它设备时，不要再追问设备 ID。',
@@ -836,7 +839,7 @@ const DEVICE_AGENT_TAB_ALIASES: Record<string, string> = {
 const DEVICE_AGENT_KNOWN_TABS = new Set(Object.values(DEVICE_AGENT_TAB_ALIASES))
 
 const isDeviceRemoteFileSupported = () => (
-  DEVICE_REMOTE_FILE_ACCESS_PROVIDERS.has(String(instanceStore.current?.accessProvider || ''))
+  isEdgeDiagnosisAccessProvider(instanceStore.current?.accessProvider)
 )
 
 const getDeviceAgentVisibleTabs = () => {
@@ -884,9 +887,10 @@ const buildDeviceDetailAgentTabPrompt = () => {
 const buildDeviceDetailAgentSystemPrompt = () => {
   const lines = [...DEVICE_DETAIL_AGENT_SYSTEM_PROMPT_LINES]
   if (isDeviceRemoteFileSupported()) {
-    lines.splice(lines.length - 1, 0, '当前设备支持边缘网关远程文件能力，可用于远程目录、远程文件或网关文件相关问题。')
+    lines.splice(lines.length - 1, 0, '当前设备支持边缘网关边端运行态、MBean 白名单、线程摘要、系统文件只读片段和云边协同只读诊断能力。')
+    lines.splice(lines.length - 1, 0, ...EDGE_DIAGNOSIS_SYSTEM_PROMPT_LINES)
   } else {
-    lines.splice(lines.length - 1, 0, '当前设备未暴露边缘网关远程文件能力，相关入口暂不可用。')
+    lines.splice(lines.length - 1, 0, '当前设备未暴露边缘网关边端运行态、MBean、线程摘要、系统文件只读片段和云边协同诊断能力，相关入口暂不可用。')
   }
   lines.splice(lines.length - 1, 0, buildDeviceDetailAgentTabPrompt())
   return lines.join('\n')
@@ -894,18 +898,33 @@ const buildDeviceDetailAgentSystemPrompt = () => {
 
 const getDeviceDetailClientTools = () => {
   const tools = deviceDetailClientToolRuntime.clientTools || []
-  if (isDeviceRemoteFileSupported()) return tools
-  return tools.filter((tool: any) => !String(tool?.id || tool?.name || '').startsWith('edge_remote_file_'))
+  const withoutLegacyEdgeRemoteFileTools = tools.filter((tool: any) => {
+    const toolId = String(tool?.id || tool?.name || '')
+    return !toolId.startsWith('edge_remote_file_')
+  })
+  if (isDeviceRemoteFileSupported()) return withoutLegacyEdgeRemoteFileTools
+  return withoutLegacyEdgeRemoteFileTools.filter((tool: any) => {
+    const toolId = String(tool?.id || tool?.name || '')
+    return !isEdgeDiagnosisToolId(toolId)
+  })
+}
+
+const getDeviceDetailWorkflowGuides = () => {
+  return isDeviceRemoteFileSupported()
+    ? [...DEVICE_DETAIL_AGENT_WORKFLOW_GUIDES, ...EDGE_DIAGNOSIS_WORKFLOW_GUIDES]
+    : DEVICE_DETAIL_AGENT_WORKFLOW_GUIDES
 }
 
 const buildDeviceDetailClientToolsDescription = () => {
   const remoteText = isDeviceRemoteFileSupported()
-    ? '当前设备支持边缘网关远程文件片段读取，可用于远程目录、远程文件或网关文件问题。'
-    : '当前设备未暴露边缘网关远程文件能力。'
+    ? buildEdgeDiagnosisClientToolsDescription(true)
+    : buildEdgeDiagnosisClientToolsDescription(false)
   return [
     '设备详情页提供当前设备的状态、接入、模型字段、属性、事件、文档、告警记录、告警日志、上下线、通信日志和链路样本工具。',
     remoteText,
-    '宽泛、多步骤或排障类问题可结合工作流指导选择工具。',
+    isDeviceRemoteFileSupported()
+      ? '当前设备是边缘网关时，用户提出诊断、分析、排查、健康、稳定、异常原因、离线抖动、消息积压、日志或 JVM 类问题，应先按云边协同诊断流程取证，再结合平台侧证据回答；CPU、线程、JVM 和积压问题不要从边端文件读取开始。'
+      : '宽泛、多步骤或排障类问题可结合工作流指导选择工具。',
     '当前设备默认来自 subject；设备选择能力用于其它设备或跨设备对比。',
     '用户说获取、读取或查询某项设备信息时，先判断数据来源：平台已有的属性、历史、事件、日志、告警和文档走对应查询工具；若该信息命中物模型功能且需要设备返回结果，则通过功能调用工具在确认后获取，不要只解释模型里存在该功能。',
     '抓包、实时链路、上报/下发报文、连接或认证复现场景必须先启动抓包；需要触发下发、重连或上报时，在抓包窗口内并行触发，不要事后抓包。device_trace_capture 会自动返回统计、语义去重摘要和代表样本。',
@@ -914,6 +933,30 @@ const buildDeviceDetailClientToolsDescription = () => {
 }
 
 const deviceDetailAgentPromptConfigs = {
+  edgeOnline: {
+    opening: 'DeviceDetail.agent.opening.edgeOnline',
+    prompts: [
+      'DeviceDetail.agent.prompt.edge.online.health',
+      'DeviceDetail.agent.prompt.edge.online.connection',
+      'DeviceDetail.agent.prompt.edge.online.logs'
+    ]
+  },
+  edgeOffline: {
+    opening: 'DeviceDetail.agent.opening.edgeOffline',
+    prompts: [
+      'DeviceDetail.agent.prompt.edge.offline.reason',
+      'DeviceDetail.agent.prompt.edge.offline.connection',
+      'DeviceDetail.agent.prompt.edge.offline.logs'
+    ]
+  },
+  edgeDefault: {
+    opening: 'DeviceDetail.agent.opening.edgeDefault',
+    prompts: [
+      'DeviceDetail.agent.prompt.edge.default.health',
+      'DeviceDetail.agent.prompt.edge.default.backlog',
+      'DeviceDetail.agent.prompt.edge.default.logs'
+    ]
+  },
   online: {
     opening: 'DeviceDetail.agent.opening.online',
     prompts: [
@@ -950,6 +993,11 @@ const deviceDetailAgentPromptConfigs = {
 
 const getDeviceDetailAgentPromptConfig = () => {
   const state = String(instanceStore.current?.state?.value || '')
+  if (isDeviceRemoteFileSupported()) {
+    if (state === 'online') return deviceDetailAgentPromptConfigs.edgeOnline
+    if (state === 'offline') return deviceDetailAgentPromptConfigs.edgeOffline
+    return deviceDetailAgentPromptConfigs.edgeDefault
+  }
   if (state === 'online' || state === 'offline' || state === 'notActive') {
     return deviceDetailAgentPromptConfigs[state]
   }
@@ -977,7 +1025,7 @@ const buildDeviceDetailAgentParameters = () => {
     clientToolHandler: deviceDetailClientToolRuntime.handleClientToolCall,
     clientToolsName: deviceDetailClientToolRuntime.clientToolsName,
     clientToolsDescription: buildDeviceDetailClientToolsDescription(),
-    workflowGuides: DEVICE_DETAIL_AGENT_WORKFLOW_GUIDES,
+    workflowGuides: getDeviceDetailWorkflowGuides(),
     markdownLinkHandler: handleDeviceAgentMarkdownLink,
     systemPrompt: buildDeviceDetailAgentSystemPrompt(),
     openingStatement: buildDeviceDetailAgentOpeningStatement(),

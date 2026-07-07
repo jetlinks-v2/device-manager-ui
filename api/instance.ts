@@ -880,6 +880,24 @@ export const getRemoteSystemWorkingDirectory = (deviceId: string) =>
 export const listRemoteSystemFiles = (deviceId: string, data: Record<string, any>) =>
     remoteSystemFileCommand(deviceId, 'SystemFileList', data)
 
+export const statRemoteSystemFile = (deviceId: string, data: Record<string, any>) =>
+    remoteSystemFileCommand(deviceId, 'Stat', data)
+
+export const headRemoteSystemFile = (deviceId: string, data: Record<string, any>) =>
+    remoteSystemFileCommand(deviceId, 'Head', data)
+
+export const tailRemoteSystemFile = (deviceId: string, data: Record<string, any>) =>
+    remoteSystemFileCommand(deviceId, 'Tail', data)
+
+export const readRemoteSystemTextFile = (deviceId: string, data: Record<string, any>) =>
+    remoteSystemFileCommand(deviceId, 'ReadText', data)
+
+export const searchRemoteSystemFile = (deviceId: string, data: Record<string, any>) =>
+    remoteSystemFileCommand(deviceId, 'Search', data)
+
+export const listRemoteSystemArchiveEntries = (deviceId: string, data: Record<string, any>) =>
+    remoteSystemFileCommand(deviceId, 'ArchiveEntries', data)
+
 export const createRemoteSystemDirectory = (deviceId: string, path: string) =>
     remoteSystemFileCommand(deviceId, 'SystemFileCreateDirectory', { path })
 
@@ -911,6 +929,15 @@ export const uploadRemoteSystemFile = (
 
 export const downloadRemoteSystemFile = (deviceId: string, fileName: string) =>
     request.get(`/edge/device/${deviceId}/_/file/system/download?fileName=${encodeURIComponent(fileName)}`, {}, { responseType: 'blob' })
+
+export const queryRemoteSystemMonitorMembersDetail = (deviceId: string, data: Record<string, any> = { paging: false }) =>
+    request.post(`/edge/device/${deviceId}/_/system/monitor/members/_detail`, data)
+
+export const queryRemoteSystemMonitorMBean = (deviceId: string, name: string) =>
+    request.get(`/edge/device/${deviceId}/_/system/monitor/mbean/${encodeURIComponent(name)}`)
+
+export const dumpRemoteSystemThreadText = (deviceId: string) =>
+    request.post(`/edge/device/${deviceId}/_/system/monitor/thread/_dump`, {})
 
 /**
  * 访问边端设备列表
