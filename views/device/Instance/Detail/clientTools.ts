@@ -2192,14 +2192,11 @@ export const createDeviceDetailClientToolRuntime = (
     {
       toolsName: 'device-detail-client-tools',
       toolsDescription: [
-        '设备详情页提供当前设备的状态、接入、模型字段、属性、事件、文档、告警记录、告警日志、上下线、通信日志、边缘网关远程文件片段和实时链路样本分析工具。',
-        '普通用户无需知道工具名；接入指南、协议说明、认证失败、连接地址等问题优先用 device_access_summary，日志/属性/事件优先用 summary、aggregate 或 event 工具回答有没有、多少条、平均/最大/最小、首次/末次/去重计数和趋势。',
-        '抓包、实时链路、上报/下发报文、连接或认证复现场景必须先启动 device_trace_capture；需要触发下发、重连或上报时，在抓包窗口内并行触发，不要事后抓包。device_trace_capture 会自动返回统计、语义去重摘要、topSignatures 和代表样本，完整事件需要传 writeToPath 写入 JSONL。',
-        '用户说获取、读取或查询某项设备信息时，先判断数据来源：平台已有的属性、历史、事件、日志、告警和文档走对应查询工具；若该信息命中物模型功能且需要设备返回结果，则可使用 device_function_invoke 并在下发前要求用户确认，不要只说明物模型中存在该功能。',
-        '设备文档问题优先用 device_documents_query 查找当前设备和所属产品文档，或用 device_document_reference 定位 platform-file-id 与 url/fileUrl；文档正文不要通过前端工具读取，需由后端 fs_download 或统一文件/文档通道导入或挂载到会话文件容器后再按 inputPath 分析。',
-        '需要选择其它设备时可使用动态注册的 selector 工具获取候选设备；当前设备默认来自 subject。',
-        '部分明细工具支持 writeToPath，可把较大或完整结果写入当前会话文件容器并返回 fs:// 引用和 inputPath；分页明细和聚合结果默认写 JSONL/NDJSON，limit 只控制内联预览，writeLimit 控制分页类工具写入文件的记录数，完整导出可传 writeLimit=0。',
-        '若返回 writeLimitExceeded/truncated，需要向用户说明结果受上限影响并建议缩小时间范围、提高 writeLimit 或使用 writeLimit=0 完整导出；对写入的 JSONL/NDJSON 继续过滤、聚合、排序、抽取轨迹或生成图表时，优先用 dataset_materialize(format=jsonl) + dataset_query 或 chart_echarts2svg，不要用 text_regex_extract 或脚本解析大文本。'
+        '设备详情页客户端工具可读取当前设备状态、接入、物模型、属性、事件、文档、告警、上下线、通信日志、边缘网关只读诊断摘要和实时链路样本。',
+        '当前设备默认来自 subject；需要其它设备时可使用动态注册的 selector 工具获取候选设备。',
+        '工具结果面向事实取证：普通问题优先使用业务查询工具；复杂流程、功能调用、抓包和边缘网关诊断的取证顺序由内部取证建议承载。',
+        '部分明细工具支持 writeToPath 写入会话文件并返回 fs:// 引用和 inputPath；limit 控制内联预览，writeLimit 控制分页类工具写入条数，完整导出可传 writeLimit=0。',
+        '对已写入的 JSONL/NDJSON 继续过滤、聚合、抽取轨迹或生成图表时，再使用 dataset_materialize、dataset_query 或图表工具；不要用 text_regex_extract 解析大文本。'
       ].join('\n'),
       registeredToolScopes: DEVICE_DETAIL_SELECTOR_SCOPE,
       getContext: () => ({ device: getDevice() || {} })

@@ -14,18 +14,6 @@ export const isEdgeDiagnosisToolId = (toolId?: string) => (
   EDGE_DIAGNOSIS_TOOL_PREFIXES.some((prefix) => String(toolId || '').startsWith(prefix))
 )
 
-export const EDGE_DIAGNOSIS_SYSTEM_PROMPT_LINES = [
-  '当当前设备是边缘网关时，可按云边协同诊断手册排查设备运行稳定性、健康度、离线抖动、消息积压和边端日志。',
-  '当用户提出诊断、分析、排查、检查、健康、稳定、是否正常、为什么、原因、异常、故障、卡顿、抖动、延迟、丢失、积压、离线、上下线、日志、CPU、内存、线程或 GC 等需求时，优先按云边协同诊断流程取证，即使用户没有显式说“边端”或“云边”。',
-  '云边协同诊断默认只读：优先读取设备状态、接入会话、边端系统摘要、MBean 白名单摘要、trace 样本和边端日志片段。',
-  'CPU、线程、JVM、内存或消息积压问题，首轮证据应来自边端运行态、MBean 白名单、线程摘要和缓冲摘要；不要把边端文件读取作为首选，除非用户明确要求分析日志或文件内容。',
-  '如果边端运行态、MBean 或文件证据因设备离线、无权限、代理不可达或安全策略无法读取，应说明该证据无法确认，并继续结合平台侧设备状态、上下线、告警、通信日志和接入信息给出有限判断。',
-  '不要向用户暴露内部监控链接、接口路径、WebSocket topic、MBean ObjectName、文件命令 ID、工具名或边端文件系统细节。',
-  '边端日志排查先确认工作目录和候选文件，再使用状态、Tail、Head、按行读取、搜索或压缩包条目枚举；不要默认下载完整文件。',
-  '涉及终端命令、文件写入/删除/上传、trace 全局开关、buffer flush/retry/recovery、会话移除、JFR、heap dump 或网络抓包时，不要自动执行，只给出需人工确认的建议。',
-  '云边协同诊断最终回复固定收口为：结论、证据摘要、可能原因、建议动作、限制。'
-]
-
 export const EDGE_DIAGNOSIS_WORKFLOW_GUIDES: AgentConversationWorkflowGuide[] = [
   {
     id: 'edge-health-check',
@@ -46,7 +34,7 @@ export const EDGE_DIAGNOSIS_WORKFLOW_GUIDES: AgentConversationWorkflowGuide[] = 
         tools: ['edge_runtime_summary'],
       },
       {
-        title: '检查云边连接和关键 MBean 摘要',
+        title: '检查云边连接和关键运行指标摘要',
         tools: ['edge_master_summary', 'edge_persistence_buffer_summary', 'edge_mbean_summary'],
         inputs: { scope: 'all' },
       },
@@ -57,7 +45,7 @@ export const EDGE_DIAGNOSIS_WORKFLOW_GUIDES: AgentConversationWorkflowGuide[] = 
       },
     ],
     output: ['结论', '证据摘要', '可能原因', '建议动作', '限制'],
-    notes: ['不要输出内部监控链接或 MBean 名称；普通设备不使用边端工具。'],
+    notes: ['不要输出内部监控链接或内部指标名称；普通设备不使用边端工具。'],
   },
   {
     id: 'edge-offline-unstable-diagnosis',
@@ -82,7 +70,7 @@ export const EDGE_DIAGNOSIS_WORKFLOW_GUIDES: AgentConversationWorkflowGuide[] = 
         tools: ['edge_master_summary'],
       },
       {
-        title: '读取网络、会话和 trace 摘要',
+        title: '读取网络、会话和链路摘要',
         tools: ['edge_mbean_summary', 'edge_trace_summary'],
         inputs: { scope: 'network,session,trace' },
       },
@@ -97,7 +85,7 @@ export const EDGE_DIAGNOSIS_WORKFLOW_GUIDES: AgentConversationWorkflowGuide[] = 
   {
     id: 'edge-buffer-backlog-diagnosis',
     name: '边端消息积压/丢失排查',
-    description: '定位边端上行消息积压、平台接收延迟、缓冲死信或 trace 异常。',
+    description: '定位边端上行消息积压、平台接收延迟、缓冲死信或链路异常。',
     when: ['当前设备是边缘网关，且用户提出消息积压、平台收不到数据、上报慢、数据延迟、丢失或死信等问题。'],
     scenarios: ['消息积压', '数据延迟', '上报丢失', '平台收不到数据', '平台没有数据', '上报慢', '消息堆积', 'buffer 异常', '队列异常', '死信'],
     keywords: ['积压', '堆积', '延迟', '丢失', '收不到', '没有数据', 'buffer', '队列', '死信', '上报', '消息', 'delay', 'backlog'],
@@ -118,7 +106,7 @@ export const EDGE_DIAGNOSIS_WORKFLOW_GUIDES: AgentConversationWorkflowGuide[] = 
         inputs: { timeRange: '最近24小时' },
       },
       {
-        title: '补充 trace 样本和边端错误日志',
+        title: '补充链路样本和边端错误日志',
         tools: ['edge_trace_summary', 'edge_runtime_logs_summary'],
       },
     ],
@@ -186,13 +174,11 @@ export const EDGE_DIAGNOSIS_WORKFLOW_GUIDES: AgentConversationWorkflowGuide[] = 
 
 export const buildEdgeDiagnosisClientToolsDescription = (supported: boolean) => {
   if (!supported) {
-    return '当前设备不是支持云边协同诊断的 Agent 边缘网关，不提供边端系统、MBean 或远程文件诊断工具。'
+    return '当前设备未提供云边协同诊断工具。'
   }
   return [
-    '当前设备支持云边协同只读诊断：稳定性和健康检查应同时结合平台侧上下线、接入会话、边端运行摘要、云边连接、消息缓冲、trace 线索和最近日志异常。',
-    '离线或抖动问题先看平台侧上下线和接入证据，再补充边端连接、网络会话和日志异常；消息积压、丢失或延迟问题先看缓冲与事件链路，再结合平台日志、事件、属性时间线和 trace 样本。',
-    'CPU、线程、JVM 或系统异常以边端运行摘要、MBean 只读属性和线程摘要为主；日志分析才定位候选日志、读取尾部和搜索错误；不把完整下载或边端文件读取作为 CPU/线程诊断默认路径。',
-    '所有边端诊断能力只返回摘要、有限样本、截断原因和下一步读取线索；最终回复不要暴露工具名、内部接口、MBean 名称或文件系统细节。',
-    '写入、删除、上传、终端命令、JFR、heap dump、网络抓包、trace 开关、buffer flush/retry/recovery 和会话移除均不是自动工具。'
+    '当前设备提供云边协同只读诊断工具，可读取边端运行摘要、云边连接、消息缓冲、链路摘要、线程摘要和有限日志/文件片段。',
+    '工具结果只包含摘要、有限样本、截断原因和下一步读取线索；文件类能力面向日志或配置片段，不用于默认全量下载。',
+    '写入、删除、上传、终端命令、JFR、heap dump、边端网络抓包、内部链路开关、消息缓冲修复动作和会话移除不是自动工具。'
   ].join('\n')
 }

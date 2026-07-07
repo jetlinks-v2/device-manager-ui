@@ -5,12 +5,15 @@ import {
   type HomeAgentCapabilityProvider,
 } from '@jetlinks-web-core/layout/components/AiChat/homeAgentCapabilities';
 import type { AiClientToolDefinition } from '@jetlinks-web-core/layout/components/AiChat/clientTools';
+import { saveAiAgentHandoff } from '@jetlinks-web-core/layout/components/AiChat/agentHandoff';
 import { getOrgList, query } from '../../../api/instance';
 
 const DEVICE_INSTANCE_MENU_CODE = 'device/Instance';
 const DEVICE_INSTANCE_DETAIL_ROUTE = 'device/Instance/Detail';
 const DEVICE_INSTANCE_PATH = '/iot/device/Instance';
 const DEVICE_INSTANCE_SEARCH_TOOL = 'device_instance_search';
+const DEVICE_DETAIL_AGENT_CLIENT_ID = 'deviceDetailChat';
+const DEVICE_AGENT_SUBJECT_TYPE = 'device';
 
 const normalizeText = (value: unknown) => String(value || '').trim();
 const normalizeComparableText = (value: unknown) => normalizeText(value).toLowerCase();
@@ -33,6 +36,91 @@ const clampPageSize = (value: unknown) => {
   return Math.min(20, Math.max(1, Math.floor(numberValue)));
 };
 
+const isDiagnosisHandoffGoal = (value: unknown) => {
+  const text = normalizeComparableText(value);
+  return !!text && [
+    '分析',
+    '诊断',
+    '排查',
+    '健康',
+    '稳定',
+    '运行',
+    '今日',
+    '告警',
+    '日志',
+    '接入',
+    '离线',
+    '上线',
+    '下线',
+    '异常',
+    '问题',
+    'analyze',
+    'diagnose',
+    'troubleshoot',
+    'health',
+    'stable',
+    'stability',
+    'running',
+    'operation',
+    'alarm',
+    'log',
+    'offline',
+    'online',
+    'issue',
+  ].some((keyword) => text.includes(keyword));
+};
+
+const isPositiveHandoffIntent = (value: unknown) => {
+  if (value === true) return true;
+  const text = normalizeComparableText(value);
+  return [
+    'true',
+    'yes',
+    'y',
+    '1',
+    'analysis',
+    'analyze',
+    'diagnosis',
+    'diagnose',
+    'troubleshoot',
+    '分析',
+    '诊断',
+    '排查',
+  ].includes(text);
+};
+
+const createDeviceAgentHandoff = (
+  deviceId: string,
+  userGoal: unknown,
+  fallbackPrompt: string,
+  force = false,
+  context?: Record<string, any>,
+) => {
+  const prompt = (normalizeText(userGoal) || normalizeText(fallbackPrompt)).slice(0, 1000);
+  if (!deviceId || !prompt || (!force && !isDiagnosisHandoffGoal(prompt))) {
+    return '';
+  }
+  return saveAiAgentHandoff({
+    clientId: DEVICE_DETAIL_AGENT_CLIENT_ID,
+    subjectType: DEVICE_AGENT_SUBJECT_TYPE,
+    subjectId: deviceId,
+    prompt,
+    context,
+    source: 'device-instance-home',
+    routeName: DEVICE_INSTANCE_DETAIL_ROUTE,
+    menuCode: DEVICE_INSTANCE_MENU_CODE,
+  });
+};
+
+const buildDeviceDetailLink = (deviceId: string) => {
+  const params = new URLSearchParams({
+    route: DEVICE_INSTANCE_DETAIL_ROUTE,
+    menu: DEVICE_INSTANCE_MENU_CODE,
+    id: deviceId,
+  });
+  return `#${params.toString()}`;
+};
+
 const toPageIndex = (value: unknown) => {
   const numberValue = Number(value);
   return Number.isFinite(numberValue) ? Math.max(0, Math.floor(numberValue)) : 0;
@@ -52,7 +140,7 @@ const isDeviceInstanceAvailable = (context: HomeAgentCapabilityContext) => (
 const getPromptExamples = () => [
   i18n.global.t('Instance.homeAgent.prompt.searchDevice'),
   i18n.global.t('Instance.homeAgent.prompt.onlineDevices'),
-  i18n.global.t('Instance.homeAgent.prompt.findByProduct'),
+  i18n.global.t('Instance.homeAgent.prompt.offlineDevices'),
 ];
 
 const getSpecificDeviceWorkflowGuides = () => [
@@ -305,10 +393,74 @@ const resolveOrganizationFilter = async (args: Record<string, any>, context: Hom
   };
 };
 
-const compactDevice = (item: Record<string, any>) => {
+const resolveDeviceHandoffPrompt = (title: string, userGoal?: unknown) => (
+  normalizeText(userGoal)
+  || i18n.global.t('Instance.homeAgent.tool.search.handoffPromptFallback', [title])
+);
+
+const pickSearchContext = (
+  args: Record<string, any>,
+  extra: Record<string, any> = {},
+) => ({
+  keyword: firstTextArg(args, 'keyword', 'query', 'idOrName', 'name', 'deviceName'),
+  deviceId: firstTextArg(args, 'deviceId', 'id'),
+  productId: firstTextArg(args, 'productId'),
+  productName: firstTextArg(args, 'productName'),
+  state: firstTextArg(args, 'state'),
+  deviceType: firstTextArg(args, 'deviceType'),
+  accessProvider: firstTextArg(args, 'accessProvider'),
+  accessId: firstTextArg(args, 'accessId'),
+  ...extra,
+});
+
+const buildDeviceHandoffContext = (
+  item: Record<string, any>,
+  userGoal: unknown,
+  sourceContext: unknown,
+  searchContext: Record<string, any> = {},
+) => ({
+  sourcePage: 'device-instance',
+  userGoal: normalizeText(userGoal),
+  sourceContext: normalizeText(sourceContext),
+  targetDevice: {
+    id: normalizeText(item.id),
+    name: normalizeText(item.name),
+    productId: normalizeText(item.productId),
+    productName: normalizeText(item.productName),
+    deviceType: {
+      value: enumValue(item.deviceType),
+      text: enumText(item.deviceType),
+    },
+    state: {
+      value: enumValue(item.state),
+      text: enumText(item.state),
+    },
+    accessProvider: normalizeText(item.accessProvider),
+    accessId: normalizeText(item.accessId),
+  },
+  search: searchContext,
+});
+
+const resolveLatestUserGoal = (context: HomeAgentCapabilityContext) => (
+  normalizeText(context.latestUserMessage?.content)
+);
+
+const compactDevice = (
+  item: Record<string, any>,
+  userGoal?: unknown,
+  prepareHandoff = false,
+  searchContext: Record<string, any> = {},
+) => {
   const id = normalizeText(item.id);
   const title = normalizeText(item.name) || id;
-  const detailLink = `#route=${encodeURIComponent(DEVICE_INSTANCE_DETAIL_ROUTE)}&menu=${encodeURIComponent(DEVICE_INSTANCE_MENU_CODE)}&id=${encodeURIComponent(id)}`;
+  const handoffReady = createDeviceAgentHandoff(
+    id,
+    userGoal,
+    resolveDeviceHandoffPrompt(title, userGoal),
+    prepareHandoff,
+    buildDeviceHandoffContext(item, userGoal, searchContext.sourceContext, searchContext),
+  );
+  const detailLink = buildDeviceDetailLink(id);
   return {
     id,
     name: item.name,
@@ -330,8 +482,19 @@ const compactDevice = (item: Record<string, any>) => {
     },
     detailLink,
     markdownLink: `[${i18n.global.t('Instance.homeAgent.detailLink', [title])}](${detailLink})`,
+    handoff: {
+      nextStep: i18n.global.t('Instance.homeAgent.tool.search.handoffNextStep'),
+      singleDeviceDiagnosis: i18n.global.t('Instance.homeAgent.tool.search.handoffSingleDeviceDiagnosis'),
+      contextPrepared: !!handoffReady,
+    },
   };
 };
+
+const buildHomeReplyPolicy = () => [
+  i18n.global.t('Instance.homeAgent.tool.search.homeScope'),
+  i18n.global.t('Instance.homeAgent.tool.search.handoffSingleDeviceDiagnosis'),
+  i18n.global.t('Instance.homeAgent.tool.search.handoffNoReport'),
+];
 
 const searchDevices = async (args: Record<string, any>, context: HomeAgentCapabilityContext) => {
   if (!isDeviceInstanceAvailable(context)) {
@@ -356,6 +519,7 @@ const searchDevices = async (args: Record<string, any>, context: HomeAgentCapabi
       pageSize: clampPageSize(args.limit ?? args.pageSize),
       items: [],
       organizationCandidates: [],
+      replyPolicy: buildHomeReplyPolicy(),
       summary: i18n.global.t('Instance.homeAgent.tool.search.organizationNotFound'),
       instruction: i18n.global.t('Instance.homeAgent.tool.search.organizationInstruction'),
     };
@@ -369,6 +533,7 @@ const searchDevices = async (args: Record<string, any>, context: HomeAgentCapabi
       items: [],
       organizationCandidates: organizationFilter.candidates,
       needsOrganizationSelection: true,
+      replyPolicy: buildHomeReplyPolicy(),
       summary: i18n.global.t('Instance.homeAgent.tool.search.organizationNeedSelection', [
         organizationFilter.candidates.length,
       ]),
@@ -390,6 +555,38 @@ const searchDevices = async (args: Record<string, any>, context: HomeAgentCapabi
   }
 
   const { list, total } = resolvePagedResult(response);
+  const latestUserGoal = resolveLatestUserGoal(context);
+  const explicitUserGoal = firstTextArg(args, 'userGoal');
+  const explicitSourceContext = firstTextArg(args, 'handoffContext');
+  const handoffGoalText = [
+    explicitUserGoal,
+    latestUserGoal,
+    args.intent,
+    args.keyword,
+    args.query,
+    args.idOrName,
+    args.name,
+    args.deviceName,
+    args.id,
+    args.deviceId,
+    explicitSourceContext,
+  ].map(normalizeText).filter(Boolean).join(' ');
+  const shouldPrepareHandoff = total === 1
+    || isPositiveHandoffIntent(args.handoffIntent)
+    || isDiagnosisHandoffGoal(handoffGoalText);
+  const handoffPromptSource = isPositiveHandoffIntent(args.handoffIntent) || isDiagnosisHandoffGoal(handoffGoalText)
+    ? (explicitUserGoal || latestUserGoal || handoffGoalText)
+    : (explicitUserGoal || latestUserGoal);
+  const handoffSearchContext = pickSearchContext(args, {
+    sourceContext: explicitSourceContext || latestUserGoal,
+    latestUserMessage: context.latestUserMessage ? {
+      content: latestUserGoal,
+      createdAt: context.latestUserMessage.createdAt,
+    } : undefined,
+    matchedTotal: total,
+    returnedCount: list.length,
+    selectedOrganizations: organizationFilter.selected,
+  });
   return {
     ok: true,
     total,
@@ -402,7 +599,17 @@ const searchDevices = async (args: Record<string, any>, context: HomeAgentCapabi
     },
     organizationCandidates: organizationFilter.candidates,
     selectedOrganizations: organizationFilter.selected,
-    items: list.map(compactDevice),
+    items: list.map((item) => compactDevice(
+      item,
+      handoffPromptSource,
+      shouldPrepareHandoff,
+      handoffSearchContext,
+    )),
+    replyPolicy: buildHomeReplyPolicy(),
+    handoff: {
+      nextStep: i18n.global.t('Instance.homeAgent.tool.search.handoffNextStep'),
+      singleDeviceDiagnosis: i18n.global.t('Instance.homeAgent.tool.search.handoffSingleDeviceDiagnosis'),
+    },
     summary: i18n.global.t('Instance.homeAgent.tool.search.summary', [
       total,
       list.length,
@@ -505,6 +712,27 @@ const createDeviceInstanceTools = (): AiClientToolDefinition<HomeAgentCapability
         valueType: 'string',
       },
       {
+        id: 'userGoal',
+        name: 'userGoal',
+        description: i18n.global.t('Instance.homeAgent.tool.search.userGoal'),
+        required: false,
+        valueType: 'string',
+      },
+      {
+        id: 'handoffIntent',
+        name: 'handoffIntent',
+        description: i18n.global.t('Instance.homeAgent.tool.search.handoffIntent'),
+        required: false,
+        valueType: 'boolean',
+      },
+      {
+        id: 'handoffContext',
+        name: 'handoffContext',
+        description: i18n.global.t('Instance.homeAgent.tool.search.handoffContext'),
+        required: false,
+        valueType: 'string',
+      },
+      {
         id: 'organizationId',
         name: 'organizationId',
         description: i18n.global.t('Instance.homeAgent.tool.search.organizationId'),
@@ -558,7 +786,7 @@ const createDeviceInstanceCapabilities = (context: HomeAgentCapabilityContext) =
       menuCode: DEVICE_INSTANCE_MENU_CODE,
       routeName: DEVICE_INSTANCE_MENU_CODE,
       path: DEVICE_INSTANCE_PATH,
-      order: 20,
+      order: 10,
       keywords: ['device', 'instance', 'search', '设备', '实例', '搜索'],
       metadata: {
         currentRoute,

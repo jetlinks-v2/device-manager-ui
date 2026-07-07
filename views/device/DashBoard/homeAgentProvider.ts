@@ -34,11 +34,11 @@ const isDeviceDashboardAvailable = (context: HomeAgentCapabilityContext) => (
 );
 
 const getPromptExamples = () => [
-  i18n.global.t('DashBoard.homeAgent.prompt.overview'),
   i18n.global.t('DashBoard.homeAgent.prompt.deviceStatus'),
   i18n.global.t('DashBoard.homeAgent.prompt.messageAggregation'),
-  i18n.global.t('DashBoard.homeAgent.prompt.messageTrend'),
   i18n.global.t('DashBoard.homeAgent.prompt.messagePeak'),
+  i18n.global.t('DashBoard.homeAgent.prompt.overview'),
+  i18n.global.t('DashBoard.homeAgent.prompt.messageTrend'),
 ];
 
 const getWorkflowGuides = (): HomeAgentWorkflowGuide[] => [

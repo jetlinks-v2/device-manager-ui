@@ -273,7 +273,7 @@ const createProductCapabilities = (context: HomeAgentCapabilityContext) => {
       keywords: ['product', 'device product', 'search', '产品', '设备产品', '搜索'],
       metadata: {
         currentRoute,
-        promptExamples: getProductPromptExamples(),
+        promptExamples: currentRoute ? getProductPromptExamples() : undefined,
       },
     },
   ];

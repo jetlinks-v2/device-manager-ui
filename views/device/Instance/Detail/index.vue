@@ -340,7 +340,6 @@ import { deviceStateList } from '@device-manager-ui/views/device/data'
 import { isApplyDashboard } from '@device-manager-ui/utils/dashboardProject'
 import { createDeviceDetailClientToolRuntime } from './clientTools'
 import {
-  EDGE_DIAGNOSIS_SYSTEM_PROMPT_LINES,
   EDGE_DIAGNOSIS_WORKFLOW_GUIDES,
   buildEdgeDiagnosisClientToolsDescription,
   isEdgeDiagnosisToolId
@@ -568,12 +567,8 @@ const DEVICE_AGENT_SUBJECT_TYPE = 'device'
 const DEVICE_DETAIL_AGENT_SYSTEM_PROMPT_LINES = [
   '你是设备详情页内的设备问数与诊断助手。',
   '当前会话的 subject 就是页面打开的设备，已通过 subjectType=device、subjectId、deviceId 和 deviceName 提供；用户没有明确要求其它设备时，不要再追问设备 ID。',
-  '当前会话可通过客户端工具读取该设备的状态、运行数据、告警、日志、接入、文档、功能和调试证据。',
-  '涉及抓包、实时链路、上报/下发报文、连接或认证复现场景时，先启动抓包窗口；需要触发下发、重连或上报时，应让抓包与触发动作并行，至少保证抓包已开始后再触发，不要事后抓包。',
-  '多步骤诊断可以先用一句业务侧说明承接，例如“我会先确认设备状态、近期数据和异常记录，再给出判断与建议。”',
-  '下一步建议可以输出 Markdown 链接，例如 [查看今日告警](#prompt=查看今日告警)，让用户一键填充到输入框。',
-  '设备告警中，当前状态来自告警记录，触发次数和历史时间线来自告警日志。',
-  '用户明确要求选择其它设备、按条件挑设备或跨设备对比时，可使用设备选择能力；未明确要求时仍使用当前 subject 设备。'
+  '当前会话可通过客户端工具读取该设备的状态、运行数据、告警、日志、接入、文档、功能和调试证据；需要当前事实时以本轮工具结果为准。',
+  '多步骤任务的取证顺序以当前会话的内部取证建议和工具结果为准。'
 ]
 const deviceDetailClientToolRuntime = createDeviceDetailClientToolRuntime(() => instanceStore.current || {})
 
@@ -668,7 +663,7 @@ const DEVICE_DETAIL_AGENT_WORKFLOW_GUIDES: AgentConversationWorkflowGuide[] = [
     steps: [
       {
         title: '先启动抓包窗口',
-        description: '抓包是实时窗口。先启动 device_trace_capture，再在窗口内触发下发、重连、认证复现或等待设备上报；不要先触发动作再抓包。',
+        description: '抓包是实时窗口。先启动实时链路采样，再在窗口内触发下发、重连、认证复现或等待设备上报；不要先触发动作再抓包。',
         tools: ['device_trace_capture'],
         inputs: { seconds: '按用户场景选择，默认5秒；复现较慢可增加到10-15秒', maxEvents: '高频场景可调大' },
       },
@@ -684,7 +679,7 @@ const DEVICE_DETAIL_AGENT_WORKFLOW_GUIDES: AgentConversationWorkflowGuide[] = [
       },
     ],
     output: ['抓到的通信概况', '上下行方向和关键报文', '重复/高频模式', '异常或缺失环节', '下一步复现建议'],
-    notes: ['device_trace_capture 会自动统计和按语义去重；不要把所有原始报文逐条复述给用户。'],
+    notes: ['实时链路采样会自动统计和按语义去重；不要把所有原始报文逐条复述给用户。'],
   },
   {
     id: 'device-bring-online',
@@ -887,10 +882,9 @@ const buildDeviceDetailAgentTabPrompt = () => {
 const buildDeviceDetailAgentSystemPrompt = () => {
   const lines = [...DEVICE_DETAIL_AGENT_SYSTEM_PROMPT_LINES]
   if (isDeviceRemoteFileSupported()) {
-    lines.splice(lines.length - 1, 0, '当前设备支持边缘网关边端运行态、MBean 白名单、线程摘要、系统文件只读片段和云边协同只读诊断能力。')
-    lines.splice(lines.length - 1, 0, ...EDGE_DIAGNOSIS_SYSTEM_PROMPT_LINES)
+    lines.splice(lines.length - 1, 0, '当前设备支持边缘网关云边协同只读诊断能力；具体取证顺序按内部取证建议选择。')
   } else {
-    lines.splice(lines.length - 1, 0, '当前设备未暴露边缘网关边端运行态、MBean、线程摘要、系统文件只读片段和云边协同诊断能力，相关入口暂不可用。')
+    lines.splice(lines.length - 1, 0, '当前设备未提供边缘网关云边协同诊断工具，相关问题仅能结合平台侧证据判断。')
   }
   lines.splice(lines.length - 1, 0, buildDeviceDetailAgentTabPrompt())
   return lines.join('\n')
@@ -920,15 +914,11 @@ const buildDeviceDetailClientToolsDescription = () => {
     ? buildEdgeDiagnosisClientToolsDescription(true)
     : buildEdgeDiagnosisClientToolsDescription(false)
   return [
-    '设备详情页提供当前设备的状态、接入、模型字段、属性、事件、文档、告警记录、告警日志、上下线、通信日志和链路样本工具。',
+    '设备详情页客户端工具可读取当前设备状态、接入、物模型、属性、事件、文档、告警、上下线、通信日志和链路样本。',
     remoteText,
-    isDeviceRemoteFileSupported()
-      ? '当前设备是边缘网关时，用户提出诊断、分析、排查、健康、稳定、异常原因、离线抖动、消息积压、日志或 JVM 类问题，应先按云边协同诊断流程取证，再结合平台侧证据回答；CPU、线程、JVM 和积压问题不要从边端文件读取开始。'
-      : '宽泛、多步骤或排障类问题可结合工作流指导选择工具。',
-    '当前设备默认来自 subject；设备选择能力用于其它设备或跨设备对比。',
-    '用户说获取、读取或查询某项设备信息时，先判断数据来源：平台已有的属性、历史、事件、日志、告警和文档走对应查询工具；若该信息命中物模型功能且需要设备返回结果，则通过功能调用工具在确认后获取，不要只解释模型里存在该功能。',
-    '抓包、实时链路、上报/下发报文、连接或认证复现场景必须先启动抓包；需要触发下发、重连或上报时，在抓包窗口内并行触发，不要事后抓包。device_trace_capture 会自动返回统计、语义去重摘要和代表样本。',
-    '明细较大、导出、报告或图表可由设备业务工具写入会话文件，数据集工具适合已写入文件后的二次加工。'
+    '当前设备默认来自 subject；只有用户明确要求其它设备或跨设备对比时才使用设备选择能力。',
+    '复杂排障、功能调用、抓包、告警和云边诊断的取证顺序由内部取证建议承载，工具说明只描述能力和返回边界。',
+    '较大明细、导出、报告或图表优先由设备业务工具写入会话文件；数据集工具只用于已写入文件后的二次加工。'
   ].join('\n')
 }
 
