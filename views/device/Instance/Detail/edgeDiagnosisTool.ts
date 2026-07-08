@@ -14,12 +14,14 @@ import {
 import type { AiClientToolDefinition } from '@jetlinks-web-core/layout/components/AiChat/clientTools'
 
 type DeviceDetailRecord = Record<string, any>
+type TranslateFn = (key: string, params?: Record<string, any>) => string
 
 interface EdgeDiagnosisToolContext {
   device: DeviceDetailRecord
 }
 
 interface EdgeDiagnosisToolDependencies {
+  t: TranslateFn
   clampNumber: (value: unknown, min: number, max: number, defaultValue: number) => number
   asArray: <T = any>(value: unknown) => T[]
   responseResult: (response: any) => any
@@ -42,47 +44,58 @@ const TEXT_FILE_GLOB = '**/*.{log,txt,out,err,json,yml,yaml,properties,conf,xml}
 
 const MBEAN_QUERIES = {
   master: {
-    label: 'master',
+    scope: 'master',
+    i18nKey: 'DeviceDetail.edgeTools.mbean.scopes.master',
     name: 'org.jetlinks:type=EdgeMasterManager,name=DefaultEdgeMasterManager'
   },
   buffer: {
-    label: 'buffer',
+    scope: 'buffer',
+    i18nKey: 'DeviceDetail.edgeTools.mbean.scopes.buffer',
     name: 'org.jetlinks:type=PersistenceBuffer,name=*'
   },
   trace: {
-    label: 'trace',
+    scope: 'trace',
+    i18nKey: 'DeviceDetail.edgeTools.mbean.scopes.trace',
     name: 'org.jetlinks:type=Tracing,name=LocalTracing'
   },
   network: {
-    label: 'network',
+    scope: 'network',
+    i18nKey: 'DeviceDetail.edgeTools.mbean.scopes.network',
     name: 'org.jetlinks:type=NetworkManager,name=NetworkMonitor'
   },
   session: {
-    label: 'session',
+    scope: 'session',
+    i18nKey: 'DeviceDetail.edgeTools.mbean.scopes.session',
     name: 'org.jetlinks:type=DeviceSessionManager,name=PersistenceDeviceSessionManager'
   },
   eventbus: {
-    label: 'eventbus',
+    scope: 'eventbus',
+    i18nKey: 'DeviceDetail.edgeTools.mbean.scopes.eventbus',
     name: 'org.jetlinks:type=EventBus,name=ClusterEventBus'
   },
   memory: {
-    label: 'jvm.memory',
+    scope: 'jvm.memory',
+    i18nKey: 'DeviceDetail.edgeTools.mbean.scopes.memory',
     name: 'java.lang:type=Memory'
   },
   threading: {
-    label: 'jvm.threading',
+    scope: 'jvm.threading',
+    i18nKey: 'DeviceDetail.edgeTools.mbean.scopes.threading',
     name: 'java.lang:type=Threading'
   },
   runtime: {
-    label: 'jvm.runtime',
+    scope: 'jvm.runtime',
+    i18nKey: 'DeviceDetail.edgeTools.mbean.scopes.runtime',
     name: 'java.lang:type=Runtime'
   },
   os: {
-    label: 'jvm.os',
+    scope: 'jvm.os',
+    i18nKey: 'DeviceDetail.edgeTools.mbean.scopes.os',
     name: 'java.lang:type=OperatingSystem'
   },
   gc: {
-    label: 'jvm.gc',
+    scope: 'jvm.gc',
+    i18nKey: 'DeviceDetail.edgeTools.mbean.scopes.gc',
     name: 'java.lang:type=GarbageCollector,name=*'
   }
 } as const
@@ -106,7 +119,7 @@ const MBEAN_SCOPE_MAPPING: Record<string, Array<keyof typeof MBEAN_QUERIES>> = {
 
 const ensureSuccessResult = (response: any, deps: EdgeDiagnosisToolDependencies) => {
   if (response?.success === false) {
-    throw new Error(response?.message || response?.result || 'request failed')
+    throw new Error(response?.message || response?.result || deps.t('DeviceDetail.agentTools.common.errors.requestFailed'))
   }
   if (response?.status && response.status !== 200) {
     throw new Error(response?.message || `${response.status}`)
@@ -119,10 +132,10 @@ const ensureEdgeSupported = (
   deps: EdgeDiagnosisToolDependencies
 ) => {
   const deviceId = deps.getDeviceId(context)
-  if (!deviceId) throw new Error('deviceId missing')
+  if (!deviceId) throw new Error(deps.t('DeviceDetail.agentTools.common.errors.deviceIdMissing'))
   const accessProvider = context.device?.accessProvider
   if (!isEdgeDiagnosisAccessProvider(accessProvider)) {
-    throw new Error(`edge diagnosis unsupported for accessProvider: ${accessProvider || 'unknown'}`)
+    throw new Error(deps.t('DeviceDetail.edgeTools.common.errors.unsupportedAccessProvider', { accessProvider: accessProvider || 'unknown' }))
   }
   return deviceId
 }
@@ -252,18 +265,19 @@ const getMBeanSections = async (
   deps: EdgeDiagnosisToolDependencies
 ) => Promise.all(queryKeys.map(async (key) => {
   const query = MBEAN_QUERIES[key]
+  const label = deps.t(query.i18nKey)
   const result = await safePart(async () => {
     const data = ensureSuccessResult(await queryRemoteSystemMonitorMBean(deviceId, query.name), deps)
     return listMBeanBeans(data).map((bean) => ({
-      label: query.label,
+      label,
       type: bean.type,
       name: bean.name,
       attributes: bean.attributes
     }))
   })
   return result.ok
-    ? { scope: query.label, ok: true, beans: result.data }
-    : { scope: query.label, ok: false, error: result.error }
+    ? { scope: query.scope, scopeLabel: label, ok: true, beans: result.data }
+    : { scope: query.scope, scopeLabel: label, ok: false, error: result.error }
 }))
 
 const resolveMBeanScopes = (scope: unknown) => {
@@ -318,10 +332,10 @@ export const createEdgeDiagnosisClientTools = (
     {
       id: 'edge_runtime_summary',
       name: 'edge_runtime_summary',
-      description: '读取当前边缘网关的系统、JVM、线程和内存只读摘要。',
+      description: deps.t('DeviceDetail.edgeTools.runtimeSummary.description'),
       inputs: [],
       output: { type: 'object' },
-      help: '边端运行态摘要。用于判断边端 JVM、线程、内存、OS 负载是否有明显异常；不返回完整系统属性、classPath 或启动参数明细。',
+      help: deps.t('DeviceDetail.edgeTools.runtimeSummary.help'),
       execute: async (_args, context) => {
         const deviceId = ensureEdgeSupported(context, deps)
         const [nodeDetail, jvmSections] = await Promise.all([
@@ -354,18 +368,18 @@ export const createEdgeDiagnosisClientTools = (
     {
       id: 'edge_mbean_summary',
       name: 'edge_mbean_summary',
-      description: '读取边端白名单 MBean 的只读属性摘要。',
+      description: deps.t('DeviceDetail.edgeTools.mbeanSummary.description'),
       inputs: [
         {
           id: 'scope',
           name: 'scope',
-          description: '摘要范围：all/master/buffer/trace/network/session/eventbus/jvm，多个范围用逗号分隔。',
+          description: deps.t('DeviceDetail.edgeTools.mbeanSummary.inputs.scope'),
           required: false,
           valueType: 'string'
         }
       ],
       output: { type: 'object' },
-      help: '只读 MBean 摘要。仅查询白名单属性，并过滤所有 @operation；不能执行 MBean invoke。',
+      help: deps.t('DeviceDetail.edgeTools.mbeanSummary.help'),
       execute: async (args, context) => {
         const deviceId = ensureEdgeSupported(context, deps)
         const queryKeys = resolveMBeanScopes(args.scope)
@@ -379,10 +393,10 @@ export const createEdgeDiagnosisClientTools = (
     {
       id: 'edge_master_summary',
       name: 'edge_master_summary',
-      description: '读取边缘网关 master 连接只读摘要。',
+      description: deps.t('DeviceDetail.edgeTools.masterSummary.description'),
       inputs: [],
       output: { type: 'object' },
-      help: '云边 master 连接摘要。用于判断 provider、连接状态、上行/下行执行错误和连续错误，不暴露底层连接对象完整结构。',
+      help: deps.t('DeviceDetail.edgeTools.masterSummary.help'),
       execute: async (_args, context) => {
         const deviceId = ensureEdgeSupported(context, deps)
         const sections = await getMBeanSections(deviceId, ['master'], deps)
@@ -413,10 +427,10 @@ export const createEdgeDiagnosisClientTools = (
     {
       id: 'edge_persistence_buffer_summary',
       name: 'edge_persistence_buffer_summary',
-      description: '读取边端 PersistenceBuffer 只读摘要。',
+      description: deps.t('DeviceDetail.edgeTools.bufferSummary.description'),
       inputs: [],
       output: { type: 'object' },
-      help: '边端缓冲区摘要。用于判断 remainder、deadSize、wip、lastError、写入写出和磁盘占用；不会执行 reset/flush/retry/recovery/peekDead。',
+      help: deps.t('DeviceDetail.edgeTools.bufferSummary.help'),
       execute: async (_args, context) => {
         const deviceId = ensureEdgeSupported(context, deps)
         const sections = await getMBeanSections(deviceId, ['buffer'], deps)
@@ -441,10 +455,10 @@ export const createEdgeDiagnosisClientTools = (
     {
       id: 'edge_trace_summary',
       name: 'edge_trace_summary',
-      description: '读取边端 trace 存储与启用状态只读摘要。',
+      description: deps.t('DeviceDetail.edgeTools.traceSummary.description'),
       inputs: [],
       output: { type: 'object' },
-      help: '边端 trace 摘要。只读取大小、内存占用、存储文件和启用状态；不执行 enable/disable/cleanup/compact。',
+      help: deps.t('DeviceDetail.edgeTools.traceSummary.help'),
       execute: async (_args, context) => {
         const deviceId = ensureEdgeSupported(context, deps)
         const sections = await getMBeanSections(deviceId, ['trace'], deps)
@@ -465,10 +479,10 @@ export const createEdgeDiagnosisClientTools = (
     {
       id: 'edge_system_file_workdir',
       name: 'edge_system_file_workdir',
-      description: '获取当前边缘网关系统文件工作目录。',
+      description: deps.t('DeviceDetail.edgeTools.fileWorkdir.description'),
       inputs: [],
       output: { type: 'object' },
-      help: '获取边端文件工作目录。仅用于后续只读目录和日志排查，不向最终用户输出内部路径。',
+      help: deps.t('DeviceDetail.edgeTools.fileWorkdir.help'),
       execute: async (_args, context) => {
         const workingDirectory = await executeFileCommand(context, getRemoteSystemWorkingDirectory)
         return {
@@ -480,14 +494,14 @@ export const createEdgeDiagnosisClientTools = (
     {
       id: 'edge_system_file_list',
       name: 'edge_system_file_list',
-      description: '列出当前边缘网关系统文件目录。',
+      description: deps.t('DeviceDetail.edgeTools.fileList.description'),
       inputs: [
-        { id: 'path', name: 'path', description: '目录路径；为空时先读取工作目录。', required: false, valueType: 'string' },
-        { id: 'filter', name: 'filter', description: '按文件名过滤的普通关键词。', required: false, valueType: 'string' },
-        { id: 'limit', name: 'limit', description: '最多返回条数，默认50，最大200。', required: false, valueType: 'int' }
+        { id: 'path', name: 'path', description: deps.t('DeviceDetail.edgeTools.inputs.pathOptionalWorkdir'), required: false, valueType: 'string' },
+        { id: 'filter', name: 'filter', description: deps.t('DeviceDetail.edgeTools.inputs.filter'), required: false, valueType: 'string' },
+        { id: 'limit', name: 'limit', description: deps.t('DeviceDetail.edgeTools.inputs.limit50'), required: false, valueType: 'int' }
       ],
       output: { type: 'object' },
-      help: '列出边端目录，只返回有限条目。filter 会按普通关键词转义后传入文件名过滤。',
+      help: deps.t('DeviceDetail.edgeTools.fileList.help'),
       execute: async (args, context) => {
         const deviceId = ensureEdgeSupported(context, deps)
         const limit = deps.clampNumber(args.limit, 1, 200, 50)
@@ -516,16 +530,16 @@ export const createEdgeDiagnosisClientTools = (
     {
       id: 'edge_system_file_stat',
       name: 'edge_system_file_stat',
-      description: '读取边端系统文件状态。',
+      description: deps.t('DeviceDetail.edgeTools.fileStat.description'),
       inputs: [
-        { id: 'path', name: 'path', description: '文件或目录路径。', required: true, valueType: 'string' },
-        { id: 'entry', name: 'entry', description: '压缩包内 entry；普通文件为空。', required: false, valueType: 'string' }
+        { id: 'path', name: 'path', description: deps.t('DeviceDetail.edgeTools.inputs.fileOrDirectoryPath'), required: true, valueType: 'string' },
+        { id: 'entry', name: 'entry', description: deps.t('DeviceDetail.edgeTools.inputs.archiveEntry'), required: false, valueType: 'string' }
       ],
       output: { type: 'object' },
-      help: '读取前判断文件大小、文本/压缩/压缩包、seek 能力和可读性，帮助选择 tail/read/search/archive。',
+      help: deps.t('DeviceDetail.edgeTools.fileStat.help'),
       execute: async (args, context) => {
         const path = String(args.path || '').trim()
-        if (!path) throw new Error('path missing')
+        if (!path) throw new Error(deps.t('DeviceDetail.agentTools.common.errors.pathMissing'))
         return sanitizeValue(await executeFileCommand(context, (deviceId) => statRemoteSystemFile(deviceId, {
           path,
           entry: String(args.entry || '').trim() || undefined
@@ -535,18 +549,18 @@ export const createEdgeDiagnosisClientTools = (
     {
       id: 'edge_system_file_tail',
       name: 'edge_system_file_tail',
-      description: '读取边端文本文件尾部有限行。',
+      description: deps.t('DeviceDetail.edgeTools.fileTail.description'),
       inputs: [
-        { id: 'path', name: 'path', description: '文件路径。', required: true, valueType: 'string' },
-        { id: 'entry', name: 'entry', description: '压缩包内 entry；普通文件为空。', required: false, valueType: 'string' },
-        { id: 'lines', name: 'lines', description: '读取尾部行数，默认120，最大300。', required: false, valueType: 'int' },
-        { id: 'charset', name: 'charset', description: '文本编码；为空使用服务端建议。', required: false, valueType: 'string' }
+        { id: 'path', name: 'path', description: deps.t('DeviceDetail.edgeTools.inputs.filePath'), required: true, valueType: 'string' },
+        { id: 'entry', name: 'entry', description: deps.t('DeviceDetail.edgeTools.inputs.archiveEntry'), required: false, valueType: 'string' },
+        { id: 'lines', name: 'lines', description: deps.t('DeviceDetail.edgeTools.inputs.tailLines'), required: false, valueType: 'int' },
+        { id: 'charset', name: 'charset', description: deps.t('DeviceDetail.edgeTools.inputs.charset'), required: false, valueType: 'string' }
       ],
       output: { type: 'object' },
-      help: '读取日志尾部。用于日志首轮排查，返回截断原因和下一次读取线索。',
+      help: deps.t('DeviceDetail.edgeTools.fileTail.help'),
       execute: async (args, context) => {
         const path = String(args.path || '').trim()
-        if (!path) throw new Error('path missing')
+        if (!path) throw new Error(deps.t('DeviceDetail.agentTools.common.errors.pathMissing'))
         const lines = deps.clampNumber(args.lines, 1, 300, 120)
         const slice = await executeFileCommand(context, (deviceId) => tailRemoteSystemFile(deviceId, {
           path,
@@ -560,18 +574,18 @@ export const createEdgeDiagnosisClientTools = (
     {
       id: 'edge_system_file_head',
       name: 'edge_system_file_head',
-      description: '读取边端文本文件开头有限行。',
+      description: deps.t('DeviceDetail.edgeTools.fileHead.description'),
       inputs: [
-        { id: 'path', name: 'path', description: '文件路径。', required: true, valueType: 'string' },
-        { id: 'entry', name: 'entry', description: '压缩包内 entry；普通文件为空。', required: false, valueType: 'string' },
-        { id: 'lines', name: 'lines', description: '读取开头行数，默认80，最大300。', required: false, valueType: 'int' },
-        { id: 'charset', name: 'charset', description: '文本编码；为空使用服务端建议。', required: false, valueType: 'string' }
+        { id: 'path', name: 'path', description: deps.t('DeviceDetail.edgeTools.inputs.filePath'), required: true, valueType: 'string' },
+        { id: 'entry', name: 'entry', description: deps.t('DeviceDetail.edgeTools.inputs.archiveEntry'), required: false, valueType: 'string' },
+        { id: 'lines', name: 'lines', description: deps.t('DeviceDetail.edgeTools.inputs.headLines'), required: false, valueType: 'int' },
+        { id: 'charset', name: 'charset', description: deps.t('DeviceDetail.edgeTools.inputs.charset'), required: false, valueType: 'string' }
       ],
       output: { type: 'object' },
-      help: '读取文本文件开头。适合先看配置头部、启动日志开头或文件格式；返回截断原因和下一次读取线索。',
+      help: deps.t('DeviceDetail.edgeTools.fileHead.help'),
       execute: async (args, context) => {
         const path = String(args.path || '').trim()
-        if (!path) throw new Error('path missing')
+        if (!path) throw new Error(deps.t('DeviceDetail.agentTools.common.errors.pathMissing'))
         const lines = deps.clampNumber(args.lines, 1, 300, 80)
         const slice = await executeFileCommand(context, (deviceId) => headRemoteSystemFile(deviceId, {
           path,
@@ -585,21 +599,21 @@ export const createEdgeDiagnosisClientTools = (
     {
       id: 'edge_system_file_read_text',
       name: 'edge_system_file_read_text',
-      description: '按行读取边端文本文件片段。',
+      description: deps.t('DeviceDetail.edgeTools.fileReadText.description'),
       inputs: [
-        { id: 'path', name: 'path', description: '文件路径。', required: true, valueType: 'string' },
-        { id: 'entry', name: 'entry', description: '压缩包内 entry；普通文件为空。', required: false, valueType: 'string' },
-        { id: 'fromLine', name: 'fromLine', description: '起始行，0 基且包含。', required: false, valueType: 'long' },
-        { id: 'toLine', name: 'toLine', description: '结束行，0 基且不包含。', required: false, valueType: 'long' },
-        { id: 'tailLines', name: 'tailLines', description: '从尾部读取行数；设置后优先于 fromLine/toLine。', required: false, valueType: 'int' },
-        { id: 'maxLines', name: 'maxLines', description: '最多返回行数，默认120，最大300。', required: false, valueType: 'int' },
-        { id: 'charset', name: 'charset', description: '文本编码；为空使用服务端建议。', required: false, valueType: 'string' }
+        { id: 'path', name: 'path', description: deps.t('DeviceDetail.edgeTools.inputs.filePath'), required: true, valueType: 'string' },
+        { id: 'entry', name: 'entry', description: deps.t('DeviceDetail.edgeTools.inputs.archiveEntry'), required: false, valueType: 'string' },
+        { id: 'fromLine', name: 'fromLine', description: deps.t('DeviceDetail.edgeTools.inputs.fromLine'), required: false, valueType: 'long' },
+        { id: 'toLine', name: 'toLine', description: deps.t('DeviceDetail.edgeTools.inputs.toLine'), required: false, valueType: 'long' },
+        { id: 'tailLines', name: 'tailLines', description: deps.t('DeviceDetail.edgeTools.inputs.tailLinesOverride'), required: false, valueType: 'int' },
+        { id: 'maxLines', name: 'maxLines', description: deps.t('DeviceDetail.edgeTools.inputs.maxLines'), required: false, valueType: 'int' },
+        { id: 'charset', name: 'charset', description: deps.t('DeviceDetail.edgeTools.inputs.charset'), required: false, valueType: 'string' }
       ],
       output: { type: 'object' },
-      help: '分段读取文本。根据 truncated 和 nextFromLine 决定是否继续；不要循环读取整文件。',
+      help: deps.t('DeviceDetail.edgeTools.fileReadText.help'),
       execute: async (args, context) => {
         const path = String(args.path || '').trim()
-        if (!path) throw new Error('path missing')
+        if (!path) throw new Error(deps.t('DeviceDetail.agentTools.common.errors.pathMissing'))
         const maxLines = deps.clampNumber(args.maxLines ?? args.lines, 1, 300, 120)
         const slice = await executeFileCommand(context, (deviceId) => readRemoteSystemTextFile(deviceId, {
           path,
@@ -616,25 +630,25 @@ export const createEdgeDiagnosisClientTools = (
     {
       id: 'edge_system_file_search',
       name: 'edge_system_file_search',
-      description: '在边端单文件、目录、gzip 或 zip entry 中搜索错误关键词。',
+      description: deps.t('DeviceDetail.edgeTools.fileSearch.description'),
       inputs: [
-        { id: 'path', name: 'path', description: '文件或目录路径。', required: true, valueType: 'string' },
-        { id: 'entry', name: 'entry', description: '压缩包内 entry；普通文件或目录为空。', required: false, valueType: 'string' },
-        { id: 'pattern', name: 'pattern', description: '搜索关键词；默认搜索常见错误关键词。regex=false 时按普通词转义。', required: false, valueType: 'string' },
-        { id: 'regex', name: 'regex', description: '是否把 pattern 作为 Java 正则，默认 false。', required: false, valueType: 'boolean' },
-        { id: 'caseInsensitive', name: 'caseInsensitive', description: '是否忽略大小写，默认 true。', required: false, valueType: 'boolean' },
-        { id: 'maxMatches', name: 'maxMatches', description: '最多命中数，默认20，最大50。', required: false, valueType: 'int' },
-        { id: 'maxFiles', name: 'maxFiles', description: '目录搜索最多文件数，默认20，最大80。', required: false, valueType: 'int' },
-        { id: 'maxDepth', name: 'maxDepth', description: '目录搜索最大深度，默认3，最大6。', required: false, valueType: 'int' },
-        { id: 'beforeLines', name: 'beforeLines', description: '命中前上下文行数，默认1，最大3。', required: false, valueType: 'int' },
-        { id: 'afterLines', name: 'afterLines', description: '命中后上下文行数，默认1，最大3。', required: false, valueType: 'int' },
-        { id: 'includeGlob', name: 'includeGlob', description: `包含 glob，默认 ${TEXT_FILE_GLOB}。`, required: false, valueType: 'string' }
+        { id: 'path', name: 'path', description: deps.t('DeviceDetail.edgeTools.inputs.fileOrDirectoryPath'), required: true, valueType: 'string' },
+        { id: 'entry', name: 'entry', description: deps.t('DeviceDetail.edgeTools.inputs.archiveEntryForSearch'), required: false, valueType: 'string' },
+        { id: 'pattern', name: 'pattern', description: deps.t('DeviceDetail.edgeTools.inputs.pattern'), required: false, valueType: 'string' },
+        { id: 'regex', name: 'regex', description: deps.t('DeviceDetail.edgeTools.inputs.regex'), required: false, valueType: 'boolean' },
+        { id: 'caseInsensitive', name: 'caseInsensitive', description: deps.t('DeviceDetail.edgeTools.inputs.caseInsensitive'), required: false, valueType: 'boolean' },
+        { id: 'maxMatches', name: 'maxMatches', description: deps.t('DeviceDetail.edgeTools.inputs.maxMatches'), required: false, valueType: 'int' },
+        { id: 'maxFiles', name: 'maxFiles', description: deps.t('DeviceDetail.edgeTools.inputs.maxFiles'), required: false, valueType: 'int' },
+        { id: 'maxDepth', name: 'maxDepth', description: deps.t('DeviceDetail.edgeTools.inputs.maxDepth'), required: false, valueType: 'int' },
+        { id: 'beforeLines', name: 'beforeLines', description: deps.t('DeviceDetail.edgeTools.inputs.beforeLines'), required: false, valueType: 'int' },
+        { id: 'afterLines', name: 'afterLines', description: deps.t('DeviceDetail.edgeTools.inputs.afterLines'), required: false, valueType: 'int' },
+        { id: 'includeGlob', name: 'includeGlob', description: deps.t('DeviceDetail.edgeTools.inputs.includeGlob', { glob: TEXT_FILE_GLOB }), required: false, valueType: 'string' }
       ],
       output: { type: 'object' },
-      help: '搜索日志错误。默认按普通关键词安全转义；只有 regex=true 时才使用 Java 正则。',
+      help: deps.t('DeviceDetail.edgeTools.fileSearch.help'),
       execute: async (args, context) => {
         const path = String(args.path || '').trim()
-        if (!path) throw new Error('path missing')
+        if (!path) throw new Error(deps.t('DeviceDetail.agentTools.common.errors.pathMissing'))
         const maxMatches = deps.clampNumber(args.maxMatches, 1, 50, 20)
         const matches = deps.asArray<Record<string, any>>(await executeFileCommand(context, (deviceId) => searchRemoteSystemFile(deviceId, {
           path,
@@ -664,16 +678,16 @@ export const createEdgeDiagnosisClientTools = (
     {
       id: 'edge_system_file_archive_entries',
       name: 'edge_system_file_archive_entries',
-      description: '枚举边端 zip 压缩包正常 entry。',
+      description: deps.t('DeviceDetail.edgeTools.archiveEntries.description'),
       inputs: [
-        { id: 'path', name: 'path', description: '压缩包路径。', required: true, valueType: 'string' },
-        { id: 'maxEntries', name: 'maxEntries', description: '最多返回 entry 数，默认50，最大200。', required: false, valueType: 'int' }
+        { id: 'path', name: 'path', description: deps.t('DeviceDetail.edgeTools.inputs.archivePath'), required: true, valueType: 'string' },
+        { id: 'maxEntries', name: 'maxEntries', description: deps.t('DeviceDetail.edgeTools.inputs.maxEntries'), required: false, valueType: 'int' }
       ],
       output: { type: 'object' },
-      help: '只枚举压缩包 entry，不整体解压。后续读取或搜索必须指定 entry。',
+      help: deps.t('DeviceDetail.edgeTools.archiveEntries.help'),
       execute: async (args, context) => {
         const path = String(args.path || '').trim()
-        if (!path) throw new Error('path missing')
+        if (!path) throw new Error(deps.t('DeviceDetail.agentTools.common.errors.pathMissing'))
         const maxEntries = deps.clampNumber(args.maxEntries, 1, 200, 50)
         const entries = deps.asArray<Record<string, any>>(await executeFileCommand(context, (deviceId) => listRemoteSystemArchiveEntries(deviceId, {
           path,
@@ -691,17 +705,17 @@ export const createEdgeDiagnosisClientTools = (
     {
       id: 'edge_runtime_logs_summary',
       name: 'edge_runtime_logs_summary',
-      description: '按工作目录、目录列表、文件状态、Tail 和 Search 汇总最近边端日志异常。',
+      description: deps.t('DeviceDetail.edgeTools.runtimeLogs.description'),
       inputs: [
-        { id: 'path', name: 'path', description: '指定日志文件路径；为空时从工作目录中筛选候选日志。', required: false, valueType: 'string' },
-        { id: 'filter', name: 'filter', description: '候选文件名过滤关键词，默认 log。', required: false, valueType: 'string' },
-        { id: 'pattern', name: 'pattern', description: '错误搜索关键词，默认常见错误关键词。', required: false, valueType: 'string' },
-        { id: 'regex', name: 'regex', description: '是否把 pattern 作为 Java 正则，默认 false。', required: false, valueType: 'boolean' },
-        { id: 'lines', name: 'lines', description: '每个候选文件读取尾部行数，默认80，最大200。', required: false, valueType: 'int' },
-        { id: 'maxFiles', name: 'maxFiles', description: '最多分析候选文件数，默认3，最大5。', required: false, valueType: 'int' }
+        { id: 'path', name: 'path', description: deps.t('DeviceDetail.edgeTools.runtimeLogs.inputs.path'), required: false, valueType: 'string' },
+        { id: 'filter', name: 'filter', description: deps.t('DeviceDetail.edgeTools.runtimeLogs.inputs.filter'), required: false, valueType: 'string' },
+        { id: 'pattern', name: 'pattern', description: deps.t('DeviceDetail.edgeTools.runtimeLogs.inputs.pattern'), required: false, valueType: 'string' },
+        { id: 'regex', name: 'regex', description: deps.t('DeviceDetail.edgeTools.inputs.regex'), required: false, valueType: 'boolean' },
+        { id: 'lines', name: 'lines', description: deps.t('DeviceDetail.edgeTools.runtimeLogs.inputs.lines'), required: false, valueType: 'int' },
+        { id: 'maxFiles', name: 'maxFiles', description: deps.t('DeviceDetail.edgeTools.runtimeLogs.inputs.maxFiles'), required: false, valueType: 'int' }
       ],
       output: { type: 'object' },
-      help: '边端日志摘要。优先 tail 和错误搜索，只返回有限样本、截断原因和无法确认项。',
+      help: deps.t('DeviceDetail.edgeTools.runtimeLogs.help'),
       execute: async (args, context) => {
         const deviceId = ensureEdgeSupported(context, deps)
         const lines = deps.clampNumber(args.lines, 1, 200, 80)
@@ -762,18 +776,18 @@ export const createEdgeDiagnosisClientTools = (
     {
       id: 'edge_thread_dump_summary',
       name: 'edge_thread_dump_summary',
-      description: '读取边端线程 dump 文本并返回有限摘要。',
+      description: deps.t('DeviceDetail.edgeTools.threadDump.description'),
       confirm: {
-        title: '读取边端线程摘要',
-        content: '该操作会在边端生成一次线程 dump 文本摘要，适合 CPU 高、线程阻塞等深度诊断。不会下载原始 dump 文件。',
-        okText: '读取摘要',
-        cancelText: '取消'
+        title: deps.t('DeviceDetail.edgeTools.threadDump.confirmTitle'),
+        content: deps.t('DeviceDetail.edgeTools.threadDump.confirmContent'),
+        okText: deps.t('DeviceDetail.edgeTools.threadDump.confirmOk'),
+        cancelText: deps.t('DeviceDetail.agentTools.common.cancel')
       },
       inputs: [
-        { id: 'maxPreviewLength', name: 'maxPreviewLength', description: '摘要预览最大字符数，默认6000，最大12000。', required: false, valueType: 'int' }
+        { id: 'maxPreviewLength', name: 'maxPreviewLength', description: deps.t('DeviceDetail.edgeTools.threadDump.inputs.maxPreviewLength'), required: false, valueType: 'int' }
       ],
       output: { type: 'object' },
-      help: '线程 dump 摘要需要用户确认。工具只返回状态计数和有限预览，不执行 JFR、heap dump 或终端命令。',
+      help: deps.t('DeviceDetail.edgeTools.threadDump.help'),
       execute: async (args, context) => {
         const deviceId = ensureEdgeSupported(context, deps)
         const maxPreviewLength = deps.clampNumber(args.maxPreviewLength, 1000, 12000, 6000)

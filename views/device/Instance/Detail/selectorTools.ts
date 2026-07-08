@@ -2,6 +2,8 @@ import { query as queryDeviceInstance } from '../../../../api/instance';
 import { aiClientToolRegistry } from '@jetlinks-web-core/layout/components/AiChat/clientToolRegistry';
 import type { AiClientToolDefinition } from '@jetlinks-web-core/layout/components/AiChat/clientTools';
 
+type TranslateFn = (key: string, params?: Record<string, any>) => string;
+
 const DEVICE_DETAIL_SELECTOR_SCOPE = 'device-detail-selectors';
 
 const responseResult = (response: any) => response?.result ?? response?.data ?? response;
@@ -99,49 +101,49 @@ const normalizeDeviceCandidate = (item: Record<string, any>) => ({
   createTime: item.createTime,
 });
 
-const createDeviceSelectorTool = (): AiClientToolDefinition => ({
+const createDeviceSelectorTool = (t: TranslateFn): AiClientToolDefinition => ({
   id: 'device_selector_query',
   name: 'device_selector_query',
-  description: '按关键词、产品或状态查询设备候选列表，用于需要用户选择其它设备的对话场景。',
+  description: t('DeviceDetail.agentTools.deviceSelector.description'),
   inputs: [
     {
       id: 'keyword',
       name: 'keyword',
-      description: '设备ID、设备名称或产品名称关键词。',
+      description: t('DeviceDetail.agentTools.deviceSelector.inputs.keyword'),
       required: false,
       valueType: 'string',
     },
     {
       id: 'productId',
       name: 'productId',
-      description: '产品ID，已知产品时用于缩小候选范围。',
+      description: t('DeviceDetail.agentTools.deviceSelector.inputs.productId'),
       required: false,
       valueType: 'string',
     },
     {
       id: 'productName',
       name: 'productName',
-      description: '产品名称关键词。',
+      description: t('DeviceDetail.agentTools.deviceSelector.inputs.productName'),
       required: false,
       valueType: 'string',
     },
     {
       id: 'state',
       name: 'state',
-      description: '设备状态：online/offline/notActive，也支持“在线/离线/禁用”。',
+      description: t('DeviceDetail.agentTools.deviceSelector.inputs.state'),
       required: false,
       valueType: 'string',
     },
     {
       id: 'limit',
       name: 'limit',
-      description: '最多返回候选数量，默认10，最大20。',
+      description: t('DeviceDetail.agentTools.deviceSelector.inputs.limit'),
       required: false,
       valueType: 'int',
     },
   ],
   output: { type: 'object' },
-  help: '设备候选查询。当前设备详情页默认使用 subject 设备；只有用户明确要选择或对比其它设备、或问题缺少设备对象时才使用。多个候选时应列出候选并让用户确认，不要擅自切换当前 subject。',
+  help: t('DeviceDetail.agentTools.deviceSelector.help'),
   execute: async (args) => {
     const limit = clampNumber(args.limit, 1, 20, 10);
     const resp = await queryDeviceInstance({
@@ -158,13 +160,13 @@ const createDeviceSelectorTool = (): AiClientToolDefinition => ({
       total: paged.total,
       returned: paged.data.length,
       candidates: paged.data.map(normalizeDeviceCandidate),
-      nextAction: paged.total > 1 ? '请根据候选设备让用户确认目标设备。' : undefined,
+      nextAction: paged.total > 1 ? t('DeviceDetail.agentTools.deviceSelector.nextAction.confirmTarget') : undefined,
     };
   },
 });
 
-export const registerDeviceDetailSelectorTools = () => {
-  aiClientToolRegistry.register(DEVICE_DETAIL_SELECTOR_SCOPE, createDeviceSelectorTool());
+export const registerDeviceDetailSelectorTools = (t: TranslateFn) => {
+  aiClientToolRegistry.register(DEVICE_DETAIL_SELECTOR_SCOPE, createDeviceSelectorTool(t));
 };
 
 export { DEVICE_DETAIL_SELECTOR_SCOPE };

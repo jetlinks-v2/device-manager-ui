@@ -9,7 +9,10 @@ type DeviceClientToolContext = {
   device: Record<string, any>
 }
 
+type TranslateFn = (key: string, params?: Record<string, any>) => string
+
 interface DeviceTraceCaptureToolDependencies {
+  t: TranslateFn
   clampNumber: (value: unknown, min: number, max: number, defaultValue: number) => number
   compactInlineValue: (value: unknown, maxLength?: number) => unknown
   withWriteToPathInput: (inputs: any[]) => any[]
@@ -46,6 +49,7 @@ interface DeviceTraceCaptureTask {
   resolveDone: (result: Record<string, any>) => void
   rejectDone: (error: Error) => void
   done: Promise<Record<string, any>>
+  t: TranslateFn
 }
 
 const TRACE_TASK_TTL_MS = 10 * 60 * 1000
@@ -98,9 +102,10 @@ const counterToSortedList = (counter: Record<string, number>, limit = 12) => (
 )
 
 const createTraceAccumulator = (
-  compactInlineValue: DeviceTraceCaptureToolDependencies['compactInlineValue'],
+  deps: DeviceTraceCaptureToolDependencies,
   sampleLimit: number
 ) => {
+  const { compactInlineValue } = deps
   const MAX_TRACE_SIGNATURES = 500
   const samples: Record<string, any>[] = []
   const signatures = new Map<string, { count: number; sample: Record<string, any> }>()
@@ -152,7 +157,7 @@ const createTraceAccumulator = (
       trackedSignatureCount: signatures.size,
       duplicateCount: Math.max(0, trackedEventCount - signatures.size),
       overflowEventCount,
-      dedupeRule: '按 direction/type/operation/logLevel 与 message/detail/error/upstream/downstream 摘要去重；timestamp、traceId、spanId 只用于定位，不参与语义去重。',
+      dedupeRule: deps.t('DeviceDetail.agentTools.traceCapture.dedupeRule'),
       byDirection: counterToSortedList(byDirection),
       byType: counterToSortedList(byType),
       byOperation: counterToSortedList(byOperation),
@@ -258,7 +263,7 @@ const toTraceCaptureResult = (
       rawPayloadOmitted: true,
       sampleLimit: task.sampleLimit,
       eventLimit: task.eventLimit,
-      detail: '内联结果只返回归一后的统计、去重签名和代表样本；完整事件不直接返回给模型。'
+      detail: task.t('DeviceDetail.agentTools.traceCapture.inlineDataPolicyDetail')
     },
     analysis,
     samples: analysis.samples,
@@ -304,16 +309,16 @@ const createTraceTask = (
   const sampleLimit = deps.clampNumber(args.limit, 1, 30, 10)
   const eventLimit = deps.clampNumber(args.maxEvents, sampleLimit, 5000, Math.max(sampleLimit, 300))
   const taskId = String(args.taskId || createTraceTaskId(deviceId)).trim()
-  if (!taskId) throw new Error('taskId missing')
+  if (!taskId) throw new Error(deps.t('DeviceDetail.agentTools.common.errors.taskIdMissing'))
   if (traceTasks.has(taskId)) {
-    throw new Error(`trace task already exists: ${taskId}`)
+    throw new Error(deps.t('DeviceDetail.agentTools.traceCapture.errors.taskExists', { taskId }))
   }
 
   const topic = `/debug/device/${deviceId}/trace`
   const wsId = `ai-device-debug-${deviceId}-${taskId}`
   const socket = wsClient.getWebSocket(wsId, topic, {})
   if (!socket) {
-    throw new Error('device trace websocket unavailable')
+    throw new Error(deps.t('DeviceDetail.agentTools.traceCapture.errors.websocketUnavailable'))
   }
 
   let resolveDone: DeviceTraceCaptureTask['resolveDone'] = () => undefined
@@ -328,9 +333,10 @@ const createTraceTask = (
     sampleLimit,
     eventLimit,
     records: [],
-    accumulator: createTraceAccumulator(deps.compactInlineValue, sampleLimit),
+    accumulator: createTraceAccumulator(deps, sampleLimit),
     resolveDone,
     rejectDone,
+    t: deps.t,
     done: new Promise((resolve, reject) => {
       resolveDone = resolve
       rejectDone = reject
@@ -362,25 +368,25 @@ const createTraceTask = (
   return task
 }
 
-const getTraceTask = (taskId: unknown, deviceId: string) => {
+const getTraceTask = (taskId: unknown, deviceId: string, t: TranslateFn) => {
   const id = String(taskId || '').trim()
-  if (!id) throw new Error('taskId missing')
+  if (!id) throw new Error(t('DeviceDetail.agentTools.common.errors.taskIdMissing'))
   const task = traceTasks.get(id)
   if (!task) {
     return undefined
   }
   if (task.deviceId !== deviceId) {
-    throw new Error(`trace task ${id} does not belong to current device`)
+    throw new Error(t('DeviceDetail.agentTools.traceCapture.errors.taskDeviceMismatch', { taskId: id }))
   }
   return task
 }
 
-const createTaskNotFoundResult = (taskId: unknown, deviceId: string) => ({
+const createTaskNotFoundResult = (taskId: unknown, deviceId: string, t: TranslateFn) => ({
   deviceId,
   taskId: String(taskId || '').trim(),
   status: 'not_found',
   running: false,
-  nextAction: '未找到该抓包任务。可能已超过保留时间、页面已刷新，或 taskId 不属于当前设备；请重新 action=start 后再复现。'
+  nextAction: t('DeviceDetail.agentTools.traceCapture.nextAction.notFound')
 })
 
 const appendTraceFileSummary = async (
@@ -400,14 +406,14 @@ const appendTraceFileSummary = async (
     ...visibleResult,
     ...(fileSummary ? {
       traceFile: fileSummary,
-      nextAction: `已返回抓包统计和归一后的去重代表样本，完整归一事件已写入 ${fileSummary.uri}。若需要继续按字段过滤、聚合或制图，使用 dataset_materialize(inputPath="${fileSummary.inputPath}", format="jsonl") 后再处理。`
+      nextAction: deps.t('DeviceDetail.agentTools.traceCapture.nextAction.fileWritten', { uri: fileSummary.uri, inputPath: fileSummary.inputPath })
     } : {})
   }
 }
 
 const createStartResult = (task: DeviceTraceCaptureTask) => ({
   ...toTraceCaptureResult(task),
-  nextAction: `抓包任务已启动。若需要用户复现或等待超过 8 秒，先回复用户“已开启 ${task.durationMs / 1000} 秒抓包，请现在触发操作”，不要静默长时间等待；完成后调用 device_trace_capture(action="stop", taskId="${task.taskId}") 汇总结果。`
+  nextAction: task.t('DeviceDetail.agentTools.traceCapture.nextAction.started', { seconds: task.durationMs / 1000, taskId: task.taskId })
 })
 
 export const createDeviceTraceCaptureClientTools = (
@@ -416,59 +422,59 @@ export const createDeviceTraceCaptureClientTools = (
   {
     id: 'device_trace_capture',
     name: 'device_trace_capture',
-    displayName: '设备链路抓包',
-    progressText: '正在抓取设备链路',
-    progressDescription: '正在订阅当前设备实时链路、协议日志和诊断数据。',
-    description: '订阅并抓取当前设备实时链路、协议日志和诊断数据；短采样可同步 capture，超过 8 秒或需要用户复现/下发时必须使用 start/status/stop 异步窗口。',
+    displayName: deps.t('DeviceDetail.agentTools.traceCapture.displayName'),
+    progressText: deps.t('DeviceDetail.agentTools.traceCapture.progressText'),
+    progressDescription: deps.t('DeviceDetail.agentTools.traceCapture.progressDescription'),
+    description: deps.t('DeviceDetail.agentTools.traceCapture.description'),
     inputs: deps.withWriteToPathInput([
       {
         id: 'action',
         name: 'action',
-        description: '动作：capture(默认同步采样，仅适合 1-8 秒短采样)、start(启动后立即返回 taskId)、status(查看进度)、stop(停止并汇总)、cancel(取消并汇总)。超过 8 秒、需要下发功能或等待用户复现时必须用 start；也可传 async=true 等价于 start。',
+        description: deps.t('DeviceDetail.agentTools.traceCapture.inputs.action'),
         required: false,
         valueType: 'string'
       },
       {
         id: 'taskId',
         name: 'taskId',
-        description: 'action=status/stop/cancel 时传入 start 返回的 taskId；action=start 时可选自定义 taskId。',
+        description: deps.t('DeviceDetail.agentTools.traceCapture.inputs.taskId'),
         required: false,
         valueType: 'string'
       },
       {
         id: 'async',
         name: 'async',
-        description: '为 true 时等价于 action=start，适合先启动抓包再下发指令、等待设备上报或等待用户复现。',
+        description: deps.t('DeviceDetail.agentTools.traceCapture.inputs.async'),
         required: false,
         valueType: 'boolean'
       },
       {
         id: 'seconds',
         name: 'seconds',
-        description: '抓取秒数，默认5，最大60。异步 start 会在超时后自动停止；同步 capture 会等待到结束再返回，所以超过 8 秒不要用同步 capture。',
+        description: deps.t('DeviceDetail.agentTools.traceCapture.inputs.seconds'),
         required: false,
         valueType: 'int'
       },
       {
         id: 'limit',
         name: 'limit',
-        description: '内联返回的代表样本条数，默认10，最大30；不代表抓包总量。',
+        description: deps.t('DeviceDetail.agentTools.traceCapture.inputs.limit'),
         required: false,
         valueType: 'int'
       },
       {
         id: 'maxEvents',
         name: 'maxEvents',
-        description: '本次抓包最多接收的事件数，默认300，最大5000；高频设备可适当调大，达到上限会停止并返回 maxEvents。',
+        description: deps.t('DeviceDetail.agentTools.traceCapture.inputs.maxEvents'),
         required: false,
         valueType: 'int'
       }
     ]),
     output: { type: 'object' },
-    help: '实时抓取设备接入链路样本。1-8 秒的一次性短采样可直接调用默认 capture；超过 8 秒、需要用户复现、需要先抓包再下发/重连/认证复现/等待上报的任务，必须先调用 device_trace_capture(action=start) 获得 taskId，并先给用户可见反馈，说明已开启抓包和需要用户做什么，再在窗口内调用 device_function_invoke、time_await 或等待设备通信，最后调用 device_trace_capture(action=stop, taskId=...) 汇总。工具会先把 WebSocket payload 归一为 direction/type/operation/logLevel/message/detail/error/upstream/downstream 预览，再按语义签名聚合去重；内联只返回统计、重复数量、topSignatures 和 samples，不把原始 JSON 直接返回给模型。完整事件默认不返回到对话，只有在 stop 或同步 capture 时传 writeToPath 才写 JSONL 文件，且文件内容也是归一后的记录。',
+    help: deps.t('DeviceDetail.agentTools.traceCapture.help'),
     execute: async (args, context, call) => {
       const deviceId = deps.getDeviceId(context)
-      if (!deviceId) throw new Error('deviceId missing')
+      if (!deviceId) throw new Error(deps.t('DeviceDetail.agentTools.common.errors.deviceIdMissing'))
       const action = normalizeTraceAction(args)
 
       if (action === 'start') {
@@ -476,20 +482,20 @@ export const createDeviceTraceCaptureClientTools = (
       }
 
       if (action === 'status') {
-        const task = getTraceTask(args.taskId, deviceId)
+        const task = getTraceTask(args.taskId, deviceId, deps.t)
         return task
           ? {
               ...toTraceCaptureResult(task),
               nextAction: task.status === 'running'
-                ? `抓包仍在进行；完成复现或下发后调用 device_trace_capture(action="stop", taskId="${task.taskId}")。`
+                ? deps.t('DeviceDetail.agentTools.traceCapture.nextAction.running', { taskId: task.taskId })
                 : undefined
             }
-          : createTaskNotFoundResult(args.taskId, deviceId)
+          : createTaskNotFoundResult(args.taskId, deviceId, deps.t)
       }
 
       if (action === 'stop' || action === 'cancel') {
-        const task = getTraceTask(args.taskId, deviceId)
-        if (!task) return createTaskNotFoundResult(args.taskId, deviceId)
+        const task = getTraceTask(args.taskId, deviceId, deps.t)
+        if (!task) return createTaskNotFoundResult(args.taskId, deviceId, deps.t)
         const result = finishTraceTask(task, action === 'cancel' ? 'cancelled' : 'manualStop')
         return appendTraceFileSummary(deps, args, call, result)
       }
