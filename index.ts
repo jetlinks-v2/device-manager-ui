@@ -41,6 +41,9 @@ const getExtraRoutesMap = () => {
                     code: 'Detail',
                     url: '/detail/:id',
                     name: i18n.global.t('device-manager-ui.index.106686-0'),
+                    meta: {
+                        pageAgentClientId: 'deviceDetailChat'
+                    },
                     component: () => import('./views/device/Instance/Detail/index.vue')
                 }
             ]

@@ -339,6 +339,13 @@ import { useRegistryOptions } from '@jetlinks-web-core/hooks'
 import { deviceStateList } from '@device-manager-ui/views/device/data'
 import { isApplyDashboard } from '@device-manager-ui/utils/dashboardProject'
 import { createDeviceDetailClientToolRuntime } from './clientTools'
+import { useDeviceMetadataReferences } from './useDeviceMetadataReferences'
+import {
+  EDGE_DIAGNOSIS_WORKFLOW_GUIDES,
+  buildEdgeDiagnosisClientToolsDescription,
+  isEdgeDiagnosisToolId
+} from './agentDiagnosisManual'
+import { isEdgeDiagnosisAccessProvider } from './edgeDiagnosisTool'
 import type {
   AgentConversationMarkdownLinkHandler,
   AgentConversationWorkflowGuide,
@@ -556,21 +563,19 @@ const isRefresh = ref(false)
 const aiStore = useAIStore()
 const permissionStore = useAuthStore()
 const { mergedOptions } = useRegistryOptions({ baseOptions: list, code: 'detail-tabs' })
+const DEVICE_DETAIL_AGENT_CLIENT_ID = 'deviceDetailChat'
 const DEVICE_AGENT_SUBJECT_TYPE = 'device'
-const DEVICE_REMOTE_FILE_ACCESS_PROVIDERS = new Set([
-  'agent-device-gateway',
-  'agent-media-device-gateway'
-])
 const DEVICE_DETAIL_AGENT_SYSTEM_PROMPT_LINES = [
   '你是设备详情页内的设备问数与诊断助手。',
   '当前会话的 subject 就是页面打开的设备，已通过 subjectType=device、subjectId、deviceId 和 deviceName 提供；用户没有明确要求其它设备时，不要再追问设备 ID。',
-  '当前会话可通过客户端工具读取该设备的状态、运行数据、告警、日志、接入、文档、功能和调试证据。',
-  '多步骤诊断可以先用一句业务侧说明承接，例如“我会先确认设备状态、近期数据和异常记录，再给出判断与建议。”',
-  '下一步建议可以输出 Markdown 链接，例如 [查看今日告警](#prompt=查看今日告警)，让用户一键填充到输入框。',
-  '设备告警中，当前状态来自告警记录，触发次数和历史时间线来自告警日志。',
-  '用户明确要求选择其它设备、按条件挑设备或跨设备对比时，可使用设备选择能力；未明确要求时仍使用当前 subject 设备。'
+  '当前会话可通过客户端工具读取该设备的状态、运行数据、告警、日志、接入、文档、功能和调试证据；需要当前事实时以本轮工具结果为准。',
+  '多步骤任务的取证顺序以当前会话的内部取证建议和工具结果为准。'
 ]
 const deviceDetailClientToolRuntime = createDeviceDetailClientToolRuntime(() => instanceStore.current || {})
+const deviceMetadataReferences = useDeviceMetadataReferences({
+  device: computed(() => instanceStore.current || {}),
+  t: $t,
+})
 
 const DEVICE_DETAIL_AGENT_WORKFLOW_GUIDES: AgentConversationWorkflowGuide[] = [
   {
@@ -646,12 +651,40 @@ const DEVICE_DETAIL_AGENT_WORKFLOW_GUIDES: AgentConversationWorkflowGuide[] = [
         inputs: { timeRange: '最近24小时' },
       },
       {
-        title: '需要链路细节时抓取实时样本',
+        title: '需要链路细节时先启动实时抓包',
         tools: ['device_trace_capture'],
-        tips: ['只有需要连接、认证、上报、下发、编解码证据时再使用。'],
+        tips: ['只有需要连接、认证、上报、下发、编解码证据时再使用。抓包必须先开始；若还要重连、下发或等待上报，应在抓包窗口内并行触发。'],
       },
     ],
     output: ['最可能原因', '已验证证据', '下一步处理动作', '仍需现场确认的信息'],
+  },
+  {
+    id: 'device-trace-diagnosis',
+    name: '抓包链路分析',
+    description: '分析实时链路、上下行报文、下发后响应、连接认证和编解码异常。',
+    scenarios: ['抓包分析', '看报文', '分析上报报文', '下发后有没有响应', '编解码失败', '认证报文', '链路诊断'],
+    keywords: ['抓包', '报文', '链路', '上报', '下发', '响应', '编解码', '认证', 'trace'],
+    priority: 95,
+    steps: [
+      {
+        title: '先启动抓包窗口',
+        description: '抓包是实时窗口。先启动实时链路采样，再在窗口内触发下发、重连、认证复现或等待设备上报；不要先触发动作再抓包。',
+        tools: ['device_trace_capture'],
+        inputs: { seconds: '按用户场景选择，默认5秒；复现较慢可增加到10-15秒', maxEvents: '高频场景可调大' },
+      },
+      {
+        title: '并行触发或等待业务动作',
+        description: '如果用户要求观察下发、功能调用、重连或上报，应在抓包已开始后并行触发对应动作；需要用户或设备侧操作时，先说明请在抓包窗口内操作。',
+        tools: ['device_function_invoke', 'device_access_summary'],
+      },
+      {
+        title: '整理抓包结果',
+        description: '优先使用工具返回的统计、去重摘要、topSignatures 和代表样本判断方向；大量事件已写入文件时，再按 inputPath 做二次过滤或聚合。',
+        tools: ['device_trace_capture'],
+      },
+    ],
+    output: ['抓到的通信概况', '上下行方向和关键报文', '重复/高频模式', '异常或缺失环节', '下一步复现建议'],
+    notes: ['实时链路采样会自动统计和按语义去重；不要把所有原始报文逐条复述给用户。'],
   },
   {
     id: 'device-bring-online',
@@ -806,7 +839,7 @@ const DEVICE_AGENT_TAB_ALIASES: Record<string, string> = {
 const DEVICE_AGENT_KNOWN_TABS = new Set(Object.values(DEVICE_AGENT_TAB_ALIASES))
 
 const isDeviceRemoteFileSupported = () => (
-  DEVICE_REMOTE_FILE_ACCESS_PROVIDERS.has(String(instanceStore.current?.accessProvider || ''))
+  isEdgeDiagnosisAccessProvider(instanceStore.current?.accessProvider)
 )
 
 const getDeviceAgentVisibleTabs = () => {
@@ -854,9 +887,9 @@ const buildDeviceDetailAgentTabPrompt = () => {
 const buildDeviceDetailAgentSystemPrompt = () => {
   const lines = [...DEVICE_DETAIL_AGENT_SYSTEM_PROMPT_LINES]
   if (isDeviceRemoteFileSupported()) {
-    lines.splice(lines.length - 1, 0, '当前设备支持边缘网关远程文件能力，可用于远程目录、远程文件或网关文件相关问题。')
+    lines.splice(lines.length - 1, 0, '当前设备支持边缘网关云边协同只读诊断能力；具体取证顺序按内部取证建议选择。')
   } else {
-    lines.splice(lines.length - 1, 0, '当前设备未暴露边缘网关远程文件能力，相关入口暂不可用。')
+    lines.splice(lines.length - 1, 0, '当前设备未提供边缘网关云边协同诊断工具，相关问题仅能结合平台侧证据判断。')
   }
   lines.splice(lines.length - 1, 0, buildDeviceDetailAgentTabPrompt())
   return lines.join('\n')
@@ -864,24 +897,61 @@ const buildDeviceDetailAgentSystemPrompt = () => {
 
 const getDeviceDetailClientTools = () => {
   const tools = deviceDetailClientToolRuntime.clientTools || []
-  if (isDeviceRemoteFileSupported()) return tools
-  return tools.filter((tool: any) => !String(tool?.id || tool?.name || '').startsWith('edge_remote_file_'))
+  const withoutLegacyEdgeRemoteFileTools = tools.filter((tool: any) => {
+    const toolId = String(tool?.id || tool?.name || '')
+    return !toolId.startsWith('edge_remote_file_')
+  })
+  if (isDeviceRemoteFileSupported()) return withoutLegacyEdgeRemoteFileTools
+  return withoutLegacyEdgeRemoteFileTools.filter((tool: any) => {
+    const toolId = String(tool?.id || tool?.name || '')
+    return !isEdgeDiagnosisToolId(toolId)
+  })
+}
+
+const getDeviceDetailWorkflowGuides = () => {
+  return isDeviceRemoteFileSupported()
+    ? [...DEVICE_DETAIL_AGENT_WORKFLOW_GUIDES, ...EDGE_DIAGNOSIS_WORKFLOW_GUIDES]
+    : DEVICE_DETAIL_AGENT_WORKFLOW_GUIDES
 }
 
 const buildDeviceDetailClientToolsDescription = () => {
   const remoteText = isDeviceRemoteFileSupported()
-    ? '当前设备支持边缘网关远程文件片段读取，可用于远程目录、远程文件或网关文件问题。'
-    : '当前设备未暴露边缘网关远程文件能力。'
+    ? buildEdgeDiagnosisClientToolsDescription(true)
+    : buildEdgeDiagnosisClientToolsDescription(false)
   return [
-    '设备详情页提供当前设备的状态、接入、模型字段、属性、事件、文档、告警记录、告警日志、上下线、通信日志和链路样本工具。',
+    '设备详情页客户端工具可读取当前设备状态、接入、物模型、属性、事件、文档、告警、上下线、通信日志和链路样本。',
     remoteText,
-    '宽泛、多步骤或排障类问题可结合工作流指导选择工具。',
-    '当前设备默认来自 subject；设备选择能力用于其它设备或跨设备对比，功能调用工具用于下发、调用或执行设备功能。',
-    '明细较大、导出、报告或图表可由设备业务工具写入会话文件，数据集工具适合已写入文件后的二次加工。'
+    '当前设备默认来自 subject；只有用户明确要求其它设备或跨设备对比时才使用设备选择能力。',
+    '复杂排障、功能调用、抓包、告警和云边诊断的取证顺序由内部取证建议承载，工具说明只描述能力和返回边界。',
+    '较大明细、导出、报告或图表优先由设备业务工具写入会话文件；数据集工具只用于已写入文件后的二次加工。'
   ].join('\n')
 }
 
 const deviceDetailAgentPromptConfigs = {
+  edgeOnline: {
+    opening: 'DeviceDetail.agent.opening.edgeOnline',
+    prompts: [
+      'DeviceDetail.agent.prompt.edge.online.health',
+      'DeviceDetail.agent.prompt.edge.online.connection',
+      'DeviceDetail.agent.prompt.edge.online.logs'
+    ]
+  },
+  edgeOffline: {
+    opening: 'DeviceDetail.agent.opening.edgeOffline',
+    prompts: [
+      'DeviceDetail.agent.prompt.edge.offline.reason',
+      'DeviceDetail.agent.prompt.edge.offline.connection',
+      'DeviceDetail.agent.prompt.edge.offline.logs'
+    ]
+  },
+  edgeDefault: {
+    opening: 'DeviceDetail.agent.opening.edgeDefault',
+    prompts: [
+      'DeviceDetail.agent.prompt.edge.default.health',
+      'DeviceDetail.agent.prompt.edge.default.backlog',
+      'DeviceDetail.agent.prompt.edge.default.logs'
+    ]
+  },
   online: {
     opening: 'DeviceDetail.agent.opening.online',
     prompts: [
@@ -918,6 +988,11 @@ const deviceDetailAgentPromptConfigs = {
 
 const getDeviceDetailAgentPromptConfig = () => {
   const state = String(instanceStore.current?.state?.value || '')
+  if (isDeviceRemoteFileSupported()) {
+    if (state === 'online') return deviceDetailAgentPromptConfigs.edgeOnline
+    if (state === 'offline') return deviceDetailAgentPromptConfigs.edgeOffline
+    return deviceDetailAgentPromptConfigs.edgeDefault
+  }
   if (state === 'online' || state === 'offline' || state === 'notActive') {
     return deviceDetailAgentPromptConfigs[state]
   }
@@ -945,7 +1020,9 @@ const buildDeviceDetailAgentParameters = () => {
     clientToolHandler: deviceDetailClientToolRuntime.handleClientToolCall,
     clientToolsName: deviceDetailClientToolRuntime.clientToolsName,
     clientToolsDescription: buildDeviceDetailClientToolsDescription(),
-    workflowGuides: DEVICE_DETAIL_AGENT_WORKFLOW_GUIDES,
+    workflowGuides: getDeviceDetailWorkflowGuides(),
+    referenceProviders: deviceMetadataReferences.referenceProviders.value,
+    composerAddActions: deviceMetadataReferences.composerAddActions.value,
     markdownLinkHandler: handleDeviceAgentMarkdownLink,
     systemPrompt: buildDeviceDetailAgentSystemPrompt(),
     openingStatement: buildDeviceDetailAgentOpeningStatement(),
@@ -958,6 +1035,19 @@ const buildDeviceDetailAgentParameters = () => {
     ...(deviceName ? { deviceName, subjectName: deviceName } : {})
   }
 }
+
+const prepareDeviceDetailAgent = (deviceId?: unknown) => {
+  const id = String(deviceId || '').trim()
+  aiStore.prepareAgentConversation(DEVICE_DETAIL_AGENT_CLIENT_ID, id
+    ? {
+        deviceId: id,
+        subjectType: DEVICE_AGENT_SUBJECT_TYPE,
+        subjectId: id
+      }
+    : {})
+}
+
+prepareDeviceDetailAgent(route.params?.id)
 
 const resolveDeviceAgentLinkTab = (href: string) => {
   const raw = String(href || '').trim()
@@ -1041,7 +1131,7 @@ const handleDeviceAgentMarkdownLink: AgentConversationMarkdownLinkHandler = ({ h
 const syncDeviceDetailAgent = () => {
   const parameters = buildDeviceDetailAgentParameters()
   if (!parameters) return
-  void aiStore.queryAgent('deviceDetailChat', parameters)
+  void aiStore.queryAgent(DEVICE_DETAIL_AGENT_CLIENT_ID, parameters)
     .then(refreshDeviceDetailAgentParameters)
 }
 
@@ -1311,6 +1401,7 @@ const initPage = async (newId: any) => {
 onBeforeRouteUpdate((to: any) => {
   if (to.params?.id !== instanceStore.current.id && to.name === 'device/Instance/Detail') {
     // location.reload()
+    prepareDeviceDetailAgent(to.params?.id)
     initPage(to.params?.id)
   }
 })
@@ -1486,7 +1577,7 @@ watch(
 onUnmounted(() => {
   instanceStore.current = {} as any
   statusRef.value && statusRef.value.unsubscribe()
-  aiStore.hideAiButton()
+  aiStore.releaseAgentConversation(DEVICE_DETAIL_AGENT_CLIENT_ID)
 })
 
 defineExpose({

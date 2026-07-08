@@ -34,11 +34,11 @@ const isDeviceDashboardAvailable = (context: HomeAgentCapabilityContext) => (
 );
 
 const getPromptExamples = () => [
-  i18n.global.t('DashBoard.homeAgent.prompt.overview'),
   i18n.global.t('DashBoard.homeAgent.prompt.deviceStatus'),
   i18n.global.t('DashBoard.homeAgent.prompt.messageAggregation'),
-  i18n.global.t('DashBoard.homeAgent.prompt.messageTrend'),
   i18n.global.t('DashBoard.homeAgent.prompt.messagePeak'),
+  i18n.global.t('DashBoard.homeAgent.prompt.overview'),
+  i18n.global.t('DashBoard.homeAgent.prompt.messageTrend'),
 ];
 
 const getWorkflowGuides = (): HomeAgentWorkflowGuide[] => [
@@ -105,6 +105,102 @@ const getYesterdayRange = () => ({
   from: dayjs().subtract(1, 'day').startOf('day').format('YYYY-MM-DD HH:mm:ss'),
   to: dayjs().subtract(1, 'day').endOf('day').format('YYYY-MM-DD HH:mm:ss'),
 });
+
+const normalizeRangeShortcut = (value: unknown) => String(value || 'today').trim().toLowerCase();
+
+const isShortcutIn = (shortcut: string, candidates: string[]) => candidates.includes(shortcut);
+
+const toPlainRecord = (value: unknown): Record<string, any> => (
+  value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, any> : {}
+);
+
+const resolveDashboardTimeRange = (args: Record<string, any> = {}) => {
+  const timeRangeRecord = toPlainRecord(args.timeRange);
+  const nestedRange = Object.keys(timeRangeRecord).length ? timeRangeRecord : toPlainRecord(args.range);
+  const from = args.from ?? args.start ?? args.startTime ?? nestedRange.from ?? nestedRange.start ?? nestedRange.startTime;
+  const to = args.to ?? args.end ?? args.endTime ?? nestedRange.to ?? nestedRange.end ?? nestedRange.endTime;
+  // Different models may pass shortcut as a flat field or as a nested timeRange object.
+  const shortcut = normalizeRangeShortcut(
+    args.shortcut
+    || nestedRange.shortcut
+    || nestedRange.value
+    || nestedRange.type
+    || args.timeRange
+    || args.range,
+  );
+  const now = dayjs();
+  if (from && to) {
+    const startMs = dayjs(from).valueOf();
+    const endMs = dayjs(to).valueOf();
+    if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || startMs >= endMs) {
+      throw new Error(i18n.global.t('DashBoard.homeAgent.tool.timeRange.invalidRange'));
+    }
+    return {
+      from,
+      to,
+      label: 'custom',
+      startMs,
+      endMs,
+    };
+  }
+  if (isShortcutIn(shortcut, ['day', '24h', 'last24h', 'last_24h', '最近24小时', '近24小时'])) {
+    const start = now.subtract(24, 'hour');
+    return {
+      from: start.valueOf(),
+      to: now.valueOf(),
+      label: 'day',
+      startMs: start.valueOf(),
+      endMs: now.valueOf(),
+    };
+  }
+  if (isShortcutIn(shortcut, ['week', '7d', 'last7d', 'last_7d', '最近7天', '近7天', '近一周'])) {
+    const start = now.subtract(6, 'day').startOf('day');
+    return {
+      from: start.valueOf(),
+      to: now.valueOf(),
+      label: 'week',
+      startMs: start.valueOf(),
+      endMs: now.valueOf(),
+    };
+  }
+  if (isShortcutIn(shortcut, ['month', '30d', 'last30d', 'last_30d', '最近30天', '近30天', '近一个月'])) {
+    const start = now.subtract(30, 'day').startOf('day');
+    return {
+      from: start.valueOf(),
+      to: now.valueOf(),
+      label: 'month',
+      startMs: start.valueOf(),
+      endMs: now.valueOf(),
+    };
+  }
+  const currentRange = getCurrentDayRange();
+  return {
+    ...currentRange,
+    label: 'today',
+    startMs: dayjs(currentRange.from).valueOf(),
+    endMs: dayjs(currentRange.to).valueOf(),
+  };
+};
+
+const resolveDashboardAggregationQuery = (range: { startMs: number; endMs: number }) => {
+  const duration = range.endMs - range.startMs;
+  const hour = 60 * 60 * 1000;
+  const day = 24 * hour;
+  const month = 30 * day;
+  const year = 365 * day;
+
+  // Select an aggregation bucket from the requested range so dashboard tools are not limited to "today".
+  if (duration <= hour + 10) {
+    return { time: '1m', format: 'HH:mm', limit: 60 };
+  }
+  if (duration <= day) {
+    return { time: '1h', format: 'yyyy-MM-dd HH:mm:ss', limit: 24 };
+  }
+  if (duration < year) {
+    return { time: '1d', format: 'yyyy-MM-dd', limit: Math.abs(Math.ceil(duration / day)) + 1 };
+  }
+  return { time: '1M', format: 'yyyy-MM', limit: Math.max(1, Math.abs(Math.floor(duration / month))) };
+};
 
 const buildSeries = (items: any[], group?: string) => {
   const source = group ? items.filter((item) => item?.group === group) : items;
@@ -184,132 +280,85 @@ const getMonthMessageTotal = async () => {
   return toNumber(ensureSuccess<any[]>(resp).find((item) => item?.group === 'monthTotal')?.data?.value);
 };
 
-const queryOnlineTrend = async () => {
-  const currentRange = getCurrentDayRange();
-  const yesterdayRange = getYesterdayRange();
-  const resp = await dashboard([
+const queryOnlineTrend = async (args: Record<string, any> = {}) => {
+  const range = resolveDashboardTimeRange(args);
+  const query = resolveDashboardAggregationQuery(range);
+  const shouldCompareYesterday = range.label === 'today';
+  const dashboardQueries: Record<string, any>[] = [
     {
       dashboard: 'device',
       object: 'session',
       measurement: 'online',
       dimension: 'agg',
-      group: 'todayTrend',
+      group: 'onlineTrend',
       params: {
         state: 'online',
-        limit: 24,
-        from: currentRange.from,
-        to: currentRange.to,
-        time: '1h',
-        format: 'yyyy-MM-dd HH:mm:ss',
+        limit: query.limit,
+        from: range.from,
+        to: range.to,
+        time: query.time,
+        format: query.format,
       },
     },
-    {
-      dashboard: 'device',
-      object: 'session',
-      measurement: 'online',
-      dimension: 'agg',
-      group: 'yesterday',
-      params: {
-        state: 'online',
-        limit: 24,
-        from: yesterdayRange.from,
-        to: yesterdayRange.to,
-        time: '1d',
-        format: 'yyyy-MM-dd HH:mm:ss',
+  ];
+  if (shouldCompareYesterday) {
+    const yesterdayRange = getYesterdayRange();
+    dashboardQueries.push(
+      {
+        dashboard: 'device',
+        object: 'session',
+        measurement: 'online',
+        dimension: 'agg',
+        group: 'yesterday',
+        params: {
+          state: 'online',
+          limit: 24,
+          from: yesterdayRange.from,
+          to: yesterdayRange.to,
+          time: '1d',
+          format: 'yyyy-MM-dd HH:mm:ss',
+        },
       },
-    },
-  ]);
+    );
+  }
+  const resp = await dashboard(dashboardQueries);
   const items = ensureSuccess<any[]>(resp);
-  const series = buildSeries(items, 'todayTrend');
+  const series = buildSeries(items, 'onlineTrend');
   const summary = summarizeSeries(series);
+  const yesterdayOnline = shouldCompareYesterday
+    ? toNumber(items.find((item) => item?.group === 'yesterday')?.data?.value)
+    : undefined;
 
   return {
     ok: true,
-    range: { ...currentRange, time: '1h' },
-    yesterdayOnline: toNumber(items.find((item) => item?.group === 'yesterday')?.data?.value),
+    range: {
+      from: range.from,
+      to: range.to,
+      shortcut: range.label,
+      time: query.time,
+      format: query.format,
+      limit: query.limit,
+    },
+    ...(yesterdayOnline === undefined ? {} : { yesterdayOnline }),
     currentOnline: summary.latest.value,
     peakOnline: summary.peak,
     averageOnline: summary.average,
     series,
+    summary: i18n.global.t('DashBoard.homeAgent.tool.onlineTrend.summary', [
+      range.label,
+      summary.latest.value,
+      summary.peak.time || '-',
+      summary.peak.value,
+      summary.average,
+    ]),
   };
 };
 
-const resolveMessageRange = (args: Record<string, any>) => {
-  const shortcut = String(args.shortcut || 'today');
-  const now = dayjs();
-  if (args.from && args.to) {
-    const startMs = dayjs(args.from).valueOf();
-    const endMs = dayjs(args.to).valueOf();
-    if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || startMs >= endMs) {
-      throw new Error(i18n.global.t('DashBoard.homeAgent.tool.messageAggregation.invalidRange'));
-    }
-    return {
-      from: args.from,
-      to: args.to,
-      label: 'custom',
-      startMs,
-      endMs,
-    };
-  }
-  if (shortcut === 'day') {
-    return {
-      from: now.subtract(24, 'hour').valueOf(),
-      to: now.valueOf(),
-      label: shortcut,
-      startMs: now.subtract(24, 'hour').valueOf(),
-      endMs: now.valueOf(),
-    };
-  }
-  if (shortcut === 'week') {
-    return {
-      from: now.subtract(6, 'day').startOf('day').valueOf(),
-      to: now.valueOf(),
-      label: shortcut,
-      startMs: now.subtract(6, 'day').startOf('day').valueOf(),
-      endMs: now.valueOf(),
-    };
-  }
-  if (shortcut === 'month') {
-    return {
-      from: now.subtract(30, 'day').startOf('day').valueOf(),
-      to: now.valueOf(),
-      label: shortcut,
-      startMs: now.subtract(30, 'day').startOf('day').valueOf(),
-      endMs: now.valueOf(),
-    };
-  }
-  const currentRange = getCurrentDayRange();
-  return {
-    ...currentRange,
-    label: 'today',
-    startMs: dayjs(currentRange.from).valueOf(),
-    endMs: dayjs(currentRange.to).valueOf(),
-  };
-};
-
-const resolveMessageQuery = (range: { startMs: number; endMs: number }) => {
-  const duration = range.endMs - range.startMs;
-  const hour = 60 * 60 * 1000;
-  const day = 24 * hour;
-  const month = 30 * day;
-  const year = 365 * day;
-
-  // Select an aggregation bucket from the requested range so the tool stays useful beyond "today".
-  if (duration <= hour + 10) {
-    return { time: '1m', format: 'HH:mm', limit: 60 };
-  }
-  if (duration <= day) {
-    return { time: '1h', format: 'yyyy-MM-dd HH:mm:ss', limit: 24 };
-  }
-  if (duration < year) {
-    return { time: '1d', format: 'yyyy-MM-dd', limit: Math.abs(Math.ceil(duration / day)) + 1 };
-  }
-  return { time: '1M', format: 'yyyy-MM', limit: Math.max(1, Math.abs(Math.floor(duration / month))) };
-};
+const resolveMessageRange = (args: Record<string, any>) => resolveDashboardTimeRange(args);
 
 const analyzeMessageAggregation = async (args: Record<string, any> = {}) => {
   const range = resolveMessageRange(args);
-  const query = resolveMessageQuery(range);
+  const query = resolveDashboardAggregationQuery(range);
   const resp = await dashboard([
     {
       dashboard: 'device',
@@ -399,6 +448,8 @@ const createDeviceDashboardTools = (): AiClientToolDefinition<HomeAgentCapabilit
   {
     id: DEVICE_DASHBOARD_OVERVIEW_TOOL,
     name: DEVICE_DASHBOARD_OVERVIEW_TOOL,
+    displayName: i18n.global.t('DashBoard.homeAgent.tool.overview.displayName'),
+    progressText: i18n.global.t('DashBoard.homeAgent.tool.overview.progressText'),
     description: i18n.global.t('DashBoard.homeAgent.tool.overview.description'),
     help: i18n.global.t('DashBoard.homeAgent.tool.overview.help'),
     inputs: [],
@@ -409,6 +460,8 @@ const createDeviceDashboardTools = (): AiClientToolDefinition<HomeAgentCapabilit
   {
     id: DEVICE_DASHBOARD_PRODUCT_STATS_TOOL,
     name: DEVICE_DASHBOARD_PRODUCT_STATS_TOOL,
+    displayName: i18n.global.t('DashBoard.homeAgent.tool.productStats.displayName'),
+    progressText: i18n.global.t('DashBoard.homeAgent.tool.productStats.progressText'),
     description: i18n.global.t('DashBoard.homeAgent.tool.productStats.description'),
     help: i18n.global.t('DashBoard.homeAgent.tool.productStats.help'),
     inputs: [],
@@ -422,6 +475,8 @@ const createDeviceDashboardTools = (): AiClientToolDefinition<HomeAgentCapabilit
   {
     id: DEVICE_DASHBOARD_DEVICE_STATS_TOOL,
     name: DEVICE_DASHBOARD_DEVICE_STATS_TOOL,
+    displayName: i18n.global.t('DashBoard.homeAgent.tool.deviceStats.displayName'),
+    progressText: i18n.global.t('DashBoard.homeAgent.tool.deviceStats.progressText'),
     description: i18n.global.t('DashBoard.homeAgent.tool.deviceStats.description'),
     help: i18n.global.t('DashBoard.homeAgent.tool.deviceStats.help'),
     inputs: [],
@@ -435,9 +490,33 @@ const createDeviceDashboardTools = (): AiClientToolDefinition<HomeAgentCapabilit
   {
     id: DEVICE_DASHBOARD_ONLINE_TREND_TOOL,
     name: DEVICE_DASHBOARD_ONLINE_TREND_TOOL,
+    displayName: i18n.global.t('DashBoard.homeAgent.tool.onlineTrend.displayName'),
+    progressText: i18n.global.t('DashBoard.homeAgent.tool.onlineTrend.progressText'),
     description: i18n.global.t('DashBoard.homeAgent.tool.onlineTrend.description'),
     help: i18n.global.t('DashBoard.homeAgent.tool.onlineTrend.help'),
-    inputs: [],
+    inputs: [
+      {
+        id: 'shortcut',
+        name: 'shortcut',
+        description: i18n.global.t('DashBoard.homeAgent.tool.timeRange.shortcut'),
+        required: false,
+        valueType: 'string',
+      },
+      {
+        id: 'from',
+        name: 'from',
+        description: i18n.global.t('DashBoard.homeAgent.tool.timeRange.from'),
+        required: false,
+        valueType: 'string',
+      },
+      {
+        id: 'to',
+        name: 'to',
+        description: i18n.global.t('DashBoard.homeAgent.tool.timeRange.to'),
+        required: false,
+        valueType: 'string',
+      },
+    ],
     output: { type: 'object' },
     annotations: { readOnlyHint: true },
     execute: queryOnlineTrend,
@@ -445,27 +524,29 @@ const createDeviceDashboardTools = (): AiClientToolDefinition<HomeAgentCapabilit
   {
     id: DEVICE_DASHBOARD_MESSAGE_AGGREGATION_TOOL,
     name: DEVICE_DASHBOARD_MESSAGE_AGGREGATION_TOOL,
+    displayName: i18n.global.t('DashBoard.homeAgent.tool.messageAggregation.displayName'),
+    progressText: i18n.global.t('DashBoard.homeAgent.tool.messageAggregation.progressText'),
     description: i18n.global.t('DashBoard.homeAgent.tool.messageAggregation.description'),
     help: i18n.global.t('DashBoard.homeAgent.tool.messageAggregation.help'),
     inputs: [
       {
         id: 'shortcut',
         name: 'shortcut',
-        description: i18n.global.t('DashBoard.homeAgent.tool.messageAggregation.shortcut'),
+        description: i18n.global.t('DashBoard.homeAgent.tool.timeRange.shortcut'),
         required: false,
         valueType: 'string',
       },
       {
         id: 'from',
         name: 'from',
-        description: i18n.global.t('DashBoard.homeAgent.tool.messageAggregation.from'),
+        description: i18n.global.t('DashBoard.homeAgent.tool.timeRange.from'),
         required: false,
         valueType: 'string',
       },
       {
         id: 'to',
         name: 'to',
-        description: i18n.global.t('DashBoard.homeAgent.tool.messageAggregation.to'),
+        description: i18n.global.t('DashBoard.homeAgent.tool.timeRange.to'),
         required: false,
         valueType: 'string',
       },
