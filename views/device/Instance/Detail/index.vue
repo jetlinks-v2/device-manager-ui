@@ -339,6 +339,7 @@ import { useRegistryOptions } from '@jetlinks-web-core/hooks'
 import { deviceStateList } from '@device-manager-ui/views/device/data'
 import { isApplyDashboard } from '@device-manager-ui/utils/dashboardProject'
 import { createDeviceDetailClientToolRuntime } from './clientTools'
+import { useDeviceMetadataReferences } from './useDeviceMetadataReferences'
 import {
   EDGE_DIAGNOSIS_WORKFLOW_GUIDES,
   buildEdgeDiagnosisClientToolsDescription,
@@ -571,6 +572,10 @@ const DEVICE_DETAIL_AGENT_SYSTEM_PROMPT_LINES = [
   '多步骤任务的取证顺序以当前会话的内部取证建议和工具结果为准。'
 ]
 const deviceDetailClientToolRuntime = createDeviceDetailClientToolRuntime(() => instanceStore.current || {})
+const deviceMetadataReferences = useDeviceMetadataReferences({
+  device: computed(() => instanceStore.current || {}),
+  t: $t,
+})
 
 const DEVICE_DETAIL_AGENT_WORKFLOW_GUIDES: AgentConversationWorkflowGuide[] = [
   {
@@ -1016,6 +1021,8 @@ const buildDeviceDetailAgentParameters = () => {
     clientToolsName: deviceDetailClientToolRuntime.clientToolsName,
     clientToolsDescription: buildDeviceDetailClientToolsDescription(),
     workflowGuides: getDeviceDetailWorkflowGuides(),
+    referenceProviders: deviceMetadataReferences.referenceProviders.value,
+    composerAddActions: deviceMetadataReferences.composerAddActions.value,
     markdownLinkHandler: handleDeviceAgentMarkdownLink,
     systemPrompt: buildDeviceDetailAgentSystemPrompt(),
     openingStatement: buildDeviceDetailAgentOpeningStatement(),

@@ -43,7 +43,7 @@ const asArray = <T = any>(value: unknown): T[] => (Array.isArray(value) ? value 
 
 const responseResult = (response: any) => response?.result ?? response?.data ?? response
 
-const parseJsonObject = (value: unknown): Record<string, any> => {
+export const parseJsonObject = (value: unknown): Record<string, any> => {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
     return value as Record<string, any>
   }
@@ -67,7 +67,7 @@ const REMOTE_FILE_ACCESS_PROVIDERS = new Set([
   'agent-media-device-gateway'
 ])
 
-const METADATA_SECTIONS = ['properties', 'functions', 'events', 'tags'] as const
+export const METADATA_SECTIONS = ['properties', 'functions', 'events', 'tags'] as const
 const VALID_METADATA_SECTIONS = new Set<string>(METADATA_SECTIONS)
 
 const normalizeMetadataSection = (section?: string) => {
@@ -433,7 +433,7 @@ const describeResolvedTimeRange = (range: ResolvedTimeRange) => (
     }
 )
 
-const dataTypeText = (valueType: any): string => {
+export const dataTypeText = (valueType: any): string => {
   if (!valueType) return 'unknown'
   if (typeof valueType === 'string') return valueType
   const type = valueType.type || valueType.id || 'object'
@@ -457,7 +457,7 @@ const dataTypeText = (valueType: any): string => {
   return String(type)
 }
 
-const metadataSectionItems = (metadata: Record<string, any>, section: string) => {
+export const metadataSectionItems = (metadata: Record<string, any>, section: string) => {
   if (VALID_METADATA_SECTIONS.has(section)) return asArray(metadata[section])
   return METADATA_SECTIONS.flatMap((type) => (
     asArray(metadata[type]).map((item) => ({ ...item, __type: type }))
@@ -471,7 +471,7 @@ const metadataTypeName = (type: string) => ({
   tags: '标签'
 }[type] || type)
 
-const propertyAccessText = (item: any) => {
+export const propertyAccessText = (item: any) => {
   const raw = item?.expands?.type
   const type = Array.isArray(raw) ? raw : (raw ? [raw] : [])
   if (!type.length) return ''
