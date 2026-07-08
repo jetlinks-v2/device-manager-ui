@@ -569,6 +569,7 @@ const DEVICE_DETAIL_AGENT_SYSTEM_PROMPT_LINES = [
   '你是设备详情页内的设备问数与诊断助手。',
   '当前会话的 subject 就是页面打开的设备，已通过 subjectType=device、subjectId、deviceId 和 deviceName 提供；用户没有明确要求其它设备时，不要再追问设备 ID。',
   '当前会话可通过客户端工具读取该设备的状态、运行数据、告警、日志、接入、文档、功能和调试证据；需要当前事实时以本轮工具结果为准。',
+  '启动抓包、等待用户复现或等待时间超过 8 秒时，先给用户可见反馈，说明已开始做什么、预计等待多久、需要用户触发什么；不要让用户只看到长时间“正在处理中”。',
   '多步骤任务的取证顺序以当前会话的内部取证建议和工具结果为准。'
 ]
 const deviceDetailClientToolRuntime = createDeviceDetailClientToolRuntime(() => instanceStore.current || {})
@@ -653,7 +654,8 @@ const DEVICE_DETAIL_AGENT_WORKFLOW_GUIDES: AgentConversationWorkflowGuide[] = [
       {
         title: '需要链路细节时先启动实时抓包',
         tools: ['device_trace_capture'],
-        tips: ['只有需要连接、认证、上报、下发、编解码证据时再使用。抓包必须先开始；若还要重连、下发或等待上报，应在抓包窗口内并行触发。'],
+        inputs: { action: 'start', seconds: '按复现场景选择，默认5秒；较慢可增加到10-30秒' },
+        tips: ['只有需要连接、认证、上报、下发、编解码证据时再使用。先 action=start 获取 taskId；超过 8 秒或需要用户复现时，先回复用户已开启抓包和下一步操作；最后 action=stop 汇总。'],
       },
     ],
     output: ['最可能原因', '已验证证据', '下一步处理动作', '仍需现场确认的信息'],
@@ -670,21 +672,22 @@ const DEVICE_DETAIL_AGENT_WORKFLOW_GUIDES: AgentConversationWorkflowGuide[] = [
         title: '先启动抓包窗口',
         description: '抓包是实时窗口。先启动实时链路采样，再在窗口内触发下发、重连、认证复现或等待设备上报；不要先触发动作再抓包。',
         tools: ['device_trace_capture'],
-        inputs: { seconds: '按用户场景选择，默认5秒；复现较慢可增加到10-15秒', maxEvents: '高频场景可调大' },
+        inputs: { action: 'start', seconds: '按用户场景选择，默认5秒；复现较慢可增加到10-30秒', maxEvents: '高频场景可调大' },
       },
       {
-        title: '并行触发或等待业务动作',
-        description: '如果用户要求观察下发、功能调用、重连或上报，应在抓包已开始后并行触发对应动作；需要用户或设备侧操作时，先说明请在抓包窗口内操作。',
+        title: '反馈抓包状态并触发业务动作',
+        description: '抓包启动后，如果需要等待超过 8 秒或需要用户/设备侧复现，先回复用户已开启抓包、预计等待时间和需要触发的动作；然后再调用功能、短等待或等待用户操作。',
         tools: ['device_function_invoke', 'device_access_summary'],
       },
       {
         title: '整理抓包结果',
-        description: '优先使用工具返回的统计、去重摘要、topSignatures 和代表样本判断方向；大量事件已写入文件时，再按 inputPath 做二次过滤或聚合。',
+        description: '调用 device_trace_capture(action=stop, taskId=启动时返回的值) 汇总。优先使用统计、去重摘要、topSignatures 和代表样本判断方向；大量事件已写入文件时，再按 inputPath 做二次过滤或聚合。',
         tools: ['device_trace_capture'],
+        inputs: { action: 'stop', taskId: 'start 返回的 taskId' },
       },
     ],
     output: ['抓到的通信概况', '上下行方向和关键报文', '重复/高频模式', '异常或缺失环节', '下一步复现建议'],
-    notes: ['实时链路采样会自动统计和按语义去重；不要把所有原始报文逐条复述给用户。'],
+    notes: ['实时链路采样会自动统计和按语义去重；不要把所有原始报文逐条复述给用户。', '长窗口抓包不要用同步 capture 静默等待；用 start 后先反馈，再 stop 汇总。'],
   },
   {
     id: 'device-bring-online',

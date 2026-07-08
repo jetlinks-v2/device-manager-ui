@@ -1,5 +1,3 @@
-import { map } from 'rxjs/operators'
-import { wsClient } from '@jetlinks-web/core'
 import {
   downloadRemoteSystemFile,
   getProperty,
@@ -25,6 +23,7 @@ import { createDeviceEventClientTools } from './eventTool'
 import { createDeviceFunctionClientTools } from './functionTool'
 import { createDeviceAlarmClientTools } from './alarmTool'
 import { createEdgeDiagnosisClientTools } from './edgeDiagnosisTool'
+import { createDeviceTraceCaptureClientTools } from './traceCaptureTool'
 
 type DeviceDetailRecord = Record<string, any>
 type RemoteSystemFileRecord = Record<string, any>
@@ -775,110 +774,6 @@ const normalizeDeviceLogRecord = (item: Record<string, any>) => ({
   content: compactInlineValue(item.content, 1600)
 })
 
-const normalizeTraceDirection = (payload: Record<string, any>) => {
-  if (payload?.upstream === true) return 'upstream'
-  if (payload?.downstream === true) return 'downstream'
-  const operation = String(payload?.operation || '').trim().toLowerCase()
-  if (['upstream', 'decode', 'request'].includes(operation)) return 'upstream'
-  if (['downstream', 'encode', 'response'].includes(operation)) return 'downstream'
-  return undefined
-}
-
-const normalizeTraceSignatureText = (value: unknown, maxLength = 320) => (
-  String(compactInlineValue(value, maxLength) ?? '')
-    .replace(/\s+/g, ' ')
-    .trim()
-)
-
-const buildTraceSignature = (item: Record<string, any>) => ([
-  item.direction || '',
-  item.type || '',
-  item.operation || '',
-  item.logLevel || '',
-  normalizeTraceSignatureText(item.message),
-  normalizeTraceSignatureText(item.error),
-  normalizeTraceSignatureText(item.detail),
-  normalizeTraceSignatureText(item.upstream),
-  normalizeTraceSignatureText(item.downstream)
-].join('|').toLowerCase())
-
-const incrementCounter = (target: Record<string, number>, key?: unknown) => {
-  const normalized = String(key || 'unknown').trim() || 'unknown'
-  target[normalized] = (target[normalized] || 0) + 1
-}
-
-const counterToSortedList = (counter: Record<string, number>, limit = 12) => (
-  Object.entries(counter)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, limit)
-    .map(([name, count]) => ({ name, count }))
-)
-
-const createTraceAccumulator = (sampleLimit: number) => {
-  const MAX_TRACE_SIGNATURES = 500
-  const samples: Record<string, any>[] = []
-  const signatures = new Map<string, { count: number; sample: Record<string, any> }>()
-  const byDirection: Record<string, number> = {}
-  const byType: Record<string, number> = {}
-  const byOperation: Record<string, number> = {}
-  const byLogLevel: Record<string, number> = {}
-  let receivedCount = 0
-  let overflowEventCount = 0
-
-  const ingest = (item: Record<string, any>) => {
-    receivedCount += 1
-    incrementCounter(byDirection, item.direction)
-    incrementCounter(byType, item.type)
-    incrementCounter(byOperation, item.operation)
-    incrementCounter(byLogLevel, item.logLevel)
-
-    const signature = buildTraceSignature(item)
-    const existing = signatures.get(signature)
-    if (existing) {
-      existing.count += 1
-    } else if (signatures.size < MAX_TRACE_SIGNATURES) {
-      signatures.set(signature, { count: 1, sample: item })
-      if (samples.length < sampleLimit) {
-        samples.push(item)
-      }
-    } else {
-      overflowEventCount += 1
-    }
-  }
-
-  const toResult = () => {
-    const topSignatures = Array.from(signatures.values())
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 12)
-      .map((item) => ({
-        count: item.count,
-        direction: item.sample.direction,
-        type: item.sample.type,
-        operation: item.sample.operation,
-        logLevel: item.sample.logLevel,
-        message: compactInlineValue(item.sample.message || item.sample.error || item.sample.detail, 360)
-      }))
-
-    const trackedEventCount = Array.from(signatures.values()).reduce((total, item) => total + item.count, 0)
-    return {
-      receivedCount,
-      sampleCount: samples.length,
-      trackedSignatureCount: signatures.size,
-      duplicateCount: Math.max(0, trackedEventCount - signatures.size),
-      overflowEventCount,
-      dedupeRule: '按 direction/type/operation/logLevel 与 message/detail/error/upstream/downstream 摘要去重；timestamp、traceId、spanId 只用于定位，不参与语义去重。',
-      byDirection: counterToSortedList(byDirection),
-      byType: counterToSortedList(byType),
-      byOperation: counterToSortedList(byOperation),
-      byLogLevel: counterToSortedList(byLogLevel),
-      topSignatures,
-      samples
-    }
-  }
-
-  return { ingest, toResult }
-}
-
 const writeToPathInput = {
   id: 'writeToPath',
   name: 'writeToPath',
@@ -1178,25 +1073,6 @@ const buildDeviceLogTerms = (args: Record<string, any>, resolved = resolveTimeRa
   ]
 }
 
-const normalizeTracePayload = (payload: Record<string, any>) => ({
-  type: payload?.type,
-  operation: payload?.operation,
-  logLevel: payload?.logLevel,
-  traceId: payload?.traceId,
-  spanId: payload?.spanId,
-  parentSpanId: payload?.parentSpanId,
-  messageId: payload?.messageId,
-  direction: normalizeTraceDirection(payload),
-  timestamp: payload?.timestamp,
-  startTime: payload?.startTime,
-  endTime: payload?.endTime,
-  detail: compactInlineValue(payload?.detail, 1200),
-  message: compactInlineValue(payload?.message, 1200),
-  error: compactInlineValue(payload?.error, 1200),
-  upstream: compactInlineValue(payload?.upstream, 1600),
-  downstream: compactInlineValue(payload?.downstream, 1600)
-})
-
 const readBlobText = async (response: any, maxBytes: number, mode = 'head') => {
   const blob = response instanceof Blob ? response : new Blob([response])
   const normalizedMode = mode === 'tail' ? 'tail' : 'head'
@@ -1250,70 +1126,6 @@ const readLatestProperty = async (deviceId: string, propertyId: string) => {
     }
   }
 }
-
-const captureDeviceTrace = (deviceId: string, seconds: number, limit: number, maxEvents: number) => new Promise((resolve, reject) => {
-  const duration = clampNumber(seconds, 1, 15, 5) * 1000
-  const sampleLimit = clampNumber(limit, 1, 30, 10)
-  const eventLimit = clampNumber(maxEvents, sampleLimit, 2000, Math.max(sampleLimit, 300))
-  const records: any[] = []
-  const accumulator = createTraceAccumulator(sampleLimit)
-  let finished = false
-  let sub: { unsubscribe: () => void } | undefined
-  let timer: ReturnType<typeof setTimeout> | undefined
-
-  const cleanup = () => {
-    if (timer) {
-      clearTimeout(timer)
-      timer = undefined
-    }
-    sub?.unsubscribe()
-    sub = undefined
-  }
-
-  const finish = (reason: string) => {
-    if (finished) return
-    finished = true
-    cleanup()
-    const analysis = accumulator.toResult()
-    resolve({
-      deviceId,
-      reason,
-      durationSeconds: duration / 1000,
-      maxEvents: eventLimit,
-      count: analysis.receivedCount,
-      analysis,
-      data: analysis.samples,
-      records
-    })
-  }
-
-  const fail = (error: unknown) => {
-    if (finished) return
-    finished = true
-    cleanup()
-    reject(error instanceof Error ? error : new Error(String(error)))
-  }
-
-  const topic = `/debug/device/${deviceId}/trace`
-  const wsId = `ai-device-debug-${deviceId}-${Date.now()}`
-  const socket = wsClient.getWebSocket(wsId, topic, {})
-  if (!socket) {
-    reject(new Error('device trace websocket unavailable'))
-    return
-  }
-
-  timer = setTimeout(() => finish('timeout'), duration)
-  sub = socket
-    .pipe(map((res: any) => (res != null && res.payload !== undefined ? res.payload : res)))
-    .subscribe((payload: any) => {
-      const item = normalizeTracePayload(payload)
-      records.push(item)
-      accumulator.ingest(item)
-      if (records.length >= eventLimit) {
-        finish('maxEvents')
-      }
-    }, fail)
-})
 
 export const createDeviceDetailClientToolRuntime = (
   getDevice: () => DeviceDetailRecord
@@ -2130,64 +1942,13 @@ export const createDeviceDetailClientToolRuntime = (
         })
       }
     },
-    {
-      id: 'device_trace_capture',
-      name: 'device_trace_capture',
-      description: '订阅并抓取当前设备实时链路、协议日志和诊断数据，并自动返回统计、语义去重摘要和代表样本。',
-      inputs: withWriteToPathInput([
-        {
-          id: 'seconds',
-          name: 'seconds',
-          description: '抓取秒数，默认5，最大15。抓包分析、下发后观察、连接/认证复现场景要先启动抓包，再在该时间窗口内触发后续操作或等待设备通信。',
-          required: false,
-          valueType: 'int'
-        },
-        {
-          id: 'limit',
-          name: 'limit',
-          description: '内联返回的代表样本条数，默认10，最大30；不代表抓包总量。',
-          required: false,
-          valueType: 'int'
-        },
-        {
-          id: 'maxEvents',
-          name: 'maxEvents',
-          description: '本次抓包最多接收的事件数，默认300，最大2000；高频设备可适当调大，达到上限会停止并返回 maxEvents。',
-          required: false,
-          valueType: 'int'
-        }
-      ]),
-      output: { type: 'object' },
-      help: '实时抓取设备接入链路样本。用于排查连接、认证、上报、下发、编解码等问题。抓包是时间窗口能力：涉及“抓包分析、下发后看报文、重连/认证复现、等待上报”的任务，必须先启动 device_trace_capture，并在抓包窗口内并行触发后续操作或等待设备通信；不要先完成下发/复现再抓包。工具默认按 direction/type/operation/logLevel 与报文摘要做语义去重，返回统计、重复数量、topSignatures 和少量代表样本；大量数据需要保存完整事件时传 writeToPath，完整事件会写 JSONL，内联结果只保留摘要。',
-      execute: async (args, context, call) => {
-        const deviceId = getDeviceId(context)
-        if (!deviceId) throw new Error('deviceId missing')
-        const captured = await captureDeviceTrace(
-          deviceId,
-          Number(args.seconds || 5),
-          Number(args.limit || 10),
-          Number(args.maxEvents || 300)
-        ) as Record<string, any>
-        const records = asArray<Record<string, any>>(captured.records)
-        const result = {
-          ...captured,
-          records: undefined
-        }
-        delete result.records
-
-        const fileSummary = isWriteToPathEnabled(args)
-          ? await writeRecordsToSessionFile(args, call, records)
-          : undefined
-
-        return {
-          ...result,
-          ...(fileSummary ? {
-            traceFile: fileSummary,
-            nextAction: `已返回抓包统计和去重代表样本，完整事件已写入 ${fileSummary.uri}。若需要继续按字段过滤、聚合或制图，使用 dataset_materialize(inputPath="${fileSummary.inputPath}", format="jsonl") 后再处理。`
-          } : {})
-        }
-      }
-    }
+    ...createDeviceTraceCaptureClientTools({
+      clampNumber,
+      compactInlineValue,
+      withWriteToPathInput,
+      writeRecordsToSessionFile,
+      getDeviceId
+    })
     ]),
     {
       toolsName: 'device-detail-client-tools',
