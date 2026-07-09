@@ -8,7 +8,10 @@ type DeviceClientToolContext = {
   device: Record<string, any>
 }
 
+type TranslateFn = (key: string, params?: Record<string, any>) => string
+
 interface DeviceFunctionToolDependencies {
+  t: TranslateFn
   asArray: <T = any>(value: unknown) => T[]
   responseResult: (response: any) => any
   compactInlineValue: (value: unknown, maxLength?: number) => unknown
@@ -17,14 +20,6 @@ interface DeviceFunctionToolDependencies {
 }
 
 const normalizeSearchText = (value: unknown) => String(value ?? '').trim().toLowerCase()
-
-const safeStringify = (value: unknown) => {
-  try {
-    return JSON.stringify(value, null, 2)
-  } catch {
-    return String(value)
-  }
-}
 
 const parseArgumentsObject = (value: unknown) => {
   if (!value) return {}
@@ -143,12 +138,10 @@ const buildConfirmContent = (
 ) => {
   const func = resolveFunctionMetadata(deps, context, args)
   const device = context.device || {}
-  const params = resolveFunctionArguments(args)
-  return [
-    `即将向设备「${device.name || device.id || deps.getDeviceId(context)}」调用功能「${func?.name || func?.id || args.functionId}」。`,
-    '该操作会真实下发设备指令，请确认后继续。',
-    `参数：${safeStringify(params).slice(0, 800)}`
-  ].join('\n')
+  return deps.t('DeviceDetail.agentTools.functionInvoke.confirmContent', {
+    deviceName: device.name || device.id || deps.getDeviceId(context),
+    functionName: func?.name || func?.id || args.functionId
+  })
 }
 
 export const createDeviceFunctionClientTools = (
@@ -157,42 +150,48 @@ export const createDeviceFunctionClientTools = (
   {
     id: 'device_function_invoke',
     name: 'device_function_invoke',
-    description: '调用当前设备物模型中定义的功能。该工具会在真正下发前要求用户确认。',
+    displayName: deps.t('DeviceDetail.agentTools.functionInvoke.displayName'),
+    description: deps.t('DeviceDetail.agentTools.functionInvoke.description'),
     confirm: {
-      title: '确认调用设备功能',
+      title: deps.t('DeviceDetail.agentTools.functionInvoke.confirmTitle'),
       content: (args, context) => buildConfirmContent(deps, args, context),
-      okText: '确认调用',
-      cancelText: '取消',
+      okText: deps.t('DeviceDetail.agentTools.functionInvoke.confirmOk'),
+      cancelText: deps.t('DeviceDetail.agentTools.common.cancel'),
+      localConfirmation: true,
+      risk: {
+        readOnly: false,
+        parallelSafe: false
+      },
       when: (args, context) => canInvokeFunction(deps, context, args)
     },
     inputs: [
       {
         id: 'functionId',
         name: 'functionId',
-        description: '功能ID；如果不确定可传 keyword，工具会在功能物模型中匹配唯一功能，或返回候选功能。',
+        description: deps.t('DeviceDetail.agentTools.functionInvoke.inputs.functionId'),
         required: false,
         valueType: 'string'
       },
       {
         id: 'keyword',
         name: 'keyword',
-        description: '功能名称、标识或说明关键词；functionId 为空时用于匹配功能定义。',
+        description: deps.t('DeviceDetail.agentTools.functionInvoke.inputs.keyword'),
         required: false,
         valueType: 'string'
       },
       {
         id: 'arguments',
         name: 'arguments',
-        description: '功能输入参数对象，字段名应来自功能物模型 inputs/properties。',
+        description: deps.t('DeviceDetail.agentTools.functionInvoke.inputs.arguments'),
         required: false,
         valueType: { type: 'object' }
       }
     ],
     output: { type: 'object' },
-    help: '调用设备功能。先用 device_metadata_search 搜索 functions 或传 keyword 让工具匹配；工具会校验必填参数，真正调用前会弹出用户确认。不要把查询类问题误用为功能调用，只有用户明确要求下发/调用/执行设备功能时才使用。',
+    help: deps.t('DeviceDetail.agentTools.functionInvoke.help'),
     execute: async (args, context) => {
       const deviceId = deps.getDeviceId(context)
-      if (!deviceId) throw new Error('deviceId missing')
+      if (!deviceId) throw new Error(deps.t('DeviceDetail.agentTools.common.errors.deviceIdMissing'))
       const func = resolveFunctionMetadata(deps, context, args)
       if (!func) {
         return {
@@ -200,7 +199,7 @@ export const createDeviceFunctionClientTools = (
           needsFunctionId: true,
           keyword: args.keyword ?? args.functionName ?? args.name,
           candidates: listFunctionCandidates(deps, context, args.keyword ?? args.functionName ?? args.name),
-          nextAction: '请从 candidates 中选择功能ID和参数后再次调用。'
+          nextAction: deps.t('DeviceDetail.agentTools.functionInvoke.nextAction.selectFunction')
         }
       }
 
@@ -213,7 +212,7 @@ export const createDeviceFunctionClientTools = (
           function: normalizeFunctionCandidate(deps, func),
           needsArguments: true,
           missingInputs,
-          nextAction: '请补充 missingInputs 对应的功能参数后再次调用。'
+          nextAction: deps.t('DeviceDetail.agentTools.functionInvoke.nextAction.fillInputs')
         }
       }
 

@@ -8,6 +8,8 @@ import type {
   AiClientToolDefinition
 } from '@jetlinks-web-core/layout/components/AiChat/clientTools'
 
+type TranslateFn = (key: string, params?: Record<string, any>) => string
+
 type DeviceClientToolContext = {
   device: Record<string, any>
 }
@@ -15,6 +17,7 @@ type DeviceClientToolContext = {
 type DocumentSource = 'device' | 'product'
 
 interface DeviceDocumentToolDependencies {
+  t: TranslateFn
   clampNumber: (value: unknown, min: number, max: number, defaultValue: number) => number
   asArray: <T = any>(value: unknown) => T[]
   responseResult: (response: any) => any
@@ -206,7 +209,7 @@ const queryDocuments = async (
   context: DeviceClientToolContext
 ) => {
   const deviceId = deps.getDeviceId(context)
-  if (!deviceId) throw new Error('deviceId missing')
+  if (!deviceId) throw new Error(deps.t('DeviceDetail.agentTools.common.errors.deviceIdMissing'))
   const includeProduct = args.includeProductDocuments !== false
   const productId = String(context.device?.productId || '').trim()
   const documentTypes = normalizeDocumentTypes(args.documentTypes ?? args.documentType ?? args.type)
@@ -240,7 +243,7 @@ const queryDocuments = async (
   }
 }
 
-const toDocumentReferenceResult = (document: Record<string, any>) => ({
+const toDocumentReferenceResult = (document: Record<string, any>, t: TranslateFn) => ({
   ...document,
   url: document.url || documentFileUrl(normalizeFileId(document.fileId)),
   fileUrl: document.fileUrl || document.url || documentFileUrl(normalizeFileId(document.fileId)),
@@ -257,10 +260,10 @@ const toDocumentReferenceResult = (document: Record<string, any>) => ({
     : undefined),
   contentInline: false,
   contentOmitted: true,
-  contentOmittedReason: '文档正文未通过前端工具读取，避免大文件内容通过 WebSocket 回传。',
+  contentOmittedReason: t('DeviceDetail.agentTools.documentReference.contentOmittedReason'),
   nextAction: document.fileId
-    ? '需要正文级分析时，优先使用返回的 url/fileUrl 通过后端 fs_download 或统一文件通道导入当前会话文件容器，再把返回的会话文件路径作为 inputPath 传给文档分析工具。不要让前端读取并回传全文。'
-    : '该文档未返回 fileId，无法形成可分析的文件引用。'
+    ? t('DeviceDetail.agentTools.documentReference.nextAction.importFile')
+    : t('DeviceDetail.agentTools.documentReference.nextAction.noFileId')
 })
 
 const resolveDocumentReference = async (
@@ -284,10 +287,10 @@ const resolveDocumentReference = async (
     matched: !!document,
     partial: queryResult.partial,
     errors: queryResult.errors,
-    document: document ? toDocumentReferenceResult(document) : undefined,
+    document: document ? toDocumentReferenceResult(document, deps.t) : undefined,
     candidates: queryResult.data
       .slice(0, candidateLimit)
-      .map(toDocumentReferenceResult),
+      .map((item) => toDocumentReferenceResult(item, deps.t)),
     totalCandidates: queryResult.data.length,
     contentInline: false,
     contentOmitted: true
@@ -300,39 +303,39 @@ export const createDeviceDocumentClientTools = (
   {
     id: 'device_documents_query',
     name: 'device_documents_query',
-    description: '查询当前设备关联的文档绑定，可包含设备自身文档和所属产品文档。',
+    description: deps.t('DeviceDetail.agentTools.documentsQuery.description'),
     inputs: deps.withWriteToPathInput([
       {
         id: 'documentTypes',
         name: 'documentTypes',
-        description: '文档类型数组。可选：maintenance、access-guide、protocol-doc、market-doc、other；也支持“维修/接入指南/协议”等自然语言。',
+        description: deps.t('DeviceDetail.agentTools.documentsQuery.inputs.documentTypes'),
         required: false,
         valueType: { type: 'array', elementType: { type: 'string' } }
       },
       {
         id: 'keyword',
         name: 'keyword',
-        description: '按文档名称、文件名或类型过滤。',
+        description: deps.t('DeviceDetail.agentTools.documentsQuery.inputs.keyword'),
         required: false,
         valueType: 'string'
       },
       {
         id: 'includeProductDocuments',
         name: 'includeProductDocuments',
-        description: '是否同时返回所属产品文档，默认 true。',
+        description: deps.t('DeviceDetail.agentTools.documentsQuery.inputs.includeProductDocuments'),
         required: false,
         valueType: 'boolean'
       },
       {
         id: 'limit',
         name: 'limit',
-        description: '内联预览最多返回条数，默认20，最大100；传 writeToPath 时完整文档元数据写入文件。',
+        description: deps.t('DeviceDetail.agentTools.documentsQuery.inputs.limit'),
         required: false,
         valueType: 'int'
       }
     ]),
     output: { type: 'object' },
-    help: '设备文档查询。用户问“有没有维修知识库”“接入指南在哪”“设备文档里怎么说”时先用此工具找文档；结果返回文档元数据、platform-file-id 和 url/fileUrl，不读取正文。需要分析大文档正文时，应通过后端 fs_download 或统一文件/文档工具把 url/fileUrl 导入或挂载到会话文件容器后，再用 inputPath 分析。',
+    help: deps.t('DeviceDetail.agentTools.documentsQuery.help'),
     execute: async (args, context, call) => {
       const result = await queryDocuments(deps, args, context)
       const limit = deps.clampNumber(args.limit, 1, 100, 20)
@@ -370,52 +373,52 @@ export const createDeviceDocumentClientTools = (
   {
     id: 'device_document_reference',
     name: 'device_document_reference',
-    description: '定位当前设备文档的文件引用，返回 platform-file-id、url/fileUrl 元数据，不通过前端读取文档正文。',
+    description: deps.t('DeviceDetail.agentTools.documentReference.description'),
     inputs: [
       {
         id: 'fileId',
         name: 'fileId',
-        description: '文件ID。为空时会按 documentType/keyword 查找第一个匹配文档。',
+        description: deps.t('DeviceDetail.agentTools.documentReference.inputs.fileId'),
         required: false,
         valueType: 'string'
       },
       {
         id: 'documentType',
         name: 'documentType',
-        description: '文档类型。可选 maintenance、access-guide、protocol-doc、market-doc、other；fileId 为空时用于定位文档。',
+        description: deps.t('DeviceDetail.agentTools.documentReference.inputs.documentType'),
         required: false,
         valueType: 'string'
       },
       {
         id: 'keyword',
         name: 'keyword',
-        description: 'fileId 为空时按文档名称或文件名过滤。',
+        description: deps.t('DeviceDetail.agentTools.documentReference.inputs.keyword'),
         required: false,
         valueType: 'string'
       },
       {
         id: 'includeProductDocuments',
         name: 'includeProductDocuments',
-        description: 'fileId 为空时是否同时查所属产品文档，默认 true。',
+        description: deps.t('DeviceDetail.agentTools.documentReference.inputs.includeProductDocuments'),
         required: false,
         valueType: 'boolean'
       },
       {
         id: 'candidateLimit',
         name: 'candidateLimit',
-        description: '同时返回的候选引用数量，默认5，最大10。',
+        description: deps.t('DeviceDetail.agentTools.documentReference.inputs.candidateLimit'),
         required: false,
         valueType: 'int'
       }
     ],
     output: { type: 'object' },
-    help: '定位设备文档引用。先用 device_documents_query 查看候选；需要文档正文分析时，不要让前端下载并回传全文，而是把返回的 url/fileUrl 通过后端 fs_download 或统一文件/文档通道转换成会话文件路径后，再调用文档分析工具。',
+    help: deps.t('DeviceDetail.agentTools.documentReference.help'),
     execute: async (args, context) => {
       const result = await resolveDocumentReference(deps, args, context)
       if (!result.matched) {
         return {
           ...result,
-          reason: '未找到匹配的设备文档。'
+          reason: deps.t('DeviceDetail.agentTools.documentReference.reason.notFound')
         }
       }
       return result

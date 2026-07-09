@@ -8,6 +8,8 @@ import type {
   AiClientToolDefinition
 } from '@jetlinks-web-core/layout/components/AiChat/clientTools'
 
+type TranslateFn = (key: string, params?: Record<string, any>) => string
+
 type DeviceClientToolContext = {
   device: Record<string, any>
 }
@@ -18,6 +20,7 @@ interface ResolvedTimeRange {
 }
 
 interface DeviceAlarmToolDependencies {
+  t: TranslateFn
   clampNumber: (value: unknown, min: number, max: number, defaultValue: number) => number
   asArray: <T = any>(value: unknown) => T[]
   responseResult: (response: any) => any
@@ -354,33 +357,33 @@ export const createDeviceAlarmClientTools = (
   {
     id: 'device_alarm_records_query',
     name: 'device_alarm_records_query',
-    description: '查询平台告警中心中与当前设备关联的告警记录，是回答当前告警状态、有哪些告警、告警是否恢复的首选事实来源。',
+    description: deps.t('DeviceDetail.agentTools.alarmRecords.description'),
     inputs: deps.withWriteToPathInput([
       {
         id: 'state',
         name: 'state',
-        description: '告警状态：warning 表示告警中，normal 表示已恢复/正常；为空查询全部。',
+        description: deps.t('DeviceDetail.agentTools.alarm.inputs.state'),
         required: false,
         valueType: 'string'
       },
       {
         id: 'onlyActive',
         name: 'onlyActive',
-        description: '是否只查询告警中的记录；为 true 时等同 state=warning。',
+        description: deps.t('DeviceDetail.agentTools.alarmRecords.inputs.onlyActive'),
         required: false,
         valueType: 'boolean'
       },
       {
         id: 'level',
         name: 'level',
-        description: '告警级别，可传单个级别或级别数组。',
+        description: deps.t('DeviceDetail.agentTools.alarm.inputs.level'),
         required: false,
         valueType: 'string'
       },
       {
         id: 'keyword',
         name: 'keyword',
-        description: '按告警名称、触发描述、告警原因或告警源模糊搜索。',
+        description: deps.t('DeviceDetail.agentTools.alarmRecords.inputs.keyword'),
         required: false,
         valueType: 'string'
       },
@@ -402,17 +405,17 @@ export const createDeviceAlarmClientTools = (
       {
         id: 'limit',
         name: 'limit',
-        description: '内联预览条数，默认20，最大50；传 writeToPath 时更多告警记录写入文件。',
+        description: deps.t('DeviceDetail.agentTools.alarmRecords.inputs.limit'),
         required: false,
         valueType: 'int'
       },
       deps.writeLimitInput()
     ]),
     output: { type: 'object' },
-    help: '查询平台告警记录。用户问“有没有告警”“报警中吗”“最近告警原因”“有哪些告警记录”时优先使用此工具；单个告警记录通常只代表当前告警快照，不能用记录条数当触发次数。用户问“触发了多少次/告警历史数量/历史日志”时必须使用 device_alarm_history_summary 或 device_alarm_history_query。需要保存大范围告警列表时传 writeToPath，建议优先使用 .jsonl 路径，也兼容 .ndjson，工具会逐页追加 JSONL/NDJSON；limit 只控制内联预览，writeLimit 控制文件写入条数，完整导出可传 writeLimit=0。',
+    help: deps.t('DeviceDetail.agentTools.alarmRecords.help'),
     execute: async (args, context, call) => {
       const deviceId = deps.getDeviceId(context)
-      if (!deviceId) throw new Error('deviceId missing')
+      if (!deviceId) throw new Error(deps.t('DeviceDetail.agentTools.common.errors.deviceIdMissing'))
       const inlineLimit = deps.clampNumber(args.limit, 1, 50, 20)
       const timeRange = deps.resolveTimeRange(args)
       const collected = await deps.collectPagedToolData({
@@ -436,13 +439,13 @@ export const createDeviceAlarmClientTools = (
         keyword: String(args.keyword || '').trim() || undefined,
         timeRange: deps.describeResolvedTimeRange(timeRange),
         total: collected.total,
-        countMeaning: '告警记录数表示当前设备关联的告警记录快照数量，不等于触发历史次数。触发次数请查询告警日志。'
+        countMeaning: deps.t('DeviceDetail.agentTools.alarmRecords.countMeaning')
       }
       const output = {
         ...base,
         returned: previewData.length,
         truncated: collected.total > previewData.length,
-        nextAction: collected.total > previewData.length ? '结果已截断，可传 writeToPath 保存更多告警记录；需要统计触发次数请调用 device_alarm_history_summary。' : undefined,
+        nextAction: collected.total > previewData.length ? deps.t('DeviceDetail.agentTools.alarmRecords.nextAction.truncated') : undefined,
         data: previewData
       }
       if (collected.file) {
@@ -490,33 +493,33 @@ export const createDeviceAlarmClientTools = (
   {
     id: 'device_alarm_history_summary',
     name: 'device_alarm_history_summary',
-    description: '统计当前设备告警日志触发历史数量，并返回少量最新告警日志样本；触发次数以告警日志为准，不以告警记录条数为准。',
+    description: deps.t('DeviceDetail.agentTools.alarmHistorySummary.description'),
     inputs: [
       {
         id: 'alarmRecordId',
         name: 'alarmRecordId',
-        description: '可选。告警记录ID；传入后只统计该告警记录的触发日志。为空时统计当前设备全部告警日志。',
+        description: deps.t('DeviceDetail.agentTools.alarmHistory.inputs.alarmRecordIdOptional'),
         required: false,
         valueType: 'string'
       },
       {
         id: 'alarmConfigId',
         name: 'alarmConfigId',
-        description: '可选。告警配置ID；用于限定某个告警配置的触发历史。',
+        description: deps.t('DeviceDetail.agentTools.alarmHistory.inputs.alarmConfigId'),
         required: false,
         valueType: 'string'
       },
       {
         id: 'level',
         name: 'level',
-        description: '告警级别，可传单个级别或级别数组。',
+        description: deps.t('DeviceDetail.agentTools.alarm.inputs.level'),
         required: false,
         valueType: 'string'
       },
       {
         id: 'keyword',
         name: 'keyword',
-        description: '按告警配置名称、说明、触发描述、告警原因、告警源或告警详情模糊搜索。',
+        description: deps.t('DeviceDetail.agentTools.alarmHistory.inputs.keyword'),
         required: false,
         valueType: 'string'
       },
@@ -538,23 +541,23 @@ export const createDeviceAlarmClientTools = (
       {
         id: 'sampleLimit',
         name: 'sampleLimit',
-        description: '返回最新告警日志样本条数，默认5，最大20。',
+        description: deps.t('DeviceDetail.agentTools.alarmHistorySummary.inputs.sampleLimit'),
         required: false,
         valueType: 'int'
       },
       {
         id: 'recordLimit',
         name: 'recordLimit',
-        description: 'alarmRecordId 为空时，为了返回样本最多先查看多少条告警记录，默认10，最大50；总数统计不受此限制。',
+        description: deps.t('DeviceDetail.agentTools.alarmHistorySummary.inputs.recordLimit'),
         required: false,
         valueType: 'int'
       }
     ],
     output: { type: 'object' },
-    help: '统计告警日志触发次数。用户问“告警触发了多少次”“今天告警历史数量”“历史报警次数”“某告警发生几次”时使用此工具；不要用 device_alarm_records_query 的 total 当触发次数。alarmRecordId 为空时 total 是当前设备告警日志总数；samples 只是从最近告警记录中抽取的少量日志样本。',
+    help: deps.t('DeviceDetail.agentTools.alarmHistorySummary.help'),
     execute: async (args, context) => {
       const deviceId = deps.getDeviceId(context)
-      if (!deviceId) throw new Error('deviceId missing')
+      if (!deviceId) throw new Error(deps.t('DeviceDetail.agentTools.common.errors.deviceIdMissing'))
       const sampleLimit = deps.clampNumber(args.sampleLimit, 1, 20, 5)
       const recordLimit = deps.clampNumber(args.recordLimit, 1, 50, 10)
       const timeRange = deps.resolveTimeRange(args)
@@ -571,7 +574,7 @@ export const createDeviceAlarmClientTools = (
         return {
           deviceId,
           source: 'platform-alarm-history',
-          countMeaning: 'total 表示告警日志触发次数。',
+          countMeaning: deps.t('DeviceDetail.agentTools.alarmHistorySummary.countMeaning.recordIds'),
           alarmRecordIds: recordIds,
           timeRange: deps.describeResolvedTimeRange(timeRange),
           total: histories.reduce((sum, item) => sum + item.total, 0),
@@ -599,7 +602,7 @@ export const createDeviceAlarmClientTools = (
       return {
         deviceId,
         source: 'platform-alarm-history',
-        countMeaning: 'total 表示告警日志触发次数，不是告警记录条数。',
+        countMeaning: deps.t('DeviceDetail.agentTools.alarmHistorySummary.countMeaning.device'),
         timeRange: deps.describeResolvedTimeRange(timeRange),
         keyword: String(args.keyword || '').trim() || undefined,
         total,
@@ -607,7 +610,7 @@ export const createDeviceAlarmClientTools = (
         sampleRecordScope: {
           recordLimit,
           recordTotal: records.length,
-          note: 'samples 从最近的告警记录中抽取；total 使用按设备告警日志计数接口统计。'
+          note: deps.t('DeviceDetail.agentTools.alarmHistorySummary.sampleRecordScope.note')
         },
         records: records.map((record) => ({
           ...record,
@@ -620,26 +623,26 @@ export const createDeviceAlarmClientTools = (
   {
     id: 'device_alarm_history_query',
     name: 'device_alarm_history_query',
-    description: '按告警记录ID分页查询告警日志触发明细；用于查看某一条告警记录背后的历史触发记录。',
+    description: deps.t('DeviceDetail.agentTools.alarmHistoryQuery.description'),
     inputs: deps.withWriteToPathInput([
       {
         id: 'alarmRecordId',
         name: 'alarmRecordId',
-        description: '告警记录ID。可先用 device_alarm_records_query 获取候选记录。',
+        description: deps.t('DeviceDetail.agentTools.alarmHistoryQuery.inputs.alarmRecordId'),
         required: true,
         valueType: 'string'
       },
       {
         id: 'level',
         name: 'level',
-        description: '告警级别，可传单个级别或级别数组。',
+        description: deps.t('DeviceDetail.agentTools.alarm.inputs.level'),
         required: false,
         valueType: 'string'
       },
       {
         id: 'keyword',
         name: 'keyword',
-        description: '按告警配置名称、说明、触发描述、告警原因、告警源或告警详情模糊搜索。',
+        description: deps.t('DeviceDetail.agentTools.alarmHistory.inputs.keyword'),
         required: false,
         valueType: 'string'
       },
@@ -661,17 +664,17 @@ export const createDeviceAlarmClientTools = (
       {
         id: 'limit',
         name: 'limit',
-        description: '内联预览告警日志条数，默认20，最大50；传 writeToPath 时更多日志写入文件。',
+        description: deps.t('DeviceDetail.agentTools.alarmHistoryQuery.inputs.limit'),
         required: false,
         valueType: 'int'
       },
       deps.writeLimitInput()
     ]),
     output: { type: 'object' },
-    help: '查询某条告警记录的告警日志明细。用户问某个告警的历史触发详情、触发时间列表、触发原因变化时使用；如果没有 alarmRecordId，先调用 device_alarm_records_query 选择告警记录。需要保存大范围日志时传 writeToPath，建议优先使用 .jsonl 路径，也兼容 .ndjson；limit 只控制内联预览，writeLimit 控制文件写入条数，完整导出可传 writeLimit=0。',
+    help: deps.t('DeviceDetail.agentTools.alarmHistoryQuery.help'),
     execute: async (args, context, call) => {
       const deviceId = deps.getDeviceId(context)
-      if (!deviceId) throw new Error('deviceId missing')
+      if (!deviceId) throw new Error(deps.t('DeviceDetail.agentTools.common.errors.deviceIdMissing'))
       const alarmRecordId = alarmRecordIdsFromArgs(deps, args)[0]
       if (!alarmRecordId) {
         const timeRange = deps.resolveTimeRange(args)
@@ -680,7 +683,7 @@ export const createDeviceAlarmClientTools = (
           deviceId,
           needsAlarmRecordId: true,
           candidates,
-          nextAction: '请从 candidates 中选择 alarmRecordId 后再次调用。'
+          nextAction: deps.t('DeviceDetail.agentTools.alarmHistoryQuery.nextAction.selectAlarmRecord')
         }
       }
 
@@ -704,7 +707,7 @@ export const createDeviceAlarmClientTools = (
         deviceId,
         alarmRecordId,
         source: 'platform-alarm-history',
-        countMeaning: 'total 表示该告警记录的日志触发次数。',
+        countMeaning: deps.t('DeviceDetail.agentTools.alarmHistoryQuery.countMeaning'),
         timeRange: deps.describeResolvedTimeRange(timeRange),
         total: collected.total
       }
@@ -712,7 +715,7 @@ export const createDeviceAlarmClientTools = (
         ...base,
         returned: previewData.length,
         truncated: collected.total > previewData.length,
-        nextAction: collected.total > previewData.length ? '结果已截断，可传 writeToPath 保存更多告警日志。' : undefined,
+        nextAction: collected.total > previewData.length ? deps.t('DeviceDetail.agentTools.alarmHistoryQuery.nextAction.truncated') : undefined,
         data: previewData
       }
       if (collected.file) {

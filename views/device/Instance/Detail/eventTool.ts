@@ -4,6 +4,8 @@ import type {
   AiClientToolDefinition
 } from '@jetlinks-web-core/layout/components/AiChat/clientTools'
 
+type TranslateFn = (key: string, params?: Record<string, any>) => string
+
 type DeviceClientToolContext = {
   device: Record<string, any>
 }
@@ -14,6 +16,7 @@ interface ResolvedTimeRange {
 }
 
 interface DeviceEventToolDependencies {
+  t: TranslateFn
   clampNumber: (value: unknown, min: number, max: number, defaultValue: number) => number
   asArray: <T = any>(value: unknown) => T[]
   responseResult: (response: any) => any
@@ -210,26 +213,26 @@ export const createDeviceEventClientTools = (
   {
     id: 'device_event_history_query',
     name: 'device_event_history_query',
-    description: '查询当前设备指定事件在时间范围内的上报记录数量，并返回少量最新事件样本。',
+    description: deps.t('DeviceDetail.agentTools.eventHistory.description'),
     inputs: deps.withWriteToPathInput([
       {
         id: 'eventId',
         name: 'eventId',
-        description: '事件ID；如果不确定可传 keyword，工具会在事件物模型中匹配唯一事件，或返回候选事件。',
+        description: deps.t('DeviceDetail.agentTools.eventHistory.inputs.eventId'),
         required: false,
         valueType: 'string'
       },
       {
         id: 'keyword',
         name: 'keyword',
-        description: '事件名称、标识或说明关键词；eventId 为空时用于匹配事件定义。',
+        description: deps.t('DeviceDetail.agentTools.eventHistory.inputs.keyword'),
         required: false,
         valueType: 'string'
       },
       {
         id: 'filters',
         name: 'filters',
-        description: '事件输出字段过滤条件对象，如 {"level":"error"}；字段名应来自事件物模型。',
+        description: deps.t('DeviceDetail.agentTools.eventHistory.inputs.filters'),
         required: false,
         valueType: { type: 'object' }
       },
@@ -251,17 +254,17 @@ export const createDeviceEventClientTools = (
       {
         id: 'limit',
         name: 'limit',
-        description: '内联预览事件样本条数，默认10，最大50；传 writeToPath 时更多事件记录写入文件。',
+        description: deps.t('DeviceDetail.agentTools.eventHistory.inputs.limit'),
         required: false,
         valueType: 'int'
       },
       deps.writeLimitInput()
     ]),
     output: { type: 'object' },
-    help: '查询设备事件上报数据。用户问“某事件有没有上报”“最近报警事件”“事件触发了多少次”“最近事件内容”时使用；若不知道 eventId，先传 keyword 或调用 device_metadata_search 搜索 events。需要保存大范围事件样本时传 writeToPath，建议优先使用 .jsonl 路径，也兼容 .ndjson，工具会逐页追加 JSONL/NDJSON；limit 只控制内联预览，writeLimit 控制文件写入条数，完整导出可传 writeLimit=0。',
+    help: deps.t('DeviceDetail.agentTools.eventHistory.help'),
     execute: async (args, context, call) => {
       const deviceId = deps.getDeviceId(context)
-      if (!deviceId) throw new Error('deviceId missing')
+      if (!deviceId) throw new Error(deps.t('DeviceDetail.agentTools.common.errors.deviceIdMissing'))
       const event = resolveEventMetadata(deps, context, args)
       if (!event) {
         return {
@@ -269,7 +272,7 @@ export const createDeviceEventClientTools = (
           needsEventId: true,
           keyword: args.keyword ?? args.eventName ?? args.name,
           candidates: listEventCandidates(deps, context, args.keyword ?? args.eventName ?? args.name),
-          nextAction: '请从 candidates 中选择事件ID后再次调用。'
+          nextAction: deps.t('DeviceDetail.agentTools.eventHistory.nextAction.selectEvent')
         }
       }
 
@@ -301,7 +304,7 @@ export const createDeviceEventClientTools = (
         ...base,
         returned: previewData.length,
         truncated: collected.total > previewData.length,
-        nextAction: collected.total > previewData.length ? '结果已截断，可传 writeToPath 保存更多事件样本。' : undefined,
+        nextAction: collected.total > previewData.length ? deps.t('DeviceDetail.agentTools.eventHistory.nextAction.truncated') : undefined,
         data: previewData
       }
       if (collected.file) {

@@ -339,6 +339,13 @@ import { useRegistryOptions } from '@jetlinks-web-core/hooks'
 import { deviceStateList } from '@device-manager-ui/views/device/data'
 import { isApplyDashboard } from '@device-manager-ui/utils/dashboardProject'
 import { createDeviceDetailClientToolRuntime } from './clientTools'
+import { useDeviceMetadataReferences } from './useDeviceMetadataReferences'
+import {
+  createEdgeDiagnosisWorkflowGuides,
+  buildEdgeDiagnosisClientToolsDescription,
+  isEdgeDiagnosisToolId
+} from './agentDiagnosisManual'
+import { isEdgeDiagnosisAccessProvider } from './edgeDiagnosisTool'
 import type {
   AgentConversationMarkdownLinkHandler,
   AgentConversationWorkflowGuide,
@@ -556,183 +563,212 @@ const isRefresh = ref(false)
 const aiStore = useAIStore()
 const permissionStore = useAuthStore()
 const { mergedOptions } = useRegistryOptions({ baseOptions: list, code: 'detail-tabs' })
+const DEVICE_DETAIL_AGENT_CLIENT_ID = 'deviceDetailChat'
 const DEVICE_AGENT_SUBJECT_TYPE = 'device'
-const DEVICE_REMOTE_FILE_ACCESS_PROVIDERS = new Set([
-  'agent-device-gateway',
-  'agent-media-device-gateway'
-])
 const DEVICE_DETAIL_AGENT_SYSTEM_PROMPT_LINES = [
-  '你是设备详情页内的设备问数与诊断助手。',
-  '当前会话的 subject 就是页面打开的设备，已通过 subjectType=device、subjectId、deviceId 和 deviceName 提供；用户没有明确要求其它设备时，不要再追问设备 ID。',
-  '当前会话可通过客户端工具读取该设备的状态、运行数据、告警、日志、接入、文档、功能和调试证据。',
-  '多步骤诊断可以先用一句业务侧说明承接，例如“我会先确认设备状态、近期数据和异常记录，再给出判断与建议。”',
-  '下一步建议可以输出 Markdown 链接，例如 [查看今日告警](#prompt=查看今日告警)，让用户一键填充到输入框。',
-  '设备告警中，当前状态来自告警记录，触发次数和历史时间线来自告警日志。',
-  '用户明确要求选择其它设备、按条件挑设备或跨设备对比时，可使用设备选择能力；未明确要求时仍使用当前 subject 设备。'
+  $t('DeviceDetail.agent.systemPrompt.0'),
+  $t('DeviceDetail.agent.systemPrompt.1'),
+  $t('DeviceDetail.agent.systemPrompt.2'),
+  $t('DeviceDetail.agent.systemPrompt.3'),
+  $t('DeviceDetail.agent.systemPrompt.4')
 ]
-const deviceDetailClientToolRuntime = createDeviceDetailClientToolRuntime(() => instanceStore.current || {})
+const deviceDetailClientToolRuntime = createDeviceDetailClientToolRuntime(() => instanceStore.current || {}, $t)
+const deviceMetadataReferences = useDeviceMetadataReferences({
+  device: computed(() => instanceStore.current || {}),
+  t: $t,
+})
 
 const DEVICE_DETAIL_AGENT_WORKFLOW_GUIDES: AgentConversationWorkflowGuide[] = [
   {
     id: 'device-today-operation',
-    name: '今日运行分析',
-    description: '分析设备今天是否运行正常，覆盖告警、上下线、关键属性最新值和趋势。',
-    scenarios: ['分析今日运行情况', '是否正常', '全面检查', '帮我看看', '最近状态'],
-    keywords: ['今日', '今天', '运行', '正常', '全面', '状态', '分析'],
+    name: $t('DeviceDetail.agentGuides.today.name'),
+    description: $t('DeviceDetail.agentGuides.today.description'),
+    scenarios: [$t('DeviceDetail.agentGuides.today.scenarios.0'), $t('DeviceDetail.agentGuides.today.scenarios.1'), $t('DeviceDetail.agentGuides.today.scenarios.2'), $t('DeviceDetail.agentGuides.today.scenarios.3'), $t('DeviceDetail.agentGuides.today.scenarios.4')],
+    keywords: [$t('DeviceDetail.agentGuides.today.keywords.0'), $t('DeviceDetail.agentGuides.today.keywords.1'), $t('DeviceDetail.agentGuides.today.keywords.2'), $t('DeviceDetail.agentGuides.today.keywords.3'), $t('DeviceDetail.agentGuides.today.keywords.4'), $t('DeviceDetail.agentGuides.today.keywords.5'), $t('DeviceDetail.agentGuides.today.keywords.6')],
     priority: 100,
     steps: [
       {
-        title: '识别关键运行指标',
-        description: '根据设备属性定义的名称、标识、说明和数据类型识别本设备已有的关键运行指标；不要预设固定字段，只保留实际匹配到的属性。',
+        title: $t('DeviceDetail.agentGuides.today.steps.identify.title'),
+        description: $t('DeviceDetail.agentGuides.today.steps.identify.description'),
         tools: ['device_metadata_markdown', 'device_metadata_search'],
         inputs: { section: 'properties' },
       },
       {
-        title: '查询今日平台告警',
+        title: $t('DeviceDetail.agentGuides.today.steps.alarmRecords.title'),
         tools: ['device_alarm_records_query'],
-        inputs: { timeRange: '今天' },
+        inputs: { timeRange: $t('DeviceDetail.agentGuides.inputs.today') },
       },
       {
-        title: '统计今日告警触发历史',
+        title: $t('DeviceDetail.agentGuides.today.steps.alarmHistory.title'),
         tools: ['device_alarm_history_summary'],
-        inputs: { timeRange: '今天' },
+        inputs: { timeRange: $t('DeviceDetail.agentGuides.inputs.today') },
       },
       {
-        title: '统计今日上下线',
+        title: $t('DeviceDetail.agentGuides.today.steps.onlineOffline.title'),
         tools: ['device_online_offline_summary'],
-        inputs: { timeRange: '今天', type: 'both' },
+        inputs: { timeRange: $t('DeviceDetail.agentGuides.inputs.today'), type: 'both' },
       },
       {
-        title: '读取关键属性最新值',
-        description: '对已匹配属性直接批量读取；没有匹配到运行指标时说明当前设备未暴露相关属性。',
+        title: $t('DeviceDetail.agentGuides.today.steps.latestProperties.title'),
+        description: $t('DeviceDetail.agentGuides.today.steps.latestProperties.description'),
         tools: ['device_latest_properties'],
         inputs: { propertyIds: 'matched-property-ids' },
       },
       {
-        title: '按需查看趋势',
-        description: '用户问“今日运行/是否正常”时，优先对已匹配的数值型指标按小时聚合，趋势不足时说明数据限制。',
+        title: $t('DeviceDetail.agentGuides.today.steps.trend.title'),
+        description: $t('DeviceDetail.agentGuides.today.steps.trend.description'),
         tools: ['device_property_aggregate'],
-        inputs: { propertyIds: 'matched-property-ids', timeRange: '今天', interval: '1h' },
+        inputs: { propertyIds: 'matched-property-ids', timeRange: $t('DeviceDetail.agentGuides.inputs.today'), interval: '1h' },
       },
     ],
-    output: ['已验证事实', '异常迹象', '建议动作', '无法确认的限制'],
-    notes: ['不要让用户先选择属性；不要把属性候选列表当最终答案。'],
+    output: [$t('DeviceDetail.agentGuides.today.output.0'), $t('DeviceDetail.agentGuides.today.output.1'), $t('DeviceDetail.agentGuides.today.output.2'), $t('DeviceDetail.agentGuides.today.output.3')],
+    notes: [$t('DeviceDetail.agentGuides.today.notes.0')],
   },
   {
     id: 'device-offline-diagnosis',
-    name: '离线原因分析',
-    description: '设备离线时，按接入配置、上下线记录、日志、告警和链路样本排查原因。',
-    scenarios: ['分析离线原因', '为什么离线', '设备不上线', '连接失败', '认证失败'],
-    keywords: ['离线', '下线', '不上线', '连接失败', '认证失败', '断开'],
+    name: $t('DeviceDetail.agentGuides.offline.name'),
+    description: $t('DeviceDetail.agentGuides.offline.description'),
+    scenarios: [$t('DeviceDetail.agentGuides.offline.scenarios.0'), $t('DeviceDetail.agentGuides.offline.scenarios.1'), $t('DeviceDetail.agentGuides.offline.scenarios.2'), $t('DeviceDetail.agentGuides.offline.scenarios.3'), $t('DeviceDetail.agentGuides.offline.scenarios.4')],
+    keywords: [$t('DeviceDetail.agentGuides.offline.keywords.0'), $t('DeviceDetail.agentGuides.offline.keywords.1'), $t('DeviceDetail.agentGuides.offline.keywords.2'), $t('DeviceDetail.agentGuides.offline.keywords.3'), $t('DeviceDetail.agentGuides.offline.keywords.4'), $t('DeviceDetail.agentGuides.offline.keywords.5')],
     priority: 90,
     steps: [
       {
-        title: '获取接入配置和会话证据',
+        title: $t('DeviceDetail.agentGuides.offline.steps.access.title'),
         tools: ['device_access_summary'],
       },
       {
-        title: '统计最近上下线',
+        title: $t('DeviceDetail.agentGuides.offline.steps.onlineOffline.title'),
         tools: ['device_online_offline_summary'],
-        inputs: { timeRange: '最近24小时', type: 'both' },
+        inputs: { timeRange: $t('DeviceDetail.agentGuides.inputs.recent24h'), type: 'both' },
       },
       {
-        title: '查看最近通信日志',
+        title: $t('DeviceDetail.agentGuides.offline.steps.logs.title'),
         tools: ['device_logs_summary'],
-        inputs: { timeRange: '最近24小时' },
+        inputs: { timeRange: $t('DeviceDetail.agentGuides.inputs.recent24h') },
       },
       {
-        title: '查询平台告警',
+        title: $t('DeviceDetail.agentGuides.offline.steps.alarms.title'),
         tools: ['device_alarm_records_query', 'device_alarm_history_summary'],
-        inputs: { timeRange: '最近24小时' },
+        inputs: { timeRange: $t('DeviceDetail.agentGuides.inputs.recent24h') },
       },
       {
-        title: '需要链路细节时抓取实时样本',
+        title: $t('DeviceDetail.agentGuides.offline.steps.trace.title'),
         tools: ['device_trace_capture'],
-        tips: ['只有需要连接、认证、上报、下发、编解码证据时再使用。'],
+        inputs: { action: 'start', seconds: $t('DeviceDetail.agentGuides.inputs.secondsByScenario') },
+        tips: [$t('DeviceDetail.agentGuides.offline.steps.trace.tips.0')],
       },
     ],
-    output: ['最可能原因', '已验证证据', '下一步处理动作', '仍需现场确认的信息'],
+    output: [$t('DeviceDetail.agentGuides.offline.output.0'), $t('DeviceDetail.agentGuides.offline.output.1'), $t('DeviceDetail.agentGuides.offline.output.2'), $t('DeviceDetail.agentGuides.offline.output.3')],
+  },
+  {
+    id: 'device-trace-diagnosis',
+    name: $t('DeviceDetail.agentGuides.trace.name'),
+    description: $t('DeviceDetail.agentGuides.trace.description'),
+    scenarios: [$t('DeviceDetail.agentGuides.trace.scenarios.0'), $t('DeviceDetail.agentGuides.trace.scenarios.1'), $t('DeviceDetail.agentGuides.trace.scenarios.2'), $t('DeviceDetail.agentGuides.trace.scenarios.3'), $t('DeviceDetail.agentGuides.trace.scenarios.4'), $t('DeviceDetail.agentGuides.trace.scenarios.5'), $t('DeviceDetail.agentGuides.trace.scenarios.6')],
+    keywords: [$t('DeviceDetail.agentGuides.trace.keywords.0'), $t('DeviceDetail.agentGuides.trace.keywords.1'), $t('DeviceDetail.agentGuides.trace.keywords.2'), $t('DeviceDetail.agentGuides.trace.keywords.3'), $t('DeviceDetail.agentGuides.trace.keywords.4'), $t('DeviceDetail.agentGuides.trace.keywords.5'), $t('DeviceDetail.agentGuides.trace.keywords.6'), $t('DeviceDetail.agentGuides.trace.keywords.7'), 'trace'],
+    priority: 95,
+    steps: [
+      {
+        title: $t('DeviceDetail.agentGuides.trace.steps.start.title'),
+        description: $t('DeviceDetail.agentGuides.trace.steps.start.description'),
+        tools: ['device_trace_capture'],
+        inputs: { action: 'start', seconds: $t('DeviceDetail.agentGuides.inputs.secondsByUserScenario'), maxEvents: $t('DeviceDetail.agentGuides.inputs.maxEventsHighFrequency') },
+      },
+      {
+        title: $t('DeviceDetail.agentGuides.trace.steps.feedback.title'),
+        description: $t('DeviceDetail.agentGuides.trace.steps.feedback.description'),
+        tools: ['device_function_invoke', 'device_access_summary'],
+      },
+      {
+        title: $t('DeviceDetail.agentGuides.trace.steps.summary.title'),
+        description: $t('DeviceDetail.agentGuides.trace.steps.summary.description'),
+        tools: ['device_trace_capture'],
+        inputs: { action: 'stop', taskId: $t('DeviceDetail.agentGuides.inputs.startTaskId') },
+      },
+    ],
+    output: [$t('DeviceDetail.agentGuides.trace.output.0'), $t('DeviceDetail.agentGuides.trace.output.1'), $t('DeviceDetail.agentGuides.trace.output.2'), $t('DeviceDetail.agentGuides.trace.output.3'), $t('DeviceDetail.agentGuides.trace.output.4')],
+    notes: [$t('DeviceDetail.agentGuides.trace.notes.0'), $t('DeviceDetail.agentGuides.trace.notes.1')],
   },
   {
     id: 'device-bring-online',
-    name: '上线接入指导',
-    description: '回答如何让设备上线、接入地址、认证字段、协议说明和首次上线检查。',
-    scenarios: ['如何让设备上线', '设备怎么接入', '接入地址是什么', '认证字段', '首次上线'],
-    keywords: ['上线', '接入', '地址', '认证', '协议', '首次'],
+    name: $t('DeviceDetail.agentGuides.bringOnline.name'),
+    description: $t('DeviceDetail.agentGuides.bringOnline.description'),
+    scenarios: [$t('DeviceDetail.agentGuides.bringOnline.scenarios.0'), $t('DeviceDetail.agentGuides.bringOnline.scenarios.1'), $t('DeviceDetail.agentGuides.bringOnline.scenarios.2'), $t('DeviceDetail.agentGuides.bringOnline.scenarios.3'), $t('DeviceDetail.agentGuides.bringOnline.scenarios.4')],
+    keywords: [$t('DeviceDetail.agentGuides.bringOnline.keywords.0'), $t('DeviceDetail.agentGuides.bringOnline.keywords.1'), $t('DeviceDetail.agentGuides.bringOnline.keywords.2'), $t('DeviceDetail.agentGuides.bringOnline.keywords.3'), $t('DeviceDetail.agentGuides.bringOnline.keywords.4'), $t('DeviceDetail.agentGuides.bringOnline.keywords.5')],
     priority: 80,
     steps: [
       {
-        title: '获取接入配置',
+        title: $t('DeviceDetail.agentGuides.bringOnline.steps.access.title'),
         tools: ['device_access_summary'],
       },
       {
-        title: '查找接入文档',
+        title: $t('DeviceDetail.agentGuides.bringOnline.steps.docs.title'),
         tools: ['device_documents_query', 'device_document_reference'],
       },
       {
-        title: '结合最近上线/离线和日志判断是否已尝试接入',
+        title: $t('DeviceDetail.agentGuides.bringOnline.steps.evidence.title'),
         tools: ['device_online_offline_summary', 'device_logs_summary'],
-        inputs: { timeRange: '最近24小时' },
+        inputs: { timeRange: $t('DeviceDetail.agentGuides.inputs.recent24h') },
       },
     ],
-    output: ['接入地址与认证要点', '上线前检查项', '如果仍不上线的排查顺序'],
+    output: [$t('DeviceDetail.agentGuides.bringOnline.output.0'), $t('DeviceDetail.agentGuides.bringOnline.output.1'), $t('DeviceDetail.agentGuides.bringOnline.output.2')],
   },
   {
     id: 'device-property-trend',
-    name: '属性趋势分析',
-    description: '分析用户指定或设备属性定义中匹配到的指标趋势。',
-    scenarios: ['分析属性趋势', '运行指标趋势', '使用率情况', '状态趋势'],
-    keywords: ['属性', '趋势', '指标', '使用率', '变化', '统计'],
+    name: $t('DeviceDetail.agentGuides.propertyTrend.name'),
+    description: $t('DeviceDetail.agentGuides.propertyTrend.description'),
+    scenarios: [$t('DeviceDetail.agentGuides.propertyTrend.scenarios.0'), $t('DeviceDetail.agentGuides.propertyTrend.scenarios.1'), $t('DeviceDetail.agentGuides.propertyTrend.scenarios.2'), $t('DeviceDetail.agentGuides.propertyTrend.scenarios.3')],
+    keywords: [$t('DeviceDetail.agentGuides.propertyTrend.keywords.0'), $t('DeviceDetail.agentGuides.propertyTrend.keywords.1'), $t('DeviceDetail.agentGuides.propertyTrend.keywords.2'), $t('DeviceDetail.agentGuides.propertyTrend.keywords.3'), $t('DeviceDetail.agentGuides.propertyTrend.keywords.4'), $t('DeviceDetail.agentGuides.propertyTrend.keywords.5')],
     priority: 70,
     steps: [
       {
-        title: '确认属性标识',
+        title: $t('DeviceDetail.agentGuides.propertyTrend.steps.identify.title'),
         tools: ['device_metadata_search', 'device_metadata_markdown'],
       },
       {
-        title: '读取最新值',
+        title: $t('DeviceDetail.agentGuides.propertyTrend.steps.latest.title'),
         tools: ['device_latest_properties'],
         inputs: { propertyIds: 'matched-property-ids' },
       },
       {
-        title: '聚合趋势',
-        description: '导出或生成趋势图时，也先用该工具完成聚合取数；需要完整数据时传 writeToPath，之后仅在二次加工或渲染图片时使用数据集/图表工具。',
+        title: $t('DeviceDetail.agentGuides.propertyTrend.steps.aggregate.title'),
+        description: $t('DeviceDetail.agentGuides.propertyTrend.steps.aggregate.description'),
         tools: ['device_property_aggregate'],
-        inputs: { propertyIds: 'matched-property-ids', timeRange: 'user-time-range-or-今天' },
+        inputs: { propertyIds: 'matched-property-ids', timeRange: $t('DeviceDetail.agentGuides.inputs.userTimeRangeOrToday') },
       },
     ],
-    output: ['最新值', '趋势变化', '峰值/均值/低值', '数据缺口'],
+    output: [$t('DeviceDetail.agentGuides.propertyTrend.output.0'), $t('DeviceDetail.agentGuides.propertyTrend.output.1'), $t('DeviceDetail.agentGuides.propertyTrend.output.2'), $t('DeviceDetail.agentGuides.propertyTrend.output.3')],
   },
   {
     id: 'device-alarm-diagnosis',
-    name: '告警排查',
-    description: '当前告警状态看平台告警记录；触发次数和历史时间线看告警日志，再用通信日志、属性或上下线记录佐证。',
-    scenarios: ['查看今日告警', '有没有告警', '告警原因', '报警中吗', '异常恢复', '告警触发几次', '告警历史数量'],
-    keywords: ['告警', '报警', '异常', '恢复', 'warning'],
+    name: $t('DeviceDetail.agentGuides.alarm.name'),
+    description: $t('DeviceDetail.agentGuides.alarm.description'),
+    scenarios: [$t('DeviceDetail.agentGuides.alarm.scenarios.0'), $t('DeviceDetail.agentGuides.alarm.scenarios.1'), $t('DeviceDetail.agentGuides.alarm.scenarios.2'), $t('DeviceDetail.agentGuides.alarm.scenarios.3'), $t('DeviceDetail.agentGuides.alarm.scenarios.4'), $t('DeviceDetail.agentGuides.alarm.scenarios.5'), $t('DeviceDetail.agentGuides.alarm.scenarios.6')],
+    keywords: [$t('DeviceDetail.agentGuides.alarm.keywords.0'), $t('DeviceDetail.agentGuides.alarm.keywords.1'), $t('DeviceDetail.agentGuides.alarm.keywords.2'), $t('DeviceDetail.agentGuides.alarm.keywords.3'), 'warning'],
     priority: 75,
     steps: [
       {
-        title: '查询平台告警记录',
+        title: $t('DeviceDetail.agentGuides.alarm.steps.records.title'),
         tools: ['device_alarm_records_query'],
-        inputs: { timeRange: 'user-time-range-or-今天' },
+        inputs: { timeRange: $t('DeviceDetail.agentGuides.inputs.userTimeRangeOrToday') },
       },
       {
-        title: '统计告警日志触发历史',
+        title: $t('DeviceDetail.agentGuides.alarm.steps.history.title'),
         tools: ['device_alarm_history_summary'],
         inputs: { timeRange: 'same-as-alarm-query' },
       },
       {
-        title: '补充通信和上下线证据',
+        title: $t('DeviceDetail.agentGuides.alarm.steps.evidence.title'),
         tools: ['device_logs_summary', 'device_online_offline_summary'],
         inputs: { timeRange: 'same-as-alarm-query' },
       },
       {
-        title: '必要时查询相关属性或事件',
+        title: $t('DeviceDetail.agentGuides.alarm.steps.properties.title'),
         tools: ['device_metadata_search', 'device_property_history_summary', 'device_event_history_query'],
       },
     ],
-    output: ['告警状态', '触发次数', '触发原因', '恢复情况', '建议处理动作'],
-    notes: ['单个告警只会保留一条告警记录；历史触发次数必须来自告警日志。设备属性、事件或通信日志只能作为补充解释。'],
+    output: [$t('DeviceDetail.agentGuides.alarm.output.0'), $t('DeviceDetail.agentGuides.alarm.output.1'), $t('DeviceDetail.agentGuides.alarm.output.2'), $t('DeviceDetail.agentGuides.alarm.output.3'), $t('DeviceDetail.agentGuides.alarm.output.4')],
+    notes: [$t('DeviceDetail.agentGuides.alarm.notes.0')],
   },
 ]
 
@@ -811,7 +847,7 @@ const DEVICE_AGENT_TAB_ALIASES: Record<string, string> = {
 const DEVICE_AGENT_KNOWN_TABS = new Set(Object.values(DEVICE_AGENT_TAB_ALIASES))
 
 const isDeviceRemoteFileSupported = () => (
-  DEVICE_REMOTE_FILE_ACCESS_PROVIDERS.has(String(instanceStore.current?.accessProvider || ''))
+  isEdgeDiagnosisAccessProvider(instanceStore.current?.accessProvider)
 )
 
 const getDeviceAgentVisibleTabs = () => {
@@ -852,16 +888,16 @@ const buildDeviceDetailAgentTabPrompt = () => {
     .join('、')
 
   return links
-    ? `当前设备详情页可跳转的一级选项卡：${links}。未列出的选项卡表示当前账号、设备类型或版本暂不支持直接跳转。`
-    : '当前设备详情页暂未加载出可跳转选项卡；如需引导用户查看页面数据，应先说明暂不可确认页面选项卡。'
+    ? $t('DeviceDetail.agent.tabPrompt.visible', { links })
+    : $t('DeviceDetail.agent.tabPrompt.empty')
 }
 
 const buildDeviceDetailAgentSystemPrompt = () => {
   const lines = [...DEVICE_DETAIL_AGENT_SYSTEM_PROMPT_LINES]
   if (isDeviceRemoteFileSupported()) {
-    lines.splice(lines.length - 1, 0, '当前设备支持边缘网关远程文件能力，可用于远程目录、远程文件或网关文件相关问题。')
+    lines.splice(lines.length - 1, 0, $t('DeviceDetail.agent.systemPrompt.edgeSupported'))
   } else {
-    lines.splice(lines.length - 1, 0, '当前设备未暴露边缘网关远程文件能力，相关入口暂不可用。')
+    lines.splice(lines.length - 1, 0, $t('DeviceDetail.agent.systemPrompt.edgeUnsupported'))
   }
   lines.splice(lines.length - 1, 0, buildDeviceDetailAgentTabPrompt())
   return lines.join('\n')
@@ -869,24 +905,61 @@ const buildDeviceDetailAgentSystemPrompt = () => {
 
 const getDeviceDetailClientTools = () => {
   const tools = deviceDetailClientToolRuntime.clientTools || []
-  if (isDeviceRemoteFileSupported()) return tools
-  return tools.filter((tool: any) => !String(tool?.id || tool?.name || '').startsWith('edge_remote_file_'))
+  const withoutLegacyEdgeRemoteFileTools = tools.filter((tool: any) => {
+    const toolId = String(tool?.id || tool?.name || '')
+    return !toolId.startsWith('edge_remote_file_')
+  })
+  if (isDeviceRemoteFileSupported()) return withoutLegacyEdgeRemoteFileTools
+  return withoutLegacyEdgeRemoteFileTools.filter((tool: any) => {
+    const toolId = String(tool?.id || tool?.name || '')
+    return !isEdgeDiagnosisToolId(toolId)
+  })
+}
+
+const getDeviceDetailWorkflowGuides = () => {
+  return isDeviceRemoteFileSupported()
+    ? [...DEVICE_DETAIL_AGENT_WORKFLOW_GUIDES, ...createEdgeDiagnosisWorkflowGuides($t)]
+    : DEVICE_DETAIL_AGENT_WORKFLOW_GUIDES
 }
 
 const buildDeviceDetailClientToolsDescription = () => {
   const remoteText = isDeviceRemoteFileSupported()
-    ? '当前设备支持边缘网关远程文件片段读取，可用于远程目录、远程文件或网关文件问题。'
-    : '当前设备未暴露边缘网关远程文件能力。'
+    ? buildEdgeDiagnosisClientToolsDescription(true, $t)
+    : buildEdgeDiagnosisClientToolsDescription(false, $t)
   return [
-    '设备详情页提供当前设备的状态、接入、模型字段、属性、事件、文档、告警记录、告警日志、上下线、通信日志和链路样本工具。',
+    $t('DeviceDetail.agentTools.description.0'),
     remoteText,
-    '宽泛、多步骤或排障类问题可结合工作流指导选择工具。',
-    '当前设备默认来自 subject；设备选择能力用于其它设备或跨设备对比，功能调用工具用于下发、调用或执行设备功能。',
-    '明细较大、导出、报告或图表可由设备业务工具写入会话文件，数据集工具适合已写入文件后的二次加工。'
+    $t('DeviceDetail.agentTools.description.1'),
+    $t('DeviceDetail.agentTools.description.2'),
+    $t('DeviceDetail.agentTools.description.3')
   ].join('\n')
 }
 
 const deviceDetailAgentPromptConfigs = {
+  edgeOnline: {
+    opening: 'DeviceDetail.agent.opening.edgeOnline',
+    prompts: [
+      'DeviceDetail.agent.prompt.edge.online.health',
+      'DeviceDetail.agent.prompt.edge.online.connection',
+      'DeviceDetail.agent.prompt.edge.online.logs'
+    ]
+  },
+  edgeOffline: {
+    opening: 'DeviceDetail.agent.opening.edgeOffline',
+    prompts: [
+      'DeviceDetail.agent.prompt.edge.offline.reason',
+      'DeviceDetail.agent.prompt.edge.offline.connection',
+      'DeviceDetail.agent.prompt.edge.offline.logs'
+    ]
+  },
+  edgeDefault: {
+    opening: 'DeviceDetail.agent.opening.edgeDefault',
+    prompts: [
+      'DeviceDetail.agent.prompt.edge.default.health',
+      'DeviceDetail.agent.prompt.edge.default.backlog',
+      'DeviceDetail.agent.prompt.edge.default.logs'
+    ]
+  },
   online: {
     opening: 'DeviceDetail.agent.opening.online',
     prompts: [
@@ -923,6 +996,11 @@ const deviceDetailAgentPromptConfigs = {
 
 const getDeviceDetailAgentPromptConfig = () => {
   const state = String(instanceStore.current?.state?.value || '')
+  if (isDeviceRemoteFileSupported()) {
+    if (state === 'online') return deviceDetailAgentPromptConfigs.edgeOnline
+    if (state === 'offline') return deviceDetailAgentPromptConfigs.edgeOffline
+    return deviceDetailAgentPromptConfigs.edgeDefault
+  }
   if (state === 'online' || state === 'offline' || state === 'notActive') {
     return deviceDetailAgentPromptConfigs[state]
   }
@@ -950,7 +1028,9 @@ const buildDeviceDetailAgentParameters = () => {
     clientToolHandler: deviceDetailClientToolRuntime.handleClientToolCall,
     clientToolsName: deviceDetailClientToolRuntime.clientToolsName,
     clientToolsDescription: buildDeviceDetailClientToolsDescription(),
-    workflowGuides: DEVICE_DETAIL_AGENT_WORKFLOW_GUIDES,
+    workflowGuides: getDeviceDetailWorkflowGuides(),
+    referenceProviders: deviceMetadataReferences.referenceProviders.value,
+    composerAddActions: deviceMetadataReferences.composerAddActions.value,
     markdownLinkHandler: handleDeviceAgentMarkdownLink,
     systemPrompt: buildDeviceDetailAgentSystemPrompt(),
     openingStatement: buildDeviceDetailAgentOpeningStatement(),
@@ -963,6 +1043,19 @@ const buildDeviceDetailAgentParameters = () => {
     ...(deviceName ? { deviceName, subjectName: deviceName } : {})
   }
 }
+
+const prepareDeviceDetailAgent = (deviceId?: unknown) => {
+  const id = String(deviceId || '').trim()
+  aiStore.prepareAgentConversation(DEVICE_DETAIL_AGENT_CLIENT_ID, id
+    ? {
+        deviceId: id,
+        subjectType: DEVICE_AGENT_SUBJECT_TYPE,
+        subjectId: id
+      }
+    : {})
+}
+
+prepareDeviceDetailAgent(route.params?.id)
 
 const resolveDeviceAgentLinkTab = (href: string) => {
   const raw = String(href || '').trim()
@@ -1046,7 +1139,7 @@ const handleDeviceAgentMarkdownLink: AgentConversationMarkdownLinkHandler = ({ h
 const syncDeviceDetailAgent = () => {
   const parameters = buildDeviceDetailAgentParameters()
   if (!parameters) return
-  void aiStore.queryAgent('deviceDetailChat', parameters)
+  void aiStore.queryAgent(DEVICE_DETAIL_AGENT_CLIENT_ID, parameters)
     .then(refreshDeviceDetailAgentParameters)
 }
 
@@ -1323,6 +1416,7 @@ const initPage = async (newId: any) => {
 onBeforeRouteUpdate((to: any) => {
   if (to.params?.id !== instanceStore.current.id && to.name === 'device/Instance/Detail') {
     // location.reload()
+    prepareDeviceDetailAgent(to.params?.id)
     initPage(to.params?.id)
   }
 })
@@ -1498,7 +1592,7 @@ watch(
 onUnmounted(() => {
   instanceStore.current = {} as any
   statusRef.value && statusRef.value.unsubscribe()
-  aiStore.hideAiButton()
+  aiStore.releaseAgentConversation(DEVICE_DETAIL_AGENT_CLIENT_ID)
 })
 
 defineExpose({

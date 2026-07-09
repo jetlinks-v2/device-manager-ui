@@ -3,10 +3,16 @@ import { queryNoPagingPost as queryInstanceNoPage, query } from '@device-manager
 import { usePluginPermissionContext } from '@device-manager-ui/hooks/usePermission'
 import { useInstanceStore } from '@device-manager-ui/store/instance'
 
-const homeAgentProviderModules = import.meta.glob('./views/**/homeAgentProvider.ts')
+type HomeAgentProviderLoader = () => Promise<unknown>
+
+const toHomeAgentProviderKey = (path: string) => (
+  path.replace('./views/', '').replace('/homeAgentProvider.ts', '')
+)
+
+const homeAgentProviderModules = import.meta.glob('./views/**/homeAgentProvider.ts') as Record<string, HomeAgentProviderLoader>
 const homeAgentProviders = Object.fromEntries(
   Object.entries(homeAgentProviderModules).map(([path, loader]) => [
-    path.replace('./views/', '').replace('/homeAgentProvider.ts', ''),
+    toHomeAgentProviderKey(path),
     loader
   ])
 )

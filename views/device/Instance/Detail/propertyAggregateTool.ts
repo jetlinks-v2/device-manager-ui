@@ -5,6 +5,7 @@ import type {
 } from '@jetlinks-web-core/layout/components/AiChat/clientTools'
 
 type DeviceDetailRecord = Record<string, any>
+type TranslateFn = (key: string, params?: Record<string, any>) => string
 
 interface DeviceClientToolContext {
   device: DeviceDetailRecord
@@ -18,6 +19,7 @@ interface ResolvedTimeRange {
 type PropertyAggregate = 'AVG' | 'MAX' | 'MIN' | 'COUNT' | 'FIRST' | 'LAST' | 'DISTINCT_COUNT'
 
 interface PropertyAggregateToolDependencies {
+  t: TranslateFn
   clampNumber: (value: unknown, min: number, max: number, defaultValue: number) => number
   asArray: <T = any>(value: unknown) => T[]
   responseResult: (response: any) => any
@@ -162,7 +164,7 @@ const resolvePropertyAggregate = (
   const property = getMetadataProperty(deps.asArray, metadata, propertyId)
   const numeric = property ? isNumericPropertyMetadata(property) : true
   if (requestedAgg && NUMERIC_REQUIRED_AGGREGATES.has(requestedAgg) && !numeric) {
-    warnings.push(`${propertyId} 不是数值属性，已改用 COUNT 聚合。`)
+    warnings.push(deps.t('DeviceDetail.agentTools.propertyAggregate.warning.nonNumericCount', { propertyId }))
     return 'COUNT' as PropertyAggregate
   }
   return requestedAgg ?? (numeric ? 'AVG' : 'COUNT')
@@ -249,33 +251,33 @@ export const createDevicePropertyAggregateTool = (
 ): AiClientToolDefinition<DeviceClientToolContext> => ({
   id: 'device_property_aggregate',
   name: 'device_property_aggregate',
-  description: '按时间桶聚合查询当前设备一个或多个属性，用于回答平均值、最大值、最小值、计数、首次值、末次值、去重计数和趋势问题。',
+  description: deps.t('DeviceDetail.agentTools.propertyAggregate.description'),
   inputs: deps.withWriteToPathInput([
     {
       id: 'propertyId',
       name: 'propertyId',
-      description: '单个属性ID；与 propertyIds 二选一。',
+      description: deps.t('DeviceDetail.agentTools.propertyAggregate.inputs.propertyId'),
       required: false,
       valueType: 'string'
     },
     {
       id: 'propertyIds',
       name: 'propertyIds',
-      description: '属性ID数组；可一次聚合多个属性。',
+      description: deps.t('DeviceDetail.agentTools.propertyAggregate.inputs.propertyIds'),
       required: false,
       valueType: { type: 'array', elementType: { type: 'string' } }
     },
     {
       id: 'agg',
       name: 'agg',
-      description: '聚合方式：AVG 平均值、MAX 最大值、MIN 最小值、COUNT 条数、FIRST 首个值、LAST 最后值、DISTINCT_COUNT 去重计数；也支持“平均/最大/最小/次数/首次/最后/去重”等自然语言。未传时数值属性默认 AVG，非数值属性默认 COUNT。',
+      description: deps.t('DeviceDetail.agentTools.propertyAggregate.inputs.agg'),
       required: false,
       valueType: 'string'
     },
     {
       id: 'interval',
       name: 'interval',
-      description: '聚合时间桶：1m、1h、1d、1w、1M；也支持“按分钟/按小时/按天/按周/按月”。未传时按时间范围自动选择。',
+      description: deps.t('DeviceDetail.agentTools.propertyAggregate.inputs.interval'),
       required: false,
       valueType: 'string'
     },
@@ -297,19 +299,19 @@ export const createDevicePropertyAggregateTool = (
     {
       id: 'limit',
       name: 'limit',
-      description: '内联预览最多返回聚合桶数量，默认200，最大1000；传 writeToPath 时完整聚合结果会写入会话文件，建议优先使用 .jsonl 路径，也兼容 .ndjson，不受此预览限制。',
+      description: deps.t('DeviceDetail.agentTools.propertyAggregate.inputs.limit'),
       required: false,
       valueType: 'int'
     }
   ]),
   output: { type: 'object' },
-  help: '属性聚合趋势查询。用户问“今天平均温度”“最近24小时最大电压”“按小时统计趋势”“某属性每天多少条”“每分钟最后一个坐标”“首次状态”“去重数量”，或要求导出/生成属性趋势图时，先使用此工具完成聚合取数；只问有没有/多少条且不需要趋势时使用 device_property_history_summary。查询整天每分钟、长时间范围、多属性趋势、导出或制图时，应传 writeToPath 保存完整聚合结果，建议优先使用 .jsonl 路径，也兼容 .ndjson；如需生成图片，先用本工具得到聚合数据，再使用图表工具渲染，不要用 dataset 查询替代首次聚合取数。',
+  help: deps.t('DeviceDetail.agentTools.propertyAggregate.help'),
   execute: async (args, context, call) => {
     const deviceId = deps.getDeviceId(context)
-    if (!deviceId) throw new Error('deviceId missing')
+    if (!deviceId) throw new Error(deps.t('DeviceDetail.agentTools.common.errors.deviceIdMissing'))
     const metadata = deps.getMetadata(context)
     const propertyIds = normalizePropertyIds(args)
-    if (!propertyIds.length) throw new Error('propertyId missing')
+    if (!propertyIds.length) throw new Error(deps.t('DeviceDetail.agentTools.common.errors.propertyIdMissing'))
 
     const requestedAgg = normalizePropertyAggregate(args.agg ?? args.aggregate ?? args.method)
     const warnings: string[] = []
@@ -358,7 +360,7 @@ export const createDevicePropertyAggregateTool = (
       ...base,
       returned: visibleData.length,
       truncated: data.length > visibleData.length,
-      nextAction: data.length > visibleData.length ? '结果已截断，可传 writeToPath 保存完整聚合结果。' : undefined,
+      nextAction: data.length > visibleData.length ? deps.t('DeviceDetail.agentTools.propertyAggregate.nextAction.truncated') : undefined,
       data: visibleData
     }
     const fileWrite = await deps.writeRecordsToSessionFile(args, call, data)

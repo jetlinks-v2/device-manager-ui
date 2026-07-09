@@ -1,5 +1,3 @@
-import { map } from 'rxjs/operators'
-import { wsClient } from '@jetlinks-web/core'
 import {
   downloadRemoteSystemFile,
   getProperty,
@@ -24,8 +22,12 @@ import { createDeviceAccessClientTools } from './accessTool'
 import { createDeviceEventClientTools } from './eventTool'
 import { createDeviceFunctionClientTools } from './functionTool'
 import { createDeviceAlarmClientTools } from './alarmTool'
+import { createEdgeDiagnosisClientTools } from './edgeDiagnosisTool'
+import { createDeviceTraceCaptureClientTools } from './traceCaptureTool'
 
 type DeviceDetailRecord = Record<string, any>
+type TranslateFn = (key: string, params?: Record<string, any>) => string
+let currentT: TranslateFn = (key) => key
 type RemoteSystemFileRecord = Record<string, any>
 
 interface DeviceClientToolContext {
@@ -42,7 +44,7 @@ const asArray = <T = any>(value: unknown): T[] => (Array.isArray(value) ? value 
 
 const responseResult = (response: any) => response?.result ?? response?.data ?? response
 
-const parseJsonObject = (value: unknown): Record<string, any> => {
+export const parseJsonObject = (value: unknown): Record<string, any> => {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
     return value as Record<string, any>
   }
@@ -66,7 +68,7 @@ const REMOTE_FILE_ACCESS_PROVIDERS = new Set([
   'agent-media-device-gateway'
 ])
 
-const METADATA_SECTIONS = ['properties', 'functions', 'events', 'tags'] as const
+export const METADATA_SECTIONS = ['properties', 'functions', 'events', 'tags'] as const
 const VALID_METADATA_SECTIONS = new Set<string>(METADATA_SECTIONS)
 
 const normalizeMetadataSection = (section?: string) => {
@@ -128,10 +130,10 @@ interface ResolvedTimeRange {
   end?: number
 }
 
-const TIME_INPUT_EXAMPLES = '今日/今天/昨天/最近24小时/近7天/本周/本月、now、now-1d、now/d、2020-10-01||+1d'
-const TIME_RANGE_DESCRIPTION = `时间范围，支持“${TIME_INPUT_EXAMPLES}”等自然语言或 JetLinks 时间表达式，也支持毫秒时间戳、可解析时间字符串，或后端时间工具返回的 {start/end/from/to/startTime/endTime}。`
-const START_TIME_DESCRIPTION = `开始时间，支持毫秒时间戳、可解析时间字符串、“${TIME_INPUT_EXAMPLES}”等自然语言或 JetLinks 时间表达式。`
-const END_TIME_DESCRIPTION = `结束时间，支持毫秒时间戳、可解析时间字符串、“${TIME_INPUT_EXAMPLES}”等自然语言或 JetLinks 时间表达式。`
+const timeInputExamples = () => currentT('DeviceDetail.agentTools.common.time.examples')
+const timeRangeDescription = () => currentT('DeviceDetail.agentTools.common.time.rangeDescription', { examples: timeInputExamples() })
+const startTimeDescription = () => currentT('DeviceDetail.agentTools.common.time.startDescription', { examples: timeInputExamples() })
+const endTimeDescription = () => currentT('DeviceDetail.agentTools.common.time.endDescription', { examples: timeInputExamples() })
 
 const startOfDay = (date = new Date()) => {
   const value = new Date(date)
@@ -416,7 +418,7 @@ const buildTimeTerms = (args: Record<string, any>, column = 'timestamp', resolve
 const timeRangeInput = () => ({
   id: 'timeRange',
   name: 'timeRange',
-  description: TIME_RANGE_DESCRIPTION,
+  description: timeRangeDescription(),
   required: false,
   valueType: 'string'
 })
@@ -432,7 +434,7 @@ const describeResolvedTimeRange = (range: ResolvedTimeRange) => (
     }
 )
 
-const dataTypeText = (valueType: any): string => {
+export const dataTypeText = (valueType: any): string => {
   if (!valueType) return 'unknown'
   if (typeof valueType === 'string') return valueType
   const type = valueType.type || valueType.id || 'object'
@@ -456,7 +458,7 @@ const dataTypeText = (valueType: any): string => {
   return String(type)
 }
 
-const metadataSectionItems = (metadata: Record<string, any>, section: string) => {
+export const metadataSectionItems = (metadata: Record<string, any>, section: string) => {
   if (VALID_METADATA_SECTIONS.has(section)) return asArray(metadata[section])
   return METADATA_SECTIONS.flatMap((type) => (
     asArray(metadata[type]).map((item) => ({ ...item, __type: type }))
@@ -464,13 +466,13 @@ const metadataSectionItems = (metadata: Record<string, any>, section: string) =>
 }
 
 const metadataTypeName = (type: string) => ({
-  properties: '属性',
-  functions: '功能',
-  events: '事件',
-  tags: '标签'
+  properties: currentT('DeviceDetail.agentTools.metadata.types.properties'),
+  functions: currentT('DeviceDetail.agentTools.metadata.types.functions'),
+  events: currentT('DeviceDetail.agentTools.metadata.types.events'),
+  tags: currentT('DeviceDetail.agentTools.metadata.types.tags')
 }[type] || type)
 
-const propertyAccessText = (item: any) => {
+export const propertyAccessText = (item: any) => {
   const raw = item?.expands?.type
   const type = Array.isArray(raw) ? raw : (raw ? [raw] : [])
   if (!type.length) return ''
@@ -488,40 +490,40 @@ const buildMetadataMarkdown = (
   const sections = sectionKey === 'all' ? [...METADATA_SECTIONS] : [sectionKey]
 
   const lines = [
-    `# ${device.name || device.id || '设备'}物模型`,
+    `# ${currentT('DeviceDetail.agentTools.metadataMarkdown.title', { device: device.name || device.id || currentT('DeviceDetail.agentTools.metadataMarkdown.deviceFallback') })}`,
     '',
-    `- 设备ID: ${device.id || '--'}`,
-    `- 产品: ${device.productName || device.productId || '--'}`,
-    `- 状态: ${device.state?.text || device.state?.value || '--'}`,
+    `- ${currentT('DeviceDetail.agentTools.metadataMarkdown.fields.deviceId')}: ${device.id || '--'}`,
+    `- ${currentT('DeviceDetail.agentTools.metadataMarkdown.fields.product')}: ${device.productName || device.productId || '--'}`,
+    `- ${currentT('DeviceDetail.agentTools.metadataMarkdown.fields.state')}: ${device.state?.text || device.state?.value || '--'}`,
     ''
   ]
 
   sections.forEach((key) => {
     const items = metadataSectionItems(metadata, key).slice(0, limit)
-    lines.push(`## ${metadataTypeName(key)}（${metadataSectionItems(metadata, key).length}）`, '')
+    lines.push(currentT('DeviceDetail.agentTools.metadataMarkdown.sectionHeading', { name: metadataTypeName(key), count: metadataSectionItems(metadata, key).length }), '')
     if (!items.length) {
-      lines.push('暂无定义', '')
+      lines.push(currentT('DeviceDetail.agentTools.metadataMarkdown.empty'), '')
       return
     }
     if (key === 'properties') {
-      lines.push('| 标识 | 名称 | 类型 | 读写 | 说明 |', '| --- | --- | --- | --- | --- |')
+      lines.push(currentT('DeviceDetail.agentTools.metadataMarkdown.table.properties'), '| --- | --- | --- | --- | --- |')
       items.forEach((item: any) => {
         lines.push(`| ${escapeMarkdownTableCell(item.id)} | ${escapeMarkdownTableCell(item.name)} | ${escapeMarkdownTableCell(dataTypeText(item.valueType))} | ${escapeMarkdownTableCell(propertyAccessText(item))} | ${escapeMarkdownTableCell(item.description)} |`)
       })
     } else if (key === 'functions') {
-      lines.push('| 标识 | 名称 | 输入 | 输出 | 说明 |', '| --- | --- | --- | --- | --- |')
+      lines.push(currentT('DeviceDetail.agentTools.metadataMarkdown.table.functions'), '| --- | --- | --- | --- | --- |')
       items.forEach((item: any) => {
         const inputs = asArray(item.inputs).map((input: any) => `${input.id}:${dataTypeText(input.valueType)}`).join(', ')
         lines.push(`| ${escapeMarkdownTableCell(item.id)} | ${escapeMarkdownTableCell(item.name)} | ${escapeMarkdownTableCell(inputs || '--')} | ${escapeMarkdownTableCell(dataTypeText(item.output))} | ${escapeMarkdownTableCell(item.description)} |`)
       })
     } else if (key === 'events') {
-      lines.push('| 标识 | 名称 | 类型 | 输出 | 说明 |', '| --- | --- | --- | --- | --- |')
+      lines.push(currentT('DeviceDetail.agentTools.metadataMarkdown.table.events'), '| --- | --- | --- | --- | --- |')
       items.forEach((item: any) => {
         const outputs = asArray(item.properties).map((property: any) => `${property.id}:${dataTypeText(property.valueType)}`).join(', ')
         lines.push(`| ${escapeMarkdownTableCell(item.id)} | ${escapeMarkdownTableCell(item.name)} | ${escapeMarkdownTableCell(item.type || '--')} | ${escapeMarkdownTableCell(outputs || '--')} | ${escapeMarkdownTableCell(item.description)} |`)
       })
     } else {
-      lines.push('| 标识 | 名称 | 类型 | 说明 |', '| --- | --- | --- | --- |')
+      lines.push(currentT('DeviceDetail.agentTools.metadataMarkdown.table.default'), '| --- | --- | --- | --- |')
       items.forEach((item: any) => {
         lines.push(`| ${escapeMarkdownTableCell(item.id || item.key)} | ${escapeMarkdownTableCell(item.name)} | ${escapeMarkdownTableCell(dataTypeText(item.valueType || item.dataType))} | ${escapeMarkdownTableCell(item.description)} |`)
       })
@@ -691,17 +693,17 @@ const buildSimpleTerm = (column: string, value: unknown) => {
 
 const ensureRemoteFileSupported = (context: DeviceClientToolContext) => {
   const deviceId = getDeviceId(context)
-  if (!deviceId) throw new Error('deviceId missing')
+  if (!deviceId) throw new Error(currentT('DeviceDetail.agentTools.common.errors.deviceIdMissing'))
   const accessProvider = String(context.device?.accessProvider || '')
   if (!REMOTE_FILE_ACCESS_PROVIDERS.has(accessProvider)) {
-    throw new Error(`remote file tools unsupported for accessProvider: ${accessProvider || 'unknown'}`)
+    throw new Error(currentT('DeviceDetail.agentTools.legacyRemoteFile.errors.unsupportedAccessProvider', { accessProvider: accessProvider || 'unknown' }))
   }
   return deviceId
 }
 
 const ensureSuccessResult = (response: any) => {
   if (response?.success === false) {
-    throw new Error(response?.message || response?.result || 'request failed')
+    throw new Error(response?.message || response?.result || currentT('DeviceDetail.agentTools.common.errors.requestFailed'))
   }
   if (response?.status && response.status !== 200) {
     throw new Error(response?.message || `${response.status}`)
@@ -774,15 +776,15 @@ const normalizeDeviceLogRecord = (item: Record<string, any>) => ({
   content: compactInlineValue(item.content, 1600)
 })
 
-const writeToPathInput = {
+const writeToPathInput = () => ({
   id: 'writeToPath',
   name: 'writeToPath',
-  description: '可选。需要保存较大或完整查询结果时，传入会话文件相对路径，如 reports/property-history.jsonl 或 reports/metadata.md；分页明细工具会按 JSONL/NDJSON 逐页追加到当前会话文件容器并返回 fs:// 引用和 inputPath，非分页工具按自身内容格式写入。后续对大数据做过滤/聚合/排序/图表时优先用 dataset_materialize(format=jsonl) + dataset_query，不要用 text_regex_extract。',
+  description: currentT('DeviceDetail.agentTools.common.inputs.writeToPath'),
   required: false,
   valueType: 'string'
-}
+})
 
-const withWriteToPathInput = (inputs: any[]) => [...inputs, writeToPathInput]
+const withWriteToPathInput = (inputs: any[]) => [...inputs, writeToPathInput()]
 
 const normalizeWriteToPath = (value: unknown) => String(value || '').trim()
 
@@ -793,7 +795,7 @@ const UNLIMITED_WRITE_RECORD_LIMIT = Number.MAX_SAFE_INTEGER
 const writeLimitInput = () => ({
   id: 'writeLimit',
   name: 'writeLimit',
-  description: `传 writeToPath 时最多写入多少条记录，默认${DEFAULT_WRITE_RECORD_LIMIT}，最大${MAX_WRITE_RECORD_LIMIT}；传 0、-1、all 或 unlimited 表示不按前端条数截断，仅受接口分页结束和会话文件配额限制；分页明细会写入 JSONL/NDJSON，limit 仍只控制内联预览。`,
+  description: currentT('DeviceDetail.agentTools.common.inputs.writeLimit', { defaultLimit: DEFAULT_WRITE_RECORD_LIMIT, maxLimit: MAX_WRITE_RECORD_LIMIT }),
   required: false,
   valueType: 'int'
 })
@@ -886,7 +888,7 @@ const createSessionFileWriteSummary = (
   const actualPath = String(normalizedFile.path || filePath).trim()
   const fileUri = resolveSessionFileUri(sessionFiles, actualPath, normalizedFile)
   const fileName = actualPath.split('/').filter(Boolean).pop() || actualPath || 'result.jsonl'
-  const nextAction = `已完成业务工具取数并写入 ${fileUri}。只有需要对这个已写入文件做二次过滤、排序、抽取轨迹或制图时，才调用 dataset_materialize(inputPath="${actualPath}", format="jsonl") 后使用 dataset_query 或图表工具；不要用 dataset 查询替代设备属性聚合、告警、日志等业务工具的首次取数。`
+  const nextAction = currentT('DeviceDetail.agentTools.common.file.jsonlNextAction', { fileUri, actualPath })
   return {
     writeToPath: actualPath,
     ...(requestedPath && requestedPath !== actualPath ? { requestedWriteToPath: requestedPath } : {}),
@@ -900,7 +902,7 @@ const createSessionFileWriteSummary = (
       preferredWorkflow: 'business_tool(writeToPath) -> optional dataset_materialize/dataset_query for secondary processing -> optional chart/report',
       nextAction
     },
-    protocolHint: '会话文件展示必须使用 fs:// 引用，不要改写为 file://、http:// 或本地路径；调用后端文件/数据集工具时使用 inputPath 相对路径。',
+    protocolHint: currentT('DeviceDetail.agentTools.common.file.protocolHint'),
     file: normalizedFile,
     contentOmitted: true,
     nextAction
@@ -925,7 +927,7 @@ const writeSessionFileTextChunk = async (
   if (typeof sessionFiles.writeText === 'function') {
     return sessionFiles.writeText(filePath, content, { append, charset: 'UTF-8' })
   }
-  throw new Error('session file api unavailable for writeToPath')
+  throw new Error(currentT('DeviceDetail.agentTools.common.errors.sessionFileApiUnavailable'))
 }
 
 const writeNdjsonRecordsToSessionFile = async <T = any>(
@@ -937,11 +939,11 @@ const writeNdjsonRecordsToSessionFile = async <T = any>(
   const requestedPath = normalizeWriteToPath(args.writeToPath)
   const filePath = normalizeNdjsonWritePath(requestedPath)
   if (!filePath) {
-    throw new Error('writeToPath missing')
+    throw new Error(currentT('DeviceDetail.agentTools.common.errors.writeToPathMissing'))
   }
   const sessionFiles = call.sessionFiles
   if (!sessionFiles) {
-    throw new Error('session file api unavailable for writeToPath')
+    throw new Error(currentT('DeviceDetail.agentTools.common.errors.sessionFileApiUnavailable'))
   }
 
   // 大结果按 JSONL/NDJSON 分块追加，避免把完整数组放进内存或 WebSocket 工具结果。
@@ -978,7 +980,7 @@ const writeToolResultToSessionFile = async (
   }
   const sessionFiles = call.sessionFiles
   if (!sessionFiles || (typeof sessionFiles.writeText !== 'function' && typeof sessionFiles.upload !== 'function')) {
-    throw new Error('session file api unavailable for writeToPath')
+    throw new Error(currentT('DeviceDetail.agentTools.common.errors.sessionFileApiUnavailable'))
   }
 
   const content = options.content ?? stringifyToolResult(result)
@@ -993,7 +995,7 @@ const writeToolResultToSessionFile = async (
         format: 'json',
         inputPath: filePath,
         preferredWorkflow: 'business_tool(writeToPath) -> optional dataset_materialize/dataset_query for secondary processing -> optional chart/report',
-        nextAction: `已完成业务工具取数并写入 ${fileUri}。只有需要对这个已写入文件做二次过滤、排序、抽取轨迹或制图时，才调用 dataset_materialize(inputPath="${filePath}", jsonPath="$.data") 后使用 dataset_query 或图表工具；只读取少量字段时才用 json_query_path；不要用 dataset 查询替代设备属性聚合、告警、日志等业务工具的首次取数。`
+        nextAction: currentT('DeviceDetail.agentTools.common.file.structuredNextAction', { fileUri, filePath })
       }
     : undefined
 
@@ -1003,11 +1005,11 @@ const writeToolResultToSessionFile = async (
     inputPath: filePath,
     uri: fileUri,
     markdownLink: `[${fileName}](${fileUri})`,
-    protocolHint: '会话文件展示必须使用 fs:// 引用，不要改写为 file://、http:// 或本地路径；调用后端文件/数据集工具时使用 inputPath 相对路径。',
+    protocolHint: currentT('DeviceDetail.agentTools.common.file.protocolHint'),
     ...(structuredDataHint ? { structuredDataHint } : {}),
     file,
     contentOmitted: true,
-    nextAction: structuredDataHint?.nextAction || `查询结果已写入 ${fileUri}`
+    nextAction: structuredDataHint?.nextAction || currentT('DeviceDetail.agentTools.common.file.writtenNextAction', { fileUri })
   }
 }
 
@@ -1073,23 +1075,6 @@ const buildDeviceLogTerms = (args: Record<string, any>, resolved = resolveTimeRa
   ]
 }
 
-const normalizeTracePayload = (payload: Record<string, any>) => ({
-  type: payload?.type,
-  operation: payload?.operation,
-  logLevel: payload?.logLevel,
-  traceId: payload?.traceId,
-  spanId: payload?.spanId,
-  parentSpanId: payload?.parentSpanId,
-  timestamp: payload?.timestamp,
-  startTime: payload?.startTime,
-  endTime: payload?.endTime,
-  detail: compactInlineValue(payload?.detail, 1200),
-  message: compactInlineValue(payload?.message, 1200),
-  error: compactInlineValue(payload?.error, 1200),
-  upstream: compactInlineValue(payload?.upstream, 1600),
-  downstream: compactInlineValue(payload?.downstream, 1600)
-})
-
 const readBlobText = async (response: any, maxBytes: number, mode = 'head') => {
   const blob = response instanceof Blob ? response : new Blob([response])
   const normalizedMode = mode === 'tail' ? 'tail' : 'head'
@@ -1144,68 +1129,18 @@ const readLatestProperty = async (deviceId: string, propertyId: string) => {
   }
 }
 
-const captureDeviceTrace = (deviceId: string, seconds: number, limit: number) => new Promise((resolve, reject) => {
-  const duration = clampNumber(seconds, 1, 15, 5) * 1000
-  const maxCount = clampNumber(limit, 1, 30, 10)
-  const items: any[] = []
-  let finished = false
-  let sub: { unsubscribe: () => void } | undefined
-  let timer: ReturnType<typeof setTimeout> | undefined
-
-  const cleanup = () => {
-    if (timer) {
-      clearTimeout(timer)
-      timer = undefined
-    }
-    sub?.unsubscribe()
-    sub = undefined
-  }
-
-  const finish = (reason: string) => {
-    if (finished) return
-    finished = true
-    cleanup()
-    resolve({
-      deviceId,
-      reason,
-      count: items.length,
-      data: items
-    })
-  }
-
-  const fail = (error: unknown) => {
-    if (finished) return
-    finished = true
-    cleanup()
-    reject(error instanceof Error ? error : new Error(String(error)))
-  }
-
-  const topic = `/debug/device/${deviceId}/trace`
-  const wsId = `ai-device-debug-${deviceId}-${Date.now()}`
-  const socket = wsClient.getWebSocket(wsId, topic, {})
-  if (!socket) {
-    reject(new Error('device trace websocket unavailable'))
-    return
-  }
-
-  timer = setTimeout(() => finish('timeout'), duration)
-  sub = socket
-    .pipe(map((res: any) => (res != null && res.payload !== undefined ? res.payload : res)))
-    .subscribe((payload: any) => {
-      items.push(normalizeTracePayload(payload))
-      if (items.length >= maxCount) {
-        finish('limit')
-      }
-    }, fail)
-})
+const fallbackT: TranslateFn = (key) => key
 
 export const createDeviceDetailClientToolRuntime = (
-  getDevice: () => DeviceDetailRecord
+  getDevice: () => DeviceDetailRecord,
+  t: TranslateFn = fallbackT
 ): AiClientToolRuntime => {
-  registerDeviceDetailSelectorTools()
+  currentT = t
+  registerDeviceDetailSelectorTools(t)
   return createAiClientToolRuntime<DeviceClientToolContext>(
     defineAiClientTools<DeviceClientToolContext>([
     ...createDeviceAccessClientTools({
+      t,
       clampNumber,
       responseResult,
       compactInlineValue,
@@ -1217,25 +1152,25 @@ export const createDeviceDetailClientToolRuntime = (
     {
       id: 'device_metadata_markdown',
       name: 'device_metadata_markdown',
-      description: '将当前设备物模型转换为适合智能体阅读的 Markdown。',
+      description: t('DeviceDetail.agentTools.metadataMarkdown.description'),
       inputs: withWriteToPathInput([
         {
           id: 'section',
           name: 'section',
-          description: '物模型范围：all、properties、functions、events、tags。',
+          description: t('DeviceDetail.agentTools.metadata.inputs.section'),
           required: false,
           valueType: 'string'
         },
         {
           id: 'limit',
           name: 'limit',
-          description: '内联预览每个分类最多返回多少条，默认40，最大120；传 writeToPath 时完整物模型写入文件。',
+          description: t('DeviceDetail.agentTools.metadataMarkdown.inputs.limit'),
           required: false,
           valueType: 'int'
         }
       ]),
       output: { type: 'object' },
-      help: '获取物模型 Markdown。section=properties 只看属性；section=functions 只看功能；section=events 只看事件；默认 all。需要保存完整 Markdown 时传 writeToPath，limit 只控制内联预览。',
+      help: t('DeviceDetail.agentTools.metadataMarkdown.help'),
       execute: async (args, context, call) => {
         const section = normalizeMetadataSection(args.section)
         const inlineLimit = clampNumber(args.limit, 1, 120, 40)
@@ -1264,32 +1199,32 @@ export const createDeviceDetailClientToolRuntime = (
     {
       id: 'device_metadata_search',
       name: 'device_metadata_search',
-      description: '按标识、名称、说明或类型模糊搜索当前设备物模型。',
+      description: t('DeviceDetail.agentTools.metadataSearch.description'),
       inputs: [
         {
           id: 'keyword',
           name: 'keyword',
-          description: '搜索关键词，可匹配物模型标识、名称、说明和数据类型。',
+          description: t('DeviceDetail.agentTools.metadataSearch.inputs.keyword'),
           required: true,
           valueType: 'string'
         },
         {
           id: 'types',
           name: 'types',
-          description: '限定分类，如 properties/functions/events/tags 数组；为空时搜索全部。',
+          description: t('DeviceDetail.agentTools.metadataSearch.inputs.types'),
           required: false,
           valueType: { type: 'array', elementType: { type: 'string' } }
         },
         {
           id: 'limit',
           name: 'limit',
-          description: '最多返回条数，默认20，最大100。',
+          description: t('DeviceDetail.agentTools.metadataSearch.inputs.limit'),
           required: false,
           valueType: 'int'
         }
       ],
       output: { type: 'object' },
-      help: '模糊搜索物模型。适合用户只记得“温度”“电压”“alarm”这类关键词时查找属性、功能或事件定义。',
+      help: t('DeviceDetail.agentTools.metadataSearch.help'),
       execute: (args, context) => {
         const metadata = getMetadata(context)
         const types = asArray<string>(args.types).length
@@ -1306,28 +1241,28 @@ export const createDeviceDetailClientToolRuntime = (
     {
       id: 'device_latest_properties',
       name: 'device_latest_properties',
-      description: '获取当前设备一个或多个属性的最新值。',
+      description: t('DeviceDetail.agentTools.latestProperties.description'),
       inputs: [
         {
           id: 'propertyIds',
           name: 'propertyIds',
-          description: '属性ID数组；为空时按物模型属性顺序取前 limit 个。',
+          description: t('DeviceDetail.agentTools.latestProperties.inputs.propertyIds'),
           required: false,
           valueType: { type: 'array', elementType: { type: 'string' } }
         },
         {
           id: 'limit',
           name: 'limit',
-          description: 'propertyIds 为空时最多读取多少个属性，默认15，最大30。',
+          description: t('DeviceDetail.agentTools.latestProperties.inputs.limit'),
           required: false,
           valueType: 'int'
         }
       ],
       output: { type: 'object' },
-      help: '查询设备属性最新值。优先尝试实时读取；设备离线或读取失败时回退到历史最新一条，并返回每个属性的 success/error 明细。',
+      help: t('DeviceDetail.agentTools.latestProperties.help'),
       execute: async (args, context) => {
         const deviceId = getDeviceId(context)
-        if (!deviceId) throw new Error('deviceId missing')
+        if (!deviceId) throw new Error(currentT('DeviceDetail.agentTools.common.errors.deviceIdMissing'))
         const metadata = getMetadata(context)
         const limit = clampNumber(args.limit, 1, 30, 15)
         const propertyIds = asArray<string>(args.propertyIds).length
@@ -1345,26 +1280,26 @@ export const createDeviceDetailClientToolRuntime = (
     {
       id: 'device_property_history_summary',
       name: 'device_property_history_summary',
-      description: '统计当前设备指定属性在时间范围内的历史数据条数，并返回少量最新样本。',
+      description: t('DeviceDetail.agentTools.propertyHistorySummary.description'),
       inputs: [
         {
           id: 'propertyId',
           name: 'propertyId',
-          description: '属性ID。',
+          description: t('DeviceDetail.agentTools.common.inputs.propertyId'),
           required: true,
           valueType: 'string'
         },
         {
           id: 'startTime',
           name: 'startTime',
-          description: START_TIME_DESCRIPTION,
+          description: startTimeDescription(),
           required: false,
           valueType: 'string'
         },
         {
           id: 'endTime',
           name: 'endTime',
-          description: END_TIME_DESCRIPTION,
+          description: endTimeDescription(),
           required: false,
           valueType: 'string'
         },
@@ -1372,18 +1307,18 @@ export const createDeviceDetailClientToolRuntime = (
         {
           id: 'sampleLimit',
           name: 'sampleLimit',
-          description: '返回最新样本条数，默认3，最大10。',
+          description: t('DeviceDetail.agentTools.propertyHistorySummary.inputs.limit'),
           required: false,
           valueType: 'int'
         }
       ],
       output: { type: 'object' },
-      help: '属性历史统计。用户问“这段时间有没有上报”“上报了多少条”“最近有没有变化”时优先用此工具；需要少量原始样本再看 samples。',
+      help: t('DeviceDetail.agentTools.propertyHistorySummary.help'),
       execute: async (args, context) => {
         const deviceId = getDeviceId(context)
         const propertyId = String(args.propertyId || '').trim()
-        if (!deviceId) throw new Error('deviceId missing')
-        if (!propertyId) throw new Error('propertyId missing')
+        if (!deviceId) throw new Error(currentT('DeviceDetail.agentTools.common.errors.deviceIdMissing'))
+        if (!propertyId) throw new Error(currentT('DeviceDetail.agentTools.common.errors.propertyIdMissing'))
         const sampleLimit = clampNumber(args.sampleLimit, 1, 10, 3)
         const timeRange = resolveTimeRange(args)
         const resp = await getPropertyData(deviceId, propertyId, {
@@ -1405,6 +1340,7 @@ export const createDeviceDetailClientToolRuntime = (
       }
     },
     createDevicePropertyAggregateTool({
+      t,
       clampNumber,
       asArray,
       responseResult,
@@ -1417,12 +1353,13 @@ export const createDeviceDetailClientToolRuntime = (
       writeToolResultToSessionFile,
       writeRecordsToSessionFile,
       timeRangeInput,
-      startTimeDescription: START_TIME_DESCRIPTION,
-      endTimeDescription: END_TIME_DESCRIPTION,
+      startTimeDescription: startTimeDescription(),
+      endTimeDescription: endTimeDescription(),
       getDeviceId,
       getMetadata
     }),
     ...createDeviceDocumentClientTools({
+      t,
       clampNumber,
       asArray,
       responseResult,
@@ -1433,6 +1370,7 @@ export const createDeviceDetailClientToolRuntime = (
       getDeviceId
     }),
     ...createDeviceEventClientTools({
+      t,
       clampNumber,
       asArray,
       responseResult,
@@ -1444,12 +1382,13 @@ export const createDeviceDetailClientToolRuntime = (
       collectPagedToolData,
       writeToolResultToSessionFile,
       timeRangeInput,
-      startTimeDescription: START_TIME_DESCRIPTION,
-      endTimeDescription: END_TIME_DESCRIPTION,
+      startTimeDescription: startTimeDescription(),
+      endTimeDescription: endTimeDescription(),
       getDeviceId,
       getMetadata
     }),
     ...createDeviceFunctionClientTools({
+      t,
       asArray,
       responseResult,
       compactInlineValue,
@@ -1457,6 +1396,7 @@ export const createDeviceDetailClientToolRuntime = (
       getMetadata
     }),
     ...createDeviceAlarmClientTools({
+      t,
       clampNumber,
       asArray,
       responseResult,
@@ -1468,33 +1408,41 @@ export const createDeviceDetailClientToolRuntime = (
       collectPagedToolData,
       writeToolResultToSessionFile,
       timeRangeInput,
-      startTimeDescription: START_TIME_DESCRIPTION,
-      endTimeDescription: END_TIME_DESCRIPTION,
+      startTimeDescription: startTimeDescription(),
+      endTimeDescription: endTimeDescription(),
+      getDeviceId
+    }),
+    ...createEdgeDiagnosisClientTools({
+      t,
+      clampNumber,
+      asArray,
+      responseResult,
+      compactInlineValue,
       getDeviceId
     }),
     {
       id: 'device_property_history',
       name: 'device_property_history',
-      description: '按时间倒序查询当前设备指定属性的少量历史样本。',
+      description: t('DeviceDetail.agentTools.propertyHistory.description'),
       inputs: withWriteToPathInput([
         {
           id: 'propertyId',
           name: 'propertyId',
-          description: '属性ID。',
+          description: t('DeviceDetail.agentTools.common.inputs.propertyId'),
           required: true,
           valueType: 'string'
         },
         {
           id: 'startTime',
           name: 'startTime',
-          description: START_TIME_DESCRIPTION,
+          description: startTimeDescription(),
           required: false,
           valueType: 'string'
         },
         {
           id: 'endTime',
           name: 'endTime',
-          description: END_TIME_DESCRIPTION,
+          description: endTimeDescription(),
           required: false,
           valueType: 'string'
         },
@@ -1502,19 +1450,19 @@ export const createDeviceDetailClientToolRuntime = (
         {
           id: 'limit',
           name: 'limit',
-          description: '内联预览样本条数，默认20，最大50；传 writeToPath 时完整/大批量结果写入文件。',
+          description: t('DeviceDetail.agentTools.propertyHistory.inputs.limit'),
           required: false,
           valueType: 'int'
         },
         writeLimitInput()
       ]),
       output: { type: 'object' },
-      help: '查询单个属性历史样本。用于“最近20条温度数据”这类确实需要明细的问题；如果只是问有没有、多少条，优先使用 device_property_history_summary。需要保存大范围样本时传 writeToPath，建议优先使用 .jsonl 路径，也兼容 .ndjson，工具会逐页追加 JSONL/NDJSON；limit 只控制内联预览，writeLimit 控制文件写入条数，完整导出可传 writeLimit=0。',
+      help: t('DeviceDetail.agentTools.propertyHistory.help'),
       execute: async (args, context, call) => {
         const deviceId = getDeviceId(context)
         const propertyId = String(args.propertyId || '').trim()
-        if (!deviceId) throw new Error('deviceId missing')
-        if (!propertyId) throw new Error('propertyId missing')
+        if (!deviceId) throw new Error(currentT('DeviceDetail.agentTools.common.errors.deviceIdMissing'))
+        if (!propertyId) throw new Error(currentT('DeviceDetail.agentTools.common.errors.propertyIdMissing'))
         const inlineLimit = clampNumber(args.limit, 1, 50, 20)
         const timeRange = resolveTimeRange(args)
         const collected = await collectPagedToolData({
@@ -1541,7 +1489,7 @@ export const createDeviceDetailClientToolRuntime = (
           ...base,
           returned: previewData.length,
           truncated: collected.total > previewData.length,
-          nextAction: collected.total > previewData.length ? '结果已截断，可传 writeToPath 保存更多历史样本。' : undefined,
+          nextAction: collected.total > previewData.length ? t('DeviceDetail.agentTools.propertyHistory.nextAction.truncated') : undefined,
           data: previewData
         }
         if (collected.file) {
@@ -1589,26 +1537,26 @@ export const createDeviceDetailClientToolRuntime = (
     {
       id: 'device_online_offline_summary',
       name: 'device_online_offline_summary',
-      description: '统计当前设备在指定时间范围内的上线和离线日志数量，并返回少量最新上下线样本。',
+      description: t('DeviceDetail.agentTools.onlineOfflineSummary.description'),
       inputs: [
         {
           id: 'type',
           name: 'type',
-          description: '统计范围：both/online/offline，也支持“上下线/上线/离线”；默认 both。',
+          description: t('DeviceDetail.agentTools.onlineOfflineSummary.inputs.type'),
           required: false,
           valueType: 'string'
         },
         {
           id: 'startTime',
           name: 'startTime',
-          description: START_TIME_DESCRIPTION,
+          description: startTimeDescription(),
           required: false,
           valueType: 'string'
         },
         {
           id: 'endTime',
           name: 'endTime',
-          description: END_TIME_DESCRIPTION,
+          description: endTimeDescription(),
           required: false,
           valueType: 'string'
         },
@@ -1616,16 +1564,16 @@ export const createDeviceDetailClientToolRuntime = (
         {
           id: 'sampleLimit',
           name: 'sampleLimit',
-          description: '返回最新上下线样本条数，默认5，最大10。',
+          description: t('DeviceDetail.agentTools.onlineOfflineSummary.inputs.limit'),
           required: false,
           valueType: 'int'
         }
       ],
       output: { type: 'object' },
-      help: '设备上下线统计。用户问“上下线数量”“今天上线几次”“最近离线几次”“在线离线记录数量”时优先使用此工具；它会分别统计 online/offline 的 total，并只返回少量样本。',
+      help: t('DeviceDetail.agentTools.onlineOfflineSummary.help'),
       execute: async (args, context) => {
         const deviceId = getDeviceId(context)
-        if (!deviceId) throw new Error('deviceId missing')
+        if (!deviceId) throw new Error(currentT('DeviceDetail.agentTools.common.errors.deviceIdMissing'))
         const sampleLimit = clampNumber(args.sampleLimit, 1, 10, 5)
         const timeRange = resolveTimeRange(args)
         const types = normalizeOnlineOfflineTypes(args.type)
@@ -1687,33 +1635,33 @@ export const createDeviceDetailClientToolRuntime = (
     {
       id: 'device_logs_summary',
       name: 'device_logs_summary',
-      description: '统计当前设备日志数量，并返回少量最新日志样本；上下线数量优先使用 device_online_offline_summary。',
+      description: t('DeviceDetail.agentTools.logsSummary.description'),
       inputs: [
         {
           id: 'type',
           name: 'type',
-          description: '日志类型，可为空；上线/在线会归一为 online，离线/下线会归一为 offline，上下线会归一为 online/offline。',
+          description: t('DeviceDetail.agentTools.logs.inputs.type'),
           required: false,
           valueType: 'string'
         },
         {
           id: 'keyword',
           name: 'keyword',
-          description: '日志内容关键词。',
+          description: t('DeviceDetail.agentTools.logs.inputs.keyword'),
           required: false,
           valueType: 'string'
         },
         {
           id: 'startTime',
           name: 'startTime',
-          description: START_TIME_DESCRIPTION,
+          description: startTimeDescription(),
           required: false,
           valueType: 'string'
         },
         {
           id: 'endTime',
           name: 'endTime',
-          description: END_TIME_DESCRIPTION,
+          description: endTimeDescription(),
           required: false,
           valueType: 'string'
         },
@@ -1721,16 +1669,16 @@ export const createDeviceDetailClientToolRuntime = (
         {
           id: 'sampleLimit',
           name: 'sampleLimit',
-          description: '返回最新样本条数，默认3，最大10。',
+          description: t('DeviceDetail.agentTools.propertyHistorySummary.inputs.limit'),
           required: false,
           valueType: 'int'
         }
       ],
       output: { type: 'object' },
-      help: '设备日志统计。用户问“最近有没有上报/错误/日志”“日志多少条”“这段时间是否有通信”时使用此工具；如果问题是“上下线数量/上线几次/离线几次”，优先使用 device_online_offline_summary。只返回 total 和少量 samples，避免把整页日志回传给模型。',
+      help: t('DeviceDetail.agentTools.logsSummary.help'),
       execute: async (args, context) => {
         const deviceId = getDeviceId(context)
-        if (!deviceId) throw new Error('deviceId missing')
+        if (!deviceId) throw new Error(currentT('DeviceDetail.agentTools.common.errors.deviceIdMissing'))
         const sampleLimit = clampNumber(args.sampleLimit, 1, 10, 3)
         const timeRange = resolveTimeRange(args)
         const types = normalizeDeviceLogTypes(args.type ?? args.types)
@@ -1756,33 +1704,33 @@ export const createDeviceDetailClientToolRuntime = (
     {
       id: 'device_logs_query',
       name: 'device_logs_query',
-      description: '查询当前设备少量操作日志和消息日志样本。',
+      description: t('DeviceDetail.agentTools.logsQuery.description'),
       inputs: withWriteToPathInput([
         {
           id: 'type',
           name: 'type',
-          description: '日志类型，可为空；上线/在线会归一为 online，离线/下线会归一为 offline，上下线会归一为 online/offline。',
+          description: t('DeviceDetail.agentTools.logs.inputs.type'),
           required: false,
           valueType: 'string'
         },
         {
           id: 'keyword',
           name: 'keyword',
-          description: '日志内容关键词。',
+          description: t('DeviceDetail.agentTools.logs.inputs.keyword'),
           required: false,
           valueType: 'string'
         },
         {
           id: 'startTime',
           name: 'startTime',
-          description: START_TIME_DESCRIPTION,
+          description: startTimeDescription(),
           required: false,
           valueType: 'string'
         },
         {
           id: 'endTime',
           name: 'endTime',
-          description: END_TIME_DESCRIPTION,
+          description: endTimeDescription(),
           required: false,
           valueType: 'string'
         },
@@ -1790,17 +1738,17 @@ export const createDeviceDetailClientToolRuntime = (
         {
           id: 'limit',
           name: 'limit',
-          description: '内联预览样本条数，默认10，最大20；传 writeToPath 时更多日志样本写入文件。',
+          description: t('DeviceDetail.agentTools.logsQuery.inputs.limit'),
           required: false,
           valueType: 'int'
         },
         writeLimitInput()
       ]),
       output: { type: 'object' },
-      help: '查询设备日志样本。需要查看少量原始日志内容时使用；如果只是问有没有、多少条、最近是否有通信，优先使用 device_logs_summary；上下线数量优先使用 device_online_offline_summary。需要保存大范围日志样本时传 writeToPath，建议优先使用 .jsonl 路径，也兼容 .ndjson，工具会逐页追加 JSONL/NDJSON；limit 只控制内联预览，writeLimit 控制文件写入条数，完整导出可传 writeLimit=0。',
+      help: t('DeviceDetail.agentTools.logsQuery.help'),
       execute: async (args, context, call) => {
         const deviceId = getDeviceId(context)
-        if (!deviceId) throw new Error('deviceId missing')
+        if (!deviceId) throw new Error(currentT('DeviceDetail.agentTools.common.errors.deviceIdMissing'))
         const inlineLimit = clampNumber(args.limit, 1, 20, 10)
         const timeRange = resolveTimeRange(args)
         const types = normalizeDeviceLogTypes(args.type ?? args.types)
@@ -1828,7 +1776,7 @@ export const createDeviceDetailClientToolRuntime = (
           ...base,
           returned: previewData.length,
           truncated: collected.total > previewData.length,
-          nextAction: collected.total > previewData.length ? '结果已截断，可传 writeToPath 保存更多日志样本。' : undefined,
+          nextAction: collected.total > previewData.length ? t('DeviceDetail.agentTools.logsQuery.nextAction.truncated') : undefined,
           data: previewData
         }
         if (collected.file) {
@@ -1876,10 +1824,10 @@ export const createDeviceDetailClientToolRuntime = (
     {
       id: 'edge_remote_file_workdir',
       name: 'edge_remote_file_workdir',
-      description: '获取当前边缘网关设备远程文件管理的工作目录。',
+      description: t('DeviceDetail.agentTools.legacyRemoteFileWorkdir.description'),
       inputs: [],
       output: { type: 'object' },
-      help: '获取边缘网关远程文件系统的当前工作目录。适合在列目录或读取日志文件前确认根路径。',
+      help: t('DeviceDetail.agentTools.legacyRemoteFileWorkdir.help'),
       execute: async (_args, context) => {
         const deviceId = ensureRemoteFileSupported(context)
         const resp = await getRemoteSystemWorkingDirectory(deviceId)
@@ -1893,32 +1841,32 @@ export const createDeviceDetailClientToolRuntime = (
     {
       id: 'edge_remote_file_list',
       name: 'edge_remote_file_list',
-      description: '列出当前边缘网关设备远程文件系统目录。',
+      description: t('DeviceDetail.agentTools.legacyRemoteFileList.description'),
       inputs: [
         {
           id: 'path',
           name: 'path',
-          description: '目录路径；为空时先读取远程工作目录。',
+          description: t('DeviceDetail.agentTools.legacyRemoteFile.inputs.pathOptionalWorkdir'),
           required: false,
           valueType: 'string'
         },
         {
           id: 'filter',
           name: 'filter',
-          description: '按文件名过滤的关键词。',
+          description: t('DeviceDetail.agentTools.legacyRemoteFile.inputs.filter'),
           required: false,
           valueType: 'string'
         },
         {
           id: 'limit',
           name: 'limit',
-          description: '最多返回条数，默认50，最大200。',
+          description: t('DeviceDetail.agentTools.legacyRemoteFile.inputs.limit50'),
           required: false,
           valueType: 'int'
         }
       ],
       output: { type: 'object' },
-      help: '列出边缘网关远程文件。path 为空时使用工作目录；filter 可按文件名模糊过滤；返回目录/文件、大小、权限和时间信息。',
+      help: t('DeviceDetail.agentTools.legacyRemoteFileList.help'),
       execute: async (args, context) => {
         const deviceId = ensureRemoteFileSupported(context)
         const filter = String(args.filter || '').trim()
@@ -1927,7 +1875,7 @@ export const createDeviceDetailClientToolRuntime = (
         if (!path) {
           path = ensureSuccessResult(await getRemoteSystemWorkingDirectory(deviceId)) || ''
         }
-        if (!path) throw new Error('remote working directory missing')
+        if (!path) throw new Error(currentT('DeviceDetail.agentTools.legacyRemoteFile.errors.workdirMissing'))
 
         const resp = await listRemoteSystemFiles(deviceId, {
           path,
@@ -1954,36 +1902,36 @@ export const createDeviceDetailClientToolRuntime = (
     {
       id: 'edge_remote_file_read_text',
       name: 'edge_remote_file_read_text',
-      description: '读取当前边缘网关远程文件的文本内容片段。',
+      description: t('DeviceDetail.agentTools.legacyRemoteFileRead.description'),
       inputs: withWriteToPathInput([
         {
           id: 'path',
           name: 'path',
-          description: '远程文件完整路径。',
+          description: t('DeviceDetail.agentTools.legacyRemoteFile.inputs.fullPath'),
           required: true,
           valueType: 'string'
         },
         {
           id: 'maxBytes',
           name: 'maxBytes',
-          description: '最多读取字节数，默认16384，最大131072。',
+          description: t('DeviceDetail.agentTools.legacyRemoteFile.inputs.maxBytes'),
           required: false,
           valueType: 'int'
         },
         {
           id: 'mode',
           name: 'mode',
-          description: '读取位置：head 表示文件开头，tail 表示文件末尾；默认 head。',
+          description: t('DeviceDetail.agentTools.legacyRemoteFile.inputs.mode'),
           required: false,
           valueType: 'string'
         }
       ]),
       output: { type: 'object' },
-      help: '读取远程文本文件片段。仅用于日志、配置、脚本等文本内容分析；默认读取 16 KiB，最多 128 KiB，可用 mode=tail 查看日志末尾，并通过 truncated 标记是否截断。需要把片段保存为会话文件时传 writeToPath。',
+      help: t('DeviceDetail.agentTools.legacyRemoteFileRead.help'),
       execute: async (args, context, call) => {
         const deviceId = ensureRemoteFileSupported(context)
         const path = String(args.path || '').trim()
-        if (!path) throw new Error('path missing')
+        if (!path) throw new Error(currentT('DeviceDetail.agentTools.common.errors.pathMissing'))
         const maxBytes = clampNumber(args.maxBytes, 1, 128 * 1024, 16 * 1024)
         const mode = String(args.mode || 'head').trim()
 
@@ -2007,45 +1955,24 @@ export const createDeviceDetailClientToolRuntime = (
         })
       }
     },
-    {
-      id: 'device_trace_capture',
-      name: 'device_trace_capture',
-      description: '订阅并抓取当前设备实时链路、协议日志和诊断数据。',
-      inputs: withWriteToPathInput([
-        {
-          id: 'seconds',
-          name: 'seconds',
-          description: '抓取秒数，默认5，最大15。',
-          required: false,
-          valueType: 'int'
-        },
-        {
-          id: 'limit',
-          name: 'limit',
-          description: '最多抓取条数，默认10，最大30。',
-          required: false,
-          valueType: 'int'
-        }
-      ]),
-      output: { type: 'object' },
-      help: '实时抓取设备接入链路样本。用于排查连接、认证、上报、下发、编解码等问题；工具会压缩上下行报文和错误详情，若设备当前无通信，可能返回空数组。需要保存完整抓包结果时传 writeToPath。',
-      execute: async (args, context, call) => {
-        const deviceId = getDeviceId(context)
-        if (!deviceId) throw new Error('deviceId missing')
-        const result = await captureDeviceTrace(deviceId, Number(args.seconds || 5), Number(args.limit || 10)) as Record<string, any>
-        return writeToolResultToSessionFile(args, call, result, {
-          summary: {
-            deviceId,
-            reason: result.reason,
-            count: result.count
-          }
-        })
-      }
-    }
+    ...createDeviceTraceCaptureClientTools({
+      t,
+      clampNumber,
+      compactInlineValue,
+      withWriteToPathInput,
+      writeRecordsToSessionFile,
+      getDeviceId
+    })
     ]),
     {
       toolsName: 'device-detail-client-tools',
-      toolsDescription: '设备详情页提供的当前设备问数与诊断工具。可用于自然语言问题中的在线状态、接入配置、接入地址、认证字段、协议说明、接入会话、物模型、属性快照、属性聚合趋势、事件上报数据、设备文档与维修知识库、平台告警记录、上下线统计、日志统计与少量样本、边缘网关远程文件片段和实时链路样本分析；普通用户无需知道工具名，接入指南、协议说明、认证失败、连接地址等问题优先用 device_access_summary 获取设备接入 Tab 中的配置、身份、协议说明和在线连接证据，日志/属性/事件优先用 summary、aggregate 或 event 工具回答有没有、多少条、平均/最大/最小、首次/末次/去重计数和趋势。设备文档问题优先用 device_documents_query 查找当前设备和所属产品文档，或用 device_document_reference 定位 platform-file-id 与 url/fileUrl；文档正文不要通过前端工具读取，需由后端 fs_download 或统一文件/文档通道导入或挂载到会话文件容器后再按 inputPath 分析。需要选择其它设备时可使用动态注册的 selector 工具获取候选设备；当前设备默认来自 subject。只有用户明确要求下发/调用/执行设备功能时，才可使用 device_function_invoke，并且会在下发前要求用户确认。部分明细工具支持 writeToPath，可把较大或完整结果写入当前会话文件容器并返回 fs:// 引用和 inputPath；分页明细和聚合结果默认写 JSONL/NDJSON，建议优先使用 .jsonl 路径，也兼容 .ndjson，limit 只控制内联预览，writeLimit 控制分页类工具写入文件的记录数，完整导出可传 writeLimit=0；若返回 writeLimitExceeded/truncated，需要向用户说明结果受上限影响并建议缩小时间范围、提高 writeLimit 或使用 writeLimit=0 完整导出；对写入的 JSONL/NDJSON 继续过滤、聚合、排序、抽取轨迹或生成图表时，优先用 dataset_materialize(format=jsonl) + dataset_query 或 chart_echarts2svg，不要用 text_regex_extract 或脚本解析大文本。',
+      toolsDescription: [
+        t('DeviceDetail.agentTools.runtime.description.0'),
+        t('DeviceDetail.agentTools.runtime.description.1'),
+        t('DeviceDetail.agentTools.runtime.description.2'),
+        t('DeviceDetail.agentTools.runtime.description.3'),
+        t('DeviceDetail.agentTools.runtime.description.4')
+      ].join('\n'),
       registeredToolScopes: DEVICE_DETAIL_SELECTOR_SCOPE,
       getContext: () => ({ device: getDevice() || {} })
     }
