@@ -798,6 +798,11 @@ const DEVICE_AGENT_TAB_ALIASES: Record<string, string> = {
   物模型映射: 'MetadataMap',
   terminal: 'Terminal',
   远程调试: 'Terminal',
+  visionmodel: 'VisionModel',
+  visionmodels: 'VisionModel',
+  cvmodel: 'VisionModel',
+  cvmodels: 'VisionModel',
+  视觉模型: 'VisionModel',
   shadow: 'Shadow',
   设备影子: 'Shadow',
   firmware: 'Firmware',
@@ -1283,6 +1288,13 @@ const getDetail = () => {
 
   if (_arr.includes(instanceStore.current?.accessProvider) && !keys.includes('Terminal')) {
     list.value.push({ key: 'Terminal', tab: $t('Detail.index.957187-26') })
+  }
+  if (
+    _arr.includes(instanceStore.current?.accessProvider) &&
+    userStore.isAdmin &&
+    !keys.includes('VisionModel')
+  ) {
+    list.value.push({ key: 'VisionModel', tab: $t('Detail.index.957187-44') })
   }
 
   // 仪表盘
