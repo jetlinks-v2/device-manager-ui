@@ -18,6 +18,7 @@ export const tabs = {
   Firmware: defineAsyncComponent(() => import('./Firmware/index.vue')),
   Shadow: defineAsyncComponent(() => import('./Shadow/index.vue')),
   Terminal: defineAsyncComponent(() => import('./Terminal/index.vue')),
+  VisionModel: defineAsyncComponent(() => import('./VisionModel/index.vue')),
   Invalid: defineAsyncComponent(() => import('./Invalid/index.vue')),
   Threshold: defineAsyncComponent(() => import('./Threshold/index.vue')),
   DeviceRelationship: defineAsyncComponent(() => import('./DeviceRelationship/index.vue')),
