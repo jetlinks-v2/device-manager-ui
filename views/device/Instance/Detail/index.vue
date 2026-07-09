@@ -341,7 +341,7 @@ import { isApplyDashboard } from '@device-manager-ui/utils/dashboardProject'
 import { createDeviceDetailClientToolRuntime } from './clientTools'
 import { useDeviceMetadataReferences } from './useDeviceMetadataReferences'
 import {
-  EDGE_DIAGNOSIS_WORKFLOW_GUIDES,
+  createEdgeDiagnosisWorkflowGuides,
   buildEdgeDiagnosisClientToolsDescription,
   isEdgeDiagnosisToolId
 } from './agentDiagnosisManual'
@@ -566,12 +566,13 @@ const { mergedOptions } = useRegistryOptions({ baseOptions: list, code: 'detail-
 const DEVICE_DETAIL_AGENT_CLIENT_ID = 'deviceDetailChat'
 const DEVICE_AGENT_SUBJECT_TYPE = 'device'
 const DEVICE_DETAIL_AGENT_SYSTEM_PROMPT_LINES = [
-  '你是设备详情页内的设备问数与诊断助手。',
-  '当前会话的 subject 就是页面打开的设备，已通过 subjectType=device、subjectId、deviceId 和 deviceName 提供；用户没有明确要求其它设备时，不要再追问设备 ID。',
-  '当前会话可通过客户端工具读取该设备的状态、运行数据、告警、日志、接入、文档、功能和调试证据；需要当前事实时以本轮工具结果为准。',
-  '多步骤任务的取证顺序以当前会话的内部取证建议和工具结果为准。'
+  $t('DeviceDetail.agent.systemPrompt.0'),
+  $t('DeviceDetail.agent.systemPrompt.1'),
+  $t('DeviceDetail.agent.systemPrompt.2'),
+  $t('DeviceDetail.agent.systemPrompt.3'),
+  $t('DeviceDetail.agent.systemPrompt.4')
 ]
-const deviceDetailClientToolRuntime = createDeviceDetailClientToolRuntime(() => instanceStore.current || {})
+const deviceDetailClientToolRuntime = createDeviceDetailClientToolRuntime(() => instanceStore.current || {}, $t)
 const deviceMetadataReferences = useDeviceMetadataReferences({
   device: computed(() => instanceStore.current || {}),
   t: $t,
@@ -580,192 +581,194 @@ const deviceMetadataReferences = useDeviceMetadataReferences({
 const DEVICE_DETAIL_AGENT_WORKFLOW_GUIDES: AgentConversationWorkflowGuide[] = [
   {
     id: 'device-today-operation',
-    name: '今日运行分析',
-    description: '分析设备今天是否运行正常，覆盖告警、上下线、关键属性最新值和趋势。',
-    scenarios: ['分析今日运行情况', '是否正常', '全面检查', '帮我看看', '最近状态'],
-    keywords: ['今日', '今天', '运行', '正常', '全面', '状态', '分析'],
+    name: $t('DeviceDetail.agentGuides.today.name'),
+    description: $t('DeviceDetail.agentGuides.today.description'),
+    scenarios: [$t('DeviceDetail.agentGuides.today.scenarios.0'), $t('DeviceDetail.agentGuides.today.scenarios.1'), $t('DeviceDetail.agentGuides.today.scenarios.2'), $t('DeviceDetail.agentGuides.today.scenarios.3'), $t('DeviceDetail.agentGuides.today.scenarios.4')],
+    keywords: [$t('DeviceDetail.agentGuides.today.keywords.0'), $t('DeviceDetail.agentGuides.today.keywords.1'), $t('DeviceDetail.agentGuides.today.keywords.2'), $t('DeviceDetail.agentGuides.today.keywords.3'), $t('DeviceDetail.agentGuides.today.keywords.4'), $t('DeviceDetail.agentGuides.today.keywords.5'), $t('DeviceDetail.agentGuides.today.keywords.6')],
     priority: 100,
     steps: [
       {
-        title: '识别关键运行指标',
-        description: '根据设备属性定义的名称、标识、说明和数据类型识别本设备已有的关键运行指标；不要预设固定字段，只保留实际匹配到的属性。',
+        title: $t('DeviceDetail.agentGuides.today.steps.identify.title'),
+        description: $t('DeviceDetail.agentGuides.today.steps.identify.description'),
         tools: ['device_metadata_markdown', 'device_metadata_search'],
         inputs: { section: 'properties' },
       },
       {
-        title: '查询今日平台告警',
+        title: $t('DeviceDetail.agentGuides.today.steps.alarmRecords.title'),
         tools: ['device_alarm_records_query'],
-        inputs: { timeRange: '今天' },
+        inputs: { timeRange: $t('DeviceDetail.agentGuides.inputs.today') },
       },
       {
-        title: '统计今日告警触发历史',
+        title: $t('DeviceDetail.agentGuides.today.steps.alarmHistory.title'),
         tools: ['device_alarm_history_summary'],
-        inputs: { timeRange: '今天' },
+        inputs: { timeRange: $t('DeviceDetail.agentGuides.inputs.today') },
       },
       {
-        title: '统计今日上下线',
+        title: $t('DeviceDetail.agentGuides.today.steps.onlineOffline.title'),
         tools: ['device_online_offline_summary'],
-        inputs: { timeRange: '今天', type: 'both' },
+        inputs: { timeRange: $t('DeviceDetail.agentGuides.inputs.today'), type: 'both' },
       },
       {
-        title: '读取关键属性最新值',
-        description: '对已匹配属性直接批量读取；没有匹配到运行指标时说明当前设备未暴露相关属性。',
+        title: $t('DeviceDetail.agentGuides.today.steps.latestProperties.title'),
+        description: $t('DeviceDetail.agentGuides.today.steps.latestProperties.description'),
         tools: ['device_latest_properties'],
         inputs: { propertyIds: 'matched-property-ids' },
       },
       {
-        title: '按需查看趋势',
-        description: '用户问“今日运行/是否正常”时，优先对已匹配的数值型指标按小时聚合，趋势不足时说明数据限制。',
+        title: $t('DeviceDetail.agentGuides.today.steps.trend.title'),
+        description: $t('DeviceDetail.agentGuides.today.steps.trend.description'),
         tools: ['device_property_aggregate'],
-        inputs: { propertyIds: 'matched-property-ids', timeRange: '今天', interval: '1h' },
+        inputs: { propertyIds: 'matched-property-ids', timeRange: $t('DeviceDetail.agentGuides.inputs.today'), interval: '1h' },
       },
     ],
-    output: ['已验证事实', '异常迹象', '建议动作', '无法确认的限制'],
-    notes: ['不要让用户先选择属性；不要把属性候选列表当最终答案。'],
+    output: [$t('DeviceDetail.agentGuides.today.output.0'), $t('DeviceDetail.agentGuides.today.output.1'), $t('DeviceDetail.agentGuides.today.output.2'), $t('DeviceDetail.agentGuides.today.output.3')],
+    notes: [$t('DeviceDetail.agentGuides.today.notes.0')],
   },
   {
     id: 'device-offline-diagnosis',
-    name: '离线原因分析',
-    description: '设备离线时，按接入配置、上下线记录、日志、告警和链路样本排查原因。',
-    scenarios: ['分析离线原因', '为什么离线', '设备不上线', '连接失败', '认证失败'],
-    keywords: ['离线', '下线', '不上线', '连接失败', '认证失败', '断开'],
+    name: $t('DeviceDetail.agentGuides.offline.name'),
+    description: $t('DeviceDetail.agentGuides.offline.description'),
+    scenarios: [$t('DeviceDetail.agentGuides.offline.scenarios.0'), $t('DeviceDetail.agentGuides.offline.scenarios.1'), $t('DeviceDetail.agentGuides.offline.scenarios.2'), $t('DeviceDetail.agentGuides.offline.scenarios.3'), $t('DeviceDetail.agentGuides.offline.scenarios.4')],
+    keywords: [$t('DeviceDetail.agentGuides.offline.keywords.0'), $t('DeviceDetail.agentGuides.offline.keywords.1'), $t('DeviceDetail.agentGuides.offline.keywords.2'), $t('DeviceDetail.agentGuides.offline.keywords.3'), $t('DeviceDetail.agentGuides.offline.keywords.4'), $t('DeviceDetail.agentGuides.offline.keywords.5')],
     priority: 90,
     steps: [
       {
-        title: '获取接入配置和会话证据',
+        title: $t('DeviceDetail.agentGuides.offline.steps.access.title'),
         tools: ['device_access_summary'],
       },
       {
-        title: '统计最近上下线',
+        title: $t('DeviceDetail.agentGuides.offline.steps.onlineOffline.title'),
         tools: ['device_online_offline_summary'],
-        inputs: { timeRange: '最近24小时', type: 'both' },
+        inputs: { timeRange: $t('DeviceDetail.agentGuides.inputs.recent24h'), type: 'both' },
       },
       {
-        title: '查看最近通信日志',
+        title: $t('DeviceDetail.agentGuides.offline.steps.logs.title'),
         tools: ['device_logs_summary'],
-        inputs: { timeRange: '最近24小时' },
+        inputs: { timeRange: $t('DeviceDetail.agentGuides.inputs.recent24h') },
       },
       {
-        title: '查询平台告警',
+        title: $t('DeviceDetail.agentGuides.offline.steps.alarms.title'),
         tools: ['device_alarm_records_query', 'device_alarm_history_summary'],
-        inputs: { timeRange: '最近24小时' },
+        inputs: { timeRange: $t('DeviceDetail.agentGuides.inputs.recent24h') },
       },
       {
-        title: '需要链路细节时先启动实时抓包',
+        title: $t('DeviceDetail.agentGuides.offline.steps.trace.title'),
         tools: ['device_trace_capture'],
-        tips: ['只有需要连接、认证、上报、下发、编解码证据时再使用。抓包必须先开始；若还要重连、下发或等待上报，应在抓包窗口内并行触发。'],
+        inputs: { action: 'start', seconds: $t('DeviceDetail.agentGuides.inputs.secondsByScenario') },
+        tips: [$t('DeviceDetail.agentGuides.offline.steps.trace.tips.0')],
       },
     ],
-    output: ['最可能原因', '已验证证据', '下一步处理动作', '仍需现场确认的信息'],
+    output: [$t('DeviceDetail.agentGuides.offline.output.0'), $t('DeviceDetail.agentGuides.offline.output.1'), $t('DeviceDetail.agentGuides.offline.output.2'), $t('DeviceDetail.agentGuides.offline.output.3')],
   },
   {
     id: 'device-trace-diagnosis',
-    name: '抓包链路分析',
-    description: '分析实时链路、上下行报文、下发后响应、连接认证和编解码异常。',
-    scenarios: ['抓包分析', '看报文', '分析上报报文', '下发后有没有响应', '编解码失败', '认证报文', '链路诊断'],
-    keywords: ['抓包', '报文', '链路', '上报', '下发', '响应', '编解码', '认证', 'trace'],
+    name: $t('DeviceDetail.agentGuides.trace.name'),
+    description: $t('DeviceDetail.agentGuides.trace.description'),
+    scenarios: [$t('DeviceDetail.agentGuides.trace.scenarios.0'), $t('DeviceDetail.agentGuides.trace.scenarios.1'), $t('DeviceDetail.agentGuides.trace.scenarios.2'), $t('DeviceDetail.agentGuides.trace.scenarios.3'), $t('DeviceDetail.agentGuides.trace.scenarios.4'), $t('DeviceDetail.agentGuides.trace.scenarios.5'), $t('DeviceDetail.agentGuides.trace.scenarios.6')],
+    keywords: [$t('DeviceDetail.agentGuides.trace.keywords.0'), $t('DeviceDetail.agentGuides.trace.keywords.1'), $t('DeviceDetail.agentGuides.trace.keywords.2'), $t('DeviceDetail.agentGuides.trace.keywords.3'), $t('DeviceDetail.agentGuides.trace.keywords.4'), $t('DeviceDetail.agentGuides.trace.keywords.5'), $t('DeviceDetail.agentGuides.trace.keywords.6'), $t('DeviceDetail.agentGuides.trace.keywords.7'), 'trace'],
     priority: 95,
     steps: [
       {
-        title: '先启动抓包窗口',
-        description: '抓包是实时窗口。先启动实时链路采样，再在窗口内触发下发、重连、认证复现或等待设备上报；不要先触发动作再抓包。',
+        title: $t('DeviceDetail.agentGuides.trace.steps.start.title'),
+        description: $t('DeviceDetail.agentGuides.trace.steps.start.description'),
         tools: ['device_trace_capture'],
-        inputs: { seconds: '按用户场景选择，默认5秒；复现较慢可增加到10-15秒', maxEvents: '高频场景可调大' },
+        inputs: { action: 'start', seconds: $t('DeviceDetail.agentGuides.inputs.secondsByUserScenario'), maxEvents: $t('DeviceDetail.agentGuides.inputs.maxEventsHighFrequency') },
       },
       {
-        title: '并行触发或等待业务动作',
-        description: '如果用户要求观察下发、功能调用、重连或上报，应在抓包已开始后并行触发对应动作；需要用户或设备侧操作时，先说明请在抓包窗口内操作。',
+        title: $t('DeviceDetail.agentGuides.trace.steps.feedback.title'),
+        description: $t('DeviceDetail.agentGuides.trace.steps.feedback.description'),
         tools: ['device_function_invoke', 'device_access_summary'],
       },
       {
-        title: '整理抓包结果',
-        description: '优先使用工具返回的统计、去重摘要、topSignatures 和代表样本判断方向；大量事件已写入文件时，再按 inputPath 做二次过滤或聚合。',
+        title: $t('DeviceDetail.agentGuides.trace.steps.summary.title'),
+        description: $t('DeviceDetail.agentGuides.trace.steps.summary.description'),
         tools: ['device_trace_capture'],
+        inputs: { action: 'stop', taskId: $t('DeviceDetail.agentGuides.inputs.startTaskId') },
       },
     ],
-    output: ['抓到的通信概况', '上下行方向和关键报文', '重复/高频模式', '异常或缺失环节', '下一步复现建议'],
-    notes: ['实时链路采样会自动统计和按语义去重；不要把所有原始报文逐条复述给用户。'],
+    output: [$t('DeviceDetail.agentGuides.trace.output.0'), $t('DeviceDetail.agentGuides.trace.output.1'), $t('DeviceDetail.agentGuides.trace.output.2'), $t('DeviceDetail.agentGuides.trace.output.3'), $t('DeviceDetail.agentGuides.trace.output.4')],
+    notes: [$t('DeviceDetail.agentGuides.trace.notes.0'), $t('DeviceDetail.agentGuides.trace.notes.1')],
   },
   {
     id: 'device-bring-online',
-    name: '上线接入指导',
-    description: '回答如何让设备上线、接入地址、认证字段、协议说明和首次上线检查。',
-    scenarios: ['如何让设备上线', '设备怎么接入', '接入地址是什么', '认证字段', '首次上线'],
-    keywords: ['上线', '接入', '地址', '认证', '协议', '首次'],
+    name: $t('DeviceDetail.agentGuides.bringOnline.name'),
+    description: $t('DeviceDetail.agentGuides.bringOnline.description'),
+    scenarios: [$t('DeviceDetail.agentGuides.bringOnline.scenarios.0'), $t('DeviceDetail.agentGuides.bringOnline.scenarios.1'), $t('DeviceDetail.agentGuides.bringOnline.scenarios.2'), $t('DeviceDetail.agentGuides.bringOnline.scenarios.3'), $t('DeviceDetail.agentGuides.bringOnline.scenarios.4')],
+    keywords: [$t('DeviceDetail.agentGuides.bringOnline.keywords.0'), $t('DeviceDetail.agentGuides.bringOnline.keywords.1'), $t('DeviceDetail.agentGuides.bringOnline.keywords.2'), $t('DeviceDetail.agentGuides.bringOnline.keywords.3'), $t('DeviceDetail.agentGuides.bringOnline.keywords.4'), $t('DeviceDetail.agentGuides.bringOnline.keywords.5')],
     priority: 80,
     steps: [
       {
-        title: '获取接入配置',
+        title: $t('DeviceDetail.agentGuides.bringOnline.steps.access.title'),
         tools: ['device_access_summary'],
       },
       {
-        title: '查找接入文档',
+        title: $t('DeviceDetail.agentGuides.bringOnline.steps.docs.title'),
         tools: ['device_documents_query', 'device_document_reference'],
       },
       {
-        title: '结合最近上线/离线和日志判断是否已尝试接入',
+        title: $t('DeviceDetail.agentGuides.bringOnline.steps.evidence.title'),
         tools: ['device_online_offline_summary', 'device_logs_summary'],
-        inputs: { timeRange: '最近24小时' },
+        inputs: { timeRange: $t('DeviceDetail.agentGuides.inputs.recent24h') },
       },
     ],
-    output: ['接入地址与认证要点', '上线前检查项', '如果仍不上线的排查顺序'],
+    output: [$t('DeviceDetail.agentGuides.bringOnline.output.0'), $t('DeviceDetail.agentGuides.bringOnline.output.1'), $t('DeviceDetail.agentGuides.bringOnline.output.2')],
   },
   {
     id: 'device-property-trend',
-    name: '属性趋势分析',
-    description: '分析用户指定或设备属性定义中匹配到的指标趋势。',
-    scenarios: ['分析属性趋势', '运行指标趋势', '使用率情况', '状态趋势'],
-    keywords: ['属性', '趋势', '指标', '使用率', '变化', '统计'],
+    name: $t('DeviceDetail.agentGuides.propertyTrend.name'),
+    description: $t('DeviceDetail.agentGuides.propertyTrend.description'),
+    scenarios: [$t('DeviceDetail.agentGuides.propertyTrend.scenarios.0'), $t('DeviceDetail.agentGuides.propertyTrend.scenarios.1'), $t('DeviceDetail.agentGuides.propertyTrend.scenarios.2'), $t('DeviceDetail.agentGuides.propertyTrend.scenarios.3')],
+    keywords: [$t('DeviceDetail.agentGuides.propertyTrend.keywords.0'), $t('DeviceDetail.agentGuides.propertyTrend.keywords.1'), $t('DeviceDetail.agentGuides.propertyTrend.keywords.2'), $t('DeviceDetail.agentGuides.propertyTrend.keywords.3'), $t('DeviceDetail.agentGuides.propertyTrend.keywords.4'), $t('DeviceDetail.agentGuides.propertyTrend.keywords.5')],
     priority: 70,
     steps: [
       {
-        title: '确认属性标识',
+        title: $t('DeviceDetail.agentGuides.propertyTrend.steps.identify.title'),
         tools: ['device_metadata_search', 'device_metadata_markdown'],
       },
       {
-        title: '读取最新值',
+        title: $t('DeviceDetail.agentGuides.propertyTrend.steps.latest.title'),
         tools: ['device_latest_properties'],
         inputs: { propertyIds: 'matched-property-ids' },
       },
       {
-        title: '聚合趋势',
-        description: '导出或生成趋势图时，也先用该工具完成聚合取数；需要完整数据时传 writeToPath，之后仅在二次加工或渲染图片时使用数据集/图表工具。',
+        title: $t('DeviceDetail.agentGuides.propertyTrend.steps.aggregate.title'),
+        description: $t('DeviceDetail.agentGuides.propertyTrend.steps.aggregate.description'),
         tools: ['device_property_aggregate'],
-        inputs: { propertyIds: 'matched-property-ids', timeRange: 'user-time-range-or-今天' },
+        inputs: { propertyIds: 'matched-property-ids', timeRange: $t('DeviceDetail.agentGuides.inputs.userTimeRangeOrToday') },
       },
     ],
-    output: ['最新值', '趋势变化', '峰值/均值/低值', '数据缺口'],
+    output: [$t('DeviceDetail.agentGuides.propertyTrend.output.0'), $t('DeviceDetail.agentGuides.propertyTrend.output.1'), $t('DeviceDetail.agentGuides.propertyTrend.output.2'), $t('DeviceDetail.agentGuides.propertyTrend.output.3')],
   },
   {
     id: 'device-alarm-diagnosis',
-    name: '告警排查',
-    description: '当前告警状态看平台告警记录；触发次数和历史时间线看告警日志，再用通信日志、属性或上下线记录佐证。',
-    scenarios: ['查看今日告警', '有没有告警', '告警原因', '报警中吗', '异常恢复', '告警触发几次', '告警历史数量'],
-    keywords: ['告警', '报警', '异常', '恢复', 'warning'],
+    name: $t('DeviceDetail.agentGuides.alarm.name'),
+    description: $t('DeviceDetail.agentGuides.alarm.description'),
+    scenarios: [$t('DeviceDetail.agentGuides.alarm.scenarios.0'), $t('DeviceDetail.agentGuides.alarm.scenarios.1'), $t('DeviceDetail.agentGuides.alarm.scenarios.2'), $t('DeviceDetail.agentGuides.alarm.scenarios.3'), $t('DeviceDetail.agentGuides.alarm.scenarios.4'), $t('DeviceDetail.agentGuides.alarm.scenarios.5'), $t('DeviceDetail.agentGuides.alarm.scenarios.6')],
+    keywords: [$t('DeviceDetail.agentGuides.alarm.keywords.0'), $t('DeviceDetail.agentGuides.alarm.keywords.1'), $t('DeviceDetail.agentGuides.alarm.keywords.2'), $t('DeviceDetail.agentGuides.alarm.keywords.3'), 'warning'],
     priority: 75,
     steps: [
       {
-        title: '查询平台告警记录',
+        title: $t('DeviceDetail.agentGuides.alarm.steps.records.title'),
         tools: ['device_alarm_records_query'],
-        inputs: { timeRange: 'user-time-range-or-今天' },
+        inputs: { timeRange: $t('DeviceDetail.agentGuides.inputs.userTimeRangeOrToday') },
       },
       {
-        title: '统计告警日志触发历史',
+        title: $t('DeviceDetail.agentGuides.alarm.steps.history.title'),
         tools: ['device_alarm_history_summary'],
         inputs: { timeRange: 'same-as-alarm-query' },
       },
       {
-        title: '补充通信和上下线证据',
+        title: $t('DeviceDetail.agentGuides.alarm.steps.evidence.title'),
         tools: ['device_logs_summary', 'device_online_offline_summary'],
         inputs: { timeRange: 'same-as-alarm-query' },
       },
       {
-        title: '必要时查询相关属性或事件',
+        title: $t('DeviceDetail.agentGuides.alarm.steps.properties.title'),
         tools: ['device_metadata_search', 'device_property_history_summary', 'device_event_history_query'],
       },
     ],
-    output: ['告警状态', '触发次数', '触发原因', '恢复情况', '建议处理动作'],
-    notes: ['单个告警只会保留一条告警记录；历史触发次数必须来自告警日志。设备属性、事件或通信日志只能作为补充解释。'],
+    output: [$t('DeviceDetail.agentGuides.alarm.output.0'), $t('DeviceDetail.agentGuides.alarm.output.1'), $t('DeviceDetail.agentGuides.alarm.output.2'), $t('DeviceDetail.agentGuides.alarm.output.3'), $t('DeviceDetail.agentGuides.alarm.output.4')],
+    notes: [$t('DeviceDetail.agentGuides.alarm.notes.0')],
   },
 ]
 
@@ -880,16 +883,16 @@ const buildDeviceDetailAgentTabPrompt = () => {
     .join('、')
 
   return links
-    ? `当前设备详情页可跳转的一级选项卡：${links}。未列出的选项卡表示当前账号、设备类型或版本暂不支持直接跳转。`
-    : '当前设备详情页暂未加载出可跳转选项卡；如需引导用户查看页面数据，应先说明暂不可确认页面选项卡。'
+    ? $t('DeviceDetail.agent.tabPrompt.visible', { links })
+    : $t('DeviceDetail.agent.tabPrompt.empty')
 }
 
 const buildDeviceDetailAgentSystemPrompt = () => {
   const lines = [...DEVICE_DETAIL_AGENT_SYSTEM_PROMPT_LINES]
   if (isDeviceRemoteFileSupported()) {
-    lines.splice(lines.length - 1, 0, '当前设备支持边缘网关云边协同只读诊断能力；具体取证顺序按内部取证建议选择。')
+    lines.splice(lines.length - 1, 0, $t('DeviceDetail.agent.systemPrompt.edgeSupported'))
   } else {
-    lines.splice(lines.length - 1, 0, '当前设备未提供边缘网关云边协同诊断工具，相关问题仅能结合平台侧证据判断。')
+    lines.splice(lines.length - 1, 0, $t('DeviceDetail.agent.systemPrompt.edgeUnsupported'))
   }
   lines.splice(lines.length - 1, 0, buildDeviceDetailAgentTabPrompt())
   return lines.join('\n')
@@ -910,20 +913,20 @@ const getDeviceDetailClientTools = () => {
 
 const getDeviceDetailWorkflowGuides = () => {
   return isDeviceRemoteFileSupported()
-    ? [...DEVICE_DETAIL_AGENT_WORKFLOW_GUIDES, ...EDGE_DIAGNOSIS_WORKFLOW_GUIDES]
+    ? [...DEVICE_DETAIL_AGENT_WORKFLOW_GUIDES, ...createEdgeDiagnosisWorkflowGuides($t)]
     : DEVICE_DETAIL_AGENT_WORKFLOW_GUIDES
 }
 
 const buildDeviceDetailClientToolsDescription = () => {
   const remoteText = isDeviceRemoteFileSupported()
-    ? buildEdgeDiagnosisClientToolsDescription(true)
-    : buildEdgeDiagnosisClientToolsDescription(false)
+    ? buildEdgeDiagnosisClientToolsDescription(true, $t)
+    : buildEdgeDiagnosisClientToolsDescription(false, $t)
   return [
-    '设备详情页客户端工具可读取当前设备状态、接入、物模型、属性、事件、文档、告警、上下线、通信日志和链路样本。',
+    $t('DeviceDetail.agentTools.description.0'),
     remoteText,
-    '当前设备默认来自 subject；只有用户明确要求其它设备或跨设备对比时才使用设备选择能力。',
-    '复杂排障、功能调用、抓包、告警和云边诊断的取证顺序由内部取证建议承载，工具说明只描述能力和返回边界。',
-    '较大明细、导出、报告或图表优先由设备业务工具写入会话文件；数据集工具只用于已写入文件后的二次加工。'
+    $t('DeviceDetail.agentTools.description.1'),
+    $t('DeviceDetail.agentTools.description.2'),
+    $t('DeviceDetail.agentTools.description.3')
   ].join('\n')
 }
 

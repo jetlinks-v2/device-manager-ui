@@ -18,12 +18,14 @@ import type {
 } from '@jetlinks-web-core/layout/components/AiChat/clientTools'
 
 type DeviceDetailRecord = Record<string, any>
+type TranslateFn = (key: string, params?: Record<string, any>) => string
 
 type DeviceClientToolContext = {
   device: DeviceDetailRecord
 }
 
 interface DeviceAccessToolDependencies {
+  t: TranslateFn
   clampNumber: (value: unknown, min: number, max: number, defaultValue: number) => number
   responseResult: (response: any) => any
   compactInlineValue: (value: unknown, maxLength?: number) => unknown
@@ -247,7 +249,8 @@ const normalizeRoutes = (routes: unknown) => asArray<Record<string, any>>(routes
 const loadAccessInfo = async (
   device: DeviceDetailRecord,
   principals: Record<string, any>[],
-  includeProtocolDocument: boolean
+  includeProtocolDocument: boolean,
+  t: TranslateFn
 ) => {
   let accessId = device?.accessId
   if (!accessId && device?.productId) {
@@ -255,7 +258,7 @@ const loadAccessInfo = async (
     accessId = productResp?.result?.accessId
   }
   if (!accessId) {
-    return { empty: true, reason: '当前设备和产品未配置接入方式。' }
+    return { empty: true, reason: t('DeviceDetail.agentTools.accessSummary.reason.noAccess') }
   }
 
   const [accessResp, providersResp] = await Promise.all([
@@ -264,7 +267,7 @@ const loadAccessInfo = async (
   ])
   const access = accessResp?.result?.data?.[0]
   if (!access) {
-    return { empty: true, accessId, reason: '未查询到接入方式详情。' }
+    return { empty: true, accessId, reason: t('DeviceDetail.agentTools.accessSummary.reason.notFound') }
   }
 
   const providers = providersResp.ok ? asArray<Record<string, any>>(providersResp.data?.result) : []
@@ -358,35 +361,35 @@ export const createDeviceAccessClientTools = (
   {
     id: 'device_access_summary',
     name: 'device_access_summary',
-    description: '获取当前设备的接入配置、接入地址、协议说明、在线会话和接入身份概览。',
+    description: deps.t('DeviceDetail.agentTools.accessSummary.description'),
     inputs: deps.withWriteToPathInput([
       {
         id: 'includeSessions',
         name: 'includeSessions',
-        description: '是否查询在线会话和连接信息，默认 true。',
+        description: deps.t('DeviceDetail.agentTools.accessSummary.inputs.includeSessions'),
         required: false,
         valueType: 'boolean'
       },
       {
         id: 'includeProtocolDocument',
         name: 'includeProtocolDocument',
-        description: '是否返回协议说明 Markdown 摘要，默认 true。',
+        description: deps.t('DeviceDetail.agentTools.accessSummary.inputs.includeProtocolDocument'),
         required: false,
         valueType: 'boolean'
       },
       {
         id: 'protocolDocumentMaxLength',
         name: 'protocolDocumentMaxLength',
-        description: '协议说明内联预览最大字符数，默认5000，最大12000；传 writeToPath 时完整接入结果写入文件。',
+        description: deps.t('DeviceDetail.agentTools.accessSummary.inputs.protocolDocumentMaxLength'),
         required: false,
         valueType: 'int'
       }
     ]),
     output: { type: 'object' },
-    help: '设备接入诊断。用户问“这个设备怎么接入”“接入地址是什么”“认证需要什么字段”“协议文档怎么说”“为什么上线/认证失败”时优先使用此工具；它会汇总设备接入 Tab 中的接入方式、地址、配置、身份、协议说明和在线会话。',
+    help: deps.t('DeviceDetail.agentTools.accessSummary.help'),
     execute: async (args, context, call) => {
       const deviceId = deps.getDeviceId(context)
-      if (!deviceId) throw new Error('deviceId missing')
+      if (!deviceId) throw new Error(deps.t('DeviceDetail.agentTools.common.errors.deviceIdMissing'))
 
       const includeSessions = args.includeSessions !== false
       const includeProtocolDocument = args.includeProtocolDocument !== false
@@ -398,7 +401,7 @@ export const createDeviceAccessClientTools = (
         safeToolPart(() => loadDeviceConfigGroups(context.device))
       ])
       const principals = principalsResult.ok ? principalsResult.data : []
-      const accessResult = await safeToolPart(() => loadAccessInfo(context.device, principals, includeProtocolDocument))
+      const accessResult = await safeToolPart(() => loadAccessInfo(context.device, principals, includeProtocolDocument, deps.t))
       const accessData = accessResult.ok ? accessResult.data as Record<string, any> : undefined
       const protocolDocument = accessData?.protocolDocumentMarkdown || ''
       const visibleAccessData = accessData
