@@ -1,0 +1,136 @@
+.codec-simulator-item {
+  margin-bottom: 16px;
+  overflow: hidden;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.codec-simulator-item.uplink {
+  border-color: #bae7ff;
+}
+
+.codec-simulator-item.downlink {
+  border-color: #efdbff;
+}
+
+.codec-simulator-item__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #f0f0f0;
+  background: #f7fbff;
+}
+
+.downlink .codec-simulator-item__header {
+  background: #fbf7ff;
+}
+
+.codec-simulator-item__main {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+}
+
+.codec-simulator-item__topic {
+  max-width: 420px;
+}
+
+.codec-simulator-item__select-sm {
+  width: 84px;
+}
+
+.codec-simulator-item__select-md {
+  width: 112px;
+}
+
+.codec-simulator-item__select-lg {
+  width: 220px;
+}
+
+.codec-simulator-item__actions {
+  color: rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+}
+
+.codec-simulator-item__delete:hover {
+  color: #ff4d4f;
+}
+
+.codec-simulator-item__body {
+  padding: 16px;
+}
+
+.codec-simulator-item__label {
+  margin-bottom: 8px;
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 13px;
+}
+
+.codec-simulator-item__editor {
+  position: relative;
+  min-height: 136px;
+  overflow: hidden;
+  border: 1px solid #f0f0f0;
+  border-radius: 4px;
+}
+
+.codec-simulator-item__textarea {
+  padding-bottom: 34px;
+  border: 0;
+  box-shadow: none;
+  font-family: Menlo, Monaco, Consolas, monospace;
+}
+
+.codec-simulator-item__readonly {
+  display: flex;
+  height: 136px;
+  align-items: center;
+  justify-content: center;
+  background: #fafafa;
+  color: rgba(0, 0, 0, 0.35);
+}
+
+.codec-simulator-item__table {
+  padding: 8px 8px 40px;
+}
+
+.codec-simulator-item__footer {
+  position: absolute;
+  right: 12px;
+  bottom: 8px;
+  left: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 11px;
+}
+
+.codec-simulator-item__arrow {
+  padding: 12px 0;
+  text-align: center;
+  color: #d9d9d9;
+  font-size: 18px;
+}
+
+.codec-simulator-item__target {
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.codec-simulator-item__target pre {
+  min-height: 48px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid #f0f0f0;
+  border-radius: 4px;
+  background: #fafafa;
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-family: Menlo, Monaco, Consolas, monospace;
+}

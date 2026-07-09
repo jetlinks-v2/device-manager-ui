@@ -1,7 +1,10 @@
 <template>
   <div class="trace-chain-list">
     <div class="trace-chain-layout">
-      <TraceDebugPanel class="trace-chain-layout__debug" @trace-match="onTraceMatch" />
+      <TraceToolPanel
+        class="trace-chain-layout__debug"
+        @trace-match="onTraceMatch"
+      />
       <div class="trace-chain-layout__main">
     <div class="trace-hint">
       <p class="trace-hint__text">
@@ -9,7 +12,11 @@
         {{ $t('InstanceDeviceAccess.952800-20') }}
       </p>
       <span class="trace-hint__count" aria-live="polite">
-        {{ $t('InstanceDeviceAccess.traceHintCount', { n: receivedTotal }) }}
+        {{
+          mode === 'history'
+            ? $t('InstanceDeviceAccess.debugLog.historyHintCount', { n: receivedTotal })
+            : $t('InstanceDeviceAccess.traceHintCount', { n: receivedTotal })
+        }}
       </span>
     </div>
     <div class="list-wrap">
@@ -110,10 +117,25 @@
             </button>
           </div>
         </div>
+        <div
+          v-if="mode === 'history'"
+          class="trace-history-footer"
+          :class="{ 'trace-history-footer--disabled': historyLoading || !historyHasMore }"
+          @click="requestHistoryMore"
+        >
+          <a-spin v-if="historyLoading" size="small" />
+          <span v-else>{{ historyHasMore ? $t('InstanceDeviceAccess.debugLog.loadMore') : $t('InstanceDeviceAccess.debugLog.noMore') }}</span>
+        </div>
       </div>
       <div v-else class="trace-empty">
         <j-empty>
-          <template #description>{{ $t('InstanceDeviceAccess.952800-5') }}</template>
+          <template #description>
+            {{
+              mode === 'history'
+                ? $t('InstanceDeviceAccess.debugLog.historyEmpty')
+                : $t('InstanceDeviceAccess.952800-5')
+            }}
+          </template>
         </j-empty>
       </div>
     </div>
@@ -140,7 +162,7 @@ import {
   type TraceListRow,
 } from './traceListUtils'
 import TraceChainDetailDrawer from './TraceChainDetailDrawer.vue'
-import TraceDebugPanel from './TraceDebugPanel.vue'
+import TraceToolPanel from './TraceToolPanel.vue'
 import {
   ArrowDownOutlined,
   ArrowUpOutlined,
@@ -160,6 +182,13 @@ const props = defineProps<{
   deviceId?: string
   /** 由父级 useTraceReceivedTotal 提供的累加条数（与 Tab 角标一致） */
   receivedTotal: number
+  mode?: 'realtime' | 'history'
+  historyLoading?: boolean
+  historyHasMore?: boolean
+}>()
+
+const emit = defineEmits<{
+  (e: 'history-load-more'): void
 }>()
 
 const detailOpen = ref(false)
@@ -214,6 +243,16 @@ function syncListViewport() {
 
 function onListScroll(event: Event) {
   listScrollTop.value = (event.target as HTMLElement | null)?.scrollTop || 0
+  const target = event.target as HTMLElement | null
+  if (!target || props.mode !== 'history' || props.historyLoading || !props.historyHasMore) return
+  if (target.scrollTop + target.clientHeight >= target.scrollHeight - 32) {
+    requestHistoryMore()
+  }
+}
+
+function requestHistoryMore() {
+  if (props.mode !== 'history' || props.historyLoading || !props.historyHasMore) return
+  emit('history-load-more')
 }
 
 function measureTraceItemHeight() {
@@ -841,5 +880,22 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   min-height: 220px;
+}
+
+.trace-history-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  margin-top: 6px;
+  color: var(--ant-color-primary, #1677ff);
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.trace-history-footer--disabled {
+  color: var(--ant-color-text-tertiary, rgba(0, 0, 0, 0.38));
+  cursor: default;
 }
 </style>
