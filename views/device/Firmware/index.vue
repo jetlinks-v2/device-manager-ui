@@ -18,16 +18,7 @@
                     :params="params"
                 >
                     <template #headerLeftRender>
-                        <j-permission-button
-                            type="primary"
-                            @click="handleAdd"
-                            hasPermission="device/Firmware:add"
-                        >
-                            <template #icon
-                                ><AIcon type="PlusOutlined"
-                            /></template>
-                            {{ $t('Firmware.index.858355-0') }}
-                        </j-permission-button>
+                        <CreateActions @add="handleAdd" @application-add="applicationVisible = true" />
                     </template>
                     <template #productId="slotProps">
                         <span>{{ slotProps.productName }}</span>
@@ -73,6 +64,7 @@
             :productOptions="productOptions"
             @change="saveChange"
         />
+        <Application v-if="applicationVisible" :product-options="productOptions" @change="applicationChange" />
         <TaskDrawer
             v-if="showTask"
             :firmwareId="firmwareId"
@@ -88,7 +80,9 @@ import TaskDrawer from './Task/index.vue';
 import dayjs from 'dayjs';
 import { cloneDeep, map } from 'lodash-es';
 import Save from './Save/index.vue';
-import type { FormDataType } from './type';
+import Application from './Application/index.vue';
+import CreateActions from './CreateActions.vue';
+import type { FirmwareProductOption, FormDataType } from './type';
 import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import { useI18n } from 'vue-i18n';
 
@@ -97,8 +91,9 @@ const { t: $t } = useI18n();
 const tableRef = ref<Record<string, any>>({});
 const params = ref<Record<string, any>>({});
 
-const productOptions = ref([]);
+const productOptions = ref<FirmwareProductOption[]>([]);
 const visible = ref(false);
+const applicationVisible = ref(false);
 const current = ref({});
 const showTask = ref(false);
 const firmwareId = ref('');
@@ -253,6 +248,13 @@ const saveChange = (value: FormDataType) => {
     current.value = {};
     if (value) {
         onlyMessage($t('Firmware.index.858355-12'), 'success');
+        tableRef.value.reload();
+    }
+};
+
+const applicationChange = (saved: boolean) => {
+    applicationVisible.value = false;
+    if (saved) {
         tableRef.value.reload();
     }
 };

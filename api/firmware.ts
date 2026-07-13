@@ -1,4 +1,9 @@
 import { request } from '@jetlinks-web/core'
+import type {
+    ApplicationFirmwareCreateRequest,
+    ApplicationFirmwareInfo,
+    ApplicationFirmwareParseRequest,
+} from '../views/device/Firmware/type';
 
 export const save = (data: object) => request.post(`/firmware`, data);
 
@@ -60,6 +65,12 @@ export const validateVersion = (
     productId: string,
     versionOrder: number | string,
 ) => request.get(`/firmware/${productId}/${versionOrder}/exists`);
+
+export const parseApplicationFirmware = (data: ApplicationFirmwareParseRequest) =>
+    request.post<ApplicationFirmwareInfo>('/firmware/application/_parse', data);
+
+export const saveApplicationFirmware = (data: ApplicationFirmwareCreateRequest) =>
+    request.post('/firmware/application', data);
 
 export const queryDetailList = (data: Record<string, unknown>, params?: Record<string, unknown>) => {
     return request.post(`/device-instance/detail/_query`, data, {params});
