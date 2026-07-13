@@ -13,7 +13,7 @@
     <!-- 初始数据提交表单 -->
     <a-modal
         v-model:open="visible"
-        ::title="$t('init-home.index.011072-2')"
+        ::title="$t('init-home-backup.index.011072-2')"
         width="52vw"
         :maskClosable="false"
         @cancel="cancel"
@@ -25,7 +25,7 @@
         <div class="data-content">
             <p class="data-p-style">
                 <ExclamationCircleOutlined style="margin: 0 0 0 5px" />
-                {{ $t('init-home.index.011072-3') }}
+                {{ $t('init-home-backup.index.011072-3') }}
             </p>
         </div>
         <div style="margin-top: 20px">
@@ -39,9 +39,9 @@
                     <a-col :span="12">
                         <a-form-item name="host">
                             <template #label>
-                                <span>{{ $t('init-home.index.011072-4') }} </span>
+                                <span>{{ $t('init-home-backup.index.011072-4') }} </span>
                                 <a-tooltip
-                                    :title="$t('init-home.index.011072-14')"
+                                    :title="$t('init-home-backup.index.011072-14')"
                                 >
                                     <img
                                         class="img-style"
@@ -56,9 +56,9 @@
                         </a-form-item>
                         <a-form-item name="publicHost">
                             <template #label>
-                                <span>{{$t('init-home.index.011072-5')}} </span>
+                                <span>{{$t('init-home-backup.index.011072-5')}} </span>
                                 <a-tooltip
-                                    :title="$t('init-home.index.011072-6')"
+                                    :title="$t('init-home-backup.index.011072-6')"
                                 >
                                     <img
                                         class="img-style"
@@ -66,22 +66,22 @@
                                     />
                                 </a-tooltip>
                             </template>
-                            <a-input v-model:value="modalForm.publicHost" :placeholder="$t('init-home.index.011072-7')">
+                            <a-input v-model:value="modalForm.publicHost" :placeholder="$t('init-home-backup.index.011072-7')">
                             </a-input>
                         </a-form-item>
                     </a-col>
                     <a-col :span="12">
                         <a-form-item name="port">
                             <template #label>
-                                <span>{{ $t('init-home.index.011072-8') }} </span>
-                                <a-tooltip :title="$t('init-home.index.011072-9')">
+                                <span>{{ $t('init-home-backup.index.011072-8') }} </span>
+                                <a-tooltip :title="$t('init-home-backup.index.011072-9')">
                                     <img
                                         class="img-style"
                                         :src="Mark"
                                     />
                                 </a-tooltip>
                             </template>
-                            <a-select v-model:value="modalForm.port" :placeholder="$t('init-home.index.011072-10')" show-search>
+                            <a-select v-model:value="modalForm.port" :placeholder="$t('init-home-backup.index.011072-10')" show-search>
                                 <a-select-option
                                     v-for="item in optionPorts"
                                     :key="item"
@@ -93,8 +93,8 @@
                         </a-form-item>
                         <a-form-item name="publicPort">
                             <template #label>
-                                <span>{{ $t('init-home.index.011072-11') }} </span>
-                                <a-tooltip :title="$t('init-home.index.011072-12')">
+                                <span>{{ $t('init-home-backup.index.011072-11') }} </span>
+                                <a-tooltip :title="$t('init-home-backup.index.011072-12')">
                                     <img
                                         class="img-style"
                                         :src="Mark"
@@ -103,7 +103,7 @@
                             </template>
                             <a-input-number
                                 v-model:value="modalForm.publicPort"
-                                :placeholder="$t('init-home.index.011072-13')"
+                                :placeholder="$t('init-home-backup.index.011072-13')"
                                 style="width: 100%"
                                 :precision="0"
                             />
@@ -156,10 +156,10 @@ const regDomain = new RegExp(
  */
 const validateUrl = async (_rule: Rule, value: string) => {
     if (!value) {
-        return Promise.reject($t('init-home.index.011072-7'));
+        return Promise.reject($t('init-home-backup.index.011072-7'));
     } else {
         if (!(regular.isIpReg(value) || regular.isIpv6(value)) && !regDomain.test(value)) {
-            return Promise.reject($t('init-home.index.011072-15'));
+            return Promise.reject($t('init-home-backup.index.011072-15'));
         }
         return Promise.resolve();
     }
@@ -169,10 +169,10 @@ const validateUrl = async (_rule: Rule, value: string) => {
  */
 const validateNumber = async (_rule: Rule, value: string) => {
     if (!value) {
-        return Promise.reject($t('init-home.index.011072-13'));
+        return Promise.reject($t('init-home-backup.index.011072-13'));
     } else {
         if (Number(value) < 1 || Number(value) > 65535) {
-            return Promise.reject($t('init-home.index.011072-16'));
+            return Promise.reject($t('init-home-backup.index.011072-16'));
         }
         return Promise.resolve();
     }
@@ -181,13 +181,13 @@ const rulesModule = ref({
     host: [
         {
             required: true,
-            message: $t('init-home.index.011072-17'),
+            message: $t('init-home-backup.index.011072-17'),
         },
     ],
     port: [
         {
             required: true,
-            message: $t('init-home.index.011072-10'),
+            message: $t('init-home-backup.index.011072-10'),
         },
     ],
     publicHost: [
@@ -261,7 +261,7 @@ const saveCurrentData = () => {
                     const network = await saveNetwork({
                         type: 'MQTT_SERVER',
                         shareCluster: true,
-                        name: $t('init-home.index.011072-18'),
+                        name: $t('init-home-backup.index.011072-18'),
                         configuration: {
                             host: '0.0.0.0',
                             secure: false,
@@ -278,13 +278,13 @@ const saveCurrentData = () => {
                         const proid = await getProtocol();
                         if (proid.status === 200) {
                             protocolItem = (proid?.result || []).find(
-                                (it: any) => it.name === $t('init-home.index.011072-19'),
+                                (it: any) => it.name === $t('init-home-backup.index.011072-19'),
                             );
                         }
                     }
                     // 新增设备接入网关
                     const accessConfig = await saveAccessConfig({
-                        name: $t('init-home.index.011072-20'),
+                        name: $t('init-home-backup.index.011072-20'),
                         provider: 'mqtt-server-gateway',
                         protocol: protocolItem?.id,
                         transport: 'MQTT',
@@ -293,7 +293,7 @@ const saveCurrentData = () => {
                     });
                     // 新增产品
                     const product = await saveProduct({
-                        name: $t('init-home.index.011072-21'),
+                        name: $t('init-home-backup.index.011072-21'),
                         messageProtocol: protocolItem?.id,
                         protocolName: protocolItem?.name,
                         transportProtocol: 'MQTT',
@@ -304,7 +304,7 @@ const saveCurrentData = () => {
                     });
                     // 新增设备
                     const device = await saveDevice({
-                        name: $t('init-home.index.011072-22'),
+                        name: $t('init-home-backup.index.011072-22'),
                         productId: product?.result?.id,
                         productName: product?.result?.name,
                     });
@@ -325,7 +325,7 @@ const saveCurrentData = () => {
 const { optionPorts } = toRefs(initialization);
 const handelSave = () => {
     formRef.value.validate().then(() => {
-        onlyMessage($t('init-home.index.011430-6'));
+        onlyMessage($t('init-home-backup.index.011430-6'));
         flag.value = true;
         visible.value = false;
     });
