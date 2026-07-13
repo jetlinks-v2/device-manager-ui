@@ -54,7 +54,7 @@ const jumpPage = (item: bootConfig) => {
 
 const setCssProperty = () => {
   if (domRef.value) {
-    domRef.value?.style.setProperty('--home-arrow-2', `url(${home.arrow2})`)
+    domRef.value?.style.setProperty('--home-backup-arrow-2', `url(${home.arrow2})`)
   }
 }
 

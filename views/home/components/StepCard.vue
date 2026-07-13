@@ -52,7 +52,7 @@ const jumpPage = (row: recommendList) => {
 
 const setCssProperty = () => {
   if (domRef.value) {
-    domRef.value?.style.setProperty('--home-arrow-1', `url(${home.arrow1})`)
+    domRef.value?.style.setProperty('--home-backup-arrow-1', `url(${home.arrow1})`)
   }
 }
 

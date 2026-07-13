@@ -96,7 +96,7 @@ const styles = computed(() => {
   }
 })
 const treeSelect = (node: treeNodeTpye, nodeSchemas: object = {}) => {
-  if (node.key === 'home') return (showHome.value = true);
+  if (node.key === 'home-backup') return (showHome.value = true);
   schemas.value = nodeSchemas;
   if (!node.apiList) return;
   showHome.value = false;

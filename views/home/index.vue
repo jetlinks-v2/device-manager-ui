@@ -15,7 +15,7 @@
             >
                 <template #top>
                     <div class="card">
-                        <h3 style="margin: 0 0 24px 0">{{ $t('home.index.926510-0') }}</h3>
+                        <h3 style="margin: 0 0 24px 0">{{ $t('home-backup.index.926510-0') }}</h3>
                         <p>
                             <span class="label">clientId: </span>
                             <span class="value">{{ clientId }}</span>

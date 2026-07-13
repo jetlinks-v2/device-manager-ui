@@ -4,7 +4,7 @@
             <j-pro-table
                 :columns="columns"
                 :dataSource="_tableData"
-                :rowSelection="props.mode !== 'home' ? {
+                :rowSelection="props.mode !== 'home-backup' ? {
                     selectedRowKeys: _selectedRowKeys,
                     onChange: onChange,
                 } : undefined"
@@ -25,7 +25,7 @@
             type="primary"
             hasPermission="system/Platforms/Setting:update"
             @click="save"
-            v-if="props.mode !== 'home'"
+            v-if="props.mode !== 'home-backup'"
             style="margin-left: 20px;"
         >
             {{ $t('components.ChooseApi.726023-0') }}

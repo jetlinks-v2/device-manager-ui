@@ -54,7 +54,7 @@ const getTreeData = () => {
         const allPromise = tree.map((item) => getTreeTwo_api(item.name));
         // 若类型不为api，根据不同类型添加得到不同的过滤数组
         if (props.mode === 'appManger') allPromise.push(apiOperations_api());
-        else if (props.mode === 'home')
+        else if (props.mode === 'home-backup')
             allPromise.push(getApiGranted_api(props.code as string));
         Promise.all(allPromise)
             .then((values) => {
@@ -73,12 +73,12 @@ const getTreeData = () => {
                 });
                 if (props.hasHome) {
                     tree.unshift({
-                        key: 'home',
+                        key: 'home-backup',
                         name: $t('components.LeftTree.726027-0'),
                         schemas: {},
                         children: [],
                     });
-                    selectedKeys.value = ['home'];
+                    selectedKeys.value = ['home-backup'];
                 }
 
                 treeData.value = tree;
@@ -118,9 +118,9 @@ const dealTreeData = (tree:Array<any>) =>{
     return table
 }
 const clickSelectItem: TreeProps['onSelect'] = (key: any[], node: any) => {
-    if (key[0] === 'home') return emits('select', node.node.dataRef, {});
+    if (key[0] === 'home-backup') return emits('select', node.node.dataRef, {});
 
-    if (!node.node.parent && key[0] !== 'home') return;
+    if (!node.node.parent && key[0] !== 'home-backup') return;
     emits('select', node.node.dataRef, node.node?.parent.node.schemas);
 };
 
