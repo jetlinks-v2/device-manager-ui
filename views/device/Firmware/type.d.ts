@@ -30,13 +30,9 @@ export interface FirmwareProductOption {
 }
 
 export interface FirmwareUploadResult {
-    id: string;
-    md5: string;
+    accessUrl: string;
     sha256: string;
     length: number;
-    others: {
-        accessKey: string;
-    };
 }
 
 export interface ApplicationFirmwareFile {
@@ -56,6 +52,14 @@ export interface ApplicationFirmwareInfo {
     buildVersion: string;
     requiredJavaVersion: number;
     upgradeToVersions: string[];
+}
+
+export interface ApplicationFirmwareParseResult {
+    version: string;
+    metadata: {
+        application: ApplicationFirmwareInfo;
+        modules: Record<string, unknown>;
+    };
 }
 
 export interface ApplicationFirmwareCreateRequest

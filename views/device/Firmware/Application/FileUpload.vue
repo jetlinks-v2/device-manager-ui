@@ -23,7 +23,6 @@ import { FileStaticPath } from '@jetlinks-web-core/api/comm';
 import { getUploadHeaders, onlyMessage } from '@jetlinks-web-core/utils/comm';
 import { notification as Notification } from 'ant-design-vue';
 import type { UploadChangeParam, UploadProps } from 'ant-design-vue';
-import { useSystemStore } from '@jetlinks-web-core/store/system';
 import { useI18n } from 'vue-i18n';
 import type {
     ApplicationFirmwareFile,
@@ -48,7 +47,6 @@ const emit = defineEmits<{
     (event: 'update:uploading', value: boolean): void;
 }>();
 
-const paths = useSystemStore().systemInfo.paths?.['base-path'] as string;
 const fileList = ref<UploadProps['fileList']>([]);
 const uploading = ref(false);
 
@@ -91,8 +89,7 @@ const handleChange = (info: UploadChangeParam) => {
         const result = response?.result;
         if (
             response?.success === false ||
-            !result?.id ||
-            !result.others?.accessKey ||
+            !result?.accessUrl ||
             !result.sha256 ||
             typeof result.length !== 'number'
         ) {
@@ -105,10 +102,9 @@ const handleChange = (info: UploadChangeParam) => {
             clearFile();
             return;
         }
-        const url = `${paths || ''}/file/${result.id}?accessKey=${result.others.accessKey}`;
         // Application 固件固定提交文件服务返回的 SHA256 摘要，避免用户手工选择后不一致。
         emit('change', {
-            url,
+            url: result.accessUrl,
             sign: result.sha256,
             signMethod: 'SHA256',
             size: result.length,

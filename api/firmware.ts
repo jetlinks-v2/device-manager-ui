@@ -1,7 +1,7 @@
 import { request } from '@jetlinks-web/core'
 import type {
     ApplicationFirmwareCreateRequest,
-    ApplicationFirmwareInfo,
+    ApplicationFirmwareParseResult,
     ApplicationFirmwareParseRequest,
 } from '../views/device/Firmware/type';
 
@@ -26,8 +26,36 @@ export const queryTaskPaginateNot = (data:any)=> request.post('/firmware/upgrade
 export const taskById = (id: string) =>
     request.get(`/firmware/upgrade/task/${id}`);
 
-export const saveTask = (data: Record<string, unknown>) =>
-    request.post(`/firmware/upgrade/task`, data);
+type FirmwareUpgradeTaskFormData = Record<string, unknown> & {
+    releaseType?: 'all' | 'part';
+    terms?: unknown;
+};
+
+const createTaskRequest = (data: FirmwareUpgradeTaskFormData) => {
+    const { releaseType, terms, ...requestData } = data;
+    if (releaseType !== 'part') {
+        return requestData;
+    }
+    const deviceTerm = Array.isArray(terms) && terms.length === 1
+        ? terms[0] as Record<string, unknown>
+        : undefined;
+    const termValue = deviceTerm?.value;
+    const deviceId = deviceTerm?.column === 'id' &&
+        deviceTerm?.termType === 'in' &&
+        Array.isArray(termValue) &&
+        termValue.length > 0 &&
+        termValue.every(id => typeof id === 'string')
+        ? termValue
+        : undefined;
+
+    // 自选设备直接使用任务原生 deviceId，组织和条件选择继续使用 terms。
+    return deviceId
+        ? { ...requestData, deviceId }
+        : { ...requestData, terms };
+};
+
+export const saveTask = (data: FirmwareUpgradeTaskFormData) =>
+    request.post(`/firmware/upgrade/task`, createTaskRequest(data));
 
 export const deleteTask = (id: string) =>
     request.remove(`/firmware/upgrade/task/${id}`);
@@ -67,10 +95,10 @@ export const validateVersion = (
 ) => request.get(`/firmware/${productId}/${versionOrder}/exists`);
 
 export const parseApplicationFirmware = (data: ApplicationFirmwareParseRequest) =>
-    request.post<ApplicationFirmwareInfo>('/firmware/application/_parse', data);
+    request.post<ApplicationFirmwareParseResult>('/firmware/_parse', data);
 
 export const saveApplicationFirmware = (data: ApplicationFirmwareCreateRequest) =>
-    request.post('/firmware/application', data);
+    request.post('/firmware/_create', data);
 
 export const queryDetailList = (data: Record<string, unknown>, params?: Record<string, unknown>) => {
     return request.post(`/device-instance/detail/_query`, data, {params});

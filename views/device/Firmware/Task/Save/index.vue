@@ -267,10 +267,16 @@ watch(
     () => props.data,
     (value) => {
       if (value.id) {
+        const selectedTerms = value?.terms || (value?.deviceId?.length ? [{
+          column: 'id',
+          termType: 'in',
+          value: value.deviceId,
+        }] : undefined);
         formData.value = {
           ...value,
           mode: value.mode.value,
-          releaseType: value?.terms ? 'part' : 'all',
+          releaseType: selectedTerms ? 'part' : 'all',
+          terms: selectedTerms,
         };
       }
     },

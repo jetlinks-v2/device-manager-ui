@@ -193,7 +193,7 @@ const parseFirmware = async () => {
         });
         // 产品或文件切换后，只接收最后一次解析结果，避免展示过期版本。
         if (currentRequestId === parseRequestId && response.status === 200) {
-            preview.value = response.result;
+            preview.value = response.result?.metadata.application;
         }
     } catch {
         if (currentRequestId === parseRequestId) {
