@@ -897,7 +897,6 @@
     "Firmware.index.858355-12": "Operation successful",
     "Firmware.index.858355-13": "Some devices only have read-only permissions, so batch operations will not be effective for these devices.",
     "Firmware.index.858355-14": "Only the upgrade subtasks for this device are displayed after filtering; upgrade statuses for other devices are not included.",
-    "Firmware.index.858355-15": "Add Application Firmware",
     "Application.index.385271-0": "Add Application Firmware",
     "Application.index.385271-1": "Create",
     "Application.index.385271-2": "Cancel",

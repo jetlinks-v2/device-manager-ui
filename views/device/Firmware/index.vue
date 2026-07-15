@@ -18,7 +18,7 @@
                     :params="params"
                 >
                     <template #headerLeftRender>
-                        <CreateActions @add="handleAdd" @application-add="applicationVisible = true" />
+                        <CreateActions @add="applicationVisible = true" />
                     </template>
                     <template #productId="slotProps">
                         <span>{{ slotProps.productName }}</span>
@@ -64,7 +64,7 @@
             :productOptions="productOptions"
             @change="saveChange"
         />
-        <Application v-if="applicationVisible" :product-options="productOptions" @change="applicationChange" />
+        <Application v-if="applicationVisible" :product-options="productOptions" @change="applicationChange" @fallback="handleManualAdd" />
         <TaskDrawer
             v-if="showTask"
             :firmwareId="firmwareId"
@@ -234,7 +234,8 @@ const handleUpdate = (data: Partial<Record<string, any>>) => {
     console.log(data);
 };
 
-const handleAdd = () => {
+const handleManualAdd = () => {
+    applicationVisible.value = false;
     current.value = {};
     visible.value = true;
 };
@@ -296,5 +297,3 @@ const handleSearch = (e: any) => {
     params.value = e;
 };
 </script>
-
-<style lang="less" scoped></style>

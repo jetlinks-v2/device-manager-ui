@@ -134,6 +134,7 @@ const props = defineProps({
 });
 const emit = defineEmits<{
     (event: 'change', saved: boolean): void;
+    (event: 'fallback'): void;
 }>();
 const { t: $t } = useI18n();
 
@@ -180,6 +181,14 @@ const resetPreview = () => {
     parsing.value = false;
 };
 
+const fallbackToManual = (requestId: number) => {
+    if (requestId === parseRequestId) {
+        // 当前交互不区分解析无结果与错误，统一回到原手工创建。
+        preview.value = undefined;
+        emit('fallback');
+    }
+};
+
 const parseFirmware = async () => {
     if (!formData.productId || !file.value) {
         return;
@@ -192,13 +201,18 @@ const parseFirmware = async () => {
             url: file.value.url,
         });
         // 产品或文件切换后，只接收最后一次解析结果，避免展示过期版本。
-        if (currentRequestId === parseRequestId && response.status === 200) {
-            preview.value = response.result?.metadata.application;
+        if (currentRequestId === parseRequestId) {
+            const application = response.status === 200
+                ? response.result?.metadata.application
+                : undefined;
+            if (application) {
+                preview.value = application;
+            } else {
+                fallbackToManual(currentRequestId);
+            }
         }
     } catch {
-        if (currentRequestId === parseRequestId) {
-            preview.value = undefined;
-        }
+        fallbackToManual(currentRequestId);
     } finally {
         if (currentRequestId === parseRequestId) {
             parsing.value = false;

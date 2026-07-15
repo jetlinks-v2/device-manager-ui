@@ -897,7 +897,6 @@
     "Firmware.index.858355-12": "操作成功",
     "Firmware.index.858355-13": "部分设备仅拥有只读权限，批量操作将对这些设备无效",
     "Firmware.index.858355-14": "已过滤仅展示本设备的升级子任务，不包含其他设备升级情况",
-    "Firmware.index.858355-15": "新增 Application 固件",
     "Application.index.385271-0": "新增 Application 固件",
     "Application.index.385271-1": "创建",
     "Application.index.385271-2": "取消",
