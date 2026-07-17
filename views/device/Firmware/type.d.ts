@@ -21,3 +21,52 @@ export interface Properties {
     value: any;
     keyid: number;
 }
+
+export type FirmwareSignMethod = 'MD5' | 'SHA256';
+
+export interface FirmwareProductOption {
+    label: string;
+    value: string;
+}
+
+export interface FirmwareUploadResult {
+    accessUrl: string;
+    sha256: string;
+    length: number;
+}
+
+export interface ApplicationFirmwareFile {
+    url: string;
+    sign: string;
+    signMethod: FirmwareSignMethod;
+    size: number;
+}
+
+export interface ApplicationFirmwareParseRequest {
+    productId: string;
+    url: string;
+}
+
+export interface ApplicationFirmwareInfo {
+    releaseVersion: string;
+    buildVersion: string;
+    requiredJavaVersion: number;
+    upgradeToVersions: string[];
+}
+
+export interface ApplicationFirmwareParseResult {
+    version: string;
+    metadata: {
+        application: ApplicationFirmwareInfo;
+        modules: Record<string, unknown>;
+    };
+}
+
+export interface ApplicationFirmwareCreateRequest
+    extends ApplicationFirmwareParseRequest {
+    name: string;
+    description?: string;
+    sign: string;
+    signMethod: FirmwareSignMethod;
+    size: number;
+}

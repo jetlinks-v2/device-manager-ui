@@ -414,8 +414,12 @@ watch(
     () => props.data,
     (value) => {
         if (value.id) {
-            formData.value = value;
-            dynamicValidateForm.properties = value.properties
+            // 协议化固件不返回旧式 properties，编辑表单统一使用空数组。
+            const properties = Array.isArray(value.properties)
+                ? value.properties
+                : [];
+            formData.value = { ...value, properties };
+            dynamicValidateForm.properties = properties;
         }
     },
     { immediate: true, deep: true },
