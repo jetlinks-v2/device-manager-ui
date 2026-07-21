@@ -1,0 +1,22 @@
+<svg width="100" height="66" viewBox="0 0 100 66" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="switchListPrimary" x1="8" y1="14" x2="91" y2="52" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0D6DFF"/>
+      <stop offset="1" stop-color="#0EECE4"/>
+    </linearGradient>
+  </defs>
+  <path d="M7 23H93M7 43H93" stroke="white" stroke-opacity="0.18"/>
+  <g stroke="#BEE5FB" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M15 8C10 8 8 12 8 15C8 18 10 19 11 21H19C20 19 22 18 22 15C22 11 19 8 15 8Z" fill="#0D6DFF" fill-opacity="0.18"/>
+    <path d="M12 25L15 28L19 24M12 35L15 32L19 36M11 51H19M13 55H17"/>
+  </g>
+  <rect x="28" y="12" width="29" height="4" rx="2" fill="white" fill-opacity="0.35"/>
+  <rect x="28" y="31" width="22" height="4" rx="2" fill="white" fill-opacity="0.35"/>
+  <rect x="28" y="50" width="27" height="4" rx="2" fill="white" fill-opacity="0.35"/>
+  <rect x="68" y="9" width="25" height="12" rx="6" fill="url(#switchListPrimary)"/>
+  <circle cx="87" cy="15" r="4.5" fill="white"/>
+  <rect x="68" y="29" width="25" height="12" rx="6" fill="white" fill-opacity="0.2" stroke="#BEE5FB" stroke-opacity="0.45"/>
+  <circle cx="74" cy="35" r="4.5" fill="white" fill-opacity="0.65"/>
+  <rect x="68" y="48" width="25" height="12" rx="6" fill="url(#switchListPrimary)"/>
+  <circle cx="87" cy="54" r="4.5" fill="white"/>
+</svg>

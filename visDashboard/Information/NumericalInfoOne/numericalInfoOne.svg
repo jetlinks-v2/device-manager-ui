@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="66" viewBox="0 0 100 66" fill="none">
+  <defs>
+    <linearGradient id="nio-value" x1="22" y1="20" x2="78" y2="48" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#34D6FF"/>
+      <stop offset="1" stop-color="#3B82F6"/>
+    </linearGradient>
+  </defs>
+  <rect x="7" y="9" width="26" height="48" rx="5" fill="#EAF5FF" stroke="#B8D9F5"/>
+  <rect x="37" y="9" width="26" height="48" rx="5" fill="#F0F7FF" stroke="#C5DDF3"/>
+  <rect x="67" y="9" width="26" height="48" rx="5" fill="#EAF5FF" stroke="#B8D9F5"/>
+  <rect x="13" y="17" width="14" height="3" rx="1.5" fill="#90A9BE"/>
+  <rect x="43" y="17" width="14" height="3" rx="1.5" fill="#90A9BE"/>
+  <rect x="73" y="17" width="14" height="3" rx="1.5" fill="#90A9BE"/>
+  <rect x="13" y="28" width="15" height="9" rx="2.5" fill="url(#nio-value)"/>
+  <rect x="43" y="28" width="15" height="9" rx="2.5" fill="url(#nio-value)"/>
+  <rect x="73" y="28" width="15" height="9" rx="2.5" fill="url(#nio-value)"/>
+  <circle cx="16" cy="46" r="2" fill="#55C895"/>
+  <rect x="20" y="44.5" width="8" height="3" rx="1.5" fill="#B6CADB"/>
+  <circle cx="46" cy="46" r="2" fill="#F6B84B"/>
+  <rect x="50" y="44.5" width="8" height="3" rx="1.5" fill="#B6CADB"/>
+  <circle cx="76" cy="46" r="2" fill="#55C895"/>
+  <rect x="80" y="44.5" width="8" height="3" rx="1.5" fill="#B6CADB"/>
+</svg>

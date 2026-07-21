@@ -1,0 +1,16 @@
+<svg width="100" height="66" viewBox="0 0 100 66" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="amapPin" x1="49" y1="13" x2="66" y2="42" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0EECE4"/>
+      <stop offset="1" stop-color="#0D6DFF"/>
+    </linearGradient>
+  </defs>
+  <path d="M5 17L32 8L63 16L95 7V50L64 59L33 51L5 59V17Z" fill="#0D6DFF" fill-opacity="0.07" stroke="#BEE5FB" stroke-width="1.4" stroke-linejoin="round"/>
+  <path d="M32 8L33 51M63 16L64 59" stroke="#BEE5FB" stroke-width="1.2"/>
+  <path d="M8 32C18 24 25 33 34 25C44 16 53 24 61 31C71 40 83 32 93 39" stroke="#0EECE4" stroke-width="2" stroke-linecap="round"/>
+  <path d="M10 50C21 42 26 44 36 38C47 31 53 39 63 42C73 46 81 45 92 20" stroke="#0D6DFF" stroke-width="2" stroke-linecap="round"/>
+  <path d="M55 12C48.9249 12 44 16.9249 44 23C44 31 55 40 55 40C55 40 66 31 66 23C66 16.9249 61.0751 12 55 12Z" fill="url(#amapPin)" stroke="#BEE5FB" stroke-width="1.4"/>
+  <circle cx="55" cy="23" r="3.5" fill="#0D6DFF" stroke="#BEE5FB" stroke-width="1.2"/>
+  <circle cx="84" cy="16" r="7" fill="#0D6DFF" fill-opacity="0.12" stroke="#0D6DFF" stroke-width="1.3"/>
+  <path d="M84 11L86 16L84 21L82 16L84 11Z" fill="#0EECE4"/>
+</svg>

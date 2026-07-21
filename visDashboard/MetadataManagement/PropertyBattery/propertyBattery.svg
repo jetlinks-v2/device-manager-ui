@@ -1,0 +1,17 @@
+<svg width="100" height="66" viewBox="0 0 100 66" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="batteryCharge" x1="22" y1="54" x2="55" y2="14" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0D6DFF"/>
+      <stop offset="1" stop-color="#0EECE4"/>
+    </linearGradient>
+  </defs>
+  <rect x="16" y="9" width="38" height="49" rx="7" stroke="#BEE5FB" stroke-width="2"/>
+  <rect x="29" y="5" width="12" height="4" rx="2" fill="#BEE5FB"/>
+  <rect x="21" y="44" width="28" height="9" rx="2" fill="#0D6DFF"/>
+  <rect x="21" y="32" width="28" height="9" rx="2" fill="#0D6DFF" fill-opacity="0.8"/>
+  <rect x="21" y="20" width="28" height="9" rx="2" fill="url(#batteryCharge)"/>
+  <rect x="21" y="12" width="28" height="5" rx="2" fill="#BEE5FB" fill-opacity="0.45"/>
+  <path d="M65 20H90M65 29H82" stroke="#BEE5FB" stroke-width="3" stroke-linecap="round"/>
+  <path d="M65 43H84" stroke="#0D6DFF" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="89" cy="43" r="3.5" fill="#0EECE4"/>
+</svg>
