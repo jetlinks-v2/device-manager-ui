@@ -3,21 +3,17 @@ import type { AiClientToolDefinition } from '@jetlinks-web-core/layout/component
 import type { HomeAgentCapabilityContext } from '@jetlinks-web-core/layout/components/AiChat/homeAgentCapabilities';
 import {
   detail as getDeviceDetail,
-  getPropertiesInfo,
   getProperty,
   getPropertyData,
 } from '../../../api/instance';
 import { detail as getProductDetail } from '../../../api/product';
+import { createDevicePropertyAggregateTool } from '../agentTools/propertyAggregateTool';
 
 const DEVICE_INSTANCE_MENU_CODE = 'device/Instance';
 const DEVICE_PRODUCT_MENU_CODE = 'device/Product';
 
 const METADATA_SECTIONS = ['properties', 'functions', 'events', 'tags'] as const;
 const VALID_METADATA_SECTIONS = new Set<string>(METADATA_SECTIONS);
-const NUMERIC_PROPERTY_VALUE_TYPES = new Set(['int', 'float', 'double', 'long', 'number', 'integer', 'short', 'byte']);
-const PROPERTY_AGGREGATES = new Set(['AVG', 'MAX', 'MIN', 'COUNT', 'FIRST', 'LAST', 'DISTINCT_COUNT']);
-const NUMERIC_REQUIRED_AGGREGATES = new Set(['AVG', 'MAX', 'MIN']);
-const AGGREGATE_INTERVALS = new Set(['1m', '1h', '1d', '1w', '1M']);
 
 type DeviceDomainSubjectType = 'device' | 'product';
 
@@ -784,165 +780,6 @@ const readLatestProperty = async (deviceId: string, propertyId: string) => {
   }
 };
 
-const normalizePropertyIds = (args: Record<string, any>) => {
-  const rawValues: unknown[] = [];
-  const append = (value: unknown) => {
-    if (Array.isArray(value)) {
-      value.forEach(append);
-      return;
-    }
-    if (value === undefined || value === null || value === '') return;
-    rawValues.push(value);
-  };
-  append(args.propertyId ?? args.property);
-  append(args.propertyIds ?? args.properties);
-
-  return Array.from(new Set(
-    rawValues
-      .flatMap((value) => String(value).split(/[\s,，、]+/))
-      .map((value) => value.trim())
-      .filter(Boolean),
-  ));
-};
-
-const getMetadataProperty = (
-  metadata: Record<string, any>,
-  propertyId: string,
-) => asArray(metadata.properties).find((item: any) => String(item?.id || '') === propertyId);
-
-const isNumericPropertyMetadata = (property: any) => {
-  const valueType = property?.valueType;
-  const type = typeof valueType === 'string' ? valueType : valueType?.type;
-  return NUMERIC_PROPERTY_VALUE_TYPES.has(String(type || '').toLowerCase());
-};
-
-const normalizePropertyAggregate = (value: unknown) => {
-  const raw = String(value ?? '').trim();
-  if (!raw) return undefined;
-  const upper = raw.toUpperCase();
-  if (PROPERTY_AGGREGATES.has(upper)) {
-    return upper;
-  }
-
-  const normalized = raw.toLowerCase().replace(/[\s_\-./|,，、]+/g, '');
-  return ({
-    avg: 'AVG',
-    average: 'AVG',
-    mean: 'AVG',
-    平均: 'AVG',
-    平均值: 'AVG',
-    max: 'MAX',
-    maximum: 'MAX',
-    最大: 'MAX',
-    最大值: 'MAX',
-    min: 'MIN',
-    minimum: 'MIN',
-    最小: 'MIN',
-    最小值: 'MIN',
-    count: 'COUNT',
-    total: 'COUNT',
-    数量: 'COUNT',
-    次数: 'COUNT',
-    条数: 'COUNT',
-    first: 'FIRST',
-    首个: 'FIRST',
-    首次: 'FIRST',
-    last: 'LAST',
-    latest: 'LAST',
-    最新: 'LAST',
-    最后: 'LAST',
-    distinct: 'DISTINCT_COUNT',
-    distinctcount: 'DISTINCT_COUNT',
-    去重: 'DISTINCT_COUNT',
-    去重数: 'DISTINCT_COUNT',
-  } as Record<string, string | undefined>)[normalized];
-};
-
-const resolvePropertyAggregate = (
-  metadata: Record<string, any>,
-  propertyId: string,
-  requestedAgg: string | undefined,
-  warnings: string[],
-) => {
-  const property = getMetadataProperty(metadata, propertyId);
-  const numeric = property ? isNumericPropertyMetadata(property) : true;
-  if (requestedAgg && NUMERIC_REQUIRED_AGGREGATES.has(requestedAgg) && !numeric) {
-    warnings.push(i18n.global.t('Domain.homeAgent.tool.aggregate.nonNumericWarning', [propertyId]));
-    return 'COUNT';
-  }
-  return requestedAgg ?? (numeric ? 'AVG' : 'COUNT');
-};
-
-const normalizeAggregateTimeRange = (range: ResolvedTimeRange) => {
-  const now = Date.now();
-  // 通用智能体无显式时间时只看最近 24 小时，避免无界聚合影响页面响应。
-  const end = range.end ?? now;
-  const start = range.start ?? Math.max(0, end - 24 * 60 * 60 * 1000);
-  return start > end ? { start: end, end: start } : { start, end };
-};
-
-const normalizeAggregateInterval = (value: unknown, range: ResolvedTimeRange) => {
-  const raw = normalizeText(value);
-  if (raw && AGGREGATE_INTERVALS.has(raw)) return raw;
-  const lower = raw.toLowerCase();
-  if (lower && AGGREGATE_INTERVALS.has(lower)) return lower;
-
-  const normalized = lower.replace(/[\s_\-./|,，、]+/g, '');
-  const alias = ({
-    minute: '1m',
-    minutes: '1m',
-    min: '1m',
-    '1分钟': '1m',
-    分钟: '1m',
-    hour: '1h',
-    hours: '1h',
-    '1小时': '1h',
-    小时: '1h',
-    day: '1d',
-    days: '1d',
-    '1天': '1d',
-    天: '1d',
-    week: '1w',
-    weeks: '1w',
-    '1周': '1w',
-    周: '1w',
-    month: '1M',
-    months: '1M',
-    '1月': '1M',
-    月: '1M',
-  } as Record<string, string | undefined>)[normalized];
-  if (alias && AGGREGATE_INTERVALS.has(alias)) return alias;
-
-  const duration = (range.end ?? Date.now()) - (range.start ?? 0);
-  if (duration <= 60 * 60 * 1000) return '1m';
-  if (duration <= 30 * 24 * 60 * 60 * 1000) return '1h';
-  if (duration <= 180 * 24 * 60 * 60 * 1000) return '1d';
-  return '1w';
-};
-
-const aggregateTimeFormat = (interval: string) => (
-  interval === '1d' || interval === '1w' || interval === '1M'
-    ? 'yyyy-MM-dd'
-    : 'yyyy-MM-dd HH:mm:ss'
-);
-
-const normalizePropertyAggregateRecord = (
-  item: Record<string, any>,
-  propertyIds: string[],
-) => {
-  const record: Record<string, any> = {
-    time: item.time ?? item.timestamp ?? item.createTime,
-  };
-  propertyIds.forEach((propertyId) => {
-    record[propertyId] = compactInlineValue(item[propertyId], 1000);
-    const formatValue = item[`${propertyId}_format`];
-    if (formatValue !== undefined) {
-      record[`${propertyId}_format`] = compactInlineValue(formatValue, 1000);
-    }
-  });
-  return record;
-};
-
 const subjectInputs = () => [
   {
     id: 'subjectType',
@@ -1284,14 +1121,29 @@ export const createDeviceDomainTools = (
       };
     },
   },
-  {
-    id: DEVICE_DOMAIN_TOOL_IDS.propertyAggregate,
-    name: DEVICE_DOMAIN_TOOL_IDS.propertyAggregate,
+  createDevicePropertyAggregateTool<HomeAgentCapabilityContext>({
     displayName: i18n.global.t('Domain.homeAgent.tool.aggregate.displayName'),
     progressText: i18n.global.t('Domain.homeAgent.tool.aggregate.progressText'),
-    description: i18n.global.t('Domain.homeAgent.tool.aggregate.description'),
-    help: i18n.global.t('Domain.homeAgent.tool.aggregate.help'),
-    inputs: [
+    copy: {
+      description: i18n.global.t('Domain.homeAgent.tool.aggregate.description'),
+      help: i18n.global.t('Domain.homeAgent.tool.aggregate.help'),
+      propertyId: i18n.global.t('Domain.homeAgent.tool.aggregate.propertyId'),
+      propertyIds: i18n.global.t('Domain.homeAgent.tool.aggregate.propertyIds'),
+      aggregation: i18n.global.t('Domain.homeAgent.tool.aggregate.agg'),
+      interval: i18n.global.t('Domain.homeAgent.tool.aggregate.interval'),
+      startTime: i18n.global.t('Domain.homeAgent.tool.common.startTime'),
+      endTime: i18n.global.t('Domain.homeAgent.tool.common.endTime'),
+      timeRangeInput: timeRangeInput(),
+      limit: i18n.global.t('Domain.homeAgent.tool.aggregate.limit'),
+      deviceIdMissing: i18n.global.t('Domain.homeAgent.tool.common.deviceIdMissing'),
+      propertyIdMissing: i18n.global.t('Domain.homeAgent.tool.common.propertyIdMissing'),
+      nonNumericWarning: propertyId => i18n.global.t(
+        'Domain.homeAgent.tool.aggregate.nonNumericWarning',
+        [propertyId],
+      ),
+      truncated: i18n.global.t('Domain.homeAgent.tool.aggregate.truncated'),
+    },
+    decorateInputs: inputs => [
       {
         id: 'deviceId',
         name: 'deviceId',
@@ -1299,115 +1151,20 @@ export const createDeviceDomainTools = (
         required: true,
         valueType: 'string',
       },
-      {
-        id: 'propertyId',
-        name: 'propertyId',
-        description: i18n.global.t('Domain.homeAgent.tool.aggregate.propertyId'),
-        required: false,
-        valueType: 'string',
-      },
-      {
-        id: 'propertyIds',
-        name: 'propertyIds',
-        description: i18n.global.t('Domain.homeAgent.tool.aggregate.propertyIds'),
-        required: false,
-        valueType: { type: 'array', elementType: { type: 'string' } },
-      },
-      {
-        id: 'agg',
-        name: 'agg',
-        description: i18n.global.t('Domain.homeAgent.tool.aggregate.agg'),
-        required: false,
-        valueType: 'string',
-      },
-      {
-        id: 'interval',
-        name: 'interval',
-        description: i18n.global.t('Domain.homeAgent.tool.aggregate.interval'),
-        required: false,
-        valueType: 'string',
-      },
-      {
-        id: 'startTime',
-        name: 'startTime',
-        description: i18n.global.t('Domain.homeAgent.tool.common.startTime'),
-        required: false,
-        valueType: 'string',
-      },
-      {
-        id: 'endTime',
-        name: 'endTime',
-        description: i18n.global.t('Domain.homeAgent.tool.common.endTime'),
-        required: false,
-        valueType: 'string',
-      },
-      timeRangeInput(),
-      {
-        id: 'limit',
-        name: 'limit',
-        description: i18n.global.t('Domain.homeAgent.tool.aggregate.limit'),
-        required: false,
-        valueType: 'int',
-      },
+      ...inputs,
     ],
-    output: { type: 'object' },
-    annotations: { readOnlyHint: true },
-    execute: async (args, context) => {
+    resolveSubject: async (args, context) => {
       ensureDevicePermission(context);
       const deviceId = firstTextArg(args, 'deviceId');
-      if (!deviceId) throw new Error(i18n.global.t('Domain.homeAgent.tool.common.deviceIdMissing'));
-      const propertyIds = normalizePropertyIds(args);
-      if (!propertyIds.length) throw new Error(i18n.global.t('Domain.homeAgent.tool.common.propertyIdMissing'));
-
+      if (!deviceId) return { deviceId: '', metadata: {} };
       const subject = await fetchDeviceSubject(deviceId);
-      const requestedAgg = normalizePropertyAggregate(args.agg ?? args.aggregate ?? args.method);
-      const warnings: string[] = [];
-      const timeRange = normalizeAggregateTimeRange(resolveTimeRange(args));
-      const interval = normalizeAggregateInterval(args.interval, timeRange);
-      const format = aggregateTimeFormat(interval);
-      const columns = propertyIds.map((propertyId) => ({
-        property: propertyId,
-        alias: propertyId,
-        agg: resolvePropertyAggregate(subject.metadata, propertyId, requestedAgg, warnings),
-      }));
-      const resp = await getPropertiesInfo(deviceId, {
-        columns,
-        query: {
-          interval,
-          format,
-          from: timeRange.start,
-          to: timeRange.end,
-        },
-      });
-      const data = asArray<Record<string, any>>(responseResult(resp))
-        .map((item) => normalizePropertyAggregateRecord(item, propertyIds))
-        .reverse();
-      const limit = clampNumber(args.limit, 1, 1000, 200);
-      const visibleData = data.slice(0, limit);
-      const aggregateByProperty = new Map(columns.map((item) => [item.property, item.agg]));
-      return {
-        deviceId,
-        propertyIds,
-        properties: propertyIds.map((propertyId) => {
-          const property = getMetadataProperty(subject.metadata, propertyId);
-          return {
-            id: propertyId,
-            name: property?.name,
-            valueType: dataTypeText(property?.valueType),
-            aggregate: aggregateByProperty.get(propertyId),
-          };
-        }),
-        interval,
-        format,
-        timeRange: describeResolvedTimeRange(timeRange),
-        total: data.length,
-        returned: visibleData.length,
-        truncated: data.length > visibleData.length,
-        warnings: warnings.length ? warnings : undefined,
-        data: visibleData,
-      };
+      return { deviceId, metadata: subject.metadata };
     },
-  },
+    resolveTimeRange,
+    describeTimeRange: describeResolvedTimeRange,
+    dataTypeText,
+    compactValue: compactInlineValue,
+  }),
   ].filter((tool) => (
     hasDomainTools
     && (!DEVICE_ONLY_TOOL_IDS.has(tool.id) || includeDeviceTools)
