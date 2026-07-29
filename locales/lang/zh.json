@@ -4176,5 +4176,18 @@
     "DeviceDetail.edgeTools.mbean.scopes.threading": "JVM 线程",
     "DeviceDetail.edgeTools.mbean.scopes.runtime": "JVM 运行时",
     "DeviceDetail.edgeTools.mbean.scopes.os": "操作系统",
-    "DeviceDetail.edgeTools.mbean.scopes.gc": "JVM GC"
+    "DeviceDetail.edgeTools.mbean.scopes.gc": "JVM GC",
+    "DeviceDataCapability.summary.name": "设备运行总览",
+    "DeviceDataCapability.summary.description": "查询当前权限范围内的设备状态数量和在线率。",
+    "DeviceDataCapability.location.name": "设备位置列表",
+    "DeviceDataCapability.location.description": "分页查询带地理坐标的设备位置。",
+    "DeviceDataCapability.history.name": "设备在线趋势",
+    "DeviceDataCapability.history.description": "查询指定时间范围内的设备在线数量趋势。",
+    "DeviceDataCapability.query.startTime": "开始时间",
+    "DeviceDataCapability.query.endTime": "结束时间",
+    "DeviceDataCapability.error.invalidState": "设备状态不正确",
+    "DeviceDataCapability.error.invalidTimeRange": "开始时间不能晚于结束时间",
+    "DeviceDataCapability.error.invalidTimestamp": "时间必须是有效的 Unix 毫秒时间戳",
+    "DeviceDataCapability.error.invalidPagination": "分页参数不正确",
+    "DeviceDataCapability.error.loadFailed": "设备运行数据加载失败"
 }

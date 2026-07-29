@@ -4175,5 +4175,18 @@
     "DeviceDetail.edgeTools.mbean.scopes.threading": "JVM threading",
     "DeviceDetail.edgeTools.mbean.scopes.runtime": "JVM runtime",
     "DeviceDetail.edgeTools.mbean.scopes.os": "Operating system",
-    "DeviceDetail.edgeTools.mbean.scopes.gc": "JVM GC"
+    "DeviceDetail.edgeTools.mbean.scopes.gc": "JVM GC",
+    "DeviceDataCapability.summary.name": "Device Status Summary",
+    "DeviceDataCapability.summary.description": "Query device state counts and online rate within the current permission scope.",
+    "DeviceDataCapability.location.name": "Device Location List",
+    "DeviceDataCapability.location.description": "Page through devices that have geographic coordinates.",
+    "DeviceDataCapability.history.name": "Device Online Trend",
+    "DeviceDataCapability.history.description": "Query the device online-count trend for a time range.",
+    "DeviceDataCapability.query.startTime": "Start Time",
+    "DeviceDataCapability.query.endTime": "End Time",
+    "DeviceDataCapability.error.invalidState": "Invalid device state",
+    "DeviceDataCapability.error.invalidTimeRange": "Start time cannot be later than end time",
+    "DeviceDataCapability.error.invalidTimestamp": "Time must be a valid Unix millisecond timestamp",
+    "DeviceDataCapability.error.invalidPagination": "Invalid pagination parameters",
+    "DeviceDataCapability.error.loadFailed": "Failed to load device monitoring data"
 }

@@ -2,6 +2,7 @@ import { queryNoPagingPost } from '@device-manager-ui/api/product'
 import { queryNoPagingPost as queryInstanceNoPage, query } from '@device-manager-ui/api/instance'
 import { usePluginPermissionContext } from '@device-manager-ui/hooks/usePermission'
 import { useInstanceStore } from '@device-manager-ui/store/instance'
+import type { DataCapabilityProviderManifest } from '@jetlinks-web-core/data-capability'
 
 type HomeAgentProviderLoader = () => Promise<unknown>
 
@@ -18,6 +19,7 @@ const homeAgentProviders = Object.fromEntries(
 )
 
 export default {
+  moduleId: 'device-manager-ui',
   apis: {
     productNoPage: queryNoPagingPost,
     instanceNoPage: queryInstanceNoPage,
@@ -36,5 +38,15 @@ export default {
   stores: {
     useInstanceStore
   },
-  homeAgentProviders
+  homeAgentProviders,
+  dataCapabilityProviders: {
+    deviceMonitoring: {
+      capabilityIds: [
+        'device.summary',
+        'device.location.list',
+        'device.online.history',
+      ],
+      loader: () => import('./dataCapabilities/deviceMonitoringProvider'),
+    },
+  } satisfies DataCapabilityProviderManifest,
 }
