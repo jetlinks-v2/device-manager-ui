@@ -29,14 +29,14 @@
         <template v-if="column.key === 'name'">
           <div class="device-document-name">
             <AIcon type="FileTextOutlined" />
-            <span>{{ record.name || fileName(record) }}</span>
+            <span>{{ getI18nText(record, 'name') || fileName(record) }}</span>
           </div>
         </template>
         <template v-else-if="column.key === 'documentType'">
           <a-tag>{{ documentTypeText(record.documentType) }}</a-tag>
         </template>
         <template v-else-if="column.key === 'fileId'">
-          <j-ellipsis>{{ record.fileId }}</j-ellipsis>
+          <j-ellipsis>{{ getI18nText(record, 'fileId') }}</j-ellipsis>
         </template>
         <template v-else-if="column.key === 'createTime'">
           {{ record.createTime ? dayjs(record.createTime).format('YYYY-MM-DD HH:mm:ss') : '-' }}
@@ -111,6 +111,7 @@ import {
   saveDeviceDocuments
 } from '../../../../../api/instance'
 import { useInstanceStore } from '../../../../../store/instance'
+import { getI18nText } from '../../../../../utils/i18n'
 import SaveModal from './SaveModal.vue'
 
 const { t: $t } = useI18n()
@@ -147,7 +148,7 @@ const documentTypeText = (type: string) => (
 )
 
 const fileName = (record: Record<string, any>) => {
-  const fileId = String(record.fileId || '').split(/[?#]/)[0]
+  const fileId = String(getI18nText(record, 'fileId')).split(/[?#]/)[0]
   return fileId.split(/[\\/]/).pop() || fileId || '-'
 }
 
@@ -181,8 +182,9 @@ const openEdit = (record: Record<string, any>) => {
 }
 
 const openFile = (record: Record<string, any>) => {
-  if (record.fileId) {
-    window.open(getFileUrlById(String(record.fileId)), '_blank')
+  const fileId = getI18nText(record, 'fileId')
+  if (fileId) {
+    window.open(getFileUrlById(fileId), '_blank')
   }
 }
 

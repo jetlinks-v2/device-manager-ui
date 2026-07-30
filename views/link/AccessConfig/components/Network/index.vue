@@ -135,8 +135,12 @@
                   :label="$t('Network.index.041705-8')"
                   v-bind="validateInfos.name"
                 >
-                  <a-input
+                  <I18nTextField
                     v-model:value="formData.name"
+                    v-model:i18nMessages="formData.i18nMessages"
+                    field="name"
+                    :label="$t('Network.index.041705-8')"
+                    :i18n-max-length="64"
                     allowClear
                     :placeholder="$t('Network.index.041705-9')"
                   />
@@ -145,10 +149,14 @@
                   :label="$t('Network.index.041705-10')"
                   v-bind="validateInfos.description"
                 >
-                  <a-textarea
+                  <I18nTextField
                     :placeholder="$t('Network.index.041705-11')"
                     :rows="4"
                     v-model:value="formData.description"
+                    v-model:i18nMessages="formData.i18nMessages"
+                    field="description"
+                    :label="$t('Network.index.041705-10')"
+                    textarea
                     show-count
                     :maxlength="200"
                   />
@@ -264,6 +272,7 @@ import { useMenuStore } from "@jetlinks-web-core/store/menu";
 import { onlyMessage, randomString } from "@jetlinks-web/utils";
 import { useI18n } from "vue-i18n";
 import { useTabSaveSuccess, useTabSaveSuccessBack } from '@jetlinks-web-core/hooks'
+import I18nTextField from '@device-manager-ui/components/I18n/I18nTextField.vue';
 
 const { t: $t } = useI18n();
 const menuStory = useMenuStore();
@@ -321,6 +330,7 @@ const columnsHTTP = ref(<TableColumnType>[]);
 const formData = ref({
   name: "",
   description: "",
+  i18nMessages: {},
 });
 const loading = ref(false);
 

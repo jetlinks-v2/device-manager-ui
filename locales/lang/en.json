@@ -4175,5 +4175,10 @@
     "DeviceDetail.edgeTools.mbean.scopes.threading": "JVM threading",
     "DeviceDetail.edgeTools.mbean.scopes.runtime": "JVM runtime",
     "DeviceDetail.edgeTools.mbean.scopes.os": "Operating system",
-    "DeviceDetail.edgeTools.mbean.scopes.gc": "JVM GC"
+    "DeviceDetail.edgeTools.mbean.scopes.gc": "JVM GC",
+    "I18n.configure": "Internationalization settings",
+    "I18n.chinese": "Chinese",
+    "I18n.english": "English",
+    "I18n.placeholder": "Enter {language}",
+    "I18n.maxLength": "Must not exceed {max} characters"
 }

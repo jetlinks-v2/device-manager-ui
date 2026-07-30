@@ -30,6 +30,7 @@ export interface FormDataType {
     type: string;
     shareCluster: boolean;
     description: string;
+    i18nMessages: Record<string, Record<string, string>>;
 }
 
 export interface TagsFilterType {

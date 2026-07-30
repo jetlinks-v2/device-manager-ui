@@ -9,7 +9,7 @@
             <JProTable
                 ref="instanceRef"
                 :columns="columns"
-                :request="query"
+                :request="queryWithProductI18n"
                 :defaultParams="{
                     sorts: [{ name: 'createTime', order: 'desc' }, { name: 'name', order: 'desc'}],
                 }"
@@ -80,7 +80,7 @@
                                 "
                             >
                                 <span style="font-size: 16px; font-weight: 600">
-                                    {{ slotProps.name }}
+                                    {{ getI18nText(slotProps, 'name') }}
                                 </span>
                             </j-ellipsis>
                             <a-row>
@@ -95,7 +95,7 @@
                                         {{ $t('Instance.index.133466-2') }}
                                     </div>
                                     <j-ellipsis style="width: 100%">
-                                        {{ slotProps.productName }}
+                                        {{ getI18nText(slotProps, 'productName') }}
                                     </j-ellipsis>
                                 </a-col>
                             </a-row>
@@ -132,6 +132,15 @@
                             notActive: 'warning',
                         }"
                     />
+                </template>
+                <template #name="slotProps">
+                    {{ getI18nText(slotProps, 'name') }}
+                </template>
+                <template #describe="slotProps">
+                    {{ getI18nText(slotProps, 'describe') }}
+                </template>
+                <template #productName="slotProps">
+                    {{ getI18nText(slotProps, 'productName') }}
                 </template>
                 <template #createTime="slotProps">
                     <span>{{
@@ -203,7 +212,7 @@
 
 <script setup lang="ts">
 import {
-    query,
+    queryWithProductI18n,
     _delete,
     _deploy,
     _undeploy,
@@ -238,6 +247,7 @@ import { useTermOptions } from '@jetlinks-web/components/es/Search/hooks/useTerm
 import { mergeObjectArrays, getBaseApi } from '@jetlinks-web-core/utils';
 import {deviceStateList} from "@device-manager-ui/views/device/data";
 import {isSaaS} from '@jetlinks-web-core/utils/consts'
+import { getI18nText } from '../../../utils/i18n'
 
 const { t: $t } = useI18n();
 
@@ -291,6 +301,7 @@ const columns = ref([
         title: $t('Instance.index.133466-4'),
         dataIndex: 'name',
         key: 'name',
+        scopedSlots: true,
         ellipsis: true,
         search: {
             type: 'string',
@@ -301,6 +312,7 @@ const columns = ref([
         title: $t('Instance.index.133466-2'),
         dataIndex: 'productName',
         key: 'productName',
+        scopedSlots: true,
         ellipsis: true,
         search: {
             type: 'select',
@@ -310,7 +322,7 @@ const columns = ref([
                     queryNoPagingPost({ paging: false }).then((resp: any) => {
                         resolve(
                             resp.result.map((item: any) => ({
-                                label: item.name,
+                                label: getI18nText(item, 'name'),
                                 value: item.id,
                             })),
                         );

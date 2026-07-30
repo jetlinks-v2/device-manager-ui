@@ -348,16 +348,24 @@
                                     },
                                 ]"
                             >
-                                <a-input
+                                <I18nTextField
                                     :placeholder="$t('Cloud.OneNet.808542-42')"
                                     v-model:value="formData.name"
+                                    v-model:i18nMessages="formData.i18nMessages"
+                                    field="name"
+                                    :label="$t('Cloud.OneNet.808542-41')"
+                                    :i18n-max-length="64"
                                 />
                             </a-form-item>
                             <a-form-item :label="$t('Cloud.OneNet.808542-10')" name="description">
-                                <a-textarea
+                                <I18nTextField
                                     :placeholder="$t('Cloud.OneNet.808542-11')"
                                     :rows="4"
                                     v-model:value="formData.description"
+                                    v-model:i18nMessages="formData.i18nMessages"
+                                    field="description"
+                                    :label="$t('Cloud.OneNet.808542-10')"
+                                    textarea
                                     show-count
                                     :maxlength="200"
                                 />
@@ -433,6 +441,7 @@ import { useMenuStore } from '@jetlinks-web-core/store';
 import { network } from '../../../../../assets';
 import { useI18n } from 'vue-i18n';
 import { useTabSaveSuccess, useTabSaveSuccessBack } from '@jetlinks-web-core/hooks'
+import I18nTextField from '@device-manager-ui/components/I18n/I18nTextField.vue';
 
 const { t: $t } = useI18n();
 const menuStory = useMenuStore();
@@ -453,6 +462,7 @@ interface FormState {
 interface Form {
     name: string;
     description: string;
+    i18nMessages?: Record<string, Record<string, string>>;
 }
 
 const props = defineProps({
@@ -487,6 +497,7 @@ const formState = ref<FormState>({
 const formData = ref<Form>({
     name: '',
     description: '',
+    i18nMessages: {},
 });
 
 const loading = ref(false)

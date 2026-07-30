@@ -56,7 +56,7 @@
                                 <div class="card-item-content">
                                     <j-ellipsis style="width: calc(100% - 100px)">
                                         <span class="card-title">
-                                            {{ slotProps.name }}
+                                            {{ getI18nText(slotProps, 'name') }}
                                         </span>
                                     </j-ellipsis>
                                     <template v-if="slotProps.provider !== 'composite-device-gateway'">
@@ -128,8 +128,10 @@
                                                 >
                                                     <div>
                                                         {{
-                                                            slotProps.protocolDetail
-                                                                .name
+                                                            getI18nText(
+                                                                slotProps.protocolDetail,
+                                                                'name',
+                                                            )
                                                         }}
                                                     </div>
                                                 </j-ellipsis>
@@ -222,6 +224,7 @@ import { cloneDeep } from 'lodash-es';
 import Outline from './Outline/index.vue'
 import { device } from '../../../assets'
 import { useI18n } from 'vue-i18n';
+import { getI18nText } from '../../../utils/i18n';
 
 const { t: $t } = useI18n();
 const menuStory = useMenuStore();
@@ -393,8 +396,8 @@ const handleEye = (data: any) => {
 };
 
 const getDescription = (slotProps: Record<string, any>) =>
-    slotProps.description
-        ? slotProps.description
+    getI18nText(slotProps, 'description')
+        ? getI18nText(slotProps, 'description')
         : providersList.value?.find(
               (item: Record<string, any>) => item.id === slotProps.provider,
           )?.description;

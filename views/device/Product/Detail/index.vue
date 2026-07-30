@@ -9,9 +9,9 @@
       <div>
         <div style="display: flex; align-items: center">
           <a-tooltip>
-            <template #title>{{ productStore.current.name }}</template>
+            <template #title>{{ getI18nText(productStore.current, 'name') }}</template>
             <div class="productDetailHead">
-              {{ productStore.current.name }}
+              {{ getI18nText(productStore.current, 'name') }}
             </div>
           </a-tooltip>
           <div
@@ -122,6 +122,7 @@ import { isNoCommunity } from '@jetlinks-web-core/utils/utils'
 import { useI18n } from 'vue-i18n'
 import { tabs } from './asyncComponent'
 import { isApplyDashboard } from '@device-manager-ui/utils/dashboardProject'
+import { getI18nText } from '../../../../utils/i18n'
 
 const { t: $t } = useI18n()
 

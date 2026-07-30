@@ -3,10 +3,13 @@ import { MetadataItem } from "../Product/typings";
 export type DeviceInstance = {
   id: string;
   name: string;
+  i18nName?: string;
   describe: string;
+  i18nDescribe?: string;
   description: string;
   productId: string;
   productName: string;
+  i18nProductName?: string;
   protocolName: string;
   security: any;
   deriveMetadata: string;

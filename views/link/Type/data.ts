@@ -33,6 +33,7 @@ export const FormStates = {
     type: '',
     shareCluster: true,
     description: '',
+    i18nMessages: {},
 };
 
 export const FormStates2 = {

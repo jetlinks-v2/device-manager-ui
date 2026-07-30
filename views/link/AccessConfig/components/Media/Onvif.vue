@@ -27,16 +27,24 @@
                                 },
                             ]"
                         >
-                            <a-input
+                            <I18nTextField
                                 :placeholder="$t('Media.Onvif.507446-2')"
                                 v-model:value="formState.name"
+                                v-model:i18nMessages="formState.i18nMessages"
+                                field="name"
+                                :label="$t('Media.Onvif.507446-1')"
+                                :i18n-max-length="64"
                             />
                         </a-form-item>
                         <a-form-item :label="$t('Media.Onvif.507446-4')" name="description">
-                            <a-textarea
+                            <I18nTextField
                                 :placeholder="$t('Media.Onvif.507446-5')"
                                 :rows="4"
                                 v-model:value="formState.description"
+                                v-model:i18nMessages="formState.i18nMessages"
+                                field="description"
+                                :label="$t('Media.Onvif.507446-4')"
+                                textarea
                                 show-count
                                 :maxlength="200"
                             />
@@ -78,11 +86,13 @@ import { onlyMessage } from '@jetlinks-web/utils';
 import { update, save } from '../../../../../api/link/accessConfig';
 import { useI18n } from 'vue-i18n';
 import { useTabSaveSuccessBack } from '@jetlinks-web-core/hooks'
+import I18nTextField from '@device-manager-ui/components/I18n/I18nTextField.vue';
 
 const { t: $t } = useI18n();
 interface FormState {
     name: string;
     description: string;
+    i18nMessages?: Record<string, Record<string, string>>;
 }
 const route = useRoute();
 const view = route.query.view as string;
@@ -104,6 +114,7 @@ const channel = ref(props.provider.channel);
 const formState = ref<FormState>({
     name: '',
     description: '',
+    i18nMessages: {},
 });
 
 const { onBack } = useTabSaveSuccessBack()

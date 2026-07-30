@@ -390,8 +390,12 @@
                     :label="$t('Media.GB28181.666483-27')"
                     v-bind="validateInfos.name"
                   >
-                    <a-input
+                    <I18nTextField
                       v-model:value="formData.name"
+                      v-model:i18nMessages="formData.i18nMessages"
+                      field="name"
+                      :label="$t('Media.GB28181.666483-27')"
+                      :i18n-max-length="64"
                       allowClear
                       :placeholder="$t('Media.GB28181.666483-28')"
                     />
@@ -401,10 +405,14 @@
                     :label="$t('Media.GB28181.666483-29')"
                     v-bind="validateInfos.description"
                   >
-                    <a-textarea
+                    <I18nTextField
                       :placeholder="$t('Media.GB28181.666483-30')"
                       :rows="4"
                       v-model:value="formData.description"
+                      v-model:i18nMessages="formData.i18nMessages"
+                      field="description"
+                      :label="$t('Media.GB28181.666483-29')"
+                      textarea
                       show-count
                       :maxlength="200"
                     />
@@ -489,6 +497,7 @@ import type { Rule } from 'ant-design-vue/es/form'
 import { testIpv4_6 } from '@jetlinks-web-core/utils/validate'
 import { useI18n } from 'vue-i18n'
 import { useTabSaveSuccessBack } from '@jetlinks-web-core/hooks'
+import I18nTextField from '@device-manager-ui/components/I18n/I18nTextField.vue'
 
 const { t: $t } = useI18n()
 interface Form2 {
@@ -538,7 +547,8 @@ const stepCurrent = ref(0)
 const steps = ref([$t('Media.GB28181.666483-36'), $t('Media.GB28181.666483-37')])
 const formData = ref({
   name: '',
-  description: ''
+  description: '',
+  i18nMessages: {},
 })
 let formState = ref<FormState>({
   domain: undefined,

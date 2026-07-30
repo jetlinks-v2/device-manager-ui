@@ -50,7 +50,7 @@
                                                 font-weight: 600;
                                             "
                                         >
-                                            {{ slotProps.name }}
+                                            {{ getI18nText(slotProps, 'name') }}
                                         </span>
                                     </j-ellipsis>
                                     <a-row class="card-item-content-box">
@@ -145,6 +145,12 @@
                             </template>
                         </a-space>
                     </template>
+                    <template #name="slotProps">
+                        {{ getI18nText(slotProps, 'name') }}
+                    </template>
+                    <template #description="slotProps">
+                        {{ getI18nText(slotProps, 'description') }}
+                    </template>
                 </j-pro-table>
             </FullPage>
         </div>
@@ -161,6 +167,7 @@ import { useI18n } from 'vue-i18n';
 import { computed } from 'vue';
 import { useProtocolTypeProviders } from './useProtocolTypeProviders';
 import { protocolTypeFontIcon } from './protocolTypeAssets';
+import { getI18nText } from '../../../utils/i18n';
 
 const { t: $t } = useI18n();
 const { typeFilterOptions, typeLabel } = useProtocolTypeProviders();
@@ -204,6 +211,7 @@ const columns = computed(() => [
         search: {
             type: 'string',
         },
+        scopedSlots: true,
         ellipsis: true,
     },
     {
@@ -223,6 +231,7 @@ const columns = computed(() => [
         search: {
             type: 'string',
         },
+        scopedSlots: true,
         ellipsis: true,
     },
     {

@@ -72,8 +72,12 @@
                 }
               ]"
             >
-              <a-input
+              <I18nTextField
                 v-model:value="modelRef.name"
+                v-model:i18nMessages="modelRef.i18nMessages"
+                field="name"
+                :label="$t('Save.index.902471-6')"
+                :i18n-max-length="64"
                 :placeholder="$t('Save.index.902471-7')"
               />
             </a-form-item>
@@ -136,11 +140,15 @@
             }
           ]"
         >
-          <a-textarea
+          <I18nTextField
             v-model:value="modelRef.describe"
+            v-model:i18nMessages="modelRef.i18nMessages"
+            field="describe"
+            :label="$t('Save.index.902471-12')"
             :placeholder="$t('Save.index.902471-14')"
             showCount
             :maxlength="200"
+            textarea
           />
         </a-form-item>
       </a-form>
@@ -159,6 +167,7 @@ import { moduleRegistry } from '@jetlinks-web-core/utils/module-registry'
 import { deviceCloudSave } from '@device-manager-ui/api/instance'
 import { ensureVisualizationDashboardProject } from '@device-manager-ui/utils/dashboardProject'
 import {isSaaS} from "@jetlinks-web-core/utils/consts";
+import I18nTextField from '@device-manager-ui/components/I18n/I18nTextField.vue'
 
 const { t: $t } = useI18n()
 
@@ -183,6 +192,7 @@ const modelRef = reactive({
   id: undefined,
   name: '',
   describe: '',
+  i18nMessages: {} as Record<string, Record<string, string>>,
   configuration: {
     type: 'local'
   },

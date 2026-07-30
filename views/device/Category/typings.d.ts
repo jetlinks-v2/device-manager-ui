@@ -6,5 +6,7 @@ export type CategoryItem = {
   parentId: string;
   path: string;
   sortIndex: number;
+  description?: string;
+  i18nMessages?: Record<string, Record<string, string>>;
   children?: Category[];
 };

@@ -12,8 +12,12 @@
           <a-row :gutter="[24, 0]">
             <a-col :span="12">
               <a-form-item :label="$t('Detail.index.258513-0')" name="name" :rules="Rules.name">
-                <a-input
+                <I18nTextField
                   v-model:value="formData.name"
+                  v-model:i18nMessages="formData.i18nMessages"
+                  field="name"
+                  :label="$t('Detail.index.258513-0')"
+                  :i18n-max-length="64"
                   :placeholder="$t('Detail.index.258513-1')"
                 />
               </a-form-item>
@@ -772,11 +776,15 @@
           <a-row :gutter="[24, 0]">
             <a-col :span="24">
               <a-form-item :label="$t('Detail.index.258513-62')" name="description">
-                <a-textarea
+                <I18nTextField
                   v-model:value="formData.description"
+                  v-model:i18nMessages="formData.i18nMessages"
+                  field="description"
+                  :label="$t('Detail.index.258513-62')"
                   show-count
                   :maxlength="200"
                   :rows="4"
+                  textarea
                 /> </a-form-item
             ></a-col>
           </a-row>
@@ -834,6 +842,7 @@ import { storeToRefs } from "pinia";
 import NodeSelect from "./NodeSelect.vue";
 import { useI18n } from "vue-i18n";
 import { useTabSaveSuccessBack } from '@jetlinks-web-core/hooks'
+import I18nTextField from '@device-manager-ui/components/I18n/I18nTextField.vue'
 
 const { t: $t } = useI18n();
 const route = useRoute();

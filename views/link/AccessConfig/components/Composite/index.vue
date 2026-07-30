@@ -161,15 +161,26 @@
                   { max: 64, message: $t('Composite.index.636069-6') },
                 ]"
               >
-                <a-input v-model:value="formData.name" :placeholder="$t('Composite.index.636069-5')"></a-input>
+                <I18nTextField
+                  v-model:value="formData.name"
+                  v-model:i18nMessages="formData.i18nMessages"
+                  field="name"
+                  :label="$t('Composite.index.636069-4')"
+                  :i18n-max-length="64"
+                  :placeholder="$t('Composite.index.636069-5')"
+                />
               </a-form-item>
               <a-form-item :label="$t('Composite.index.636069-7')">
-                <a-textarea
+                <I18nTextField
                   v-model:value="formData.description"
+                  v-model:i18nMessages="formData.i18nMessages"
+                  field="description"
+                  :label="$t('Composite.index.636069-7')"
+                  textarea
                   showCount
                   :rows="4"
                   :maxlength="200"
-                ></a-textarea>
+                />
               </a-form-item>
             </a-form>
           </a-col>
@@ -314,6 +325,7 @@ import Outline from '../../Outline/index.vue'
 import { BackMap } from '../../data'
 import { useI18n } from 'vue-i18n'
 import { useTabSaveSuccess } from '@jetlinks-web-core/hooks'
+import I18nTextField from '@device-manager-ui/components/I18n/I18nTextField.vue'
 
 const { t: $t } = useI18n()
 const props = defineProps({
@@ -350,6 +362,7 @@ const formData = reactive({
   id: route.params.id !== ':id' ? route.params.id : generateId,
   name: '',
   description: '',
+  i18nMessages: {},
 })
 
 const { onOpen } = useTabSaveSuccess('link/AccessConfig/Detail', {
