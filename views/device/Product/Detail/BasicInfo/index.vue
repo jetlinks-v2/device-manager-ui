@@ -21,7 +21,7 @@
             <j-ellipsis>{{ productStore.current.id }}</j-ellipsis>
         </a-descriptions-item>
         <a-descriptions-item :label="$t('BasicInfo.indev.028379-1')">
-            <j-ellipsis>{{ productStore.current.classifiedName }}</j-ellipsis>
+            <j-ellipsis>{{ getI18nText(productStore.current, 'classifiedName') }}</j-ellipsis>
         </a-descriptions-item>
         <a-descriptions-item :label="$t('BasicInfo.indev.028379-2')">{{
             productStore.current.deviceType?.text
@@ -35,8 +35,8 @@
                     >
                     <div style="white-space: normal">
                     <j-ellipsis>{{
-                        productStore.current.accessName
-                            ? productStore.current.accessName
+                        getI18nText(productStore.current, 'accessName')
+                            ? getI18nText(productStore.current, 'accessName')
                             : $t('BasicInfo.indev.028379-4')
                     }}</j-ellipsis>
                     </div>
@@ -51,7 +51,7 @@
         }}</a-descriptions-item>
 
         <a-descriptions-item :label="$t('BasicInfo.indev.028379-7')" :span="3">
-            {{ productStore.current.describe }}
+            {{ getI18nText(productStore.current, 'describe') }}
         </a-descriptions-item>
     </a-descriptions>
 
@@ -66,6 +66,7 @@ import dayjs from 'dayjs';
 import { useRoute } from 'vue-router';
 import { useMenuStore } from '@jetlinks-web-core/store/menu';
 import { useI18n } from 'vue-i18n';
+import { getI18nText } from '../../../../../utils/i18n'
 
 const { t: $t } = useI18n();
 

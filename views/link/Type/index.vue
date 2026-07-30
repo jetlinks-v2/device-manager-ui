@@ -66,7 +66,7 @@
                                                 line-height: 22px;
                                             "
                                         >
-                                            {{ slotProps.name }}
+                                            {{ getI18nText(slotProps, 'name') }}
                                         </span>
                   </j-ellipsis>
                   <a-row class="card-item-content-box">
@@ -165,6 +165,12 @@
                             }"
             ></j-badge-status>
           </template>
+          <template #name="slotProps">
+            {{ getI18nText(slotProps, 'name') }}
+          </template>
+          <template #description="slotProps">
+            {{ getI18nText(slotProps, 'description') }}
+          </template>
           <template #shareCluster="slotProps">
             {{
               slotProps.shareCluster === true
@@ -190,6 +196,7 @@ import {useMenuStore} from '@jetlinks-web-core/store';
 import {network} from "../../../assets";
 import {useI18n} from 'vue-i18n';
 import { isNoCommunity } from '@jetlinks-web-core/utils/utils';
+import { getI18nText } from '../../../utils/i18n'
 
 const {t: $t} = useI18n();
 const menuStory = useMenuStore();
@@ -208,6 +215,7 @@ const columns = [
     search: {
       type: 'string',
     },
+    scopedSlots: true,
   },
   {
     title: $t('Type.index.196842-1'),
@@ -254,6 +262,7 @@ const columns = [
     dataIndex: 'description',
     key: 'description',
     ellipsis: true,
+    scopedSlots: true,
     search: {
       type: 'string',
     },

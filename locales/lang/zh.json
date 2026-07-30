@@ -4176,5 +4176,10 @@
     "DeviceDetail.edgeTools.mbean.scopes.threading": "JVM 线程",
     "DeviceDetail.edgeTools.mbean.scopes.runtime": "JVM 运行时",
     "DeviceDetail.edgeTools.mbean.scopes.os": "操作系统",
-    "DeviceDetail.edgeTools.mbean.scopes.gc": "JVM GC"
+    "DeviceDetail.edgeTools.mbean.scopes.gc": "JVM GC",
+    "I18n.configure": "国际化配置",
+    "I18n.chinese": "中文",
+    "I18n.english": "English",
+    "I18n.placeholder": "请输入{language}",
+    "I18n.maxLength": "长度不能超过{max}个字符"
 }

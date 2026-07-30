@@ -76,7 +76,7 @@
             <template #content>
               <j-ellipsis style="width: calc(100% - 100px); margin-bottom: 18px"
                 ><span style="font-weight: 600; font-size: 16px">
-                  {{ slotProps.name }}
+                  {{ getI18nText(slotProps, 'name') }}
                 </span></j-ellipsis
               >
               <a-row>
@@ -93,8 +93,8 @@
                   <j-ellipsis>
                     <div>
                       {{
-                        slotProps?.accessName
-                          ? slotProps?.accessName
+                        getI18nText(slotProps, 'accessName')
+                          ? getI18nText(slotProps, 'accessName')
                           : $t("Product.index.660348-6")
                       }}
                     </div>
@@ -136,6 +136,15 @@
               0: 'error',
             }"
           />
+        </template>
+        <template #name="slotProps">
+          {{ getI18nText(slotProps, 'name') }}
+        </template>
+        <template #accessName="slotProps">
+          {{ getI18nText(slotProps, 'accessName') || $t('Product.index.660348-6') }}
+        </template>
+        <template #describe="slotProps">
+          {{ getI18nText(slotProps, 'describe') }}
         </template>
         <template #action="slotProps">
           <a-space>
@@ -197,6 +206,7 @@ import { useI18n } from "vue-i18n";
 import { useTermOptions } from '@jetlinks-web/components/es/Search/hooks/useTermOptions'
 import BatchDropdown from "@jetlinks-web-core/components/BatchDropdown/index.vue";
 import {isSaaS} from '@jetlinks-web-core/utils/consts'
+import { getI18nText } from '../../../utils/i18n'
 
 const { t: $t } = useI18n();
 
@@ -224,6 +234,7 @@ const columns = [
     title: $t("Product.index.660348-7"),
     dataIndex: "name",
     key: "name",
+    scopedSlots: true,
     width: 220,
     ellipsis: true,
   },
@@ -231,6 +242,7 @@ const columns = [
     title: $t("Product.index.660348-5"),
     dataIndex: "accessName",
     key: "accessName",
+    scopedSlots: true,
     width: 220,
     ellipsis: true,
   },
@@ -266,6 +278,7 @@ const columns = [
     title: $t("Product.index.660348-10"),
     dataIndex: "describe",
     key: "describe",
+    scopedSlots: true,
     ellipsis: true,
   },
   {

@@ -134,16 +134,24 @@
                                 },
                             ]"
                         >
-                            <a-input
+                            <I18nTextField
                                 :placeholder="$t('Edge.index.066653-8')"
                                 v-model:value="formState.name"
+                                v-model:i18nMessages="formState.i18nMessages"
+                                field="name"
+                                :label="$t('Edge.index.066653-7')"
+                                :i18n-max-length="64"
                             />
                         </a-form-item>
                         <a-form-item :label="$t('Edge.index.066653-10')" name="description">
-                            <a-textarea
+                            <I18nTextField
                                 :placeholder="$t('Edge.index.066653-11')"
                                 :rows="4"
                                 v-model:value="formState.description"
+                                v-model:i18nMessages="formState.i18nMessages"
+                                field="description"
+                                :label="$t('Edge.index.066653-10')"
+                                textarea
                                 show-count
                                 :maxlength="200"
                             />
@@ -216,6 +224,7 @@ import AccessCard from '../AccessCard/index.vue';
 import { useMenuStore } from '@jetlinks-web-core/store/menu';
 import { useI18n } from 'vue-i18n';
 import { useTabSaveSuccess, useTabSaveSuccessBack } from '@jetlinks-web-core/hooks'
+import I18nTextField from '@device-manager-ui/components/I18n/I18nTextField.vue';
 
 const { t: $t } = useI18n();
 const menuStory = useMenuStore();
@@ -223,6 +232,7 @@ const menuStory = useMenuStore();
 interface FormState {
     name: string;
     description: string;
+    i18nMessages?: Record<string, Record<string, string>>;
 }
 const route = useRoute();
 const view = route.query.view as string;
@@ -246,6 +256,7 @@ const channel = ref(props.provider.channel);
 const formState = ref<FormState>({
     name: '',
     description: '',
+    i18nMessages: {},
 });
 
 const formRef = ref<FormInstance>();

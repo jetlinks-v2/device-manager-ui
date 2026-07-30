@@ -22,9 +22,13 @@
                     { max: 64, message: $t('Save.index.903552-4') },
                 ]"
             >
-                <a-input
+                <I18nTextField
                     :placeholder="$t('Save.index.903552-3')"
                     v-model:value="formData.name"
+                    v-model:i18nMessages="formData.i18nMessages"
+                    field="name"
+                    :label="$t('Save.index.903552-2')"
+                    :i18n-max-length="64"
                 />
             </a-form-item>
             <a-form-item
@@ -95,9 +99,13 @@
                 </a-button>
             </a-form-item>
             <a-form-item :label="$t('Save.index.903552-9')" name="description">
-                <a-textarea
+                <I18nTextField
                     :placeholder="$t('Save.index.903552-10')"
                     v-model:value="formData.description"
+                    v-model:i18nMessages="formData.i18nMessages"
+                    field="description"
+                    :label="$t('Save.index.903552-9')"
+                    textarea
                     :maxlength="200"
                     :rows="3"
                     showCount
@@ -141,6 +149,7 @@ import { useProtocolTypeProviders } from '../useProtocolTypeProviders';
 import { protocolTypeFontIcon } from '../protocolTypeAssets';
 import { PROTOCOL_TYPE_ORDER } from '../protocolTypes';
 import { cloneDeep } from 'lodash-es';
+import I18nTextField from '../../../../components/I18n/I18nTextField.vue';
 
 const { t: $t } = useI18n();
 const loading = ref(false);
@@ -192,6 +201,7 @@ const formData = ref<FormDataType>({
         location: '',
     },
     description: '',
+    i18nMessages: {},
 });
 
 const locationRules = computed(() => {
@@ -223,6 +233,7 @@ function createEmptyFormData(): FormDataType {
             location: '',
         },
         description: '',
+        i18nMessages: {},
     };
 }
 
@@ -335,6 +346,7 @@ const onSubmit = async () => {
     const payload = {
         name: data.name,
         description: data.description,
+        i18nMessages: formData.value.i18nMessages,
         type,
         configuration: data.configuration ?? formData.value.configuration,
     };
