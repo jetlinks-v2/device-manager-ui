@@ -5,7 +5,10 @@ import type { CategoryItem } from '../views/device/Category/typings'
  * 查询产品分类树形数据
  */
 
-export const queryTree = (params?: Record<string, any>) => request.post<CategoryItem>('/device/category/_tree', params)
+export const queryTree = (params?: Record<string, any>, config?: Record<string, unknown>) =>
+  config
+    ? request.post<CategoryItem>('/device/category/_tree', params, config)
+    : request.post<CategoryItem>('/device/category/_tree', params)
 
 /**
  * 保存树形数据

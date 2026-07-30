@@ -2,7 +2,10 @@ import dayjs from 'dayjs'
 import i18n from '@jetlinks-web-core/locales'
 import { encodeQuery } from '@jetlinks-web-core/utils'
 import { dashboard, deviceCount, getDeviceGeoJson } from '@device-manager-ui/api/dashboard'
+import { queryTree } from '@device-manager-ui/api/category'
 import type {
+  DeviceCategoryDistributionQuery,
+  DeviceCategoryDistributionRow,
   DeviceLocationPageData,
   DeviceLocationQuery,
   DeviceLocationRow,
@@ -115,12 +118,87 @@ export async function loadDeviceOnlineHistory(
     .sort((left, right) => left.timestamp - right.timestamp)
 }
 
+/**
+ * 查询设备产品分类分布。
+ *
+ * 分类树和设备数量均沿用设备模块现有权限上下文；未分类及被 limit 截断的数量合并为“其他”。
+ */
+export async function loadDeviceCategoryDistribution(
+  query: DeviceCategoryDistributionQuery,
+  signal?: AbortSignal,
+): Promise<DeviceCategoryDistributionRow[]> {
+  const [categoryResponse, total] = await Promise.all([
+    queryTree({
+      paging: false,
+      sorts: [
+        { name: 'sortIndex', order: 'asc' },
+        { name: 'createTime', order: 'desc' },
+      ],
+    }, { signal }),
+    queryDeviceCount(undefined, signal),
+  ])
+  assertResponseSuccess(categoryResponse)
+  const categories = flattenCategories(unwrapResult(categoryResponse))
+  const counted = await Promise.all(categories.map(async (category) => ({
+    categoryId: category.id,
+    categoryName: category.name,
+    count: await queryDeviceCountByCategory(category.id, signal),
+  })))
+  const rows = counted
+    .filter(row => row.count > 0)
+    .sort((left, right) => right.count - left.count)
+  const visible = rows.slice(0, query.limit)
+  const visibleCount = visible.reduce((sum, row) => sum + row.count, 0)
+  const otherCount = Math.max(total - visibleCount, 0)
+  const result = visible.map(row => ({
+    ...row,
+    rate: percent(row.count, total),
+  }))
+
+  if (otherCount > 0) {
+    result.push({
+      categoryId: 'other',
+      categoryName: t('DeviceDataCapability.category.other'),
+      count: otherCount,
+      rate: percent(otherCount, total),
+    })
+  }
+  return result
+}
+
 async function queryDeviceCount(state: string | undefined, signal?: AbortSignal): Promise<number> {
   const params = state ? encodeQuery({ terms: { state } }) : undefined
   const response = await deviceCount(params, { signal })
   assertResponseSuccess(response)
   const result = unwrapResult(response)
   return finiteNumber(isRecord(result) ? result.total ?? result.count : result) ?? 0
+}
+
+async function queryDeviceCountByCategory(categoryId: string, signal?: AbortSignal): Promise<number> {
+  const response = await deviceCount(encodeQuery({ terms: { classifiedId: categoryId } }), { signal })
+  assertResponseSuccess(response)
+  const result = unwrapResult(response)
+  return finiteNumber(isRecord(result) ? result.total ?? result.count : result) ?? 0
+}
+
+function flattenCategories(value: unknown): Array<{ id: string; name: string }> {
+  const output: Array<{ id: string; name: string }> = []
+  const walk = (items: unknown[]) => {
+    items.filter(isRecord).forEach((item) => {
+      const id = text(item.id).trim()
+      const name = text(item.name).trim()
+      if (id && name) output.push({ id, name })
+      if (Array.isArray(item.children)) walk(item.children)
+    })
+  }
+  const root = unwrapResult(value)
+  if (Array.isArray(root)) walk(root)
+  else walk(extractRows(root))
+  return output
+}
+
+function percent(value: number, total: number): number {
+  return total > 0 ? Number(((value / total) * 100).toFixed(2)) : 0
 }
 
 function toHistoryRow(row: UnknownRecord): DeviceOnlineHistoryRow | undefined {

@@ -7,11 +7,13 @@ import type {
 } from '@jetlinks-web-core/data-capability'
 import { defer, map } from 'rxjs'
 import {
+  loadDeviceCategoryDistribution,
   loadDeviceLocationList,
   loadDeviceOnlineHistory,
   loadDeviceSummary,
 } from './deviceMonitoring.service'
 import type {
+  DeviceCategoryDistributionQuery,
   DeviceLocationPageData,
   DeviceLocationQuery,
   DeviceMonitoringState,
@@ -23,10 +25,13 @@ const PROVIDER_ID = 'device-manager:monitoring'
 const SUMMARY_SOURCE_ID = 'device.summary'
 const LOCATION_SOURCE_ID = 'device.location.list'
 const HISTORY_SOURCE_ID = 'device.online.history'
+const CATEGORY_DISTRIBUTION_SOURCE_ID = 'device.category.distribution'
 
 const DEFAULT_PAGE_INDEX = 0
 const DEFAULT_PAGE_SIZE = 200
 const MAX_PAGE_SIZE = 1000
+const DEFAULT_CATEGORY_LIMIT = 8
+const MAX_CATEGORY_LIMIT = 20
 const STATES: DeviceMonitoringState[] = ['online', 'offline', 'notActive']
 
 const owner = { moduleId: MODULE_ID, providerId: PROVIDER_ID }
@@ -111,6 +116,34 @@ const historySource: DataSourceDefinition = {
   }),
 }
 
+const categoryDistributionSource: DataSourceDefinition = {
+  id: CATEGORY_DISTRIBUTION_SOURCE_ID,
+  kind: 'data-source',
+  version: 1,
+  name: t('DeviceDataCapability.category.name'),
+  description: t('DeviceDataCapability.category.description'),
+  owner,
+  tags: ['device', 'category', 'distribution'],
+  facets: { category: 'device-monitoring' },
+  modes: ['snapshot', 'poll'],
+  defaults: { pollInterval: 30_000 },
+  querySchema: {
+    type: 'object',
+    properties: {
+      limit: { type: 'integer', default: DEFAULT_CATEGORY_LIMIT },
+    },
+  },
+  outputSchema: arrayOutputSchema,
+  create: () => ({
+    query(request, context) {
+      return defer(() => loadDeviceCategoryDistribution(
+        toCategoryDistributionQuery(request),
+        request.signal || context.signal,
+      )).pipe(map(data => ({ data })))
+    },
+  }),
+}
+
 function toLocationQuery(request: DataSourceRequest): DeviceLocationQuery {
   const state = optionalText(request.query?.state)
   if (state && !STATES.includes(state as DeviceMonitoringState)) {
@@ -130,6 +163,12 @@ function toHistoryQuery(request: DataSourceRequest): DeviceOnlineHistoryQuery {
     throw new Error(t('DeviceDataCapability.error.invalidTimeRange'))
   }
   return { startTime, endTime }
+}
+
+function toCategoryDistributionQuery(request: DataSourceRequest): DeviceCategoryDistributionQuery {
+  return {
+    limit: integerInRange(request.query?.limit, DEFAULT_CATEGORY_LIMIT, 1, MAX_CATEGORY_LIMIT),
+  }
 }
 
 function toPageResult(page: DeviceLocationPageData): DataSourceResult<DeviceLocationPageData['data']> {
@@ -168,8 +207,15 @@ function integerInRange(value: unknown, fallback: number, min: number, max = Num
 const deviceMonitoringProvider: DataCapabilityProvider = {
   id: PROVIDER_ID,
   owner,
-  capabilityIds: [SUMMARY_SOURCE_ID, LOCATION_SOURCE_ID, HISTORY_SOURCE_ID],
-  load: () => ({ sources: [summarySource, locationSource, historySource] }),
+  capabilityIds: [
+    SUMMARY_SOURCE_ID,
+    LOCATION_SOURCE_ID,
+    HISTORY_SOURCE_ID,
+    CATEGORY_DISTRIBUTION_SOURCE_ID,
+  ],
+  load: () => ({
+    sources: [summarySource, locationSource, historySource, categoryDistributionSource],
+  }),
 }
 
 export default deviceMonitoringProvider
