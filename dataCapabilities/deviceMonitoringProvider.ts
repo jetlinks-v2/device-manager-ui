@@ -25,13 +25,13 @@ const PROVIDER_ID = 'device-manager:monitoring'
 const SUMMARY_SOURCE_ID = 'device.summary'
 const LOCATION_SOURCE_ID = 'device.location.list'
 const HISTORY_SOURCE_ID = 'device.online.history'
-const CATEGORY_DISTRIBUTION_SOURCE_ID = 'device.category.distribution'
+const CATEGORY_SOURCE_ID = 'device.category.distribution'
 
 const DEFAULT_PAGE_INDEX = 0
 const DEFAULT_PAGE_SIZE = 200
 const MAX_PAGE_SIZE = 1000
 const DEFAULT_CATEGORY_LIMIT = 8
-const MAX_CATEGORY_LIMIT = 20
+const MAX_CATEGORY_LIMIT = 50
 const STATES: DeviceMonitoringState[] = ['online', 'offline', 'notActive']
 
 const owner = { moduleId: MODULE_ID, providerId: PROVIDER_ID }
@@ -116,8 +116,8 @@ const historySource: DataSourceDefinition = {
   }),
 }
 
-const categoryDistributionSource: DataSourceDefinition = {
-  id: CATEGORY_DISTRIBUTION_SOURCE_ID,
+const categorySource: DataSourceDefinition = {
+  id: CATEGORY_SOURCE_ID,
   kind: 'data-source',
   version: 1,
   name: t('DeviceDataCapability.category.name'),
@@ -126,7 +126,7 @@ const categoryDistributionSource: DataSourceDefinition = {
   tags: ['device', 'category', 'distribution'],
   facets: { category: 'device-monitoring' },
   modes: ['snapshot', 'poll'],
-  defaults: { pollInterval: 30_000 },
+  defaults: { pollInterval: 60_000, limit: DEFAULT_CATEGORY_LIMIT },
   querySchema: {
     type: 'object',
     properties: {
@@ -137,7 +137,7 @@ const categoryDistributionSource: DataSourceDefinition = {
   create: () => ({
     query(request, context) {
       return defer(() => loadDeviceCategoryDistribution(
-        toCategoryDistributionQuery(request),
+        toCategoryQuery(request),
         request.signal || context.signal,
       )).pipe(map(data => ({ data })))
     },
@@ -165,9 +165,14 @@ function toHistoryQuery(request: DataSourceRequest): DeviceOnlineHistoryQuery {
   return { startTime, endTime }
 }
 
-function toCategoryDistributionQuery(request: DataSourceRequest): DeviceCategoryDistributionQuery {
+function toCategoryQuery(request: DataSourceRequest): DeviceCategoryDistributionQuery {
   return {
-    limit: integerInRange(request.query?.limit, DEFAULT_CATEGORY_LIMIT, 1, MAX_CATEGORY_LIMIT),
+    limit: integerInRange(
+      request.query?.limit ?? request.limit,
+      DEFAULT_CATEGORY_LIMIT,
+      1,
+      MAX_CATEGORY_LIMIT,
+    ),
   }
 }
 
@@ -211,10 +216,10 @@ const deviceMonitoringProvider: DataCapabilityProvider = {
     SUMMARY_SOURCE_ID,
     LOCATION_SOURCE_ID,
     HISTORY_SOURCE_ID,
-    CATEGORY_DISTRIBUTION_SOURCE_ID,
+    CATEGORY_SOURCE_ID,
   ],
   load: () => ({
-    sources: [summarySource, locationSource, historySource, categoryDistributionSource],
+    sources: [summarySource, locationSource, historySource, categorySource],
   }),
 }
 

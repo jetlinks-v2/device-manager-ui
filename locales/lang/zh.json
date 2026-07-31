@@ -4190,7 +4190,6 @@
     "DeviceDataCapability.error.invalidTimestamp": "时间必须是有效的 Unix 毫秒时间戳",
     "DeviceDataCapability.error.invalidPagination": "分页参数不正确",
     "DeviceDataCapability.error.loadFailed": "设备运行数据加载失败",
-    "DeviceDataCapability.category.name": "设备类型分布",
-    "DeviceDataCapability.category.description": "按产品分类查询设备数量和占比。",
-    "DeviceDataCapability.category.other": "其他"
+    "DeviceDataCapability.category.name": "设备分类分布",
+    "DeviceDataCapability.category.description": "按设备分类统计设备实例数量与占比。"
 }

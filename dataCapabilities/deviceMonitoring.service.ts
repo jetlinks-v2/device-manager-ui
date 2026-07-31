@@ -1,8 +1,8 @@
 import dayjs from 'dayjs'
 import i18n from '@jetlinks-web-core/locales'
 import { encodeQuery } from '@jetlinks-web-core/utils'
+import { request } from '@jetlinks-web/core'
 import { dashboard, deviceCount, getDeviceGeoJson } from '@device-manager-ui/api/dashboard'
-import { queryTree } from '@device-manager-ui/api/category'
 import type {
   DeviceCategoryDistributionQuery,
   DeviceCategoryDistributionRow,
@@ -119,51 +119,115 @@ export async function loadDeviceOnlineHistory(
 }
 
 /**
- * 查询设备产品分类分布。
- *
- * 分类树和设备数量均沿用设备模块现有权限上下文；未分类及被 limit 截断的数量合并为“其他”。
+ * 按设备分类统计实例数量。分类、产品和设备实例的关联只在设备模块内解释。
  */
 export async function loadDeviceCategoryDistribution(
   query: DeviceCategoryDistributionQuery,
   signal?: AbortSignal,
 ): Promise<DeviceCategoryDistributionRow[]> {
-  const [categoryResponse, total] = await Promise.all([
-    queryTree({
+  const [categoryResponse, productResponse] = await Promise.all([
+    request.post('/device/category/_tree', {
       paging: false,
-      sorts: [
-        { name: 'sortIndex', order: 'asc' },
-        { name: 'createTime', order: 'desc' },
-      ],
-    }, { signal }),
-    queryDeviceCount(undefined, signal),
+      sorts: [{ name: 'sortIndex', order: 'asc' }],
+    }, { signal, hiddenError: true }),
+    request.post('/device-product/_query/no-paging?paging=false', {
+      paging: false,
+      terms: [],
+    }, { signal, hiddenError: true }),
   ])
-  assertResponseSuccess(categoryResponse)
-  const categories = flattenCategories(unwrapResult(categoryResponse))
-  const counted = await Promise.all(categories.map(async (category) => ({
-    categoryId: category.id,
-    categoryName: category.name,
-    count: await queryDeviceCountByCategory(category.id, signal),
+  const categories = extractRows(unwrapResult(categoryResponse))
+    .map(toCategoryNode)
+    .filter((item): item is CategoryNode => Boolean(item))
+  const products = extractRows(unwrapResult(productResponse))
+  const productIdsByCategory = groupProductIdsByRootCategory(categories, products)
+  const rows = await Promise.all(categories.map(async category => ({
+    category,
+    count: await countDevicesByProducts(
+      productIdsByCategory.get(category.id) || [],
+      signal,
+    ),
   })))
-  const rows = counted
-    .filter(row => row.count > 0)
-    .sort((left, right) => right.count - left.count)
-  const visible = rows.slice(0, query.limit)
-  const visibleCount = visible.reduce((sum, row) => sum + row.count, 0)
-  const otherCount = Math.max(total - visibleCount, 0)
-  const result = visible.map(row => ({
-    ...row,
-    rate: percent(row.count, total),
+  const ranked = rows
+    .sort((left, right) => right.count - left.count
+      || left.category.name.localeCompare(right.category.name))
+    .slice(0, query.limit)
+  const total = ranked.reduce((sum, item) => sum + item.count, 0)
+  return ranked.map(item => ({
+    categoryId: item.category.id,
+    categoryName: item.category.name,
+    count: item.count,
+    rate: total > 0 ? Number((item.count / total * 100).toFixed(2)) : 0,
   }))
+}
 
-  if (otherCount > 0) {
-    result.push({
-      categoryId: 'other',
-      categoryName: t('DeviceDataCapability.category.other'),
-      count: otherCount,
-      rate: percent(otherCount, total),
-    })
+interface CategoryNode {
+  id: string
+  name: string
+  children: CategoryNode[]
+}
+
+function toCategoryNode(value: UnknownRecord): CategoryNode | undefined {
+  const id = text(value.id).trim()
+  const name = text(value.name).trim()
+  if (!id || !name) return undefined
+  return {
+    id,
+    name,
+    children: Array.isArray(value.children)
+      ? value.children
+          .map(asRecord)
+          .map(toCategoryNode)
+          .filter((item): item is CategoryNode => Boolean(item))
+      : [],
   }
-  return result
+}
+
+function groupProductIdsByRootCategory(
+  roots: CategoryNode[],
+  products: UnknownRecord[],
+): Map<string, string[]> {
+  const rootByCategory = new Map<string, string>()
+  roots.forEach(root => collectRootCategoryIds(root, root.id, rootByCategory))
+  const grouped = new Map<string, string[]>()
+  products.forEach((product) => {
+    const productId = text(product.id).trim()
+    if (!productId) return
+    normalizeIds(product.classifiedId ?? product.categoryId).forEach((categoryId) => {
+      const rootId = rootByCategory.get(categoryId)
+      if (!rootId) return
+      const ids = grouped.get(rootId) || []
+      if (!ids.includes(productId)) ids.push(productId)
+      grouped.set(rootId, ids)
+    })
+  })
+  return grouped
+}
+
+function collectRootCategoryIds(
+  node: CategoryNode,
+  rootId: string,
+  result: Map<string, string>,
+) {
+  result.set(node.id, rootId)
+  node.children.forEach(child => collectRootCategoryIds(child, rootId, result))
+}
+
+async function countDevicesByProducts(
+  productIds: string[],
+  signal?: AbortSignal,
+): Promise<number> {
+  if (!productIds.length) return 0
+  const response = await request.post('/device-instance/_count', {
+    terms: [{ column: 'productId', termType: 'in', value: productIds }],
+  }, { signal, hiddenError: true })
+  const result = unwrapResult(response)
+  return finiteNumber(isRecord(result) ? result.total ?? result.count : result) ?? 0
+}
+
+function normalizeIds(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map(text).map(item => item.trim()).filter(Boolean)
+  const normalized = text(isRecord(value) ? value.value : value).trim()
+  return normalized ? [normalized] : []
 }
 
 async function queryDeviceCount(state: string | undefined, signal?: AbortSignal): Promise<number> {
@@ -172,33 +236,6 @@ async function queryDeviceCount(state: string | undefined, signal?: AbortSignal)
   assertResponseSuccess(response)
   const result = unwrapResult(response)
   return finiteNumber(isRecord(result) ? result.total ?? result.count : result) ?? 0
-}
-
-async function queryDeviceCountByCategory(categoryId: string, signal?: AbortSignal): Promise<number> {
-  const response = await deviceCount(encodeQuery({ terms: { classifiedId: categoryId } }), { signal })
-  assertResponseSuccess(response)
-  const result = unwrapResult(response)
-  return finiteNumber(isRecord(result) ? result.total ?? result.count : result) ?? 0
-}
-
-function flattenCategories(value: unknown): Array<{ id: string; name: string }> {
-  const output: Array<{ id: string; name: string }> = []
-  const walk = (items: unknown[]) => {
-    items.filter(isRecord).forEach((item) => {
-      const id = text(item.id).trim()
-      const name = text(item.name).trim()
-      if (id && name) output.push({ id, name })
-      if (Array.isArray(item.children)) walk(item.children)
-    })
-  }
-  const root = unwrapResult(value)
-  if (Array.isArray(root)) walk(root)
-  else walk(extractRows(root))
-  return output
-}
-
-function percent(value: number, total: number): number {
-  return total > 0 ? Number(((value / total) * 100).toFixed(2)) : 0
 }
 
 function toHistoryRow(row: UnknownRecord): DeviceOnlineHistoryRow | undefined {
