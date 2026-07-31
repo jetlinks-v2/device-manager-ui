@@ -1,5 +1,12 @@
 export type DeviceMonitoringState = 'online' | 'offline' | 'notActive'
 
+export type DeviceMonitoringScope = 'iot'
+
+export interface DeviceSummaryQuery {
+  scope?: DeviceMonitoringScope
+  deviceIds?: string[]
+}
+
 export interface DeviceSummaryData {
   total: number
   online: number
@@ -37,16 +44,16 @@ export interface DeviceLocationPageData {
   pageSize: number
 }
 
-export interface DeviceOnlineHistoryQuery {
+export interface DeviceRuntimeTrendQuery {
   startTime?: number
   endTime?: number
+  scope?: DeviceMonitoringScope
 }
 
-export interface DeviceOnlineHistoryRow {
+export interface DeviceRuntimeTrendRow {
   timestamp: number
-  onlineCount: number
-  deviceTotal: number | null
   onlineRate: number | null
+  messageCount: number
 }
 
 export interface DeviceCategoryDistributionQuery {
