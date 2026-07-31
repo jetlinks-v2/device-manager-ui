@@ -44,10 +44,25 @@ export default {
       capabilityIds: [
         'device.summary',
         'device.location.list',
-        'device.online.history',
+        'device.runtime.trend',
         'device.category.distribution',
       ],
       loader: () => import('./dataCapabilities/deviceMonitoringProvider'),
+    },
+    deviceInstanceMonitoring: {
+      capabilityIds: [
+        'device.state.batch',
+        'device.detail',
+      ],
+      loader: () => import('./dataCapabilities/deviceInstanceMonitoringProvider'),
+    },
+    deviceGroupMonitoring: {
+      capabilityIds: [
+        'device.group.list',
+        'device.group.summary.batch',
+        'device.group.devices.page',
+      ],
+      loader: () => import('./dataCapabilities/deviceGroupMonitoringProvider'),
     },
   } satisfies DataCapabilityProviderManifest,
 }
