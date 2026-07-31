@@ -575,6 +575,8 @@ const DEVICE_DETAIL_AGENT_SYSTEM_PROMPT_LINES = [
   $t('DeviceDetail.agent.systemPrompt.4')
 ]
 const deviceDetailClientToolRuntime = createDeviceDetailClientToolRuntime(() => instanceStore.current || {}, $t)
+const deviceDetailClientToolsVersion = ref(deviceDetailClientToolRuntime.clientToolsVersion)
+let unsubscribeDeviceDetailClientTools = () => undefined
 const deviceMetadataReferences = useDeviceMetadataReferences({
   device: computed(() => instanceStore.current || {}),
   t: $t,
@@ -1027,6 +1029,7 @@ const buildDeviceDetailAgentParameters = () => {
     subjectType: DEVICE_AGENT_SUBJECT_TYPE,
     subjectId: deviceId,
     clientTools: getDeviceDetailClientTools(),
+    clientToolsVersion: deviceDetailClientToolsVersion.value,
     clientToolHandler: deviceDetailClientToolRuntime.handleClientToolCall,
     clientToolsName: deviceDetailClientToolRuntime.clientToolsName,
     clientToolsDescription: buildDeviceDetailClientToolsDescription(),
@@ -1154,6 +1157,11 @@ const refreshDeviceDetailAgentParameters = () => {
     ...parameters
   }
 }
+
+unsubscribeDeviceDetailClientTools = deviceDetailClientToolRuntime.subscribeClientTools((version) => {
+  deviceDetailClientToolsVersion.value = version
+  refreshDeviceDetailAgentParameters()
+})
 
 const orderedOptions = computed(() => {
   const source = (mergedOptions as any)?.value || []
@@ -1592,6 +1600,8 @@ watch(
 )
 
 onUnmounted(() => {
+  unsubscribeDeviceDetailClientTools()
+  deviceDetailClientToolRuntime.dispose()
   instanceStore.current = {} as any
   statusRef.value && statusRef.value.unsubscribe()
   aiStore.releaseAgentConversation(DEVICE_DETAIL_AGENT_CLIENT_ID)

@@ -24,6 +24,12 @@ import { createDeviceFunctionClientTools } from './functionTool'
 import { createDeviceAlarmClientTools } from './alarmTool'
 import { createEdgeDiagnosisClientTools } from './edgeDiagnosisTool'
 import { createDeviceTraceCaptureClientTools } from './traceCaptureTool'
+import {
+  DEVICE_LOG_RECORDS_CONTRACT,
+  DEVICE_LOG_SUMMARY_CONTRACT,
+  withDeviceLogRecordEvidence,
+  withDeviceLogSummaryEvidence,
+} from './deviceLogToolContract'
 
 type DeviceDetailRecord = Record<string, any>
 type TranslateFn = (key: string, params?: Record<string, any>) => string
@@ -616,6 +622,8 @@ const collectPagedToolData = async <T = any>({
   let total = 0
   let totalKnown = false
   let returned = 0
+  let firstRecord: T | undefined
+  let lastRecord: T | undefined
   let fileWrite: ToolSessionFileWriteSummary | undefined
   let fileAppend = false
 
@@ -627,6 +635,10 @@ const collectPagedToolData = async <T = any>({
     }
     const remaining = targetLimit - returned
     const normalizedPage = page.data.slice(0, remaining).map(normalizeRecord)
+    if (normalizedPage.length) {
+      firstRecord ??= normalizedPage[0]
+      lastRecord = normalizedPage[normalizedPage.length - 1]
+    }
     returned += normalizedPage.length
 
     if (writeMode && call) {
@@ -664,6 +676,7 @@ const collectPagedToolData = async <T = any>({
     writeLimit: writeMode && !writeLimit?.unlimited ? targetLimit : undefined,
     writeLimitUnlimited: writeMode ? !!writeLimit?.unlimited : undefined,
     file: fileWrite,
+    boundaryRecords: [firstRecord, lastRecord].filter((value): value is T => value !== undefined),
     data
   }
 }
@@ -1075,6 +1088,25 @@ const buildDeviceLogTerms = (args: Record<string, any>, resolved = resolveTimeRa
   ]
 }
 
+const booleanInput = (value: unknown) => value === true || String(value || '').trim().toLowerCase() === 'true'
+
+const readPreviousDeviceLogBoundary = async (
+  deviceId: string,
+  args: Record<string, any>,
+  range: ResolvedTimeRange
+) => {
+  if (!booleanInput(args.includePreviousBoundary) || range.start === undefined) return undefined
+  const response = await queryLog(deviceId, {
+    paging: true,
+    pageIndex: 0,
+    pageSize: 1,
+    sorts: [{ name: 'timestamp', order: 'desc' }],
+    terms: buildDeviceLogTerms(args, { end: Math.max(0, range.start - 1) })
+  })
+  const item = normalizePagedList(response).data[0]
+  return item ? normalizeDeviceLogRecord(item) : undefined
+}
+
 const readBlobText = async (response: any, maxBytes: number, mode = 'head') => {
   const blob = response instanceof Blob ? response : new Blob([response])
   const normalizedMode = mode === 'tail' ? 'tail' : 'head'
@@ -1340,23 +1372,64 @@ export const createDeviceDetailClientToolRuntime = (
       }
     },
     createDevicePropertyAggregateTool({
-      t,
-      clampNumber,
-      asArray,
-      responseResult,
+      copy: {
+        description: t('DeviceDetail.agentTools.propertyAggregate.description'),
+        help: t('DeviceDetail.agentTools.propertyAggregate.help'),
+        propertyId: t('DeviceDetail.agentTools.propertyAggregate.inputs.propertyId'),
+        propertyIds: t('DeviceDetail.agentTools.propertyAggregate.inputs.propertyIds'),
+        aggregation: t('DeviceDetail.agentTools.propertyAggregate.inputs.agg'),
+        interval: t('DeviceDetail.agentTools.propertyAggregate.inputs.interval'),
+        startTime: startTimeDescription(),
+        endTime: endTimeDescription(),
+        timeRangeInput: timeRangeInput(),
+        limit: t('DeviceDetail.agentTools.propertyAggregate.inputs.limit'),
+        deviceIdMissing: t('DeviceDetail.agentTools.common.errors.deviceIdMissing'),
+        propertyIdMissing: t('DeviceDetail.agentTools.common.errors.propertyIdMissing'),
+        nonNumericWarning: propertyId => t(
+          'DeviceDetail.agentTools.propertyAggregate.warning.nonNumericCount',
+          { propertyId }
+        ),
+        truncated: t('DeviceDetail.agentTools.propertyAggregate.nextAction.truncated')
+      },
+      resolveSubject: (_args, context) => ({
+        deviceId: getDeviceId(context),
+        metadata: getMetadata(context)
+      }),
       resolveTimeRange,
-      describeResolvedTimeRange,
+      describeTimeRange: describeResolvedTimeRange,
       dataTypeText,
-      compactInlineValue,
-      stringifyToolResult,
-      withWriteToPathInput,
-      writeToolResultToSessionFile,
-      writeRecordsToSessionFile,
-      timeRangeInput,
-      startTimeDescription: startTimeDescription(),
-      endTimeDescription: endTimeDescription(),
-      getDeviceId,
-      getMetadata
+      compactValue: compactInlineValue,
+      decorateInputs: withWriteToPathInput,
+      deliver: async ({ args, call, data, preview, inlineLimit, inlineResult, fullResult, base }) => {
+        if (!String(args.writeToPath || '').trim()) return undefined
+        const fileWrite = await writeRecordsToSessionFile(args, call, data)
+        if (fileWrite) {
+          return {
+            ...base,
+            ...fileWrite,
+            returned: data.length,
+            truncated: false,
+            fullResultWritten: true,
+            inlinePreviewLimit: inlineLimit,
+            inlinePreviewReturned: preview.length,
+            inlinePreviewTruncated: data.length > preview.length,
+            dataPreview: preview
+          }
+        }
+        return writeToolResultToSessionFile(args, call, inlineResult, {
+          content: stringifyToolResult(fullResult),
+          summary: {
+            ...base,
+            returned: data.length,
+            truncated: false,
+            fullResultWritten: true,
+            inlinePreviewLimit: inlineLimit,
+            inlinePreviewReturned: preview.length,
+            inlinePreviewTruncated: data.length > preview.length,
+            dataPreview: preview
+          }
+        })
+      }
     }),
     ...createDeviceDocumentClientTools({
       t,
@@ -1537,6 +1610,7 @@ export const createDeviceDetailClientToolRuntime = (
     {
       id: 'device_online_offline_summary',
       name: 'device_online_offline_summary',
+      ...DEVICE_LOG_SUMMARY_CONTRACT,
       description: t('DeviceDetail.agentTools.onlineOfflineSummary.description'),
       inputs: [
         {
@@ -1619,7 +1693,7 @@ export const createDeviceDetailClientToolRuntime = (
           ...(online !== undefined ? { online } : {}),
           ...(offline !== undefined ? { offline } : {})
         }
-        return {
+        return withDeviceLogSummaryEvidence({
           deviceId,
           source: 'device-log',
           types,
@@ -1629,12 +1703,13 @@ export const createDeviceDetailClientToolRuntime = (
           total: Object.values(counts).reduce((sum, count) => sum + Number(count || 0), 0),
           returned: samples.data.length,
           samples: samples.data.map(normalizeDeviceLogRecord)
-        }
+        }, timeRange)
       }
     },
     {
       id: 'device_logs_summary',
       name: 'device_logs_summary',
+      ...DEVICE_LOG_SUMMARY_CONTRACT,
       description: t('DeviceDetail.agentTools.logsSummary.description'),
       inputs: [
         {
@@ -1690,7 +1765,7 @@ export const createDeviceDetailClientToolRuntime = (
           terms: buildDeviceLogTerms(args, timeRange)
         })
         const result = normalizePagedList(resp)
-        return {
+        return withDeviceLogSummaryEvidence({
           deviceId,
           type: types.length > 1 ? types : types[0],
           timeRange: describeResolvedTimeRange(timeRange),
@@ -1698,12 +1773,13 @@ export const createDeviceDetailClientToolRuntime = (
           total: result.total,
           returned: result.data.length,
           samples: result.data.map(normalizeDeviceLogRecord)
-        }
+        }, timeRange)
       }
     },
     {
       id: 'device_logs_query',
       name: 'device_logs_query',
+      ...DEVICE_LOG_RECORDS_CONTRACT,
       description: t('DeviceDetail.agentTools.logsQuery.description'),
       inputs: withWriteToPathInput([
         {
@@ -1742,6 +1818,13 @@ export const createDeviceDetailClientToolRuntime = (
           required: false,
           valueType: 'int'
         },
+        {
+          id: 'includePreviousBoundary',
+          name: 'includePreviousBoundary',
+          description: t('DeviceDetail.agentTools.logsQuery.inputs.includePreviousBoundary'),
+          required: false,
+          valueType: 'boolean'
+        },
         writeLimitInput()
       ]),
       output: { type: 'object' },
@@ -1765,24 +1848,40 @@ export const createDeviceDetailClientToolRuntime = (
           }),
           normalizeRecord: normalizeDeviceLogRecord
         })
-        const previewData = collected.data.slice(0, inlineLimit)
+        const previousBoundary = await readPreviousDeviceLogBoundary(deviceId, args, timeRange)
+        let resultFile = collected.file
+        if (previousBoundary) {
+          collected.boundaryRecords.push(previousBoundary)
+          if (resultFile) {
+            resultFile = await writeNdjsonRecordsToSessionFile(args, call, [previousBoundary], { append: true })
+          }
+        }
+        const deliveredRecordCount = collected.returned + (previousBoundary ? 1 : 0)
+        // The boundary record is outside the requested range and must not consume its preview quota.
+        const inlineRangeRecords = collected.data.slice(0, inlineLimit)
+        const previewData = [
+          ...inlineRangeRecords,
+          ...(previousBoundary ? [previousBoundary] : [])
+        ]
         const base = {
           deviceId,
           type: types.length > 1 ? types : types[0],
           timeRange: describeResolvedTimeRange(timeRange),
-          total: collected.total
+          total: collected.total,
+          boundaryIncluded: !!previousBoundary,
+          boundaryTimestamp: previousBoundary?.timestamp
         }
         const result = {
           ...base,
           returned: previewData.length,
-          truncated: collected.total > previewData.length,
-          nextAction: collected.total > previewData.length ? t('DeviceDetail.agentTools.logsQuery.nextAction.truncated') : undefined,
+          truncated: collected.truncated,
+          nextAction: collected.truncated ? t('DeviceDetail.agentTools.logsQuery.nextAction.truncated') : undefined,
           data: previewData
         }
-        if (collected.file) {
-          return {
+        if (resultFile) {
+          return withDeviceLogRecordEvidence({
             ...base,
-            ...collected.file,
+            ...resultFile,
             returned: collected.returned,
             truncated: collected.truncated,
             fullResultWritten: !collected.truncated,
@@ -1791,9 +1890,17 @@ export const createDeviceDetailClientToolRuntime = (
             writeLimitExceeded: collected.truncated,
             inlinePreviewLimit: inlineLimit,
             inlinePreviewReturned: previewData.length,
-            inlinePreviewTruncated: collected.returned > previewData.length,
+            inlinePreviewTruncated: collected.returned > inlineRangeRecords.length,
             dataPreview: previewData
-          }
+          }, {
+            range: timeRange,
+            total: collected.total,
+            returned: collected.returned,
+            recordCount: deliveredRecordCount,
+            truncated: collected.truncated,
+            reference: resultFile.uri,
+            records: collected.boundaryRecords
+          })
         }
         const fullResult = {
           ...base,
@@ -1801,9 +1908,9 @@ export const createDeviceDetailClientToolRuntime = (
           truncated: collected.truncated,
           writeLimit: collected.writeLimit,
           writeLimitUnlimited: collected.writeLimitUnlimited,
-          data: collected.data
+          data: previewData
         }
-        return writeToolResultToSessionFile(args, call, result, {
+        const delivered = await writeToolResultToSessionFile(args, call, result, {
           content: stringifyToolResult(fullResult),
           summary: {
             ...base,
@@ -1815,9 +1922,19 @@ export const createDeviceDetailClientToolRuntime = (
             writeLimitExceeded: collected.truncated,
             inlinePreviewLimit: inlineLimit,
             inlinePreviewReturned: previewData.length,
-            inlinePreviewTruncated: collected.data.length > previewData.length,
+            inlinePreviewTruncated: collected.returned > inlineRangeRecords.length,
             dataPreview: previewData
           }
+        })
+        return withDeviceLogRecordEvidence(delivered, {
+          range: timeRange,
+          total: collected.total,
+          returned: collected.returned,
+          recordCount: deliveredRecordCount,
+          truncated: collected.truncated,
+          reference: String((delivered as Record<string, any>).uri || '').trim() || undefined,
+          inlinePath: '$.data',
+          records: collected.boundaryRecords
         })
       }
     },
