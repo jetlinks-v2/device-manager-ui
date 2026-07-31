@@ -45,6 +45,7 @@ export default {
         'device.summary',
         'device.location.list',
         'device.online.history',
+        'device.category.distribution',
       ],
       loader: () => import('./dataCapabilities/deviceMonitoringProvider'),
     },

@@ -4188,5 +4188,7 @@
     "DeviceDataCapability.error.invalidTimeRange": "Start time cannot be later than end time",
     "DeviceDataCapability.error.invalidTimestamp": "Time must be a valid Unix millisecond timestamp",
     "DeviceDataCapability.error.invalidPagination": "Invalid pagination parameters",
-    "DeviceDataCapability.error.loadFailed": "Failed to load device monitoring data"
+    "DeviceDataCapability.error.loadFailed": "Failed to load device monitoring data",
+    "DeviceDataCapability.category.name": "Device Category Distribution",
+    "DeviceDataCapability.category.description": "Count device instances and percentages by device category."
 }

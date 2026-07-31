@@ -48,3 +48,14 @@ export interface DeviceOnlineHistoryRow {
   deviceTotal: number | null
   onlineRate: number | null
 }
+
+export interface DeviceCategoryDistributionQuery {
+  limit: number
+}
+
+export interface DeviceCategoryDistributionRow {
+  categoryId: string
+  categoryName: string
+  count: number
+  rate: number
+}
