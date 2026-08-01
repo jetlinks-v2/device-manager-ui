@@ -1141,6 +1141,14 @@ export const createDeviceDomainTools = (
         'Domain.homeAgent.tool.aggregate.nonNumericWarning',
         [propertyId],
       ),
+      longitudeLabel: propertyLabel => i18n.global.t(
+        'Domain.homeAgent.tool.aggregate.longitudeLabel',
+        [propertyLabel],
+      ),
+      latitudeLabel: propertyLabel => i18n.global.t(
+        'Domain.homeAgent.tool.aggregate.latitudeLabel',
+        [propertyLabel],
+      ),
       truncated: i18n.global.t('Domain.homeAgent.tool.aggregate.truncated'),
     },
     decorateInputs: inputs => [

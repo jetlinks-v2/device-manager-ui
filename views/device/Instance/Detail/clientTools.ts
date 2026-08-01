@@ -1389,6 +1389,14 @@ export const createDeviceDetailClientToolRuntime = (
           'DeviceDetail.agentTools.propertyAggregate.warning.nonNumericCount',
           { propertyId }
         ),
+        longitudeLabel: propertyLabel => t(
+          'DeviceDetail.agentTools.propertyAggregate.fields.longitude',
+          { propertyLabel }
+        ),
+        latitudeLabel: propertyLabel => t(
+          'DeviceDetail.agentTools.propertyAggregate.fields.latitude',
+          { propertyLabel }
+        ),
         truncated: t('DeviceDetail.agentTools.propertyAggregate.nextAction.truncated')
       },
       resolveSubject: (_args, context) => ({

@@ -5,6 +5,7 @@ import {
   withAiClientToolContractEvidence,
   type AiClientToolOutputField,
 } from '@jetlinks-web-core/layout/components/AiChat/clientTools'
+import { createDevicePropertyAggregateRecordSchema } from './propertyAggregateSupport'
 
 type JsonRecord = Record<string, unknown>
 
@@ -67,19 +68,6 @@ const observedRange = (data: JsonRecord[]) => {
   return start === undefined || end === undefined ? undefined : { start, end }
 }
 
-const recordSchema = (fields: AiClientToolOutputField[]) => ({
-  type: 'object',
-  properties: Object.fromEntries(fields.map(field => [field.name, {
-    type: field.semanticRole === 'number' || field.semanticRole === 'duration' ? 'number' : 'string',
-    'x-ai-role': field.semanticRole,
-    ...(field.format === 'datetime' ? { format: 'date-time' } : {}),
-    ...(field.label ? { label: field.label } : {}),
-    ...(field.measure ? { 'x-ai-measure': field.measure } : {}),
-    ...(field.unit ? { 'x-ai-unit': field.unit } : {}),
-    ...(field.aggregation ? { 'x-ai-aggregation': field.aggregation } : {}),
-  }])),
-})
-
 const fileReference = (result: JsonRecord) => String(
   result.uri || result.fileRef || result.contentRef || asRecord(result.file).uri || '',
 ).trim()
@@ -136,7 +124,7 @@ export const createDevicePropertyAggregateRecordStream = (
   inlineLimit: number,
 ) => createAiClientToolRecordStream({
   source: createAiClientToolArrayRecordSource(data),
-  schema: recordSchema(fields),
+  schema: createDevicePropertyAggregateRecordSchema(fields),
   bindingName: DEVICE_PROPERTY_AGGREGATE_OUTPUT.name,
   outputShape: DEVICE_PROPERTY_AGGREGATE_OUTPUT.shape,
   timeRange: range,

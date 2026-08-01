@@ -10,6 +10,11 @@ export interface DevicePropertyAggregateColumn {
   agg: DevicePropertyAggregate
 }
 
+export interface DevicePropertyAggregateCoordinateLabels {
+  longitude: (propertyLabel: string) => string
+  latitude: (propertyLabel: string) => string
+}
+
 const PROPERTY_AGGREGATES = new Set<DevicePropertyAggregate>([
   'AVG', 'MAX', 'MIN', 'COUNT', 'FIRST', 'LAST', 'DISTINCT_COUNT',
 ])
@@ -17,6 +22,7 @@ const NUMERIC_REQUIRED_AGGREGATES = new Set<DevicePropertyAggregate>(['AVG', 'MA
 const NUMERIC_PROPERTY_VALUE_TYPES = new Set([
   'int', 'float', 'double', 'long', 'number', 'integer', 'short', 'byte',
 ])
+const GEO_POINT_PROPERTY_VALUE_TYPE = 'geopoint'
 const AGGREGATE_INTERVALS = new Set(['1m', '1h', '1d', '1w', '1M'])
 const AGGREGATE_DEFAULT_RANGE_MS = 24 * 60 * 60 * 1000
 const DEFAULT_INLINE_LIMIT = 200
@@ -84,6 +90,34 @@ const propertyValueType = (property: DevicePropertyAggregateRecord | undefined) 
 
 const isNumericProperty = (property: DevicePropertyAggregateRecord | undefined) => (
   NUMERIC_PROPERTY_VALUE_TYPES.has(String(propertyValueType(property) || '').toLowerCase())
+)
+
+const isGeoPointProperty = (property: DevicePropertyAggregateRecord | undefined) => (
+  String(propertyValueType(property) || '').toLowerCase() === GEO_POINT_PROPERTY_VALUE_TYPE
+)
+
+const isGeoPointValueAggregate = (
+  property: DevicePropertyAggregateRecord | undefined,
+  aggregate: DevicePropertyAggregate,
+) => isGeoPointProperty(property) && (aggregate === 'FIRST' || aggregate === 'LAST')
+
+const finiteCoordinate = (value: unknown, min: number, max: number) => {
+  if (value === undefined || value === null || value === '') return undefined
+  const number = typeof value === 'number' ? value : Number(value)
+  return Number.isFinite(number) && number >= min && number <= max ? number : undefined
+}
+
+const normalizeGeoPoint = (value: unknown) => {
+  const point = asRecord(value)
+  const longitude = finiteCoordinate(point.lon, -180, 180)
+  const latitude = finiteCoordinate(point.lat, -90, 90)
+  return longitude === undefined || latitude === undefined
+    ? undefined
+    : { longitude, latitude }
+}
+
+const coordinateFieldName = (propertyId: string, coordinate: 'longitude' | 'latitude') => (
+  `${propertyId}_${coordinate}`
 )
 
 export const normalizeDevicePropertyAggregate = (value: unknown): DevicePropertyAggregate | undefined => {
@@ -160,7 +194,7 @@ export const createDevicePropertyAggregateColumns = (
     const numeric = property ? isNumericProperty(property) : true
     const aggregate = requested && NUMERIC_REQUIRED_AGGREGATES.has(requested) && !numeric
       ? 'COUNT'
-      : requested ?? (numeric ? 'AVG' : 'COUNT')
+      : requested ?? (numeric ? 'AVG' : isGeoPointProperty(property) ? 'LAST' : 'COUNT')
     if (aggregate === 'COUNT' && requested && NUMERIC_REQUIRED_AGGREGATES.has(requested) && !numeric) {
       warnings.push(nonNumericWarning(propertyId))
     }
@@ -171,12 +205,23 @@ export const createDevicePropertyAggregateColumns = (
 
 export const normalizeDevicePropertyAggregateData = (
   response: unknown,
-  propertyIds: string[],
+  metadata: DevicePropertyAggregateRecord,
+  columns: DevicePropertyAggregateColumn[],
   compactValue: (value: unknown, maxLength: number) => unknown,
 ) => asArray<DevicePropertyAggregateRecord>(devicePropertyAggregateResponseResult(response))
   .map((item) => {
     const record: DevicePropertyAggregateRecord = { time: item.time ?? item.timestamp ?? item.createTime }
-    propertyIds.forEach((propertyId) => {
+    columns.forEach(({ property: propertyId, agg }) => {
+      const property = findDevicePropertyMetadata(metadata, propertyId)
+      if (isGeoPointValueAggregate(property, agg)) {
+        // Geo values remain canonical at the query boundary, then become renderer-neutral scalar roles here.
+        const point = normalizeGeoPoint(item[propertyId])
+        if (point) {
+          record[coordinateFieldName(propertyId, 'longitude')] = point.longitude
+          record[coordinateFieldName(propertyId, 'latitude')] = point.latitude
+        }
+        return
+      }
       record[propertyId] = compactValue(item[propertyId], 1000)
       const formatted = item[`${propertyId}_format`]
       if (formatted !== undefined) record[`${propertyId}_format`] = compactValue(formatted, 1000)
@@ -194,19 +239,54 @@ const propertyUnit = (property: DevicePropertyAggregateRecord | undefined) => {
 export const createDevicePropertyAggregateFields = (
   metadata: DevicePropertyAggregateRecord,
   columns: DevicePropertyAggregateColumn[],
+  coordinateLabels: DevicePropertyAggregateCoordinateLabels,
 ): AiClientToolOutputField[] => [
   { name: 'time', semanticRole: 'timestamp', format: 'datetime' },
-  ...columns.map(({ property: propertyId, agg }) => {
+  ...columns.flatMap(({ property: propertyId, agg }): AiClientToolOutputField[] => {
     const property = findDevicePropertyMetadata(metadata, propertyId)
+    if (isGeoPointValueAggregate(property, agg)) {
+      const propertyLabel = String(property?.name || propertyId)
+      return [
+        {
+          name: coordinateFieldName(propertyId, 'longitude'),
+          semanticRole: 'longitude',
+          label: coordinateLabels.longitude(propertyLabel),
+          measure: propertyId,
+          aggregation: agg.toLowerCase(),
+        },
+        {
+          name: coordinateFieldName(propertyId, 'latitude'),
+          semanticRole: 'latitude',
+          label: coordinateLabels.latitude(propertyLabel),
+          measure: propertyId,
+          aggregation: agg.toLowerCase(),
+        },
+      ]
+    }
     const numeric = isNumericProperty(property) || agg === 'COUNT' || agg === 'DISTINCT_COUNT'
     const unit = agg === 'COUNT' || agg === 'DISTINCT_COUNT' ? 'count' : propertyUnit(property)
-    return {
+    return [{
       name: propertyId,
       semanticRole: numeric ? 'number' as const : 'category' as const,
       ...(property?.name ? { label: String(property.name) } : {}),
       measure: propertyId,
       aggregation: agg.toLowerCase(),
       ...(unit ? { unit } : {}),
-    }
+    }]
   }),
 ]
+
+export const createDevicePropertyAggregateRecordSchema = (fields: AiClientToolOutputField[]) => ({
+  type: 'object',
+  properties: Object.fromEntries(fields.map(field => [field.name, {
+    type: ['number', 'duration', 'longitude', 'latitude'].includes(field.semanticRole || '')
+      ? 'number'
+      : 'string',
+    'x-ai-role': field.semanticRole,
+    ...(field.format === 'datetime' ? { format: 'date-time' } : {}),
+    ...(field.label ? { label: field.label } : {}),
+    ...(field.measure ? { 'x-ai-measure': field.measure } : {}),
+    ...(field.unit ? { 'x-ai-unit': field.unit } : {}),
+    ...(field.aggregation ? { 'x-ai-aggregation': field.aggregation } : {}),
+  }])),
+})

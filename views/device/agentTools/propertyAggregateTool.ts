@@ -53,6 +53,8 @@ export interface DevicePropertyAggregateCopy {
   deviceIdMissing: string
   propertyIdMissing: string
   nonNumericWarning: (propertyId: string) => string
+  longitudeLabel: (propertyLabel: string) => string
+  latitudeLabel: (propertyLabel: string) => string
   truncated: string
 }
 
@@ -142,7 +144,7 @@ export const createDevicePropertyAggregateTool = <TContext>(
         query: { interval, format, from: range.start, to: range.end },
       })
       const compactValue = dependencies.compactValue || compactDevicePropertyAggregateValue
-      const data = normalizeDevicePropertyAggregateData(response, propertyIds, compactValue)
+      const data = normalizeDevicePropertyAggregateData(response, subject.metadata, columns, compactValue)
       const limit = clampDevicePropertyAggregateInlineLimit(args.limit)
       const preview = data.slice(0, limit)
       const aggregates = new Map(columns.map(column => [column.property, column.agg]))
@@ -175,7 +177,10 @@ export const createDevicePropertyAggregateTool = <TContext>(
       const delivered = dependencies.deliver
         ? await dependencies.deliver({ args, call, data, preview, inlineLimit: limit, inlineResult, fullResult, base })
         : undefined
-      const fields = createDevicePropertyAggregateFields(subject.metadata, columns)
+      const fields = createDevicePropertyAggregateFields(subject.metadata, columns, {
+        longitude: copy.longitudeLabel,
+        latitude: copy.latitudeLabel,
+      })
       if (delivered) {
         return withDevicePropertyAggregateEvidence(
           delivered,
