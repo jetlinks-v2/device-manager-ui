@@ -1,8 +1,12 @@
 import type { AiClientToolOutputField } from '@jetlinks-web-core/layout/components/AiChat/clientTools'
-import type { DevicePropertyAggregateTimeRange } from './propertyAggregateContract'
 
 export type DevicePropertyAggregateRecord = Record<string, unknown>
 export type DevicePropertyAggregate = 'AVG' | 'MAX' | 'MIN' | 'COUNT' | 'FIRST' | 'LAST' | 'DISTINCT_COUNT'
+
+export interface DevicePropertyAggregateTimeRange {
+  start?: number
+  end?: number
+}
 
 export interface DevicePropertyAggregateColumn {
   property: string
@@ -27,6 +31,10 @@ const AGGREGATE_INTERVALS = new Set(['1m', '1h', '1d', '1w', '1M'])
 const AGGREGATE_DEFAULT_RANGE_MS = 24 * 60 * 60 * 1000
 const DEFAULT_INLINE_LIMIT = 200
 const MAX_INLINE_LIMIT = 1000
+const MAX_ORDERED_PATH_INLINE_RECORDS = 10_000
+const TARGET_ORDERED_PATH_BUCKETS = 1000
+// Leave headroom below the client-tool runtime's 96 KiB result guard for evidence and artifact metadata.
+const MAX_ORDERED_PATH_INLINE_BYTES = 84 * 1024
 
 const asArray = <T = unknown>(value: unknown): T[] => Array.isArray(value) ? value as T[] : []
 
@@ -107,17 +115,60 @@ const finiteCoordinate = (value: unknown, min: number, max: number) => {
   return Number.isFinite(number) && number >= min && number <= max ? number : undefined
 }
 
-const normalizeGeoPoint = (value: unknown) => {
+const normalizeGeoPoint = (value: unknown): { longitude: number; latitude: number } | undefined => {
+  if (typeof value === 'string') {
+    const text = value.trim()
+    if (!text) return undefined
+    try {
+      return normalizeGeoPoint(JSON.parse(text))
+    } catch {
+      const [longitude, latitude] = text.split(',').map(item => item.trim())
+      const lng = finiteCoordinate(longitude, -180, 180)
+      const lat = finiteCoordinate(latitude, -90, 90)
+      return lng === undefined || lat === undefined ? undefined : { longitude: lng, latitude: lat }
+    }
+  }
+  if (Array.isArray(value) && value.length >= 2) {
+    const longitude = finiteCoordinate(value[0], -180, 180)
+    const latitude = finiteCoordinate(value[1], -90, 90)
+    return longitude === undefined || latitude === undefined ? undefined : { longitude, latitude }
+  }
   const point = asRecord(value)
-  const longitude = finiteCoordinate(point.lon, -180, 180)
-  const latitude = finiteCoordinate(point.lat, -90, 90)
+  const longitude = finiteCoordinate(point.lon ?? point.lng ?? point.longitude, -180, 180)
+  const latitude = finiteCoordinate(point.lat ?? point.latitude, -90, 90)
   return longitude === undefined || latitude === undefined
     ? undefined
     : { longitude, latitude }
 }
 
-const coordinateFieldName = (propertyId: string, coordinate: 'longitude' | 'latitude') => (
-  `${propertyId}_${coordinate}`
+const isSingleOrderedPathColumn = (
+  metadata: DevicePropertyAggregateRecord,
+  columns: DevicePropertyAggregateColumn[],
+) => columns.length === 1 && isGeoPointValueAggregate(
+  findDevicePropertyMetadata(metadata, columns[0].property),
+  columns[0].agg,
+)
+
+const aggregateTimeFieldName = (
+  metadata: DevicePropertyAggregateRecord,
+  columns: DevicePropertyAggregateColumn[],
+) => isSingleOrderedPathColumn(metadata, columns) ? 't' : 'time'
+
+const coordinateFieldName = (
+  metadata: DevicePropertyAggregateRecord,
+  columns: DevicePropertyAggregateColumn[],
+  propertyId: string,
+  coordinate: 'longitude' | 'latitude',
+) => isSingleOrderedPathColumn(metadata, columns)
+  ? coordinate === 'longitude' ? 'x' : 'y'
+  : `${propertyId}_${coordinate}`
+
+export const isDevicePropertyAggregateGeoPointValueColumn = (
+  metadata: DevicePropertyAggregateRecord,
+  column: DevicePropertyAggregateColumn,
+) => isGeoPointValueAggregate(
+  findDevicePropertyMetadata(metadata, column.property),
+  column.agg,
 )
 
 export const normalizeDevicePropertyAggregate = (value: unknown): DevicePropertyAggregate | undefined => {
@@ -208,27 +259,166 @@ export const normalizeDevicePropertyAggregateData = (
   metadata: DevicePropertyAggregateRecord,
   columns: DevicePropertyAggregateColumn[],
   compactValue: (value: unknown, maxLength: number) => unknown,
-) => asArray<DevicePropertyAggregateRecord>(devicePropertyAggregateResponseResult(response))
-  .map((item) => {
-    const record: DevicePropertyAggregateRecord = { time: item.time ?? item.timestamp ?? item.createTime }
-    columns.forEach(({ property: propertyId, agg }) => {
-      const property = findDevicePropertyMetadata(metadata, propertyId)
-      if (isGeoPointValueAggregate(property, agg)) {
-        // Geo values remain canonical at the query boundary, then become renderer-neutral scalar roles here.
-        const point = normalizeGeoPoint(item[propertyId])
-        if (point) {
-          record[coordinateFieldName(propertyId, 'longitude')] = point.longitude
-          record[coordinateFieldName(propertyId, 'latitude')] = point.latitude
-        }
-        return
+) => {
+  const orderedPath = isSingleOrderedPathColumn(metadata, columns)
+  const timeField = aggregateTimeFieldName(metadata, columns)
+  return asArray<DevicePropertyAggregateRecord>(devicePropertyAggregateResponseResult(response))
+    .map((item) => {
+      const record: DevicePropertyAggregateRecord = {
+        [timeField]: item.time ?? item.timestamp ?? item.createTime,
       }
-      record[propertyId] = compactValue(item[propertyId], 1000)
-      const formatted = item[`${propertyId}_format`]
-      if (formatted !== undefined) record[`${propertyId}_format`] = compactValue(formatted, 1000)
+      columns.forEach(({ property: propertyId, agg }) => {
+        const property = findDevicePropertyMetadata(metadata, propertyId)
+        if (isGeoPointValueAggregate(property, agg)) {
+          // Geo values remain canonical at the query boundary, then become renderer-neutral scalar roles here.
+          const point = normalizeGeoPoint(item[propertyId])
+          if (point) {
+            record[coordinateFieldName(metadata, columns, propertyId, 'longitude')] = point.longitude
+            record[coordinateFieldName(metadata, columns, propertyId, 'latitude')] = point.latitude
+          }
+          return
+        }
+        record[propertyId] = compactValue(item[propertyId], 1000)
+        const formatted = item[`${propertyId}_format`]
+        if (formatted !== undefined) record[`${propertyId}_format`] = compactValue(formatted, 1000)
+      })
+      return record
     })
-    return record
+    // A closed path cannot contain a timestamp-only row. Mixed aggregates keep their other measures.
+    .filter(record => !orderedPath || ('x' in record && 'y' in record))
+    .reverse()
+}
+
+const timeSortValue = (value: unknown) => {
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  const parsed = Date.parse(String(value || '').trim().replace(' ', 'T'))
+  return Number.isFinite(parsed) ? parsed : undefined
+}
+
+const padTimePart = (value: number) => String(value).padStart(2, '0')
+
+const formatAggregateBucketTime = (timestamp: number, interval: string) => {
+  const date = new Date(timestamp)
+  if (interval === '1m') date.setSeconds(0, 0)
+  else if (interval === '1h') date.setMinutes(0, 0, 0)
+  else if (interval === '1d') date.setHours(0, 0, 0, 0)
+  else if (interval === '1w') {
+    const day = date.getDay() || 7
+    date.setDate(date.getDate() - day + 1)
+    date.setHours(0, 0, 0, 0)
+  } else if (interval === '1M') {
+    date.setDate(1)
+    date.setHours(0, 0, 0, 0)
+  }
+  return `${date.getFullYear()}-${padTimePart(date.getMonth() + 1)}-${padTimePart(date.getDate())}`
+    + (interval === '1d' || interval === '1w' || interval === '1M'
+      ? ''
+      : ` ${padTimePart(date.getHours())}:${padTimePart(date.getMinutes())}:00`)
+}
+
+const rawPropertyHistoryValue = (input: unknown) => {
+  const row = asRecord(input)
+  const nested = asRecord(row.value)
+  return {
+    timestamp: timeSortValue(row.timestamp ?? nested.timestamp ?? row.createTime),
+    value: 'value' in nested ? nested.value : row.value,
+  }
+}
+
+/**
+ * Selects the finest supported bucket that keeps an observed ordered path near the inline budget.
+ * Requested time ranges can be mostly empty, so path resolution is based on observed timestamps.
+ */
+export const resolveDevicePropertyOrderedPathInterval = (
+  recordsByProperty: Readonly<Record<string, readonly unknown[]>>,
+) => {
+  const timestamps = Object.values(recordsByProperty)
+    .flatMap(records => records.map(record => rawPropertyHistoryValue(record).timestamp))
+    .filter((timestamp): timestamp is number => timestamp !== undefined)
+  if (timestamps.length < 2) return '1m'
+  const duration = Math.max(...timestamps) - Math.min(...timestamps)
+  if (duration <= TARGET_ORDERED_PATH_BUCKETS * 60 * 1000) return '1m'
+  if (duration <= TARGET_ORDERED_PATH_BUCKETS * 60 * 60 * 1000) return '1h'
+  if (duration <= TARGET_ORDERED_PATH_BUCKETS * 24 * 60 * 60 * 1000) return '1d'
+  if (duration <= TARGET_ORDERED_PATH_BUCKETS * 7 * 24 * 60 * 60 * 1000) return '1w'
+  return '1M'
+}
+
+const ORDERED_PATH_INTERVAL_RANK = new Map([
+  ['1m', 0],
+  ['1h', 1],
+  ['1d', 2],
+  ['1w', 3],
+  ['1M', 4],
+])
+
+export const refineDevicePropertyOrderedPathInterval = (
+  requested: string,
+  recordsByProperty: Readonly<Record<string, readonly unknown[]>>,
+) => {
+  const observed = resolveDevicePropertyOrderedPathInterval(recordsByProperty)
+  return (ORDERED_PATH_INTERVAL_RANK.get(observed) ?? Number.MAX_SAFE_INTEGER)
+    < (ORDERED_PATH_INTERVAL_RANK.get(requested) ?? Number.MAX_SAFE_INTEGER)
+    ? observed
+    : requested
+}
+
+/**
+ * Complex values are not uniformly supported by storage aggregation adapters. This fallback keeps
+ * the aggregate contract stable by selecting FIRST/LAST inside the requested, already bounded rows.
+ */
+export const aggregateDevicePropertyGeoPointHistory = (
+  recordsByProperty: Readonly<Record<string, readonly unknown[]>>,
+  columns: readonly DevicePropertyAggregateColumn[],
+  interval: string,
+) => {
+  const buckets = new Map<string, DevicePropertyAggregateRecord>()
+  const columnsByProperty = new Map<string, DevicePropertyAggregateColumn[]>()
+  columns.forEach((column) => {
+    columnsByProperty.set(column.property, [
+      ...(columnsByProperty.get(column.property) || []),
+      column,
+    ])
   })
-  .reverse()
+  columnsByProperty.forEach((propertyColumns, propertyId) => {
+    const records = [...(recordsByProperty[propertyId] || [])]
+      .map(rawPropertyHistoryValue)
+      .filter((record): record is { timestamp: number; value: unknown } => record.timestamp !== undefined)
+      .sort((left, right) => left.timestamp - right.timestamp)
+    records.forEach((record) => {
+      const time = formatAggregateBucketTime(record.timestamp, interval)
+      const bucket = buckets.get(time) || { time }
+      propertyColumns.forEach((column) => {
+        if (column.agg === 'FIRST') {
+          if (bucket[column.alias] === undefined) bucket[column.alias] = record.value
+        } else {
+          bucket[column.alias] = record.value
+        }
+      })
+      buckets.set(time, bucket)
+    })
+  })
+  // normalizeDevicePropertyAggregateData accepts storage-order rows and returns chronological rows.
+  return [...buckets.values()].sort((left, right) => (
+    (timeSortValue(right.time) ?? Number.MIN_SAFE_INTEGER)
+    - (timeSortValue(left.time) ?? Number.MIN_SAFE_INTEGER)
+  ))
+}
+
+export const mergeDevicePropertyAggregateRows = (
+  groups: readonly (readonly DevicePropertyAggregateRecord[])[],
+) => {
+  const merged = new Map<string, DevicePropertyAggregateRecord>()
+  groups.flat().forEach((row) => {
+    const key = String(row.time || '').trim()
+    if (!key) return
+    merged.set(key, { ...(merged.get(key) || {}), ...row, time: row.time })
+  })
+  return [...merged.values()].sort((left, right) => (
+    (timeSortValue(right.time) ?? Number.MIN_SAFE_INTEGER)
+    - (timeSortValue(left.time) ?? Number.MIN_SAFE_INTEGER)
+  ))
+}
 
 const propertyUnit = (property: DevicePropertyAggregateRecord | undefined) => {
   const valueType = asRecord(property?.valueType)
@@ -241,21 +431,25 @@ export const createDevicePropertyAggregateFields = (
   columns: DevicePropertyAggregateColumn[],
   coordinateLabels: DevicePropertyAggregateCoordinateLabels,
 ): AiClientToolOutputField[] => [
-  { name: 'time', semanticRole: 'timestamp', format: 'datetime' },
+  {
+    name: aggregateTimeFieldName(metadata, columns),
+    semanticRole: 'timestamp',
+    format: 'datetime',
+  },
   ...columns.flatMap(({ property: propertyId, agg }): AiClientToolOutputField[] => {
     const property = findDevicePropertyMetadata(metadata, propertyId)
     if (isGeoPointValueAggregate(property, agg)) {
       const propertyLabel = String(property?.name || propertyId)
       return [
         {
-          name: coordinateFieldName(propertyId, 'longitude'),
+          name: coordinateFieldName(metadata, columns, propertyId, 'longitude'),
           semanticRole: 'longitude',
           label: coordinateLabels.longitude(propertyLabel),
           measure: propertyId,
           aggregation: agg.toLowerCase(),
         },
         {
-          name: coordinateFieldName(propertyId, 'latitude'),
+          name: coordinateFieldName(metadata, columns, propertyId, 'latitude'),
           semanticRole: 'latitude',
           label: coordinateLabels.latitude(propertyLabel),
           measure: propertyId,
@@ -276,6 +470,51 @@ export const createDevicePropertyAggregateFields = (
   }),
 ]
 
+const normalizedFieldText = (value: unknown) => String(value || '').trim().toLowerCase()
+
+export const isDevicePropertyAggregateOrderedPath = (
+  fields: readonly AiClientToolOutputField[],
+) => {
+  const timestamps = fields.filter(field => field.semanticRole === 'timestamp')
+  const longitudes = fields.filter(field => field.semanticRole === 'longitude')
+  const latitudes = fields.filter(field => field.semanticRole === 'latitude')
+  if (timestamps.length + longitudes.length + latitudes.length !== fields.length
+    || timestamps.length !== 1
+    || longitudes.length !== 1
+    || latitudes.length !== 1) return false
+  const longitude = longitudes[0]
+  const latitude = latitudes[0]
+  const measure = normalizedFieldText(longitude.measure)
+  const aggregation = normalizedFieldText(longitude.aggregation)
+  return !!measure
+    && measure === normalizedFieldText(latitude.measure)
+    && aggregation === normalizedFieldText(latitude.aggregation)
+    && (aggregation === 'first' || aggregation === 'last')
+}
+
+const jsonByteLength = (value: unknown) => {
+  try {
+    return new TextEncoder().encode(JSON.stringify(value)).byteLength
+  } catch {
+    return Number.POSITIVE_INFINITY
+  }
+}
+
+/**
+ * Small aggregates follow the caller's normal inline limit. A closed ordered path may exceed that
+ * bucket limit only while it remains below the shared record and WebSocket byte budgets, allowing
+ * the canonical compiler to materialize the line presentation without a second model-authored chart.
+ */
+export const shouldInlineDevicePropertyAggregate = (
+  data: readonly DevicePropertyAggregateRecord[],
+  fields: readonly AiClientToolOutputField[],
+  inlineLimit: number,
+) => data.length <= inlineLimit || (
+  data.length <= MAX_ORDERED_PATH_INLINE_RECORDS
+  && isDevicePropertyAggregateOrderedPath(fields)
+  && jsonByteLength(data) <= MAX_ORDERED_PATH_INLINE_BYTES
+)
+
 export const createDevicePropertyAggregateRecordSchema = (fields: AiClientToolOutputField[]) => ({
   type: 'object',
   properties: Object.fromEntries(fields.map(field => [field.name, {
@@ -290,3 +529,23 @@ export const createDevicePropertyAggregateRecordSchema = (fields: AiClientToolOu
     ...(field.aggregation ? { 'x-ai-aggregation': field.aggregation } : {}),
   }])),
 })
+
+const finiteTimestamp = (value: unknown) => {
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  const timestamp = new Date(String(value || '')).getTime()
+  return Number.isFinite(timestamp) ? timestamp : undefined
+}
+
+export const resolveDevicePropertyAggregateObservedRange = (
+  data: DevicePropertyAggregateRecord[],
+) => {
+  let start: number | undefined
+  let end: number | undefined
+  data.forEach((item) => {
+    const timestamp = finiteTimestamp(item.time ?? item.t)
+    if (timestamp === undefined) return
+    start = start === undefined ? timestamp : Math.min(start, timestamp)
+    end = end === undefined ? timestamp : Math.max(end, timestamp)
+  })
+  return start === undefined || end === undefined ? undefined : { start, end }
+}

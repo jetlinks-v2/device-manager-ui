@@ -1,38 +1,136 @@
-import { getPropertiesInfo } from '@device-manager-ui/api/instance'
+import { getPropertiesInfo, getPropertyData } from '@device-manager-ui/api/instance'
 import {
-  type AiClientToolCall,
-  type AiClientToolDefinition,
-  type AiClientToolInput,
+  createAiClientToolArrayRecordSource,
+  createAiClientToolRecordStream,
 } from '@jetlinks-web-core/layout/components/AiChat/clientTools'
 import {
-  createDevicePropertyAggregateRecordStream,
-  DEVICE_PROPERTY_AGGREGATE_CONTRACT,
-  withDevicePropertyAggregateEvidence,
-  type DevicePropertyAggregateTimeRange,
-} from './propertyAggregateContract'
+  type ClientToolInput,
+  type CompiledClientTool,
+} from '@jetlinks-web-core/layout/components/AiChat/clientToolApi'
 import {
+  createDevicePropertyAggregateDefinition,
+  createDevicePropertySelectorAlternatives,
+  devicePropertyAnalysisResult,
+  DEVICE_PROPERTY_ANALYSIS_OUTPUTS,
+} from './devicePropertyAnalysisTools'
+import {
+  aggregateDevicePropertyGeoPointHistory,
   clampDevicePropertyAggregateInlineLimit,
   compactDevicePropertyAggregateValue,
   createDevicePropertyAggregateColumns,
   createDevicePropertyAggregateFields,
+  createDevicePropertyAggregateRecordSchema,
   devicePropertyAggregateTimeFormat,
   findDevicePropertyMetadata,
+  isDevicePropertyAggregateGeoPointValueColumn,
+  mergeDevicePropertyAggregateRows,
   normalizeDevicePropertyAggregate,
   normalizeDevicePropertyAggregateData,
   normalizeDevicePropertyAggregateInterval,
   normalizeDevicePropertyAggregateTimeRange,
   normalizeDevicePropertyIds,
+  refineDevicePropertyOrderedPathInterval,
+  resolveDevicePropertyAggregateObservedRange,
+  shouldInlineDevicePropertyAggregate,
+  type DevicePropertyAggregateTimeRange,
   type DevicePropertyAggregateRecord,
 } from './propertyAggregateSupport'
 
 export {
-  DEVICE_PROPERTY_AGGREGATE_CONTRACT,
-  DEVICE_PROPERTY_AGGREGATE_OUTPUT,
-  type DevicePropertyAggregateTimeRange,
-} from './propertyAggregateContract'
+  DEVICE_PROPERTY_ANALYSIS_OUTPUTS,
+} from './devicePropertyAnalysisTools'
+export type { DevicePropertyAggregateTimeRange } from './propertyAggregateSupport'
 
 type JsonRecord = DevicePropertyAggregateRecord
 type MaybePromise<T> = T | Promise<T>
+
+const GEO_POINT_HISTORY_PAGE_SIZE = 1000
+const GEO_POINT_HISTORY_RECORD_LIMIT = 10_000
+
+interface DevicePropertyHistoryPage {
+  records: unknown[]
+  total?: number
+}
+
+const asJsonRecord = (value: unknown): JsonRecord => (
+  value && typeof value === 'object' && !Array.isArray(value) ? value as JsonRecord : {}
+)
+
+const finiteRecordCount = (value: unknown) => {
+  const count = Number(value)
+  return Number.isFinite(count) && count >= 0 ? Math.floor(count) : undefined
+}
+
+const normalizeDevicePropertyHistoryPage = (
+  response: unknown,
+  depth = 0,
+): DevicePropertyHistoryPage => {
+  if (Array.isArray(response)) return { records: response }
+  const result = asJsonRecord(response)
+  const directRecords = [result.records, result.data, result.result]
+    .find(Array.isArray)
+  if (Array.isArray(directRecords)) {
+    return {
+      records: directRecords,
+      total: finiteRecordCount(result.total ?? result.count),
+    }
+  }
+  if (depth < 3) {
+    for (const nested of [result.result, result.data]) {
+      if (!nested || nested === response || typeof nested !== 'object') continue
+      const page = normalizeDevicePropertyHistoryPage(nested, depth + 1)
+      if (page.records.length || Object.keys(asJsonRecord(nested)).length) {
+        return {
+          records: page.records,
+          total: finiteRecordCount(result.total ?? result.count) ?? page.total,
+        }
+      }
+    }
+  }
+  return {
+    records: [],
+    total: finiteRecordCount(result.total ?? result.count),
+  }
+}
+
+const collectDevicePropertyHistory = async (
+  deviceId: string,
+  propertyId: string,
+  range: Required<DevicePropertyAggregateTimeRange>,
+  maxRecords: number,
+) => {
+  const records: unknown[] = []
+  let total: number | undefined
+  let pageIndex = 0
+  while (records.length < maxRecords) {
+    const pageSize = Math.min(GEO_POINT_HISTORY_PAGE_SIZE, maxRecords - records.length)
+    const response = await getPropertyData(deviceId, propertyId, {
+      paging: true,
+      pageIndex,
+      pageSize,
+      sorts: [{ name: 'timestamp', order: 'asc' }],
+      terms: [{
+        column: 'timestamp',
+        termType: 'btw',
+        value: [range.start, range.end],
+      }],
+    })
+    const page = normalizeDevicePropertyHistoryPage(response)
+    total = page.total ?? total
+    records.push(...page.records.slice(0, pageSize))
+    if (!page.records.length
+      || page.records.length < pageSize
+      || (total !== undefined && records.length >= total)) break
+    pageIndex += 1
+  }
+  return {
+    records,
+    total,
+    truncated: total === undefined
+      ? records.length >= maxRecords
+      : records.length < total,
+  }
+}
 
 export interface DevicePropertyAggregateSubject {
   deviceId: string
@@ -48,25 +146,15 @@ export interface DevicePropertyAggregateCopy {
   interval: string
   startTime: string
   endTime: string
-  timeRangeInput: AiClientToolInput
+  timeRangeInput: ClientToolInput
   limit: string
   deviceIdMissing: string
   propertyIdMissing: string
   nonNumericWarning: (propertyId: string) => string
   longitudeLabel: (propertyLabel: string) => string
   latitudeLabel: (propertyLabel: string) => string
+  pathResolutionAdjusted: (requested: string, resolved: string) => string
   truncated: string
-}
-
-export interface DevicePropertyAggregateDeliveryContext {
-  args: JsonRecord
-  call: AiClientToolCall
-  data: JsonRecord[]
-  preview: JsonRecord[]
-  inlineLimit: number
-  inlineResult: JsonRecord
-  fullResult: JsonRecord
-  base: JsonRecord
 }
 
 export interface DevicePropertyAggregateToolDependencies<TContext> {
@@ -79,10 +167,8 @@ export interface DevicePropertyAggregateToolDependencies<TContext> {
   describeTimeRange: (range: DevicePropertyAggregateTimeRange) => JsonRecord | undefined
   dataTypeText: (valueType: unknown) => string
   compactValue?: (value: unknown, maxLength: number) => unknown
-  decorateInputs?: (inputs: AiClientToolInput[]) => AiClientToolInput[]
-  deliver?: (
-    context: DevicePropertyAggregateDeliveryContext,
-  ) => MaybePromise<JsonRecord | undefined>
+  decorateInputs?: (inputs: ClientToolInput[]) => ClientToolInput[]
+  resolveRecordPath?: (args: JsonRecord) => string | undefined
   displayName?: string
   progressText?: string
 }
@@ -94,9 +180,9 @@ export interface DevicePropertyAggregateToolDependencies<TContext> {
  */
 export const createDevicePropertyAggregateTool = <TContext>(
   dependencies: DevicePropertyAggregateToolDependencies<TContext>,
-): AiClientToolDefinition<TContext> => {
+): CompiledClientTool<TContext> => {
   const { copy } = dependencies
-  const baseInputs: AiClientToolInput[] = [
+  const baseInputs: ClientToolInput[] = [
     { id: 'propertyId', name: 'propertyId', description: copy.propertyId, required: false, valueType: 'string' },
     {
       id: 'propertyIds',
@@ -112,17 +198,15 @@ export const createDevicePropertyAggregateTool = <TContext>(
     copy.timeRangeInput,
     { id: 'limit', name: 'limit', description: copy.limit, required: false, valueType: 'int' },
   ]
-  return {
-    id: 'device_property_aggregate',
-    name: 'device_property_aggregate',
-    ...(dependencies.displayName ? { displayName: dependencies.displayName } : {}),
-    ...(dependencies.progressText ? { progressText: dependencies.progressText } : {}),
-    description: copy.description,
-    help: copy.help,
+  return createDevicePropertyAggregateDefinition<TContext>({
+    copy: {
+      description: copy.description,
+      help: copy.help,
+      displayName: dependencies.displayName,
+      progressText: dependencies.progressText,
+    },
     inputs: dependencies.decorateInputs ? dependencies.decorateInputs(baseInputs) : baseInputs,
-    output: { type: 'object' },
-    annotations: { readOnlyHint: true },
-    ...DEVICE_PROPERTY_AGGREGATE_CONTRACT,
+    inputAlternatives: createDevicePropertySelectorAlternatives(),
     execute: async (args, context, call) => {
       const subject = await dependencies.resolveSubject(args, context)
       const deviceId = String(subject.deviceId || '').trim()
@@ -131,22 +215,82 @@ export const createDevicePropertyAggregateTool = <TContext>(
       if (!propertyIds.length) throw new Error(copy.propertyIdMissing)
       const requested = normalizeDevicePropertyAggregate(args.agg ?? args.aggregate ?? args.method)
       const range = normalizeDevicePropertyAggregateTimeRange(dependencies.resolveTimeRange(args))
-      const interval = normalizeDevicePropertyAggregateInterval(args.interval, range)
-      const format = devicePropertyAggregateTimeFormat(interval)
+      const requestedInterval = normalizeDevicePropertyAggregateInterval(args.interval, range)
       const { columns, warnings } = createDevicePropertyAggregateColumns(
         subject.metadata,
         propertyIds,
         requested,
         copy.nonNumericWarning,
       )
-      const response = await getPropertiesInfo(deviceId, {
-        columns,
-        query: { interval, format, from: range.start, to: range.end },
-      })
+      const scalarColumns = columns.filter(column => (
+        !isDevicePropertyAggregateGeoPointValueColumn(subject.metadata, column)
+      ))
+      const geoPointColumns = columns.filter(column => (
+        isDevicePropertyAggregateGeoPointValueColumn(subject.metadata, column)
+      ))
+      const scalarResponse = scalarColumns.length
+        ? await getPropertiesInfo(deviceId, {
+            columns: scalarColumns,
+            query: {
+              interval: requestedInterval,
+              format: devicePropertyAggregateTimeFormat(requestedInterval),
+              from: range.start,
+              to: range.end,
+            },
+          })
+        : []
+      const scalarResult = scalarColumns.length
+        ? normalizeDevicePropertyAggregateData(
+            scalarResponse,
+            subject.metadata,
+            scalarColumns,
+            dependencies.compactValue || compactDevicePropertyAggregateValue,
+          ).reverse()
+        : []
+      const geoPointPropertyIds = Array.from(new Set(geoPointColumns.map(column => column.property)))
+      const geoPointHistory: Record<string, readonly unknown[]> = {}
+      let remainingRecordBudget = GEO_POINT_HISTORY_RECORD_LIMIT
+      let geoPointRecordCount = 0
+      let geoPointHistoryTruncated = false
+      for (const [index, propertyId] of geoPointPropertyIds.entries()) {
+        // Share one hard record budget across every complex property so adding fields cannot create
+        // an unbounded fan-out. Unused capacity rolls forward to the remaining properties.
+        const remainingProperties = geoPointPropertyIds.length - index
+        const propertyLimit = Math.max(1, Math.floor(remainingRecordBudget / remainingProperties))
+        const history = await collectDevicePropertyHistory(deviceId, propertyId, range, propertyLimit)
+        geoPointHistory[propertyId] = history.records
+        geoPointRecordCount += history.records.length
+        remainingRecordBudget -= history.records.length
+        geoPointHistoryTruncated ||= history.truncated
+      }
+      // Closed paths use the finer of the requested and observed-safe buckets. Coarse calendar
+      // ranges otherwise collapse a dense movement path into one or two statistically valid points.
+      const interval = columns.length === 1 && geoPointColumns.length === 1
+        ? refineDevicePropertyOrderedPathInterval(requestedInterval, geoPointHistory)
+        : requestedInterval
+      const geoPointResult = aggregateDevicePropertyGeoPointHistory(
+        geoPointHistory,
+        geoPointColumns,
+        interval,
+      )
+      const resolutionAdjusted = interval !== requestedInterval
+      const aggregateWarnings = [
+        ...warnings,
+        ...(resolutionAdjusted
+          ? [copy.pathResolutionAdjusted(requestedInterval, interval)]
+          : []),
+        ...(geoPointHistoryTruncated ? [copy.truncated] : []),
+      ]
+      const format = devicePropertyAggregateTimeFormat(interval)
+      const mergedResponse = mergeDevicePropertyAggregateRows([scalarResult, geoPointResult])
       const compactValue = dependencies.compactValue || compactDevicePropertyAggregateValue
-      const data = normalizeDevicePropertyAggregateData(response, subject.metadata, columns, compactValue)
+      const data = normalizeDevicePropertyAggregateData(
+        mergedResponse,
+        subject.metadata,
+        columns,
+        compactValue,
+      )
       const limit = clampDevicePropertyAggregateInlineLimit(args.limit)
-      const preview = data.slice(0, limit)
       const aggregates = new Map(columns.map(column => [column.property, column.agg]))
       const base = {
         deviceId,
@@ -164,42 +308,54 @@ export const createDevicePropertyAggregateTool = <TContext>(
         format,
         timeRange: dependencies.describeTimeRange(range),
         total: data.length,
-        warnings: warnings.length ? warnings : undefined,
+        rawRecordCount: geoPointRecordCount || undefined,
+        requestedInterval: resolutionAdjusted ? requestedInterval : undefined,
+        resolutionAdjusted: resolutionAdjusted || undefined,
+        warnings: aggregateWarnings.length ? aggregateWarnings : undefined,
       }
-      const inlineResult = {
-        ...base,
-        returned: preview.length,
-        truncated: data.length > preview.length,
-        nextAction: data.length > preview.length ? copy.truncated : undefined,
-        data: preview,
-      }
-      const fullResult = { ...base, returned: data.length, truncated: false, data }
-      const delivered = dependencies.deliver
-        ? await dependencies.deliver({ args, call, data, preview, inlineLimit: limit, inlineResult, fullResult, base })
-        : undefined
       const fields = createDevicePropertyAggregateFields(subject.metadata, columns, {
         longitude: copy.longitudeLabel,
         latitude: copy.latitudeLabel,
       })
-      if (delivered) {
-        return withDevicePropertyAggregateEvidence(
-          delivered,
-          range,
-          data,
-          Number(delivered.returned ?? preview.length),
-          fields,
-        )
-      }
-      return {
-        ...base,
-        data: createDevicePropertyAggregateRecordStream(
-          data,
-          fields,
-          range,
-          { deviceId, propertyIds, interval, total: data.length },
-          limit,
-        ),
-      }
+      const recordPath = dependencies.resolveRecordPath?.(args)
+      // Large or explicitly exported results use the shared streaming delivery lifecycle; small
+      // aggregates and byte-bounded ordered paths stay inline so the canonical compiler can derive
+      // a renderer-ready chart without asking the model to redraw or truncate the producer result.
+      const records = recordPath || !shouldInlineDevicePropertyAggregate(data, fields, limit)
+        ? createAiClientToolRecordStream({
+            source: createAiClientToolArrayRecordSource(data),
+            schema: createDevicePropertyAggregateRecordSchema(fields),
+            bindingName: DEVICE_PROPERTY_ANALYSIS_OUTPUTS.aggregate.name,
+            ...(dependencies.displayName ? { bindingLabel: dependencies.displayName } : {}),
+            outputShape: DEVICE_PROPERTY_ANALYSIS_OUTPUTS.aggregate.shape,
+            timeRange: range,
+            summary: { deviceId, propertyIds, interval, total: data.length },
+            ...(recordPath ? { path: recordPath } : {}),
+            limits: {
+              fallbackSampleLimit: Math.min(20, limit),
+              previewLimit: Math.min(3, limit),
+            },
+          })
+        : data
+      return devicePropertyAnalysisResult({ records, fields }, {
+        status: data.length ? 'ok' : 'empty',
+        complete: !geoPointHistoryTruncated,
+        truncated: geoPointHistoryTruncated,
+        limitReason: geoPointHistoryTruncated ? 'records' : undefined,
+        requestedRange: range,
+        observedRange: resolveDevicePropertyAggregateObservedRange(data),
+        summary: base,
+        facts: {
+          deviceId,
+          propertyCount: propertyIds.length,
+          bucketCount: data.length,
+          rawRecordCount: geoPointRecordCount || undefined,
+          interval,
+          requestedInterval: resolutionAdjusted ? requestedInterval : undefined,
+          resolutionAdjusted: resolutionAdjusted || undefined,
+        },
+        warnings: aggregateWarnings,
+      })
     },
-  }
+  })
 }

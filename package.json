@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "pnpm --filter jetlinks-ui-core dev -- --module-name device-manager",
     "build": "pnpm --filter jetlinks-ui-core build -- --module-name device-manager",
-    "test:agent-tools": "node --experimental-strip-types --test tests/propertyAggregateSupport.test.ts"
+    "test:agent-tools": "node scripts/run-agent-tool-tests.mjs"
   },
   "repository": {
     "type": "git",
