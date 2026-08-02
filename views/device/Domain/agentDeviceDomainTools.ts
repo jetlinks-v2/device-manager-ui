@@ -1,5 +1,6 @@
 import i18n from '@jetlinks-web-core/locales';
 import type { AiClientToolDefinition } from '@jetlinks-web-core/layout/components/AiChat/clientTools';
+import type { ClientToolInput } from '@jetlinks-web-core/layout/components/AiChat/clientToolApi';
 import type { HomeAgentCapabilityContext } from '@jetlinks-web-core/layout/components/AiChat/homeAgentCapabilities';
 import {
   detail as getDeviceDetail,
@@ -8,6 +9,19 @@ import {
 } from '../../../api/instance';
 import { detail as getProductDetail } from '../../../api/product';
 import { createDevicePropertyAggregateTool } from '../agentTools/propertyAggregateTool';
+import {
+  createDeviceLatestPropertiesTool,
+  createDeviceMetadataSearchTool,
+  createDeviceModelGetTool,
+  createDevicePropertyHistorySummaryTool,
+  createDevicePropertyHistoryTool,
+  devicePropertyAnalysisResult,
+  DEVICE_PROPERTY_ANALYSIS_TOOL_IDS,
+} from '../agentTools/devicePropertyAnalysisTools';
+import {
+  describeDeviceToolTimeRange,
+  resolveDeviceToolTimeRange,
+} from '../agentTools/timeRangeSupport';
 
 const DEVICE_INSTANCE_MENU_CODE = 'device/Instance';
 const DEVICE_PRODUCT_MENU_CODE = 'device/Product';
@@ -33,14 +47,7 @@ interface DeviceDomainSubject {
   raw: Record<string, any>;
 }
 
-export const DEVICE_DOMAIN_TOOL_IDS = {
-  modelGet: 'device_model_get',
-  metadataSearch: 'device_metadata_search',
-  latestProperties: 'device_latest_properties',
-  propertyHistorySummary: 'device_property_history_summary',
-  propertyHistory: 'device_property_history',
-  propertyAggregate: 'device_property_aggregate',
-};
+export const DEVICE_DOMAIN_TOOL_IDS = DEVICE_PROPERTY_ANALYSIS_TOOL_IDS;
 
 const DEVICE_ONLY_TOOL_IDS = new Set<string>([
   DEVICE_DOMAIN_TOOL_IDS.latestProperties,
@@ -780,7 +787,7 @@ const readLatestProperty = async (deviceId: string, propertyId: string) => {
   }
 };
 
-const subjectInputs = () => [
+const subjectInputs = (): ClientToolInput[] => [
   {
     id: 'subjectType',
     name: 'subjectType',
@@ -812,13 +819,13 @@ export const createDeviceDomainTools = (
   const hasDomainTools = includeDeviceTools || includeProductTools;
 
   return [
-  {
-    id: DEVICE_DOMAIN_TOOL_IDS.modelGet,
-    name: DEVICE_DOMAIN_TOOL_IDS.modelGet,
-    displayName: i18n.global.t('Domain.homeAgent.tool.modelGet.displayName'),
-    progressText: i18n.global.t('Domain.homeAgent.tool.modelGet.progressText'),
-    description: i18n.global.t('Domain.homeAgent.tool.modelGet.description'),
-    help: i18n.global.t('Domain.homeAgent.tool.modelGet.help'),
+  createDeviceModelGetTool<HomeAgentCapabilityContext>({
+    copy: {
+      displayName: i18n.global.t('Domain.homeAgent.tool.modelGet.displayName'),
+      progressText: i18n.global.t('Domain.homeAgent.tool.modelGet.progressText'),
+      description: i18n.global.t('Domain.homeAgent.tool.modelGet.description'),
+      help: i18n.global.t('Domain.homeAgent.tool.modelGet.help'),
+    },
     inputs: [
       ...subjectInputs(),
       {
@@ -843,14 +850,13 @@ export const createDeviceDomainTools = (
         valueType: 'int',
       },
     ],
-    output: { type: 'object' },
-    annotations: { readOnlyHint: true },
     execute: async (args, context) => {
       const subject = await resolveModelSubject(args, context);
       const section = normalizeMetadataSection(args.section);
       const limit = clampNumber(args.limit, 1, 120, 40);
       const format = normalizeText(args.format).toLowerCase() === 'json' ? 'json' : 'markdown';
-      return {
+      const model = pickMetadataSections(subject.metadata, section, limit);
+      return devicePropertyAnalysisResult({
         subject: {
           type: subject.type,
           id: subject.id,
@@ -866,17 +872,25 @@ export const createDeviceDomainTools = (
         counts: metadataCounts(subject.metadata),
         format,
         markdown: format === 'markdown' ? buildMetadataMarkdown(subject, section, limit) : undefined,
-        metadata: format === 'json' ? pickMetadataSections(subject.metadata, section, limit) : undefined,
-      };
+        metadata: format === 'json' ? model : undefined,
+        model,
+      }, {
+        summary: {
+          subjectType: subject.type,
+          subjectId: subject.id,
+          section,
+          counts: metadataCounts(subject.metadata),
+        },
+      });
     },
-  },
-  {
-    id: DEVICE_DOMAIN_TOOL_IDS.metadataSearch,
-    name: DEVICE_DOMAIN_TOOL_IDS.metadataSearch,
-    displayName: i18n.global.t('Domain.homeAgent.tool.metadataSearch.displayName'),
-    progressText: i18n.global.t('Domain.homeAgent.tool.metadataSearch.progressText'),
-    description: i18n.global.t('Domain.homeAgent.tool.metadataSearch.description'),
-    help: i18n.global.t('Domain.homeAgent.tool.metadataSearch.help'),
+  }),
+  createDeviceMetadataSearchTool<HomeAgentCapabilityContext>({
+    copy: {
+      displayName: i18n.global.t('Domain.homeAgent.tool.metadataSearch.displayName'),
+      progressText: i18n.global.t('Domain.homeAgent.tool.metadataSearch.progressText'),
+      description: i18n.global.t('Domain.homeAgent.tool.metadataSearch.description'),
+      help: i18n.global.t('Domain.homeAgent.tool.metadataSearch.help'),
+    },
     inputs: [
       ...subjectInputs(),
       {
@@ -901,14 +915,13 @@ export const createDeviceDomainTools = (
         valueType: 'int',
       },
     ],
-    output: { type: 'object' },
-    annotations: { readOnlyHint: true },
     execute: async (args, context) => {
       const subject = await resolveModelSubject(args, context);
       const keyword = normalizeText(args.keyword);
       const types = normalizeMetadataTypes(args.types);
       const limit = clampNumber(args.limit, 1, 100, 20);
-      return {
+      const matches = fuzzySearchMetadata(subject.metadata, keyword, types, limit);
+      return devicePropertyAnalysisResult({
         subject: {
           type: subject.type,
           id: subject.id,
@@ -919,17 +932,25 @@ export const createDeviceDomainTools = (
         keyword,
         types,
         counts: metadataCounts(subject.metadata),
-        matches: fuzzySearchMetadata(subject.metadata, keyword, types, limit),
-      };
+        matches,
+      }, {
+        status: matches.length ? 'ok' : 'empty',
+        summary: {
+          subjectType: subject.type,
+          subjectId: subject.id,
+          keyword,
+          returned: matches.length,
+        },
+      });
     },
-  },
-  {
-    id: DEVICE_DOMAIN_TOOL_IDS.latestProperties,
-    name: DEVICE_DOMAIN_TOOL_IDS.latestProperties,
-    displayName: i18n.global.t('Domain.homeAgent.tool.latestProperties.displayName'),
-    progressText: i18n.global.t('Domain.homeAgent.tool.latestProperties.progressText'),
-    description: i18n.global.t('Domain.homeAgent.tool.latestProperties.description'),
-    help: i18n.global.t('Domain.homeAgent.tool.latestProperties.help'),
+  }),
+  createDeviceLatestPropertiesTool<HomeAgentCapabilityContext, Record<string, unknown>>({
+    copy: {
+      displayName: i18n.global.t('Domain.homeAgent.tool.latestProperties.displayName'),
+      progressText: i18n.global.t('Domain.homeAgent.tool.latestProperties.progressText'),
+      description: i18n.global.t('Domain.homeAgent.tool.latestProperties.description'),
+      help: i18n.global.t('Domain.homeAgent.tool.latestProperties.help'),
+    },
     inputs: [
       {
         id: 'deviceId',
@@ -953,8 +974,6 @@ export const createDeviceDomainTools = (
         valueType: 'int',
       },
     ],
-    output: { type: 'object' },
-    annotations: { readOnlyHint: true },
     execute: async (args, context) => {
       ensureDevicePermission(context);
       const deviceId = firstTextArg(args, 'deviceId');
@@ -966,21 +985,28 @@ export const createDeviceDomainTools = (
         ? providedPropertyIds
         : asArray(subject?.metadata.properties).map((item: any) => item.id).filter(Boolean).slice(0, limit);
       const data = await Promise.all(propertyIds.map((propertyId) => readLatestProperty(deviceId, propertyId)));
-      return {
+      return devicePropertyAnalysisResult({
         deviceId,
         count: data.length,
         successCount: data.filter((item) => item.success).length,
         data: data.map(normalizeLatestPropertyRead),
-      };
+      }, {
+        status: data.length ? 'ok' : 'empty',
+        summary: {
+          deviceId,
+          count: data.length,
+          successCount: data.filter((item) => item.success).length,
+        },
+      });
     },
-  },
-  {
-    id: DEVICE_DOMAIN_TOOL_IDS.propertyHistorySummary,
-    name: DEVICE_DOMAIN_TOOL_IDS.propertyHistorySummary,
-    displayName: i18n.global.t('Domain.homeAgent.tool.historySummary.displayName'),
-    progressText: i18n.global.t('Domain.homeAgent.tool.historySummary.progressText'),
-    description: i18n.global.t('Domain.homeAgent.tool.historySummary.description'),
-    help: i18n.global.t('Domain.homeAgent.tool.historySummary.help'),
+  }),
+  createDevicePropertyHistorySummaryTool<HomeAgentCapabilityContext, Record<string, unknown>>({
+    copy: {
+      displayName: i18n.global.t('Domain.homeAgent.tool.historySummary.displayName'),
+      progressText: i18n.global.t('Domain.homeAgent.tool.historySummary.progressText'),
+      description: i18n.global.t('Domain.homeAgent.tool.historySummary.description'),
+      help: i18n.global.t('Domain.homeAgent.tool.historySummary.help'),
+    },
     inputs: [
       {
         id: 'deviceId',
@@ -1019,8 +1045,6 @@ export const createDeviceDomainTools = (
         valueType: 'int',
       },
     ],
-    output: { type: 'object' },
-    annotations: { readOnlyHint: true },
     execute: async (args, context) => {
       ensureDevicePermission(context);
       const deviceId = firstTextArg(args, 'deviceId');
@@ -1028,7 +1052,9 @@ export const createDeviceDomainTools = (
       if (!deviceId) throw new Error(i18n.global.t('Domain.homeAgent.tool.common.deviceIdMissing'));
       if (!propertyId) throw new Error(i18n.global.t('Domain.homeAgent.tool.common.propertyIdMissing'));
       const sampleLimit = clampNumber(args.sampleLimit, 1, 10, 3);
-      const timeRange = resolveTimeRange(args);
+      const timeRange = resolveDeviceToolTimeRange(args, {
+        invalidInputMessage: i18n.global.t('DeviceDetail.agentTools.common.errors.timeRangeInvalid'),
+      });
       const resp = await getPropertyData(deviceId, propertyId, {
         paging: true,
         pageIndex: 0,
@@ -1037,23 +1063,34 @@ export const createDeviceDomainTools = (
         terms: buildTimeTerms(args, 'timestamp', timeRange),
       });
       const result = normalizePagedList(resp);
-      return {
+      const resolvedRange = describeDeviceToolTimeRange(timeRange);
+      return devicePropertyAnalysisResult({
         deviceId,
         propertyId,
-        timeRange: describeResolvedTimeRange(timeRange),
+        timeRange: resolvedRange,
         total: result.total,
         returned: result.data.length,
         samples: result.data.map((item: Record<string, any>) => normalizePropertyHistoryRecord(item, propertyId)),
-      };
+      }, {
+        status: result.total ? 'ok' : 'empty',
+        requestedRange: resolvedRange,
+        summary: {
+          deviceId,
+          propertyId,
+          total: result.total,
+          returned: result.data.length,
+        },
+        facts: { deviceId, propertyId, total: result.total },
+      });
     },
-  },
-  {
-    id: DEVICE_DOMAIN_TOOL_IDS.propertyHistory,
-    name: DEVICE_DOMAIN_TOOL_IDS.propertyHistory,
-    displayName: i18n.global.t('Domain.homeAgent.tool.history.displayName'),
-    progressText: i18n.global.t('Domain.homeAgent.tool.history.progressText'),
-    description: i18n.global.t('Domain.homeAgent.tool.history.description'),
-    help: i18n.global.t('Domain.homeAgent.tool.history.help'),
+  }),
+  createDevicePropertyHistoryTool<HomeAgentCapabilityContext>({
+    copy: {
+      displayName: i18n.global.t('Domain.homeAgent.tool.history.displayName'),
+      progressText: i18n.global.t('Domain.homeAgent.tool.history.progressText'),
+      description: i18n.global.t('Domain.homeAgent.tool.history.description'),
+      help: i18n.global.t('Domain.homeAgent.tool.history.help'),
+    },
     inputs: [
       {
         id: 'deviceId',
@@ -1092,8 +1129,6 @@ export const createDeviceDomainTools = (
         valueType: 'int',
       },
     ],
-    output: { type: 'object' },
-    annotations: { readOnlyHint: true },
     execute: async (args, context) => {
       ensureDevicePermission(context);
       const deviceId = firstTextArg(args, 'deviceId');
@@ -1101,7 +1136,9 @@ export const createDeviceDomainTools = (
       if (!deviceId) throw new Error(i18n.global.t('Domain.homeAgent.tool.common.deviceIdMissing'));
       if (!propertyId) throw new Error(i18n.global.t('Domain.homeAgent.tool.common.propertyIdMissing'));
       const limit = clampNumber(args.limit, 1, 50, 20);
-      const timeRange = resolveTimeRange(args);
+      const timeRange = resolveDeviceToolTimeRange(args, {
+        invalidInputMessage: i18n.global.t('DeviceDetail.agentTools.common.errors.timeRangeInvalid'),
+      });
       const resp = await getPropertyData(deviceId, propertyId, {
         paging: true,
         pageIndex: 0,
@@ -1110,17 +1147,25 @@ export const createDeviceDomainTools = (
         terms: buildTimeTerms(args, 'timestamp', timeRange),
       });
       const result = normalizePagedList(resp);
-      return {
-        deviceId,
-        propertyId,
-        timeRange: describeResolvedTimeRange(timeRange),
-        total: result.total,
-        returned: result.data.length,
-        truncated: result.total > result.data.length,
-        data: result.data.map((item: Record<string, any>) => normalizePropertyHistoryRecord(item, propertyId)),
-      };
+      const resolvedRange = describeDeviceToolTimeRange(timeRange);
+      const records = result.data.map((item: Record<string, any>) => normalizePropertyHistoryRecord(item, propertyId));
+      const truncated = result.total > records.length;
+      return devicePropertyAnalysisResult({ records }, {
+        status: result.total ? 'ok' : 'empty',
+        complete: !truncated,
+        truncated,
+        limitReason: truncated ? 'records' : undefined,
+        requestedRange: resolvedRange,
+        summary: {
+          deviceId,
+          propertyId,
+          total: result.total,
+          returned: records.length,
+        },
+        facts: { deviceId, propertyId, total: result.total },
+      });
     },
-  },
+  }),
   createDevicePropertyAggregateTool<HomeAgentCapabilityContext>({
     displayName: i18n.global.t('Domain.homeAgent.tool.aggregate.displayName'),
     progressText: i18n.global.t('Domain.homeAgent.tool.aggregate.progressText'),
@@ -1141,6 +1186,18 @@ export const createDeviceDomainTools = (
         'Domain.homeAgent.tool.aggregate.nonNumericWarning',
         [propertyId],
       ),
+      longitudeLabel: propertyLabel => i18n.global.t(
+        'Domain.homeAgent.tool.aggregate.longitudeLabel',
+        [propertyLabel],
+      ),
+      latitudeLabel: propertyLabel => i18n.global.t(
+        'Domain.homeAgent.tool.aggregate.latitudeLabel',
+        [propertyLabel],
+      ),
+      pathResolutionAdjusted: (requested, resolved) => i18n.global.t(
+        'Domain.homeAgent.tool.aggregate.pathResolutionAdjusted',
+        [requested, resolved],
+      ),
       truncated: i18n.global.t('Domain.homeAgent.tool.aggregate.truncated'),
     },
     decorateInputs: inputs => [
@@ -1160,8 +1217,10 @@ export const createDeviceDomainTools = (
       const subject = await fetchDeviceSubject(deviceId);
       return { deviceId, metadata: subject.metadata };
     },
-    resolveTimeRange,
-    describeTimeRange: describeResolvedTimeRange,
+    resolveTimeRange: (args) => resolveDeviceToolTimeRange(args, {
+      invalidInputMessage: i18n.global.t('DeviceDetail.agentTools.common.errors.timeRangeInvalid'),
+    }),
+    describeTimeRange: describeDeviceToolTimeRange,
     dataTypeText,
     compactValue: compactInlineValue,
   }),

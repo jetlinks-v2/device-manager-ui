@@ -1,9 +1,7 @@
 export {
   createDevicePropertyAggregateTool,
-  DEVICE_PROPERTY_AGGREGATE_CONTRACT,
-  DEVICE_PROPERTY_AGGREGATE_OUTPUT,
+  DEVICE_PROPERTY_ANALYSIS_OUTPUTS,
   type DevicePropertyAggregateCopy,
-  type DevicePropertyAggregateDeliveryContext,
   type DevicePropertyAggregateSubject,
   type DevicePropertyAggregateTimeRange,
   type DevicePropertyAggregateToolDependencies,
