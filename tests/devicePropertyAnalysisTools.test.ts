@@ -145,7 +145,7 @@ test('raw property history accepts standard record-stream delivery without chang
   assert.equal(prepared.data.outputShape, DEVICE_PROPERTY_ANALYSIS_OUTPUTS.history.shape)
 })
 
-test('aggregate output derives a renderer-ready, zoomable line path from semantic coordinates', async () => {
+test('aggregate output preserves renderer-neutral records and semantic fields for the canonical compiler', async () => {
   const points = [
     { time: 1, position_longitude: 120.1, position_latitude: 30.1 },
     { time: 2, position_longitude: 120.2, position_latitude: 30.2 },
@@ -161,21 +161,16 @@ test('aggregate output derives a renderer-ready, zoomable line path from semanti
     execute: () => devicePropertyAnalysisResult({ records: points, fields }),
   })
 
-  assert.deepEqual(
-    tool.routing?.produces?.filter(name => !name.endsWith('-echarts-source')),
-    [DEVICE_PROPERTY_ANALYSIS_OUTPUTS.aggregate.name],
-  )
+  assert.deepEqual(tool.routing?.produces, [DEVICE_PROPERTY_ANALYSIS_OUTPUTS.aggregate.name])
   assert.deepEqual(tool.routing?.capabilities, ['subject.property.aggregate'])
 
   const prepared = await tool.execute({}, {}, callFor(tool.id)) as any
-  const option = prepared.data.modelSafeInline
-  assert.equal(option.series[0].type, 'line')
-  assert.equal(option.xAxis.scale, true)
-  assert.equal(option.yAxis.scale, true)
-  assert.deepEqual(option.dataZoom, [
-    { type: 'inside', xAxisIndex: 0, filterMode: 'none' },
-    { type: 'inside', yAxisIndex: 0, filterMode: 'none' },
-  ])
+  assert.equal(prepared.data, undefined)
+  assert.deepEqual(prepared.__clientToolOutputs.output0, points)
+  assert.equal(prepared.outputBindings[0].name, DEVICE_PROPERTY_ANALYSIS_OUTPUTS.aggregate.name)
+  assert.equal(prepared.outputBindings[0].shape, DEVICE_PROPERTY_ANALYSIS_OUTPUTS.aggregate.shape)
+  assert.equal(prepared.outputBindings[0].path, '$.__clientToolOutputs.output0')
+  assert.deepEqual(prepared.outputBindings[0].fields, fields)
   assert.equal(prepared.outputBindings[0].label, copy.displayName)
 })
 
