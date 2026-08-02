@@ -7,9 +7,11 @@ import {
   queryLog
 } from '../../../../api/instance'
 import {
+  createAiClientToolRecordStream,
   createAiClientToolRuntime,
   defineAiClientTools,
   type AiClientToolCall,
+  type AiClientToolRecordSource,
   type AiClientToolRuntime
 } from '@jetlinks-web-core/layout/components/AiChat/clientTools'
 import {
@@ -30,6 +32,19 @@ import {
   withDeviceLogRecordEvidence,
   withDeviceLogSummaryEvidence,
 } from './deviceLogToolContract'
+import {
+  createDeviceLatestPropertiesTool,
+  createDeviceMetadataSearchTool,
+  createDeviceModelGetTool,
+  createDevicePropertyHistorySummaryTool,
+  createDevicePropertyHistoryTool,
+  devicePropertyAnalysisResult,
+  DEVICE_PROPERTY_ANALYSIS_OUTPUTS,
+} from '../../agentTools/devicePropertyAnalysisTools'
+import {
+  describeDeviceToolTimeRange,
+  resolveDeviceToolTimeRange,
+} from '../../agentTools/timeRangeSupport'
 
 type DeviceDetailRecord = Record<string, any>
 type TranslateFn = (key: string, params?: Record<string, any>) => string
@@ -471,6 +486,22 @@ export const metadataSectionItems = (metadata: Record<string, any>, section: str
   ))
 }
 
+const metadataCounts = (metadata: Record<string, any>) => Object.fromEntries(
+  METADATA_SECTIONS.map(section => [section, asArray(metadata[section]).length])
+)
+
+const pickMetadataSections = (
+  metadata: Record<string, any>,
+  section: string,
+  limit: number
+) => {
+  const sectionKey = normalizeMetadataSection(section)
+  const sections = sectionKey === 'all' ? [...METADATA_SECTIONS] : [sectionKey]
+  return Object.fromEntries(
+    sections.map(key => [key, metadataSectionItems(metadata, key).slice(0, limit)])
+  )
+}
+
 const metadataTypeName = (type: string) => ({
   properties: currentT('DeviceDetail.agentTools.metadata.types.properties'),
   functions: currentT('DeviceDetail.agentTools.metadata.types.functions'),
@@ -679,6 +710,57 @@ const collectPagedToolData = async <T = any>({
     boundaryRecords: [firstRecord, lastRecord].filter((value): value is T => value !== undefined),
     data
   }
+}
+
+const PROPERTY_HISTORY_RECORD_SCHEMA = {
+  type: 'object',
+  properties: {
+    timestamp: { 'x-ai-role': 'timestamp', format: 'date-time' },
+    value: {},
+    messageId: { type: 'string' },
+    formatValue: {},
+  },
+}
+
+const createPropertyHistoryRecordStream = (options: {
+  path: string
+  timeRange?: Record<string, unknown>
+  summary: Record<string, unknown>
+  maxRecords: number
+  fetchPage: (pageIndex: number, pageSize: number) => Promise<any>
+  normalizeRecord: (record: Record<string, any>) => Record<string, unknown>
+}) => {
+  const source: AiClientToolRecordSource<Record<string, unknown>> = {
+    consume: async (consumer, context) => {
+      const pageSize = 500
+      for (let pageIndex = 0; ; pageIndex += 1) {
+        if (context.signal.aborted) return
+        const page = normalizePagedList(await options.fetchPage(pageIndex, pageSize))
+        for (const item of page.data) {
+          await consumer(options.normalizeRecord(item))
+        }
+        if (!page.data.length
+          || page.data.length < pageSize
+          || (page.hasTotal && page.total > 0 && (pageIndex + 1) * pageSize >= page.total)) {
+          return
+        }
+      }
+    },
+  }
+  return createAiClientToolRecordStream({
+    source,
+    schema: PROPERTY_HISTORY_RECORD_SCHEMA,
+    bindingName: DEVICE_PROPERTY_ANALYSIS_OUTPUTS.history.name,
+    outputShape: DEVICE_PROPERTY_ANALYSIS_OUTPUTS.history.shape,
+    path: options.path,
+    timeRange: options.timeRange,
+    summary: options.summary,
+    limits: {
+      maxRecords: Math.min(10_000, Math.max(1, options.maxRecords)),
+      fallbackSampleLimit: 20,
+      previewLimit: 3,
+    },
+  })
 }
 
 const enumValue = (value: any) => {
@@ -1228,16 +1310,72 @@ export const createDeviceDetailClientToolRuntime = (
         })
       }
     },
-    {
-      id: 'device_metadata_search',
-      name: 'device_metadata_search',
-      description: t('DeviceDetail.agentTools.metadataSearch.description'),
+    createDeviceModelGetTool<DeviceClientToolContext>({
+      copy: {
+        displayName: t('DeviceDetail.agentTools.modelGet.displayName'),
+        progressText: t('DeviceDetail.agentTools.modelGet.progressText'),
+        description: t('DeviceDetail.agentTools.modelGet.description'),
+        help: t('DeviceDetail.agentTools.modelGet.help'),
+      },
+      inputs: [
+        {
+          id: 'section',
+          name: 'section',
+          description: t('DeviceDetail.agentTools.metadata.inputs.section'),
+          required: false,
+          valueType: 'string'
+        },
+        {
+          id: 'format',
+          name: 'format',
+          description: t('DeviceDetail.agentTools.modelGet.inputs.format'),
+          required: false,
+          valueType: 'string'
+        },
+        {
+          id: 'limit',
+          name: 'limit',
+          description: t('DeviceDetail.agentTools.metadataMarkdown.inputs.limit'),
+          required: false,
+          valueType: 'int'
+        }
+      ],
+      execute: (args, context) => {
+        const metadata = getMetadata(context)
+        const section = normalizeMetadataSection(args.section as string | undefined)
+        const limit = clampNumber(args.limit, 1, 120, 40)
+        const format = String(args.format || '').trim().toLowerCase() === 'json' ? 'json' : 'markdown'
+        const model = pickMetadataSections(metadata, section, limit)
+        return devicePropertyAnalysisResult({
+          deviceId: getDeviceId(context),
+          section,
+          counts: metadataCounts(metadata),
+          format,
+          markdown: format === 'markdown' ? buildMetadataMarkdown(context, section, limit) : undefined,
+          metadata: format === 'json' ? model : undefined,
+          model,
+        }, {
+          summary: {
+            deviceId: getDeviceId(context),
+            section,
+            counts: metadataCounts(metadata),
+          },
+        })
+      }
+    }),
+    createDeviceMetadataSearchTool<DeviceClientToolContext>({
+      copy: {
+        displayName: t('DeviceDetail.agentTools.metadataSearch.displayName'),
+        progressText: t('DeviceDetail.agentTools.metadataSearch.progressText'),
+        description: t('DeviceDetail.agentTools.metadataSearch.description'),
+        help: t('DeviceDetail.agentTools.metadataSearch.help'),
+      },
       inputs: [
         {
           id: 'keyword',
           name: 'keyword',
           description: t('DeviceDetail.agentTools.metadataSearch.inputs.keyword'),
-          required: true,
+          required: false,
           valueType: 'string'
         },
         {
@@ -1255,25 +1393,37 @@ export const createDeviceDetailClientToolRuntime = (
           valueType: 'int'
         }
       ],
-      output: { type: 'object' },
-      help: t('DeviceDetail.agentTools.metadataSearch.help'),
       execute: (args, context) => {
         const metadata = getMetadata(context)
         const types = asArray<string>(args.types).length
           ? normalizeMetadataTypes(asArray<string>(args.types))
           : ['properties', 'functions', 'events', 'tags']
         const limit = clampNumber(args.limit, 1, 100, 20)
-        return {
+        const keyword = String(args.keyword || '')
+        const matches = fuzzySearchMetadata(metadata, keyword, types, limit)
+        return devicePropertyAnalysisResult({
           deviceId: getDeviceId(context),
-          keyword: String(args.keyword || ''),
-          matches: fuzzySearchMetadata(metadata, String(args.keyword || ''), types, limit)
-        }
+          keyword,
+          types,
+          counts: metadataCounts(metadata),
+          matches,
+        }, {
+          status: matches.length ? 'ok' : 'empty',
+          summary: {
+            deviceId: getDeviceId(context),
+            keyword,
+            returned: matches.length,
+          },
+        })
       }
-    },
-    {
-      id: 'device_latest_properties',
-      name: 'device_latest_properties',
-      description: t('DeviceDetail.agentTools.latestProperties.description'),
+    }),
+    createDeviceLatestPropertiesTool<DeviceClientToolContext, Record<string, unknown>>({
+      copy: {
+        displayName: t('DeviceDetail.agentTools.latestProperties.displayName'),
+        progressText: t('DeviceDetail.agentTools.latestProperties.progressText'),
+        description: t('DeviceDetail.agentTools.latestProperties.description'),
+        help: t('DeviceDetail.agentTools.latestProperties.help'),
+      },
       inputs: [
         {
           id: 'propertyIds',
@@ -1290,8 +1440,6 @@ export const createDeviceDetailClientToolRuntime = (
           valueType: 'int'
         }
       ],
-      output: { type: 'object' },
-      help: t('DeviceDetail.agentTools.latestProperties.help'),
       execute: async (args, context) => {
         const deviceId = getDeviceId(context)
         if (!deviceId) throw new Error(currentT('DeviceDetail.agentTools.common.errors.deviceIdMissing'))
@@ -1301,18 +1449,28 @@ export const createDeviceDetailClientToolRuntime = (
           ? asArray<string>(args.propertyIds)
           : asArray(metadata.properties).map((item: any) => item.id).filter(Boolean).slice(0, limit)
         const data = await Promise.all(propertyIds.map((propertyId) => readLatestProperty(deviceId, propertyId)))
-        return {
+        return devicePropertyAnalysisResult({
           deviceId,
           count: data.length,
           successCount: data.filter((item) => item.success).length,
           data: data.map(normalizeLatestPropertyRead)
-        }
+        }, {
+          status: data.length ? 'ok' : 'empty',
+          summary: {
+            deviceId,
+            count: data.length,
+            successCount: data.filter((item) => item.success).length,
+          },
+        })
       }
-    },
-    {
-      id: 'device_property_history_summary',
-      name: 'device_property_history_summary',
-      description: t('DeviceDetail.agentTools.propertyHistorySummary.description'),
+    }),
+    createDevicePropertyHistorySummaryTool<DeviceClientToolContext, Record<string, unknown>>({
+      copy: {
+        displayName: t('DeviceDetail.agentTools.propertyHistorySummary.displayName'),
+        progressText: t('DeviceDetail.agentTools.propertyHistorySummary.progressText'),
+        description: t('DeviceDetail.agentTools.propertyHistorySummary.description'),
+        help: t('DeviceDetail.agentTools.propertyHistorySummary.help'),
+      },
       inputs: [
         {
           id: 'propertyId',
@@ -1344,15 +1502,15 @@ export const createDeviceDetailClientToolRuntime = (
           valueType: 'int'
         }
       ],
-      output: { type: 'object' },
-      help: t('DeviceDetail.agentTools.propertyHistorySummary.help'),
       execute: async (args, context) => {
         const deviceId = getDeviceId(context)
         const propertyId = String(args.propertyId || '').trim()
         if (!deviceId) throw new Error(currentT('DeviceDetail.agentTools.common.errors.deviceIdMissing'))
         if (!propertyId) throw new Error(currentT('DeviceDetail.agentTools.common.errors.propertyIdMissing'))
         const sampleLimit = clampNumber(args.sampleLimit, 1, 10, 3)
-        const timeRange = resolveTimeRange(args)
+        const timeRange = resolveDeviceToolTimeRange(args, {
+          invalidInputMessage: t('DeviceDetail.agentTools.common.errors.timeRangeInvalid'),
+        })
         const resp = await getPropertyData(deviceId, propertyId, {
           paging: true,
           pageIndex: 0,
@@ -1361,17 +1519,30 @@ export const createDeviceDetailClientToolRuntime = (
           terms: buildTimeTerms(args, 'timestamp', timeRange)
         })
         const result = normalizePagedList(resp)
-        return {
+        const resolvedRange = describeDeviceToolTimeRange(timeRange)
+        return devicePropertyAnalysisResult({
           deviceId,
           propertyId,
-          timeRange: describeResolvedTimeRange(timeRange),
+          timeRange: resolvedRange,
           total: result.total,
           returned: result.data.length,
           samples: result.data.map((item: Record<string, any>) => normalizePropertyHistoryRecord(item, propertyId))
-        }
+        }, {
+          status: result.total ? 'ok' : 'empty',
+          requestedRange: resolvedRange,
+          summary: {
+            deviceId,
+            propertyId,
+            total: result.total,
+            returned: result.data.length,
+          },
+          facts: { deviceId, propertyId, total: result.total },
+        })
       }
-    },
+    }),
     createDevicePropertyAggregateTool({
+      displayName: t('DeviceDetail.agentTools.propertyAggregate.displayName'),
+      progressText: t('DeviceDetail.agentTools.propertyAggregate.progressText'),
       copy: {
         description: t('DeviceDetail.agentTools.propertyAggregate.description'),
         help: t('DeviceDetail.agentTools.propertyAggregate.help'),
@@ -1389,47 +1560,30 @@ export const createDeviceDetailClientToolRuntime = (
           'DeviceDetail.agentTools.propertyAggregate.warning.nonNumericCount',
           { propertyId }
         ),
+        longitudeLabel: propertyLabel => t(
+          'DeviceDetail.agentTools.propertyAggregate.fields.longitude',
+          { propertyLabel }
+        ),
+        latitudeLabel: propertyLabel => t(
+          'DeviceDetail.agentTools.propertyAggregate.fields.latitude',
+          { propertyLabel }
+        ),
+        pathResolutionAdjusted: (requested, resolved) => t(
+          'DeviceDetail.agentTools.propertyAggregate.warning.pathResolutionAdjusted',
+          { requested, resolved }
+        ),
         truncated: t('DeviceDetail.agentTools.propertyAggregate.nextAction.truncated')
       },
       resolveSubject: (_args, context) => ({
         deviceId: getDeviceId(context),
         metadata: getMetadata(context)
       }),
-      resolveTimeRange,
-      describeTimeRange: describeResolvedTimeRange,
+      resolveTimeRange: args => resolveDeviceToolTimeRange(args, {
+        invalidInputMessage: t('DeviceDetail.agentTools.common.errors.timeRangeInvalid'),
+      }),
+      describeTimeRange: describeDeviceToolTimeRange,
       dataTypeText,
-      compactValue: compactInlineValue,
-      decorateInputs: withWriteToPathInput,
-      deliver: async ({ args, call, data, preview, inlineLimit, inlineResult, fullResult, base }) => {
-        if (!String(args.writeToPath || '').trim()) return undefined
-        const fileWrite = await writeRecordsToSessionFile(args, call, data)
-        if (fileWrite) {
-          return {
-            ...base,
-            ...fileWrite,
-            returned: data.length,
-            truncated: false,
-            fullResultWritten: true,
-            inlinePreviewLimit: inlineLimit,
-            inlinePreviewReturned: preview.length,
-            inlinePreviewTruncated: data.length > preview.length,
-            dataPreview: preview
-          }
-        }
-        return writeToolResultToSessionFile(args, call, inlineResult, {
-          content: stringifyToolResult(fullResult),
-          summary: {
-            ...base,
-            returned: data.length,
-            truncated: false,
-            fullResultWritten: true,
-            inlinePreviewLimit: inlineLimit,
-            inlinePreviewReturned: preview.length,
-            inlinePreviewTruncated: data.length > preview.length,
-            dataPreview: preview
-          }
-        })
-      }
+      compactValue: compactInlineValue
     }),
     ...createDeviceDocumentClientTools({
       t,
@@ -1493,10 +1647,13 @@ export const createDeviceDetailClientToolRuntime = (
       compactInlineValue,
       getDeviceId
     }),
-    {
-      id: 'device_property_history',
-      name: 'device_property_history',
-      description: t('DeviceDetail.agentTools.propertyHistory.description'),
+    createDevicePropertyHistoryTool<DeviceClientToolContext>({
+      copy: {
+        displayName: t('DeviceDetail.agentTools.propertyHistory.displayName'),
+        progressText: t('DeviceDetail.agentTools.propertyHistory.progressText'),
+        description: t('DeviceDetail.agentTools.propertyHistory.description'),
+        help: t('DeviceDetail.agentTools.propertyHistory.help'),
+      },
       inputs: withWriteToPathInput([
         {
           id: 'propertyId',
@@ -1529,84 +1686,65 @@ export const createDeviceDetailClientToolRuntime = (
         },
         writeLimitInput()
       ]),
-      output: { type: 'object' },
-      help: t('DeviceDetail.agentTools.propertyHistory.help'),
-      execute: async (args, context, call) => {
+      execute: async (args, context) => {
         const deviceId = getDeviceId(context)
         const propertyId = String(args.propertyId || '').trim()
         if (!deviceId) throw new Error(currentT('DeviceDetail.agentTools.common.errors.deviceIdMissing'))
         if (!propertyId) throw new Error(currentT('DeviceDetail.agentTools.common.errors.propertyIdMissing'))
         const inlineLimit = clampNumber(args.limit, 1, 50, 20)
-        const timeRange = resolveTimeRange(args)
-        const collected = await collectPagedToolData({
-          args,
-          call,
-          inlineLimit,
-          fetchPage: (pageIndex, pageSize) => getPropertyData(deviceId, propertyId, {
+        const timeRange = resolveDeviceToolTimeRange(args, {
+          invalidInputMessage: t('DeviceDetail.agentTools.common.errors.timeRangeInvalid'),
+        })
+        const resolvedRange = describeDeviceToolTimeRange(timeRange)
+        const fetchPage = (pageIndex: number, pageSize: number) => getPropertyData(deviceId, propertyId, {
             paging: true,
             pageIndex,
             pageSize,
             sorts: [{ name: 'timestamp', order: 'desc' }],
             terms: buildTimeTerms(args, 'timestamp', timeRange)
-          }),
-          normalizeRecord: (item) => normalizePropertyHistoryRecord(item, propertyId)
         })
-        const previewData = collected.data.slice(0, inlineLimit)
-        const base = {
-          deviceId,
-          propertyId,
-          timeRange: describeResolvedTimeRange(timeRange),
-          total: collected.total
+        if (isWriteToPathEnabled(args)) {
+          const writeLimit = resolveWriteRecordLimit(args)
+          const path = normalizeNdjsonWritePath(normalizeWriteToPath(args.writeToPath))
+          const records = createPropertyHistoryRecordStream({
+            path,
+            timeRange: resolvedRange,
+            summary: { deviceId, propertyId },
+            maxRecords: writeLimit.limit,
+            fetchPage,
+            normalizeRecord: item => normalizePropertyHistoryRecord(item, propertyId),
+          })
+          return devicePropertyAnalysisResult({ records }, {
+            requestedRange: resolvedRange,
+            summary: {
+              deviceId,
+              propertyId,
+              delivery: 'record-stream',
+              writeLimit: writeLimit.unlimited ? undefined : writeLimit.limit,
+            },
+            facts: { deviceId, propertyId },
+          })
         }
-        const result = {
-          ...base,
-          returned: previewData.length,
-          truncated: collected.total > previewData.length,
-          nextAction: collected.total > previewData.length ? t('DeviceDetail.agentTools.propertyHistory.nextAction.truncated') : undefined,
-          data: previewData
-        }
-        if (collected.file) {
-          return {
-            ...base,
-            ...collected.file,
-            returned: collected.returned,
-            truncated: collected.truncated,
-            fullResultWritten: !collected.truncated,
-            writeLimit: collected.writeLimit,
-            writeLimitUnlimited: collected.writeLimitUnlimited,
-            writeLimitExceeded: collected.truncated,
-            inlinePreviewLimit: inlineLimit,
-            inlinePreviewReturned: previewData.length,
-            inlinePreviewTruncated: collected.returned > previewData.length,
-            dataPreview: previewData
-          }
-        }
-        const fullResult = {
-          ...base,
-          returned: collected.returned,
-          truncated: collected.truncated,
-          writeLimit: collected.writeLimit,
-          writeLimitUnlimited: collected.writeLimitUnlimited,
-          data: collected.data
-        }
-        return writeToolResultToSessionFile(args, call, result, {
-          content: stringifyToolResult(fullResult),
+        const response = await fetchPage(0, inlineLimit)
+        const page = normalizePagedList(response)
+        const records = page.data.map((item: Record<string, any>) => normalizePropertyHistoryRecord(item, propertyId))
+        const truncated = page.total > records.length
+        return devicePropertyAnalysisResult({ records }, {
+          status: page.total ? 'ok' : 'empty',
+          complete: !truncated,
+          truncated,
+          limitReason: truncated ? 'records' : undefined,
+          requestedRange: resolvedRange,
           summary: {
-            ...base,
-            returned: collected.returned,
-            truncated: collected.truncated,
-            fullResultWritten: !collected.truncated,
-            writeLimit: collected.writeLimit,
-            writeLimitUnlimited: collected.writeLimitUnlimited,
-            writeLimitExceeded: collected.truncated,
-            inlinePreviewLimit: inlineLimit,
-            inlinePreviewReturned: previewData.length,
-            inlinePreviewTruncated: collected.data.length > previewData.length,
-            dataPreview: previewData
-          }
+            deviceId,
+            propertyId,
+            total: page.total,
+            returned: records.length,
+          },
+          facts: { deviceId, propertyId, total: page.total },
         })
       }
-    },
+    }),
     {
       id: 'device_online_offline_summary',
       name: 'device_online_offline_summary',

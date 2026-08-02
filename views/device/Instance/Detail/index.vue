@@ -594,8 +594,8 @@ const DEVICE_DETAIL_AGENT_WORKFLOW_GUIDES: AgentConversationWorkflowGuide[] = [
       {
         title: $t('DeviceDetail.agentGuides.today.steps.identify.title'),
         description: $t('DeviceDetail.agentGuides.today.steps.identify.description'),
-        tools: ['device_metadata_markdown', 'device_metadata_search'],
-        inputs: { section: 'properties' },
+        capability: 'subject.schema.search',
+        evidence: 'subject-property-id',
       },
       {
         title: $t('DeviceDetail.agentGuides.today.steps.alarmRecords.title'),
@@ -615,14 +615,16 @@ const DEVICE_DETAIL_AGENT_WORKFLOW_GUIDES: AgentConversationWorkflowGuide[] = [
       {
         title: $t('DeviceDetail.agentGuides.today.steps.latestProperties.title'),
         description: $t('DeviceDetail.agentGuides.today.steps.latestProperties.description'),
-        tools: ['device_latest_properties'],
-        inputs: { propertyIds: 'matched-property-ids' },
+        capability: 'subject.property.latest',
+        evidence: 'property-snapshot',
       },
       {
         title: $t('DeviceDetail.agentGuides.today.steps.trend.title'),
         description: $t('DeviceDetail.agentGuides.today.steps.trend.description'),
-        tools: ['device_property_aggregate'],
-        inputs: { propertyIds: 'matched-property-ids', timeRange: $t('DeviceDetail.agentGuides.inputs.today'), interval: '1h' },
+        capability: 'subject.property.aggregate',
+        evidence: 'property-aggregate',
+        inputs: { timeRange: $t('DeviceDetail.agentGuides.inputs.today'), interval: '1h' },
+        required: true,
       },
     ],
     output: [$t('DeviceDetail.agentGuides.today.output.0'), $t('DeviceDetail.agentGuides.today.output.1'), $t('DeviceDetail.agentGuides.today.output.2'), $t('DeviceDetail.agentGuides.today.output.3')],
@@ -727,18 +729,21 @@ const DEVICE_DETAIL_AGENT_WORKFLOW_GUIDES: AgentConversationWorkflowGuide[] = [
     steps: [
       {
         title: $t('DeviceDetail.agentGuides.propertyTrend.steps.identify.title'),
-        tools: ['device_metadata_search', 'device_metadata_markdown'],
+        capability: 'subject.schema.search',
+        evidence: 'subject-property-id',
       },
       {
         title: $t('DeviceDetail.agentGuides.propertyTrend.steps.latest.title'),
-        tools: ['device_latest_properties'],
-        inputs: { propertyIds: 'matched-property-ids' },
+        capability: 'subject.property.latest',
+        evidence: 'property-snapshot',
       },
       {
         title: $t('DeviceDetail.agentGuides.propertyTrend.steps.aggregate.title'),
         description: $t('DeviceDetail.agentGuides.propertyTrend.steps.aggregate.description'),
-        tools: ['device_property_aggregate'],
-        inputs: { propertyIds: 'matched-property-ids', timeRange: $t('DeviceDetail.agentGuides.inputs.userTimeRangeOrToday') },
+        capability: 'subject.property.aggregate',
+        evidence: 'property-aggregate',
+        inputs: { timeRange: $t('DeviceDetail.agentGuides.inputs.userTimeRangeOrToday') },
+        required: true,
       },
     ],
     output: [$t('DeviceDetail.agentGuides.propertyTrend.output.0'), $t('DeviceDetail.agentGuides.propertyTrend.output.1'), $t('DeviceDetail.agentGuides.propertyTrend.output.2'), $t('DeviceDetail.agentGuides.propertyTrend.output.3')],
