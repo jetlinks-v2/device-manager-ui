@@ -905,6 +905,7 @@
     "Domain.homeAgent.tool.aggregate.interval": "Time bucket: 1m, 1h, 1d, 1w, or 1M. If omitted, it is selected by time range.",
     "Domain.homeAgent.tool.aggregate.limit": "Maximum inline aggregation buckets. Default 200, maximum 1000.",
     "Domain.homeAgent.tool.aggregate.nonNumericWarning": "{0} is not a numeric property. COUNT aggregation was used instead.",
+    "Domain.homeAgent.tool.aggregate.truncated": "Only a bounded preview is included. Run it from a device-detail context with file delivery for the complete result.",
     "Instance.homeAgent.menu.deviceInstance": "Device Instances",
     "Instance.homeAgent.detailLink": "Open {0} details",
     "Instance.homeAgent.capability.search.name": "Search Device Instances",
@@ -4112,7 +4113,8 @@
     "DeviceDetail.agentTools.logsSummary.help": "Device log summary. Use when the user asks whether there were recent reports, errors, logs, how many logs exist, or whether there was communication in a period. For online/offline count questions, prefer device_online_offline_summary. Returns only total and a few samples to avoid sending a whole log page to the model.",
     "DeviceDetail.agentTools.logsQuery.description": "Query a small set of operation-log and message-log samples for the current device.",
     "DeviceDetail.agentTools.logsQuery.inputs.limit": "Inline preview sample count, default 10, max 20. With writeToPath, more log samples are written to a file.",
-    "DeviceDetail.agentTools.logsQuery.help": "Query device log samples. Use when a few raw log lines are needed. For existence, count, or recent communication questions, prefer device_logs_summary; for online/offline counts, prefer device_online_offline_summary. To save large log samples, pass writeToPath. Prefer .jsonl; .ndjson is also supported. The tool appends JSONL/NDJSON page by page; limit only controls inline preview, writeLimit controls file write count, and writeLimit=0 exports all.",
+    "DeviceDetail.agentTools.logsQuery.inputs.includePreviousBoundary": "Whether to include the latest matching log before startTime for temporal calculations that require a boundary state. Default is false.",
+    "DeviceDetail.agentTools.logsQuery.help": "Query device log samples. Use when a few raw log lines are needed. For existence, count, or recent communication questions, prefer device_logs_summary; for online/offline counts, prefer device_online_offline_summary. To save large log samples, pass writeToPath. Prefer .jsonl; .ndjson is also supported. The tool appends JSONL/NDJSON page by page; limit only controls inline preview, writeLimit controls file write count, and writeLimit=0 exports all. Set includePreviousBoundary=true for state-duration calculations that require the state at the requested start boundary.",
     "DeviceDetail.agentTools.logsQuery.nextAction.truncated": "Result was truncated. Pass writeToPath to save more log samples.",
     "DeviceDetail.agentTools.legacyRemoteFileWorkdir.description": "Get the working directory for remote file management on the current edge gateway device.",
     "DeviceDetail.agentTools.legacyRemoteFileWorkdir.help": "Get the current working directory of the edge-gateway remote file system. Useful before listing directories or reading log files.",
@@ -4216,5 +4218,11 @@
     "DeviceGroupDataCapability.error.invalidGroupIds": "Invalid device group ID list; at most 100 groups can be queried at once",
     "DeviceGroupDataCapability.error.invalidGroupId": "Device group ID is required",
     "DeviceGroupDataCapability.error.invalidPagination": "Invalid pagination parameters",
-    "DeviceGroupDataCapability.error.loadFailed": "Failed to load device group data"
+    "DeviceGroupDataCapability.error.loadFailed": "Failed to load device group data",
+    "DeviceDetail.edgeTools.mbean.scopes.gc": "JVM GC",
+    "I18n.configure": "Internationalization settings",
+    "I18n.chinese": "Chinese",
+    "I18n.english": "English",
+    "I18n.placeholder": "Enter {language}",
+    "I18n.maxLength": "Must not exceed {max} characters"
 }

@@ -15,8 +15,12 @@
   >
     <a-form layout="vertical" ref="formRef" :rules="rules" :model="formModel">
       <a-form-item :label="$t('modifyModal.index.177674-2')" name="name">
-        <a-input
+        <I18nTextField
           v-model:value="formModel.name"
+          v-model:i18nMessages="formModel.i18nMessages"
+          field="name"
+          :label="$t('modifyModal.index.177674-2')"
+          :i18n-max-length="64"
           :placeholder="$t('modifyModal.index.177674-3')"
         />
       </a-form-item>
@@ -32,8 +36,12 @@
         />
       </a-form-item>
       <a-form-item :label="$t('modifyModal.index.177674-6')">
-        <a-textarea
+        <I18nTextField
           v-model:value="formModel.description"
+          v-model:i18nMessages="formModel.i18nMessages"
+          field="description"
+          :label="$t('modifyModal.index.177674-6')"
+          textarea
           show-count
           :maxlength="200"
           :placeholder="$t('modifyModal.index.177674-7')"
@@ -48,6 +56,7 @@ import { Form } from "ant-design-vue";
 import { queryTree, saveTree, updateTree } from "../../../../../api/category";
 import { onlyMessage } from "@jetlinks-web-core/utils/comm";
 import { useI18n } from "vue-i18n";
+import I18nTextField from "../../../../../components/I18n/I18nTextField.vue";
 
 const { t: $t } = useI18n();
 
@@ -76,6 +85,7 @@ interface formState {
   name: string;
   sortIndex: number;
   description: string;
+  i18nMessages?: Record<string, Record<string, string>>;
 }
 const listData = ref([]);
 const childArr = ref([]);
@@ -91,6 +101,7 @@ const formModel = ref<formState>({
   name: "",
   sortIndex: 1,
   description: "",
+  i18nMessages: {},
 });
 const rules = ref({
   name: [
@@ -190,6 +201,7 @@ const show = async (row: any) => {
               ? childArr.value[childArr.value.length - 1].sortIndex
               : childArr.value[childArr.value.length - 1].sortIndex + 1,
           description: "",
+          i18nMessages: {},
         };
         visible.value = true;
       }
@@ -204,6 +216,7 @@ const show = async (row: any) => {
               ? arr.value[arr.value.length - 1].sortIndex
               : arr.value[arr.value.length - 1].sortIndex + 1,
           description: "",
+          i18nMessages: {},
         };
       }
       visible.value = true;
@@ -217,6 +230,7 @@ const show = async (row: any) => {
           name: "",
           sortIndex: 1,
           description: "",
+          i18nMessages: {},
         };
         visible.value = true;
       }
@@ -228,6 +242,7 @@ const show = async (row: any) => {
       name: row.name,
       sortIndex: row.sortIndex,
       description: row.description,
+      i18nMessages: row.i18nMessages || {},
     };
     visible.value = true;
   }

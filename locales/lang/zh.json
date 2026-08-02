@@ -905,6 +905,7 @@
     "Domain.homeAgent.tool.aggregate.interval": "聚合时间桶：1m、1h、1d、1w、1M；未传时按时间范围自动选择。",
     "Domain.homeAgent.tool.aggregate.limit": "内联预览最多返回聚合桶数量，默认 200，最大 1000。",
     "Domain.homeAgent.tool.aggregate.nonNumericWarning": "{0} 不是数值属性，已改用 COUNT 聚合。",
+    "Domain.homeAgent.tool.aggregate.truncated": "结果仅包含有界预览；如需完整数据，请在支持文件交付的设备详情上下文中执行。",
     "Instance.homeAgent.menu.deviceInstance": "设备实例",
     "Instance.homeAgent.detailLink": "打开{0}详情",
     "Instance.homeAgent.capability.search.name": "搜索设备实例",
@@ -4113,7 +4114,8 @@
     "DeviceDetail.agentTools.logsSummary.help": "设备日志统计。用户问“最近有没有上报/错误/日志”“日志多少条”“这段时间是否有通信”时使用此工具；如果问题是“上下线数量/上线几次/离线几次”，优先使用 device_online_offline_summary。只返回 total 和少量 samples，避免把整页日志回传给模型。",
     "DeviceDetail.agentTools.logsQuery.description": "查询当前设备少量操作日志和消息日志样本。",
     "DeviceDetail.agentTools.logsQuery.inputs.limit": "内联预览样本条数，默认10，最大20；传 writeToPath 时更多日志样本写入文件。",
-    "DeviceDetail.agentTools.logsQuery.help": "查询设备日志样本。需要查看少量原始日志内容时使用；如果只是问有没有、多少条、最近是否有通信，优先使用 device_logs_summary；上下线数量优先使用 device_online_offline_summary。需要保存大范围日志样本时传 writeToPath，建议优先使用 .jsonl 路径，也兼容 .ndjson，工具会逐页追加 JSONL/NDJSON；limit 只控制内联预览，writeLimit 控制文件写入条数，完整导出可传 writeLimit=0。",
+    "DeviceDetail.agentTools.logsQuery.inputs.includePreviousBoundary": "是否额外包含起始时间之前最近一条同条件日志，用于需要范围边界状态的时序计算；默认 false。",
+    "DeviceDetail.agentTools.logsQuery.help": "查询设备日志样本。需要查看少量原始日志内容时使用；如果只是问有没有、多少条、最近是否有通信，优先使用 device_logs_summary；上下线数量优先使用 device_online_offline_summary。需要保存大范围日志样本时传 writeToPath，建议优先使用 .jsonl 路径，也兼容 .ndjson，工具会逐页追加 JSONL/NDJSON；limit 只控制内联预览，writeLimit 控制文件写入条数，完整导出可传 writeLimit=0。需要计算有起始边界的状态时长时设置 includePreviousBoundary=true。",
     "DeviceDetail.agentTools.logsQuery.nextAction.truncated": "结果已截断，可传 writeToPath 保存更多日志样本。",
     "DeviceDetail.agentTools.legacyRemoteFileWorkdir.description": "获取当前边缘网关设备远程文件管理的工作目录。",
     "DeviceDetail.agentTools.legacyRemoteFileWorkdir.help": "获取边缘网关远程文件系统的当前工作目录。适合在列目录或读取日志文件前确认根路径。",
@@ -4217,5 +4219,11 @@
     "DeviceGroupDataCapability.error.invalidGroupIds": "设备分组ID列表不正确，单次最多查询100个分组",
     "DeviceGroupDataCapability.error.invalidGroupId": "设备分组ID不能为空",
     "DeviceGroupDataCapability.error.invalidPagination": "分页参数不正确",
-    "DeviceGroupDataCapability.error.loadFailed": "设备分组数据加载失败"
+    "DeviceGroupDataCapability.error.loadFailed": "设备分组数据加载失败",
+    "DeviceDetail.edgeTools.mbean.scopes.gc": "JVM GC",
+    "I18n.configure": "国际化配置",
+    "I18n.chinese": "中文",
+    "I18n.english": "English",
+    "I18n.placeholder": "请输入{language}",
+    "I18n.maxLength": "长度不能超过{max}个字符"
 }

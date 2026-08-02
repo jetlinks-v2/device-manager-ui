@@ -52,8 +52,12 @@
                             />
                         </a-form-item>
                         <a-form-item :label="$t('Save.index.912481-4')" name="name">
-                            <a-input
+                            <I18nTextField
                                 v-model:value="form.name"
+                                v-model:i18nMessages="form.i18nMessages"
+                                field="name"
+                                :label="$t('Save.index.912481-4')"
+                                :i18n-max-length="64"
                                 :placeholder="$t('Save.index.912481-5')"
                             />
                         </a-form-item>
@@ -116,13 +120,17 @@
                     </div>
                 </RegistryComponent>
                 
-                <a-form-item :label="$t('Save.index.912481-9')" name="description">
-                    <a-textarea
+                <a-form-item :label="$t('Save.index.912481-9')" name="describe">
+                    <I18nTextField
                         :maxlength="200"
                         showCount
                         :auto-size="{ minRows: 4, maxRows: 5 }"
                         v-model:value="form.describe"
+                        v-model:i18nMessages="form.i18nMessages"
+                        field="describe"
+                        :label="$t('Save.index.912481-9')"
                         :placeholder="$t('Save.index.912481-10')"
+                        textarea
                     />
                 </a-form-item>
             </a-form>
@@ -150,6 +158,7 @@ import { useI18n } from 'vue-i18n';
 import { omit } from 'lodash-es';
 import SaveProductCloud from './SaveProductCloud.vue';
 import { ensureVisualizationDashboardProject } from '@device-manager-ui/utils/dashboardProject';
+import I18nTextField from '@device-manager-ui/components/I18n/I18nTextField.vue';
 
 const { t: $t } = useI18n();
 
@@ -220,7 +229,8 @@ const form = reactive({
     type: 'custom',
     masterProductId: undefined,
     edgeMasterId: undefined,
-    metadata: undefined
+    metadata: undefined,
+    i18nMessages: {} as Record<string, Record<string, string>>,
 });
 /**
  * 校验id
@@ -284,7 +294,7 @@ const rules = reactive({
             validator: validateDeviceType,
         },
     ],
-    description: [
+    describe: [
         { max: 200, message: $t('Save.index.912481-21'), trigger: 'blur' },
     ],
     type: [
@@ -342,6 +352,7 @@ const show = async (data: any) => {
         form.photoUrl = data.photoUrl || photoValue.value;
         form.deviceType = data.deviceType.value;
         form.describe = data.describe;
+        form.i18nMessages = data.i18nMessages || {};
         form.id = data.id;
         idDisabled.value = true;
         form.type =
@@ -374,6 +385,7 @@ const show = async (data: any) => {
         form.photoUrl = device.deviceProduct;
         form.deviceType = '';
         form.describe = undefined;
+        form.i18nMessages = {};
         form.id = undefined;
         idDisabled.value = false;
         form.type = 'custom';

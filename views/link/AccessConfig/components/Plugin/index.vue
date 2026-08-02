@@ -104,8 +104,12 @@
                                     ]"
                                     name="name"
                                 >
-                                    <a-input
+                                    <I18nTextField
                                         v-model:value="formData.name"
+                                        v-model:i18nMessages="formData.i18nMessages"
+                                        field="name"
+                                        :label="$t('Plugin.index.626239-8')"
+                                        :i18n-max-length="64"
                                         allowClear
                                         :placeholder="$t('Plugin.index.626239-9')"
                                     />
@@ -120,10 +124,14 @@
                                     ]"
                                     name="description"
                                 >
-                                    <a-textarea
+                                    <I18nTextField
                                         :placeholder="$t('Plugin.index.626239-13')"
                                         :rows="4"
                                         v-model:value="formData.description"
+                                        v-model:i18nMessages="formData.i18nMessages"
+                                        field="description"
+                                        :label="$t('Plugin.index.626239-11')"
+                                        textarea
                                         show-count
                                         :maxlength="200"
                                     />
@@ -198,6 +206,7 @@ import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import { CreteRuleByType } from '../../../components/Form/rules';
 import { useI18n } from 'vue-i18n';
 import { useTabSaveSuccessBack } from '@jetlinks-web-core/hooks'
+import I18nTextField from '@device-manager-ui/components/I18n/I18nTextField.vue';
 
 const { t: $t } = useI18n();
 const props = defineProps({
@@ -229,6 +238,7 @@ const loading = ref(false);
 const formData = reactive({
     name: undefined,
     description: undefined,
+    i18nMessages: {},
     configuration: {},
 });
 const formRef = ref();

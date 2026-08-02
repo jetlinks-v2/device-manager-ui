@@ -40,11 +40,11 @@
         </Title>
         <div>
           <div>
-            {{ access?.name }}
+            {{ getI18nText(access, 'name') }}
           </div>
           <div>
             {{
-              access?.description ||
+              getI18nText(access, 'description') ||
               dataSource.find((item) => item?.id === access?.provider)
                 ?.description
             }}
@@ -55,7 +55,7 @@
               <a-collapse v-model:activeKey="activeKey">
                 <a-collapse-panel
                   v-for="item in access?.configuration?.gateways"
-                  :key="item.id" :header="item.name"
+                  :key="item.id" :header="getI18nText(item, 'name')"
                 >
                   <template #extra>
                     {{ dataSource.find((i) => i?.id === item?.provider)?.description }}
@@ -63,7 +63,7 @@
                   <div class="item-style">
                     <Title :data="$t('DeviceAccess.index.594346-6')"></Title>
                     <div>
-                      {{ item?.protocolDetail?.name }}
+                      {{ getI18nText(item?.protocolDetail, 'name') }}
                     </div>
                   </div>
                   <div class="item-style">
@@ -130,7 +130,7 @@
           <div class="item-style">
             <Title :data="$t('DeviceAccess.index.594346-6')"></Title>
             <div>
-              {{ access?.protocolDetail?.name }}
+              {{ getI18nText(access?.protocolDetail, 'name') }}
             </div>
           </div>
           <div class="item-style">
@@ -293,6 +293,7 @@ import {onlyMessage} from "@jetlinks-web-core/utils/comm";
 import {pick} from "lodash-es";
 import {useI18n} from "vue-i18n";
 import { useTabSaveSuccessBack } from '@jetlinks-web-core/hooks'
+import { getI18nText } from '../../../../../utils/i18n'
 
 const { t: $t } = useI18n();
 const route = useRoute();

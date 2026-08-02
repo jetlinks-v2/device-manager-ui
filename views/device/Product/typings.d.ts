@@ -8,8 +8,10 @@ type DeviceType = {
 export type ProductItem = {
   id: string;
   name: string;
+  i18nName?: string;
   classifiedId: string | string[];
   classifiedName: string;
+  i18nClassifiedName?: string;
   configuration: Record<string, any>;
   createTime: number;
   updateTime: number;
@@ -21,11 +23,18 @@ export type ProductItem = {
   metadata: string;
   orgId: string;
   protocolName: string;
+  i18nProtocolName?: string;
   state: number;
   transportProtocol: string;
   describe?: string;
+  i18nDescribe?: string;
   accessId?: string;
   accessName?: string;
+  i18nAccessName?: string;
+  manufacturer?: string;
+  i18nManufacturer?: string;
+  model?: string;
+  i18nModel?: string;
   photoUrl?: string;
   storePolicy?: string;
   accessProvider?: string;

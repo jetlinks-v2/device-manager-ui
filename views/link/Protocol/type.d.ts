@@ -8,4 +8,5 @@ export interface FormDataType {
         pkgVersion?: string;
     };
     description: string;
+    i18nMessages?: Record<string, Record<string, string>>;
 }
