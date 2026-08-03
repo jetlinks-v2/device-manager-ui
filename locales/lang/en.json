@@ -4224,6 +4224,8 @@
     "DeviceInstanceDataCapability.state.description": "Query runtime states for a batch of devices.",
     "DeviceInstanceDataCapability.detail.name": "Device Details",
     "DeviceInstanceDataCapability.detail.description": "Query basic information and the latest active time for a device.",
+    "DeviceInstanceDataCapability.detailPage.name": "Device Detail Page",
+    "DeviceInstanceDataCapability.detailPage.description": "Page through device details and runtime states.",
     "DeviceInstanceDataCapability.query.deviceIds": "Device IDs",
     "DeviceInstanceDataCapability.query.deviceId": "Device ID",
     "DeviceInstanceDataCapability.error.invalidDeviceIds": "Invalid device ID list; at most 200 devices can be queried at once",

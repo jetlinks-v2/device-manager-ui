@@ -4225,6 +4225,8 @@
     "DeviceInstanceDataCapability.state.description": "批量查询指定设备的运行状态。",
     "DeviceInstanceDataCapability.detail.name": "设备详情",
     "DeviceInstanceDataCapability.detail.description": "查询指定设备的基础信息与最近活动时间。",
+    "DeviceInstanceDataCapability.detailPage.name": "设备明细分页",
+    "DeviceInstanceDataCapability.detailPage.description": "分页查询物联设备明细及运行状态。",
     "DeviceInstanceDataCapability.query.deviceIds": "设备ID列表",
     "DeviceInstanceDataCapability.query.deviceId": "设备ID",
     "DeviceInstanceDataCapability.error.invalidDeviceIds": "设备ID列表不正确，单次最多查询200个设备",

@@ -23,6 +23,7 @@ export interface DeviceLocationQuery {
   pageIndex: number
   pageSize: number
   state?: DeviceMonitoringState
+  scope?: DeviceMonitoringScope
 }
 
 export interface DeviceLocationRow {

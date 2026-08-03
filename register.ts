@@ -53,6 +53,7 @@ export default {
       capabilityIds: [
         'device.state.batch',
         'device.detail',
+        'device.detail.page',
       ],
       loader: () => import('./dataCapabilities/deviceInstanceMonitoringProvider'),
     },

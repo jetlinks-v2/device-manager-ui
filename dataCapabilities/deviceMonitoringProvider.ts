@@ -97,6 +97,11 @@ const locationSource: DataSourceDefinition = {
       pageIndex: { type: 'integer', default: DEFAULT_PAGE_INDEX },
       pageSize: { type: 'integer', default: DEFAULT_PAGE_SIZE },
       state: { type: 'string', enum: STATES },
+      scope: {
+        type: 'string',
+        enum: SCOPES,
+        title: t('DeviceDataCapability.query.scope'),
+      },
     },
   },
   outputSchema: arrayOutputSchema,
@@ -181,6 +186,7 @@ function toLocationQuery(request: DataSourceRequest): DeviceLocationQuery {
     pageIndex: integerInRange(request.query?.pageIndex, DEFAULT_PAGE_INDEX, 0),
     pageSize: integerInRange(request.query?.pageSize ?? request.limit, DEFAULT_PAGE_SIZE, 1, MAX_PAGE_SIZE),
     state: state as DeviceMonitoringState | undefined,
+    scope: toScope(request.query?.scope),
   }
 }
 

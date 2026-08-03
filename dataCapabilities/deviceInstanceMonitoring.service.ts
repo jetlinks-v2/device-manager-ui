@@ -1,14 +1,19 @@
 import i18n from '@jetlinks-web-core/locales'
 import {
   queryDeviceInstanceDetail,
+  queryDeviceInstanceDetailPage,
   queryDeviceInstanceStates,
 } from '@device-manager-ui/api/deviceInstanceMonitoring'
 import type {
   DeviceDetailData,
+  DeviceDetailPageData,
+  DeviceDetailPageQuery,
+  DeviceDetailPageRow,
   DeviceDetailQuery,
   DeviceStateBatchQuery,
   DeviceStateRow,
 } from './deviceInstanceMonitoring.types'
+import { createIotDeviceScopeTerm } from './deviceScope'
 
 type UnknownRecord = Record<string, unknown>
 
@@ -43,6 +48,38 @@ export async function loadDeviceDetail(
     throw new Error(t('DeviceInstanceDataCapability.error.loadFailed'))
   }
   return normalizeDeviceDetail(detail, query.deviceId)
+}
+
+export async function loadDeviceDetailPage(
+  query: DeviceDetailPageQuery,
+  signal?: AbortSignal,
+): Promise<DeviceDetailPageData> {
+  const terms: UnknownRecord[] = []
+  if (query.scope === 'iot') terms.push(createIotDeviceScopeTerm())
+  if (query.state) {
+    terms.push({ column: 'state', termType: 'eq', value: query.state })
+  }
+
+  const response = await queryDeviceInstanceDetailPage({
+    paging: true,
+    pageIndex: query.pageIndex,
+    pageSize: query.pageSize,
+    sorts: [{ name: 'createTime', order: 'desc' }],
+    terms,
+  }, { signal, hiddenError: true })
+  assertResponseSuccess(response)
+
+  const result = asRecord(unwrapResult(response))
+  const data = extractRows(result)
+    .map(normalizeDeviceDetailPageRow)
+    .filter((item): item is DeviceDetailPageRow => Boolean(item))
+
+  return {
+    data,
+    total: finiteNumber(result.total ?? result.count) ?? data.length,
+    pageIndex: finiteNumber(result.pageIndex) ?? query.pageIndex,
+    pageSize: finiteNumber(result.pageSize) ?? query.pageSize,
+  }
 }
 
 function normalizeStateRow(row: UnknownRecord): DeviceStateRow | undefined {
@@ -81,6 +118,33 @@ function normalizeDeviceDetail(
     ),
     address: textOrNull(row.address),
     description: firstText(row.description, row.describe),
+    lastActiveTime,
+  }
+}
+
+function normalizeDeviceDetailPageRow(
+  row: UnknownRecord,
+): DeviceDetailPageRow | undefined {
+  const deviceId = textOrNull(row.id)
+  if (!deviceId) return undefined
+
+  const state = enumValue(row.state)
+  const extensions = asRecord(row.extensions)
+  const iotExtensions = asRecord(extensions.iot)
+  const lastActiveTime = state === 'online'
+    ? toTimestamp(row.onlineTime)
+    : state === 'offline'
+      ? toTimestamp(row.offlineTime)
+      : state === 'notActive'
+        ? null
+        : toTimestamp(row.offlineTime) ?? toTimestamp(row.onlineTime)
+
+  return {
+    deviceId,
+    deviceName: textOrNull(row.name),
+    productName: textOrNull(row.productName),
+    state,
+    area: firstText(iotExtensions.area, extensions.area, row.orgName),
     lastActiveTime,
   }
 }
@@ -128,6 +192,12 @@ function toTimestamp(value: unknown): number | null {
   }
   const parsed = Date.parse(String(raw))
   return Number.isFinite(parsed) ? parsed : null
+}
+
+function finiteNumber(value: unknown): number | undefined {
+  if (value === undefined || value === null || value === '') return undefined
+  const number = Number(value)
+  return Number.isFinite(number) ? number : undefined
 }
 
 function textOrNull(value: unknown): string | null {

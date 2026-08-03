@@ -83,9 +83,11 @@ export async function loadDeviceLocationList(
   query: DeviceLocationQuery,
   signal?: AbortSignal,
 ): Promise<DeviceLocationPageData> {
-  const terms = query.state
-    ? [{ column: 'state', termType: 'eq', value: query.state }]
-    : []
+  const terms: UnknownRecord[] = []
+  if (query.scope === 'iot') terms.push(createIotDeviceScopeTerm())
+  if (query.state) {
+    terms.push({ column: 'state', termType: 'eq', value: query.state })
+  }
   const response = await getDeviceGeoJson({
     paging: true,
     pageIndex: query.pageIndex,
@@ -155,9 +157,7 @@ export async function loadDeviceRuntimeTrend(
     const group = text(row.group)
     if (group !== ONLINE_RATE_GROUP && group !== MESSAGE_COUNT_GROUP) return
     const data = asRecord(row.data)
-    const timestamp = toTimestamp(
-      data.timestamp ?? data.timeString ?? row.timestamp ?? row.timeString,
-    )
+    const timestamp = toTimestamp(data.timeString)
     if (timestamp === null) return
 
     const point = points.get(timestamp) || {
