@@ -9,7 +9,6 @@ export type DeviceInstance = {
   description: string;
   productId: string;
   productName: string;
-  i18nProductName?: string;
   protocolName: string;
   security: any;
   deriveMetadata: string;
