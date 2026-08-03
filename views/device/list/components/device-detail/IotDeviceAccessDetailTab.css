@@ -1,0 +1,101 @@
+.instance-device-access {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 30rem;
+  gap: var(--space-3);
+}
+
+.device-access-tabs {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.device-access-tabs :deep(.ant-tabs-nav) {
+  flex-shrink: 0;
+  margin-bottom: var(--space-3);
+}
+
+.device-access-tabs :deep(.ant-tabs-extra-content) {
+  display: flex;
+  align-items: center;
+}
+
+.device-access-tabs :deep(.ant-tabs-content-holder) {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.device-access-tabs :deep(.device-access-tab-pane--trace.ant-tabs-tabpane) {
+  height: 100%;
+  min-height: 0;
+}
+
+.device-access-tabs :deep(.device-access-tab-pane--parsing.ant-tabs-tabpane) {
+  height: 100%;
+  min-height: 0;
+}
+
+.device-access-tabs :deep(.device-access-tab-pane--children.ant-tabs-tabpane) {
+  height: 100%;
+  min-height: 0;
+}
+
+.trace-tab-actions {
+  flex-shrink: 0;
+}
+
+.trace-tab-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  vertical-align: middle;
+}
+
+.trace-tab-badge {
+  line-height: 1;
+}
+
+.trace-tab-badge :deep(.ant-badge-count) {
+  box-shadow: none;
+}
+
+.tab-pane-inner {
+  min-height: 22.5rem;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.tab-pane-inner--trace {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.tab-pane-inner--parsing {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 28rem;
+  overflow: hidden;
+}
+
+.tab-pane-inner--children {
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 28rem;
+  overflow: visible;
+}
+
+.tab-pane-inner--access {
+  overflow-x: hidden;
+  overflow-y: visible;
+  height: auto;
+}

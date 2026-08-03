@@ -1,0 +1,22 @@
+.alarm-record-tab {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.alarm-record-tab__filter {
+  min-width: 0;
+}
+
+.alarm-record-tab__table {
+  min-width: 0;
+}
+
+.threshold {
+  display: inline-flex;
+  max-width: 100%;
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--jet-theme-radius);
+  background: var(--jet-theme-bg);
+  font-family: var(--font-mono, monospace);
+}

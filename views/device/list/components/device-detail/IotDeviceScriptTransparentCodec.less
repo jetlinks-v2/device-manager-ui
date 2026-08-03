@@ -1,0 +1,92 @@
+.parsing-script {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.script-toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: 0.625rem;
+}
+
+.script-toolbar__hint {
+  flex: 1;
+  min-width: 0;
+  color: var(--jet-theme-text);
+  font-size: var(--fs-14);
+  line-height: 1.6;
+
+  :deep(.anticon) {
+    margin-right: 0.375rem;
+    color: var(--jet-theme-warning);
+  }
+}
+
+.script-link {
+  padding: 0 0.125rem;
+  height: auto;
+}
+
+.script-toolbar__expand {
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+  cursor: pointer;
+}
+
+.script-editor {
+  position: relative;
+  min-height: 21.25rem;
+  border: 0.0625rem solid var(--jet-theme-border);
+}
+
+.script-editor__mask {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background-color: color-mix(in srgb, var(--jet-theme-bg-layout) 70%, transparent);
+  cursor: not-allowed;
+}
+
+.script-debug {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 0.625rem;
+  background-color: var(--jet-theme-bg-layout);
+}
+
+.script-debug__panel {
+  width: 49.5%;
+}
+
+.script-debug__title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: 0.625rem;
+}
+
+.script-debug__route {
+  display: flex;
+  align-items: center;
+  gap: 0.3125rem;
+}
+
+.script-actions {
+  padding-top: 0.625rem;
+  flex-shrink: 0;
+}
+
+@media (max-width: 60rem) {
+  .script-debug {
+    flex-direction: column;
+  }
+
+  .script-debug__panel {
+    width: 100%;
+  }
+}

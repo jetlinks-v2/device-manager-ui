@@ -1,0 +1,69 @@
+.device-alarm-message {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.device-alarm-message :deep(.ant-form-item) {
+  margin-bottom: 0;
+}
+
+.device-alarm-message__scope {
+  margin: 0;
+  color: var(--jet-theme-text-secondary);
+  font-size: var(--fs-14);
+}
+
+.device-alarm-message__variables {
+  display: grid;
+  gap: var(--space-2);
+  color: var(--jet-theme-text-secondary);
+  font-size: var(--fs-14);
+}
+
+.device-alarm-message__variable-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.device-alarm-message__variable-list button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  border: 0.0625rem solid var(--jet-theme-border);
+  border-radius: var(--jet-theme-radius);
+  background: var(--jet-theme-bg-container);
+  padding: var(--space-1) var(--space-2);
+  color: var(--jet-theme-text);
+  cursor: pointer;
+}
+
+.device-alarm-message__variable-list button:hover:not(:disabled) {
+  border-color: var(--ant-primary-color);
+  color: var(--ant-primary-color);
+}
+
+.device-alarm-message__variable-list button:disabled {
+  color: var(--jet-theme-text-disabled);
+  cursor: not-allowed;
+}
+
+.device-alarm-message__variable-list code {
+  color: inherit;
+  font-size: var(--fs-12);
+}
+
+.device-alarm-message__preview {
+  border-radius: var(--jet-theme-radius);
+  background: var(--jet-theme-bg-layout);
+  padding: var(--space-3);
+  color: var(--jet-theme-text-secondary);
+  font-size: var(--fs-14);
+}
+
+.device-alarm-message__preview p {
+  margin: var(--space-1) 0 0;
+  color: var(--jet-theme-text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}

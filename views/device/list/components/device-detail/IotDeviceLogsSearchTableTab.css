@@ -1,0 +1,81 @@
+.logs-pro-tab {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.logs-pro-tab__filter {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+}
+
+.logs-pro-tab__table {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.logs-pro-tab__table :deep(.jtable-body-spin),
+.logs-pro-tab__table :deep(.jtable-body),
+.logs-pro-tab__table :deep(.jtable-box),
+.logs-pro-tab__table :deep(.ant-table-wrapper),
+.logs-pro-tab__table :deep(.ant-table),
+.logs-pro-tab__table :deep(.ant-table-container) {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.logs-pro-tab__table :deep(.jtable-box) {
+  overflow: hidden;
+}
+
+.logs-pro-tab__table :deep(.ant-table-content) {
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.logs-pro-tab__table :deep(.ant-table table) {
+  width: 100% !important;
+  table-layout: fixed;
+}
+
+.logs-pro-tab__table :deep(.ant-table-thead > tr > th) {
+  background: var(--jet-theme-bg-layout) !important;
+  color: var(--jet-theme-text-secondary);
+  font-size: var(--fs-14);
+}
+
+.log-chip,
+.log-direction {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 0.375rem;
+  padding: 0.125rem 0.5rem;
+  background: var(--jet-theme-bg-layout);
+  color: var(--jet-theme-text-secondary);
+  font-size: var(--fs-14);
+  font-weight: 600;
+}
+
+.log-direction {
+  background: var(--jet-theme-primary-soft);
+  color: var(--jet-theme-primary);
+}
+
+.log-direction[data-direction='down'] {
+  background: color-mix(in srgb, var(--jet-theme-warning) 10%, var(--jet-theme-bg-container));
+  color: var(--jet-theme-warning);
+}
+
+.log-content,
+.logs-pro-tab__table :deep(time) {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}

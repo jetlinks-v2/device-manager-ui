@@ -1,0 +1,31 @@
+.iot-device-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.iot-device-list > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.iot-device-list__page-header {
+  min-height: 2rem;
+  margin: 0;
+}
+
+.iot-device-list__page-header :deep(.cloud-page-header__title h1) {
+  color: var(--jet-theme-text-title);
+  font-size: var(--fs-18);
+  font-weight: 600;
+  line-height: 1.5rem;
+}
+
+.iot-device-list__page-header :deep(.cloud-page-header__actions .ant-btn) {
+  min-height: 2rem;
+  padding-inline: var(--space-4);
+  border-radius: var(--r-3);
+  box-shadow: none;
+}

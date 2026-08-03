@@ -1,0 +1,249 @@
+.iot-content,
+.component-drawer {
+  color: var(--jet-theme-text);
+}
+
+:where(.iot-content, .component-drawer) .work-surface {
+  min-width: 0;
+  border: var(--jet-theme-stroke-width) solid var(--jet-theme-border);
+  border-radius: var(--jet-theme-radius-lg);
+  background: var(--jet-theme-bg-container);
+  box-shadow: var(--jet-theme-shadow-secondary);
+  overflow: hidden;
+}
+
+:where(.iot-content, .component-drawer) .stat-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-5) var(--space-7);
+  padding: var(--space-5) var(--space-8);
+}
+
+:where(.iot-content, .component-drawer) .stat-strip__item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  color: var(--jet-theme-text-disabled);
+  font-size: var(--fs-14);
+}
+
+:where(.iot-content, .component-drawer) .stat-strip__item strong {
+  color: var(--jet-theme-text); font-size: var(--fs-h3);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+:where(.iot-content, .component-drawer) .stat-strip__item strong[data-state='urgent'] {
+  color: var(--jet-theme-error);
+}
+
+:where(.iot-content, .component-drawer) .stat-strip__item strong[data-state='watch'] {
+  color: var(--jet-theme-warning);
+}
+
+:where(.iot-content, .component-drawer) .stat-strip__item strong[data-state='ok'] {
+  color: var(--jet-theme-success);
+}
+
+:where(.iot-content, .component-drawer) .stat-strip--columns {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+  border-top: var(--jet-theme-stroke-width) solid var(--jet-theme-border);
+  border-bottom: var(--jet-theme-stroke-width) solid var(--jet-theme-border);
+  background: var(--jet-theme-primary-soft);
+}
+
+:where(.iot-content, .component-drawer) .stat-strip--columns .stat-strip__item {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-7) var(--space-9);
+}
+
+:where(.iot-content, .component-drawer) .stat-strip--columns .stat-strip__item + .stat-strip__item::before {
+  position: absolute;
+  top: var(--space-7);
+  bottom: var(--space-7);
+  left: 0;
+  width: var(--jet-theme-stroke-width);
+  background: var(--jet-theme-border);
+  content: '';
+}
+
+:where(.iot-content, .component-drawer) .stat-strip--columns .stat-strip__item strong { font-size: var(--fs-display);
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+:where(.iot-content, .component-drawer) .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  height: 1.75rem;
+  padding: 0 var(--space-6);
+  border: var(--jet-theme-stroke-width) solid var(--jet-theme-border-secondary);
+  border-radius: var(--jet-theme-radius);
+  background: var(--jet-theme-bg-container);
+  color: var(--jet-theme-text);
+  font: inherit;
+  font-size: var(--fs-14);
+  font-weight: 500;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s, transform 0.04s;
+}
+
+:where(.iot-content, .component-drawer) .btn:hover {
+  background: var(--jet-theme-primary-soft);
+  color: var(--jet-theme-text);
+}
+
+:where(.iot-content, .component-drawer) .btn:active {
+  transform: translateY(0.03125rem);
+}
+
+:where(.iot-content, .component-drawer) .btn:disabled,
+:where(.iot-content, .component-drawer) .btn[aria-disabled='true'] {
+  opacity: 0.52;
+  cursor: not-allowed;
+  transform: none;
+}
+
+:where(.iot-content, .component-drawer) .btn--primary {
+  border-color: var(--jet-theme-primary);
+  background: var(--jet-theme-primary);
+  color: var(--accent-ink);
+  box-shadow: var(--jet-theme-shadow);
+}
+
+:where(.iot-content, .component-drawer) .btn--primary:hover {
+  background: var(--jet-theme-primary);
+  color: var(--accent-ink);
+  filter: brightness(0.94);
+  transform: translateY(-0.0625rem);
+}
+
+:where(.iot-content, .component-drawer) .btn--ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--jet-theme-text-secondary);
+  box-shadow: none;
+}
+
+:where(.iot-content, .component-drawer) .btn--ghost:hover {
+  background: var(--jet-theme-border-secondary);
+  color: var(--jet-theme-text);
+}
+
+:where(.iot-content, .component-drawer) .btn--sm {
+  height: 1.5rem;
+  padding: 0 var(--space-4);
+  font-size: var(--fs-14);
+}
+
+:where(.iot-content, .component-drawer) .pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  height: 1.25rem;
+  padding: 0 var(--space-4);
+  border: var(--jet-theme-stroke-width) solid var(--jet-theme-border);
+  border-radius: 62.4375rem;
+  background: var(--jet-theme-bg-container);
+  color: var(--jet-theme-text-secondary); font-size: var(--fs-14);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+:where(.iot-content, .component-drawer) .pill::before {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 62.4375rem;
+  background: currentColor;
+  content: '';
+}
+
+:where(.iot-content, .component-drawer) .pill--ok {
+  border-color: transparent;
+  background: var(--ok-bg);
+  color: var(--jet-theme-success);
+}
+
+:where(.iot-content, .component-drawer) .pill--warn {
+  border-color: transparent;
+  background: var(--warn-bg);
+  color: var(--jet-theme-warning);
+}
+
+:where(.iot-content, .component-drawer) .pill--err {
+  border-color: transparent;
+  background: var(--err-bg);
+  color: var(--jet-theme-error);
+}
+
+:where(.iot-content, .component-drawer) .pill--info {
+  border-color: transparent;
+  background: var(--jet-theme-primary-soft);
+  color: var(--jet-theme-primary);
+}
+
+:where(.iot-content, .component-drawer) .pill--muted {
+  border-color: transparent;
+  background: var(--jet-theme-primary-soft);
+  color: var(--jet-theme-text-disabled);
+}
+
+:where(.iot-content, .component-drawer) .empty-state {
+  display: grid;
+  place-items: center;
+  gap: var(--space-4);
+  min-height: 10rem;
+  padding: var(--space-11);
+  border: var(--jet-theme-stroke-width) dashed var(--jet-theme-border-secondary);
+  border-radius: var(--jet-theme-radius-lg);
+  background: var(--jet-theme-primary-soft);
+  color: var(--jet-theme-text-disabled);
+  text-align: center;
+}
+
+:where(.iot-content, .component-drawer) .empty-state--compact {
+  min-height: 6rem;
+  padding: var(--space-8);
+}
+
+:where(.iot-content, .component-drawer) .empty-state__title {
+  margin: 0;
+  color: var(--jet-theme-text);
+  font-size: var(--fs-14);
+  font-weight: 600;
+}
+
+:where(.iot-content, .component-drawer) .iot-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1em;
+  height: 1em;
+  flex: 0 0 auto;
+}
+
+:where(.iot-content, .component-drawer) .iot-icon svg {
+  display: block;
+}
+
+@media (width <= 51.25rem) {
+  .stat-strip--columns {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
