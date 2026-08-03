@@ -20,3 +20,8 @@ export const queryDeviceInstanceDetail = (
   {},
   config,
 )
+
+export const queryDeviceInstanceDetailPage = (
+  data: Record<string, unknown>,
+  config?: RequestConfig,
+) => request.post('/device/instance/detail/_query', data, config)
