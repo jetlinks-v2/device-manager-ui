@@ -9,9 +9,16 @@
             <JProTable
                 ref="instanceRef"
                 :columns="columns"
-                :request="queryWithProductI18n"
+                :request="queryDetails"
                 :defaultParams="{
                     sorts: [{ name: 'createTime', order: 'desc' }, { name: 'name', order: 'desc'}],
+                    context: {
+                        includeTags: false,
+                        includeBind: false,
+                        includeRelations: false,
+                        includeFirmwareInfos: false,
+                        includeParent: false,
+                    },
                 }"
                 :rowSelection="
                     isCheck
@@ -67,7 +74,8 @@
                             <Image
                                 class="card-list-img-80"
                                 :src="
-                                    slotProps?.photoUrl ||
+                                    slotProps?.devicePhotoUrl ||
+                                    slotProps?.productPhotoUrl ||
                                     device.deviceCard
                                 "
                             />
@@ -136,8 +144,8 @@
                 <template #name="slotProps">
                     {{ getI18nText(slotProps, 'name') }}
                 </template>
-                <template #describe="slotProps">
-                    {{ getI18nText(slotProps, 'describe') }}
+                <template #description="slotProps">
+                    {{ getI18nText(slotProps, 'description') }}
                 </template>
                 <template #productName="slotProps">
                     {{ getI18nText(slotProps, 'productName') }}
@@ -212,7 +220,7 @@
 
 <script setup lang="ts">
 import {
-    queryWithProductI18n,
+    queryDetails,
     _delete,
     _deploy,
     _undeploy,
@@ -459,11 +467,12 @@ const columns = ref([
     },
     {
         title: $t('Instance.index.133466-18'),
-        dataIndex: 'describe',
-        key: 'describe',
+        dataIndex: 'description',
+        key: 'description',
         ellipsis: true,
         search: {
             type: 'string',
+            rename: 'describe',
         },
     },
     {

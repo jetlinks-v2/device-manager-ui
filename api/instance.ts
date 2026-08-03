@@ -49,10 +49,11 @@ export const query = (data?: Record<string, any>) => request.post('/device-insta
 export const queryDetails = (data?: Record<string, any>) => request.post('/device-instance/detail/_query', data)
 
 /**
- * 查询设备并返回所属产品的当前语言名称。
+ * 分页查询设备详情
+ * @param data 分页搜索数据
+ * @returns
  */
-export const queryWithProductI18n = (data?: Record<string, any>) =>
-  request.post('/device-instance/i18n/_query', data)
+export const queryDetails = (data?: Record<string, any>) => request.post('/device-instance/detail/_query', data)
 
 /**
  * 不分页查询设备
