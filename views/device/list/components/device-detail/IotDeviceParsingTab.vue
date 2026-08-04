@@ -73,7 +73,7 @@ import { computed, type PropType, ref, watch } from 'vue'
 import { DownOutlined, ReloadOutlined, SaveOutlined } from '@ant-design/icons-vue'
 import { useI18n } from 'vue-i18n'
 
-import ModbusMapping from '../../../../../../device-manager-ui/views/device/Instance/Detail/Parsing/ModbusMapping.vue'
+import ModbusMapping from '@device-manager-ui/views/device/list/components/common/ModbusMapping.vue'
 import { iotDeviceDetailRealApi } from '../../services/iotDeviceDetailReal.service'
 import type { IotDevice } from '../../types'
 import IotDeviceScriptTransparentCodec from './IotDeviceScriptTransparentCodec.vue'

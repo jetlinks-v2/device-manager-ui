@@ -1,0 +1,38 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+components.d.ts
+apps
+
+# Editor directories and files
+.vscode
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.history
+.claude
+
+# 忽略所有 java 目录中的内容
+java/**
+
+# 插件生成文件不需要提交
+tsconfig.paths.json
+/.agents/**
+/.codex/**
+/.trellis/**
