@@ -1,1 +1,0 @@
-import{importShared as e}from"./__federation_fn_import.1785753498521.js";import{_ as c}from"./index.1785753498521.js";const o={},{openBlock:t,createElementBlock:r}=await e("vue");function n(_,a){return t(),r("div")}const f=c(o,[["render",n],["__scopeId","data-v-e2ec6efb"]]);export{f as default};

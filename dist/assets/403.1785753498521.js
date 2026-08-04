@@ -1,1 +1,0 @@
-import{importShared as o}from"./__federation_fn_import.1785753498521.js";import{_ as t}from"./index.1785753498521.js";const r={},{resolveComponent:c,openBlock:n,createBlock:_}=await o("vue");function s(a,l){const e=c("a-result");return n(),_(e,{status:"403",title:"403"})}const f=t(r,[["render",s]]);export{f as default};
