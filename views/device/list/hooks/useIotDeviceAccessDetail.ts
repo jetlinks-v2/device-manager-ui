@@ -1,5 +1,6 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import useClipboard from 'vue-clipboard3'
 import { marked } from 'marked'
 import { onlyMessage } from '@jetlinks-web/utils'
 
@@ -51,6 +52,7 @@ export type IotDeviceAccessDetailProps = {
 
 export function useIotDeviceAccessDetail(props: Readonly<IotDeviceAccessDetailProps>) {
   const { t: $t } = useI18n()
+  const { toClipboard } = useClipboard()
   const accessDetail = ref<Record<string, any>>({})
   const configView = ref<Record<string, any>>({})
   const deviceConfiguration = ref<Record<string, any>>({})
@@ -183,8 +185,8 @@ export function useIotDeviceAccessDetail(props: Readonly<IotDeviceAccessDetailPr
   }
 
   async function copyText(value?: string) {
-    if (!value || typeof navigator === 'undefined') return
-    await navigator.clipboard?.writeText(value)
+    if (!value) return
+    await toClipboard(value)
     onlyMessage($t('IotDeviceDetail.accessDetail.copied'))
   }
 
