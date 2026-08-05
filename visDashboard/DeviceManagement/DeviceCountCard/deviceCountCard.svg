@@ -1,0 +1,19 @@
+<svg width="100" height="66" viewBox="0 0 100 66" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="deviceCountAccent" x1="55" y1="11" x2="88" y2="43" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0EECE4"/>
+      <stop offset="1" stop-color="#0D6DFF"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="12" width="28" height="5" rx="2.5" fill="#BEE5FB" fill-opacity="0.8"/>
+  <rect x="8" y="23" width="36" height="10" rx="3" fill="#0D6DFF" fill-opacity="0.22"/>
+  <rect x="8" y="23" width="23" height="10" rx="3" fill="#0D6DFF"/>
+  <path d="M60 15H83C86.3137 15 89 17.6863 89 21V40H54V21C54 17.6863 56.6863 15 60 15Z" fill="#0D6DFF" fill-opacity="0.12" stroke="url(#deviceCountAccent)" stroke-width="1.7"/>
+  <path d="M61 23H82M61 29H82M61 35H75" stroke="#BEE5FB" stroke-width="1.6" stroke-linecap="round"/>
+  <circle cx="83" cy="35" r="2" fill="#0EECE4"/>
+  <path d="M7 48H93" stroke="#BEE5FB" stroke-opacity="0.6"/>
+  <circle cx="11" cy="57" r="3" fill="#3CD495"/>
+  <rect x="17" y="54.5" width="21" height="5" rx="2.5" fill="#BEE5FB"/>
+  <circle cx="65" cy="57" r="3" fill="#FF4D4F"/>
+  <rect x="71" y="54.5" width="21" height="5" rx="2.5" fill="#BEE5FB"/>
+</svg>

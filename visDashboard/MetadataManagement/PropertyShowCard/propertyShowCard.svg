@@ -1,0 +1,20 @@
+<svg width="100" height="66" viewBox="0 0 100 66" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="propertyCardsAccent" x1="13" y1="14" x2="87" y2="54" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0D6DFF"/>
+      <stop offset="1" stop-color="#0EECE4"/>
+    </linearGradient>
+  </defs>
+  <rect x="7" y="7" width="32" height="4" rx="2" fill="#0D6DFF" fill-opacity="0.65"/>
+  <rect x="7" y="17" width="40" height="40" rx="5" stroke="#BEE5FB" stroke-width="1.5"/>
+  <rect x="53" y="17" width="40" height="40" rx="5" stroke="#BEE5FB" stroke-width="1.5"/>
+  <rect x="13" y="23" width="17" height="3" rx="1.5" fill="#BEE5FB"/>
+  <circle cx="39" cy="25" r="2" fill="#0D6DFF"/>
+  <rect x="13" y="32" width="25" height="8" rx="3" fill="#0D6DFF" fill-opacity="0.18"/>
+  <rect x="17" y="34" width="17" height="4" rx="2" fill="url(#propertyCardsAccent)"/>
+  <rect x="13" y="47" width="20" height="3" rx="1.5" fill="#BEE5FB" fill-opacity="0.75"/>
+  <rect x="59" y="23" width="17" height="3" rx="1.5" fill="#BEE5FB"/>
+  <circle cx="85" cy="25" r="2" fill="#0EECE4"/>
+  <path d="M60 39L66 34L72 37L79 29L86 33" stroke="url(#propertyCardsAccent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="59" y="47" width="20" height="3" rx="1.5" fill="#BEE5FB" fill-opacity="0.75"/>
+</svg>
