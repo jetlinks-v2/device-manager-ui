@@ -1,0 +1,15 @@
+<svg width="100" height="66" viewBox="0 0 100 66" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="switchTwoPrimary" x1="27" y1="12" x2="73" y2="51" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0D6DFF"/>
+      <stop offset="1" stop-color="#0EECE4"/>
+    </linearGradient>
+  </defs>
+  <circle cx="50" cy="31" r="22" fill="#0D6DFF" fill-opacity="0.1" stroke="#BEE5FB" stroke-opacity="0.35" stroke-width="1.5"/>
+  <path d="M50 15V31" stroke="url(#switchTwoPrimary)" stroke-width="4" stroke-linecap="round"/>
+  <path d="M38 21C33 25 31 30 32 36C34 45 41 51 50 51C59 51 67 45 68 36C69 30 67 25 62 21" stroke="url(#switchTwoPrimary)" stroke-width="3.2" stroke-linecap="round"/>
+  <circle cx="50" cy="31" r="17" stroke="white" stroke-opacity="0.12" stroke-width="1" stroke-dasharray="2 3"/>
+  <circle cx="77" cy="15" r="3" fill="#3CD495"/>
+  <path d="M76 22C82 26 85 32 84 39" stroke="#0EECE4" stroke-opacity="0.7" stroke-width="1.5" stroke-linecap="round"/>
+  <rect x="36" y="58" width="28" height="4" rx="2" fill="white" fill-opacity="0.35"/>
+</svg>

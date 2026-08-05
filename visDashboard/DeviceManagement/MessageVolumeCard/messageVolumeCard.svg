@@ -1,0 +1,20 @@
+<svg width="100" height="66" viewBox="0 0 100 66" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="volumeTrend" x1="42" y1="44" x2="91" y2="18" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0D6DFF"/>
+      <stop offset="1" stop-color="#0EECE4"/>
+    </linearGradient>
+    <linearGradient id="volumeFill" x1="68" y1="19" x2="68" y2="48" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0EECE4" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="#0D6DFF" stop-opacity="0.04"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="11" width="24" height="5" rx="2.5" fill="#BEE5FB"/>
+  <rect x="8" y="22" width="30" height="11" rx="3" fill="#0D6DFF"/>
+  <path d="M44 42L51 36L58 39L66 27L74 31L83 18L92 23V48H44V42Z" fill="url(#volumeFill)"/>
+  <path d="M44 42L51 36L58 39L66 27L74 31L83 18L92 23" stroke="url(#volumeTrend)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M7 49H93" stroke="#BEE5FB"/>
+  <path d="M12 55H32C34.2091 55 36 56.7909 36 59V61H12C9.79086 61 8 59.2091 8 57C8 55.8954 8.89543 55 10 55H12Z" fill="#0D6DFF" fill-opacity="0.18" stroke="#0D6DFF" stroke-width="1.2"/>
+  <path d="M17 55V50L22 55" stroke="#0EECE4" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="73" y="54" width="20" height="7" rx="3.5" fill="#0EECE4" fill-opacity="0.3"/>
+</svg>

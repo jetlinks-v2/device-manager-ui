@@ -1,0 +1,230 @@
+import { execute } from '../../../../api/instance'
+import type {
+  AiClientToolCall,
+  AiClientToolDefinition
+} from '@jetlinks-web-core/layout/components/AiChat/clientTools'
+
+type DeviceClientToolContext = {
+  device: Record<string, any>
+}
+
+type TranslateFn = (key: string, params?: Record<string, any>) => string
+
+interface DeviceFunctionToolDependencies {
+  t: TranslateFn
+  asArray: <T = any>(value: unknown) => T[]
+  responseResult: (response: any) => any
+  compactInlineValue: (value: unknown, maxLength?: number) => unknown
+  getDeviceId: (context: DeviceClientToolContext) => string
+  getMetadata: (context: DeviceClientToolContext) => Record<string, any>
+}
+
+const normalizeSearchText = (value: unknown) => String(value ?? '').trim().toLowerCase()
+
+const parseArgumentsObject = (value: unknown) => {
+  if (!value) return {}
+  if (typeof value === 'object' && !Array.isArray(value)) return value as Record<string, any>
+  if (typeof value !== 'string' || !value.trim()) return {}
+  try {
+    const parsed = JSON.parse(value)
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
+const normalizeFunctionCandidate = (
+  deps: DeviceFunctionToolDependencies,
+  func: Record<string, any>
+) => ({
+  id: func.id || func.key,
+  name: func.name,
+  description: func.description,
+  inputs: deps.asArray<Record<string, any>>(func.inputs || func.properties).map((input) => ({
+    id: input.id || input.key,
+    name: input.name,
+    required: !!input.expands?.required,
+    valueType: input.valueType?.type || input.valueType
+  })),
+  output: func.output?.type || func.output
+})
+
+const resolveFunctionMetadata = (
+  deps: DeviceFunctionToolDependencies,
+  context: DeviceClientToolContext,
+  args: Record<string, any>
+) => {
+  const functions = deps.asArray<Record<string, any>>(deps.getMetadata(context).functions)
+  const functionId = normalizeSearchText(args.functionId ?? args.function ?? args.id)
+  const keyword = normalizeSearchText(args.keyword ?? args.functionName ?? args.name)
+  const exact = functions.find((func) => {
+    const ids = [
+      func.id,
+      func.key,
+      func.name
+    ].map(normalizeSearchText)
+    return functionId ? ids.includes(functionId) : false
+  })
+  if (exact) return exact
+
+  if (!keyword) return undefined
+  const matches = functions.filter((func) => {
+    const text = [
+      func.id,
+      func.key,
+      func.name,
+      func.description
+    ].map(normalizeSearchText).join(' ')
+    return text.includes(keyword)
+  })
+  return matches.length === 1 ? matches[0] : undefined
+}
+
+const listFunctionCandidates = (
+  deps: DeviceFunctionToolDependencies,
+  context: DeviceClientToolContext,
+  keyword?: unknown
+) => {
+  const normalizedKeyword = normalizeSearchText(keyword)
+  return deps.asArray<Record<string, any>>(deps.getMetadata(context).functions)
+    .filter((func) => {
+      if (!normalizedKeyword) return true
+      const text = [
+        func.id,
+        func.key,
+        func.name,
+        func.description
+      ].map(normalizeSearchText).join(' ')
+      return text.includes(normalizedKeyword)
+    })
+    .slice(0, 20)
+    .map((func) => normalizeFunctionCandidate(deps, func))
+}
+
+const resolveFunctionArguments = (args: Record<string, any>) => (
+  parseArgumentsObject(args.arguments ?? args.params ?? args.inputs ?? args.properties)
+)
+
+const getMissingRequiredInputs = (
+  deps: DeviceFunctionToolDependencies,
+  func: Record<string, any>,
+  params: Record<string, any>
+) => deps.asArray<Record<string, any>>(func.inputs || func.properties)
+  .filter((input) => !!input.expands?.required)
+  .filter((input) => {
+    const id = input.id || input.key
+    return id && (params[id] === undefined || params[id] === null || params[id] === '')
+  })
+  .map((input) => ({
+    id: input.id || input.key,
+    name: input.name,
+    valueType: input.valueType?.type || input.valueType
+  }))
+
+const canInvokeFunction = (
+  deps: DeviceFunctionToolDependencies,
+  context: DeviceClientToolContext,
+  args: Record<string, any>
+) => {
+  const func = resolveFunctionMetadata(deps, context, args)
+  if (!func) return false
+  return getMissingRequiredInputs(deps, func, resolveFunctionArguments(args)).length === 0
+}
+
+const buildConfirmContent = (
+  deps: DeviceFunctionToolDependencies,
+  args: Record<string, any>,
+  context: DeviceClientToolContext
+) => {
+  const func = resolveFunctionMetadata(deps, context, args)
+  const device = context.device || {}
+  return deps.t('DeviceDetail.agentTools.functionInvoke.confirmContent', {
+    deviceName: device.name || device.id || deps.getDeviceId(context),
+    functionName: func?.name || func?.id || args.functionId
+  })
+}
+
+export const createDeviceFunctionClientTools = (
+  deps: DeviceFunctionToolDependencies
+): AiClientToolDefinition<DeviceClientToolContext>[] => ([
+  {
+    id: 'device_function_invoke',
+    name: 'device_function_invoke',
+    displayName: deps.t('DeviceDetail.agentTools.functionInvoke.displayName'),
+    description: deps.t('DeviceDetail.agentTools.functionInvoke.description'),
+    confirm: {
+      title: deps.t('DeviceDetail.agentTools.functionInvoke.confirmTitle'),
+      content: (args, context) => buildConfirmContent(deps, args, context),
+      okText: deps.t('DeviceDetail.agentTools.functionInvoke.confirmOk'),
+      cancelText: deps.t('DeviceDetail.agentTools.common.cancel'),
+      localConfirmation: true,
+      risk: {
+        readOnly: false,
+        parallelSafe: false
+      },
+      when: (args, context) => canInvokeFunction(deps, context, args)
+    },
+    inputs: [
+      {
+        id: 'functionId',
+        name: 'functionId',
+        description: deps.t('DeviceDetail.agentTools.functionInvoke.inputs.functionId'),
+        required: false,
+        valueType: 'string'
+      },
+      {
+        id: 'keyword',
+        name: 'keyword',
+        description: deps.t('DeviceDetail.agentTools.functionInvoke.inputs.keyword'),
+        required: false,
+        valueType: 'string'
+      },
+      {
+        id: 'arguments',
+        name: 'arguments',
+        description: deps.t('DeviceDetail.agentTools.functionInvoke.inputs.arguments'),
+        required: false,
+        valueType: { type: 'object' }
+      }
+    ],
+    output: { type: 'object' },
+    help: deps.t('DeviceDetail.agentTools.functionInvoke.help'),
+    execute: async (args, context) => {
+      const deviceId = deps.getDeviceId(context)
+      if (!deviceId) throw new Error(deps.t('DeviceDetail.agentTools.common.errors.deviceIdMissing'))
+      const func = resolveFunctionMetadata(deps, context, args)
+      if (!func) {
+        return {
+          deviceId,
+          needsFunctionId: true,
+          keyword: args.keyword ?? args.functionName ?? args.name,
+          candidates: listFunctionCandidates(deps, context, args.keyword ?? args.functionName ?? args.name),
+          nextAction: deps.t('DeviceDetail.agentTools.functionInvoke.nextAction.selectFunction')
+        }
+      }
+
+      const functionId = func.id || func.key
+      const params = resolveFunctionArguments(args)
+      const missingInputs = getMissingRequiredInputs(deps, func, params)
+      if (missingInputs.length) {
+        return {
+          deviceId,
+          function: normalizeFunctionCandidate(deps, func),
+          needsArguments: true,
+          missingInputs,
+          nextAction: deps.t('DeviceDetail.agentTools.functionInvoke.nextAction.fillInputs')
+        }
+      }
+
+      const response = await execute(deviceId, functionId, params)
+      return {
+        deviceId,
+        function: normalizeFunctionCandidate(deps, func),
+        arguments: params,
+        success: response?.success !== false,
+        message: response?.message,
+        result: deps.compactInlineValue(deps.responseResult(response), 3000)
+      }
+    }
+  }
+])

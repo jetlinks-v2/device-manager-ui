@@ -36,3 +36,5 @@ tsconfig.paths.json
 /.agents/**
 /.codex/**
 /.trellis/**
+du-i18n.config.json
+/target

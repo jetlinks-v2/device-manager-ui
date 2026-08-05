@@ -1,0 +1,18 @@
+<svg width="100" height="66" viewBox="0 0 100 66" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="customImageCardPrimary" x1="8" y1="10" x2="91" y2="54" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0D6DFF"/>
+      <stop offset="1" stop-color="#0EECE4"/>
+    </linearGradient>
+  </defs>
+  <rect x="57" y="8" width="35" height="34" rx="4" fill="#0D6DFF" fill-opacity="0.12" stroke="#BEE5FB" stroke-opacity="0.55" stroke-width="1.5"/>
+  <circle cx="82" cy="17" r="4" fill="#0EECE4" fill-opacity="0.8"/>
+  <path d="M61 37L69 28L75 33L82 24L89 37H61Z" fill="url(#customImageCardPrimary)" fill-opacity="0.78"/>
+  <rect x="8" y="11" width="27" height="4" rx="2" fill="white" fill-opacity="0.38"/>
+  <path d="M9 35H15V23H20V35H26V18H31V35H38V27H43V35" stroke="url(#customImageCardPrimary)" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M7 48H93" stroke="white" stroke-opacity="0.2" stroke-width="1"/>
+  <circle cx="11" cy="57" r="3" fill="#3CD495"/>
+  <rect x="17" y="55" width="23" height="4" rx="2" fill="white" fill-opacity="0.35"/>
+  <circle cx="61" cy="57" r="3" fill="#FF5B5B"/>
+  <rect x="67" y="55" width="25" height="4" rx="2" fill="white" fill-opacity="0.35"/>
+</svg>
