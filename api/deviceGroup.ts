@@ -4,12 +4,23 @@ import { request } from '@jetlinks-web/core'
 import { queryRuntimeDeviceAlarmInfo } from './alarmRecord'
 import type { DeviceGroupRuntimeDevice, RuntimeDeviceResponse } from './deviceGroupRuntime'
 import { toRuntimeDevice } from './deviceGroupRuntime'
+import { withIotDeviceListDefaultTerms } from './deviceListDefaultTerms'
 import {
-  IOT_DEVICE_DASHBOARD_ACCESS_PROVIDERS,
-  withIotDeviceListDefaultTerms,
-} from './deviceListDefaultTerms'
+  buildDeviceTrendDashboardQueries,
+  toFiniteDeviceTrendMeasurement,
+  toDeviceTrendMetrics,
+  type DeviceGroupTrendMetric,
+  type DeviceGroupTrendMetricKey,
+  type DeviceGroupTrendPoint,
+  type DeviceTrendDashboardResponse,
+} from './deviceTrend'
 
 export type { DeviceGroupRuntimeDevice } from './deviceGroupRuntime'
+export type {
+  DeviceGroupTrendMetric,
+  DeviceGroupTrendMetricKey,
+  DeviceGroupTrendPoint,
+} from './deviceTrend'
 
 export type DeviceGroupQueryTerm = {
   column?: string
@@ -100,19 +111,6 @@ export interface DeviceGroupTrendWindow {
 
 export type DeviceGroupTrendQuery = DeviceGroupTrendRange | DeviceGroupTrendWindow
 
-export interface DeviceGroupTrendPoint {
-  label: string
-  value: number
-  timestamp?: number
-}
-
-export type DeviceGroupTrendMetricKey = 'onlineRate' | 'uplink'
-
-export interface DeviceGroupTrendMetric {
-  key: DeviceGroupTrendMetricKey
-  points: DeviceGroupTrendPoint[]
-}
-
 type ApiResponse<T> = {
   result?: T
 }
@@ -127,17 +125,6 @@ type PagerResult<T> = {
 type DeviceGroupResponse = Partial<DeviceGroup>
 
 type DeviceGroupSummaryResponse = Partial<DeviceGroupSummary>
-
-type DashboardGroup = 'device-group-online-rate' | 'device-group-uplink'
-
-type DashboardTrendResponse = {
-  group?: DashboardGroup | string
-  data?: {
-    value?: unknown
-    timeString?: string
-    timestamp?: number
-  }
-}
 
 const unwrapResult = <T>(response: ApiResponse<T> | T | undefined | null): T => {
   if (response && typeof response === 'object' && 'result' in response) {
@@ -508,42 +495,17 @@ const queryDeviceTrend_api = async (
   metrics: readonly DeviceGroupTrendMetricKey[] = ['onlineRate', 'uplink'],
 ): Promise<DeviceGroupTrendMetric[]> => {
   const config = trendRangeConfig(range)
-  const params = withDashboardDefaultDeviceScope({
-    ...scope,
+  const queries = buildDeviceTrendDashboardQueries(scope, {
     time: config.time,
     format: config.format,
     limit: config.limit,
     from: config.from,
     to: config.to,
-  })
-  const queries = metrics.map(metric => metric === 'onlineRate'
-    ? {
-      dashboard: 'device',
-      object: 'status',
-      measurement: 'record',
-      dimension: 'onlineRate',
-      group: 'device-group-online-rate',
-      params,
-    }
-    : {
-      dashboard: 'device',
-      object: 'message',
-      measurement: 'quantity',
-      dimension: 'agg',
-      group: 'device-group-uplink',
-      params,
-    })
-  const response = await request.post('/dashboard/_multi', queries) as ApiResponse<DashboardTrendResponse[]> | DashboardTrendResponse[]
-  const result = unwrapResult<DashboardTrendResponse[]>(response) ?? []
+  }, metrics)
+  const response = await request.post('/dashboard/_multi', queries) as ApiResponse<DeviceTrendDashboardResponse[]> | DeviceTrendDashboardResponse[]
+  const result = unwrapResult<DeviceTrendDashboardResponse[]>(response) ?? []
 
-  return metrics.map(key => ({
-    key,
-    points: toTrendPoints(
-      result,
-      key === 'onlineRate' ? 'device-group-online-rate' : 'device-group-uplink',
-      config.labelFormat,
-    ),
-  }))
+  return toDeviceTrendMetrics(result, metrics, config.labelFormat)
 }
 
 export const queryDeviceGroupTrend_api = async (
@@ -592,14 +554,14 @@ const queryYesterdayOnlineRate = async (
 ): Promise<number | null> => {
   const yesterday = dayjs().subtract(1, 'day')
   const textFormat = 'YYYY-MM-DD HH:mm:ss'
-  const params = withDashboardDefaultDeviceScope({
+  const params = {
     ...scope,
     time: '1d',
     format: 'yyyy-MM-dd',
     limit: 1,
     from: yesterday.startOf('day').format(textFormat),
     to: yesterday.endOf('day').format(textFormat),
-  })
+  }
   const response = await request.post('/dashboard/_multi', [
     {
       dashboard: 'device',
@@ -609,40 +571,8 @@ const queryYesterdayOnlineRate = async (
       group: 'device-group-online-rate',
       params,
     },
-  ]) as ApiResponse<DashboardTrendResponse[]> | DashboardTrendResponse[]
-  const result = unwrapResult<DashboardTrendResponse[]>(response) ?? []
+  ]) as ApiResponse<DeviceTrendDashboardResponse[]> | DeviceTrendDashboardResponse[]
+  const result = unwrapResult<DeviceTrendDashboardResponse[]>(response) ?? []
   const value = result.find((item) => item.group === 'device-group-online-rate')?.data?.value
-  const numberValue = Number(value)
-  return Number.isFinite(numberValue) ? numberValue : null
-}
-
-function withDashboardDefaultDeviceScope<T extends Record<string, unknown>>(params: T): T & {
-  accessProvider: typeof IOT_DEVICE_DASHBOARD_ACCESS_PROVIDERS
-} {
-  return {
-    ...params,
-    accessProvider: IOT_DEVICE_DASHBOARD_ACCESS_PROVIDERS,
-  }
-}
-
-function toTrendPoints(
-  rows: DashboardTrendResponse[],
-  group: DashboardGroup,
-  labelFormat: string,
-): DeviceGroupTrendPoint[] {
-  return rows
-    .filter((item) => item.group === group)
-    .map((item, index) => {
-      const timeString = item.data?.timeString || ''
-      const parsedTime = dayjs(timeString)
-      const timestamp = parsedTime.isValid()
-        ? parsedTime.valueOf()
-        : Number(item.data?.timestamp ?? index)
-      return {
-        label: parsedTime.isValid() ? parsedTime.format(labelFormat) : timeString,
-        value: Number(item.data?.value ?? 0),
-        timestamp,
-      }
-    })
-    .sort((a, b) => Number(a.timestamp ?? 0) - Number(b.timestamp ?? 0))
+  return toFiniteDeviceTrendMeasurement(value) ?? null
 }

@@ -15,6 +15,7 @@ import {
   queryAllDeviceMetricTrend_api,
   type DeviceGroupTrendPoint,
 } from '@device-manager-ui/api/deviceGroup'
+import { sumDeviceTrendPoints } from '@device-manager-ui/api/deviceTrend'
 import { buildDeviceAnalysisSearchTerms } from './deviceAnalysisScope'
 
 const run = async <T>(
@@ -75,10 +76,34 @@ export const deviceMetricsService = {
       summary: data,
       facts: data,
       claims: [
-        createDomainAgentClaim('deviceTotal', resolveDomainAgentMessage('components.AiChat.domainAgent.claims.deviceTotal'), data.total, 'integer'),
-        createDomainAgentClaim('onlineDevices', resolveDomainAgentMessage('components.AiChat.domainAgent.claims.onlineDevices'), data.online, 'integer'),
-        createDomainAgentClaim('offlineDevices', resolveDomainAgentMessage('components.AiChat.domainAgent.claims.offlineDevices'), data.offline, 'integer'),
-        createDomainAgentClaim('onlineRate', resolveDomainAgentMessage('components.AiChat.domainAgent.claims.onlineRate'), data.onlineRate, 'percent'),
+        createDomainAgentClaim(
+          'deviceTotal',
+          resolveDomainAgentMessage('components.AiChat.domainAgent.claims.deviceTotal'),
+          data.total,
+          'integer',
+          { binding: 'device-state-summary', measure: 'devices', statistic: 'count', unit: 'count' },
+        ),
+        createDomainAgentClaim(
+          'onlineDevices',
+          resolveDomainAgentMessage('components.AiChat.domainAgent.claims.onlineDevices'),
+          data.online,
+          'integer',
+          { binding: 'device-state-summary', measure: 'online_devices', statistic: 'count', unit: 'count' },
+        ),
+        createDomainAgentClaim(
+          'offlineDevices',
+          resolveDomainAgentMessage('components.AiChat.domainAgent.claims.offlineDevices'),
+          data.offline,
+          'integer',
+          { binding: 'device-state-summary', measure: 'offline_devices', statistic: 'count', unit: 'count' },
+        ),
+        createDomainAgentClaim(
+          'onlineRate',
+          resolveDomainAgentMessage('components.AiChat.domainAgent.claims.onlineRate'),
+          data.onlineRate,
+          'percent',
+          { binding: 'device-state-summary', measure: 'online_rate', statistic: 'current', unit: 'percent' },
+        ),
       ],
       data,
       total,
@@ -96,16 +121,10 @@ export const deviceMetricsService = {
       timeRange,
       summary: { metric: 'onlineRate', ...summary },
       facts: { metric: 'onlineRate', ...summary },
-      claims: [createDomainAgentClaim(
-        'dataPointCount',
-        resolveDomainAgentMessage('components.AiChat.domainAgent.claims.dataPointCount'),
-        metric.points.length,
-        'integer',
-      )],
       data: { metric: 'onlineRate', points: metric.points },
       cardinality: createDomainAgentAggregateCardinality({
-        bucketCount: metric.points.length,
-        populatedBucketCount: metric.points.length,
+        bucketCount: metric.bucketCount,
+        populatedBucketCount: metric.populatedBucketCount,
         measurementCount: metric.points.length,
       }),
     })
@@ -114,22 +133,28 @@ export const deviceMetricsService = {
   messageTrend: (args: Record<string, unknown>) => run<Record<string, unknown>>({}, async () => {
     const timeRange = trendInputs(args)
     const metric = await queryAllDeviceMetricTrend_api('uplink', timeRange)
-    const totalMessages = metric.points.reduce((total, point) => total + point.value, 0)
+    const totalMessages = sumDeviceTrendPoints(metric.points)
     const summary = trendSummary(metric.points)
+    const totals = totalMessages === undefined ? {} : { totalMessages }
     return createDomainAgentToolResult({
       domain: 'device',
       status: metric.points.length ? undefined : 'empty',
       timeRange,
-      summary: { metric: 'uplinkMessages', totalMessages, ...summary },
-      facts: { metric: 'uplinkMessages', totalMessages, ...summary },
-      claims: [
-        createDomainAgentClaim('messageTotal', resolveDomainAgentMessage('components.AiChat.domainAgent.claims.messageTotal'), totalMessages, 'integer'),
-        createDomainAgentClaim('dataPointCount', resolveDomainAgentMessage('components.AiChat.domainAgent.claims.dataPointCount'), metric.points.length, 'integer'),
+      summary: { metric: 'uplinkMessages', ...totals, ...summary },
+      facts: { metric: 'uplinkMessages', ...totals, ...summary },
+      claims: totalMessages === undefined ? [] : [
+        createDomainAgentClaim(
+          'messageTotal',
+          resolveDomainAgentMessage('components.AiChat.domainAgent.claims.messageTotal'),
+          totalMessages,
+          'integer',
+          { binding: 'device-message-series', measure: 'uplink_messages', statistic: 'sum', unit: 'count' },
+        ),
       ],
-      data: { metric: 'uplinkMessages', totalMessages, points: metric.points },
+      data: { metric: 'uplinkMessages', ...totals, points: metric.points },
       cardinality: createDomainAgentAggregateCardinality({
-        bucketCount: metric.points.length,
-        populatedBucketCount: metric.points.length,
+        bucketCount: metric.bucketCount,
+        populatedBucketCount: metric.populatedBucketCount,
         measurementCount: metric.points.length,
       }),
     })

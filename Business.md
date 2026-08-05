@@ -4,6 +4,40 @@
 
 ## 最近变更
 
+### 设备趋势查询范围与汇总真实性（已实施）
+
+- 目标：修正设备在线率、消息量 dashboard 趋势被前端静态 `accessProvider` allowlist 过滤成零值的问题；
+  趋势默认使用后端资产权限边界，仅传递用户明确选择的分组、空间和时间范围，保证图表与 `messageTotal` claim 来自同一份真实数据。
+- 影响范围与 owning module：`device-manager-ui` 的 `api/deviceGroup.ts`、设备趋势查询构建契约、定向测试和本说明；
+  不修改通用智能体终答、presentation renderer 或 dashboard 后端指标定义。
+- 不做：不隐藏真实的零值汇总，不按设备、工具、模型、时间范围或接入方式写特判；不把设备列表的产品筛选条件机械翻译成历史指标条件。
+- 实施入口：`api/deviceTrend.ts` 统一构建 dashboard 查询并归一化趋势点；移除默认 `accessProvider` allowlist；保留显式
+  `groupId` / `spaceId` 与时间窗口；缺失或非有限测量不再转成 0，真实零值仍参与趋势和总量汇总。
+- 风险与验证：默认全局趋势与 dashboard 的授权设备范围一致，不再与设备列表的展示型 provider 排除规则强耦合。
+  定向契约测试通过，覆盖默认无 provider allowlist、显式分组/空间范围、真实零值、缺失/null/非数字桶和空结果；
+  `device-manager-ui` 窄构建通过（8115 个模块），完整模块 typecheck 仍被工作区既有 948 条错误阻塞，本次触达文件过滤错误为 0。
+  本地 AI 工作台新会话实测生成两张 24 点图表，消息图数据求和与 `消息总量: 22191` 完全一致；刷新后文本、两张图表、顺序和总量保持不变。
+
+### 设备指标时序输出契约迁移（已实施）
+
+- 目标：让设备在线率和消息量时序按通用 typed field contract 明确区分时间值、显示标签和度量值，
+  使后端 canonical presentation compiler 生成一条连续曲线，不再把每个时间标签当成独立系列。
+- 影响范围与 owning module：仅修改 `agentCapabilities/deviceAnalysis/tools.ts` 的 renderer-neutral output declaration 和相关契约测试；
+  通用字段角色和分系列策略分别由 `ui/jetlinks-web-core` 与 `modules/jetlinks-ai-agent` owning。
+- 不做：不修改 dashboard API、指标数值、时间粒度、工具 ID、shape 或图表组件；不在公共层加设备、在线率、24h
+  或字段名特判。
+- 实施入口：`timestamp` 声明为时间轴，格式化的 `label` 声明为行级显示标签，`value` 保留
+  measure/unit/aggregation；两类时序都声明按 `timestamp asc` 的 producer-guaranteed ordering；数值字段通过模块 i18n
+  提供完整用户展示名，canonical unit 只保留为机器语义，不再向图表泄漏 `count`、`percent` 等内部标识。
+- 验证：后端 canonical presentation 定向矩阵 87 个测试通过，其中 `PresentationCompilerTest` 12 个测试通过；
+  中英文指标展示名契约测试、设备趋势 scope 契约测试、`jetlinks-web-core` client-tool contract 59 个测试和
+  client-tool typecheck 通过；`device-manager-ui` 窄构建通过（8115 个模块）；四个 owning worktree 的
+  `git diff --check` 均通过。父 UI catalog 测试直接由 Node 启动时仍受工作区 `@jetlinks-web-core/*` alias 无法解析阻塞，
+  相关字段断言已更新且已由窄构建覆盖编译。
+- 2026-08-05 本地 AI 工作台的双趋势、单在线率趋势新会话均在 presentation 生成前被既有终答一致性校验停止；
+  未再展示错误的多 series 图表，但也未能完成运行态 canonical option 验收。待该独立问题解除且服务加载本次代码后，需复验
+  一条 series、全部时间点和无单系列图例。
+
 ### 设备告警自定义通知内容（已实现）
 
 - 目标：在设备告警编辑弹窗的通知配置中支持“平台默认内容 / 自定义内容”切换；自定义内容只作用于当前设备、当前属性的告警配置，并作为统一 `${message}` 发送给站内信及已选通知渠道。
