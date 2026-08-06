@@ -2,21 +2,21 @@
   <section class="device-data-tab">
     <IotDevicePropertyReadModal
       v-model:open="readOpen"
-      :property="selectedProperty"
+      :property="selectedLiveProperty"
       :tone="selectedTone"
       :loading="reading"
       @confirm="readSelectedProperty"
     />
     <IotDevicePropertyWriteModal
       v-model:open="writeOpen"
-      :property="selectedProperty"
+      :property="selectedLiveProperty"
       :loading="writing"
       @confirm="writeSelectedProperty"
     />
     <IotDevicePropertyDetailModal
       v-model:open="detailOpen"
       :device-id="deviceId"
-      :property="selectedProperty"
+      :property="selectedLiveProperty"
       :tone="selectedTone"
     />
     <header class="data-toolbar">
@@ -87,26 +87,26 @@
         <template #card="item">
           <article
             class="data-property-card"
-            :data-tone="cardTone(item, propertyCardIndex(item))"
+            :data-tone="cardTone(liveProperty(item), propertyCardIndex(liveProperty(item)))"
           >
             <header>
               <div class="property-title">
                 <span />
-                <strong>{{ item.name }}</strong>
+                <strong>{{ liveProperty(item).name }}</strong>
               </div>
               <div class="property-actions">
-                <a-tooltip v-if="canReadProperty(item)" :title="$t('IotDeviceDetail.dataTable.readProperty')">
-                  <a-button type="text" size="small" :aria-label="$t('IotDeviceDetail.dataTable.readProperty')" @click="openRead(item)">
+                <a-tooltip v-if="canReadProperty(liveProperty(item))" :title="$t('IotDeviceDetail.dataTable.readProperty')">
+                  <a-button type="text" size="small" :aria-label="$t('IotDeviceDetail.dataTable.readProperty')" @click="openRead(liveProperty(item))">
                     <template #icon><AIcon type="ReloadOutlined" /></template>
                   </a-button>
                 </a-tooltip>
-                <a-tooltip v-if="canWriteProperty(item)" :title="$t('IotDeviceDetail.dataTable.writeProperty')">
-                  <a-button type="text" size="small" :aria-label="$t('IotDeviceDetail.dataTable.writeProperty')" @click="openWrite(item)">
+                <a-tooltip v-if="canWriteProperty(liveProperty(item))" :title="$t('IotDeviceDetail.dataTable.writeProperty')">
+                  <a-button type="text" size="small" :aria-label="$t('IotDeviceDetail.dataTable.writeProperty')" @click="openWrite(liveProperty(item))">
                     <template #icon><AIcon type="EditOutlined" /></template>
                   </a-button>
                 </a-tooltip>
                 <a-tooltip :title="$t('IotDeviceDetail.dataTable.detail')">
-                  <a-button type="text" size="small" :aria-label="$t('IotDeviceDetail.dataTable.detail')" @click="openDetail(item)">
+                  <a-button type="text" size="small" :aria-label="$t('IotDeviceDetail.dataTable.detail')" @click="openDetail(liveProperty(item))">
                     <template #icon><AIcon type="LineChartOutlined" /></template>
                   </a-button>
                 </a-tooltip>
@@ -114,23 +114,23 @@
             </header>
             <div class="property-value">
               <IotDevicePropertyValuePreview
-                :value="item.value"
-                :value-type="item.valueType"
-                :data-type="item.dataType"
-                :name="item.name"
+                :value="liveProperty(item).value"
+                :value-type="liveProperty(item).valueType"
+                :data-type="liveProperty(item).dataType"
+                :name="liveProperty(item).name"
               />
-              <span v-if="propertyDisplayUnit(item)">{{ propertyDisplayUnit(item) }}</span>
+              <span v-if="propertyDisplayUnit(liveProperty(item))">{{ propertyDisplayUnit(liveProperty(item)) }}</span>
             </div>
             <IotDevicePropertySparkline
-              :property="item"
-              :rows="getSparklineRows(item)"
-              :tone="cardTone(item, propertyCardIndex(item))"
+              :property="liveProperty(item)"
+              :rows="getSparklineRows(liveProperty(item))"
+              :tone="cardTone(liveProperty(item), propertyCardIndex(liveProperty(item)))"
               :time-range="propertyTimeRange"
             />
             <footer>
-              <span>{{ propertyStatusText(item, propertyCardIndex(item)) }}</span>
+              <span>{{ propertyStatusText(liveProperty(item), propertyCardIndex(liveProperty(item))) }}</span>
               <i />
-              <span>{{ propertyTimeText(item, propertyCardIndex(item)) }}</span>
+              <span>{{ propertyTimeText(liveProperty(item), propertyCardIndex(liveProperty(item))) }}</span>
             </footer>
           </article>
         </template>
@@ -252,7 +252,11 @@ const {
   deviceId: () => props.deviceId,
   onValue: (value) => emit('property-value', value),
 })
-const selectedTone = computed(() => selectedProperty.value ? cardTone(selectedProperty.value, props.properties.indexOf(selectedProperty.value)) : 'primary')
+const propertyByIdentifier = computed(() => new Map(
+  props.properties.map((item) => [item.identifier.toLowerCase(), item]),
+))
+const selectedLiveProperty = computed(() => selectedProperty.value ? liveProperty(selectedProperty.value) : null)
+const selectedTone = computed(() => selectedLiveProperty.value ? cardTone(selectedLiveProperty.value, propertyCardIndex(selectedLiveProperty.value)) : 'primary')
 const {
   propertyPaginationOptions,
   filteredPropertyCards,
@@ -315,6 +319,10 @@ function cardTone(item: RealtimePropertyRow, index: number) {
   if (item.tone === 'critical') return 'danger'
   if (item.tone === 'warning') return 'warning'
   return ['primary', 'cyan', 'success', 'warning', 'slate', 'slate', 'primary'][index % 7]
+}
+
+function liveProperty(item: RealtimePropertyRow) {
+  return propertyByIdentifier.value.get(item.identifier.toLowerCase()) ?? item
 }
 
 function propertyStatusText(item: RealtimePropertyRow, index: number) {
