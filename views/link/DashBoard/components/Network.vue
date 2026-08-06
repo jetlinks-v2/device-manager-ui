@@ -1,302 +1,257 @@
 <template>
-    <a-spin :spinning="loading">
-        <div class="dash-board">
-            <div class="header">
-                <div class="left">
-                    <h3 style="width: 120px">{{ $t('DeviceAccess.index.594346-33') }}</h3>
-                    <a-radio-group
-                        button-style="solid"
-                        v-model:value="data.type"
-                        @change="changeType"
-                    >
-                        <a-radio-button value="bytesRead">
-                            {{ $t('DeviceAccess.index.594346-26') }}
-                        </a-radio-button>
-                        <a-radio-button value="bytesSent">
-                            {{ $t('DeviceAccess.index.594346-27') }}
-                        </a-radio-button>
-                    </a-radio-group>
-                </div>
-                <div class="right">
-                    <a-radio-group
-                        default-value="a"
-                        button-style="solid"
-                        style="margin-right: 10px"
-                        v-model:value="data.time.type"
-                    >
-                        <a-radio-button value="hour">
-                            {{ $t('DashBoard.index.954313-5') }}
-                        </a-radio-button>
-                        <a-radio-button value="day">
-                            {{ $t('DashBoard.index.954313-6') }}
-                        </a-radio-button>
-                        <a-radio-button value="week">
-                            {{ $t('DashBoard.index.954313-7') }}
-                        </a-radio-button>
-                    </a-radio-group>
-                    <a-range-picker
-                        :allowClear="false"
-                        :show-time="{ format: 'HH:mm:ss' }"
-                        format="YYYY-MM-DD HH:mm:ss"
-                        v-model:value="data.time.time"
-                        @change="pickerTimeChange"
-                    >
-                        <template #suffixIcon
-                            ><AIcon type="CalendarOutlined"
-                        /></template>
-                    </a-range-picker>
-                </div>
-            </div>
-            <div>
-                <j-empty
-                    v-if="isEmpty"
-                    style="height: 250px; margin-top: 100px"
-                />
-                <template v-else>
-                    <div style="height: 300px">
-                        <JEcharts :option="echartsOptions" />
-                    </div>
-
-                    <ServerList
-                        v-if="serverOptions.length > 1"
-                        v-model:value="serverActive"
-                        :options="serverOptions"
-                        color="#979AFF"
-                    />
-                </template>
-            </div>
+  <a-spin :spinning="loading">
+    <section class="network-trend">
+      <header class="network-trend__header">
+        <h3>{{ $t('DeviceAccess.index.594346-33') }}</h3>
+        <div class="network-trend__actions">
+          <a-radio-group v-model:value="timeType" button-style="solid" size="small">
+            <a-radio-button value="hour">{{ $t('DashBoard.index.954313-5') }}</a-radio-button>
+            <a-radio-button value="day">{{ $t('DashBoard.index.954313-6') }}</a-radio-button>
+            <a-radio-button value="week">{{ $t('DashBoard.index.954313-7') }}</a-radio-button>
+          </a-radio-group>
+          <a-range-picker
+            v-model:value="timeRange"
+            :allow-clear="false"
+            :show-time="{ format: 'HH:mm:ss' }"
+            format="YYYY-MM-DD HH:mm:ss"
+            @change="onRangeChange"
+          >
+            <template #suffixIcon><AIcon type="CalendarOutlined" /></template>
+          </a-range-picker>
+          <a-tooltip :title="$t('components.MonitorRefresh.button')">
+            <a-button type="text" :loading="loading" @click="refresh">
+              <template #icon><AIcon type="ReloadOutlined" /></template>
+            </a-button>
+          </a-tooltip>
         </div>
-    </a-spin>
+      </header>
+
+      <div class="network-trend__legend">
+        <span><i class="network-trend__line" />{{ $t('DeviceAccess.index.594346-26') }}</span>
+        <span><i class="network-trend__line network-trend__line--sent" />{{ $t('DeviceAccess.index.594346-27') }}</span>
+      </div>
+
+      <j-empty v-if="!loading && !serverOptions.length" class="network-trend__empty" />
+      <template v-else>
+        <div class="network-trend__chart">
+          <JEcharts :option="chartOptions" not-merge />
+        </div>
+        <NodeFocusSelector
+          v-if="serverOptions.length > 1"
+          :value="selectedNodes"
+          :options="nodeOptions"
+          @update:value="updateSelectedNodes"
+          @reset="resetFocusedNodes"
+        />
+      </template>
+    </section>
+  </a-spin>
 </template>
 
 <script lang="ts" setup name="Network">
-import { dashboard } from '../../../../api/link/dashboard';
+import type { PropType } from 'vue'
+import dayjs, { type Dayjs } from 'dayjs'
+import { useI18n } from 'vue-i18n'
+import { dashboard } from '../../../../api/link/dashboard'
+import { getTimeByType, networkParams, typeDataLine } from './tool'
+import NodeFocusSelector from './NodeFocusSelector.vue'
+import { nodeColor, nodeSeriesVisual } from './monitorData'
 import {
-    getTimeByType,
-    typeDataLine,
-    colorNetwork,
-    networkParams,
-} from './tool';
-import dayjs from 'dayjs';
-import { DataType } from '../typings.d';
-import ServerList from './ServerList.vue';
-import Echarts from './echarts.vue';
-import {useI18n} from "vue-i18n";
+  formatNetworkSize,
+  latestNetworkValue,
+  renderNetworkTooltip,
+  resolveAvailableNetworkNodes,
+  type NetworkSeriesMap,
+} from './networkData'
+
+type NetworkType = 'bytesRead' | 'bytesSent'
 
 const props = defineProps({
-    serviceId: {
-        type: String,
-        default: undefined,
-    },
-});
-const { t: $t } = useI18n();
-const chartRef = ref<Record<string, any>>({});
-const loading = ref(false);
-const data = ref<DataType>({
-    type: 'bytesRead',
-    time: {
-        type: 'hour',
-        time: [null, null],
-    },
-});
-const isEmpty = ref(false);
-const serverActive = ref<string[]>([]);
-const serverOptions = ref<string[]>([]);
-const serverData = reactive({
-    xAxis: [],
-    data: [],
-});
+  selectedNodes: {
+    type: Array as PropType<string[]>,
+    default: () => [],
+  },
+  defaultNodes: {
+    type: Array as PropType<string[]>,
+    default: () => [],
+  },
+  refreshVersion: {
+    type: Number,
+    default: 0,
+  },
+})
+const emit = defineEmits(['update:selectedNodes'])
+const { t } = useI18n()
 
-const pickerTimeChange = (value: any) => {
-    data.value.time.type = undefined;
-    getNetworkEcharts(data.value);
-};
-const changeType = (value: any) => {
-    getNetworkEcharts(data.value);
-};
-const getNetworkEcharts = async (val: any) => {
-    loading.value = true;
-    const resp: any = await dashboard(networkParams(val)).catch(() => { loading.value = false; })
-    if (resp.success) {
-        const _networkOptions = {};
-        const _networkXAxis = new Map();
-        if (resp.result.length) {
-            isEmpty.value = false;
-            const filterArray = resp.result;
-            // const filterArray = resp.result.filter((item : any) => item.data?.clusterNodeId === props.serviceId)
-            filterArray.forEach((item: any) => {
-                const value = item.data.value;
-                const nodeID = item.data.clusterNodeId;
-                if (!_networkOptions[nodeID]) {
-                    _networkOptions[nodeID] = {};
-                }
-                value.forEach((current: any) => {
-                    _networkOptions[nodeID][current.timeString] = current.value;
-                    _networkXAxis.set(current.timeString, current.timestamp);
-                });
-            });
-            const _sortedXAxis = [..._networkXAxis.entries()]
-                .sort((a: any, b: any) => a[1] - b[1])
-                .map((item: any) => item[0]);
+const loading = ref(false)
+const timeType = ref<'hour' | 'day' | 'week' | undefined>('hour')
+const timeRange = ref<[Dayjs, Dayjs]>([dayjs(getTimeByType('hour')), dayjs()])
+const serverOptions = ref<string[]>([])
+const serverData = reactive<Record<NetworkType, NetworkSeriesMap>>({
+  bytesRead: {},
+  bytesSent: {},
+})
+const xAxis = ref<string[]>([])
+let requestSequence = 0
 
-            const _alignedNetworkOptions = Object.keys(_networkOptions).reduce(
-                (result: any, key: string) => {
-                    result[key] = {
-                        _data: _sortedXAxis.map((timeKey: string) =>
-                            _networkOptions[key][timeKey] ?? null,
-                        ),
-                    };
-                    return result;
-                },
-                {},
-            );
+const latestTraffic = (nodeId: string) => Math.max(
+  latestNetworkValue(nodeId, serverData.bytesRead) ?? -1,
+  latestNetworkValue(nodeId, serverData.bytesSent) ?? -1,
+)
+const nodeOptions = computed(() => serverOptions.value.map(nodeId => ({
+  label: nodeId,
+  value: nodeId,
+  color: nodeColor(nodeId),
+  metric: formatNetworkSize(latestTraffic(nodeId)),
+})))
+const selectedNodes = computed(() => props.selectedNodes)
 
-            handleNetworkOptions(_alignedNetworkOptions, _sortedXAxis);
-        } else {
-            handleNetworkOptions([], []);
-            isEmpty.value = true;
-        }
+const updateSelectedNodes = (value: string[]) => emit('update:selectedNodes', value)
+const resetFocusedNodes = () => emit('update:selectedNodes', props.defaultNodes)
+
+const normalizeResponse = (items: any[]) => {
+  const timestamps = new Map<string, number>()
+  const raw: Record<NetworkType, Record<string, Record<string, unknown>>> = {
+    bytesRead: {},
+    bytesSent: {},
+  }
+  items.forEach((item) => {
+    const type = item.group as NetworkType
+    if (type !== 'bytesRead' && type !== 'bytesSent') return
+    const nodeId = item.data?.clusterNodeId
+    if (!nodeId) return
+    raw[type][nodeId] ||= {}
+    ;(item.data?.value || []).forEach((point: any) => {
+      raw[type][nodeId][point.timeString] = point.value
+      timestamps.set(point.timeString, Number(point.timestamp))
+    })
+  })
+  const orderedTimes = [...timestamps.entries()]
+    .sort((left, right) => left[1] - right[1])
+    .map(item => item[0])
+  const nodes = [...new Set(Object.values(raw).flatMap(group => Object.keys(group)))]
+
+  ;(['bytesRead', 'bytesSent'] as NetworkType[]).forEach((type) => {
+    serverData[type] = Object.fromEntries(nodes.map(nodeId => [nodeId, {
+      _data: orderedTimes.map(time => raw[type][nodeId]?.[time] ?? null),
+    }]))
+  })
+  xAxis.value = orderedTimes
+  serverOptions.value = nodes
+  const nextSelectedNodes = resolveAvailableNetworkNodes(
+    nodes,
+    props.selectedNodes,
+    props.defaultNodes,
+    serverData.bytesRead,
+  )
+  if (nextSelectedNodes.length !== props.selectedNodes.length
+    || nextSelectedNodes.some((nodeId, index) => nodeId !== props.selectedNodes[index])) {
+    emit('update:selectedNodes', nextSelectedNodes)
+  }
+}
+
+const loadNetwork = async () => {
+  const sequence = ++requestSequence
+  loading.value = true
+  try {
+    const response = await dashboard(networkParams({ time: { time: timeRange.value } })) as {
+      success?: boolean
+      result?: any[]
     }
-    setTimeout(() => {
-        loading.value = false;
-    }, 300);
-};
+    if (sequence !== requestSequence) return
+    normalizeResponse(response.success ? response.result || [] : [])
+  } catch {
+    if (sequence === requestSequence) normalizeResponse([])
+  } finally {
+    if (sequence === requestSequence) loading.value = false
+  }
+}
 
-const formatterData = (value: any) => {
-    if (
-        value === null ||
-        value === undefined ||
-        value === '-' ||
-        Number.isNaN(value)
-    ) {
-        return '--';
-    }
-    let _data = '';
-    const kb = 1024;
-    const mb = kb ** 2;
-    const gb = kb ** 3;
+const onRangeChange = () => {
+  timeType.value = undefined
+  loadNetwork()
+}
+const refresh = () => {
+  if (timeType.value) timeRange.value = [dayjs(getTimeByType(timeType.value)), dayjs()]
+  loadNetwork()
+}
 
-    if (value >= kb && value < mb) {
-        _data = `${Number((value / kb).toFixed(2))}KB`;
-    } else if (value >= mb && value < gb) {
-        _data = `${Number((value / mb).toFixed(2))}M`;
-    } else if (value >= gb) {
-        _data = `${Number((value / gb).toFixed(2))}G`;
-    } else {
-        _data = `${value}B`;
-    }
-    return _data;
-};
-
-const networkValueRender = (obj: any) => {
-    // const { value } = obj;
-    let data: any = '';
-    const validItems = obj.filter((item: any) =>
-        item?.value !== null &&
-        item?.value !== undefined &&
-        item?.value !== '-' &&
-        !Number.isNaN(item?.value),
-    );
-    validItems.forEach((item: any, index: number) => {
-        const { value } = item;
-        if (index === 0) {
-            data += `${item?.axisValueLabel}<br />${item?.marker}${
-                item?.seriesName
-            } &nbsp; ${formatterData(value)}<br />`;
-        }else{
-            data += `${item?.marker}${
-                item?.seriesName
-            } &nbsp; ${formatterData(value)}<br />`;
-        }
-    });
-    return data || obj?.[0]?.axisValueLabel || '';
-    // return `${obj?.axisValueLabel}<br />${obj?.marker}${
-    //     obj?.seriesName
-    // } &nbsp; ${formatterData(value)}`;
-};
-
-const setOptions = (data: any, key: string) => ({
-    data: data[key]._data, // .map((item) => Number((item / 1024 / 1024).toFixed(2))),
-    name: key,
-    type: 'line',
-    smooth: true,
-    // areaStyle,
-});
-
-const handleNetworkOptions = (optionsData: any, xAxis: any) => {
-    const dataKeys = Object.keys(optionsData);
-    serverActive.value = dataKeys;
-    serverOptions.value = dataKeys;
-    serverData.xAxis = xAxis;
-    serverData.data = optionsData;
-};
-
-const echartsOptions = computed(() => {
-    const series = serverActive.value.length
-        ? serverActive.value.map((key) => setOptions(serverData.data, key))
-        : typeDataLine;
+const chartOptions = computed(() => ({
+  xAxis: { type: 'category', boundaryGap: false, data: xAxis.value },
+  yAxis: { type: 'value', axisLabel: { formatter: formatNetworkSize } },
+  grid: { left: 70, right: 24, bottom: 44, top: 24 },
+  tooltip: {
+    trigger: 'axis',
+    formatter: (items: any[]) => renderNetworkTooltip(items, {
+      up: t('DeviceAccess.index.594346-26'),
+      down: t('DeviceAccess.index.594346-27'),
+    }),
+  },
+  dataZoom: [{ type: 'inside' }, { type: 'slider', height: 20, bottom: 4 }],
+  series: selectedNodes.value.flatMap(nodeId => (['bytesRead', 'bytesSent'] as NetworkType[]).map((type) => {
+    const visual = nodeSeriesVisual(nodeId)
     return {
-        xAxis: {
-            type: 'category',
-            boundaryGap: false,
-            data: serverData.xAxis,
-        },
-        yAxis: {
-            type: 'value',
-            axisLabel: {
-                formatter: (_value: any) => formatterData(_value),
-            },
-        },
-        grid: {
-            left: '70px',
-            right: data.value.time.type === 'week' ? 50 : 10,
-            bottom: '24px',
-            top: 24,
-        },
-        tooltip: {
-            trigger: 'axis',
-            formatter: (_value: any) => networkValueRender(_value),
-        },
-        color: colorNetwork,
-        series: series,
-    };
-});
+      name: `${nodeId} · ${type === 'bytesRead' ? '↑' : '↓'}`,
+      type: 'line',
+      smooth: true,
+      showSymbol: false,
+      data: serverData[type][nodeId]?._data || [],
+      ...visual,
+      lineStyle: {
+        ...visual.lineStyle,
+        type: type === 'bytesRead' ? 'solid' : 'dashed',
+      },
+    }
+  })) || typeDataLine,
+}))
 
-watch(
-    () => data.value.time.type,
-    (value) => {
-        if (value === undefined) return;
-        const date = getTimeByType(value);
-        data.value.time.time = [dayjs(date), dayjs(new Date())];
+watch(timeType, (value) => {
+  if (!value) return
+  timeRange.value = [dayjs(getTimeByType(value)), dayjs()]
+  loadNetwork()
+}, { immediate: true })
 
-        getNetworkEcharts(data.value);
-    },
-    { immediate: true, deep: true },
-);
+watch(() => props.refreshVersion, () => {
+  if (timeType.value) timeRange.value = [dayjs(getTimeByType(timeType.value)), dayjs()]
+  loadNetwork()
+})
 </script>
 
 <style lang="less" scoped>
-.dash-board {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    padding: 24px;
-    background-color: #fff;
-    // box-shadow: 0px 2.73036px 5.46071px rgba(31, 89, 245, 0.2);
-    border-radius: 2px;
+.network-trend {
+  min-height: 30rem;
+  padding: var(--space-6, 1.5rem);
+  background: var(--bg, #fff);
+  border-radius: 0.25rem;
 }
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    .left h3 {
-        width: 200px;
-        margin-top: 8px;
-    }
+
+.network-trend__header,
+.network-trend__actions,
+.network-trend__legend,
+.network-trend__legend span {
+  display: flex;
+  align-items: center;
 }
-.left,
-.right {
-    display: flex;
-    align-items: center;
+
+.network-trend__header {
+  justify-content: space-between;
+  gap: var(--space-4, 1rem);
+
+  h3 { margin: 0; }
+}
+
+.network-trend__actions,
+.network-trend__legend { gap: var(--space-3, 0.75rem); }
+.network-trend__legend { margin-top: var(--space-3, 0.75rem); color: rgba(0, 0, 0, 0.45); }
+.network-trend__legend span { gap: 0.375rem; }
+.network-trend__line { width: 1.25rem; border-top: 2px solid currentColor; }
+.network-trend__line--sent { border-top-style: dashed; }
+.network-trend__chart { height: 20rem; margin-top: var(--space-2, 0.5rem); }
+.network-trend__empty { height: 22rem; }
+
+@media (max-width: 70rem) {
+  .network-trend__header { align-items: flex-start; flex-direction: column; }
 }
 </style>
+
+<style lang="less" src="./monitorTooltip.less"></style>
