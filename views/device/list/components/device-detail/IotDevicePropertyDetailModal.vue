@@ -327,17 +327,36 @@ function openRowDetail(row: DetailRow) {
   rowDetailOpen.value = true
 }
 
+function resetDetailStateForOpen() {
+  const nextRange = getShortcutRange('today')
+  const rangeChanged = detailTimeRange.value[0]?.valueOf() !== nextRange[0].valueOf()
+    || detailTimeRange.value[1]?.valueOf() !== nextRange[1].valueOf()
+
+  // 弹层关闭后组件状态会保留，重新打开时需要刷新快捷时间段的结束时间。
+  detailRange.value = 'today'
+  detailTimeRange.value = nextRange
+  detailRows.value = []
+  pageTotal.value = 0
+  pageCurrent.value = 1
+  rowDetailOpen.value = false
+  selectedDetailRow.value = null
+  resetHistoryFilter()
+  if (!isGeoPointProperty.value && detailMode.value === 'trajectory') {
+    detailMode.value = 'list'
+  }
+
+  return rangeChanged
+}
+
 watch(
-  () => [props.open, props.deviceId, props.property?.identifier, detailMode.value, detailTimeRange.value?.[0]?.valueOf(), detailTimeRange.value?.[1]?.valueOf()],
-  (_next, prev) => {
-    const propertyChanged = prev?.[2] !== props.property?.identifier
-    if (propertyChanged) {
-      detailRows.value = []
-      pageTotal.value = 0
-      resetHistoryFilter()
-      if (!isGeoPointProperty.value && detailMode.value === 'trajectory') {
-        detailMode.value = 'list'
-      }
+  () => [props.open, props.deviceId, props.property?.identifier, detailMode.value, detailTimeRange.value?.[0]?.valueOf(), detailTimeRange.value?.[1]?.valueOf()] as const,
+  ([open, deviceId, propertyId], prev) => {
+    const opened = open && !prev?.[0]
+    const deviceChanged = prev?.[1] !== deviceId
+    const propertyChanged = prev?.[2] !== propertyId
+
+    if (open && propertyId && (opened || deviceChanged || propertyChanged)) {
+      if (resetDetailStateForOpen()) return
     }
     pageCurrent.value = 1
     void loadRows()
