@@ -59,4 +59,5 @@
 - TCP 连接数对齐补充验证：通用指标组新增单值紧凑模式，连接数占据网络列左半格，标签左边缘和数值右边缘分别与“下行 / 丢包”对齐；网络单元格 `clientWidth / scrollWidth` 均为 240px，列表行高保持约 70.3px。`test:agent-tools` 33/33、生产构建、差异格式和 Vue 文件 300 行门禁通过。
 - 磁盘 / 网络宽度补充验证：磁盘由 11.5rem 增至 12.5rem（200px），网络由 15rem 收敛到 14rem（224px），整表总宽保持 74rem。磁盘读写使用通用按内容分配模式，两个标签保持完整并分别贴合各自数值，读指标左对齐、写指标右对齐；磁盘 / 网络单元格 `clientWidth / scrollWidth` 一致，列表行高保持约 70.3px。`test:agent-tools` 33/33、生产构建、差异格式和 Vue 文件 300 行门禁通过。
 - 节点健康补充验证：健康状态采用集中阈值和可解释证据，不把 TCP 连接数等无容量基线的 gauge 直接判为异常。CPU、磁盘、网络所有可选诊断均先检查对应 `*Available`；counter 只使用有效相邻快照，时间 / counter 回退和能力变为不可用会清除旧证据，同一采集时间保持上次有效结论。CPU 临界温度不可用时，Tooltip 展示实际采用的默认参考阈值，不渲染 `临界 --`；后端提供临界温度时则展示按其比例计算的参考阈值。正常节点不渲染摘要，当前 5 行浏览器实测均为约 70.3px；异常测试覆盖 IO wait、磁盘忙碌、conntrack 容量、cgroup 限流、温度阈值、块设备和 SMART 失败。
-- Git commit / Pull Request：pending
+- Git commit：`3d62b711e3128e43b85c78d76fd171566c426ce5`
+- Pull Request：`https://github.com/jetlinks-v2/device-manager-ui/pull/230`
