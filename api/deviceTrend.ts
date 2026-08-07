@@ -1,5 +1,7 @@
 import dayjs from 'dayjs'
 
+const MIN_TIMESTAMP = 946684800000
+
 export type DeviceGroupTrendMetricKey = 'onlineRate' | 'uplink'
 
 export interface DeviceGroupTrendPoint {
@@ -29,6 +31,52 @@ export interface DeviceTrendDashboardRange {
 }
 
 export type DeviceTrendDashboardGroup = 'device-group-online-rate' | 'device-group-uplink'
+
+/**
+ * Resolves a user-visible time label from the actual calendar span and bucket granularity.
+ * Numeric ordering stays independent from this presentation format.
+ */
+export function resolveDeviceTrendLabelFormat(
+  start: number | string,
+  end: number | string,
+  bucket: string,
+): string {
+  const startTime = toDeviceTrendTimestamp(start)
+  const endTime = toDeviceTrendTimestamp(end)
+  const unit = String(bucket || '').slice(-1)
+
+  if (unit === 'M') return 'YYYY-MM'
+  if (!startTime || !endTime) return unit === 'd' ? 'MM-DD' : 'HH:mm'
+  if (dayjs(startTime).year() !== dayjs(endTime).year()) {
+    return unit === 'd' ? 'YYYY-MM-DD' : 'YYYY-MM-DD HH:mm'
+  }
+  if (unit === 'd') return 'MM-DD'
+  if (!dayjs(startTime).isSame(dayjs(endTime), 'day')) return 'MM-DD HH:mm'
+  return 'HH:mm'
+}
+
+/** Formats a batch of axis values with one format derived from the whole series. */
+export function formatDeviceTrendAxisLabels(
+  values: readonly (number | string | undefined | null)[],
+  bucket = '1h',
+): string[] {
+  const timestamps = values
+    .map(toDeviceTrendTimestamp)
+    .filter((value): value is number => value !== undefined)
+  const format = timestamps.length
+    ? resolveDeviceTrendLabelFormat(Math.min(...timestamps), Math.max(...timestamps), bucket)
+    : resolveDeviceTrendLabelFormat('', '', bucket)
+
+  return values.map((value) => {
+    const timestamp = toDeviceTrendTimestamp(value)
+    if (timestamp === undefined) {
+      if (value === undefined || value === null || value === '') return ''
+      if (typeof value === 'number' || /^\d+(?:\.\d+)?$/.test(String(value).trim())) return ''
+      return String(value)
+    }
+    return dayjs(timestamp).format(format)
+  })
+}
 
 export interface DeviceTrendDashboardResponse {
   group?: DeviceTrendDashboardGroup | string
@@ -99,11 +147,11 @@ export function toDeviceTrendMetrics(
         const timeString = item.data?.timeString || ''
         const parsedTime = dayjs(timeString)
         const rawTimestamp = Number(item.data?.timestamp)
-        const timestamp = parsedTime.isValid()
-          ? parsedTime.valueOf()
-          : Number.isFinite(rawTimestamp) ? rawTimestamp : index
+        const parsedTimestamp = parsedTime.isValid() ? parsedTime.valueOf() : undefined
+        const timestamp = parsedTimestamp
+          ?? (Number.isFinite(rawTimestamp) ? rawTimestamp : index)
         return [{
-          label: parsedTime.isValid() ? parsedTime.format(labelFormat) : timeString,
+          label: parsedTimestamp === undefined ? timeString : dayjs(parsedTimestamp).format(labelFormat),
           value,
           timestamp,
         }]
@@ -117,6 +165,16 @@ export function toDeviceTrendMetrics(
       populatedBucketCount: points.length,
     }
   })
+}
+
+function toDeviceTrendTimestamp(value: unknown): number | undefined {
+  if (value === undefined || value === null || value === '') return undefined
+  if (typeof value === 'number' || /^\d+(?:\.\d+)?$/.test(String(value).trim())) {
+    const numeric = Number(value)
+    return Number.isFinite(numeric) && numeric >= MIN_TIMESTAMP ? numeric : undefined
+  }
+  const parsed = dayjs(String(value))
+  return parsed.isValid() ? parsed.valueOf() : undefined
 }
 
 /** Returns undefined when no measurement exists, while preserving a real all-zero series as total zero. */

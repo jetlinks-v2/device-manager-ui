@@ -12,6 +12,7 @@ import * as echarts from 'echarts'
 import dayjs from 'dayjs'
 import { computed, nextTick, onBeforeUnmount, ref, watch, type PropType } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { formatDeviceTrendAxisLabels } from '@device-manager-ui/api/deviceTrend'
 
 import { extractRows, iotDeviceDetailRealApi } from '../../services/iotDeviceDetailReal.service'
 import type { RealtimePropertyRow } from './iotDeviceDetail.types'
@@ -174,7 +175,7 @@ function renderChart() {
       xAxis: {
         type: 'category',
         boundaryGap: false,
-        data: rows.map((item) => formatTime(item.time, 'HH:mm')),
+        data: formatDeviceTrendAxisLabels(rows.map((item) => item.time), '1h'),
         axisLabel: { fontSize: 14, color: axisTextColor },
         axisLine: { lineStyle: { color: axisLineColor } },
         axisTick: { show: false },

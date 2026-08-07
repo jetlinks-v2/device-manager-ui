@@ -104,7 +104,7 @@ import { type OverviewAccessSummary, useIotDeviceOverview } from '../../hooks/us
 import { extractRows, formatApiTime, iotDeviceDetailRealApi } from '../../services/iotDeviceDetailReal.service'
 import IotDevicePropertyDetailModal from './IotDevicePropertyDetailModal.vue'
 import { createMessageTrendOption, createStatCard, formatBytes, formatCount, formatDuration as formatMetricDuration } from './iotDeviceOverviewCharts'
-import { formatMessageTrendTimestamp } from './iotDeviceOverviewTime'
+import { formatMessageTrendAxisLabels } from './iotDeviceOverviewTime'
 import { getPropertyDisplayUnit, getPropertyDisplayValue } from './iotDevicePropertyDisplay'
 
 type SummarySeries = {
@@ -212,10 +212,10 @@ const trafficText = computed(() => {
 })
 
 const statCards = computed(() => [
-  createStatCard('active', $t('IotDeviceDetail.overview.stat.activeDuration'), formatMetricDuration(numberValue(overviewSummary.value.activeDuration?.total)), '', $t('IotDeviceDetail.overview.stat.activeDurationHint'), 'purple', bucketValues(overviewSummary.value.activeDuration?.buckets)),
-  createStatCard('up', $t('IotDeviceDetail.overview.stat.todayUpstream'), formatCount(messageTotals.value.up), $t('IotDeviceDetail.overview.unit.message'), $t('IotDeviceDetail.overview.stat.peakPerHour', { value: formatPeak(trendSeries.value.up) }), 'violet', trendSeries.value.up),
-  createStatCard('down', $t('IotDeviceDetail.overview.stat.todayDownstream'), formatCount(messageTotals.value.down), $t('IotDeviceDetail.overview.unit.message'), $t('IotDeviceDetail.overview.stat.peakPerHour', { value: formatPeak(trendSeries.value.down) }), 'orange', trendSeries.value.down),
-  createStatCard('traffic', $t('IotDeviceDetail.overview.stat.todayTraffic'), formatBytes(numberValue(overviewSummary.value.traffic?.total)), '', $t('IotDeviceDetail.overview.trafficSummary', { upstream: trafficText.value.up, downstream: trafficText.value.down }), 'cyan', bucketValues(overviewSummary.value.traffic?.buckets)),
+  createStatCard('active', $t('IotDeviceDetail.overview.stat.activeDuration'), formatMetricDuration(numberValue(overviewSummary.value.activeDuration?.total)), '', $t('IotDeviceDetail.overview.stat.activeDurationHint'), 'purple', bucketValues(overviewSummary.value.activeDuration?.buckets), bucketLabels(overviewSummary.value.activeDuration?.buckets)),
+  createStatCard('up', $t('IotDeviceDetail.overview.stat.todayUpstream'), formatCount(messageTotals.value.up), $t('IotDeviceDetail.overview.unit.message'), $t('IotDeviceDetail.overview.stat.peakPerHour', { value: formatPeak(trendSeries.value.up) }), 'violet', trendSeries.value.up, trendAxisLabels.value),
+  createStatCard('down', $t('IotDeviceDetail.overview.stat.todayDownstream'), formatCount(messageTotals.value.down), $t('IotDeviceDetail.overview.unit.message'), $t('IotDeviceDetail.overview.stat.peakPerHour', { value: formatPeak(trendSeries.value.down) }), 'orange', trendSeries.value.down, trendAxisLabels.value),
+  createStatCard('traffic', $t('IotDeviceDetail.overview.stat.todayTraffic'), formatBytes(numberValue(overviewSummary.value.traffic?.total)), '', $t('IotDeviceDetail.overview.trafficSummary', { upstream: trafficText.value.up, downstream: trafficText.value.down }), 'cyan', bucketValues(overviewSummary.value.traffic?.buckets), bucketLabels(overviewSummary.value.traffic?.buckets)),
 ])
 
 const messageTrendOption = computed(() => createMessageTrendOption(trendAxisLabels.value, trendSeries.value, chartMax.value))
@@ -391,11 +391,7 @@ function normalizeSeries(value: any, fallbackBuckets?: SummaryPoint[]): SummaryS
 
 function normalizeBuckets(value?: unknown, fallbackBuckets?: SummaryPoint[]): SummaryPoint[] {
   const source = Array.isArray(value) && value.length ? value : fallbackBuckets ?? []
-  const fallback = todayHourBuckets()
-  return Array.from({ length: 24 }, (_, index) => {
-    const bucket = normalizeBucket(source[index])
-    return bucket.time ? bucket : { ...bucket, time: fallback[index].time }
-  })
+  return source.map(normalizeBucket)
 }
 
 function normalizeBucket(value: any): SummaryPoint {
@@ -403,50 +399,46 @@ function normalizeBucket(value: any): SummaryPoint {
     return { value: numberValue(value) }
   }
   return {
-    time: numberValue(value?.time),
+    time: optionalNumber(value?.time),
     value: numberValue(value?.value),
   }
 }
 
 function mapTrendBuckets(value: MessageTrendPoint[], field: 'upstream' | 'downstream'): SummaryPoint[] {
   return value.map((item) => ({
-    time: numberValue(item?.time),
+    time: optionalNumber(item?.time),
     value: numberValue(item?.[field]),
   }))
 }
 
 function mapTrafficBuckets(value: TrafficTrendPoint[]): SummaryPoint[] {
   return value.map((item) => ({
-    time: numberValue(item?.time),
+    time: optionalNumber(item?.time),
     value: numberValue(item?.upstreamBytes) + numberValue(item?.downstreamBytes),
   }))
 }
 
 function emptyBuckets(): SummaryPoint[] {
-  return todayHourBuckets()
+  return []
 }
 
 function bucketValues(value?: SummaryPoint[]) {
-  return (value?.length ? value : emptyBuckets()).map((item) => numberValue(item.value))
+  return (value ?? []).map((item) => numberValue(item.value))
 }
 
 function bucketLabels(value?: SummaryPoint[]) {
-  const buckets = value?.length ? value : emptyBuckets()
-  return buckets.map((item) => formatMessageTrendTimestamp(item.time))
-}
-
-function todayHourBuckets(): SummaryPoint[] {
-  const hour = 60 * 60 * 1000
-  const firstHour = dayjs().startOf('day').valueOf()
-  return Array.from({ length: 24 }, (_, index) => ({
-    time: firstHour + hour * index,
-    value: 0,
-  }))
+  return formatMessageTrendAxisLabels((value ?? []).map((item) => item.time))
 }
 
 function numberValue(value: unknown): number {
   const number = Number(value)
   return Number.isFinite(number) ? number : 0
+}
+
+function optionalNumber(value: unknown): number | undefined {
+  if (value === undefined || value === null || value === '') return undefined
+  const number = Number(value)
+  return Number.isFinite(number) ? number : undefined
 }
 
 </script>

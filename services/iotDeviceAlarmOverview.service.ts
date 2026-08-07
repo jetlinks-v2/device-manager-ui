@@ -185,7 +185,7 @@ function dashboardBucket(duration: number) {
   const hour = 60 * 60 * 1000
   const day = hour * 24
   const year = 365 * day
-  if (duration <= hour + 10) return { time: '1m', format: 'HH:mm', limit: 60 }
+  if (duration <= hour + 10) return { time: '1m', format: 'MM-dd HH:mm', limit: 60 }
   if (duration <= day) return { time: '1h', format: 'MM-dd HH:mm', limit: 24 }
   if (duration < year) return { time: '1d', format: 'MM-dd HH:mm:ss', limit: Math.abs(Math.ceil(duration / day)) + 1 }
   return { time: '1M', format: 'yyyy-MM', limit: Math.abs(Math.floor(duration / (day * 30))) }

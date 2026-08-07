@@ -191,7 +191,7 @@ const resolveDashboardAggregationQuery = (range: { startMs: number; endMs: numbe
 
   // Select an aggregation bucket from the requested range so dashboard tools are not limited to "today".
   if (duration <= hour + 10) {
-    return { time: '1m', format: 'HH:mm', limit: 60 };
+    return { time: '1m', format: 'yyyy-MM-dd HH:mm:ss', limit: 60 };
   }
   if (duration <= day) {
     return { time: '1h', format: 'yyyy-MM-dd HH:mm:ss', limit: 24 };

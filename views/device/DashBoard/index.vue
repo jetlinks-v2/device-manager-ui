@@ -560,7 +560,7 @@ const getEcharts = (data: any) => {
     const year = 365 * days;
     if (dt <= (hour + 10)) {
         limit = 60
-        format = 'HH:mm';
+        // Keep the date-bearing default so a short range crossing midnight remains unambiguous.
     } else if (dt > hour && dt <= days) {
         _time = '1h'
         limit = 24;

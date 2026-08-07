@@ -7,6 +7,7 @@ import { toRuntimeDevice } from './deviceGroupRuntime'
 import { withIotDeviceListDefaultTerms } from './deviceListDefaultTerms'
 import {
   buildDeviceTrendDashboardQueries,
+  resolveDeviceTrendLabelFormat,
   toFiniteDeviceTrendMeasurement,
   toDeviceTrendMetrics,
   type DeviceGroupTrendMetric,
@@ -205,7 +206,7 @@ const trendRangeConfig = (range: DeviceGroupTrendQuery) => {
     return {
       time: '1m',
       format: 'yyyy-MM-dd HH:mm:ss',
-      labelFormat: 'HH:mm',
+      labelFormat: resolveDeviceTrendLabelFormat(start.valueOf(), end.valueOf(), '1m'),
       limit: Math.max(1, Math.ceil(duration / (60 * 1000))),
       from: start.format(textFormat),
       to: end.format(textFormat),
@@ -216,7 +217,7 @@ const trendRangeConfig = (range: DeviceGroupTrendQuery) => {
     return {
       time: '1h',
       format: 'yyyy-MM-dd HH:mm:ss',
-      labelFormat: 'HH:mm',
+      labelFormat: resolveDeviceTrendLabelFormat(start.valueOf(), end.valueOf(), '1h'),
       limit: Math.max(1, Math.ceil(duration / hour)),
       from: start.format(textFormat),
       to: end.format(textFormat),
@@ -226,7 +227,7 @@ const trendRangeConfig = (range: DeviceGroupTrendQuery) => {
   return {
     time: '1d',
     format: 'yyyy-MM-dd',
-    labelFormat: 'MM-DD',
+    labelFormat: resolveDeviceTrendLabelFormat(start.valueOf(), end.valueOf(), '1d'),
     limit: Math.max(1, Math.ceil(duration / day)),
     from: start.format(textFormat),
     to: end.format(textFormat),
