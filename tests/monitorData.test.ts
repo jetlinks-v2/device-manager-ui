@@ -22,10 +22,12 @@ import {
 } from '../views/link/DashBoard/components/realtimeResourceData.ts'
 import { createNodeHealthCalculator } from '../views/link/DashBoard/components/nodeHealthData.ts'
 import {
-  defaultFocusedNetworkNodes,
+  formatNetworkCount,
+  formatNetworkPercent,
   formatNetworkSize,
-  renderNetworkTooltip,
-  resolveAvailableNetworkNodes,
+  normalizeSystemNetworkHistory,
+  normalizeTrafficHistory,
+  renderNetworkMetricTooltip,
 } from '../views/link/DashBoard/components/networkData.ts'
 
 const history = [
@@ -392,47 +394,101 @@ test('focuses nodes by highest then average realtime pressure and restores valid
   assert.deepEqual(resolveFocusedRealtimeNodes(nodes, [], 2), ['spike', 'steady'])
 })
 
-test('focuses network nodes and groups both directions into one periodic-traffic row per node', () => {
-  const series = {
-    'node-a': { _data: [1024, 2048] },
-    'node-b': { _data: [1024, 4096] },
-  }
-  const tooltip = renderNetworkTooltip([
-    { axisValueLabel: '12:00', marker: 'a', seriesName: 'node-a · ↑', value: 2048 },
-    { axisValueLabel: '12:00', marker: 'a', seriesName: 'node-a · ↓', value: 1024 },
-    { axisValueLabel: '12:00', marker: 'b', seriesName: 'node-b · ↑', value: 4096 },
-    { axisValueLabel: '12:00', marker: 'b', seriesName: 'node-b · ↓', value: 512 },
-  ], { up: '上行', down: '下行' })
+test('groups both traffic directions into one sorted periodic-traffic row per node', () => {
+  const tooltip = renderNetworkMetricTooltip([
+    { axisValueLabel: '12:00', marker: 'a', seriesName: 'node-a · trafficUp', value: 2048 },
+    { axisValueLabel: '12:00', marker: 'a', seriesName: 'node-a · trafficDown', value: 1024 },
+    { axisValueLabel: '12:00', marker: 'b', seriesName: 'node-b · trafficUp', value: 4096 },
+    { axisValueLabel: '12:00', marker: 'b', seriesName: 'node-b · trafficDown', value: 512 },
+  ], ['trafficUp', 'trafficDown'], { trafficUp: '上行', trafficDown: '下行' }, formatNetworkSize)
 
-  assert.deepEqual(defaultFocusedNetworkNodes(['node-a', 'node-b'], series), ['node-b', 'node-a'])
   assert.equal(formatNetworkSize(1024), '1KB')
   assert.ok(tooltip.indexOf('node-b') < tooltip.indexOf('node-a'))
   assert.equal(tooltip.match(/node-a/g)?.length, 1)
   assert.match(tooltip, /上行.*2KB.*下行.*1KB/)
 })
 
-test('reconciles stale network selections against nodes returned by history', () => {
-  const series = {
-    'node-a': { _data: [1024, 2048] },
-    'node-b': { _data: [1024, 4096] },
-  }
+const systemNetworkHistoryItem = (
+  nodeId: string,
+  timestamp: number,
+  overrides: Record<string, unknown> = {},
+) => ({
+  data: {
+    clusterNodeId: nodeId,
+    value: {
+      timestamp,
+      networkInterfaceMetricsAvailable: true,
+      networkReceivedPackets: 100,
+      networkSentPackets: 200,
+      networkReceiveErrors: 2,
+      networkSendErrors: 1,
+      networkReceiveDrops: 10,
+      networkTcpMetricsAvailable: true,
+      networkTcpConnectionsEstablished: 12,
+      networkTcpSegmentsSent: 1000,
+      networkTcpSegmentsRetransmitted: 20,
+      ...overrides,
+    },
+  },
+})
 
-  assert.deepEqual(resolveAvailableNetworkNodes(
-    ['node-a', 'node-b'],
-    ['offline-node'],
-    ['node-a'],
-    series,
-  ), ['node-a'])
-  assert.deepEqual(resolveAvailableNetworkNodes(
-    ['node-a', 'node-b'],
-    ['offline-node'],
-    ['offline-node'],
-    series,
-  ), ['node-b', 'node-a'])
-  assert.deepEqual(resolveAvailableNetworkNodes(
-    ['node-a', 'node-b'],
-    [],
-    ['node-a'],
-    series,
-  ), ['node-a'])
+test('derives historical packet loss, interface error and TCP retransmission rates', () => {
+  const history = normalizeSystemNetworkHistory([
+    systemNetworkHistoryItem('node-a', 60_000),
+    systemNetworkHistoryItem('node-a', 120_000, {
+      networkReceivedPackets: 190,
+      networkSentPackets: 300,
+      networkReceiveErrors: 4,
+      networkSendErrors: 2,
+      networkReceiveDrops: 20,
+      networkTcpConnectionsEstablished: 18,
+      networkTcpSegmentsSent: 1100,
+      networkTcpSegmentsRetransmitted: 25,
+    }),
+  ])
+
+  assert.deepEqual(history.series.packetLoss['node-a']._data, [[60_000, null], [120_000, 10]])
+  assert.deepEqual(history.series.interfaceErrors['node-a']._data, [[60_000, null], [120_000, 1.5789]])
+  assert.deepEqual(history.series.tcpRetransmission['node-a']._data, [[60_000, null], [120_000, 5]])
+  assert.deepEqual(history.series.tcpConnections['node-a']._data, [[60_000, 12], [120_000, 18]])
+})
+
+test('uses null history gaps for unavailable, stationary, zero-denominator and rollback counters', () => {
+  const history = normalizeSystemNetworkHistory([
+    systemNetworkHistoryItem('unavailable', 60_000),
+    systemNetworkHistoryItem('unavailable', 120_000, { networkInterfaceMetricsAvailable: false }),
+    systemNetworkHistoryItem('stationary', 60_000),
+    systemNetworkHistoryItem('stationary', 60_000, { networkReceivedPackets: 120 }),
+    systemNetworkHistoryItem('zero', 60_000),
+    systemNetworkHistoryItem('zero', 120_000),
+    systemNetworkHistoryItem('rollback', 60_000),
+    systemNetworkHistoryItem('rollback', 120_000, {
+      networkReceivedPackets: 90,
+      networkTcpSegmentsSent: 900,
+    }),
+  ])
+
+  assert.equal(history.series.packetLoss.unavailable._data.at(-1)?.[1], null)
+  assert.equal(history.series.packetLoss.stationary._data.at(-1)?.[1], null)
+  assert.equal(history.series.packetLoss.zero._data.at(-1)?.[1], null)
+  assert.equal(history.series.packetLoss.rollback._data.at(-1)?.[1], null)
+  assert.equal(history.series.tcpRetransmission.rollback._data.at(-1)?.[1], null)
+})
+
+test('normalizes traffic independently from system history and sorts metric tooltip rows', () => {
+  const traffic = normalizeTrafficHistory([{ group: 'bytesRead', data: {
+    clusterNodeId: 'traffic-only',
+    value: [{ timeString: '12:00', timestamp: 1000, value: 2048 }],
+  } }])
+  const system = normalizeSystemNetworkHistory([systemNetworkHistoryItem('system-only', 60_000)])
+  const tooltip = renderNetworkMetricTooltip([
+    { axisValueLabel: '12:00', marker: 'a', seriesName: 'node-a · packetLoss', value: [60_000, 1] },
+    { axisValueLabel: '12:00', marker: 'b', seriesName: 'node-b · packetLoss', value: [60_000, 5] },
+  ], ['packetLoss'], { packetLoss: '丢包' }, formatNetworkPercent)
+
+  assert.deepEqual(traffic.nodes, ['traffic-only'])
+  assert.deepEqual(system.nodes, ['system-only'])
+  assert.ok(tooltip.indexOf('node-b') < tooltip.indexOf('node-a'))
+  assert.match(tooltip, /丢包.*5%/)
+  assert.equal(formatNetworkCount([60_000, 1234]), '1,234')
 })

@@ -2,13 +2,11 @@
   <a-spin :spinning="loading">
     <section class="network-trend">
       <header class="network-trend__header">
-        <h3>{{ $t('DeviceAccess.index.594346-33') }}</h3>
+        <div class="network-trend__title-group">
+          <h3>{{ $t('components.NetworkTrend.title') }}</h3>
+          <a-segmented v-model:value="activeMetric" size="small" :options="metricOptions" />
+        </div>
         <div class="network-trend__actions">
-          <a-radio-group v-model:value="timeType" button-style="solid" size="small">
-            <a-radio-button value="hour">{{ $t('DashBoard.index.954313-5') }}</a-radio-button>
-            <a-radio-button value="day">{{ $t('DashBoard.index.954313-6') }}</a-radio-button>
-            <a-radio-button value="week">{{ $t('DashBoard.index.954313-7') }}</a-radio-button>
-          </a-radio-group>
           <a-range-picker
             v-model:value="timeRange"
             :allow-clear="false"
@@ -17,6 +15,13 @@
             @change="onRangeChange"
           >
             <template #suffixIcon><AIcon type="CalendarOutlined" /></template>
+            <template #renderExtraFooter>
+              <a-radio-group v-model:value="shortcut" button-style="solid" size="small">
+                <a-radio-button value="hour">{{ $t('components.MonitorTrend.lastHour') }}</a-radio-button>
+                <a-radio-button value="day">{{ $t('components.MonitorTrend.lastDay') }}</a-radio-button>
+                <a-radio-button value="week">{{ $t('components.MonitorTrend.lastWeek') }}</a-radio-button>
+              </a-radio-group>
+            </template>
           </a-range-picker>
           <a-tooltip :title="$t('components.MonitorRefresh.button')">
             <a-button type="text" :loading="loading" @click="refresh">
@@ -26,24 +31,24 @@
         </div>
       </header>
 
-      <div class="network-trend__legend">
-        <span><i class="network-trend__line" />{{ $t('DeviceAccess.index.594346-26') }}</span>
-        <span><i class="network-trend__line network-trend__line--sent" />{{ $t('DeviceAccess.index.594346-27') }}</span>
+      <div v-if="legendItems.length > 1" class="network-trend__legend">
+        <span v-for="(item, index) in legendItems" :key="item.kind">
+          <i class="network-trend__line" :class="{ 'network-trend__line--secondary': index > 0 }" />
+          {{ item.label }}
+        </span>
       </div>
 
-      <j-empty v-if="!loading && !serverOptions.length" class="network-trend__empty" />
-      <template v-else>
-        <div class="network-trend__chart">
-          <JEcharts :option="chartOptions" not-merge />
-        </div>
-        <NodeFocusSelector
-          v-if="serverOptions.length > 1"
-          :value="selectedNodes"
-          :options="nodeOptions"
-          @update:value="updateSelectedNodes"
-          @reset="resetFocusedNodes"
-        />
-      </template>
+      <j-empty v-if="!loading && !visibleSeries.length" class="network-trend__empty" />
+      <div v-else class="network-trend__chart">
+        <JEcharts :option="chartOptions" not-merge />
+      </div>
+      <NodeFocusSelector
+        v-if="nodeOptions.length > 1"
+        :value="selectedNodes"
+        :options="nodeOptions"
+        @update:value="updateSelectedNodes"
+        @reset="resetFocusedNodes"
+      />
     </section>
   </a-spin>
 </template>
@@ -53,202 +58,196 @@ import type { PropType } from 'vue'
 import dayjs, { type Dayjs } from 'dayjs'
 import { useI18n } from 'vue-i18n'
 import { dashboard } from '../../../../api/link/dashboard'
-import { getTimeByType, networkParams, typeDataLine } from './tool'
+import { getTimeByType, networkHistoryParams, networkParams } from './tool'
 import NodeFocusSelector from './NodeFocusSelector.vue'
 import { nodeColor, nodeSeriesVisual } from './monitorData'
 import {
+  formatNetworkCount,
+  formatNetworkPercent,
   formatNetworkSize,
   latestNetworkValue,
-  renderNetworkTooltip,
-  resolveAvailableNetworkNodes,
-  type NetworkSeriesMap,
+  normalizeSystemNetworkHistory,
+  normalizeTrafficHistory,
+  renderNetworkMetricTooltip,
+  type NetworkHistoryResponseItem,
+  type NetworkSeriesByKind,
+  type NetworkSeriesKind,
+  type NetworkTrendMetric,
+  type TrafficHistoryResult,
 } from './networkData'
 
-type NetworkType = 'bytesRead' | 'bytesSent'
+const EMPTY_TRAFFIC: TrafficHistoryResult = {
+  times: [], nodes: [], series: { trafficUp: {}, trafficDown: {} },
+}
+const EMPTY_SYSTEM = normalizeSystemNetworkHistory([])
 
 const props = defineProps({
-  selectedNodes: {
-    type: Array as PropType<string[]>,
-    default: () => [],
-  },
-  defaultNodes: {
-    type: Array as PropType<string[]>,
-    default: () => [],
-  },
-  refreshVersion: {
-    type: Number,
-    default: 0,
-  },
+  selectedNodes: { type: Array as PropType<string[]>, default: () => [] },
+  defaultNodes: { type: Array as PropType<string[]>, default: () => [] },
+  availableNodes: { type: Array as PropType<string[]>, default: () => [] },
+  refreshVersion: { type: Number, default: 0 },
 })
 const emit = defineEmits(['update:selectedNodes'])
 const { t } = useI18n()
 
 const loading = ref(false)
-const timeType = ref<'hour' | 'day' | 'week' | undefined>('hour')
+const activeMetric = ref<NetworkTrendMetric>('traffic')
+const shortcut = ref<'hour' | 'day' | 'week' | undefined>('hour')
 const timeRange = ref<[Dayjs, Dayjs]>([dayjs(getTimeByType('hour')), dayjs()])
-const serverOptions = ref<string[]>([])
-const serverData = reactive<Record<NetworkType, NetworkSeriesMap>>({
-  bytesRead: {},
-  bytesSent: {},
-})
-const xAxis = ref<string[]>([])
+const trafficHistory = ref<TrafficHistoryResult>(EMPTY_TRAFFIC)
+const systemHistory = ref(EMPTY_SYSTEM)
 let requestSequence = 0
 
-const latestTraffic = (nodeId: string) => Math.max(
-  latestNetworkValue(nodeId, serverData.bytesRead) ?? -1,
-  latestNetworkValue(nodeId, serverData.bytesSent) ?? -1,
+const metricOptions = computed(() => [
+  { label: t('components.NetworkTrend.traffic'), value: 'traffic' },
+  { label: t('components.NetworkTrend.quality'), value: 'quality' },
+  { label: t('components.NetworkTrend.retransmission'), value: 'tcpRetransmission' },
+  { label: t('components.NetworkTrend.connections'), value: 'tcpConnections' },
+])
+const metricKinds = computed<NetworkSeriesKind[]>(() => ({
+  traffic: ['trafficUp', 'trafficDown'],
+  quality: ['packetLoss', 'interfaceErrors'],
+  tcpRetransmission: ['tcpRetransmission'],
+  tcpConnections: ['tcpConnections'],
+})[activeMetric.value] as NetworkSeriesKind[])
+const kindLabels = computed<Record<NetworkSeriesKind, string>>(() => ({
+  trafficUp: t('DeviceAccess.index.594346-26'),
+  trafficDown: t('DeviceAccess.index.594346-27'),
+  packetLoss: t('components.NetworkTrend.packetLoss'),
+  interfaceErrors: t('components.NetworkTrend.interfaceErrors'),
+  tcpRetransmission: t('components.NetworkTrend.retransmission'),
+  tcpConnections: t('components.NetworkTrend.connections'),
+}))
+const currentSeries = computed<Partial<NetworkSeriesByKind>>(() => activeMetric.value === 'traffic'
+  ? trafficHistory.value.series
+  : systemHistory.value.series)
+const dataNodes = computed(() => activeMetric.value === 'traffic'
+  ? trafficHistory.value.nodes
+  : systemHistory.value.nodes)
+const availableNodeIds = computed(() => [...new Set(
+  props.availableNodes.length ? props.availableNodes : dataNodes.value,
+)])
+const selectedNodes = computed(() => props.selectedNodes)
+const formatter = computed(() => activeMetric.value === 'traffic'
+  ? formatNetworkSize
+  : activeMetric.value === 'tcpConnections' ? formatNetworkCount : formatNetworkPercent)
+const latestMetric = (nodeId: string) => Math.max(
+  ...metricKinds.value.map(kind => latestNetworkValue(nodeId, currentSeries.value[kind] || {} ) ?? -1),
 )
-const nodeOptions = computed(() => serverOptions.value.map(nodeId => ({
+const nodeOptions = computed(() => availableNodeIds.value.map(nodeId => ({
   label: nodeId,
   value: nodeId,
   color: nodeColor(nodeId),
-  metric: formatNetworkSize(latestTraffic(nodeId)),
+  metric: latestMetric(nodeId) < 0 ? undefined : formatter.value(latestMetric(nodeId)),
 })))
-const selectedNodes = computed(() => props.selectedNodes)
+const visibleSeries = computed(() => props.selectedNodes.flatMap(nodeId => metricKinds.value
+  .filter(kind => currentSeries.value[kind]?.[nodeId])
+  .map((kind, index) => ({ nodeId, kind, secondary: index > 0 }))))
+const legendItems = computed(() => metricKinds.value.map(kind => ({ kind, label: kindLabels.value[kind] })))
 
 const updateSelectedNodes = (value: string[]) => emit('update:selectedNodes', value)
 const resetFocusedNodes = () => emit('update:selectedNodes', props.defaultNodes)
 
-const normalizeResponse = (items: any[]) => {
-  const timestamps = new Map<string, number>()
-  const raw: Record<NetworkType, Record<string, Record<string, unknown>>> = {
-    bytesRead: {},
-    bytesSent: {},
-  }
-  items.forEach((item) => {
-    const type = item.group as NetworkType
-    if (type !== 'bytesRead' && type !== 'bytesSent') return
-    const nodeId = item.data?.clusterNodeId
-    if (!nodeId) return
-    raw[type][nodeId] ||= {}
-    ;(item.data?.value || []).forEach((point: any) => {
-      raw[type][nodeId][point.timeString] = point.value
-      timestamps.set(point.timeString, Number(point.timestamp))
-    })
-  })
-  const orderedTimes = [...timestamps.entries()]
-    .sort((left, right) => left[1] - right[1])
-    .map(item => item[0])
-  const nodes = [...new Set(Object.values(raw).flatMap(group => Object.keys(group)))]
-
-  ;(['bytesRead', 'bytesSent'] as NetworkType[]).forEach((type) => {
-    serverData[type] = Object.fromEntries(nodes.map(nodeId => [nodeId, {
-      _data: orderedTimes.map(time => raw[type][nodeId]?.[time] ?? null),
-    }]))
-  })
-  xAxis.value = orderedTimes
-  serverOptions.value = nodes
-  const nextSelectedNodes = resolveAvailableNetworkNodes(
-    nodes,
-    props.selectedNodes,
-    props.defaultNodes,
-    serverData.bytesRead,
-  )
-  if (nextSelectedNodes.length !== props.selectedNodes.length
-    || nextSelectedNodes.some((nodeId, index) => nodeId !== props.selectedNodes[index])) {
-    emit('update:selectedNodes', nextSelectedNodes)
-  }
-}
-
-const loadNetwork = async () => {
+const loadHistory = async () => {
   const sequence = ++requestSequence
   loading.value = true
   try {
-    const response = await dashboard(networkParams({ time: { time: timeRange.value } })) as {
-      success?: boolean
-      result?: any[]
-    }
+    const params = activeMetric.value === 'traffic'
+      ? networkParams({ time: { time: timeRange.value } })
+      : networkHistoryParams({ time: timeRange.value })
+    const response = await dashboard(params) as { success?: boolean; result?: NetworkHistoryResponseItem[] }
     if (sequence !== requestSequence) return
-    normalizeResponse(response.success ? response.result || [] : [])
+    const items = response.success ? response.result || [] : []
+    if (activeMetric.value === 'traffic') trafficHistory.value = normalizeTrafficHistory(items)
+    else systemHistory.value = normalizeSystemNetworkHistory(items)
   } catch {
-    if (sequence === requestSequence) normalizeResponse([])
+    if (sequence !== requestSequence) return
+    if (activeMetric.value === 'traffic') trafficHistory.value = EMPTY_TRAFFIC
+    else systemHistory.value = EMPTY_SYSTEM
   } finally {
     if (sequence === requestSequence) loading.value = false
   }
 }
 
 const onRangeChange = () => {
-  timeType.value = undefined
-  loadNetwork()
+  shortcut.value = undefined
+  loadHistory()
 }
 const refresh = () => {
-  if (timeType.value) timeRange.value = [dayjs(getTimeByType(timeType.value)), dayjs()]
-  loadNetwork()
+  if (shortcut.value) timeRange.value = [dayjs(getTimeByType(shortcut.value)), dayjs()]
+  loadHistory()
 }
 
-const chartOptions = computed(() => ({
-  xAxis: { type: 'category', boundaryGap: false, data: xAxis.value },
-  yAxis: { type: 'value', axisLabel: { formatter: formatNetworkSize } },
-  grid: { left: 70, right: 24, bottom: 44, top: 24 },
-  tooltip: {
-    trigger: 'axis',
-    formatter: (items: any[]) => renderNetworkTooltip(items, {
-      up: t('DeviceAccess.index.594346-26'),
-      down: t('DeviceAccess.index.594346-27'),
+const chartOptions = computed(() => {
+  const traffic = activeMetric.value === 'traffic'
+  const connections = activeMetric.value === 'tcpConnections'
+  return {
+    animationDuration: 240,
+    grid: { left: 70, right: 24, bottom: 44, top: 24 },
+    xAxis: traffic
+      ? { type: 'category', boundaryGap: false, data: trafficHistory.value.times }
+      : { type: 'time', boundaryGap: false },
+    yAxis: {
+      type: 'value', min: 0, minInterval: connections ? 1 : undefined,
+      axisLabel: { formatter: (value: unknown) => formatter.value(value) },
+    },
+    dataZoom: [
+      { type: 'inside', start: shortcut.value === 'hour' ? 0 : 70, end: 100 },
+      { type: 'slider', height: 20, bottom: 4, start: shortcut.value === 'hour' ? 0 : 70, end: 100 },
+    ],
+    tooltip: {
+      trigger: 'axis',
+      formatter: (items: any[]) => renderNetworkMetricTooltip(
+        items, metricKinds.value, kindLabels.value, formatter.value,
+      ),
+    },
+    series: visibleSeries.value.map(({ nodeId, kind, secondary }) => {
+      const visual = nodeSeriesVisual(nodeId)
+      return {
+        name: `${nodeId} · ${kind}`,
+        type: 'line', smooth: true, showSymbol: false, connectNulls: false,
+        data: currentSeries.value[kind]?.[nodeId]?._data || [],
+        ...visual,
+        lineStyle: { ...visual.lineStyle, type: secondary ? 'dashed' : 'solid' },
+      }
     }),
-  },
-  dataZoom: [{ type: 'inside' }, { type: 'slider', height: 20, bottom: 4 }],
-  series: selectedNodes.value.flatMap(nodeId => (['bytesRead', 'bytesSent'] as NetworkType[]).map((type) => {
-    const visual = nodeSeriesVisual(nodeId)
-    return {
-      name: `${nodeId} · ${type === 'bytesRead' ? '↑' : '↓'}`,
-      type: 'line',
-      smooth: true,
-      showSymbol: false,
-      data: serverData[type][nodeId]?._data || [],
-      ...visual,
-      lineStyle: {
-        ...visual.lineStyle,
-        type: type === 'bytesRead' ? 'solid' : 'dashed',
-      },
-    }
-  })) || typeDataLine,
-}))
+  }
+})
 
-watch(timeType, (value) => {
+watch(shortcut, (value) => {
   if (!value) return
   timeRange.value = [dayjs(getTimeByType(value)), dayjs()]
-  loadNetwork()
+  loadHistory()
 }, { immediate: true })
-
-watch(() => props.refreshVersion, () => {
-  if (timeType.value) timeRange.value = [dayjs(getTimeByType(timeType.value)), dayjs()]
-  loadNetwork()
-})
+watch(activeMetric, loadHistory)
+watch(() => props.refreshVersion, refresh)
 </script>
 
 <style lang="less" scoped>
 .network-trend {
+  display: flex;
+  flex-direction: column;
   min-height: 30rem;
   padding: var(--space-6, 1.5rem);
   background: var(--bg, #fff);
   border-radius: 0.25rem;
 }
-
 .network-trend__header,
+.network-trend__title-group,
 .network-trend__actions,
 .network-trend__legend,
-.network-trend__legend span {
-  display: flex;
-  align-items: center;
-}
-
-.network-trend__header {
-  justify-content: space-between;
-  gap: var(--space-4, 1rem);
-
-  h3 { margin: 0; }
-}
-
+.network-trend__legend span { display: flex; align-items: center; }
+.network-trend__header { justify-content: space-between; gap: var(--space-4, 1rem); }
+.network-trend__title-group,
 .network-trend__actions,
 .network-trend__legend { gap: var(--space-3, 0.75rem); }
+.network-trend__title-group h3 { margin: 0; }
 .network-trend__legend { margin-top: var(--space-3, 0.75rem); color: rgba(0, 0, 0, 0.45); }
 .network-trend__legend span { gap: 0.375rem; }
 .network-trend__line { width: 1.25rem; border-top: 2px solid currentColor; }
-.network-trend__line--sent { border-top-style: dashed; }
+.network-trend__line--secondary { border-top-style: dashed; }
 .network-trend__chart { height: 20rem; margin-top: var(--space-2, 0.5rem); }
 .network-trend__empty { height: 22rem; }
-
 @media (max-width: 70rem) {
   .network-trend__header { align-items: flex-start; flex-direction: column; }
 }

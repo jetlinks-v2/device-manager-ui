@@ -31,6 +31,7 @@
                   <Network
                     :selected-nodes="selectedNodes.network"
                     :default-nodes="defaultNodes"
+                    :available-nodes="realtimeNodeIds"
                     :refresh-version="nodeRefreshVersion"
                     @update:selected-nodes="updateSelectedNodes('network', $event)"
                   />
@@ -67,6 +68,7 @@ const focusInitialized = reactive<Record<FocusScope, boolean>>({ cpu: false, mem
 let realtimeNodeSignature = ''
 
 const defaultNodes = computed(() => defaultFocusedRealtimeNodes(realtimeNodes.value))
+const realtimeNodeIds = computed(() => realtimeNodes.value.map(node => node.nodeId))
 
 const validNodeIds = (value: unknown): value is string[] =>
   Array.isArray(value) && value.every(nodeId => typeof nodeId === 'string')

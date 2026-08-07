@@ -102,6 +102,21 @@ export const defaultParamsData = (group: string, val: any) => [
     },
 ];
 
+export const networkHistoryParams = (val: any) => [
+    {
+        dashboard: 'systemMonitor',
+        object: 'stats',
+        measurement: 'info',
+        dimension: 'history',
+        group: 'network',
+        params: {
+            from: dayjs(val.time[0]).valueOf(),
+            to: dayjs(val.time[1]).valueOf(),
+            format: 'YYYY-MM-dd HH:mm',
+        },
+    },
+];
+
 export const colorNetwork = ['#FF7D00', '#FFC300', '#37E2E2', '#165DFF', '#722ED1']
 export const colorCpu = ['#313CA9', '#21CCFF', '#249EFF', '#86DF6C', '#979AFF']
 export const colorJvm = ['#246EFF', '#00B2FF', '#81E2FF', '#2CAB40', '#8D4EDA']
