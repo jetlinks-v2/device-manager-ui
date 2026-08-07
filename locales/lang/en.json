@@ -3039,6 +3039,8 @@
     "components.NetworkTrend.traffic": "Traffic",
     "components.NetworkTrend.trafficScope": "Traffic info",
     "components.NetworkTrend.trafficScopeTooltip": "This metric shows application data handled by platform network components during device access: upstream is data received by the platform, and downstream is data sent by the platform. It reflects device communication activity, not actual server NIC traffic or network bandwidth utilization.",
+    "components.NetworkTrend.systemScope": "Host metric info",
+    "components.NetworkTrend.systemScopeTooltip": "Network quality, TCP retransmission, and TCP connection metrics come from the node's operating system and describe the entire server, not the individual service process. When multiple services run on the same server, their nodes may report the same metrics; do not add them together as platform totals.",
     "components.NetworkTrend.quality": "Network quality",
     "components.NetworkTrend.retransmission": "TCP retransmission",
     "components.NetworkTrend.connections": "TCP connections",

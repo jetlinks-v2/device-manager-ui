@@ -3039,6 +3039,8 @@
     "components.NetworkTrend.traffic": "流量",
     "components.NetworkTrend.trafficScope": "流量说明",
     "components.NetworkTrend.trafficScopeTooltip": "这里统计平台网络组件在设备接入过程中处理的业务数据量：上行为平台接收，下行为平台发送。它反映设备通信活跃度，不代表服务器网卡的实际流量或网络带宽占用。",
+    "components.NetworkTrend.systemScope": "主机指标说明",
+    "components.NetworkTrend.systemScopeTooltip": "网络质量、TCP重传和TCP连接来自节点所在操作系统，反映整台服务器的网络状态，不是当前服务进程的独立数据。同一服务器部署多个服务时，各服务节点可能上报相同的指标，请勿将它们相加作为平台总量。",
     "components.NetworkTrend.quality": "网络质量",
     "components.NetworkTrend.retransmission": "TCP重传",
     "components.NetworkTrend.connections": "TCP连接",

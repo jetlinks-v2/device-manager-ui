@@ -5,13 +5,10 @@
         <div class="network-trend__title-group">
           <h3>{{ $t('components.NetworkTrend.title') }}</h3>
           <a-segmented v-model:value="activeMetric" size="small" :options="metricOptions" />
-          <a-tooltip
-            v-if="activeMetric === 'traffic'"
-            :title="$t('components.NetworkTrend.trafficScopeTooltip')"
-          >
+          <a-tooltip :title="metricScope.tooltip">
             <span class="network-trend__scope">
               <AIcon type="InfoCircleOutlined" />
-              {{ $t('components.NetworkTrend.trafficScope') }}
+              {{ metricScope.label }}
             </span>
           </a-tooltip>
         </div>
@@ -113,6 +110,16 @@ const metricOptions = computed(() => [
   { label: t('components.NetworkTrend.retransmission'), value: 'tcpRetransmission' },
   { label: t('components.NetworkTrend.connections'), value: 'tcpConnections' },
 ])
+// 业务流量与主机指标的数据来源不同，说明随来源切换，避免把同机节点的重复值相加。
+const metricScope = computed(() => activeMetric.value === 'traffic'
+  ? {
+      label: t('components.NetworkTrend.trafficScope'),
+      tooltip: t('components.NetworkTrend.trafficScopeTooltip'),
+    }
+  : {
+      label: t('components.NetworkTrend.systemScope'),
+      tooltip: t('components.NetworkTrend.systemScopeTooltip'),
+    })
 const metricKinds = computed<NetworkSeriesKind[]>(() => ({
   traffic: ['trafficUp', 'trafficDown'],
   quality: ['packetLoss', 'interfaceErrors'],
