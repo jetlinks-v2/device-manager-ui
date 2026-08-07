@@ -3037,6 +3037,8 @@
     "components.MonitorTrend.lastWeek": "Last 7 days",
     "components.NetworkTrend.title": "Network trends",
     "components.NetworkTrend.traffic": "Traffic",
+    "components.NetworkTrend.trafficScope": "Traffic info",
+    "components.NetworkTrend.trafficScopeTooltip": "This metric shows application data handled by platform network components during device access: upstream is data received by the platform, and downstream is data sent by the platform. It reflects device communication activity, not actual server NIC traffic or network bandwidth utilization.",
     "components.NetworkTrend.quality": "Network quality",
     "components.NetworkTrend.retransmission": "TCP retransmission",
     "components.NetworkTrend.connections": "TCP connections",

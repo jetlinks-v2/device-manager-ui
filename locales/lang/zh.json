@@ -3037,6 +3037,8 @@
     "components.MonitorTrend.lastWeek": "近一周",
     "components.NetworkTrend.title": "网络趋势",
     "components.NetworkTrend.traffic": "流量",
+    "components.NetworkTrend.trafficScope": "流量说明",
+    "components.NetworkTrend.trafficScopeTooltip": "这里统计平台网络组件在设备接入过程中处理的业务数据量：上行为平台接收，下行为平台发送。它反映设备通信活跃度，不代表服务器网卡的实际流量或网络带宽占用。",
     "components.NetworkTrend.quality": "网络质量",
     "components.NetworkTrend.retransmission": "TCP重传",
     "components.NetworkTrend.connections": "TCP连接",

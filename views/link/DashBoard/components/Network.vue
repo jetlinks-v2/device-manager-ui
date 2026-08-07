@@ -5,6 +5,15 @@
         <div class="network-trend__title-group">
           <h3>{{ $t('components.NetworkTrend.title') }}</h3>
           <a-segmented v-model:value="activeMetric" size="small" :options="metricOptions" />
+          <a-tooltip
+            v-if="activeMetric === 'traffic'"
+            :title="$t('components.NetworkTrend.trafficScopeTooltip')"
+          >
+            <span class="network-trend__scope">
+              <AIcon type="InfoCircleOutlined" />
+              {{ $t('components.NetworkTrend.trafficScope') }}
+            </span>
+          </a-tooltip>
         </div>
         <div class="network-trend__actions">
           <a-range-picker
@@ -242,6 +251,15 @@ watch(() => props.refreshVersion, refresh)
 .network-trend__actions,
 .network-trend__legend { gap: var(--space-3, 0.75rem); }
 .network-trend__title-group h3 { margin: 0; }
+.network-trend__scope {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 0.75rem;
+  white-space: nowrap;
+  cursor: help;
+}
 .network-trend__legend { margin-top: var(--space-3, 0.75rem); color: rgba(0, 0, 0, 0.45); }
 .network-trend__legend span { gap: 0.375rem; }
 .network-trend__line { width: 1.25rem; border-top: 2px solid currentColor; }
