@@ -71,31 +71,44 @@ export const networkParams = (val: any) => {
         _time = '1M';
         format = 'yyyy-MM';
     }
-    return [
-        {
+    return ['bytesRead', 'bytesSent'].map(type => ({
             dashboard: 'systemMonitor',
             object: 'network',
             measurement: 'traffic',
             dimension: 'agg',
-            group: 'network-group',
+            group: type,
             params: {
-                type: val.type,
+                type,
                 interval: _time,
                 from: Number(val.time.time[0]),
                 to: Number(val.time.time[1]),
                 limit: _limit,
                 format: format,
             },
-        },
-    ];
+        }));
 };
-export const defaultParamsData = (group: any, val: any) => [
+export const defaultParamsData = (group: string, val: any) => [
     {
         dashboard: 'systemMonitor',
         object: 'stats',
         measurement: 'info',
         dimension: 'history',
-        group,
+        group: group.startsWith('cpu') ? 'cpu' : 'memory',
+        params: {
+            from: dayjs(val.time[0]).valueOf(),
+            to: dayjs(val.time[1]).valueOf(),
+            format: 'YYYY-MM-dd HH:mm',
+        },
+    },
+];
+
+export const networkHistoryParams = (val: any) => [
+    {
+        dashboard: 'systemMonitor',
+        object: 'stats',
+        measurement: 'info',
+        dimension: 'history',
+        group: 'network',
         params: {
             from: dayjs(val.time[0]).valueOf(),
             to: dayjs(val.time[1]).valueOf(),
