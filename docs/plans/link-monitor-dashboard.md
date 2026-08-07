@@ -68,5 +68,5 @@
 - 磁盘 / 网络宽度补充验证：磁盘由 11.5rem 增至 12.5rem（200px），网络由 15rem 收敛到 14rem（224px），整表总宽保持 74rem。磁盘读写使用通用按内容分配模式，两个标签保持完整并分别贴合各自数值，读指标左对齐、写指标右对齐；磁盘 / 网络单元格 `clientWidth / scrollWidth` 一致，列表行高保持约 70.3px。`test:agent-tools` 33/33、生产构建、差异格式和 Vue 文件 300 行门禁通过。
 - 节点健康补充验证：健康状态采用集中阈值和可解释证据，不把 TCP 连接数等无容量基线的 gauge 直接判为异常。CPU、磁盘、网络所有可选诊断均先检查对应 `*Available`；counter 只使用有效相邻快照，时间 / counter 回退和能力变为不可用会清除旧证据，同一采集时间保持上次有效结论。CPU 临界温度不可用时，Tooltip 展示实际采用的默认参考阈值，不渲染 `临界 --`；后端提供临界温度时则展示按其比例计算的参考阈值。正常节点不渲染摘要，当前 5 行浏览器实测均为约 70.3px；异常测试覆盖 IO wait、磁盘忙碌、conntrack 容量、cgroup 限流、温度阈值、块设备和 SMART 失败。
 - 网络历史补充验证：`test:agent-tools` 42/42 与生产构建通过；覆盖流量响应归一化、丢包 / 网卡错误 / TCP 重传 counter 派生、TCP established gauge，以及 availability 不可用、首点、时间未推进、零分母和 counter 回退断点。浏览器实测四类指标均可切换并渲染，network 聚焦始终保持 `已选 1/7`，未被仅含 `iot-service:8200` 的业务流量响应或全节点系统历史响应反向改写；1327px 视口下标题、指标切换、时间范围与刷新保持单行，section / header / action 的 `clientWidth` 与 `scrollWidth` 一致，控制台无错误。
-- Git commit：`3d62b711e3128e43b85c78d76fd171566c426ce5`
+- Git commits：`3d62b711e3128e43b85c78d76fd171566c426ce5`、`3caeea988faffd0b57568cdfa872896fe389897e`
 - Pull Request：`https://github.com/jetlinks-v2/device-manager-ui/pull/230`
