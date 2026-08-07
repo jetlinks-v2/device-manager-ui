@@ -1,9 +1,11 @@
 import i18n from '@jetlinks-web-core/locales'
 import type {
+  CapabilityOption,
   DataCapabilityProvider,
   DataSourceDefinition,
   DataSourceRequest,
   DataSourceResult,
+  OptionSourceDefinition,
   RuntimeContext,
 } from '@jetlinks-web-core/data-capability'
 import { defer, map } from 'rxjs'
@@ -24,6 +26,7 @@ const PROVIDER_ID = 'device-manager:group-monitoring'
 const GROUP_LIST_SOURCE_ID = 'device.group.list'
 const GROUP_SUMMARY_BATCH_SOURCE_ID = 'device.group.summary.batch'
 const GROUP_DEVICES_PAGE_SOURCE_ID = 'device.group.devices.page'
+const GROUP_OPTION_SOURCE_ID = 'device.group.options'
 
 const DEFAULT_GROUP_LIMIT = 5
 const MAX_GROUP_LIMIT = 100
@@ -34,8 +37,61 @@ const MAX_PAGE_SIZE = 200
 
 const owner = { moduleId: MODULE_ID, providerId: PROVIDER_ID }
 const t = (key: string) => String(i18n.global.t(key))
-const objectOutputSchema = { type: 'object' as const }
-const arrayOutputSchema = { type: 'array' as const, items: objectOutputSchema }
+const textOutput = (key: string) => ({
+  type: 'string' as const,
+  title: t(`DeviceGroupDataCapability.output.${key}`),
+})
+const numberOutput = (key: string) => ({
+  type: 'number' as const,
+  title: t(`DeviceGroupDataCapability.output.${key}`),
+})
+const integerOutput = (key: string, format?: string) => ({
+  type: 'integer' as const,
+  title: t(`DeviceGroupDataCapability.output.${key}`),
+  ...(format ? { format } : {}),
+})
+const groupOptionRef = {
+  type: 'provider' as const,
+  capability: { capabilityId: GROUP_OPTION_SOURCE_ID, version: 1 },
+}
+const groupListOutputSchema = {
+  type: 'array' as const,
+  items: {
+    type: 'object' as const,
+    properties: {
+      groupId: textOutput('groupId'),
+      groupName: textOutput('groupName'),
+    },
+  },
+}
+const groupSummaryOutputSchema = {
+  type: 'array' as const,
+  items: {
+    type: 'object' as const,
+    properties: {
+      groupId: textOutput('groupId'),
+      total: integerOutput('total'),
+      online: integerOutput('online'),
+      offline: integerOutput('offline'),
+      notActive: integerOutput('notActive'),
+      onlineRate: numberOutput('onlineRate'),
+    },
+  },
+}
+const groupDevicesOutputSchema = {
+  type: 'array' as const,
+  items: {
+    type: 'object' as const,
+    properties: {
+      deviceId: textOutput('deviceId'),
+      identifier: textOutput('identifier'),
+      deviceName: textOutput('deviceName'),
+      productName: textOutput('productName'),
+      state: textOutput('state'),
+      lastReportTime: integerOutput('lastReportTime', 'timestamp-ms'),
+    },
+  },
+}
 
 const groupListSource: DataSourceDefinition = {
   id: GROUP_LIST_SOURCE_ID,
@@ -50,10 +106,14 @@ const groupListSource: DataSourceDefinition = {
   querySchema: {
     type: 'object',
     properties: {
-      limit: { type: 'integer', default: DEFAULT_GROUP_LIMIT },
+      limit: {
+        type: 'integer',
+        default: DEFAULT_GROUP_LIMIT,
+        title: t('DeviceGroupDataCapability.query.limit'),
+      },
     },
   },
-  outputSchema: arrayOutputSchema,
+  outputSchema: groupListOutputSchema,
   create: () => ({
     query<T = unknown>(request: DataSourceRequest, context: RuntimeContext) {
       return defer(() => loadDeviceGroups(
@@ -82,10 +142,11 @@ const groupSummaryBatchSource: DataSourceDefinition = {
         type: 'array',
         items: { type: 'string' },
         title: t('DeviceGroupDataCapability.query.groupIds'),
+        optionSource: groupOptionRef,
       },
     },
   },
-  outputSchema: arrayOutputSchema,
+  outputSchema: groupSummaryOutputSchema,
   create: () => ({
     query<T = unknown>(request: DataSourceRequest, context: RuntimeContext) {
       return defer(() => loadDeviceGroupSummaries(
@@ -110,12 +171,14 @@ const groupDevicesPageSource: DataSourceDefinition = {
     type: 'object',
     required: ['groupId'],
     properties: {
-      groupId: { type: 'string', title: t('DeviceGroupDataCapability.query.groupId') },
-      pageIndex: { type: 'integer', default: DEFAULT_PAGE_INDEX },
-      pageSize: { type: 'integer', default: DEFAULT_PAGE_SIZE },
+      groupId: {
+        type: 'string',
+        title: t('DeviceGroupDataCapability.query.groupId'),
+        optionSource: groupOptionRef,
+      },
     },
   },
-  outputSchema: arrayOutputSchema,
+  outputSchema: groupDevicesOutputSchema,
   create: () => ({
     query<T = unknown>(request: DataSourceRequest, context: RuntimeContext) {
       return defer(() => loadDeviceGroupDevices(
@@ -134,7 +197,26 @@ function toGroupListQuery(request: DataSourceRequest): DeviceGroupListQuery {
       1,
       MAX_GROUP_LIMIT,
     ),
+    keyword: optionalText(request.query?.keyword),
   }
+}
+
+const groupOptionSource: OptionSourceDefinition = {
+  id: GROUP_OPTION_SOURCE_ID,
+  kind: 'option-source',
+  version: 1,
+  name: t('DeviceGroupDataCapability.options.name'),
+  owner,
+  query: async (request): Promise<{ options: CapabilityOption[]; total: number }> => {
+    const groups = await loadDeviceGroups({
+      limit: MAX_GROUP_LIMIT,
+      keyword: optionalText(request.keyword),
+    }, request.signal)
+    return {
+      options: groups.map(group => ({ label: group.groupName, value: group.groupId })),
+      total: groups.length,
+    }
+  },
 }
 
 function toGroupSummaryBatchQuery(
@@ -214,9 +296,11 @@ const deviceGroupMonitoringProvider: DataCapabilityProvider = {
     GROUP_LIST_SOURCE_ID,
     GROUP_SUMMARY_BATCH_SOURCE_ID,
     GROUP_DEVICES_PAGE_SOURCE_ID,
+    GROUP_OPTION_SOURCE_ID,
   ],
   load: () => ({
     sources: [groupListSource, groupSummaryBatchSource, groupDevicesPageSource],
+    optionSources: [groupOptionSource],
   }),
 }
 

@@ -67,6 +67,7 @@ export default {
         'device.group.list',
         'device.group.summary.batch',
         'device.group.devices.page',
+        'device.group.options',
       ],
       loader: () => import('./dataCapabilities/deviceGroupMonitoringProvider'),
     },

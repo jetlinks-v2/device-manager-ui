@@ -34,7 +34,9 @@ export async function loadDeviceGroups(
     pageIndex: 0,
     pageSize: query.limit,
     sorts: [{ name: 'sortIndex', order: 'asc' }],
-    terms: [],
+    terms: query.keyword
+      ? [{ column: 'name', termType: 'like', value: `%${query.keyword}%` }]
+      : [],
   }, { signal })
   assertResponseSuccess(response)
 

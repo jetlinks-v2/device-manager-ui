@@ -4,6 +4,7 @@ export type DeviceGroupRuntimeState = 'online' | 'offline' | 'notActive'
 
 export interface DeviceGroupListQuery {
   limit: number
+  keyword?: string
 }
 
 export interface DeviceGroupRow {

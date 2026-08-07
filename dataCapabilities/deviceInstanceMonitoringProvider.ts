@@ -37,8 +37,63 @@ const SCOPES: DeviceMonitoringScope[] = ['iot']
 
 const owner = { moduleId: MODULE_ID, providerId: PROVIDER_ID }
 const t = (key: string) => String(i18n.global.t(key))
-const objectOutputSchema = { type: 'object' as const }
-const arrayOutputSchema = { type: 'array' as const, items: objectOutputSchema }
+const textOutput = (key: string) => ({
+  type: 'string' as const,
+  title: t(`DeviceInstanceDataCapability.output.${key}`),
+})
+const integerOutput = (key: string, format?: string) => ({
+  type: 'integer' as const,
+  title: t(`DeviceInstanceDataCapability.output.${key}`),
+  ...(format ? { format } : {}),
+})
+const stateOptions = {
+  type: 'static' as const,
+  options: STATES.map(value => ({
+    label: t(`DeviceDataCapability.state.${value}`),
+    value,
+  })),
+}
+const stateOutputSchema = {
+  type: 'array' as const,
+  items: {
+    type: 'object' as const,
+    properties: {
+      deviceId: textOutput('deviceId'),
+      state: textOutput('state'),
+      stateText: textOutput('stateText'),
+    },
+  },
+}
+const detailOutputSchema = {
+  type: 'object' as const,
+  properties: {
+    deviceId: textOutput('deviceId'),
+    deviceName: textOutput('deviceName'),
+    state: textOutput('state'),
+    stateText: textOutput('stateText'),
+    productName: textOutput('productName'),
+    deviceType: textOutput('deviceType'),
+    organizationName: textOutput('organizationName'),
+    accessMode: textOutput('accessMode'),
+    address: textOutput('address'),
+    description: textOutput('description'),
+    lastActiveTime: integerOutput('lastActiveTime', 'timestamp-ms'),
+  },
+}
+const detailPageOutputSchema = {
+  type: 'array' as const,
+  items: {
+    type: 'object' as const,
+    properties: {
+      deviceId: textOutput('deviceId'),
+      deviceName: textOutput('deviceName'),
+      productName: textOutput('productName'),
+      state: textOutput('state'),
+      area: textOutput('area'),
+      lastActiveTime: integerOutput('lastActiveTime', 'timestamp-ms'),
+    },
+  },
+}
 
 const stateBatchSource: DataSourceDefinition = {
   id: STATE_BATCH_SOURCE_ID,
@@ -56,12 +111,13 @@ const stateBatchSource: DataSourceDefinition = {
     properties: {
       deviceIds: {
         type: 'array',
+        format: 'device-ids',
         items: { type: 'string' },
         title: t('DeviceInstanceDataCapability.query.deviceIds'),
       },
     },
   },
-  outputSchema: arrayOutputSchema,
+  outputSchema: stateOutputSchema,
   create: () => ({
     query<T = unknown>(request: DataSourceRequest, context: RuntimeContext) {
       return defer(() => loadDeviceStates(
@@ -88,11 +144,12 @@ const detailSource: DataSourceDefinition = {
     properties: {
       deviceId: {
         type: 'string',
+        format: 'device-id',
         title: t('DeviceInstanceDataCapability.query.deviceId'),
       },
     },
   },
-  outputSchema: objectOutputSchema,
+  outputSchema: detailOutputSchema,
   create: () => ({
     query<T = unknown>(request: DataSourceRequest, context: RuntimeContext) {
       return defer(() => loadDeviceDetail(
@@ -116,17 +173,15 @@ const detailPageSource: DataSourceDefinition = {
   querySchema: {
     type: 'object',
     properties: {
-      pageIndex: { type: 'integer', default: DEFAULT_PAGE_INDEX },
-      pageSize: { type: 'integer', default: DEFAULT_PAGE_SIZE },
-      state: { type: 'string', enum: STATES },
-      scope: {
+      state: {
         type: 'string',
-        enum: SCOPES,
-        title: t('DeviceDataCapability.query.scope'),
+        enum: STATES,
+        title: t('DeviceDataCapability.query.state'),
+        optionSource: stateOptions,
       },
     },
   },
-  outputSchema: arrayOutputSchema,
+  outputSchema: detailPageOutputSchema,
   create: () => ({
     query<T = unknown>(request: DataSourceRequest, context: RuntimeContext) {
       return defer(() => loadDeviceDetailPage(

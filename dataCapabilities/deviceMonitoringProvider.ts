@@ -40,8 +40,80 @@ const SCOPES: DeviceMonitoringScope[] = ['iot']
 
 const owner = { moduleId: MODULE_ID, providerId: PROVIDER_ID }
 const t = (key: string) => String(i18n.global.t(key))
-const objectOutputSchema = { type: 'object' as const }
-const arrayOutputSchema = { type: 'array' as const, items: objectOutputSchema }
+const textOutput = (key: string) => ({
+  type: 'string' as const,
+  title: t(`DeviceDataCapability.output.${key}`),
+})
+const numberOutput = (key: string) => ({
+  type: 'number' as const,
+  title: t(`DeviceDataCapability.output.${key}`),
+})
+const integerOutput = (key: string, format?: string) => ({
+  type: 'integer' as const,
+  title: t(`DeviceDataCapability.output.${key}`),
+  ...(format ? { format } : {}),
+})
+const stateOptions = {
+  type: 'static' as const,
+  options: STATES.map(value => ({
+    label: t(`DeviceDataCapability.state.${value}`),
+    value,
+  })),
+}
+const summaryOutputSchema = {
+  type: 'object' as const,
+  properties: {
+    total: integerOutput('total'),
+    online: integerOutput('online'),
+    offline: integerOutput('offline'),
+    notActive: integerOutput('notActive'),
+    other: integerOutput('other'),
+    onlineRate: numberOutput('onlineRate'),
+    healthyOnline: integerOutput('healthyOnline'),
+    abnormalOnline: integerOutput('abnormalOnline'),
+    sampleTime: integerOutput('sampleTime', 'timestamp-ms'),
+  },
+}
+const locationOutputSchema = {
+  type: 'array' as const,
+  items: {
+    type: 'object' as const,
+    properties: {
+      deviceId: textOutput('deviceId'),
+      deviceName: textOutput('deviceName'),
+      longitude: numberOutput('longitude'),
+      latitude: numberOutput('latitude'),
+      state: textOutput('state'),
+      stateText: textOutput('stateText'),
+      productId: textOutput('productId'),
+      productName: textOutput('productName'),
+      lastOnlineTime: integerOutput('lastOnlineTime', 'timestamp-ms'),
+    },
+  },
+}
+const runtimeTrendOutputSchema = {
+  type: 'array' as const,
+  items: {
+    type: 'object' as const,
+    properties: {
+      timestamp: integerOutput('timestamp', 'timestamp-ms'),
+      onlineRate: numberOutput('onlineRate'),
+      messageCount: integerOutput('messageCount'),
+    },
+  },
+}
+const categoryOutputSchema = {
+  type: 'array' as const,
+  items: {
+    type: 'object' as const,
+    properties: {
+      categoryId: textOutput('categoryId'),
+      categoryName: textOutput('categoryName'),
+      count: integerOutput('count'),
+      rate: numberOutput('rate'),
+    },
+  },
+}
 
 const summarySource: DataSourceDefinition = {
   id: SUMMARY_SOURCE_ID,
@@ -57,19 +129,15 @@ const summarySource: DataSourceDefinition = {
   querySchema: {
     type: 'object',
     properties: {
-      scope: {
-        type: 'string',
-        enum: SCOPES,
-        title: t('DeviceDataCapability.query.scope'),
-      },
       deviceIds: {
         type: 'array',
+        format: 'device-ids',
         items: { type: 'string' },
         title: t('DeviceDataCapability.query.deviceIds'),
       },
     },
   },
-  outputSchema: objectOutputSchema,
+  outputSchema: summaryOutputSchema,
   create: () => ({
     query<T = unknown>(request: DataSourceRequest, context: RuntimeContext) {
       return defer(() => loadDeviceSummary(
@@ -94,17 +162,15 @@ const locationSource: DataSourceDefinition = {
   querySchema: {
     type: 'object',
     properties: {
-      pageIndex: { type: 'integer', default: DEFAULT_PAGE_INDEX },
-      pageSize: { type: 'integer', default: DEFAULT_PAGE_SIZE },
-      state: { type: 'string', enum: STATES },
-      scope: {
+      state: {
         type: 'string',
-        enum: SCOPES,
-        title: t('DeviceDataCapability.query.scope'),
+        enum: STATES,
+        title: t('DeviceDataCapability.query.state'),
+        optionSource: stateOptions,
       },
     },
   },
-  outputSchema: arrayOutputSchema,
+  outputSchema: locationOutputSchema,
   create: () => ({
     query<T = unknown>(request: DataSourceRequest, context: RuntimeContext) {
       return defer(() => loadDeviceLocationList(
@@ -129,16 +195,19 @@ const runtimeTrendSource: DataSourceDefinition = {
   querySchema: {
     type: 'object',
     properties: {
-      startTime: { type: 'integer', title: t('DeviceDataCapability.query.startTime') },
-      endTime: { type: 'integer', title: t('DeviceDataCapability.query.endTime') },
-      scope: {
-        type: 'string',
-        enum: SCOPES,
-        title: t('DeviceDataCapability.query.scope'),
+      startTime: {
+        type: 'integer',
+        format: 'timestamp-ms',
+        title: t('DeviceDataCapability.query.startTime'),
+      },
+      endTime: {
+        type: 'integer',
+        format: 'timestamp-ms',
+        title: t('DeviceDataCapability.query.endTime'),
       },
     },
   },
-  outputSchema: arrayOutputSchema,
+  outputSchema: runtimeTrendOutputSchema,
   create: () => ({
     query<T = unknown>(request: DataSourceRequest, context: RuntimeContext) {
       return defer(() => loadDeviceRuntimeTrend(
@@ -163,10 +232,14 @@ const categorySource: DataSourceDefinition = {
   querySchema: {
     type: 'object',
     properties: {
-      limit: { type: 'integer', default: DEFAULT_CATEGORY_LIMIT },
+      limit: {
+        type: 'integer',
+        default: DEFAULT_CATEGORY_LIMIT,
+        title: t('DeviceDataCapability.query.limit'),
+      },
     },
   },
-  outputSchema: arrayOutputSchema,
+  outputSchema: categoryOutputSchema,
   create: () => ({
     query<T = unknown>(request: DataSourceRequest, context: RuntimeContext) {
       return defer(() => loadDeviceCategoryDistribution(
