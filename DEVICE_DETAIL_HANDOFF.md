@@ -74,6 +74,18 @@
   - `查看详情` 已升级为带时间过滤、列表、图表的详情弹层
   - 目前图表与历史数据仍以 `iot-ui` 本地轻量数据生成逻辑为主，尚未切到旧版真实属性接口链
 
+- [IotDeviceDataTableTab.vue](views/device/list/components/device-detail/IotDeviceDataTableTab.vue)
+  - 当前修复目标：设备数据页属性卡片在接收实时上报后，按属性标识映射到最新 `props.properties`，避免 `j-pro-table` CARD 模式沿用 request 返回的旧对象导致界面不刷新。
+  - 影响范围与 owning module：仅 `ui/modules/device-manager-ui` 设备详情前端；不改 WebSocket topic、后端接口、数据详情弹层查询或主动快照查询策略。
+  - 验证方式：运行 `pnpm -F jetlinks-web-core build -- --module-name device-manager-ui`，并在页面复测设备属性上报后当前页卡片值、更新时间和详情入口属性对象是否随之更新。
+  - 验证结果：`pnpm -F jetlinks-web-core build -- --module-name device-manager-ui` 通过；构建输出仍包含既有 CSS `//background` 注释与大 chunk 警告。
+
+- [IotDevicePropertyDetailModal.vue](views/device/list/components/device-detail/IotDevicePropertyDetailModal.vue)
+  - 当前修复目标：属性详情弹层每次打开或切换属性 / 设备时，重新计算默认 `今天` 时间范围，避免关闭后再次打开沿用上一次固定的结束时间。
+  - 影响范围与 owning module：仅 `ui/modules/device-manager-ui` 设备详情前端；不改属性卡片实时值刷新、历史数据接口、图表组件或后端查询参数契约。
+  - 验证方式：运行 `pnpm -F jetlinks-web-core build -- --module-name device-manager-ui`，并在页面复测关闭后重新打开属性详情时结束时间是否更新为当前时间。
+  - 验证结果：`pnpm -F jetlinks-web-core build -- --module-name device-manager-ui` 通过；构建输出仍包含既有 CSS `//background` 注释与大 chunk 警告。
+
 - [IotDeviceEventGroupsTab.vue](views/device/list/components/device-detail/IotDeviceEventGroupsTab.vue)
   - 事件按分组展示的轻量实现
   - 目前是按 `RealtimeEventRow.id` 做分组分页骨架

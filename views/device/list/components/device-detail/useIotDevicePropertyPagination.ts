@@ -11,6 +11,7 @@ export function useIotDevicePropertyPagination(
   propertyGroup: Ref<string>,
 ) {
   let firstRequest = true
+  const lastPageParams = ref({ pageIndex: 0, pageSize: DEFAULT_PAGE_SIZE })
   const visiblePropertyCards = ref<RealtimePropertyRow[]>([])
   const filteredPropertyCards = computed(() => properties.value.filter((item) => {
     const matchesGroup = propertyGroup.value === '__all__' || item.groupId === propertyGroup.value
@@ -52,13 +53,22 @@ export function useIotDevicePropertyPagination(
     showLessItems: true,
   }
 
-  const requestPropertyCards = async (params: Record<string, unknown>) => {
+  function getPageRows(params = lastPageParams.value) {
     const pageIndex = Number(params.pageIndex ?? 0)
     const requestedPageSize = Number(params.pageSize ?? DEFAULT_PAGE_SIZE)
     const pageSize = firstRequest && requestedPageSize === 12 ? DEFAULT_PAGE_SIZE : requestedPageSize
     const start = pageIndex * pageSize
-    const data = filteredPropertyCards.value.slice(start, start + pageSize)
+    return {
+      data: filteredPropertyCards.value.slice(start, start + pageSize),
+      pageIndex,
+      pageSize,
+    }
+  }
+
+  const requestPropertyCards = async (params: Record<string, unknown>) => {
+    const { data, pageIndex, pageSize } = getPageRows(params)
     firstRequest = false
+    lastPageParams.value = { pageIndex, pageSize }
     visiblePropertyCards.value = data
 
     return {
@@ -71,6 +81,14 @@ export function useIotDevicePropertyPagination(
       },
     }
   }
+
+  watch(
+    filteredPropertyCards,
+    () => {
+      // CARD 模式会保留 request 返回的当前页数据；实时值变更时只替换当前页切片，避免跳回第一页。
+      visiblePropertyCards.value = getPageRows().data
+    },
+  )
 
   function propertyCardIndex(item: RealtimePropertyRow) {
     const index = filteredPropertyCards.value.findIndex((property) => property.id === item.id)
