@@ -145,7 +145,7 @@
             ]
           },
           {
-            "permission": "system-trace",
+            "permission": "system-monitor",
             "actions": [
               "query"
             ]
