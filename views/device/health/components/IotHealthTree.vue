@@ -230,72 +230,7 @@ function handleKeywordSearch(value: string) {
   padding: 0 1rem 1rem;
 }
 
-.iot-health-tree__body :deep(.ant-tree) {
-  background: transparent;
-}
-
-.iot-health-tree__body :deep(.ant-tree-indent-unit) {
-  width: 1rem;
-}
-
-.iot-health-tree__body :deep(.ant-tree-treenode) {
-  align-items: center;
-  min-height: 2.25rem;
-  padding: 0;
-}
-
-.iot-health-tree__body :deep(.ant-tree-switcher) {
-  width: 1rem;
-  height: 2.25rem;
-  color: var(--jet-theme-text-disabled);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.iot-health-tree__body :deep(.ant-tree-node-content-wrapper) {
-  position: relative;
-  display: flex;
-  flex: 1;
-  align-items: center;
-  min-width: 0;
-  min-height: 2.25rem;
-  padding: 0 var(--space-2);
-  border-radius: 0.5rem;
-}
-
-.iot-health-tree__body :deep(.ant-tree-node-content-wrapper.ant-tree-node-selected) {
-	border-left: 2px solid var(--jet-theme-primary);
-  background: linear-gradient(90deg, var(--accent-soft) 0%, rgba(255, 255, 255, 0.10) 100%);
-}
-
-.iot-health-tree__body :deep(.ant-tree-node-content-wrapper.ant-tree-node-selected::before) {
-  position: absolute;
-  top: 0.375rem;
-  bottom: 0.375rem;
-  left: 0;
-  width: 0.125rem;
-  background: var(--accent-soft);
-  border-radius: 0 0.125rem 0.125rem 0;
-  content: '';
-}
-
-.iot-health-tree__body :deep(.ant-tree-node-content-wrapper.ant-tree-node-selected .iot-health-tree-title__name) {
-  color: var(--jet-theme-primary);
-  font-weight: var(--layout-menu-item-active-font-weight);
-}
-
-.iot-health-tree__body :deep(.ant-tree-title) {
-  display: block;
-  flex: 1;
-  min-width: 0;
-}
-
 .iot-health-tree__empty {
   padding: var(--space-6) 0;
-}
-
-:deep(.ant-tree-switcher-noop) {
-  display: none !important;
 }
 </style>
