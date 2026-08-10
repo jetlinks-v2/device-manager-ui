@@ -142,6 +142,7 @@ const groupSummaryBatchSource: DataSourceDefinition = {
         type: 'array',
         items: { type: 'string' },
         title: t('DeviceGroupDataCapability.query.groupIds'),
+        description: t('DeviceGroupDataCapability.query.groupIdsDescription'),
         optionSource: groupOptionRef,
       },
     },
@@ -174,6 +175,7 @@ const groupDevicesPageSource: DataSourceDefinition = {
       groupId: {
         type: 'string',
         title: t('DeviceGroupDataCapability.query.groupId'),
+        description: t('DeviceGroupDataCapability.query.groupIdDescription'),
         optionSource: groupOptionRef,
       },
     },

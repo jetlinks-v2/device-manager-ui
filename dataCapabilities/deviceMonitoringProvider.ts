@@ -134,6 +134,7 @@ const summarySource: DataSourceDefinition = {
         format: 'device-ids',
         items: { type: 'string' },
         title: t('DeviceDataCapability.query.deviceIds'),
+        description: t('DeviceDataCapability.query.deviceIdsDescription'),
       },
     },
   },
