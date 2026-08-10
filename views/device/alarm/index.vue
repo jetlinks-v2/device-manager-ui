@@ -41,9 +41,12 @@
         >
           <template #name="record">
             <span class="device-alarm-page__name">
-              <span class="device-alarm-page__name-icon" aria-hidden="true">
-                <span class="device-alarm-page__name-initial">{{ alarmNameInitial(record) }}</span>
-              </span>
+              <IconBadge
+                :size="32"
+                :inner-size="24"
+                :text="alarmNameInitial(record)"
+                aria-hidden="true"
+              />
               <span class="device-alarm-page__name-text" :title="toAlarmRow(record).name">
                 {{ toAlarmRow(record).name || '--' }}
               </span>
@@ -130,6 +133,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import ConditionFilter from '@jetlinks-web-core/components/ConditionFilter'
+import IconBadge from '@jetlinks-web-core/components/IconBadge/index.vue'
 import { PageHeader } from '@jetlinks-web-core/components'
 import DeviceAlarmEditorModal from './components/DeviceAlarmEditorModal.vue'
 import DeviceAlarmRestoreButton from './components/DeviceAlarmRestoreButton.vue'
@@ -221,7 +225,6 @@ const notificationStatus = (record: Record<string, any>) => {
 	flex-direction: column;
   min-width: 0;
 	background: color-mix(in srgb, var(--jet-theme-bg-container) 70%, transparent);
-	padding: var(--space-4);
 	border-radius: var(--r-4);
 }
 .device-alarm-page__filter {
@@ -245,29 +248,6 @@ const notificationStatus = (record: Record<string, any>) => {
   gap: var(--space-3);
   min-width: 0;
   max-width: 100%;
-}
-
-.device-alarm-page__name-icon {
-  position: relative;
-  display: inline-grid;
-  flex: 0 0 2rem;
-  place-items: center;
-  width: 2rem;
-  height: 2rem;
-  overflow: hidden;
-  color: #6b9cff;
-  font-size: 20px;
-  background: linear-gradient(180deg, var(--jet-theme-primary) 0%, var(--accent-soft) 100%);
-  border: 1px solid #f3f7fc;
-  border-radius: 50%;
-}
-
-.device-alarm-page__name-initial {
-  position: absolute;
-  color: #fff;
-  font-size: 16px;
-  font-weight: 600;
-  line-height: 22px;
 }
 
 .device-alarm-page__name-text {

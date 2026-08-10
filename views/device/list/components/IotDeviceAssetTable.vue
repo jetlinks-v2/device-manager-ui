@@ -94,20 +94,13 @@
 
       <template #device="record">
         <div class="iot-device-list__device-cell" @click="onDetail(record.id)">
-          <span
-            class="iot-device-list__device-icon"
-            :data-tone="connectionStatusOf(record).tone"
-            :data-image="hasVisibleImage(record)"
-          >
-            <img
-              v-if="hasVisibleImage(record)"
-              :src="record.imageUrl"
-              :alt="$t('IotDeviceList.table.deviceImageAlt', { name: record.name })"
-              loading="lazy"
-              @error="markImageFailed(record.id)"
-            >
-            <AIcon v-else :type="deviceIconType(record)" />
-          </span>
+          <IconBadge
+            :image="record.imageUrl"
+            :icon="deviceIconType(record)"
+            :size="40"
+            :inner-size="32"
+            :alt="$t('IotDeviceList.table.deviceImageAlt', { name: record.name })"
+          />
           <div class="iot-device-list__device-body">
             <div class="iot-device-list__device-name">
               <a-tooltip :title="displayText(record.name)">
@@ -235,6 +228,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import IconBadge from '@jetlinks-web-core/components/IconBadge/index.vue'
 
 import IotDeviceAssetActionPanel from './IotDeviceAssetActionPanel.vue'
 import { useIotDeviceAssetTableColumns } from './useIotDeviceAssetTableColumns'
@@ -273,7 +267,6 @@ const props = defineProps<{
 }>()
 const actionPopoverOpenId = ref('')
 const columns = useIotDeviceAssetTableColumns($t)
-const failedImageIds = ref(new Set<string>())
 const resultSummaryText = computed(() =>
   props.hasActiveFilters
     ? $t('IotDeviceList.toolbar.filteredSummary', { total: props.totalDevices })
@@ -302,14 +295,6 @@ function deviceIconType(device: IotDevice) {
   if (device.deviceTypeValue === 'gateway') return 'GatewayOutlined'
   if (device.deviceTypeValue === 'childrenDevice') return 'ApartmentOutlined'
   return 'ApiOutlined'
-}
-
-function hasVisibleImage(device: IotDevice) {
-  return Boolean(device.imageUrl && !failedImageIds.value.has(device.id))
-}
-
-function markImageFailed(deviceId: string) {
-  failedImageIds.value = new Set([...failedImageIds.value, deviceId])
 }
 
 function displayText(value?: string) {
