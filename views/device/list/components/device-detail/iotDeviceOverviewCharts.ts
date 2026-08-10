@@ -1,5 +1,4 @@
 import i18n from '@jetlinks-web-core/locales'
-import { formatMessageTrendAxisLabel } from './iotDeviceOverviewTime'
 
 const $t = i18n.global.t
 
@@ -37,7 +36,6 @@ export function createMessageTrendOption(labels: string[], series: OverviewTrend
       axisLabel: {
         color: '#7e8da9',
         fontSize: 14,
-        formatter: formatMessageTrendAxisLabel,
       },
     },
     yAxis: {
@@ -57,8 +55,8 @@ export function createMessageTrendOption(labels: string[], series: OverviewTrend
   }
 }
 
-export function createStatCard(key: string, label: string, value: string, unit: string, sub: string, tone: string, values: number[]): OverviewStatCard {
-  return { key, label, value, unit, sub, tone, chartOption: createStatSparkOption(values, tone, key) }
+export function createStatCard(key: string, label: string, value: string, unit: string, sub: string, tone: string, values: number[], labels: string[] = []): OverviewStatCard {
+  return { key, label, value, unit, sub, tone, chartOption: createStatSparkOption(values, tone, key, labels) }
 }
 
 export function formatCount(value: number) {
@@ -105,7 +103,7 @@ function createTrendLine(name: string, data: number[], color: string, withArea: 
   }
 }
 
-function createStatSparkOption(values: number[], tone: string, key: string) {
+function createStatSparkOption(values: number[], tone: string, key: string, labels: string[]) {
   const color = statToneColor(tone)
   return {
     animation: false,
@@ -123,7 +121,7 @@ function createStatSparkOption(values: number[], tone: string, key: string) {
       },
       formatter: (params: unknown) => formatSparkTooltip(params, key, color),
     },
-    xAxis: { type: 'category', show: false, boundaryGap: false, data: values.map((_, index) => `${String(index).padStart(2, '0')}:00`) },
+    xAxis: { type: 'category', show: false, boundaryGap: false, data: values.map((_, index) => labels[index] ?? '') },
     yAxis: { type: 'value', show: false, min: 0 },
     series: [{
       name: '',
