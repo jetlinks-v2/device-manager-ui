@@ -53,7 +53,7 @@ export const networkParams = (val: any) => {
     const year = 365 * days;
 
     if (dt <= (hour + 10)) {
-        format = 'HH:mm';
+        // Keep the date-bearing default so a short range crossing midnight remains unambiguous.
         _time = '1m';
         _limit = 60;
     } else if (dt > hour && dt <= days) {

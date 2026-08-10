@@ -444,9 +444,9 @@ const activeTrendValues = computed(() => {
 const activeTrendPoints = computed(() => {
   const values = activeTrendValues.value
   const max = Math.max(1, ...values)
-  const labels = ['1', '2', '3', '4', '5', '6', '7']
   return values.map((value, index) => ({
-    label: overviewMetrics.messageTrend.value[index]?.label ?? labels[index] ?? `${index + 1}`,
+    // Empty-state points keep the chart shape without inventing a time axis.
+    label: overviewMetrics.messageTrend.value[index]?.label ?? '',
     x: values.length <= 1 ? 34 : 34 + (index / (values.length - 1)) * 460,
     y: 28 + (1 - value / max) * 120,
   }))
@@ -460,9 +460,9 @@ const onlineRateTrendValues = computed(() => {
 const onlineRateTrendPoints = computed(() => {
   const values = onlineRateTrendValues.value
   const max = Math.max(100, ...values)
-  const labels = ['1', '2', '3', '4', '5', '6', '7']
   return values.map((value, index) => ({
-    label: overviewMetrics.onlineRateTrend.value[index]?.label ?? labels[index] ?? `${index + 1}`,
+    // Empty-state points keep the chart shape without inventing a time axis.
+    label: overviewMetrics.onlineRateTrend.value[index]?.label ?? '',
     x: values.length <= 1 ? 34 : 34 + (index / (values.length - 1)) * 460,
     y: 28 + (1 - value / max) * 120,
   }))
@@ -477,7 +477,8 @@ const alarmRecordTrendPoints = computed(() => {
   const values = alarmRecordTrendValues.value
   const max = Math.max(1, ...values)
   return values.map((value, index) => ({
-    label: deviceAlarmOverview.recordTrend.value[index]?.label ?? `${index + 1}`,
+    // Empty-state points keep the chart shape without inventing a time axis.
+    label: deviceAlarmOverview.recordTrend.value[index]?.label ?? '',
     x: values.length <= 1 ? 34 : 34 + (index / (values.length - 1)) * 460,
     y: 28 + (1 - value / max) * 120,
   }))

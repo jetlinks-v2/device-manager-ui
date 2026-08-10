@@ -288,7 +288,7 @@ const resolveMessageQuery = (range: TimeRangePayload) => {
   const month = 30 * day
 
   let time = '1m'
-  let format = 'HH:mm'
+  let format = 'yyyy-MM-dd HH:mm:ss'
   let limit = 60
 
   if (duration > hour && duration <= day) {

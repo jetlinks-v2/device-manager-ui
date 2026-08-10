@@ -710,7 +710,7 @@ const getEcharts = async (data: any) => {
   if (dt <= hour + 10) {
     _time = "1h";
     limit = 24;
-    format = "HH:mm";
+    // Keep the date-bearing default so a short range crossing midnight remains unambiguous.
   } else if (dt > hour && dt <= days) {
     _time = "1h";
     limit = 24;

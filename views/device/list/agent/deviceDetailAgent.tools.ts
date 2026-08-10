@@ -344,7 +344,14 @@ const propertyAggregateTool = (
       ...contract.inputs,
     ],
     inputAlternatives: createIotDevicePropertyAggregateInputAlternatives(contract.inputAlternatives),
-    consumes: [{ name: 'subject-property-id', source: 'EITHER' }],
+    consumes: [{
+      name: 'subject-property-id',
+      type: 'structured-data',
+      mediaType: 'application/json',
+      shape: 'schema.property-ids',
+      required: false,
+      sourcePolicy: 'EITHER',
+    }],
     effect: { kind: 'READ' },
     output: clientToolOutput.aggregateSeries({
       name: 'property-aggregate',

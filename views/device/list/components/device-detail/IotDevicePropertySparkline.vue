@@ -12,6 +12,7 @@
 import dayjs from 'dayjs'
 import { computed, type PropType } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { formatDeviceTrendAxisLabels } from '@device-manager-ui/api/deviceTrend'
 import type { RealtimePropertyRow } from './iotDeviceDetail.types'
 import { splitPropertyValueAndUnit } from './iotDevicePropertyDisplay'
 import type { PropertySparklinePoint } from './useIotDevicePropertySparklineData'
@@ -54,7 +55,10 @@ const chartOption = computed(() => {
     xAxis: {
       type: 'category',
       boundaryGap: displayRows.value.length === 1,
-      data: displayRows.value.map((row) => formatAxisTime(row.time)),
+      data: formatDeviceTrendAxisLabels(
+        displayRows.value.map((row) => row.time),
+        props.timeRange === '7d' ? '1d' : props.timeRange === '1h' ? '1m' : '1h',
+      ),
       axisLabel: {
         color: '#8c9bab',
         fontSize: 10,
@@ -108,12 +112,6 @@ function formatTime(value?: number | string, pattern = 'HH:mm') {
   if (!value) return '--'
   const time = dayjs(value)
   return time.isValid() ? time.format(pattern) : String(value)
-}
-
-function formatAxisTime(value?: number | string) {
-  if (props.timeRange === '7d') return formatTime(value, 'MM-DD')
-  if (props.timeRange === '1h') return formatTime(value, 'HH:mm')
-  return formatTime(value, 'HH:mm')
 }
 
 function formatAxisNumber(value: number) {
