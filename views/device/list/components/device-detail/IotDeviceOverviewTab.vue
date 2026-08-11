@@ -41,17 +41,24 @@
             <span>{{ $t('IotDeviceDetail.overview.thingModelReadonly') }}</span>
           </header>
           <div v-if="snapshotMetrics.length" class="property-snapshot-grid">
-            <div
+            <CardSummary
               v-for="metric in snapshotMetrics"
               :key="metric.id"
               class="property-snapshot"
+              :data="{ title: metric.name }"
               :data-tone="metric.tone"
               @click="openHistory(metric)"
             >
-              <span>{{ metric.name }} <code>{{ metric.identifier }}</code></span>
-              <strong>{{ propertyDisplayValue(metric) }}<em v-if="propertyDisplayUnit(metric)">{{ propertyDisplayUnit(metric) }}</em></strong>
-              <small>{{ displayText(metric.updatedAt) }}</small>
-            </div>
+              <template #title>
+                {{ metric.name }} <code>{{ metric.identifier }}</code>
+              </template>
+              <template #meta>
+                <strong>{{ propertyDisplayValue(metric) }}<em v-if="propertyDisplayUnit(metric)">{{ propertyDisplayUnit(metric) }}</em></strong>
+              </template>
+              <template #footer>
+                <small>{{ displayText(metric.updatedAt) }}</small>
+              </template>
+            </CardSummary>
           </div>
           <CloudEmpty v-else class="overview-empty" :description="$t('IotDeviceDetail.overview.emptyPropertiesHint')" />
         </article>
@@ -95,6 +102,7 @@ import { computed, onMounted, ref, watch, type PropType } from 'vue'
 import dayjs from 'dayjs'
 import { useI18n } from 'vue-i18n'
 
+import { CardSummary } from '@jetlinks-web-core/components'
 import { queryDefaultAlarmLevels } from '@device-manager-ui/views/device/alarm/api'
 import type { AlarmLevelOption } from '@device-manager-ui/views/device/alarm/types'
 import type { DeviceTemplate } from '../../services/device-library/types'
