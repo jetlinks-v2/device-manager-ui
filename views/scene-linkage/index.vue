@@ -152,7 +152,6 @@ onMounted(reload)
 
 .scene-list-table {
 	background: var(--jet-theme-bg-container);
-	padding: var(--space-4);
 	border-radius: var(--jet-theme-radius);
 	display: grid;
 	gap: var(--space-4);

@@ -87,7 +87,7 @@ const {
 
 <style scoped>
 .iot-health {
-  --iot-health-layout-offset: 8.75rem;
+  --iot-health-layout-offset: 10.75rem;
   display: grid;
   min-width: 0;
 }
