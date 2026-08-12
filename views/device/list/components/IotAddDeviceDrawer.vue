@@ -48,8 +48,7 @@
               @add-template="addTemplateToProject"
             />
           </template>
-          <IotDeviceBasicFields v-else-if="currentStep === 1" :form="activeForm" :image-preview-url="activeImagePreviewUrl" :image-file-name="activeImageFileName" :area-tree-data="activeAreaTreeData" :group-select-options="activeGroupSelectOptions" :on-area-change="activeOnAreaChange" :handle-image-before-upload="activeHandleImageBeforeUpload" />
-          <IotAddDeviceConfirmStep v-else :form="form" :selected-product="selectedProduct" :selected-template="selectedTemplate" :group-label="selectedGroupLabel" :mode="createMode" :product-sync-state="libraryProductSyncState" :install-progress="installProgressState" />
+          <IotDeviceBasicFields v-else :form="activeForm" :image-preview-url="activeImagePreviewUrl" :image-file-name="activeImageFileName" :area-tree-data="activeAreaTreeData" :group-select-options="activeGroupSelectOptions" :on-area-change="activeOnAreaChange" :handle-image-before-upload="activeHandleImageBeforeUpload" />
         </template>
       </a-form>
     </section>
@@ -75,7 +74,6 @@ import { Tooltip } from 'ant-design-vue'
 import { useI18n } from 'vue-i18n'
 import { onlyMessage } from '@jetlinks-web/utils'
 import IotAddDeviceCustomStep from './IotAddDeviceCustomStep.vue'
-import IotAddDeviceConfirmStep from './IotAddDeviceConfirmStep.vue'
 import IotAddDeviceLibraryStep from './IotAddDeviceLibraryStep.vue'
 import IotAddDeviceModalFooter from './IotAddDeviceModalFooter.vue'
 import IotAddDeviceModalTitle from './IotAddDeviceModalTitle.vue'
@@ -101,11 +99,11 @@ const { t: $t } = useI18n()
 const currentStep = ref(0)
 const createMode = ref<'library' | 'custom'>('library')
 const libraryStepKey = ref(0)
+const productSyncPrepared = ref(false)
 const stepHelpIcon = resolveComponent('AIcon')
 const createSteps = computed(() => [
   { title: stepTitle($t('IotDeviceList.add.stepLibrary'), $t('IotDeviceList.add.libraryDesc')) },
   { title: $t('IotDeviceList.add.stepConfig') },
-  { title: stepTitle($t('IotDeviceList.add.stepConfirm'), $t('IotDeviceList.add.confirmDesc')) },
 ])
 const addDrawerProps = {
   get open() { return props.open && !isEditMode.value },
@@ -124,12 +122,11 @@ const {
   busy, submitAction, errorMessage, imagePreviewUrl, imageFileName, formRef, form, formRules,
   availableProducts, areaTreeData, groupSelectOptions, libraryProducts, libraryTagGroups,
   libraryTotal, libraryPageIndex, libraryPageSize, libraryProductSyncState, deviceTemplateProducts,
-  selectedProduct, selectedTemplate, updateAndCreateDisabledReason, updateAndCreateBusy,
+  updateAndCreateDisabledReason, updateAndCreateBusy,
   updateAndCreateDisabled, updateAndCreateSubmitText, categoryLabel,
-  installProgressState,
   selectProduct, selectTemplate, onAreaChange, handleImageBeforeUpload, addTemplateToProject,
   loadDeviceLibraryTemplates, loadProducts, loadConfigOptions, loadDeviceTemplates,
-  prepareConfirmStep, onClose, onSubmit, onUpdateAndSubmit,
+  prepareConfirmStep: prepareProductSync, onClose, onSubmit, onUpdateAndSubmit,
 } = useIotAddDeviceDrawer(addDrawerProps, {
   updateOpen: (value) => emit('update:open', value),
   created: (payload) => emit('created', payload),
@@ -155,11 +152,14 @@ const {
 })
 
 const activePrimaryBusy = computed(() =>
-  isEditMode.value ? editBusy.value : submitAction.value === 'create',
+  isEditMode.value
+    ? editBusy.value
+    : submitAction.value === 'create' || libraryProductSyncState.value.checking,
 )
-const activeSubmitDisabled = computed(() =>
-  isEditMode.value ? !props.device : busy.value && submitAction.value !== 'create',
-)
+const activeSubmitDisabled = computed(() => {
+  if (isEditMode.value) return !props.device
+  return busy.value && submitAction.value !== 'create'
+})
 const activeErrorMessage = computed(() => isEditMode.value ? editErrorMessage.value : errorMessage.value)
 const activeForm = computed(() => isEditMode.value ? editForm : form)
 const activeFormRules = computed(() => isEditMode.value ? editFormRules : formRules)
@@ -173,19 +173,15 @@ const activeHandleImageBeforeUpload = computed(() =>
 )
 const showUpdateAndCreate = computed(() =>
   !isEditMode.value
-  && currentStep.value === 2
+  && currentStep.value === 1
   && createMode.value === 'library'
   && libraryProductSyncState.value.installed,
 )
 const activeSubmitText = computed(() => {
   if (isEditMode.value) return editBusy.value ? $t('IotDeviceList.add.saving') : $t('IotDeviceList.add.save')
-  if (currentStep.value < 2) return $t('IotDeviceList.add.next')
+  if (currentStep.value === 0) return $t('IotDeviceList.add.next')
   return busy.value && submitAction.value === 'create' ? $t('IotDeviceList.add.creating') : $t('IotDeviceList.add.confirmCreate')
 })
-
-const selectedGroupLabel = computed(() =>
-  groupSelectOptions.value.find((item) => item.value === form.groupId)?.label ?? '',
-)
 type FormExpose = {
   validate?: () => Promise<unknown>
   clearValidate?: () => void
@@ -233,13 +229,10 @@ function onActiveSubmit() {
     }
     currentStep.value = 1
     void loadConfigOptions()
+    if (createMode.value === 'library') void prepareSecondStep()
     return
   }
-  if (currentStep.value === 1) {
-    void goConfirmStep()
-    return
-  }
-  void onSubmit()
+  void submitSecondStep()
 }
 function switchToCustom() {
   createMode.value = 'custom'
@@ -253,17 +246,24 @@ function handleTemplateOpen(value: boolean) {
   templateOpen.value = value
   if (value) void loadDeviceTemplates()
 }
-async function goConfirmStep() {
+async function prepareSecondStep() {
+  productSyncPrepared.value = false
   try {
-    await formRef.value?.validate?.()
-    if (createMode.value === 'library') {
-      await prepareConfirmStep()
-    }
-    currentStep.value = 2
+    // 第二步直接保存，进入时提前完成模板产品同步检查，避免提交时绕过更新限制。
+    await prepareProductSync()
+    productSyncPrepared.value = true
+    return true
   } catch (error) {
-    // 表单字段错误或安装态检查失败时都停留在当前步骤，由页面错误区承接反馈。
     if (error instanceof Error) errorMessage.value = error.message
+    return false
   }
+}
+async function submitSecondStep() {
+  if (createMode.value === 'library' && !productSyncPrepared.value) {
+    const prepared = await prepareSecondStep()
+    if (!prepared) return
+  }
+  await onSubmit()
 }
 watch(
   () => props.open,
@@ -271,6 +271,7 @@ watch(
     if (!open || isEditMode.value) return
     currentStep.value = 0
     createMode.value = 'library'
+    productSyncPrepared.value = false
     libraryStepKey.value += 1
   },
 )

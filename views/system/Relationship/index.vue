@@ -1,14 +1,10 @@
 <template>
   <j-page-container>
     <div class="relationship-container">
-      <pro-search
-        :columns="columns"
-        target="system-relationship"
-        @search="(params: any) => (queryParams = { ...params })"
-      />
-      <FullPage>
+      <FullPage :fixed="false">
         <j-pro-table
           ref="tableRef"
+          class="pro-table__no-padding"
           :columns="columns"
           :request="getRelationshipList_api"
           mode="TABLE"
@@ -18,15 +14,22 @@
           }"
         >
           <template #headerLeftRender>
-            <j-permission-button
-              type="primary"
-              :hasPermission="`${permission}:add`"
-              @click="table.openDialog(undefined)"
-            >
-              <AIcon type="PlusOutlined" />{{
-                $t("Relationship.index.710824-0")
-              }}
-            </j-permission-button>
+            <a-flex gap="small">
+              <ConditionFilter
+                class="relationship-container__filter"
+                :columns="columns"
+                @change="handleSearch"
+              />
+              <j-permission-button
+                type="primary"
+                :hasPermission="`${permission}:add`"
+                @click="table.openDialog(undefined)"
+              >
+                <AIcon type="PlusOutlined" />{{
+                  $t("Relationship.index.710824-0")
+                }}
+              </j-permission-button>
+            </a-flex>
           </template>
           <template #action="slotProps">
             <a-space :size="16">
@@ -78,6 +81,7 @@ import EditDialog from "./components/EditDialog.vue";
 import { onlyMessage } from "@jetlinks-web-core/utils/comm";
 import { useI18n } from "vue-i18n";
 import { useRelationTypes } from "./hooks/useRelationTypes";
+import type { ConditionFilterChangePayload } from "@jetlinks-web-core/components/ConditionFilter";
 
 const { relationTypes, beRelationTypes } = useRelationTypes();
 
@@ -161,7 +165,11 @@ const columns = [
     width: 100,
   },
 ];
-const queryParams = ref({});
+const queryParams = ref<ConditionFilterChangePayload["filter"]>({ terms: [] });
+
+const handleSearch = ({ filter }: ConditionFilterChangePayload) => {
+  queryParams.value = filter;
+};
 
 const tableRef = ref<Record<string, any>>({}); // 表格实例
 const table = {
@@ -197,9 +205,22 @@ const dialog = reactive({
 
 <style lang="less" scoped>
 .relationship-container {
+  &__filter {
+    width: min(34rem, 46vw);
+    min-width: 20rem;
+  }
+
   :deep(.ant-table-cell) {
     .ant-btn-link {
       padding: 0;
+    }
+  }
+
+  @media (max-width: 73.75rem) {
+    &__filter {
+      flex: 1 1 20rem;
+      width: auto;
+      min-width: 0;
     }
   }
 }

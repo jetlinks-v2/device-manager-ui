@@ -2,7 +2,7 @@
   <div class="iot-groups-page">
     <EqualHeightColumns
       class="iot-groups-page__layout"
-      height="calc(100vh - 8.75rem)"
+      height="calc(100vh - 6rem)"
       left-width="15rem"
       right-width="1fr"
     >

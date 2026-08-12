@@ -20,8 +20,8 @@
         <EqualHeightColumns
           v-if="selected"
           class="iot-health__layout"
-          height="calc(100vh - var(--iot-health-layout-offset))"
-          left-width="15rem"message-chart__legend
+          height="calc(100vh - 9rem)"
+          left-width="15rem"
           right-width="1fr"
         >
           <template #left>

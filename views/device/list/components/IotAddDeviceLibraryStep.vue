@@ -1,13 +1,8 @@
 <template>
   <section class="add-device-library">
-    <div class="add-device-library__head">
-      <a-button @click="$emit('custom')">
-        <template #icon>
-          <AIcon type="EditOutlined" aria-hidden="true" />
-        </template>
-        {{ $t('IotDeviceList.add.customAdd') }}
-      </a-button>
-    </div>
+<!--    <div class="add-device-library__head">-->
+
+<!--    </div>-->
 
     <div class="add-device-library__body" :class="{ 'has-tag-panel': showTagPanel }">
       <aside v-if="showTagPanel" class="add-device-library__tag-panel">
@@ -39,15 +34,23 @@
       </aside>
 
       <div class="add-device-library__content">
-        <a-input-search
-          class="add-device-library__search"
-          v-model:value="keyword"
-          allow-clear
-          enter-button
-          :placeholder="$t('IotDeviceList.add.librarySearch')"
-          @search="handleKeywordSearch"
-          @change="handleKeywordChange"
-        />
+          <a-flex gap="small">
+            <a-input-search
+              class="add-device-library__search"
+              v-model:value="keyword"
+              allow-clear
+              enter-button
+              :placeholder="$t('IotDeviceList.add.librarySearch')"
+              @search="handleKeywordSearch"
+              @change="handleKeywordChange"
+            />
+              <a-button type="primary" @click="$emit('custom')">
+                  <template #icon>
+                      <AIcon type="EditOutlined" aria-hidden="true" />
+                  </template>
+                  {{ $t('IotDeviceList.add.customAdd') }}
+              </a-button>
+          </a-flex>
 
         <a-spin :spinning="loading">
           <div v-if="templates.length" class="add-device-library__grid">

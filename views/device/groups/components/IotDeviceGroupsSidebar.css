@@ -250,7 +250,6 @@
   align-items: center;
   min-height: 2.5rem;
   padding: 0;
-  border-radius: var(--r-3);
   overflow: hidden;
 }
 
@@ -259,7 +258,6 @@
 }
 
 .group-tree :deep(.ant-tree-treenode:has(.group-tree-node.is-active)) {
-  border-left: 0.125rem solid var(--jet-theme-primary);
   background: linear-gradient(90deg, var(--accent-soft) 0%, transparent 100%);
 }
 
