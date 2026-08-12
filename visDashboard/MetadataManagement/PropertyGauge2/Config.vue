@@ -1,6 +1,7 @@
-<template>
-  <div class="card-container">    <div class="card-header">
-      <config-item
+﻿<template>
+  <div class="card-container">
+    <div class="card-header">
+    <config-item
       v-if="isProduct"
       label="设备"
     >
@@ -15,106 +16,21 @@
       />
     </config-item>
 
-      <config-item label="属性">
+    <config-item label="属性">
       <a-select
-        v-model:value="config.propertyId"
-        :options="typeOptions"
-        placeholder="请选择属性"
+        v-model:value="config.propertyIds"
+        mode="multiple"
+        :maxTagCount="2"
+        :options="propertyOptions"
+        placeholder="请选择属性，最多5个"
         optionFilterProp="label"
         style="width: 100%"
         popupClassName="is-dark"
-        @change="onTypeChange"
+        @change="onPropertiesChange"
       />
     </config-item>
-    
     </div>
     <a-divider />
-    <config-item label="标题样式">
-      <div class="card-container-row">
-        <ColorPicker
-          v-model:value="config.titleColor"
-          :isInput="false"
-          style="margin-right: 6px"
-          theme="white"
-          @change="onChange"
-        />
-        <a-input-number
-          v-model:value="config.titleFontSize"
-          :min="12"
-          :max="60"
-          :precision="0"
-          style="flex: 1"
-          @change="onChange"
-        />
-      </div>
-    </config-item>
-
-    <config-item label="属性值样式">
-      <div class="card-container-row">
-        <ColorPicker
-          v-model:value="config.valueColor"
-          :isInput="false"
-          style="margin-right: 6px"
-          theme="white"
-          @change="onChange"
-        />
-        <a-input-number
-          v-model:value="config.valueFontSize"
-          :min="12"
-          :max="120"
-          :precision="0"
-          style="flex: 1"
-          @change="onChange"
-        />
-      </div>
-    </config-item>
-
-    <config-item label="单位">
-      <a-input
-        v-model:value="config.unit"
-        placeholder="为空时使用物模型单位"
-        style="width: 100%"
-        @change="onChange"
-      />
-    </config-item>
-
-    <config-item label="单位样式">
-      <div class="card-container-row">
-        <ColorPicker
-          v-model:value="config.unitColor"
-          :isInput="false"
-          style="margin-right: 6px"
-          theme="white"
-          @change="onChange"
-        />
-        <a-input-number
-          v-model:value="config.unitFontSize"
-          :min="10"
-          :max="80"
-          :precision="0"
-          style="flex: 1"
-          @change="onChange"
-        />
-      </div>
-    </config-item>
-
-    <config-item label="进度条颜色">
-      <ColorPicker
-        v-model:value="config.progressColor"
-        :isInput="false"
-        theme="white"
-        @change="onChange"
-      />
-    </config-item>
-
-    <config-item label="背景条颜色">
-      <ColorPicker
-        v-model:value="config.trailColor"
-        :isInput="false"
-        theme="white"
-        @change="onChange"
-      />
-    </config-item>
 
     <config-item label="最小值">
       <a-input-number
@@ -131,18 +47,52 @@
         @change="onChange"
       />
     </config-item>
+
+    <config-item label="环宽">
+      <a-input-number
+        v-model:value="config.ringWidth"
+        :min="14"
+        :max="48"
+        :precision="0"
+        style="width: 100%"
+        @change="onChange"
+      />
+    </config-item>
+
+    <config-item label="标题字号">
+      <a-input-number
+        v-model:value="config.titleFontSize"
+        :min="12"
+        :max="48"
+        :precision="0"
+        style="width: 100%"
+        @change="onChange"
+      />
+    </config-item>
+
+    <config-item label="数值字号">
+      <a-input-number
+        v-model:value="config.valueFontSize"
+        :min="12"
+        :max="48"
+        :precision="0"
+        style="width: 100%"
+        @change="onChange"
+      />
+    </config-item>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { cloneDeep, throttle } from 'lodash-es'
 import { moduleRegistry } from '@jetlinks-web-core/utils/module-registry'
+import { onlyMessage } from '@jetlinks-web/utils'
 import { useProductStore } from '@device-manager-ui/store/product'
 import { useInstanceStore } from '@device-manager-ui/store/instance'
 import { queryNoPagingPost } from '@device-manager-ui/api/instance'
-import { propertyProgressConfig } from './config'
+import { propertyGauge2Config } from './config'
 
-const { ConfigItem, ColorPicker } = moduleRegistry.getResource('visualization-designer-ui', 'components')
+const { ConfigItem } = moduleRegistry.getResource('visualization-designer-ui', 'components')
 
 const props = defineProps({
   configData: {
@@ -151,7 +101,7 @@ const props = defineProps({
   },
   type: {
     type: String,
-    default: 'propertyProgress'
+    default: 'propertyGauge2'
   }
 })
 
@@ -164,6 +114,7 @@ const deviceOptions = ref<any[]>([])
 const deviceOptionsMap = ref(new Map())
 
 const isProduct = computed(() => route.name === 'device/Product/Detail')
+const numericTypes = new Set(['int', 'long', 'float', 'double', 'short', 'byte', 'decimal', 'number'])
 
 const emitChange = throttle(() => {
   emits('change', config.value, props.type)
@@ -173,15 +124,15 @@ const onChange = () => {
   emitChange()
 }
 
-const strToJson = (str: string) => {
+const strToJson = (str: string, key: string = 'properties') => {
   try {
-    return JSON.parse(str || '{}').properties || []
+    return JSON.parse(str || '{}')[key] || []
   } catch (e) {
     return []
   }
 }
 
-const typeOptions = computed(() => {
+const propertyOptions = computed(() => {
   try {
     let properties = []
     if (isProduct.value) {
@@ -194,11 +145,13 @@ const typeOptions = computed(() => {
       properties = strToJson(instanceStore.current.metadata || instanceStore.detail.metadata)
     }
 
-    return properties.map((item: any) => ({
-      ...item,
-      label: item.name,
-      value: item.id
-    }))
+    return properties
+      .filter((item: any) => numericTypes.has(String(item?.valueType?.type || '').toLowerCase()))
+      .map((item: any) => ({
+        ...item,
+        label: item.name,
+        value: item.id
+      }))
   } catch (e) {
     return []
   }
@@ -207,15 +160,21 @@ const typeOptions = computed(() => {
 const onDeviceChange = (value: string, option: any) => {
   config.value.deviceId = value
   config.value.deviceName = option?.label || ''
-  config.value.propertyId = ''
-  config.value.propertyName = ''
+  config.value.propertyIds = []
+  config.value.propertyNames = []
   emitChange()
 }
 
-const onTypeChange = (value: string) => {
-  const option = typeOptions.value.find((item: any) => item.value === value)
-  config.value.propertyId = value
-  config.value.propertyName = option?.label || ''
+const onPropertiesChange = (values: string[]) => {
+  const nextValues = (values || []).slice(0, 5)
+
+  if ((values || []).length > 5) {
+    onlyMessage('最多选择5个属性', 'warning')
+  }
+
+  const optionsMap = new Map(propertyOptions.value.map((item: any) => [item.value, item.label]))
+  config.value.propertyIds = nextValues
+  config.value.propertyNames = nextValues.map((id) => optionsMap.get(id) || id)
   emitChange()
 }
 
@@ -242,10 +201,14 @@ onMounted(() => {
 watch(
   () => props.configData?.componentProps?.[props.type],
   (newVal) => {
-    config.value = cloneDeep({
-      ...propertyProgressConfig.componentProps.propertyProgress,
+    const merged = cloneDeep({
+      ...propertyGauge2Config.componentProps.propertyGauge2,
       ...(newVal || {})
     })
+
+    merged.propertyIds = Array.isArray(merged.propertyIds) ? merged.propertyIds.slice(0, 5) : []
+    merged.propertyNames = Array.isArray(merged.propertyNames) ? merged.propertyNames.slice(0, 5) : []
+    config.value = merged
   },
   { deep: true, immediate: true }
 )
@@ -253,6 +216,10 @@ watch(
 
 <style lang="less" scoped>
 .card-container {
+  color: #fff;
+  gap: 12px;
+  display: flex;
+  flex-direction: column;
   .card-header {
     gap: 12px;
     display: flex;
@@ -261,22 +228,13 @@ watch(
     border-radius: 12px;
     background: #f7f9fc;
   }
-  color: #fff;
-  gap: 12px;
-  display: flex;
-  flex-direction: column;
-  :deep(.ant-divider-horizontal) {
+    :deep(.ant-divider-horizontal) {
     margin: 0;
     margin-bottom: 12px;
   }
-   :deep(.config-form-item-content) {
+
+  :deep(.config-form-item-content) {
     padding: 0;
   }
-}
-
-.card-container-row {
-  width: 100%;
-  display: flex;
-  align-items: center;
 }
 </style>

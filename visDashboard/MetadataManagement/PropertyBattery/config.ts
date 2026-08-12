@@ -17,7 +17,7 @@ export const propertyBatteryConfig = {
     propertyBattery: {
       titleColor: 'rgba(0, 0, 0, 0.88)',
       titleFontSize: 16,
-      value: 'N/A',
+      value: '',
       valueColor: 'rgba(0, 0, 0, 0.88)',
       valueFontSize: 32,
       unit: '%',

@@ -1,34 +1,43 @@
 <template>
-  <div class="card-container">    <div class="card-header">
+  <div class="card-container">
+    <div class="card-header">
       <config-item
-      v-if="isProduct"
-      label="设备"
-    >
-      <a-select
-        v-model:value="config.deviceId"
-        :options="deviceOptions"
-        placeholder="请选择设备"
-        optionFilterProp="label"
+        v-if="isProduct"
+        label="设备"
+      >
+        <a-select
+          v-model:value="config.deviceId"
+          :options="deviceOptions"
+          placeholder="请选择设备"
+          optionFilterProp="label"
+          style="width: 100%"
+          popupClassName="is-dark"
+          @change="onDeviceChange"
+        />
+      </config-item>
+
+      <config-item label="属性">
+        <a-select
+          v-model:value="config.propertyId"
+          :options="typeOptions"
+          placeholder="请选择属性"
+          optionFilterProp="label"
+          style="width: 100%"
+          popupClassName="is-dark"
+          @change="onTypeChange"
+        />
+      </config-item>
+    </div>
+    <a-divider />
+    <config-item label="标题">
+      <a-input
+        v-model:value="config.title"
+        placeholder="请输入标题"
         style="width: 100%"
-        popupClassName="is-dark"
-        @change="onDeviceChange"
+        @change="onChange"
       />
     </config-item>
 
-      <config-item label="属性">
-      <a-select
-        v-model:value="config.propertyId"
-        :options="typeOptions"
-        placeholder="请选择属性"
-        optionFilterProp="label"
-        style="width: 100%"
-        popupClassName="is-dark"
-        @change="onTypeChange"
-      />
-    </config-item>
-    
-    </div>
-    <a-divider />
     <config-item label="标题样式">
       <div class="card-container-row">
         <ColorPicker
@@ -41,7 +50,7 @@
         <a-input-number
           v-model:value="config.titleFontSize"
           :min="12"
-          :max="60"
+          :max="48"
           :precision="0"
           style="flex: 1"
           @change="onChange"
@@ -49,7 +58,7 @@
       </div>
     </config-item>
 
-    <config-item label="属性值样式">
+    <config-item label="数值样式">
       <div class="card-container-row">
         <ColorPicker
           v-model:value="config.valueColor"
@@ -60,8 +69,8 @@
         />
         <a-input-number
           v-model:value="config.valueFontSize"
-          :min="12"
-          :max="120"
+          :min="20"
+          :max="72"
           :precision="0"
           style="flex: 1"
           @change="onChange"
@@ -72,13 +81,13 @@
     <config-item label="单位">
       <a-input
         v-model:value="config.unit"
-        placeholder="为空时使用物模型单位"
+        placeholder="请输入单位"
         style="width: 100%"
         @change="onChange"
       />
     </config-item>
 
-    <config-item label="单位样式">
+    <config-item label="单位字体">
       <div class="card-container-row">
         <ColorPicker
           v-model:value="config.unitColor"
@@ -90,50 +99,12 @@
         <a-input-number
           v-model:value="config.unitFontSize"
           :min="10"
-          :max="80"
+          :max="40"
           :precision="0"
           style="flex: 1"
           @change="onChange"
         />
       </div>
-    </config-item>
-
-    <config-item label="激活颜色">
-      <ColorPicker
-        v-model:value="config.activeColor"
-        :isInput="false"
-        theme="white"
-        @change="onChange"
-      />
-    </config-item>
-
-    <config-item label="未激活颜色">
-      <ColorPicker
-        v-model:value="config.inactiveColor"
-        :isInput="false"
-        theme="white"
-        @change="onChange"
-      />
-    </config-item>
-
-    <config-item label="边框颜色">
-      <ColorPicker
-        v-model:value="config.borderColor"
-        :isInput="false"
-        theme="white"
-        @change="onChange"
-      />
-    </config-item>
-
-    <config-item label="分段数">
-      <a-input-number
-        v-model:value="config.segments"
-        :min="3"
-        :max="8"
-        :precision="0"
-        style="width: 100%"
-        @change="onChange"
-      />
     </config-item>
 
     <config-item label="最小值">
@@ -151,6 +122,44 @@
         @change="onChange"
       />
     </config-item>
+
+    <config-item label="刻度分段">
+      <a-input-number
+        v-model:value="config.splitNumber"
+        :min="5"
+        :max="20"
+        :precision="0"
+        style="width: 100%"
+        @change="onChange"
+      />
+    </config-item>
+
+    <config-item label="指针颜色">
+      <ColorPicker
+        v-model:value="config.pointerColor"
+        :isInput="false"
+        theme="white"
+        @change="onChange"
+      />
+    </config-item>
+
+    <config-item label="起始色">
+      <ColorPicker
+        v-model:value="config.progressStartColor"
+        :isInput="false"
+        theme="white"
+        @change="onChange"
+      />
+    </config-item>
+
+    <config-item label="结束色">
+      <ColorPicker
+        v-model:value="config.progressEndColor"
+        :isInput="false"
+        theme="white"
+        @change="onChange"
+      />
+    </config-item>
   </div>
 </template>
 
@@ -160,7 +169,7 @@ import { moduleRegistry } from '@jetlinks-web-core/utils/module-registry'
 import { useProductStore } from '@device-manager-ui/store/product'
 import { useInstanceStore } from '@device-manager-ui/store/instance'
 import { queryNoPagingPost } from '@device-manager-ui/api/instance'
-import { propertyBatteryConfig } from './config'
+import { propertyGaugeConfig } from './config'
 
 const { ConfigItem, ColorPicker } = moduleRegistry.getResource('visualization-designer-ui', 'components')
 
@@ -171,7 +180,7 @@ const props = defineProps({
   },
   type: {
     type: String,
-    default: 'propertyBattery'
+    default: 'propertyGauge'
   }
 })
 
@@ -263,7 +272,7 @@ watch(
   () => props.configData?.componentProps?.[props.type],
   (newVal) => {
     config.value = cloneDeep({
-      ...propertyBatteryConfig.componentProps.propertyBattery,
+      ...propertyGaugeConfig.componentProps.propertyGauge,
       ...(newVal || {})
     })
   },
@@ -289,7 +298,8 @@ watch(
     margin: 0;
     margin-bottom: 12px;
   }
-   :deep(.config-form-item-content) {
+
+  :deep(.config-form-item-content) {
     padding: 0;
   }
 }

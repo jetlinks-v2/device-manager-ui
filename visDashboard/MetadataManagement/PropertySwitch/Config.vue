@@ -1,5 +1,61 @@
 <template>
-  <div class="card-container">
+  <div class="card-container">    <div class="card-header">
+      <config-item
+      v-if="isProduct"
+      label="设备"
+    >
+      <a-select
+        v-model:value="config.deviceId"
+        :options="deviceOptions"
+        placeholder="请选择设备"
+        optionFilterProp="label"
+        style="width: 100%"
+        popupClassName="is-dark"
+        @change="onDeviceChange"
+      />
+    </config-item>
+
+      <config-item label="属性">
+      <a-select
+        v-model:value="config.propertyId"
+        :options="typeOptions"
+        placeholder="请选择属性"
+        optionFilterProp="label"
+        style="width: 100%"
+        popupClassName="is-dark"
+        @change="onTypeChange"
+      />
+    </config-item>
+
+      <config-item label="功能">
+      <a-select
+        v-model:value="config.functionId"
+        :options="functionOptions"
+        placeholder="请选择功能"
+        optionFilterProp="label"
+        style="width: 100%"
+        popupClassName="is-dark"
+        @change="onFunctionChange"
+      />
+    </config-item>
+
+      <config-item
+      label="参数"
+      v-if="config.functionId"
+    >
+      <a-select
+        v-model:value="config.paramId"
+        :options="paramOptions"
+        placeholder="请选择参数(Boolean)"
+        optionFilterProp="label"
+        style="width: 100%"
+        popupClassName="is-dark"
+        @change="onChange"
+      />
+    </config-item>
+    
+    </div>
+    <a-divider />
     <config-item label="标题样式">
       <div class="card-container-row">
         <ColorPicker
@@ -73,60 +129,6 @@
         @change="onChange"
       />
     </config-item>
-
-    <config-item
-      v-if="isProduct"
-      label="设备"
-    >
-      <a-select
-        v-model:value="config.deviceId"
-        :options="deviceOptions"
-        placeholder="请选择设备"
-        optionFilterProp="label"
-        style="width: 100%"
-        popupClassName="is-dark"
-        @change="onDeviceChange"
-      />
-    </config-item>
-
-    <config-item label="属性">
-      <a-select
-        v-model:value="config.propertyId"
-        :options="typeOptions"
-        placeholder="请选择属性"
-        optionFilterProp="label"
-        style="width: 100%"
-        popupClassName="is-dark"
-        @change="onTypeChange"
-      />
-    </config-item>
-
-    <config-item label="功能">
-      <a-select
-        v-model:value="config.functionId"
-        :options="functionOptions"
-        placeholder="请选择功能"
-        optionFilterProp="label"
-        style="width: 100%"
-        popupClassName="is-dark"
-        @change="onFunctionChange"
-      />
-    </config-item>
-
-    <config-item
-      label="参数"
-      v-if="config.functionId"
-    >
-      <a-select
-        v-model:value="config.paramId"
-        :options="paramOptions"
-        placeholder="请选择参数(Boolean)"
-        optionFilterProp="label"
-        style="width: 100%"
-        popupClassName="is-dark"
-        @change="onChange"
-      />
-    </config-item>
   </div>
 </template>
 
@@ -189,7 +191,7 @@ const typeOptions = computed(() => {
     } else {
       properties = strToJson(instanceStore.current.metadata || instanceStore.detail.metadata)
     }
-
+    console.log('properties', properties)
     return properties.map((item: any) => ({
       ...item,
       label: item.name,
@@ -296,6 +298,14 @@ watch(
 
 <style lang="less" scoped>
 .card-container {
+  .card-header {
+    gap: 12px;
+    display: flex;
+    flex-direction: column;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: #f7f9fc;
+  }
   color: #fff;
   gap: 12px;
   display: flex;
