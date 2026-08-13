@@ -284,6 +284,11 @@
         },
         "supportDataAccess": true,
         "assetType": "device",
+        "assetTypes": [
+          "device",
+          "notifySubscriberProvider",
+          "notifyConfig"
+        ],
         "options": {
           "meta": {
             "componentCode": "device/alarm"
