@@ -56,7 +56,9 @@
           "value": "support"
         },
         "supportDataAccess": true,
-        "assetType": "device",
+          "assetTypes": [
+              "device","product"
+          ],
         "options": {
           "meta": {
             "componentCode": "iot/device"
@@ -94,7 +96,9 @@
           "value": "support"
         },
         "supportDataAccess": true,
-        "assetType": "device",
+          "assetTypes": [
+              "device","product"
+          ],
         "options": {
           "meta": {
             "componentCode": "device/list"
@@ -245,7 +249,9 @@
           "value": "support"
         },
         "supportDataAccess": true,
-        "assetType": "device",
+          "assetTypes": [
+              "device","product"
+          ],
         "options": {
           "meta": {
             "componentCode": "device/health"
@@ -283,7 +289,9 @@
           "value": "support"
         },
         "supportDataAccess": true,
-        "assetType": "device",
+          "assetTypes": [
+              "device","product"
+          ],
         "options": {
           "meta": {
             "componentCode": "device/alarm"
