@@ -289,9 +289,13 @@
           "value": "support"
         },
         "supportDataAccess": true,
-          "assetTypes": [
-              "device","product"
-          ],
+        "assetType": "device",
+        "assetTypes": [
+          "device",
+          "notifySubscriberProvider",
+          "notifyConfig",
+            "product"
+        ],
         "options": {
           "meta": {
             "componentCode": "device/alarm"
