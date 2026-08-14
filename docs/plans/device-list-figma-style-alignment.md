@@ -74,6 +74,18 @@
 
 ## 实施与验证结果
 
+### 设备详情删除禁用态修复
+
+- 目标：设备处于启用状态时，详情页删除按钮保持置灰，点击后不得打开删除确认弹层；设备禁用后仍保留原有确认删除流程。
+- 影响范围与 owning module：`device-manager-ui` 的 `views/device/list/components/IotDeviceDetailView.vue`，不修改列表页、接口、设备状态规则、权限或 `runtime-ui/`。
+- 实施入口：将删除按钮的禁用条件同步传给 Ant Design Vue `a-popconfirm`，并保留 `confirmDeleteDevice` 中的状态二次校验。
+- 风险：仅影响详情页删除确认弹层的打开条件；需回归启用态不可打开、禁用态可打开并正常确认。
+- 验证结果：
+  - `git diff --check`：通过。
+  - `pnpm -F jetlinks-web-core build -- --module-name device-manager-ui`：通过，共转换 `9449` 个模块；构建仅输出既有 CSS 注释、资源运行时解析和大 chunk 警告。
+  - `pnpm exec vue-tsc --noEmit -p modules/device-manager-ui/tsconfig.json --pretty false`：被既有的 `views/link/Certificate/type.d.ts:2` 语法错误阻断，本次修改文件未出现在错误输出中。
+  - 当前本地 `9100`、`9101`、`9102`、`5173` 端口均无可用页面，未执行浏览器点击回归；已核验当前 Ant Design Vue `a-popconfirm` 的 `disabled` 会在打开回调处直接返回。
+
 已完成：
 
 - `IotDeviceAssetListView.vue`：隐藏路由图标，保留标题与新增设备操作，不改变点击行为。
