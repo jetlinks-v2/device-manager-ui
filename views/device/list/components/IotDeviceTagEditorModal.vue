@@ -25,11 +25,20 @@
         <div v-else-if="column.dataIndex === 'name'" class="device-tag-editor__name">
           <j-ellipsis>{{ getTagLabel(record) }}</j-ellipsis>
         </div>
-        <MetadataValueItem
-          v-else
-          v-model="record.value"
-          :item="record"
-        />
+        <template v-else>
+          <j-value-item
+            v-if="getTagType(record) === 'date'"
+            v-model:modelValue="record.value"
+            item-type="date"
+            value-format="YYYY-MM-DD HH:mm:ss"
+            style="width: 100%"
+          />
+          <MetadataValueItem
+            v-else
+            v-model="record.value"
+            :item="record"
+          />
+        </template>
       </template>
     </a-table>
   </a-modal>
