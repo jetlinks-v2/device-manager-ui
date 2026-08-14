@@ -40,6 +40,7 @@ import {
   validateNotificationMessage,
 } from '../utils'
 import type { IotAlarmTargetSelectOption, IotAlarmTargetSelectQuery } from '../components/IotAlarmTargetSelect.vue'
+import { mergeNotifyUsersById } from '../../../../utils/notifyUser'
 
 export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unknown>) => string) {
   const loading = ref(false)
@@ -301,12 +302,21 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
   async function loadNotifyResources() {
     notifyLoading.value = true
     try {
-      const [channels, users] = await Promise.all([
+      const selectedUserIds = [...new Set(form.value.notification.userIds.map(String).filter(Boolean))]
+      // Saved recipients may be outside the first dropdown page, so resolve them separately.
+      const [channels, users, selectedUsers] = await Promise.all([
         queryDeviceAlarmNotifyProviders().catch(() => []),
         queryDeviceAlarmNotifyUsers({ pageIndex: 0 }).catch(() => ({ data: [], total: 0 })),
+        selectedUserIds.length
+          ? queryDeviceAlarmNotifyUsers({ paging: false, userIds: selectedUserIds }).catch(() => ({ data: [], total: 0 }))
+          : Promise.resolve({ data: [], total: 0 }),
       ])
       notifyMethods.value = toNotifyMethods(channels)
-      notifyUsers.value = users.data
+      const retainedUsers = notifyUsers.value.filter((user) => selectedUserIds.includes(user.id))
+      notifyUsers.value = mergeNotifyUsersById(
+        retainedUsers,
+        mergeNotifyUsersById(selectedUsers.data, users.data),
+      )
       notifyUserPageIndex.value = 0
       notifyUserTotal.value = users.total
     } finally {
@@ -319,9 +329,7 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
     notifyLoading.value = true
     try {
       const page = await queryDeviceAlarmNotifyUsers({ pageIndex: notifyUserPageIndex.value + 1 })
-      const userMap = new Map(notifyUsers.value.map((user) => [user.id, user]))
-      page.data.forEach((user) => userMap.set(user.id, user))
-      notifyUsers.value = [...userMap.values()]
+      notifyUsers.value = mergeNotifyUsersById(notifyUsers.value, page.data)
       notifyUserPageIndex.value += 1
       notifyUserTotal.value = page.total
     } finally {

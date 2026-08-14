@@ -76,11 +76,21 @@ export const deviceAlarmApi = {
     request.remove(`/message/preprocessor/device/${productId}/${deviceId}/property/${propertyId}`, data),
   queryNotifyChannels: () =>
     request.get('/notify/channel/all'),
-  queryNotifyUsers: (data: { pageIndex: number; pageSize: number }) =>
-    request.post('/user/detail/_query', {
-      ...data,
+  queryNotifyUsers: (data: {
+    pageIndex?: number
+    pageSize?: number
+    paging?: boolean
+    userIds?: string[]
+  }) => {
+    const { userIds, ...params } = data
+    return request.post('/user/detail/_query', {
+      ...params,
+      terms: userIds?.length
+        ? [{ column: 'id', termType: 'in', value: userIds }]
+        : undefined,
       sorts: [{ name: 'name', order: 'asc' }],
-    }),
+    })
+  },
   queryInstalledDeviceLibrary: (capabilityId: string) =>
     request.post(`/marketplace/capabilities/device-template/${encodeURIComponent(capabilityId)}/installed`, []),
   queryDeviceLibraryResources: () =>
@@ -249,12 +259,12 @@ export function toNotifyMethods(providers: unknown[]): DeviceAlarmNotifyMethod[]
 }
 
 export async function queryDeviceAlarmNotifyUsers(
-  params: { pageIndex?: number; pageSize?: number } = {},
+  params: { pageIndex?: number; pageSize?: number; paging?: boolean; userIds?: string[] } = {},
 ): Promise<{ data: DeviceAlarmNotifyUser[]; total: number }> {
   const pageIndex = Math.max(0, Number(params.pageIndex ?? 0))
   const pageSize = Math.max(1, Number(params.pageSize ?? 20))
   const page = normalizeAlarmTargetPage(
-    await deviceAlarmApi.queryNotifyUsers({ pageIndex, pageSize }),
+    await deviceAlarmApi.queryNotifyUsers({ ...params, pageIndex, pageSize }),
     pageIndex,
     pageSize,
   )
