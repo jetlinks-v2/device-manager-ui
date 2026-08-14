@@ -188,6 +188,7 @@
         </a-popconfirm>
         <a-popconfirm
           :title="$t('IotDeviceList.confirm.deleteOne', { name: device.name })"
+          :disabled="deleteActionDisabled"
           :ok-button-props="{ loading: actionBusyId === device.id && actionKind === 'delete' }"
           @confirm="confirmDeleteDevice"
         >
@@ -195,7 +196,7 @@
             size="small"
             danger
             :loading="actionBusyId === device.id && actionKind === 'delete'"
-            :disabled="Boolean(actionBusyId && actionKind !== 'delete') || !isDeviceDisabled"
+            :disabled="deleteActionDisabled"
           >
             <template #icon><AIcon type="DeleteOutlined" /></template>
             {{ $t('IotDeviceDetail.detail.delete') }}
@@ -671,6 +672,8 @@ const businessGroupText = computed(() => limitedDisplayText(businessGroupItems.v
 const businessGroupFullText = computed(() => displayText(businessGroupItems.value.join($t('IotDeviceList.presentation.separator'))))
 const lastSeenText = computed(() => displayText(device.value?.lastSeen))
 const isDeviceDisabled = computed(() => device.value ? getIotDeviceConnectionStatus(device.value) === 'disabled' : false)
+// 启用状态或其他操作执行中时，删除入口和确认弹层必须同时禁用。
+const deleteActionDisabled = computed(() => Boolean(actionBusyId.value && actionKind.value !== 'delete') || !isDeviceDisabled.value)
 
 const productTemplate = computed(() => {
   if (!device.value?.productKey) return null
