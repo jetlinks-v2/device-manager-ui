@@ -1760,7 +1760,7 @@ watch(activeRealtimePropertyKeySignature, async () => {
   min-height: 5rem;
   padding: var(--space-3) var(--space-4);
   margin-bottom: 0.875rem;
-  border: 0.0625rem solid var(--jet-theme-border);
+  border: 0.0625rem solid var(--jet-theme-border-secondary);
   border-radius: 0.5rem;
   background: var(--jet-theme-bg-container);
 }
@@ -2002,14 +2002,13 @@ watch(activeRealtimePropertyKeySignature, async () => {
 }
 
 .dd-tab-shell {
-  border: 0.0625rem solid var(--jet-theme-border);
+  border: 0.0625rem solid var(--jet-theme-border-secondary);
   border-radius: var(--jet-theme-radius);
   background: var(--jet-theme-bg-container);
   overflow: hidden;
 }
 
 .dd-detail-tabs {
-  border-bottom: 0.0625rem solid var(--jet-theme-border);
   padding: 0 var(--space-4);
 }
 

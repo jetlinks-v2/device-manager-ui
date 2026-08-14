@@ -4,7 +4,7 @@
 
 .overview-dashboard {
   overflow: hidden;
-  border: 0.0625rem solid var(--jet-theme-border);
+  border: 0.0625rem solid var(--jet-theme-border-secondary);
   border-radius: var(--jet-theme-radius);
   background: var(--jet-theme-bg-container);
 }
@@ -13,7 +13,7 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   min-height: 7.125rem;
-  border-bottom: 0.0625rem solid var(--jet-theme-border);
+  border-bottom: 0.0625rem solid var(--jet-theme-border-secondary);
 }
 
 .overview-stat {
@@ -24,7 +24,7 @@
   gap: 0.25rem 1rem;
   min-width: 0;
   padding: 1.25rem 1.5rem 1.125rem;
-  border-right: 0.0625rem solid color-mix(in srgb, var(--jet-theme-border) 82%, transparent);
+  border-right: 0.0625rem solid color-mix(in srgb, var(--jet-theme-border-secondary) 82%, transparent);
 }
 
 .overview-stat:last-child {
@@ -119,12 +119,12 @@
 
 .overview-panel--trend {
   min-height: 20.375rem;
-  border-bottom: 0.0625rem solid var(--jet-theme-border);
+  border-bottom: 0.0625rem solid var(--jet-theme-border-secondary);
 }
 
 .overview-panel--properties {
   min-height: 20.375rem;
-  border-right: 0.0625rem solid var(--jet-theme-border);
+  border-right: 0.0625rem solid var(--jet-theme-border-secondary);
 }
 
 .overview-panel--alerts {
@@ -196,16 +196,8 @@
 }
 
 .property-snapshot {
-  display: grid;
-  gap: 0.375rem;
   min-width: 0;
   min-height: 4.875rem;
-  padding: 0.75rem 0.875rem;
-  border: 0.0625rem solid color-mix(in srgb, var(--jet-theme-border) 86%, transparent);
-  border-radius: var(--jet-theme-radius);
-  background: var(--jet-theme-bg-container);
-  text-align: left;
-  cursor: pointer;
 }
 
 .property-snapshot:hover,

@@ -67,7 +67,7 @@ const guideTab = ref<'guide' | 'protocol'>('guide')
 .access-guide-doc__sticky {
   position: sticky;
   top: 0;
-  border: 0.0625rem solid var(--jet-theme-border);
+  border: 0.0625rem solid var(--jet-theme-border-secondary);
   border-radius: var(--jet-theme-radius);
   background: var(--jet-theme-bg-container);
   padding: var(--space-3);
