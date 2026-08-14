@@ -29,6 +29,8 @@ export default {
   },
   components: {
     AccessCard: defineAsyncComponent(() => import('./views/link/AccessConfig/components/AccessCard/index.vue')),
+    // 跨模块对象详情复用同一设备接入实现，统一通过注册表公开，避免业务模块深层引用私有目录。
+    IotDeviceAccessDetailTab: defineAsyncComponent(() => import('./views/device/list/components/device-detail/IotDeviceAccessDetailTab.vue')),
     pluginPage: defineAsyncComponent(() => import('./views/link/plugin/Content.vue')),
     ProductPage: defineAsyncComponent(() => import('./views/device/Product/index.vue')),
     InstancePage: defineAsyncComponent(() => import('./views/device/Instance/index.vue')),

@@ -90,6 +90,7 @@ const props = defineProps({
   commands: { type: Array as PropType<IotDeviceCommandDefinition[]>, required: true },
   sessionEnabled: { type: Boolean, default: true },
   traceEnabled: { type: Boolean, default: true },
+  defaultTab: { type: String as PropType<DeviceAccessInnerTab>, default: undefined },
 })
 
 const { t: $t } = useI18n()
@@ -109,14 +110,19 @@ const legacyChildrenRequested = computed(() =>
   route.query.tab === 'children'
   || ((route.query.tab === 'access' || route.query.tab === 'advanced') && route.query.sub === 'children'),
 )
+// 跨模块嵌入时没有设备详情路由参数，由调用方显式指定首次展示的内层页签。
 const accessConfigRequested = computed(() =>
-  route.query.tab === 'access' && (route.query.sub === 'connection' || route.query.sub === 'access'),
+  props.defaultTab === 'access'
+  || (route.query.tab === 'access' && (route.query.sub === 'connection' || route.query.sub === 'access')),
 )
 
 function getDefaultInnerTab(): DeviceAccessInnerTab {
   if (accessConfigRequested.value) return 'access'
   if (legacyChildrenRequested.value && isGatewayDevice.value) return 'children'
   if (legacyParsingRequested.value && hasTransparentCodec.value) return 'parsing'
+  if (props.defaultTab === 'children' && isGatewayDevice.value) return 'children'
+  if (props.defaultTab === 'parsing' && hasTransparentCodec.value) return 'parsing'
+  if (props.defaultTab === 'trace' && props.traceEnabled) return 'trace'
   if (!props.traceEnabled) return 'access'
   return isOnline.value ? 'trace' : 'access'
 }
