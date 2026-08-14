@@ -294,6 +294,7 @@ import { onlyMessage } from '@jetlinks-web-core/utils/comm'
 import { createSceneLinkage, getProduct, getSceneDetail, queryDevices, queryProducts, querySceneNotifyChannelTemplates, querySceneNotifyChannels, querySceneNotifyUsers, querySceneSupportedActions, querySceneSupportedTriggers, updateSceneLinkage, type SceneNotifyMethod, type SceneNotifyUser, type SceneProviderInfo } from '../../../api/scene-linkage'
 import { queryDeviceBoundGroups_api, queryDeviceGroupDetailList_api } from '../../../api/deviceGroup'
 import { queryDeviceSpaceAreaBindings_api, queryProjectSpaceAreaSettings_api } from '../../../api/spaceArea'
+import { mergeNotifyUsersById } from '../../../utils/notifyUser'
 import IotAlarmTargetSelect, { type IotAlarmTargetSelectOption, type IotAlarmTargetSelectQuery } from '../../device/alarm/components/IotAlarmTargetSelect.vue'
 import { applyMultiTriggerForm, buildRequest, defaultForm, normalizeResult, toForm, type SceneConditionForm, type SceneLinkageForm, type SceneMultiTriggerForm, type SceneTriggerKind } from '../utils'
 import ActionPickerModal from './components/ActionPickerModal.vue'
@@ -393,7 +394,40 @@ async function changeNotifyMethod(index: number, method: SceneNotifyMethod) { aw
 async function refreshNotifyTemplate(index: number, method: SceneNotifyMethod, changed = false) { const response: any = await querySceneNotifyChannelTemplates(method.providerId); const detail = response?.result ?? response; const item = detail?.channels?.find((channel: any) => channel.channel?.id === method.id); form.actions[index] = { ...form.actions[index], config: { ...form.actions[index].config, ...(changed ? { notifyChannelIds: [method.id] } : {}) }, options: { ...form.actions[index].options, channelName: method.name, templateContent: getTemplateContent(item?.template) } } }
 function getTemplateContent(template: any) { const content = template?.template || {}; const getByPath = (source: any, path: string[]) => path.reduce((target, key) => target && typeof target === 'object' && !Array.isArray(target) ? target[key] : undefined, source); const asText = (value: unknown) => typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' ? String(value) : ''; const firstText = (...values: unknown[]) => values.map(asText).find(Boolean) || ''; return firstText(getByPath(content, ['message']), getByPath(content, ['ttsmessage']), getByPath(content, ['body']), getByPath(content, ['text', 'content']), getByPath(content, ['markdown', 'text']), getByPath(content, ['link', 'text']), getByPath(content, ['text'])) }
 async function loadNotifyMethods(force = false) { if ((!force && notifyMethods.value.length) || notifyMethodsLoading.value) return; notifyMethodsLoading.value = true; try { const providers: any[] = normalizeResult(await querySceneNotifyChannels()).data; notifyMethods.value = providers.filter(provider => provider.provider === 'scene').flatMap(provider => (provider.channels || []).map((channel: any) => ({ id: channel.id, providerId: provider.id || provider.provider, name: channel.name || channel.channelProvider, channelProvider: channel.channelProvider }))).filter(method => method.id && method.providerId && method.channelProvider?.startsWith('notifier-')); } finally { notifyMethodsLoading.value = false } }
-async function loadNotifyUsers(reset = true) { if (notifyUsersLoading.value || (!reset && notifyUsers.value.length >= notifyUsersTotal.value)) return; const pageIndex = reset ? 0 : notifyUsersPageIndex.value + 1; notifyUsersLoading.value = true; try { const page = normalizeResult(await querySceneNotifyUsers({ pageIndex, pageSize: 20 })); const users = page.data.map((user: any) => ({ id: user.id, name: user.name, username: user.username, email: user.email, telephone: user.telephone })); const userMap = new Map((reset ? [] : notifyUsers.value).map(user => [user.id, user])); users.forEach(user => userMap.set(user.id, user)); notifyUsers.value = [...userMap.values()]; notifyUsersPageIndex.value = pageIndex; notifyUsersTotal.value = Number(page.total ?? pageIndex * 20 + users.length); } finally { notifyUsersLoading.value = false } }
+const selectedNotifyUserIds = () => [...new Set(form.actions
+  .filter(action => action.type === 'sceneNotify')
+  .flatMap(action => action.config?.userIds || [])
+  .map(String)
+  .filter(Boolean))]
+const toSceneNotifyUsers = (users: any[]): SceneNotifyUser[] => users
+  .map(user => ({ id: String(user.id || ''), name: user.name, username: user.username, email: user.email, telephone: user.telephone }))
+  .filter((user): user is SceneNotifyUser => Boolean(user.id))
+async function loadNotifyUsers(reset = true) {
+  if (notifyUsersLoading.value || (!reset && notifyUsers.value.length >= notifyUsersTotal.value)) return
+  const pageIndex = reset ? 0 : notifyUsersPageIndex.value + 1
+  const userIds = selectedNotifyUserIds()
+  notifyUsersLoading.value = true
+  try {
+    // Saved recipients may be outside the first dropdown page, so resolve them separately.
+    const [pageResponse, selectedResponse] = await Promise.all([
+      querySceneNotifyUsers({ pageIndex, pageSize: 20 }),
+      reset && userIds.length
+        ? querySceneNotifyUsers({ paging: false, userIds }).catch(() => undefined)
+        : Promise.resolve(undefined),
+    ])
+    const page = normalizeResult(pageResponse)
+    const selectedUsers = selectedResponse ? toSceneNotifyUsers(normalizeResult(selectedResponse).data) : []
+    const retainedUsers = reset ? notifyUsers.value.filter(user => userIds.includes(user.id)) : notifyUsers.value
+    notifyUsers.value = mergeNotifyUsersById(
+      retainedUsers,
+      mergeNotifyUsersById(selectedUsers, toSceneNotifyUsers(page.data)),
+    )
+    notifyUsersPageIndex.value = pageIndex
+    notifyUsersTotal.value = Number(page.total ?? pageIndex * 20 + page.data.length)
+  } finally {
+    notifyUsersLoading.value = false
+  }
+}
 const isEmptyValue = (value: unknown) => value === undefined || value === null || value === ''
 async function getMissingFunctionInputs(action: any) {
   const message = action.config?.message || {}
@@ -411,7 +445,7 @@ watch(() => form.repeatMode, (_value, previous) => { if (!loadingScene.value && 
 watch(() => form.name, value => { if (value.trim() && hasError('name')) { validation.field = ''; validation.message = '' } })
 watch(() => [form.propertyId, form.termValue], ([propertyId, termValue]) => { if (propertyId && termValue !== undefined && termValue !== null && termValue !== '' && hasError('property')) { validation.field = ''; validation.message = '' } })
 // Keep persisted weekly or monthly selections while the edit form is being populated.
-async function init() { await loadSceneProviders(); const id = String(route.params.id || ''); if (!id) { form.triggerKind = '' as SceneTriggerKind; return }; const data: any = await getSceneDetail(id); Object.assign(form, toForm(data.result || data)); advancedExpanded.value = form.debounceEnabled; if (form.productId) { const response: any = await getProduct(form.productId); const product = response.result || response; form.productName ||= product.name || form.productId; selectedProductOption.value = { label: product.name || form.productId, value: form.productId, data: product }; await loadMetadata(true) }; await nextTick(); loadingScene.value = false; if (form.actions.some(action => action.type === 'sceneNotify')) { await loadNotifyMethods(); await Promise.all(form.actions.map((action, index) => { const method = action.type === 'sceneNotify' ? notifyMethods.value.find(item => item.id === action.config?.notifyChannelIds?.[0]) : undefined; return method ? refreshNotifyTemplate(index, method) : undefined })) } }
+async function init() { await loadSceneProviders(); const id = String(route.params.id || ''); if (!id) { form.triggerKind = '' as SceneTriggerKind; return }; const data: any = await getSceneDetail(id); Object.assign(form, toForm(data.result || data)); advancedExpanded.value = form.debounceEnabled; if (form.productId) { const response: any = await getProduct(form.productId); const product = response.result || response; form.productName ||= product.name || form.productId; selectedProductOption.value = { label: product.name || form.productId, value: form.productId, data: product }; await loadMetadata(true) }; await nextTick(); loadingScene.value = false; if (form.actions.some(action => action.type === 'sceneNotify')) { await Promise.all([loadNotifyMethods(), loadNotifyUsers()]); await Promise.all(form.actions.map((action, index) => { const method = action.type === 'sceneNotify' ? notifyMethods.value.find(item => item.id === action.config?.notifyChannelIds?.[0]) : undefined; return method ? refreshNotifyTemplate(index, method) : undefined })) } }
 init()
 </script>
 <style src="./SceneLinkageEditor.css"></style>

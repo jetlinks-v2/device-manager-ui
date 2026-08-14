@@ -112,11 +112,21 @@ export const querySceneContextRecords = (id: string, contextId: string, data: Re
 export const querySceneNotifyChannels = () =>
   request.get('/notify/channel/all')
 
-export const querySceneNotifyUsers = (data: { pageIndex: number; pageSize: number }) =>
-  request.post('/user/detail/_query', {
-    ...data,
+export const querySceneNotifyUsers = (data: {
+  pageIndex?: number
+  pageSize?: number
+  paging?: boolean
+  userIds?: string[]
+}) => {
+  const { userIds, ...params } = data
+  return request.post('/user/detail/_query', {
+    ...params,
+    terms: userIds?.length
+      ? [{ column: 'id', termType: 'in', value: userIds }]
+      : undefined,
     sorts: [{ name: 'name', order: 'asc' }],
   })
+}
 
 export const querySceneNotifyChannelTemplates = (providerId: string) =>
   request.get(`/notify/channel/${encodeURIComponent(providerId)}/_query-with-templates`)
