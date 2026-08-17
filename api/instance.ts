@@ -49,13 +49,6 @@ export const query = (data?: Record<string, any>) => request.post('/device-insta
 export const queryDetails = (data?: Record<string, any>) => request.post('/device-instance/detail/_query', data)
 
 /**
- * 分页查询设备详情
- * @param data 分页搜索数据
- * @returns
- */
-export const queryDetails = (data?: Record<string, any>) => request.post('/device-instance/detail/_query', data)
-
-/**
  * 不分页查询设备
  * @param data
  * @returns
