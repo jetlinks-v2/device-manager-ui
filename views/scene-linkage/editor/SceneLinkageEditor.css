@@ -472,6 +472,15 @@
     width: var(--scene-linkage-resource-select-width) !important;
     min-width: var(--scene-linkage-resource-select-width);
 }
+.scene-editor__trigger-row > .scene-editor__product-select {
+    flex: 0 0 var(--scene-linkage-resource-select-width) !important;
+    width: var(--scene-linkage-resource-select-width) !important;
+    min-width: var(--scene-linkage-resource-select-width);
+}
+.scene-editor__trigger-row--device:not(.scene-editor__trigger-row--property) .scene-editor__product-select {
+    width: var(--scene-linkage-resource-select-width) !important;
+    min-width: var(--scene-linkage-resource-select-width);
+}
 .scene-editor__trigger-row--property .scene-editor__thing-model-select {
     flex: 0 0 var(--scene-linkage-thing-model-select-width) !important;
     width: var(--scene-linkage-thing-model-select-width) !important;
