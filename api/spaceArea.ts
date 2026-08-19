@@ -212,7 +212,8 @@ export const bindDevicesToSpaceArea_api = async (
       },
     }))
   if (!spaceId || !rows.length) return
-  await request.post('/space/data-bind/_batch', rows)
+  // The page surfaces the backend business message itself; suppress the generic request toast.
+  await request.post('/space/data-bind/_batch', rows, { hiddenError: true })
 }
 
 export const unbindDevicesFromSpaceArea_api = async (

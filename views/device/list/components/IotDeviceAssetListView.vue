@@ -24,6 +24,7 @@
       :selected-count="selectedRowKeys.length"
       :has-active-filters="hasActiveFilters"
       :running-action="runningAction"
+      :has-selected-area-bound-device="hasSelectedAreaBoundDevice"
       :load-error="loadError"
       :table-params="tableParams"
       :table-pagination="tablePagination"
@@ -101,6 +102,7 @@ import { buildIotDeviceDetailPath, resolveIotProjectId } from '../hooks/useIotDe
 import { useIotDeviceMeta } from '../hooks/useIotDeviceMeta'
 import { useIotChildGatewayGuide } from '../hooks/useIotChildGatewayGuide'
 import { useIotDeviceLibraryQuickUpdate } from '../hooks/useIotDeviceLibraryQuickUpdate'
+import { resolveSpaceAreaError } from '../services/shared/spaceAreaError'
 import type { IotDevice } from '../types'
 import type { IotAddDeviceCreatedPayload } from '../hooks/useIotAddDeviceDrawer'
 
@@ -182,6 +184,9 @@ const {
   openCreatedDeviceAccessGuide,
 } = useIotChildGatewayGuide(projectId, route, router, $t)
 const hasActiveFilters = computed(() => submittedTerms.value.some(hasFilterValue))
+const hasSelectedAreaBoundDevice = computed(() => selectedDevices.value.some((device) => (
+  Boolean(device.areaBindings?.length) || Boolean(device.areaId)
+)))
 
 function riskLabelOf(device: IotDevice) {
   return riskMeta(device.risk)
@@ -252,10 +257,8 @@ async function assignSelectedDevicesToArea(areaId: string) {
     clearSelection()
     refreshTable()
   } catch (error) {
-    assignAreaError.value = error instanceof Error
-      ? error.message
-      : $t('IotDeviceList.assignArea.failed')
-    onlyMessage(assignAreaError.value, 'error')
+    assignAreaError.value = ''
+    onlyMessage(resolveSpaceAreaError(error) || $t('IotDeviceList.assignArea.failed'), 'error')
   } finally {
     assignAreaSaving.value = false
   }

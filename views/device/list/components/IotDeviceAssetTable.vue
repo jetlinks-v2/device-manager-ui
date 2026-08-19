@@ -29,15 +29,22 @@
           <template #icon><AIcon type="StopOutlined" /></template>
           {{ $t('IotDeviceList.action.batchDisable') }}
         </j-permission-button>
-        <j-permission-button
-          class="iot-device-list__batch-action"
-          :disabled="!selectedCount"
-          :hasPermission="true"
-          @click="onAssignArea"
-        >
-          <template #icon><AIcon type="EnvironmentOutlined" /></template>
-          {{ $t('IotDeviceList.action.assignArea') }}
-        </j-permission-button>
+        <a-tooltip :title="hasSelectedAreaBoundDevice ? $t('IotDeviceList.assignArea.boundDeviceDisabled') : undefined">
+          <span
+            :tabindex="hasSelectedAreaBoundDevice ? 0 : undefined"
+            :aria-label="hasSelectedAreaBoundDevice ? $t('IotDeviceList.assignArea.boundDeviceDisabled') : undefined"
+          >
+            <j-permission-button
+              class="iot-device-list__batch-action"
+              :disabled="!selectedCount || hasSelectedAreaBoundDevice"
+              :hasPermission="true"
+              @click="onAssignArea"
+            >
+              <template #icon><AIcon type="EnvironmentOutlined" /></template>
+              {{ $t('IotDeviceList.action.assignArea') }}
+            </j-permission-button>
+          </span>
+        </a-tooltip>
         <j-permission-button
           class="iot-device-list__batch-action"
           :disabled="!selectedCount"
@@ -237,6 +244,7 @@ const { t: $t } = useI18n()
 const props = defineProps<{
   totalDevices: number
   selectedCount: number
+  hasSelectedAreaBoundDevice: boolean
   hasActiveFilters: boolean
   runningAction: '' | 'enable' | 'disable' | 'export'
   loadError: string
