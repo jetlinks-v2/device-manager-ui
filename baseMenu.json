@@ -172,6 +172,10 @@
             "actions": [
               "save"
             ]
+          },
+          {
+            "permission": "device-group",
+            "actions": ["query"]
           }
         ]
       },

@@ -119,6 +119,7 @@
         :notify-methods="notifyMethods"
         :notify-users="notifyUsers"
         :notify-loading="notifyLoading"
+        :product-reload-key="productReloadKey"
         @product-change="onProductChange"
         @device-change="onDeviceChange"
         @property-change="onPropertyChange"
@@ -157,6 +158,7 @@ const {
   notifyUsers,
   notifyLoading,
   editorOpen,
+  productReloadKey,
   editingRow,
   form,
   refresh,

@@ -85,7 +85,6 @@ import { useRoute, useRouter } from 'vue-router'
 import { onlyMessage } from '@jetlinks-web/utils'
 import { PageHeader } from '@jetlinks-web-core/components'
 import { bindDeviceGroupDevices_api, type DeviceGroup } from '@device-manager-ui/api/deviceGroup'
-import { bindDeviceToSpaceArea_api } from '@device-manager-ui/api/spaceArea'
 
 import IotAddDeviceDrawer from './IotAddDeviceDrawer.vue'
 import IotDeviceAssignAreaModal from './IotDeviceAssignAreaModal.vue'
@@ -101,6 +100,8 @@ import { buildIotDeviceDetailPath, resolveIotProjectId } from '../hooks/useIotDe
 import { useIotDeviceMeta } from '../hooks/useIotDeviceMeta'
 import { useIotChildGatewayGuide } from '../hooks/useIotChildGatewayGuide'
 import { useIotDeviceLibraryQuickUpdate } from '../hooks/useIotDeviceLibraryQuickUpdate'
+import { reassignIotDevicesToArea } from '../hooks/iotDeviceAreaGroupBindings'
+import { resolveSpaceAreaError } from '../services/shared/spaceAreaError'
 import type { IotDevice } from '../types'
 import type { IotAddDeviceCreatedPayload } from '../hooks/useIotAddDeviceDrawer'
 
@@ -241,7 +242,7 @@ async function assignSelectedDevicesToArea(areaId: string) {
   assignAreaSaving.value = true
   assignAreaError.value = ''
   try {
-    await Promise.all(selectedDevices.value.map((device) => bindDeviceToSpaceArea_api(areaId, {
+    await reassignIotDevicesToArea(areaId, selectedDevices.value.map((device) => ({
       id: device.id,
       name: device.name,
       productName: productNameText(device),
@@ -252,10 +253,8 @@ async function assignSelectedDevicesToArea(areaId: string) {
     clearSelection()
     refreshTable()
   } catch (error) {
-    assignAreaError.value = error instanceof Error
-      ? error.message
-      : $t('IotDeviceList.assignArea.failed')
-    onlyMessage(assignAreaError.value, 'error')
+    assignAreaError.value = ''
+    onlyMessage(resolveSpaceAreaError(error) || $t('IotDeviceList.assignArea.failed'), 'error')
   } finally {
     assignAreaSaving.value = false
   }

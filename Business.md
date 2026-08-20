@@ -70,3 +70,9 @@
 - 影响范围：`ui/modules/iot-ui/views/device/list/components/device-detail/IotDeviceLogsSearchTableTab.vue`
 - 实现入口：筛选项移除 `direction`，时间字段改为 `timestamp`，内容字段改为 `content`，同时同步调整筛选占位文案。
 - 验证：本轮完成静态代码检查，运行时页面联调待执行。
+
+### 设备日志方向筛选
+
+- 目标：在设备日志列表增加方向筛选，并与列表中的方向展示保持同一套解析口径。
+- 实现入口：方向筛选使用虚拟 `direction` 字段，选择后按 `DeviceLogType` 的上行/下行类型集合转换为 `type in (...)` 查询条件；列表方向优先按日志类型集合判断，未知或本地兜底日志继续使用内容关键词解析。
+- 验证：完成静态类型检查、差异检查和 UTF-8 无 BOM 检查；运行时页面联调待执行。

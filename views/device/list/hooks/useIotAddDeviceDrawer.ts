@@ -345,15 +345,19 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
   }
 
   function appendInstallProgress(progress: DeviceLibraryInstallProgress) {
-    if (!progress.message) return
+    const message = progress.type === 'error'
+      ? normalizeCreateDeviceErrorMessage(progress.message)
+      : progress.message
+    if (!message) return
     const duplicated = installProgressLogs.value.some((item) =>
-      item.type === progress.type && item.message === progress.message,
+      item.type === progress.type && item.message === message,
     )
     if (duplicated) return
     installProgressLogs.value = [
       ...installProgressLogs.value,
       {
         ...progress,
+        message,
         id: `${Date.now()}-${installProgressLogs.value.length}`,
       },
     ].slice(-20)
@@ -365,12 +369,24 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
       && (message.includes('未找到业务标识') || message.includes('请先创建或绑定'))
   }
 
-  function getCreateDeviceErrorMessage(error: unknown) {
-    const message = error instanceof Error ? error.message : ''
+  function isServiceConnectionTimeoutError(message: string) {
+    return /^No keep-alive acks for \d+\s*ms$/i.test(message.trim())
+  }
+
+  function normalizeCreateDeviceErrorMessage(message: string) {
+    if (isServiceConnectionTimeoutError(message)) {
+      // 保留英文原文便于排查，中文环境只展示面向用户的简短提示。
+      return $t('IotDeviceList.add.serviceConnectionTimeout', { message })
+    }
     if (isMissingDeviceAccessConfigError(message)) {
       return $t('IotDeviceList.add.accessConfigIncomplete')
     }
-    return message || $t('IotDeviceList.add.createFailed')
+    return message
+  }
+
+  function getCreateDeviceErrorMessage(error: unknown) {
+    const message = error instanceof Error ? error.message : ''
+    return normalizeCreateDeviceErrorMessage(message) || $t('IotDeviceList.add.createFailed')
   }
 
   function appendInstallError(error: unknown) {

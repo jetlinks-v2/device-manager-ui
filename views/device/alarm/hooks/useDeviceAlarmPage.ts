@@ -61,6 +61,8 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
   const notifyUserPageIndex = ref(-1)
   const notifyUserTotal = ref(0)
   const editorOpen = ref(false)
+  // The editor stays mounted after close; use this key to refresh product options for every open.
+  const productReloadKey = ref(0)
   const editingRow = ref<DeviceAlarmRow | null>(null)
   const selectedProductOption = ref<DeviceAlarmTargetOption>()
   const selectedDeviceOption = ref<DeviceAlarmTargetOption>()
@@ -198,6 +200,7 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
     selectedDeviceOption.value = undefined
     propertyOptions.value = []
     editorOpen.value = true
+    productReloadKey.value += 1
   }
 
   async function openEdit(row: DeviceAlarmRow) {
@@ -218,6 +221,7 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
     const target = row.source === 'device' ? selectedDeviceOption.value : selectedProductOption.value
     await loadProperties(target)
     editorOpen.value = true
+    productReloadKey.value += 1
   }
 
   async function onSourceChange(source: DeviceAlarmSource) {
@@ -470,6 +474,7 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
     notifyUsers,
     notifyLoading,
     editorOpen,
+    productReloadKey,
     editingRow,
     form,
     refresh,

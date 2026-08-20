@@ -5168,6 +5168,7 @@
     "IotDeviceList.add.productCreatedFromTemplate": "Synced product configuration from {name}. You can continue adding the device.",
     "IotDeviceList.add.productCreateFailed": "Failed to create product. Try again.",
     "IotDeviceList.add.accessConfigIncomplete": "Device access configuration for this project is incomplete. Contact an administrator and try again.",
+    "IotDeviceList.add.serviceConnectionTimeout": "{message}",
     "IotDeviceList.add.createFailed": "Failed to add device. Try again.",
     "IotDeviceList.add.bindAfterCreateFailed": "Device created, but area or group binding failed. Reassign it from the device list later.",
     "IotDeviceAccess.guide.tab": "Access Guide",

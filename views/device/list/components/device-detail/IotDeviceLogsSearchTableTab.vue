@@ -13,9 +13,11 @@
       :fields="filterFields"
       :common-fields="filterCommonFields"
       :placeholder="$t('IotDeviceDetail.logsSearch.searchPlaceholder')"
+      @change="handleSearch"
     />
 
     <JProTable
+      ref="tableRef"
       mode="TABLE"
       row-key="id"
       class="logs-pro-tab__table"
@@ -78,14 +80,75 @@ interface LogRow {
   raw: any
 }
 
+type LogDirection = 'up' | 'down'
+
+// DeviceLogType does not persist a direction field. Keep the query-side type
+// groups aligned with the direction shown in the log table.
+const DOWNLINK_LOG_TYPES = [
+  'readProperty',
+  'writeProperty',
+  'functionInvoke',
+  'readFirmware',
+  'pullFirmware',
+  'upgradeFirmware',
+  'stateCheck',
+  'disconnect',
+  'readCollectorData',
+  'writeCollectorData',
+] as const
+
+const UPLINK_LOG_TYPES = [
+  'event',
+  'writePropertyReply',
+  'reportProperty',
+  'readPropertyReply',
+  'child',
+  'childReply',
+  'functionReply',
+  'register',
+  'unregister',
+  'readFirmwareReply',
+  'reportFirmware',
+  'pullFirmwareReply',
+  'upgradeFirmwareReply',
+  'upgradeFirmwareProgress',
+  'log',
+  'tag',
+  'offline',
+  'online',
+  'other',
+  'direct',
+  'acknowledge',
+  'metadata',
+  'stateCheckReply',
+  'disconnectReply',
+  'reportCollectorData',
+  'readCollectorDataReply',
+  'writeCollectorDataReply',
+  'broadcast',
+  'batch',
+  'module',
+  'unknown',
+] as const
+
+const LOG_TYPES_BY_DIRECTION: Record<LogDirection, readonly string[]> = {
+  up: UPLINK_LOG_TYPES,
+  down: DOWNLINK_LOG_TYPES,
+}
+const DOWNLINK_LOG_TYPE_SET = new Set<string>(DOWNLINK_LOG_TYPES)
+const UPLINK_LOG_TYPE_SET = new Set<string>(UPLINK_LOG_TYPES)
+
 const props = defineProps<{
   device: IotDevice
   logs: IotDeviceLog[]
 }>()
 
 const { t: $t } = useI18n()
+const tableRef = ref()
 const logTypeOptions = ref<Array<{ label: string; value: string }>>([])
 const filterTerms = ref<ConditionFilterTerm[]>([])
+// Keep editing terms separate from submitted terms so the table refresh is explicit.
+const submittedTerms = ref<ConditionFilterTerm[]>([])
 const detailOpen = ref(false)
 const selectedLog = ref<LogRow | null>(null)
 const filterCommonFields = ['typeText', 'direction', 'happenedAt', 'message']
@@ -96,6 +159,23 @@ const filterFields = computed<ConditionFilterField[]>(() => [
     search: {
       type: 'select',
       options: logTypeOptions.value,
+    },
+  },
+  {
+    title: $t('IotDeviceDetail.logs.column.direction'),
+    dataIndex: 'direction',
+    search: {
+      type: 'select',
+      options: [
+        { label: $t('IotDeviceDetail.logs.direction.up'), value: 'up' },
+        { label: $t('IotDeviceDetail.logs.direction.down'), value: 'down' },
+      ],
+      handleParamsItem: (term) => ({
+        ...term,
+        column: 'type',
+        termType: 'in',
+        value: LOG_TYPES_BY_DIRECTION[term.value as LogDirection] ?? [],
+      }),
     },
   },
   { title: $t('IotDeviceDetail.logs.column.time'), dataIndex: 'timestamp', search: { type: 'date' } },
@@ -122,6 +202,8 @@ watch(
   () => props.device.id,
   () => {
     filterTerms.value = []
+    submittedTerms.value = []
+    tableRef.value?.reload?.()
   },
   { immediate: true },
 )
@@ -164,8 +246,13 @@ function fallbackLogResponse(params: Record<string, unknown>) {
   }
 }
 
+function handleSearch(payload?: { terms?: ConditionFilterTerm[] }) {
+  submittedTerms.value = payload?.terms ?? filterTerms.value
+  tableRef.value?.reload?.()
+}
+
 function buildQueryTerms() {
-  return buildQueryFilter(filterTerms.value, filterFields.value).terms ?? []
+  return buildQueryFilter(submittedTerms.value, filterFields.value).terms ?? []
 }
 
 function mapApiLog(item: any, index: number): LogRow {
@@ -176,7 +263,7 @@ function mapApiLog(item: any, index: number): LogRow {
     id: item.id || `${item.timestamp || item.createTime || index}-${type}`,
     type: String(type || typeText),
     typeText: String(typeText),
-    direction: inferDirection(typeText, content),
+    direction: inferDirection(String(type), typeText, content),
     message: String(content || '--'),
     happenedAt: formatApiTime(item.timestamp || item.createTime),
     rawContent: String(content || ''),
@@ -189,7 +276,7 @@ function mapFallbackLog(log: IotDeviceLog): LogRow {
     id: `fallback-${log.id}`,
     type: log.title || log.level || 'device-log',
     typeText: log.title || $t('IotDeviceDetail.logs.defaultType'),
-    direction: inferDirection(log.title, log.message),
+    direction: inferDirection('', log.title, log.message),
     message: log.message || '--',
     happenedAt: log.happenedAt,
     rawContent: log.message || '',
@@ -197,7 +284,10 @@ function mapFallbackLog(log: IotDeviceLog): LogRow {
   }
 }
 
-function inferDirection(typeText = '', content = ''): 'up' | 'down' {
+function inferDirection(type = '', typeText = '', content = ''): LogDirection {
+  if (DOWNLINK_LOG_TYPE_SET.has(type)) return 'down'
+  if (UPLINK_LOG_TYPE_SET.has(type)) return 'up'
+  // Keep the existing content-based fallback for local or unknown log rows.
   return /下发|调用|WRITE|INVOKE|down/i.test(`${typeText} ${content}`) ? 'down' : 'up'
 }
 
