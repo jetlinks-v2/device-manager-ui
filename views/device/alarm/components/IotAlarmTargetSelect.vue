@@ -44,6 +44,7 @@ const props = defineProps({
   placeholder: { type: String, default: '' },
   disabled: { type: Boolean, default: false },
   reloadKey: { type: [String, Number], default: '' },
+  loadOnReload: { type: Boolean, default: false },
   rich: { type: Boolean, default: false },
   optionType: { type: String as PropType<'auto' | 'product' | 'device'>, default: 'auto' },
 })
@@ -124,6 +125,7 @@ watch(
     keyword.value = ''
     loaded.value = false
     remoteOptions.value = []
+    if (props.loadOnReload) void load()
   },
 )
 

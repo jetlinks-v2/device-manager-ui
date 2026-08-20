@@ -29,22 +29,16 @@
           <template #icon><AIcon type="StopOutlined" /></template>
           {{ $t('IotDeviceList.action.batchDisable') }}
         </j-permission-button>
-        <a-tooltip :title="hasSelectedAreaBoundDevice ? $t('IotDeviceList.assignArea.boundDeviceDisabled') : undefined">
-          <span
-            :tabindex="hasSelectedAreaBoundDevice ? 0 : undefined"
-            :aria-label="hasSelectedAreaBoundDevice ? $t('IotDeviceList.assignArea.boundDeviceDisabled') : undefined"
-          >
-            <j-permission-button
-              class="iot-device-list__batch-action"
-              :disabled="!selectedCount || hasSelectedAreaBoundDevice"
-              :hasPermission="true"
-              @click="onAssignArea"
-            >
-              <template #icon><AIcon type="EnvironmentOutlined" /></template>
-              {{ $t('IotDeviceList.action.assignArea') }}
-            </j-permission-button>
-          </span>
-        </a-tooltip>
+        <j-permission-button
+          class="iot-device-list__batch-action"
+          :disabled="!selectedCount || hasSelectedAreaBoundDevice"
+          :hasPermission="true"
+          :tooltip="hasSelectedAreaBoundDevice ? { title: $t('IotDeviceList.assignArea.boundDeviceDisabled') } : undefined"
+          @click="onAssignArea"
+        >
+          <template #icon><AIcon type="EnvironmentOutlined" /></template>
+          {{ $t('IotDeviceList.action.assignArea') }}
+        </j-permission-button>
         <j-permission-button
           class="iot-device-list__batch-action"
           :disabled="!selectedCount"
