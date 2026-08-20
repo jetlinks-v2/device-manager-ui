@@ -31,9 +31,8 @@
         </j-permission-button>
         <j-permission-button
           class="iot-device-list__batch-action"
-          :disabled="!selectedCount || hasSelectedAreaBoundDevice"
+          :disabled="!selectedCount"
           :hasPermission="true"
-          :tooltip="hasSelectedAreaBoundDevice ? { title: $t('IotDeviceList.assignArea.boundDeviceDisabled') } : undefined"
           @click="onAssignArea"
         >
           <template #icon><AIcon type="EnvironmentOutlined" /></template>
@@ -238,7 +237,6 @@ const { t: $t } = useI18n()
 const props = defineProps<{
   totalDevices: number
   selectedCount: number
-  hasSelectedAreaBoundDevice: boolean
   hasActiveFilters: boolean
   runningAction: '' | 'enable' | 'disable' | 'export'
   loadError: string

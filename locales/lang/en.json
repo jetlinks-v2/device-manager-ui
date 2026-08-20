@@ -5071,7 +5071,6 @@
     "IotDeviceList.assignArea.selectDeviceFirst": "Select devices before assigning an area.",
     "IotDeviceList.assignArea.success": "Assigned {count} devices to the area.",
     "IotDeviceList.assignArea.failed": "Failed to assign device area.",
-    "IotDeviceList.assignArea.boundDeviceDisabled": "Some selected devices are already assigned to an area and cannot be assigned again.",
     "IotDeviceList.add.createTitle": "Add Device",
     "IotDeviceList.add.editTitle": "Edit Device",
     "IotDeviceList.add.stepLibrary": "Select Template",

@@ -5072,7 +5072,6 @@
     "IotDeviceList.assignArea.selectDeviceFirst": "请先选择要分配的设备",
     "IotDeviceList.assignArea.success": "已将 {count} 台设备分配到区域",
     "IotDeviceList.assignArea.failed": "设备区域分配失败",
-    "IotDeviceList.assignArea.boundDeviceDisabled": "已选择的设备中包含已绑定区域的设备，无法重复分配",
     "IotDeviceList.add.createTitle": "新增设备",
     "IotDeviceList.add.editTitle": "编辑设备",
     "IotDeviceList.add.stepLibrary": "选择设备库",

@@ -24,7 +24,6 @@
       :selected-count="selectedRowKeys.length"
       :has-active-filters="hasActiveFilters"
       :running-action="runningAction"
-      :has-selected-area-bound-device="hasSelectedAreaBoundDevice"
       :load-error="loadError"
       :table-params="tableParams"
       :table-pagination="tablePagination"
@@ -86,7 +85,6 @@ import { useRoute, useRouter } from 'vue-router'
 import { onlyMessage } from '@jetlinks-web/utils'
 import { PageHeader } from '@jetlinks-web-core/components'
 import { bindDeviceGroupDevices_api, type DeviceGroup } from '@device-manager-ui/api/deviceGroup'
-import { bindDeviceToSpaceArea_api } from '@device-manager-ui/api/spaceArea'
 
 import IotAddDeviceDrawer from './IotAddDeviceDrawer.vue'
 import IotDeviceAssignAreaModal from './IotDeviceAssignAreaModal.vue'
@@ -102,6 +100,7 @@ import { buildIotDeviceDetailPath, resolveIotProjectId } from '../hooks/useIotDe
 import { useIotDeviceMeta } from '../hooks/useIotDeviceMeta'
 import { useIotChildGatewayGuide } from '../hooks/useIotChildGatewayGuide'
 import { useIotDeviceLibraryQuickUpdate } from '../hooks/useIotDeviceLibraryQuickUpdate'
+import { reassignIotDevicesToArea } from '../hooks/iotDeviceAreaGroupBindings'
 import { resolveSpaceAreaError } from '../services/shared/spaceAreaError'
 import type { IotDevice } from '../types'
 import type { IotAddDeviceCreatedPayload } from '../hooks/useIotAddDeviceDrawer'
@@ -184,9 +183,6 @@ const {
   openCreatedDeviceAccessGuide,
 } = useIotChildGatewayGuide(projectId, route, router, $t)
 const hasActiveFilters = computed(() => submittedTerms.value.some(hasFilterValue))
-const hasSelectedAreaBoundDevice = computed(() => selectedDevices.value.some((device) => (
-  Boolean(device.areaBindings?.length) || Boolean(device.areaId)
-)))
 
 function riskLabelOf(device: IotDevice) {
   return riskMeta(device.risk)
@@ -246,7 +242,7 @@ async function assignSelectedDevicesToArea(areaId: string) {
   assignAreaSaving.value = true
   assignAreaError.value = ''
   try {
-    await Promise.all(selectedDevices.value.map((device) => bindDeviceToSpaceArea_api(areaId, {
+    await reassignIotDevicesToArea(areaId, selectedDevices.value.map((device) => ({
       id: device.id,
       name: device.name,
       productName: productNameText(device),
