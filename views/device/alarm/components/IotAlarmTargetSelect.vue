@@ -8,6 +8,7 @@
     :placeholder="placeholder"
     :disabled="disabled"
     :loading="loading"
+    :dropdown-match-select-width="dropdownMatchSelectWidth"
     @dropdownVisibleChange="handleVisibleChange"
     @search="handleSearch"
     @change="handleChange"
@@ -58,6 +59,8 @@ const loaded = ref(false)
 const keyword = ref('')
 const remoteOptions = ref<IotAlarmTargetSelectOption[]>([])
 let searchTimer: ReturnType<typeof setTimeout> | undefined
+
+const dropdownMatchSelectWidth = computed(() => props.rich ? 336 : true)
 
 const options = computed(() => {
   const staticOptions = [...props.staticOptions]

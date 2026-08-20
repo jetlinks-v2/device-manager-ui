@@ -70,6 +70,10 @@
 - `views/scene-linkage/editor/index.vue`：场景名称改为独立表单容器，保留原有 `v-model`、占位文案与校验信息。
 - `views/scene-linkage/editor/index.vue`：在现有编辑器作用域内对触发条件、附加条件、执行动作、高级设置、表单控件和添加按钮统一对齐设计稿的容器、间距、边框、圆角和控件高度。
 - 窄屏：编辑器保留 `62.5rem` 的最小配置宽度，避免项目侧栏未收起时将场景规则、字段和操作按钮压缩换行；外层承载横向可视区域。
+- `views/scene-linkage/editor/SceneLinkageEditor.css`：补齐设备上线、设备离线、设备状态变化等非属性设备触发的产品选择框宽度，使其与属性触发共用 `--scene-linkage-resource-select-width`，避免回落到通用 `132px` 选择框宽度。
+- `views/scene-linkage/editor/SceneLinkageEditor.css`：主触发行的产品选择框增加直接子选择器兜底，不再依赖 `scene-editor__trigger-row--device` class；首个触发选择为设备上线、设备离线或设备状态变化时同样保持 `21rem`。
+- `views/device/alarm/components/IotAlarmTargetSelect.vue`：富选项模式的产品 / 设备下拉宽度固定为 `21rem`，不再跟随窄选择框收缩；该组件也被组合触发、附加条件、告警触发 / 条件和设备动作复用，可一并规避同类富选项名称截断问题。
+- `views/scene-linkage/editor/components/MultiTriggerCard.vue`、`views/scene-linkage/editor/components/AlarmTriggerRow.vue`：组合触发卡片和告警触发行的产品选择框改为同一 `--scene-linkage-resource-select-width`，与主触发、附加条件和设备动作保持一致。
 
 验证结果：
 
@@ -77,3 +81,6 @@
 - 编辑器 SFC 静态检查：只保留一个 `scoped` 外部样式入口；`SceneLinkageEditor.css` 不包含 SFC 样式标签。
 - `npx vue-tsc --noEmit -p modules/iot-ui/tsconfig.json --pretty false`：未通过，输出约 698 条工作区既有类型错误，主要位于 `jetlinks-web-core`、设备列表与场景联动既有组件；本次模板和样式变更未出现新的模板解析错误。
 - 浏览器视觉检查：已在 `http://localhost:9102/ht_device/#/iot-user/scene-linkage/editor` 对比 Figma 节点 `6180:6084`。桌面首屏及高级设置展开态确认顶部操作条、名称区、配置容器、添加按钮和高级设置没有遮挡或溢出；窄屏确认编辑内容不再被压缩换行。
+- `git -C ui/modules/device-manager-ui diff --check -- views/device/alarm/components/IotAlarmTargetSelect.vue views/scene-linkage/editor/SceneLinkageEditor.css`：通过。
+- `PATH=/Users/hukaiyu/.nvm/versions/node/v22.18.0/bin:$PATH pnpm --filter jetlinks-web-core build -- --module-name device-manager-ui`：通过；仍有既有资源路径、CSS `//background` 注释和大 chunk warning。
+- `git -C ui/modules/device-manager-ui diff --check -- views/scene-linkage/editor/components/MultiTriggerCard.vue views/scene-linkage/editor/components/AlarmTriggerRow.vue docs/plans/scene-linkage-editor-figma-style-alignment.md`：通过。

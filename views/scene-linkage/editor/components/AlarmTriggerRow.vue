@@ -351,7 +351,9 @@ async function loadSelectedDevice(id?: string) {
 }
 
 .alarm-trigger-row__product {
-	min-width: 20rem;
+	flex: 0 0 var(--scene-linkage-resource-select-width, 21rem);
+	width: var(--scene-linkage-resource-select-width, 21rem);
+	min-width: var(--scene-linkage-resource-select-width, 21rem);
 }
 
 .alarm-trigger-row__device {
