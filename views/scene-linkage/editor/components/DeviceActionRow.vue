@@ -13,7 +13,7 @@
         rich
         @change="onProductChange"
       />
-      <a-button class="device-action-row__scope" :disabled="!config.productId" @click="scopeVisible = true">
+      <a-button class="device-action-row__scope" :title="scopeTitle" :disabled="!config.productId" @click="scopeVisible = true">
         <AIcon type="AimOutlined" />{{ scopeText }}
       </a-button>
       <div class="device-action-row__details">
@@ -86,6 +86,7 @@ import type { SceneActionForm } from '../../utils'
 import DeviceScopeModal, { type DeviceScope } from './DeviceScopeModal.vue'
 import ThingModelSelect from './ThingModelSelect.vue'
 import ThingModelValueInput from './ThingModelValueInput.vue'
+import { formatDeviceScopeText, formatDeviceScopeTitle } from '../deviceScopeLabel'
 import { getValueType, isSupportedValueType, toThingModelOptions } from '../thingModel'
 
 const props = defineProps({
@@ -115,13 +116,18 @@ const config = computed(() => {
   }
 })
 const scopeText = computed(() => {
-  const count = config.value.selectorValues.length
-  if (!count && config.value.selector !== 'all') return t('IotSceneLinkage.placeholder.device')
-  return config.value.selector === 'all'
-    ? t('IotSceneLinkage.scope.all')
-    : config.value.selector === 'fixed'
-    ? t('IotSceneLinkage.scope.fixedCount', { count })
-    : t('IotSceneLinkage.scope.range', { count })
+  return formatDeviceScopeText(t, {
+    selector: config.value.selector,
+    selectorValues: config.value.selectorValues,
+    options: config.value.options,
+  }, { emptyText: t('IotSceneLinkage.placeholder.device') })
+})
+const scopeTitle = computed(() => {
+  return formatDeviceScopeTitle(t, {
+    selector: config.value.selector,
+    selectorValues: config.value.selectorValues,
+    options: config.value.options,
+  }, { emptyText: t('IotSceneLinkage.placeholder.device') })
 })
 const readableProperties = computed(() => toThingModelOptions(
   metadata.value.properties.filter(item => item.expands?.type?.includes('read') !== false),

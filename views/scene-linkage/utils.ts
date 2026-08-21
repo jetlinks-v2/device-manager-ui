@@ -53,6 +53,7 @@ export interface SceneLinkageForm {
   name: string
   description?: string
   summary?: string
+  summaryTitle?: string
   debounceEnabled: boolean
   debounceMode: 'continuous' | 'interval'
   debounceTime: number
@@ -122,6 +123,7 @@ export interface SceneConditionColumns {
 export const defaultForm = (): SceneLinkageForm => ({
   name: '',
   summary: '',
+  summaryTitle: '',
   triggerKind: 'property',
   debounceEnabled: false,
   debounceMode: 'continuous',
@@ -365,6 +367,7 @@ export const toForm = (detail: any): SceneLinkageForm => {
     name: scene.name,
     description: scene.description,
     summary: scene.options?.summary || '',
+    summaryTitle: scene.options?.summaryTitle || scene.options?.summary || '',
     debounceEnabled: device.operation?.operator === 'state' ? false : Boolean(shakeLimit.enabled),
     debounceMode: shakeLimit.continuous ? 'continuous' : 'interval',
     debounceTime: Number(shakeLimit.time || 60),
@@ -684,6 +687,7 @@ export const buildRequest = (form: SceneLinkageForm, conditionColumns: SceneCond
     description: form.description,
     options: {
       summary: form.summary,
+      summaryTitle: form.summaryTitle || form.summary,
       trigger: buildTriggerOptions(),
       when: branchOptions,
     },
