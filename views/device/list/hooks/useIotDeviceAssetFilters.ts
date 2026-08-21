@@ -42,6 +42,8 @@ export function useIotDeviceAssetFilters(
   const areaOptions = ref<ProjectArea[]>([])
   const groupOptions = ref<DeviceGroup[]>([])
   const deviceLibraryProducts = ref<DeviceLibraryProductFilterOption[]>([])
+  const scopeType = ref<'area' | 'group'>(route.query.scopeType === 'group' ? 'group' : 'area')
+  const scopeId = ref(String(route.query.scopeId || ''))
 
   const areaChildrenByParent = computed(() => {
     const map = new Map<string, ProjectArea[]>()
@@ -388,9 +390,27 @@ export function useIotDeviceAssetFilters(
 
   function buildDeviceQueryTerms() {
     const filter = buildQueryFilter(submittedTerms.value, filterFields.value)
-    return (filter.terms as DeviceQueryTerm[])
+    const terms = (filter.terms as DeviceQueryTerm[])
       .map(normalizeDeviceQueryTerm)
       .filter((item): item is DeviceQueryTerm => Boolean(item))
+    if (!scopeId.value) return terms
+    if (scopeType.value === 'area') {
+      const ids = collectAreaScopeIds(scopeId.value)
+      if (ids.length) terms.push({ column: 'id', termType: 'space-bind$device', value: ids.length === 1 ? ids[0] : ids })
+    } else {
+      terms.push({ column: 'id', termType: 'dev-group-tree', value: scopeId.value })
+    }
+    return terms
+  }
+
+  function handleScopeChange(scope: { type: 'area' | 'group'; id: string }) {
+    scopeType.value = scope.type
+    scopeId.value = scope.id
+    const nextQuery = { ...route.query, scopeType: scope.type }
+    if (scope.id) nextQuery.scopeId = scope.id
+    else delete nextQuery.scopeId
+    void router.replace({ query: nextQuery })
+    onSearch()
   }
 
   function syncRouteQuery(terms: ConditionFilterTerm[]) {
@@ -442,7 +462,7 @@ export function useIotDeviceAssetFilters(
         queryDeviceLibraryProductFilterOptions_api(value).catch(() => []),
       ])
       areaOptions.value = areaSettings.areas
-      groupOptions.value = groups
+    groupOptions.value = groups
       deviceLibraryProducts.value = products
       if (hasProductFilter(submittedTerms.value)) onSearch()
     },
@@ -453,9 +473,14 @@ export function useIotDeviceAssetFilters(
     filterTerms,
     filterFields: filterFields as ComputedRef<ConditionFilterField[]>,
     commonFilterFields,
+    areaOptions,
+    groupOptions,
+    scopeType,
+    scopeId,
     submittedTerms,
     buildDeviceQueryTerms,
     handleFilterTermsUpdate,
     handleFilterSearch,
+    handleScopeChange,
   }
 }

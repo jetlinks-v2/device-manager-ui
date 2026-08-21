@@ -71,12 +71,7 @@
       :style="{ '--dd-tags-expanded-shift': `${-tagsExpandedOffset / 2}px` }"
     >
       <div class="dd-hero__icon" :data-category="categoryKey ?? 'sensor'">
-        <img
-          v-if="device.imageUrl && !deviceImageFailed"
-          :src="device.imageUrl"
-          :alt="$t('IotDeviceList.table.deviceImageAlt', { name: device.name })"
-          @error="deviceImageFailed = true"
-        >
+        <IconValueView v-if="device.imageUrl" :value="device.imageUrl" :fallback-text="device.name" :size="52" />
         <AIcon v-else :type="categoryIcon" aria-hidden="true" />
       </div>
       <div class="dd-hero__main">
@@ -294,6 +289,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import { onlyMessage } from '@jetlinks-web/utils'
+import { IconValueView } from '@jetlinks-web-core/components/IconValue'
 import {
   deleteDevice_api,
   deployDevice_api,
@@ -374,7 +370,6 @@ const deviceId = computed(() => String(route.params.deviceId ?? route.params.id)
 const healthPath = computed(() => buildIotDeviceHealthPath(projectId.value, deviceId.value, undefined, route))
 
 const device = ref<IotDevice | null>(null)
-const deviceImageFailed = ref(false)
 const hasTransparentCodec = computed(() =>
   Boolean(device.value?.features?.some((item: any) => item?.id === 'transparentCodec')),
 )
@@ -1739,12 +1734,6 @@ watch(
   { deep: true, immediate: true },
 )
 
-watch(
-  () => device.value?.imageUrl,
-  () => {
-    deviceImageFailed.value = false
-  },
-)
 
 watch(activeRealtimePropertyKeySignature, async () => {
   if (!device.value?.id) return

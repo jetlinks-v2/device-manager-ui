@@ -1,36 +1,54 @@
 <template>
   <div class="iot-device-list">
-		<a-flex :gap="16">
-			<IotDeviceAssetSearchBar
-				:filter-fields="filterFields"
-				:common-filter-fields="commonFilterFields"
-				:filter-terms="filterTerms"
-				@update:filter-terms="handleFilterTermsUpdate"
-				@search="handleFilterSearch"
-			/>
-			<j-permission-button
-				class="project-onboarding-target--iot-device-create"
-				type="primary"
-				:hasPermission="true"
-				@click="openCreateDrawer"
-			>
-				<template #icon><AIcon type="PlusOutlined" /></template>
-				{{ $t('IotDeviceList.action.create') }}
-			</j-permission-button>
-		</a-flex>
-
-    <IotDeviceAssetTable
+    <EqualHeightColumns class="iot-device-list__layout" height="auto" left-width="15rem" right-width="1fr">
+      <template #left>
+        <IotDeviceScopeSidebar
+          :active-type="scopeType"
+          :active-id="scopeId"
+          :areas="areaOptions"
+          :groups="groupOptions"
+          :total-device-count="totalDeviceCount"
+          :area-device-counts="areaDeviceCounts"
+          :group-device-counts="groupDeviceCounts"
+          @change="handleScopeChange"
+        />
+      </template>
+      <template #right>
+        <section class="iot-device-list__main">
+          <IotDeviceAssetSummary :summary="deviceSummary" />
+          <a-flex class="iot-device-list__search-actions" :gap="16" align="center" wrap="wrap">
+            <IotDeviceAssetSearchBar
+              class="iot-device-list__search"
+              :filter-fields="filterFields"
+              :common-filter-fields="commonFilterFields"
+              :filter-terms="filterTerms"
+              @update:filter-terms="handleFilterTermsUpdate"
+              @search="handleFilterSearch"
+            />
+            <a-flex class="iot-device-list__action-group" :gap="16" align="center" wrap="wrap">
+              <IotDeviceAssetBatchActions
+                :selected-count="selectedRowKeys.length"
+                :running-action="runningAction"
+                :on-batch-toggle="toggleSelectedDevices"
+                :on-assign-area="openAssignAreaModal"
+                :on-assign-group="openAssignGroupModal"
+              />
+              <j-permission-button class="project-onboarding-target--iot-device-create" type="primary" :hasPermission="true" @click="openCreateDrawer">
+                <template #icon><AIcon type="PlusOutlined" /></template>
+                {{ $t('IotDeviceList.action.create') }}
+              </j-permission-button>
+            </a-flex>
+          </a-flex>
+          <IotDeviceAssetTable
       :total-devices="totalDevices"
       :selected-count="selectedRowKeys.length"
       :has-active-filters="hasActiveFilters"
-      :running-action="runningAction"
       :load-error="loadError"
       :table-params="tableParams"
       :table-pagination="tablePagination"
       :table-request="tableRequest"
       :row-selection="rowSelection"
       :connection-status-of="connectionStatusOf"
-      :risk-label-of="riskLabelOf"
       :product-name-text="productNameText"
       :area-text="areaText"
       :area-full-text="areaFullText"
@@ -38,18 +56,14 @@
       :group-full-text="groupFullText"
       :is-device-disabled="isDeviceDisabled"
       :action-busy-id="actionBusyId"
-      :product-update-busy-id="runningProductId"
-      :can-update-product="canUpdateProduct"
-      :product-update-tooltip-of="productUpdateTooltipOf"
-      :on-batch-toggle="toggleSelectedDevices"
-      :on-assign-area="openAssignAreaModal"
-      :on-assign-group="openAssignGroupModal"
       :on-detail="goToDetail"
       :on-edit="openEditDrawer"
       :on-toggle="toggleDeviceEnabled"
       :on-delete="deleteDevice"
-      :on-update-product="updateDeviceProduct"
-    />
+          />
+        </section>
+      </template>
+    </EqualHeightColumns>
   </div>
 
   <IotAddDeviceDrawer
@@ -79,27 +93,29 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { onlyMessage } from '@jetlinks-web/utils'
-import { PageHeader } from '@jetlinks-web-core/components'
+import EqualHeightColumns from '@jetlinks-web-core/components/EqualHeightColumns/index.vue'
 import { bindDeviceGroupDevices_api, type DeviceGroup } from '@device-manager-ui/api/deviceGroup'
 
 import IotAddDeviceDrawer from './IotAddDeviceDrawer.vue'
 import IotDeviceAssignAreaModal from './IotDeviceAssignAreaModal.vue'
 import IotDeviceAssignGroupModal from './IotDeviceAssignGroupModal.vue'
+import IotDeviceAssetBatchActions from './IotDeviceAssetBatchActions.vue'
 import IotDeviceAssetSearchBar from './IotDeviceAssetSearchBar.vue'
+import IotDeviceAssetSummary from './IotDeviceAssetSummary.vue'
 import IotDeviceAssetTable from './IotDeviceAssetTable.vue'
+import IotDeviceScopeSidebar from './IotDeviceScopeSidebar.vue'
 import { useIotDeviceAssetActions } from '../hooks/useIotDeviceAssetActions'
 import { useIotDeviceAssetBulkActions } from '../hooks/useIotDeviceAssetBulkActions'
 import { useIotDeviceAssetFilters } from '../hooks/useIotDeviceAssetFilters'
 import { useIotDeviceAssetPresentation } from '../hooks/useIotDeviceAssetPresentation'
+import { useIotDeviceScopeCounts } from '../hooks/useIotDeviceScopeCounts'
 import { useIotDeviceAssetTable } from '../hooks/useIotDeviceAssetTable'
 import { buildIotDeviceDetailPath, resolveIotProjectId } from '../hooks/useIotDeviceRouting'
 import { useIotDeviceMeta } from '../hooks/useIotDeviceMeta'
-import { useIotChildGatewayGuide } from '../hooks/useIotChildGatewayGuide'
-import { useIotDeviceLibraryQuickUpdate } from '../hooks/useIotDeviceLibraryQuickUpdate'
 import { reassignIotDevicesToArea } from '../hooks/iotDeviceAreaGroupBindings'
 import { resolveSpaceAreaError } from '../services/shared/spaceAreaError'
 import type { IotDevice } from '../types'
@@ -109,7 +125,7 @@ const { t: $t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const projectId = computed(() => resolveIotProjectId(route))
-const { connectionStatusMeta, riskMeta } = useIotDeviceMeta()
+const { connectionStatusMeta } = useIotDeviceMeta()
 const devices = ref<IotDevice[]>([])
 const assignGroupOpen = ref(false)
 const assignGroupSaving = ref(false)
@@ -122,20 +138,26 @@ const {
   filterTerms,
   filterFields,
   commonFilterFields,
-  submittedTerms,
+  submittedTerms, areaOptions, groupOptions, scopeType, scopeId,
   buildDeviceQueryTerms,
   handleFilterTermsUpdate,
-  handleFilterSearch,
+  handleFilterSearch, handleScopeChange: changeScope,
 } = useIotDeviceAssetFilters(projectId, devices, connectionStatusMeta, route, router, () => refreshTable(true))
 
 const {
   totalDevices,
+  deviceSummary,
   loadError,
   tableParams,
   tablePagination,
   refreshTable,
+  refreshKey,
   tableRequest,
 } = useIotDeviceAssetTable(projectId, submittedTerms, buildDeviceQueryTerms, devices)
+
+const { totalDeviceCount, areaDeviceCounts, groupDeviceCounts } = useIotDeviceScopeCounts(
+  projectId, areaOptions, groupOptions, refreshKey,
+)
 
 const {
   deviceFormOpen,
@@ -149,13 +171,6 @@ const {
   toggleDeviceEnabled,
   deleteDevice,
 } = useIotDeviceAssetActions(devices, refreshTable)
-
-const {
-  runningProductId,
-  canUpdateProduct,
-  productUpdateTooltipOf,
-  updateDeviceProduct,
-} = useIotDeviceLibraryQuickUpdate(() => projectId.value, () => refreshTable())
 
 const presentation = useIotDeviceAssetPresentation(devices, connectionStatusMeta)
 
@@ -177,16 +192,7 @@ const {
   groupFullText,
 } = presentation
 
-const {
-  isChildDeviceType,
-  openChildGatewayGuide,
-  openCreatedDeviceAccessGuide,
-} = useIotChildGatewayGuide(projectId, route, router, $t)
-const hasActiveFilters = computed(() => submittedTerms.value.some(hasFilterValue))
-
-function riskLabelOf(device: IotDevice) {
-  return riskMeta(device.risk)
-}
+const hasActiveFilters = computed(() => Boolean(scopeId.value) || submittedTerms.value.some(hasFilterValue))
 
 function hasFilterValue(term: { value?: unknown; terms?: unknown }): boolean {
   if (Array.isArray(term.terms) && term.terms.some((item) => hasFilterValue(item as { value?: unknown; terms?: unknown }))) {
@@ -206,14 +212,16 @@ function goToDetail(deviceId: string) {
 
 function handleDeviceCreated(payload: IotAddDeviceCreatedPayload | string) {
   const deviceId = typeof payload === 'string' ? payload : payload.deviceId
-  const deviceType = typeof payload === 'string' ? undefined : payload.deviceType
   onDeviceCreated()
-  if (isChildDeviceType(deviceType)) {
-    openChildGatewayGuide()
-    return
-  }
-  openCreatedDeviceAccessGuide(deviceId)
+  goToDetail(deviceId)
 }
+
+function handleScopeChange(scope: { type: 'area' | 'group'; id: string }) {
+  clearSelection()
+  changeScope(scope)
+}
+
+watch([scopeType, scopeId], () => clearSelection())
 
 function openAssignGroupModal() {
   assignGroupError.value = ''
