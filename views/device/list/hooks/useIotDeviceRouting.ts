@@ -30,7 +30,7 @@ export function resolveIotProjectId(route: IotRouteLike, fallback = 'doraemon') 
 }
 
 export function buildIotDeviceListPath(projectId: string, route?: IotRouteLike) {
-  if (!isProjectIotRoute(route)) return '/iot-user/device/list'
+  if (!isProjectIotRoute(route)) return '/access/device'
 
   return `/project/${encodePathSegment(projectId)}/iot-user/list`
 }
@@ -46,7 +46,7 @@ export function buildIotDeviceDetailPath(
     if (value) search.set(key, value)
   })
   const searchText = search.toString()
-  return `/iot-user/device/list/Detail/${encodePathSegment(deviceId)}${searchText ? `?${searchText}` : ''}`
+  return `/access/device/Detail/${encodePathSegment(deviceId)}${searchText ? `?${searchText}` : ''}`
 }
 
 export function buildIotDeviceDiagnosisPath(projectId: string, deviceId: string, route?: IotRouteLike) {

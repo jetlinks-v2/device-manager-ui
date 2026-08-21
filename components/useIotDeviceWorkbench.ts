@@ -850,7 +850,7 @@ async function loadWorkbench() {
 function goDeviceAlarmRecord(deviceId?: string) {
   if (!deviceId) return
   push({
-    path: `/iot-user/device/list/Detail/${encodeURIComponent(deviceId)}`,
+    path: `/access/device/Detail/${encodeURIComponent(deviceId)}`,
     query: {
       projectId: resolvedProjectId.value,
       tab: 'alarm',

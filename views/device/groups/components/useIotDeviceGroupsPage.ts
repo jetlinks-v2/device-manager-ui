@@ -755,7 +755,7 @@ export function useIotDeviceGroupsPage() {
     areaExpandedKeys,
     areaTreeData,
     deviceCommonFilterFieldsByView,
-    deviceDetailPath: (deviceId: string) => `/iot-user/device/list/Detail/${deviceId}?${new URLSearchParams({ projectId: projectId.value }).toString()}`,
+    deviceDetailPath: (deviceId: string) => `/access/device/Detail/${deviceId}?${new URLSearchParams({ projectId: projectId.value }).toString()}`,
     groupKeyword,
     groupViewOptions,
     handleDeviceFilterSearch,
