@@ -23,6 +23,7 @@ import {
 import { queryDeviceGroupDetailList_api, type DeviceGroup } from '@device-manager-ui/api/deviceGroup'
 import { queryProjectSpaceAreaSettings_api } from '@device-manager-ui/api/spaceArea'
 import type { ProjectArea } from '@device-manager-ui/modules/defaults/types'
+import { formatIconValueFont } from '@jetlinks-web-core/components/IconValue'
 import { categoryLabel, toTemplateProductOption } from './iotAddDeviceProductOptions'
 import { buildAreaTreeData, isSelectableDeviceArea } from './iotAreaTreeOptions'
 import { saveIotDeviceAreaGroupBindings } from './iotDeviceAreaGroupBindings'
@@ -81,7 +82,7 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
   const libraryTagGroups = ref<IotDeviceLibraryTagGroup[]>([])
   const libraryTotal = ref(0)
   const libraryPageIndex = ref(0)
-  const libraryPageSize = ref(4)
+  const libraryPageSize = ref(6)
   const libraryLoaded = ref(false)
   const libraryTagLoaded = ref(false)
   const productLoaded = ref(false)
@@ -349,10 +350,6 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
       ? normalizeCreateDeviceErrorMessage(progress.message)
       : progress.message
     if (!message) return
-    const duplicated = installProgressLogs.value.some((item) =>
-      item.type === progress.type && item.message === message,
-    )
-    if (duplicated) return
     installProgressLogs.value = [
       ...installProgressLogs.value,
       {
@@ -360,7 +357,7 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
         message,
         id: `${Date.now()}-${installProgressLogs.value.length}`,
       },
-    ].slice(-20)
+    ]
   }
 
   function isMissingDeviceAccessConfigError(message: string) {
@@ -392,12 +389,30 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
   function appendInstallError(error: unknown) {
     const message = getCreateDeviceErrorMessage(error)
     if (!message || installProgressLogs.value.some((item) => item.type === 'error' && item.message === message)) return
-    appendInstallProgress({ type: 'error', message })
+    appendInstallProgress({ type: 'error', message, payload: error })
   }
 
   function appendInstallWarning(message: string, extra?: unknown) {
     if (!message || installProgressLogs.value.some((item) => item.type === 'warning' && item.message === message)) return
     appendInstallProgress({ type: 'warning', message, extra })
+  }
+
+  function selectPresetIcon(icon: string) {
+    imageUpload.clearImage()
+    form.imageUrl = formatIconValueFont(icon)
+    imageUpload.setExistingImage(form.imageUrl)
+  }
+
+  function backToLibrary() {
+    form.name = ''
+    form.areaId = ''
+    form.area = ''
+    form.groupId = ''
+    form.description = ''
+    clearImage()
+    errorMessage.value = ''
+    clearInstallProgress()
+    void nextTick(() => formRef.value?.clearValidate?.())
   }
 
   function resetForm() {
@@ -430,7 +445,7 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
     libraryTagGroups.value = []
     libraryTotal.value = 0
     libraryPageIndex.value = 0
-    libraryPageSize.value = 4
+    libraryPageSize.value = 6
     productSync.reset()
     libraryLoaded.value = false
     libraryTagLoaded.value = false
@@ -641,6 +656,8 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
     installProgressState,
     categoryLabel, selectProduct, selectTemplate, onAreaChange,
     handleImageBeforeUpload: imageUpload.handleImageBeforeUpload,
+    selectPresetIcon,
+    backToLibrary,
     addTemplateToProject, loadDeviceLibraryTemplates, loadDeviceLibraryTags, loadProducts, loadConfigOptions, loadDeviceTemplates,
     prepareConfirmStep, onClose, onSubmit, onUpdateAndSubmit,
   }

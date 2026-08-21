@@ -1,55 +1,5 @@
 <template>
   <section class="iot-device-list__table-wrap">
-    <div class="iot-device-list__toolbar">
-      <a-space class="iot-device-list__batch-actions" wrap :size="[8, 8]">
-        <j-permission-button
-          class="iot-device-list__batch-action"
-          :disabled="!selectedCount"
-          :loading="runningAction === 'enable'"
-          :popConfirm="{
-            title: $t('IotDeviceList.confirm.batchEnable', { count: selectedCount }),
-            okButtonProps: { loading: runningAction === 'enable' },
-            onConfirm: () => onBatchToggle('enable'),
-          }"
-        >
-          <template #icon><AIcon type="PlayCircleOutlined" /></template>
-          {{ $t('IotDeviceList.action.batchEnable') }}
-        </j-permission-button>
-        <j-permission-button
-          class="iot-device-list__batch-action"
-          :disabled="!selectedCount"
-          :loading="runningAction === 'disable'"
-          :hasPermission="true"
-          :popConfirm="{
-            title: $t('IotDeviceList.confirm.batchDisable', { count: selectedCount }),
-            okButtonProps: { loading: runningAction === 'disable' },
-            onConfirm: () => onBatchToggle('disable'),
-          }"
-        >
-          <template #icon><AIcon type="StopOutlined" /></template>
-          {{ $t('IotDeviceList.action.batchDisable') }}
-        </j-permission-button>
-        <j-permission-button
-          class="iot-device-list__batch-action"
-          :disabled="!selectedCount"
-          :hasPermission="true"
-          @click="onAssignArea"
-        >
-          <template #icon><AIcon type="EnvironmentOutlined" /></template>
-          {{ $t('IotDeviceList.action.assignArea') }}
-        </j-permission-button>
-        <j-permission-button
-          class="iot-device-list__batch-action"
-          :disabled="!selectedCount"
-          :hasPermission="true"
-          @click="onAssignGroup"
-        >
-          <template #icon><AIcon type="ApartmentOutlined" /></template>
-          {{ $t('IotDeviceList.action.assignGroup') }}
-        </j-permission-button>
-      </a-space>
-    </div>
-
     <a-alert
       v-if="loadError"
       class="iot-device-list__error"
@@ -59,6 +9,7 @@
     />
 
     <j-pro-table
+      class="iot-device-list__table"
       mode="TABLE"
       rowKey="id"
       :columns="columns"
@@ -95,7 +46,7 @@
       <template #device="record">
         <div class="iot-device-list__device-cell" @click="onDetail(record.id)">
           <IconBadge
-            :image="record.imageUrl"
+            :image="deviceImageUrl(record.imageUrl)"
             :icon="deviceIconType(record)"
             :size="40"
             :inner-size="32"
@@ -117,14 +68,12 @@
           <span class="iot-device-list__cell-text">{{ productNameText(record) }}</span>
         </a-tooltip>
       </template>
-      <template #productManufacturer="record">
-        <a-tooltip :title="displayText(record.productManufacturer)">
-          <span class="iot-device-list__cell-text">{{ displayText(record.productManufacturer) }}</span>
-        </a-tooltip>
-      </template>
-      <template #productModel="record">
-        <a-tooltip :title="displayText(record.productModel)">
-          <span class="iot-device-list__cell-text">{{ displayText(record.productModel) }}</span>
+      <template #brandModel="record">
+        <a-tooltip :title="brandModelFullText(record)">
+          <span class="iot-device-list__cell-stack">
+            <span class="iot-device-list__cell-text">{{ displayText(record.productManufacturer) }}</span>
+            <span class="iot-device-list__cell-subtext">{{ displayText(record.productModel) }}</span>
+          </span>
         </a-tooltip>
       </template>
       <template #status="record">
@@ -162,53 +111,16 @@
         </a-tooltip>
       </template>
 
-      <template #risk="record">
-        <StatusTag
-          :status="riskStatusTagStatusOf(riskLabelOf(record).tone)"
-          :text="riskLabelOf(record).label"
-          :bordered="false"
-        >
-          <template #icon>
-            <AIcon
-              :type="riskLabelOf(record).tone === 'ok' ? 'CheckCircleFilled' : 'ExclamationCircleFilled'"
-              aria-hidden="true"
-            />
-          </template>
-        </StatusTag>
-      </template>
       <template #action="record">
-        <a-popover
-          placement="bottomRight"
-          trigger="click"
-          :open="actionPopoverOpenId === record.id"
-          overlay-class-name="iot-device-list-action-popover"
-          @open-change="(open: boolean) => onActionPopoverOpenChange(record.id, open)"
-        >
-          <j-permission-button
-            type="text"
-            size="small"
-            class="iot-device-list__more"
-            :hasPermission="true"
-            @click.stop
-          >
-            <AIcon type="MoreOutlined" />
-          </j-permission-button>
-          <template #content>
-            <IotDeviceAssetActionPanel
-              :device="record"
-              :action-busy-id="actionBusyId"
-              :product-update-busy-id="productUpdateBusyId"
-              :is-device-disabled="isDeviceDisabled"
-              :can-update-product="canUpdateProduct"
-              :product-update-tooltip-of="productUpdateTooltipOf"
-              :run-toggle-device="runToggleDevice"
-              :run-delete-device="runDeleteDevice"
-              @detail="(deviceId) => { closeActionPopover(); onDetail(deviceId) }"
-              @edit="(device) => { closeActionPopover(); onEdit(device) }"
-              @update-product="onUpdateProduct"
-            />
-          </template>
-        </a-popover>
+        <IotDeviceAssetActionPanel
+          :device="record"
+          :action-busy-id="actionBusyId"
+          :is-device-disabled="isDeviceDisabled"
+          :run-toggle-device="runToggleDevice"
+          :run-delete-device="runDeleteDevice"
+          @detail="onDetail"
+          @edit="onEdit"
+        />
       </template>
 
       <template #emptyText>
@@ -226,8 +138,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { parseIconValue } from '@jetlinks-web-core/components/IconValue'
 import IconBadge from '@jetlinks-web-core/components/IconBadge/index.vue'
 
 import IotDeviceAssetActionPanel from './IotDeviceAssetActionPanel.vue'
@@ -238,14 +151,12 @@ const props = defineProps<{
   totalDevices: number
   selectedCount: number
   hasActiveFilters: boolean
-  runningAction: '' | 'enable' | 'disable' | 'export'
   loadError: string
   tableParams: Record<string, unknown>
   tablePagination: Record<string, unknown>
   tableRequest: (params: { pageIndex?: number; pageSize?: number }) => Promise<unknown>
   rowSelection: Record<string, unknown>
   connectionStatusOf: (device: IotDevice) => { label: string; tone: string }
-  riskLabelOf: (device: IotDevice) => { label: string; tone: 'ok' | 'warn' | 'err' }
   productNameText: (device: IotDevice) => string
   areaText: (device: IotDevice) => string
   areaFullText: (device: IotDevice) => string
@@ -253,19 +164,11 @@ const props = defineProps<{
   groupFullText: (device: IotDevice) => string
   isDeviceDisabled: (device: IotDevice) => boolean
   actionBusyId: string
-  productUpdateBusyId: string
-  canUpdateProduct: (device: IotDevice) => boolean
-  productUpdateTooltipOf: (device: IotDevice) => { title: string } | undefined
-  onBatchToggle: (target: 'enable' | 'disable') => void | Promise<void>
-  onAssignArea: () => void
-  onAssignGroup: () => void
   onDetail: (deviceId: string) => void
   onEdit: (device: IotDevice) => void
   onToggle: (device: IotDevice) => void | Promise<void>
   onDelete: (device: IotDevice) => void | Promise<void>
-  onUpdateProduct: (device: IotDevice) => void
 }>()
-const actionPopoverOpenId = ref('')
 const columns = useIotDeviceAssetTableColumns($t)
 const resultSummaryText = computed(() =>
   props.hasActiveFilters
@@ -273,28 +176,25 @@ const resultSummaryText = computed(() =>
     : $t('IotDeviceList.toolbar.totalSummary', { total: props.totalDevices }),
 )
 
-function onActionPopoverOpenChange(deviceId: string, open: boolean) {
-  actionPopoverOpenId.value = open ? deviceId : ''
-}
-
-function closeActionPopover() {
-  actionPopoverOpenId.value = ''
-}
-
 async function runToggleDevice(device: IotDevice) {
   await props.onToggle(device)
-  closeActionPopover()
 }
 
 async function runDeleteDevice(device: IotDevice) {
   await props.onDelete(device)
-  closeActionPopover()
 }
 
 function deviceIconType(device: IotDevice) {
+  const parsed = parseIconValue(device.imageUrl)
+  if (parsed.kind === 'font') return parsed.iconType
   if (device.deviceTypeValue === 'gateway') return 'GatewayOutlined'
   if (device.deviceTypeValue === 'childrenDevice') return 'ApartmentOutlined'
   return 'ApiOutlined'
+}
+
+function deviceImageUrl(value?: string) {
+  const parsed = parseIconValue(value)
+  return parsed.kind === 'image' ? parsed.url : ''
 }
 
 function displayText(value?: string) {
@@ -313,6 +213,10 @@ function deviceTypeFullText(device: IotDevice) {
   return `${deviceTypeText(device)} / ${displayText(device.accessMode)}`
 }
 
+function brandModelFullText(device: IotDevice) {
+  return `${displayText(device.productManufacturer)} / ${displayText(device.productModel)}`
+}
+
 function deviceGroupFullText(device: IotDevice) {
   return `${$t('IotDeviceList.table.areaGroupLabel')}${props.areaFullText(device)} / ${$t('IotDeviceList.table.businessGroupLabel')}${props.groupFullText(device)}`
 }
@@ -329,12 +233,6 @@ function connectionStatusTagStatusOf(tone: string) {
   return 'default' as const
 }
 
-function riskStatusTagStatusOf(tone: string) {
-  if (tone === 'ok') return 'info' as const
-  if (tone === 'warn') return 'warning' as const
-  if (tone === 'err') return 'error' as const
-  return 'default' as const
-}
 </script>
 
 <style scoped src="../styles/device-list-table.less" lang="less"></style>

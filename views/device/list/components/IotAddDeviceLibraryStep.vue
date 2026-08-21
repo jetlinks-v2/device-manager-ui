@@ -1,9 +1,14 @@
 <template>
   <section class="add-device-library">
-<!--    <div class="add-device-library__head">-->
-
-<!--    </div>-->
-
+    <a-input-search
+      v-model:value="keyword"
+      class="add-device-library__search"
+      allow-clear
+      enter-button
+      :placeholder="$t('IotDeviceList.add.librarySearch')"
+      @search="handleKeywordSearch"
+      @change="handleKeywordChange"
+    />
     <div class="add-device-library__body" :class="{ 'has-tag-panel': showTagPanel }">
       <aside v-if="showTagPanel" class="add-device-library__tag-panel">
         <div class="add-device-library__tag-panel-head">
@@ -17,41 +22,27 @@
           <span>{{ $t('IotDeviceList.add.libraryTagLoading') }}</span>
         </div>
         <template v-else>
-          <div v-for="group in tagFilterGroups" :key="group.id" class="add-device-library__tag-row">
-            <span>{{ group.name }}</span>
-            <button
-              v-for="option in group.tags"
-              :key="option.id"
-              type="button"
-              class="add-device-library__tag-option"
-              :class="{ 'is-active': activeTagIds.includes(option.id) }"
-              @click="toggleTagFilter(option.id)"
-            >
-              {{ option.name }}
-            </button>
-          </div>
+          <IotAddDeviceLibraryTagFilterRow
+            v-for="group in visibleTagFilterGroups"
+            :key="group.id"
+            :group="group"
+            :active-tag-ids="activeTagIds"
+            @toggle-tag="toggleTagFilter"
+          />
+          <a-button
+            v-if="hasHiddenTagFilterGroups"
+            class="add-device-library__tag-panel-toggle"
+            type="link"
+            size="small"
+            @click="tagGroupsExpanded = !tagGroupsExpanded"
+          >
+            {{ tagGroupsExpanded ? $t('IotDeviceList.add.libraryTagCollapseGroups') : $t('IotDeviceList.add.libraryTagExpandGroups') }}
+            <AIcon :type="tagGroupsExpanded ? 'UpOutlined' : 'DownOutlined'" />
+          </a-button>
         </template>
       </aside>
 
       <div class="add-device-library__content">
-          <a-flex gap="small">
-            <a-input-search
-              class="add-device-library__search"
-              v-model:value="keyword"
-              allow-clear
-              enter-button
-              :placeholder="$t('IotDeviceList.add.librarySearch')"
-              @search="handleKeywordSearch"
-              @change="handleKeywordChange"
-            />
-              <a-button type="primary" @click="$emit('custom')">
-                  <template #icon>
-                      <AIcon type="EditOutlined" aria-hidden="true" />
-                  </template>
-                  {{ $t('IotDeviceList.add.customAdd') }}
-              </a-button>
-          </a-flex>
-
         <a-spin :spinning="loading">
           <div v-if="templates.length" class="add-device-library__grid">
             <IotAddDeviceLibraryCard
@@ -96,6 +87,9 @@ import {
   type IotDeviceProductTemplate,
 } from '@device-manager-ui/api/device'
 import IotAddDeviceLibraryCard from './IotAddDeviceLibraryCard.vue'
+import IotAddDeviceLibraryTagFilterRow from './IotAddDeviceLibraryTagFilterRow.vue'
+
+const COLLAPSED_TAG_GROUP_COUNT = 5
 
 const props = defineProps({
   templates: { type: Array as PropType<IotDeviceProductTemplate[]>, required: true },
@@ -104,14 +98,13 @@ const props = defineProps({
   tagFilterGroups: { type: Array as PropType<IotDeviceLibraryTagGroup[]>, default: () => [] },
   total: { type: Number, default: 0 },
   pageIndex: { type: Number, default: 0 },
-  pageSize: { type: Number, default: 4 },
+  pageSize: { type: Number, default: 6 },
   loading: { type: Boolean, default: false },
   tagLoading: { type: Boolean, default: false },
 })
 
 const emit = defineEmits<{
   (e: 'select-template', templateId: string): void
-  (e: 'custom'): void
   (e: 'query-change', query: { pageIndex: number; pageSize: number; keyword: string; tags: string[] }): void
 }>()
 
@@ -120,9 +113,14 @@ const keyword = ref('')
 const submittedKeyword = ref('')
 const activeTagIds = ref<string[]>([])
 const page = ref(props.pageIndex + 1)
+const tagGroupsExpanded = ref(false)
 
 const showTagPanel = computed(() => props.tagLoading || props.tagFilterGroups.length || activeTagIds.value.length)
 const hasActiveTagFilter = computed(() => activeTagIds.value.length > 0)
+const visibleTagFilterGroups = computed(() => (
+  tagGroupsExpanded.value ? props.tagFilterGroups : props.tagFilterGroups.slice(0, COLLAPSED_TAG_GROUP_COUNT)
+))
+const hasHiddenTagFilterGroups = computed(() => props.tagFilterGroups.length > COLLAPSED_TAG_GROUP_COUNT)
 
 function handleKeywordSearch(value = keyword.value) {
   submittedKeyword.value = value.trim()
@@ -135,7 +133,13 @@ function handleKeywordChange(event: Event) {
 }
 
 function toggleTagFilter(tagId: string) {
-  activeTagIds.value = activeTagIds.value.includes(tagId)
+  const isSelected = activeTagIds.value.includes(tagId)
+  if (!isSelected && props.tagFilterGroups.slice(COLLAPSED_TAG_GROUP_COUNT).some((group) => (
+    group.tags.some((tag) => tag.id === tagId)
+  ))) {
+    tagGroupsExpanded.value = true
+  }
+  activeTagIds.value = isSelected
     ? activeTagIds.value.filter((item) => item !== tagId)
     : [...activeTagIds.value, tagId]
   updatePageAndQuery(1)
@@ -178,6 +182,9 @@ watch(
     if (page.value !== nextPage) page.value = nextPage
   },
 )
+watch(() => props.tagFilterGroups, () => {
+  tagGroupsExpanded.value = false
+}, { deep: true })
 </script>
 
 <style scoped src="./IotAddDeviceDrawer.css"></style>
