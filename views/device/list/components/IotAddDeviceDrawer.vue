@@ -1,14 +1,13 @@
 <template>
   <a-modal :open="open" :width="isEditMode ? 680 : 960" :mask-closable="false" centered @cancel="onActiveClose">
     <template #title>
-      <IotAddDeviceModalTitle :edit-mode="isEditMode" />
+      <IotAddDeviceModalTitle :edit-mode="isEditMode" :current-step="currentStep" :creating="isCreating" />
     </template>
     <section class="add-device">
-      <a-steps v-if="!isEditMode" class="add-device__steps" size="small" :current="currentStep" :items="createSteps" />
-      <a-alert v-if="activeErrorMessage" type="error" show-icon :message="activeErrorMessage" />
+      <a-alert v-if="activeErrorMessage && !isCreating" type="error" show-icon :message="activeErrorMessage" />
       <a-form :ref="setActiveFormRef" class="add-device__form" layout="vertical" :model="activeForm" :rules="activeFormRules">
         <template v-if="isEditMode">
-          <IotDeviceBasicFields :form="activeForm" :image-preview-url="activeImagePreviewUrl" :image-file-name="activeImageFileName" :area-tree-data="activeAreaTreeData" :group-select-options="activeGroupSelectOptions" :group-multiple="isEditMode" :on-area-change="activeOnAreaChange" :handle-image-before-upload="activeHandleImageBeforeUpload" />
+          <IotDeviceBasicFields :form="activeForm" :image-preview-url="activeImagePreviewUrl" :image-file-name="activeImageFileName" :area-tree-data="activeAreaTreeData" :group-select-options="activeGroupSelectOptions" :group-multiple="isEditMode" show-icon :on-area-change="activeOnAreaChange" :handle-image-before-upload="activeHandleImageBeforeUpload" :on-select-preset-icon="activeSelectPresetIcon" />
         </template>
         <template v-else>
           <template v-if="currentStep === 0">
@@ -24,9 +23,8 @@
               :page-size="libraryPageSize"
               :loading="libraryLoading"
               :tag-loading="libraryTagLoading"
-              @select-template="selectTemplate"
+              @select-template="handleTemplateSelect"
               @query-change="loadDeviceLibraryTemplates(true, $event)"
-              @custom="switchToCustom"
             />
             <IotAddDeviceCustomStep
               v-else
@@ -48,19 +46,30 @@
               @add-template="addTemplateToProject"
             />
           </template>
-          <IotDeviceBasicFields v-else :form="activeForm" :image-preview-url="activeImagePreviewUrl" :image-file-name="activeImageFileName" :area-tree-data="activeAreaTreeData" :group-select-options="activeGroupSelectOptions" :on-area-change="activeOnAreaChange" :handle-image-before-upload="activeHandleImageBeforeUpload" />
+          <template v-else-if="isCreating">
+            <IotDeviceQuotaExceeded v-if="quotaExceededState.detected" :state="quotaExceededState" />
+            <IotAddDeviceInstallProgress v-else :state="installProgressState" :device-name="form.name" />
+          </template>
+          <template v-else>
+            <IotAddDeviceSelectedTemplate
+              :template="selectedTemplate"
+              @change="backToLibrary"
+            />
+            <IotDeviceBasicFields :form="activeForm" :image-preview-url="activeImagePreviewUrl" :image-file-name="activeImageFileName" :area-tree-data="activeAreaTreeData" :group-select-options="activeGroupSelectOptions" stack-fields :on-area-change="activeOnAreaChange" :handle-image-before-upload="activeHandleImageBeforeUpload" :on-select-preset-icon="activeSelectPresetIcon" />
+          </template>
         </template>
       </a-form>
     </section>
-    <template #footer>
+    <template v-if="isEditMode || currentStep > 0 && (!isCreating || hasInstallError)" #footer>
       <IotAddDeviceModalFooter
-        :show-previous="!isEditMode && currentStep > 0"
+        :show-previous="false"
+        :previous-text="$t('IotDeviceList.add.changeDevice')"
         :busy="activePrimaryBusy"
         :submit-disabled="activeSubmitDisabled"
         :submit-text="activeSubmitText"
         :show-extra-submit="showUpdateAndCreate" :extra-busy="updateAndCreateBusy" :extra-submit-text="updateAndCreateSubmitText" :extra-submit-disabled="updateAndCreateDisabled" :extra-submit-tooltip="updateAndCreateDisabledReason"
         @close="onActiveClose"
-        @previous="currentStep -= 1"
+        @previous="backToLibrary"
         @submit="onActiveSubmit"
         @extra-submit="onUpdateAndSubmit"
       />
@@ -69,17 +78,20 @@
 </template>
 
 <script setup lang="ts">
-import { computed, h, ref, resolveComponent, watch, type ComponentPublicInstance } from 'vue'
-import { Tooltip } from 'ant-design-vue'
+import { computed, ref, watch, type ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { onlyMessage } from '@jetlinks-web/utils'
 import IotAddDeviceCustomStep from './IotAddDeviceCustomStep.vue'
 import IotAddDeviceLibraryStep from './IotAddDeviceLibraryStep.vue'
 import IotAddDeviceModalFooter from './IotAddDeviceModalFooter.vue'
 import IotAddDeviceModalTitle from './IotAddDeviceModalTitle.vue'
+import IotAddDeviceInstallProgress from './IotAddDeviceInstallProgress.vue'
+import IotDeviceQuotaExceeded from './IotDeviceQuotaExceeded.vue'
+import IotAddDeviceSelectedTemplate from './IotAddDeviceSelectedTemplate.vue'
 import IotDeviceBasicFields from './IotDeviceBasicFields.vue'
 import { useIotAddDeviceDrawer, type IotAddDeviceCreatedPayload } from '../hooks/useIotAddDeviceDrawer'
 import { useIotEditDeviceDrawer } from '../hooks/useIotEditDeviceDrawer'
+import { useIotDeviceQuotaExceeded } from '../hooks/useIotDeviceQuotaExceeded'
 import type { IotDevice } from '../types'
 
 const props = withDefaults(defineProps<{
@@ -100,11 +112,6 @@ const currentStep = ref(0)
 const createMode = ref<'library' | 'custom'>('library')
 const libraryStepKey = ref(0)
 const productSyncPrepared = ref(false)
-const stepHelpIcon = resolveComponent('AIcon')
-const createSteps = computed(() => [
-  { title: stepTitle($t('IotDeviceList.add.stepLibrary'), $t('IotDeviceList.add.libraryDesc')) },
-  { title: $t('IotDeviceList.add.stepConfig') },
-])
 const addDrawerProps = {
   get open() { return props.open && !isEditMode.value },
   get projectId() { return props.projectId },
@@ -119,12 +126,12 @@ const editDrawerProps = {
 const {
   selectedProductKey, selectedTemplateKey, templateOpen,
   productMessage, libraryMessage, libraryLoading, libraryTagLoading, productLoading, deviceTemplateLoading,
-  busy, submitAction, errorMessage, imagePreviewUrl, imageFileName, formRef, form, formRules,
+  busy, submitAction, errorMessage, imagePreviewUrl, imageFileName, formRef, form, formRules, installProgressState,
   availableProducts, areaTreeData, groupSelectOptions, libraryProducts, libraryTagGroups,
-  libraryTotal, libraryPageIndex, libraryPageSize, libraryProductSyncState, deviceTemplateProducts,
+  libraryTotal, libraryPageIndex, libraryPageSize, libraryProductSyncState, deviceTemplateProducts, selectedTemplate,
   updateAndCreateDisabledReason, updateAndCreateBusy,
   updateAndCreateDisabled, updateAndCreateSubmitText, categoryLabel,
-  selectProduct, selectTemplate, onAreaChange, handleImageBeforeUpload, addTemplateToProject,
+  selectProduct, selectTemplate, onAreaChange, handleImageBeforeUpload, selectPresetIcon, backToLibrary: resetBasicFields, addTemplateToProject,
   loadDeviceLibraryTemplates, loadProducts, loadConfigOptions, loadDeviceTemplates,
   prepareConfirmStep: prepareProductSync, onClose, onSubmit, onUpdateAndSubmit,
 } = useIotAddDeviceDrawer(addDrawerProps, {
@@ -144,6 +151,7 @@ const {
   groupSelectOptions: editGroupSelectOptions,
   onAreaChange: onEditAreaChange,
   handleImageBeforeUpload: handleEditImageBeforeUpload,
+  selectPresetIcon: selectEditPresetIcon,
   onUpdateOpen: onEditUpdateOpen,
   onSubmit: onEditSubmit,
 } = useIotEditDeviceDrawer(editDrawerProps, {
@@ -171,32 +179,33 @@ const activeOnAreaChange = computed(() => isEditMode.value ? onEditAreaChange : 
 const activeHandleImageBeforeUpload = computed(() =>
   isEditMode.value ? handleEditImageBeforeUpload : handleImageBeforeUpload,
 )
+const isCreating = computed(() => !isEditMode.value && (
+  submitAction.value !== '' || installProgressState.value.hasError
+))
+const hasInstallError = computed(() =>
+  !isEditMode.value && installProgressState.value.hasError,
+)
+const activeSelectPresetIcon = computed(() => isEditMode.value ? selectEditPresetIcon : selectPresetIcon)
 const showUpdateAndCreate = computed(() =>
-  !isEditMode.value
+  !hasInstallError.value
+  && !isEditMode.value
   && currentStep.value === 1
   && createMode.value === 'library'
   && libraryProductSyncState.value.installed,
 )
 const activeSubmitText = computed(() => {
   if (isEditMode.value) return editBusy.value ? $t('IotDeviceList.add.saving') : $t('IotDeviceList.add.save')
+  if (hasInstallError.value) return $t('IotDeviceList.add.installProgressClose')
   if (currentStep.value === 0) return $t('IotDeviceList.add.next')
-  return busy.value && submitAction.value === 'create' ? $t('IotDeviceList.add.creating') : $t('IotDeviceList.add.confirmCreate')
+  return busy.value && submitAction.value === 'create' ? $t('IotDeviceList.add.creating') : $t('IotDeviceList.add.next')
 })
+const { quotaExceededState } = useIotDeviceQuotaExceeded(
+  computed(() => props.projectId),
+  computed(() => installProgressState.value.logs),
+)
 type FormExpose = {
   validate?: () => Promise<unknown>
   clearValidate?: () => void
-}
-function stepTitle(title: string, help: string) {
-  return h('span', { class: 'add-device__step-title' }, [
-    h('span', title),
-    h(Tooltip, { title: help }, {
-      default: () => h(stepHelpIcon, {
-        type: 'QuestionCircleOutlined',
-        class: 'add-device__step-help',
-        'aria-hidden': 'true',
-      }),
-    }),
-  ])
 }
 function setActiveFormRef(value: Element | ComponentPublicInstance | null) {
   const formExpose = value as FormExpose | null
@@ -218,6 +227,10 @@ function onActiveSubmit() {
     void onEditSubmit()
     return
   }
+  if (hasInstallError.value) {
+    onClose()
+    return
+  }
   if (currentStep.value === 0) {
     if (createMode.value === 'library' && !selectedTemplateKey.value) {
       onlyMessage($t('IotDeviceList.add.selectTemplateFirst'), 'warning')
@@ -234,9 +247,16 @@ function onActiveSubmit() {
   }
   void submitSecondStep()
 }
-function switchToCustom() {
-  createMode.value = 'custom'
-  void loadProducts()
+function handleTemplateSelect(templateId: string) {
+  selectTemplate(templateId)
+  currentStep.value = 1
+  void loadConfigOptions()
+  void prepareSecondStep()
+}
+function backToLibrary() {
+  currentStep.value = 0
+  productSyncPrepared.value = false
+  resetBasicFields()
 }
 function switchToLibrary() {
   createMode.value = 'library'

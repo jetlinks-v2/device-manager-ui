@@ -8,6 +8,7 @@ import type { ProjectArea } from '@device-manager-ui/modules/defaults/types'
 import { buildAreaTreeData, isSelectableDeviceArea } from './iotAreaTreeOptions'
 import { saveIotDeviceAreaGroupBindings } from './iotDeviceAreaGroupBindings'
 import { useIotDeviceImageUpload } from './useIotDeviceImageUpload'
+import { formatIconValueFont } from '@jetlinks-web-core/components/IconValue'
 import type { IotDevice } from '../types'
 
 export type IotEditDeviceDrawerProps = {
@@ -110,6 +111,12 @@ export function useIotEditDeviceDrawer(props: IotEditDeviceDrawerProps, handlers
     form.imageUrl = imageUpload.imageUrl.value
   }
 
+  function selectPresetIcon(icon: string) {
+    imageUpload.clearImage()
+    form.imageUrl = formatIconValueFont(icon)
+    imageUpload.setExistingImage(form.imageUrl)
+  }
+
   async function loadFormOptions() {
     const [areaSettings, groups] = await Promise.all([
       queryProjectSpaceAreaSettings_api(props.projectId).catch(() => ({ areas: [] })),
@@ -207,6 +214,7 @@ export function useIotEditDeviceDrawer(props: IotEditDeviceDrawerProps, handlers
     groupSelectOptions,
     onAreaChange,
     handleImageBeforeUpload: imageUpload.handleImageBeforeUpload,
+    selectPresetIcon,
     clearImage,
     onUpdateOpen,
     onClose,
