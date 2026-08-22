@@ -2261,7 +2261,7 @@
                 "en": "IoT"
             }
         },
-        "owner": "cloud",
+        "owner": "app",
         "id": "iot-user-root",
         "url": "/iot-user",
         "icon": "icon-wulianwang",
@@ -2298,7 +2298,7 @@
                         "en": "Device Overview"
                     }
                 },
-                "owner": "cloud",
+                "owner": "app",
                 "id": "iot-user-device-overview",
                 "url": "/iot-user/device/overview",
                 "icon": "UngroupOutlined",
@@ -2338,7 +2338,7 @@
                         "en": "Device List"
                     }
                 },
-                "owner": "cloud",
+                "owner": "app",
                 "id": "iot-user-device-list",
                 "url": "/iot-user/device/list",
                 "icon": "HddOutlined",
@@ -2441,7 +2441,7 @@
                         "en": "Device Groups"
                     }
                 },
-                "owner": "cloud",
+                "owner": "app",
                 "id": "iot-user-device-groups",
                 "url": "/iot-user/device/groups",
                 "icon": "ClusterOutlined",
@@ -2495,7 +2495,7 @@
                         "en": "Device Health"
                     }
                 },
-                "owner": "cloud",
+                "owner": "app",
                 "id": "iot-user-device-health",
                 "url": "iot-user/device/health",
                 "icon": "ControlOutlined",
@@ -2535,7 +2535,7 @@
                         "en": "Device Alarm"
                     }
                 },
-                "owner": "cloud",
+                "owner": "app",
                 "id": "iot-user-device-alarm",
                 "url": "/iot-user/device/alarm",
                 "icon": "AlertOutlined",
@@ -2633,7 +2633,7 @@
                         "en": "Scene Linkage"
                     }
                 },
-                "owner": "cloud",
+                "owner": "app",
                 "id": "iot-user-scene-linkage",
                 "url": "/iot-user/scene-linkage",
                 "icon": "PartitionOutlined",
