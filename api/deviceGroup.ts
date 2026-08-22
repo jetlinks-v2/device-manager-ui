@@ -46,6 +46,7 @@ export interface DeviceGroup {
   id: string
   key: string
   name: string
+  parentId?: string
   description?: string
   sortIndex: number
   creatorId?: string
@@ -56,6 +57,7 @@ export interface DeviceGroup {
 export interface CreateDeviceGroupInput {
   code: string
   name: string
+  parentId?: string
   description?: string
   sortIndex?: number
 }
@@ -269,6 +271,7 @@ const toDeviceGroup = (item: DeviceGroupResponse = {}): DeviceGroup => ({
   id: String(item.id || ''),
   key: String(item.key || item.id || ''),
   name: String(item.name || item.key || item.id || '--'),
+  parentId: item.parentId ? String(item.parentId) : undefined,
   description: item.description || '',
   sortIndex: Number(item.sortIndex ?? 0),
   creatorId: item.creatorId,
@@ -304,14 +307,24 @@ const toDeviceGroupSummary = (item: DeviceGroupSummaryResponse = {}): DeviceGrou
 }
 
 export const queryDeviceGroupDetailList_api = async (): Promise<DeviceGroup[]> => {
-  const response = await request.post('/device/group/_query/_detail', {
+  const query = {
     paging: false,
     sorts: [{ name: 'sortIndex', order: 'asc' }],
-  }) as ApiResponse<PagerResult<DeviceGroupResponse>>
-  const result = unwrapResult<PagerResult<DeviceGroupResponse>>(response) ?? {}
+  }
+  const [detailResponse, treeResponse] = await Promise.all([
+    request.post('/device/group/_query/_detail', query) as Promise<ApiResponse<PagerResult<DeviceGroupResponse>>>,
+    request.post('/device/group/_query', query).catch(() => undefined) as Promise<ApiResponse<PagerResult<DeviceGroupResponse>> | undefined>,
+  ])
+  const result = unwrapResult<PagerResult<DeviceGroupResponse>>(detailResponse) ?? {}
+  const treeResult = unwrapResult<PagerResult<DeviceGroupResponse>>(treeResponse) ?? {}
+  const parentIdByGroupId = new Map((treeResult.data ?? []).map((item) => [String(item.id || ''), item.parentId ? String(item.parentId) : undefined]))
 
+  // 详情接口提供设备数量，但不返回树字段；标准查询补齐 parentId 以保持分组层级。
   return (result.data ?? [])
-    .map(toDeviceGroup)
+    .map((item) => {
+      const group = toDeviceGroup(item)
+      return { ...group, parentId: parentIdByGroupId.get(group.id) ?? group.parentId }
+    })
     .filter((item) => Boolean(item.id))
 }
 
@@ -385,6 +398,7 @@ export const createDeviceGroup_api = async (input: CreateDeviceGroupInput): Prom
     id,
     key: input.code,
     name: input.name,
+    parentId: input.parentId,
     description: input.description,
     sortIndex: input.sortIndex ?? 0,
   }) as ApiResponse<DeviceGroupResponse>
@@ -398,6 +412,7 @@ export const updateDeviceGroup_api = async (input: UpdateDeviceGroupInput): Prom
     id: input.id,
     key: input.code,
     name: input.name,
+    parentId: input.parentId,
     description: input.description,
     sortIndex: input.sortIndex ?? 0,
   }) as ApiResponse<DeviceGroupResponse>

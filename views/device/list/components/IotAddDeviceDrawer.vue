@@ -7,7 +7,7 @@
       <a-alert v-if="activeErrorMessage && !isCreating" type="error" show-icon :message="activeErrorMessage" />
       <a-form :ref="setActiveFormRef" class="add-device__form" layout="vertical" :model="activeForm" :rules="activeFormRules">
         <template v-if="isEditMode">
-          <IotDeviceBasicFields :form="activeForm" :image-preview-url="activeImagePreviewUrl" :image-file-name="activeImageFileName" :area-tree-data="activeAreaTreeData" :group-select-options="activeGroupSelectOptions" :group-multiple="isEditMode" show-icon :on-area-change="activeOnAreaChange" :handle-image-before-upload="activeHandleImageBeforeUpload" :on-select-preset-icon="activeSelectPresetIcon" />
+          <IotDeviceBasicFields :form="activeForm" :image-preview-url="activeImagePreviewUrl" :image-file-name="activeImageFileName" :area-tree-data="activeAreaTreeData" :group-tree-data="activeGroupTreeData" :group-multiple="isEditMode" show-icon :on-area-change="activeOnAreaChange" :handle-image-before-upload="activeHandleImageBeforeUpload" :on-select-preset-icon="activeSelectPresetIcon" />
         </template>
         <template v-else>
           <template v-if="currentStep === 0">
@@ -55,7 +55,7 @@
               :template="selectedTemplate"
               @change="backToLibrary"
             />
-            <IotDeviceBasicFields :form="activeForm" :image-preview-url="activeImagePreviewUrl" :image-file-name="activeImageFileName" :area-tree-data="activeAreaTreeData" :group-select-options="activeGroupSelectOptions" stack-fields :on-area-change="activeOnAreaChange" :handle-image-before-upload="activeHandleImageBeforeUpload" :on-select-preset-icon="activeSelectPresetIcon" />
+            <IotDeviceBasicFields :form="activeForm" :image-preview-url="activeImagePreviewUrl" :image-file-name="activeImageFileName" :area-tree-data="activeAreaTreeData" :group-tree-data="activeGroupTreeData" stack-fields :on-area-change="activeOnAreaChange" :handle-image-before-upload="activeHandleImageBeforeUpload" :on-select-preset-icon="activeSelectPresetIcon" />
           </template>
         </template>
       </a-form>
@@ -127,7 +127,7 @@ const {
   selectedProductKey, selectedTemplateKey, templateOpen,
   productMessage, libraryMessage, libraryLoading, libraryTagLoading, productLoading, deviceTemplateLoading,
   busy, submitAction, errorMessage, imagePreviewUrl, imageFileName, formRef, form, formRules, installProgressState,
-  availableProducts, areaTreeData, groupSelectOptions, libraryProducts, libraryTagGroups,
+  availableProducts, areaTreeData, groupTreeData, libraryProducts, libraryTagGroups,
   libraryTotal, libraryPageIndex, libraryPageSize, libraryProductSyncState, deviceTemplateProducts, selectedTemplate,
   updateAndCreateDisabledReason, updateAndCreateBusy,
   updateAndCreateDisabled, updateAndCreateSubmitText, categoryLabel,
@@ -148,7 +148,7 @@ const {
   form: editForm,
   formRules: editFormRules,
   areaTreeData: editAreaTreeData,
-  groupSelectOptions: editGroupSelectOptions,
+  groupTreeData: editGroupTreeData,
   onAreaChange: onEditAreaChange,
   handleImageBeforeUpload: handleEditImageBeforeUpload,
   selectPresetIcon: selectEditPresetIcon,
@@ -174,7 +174,7 @@ const activeFormRules = computed(() => isEditMode.value ? editFormRules : formRu
 const activeImagePreviewUrl = computed(() => isEditMode.value ? editImagePreviewUrl.value : imagePreviewUrl.value)
 const activeImageFileName = computed(() => isEditMode.value ? editImageFileName.value : imageFileName.value)
 const activeAreaTreeData = computed(() => isEditMode.value ? editAreaTreeData.value : areaTreeData.value)
-const activeGroupSelectOptions = computed(() => isEditMode.value ? editGroupSelectOptions.value : groupSelectOptions.value)
+const activeGroupTreeData = computed(() => isEditMode.value ? editGroupTreeData.value : groupTreeData.value)
 const activeOnAreaChange = computed(() => isEditMode.value ? onEditAreaChange : onAreaChange)
 const activeHandleImageBeforeUpload = computed(() =>
   isEditMode.value ? handleEditImageBeforeUpload : handleImageBeforeUpload,

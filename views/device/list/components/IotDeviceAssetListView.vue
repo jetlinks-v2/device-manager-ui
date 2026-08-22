@@ -10,7 +10,13 @@
           :total-device-count="totalDeviceCount"
           :area-device-counts="areaDeviceCounts"
           :group-device-counts="groupDeviceCounts"
+          :unbound-area-device-count="unboundAreaDeviceCount"
+          :unassigned-group-device-count="unassignedGroupDeviceCount"
           @change="handleScopeChange"
+          @create-group="openCreateGroup"
+          @create-child-group="openCreateChildGroup"
+          @edit-group="openEditGroup"
+          @delete-group="confirmDeleteGroup"
         />
       </template>
       <template #right>
@@ -90,12 +96,22 @@
     :selected-device-count="selectedRowKeys.length"
     @save="assignSelectedDevicesToArea"
   />
+
+  <IotDeviceGroupNameModal
+    v-model:open="groupDialogOpen"
+    :mode="groupDialogMode"
+    :initial-name="groupEditing?.name"
+    :saving="groupSaving"
+    :error="groupDialogError"
+    @save="saveGroup"
+  />
 </template>
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
+import { Modal } from 'ant-design-vue'
 import { onlyMessage } from '@jetlinks-web/utils'
 import EqualHeightColumns from '@jetlinks-web-core/components/EqualHeightColumns/index.vue'
 import { bindDeviceGroupDevices_api, type DeviceGroup } from '@device-manager-ui/api/deviceGroup'
@@ -103,6 +119,7 @@ import { bindDeviceGroupDevices_api, type DeviceGroup } from '@device-manager-ui
 import IotAddDeviceDrawer from './IotAddDeviceDrawer.vue'
 import IotDeviceAssignAreaModal from './IotDeviceAssignAreaModal.vue'
 import IotDeviceAssignGroupModal from './IotDeviceAssignGroupModal.vue'
+import IotDeviceGroupNameModal from './IotDeviceGroupNameModal.vue'
 import IotDeviceAssetBatchActions from './IotDeviceAssetBatchActions.vue'
 import IotDeviceAssetSearchBar from './IotDeviceAssetSearchBar.vue'
 import IotDeviceAssetSummary from './IotDeviceAssetSummary.vue'
@@ -111,6 +128,7 @@ import IotDeviceScopeSidebar from './IotDeviceScopeSidebar.vue'
 import { useIotDeviceAssetActions } from '../hooks/useIotDeviceAssetActions'
 import { useIotDeviceAssetBulkActions } from '../hooks/useIotDeviceAssetBulkActions'
 import { useIotDeviceAssetFilters } from '../hooks/useIotDeviceAssetFilters'
+import { useIotDeviceGroupManagement } from '../hooks/useIotDeviceGroupManagement'
 import { useIotDeviceAssetPresentation } from '../hooks/useIotDeviceAssetPresentation'
 import { useIotDeviceScopeCounts } from '../hooks/useIotDeviceScopeCounts'
 import { useIotDeviceAssetTable } from '../hooks/useIotDeviceAssetTable'
@@ -138,7 +156,7 @@ const {
   filterTerms,
   filterFields,
   commonFilterFields,
-  submittedTerms, areaOptions, groupOptions, scopeType, scopeId,
+  submittedTerms, areaOptions, groupOptions, scopeType, scopeId, reloadGroups,
   buildDeviceQueryTerms,
   handleFilterTermsUpdate,
   handleFilterSearch, handleScopeChange: changeScope,
@@ -155,9 +173,32 @@ const {
   tableRequest,
 } = useIotDeviceAssetTable(projectId, submittedTerms, buildDeviceQueryTerms, devices)
 
-const { totalDeviceCount, areaDeviceCounts, groupDeviceCounts } = useIotDeviceScopeCounts(
+const {
+  totalDeviceCount,
+  areaDeviceCounts,
+  groupDeviceCounts,
+  unboundAreaDeviceCount,
+  unassignedGroupDeviceCount,
+} = useIotDeviceScopeCounts(
   projectId, areaOptions, groupOptions, refreshKey,
 )
+
+const {
+  deleteGroup,
+  groupDialogError,
+  groupDialogMode,
+  groupDialogOpen,
+  groupEditing,
+  groupSaving,
+  openCreateChildGroup,
+  openCreateGroup,
+  openEditGroup,
+  saveGroup,
+} = useIotDeviceGroupManagement({
+  getActiveScope: () => ({ type: scopeType.value, id: scopeId.value }),
+  reloadGroups,
+  changeScope,
+})
 
 const {
   deviceFormOpen,
@@ -219,6 +260,17 @@ function handleDeviceCreated(payload: IotAddDeviceCreatedPayload | string) {
 function handleScopeChange(scope: { type: 'area' | 'group'; id: string }) {
   clearSelection()
   changeScope(scope)
+}
+
+function confirmDeleteGroup(group: DeviceGroup) {
+  Modal.confirm({
+    title: $t('IotDeviceList.scope.deleteGroupTitle'),
+    content: $t('IotDeviceList.scope.deleteGroupContent', { name: group.name }),
+    okText: $t('IotDeviceList.scope.deleteGroup'),
+    cancelText: $t('IotDeviceList.scope.cancel'),
+    okType: 'danger',
+    onOk: () => deleteGroup(group),
+  })
 }
 
 watch([scopeType, scopeId], () => clearSelection())
