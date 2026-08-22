@@ -47,7 +47,7 @@
           }
         },
         "owner": "cloud",
-        "id": "iot-user-device-list",
+        "id": "access-center-device-list",
         "url": "/access/device",
         "icon": "HddOutlined",
         "sortIndex": 2,
@@ -2250,5 +2250,618 @@
         "supportDataAccess": false
       }
     ]
-  }
+  },
+    {
+        "code": "iot-user",
+        "name": "物联",
+        "i18nMessages": {
+            "name": {
+                "zh_CN": "物联",
+                "en_US": "IoT",
+                "en": "IoT"
+            }
+        },
+        "owner": "cloud",
+        "id": "iot-user-root",
+        "url": "/iot-user",
+        "icon": "icon-wulianwang",
+        "sortIndex": 20,
+        "permissions": [
+            {
+                "permission": "space-management",
+                "actions": [
+                    "query",
+                    "save"
+                ]
+            },
+            {
+                "permission": "space-type",
+                "actions": [
+                    "query"
+                ]
+            },
+            {
+                "permission": "alarm-record",
+                "actions": [
+                    "query"
+                ]
+            }
+        ],
+        "children": [
+            {
+                "code": "iot-user/device/overview",
+                "name": "设备总览",
+                "i18nMessages": {
+                    "name": {
+                        "zh_CN": "设备总览",
+                        "en_US": "Device Overview",
+                        "en": "Device Overview"
+                    }
+                },
+                "owner": "cloud",
+                "id": "iot-user-device-overview",
+                "url": "/iot-user/device/overview",
+                "icon": "UngroupOutlined",
+                "sortIndex": 1,
+                "accessSupport": {
+                    "text": "支持",
+                    "value": "support"
+                },
+                "supportDataAccess": true,
+                "assetTypes": [
+                    "device","product"
+                ],
+                "options": {
+                    "meta": {
+                        "componentCode": "iot/device"
+                    }
+                },
+                "showPage": [
+                    "device-instance"
+                ],
+                "permissions": [
+                    {
+                        "permission": "device-instance",
+                        "actions": [
+                            "query"
+                        ]
+                    }
+                ]
+            },
+            {
+                "code": "iot-user/device/list",
+                "name": "设备列表",
+                "i18nMessages": {
+                    "name": {
+                        "zh_CN": "设备列表",
+                        "en_US": "Device List",
+                        "en": "Device List"
+                    }
+                },
+                "owner": "cloud",
+                "id": "iot-user-device-list",
+                "url": "/iot-user/device/list",
+                "icon": "HddOutlined",
+                "sortIndex": 2,
+                "accessSupport": {
+                    "text": "支持",
+                    "value": "support"
+                },
+                "supportDataAccess": true,
+                "assetTypes": [
+                    "device","product"
+                ],
+                "options": {
+                    "meta": {
+                        "componentCode": "device/list"
+                    }
+                },
+                "showPage": [
+                    "device-instance",
+                    "device-template"
+                ],
+                "permissions": [
+                    {
+                        "permission": "device-instance",
+                        "actions": [
+                            "delete",
+                            "import",
+                            "export",
+                            "enable",
+                            "query",
+                            "save",
+                            "disable"
+                        ]
+                    },
+                    {
+                        "permission": "device-product",
+                        "actions": [
+                            "query",
+                            "save"
+                        ]
+                    },
+                    {
+                        "permission": "device-category",
+                        "actions": [
+                            "query"
+                        ]
+                    },
+                    {
+                        "permission": "device-template",
+                        "actions": [
+                            "query"
+                        ]
+                    },
+                    {
+                        "permission": "marketplace",
+                        "actions": [
+                            "query",
+                            "install",
+                            "upgrade"
+                        ]
+                    },
+                    {
+                        "permission": "system-monitor",
+                        "actions": [
+                            "query"
+                        ]
+                    },
+                    {
+                        "permission": "transparent-codec",
+                        "actions": [
+                            "query",
+                            "save"
+                        ]
+                    },
+                    {
+                        "permission": "device-gateway",
+                        "actions": [
+                            "query"
+                        ]
+                    },
+                    {
+                        "permission": "space-data-bind",
+                        "actions": [
+                            "save"
+                        ]
+                    },
+                    {
+                        "permission": "device-group",
+                        "actions": ["query"]
+                    }
+                ]
+            },
+            {
+                "code": "iot-user/device/groups",
+                "name": "设备分组",
+                "i18nMessages": {
+                    "name": {
+                        "zh_CN": "设备分组",
+                        "en_US": "Device Groups",
+                        "en": "Device Groups"
+                    }
+                },
+                "owner": "cloud",
+                "id": "iot-user-device-groups",
+                "url": "/iot-user/device/groups",
+                "icon": "ClusterOutlined",
+                "sortIndex": 3,
+                "accessSupport": {
+                    "text": "支持",
+                    "value": "support"
+                },
+                "supportDataAccess": true,
+                "assetType": "deviceGroup",
+                "options": {
+                    "meta": {
+                        "componentCode": "device/groups"
+                    }
+                },
+                "showPage": [
+                    "device-instance"
+                ],
+                "permissions": [
+                    {
+                        "permission": "device-instance",
+                        "actions": [
+                            "query"
+                        ]
+                    },
+                    {
+                        "permission": "device-group",
+                        "actions": [
+                            "query",
+                            "save",
+                            "delete"
+                        ]
+                    },
+                    {
+                        "permission": "space-data-bind",
+                        "actions": [
+                            "query",
+                            "save",
+                            "delete"
+                        ]
+                    }
+                ]
+            },
+            {
+                "code": "iot-user/device/health",
+                "name": "设备健康",
+                "i18nMessages": {
+                    "name": {
+                        "zh_CN": "设备健康",
+                        "en_US": "Device Health",
+                        "en": "Device Health"
+                    }
+                },
+                "owner": "cloud",
+                "id": "iot-user-device-health",
+                "url": "iot-user/device/health",
+                "icon": "ControlOutlined",
+                "sortIndex": 4,
+                "accessSupport": {
+                    "text": "支持",
+                    "value": "support"
+                },
+                "supportDataAccess": true,
+                "assetTypes": [
+                    "device","product"
+                ],
+                "options": {
+                    "meta": {
+                        "componentCode": "device/health"
+                    }
+                },
+                "showPage": [
+                    "device-instance"
+                ],
+                "permissions": [
+                    {
+                        "permission": "device-instance",
+                        "actions": [
+                            "query"
+                        ]
+                    }
+                ]
+            },
+            {
+                "code": "iot-user/device/alarm",
+                "name": "设备告警",
+                "i18nMessages": {
+                    "name": {
+                        "zh_CN": "设备告警",
+                        "en_US": "Device Alarm",
+                        "en": "Device Alarm"
+                    }
+                },
+                "owner": "cloud",
+                "id": "iot-user-device-alarm",
+                "url": "/iot-user/device/alarm",
+                "icon": "AlertOutlined",
+                "sortIndex": 5,
+                "accessSupport": {
+                    "text": "支持",
+                    "value": "support"
+                },
+                "supportDataAccess": true,
+                "assetType": "device",
+                "assetTypes": [
+                    "device",
+                    "notifySubscriberProvider",
+                    "notifyConfig",
+                    "product"
+                ],
+                "options": {
+                    "meta": {
+                        "componentCode": "device/alarm"
+                    }
+                },
+                "showPage": [
+                    "device-instance",
+                    "device-product",
+                    "device-template"
+                ],
+                "permissions": [
+                    {
+                        "permission": "device-instance",
+                        "actions": [
+                            "query",
+                            "save",
+                            "delete"
+                        ]
+                    },
+                    {
+                        "permission": "device-product",
+                        "actions": [
+                            "query",
+                            "save",
+                            "delete"
+                        ]
+                    },
+                    {
+                        "permission": "device-category",
+                        "actions": [
+                            "query"
+                        ]
+                    },
+                    {
+                        "permission": "device-template",
+                        "actions": [
+                            "query"
+                        ]
+                    },
+                    {
+                        "permission": "marketplace",
+                        "actions": [
+                            "query"
+                        ]
+                    },
+                    {
+                        "permission": "alarm-config",
+                        "actions": [
+                            "query"
+                        ]
+                    },
+                    {
+                        "permission": "user",
+                        "actions": [
+                            "query"
+                        ]
+                    },
+                    {
+                        "permission": "notify-channel",
+                        "actions": [
+                            "save"
+                        ]
+                    },
+                    {
+                        "permission": "notifier",
+                        "actions": [
+                            "query"
+                        ]
+                    }
+                ]
+            },
+            {
+                "code": "iot-user/scene-linkage",
+                "name": "场景联动",
+                "i18nMessages": {
+                    "name": {
+                        "zh_CN": "场景联动",
+                        "en_US": "Scene Linkage",
+                        "en": "Scene Linkage"
+                    }
+                },
+                "owner": "cloud",
+                "id": "iot-user-scene-linkage",
+                "url": "/iot-user/scene-linkage",
+                "icon": "PartitionOutlined",
+                "sortIndex": 7,
+                "accessSupport": {
+                    "text": "支持",
+                    "value": "support"
+                },
+                "supportDataAccess": true,
+                "assetType": "scene",
+                "options": {
+                    "meta": {
+                        "componentCode": "scene-linkage"
+                    }
+                },
+                "showPage": [
+                    "rule-scene",
+                    "device-instance",
+                    "device-product"
+                ],
+                "permissions": [
+                    {
+                        "permission": "rule-scene",
+                        "actions": [
+                            "query",
+                            "save",
+                            "delete"
+                        ]
+                    },
+                    {
+                        "permission": "device-instance",
+                        "actions": [
+                            "query"
+                        ]
+                    },
+                    {
+                        "permission": "device-product",
+                        "actions": [
+                            "query"
+                        ]
+                    }
+                ],
+                "buttons": [
+                    {
+                        "id": "record",
+                        "name": "执行日志",
+                        "permissions": [
+                            {
+                                "permission": "rule-scene",
+                                "actions": [
+                                    "query"
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "add",
+                        "name": "新增",
+                        "permissions": [
+                            {
+                                "permission": "rule-scene",
+                                "actions": [
+                                    "save"
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "update",
+                        "name": "编辑",
+                        "permissions": [
+                            {
+                                "permission": "rule-scene",
+                                "actions": [
+                                    "save"
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "delete",
+                        "name": "删除",
+                        "permissions": [
+                            {
+                                "permission": "rule-scene",
+                                "actions": [
+                                    "delete"
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+
+    {
+        "code": "oam",
+        "name": "运维中心",
+        "owner": "cloud",
+        "i18nMessages": {
+            "name": {
+                "zh_CN": "运维中心",
+                "en_US": "Application Center",
+                "en": "Application Center"
+            }
+        },
+        "id": "application-center",
+        "url": "/oam",
+        "icon": "ToolOutlined",
+        "sortIndex": 50,
+        "children": [
+            {
+                "code": "alarm-center",
+                "name": "告警中心",
+                "owner": "cloud",
+                "i18nMessages": {
+                    "name": {
+                        "zh_CN": "告警中心",
+                        "en_US": "Alarm Center",
+                        "en": "Alarm Center"
+                    }
+                },
+                "id": "oam-alarm-center",
+                "url": "/oam/aram",
+                "icon": "ToolOutlined",
+                "sortIndex": 50,
+                "children": [
+                    {
+                        "code": "iot-user/device/alarm",
+                        "name": "物联告警",
+                        "i18nMessages": {
+                            "name": {
+                                "zh_CN": "物联告警",
+                                "en_US": "Iot Alarm",
+                                "en": "Iot Alarm"
+                            }
+                        },
+                        "owner": "cloud",
+                        "id": "iot-device-alarm",
+                        "url": "/oam/alarm/device",
+                        "icon": "AlertOutlined",
+                        "sortIndex": 5,
+                        "accessSupport": {
+                            "text": "支持",
+                            "value": "support"
+                        },
+                        "supportDataAccess": true,
+                        "assetType": "device",
+                        "assetTypes": [
+                            "device",
+                            "notifySubscriberProvider",
+                            "notifyConfig",
+                            "product"
+                        ],
+                        "options": {
+                            "meta": {
+                                "componentCode": "device/alarm"
+                            }
+                        },
+                        "showPage": [
+                            "device-instance",
+                            "device-product",
+                            "device-template"
+                        ],
+                        "permissions": [
+                            {
+                                "permission": "device-instance",
+                                "actions": [
+                                    "query",
+                                    "save",
+                                    "delete"
+                                ]
+                            },
+                            {
+                                "permission": "device-product",
+                                "actions": [
+                                    "query",
+                                    "save",
+                                    "delete"
+                                ]
+                            },
+                            {
+                                "permission": "device-category",
+                                "actions": [
+                                    "query"
+                                ]
+                            },
+                            {
+                                "permission": "device-template",
+                                "actions": [
+                                    "query"
+                                ]
+                            },
+                            {
+                                "permission": "marketplace",
+                                "actions": [
+                                    "query"
+                                ]
+                            },
+                            {
+                                "permission": "alarm-config",
+                                "actions": [
+                                    "query"
+                                ]
+                            },
+                            {
+                                "permission": "user",
+                                "actions": [
+                                    "query"
+                                ]
+                            },
+                            {
+                                "permission": "notify-channel",
+                                "actions": [
+                                    "save"
+                                ]
+                            },
+                            {
+                                "permission": "notifier",
+                                "actions": [
+                                    "query"
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
 ]

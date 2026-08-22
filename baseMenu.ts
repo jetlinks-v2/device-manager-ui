@@ -19,7 +19,7 @@ type MenuItem = {
 }
 
 const handleMenu = (menus: MenuItem[], inheritedRuntime = false): MenuItem[] => menus.map(item => {
-  const isRuntime = inheritedRuntime || item.owner === 'cloud'
+  const isRuntime = inheritedRuntime || item.owner === 'cloud' || item.owner === 'app'
 
   return {
     ...item,
