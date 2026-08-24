@@ -22,6 +22,14 @@
 
 .event-history__tabs :deep(.ant-tabs-nav) {
   margin: 0;
+  width: 100%;
+  min-width: 0;
+}
+
+.event-history__tabs :deep(.ant-tabs-nav-wrap),
+.event-history__tabs :deep(.ant-tabs-nav-list) {
+  width: 100%;
+  min-width: 0;
 }
 
 .event-history__tabs :deep(.ant-tabs-ink-bar) {
@@ -29,10 +37,20 @@
 }
 
 .event-history__tabs :deep(.ant-tabs-tab) {
+  min-width: 0;
+  max-width: 100%;
   width: 100%;
+  overflow: hidden;
   margin: 0 0 var(--space-1) !important;
   border-radius: var(--jet-theme-radius);
   padding: var(--space-2) var(--space-3) !important;
+}
+
+.event-history__tabs :deep(.ant-tabs-tab-btn) {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .event-history__tabs :deep(.ant-tabs-tab-active) {
@@ -44,9 +62,12 @@
 }
 
 .event-history__tab {
-  display: inline-flex;
+  display: flex;
+  flex: 1 1 0;
   align-items: baseline;
   gap: var(--space-2);
+  min-width: 0;
+  max-width: 100%;
   width: 100%;
   overflow: hidden;
   color: var(--jet-theme-text-secondary);
@@ -54,17 +75,18 @@
 
 .event-history__tab strong,
 .event-history__tab small {
-  overflow: hidden;
-  text-overflow: ellipsis;
+  min-width: 0;
   white-space: nowrap;
 }
 
 .event-history__tab strong {
+  flex: 0 1 auto;
   color: inherit;
   font-weight: 600;
 }
 
 .event-history__tab small {
+  flex: 1 1 0;
   color: var(--jet-theme-text-disabled);
   font-size: var(--fs-14);
 }

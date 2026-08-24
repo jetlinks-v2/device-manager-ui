@@ -30,7 +30,7 @@ export function resolveIotProjectId(route: IotRouteLike, fallback = 'doraemon') 
 }
 
 export function buildIotDeviceListPath(projectId: string, route?: IotRouteLike) {
-  if (!isProjectIotRoute(route)) return '/iot-user/device'
+  if (!isProjectIotRoute(route)) return '/iot-user/device/list'
 
   return `/project/${encodePathSegment(projectId)}/iot-user/list`
 }
