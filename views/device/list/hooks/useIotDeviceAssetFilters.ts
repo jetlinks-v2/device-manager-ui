@@ -18,6 +18,9 @@ import type { IotDevice, IotDeviceConnectionStatus } from '../types'
 
 type ConnectionStatusMeta = (status: IotDeviceConnectionStatus) => { label: string }
 
+export const IOT_UNBOUND_AREA_SCOPE_ID = '__iot-unbound-area__'
+export const IOT_UNASSIGNED_GROUP_SCOPE_ID = '__iot-unassigned-group__'
+
 export function cloneConditionTerms(terms: ConditionFilterTerm[] = []): ConditionFilterTerm[] {
   return terms.map((item) => ({
     ...item,
@@ -395,10 +398,22 @@ export function useIotDeviceAssetFilters(
       .filter((item): item is DeviceQueryTerm => Boolean(item))
     if (!scopeId.value) return terms
     if (scopeType.value === 'area') {
+      if (scopeId.value === IOT_UNBOUND_AREA_SCOPE_ID) {
+        const areaIds = areaOptions.value.map((area) => area.id)
+        if (areaIds.length) {
+          terms.push({ column: 'id', termType: 'space-bind$not$device', value: areaIds.length === 1 ? areaIds[0] : areaIds })
+        }
+        return terms
+      }
       const ids = collectAreaScopeIds(scopeId.value)
       if (ids.length) terms.push({ column: 'id', termType: 'space-bind$device', value: ids.length === 1 ? ids[0] : ids })
     } else {
-      terms.push({ column: 'id', termType: 'dev-group-tree', value: scopeId.value })
+      if (scopeId.value === IOT_UNASSIGNED_GROUP_SCOPE_ID) {
+        const groupIds = groupOptions.value.map((group) => group.id).filter(Boolean)
+        if (groupIds.length) terms.push({ column: 'id', termType: 'dev-group$not', value: groupIds })
+      } else {
+        terms.push({ column: 'id', termType: 'dev-group-tree', value: scopeId.value })
+      }
     }
     return terms
   }
@@ -469,6 +484,10 @@ export function useIotDeviceAssetFilters(
     { immediate: true },
   )
 
+  async function reloadGroups() {
+    groupOptions.value = await queryDeviceGroupDetailList_api().catch(() => [])
+  }
+
   return {
     filterTerms,
     filterFields: filterFields as ComputedRef<ConditionFilterField[]>,
@@ -478,6 +497,7 @@ export function useIotDeviceAssetFilters(
     scopeType,
     scopeId,
     submittedTerms,
+    reloadGroups,
     buildDeviceQueryTerms,
     handleFilterTermsUpdate,
     handleFilterSearch,

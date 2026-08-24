@@ -6,6 +6,7 @@ import { queryDeviceGroupDetailList_api, type DeviceGroup } from '@device-manage
 import { queryProjectSpaceAreaSettings_api } from '@device-manager-ui/api/spaceArea'
 import type { ProjectArea } from '@device-manager-ui/modules/defaults/types'
 import { buildAreaTreeData, isSelectableDeviceArea } from './iotAreaTreeOptions'
+import { buildDeviceGroupTreeData } from './iotDeviceGroupTreeOptions'
 import { saveIotDeviceAreaGroupBindings } from './iotDeviceAreaGroupBindings'
 import { useIotDeviceImageUpload } from './useIotDeviceImageUpload'
 import { formatIconValueFont } from '@jetlinks-web-core/components/IconValue'
@@ -55,9 +56,7 @@ export function useIotEditDeviceDrawer(props: IotEditDeviceDrawerProps, handlers
 
   const selectableAreas = computed(() => areaOptions.value)
   const areaTreeData = computed(() => buildAreaTreeData(selectableAreas.value))
-  const groupSelectOptions = computed(() =>
-    groupOptions.value.map((group) => ({ label: group.name, value: group.id })),
-  )
+  const groupTreeData = computed(() => buildDeviceGroupTreeData(groupOptions.value))
 
   function fillForm(device: IotDevice | null) {
     form.name = device?.name && device.name !== '--' ? device.name : ''
@@ -211,7 +210,7 @@ export function useIotEditDeviceDrawer(props: IotEditDeviceDrawerProps, handlers
     form,
     formRules,
     areaTreeData,
-    groupSelectOptions,
+    groupTreeData,
     onAreaChange,
     handleImageBeforeUpload: imageUpload.handleImageBeforeUpload,
     selectPresetIcon,

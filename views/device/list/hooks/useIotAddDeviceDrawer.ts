@@ -26,6 +26,7 @@ import type { ProjectArea } from '@device-manager-ui/modules/defaults/types'
 import { formatIconValueFont } from '@jetlinks-web-core/components/IconValue'
 import { categoryLabel, toTemplateProductOption } from './iotAddDeviceProductOptions'
 import { buildAreaTreeData, isSelectableDeviceArea } from './iotAreaTreeOptions'
+import { buildDeviceGroupTreeData } from './iotDeviceGroupTreeOptions'
 import { saveIotDeviceAreaGroupBindings } from './iotDeviceAreaGroupBindings'
 import { useIotDeviceImageUpload } from './useIotDeviceImageUpload'
 import { useIotDeviceLibraryProductSync } from './useIotDeviceLibraryProductSync'
@@ -114,9 +115,7 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
   const availableProducts = computed(() => projectProducts.value)
   const selectableAreas = computed(() => areaOptions.value)
   const areaTreeData = computed(() => buildAreaTreeData(selectableAreas.value))
-  const groupSelectOptions = computed(() =>
-    groupOptions.value.map((group) => ({ label: group.name, value: group.id })),
-  )
+  const groupTreeData = computed(() => buildDeviceGroupTreeData(groupOptions.value))
   const libraryProducts = computed(() => templateProducts.value.map(toTemplateProductOption))
   const deviceTemplateProducts = computed(() => deviceTemplates.value.map(toTemplateProductOption))
   const selectedProduct = computed(() =>
@@ -649,7 +648,7 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
     selectedProductKey, selectedTemplateKey, templateOpen,
     productMessage, libraryMessage, libraryLoading, libraryTagLoading, productLoading, deviceTemplateLoading, configOptionsLoading,
     busy, submitAction, errorMessage, imagePreviewUrl: imageUpload.imagePreviewUrl, imageFileName: imageUpload.imageFileName,
-    formRef, form, formRules, availableProducts, areaTreeData, groupSelectOptions,
+    formRef, form, formRules, availableProducts, areaTreeData, groupTreeData,
     libraryProducts, libraryTagGroups, libraryTotal, libraryPageIndex, libraryPageSize, libraryProductSyncState,
     deviceTemplateProducts, selectedProduct, selectedTemplate,
     updateAndCreateDisabledReason, updateAndCreateBusy, updateAndCreateDisabled, updateAndCreateSubmitText,

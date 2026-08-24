@@ -62,13 +62,17 @@
     </a-form-item>
 
     <a-form-item class="add-device__field" :label="$t('IotDeviceList.basicFields.label.group')" name="groupId">
-      <a-select
+      <a-tree-select
         v-model:value="form.groupId"
-        :mode="groupMultiple ? 'multiple' : undefined"
-        :options="groupSelectOptions"
+        :tree-data="groupTreeData"
         :placeholder="$t('IotDeviceList.basicFields.placeholder.group')"
         allow-clear
+        show-search
+        tree-default-expand-all
+        tree-node-filter-prop="title"
+        :multiple="groupMultiple"
         :max-tag-count="groupMultiple ? 'responsive' : undefined"
+        :dropdown-style="{ maxHeight: '320px', overflow: 'auto' }"
       />
     </a-form-item>
 
@@ -97,7 +101,7 @@ const props = defineProps<{
   imagePreviewUrl: string
   imageFileName: string
   areaTreeData: AreaTreeNode[]
-  groupSelectOptions: Array<{ label: string; value: string }>
+  groupTreeData: Array<{ title: string; value: string; key: string; children?: unknown[] }>
   groupMultiple?: boolean
   showIcon?: boolean
   stackFields?: boolean

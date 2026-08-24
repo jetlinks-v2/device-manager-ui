@@ -70,6 +70,10 @@
       :class="{ 'is-tags-expanded': tagsExpanded }"
       :style="{ '--dd-tags-expanded-shift': `${-tagsExpandedOffset / 2}px` }"
     >
+      <a-button class="dd-hero__back" type="text" @click="backToDeviceList">
+        <template #icon><AIcon type="LeftOutlined" /></template>
+        {{ $t('IotDeviceDetail.common.back') }}
+      </a-button>
       <div class="dd-hero__icon" :data-category="categoryKey ?? 'sensor'">
         <IconValueView v-if="device.imageUrl" :value="device.imageUrl" :fallback-text="device.name" :size="52" />
         <AIcon v-else :type="categoryIcon" aria-hidden="true" />
@@ -565,6 +569,10 @@ function openThingModelTab() {
 function openEditDrawer() {
   actionError.value = ''
   editDrawerOpen.value = true
+}
+
+function backToDeviceList() {
+  void router.push(buildIotDeviceListPath(projectId.value, route))
 }
 
 async function onDeviceSaved() {
@@ -1755,6 +1763,20 @@ watch(activeRealtimePropertyKeySignature, async () => {
   border: 0.0625rem solid var(--jet-theme-border-secondary);
   border-radius: 0.5rem;
   background: var(--jet-theme-bg-container);
+}
+
+.dd-hero__back.ant-btn {
+  grid-column: 1 / -1;
+  justify-self: start;
+  height: auto;
+  padding: 0;
+  color: var(--jet-theme-text-secondary);
+}
+
+.dd-hero__back.ant-btn:hover,
+.dd-hero__back.ant-btn:focus {
+  color: var(--jet-theme-primary);
+  background: transparent;
 }
 
 .dd-hero__icon {
