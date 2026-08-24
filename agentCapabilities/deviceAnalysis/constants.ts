@@ -11,6 +11,6 @@ export const IOT_DEVICE_OPEN_DETAIL_TABS = ['overview', 'access', 'data', 'alarm
 
 export const IOT_DEVICE_MENU_ANCHORS = {
   overview: ['iot-user/device/overview', '/iot-user/device/overview'],
-  list: ['iot-user/device', '/iot-user/device'],
+  list: ['iot-user/device/list', '/iot-user/device/list'],
   health: ['iot-user/device/health', '/iot-user/device/health'],
 } as const
