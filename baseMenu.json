@@ -48,7 +48,7 @@
         },
         "owner": "cloud",
         "id": "access-center-device-list",
-        "url": "/access/device",
+        "url": "/iot-user/device/list",
         "icon": "HddOutlined",
         "sortIndex": 2,
         "accessSupport": {

@@ -8,6 +8,7 @@ import type { IotDevice, IotDeviceFilters, IotDeviceTodo, IotDeviceWorkbench } f
 import { useIotDeviceAlarmOverview } from './useIotDeviceAlarmOverview'
 import { useIotDeviceOverviewMetrics } from './useIotDeviceOverviewMetrics'
 import type { DeviceGroupTrendRange } from '../api/deviceGroup'
+import { useMenuStore } from '@jetlinks-web-core/store'
 
 export type WidgetKind =
   | 'online-trend'
@@ -849,13 +850,16 @@ async function loadWorkbench() {
 
 function goDeviceAlarmRecord(deviceId?: string) {
   if (!deviceId) return
-  push({
-    path: `/access/device/Detail/${encodeURIComponent(deviceId)}`,
-    query: {
-      projectId: resolvedProjectId.value,
-      tab: 'alarm',
-    },
-  })
+    const menuStore = useMenuStore()
+    menuStore.jumpPage('iot-user/device/list', {
+        params: {
+            id: encodeURIComponent(deviceId)
+        },
+        query: {
+            projectId: resolvedProjectId.value,
+            tab: 'alarm',
+        },
+    })
 }
 
 onMounted(() => {
