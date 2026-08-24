@@ -9,7 +9,10 @@ export function splitPropertyValueAndUnit(value: unknown, unit?: string): Displa
   const text = String(value ?? '').trim()
   if (!text || text === '--') return { value: '--', unit: '' }
 
-  // 设备值可能已来自 formatValue，部分协议会把单位拼进值里；先拆开再展示，避免重复单位。
+  const normalizedUnit = String(unit ?? '').trim()
+  if (!normalizedUnit) return { value: text, unit: '' }
+
+  // 设备值可能已来自 formatValue，部分协议会把已配置单位拼进值里；先拆开再展示，避免重复单位。
   const inlineUnit = text.match(/^([+-]?\d+(?:\.\d+)?)(?:\s*)([^\d\s].*)$/u)
   if (inlineUnit) {
     return {
@@ -18,7 +21,7 @@ export function splitPropertyValueAndUnit(value: unknown, unit?: string): Displa
     }
   }
 
-  return { value: text, unit: String(unit ?? '').trim() }
+  return { value: text, unit: normalizedUnit }
 }
 
 export function getPropertyDisplayValue(item: RealtimePropertyRow) {
