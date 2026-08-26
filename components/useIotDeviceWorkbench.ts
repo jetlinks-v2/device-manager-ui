@@ -67,6 +67,7 @@ export interface DeviceStatCard {
   tone: DashboardTone | 'default'
   target: Partial<IotDeviceFilters>
   sparkline?: number[]
+  sparklineDomain?: readonly [number, number]
   breakdown?: Array<{
     label: string
     value: number
@@ -351,6 +352,7 @@ const deviceStatCards = computed<DeviceStatCard[]>(() => {
       tone: 'muted',
       target: { connectionStatus: 'online', businessStatus: 'all', risk: 'all', anomalyKind: 'all' },
       sparkline: overviewMetrics.onlineRateTrend.value.map((item) => item.value),
+      sparklineDomain: [0, 100],
       trend: { direction: 'flat', value: $t('IotWorkbench.trend.flat'), label: $t('IotWorkbench.stat.realtime'), tone: 'muted' },
     },
     {
