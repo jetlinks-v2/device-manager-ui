@@ -88,20 +88,21 @@ const sparklinePoints: Record<string, string> = {
   alarm: '2,34 10,30 18,32 26,18 34,24 42,10 50,28 58,6 66,18 74,8 82,26 88,14',
 }
 
-function buildSparklinePoints(values: number[]) {
+function buildSparklinePoints(values: number[], domain?: readonly [number, number]) {
   if (values.length < 2) return ''
-  const max = Math.max(...values)
-  const min = Math.min(...values)
+  const [min, max] = domain ?? [Math.min(...values), Math.max(...values)]
   const range = Math.max(max - min, 1)
   return values.map((value, index) => {
     const x = 2 + (index / (values.length - 1)) * 86
-    const y = 36 - ((value - min) / range) * 30
+    const normalizedValue = Math.min(Math.max(value, min), max)
+    const y = 36 - ((normalizedValue - min) / range) * 30
     return `${Math.round(x)},${Math.round(y)}`
   }).join(' ')
 }
 
 function statSparklinePoints(item: DeviceStatCard) {
-  if (item.sparkline) return buildSparklinePoints(item.sparkline)
+  // Percent trends retain their 0–100 domain so a low rate is not visually magnified.
+  if (item.sparkline) return buildSparklinePoints(item.sparkline, item.sparklineDomain)
   return sparklinePoints[item.key] ?? ''
 }
 

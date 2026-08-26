@@ -1,5 +1,7 @@
 import dayjs from 'dayjs'
 
+import { IOT_DEVICE_DASHBOARD_ACCESS_PROVIDERS } from '../dataCapabilities/deviceScope'
+
 const MIN_TIMESTAMP = 946684800000
 
 export type DeviceGroupTrendMetricKey = 'onlineRate' | 'uplink'
@@ -20,6 +22,7 @@ export interface DeviceGroupTrendMetric {
 export interface DeviceTrendDashboardScope {
   groupId?: string
   spaceId?: string | string[]
+  accessProvider?: readonly string[]
 }
 
 export interface DeviceTrendDashboardRange {
@@ -112,7 +115,11 @@ export function buildDeviceTrendDashboardQueries(
   range: DeviceTrendDashboardRange,
   metrics: readonly DeviceGroupTrendMetricKey[],
 ): DeviceTrendDashboardQuery[] {
-  const params = { ...scope, ...range }
+  const params = {
+    ...scope,
+    accessProvider: scope.accessProvider ?? IOT_DEVICE_DASHBOARD_ACCESS_PROVIDERS,
+    ...range,
+  }
   return metrics.map(metric => metric === 'onlineRate'
     ? {
       dashboard: 'device',
