@@ -169,9 +169,9 @@ const buildRuntimeQueryBody = (params: DeviceGroupDeviceQueryParams = {}) => ({
 
 const buildGroupDeviceQueryBody = (groupId: string, params: DeviceGroupDeviceQueryParams = {}) => ({
   ...buildRuntimeQueryBody(params),
-  // DeviceGroupController 通过 dev-group-tree term 递归匹配当前分组及子分组设备。
+  // 设备分组为平铺业务分组，仅匹配当前分组下的设备。
   terms: [
-    { column: 'id', termType: 'dev-group-tree', value: groupId },
+    { column: 'id', termType: 'dev-group', value: groupId },
     ...withIotDeviceListDefaultTerms((params.terms ?? []).map(normalizeLikeTermValue)),
   ],
 })

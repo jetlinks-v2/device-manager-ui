@@ -7,7 +7,7 @@
 
     <div v-if="isDevice" class="multi-trigger-card__row">
       <IotAlarmTargetSelect v-model="trigger.productId" class="multi-trigger-card__product" :request="requestProducts" :selected-option="selectedProduct" :placeholder="$t('IotSceneLinkage.placeholder.product')" rich @change="changeProduct" />
-      <a-button class="multi-trigger-card__scope" :disabled="!trigger.productId" @click="scopeVisible = true"><AIcon type="AimOutlined" />{{ scopeText }}</a-button>
+      <a-button class="multi-trigger-card__scope" :title="scopeTitle" :disabled="!trigger.productId" @click="scopeVisible = true"><AIcon type="AimOutlined" />{{ scopeText }}</a-button>
     </div>
 
     <div v-if="trigger.triggerKind === 'property'" class="multi-trigger-card__row">
@@ -59,6 +59,7 @@ import DeviceScopeModal, { type DeviceScope } from './DeviceScopeModal.vue'
 import DeviceStateTriggerRow from './DeviceStateTriggerRow.vue'
 import ThingModelSelect from './ThingModelSelect.vue'
 import ThingModelValueInput from './ThingModelValueInput.vue'
+import { formatDeviceScopeText, formatDeviceScopeTitle, toTriggerScopeValue } from '../deviceScopeLabel'
 import { getTermTypes, toThingModelOptions } from '../thingModel'
 
 const props = defineProps({ trigger: { type: Object as PropType<SceneMultiTriggerForm>, required: true }, removable: Boolean })
@@ -82,7 +83,8 @@ const eventOutputOptions = computed(() => toThingModelOptions(selectedEvent.valu
 const selectedEventOutput = computed(() => eventOutputOptions.value.find(item => item.value === trigger.value.eventOutputId))
 const termOptions = computed(() => getTermTypes(selectedProperty.value?.valueType).map(value => ({ value, label: t(`IotSceneLinkage.term.${value}`) })))
 const eventTermOptions = computed(() => getTermTypes(selectedEventOutput.value?.valueType).map(value => ({ value, label: t(`IotSceneLinkage.term.${value}`) })))
-const scopeText = computed(() => trigger.value.allDevices ? t('IotSceneLinkage.scope.all') : trigger.value.dynamicScope ? t('IotSceneLinkage.scope.range', { count: trigger.value.groupIds.length }) : t('IotSceneLinkage.scope.fixedCount', { count: trigger.value.deviceIds.length }))
+const scopeText = computed(() => formatDeviceScopeText(t, toTriggerScopeValue(trigger.value), { emptyText: t('IotSceneLinkage.placeholder.device') }))
+const scopeTitle = computed(() => formatDeviceScopeTitle(t, toTriggerScopeValue(trigger.value), { emptyText: t('IotSceneLinkage.placeholder.device') }))
 const scope = computed(() => ({ selector: trigger.value.allDevices ? 'all' : trigger.value.dynamicScope ? trigger.value.dynamicScopeType : 'fixed', selectorValues: trigger.value.dynamicScope ? trigger.value.groupIds.map(value => ({ value })) : trigger.value.deviceIds.map((value, index) => ({ value, name: trigger.value.scopeOptions.names?.[index] })), options: trigger.value.scopeOptions }))
 
 async function requestProducts(query: IotAlarmTargetSelectQuery) {
@@ -115,7 +117,9 @@ function changeProperty(value?: string) { const option = propertyOptions.value.f
 function changeEvent(value?: string) { const option = eventOptions.value.find(item => item.value === value); Object.assign(trigger.value, { eventName: option?.label, eventOutputId: undefined, eventOutputName: undefined, eventTermValue: undefined }) }
 function changeEventOutput(value?: string) { trigger.value.eventOutputName = eventOutputOptions.value.find(item => item.value === value)?.label; trigger.value.eventTermValue = undefined }
 function saveScope(value: DeviceScope) {
-  Object.assign(trigger.value, { allDevices: value.selector === 'all', dynamicScope: ['space', 'device-group'].includes(value.selector), dynamicScopeType: value.selector === 'space' ? 'space' : 'device-group', scopeOptions: { ...value.options, names: value.selectorValues.map(item => item.name || item.value) }, groupIds: ['space', 'device-group'].includes(value.selector) ? value.selectorValues.map(item => item.value) : [], deviceIds: value.selector === 'fixed' ? value.selectorValues.map(item => item.value) : [] })
+  const isDynamicScope = ['space', 'device-group'].includes(value.selector)
+  const selectorValues = value.selectorValues
+  Object.assign(trigger.value, { allDevices: value.selector === 'all', dynamicScope: isDynamicScope, dynamicScopeType: value.selector === 'space' ? 'space' : 'device-group', scopeOptions: { ...value.options, names: selectorValues.map(item => item.name || item.value) }, groupIds: isDynamicScope ? selectorValues.map(item => item.value) : [], deviceIds: value.selector === 'fixed' ? selectorValues.map(item => item.value) : [] })
   scopeVisible.value = false
 }
 watch(() => trigger.value.productId, value => { void loadMetadata(value); void loadSelectedProduct(value) }, { immediate: true })
