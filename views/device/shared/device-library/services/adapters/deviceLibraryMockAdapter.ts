@@ -1,6 +1,6 @@
 import { DEVICE_ACCESS_META } from '@device-manager-ui/views/device/shared/device-library/services/deviceLibraryAccessMeta'
 import { DEVICE_LIBRARY } from '@device-manager-ui/views/device/shared/device-library/services/adapters/deviceLibrary.seed'
-import { err, ok } from '@device-manager-ui/views/device/shared/services/shared/serviceResult'
+import { err, ok } from '@jetlinks-web-core/utils/service-result'
 import type {
   AddToProjectInput,
   AdapterBrand,

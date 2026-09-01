@@ -1,4 +1,4 @@
-import type { ServiceResult } from '@device-manager-ui/views/device/shared/services/shared/serviceResult'
+import type { ServiceResult } from '@jetlinks-web-core/utils/service-result'
 
 export type DeviceCategory =
   | 'video'

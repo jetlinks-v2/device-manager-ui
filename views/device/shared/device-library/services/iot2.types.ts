@@ -1,4 +1,4 @@
-import type { ServiceResult } from '@device-manager-ui/views/device/shared/services/shared/serviceResult'
+import type { ServiceResult } from '@jetlinks-web-core/utils/service-result'
 
 export type Iot2TimeRange = 'today' | '7d' | '30d' | 'custom'
 export type Iot2TrendWindow = '24h' | '7d' | '30d'
