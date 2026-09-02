@@ -1,5 +1,5 @@
 import { request } from '@jetlinks-web/core'
-import { err, ok, type ServiceResult } from './serviceResult'
+import { err, ok, type ServiceResult } from '@jetlinks-web-core/utils/service-result'
 import {
   DEFAULT_MODEL_PAGE_SIZE,
   emptyVersionInfo,

@@ -1,4 +1,4 @@
-import { err, ok } from '@device-manager-ui/services/shared/serviceResult'
+import { err, ok } from '@jetlinks-web-core/utils/service-result'
 import { projectDataAccessService } from '@device-manager-ui/modules/defaults/services/projectDataAccess.service'
 import { projectAreaService } from '@device-manager-ui/modules/defaults/services/projectArea.service'
 import { createIotDeviceSeed } from './iotDevice.seed'

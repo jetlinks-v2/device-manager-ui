@@ -1,6 +1,6 @@
 import type { Ref } from 'vue'
 import { readonly } from 'vue'
-import { err, ok } from '@device-manager-ui/services/shared/serviceResult'
+import { err, ok } from '@jetlinks-web-core/utils/service-result'
 import { projectIdentityService } from './projectIdentity.service'
 import type {
   ProjectIdentitySettings,

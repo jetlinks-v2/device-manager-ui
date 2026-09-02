@@ -1,4 +1,4 @@
-import type { ServiceResult } from '@device-manager-ui/services/shared/serviceResult'
+import type { ServiceResult } from '@jetlinks-web-core/utils/service-result'
 
 export type ProjectAreaType = 'site' | 'building' | 'floor' | 'zone' | 'room' | 'point'
 export type ProjectAreaPlanMode = 'own' | 'inherit'

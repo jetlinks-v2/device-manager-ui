@@ -1,4 +1,4 @@
-import type { ServiceResult } from '@device-manager-ui/services/shared/serviceResult'
+import type { ServiceResult } from '@jetlinks-web-core/utils/service-result'
 import type { PlatformEvent } from '@device-manager-ui/services/platform-events'
 
 export type IotDeviceConnectionStatus = 'online' | 'offline' | 'disabled'
