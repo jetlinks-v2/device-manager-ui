@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="66" viewBox="0 0 100 66" fill="none">
+  <defs>
+    <linearGradient id="ssl-green" x1="18" y1="20" x2="36" y2="38" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8AE6B5"/>
+      <stop offset="1" stop-color="#28B978"/>
+    </linearGradient>
+    <linearGradient id="ssl-red" x1="42" y1="20" x2="60" y2="38" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF9D9D"/>
+      <stop offset="1" stop-color="#F05A67"/>
+    </linearGradient>
+    <linearGradient id="ssl-blue" x1="66" y1="20" x2="84" y2="38" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#75DDFF"/>
+      <stop offset="1" stop-color="#4389F5"/>
+    </linearGradient>
+  </defs>
+  <rect x="9" y="8" width="82" height="50" rx="7" fill="#F5F9FC" stroke="#D4E2ED"/>
+  <circle cx="27" cy="29" r="12" fill="#DDF7EA"/>
+  <circle cx="27" cy="29" r="8" fill="url(#ssl-green)"/>
+  <circle cx="51" cy="29" r="12" fill="#FDE7E8"/>
+  <circle cx="51" cy="29" r="8" fill="url(#ssl-red)"/>
+  <circle cx="75" cy="29" r="12" fill="#E1F1FF"/>
+  <circle cx="75" cy="29" r="8" fill="url(#ssl-blue)"/>
+  <rect x="19" y="46" width="16" height="3" rx="1.5" fill="#A9BDCC"/>
+  <rect x="43" y="46" width="16" height="3" rx="1.5" fill="#A9BDCC"/>
+  <rect x="67" y="46" width="16" height="3" rx="1.5" fill="#A9BDCC"/>
+</svg>

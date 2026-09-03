@@ -1,7 +1,7 @@
 <template>
-  <span v-if="raw" class="property-value-preview property-value-preview--text">
+  <j-ellipsis v-if="raw" class="property-value-preview property-value-preview--text">
     {{ rawText }}
-  </span>
+  </j-ellipsis>
   <a-tooltip v-else-if="structuredValue" :title="$t('IotDeviceDetail.propertyDetail.viewDetail')">
     <button
       type="button"
@@ -20,9 +20,9 @@
     :height="thumbnailSize"
     class="property-value-preview property-value-preview--image"
   />
-  <span v-else class="property-value-preview property-value-preview--text">
+  <j-ellipsis v-else class="property-value-preview property-value-preview--text">
     {{ displayValue }}
-  </span>
+  </j-ellipsis>
 
   <a-modal
     v-model:open="detailOpen"

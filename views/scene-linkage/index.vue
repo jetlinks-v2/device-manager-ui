@@ -24,7 +24,7 @@
 	      <a-table class="scene-list__table" :loading="loading" :columns="columns" :data-source="list" row-key="scene.id" :pagination="pagination" @change="changePage">
 		      <template #bodyCell="{ column, record }">
 			      <template v-if="column.dataIndex === 'name'"><strong>{{ record.scene.name }}</strong><div><a-tag class="scene-list__trigger-tag">{{ triggerLabel(record.scene) }}</a-tag></div></template>
-			      <template v-else-if="column.dataIndex === 'rule'"><div class="scene-list__summary"><template v-for="part in sceneSummaryParts(record.scene)" :key="part.keyword"><b :class="part.kind === 'action' ? 'scene-list__summary-keyword--action' : 'scene-list__summary-keyword--trigger'">{{ part.keyword }}</b><span :class="`scene-list__summary-field--${part.kind}`">{{ part.value }}</span></template></div></template>
+			      <template v-else-if="column.dataIndex === 'rule'"><div class="scene-list__summary"><template v-for="(part, index) in sceneSummaryParts(record.scene)" :key="`${part.keyword}-${index}`"><b :class="part.kind === 'action' ? 'scene-list__summary-keyword--action' : 'scene-list__summary-keyword--trigger'">{{ part.keyword }}</b><span :class="`scene-list__summary-field--${part.kind}`" :title="part.title || part.value">{{ part.value }}</span></template></div></template>
 			      <template v-else-if="column.dataIndex === 'state'"><a-switch :checked="stateValue(record.scene) === 'started'" :loading="pendingId === record.scene.id" @change="confirmToggle(record.scene)" /></template>
 			      <template v-else-if="column.dataIndex === 'lastExecute'">{{ record.lastExecute || '-' }}</template>
 			      <template v-else-if="column.dataIndex === 'actions'"><div class="scene-list__actions"><span><a-button v-if="sceneTriggerType(record.scene) === 'manual'" type="link" @click="confirmExecute(record.scene)">{{ $t('IotSceneLinkage.action.execute') }}</a-button></span><j-permission-button type="link" hasPermission="iot-user/scene-linkage:update" @click="openEditor(record.scene.id)">{{ $t('IotSceneLinkage.action.edit') }}</j-permission-button><a-dropdown><a-button type="link"><AIcon type="MoreOutlined" /></a-button><template #overlay><a-menu><a-menu-item @click="recordScene = record.scene">{{ $t('IotSceneLinkage.action.records') }}</a-menu-item><a-menu-item v-if="stateValue(record.scene) !== 'disable'" danger disabled><a-tooltip :title="$t('IotSceneLinkage.message.disableBeforeDelete')"><span class="scene-list__delete-tooltip">{{ $t('IotSceneLinkage.action.delete') }}</span></a-tooltip></a-menu-item><a-menu-item v-else danger @click="confirmRemove(record.scene)">{{ $t('IotSceneLinkage.action.delete') }}</a-menu-item></a-menu></template></a-dropdown></div></template>
@@ -45,6 +45,7 @@ import { PageHeader } from '@jetlinks-web-core/components'
 import { deleteScene, disableScene, enableScene, executeScene, queryScenes } from '../../api/scene-linkage'
 import { normalizeResult } from './utils'
 import SceneRecordTimeline from './components/SceneRecordTimeline.vue'
+import { formatDeviceScopeText, formatDeviceScopeTitle, formatProductScopeText, type SceneDeviceScopeValue } from './editor/deviceScopeLabel'
 const router = useRouter()
 const { t } = useI18n()
 const list = ref<any[]>([])
@@ -68,9 +69,48 @@ const stateValue = (scene: any) => scene.state?.value || scene.state
 const sceneTriggerType = (scene: any) => scene.triggerType || scene.trigger?.type
 const triggerLabel = (scene: any) => t(`IotSceneLinkage.triggerType.${sceneTriggerType(scene)}`)
 const sceneSummary = (scene: any) => scene.options?.summary || `${t('IotSceneLinkage.rule.when')} ${triggerLabel(scene)}，${t('IotSceneLinkage.rule.then')} ${(scene.actions || []).map((a: any) => t(`IotSceneLinkage.action.${a.executor}`)).join('、')}`
-const sceneSummaryParts = (scene: any) => {
-  const text = sceneSummary(scene); const matches = [...text.matchAll(/(?:^|[，。\s])([当且就则])\s*(.*?)(?=[，。\s]+[且就则]|$)/g)]
+const splitNames = (value?: string | string[]) => Array.isArray(value) ? value : String(value || '').split(/[、,，]/).map(item => item.trim()).filter(Boolean)
+const normalizeScope = (scope: any, extraOptions: Record<string, any> = {}): SceneDeviceScopeValue => {
+  const options = { ...extraOptions, ...(scope?.options || {}) }
+  if (!options.names?.length) {
+    const names = splitNames(options.name)
+    if (names.length) options.names = names
+  }
+  return {
+    selector: scope?.selector,
+    selectorValues: (scope?.selectorValues || []).map((item: any, index: number) => typeof item === 'object'
+      ? { value: String(item.value ?? item.id ?? ''), name: item.name || options.names?.[index] }
+      : { value: String(item), name: options.names?.[index] }),
+    options,
+  }
+}
+const replaceAllText = (source: string, search: string, replacement: string) => search && replacement && search !== replacement ? source.split(search).join(replacement) : source
+const expandScopeSummaryTitle = (scene: any, source: string) => {
+  const scopes: Array<{ scope: SceneDeviceScopeValue; productName?: string }> = []
+  const triggerDevice = scene.trigger?.device
+  if (triggerDevice) scopes.push({ scope: normalizeScope(triggerDevice, { names: splitNames(scene.options?.trigger?.name) }), productName: scene.options?.trigger?.productName })
+  const branchActions = (scene.branches || []).flatMap((branch: any) => (branch.then || []).flatMap((item: any) => item.actions || []))
+  branchActions.forEach((action: any) => {
+    if (action.executor === 'device' && action.device) scopes.push({ scope: normalizeScope(action.device, action.options), productName: action.options?.productName || action.device.options?.productName })
+    if (action.executor === 'device-data' && action.configuration?.selector) scopes.push({ scope: normalizeScope(action.configuration.selector, action.options), productName: action.options?.productName || action.configuration.selector.options?.productName })
+  })
+  return scopes.reduce((text, item) => {
+    const shortScope = formatDeviceScopeText(t, item.scope)
+    const fullScope = formatDeviceScopeTitle(t, item.scope)
+    const shortTarget = formatProductScopeText(t, item.productName || '', shortScope)
+    const fullTarget = formatProductScopeText(t, item.productName || '', fullScope)
+    return replaceAllText(replaceAllText(text, shortTarget, fullTarget), shortScope, fullScope)
+  }, source)
+}
+const sceneSummaryTitle = (scene: any) => expandScopeSummaryTitle(scene, scene.options?.summaryTitle || sceneSummary(scene))
+const splitSceneSummaryParts = (text: string) => {
+  const matches = [...text.matchAll(/(?:^|[，。\s])([当且就则])\s*(.*?)(?=[，。\s]+[且就则]|$)/g)]
   return matches.length ? matches.map((item, index) => ({ keyword: item[1], value: item[2].replace(/[，。]\s*$/, '').trim(), kind: item[1] === '就' || item[1] === '则' ? 'action' : index ? 'condition' : 'trigger' })) : [{ keyword: t('IotSceneLinkage.rule.when'), value: text, kind: 'trigger' }]
+}
+const sceneSummaryParts = (scene: any) => {
+  const title = sceneSummaryTitle(scene)
+  const titleParts = splitSceneSummaryParts(title)
+  return splitSceneSummaryParts(sceneSummary(scene)).map((part, index) => ({ ...part, title: titleParts[index]?.value || title }))
 }
 async function reload(payload?: ConditionFilterChangePayload) {
   // 翻页时沿用 ConditionFilter 已转换的查询条件，避免丢失名称模糊匹配的通配符。
@@ -152,7 +192,6 @@ onMounted(reload)
 
 .scene-list-table {
 	background: var(--jet-theme-bg-container);
-	padding: var(--space-4);
 	border-radius: var(--jet-theme-radius);
 	display: grid;
 	gap: var(--space-4);

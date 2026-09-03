@@ -2,7 +2,7 @@ import type { Ref } from 'vue'
 import { readonly, ref } from 'vue'
 import i18n from '@jetlinks-web-core/locales'
 
-import type { ServiceError } from '@device-manager-ui/views/device/shared/services/shared/serviceResult'
+import type { ServiceError } from '@jetlinks-web-core/utils/service-result'
 
 import { createIotDeviceLibraryMockAdapter } from './adapters/iotDeviceLibraryMockAdapter'
 import type {

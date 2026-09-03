@@ -131,7 +131,6 @@ const { t: $t } = useI18n()
   min-height: 0;
   min-width: 0;
   overflow: auto;
-  background: var(--jet-theme-bg-layout);
   container-type: inline-size;
 }
 

@@ -1,0 +1,20 @@
+<svg width="100" height="66" viewBox="0 0 100 66" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="historyLinePrimary" x1="12" y1="49" x2="91" y2="13" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0D6DFF"/>
+      <stop offset="1" stop-color="#0EECE4"/>
+    </linearGradient>
+  </defs>
+  <path d="M10 13V53H94" stroke="#BEE5FB" stroke-opacity="0.55" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M11 23H94M11 33H94M11 43H94" stroke="white" stroke-opacity="0.12" stroke-dasharray="2 3"/>
+  <path d="M13 44C22 44 23 34 32 35C41 36 42 22 53 24C64 26 66 16 76 20C84 23 87 13 94 15" stroke="url(#historyLinePrimary)" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M13 48C22 45 24 50 33 46C42 42 45 43 54 38C63 33 69 39 77 32C85 25 89 30 94 25" stroke="#BEE5FB" stroke-opacity="0.75" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <g fill="#0EECE4" stroke="#BEE5FB" stroke-width="1">
+    <circle cx="32" cy="35" r="2.5"/>
+    <circle cx="53" cy="24" r="2.5"/>
+    <circle cx="76" cy="20" r="2.5"/>
+  </g>
+  <path d="M23 53V57M43 53V57M63 53V57M83 53V57" stroke="white" stroke-opacity="0.45" stroke-width="1.2"/>
+  <circle cx="15" cy="59" r="3" stroke="#0D6DFF" stroke-width="1.5"/>
+  <path d="M15 57V59L17 60" stroke="#0EECE4" stroke-width="1.2" stroke-linecap="round"/>
+</svg>

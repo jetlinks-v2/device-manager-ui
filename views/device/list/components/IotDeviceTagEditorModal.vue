@@ -25,11 +25,27 @@
         <div v-else-if="column.dataIndex === 'name'" class="device-tag-editor__name">
           <j-ellipsis>{{ getTagLabel(record) }}</j-ellipsis>
         </div>
-        <MetadataValueItem
-          v-else
-          v-model="record.value"
-          :item="record"
-        />
+        <template v-else>
+          <MetadataValueItem
+            v-if="['object', 'array'].includes(getTagType(record))"
+            v-model="record.value"
+            :item="record"
+          />
+          <SelectAMap
+            v-else-if="getTagType(record) === 'geoPoint'"
+            v-model:point="record.value"
+          />
+          <j-value-item
+            v-else
+            v-model:modelValue="record.value"
+            :item-type="getEditorType(record)"
+            :action="FileStaticPath()"
+            :headers="getUploadHeaders()"
+            :options="getTagOptions(record)"
+            value-format="YYYY-MM-DD HH:mm:ss"
+            style="width: 100%"
+          />
+        </template>
       </template>
     </a-table>
   </a-modal>
@@ -39,6 +55,8 @@
 import dayjs from 'dayjs'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { FileStaticPath } from '@jetlinks-web-core/api/comm'
+import { getUploadHeaders } from '@jetlinks-web-core/utils'
 
 type TagRecord = Record<string, any>
 
@@ -90,15 +108,58 @@ function getTagType(tag: TagRecord) {
   return String(tag.dataType?.type || tag.type || 'string')
 }
 
+function getEditorType(tag: TagRecord) {
+  const type = getTagType(tag)
+  return type === 'array' ? 'object' : type === 'file' ? 'string' : type
+}
+
+function getTagOptions(tag: TagRecord) {
+  const type = getTagType(tag)
+  if (type === 'enum') {
+    return (tag.dataType?.elements || []).map((item: TagRecord) => ({
+      label: item.text,
+      value: item.value,
+    }))
+  }
+  if (type === 'boolean') {
+    return [
+      { label: tag.dataType?.trueText, value: tag.dataType?.trueValue },
+      { label: tag.dataType?.falseText, value: tag.dataType?.falseValue },
+    ]
+  }
+  return undefined
+}
+
+function normalizeTagValue(type: string, value: unknown) {
+  // 标签接口的 value 是字符串；object/array 需要提交 JSON 文本而不是解析后的对象。
+  if (['object', 'array'].includes(type) && value !== undefined && value !== null && typeof value !== 'string') {
+    return JSON.stringify(value)
+  }
+  return value
+}
+
+function parseJsonEditorValue(value: unknown) {
+  if (typeof value !== 'string') return value
+  try {
+    return JSON.parse(value)
+  } catch {
+    return value
+  }
+}
+
 function resetRows() {
-  rows.value = props.tags.map((tag) => ({
-    ...tag,
-    value: tag.value ?? tag.formatValue ?? undefined,
-    valueType: {
-      ...(tag.dataType || {}),
-      type: getTagType(tag),
-    },
-  }))
+  rows.value = props.tags.map((tag) => {
+    const type = getTagType(tag)
+    const value = tag.value ?? tag.formatValue ?? undefined
+    return {
+      ...tag,
+      value: ['object', 'array'].includes(type) ? parseJsonEditorValue(value) : value,
+      valueType: {
+        ...(tag.dataType || {}),
+        type,
+      },
+    }
+  })
 }
 
 function close() {
@@ -107,10 +168,16 @@ function close() {
 
 function submit() {
   // 与旧版接口保持一致：日期标签保存为后端可读的完整时间字符串。
-  emit('save', rows.value.map(({ valueType, ...tag }) => ({
-    ...tag,
-    value: getTagType(tag) === 'date' && tag.value ? dayjs(tag.value).format('YYYY-MM-DD HH:mm:ss') : tag.value,
-  })))
+  emit('save', rows.value.map((row) => {
+    const type = getTagType(row)
+    const { dataType, valueType, ...tag } = row
+    return {
+      ...tag,
+      value: type === 'date' && row.value
+        ? dayjs(row.value).format('YYYY-MM-DD HH:mm:ss')
+        : normalizeTagValue(type, row.value),
+    }
+  }))
 }
 
 watch(

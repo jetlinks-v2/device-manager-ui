@@ -8,6 +8,7 @@
     :placeholder="placeholder"
     :disabled="disabled"
     :loading="loading"
+    :dropdown-match-select-width="dropdownMatchSelectWidth"
     @dropdownVisibleChange="handleVisibleChange"
     @search="handleSearch"
     @change="handleChange"
@@ -44,6 +45,7 @@ const props = defineProps({
   placeholder: { type: String, default: '' },
   disabled: { type: Boolean, default: false },
   reloadKey: { type: [String, Number], default: '' },
+  loadOnReload: { type: Boolean, default: false },
   rich: { type: Boolean, default: false },
   optionType: { type: String as PropType<'auto' | 'product' | 'device'>, default: 'auto' },
 })
@@ -58,6 +60,8 @@ const loaded = ref(false)
 const keyword = ref('')
 const remoteOptions = ref<IotAlarmTargetSelectOption[]>([])
 let searchTimer: ReturnType<typeof setTimeout> | undefined
+
+const dropdownMatchSelectWidth = computed(() => props.rich ? 336 : true)
 
 const options = computed(() => {
   const staticOptions = [...props.staticOptions]
@@ -124,6 +128,7 @@ watch(
     keyword.value = ''
     loaded.value = false
     remoteOptions.value = []
+    if (props.loadOnReload) void load()
   },
 )
 

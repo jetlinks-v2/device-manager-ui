@@ -1,5 +1,6 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import useClipboard from 'vue-clipboard3'
 import { onlyMessage } from '@jetlinks-web/utils'
 
 import type { DeviceTemplate } from '../services/device-library/types'
@@ -25,6 +26,7 @@ export type IotDeviceOverviewProps = {
 
 export function useIotDeviceOverview(props: Readonly<IotDeviceOverviewProps>) {
   const { t: $t } = useI18n()
+  const { toClipboard } = useClipboard()
   const selectedMetric = ref<RealtimePropertyRow | null>(null)
   const detailOpen = ref(false)
 
@@ -56,8 +58,8 @@ export function useIotDeviceOverview(props: Readonly<IotDeviceOverviewProps>) {
   }
 
   async function copyText(value?: string) {
-    if (!value || typeof navigator === 'undefined') return
-    await navigator.clipboard?.writeText(value)
+    if (!value) return
+    await toClipboard(value)
     onlyMessage($t('IotDeviceDetail.accessDetail.copied'))
   }
 

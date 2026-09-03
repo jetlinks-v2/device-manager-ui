@@ -20,7 +20,6 @@ const props = defineProps<{
 }>()
 
 const { t: $t } = useI18n()
-const activeTrendTimeLabels = ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '24:00']
 const ariaLabel = computed(() => props.ariaLabel || $t('IotWorkbench.chart.activeAria'))
 
 function readThemeToken(name: string, fallback: string) {
@@ -56,16 +55,9 @@ function rem(value: number) {
   return value * (Number.isFinite(rootFontSize) ? rootFontSize : 16)
 }
 
-function activeTrendPointLabel(label: string, index: number) {
-  const isTimeLabel = props.windowLabel === $t('IotWorkbench.option.time.24h.short')
-    || props.windowLabel === $t('IotWorkbench.option.time.today')
-  return isTimeLabel && props.points.length <= activeTrendTimeLabels.length
-    ? activeTrendTimeLabels[index] ?? label
-    : label
-}
-
 const labels = computed(() => {
-  return props.points.map((point, index) => activeTrendPointLabel(point.label, index))
+  // Labels are produced from the complete timestamp span by the data layer; never infer dates from point indexes.
+  return props.points.map((point) => point.label)
 })
 
 function recordAxisScale(values: number[]) {

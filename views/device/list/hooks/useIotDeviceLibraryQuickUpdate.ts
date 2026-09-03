@@ -120,13 +120,7 @@ export function useIotDeviceLibraryQuickUpdate(projectId: () => string, refreshT
       selectedTemplateKey.value = templateId
       const template = templateId ? await queryDeviceLibraryTemplateById_api(templateId) : null
       if (!template) {
-        states[key] = {
-          checked: true,
-          checking: false,
-          updateDisabled: true,
-          disabledReason: $t('IotDeviceList.message.updateProductTemplateMissing'),
-        }
-        return states[key]
+        throw new Error($t('IotDeviceList.message.updateProductTemplateMissing'))
       }
       templateProducts.value = [{ ...template, installed: true, installedProductId: productId }]
       productSync.reset()

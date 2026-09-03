@@ -25,6 +25,8 @@
               :model-value="model.productId"
               :request="productRequest"
               :selected-option="productOption"
+              :reload-key="productReloadKey"
+              load-on-reload
               :placeholder="$t('DeviceAlarm.placeholder.productSearch')"
               :disabled="readonlyScope"
               @change="(_value, option) => emit('product-change', option)"
@@ -134,6 +136,7 @@ const props = defineProps({
   triggerOptions: { type: Array as PropType<Array<{ label: string; value: string }>>, default: () => [] },
   productOption: { type: Object as PropType<DeviceAlarmTargetOption | undefined>, default: undefined },
   deviceOption: { type: Object as PropType<DeviceAlarmTargetOption | undefined>, default: undefined },
+  productReloadKey: { type: Number, default: 0 },
   productRequest: { type: Function as PropType<(query: IotAlarmTargetSelectQuery) => Promise<{ data: IotAlarmTargetSelectOption[] }>>, required: true },
   deviceRequest: { type: Function as PropType<(query: IotAlarmTargetSelectQuery) => Promise<{ data: IotAlarmTargetSelectOption[] }>>, required: true },
   propertyOptions: { type: Array as PropType<ThingModelProperty[]>, default: () => [] },

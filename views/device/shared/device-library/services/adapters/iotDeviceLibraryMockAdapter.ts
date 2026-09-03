@@ -1,4 +1,4 @@
-import { err, ok } from '@device-manager-ui/views/device/shared/services/shared/serviceResult'
+import { err, ok } from '@jetlinks-web-core/utils/service-result'
 
 import {
   buildIot2ProductTemplateFilterOptions,

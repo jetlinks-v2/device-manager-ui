@@ -70,13 +70,12 @@
       :class="{ 'is-tags-expanded': tagsExpanded }"
       :style="{ '--dd-tags-expanded-shift': `${-tagsExpandedOffset / 2}px` }"
     >
+      <a-button class="dd-hero__back" type="text" @click="backToDeviceList">
+        <template #icon><AIcon type="LeftOutlined" /></template>
+        {{ $t('IotDeviceDetail.common.back') }}
+      </a-button>
       <div class="dd-hero__icon" :data-category="categoryKey ?? 'sensor'">
-        <img
-          v-if="device.imageUrl && !deviceImageFailed"
-          :src="device.imageUrl"
-          :alt="$t('IotDeviceList.table.deviceImageAlt', { name: device.name })"
-          @error="deviceImageFailed = true"
-        >
+        <IconValueView v-if="device.imageUrl" :value="device.imageUrl" :fallback-text="device.name" :size="52" />
         <AIcon v-else :type="categoryIcon" aria-hidden="true" />
       </div>
       <div class="dd-hero__main">
@@ -188,6 +187,7 @@
         </a-popconfirm>
         <a-popconfirm
           :title="$t('IotDeviceList.confirm.deleteOne', { name: device.name })"
+          :disabled="deleteActionDisabled"
           :ok-button-props="{ loading: actionBusyId === device.id && actionKind === 'delete' }"
           @confirm="confirmDeleteDevice"
         >
@@ -195,7 +195,7 @@
             size="small"
             danger
             :loading="actionBusyId === device.id && actionKind === 'delete'"
-            :disabled="Boolean(actionBusyId && actionKind !== 'delete') || !isDeviceDisabled"
+            :disabled="deleteActionDisabled"
           >
             <template #icon><AIcon type="DeleteOutlined" /></template>
             {{ $t('IotDeviceDetail.detail.delete') }}
@@ -293,6 +293,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import { onlyMessage } from '@jetlinks-web/utils'
+import { IconValueView } from '@jetlinks-web-core/components/IconValue'
 import {
   deleteDevice_api,
   deployDevice_api,
@@ -373,7 +374,6 @@ const deviceId = computed(() => String(route.params.deviceId ?? route.params.id)
 const healthPath = computed(() => buildIotDeviceHealthPath(projectId.value, deviceId.value, undefined, route))
 
 const device = ref<IotDevice | null>(null)
-const deviceImageFailed = ref(false)
 const hasTransparentCodec = computed(() =>
   Boolean(device.value?.features?.some((item: any) => item?.id === 'transparentCodec')),
 )
@@ -571,6 +571,10 @@ function openEditDrawer() {
   editDrawerOpen.value = true
 }
 
+function backToDeviceList() {
+  void router.push(buildIotDeviceListPath(projectId.value, route))
+}
+
 async function onDeviceSaved() {
   editDrawerOpen.value = false
   await loadAll()
@@ -671,6 +675,8 @@ const businessGroupText = computed(() => limitedDisplayText(businessGroupItems.v
 const businessGroupFullText = computed(() => displayText(businessGroupItems.value.join($t('IotDeviceList.presentation.separator'))))
 const lastSeenText = computed(() => displayText(device.value?.lastSeen))
 const isDeviceDisabled = computed(() => device.value ? getIotDeviceConnectionStatus(device.value) === 'disabled' : false)
+// 启用状态或其他操作执行中时，删除入口和确认弹层必须同时禁用。
+const deleteActionDisabled = computed(() => Boolean(actionBusyId.value && actionKind.value !== 'delete') || !isDeviceDisabled.value)
 
 const productTemplate = computed(() => {
   if (!device.value?.productKey) return null
@@ -1736,12 +1742,6 @@ watch(
   { deep: true, immediate: true },
 )
 
-watch(
-  () => device.value?.imageUrl,
-  () => {
-    deviceImageFailed.value = false
-  },
-)
 
 watch(activeRealtimePropertyKeySignature, async () => {
   if (!device.value?.id) return
@@ -1760,9 +1760,23 @@ watch(activeRealtimePropertyKeySignature, async () => {
   min-height: 5rem;
   padding: var(--space-3) var(--space-4);
   margin-bottom: 0.875rem;
-  border: 0.0625rem solid var(--jet-theme-border);
+  border: 0.0625rem solid var(--jet-theme-border-secondary);
   border-radius: 0.5rem;
   background: var(--jet-theme-bg-container);
+}
+
+.dd-hero__back.ant-btn {
+  grid-column: 1 / -1;
+  justify-self: start;
+  height: auto;
+  padding: 0;
+  color: var(--jet-theme-text-secondary);
+}
+
+.dd-hero__back.ant-btn:hover,
+.dd-hero__back.ant-btn:focus {
+  color: var(--jet-theme-primary);
+  background: transparent;
 }
 
 .dd-hero__icon {
@@ -2002,14 +2016,13 @@ watch(activeRealtimePropertyKeySignature, async () => {
 }
 
 .dd-tab-shell {
-  border: 0.0625rem solid var(--jet-theme-border);
+  border: 0.0625rem solid var(--jet-theme-border-secondary);
   border-radius: var(--jet-theme-radius);
   background: var(--jet-theme-bg-container);
   overflow: hidden;
 }
 
 .dd-detail-tabs {
-  border-bottom: 0.0625rem solid var(--jet-theme-border);
   padding: 0 var(--space-4);
 }
 

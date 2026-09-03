@@ -6,7 +6,7 @@
     "paths": {
       "@jetlinks-web-core/*": ["../../jetlinks-web-core/src/*"],
       "@device-manager-ui/*": ["./*"],
-      "@saas-manager-ui/*": ["../saas-manager-ui/*"],
+      "@saas-manager-ui/*": ["../saas-manager-ui/*"]
     }
   }
 }

@@ -4,6 +4,7 @@
 <script setup lang="ts">
 import { computed, ref, type PropType } from 'vue'
 import { useI18n } from 'vue-i18n'
+import useClipboard from 'vue-clipboard3'
 
 import type { DeviceTemplate } from '../../services/device-library/types'
 import type { IotDevice } from '../../types'
@@ -27,6 +28,7 @@ const props = defineProps({
 })
 
 const { t: $t } = useI18n()
+const { toClipboard } = useClipboard()
 const credentialRevealed = ref(false)
 
 const matchedModel = computed(() => {
@@ -118,8 +120,8 @@ const thingModelDefinition = computed<IotDeviceLibraryThingModelDefinition>(() =
 )
 
 async function copyText(value: string) {
-  if (!value || value === '-' || typeof navigator === 'undefined') return
-  await navigator.clipboard?.writeText(value)
+  if (!value || value === '-') return
+  await toClipboard(value)
 }
 
 async function copyConfigText() {

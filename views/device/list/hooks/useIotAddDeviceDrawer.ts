@@ -23,8 +23,10 @@ import {
 import { queryDeviceGroupDetailList_api, type DeviceGroup } from '@device-manager-ui/api/deviceGroup'
 import { queryProjectSpaceAreaSettings_api } from '@device-manager-ui/api/spaceArea'
 import type { ProjectArea } from '@device-manager-ui/modules/defaults/types'
+import { formatIconValueFont } from '@jetlinks-web-core/components/IconValue'
 import { categoryLabel, toTemplateProductOption } from './iotAddDeviceProductOptions'
 import { buildAreaTreeData, isSelectableDeviceArea } from './iotAreaTreeOptions'
+import { buildDeviceGroupTreeData } from './iotDeviceGroupTreeOptions'
 import { saveIotDeviceAreaGroupBindings } from './iotDeviceAreaGroupBindings'
 import { useIotDeviceImageUpload } from './useIotDeviceImageUpload'
 import { useIotDeviceLibraryProductSync } from './useIotDeviceLibraryProductSync'
@@ -81,7 +83,7 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
   const libraryTagGroups = ref<IotDeviceLibraryTagGroup[]>([])
   const libraryTotal = ref(0)
   const libraryPageIndex = ref(0)
-  const libraryPageSize = ref(4)
+  const libraryPageSize = ref(6)
   const libraryLoaded = ref(false)
   const libraryTagLoaded = ref(false)
   const productLoaded = ref(false)
@@ -113,9 +115,7 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
   const availableProducts = computed(() => projectProducts.value)
   const selectableAreas = computed(() => areaOptions.value)
   const areaTreeData = computed(() => buildAreaTreeData(selectableAreas.value))
-  const groupSelectOptions = computed(() =>
-    groupOptions.value.map((group) => ({ label: group.name, value: group.id })),
-  )
+  const groupTreeData = computed(() => buildDeviceGroupTreeData(groupOptions.value))
   const libraryProducts = computed(() => templateProducts.value.map(toTemplateProductOption))
   const deviceTemplateProducts = computed(() => deviceTemplates.value.map(toTemplateProductOption))
   const selectedProduct = computed(() =>
@@ -345,18 +345,18 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
   }
 
   function appendInstallProgress(progress: DeviceLibraryInstallProgress) {
-    if (!progress.message) return
-    const duplicated = installProgressLogs.value.some((item) =>
-      item.type === progress.type && item.message === progress.message,
-    )
-    if (duplicated) return
+    const message = progress.type === 'error'
+      ? normalizeCreateDeviceErrorMessage(progress.message)
+      : progress.message
+    if (!message) return
     installProgressLogs.value = [
       ...installProgressLogs.value,
       {
         ...progress,
+        message,
         id: `${Date.now()}-${installProgressLogs.value.length}`,
       },
-    ].slice(-20)
+    ]
   }
 
   function isMissingDeviceAccessConfigError(message: string) {
@@ -365,23 +365,53 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
       && (message.includes('未找到业务标识') || message.includes('请先创建或绑定'))
   }
 
-  function getCreateDeviceErrorMessage(error: unknown) {
-    const message = error instanceof Error ? error.message : ''
+  function isServiceConnectionTimeoutError(message: string) {
+    return /^No keep-alive acks for \d+\s*ms$/i.test(message.trim())
+  }
+
+  function normalizeCreateDeviceErrorMessage(message: string) {
+    if (isServiceConnectionTimeoutError(message)) {
+      // 保留英文原文便于排查，中文环境只展示面向用户的简短提示。
+      return $t('IotDeviceList.add.serviceConnectionTimeout', { message })
+    }
     if (isMissingDeviceAccessConfigError(message)) {
       return $t('IotDeviceList.add.accessConfigIncomplete')
     }
-    return message || $t('IotDeviceList.add.createFailed')
+    return message
+  }
+
+  function getCreateDeviceErrorMessage(error: unknown) {
+    const message = error instanceof Error ? error.message : ''
+    return normalizeCreateDeviceErrorMessage(message) || $t('IotDeviceList.add.createFailed')
   }
 
   function appendInstallError(error: unknown) {
     const message = getCreateDeviceErrorMessage(error)
     if (!message || installProgressLogs.value.some((item) => item.type === 'error' && item.message === message)) return
-    appendInstallProgress({ type: 'error', message })
+    appendInstallProgress({ type: 'error', message, payload: error })
   }
 
   function appendInstallWarning(message: string, extra?: unknown) {
     if (!message || installProgressLogs.value.some((item) => item.type === 'warning' && item.message === message)) return
     appendInstallProgress({ type: 'warning', message, extra })
+  }
+
+  function selectPresetIcon(icon: string) {
+    imageUpload.clearImage()
+    form.imageUrl = formatIconValueFont(icon)
+    imageUpload.setExistingImage(form.imageUrl)
+  }
+
+  function backToLibrary() {
+    form.name = ''
+    form.areaId = ''
+    form.area = ''
+    form.groupId = ''
+    form.description = ''
+    clearImage()
+    errorMessage.value = ''
+    clearInstallProgress()
+    void nextTick(() => formRef.value?.clearValidate?.())
   }
 
   function resetForm() {
@@ -414,7 +444,7 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
     libraryTagGroups.value = []
     libraryTotal.value = 0
     libraryPageIndex.value = 0
-    libraryPageSize.value = 4
+    libraryPageSize.value = 6
     productSync.reset()
     libraryLoaded.value = false
     libraryTagLoaded.value = false
@@ -618,13 +648,15 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
     selectedProductKey, selectedTemplateKey, templateOpen,
     productMessage, libraryMessage, libraryLoading, libraryTagLoading, productLoading, deviceTemplateLoading, configOptionsLoading,
     busy, submitAction, errorMessage, imagePreviewUrl: imageUpload.imagePreviewUrl, imageFileName: imageUpload.imageFileName,
-    formRef, form, formRules, availableProducts, areaTreeData, groupSelectOptions,
+    formRef, form, formRules, availableProducts, areaTreeData, groupTreeData,
     libraryProducts, libraryTagGroups, libraryTotal, libraryPageIndex, libraryPageSize, libraryProductSyncState,
     deviceTemplateProducts, selectedProduct, selectedTemplate,
     updateAndCreateDisabledReason, updateAndCreateBusy, updateAndCreateDisabled, updateAndCreateSubmitText,
     installProgressState,
     categoryLabel, selectProduct, selectTemplate, onAreaChange,
     handleImageBeforeUpload: imageUpload.handleImageBeforeUpload,
+    selectPresetIcon,
+    backToLibrary,
     addTemplateToProject, loadDeviceLibraryTemplates, loadDeviceLibraryTags, loadProducts, loadConfigOptions, loadDeviceTemplates,
     prepareConfirmStep, onClose, onSubmit, onUpdateAndSubmit,
   }

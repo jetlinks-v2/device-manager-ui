@@ -8,6 +8,7 @@ import type { IotDevice, IotDeviceFilters, IotDeviceTodo, IotDeviceWorkbench } f
 import { useIotDeviceAlarmOverview } from './useIotDeviceAlarmOverview'
 import { useIotDeviceOverviewMetrics } from './useIotDeviceOverviewMetrics'
 import type { DeviceGroupTrendRange } from '../api/deviceGroup'
+import { useMenuStore } from '@jetlinks-web-core/store'
 
 export type WidgetKind =
   | 'online-trend'
@@ -66,6 +67,7 @@ export interface DeviceStatCard {
   tone: DashboardTone | 'default'
   target: Partial<IotDeviceFilters>
   sparkline?: number[]
+  sparklineDomain?: readonly [number, number]
   breakdown?: Array<{
     label: string
     value: number
@@ -350,6 +352,7 @@ const deviceStatCards = computed<DeviceStatCard[]>(() => {
       tone: 'muted',
       target: { connectionStatus: 'online', businessStatus: 'all', risk: 'all', anomalyKind: 'all' },
       sparkline: overviewMetrics.onlineRateTrend.value.map((item) => item.value),
+      sparklineDomain: [0, 100],
       trend: { direction: 'flat', value: $t('IotWorkbench.trend.flat'), label: $t('IotWorkbench.stat.realtime'), tone: 'muted' },
     },
     {
@@ -444,9 +447,9 @@ const activeTrendValues = computed(() => {
 const activeTrendPoints = computed(() => {
   const values = activeTrendValues.value
   const max = Math.max(1, ...values)
-  const labels = ['1', '2', '3', '4', '5', '6', '7']
   return values.map((value, index) => ({
-    label: overviewMetrics.messageTrend.value[index]?.label ?? labels[index] ?? `${index + 1}`,
+    // Empty-state points keep the chart shape without inventing a time axis.
+    label: overviewMetrics.messageTrend.value[index]?.label ?? '',
     x: values.length <= 1 ? 34 : 34 + (index / (values.length - 1)) * 460,
     y: 28 + (1 - value / max) * 120,
   }))
@@ -460,9 +463,9 @@ const onlineRateTrendValues = computed(() => {
 const onlineRateTrendPoints = computed(() => {
   const values = onlineRateTrendValues.value
   const max = Math.max(100, ...values)
-  const labels = ['1', '2', '3', '4', '5', '6', '7']
   return values.map((value, index) => ({
-    label: overviewMetrics.onlineRateTrend.value[index]?.label ?? labels[index] ?? `${index + 1}`,
+    // Empty-state points keep the chart shape without inventing a time axis.
+    label: overviewMetrics.onlineRateTrend.value[index]?.label ?? '',
     x: values.length <= 1 ? 34 : 34 + (index / (values.length - 1)) * 460,
     y: 28 + (1 - value / max) * 120,
   }))
@@ -477,7 +480,8 @@ const alarmRecordTrendPoints = computed(() => {
   const values = alarmRecordTrendValues.value
   const max = Math.max(1, ...values)
   return values.map((value, index) => ({
-    label: deviceAlarmOverview.recordTrend.value[index]?.label ?? `${index + 1}`,
+    // Empty-state points keep the chart shape without inventing a time axis.
+    label: deviceAlarmOverview.recordTrend.value[index]?.label ?? '',
     x: values.length <= 1 ? 34 : 34 + (index / (values.length - 1)) * 460,
     y: 28 + (1 - value / max) * 120,
   }))
@@ -848,13 +852,16 @@ async function loadWorkbench() {
 
 function goDeviceAlarmRecord(deviceId?: string) {
   if (!deviceId) return
-  push({
-    path: `/iot-user/device/list/Detail/${encodeURIComponent(deviceId)}`,
-    query: {
-      projectId: resolvedProjectId.value,
-      tab: 'alarm',
-    },
-  })
+    const menuStore = useMenuStore()
+    menuStore.jumpPage('iot-user/device/list', {
+        params: {
+            id: encodeURIComponent(deviceId)
+        },
+        query: {
+            projectId: resolvedProjectId.value,
+            tab: 'alarm',
+        },
+    })
 }
 
 onMounted(() => {

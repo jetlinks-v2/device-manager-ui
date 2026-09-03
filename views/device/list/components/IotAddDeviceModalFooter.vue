@@ -2,7 +2,7 @@
   <a-space>
 	  <a-button @click="$emit('close')">{{ $t('IotDeviceList.action.cancel') }}</a-button>
 	  <a-button v-if="showPrevious" @click="$emit('previous')">
-		  {{ $t('IotDeviceList.add.prev') }}
+		  {{ previousText || $t('IotDeviceList.add.prev') }}
 	  </a-button>
 	  <a-tooltip v-if="showExtraSubmit" :title="extraSubmitDisabled ? extraSubmitTooltip : ''">
     <span class="add-device-footer__tooltip-anchor">
@@ -32,6 +32,7 @@ import { useI18n } from 'vue-i18n'
 
 defineProps({
   showPrevious: { type: Boolean, default: false },
+  previousText: { type: String, default: '' },
   busy: { type: Boolean, default: false },
   submitDisabled: { type: Boolean, default: false },
   submitText: { type: String, required: true },

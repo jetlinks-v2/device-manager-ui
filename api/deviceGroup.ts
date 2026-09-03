@@ -4,12 +4,24 @@ import { request } from '@jetlinks-web/core'
 import { queryRuntimeDeviceAlarmInfo } from './alarmRecord'
 import type { DeviceGroupRuntimeDevice, RuntimeDeviceResponse } from './deviceGroupRuntime'
 import { toRuntimeDevice } from './deviceGroupRuntime'
+import { withIotDeviceListDefaultTerms } from './deviceListDefaultTerms'
 import {
-  IOT_DEVICE_DASHBOARD_ACCESS_PROVIDERS,
-  withIotDeviceListDefaultTerms,
-} from './deviceListDefaultTerms'
+  buildDeviceTrendDashboardQueries,
+  resolveDeviceTrendLabelFormat,
+  toFiniteDeviceTrendMeasurement,
+  toDeviceTrendMetrics,
+  type DeviceGroupTrendMetric,
+  type DeviceGroupTrendMetricKey,
+  type DeviceGroupTrendPoint,
+  type DeviceTrendDashboardResponse,
+} from './deviceTrend'
 
 export type { DeviceGroupRuntimeDevice } from './deviceGroupRuntime'
+export type {
+  DeviceGroupTrendMetric,
+  DeviceGroupTrendMetricKey,
+  DeviceGroupTrendPoint,
+} from './deviceTrend'
 
 export type DeviceGroupQueryTerm = {
   column?: string
@@ -34,6 +46,7 @@ export interface DeviceGroup {
   id: string
   key: string
   name: string
+  parentId?: string
   description?: string
   sortIndex: number
   creatorId?: string
@@ -44,6 +57,7 @@ export interface DeviceGroup {
 export interface CreateDeviceGroupInput {
   code: string
   name: string
+  parentId?: string
   description?: string
   sortIndex?: number
 }
@@ -100,19 +114,6 @@ export interface DeviceGroupTrendWindow {
 
 export type DeviceGroupTrendQuery = DeviceGroupTrendRange | DeviceGroupTrendWindow
 
-export interface DeviceGroupTrendPoint {
-  label: string
-  value: number
-  timestamp?: number
-}
-
-export type DeviceGroupTrendMetricKey = 'onlineRate' | 'uplink'
-
-export interface DeviceGroupTrendMetric {
-  key: DeviceGroupTrendMetricKey
-  points: DeviceGroupTrendPoint[]
-}
-
 type ApiResponse<T> = {
   result?: T
 }
@@ -127,17 +128,6 @@ type PagerResult<T> = {
 type DeviceGroupResponse = Partial<DeviceGroup>
 
 type DeviceGroupSummaryResponse = Partial<DeviceGroupSummary>
-
-type DashboardGroup = 'device-group-online-rate' | 'device-group-uplink'
-
-type DashboardTrendResponse = {
-  group?: DashboardGroup | string
-  data?: {
-    value?: unknown
-    timeString?: string
-    timestamp?: number
-  }
-}
 
 const unwrapResult = <T>(response: ApiResponse<T> | T | undefined | null): T => {
   if (response && typeof response === 'object' && 'result' in response) {
@@ -179,9 +169,9 @@ const buildRuntimeQueryBody = (params: DeviceGroupDeviceQueryParams = {}) => ({
 
 const buildGroupDeviceQueryBody = (groupId: string, params: DeviceGroupDeviceQueryParams = {}) => ({
   ...buildRuntimeQueryBody(params),
-  // DeviceGroupController 通过 dev-group-tree term 递归匹配当前分组及子分组设备。
+  // 设备分组为平铺业务分组，仅匹配当前分组下的设备。
   terms: [
-    { column: 'id', termType: 'dev-group-tree', value: groupId },
+    { column: 'id', termType: 'dev-group', value: groupId },
     ...withIotDeviceListDefaultTerms((params.terms ?? []).map(normalizeLikeTermValue)),
   ],
 })
@@ -218,7 +208,7 @@ const trendRangeConfig = (range: DeviceGroupTrendQuery) => {
     return {
       time: '1m',
       format: 'yyyy-MM-dd HH:mm:ss',
-      labelFormat: 'HH:mm',
+      labelFormat: resolveDeviceTrendLabelFormat(start.valueOf(), end.valueOf(), '1m'),
       limit: Math.max(1, Math.ceil(duration / (60 * 1000))),
       from: start.format(textFormat),
       to: end.format(textFormat),
@@ -229,7 +219,7 @@ const trendRangeConfig = (range: DeviceGroupTrendQuery) => {
     return {
       time: '1h',
       format: 'yyyy-MM-dd HH:mm:ss',
-      labelFormat: 'HH:mm',
+      labelFormat: resolveDeviceTrendLabelFormat(start.valueOf(), end.valueOf(), '1h'),
       limit: Math.max(1, Math.ceil(duration / hour)),
       from: start.format(textFormat),
       to: end.format(textFormat),
@@ -239,7 +229,7 @@ const trendRangeConfig = (range: DeviceGroupTrendQuery) => {
   return {
     time: '1d',
     format: 'yyyy-MM-dd',
-    labelFormat: 'MM-DD',
+    labelFormat: resolveDeviceTrendLabelFormat(start.valueOf(), end.valueOf(), '1d'),
     limit: Math.max(1, Math.ceil(duration / day)),
     from: start.format(textFormat),
     to: end.format(textFormat),
@@ -281,6 +271,7 @@ const toDeviceGroup = (item: DeviceGroupResponse = {}): DeviceGroup => ({
   id: String(item.id || ''),
   key: String(item.key || item.id || ''),
   name: String(item.name || item.key || item.id || '--'),
+  parentId: item.parentId ? String(item.parentId) : undefined,
   description: item.description || '',
   sortIndex: Number(item.sortIndex ?? 0),
   creatorId: item.creatorId,
@@ -316,14 +307,24 @@ const toDeviceGroupSummary = (item: DeviceGroupSummaryResponse = {}): DeviceGrou
 }
 
 export const queryDeviceGroupDetailList_api = async (): Promise<DeviceGroup[]> => {
-  const response = await request.post('/device/group/_query/_detail', {
+  const query = {
     paging: false,
     sorts: [{ name: 'sortIndex', order: 'asc' }],
-  }) as ApiResponse<PagerResult<DeviceGroupResponse>>
-  const result = unwrapResult<PagerResult<DeviceGroupResponse>>(response) ?? {}
+  }
+  const [detailResponse, treeResponse] = await Promise.all([
+    request.post('/device/group/_query/_detail', query) as Promise<ApiResponse<PagerResult<DeviceGroupResponse>>>,
+    request.post('/device/group/_query', query).catch(() => undefined) as Promise<ApiResponse<PagerResult<DeviceGroupResponse>> | undefined>,
+  ])
+  const result = unwrapResult<PagerResult<DeviceGroupResponse>>(detailResponse) ?? {}
+  const treeResult = unwrapResult<PagerResult<DeviceGroupResponse>>(treeResponse) ?? {}
+  const parentIdByGroupId = new Map((treeResult.data ?? []).map((item) => [String(item.id || ''), item.parentId ? String(item.parentId) : undefined]))
 
+  // 详情接口提供设备数量，但不返回树字段；标准查询补齐 parentId 以保持分组层级。
   return (result.data ?? [])
-    .map(toDeviceGroup)
+    .map((item) => {
+      const group = toDeviceGroup(item)
+      return { ...group, parentId: parentIdByGroupId.get(group.id) ?? group.parentId }
+    })
     .filter((item) => Boolean(item.id))
 }
 
@@ -397,6 +398,7 @@ export const createDeviceGroup_api = async (input: CreateDeviceGroupInput): Prom
     id,
     key: input.code,
     name: input.name,
+    parentId: input.parentId,
     description: input.description,
     sortIndex: input.sortIndex ?? 0,
   }) as ApiResponse<DeviceGroupResponse>
@@ -410,6 +412,7 @@ export const updateDeviceGroup_api = async (input: UpdateDeviceGroupInput): Prom
     id: input.id,
     key: input.code,
     name: input.name,
+    parentId: input.parentId,
     description: input.description,
     sortIndex: input.sortIndex ?? 0,
   }) as ApiResponse<DeviceGroupResponse>
@@ -508,42 +511,17 @@ const queryDeviceTrend_api = async (
   metrics: readonly DeviceGroupTrendMetricKey[] = ['onlineRate', 'uplink'],
 ): Promise<DeviceGroupTrendMetric[]> => {
   const config = trendRangeConfig(range)
-  const params = withDashboardDefaultDeviceScope({
-    ...scope,
+  const queries = buildDeviceTrendDashboardQueries(scope, {
     time: config.time,
     format: config.format,
     limit: config.limit,
     from: config.from,
     to: config.to,
-  })
-  const queries = metrics.map(metric => metric === 'onlineRate'
-    ? {
-      dashboard: 'device',
-      object: 'status',
-      measurement: 'record',
-      dimension: 'onlineRate',
-      group: 'device-group-online-rate',
-      params,
-    }
-    : {
-      dashboard: 'device',
-      object: 'message',
-      measurement: 'quantity',
-      dimension: 'agg',
-      group: 'device-group-uplink',
-      params,
-    })
-  const response = await request.post('/dashboard/_multi', queries) as ApiResponse<DashboardTrendResponse[]> | DashboardTrendResponse[]
-  const result = unwrapResult<DashboardTrendResponse[]>(response) ?? []
+  }, metrics)
+  const response = await request.post('/dashboard/_multi', queries) as ApiResponse<DeviceTrendDashboardResponse[]> | DeviceTrendDashboardResponse[]
+  const result = unwrapResult<DeviceTrendDashboardResponse[]>(response) ?? []
 
-  return metrics.map(key => ({
-    key,
-    points: toTrendPoints(
-      result,
-      key === 'onlineRate' ? 'device-group-online-rate' : 'device-group-uplink',
-      config.labelFormat,
-    ),
-  }))
+  return toDeviceTrendMetrics(result, metrics, config.labelFormat)
 }
 
 export const queryDeviceGroupTrend_api = async (
@@ -592,14 +570,14 @@ const queryYesterdayOnlineRate = async (
 ): Promise<number | null> => {
   const yesterday = dayjs().subtract(1, 'day')
   const textFormat = 'YYYY-MM-DD HH:mm:ss'
-  const params = withDashboardDefaultDeviceScope({
+  const params = {
     ...scope,
     time: '1d',
     format: 'yyyy-MM-dd',
     limit: 1,
     from: yesterday.startOf('day').format(textFormat),
     to: yesterday.endOf('day').format(textFormat),
-  })
+  }
   const response = await request.post('/dashboard/_multi', [
     {
       dashboard: 'device',
@@ -609,40 +587,8 @@ const queryYesterdayOnlineRate = async (
       group: 'device-group-online-rate',
       params,
     },
-  ]) as ApiResponse<DashboardTrendResponse[]> | DashboardTrendResponse[]
-  const result = unwrapResult<DashboardTrendResponse[]>(response) ?? []
+  ]) as ApiResponse<DeviceTrendDashboardResponse[]> | DeviceTrendDashboardResponse[]
+  const result = unwrapResult<DeviceTrendDashboardResponse[]>(response) ?? []
   const value = result.find((item) => item.group === 'device-group-online-rate')?.data?.value
-  const numberValue = Number(value)
-  return Number.isFinite(numberValue) ? numberValue : null
-}
-
-function withDashboardDefaultDeviceScope<T extends Record<string, unknown>>(params: T): T & {
-  accessProvider: typeof IOT_DEVICE_DASHBOARD_ACCESS_PROVIDERS
-} {
-  return {
-    ...params,
-    accessProvider: IOT_DEVICE_DASHBOARD_ACCESS_PROVIDERS,
-  }
-}
-
-function toTrendPoints(
-  rows: DashboardTrendResponse[],
-  group: DashboardGroup,
-  labelFormat: string,
-): DeviceGroupTrendPoint[] {
-  return rows
-    .filter((item) => item.group === group)
-    .map((item, index) => {
-      const timeString = item.data?.timeString || ''
-      const parsedTime = dayjs(timeString)
-      const timestamp = parsedTime.isValid()
-        ? parsedTime.valueOf()
-        : Number(item.data?.timestamp ?? index)
-      return {
-        label: parsedTime.isValid() ? parsedTime.format(labelFormat) : timeString,
-        value: Number(item.data?.value ?? 0),
-        timestamp,
-      }
-    })
-    .sort((a, b) => Number(a.timestamp ?? 0) - Number(b.timestamp ?? 0))
+  return toFiniteDeviceTrendMeasurement(value) ?? null
 }

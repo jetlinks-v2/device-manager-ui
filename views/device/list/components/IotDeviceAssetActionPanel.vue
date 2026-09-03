@@ -1,23 +1,14 @@
 <template>
-  <div class="iot-device-list__action-panel">
-    <j-permission-button type="text" :hasPermission="true" @click="emit('detail', device.id)">
-      {{ $t('IotDeviceList.action.detail') }}
+  <div class="iot-device-list__row-actions">
+    <j-permission-button type="text" size="small" :hasPermission="true" @click="emit('detail', device.id)">
+      {{ $t('IotDeviceList.action.detailShort') }}
     </j-permission-button>
-    <j-permission-button type="text" :hasPermission="true" @click="emit('edit', device)">
-      {{ $t('IotDeviceList.action.edit') }}
-    </j-permission-button>
-    <j-permission-button
-      type="text"
-      :disabled="!canUpdateProduct(device)"
-      :loading="productUpdateBusyId === (device.productId || device.productKey || device.id)"
-      :hasPermission="true"
-      :tooltip="productUpdateTooltipOf(device)"
-      @click="emit('update-product', device)"
-    >
-      {{ $t('IotDeviceList.action.updateProduct') }}
+    <j-permission-button type="text" size="small" :hasPermission="true" @click="emit('edit', device)">
+      {{ $t('IotDeviceList.action.editShort') }}
     </j-permission-button>
     <j-permission-button
       type="text"
+      size="small"
       :danger="!isDeviceDisabled(device)"
       :loading="actionBusyId === device.id"
       :hasPermission="true"
@@ -29,10 +20,11 @@
         onConfirm: () => runToggleDevice(device),
       }"
     >
-      {{ isDeviceDisabled(device) ? $t('IotDeviceList.action.enableOne') : $t('IotDeviceList.action.disableOne') }}
+      {{ isDeviceDisabled(device) ? $t('IotDeviceList.action.enableShort') : $t('IotDeviceList.action.disableShort') }}
     </j-permission-button>
     <j-permission-button
       type="text"
+      size="small"
       danger
       :disabled="!isDeviceDisabled(device)"
       :loading="actionBusyId === device.id"
@@ -44,7 +36,7 @@
         onConfirm: () => runDeleteDevice(device),
       }"
     >
-      {{ $t('IotDeviceList.action.delete') }}
+      {{ $t('IotDeviceList.action.deleteShort') }}
     </j-permission-button>
   </div>
 </template>
@@ -56,10 +48,7 @@ import type { IotDevice } from '../types'
 const props = defineProps<{
   device: IotDevice
   actionBusyId: string
-  productUpdateBusyId: string
   isDeviceDisabled: (device: IotDevice) => boolean
-  canUpdateProduct: (device: IotDevice) => boolean
-  productUpdateTooltipOf: (device: IotDevice) => { title: string } | undefined
   runToggleDevice: (device: IotDevice) => void | Promise<void>
   runDeleteDevice: (device: IotDevice) => void | Promise<void>
 }>()
@@ -67,7 +56,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   detail: [deviceId: string]
   edit: [device: IotDevice]
-  'update-product': [device: IotDevice]
 }>()
 
 const { t: $t } = useI18n()
@@ -80,3 +68,16 @@ async function runDeleteDevice(device: IotDevice) {
   await props.runDeleteDevice(device)
 }
 </script>
+
+<style scoped lang="less">
+.iot-device-list__row-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  white-space: nowrap;
+}
+
+.iot-device-list__row-actions :deep(.ant-btn) {
+  padding-inline: 0;
+}
+</style>

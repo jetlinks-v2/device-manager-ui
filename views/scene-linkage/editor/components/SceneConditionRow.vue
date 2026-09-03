@@ -11,7 +11,7 @@
 				<IotAlarmTargetSelect :model-value="condition.productId || undefined" class="scene-condition-row__product"
 				                      :request="requestProducts" :selected-option="selectedProduct"
 				                      :placeholder="$t('IotSceneLinkage.placeholder.product')" rich @change="onProductChange"/>
-				<a-button class="scene-condition-row__scope" :disabled="!condition.productId" @click="scopeVisible = true">
+				<a-button class="scene-condition-row__scope" :title="scopeTitle" :disabled="!condition.productId" @click="scopeVisible = true">
 					<AIcon type="AimOutlined"/>
 					{{ scopeText }}
 				</a-button>
@@ -58,6 +58,7 @@ import DeviceScopeModal, {type DeviceScope} from './DeviceScopeModal.vue'
 import TimeRangeConditionEditor from './TimeRangeConditionEditor.vue'
 import ThingModelValueInput from './ThingModelValueInput.vue'
 import ThingModelSelect from './ThingModelSelect.vue'
+import {formatDeviceScopeText, formatDeviceScopeTitle} from '../deviceScopeLabel'
 import {getTermTypes, toThingModelOptions} from '../thingModel'
 
 const props = defineProps({
@@ -81,11 +82,20 @@ const termOptions = computed(() => getTermTypes(selectedProperty.value?.valueTyp
 	value,
 	label: t(`IotSceneLinkage.term.${value}`)
 })))
-const scopeText = computed(() => props.condition.type === 'deviceProperty' && props.condition.selector === 'all'
-	? t('IotSceneLinkage.scope.all')
-	: props.condition.type === 'deviceProperty' && props.condition.selector === 'fixed'
-		? t('IotSceneLinkage.scope.fixedCount', {count: props.condition.selectorValues.length})
-		: t('IotSceneLinkage.scope.range', {count: props.condition.type === 'deviceProperty' ? props.condition.selectorValues.length : 0}))
+const scopeText = computed(() => props.condition.type === 'deviceProperty'
+	? formatDeviceScopeText(t, {
+		selector: props.condition.selector,
+		selectorValues: props.condition.selectorValues,
+		options: props.condition.options,
+	}, {emptyText: t('IotSceneLinkage.placeholder.device')})
+	: t('IotSceneLinkage.placeholder.device'))
+const scopeTitle = computed(() => props.condition.type === 'deviceProperty'
+	? formatDeviceScopeTitle(t, {
+		selector: props.condition.selector,
+		selectorValues: props.condition.selectorValues,
+		options: props.condition.options,
+	}, {emptyText: t('IotSceneLinkage.placeholder.device')})
+	: t('IotSceneLinkage.placeholder.device'))
 
 function update(value: SceneConditionForm) {
 	emit('update', value)

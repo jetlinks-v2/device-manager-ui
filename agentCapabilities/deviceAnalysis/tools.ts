@@ -92,18 +92,42 @@ const DEVICE_TOOL_USAGE: Record<string, Omit<ClientToolDescription, 'text'>> = {
   },
 }
 
+// Consumer identity mirrors the producer descriptor so resource routing never guesses representation from the slot name.
+const DEVICE_ID_CONSUMER: ClientToolConsumedResource = {
+  name: 'device-id',
+  type: 'structured-data',
+  mediaType: 'application/json',
+  shape: 'device.ids',
+  required: false,
+  sourcePolicy: 'EITHER',
+}
+
+const PROPERTY_ID_CONSUMER: ClientToolConsumedResource = {
+  name: 'subject-property-id',
+  type: 'structured-data',
+  mediaType: 'application/json',
+  shape: 'schema.property-ids',
+  required: false,
+  sourcePolicy: 'EITHER',
+}
+
+const DEVICE_METRIC_TREND_ORDERING = {
+  keys: [{ field: 'timestamp', direction: 'asc' as const }],
+  producerGuaranteed: true,
+}
+
 const DEVICE_TOOL_CONSUMES: Record<string, ClientToolConsumedResource[]> = {
-  device_model_get: [{ name: 'device-id', optional: true, source: 'EITHER' }],
-  device_latest_properties: [{ name: 'device-id', optional: true, source: 'EITHER' }],
+  device_model_get: [DEVICE_ID_CONSUMER],
+  device_latest_properties: [DEVICE_ID_CONSUMER],
   device_property_raw_records: [
-    { name: 'device-id', optional: true, source: 'EITHER' },
-    { name: 'subject-property-id', optional: true, source: 'EITHER' },
+    DEVICE_ID_CONSUMER,
+    PROPERTY_ID_CONSUMER,
   ],
   device_property_aggregate: [
-    { name: 'device-id', optional: true, source: 'EITHER' },
-    { name: 'subject-property-id', optional: true, source: 'EITHER' },
+    DEVICE_ID_CONSUMER,
+    PROPERTY_ID_CONSUMER,
   ],
-  device_open_detail: [{ name: 'device-id', optional: true, source: 'EITHER' }],
+  device_open_detail: [DEVICE_ID_CONSUMER],
 }
 
 const input = (
@@ -179,9 +203,19 @@ const deviceOutputs = (id: string): ClientToolOutput<any> | ClientToolOutput<any
       label: t('tools.device_query_online_rate_trend.name'),
       select: selectMetricPoints,
       fields: [
-        { name: 'label', semanticRole: 'category' },
-        { name: 'value', semanticRole: 'number', format: 'percent' },
+        { name: 'timestamp', semanticRole: 'timestamp' },
+        { name: 'label', semanticRole: 'label' },
+        {
+          name: 'value',
+          semanticRole: 'number',
+          label: t('metrics.onlineRate'),
+          format: 'percent',
+          measure: 'online_rate',
+          unit: 'percent',
+          aggregation: 'avg',
+        },
       ],
+      ordering: DEVICE_METRIC_TREND_ORDERING,
     })
   }
   if (id === 'device_query_message_trend') {
@@ -191,9 +225,19 @@ const deviceOutputs = (id: string): ClientToolOutput<any> | ClientToolOutput<any
       label: t('tools.device_query_message_trend.name'),
       select: selectMetricPoints,
       fields: [
-        { name: 'label', semanticRole: 'category' },
-        { name: 'value', semanticRole: 'number', format: 'integer' },
+        { name: 'timestamp', semanticRole: 'timestamp' },
+        { name: 'label', semanticRole: 'label' },
+        {
+          name: 'value',
+          semanticRole: 'number',
+          label: t('metrics.uplinkMessages'),
+          format: 'integer',
+          measure: 'uplink_messages',
+          unit: 'count',
+          aggregation: 'sum',
+        },
       ],
+      ordering: DEVICE_METRIC_TREND_ORDERING,
     })
   }
   if (id === 'device_health_summary') {

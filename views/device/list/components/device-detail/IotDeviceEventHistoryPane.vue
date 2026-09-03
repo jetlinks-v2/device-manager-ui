@@ -8,7 +8,7 @@
     >
       <a-tab-pane v-for="event in events" :key="event.id">
         <template #tab>
-          <span class="event-history__tab" :title="event.name || event.id">
+          <span class="event-history__tab" :title="event.name + event.id">
             <strong>{{ event.name || event.id }}</strong>
             <small v-if="event.id">{{ event.id }}</small>
           </span>
