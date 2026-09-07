@@ -52,12 +52,18 @@ const snapshot = ref('')
 const resolved = ref(false)
 const showSnapshot = computed(() => Boolean(snapshot.value) && !resolved.value && !props.form.multiTriggers?.length)
 const triggerForms = computed(() => props.form.multiTriggers?.length ? props.form.multiTriggers : [props.form])
+const isVisualAiAlarm = (alarm: any) => alarm.sourceKind === 'visual-ai' || alarm.targetType === 'aiTaskMediaTarget'
 const productIds = computed(() => [...new Set([
   ...triggerForms.value.flatMap(trigger => [trigger.productId, trigger.alarm.options?.productId]),
   props.form.alarm.options?.productId,
   ...props.form.additionalConditions.map((item: any) => item.productId || item.alarm?.options?.productId),
   ...props.form.actions.map(action => action.config?.productId),
 ].filter(Boolean) as string[])])
+const deviceAlarmIds = computed(() => [...new Set([
+  ...triggerForms.value.map(trigger => trigger.alarm),
+  props.form.alarm,
+  ...props.form.additionalConditions.filter((item: any) => item.type === 'alarmState').map((item: any) => item.alarm),
+].filter(alarm => !isVisualAiAlarm(alarm)).map(alarm => alarm.alarmConfigId).filter(Boolean) as string[])])
 const productName = (id?: string) => id ? products.value[id]?.name || (id === props.form.productId ? props.form.productName : '') || id : ''
 const productScopeName = (form: SceneMultiTriggerForm, full = false) => formatProductScopeText(t, productName(form.productId), (full ? formatDeviceScopeTitle : formatDeviceScopeText)(t, toTriggerScopeValue(form)))
 const propertyName = (productId: string | undefined, id: string | undefined) => products.value[productId || '']?.metadata?.properties?.find((item: any) => item.id === id)?.name || id || ''
@@ -68,6 +74,20 @@ const timeRangeLabel = (range: SceneTimeRange) => {
   if (range.start === '09:00' && range.end === '18:00') return t('IotSceneLinkage.timeTemplate.workday')
   if (range.start === '20:00' && range.end === '08:00') return t('IotSceneLinkage.timeTemplate.evening')
   return `${t('IotSceneLinkage.timeTemplate.custom')} ${range.start}–${range.end}`
+}
+/** 将保存的单一 AI 结果条件转换为用户术语，不向摘要泄露内部字段名。 */
+const aiEventConditionText = (condition: SceneMultiTriggerForm['aiEvent']['condition']) => {
+  if (!condition) return ''
+  if (condition.column === 'hitResults') {
+    if (condition.termType === 'isnull') return t('IotSceneLinkage.aiEvent.conditionValue.noDecision')
+    const value = condition.value === 1
+      ? t('IotSceneLinkage.aiEvent.conditionValue.hit')
+      : t('IotSceneLinkage.aiEvent.conditionValue.miss')
+    return `${t('IotSceneLinkage.aiEvent.condition.hitResults')} ${t('IotSceneLinkage.term.eq')} ${value}`
+  }
+  const name = t(`IotSceneLinkage.aiEvent.condition.${condition.column}`)
+  if (condition.termType === 'isnull') return `${name} ${t('IotSceneLinkage.term.isnull')}`
+  return `${name} ${t(`IotSceneLinkage.term.${condition.termType || 'eq'}`)} ${condition.value ?? ''}`
 }
 const triggerSummaryTextFor = (form: SceneMultiTriggerForm, full = false) => {
   if (form.triggerKind === 'property') return `${productScopeName(form, full)} ${propertyName(form.productId, form.propertyId)} ${t(`IotSceneLinkage.term.${form.termType}`)} ${form.termValue ?? ''}`
@@ -88,8 +108,28 @@ const triggerSummaryTextFor = (form: SceneMultiTriggerForm, full = false) => {
   }
   if (form.triggerKind === 'date') return form.dateTime || ''
   if (form.triggerKind === 'interval') return t('IotSceneLinkage.summary.interval', { time: form.interval, unit: t(`IotSceneLinkage.unit.${form.intervalUnit}`) })
+  if (form.triggerKind === 'ai-event') {
+    const mediaTargets = form.aiEvent.mediaTargets || []
+    const scope = t('IotSceneLinkage.summary.aiEvent', {
+      scene: form.aiEvent.sceneName || form.aiEvent.sceneId || '',
+      target: form.aiEvent.taskTargetName || form.aiEvent.taskTarget || '',
+      scope: mediaTargets.length
+        ? t('IotSceneLinkage.aiEvent.cameraCount', { count: mediaTargets.length })
+        : t('IotSceneLinkage.aiEvent.allCameras'),
+    })
+    const condition = aiEventConditionText(form.aiEvent.condition)
+    return condition
+      ? t('IotSceneLinkage.summary.aiEventWithCondition', { event: scope, condition })
+      : scope
+  }
   if (form.triggerKind === 'alarm') {
     const state = form.alarm.modes?.[0] === 'relieve' ? 'normal' : 'warning'
+    if (isVisualAiAlarm(form.alarm)) return t('IotSceneLinkage.summary.visualAiAlarm', {
+      scene: form.alarm.options?.sceneName || form.alarm.options?.sceneId || '',
+      target: form.alarm.options?.taskTargetName || form.alarm.options?.taskTarget || '',
+      task: alarmName(form.alarm),
+      state: t(`IotSceneLinkage.alarmState.${state}`),
+    })
     return `${productName(form.alarm.options?.productId)}${t('IotSceneLinkage.alarmPhrase.ofAlarm')}${alarmName(form.alarm)}${t('IotSceneLinkage.alarmPhrase.becomes')}${t(`IotSceneLinkage.alarmState.${state}`)}`
   }
   return form.triggerKind === 'manual' ? t('IotSceneLinkage.summary.manual') : form.triggerKind ? t(`IotSceneLinkage.trigger.${form.triggerKind}`) : ''
@@ -151,7 +191,7 @@ const summaryTitleText = computed(() => [
 ].filter(Boolean).join('，'))
 watch(() => props.form.summary, value => { if (value && !snapshot.value) { snapshot.value = value; resolved.value = false } }, { immediate: true })
 watch(productIds, async ids => { const unloaded = ids.filter(id => !products.value[id]); if (unloaded.length) { const values = await Promise.all(unloaded.map(async id => { const response: any = await getProduct(id); const product = response?.result ?? response; return [id, { ...product, metadata: typeof product?.metadata === 'string' ? JSON.parse(product.metadata) : product?.metadata || {} }] })); products.value = { ...products.value, ...Object.fromEntries(values) } }; resolved.value = true }, { immediate: true })
-watch(() => [...triggerForms.value.map(trigger => trigger.alarm.alarmConfigId), props.form.alarm.alarmConfigId, ...props.form.additionalConditions.filter((item: any) => item.type === 'alarmState').map((item: any) => item.alarm.alarmConfigId)].filter(Boolean), async ids => { const missing = ids.filter(id => !alarmNames.value[id]); if (!missing.length) return; const result: any = await queryDeviceAlarmPreprocesses({ pageIndex: 0, pageSize: 100, terms: [{ column: 'id', termType: 'in', value: missing }] }); const rows = result?.result?.data || result?.data || []; alarmNames.value = { ...alarmNames.value, ...Object.fromEntries(rows.map((item: any) => [item.id, item.name || item.id])) } }, { immediate: true })
+watch(deviceAlarmIds, async ids => { const missing = ids.filter(id => !alarmNames.value[id]); if (!missing.length) return; const result: any = await queryDeviceAlarmPreprocesses({ pageIndex: 0, pageSize: 100, terms: [{ column: 'id', termType: 'in', value: missing }] }); const rows = result?.result?.data || result?.data || []; alarmNames.value = { ...alarmNames.value, ...Object.fromEntries(rows.map((item: any) => [item.id, item.name || item.id])) } }, { immediate: true })
 watch([summaryText, resolved], ([value]) => { if (resolved.value || props.form.multiTriggers?.length) emit('change', value) }, { immediate: true })
 watch([summaryTitleText, resolved], ([value]) => { if (resolved.value || props.form.multiTriggers?.length) emit('title-change', value) }, { immediate: true })
 </script>

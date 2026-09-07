@@ -25,6 +25,9 @@ try {
     plugins: [{
       name: 'device-manager-workspace-aliases',
       setup(buildApi) {
+        buildApi.onResolve({ filter: /^@jetlinks-web\/utils$/ }, () => ({
+          path: path.join(packageRoot, 'tests/sceneLinkageAiTrigger.test-shim.ts'),
+        }))
         buildApi.onResolve({
           filter: /^@jetlinks-web-core\/layout\/components\/AiChat\/clientToolApi$/,
         }, () => ({

@@ -1,6 +1,6 @@
 <template>
   <span :class="['iot-target-option', { 'iot-target-option--single-line': singleLine, 'iot-target-option--description-hidden': !showDescription }]">
-    <img v-if="data.photoUrl" class="iot-target-option__image" :src="data.photoUrl" alt="" />
+    <img v-if="showPhoto" class="iot-target-option__image" :src="photoUrl" alt="" @error="handlePhotoError" />
     <span v-else class="iot-target-option__icon"><AIcon :type="iconType" /></span>
     <span class="iot-target-option__content">
       <span class="iot-target-option__heading">
@@ -22,7 +22,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, type PropType } from 'vue'
+import { computed, ref, type PropType } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const props = defineProps({
@@ -34,6 +34,9 @@ const props = defineProps({
 
 const { t } = useI18n()
 const data = computed<Record<string, any>>(() => props.option.data || props.option)
+const failedPhotoUrl = ref('')
+const photoUrl = computed(() => String(data.value.photoUrl || ''))
+const showPhoto = computed(() => Boolean(photoUrl.value) && failedPhotoUrl.value !== photoUrl.value)
 const isDevice = computed(() => props.type === 'device' || (props.type === 'auto' && Boolean(data.value.productId || data.value.productName || data.value.areaBindings || data.value.groupBindings)))
 const isAlarm = computed(() => props.type === 'alarm')
 const iconType = computed(() => isAlarm.value ? 'AlertOutlined' : isDevice.value ? 'DeploymentUnitOutlined' : 'AppstoreOutlined')
@@ -57,8 +60,8 @@ const description = computed(() => {
     return [
       detailText('manufacturer', data.value.manufacturerName || data.value.manufacturer || data.value.vendorName || data.value.vendor),
       detailText('model', data.value.modelName || data.value.model),
-      detailText('deviceType', data.value.deviceType?.text || data.value.deviceType),
-      detailText('accessName', data.value.accessName),
+      data.value.deviceType?.text || data.value.deviceType,
+      data.value.accessName,
     ].filter(Boolean).join(' · ')
   }
   const groupNames = (data.value.groupBindings || data.value.groups || [])
@@ -70,19 +73,23 @@ const description = computed(() => {
     detailText('group', data.value.groupName || data.value.deviceGroupName || data.value.group?.name || groupNames),
   ].filter(Boolean).join(' · ')
 })
+
+function handlePhotoError() {
+  failedPhotoUrl.value = photoUrl.value
+}
 </script>
 
 <style scoped>
 .iot-target-option { display: flex; gap: var(--space-2, 8px); align-items: center; min-width: 0; width: 100%; padding: var(--space-1, 4px) 0; }
-.iot-target-option__image, .iot-target-option__icon { display: grid; flex: none; place-items: center; width: 32px; height: 32px; border-radius: var(--radius-jet-sm, 8px); }
+.iot-target-option__image, .iot-target-option__icon { display: grid; flex: none; place-items: center; width: 28px; height: 28px; border-radius: var(--radius-jet-sm, 8px); }
 .iot-target-option__image { object-fit: cover; background: var(--ant-color-fill-quaternary); }
-.iot-target-option__icon { color: var(--ant-color-primary); background: var(--ant-color-primary-bg); font-size: 20px; }
-.iot-target-option__content { display: grid; flex: 1; gap: 6px; min-width: 0; line-height: 1.35; }
+.iot-target-option__icon { color: #1e5eff; background: #e8f0ff; font-size: 16px; }
+.iot-target-option__content { display: grid; flex: 1; gap: 4px; min-width: 0; line-height: 1.35; }
 .iot-target-option__heading { display: flex; gap: 8px; align-items: center; min-width: 0; }
 .iot-target-option__title { flex: 1; min-width: 0; overflow: hidden; color: var(--ant-color-text); font-size: 13px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .iot-target-option__heading :deep(.ant-badge) { flex: none; margin-left: auto; }
 .iot-target-option__heading :deep(.ant-badge-status-text) { color: var(--ant-color-text-secondary); font-size: 12px; font-weight: 400; }
-.iot-target-option__description { display: -webkit-box; box-sizing: border-box; width: 100%; max-height: 44px; overflow: hidden; padding: 4px 8px; color: var(--ant-color-text-tertiary, #86909c) !important; background: var(--ant-color-fill-quaternary, #f7f8fa); border-radius: var(--radius-jet-sm, 6px); font-size: 12px; font-weight: 400 !important; line-height: 18px; text-overflow: ellipsis; white-space: normal; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.iot-target-option__description { display: -webkit-box; max-height: 36px; overflow: hidden; color: var(--ant-color-text-tertiary, #86909c) !important; font-size: 12px; font-weight: 400 !important; line-height: 18px; text-overflow: ellipsis; white-space: normal; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .iot-target-option--single-line .iot-target-option__content { display: flex; gap: 10px; align-items: center; }
 .iot-target-option--single-line .iot-target-option__heading { flex: none; max-width: 42%; }
 .iot-target-option--single-line .iot-target-option__description { flex: 1; min-width: 0; width: auto; max-height: 26px; -webkit-line-clamp: 1; }

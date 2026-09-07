@@ -56,11 +56,11 @@
 							<template v-if="!isMulti || index === activeMultiTriggerIndex">
 								<div :class="['scene-editor__trigger-card', { 'scene-editor__invalid': hasError('trigger') }]">
 									<div
-										:class="['scene-editor__trigger-row', { 'scene-editor__trigger-row--property': form.triggerKind === 'property', 'scene-editor__trigger-row--device': ['property', 'event'].includes(form.triggerKind), 'scene-editor__trigger-row--state': form.triggerKind === 'state', 'scene-editor__trigger-row--interval': form.triggerKind === 'interval', 'scene-editor__trigger-row--alarm': form.triggerKind === 'alarm' }]">
+									:class="['scene-editor__trigger-row', { 'scene-editor__trigger-row--property': form.triggerKind === 'property', 'scene-editor__trigger-row--device': ['property', 'event'].includes(form.triggerKind), 'scene-editor__trigger-row--state': form.triggerKind === 'state', 'scene-editor__trigger-row--interval': form.triggerKind === 'interval', 'scene-editor__trigger-row--alarm': form.triggerKind === 'alarm', 'scene-editor__trigger-row--ai-event': form.triggerKind === 'ai-event' }]">
 										<span class="scene-editor__trigger-icon"
-										      :style="{ color: triggerIcon.color, background: triggerIcon.background }"><svg
+										      :style="{ color: form.triggerKind === 'ai-event' ? '#1E5EFF' : triggerIcon.color, background: form.triggerKind === 'ai-event' ? '#E8F0FF' : triggerIcon.background }"><svg
 											v-if="triggerIcon.path" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path
-											:d="triggerIcon.path"/></svg><AIcon v-else :type="triggerIcon.type"/></span><b>{{
+											:d="triggerIcon.path"/></svg><AIcon v-else :type="form.triggerKind === 'ai-event' ? 'RadarChartOutlined' : triggerIcon.type"/></span><b>{{
 											triggerText
 										}}</b>
 										<template v-if="isDevice">
@@ -108,7 +108,8 @@
 											                       v-model:sustained-time="form.deviceStateSustainedTime"
 											                       :removable="!isEditing" @remove="clearTrigger"/>
 										</template>
-										<AlarmTriggerRow v-else-if="form.triggerKind === 'alarm'" v-model="form.alarm"/>
+										<AlarmTriggerSourceRow v-else-if="form.triggerKind === 'alarm'" v-model="form.alarm"/>
+										<AiEventTriggerRow v-else-if="form.triggerKind === 'ai-event'" v-model="form.aiEvent"/>
 										<template v-else-if="form.triggerKind === 'repeat'">
 											<a-radio-group v-model:value="form.repeatMode">
 												<a-radio-button value="daily">{{ $t('IotSceneLinkage.repeat.daily') }}</a-radio-button>
@@ -305,7 +306,8 @@ import DeviceStateTriggerRow from './components/DeviceStateTriggerRow.vue'
 import DeviceScopeModal, { type DeviceScope } from './components/DeviceScopeModal.vue'
 import MultiTriggerCard from './components/MultiTriggerCard.vue'
 import SceneConditionRow from './components/SceneConditionRow.vue'
-import AlarmTriggerRow from './components/AlarmTriggerRow.vue'
+import AlarmTriggerSourceRow from './components/AlarmTriggerSourceRow.vue'
+import AiEventTriggerRow from './components/AiEventTriggerRow.vue'
 import NotifyActionRow from './components/NotifyActionRow.vue'
 import SceneRuleSummary from './components/SceneRuleSummary.vue'
 import ThingModelSelect from './components/ThingModelSelect.vue'
@@ -351,7 +353,7 @@ const scopeView = ref<'space' | 'device-group'>('space')
 const visibleScopeTreeData = computed(() => { const decorate = (nodes: any[]): any[] => nodes.map(({ disabled: _disabled, ...node }) => ({ ...node, disableCheckbox: node.deviceId ? form.dynamicScope : !form.dynamicScope, children: decorate(node.children || []) })); const root = scopeTreeData.value.find(item => item.key === `root:${scopeView.value === 'space' ? 'space' : 'group'}`); return decorate(root?.children || []) })
 const scopeDialogTitle = computed(() => `${t('IotSceneLinkage.title.selectDevices')} · ${form.productName || selectedProductOption.value?.label || ''}`)
 // SaaS 的细分类型映射到后端 Provider，后端返回结果是可选项的唯一依据。
-const triggerOptions = computed(() => [{ value: 'manual', icon: 'ThunderboltOutlined', provider: 'manual' }, { value: 'repeat', icon: 'ClockCircleOutlined', provider: 'timer' }, { value: 'date', icon: 'CalendarOutlined', provider: 'timer' }, { value: 'interval', icon: 'SyncOutlined', provider: 'timer' }, { value: 'property', icon: 'RiseOutlined', provider: 'device' }, { value: 'event', icon: 'NotificationOutlined', provider: 'device' }, { value: 'online', icon: 'LoginOutlined', provider: 'device' }, { value: 'offline', icon: 'LogoutOutlined', provider: 'device' }, { value: 'state', icon: 'SyncOutlined', provider: 'device' }, { value: 'alarm', icon: 'AlertOutlined', provider: 'alarm' }].filter(item => supportedTriggers.value.includes(item.provider)).map(item => ({ ...item, label: t(`IotSceneLinkage.trigger.${item.value}`), description: t(`IotSceneLinkage.triggerDesc.${item.value}`) })))
+const triggerOptions = computed(() => [{ value: 'manual', icon: 'ThunderboltOutlined', provider: 'manual' }, { value: 'repeat', icon: 'ClockCircleOutlined', provider: 'timer' }, { value: 'date', icon: 'CalendarOutlined', provider: 'timer' }, { value: 'interval', icon: 'SyncOutlined', provider: 'timer' }, { value: 'property', icon: 'RiseOutlined', provider: 'device' }, { value: 'event', icon: 'NotificationOutlined', provider: 'device' }, { value: 'online', icon: 'LoginOutlined', provider: 'device' }, { value: 'offline', icon: 'LogoutOutlined', provider: 'device' }, { value: 'state', icon: 'SyncOutlined', provider: 'device' }, { value: 'alarm', icon: 'AlertOutlined', provider: 'alarm' }, { value: 'ai-event', icon: 'RadarChartOutlined', provider: 'ai-event' }].filter(item => supportedTriggers.value.includes(item.provider)).map(item => ({ ...item, label: t(`IotSceneLinkage.trigger.${item.value}`), description: t(`IotSceneLinkage.triggerDesc.${item.value}`) })))
 const availableTriggerOptions = computed(() => triggerOptions.value.map(item => addingMultiTrigger.value && item.provider === 'manual'
   ? { ...item, disabled: true, disabledReason: 'IotSceneLinkage.message.conditionCannotAddMore' }
   : item))
@@ -379,7 +381,7 @@ function selectTrigger(kind: SceneTriggerKind) {
   triggerPickerVisible.value = false
 }
 function selectTriggerFromPicker(value: string) { selectTrigger(value as SceneTriggerKind) }
-function clearTrigger() { if (isMulti.value) return; form.triggerKind = '' as SceneTriggerKind; form.productId = undefined; form.productName = undefined; selectedProductOption.value = undefined; form.deviceIds = []; form.groupIds = []; form.propertyId = undefined; form.eventId = undefined; form.eventOutputId = undefined; form.eventOutputName = undefined; form.eventTermValue = undefined; form.termValue = undefined; form.alarm = { modes: [] }; properties.value = []; events.value = []; validation.field = '' }
+function clearTrigger() { if (isMulti.value) return; form.triggerKind = '' as SceneTriggerKind; form.productId = undefined; form.productName = undefined; selectedProductOption.value = undefined; form.deviceIds = []; form.groupIds = []; form.propertyId = undefined; form.eventId = undefined; form.eventOutputId = undefined; form.eventOutputName = undefined; form.eventTermValue = undefined; form.termValue = undefined; form.alarm = { modes: [] }; form.aiEvent = defaultForm().aiEvent; properties.value = []; events.value = []; validation.field = '' }
 function resetRepeatSelections() { form.repeatWeekdays = []; form.repeatMonthDays = [] }
 function changeRepeatCustomMode() { resetRepeatSelections() }
 function onProductChange(value?: string, option?: IotAlarmTargetSelectOption) { selectedProductOption.value = option; form.productName = option?.label; clearScope(); if (value && hasError('product')) { validation.field = ''; validation.message = '' }; void loadMetadata(true) }
@@ -442,8 +444,66 @@ async function getMissingFunctionInputs(action: any) {
   const values = new Map((message.inputs || []).map((input: any) => [input.name, input.value]))
   return inputs.filter((input: any) => input.expands?.required && isEmptyValue(values.get(input.id))).map((input: any) => input.name || input.id)
 }
-async function validate() { const invalid = (field: string, message: string, params?: Record<string, unknown>) => { validation.field = field; validation.message = message; onlyMessage(t(message, params), 'warning'); return false }; if (!form.name?.trim()) return invalid('name', 'IotSceneLinkage.message.nameRequired'); if (!hasTrigger.value) return invalid('trigger', 'IotSceneLinkage.message.triggerRequired'); for (const trigger of form.multiTriggers || []) { const isDeviceTrigger = ['property', 'event', 'online', 'offline', 'state'].includes(trigger.triggerKind); if (isDeviceTrigger && !trigger.productId) return invalid('trigger', 'IotSceneLinkage.message.selectProductFirst'); if (isDeviceTrigger && !trigger.allDevices && (trigger.dynamicScope ? !trigger.groupIds.length : !trigger.deviceIds.length)) return invalid('trigger', 'IotSceneLinkage.message.deviceRequired'); if (trigger.triggerKind === 'alarm' && (!trigger.alarm.options?.productId || !trigger.alarm.alarmConfigId || !trigger.alarm.targetType || !trigger.alarm.modes.length)) return invalid('trigger', 'IotSceneLinkage.message.alarmTriggerRequired'); if (trigger.triggerKind === 'property' && (!trigger.propertyId || trigger.termValue === undefined || trigger.termValue === '')) return invalid('trigger', 'IotSceneLinkage.message.propertyRequired'); if (trigger.triggerKind === 'event' && !trigger.eventId) return invalid('trigger', 'IotSceneLinkage.message.eventRequired'); if (trigger.triggerKind === 'date' && !trigger.dateTime) return invalid('trigger', 'IotSceneLinkage.message.dateRequired'); if (trigger.triggerKind === 'repeat' && trigger.repeatMode === 'custom' && ((trigger.repeatCustomMode === 'weekly' && !trigger.repeatWeekdays.length) || (trigger.repeatCustomMode === 'monthly' && !trigger.repeatMonthDays.length))) return invalid('trigger', 'IotSceneLinkage.message.repeatDateRequired') }; if (isDevice.value && !form.productId) return invalid('product', 'IotSceneLinkage.message.selectProductFirst'); if (isDevice.value && !form.allDevices && (form.dynamicScope ? !form.groupIds.length : !form.deviceIds.length)) return invalid('scope', 'IotSceneLinkage.message.deviceRequired'); if (form.triggerKind === 'alarm' && (!form.alarm.options?.productId || !form.alarm.alarmConfigId || !form.alarm.targetType || !form.alarm.modes.length)) return invalid('alarm', 'IotSceneLinkage.message.alarmTriggerRequired'); if (form.triggerKind === 'property' && (!form.propertyId || form.termValue === undefined || form.termValue === '')) return invalid('property', 'IotSceneLinkage.message.propertyRequired'); if (form.triggerKind === 'event' && !form.eventId) return invalid('event', 'IotSceneLinkage.message.eventRequired'); if (form.triggerKind === 'date' && !form.dateTime) return invalid('date', 'IotSceneLinkage.message.dateRequired'); if (form.triggerKind === 'repeat' && form.repeatMode === 'custom' && ((form.repeatCustomMode === 'weekly' && !form.repeatWeekdays.length) || (form.repeatCustomMode === 'monthly' && !form.repeatMonthDays.length))) return invalid('repeat', 'IotSceneLinkage.message.repeatDateRequired'); if (form.additionalConditions.some(condition => condition.type === 'timeRange' && !condition.ranges.length)) return invalid('condition', 'IotSceneLinkage.message.timeRangeRequired'); if (form.additionalConditions.some(condition => condition.type === 'timeRange' && condition.ranges.some(range => range.start === range.end))) return invalid('condition', 'IotSceneLinkage.message.timeRangeInvalid'); if (form.additionalConditions.some(condition => condition.type === 'deviceProperty' && isEmptyValue(condition.value))) return invalid('condition', 'IotSceneLinkage.message.conditionValueRequired'); if (!form.actions.length) return invalid('action', 'IotSceneLinkage.message.actionRequired'); if (form.actions.some(action => action.type === 'device' && (!action.config?.productId || (action.config?.selector !== 'all' && !action.config?.selectorValues?.length) || !action.config?.message?.messageType))) return invalid('action', 'IotSceneLinkage.message.deviceActionRequired'); if (form.actions.some(action => action.type === 'device' && action.config?.message?.messageType === 'WRITE_PROPERTY' && isEmptyValue(Object.values(action.config.message.properties || {})[0]))) return invalid('action', 'IotSceneLinkage.message.deviceActionValueRequired'); const missingFunctionInputs = (await Promise.all(form.actions.filter(action => action.type === 'device').map(getMissingFunctionInputs))).flat(); if (missingFunctionInputs.length) return invalid('action', 'IotSceneLinkage.message.deviceFunctionInputRequired', { names: missingFunctionInputs.join('、') }); if (form.actions.some(action => action.type === 'sceneNotify' && (!action.config?.notifyChannelIds?.length || !action.config?.userIds?.length))) return invalid('notify', 'IotSceneLinkage.message.notifyRequired'); validation.field = ''; validation.message = ''; return true }
-async function save() { if (form.additionalConditions.some(condition => condition.type === 'alarmState' && (!condition.alarm.options?.productId || !condition.alarm.alarmConfigId || !condition.alarm.state))) { validation.field = 'condition'; validation.message = 'IotSceneLinkage.message.alarmTriggerRequired'; onlyMessage(t(validation.message), 'warning'); return }; if (!await validate()) return; saving.value = true; try { const conditionColumns = await resolveSceneConditionColumns(form); const deviceConditionCount = form.additionalConditions.filter(condition => condition.type === 'deviceProperty').length; const alarmStateConditionCount = form.additionalConditions.filter(condition => condition.type === 'alarmState').length; if ((deviceConditionCount && conditionColumns.devicePropertyColumns?.filter(Boolean).length !== deviceConditionCount) || (alarmStateConditionCount && conditionColumns.alarmStateColumns?.filter(Boolean).length !== alarmStateConditionCount)) { validation.field = 'condition'; validation.message = 'IotSceneLinkage.message.conditionColumnUnavailable'; onlyMessage(t(validation.message), 'warning'); return }; const scene = buildRequest(form, conditionColumns); form.id ? await updateSceneLinkage(form.id, scene) : await createSceneLinkage(scene); router.push('/iot-user/scene-linkage') } finally { saving.value = false } }
+const isVisualAiAlarm = (alarm: SceneLinkageForm['alarm']) => alarm.sourceKind === 'visual-ai'
+  || alarm.targetType === 'aiTaskMediaTarget'
+
+const hasValidAlarmTrigger = (alarm: SceneLinkageForm['alarm']) => isVisualAiAlarm(alarm)
+  ? Boolean(alarm.options?.sceneId && alarm.options?.taskTarget && alarm.alarmConfigId && alarm.modes.length)
+  : Boolean(alarm.options?.productId && alarm.alarmConfigId && alarm.targetType && alarm.modes.length)
+const hasValidAlarmStateCondition = (alarm: SceneLinkageForm['alarm']) => isVisualAiAlarm(alarm)
+  ? Boolean(alarm.options?.sceneId && alarm.options?.taskTarget && alarm.alarmConfigId && alarm.state)
+  : Boolean(alarm.options?.productId && alarm.alarmConfigId && alarm.state)
+const hasValidAiEventTrigger = (aiEvent: SceneLinkageForm['aiEvent']) => Boolean(
+  aiEvent.sceneId
+  && aiEvent.taskTarget
+  && (!aiEvent.condition
+    || aiEvent.condition.termType === 'isnull'
+    || !isEmptyValue(aiEvent.condition.value))
+  && !aiEvent.mediaTargets?.some(target => target.unavailable),
+)
+
+async function validate() {
+  const invalid = (field: string, message: string, params?: Record<string, unknown>) => {
+    validation.field = field
+    validation.message = message
+    onlyMessage(t(message, params), 'warning')
+    return false
+  }
+  if (!form.name?.trim()) return invalid('name', 'IotSceneLinkage.message.nameRequired')
+  if (!hasTrigger.value) return invalid('trigger', 'IotSceneLinkage.message.triggerRequired')
+  for (const trigger of form.multiTriggers || []) {
+    const isDeviceTrigger = ['property', 'event', 'online', 'offline', 'state'].includes(trigger.triggerKind)
+    if (isDeviceTrigger && !trigger.productId) return invalid('trigger', 'IotSceneLinkage.message.selectProductFirst')
+    if (isDeviceTrigger && !trigger.allDevices && (trigger.dynamicScope ? !trigger.groupIds.length : !trigger.deviceIds.length)) return invalid('trigger', 'IotSceneLinkage.message.deviceRequired')
+    if (trigger.triggerKind === 'alarm' && !hasValidAlarmTrigger(trigger.alarm)) return invalid('trigger', 'IotSceneLinkage.message.alarmTriggerRequired')
+    if (trigger.triggerKind === 'ai-event' && !hasValidAiEventTrigger(trigger.aiEvent)) return invalid('trigger', 'IotSceneLinkage.message.aiEventTriggerRequired')
+    if (trigger.triggerKind === 'property' && (!trigger.propertyId || trigger.termValue === undefined || trigger.termValue === '')) return invalid('trigger', 'IotSceneLinkage.message.propertyRequired')
+    if (trigger.triggerKind === 'event' && !trigger.eventId) return invalid('trigger', 'IotSceneLinkage.message.eventRequired')
+    if (trigger.triggerKind === 'date' && !trigger.dateTime) return invalid('trigger', 'IotSceneLinkage.message.dateRequired')
+    if (trigger.triggerKind === 'repeat' && trigger.repeatMode === 'custom' && ((trigger.repeatCustomMode === 'weekly' && !trigger.repeatWeekdays.length) || (trigger.repeatCustomMode === 'monthly' && !trigger.repeatMonthDays.length))) return invalid('trigger', 'IotSceneLinkage.message.repeatDateRequired')
+  }
+  if (isDevice.value && !form.productId) return invalid('product', 'IotSceneLinkage.message.selectProductFirst')
+  if (isDevice.value && !form.allDevices && (form.dynamicScope ? !form.groupIds.length : !form.deviceIds.length)) return invalid('scope', 'IotSceneLinkage.message.deviceRequired')
+  if (form.triggerKind === 'alarm' && !hasValidAlarmTrigger(form.alarm)) return invalid('alarm', 'IotSceneLinkage.message.alarmTriggerRequired')
+  if (form.triggerKind === 'ai-event' && !hasValidAiEventTrigger(form.aiEvent)) return invalid('trigger', 'IotSceneLinkage.message.aiEventTriggerRequired')
+  if (form.triggerKind === 'property' && (!form.propertyId || form.termValue === undefined || form.termValue === '')) return invalid('property', 'IotSceneLinkage.message.propertyRequired')
+  if (form.triggerKind === 'event' && !form.eventId) return invalid('event', 'IotSceneLinkage.message.eventRequired')
+  if (form.triggerKind === 'date' && !form.dateTime) return invalid('date', 'IotSceneLinkage.message.dateRequired')
+  if (form.triggerKind === 'repeat' && form.repeatMode === 'custom' && ((form.repeatCustomMode === 'weekly' && !form.repeatWeekdays.length) || (form.repeatCustomMode === 'monthly' && !form.repeatMonthDays.length))) return invalid('repeat', 'IotSceneLinkage.message.repeatDateRequired')
+  if (form.additionalConditions.some(condition => condition.type === 'timeRange' && !condition.ranges.length)) return invalid('condition', 'IotSceneLinkage.message.timeRangeRequired')
+  if (form.additionalConditions.some(condition => condition.type === 'timeRange' && condition.ranges.some(range => range.start === range.end))) return invalid('condition', 'IotSceneLinkage.message.timeRangeInvalid')
+  if (form.additionalConditions.some(condition => condition.type === 'deviceProperty' && isEmptyValue(condition.value))) return invalid('condition', 'IotSceneLinkage.message.conditionValueRequired')
+  if (!form.actions.length) return invalid('action', 'IotSceneLinkage.message.actionRequired')
+  if (form.actions.some(action => action.type === 'device' && (!action.config?.productId || (action.config?.selector !== 'all' && !action.config?.selectorValues?.length) || !action.config?.message?.messageType))) return invalid('action', 'IotSceneLinkage.message.deviceActionRequired')
+  if (form.actions.some(action => action.type === 'device' && action.config?.message?.messageType === 'WRITE_PROPERTY' && isEmptyValue(Object.values(action.config.message.properties || {})[0]))) return invalid('action', 'IotSceneLinkage.message.deviceActionValueRequired')
+  const missingFunctionInputs = (await Promise.all(form.actions.filter(action => action.type === 'device').map(getMissingFunctionInputs))).flat()
+  if (missingFunctionInputs.length) return invalid('action', 'IotSceneLinkage.message.deviceFunctionInputRequired', { names: missingFunctionInputs.join('、') })
+  if (form.actions.some(action => action.type === 'sceneNotify' && (!action.config?.notifyChannelIds?.length || !action.config?.userIds?.length))) return invalid('notify', 'IotSceneLinkage.message.notifyRequired')
+  validation.field = ''
+  validation.message = ''
+  return true
+}
+async function save() { if (form.additionalConditions.some(condition => condition.type === 'alarmState' && !hasValidAlarmStateCondition(condition.alarm))) { validation.field = 'condition'; validation.message = 'IotSceneLinkage.message.alarmTriggerRequired'; onlyMessage(t(validation.message), 'warning'); return }; if (!await validate()) return; saving.value = true; try { const conditionColumns = await resolveSceneConditionColumns(form); const deviceConditionCount = form.additionalConditions.filter(condition => condition.type === 'deviceProperty').length; const alarmStateConditionCount = form.additionalConditions.filter(condition => condition.type === 'alarmState').length; if ((deviceConditionCount && conditionColumns.devicePropertyColumns?.filter(Boolean).length !== deviceConditionCount) || (alarmStateConditionCount && conditionColumns.alarmStateColumns?.filter(Boolean).length !== alarmStateConditionCount)) { validation.field = 'condition'; validation.message = 'IotSceneLinkage.message.conditionColumnUnavailable'; onlyMessage(t(validation.message), 'warning'); return }; const scene = buildRequest(form, conditionColumns); form.id ? await updateSceneLinkage(form.id, scene) : await createSceneLinkage(scene); router.push('/iot-user/scene-linkage') } finally { saving.value = false } }
 watch(() => form.repeatMode, (_value, previous) => { if (!loadingScene.value && previous) resetRepeatSelections() })
 watch(() => form.name, value => { if (value.trim() && hasError('name')) { validation.field = ''; validation.message = '' } })
 watch(() => [form.propertyId, form.termValue], ([propertyId, termValue]) => { if (propertyId && termValue !== undefined && termValue !== null && termValue !== '' && hasError('property')) { validation.field = ''; validation.message = '' } })

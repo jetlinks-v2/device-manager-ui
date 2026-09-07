@@ -12,10 +12,12 @@ export const useMultiSceneTrigger = (
   let applyingMultiTrigger = false
   // multi 保留一个叶子时仍须使用 multi 模型，避免编辑已保存场景时改变根触发器类型。
   const isMulti = computed(() => Boolean(form.multiTriggers?.length))
-  const showMultiTriggerControl = computed(() => supportedTriggers.value.includes('multi'))
+  // 已保存的单条件场景不能变更为组合条件，直接不展示入口；手动条件仍保留禁用提示。
+  const showMultiTriggerControl = computed(() => supportedTriggers.value.includes('multi')
+    && (form.triggerKind === 'manual' || !isEditing() || isMulti.value))
   const multiTriggerDisabledReason = computed(() => {
     if (!showMultiTriggerControl.value) return ''
-    if (form.triggerKind === 'manual' || (isEditing() && !isMulti.value)) {
+    if (form.triggerKind === 'manual') {
       return 'IotSceneLinkage.message.conditionCannotAddMore'
     }
     return ''
