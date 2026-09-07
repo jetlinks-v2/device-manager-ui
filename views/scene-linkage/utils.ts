@@ -1,8 +1,36 @@
 import { randomNumber } from '@jetlinks-web/utils'
 
-export type SceneTriggerKind = 'manual' | 'repeat' | 'date' | 'interval' | 'property' | 'event' | 'online' | 'offline' | 'state' | 'alarm'
+export type SceneTriggerKind = 'manual' | 'repeat' | 'date' | 'interval' | 'property' | 'event' | 'online' | 'offline' | 'state' | 'alarm' | 'ai-event'
+
+export const AI_EVENT_RESULT_COLUMNS = ['hitResults', 'maxTargetScore', 'targetCount', 'results', 'numberResults'] as const
+
+export type AiEventResultColumn = typeof AI_EVENT_RESULT_COLUMNS[number]
+
+export interface SceneAiEventMediaTarget {
+  deviceId: string
+  channelId: string
+  /** 编辑器回填信息，不会写入触发器范围配置。 */
+  name?: string
+  unavailable?: boolean
+}
+
+export interface SceneAiEventTriggerConfig {
+  sceneId?: string
+  sceneName?: string
+  taskTarget?: string
+  taskTargetName?: string
+  mediaTargets?: SceneAiEventMediaTarget[]
+  /** 未设置时，范围内的所有 AI 识别结果都可触发。 */
+  condition?: {
+    column: AiEventResultColumn
+    termType?: string
+    value?: string | number | boolean
+  }
+}
 
 export interface SceneAlarmTriggerConfig {
+  /** 仅用于编辑器选择来源；提交时由 targetType 表达实际告警目标。 */
+  sourceKind?: 'iot-device' | 'visual-ai'
   alarmConfigId?: string
   targetType?: string
   modes: Array<'trigger' | 'relieve'>
@@ -11,6 +39,10 @@ export interface SceneAlarmTriggerConfig {
     productId?: string
     deviceId?: string
     alarmConfigName?: string
+    sceneId?: string
+    sceneName?: string
+    taskTarget?: string
+    taskTargetName?: string
   }
 }
 
@@ -88,6 +120,7 @@ export interface SceneLinkageForm {
   interval: number
   intervalUnit: 'seconds' | 'minutes' | 'hours'
   alarm: SceneAlarmTriggerConfig
+  aiEvent: SceneAiEventTriggerConfig
   additionalConditions: SceneConditionForm[]
   actions: SceneActionForm[]
   multiTriggers?: SceneMultiTriggerForm[]
@@ -99,7 +132,7 @@ export type SceneMultiTriggerForm = Pick<SceneLinkageForm,
   | 'propertyId' | 'propertyName' | 'eventId' | 'eventName' | 'eventOutputId' | 'eventOutputName'
   | 'eventTermType' | 'eventTermValue' | 'deviceState' | 'deviceStateTriggerMode' | 'deviceStateSustainedTime'
   | 'termType' | 'termValue' | 'repeatTime' | 'repeatMode' | 'repeatCustomMode' | 'repeatWeekdays'
-  | 'repeatMonthDays' | 'dateTime' | 'interval' | 'intervalUnit' | 'alarm'> & {
+  | 'repeatMonthDays' | 'dateTime' | 'interval' | 'intervalUnit' | 'alarm' | 'aiEvent'> & {
   /** 仅用于保持编辑页卡片实例稳定，不会提交到后端。 */
   clientId: number
 }
@@ -111,6 +144,7 @@ const triggerFormFields: Array<Exclude<keyof SceneMultiTriggerForm, 'clientId'>>
   'eventTermType', 'eventTermValue', 'deviceState', 'deviceStateTriggerMode', 'deviceStateSustainedTime',
   'termType', 'termValue', 'repeatTime', 'repeatMode', 'repeatCustomMode', 'repeatWeekdays',
   'repeatMonthDays', 'dateTime', 'interval', 'intervalUnit', 'alarm',
+  'aiEvent',
 ]
 
 export interface SceneConditionColumns {
@@ -147,6 +181,7 @@ export const defaultForm = (): SceneLinkageForm => ({
   interval: 30,
   intervalUnit: 'minutes',
   alarm: { modes: [] },
+  aiEvent: { mediaTargets: [] },
   additionalConditions: [],
   actions: [],
 })
@@ -179,6 +214,24 @@ export const normalizeResult = <T = any>(res: any): { data: T[]; total: number }
 export const enumText = (value: any, fallback = '-') => typeof value === 'object'
   ? value?.text || value?.value || fallback
   : value || fallback
+
+const aiEventConditionFromTerms = (terms: Record<string, any>[]) => {
+  const condition = terms.find(term => AI_EVENT_RESULT_COLUMNS.includes(term.column as AiEventResultColumn))
+  return condition
+    ? { column: condition.column as AiEventResultColumn, termType: condition.termType || 'eq', value: condition.value }
+    : undefined
+}
+
+const toAiEventMediaTargets = (configuration: Record<string, any>, mediaNames: string[] = []): SceneAiEventMediaTarget[] =>
+  Array.isArray(configuration?.mediaTargets)
+    ? configuration.mediaTargets
+      .filter((target: any) => target?.deviceId && target?.channelId)
+      .map((target: any, index: number) => ({
+        deviceId: target.deviceId,
+        channelId: target.channelId,
+        name: mediaNames[index],
+      }))
+    : []
 
 const isAlarmRecordQueryAction = (action: any) => action.executor === 'alarm-record-query'
 
@@ -316,6 +369,7 @@ export const toForm = (detail: any): SceneLinkageForm => {
   const eventTriggerTerm = findEventTriggerTerm((scene.branches || []).flatMap((branch: any) => branch.when || []))
     || findEventTriggerTerm(scene.terms || [])
   const deviceStateTriggerTerm = findDeviceStateTriggerTerm((scene.branches || []).flatMap((branch: any) => branch.when || []))
+  const aiEventTerms = (scene.branches || []).flatMap((branch: any) => branch.when || [])
   const selectorValues = Array.isArray(device.selectorValues) ? device.selectorValues : []
   const deviceConditionActions = sourceActions
     .filter((action: any) => action.executor === 'device-data' && action.configuration?.properties?.length && action.terms?.length)
@@ -394,8 +448,20 @@ export const toForm = (detail: any): SceneLinkageForm => {
     alarm: {
       alarmConfigId: trigger.configuration?.alarmConfigId,
       targetType: trigger.configuration?.targetType,
+      sourceKind: trigger.configuration?.targetType === 'aiTaskMediaTarget' ? 'visual-ai' : 'iot-device',
       modes: trigger.configuration?.modes || [],
       options: trigger.configuration?.options,
+    },
+    aiEvent: {
+      sceneId: trigger.configuration?.sceneId,
+      sceneName: scene.options?.trigger?.aiEvent?.sceneName,
+      taskTarget: trigger.configuration?.taskTarget,
+      taskTargetName: scene.options?.trigger?.aiEvent?.taskTargetName,
+      mediaTargets: toAiEventMediaTargets(
+        trigger.configuration || {},
+        scene.options?.trigger?.aiEvent?.mediaNames || [],
+      ),
+      condition: trigger.type === 'ai-event' ? aiEventConditionFromTerms(aiEventTerms) : undefined,
     },
     additionalConditions: [...(timeRanges.length ? [{ type: 'timeRange' as const, ranges: timeRanges }] : []), ...orderedActionConditions],
     actions: sourceActions.filter((action: any) => !conditionActionSet.has(action)).flatMap((action: any) => {
@@ -412,6 +478,7 @@ export const toForm = (detail: any): SceneLinkageForm => {
   else if (device.operation?.operator === 'offline') form.triggerKind = 'offline'
   else if (device.operation?.operator === 'state') form.triggerKind = 'state'
   else if (trigger.type === 'alarm') form.triggerKind = 'alarm'
+  else if (trigger.type === 'ai-event') form.triggerKind = 'ai-event'
   else form.triggerKind = 'property'
   return form
 }
@@ -450,7 +517,7 @@ export const buildRequest = (form: SceneLinkageForm, conditionColumns: SceneCond
   const buildTriggerOptions = () => {
     const triggerTypes: Record<SceneTriggerKind, string> = {
       manual: '手动触发', repeat: '重复时间', date: '日期时间', interval: '间隔时间',
-      property: '属性上报', event: '事件上报', online: '上线', offline: '离线', state: '设备状态变化', alarm: '告警状态变化',
+      property: '属性上报', event: '事件上报', online: '上线', offline: '离线', state: '设备状态变化', alarm: '告警状态变化', 'ai-event': '视觉事件',
     }
     return {
       name: form.scopeOptions.names?.join('、') || form.productName || '',
@@ -458,6 +525,11 @@ export const buildRequest = (form: SceneLinkageForm, conditionColumns: SceneCond
       type: form.multiTriggers?.length ? '多条件触发' : triggerTypes[form.triggerKind],
       action: form.triggerKind === 'property' ? form.propertyName || form.propertyId : form.triggerKind === 'event' ? form.eventName || form.eventId : '',
       selector: form.allDevices ? 'all' : form.dynamicScope ? form.dynamicScopeType : 'fixed',
+      aiEvent: form.triggerKind === 'ai-event' ? {
+        sceneName: form.aiEvent.sceneName,
+        taskTargetName: form.aiEvent.taskTargetName,
+        mediaNames: form.aiEvent.mediaTargets?.map(target => target.name || `${target.deviceId}/${target.channelId}`),
+      } : undefined,
     }
   }
   const buildActionOptions = (action: SceneActionForm) => {
@@ -497,8 +569,24 @@ export const buildRequest = (form: SceneLinkageForm, conditionColumns: SceneCond
           },
         }
       : form.triggerKind === 'alarm'
-        ? { type: 'alarm', configuration: form.alarm }
-      : { type: 'timer', timer: { trigger: 'cron', cron: timerCron(form) } }
+        ? {
+            type: 'alarm',
+            // sourceKind 是编辑器状态；运行时仍只读取通用告警 Trigger 的标准配置。
+            configuration: (({ sourceKind: _sourceKind, ...configuration }) => configuration)(form.alarm),
+          }
+        : form.triggerKind === 'ai-event'
+          ? {
+              type: 'ai-event',
+              configuration: {
+                sceneId: form.aiEvent.sceneId,
+                taskTarget: form.aiEvent.taskTarget,
+                mediaTargets: (form.aiEvent.mediaTargets || []).map(target => ({
+                  deviceId: target.deviceId,
+                  channelId: target.channelId,
+                })),
+              },
+            }
+        : { type: 'timer', timer: { trigger: 'cron', cron: timerCron(form) } }
   // 场景运行时在分支层执行防抖；触发器上的 shakeLimit 仅用于兼容旧规则。
   const debounceShakeLimit = form.debounceEnabled && form.triggerKind !== 'state'
     ? {
@@ -519,6 +607,24 @@ export const buildRequest = (form: SceneLinkageForm, conditionColumns: SceneCond
     : []
   const stateTriggerTerms = form.triggerKind === 'state' && form.deviceState !== 'any'
     ? [{ column: 'deviceState', termType: 'eq', value: form.deviceState === 'online' ? '1' : '0' }]
+    : []
+  const aiEventTriggerTerms = form.triggerKind === 'ai-event' && form.aiEvent.condition
+    ? [{
+        column: form.aiEvent.condition.column,
+        termType: form.aiEvent.condition.termType || 'eq',
+        value: form.aiEvent.condition.value,
+      }]
+    : []
+  // 视觉 AI 告警与通用告警共享配置契约；算法范围以分支条件收窄，不持久化为 Trigger 配置字段。
+  const visualAiAlarmTriggerTerms = form.triggerKind === 'alarm'
+    && (form.alarm.sourceKind === 'visual-ai' || form.alarm.targetType === 'aiTaskMediaTarget')
+    && form.alarm.options?.sceneId
+    && form.alarm.options?.taskTarget
+    ? [{
+        column: 'bizId',
+        termType: 'eq',
+        value: `${form.alarm.options.sceneId}-${form.alarm.options.taskTarget}`,
+      }]
     : []
   const multiTriggers = form.multiTriggers?.length
     ? form.multiTriggers
@@ -644,6 +750,8 @@ export const buildRequest = (form: SceneLinkageForm, conditionColumns: SceneCond
     ...triggerTerms,
     ...eventTriggerTerms,
     ...stateTriggerTerms,
+    ...aiEventTriggerTerms,
+    ...visualAiAlarmTriggerTerms,
     ...(timeTerms.length && form.triggerKind !== 'manual' ? [{
       type: 'and',
       termType: 'eq',

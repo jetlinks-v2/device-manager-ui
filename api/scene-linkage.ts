@@ -24,6 +24,61 @@ export interface SceneProviderInfo {
   description?: string
 }
 
+export interface AiTaskTargetOption {
+  value: string
+  text: string
+  description?: string
+}
+
+export interface AiSceneTreeOption {
+  id: string
+  name: string
+  aliases?: string
+  children: AiTaskTargetOption[]
+}
+
+export interface AiAggregateTaskOption {
+  id: string
+  name: string
+  sceneId: string
+  alarmLevel?: number
+  timeInterval?: Record<string, unknown> | null
+  videoCount?: number
+  state?: string | { value?: string, text?: string }
+  taskTargets: AiTaskTargetOption[]
+}
+
+export interface AiAggregateTaskVideoScope {
+  id: string
+  aggregateTaskId: string
+  deviceId: string
+  channelId: string
+  sourceName?: string
+}
+
+export interface AiEventMediaDevice {
+  id: string
+  name?: string
+  provider?: string
+  createTime?: number
+}
+
+export interface AiEventMediaChannel {
+  id: string
+  deviceId: string
+  channelId: string
+  name?: string
+  image?: string
+  others?: { playerScreenshotCover?: string }
+  status?: { value?: string; text?: string }
+}
+
+export interface AiEventSpace {
+  id: string
+  name?: string
+  children?: AiEventSpace[]
+}
+
 const pendingProductRequests = new Map<string, Promise<any>>()
 const pendingDeviceQueries = new Map<string, Promise<any>>()
 
@@ -102,6 +157,52 @@ export const getProduct = (id: string) => {
 
 export const queryDeviceAlarmPreprocesses = (data: Record<string, any>) =>
   request.post('/message/preprocessor/device-alarm/_query', data)
+
+export const queryAiSceneTree = (data: Record<string, any>) =>
+  request.post('/ai/scene/tree/_query', data)
+
+export const queryAiAlarmSceneTree = (data: Record<string, any>) =>
+  request.post('/ai/scene/alarm/tree/_query', data)
+
+export const queryAiAggregateTasks = (data: Record<string, any>) =>
+  request.post('/ai/aggregate/task/list/_query', data)
+
+export const queryAiAggregateTaskVideos = (id: string) =>
+  request.get<AiAggregateTaskVideoScope[]>(`/ai/aggregate/task/${encodeURIComponent(id)}/videos/_query`)
+
+// 区域、网关和通道接口均在服务端执行资产权限过滤；场景联动仅按来源组织展示，不能在前端补造权限条件。
+export const queryAiEventSpaceTree = () =>
+  request.post<AiEventSpace[]>('/space/detail/_tree', {
+    paging: false,
+    terms: [],
+    sorts: [{ name: 'sortIndex', order: 'asc' }, { name: 'createTime', order: 'asc' }],
+  }, { params: { assetType: 'device' } })
+
+export const queryAiEventSpaceChannels = (spaceId: string, data: Record<string, any> = {}) =>
+  request.post<AiEventMediaChannel[]>('/media/channel/_query', {
+    pageIndex: 0,
+    pageSize: 18,
+    ...data,
+    terms: [{ column: 'channelId', termType: 'space-bind$channel', value: spaceId }, ...(data.terms ?? [])],
+    sorts: data.sorts ?? [{ name: 'createTime', order: 'desc' }],
+  })
+
+export const queryAiEventMediaGateways = (data: Record<string, any> = {}) =>
+  request.post<AiEventMediaDevice[]>('/media/device/_query', {
+    pageIndex: 0,
+    pageSize: 30,
+    ...data,
+    terms: [{ column: 'provider', termType: 'eq', value: 'agent-media-device-gateway' }, ...(data.terms ?? [])],
+    sorts: data.sorts ?? [{ name: 'createTime', order: 'desc' }],
+  })
+
+export const queryAiEventMediaDeviceChannels = (deviceId: string, data: Record<string, any> = {}) =>
+  request.post<AiEventMediaChannel[]>(`/media/device/${encodeURIComponent(deviceId)}/channel/_query`, {
+    pageIndex: 0,
+    pageSize: 18,
+    ...data,
+    sorts: data.sorts ?? [{ name: 'createTime', order: 'desc' }],
+  })
 
 export const querySceneRecordsByScene = (id: string, data: Record<string, any>) =>
   request.post(`/scene/${id}/record/_query`, data)

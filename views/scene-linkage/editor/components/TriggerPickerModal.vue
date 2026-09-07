@@ -80,12 +80,14 @@ const providerIcons: Record<string, string> = {
   device: 'ApiOutlined',
   timer: 'ClockCircleOutlined',
   alarm: 'AlertOutlined',
+  'ai-event': 'RadarChartOutlined',
   manual: 'ThunderboltOutlined',
 }
 const providerIconStyles: Record<string, Record<string, string>> = {
   device: { color: '#1e72f0' },
   timer: { color: '#1e72f0' },
   alarm: { color: '#1e72f0' },
+  'ai-event': { color: '#1e72f0' },
   manual: { color: '#1e72f0' },
 }
 
@@ -100,8 +102,9 @@ const triggerIconStyles: Record<string, Record<string, string>> = {
     offline: providerIconStyles.manual,
     state: { color: '#6c4fe0', background: '#efebff' },
     alarm: providerIconStyles.alarm,
+    'ai-event': { color: '#6c4fe0', background: '#efebff' },
 }
-const providerOrder = ['device', 'timer', 'alarm', 'manual']
+const providerOrder = ['device', 'timer', 'alarm', 'ai-event', 'manual']
 const categories = computed(() => providerOrder
   .map(provider => ({
     provider,

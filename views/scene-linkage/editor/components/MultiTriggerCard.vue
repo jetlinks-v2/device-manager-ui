@@ -27,7 +27,8 @@
       </template>
     </div>
     <div v-else-if="trigger.triggerKind === 'state'" class="multi-trigger-card__row"><DeviceStateTriggerRow v-model:state="trigger.deviceState" v-model:mode="trigger.deviceStateTriggerMode" v-model:sustained-time="trigger.deviceStateSustainedTime" :removable="false" /></div>
-    <AlarmTriggerRow v-else-if="trigger.triggerKind === 'alarm'" v-model="trigger.alarm" />
+    <AlarmTriggerSourceRow v-else-if="trigger.triggerKind === 'alarm'" v-model="trigger.alarm" />
+    <AiEventTriggerRow v-else-if="trigger.triggerKind === 'ai-event'" v-model="trigger.aiEvent" class="multi-trigger-card__row" />
     <div v-else-if="trigger.triggerKind === 'repeat'" class="multi-trigger-card__row">
       <a-radio-group v-model:value="trigger.repeatMode">
         <a-radio-button value="daily">{{ $t('IotSceneLinkage.repeat.daily') }}</a-radio-button><a-radio-button value="weekdays">{{ $t('IotSceneLinkage.repeat.weekdays') }}</a-radio-button><a-radio-button value="weekends">{{ $t('IotSceneLinkage.repeat.weekends') }}</a-radio-button><a-radio-button value="custom">{{ $t('IotSceneLinkage.repeat.custom') }}</a-radio-button>
@@ -54,7 +55,8 @@ import { useI18n } from 'vue-i18n'
 import { getProduct, queryProducts } from '../../../../api/scene-linkage'
 import type { SceneMultiTriggerForm } from '../../utils'
 import IotAlarmTargetSelect, { type IotAlarmTargetSelectOption, type IotAlarmTargetSelectQuery } from '../../../device/alarm/components/IotAlarmTargetSelect.vue'
-import AlarmTriggerRow from './AlarmTriggerRow.vue'
+import AlarmTriggerSourceRow from './AlarmTriggerSourceRow.vue'
+import AiEventTriggerRow from './AiEventTriggerRow.vue'
 import DeviceScopeModal, { type DeviceScope } from './DeviceScopeModal.vue'
 import DeviceStateTriggerRow from './DeviceStateTriggerRow.vue'
 import ThingModelSelect from './ThingModelSelect.vue'
