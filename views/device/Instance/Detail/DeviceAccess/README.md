@@ -34,3 +34,8 @@ Owning module：`runtime-ui/modules/device-manager-ui`。详情页 `asyncCompone
 - 在 `runtime-ui` 执行 `pnpm --filter jetlinks-web-core build -- --module-name device-manager-ui` 构建通过，现有 Rollup `output.input` 配置和大体积 chunk 警告仍存在。
 - 完整类型检查未通过：`pnpm exec vue-tsc --noEmit -p modules/device-manager-ui/tsconfig.json` 被已有 `views/link/Certificate/type.d.ts:2` 的 `export interface TypeObjType = {` 语法错误（TS1005）阻断。需在该问题修复后重跑同一命令；本次未调整证书功能或类型检查配置。
 - 当前模块及 runtime-ui 未配置独立 lint 命令/配置，未运行 lint。配置保存行为未变更，浏览器验证覆盖展示、回显和取消；不同插件最终显示的字段仍由其后端配置定义决定。
+
+## 交付引用
+
+- 实现提交：`113dd83ded23e4e51f73d567d2fd912483ea0005`。
+- Pull Request：[device-manager-ui #250](https://github.com/jetlinks-v2/device-manager-ui/pull/250)，目标分支 `2.12`。
