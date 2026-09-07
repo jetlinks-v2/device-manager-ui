@@ -386,19 +386,26 @@ export const toForm = (detail: any): SceneLinkageForm => {
       actionId: action.actionId,
     }))
   const alarmConditionActions = sourceActions
-    .filter((action: any) => isAlarmRecordQueryAction(action) && action.options?.productId && action.terms?.length)
+    .filter((action: any) => isAlarmRecordQueryAction(action)
+      && action.terms?.length
+      && (action.configuration?.targetType === 'aiTaskMediaTarget' || action.options?.productId))
   const alarmConditions = alarmConditionActions
     .map((action: any) => ({
       type: 'alarmState' as const,
       alarm: {
         alarmConfigId: action.configuration?.alarmConfigId,
         targetType: action.configuration?.targetType || 'device',
+        sourceKind: action.configuration?.targetType === 'aiTaskMediaTarget' ? 'visual-ai' : 'iot-device',
         state: action.terms?.[0]?.value === false ? 'normal' : 'warning',
         modes: [],
         options: {
           productId: action.options?.productId,
           deviceId: action.options?.deviceId,
           alarmConfigName: action.options?.name,
+          sceneId: action.options?.sceneId,
+          sceneName: action.options?.sceneName,
+          taskTarget: action.options?.taskTarget,
+          taskTargetName: action.options?.taskTargetName,
         },
       },
       actionId: action.actionId,
@@ -684,21 +691,31 @@ export const buildRequest = (form: SceneLinkageForm, conditionColumns: SceneCond
       }]
     }
     const alarm = condition.alarm
+    const visualAiAlarm = alarm.sourceKind === 'visual-ai' || alarm.targetType === 'aiTaskMediaTarget'
     return [{
       actionId: ensureActionId(condition),
       executor: 'alarm-record-query',
       configuration: {
         alarmConfigId: alarm.alarmConfigId,
-        targetType: 'device',
-        productId: alarm.options?.productId,
-        deviceId: alarm.options?.deviceId,
+        targetType: visualAiAlarm ? 'aiTaskMediaTarget' : 'device',
+        ...(visualAiAlarm ? {} : {
+          productId: alarm.options?.productId,
+          deviceId: alarm.options?.deviceId,
+        }),
       },
       terms: [{ column: conditionColumns.alarmStateColumns?.[alarmStateConditionIndex++] || '', termType: 'eq', value: alarm.state !== 'normal' }],
       options: {
         type: '获取告警记录',
         name: alarm.options?.alarmConfigName || '',
-        productId: alarm.options?.productId,
-        deviceId: alarm.options?.deviceId,
+        ...(visualAiAlarm ? {
+          sceneId: alarm.options?.sceneId,
+          sceneName: alarm.options?.sceneName,
+          taskTarget: alarm.options?.taskTarget,
+          taskTargetName: alarm.options?.taskTargetName,
+        } : {
+          productId: alarm.options?.productId,
+          deviceId: alarm.options?.deviceId,
+        }),
       },
     }]
   })

@@ -1,7 +1,12 @@
 <template>
   <div class="alarm-state-condition-row">
-    <div class="alarm-state-condition-row__product">
+    <a-radio-group class="alarm-state-condition-row__source" :value="sourceKind" size="small" @change="changeSource">
+      <a-radio-button value="iot-device">{{ $t('IotSceneLinkage.alarmSource.iotDevice') }}</a-radio-button>
+      <a-radio-button value="visual-ai">{{ $t('IotSceneLinkage.alarmSource.visualAi') }}</a-radio-button>
+    </a-radio-group>
+    <template v-if="sourceKind === 'iot-device'">
       <IotAlarmTargetSelect
+        class="alarm-state-condition-row__product"
         :model-value="modelValue.options?.productId"
         :request="requestProducts"
         :selected-option="selectedProduct"
@@ -9,9 +14,8 @@
         rich
         @change="changeProduct"
       />
-    </div>
-    <div class="alarm-state-condition-row__device">
       <IotAlarmTargetSelect
+        class="alarm-state-condition-row__device"
         :model-value="modelValue.options?.deviceId"
         :request="requestDevices"
         :selected-option="selectedDevice"
@@ -22,9 +26,7 @@
         option-type="device"
         @change="changeDevice"
       />
-    </div>
-    <span class="alarm-state-condition-row__word">{{ $t('IotSceneLinkage.alarmPhrase.ofAlarm') }}</span>
-    <div class="alarm-state-condition-row__alarm-config">
+      <span class="alarm-state-condition-row__word">{{ $t('IotSceneLinkage.alarmPhrase.ofAlarm') }}</span>
       <a-select
         class="alarm-state-condition-row__alarm"
         :value="modelValue.alarmConfigId"
@@ -41,9 +43,10 @@
           <IotAlarmTargetOption :option="alarmOption(option)" type="alarm" />
         </template>
       </a-select>
-      <span>{{ $t('IotSceneLinkage.alarmPhrase.currentState') }}</span>
-      <a-select :value="modelValue.state || 'warning'" :options="stateOptions" @change="changeState" />
-    </div>
+    </template>
+    <VisualAiAlarmSelector v-else :model-value="modelValue" @update:model-value="updateValue" />
+    <span class="alarm-state-condition-row__word">{{ $t('IotSceneLinkage.alarmPhrase.currentState') }}</span>
+    <a-select class="alarm-state-condition-row__state" :value="modelValue.state || 'warning'" :options="stateOptions" @change="changeState" />
   </div>
 </template>
 
@@ -53,6 +56,7 @@ import { useI18n } from 'vue-i18n'
 import { getProduct, queryDeviceAlarmPreprocesses, queryDevicesPage, queryProducts } from '../../../../api/scene-linkage'
 import IotAlarmTargetSelect, { type IotAlarmTargetSelectOption, type IotAlarmTargetSelectQuery } from '../../../device/alarm/components/IotAlarmTargetSelect.vue'
 import IotAlarmTargetOption from '../../../device/alarm/components/IotAlarmTargetOption.vue'
+import VisualAiAlarmSelector from './VisualAiAlarmSelector.vue'
 import { formatTriggerText } from '../../../device/alarm/utils'
 import { normalizeResult, type SceneAlarmTriggerConfig } from '../../utils'
 import { enrichDeviceOptionData } from '../deviceOptionData'
@@ -72,6 +76,21 @@ const stateOptions = computed(() => [
   { value: 'warning', label: t('IotSceneLinkage.alarmState.warning') },
   { value: 'normal', label: t('IotSceneLinkage.alarmState.normal') },
 ])
+const sourceKind = computed(() => props.modelValue.sourceKind
+  || (props.modelValue.targetType === 'aiTaskMediaTarget' ? 'visual-ai' : 'iot-device'))
+
+function updateValue(value: SceneAlarmTriggerConfig) {
+  emit('update:modelValue', value)
+}
+
+function changeSource(event: { target?: { value?: unknown } }) {
+  const value = event.target?.value
+  if (value !== 'iot-device' && value !== 'visual-ai') return
+  // 告警来源决定可选资源和后端查询维度，切换时不能保留另一类告警的筛选条件。
+  emit('update:modelValue', value === 'iot-device'
+    ? { sourceKind: value, modes: [], state: props.modelValue.state || 'warning', options: {} }
+    : { sourceKind: value, targetType: 'aiTaskMediaTarget', modes: [], state: props.modelValue.state || 'warning', options: {} })
+}
 
 function toOption(item: Record<string, any>): AlarmConfigOption | undefined {
   const alarm = item.alarm || {}
@@ -250,11 +269,10 @@ watch(() => [props.modelValue.alarmConfigId, props.modelValue.options?.productId
 </script>
 
 <style scoped>
-.alarm-state-condition-row { display: grid; grid-template-columns: var(--scene-linkage-resource-select-width, 10.5rem) 18rem max-content; gap: 8px; width: 100%; min-width: 0; align-items: center; justify-content: start; }
-.alarm-state-condition-row__product { grid-column: 1; grid-row: 1; }
-.alarm-state-condition-row__device { grid-column: 2; grid-row: 1; }
-.alarm-state-condition-row__word { grid-column: 3; grid-row: 1; }
-.alarm-state-condition-row__alarm-config { display: grid; grid-column: 1 / -1; grid-row: 2; grid-template-columns: minmax(10rem, 18rem) max-content 8rem; gap: 8px; min-width: 0; align-items: center; justify-content: start; }
-.alarm-state-condition-row__word, .alarm-state-condition-row__alarm-config > span { white-space: nowrap; }
-.alarm-state-condition-row :deep(.alarm-state-condition-row__alarm), .alarm-state-condition-row :deep(.ant-select) { width: 100% !important; min-width: 0; }
+.alarm-state-condition-row { display: flex; flex: 1 1 auto; flex-wrap: nowrap; gap: var(--space-2, 8px); width: 100%; min-width: 0; align-items: center; }
+.alarm-state-condition-row__source, .alarm-state-condition-row__word, .alarm-state-condition-row__state { flex: none; }
+.alarm-state-condition-row__product { flex: 1 1 var(--scene-linkage-resource-select-width, 10.5rem); min-width: 8rem; max-width: var(--scene-linkage-resource-select-width, 10.5rem); }
+.alarm-state-condition-row__device, .alarm-state-condition-row__alarm { flex: 1 1 16rem; min-width: 10rem; max-width: 18rem; }
+.alarm-state-condition-row__state { width: 8rem; }
+.alarm-state-condition-row__word { white-space: nowrap; }
 </style>

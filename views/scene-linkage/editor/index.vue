@@ -58,9 +58,9 @@
 									<div
 									:class="['scene-editor__trigger-row', { 'scene-editor__trigger-row--property': form.triggerKind === 'property', 'scene-editor__trigger-row--device': ['property', 'event'].includes(form.triggerKind), 'scene-editor__trigger-row--state': form.triggerKind === 'state', 'scene-editor__trigger-row--interval': form.triggerKind === 'interval', 'scene-editor__trigger-row--alarm': form.triggerKind === 'alarm', 'scene-editor__trigger-row--ai-event': form.triggerKind === 'ai-event' }]">
 										<span class="scene-editor__trigger-icon"
-										      :style="{ color: triggerIcon.color, background: triggerIcon.background }"><svg
+										      :style="{ color: form.triggerKind === 'ai-event' ? '#1E5EFF' : triggerIcon.color, background: form.triggerKind === 'ai-event' ? '#E8F0FF' : triggerIcon.background }"><svg
 											v-if="triggerIcon.path" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path
-											:d="triggerIcon.path"/></svg><AIcon v-else :type="triggerIcon.type"/></span><b>{{
+											:d="triggerIcon.path"/></svg><AIcon v-else :type="form.triggerKind === 'ai-event' ? 'RadarChartOutlined' : triggerIcon.type"/></span><b>{{
 											triggerText
 										}}</b>
 										<template v-if="isDevice">
@@ -450,6 +450,9 @@ const isVisualAiAlarm = (alarm: SceneLinkageForm['alarm']) => alarm.sourceKind =
 const hasValidAlarmTrigger = (alarm: SceneLinkageForm['alarm']) => isVisualAiAlarm(alarm)
   ? Boolean(alarm.options?.sceneId && alarm.options?.taskTarget && alarm.alarmConfigId && alarm.modes.length)
   : Boolean(alarm.options?.productId && alarm.alarmConfigId && alarm.targetType && alarm.modes.length)
+const hasValidAlarmStateCondition = (alarm: SceneLinkageForm['alarm']) => isVisualAiAlarm(alarm)
+  ? Boolean(alarm.options?.sceneId && alarm.options?.taskTarget && alarm.alarmConfigId && alarm.state)
+  : Boolean(alarm.options?.productId && alarm.alarmConfigId && alarm.state)
 const hasValidAiEventTrigger = (aiEvent: SceneLinkageForm['aiEvent']) => Boolean(
   aiEvent.sceneId
   && aiEvent.taskTarget
@@ -500,7 +503,7 @@ async function validate() {
   validation.message = ''
   return true
 }
-async function save() { if (form.additionalConditions.some(condition => condition.type === 'alarmState' && (!condition.alarm.options?.productId || !condition.alarm.alarmConfigId || !condition.alarm.state))) { validation.field = 'condition'; validation.message = 'IotSceneLinkage.message.alarmTriggerRequired'; onlyMessage(t(validation.message), 'warning'); return }; if (!await validate()) return; saving.value = true; try { const conditionColumns = await resolveSceneConditionColumns(form); const deviceConditionCount = form.additionalConditions.filter(condition => condition.type === 'deviceProperty').length; const alarmStateConditionCount = form.additionalConditions.filter(condition => condition.type === 'alarmState').length; if ((deviceConditionCount && conditionColumns.devicePropertyColumns?.filter(Boolean).length !== deviceConditionCount) || (alarmStateConditionCount && conditionColumns.alarmStateColumns?.filter(Boolean).length !== alarmStateConditionCount)) { validation.field = 'condition'; validation.message = 'IotSceneLinkage.message.conditionColumnUnavailable'; onlyMessage(t(validation.message), 'warning'); return }; const scene = buildRequest(form, conditionColumns); form.id ? await updateSceneLinkage(form.id, scene) : await createSceneLinkage(scene); router.push('/iot-user/scene-linkage') } finally { saving.value = false } }
+async function save() { if (form.additionalConditions.some(condition => condition.type === 'alarmState' && !hasValidAlarmStateCondition(condition.alarm))) { validation.field = 'condition'; validation.message = 'IotSceneLinkage.message.alarmTriggerRequired'; onlyMessage(t(validation.message), 'warning'); return }; if (!await validate()) return; saving.value = true; try { const conditionColumns = await resolveSceneConditionColumns(form); const deviceConditionCount = form.additionalConditions.filter(condition => condition.type === 'deviceProperty').length; const alarmStateConditionCount = form.additionalConditions.filter(condition => condition.type === 'alarmState').length; if ((deviceConditionCount && conditionColumns.devicePropertyColumns?.filter(Boolean).length !== deviceConditionCount) || (alarmStateConditionCount && conditionColumns.alarmStateColumns?.filter(Boolean).length !== alarmStateConditionCount)) { validation.field = 'condition'; validation.message = 'IotSceneLinkage.message.conditionColumnUnavailable'; onlyMessage(t(validation.message), 'warning'); return }; const scene = buildRequest(form, conditionColumns); form.id ? await updateSceneLinkage(form.id, scene) : await createSceneLinkage(scene); router.push('/iot-user/scene-linkage') } finally { saving.value = false } }
 watch(() => form.repeatMode, (_value, previous) => { if (!loadingScene.value && previous) resetRepeatSelections() })
 watch(() => form.name, value => { if (value.trim() && hasError('name')) { validation.field = ''; validation.message = '' } })
 watch(() => [form.propertyId, form.termValue], ([propertyId, termValue]) => { if (propertyId && termValue !== undefined && termValue !== null && termValue !== '' && hasError('property')) { validation.field = ''; validation.message = '' } })

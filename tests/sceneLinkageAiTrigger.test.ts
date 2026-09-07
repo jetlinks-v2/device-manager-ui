@@ -134,6 +134,46 @@ test('round-trips visual AI alarm selection without persisting editor-only sourc
   assert.equal(restored.alarm.options?.taskTarget, 'PersonDetection')
 })
 
+test('serializes and restores a visual alarm state additional condition', () => {
+  const form = defaultForm()
+  form.triggerKind = 'manual'
+  form.additionalConditions = [{
+    type: 'alarmState',
+    alarm: {
+      sourceKind: 'visual-ai',
+      targetType: 'aiTaskMediaTarget',
+      alarmConfigId: aiAggregateTaskFixture.id,
+      state: 'warning',
+      modes: [],
+      options: {
+        sceneId: aiSceneFixture.id,
+        sceneName: aiSceneFixture.name,
+        taskTarget: 'PersonDetection',
+        taskTargetName: '人员检测',
+        alarmConfigName: aiAggregateTaskFixture.name,
+      },
+    },
+  }]
+
+  const rule = buildRequest(form, { alarmStateColumns: ['branch_1_group_1_action_1.alarming'] })
+  const action = rule.branches[0].then[0].actions.find((item: any) => item.executor === 'alarm-record-query')
+
+  assert.deepEqual(action.configuration, {
+    alarmConfigId: aiAggregateTaskFixture.id,
+    targetType: 'aiTaskMediaTarget',
+  })
+  assert.deepEqual(action.terms, [{
+    column: 'branch_1_group_1_action_1.alarming',
+    termType: 'eq',
+    value: true,
+  }])
+  assert.equal(toForm(rule).additionalConditions[0].type, 'alarmState')
+  const restored = toForm(rule).additionalConditions[0] as Extract<typeof form.additionalConditions[number], { type: 'alarmState' }>
+  assert.equal(restored.alarm.sourceKind, 'visual-ai')
+  assert.equal(restored.alarm.options?.sceneId, aiSceneFixture.id)
+  assert.equal(restored.alarm.options?.taskTarget, 'PersonDetection')
+})
+
 test('keeps AI-event leaves independent in a multi-trigger rule without a dedicated shake limit', () => {
   const form = defaultForm()
   form.triggerKind = 'ai-event'

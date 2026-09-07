@@ -20,7 +20,7 @@ export function createAiSceneResourceOption(
     label: scene.name || scene.id,
     value: scene.id,
     description: details.join(' · '),
-    icon: 'ApartmentOutlined',
+    icon: 'scene',
   }
 }
 
@@ -29,7 +29,7 @@ export function createAiTaskTargetResourceOption(target: AiTaskTargetOption): Ai
     label: target.text || target.value,
     value: target.value,
     description: target.description,
-    icon: 'RadarChartOutlined',
+    icon: 'AimOutlined',
   }
 }
 
@@ -46,7 +46,7 @@ export function createAiAggregateTaskResourceOption(
       t('IotSceneLinkage.aiEvent.option.videoCount', { count: task.videoCount || 0 }),
       formatActivePeriod(task.timeInterval, t),
     ].join(' · '),
-    icon: 'AlertOutlined',
+    icon: 'DeploymentUnitOutlined',
   }
 }
 

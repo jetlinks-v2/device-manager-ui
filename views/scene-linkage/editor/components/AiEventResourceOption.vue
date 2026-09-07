@@ -1,6 +1,11 @@
 <template>
   <div class="ai-event-resource-option">
-    <span class="ai-event-resource-option__icon"><AIcon :type="icon" /></span>
+    <IconValueView
+      v-if="option.icon === 'scene'"
+      :size="28"
+      :fallback-text="sceneInitial"
+    />
+    <span v-else class="ai-event-resource-option__icon"><component :is="iconComponent" /></span>
     <span class="ai-event-resource-option__content">
       <a-tooltip :title="option.label">
         <span class="ai-event-resource-option__title">{{ option.label }}</span>
@@ -13,7 +18,9 @@
 </template>
 
 <script setup lang="ts">
-import { type PropType } from 'vue'
+import { computed, type PropType } from 'vue'
+import { AimOutlined, AppstoreOutlined, DeploymentUnitOutlined } from '@ant-design/icons-vue'
+import { IconValueView } from '@jetlinks-web-core/components/IconValue'
 
 export type AiEventResourceOption = {
   label: string
@@ -22,9 +29,15 @@ export type AiEventResourceOption = {
   icon: string
 }
 
-defineProps({
+const props = defineProps({
   option: { type: Object as PropType<AiEventResourceOption>, required: true },
 })
+
+const iconComponent = computed(() => ({
+  AimOutlined,
+  DeploymentUnitOutlined,
+}[props.option.icon] || AppstoreOutlined))
+const sceneInitial = computed(() => [...props.option.label.trim()].slice(0, 1).join(''))
 </script>
 
 <style scoped>

@@ -3,7 +3,7 @@
 		<div :class="['scene-condition-row', { 'scene-condition-row--invalid': invalid }]">
 			<span class="scene-condition-row__index">{{ index + 1 }}</span>
 			<span :class="['scene-condition-row__icon', `scene-condition-row__icon--${condition.type}`]"><AIcon
-				:type="condition.type === 'timeRange' ? 'ClockCircleOutlined' : condition.type === 'alarmState' ? 'SafetyCertificateOutlined' : 'BarChartOutlined'"/></span>
+				:type="condition.type === 'timeRange' ? 'ClockCircleOutlined' : condition.type === 'alarmState' ? 'AlertOutlined' : 'BarChartOutlined'"/></span>
 			<strong>{{
 					condition.type === 'timeRange' ? $t('IotSceneLinkage.condition.timeRange') : condition.type === 'alarmState' ? $t('IotSceneLinkage.condition.alarmState') : $t('IotSceneLinkage.condition.deviceProperty')
 				}}</strong>
@@ -17,7 +17,10 @@
 				</a-button>
 			</template>
 			<div
-				:class="['scene-condition-row__footer', { 'scene-condition-row__footer--full': condition.type !== 'timeRange' }]">
+				:class="['scene-condition-row__footer', {
+					'scene-condition-row__footer--full': condition.type === 'deviceProperty',
+					'scene-condition-row__footer--alarm': condition.type === 'alarmState',
+				}]">
 				<TimeRangeConditionEditor v-if="condition.type === 'timeRange'" :model-value="condition.ranges"
 				                          @update:model-value="updateTimeRanges"/>
 				<div v-else-if="condition.type === 'deviceProperty'" class="scene-condition-row__condition">
@@ -321,6 +324,10 @@ watch(() => props.condition.type === 'deviceProperty' ? props.condition.productI
 
 .scene-condition-row__footer--full {
 	flex: 0 0 100%;
+}
+
+.scene-condition-row__footer--alarm {
+	flex: 1 1 0;
 }
 
 .scene-condition-row__condition {

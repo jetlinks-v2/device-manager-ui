@@ -111,7 +111,7 @@ const visibleSceneOptions = computed(() => appendSelectedOption(
   props.modelValue.sceneId,
   props.modelValue.sceneName || props.modelValue.sceneId,
   '',
-  'ApartmentOutlined',
+  'scene',
 ))
 const targetOptions = computed(() => taskTargets.value(props.modelValue.sceneId)
   .map(createAiTaskTargetResourceOption))
@@ -120,7 +120,7 @@ const visibleTargetOptions = computed(() => appendSelectedOption(
   props.modelValue.taskTarget,
   props.modelValue.taskTargetName || props.modelValue.taskTarget,
   '',
-  'RadarChartOutlined',
+  'AimOutlined',
 ))
 const conditionOptions = computed(() => termColumns.value
   .filter(column => AI_EVENT_RESULT_COLUMNS.includes(column.column as AiEventResultColumn))
