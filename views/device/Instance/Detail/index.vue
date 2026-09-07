@@ -137,16 +137,18 @@
             </span>
           </div>
           <div class="device-detail-meta">
-            <span class="device-detail-meta__label">ID</span>
-            <a-tooltip :title="$t('Detail.index.957187-35')">
-              <span
-                class="device-detail-meta__id-text device-detail-meta__id-text--copy"
-                @click="handleCopyId"
-              >
-                {{ instanceStore.current?.id }}
-              </span>
-            </a-tooltip>
-	          <DeviceIdMapping class="device-detail-meta__mapping" />
+            <div class="device-detail-meta__identity">
+              <span class="device-detail-meta__label">ID</span>
+              <a-tooltip :title="`${instanceStore.current?.id} · ${$t('Detail.index.957187-35')}`">
+                <span
+                  class="device-detail-meta__id-text device-detail-meta__id-text--copy"
+                  @click="handleCopyId"
+                >
+                  {{ instanceStore.current?.id }}
+                </span>
+              </a-tooltip>
+              <DeviceIdMapping />
+            </div>
             <span
               class="device-detail-meta__sep"
               aria-hidden="true"
@@ -1770,11 +1772,22 @@ defineExpose({
   opacity: 0.85;
 }
 
-.device-detail-meta__id-text {
-  flex: 1 1 auto;
+// ID 与映射入口作为一组收缩、换行，避免将映射推到产品信息旁。
+.device-detail-meta__identity {
+  display: inline-flex;
+  // 映射按钮以图标作为首个 flex 子项，按中心对齐以免图标基线抬高按钮文字。
+  align-items: center;
+  gap: 6px;
   min-width: 0;
-  word-break: break-all;
-  overflow-wrap: anywhere;
+  max-width: 100%;
+}
+
+.device-detail-meta__id-text {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 
