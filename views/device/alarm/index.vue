@@ -17,29 +17,30 @@
         </template>
       </PageHeader>
 
-      <section class="device-alarm-page__filter">
-        <ConditionFilter
-          :fields="filterFields"
-          :modelValue="filterTerms"
-          :placeholder="$t('DeviceAlarm.placeholder.filter')"
-          @update:modelValue="handleFilterTermsUpdate"
-          @change="handleSearch"
-        />
-      </section>
+      <FullPage hasPadding>
+        <section class="device-alarm-page__filter">
+          <ConditionFilter
+            :fields="filterFields"
+            :modelValue="filterTerms"
+            :placeholder="$t('DeviceAlarm.placeholder.filter')"
+            @update:modelValue="handleFilterTermsUpdate"
+            @change="handleSearch"
+          />
+        </section>
 
-      <section class="device-alarm-page__table">
-        <JProTable
-          rowKey="key"
-          mode="TABLE"
-          :columns="columns"
-          :request="tableRequest"
-          :params="tableParams"
-          :pagination="tablePagination"
-          :alertShow="false"
-          :bodyStyle="{ padding: 0 }"
-          :scroll="{x: 'max-content'}"
-        >
-          <template #name="record">
+        <section class="device-alarm-page__table">
+          <JProTable
+            rowKey="key"
+            mode="TABLE"
+            :columns="columns"
+            :request="tableRequest"
+            :params="tableParams"
+            :pagination="tablePagination"
+            :alertShow="false"
+            :bodyStyle="{ padding: 0 }"
+            :scroll="{x: 'max-content'}"
+          >
+            <template #name="record">
             <span class="device-alarm-page__name">
               <IconBadge
                 :size="32"
@@ -51,59 +52,60 @@
                 {{ toAlarmRow(record).name || '--' }}
               </span>
             </span>
-          </template>
-          <template #productName="record">
-            <span>{{ productName(record) }}</span>
-          </template>
-          <template #deviceName="record">
-            <span>{{ deviceName(record) }}</span>
-          </template>
-          <template #trigger="record">
-            <span>{{ rowTriggerText(record) }}</span>
-          </template>
-          <template #level="record">
-            <StatusTag
-              :status="levelStatus(record.level)"
-              :style="levelTagStyle(record.level)"
-              :text="String(levelLabel(record.level))"
-            />
-          </template>
-          <template #notificationConfigured="record">
-            <StatusTag
-              class="device-alarm-page__notification-tag"
-              :status="notificationStatus(record)"
-              :text="notificationText(record)"
-              :bordered="false"
-            >
-              <template #icon>
-                <span class="device-alarm-page__status-dot" />
-              </template>
-            </StatusTag>
-          </template>
-          <template #action="record">
-            <a-space>
-              <a-button type="link" size="small" @click="openEdit(toAlarmRow(record))">
-                {{ $t('DeviceAlarm.action.edit') }}
-              </a-button>
-              <a-popconfirm
-                :title="$t('DeviceAlarm.confirm.delete', { name: record.name })"
-                @confirm="remove(toAlarmRow(record))"
+            </template>
+            <template #productName="record">
+              <span>{{ productName(record) }}</span>
+            </template>
+            <template #deviceName="record">
+              <span>{{ deviceName(record) }}</span>
+            </template>
+            <template #trigger="record">
+              <span>{{ rowTriggerText(record) }}</span>
+            </template>
+            <template #level="record">
+              <StatusTag
+                :status="levelStatus(record.level)"
+                :style="levelTagStyle(record.level)"
+                :text="String(levelLabel(record.level))"
+              />
+            </template>
+            <template #notificationConfigured="record">
+              <StatusTag
+                class="device-alarm-page__notification-tag"
+                :status="notificationStatus(record)"
+                :text="notificationText(record)"
+                :bordered="false"
               >
-                <a-button type="link" size="small" danger>
-                  {{ $t('DeviceAlarm.action.delete') }}
+                <template #icon>
+                  <span class="device-alarm-page__status-dot" />
+                </template>
+              </StatusTag>
+            </template>
+            <template #action="record">
+              <a-space>
+                <a-button type="link" size="small" @click="openEdit(toAlarmRow(record))">
+                  {{ $t('DeviceAlarm.action.edit') }}
                 </a-button>
-              </a-popconfirm>
-            </a-space>
-          </template>
-          <template #emptyText>
-            <CloudEmpty>
-              <template #description>
-                <span>{{ $t('DeviceAlarm.empty') }}</span>
-              </template>
-            </CloudEmpty>
-          </template>
-        </JProTable>
-      </section>
+                <a-popconfirm
+                  :title="$t('DeviceAlarm.confirm.delete', { name: record.name })"
+                  @confirm="remove(toAlarmRow(record))"
+                >
+                  <a-button type="link" size="small" danger>
+                    {{ $t('DeviceAlarm.action.delete') }}
+                  </a-button>
+                </a-popconfirm>
+              </a-space>
+            </template>
+            <template #emptyText>
+              <CloudEmpty>
+                <template #description>
+                  <span>{{ $t('DeviceAlarm.empty') }}</span>
+                </template>
+              </CloudEmpty>
+            </template>
+          </JProTable>
+        </section>
+      </FullPage>
 
       <DeviceAlarmEditorModal
         v-model:open="editorOpen"
@@ -226,8 +228,6 @@ const notificationStatus = (record: Record<string, any>) => {
   gap: var(--space-4);
 	flex-direction: column;
   min-width: 0;
-	background: color-mix(in srgb, var(--jet-theme-bg-container) 70%, transparent);
-	border-radius: var(--r-4);
 }
 .device-alarm-page__filter {
 	flex: 1;

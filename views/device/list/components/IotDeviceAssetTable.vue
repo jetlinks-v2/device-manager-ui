@@ -1,5 +1,5 @@
 <template>
-  <section class="iot-device-list__table-wrap">
+  <FullPage class="iot-device-list__table-wrap">
     <a-alert
       v-if="loadError"
       class="iot-device-list__error"
@@ -134,7 +134,7 @@
         </CloudEmpty>
       </template>
     </j-pro-table>
-  </section>
+  </FullPage>
 </template>
 
 <script setup lang="ts">
