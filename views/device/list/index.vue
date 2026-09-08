@@ -21,8 +21,6 @@ import IotDeviceAssetListView from './components/IotDeviceAssetListView.vue'
 <style scoped lang="less">
 .iot-device-page {
   width: 100%;
-	background: color-mix(in srgb, var(--jet-theme-bg-container) 70%, transparent);
-	border-radius: var(--r-4);
 }
 
 .iot-device-page__loading {
