@@ -6,16 +6,7 @@
       </template>
     </j-empty>
     <a-spin v-else :spinning="loading">
-      <div v-if="pluginOnly">
-        <a-button
-          type="link"
-          @click="jumpProduct"
-        >
-          {{ $t('InstanceDeviceAccess.952800-8') }}
-        </a-button>
-      </div>
-
-      <template v-else-if="access?.id">
+      <template v-if="access?.id">
         <div
           class="access-guide-layout"
           :class="{ 'access-guide-layout--with-doc': showProtocolDoc }"
@@ -124,7 +115,6 @@ import {
 import { getCompositeProviderDetail } from '../../../../../api/link/accessConfig'
 import { existsDevicePrincipalSupport, getDevicePrincipal } from '../../../../../api/instance'
 import { useInstanceStore } from '../../../../../store/instance'
-import { useMenuStore } from '@jetlinks-web-core/store/menu'
 import { marked } from 'marked'
 import dayjs from 'dayjs'
 import type { TableColumnType } from 'ant-design-vue'
@@ -135,11 +125,9 @@ import useClipboard from 'vue-clipboard3'
 const { t: $t } = useI18n()
 const { toClipboard } = useClipboard()
 const instanceStore = useInstanceStore()
-const menuStore = useMenuStore()
 
 const loading = ref(false)
 const empty = ref(false)
-const pluginOnly = ref(false)
 const access = ref<Record<string, any>>({})
 const config = ref<any>({})
 const markdownToHtml = shallowRef('')
@@ -572,7 +560,7 @@ const queryAccessDetail = async (id: string) => {
       return
     }
     if (access.value.provider === 'plugin_gateway') {
-      pluginOnly.value = true
+      // 插件的设备配置由 Config 读取配置元数据；这里只跳过普通协议的说明请求。
       return
     }
     const inst = instanceStore.current
@@ -588,7 +576,6 @@ const queryAccessDetail = async (id: string) => {
 const load = async () => {
   loading.value = true
   empty.value = false
-  pluginOnly.value = false
   access.value = {}
   config.value = {}
   markdownToHtml.value = ''
@@ -613,15 +600,6 @@ const load = async () => {
   } finally {
     loading.value = false
   }
-}
-
-const jumpProduct = () => {
-  menuStore.jumpPage('device/Product/Detail', {
-    params: {
-      id: instanceStore.current?.productId,
-      tab: 'Device',
-    },
-  })
 }
 
 onMounted(() => {

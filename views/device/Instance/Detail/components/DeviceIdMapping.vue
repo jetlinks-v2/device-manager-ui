@@ -5,25 +5,26 @@
   >
     <a-tooltip>
       <template #title>
-        <p>
-          {{ $t('Info.index.208636-3') }}
+        <p class="device-id-mapping__tip">
+          {{ inklingDeviceId
+            ? $t('DeviceIdMapping.externalId', { id: inklingDeviceId })
+            : $t('Info.index.208636-5') }}
         </p>
-        {{ $t('Info.index.208636-4') }}
+        <p class="device-id-mapping__tip">{{ $t('Info.index.208636-3') }}</p>
+        <span v-if="!inklingDeviceId">{{ $t('Info.index.208636-4') }}</span>
       </template>
-      <a
-        v-if="!inklingDeviceId"
+      <a-button
         type="link"
+        size="small"
+        class="device-id-mapping__trigger"
+        :aria-label="$t('DeviceIdMapping.accessibleLabel', {
+          status: $t(inklingDeviceId ? 'Info.index.208636-6' : 'Info.index.208636-5')
+        })"
         @click="openInklingModal"
       >
-        {{ $t('Info.index.208636-5') }}
-      </a>
-      <a
-        v-else
-        type="link"
-        @click="openInklingModal"
-      >
-        {{ $t('Info.index.208636-6') }}
-      </a>
+        <AIcon type="LinkOutlined" aria-hidden="true" />
+        <span class="device-id-mapping__label">{{ mappingLabel }}</span>
+      </a-button>
     </a-tooltip>
     <InkingModal
       v-if="inkingVisible"
@@ -55,6 +56,11 @@ const inklingDeviceId = ref<string>()
 const channelId = ref<string>()
 
 const isPluginGateway = computed(() => instanceStore.current?.accessProvider === 'plugin_gateway')
+
+// 双方 ID 一致时无需单独映射，未配置状态使用操作名称，避免被理解为接入异常。
+const mappingLabel = computed(() => $t(
+  inklingDeviceId.value ? 'Info.index.208636-6' : 'DeviceIdMapping.action'
+))
 
 const refreshInstance = async () => {
   if (!instanceStore.current?.id) return
@@ -119,5 +125,30 @@ watch(
   align-items: center;
   flex: 0 0 auto;
   min-width: 0;
+}
+
+.device-id-mapping__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  height: auto;
+  font-size: inherit;
+  line-height: inherit;
+
+  > .device-id-mapping__label {
+    margin-inline-start: 0;
+  }
+}
+
+.device-id-mapping__tip {
+  margin-bottom: 4px;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 768px) {
+  .device-id-mapping__label {
+    display: none;
+  }
 }
 </style>
