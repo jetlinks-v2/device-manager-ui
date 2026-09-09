@@ -1,6 +1,6 @@
 <template>
   <aside class="group-sidebar" :aria-label="$t('IotDeviceGroups.sidebar.aria')">
-    <section class="group-sidebar__card">
+    <ContentPanel class="group-sidebar__card">
       <div class="group-sidebar__switch">
         <a-segmented
           :value="activeView"
@@ -114,7 +114,7 @@
         <span>{{ $t('IotDeviceGroups.sidebar.total', { count: currentViewCount }) }}</span>
         <span>{{ $t('IotDeviceGroups.sidebar.coverage', { count: visibleDeviceCount }) }}</span>
       </footer>
-    </section>
+    </ContentPanel>
   </aside>
 </template>
 

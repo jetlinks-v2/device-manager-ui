@@ -1,5 +1,5 @@
 <template>
-  <aside class="iot-health-tree">
+  <ContentPanel class="iot-health-tree">
     <header class="iot-health-tree__head">
       <h3>{{ $t('IotHealthPage.tree.title') }}</h3>
       <span>{{ total }}</span>
@@ -40,7 +40,7 @@
         :description="$t('IotHealthPage.tree.empty')"
       />
     </div>
-  </aside>
+  </ContentPanel>
 </template>
 
 <script setup lang="ts">
@@ -178,16 +178,12 @@ function handleKeywordSearch(value: string) {
   height: 100%;
   min-height: 0;
   overflow: hidden;
-  background: var(--jet-theme-bg-container);
-  border: var(--jet-theme-stroke-width) solid var(--jet-theme-border-secondary);
-  border-radius: 1rem;
 }
 
 .iot-health-tree__head {
   display: flex;
   align-items: center;
   gap: var(--space-4);
-  padding: 1rem 1rem 0;
 }
 
 .iot-health-tree__head h3 {
@@ -203,10 +199,6 @@ function handleKeywordSearch(value: string) {
   color: var(--jet-theme-text-disabled);
   font-size: var(--fs-14);
   line-height: 1.375rem;
-}
-
-.iot-health-tree__search {
-  padding: 1rem;
 }
 
 .iot-health-tree__search-input {
@@ -227,7 +219,6 @@ function handleKeywordSearch(value: string) {
 .iot-health-tree__body {
   flex: 1;
   overflow: auto;
-  padding: 0 1rem 1rem;
 }
 
 .iot-health-tree__empty {

@@ -17,7 +17,7 @@
   padding: var(--space-4);
   border: 0.0625rem solid var(--line);
   border-radius: 1rem;
-  background: color-mix(in srgb, var(--bg) 70%, transparent);
+  background: color-mix(in srgb, var(--bg) 80%, transparent);
 }
 
 .group-detail-card__identity,
