@@ -46,7 +46,6 @@
             block-node
             :tree-data="groupTree"
             :selected-keys="scopeId ? [scopeId] : []"
-            :default-expand-all="true"
             @select="onGroupSelect"
           >
             <template #title="node">

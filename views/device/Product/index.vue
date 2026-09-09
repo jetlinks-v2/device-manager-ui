@@ -1,182 +1,112 @@
 <template>
-  <j-page-container>
-    <pro-search
-      :columns="query.columns"
-      target="product-manage"
-      @search="handleSearch"
-    />
-    <FullPage>
-      <JProTable
-        :columns="columns"
-        :request="queryProductList"
-        ref="tableRef"
-        :defaultParams="{
-          sorts: [{ name: 'createTime', order: 'desc' }],
-        }"
-        modeValue="CARD"
-        :params="params"
-      >
-        <template #headerLeftRender>
-          <RegistryComponent is="a-space" code="productAddButton" @save="refresh">
-            <j-permission-button
-              type="primary"
-              key="add"
-              @click="add"
-              hasPermission="device/Product:add"
-            >
-              <template #icon>
-                <AIcon type="PlusOutlined" />
-              </template>
-              {{ $t("Product.index.660348-0") }}
-            </j-permission-button>
-            <j-permission-button
-                key="quick"
-              v-if="hasSourceMenu && isNoCommunity"
-              hasPermission="device/Product:add"
-              @click="menuStory.jumpPage('device/Product/QuickCreate', {})"
-            >
-              {{ $t("Product.index.660348-35") }}
-            </j-permission-button>
-
-            <BatchDropdown
-                key="batch"
-              :actions="batchActions"
-            />
-            </RegistryComponent>
-        </template>
-        <template #deviceType="slotProps">
-          <div>{{ slotProps.deviceType.text }}</div>
-        </template>
-        <template #card="slotProps">
-          <CardBox
-            :value="slotProps"
-            :actions="getActions(slotProps, 'card')"
-            v-bind="slotProps"
-            :active="_selectedRowKeys.includes(slotProps.id)"
-            :status="slotProps.state"
-            @click="handleView(slotProps.id)"
-            :statusText="
-              slotProps.state === 1
-                ? $t('Product.index.660348-2')
-                : $t('Product.index.660348-3')
-            "
-            :statusNames="{
-              1: 'processing',
-              0: 'error',
-            }"
-          >
-            <template #img>
-              <slot name="img">
-                <Image
-                  :src="slotProps.photoUrl || device.deviceProduct"
-                  class="card-list-img-80"
-                />
-              </slot>
-            </template>
-            <template #content>
-              <j-ellipsis style="width: calc(100% - 100px); margin-bottom: 18px"
-                ><span style="font-weight: 600; font-size: 16px">
-                  {{ getI18nText(slotProps, 'name') }}
-                </span></j-ellipsis
-              >
-              <a-row>
-                <a-col :span="12">
-                  <div class="card-item-content-text">
-                    {{ $t("Product.index.660348-4") }}
-                  </div>
-                  <div>{{ slotProps?.deviceType?.text }}</div>
-                </a-col>
-                <a-col :span="12">
-                  <div class="card-item-content-text">
-                    {{ $t("Product.index.660348-5") }}
-                  </div>
-                  <j-ellipsis>
-                    <div>
-                      {{
-                        getI18nText(slotProps, 'accessName')
-                          ? getI18nText(slotProps, 'accessName')
-                          : $t("Product.index.660348-6")
-                      }}
-                    </div>
-                  </j-ellipsis>
-                </a-col>
-              </a-row>
-            </template>
-            <template #actions="item">
-              <j-permission-button
-                :disabled="item.disabled"
-                :popConfirm="item.popConfirm"
-                :tooltip="{
-                  ...item.tooltip,
-                }"
-                @click="item.onClick"
-                :hasPermission="item.permission ||
-                  item.key === 'view' ? true : 'device/Product:' + item.key
-                "
-              >
-                <AIcon type="DeleteOutlined" v-if="item.key === 'delete'" />
-                <template v-else>
-                  <AIcon :type="item.icon" />
-                  <span>{{ item?.text }}</span>
-                </template>
-              </j-permission-button>
-            </template>
-          </CardBox>
-        </template>
-        <template #state="slotProps">
-          <j-badge-status
-            :text="
-              slotProps.state === 1
-                ? $t('Product.index.660348-2')
-                : $t('Product.index.660348-3')
-            "
-            :status="slotProps.state"
-            :statusNames="{
-              1: 'processing',
-              0: 'error',
-            }"
+  <j-page-container class="product-page">
+    <FullPage :fixed="false">
+      <EqualHeightColumns class="product-page__layout" left-width="17rem" right-width="1fr">
+        <template #left>
+          <ProductCategoryTree
+            :tree-data="categoryTree"
+            :active-id="selectedCategoryId"
+            :loading="categoryLoading"
+            :can-add="canAddCategory"
+            :can-update="canUpdateCategory"
+            :can-delete="canDeleteCategory"
+            @select="handleCategorySelect"
+            @select-unclassified="handleUnclassifiedCategorySelect"
+            @add-root="openAddRootCategory"
+            @add-child="openAddChildCategory"
+            @edit="openEditCategory"
+            @delete="confirmDeleteCategory"
           />
         </template>
-        <template #name="slotProps">
-          {{ getI18nText(slotProps, 'name') }}
+        <template #right>
+          <section class="product-page__main">
+            <a-flex class="product-page__toolbar" :gap="16" align="center" wrap="wrap">
+              <ConditionFilter
+                class="product-page__search"
+                :fields="filterFields"
+                :common-fields="commonFilterFields"
+                :model-value="filterTerms"
+                :placeholder="$t('IotDeviceList.filter.conditionPlaceholder')"
+                @update:model-value="handleFilterTermsUpdate"
+                @change="handleFilterSearch"
+              />
+              <a-space class="product-page__actions">
+                <j-permission-button
+                  type="primary"
+                  key="add"
+                  @click="add"
+                  hasPermission="device/Product:add"
+                >
+                  <template #icon><AIcon type="PlusOutlined" /></template>
+                  {{ $t("Product.index.660348-0") }}
+                </j-permission-button>
+                <BatchDropdown key="batch" :actions="batchActions" />
+              </a-space>
+            </a-flex>
+            <JProTable
+              :columns="columns"
+              :request="queryProductList"
+              ref="tableRef"
+              :defaultParams="{
+                sorts: [{ name: 'createTime', order: 'desc' }],
+              }"
+              mode="TABLE"
+              :params="tableParams"
+            >
+              <template #deviceType="slotProps">
+                <div>{{ slotProps.deviceType?.text || '-' }}</div>
+              </template>
+              <template #state="slotProps">
+                <j-badge-status
+                  :text="slotProps.state === 1 ? $t('Product.index.660348-2') : $t('Product.index.660348-3')"
+                  :status="slotProps.state"
+                  :statusNames="{ 1: 'processing', 0: 'error' }"
+                />
+              </template>
+              <template #name="slotProps">
+                <div class="product-page__name-cell">
+                  <j-ellipsis>{{ getI18nText(slotProps, 'name') }}</j-ellipsis>
+                  <span>{{ slotProps.id }}</span>
+                </div>
+              </template>
+              <template #classifiedName="slotProps">
+                {{ getI18nText(slotProps, 'classifiedName') || '-' }}
+              </template>
+              <template #brandModel="slotProps">
+                {{ getBrandModel(slotProps) }}
+              </template>
+              <template #action="slotProps">
+                <a-space>
+                  <template v-for="i in getActions(slotProps)" :key="i.key">
+                    <j-permission-button
+                      :disabled="i.disabled"
+                      :popConfirm="i.popConfirm"
+                      :hasPermission="i.permission || i.key === 'view' ? true : 'device/Product:' + i.key"
+                      :tooltip="{ ...i.tooltip }"
+                      type="link"
+                      style="padding: 0; margin: 0"
+                      :danger="i.key === 'delete'"
+                      @click="i.onClick"
+                    >
+                      <template #icon><AIcon :type="i.icon" /></template>
+                    </j-permission-button>
+                  </template>
+                </a-space>
+              </template>
+            </JProTable>
+          </section>
         </template>
-        <template #accessName="slotProps">
-          {{ getI18nText(slotProps, 'accessName') || $t('Product.index.660348-6') }}
-        </template>
-        <template #describe="slotProps">
-          {{ getI18nText(slotProps, 'describe') }}
-        </template>
-        <template #action="slotProps">
-          <a-space>
-            <template v-for="i in getActions(slotProps, 'table')" :key="i.key">
-              <j-permission-button
-                :disabled="i.disabled"
-                :popConfirm="i.popConfirm"
-                :hasPermission="i.permission ||
-                  i.key === 'view' ? true : 'device/Product:' + i.key
-                "
-                :tooltip="{
-                  ...i.tooltip,
-                }"
-                type="link"
-                style="padding: 0; margin: 0"
-                :danger="i.key === 'delete'"
-                @click="i.onClick"
-              >
-                <template #icon>
-                  <AIcon :type="i.icon" />
-                </template>
-              </j-permission-button>
-            </template>
-          </a-space>
-        </template>
-      </JProTable>
+      </EqualHeightColumns>
     </FullPage>
-    <!-- {{ $t('Product.index.660348-0') }}、{{ $t('Product.index.660348-13') }} -->
-    <Save ref="saveRef" :isAdd="isAdd" :title="title" @success="refresh" ></Save>
-
-    <!-- 同步缓存组件 -->
-    <SyncCache v-if="syncCacheVisible" :params="params" @success="refresh" @close="syncCacheVisible = false"/>
+    <Save ref="saveRef" :isAdd="isAdd" :title="title" @success="refresh" />
+    <ModifyModal
+      ref="categoryModalRef"
+      :title="categoryTitle"
+      :isAdd="categoryModalMode"
+      :isChild="categoryModalChildMode"
+      @refresh="handleCategoryChanged"
+    />
+    <SyncCache v-if="syncCacheVisible" :params="tableParams" @success="refresh" @close="syncCacheVisible = false" />
   </j-page-container>
 </template>
 
@@ -184,7 +114,6 @@
 import { onlyMessage } from "@jetlinks-web/utils";
 import {
   getProviders,
-  category,
   queryOrgThree,
   queryGatewayList,
   queryProductList,
@@ -197,12 +126,19 @@ import { downloadJson, accessConfigTypeFilter, isNoCommunity, mergeObjectArrays 
 import { omit, cloneDeep } from "lodash-es";
 import Save from "./Save/index.vue";
 import SyncCache from "./components/SyncCache.vue";
+import ProductCategoryTree, { type ProductCategoryTreeNode } from "./components/ProductCategoryTree.vue";
+import ModifyModal from "../Category/components/modifyModal/index.vue";
+import { queryTree, deleteTree } from "../../../api/category";
 import { useMenuStore, useAuthStore } from "@jetlinks-web-core/store";
 import { useRouterParams } from "@jetlinks-web/hooks";
-import { device } from "../../../assets";
-import TagSearch from "../Instance/components/TagSearch.vue";
 import { accessType } from "../data";
 import { useI18n } from "vue-i18n";
+import { Modal } from "ant-design-vue";
+import ConditionFilter, {
+  buildQueryFilter,
+  type ConditionFilterField,
+  type ConditionFilterTerm,
+} from '@jetlinks-web-core/components/ConditionFilter';
 import { useTermOptions } from '@jetlinks-web/components/es/Search/hooks/useTermOptions'
 import BatchDropdown from "@jetlinks-web-core/components/BatchDropdown/index.vue";
 import {isSaaS} from '@jetlinks-web-core/utils/consts'
@@ -210,61 +146,43 @@ import { getI18nText } from '../../../utils/i18n'
 
 const { t: $t } = useI18n();
 
-const slots = useSlots();
-/**
- * 表格数据
- */
 const menuStory = useMenuStore();
+const authStore = useAuthStore();
 const isAdd = ref<number>(0);
 const title = ref<string>("");
-const params = ref<Record<string, any>>({});
-const { termOptions } = useTermOptions({ pick: ['eq', 'not']})
+const productSearchParams = ref<Record<string, any>>({});
+const filterTerms = ref<ConditionFilterTerm[]>([]);
+const submittedFilterTerms = ref<ConditionFilterTerm[]>([]);
+const selectedCategoryId = ref<string>();
+const categoryTree = ref<ProductCategoryTreeNode[]>([]);
+const categoryLoading = ref(false);
+const productUnclassifiedScopeId = '__product-unclassified__';
 const { termOptions: dimAssetsTermOptions } = useTermOptions({ pick: ['eq']})
 
 const columns = [
-  {
-    title: "ID",
-    dataIndex: "id",
-    key: "id",
-    scopedSlots: true,
-    width: 200,
-    ellipsis: true,
-  },
   {
     title: $t("Product.index.660348-7"),
     dataIndex: "name",
     key: "name",
     scopedSlots: true,
-    width: 220,
+    width: 240,
     ellipsis: true,
   },
   {
-    title: $t("Product.index.660348-5"),
-    dataIndex: "accessName",
-    key: "accessName",
+    title: $t("Product.index.660348-36"),
+    dataIndex: "classifiedName",
+    key: "classifiedName",
     scopedSlots: true,
-    width: 220,
+    width: 180,
     ellipsis: true,
   },
   {
-    title: $t("Product.index.660348-4"),
-    dataIndex: "deviceType",
-    key: "deviceType",
+    title: $t("Product.index.660348-40"),
+    dataIndex: "brandModel",
+    key: "brandModel",
     scopedSlots: true,
     ellipsis: true,
-    width: 120,
-  },
-  {
-    key: "id$dev-instance",
-    dataIndex: "id$dev-instance",
-    title: $t("Product.index.660348-8"),
-    hideInTable: true,
-    search: {
-      type: "component",
-      components: TagSearch,
-      termOptions: termOptions,
-      defaultTermType: 'eq'
-    },
+    width: 180,
   },
   {
     title: $t("Product.index.660348-9"),
@@ -275,11 +193,12 @@ const columns = [
     width: 90,
   },
   {
-    title: $t("Product.index.660348-10"),
-    dataIndex: "describe",
-    key: "describe",
+    title: $t("Product.index.660348-4"),
+    dataIndex: "deviceType",
+    key: "deviceType",
     scopedSlots: true,
     ellipsis: true,
+    width: 120,
   },
   {
     title: $t("Product.index.660348-11"),
@@ -290,12 +209,38 @@ const columns = [
     ellipsis: true,
   },
 ];
-const permission = useAuthStore().hasPermission(`device/Product:import`);
-const hasSourceMenu = menuStory.hasMenu(`resource/Resource`);
 const hasDepartmentMenu = menuStory.hasMenu('system/Department');
-const _selectedRowKeys = ref<string[]>([]);
 const currentForm = ref({});
 const syncCacheVisible = ref(false)
+const categoryModalRef = ref();
+const categoryModalMode = ref(0);
+const categoryModalChildMode = ref(0);
+const categoryTitle = ref('');
+const canAddCategory = computed(() => authStore.hasPermission('device/Product:category-add'));
+const canUpdateCategory = computed(() => authStore.hasPermission('device/Product:category-update'));
+const canDeleteCategory = computed(() => authStore.hasPermission('device/Product:category-delete'));
+
+const tableParams = computed(() => {
+  const params = cloneDeep(productSearchParams.value);
+  if (!selectedCategoryId.value) {
+    return params;
+  }
+
+  // 分类选择是列表查询条件，分类名称输入只由左侧组件在本地过滤。
+  const categoryTerm = selectedCategoryId.value === productUnclassifiedScopeId
+    ? { column: 'classifiedId', termType: 'isnull' }
+    : { column: 'classifiedId', termType: 'eq', value: selectedCategoryId.value };
+
+  return {
+    ...params,
+    terms: [
+      ...(params.terms || []),
+      {
+        terms: [categoryTerm],
+      },
+    ],
+  };
+});
 
 // 批量操作配置
 const batchActions = computed(() => {
@@ -322,7 +267,7 @@ const batchActions = computed(() => {
     },
     {
       key: 'syncCache',
-      text: '同步缓存',
+      text: $t('Product.index.660348-41'),
       icon: 'SyncOutlined',
       permission: 'device/Product:update',
       onClick: () => {
@@ -333,10 +278,7 @@ const batchActions = computed(() => {
   return arr
 });
 
-const getActions = (
-  data: Partial<Record<string, any>>,
-  type: "card" | "table",
-): any[] => {
+const getActions = (data: Partial<Record<string, any>>): any[] => {
   if (!data) {
     return [];
   }
@@ -454,7 +396,6 @@ const getActions = (
   if (parentActions && parentActions.length > 0) {
     actions = mergeObjectArrays(actions, parentActions)
   }
-  if (type === "card") return actions.filter((i: any) => i.key !== "view");
   return actions;
 };
 
@@ -467,10 +408,6 @@ const add = () => {
   nextTick(() => {
     saveRef.value.show(currentForm.value);
   });
-};
-
-const handleAdd = () => {
-  add();
 };
 
 /**
@@ -527,8 +464,102 @@ const handleView = (id: string) => {
 const refresh = () => {
   tableRef.value?.reload();
 };
+
+const getBrandModel = (product: Record<string, any>) => {
+  const manufacturer = getI18nText(product, 'manufacturer');
+  const model = getI18nText(product, 'model');
+  return [manufacturer, model].filter(Boolean).join(' / ') || '-';
+};
+
+const normalizeCategoryTree = (nodes: Record<string, any>[] = []): ProductCategoryTreeNode[] => {
+  return nodes.map((node) => ({
+    ...node,
+    children: normalizeCategoryTree(node.children || node._children || []),
+  }));
+};
+
+const hasCategory = (nodes: ProductCategoryTreeNode[], id?: string): boolean => {
+  if (!id) {
+    return false;
+  }
+  return nodes.some((node) => node.id === id || hasCategory(node.children || [], id));
+};
+
+const refreshCategoryTree = async () => {
+  categoryLoading.value = true;
+  try {
+    const response = await queryTree({
+      paging: false,
+      sorts: [{ name: 'sortIndex', order: 'asc' }],
+    });
+    if (response.status === 200) {
+      categoryTree.value = normalizeCategoryTree(response.result || []);
+      if (
+        selectedCategoryId.value !== productUnclassifiedScopeId
+        && !hasCategory(categoryTree.value, selectedCategoryId.value)
+      ) {
+        selectedCategoryId.value = undefined;
+      }
+    }
+  } finally {
+    categoryLoading.value = false;
+  }
+};
+
+const handleCategorySelect = (id?: string) => {
+  selectedCategoryId.value = id;
+  refresh();
+};
+
+const handleUnclassifiedCategorySelect = () => {
+  selectedCategoryId.value = productUnclassifiedScopeId;
+  refresh();
+};
+
+const openAddRootCategory = () => {
+  categoryTitle.value = $t('Category.index.779033-15');
+  categoryModalMode.value = 0;
+  categoryModalChildMode.value = 3;
+  nextTick(() => categoryModalRef.value?.show({}));
+};
+
+const openAddChildCategory = (category: ProductCategoryTreeNode) => {
+  categoryTitle.value = $t('Category.index.779033-8');
+  categoryModalMode.value = 0;
+  categoryModalChildMode.value = category.children?.length ? 1 : 2;
+  nextTick(() => categoryModalRef.value?.show(category));
+};
+
+const openEditCategory = (category: ProductCategoryTreeNode) => {
+  categoryTitle.value = $t('Category.index.779033-6');
+  categoryModalMode.value = 2;
+  categoryModalChildMode.value = 0;
+  nextTick(() => categoryModalRef.value?.show(category));
+};
+
+const confirmDeleteCategory = (category: ProductCategoryTreeNode) => {
+  Modal.confirm({
+    title: $t('Category.index.779033-10'),
+    okText: $t('modifyModal.index.177674-0'),
+    cancelText: $t('Category.index.779033-12'),
+    onOk: async () => {
+      const response = await deleteTree(category.id);
+      if (response.status === 200) {
+        onlyMessage($t('Category.index.779033-13'));
+        await handleCategoryChanged();
+      } else {
+        onlyMessage($t('Category.index.779033-14'), 'error');
+      }
+    },
+  });
+};
+
+const handleCategoryChanged = async () => {
+  await refreshCategoryTree();
+  refresh();
+};
+
 // 筛选
-const listData = ref([]);
 const typeList = ref([]);
 const tableRef = ref<Record<string, any>>({});
 const query = reactive({
@@ -642,23 +673,6 @@ const query = reactive({
       },
     },
     {
-      title: $t("Product.index.660348-33"),
-      key: "classified",
-      dataIndex: "classifiedId",
-      search: {
-        type: "treeSelect",
-        options: async () => {
-          return new Promise((res) => {
-            category({
-              paging: false,
-            }).then((resp) => {
-              res(resp.result);
-            });
-          });
-        },
-      },
-    },
-    {
       title: $t("Product.index.660348-11"),
       key: "action",
       fixed: "right",
@@ -667,20 +681,12 @@ const query = reactive({
     },
   ],
 });
+const filterFields = computed<ConditionFilterField[]>(() =>
+  query.columns.filter((column) => column.search),
+);
+const commonFilterFields = ['name', 'id', 'deviceType', 'accessProvider', 'state'];
 const saveRef = ref();
-const fileRef = ref();
-
-const handleFileChange = (event: any) => {
-  const file = event.target.files[0];
-  if (file) {
-    beforeUpload(file);
-  }
-};
-
-
-
-const handleSearch = (e: any) => {
-  // console.log(e, 'e')
+const applyProductSearch = (e: Record<string, any>) => {
   const newTerms = cloneDeep(e);
   if (newTerms.terms?.length) {
     newTerms.terms.forEach((a: any) => {
@@ -726,7 +732,16 @@ const handleSearch = (e: any) => {
     });
   }
 
-  params.value = newTerms;
+  productSearchParams.value = newTerms;
+};
+
+const handleFilterTermsUpdate = (terms: ConditionFilterTerm[] = []) => {
+  filterTerms.value = terms;
+};
+
+const handleFilterSearch = (payload?: { terms?: ConditionFilterTerm[] }) => {
+  submittedFilterTerms.value = payload?.terms || filterTerms.value;
+  applyProductSearch(buildQueryFilter(submittedFilterTerms.value, filterFields.value));
 };
 const routerParams = useRouterParams();
 
@@ -736,7 +751,7 @@ onMounted(() => {
   }
   if (routerParams.params.value?.resourceId) {
     setTimeout(() => {
-      params.value = {
+      productSearchParams.value = {
         terms: [
           {
             column: "id$in-res-quick$product",
@@ -786,23 +801,65 @@ onMounted(() => {
       },
     });
   }
+  refreshCategoryTree();
 });
 </script>
 
 <style lang="less" scoped>
-.box {
-  padding: 20px;
-  background: #f0f2f5;
+.product-page {
+  &__layout {
+    height: calc(100vh - 11rem);
+    min-height: 0;
+  }
+
+  &__main {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    overflow: auto;
+    padding: var(--space-4);
+    background: var(--color-jet-bg-container);
+    border: 1px solid var(--color-jet-border);
+    border-radius: var(--radius-jet-lg);
+  }
+
+  &__toolbar {
+    justify-content: space-between;
+    margin-bottom: var(--space-4);
+  }
+
+  &__search {
+    flex: 1 1 32rem;
+    min-width: 18rem;
+  }
+
+  &__actions {
+    flex: 0 0 auto;
+  }
+
+  &__name-cell {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+
+    > span {
+      color: var(--color-jet-text-secondary);
+      font-size: var(--fs-12);
+    }
+  }
 }
 
-.productImg {
-  width: 80px;
-  height: 80px;
-}
+@media (max-width: 48rem) {
+  .product-page {
+    &__layout {
+      min-height: auto;
+      height: auto;
+    }
 
-.productName {
-  white-space: nowrap; /*强制在同一行内显示所有文本，直到文本结束或者遭遇br标签对象才换行。*/
-  overflow: hidden; /*超出部分隐藏*/
-  text-overflow: ellipsis; /*隐藏部分以省略号代替*/
+    &__search {
+      min-width: 100%;
+    }
+  }
 }
 </style>
