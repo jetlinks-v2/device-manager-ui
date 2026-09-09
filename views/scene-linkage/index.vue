@@ -18,7 +18,7 @@
           </j-permission-button>
         </template>
       </PageHeader>
-      <div class="scene-list-table">
+      <FullPage hasPadding :fixed="false" class="scene-list-table">
 	      <ConditionFilter :fields="filterFields" :common-fields="filterCommonFields" :model-value="terms" :placeholder="$t('IotSceneLinkage.placeholder.search')" @update:model-value="terms = $event" @change="reload($event)" />
 	      <div class="scene-list__count">{{ $t('IotSceneLinkage.list.total', { total }) }}</div>
 	      <a-table class="scene-list__table" :loading="loading" :columns="columns" :data-source="list" row-key="scene.id" :pagination="pagination" @change="changePage">
@@ -30,7 +30,7 @@
 			      <template v-else-if="column.dataIndex === 'actions'"><div class="scene-list__actions"><span><a-button v-if="sceneTriggerType(record.scene) === 'manual'" type="link" @click="confirmExecute(record.scene)">{{ $t('IotSceneLinkage.action.execute') }}</a-button></span><j-permission-button type="link" hasPermission="iot-user/scene-linkage:update" @click="openEditor(record.scene.id)">{{ $t('IotSceneLinkage.action.edit') }}</j-permission-button><a-dropdown><a-button type="link"><AIcon type="MoreOutlined" /></a-button><template #overlay><a-menu><a-menu-item @click="recordScene = record.scene">{{ $t('IotSceneLinkage.action.records') }}</a-menu-item><a-menu-item v-if="stateValue(record.scene) !== 'disable'" danger disabled><a-tooltip :title="$t('IotSceneLinkage.message.disableBeforeDelete')"><span class="scene-list__delete-tooltip">{{ $t('IotSceneLinkage.action.delete') }}</span></a-tooltip></a-menu-item><a-menu-item v-else danger @click="confirmRemove(record.scene)">{{ $t('IotSceneLinkage.action.delete') }}</a-menu-item></a-menu></template></a-dropdown></div></template>
 		      </template>
 	      </a-table>
-      </div>
+      </FullPage>
     </section>
   </j-page-container>
 </template>

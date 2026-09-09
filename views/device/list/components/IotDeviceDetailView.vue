@@ -1761,8 +1761,8 @@ watch(activeRealtimePropertyKeySignature, async () => {
   padding: var(--space-3) var(--space-4);
   margin-bottom: 0.875rem;
   border: 0.0625rem solid var(--jet-theme-border-secondary);
-  border-radius: 0.5rem;
-  background: var(--jet-theme-bg-container);
+  border-radius: var(--r-6);
+  background: var(--bg-trans-8);
 }
 
 .dd-hero__back.ant-btn {
@@ -2017,8 +2017,8 @@ watch(activeRealtimePropertyKeySignature, async () => {
 
 .dd-tab-shell {
   border: 0.0625rem solid var(--jet-theme-border-secondary);
-  border-radius: var(--jet-theme-radius);
-  background: var(--jet-theme-bg-container);
+  border-radius: var(--r-6);
+  background: var(--bg-trans-8);
   overflow: hidden;
 }
 

@@ -1,7 +1,7 @@
 <template>
   <j-page-container>
     <div class="relationship-container">
-      <FullPage :fixed="false">
+      <FullPage :fixed="false" hasPadding>
         <j-pro-table
           ref="tableRef"
           class="pro-table__no-padding"

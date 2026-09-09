@@ -1,6 +1,6 @@
 <template>
-  <div class="iot-device-list">
-    <EqualHeightColumns class="iot-device-list__layout" height="auto" left-width="15rem" right-width="1fr">
+  <FullPage transparentBackground :fixed="false" class="iot-device-list">
+    <EqualHeightColumns class="iot-device-list__layout" left-width="15rem" right-width="1fr">
       <template #left>
         <IotDeviceScopeSidebar
           :active-type="scopeType"
@@ -22,55 +22,57 @@
       <template #right>
         <section class="iot-device-list__main">
           <IotDeviceAssetSummary :summary="deviceSummary" />
-          <a-flex class="iot-device-list__search-actions" :gap="16" align="center" wrap="wrap">
-            <IotDeviceAssetSearchBar
-              class="iot-device-list__search"
-              :filter-fields="filterFields"
-              :common-filter-fields="commonFilterFields"
-              :filter-terms="filterTerms"
-              @update:filter-terms="handleFilterTermsUpdate"
-              @search="handleFilterSearch"
-            />
-            <a-flex class="iot-device-list__action-group" :gap="16" align="center" wrap="wrap">
-              <IotDeviceAssetBatchActions
-                :selected-count="selectedRowKeys.length"
-                :running-action="runningAction"
-                :on-batch-toggle="toggleSelectedDevices"
-                :on-assign-area="openAssignAreaModal"
-                :on-assign-group="openAssignGroupModal"
+          <ContentPanel>
+            <a-flex class="iot-device-list__search-actions" :gap="16" align="center" wrap="wrap">
+              <IotDeviceAssetSearchBar
+                class="iot-device-list__search"
+                :filter-fields="filterFields"
+                :common-filter-fields="commonFilterFields"
+                :filter-terms="filterTerms"
+                @update:filter-terms="handleFilterTermsUpdate"
+                @search="handleFilterSearch"
               />
-              <j-permission-button class="project-onboarding-target--iot-device-create" type="primary" :hasPermission="true" @click="openCreateDrawer">
-                <template #icon><AIcon type="PlusOutlined" /></template>
-                {{ $t('IotDeviceList.action.create') }}
-              </j-permission-button>
+              <a-flex class="iot-device-list__action-group" :gap="16" align="center" wrap="wrap">
+                <IotDeviceAssetBatchActions
+                  :selected-count="selectedRowKeys.length"
+                  :running-action="runningAction"
+                  :on-batch-toggle="toggleSelectedDevices"
+                  :on-assign-area="openAssignAreaModal"
+                  :on-assign-group="openAssignGroupModal"
+                />
+                <j-permission-button class="project-onboarding-target--iot-device-create" type="primary" :hasPermission="true" @click="openCreateDrawer">
+                  <template #icon><AIcon type="PlusOutlined" /></template>
+                  {{ $t('IotDeviceList.action.create') }}
+                </j-permission-button>
+              </a-flex>
             </a-flex>
-          </a-flex>
-          <IotDeviceAssetTable
-      :total-devices="totalDevices"
-      :selected-count="selectedRowKeys.length"
-      :has-active-filters="hasActiveFilters"
-      :load-error="loadError"
-      :table-params="tableParams"
-      :table-pagination="tablePagination"
-      :table-request="tableRequest"
-      :row-selection="rowSelection"
-      :connection-status-of="connectionStatusOf"
-      :product-name-text="productNameText"
-      :area-text="areaText"
-      :area-full-text="areaFullText"
-      :group-text="groupText"
-      :group-full-text="groupFullText"
-      :is-device-disabled="isDeviceDisabled"
-      :action-busy-id="actionBusyId"
-      :on-detail="goToDetail"
-      :on-edit="openEditDrawer"
-      :on-toggle="toggleDeviceEnabled"
-      :on-delete="deleteDevice"
-          />
+            <IotDeviceAssetTable
+              :total-devices="totalDevices"
+              :selected-count="selectedRowKeys.length"
+              :has-active-filters="hasActiveFilters"
+              :load-error="loadError"
+              :table-params="tableParams"
+              :table-pagination="tablePagination"
+              :table-request="tableRequest"
+              :row-selection="rowSelection"
+              :connection-status-of="connectionStatusOf"
+              :product-name-text="productNameText"
+              :area-text="areaText"
+              :area-full-text="areaFullText"
+              :group-text="groupText"
+              :group-full-text="groupFullText"
+              :is-device-disabled="isDeviceDisabled"
+              :action-busy-id="actionBusyId"
+              :on-detail="goToDetail"
+              :on-edit="openEditDrawer"
+              :on-toggle="toggleDeviceEnabled"
+              :on-delete="deleteDevice"
+            />
+          </ContentPanel>
         </section>
       </template>
     </EqualHeightColumns>
-  </div>
+  </FullPage>
 
   <IotAddDeviceDrawer
     v-model:open="deviceFormOpen"

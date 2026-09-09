@@ -1,35 +1,36 @@
 <template>
 	<j-page-container>
+    <PageHeader
+      show-back
+      :title="route.params.id ? $t('IotSceneLinkage.title.editRule') : $t('IotSceneLinkage.title.addRule')"
+    >
+      <template #description>
+        <div v-if="hasRuleContent" class="scene-editor__summary">
+          <SceneRuleSummary :form="form" :users="notifyUsers" @change="form.summary = $event" @title-change="form.summaryTitle = $event"/>
+        </div>
+      </template>
+      <template #actions>
+        <div class="scene-editor__header-actions">
+          <a-button @click="router.back()">{{ $t('IotSceneLinkage.action.cancel') }}</a-button>
+          <a-button type="primary" :loading="saving" @click="save">{{
+              $t('IotSceneLinkage.action.saveScene')
+            }}
+          </a-button>
+        </div>
+      </template>
+    </PageHeader>
 		<main class="scene-editor">
-			<PageHeader
-				show-back
-					:title="route.params.id ? $t('IotSceneLinkage.title.editRule') : $t('IotSceneLinkage.title.addRule')"
-			>
-				<template #description>
-					<div v-if="hasRuleContent" class="scene-editor__summary">
-						<SceneRuleSummary :form="form" :users="notifyUsers" @change="form.summary = $event" @title-change="form.summaryTitle = $event"/>
-					</div>
-				</template>
-				<template #actions>
-					<div class="scene-editor__header-actions">
-						<a-button @click="router.back()">{{ $t('IotSceneLinkage.action.cancel') }}</a-button>
-						<a-button type="primary" :loading="saving" @click="save">{{
-								$t('IotSceneLinkage.action.saveScene')
-							}}
-						</a-button>
-					</div>
-				</template>
-			</PageHeader>
-			<header class="scene-editor__header">
+
+			<ContentPanel class="scene-editor__header">
 				<div class="scene-editor__field scene-editor__name-field">
 						{{ $t('IotSceneLinkage.form.sceneName') }}
 					<a-input v-model:value="form.name"
 					         :class="['scene-editor__name', { 'scene-editor__invalid': hasError('name') }]"
 					         :placeholder="$t('IotSceneLinkage.placeholder.editorName')"/>
 					<span v-if="hasError('name')" class="scene-editor__name-error">{{ errorMessage('name') }}</span></div>
-			</header>
+			</ContentPanel>
 
-			<section :class="['scene-editor__section', { 'scene-editor__multi-trigger': isMulti }]">
+			<ContentPanel :class="['scene-editor__section', { 'scene-editor__multi-trigger': isMulti }]">
 				<h3><i class="scene-editor__marker scene-editor__marker--trigger"/>{{ $t('IotSceneLinkage.rule.when') }}<small>{{
 						$t('IotSceneLinkage.editor.triggerHint')
 					}}</small></h3>
@@ -184,7 +185,7 @@
 							type="PlusOutlined"/>{{ $t('IotSceneLinkage.editor.addAnotherTrigger') }}</a-button></span></a-tooltip>
 					</template>
 				</template>
-			</section>
+			</ContentPanel>
 			<section v-if="form.additionalConditions.length" class="scene-editor__section scene-editor__conditions">
 				<h3><i class="scene-editor__marker scene-editor__marker--condition"/>{{ $t('IotSceneLinkage.rule.and') }}<small>{{
 						$t('IotSceneLinkage.editor.conditionHint')
@@ -204,7 +205,7 @@
 				<AIcon type="PlusOutlined"/>
 				{{ $t('IotSceneLinkage.editor.addCondition') }}
 			</a-button>
-			<section
+			<ContentPanel
 				:class="['scene-editor__section', { 'scene-editor__invalid': hasError('action') || hasError('notify') }]">
 				<h3><i class="scene-editor__marker scene-editor__marker--action"/>{{
 						$t('IotSceneLinkage.rule.then')
@@ -247,8 +248,8 @@
 				</a-button>
 				<p v-if="hasError('action') || hasError('notify')" class="scene-editor__error-message">
 					{{ errorMessage(validation.field) }}</p>
-			</section>
-			<section v-if="isMulti || form.triggerKind !== 'state'" class="scene-editor__advanced"
+			</ContentPanel>
+			<ContentPanel v-if="isMulti || form.triggerKind !== 'state'" class="scene-editor__advanced"
 			         @click="advancedExpanded = !advancedExpanded"><i
 				class="scene-editor__marker"/>{{ $t('IotSceneLinkage.editor.advanced') }}<i
 				class="scene-editor__advanced-toggle">
@@ -269,7 +270,7 @@
 							}}</small></template>
 					</div>
 				</div>
-			</section>
+			</ContentPanel>
 		</main>
 		<TriggerPickerModal :open="triggerPickerVisible" :options="availableTriggerOptions" @cancel="cancelTriggerPicker"
 		                    @select="selectTriggerFromPicker"/>

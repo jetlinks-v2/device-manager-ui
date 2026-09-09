@@ -1,5 +1,5 @@
 <template>
-  <aside class="iot-device-scope" :aria-label="$t('IotDeviceList.scope.aria')">
+  <ContentPanel class="iot-device-scope" :aria-label="$t('IotDeviceList.scope.aria')">
     <a-segmented v-model:value="scopeType" block :options="scopeOptions" />
     <div class="iot-device-scope__body">
       <template v-if="scopeType === 'area'">
@@ -99,7 +99,7 @@
         </a-button>
       </template>
     </div>
-  </aside>
+  </ContentPanel>
 </template>
 
 <script setup lang="ts">
@@ -178,6 +178,7 @@ const onGroupSelect: TreeProps['onSelect'] = (keys) => select(String(keys[0] || 
   grid-template-rows: auto minmax(0, 1fr);
   gap: var(--space-3);
   min-height: 0;
+  height: 100%;
 }
 
 .iot-device-scope__body {
