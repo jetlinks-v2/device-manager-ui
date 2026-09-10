@@ -234,9 +234,10 @@ const handleUpdate = (data: Partial<Record<string, any>>) => {
     console.log(data);
 };
 
-const handleManualAdd = () => {
+// 将解析前已填写和上传的数据传入手工表单，避免重复录入和上传。
+const handleManualAdd = (data: Partial<FormDataType>) => {
     applicationVisible.value = false;
-    current.value = {};
+    current.value = data;
     visible.value = true;
 };
 const handleEdit = (data: Partial<Record<string, any>>) => {

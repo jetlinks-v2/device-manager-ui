@@ -1,5 +1,5 @@
 import { ref, watch, type Ref } from 'vue'
-import { countDevice_api } from '@device-manager-ui/api/device'
+import { countDevice_api, type DeviceQueryTerm } from '@device-manager-ui/api/device'
 import { batchDeviceNodeSummary_api, type DeviceGroup } from '@device-manager-ui/api/deviceGroup'
 import type { ProjectArea } from '@device-manager-ui/modules/defaults/types'
 import { IOT_UNASSIGNED_GROUP_SCOPE_ID, IOT_UNBOUND_AREA_SCOPE_ID } from './useIotDeviceAssetFilters'
@@ -7,7 +7,7 @@ import { IOT_UNASSIGNED_GROUP_SCOPE_ID, IOT_UNBOUND_AREA_SCOPE_ID } from './useI
 type ScopeCounts = Record<string, number>
 const areaScopeKey = (areaId: string) => `area:${areaId}`
 
-function buildAreaScopeIds(areas: ProjectArea[]): Record<string, string[]> {
+export function buildAreaScopeIds(areas: ProjectArea[]): Record<string, string[]> {
   const childrenByParent = new Map<string, string[]>()
 
   areas.forEach((area) => {
@@ -41,6 +41,7 @@ export function useIotDeviceScopeCounts(
   areas: Ref<ProjectArea[]>,
   groups: Ref<DeviceGroup[]>,
   refreshKey: Ref<number>,
+  baseTerms: Ref<DeviceQueryTerm[] | undefined> = ref(),
 ) {
   const totalDeviceCount = ref(0)
   const areaDeviceCounts = ref<ScopeCounts>({})
@@ -55,7 +56,7 @@ export function useIotDeviceScopeCounts(
     const areaScopeIds = buildAreaScopeIds(areas.value)
     const groupIds = groups.value.map((group) => group.id).filter(Boolean)
     const [total, scopeSummaries] = await Promise.all([
-      countDevice_api().catch(() => 0),
+      countDevice_api({}, baseTerms.value).catch(() => 0),
       batchDeviceNodeSummary_api([
         ...areas.value.map((area) => {
           const scopeIds = areaScopeIds[area.id] ?? [area.id]
@@ -92,7 +93,7 @@ export function useIotDeviceScopeCounts(
             terms: groupIds.length ? [{ column: 'id', termType: 'dev-group$not', value: groupIds }] : [],
           },
         },
-      ]).catch(() => []),
+      ], baseTerms.value).catch(() => []),
     ])
 
     // 设备写操作与范围切换可能并发触发统计刷新，只保留最新结果。
@@ -106,7 +107,7 @@ export function useIotDeviceScopeCounts(
     unassignedGroupDeviceCount.value = scopeCountMap[IOT_UNASSIGNED_GROUP_SCOPE_ID] ?? 0
   }
 
-  watch([projectId, areas, groups, refreshKey], ([nextProjectId]) => {
+  watch([projectId, areas, groups, refreshKey, baseTerms], ([nextProjectId]) => {
     if (!nextProjectId) {
       totalDeviceCount.value = 0
       areaDeviceCounts.value = {}

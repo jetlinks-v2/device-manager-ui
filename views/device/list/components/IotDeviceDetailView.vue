@@ -291,6 +291,7 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
+import { useMenuStore } from '@jetlinks-web-core/store'
 
 import { onlyMessage } from '@jetlinks-web/utils'
 import { IconValueView } from '@jetlinks-web-core/components/IconValue'
@@ -302,7 +303,7 @@ import {
 import { DEVICE_CATEGORY_META } from '../hooks/useDeviceLibraryMeta'
 import { useDeviceLibrary } from '../hooks/useDeviceLibrary'
 import { useIotDataAccessRefresh } from '../hooks/useIotDataAccessRefresh'
-import { buildIotDeviceHealthPath, buildIotDeviceListPath, resolveIotProjectId } from '../hooks/useIotDeviceRouting'
+import { buildIotDeviceHealthPath, resolveIotProjectId } from '../hooks/useIotDeviceRouting'
 import { getIotDeviceConnectionStatus } from '../hooks/useIotDeviceStatus'
 import type { DeviceCategory, DeviceTemplate } from '../services/device-library/types'
 import { iotDeviceService } from '../services/iotDevice.service'
@@ -366,6 +367,7 @@ type AdvancedInnerTab = 'connection' | 'thing-model' | 'parsing' | 'children' | 
 type ThingModelKind = 'properties' | 'events' | 'functions' | 'tags'
 
 const route = useRoute()
+const deviceMenu = useMenuStore()
 const router = useRouter()
 const { t: $t } = useI18n()
 
@@ -572,7 +574,7 @@ function openEditDrawer() {
 }
 
 function backToDeviceList() {
-  void router.push(buildIotDeviceListPath(projectId.value, route))
+  deviceMenu.jumpPage('iot-user-device-list', { query: { ...route.query } })
 }
 
 async function onDeviceSaved() {
@@ -617,7 +619,7 @@ async function confirmDeleteDevice() {
   try {
     await deleteDevice_api(current.id)
     onlyMessage($t('IotDeviceDetail.detail.deletedMessage', { name: current.name }))
-    await router.push(buildIotDeviceListPath(projectId.value, route))
+    backToDeviceList()
   } catch (error) {
     actionError.value = error instanceof Error ? error.message : $t('IotDeviceDetail.detail.deleteFailed')
     onlyMessage(actionError.value, 'error')

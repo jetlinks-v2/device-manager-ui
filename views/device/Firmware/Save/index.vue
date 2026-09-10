@@ -413,14 +413,13 @@ const changeSignMethod = () => {
 watch(
     () => props.data,
     (value) => {
-        if (value.id) {
-            // 协议化固件不返回旧式 properties，编辑表单统一使用空数组。
-            const properties = Array.isArray(value.properties)
-                ? value.properties
-                : [];
-            formData.value = { ...value, properties };
-            dynamicValidateForm.properties = properties;
-        }
+        // 新增时也接收解析失败前的数据，缺失字段沿用表单默认值。
+        // 协议化固件不返回旧式 properties，统一使用空数组。
+        const properties = Array.isArray(value.properties)
+            ? value.properties
+            : [];
+        formData.value = { ...formData.value, ...value, properties };
+        dynamicValidateForm.properties = properties;
     },
     { immediate: true, deep: true },
 );

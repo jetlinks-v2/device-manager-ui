@@ -341,7 +341,10 @@ export const queryDeviceBoundGroup_api = async (deviceId: string): Promise<Devic
   return null
 }
 
-export const queryDeviceBoundGroups_api = async (deviceIds: string[]): Promise<Record<string, DeviceGroup[]>> => {
+export const queryDeviceBoundGroups_api = async (
+  deviceIds: string[],
+  baseTerms?: DeviceGroupQueryTerm[],
+): Promise<Record<string, DeviceGroup[]>> => {
   const ids = [...new Set(deviceIds.filter(Boolean))]
   if (!ids.length) return {}
 
@@ -352,7 +355,16 @@ export const queryDeviceBoundGroups_api = async (deviceIds: string[]): Promise<R
     try {
       const response = await request.post(
         '/device/group/device/_runtime-query',
-        buildGroupDeviceQueryBody(group.id, {
+        // 指定资产范围时不叠加普通设备默认排除条件，否则网关无法回显所属分组。
+        baseTerms ? buildQueryBody({
+          pageIndex: 0,
+          pageSize: ids.length,
+          terms: [
+            ...baseTerms,
+            { column: 'id', termType: 'dev-group', value: group.id },
+            { column: 'id', termType: 'in', value: ids },
+          ],
+        }) : buildGroupDeviceQueryBody(group.id, {
           pageIndex: 0,
           pageSize: ids.length,
           terms: [{ column: 'id', termType: 'in', value: ids }],
@@ -452,12 +464,16 @@ export const getDeviceSummary_api = async (params: DeviceGroupDeviceQueryParams 
 
 export const batchDeviceNodeSummary_api = async (
   requests: Array<{ id: string; query: DeviceGroupDeviceQueryParams }>,
+  baseTerms?: DeviceGroupQueryTerm[],
 ): Promise<DeviceGroupNodeSummary[]> => {
   const response = await request.post(
     '/device/group/device/_summary/_batch',
     requests.map((item) => ({
       id: item.id,
-      query: buildRuntimeQueryBody({ ...item.query, pageSize: 0 }),
+      // 宿主指定范围时不叠加普通设备的排除条件，默认调用仍保持原有口径。
+      query: baseTerms
+        ? buildQueryBody({ ...item.query, terms: [...baseTerms, ...(item.query.terms ?? [])], pageSize: 0 })
+        : buildRuntimeQueryBody({ ...item.query, pageSize: 0 }),
     })),
   ) as ApiResponse<DeviceGroupNodeSummary[]> | DeviceGroupNodeSummary[]
   const result = unwrapResult<DeviceGroupNodeSummary[]>(response) ?? []
@@ -468,10 +484,14 @@ export const batchDeviceNodeSummary_api = async (
 
 export const queryRuntimeDevices_api = async (
   params: DeviceGroupDeviceQueryParams = {},
+  baseTerms?: DeviceGroupQueryTerm[],
 ): Promise<DeviceGroupDevicePageResult> => {
   const response = await request.post(
     '/device/group/device/_runtime-query',
-    buildRuntimeQueryBody(params),
+    // 与列表、范围统计一致，宿主指定范围时替换普通设备的默认限定。
+    baseTerms
+      ? buildQueryBody({ ...params, terms: [...baseTerms, ...(params.terms ?? [])] })
+      : buildRuntimeQueryBody(params),
   ) as ApiResponse<PagerResult<RuntimeDeviceResponse>>
   const result = unwrapResult<PagerResult<RuntimeDeviceResponse>>(response) ?? {}
   const rows = result.data ?? []

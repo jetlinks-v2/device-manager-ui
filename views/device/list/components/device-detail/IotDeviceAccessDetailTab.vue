@@ -54,7 +54,7 @@
       </a-tab-pane>
 
       <a-tab-pane
-        v-if="isGatewayDevice"
+        v-if="canShowChildren"
         key="children"
         class="device-access-tab-pane device-access-tab-pane--children"
         :tab="$t('IotDeviceDetail.accessDetail.tab.children')"
@@ -90,6 +90,7 @@ const props = defineProps({
   commands: { type: Array as PropType<IotDeviceCommandDefinition[]>, required: true },
   sessionEnabled: { type: Boolean, default: true },
   traceEnabled: { type: Boolean, default: true },
+  showChildren: { type: Boolean, default: true },
   defaultTab: { type: String as PropType<DeviceAccessInnerTab>, default: undefined },
 })
 
@@ -98,7 +99,8 @@ const route = useRoute()
 const accessDetail = ref<Record<string, any>>({})
 const deviceId = computed(() => props.device.id || undefined)
 const isOnline = computed(() => props.device.status === 'online')
-const isGatewayDevice = computed(() => props.device.deviceTypeValue === 'gateway')
+// 跨模块可关闭重复的子设备入口；默认值保持设备详情现有行为。
+const canShowChildren = computed(() => props.showChildren && props.device.deviceTypeValue === 'gateway')
 const hasTransparentCodec = computed(() =>
   Boolean(props.device.features?.some((item) => item?.id === 'transparentCodec')),
 )
@@ -118,9 +120,9 @@ const accessConfigRequested = computed(() =>
 
 function getDefaultInnerTab(): DeviceAccessInnerTab {
   if (accessConfigRequested.value) return 'access'
-  if (legacyChildrenRequested.value && isGatewayDevice.value) return 'children'
+  if (legacyChildrenRequested.value && canShowChildren.value) return 'children'
   if (legacyParsingRequested.value && hasTransparentCodec.value) return 'parsing'
-  if (props.defaultTab === 'children' && isGatewayDevice.value) return 'children'
+  if (props.defaultTab === 'children' && canShowChildren.value) return 'children'
   if (props.defaultTab === 'parsing' && hasTransparentCodec.value) return 'parsing'
   if (props.defaultTab === 'trace' && props.traceEnabled) return 'trace'
   if (!props.traceEnabled) return 'access'
@@ -190,7 +192,7 @@ watch(
 watch(
   legacyChildrenRequested,
   (requested) => {
-    if (requested && isGatewayDevice.value) {
+    if (requested && canShowChildren.value) {
       innerTab.value = 'children'
     }
   },
@@ -203,7 +205,7 @@ watch(hasTransparentCodec, (supported) => {
   }
 })
 
-watch(isGatewayDevice, (supported) => {
+watch(canShowChildren, (supported) => {
   if (supported && legacyChildrenRequested.value) {
     innerTab.value = 'children'
   } else if (!supported && innerTab.value === 'children') {

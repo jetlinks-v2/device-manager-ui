@@ -3,6 +3,9 @@ import { queryNoPagingPost } from '@device-manager-ui/api/product'
 import { queryNoPagingPost as queryInstanceNoPage, query } from '@device-manager-ui/api/instance'
 import { usePluginPermissionContext } from '@device-manager-ui/hooks/usePermission'
 import { useInstanceStore } from '@device-manager-ui/store/instance'
+import { useDeviceScope } from './deviceScope'
+import { queryDeviceSpaceAreaBindings_api } from './api/spaceArea'
+import { queryDeviceBoundGroups_api, queryRuntimeDevices_api } from './api/deviceGroup'
 import type { DataCapabilityProviderManifest } from '@jetlinks-web-core/data-capability'
 import { IOT_DEVICE_ANALYSIS_EXTENSION_KEY } from './agentCapabilities/deviceAnalysis/constants'
 
@@ -23,11 +26,19 @@ const homeAgentProviders = Object.fromEntries(
 export default {
   moduleId: 'device-manager-ui',
   apis: {
+    deviceSpaceAreaBindings: queryDeviceSpaceAreaBindings_api,
+    deviceBoundGroups: queryDeviceBoundGroups_api,
+    deviceRuntimePage: queryRuntimeDevices_api,
     productNoPage: queryNoPagingPost,
     instanceNoPage: queryInstanceNoPage,
     instancePage: query,
   },
   components: {
+    UnifiedDeviceList: defineAsyncComponent(() => import('./views/device/list/unified/index.vue')),
+    IotDeviceScopeSidebar: defineAsyncComponent(() => import('./views/device/list/components/IotDeviceScopeSidebar.vue')),
+    IotDeviceAssetSearchBar: defineAsyncComponent(() => import('./views/device/list/components/IotDeviceAssetSearchBar.vue')),
+    // 网关详情复用 2.12 云边子设备映射，设备身份由宿主显式传入。
+    DeviceChildMapping: defineAsyncComponent(() => import('./views/device/Instance/Detail/Child/DeviceChildMapping.vue')),
     AccessCard: defineAsyncComponent(() => import('./views/link/AccessConfig/components/AccessCard/index.vue')),
     // 跨模块对象详情复用同一设备接入实现，统一通过注册表公开，避免业务模块深层引用私有目录。
     IotDeviceAccessDetailTab: defineAsyncComponent(() => import('./views/device/list/components/device-detail/IotDeviceAccessDetailTab.vue')),
@@ -37,6 +48,7 @@ export default {
     InstanceDetailPage: defineAsyncComponent(() => import('./views/device/Instance/Detail/index.vue')),
   },
   hooks: {
+    useDeviceScope,
     usePluginPermissionContext
   },
   stores: {

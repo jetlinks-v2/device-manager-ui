@@ -120,7 +120,7 @@ import {
   _deploy,
   _undeploy,
 } from "../../../../../api/instance";
-import { useInstanceStore } from "../../../../../store/instance";
+import { useChildDeviceContext } from "./useChildDeviceContext";
 import { onlyMessage } from "@jetlinks-web/utils";
 import { diagnose } from "../../../../../assets";
 import { useI18n } from "vue-i18n";
@@ -147,7 +147,7 @@ const props = defineProps({
     default: false,
   },
 });
-const instanceStore = useInstanceStore();
+const { detail } = useChildDeviceContext();
 const typeMap = new Map();
 typeMap.set("unbind", {
   title: $t("Child.actionModal.664579-10"),
@@ -191,7 +191,7 @@ const isMap = computed(() => {
   return props.isMap;
 });
 
-const edgeId = instanceStore.detail.id;
+const edgeId = detail.value.id;
 const form = reactive({
   way: "cloud",
 });
