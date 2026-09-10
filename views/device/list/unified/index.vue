@@ -76,11 +76,11 @@
   </FullPage>
 </template>
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { Modal } from 'ant-design-vue'
 import { useI18n } from 'vue-i18n'
 import EqualHeightColumns from '@jetlinks-web-core/components/EqualHeightColumns/index.vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useMenuStore } from '@jetlinks-web-core/store'
 import IotDeviceScopeSidebar from '../components/IotDeviceScopeSidebar.vue'
 import IotAddDeviceDrawer from '../components/IotAddDeviceDrawer.vue'
@@ -93,6 +93,7 @@ import { useUnifiedDeviceList } from './useUnifiedDeviceList'
 import { useUnifiedDeviceActions } from './useUnifiedDeviceActions'
 const { t } = useI18n()
 const route = useRoute()
+const router = useRouter()
 const menu = useMenuStore()
 // 已选网关按明确 ID 传入；未选择网关时在批量页按当前范围加载，由矩阵决定实际下发项。
 function openBatchPage() {
@@ -105,6 +106,21 @@ function openBatchPage() {
 const { providers, activeType, activeProvider, scope, keyword, status, rows, total, pageIndex, pageSize, loading, error, counts, summary, selectedIds, batchMode, providerOf, changeType, search, changeStatus, refresh, changePage } = useUnifiedDeviceList()
 const { sidebarProps, loading: scopeLoading, loadError: scopeLoadError, handleScopeChange } = scope
 const { projectId, editing, editOpen, createEntry, detailDevice, busy, selected, allowed, openDetail, edit, toggle, remove, canDelete, batchToggle, assignAreaOpen, assignGroupOpen, assignArea, assignGroup } = useUnifiedDeviceActions(rows, selectedIds, providerOf, refresh)
+
+// 快捷入口先挂载统一列表，再按当前分类打开对应新增组件并消费一次性动作参数。
+watch([() => route.query.action, activeType, activeProvider], ([action, type, provider]) => {
+  if (action !== 'create') return
+  if (type === 'device') {
+    editing.value = null
+    editOpen.value = true
+  } else if (provider?.create) {
+    createEntry.value = provider.create
+  } else {
+    return
+  }
+  const { action: _action, ...query } = route.query
+  void router.replace({ query })
+}, { immediate: true })
 const { deleteGroup, groupDialogError, groupDialogMode, groupDialogOpen, groupEditing, groupSaving, openCreateChildGroup, openCreateGroup, openEditGroup, saveGroup } = useIotDeviceGroupManagement({
   getActiveScope: () => ({ type: scope.scopeType.value, id: scope.scopeId.value }), reloadGroups: scope.reloadGroups, changeScope: handleScopeChange,
 })
