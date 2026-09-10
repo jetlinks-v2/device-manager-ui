@@ -1,6 +1,6 @@
 <template>
   <a-spin :spinning="loading">
-    <section class="network-trend">
+    <ContentPanel class="network-trend">
       <header class="network-trend__header">
         <div class="network-trend__title-group">
           <h3>{{ $t('components.NetworkTrend.title') }}</h3>
@@ -55,7 +55,7 @@
         @update:value="updateSelectedNodes"
         @reset="resetFocusedNodes"
       />
-    </section>
+    </ContentPanel>
   </a-spin>
 </template>
 
@@ -244,9 +244,6 @@ watch(() => props.refreshVersion, refresh)
   display: flex;
   flex-direction: column;
   min-height: 30rem;
-  padding: var(--space-6, 1.5rem);
-  background: var(--bg, #fff);
-  border-radius: 0.25rem;
 }
 .network-trend__header,
 .network-trend__title-group,

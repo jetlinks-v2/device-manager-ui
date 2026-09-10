@@ -1,6 +1,6 @@
 <template>
   <a-spin :spinning="loading">
-    <section class="monitor-trend">
+    <ContentPanel class="monitor-trend">
       <header class="monitor-trend__header">
         <div class="monitor-trend__title-group">
           <h3>{{ title }}</h3>
@@ -48,7 +48,7 @@
           @reset="resetFocusedNodes"
         />
       </template>
-    </section>
+    </ContentPanel>
   </a-spin>
 </template>
 
@@ -233,9 +233,6 @@ watch(() => props.refreshVersion, () => {
   display: flex;
   flex-direction: column;
   min-height: 30rem;
-  padding: var(--space-6, 1.5rem);
-  background: var(--bg, #fff);
-  border-radius: 0.25rem;
 }
 
 .monitor-trend__header,
