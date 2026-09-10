@@ -12,7 +12,7 @@
       },
       "id": "jetlinks-resource",
       "url": "/resources",
-      "icon": "ApiOutlined",
+      "icon": "icon-ziyuanzhongxin",
       "sortIndex": 10,
       "permissions": [],
       "buttons": [],
@@ -30,7 +30,7 @@
           },
           "id": "jetlinks-resource-devices",
           "url": "/resources/devices",
-          "icon": "ApiOutlined",
+          "icon": "icon-shebeiguanli",
           "sortIndex": 30,
           "permissions": [],
           "buttons": [],
@@ -48,7 +48,7 @@
               "owner": "iot",
               "id": "8ddbb67de5f65514105d47b448bfd70e",
               "url": "/resources/devices/products",
-              "icon": "icon-chanpin",
+              "icon": "icon-yuandian",
               "sortIndex": 10,
               "assetType": "product",
               "showPage": [
@@ -358,7 +358,7 @@
               "owner": "iot",
               "id": "access-center-device-list",
               "url": "/resources/devices/list",
-              "icon": "HddOutlined",
+              "icon": "icon-yuandian",
               "sortIndex": 20,
               "accessSupport": {
                 "text": "支持",
@@ -386,7 +386,7 @@
                   "owner": "iot",
                   "id": "access-center-device-list-device",
                   "url": "/resources/devices/list/device",
-                  "icon": "HddOutlined",
+                  "icon": "icon-yuandian",
                   "sortIndex": 20,
                   "accessSupport": {
                     "text": "支持",
@@ -510,7 +510,7 @@
     "owner": "iot",
     "id": "bd55cdc9d0c1700afe628f572f91c22e",
     "url": "/infrastructure",
-    "icon": "icon-yunweiguanli-1",
+    "icon": "icon-yunweizhongxin",
     "permissions": [],
     "sortIndex": 4,
     "children": [
@@ -528,7 +528,7 @@
         "id": "47bedff9df89ecc0f0ce896e53805f02",
         "sortIndex": 10,
         "url": "/infrastructure/dashboard",
-        "icon": "icon-keshihua",
+        "icon": "icon-yibiaopan",
         "showPage": [
           "dashboard",
           "network-config"
@@ -567,7 +567,7 @@
         "id": "67bedff5df89ecc1f5ce896e42805f02",
         "sortIndex": 20,
         "url": "/infrastructure/access",
-        "icon": "icon-keshihua",
+        "icon": "icon-jieruzujian",
         "showPage": [],
         "permissions": [],
         "children": [
@@ -585,7 +585,7 @@
             "id": "f99acd0b64f96209eb276236cfb427cb",
             "sortIndex": 10,
             "url": "/infrastructure/access/network",
-            "icon": "icon-wangluozujian",
+            "icon": "icon-yuandian",
             "showPage": [
               "network-config"
             ],
@@ -720,7 +720,7 @@
             "id": "10e67b761ec1f4206fabf36fcf9d9b0b",
             "sortIndex": 20,
             "url": "/infrastructure/access/gateway",
-            "icon": "icon-wangguanzishebei",
+            "icon": "icon-yuandian",
             "showPage": [
               "device-gateway"
             ],
@@ -930,7 +930,7 @@
             "id": "cdd73c8cb02d1ae9af61ded7fc31e9c5",
             "sortIndex": 30,
             "url": "/infrastructure/access/protocols",
-            "icon": "icon-tongzhiguanli",
+            "icon": "icon-yuandian",
             "showPage": [
               "protocol-supports"
             ],
@@ -1052,7 +1052,7 @@
             "id": "e395655a273a1b765236342738289587",
             "sortIndex": 40,
             "url": "/infrastructure/access/Cert",
-            "icon": "icon-zhengshuguanli",
+            "icon": "icon-yuandian",
             "showPage": [
               "certificate"
             ],
@@ -1322,7 +1322,7 @@
         "id": "a20354876e9519e48f5ed6710ba6efb3",
         "sortIndex": 50,
         "url": "/infrastructure/plugin",
-        "icon": "BoxPlotOutlined",
+        "icon": "icon-chajianguanli",
         "showPage": [
           "plugin-driver"
         ],
@@ -1425,7 +1425,7 @@
     },
     "id": "fd1670b860ae58cc58bcd01d027ccd35",
     "url": "/system",
-    "icon": "icon-xitongguanli1",
+    "icon": "icon-xitongshezhi",
     "sortIndex": 100,
     "permissions": [],
     "buttons": [],
@@ -1444,7 +1444,7 @@
         "id": "fe2e589bcf09a5353cbb5adrgb0b715l",
         "sortIndex": 30,
         "url": "/system/ps",
-        "icon": "icon-yonghuguanli",
+        "icon": "icon-pingtaishezhi",
         "children": [{
           "code": "system/Relationship",
           "name": "关系配置",
@@ -1459,7 +1459,7 @@
           "id": "2fa02b8758fe82a6b9666f4ebb1bbd03",
           "sortIndex": 40,
           "url": "/system/ps/relationship",
-          "icon": "icon-shuxingpeizhi",
+          "icon": "icon-yuandian",
           "showPage": [
             "relation"
           ],
@@ -1559,7 +1559,7 @@
     },
     "id": "3c7dca6ea8b5828bbcc023ce905244f7",
     "url": "/alarms",
-    "icon": "ToolOutlined",
+    "icon": "icon-gaojingzhongxin",
     "sortIndex": 50,
     "children": [
       {
@@ -1575,7 +1575,7 @@
         },
         "id": "3c7dcb6fa8c5839bbef033ce915344f7",
         "url": "/alarms/rules",
-        "icon": "ToolOutlined",
+        "icon": "icon-gaojingguize",
         "sortIndex": 20,
         "children": [
           {
@@ -1591,7 +1591,7 @@
             "owner": "iot",
             "id": "iot-device-alarm",
             "url": "/alarms/rules/iot",
-            "icon": "AlertOutlined",
+            "icon": "icon-yuandian",
             "sortIndex": 1,
             "accessSupport": {
               "text": "支持",
