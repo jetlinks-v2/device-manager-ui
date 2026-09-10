@@ -3,6 +3,7 @@ import { moduleRegistry } from '@jetlinks-web-core/utils/module-registry'
 import registerSetting from './register'
 import { name } from './package.json'
 import './assets/iot-design-bridge.css'
+import { getUnifiedDeviceMenuFilters } from './unifiedDeviceMenu'
 
 const routerModules = import.meta.glob('./views/**/index.vue')
 
@@ -13,6 +14,8 @@ const getAsyncRoutesMap = () => {
     modules[code] = routerModules[item]
     modules[`iot-user/${code}`] = routerModules[item]
   })
+  modules['iot-user-device-list'] = () => import('./views/device/list/unified/Page.vue')
+  modules['iot-user/device/list'] = () => import('./views/device/list/unified/index.vue')
   return modules
 }
 
@@ -39,6 +42,12 @@ const sceneLinkageExtraRoutes = [
 
 
 const getExtraRoutesMap = () => ({
+  'iot-user-device-list': {
+    children: [{
+      code: 'Batch', url: '/batch', name: i18n.global.t('UnifiedDeviceList.batch'),
+      component: () => import('./views/device/list/unified/BatchPage.vue'),
+    }],
+  },
   'device/Product': {
     children: [
       {
@@ -121,6 +130,7 @@ const register = () => {
 }
 
 export default {
+  getMenuFilters: getUnifiedDeviceMenuFilters,
   getAsyncRoutesMap,
   getExtraRoutesMap,
   getCoreRouteOverrides,

@@ -53,7 +53,7 @@
               <span class="iot-device-scope__group-node">
                 <span class="iot-device-scope__label">{{ node.title }}</span>
                 <em class="iot-device-scope__count">{{ countText(groupDeviceCounts[node.group.id]) }}</em>
-                <a-dropdown :trigger="['click']">
+                <a-dropdown v-if="showGroupActions !== false" :trigger="['click']">
                   <a-button
                     class="iot-device-scope__group-action"
                     type="text"
@@ -94,7 +94,7 @@
           <span class="iot-device-scope__label">{{ $t('IotDeviceList.scope.unassignedGroup') }}</span>
           <em class="iot-device-scope__count">{{ countText(unassignedGroupDeviceCount) }}</em>
         </button>
-        <a-button class="iot-device-scope__create-group" type="dashed" block @click="$emit('create-group')">
+        <a-button v-if="showGroupActions !== false" class="iot-device-scope__create-group" type="dashed" block @click="$emit('create-group')">
           <template #icon><AIcon type="PlusOutlined" /></template>
           {{ $t('IotDeviceList.scope.createGroup') }}
         </a-button>
@@ -118,6 +118,8 @@ type Area = { id: string; name: string; parentId?: string }
 type Group = DeviceGroup
 
 const props = defineProps<{
+  // 仅消费范围筛选的页面关闭管理入口，设备页保持原有分组操作。
+  showGroupActions?: boolean
   activeType: 'area' | 'group'
   activeId: string
   areas: Area[]

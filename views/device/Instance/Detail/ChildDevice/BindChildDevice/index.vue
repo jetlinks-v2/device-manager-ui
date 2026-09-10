@@ -101,8 +101,7 @@ import {
     queryNoPagingPost,
 } from '@device-manager-ui/api/product'
 import dayjs from 'dayjs';
-import { useInstanceStore } from '../../../../../../store/instance';
-import { storeToRefs } from 'pinia';
+import { useChildDeviceContext } from '../../Child/useChildDeviceContext';
 import { onlyMessage } from '@jetlinks-web/utils';
 import i18n from '@jetlinks-web-core/locales';
 import { useI18n } from 'vue-i18n';
@@ -119,8 +118,7 @@ const props = defineProps({
     },
 });
 
-const instanceStore = useInstanceStore();
-const { detail } = storeToRefs(instanceStore);
+const { detail } = useChildDeviceContext();
 
 const emit = defineEmits(['change']);
 
@@ -272,9 +270,9 @@ const handleOk = () => {
         return;
     }
     btnLoading.value = true;
-    if (instanceStore.current.accessProvider === 'official-edge-gateway') {
+    if (detail.value.accessProvider === 'official-edge-gateway') {
         // 网关设备
-        queryDeviceMapping(instanceStore.current.id)
+        queryDeviceMapping(detail.value.id)
             .then((res) => {
                 const arr = bindDeviceRef.value?._dataSource
                     .filter((item) => {
@@ -291,7 +289,7 @@ const handleOk = () => {
                         };
                     });
                 if (arr.length) {
-                    return saveDeviceMapping(instanceStore.current.id, {
+                    return saveDeviceMapping(detail.value.id, {
                         info: arr,
                     });
                 }

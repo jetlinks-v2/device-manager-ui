@@ -690,8 +690,10 @@ const flattenTree = (nodes: TreeNodeResponse[] = [], parentId?: string): IotDevi
     ]
   })
 
-export const queryDevicePage_api = async (params: DeviceQueryParams = {}): Promise<DevicePageResult> => {
-  const response = await request.post('/device/instance/detail/_query', buildDeviceListQueryBody(params)) as ApiResponse<PagerResult<DeviceDetailResponse>>
+// 统一资产列表显式传入类型条件；原设备列表仍使用原有默认范围。
+export const queryDevicePage_api = async (params: DeviceQueryParams = {}, baseTerms?: DeviceQueryTerm[]): Promise<DevicePageResult> => {
+  const body = baseTerms ? buildQueryBody({ ...params, terms: [...baseTerms, ...(params.terms ?? [])] }) : buildDeviceListQueryBody(params)
+  const response = await request.post('/device/instance/detail/_query', body) as ApiResponse<PagerResult<DeviceDetailResponse>>
   const result = response.result || {}
   const pageIndex = Number(result.pageIndex ?? params.pageIndex ?? 0)
   const pageSize = Number(result.pageSize ?? params.pageSize ?? 10)
@@ -720,8 +722,12 @@ export const queryDeviceCountByProductId_api = async (productId: string): Promis
   return Number(response.result?.total ?? 0)
 }
 
-export const countDevice_api = async (params: DeviceQueryParams = {}): Promise<number> => {
-  const response = await request.post('/device-instance/_count', buildDeviceListQueryBody({ ...params, pageSize: 0 })) as ApiResponse<number> | number
+// 显式设备范围替换普通设备列表的默认限定，供网关等独立资产列表复用统计。
+export const countDevice_api = async (params: DeviceQueryParams = {}, baseTerms?: DeviceQueryTerm[]): Promise<number> => {
+  const body = baseTerms
+    ? buildQueryBody({ ...params, terms: [...baseTerms, ...(params.terms ?? [])], pageSize: 0 })
+    : buildDeviceListQueryBody({ ...params, pageSize: 0 })
+  const response = await request.post('/device-instance/_count', body) as ApiResponse<number> | number
   const result = unwrapResult<number>(response)
   return Number(result ?? 0)
 }

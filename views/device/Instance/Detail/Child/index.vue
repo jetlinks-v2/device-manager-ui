@@ -389,14 +389,12 @@ import {
     _commandByEdge
 } from '../../../../../api/instance';
 import { queryProductList } from '../../../../../api/product';
-import { useInstanceStore } from '../../../../../store/instance';
-import { storeToRefs } from 'pinia';
+import { useChildDeviceContext } from './useChildDeviceContext';
 import dayjs from 'dayjs';
 import Save from './Save/index.vue';
 import Bind from '../ChildDevice/BindChildDevice/index.vue';
 import {randomString, onlyMessage, getToken} from '@jetlinks-web/utils';
 import { cloneDeep } from 'lodash-es';
-import { useMenuStore } from '@jetlinks-web-core/store/menu';
 import actionModal from './actionModal.vue';
 import { Modal } from 'ant-design-vue';
 import { EventEmitter } from '@jetlinks-web/utils';
@@ -411,18 +409,18 @@ const props = defineProps({
     },
 });
 
-const instanceStore = useInstanceStore();
+const childContext = useChildDeviceContext();
 const _checked = ref(true);
 const _selectedRowKeys = ref([]);
 const childDeviceRef = ref();
-const { detail } = storeToRefs(instanceStore);
+const { detail } = childContext;
 const params = ref({});
 const menuVisible = ref(false);
 const _customRow = ref({});
 const fold = ref(false);
 const visible = ref(false);
 const bindVisible = ref(false);
-const parentIds = ref([instanceStore.detail.id]);
+const parentIds = ref([detail.value.id]);
 const _search = ref('');
 const edgeList = ref([]);
 const _edgeInitList = ref([]);
@@ -430,7 +428,6 @@ const _drop = ref({});
 const _dropList = ref([]);
 const _dataSource = ref([]);
 const _bindInitList = ref([]);
-const menuStory = useMenuStore();
 const actionRef = reactive({
     visible: false,
     type: '',
@@ -440,7 +437,6 @@ const actionRef = reactive({
 const edgeVisible = ref(false);
 const edgeCurrent = ref({});
 const editStatus = ref(false);
-const route = useRoute();
 const isMap = ref(false);
 const dropLoading = ref(false);
 const isToDetail = ref(false)
@@ -522,11 +518,11 @@ const searchColumns = [
     },
 ];
 const handleSearch = async (e) => {
-    if (instanceStore.detail.id && e) {
+    if (detail.value.id && e) {
         const terms = [
             {
                 column: 'parentId',
-                value: instanceStore.detail.id,
+                value: detail.value.id,
                 termType: 'eq',
                 type: 'and',
             },
@@ -544,7 +540,7 @@ const handleSearch = async (e) => {
 
         if (res.success) {
             try {
-                const resp = await _queryByEdge(instanceStore.detail.id, {
+                const resp = await _queryByEdge(detail.value.id, {
                     sorts: [{ name: '_bind.createTime', order: 'desc' }],
                     terms: [{ column: 'key', value: '', termType: 'notnull' }],
                 });
@@ -625,7 +621,7 @@ const onSaveAll = async (cb) => {
         (item) => item?.Mappingtype === 'auto',
     );
     if (_none.length) {
-        await _commandByEdge(instanceStore.detail.id, 'BatchUnbindDevice', {
+        await _commandByEdge(detail.value.id, 'BatchUnbindDevice', {
             deviceId: _none,
         });
     }
@@ -633,7 +629,7 @@ const onSaveAll = async (cb) => {
         const objs = _auto.map((item) => ({
             id: item.id,
             name: item.name,
-            parentId: instanceStore.detail.id,
+            parentId: detail.value.id,
             productId: item.Mapping.masterProductId,
             productName: item.Mapping.productName,
         }));
@@ -641,17 +637,18 @@ const onSaveAll = async (cb) => {
     }
 
     const res = await _commandByEdge(
-        instanceStore.detail.id,
+        detail.value.id,
         'BatchBindDevice',
         {
             bindInfo: _arr,
         },
-    ).finally(() => {
-        cb && (typeof cb === 'function' && cb?.());
-    });
+    );
     if (res.success) {
+        // 保存完成后才允许宿主切换分类或 Tab，失败时保留当前编辑。
+        editStatus.value = false;
         handleRefresh();
         onlyMessage($t('Child.index.135369-24'));
+        if (typeof cb === 'function') cb();
     }
 };
 
@@ -921,7 +918,7 @@ const onDetail = (item) => {
 
 const onDetailClose = async () => {
     // edgeVisible.value = false;
-    await instanceStore.refresh(route.params?.id).finally(() => {
+    await childContext.refresh().finally(() => {
         edgeVisible.value = false;
     });
 };
@@ -937,9 +934,18 @@ const onRightSearch = (e) => {
 };
 //边端未映射
 const getNoMapping = async () => {
-    const res = await _queryByEdge(instanceStore.detail.id, {
+    const res = await _queryByEdge(detail.value.id, {
         sorts: [{ name: 'createTime', order: 'desc' }],
-        terms: [{ column: 'key', value: '', termType: 'isnull' }],
+        terms: [
+            { column: 'key', value: '', termType: 'isnull' },
+            // 映射命令已关联产品表，直接在边端排除视频接入设备。
+            {
+                column: '_product.accessProvider',
+                termType: 'nin',
+                type: 'and',
+                value: ['fixed-media', 'gb28181-2016', 'media-plugin', 'onvif', 'agent-media-device-gateway'],
+            },
+        ],
     });
     if (res.success) {
         edgeList.value = [...res.result];
@@ -952,10 +958,9 @@ const handleRefresh = () => {
 };
 
 const onJump = (id) => {
-    isToDetail.value = true;
     TabsChange(() => {
-        window.location.hash = route.path.replace(`/${route.params.id}`, `/${id}`)
-        menuStory.jumpPage('device/Instance/Detail', { params: {id} });
+        isToDetail.value = true;
+        childContext.openDevice(id);
     });
 };
 
@@ -970,7 +975,7 @@ const onDrop = async (e, item) => {
         dropLoading.value = true;
         item.Mapping = _drop.value;
         const res = await _commandByEdge(
-            instanceStore.detail.id,
+            detail.value.id,
             'BindMasterDevice',
             {
                 deviceId: _drop.value.id,
@@ -1019,7 +1024,7 @@ const onCover = async (e, item) => {
         item.loading = true;
         item.Mapping = _drop.value;
         const res = await _commandByEdge(
-            instanceStore.detail.id,
+            detail.value.id,
             'BindMasterDevice',
             {
                 deviceId: _drop.value.id,
@@ -1062,7 +1067,7 @@ const onDelete = (item) => {
         if (_checked.value) {
             item.loading = true;
 
-            _commandByEdge(instanceStore.detail.id, 'UnbindDevice', {
+            _commandByEdge(detail.value.id, 'UnbindDevice', {
                 key: item.id,
             })
                 .then((res) => {
@@ -1164,7 +1169,7 @@ const onAuto = async (item) => {
     const deviceInfo = {
         id: item.id,
         name: item.name,
-        parentId: instanceStore.detail.id,
+        parentId: detail.value.id,
         productId: item.Mapping.masterProductId,
         productName: item.Mapping.productName,
     };
@@ -1173,7 +1178,7 @@ const onAuto = async (item) => {
     if (res.success) {
         item.loading = true;
         const resp = await _commandByEdge(
-            instanceStore.detail.id,
+            detail.value.id,
             'BindMasterDevice',
             {
                 deviceId: _drop.value.id,
@@ -1206,7 +1211,7 @@ const TabsChange = (next) => {
             zIndex: 1400,
             closable: true,
             onOk: () => {
-                onSaveAll(()=>next?.());
+                return onSaveAll(() => next?.());
             },
             onCancel: (e) => {
                 if (!e.triggerCancel) {
@@ -1227,7 +1232,7 @@ const TabsChange = (next) => {
 onBeforeRouteUpdate((to, from, next) => {
     // 设备管理内路由跳转
     if(isToDetail.value){
-        next;
+        next();
     }else{
         TabsChange(next);
     }
@@ -1236,7 +1241,7 @@ onBeforeRouteUpdate((to, from, next) => {
 onBeforeRouteLeave((to, from, next) => {
     // 设备管理外路由跳转
     if(isToDetail.value){
-        next
+        next();
     }else{
         TabsChange(next);
     }
@@ -1247,13 +1252,12 @@ watch(
     (val) => {
         handleRefresh();
     },
-    { immediate: true },
 );
 
 onMounted(() => {
     EventEmitter.subscribe(['ChildTabs'], TabsChange);
-    if (instanceStore.detail.id) {
-        getNoMapping();
+    if (detail.value.id) {
+        // 首次加载只在挂载时触发；刷新方法已包含已映射与未映射查询。
         handleRefresh();
     }
 });
@@ -1267,7 +1271,9 @@ watchEffect(() => {
 })
 
 defineExpose({
-    handleRefresh
+    handleRefresh,
+    // 宿主分类和详情 Tab 切换沿用原有未保存映射提示。
+    beforeLeave: TabsChange,
 })
 </script>
 

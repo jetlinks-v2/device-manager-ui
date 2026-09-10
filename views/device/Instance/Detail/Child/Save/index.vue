@@ -51,19 +51,19 @@
 <script setup name="Save">
 import { getProductListNoPage, addDevice } from '../../../../../../api/instance';
 
-import { useInstanceStore } from '../../../../../../store/instance';
+import { useChildDeviceContext } from '../useChildDeviceContext';
 import { onlyMessage } from '@jetlinks-web/utils';
 import { useI18n } from 'vue-i18n';
 
 const { t: $t } = useI18n();
 const emits = defineEmits(['close']);
 
-const instanceStore = useInstanceStore();
+const { detail } = useChildDeviceContext();
 const form = reactive({
     name: '',
     productId: undefined,
     productName: '',
-    parentId: instanceStore.current.id,
+    parentId: detail.value.id,
 });
 const formRef = ref();
 const loading = ref(false);

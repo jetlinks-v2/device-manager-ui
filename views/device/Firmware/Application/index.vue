@@ -124,6 +124,7 @@ import type {
     ApplicationFirmwareFile,
     ApplicationFirmwareInfo,
     FirmwareProductOption,
+    FormDataType,
 } from '../type';
 
 const props = defineProps({
@@ -134,7 +135,7 @@ const props = defineProps({
 });
 const emit = defineEmits<{
     (event: 'change', saved: boolean): void;
-    (event: 'fallback'): void;
+    (event: 'fallback', data: Partial<FormDataType>): void;
 }>();
 const { t: $t } = useI18n();
 
@@ -183,9 +184,13 @@ const resetPreview = () => {
 
 const fallbackToManual = (requestId: number) => {
     if (requestId === parseRequestId) {
-        // 当前交互不区分解析无结果与错误，统一回到原手工创建。
+        // 解析失败只需补录版本信息，已上传文件和表单内容继续用于手工创建。
         preview.value = undefined;
-        emit('fallback');
+        emit('fallback', {
+            ...formData,
+            ...file.value,
+            signMethod: file.value?.signMethod.toLowerCase(),
+        });
     }
 };
 
