@@ -1,5 +1,5 @@
-import { computed, ref, shallowRef, type Ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, ref, shallowRef, watch, type Ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Modal } from 'ant-design-vue'
 import { useAuthStore, useMenuStore } from '@jetlinks-web-core/store'
@@ -10,16 +10,36 @@ import { reassignIotDevicesToArea } from '../hooks/iotDeviceAreaGroupBindings'
 import { resolveIotProjectId } from '../hooks/useIotDeviceRouting'
 import type { DeviceListProvider, UnifiedDevice } from '../../../../deviceListProvider'
 
-export function useUnifiedDeviceActions(rows: Ref<UnifiedDevice[]>, selectedIds: Ref<string[]>, providerOf: (device: UnifiedDevice) => DeviceListProvider | undefined, refresh: () => void) {
+/** 统一列表操作与新增弹层状态；快捷入口仅调用当前分类已有的新增能力。 */
+export function useUnifiedDeviceActions(
+  rows: Ref<UnifiedDevice[]>,
+  selectedIds: Ref<string[]>,
+  providerOf: (device: UnifiedDevice) => DeviceListProvider | undefined,
+  refresh: () => void,
+  activeProvider: Ref<DeviceListProvider | undefined>,
+) {
   const { t } = useI18n()
   const menu = useMenuStore()
   const auth = useAuthStore()
   const route = useRoute()
+  const router = useRouter()
   const projectId = computed(() => resolveIotProjectId(route))
   const editing = ref<UnifiedDevice | null>(null)
   const editOpen = ref(false)
   // 固定打开时的新增入口，切换列表分类不会替换正在填写的表单。
   const createEntry = shallowRef<DeviceListProvider['create']>()
+  // 消费一次性创建动作，刷新页面不重开；未提供新增弹层的分类只保留列表。
+  watch([() => route.query.action, activeProvider], ([action, provider]) => {
+    if (action !== 'create' || !provider) return
+    if (provider.id === 'device') {
+      editing.value = null
+      editOpen.value = true
+    } else if (provider.create) {
+      createEntry.value = provider.create
+    }
+    const { action: _action, ...query } = route.query
+    void router.replace({ query })
+  }, { immediate: true })
   const detailDevice = ref<UnifiedDevice | null>(null)
   const busy = ref(false)
   const assignAreaOpen = ref(false)
