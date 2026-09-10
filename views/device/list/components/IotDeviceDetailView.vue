@@ -245,6 +245,13 @@
           :commands="deviceCommands"
         />
 
+        <LegacyMetadata
+          v-else-if="activeTab === 'thing-model'"
+          :key="`${device.id}:${device.independentMetadata ? 'independent' : 'inherited'}`"
+          type="device"
+          :update-permission="deviceUpdatePermission"
+        />
+
         <IotDeviceCommandCenterTab
           v-else-if="activeTab === 'commands'"
           :device-id="device.id"
@@ -293,8 +300,9 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useMenuStore } from '@jetlinks-web-core/store'
 
-import { onlyMessage } from '@jetlinks-web/utils'
+import { EventEmitter, onlyMessage } from '@jetlinks-web/utils'
 import { IconValueView } from '@jetlinks-web-core/components/IconValue'
+import { useAuthStore } from '@jetlinks-web-core/store'
 import {
   deleteDevice_api,
   deployDevice_api,
@@ -339,6 +347,10 @@ import IotDeviceDataTableTab from './device-detail/IotDeviceDataTableTab.vue'
 import IotDeviceAlarmTab from './device-detail/IotDeviceAlarmTab.vue'
 import IotDeviceLogsSearchTableTab from './device-detail/IotDeviceLogsSearchTableTab.vue'
 import IotDeviceOverviewTab from './device-detail/IotDeviceOverviewTab.vue'
+import LegacyMetadata from '@device-manager-ui/views/device/components/Metadata/index.vue'
+import { useInstanceStore } from '@device-manager-ui/store/instance'
+import type { DeviceInstance } from '@device-manager-ui/views/device/Instance/typings'
+import { collectOverviewPropertyKeys, isKeyMetricProperty } from '@device-manager-ui/utils/deviceThingModel'
 import type {
   RealtimeAccessMode,
   RealtimeEventLevel,
@@ -360,7 +372,7 @@ import {
   buildThingModelDefinitionFromTemplate,
 } from '@device-manager-ui/views/device/shared/standard-model/standardModelMappers'
 
-type DeviceDetailTab = 'overview' | 'access' | 'commands' | 'data' | 'alarm' | 'logs'
+type DeviceDetailTab = 'overview' | 'access' | 'thing-model' | 'commands' | 'data' | 'alarm' | 'logs'
 type DataInnerTab = 'property' | 'event' | 'function' | 'trace'
 type RecordsInnerTab = 'alarm' | 'log' | 'threshold'
 type AdvancedInnerTab = 'connection' | 'thing-model' | 'parsing' | 'children' | 'health' | 'threshold'
@@ -376,6 +388,9 @@ const deviceId = computed(() => String(route.params.deviceId ?? route.params.id)
 const healthPath = computed(() => buildIotDeviceHealthPath(projectId.value, deviceId.value, undefined, route))
 
 const device = ref<IotDevice | null>(null)
+const instanceStore = useInstanceStore()
+const authStore = useAuthStore()
+const deviceUpdatePermission = computed(() => authStore.hasPermission('iot-user/device/list:update'))
 const hasTransparentCodec = computed(() =>
   Boolean(device.value?.features?.some((item: any) => item?.id === 'transparentCodec')),
 )
@@ -485,7 +500,7 @@ type AccessConfigProperty = {
 }
 
 const DEFAULT_DETAIL_TAB: DeviceDetailTab = 'overview'
-const DEVICE_DETAIL_TAB_KEYS: DeviceDetailTab[] = ['overview', 'access', 'commands', 'data', 'alarm', 'logs']
+const DEVICE_DETAIL_TAB_KEYS: DeviceDetailTab[] = ['overview', 'access', 'thing-model', 'commands', 'data', 'alarm', 'logs']
 
 function normalizeDetailTab(value: unknown): DeviceDetailTab {
   if (typeof value !== 'string') return DEFAULT_DETAIL_TAB
@@ -553,17 +568,10 @@ function setInnerTab(tab: 'data' | 'records' | 'advanced', sub: string) {
 }
 
 function openThingModelTab() {
-  const kindMap: Record<Extract<DataInnerTab, 'property' | 'event' | 'function'>, ThingModelKind> = {
-    property: 'properties',
-    event: 'events',
-    function: 'functions',
-  }
   router.replace({
     query: {
       ...route.query,
-      tab: 'advanced',
-      sub: 'thing-model',
-      thingModelKind: kindMap[dataInnerTab.value as Extract<DataInnerTab, 'property' | 'event' | 'function'>] || 'properties',
+      tab: 'thing-model',
     },
   })
 }
@@ -939,7 +947,7 @@ const realtimeProperties = computed<RealtimePropertyRow[]>(() => {
       tone: point.status,
       expands: template?.expands,
       metricEnabled: ['number', 'string', 'boolean', 'enum'].includes(numeric ? 'number' : template?.kind === 'status' ? 'enum' : template?.kind ?? 'string'),
-      focused: isFocusedProperty(template),
+      focused: isKeyMetricProperty(template),
     }
   })
 })
@@ -978,23 +986,8 @@ const realtimePropertyKeys = computed(() => {
 })
 
 const overviewRealtimePropertyKeys = computed(() => {
-  const source = device.value?.thingModelMetadata?.properties?.length
-    ? device.value.thingModelMetadata.properties
-    : device.value?.telemetry?.length
-      ? device.value.telemetry
-      : productTemplate.value?.dataPoints ?? []
-
-  const rows = source
-    .map((item: any) => ({
-      key: item?.id || item?.property || item?.key || item?.name,
-      focused: isFocusedProperty(item),
-    }))
-    .filter((item: { key?: string }) => item.key)
-
-  const focusedRows = rows.filter((item: { focused: boolean }) => item.focused)
-  return (focusedRows.length ? focusedRows : rows)
-    .map((item: { key: string }) => String(item.key))
-    .slice(0, OVERVIEW_PROPERTY_LIMIT)
+  // 概览快照仅订阅有效物模型明确标记的关键属性，未配置时保持空态。
+  return collectOverviewPropertyKeys(device.value?.thingModelMetadata, OVERVIEW_PROPERTY_LIMIT)
 })
 
 const activeRealtimePropertyKeys = computed(() => (
@@ -1048,20 +1041,6 @@ const realtimeEvents = computed<RealtimeEventRow[]>(() => {
     }
   }).filter((item: RealtimeEventRow) => item.id)
 })
-
-function isFocusedProperty(property: any): boolean {
-  const expands = property?.expands ?? property ?? {}
-  return [
-    expands.focus,
-    expands.focused,
-    expands.attention,
-    expands.concern,
-    expands.keyMetric,
-    expands.isKeyMetric,
-    expands.showInOverview,
-    property?.isKeyMetric,
-  ].some((value) => value === true || value === 'true' || value === 1 || value === '1')
-}
 
 const realtimeServices = computed<RealtimeServiceRow[]>(() => {
   if (!device.value) return []
@@ -1277,6 +1256,7 @@ const advancedCount = computed(() => deviceCommands.value.length + healthConnect
 const tabOptions = computed<Array<{ key: DeviceDetailTab; label: string; icon: string }>>(() => [
   { key: 'overview', label: $t('IotDeviceDetail.detail.tab.overview'), icon: 'AppstoreOutlined' },
   { key: 'access', label: $t('IotDeviceDetail.detail.tab.access'), icon: 'WifiOutlined' },
+  { key: 'thing-model', label: $t('IotDeviceDetail.detail.tab.thingModel'), icon: 'ApartmentOutlined' },
   { key: 'commands', label: $t('IotDeviceDetail.detail.tab.commands'), icon: 'CodeOutlined' },
   { key: 'data', label: $t('IotDeviceDetail.detail.tab.data'), icon: 'LineChartOutlined' },
   { key: 'alarm', label: $t('DeviceAlarm.title.page'), icon: 'AlertOutlined' },
@@ -1626,11 +1606,50 @@ function startRealtimeSubscriptions() {
 async function loadDevice() {
   const result = await iotDeviceService.getDevice(projectId.value, deviceId.value)
   device.value = result.ok ? result.data : null
+  syncLegacyMetadataDevice(device.value)
   realtimePropertyValues.value = {}
   propertyPageRealtimeKeys.value = []
   liveSimulatorTraces.value = []
   await loadRealtimePropertySnapshot()
   startRealtimeSubscriptions()
+}
+
+/**
+ * 原版 Metadata 组件以实例 store 作为数据源；SaaS 详情切换设备时必须同步有效物模型，
+ * 否则会把上一台设备的 metadata 读取或保存到当前标签。
+ */
+function syncLegacyMetadataDevice(current: IotDevice | null) {
+  if (!current) {
+    instanceStore.setCurrent({} as DeviceInstance)
+    return
+  }
+  const metadata = JSON.stringify(current.thingModelMetadata ?? {
+    properties: [],
+    functions: [],
+    events: [],
+    tags: [],
+  })
+  const productMetadata = JSON.stringify(current.productThingModelMetadata ?? current.thingModelMetadata ?? {
+    properties: [],
+    functions: [],
+    events: [],
+    tags: [],
+  })
+  instanceStore.setCurrent({
+    id: current.id,
+    name: current.name,
+    describe: current.summary,
+    description: current.summary,
+    productId: current.productId || current.productKey || '',
+    productName: current.productName,
+    metadata,
+    productMetadata,
+    independentMetadata: Boolean(current.independentMetadata),
+    state: { value: current.status, text: current.status },
+    deviceType: { value: current.deviceTypeValue || current.deviceType, text: current.deviceType },
+    configuration: {},
+    tags: current.tags,
+  } as DeviceInstance)
 }
 
 async function loadCommands() {
@@ -1725,7 +1744,17 @@ onUnmounted(() => {
     window.removeEventListener('resize', updateTagsOverflow)
   }
   clearRealtimeSubscriptions()
+  syncLegacyMetadataDevice(null)
+  EventEmitter.unSubscribe(['MetadataChanged'], onMetadataChanged)
 })
+
+// 旧版 Metadata 组件维护独立 store；变更后重新拉取设备详情，保证概览和实时订阅使用同一份有效物模型。
+function onMetadataChanged(payload?: { type?: string; id?: string }) {
+  if (payload?.type !== 'device' || payload.id !== device.value?.id) return
+  void loadDevice()
+}
+
+EventEmitter.subscribe(['MetadataChanged'], onMetadataChanged)
 
 await loadAll()
 

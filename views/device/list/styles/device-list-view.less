@@ -43,11 +43,19 @@
 
 .iot-device-list__main {
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto auto;
   gap: var(--space-3);
-  height: 100%;
+  height: auto;
   min-height: 0;
   min-width: 0;
+}
+
+.iot-device-list__scope {
+  height: calc(100vh - 11rem);
+}
+
+.iot-device-list__content-panel {
+  overflow: visible;
 }
 
 .iot-device-list__search-actions {
@@ -58,7 +66,7 @@
 }
 
 .iot-device-list__search {
-  flex: 1 1 22rem;
+  flex: 0 1 28rem;
   max-width: 28rem;
   min-width: 0;
 }
@@ -97,6 +105,10 @@
   .iot-device-list__layout { height: auto; grid-template-columns: 1fr; }
 
   .iot-device-list__main {
+    height: auto;
+  }
+
+  .iot-device-list__scope {
     height: auto;
   }
 }

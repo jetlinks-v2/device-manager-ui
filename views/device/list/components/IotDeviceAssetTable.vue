@@ -1,5 +1,5 @@
 <template>
-  <FullPage class="iot-device-list__table-wrap">
+  <FullPage :fixed="false" class="iot-device-list__table-wrap">
     <a-alert
       v-if="loadError"
       class="iot-device-list__error"
@@ -19,6 +19,7 @@
       :pagination="tablePagination"
       :rowSelection="rowSelection"
       :bodyStyle="{ padding: 0 }"
+      :scroll="false"
     >
       <template #paginationRender="{ total, pageSize, current, onChange }">
         <footer class="iot-device-list__table-footer">

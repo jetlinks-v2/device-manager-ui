@@ -18,6 +18,7 @@ const props = defineProps({
   editMode: { type: Boolean, default: false },
   currentStep: { type: Number, default: 0 },
   creating: { type: Boolean, default: false },
+  creationSource: { type: String, default: 'product' },
 })
 
 const { t: $t } = useI18n()
@@ -31,7 +32,7 @@ const title = computed(() => {
 const helpText = computed(() => props.editMode
   ? ''
   : props.currentStep === 0
-    ? $t('IotDeviceList.add.libraryDesc')
+    ? $t(props.creationSource === 'library' ? 'IotDeviceList.add.libraryDesc' : 'IotDeviceList.add.productSourceDesc')
     : $t('IotDeviceList.add.basicInfoHelp'))
 </script>
 

@@ -62,13 +62,13 @@ function handleFilterTermsUpdate(terms: ConditionFilterTerm[] = []) {
   emit('update:filterTerms', normalized.terms)
 }
 
-function handleFilterSearch() {
+function handleFilterSearch(payload?: { terms?: ConditionFilterTerm[] }) {
   if (skipNextSearch) {
     skipNextSearch = false
     return
   }
-  const terms = latestRawTerms.value
-  emit('update:filterTerms', terms)
+  // ConditionFilter 在 change 时才补齐 like 的通配符；不能用编辑态的原始 Token 覆盖查询条件。
+  const terms = payload?.terms ?? latestRawTerms.value
   emit('search', { terms })
 }
 

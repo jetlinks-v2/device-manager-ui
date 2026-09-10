@@ -1,13 +1,13 @@
 import { computed, nextTick, reactive, ref, watch } from 'vue'
-import { Modal } from 'ant-design-vue'
 import type { Rule } from 'ant-design-vue/es/form'
 import { useI18n } from 'vue-i18n'
 import {
-  createProductFromDeviceTemplate_api,
   createDevice_api,
   queryDeviceProductById_api,
-  queryDeviceProducts_api,
-  queryDeviceTemplates_api,
+  queryDeviceProductCategoryTree_api,
+  queryDeviceProductPage_api,
+  type DeviceCreationSource,
+  type DeviceLibraryCapabilityState,
   type DeviceLibraryInstallProgress,
   type DeviceLibraryTemplateQueryInput,
   type DeviceTemplateProductInput,
@@ -15,21 +15,35 @@ import {
   type IotDeviceProductTemplate,
 } from '@device-manager-ui/api/device'
 import {
-  installDeviceLibraryAndCreateDevice_api,
   joinDeviceLibraryToProject_api,
+  probeDeviceLibraryCapability_api,
+  queryProjectInstalledDeviceLibrary_api,
   queryDeviceLibraryTags_api,
   queryDeviceLibraryTemplates_api,
 } from '@device-manager-ui/api/device-library'
+import {
+  getStoragList,
+  saveProductStorePolicy,
+  type DeviceDataStorePolicyInfo,
+} from '@device-manager-ui/api/product'
 import { queryDeviceGroupDetailList_api, type DeviceGroup } from '@device-manager-ui/api/deviceGroup'
 import { queryProjectSpaceAreaSettings_api } from '@device-manager-ui/api/spaceArea'
 import type { ProjectArea } from '@device-manager-ui/modules/defaults/types'
+import type { ProductCategoryTreeNode } from '@device-manager-ui/views/device/Product/components/ProductCategoryTree.vue'
 import { formatIconValueFont } from '@jetlinks-web-core/components/IconValue'
-import { categoryLabel, toTemplateProductOption } from './iotAddDeviceProductOptions'
 import { buildAreaTreeData, isSelectableDeviceArea } from './iotAreaTreeOptions'
 import { buildDeviceGroupTreeData } from './iotDeviceGroupTreeOptions'
+import { toTemplateProductOption } from './iotAddDeviceProductOptions'
 import { saveIotDeviceAreaGroupBindings } from './iotDeviceAreaGroupBindings'
 import { useIotDeviceImageUpload } from './useIotDeviceImageUpload'
 import { useIotDeviceLibraryProductSync } from './useIotDeviceLibraryProductSync'
+import {
+  collectProductCategoryScopeIds,
+  hasAvailableStorePolicy,
+  isSelectableDeviceCreationCandidate,
+} from '@device-manager-ui/utils/deviceCreationSources'
+
+const UNCLASSIFIED_CATEGORY_ID = '__product-unclassified__'
 
 export type IotAddDeviceDrawerProps = {
   open: boolean
@@ -44,9 +58,7 @@ export type IotAddDeviceCreatedPayload = {
   deviceType?: string
 }
 
-export type IotAddDeviceInstallProgressLog = DeviceLibraryInstallProgress & {
-  id: string
-}
+export type IotAddDeviceInstallProgressLog = DeviceLibraryInstallProgress & { id: string }
 
 export type IotAddDeviceInstallProgressState = {
   logs: IotAddDeviceInstallProgressLog[]
@@ -59,51 +71,97 @@ type IotAddDeviceDrawerHandlers = {
   created: (payload: IotAddDeviceCreatedPayload) => void
 }
 
+function normalizeCategoryTree(nodes: Record<string, any>[] = []): ProductCategoryTreeNode[] {
+  return nodes.map((node) => ({
+    ...node,
+    id: String(node.id),
+    name: String(node.name ?? ''),
+    children: normalizeCategoryTree(node.children ?? node._children ?? []),
+  }))
+}
+
 export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: IotAddDeviceDrawerHandlers) {
   const { t: $t } = useI18n()
+  const creationSource = ref<DeviceCreationSource>('product')
+  const marketplaceCapability = ref<DeviceLibraryCapabilityState>('checking')
   const selectedProductKey = ref('')
   const selectedTemplateKey = ref('')
-  const templateOpen = ref(false)
+  const selectedProduct = ref<IotDeviceProductTemplate | null>(null)
+  const selectedTemplate = ref<DeviceTemplateProductInput | null>(null)
+  const libraryProductNeedsStorePolicy = ref(false)
+  const libraryProductChecking = ref(false)
   const productMessage = ref('')
   const libraryMessage = ref('')
+  const errorMessage = ref('')
+  const productLoading = ref(false)
   const libraryLoading = ref(false)
   const libraryTagLoading = ref(false)
-  const productLoading = ref(false)
-  const deviceTemplateLoading = ref(false)
   const configOptionsLoading = ref(false)
   const busy = ref(false)
-  const submitAction = ref<'create' | 'update-create' | ''>('')
-  const errorMessage = ref('')
+  const submitAction = ref<'create' | 'install' | ''>('')
   const installProgressLogs = ref<IotAddDeviceInstallProgressLog[]>([])
   const areaOptions = ref<ProjectArea[]>([])
   const groupOptions = ref<DeviceGroup[]>([])
-  const projectProducts = ref<IotDeviceProductTemplate[]>([])
-  const templateProducts = ref<DeviceTemplateProductInput[]>([])
-  const deviceTemplates = ref<DeviceTemplateProductInput[]>([])
+  const storePolicies = ref<DeviceDataStorePolicyInfo[]>([])
+  const categoryTree = ref<ProductCategoryTreeNode[]>([])
+  const categoryLoading = ref(false)
+  const selectedCategoryId = ref<string>()
+  const productCandidates = ref<IotDeviceProductTemplate[]>([])
+  const productTotal = ref(0)
+  const productPageIndex = ref(0)
+  const productPageSize = ref(4)
+  const productFilterTerms = ref<DeviceQueryTerm[]>([])
+  const libraryTemplates = ref<DeviceTemplateProductInput[]>([])
   const libraryTagGroups = ref<IotDeviceLibraryTagGroup[]>([])
-  const libraryTotal = ref(0)
   const libraryPageIndex = ref(0)
   const libraryPageSize = ref(6)
-  const libraryLoaded = ref(false)
-  const libraryTagLoaded = ref(false)
-  const productLoaded = ref(false)
-  const deviceTemplateLoaded = ref(false)
-  const configOptionsLoaded = ref(false)
+  const libraryHasMore = ref(false)
+  const libraryKeyword = ref('')
+  const libraryTags = ref<string[]>([])
   const formRef = ref<{ validate?: () => Promise<unknown>; clearValidate?: () => void } | null>(null)
   const imageUpload = useIotDeviceImageUpload()
-  let libraryRequestSeq = 0
+  let openSequence = 0
+  let productRequestSequence = 0
+  let libraryRequestSequence = 0
+  let libraryProductRequestSequence = 0
 
   const form = reactive({
-    name: '',
-    areaId: '',
-    area: '',
-    groupId: '',
-    description: '',
-    imageUrl: '',
+    name: '', areaId: '', area: '', groupId: '', description: '', imageUrl: '', storePolicy: '',
   })
-
+  const selectableAreas = computed(() => areaOptions.value)
+  const areaTreeData = computed(() => buildAreaTreeData(selectableAreas.value))
+  const groupTreeData = computed(() => buildDeviceGroupTreeData(groupOptions.value))
+  const isLibraryAvailable = computed(() => marketplaceCapability.value === 'available')
+  const selectedSource = computed<IotDeviceProductTemplate | DeviceTemplateProductInput | null>(() => (
+    creationSource.value === 'library' ? selectedTemplate.value : selectedProduct.value
+  ))
+  const installProgressState = computed<IotAddDeviceInstallProgressState>(() => ({
+    logs: installProgressLogs.value,
+    running: busy.value && submitAction.value === 'install',
+    hasError: installProgressLogs.value.some((item) => item.type === 'error'),
+  }))
+  const storagePolicyOptions = computed(() => storePolicies.value.map((item) => ({ value: item.id, label: item.name || item.id })))
+  const libraryProducts = computed(() => libraryTemplates.value.map(toTemplateProductOption))
+  const productSync = useIotDeviceLibraryProductSync({
+    projectId: () => props.projectId,
+    projectProducts: productCandidates,
+    templateProducts: libraryTemplates,
+    selectedTemplateKey,
+    selectedProductKey,
+    loadProducts: () => loadProductCandidates(true),
+    t: $t,
+  })
+  const libraryProductSyncState = productSync.state
   const formRules: Record<string, Rule[]> = {
     name: [{ required: true, message: $t('IotDeviceList.add.nameRequired'), trigger: 'blur' }],
+    storePolicy: [{
+      validator: async (_rule, value) => {
+        if (creationSource.value === 'library' && libraryProductNeedsStorePolicy.value && !value) {
+          throw new Error($t('IotDeviceList.add.storePolicyRequired'))
+        }
+      },
+      trigger: 'change',
+    }],
     areaId: [{
       validator: async (_rule, value) => {
         if (value && !isSelectableDeviceArea(selectableAreas.value, String(value))) throw new Error($t('IotDeviceList.add.areaLevelRequired'))
@@ -112,288 +170,15 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
     }],
   }
 
-  const availableProducts = computed(() => projectProducts.value)
-  const selectableAreas = computed(() => areaOptions.value)
-  const areaTreeData = computed(() => buildAreaTreeData(selectableAreas.value))
-  const groupTreeData = computed(() => buildDeviceGroupTreeData(groupOptions.value))
-  const libraryProducts = computed(() => templateProducts.value.map(toTemplateProductOption))
-  const deviceTemplateProducts = computed(() => deviceTemplates.value.map(toTemplateProductOption))
-  const selectedProduct = computed(() =>
-    availableProducts.value.find((p) => p.id === selectedProductKey.value) ?? null,
-  )
-  const selectedTemplate = computed(() =>
-    libraryProducts.value.find((p) => p.id === selectedTemplateKey.value) ?? null,
-  )
-
-  function applySourceDefaults(source?: Pick<IotDeviceProductTemplate, 'name' | 'photoUrl'> | null) {
+  function applySourceDefaults(source?: Pick<IotDeviceProductTemplate, 'name' | 'photoUrl' | 'storePolicy'> | null) {
     form.name = source?.name || ''
     form.imageUrl = source?.photoUrl || ''
-    // 设备库图片作为已有图片回填，复用上传组件的预览和提交链路。
+    form.storePolicy = source?.storePolicy || storePolicies.value[0]?.id || ''
     imageUpload.setExistingImage(form.imageUrl, form.name ? $t('IotDeviceList.imageAlt', { name: form.name }) : '')
   }
 
-  function selectProduct(productKey: string) {
-    selectedProductKey.value = productKey
-    const product = availableProducts.value.find((item) => item.id === productKey)
-    selectedTemplateKey.value = product?.templateId || ''
-    applySourceDefaults(product)
-    productSync.reset()
-  }
-
-  function selectTemplate(templateId: string) {
-    selectedTemplateKey.value = templateId
-    const template = [...libraryProducts.value, ...deviceTemplateProducts.value].find((item) => item.id === templateId)
-    const existingProduct = projectProducts.value.find((item) => item.templateId === templateId)
-    selectedProductKey.value = existingProduct?.id || ''
-    applySourceDefaults(template)
-    productSync.reset()
-  }
-
-  function confirmProductUpdate(product: IotDeviceProductTemplate, template: DeviceTemplateProductInput) {
-    return new Promise<boolean>((resolve) => {
-      Modal.confirm({
-        title: $t('IotDeviceList.add.updateProductTitle'),
-        content: $t('IotDeviceList.add.updateProductContent', {
-          template: template.name,
-          product: product.name,
-        }),
-        okText: $t('IotDeviceList.add.updateProductOk'),
-        cancelText: $t('IotDeviceList.action.cancel'),
-        onOk: () => resolve(true),
-        onCancel: () => resolve(false),
-      })
-    })
-  }
-
   function onAreaChange() {
-    const area = selectableAreas.value.find((item) => item.id === form.areaId)
-    form.area = area?.name ?? ''
-  }
-
-  function clearImage() {
-    imageUpload.clearImage()
-    form.imageUrl = imageUpload.imageUrl.value
-  }
-
-  async function loadDeviceLibraryTags(force = false) {
-    if (libraryTagLoading.value || (libraryTagLoaded.value && !force)) return
-    libraryTagLoading.value = true
-    try {
-      libraryTagGroups.value = await queryDeviceLibraryTags_api()
-      libraryTagLoaded.value = true
-    } catch {
-      libraryTagGroups.value = []
-    } finally {
-      libraryTagLoading.value = false
-    }
-  }
-
-  async function loadDeviceLibraryTemplates(force = false, query: DeviceLibraryTemplateQueryInput = {}) {
-    if (!force && (libraryLoading.value || libraryLoaded.value)) return
-    const requestSeq = ++libraryRequestSeq
-    libraryMessage.value = ''
-    libraryLoading.value = true
-    try {
-      const page = await queryDeviceLibraryTemplates_api({
-        projectId: props.projectId,
-        pageIndex: query.pageIndex ?? libraryPageIndex.value,
-        pageSize: query.pageSize ?? libraryPageSize.value,
-        keyword: query.keyword,
-        tags: query.tags,
-      })
-      if (requestSeq !== libraryRequestSeq) return
-      templateProducts.value = page.data
-      libraryTotal.value = page.total
-      libraryPageIndex.value = page.pageIndex
-      libraryPageSize.value = page.pageSize
-      libraryLoaded.value = true
-      if (selectedTemplateKey.value && !page.data.some((template) => template.id === selectedTemplateKey.value)) {
-        selectedTemplateKey.value = ''
-      }
-    } catch (error) {
-      if (requestSeq !== libraryRequestSeq) return
-      libraryMessage.value = error instanceof Error ? error.message : $t('IotDeviceList.add.templateLoadFailed')
-      templateProducts.value = []
-      libraryTotal.value = 0
-    } finally {
-      if (requestSeq === libraryRequestSeq) {
-        libraryLoading.value = false
-      }
-    }
-  }
-
-  async function loadProducts(force = false) {
-    if (productLoading.value || (productLoaded.value && !force)) return
-    productMessage.value = ''
-    productLoading.value = true
-    try {
-      const products = await queryDeviceProducts_api(props.projectId, props.deviceType)
-      projectProducts.value = products
-      productLoaded.value = true
-      if (props.initialProductId && products.some((product) => product.id === props.initialProductId)) {
-        selectProduct(props.initialProductId)
-      }
-      if (selectedTemplateKey.value && !selectedProductKey.value) {
-        const existingProduct = products.find((item) => item.templateId === selectedTemplateKey.value)
-        selectedProductKey.value = existingProduct?.id || ''
-      }
-    } catch (error) {
-      productMessage.value = error instanceof Error ? error.message : $t('IotDeviceList.add.productLoadFailed')
-      projectProducts.value = []
-    } finally {
-      productLoading.value = false
-    }
-  }
-
-  async function loadConfigOptions(force = false) {
-    if (configOptionsLoading.value || (configOptionsLoaded.value && !force)) return
-    configOptionsLoading.value = true
-    try {
-      const [areaSettings, groups] = await Promise.all([
-        queryProjectSpaceAreaSettings_api(props.projectId).catch(() => ({ areas: [] })),
-        queryDeviceGroupDetailList_api().catch(() => []),
-      ])
-      areaOptions.value = areaSettings.areas
-      groupOptions.value = groups
-      configOptionsLoaded.value = true
-    } finally {
-      configOptionsLoading.value = false
-    }
-  }
-
-  async function loadDeviceTemplates(force = false) {
-    if (deviceTemplateLoading.value || (deviceTemplateLoaded.value && !force)) return
-    libraryMessage.value = ''
-    deviceTemplateLoading.value = true
-    try {
-      const templates = await queryDeviceTemplates_api(props.deviceType)
-      deviceTemplates.value = templates
-      deviceTemplateLoaded.value = true
-      if (selectedTemplateKey.value && !templates.some((template) => template.id === selectedTemplateKey.value)) {
-        selectedTemplateKey.value = ''
-      }
-    } catch (error) {
-      libraryMessage.value = error instanceof Error ? error.message : $t('IotDeviceList.add.templateLoadFailed')
-      deviceTemplates.value = []
-    } finally {
-      deviceTemplateLoading.value = false
-    }
-  }
-
-  async function addTemplateToProject(templateId: string) {
-    if (busy.value) return
-    const template = deviceTemplates.value.find((item) => item.id === templateId)
-    if (!template) return
-    const existingProduct = projectProducts.value.find((item) => item.templateId === template.id)
-    if (existingProduct && !(await confirmProductUpdate(existingProduct, template))) return
-    libraryMessage.value = ''
-    busy.value = true
-    try {
-      // 已有同模板隐藏产品时传入原产品ID，后端会按最新模板覆盖更新而不是创建重复产品。
-      const product = await createProductFromDeviceTemplate_api({
-        projectId: props.projectId,
-        template,
-        productId: existingProduct?.id,
-      })
-      projectProducts.value = [
-        product,
-        ...projectProducts.value.filter((item) => item.id !== product.id),
-      ]
-      selectedProductKey.value = product.id
-      selectedTemplateKey.value = template.id
-      templateOpen.value = false
-      productMessage.value = existingProduct
-        ? $t('IotDeviceList.add.productUpdatedFromTemplate', { name: template.name })
-        : $t('IotDeviceList.add.productCreatedFromTemplate', { name: template.name })
-    } catch (error) {
-      libraryMessage.value = error instanceof Error ? error.message : $t('IotDeviceList.add.productCreateFailed')
-    } finally {
-      busy.value = false
-    }
-  }
-
-  const productSync = useIotDeviceLibraryProductSync({
-    projectId: () => props.projectId,
-    projectProducts,
-    templateProducts,
-    selectedTemplateKey,
-    selectedProductKey,
-    loadProducts,
-    t: $t,
-  })
-  const libraryProductSyncState = productSync.state
-  const updateAndCreateDisabledReason = productSync.disabledReason
-  const updateAndCreateBusy = computed(() => submitAction.value === 'update-create')
-  const updateAndCreateDisabled = computed(() =>
-    libraryProductSyncState.value.checking
-    || libraryProductSyncState.value.updateDisabled
-    || (busy.value && !updateAndCreateBusy.value),
-  )
-  const updateAndCreateSubmitText = computed(() =>
-    updateAndCreateBusy.value
-      ? $t('IotDeviceList.add.updatingAndCreating')
-      : $t('IotDeviceList.add.updateAndCreate'),
-  )
-  const installProgressState = computed<IotAddDeviceInstallProgressState>(() => ({
-    logs: installProgressLogs.value,
-    running: busy.value && Boolean(submitAction.value) && Boolean(selectedTemplateKey.value),
-    hasError: installProgressLogs.value.some((item) => item.type === 'error'),
-  }))
-
-  function clearInstallProgress() {
-    installProgressLogs.value = []
-  }
-
-  function appendInstallProgress(progress: DeviceLibraryInstallProgress) {
-    const message = progress.type === 'error'
-      ? normalizeCreateDeviceErrorMessage(progress.message)
-      : progress.message
-    if (!message) return
-    installProgressLogs.value = [
-      ...installProgressLogs.value,
-      {
-        ...progress,
-        message,
-        id: `${Date.now()}-${installProgressLogs.value.length}`,
-      },
-    ]
-  }
-
-  function isMissingDeviceAccessConfigError(message: string) {
-    // 后端仍按接入网关报错，项目侧用户只需要知道接入配置需管理员处理。
-    return message.includes('设备接入网关')
-      && (message.includes('未找到业务标识') || message.includes('请先创建或绑定'))
-  }
-
-  function isServiceConnectionTimeoutError(message: string) {
-    return /^No keep-alive acks for \d+\s*ms$/i.test(message.trim())
-  }
-
-  function normalizeCreateDeviceErrorMessage(message: string) {
-    if (isServiceConnectionTimeoutError(message)) {
-      // 保留英文原文便于排查，中文环境只展示面向用户的简短提示。
-      return $t('IotDeviceList.add.serviceConnectionTimeout', { message })
-    }
-    if (isMissingDeviceAccessConfigError(message)) {
-      return $t('IotDeviceList.add.accessConfigIncomplete')
-    }
-    return message
-  }
-
-  function getCreateDeviceErrorMessage(error: unknown) {
-    const message = error instanceof Error ? error.message : ''
-    return normalizeCreateDeviceErrorMessage(message) || $t('IotDeviceList.add.createFailed')
-  }
-
-  function appendInstallError(error: unknown) {
-    const message = getCreateDeviceErrorMessage(error)
-    if (!message || installProgressLogs.value.some((item) => item.type === 'error' && item.message === message)) return
-    appendInstallProgress({ type: 'error', message, payload: error })
-  }
-
-  function appendInstallWarning(message: string, extra?: unknown) {
-    if (!message || installProgressLogs.value.some((item) => item.type === 'warning' && item.message === message)) return
-    appendInstallProgress({ type: 'warning', message, extra })
+    form.area = selectableAreas.value.find((item) => item.id === form.areaId)?.name ?? ''
   }
 
   function selectPresetIcon(icon: string) {
@@ -402,180 +187,307 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
     imageUpload.setExistingImage(form.imageUrl)
   }
 
-  function backToLibrary() {
-    form.name = ''
-    form.areaId = ''
-    form.area = ''
-    form.groupId = ''
-    form.description = ''
-    clearImage()
+  function selectProduct(productId: string) {
+    selectedProductKey.value = productId
+    selectedProduct.value = productCandidates.value.find((item) => item.id === productId) ?? null
+    applySourceDefaults(selectedProduct.value)
+  }
+
+  function selectTemplate(templateId: string) {
+    selectedTemplateKey.value = templateId
+    selectedTemplate.value = libraryTemplates.value.find((item) => item.id === templateId) ?? null
+    applySourceDefaults(selectedTemplate.value)
+    libraryProductNeedsStorePolicy.value = false
+    libraryProductChecking.value = true
+    void checkLibraryProduct()
+  }
+
+  /**
+   * 检查设备库模板是否已经对应当前运行时产品；查询失败时按需安装处理，避免跳过产品创建。
+   */
+  async function checkLibraryProduct() {
+    const requestSequence = ++libraryProductRequestSequence
+    try {
+      await productSync.prepare()
+      if (requestSequence !== libraryProductRequestSequence) return
+      const productId = libraryProductSyncState.value.productId
+      const product = productId
+        ? productCandidates.value.find((item) => item.id === productId)
+          ?? await queryDeviceProductById_api(productId).catch(() => null)
+        : null
+      libraryProductNeedsStorePolicy.value = !product
+      if (product) {
+        selectedProduct.value = product
+        selectedProductKey.value = product.id
+      } else {
+        await loadStoragePolicies()
+      }
+    } catch {
+      if (requestSequence === libraryProductRequestSequence) {
+        libraryProductNeedsStorePolicy.value = true
+        await loadStoragePolicies()
+      }
+    } finally {
+      productSync.finishChecking()
+      if (requestSequence === libraryProductRequestSequence) libraryProductChecking.value = false
+    }
+  }
+
+  function selectSource(source: DeviceCreationSource) {
+    if (source === 'library' && !isLibraryAvailable.value) return
+    // 两种来源的产品集合不同，切换时必须撤销产品侧的在途请求并清空筛选，避免隐藏条件污染返回后的列表。
+    ++productRequestSequence
+    productFilterTerms.value = []
+    productPageIndex.value = 0
+    productTotal.value = 0
+    creationSource.value = source
     errorMessage.value = ''
-    clearInstallProgress()
+    if (source !== 'library') {
+      libraryProductNeedsStorePolicy.value = false
+      libraryProductChecking.value = false
+      ++libraryProductRequestSequence
+      productSync.reset()
+    }
+    if (source === 'product') void loadProductCandidates()
+    else void loadDeviceLibraryTemplates()
+  }
+
+  function selectProductCategory(id?: string) {
+    selectedCategoryId.value = id
+    productPageIndex.value = 0
+    void loadProductCandidates(true)
+  }
+
+  function selectUnclassifiedProductCategory() {
+    selectedCategoryId.value = UNCLASSIFIED_CATEGORY_ID
+    productPageIndex.value = 0
+    void loadProductCandidates(true)
+  }
+
+  async function loadProductCategories() {
+    if (categoryLoading.value) return
+    categoryLoading.value = true
+    try {
+      categoryTree.value = normalizeCategoryTree(await queryDeviceProductCategoryTree_api())
+    } finally {
+      categoryLoading.value = false
+    }
+  }
+
+  /** 产品来源独占分页、分类和条件筛选状态，切换设备库不会覆盖其浏览位置。 */
+  async function loadProductCandidates(force = false, query?: { terms?: DeviceQueryTerm[]; pageIndex?: number }) {
+    if (productLoading.value && !force) return
+    const requestSequence = ++productRequestSequence
+    productLoading.value = true
+    productMessage.value = ''
+    if (query?.terms !== undefined) productFilterTerms.value = query.terms
+    if (query?.pageIndex !== undefined) productPageIndex.value = query.pageIndex
+    try {
+      const page = await queryDeviceProductPage_api({
+        pageIndex: productPageIndex.value,
+        pageSize: productPageSize.value,
+        terms: productFilterTerms.value,
+        classifiedIds: selectedCategoryId.value && selectedCategoryId.value !== UNCLASSIFIED_CATEGORY_ID
+          ? collectProductCategoryScopeIds(categoryTree.value, selectedCategoryId.value)
+          : undefined,
+        unclassified: selectedCategoryId.value === UNCLASSIFIED_CATEGORY_ID,
+        deviceType: props.deviceType,
+      })
+      if (requestSequence !== productRequestSequence || !props.open) return
+      productCandidates.value = page.data
+      productTotal.value = page.total
+      productPageIndex.value = page.pageIndex
+      productPageSize.value = page.pageSize
+      if (props.initialProductId && !selectedProduct.value) {
+        const initial = page.data.find((item) => item.id === props.initialProductId)
+        if (initial) selectProduct(initial.id)
+      }
+    } catch (error) {
+      if (requestSequence !== productRequestSequence) return
+      productCandidates.value = []
+      productTotal.value = 0
+      productMessage.value = error instanceof Error ? error.message : $t('IotDeviceList.add.productLoadFailed')
+    } finally {
+      if (requestSequence === productRequestSequence) productLoading.value = false
+    }
+  }
+
+  async function loadDeviceLibraryTags() {
+    if (libraryTagLoading.value) return
+    libraryTagLoading.value = true
+    try {
+      libraryTagGroups.value = await queryDeviceLibraryTags_api()
+    } catch {
+      libraryTagGroups.value = []
+    } finally {
+      libraryTagLoading.value = false
+    }
+  }
+
+  /** 运行时市场不返回 total，以 hasMore 而非伪造总数驱动设备库翻页。 */
+  async function loadDeviceLibraryTemplates(force = false, query: DeviceLibraryTemplateQueryInput = {}) {
+    if (libraryLoading.value && !force) return
+    const requestSequence = ++libraryRequestSequence
+    libraryLoading.value = true
+    libraryMessage.value = ''
+    if (query.keyword !== undefined) libraryKeyword.value = query.keyword.trim()
+    if (query.tags !== undefined) libraryTags.value = query.tags
+    if (query.pageIndex !== undefined) libraryPageIndex.value = query.pageIndex
+    try {
+      const page = await queryDeviceLibraryTemplates_api({
+        pageIndex: libraryPageIndex.value, pageSize: libraryPageSize.value, keyword: libraryKeyword.value,
+        tags: libraryTags.value, deviceType: props.deviceType,
+      })
+      if (requestSequence !== libraryRequestSequence || !props.open) return
+      libraryTemplates.value = page.data.filter(isSelectableDeviceCreationCandidate)
+      libraryPageIndex.value = page.pageIndex
+      libraryPageSize.value = page.pageSize
+      libraryHasMore.value = page.hasMore
+    } catch (error) {
+      if (requestSequence !== libraryRequestSequence) return
+      libraryTemplates.value = []
+      libraryHasMore.value = false
+      libraryMessage.value = error instanceof Error ? error.message : $t('IotDeviceList.add.templateLoadFailed')
+    } finally {
+      if (requestSequence === libraryRequestSequence) libraryLoading.value = false
+    }
+  }
+
+  async function probeMarketplace() {
+    const requestSequence = openSequence
+    marketplaceCapability.value = 'checking'
+    try {
+      await probeDeviceLibraryCapability_api()
+      if (requestSequence !== openSequence || !props.open) return
+      marketplaceCapability.value = 'available'
+      creationSource.value = 'library'
+      void loadDeviceLibraryTags()
+      void loadDeviceLibraryTemplates()
+    } catch {
+      // 市场缺失、无权限或网络异常只影响设备库入口，产品创建路径始终可用。
+      if (requestSequence !== openSequence || !props.open) return
+      marketplaceCapability.value = 'unavailable'
+      creationSource.value = 'product'
+    }
+  }
+
+  async function loadConfigOptions() {
+    if (configOptionsLoading.value) return
+    configOptionsLoading.value = true
+    try {
+      const [areaSettings, groups] = await Promise.all([
+        queryProjectSpaceAreaSettings_api(props.projectId).catch(() => ({ areas: [] })),
+        queryDeviceGroupDetailList_api().catch(() => []),
+      ])
+      areaOptions.value = areaSettings.areas
+      groupOptions.value = groups
+    } finally {
+      configOptionsLoading.value = false
+    }
+  }
+
+  /** 仅设备库首次安装产品时读取策略，已有产品和按产品创建均不改产品级配置。 */
+  async function loadStoragePolicies() {
+    const storageResponse = await getStoragList().catch(() => ({ result: [] }))
+    const result = (storageResponse as any)?.result ?? storageResponse ?? []
+    storePolicies.value = Array.isArray(result) ? result.filter((item) => item?.id) : []
+    if (!form.storePolicy || !storePolicies.value.some((item) => item.id === form.storePolicy)) {
+      form.storePolicy = storePolicies.value[0]?.id || ''
+    }
+  }
+
+  function appendInstallProgress(progress: DeviceLibraryInstallProgress) {
+    if (!progress.message) return
+    installProgressLogs.value = [...installProgressLogs.value, { ...progress, id: `${Date.now()}-${installProgressLogs.value.length}` }]
+  }
+
+  function clearBasicFields() {
+    form.name = ''; form.areaId = ''; form.area = ''; form.groupId = ''; form.description = ''
+    form.storePolicy = selectedSource.value?.storePolicy || storePolicies.value[0]?.id || ''
+    imageUpload.clearImage()
+    form.imageUrl = imageUpload.imageUrl.value
+    errorMessage.value = ''
+    installProgressLogs.value = []
     void nextTick(() => formRef.value?.clearValidate?.())
   }
 
   function resetForm() {
-    selectedProductKey.value = ''
-    selectedTemplateKey.value = ''
-    templateOpen.value = false
-    productMessage.value = ''
-    libraryMessage.value = ''
-    form.name = ''
-    form.areaId = ''
-    form.area = ''
-    form.groupId = ''
-    form.description = ''
-    clearImage()
-    errorMessage.value = ''
-    clearInstallProgress()
-    busy.value = false
-    submitAction.value = ''
-    libraryRequestSeq += 1
-    libraryLoading.value = false
-    libraryTagLoading.value = false
-    productLoading.value = false
-    deviceTemplateLoading.value = false
-    configOptionsLoading.value = false
-    areaOptions.value = []
-    groupOptions.value = []
-    projectProducts.value = []
-    templateProducts.value = []
-    deviceTemplates.value = []
-    libraryTagGroups.value = []
-    libraryTotal.value = 0
-    libraryPageIndex.value = 0
-    libraryPageSize.value = 6
+    openSequence += 1; productRequestSequence += 1; libraryRequestSequence += 1; libraryProductRequestSequence += 1
+    creationSource.value = 'product'; marketplaceCapability.value = 'checking'
+    selectedProductKey.value = ''; selectedTemplateKey.value = ''
+    selectedProduct.value = null; selectedTemplate.value = null; selectedCategoryId.value = undefined
+    libraryProductNeedsStorePolicy.value = false; libraryProductChecking.value = false
     productSync.reset()
-    libraryLoaded.value = false
-    libraryTagLoaded.value = false
-    productLoaded.value = false
-    deviceTemplateLoaded.value = false
-    configOptionsLoaded.value = false
-    void nextTick(() => formRef.value?.clearValidate?.())
+    productCandidates.value = []; productTotal.value = 0; productPageIndex.value = 0; productFilterTerms.value = []
+    libraryTemplates.value = []; libraryTagGroups.value = []; libraryPageIndex.value = 0; libraryKeyword.value = ''; libraryTags.value = []; libraryHasMore.value = false
+    areaOptions.value = []; groupOptions.value = []; storePolicies.value = []
+    productMessage.value = ''; libraryMessage.value = ''; errorMessage.value = ''; installProgressLogs.value = []
+    busy.value = false; submitAction.value = ''
+    form.name = ''; form.areaId = ''; form.area = ''; form.groupId = ''; form.description = ''; form.storePolicy = ''
+    imageUpload.clearImage(); form.imageUrl = ''
   }
 
   function onClose() {
     handlers.updateOpen(false)
-    setTimeout(resetForm, 200)
+    window.setTimeout(resetForm, 200)
   }
 
-  async function bindCreatedDevice(deviceId: string, options: { bindGroup?: boolean } = { bindGroup: true }) {
-    await saveIotDeviceAreaGroupBindings({
-      deviceId,
-      deviceName: form.name,
-      productName: selectedProduct.value?.name,
-      areaId: form.areaId,
-      groupId: options.bindGroup === false ? undefined : form.groupId,
-    })
-  }
-
-  async function bindCreatedDeviceBestEffort(deviceId: string, options: { bindGroup?: boolean } = { bindGroup: true }) {
-    try {
-      await bindCreatedDevice(deviceId, options)
-    } catch (error) {
-      // 设备创建和区域/分组绑定不是同一个事务；绑定失败不能回滚已创建设备，只记录日志供排查。
-      console.warn('[iot-ui] 设备已创建，但区域或分组绑定失败', error)
-      appendInstallWarning($t('IotDeviceList.add.bindAfterCreateFailed'), error)
-    }
-  }
-
-  function buildDeviceCreateInput(product?: IotDeviceProductTemplate, imageUrl = '') {
+  function buildDeviceCreateInput(product: IotDeviceProductTemplate, imageUrl: string) {
     return {
-      projectId: props.projectId,
-      productKey: product?.id ?? '',
-      productName: product?.name,
-      productDeviceType: product?.deviceType,
-      parentId: props.parentId,
-      name: form.name,
-      areaId: form.areaId,
-      area: form.area,
-      groupId: form.groupId,
+      projectId: props.projectId, productKey: product.id, productName: product.name, productDeviceType: product.deviceType,
+      parentId: props.parentId, name: form.name, areaId: form.areaId, area: form.area, groupId: form.groupId,
       scenario: groupOptions.value.find((group) => group.id === form.groupId)?.name,
-      imageUrl,
-      description: form.description,
+      imageUrl, description: form.description,
     }
   }
 
-  async function installTemplateAndCreateDevice(imageUrl: string, options: { updateProduct?: boolean } = {}) {
-    const template = templateProducts.value.find((item) => item.id === selectedTemplateKey.value)
-    if (!template) return null
-    const result = await installDeviceLibraryAndCreateDevice_api({
-      projectId: props.projectId,
-      template,
-      productName: template.name,
-      device: buildDeviceCreateInput(undefined, imageUrl),
-    }, {
-      onProgress: appendInstallProgress,
-      updateProduct: options.updateProduct,
-    })
-    projectProducts.value = [
-      result.product,
-      ...projectProducts.value.filter((item) => item.id !== result.product.id),
-    ]
-    selectedProductKey.value = result.product.id
-    selectedTemplateKey.value = template.id
-    return result
+  async function saveStorePolicy(product: IotDeviceProductTemplate) {
+    if (!hasAvailableStorePolicy(form.storePolicy, storePolicies.value)) {
+      throw new Error($t('IotDeviceList.add.storePolicyRequired'))
+    }
+    await saveProductStorePolicy(product.id, form.storePolicy)
+    product.storePolicy = form.storePolicy
   }
 
-  async function ensureTemplateProduct() {
-    if (selectedProductKey.value && selectedProduct.value) return selectedProduct.value
-    const template = templateProducts.value.find((item) => item.id === selectedTemplateKey.value)
-    if (!template) return null
+  async function resolveCreationProduct(): Promise<{ product: IotDeviceProductTemplate | null; needsStorePolicy: boolean }> {
+    if (creationSource.value === 'product') return { product: selectedProduct.value, needsStorePolicy: false }
+    if (!selectedTemplate.value) return { product: null, needsStorePolicy: false }
 
-    if (template.installedProductId) {
-      // installedProductId 只表示安装记录，仍需用当前权限查询产品后才能复用。
-      const product = await queryDeviceProductById_api(template.installedProductId)
-      if (!product) throw new Error($t('IotDeviceList.add.installedProductMissing'))
-      projectProducts.value = [product, ...projectProducts.value.filter((item) => item.id !== product.id)]
-      selectedProductKey.value = product.id
-      selectedTemplateKey.value = template.id
-      return product
-    }
-
-    const findExistingProduct = () => projectProducts.value.find((item) => item.templateId === template.id)
-    let existingProduct = productLoaded.value ? findExistingProduct() : undefined
-    if (existingProduct) {
-      selectedProductKey.value = existingProduct.id
-      return existingProduct
-    }
-
-    if (template.installed) {
-      await loadProducts()
-      existingProduct = findExistingProduct()
+    const installedProductId = (await queryProjectInstalledDeviceLibrary_api(
+      props.projectId,
+      [selectedTemplate.value.id],
+    ).catch(() => new Map<string, string>())).get(selectedTemplate.value.id)
+    if (installedProductId) {
+      const existingProduct = await queryDeviceProductById_api(installedProductId).catch(() => null)
       if (existingProduct) {
+        selectedProduct.value = existingProduct
         selectedProductKey.value = existingProduct.id
-        return existingProduct
+        return { product: existingProduct, needsStorePolicy: false }
       }
-      throw new Error($t('IotDeviceList.add.installedProductMissing'))
     }
 
+    submitAction.value = 'install'
     const product = await joinDeviceLibraryToProject_api({
-      projectId: props.projectId,
-      template,
-      productName: template.name,
-    })
-    projectProducts.value = [
-      product,
-      ...projectProducts.value.filter((item) => item.id !== product.id),
-    ]
+      projectId: props.projectId, template: selectedTemplate.value, productName: selectedTemplate.value.name,
+    }, { onProgress: appendInstallProgress })
+    selectedProduct.value = product
     selectedProductKey.value = product.id
-    selectedTemplateKey.value = template.id
-    return product
+    return { product, needsStorePolicy: true }
   }
 
-  async function prepareConfirmStep() {
-    busy.value = true
+  async function bindCreatedDeviceBestEffort(deviceId: string, product: IotDeviceProductTemplate) {
     try {
-      await productSync.prepare()
-    } finally {
-      productSync.finishChecking()
-      busy.value = false
+      await saveIotDeviceAreaGroupBindings({
+        deviceId, deviceName: form.name, productName: product.name, areaId: form.areaId, groupId: form.groupId,
+      })
+    } catch (error) {
+      console.warn('[iot-ui] 设备已创建，但区域或分组绑定失败', error)
     }
   }
 
-  async function onSubmit(options: { syncProduct?: boolean } = {}) {
+  async function onSubmit() {
     errorMessage.value = ''
-    if (!selectedProductKey.value && !selectedTemplateKey.value) {
+    if (!selectedSource.value) {
       errorMessage.value = $t('IotDeviceList.add.selectSourceFirst')
       return
     }
@@ -584,80 +496,56 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
     } catch {
       return
     }
-    clearInstallProgress()
+    installProgressLogs.value = []
     busy.value = true
-    submitAction.value = options.syncProduct ? 'update-create' : 'create'
+    submitAction.value = 'create'
     try {
-      const imageUrl = await imageUpload.resolveImageUrl()
-      if (selectedTemplateKey.value) {
-        const result = await installTemplateAndCreateDevice(imageUrl, { updateProduct: options.syncProduct })
-        if (!result) {
-          errorMessage.value = $t('IotDeviceList.add.selectSourceFirst')
-          return
-        }
-        await bindCreatedDeviceBestEffort(result.device.id, { bindGroup: false })
-        handlers.created({
-          deviceId: result.device.id,
-          deviceType: result.product.deviceType,
-        })
-        handlers.updateOpen(false)
-        setTimeout(resetForm, 200)
-        return
+      const resolved = await resolveCreationProduct()
+      if (!resolved.product) throw new Error($t('IotDeviceList.add.selectSourceFirst'))
+      if (resolved.needsStorePolicy) {
+        if (!storePolicies.value.length) await loadStoragePolicies()
+        await saveStorePolicy(resolved.product)
       }
-      const product = options.syncProduct
-        ? await productSync.syncSelectedProduct()
-        : await ensureTemplateProduct()
-      if (!product) {
-        errorMessage.value = $t('IotDeviceList.add.selectSourceFirst')
-        return
-      }
-      const device = await createDevice_api(buildDeviceCreateInput(product, imageUrl))
-      await bindCreatedDeviceBestEffort(device.id)
-      handlers.created({
-        deviceId: device.id,
-        deviceType: product.deviceType,
-      })
+      submitAction.value = 'create'
+      const device = await createDevice_api(buildDeviceCreateInput(resolved.product, await imageUpload.resolveImageUrl()))
+      await bindCreatedDeviceBestEffort(device.id, resolved.product)
+      handlers.created({ deviceId: device.id, deviceType: resolved.product.deviceType })
       handlers.updateOpen(false)
-      setTimeout(resetForm, 200)
+      window.setTimeout(resetForm, 200)
     } catch (error) {
-      errorMessage.value = getCreateDeviceErrorMessage(error)
-      if (selectedTemplateKey.value) appendInstallError(error)
+      errorMessage.value = error instanceof Error && error.message ? error.message : $t('IotDeviceList.add.createFailed')
+      if (creationSource.value === 'library') appendInstallProgress({ type: 'error', message: errorMessage.value })
     } finally {
       busy.value = false
       submitAction.value = ''
     }
   }
 
-  async function onUpdateAndSubmit() {
-    if (libraryProductSyncState.value.updateDisabled) return
-    await onSubmit({ syncProduct: true })
-  }
-
-  watch(
-    () => props.open,
-    (next) => {
-      if (next) {
-        resetForm()
-        void loadDeviceLibraryTemplates()
-        void loadDeviceLibraryTags()
-      }
-    },
-  )
+  watch(() => props.open, (open) => {
+    if (!open) return
+    resetForm()
+    openSequence += 1
+    void loadProductCategories()
+    void loadProductCandidates(true)
+    void probeMarketplace()
+  })
 
   return {
-    selectedProductKey, selectedTemplateKey, templateOpen,
-    productMessage, libraryMessage, libraryLoading, libraryTagLoading, productLoading, deviceTemplateLoading, configOptionsLoading,
-    busy, submitAction, errorMessage, imagePreviewUrl: imageUpload.imagePreviewUrl, imageFileName: imageUpload.imageFileName,
-    formRef, form, formRules, availableProducts, areaTreeData, groupTreeData,
-    libraryProducts, libraryTagGroups, libraryTotal, libraryPageIndex, libraryPageSize, libraryProductSyncState,
-    deviceTemplateProducts, selectedProduct, selectedTemplate,
-    updateAndCreateDisabledReason, updateAndCreateBusy, updateAndCreateDisabled, updateAndCreateSubmitText,
-    installProgressState,
-    categoryLabel, selectProduct, selectTemplate, onAreaChange,
+    creationSource, marketplaceCapability, isLibraryAvailable,
+    selectedProductKey, selectedTemplateKey, selectedProduct, selectedTemplate, selectedSource,
+    libraryProductNeedsStorePolicy, libraryProductChecking,
+    libraryProductSyncState,
+    productMessage, libraryMessage, errorMessage, productLoading, libraryLoading, libraryTagLoading,
+    busy, submitAction, installProgressState,
+    formRef, form, formRules, areaTreeData, groupTreeData,
+    storePolicies, storagePolicyOptions, configOptionsLoading,
+    categoryTree, categoryLoading, selectedCategoryId, productCandidates, productTotal, productPageIndex, productPageSize,
+    libraryProducts, libraryTagGroups, libraryPageIndex, libraryPageSize, libraryHasMore,
+    onAreaChange, selectPresetIcon,
+    selectSource, selectProduct, selectTemplate, selectProductCategory, selectUnclassifiedProductCategory,
+    loadProductCandidates, loadDeviceLibraryTemplates, loadConfigOptions,
+    clearBasicFields, onClose, onSubmit,
     handleImageBeforeUpload: imageUpload.handleImageBeforeUpload,
-    selectPresetIcon,
-    backToLibrary,
-    addTemplateToProject, loadDeviceLibraryTemplates, loadDeviceLibraryTags, loadProducts, loadConfigOptions, loadDeviceTemplates,
-    prepareConfirmStep, onClose, onSubmit, onUpdateAndSubmit,
+    imagePreviewUrl: imageUpload.imagePreviewUrl, imageFileName: imageUpload.imageFileName,
   }
 }

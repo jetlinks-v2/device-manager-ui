@@ -39,6 +39,7 @@ import { useIotDeviceMeta } from '@device-manager-ui/hooks/useIotDeviceMeta'
 import type { ProjectArea, ProjectAreaSettings } from '@device-manager-ui/modules/defaults/types'
 import { IOT_MOCK_PROJECT_ID, iotDeviceService } from '@device-manager-ui/services/iotDevice.service'
 import type { IotDevice } from '@device-manager-ui/types'
+import { buildIotDeviceDetailPath } from '@device-manager-ui/views/device/list/hooks/useIotDeviceRouting'
 
 import type { AreaTreeNode, GroupItem } from './iotDeviceGroupsPage.types'
 import { useIotTypeGroupDeviceBinding } from './useIotTypeGroupDeviceBinding'
@@ -755,7 +756,7 @@ export function useIotDeviceGroupsPage() {
     areaExpandedKeys,
     areaTreeData,
     deviceCommonFilterFieldsByView,
-    deviceDetailPath: (deviceId: string) => `/iot-user/device/list/Detail/${deviceId}?${new URLSearchParams({ projectId: projectId.value }).toString()}`,
+    deviceDetailPath: (deviceId: string) => buildIotDeviceDetailPath(projectId.value, deviceId, undefined, route),
     groupKeyword,
     groupViewOptions,
     handleDeviceFilterSearch,

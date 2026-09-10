@@ -46,7 +46,6 @@
             block-node
             :tree-data="groupTree"
             :selected-keys="scopeId ? [scopeId] : []"
-            :default-expand-all="true"
             @select="onGroupSelect"
           >
             <template #title="node">
@@ -182,6 +181,7 @@ const onGroupSelect: TreeProps['onSelect'] = (keys) => select(String(keys[0] || 
   gap: var(--space-3);
   min-height: 0;
   height: 100%;
+  overflow: hidden;
 }
 
 .iot-device-scope__body {

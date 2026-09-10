@@ -62,15 +62,31 @@
           />
 
           <div v-if="templates.length" class="add-device-library__pager">
-            <span>{{ $t('IotDeviceList.add.libraryTotal', { total }) }}</span>
-            <a-pagination
-              v-model:current="page"
-              size="small"
-              :total="total"
-              :page-size="pageSize"
-              :show-size-changer="false"
-              show-less-items
-            />
+            <a-space>
+              <a-tooltip :title="$t('IotDeviceList.add.prev')">
+                <a-button
+                  type="text"
+                  size="small"
+                  :aria-label="$t('IotDeviceList.add.prev')"
+                  :disabled="pageIndex === 0"
+                  @click="changePage(pageIndex - 1)"
+                >
+                  <template #icon><AIcon type="LeftOutlined" /></template>
+                </a-button>
+              </a-tooltip>
+              <span>{{ pageIndex + 1 }}</span>
+              <a-tooltip :title="$t('IotDeviceList.add.next')">
+                <a-button
+                  type="text"
+                  size="small"
+                  :aria-label="$t('IotDeviceList.add.next')"
+                  :disabled="!hasMore"
+                  @click="changePage(pageIndex + 1)"
+                >
+                  <template #icon><AIcon type="RightOutlined" /></template>
+                </a-button>
+              </a-tooltip>
+            </a-space>
           </div>
         </a-spin>
       </div>
@@ -96,7 +112,7 @@ const props = defineProps({
   selectedTemplateKey: { type: String, required: true },
   selectableDeviceType: { type: String, default: '' },
   tagFilterGroups: { type: Array as PropType<IotDeviceLibraryTagGroup[]>, default: () => [] },
-  total: { type: Number, default: 0 },
+  hasMore: { type: Boolean, default: false },
   pageIndex: { type: Number, default: 0 },
   pageSize: { type: Number, default: 6 },
   loading: { type: Boolean, default: false },
@@ -112,7 +128,6 @@ const { t: $t } = useI18n()
 const keyword = ref('')
 const submittedKeyword = ref('')
 const activeTagIds = ref<string[]>([])
-const page = ref(props.pageIndex + 1)
 const tagGroupsExpanded = ref(false)
 
 const showTagPanel = computed(() => props.tagLoading || props.tagFilterGroups.length || activeTagIds.value.length)
@@ -124,7 +139,7 @@ const hasHiddenTagFilterGroups = computed(() => props.tagFilterGroups.length > C
 
 function handleKeywordSearch(value = keyword.value) {
   submittedKeyword.value = value.trim()
-  updatePageAndQuery(1)
+  updatePageAndQuery(0)
 }
 
 function handleKeywordChange(event: Event) {
@@ -142,25 +157,26 @@ function toggleTagFilter(tagId: string) {
   activeTagIds.value = isSelected
     ? activeTagIds.value.filter((item) => item !== tagId)
     : [...activeTagIds.value, tagId]
-  updatePageAndQuery(1)
+  updatePageAndQuery(0)
 }
 
 function clearTagFilters() {
   activeTagIds.value = []
-  updatePageAndQuery(1)
+  updatePageAndQuery(0)
 }
 
-function updatePageAndQuery(nextPage: number) {
-  if (page.value !== nextPage) {
-    page.value = nextPage
-    return
-  }
-  emitQuery()
+function updatePageAndQuery(nextPageIndex: number) {
+  emitQuery(nextPageIndex)
 }
 
-function emitQuery() {
+function changePage(nextPageIndex: number) {
+  if (nextPageIndex < 0 || (nextPageIndex > props.pageIndex && !props.hasMore)) return
+  emitQuery(nextPageIndex)
+}
+
+function emitQuery(pageIndex = props.pageIndex) {
   emit('query-change', {
-    pageIndex: Math.max(0, page.value - 1),
+    pageIndex: Math.max(0, pageIndex),
     pageSize: props.pageSize,
     keyword: submittedKeyword.value,
     tags: [...activeTagIds.value],
@@ -174,14 +190,6 @@ function isTemplateDisabled(template: IotDeviceProductTemplate) {
   )
 }
 
-watch(page, () => emitQuery())
-watch(
-  () => props.pageIndex,
-  (value) => {
-    const nextPage = value + 1
-    if (page.value !== nextPage) page.value = nextPage
-  },
-)
 watch(() => props.tagFilterGroups, () => {
   tagGroupsExpanded.value = false
 }, { deep: true })

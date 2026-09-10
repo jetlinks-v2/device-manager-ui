@@ -26,7 +26,7 @@
                     <j-permission-button
                         v-if="showReset"
                         key="reload"
-                        :hasPermission="`${permission}:update`"
+                        :hasPermission="updatePermission"
                         :popConfirm="{
                             title: $t('Metadata.index.838029-0'),
                             onConfirm: resetMetadata,
@@ -36,14 +36,14 @@
                         {{ $t('Metadata.index.838029-2') }}
                     </j-permission-button>
                     <j-permission-button
-                        :hasPermission="`${permission}:update`"
+                        :hasPermission="updatePermission"
                         @click="visible = true"
                         key="import"
                         v-if="type === 'product'"
                         >{{ $t('Metadata.index.838029-3') }}</j-permission-button
                     >
                     <j-permission-button
-                        :hasPermission="`${permission}:update`"
+                        :hasPermission="updatePermission"
                         @click="cat = true"
                         key="tsl"
                         >{{ $t('Metadata.index.838029-4') }}</j-permission-button
@@ -54,28 +54,28 @@
                 <BaseMetadata
                     :target="type"
                     type="properties"
-                    :permission="permission"
+                    :permission="updatePermission"
                 />
             </a-tab-pane>
             <a-tab-pane :tab="$t('Metadata.index.838029-7')" key="functions">
                 <BaseMetadata
                     :target="type"
                     type="functions"
-                    :permission="permission"
+                    :permission="updatePermission"
                 />
             </a-tab-pane>
             <a-tab-pane :tab="$t('Metadata.index.838029-8')" key="events">
                 <BaseMetadata
                     :target="type"
                     type="events"
-                    :permission="permission"
+                    :permission="updatePermission"
                 />
             </a-tab-pane>
             <a-tab-pane :tab="$t('Metadata.index.838029-9')" key="tags">
                 <BaseMetadata
                     :target="type"
                     type="tags"
-                    :permission="permission"
+                    :permission="updatePermission"
                 />
             </a-tab-pane>
         </a-tabs>
@@ -105,6 +105,7 @@ import Cat from './Cat/index.vue';
 import BaseMetadata from './Base/Base.vue';
 import { useMetadataStore } from '../../../../store/metadata';
 import { EventEmitter } from '@jetlinks-web/utils';
+import { useAuthStore } from '@jetlinks-web-core/store';
 import { isEqual } from 'lodash-es';
 import { useI18n } from 'vue-i18n';
 import { useElementSize } from '@vueuse/core';
@@ -114,15 +115,26 @@ const { t: $t } = useI18n();
 const route = useRoute();
 const instanceStore = useInstanceStore();
 const metadataStore = useMetadataStore();
+const authStore = useAuthStore();
 interface Props {
     type: 'product' | 'device';
     independentMetadata?: boolean;
+    /**
+     * 资源中心详情不沿用旧菜单权限码时传入最终更新权限；未传入则保持旧页面行为。
+     */
+    updatePermission?: string | string[] | boolean;
 }
 const props = defineProps<Props>();
 
 const permission = computed(() =>
     props.type === 'device' ? 'device/Instance' : 'device/Product',
 );
+// j-permission-button 的共享 Hook 只监听权限码本身，不会在菜单异步加载后重新计算。
+// 这里将最终权限解析为响应式布尔值，既复用真实菜单授权，也能随权限仓库更新刷新按钮状态。
+const updatePermission = computed(() => {
+    const code = props.updatePermission ?? `${permission.value}:update`;
+    return typeof code === 'boolean' ? code : authStore.hasPermission(code);
+});
 const visible = ref(false);
 const cat = ref(false);
 const tabActiveKey = ref('properties');
@@ -154,6 +166,7 @@ const resetMetadata = () => {
             message.info($t('Metadata.index.838029-10'));
             instanceStore.refresh(id as string).then(() => {
                 metadataStore.set('importMetadata', true);
+                EventEmitter.emit('MetadataChanged', { type: 'device', id });
             });
         }
     });

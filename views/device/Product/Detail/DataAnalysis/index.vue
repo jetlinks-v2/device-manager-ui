@@ -81,9 +81,9 @@
         </div>
     </div>
     <div style="margin-top: 10px; margin-left: 10px">
-        <j-permission-button
+        <a-button
             type="primary"
-            hasPermission="device/Instance:update"
+            v-if="canUpdate"
             :loading="loading"
             :disabled="isDisabled"
             @click="debug()"
@@ -92,9 +92,9 @@
             }"
         >
             {{ $t('DataAnalysis.index.571961-6') }}
-        </j-permission-button>
-        <j-permission-button
-            hasPermission="device/Instance:update"
+        </a-button>
+        <a-button
+            v-if="canUpdate"
             :loading="loading"
             :disabled="!isTest"
             @click="save()"
@@ -104,7 +104,7 @@
             }"
         >
             {{ $t('DataAnalysis.index.571961-8') }}
-        </j-permission-button>
+        </a-button>
     </div>
 </template>
 
@@ -119,9 +119,12 @@ import {
 } from '../../../../../api/instance';
 import { isBoolean } from 'lodash-es';
 import { onlyMessage } from '@jetlinks-web-core/utils/comm';
+import { useAuthStore } from '@jetlinks-web-core/store';
 import { useI18n } from 'vue-i18n';
 
 const { t: $t } = useI18n();
+const permissionStore = useAuthStore();
+const canUpdate = computed(() => permissionStore.hasPermission('device/Product:update'));
 
 const defaultValue =
     `//注册设备下行数据监听器,当平台下发指令给设备时,回调将被调用,用于构造下发给设备的报文
