@@ -13,7 +13,7 @@
       "id": "jetlinks-resource",
       "url": "/resources",
       "icon": "icon-ziyuanzhongxin",
-      "sortIndex": 10,
+      "sortIndex": 2,
       "permissions": [],
       "buttons": [],
       "children": [
@@ -512,7 +512,7 @@
     "url": "/infrastructure",
     "icon": "icon-yunweizhongxin",
     "permissions": [],
-    "sortIndex": 4,
+    "sortIndex": 6,
     "children": [
       {
         "code": "link/DashBoard",
@@ -1560,7 +1560,7 @@
     "id": "3c7dca6ea8b5828bbcc023ce905244f7",
     "url": "/alarms",
     "icon": "icon-gaojingzhongxin",
-    "sortIndex": 50,
+    "sortIndex": 3,
     "children": [
       {
         "code": "alarm-rules",
