@@ -2,6 +2,7 @@ import type {
   DeviceAlarmFormModel,
   DeviceAlarmLevel,
   DeviceAlarmNotificationConfig,
+  DeviceAlarmNotifyMethod,
   DeviceAlarmRow,
   DeviceAlarmSource,
   DeviceAlarmTrigger,
@@ -14,6 +15,20 @@ import i18n from '@jetlinks-web-core/locales'
 const DEVICE_ALARM_PROCESSOR = 'device-alarm'
 const NOTIFY_PROCESSOR = 'notify'
 const NUMBER_RANGE_MATCHER = 'number-range'
+
+/** 旧配置仅保存提供者和参数；同一提供者可能存在多个通知通道，必须同时匹配参数。 */
+export function matchesAlarmNotifyMethod(notification: DeviceAlarmNotificationConfig, method: DeviceAlarmNotifyMethod) {
+  if (notification.notifyChannelIds?.includes(method.channelId || method.id)) return true
+  if (!notification.channelProviders.includes(method.providerId)) return false
+  const parameter = notification.parameters?.[method.providerId]
+  if (!isRecord(parameter)) return true
+  const raw = method.raw ?? {}
+  const configuration = raw.channelConfiguration ?? raw.configuration ?? {}
+  const notifierId = String(parameter.notifierId || '')
+  const templateId = String(parameter.templateId || '')
+  return (!notifierId || notifierId === String(configuration.notifierId || raw.notifierId || ''))
+    && (!templateId || templateId === String(configuration.templateId || raw.templateId || ''))
+}
 
 export const DEVICE_ALARM_NOTIFICATION_MESSAGE_MAX_LENGTH = 1024
 export type DeviceAlarmNotificationMessageMode = 'default' | 'custom'

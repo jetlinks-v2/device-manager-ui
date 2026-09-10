@@ -1657,6 +1657,13 @@
                 ]
               },
               {
+                "permission": "alarm-record",
+                "actions": [
+                  "query",
+                  "save"
+                ]
+              },
+              {
                 "permission": "user",
                 "actions": [
                   "query"
@@ -2024,6 +2031,13 @@
             "permission": "marketplace",
             "actions": [
               "query"
+            ]
+          },
+          {
+            "permission": "alarm-record",
+            "actions": [
+              "query",
+              "save"
             ]
           },
           {

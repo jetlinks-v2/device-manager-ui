@@ -55,6 +55,7 @@
 <script setup lang="ts">
 import { computed, watch, type PropType } from 'vue'
 import DeviceAlarmMessageTemplateConfig from './DeviceAlarmMessageTemplateConfig.vue'
+import { matchesAlarmNotifyMethod } from '../utils'
 import type {
   DeviceAlarmFormModel,
   DeviceAlarmNotifyMethod,
@@ -77,14 +78,7 @@ const hasNotification = computed(() =>
 )
 
 const selectedMethods = computed(() => {
-  const selectedChannelIds = new Set(props.model.notification.notifyChannelIds ?? [])
-  const selectedProviders = new Set(props.model.notification.channelProviders)
-  return props.methods.filter((method) => {
-    const channelId = method.channelId || method.id
-    if (channelId && selectedChannelIds.has(channelId)) return true
-    if (!selectedProviders.has(method.providerId)) return false
-    return matchesConfiguredParameter(method)
-  })
+  return props.methods.filter(method => matchesAlarmNotifyMethod(props.model.notification, method))
 })
 
 const selectedChannelIds = computed({
@@ -96,7 +90,7 @@ const selectedChannelIds = computed({
     const methods = props.methods.filter((method) => selected.has(method.channelId || method.id))
     props.model.notification.notifyChannelIds = methods
       .map((method) => method.channelId)
-      .filter(Boolean)
+      .filter((id): id is string => Boolean(id))
     props.model.notification.channelProviders = Array.from(new Set(methods.map((method) => method.providerId).filter(Boolean)))
   },
 })
@@ -111,7 +105,7 @@ const methodOptions = computed(() =>
 watch(
   selectedMethods,
   (methods) => {
-    const channelIds = methods.map((method) => method.channelId).filter(Boolean)
+    const channelIds = methods.map((method) => method.channelId).filter((id): id is string => Boolean(id))
     if (!sameStringArray(props.model.notification.notifyChannelIds ?? [], channelIds)) {
       props.model.notification.notifyChannelIds = channelIds
     }
@@ -155,18 +149,6 @@ function syncParameters() {
   props.model.notification.parameters = parameters
 }
 
-function matchesConfiguredParameter(method: DeviceAlarmNotifyMethod) {
-  const parameter = props.model.notification.parameters?.[method.providerId]
-  if (!isRecord(parameter)) return true
-  const raw = method.raw ?? {}
-  const configuration = raw.channelConfiguration ?? raw.configuration ?? {}
-  const configuredNotifierId = firstText(parameter.notifierId)
-  const configuredTemplateId = firstText(parameter.templateId)
-  if (configuredNotifierId && configuredNotifierId !== firstText(configuration.notifierId, raw.notifierId)) return false
-  if (configuredTemplateId && configuredTemplateId !== firstText(configuration.templateId, raw.templateId)) return false
-  return true
-}
-
 function filterUserOption(input: string, option?: { label?: string }) {
   return String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
 }
@@ -185,10 +167,6 @@ function firstText(...values: unknown[]) {
     if (typeof value === 'number' || typeof value === 'boolean') return String(value)
     return ''
   }).find(Boolean) || ''
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === 'object' && !Array.isArray(value)
 }
 
 function sameStringArray(left: string[], right: string[]) {

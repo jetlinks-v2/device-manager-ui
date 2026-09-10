@@ -1,6 +1,5 @@
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref } from 'vue'
 import { message } from 'ant-design-vue'
-import type { ColumnsType } from 'ant-design-vue/es/table'
 import type { ConditionFilterField, ConditionFilterTerm } from '@jetlinks-web-core/components/ConditionFilter'
 import { buildQueryFilter } from '@jetlinks-web-core/components/ConditionFilter'
 import {
@@ -101,26 +100,6 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
     },
   ])
 
-  const columns = computed<ColumnsType<DeviceAlarmRow>>(() => [
-    { title: t('DeviceAlarm.column.name'), dataIndex: 'name', key: 'name', scopedSlots: true, width: 220 },
-    { title: t('DeviceAlarm.form.product'), dataIndex: 'productName', key: 'productName', scopedSlots: true, width: 180 },
-    { title: t('DeviceAlarm.form.deviceRange'), dataIndex: 'deviceName', key: 'deviceName', scopedSlots: true, width: 180 },
-    { title: t('DeviceAlarm.column.property'), dataIndex: 'propertyName', key: 'propertyName', width: 150 },
-    { title: t('DeviceAlarm.column.trigger'), dataIndex: 'trigger', key: 'trigger', scopedSlots: true, width: 190 },
-    { title: t('DeviceAlarm.column.level'), dataIndex: 'level', key: 'level', scopedSlots: true, width: 120 },
-    { title: t('DeviceAlarm.column.notification'), dataIndex: 'notificationConfigured', key: 'notificationConfigured', scopedSlots: true, width: 130 },
-    { title: t('DeviceAlarm.column.action'), dataIndex: 'action', key: 'action', scopedSlots: true, fixed: 'right', width: 130 },
-  ])
-
-  const tablePagination = computed(() => ({
-    current: pageIndex.value + 1,
-    pageSize: pageSize.value,
-    pageSizeOptions: ['10', '20', '50'],
-    showSizeChanger: true,
-    showQuickJumper: true,
-    showTotal: (value: number) => t('DeviceAlarm.table.total', { total: value }),
-  }))
-
   const tableParams = computed(() => ({
     refreshKey: refreshKey.value,
     filterKey: JSON.stringify(submittedTerms.value),
@@ -159,7 +138,11 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
     refreshKey.value += 1
   }
 
-  async function tableRequest(params: { pageIndex?: number; pageSize?: number }) {
+  let requestSequence = 0
+  onBeforeUnmount(() => { requestSequence += 1 })
+
+  async function tableRequest(params: { pageIndex?: number; pageSize?: number }, extraTerms: Record<string, unknown>[] = []) {
+    const sequence = ++requestSequence
     const nextPageIndex = Number(params.pageIndex ?? pageIndex.value)
     const nextPageSize = Number(params.pageSize ?? pageSize.value)
     pageIndex.value = nextPageIndex
@@ -167,18 +150,22 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
     loading.value = true
     try {
       await loadAlarmLevels()
-      const page = await queryDeviceAlarmPage(buildPageQuery(nextPageIndex, nextPageSize))
+      const query = buildPageQuery(nextPageIndex, nextPageSize)
+      const page = await queryDeviceAlarmPage({ ...query, terms: [{ terms: query.terms }, ...extraTerms] })
       const data = page.data
         .map(toDeviceAlarmPageRow)
         .filter((item): item is DeviceAlarmRow => Boolean(item))
-      rows.value = data
-      total.value = page.total
+      // 搜索与分页可能交错返回，仅最新请求更新列表和总数。
+      if (sequence === requestSequence) {
+        rows.value = data
+        total.value = page.total
+      }
       return {
         success: true,
         result: { data, total: page.total, pageIndex: nextPageIndex, pageSize: nextPageSize },
       }
     } finally {
-      loading.value = false
+      if (sequence === requestSequence) loading.value = false
     }
   }
 
@@ -186,8 +173,9 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
     filterTerms.value = terms
   }
 
-  function handleSearch(payload?: { terms?: ConditionFilterTerm[] }) {
-    submittedTerms.value = payload?.terms ?? filterTerms.value
+  function handleSearch() {
+    // 保留原始编辑模型；change 事件的 terms 已转换，不能交给 getFilterTerms 再次编码。
+    submittedTerms.value = filterTerms.value
     pageIndex.value = 0
     refreshKey.value += 1
   }
@@ -458,12 +446,16 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
   }
 
   return {
+    invalidateList: () => { requestSequence += 1 },
+    rows,
+    loading,
+    pageIndex,
+    pageSize,
+    buildPageQuery,
     total,
-    tablePagination,
     tableParams,
     filterTerms,
     filterFields,
-    columns,
     levelOptions,
     triggerOptions,
     targetOptions,
