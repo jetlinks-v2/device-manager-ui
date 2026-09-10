@@ -18,7 +18,7 @@ export function useUnifiedDeviceList() {
   const deviceProvider: DeviceListProvider = {
     id: 'device', label: () => t('UnifiedDeviceList.device'), order: 10, menuCode: 'iot-user/device/list',
     terms: () => [IOT_DEVICE_LIST_DEFAULT_PRODUCT_TERM], matches: () => true,
-    detailRoute: 'iot-user/device/list/Detail', detailParam: 'id',
+    detailRoute: 'iot-user-device-list/Detail', detailParam: 'id',
   }
   const extensions = moduleRegistry.getAllModuleIds().flatMap(id => Object.values(
     moduleRegistry.getResource(id, 'deviceListProviders') || {},
