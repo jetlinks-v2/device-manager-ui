@@ -226,6 +226,8 @@ function mapApiDevice(
   fallback?: IotDevice,
 ): IotDevice {
   const accessInfo = instance as IotDeviceInstanceAccessInfo
+  const deviceMetadata = safeParseMetadata(instance.metadata)
+  const productMetadata = safeParseMetadata(instance.productMetadata)
   const metadata = safeParseMetadata(instance.metadata || instance.deriveMetadata || instance.productMetadata)
   const connectionStatus = connectionStatusOf(instance)
   const status = statusOf(instance)
@@ -283,6 +285,9 @@ function mapApiDevice(
     ],
     tags,
     thingModelMetadata: metadata,
+    deviceThingModelMetadata: deviceMetadata,
+    productThingModelMetadata: productMetadata,
+    independentMetadata: Boolean((instance as any).independentMetadata ?? instance.aloneConfiguration),
     thingModelTags: Array.isArray(instance.tags) ? instance.tags : [],
     currentFaultCodes: fallback?.currentFaultCodes,
     createdAt: formatTime(instance.createTime || instance.registryTime || instance.registerTime, '--'),

@@ -121,6 +121,17 @@
               :value='metrics'
             />
           </a-collapse-panel>
+          <a-collapse-panel
+            key='overview'
+            v-if='showKeyProperty'
+            :header="$t('Properties.OtherSetting.237457-35')"
+          >
+            <CardItem
+              v-model:value='configValue.isKeyMetric'
+              :title="$t('Properties.OtherSetting.237457-36')"
+              :tip="$t('Properties.OtherSetting.237457-37')"
+            />
+          </a-collapse-panel>
           <a-collapse-panel key='extra' v-if='showExtra || showExtraFile'
                             :header="$t('Properties.OtherSetting.237457-28')">
             <CardItem
@@ -386,9 +397,9 @@ const handleTip = computed(() => {
 
 const showContent = computed(() => {
   if (props.isProduct) {
-    return showExtra.value || showExtraFile.value
+    return showKeyProperty.value || showExtra.value || showExtraFile.value
   }
-  return (showMetrics.value || config.value.length > 0 || (showExtra.value || showExtraFile.value)) && props.id
+  return (showKeyProperty.value || showMetrics.value || config.value.length > 0 || (showExtra.value || showExtraFile.value)) && props.id
 })
 
 const showMetrics = computed(() => {
@@ -401,6 +412,11 @@ const showMetrics = computed(() => {
     'boolean',
     'date'
   ].includes(props.type as any)
+})
+
+// 关键属性由产品物模型统一定义，设备详情概览只读取该配置。
+const showKeyProperty = computed(() => {
+  return type === 'product' && props.metadataType === 'properties'
 })
 
 const showExtra = computed(() => {
@@ -549,6 +565,8 @@ const getConfig = async () => {
   }
   if (config.value.length > 0) {
     activeKey.value = ['store_0']
+  } else if (showKeyProperty.value) {
+    activeKey.value = ['overview']
   } else if (showMetrics.value) {
     activeKey.value = ['metrics']
   } else if (showExtra.value) {

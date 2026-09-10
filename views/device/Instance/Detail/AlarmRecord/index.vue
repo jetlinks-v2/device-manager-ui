@@ -96,7 +96,6 @@
 
 <script setup>
 import {
-  query as queryAlarmRecordAll,
   queryByDevice as queryDeviceAlarmRecord,
   queryPreHandleHistory,
 } from '@device-manager-ui/api/rule-engine/log';
@@ -126,10 +125,8 @@ const current = computed(() => {
   return props.type === 'device' ? device.current : product.current
 })
 
-// 设备详情页与 AI 诊断工具统一使用设备维度告警记录查询，产品详情仍保留混合目标查询。
-const queryAlarmRecord = (params) => (
-  props.type === 'device' ? queryDeviceAlarmRecord(params) : queryAlarmRecordAll(params)
-);
+// 产品阈值告警也由设备运行时产生，产品与设备详情均使用设备维度告警查询。
+const queryAlarmRecord = (params) => queryDeviceAlarmRecord(params);
 
 const localLanguage = localStorage.getItem(langKey)  || 'zh'
 const columns =
@@ -385,11 +382,8 @@ const defaultParams = computed(() => {
               },
               {
                 "column": "targetType",
-                "value": [
-                  "device",
-                  "product"
-                ],
-                "termType": "in"
+                "value": "device",
+                "termType": "eq"
               }
             ],
             "type": "and"

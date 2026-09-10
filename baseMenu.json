@@ -337,6 +337,57 @@
                       ]
                     }
                   ]
+                },
+                {
+                  "id": "category-add",
+                  "name": "新增分类",
+                  "i18nMessages": {
+                    "zh_CN": "新增分类",
+                    "en_US": "Add Category",
+                    "en": "Add Category"
+                  },
+                  "permissions": [
+                    {
+                      "permission": "device-category",
+                      "actions": [
+                        "save"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "category-update",
+                  "name": "编辑分类",
+                  "i18nMessages": {
+                    "zh_CN": "编辑分类",
+                    "en_US": "Edit Category",
+                    "en": "Edit Category"
+                  },
+                  "permissions": [
+                    {
+                      "permission": "device-category",
+                      "actions": [
+                        "save"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "category-delete",
+                  "name": "删除分类",
+                  "i18nMessages": {
+                    "zh_CN": "删除分类",
+                    "en_US": "Delete Category",
+                    "en": "Delete Category"
+                  },
+                  "permissions": [
+                    {
+                      "permission": "device-category",
+                      "actions": [
+                        "delete"
+                      ]
+                    }
+                  ]
                 }
               ],
               "accessSupport": {
@@ -487,6 +538,25 @@
                       "permission": "alarm-record",
                       "actions": [
                         "query"
+                      ]
+                    }
+                  ],
+                  "buttons": [
+                    {
+                      "id": "update",
+                      "name": "编辑",
+                      "i18nMessages": {
+                        "zh_CN": "编辑",
+                        "en_US": "Edit",
+                        "en": "Edit"
+                      },
+                      "permissions": [
+                        {
+                          "permission": "device-instance",
+                          "actions": [
+                            "save"
+                          ]
+                        }
                       ]
                     }
                   ]

@@ -17,13 +17,17 @@
       </template>
     </j-empty>
   </div>
-  <div v-else>
+  <div v-else class="product-device-access">
     <a-row :gutter="24">
-      <a-col :span="12">
-        <Title :data="$t('DeviceAccess.index.594346-4')">
+      <a-col :span="12" class="product-device-access__content">
+        <section class="product-device-access__section product-device-access__section--access">
+        <Title
+          class="product-device-access__section-title"
+          :data="$t('DeviceAccess.index.594346-4')"
+        >
           <template #extra>
             <j-permission-button
-              style="margin: 0 0 0 20px"
+              class="product-device-access__change"
               type="primary"
               size="small"
               :tooltip="{
@@ -38,11 +42,11 @@
             </j-permission-button>
           </template>
         </Title>
-        <div>
-          <div>
+        <div class="product-device-access__access-method">
+          <div class="product-device-access__access-name">
             {{ getI18nText(access, 'name') }}
           </div>
-          <div>
+          <div class="product-device-access__access-description">
             {{
               getI18nText(access, 'description') ||
               dataSource.find((item) => item?.id === access?.provider)
@@ -51,7 +55,7 @@
           </div>
         </div>
         <template v-if="access?.provider === 'composite-device-gateway'">
-          <div style="margin: 16px 0">
+          <div class="product-device-access__composite">
               <a-collapse v-model:activeKey="activeKey">
                 <a-collapse-panel
                   v-for="item in access?.configuration?.gateways"
@@ -204,7 +208,12 @@
             </a-form>
           </div>
         </template>
-        <Title :data="$t('DeviceAccess.index.594346-14')">
+        </section>
+        <section class="product-device-access__section product-device-access__section--storage">
+        <Title
+          class="product-device-access__section-title"
+          :data="$t('DeviceAccess.index.594346-14')"
+        >
           <template #extra>
             <a-tooltip :title="$t('DeviceAccess.index.594346-15')">
               <AIcon type="QuestionCircleOutlined" style="margin-left: 2px" />
@@ -224,12 +233,14 @@
           </a-form-item>
         </a-form>
         <j-permission-button
+          class="product-device-access__save"
           type="primary"
           @click="submitDevice"
-          hasPermission="device/Instance:update"
+          hasPermission="device/Product:update"
           :loading="submitLoading"
           >{{ $t("DeviceAccess.index.594346-16") }}
         </j-permission-button>
+        </section>
       </a-col>
     </a-row>
   </div>
@@ -875,8 +886,117 @@ watch(() => access.value?.id, (val) => {
 <style lang="less" scoped>
 @import "./index.less";
 
+.product-device-access {
+  min-width: 0;
+  padding-top: var(--space-1);
+
+  &__content {
+    width: 100%;
+  }
+
+  &__section {
+    max-width: 48rem;
+
+    &--storage {
+      margin-top: var(--space-4);
+      padding-top: var(--space-4);
+      border-top: 1px solid var(--jet-theme-border-secondary);
+    }
+  }
+
+  &__section-title {
+    display: flex;
+    align-items: center;
+    min-height: var(--space-4);
+    margin-bottom: var(--space-2);
+    padding-left: var(--space-3);
+    color: var(--jet-theme-text);
+    font-size: var(--fs-16);
+    line-height: 1.5;
+  }
+
+  &__change {
+    margin-left: var(--space-3);
+  }
+
+  &__access-method {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding-bottom: var(--space-3);
+  }
+
+  &__access-name {
+    color: var(--jet-theme-text);
+    font-size: var(--fs-14);
+    line-height: 1.5;
+  }
+
+  &__access-description {
+    color: var(--jet-theme-text-secondary);
+    font-size: var(--fs-14);
+    line-height: 1.6;
+  }
+
+  &__composite {
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--jet-theme-border-secondary);
+  }
+
+  &__save {
+    margin-top: var(--space-1);
+  }
+}
+
 .item-style {
-  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--jet-theme-border-secondary);
+}
+
+.product-device-access :deep(.title) {
+  display: flex;
+  align-items: center;
+  min-height: var(--space-4);
+  margin-bottom: var(--space-2);
+  padding-left: var(--space-3);
+  color: var(--jet-theme-text);
+  font-size: var(--fs-16);
+  line-height: 1.5;
+}
+
+.product-device-access :deep(.title-before) {
+  width: 0.1875rem;
+  height: var(--space-3);
+  border-radius: var(--r-1);
+}
+
+.product-device-access :deep(.config.title) {
+  margin-top: var(--space-4);
+}
+
+.product-device-access :deep(.ant-collapse) {
+  border-color: var(--jet-theme-border-secondary);
+  border-radius: var(--r-2);
+}
+
+.product-device-access :deep(.ant-collapse-item) {
+  border-color: var(--jet-theme-border-secondary);
+}
+
+.product-device-access :deep(.ant-collapse-content) {
+  border-color: var(--jet-theme-border-secondary);
+}
+
+.product-device-access :deep(.ant-form-item) {
+  margin-bottom: var(--space-3);
+}
+
+.product-device-access__section--storage :deep(.ant-form-item) {
+  margin-bottom: 0;
 }
 
 .ellipsis-style {

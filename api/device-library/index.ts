@@ -1,9 +1,11 @@
 import { createNdJson, request } from '@jetlinks-web/core'
 import { TOKEN_KEY } from '@jetlinks-web/constants'
 import { getProjectIdFromLocation } from '@jetlinks-web-core/utils/project-runtime'
+import { getRequestBaseApi, getRequestHeaders } from '@jetlinks-web-core/utils/request-context'
 import { getProjectStorage } from '@jetlinks-web-core/utils/project-storage'
 import { langKey } from '@jetlinks-web-core/utils/consts'
 import i18n from '@jetlinks-web-core/locales'
+import { hasMoreDeviceLibraryRows } from '@device-manager-ui/utils/deviceCreationSources'
 
 import type { IotDevice } from '@device-manager-ui/views/device/list/types'
 import type {
@@ -105,12 +107,22 @@ const normalizeProjectRuntimeApiUrl = (apiUrl?: string) =>
 const getProjectRuntimeContext = (_required = true): ProjectRuntimeContext => {
   const projectId = getProjectIdFromLocation()
   const projectStorage = getProjectStorage(projectId)
-  const apiUrl = normalizeProjectRuntimeApiUrl(projectStorage?.apiUrl)
-  const token = projectStorage?.token?.trim()
-  const runtimeProjectId = firstString(projectStorage?.id, projectId)
+  const hasProjectRuntime = Boolean(projectStorage?.apiUrl && projectStorage?.token)
+  const requestHeaders = getRequestHeaders()
+  const apiUrl = hasProjectRuntime
+    ? normalizeProjectRuntimeApiUrl(projectStorage?.apiUrl)
+    : String(getRequestBaseApi() || '/api').trim().replace(/\/$/, '')
+  const token = String(requestHeaders[TOKEN_KEY] || '').trim()
+  const runtimeProjectId = hasProjectRuntime ? firstString(projectStorage?.id, projectId) : ''
 
-  if (runtimeProjectId && apiUrl && token) {
-    return { projectId: runtimeProjectId, apiUrl, token, domain: projectStorage?.domain }
+  // 私有化可能保留 SaaS 环境开关，但没有项目上下文；此时与全局普通请求保持同源和同会话。
+  if (apiUrl && token) {
+    return {
+      projectId: runtimeProjectId,
+      apiUrl,
+      token,
+      domain: String(requestHeaders['X-Tenant-Domain'] || '').trim() || undefined,
+    }
   }
 
   throw new Error(t('IotDeviceApi.error.runtimeAccessMissing'))
@@ -639,8 +651,14 @@ function toThingModelDataPoints(items: unknown, kind: 'telemetry' | 'event' | 'f
     }))
 }
 
-const getMarketplaceCapabilityVersions = (id: string) =>
-  request.get(`/marketplace/capabilities/${encodeURIComponent(id)}/versions`, {}, { projectContext: false })
+const getMarketplaceCapabilityVersions = (id: string) => {
+  const context = getProjectRuntimeContext(true)
+  return request.get(
+    `/marketplace/capabilities/${encodeURIComponent(id)}/versions`,
+    {},
+    withProjectRuntimeRequest(context),
+  )
+}
 
 async function resolveDeviceLibraryVersionResource(
   resource: MarketplaceResource,
@@ -948,7 +966,21 @@ export const queryDeviceLibraryTags_api = async (): Promise<IotDeviceLibraryTagG
 }
 
 function queryMarketplaceTagClassifiers() {
-  return request.get('/marketplace/tag-classifiers?type=device-template', {}, { projectContext: false })
+  const context = getProjectRuntimeContext(true)
+  return request.get(
+    '/marketplace/tag-classifiers?type=device-template',
+    {},
+    withProjectRuntimeRequest(context),
+  )
+}
+
+/**
+ * 以实际后续会使用的运行时市场接口判定设备库可用性。
+ * 私有化仅接入市场代理时不一定注册 marketplaceService，因此不能改用命令服务探测。
+ */
+export const probeDeviceLibraryCapability_api = async (): Promise<boolean> => {
+  await queryMarketplaceTagClassifiers()
+  return true
 }
 
 export const queryProjectInstalledDeviceLibrary_api = async (
@@ -1000,74 +1032,68 @@ export const queryDeviceLibraryTemplates_api = async (
   const pageIndex = Number(input.pageIndex ?? 0)
   const pageSize = Number(input.pageSize ?? 4)
   const keyword = input.keyword?.trim()
-  const terms: Record<string, unknown>[] = [
-    { column: 'type', termType: 'eq', value: 'device-template' },
-  ]
-
-  if (keyword) {
-    terms.push({
-      type: 'and',
-      terms: [
-        { column: 'name', termType: 'like', value: `%${keyword}%` },
-        { column: 'code', termType: 'like', value: `%${keyword}%`, type: 'or' },
-      ],
-    })
-  }
-
-  if (input.tags?.length) {
-    terms.push({
-      column: 'id$marketplace-tag$children',
-      value: [...input.tags],
-    })
-  }
-
-  const response = await request.post('/marketplace/resource/detail/_query', {
+  const context = getProjectRuntimeContext(true)
+  const response = await request.post('/marketplace/capabilities/version/_search', {
+    type: 'device-template',
+    keyword: keyword || undefined,
+    tags: input.tags?.length ? [...input.tags] : undefined,
     paging: true,
     pageIndex,
     pageSize,
-    sorts: [
-      { name: 'sortIndex', order: 'asc' },
-      { name: 'createTime', order: 'desc' },
-    ],
-    terms,
-  }, { projectContext: false })
-  const page = unwrapPage<MarketplaceResource>(response, pageIndex, pageSize)
+  }, withProjectRuntimeRequest(context))
+  const rows = unwrapArray<MarketplaceResource>(response)
   const tagClassifiers = await queryMarketplaceTagClassifiers().catch(() => [])
   const tagLookup = createMarketplaceTagLocaleLookup(tagClassifiers)
-  const templates = await mapWithConcurrency(
-    page.data,
-    6,
-    (resource) => resolveDeviceLibraryVersionResource(resource, tagLookup),
-  )
+  const templates = rows.map((row) => {
+    const resource = isRecord(row.resource)
+      ? row.resource as MarketplaceResource
+      : isRecord(row.capability)
+        ? row.capability as MarketplaceResource
+        : row
+    const version = isRecord(row.version)
+      ? row.version as MarketplaceVersion
+      : isRecord(resource.version)
+        ? resource.version as MarketplaceVersion
+        : undefined
+    return toDeviceLibraryTemplateInput(resource, version, templateResourceOf(version), tagLookup)
+  })
 
   return {
     data: templates
       .filter((template) => Boolean(template.id))
       .map((template) => ({ ...template, installed: false, installedProductId: undefined })),
-    total: page.total,
-    pageIndex: page.pageIndex,
-    pageSize: page.pageSize,
+    pageIndex,
+    pageSize,
+    hasMore: hasMoreDeviceLibraryRows(rows.length, pageSize),
   }
 }
 
 export const queryDeviceLibraryTemplateById_api = async (templateId: string): Promise<DeviceTemplateProductInput | null> => {
   const id = templateId.trim()
   if (!id) return null
-  const response = await request.post('/marketplace/resource/detail/_query', {
+  const context = getProjectRuntimeContext(true)
+  const response = await request.post('/marketplace/capabilities/version/_search', {
+    type: 'device-template',
+    // 运行时市场按 keyword 查询单个能力；保留旧版快速更新的按模板 ID 回查语义。
+    keyword: id,
     paging: false,
-    terms: [
-      { column: 'id', termType: 'eq', value: id },
-      { column: 'type', termType: 'eq', value: 'device-template' },
-    ],
-  }, { projectContext: false })
-  const resource = unwrapArray<MarketplaceResource>(response)[0]
-  if (!resource) return null
-
-  const tagClassifiers = await queryMarketplaceTagClassifiers().catch(() => [])
-  return resolveDeviceLibraryVersionResource(
-    resource,
-    createMarketplaceTagLocaleLookup(tagClassifiers),
+  }, withProjectRuntimeRequest(context))
+  const row = unwrapArray<MarketplaceResource>(response).find((item) =>
+    firstString(item.id, item.resourceId, item.resource?.id, item.capability?.id) === id,
   )
+  if (!row) return null
+  const resource = isRecord(row.resource)
+    ? row.resource as MarketplaceResource
+    : isRecord(row.capability)
+      ? row.capability as MarketplaceResource
+      : row
+  const version = isRecord(row.version)
+    ? row.version as MarketplaceVersion
+    : isRecord(resource.version)
+      ? resource.version as MarketplaceVersion
+      : undefined
+  const tagClassifiers = await queryMarketplaceTagClassifiers().catch(() => [])
+  return toDeviceLibraryTemplateInput(resource, version, templateResourceOf(version), createMarketplaceTagLocaleLookup(tagClassifiers))
 }
 
 

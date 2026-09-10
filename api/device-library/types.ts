@@ -8,6 +8,11 @@ export type MaybeEnum = string | {
 }
 export type IotDeviceTypeValue = 'device' | 'childrenDevice' | 'gateway'
 
+/** 新增设备首屏的能力来源；两端筛选和选择状态不得共用。 */
+export type DeviceCreationSource = 'library' | 'product'
+
+export type DeviceLibraryCapabilityState = 'checking' | 'available' | 'unavailable'
+
 type DeviceTag = {
   key?: string
   name?: string
@@ -177,6 +182,8 @@ export type IotDeviceProductTemplate = {
   templateId?: string
   deviceType?: string
   productName?: string
+  classifiedId?: string
+  classifiedName?: string
   photoUrl?: string
   faultCodeDict?: unknown[]
   version?: string
@@ -191,6 +198,8 @@ export type IotDeviceProductTemplate = {
   accessModes?: string[]
   supportedModels?: DeviceTemplateProductInput['supportedModels']
   dataPoints?: DeviceTemplateProductInput['dataPoints']
+  /** 产品共享的数据存储策略，不属于设备实例创建参数。 */
+  storePolicy?: string
 }
 
 export type DeviceLibraryProductFilterOption = {
@@ -223,6 +232,25 @@ export type DeviceLibraryTemplateQueryInput = {
 
 export type DeviceLibraryTemplatePageResult = {
   data: DeviceTemplateProductInput[]
+  pageIndex: number
+  pageSize: number
+  /** 运行时能力市场不返回 total，以本页原始结果是否满页判断可继续加载。 */
+  hasMore: boolean
+}
+
+export type DeviceProductPageQueryInput = {
+  pageIndex?: number
+  pageSize?: number
+  /** 由通用条件筛选组件生成，多个条件按标准 terms 逻辑组合。 */
+  terms?: DeviceQueryTerm[]
+  classifiedIds?: string[]
+  unclassified?: boolean
+  deviceType?: string
+  accessProvider?: string
+}
+
+export type DeviceProductPageResult = {
+  data: IotDeviceProductTemplate[]
   total: number
   pageIndex: number
   pageSize: number
