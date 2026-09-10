@@ -127,6 +127,22 @@ export interface IotDevice {
     events: any[]
     tags: any[]
   }
+  /** 原始设备物模型。未独立编辑时它可能为空，详情展示仍应使用 effective metadata。 */
+  deviceThingModelMetadata?: {
+    properties: any[]
+    functions: any[]
+    events: any[]
+    tags: any[]
+  }
+  /** 原始产品物模型，供复用原版组件保持继承/重置语义。 */
+  productThingModelMetadata?: {
+    properties: any[]
+    functions: any[]
+    events: any[]
+    tags: any[]
+  }
+  /** 设备是否已独立编辑物模型。 */
+  independentMetadata?: boolean
   /** 真实设备标签值，保留 dataType/formatValue 等旧版字段。 */
   thingModelTags?: any[]
   /** 当前活跃故障码（来自设备协议字段映射；若设备库 product 已定义 faultCodeDict，UI 在设备详情诊断段展开） */

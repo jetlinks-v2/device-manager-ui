@@ -1,9 +1,10 @@
 <template>
   <j-page-container class="product-page">
-    <FullPage :fixed="false">
-      <EqualHeightColumns class="product-page__layout" left-width="17rem" right-width="1fr">
+    <FullPage transparentBackground :fixed="false">
+      <EqualHeightColumns class="product-page__layout" left-width="15rem" right-width="1fr">
         <template #left>
           <ProductCategoryTree
+            class="product-page__category-tree"
             :tree-data="categoryTree"
             :active-id="selectedCategoryId"
             :loading="categoryLoading"
@@ -52,6 +53,7 @@
               }"
               mode="TABLE"
               :params="tableParams"
+              :scroll="false"
             >
               <template #deviceType="slotProps">
                 <div>{{ slotProps.deviceType?.text || '-' }}</div>
@@ -64,10 +66,23 @@
                 />
               </template>
               <template #name="slotProps">
-                <div class="product-page__name-cell">
-                  <j-ellipsis>{{ getI18nText(slotProps, 'name') }}</j-ellipsis>
-                  <span>{{ slotProps.id }}</span>
-                </div>
+                <a
+                  class="product-page__name-cell"
+                  href=""
+                  @click.prevent="handleView(slotProps.id)"
+                >
+                  <IconBadge
+                    :image="slotProps.photoUrl"
+                    icon="AppstoreOutlined"
+                    :size="40"
+                    :inner-size="32"
+                    :alt="getI18nText(slotProps, 'name')"
+                  />
+                  <span class="product-page__name-body">
+                    <j-ellipsis class="product-page__name-title">{{ getI18nText(slotProps, 'name') }}</j-ellipsis>
+                    <small>{{ slotProps.id }}</small>
+                  </span>
+                </a>
               </template>
               <template #classifiedName="slotProps">
                 {{ getI18nText(slotProps, 'classifiedName') || '-' }}
@@ -141,7 +156,7 @@ import ConditionFilter, {
 } from '@jetlinks-web-core/components/ConditionFilter';
 import { useTermOptions } from '@jetlinks-web/components/es/Search/hooks/useTermOptions'
 import BatchDropdown from "@jetlinks-web-core/components/BatchDropdown/index.vue";
-import {isSaaS} from '@jetlinks-web-core/utils/consts'
+import { IconBadge } from '@jetlinks-web-core/components'
 import { getI18nText } from '../../../utils/i18n'
 
 const { t: $t } = useI18n();
@@ -226,10 +241,14 @@ const tableParams = computed(() => {
     return params;
   }
 
-  // 分类选择是列表查询条件，分类名称输入只由左侧组件在本地过滤。
+  // 选择父分类时同时查询全部下级分类，保证树节点与列表筛选的范围一致。
   const categoryTerm = selectedCategoryId.value === productUnclassifiedScopeId
     ? { column: 'classifiedId', termType: 'isnull' }
-    : { column: 'classifiedId', termType: 'eq', value: selectedCategoryId.value };
+    : {
+        column: 'classifiedId',
+        termType: 'in',
+        value: collectCategoryScopeIds(categoryTree.value, selectedCategoryId.value),
+      };
 
   return {
     ...params,
@@ -242,11 +261,10 @@ const tableParams = computed(() => {
   };
 });
 
-// 批量操作配置
+// 产品管理入口同时服务私有化与运行时，不能按 SaaS 编译标识隐藏导入和缓存同步能力。
 const batchActions = computed(() => {
-  const arr = []
-  if(!isSaaS){
-    arr.push({
+  return [
+    {
       key: 'import',
       text: $t("Product.index.660348-1"),
       icon: 'UploadOutlined',
@@ -273,9 +291,8 @@ const batchActions = computed(() => {
       onClick: () => {
         syncCacheVisible.value = true;
       }
-    })
-  }
-  return arr
+    },
+  ]
 });
 
 const getActions = (data: Partial<Record<string, any>>): any[] => {
@@ -485,6 +502,28 @@ const hasCategory = (nodes: ProductCategoryTreeNode[], id?: string): boolean => 
   return nodes.some((node) => node.id === id || hasCategory(node.children || [], id));
 };
 
+const collectCategoryScopeIds = (nodes: ProductCategoryTreeNode[], id: string): string[] => {
+  const collectNodeIds = (node: ProductCategoryTreeNode): string[] => [
+    node.id,
+    ...(node.children || []).flatMap(collectNodeIds),
+  ];
+  const findScopeIds = (items: ProductCategoryTreeNode[]): string[] | undefined => {
+    for (const node of items) {
+      if (node.id === id) {
+        return collectNodeIds(node);
+      }
+
+      const descendantIds = findScopeIds(node.children || []);
+      if (descendantIds) {
+        return descendantIds;
+      }
+    }
+  };
+
+  // 分类树刷新与列表查询可能在同一时刻发生，保留当前节点避免短暂丢失筛选条件。
+  return findScopeIds(nodes) || [id];
+};
+
 const refreshCategoryTree = async () => {
   categoryLoading.value = true;
   try {
@@ -686,50 +725,70 @@ const filterFields = computed<ConditionFilterField[]>(() =>
 );
 const commonFilterFields = ['name', 'id', 'deviceType', 'accessProvider', 'state'];
 const saveRef = ref();
+
+/**
+ * 兼容 ConditionFilter 直接条件与嵌套分组两种输出，保留产品列表已有的后端字段转换。
+ */
+const normalizeProductSearchTerm = (term: any): any => {
+  if (Array.isArray(term?.terms)) {
+    return {
+      ...term,
+      terms: term.terms.map(normalizeProductSearchTerm),
+    };
+  }
+
+  if (term?.column === "id$dev-instance") {
+    return {
+      column: "id$dev-instance",
+      options: ["productId"],
+      value: term.value,
+      type: term.type,
+    };
+  }
+
+  if (term?.column === "id$dim-assets") {
+    const value = term.value;
+    term = {
+      ...term,
+      column: "id",
+      termType: "dim-assets",
+      value: {
+        assetType: "product",
+        targets: [
+          {
+            type: "org",
+            id: value,
+          },
+        ],
+      },
+    };
+  }
+
+  if (term?.column === "accessProvider") {
+    if (term.value === "collector-gateway") {
+      term.termType = term.termType === "eq" ? "in" : "nin";
+      term.value = ["opc-ua", "modbus-tcp", "collector-gateway"];
+    } else if (
+      Array.isArray(term.value) &&
+      term.value.includes("collector-gateway")
+    ) {
+      term.value = ["opc-ua", "modbus-tcp", ...term.value];
+    }
+  }
+
+  return term;
+};
+
 const applyProductSearch = (e: Record<string, any>) => {
   const newTerms = cloneDeep(e);
   if (newTerms.terms?.length) {
-    newTerms.terms.forEach((a: any) => {
-      a.terms = a.terms.map((b: any) => {
-        if (b.column === "id$dev-instance") {
-          return {
-            column: "id$dev-instance",
-            options: ["productId"],
-            value: b.value,
-            type: b.type,
-          };
-        }
-        if (b.column === "id$dim-assets") {
-          const value = b.value;
-          b = {
-            ...b,
-            column: "id",
-            termType: "dim-assets",
-            value: {
-              assetType: "product",
-              targets: [
-                {
-                  type: "org",
-                  id: value,
-                },
-              ],
-            },
-          };
-        }
-        if (b.column === "accessProvider") {
-          if (b.value === "collector-gateway") {
-            b.termType = b.termType === "eq" ? "in" : "nin";
-            b.value = ["opc-ua", "modbus-tcp", "collector-gateway"];
-          } else if (
-            Array.isArray(b.value) &&
-            b.value.includes("collector-gateway")
-          ) {
-            b.value = ["opc-ua", "modbus-tcp", ...b.value];
-          }
-        }
-        return b;
-      });
-    });
+    // 产品列表的旧查询链路以顶层条件分组为边界；ConditionFilter 会输出直接条件。
+    // 统一包成一个分组后，保留 like 的 % 通配符及组内 and/or 语义，兼容既有产品查询解析。
+    newTerms.terms = [
+      {
+        terms: newTerms.terms.map(normalizeProductSearchTerm),
+      },
+    ];
   }
 
   productSearchParams.value = newTerms;
@@ -808,16 +867,26 @@ onMounted(() => {
 <style lang="less" scoped>
 .product-page {
   &__layout {
-    height: calc(100vh - 11rem);
+    height: auto;
     min-height: 0;
+
+    :deep(.equal-height-columns__pane) {
+      height: auto;
+      overflow: visible;
+    }
+  }
+
+  &__category-tree {
+    height: calc(100vh - 11rem);
   }
 
   &__main {
     display: flex;
     flex-direction: column;
-    height: 100%;
+    height: auto;
     min-height: 0;
-    overflow: auto;
+    // 产品表格随内容自然撑高，由页面最外层承接纵向滚动。
+    overflow: visible;
     padding: var(--space-4);
     background: var(--color-jet-bg-container);
     border: 1px solid var(--color-jet-border);
@@ -830,8 +899,9 @@ onMounted(() => {
   }
 
   &__search {
-    flex: 1 1 32rem;
-    min-width: 18rem;
+    flex: 0 1 28rem;
+    max-width: 28rem;
+    min-width: 0;
   }
 
   &__actions {
@@ -840,13 +910,40 @@ onMounted(() => {
 
   &__name-cell {
     display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-width: 0;
+    color: inherit;
+    text-decoration: none;
+
+    &:hover {
+      .product-page__name-title {
+        color: var(--jet-theme-primary);
+      }
+    }
+  }
+
+  &__name-body {
+    display: flex;
+    min-width: 0;
+    flex: 1;
     flex-direction: column;
     gap: var(--space-1);
+  }
 
-    > span {
-      color: var(--color-jet-text-secondary);
-      font-size: var(--fs-12);
+  &__name-title {
+    color: var(--color-jet-text-primary);
+    font-weight: 500;
+    transition: color 0.2s ease;
+
+    :deep(.j-ellipsis-content) {
+      display: block;
     }
+  }
+
+  &__name-body > small {
+    color: var(--color-jet-text-secondary);
+    font-size: var(--fs-12);
   }
 }
 
@@ -854,6 +951,10 @@ onMounted(() => {
   .product-page {
     &__layout {
       min-height: auto;
+      height: auto;
+    }
+
+    &__category-tree {
       height: auto;
     }
 

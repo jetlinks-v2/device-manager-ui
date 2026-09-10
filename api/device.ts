@@ -1,14 +1,15 @@
 import dayjs from 'dayjs'
 import { request } from '@jetlinks-web/core'
 import { TOKEN_KEY } from '@jetlinks-web/constants'
-import { getToken } from '@jetlinks-web/utils'
 import { fileUpload } from '@jetlinks-web-core/api/comm'
 import { getProjectIdFromLocation } from '@jetlinks-web-core/utils/project-runtime'
-import { getProjectStorage, isProjectStorageEnabled } from '@jetlinks-web-core/utils/project-storage'
+import { getRequestBaseApi, getRequestHeaders } from '@jetlinks-web-core/utils/request-context'
+import { getProjectStorage } from '@jetlinks-web-core/utils/project-storage'
 import i18n from '@jetlinks-web-core/locales'
 
 import type { IotDevice, IotDeviceConnectionStatus } from '@device-manager-ui/views/device/list/types'
 import { IOT_DEVICE_LIST_EXCLUDED_ACCESS_PROVIDERS, withIotDeviceListDefaultTerms } from './deviceListDefaultTerms'
+import { isSelectableDeviceCreationCandidate } from '@device-manager-ui/utils/deviceCreationSources'
 import { queryDeviceBoundGroups_api } from './deviceGroup'
 import { queryDeviceSpaceAreaBindings_api } from './spaceArea'
 import type {
@@ -21,6 +22,8 @@ import type {
   DeviceExtension,
   DeviceGatewayDetailResponse,
   DeviceLibraryGatewayDetail,
+  DeviceProductPageQueryInput,
+  DeviceProductPageResult,
   DevicePageResult,
   DeviceQueryParams,
   DeviceQueryTerm,
@@ -82,21 +85,22 @@ function getProjectRuntimeContext(required: true): ProjectRuntimeContext
 function getProjectRuntimeContext(required?: false): ProjectRuntimeContext | undefined
 function getProjectRuntimeContext(required = false): ProjectRuntimeContext | undefined {
   const projectId = getProjectIdFromLocation()
-  const projectStorageEnabled = isProjectStorageEnabled()
-  const projectStorage = projectStorageEnabled ? getProjectStorage(projectId) : undefined
-  // 独立项目的自定义流式请求与全局请求保持同一会话和同源 /api。
-  const apiUrl = projectStorageEnabled
+  const projectStorage = getProjectStorage(projectId)
+  const hasProjectRuntime = Boolean(projectStorage?.apiUrl && projectStorage?.token)
+  const requestHeaders = getRequestHeaders()
+  // 私有化可能仍启用项目存储功能开关，但没有项目 code 或对应 storage；此时必须复用普通请求上下文。
+  const apiUrl = hasProjectRuntime
     ? normalizeProjectRuntimeApiUrl(projectStorage?.apiUrl)
-    : String(import.meta.env.VITE_APP_BASE_API || '/api').trim().replace(/\/$/, '')
-  const token = projectStorageEnabled ? projectStorage?.token?.trim() : getToken()?.trim()
-  const runtimeProjectId = firstString(projectStorage?.id, projectId)
+    : String(getRequestBaseApi() || '/api').trim().replace(/\/$/, '')
+  const token = String(requestHeaders[TOKEN_KEY] || '').trim()
+  const runtimeProjectId = hasProjectRuntime ? firstString(projectStorage?.id, projectId) : ''
 
-  if (runtimeProjectId && apiUrl && token) {
+  if (apiUrl && token) {
     return {
       projectId: runtimeProjectId,
       apiUrl,
       token,
-      domain: projectStorage?.domain,
+      domain: String(requestHeaders['X-Tenant-Domain'] || '').trim() || undefined,
     }
   }
 
@@ -460,6 +464,8 @@ const toProductTemplate = (item: ProductDetailResponse): IotDeviceProductTemplat
     templateId,
     deviceType,
     productName: item.name,
+    classifiedId: item.classifiedId,
+    classifiedName: item.classifiedName,
     photoUrl: item.photoUrl,
     faultCodeDict: [],
     accessId: item.accessId,
@@ -470,6 +476,7 @@ const toProductTemplate = (item: ProductDetailResponse): IotDeviceProductTemplat
     protocolName: item.protocolName,
     gatewayBizKey: item.gatewayBizKey,
     configuration: item.configuration,
+    storePolicy: item.storePolicy,
   }
 }
 
@@ -756,6 +763,67 @@ export const queryDeviceProducts_api = async (projectId?: string, deviceType?: s
     .filter((item) => !runtimeProjectId || !item.projectId || item.projectId === runtimeProjectId)
     .map(toProductTemplate)
     .filter((product) => Boolean(product.id))
+}
+
+/** 新增设备使用当前项目运行时的产品分类树，避免回落到 SaaS 运营端。 */
+export const queryDeviceProductCategoryTree_api = async (): Promise<TreeNodeResponse[]> => {
+  const context = getProjectRuntimeContext(true)
+  const response = await request.post('/device/category/_tree', {
+    paging: false,
+    sorts: [{ name: 'sortIndex', order: 'asc' }],
+  }, withProjectRuntimeRequest(context)) as ApiResponse<TreeNodeResponse[]>
+  return unwrapResult<TreeNodeResponse[]>(response) ?? []
+}
+
+/**
+ * 新增设备的本地产品候选分页查询。
+ * 与设备库候选共用排除边缘网关、视频接入产品的业务过滤，避免筛选路径绕过该限制。
+ */
+export const queryDeviceProductPage_api = async (
+  input: DeviceProductPageQueryInput = {},
+): Promise<DeviceProductPageResult> => {
+  const pageIndex = Math.max(0, Number(input.pageIndex ?? 0))
+  const pageSize = Math.max(1, Number(input.pageSize ?? 6))
+  const terms: DeviceQueryTerm[] = [
+    ...IOT_DEVICE_PRODUCT_SELECT_DEFAULT_TERMS,
+    // 新增设备沿用原版产品选择逻辑：禁用产品不能用于创建设备。
+    { column: 'state', termType: 'eq', value: 1 },
+    // 运行时产品查询同样遵循 QueryParamEntity 的 like 语义，手工调用时也不能漏掉两端通配符。
+    ...(input.terms ?? []).map(normalizeLikeTermValue),
+  ]
+
+  if (input.unclassified) {
+    terms.push({ column: 'classifiedId', termType: 'isnull' })
+  } else if (input.classifiedIds?.length) {
+    terms.push({ column: 'classifiedId', termType: 'in', value: input.classifiedIds })
+  }
+  if (input.deviceType) {
+    terms.push({ column: 'deviceType', termType: 'eq', value: input.deviceType })
+  }
+  if (input.accessProvider) {
+    terms.push({ column: 'accessProvider', termType: 'eq', value: input.accessProvider })
+  }
+
+  const context = getProjectRuntimeContext(true)
+  const response = await request.post('/device-product/detail/_query', {
+    paging: true,
+    pageIndex,
+    pageSize,
+    sorts: [{ name: 'createTime', order: 'desc' }],
+    terms,
+  }, withProjectRuntimeRequest(context)) as ApiResponse<PagerResult<ProductDetailResponse>>
+  const page = response.result ?? {}
+
+  return {
+    data: (page.data ?? [])
+      .map(toProductTemplate)
+      // 旧产品数据也必须经过与设备库一致的本地候选限制。
+      .filter((product) => Boolean(product.id) && isSelectableDeviceCreationCandidate(product)),
+    total: Number(page.total ?? 0),
+    pageIndex: Number(page.pageIndex ?? pageIndex),
+    // 分页大小由弹窗布局决定，不能被服务端异常的回显值（例如 1）覆盖。
+    pageSize,
+  }
 }
 
 export const queryDeviceProductById_api = async (productId: string): Promise<IotDeviceProductTemplate | null> => {

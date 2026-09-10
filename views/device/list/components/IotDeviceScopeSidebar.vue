@@ -179,6 +179,7 @@ const onGroupSelect: TreeProps['onSelect'] = (keys) => select(String(keys[0] || 
   gap: var(--space-3);
   min-height: 0;
   height: 100%;
+  overflow: hidden;
 }
 
 .iot-device-scope__body {

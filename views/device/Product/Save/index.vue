@@ -1,7 +1,6 @@
 <!-- 新增、编辑产品 -->
 <template>
     <a-modal
-        :title="props.title"
         :maskClosable="false"
         destroy-on-close
         v-model:open="visible"
@@ -9,66 +8,50 @@
         @cancel="close"
         :okText="$t('Save.index.912481-0')"
         :cancelText="$t('Save.index.912481-1')"
-        width="720px"
+        width="960px"
         :confirmLoading="loading"
     >
+        <template #title>
+            <header class="product-save__title">
+                <span class="product-save__title-icon">
+                    <AIcon :type="props.isAdd === 2 ? 'EditOutlined' : 'PlusOutlined'" aria-hidden="true" />
+                </span>
+                <h3>{{ props.title }}</h3>
+            </header>
+        </template>
         <div class="product-save">
             <a-form
+                class="product-save__form"
                 layout="vertical"
                 :model="form"
                 :rules="rules"
                 ref="formRef"
             >
-                <section class="product-save__section product-save__section--basic">
+                <section class="product-save__identity">
                     <a-row :gutter="24">
-                    <a-col :xs="24" :sm="7">
-                        <a-form-item name="photoUrl">
-                            <pro-upload
-                                v-model="form.photoUrl"
-                                :accept="
-                                    imageTypes && imageTypes.length
-                                        ? imageTypes.toString()
-                                        : ''
-                                "
-                            />
-                        </a-form-item>
-                    </a-col>
-                    <a-col :xs="24" :sm="17">
-                        <a-form-item name="id" :validateFirst="true">
-                            <template #label>
-                                <span>ID</span>
-                                <a-tooltip
-                                    :title="$t('Save.index.912481-2')"
-                                >
-                                    <AIcon
-                                        type="QuestionCircleOutlined"
-                                        style="margin-left: 2px"
-                                    />
-                                </a-tooltip>
-                            </template>
-                            <a-input
-                                v-model:value="form.id"
-                                :placeholder="$t('Save.index.912481-3')"
-                                :disabled="idDisabled || !showId"
-                            />
-                        </a-form-item>
-                        <a-form-item :label="$t('Save.index.912481-4')" name="name">
-                            <I18nTextField
-                                v-model:value="form.name"
-                                v-model:i18nMessages="form.i18nMessages"
-                                field="name"
-                                :label="$t('Save.index.912481-4')"
-                                :i18n-max-length="64"
-                                :placeholder="$t('Save.index.912481-5')"
-                            />
-                        </a-form-item>
-                    </a-col>
-                    </a-row>
-                </section>
-
-                <section class="product-save__section">
-                    <a-row :gutter="24">
-                        <a-col :xs="24" :sm="8">
+                        <a-col :xs="24" :sm="6">
+                            <a-form-item name="photoUrl">
+                                <pro-upload
+                                    v-model="form.photoUrl"
+                                    :accept="
+                                        imageTypes && imageTypes.length
+                                            ? imageTypes.toString()
+                                            : ''
+                                    "
+                                />
+                            </a-form-item>
+                        </a-col>
+                        <a-col :xs="24" :sm="18">
+                            <a-form-item :label="$t('Save.index.912481-4')" name="name">
+                                <I18nTextField
+                                    v-model:value="form.name"
+                                    v-model:i18nMessages="form.i18nMessages"
+                                    field="name"
+                                    :label="$t('Save.index.912481-4')"
+                                    :i18n-max-length="64"
+                                    :placeholder="$t('Save.index.912481-5')"
+                                />
+                            </a-form-item>
                             <a-form-item :label="$t('Save.index.912481-6')" name="classifiedId">
                                 <a-tree-select
                                     showSearch
@@ -90,32 +73,11 @@
                                 </a-tree-select>
                             </a-form-item>
                         </a-col>
-                        <a-col :xs="24" :sm="8">
-                            <a-form-item :label="$t('Save.index.912481-24')" name="manufacturer">
-                                <I18nTextField
-                                    v-model:value="form.manufacturer"
-                                    v-model:i18nMessages="form.i18nMessages"
-                                    field="manufacturer"
-                                    :label="$t('Save.index.912481-24')"
-                                    :i18n-max-length="64"
-                                    :placeholder="$t('Save.index.912481-25')"
-                                />
-                            </a-form-item>
-                        </a-col>
-                        <a-col :xs="24" :sm="8">
-                            <a-form-item :label="$t('Save.index.912481-26')" name="model">
-                                <I18nTextField
-                                    v-model:value="form.model"
-                                    v-model:i18nMessages="form.i18nMessages"
-                                    field="model"
-                                    :label="$t('Save.index.912481-26')"
-                                    :i18n-max-length="64"
-                                    :placeholder="$t('Save.index.912481-27')"
-                                />
-                            </a-form-item>
-                        </a-col>
                     </a-row>
-                    <a-form-item class="product-save__device-type" :label="$t('Save.index.912481-8')" name="deviceType">
+                </section>
+
+                <section class="product-save__fields">
+                    <a-form-item class="product-save__field product-save__field--full product-save__device-type" :label="$t('Save.index.912481-8')" name="deviceType">
                         <j-card-select
                             v-model:value="form.deviceType"
                             :column="3"
@@ -139,21 +101,40 @@
                             </template>
                         </j-card-select>
                     </a-form-item>
+                    <a-form-item class="product-save__field" :label="$t('Save.index.912481-24')" name="manufacturer">
+                        <I18nTextField
+                            v-model:value="form.manufacturer"
+                            v-model:i18nMessages="form.i18nMessages"
+                            field="manufacturer"
+                            :label="$t('Save.index.912481-24')"
+                            :i18n-max-length="64"
+                            :placeholder="$t('Save.index.912481-25')"
+                        />
+                    </a-form-item>
+                    <a-form-item class="product-save__field" :label="$t('Save.index.912481-26')" name="model">
+                        <I18nTextField
+                            v-model:value="form.model"
+                            v-model:i18nMessages="form.i18nMessages"
+                            field="model"
+                            :label="$t('Save.index.912481-26')"
+                            :i18n-max-length="64"
+                            :placeholder="$t('Save.index.912481-27')"
+                        />
+                    </a-form-item>
+                    <a-form-item class="product-save__field product-save__field--full product-save__description" :label="$t('Save.index.912481-9')" name="describe">
+                        <I18nTextField
+                            :maxlength="200"
+                            showCount
+                            :auto-size="{ minRows: 4, maxRows: 5 }"
+                            v-model:value="form.describe"
+                            v-model:i18nMessages="form.i18nMessages"
+                            field="describe"
+                            :label="$t('Save.index.912481-9')"
+                            :placeholder="$t('Save.index.912481-10')"
+                            textarea
+                        />
+                    </a-form-item>
                 </section>
-
-                <a-form-item class="product-save__description" :label="$t('Save.index.912481-9')" name="describe">
-                    <I18nTextField
-                        :maxlength="200"
-                        showCount
-                        :auto-size="{ minRows: 4, maxRows: 5 }"
-                        v-model:value="form.describe"
-                        v-model:i18nMessages="form.i18nMessages"
-                        field="describe"
-                        :label="$t('Save.index.912481-9')"
-                        :placeholder="$t('Save.index.912481-10')"
-                        textarea
-                    />
-                </a-form-item>
             </a-form>
         </div>
     </a-modal>
@@ -161,19 +142,19 @@
 </template>
 
 <script lang="ts" setup>
-import { category, queryProductId, addProduct, editProduct } from '@device-manager-ui/api/product';
+import { category, addProduct, editProduct } from '@device-manager-ui/api/product';
 import { Form } from 'ant-design-vue';
 import DialogTips from '../DialogTips/index.vue';
 import { useProductStore } from '@device-manager-ui/store/product';
 import { filterSelectNode, encodeQuery } from '@jetlinks-web-core/utils';
 import { onlyMessage } from '@jetlinks-web/utils'
-import { isInput } from '@device-manager-ui/utils/utils';
 import type { Rule } from 'ant-design-vue/es/form';
 import { device } from '@device-manager-ui/assets';
 import { useI18n } from 'vue-i18n';
 import { omit } from 'lodash-es';
 import { ensureVisualizationDashboardProject } from '@device-manager-ui/utils/dashboardProject';
 import I18nTextField from '@device-manager-ui/components/I18n/I18nTextField.vue';
+import { getI18nText } from '@device-manager-ui/utils/i18n';
 
 const { t: $t } = useI18n();
 
@@ -188,10 +169,6 @@ const props = defineProps({
     isAdd: {
         type: Number,
         default: 0,
-    },
-    showId: {
-        type: Boolean,
-        default: true,
     }
 });
 const loading = ref<boolean>(false);
@@ -199,7 +176,6 @@ const dialogRef = ref();
 const treeList = ref<Record<string, any>[]>([]);
 const visible = ref<boolean>(false);
 const formRef = ref();
-const idDisabled = ref<boolean>(false);
 const useForm = Form.useForm;
 const photoValue = ref(device.deviceProduct);
 const imageTypes = reactive([
@@ -248,27 +224,6 @@ const form = reactive({
     i18nMessages: {} as Record<string, Record<string, string>>,
 });
 /**
- * 校验id
- */
-const validateInput = async (_rule: Rule, value: string) => {
-    if (value) {
-        if (!isInput(value)) {
-            return Promise.reject($t('Save.index.912481-17'));
-        } else {
-            if (props.isAdd === 1) {
-                const res = await queryProductId(value);
-                if (res.success && res.result) {
-                    return Promise.reject($t('Save.index.912481-18'));
-                } else {
-                    return Promise.resolve();
-                }
-            }
-        }
-    } else {
-        return Promise.resolve();
-    }
-};
-/**
  * 校验是否选择设备类型
  */
 const validateDeviceType = async (_rule: Rule, value: string) => {
@@ -280,10 +235,6 @@ const validateDeviceType = async (_rule: Rule, value: string) => {
 };
 
 const rules = reactive({
-    id: [
-        { validator: validateInput, trigger: 'blur' },
-        { max: 64, message: $t('Save.index.912481-20'), trigger: 'change' },
-    ],
     name: [
         { required: true, message: $t('Save.index.912481-5'), trigger: 'blur' },
         { max: 64, message: $t('Save.index.912481-20'), trigger: 'change' },
@@ -337,18 +288,19 @@ const dealProductTree = (arr: any) => {
  */
 const show = async (data: any) => {
     if (props.isAdd === 2) {
-        productStore.refresh(data.id);
+        await productStore.refresh(data.id);
+        const detail = productStore.current;
         form.name = data.name;
         form.classifiedId = data.classifiedId || undefined;
         form.classifiedName = data.classifiedName;
         form.photoUrl = data.photoUrl || photoValue.value;
         form.deviceType = data.deviceType.value;
-        form.manufacturer = data.manufacturer || '';
-        form.model = data.model || '';
+        // 列表行可能不包含品牌和型号，编辑时以完整详情为准并兼容服务端的本地化展示字段。
+        form.manufacturer = getI18nText(detail, 'manufacturer') || getI18nText(data, 'manufacturer');
+        form.model = getI18nText(detail, 'model') || getI18nText(data, 'model');
         form.describe = data.describe;
-        form.i18nMessages = data.i18nMessages || {};
+        form.i18nMessages = detail.i18nMessages || data.i18nMessages || {};
         form.id = data.id;
-        idDisabled.value = true;
         // 旧模板产品编辑时保留来源数据，但当前弹窗不再提供模板或云端选择入口。
         form.type = 'custom';
         form.masterProductId = data.masterProductId;
@@ -366,7 +318,6 @@ const show = async (data: any) => {
         form.describe = undefined;
         form.i18nMessages = {};
         form.id = undefined;
-        idDisabled.value = false;
         form.type = 'custom';
     }
     visible.value = true;
@@ -410,9 +361,6 @@ const submitData = () => {
             // 新增
           loading.value = true
             if (props.isAdd === 1) {
-                if (form.id === '') {
-                    form.id = undefined;
-                }
                 const res = await addProduct(omit(toRaw(form), "type")).finally(()=>{
                     loading.value = false
                 });
@@ -461,29 +409,61 @@ defineExpose({
 </script>
 <style scoped lang="less">
 .product-save {
-    margin-top: var(--space-2);
+    &__title {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
 
-    &__section {
-        padding: var(--space-4);
-        margin-bottom: var(--space-4);
-        background: var(--color-jet-bg-layout);
-        border: 1px solid var(--color-jet-border-secondary);
-        border-radius: var(--radius-jet-lg);
-    }
-
-    &__section--basic {
-        :deep(.ant-form-item) {
-            margin-bottom: 0;
+        h3 {
+            margin: 0;
+            color: var(--jet-theme-text);
+            font-size: var(--fs-h3);
+            font-weight: 700;
         }
     }
 
-    &__description {
+    &__title-icon {
+        display: inline-grid;
+        place-items: center;
+        width: 2rem;
+        height: 2rem;
+        border-radius: var(--jet-theme-radius);
+        background: var(--jet-theme-primary-soft);
+        color: var(--jet-theme-primary);
+
+        :deep(svg) {
+            width: 1rem;
+            height: 1rem;
+        }
+    }
+
+    &__form {
+        display: grid;
+        gap: var(--space-4);
+    }
+
+    &__identity {
+        :deep(.ant-form-item) {
+            margin-bottom: var(--space-3);
+        }
+    }
+
+    &__fields {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--space-3);
+    }
+
+    &__field {
         margin-bottom: 0;
+        min-width: 0;
+    }
+
+    &__field--full {
+        grid-column: 1 / -1;
     }
 
     &__device-type {
-        margin-bottom: 0;
-
         :deep(.j-card-select .j-card-select-item) {
             min-height: 4.75rem;
             border-radius: var(--radius-jet-md);
@@ -491,9 +471,16 @@ defineExpose({
     }
 }
 
-.card-style {
-    position: relative;
-    top: 19px;
+@media (width <= 33.75rem) {
+    .product-save {
+        &__fields {
+            grid-template-columns: 1fr;
+        }
+
+        &__field--full {
+            grid-column: auto;
+        }
+    }
 }
 .select-item {
     display: flex;
@@ -507,117 +494,6 @@ defineExpose({
 
     span {
         white-space: nowrap;
-    }
-}
-.upload-image-warp-logo {
-    display: flex;
-    justify-content: flex-start;
-    .upload-image-border-logo {
-        position: relative;
-        overflow: hidden;
-        border: 1px dashed #d9d9d9;
-        transition: all 0.3s;
-        width: 160px;
-        height: 150px;
-        &:hover {
-            border: 1px dashed #1890ff;
-            display: flex;
-        }
-        .upload-image-content-logo {
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            width: 160px;
-            height: 150px;
-            padding: 8px;
-            background-color: rgba(0, 0, 0, 0.06);
-            cursor: pointer;
-            .loading-logo {
-                position: absolute;
-                top: 50%;
-            }
-            .loading-icon {
-                position: absolute;
-            }
-            .upload-image {
-                width: 100%;
-                height: 100%;
-                background-repeat: no-repeat;
-                background-position: 50%;
-                background-size: cover;
-            }
-            .upload-image-icon {
-                width: 100%;
-                height: 100%;
-                background-repeat: no-repeat;
-                background-position: 50%;
-                background-size: inherit;
-            }
-            .upload-image-mask {
-                align-items: center;
-                justify-content: center;
-                position: absolute;
-                top: 0;
-                left: 0;
-                display: none;
-                width: 100%;
-                height: 100%;
-                color: #fff;
-                font-size: 16px;
-                background-color: rgba(0, 0, 0, 0.35);
-            }
-            &:hover .upload-image-mask {
-                display: flex;
-            }
-        }
-    }
-}
-.button-style {
-    background-color: #fff;
-    height: 66px;
-    overflow: hidden;
-    .card-content {
-        width: 100%;
-        .img-style {
-            position: relative;
-            top: 16px;
-        }
-        .checked-icon {
-            position: absolute;
-            right: -22px;
-            bottom: -22px;
-            z-index: 2;
-
-            width: 44px;
-            height: 44px;
-            color: #fff;
-            background-color: @primary-color-active;
-            transform: rotate(-45deg);
-
-            > div {
-                position: relative;
-                height: 100%;
-                transform: rotate(45deg);
-
-                > span {
-                    position: absolute;
-                    top: 6px;
-                    left: 6px;
-                    font-size: 12px;
-                }
-            }
-        }
-        &.checked {
-            position: relative;
-            color: @primary-color-active;
-            border-color: @primary-color-active;
-
-            > .checked-icon {
-                display: block;
-            }
-        }
     }
 }
 </style>

@@ -1,5 +1,5 @@
 <template>
-  <aside class="product-category-tree" :aria-label="$t('Product.index.660348-36')">
+  <ContentPanel class="product-category-tree" :aria-label="$t('Product.index.660348-36')">
     <a-input
       v-model:value="keyword"
       class="product-category-tree__search"
@@ -83,7 +83,7 @@
       <template #icon><AIcon type="PlusOutlined" /></template>
       {{ $t('Category.index.779033-15') }}
     </a-button>
-  </aside>
+  </ContentPanel>
 </template>
 
 <script setup lang="ts">
@@ -205,9 +205,12 @@ function filterTree(nodes: ProductCategoryTreeNode[], value: string): ProductCat
   gap: var(--space-2);
   height: 100%;
   min-height: 0;
+  overflow: hidden;
 
   &__search {
+    width: 100%;
     min-width: 0;
+    box-sizing: border-box;
   }
 
   &__content {
@@ -238,8 +241,12 @@ function filterTree(nodes: ProductCategoryTreeNode[], value: string): ProductCat
   }
 
   &__unclassified {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     border: 1px solid var(--jet-theme-border, var(--ant-color-border));
     border-radius: var(--r-3);
+    text-align: center;
   }
 
   &__label {
@@ -267,7 +274,9 @@ function filterTree(nodes: ProductCategoryTreeNode[], value: string): ProductCat
   }
 
   &__create-category {
-    margin-top: var(--space-1);
+    width: 100%;
+    margin: 0;
+    box-sizing: border-box;
   }
 
   :deep(.ant-tree-title) {

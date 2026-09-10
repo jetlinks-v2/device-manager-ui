@@ -540,6 +540,25 @@
                         "query"
                       ]
                     }
+                  ],
+                  "buttons": [
+                    {
+                      "id": "update",
+                      "name": "编辑",
+                      "i18nMessages": {
+                        "zh_CN": "编辑",
+                        "en_US": "Edit",
+                        "en": "Edit"
+                      },
+                      "permissions": [
+                        {
+                          "permission": "device-instance",
+                          "actions": [
+                            "save"
+                          ]
+                        }
+                      ]
+                    }
                   ]
                 }
               ]

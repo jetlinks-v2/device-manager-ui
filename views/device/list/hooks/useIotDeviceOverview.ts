@@ -32,7 +32,8 @@ export function useIotDeviceOverview(props: Readonly<IotDeviceOverviewProps>) {
 
   const keyMetrics = computed(() => {
     const focused = props.properties.filter((item) => item.focused)
-    return (focused.length ? focused : props.properties).slice(0, 5)
+    // 未配置关键属性时不回退到全部属性，避免概览展示未经确认的业务数据。
+    return focused.slice(0, 5)
   })
 
   const overviewPropertyActions = computed(() => [

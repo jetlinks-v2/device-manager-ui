@@ -4,7 +4,7 @@
         key="import"
         ghost
         :disabled="disabled"
-        :hasPermission="`${permission}:update`"
+        :hasPermission="permission"
         :tooltip="{
             title: disabled
                 ? $t('Base.Base.640395-5')
@@ -104,7 +104,7 @@ const props = defineProps({
       default: false,
     },
   permission: {
-    type: [String, Array],
+    type: [String, Array, Boolean],
     default: undefined,
   },
 });

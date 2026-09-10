@@ -1,7 +1,7 @@
 import { request, ndJson } from '@jetlinks-web/core'
 import type { DeviceMetadata, ProductItem, DepartmentItem, MetadataType  } from '../views/device/Product/typings'
 import type { OperatorItem } from '../components/FRuleEditor/Operator/typings'
-import {getBaseApi} from "@jetlinks-web-core/utils";
+import { getBaseApi } from '@jetlinks-web-core/utils/comm'
 
 /**
  * 根据条件查询产品（不带翻页）
@@ -173,6 +173,19 @@ export const productGuideSave = (data: any) => request.patch('/user/settings/pro
  * 存储策略
  */
 export const getStoragList = () => request.get('/device/product/storage/policies')
+
+export type DeviceDataStorePolicyInfo = {
+  id: string
+  name?: string
+  description?: string
+}
+
+/**
+ * 产品存储策略由产品共享。本期新增设备仅在创建前更新这一产品字段，
+ * 不会将 storePolicy 写入设备实例请求体。
+ */
+export const saveProductStorePolicy = (productId: string, storePolicy: string) =>
+  request.patch('/device-product', { id: productId, storePolicy })
 
 /**
  * 保存设备(设备接入)
