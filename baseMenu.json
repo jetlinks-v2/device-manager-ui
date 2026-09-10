@@ -12,7 +12,7 @@
       },
       "id": "jetlinks-resource",
       "url": "/resources",
-      "icon": "ApiOutlined",
+      "icon": "icon-ziyuanzhongxin",
       "sortIndex": 10,
       "permissions": [],
       "buttons": [],
@@ -30,7 +30,7 @@
           },
           "id": "jetlinks-resource-devices",
           "url": "/resources/devices",
-          "icon": "ApiOutlined",
+          "icon": "icon-shebeiguanli",
           "sortIndex": 30,
           "permissions": [],
           "buttons": [],
@@ -47,8 +47,8 @@
               },
               "owner": "iot",
               "id": "8ddbb67de5f65514105d47b448bfd70e",
-              "url": "/resources/devices/list/product",
-              "icon": "icon-chanpin",
+              "url": "/resources/devices/products",
+              "icon": "icon-yuandian",
               "sortIndex": 10,
               "assetType": "product",
               "showPage": [
@@ -409,7 +409,7 @@
               "owner": "iot",
               "id": "access-center-device-list",
               "url": "/resources/devices/list",
-              "icon": "HddOutlined",
+              "icon": "icon-yuandian",
               "sortIndex": 20,
               "accessSupport": {
                 "text": "支持",
@@ -437,7 +437,7 @@
                   "owner": "iot",
                   "id": "access-center-device-list-device",
                   "url": "/resources/devices/list/device",
-                  "icon": "HddOutlined",
+                  "icon": "icon-yuandian",
                   "sortIndex": 20,
                   "accessSupport": {
                     "text": "支持",
@@ -580,7 +580,7 @@
     "owner": "iot",
     "id": "bd55cdc9d0c1700afe628f572f91c22e",
     "url": "/infrastructure",
-    "icon": "icon-yunweiguanli-1",
+    "icon": "icon-yunweizhongxin",
     "permissions": [],
     "sortIndex": 4,
     "children": [
@@ -598,7 +598,7 @@
         "id": "47bedff9df89ecc0f0ce896e53805f02",
         "sortIndex": 10,
         "url": "/infrastructure/dashboard",
-        "icon": "icon-keshihua",
+        "icon": "icon-yibiaopan",
         "showPage": [
           "dashboard",
           "network-config"
@@ -637,7 +637,7 @@
         "id": "67bedff5df89ecc1f5ce896e42805f02",
         "sortIndex": 20,
         "url": "/infrastructure/access",
-        "icon": "icon-keshihua",
+        "icon": "icon-jieruzujian",
         "showPage": [],
         "permissions": [],
         "children": [
@@ -655,7 +655,7 @@
             "id": "f99acd0b64f96209eb276236cfb427cb",
             "sortIndex": 10,
             "url": "/infrastructure/access/network",
-            "icon": "icon-wangluozujian",
+            "icon": "icon-yuandian",
             "showPage": [
               "network-config"
             ],
@@ -790,7 +790,7 @@
             "id": "10e67b761ec1f4206fabf36fcf9d9b0b",
             "sortIndex": 20,
             "url": "/infrastructure/access/gateway",
-            "icon": "icon-wangguanzishebei",
+            "icon": "icon-yuandian",
             "showPage": [
               "device-gateway"
             ],
@@ -1000,7 +1000,7 @@
             "id": "cdd73c8cb02d1ae9af61ded7fc31e9c5",
             "sortIndex": 30,
             "url": "/infrastructure/access/protocols",
-            "icon": "icon-tongzhiguanli",
+            "icon": "icon-yuandian",
             "showPage": [
               "protocol-supports"
             ],
@@ -1122,7 +1122,7 @@
             "id": "e395655a273a1b765236342738289587",
             "sortIndex": 40,
             "url": "/infrastructure/access/Cert",
-            "icon": "icon-zhengshuguanli",
+            "icon": "icon-yuandian",
             "showPage": [
               "certificate"
             ],
@@ -1392,7 +1392,7 @@
         "id": "a20354876e9519e48f5ed6710ba6efb3",
         "sortIndex": 50,
         "url": "/infrastructure/plugin",
-        "icon": "BoxPlotOutlined",
+        "icon": "icon-chajianguanli",
         "showPage": [
           "plugin-driver"
         ],
@@ -1484,18 +1484,18 @@
   },
   {
     "code": "system",
-    "name": "系统管理",
+    "name": "系统设置",
+    "owner": "iot",
     "i18nMessages": {
       "name": {
-        "zh_CN": "系统管理",
+        "zh_CN": "系统设置",
         "en_US": "System Settings",
         "en": "System Settings"
       }
     },
-    "owner": "iot",
     "id": "fd1670b860ae58cc58bcd01d027ccd35",
     "url": "/system",
-    "icon": "icon-xitongguanli1",
+    "icon": "icon-xitongshezhi",
     "sortIndex": 100,
     "permissions": [],
     "buttons": [],
@@ -1513,8 +1513,8 @@
         },
         "id": "fe2e589bcf09a5353cbb5adrgb0b715l",
         "sortIndex": 30,
-        "url": "/system/platform-settings",
-        "icon": "icon-yonghuguanli",
+        "url": "/system/ps",
+        "icon": "icon-pingtaishezhi",
         "children": [{
           "code": "system/Relationship",
           "name": "关系配置",
@@ -1528,8 +1528,8 @@
           "owner": "iot",
           "id": "2fa02b8758fe82a6b9666f4ebb1bbd03",
           "sortIndex": 40,
-          "url": "/system/platform-settings/relationship",
-          "icon": "icon-shuxingpeizhi",
+          "url": "/system/ps/relationship",
+          "icon": "icon-yuandian",
           "showPage": [
             "relation"
           ],
@@ -1629,7 +1629,7 @@
     },
     "id": "3c7dca6ea8b5828bbcc023ce905244f7",
     "url": "/alarms",
-    "icon": "ToolOutlined",
+    "icon": "icon-gaojingzhongxin",
     "sortIndex": 50,
     "children": [
       {
@@ -1645,7 +1645,7 @@
         },
         "id": "3c7dcb6fa8c5839bbef033ce915344f7",
         "url": "/alarms/rules",
-        "icon": "ToolOutlined",
+        "icon": "icon-gaojingguize",
         "sortIndex": 20,
         "children": [
           {
@@ -1661,7 +1661,7 @@
             "owner": "iot",
             "id": "iot-device-alarm",
             "url": "/alarms/rules/iot",
-            "icon": "AlertOutlined",
+            "icon": "icon-yuandian",
             "sortIndex": 1,
             "accessSupport": {
               "text": "支持",
@@ -1742,6 +1742,484 @@
                 "permission": "notifier",
                 "actions": [
                   "query"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "iot-user",
+    "name": "物联",
+    "i18nMessages": {
+      "name": {
+        "zh_CN": "物联",
+        "en_US": "IoT",
+        "en": "IoT"
+      }
+    },
+    "owner": "app",
+    "id": "iot-user-root",
+    "url": "/iot-center",
+    "icon": "icon-wulianwang",
+    "sortIndex": 20,
+    "permissions": [
+      {
+        "permission": "space-management",
+        "actions": [
+          "query",
+          "save"
+        ]
+      },
+      {
+        "permission": "space-type",
+        "actions": [
+          "query"
+        ]
+      },
+      {
+        "permission": "alarm-record",
+        "actions": [
+          "query"
+        ]
+      }
+    ],
+    "children": [
+      {
+        "code": "iot-user/device/overview",
+        "name": "设备总览",
+        "i18nMessages": {
+          "name": {
+            "zh_CN": "设备总览",
+            "en_US": "Device Overview",
+            "en": "Device Overview"
+          }
+        },
+        "owner": "app",
+        "id": "iot-user-device-overview",
+        "url": "/iot-center/device/overview",
+        "icon": "UngroupOutlined",
+        "sortIndex": 1,
+        "accessSupport": {
+          "text": "支持",
+          "value": "support"
+        },
+        "supportDataAccess": true,
+        "assetTypes": [
+          "device","product"
+        ],
+        "options": {
+          "meta": {
+            "componentCode": "iot/device"
+          }
+        },
+        "showPage": [
+          "device-instance"
+        ],
+        "permissions": [
+          {
+            "permission": "device-instance",
+            "actions": [
+              "query"
+            ]
+          }
+        ]
+      },
+      {
+        "code": "iot-user/device/list",
+        "name": "设备列表",
+        "i18nMessages": {
+          "name": {
+            "zh_CN": "设备列表",
+            "en_US": "Device List",
+            "en": "Device List"
+          }
+        },
+        "owner": "app",
+        "id": "iot-user-device-list",
+        "url": "/iot-center/device/list",
+        "icon": "HddOutlined",
+        "sortIndex": 2,
+        "accessSupport": {
+          "text": "支持",
+          "value": "support"
+        },
+        "supportDataAccess": true,
+        "assetTypes": [
+          "device","product"
+        ],
+        "options": {
+          "meta": {
+            "componentCode": "device/list"
+          }
+        },
+        "showPage": [
+          "device-instance",
+          "device-template"
+        ],
+        "permissions": [
+          {
+            "permission": "device-instance",
+            "actions": [
+              "delete",
+              "import",
+              "export",
+              "enable",
+              "query",
+              "save",
+              "disable"
+            ]
+          },
+          {
+            "permission": "device-product",
+            "actions": [
+              "query",
+              "save"
+            ]
+          },
+          {
+            "permission": "device-category",
+            "actions": [
+              "query"
+            ]
+          },
+          {
+            "permission": "device-template",
+            "actions": [
+              "query"
+            ]
+          },
+          {
+            "permission": "marketplace",
+            "actions": [
+              "query",
+              "install",
+              "upgrade"
+            ]
+          },
+          {
+            "permission": "system-monitor",
+            "actions": [
+              "query"
+            ]
+          },
+          {
+            "permission": "transparent-codec",
+            "actions": [
+              "query",
+              "save"
+            ]
+          },
+          {
+            "permission": "device-gateway",
+            "actions": [
+              "query"
+            ]
+          },
+          {
+            "permission": "space-data-bind",
+            "actions": [
+              "save"
+            ]
+          },
+          {
+            "permission": "device-group",
+            "actions": ["query"]
+          }
+        ]
+      },
+      {
+        "code": "iot-user/device/groups",
+        "name": "设备分组",
+        "i18nMessages": {
+          "name": {
+            "zh_CN": "设备分组",
+            "en_US": "Device Groups",
+            "en": "Device Groups"
+          }
+        },
+        "owner": "app",
+        "id": "iot-user-device-groups",
+        "url": "/iot-center/device/groups",
+        "icon": "ClusterOutlined",
+        "sortIndex": 3,
+        "accessSupport": {
+          "text": "支持",
+          "value": "support"
+        },
+        "supportDataAccess": true,
+        "assetType": "deviceGroup",
+        "options": {
+          "meta": {
+            "componentCode": "device/groups"
+          }
+        },
+        "showPage": [
+          "device-instance"
+        ],
+        "permissions": [
+          {
+            "permission": "device-instance",
+            "actions": [
+              "query"
+            ]
+          },
+          {
+            "permission": "device-group",
+            "actions": [
+              "query",
+              "save",
+              "delete"
+            ]
+          },
+          {
+            "permission": "space-data-bind",
+            "actions": [
+              "query",
+              "save",
+              "delete"
+            ]
+          }
+        ]
+      },
+      {
+        "code": "iot-user/device/health",
+        "name": "设备健康",
+        "i18nMessages": {
+          "name": {
+            "zh_CN": "设备健康",
+            "en_US": "Device Health",
+            "en": "Device Health"
+          }
+        },
+        "owner": "app",
+        "id": "iot-user-device-health",
+        "url": "iot-user/device/health",
+        "icon": "ControlOutlined",
+        "sortIndex": 4,
+        "accessSupport": {
+          "text": "支持",
+          "value": "support"
+        },
+        "supportDataAccess": true,
+        "assetTypes": [
+          "device","product"
+        ],
+        "options": {
+          "meta": {
+            "componentCode": "device/health"
+          }
+        },
+        "showPage": [
+          "device-instance"
+        ],
+        "permissions": [
+          {
+            "permission": "device-instance",
+            "actions": [
+              "query"
+            ]
+          }
+        ]
+      },
+      {
+        "code": "iot-user/device/alarm",
+        "name": "设备告警",
+        "i18nMessages": {
+          "name": {
+            "zh_CN": "设备告警",
+            "en_US": "Device Alarm",
+            "en": "Device Alarm"
+          }
+        },
+        "owner": "app",
+        "id": "iot-user-device-alarm",
+        "url": "/iot-center/device/alarm",
+        "icon": "AlertOutlined",
+        "sortIndex": 5,
+        "accessSupport": {
+          "text": "支持",
+          "value": "support"
+        },
+        "supportDataAccess": true,
+        "assetType": "device",
+        "assetTypes": [
+          "device",
+          "notifySubscriberProvider",
+          "notifyConfig",
+          "product"
+        ],
+        "options": {
+          "meta": {
+            "componentCode": "device/alarm"
+          }
+        },
+        "showPage": [
+          "device-instance",
+          "device-product",
+          "device-template"
+        ],
+        "permissions": [
+          {
+            "permission": "device-instance",
+            "actions": [
+              "query",
+              "save",
+              "delete"
+            ]
+          },
+          {
+            "permission": "device-product",
+            "actions": [
+              "query",
+              "save",
+              "delete"
+            ]
+          },
+          {
+            "permission": "device-category",
+            "actions": [
+              "query"
+            ]
+          },
+          {
+            "permission": "device-template",
+            "actions": [
+              "query"
+            ]
+          },
+          {
+            "permission": "marketplace",
+            "actions": [
+              "query"
+            ]
+          },
+          {
+            "permission": "alarm-config",
+            "actions": [
+              "query"
+            ]
+          },
+          {
+            "permission": "user",
+            "actions": [
+              "query"
+            ]
+          },
+          {
+            "permission": "notify-channel",
+            "actions": [
+              "save"
+            ]
+          },
+          {
+            "permission": "notifier",
+            "actions": [
+              "query"
+            ]
+          }
+        ]
+      },
+      {
+        "code": "iot-user/scene-linkage",
+        "name": "场景联动",
+        "i18nMessages": {
+          "name": {
+            "zh_CN": "场景联动",
+            "en_US": "Scene Linkage",
+            "en": "Scene Linkage"
+          }
+        },
+        "owner": "app",
+        "id": "iot-user-scene-linkage",
+        "url": "/iot-center/scene-linkage",
+        "icon": "PartitionOutlined",
+        "sortIndex": 7,
+        "accessSupport": {
+          "text": "支持",
+          "value": "support"
+        },
+        "supportDataAccess": true,
+        "assetType": "scene",
+        "options": {
+          "meta": {
+            "componentCode": "scene-linkage"
+          }
+        },
+        "showPage": [
+          "rule-scene",
+          "device-instance",
+          "device-product"
+        ],
+        "permissions": [
+          {
+            "permission": "rule-scene",
+            "actions": [
+              "query",
+              "save",
+              "delete"
+            ]
+          },
+          {
+            "permission": "device-instance",
+            "actions": [
+              "query"
+            ]
+          },
+          {
+            "permission": "device-product",
+            "actions": [
+              "query"
+            ]
+          }
+        ],
+        "buttons": [
+          {
+            "id": "record",
+            "name": "执行日志",
+            "permissions": [
+              {
+                "permission": "rule-scene",
+                "actions": [
+                  "query"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "add",
+            "name": "新增",
+            "permissions": [
+              {
+                "permission": "rule-scene",
+                "actions": [
+                  "save"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "update",
+            "name": "编辑",
+            "permissions": [
+              {
+                "permission": "rule-scene",
+                "actions": [
+                  "save"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "delete",
+            "name": "删除",
+            "permissions": [
+              {
+                "permission": "rule-scene",
+                "actions": [
+                  "delete"
                 ]
               }
             ]
