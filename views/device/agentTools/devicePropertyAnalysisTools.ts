@@ -6,10 +6,16 @@ import {
   type ClientToolInputAlternative,
   type CompiledClientTool,
 } from '@jetlinks-web-core/layout/components/AiChat/clientToolApi'
+import {
+  defineClientToolAnalyticalProducer,
+  defineClientToolStringArgumentBinding,
+  type ClientToolTemporalAuthoring,
+} from '@jetlinks-web-core/layout/components/AiChat/clientToolDefinition'
 import type {
   AiClientToolCall,
   AiClientToolOutputField,
 } from '@jetlinks-web-core/layout/components/AiChat/clientTools'
+import { DEVICE_PROPERTY_AGGREGATE_TIME_FIELD } from './propertyAggregateSupport'
 
 type JsonRecord = Record<string, unknown>
 type MaybePromise<T> = T | Promise<T>
@@ -33,6 +39,50 @@ export const DEVICE_PROPERTY_ANALYSIS_OUTPUTS = {
   history: { name: 'property-history-records', shape: 'time-series.records' },
   aggregate: { name: 'property-aggregate', shape: 'time-series.aggregate' },
 } as const
+
+const DEVICE_PROPERTY_AGGREGATE_INTENTS = [
+  '分析设备属性的历史趋势、分桶统计或地理位置轨迹',
+  'analyze subject property history as bucketed statistics, trends, or geographic paths',
+] as const
+
+const DEVICE_PROPERTY_AGGREGATE_ANALYTICAL = defineClientToolAnalyticalProducer<JsonRecord>({
+  producerKey: 'device.property.aggregate',
+  factKey: 'device.property.aggregate-values',
+  subjects: ['device'],
+  measures: [{
+    name: 'device_property',
+    aggregations: ['count', 'distinct_count', 'avg', 'max', 'min', 'first', 'last'],
+    units: [],
+  }],
+  dimensions: ['time'],
+  filters: [],
+  grains: [],
+  criteria: ['trend'],
+  semanticIntentBindings: [
+    {
+      intent: DEVICE_PROPERTY_AGGREGATE_INTENTS[0],
+      criterion: 'trend',
+      measures: ['device_property'],
+      dimensions: ['time'],
+    },
+    {
+      intent: DEVICE_PROPERTY_AGGREGATE_INTENTS[1],
+      criterion: 'trend',
+      measures: ['device_property'],
+      dimensions: ['time'],
+    },
+  ],
+  ordering: [{ axis: 'time', direction: 'asc' }],
+  coverage: 'complete-or-partial',
+  output: DEVICE_PROPERTY_ANALYSIS_OUTPUTS.aggregate.name,
+  outputFields: 'execution-authored',
+})
+
+// The physical row field, analytical axis and declared ordering share one canonical time identity.
+const DEVICE_PROPERTY_AGGREGATE_ORDERING = {
+  keys: [{ field: DEVICE_PROPERTY_AGGREGATE_TIME_FIELD.name, direction: 'asc' as const }],
+  producerGuaranteed: true,
+}
 
 const SCHEMA_SECTIONS = ['properties', 'events', 'functions', 'tags'] as const
 type SchemaSection = typeof SCHEMA_SECTIONS[number]
@@ -83,6 +133,7 @@ interface DevicePropertyToolDependencies<TContext, TResult> {
   copy: DevicePropertyAnalysisCopy
   inputs: ClientToolInput[]
   inputAlternatives?: ClientToolInputAlternative[]
+  temporal?: ClientToolTemporalAuthoring<JsonRecord>
   execute: (
     args: JsonRecord,
     context: TContext,
@@ -91,6 +142,11 @@ interface DevicePropertyToolDependencies<TContext, TResult> {
 }
 
 const owner = { module: 'device-manager-ui', group: 'device-property-analysis' } as const
+
+/** Preserve execution-authored field identity in the immutable result binding. */
+const stabilizeAggregateFields = (
+  fields: readonly AiClientToolOutputField[],
+): AiClientToolOutputField[] => fields.map(field => ({ ...field }))
 
 const toClientToolResult = <TResult>(result: DevicePropertyAnalysisExecution<TResult>) => {
   const options = {
@@ -103,7 +159,10 @@ const toClientToolResult = <TResult>(result: DevicePropertyAnalysisExecution<TRe
     ...(result.limitReason ? { limitReason: result.limitReason } : {}),
   }
   return result.complete === false || result.truncated === true
-    ? clientToolResult.partial(result.value, options)
+    ? clientToolResult.partial(result.value, {
+        ...options,
+        ...(result.truncated === true ? { displayTruncated: true } : {}),
+      })
     : clientToolResult.success(result.value, {
         ...options,
         status: result.status === 'empty' ? 'empty' : 'ok',
@@ -276,8 +335,16 @@ export const createDevicePropertyHistoryTool = <TContext>(
   output: clientToolOutput.recordSet<DevicePropertyHistoryResult>({
     ...DEVICE_PROPERTY_ANALYSIS_OUTPUTS.history,
     select: result => result.records,
+    recordPath: '$',
     fields: [
-      { name: 'timestamp', semanticRole: 'timestamp', format: 'datetime' },
+      {
+        name: 'timestamp',
+        type: 'timestamp',
+        role: 'temporal_dimension',
+        axis: 'time',
+        encoding: 'epoch-millis',
+        format: 'datetime',
+      },
     ],
   }),
   owner,
@@ -294,10 +361,7 @@ export const createDevicePropertyAggregateDefinition = <TContext>(
     text: dependencies.copy.description,
     help: dependencies.copy.help,
     capabilities: ['subject.property.aggregate'],
-    intents: [
-      '分析设备属性的历史趋势、分桶统计或地理位置轨迹',
-      'analyze subject property history as bucketed statistics, trends, or geographic paths',
-    ],
+    intents: [...DEVICE_PROPERTY_AGGREGATE_INTENTS],
     notFor: [
       '读取未聚合的原始属性明细',
       'read unaggregated raw property records',
@@ -306,15 +370,28 @@ export const createDevicePropertyAggregateDefinition = <TContext>(
   presentation: toolPresentation(dependencies.copy),
   inputs: dependencies.inputs,
   inputAlternatives: dependencies.inputAlternatives,
-  consumes: [{ name: DEVICE_PROPERTY_ANALYSIS_OUTPUTS.propertyId.name, source: 'EITHER' }],
+  consumes: [{
+    name: DEVICE_PROPERTY_ANALYSIS_OUTPUTS.propertyId.name,
+    type: 'structured-data',
+    mediaType: 'application/json',
+    shape: DEVICE_PROPERTY_ANALYSIS_OUTPUTS.propertyId.shape,
+    required: false,
+    sourcePolicy: 'EITHER',
+    bindArgument: defineClientToolStringArgumentBinding<JsonRecord>('propertyId'),
+  }],
+  analytical: DEVICE_PROPERTY_AGGREGATE_ANALYTICAL,
+  ...(dependencies.temporal ? { temporal: dependencies.temporal } : {}),
   effect: { kind: 'READ' },
   output: clientToolOutput.aggregateSeries<DevicePropertyAggregateResult>({
     ...DEVICE_PROPERTY_ANALYSIS_OUTPUTS.aggregate,
     label: dependencies.copy.displayName,
     delivery: 'auto',
     select: result => result.records,
-    fields: [{ name: 'time', semanticRole: 'timestamp', format: 'datetime' }],
-    resolveFields: result => result.fields,
+    recordPath: '$',
+    fields: stabilizeAggregateFields([DEVICE_PROPERTY_AGGREGATE_TIME_FIELD]),
+    ordering: DEVICE_PROPERTY_AGGREGATE_ORDERING,
+    optional: true,
+    resolveFields: result => stabilizeAggregateFields(result.fields),
   }),
   owner,
   execute: async (args, context, call) => toClientToolResult(
@@ -322,15 +399,20 @@ export const createDevicePropertyAggregateDefinition = <TContext>(
   ),
 })
 
-export const createDevicePropertySelectorAlternatives = (): ClientToolInputAlternative[] => [
+/** Keeps property selection and time selection in one closed oneOf schema without weakening either discriminator. */
+export const createDevicePropertySelectorAlternatives = (
+  baseAlternatives: readonly ClientToolInputAlternative[] = [{ required: [] }],
+): ClientToolInputAlternative[] => baseAlternatives.flatMap(alternative => ([
   {
-    title: 'Single property selector',
-    required: ['propertyId'],
-    forbidden: ['propertyIds'],
+    ...alternative,
+    title: `${alternative.title || 'Input'} / single property`,
+    required: ['propertyId', ...alternative.required],
+    forbidden: ['propertyIds', ...(alternative.forbidden || [])],
   },
   {
-    title: 'Multiple property selector',
-    required: ['propertyIds'],
-    forbidden: ['propertyId'],
+    ...alternative,
+    title: `${alternative.title || 'Input'} / multiple properties`,
+    required: ['propertyIds', ...alternative.required],
+    forbidden: ['propertyId', ...(alternative.forbidden || [])],
   },
-]
+]))
