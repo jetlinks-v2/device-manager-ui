@@ -49,6 +49,7 @@
                 show-count
               />
             </a-form-item>
+            <DeviceLibraryBizKeyPicker v-model="formState.bizKey" :provider="provider.id" />
             <a-form-item>
               <j-permission-button
                 v-if="view === 'false'"
@@ -91,12 +92,14 @@ import { ProtocolMapping } from "../../data";
 import { useI18n } from 'vue-i18n';
 import { useTabSaveSuccessBack } from '@jetlinks-web-core/hooks'
 import I18nTextField from '@device-manager-ui/components/I18n/I18nTextField.vue';
+import DeviceLibraryBizKeyPicker from '../DeviceLibraryBizKeyPicker.vue';
 
 const { t: $t } = useI18n();
 interface FormState {
   name: string;
   description: string;
   i18nMessages?: Record<string, Record<string, string>>;
+  bizKey?: string;
 }
 const route = useRoute();
 const view = route.query.view as string;
@@ -120,6 +123,7 @@ const formState = ref<FormState>({
   name: "",
   description: "",
   i18nMessages: {},
+  bizKey: '',
 });
 const { onBack } = useTabSaveSuccessBack()
 
@@ -152,6 +156,7 @@ onMounted(() => {
     formState.value = {
       name: props.data.name,
       description: props.data?.description || "",
+      bizKey: props.data?.bizKey || '',
     };
   }
 });

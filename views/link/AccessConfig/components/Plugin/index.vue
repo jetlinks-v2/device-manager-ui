@@ -136,6 +136,7 @@
                                         :maxlength="200"
                                     />
                                 </a-form-item>
+                                <DeviceLibraryBizKeyPicker v-model="formData.bizKey" :provider="provider.id" />
                                 <template v-if="config.length">
                                     <title-component :data="$t('Plugin.index.626239-14')" />
                                     <a-form-item
@@ -207,6 +208,7 @@ import { CreteRuleByType } from '../../../components/Form/rules';
 import { useI18n } from 'vue-i18n';
 import { useTabSaveSuccessBack } from '@jetlinks-web-core/hooks'
 import I18nTextField from '@device-manager-ui/components/I18n/I18nTextField.vue';
+import DeviceLibraryBizKeyPicker from '../DeviceLibraryBizKeyPicker.vue';
 
 const { t: $t } = useI18n();
 const props = defineProps({
@@ -238,6 +240,7 @@ const loading = ref(false);
 const formData = reactive({
     name: undefined,
     description: undefined,
+    bizKey: props.data?.bizKey || '',
     i18nMessages: {},
     configuration: {},
 });

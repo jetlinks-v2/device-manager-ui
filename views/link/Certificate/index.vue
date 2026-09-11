@@ -1,15 +1,10 @@
 <template>
     <j-page-container>
         <div>
-            <pro-search
-                :columns="columns"
-                target="search-certificate"
-                @search="handleSearch"
-            />
             <FullPage>
                 <j-pro-table
                     ref="tableRef"
-                    mode="TABLE"
+                    modeValue="TABLE"
                     :columns="columns"
                     :request="query"
                     :defaultParams="{
@@ -18,6 +13,19 @@
                     :params="params"
                 >
                     <template #headerLeftRender>
+                        <div class="access-component-list-toolbar">
+                            <h2 class="access-component-list-title">
+                                {{ $t('AccessComponent.listTitle.certificate') }}
+                            </h2>
+                            <ConditionFilter
+                                class="access-component-list-search"
+                                :columns="columns"
+                                target="search-certificate"
+                                @search="handleSearch"
+                            />
+                        </div>
+                    </template>
+                    <template #headerRightRender>
                         <j-permission-button
                             type="primary"
                             @click="handleAdd"
@@ -67,6 +75,7 @@ import { query, remove } from '../../../api/link/certificate';
 import { onlyMessage } from '@jetlinks-web/utils';
 import { useMenuStore } from '@jetlinks-web-core/store';
 import { useI18n } from 'vue-i18n';
+import ConditionFilter from '@jetlinks-web-core/components/ConditionFilter';
 
 const { t: $t } = useI18n();
 const menuStory = useMenuStore();
@@ -210,4 +219,27 @@ const handleSearch = (e: any) => {
 };
 </script>
 
-<style lang="less" scoped></style>
+<style lang="less" scoped>
+.access-component-list-toolbar {
+    display: flex;
+    flex: 1;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+}
+
+.access-component-list-title {
+    margin: 0;
+    color: rgba(0, 0, 0, 0.85);
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 32px;
+    white-space: nowrap;
+}
+
+.access-component-list-search {
+    flex: 1 1 360px;
+    min-width: 280px;
+    max-width: 640px;
+}
+</style>

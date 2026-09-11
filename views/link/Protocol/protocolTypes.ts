@@ -7,8 +7,11 @@ export const PROTOCOL_TYPE_ORDER = ['jar', 'local', 'marketplace'] as const
 
 export type ProtocolTypeId = (typeof PROTOCOL_TYPE_ORDER)[number]
 
-/** 默认展示顺序（接口失败或未配置时的回退） */
-export const DEFAULT_PROTOCOL_TYPES: ProtocolTypeId[] = [...PROTOCOL_TYPE_ORDER]
+/**
+ * 无法确认环境能力时，只保留本地已有的创建方式。
+ * 能力市场必须由运行时明确声明，避免私有化未部署运营端时出现不可用入口。
+ */
+export const DEFAULT_PROTOCOL_TYPES: ProtocolTypeId[] = ['jar', 'local']
 
 /**
  * 解析 GET /protocol/providers 响应为归一化的小写 id 列表。

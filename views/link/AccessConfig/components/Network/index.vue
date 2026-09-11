@@ -161,6 +161,7 @@
                     :maxlength="200"
                   />
                 </a-form-item>
+                <DeviceLibraryBizKeyPicker v-model="formData.bizKey" :provider="provider.id" />
               </a-form>
             </a-col>
             <a-col :span="12">
@@ -273,6 +274,7 @@ import { onlyMessage, randomString } from "@jetlinks-web/utils";
 import { useI18n } from "vue-i18n";
 import { useTabSaveSuccess, useTabSaveSuccessBack } from '@jetlinks-web-core/hooks'
 import I18nTextField from '@device-manager-ui/components/I18n/I18nTextField.vue';
+import DeviceLibraryBizKeyPicker from '../DeviceLibraryBizKeyPicker.vue';
 
 const { t: $t } = useI18n();
 const menuStory = useMenuStore();
@@ -330,6 +332,7 @@ const columnsHTTP = ref(<TableColumnType>[]);
 const formData = ref({
   name: "",
   description: "",
+  bizKey: "",
   i18nMessages: {},
 });
 const loading = ref(false);
@@ -642,6 +645,7 @@ onMounted(() => {
     formData.value = {
       name: props.data.name,
       description: props.data.description,
+      bizKey: props.data.bizKey || '',
     };
   }
 });

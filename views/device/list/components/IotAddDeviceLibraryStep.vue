@@ -61,7 +61,7 @@
             :description="$t('IotDeviceList.add.libraryEmpty')"
           />
 
-          <div v-if="templates.length" class="add-device-library__pager">
+          <div v-if="templates.length || (showEmptyPager && hasMore)" class="add-device-library__pager">
             <a-space>
               <a-tooltip :title="$t('IotDeviceList.add.prev')">
                 <a-button
@@ -117,6 +117,8 @@ const props = defineProps({
   pageSize: { type: Number, default: 6 },
   loading: { type: Boolean, default: false },
   tagLoading: { type: Boolean, default: false },
+  /** 资源被调用方二次筛选时，空页仍需保留继续翻页入口。 */
+  showEmptyPager: { type: Boolean, default: false },
 })
 
 const emit = defineEmits<{
