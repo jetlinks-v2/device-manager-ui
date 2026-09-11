@@ -128,8 +128,11 @@ export function useUnifiedDeviceList() {
     batchMode.value = false
     void router.replace({ query: { ...route.query, type } })
   }
-  function search(payload: { terms: ConditionFilterTerm[] }) {
-    void router.replace({ query: { ...route.query, keyword: undefined, q: encodeConditionFilterQuery(payload.terms, filterFields.value) || undefined } })
+  function search() {
+    // URL 保存编辑态；change 的查询值已转义，回填后会被再次转义并触发搜索循环。
+    const q = encodeConditionFilterQuery(searchTerms.value, filterFields.value) || undefined
+    if (q === (route.query.q || undefined) && !route.query.keyword) return
+    void router.replace({ query: { ...route.query, keyword: undefined, q } })
   }
   // 再次点击已选状态即取消，其他搜索条件及左侧范围保持不变。
   function changeStatus(value: string) { void router.replace({ query: { ...route.query, status: value === status.value ? undefined : value } }) }
