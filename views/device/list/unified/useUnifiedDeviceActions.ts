@@ -28,19 +28,45 @@ export function useUnifiedDeviceActions(
   const editOpen = ref(false)
   // 固定打开时的新增入口，切换列表分类不会替换正在填写的表单。
   const createEntry = shallowRef<Extract<DeviceCreateEntry, { component: unknown }>>()
+  const canCreate = (provider?: DeviceListProvider) => !!provider?.create && (!provider.create.permission || auth.hasPermission(provider.create.permission))
   // 消费一次性创建动作，刷新页面不重开；未提供新增弹层的分类只保留列表。
-  watch([() => route.query.action, activeProvider], ([action, provider]) => {
-    if (action !== 'create' || !provider) return
-    if (provider.id === 'device') {
+  watch([() => route.query.action, activeProvider, () => route.query.type], ([action, provider, requestedType]) => {
+    if (action !== 'create') return
+
+    const targetCategory = requestedType || (route.path.endsWith('/gateway') ? 'gateway' : route.path.endsWith('/video') ? 'video' : 'device')
+
+    // 如果需要特定分类但对应 provider 尚未就绪，则等待下一轮 watch 触发
+    if (targetCategory !== 'device' && (!provider || provider.id !== targetCategory)) {
+      return
+    }
+
+    const { action: _action, ...query } = route.query
+
+    // 设备接入（默认全部或明确为 device）：打开设备接入抽屉
+    if (targetCategory === 'device' || !provider || provider.id === 'device') {
       editing.value = null
       editOpen.value = true
-    } else if (provider.create && 'component' in provider.create) {
-      createEntry.value = provider.create
-    } else if (provider.create) {
-      menu.jumpPage(provider.create.route, { params: provider.create.params })
+      void router.replace({ query })
+      return
     }
-    const { action: _action, ...query } = route.query
-    void router.replace({ query })
+
+    // 其它扩展分类（如网关、视频等）
+    if (canCreate(provider)) {
+      if (provider.create && 'component' in provider.create) {
+        createEntry.value = provider.create
+        void router.replace({ query })
+      } else if (provider.create) {
+        // 路由型新增使用 replace 跳转，避免将中转列表页压入历史栈导致浏览器需要后退两次。
+        const targetMenu = menu.getMenu(provider.create.route)
+        void router.replace({
+          name: targetMenu?.routeName || provider.create.route,
+          params: {
+            ...provider.create.params,
+            ...(projectId.value ? { projectId: projectId.value } : {}),
+          },
+        })
+      }
+    }
   }, { immediate: true })
   const detailDevice = ref<UnifiedDevice | null>(null)
   const busy = ref(false)
@@ -49,10 +75,11 @@ export function useUnifiedDeviceActions(
   const selected = computed(() => rows.value.filter(device => selectedIds.value.includes(device.id)))
   const allowed = (device: UnifiedDevice, action: string) => {
     const provider = providerOf(device)
-    // 普通设备菜单按页面赋予 CRUD 权限；网关和视频沿用各自按钮授权。
-    return !!provider && (provider.id === 'device' ? menu.hasMenu(provider.menuCode) : auth.hasPermission(`${provider.menuCode}:${action}`))
+    if (!provider) return false
+    // 编辑统一沿用设备列表的页面授权，避免复用同一编辑表单却额外依赖分类按钮权限。
+    if (action === 'update' || provider.id === 'device') return menu.hasMenu(provider.menuCode)
+    return auth.hasPermission(`${provider.menuCode}:${action}`)
   }
-  const canCreate = (provider?: DeviceListProvider) => !!provider?.create && (!provider.create.permission || auth.hasPermission(provider.create.permission))
   function openCreate(provider?: DeviceListProvider) {
     const entry = provider?.create
     if (!entry || busy.value || !canCreate(provider)) return

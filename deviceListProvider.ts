@@ -2,7 +2,13 @@ import type { Component } from 'vue'
 import type { DeviceQueryTerm } from './api/device'
 import type { IotDevice } from './views/device/list/types'
 
-export type UnifiedDevice = IotDevice & { category: string; channelNumber?: number; networkAddress?: string }
+export type UnifiedDevice = IotDevice & {
+  category: string
+  channelNumber?: number
+  networkAddress?: string
+  createdAt?: string
+  lastReportTime?: number | null
+}
 export type DeviceCreateEntry = {
   label: () => string
   permission?: string

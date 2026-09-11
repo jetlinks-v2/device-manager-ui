@@ -1041,7 +1041,8 @@ function formatBytes(value?: string | number) {
 }
 
 async function loadSessions(showTip = false, showLoadingMask = true) {
-  if (!props.device.id || sessionsRequesting.value) return
+  // 会话信息未展示时不查询；消息追踪继续使用独立的订阅。
+  if (props.hideSession || !props.device.id || sessionsRequesting.value) return
   sessionsRequesting.value = true
   if (showLoadingMask) sessionsLoading.value = true
   try {
@@ -1063,7 +1064,7 @@ async function loadSessions(showTip = false, showLoadingMask = true) {
 }
 
 function scheduleSessionAutoRefresh() {
-  if (!isOnline.value || !props.device.id) return
+  if (props.hideSession || !isOnline.value || !props.device.id) return
   const now = Date.now()
   const remain = 1000 - (now - lastSessionAutoRefreshAt)
   const run = () => {

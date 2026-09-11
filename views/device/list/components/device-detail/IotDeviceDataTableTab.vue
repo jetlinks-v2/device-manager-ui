@@ -270,15 +270,17 @@ const {
   propertyFilter,
   propertyGroup,
 )
+// 属性页不可见时不再查询趋势或订阅属性，事件页使用自己的查询链路。
+const activePropertyCards = computed(() => activePane.value === 'property' ? visiblePropertyCards.value : [])
 const {
   getSparklineRows,
 } = useIotDevicePropertySparklineData(
   computed(() => props.deviceId),
-  visiblePropertyCards,
+  activePropertyCards,
   propertyTimeRange,
 )
 const visiblePropertyKeys = computed(() =>
-  visiblePropertyCards.value.map((item) => item.identifier).filter(Boolean),
+  activePropertyCards.value.map((item) => item.identifier).filter(Boolean),
 )
 
 watch(
