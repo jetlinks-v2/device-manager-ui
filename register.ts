@@ -34,8 +34,7 @@ export default {
     deviceRuntimePage: queryRuntimeDevices_api,
     productNoPage: queryNoPagingPost,
     instanceNoPage: queryInstanceNoPage,
-    instancePage: query,
-    deviceListSearchTerms: getDeviceListSearchTerms,
+    instancePage: query
   },
   components: {
     IotDeviceDetailView: defineAsyncComponent(() => import('./views/device/list/components/IotDeviceDetailView.vue')),
