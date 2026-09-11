@@ -264,6 +264,16 @@ export function useIotDeviceDetailView() {
   function openEditDrawer() {
     if (!canDeviceAction('update')) return
     actionError.value = ''
+    const editRoute = provider.value?.editRoute
+    const currentDeviceId = device.value?.id
+    if (editRoute && currentDeviceId) {
+      // 业务设备沿用自身已发布的编辑页，避免把媒体接入配置降级成通用 IoT 抽屉。
+      deviceMenu.jumpPage(editRoute, {
+        params: { id: currentDeviceId },
+        query: { id: currentDeviceId },
+      })
+      return
+    }
     editDrawerOpen.value = true
   }
 

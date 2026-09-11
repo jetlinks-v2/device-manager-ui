@@ -38,7 +38,7 @@
                 <template #icon><AIcon type="PlusOutlined" /></template>
                 {{ t('IotDeviceList.action.create') }}
               </a-button>
-              <a-button v-if="activeProvider?.create" :key="`create-${activeProvider.id}`" type="primary" :disabled="busy" @click="createEntry = activeProvider.create">
+              <a-button v-if="activeProvider?.create" :key="`create-${activeProvider.id}`" type="primary" :disabled="busy || !canCreate(activeProvider)" @click="openCreate(activeProvider)">
                 <template #icon><AIcon type="PlusOutlined" /></template>
                 {{ activeProvider.create.label() }}
               </a-button>
