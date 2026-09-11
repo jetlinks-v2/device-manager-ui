@@ -7,11 +7,13 @@
 ### 设备批量页接入算法配置（已实施）
 
 - 目标：在设备列表的“批量操作”页中，在现有“插件配置”右侧增加“算法配置”，由 `jetlinks-ai-ui` 注册完整算法中心工作区。
-- 影响范围与 owning module：`device-manager-ui` 只调整 `views/device/list/unified/BatchPage.vue` 的扩展页签承载契约；算法页签注册、业务内容、文案和草稿保护由 `jetlinks-ai-ui` 负责。
+- 影响范围与 owning module：`device-manager-ui` 调整 `views/device/list/unified/BatchPage.vue` 的扩展页签承载契约，并维护资源中心设备列表菜单权限；算法页签注册、业务内容、文案和草稿保护由 `jetlinks-ai-ui` 负责。
 - 方案档案：沿用“多对象对比页”的高密度矩阵工作区；批量页只增加同级分段入口，不改算法中心的筛选、矩阵、参数面板和保存流程。页签通过现有 `device-list-batch:tabs` 注册表动态装配，以 `menuCode` 复用原页面菜单授权，并缓存已打开工作区以保留未提交草稿。
 - 不做：不改 `edge-master-ui`、`jetlinks-web-core`、后端接口、请求体、响应体和依赖锁文件；不将设备列表当前勾选或查询条件转换为算法中心的摄像头范围。
 - 实现入口：`views/device/list/unified/BatchPage.vue` 同时识别注册项声明的按钮权限与 `menuCode` 菜单所有权；动态页签组件通过 `KeepAlive + code key` 保留已打开工作区状态。算法模块以 `order=20` 注册，继续排在现有 `order=10` 的插件配置右侧。
+- 权限同步结果：资源中心设备菜单 `iot-user/device/list` 已合并算法中心工作区所需的接口权限；已有权限只合并缺失动作，不重复声明同一 permission。旧的 `/iot-center/device/list` 兼容菜单保持不变。
 - 验证：`pnpm run build:modules device-manager-ui` 通过（9568 个模块）；`git diff --check` 通过，目标 Vue 文件 52 行。完整模块 `vue-tsc` 被既有 `views/link/Certificate/type.d.ts:2` 语法错误提前阻断，本次批量页已由模块构建完成编译验证；未自动发起浏览器交互验证。
+- 本次权限同步验证：`baseMenu.json` 解析通过；算法中心 9 组权限的全部动作均被资源中心设备列表菜单覆盖；目标文件 `git diff --check` 通过。仅调整菜单元数据和文档，未重复执行模块构建，也未自动发起浏览器交互验证。
 
 ### 通用智能体设备分析能力 canonical activation（已实施）
 
