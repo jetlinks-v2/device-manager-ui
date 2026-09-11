@@ -3024,7 +3024,7 @@
     "AccessConfig.index.764793-15": "确认删除?",
     "AccessConfig.bizKey.label": "唯一业务标识",
     "AccessConfig.bizKey.placeholder": "请选择设备库",
-    "AccessConfig.bizKey.select": "选择设备库",
+    "AccessConfig.bizKey.select": "从设备库绑定",
     "AccessConfig.bizKey.dialogTitle": "选择设备库",
     "Detail.CertificateFile.588280-0": "上传成功！",
     "Detail.CertificateFile.588280-1": "请上传{0}格式的文件",

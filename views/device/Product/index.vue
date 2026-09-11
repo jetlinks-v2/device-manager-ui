@@ -91,19 +91,19 @@
                 {{ getBrandModel(slotProps) }}
               </template>
               <template #action="slotProps">
-                <a-space>
+                <a-space :size="4">
                   <template v-for="i in getActions(slotProps)" :key="i.key">
                     <j-permission-button
+                      type="link"
+                      size="small"
                       :disabled="i.disabled"
                       :popConfirm="i.popConfirm"
                       :hasPermission="i.permission || i.key === 'view' ? true : 'device/Product:' + i.key"
                       :tooltip="{ ...i.tooltip }"
-                      type="link"
-                      style="padding: 0; margin: 0"
                       :danger="i.key === 'delete'"
                       @click="i.onClick"
                     >
-                      <template #icon><AIcon :type="i.icon" /></template>
+                      {{ i.text }}
                     </j-permission-button>
                   </template>
                 </a-space>
@@ -243,7 +243,7 @@ const tableParams = computed(() => {
 
   // 选择父分类时同时查询全部下级分类，保证树节点与列表筛选的范围一致。
   const categoryTerm = selectedCategoryId.value === productUnclassifiedScopeId
-    ? { column: 'classifiedId', termType: 'isnull' }
+    ? { column: 'classifiedId', termType: 'isnull', value: 1 }
     : {
         column: 'classifiedId',
         termType: 'in',

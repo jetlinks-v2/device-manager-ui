@@ -3024,7 +3024,7 @@
     "AccessConfig.index.764793-15": "Are you sure to delete?",
     "AccessConfig.bizKey.label": "Unique business identifier",
     "AccessConfig.bizKey.placeholder": "Select a device library",
-    "AccessConfig.bizKey.select": "Select device library",
+    "AccessConfig.bizKey.select": "Bind from device library",
     "AccessConfig.bizKey.dialogTitle": "Select device library",
     "Detail.CertificateFile.588280-0": "Upload successful!",
     "Detail.CertificateFile.588280-1": "Please upload a file in {0} format",

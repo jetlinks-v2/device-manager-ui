@@ -1,9 +1,9 @@
 <template>
   <a-form-item v-if="available" name="bizKey" :label="label">
-    <a-space.Compact style="width: 100%">
-      <a-input :value="modelValue" readonly :placeholder="placeholder" />
+    <a-space class="biz-key-picker" :size="8">
+      <a-input class="biz-key-picker__input" :value="modelValue" readonly :placeholder="placeholder" />
       <a-button @click="openPicker">{{ selectText }}</a-button>
-    </a-space.Compact>
+    </a-space>
   </a-form-item>
 
   <a-modal
@@ -123,3 +123,13 @@ onMounted(async () => {
   }
 })
 </script>
+
+<style scoped lang="less">
+.biz-key-picker {
+  width: 100%;
+
+  &__input {
+    width: 240px;
+  }
+}
+</style>

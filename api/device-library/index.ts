@@ -613,7 +613,15 @@ const toDeviceLibraryTemplateInput = (
     transportProtocol: firstString(source.transportProtocol),
     messageProtocol: firstString(source.messageProtocol),
     protocolName: firstString(source.protocolName),
-    gatewayBizKey: firstString(source.gatewayBizKey),
+    gatewayBizKey: firstString(
+      source.gatewayBizKey,
+      versionResource?.gatewayBizKey,
+      versionMetadata.gatewayBizKey,
+      resource.gatewayBizKey,
+      resourceMetadata.gatewayBizKey,
+      versionResource?.others?.gatewayBizKey,
+      resource.others?.gatewayBizKey,
+    ),
     metadata: localizedThingModel,
     configuration: isRecord(source.configuration) ? source.configuration : undefined,
     storePolicy: firstString(source.storePolicy),
@@ -975,11 +983,21 @@ function queryMarketplaceTagClassifiers() {
 }
 
 /**
- * 以实际后续会使用的运行时市场接口判定设备库可用性。
- * 私有化仅接入市场代理时不一定注册 marketplaceService，因此不能改用命令服务探测。
+ * 以设备库实际检索接口判定入口是否可用。
+ * 标签接口属于可选增强能力，不能因为私有化环境未部署标签服务而隐藏设备库选择入口。
  */
 export const probeDeviceLibraryCapability_api = async (): Promise<boolean> => {
-  await queryMarketplaceTagClassifiers()
+  const context = getProjectRuntimeContext(true)
+  await request.post(
+    '/marketplace/capabilities/version/_search',
+    {
+      type: 'device-template',
+      paging: true,
+      pageIndex: 0,
+      pageSize: 1,
+    },
+    { ...withProjectRuntimeRequest(context), hiddenError: true },
+  )
   return true
 }
 
@@ -1049,7 +1067,9 @@ export const queryDeviceLibraryTemplates_api = async (
       ? row.resource as MarketplaceResource
       : isRecord(row.capability)
         ? row.capability as MarketplaceResource
-        : row
+        : isRecord(row.data)
+          ? row.data as MarketplaceResource
+          : row
     const version = isRecord(row.version)
       ? row.version as MarketplaceVersion
       : isRecord(resource.version)
