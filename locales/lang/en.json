@@ -3017,6 +3017,10 @@
     "AccessConfig.index.764793-13": "delete",
     "AccessConfig.index.764793-14": "Please disable first, then delete",
     "AccessConfig.index.764793-15": "Are you sure to delete?",
+    "AccessConfig.bizKey.label": "Unique business identifier",
+    "AccessConfig.bizKey.placeholder": "Select a device library",
+    "AccessConfig.bizKey.select": "Select device library",
+    "AccessConfig.bizKey.dialogTitle": "Select device library",
     "Detail.CertificateFile.588280-0": "Upload successful!",
     "Detail.CertificateFile.588280-1": "Please upload a file in {0} format",
     "Detail.index.247061-0": "Certificate standards",
@@ -7409,5 +7413,9 @@
     "DeviceAlarm.workspace.ruleSearch": "Filter rules",
     "DeviceAlarm.workspace.createShort": "Add",
     "DeviceAlarm.workspace.alarmDevice": "Alarm device",
-    "DeviceAlarm.workspace.duration": "Duration"
+    "AccessComponent.listTitle.network": "Network Components",
+    "AccessComponent.listTitle.gateway": "Device Access Gateways",
+    "AccessComponent.listTitle.protocol": "Protocol Management",
+    "AccessComponent.listTitle.certificate": "Certificate Management",
+    "AccessComponent.listTitle.plugin": "Plugin Management"
 }

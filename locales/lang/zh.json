@@ -3017,6 +3017,10 @@
     "AccessConfig.index.764793-13": "删除",
     "AccessConfig.index.764793-14": "请先禁用，再删除",
     "AccessConfig.index.764793-15": "确认删除?",
+    "AccessConfig.bizKey.label": "唯一业务标识",
+    "AccessConfig.bizKey.placeholder": "请选择设备库",
+    "AccessConfig.bizKey.select": "选择设备库",
+    "AccessConfig.bizKey.dialogTitle": "选择设备库",
     "Detail.CertificateFile.588280-0": "上传成功！",
     "Detail.CertificateFile.588280-1": "请上传{0}格式的文件",
     "Detail.index.247061-0": "证书标准",
@@ -7410,5 +7414,9 @@
     "DeviceAlarm.workspace.ruleSearch": "筛选规则",
     "DeviceAlarm.workspace.createShort": "新增",
     "DeviceAlarm.workspace.alarmDevice": "告警设备",
-    "DeviceAlarm.workspace.duration": "告警时长"
+    "AccessComponent.listTitle.network": "网络组件",
+    "AccessComponent.listTitle.gateway": "设备接入网关",
+    "AccessComponent.listTitle.protocol": "协议管理",
+    "AccessComponent.listTitle.certificate": "证书管理",
+    "AccessComponent.listTitle.plugin": "插件管理"
 }

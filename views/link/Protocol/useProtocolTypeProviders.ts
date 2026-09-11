@@ -26,7 +26,7 @@ async function loadProtocolProviders() {
         supportedTypes.value = parsed
       }
     } catch {
-      // 保持默认三种
+      // 无法探测时保持本地创建方式；能力市场仅在接口明确返回时展示。
     } finally {
       loaded.value = true
     }
