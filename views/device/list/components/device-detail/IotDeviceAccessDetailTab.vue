@@ -3,7 +3,7 @@
     <a-tabs
       v-model:activeKey="innerTab"
       class="device-access-tabs"
-      :destroy-inactive-tab-pane="false"
+      :destroy-inactive-tab-pane="destroyInactiveTabPane"
     >
       <a-tab-pane
         key="access"
@@ -91,6 +91,7 @@ const props = defineProps({
   sessionEnabled: { type: Boolean, default: true },
   traceEnabled: { type: Boolean, default: true },
   showChildren: { type: Boolean, default: true },
+  destroyInactiveTabPane: { type: Boolean, default: false },
   defaultTab: { type: String as PropType<DeviceAccessInnerTab>, default: undefined },
 })
 

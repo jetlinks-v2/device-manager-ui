@@ -4,8 +4,10 @@ import { queryNoPagingPost as queryInstanceNoPage, query } from '@device-manager
 import { usePluginPermissionContext } from '@device-manager-ui/hooks/usePermission'
 import { useInstanceStore } from '@device-manager-ui/store/instance'
 import { useDeviceScope } from './deviceScope'
+import { getDeviceListSearchTerms } from './deviceListFilter'
 import { queryDeviceSpaceAreaBindings_api } from './api/spaceArea'
 import { queryDeviceBoundGroups_api, queryRuntimeDevices_api } from './api/deviceGroup'
+import { getDeviceListSearchTerms } from './deviceListFilter'
 import type { DataCapabilityProviderManifest } from '@jetlinks-web-core/data-capability'
 import { IOT_DEVICE_ANALYSIS_EXTENSION_KEY } from './agentCapabilities/deviceAnalysis/constants'
 
@@ -26,14 +28,18 @@ const homeAgentProviders = Object.fromEntries(
 export default {
   moduleId: 'device-manager-ui',
   apis: {
+    deviceListSearchTerms: getDeviceListSearchTerms,
     deviceSpaceAreaBindings: queryDeviceSpaceAreaBindings_api,
     deviceBoundGroups: queryDeviceBoundGroups_api,
     deviceRuntimePage: queryRuntimeDevices_api,
     productNoPage: queryNoPagingPost,
     instanceNoPage: queryInstanceNoPage,
     instancePage: query,
+    deviceListSearchTerms: getDeviceListSearchTerms,
   },
   components: {
+    IotDeviceDetailView: defineAsyncComponent(() => import('./views/device/list/components/IotDeviceDetailView.vue')),
+    IotAddDeviceDrawer: defineAsyncComponent(() => import('./views/device/list/components/IotAddDeviceDrawer.vue')),
     UnifiedDeviceList: defineAsyncComponent(() => import('./views/device/list/unified/index.vue')),
     IotDeviceScopeSidebar: defineAsyncComponent(() => import('./views/device/list/components/IotDeviceScopeSidebar.vue')),
     IotDeviceAssetSearchBar: defineAsyncComponent(() => import('./views/device/list/components/IotDeviceAssetSearchBar.vue')),

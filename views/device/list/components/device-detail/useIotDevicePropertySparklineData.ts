@@ -1,5 +1,5 @@
 import dayjs from 'dayjs'
-import { computed, ref, watch, type ComputedRef, type Ref } from 'vue'
+import { computed, onScopeDispose, ref, watch, type ComputedRef, type Ref } from 'vue'
 import { extractRows, iotDeviceDetailRealApi } from '../../services/iotDeviceDetailReal.service'
 import type { RealtimePropertyRow } from './iotDeviceDetail.types'
 
@@ -37,6 +37,7 @@ export function useIotDevicePropertySparklineData(
   }
 
   function scheduleLoad() {
+    ++requestTicket
     if (timer) clearTimeout(timer)
     timer = setTimeout(() => {
       timer = undefined
@@ -47,6 +48,7 @@ export function useIotDevicePropertySparklineData(
   async function loadRows() {
     const properties = numericVisibleProperties.value
     if (!deviceId.value || !properties.length) {
+      loading.value = false
       sparklineRows.value = {}
       return
     }
@@ -81,6 +83,11 @@ export function useIotDevicePropertySparklineData(
     scheduleLoad,
     { immediate: true },
   )
+
+  onScopeDispose(() => {
+    if (timer) clearTimeout(timer)
+    ++requestTicket
+  })
 
   return {
     getSparklineRows,

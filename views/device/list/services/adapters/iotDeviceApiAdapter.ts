@@ -382,6 +382,12 @@ async function getApiDevice(projectId: string, deviceId: string): Promise<Servic
   return ok(await mergeDeviceBindings(mapApiDevice(apiResult.data, projectId, fallback), projectId))
 }
 
+/** 物模型和数据面板只消费设备定义，不补查列表归属和概览数据。 */
+export async function getIotDeviceDefinition(projectId: string, deviceId: string): Promise<ServiceResult<IotDevice>> {
+  const result = await toServiceResult(() => deviceDetail(deviceId), t('IotDeviceApiAdapter.error.detail'))
+  return result.ok ? ok(mapApiDevice(result.data, projectId)) : result
+}
+
 export function createIotDeviceApiAdapter(): IotDeviceAdapter {
   return {
     ...fallbackAdapter,
