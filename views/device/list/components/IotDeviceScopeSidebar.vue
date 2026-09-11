@@ -283,5 +283,5 @@ const onGroupSelect: TreeProps['onSelect'] = (keys) => select(String(keys[0] || 
   box-shadow: none;
 }
 .iot-device-scope__tabs :deep(.ant-segmented-item-selected) { font-weight: 500; }
-.iot-device-scope__tabs :deep(.ant-segmented-item:hover::after) { background: var(--info-bg); }
+.iot-device-scope__tabs :deep(.ant-segmented-item:hover) { color: var(--primary-color); background: var(--info-bg); }
 </style>
