@@ -485,6 +485,26 @@
                       ]
                     },
                     {
+                      "permission": "ai_scene",
+                      "actions": [
+                        "query",
+                        "delete"
+                      ]
+                    },
+                    {
+                      "permission": "ai_model",
+                      "actions": [
+                        "query"
+                      ]
+                    },
+                    {
+                      "permission": "ai-edge-task-operation-execution",
+                      "actions": [
+                        "query",
+                        "save"
+                      ]
+                    },
+                    {
                       "permission": "marketplace",
                       "actions": [
                         "query",
@@ -514,7 +534,14 @@
                     {
                       "permission": "space-data-bind",
                       "actions": [
+                        "query",
                         "save"
+                      ]
+                    },
+                    {
+                      "permission": "media-channel",
+                      "actions": [
+                        "query"
                       ]
                     },
                     {
@@ -538,6 +565,12 @@
                       "permission": "alarm-record",
                       "actions": [
                         "query"
+                      ]
+                    },
+                    {
+                      "permission": "edge-manager",
+                      "actions": [
+                        "proxy"
                       ]
                     }
                   ],
