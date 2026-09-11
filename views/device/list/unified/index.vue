@@ -14,7 +14,7 @@
         <ContentPanel class="unified-device-list__panel">
           <a-flex align="center" justify="space-between" wrap="wrap" :gap="12" class="unified-device-list__filters">
             <IotDeviceAssetSearchBar v-model:filter-terms="searchTerms" :filter-fields="filterFields" :common-filter-fields="commonFilterFields" @search="search" />
-            <a-space :size="12" class="unified-device-list__toolbar-actions">
+            <RegistryComponent page-code="unified-device-list" code="toolbar-actions" is="a-space" :size="12" class="unified-device-list__toolbar-actions">
               <a-space :size="2" class="unified-device-list__statuses" role="group" :aria-label="t('IotDeviceList.filter.status')">
                 <a-button
                   v-for="option in statusOptions"
@@ -38,12 +38,12 @@
                 <template #icon><AIcon type="PlusOutlined" /></template>
                 {{ t('IotDeviceList.action.create') }}
               </a-button>
-              <a-button v-if="activeProvider?.create" type="primary" :disabled="busy" @click="createEntry = activeProvider.create">
+              <a-button v-if="activeProvider?.create" :key="`create-${activeProvider.id}`" type="primary" :disabled="busy" @click="createEntry = activeProvider.create">
                 <template #icon><AIcon type="PlusOutlined" /></template>
                 {{ activeProvider.create.label() }}
               </a-button>
               <a-button @click="openBatchPage">{{ t('UnifiedDeviceList.batch') }}</a-button>
-            </a-space>
+            </RegistryComponent>
           </a-flex>
           <a-flex v-if="batchMode" wrap="wrap" :gap="12" class="unified-device-list__batch">
             <span>{{ t('IotDeviceList.toolbar.selected', { selected: selectedIds.length }) }}</span>
