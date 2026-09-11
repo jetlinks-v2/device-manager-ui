@@ -357,6 +357,7 @@ const propertyAggregateTool = (
       name: 'property-aggregate',
       shape: 'time-series.aggregate',
       label: t('tools.device_property_aggregate.name'),
+      delivery: 'auto',
       select: (result: any) => result.data,
       fields: [{ name: 'time', semanticRole: 'timestamp' }],
       ordering: IOT_DEVICE_PROPERTY_AGGREGATE_ORDERING,
