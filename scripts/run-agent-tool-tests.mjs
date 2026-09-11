@@ -94,7 +94,7 @@ try {
         buildApi.onLoad({
           filter: exactPathFilter(coreUtilsRequestContextEntry),
         }, () => ({
-          contents: "export const getBaseApi = () => '/api'; export const isFromCloud = () => false",
+          contents: "export const getBaseApi = () => '/api'; export const getRequestBaseApi = () => '/api'; export const getRequestHeaders = () => ({}); export const isFromCloud = () => false",
           loader: 'js',
         }))
         buildApi.onLoad({

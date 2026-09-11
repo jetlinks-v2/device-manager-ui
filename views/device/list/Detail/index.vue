@@ -1,5 +1,5 @@
 <template>
-  <j-page-container>
+  <j-page-container :pageHeaderRender="false">
     <div class="iot-device-detail-page">
       <Suspense>
         <IotDeviceDetailView :key="String(route.params.deviceId || route.params.id)" />
@@ -25,6 +25,10 @@ const route = useRoute()
 
 <style scoped>
 .iot-device-detail-page {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
   width: 100%;
 }
 
