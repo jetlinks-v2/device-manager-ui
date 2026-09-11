@@ -3,111 +3,113 @@
     <a-flex class="unified-device-list__header" align="center" justify="space-between" wrap="wrap" :gap="16">
       <a-segmented class="unified-device-list__types" :value="activeType" :options="tabs" @change="changeType(String($event))" />
     </a-flex>
-    <EqualHeightColumns class="unified-device-list__layout" :left-width="scopeCollapsed ? '2.5rem' : '15rem'" right-width="1fr">
-      <template #left>
-        <a-spin v-if="!scopeCollapsed" :spinning="scopeLoading" wrapper-class-name="unified-device-list__scope">
-          <IotDeviceScopeSidebar v-bind="sidebarProps" @change="handleScopeChange" @create-group="openCreateGroup" @create-child-group="openCreateChildGroup" @edit-group="openEditGroup" @delete-group="confirmDeleteGroup" />
-        </a-spin>
-        <a-button :class="['unified-device-list__scope-toggle', { 'is-collapsed': scopeCollapsed }]" type="text" :aria-label="scopeCollapsed ? '展开设备范围' : '收起设备范围'" @click="scopeCollapsed = !scopeCollapsed"><AIcon :type="scopeCollapsed ? 'RightOutlined' : 'LeftOutlined'" /></a-button>
-      </template>
-      <template #right>
-        <ContentPanel class="unified-device-list__panel">
-          <a-flex align="center" justify="space-between" wrap="wrap" :gap="12" class="unified-device-list__filters">
-            <IotDeviceAssetSearchBar v-model:filter-terms="searchTerms" :filter-fields="filterFields" :common-filter-fields="commonFilterFields" @search="search" />
-            <RegistryComponent page-code="unified-device-list" code="toolbar-actions" is="a-space" :size="12" class="unified-device-list__toolbar-actions">
-              <a-space :size="2" class="unified-device-list__statuses" role="group" :aria-label="t('IotDeviceList.filter.status')">
-                <a-button
-                  v-for="option in statusOptions"
-                  :key="option.value"
-                  type="text"
-                  size="small"
-                  class="unified-device-list__status"
-                  :class="{ 'unified-device-list__status--selected': status === option.value }"
-                  :aria-pressed="status === option.value"
-                  @click="changeStatus(option.value)"
-                >
-                  <a-space :size="6">
-                    <a-badge :status="option.value === 'online' ? 'success' : option.value === 'offline' ? 'error' : 'default'" />
-                    {{ option.label }}
-                    <span class="unified-device-list__status-count">{{ statusCounts[option.value] ?? '—' }}</span>
-                  </a-space>
-                </a-button>
-              </a-space>
-              <a-divider type="vertical" class="unified-device-list__action-divider" />
-              <a-button v-if="activeType === 'all'" type="primary" :disabled="busy" @click="editing = null; editOpen = true">
-                <template #icon><AIcon type="PlusOutlined" /></template>
-                {{ t('IotDeviceList.action.create') }}
-              </a-button>
-              <a-button v-if="activeProvider?.create" :key="`create-${activeProvider.id}`" type="primary" :disabled="busy || !canCreate(activeProvider)" @click="openCreate(activeProvider)">
-                <template #icon><AIcon type="PlusOutlined" /></template>
-                {{ activeProvider.create.label() }}
-              </a-button>
-              <!-- 批量配置仅面向边缘节点，其他设备分类不提供入口。 -->
-              <a-button v-if="activeType === 'gateway'" @click="openBatchPage">{{ t('UnifiedDeviceList.batch') }}</a-button>
-            </RegistryComponent>
-          </a-flex>
-          <a-flex v-if="batchMode" wrap="wrap" :gap="12" class="unified-device-list__batch">
-            <span>{{ t('IotDeviceList.toolbar.selected', { selected: selectedIds.length }) }}</span>
-            <component v-if="activeProvider?.batchComponent" :is="activeProvider.batchComponent" :devices="rows" :selected-ids="selectedIds" @changed="refresh" />
-            <template v-else>
-              <a-button :disabled="!selectedIds.length || busy || !selected.every(device => allowed(device, 'enable'))" @click="batchToggle('enable')">{{ t('IotDeviceList.action.batchEnable') }}</a-button>
-              <a-button :disabled="!selectedIds.length || busy || !selected.every(device => allowed(device, 'disable'))" @click="batchToggle('disable')">{{ t('IotDeviceList.action.batchDisable') }}</a-button>
-            </template>
-            <a-button :disabled="!selectedIds.length || busy" @click="assignAreaOpen = true">{{ t('IotDeviceList.action.assignArea') }}</a-button>
-            <a-button :disabled="!selectedIds.length || busy" @click="assignGroupOpen = true">{{ t('IotDeviceList.action.assignGroup') }}</a-button>
-          </a-flex>
-          <a-alert v-if="error || scopeLoadError" type="error" show-icon :message="error || t('UnifiedDeviceList.loadFailed')"><template #action><a-button @click="refresh">{{ t('UnifiedDeviceList.refresh') }}</a-button></template></a-alert>
-          <div class="unified-device-list__table">
-            <a-table row-key="id" :columns="columns" :data-source="rows" :loading="loading" :pagination="false" :row-selection="rowSelection" :scroll="{ x: 'max-content' }">
-              <template #bodyCell="{ column, record }">
-                <template v-if="column.key === 'name'">
-                  <a-flex align="center" :gap="8"><a-tooltip :title="t(`UnifiedDeviceList.${record.connectionStatus}`)"><a-badge :status="record.connectionStatus === 'online' ? 'success' : record.connectionStatus === 'offline' ? 'error' : 'default'" /></a-tooltip>
-                    <div>
-                      <a-flex align="center" :gap="8" wrap="wrap">
-                        <a-button type="link" class="unified-device-list__name" @click="openDetail(record)">{{ record.name }}</a-button>
-                        <a-tag v-if="activeType === 'all'" :bordered="false" class="unified-device-list__category">{{ providerOf(record)?.label() }}</a-tag>
-                      </a-flex>
-                      <small>{{ record.networkAddress || record.identifier }}</small>
-                    </div>
-                  </a-flex>
-                </template>
-                <template v-else-if="column.key === 'product'">
-                  <div>{{ record.productName || '—' }}</div>
-                  <small>{{ [record.productManufacturer, record.productModel].filter(Boolean).join(' ') || '—' }}</small>
-                </template>
-                <template v-else-if="column.key === 'productName'">
-                  <div>{{ record.productName || '—' }}</div>
-                  <small>{{ [record.productManufacturer, record.productModel].filter(Boolean).join(' ') || '—' }}</small>
-                </template>
-                <template v-else-if="column.key === 'area'">
-                  <div>{{ record.areaBindings?.map(area => area.area).join(' / ') || record.area || '—' }}</div>
-                  <small>{{ record.groupBindings?.map(group => group.name).join('、') || record.groupName || '—' }}</small>
-                </template>
-                <template v-else-if="column.key === 'createdAt'">{{ formatTableTime(record.createdAt) }}</template>
-                <template v-else-if="column.key === 'lastReportTime'">{{ formatTableTime(record.lastReportTime) }}</template>
-                <template v-else-if="column.key === 'scope'">
-                  <div>{{ record.areaBindings?.map(area => area.area).join(' / ') || record.area || '—' }}</div>
-                  <small>{{ record.groupBindings?.map(group => group.name).join('、') || record.groupName || '—' }}</small>
-                </template>
-                <template v-else-if="column.key === 'channel'">{{ record.channelNumber ?? '—' }}</template>
-                <template v-else-if="column.key === 'monitor'">
-                  <component :is="gatewayMonitorCell" :snapshot="gatewayMetrics?.metricsMap[record.id]" />
-                </template>
-                <template v-else-if="column.key === 'action'">
-                  <a-space :size="4" class="unified-device-list__row-actions">
-                    <a-button type="link" size="small" @click="openDetail(record)">{{ t('IotDeviceList.action.detailShort') }}</a-button>
-                    <a-button v-if="allowed(record, 'update')" type="link" size="small" :disabled="busy" @click="edit(record)">{{ t('IotDeviceList.action.editShort') }}</a-button>
-                    <a-button v-if="allowed(record, record.connectionStatus === 'disabled' ? 'enable' : 'disable')" type="link" size="small" :danger="record.connectionStatus !== 'disabled'" :disabled="busy" @click="toggle(record)">{{ t(record.connectionStatus === 'disabled' ? 'IotDeviceList.action.enableShort' : 'IotDeviceList.action.disableShort') }}</a-button>
-                    <a-button v-if="allowed(record, 'delete')" type="link" size="small" danger :disabled="busy || !canDelete(record)" @click="remove(record)">{{ t('IotDeviceList.action.deleteShort') }}</a-button>
-                  </a-space>
-                </template>
-              </template>
-            </a-table>
-          </div>
-          <a-pagination class="unified-device-list__pagination" :current="pageIndex + 1" :page-size="pageSize" :total="total" :page-size-options="['10', '20', '50']" show-size-changer :show-total="value => t('UnifiedDeviceList.total', { count: value })" @change="changePage" />
-        </ContentPanel>
-      </template>
-    </EqualHeightColumns>
+    <ContentPanel>
+	    <EqualHeightColumns class="unified-device-list__layout" :left-width="scopeCollapsed ? '2.5rem' : '15rem'" right-width="1fr">
+		    <template #left>
+			    <a-spin v-if="!scopeCollapsed" :spinning="scopeLoading" wrapper-class-name="unified-device-list__scope">
+				    <IotDeviceScopeSidebar v-bind="sidebarProps" @change="handleScopeChange" @create-group="openCreateGroup" @create-child-group="openCreateChildGroup" @edit-group="openEditGroup" @delete-group="confirmDeleteGroup" />
+			    </a-spin>
+			    <a-button :class="['unified-device-list__scope-toggle', { 'is-collapsed': scopeCollapsed }]" type="text" :aria-label="scopeCollapsed ? '展开设备范围' : '收起设备范围'" @click="scopeCollapsed = !scopeCollapsed"><AIcon :type="scopeCollapsed ? 'RightOutlined' : 'LeftOutlined'" /></a-button>
+		    </template>
+		    <template #right>
+			    <div class="unified-device-list__panel">
+				    <a-flex align="center" justify="space-between" wrap="wrap" :gap="12" class="unified-device-list__filters">
+					    <IotDeviceAssetSearchBar v-model:filter-terms="searchTerms" :filter-fields="filterFields" :common-filter-fields="commonFilterFields" @search="search" />
+					    <RegistryComponent page-code="unified-device-list" code="toolbar-actions" is="a-space" :size="12" class="unified-device-list__toolbar-actions">
+						    <a-space :size="2" class="unified-device-list__statuses" role="group" :aria-label="t('IotDeviceList.filter.status')">
+							    <a-button
+								    v-for="option in statusOptions"
+								    :key="option.value"
+								    type="text"
+								    size="small"
+								    class="unified-device-list__status"
+								    :class="{ 'unified-device-list__status--selected': status === option.value }"
+								    :aria-pressed="status === option.value"
+								    @click="changeStatus(option.value)"
+							    >
+								    <a-space :size="6">
+									    <a-badge :status="option.value === 'online' ? 'success' : option.value === 'offline' ? 'error' : 'default'" />
+									    {{ option.label }}
+									    <span class="unified-device-list__status-count">{{ statusCounts[option.value] ?? '—' }}</span>
+								    </a-space>
+							    </a-button>
+						    </a-space>
+						    <a-divider type="vertical" class="unified-device-list__action-divider" />
+						    <a-button v-if="activeType === 'all'" type="primary" :disabled="busy" @click="editing = null; editOpen = true">
+							    <template #icon><AIcon type="PlusOutlined" /></template>
+							    {{ t('IotDeviceList.action.create') }}
+						    </a-button>
+						    <a-button v-if="activeProvider?.create" :key="`create-${activeProvider.id}`" type="primary" :disabled="busy || !canCreate(activeProvider)" @click="openCreate(activeProvider)">
+							    <template #icon><AIcon type="PlusOutlined" /></template>
+							    {{ activeProvider.create.label() }}
+						    </a-button>
+						    <!-- 批量配置仅面向边缘节点，其他设备分类不提供入口。 -->
+						    <a-button v-if="activeType === 'gateway'" @click="openBatchPage">{{ t('UnifiedDeviceList.batch') }}</a-button>
+					    </RegistryComponent>
+				    </a-flex>
+				    <a-flex v-if="batchMode" wrap="wrap" :gap="12" class="unified-device-list__batch">
+					    <span>{{ t('IotDeviceList.toolbar.selected', { selected: selectedIds.length }) }}</span>
+					    <component v-if="activeProvider?.batchComponent" :is="activeProvider.batchComponent" :devices="rows" :selected-ids="selectedIds" @changed="refresh" />
+					    <template v-else>
+						    <a-button :disabled="!selectedIds.length || busy || !selected.every(device => allowed(device, 'enable'))" @click="batchToggle('enable')">{{ t('IotDeviceList.action.batchEnable') }}</a-button>
+						    <a-button :disabled="!selectedIds.length || busy || !selected.every(device => allowed(device, 'disable'))" @click="batchToggle('disable')">{{ t('IotDeviceList.action.batchDisable') }}</a-button>
+					    </template>
+					    <a-button :disabled="!selectedIds.length || busy" @click="assignAreaOpen = true">{{ t('IotDeviceList.action.assignArea') }}</a-button>
+					    <a-button :disabled="!selectedIds.length || busy" @click="assignGroupOpen = true">{{ t('IotDeviceList.action.assignGroup') }}</a-button>
+				    </a-flex>
+				    <a-alert v-if="error || scopeLoadError" type="error" show-icon :message="error || t('UnifiedDeviceList.loadFailed')"><template #action><a-button @click="refresh">{{ t('UnifiedDeviceList.refresh') }}</a-button></template></a-alert>
+				    <div class="unified-device-list__table">
+					    <a-table row-key="id" :columns="columns" :data-source="rows" :loading="loading" :pagination="false" :row-selection="rowSelection" :scroll="{ x: 'max-content' }">
+						    <template #bodyCell="{ column, record }">
+							    <template v-if="column.key === 'name'">
+								    <a-flex align="center" :gap="8"><a-tooltip :title="t(`UnifiedDeviceList.${record.connectionStatus}`)"><a-badge :status="record.connectionStatus === 'online' ? 'success' : record.connectionStatus === 'offline' ? 'error' : 'default'" /></a-tooltip>
+									    <div>
+										    <a-flex align="center" :gap="8" wrap="wrap">
+											    <a-button type="link" class="unified-device-list__name" @click="openDetail(record)">{{ record.name }}</a-button>
+											    <a-tag v-if="activeType === 'all'" :bordered="false" class="unified-device-list__category">{{ providerOf(record)?.label() }}</a-tag>
+										    </a-flex>
+										    <small>{{ record.networkAddress || record.identifier }}</small>
+									    </div>
+								    </a-flex>
+							    </template>
+							    <template v-else-if="column.key === 'product'">
+								    <div>{{ record.productName || '—' }}</div>
+								    <small>{{ [record.productManufacturer, record.productModel].filter(Boolean).join(' ') || '—' }}</small>
+							    </template>
+							    <template v-else-if="column.key === 'productName'">
+								    <div>{{ record.productName || '—' }}</div>
+								    <small>{{ [record.productManufacturer, record.productModel].filter(Boolean).join(' ') || '—' }}</small>
+							    </template>
+							    <template v-else-if="column.key === 'area'">
+								    <div>{{ record.areaBindings?.map(area => area.area).join(' / ') || record.area || '—' }}</div>
+								    <small>{{ record.groupBindings?.map(group => group.name).join('、') || record.groupName || '—' }}</small>
+							    </template>
+							    <template v-else-if="column.key === 'createdAt'">{{ formatTableTime(record.createdAt) }}</template>
+							    <template v-else-if="column.key === 'lastReportTime'">{{ formatTableTime(record.lastReportTime) }}</template>
+							    <template v-else-if="column.key === 'scope'">
+								    <div>{{ record.areaBindings?.map(area => area.area).join(' / ') || record.area || '—' }}</div>
+								    <small>{{ record.groupBindings?.map(group => group.name).join('、') || record.groupName || '—' }}</small>
+							    </template>
+							    <template v-else-if="column.key === 'channel'">{{ record.channelNumber ?? '—' }}</template>
+							    <template v-else-if="column.key === 'monitor'">
+								    <component :is="gatewayMonitorCell" :snapshot="gatewayMetrics?.metricsMap[record.id]" />
+							    </template>
+							    <template v-else-if="column.key === 'action'">
+								    <a-space :size="4" class="unified-device-list__row-actions">
+									    <a-button type="link" size="small" @click="openDetail(record)">{{ t('IotDeviceList.action.detailShort') }}</a-button>
+									    <a-button v-if="allowed(record, 'update')" type="link" size="small" :disabled="busy" @click="edit(record)">{{ t('IotDeviceList.action.editShort') }}</a-button>
+									    <a-button v-if="allowed(record, record.connectionStatus === 'disabled' ? 'enable' : 'disable')" type="link" size="small" :danger="record.connectionStatus !== 'disabled'" :disabled="busy" @click="toggle(record)">{{ t(record.connectionStatus === 'disabled' ? 'IotDeviceList.action.enableShort' : 'IotDeviceList.action.disableShort') }}</a-button>
+									    <a-button v-if="allowed(record, 'delete')" type="link" size="small" danger :disabled="busy || !canDelete(record)" @click="remove(record)">{{ t('IotDeviceList.action.deleteShort') }}</a-button>
+								    </a-space>
+							    </template>
+						    </template>
+					    </a-table>
+				    </div>
+				    <a-pagination class="unified-device-list__pagination" :current="pageIndex + 1" :page-size="pageSize" :total="total" :page-size-options="['10', '20', '50']" show-size-changer :show-total="value => t('UnifiedDeviceList.total', { count: value })" @change="changePage" />
+			    </div>
+		    </template>
+	    </EqualHeightColumns>
+    </ContentPanel>
     <component v-if="createEntry" :is="createEntry.component" :open="true" @update:open="createEntry = undefined" @saved="refresh" />
     <IotAddDeviceDrawer v-if="!editing || editing.category === 'device'" v-model:open="editOpen" :project-id="projectId" :device="editing" @saved="refresh" @created="refresh" />
     <component v-else-if="editing && providerOf(editing)?.editComponent" :is="providerOf(editing)?.editComponent" v-model:open="editOpen" :gateway="editing" :device="editing" :project-id="projectId" @saved="refresh" />
@@ -195,7 +197,7 @@ const columns = computed(() => [
 .unified-device-list__types :deep(.ant-segmented-thumb) { color: var(--primary-color); background: var(--info-bg); box-shadow: none; }
 .unified-device-list__types :deep(.ant-segmented-item-selected) { font-weight: 500; }
 .unified-device-list__types :deep(.ant-segmented-item:hover) { color: var(--primary-color); background: var(--info-bg); }
-.unified-device-list__layout { flex: 1 1 0; width: 100%; min-height: 0; height: 0; align-items: stretch; }
+.unified-device-list__layout { flex: 1 1 0; width: 100%; min-height: 0;align-items: stretch; }
 .unified-device-list :deep(.unified-device-list__scope), .unified-device-list :deep(.unified-device-list__scope > .ant-spin-container) { height: 100%; min-height: 0; }
 .unified-device-list :deep(.iot-device-scope > .ant-flex:empty) { display: none; }
 .unified-device-list__scope-toggle { position: absolute; top: 50%; right: -1px; transform: translate(100%, -50%); z-index: 4; width: 22px; height: 56px; padding: 0; color: var(--primary-color); background: color-mix(in srgb, var(--info-bg) 60%, transparent); border: 1px solid color-mix(in srgb, var(--primary-color) 22%, transparent); border-left: 0; border-radius: 0 10px 10px 0; box-shadow: none; opacity: .75; transition: opacity .18s, width .18s, transform .18s; }

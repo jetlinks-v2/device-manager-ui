@@ -3,6 +3,7 @@
     <main class="device-alarm-page">
       <PageHeader :title="$t('DeviceAlarm.title.page')" :description="$t('DeviceAlarm.description.page')" style="margin: 0" />
       <FullPage flex class="alarm-content">
+            <ContentPanel>
         <EqualHeightColumns left-width="18.75rem" right-width="1fr">
           <template #left>
             <section class="alarm-rule-list">
@@ -50,7 +51,9 @@
             </section>
           </template>
         </EqualHeightColumns>
-      </FullPage>
+      
+            </ContentPanel>
+        </FullPage>
       <a-modal :open="history.open" :width="1000" :footer="null" :title="$t('DeviceAlarm.workspace.' + history.history.tab)" destroy-on-close @cancel="history.close">
         <p class="alarm-history-caption">{{ history.selectedRecord?.alarmName }} · {{ history.selectedRecord?.sourceName || history.selectedRecord?.targetName }}</p>
         <DeviceAlarmHistory :state="history.history" :range="history.range" :rule-key="history.selectedRecord?.id || ''"
@@ -105,8 +108,7 @@ const now = useNow({ interval: 1000 })
 .device-alarm-page { display: flex; flex-direction: column; gap: var(--space-4); }
 .alarm-content { overflow: hidden; }
 .alarm-workspace { display: grid; flex: 1; min-height: 0; grid-template-rows: minmax(0, 1fr); grid-template-columns: minmax(300px, 26%) minmax(0, 1fr); }
-.alarm-rule-list, .alarm-record-list { height: 100%; display: flex; min-width: 0; min-height: 0; flex-direction: column; padding: var(--space-4); gap: var(--space-3); overflow: hidden; }
-.alarm-rule-list { border-right: 1px solid var(--jet-theme-border); }
+.alarm-rule-list, .alarm-record-list { height: 100%; display: flex; min-width: 0; min-height: 0; flex-direction: column; gap: var(--space-3); overflow: hidden; }
 .alarm-list-heading { display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
 .alarm-list-heading span { color: var(--jet-theme-text-secondary); font-size: 12px; }
 .alarm-rule-search { display: flex; gap: var(--space-2); align-items: center; }

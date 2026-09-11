@@ -1,5 +1,5 @@
 <template>
-  <ContentPanel class="iot-device-scope" :aria-label="$t('IotDeviceList.scope.aria')">
+  <div class="iot-device-scope" :aria-label="$t('IotDeviceList.scope.aria')">
     <a-segmented v-model:value="scopeType" block class="iot-device-scope__tabs" :options="scopeOptions" />
     <div class="iot-device-scope__body">
       <template v-if="scopeType === 'area'">
@@ -99,7 +99,7 @@
         </a-button>
       </template>
     </div>
-  </ContentPanel>
+  </div>
 </template>
 
 <script setup lang="ts">
