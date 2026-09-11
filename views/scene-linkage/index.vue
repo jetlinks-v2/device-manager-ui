@@ -193,7 +193,8 @@ onMounted(reload)
 .scene-list-table {
 	background: var(--jet-theme-bg-container);
 	border-radius: var(--jet-theme-radius);
-	display: grid;
+	display: flex;
+	flex-direction: column;
 	gap: var(--space-4);
 }
 

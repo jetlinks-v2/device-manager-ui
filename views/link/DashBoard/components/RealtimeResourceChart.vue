@@ -1,6 +1,6 @@
 <template>
   <a-spin :spinning="loading">
-    <section class="realtime-resource">
+    <ContentPanel class="realtime-resource">
       <header class="realtime-resource__header">
         <div class="realtime-resource__title">
           <h3>{{ $t('components.RealtimeResource.title') }}</h3>
@@ -85,7 +85,7 @@
           </table>
         </div>
       </template>
-    </section>
+    </ContentPanel>
   </a-spin>
 </template>
 
@@ -237,7 +237,6 @@ onUnmounted(() => {
 </script>
 
 <style lang="less" scoped>
-.realtime-resource { padding: var(--space-6, 1.5rem); background: var(--bg, #fff); border-radius: 0.25rem; }
 .realtime-resource__header, .realtime-resource__title, .realtime-resource__actions { display: flex; align-items: center; }
 .realtime-resource__header { justify-content: space-between; }
 .realtime-resource__header h3 { margin: 0; }
