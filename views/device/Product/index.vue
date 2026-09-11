@@ -1,6 +1,6 @@
 <template>
   <j-page-container class="product-page">
-    <FullPage transparentBackground :fixed="false">
+    <FullPage transparentBackground>
       <EqualHeightColumns class="product-page__layout" left-width="15rem" right-width="1fr">
         <template #left>
           <ProductCategoryTree
@@ -20,7 +20,7 @@
           />
         </template>
         <template #right>
-          <section class="product-page__main">
+          <ContentPanel class="product-page__main">
             <a-flex class="product-page__toolbar" :gap="16" align="center" wrap="wrap">
               <ConditionFilter
                 class="product-page__search"
@@ -47,13 +47,13 @@
             <JProTable
               :columns="columns"
               :request="queryProductList"
+              class="pro-table__no-padding"
               ref="tableRef"
               :defaultParams="{
                 sorts: [{ name: 'createTime', order: 'desc' }],
               }"
               mode="TABLE"
               :params="tableParams"
-              :scroll="false"
             >
               <template #deviceType="slotProps">
                 <div>{{ slotProps.deviceType?.text || '-' }}</div>
@@ -109,7 +109,7 @@
                 </a-space>
               </template>
             </JProTable>
-          </section>
+          </ContentPanel>
         </template>
       </EqualHeightColumns>
     </FullPage>
@@ -867,30 +867,17 @@ onMounted(() => {
 <style lang="less" scoped>
 .product-page {
   &__layout {
-    height: auto;
+    height: 100%;
     min-height: 0;
-
-    :deep(.equal-height-columns__pane) {
-      height: auto;
-      overflow: visible;
-    }
-  }
-
-  &__category-tree {
-    height: calc(100vh - 11rem);
   }
 
   &__main {
     display: flex;
     flex-direction: column;
-    height: auto;
+    height: 100%;
     min-height: 0;
     // 产品表格随内容自然撑高，由页面最外层承接纵向滚动。
     overflow: visible;
-    padding: var(--space-4);
-    background: var(--color-jet-bg-container);
-    border: 1px solid var(--color-jet-border);
-    border-radius: var(--radius-jet-lg);
   }
 
   &__toolbar {
