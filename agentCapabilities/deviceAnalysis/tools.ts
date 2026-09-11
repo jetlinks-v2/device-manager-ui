@@ -183,6 +183,7 @@ const deviceOutputs = (id: string): ClientToolOutput<any> | ClientToolOutput<any
       name: 'property-aggregate',
       shape: 'time-series.aggregate',
       label: t('tools.device_property_aggregate.name'),
+      delivery: 'auto',
       select: selectData,
       fields: [
         { name: 'time', semanticRole: 'timestamp' },
@@ -201,6 +202,7 @@ const deviceOutputs = (id: string): ClientToolOutput<any> | ClientToolOutput<any
       name: 'device-online-rate-series',
       shape: 'metric.time-series',
       label: t('tools.device_query_online_rate_trend.name'),
+      delivery: 'auto',
       select: selectMetricPoints,
       fields: [
         { name: 'timestamp', semanticRole: 'timestamp' },
@@ -223,6 +225,7 @@ const deviceOutputs = (id: string): ClientToolOutput<any> | ClientToolOutput<any
       name: 'device-message-series',
       shape: 'metric.time-series',
       label: t('tools.device_query_message_trend.name'),
+      delivery: 'auto',
       select: selectMetricPoints,
       fields: [
         { name: 'timestamp', semanticRole: 'timestamp' },

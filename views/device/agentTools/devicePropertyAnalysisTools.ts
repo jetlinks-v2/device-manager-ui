@@ -311,6 +311,7 @@ export const createDevicePropertyAggregateDefinition = <TContext>(
   output: clientToolOutput.aggregateSeries<DevicePropertyAggregateResult>({
     ...DEVICE_PROPERTY_ANALYSIS_OUTPUTS.aggregate,
     label: dependencies.copy.displayName,
+    delivery: 'auto',
     select: result => result.records,
     fields: [{ name: 'time', semanticRole: 'timestamp', format: 'datetime' }],
     resolveFields: result => result.fields,

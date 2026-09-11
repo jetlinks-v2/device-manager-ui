@@ -163,6 +163,7 @@ test('aggregate output preserves renderer-neutral records and semantic fields fo
 
   assert.deepEqual(tool.routing?.produces, [DEVICE_PROPERTY_ANALYSIS_OUTPUTS.aggregate.name])
   assert.deepEqual(tool.routing?.capabilities, ['subject.property.aggregate'])
+  assert.deepEqual(tool.routing?.resultDeliveries, ['auto'])
 
   const prepared = await tool.execute({}, {}, callFor(tool.id)) as any
   assert.equal(prepared.data, undefined)
