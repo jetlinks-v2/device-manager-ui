@@ -1,279 +1,132 @@
 <template>
   <j-page-container>
     <main class="device-alarm-page">
-      <PageHeader
-        :title="$t('DeviceAlarm.title.page')"
-        :description="$t('DeviceAlarm.description.page')"
-        style="margin: 0"
-      >
-        <template #actions>
-          <a-space>
-            <DeviceAlarmRestoreButton @restored="refresh" />
-            <a-button type="primary" @click="openCreate">
-              <AIcon type="PlusOutlined" />
-              {{ $t('DeviceAlarm.action.create') }}
-            </a-button>
-          </a-space>
-        </template>
-      </PageHeader>
-
-      <FullPage hasPadding>
-        <section class="device-alarm-page__filter">
-          <ConditionFilter
-            :fields="filterFields"
-            :modelValue="filterTerms"
-            :placeholder="$t('DeviceAlarm.placeholder.filter')"
-            @update:modelValue="handleFilterTermsUpdate"
-            @change="handleSearch"
-          />
-        </section>
-
-        <section class="device-alarm-page__table">
-          <JProTable
-            rowKey="key"
-            mode="TABLE"
-            :columns="columns"
-            :request="tableRequest"
-            :params="tableParams"
-            :pagination="tablePagination"
-            :alertShow="false"
-            :bodyStyle="{ padding: 0 }"
-            :scroll="{x: 'max-content'}"
-          >
-            <template #name="record">
-            <span class="device-alarm-page__name">
-              <IconBadge
-                :size="32"
-                :inner-size="24"
-                :text="alarmNameInitial(record)"
-                aria-hidden="true"
-              />
-              <span class="device-alarm-page__name-text" :title="toAlarmRow(record).name">
-                {{ toAlarmRow(record).name || '--' }}
-              </span>
-            </span>
-            </template>
-            <template #productName="record">
-              <span>{{ productName(record) }}</span>
-            </template>
-            <template #deviceName="record">
-              <span>{{ deviceName(record) }}</span>
-            </template>
-            <template #trigger="record">
-              <span>{{ rowTriggerText(record) }}</span>
-            </template>
-            <template #level="record">
-              <StatusTag
-                :status="levelStatus(record.level)"
-                :style="levelTagStyle(record.level)"
-                :text="String(levelLabel(record.level))"
-              />
-            </template>
-            <template #notificationConfigured="record">
-              <StatusTag
-                class="device-alarm-page__notification-tag"
-                :status="notificationStatus(record)"
-                :text="notificationText(record)"
-                :bordered="false"
-              >
-                <template #icon>
-                  <span class="device-alarm-page__status-dot" />
-                </template>
-              </StatusTag>
-            </template>
-            <template #action="record">
-              <a-space>
-                <a-button type="link" size="small" @click="openEdit(toAlarmRow(record))">
-                  {{ $t('DeviceAlarm.action.edit') }}
-                </a-button>
-                <a-popconfirm
-                  :title="$t('DeviceAlarm.confirm.delete', { name: record.name })"
-                  @confirm="remove(toAlarmRow(record))"
-                >
-                  <a-button type="link" size="small" danger>
-                    {{ $t('DeviceAlarm.action.delete') }}
-                  </a-button>
-                </a-popconfirm>
-              </a-space>
-            </template>
-            <template #emptyText>
-              <CloudEmpty>
-                <template #description>
-                  <span>{{ $t('DeviceAlarm.empty') }}</span>
-                </template>
-              </CloudEmpty>
-            </template>
-          </JProTable>
-        </section>
+      <PageHeader :title="$t('DeviceAlarm.title.page')" :description="$t('DeviceAlarm.description.page')" style="margin: 0" />
+      <FullPage flex class="alarm-content">
+        <div class="alarm-workspace">
+          <section class="alarm-rule-list">
+            <header class="alarm-list-heading"><strong>{{ $t('DeviceAlarm.workspace.rules') }}</strong><span>{{ $t('DeviceAlarm.workspace.total', { total }) }}</span></header>
+            <div class="alarm-rule-search">
+              <ConditionFilter :fields="filterFields" :modelValue="filterTerms" :placeholder="$t('DeviceAlarm.workspace.ruleSearch')"
+                @update:modelValue="handleFilterTermsUpdate" @change="handleSearch" />
+              <a-button type="primary" :loading="busy" @click="run(openCreate)"><AIcon type="PlusOutlined" />{{ $t('DeviceAlarm.workspace.createShort') }}</a-button>
+            </div>
+            <a-button class="alarm-all-rules" :type="selected ? 'default' : 'primary'" ghost @click="showAllRecords">{{ $t('DeviceAlarm.workspace.allRules') }}</a-button>
+            <a-alert v-if="statusError" type="warning" show-icon :message="$t('DeviceAlarm.workspace.statusError')"><template #action><a-button type="link" size="small" @click="loadCounts">{{ $t('DeviceAlarm.workspace.retry') }}</a-button></template></a-alert>
+            <a-alert v-if="listError" type="error" :message="$t('DeviceAlarm.workspace.listError')"><template #action><a-button @click="load()">{{ $t('DeviceAlarm.workspace.retry') }}</a-button></template></a-alert>
+            <div v-else class="alarm-scroll">
+              <a-spin :spinning="loading">
+                <DeviceAlarmRuleCard v-for="row in rows" :key="row.key" :row="row" :selected="selected?.id === row.id"
+                  :levels="levelOptions" :active-count="row.id ? activeCounts?.[row.id] : undefined" :busy="busy"
+                  @select="select" @edit="item => run(() => openEdit(item))" @remove="item => run(() => remove(item))" />
+                <CloudEmpty v-if="!rows.length && !loading" :description="$t('DeviceAlarm.empty')" />
+              </a-spin>
+            </div>
+            <footer class="alarm-list-footer"><a-pagination size="small" simple :current="pageIndex + 1" :page-size="pageSize" :total="total" @change="value => load(value - 1)" /></footer>
+          </section>
+          <section class="alarm-record-list">
+            <header class="alarm-list-heading"><strong>{{ $t('DeviceAlarm.workspace.records') }}</strong><span>{{ $t('DeviceAlarm.workspace.total', { total: recordTotal }) }}</span></header>
+            <ConditionFilter :fields="recordFields" :modelValue="recordTerms" :placeholder="$t('DeviceAlarm.workspace.recordSearch')"
+              @update:modelValue="value => recordTerms = value" @change="searchRecords" />
+            <div class="alarm-record-scope">
+              <span>{{ $t('DeviceAlarm.workspace.scope') }}</span>
+              <a-tag v-if="selected" closable @close="showAllRecords">{{ selected.name }}</a-tag>
+              <span v-else>{{ $t('DeviceAlarm.workspace.allRules') }}</span>
+              <a-button type="text" :loading="recordsLoading" :aria-label="$t('DeviceAlarm.workspace.refresh')" @click="loadRecords()"><AIcon type="ReloadOutlined" /></a-button>
+            </div>
+            <a-alert v-if="recordsError" type="error" show-icon :message="$t('DeviceAlarm.workspace.summaryError')"><template #action><a-button @click="loadRecords()">{{ $t('DeviceAlarm.workspace.retry') }}</a-button></template></a-alert>
+            <div v-else class="alarm-scroll">
+              <a-spin :spinning="recordsLoading"><div class="alarm-record-items">
+                <DeviceAlarmRecordCard v-for="record in records" :key="record.id" :row="record" :levels="levelOptions" :now="now.getTime()"
+                  @handle="handling.show" @history="history.show" />
+                <CloudEmpty class="alarm-record-empty" v-if="!records.length && !recordsLoading" :description="$t('DeviceAlarm.workspace.recordsEmpty')" />
+              </div></a-spin>
+            </div>
+            <footer class="alarm-list-footer"><a-pagination size="small" :current="recordPage + 1" :page-size="recordSize" :total="recordTotal"
+              show-size-changer @change="(value, size) => loadRecords(value - 1, size)" /></footer>
+          </section>
+        </div>
       </FullPage>
-
-      <DeviceAlarmEditorModal
-        v-model:open="editorOpen"
-        :model="form"
-        :readonly-scope="Boolean(editingRow)"
-        :level-options="levelOptions"
-        :trigger-options="triggerOptions"
-        :product-option="selectedProductOption"
-        :device-option="selectedDeviceOption"
-        :product-request="requestProducts"
-        :device-request="requestDevices"
-        :property-options="propertyOptions"
-        :notify-methods="notifyMethods"
-        :notify-users="notifyUsers"
-        :notify-loading="notifyLoading"
-        :product-reload-key="productReloadKey"
-        @product-change="onProductChange"
-        @device-change="onDeviceChange"
-        @property-change="onPropertyChange"
-        @load-more-users="loadMoreNotifyUsers"
-        @save="save"
-      />
-
+      <a-modal :open="history.open" :width="1000" :footer="null" :title="$t('DeviceAlarm.workspace.' + history.history.tab)" destroy-on-close @cancel="history.close">
+        <p class="alarm-history-caption">{{ history.selectedRecord?.alarmName }} · {{ history.selectedRecord?.sourceName || history.selectedRecord?.targetName }}</p>
+        <DeviceAlarmHistory :state="history.history" :range="history.range" :rule-key="history.selectedRecord?.id || ''"
+          @tab="history.changeTab" @range="history.changeRange" @page="history.changePage" @retry="history.loadHistory" />
+      </a-modal>
+      <DeviceAlarmHandleModal :state="handling" @description="value => handling.description = value" @close="handling.close" @submit="handling.submit" />
+      <DeviceAlarmEditorModal v-model:open="editorOpen" :model="form" :readonly-scope="Boolean(editingRow)"
+        :level-options="levelOptions" :trigger-options="triggerOptions" :product-option="selectedProductOption"
+        :device-option="selectedDeviceOption" :product-request="requestProducts" :device-request="requestDevices"
+        :property-options="propertyOptions" :notify-methods="notifyMethods" :notify-users="notifyUsers" :notify-loading="notifyLoading"
+        :product-reload-key="productReloadKey" @product-change="onProductChange" @device-change="onDeviceChange"
+        @property-change="onPropertyChange" @load-more-users="loadMoreNotifyUsers" @save="run(save)" />
     </main>
   </j-page-container>
 </template>
 
 <script setup lang="ts">
+import { reactive } from 'vue'
+import { useNow } from '@vueuse/core'
+import { message } from 'ant-design-vue'
 import { useI18n } from 'vue-i18n'
 import ConditionFilter from '@jetlinks-web-core/components/ConditionFilter'
-import IconBadge from '@jetlinks-web-core/components/IconBadge/index.vue'
 import { PageHeader } from '@jetlinks-web-core/components'
 import DeviceAlarmEditorModal from './components/DeviceAlarmEditorModal.vue'
-import DeviceAlarmRestoreButton from './components/DeviceAlarmRestoreButton.vue'
-import { useDeviceAlarmPage } from './hooks/useDeviceAlarmPage'
-import type { DeviceAlarmRow } from './types'
-
+import DeviceAlarmRuleCard from './components/DeviceAlarmRuleCard.vue'
+import DeviceAlarmRecordCard from './components/DeviceAlarmRecordCard.vue'
+import DeviceAlarmHandleModal from './components/DeviceAlarmHandleModal.vue'
+import DeviceAlarmHistory from './components/DeviceAlarmHistory.vue'
+import { useDeviceAlarmWorkspace } from './hooks/useDeviceAlarmWorkspace'
+import { useDeviceAlarmRecords } from './hooks/useDeviceAlarmRecords'
+import { useDeviceAlarmHistory } from './hooks/useDeviceAlarmHistory'
+import { useDeviceAlarmHandling } from './hooks/useDeviceAlarmHandling'
 const { t: $t } = useI18n()
-
-const {
-  tablePagination,
-  tableParams,
-  filterTerms,
-  filterFields,
-  columns,
-  levelOptions,
-  triggerOptions,
-  propertyOptions,
-  selectedProductOption,
-  selectedDeviceOption,
-  notifyMethods,
-  notifyUsers,
-  notifyLoading,
-  editorOpen,
-  productReloadKey,
-  editingRow,
-  form,
-  refresh,
-  tableRequest,
-  formatTriggerText,
-  handleFilterTermsUpdate,
-  handleSearch,
-  openCreate,
-  openEdit,
-  requestProducts,
-  requestDevices,
-  onProductChange,
-  onDeviceChange,
-  onPropertyChange,
-  loadMoreNotifyUsers,
-  save,
-  remove,
-} = useDeviceAlarmPage($t)
-
-const levelLabel = (level: number) =>
-  levelOptions.value.find((item) => item.value === level)?.label || level
-
-const levelStatus = (level: number) => {
-  if (level === 1) return 'error' as const
-  if (level === 2 || level === 3) return 'warning' as const
-  if (level === 4) return 'info' as const
-  if (level === 5) return 'success' as const
-  return 'default' as const
-}
-
-const levelTagStyle = (level: number) => {
-  if (level === 3) return { '--status-tag-color': '#f7ba1e' }
-  if (level === 5) return { '--status-tag-color': '#11c6b7' }
-  return undefined
-}
-
-const toAlarmRow = (record: Record<string, any>) => record as DeviceAlarmRow
-const alarmNameInitial = (record: Record<string, any>) => Array.from(toAlarmRow(record).name?.trim() || '')[0] || '--'
-const rowTriggerText = (record: Record<string, any>) => formatTriggerText(toAlarmRow(record))
-const productName = (record: Record<string, any>) => {
-  const row = toAlarmRow(record)
-  return row.productName || (row.source === 'product' ? row.targetName : '') || '--'
-}
-const deviceName = (record: Record<string, any>) => {
-  const row = toAlarmRow(record)
-  return row.source === 'product' ? $t('DeviceAlarm.deviceRange.all') : row.targetName || '--'
-}
-const notificationText = (record: Record<string, any>) => {
-  const row = toAlarmRow(record)
-  if (!row.notificationConfigured) return $t('DeviceAlarm.notification.none')
-  return row.notificationEnabled
-    ? $t('DeviceAlarm.notification.enabled')
-    : $t('DeviceAlarm.notification.disabled')
-}
-const notificationStatus = (record: Record<string, any>) => {
-  const row = toAlarmRow(record)
-  if (!row.notificationConfigured) return 'disabled' as const
-  return row.notificationEnabled ? 'success' as const : 'warning' as const
-}
+const { page, selected, ruleId, activeCounts, statusError, listError, loading, busy,
+  load, loadCounts, select, showAllRecords, remove, run } = useDeviceAlarmWorkspace($t)
+const { rows, total, pageIndex, pageSize, filterTerms, filterFields, levelOptions, triggerOptions, propertyOptions,
+  selectedProductOption, selectedDeviceOption, notifyMethods, notifyUsers, notifyLoading, editorOpen, productReloadKey,
+  editingRow, form, handleFilterTermsUpdate, handleSearch, openCreate, openEdit, requestProducts, requestDevices,
+  onProductChange, onDeviceChange, onPropertyChange, loadMoreNotifyUsers, save } = page
+const { rows: records, total: recordTotal, pageIndex: recordPage, pageSize: recordSize,
+  loading: recordsLoading, error: recordsError, fields: recordFields, terms: recordTerms,
+  search: searchRecords, load: loadRecords } = useDeviceAlarmRecords(ruleId, $t)
+const history = reactive(useDeviceAlarmHistory())
+const handling = reactive(useDeviceAlarmHandling($t, async record => {
+  message.success($t('DeviceAlarm.workspace.handledSuccess', { name: record.alarmName || '—' }))
+  await Promise.all([loadRecords(), loadCounts()])
+}))
+const now = useNow({ interval: 1000 })
 </script>
 
 <style scoped lang="less">
-.device-alarm-page {
-  display: flex;
-  gap: var(--space-4);
-	flex-direction: column;
-  min-width: 0;
-}
-.device-alarm-page__filter {
-	flex: 1;
-}
-.device-alarm-page__table {
-  background: #fff;
-	width: 100%;
-  border-radius: 6px;
-}
-
-.device-alarm-page__table {
-  :deep(.jtable-pagination) {
-    margin-top: var(--space-3);
-  }
-}
-
-.device-alarm-page__name {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-3);
-  min-width: 0;
-  max-width: 100%;
-}
-
-.device-alarm-page__name-text {
-  min-width: 0;
-  overflow: hidden;
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 20px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.device-alarm-page__notification-tag {
-  min-height: 1.5rem;
-  gap: .25rem;
-  padding: .25rem .625rem;
-  border-radius: .6875rem;
-}
-
-.device-alarm-page__status-dot {
-  display: block;
-  width: .25rem;
-  height: .25rem;
-  background: currentcolor;
-  border-radius: 50%;
+.device-alarm-page { display: flex; flex-direction: column; gap: var(--space-4); }
+.alarm-content { overflow: hidden; }
+.alarm-workspace { display: grid; flex: 1; min-height: 0; grid-template-rows: minmax(0, 1fr); grid-template-columns: minmax(300px, 26%) minmax(0, 1fr); border: 1px solid var(--jet-theme-border); border-radius: var(--jet-theme-radius-lg); background: var(--jet-theme-bg-container); }
+.alarm-rule-list, .alarm-record-list { display: flex; min-width: 0; min-height: 0; flex-direction: column; padding: var(--space-4); gap: var(--space-3); overflow: hidden; }
+.alarm-rule-list { border-right: 1px solid var(--jet-theme-border); }
+.alarm-list-heading { display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+.alarm-list-heading span { color: var(--jet-theme-text-secondary); font-size: 12px; }
+.alarm-rule-search { display: flex; gap: var(--space-2); align-items: center; }
+.alarm-rule-search > :first-child { flex: 1; min-width: 0; }
+.alarm-rule-search :deep(.condition-filter__tail), .alarm-rule-search :deep(.condition-filter__text-input--tail) { min-width: 0; }
+.alarm-rule-search :deep(.condition-filter__text-input--tail) { overflow: hidden; text-overflow: ellipsis; }
+.alarm-rule-search :deep(.ant-btn) { flex-shrink: 0; }
+.alarm-all-rules { text-align: left; }
+.alarm-scroll { flex: 1; min-height: 0; overflow-y: auto; }
+.alarm-record-list { container: alarm-records / inline-size; }
+.alarm-record-items { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; gap: var(--space-4); }
+.alarm-record-empty { grid-column: 1 / -1; }
+@container alarm-records (max-width: 760px) { .alarm-record-items { grid-template-columns: minmax(0, 1fr); } }
+.alarm-record-scope { display: flex; align-items: center; gap: var(--space-2); font-size: 12px; min-width: 0; }
+.alarm-record-scope > span:first-child { color: var(--jet-theme-text-secondary); }
+.alarm-record-scope :deep(.ant-tag) { max-width: 75%; overflow: hidden; text-overflow: ellipsis; }
+.alarm-record-scope :deep(.ant-btn) { margin-left: auto; }
+.alarm-list-footer { margin-top: auto; display: flex; justify-content: flex-end; flex-shrink: 0; }
+.alarm-history-caption { color: var(--jet-theme-text-secondary); }
+@media (max-width: 800px) {
+  .alarm-workspace { display: flex; flex-direction: column; overflow-y: auto; }
+  .alarm-rule-list { border-right: 0; border-bottom: 1px solid var(--jet-theme-border); flex-shrink: 0; }
+  .alarm-rule-list .alarm-scroll { max-height: 230px; flex: auto; }
+  .alarm-record-list { flex: 1 0 auto; overflow: visible; }
+  .alarm-record-list .alarm-scroll { overflow: visible; }
 }
 </style>

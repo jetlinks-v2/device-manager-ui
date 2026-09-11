@@ -230,7 +230,7 @@ export async function queryDeviceAlarmPage(data: Record<string, any>): Promise<D
   return {
     data: rows
       .map(normalizeDeviceAlarmPageRecord)
-      .filter((item): item is ThingPropertyPreprocess => Boolean(item)),
+      .filter((item: ThingPropertyPreprocess | undefined): item is ThingPropertyPreprocess => Boolean(item)),
     total: Number(result?.total ?? rows.length),
   }
 }
