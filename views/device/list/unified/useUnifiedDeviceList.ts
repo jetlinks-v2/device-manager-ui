@@ -35,8 +35,9 @@ export function useUnifiedDeviceList() {
   })
   const activeProvider = computed(() => providers.value.find(provider => provider.id === activeType.value))
   const allTerms = computed<DeviceQueryTerm[]>(() => providers.value.length ? [{ terms: providers.value.map((provider, index) => ({ type: index ? 'or' : 'and', terms: provider.terms() })) }] : [{ column: 'id', termType: 'in', value: [] }])
-  const baseTerms = computed(() => activeProvider.value?.terms() || allTerms.value)
-  const scope = useDeviceScope(baseTerms, refreshKey)
+  const baseTerms = computed(() => activeType.value === 'all' ? [] : (activeProvider.value?.terms() || []))
+  // 左侧空间/分组统计只反映项目范围，不受右侧设备类型条件影响。
+  const scope = useDeviceScope(ref<DeviceQueryTerm[]>([]), refreshKey)
   const products = ref<DeviceLibraryProductFilterOption[]>([])
   const filterFields = computed(() => getDeviceListFilterFields(scope.sidebarProps.value.areas, scope.sidebarProps.value.groups, products.value))
   const commonFilterFields = computed(() => filterFields.value.map(field => String(field.dataIndex)))
