@@ -1,11 +1,6 @@
 <template>
   <j-page-container>
     <div>
-      <pro-search
-          :columns="columns"
-          target="search-type"
-          @search="handleSearch"
-      />
       <FullPage>
         <j-pro-table
             ref="tableRef"
@@ -19,6 +14,19 @@
             modeValue="CARD"
         >
           <template #headerLeftRender>
+            <div class="access-component-list-toolbar">
+              <h2 class="access-component-list-title">
+                {{ $t('AccessComponent.listTitle.network') }}
+              </h2>
+              <ConditionFilter
+                  class="access-component-list-search"
+                  :columns="columns"
+                  target="search-type"
+                  @search="handleSearch"
+              />
+            </div>
+          </template>
+          <template #headerRightRender>
             <j-permission-button
                 type="primary"
                 @click="handleAdd"
@@ -197,6 +205,7 @@ import {network} from "../../../assets";
 import {useI18n} from 'vue-i18n';
 import { isNoCommunity } from '@jetlinks-web-core/utils/utils';
 import { getI18nText } from '../../../utils/i18n'
+import ConditionFilter from '@jetlinks-web-core/components/ConditionFilter'
 
 const {t: $t} = useI18n();
 const menuStory = useMenuStore();
@@ -496,5 +505,28 @@ const handleSearch = (e: any) => {
     color: rgba(0, 0, 0, 0.75);
     opacity: 0.75;
   }
+}
+
+.access-component-list-toolbar {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+}
+
+.access-component-list-title {
+  margin: 0;
+  color: rgba(0, 0, 0, 0.85);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 32px;
+  white-space: nowrap;
+}
+
+.access-component-list-search {
+  flex: 1 1 360px;
+  min-width: 280px;
+  max-width: 640px;
 }
 </style>

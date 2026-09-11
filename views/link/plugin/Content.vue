@@ -1,9 +1,4 @@
 <template>
-  <pro-search
-    :columns="columns"
-    target="link-plugin"
-    @search="handleSearch"
-  />
   <FullPage>
     <JProTable
       ref="instanceRef"
@@ -16,20 +11,30 @@
       :params="params"
     >
       <template #headerLeftRender>
-        <a-space>
-
-          <j-permission-button
-            type="primary"
-            @click="handleAdd"
-            :hasPermission="`${permissionKey}:add`"
-          >
-            <template #icon>
-              <AIcon type="PlusOutlined"/>
-            </template>
-            {{ $t('plugin.index.293829-0') }}
-          </j-permission-button>
+        <div class="access-component-list-toolbar">
+          <h2 class="access-component-list-title">
+            {{ $t('AccessComponent.listTitle.plugin') }}
+          </h2>
+          <ConditionFilter
+            class="access-component-list-search"
+            :columns="columns"
+            target="link-plugin"
+            @search="handleSearch"
+          />
           <slot name="headerLeftRender" />
-        </a-space>
+        </div>
+      </template>
+      <template #headerRightRender>
+        <j-permission-button
+          type="primary"
+          @click="handleAdd"
+          :hasPermission="`${permissionKey}:add`"
+        >
+          <template #icon>
+            <AIcon type="PlusOutlined"/>
+          </template>
+          {{ $t('plugin.index.293829-0') }}
+        </j-permission-button>
       </template>
 
       <template #card="slotProps">
@@ -157,6 +162,7 @@ import {useI18n} from 'vue-i18n';
 import Detail from './Detail.vue';
 import { usePluginPermission } from '@device-manager-ui/hooks/usePermission'
 import { mergeObjectArrays } from '@jetlinks-web-core/utils'
+import ConditionFilter from '@jetlinks-web-core/components/ConditionFilter'
 
 const {t: $t} = useI18n();
 const route = useRoute();
@@ -344,5 +350,28 @@ onMounted(() => {
 <style scoped lang="less">
 .plugin-version {
   border-radius: 4px;
+}
+
+.access-component-list-toolbar {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+}
+
+.access-component-list-title {
+  margin: 0;
+  color: rgba(0, 0, 0, 0.85);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 32px;
+  white-space: nowrap;
+}
+
+.access-component-list-search {
+  flex: 1 1 360px;
+  min-width: 280px;
+  max-width: 640px;
 }
 </style>
