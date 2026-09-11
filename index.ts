@@ -31,16 +31,6 @@ const deviceListExtraRoutes = [
   }
 ]
 
-const sceneLinkageExtraRoutes = [
-  {
-    code: 'Editor',
-    url: '/editor/:id?',
-    name: i18n.global.t('IotSceneLinkage.title.editor'),
-    component: () => import('./views/scene-linkage/editor/index.vue'),
-  },
-]
-
-
 const getExtraRoutesMap = () => ({
   'iot-user-device-list': {
     // 统一设备入口直接承载详情，且完整复用统一列表的批量与详情子路由。
@@ -120,7 +110,6 @@ const getExtraRoutesMap = () => ({
     ],
   },
   'iot-user/device/list': deviceListExtraRoutes,
-  'iot-user/scene-linkage': sceneLinkageExtraRoutes,
 })
 
 const getCoreRouteOverrides = () => {
