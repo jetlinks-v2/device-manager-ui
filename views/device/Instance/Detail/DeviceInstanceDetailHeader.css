@@ -1,0 +1,243 @@
+.device-detail-title-row {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0;
+  min-width: 0;
+  width: 100%;
+}
+.device-detail-title-main {
+  flex: 1;
+  min-width: 0;
+  max-width: 100%;
+}
+.device-detail-name-wrap {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  min-width: 0;
+  width: 100%;
+  gap: 4px 8px;
+}
+.device-detail-avatar-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  border: none;
+  padding: 0;
+  background: rgba(0, 0, 0, 0.04);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  overflow: hidden;
+  position: relative;
+}
+.device-detail-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.device-detail-avatar-edit-mask {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.25);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+.device-detail-avatar-btn:hover .device-detail-avatar-edit-mask {
+  opacity: 1;
+}
+.device-detail-avatar-edit-mask :deep(.anticon) {
+  font-size: 14px;
+  color: #fff;
+}
+.device-detail-name-wrap > :deep(.ant-tooltip) {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: min(100%, 480px);
+}
+.device-detail-name-wrap > .deviceDetailHead--editable {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: min(100%, 480px);
+}
+.device-detail-name-status-sep {
+  opacity: 0.65;
+}
+.device-detail-status-inline {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.device-detail-inline-action {
+  padding: 0 !important;
+  margin-top: 0 !important;
+  height: auto !important;
+  line-height: 1.35 !important;
+}
+.device-detail-inline-action :deep(.ant-btn) {
+  padding: 0 4px !important;
+  height: auto !important;
+  line-height: 1.35 !important;
+}
+.device-detail-offline-hint-icon {
+  font-size: 12px;
+  color: var(--text-color-secondary, rgba(0, 0, 0, 0.45));
+}
+.deviceDetailHead {
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  line-height: 1.35;
+}
+.deviceDetailHead--editable {
+  cursor: text;
+  outline: none;
+}
+.device-detail-name-action {
+  padding: 0 4px !important;
+  min-width: auto !important;
+  height: auto !important;
+  line-height: 1 !important;
+}
+.device-detail-meta {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--text-color-secondary, rgba(0, 0, 0, 0.45));
+}
+.device-detail-meta__label {
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+.device-detail-meta__id-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+.device-detail-meta__id-text--copy {
+  cursor: pointer;
+  text-decoration: none;
+}
+.device-detail-meta__id-text--copy:hover {
+  color: var(--primary-color, #1677ff);
+}
+.device-detail-meta__sep {
+  flex-shrink: 0;
+  opacity: 0.65;
+  user-select: none;
+}
+.device-detail-meta__tags-inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+  flex: 1 1 auto;
+  position: relative;
+  overflow: visible;
+}
+.device-detail-meta__tag-chip {
+  margin: 0 !important;
+  max-width: 160px;
+  padding: 0 2px 0 4px !important;
+  line-height: 18px !important;
+  height: auto !important;
+  font-size: 12px !important;
+  border-style: dashed !important;
+  cursor: pointer;
+}
+.device-detail-meta__tag-chip--empty {
+  opacity: 0.75;
+  border-style: dashed !important;
+  color: var(--text-color-secondary, rgba(0, 0, 0, 0.45)) !important;
+  background: transparent !important;
+}
+.device-detail-meta__tags-edit {
+  padding: 0 2px !important;
+  min-width: auto !important;
+  height: auto !important;
+  line-height: 18px !important;
+}
+.device-detail-meta__tags-edit :deep(.anticon) {
+  font-size: 12px;
+}
+.device-detail-meta__tag-text {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+.device-detail-meta__tags-expand-btn {
+  border: none;
+  background: transparent;
+  padding: 0 2px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+}
+.device-detail-meta__tags-expand-caret--open {
+  transform: rotate(180deg);
+}
+.device-detail-tags-popover-inner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-start;
+}
+.device-detail-name-action :deep(.anticon) {
+  font-size: 12px;
+}
+.device-detail-meta__product {
+  min-width: 0;
+  flex: 0 1 auto;
+  max-width: 200px;
+  overflow: hidden;
+  font-size: inherit;
+  line-height: inherit;
+}
+.device-detail-meta__id-text :deep(.j-ellipsis),
+.device-detail-meta__product :deep(.j-ellipsis) {
+  font-size: inherit;
+  line-height: inherit;
+}
+.device-detail-meta__product :deep(.j-permission-button),
+.device-detail-meta__product-link {
+  padding: 0 !important;
+  height: auto !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+  color: var(--primary-color, #1677ff) !important;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+.device-detail-meta__product :deep(.j-permission-button:hover),
+.device-detail-meta__product-link:hover {
+  color: var(--primary-color-hover, #4096ff) !important;
+}
+.device-detail-status-text {
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.85);
+  white-space: nowrap;
+}
+/* Tab 鱼骨骨架：详情未返回前标签数量/文案未知，用占位 Tab + 脊柱/肋条视觉 */

@@ -8,7 +8,7 @@ import { deployDevice_api, undeployDevice_api, deleteDevice_api, batchDeployDevi
 import { bindDeviceGroupDevices_api, type DeviceGroup } from '../../../../api/deviceGroup'
 import { reassignIotDevicesToArea } from '../hooks/iotDeviceAreaGroupBindings'
 import { resolveIotProjectId } from '../hooks/useIotDeviceRouting'
-import type { DeviceListProvider, UnifiedDevice } from '../../../../deviceListProvider'
+import type { DeviceCreateEntry, DeviceListProvider, UnifiedDevice } from '../../../../deviceListProvider'
 
 /** 统一列表操作与新增弹层状态；快捷入口仅调用当前分类已有的新增能力。 */
 export function useUnifiedDeviceActions(
@@ -27,15 +27,17 @@ export function useUnifiedDeviceActions(
   const editing = ref<UnifiedDevice | null>(null)
   const editOpen = ref(false)
   // 固定打开时的新增入口，切换列表分类不会替换正在填写的表单。
-  const createEntry = shallowRef<DeviceListProvider['create']>()
+  const createEntry = shallowRef<Extract<DeviceCreateEntry, { component: unknown }>>()
   // 消费一次性创建动作，刷新页面不重开；未提供新增弹层的分类只保留列表。
   watch([() => route.query.action, activeProvider], ([action, provider]) => {
     if (action !== 'create' || !provider) return
     if (provider.id === 'device') {
       editing.value = null
       editOpen.value = true
-    } else if (provider.create) {
+    } else if (provider.create && 'component' in provider.create) {
       createEntry.value = provider.create
+    } else if (provider.create) {
+      menu.jumpPage(provider.create.route, { params: provider.create.params })
     }
     const { action: _action, ...query } = route.query
     void router.replace({ query })
@@ -50,13 +52,25 @@ export function useUnifiedDeviceActions(
     // 普通设备菜单按页面赋予 CRUD 权限；网关和视频沿用各自按钮授权。
     return !!provider && (provider.id === 'device' ? menu.hasMenu(provider.menuCode) : auth.hasPermission(`${provider.menuCode}:${action}`))
   }
+  const canCreate = (provider?: DeviceListProvider) => !!provider?.create && (!provider.create.permission || auth.hasPermission(provider.create.permission))
+  function openCreate(provider?: DeviceListProvider) {
+    const entry = provider?.create
+    if (!entry || busy.value || !canCreate(provider)) return
+    if (entry.route !== undefined) {
+      // 原新增页通过 query.id 判定编辑；列表上下文由浏览器返回历史保留。
+      menu.jumpPage(entry.route, { params: entry.params })
+    } else {
+      createEntry.value = entry
+    }
+  }
   function openDetail(device: UnifiedDevice) {
     const provider = providerOf(device)
     if (!provider) return
     if (provider.detailComponent) { detailDevice.value = device; return }
     if (provider.detailRoute) menu.jumpPage(provider.detailRoute, {
       params: { [provider.detailParam || 'id']: device.id },
-      query: { ...route.query },
+      // 子菜单也可通过 /video 等路径限定类型；详情返回统一列表时仍需保留该分类。
+      query: { ...route.query, type: route.query.type || device.category },
     })
   }
   function edit(device: UnifiedDevice) {
@@ -92,5 +106,5 @@ export function useUnifiedDeviceActions(
     })
   }
   async function assignGroup(group: DeviceGroup) { await execute(async () => { await bindDeviceGroupDevices_api(group.id, [...selectedIds.value]); assignGroupOpen.value = false }) }
-  return { projectId, editing, editOpen, createEntry, detailDevice, busy, selected, allowed, openDetail, edit, toggle, remove, canDelete, batchToggle, assignAreaOpen, assignGroupOpen, assignArea, assignGroup }
+  return { projectId, editing, editOpen, createEntry, canCreate, openCreate, detailDevice, busy, selected, allowed, openDetail, edit, toggle, remove, canDelete, batchToggle, assignAreaOpen, assignGroupOpen, assignArea, assignGroup }
 }

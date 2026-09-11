@@ -1,0 +1,110 @@
+.device-detail-content-wrap :deep(> div) {
+  height: 100%;
+}
+.device-detail-content-wrap--skeleton {
+  min-height: 420px;
+  height: 100%;
+  box-sizing: border-box;
+}
+/* Tab 鱼骨骨架：详情未返回前标签数量/文案未知，用占位 Tab + 脊柱/肋条视觉 */
+.device-detail-page-wrap--tab-skeleton :deep(.ant-tabs-nav) {
+  position: relative;
+  margin-bottom: 0 !important;
+}
+.device-detail-page-wrap--tab-skeleton :deep(.ant-tabs-nav-wrap) {
+  position: relative;
+  padding-top: 10px;
+}
+.device-detail-page-wrap--tab-skeleton :deep(.ant-tabs-nav-wrap)::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 2px;
+  border-radius: 1px;
+  background: linear-gradient(90deg, rgba(22, 119, 255, 0.4) 0%, rgba(22, 119, 255, 0.1) 45%, rgba(22, 119, 255, 0.35) 100%);
+  pointer-events: none;
+}
+.device-detail-page-wrap--tab-skeleton :deep(.ant-tabs-tab) {
+  position: relative;
+}
+.device-detail-page-wrap--tab-skeleton :deep(.ant-tabs-tab)::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 2px;
+  width: 1px;
+  height: 7px;
+  transform: translateX(-50%);
+  background: rgba(22, 119, 255, 0.22);
+  border-radius: 1px;
+  pointer-events: none;
+}
+.device-detail-page-wrap--tab-skeleton :deep(.ant-tabs-tab-btn) {
+  color: transparent !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
+  min-height: 14px;
+  padding: 0 4px !important;
+  display: inline-block;
+  border-radius: 4px;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.06) 0%, rgba(0, 0, 0, 0.11) 50%, rgba(0, 0, 0, 0.06) 100%);
+  background-size: 200% 100%;
+  animation: device-detail-tab-shimmer 1.35s ease-in-out infinite;
+}
+.device-detail-page-wrap--tab-skeleton :deep(.ant-tabs-tab:nth-child(1) .ant-tabs-tab-btn) {
+  min-width: 52px;
+}
+.device-detail-page-wrap--tab-skeleton :deep(.ant-tabs-tab:nth-child(2) .ant-tabs-tab-btn) {
+  min-width: 72px;
+}
+.device-detail-page-wrap--tab-skeleton :deep(.ant-tabs-tab:nth-child(3) .ant-tabs-tab-btn) {
+  min-width: 64px;
+}
+.device-detail-page-wrap--tab-skeleton :deep(.ant-tabs-tab:nth-child(4) .ant-tabs-tab-btn) {
+  min-width: 48px;
+}
+.device-detail-page-wrap--tab-skeleton :deep(.ant-tabs-tab:nth-child(5) .ant-tabs-tab-btn) {
+  min-width: 80px;
+}
+.device-detail-page-wrap--tab-skeleton :deep(.ant-tabs-tab:nth-child(6) .ant-tabs-tab-btn) {
+  min-width: 56px;
+}
+.device-detail-page-wrap--tab-skeleton :deep(.ant-tabs-tab:nth-child(7) .ant-tabs-tab-btn) {
+  min-width: 68px;
+}
+.device-detail-page-wrap--tab-skeleton :deep(.ant-tabs-tab:nth-child(8) .ant-tabs-tab-btn) {
+  min-width: 44px;
+}
+.device-detail-page-wrap--tab-skeleton :deep(.ant-tabs-tab:nth-child(9) .ant-tabs-tab-btn) {
+  min-width: 76px;
+}
+.device-detail-page-wrap--tab-skeleton :deep(.ant-tabs-tab:nth-child(10) .ant-tabs-tab-btn) {
+  min-width: 60px;
+}
+.device-detail-page-wrap--tab-skeleton :deep(.ant-tabs-tab:nth-child(11) .ant-tabs-tab-btn) {
+  min-width: 52px;
+}
+.device-detail-page-wrap--tab-skeleton :deep(.ant-tabs-tab:nth-child(12) .ant-tabs-tab-btn) {
+  min-width: 70px;
+}
+.device-detail-page-wrap--tab-skeleton :deep(.ant-tabs-tab-active .ant-tabs-tab-btn) {
+  background: linear-gradient(90deg, rgba(22, 119, 255, 0.2) 0%, rgba(22, 119, 255, 0.32) 50%, rgba(22, 119, 255, 0.2) 100%);
+  background-size: 200% 100%;
+}
+.device-detail-page-wrap--tab-skeleton :deep(.ant-tabs-ink-bar) {
+  background: rgba(22, 119, 255, 0.5) !important;
+}
+
+.device-instance-detail-content { height: 100%; min-height: 0; display: flex; flex-direction: column; }
+.device-instance-detail-content--embedded { flex: 1 1 0; }
+.device-instance-detail-content--embedded > .device-detail-content-wrap { background: var(--jet-theme-bg-container); }
+.device-instance-detail-content__tabs { flex: none; }
+.device-instance-detail-content__tabs :deep(.ant-tabs-content-holder) { display: none; }
+.device-instance-detail-content > .device-detail-content-wrap { flex: 1 1 0; min-height: 0; }
+
+@keyframes device-detail-tab-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}

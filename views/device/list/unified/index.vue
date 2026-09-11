@@ -6,7 +6,7 @@
       </a-flex>
       <a-space>
         <a-button v-if="activeType === 'device'" @click="editing = null; editOpen = true">{{ t('IotDeviceList.action.create') }}</a-button>
-        <a-button v-if="activeProvider?.create" type="primary" :disabled="busy" @click="createEntry = activeProvider.create">
+        <a-button v-if="activeProvider?.create" type="primary" :disabled="busy || !canCreate(activeProvider)" @click="openCreate(activeProvider)">
           <template #icon><AIcon type="PlusOutlined" /></template>
           {{ activeProvider.create.label() }}
         </a-button>

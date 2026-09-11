@@ -43,7 +43,7 @@ const sceneLinkageExtraRoutes = [
 
 const getExtraRoutesMap = () => ({
   'iot-user-device-list': {
-    // 服务端同时下发连字符菜单编码，此入口需完整复用统一列表的批量与详情子路由。
+    // 统一设备入口直接承载详情，且完整复用统一列表的批量与详情子路由。
     children: [
       {
         code: 'Batch', url: '/batch', name: i18n.global.t('UnifiedDeviceList.batch'),

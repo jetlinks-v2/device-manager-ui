@@ -1,0 +1,69 @@
+/* 标签扩展会增高中间列；抵消居中布局的半程位移，保持两侧原有位置。 */
+
+.dd-empty {
+  margin: 0.25rem 0;
+  color: var(--jet-theme-text-disabled);
+  font-size: var(--fs-14);
+  font-style: italic;
+}
+
+.dd-rule-panel {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.dd-rule-panel__summary {
+  margin: 0;
+  color: var(--jet-theme-text-disabled);
+  font-size: var(--fs-14);
+  line-height: 1.6;
+}
+
+.dd-rules {
+  display: grid;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 0.0625rem solid var(--jet-theme-border);
+}
+
+.dd-rules li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  row-gap: var(--space-1);
+  column-gap: var(--space-3);
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 0.0625rem solid var(--jet-theme-border);
+}
+
+.dd-rules li > div {
+  display: grid;
+  gap: 0.125rem;
+}
+
+.dd-rules li strong {
+  color: var(--jet-theme-text);
+  font-size: var(--fs-body);
+  font-weight: 600;
+}
+
+.dd-rules li small,
+.dd-rules li p {
+  color: var(--jet-theme-text-disabled);
+  font-size: var(--fs-14);
+}
+
+.dd-rules li p {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--jet-theme-text-secondary);
+  line-height: 1.55;
+}
+
+@media (max-width: 53.75rem) {
+
+  .dd-rules li {
+    grid-template-columns: 1fr;
+  }
+}
