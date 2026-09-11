@@ -17,18 +17,29 @@
 
       <config-item label="属性">
       <a-select
-        v-model:value="config.propertyId"
-        :options="typeOptions"
-        placeholder="请选择属性"
+        v-model:value="config.propertyIds"
+        mode="multiple"
+        :maxTagCount="2"
+        :options="propertyOptions"
+        placeholder="请选择属性(最多5个)"
         optionFilterProp="label"
         style="width: 100%"
         popupClassName="is-dark"
-        @change="onTypeChange"
+        @change="onPropertiesChange"
       />
     </config-item>
     
     </div>
     <a-divider />
+    <config-item label="标题">
+      <a-input
+        v-model:value="config.title"
+        placeholder="请输入标题"
+        style="width: 100%"
+        @change="onChange"
+      />
+    </config-item>
+
     <config-item label="标题样式">
       <div class="card-container-row">
         <ColorPicker
@@ -49,19 +60,28 @@
       </div>
     </config-item>
 
-    <config-item label="属性值样式">
+    <config-item label="总计文案">
+      <a-input
+        v-model:value="config.totalLabel"
+        placeholder="请输入总计文案"
+        style="width: 100%"
+        @change="onChange"
+      />
+    </config-item>
+
+    <config-item label="总计文案样式">
       <div class="card-container-row">
         <ColorPicker
-          v-model:value="config.valueColor"
+          v-model:value="config.totalLabelColor"
           :isInput="false"
           style="margin-right: 6px"
           theme="white"
           @change="onChange"
         />
         <a-input-number
-          v-model:value="config.valueFontSize"
-          :min="12"
-          :max="120"
+          v-model:value="config.totalLabelFontSize"
+          :min="10"
+          :max="40"
           :precision="0"
           style="flex: 1"
           @change="onChange"
@@ -69,27 +89,18 @@
       </div>
     </config-item>
 
-    <config-item label="单位">
-      <a-input
-        v-model:value="config.unit"
-        placeholder="为空时使用物模型单位"
-        style="width: 100%"
-        @change="onChange"
-      />
-    </config-item>
-
-    <config-item label="单位样式">
+    <config-item label="总计数值样式">
       <div class="card-container-row">
         <ColorPicker
-          v-model:value="config.unitColor"
+          v-model:value="config.totalValueColor"
           :isInput="false"
           style="margin-right: 6px"
           theme="white"
           @change="onChange"
         />
         <a-input-number
-          v-model:value="config.unitFontSize"
-          :min="10"
+          v-model:value="config.totalValueFontSize"
+          :min="14"
           :max="80"
           :precision="0"
           style="flex: 1"
@@ -98,55 +109,21 @@
       </div>
     </config-item>
 
-    <config-item label="激活颜色">
+    <config-item label="空数据颜色">
       <ColorPicker
-        v-model:value="config.activeColor"
+        v-model:value="config.emptyColor"
         :isInput="false"
         theme="white"
         @change="onChange"
       />
     </config-item>
 
-    <config-item label="未激活颜色">
-      <ColorPicker
-        v-model:value="config.inactiveColor"
-        :isInput="false"
-        theme="white"
-        @change="onChange"
-      />
-    </config-item>
-
-    <config-item label="边框颜色">
-      <ColorPicker
-        v-model:value="config.borderColor"
-        :isInput="false"
-        theme="white"
-        @change="onChange"
-      />
-    </config-item>
-
-    <config-item label="分段数">
+    <config-item label="环宽">
       <a-input-number
-        v-model:value="config.segments"
-        :min="3"
-        :max="8"
+        v-model:value="config.ringWidth"
+        :min="8"
+        :max="40"
         :precision="0"
-        style="width: 100%"
-        @change="onChange"
-      />
-    </config-item>
-
-    <config-item label="最小值">
-      <a-input-number
-        v-model:value="config.minValue"
-        style="width: 100%"
-        @change="onChange"
-      />
-    </config-item>
-
-    <config-item label="最大值">
-      <a-input-number
-        v-model:value="config.maxValue"
         style="width: 100%"
         @change="onChange"
       />
@@ -157,10 +134,11 @@
 <script lang="ts" setup>
 import { cloneDeep, throttle } from 'lodash-es'
 import { moduleRegistry } from '@jetlinks-web-core/utils/module-registry'
+import { onlyMessage } from '@jetlinks-web/utils'
 import { useProductStore } from '@device-manager-ui/store/product'
 import { useInstanceStore } from '@device-manager-ui/store/instance'
 import { queryNoPagingPost } from '@device-manager-ui/api/instance'
-import { propertyBatteryConfig } from './config'
+import { propertyPieConfig } from './config'
 
 const { ConfigItem, ColorPicker } = moduleRegistry.getResource('visualization-designer-ui', 'components')
 
@@ -171,7 +149,7 @@ const props = defineProps({
   },
   type: {
     type: String,
-    default: 'propertyBattery'
+    default: 'propertyPie'
   }
 })
 
@@ -185,6 +163,8 @@ const deviceOptionsMap = ref(new Map())
 
 const isProduct = computed(() => route.name === 'device/Product/Detail')
 
+const numericTypes = new Set(['int', 'long', 'float', 'double', 'short', 'byte', 'decimal', 'number'])
+
 const emitChange = throttle(() => {
   emits('change', config.value, props.type)
 }, 20)
@@ -193,15 +173,15 @@ const onChange = () => {
   emitChange()
 }
 
-const strToJson = (str: string) => {
+const strToJson = (str: string, key: string = 'properties') => {
   try {
-    return JSON.parse(str || '{}').properties || []
+    return JSON.parse(str || '{}')[key] || []
   } catch (e) {
     return []
   }
 }
 
-const typeOptions = computed(() => {
+const propertyOptions = computed(() => {
   try {
     let properties = []
     if (isProduct.value) {
@@ -214,11 +194,13 @@ const typeOptions = computed(() => {
       properties = strToJson(instanceStore.current.metadata || instanceStore.detail.metadata)
     }
 
-    return properties.map((item: any) => ({
-      ...item,
-      label: item.name,
-      value: item.id
-    }))
+    return properties
+      .filter((item: any) => numericTypes.has(String(item?.valueType?.type || '').toLowerCase()))
+      .map((item: any) => ({
+        ...item,
+        label: item.name,
+        value: item.id
+      }))
   } catch (e) {
     return []
   }
@@ -227,15 +209,21 @@ const typeOptions = computed(() => {
 const onDeviceChange = (value: string, option: any) => {
   config.value.deviceId = value
   config.value.deviceName = option?.label || ''
-  config.value.propertyId = ''
-  config.value.propertyName = ''
+  config.value.propertyIds = []
+  config.value.propertyNames = []
   emitChange()
 }
 
-const onTypeChange = (value: string) => {
-  const option = typeOptions.value.find((item: any) => item.value === value)
-  config.value.propertyId = value
-  config.value.propertyName = option?.label || ''
+const onPropertiesChange = (values: string[]) => {
+  const nextValues = (values || []).slice(0, 5)
+
+  if ((values || []).length > 5) {
+    onlyMessage('最多选择5个属性', 'warning')
+  }
+
+  const optionsMap = new Map(propertyOptions.value.map((item: any) => [item.value, item.label]))
+  config.value.propertyIds = nextValues
+  config.value.propertyNames = nextValues.map((id) => optionsMap.get(id) || id)
   emitChange()
 }
 
@@ -262,10 +250,14 @@ onMounted(() => {
 watch(
   () => props.configData?.componentProps?.[props.type],
   (newVal) => {
-    config.value = cloneDeep({
-      ...propertyBatteryConfig.componentProps.propertyBattery,
+    const merged = cloneDeep({
+      ...propertyPieConfig.componentProps.propertyPie,
       ...(newVal || {})
     })
+
+    merged.propertyIds = Array.isArray(merged.propertyIds) ? merged.propertyIds.slice(0, 5) : []
+    merged.propertyNames = Array.isArray(merged.propertyNames) ? merged.propertyNames.slice(0, 5) : []
+    config.value = merged
   },
   { deep: true, immediate: true }
 )
@@ -289,7 +281,8 @@ watch(
     margin: 0;
     margin-bottom: 12px;
   }
-   :deep(.config-form-item-content) {
+
+  :deep(.config-form-item-content) {
     padding: 0;
   }
 }

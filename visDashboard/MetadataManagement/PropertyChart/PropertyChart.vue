@@ -176,7 +176,7 @@ const displayValue = computed(() => {
   const value = currentRawValue.value
 
   if (value === undefined || value === null || value === '') {
-    return 'N/A'
+    return '--'
   }
 
   return String(value)

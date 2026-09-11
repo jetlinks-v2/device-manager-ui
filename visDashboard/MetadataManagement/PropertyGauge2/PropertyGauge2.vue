@@ -1,46 +1,23 @@
 ﻿<template>
   <div
-    ref="containerRef"
-    class="individual-card"
-    :class="{ 'is-vertical': isVertical }"
+    ref="rootRef"
+    class="property-gauge2"
     :style="style"
   >
-    <div class="individual-card__header">
-      <span
-        class="individual-card__icon"
-        :style="{
-          color: config.iconColor || '#1aa37a',
-          fontSize: `${Number(config.iconSize || 32)}px`
-        }"
-      >
-        <AIcon :type="config.icon || 'ExperimentOutlined'" />
-      </span>
-      <span
-        class="individual-card__title"
-        :style="titleStyle"
-      >
-        {{ displayTitle }}
-      </span>
-    </div>
-
-    <div
-      class="individual-card__value"
-      :style="valueStyle"
-    >
-      {{ displayValue }}
-      <span
-        v-if="config.unit"
-        class="individual-card__unit"
-        :style="unitStyle"
-      >
-        {{ config.unit }}
-      </span>
-    </div>
+    <v-chart
+      class="property-gauge2__chart"
+      :option="chartOption"
+      autoresize
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import type { PropType } from 'vue'
+import { use } from 'echarts/core'
+import { GaugeChart } from 'echarts/charts'
+import { CanvasRenderer } from 'echarts/renderers'
+import VChart from 'vue-echarts'
 import { dashboard } from '@device-manager-ui/api/dashboard'
 import { detail } from '@device-manager-ui/api/instance'
 import { useInstanceStore } from '@device-manager-ui/store/instance'
@@ -49,27 +26,22 @@ import { wsClient } from '@jetlinks-web/core'
 import { debounce, throttle } from 'lodash-es'
 import { map } from 'rxjs/operators'
 
+use([CanvasRenderer, GaugeChart])
+
 defineOptions({
-  name: 'IndividualCard'
+  name: 'PropertyGauge2'
 })
 
-interface IndividualCardComponentConfig {
-  title?: string
-  icon?: string
-  iconColor?: string
-  iconSize?: number
-  titleColor?: string
+interface PropertyGauge2ComponentConfig {
+  minValue?: number
+  maxValue?: number
+  ringWidth?: number
   titleFontSize?: number
-  value?: string | number | null
-  valueColor?: string
   valueFontSize?: number
-  unit?: string
-  unitColor?: string
-  unitFontSize?: number
   deviceId?: string
   deviceName?: string
-  propertyId?: string
-  propertyName?: string
+  propertyIds?: string[]
+  propertyNames?: string[]
 }
 
 interface DashboardCardInfo {
@@ -92,93 +64,72 @@ const props = defineProps({
   }
 })
 
+const config = computed<PropertyGauge2ComponentConfig>(() => {
+  return (props.info?.componentProps?.propertyGauge2 as PropertyGauge2ComponentConfig) || {}
+})
+
 const route = useRoute()
 const instanceStore = useInstanceStore()
 const productStore = useProductStore()
-
-const containerRef = ref<HTMLElement | null>(null)
-const containerSize = ref({ width: 0, height: 0 })
-let resizeObserver: ResizeObserver | null = null
+const rootRef = ref<HTMLElement>()
+const chartSize = ref(320)
+let resizeObserver: ResizeObserver | undefined
 
 const runtimeProductId = ref('')
-const runtimeDeviceName = ref('')
 const metadataText = ref('')
 const propertyValue = ref<Record<string, any>>({})
 const dataSource = ref<Record<string, any>[]>([])
 const subRef = ref<any>()
 const messageCache = new Map<string, Record<string, any>>()
 
-const config = computed<IndividualCardComponentConfig>(() => {
-  return (props.info?.componentProps?.individualCard as IndividualCardComponentConfig) || {}
-})
-
 const isProduct = computed(() => route.name === 'device/Product/Detail')
 const targetDeviceId = computed(() => String(config.value.deviceId || ''))
 const runtimeDeviceId = computed(() => (isProduct.value ? targetDeviceId.value : String(instanceStore.current.id || '')))
+const selectedPropertyIds = computed(() => (config.value.propertyIds || []).slice(0, 5).map((id) => String(id)))
+
+const palette = ['#4f72df', '#b4d930', '#52577f', '#f59f45', '#45b8d8']
 
 const propertyMap = computed(() => {
   try {
     const properties = JSON.parse(metadataText.value || '{}').properties || []
     const mapData = new Map<string, Record<string, any>>()
-
     properties.forEach((item: Record<string, any>) => {
       mapData.set(String(item.id || ''), item)
     })
-
     return mapData
   } catch (error) {
     return new Map<string, Record<string, any>>()
   }
 })
 
-const selectedProperty = computed(() => {
-  const id = String(config.value.propertyId || '')
-  if (!id) return undefined
-  return dataSource.value.find((item) => String(item.id || '') === id)
+const minValue = computed(() => Number(config.value.minValue ?? 0))
+const maxValue = computed(() => {
+  const max = Number(config.value.maxValue ?? 100)
+  return max <= minValue.value ? minValue.value + 1 : max
 })
 
-const displayTitle = computed(() => {
-  const propertyTitle =
-    config.value.propertyName ||
-    selectedProperty.value?.name ||
-    config.value.title ||
-    'Temperature'
-
-  const deviceName = config.value.deviceName || runtimeDeviceName.value
-
-  return deviceName ? `${deviceName}(${propertyTitle})` : propertyTitle
-})
-
-const displayValue = computed(() => {
-  const propertyId = String(config.value.propertyId || '')
-  const valueData = propertyId ? propertyValue.value[propertyId] : undefined
-  const value = valueData?.value
-
-  if (value === undefined || value === null || value === '') {
-    const fallback = config.value.value
-    if (fallback === undefined || fallback === null || fallback === '') {
-      return '--'
-    }
-    return String(fallback)
+const displayItems = computed(() => {
+  const ids = selectedPropertyIds.value
+  if (!ids.length) {
+    return [
+      { id: 'demo-1', name: 'Perfect', value: 20, color: palette[0] },
+      { id: 'demo-2', name: 'Good', value: 40, color: palette[1] },
+      { id: 'demo-3', name: 'Commonly', value: 60, color: palette[2] }
+    ]
   }
 
-  return String(value)
+  return ids.map((id, index) => {
+    const property = propertyMap.value.get(id)
+    const raw = Number(propertyValue.value[id]?.value)
+    const value = Number.isFinite(raw) ? raw : minValue.value
+    return {
+      id,
+      name: property?.name || config.value.propertyNames?.[index] || id,
+      value,
+      color: palette[index % palette.length]
+    }
+  })
 })
-
-const titleStyle = computed(() => ({
-  color: config.value.titleColor || 'rgba(0, 0, 0, 0.88)',
-  fontSize: `${Number(config.value.titleFontSize || 40)}px`
-}))
-
-const valueStyle = computed(() => ({
-  color: config.value.valueColor || 'rgba(0, 0, 0, 0.88)',
-  fontSize: `${Number(config.value.valueFontSize || 48)}px`
-}))
-
-const unitStyle = computed(() => ({
-  color: config.value.unitColor || valueStyle.value.color,
-  fontSize: `${Number(config.value.unitFontSize || 24)}px`
-}))
 
 const valueChange = (arr: Record<string, any>[]) => {
   ;(arr || [])
@@ -202,7 +153,7 @@ const subscribeProperty = () => {
   }
 
   const propertyIds = dataSource.value.map((item) => item.id)
-  const id = `individual-card-${runtimeDeviceId.value}-${runtimeProductId.value}-${propertyIds.join('-')}`
+  const id = `property-gauge2-${runtimeDeviceId.value}-${runtimeProductId.value}-${propertyIds.join('-')}`
   const topic = `/dashboard/device/${runtimeProductId.value}/properties/realTime`
 
   subRef.value = wsClient
@@ -271,21 +222,18 @@ const resolveMetadata = async () => {
   if (!isProduct.value) {
     metadataText.value = instanceStore.current.metadata || instanceStore.detail.metadata || ''
     runtimeProductId.value = String(instanceStore.current.productId || instanceStore.detail.productId || '')
-    runtimeDeviceName.value = String(instanceStore.current.name || instanceStore.detail.name || '')
     return
   }
 
   if (!targetDeviceId.value) {
     metadataText.value = productStore.detail.metadata || ''
     runtimeProductId.value = String(productStore.detail.id || '')
-    runtimeDeviceName.value = ''
     return
   }
 
   const response = await detail(targetDeviceId.value, true)
   metadataText.value = response.result?.metadata || ''
   runtimeProductId.value = String(response.result?.productId || '')
-  runtimeDeviceName.value = String(response.result?.name || '')
 }
 
 const handleProperty = debounce(async () => {
@@ -295,118 +243,153 @@ const handleProperty = debounce(async () => {
 
   await resolveMetadata()
 
-  const propertyId = String(config.value.propertyId || '')
-  const selected = propertyId ? propertyMap.value.get(propertyId) : undefined
-  dataSource.value = selected ? [selected] : []
+  dataSource.value = selectedPropertyIds.value
+    .map((id) => propertyMap.value.get(id))
+    .filter((item): item is Record<string, any> => !!item)
+    .slice(0, 5)
 
   if (messageCache.size === 0) {
     await getDashboard()
   }
 }, 300)
 
-const isVertical = computed(() => {
-  const { width, height } = containerSize.value
-  if (!width || !height) {
-    return false
-  }
-  return width < 280 || height > width
-})
-
 onMounted(() => {
-  if (containerRef.value) {
-    resizeObserver = new ResizeObserver((entries) => {
-      const { width, height } = entries[0].contentRect
-      containerSize.value = {
-        width: Math.floor(width),
-        height: Math.floor(height)
-      }
-    })
-
-    resizeObserver.observe(containerRef.value)
+  const updateSize = () => {
+    const el = rootRef.value
+    if (!el) return
+    const rect = el.getBoundingClientRect()
+    chartSize.value = Math.max(220, Math.min(rect.width, rect.height))
   }
+
+  updateSize()
+  resizeObserver = new ResizeObserver(() => {
+    updateSize()
+  })
+  if (rootRef.value) {
+    resizeObserver.observe(rootRef.value)
+  }
+
+  handleProperty()
 })
 
 onUnmounted(() => {
   handleProperty.cancel()
+  throttleFn.cancel()
   subRef.value && subRef.value?.unsubscribe()
-  resizeObserver?.disconnect()
-  resizeObserver = null
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+    resizeObserver = undefined
+  }
 })
 
 watch(
-  () => [props.info, targetDeviceId.value, runtimeDeviceId.value, config.value.propertyId],
+  () => [props.info, targetDeviceId.value, runtimeDeviceId.value, selectedPropertyIds.value.join(',')],
   () => {
     handleProperty()
   },
   { immediate: true, deep: true }
 )
+
+const chartOption = computed(() => {
+  const ringWidth = Number(config.value.ringWidth || 26)
+  const itemCount = Math.max(1, displayItems.value.slice(0, 5).length)
+  const sizeFactor = Math.max(0.68, Math.min(1, chartSize.value / 420))
+  const densityFactor = itemCount >= 4 ? 0.72 : itemCount === 3 ? 0.82 : 0.95
+  const titleBase = Number(config.value.titleFontSize || 22)
+  const valueBase = Number(config.value.valueFontSize || 20)
+  const titleFontSize = Math.max(12, Math.round(titleBase * sizeFactor * densityFactor))
+  const valueFontSize = Math.max(12, Math.round(valueBase * sizeFactor * densityFactor))
+
+  const data = displayItems.value.slice(0, 5).map((item, index) => ({
+    value: item.value,
+    name: item.name,
+    title: {
+      offsetCenter: ['0%', `${-30 + index * 30}%`],
+      color: '#6b6b6b'
+    },
+    detail: {
+      valueAnimation: true,
+      offsetCenter: ['0%', `${-20 + index * 30}%`],
+      color: item.color,
+      borderColor: item.color
+    },
+    itemStyle: {
+      color: item.color
+    }
+  }))
+
+  return {
+    animation: false,
+    series: [
+      {
+        type: 'gauge',
+        min: minValue.value,
+        max: maxValue.value,
+        startAngle: 90,
+        endAngle: -270,
+        radius: '90%',
+        center: ['50%', '52%'],
+        pointer: {
+          show: false
+        },
+        progress: {
+          show: true,
+          overlap: false,
+          roundCap: true,
+          clip: false,
+          itemStyle: {
+            borderWidth: 1,
+            borderColor: '#464646'
+          }
+        },
+        axisLine: {
+          lineStyle: {
+            width: ringWidth,
+            color: [[1, '#e4e7ee']]
+          }
+        },
+        splitLine: {
+          show: false,
+          distance: 0,
+          length: 10
+        },
+        axisTick: {
+          show: false
+        },
+        axisLabel: {
+          show: false,
+          distance: 50
+        },
+        data,
+        title: {
+          fontSize: titleFontSize,
+        },
+        detail: {
+          width: Math.max(58, Math.round(valueFontSize * 2.8)),
+          height: Math.max(18, Math.round(valueFontSize * 1.2)),
+          fontSize: valueFontSize,
+          color: 'inherit',
+          borderColor: 'inherit',
+          borderRadius: 20,
+          padding: [0, 6],
+          borderWidth: 1,
+          formatter: '{value}%'
+        }
+      }
+    ]
+  }
+})
 </script>
 
 <style scoped lang="less">
-.individual-card {
+.property-gauge2 {
   width: 100%;
   height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  box-sizing: border-box;
-  padding: 22px 24px;
-  background-color: #fff;
-  overflow: hidden;
+  background: #fff;
 }
 
-.individual-card__header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-  flex: 1;
-}
-
-.individual-card__icon {
-  line-height: 1;
-  flex-shrink: 0;
-}
-
-.individual-card__title {
-  font-weight: 500;
-  line-height: 1.2;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.individual-card__value {
-  flex-shrink: 0;
-  margin-left: 16px;
-  font-weight: 700;
-  line-height: 1;
-  white-space: nowrap;
-}
-
-.individual-card__unit {
-  margin-left: 6px;
-  font-weight: 500;
-  line-height: 1;
-}
-
-.individual-card.is-vertical {
-  flex-direction: column;
-  justify-content: center;
-  gap: 18px;
-}
-
-.individual-card.is-vertical .individual-card__header {
-  justify-content: center;
-  flex: none;
-}
-
-.individual-card.is-vertical .individual-card__title {
-  max-width: 100%;
-  text-align: center;
-}
-
-.individual-card.is-vertical .individual-card__value {
-  margin-left: 0;
+.property-gauge2__chart {
+  width: 100%;
+  height: 100%;
 }
 </style>

@@ -17,7 +17,7 @@ export const propertySignalConfig = {
     propertySignal: {
       titleColor: 'rgba(0, 0, 0, 0.88)',
       titleFontSize: 16,
-      value: 'N/A',
+      value: '',
       valueColor: 'rgba(0, 0, 0, 0.88)',
       valueFontSize: 28,
       unit: '%',

@@ -194,7 +194,7 @@ watch(numericValue, (val) => {
 
 const sliderDisplayValue = computed(() => {
   const val = sliderValue.value
-  if (val === undefined || val === null) return 'N/A'
+  if (val === undefined || val === null) return '--'
   return `${Math.round(Number(val))}`
 })
 

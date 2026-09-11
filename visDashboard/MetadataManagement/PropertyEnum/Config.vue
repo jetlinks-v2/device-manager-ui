@@ -1,5 +1,44 @@
 <template>
   <div class="card-container">    <div class="card-header">
+      <config-item label="属性">
+      <a-select
+        v-model:value="config.propertyId"
+        :options="propertyOptions"
+        placeholder="请选择属性(enum)"
+        optionFilterProp="label"
+        style="width: 100%"
+        popupClassName="is-dark"
+        @change="onPropertyChange"
+      />
+    </config-item>
+
+      <config-item label="功能">
+      <a-select
+        v-model:value="config.functionId"
+        :options="functionOptions"
+        placeholder="请选择功能"
+        optionFilterProp="label"
+        style="width: 100%"
+        popupClassName="is-dark"
+        @change="onFunctionChange"
+      />
+    </config-item>
+
+      <config-item
+      v-if="config.functionId"
+      label="参数"
+    >
+      <a-select
+        v-model:value="config.paramId"
+        :options="paramOptions"
+        placeholder="请选择参数(enum)"
+        optionFilterProp="label"
+        style="width: 100%"
+        popupClassName="is-dark"
+        @change="onChange"
+      />
+    </config-item>
+
       <config-item
       v-if="isProduct"
       label="设备"
@@ -14,45 +53,36 @@
         @change="onDeviceChange"
       />
     </config-item>
-
-      <config-item label="属性">
-      <a-select
-        v-model:value="config.propertyId"
-        :options="typeOptions"
-        placeholder="请选择属性"
-        optionFilterProp="label"
-        style="width: 100%"
-        popupClassName="is-dark"
-        @change="onTypeChange"
-      />
-    </config-item>
-
-      <config-item label="功能">
-      <a-select
-        v-model:value="config.functionId"
-        :options="_functionOptions"
-        placeholder="请选择功能"
-        optionFilterProp="label"
-        style="width: 100%"
-        popupClassName="is-dark"
-        @change="onFunctionChange"
-      />
-    </config-item>
-
-      <config-item label="参数" v-if="config.functionId">
-      <a-select
-        v-model:value="config.paramId"
-        :options="_paramsOptions"
-        placeholder="请选择参数(数值类型)"
-        optionFilterProp="label"
-        style="width: 100%"
-        popupClassName="is-dark"
-        @change="onChange"
-      />
-    </config-item>
     
     </div>
     <a-divider />
+    <config-item label="图标">
+      <IconLibrary
+        v-model:type="config.icon"
+        @change="onChange"
+      />
+    </config-item>
+
+    <config-item label="图标样式">
+      <div class="card-container-row">
+        <ColorPicker
+          v-model:value="config.iconColor"
+          :isInput="false"
+          style="margin-right: 6px"
+          theme="white"
+          @change="onChange"
+        />
+        <a-input-number
+          v-model:value="config.iconSize"
+          :min="12"
+          :max="48"
+          :precision="0"
+          style="flex: 1"
+          @change="onChange"
+        />
+      </div>
+    </config-item>
+
     <config-item label="标题样式">
       <div class="card-container-row">
         <ColorPicker
@@ -73,7 +103,7 @@
       </div>
     </config-item>
 
-    <config-item label="属性值样式">
+    <config-item label="枚举值样式">
       <div class="card-container-row">
         <ColorPicker
           v-model:value="config.valueColor"
@@ -85,7 +115,7 @@
         <a-input-number
           v-model:value="config.valueFontSize"
           :min="12"
-          :max="120"
+          :max="48"
           :precision="0"
           style="flex: 1"
           @change="onChange"
@@ -93,73 +123,63 @@
       </div>
     </config-item>
 
-    <config-item label="单位">
-      <a-input
-        v-model:value="config.unit"
-        placeholder="为空时使用物模型单位"
-        style="width: 100%"
-        @change="onChange"
-      />
-    </config-item>
-
-    <config-item label="单位样式">
-      <div class="card-container-row">
+    <config-item label="选中背景色">
         <ColorPicker
-          v-model:value="config.unitColor"
+          v-model:value="config.activeColor"
           :isInput="false"
-          style="margin-right: 6px"
           theme="white"
           @change="onChange"
         />
-        <a-input-number
-          v-model:value="config.unitFontSize"
-          :min="10"
-          :max="80"
-          :precision="0"
-          style="flex: 1"
+      </config-item>
+
+    <config-item
+        label="未选中背景色"
+        label-width="90px"
+      >
+        <ColorPicker
+          v-model:value="config.inactiveColor"
+          :isInput="false"
+          theme="white"
           @change="onChange"
         />
-      </div>
-    </config-item>
+      </config-item>
 
-    <config-item label="滑块颜色">
-      <ColorPicker
-        v-model:value="config.activeColor"
-        :isInput="false"
-        theme="white"
-        @change="onChange"
-      />
-    </config-item>
+    <config-item label="选中文字色">
+        <ColorPicker
+          v-model:value="config.activeTextColor"
+          :isInput="false"
+          theme="white"
+          @change="onChange"
+        />
+      </config-item>
 
-    <config-item label="轨道颜色">
-      <ColorPicker
-        v-model:value="config.trailColor"
-        :isInput="false"
-        theme="white"
-        @change="onChange"
-      />
-    </config-item>
+    <config-item
+        label="未选中文字色"
+        label-width="90px"
+      >
+        <ColorPicker
+          v-model:value="config.inactiveTextColor"
+          :isInput="false"
+          theme="white"
+          @change="onChange"
+        />
+      </config-item>
 
-    <config-item label="手柄颜色">
-      <ColorPicker
-        v-model:value="config.thumbColor"
-        :isInput="false"
-        theme="white"
-        @change="onChange"
-      />
-    </config-item>
+    <config-item label="边框颜色">
+        <ColorPicker
+          v-model:value="config.borderColor"
+          :isInput="false"
+          theme="white"
+          @change="onChange"
+        />
+      </config-item>
 
-    <config-item label="最小值">
+    <config-item label="圆角">
       <a-input-number
-        v-model:value="config.minValue"
-        style="width: 100%"
-        @change="onChange"
-      />
-    </config-item>
-
-    <config-item label="最大值">
-      <a-input-number
-        v-model:value="config.maxValue"
+        v-model:value="config.borderRadius"
+        :min="0"
+        :max="24"
+        :precision="0"
         style="width: 100%"
         @change="onChange"
       />
@@ -170,10 +190,11 @@
 <script lang="ts" setup>
 import { cloneDeep, throttle } from 'lodash-es'
 import { moduleRegistry } from '@jetlinks-web-core/utils/module-registry'
+import IconLibrary from '@jetlinks-web-core/components/IconLibrary/index.vue'
 import { useProductStore } from '@device-manager-ui/store/product'
 import { useInstanceStore } from '@device-manager-ui/store/instance'
 import { queryNoPagingPost } from '@device-manager-ui/api/instance'
-import { propertySliderConfig } from './config'
+import { propertyEnumConfig } from './config'
 
 const { ConfigItem, ColorPicker } = moduleRegistry.getResource('visualization-designer-ui', 'components')
 
@@ -184,7 +205,7 @@ const props = defineProps({
   },
   type: {
     type: String,
-    default: 'propertySlider'
+    default: 'propertyEnum'
   }
 })
 
@@ -214,7 +235,9 @@ const strToJson = (str: string, key: string = 'properties') => {
   }
 }
 
-const typeOptions = computed(() => {
+const isEnumType = (item: any) => String(item?.valueType?.type || '').toLowerCase() === 'enum'
+
+const propertyOptions = computed(() => {
   try {
     let properties = []
     if (isProduct.value) {
@@ -227,17 +250,19 @@ const typeOptions = computed(() => {
       properties = strToJson(instanceStore.current.metadata || instanceStore.detail.metadata)
     }
 
-    return properties.map((item: any) => ({
-      ...item,
-      label: item.name,
-      value: item.id
-    }))
+    return properties
+      .filter((item: any) => isEnumType(item))
+      .map((item: any) => ({
+        ...item,
+        label: item.name,
+        value: item.id
+      }))
   } catch (e) {
     return []
   }
 })
 
-const _functionOptions = computed(() => {
+const functionOptions = computed(() => {
   try {
     let functions = []
     if (isProduct.value) {
@@ -249,6 +274,7 @@ const _functionOptions = computed(() => {
     } else {
       functions = strToJson(instanceStore.current.metadata || instanceStore.detail.metadata, 'functions')
     }
+
     return functions.map((item: any) => ({
       ...item,
       label: item.name,
@@ -259,16 +285,15 @@ const _functionOptions = computed(() => {
   }
 })
 
-const numericInputTypes = new Set(['int', 'long', 'double', 'float'])
-
-const _paramsOptions = computed(() => {
+const paramOptions = computed(() => {
   const functionId = config.value.functionId
   if (!functionId) return []
 
-  const currentFunction = _functionOptions.value.find((item: any) => item.value === functionId)
+  const currentFunction = functionOptions.value.find((item: any) => item.value === functionId)
   const inputs = currentFunction?.inputs || []
+
   return inputs
-    .filter((item: any) => numericInputTypes.has(String(item?.valueType?.type || '').toLowerCase()))
+    .filter((item: any) => isEnumType(item))
     .map((item: any) => ({
       ...item,
       label: item.name,
@@ -276,25 +301,25 @@ const _paramsOptions = computed(() => {
     }))
 })
 
-const onFunctionChange = () => {
-  config.value.paramId = undefined
-  emitChange()
-}
-
 const onDeviceChange = (value: string, option: any) => {
   config.value.deviceId = value
   config.value.deviceName = option?.label || ''
-  config.value.propertyId = ''
+  config.value.propertyId = undefined
   config.value.propertyName = ''
   config.value.functionId = undefined
   config.value.paramId = undefined
   emitChange()
 }
 
-const onTypeChange = (value: string) => {
-  const option = typeOptions.value.find((item: any) => item.value === value)
+const onPropertyChange = (value: string) => {
+  const option = propertyOptions.value.find((item: any) => item.value === value)
   config.value.propertyId = value
   config.value.propertyName = option?.label || ''
+  emitChange()
+}
+
+const onFunctionChange = () => {
+  config.value.paramId = undefined
   emitChange()
 }
 
@@ -322,7 +347,7 @@ watch(
   () => props.configData?.componentProps?.[props.type],
   (newVal) => {
     config.value = cloneDeep({
-      ...propertySliderConfig.componentProps.propertySlider,
+      ...propertyEnumConfig.componentProps.propertyEnum,
       ...(newVal || {})
     })
   },
@@ -348,7 +373,7 @@ watch(
     margin: 0;
     margin-bottom: 12px;
   }
-   :deep(.config-form-item-content) {
+  :deep(.config-form-item-content) {
     padding: 0;
   }
 }
@@ -357,5 +382,11 @@ watch(
   width: 100%;
   display: flex;
   align-items: center;
+}
+
+.color-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
 </style>
