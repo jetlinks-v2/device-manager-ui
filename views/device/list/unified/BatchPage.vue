@@ -6,8 +6,16 @@
         <strong>{{ t('UnifiedDeviceList.batch') }}</strong>
         <a-segmented v-if="tabs.length" v-model:value="activeKey" :options="tabs.map(tab => ({ value: tab.code, label: tab.extraOptions?.label }))" />
       </a-flex>
-      <component v-if="active?.component" :is="active.component" v-bind="active.props" class="device-batch-page__content" />
-      <CloudEmpty v-else :description="t('UnifiedDeviceList.noBatchAccess')" />
+      <KeepAlive>
+        <component
+          v-if="active?.component"
+          :is="active.component"
+          :key="active.code"
+          v-bind="active.props"
+          class="device-batch-page__content"
+        />
+      </KeepAlive>
+      <CloudEmpty v-if="!active?.component" :description="t('UnifiedDeviceList.noBatchAccess')" />
     </ContentPanel>
   </FullPage>
 </template>
@@ -21,9 +29,13 @@ const { t } = useI18n()
 const route = useRoute()
 const menu = useMenuStore()
 const auth = useAuthStore()
-// 各模块通过 getRegisterComponents 注册页签及完整业务组件，宿主不依赖插件或算法实现。
+// 各模块注册页签、完整业务组件及所属权限，宿主不依赖具体批量业务实现。
 const tabs = computed(() => componentsRegistry.getRegistry('device-list-batch:tabs')
-  .filter(tab => tab.component && (!tab.extraOptions?.permission || auth.hasPermission(tab.extraOptions.permission)))
+  .filter(tab => (
+    tab.component
+    && (!tab.extraOptions?.permission || auth.hasPermission(tab.extraOptions.permission))
+    && (!tab.extraOptions?.menuCode || menu.hasMenu(tab.extraOptions.menuCode))
+  ))
   .sort((a, b) => (a.order || 0) - (b.order || 0)))
 const activeKey = ref('')
 watch(tabs, items => { if (!items.some(item => item.code === activeKey.value)) activeKey.value = items[0]?.code || '' }, { immediate: true })
