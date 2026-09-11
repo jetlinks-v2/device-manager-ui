@@ -1,6 +1,6 @@
 import type { ProductItem } from "../views/device/Product/typings";
 import { defineStore } from "pinia";
-import { queryDetailList, getDeviceNumber } from '../api/product'
+import { detail as queryProductDetail, queryDetailList, getDeviceNumber } from '../api/product'
 import {encodeQuery} from "@jetlinks-web-core/utils";
 
 export const useProductStore = defineStore({
@@ -16,8 +16,10 @@ export const useProductStore = defineStore({
       this.detail = current
     },
     async getDetail(id: string) {
-      // 改成这个接口的原因是为了查询features
-      const resp = await queryDetailList({
+      // 聚合详情提供 features，产品直查补齐品牌、型号及其 i18n 前缀字段。
+      const [productResp, detailResp] = await Promise.all([
+        queryProductDetail(id),
+        queryDetailList({
         "pageSize":1,
         "terms":[
           {
@@ -25,13 +27,15 @@ export const useProductStore = defineStore({
             "value": id
           }
         ]
-      })
-      if (resp.status === 200) {
-        const obj = resp.result?.data?.[0] || {}
+        }),
+      ])
+      if (detailResp.status === 200) {
+        const obj = detailResp.result?.data?.[0] || {}
+        const product = productResp.status === 200 ? productResp.result || {} : {}
         this.current = {
-          ...this.current,...obj
+          ...this.current, ...obj, ...product,
         }
-        this.detail = obj
+        this.detail = { ...obj, ...product }
       }
     },
     async refresh(id: string) {

@@ -59,8 +59,20 @@
                 <strong>{{ item.value }}</strong>
               </div>
               <div class="runtime-row__actions">
-                <a-button v-if="canReadProperty(item)" size="small" @click="openRead(item)">{{ $t('IotDeviceDetail.commandCenter.read') }}</a-button>
-                <a-button v-if="canWriteProperty(item)" type="primary" size="small" @click="openWrite(item)">{{ $t('IotDeviceDetail.commandCenter.write') }}</a-button>
+                <a-tooltip :title="propertyActionHint(item, 'read')">
+                  <span>
+                    <a-button :disabled="!canReadProperty(item)" size="small" @click="openRead(item)">
+                      {{ $t('IotDeviceDetail.commandCenter.read') }}
+                    </a-button>
+                  </span>
+                </a-tooltip>
+                <a-tooltip :title="propertyActionHint(item, 'write')">
+                  <span>
+                    <a-button :disabled="!canWriteProperty(item)" type="primary" size="small" @click="openWrite(item)">
+                      {{ $t('IotDeviceDetail.commandCenter.write') }}
+                    </a-button>
+                  </span>
+                </a-tooltip>
               </div>
             </article>
             <CloudEmpty v-if="!filteredProperties.length" :description="$t('IotDeviceDetail.commandCenter.noProperties')" />
@@ -221,7 +233,8 @@ const filteredCommands = computed(() => {
 
 function propertyActionTypes(item: RealtimePropertyRow) {
   const type = item.expands?.type
-  return Array.isArray(type) ? type : []
+  // 兼容历史物模型将访问方式保存为逗号分隔字符串的情况。
+  return Array.isArray(type) ? type : typeof type === 'string' ? type.split(',').map((item) => item.trim()) : []
 }
 
 function canReadProperty(item: RealtimePropertyRow) {
@@ -230,6 +243,13 @@ function canReadProperty(item: RealtimePropertyRow) {
 
 function canWriteProperty(item: RealtimePropertyRow) {
   return propertyActionTypes(item).includes('write')
+}
+
+function propertyActionHint(item: RealtimePropertyRow, action: 'read' | 'write') {
+  if ((action === 'read' && canReadProperty(item)) || (action === 'write' && canWriteProperty(item))) {
+    return undefined
+  }
+  return $t(`IotDeviceDetail.commandCenter.${action}Unsupported`)
 }
 
 function propertyAccessMode(item: RealtimePropertyRow) {

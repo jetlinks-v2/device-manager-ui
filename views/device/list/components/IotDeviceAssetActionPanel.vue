@@ -1,17 +1,33 @@
 <template>
   <div class="iot-device-list__row-actions">
-    <j-permission-button type="text" size="small" :hasPermission="true" @click="emit('detail', device.id)">
-      {{ $t('IotDeviceList.action.detailShort') }}
-    </j-permission-button>
-    <j-permission-button type="text" size="small" :hasPermission="true" @click="emit('edit', device)">
-      {{ $t('IotDeviceList.action.editShort') }}
+    <j-permission-button
+      type="link"
+      size="small"
+      :hasPermission="true"
+      :tooltip="{ title: $t('IotDeviceList.action.detailShort') }"
+      @click="emit('detail', device.id)"
+    >
+      <template #icon><AIcon type="EyeOutlined" /></template>
     </j-permission-button>
     <j-permission-button
-      type="text"
+      type="link"
       size="small"
-      :danger="!isDeviceDisabled(device)"
+      :hasPermission="true"
+      :tooltip="{ title: $t('IotDeviceList.action.editShort') }"
+      @click="emit('edit', device)"
+    >
+      <template #icon><AIcon type="EditOutlined" /></template>
+    </j-permission-button>
+    <j-permission-button
+      type="link"
+      size="small"
       :loading="actionBusyId === device.id"
       :hasPermission="true"
+      :tooltip="{
+        title: isDeviceDisabled(device)
+          ? $t('IotDeviceList.action.enableShort')
+          : $t('IotDeviceList.action.disableShort'),
+      }"
       :popConfirm="{
         title: isDeviceDisabled(device)
           ? $t('IotDeviceList.confirm.enableOne', { name: device.name })
@@ -20,23 +36,29 @@
         onConfirm: () => runToggleDevice(device),
       }"
     >
-      {{ isDeviceDisabled(device) ? $t('IotDeviceList.action.enableShort') : $t('IotDeviceList.action.disableShort') }}
+      <template #icon>
+        <AIcon :type="isDeviceDisabled(device) ? 'CheckCircleOutlined' : 'StopOutlined'" />
+      </template>
     </j-permission-button>
     <j-permission-button
-      type="text"
+      type="link"
       size="small"
       danger
       :disabled="!isDeviceDisabled(device)"
       :loading="actionBusyId === device.id"
       :hasPermission="true"
-      :tooltip="!isDeviceDisabled(device) ? { title: $t('IotDeviceList.message.deleteDisabledOnly') } : undefined"
+      :tooltip="{
+        title: !isDeviceDisabled(device)
+          ? $t('IotDeviceList.message.deleteDisabledOnly')
+          : $t('IotDeviceList.action.deleteShort'),
+      }"
       :popConfirm="{
         title: $t('IotDeviceList.confirm.deleteOne', { name: device.name }),
         okButtonProps: { loading: actionBusyId === device.id },
         onConfirm: () => runDeleteDevice(device),
       }"
     >
-      {{ $t('IotDeviceList.action.deleteShort') }}
+      <template #icon><AIcon type="DeleteOutlined" /></template>
     </j-permission-button>
   </div>
 </template>
@@ -78,6 +100,7 @@ async function runDeleteDevice(device: IotDevice) {
 }
 
 .iot-device-list__row-actions :deep(.ant-btn) {
-  padding-inline: 0;
+  padding: 0;
+  margin: 0;
 }
 </style>

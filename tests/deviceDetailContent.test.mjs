@@ -17,7 +17,7 @@ const functionNames = [
   'loadRealtimePropertySnapshot', 'startRealtimeSubscriptions', 'loadDevice', 'loadCommands',
   'loadWorkbench', 'loadChildDevices', 'runDiagnosis', 'loadAll', 'onDetailContentChanged',
   'mapStatePayloadToStatus', 'clearRealtimeStatusSubscription', 'clearRealtimePropertySubscription',
-  'clearRealtimeSubscriptions', 'saveTags',
+  'clearRealtimeSubscriptions', 'saveTags', 'syncLegacyMetadataDevice', 'onMetadataChanged',
 ]
 const variableNames = new Set(['disposed', 'loadVersion', 'snapshotVersion', 'currentLoad', 'isCurrentLoad', 'beginLoad'])
 const selected = detailHook.body.statements.filter(node =>
@@ -54,6 +54,8 @@ function fixture(t, { custom = true, properties = [] } = {}) {
     isGatewayDevice: ref(false), healthDiagnosis: shallowRef(null),
     savingTags: ref(false), tagEditorOpen: ref(true),
     onScopeDispose: callback => { dispose = callback },
+    instanceStore: { setCurrent() {} },
+    EventEmitter: { unSubscribe() {} },
     updateTagsOverflow() {}, formatApiTime: () => '', handleRealtimePropertyValue() {},
     canDeviceAction: () => true, getTagKey: tag => tag.id, isEmptyTagValue: value => value == null,
     onlyMessage() {}, $t: key => key, extractRows: result => result?.data || [],

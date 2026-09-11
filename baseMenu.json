@@ -13,7 +13,7 @@
       "id": "jetlinks-resource",
       "url": "/resources",
       "icon": "icon-ziyuanzhongxin",
-      "sortIndex": 10,
+      "sortIndex": 2,
       "permissions": [],
       "buttons": [],
       "children": [
@@ -337,6 +337,57 @@
                       ]
                     }
                   ]
+                },
+                {
+                  "id": "category-add",
+                  "name": "新增分类",
+                  "i18nMessages": {
+                    "zh_CN": "新增分类",
+                    "en_US": "Add Category",
+                    "en": "Add Category"
+                  },
+                  "permissions": [
+                    {
+                      "permission": "device-category",
+                      "actions": [
+                        "save"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "category-update",
+                  "name": "编辑分类",
+                  "i18nMessages": {
+                    "zh_CN": "编辑分类",
+                    "en_US": "Edit Category",
+                    "en": "Edit Category"
+                  },
+                  "permissions": [
+                    {
+                      "permission": "device-category",
+                      "actions": [
+                        "save"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "category-delete",
+                  "name": "删除分类",
+                  "i18nMessages": {
+                    "zh_CN": "删除分类",
+                    "en_US": "Delete Category",
+                    "en": "Delete Category"
+                  },
+                  "permissions": [
+                    {
+                      "permission": "device-category",
+                      "actions": [
+                        "delete"
+                      ]
+                    }
+                  ]
                 }
               ],
               "accessSupport": {
@@ -489,6 +540,25 @@
                         "query"
                       ]
                     }
+                  ],
+                  "buttons": [
+                    {
+                      "id": "update",
+                      "name": "编辑",
+                      "i18nMessages": {
+                        "zh_CN": "编辑",
+                        "en_US": "Edit",
+                        "en": "Edit"
+                      },
+                      "permissions": [
+                        {
+                          "permission": "device-instance",
+                          "actions": [
+                            "save"
+                          ]
+                        }
+                      ]
+                    }
                   ]
                 }
               ]
@@ -512,7 +582,7 @@
     "url": "/infrastructure",
     "icon": "icon-yunweizhongxin",
     "permissions": [],
-    "sortIndex": 4,
+    "sortIndex": 6,
     "children": [
       {
         "code": "link/DashBoard",
@@ -1560,7 +1630,7 @@
     "id": "3c7dca6ea8b5828bbcc023ce905244f7",
     "url": "/alarms",
     "icon": "icon-gaojingzhongxin",
-    "sortIndex": 50,
+    "sortIndex": 3,
     "children": [
       {
         "code": "alarm-rules",

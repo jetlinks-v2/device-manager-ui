@@ -43,11 +43,14 @@ const sceneLinkageExtraRoutes = [
 
 const getExtraRoutesMap = () => ({
   'iot-user-device-list': {
-    // 统一设备入口直接承载详情，视频设备无需依赖旧 IoT 子菜单是否授权。
-    children: [...deviceListExtraRoutes, {
-      code: 'Batch', url: '/batch', name: i18n.global.t('UnifiedDeviceList.batch'),
-      component: () => import('./views/device/list/unified/BatchPage.vue'),
-    }],
+    // 统一设备入口直接承载详情，且完整复用统一列表的批量与详情子路由。
+    children: [
+      {
+        code: 'Batch', url: '/batch', name: i18n.global.t('UnifiedDeviceList.batch'),
+        component: () => import('./views/device/list/unified/BatchPage.vue'),
+      },
+      ...deviceListExtraRoutes,
+    ],
   },
   'device/Product': {
     children: [

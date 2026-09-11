@@ -3,6 +3,7 @@
     <EqualHeightColumns class="iot-device-list__layout" left-width="15rem" right-width="1fr">
       <template #left>
         <IotDeviceScopeSidebar
+          class="iot-device-list__scope"
           :active-type="scopeType"
           :active-id="scopeId"
           :areas="areaOptions"
@@ -21,8 +22,7 @@
       </template>
       <template #right>
         <section class="iot-device-list__main">
-          <IotDeviceAssetSummary :summary="deviceSummary" />
-          <ContentPanel>
+          <ContentPanel class="iot-device-list__content-panel">
             <a-flex class="iot-device-list__search-actions" :gap="16" align="center" wrap="wrap">
               <IotDeviceAssetSearchBar
                 class="iot-device-list__search"
@@ -33,13 +33,7 @@
                 @search="handleFilterSearch"
               />
               <a-flex class="iot-device-list__action-group" :gap="16" align="center" wrap="wrap">
-                <IotDeviceAssetBatchActions
-                  :selected-count="selectedRowKeys.length"
-                  :running-action="runningAction"
-                  :on-batch-toggle="toggleSelectedDevices"
-                  :on-assign-area="openAssignAreaModal"
-                  :on-assign-group="openAssignGroupModal"
-                />
+                <BatchDropdown :actions="batchActions" />
                 <j-permission-button class="project-onboarding-target--iot-device-create" type="primary" :hasPermission="true" @click="openCreateDrawer">
                   <template #icon><AIcon type="PlusOutlined" /></template>
                   {{ $t('IotDeviceList.action.create') }}
@@ -122,11 +116,10 @@ import IotAddDeviceDrawer from './IotAddDeviceDrawer.vue'
 import IotDeviceAssignAreaModal from './IotDeviceAssignAreaModal.vue'
 import IotDeviceAssignGroupModal from './IotDeviceAssignGroupModal.vue'
 import IotDeviceGroupNameModal from './IotDeviceGroupNameModal.vue'
-import IotDeviceAssetBatchActions from './IotDeviceAssetBatchActions.vue'
 import IotDeviceAssetSearchBar from './IotDeviceAssetSearchBar.vue'
-import IotDeviceAssetSummary from './IotDeviceAssetSummary.vue'
 import IotDeviceAssetTable from './IotDeviceAssetTable.vue'
 import IotDeviceScopeSidebar from './IotDeviceScopeSidebar.vue'
+import BatchDropdown from '@jetlinks-web-core/components/BatchDropdown/index.vue'
 import { useIotDeviceAssetActions } from '../hooks/useIotDeviceAssetActions'
 import { useIotDeviceAssetBulkActions } from '../hooks/useIotDeviceAssetBulkActions'
 import { useIotDeviceAssetFilters } from '../hooks/useIotDeviceAssetFilters'
@@ -166,7 +159,6 @@ const {
 
 const {
   totalDevices,
-  deviceSummary,
   loadError,
   tableParams,
   tablePagination,
@@ -225,6 +217,53 @@ const {
   clearSelection,
   toggleSelectedDevices,
 } = useIotDeviceAssetBulkActions(devices, refreshTable)
+
+// 下拉动作保留原有的选中校验和确认流程，只收敛顶部操作区的展示密度。
+const batchActions = computed(() => {
+  const selectedCount = selectedRowKeys.value.length
+  const disabled = !selectedCount
+
+  return [
+    {
+      key: 'enable',
+      text: $t('IotDeviceList.action.batchEnable'),
+      icon: 'PlayCircleOutlined',
+      disabled,
+      loading: runningAction.value === 'enable',
+      popConfirm: {
+        title: $t('IotDeviceList.confirm.batchEnable', { count: selectedCount }),
+        okButtonProps: { loading: runningAction.value === 'enable' },
+        onConfirm: () => toggleSelectedDevices('enable'),
+      },
+    },
+    {
+      key: 'disable',
+      text: $t('IotDeviceList.action.batchDisable'),
+      icon: 'StopOutlined',
+      disabled,
+      loading: runningAction.value === 'disable',
+      popConfirm: {
+        title: $t('IotDeviceList.confirm.batchDisable', { count: selectedCount }),
+        okButtonProps: { loading: runningAction.value === 'disable' },
+        onConfirm: () => toggleSelectedDevices('disable'),
+      },
+    },
+    {
+      key: 'assign-area',
+      text: $t('IotDeviceList.action.assignArea'),
+      icon: 'EnvironmentOutlined',
+      disabled,
+      onClick: openAssignAreaModal,
+    },
+    {
+      key: 'assign-group',
+      text: $t('IotDeviceList.action.assignGroup'),
+      icon: 'ApartmentOutlined',
+      disabled,
+      onClick: openAssignGroupModal,
+    },
+  ]
+})
 
 const {
   connectionStatusOf,

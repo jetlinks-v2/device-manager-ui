@@ -18,7 +18,7 @@
         />
       </a-form-item>
 
-      <a-row :gutter="12">
+      <a-row v-if="!fixedProductScope" :gutter="12">
         <a-col :span="12">
           <a-form-item :label="$t('DeviceAlarm.form.product')" required>
             <IotAlarmTargetSelect
@@ -131,14 +131,22 @@ import type { IotAlarmTargetSelectOption, IotAlarmTargetSelectQuery } from './Io
 const props = defineProps({
   open: { type: Boolean, default: false },
   model: { type: Object as PropType<DeviceAlarmFormModel>, required: true },
+  // 产品详情只允许维护当前产品配置，不能在表单中切换到其他产品或设备。
+  fixedProductScope: { type: Boolean, default: false },
   readonlyScope: { type: Boolean, default: false },
   levelOptions: { type: Array as PropType<Array<{ label: string; value: number }>>, default: () => [] },
   triggerOptions: { type: Array as PropType<Array<{ label: string; value: string }>>, default: () => [] },
   productOption: { type: Object as PropType<DeviceAlarmTargetOption | undefined>, default: undefined },
   deviceOption: { type: Object as PropType<DeviceAlarmTargetOption | undefined>, default: undefined },
   productReloadKey: { type: Number, default: 0 },
-  productRequest: { type: Function as PropType<(query: IotAlarmTargetSelectQuery) => Promise<{ data: IotAlarmTargetSelectOption[] }>>, required: true },
-  deviceRequest: { type: Function as PropType<(query: IotAlarmTargetSelectQuery) => Promise<{ data: IotAlarmTargetSelectOption[] }>>, required: true },
+  productRequest: {
+    type: Function as PropType<(query: IotAlarmTargetSelectQuery) => Promise<{ data: IotAlarmTargetSelectOption[] }>>,
+    default: async () => ({ data: [], total: 0 }),
+  },
+  deviceRequest: {
+    type: Function as PropType<(query: IotAlarmTargetSelectQuery) => Promise<{ data: IotAlarmTargetSelectOption[] }>>,
+    default: async () => ({ data: [], total: 0 }),
+  },
   propertyOptions: { type: Array as PropType<ThingModelProperty[]>, default: () => [] },
   notifyMethods: { type: Array as PropType<DeviceAlarmNotifyMethod[]>, default: () => [] },
   notifyUsers: { type: Array as PropType<DeviceAlarmNotifyUser[]>, default: () => [] },

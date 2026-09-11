@@ -42,7 +42,7 @@ test('device capability governs tabs when switching from a camera to an ordinary
 })
 
 test('built-in tabs and legacy deep links retain their destinations', () => {
-  for (const tab of ['overview', 'access', 'commands', 'data', 'alarm', 'logs']) {
+  for (const tab of ['overview', 'access', 'thing-model', 'commands', 'data', 'alarm', 'logs']) {
     assert.equal(normalizeDeviceDetailTab(tab, [channels]), tab)
   }
   assert.equal(normalizeDeviceDetailTab('advanced', [channels]), 'access')

@@ -53,6 +53,13 @@
           :commands="deviceCommands"
         />
 
+        <LegacyMetadata
+          v-else-if="activeTab === 'thing-model'"
+          :key="`${device.id}:${device.independentMetadata ? 'independent' : 'inherited'}`"
+          type="device"
+          :update-permission="deviceUpdatePermission"
+        />
+
         <IotDeviceCommandCenterTab
           v-else-if="activeTab === 'commands'"
           :device-id="device.id"
@@ -111,6 +118,7 @@ import IotDeviceDataTableTab from './device-detail/IotDeviceDataTableTab.vue'
 import IotDeviceAlarmTab from './device-detail/IotDeviceAlarmTab.vue'
 import IotDeviceLogsSearchTableTab from './device-detail/IotDeviceLogsSearchTableTab.vue'
 import IotDeviceOverviewTab from './device-detail/IotDeviceOverviewTab.vue'
+import LegacyMetadata from '@device-manager-ui/views/device/components/Metadata/index.vue'
 import type { IotDeviceDetailViewState } from '../hooks/useIotDeviceDetailView'
 import { useDeviceDetailAgent } from '../agent/useDeviceDetailAgent'
 
@@ -125,6 +133,7 @@ const {
   deviceCommands,
   commandExecution,
   commandBusy,
+  deviceUpdatePermission,
   todoBusyId,
   accessDetailRef,
   activeTab,

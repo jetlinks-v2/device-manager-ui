@@ -32,6 +32,7 @@
         :params="params"
         :gridColumns="[2]"
         :pagination="{
+        defaultPageSize: 4,
         pageSizeOptions: ['4', '12', '24', '48'],
         showSizeChanger: true,
       }"

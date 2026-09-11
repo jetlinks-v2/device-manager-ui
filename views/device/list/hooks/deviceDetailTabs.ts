@@ -1,6 +1,6 @@
 import type { DeviceDetailSubject, DeviceDetailTabProvider } from '../../../../deviceDetailProvider'
 
-export const DEVICE_DETAIL_TAB_KEYS = ['overview', 'access', 'commands', 'data', 'alarm', 'logs'] as const
+export const DEVICE_DETAIL_TAB_KEYS = ['overview', 'access', 'thing-model', 'commands', 'data', 'alarm', 'logs'] as const
 export type BuiltinDeviceDetailTab = typeof DEVICE_DETAIL_TAB_KEYS[number]
 export type DeviceDetailTab = BuiltinDeviceDetailTab | (string & {})
 

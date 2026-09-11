@@ -75,7 +75,7 @@
               type="primary"
               key="update"
               placement="topRight"
-              :hasPermission="`${permission}:update`"
+              :hasPermission="permission"
               :loading="loading"
               :disabled="hasOperate('add', type)"
               :tooltip="{
@@ -483,7 +483,7 @@ const props = defineProps({
     default: undefined,
   },
   permission: {
-    type: [String, Array] as PropType<string | string[]>,
+    type: [String, Array, Boolean] as PropType<string | string[] | boolean>,
     default: undefined,
   },
 });
@@ -507,6 +507,12 @@ const { hasOperate } = useOperateLimits(_target);
 const permissionStore = useAuthStore();
 const instanceStore = useInstanceStore();
 const productStore = useProductStore();
+
+// 资源中心已在路由层完成授权时，以 true 绕过旧菜单权限码；旧页面仍校验传入权限。
+const hasMetadataUpdatePermission = () =>
+  typeof props.permission === 'boolean'
+    ? props.permission
+    : !!props.permission && permissionStore.hasPermission(props.permission);
 
 const dataSource = ref<MetadataItem[]>(
   JSON.parse(JSON.stringify(metadata.value || "[]")) || [],
@@ -756,6 +762,11 @@ const handleSaveClick = async (next?: Function) => {
         },
       });
       onlyMessage($t("Base.Base.640395-17"));
+      // 设备详情外层使用独立的数据模型快照，保存成功后通知外层重新加载有效物模型。
+      EventEmitter.emit('MetadataChanged', {
+        type: _target,
+        id: _target === 'device' ? instanceStore.current.id : productStore.current?.id,
+      });
       next?.();
     }
   }
@@ -780,7 +791,7 @@ const jumpProduct = () => {
 const parentTabsChange = (next?: Function) => {
   if (
     editStatus.value &&
-    permissionStore.hasPermission(`${props.permission}:update`) &&
+    hasMetadataUpdatePermission() &&
     getToken()
   ) {
     const modal = Modal.confirm({
