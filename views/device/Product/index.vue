@@ -1,117 +1,119 @@
 <template>
   <j-page-container class="product-page">
     <FullPage transparentBackground>
-      <EqualHeightColumns class="product-page__layout" left-width="15rem" right-width="1fr">
-        <template #left>
-          <ProductCategoryTree
-            class="product-page__category-tree"
-            :tree-data="categoryTree"
-            :active-id="selectedCategoryId"
-            :loading="categoryLoading"
-            :can-add="canAddCategory"
-            :can-update="canUpdateCategory"
-            :can-delete="canDeleteCategory"
-            @select="handleCategorySelect"
-            @select-unclassified="handleUnclassifiedCategorySelect"
-            @add-root="openAddRootCategory"
-            @add-child="openAddChildCategory"
-            @edit="openEditCategory"
-            @delete="confirmDeleteCategory"
-          />
-        </template>
-        <template #right>
-          <ContentPanel class="product-page__main">
-            <a-flex class="product-page__toolbar" :gap="16" align="center" wrap="wrap">
-              <ConditionFilter
-                class="product-page__search"
-                :fields="filterFields"
-                :common-fields="commonFilterFields"
-                :model-value="filterTerms"
-                :placeholder="$t('IotDeviceList.filter.conditionPlaceholder')"
-                @update:model-value="handleFilterTermsUpdate"
-                @change="handleFilterSearch"
-              />
-              <a-space class="product-page__actions">
-                <j-permission-button
-                  type="primary"
-                  key="add"
-                  @click="add"
-                  hasPermission="device/Product:add"
-                >
-                  <template #icon><AIcon type="PlusOutlined" /></template>
-                  {{ $t("Product.index.660348-0") }}
-                </j-permission-button>
-                <BatchDropdown key="batch" :actions="batchActions" />
-              </a-space>
-            </a-flex>
-            <JProTable
-              :columns="columns"
-              :request="queryProductList"
-              class="pro-table__no-padding"
-              ref="tableRef"
-              :defaultParams="{
+      <ContentPanel>
+	      <EqualHeightColumns class="product-page__layout" left-width="15rem" right-width="1fr">
+		      <template #left>
+			      <ProductCategoryTree
+				      class="product-page__category-tree"
+				      :tree-data="categoryTree"
+				      :active-id="selectedCategoryId"
+				      :loading="categoryLoading"
+				      :can-add="canAddCategory"
+				      :can-update="canUpdateCategory"
+				      :can-delete="canDeleteCategory"
+				      @select="handleCategorySelect"
+				      @select-unclassified="handleUnclassifiedCategorySelect"
+				      @add-root="openAddRootCategory"
+				      @add-child="openAddChildCategory"
+				      @edit="openEditCategory"
+				      @delete="confirmDeleteCategory"
+			      />
+		      </template>
+		      <template #right>
+			      <div class="product-page__main">
+				      <a-flex class="product-page__toolbar" :gap="16" align="center" wrap="wrap">
+					      <ConditionFilter
+						      class="product-page__search"
+						      :fields="filterFields"
+						      :common-fields="commonFilterFields"
+						      :model-value="filterTerms"
+						      :placeholder="$t('IotDeviceList.filter.conditionPlaceholder')"
+						      @update:model-value="handleFilterTermsUpdate"
+						      @change="handleFilterSearch"
+					      />
+					      <a-space class="product-page__actions">
+						      <j-permission-button
+							      type="primary"
+							      key="add"
+							      @click="add"
+							      hasPermission="device/Product:add"
+						      >
+							      <template #icon><AIcon type="PlusOutlined" /></template>
+							      {{ $t("Product.index.660348-0") }}
+						      </j-permission-button>
+						      <BatchDropdown key="batch" :actions="batchActions" />
+					      </a-space>
+				      </a-flex>
+				      <JProTable
+					      :columns="columns"
+					      :request="queryProductList"
+					      class="pro-table__no-padding"
+					      ref="tableRef"
+					      :defaultParams="{
                 sorts: [{ name: 'createTime', order: 'desc' }],
               }"
-              mode="TABLE"
-              :params="tableParams"
-            >
-              <template #deviceType="slotProps">
-                <div>{{ slotProps.deviceType?.text || '-' }}</div>
-              </template>
-              <template #state="slotProps">
-                <j-badge-status
-                  :text="slotProps.state === 1 ? $t('Product.index.660348-2') : $t('Product.index.660348-3')"
-                  :status="slotProps.state"
-                  :statusNames="{ 1: 'processing', 0: 'error' }"
-                />
-              </template>
-              <template #name="slotProps">
-                <a
-                  class="product-page__name-cell"
-                  href=""
-                  @click.prevent="handleView(slotProps.id)"
-                >
-                  <IconBadge
-                    :image="slotProps.photoUrl"
-                    icon="AppstoreOutlined"
-                    :size="40"
-                    :inner-size="32"
-                    :alt="getI18nText(slotProps, 'name')"
-                  />
-                  <span class="product-page__name-body">
+					      mode="TABLE"
+					      :params="tableParams"
+				      >
+					      <template #deviceType="slotProps">
+						      <div>{{ slotProps.deviceType?.text || '-' }}</div>
+					      </template>
+					      <template #state="slotProps">
+						      <j-badge-status
+							      :text="slotProps.state === 1 ? $t('Product.index.660348-2') : $t('Product.index.660348-3')"
+							      :status="slotProps.state"
+							      :statusNames="{ 1: 'processing', 0: 'error' }"
+						      />
+					      </template>
+					      <template #name="slotProps">
+						      <a
+							      class="product-page__name-cell"
+							      href=""
+							      @click.prevent="handleView(slotProps.id)"
+						      >
+							      <IconBadge
+								      :image="slotProps.photoUrl"
+								      icon="AppstoreOutlined"
+								      :size="40"
+								      :inner-size="32"
+								      :alt="getI18nText(slotProps, 'name')"
+							      />
+							      <span class="product-page__name-body">
                     <j-ellipsis class="product-page__name-title">{{ getI18nText(slotProps, 'name') }}</j-ellipsis>
                     <small>{{ slotProps.id }}</small>
                   </span>
-                </a>
-              </template>
-              <template #classifiedName="slotProps">
-                {{ getI18nText(slotProps, 'classifiedName') || '-' }}
-              </template>
-              <template #brandModel="slotProps">
-                {{ getBrandModel(slotProps) }}
-              </template>
-              <template #action="slotProps">
-                <a-space :size="4">
-                  <template v-for="i in getActions(slotProps)" :key="i.key">
-                    <j-permission-button
-                      type="link"
-                      size="small"
-                      :disabled="i.disabled"
-                      :popConfirm="i.popConfirm"
-                      :hasPermission="i.permission || i.key === 'view' ? true : 'device/Product:' + i.key"
-                      :tooltip="{ ...i.tooltip }"
-                      :danger="i.key === 'delete'"
-                      @click="i.onClick"
-                    >
-                      {{ i.text }}
-                    </j-permission-button>
-                  </template>
-                </a-space>
-              </template>
-            </JProTable>
-          </ContentPanel>
-        </template>
-      </EqualHeightColumns>
+						      </a>
+					      </template>
+					      <template #classifiedName="slotProps">
+						      {{ getI18nText(slotProps, 'classifiedName') || '-' }}
+					      </template>
+					      <template #brandModel="slotProps">
+						      {{ getBrandModel(slotProps) }}
+					      </template>
+					      <template #action="slotProps">
+						      <a-space :size="4">
+							      <template v-for="i in getActions(slotProps)" :key="i.key">
+								      <j-permission-button
+									      type="link"
+									      size="small"
+									      :disabled="i.disabled"
+									      :popConfirm="i.popConfirm"
+									      :hasPermission="i.permission || i.key === 'view' ? true : 'device/Product:' + i.key"
+									      :tooltip="{ ...i.tooltip }"
+									      :danger="i.key === 'delete'"
+									      @click="i.onClick"
+								      >
+									      {{ i.text }}
+								      </j-permission-button>
+							      </template>
+						      </a-space>
+					      </template>
+				      </JProTable>
+			      </div>
+		      </template>
+	      </EqualHeightColumns>
+      </ContentPanel>
     </FullPage>
     <Save ref="saveRef" :isAdd="isAdd" :title="title" @success="refresh" />
     <ModifyModal
