@@ -1,4 +1,8 @@
 import { query as queryDeviceInstance } from '../../../../api/instance';
+import {
+  createDeviceIgnoreCaseLikeTerm,
+  createDeviceKeywordQueryTerm,
+} from '../../../../api/deviceQueryTerms';
 import { aiClientToolRegistry } from '@jetlinks-web-core/layout/components/AiChat/clientToolRegistry';
 import type { AiClientToolDefinition } from '@jetlinks-web-core/layout/components/AiChat/clientTools';
 
@@ -63,21 +67,14 @@ const buildDeviceSelectorTerms = (args: Record<string, any>) => {
   const terms: any[] = [];
 
   if (keyword) {
-    terms.push({
-      type: 'or',
-      terms: [
-        { column: 'id', termType: 'like', value: keyword },
-        { column: 'name', termType: 'like', value: keyword },
-        { column: 'productName', termType: 'like', value: keyword },
-      ],
-    });
+    terms.push(createDeviceKeywordQueryTerm(keyword));
   }
 
   if (productId) {
     terms.push({ column: 'productId', termType: 'eq', value: productId });
   }
   if (productName) {
-    terms.push({ column: 'productName', termType: 'like', value: productName });
+    terms.push(createDeviceIgnoreCaseLikeTerm('productName', productName));
   }
   if (state) {
     terms.push({ column: 'state', termType: 'eq', value: state });

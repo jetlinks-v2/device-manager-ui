@@ -13,6 +13,52 @@
 - 实现入口：`views/device/list/unified/BatchPage.vue` 同时识别注册项声明的按钮权限与 `menuCode` 菜单所有权；动态页签组件通过 `KeepAlive + code key` 保留已打开工作区状态。算法模块以 `order=20` 注册，继续排在现有 `order=10` 的插件配置右侧。
 - 验证：`pnpm run build:modules device-manager-ui` 通过（9568 个模块）；`git diff --check` 通过，目标 Vue 文件 52 行。完整模块 `vue-tsc` 被既有 `views/link/Certificate/type.d.ts:2` 语法错误提前阻断，本次批量页已由模块构建完成编译验证；未自动发起浏览器交互验证。
 
+### 通用智能体设备分析能力 canonical activation（已实施）
+
+- 目标：让设备分析能力在 `loadAll` 和按当前路由 / 菜单加载时使用同一 canonical activation 语义，避免 legacy loader 只在全局预加载路径稳定生效。
+- 影响范围与 owning module：仅 `device-manager-ui/register.ts` 及对应 loader contract test；复用现有 `AgentCapabilityProviderResource` 和 `IOT_DEVICE_MENU_ANCHORS` 的 `path/menuCode`，不改变设备分析工具定义、声明或调用参数。
+- 不做：不修改或同步 `runtime-ui`，不增加工具、兼容双轨、场景判断或后端审计例外；`device_property_aggregate` 的 `contract.protocol.forbidden` 若仍出现，只按后端审计返回的精确 `path` 定位陈旧/变形 wire，不放宽 `ToolContractAudit`。
+- 实现与验证：legacy function loader 已替换为唯一 `AgentCapabilityProviderResource`，直接复用现有设备菜单 anchors 生成 path/menuCode activation，不保留双轨注册。生产文件最终 SHA-256 为 `90ebf38383d3296e11483d99f2dd0edb765f750d4c6422716f73f402501632f0`；`pnpm --dir jetlinks-web-core test:client-tool-preparation` 6/6 通过，覆盖 canonical path/menu activation、无关路由不激活和 legacy resource 拒绝；主线最小合入后的 `git diff --check` 通过。工具声明、aggregate wire、`runtime-ui` 和后端审计均未修改。
+
+### 通用智能体设备定位与详情交接契约优化（已实施）
+
+- 目标：让“按名称/ID定位设备 -> 使用真实设备 ID继续读取或打开详情 -> 用户确认后导航”的链路完全由 typed
+  producer/consumer、结构化业务回执和权威执行结果驱动，禁止模型猜设备 ID，也不把“已同意”当成“已打开”。
+- 影响范围与 owning module：`agentCapabilities/deviceAnalysis/tools.ts`、`deviceQuery.service.ts`、
+  `deviceNavigation.service.ts`、相关中英文文案和定向工具测试；共享 prepare/confirm/execute、structured navigation 和确认状态机
+  由 `ui/jetlinks-web-core`、`ui/modules/jetlinks-ai-agent-ui` owning。后端 FLAT 工具声明投影单独修复，不在本模块兜底。
+- 不做：不针对 `JT808`、固定设备、工具 ID、模型或页面写特判；不新增不受支持的查询条件；不改变 AssetsHolder 权限、
+  设备详情路由、设备趋势或 presentation 契约；不让 `device_search` 自动跳转、预写 handoff 或输出模型提示词。
+- 实施步骤：
+  1. 将执行上必须依赖设备/属性标识的 canonical consumer 改为 `required=true + sourcePolicy=EITHER`；显式 ID 仍可直接满足，
+     模糊名称必须先由 `device_search` 的 `device-id` lookup 提供事实来源。
+  2. 保持 `device_search` 为纯 READ：复用现有 `like$ignoreCase` 查询，返回设备 records、cardinality、唯一 subject 和 structured
+     navigation；移除查询阶段的 `prepareDeviceDetailHandoff`、手工 Markdown 链接、`replyPolicy` 和 `instruction`。
+  3. `device_open_detail` 采用共享 typed prepare：确认前按设备 ID和当前权限读取真实设备并生成名称/目标页摘要；确认后重校验、
+     保存一次性 handoff（仅 `handoff=true`）并导航，成功返回 navigation state-change receipt，失败返回 typed failure。
+  4. 搜索零命中、多候选、无效/无权限 ID和 handoff 不可用分别返回结构化状态；模型只能在成功回执后声称已打开详情。
+- 风险与兼容：`required=true` 表达逻辑输入必需，不等于强制先调用 producer；`EITHER` 保留用户直接提供真实 ID的路径。
+  搜索不再提前写 handoff 后，只有确认执行或用户点击受控详情入口才建立后续设备助手上下文，避免陈旧和未消费记录。
+- 验证：`device-manager-ui` 工具契约 20/20 通过，覆盖大小写模糊查询、单/多/零候选、显式与 typed lookup ID、
+  确认前目标解析、拒绝和确认后重校验；中英文 JSON 校验和 `device-manager-ui` 窄构建通过（9388 modules）。
+  9101 应用内浏览器的新会话仍停留在后端“正在处理平台数据”且未发出客户端确认，待后端/模型轮次恢复后补验真实导航与助手续接。
+
+### 设备模糊查找查询契约统一（已实施）
+
+- 目标：设备查找工具按设备 ID、设备名称、产品名称、厂商和型号进行包含匹配时忽略大小写，保证 `jt808` 能发现
+  `JT808`；同时移除设备实例表不支持的 `identifier` 查询条件，避免无效字段让整组 OR 条件失真。
+- 影响范围与 owning module：仅修改 `device-manager-ui` 的设备查询 term 构造、通用智能体设备查找、设备首页旧查找工具、
+  设备详情 selector 和定向契约测试；后端继续使用 EasyORM `like$ignoreCase` 标准 option 和现有 AssetsHolder 权限注入。
+- 不做：不为 `JT808` 或固定产品写特判；不改变设备 ID 的存储、唯一性和精确 `eq` 语义；不新增 PostgreSQL 方言 SQL，
+  不把凭证表 `dev_device_principal.identifier` 伪装成设备实例字段，也不改变普通页面的精确筛选口径。
+- 实施入口：在 `api/deviceQueryTerms.ts` 建立唯一的设备关键词 OR term 构造器，所有设备查找入口复用
+  `like$ignoreCase`；`api/device.ts` 只负责规范化通配符和兼容既有顶层关键词入口，不再递归扩展已经成组的条件。
+- 风险与验证：定向契约测试覆盖大小写变体、混合大小写、通配符归一化、支持字段集合、无 `identifier`、嵌套条件
+  不重复扩展和精确 `eq` 不变，1/1 通过；既有设备智能体工具测试 20/20 通过；`device-manager-ui` 窄构建通过
+  （9388 modules）。本机解析到的 EasyORM `4.2.2-SNAPSHOT` 已验证包含 `ignoreCase` option 和 PostgreSQL `ILIKE`
+  方言实现。完整 `vue-tsc` 在处理本次文件前被既有 `views/link/Certificate/type.d.ts:2` 语法错误阻断；本次触达文件已通过
+  Vite/Esbuild 编译。`%keyword%` 仍属于包含查询，大数据量下的索引优化由数据库规模评估决定，本次不引入方言专属索引。
+
 ### 设备时序图表跨日标签统一（已实施）
 
 - 目标：让所有设备时序图在跨午夜或跨年时保留必要的日历上下文，避免仅显示 `HH:mm` 导致时间点歧义。
@@ -55,6 +101,10 @@
 - 2026-08-05 本地 AI 工作台的双趋势、单在线率趋势新会话均在 presentation 生成前被既有终答一致性校验停止；
   未再展示错误的多 series 图表，但也未能完成运行态 canonical option 验收。待该独立问题解除且服务加载本次代码后，需复验
   一条 series、全部时间点和无单系列图例。
+- 2026-08-24 字段元数据收敛：在线率的业务标签保持无单位文本（`在线率` / `Online rate`），百分比语义只由
+  `format: percent` 和 `unit: percent` 声明；状态统计与趋势因此共享同一 typed measure contract。健康摘要保留
+  `lastSeen` 作为展示标签，并声明映射记录中已有的 `lastSeenTimestamp` 为 `timestamp` /
+  `temporal_dimension` / `epoch-millis`，由通用 presentation 层格式化，不解析或猜测显示字符串的时区。
 
 ### 设备告警自定义通知内容（已实现）
 

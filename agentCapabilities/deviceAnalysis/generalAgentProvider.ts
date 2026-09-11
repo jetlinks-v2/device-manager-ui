@@ -14,6 +14,11 @@ const findMenu = (context: GeneralAgentContext, anchors: readonly string[]) => (
   anchors.map(anchor => context.findMenu(anchor)).find(Boolean)
 )
 
+const getDeviceLandingPromptExamples = () => [
+  i18n.global.t('IotGeneralAgent.prompts.overview'),
+  i18n.global.t('IotGeneralAgent.prompts.offline'),
+]
+
 export const iotDeviceAnalysisGeneralAgentProvider: GeneralAgentCapabilityProvider = {
   id: IOT_DEVICE_ANALYSIS_PROVIDER_ID,
   order: 10,
@@ -31,7 +36,7 @@ export const iotDeviceAnalysisGeneralAgentProvider: GeneralAgentCapabilityProvid
         category: IOT_DEVICE_ANALYSIS_CATEGORY,
         menuCode: listMenu.code,
         keywords: ['设备', '物联', '在线率', '消息量', '上报量', '属性', '物模型', 'device', 'iot', 'uplink'],
-        metadata: { promptExamples: [i18n.global.t('IotGeneralAgent.prompts.overview')] },
+        metadata: { promptExamples: getDeviceLandingPromptExamples() },
       },
       {
         id: 'device:instance-detail',
@@ -42,7 +47,6 @@ export const iotDeviceAnalysisGeneralAgentProvider: GeneralAgentCapabilityProvid
         menuCode: listMenu.code,
         keywords: ['设备详情', '设备状态', '设备日志', '属性数据', 'device detail'],
         metadata: {
-          promptExamples: [i18n.global.t('IotGeneralAgent.prompts.openDetail')],
           navigationMode: 'resolve-subject-first',
           continuation: {
             targetName: i18n.global.t('IotGeneralAgent.capabilities.detail.name'),
@@ -81,8 +85,8 @@ export const iotDeviceAnalysisGeneralAgentProvider: GeneralAgentCapabilityProvid
       when: i18n.global.t('IotGeneralAgent.workflows.overview.when'),
       steps: [
         { capability: 'asset.device.state.aggregate', evidence: 'device-state-summary', required: true },
-        { capability: 'asset.device.online-rate.aggregate', evidence: 'device-online-rate-series', required: false },
-        { capability: 'asset.device.message.aggregate', evidence: 'device-message-series', required: false },
+        { capability: 'asset.device.online-rate.aggregate', evidence: 'device-online-rate-series', required: true },
+        { capability: 'asset.device.message.aggregate', evidence: 'device-message-series', required: true },
       ],
       output: i18n.global.t('IotGeneralAgent.workflows.output'),
       notes: [i18n.global.t('IotGeneralAgent.workflows.overview.note')],
@@ -108,9 +112,9 @@ export const iotDeviceAnalysisGeneralAgentProvider: GeneralAgentCapabilityProvid
     },
   ] : [],
   getPromptExamples: context => findMenu(context, IOT_DEVICE_MENU_ANCHORS.list) ? [
-    i18n.global.t('IotGeneralAgent.prompts.overview'),
-    i18n.global.t('IotGeneralAgent.prompts.offline'),
+    ...getDeviceLandingPromptExamples(),
     i18n.global.t('IotGeneralAgent.prompts.property'),
+    i18n.global.t('IotGeneralAgent.prompts.openDetail'),
   ] : [],
 }
 

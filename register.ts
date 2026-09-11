@@ -7,7 +7,11 @@ import { useDeviceScope } from './deviceScope'
 import { queryDeviceSpaceAreaBindings_api } from './api/spaceArea'
 import { queryDeviceBoundGroups_api, queryRuntimeDevices_api } from './api/deviceGroup'
 import type { DataCapabilityProviderManifest } from '@jetlinks-web-core/data-capability'
-import { IOT_DEVICE_ANALYSIS_EXTENSION_KEY } from './agentCapabilities/deviceAnalysis/constants'
+import type { AgentCapabilityProviderResource } from '@jetlinks-web-core/layout/components/AiChat/routeCapabilityLoader'
+import {
+  IOT_DEVICE_ANALYSIS_EXTENSION_KEY,
+  IOT_DEVICE_MENU_ANCHORS,
+} from './agentCapabilities/deviceAnalysis/constants'
 
 type HomeAgentProviderLoader = () => Promise<unknown>
 
@@ -56,7 +60,16 @@ export default {
   },
   homeAgentProviders,
   generalAgentExtensions: {
-    [IOT_DEVICE_ANALYSIS_EXTENSION_KEY]: () => import('./agentCapabilities/deviceAnalysis/generalAgentExtension'),
+    [IOT_DEVICE_ANALYSIS_EXTENSION_KEY]: {
+      loader: () => import('./agentCapabilities/deviceAnalysis/generalAgentExtension'),
+      activation: {
+        version: 'general-agent-provider-activation/v1',
+        scopes: [
+          { kind: 'path', values: Object.values(IOT_DEVICE_MENU_ANCHORS).flatMap(values => values) },
+          { kind: 'menuCode', values: Object.values(IOT_DEVICE_MENU_ANCHORS).flatMap(values => values) },
+        ],
+      },
+    } satisfies AgentCapabilityProviderResource,
   },
   dataCapabilityProviders: {
     deviceMonitoring: {

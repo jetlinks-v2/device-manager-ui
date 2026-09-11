@@ -7,6 +7,7 @@ import {
   type ClientToolInput,
   type CompiledClientTool,
 } from '@jetlinks-web-core/layout/components/AiChat/clientToolApi'
+import { createDomainAgentTimeScopeContract } from '@jetlinks-web-core/layout/components/AiChat/domainAgentTools'
 import {
   createDevicePropertyAggregateDefinition,
   createDevicePropertySelectorAlternatives,
@@ -35,6 +36,7 @@ import {
   type DevicePropertyAggregateTimeRange,
   type DevicePropertyAggregateRecord,
 } from './propertyAggregateSupport'
+import { withDevicePropertyAggregateTimeZone } from './propertyAggregateTimeZone'
 
 export {
   DEVICE_PROPERTY_ANALYSIS_OUTPUTS,
@@ -146,7 +148,7 @@ export interface DevicePropertyAggregateCopy {
   interval: string
   startTime: string
   endTime: string
-  timeRangeInput: ClientToolInput
+  timeRange: string
   limit: string
   deviceIdMissing: string
   propertyIdMissing: string
@@ -182,6 +184,11 @@ export const createDevicePropertyAggregateTool = <TContext>(
   dependencies: DevicePropertyAggregateToolDependencies<TContext>,
 ): CompiledClientTool<TContext> => {
   const { copy } = dependencies
+  const timeScope = createDomainAgentTimeScopeContract({
+    timeRange: copy.timeRange,
+    startTime: copy.startTime,
+    endTime: copy.endTime,
+  })
   const baseInputs: ClientToolInput[] = [
     { id: 'propertyId', name: 'propertyId', description: copy.propertyId, required: false, valueType: 'string' },
     {
@@ -193,9 +200,7 @@ export const createDevicePropertyAggregateTool = <TContext>(
     },
     { id: 'agg', name: 'agg', description: copy.aggregation, required: false, valueType: 'string' },
     { id: 'interval', name: 'interval', description: copy.interval, required: false, valueType: 'string' },
-    { id: 'startTime', name: 'startTime', description: copy.startTime, required: false, valueType: 'string' },
-    { id: 'endTime', name: 'endTime', description: copy.endTime, required: false, valueType: 'string' },
-    copy.timeRangeInput,
+    ...timeScope.inputs,
     { id: 'limit', name: 'limit', description: copy.limit, required: false, valueType: 'int' },
   ]
   return createDevicePropertyAggregateDefinition<TContext>({
@@ -206,7 +211,8 @@ export const createDevicePropertyAggregateTool = <TContext>(
       progressText: dependencies.progressText,
     },
     inputs: dependencies.decorateInputs ? dependencies.decorateInputs(baseInputs) : baseInputs,
-    inputAlternatives: createDevicePropertySelectorAlternatives(),
+    inputAlternatives: createDevicePropertySelectorAlternatives(timeScope.inputAlternatives),
+    temporal: timeScope.temporal,
     execute: async (args, context, call) => {
       const subject = await dependencies.resolveSubject(args, context)
       const deviceId = String(subject.deviceId || '').trim()
@@ -342,8 +348,11 @@ export const createDevicePropertyAggregateTool = <TContext>(
         complete: !geoPointHistoryTruncated,
         truncated: geoPointHistoryTruncated,
         limitReason: geoPointHistoryTruncated ? 'records' : undefined,
-        requestedRange: range,
-        observedRange: resolveDevicePropertyAggregateObservedRange(data),
+        requestedRange: withDevicePropertyAggregateTimeZone(range, call.environment?.timeZone),
+        observedRange: withDevicePropertyAggregateTimeZone(
+          resolveDevicePropertyAggregateObservedRange(data),
+          call.environment?.timeZone,
+        ),
         summary: base,
         facts: {
           deviceId,

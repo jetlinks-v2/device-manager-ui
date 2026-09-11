@@ -2,6 +2,7 @@ import i18n from '@jetlinks-web-core/locales'
 import {
   clientToolOutput,
   defineClientTool,
+  defineClientToolAnalyticalProducer,
 } from '@jetlinks-web-core/layout/components/AiChat/clientToolApi'
 import {
   defineAiClientToolResultBindings,
@@ -14,6 +15,7 @@ import {
   type AiClientToolResultDelivery,
   type AiClientToolRoutingMetadata,
 } from '@jetlinks-web-core/layout/components/AiChat/clientTools'
+import { defineClientToolStringArgumentBinding } from '@jetlinks-web-core/layout/components/AiChat/clientToolDefinition'
 import type { createDeviceDetailAgentService } from './deviceDetailAgent.service'
 import {
   adaptDomainAgentClientToolResult,
@@ -31,13 +33,16 @@ import {
 } from '../../../../agentCapabilities/deviceAnalysis/constants'
 import {
   createIotDevicePropertyAggregateInputAlternatives,
+  IOT_DEVICE_PROPERTY_AGGREGATE_ANALYTICAL,
   IOT_DEVICE_PROPERTY_AGGREGATE_INTENTS,
   IOT_DEVICE_PROPERTY_AGGREGATE_NOT_FOR,
   IOT_DEVICE_PROPERTY_AGGREGATE_ORDERING,
+  IOT_DEVICE_PROPERTY_AGGREGATE_TIME_FIELD,
   resolveIotDevicePropertyAggregateFields,
   resolveIotDevicePropertyAggregateOutputLabel,
 } from '../../../../agentCapabilities/deviceAnalysis/devicePropertyAggregate.support'
 import { IOT_DEVICE_DETAIL_AGENT_TABS } from './deviceDetailAgent.constants'
+import { createDeviceMetricOutput } from './deviceDetailAgent.metricOutput'
 
 type DeviceDetailAgentService = ReturnType<typeof createDeviceDetailAgentService>
 type DeviceDetailToolContext = Record<string, unknown>
@@ -351,7 +356,10 @@ const propertyAggregateTool = (
       shape: 'schema.property-ids',
       required: false,
       sourcePolicy: 'EITHER',
+      bindArgument: defineClientToolStringArgumentBinding<Record<string, any>>('propertyId'),
     }],
+    temporal: contract.temporal,
+    analytical: IOT_DEVICE_PROPERTY_AGGREGATE_ANALYTICAL,
     effect: { kind: 'READ' },
     output: clientToolOutput.aggregateSeries({
       name: 'property-aggregate',
@@ -359,8 +367,10 @@ const propertyAggregateTool = (
       label: t('tools.device_property_aggregate.name'),
       delivery: 'auto',
       select: (result: any) => result.data,
-      fields: [{ name: 'time', semanticRole: 'timestamp' }],
+      recordPath: '$',
+      fields: [IOT_DEVICE_PROPERTY_AGGREGATE_TIME_FIELD],
       ordering: IOT_DEVICE_PROPERTY_AGGREGATE_ORDERING,
+      optional: true,
       resolveFields: resolveIotDevicePropertyAggregateFields,
       resolveLabel: (_result, _value, fields) => resolveIotDevicePropertyAggregateOutputLabel(
         fields,
@@ -386,6 +396,86 @@ const pageInputs = () => [
 const metricInputs = () => [
   input('interval', domainAgentEnumValueType(['1h', '1d', '1w'])),
 ]
+
+type DeviceMetricToolId =
+  | 'device_activity_aggregate'
+  | 'device_message_aggregate'
+  | 'device_traffic_aggregate'
+
+const metricSemanticIntentBindings = (id: DeviceMetricToolId, measures: readonly string[]) => (
+  (TOOL_ROUTING[id].intents || []).map(intent => ({
+    intent,
+    criterion: 'trend',
+    measures: [...measures] as [string, ...string[]],
+    dimensions: ['time'] as [string],
+  })) as [{ intent: string; criterion: string; measures: [string, ...string[]]; dimensions: [string] }]
+)
+
+const metricAnalyticalProducer = (
+  id: DeviceMetricToolId,
+  measures: readonly { name: string; unit: string }[],
+) => defineClientToolAnalyticalProducer<Record<string, any>>({
+  producerKey: `device.detail.${id.replaceAll('_', '-')}`,
+  factKey: `device.${id.replace('device_', '').replaceAll('_', '-')}`,
+  subjects: ['device'],
+  measures: measures.map(measure => ({
+    name: measure.name,
+    aggregations: ['sum'],
+    units: [measure.unit],
+  })),
+  dimensions: ['time'],
+  filters: [],
+  grains: [],
+  criteria: ['trend'],
+  semanticIntentBindings: metricSemanticIntentBindings(id, measures.map(measure => measure.name)),
+  ordering: [{ axis: 'time', direction: 'asc' }],
+  coverage: 'complete-or-partial',
+  output: `${id}-series`,
+})
+
+const DEVICE_METRIC_ANALYTICAL = {
+  device_activity_aggregate: metricAnalyticalProducer('device_activity_aggregate', [
+    { name: 'active_duration', unit: 'ms' },
+  ]),
+  device_message_aggregate: metricAnalyticalProducer('device_message_aggregate', [
+    { name: 'upstream_messages', unit: 'count' },
+    { name: 'downstream_messages', unit: 'count' },
+  ]),
+  device_traffic_aggregate: metricAnalyticalProducer('device_traffic_aggregate', [
+    { name: 'upstream_traffic', unit: 'bytes' },
+    { name: 'downstream_traffic', unit: 'bytes' },
+  ]),
+} as const
+
+const metricAggregateTool = (
+  id: DeviceMetricToolId,
+  execute: AiClientToolDefinition<DeviceDetailToolContext>['execute'],
+) => {
+  const contract = timeScope()
+  const routing = TOOL_ROUTING[id]
+  return defineClientTool<Record<string, any>, DeviceDetailToolContext, any>({
+    id,
+    description: {
+      text: t(`tools.${id}.description`),
+      capabilities: [...(routing.capabilities || [])] as [string, ...string[]],
+      intents: routing.intents,
+    },
+    presentation: {
+      displayName: t(`tools.${id}.name`),
+      progressText: t(`tools.${id}.progress`),
+    },
+    inputs: [...metricInputs(), ...contract.inputs],
+    inputAlternatives: contract.inputAlternatives,
+    temporal: contract.temporal,
+    analytical: DEVICE_METRIC_ANALYTICAL[id],
+    effect: { kind: 'READ' },
+    output: createDeviceMetricOutput(id),
+    owner: { module: 'iot-ui', group: 'device-detail' },
+    execute: async (args, context, call) => adaptDomainAgentClientToolResult(
+      await execute(args, context, call) as any,
+    ),
+  })
+}
 
 const alarmFilterInputs = () => [
   input('state'),
@@ -423,9 +513,9 @@ export const createDeviceDetailAgentTools = (service: DeviceDetailAgentService) 
       input('propertyId', 'string', true),
     ], service.propertyHistory, 'records', 'file'),
     propertyAggregateTool(service),
-    timeScopedReadTool('device_activity_aggregate', metricInputs(), service.activityAggregate, 'aggregate'),
-    timeScopedReadTool('device_message_aggregate', metricInputs(), service.messageAggregate, 'aggregate'),
-    timeScopedReadTool('device_traffic_aggregate', metricInputs(), service.trafficAggregate, 'aggregate'),
+    metricAggregateTool('device_activity_aggregate', service.activityAggregate),
+    metricAggregateTool('device_message_aggregate', service.messageAggregate),
+    metricAggregateTool('device_traffic_aggregate', service.trafficAggregate),
     timeScopedReadTool('device_event_query', [
       input('eventId', 'string', true),
       ...pageInputs(),
