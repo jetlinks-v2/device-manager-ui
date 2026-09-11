@@ -3,49 +3,53 @@
     <main class="device-alarm-page">
       <PageHeader :title="$t('DeviceAlarm.title.page')" :description="$t('DeviceAlarm.description.page')" style="margin: 0" />
       <FullPage flex class="alarm-content">
-        <div class="alarm-workspace">
-          <section class="alarm-rule-list">
-            <header class="alarm-list-heading"><strong>{{ $t('DeviceAlarm.workspace.rules') }}</strong><span>{{ $t('DeviceAlarm.workspace.total', { total }) }}</span></header>
-            <div class="alarm-rule-search">
-              <ConditionFilter :fields="filterFields" :modelValue="filterTerms" :placeholder="$t('DeviceAlarm.workspace.ruleSearch')"
-                @update:modelValue="handleFilterTermsUpdate" @change="handleSearch" />
-              <a-button type="primary" :loading="busy" @click="run(openCreate)"><AIcon type="PlusOutlined" />{{ $t('DeviceAlarm.workspace.createShort') }}</a-button>
-            </div>
-            <a-button class="alarm-all-rules" :type="selected ? 'default' : 'primary'" ghost @click="showAllRecords">{{ $t('DeviceAlarm.workspace.allRules') }}</a-button>
-            <a-alert v-if="statusError" type="warning" show-icon :message="$t('DeviceAlarm.workspace.statusError')"><template #action><a-button type="link" size="small" @click="loadCounts">{{ $t('DeviceAlarm.workspace.retry') }}</a-button></template></a-alert>
-            <a-alert v-if="listError" type="error" :message="$t('DeviceAlarm.workspace.listError')"><template #action><a-button @click="load()">{{ $t('DeviceAlarm.workspace.retry') }}</a-button></template></a-alert>
-            <div v-else class="alarm-scroll">
-              <a-spin :spinning="loading">
-                <DeviceAlarmRuleCard v-for="row in rows" :key="row.key" :row="row" :selected="selected?.id === row.id"
-                  :levels="levelOptions" :active-count="row.id ? activeCounts?.[row.id] : undefined" :busy="busy"
-                  @select="select" @edit="item => run(() => openEdit(item))" @remove="item => run(() => remove(item))" />
-                <CloudEmpty v-if="!rows.length && !loading" :description="$t('DeviceAlarm.empty')" />
-              </a-spin>
-            </div>
-            <footer class="alarm-list-footer"><a-pagination size="small" simple :current="pageIndex + 1" :page-size="pageSize" :total="total" @change="value => load(value - 1)" /></footer>
-          </section>
-          <section class="alarm-record-list">
-            <header class="alarm-list-heading"><strong>{{ $t('DeviceAlarm.workspace.records') }}</strong><span>{{ $t('DeviceAlarm.workspace.total', { total: recordTotal }) }}</span></header>
-            <ConditionFilter :fields="recordFields" :modelValue="recordTerms" :placeholder="$t('DeviceAlarm.workspace.recordSearch')"
-              @update:modelValue="value => recordTerms = value" @change="searchRecords" />
-            <div class="alarm-record-scope">
-              <span>{{ $t('DeviceAlarm.workspace.scope') }}</span>
-              <a-tag v-if="selected" closable @close="showAllRecords">{{ selected.name }}</a-tag>
-              <span v-else>{{ $t('DeviceAlarm.workspace.allRules') }}</span>
-              <a-button type="text" :loading="recordsLoading" :aria-label="$t('DeviceAlarm.workspace.refresh')" @click="loadRecords()"><AIcon type="ReloadOutlined" /></a-button>
-            </div>
-            <a-alert v-if="recordsError" type="error" show-icon :message="$t('DeviceAlarm.workspace.summaryError')"><template #action><a-button @click="loadRecords()">{{ $t('DeviceAlarm.workspace.retry') }}</a-button></template></a-alert>
-            <div v-else class="alarm-scroll">
-              <a-spin :spinning="recordsLoading"><div class="alarm-record-items">
-                <DeviceAlarmRecordCard v-for="record in records" :key="record.id" :row="record" :levels="levelOptions" :now="now.getTime()"
-                  @handle="handling.show" @history="history.show" />
-                <CloudEmpty class="alarm-record-empty" v-if="!records.length && !recordsLoading" :description="$t('DeviceAlarm.workspace.recordsEmpty')" />
-              </div></a-spin>
-            </div>
-            <footer class="alarm-list-footer"><a-pagination size="small" :current="recordPage + 1" :page-size="recordSize" :total="recordTotal"
-              show-size-changer @change="(value, size) => loadRecords(value - 1, size)" /></footer>
-          </section>
-        </div>
+        <EqualHeightColumns left-width="18.75rem" right-width="1fr">
+          <template #left>
+            <section class="alarm-rule-list">
+              <header class="alarm-list-heading"><strong>{{ $t('DeviceAlarm.workspace.rules') }}</strong><span>{{ $t('DeviceAlarm.workspace.total', { total }) }}</span></header>
+              <div class="alarm-rule-search">
+                <ConditionFilter :fields="filterFields" :modelValue="filterTerms" :placeholder="$t('DeviceAlarm.workspace.ruleSearch')"
+                                 @update:modelValue="handleFilterTermsUpdate" @change="handleSearch" />
+                <a-button type="primary" :loading="busy" @click="run(openCreate)"><AIcon type="PlusOutlined" />{{ $t('DeviceAlarm.workspace.createShort') }}</a-button>
+              </div>
+              <a-button class="alarm-all-rules" :type="selected ? 'default' : 'primary'" ghost @click="showAllRecords">{{ $t('DeviceAlarm.workspace.allRules') }}</a-button>
+              <a-alert v-if="statusError" type="warning" show-icon :message="$t('DeviceAlarm.workspace.statusError')"><template #action><a-button type="link" size="small" @click="loadCounts">{{ $t('DeviceAlarm.workspace.retry') }}</a-button></template></a-alert>
+              <a-alert v-if="listError" type="error" :message="$t('DeviceAlarm.workspace.listError')"><template #action><a-button @click="load()">{{ $t('DeviceAlarm.workspace.retry') }}</a-button></template></a-alert>
+              <div v-else class="alarm-scroll">
+                <a-spin :spinning="loading">
+                  <DeviceAlarmRuleCard v-for="row in rows" :key="row.key" :row="row" :selected="selected?.id === row.id"
+                                       :levels="levelOptions" :active-count="row.id ? activeCounts?.[row.id] : undefined" :busy="busy"
+                                       @select="select" @edit="item => run(() => openEdit(item))" @remove="item => run(() => remove(item))" />
+                  <CloudEmpty v-if="!rows.length && !loading" :description="$t('DeviceAlarm.empty')" />
+                </a-spin>
+              </div>
+              <footer class="alarm-list-footer"><a-pagination size="small" simple :current="pageIndex + 1" :page-size="pageSize" :total="total" @change="value => load(value - 1)" /></footer>
+            </section>
+          </template>
+          <template #right>
+            <section class="alarm-record-list">
+              <header class="alarm-list-heading"><strong>{{ $t('DeviceAlarm.workspace.records') }}</strong><span>{{ $t('DeviceAlarm.workspace.total', { total: recordTotal }) }}</span></header>
+              <ConditionFilter :fields="recordFields" :modelValue="recordTerms" :placeholder="$t('DeviceAlarm.workspace.recordSearch')"
+                               @update:modelValue="value => recordTerms = value" @change="searchRecords" />
+              <div class="alarm-record-scope">
+                <span>{{ $t('DeviceAlarm.workspace.scope') }}</span>
+                <a-tag v-if="selected" closable @close="showAllRecords">{{ selected.name }}</a-tag>
+                <span v-else>{{ $t('DeviceAlarm.workspace.allRules') }}</span>
+                <a-button type="text" :loading="recordsLoading" :aria-label="$t('DeviceAlarm.workspace.refresh')" @click="loadRecords()"><AIcon type="ReloadOutlined" /></a-button>
+              </div>
+              <a-alert v-if="recordsError" type="error" show-icon :message="$t('DeviceAlarm.workspace.summaryError')"><template #action><a-button @click="loadRecords()">{{ $t('DeviceAlarm.workspace.retry') }}</a-button></template></a-alert>
+              <div v-else class="alarm-scroll">
+                <a-spin :spinning="recordsLoading"><div class="alarm-record-items">
+                  <DeviceAlarmRecordCard v-for="record in records" :key="record.id" :row="record" :levels="levelOptions" :now="now.getTime()"
+                                         @handle="handling.show" @history="history.show" />
+                  <CloudEmpty class="alarm-record-empty" v-if="!records.length && !recordsLoading" :description="$t('DeviceAlarm.workspace.recordsEmpty')" />
+                </div></a-spin>
+              </div>
+              <footer class="alarm-list-footer"><a-pagination size="small" :current="recordPage + 1" :page-size="recordSize" :total="recordTotal"
+                                                              show-size-changer @change="(value, size) => loadRecords(value - 1, size)" /></footer>
+            </section>
+          </template>
+        </EqualHeightColumns>
       </FullPage>
       <a-modal :open="history.open" :width="1000" :footer="null" :title="$t('DeviceAlarm.workspace.' + history.history.tab)" destroy-on-close @cancel="history.close">
         <p class="alarm-history-caption">{{ history.selectedRecord?.alarmName }} · {{ history.selectedRecord?.sourceName || history.selectedRecord?.targetName }}</p>
@@ -100,8 +104,8 @@ const now = useNow({ interval: 1000 })
 <style scoped lang="less">
 .device-alarm-page { display: flex; flex-direction: column; gap: var(--space-4); }
 .alarm-content { overflow: hidden; }
-.alarm-workspace { display: grid; flex: 1; min-height: 0; grid-template-rows: minmax(0, 1fr); grid-template-columns: minmax(300px, 26%) minmax(0, 1fr); border: 1px solid var(--jet-theme-border); border-radius: var(--jet-theme-radius-lg); background: var(--jet-theme-bg-container); }
-.alarm-rule-list, .alarm-record-list { display: flex; min-width: 0; min-height: 0; flex-direction: column; padding: var(--space-4); gap: var(--space-3); overflow: hidden; }
+.alarm-workspace { display: grid; flex: 1; min-height: 0; grid-template-rows: minmax(0, 1fr); grid-template-columns: minmax(300px, 26%) minmax(0, 1fr); }
+.alarm-rule-list, .alarm-record-list { height: 100%; display: flex; min-width: 0; min-height: 0; flex-direction: column; padding: var(--space-4); gap: var(--space-3); overflow: hidden; }
 .alarm-rule-list { border-right: 1px solid var(--jet-theme-border); }
 .alarm-list-heading { display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
 .alarm-list-heading span { color: var(--jet-theme-text-secondary); font-size: 12px; }
