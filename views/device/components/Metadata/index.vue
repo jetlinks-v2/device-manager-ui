@@ -93,7 +93,7 @@
             :type="type"
             @close="visible = false"
         />
-        <Cat v-model:visible="cat" @close="cat = false" :type="type" />
+        <Cat v-if="cat" v-model:visible="cat" @close="cat = false" :type="type" />
     </div>
 </template>
 <script setup lang="ts" name="Metadata">
@@ -112,7 +112,6 @@ import { useElementSize } from '@vueuse/core';
 
 const { t: $t } = useI18n();
 
-const route = useRoute();
 const instanceStore = useInstanceStore();
 const metadataStore = useMetadataStore();
 const authStore = useAuthStore();
@@ -159,7 +158,8 @@ const showReset = computed(() => {
 
 // 重置物模型
 const resetMetadata = () => {
-    const { id } = route.params;
+    // 嵌入其他资产详情时路由参数不同，操作对象以当前设备实例为准。
+    const id = instanceStore.current.id;
     const response = deleteMetadata(id as string);
     response.then((resp) => {
         if (resp.status === 200) {

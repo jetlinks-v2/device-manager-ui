@@ -1,5 +1,6 @@
 import {getMetadataConfig, getMetadataDeviceConfig} from "../../../../../api/product";
 import i18n from "@jetlinks-web-core/locales";
+import { useInstanceStore } from '@device-manager-ui/store/instance';
 
 export const sourceType = [
     {
@@ -84,10 +85,11 @@ export const getMetadataItemByType = (type: string) => {
 
 export const useStoreType = (type: string) => {
     const route = useRoute()
+    const instanceStore = useInstanceStore()
     const settingData = ref({})
 
     const getData = async () => {
-        const id = route.params.id;
+        const id = type === 'product' ? route.params.id : instanceStore.current.id;
 
         if (!id || !type) return;
 

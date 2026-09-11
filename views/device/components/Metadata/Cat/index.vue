@@ -106,28 +106,12 @@ const handleConvertMetadata = (key: Key) => {
 
 const codecs = ref<{ id: string; name: string }[]>()
 
-const routeChange = async (id: string) => {
+const loadCodecs = async () => {
   const res = await getCodecs()
   if (res.status === 200) {
     codecs.value = [{ id: 'jetlinks', name: $t('Cat.index.300353-7') }].concat(res.result)
   }
-  if (props.type === 'device' && id) {
-    detail(id as string).then((resp) => {
-      if (resp.status === 200) {
-        instanceStore.setCurrent(resp.result);
-        const _metadata = resp.result?.metadata;
-        value.value = _metadata;
-        hideVirtualRule(_metadata)
-      }
-    });
-  }
 }
-
-// watch(
-//   () => route.params.id,
-//   (id) => routeChange(id as string),
-//   { immediate: true }
-// )
 
 const hideVirtualRule = (metadata: string) => {
   const _metadata = JSON.parse(metadata || '{}')
@@ -143,7 +127,7 @@ const hideVirtualRule = (metadata: string) => {
 }
 
 onMounted(() => {
-  routeChange(instanceStore.current?.id as string)
+  void loadCodecs()
 })
 
 watch(
@@ -151,7 +135,7 @@ watch(
   () => {
     if (props.visible) {
       loading.value = true
-      const { id } = route.params
+      const id = props.type === 'device' ? instanceStore.current.id : route.params.id
       if (props.type === 'device') {
         detail(id as string).then((resp) => {
           loading.value = false

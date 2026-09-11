@@ -195,7 +195,7 @@ const onReject = () => {
 const downFile = (type) => {
     const url =
         props.target === 'device'
-            ? getTemplate(route.params.id, type)
+            ? getTemplate(current.id, type)
             : getProductTemplate(route.params.id, type);
 
     downloadFileByUrl(

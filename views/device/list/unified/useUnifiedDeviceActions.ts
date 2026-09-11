@@ -49,8 +49,10 @@ export function useUnifiedDeviceActions(
   const selected = computed(() => rows.value.filter(device => selectedIds.value.includes(device.id)))
   const allowed = (device: UnifiedDevice, action: string) => {
     const provider = providerOf(device)
-    // 普通设备菜单按页面赋予 CRUD 权限；网关和视频沿用各自按钮授权。
-    return !!provider && (provider.id === 'device' ? menu.hasMenu(provider.menuCode) : auth.hasPermission(`${provider.menuCode}:${action}`))
+    if (!provider) return false
+    // 编辑统一沿用设备列表的页面授权，避免复用同一编辑表单却额外依赖分类按钮权限。
+    if (action === 'update' || provider.id === 'device') return menu.hasMenu(provider.menuCode)
+    return auth.hasPermission(`${provider.menuCode}:${action}`)
   }
   const canCreate = (provider?: DeviceListProvider) => !!provider?.create && (!provider.create.permission || auth.hasPermission(provider.create.permission))
   function openCreate(provider?: DeviceListProvider) {
