@@ -14,7 +14,7 @@ import { useDeviceAlarmRuleSearch } from '../views/device/alarm/hooks/useDeviceA
 const response = (id: string, total = 1) => ({ result: { data: [{ id, sourceName: id }], total } })
 const flush = async () => { await nextTick(); await new Promise(resolve => setTimeout(resolve, 0)); await nextTick() }
 
-test('rule keyword search submits a literal pattern and clears only the rule query', () => {
+test('rule keyword search groups three existing conditions and clears only the rule query', () => {
   let page = 3
   let requests = 0
   const search = useDeviceAlarmRuleSearch(() => { page = 0; requests += 1 })
@@ -22,13 +22,18 @@ test('rule keyword search submits a literal pattern and clears only the rule que
   assert.deepEqual(search.terms.value, [])
   assert.equal(page, 3)
   search.submit()
-  assert.deepEqual(search.terms.value, [{ column: 'keyword', termType: 'like', value: '%温度\\_50\\%\\\\探头%' }])
+  const value = '%温度\\_50\\%\\\\探头%'
+  assert.deepEqual(search.terms.value, [{ terms: [
+    { column: 'templateId', termType: 'product-info', value: [{ column: 'name', termType: 'like', value }] },
+    { column: 'thingId', termType: 'dev-instance', type: 'or', value: [{ column: 'name', termType: 'like', value }] },
+    { column: 'property', termType: 'like', type: 'or', value },
+  ] }])
   assert.equal(page, 0)
   assert.equal(requests, 1)
   search.submit()
   assert.equal(requests, 1)
   search.updateKeyword('未提交的草稿')
-  assert.equal(search.terms.value[0].value, '%温度\\_50\\%\\\\探头%')
+  assert.equal(search.terms.value[0].terms[2].value, value)
   search.updateKeyword('')
   search.submit()
   assert.deepEqual(search.terms.value, [])

@@ -7410,7 +7410,7 @@
     "DeviceAlarm.workspace.ruleSummary": "Trigger an alarm when {condition} on {device} under {product}",
     "DeviceAlarm.workspace.total": "{total} total",
     "DeviceAlarm.workspace.ruleSearch": "Filter rules",
-    "DeviceAlarm.workspace.keywordSearch": "Search alarm name, product or device",
+    "DeviceAlarm.workspace.keywordSearch": "Search product, device or property ID",
     "DeviceAlarm.workspace.createShort": "Add",
     "DeviceAlarm.workspace.alarmDevice": "Alarm device",
     "DeviceAlarm.workspace.duration": "Duration",

@@ -5,12 +5,17 @@ import { escapeLikeValue } from '@jetlinks-web-core/components/ConditionFilter'
 export function useDeviceAlarmRuleSearch(onSearch: () => void) {
   const keyword = ref('')
   const submitted = ref('')
-  const terms = computed(() => submitted.value ? [{
-    column: 'keyword',
-    termType: 'like',
+  const terms = computed(() => {
+    if (!submitted.value) return []
     // 共享工具处理 % 和反斜杠；补齐 _ 的字面匹配，避免用户文本扩大查询范围。
-    value: `%${escapeLikeValue(submitted.value).replace(/_/g, '\\_')}%`,
-  }] : [])
+    const value = `%${escapeLikeValue(submitted.value).replace(/_/g, '\\_')}%`
+    // 名称是接口回填字段，查询需通过现有产品/设备关联条件；OR 收在组内。
+    return [{ terms: [
+      { column: 'templateId', termType: 'product-info', value: [{ column: 'name', termType: 'like', value }] },
+      { column: 'thingId', termType: 'dev-instance', type: 'or', value: [{ column: 'name', termType: 'like', value }] },
+      { column: 'property', termType: 'like', type: 'or', value },
+    ] }]
+  })
 
   function submit() {
     const next = keyword.value.trim()

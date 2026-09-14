@@ -2,13 +2,14 @@
 
 ## 规则关键词搜索
 
-实现提交：`fb414c7`；[前端 PR #275](https://github.com/jetlinks-v2/device-manager-ui/pull/275)；[配套后端 PR #446](https://github.com/jetlinks-v2/device-manager/pull/446)。
+交付入口：[前端 PR #275](https://github.com/jetlinks-v2/device-manager-ui/pull/275)。
 
-- 左侧使用 a-input-search，提示“搜索告警名称、产品或设备”，不再显示字段/运算符/条件标签。沿用视觉告警搜索控件和当前标题布局，右侧继续使用 ConditionFilter。
+- 左侧保留 a-input-search，提示“搜索产品、设备或属性标识”，不再显示字段/运算符/条件标签。沿用视觉告警搜索控件和当前标题布局，右侧继续使用 ConditionFilter。
 - `hooks/useDeviceAlarmRuleSearch.ts` 区分输入草稿与已提交文本，回车/搜索提交，清空恢复全部规则，重复提交相同值不重复请求；提交时规则分页回到第一页，不改变已选规则或右侧搜索。
-- `hooks/useDeviceAlarmPage.ts` 使用 keyword 条件构建分页查询。复用共享 escapeLikeValue 对百分号和反斜杠的转义，补充下划线字面匹配，不重复编码。
-- 接口契约、PostgreSQL适用范围、权限与发布顺序见 `modules/device-manager/README.md` 的“物联告警关键词查询”。搜索范围是配置的告警名称、产品名或设备名，未包含通知文本与卡片摘要。
-- 验证：`node scripts/test-alarm-workspace.mjs` 的8项测试与 `pnpm run build:modules device-manager-ui` 通过；浏览器 fixture 装配真实搜索模板、Ant组件和查询hook，300/260px宽度下长输入、回车、清空、转义、标题按钮同排与无脚本错误检查通过。测试没有替代完整登录页面联调。
+- `hooks/useDeviceAlarmRuleSearch.ts` 将一个关键词组合成三项 OR 条件：`templateId/product-info` 内的产品 `name like`、`thingId/dev-instance` 内的设备 `name like`、`property like`。`hooks/useDeviceAlarmPage.ts` 保持整个搜索组与附加条件隔离，继续使用现有分页接口 `POST /message/preprocessor/device-alarm/_query`；不发送虚拟 keyword，不新增后端条件或数据库专用查询。
+- 复用共享 escapeLikeValue 对百分号和反斜杠的转义，补充下划线字面匹配，不重复编码。范围沿用原筛选器的产品名称、设备名称、属性标识；配置 JSON 中的告警名称与通知文本不属于该搜索范围。后端保留通用查询与既有资产权限，只需发布 runtime-ui。
+- 验证：更新后的 `node scripts/test-alarm-workspace.mjs` 8项测试与 `pnpm run build:modules device-manager-ui` 通过；真实前端 hook 输出交由既有 product-info/dev-instance/like 查询组件执行，独立 PostgreSQL 11 临时库10项断言通过，覆盖三字段、中文与通配符、空查询、附加条件隔离、count/list与分页。未使用已撤回的后端关键词类。
+- 搜索框与按钮结构未改，复用此前浏览器 fixture 的300/260px宽度、长输入、回车、清空、标题按钮同排与无脚本错误验证。完整登录页面联调仍待执行。
 - `pnpm exec vue-tsc --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json` 仍被既有 Certificate/type.d.ts:2:30 的TS1005阻断；未修改该文件。当前模块无统一lint脚本，diff --check通过。未新增页面组件或跨模块抽象，改动Vue文件不足300行；已有大型useDeviceAlarmPage仅替换搜索职责并抽出独立hook，未扩展其他业务。
 
 ## 规则栏局部修复（已确认实施）

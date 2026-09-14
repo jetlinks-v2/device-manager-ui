@@ -7411,7 +7411,7 @@
     "DeviceAlarm.workspace.ruleSummary": "{product}下{device}{condition}触发告警",
     "DeviceAlarm.workspace.total": "共 {total} 条",
     "DeviceAlarm.workspace.ruleSearch": "筛选规则",
-    "DeviceAlarm.workspace.keywordSearch": "搜索告警名称、产品或设备",
+    "DeviceAlarm.workspace.keywordSearch": "搜索产品、设备或属性标识",
     "DeviceAlarm.workspace.createShort": "新增",
     "DeviceAlarm.workspace.alarmDevice": "告警设备",
     "DeviceAlarm.workspace.duration": "持续时长",
