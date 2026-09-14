@@ -2,6 +2,8 @@
 
 ## 规则关键词搜索
 
+实现提交：`fb414c7`；[前端 PR #275](https://github.com/jetlinks-v2/device-manager-ui/pull/275)；[配套后端 PR #446](https://github.com/jetlinks-v2/device-manager/pull/446)。
+
 - 左侧使用 a-input-search，提示“搜索告警名称、产品或设备”，不再显示字段/运算符/条件标签。沿用视觉告警搜索控件和当前标题布局，右侧继续使用 ConditionFilter。
 - `hooks/useDeviceAlarmRuleSearch.ts` 区分输入草稿与已提交文本，回车/搜索提交，清空恢复全部规则，重复提交相同值不重复请求；提交时规则分页回到第一页，不改变已选规则或右侧搜索。
 - `hooks/useDeviceAlarmPage.ts` 使用 keyword 条件构建分页查询。复用共享 escapeLikeValue 对百分号和反斜杠的转义，补充下划线字面匹配，不重复编码。
