@@ -424,6 +424,7 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
     }
   }
 
+  // 快捷入口会让抽屉首次挂载时就处于打开状态，必须立即初始化，不能只响应后续按钮触发的 false -> true。
   watch(() => props.open, (open) => {
     if (!open) return
     resetForm()
@@ -433,7 +434,7 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
       void loadProductCandidates(true)
     }
     void probeMarketplace()
-  })
+  }, { immediate: true })
 
   return {
     creationSource, marketplaceCapability, isLibraryAvailable, productMenuAvailable,
