@@ -4,6 +4,7 @@
       :product="productStore.current"
       :can-update="permissionStore.hasPermission('device/Product:update')"
       :can-action="permissionStore.hasPermission('device/Product:action')"
+      :can-view-devices="canViewDevices"
       @back="backToProductList"
       @edit="openEdit"
       @toggle-state="toggleState"
@@ -40,13 +41,14 @@ import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { useProductStore } from '../../../../store/product'
 import { _deploy, _undeploy } from '../../../../api/product'
-import { handleParamsToString } from '@jetlinks-web-core/utils'
+import { encodeConditionFilterQuery } from '@jetlinks-web-core/components/ConditionFilter'
 import { useMenuStore } from '@jetlinks-web-core/store/menu'
 import { useRouterParams } from '@jetlinks-web/hooks'
 import { EventEmitter, onlyMessage } from '@jetlinks-web/utils'
 import { useAuthStore, useSystemStore } from '@jetlinks-web-core/store'
 import { isNoCommunity } from '@jetlinks-web-core/utils/utils'
 import { isApplyDashboard } from '@device-manager-ui/utils/dashboardProject'
+import { getDeviceListFilterFields } from '../../../../deviceListFilter'
 import Save from '../Save/index.vue'
 import ProductDetailSummary from './components/ProductDetailSummary.vue'
 import { tabs } from './asyncComponent'
@@ -61,6 +63,7 @@ const menuStore = useMenuStore()
 const { showThreshold } = useSystemStore()
 const saveRef = ref()
 const activeTab = ref<ProductDetailTabKey>('Device')
+const canViewDevices = computed(() => menuStore.hasMenu('iot-user-device-list'))
 
 const visibleTabs = computed(() => buildProductDetailTabs(productStore.current, {
   showAlarm: permissionStore.hasPermission('rule-engine/Alarm/Log:view') && showThreshold,
@@ -105,10 +108,17 @@ function toggleState() {
 }
 
 function jumpDevice() {
-  menuStore.jumpPage('device/Instance', {
+  const productId = typeof route.params.id === 'string' ? route.params.id : productStore.current?.id
+  if (!canViewDevices.value || !productId) return
+
+  // SaaS Runtime 已将原 device/Instance 菜单替换为统一设备入口；沿用产品 ID 的精确筛选语义。
+  menuStore.jumpPage('iot-user-device-list', {
     query: {
-      target: 'device-instance',
-      q: handleParamsToString([{ column: 'productName', termType: 'eq', value: productStore.current?.id }]),
+      type: 'device',
+      q: encodeConditionFilterQuery(
+        [{ column: 'productId', termType: 'eq', value: productId }],
+        getDeviceListFilterFields(),
+      ),
     },
   })
 }

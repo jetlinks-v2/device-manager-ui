@@ -24,16 +24,16 @@
             </template>
           </a-tree>
           <CloudEmpty v-else :description="$t('IotDeviceList.scope.emptyAreas')" />
+          <button
+            class="iot-device-scope__unbound iot-device-scope__unbound--after-tree"
+            :class="{ 'is-active': scopeId === IOT_UNBOUND_AREA_SCOPE_ID }"
+            type="button"
+            @click="select(IOT_UNBOUND_AREA_SCOPE_ID)"
+          >
+            <span class="iot-device-scope__label">{{ $t('IotDeviceList.scope.unboundArea') }}</span>
+            <em class="iot-device-scope__count">{{ countText(unboundAreaDeviceCount) }}</em>
+          </button>
         </div>
-        <button
-          class="iot-device-scope__unbound"
-          :class="{ 'is-active': scopeId === IOT_UNBOUND_AREA_SCOPE_ID }"
-          type="button"
-          @click="select(IOT_UNBOUND_AREA_SCOPE_ID)"
-        >
-          <span class="iot-device-scope__label">{{ $t('IotDeviceList.scope.unboundArea') }}</span>
-          <em class="iot-device-scope__count">{{ countText(unboundAreaDeviceCount) }}</em>
-        </button>
       </template>
       <template v-else>
         <button class="iot-device-scope__all" :class="{ 'is-active': !scopeId }" type="button" @click="select('')">
@@ -83,16 +83,16 @@
             </template>
           </a-tree>
           <CloudEmpty v-else :description="$t('IotDeviceList.scope.emptyGroups')" />
+          <button
+            class="iot-device-scope__unbound iot-device-scope__unbound--after-tree"
+            :class="{ 'is-active': scopeId === IOT_UNASSIGNED_GROUP_SCOPE_ID }"
+            type="button"
+            @click="select(IOT_UNASSIGNED_GROUP_SCOPE_ID)"
+          >
+            <span class="iot-device-scope__label">{{ $t('IotDeviceList.scope.unassignedGroup') }}</span>
+            <em class="iot-device-scope__count">{{ countText(unassignedGroupDeviceCount) }}</em>
+          </button>
         </div>
-        <button
-          class="iot-device-scope__unbound"
-          :class="{ 'is-active': scopeId === IOT_UNASSIGNED_GROUP_SCOPE_ID }"
-          type="button"
-          @click="select(IOT_UNASSIGNED_GROUP_SCOPE_ID)"
-        >
-          <span class="iot-device-scope__label">{{ $t('IotDeviceList.scope.unassignedGroup') }}</span>
-          <em class="iot-device-scope__count">{{ countText(unassignedGroupDeviceCount) }}</em>
-        </button>
         <a-button v-if="showGroupActions !== false" class="iot-device-scope__create-group" type="dashed" block @click="$emit('create-group')">
           <template #icon><AIcon type="PlusOutlined" /></template>
           {{ $t('IotDeviceList.scope.createGroup') }}
@@ -116,8 +116,8 @@ import {
 type Area = { id: string; name: string; parentId?: string }
 type Group = DeviceGroup
 
-const props = defineProps<{
-  // 仅消费范围筛选的页面关闭管理入口，设备页保持原有分组操作。
+const props = withDefaults(defineProps<{
+  // 仅消费范围筛选的页面可显式关闭管理入口；设备页默认保留原有分组操作。
   showGroupActions?: boolean
   activeType: 'area' | 'group'
   activeId: string
@@ -128,7 +128,9 @@ const props = defineProps<{
   groupDeviceCounts: Record<string, number>
   unboundAreaDeviceCount: number
   unassignedGroupDeviceCount: number
-}>()
+}>(), {
+  showGroupActions: true,
+})
 const emit = defineEmits<{
   (event: 'change', value: { type: 'area' | 'group'; id: string }): void
   (event: 'create-group'): void
@@ -186,7 +188,7 @@ const onGroupSelect: TreeProps['onSelect'] = (keys) => select(String(keys[0] || 
 
 .iot-device-scope__body {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   gap: var(--space-2);
   min-height: 0;
 }
@@ -214,6 +216,10 @@ const onGroupSelect: TreeProps['onSelect'] = (keys) => select(String(keys[0] || 
 .iot-device-scope__unbound {
   border: 1px solid var(--jet-theme-border, var(--ant-color-border));
   border-radius: var(--r-3);
+}
+
+.iot-device-scope__unbound--after-tree {
+  margin-top: var(--space-2);
 }
 
 .iot-device-scope__label {

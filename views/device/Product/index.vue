@@ -1,8 +1,7 @@
 <template>
   <j-page-container class="product-page">
     <FullPage transparentBackground>
-      <ContentPanel>
-	      <EqualHeightColumns class="product-page__layout" left-width="15rem" right-width="1fr">
+	    <EqualHeightColumns class="product-page__layout" left-width="15rem" right-width="1fr">
 		      <template #left>
 			      <ProductCategoryTree
 				      class="product-page__category-tree"
@@ -21,7 +20,7 @@
 			      />
 		      </template>
 		      <template #right>
-			      <div class="product-page__main">
+			      <ContentPanel class="product-page__main">
 				      <a-flex class="product-page__toolbar" :gap="16" align="center" wrap="wrap">
 					      <ConditionFilter
 						      class="product-page__search"
@@ -48,13 +47,14 @@
 				      <JProTable
 					      :columns="columns"
 					      :request="queryProductList"
-					      class="pro-table__no-padding"
+					      class="product-page__table pro-table__no-padding"
 					      ref="tableRef"
 					      :defaultParams="{
                 sorts: [{ name: 'createTime', order: 'desc' }],
               }"
 					      mode="TABLE"
 					      :params="tableParams"
+					      :pagination="{ isShowContent: true }"
 				      >
 					      <template #deviceType="slotProps">
 						      <div>{{ slotProps.deviceType?.text || '-' }}</div>
@@ -110,10 +110,9 @@
 						      </a-space>
 					      </template>
 				      </JProTable>
-			      </div>
+			      </ContentPanel>
 		      </template>
-	      </EqualHeightColumns>
-      </ContentPanel>
+	    </EqualHeightColumns>
     </FullPage>
     <Save ref="saveRef" :isAdd="isAdd" :title="title" @success="refresh" />
     <ModifyModal
@@ -878,13 +877,20 @@ onMounted(() => {
     flex-direction: column;
     height: 100%;
     min-height: 0;
-    // 产品表格随内容自然撑高，由页面最外层承接纵向滚动。
-    overflow: visible;
+    overflow: hidden;
   }
 
   &__toolbar {
+    flex: 0 0 auto;
     justify-content: space-between;
     margin-bottom: var(--space-4);
+  }
+
+  // JProTable 的主体和分页共享右侧面板剩余高度，只有表格主体可以纵向滚动。
+  &__table {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow: hidden;
   }
 
   &__search {
