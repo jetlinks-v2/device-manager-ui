@@ -9,6 +9,7 @@
         :commands="deviceCommands"
         :session-enabled="false"
         :trace-enabled="false"
+        @config-saved="onDetailContentChanged"
       />
     </div>
 
@@ -51,6 +52,7 @@
           :product-template="productTemplate"
           :properties="realtimeProperties"
           :commands="deviceCommands"
+          @config-saved="onDetailContentChanged"
         />
 
         <LegacyMetadata
@@ -156,6 +158,7 @@ const {
   onExecuteDeviceCommand,
   setPropertyPageRealtimeKeys,
   activeExtension,
+  onDetailContentChanged,
 } = toRefs(props.state)
 </script>
 

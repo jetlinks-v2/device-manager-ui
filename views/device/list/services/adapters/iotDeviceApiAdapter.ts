@@ -220,7 +220,8 @@ function mapTelemetry(instance: Partial<DeviceInstance>, metadata: DeviceMetadat
   })).filter((item) => item.key)
 }
 
-function mapApiDevice(
+/** 将已加载的设备定义映射为详情视图数据，不发起查询。 */
+export function mapApiDevice(
   instance: Partial<DeviceInstance>,
   projectId: string,
   fallback?: IotDevice,
@@ -265,6 +266,7 @@ function mapApiDevice(
     features: Array.isArray((instance as any).features) ? (instance as any).features : fallback?.features,
     gatewayName: fallback?.gatewayName,
     identifier: instance.id || fallback?.identifier || '',
+    configuration: instance.configuration || {},
     imageUrl: accessInfo.devicePhotoUrl || instance.photoUrl || fallback?.imageUrl,
     summary: instance.describe || instance.description || fallback?.summary || instance.state?.text || t('IotDeviceApiAdapter.realDataSummary'),
     aiSummary: fallback?.aiSummary ?? {
@@ -380,12 +382,6 @@ async function getApiDevice(projectId: string, deviceId: string): Promise<Servic
   }
 
   return ok(await mergeDeviceBindings(mapApiDevice(apiResult.data, projectId, fallback), projectId))
-}
-
-/** 物模型和数据面板只消费设备定义，不补查列表归属和概览数据。 */
-export async function getIotDeviceDefinition(projectId: string, deviceId: string): Promise<ServiceResult<IotDevice>> {
-  const result = await toServiceResult(() => deviceDetail(deviceId), t('IotDeviceApiAdapter.error.detail'))
-  return result.ok ? ok(mapApiDevice(result.data, projectId)) : result
 }
 
 export function createIotDeviceApiAdapter(): IotDeviceAdapter {

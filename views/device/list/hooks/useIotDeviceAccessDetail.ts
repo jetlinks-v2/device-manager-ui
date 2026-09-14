@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import useClipboard from 'vue-clipboard3'
 import { marked } from 'marked'
@@ -50,12 +50,16 @@ export type IotDeviceAccessDetailProps = {
   device: IotDevice
 }
 
-export function useIotDeviceAccessDetail(props: Readonly<IotDeviceAccessDetailProps>) {
+export function useIotDeviceAccessDetail(props: Readonly<IotDeviceAccessDetailProps>, onConfigSaved: (deviceId: string) => void) {
   const { t: $t } = useI18n()
   const { toClipboard } = useClipboard()
   const accessDetail = ref<Record<string, any>>({})
   const configView = ref<Record<string, any>>({})
   const deviceConfiguration = ref<Record<string, any>>({})
+  // 保存和切设备后的配置以详情宿主为准，不在 Tab 挂载时重复查询。
+  watch(() => props.device.configuration, value => {
+    deviceConfiguration.value = { ...value }
+  }, { immediate: true })
   const deviceConfigGroups = ref<ConfigGroup[]>([])
   const principalList = ref<PrincipalRecord[]>([])
   const configEditorOpen = ref(false)
@@ -164,13 +168,16 @@ export function useIotDeviceAccessDetail(props: Readonly<IotDeviceAccessDetailPr
   }
 
   async function saveConfig() {
+    const deviceId = props.device.id
     savingConfig.value = true
     try {
-      const resp: any = await iotDeviceDetailRealApi.saveDeviceConfig(props.device.id, {
-        id: props.device.id,
+      const resp: any = await iotDeviceDetailRealApi.saveDeviceConfig(deviceId, {
+        id: deviceId,
         configuration: { ...configDraft.value },
       })
       if (resp?.status === 200) {
+        onConfigSaved(deviceId)
+        if (props.device.id !== deviceId) return
         onlyMessage($t('IotDeviceDetail.detail.saveSuccess'))
         deviceConfiguration.value = {
           ...configDraft.value,
@@ -226,11 +233,7 @@ export function useIotDeviceAccessDetail(props: Readonly<IotDeviceAccessDetailPr
 
   async function loadDeviceConfiguration() {
     if (!props.device.id) return
-    const [detailResp, configResp]: any[] = await Promise.all([
-      iotDeviceDetailRealApi.getDeviceDetail(props.device.id),
-      iotDeviceDetailRealApi.queryDeviceConfig(props.device.id).catch(() => undefined),
-    ])
-    deviceConfiguration.value = detailResp?.result?.configuration || {}
+    const configResp: any = await iotDeviceDetailRealApi.queryDeviceConfig(props.device.id).catch(() => undefined)
     deviceConfigGroups.value = Array.isArray(configResp?.result) ? configResp.result : []
   }
 
@@ -271,7 +274,7 @@ export function useIotDeviceAccessDetail(props: Readonly<IotDeviceAccessDetailPr
   function resetAccessState() {
     accessDetail.value = {}
     configView.value = {}
-    deviceConfiguration.value = {}
+    deviceConfiguration.value = { ...props.device.configuration }
     deviceConfigGroups.value = []
     principalList.value = []
     resetAccessGuideDocument()

@@ -99,6 +99,8 @@ export interface IotDevice {
   onlineAt?: number
   offlineAt?: number
   accessMode: string
+  /** 详情入口加载的设备配置，接入面板直接复用。 */
+  configuration?: Record<string, unknown>
   /** 接入方式展示名称，优先用于设备详情头部展示。 */
   accessName?: string
   /** 真实接入方式枚举值，与旧版 accessProvider 对齐。 */

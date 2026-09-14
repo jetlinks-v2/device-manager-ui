@@ -66,6 +66,7 @@
         :commands="deviceCommands"
         :session-enabled="false"
         :trace-enabled="false"
+        @config-saved="onConfigSaved"
       />
     </div>
 
@@ -249,6 +250,7 @@
           :product-template="productTemplate"
           :properties="realtimeProperties"
           :commands="deviceCommands"
+          @config-saved="onConfigSaved"
         />
 
         <LegacyMetadata
@@ -322,7 +324,7 @@ import { buildIotDeviceHealthPath, resolveIotProjectId } from '../hooks/useIotDe
 import { getIotDeviceConnectionStatus } from '../hooks/useIotDeviceStatus'
 import type { DeviceCategory, DeviceTemplate } from '../services/device-library/types'
 import { iotDeviceService } from '../services/iotDevice.service'
-import { getIotDeviceDefinition } from '../services/adapters/iotDeviceApiAdapter'
+import { mapApiDevice } from '../services/adapters/iotDeviceApiAdapter'
 import {
   extractRows,
   formatApiTime,
@@ -395,6 +397,7 @@ const { t: $t } = useI18n()
 const props = defineProps<{
   embedded?: {
     deviceId: string
+    deviceDetail?: Partial<DeviceInstance>
     panel: 'thing-model' | 'data'
     updatePermission: boolean
   }
@@ -1628,11 +1631,15 @@ function startRealtimeSubscriptions() {
 }
 
 async function loadDevice() {
-  const result = await (props.embedded
-    ? getIotDeviceDefinition(projectId.value, deviceId.value)
-    : iotDeviceService.getDevice(projectId.value, deviceId.value))
-  if (disposed) return
-  device.value = result.ok ? result.data : null
+  // 嵌入面板由宿主持有设备定义，Tab 重建只映射数据，不重新请求详情。
+  const currentDeviceId = deviceId.value
+  const result = props.embedded
+    ? null
+    : await iotDeviceService.getDevice(projectId.value, currentDeviceId)
+  if (disposed || currentDeviceId !== deviceId.value) return
+  device.value = props.embedded
+    ? (props.embedded.deviceDetail?.id === currentDeviceId ? mapApiDevice(props.embedded.deviceDetail, projectId.value) : null)
+    : (result?.ok ? result.data : null)
   syncLegacyMetadataDevice(device.value)
   realtimePropertyValues.value = {}
   propertyPageRealtimeKeys.value = []
@@ -1674,7 +1681,7 @@ function syncLegacyMetadataDevice(current: IotDevice | null) {
     independentMetadata: Boolean(current.independentMetadata),
     state: { value: current.status, text: current.status },
     deviceType: { value: current.deviceTypeValue || current.deviceType, text: current.deviceType },
-    configuration: {},
+    configuration: current.configuration || {},
     tags: current.tags,
   } as DeviceInstance)
 }
@@ -1785,9 +1792,18 @@ onScopeDispose(() => {
 // 旧版 Metadata 组件维护独立 store；变更后重新拉取设备详情，保证概览和实时订阅使用同一份有效物模型。
 function onMetadataChanged(payload?: { type?: string; id?: string }) {
   if (payload?.type !== 'device' || payload.id !== device.value?.id) return
-  void loadDevice()
+  if (!props.embedded) void loadDevice()
   emit('metadata-changed')
 }
+
+// 配置保存后刷新当前详情；迟到的旧设备保存事件不影响新设备。
+function onConfigSaved(savedDeviceId: string) {
+  if (savedDeviceId === deviceId.value) void loadDevice()
+}
+
+watch(() => props.embedded?.deviceDetail, () => {
+  if (props.embedded) void loadDevice()
+})
 
 EventEmitter.subscribe(['MetadataChanged'], onMetadataChanged)
 

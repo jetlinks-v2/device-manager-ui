@@ -15,6 +15,7 @@
             :device="device"
             :product-template="productTemplate"
             @access-detail-change="accessDetail = $event"
+            @config-saved="emit('configSaved', $event)"
           />
         </div>
       </a-tab-pane>
@@ -96,6 +97,7 @@ const props = defineProps({
 })
 
 const { t: $t } = useI18n()
+const emit = defineEmits<{ configSaved: [deviceId: string] }>()
 const route = useRoute()
 const accessDetail = ref<Record<string, any>>({})
 const deviceId = computed(() => props.device.id || undefined)

@@ -1349,7 +1349,7 @@ export function useIotDeviceDetailView() {
       independentMetadata: Boolean(current.independentMetadata),
       state: { value: current.status, text: current.status },
       deviceType: { value: current.deviceTypeValue || current.deviceType, text: current.deviceType },
-      configuration: {},
+      configuration: current.configuration || {},
       tags: current.tags,
     } as DeviceInstance)
   }
