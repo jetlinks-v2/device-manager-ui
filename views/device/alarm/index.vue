@@ -7,13 +7,21 @@
         <EqualHeightColumns left-width="18.75rem" right-width="1fr">
           <template #left>
             <section class="alarm-rule-list">
-              <header class="alarm-list-heading"><strong>{{ $t('DeviceAlarm.workspace.rules') }}</strong><span>{{ $t('DeviceAlarm.workspace.total', { total }) }}</span></header>
+              <header class="alarm-list-heading alarm-rule-heading">
+                <div class="alarm-rule-heading-title">
+                  <strong>{{ $t('DeviceAlarm.workspace.rules') }}</strong>
+                  <span :title="$t('DeviceAlarm.workspace.total', { total })">{{ $t('DeviceAlarm.workspace.total', { total }) }}</span>
+                </div>
+                <a-button type="primary" :loading="creating" :disabled="busy && !creating" @click="create">
+                  <template #icon><AIcon type="PlusOutlined" /></template>
+                  {{ $t('DeviceAlarm.action.create') }}
+                </a-button>
+              </header>
               <div class="alarm-rule-search">
-                <ConditionFilter :fields="filterFields" :modelValue="filterTerms" :placeholder="$t('DeviceAlarm.workspace.ruleSearch')"
-                                 @update:modelValue="handleFilterTermsUpdate" @change="handleSearch" />
-                <a-button type="primary" :loading="busy" @click="run(openCreate)"><AIcon type="PlusOutlined" />{{ $t('DeviceAlarm.workspace.createShort') }}</a-button>
+                <a-input-search :value="keyword" allow-clear :placeholder="$t('DeviceAlarm.workspace.keywordSearch')"
+                                :aria-label="$t('DeviceAlarm.workspace.keywordSearch')"
+                                @update:value="updateKeyword" @search="handleSearch" />
               </div>
-              <a-button class="alarm-all-rules" :type="selected ? 'default' : 'primary'" ghost @click="showAllRecords">{{ $t('DeviceAlarm.workspace.allRules') }}</a-button>
               <a-alert v-if="statusError" type="warning" show-icon :message="$t('DeviceAlarm.workspace.statusError')"><template #action><a-button type="link" size="small" @click="loadCounts">{{ $t('DeviceAlarm.workspace.retry') }}</a-button></template></a-alert>
               <a-alert v-if="listError" type="error" :message="$t('DeviceAlarm.workspace.listError')"><template #action><a-button @click="load()">{{ $t('DeviceAlarm.workspace.retry') }}</a-button></template></a-alert>
               <div v-else class="alarm-scroll">
@@ -87,11 +95,11 @@ import { useDeviceAlarmRecords } from './hooks/useDeviceAlarmRecords'
 import { useDeviceAlarmHistory } from './hooks/useDeviceAlarmHistory'
 import { useDeviceAlarmHandling } from './hooks/useDeviceAlarmHandling'
 const { t: $t } = useI18n()
-const { page, selected, ruleId, activeCounts, statusError, listError, loading, busy,
-  load, loadCounts, select, showAllRecords, remove, run } = useDeviceAlarmWorkspace($t)
-const { rows, total, pageIndex, pageSize, filterTerms, filterFields, levelOptions, triggerOptions, propertyOptions,
+const { page, selected, ruleId, activeCounts, statusError, listError, loading, busy, creating,
+  load, loadCounts, select, showAllRecords, remove, run, create } = useDeviceAlarmWorkspace($t)
+const { rows, total, pageIndex, pageSize, keyword, levelOptions, triggerOptions, propertyOptions,
   selectedProductOption, selectedDeviceOption, notifyMethods, notifyUsers, notifyLoading, editorOpen, productReloadKey,
-  editingRow, form, handleFilterTermsUpdate, handleSearch, openCreate, openEdit, requestProducts, requestDevices,
+  editingRow, form, updateKeyword, handleSearch, openEdit, requestProducts, requestDevices,
   onProductChange, onDeviceChange, onPropertyChange, loadMoreNotifyUsers, save } = page
 const { rows: records, total: recordTotal, pageIndex: recordPage, pageSize: recordSize,
   loading: recordsLoading, error: recordsError, fields: recordFields, terms: recordTerms,
@@ -111,12 +119,12 @@ const now = useNow({ interval: 1000 })
 .alarm-rule-list, .alarm-record-list { height: 100%; display: flex; min-width: 0; min-height: 0; flex-direction: column; gap: var(--space-3); overflow: hidden; }
 .alarm-list-heading { display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
 .alarm-list-heading span { color: var(--jet-theme-text-secondary); font-size: 12px; }
-.alarm-rule-search { display: flex; gap: var(--space-2); align-items: center; }
+.alarm-rule-heading { gap: var(--space-2); }
+.alarm-rule-heading-title { display: flex; align-items: center; gap: var(--space-2); min-width: 0; white-space: nowrap; }
+.alarm-rule-heading-title strong, .alarm-rule-heading > :deep(.ant-btn) { flex-shrink: 0; }
+.alarm-rule-heading-title span { overflow: hidden; text-overflow: ellipsis; }
+.alarm-rule-search { display: flex; min-width: 0; flex-shrink: 0; }
 .alarm-rule-search > :first-child { flex: 1; min-width: 0; }
-.alarm-rule-search :deep(.condition-filter__tail), .alarm-rule-search :deep(.condition-filter__text-input--tail) { min-width: 0; }
-.alarm-rule-search :deep(.condition-filter__text-input--tail) { overflow: hidden; text-overflow: ellipsis; }
-.alarm-rule-search :deep(.ant-btn) { flex-shrink: 0; }
-.alarm-all-rules { text-align: left; }
 .alarm-scroll { flex: 1; min-height: 0; overflow-y: auto; }
 .alarm-record-list { container: alarm-records / inline-size; }
 .alarm-record-items { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; gap: var(--space-4); }

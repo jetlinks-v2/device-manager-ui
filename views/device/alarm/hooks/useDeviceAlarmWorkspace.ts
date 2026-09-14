@@ -13,6 +13,7 @@ export function useDeviceAlarmWorkspace(t: (key: string, params?: Record<string,
   const listError = ref(false)
   const loading = ref(false)
   const busy = ref(false)
+  const creating = ref(false)
   let sequence = 0
   let statusSequence = 0
 
@@ -61,8 +62,15 @@ export function useDeviceAlarmWorkspace(t: (key: string, params?: Record<string,
     busy.value = true
     try { await action() } catch { message.error(t('DeviceAlarm.workspace.actionError')) } finally { busy.value = false }
   }
+  function create() {
+    return run(async () => {
+      // 操作互斥继续使用 busy，新增加载动画只跟随新增动作。
+      creating.value = true
+      try { await page.openCreate() } finally { creating.value = false }
+    })
+  }
   watch(page.tableParams, () => { void load() }, { immediate: true })
   onBeforeUnmount(() => { sequence += 1; statusSequence += 1 })
-  return { page, selected, ruleId, activeCounts, statusError, listError, loading, busy,
-    load, loadCounts, select, showAllRecords, remove, run }
+  return { page, selected, ruleId, activeCounts, statusError, listError, loading, busy, creating,
+    load, loadCounts, select, showAllRecords, remove, run, create }
 }
