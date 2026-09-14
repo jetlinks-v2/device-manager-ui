@@ -9,7 +9,7 @@
 			    <a-spin v-if="!scopeCollapsed" :spinning="scopeLoading" wrapper-class-name="unified-device-list__scope">
 				    <IotDeviceScopeSidebar v-bind="sidebarProps" @change="handleScopeChange" @create-group="openCreateGroup" @create-child-group="openCreateChildGroup" @edit-group="openEditGroup" @delete-group="confirmDeleteGroup" />
 			    </a-spin>
-			    <a-button :class="['unified-device-list__scope-toggle', { 'is-collapsed': scopeCollapsed }]" type="text" :aria-label="scopeCollapsed ? '展开设备范围' : '收起设备范围'" @click="scopeCollapsed = !scopeCollapsed"><AIcon :type="scopeCollapsed ? 'RightOutlined' : 'LeftOutlined'" /></a-button>
+<!--			    <a-button :class="['unified-device-list__scope-toggle', { 'is-collapsed': scopeCollapsed }]" type="text" :aria-label="scopeCollapsed ? '展开设备范围' : '收起设备范围'" @click="scopeCollapsed = !scopeCollapsed"><AIcon :type="scopeCollapsed ? 'RightOutlined' : 'LeftOutlined'" /></a-button>-->
 		    </template>
 		    <template #right>
 			    <div class="unified-device-list__panel">
@@ -239,5 +239,5 @@ const columns = computed(() => [
 .unified-device-list__table small { display: block; color: var(--ink-3); font-weight: normal; }
 .unified-device-list__name { padding: 0; height: auto; font-weight: 600; }
 .unified-device-list__pagination { text-align: right; }
-.unified-device-list__batch { justify-content: flex-end; align-items: center; min-height: 48px; padding: 8px 12px; color: #f5f8ff; background: #1f2d42; border: 1px solid #31445f; border-radius: 8px; }
+.unified-device-list__batch { justify-content: flex-end; align-items: center; min-height: 48px; padding: 8px 12px; border-radius: 8px; }
 </style>
