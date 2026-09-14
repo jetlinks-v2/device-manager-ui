@@ -334,14 +334,18 @@ const toDevice = (item: DeviceDetailResponse): IotDevice => {
   } as IotDevice & { createdAt?: string }
 }
 
-const enrichDeviceAreaGroups = async (devices: IotDevice[]): Promise<IotDevice[]> => {
+const enrichDeviceAreaGroups = async (
+  devices: IotDevice[],
+  groupBaseTerms?: DeviceQueryTerm[],
+): Promise<IotDevice[]> => {
   const ids = devices.map((item) => item.id).filter(Boolean)
   if (!ids.length) return devices
 
   const projectId = devices.find((item) => item.projectId)?.projectId || ''
   const [areaBindings, groupBindings] = await Promise.all([
     queryDeviceSpaceAreaBindings_api(ids, projectId).catch(() => []),
-    queryDeviceBoundGroups_api(ids).catch(() => ({})),
+    // 分组运行态补查必须沿用当前分类的范围；否则默认设备过滤会把网关、视频设备排除。
+    queryDeviceBoundGroups_api(ids, groupBaseTerms).catch(() => ({})),
   ])
   const areasByDeviceId = areaBindings.reduce<Record<string, typeof areaBindings>>((acc, item) => {
     acc[item.deviceId] = [...(acc[item.deviceId] ?? []), item]
@@ -657,7 +661,7 @@ export const queryDevicePage_api = async (params: DeviceQueryParams = {}, baseTe
   const result = response.result || {}
   const pageIndex = Number(result.pageIndex ?? params.pageIndex ?? 0)
   const pageSize = Number(result.pageSize ?? params.pageSize ?? 10)
-  const data = await enrichDeviceAreaGroups((result.data ?? []).map(toDevice))
+  const data = await enrichDeviceAreaGroups((result.data ?? []).map(toDevice), baseTerms)
 
   return {
     data,

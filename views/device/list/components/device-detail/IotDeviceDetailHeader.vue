@@ -36,8 +36,8 @@
             </div>
             <div class="dd-summary-row">
               <span class="dd-summary-label">{{ $t('IotDeviceDetail.detail.deviceType') }}</span>
-              <a-tooltip :title="deviceTypeAccessText">
-                <span class="dd-summary-value">{{ deviceTypeAccessText }}</span>
+              <a-tooltip :title="deviceTypeText">
+                <span class="dd-summary-value">{{ deviceTypeText }}</span>
               </a-tooltip>
             </div>
           </div>
@@ -169,7 +169,7 @@ type ViewState = Pick<IotDeviceDetailViewState,
   'deviceNameText' |
   'deviceSnText' |
   'productNameText' |
-  'deviceTypeAccessText' |
+  'deviceTypeText' |
   'regionText' |
   'regionFullText' |
   'businessGroupText' |
@@ -204,7 +204,7 @@ const {
   deviceNameText,
   deviceSnText,
   productNameText,
-  deviceTypeAccessText,
+  deviceTypeText,
   regionText,
   regionFullText,
   businessGroupText,

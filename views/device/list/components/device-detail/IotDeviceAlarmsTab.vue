@@ -40,16 +40,16 @@
         {{ formatDuration(record) }}
       </template>
       <template #alarmName="record">
-        <j-ellipsis>{{ displayText(record.alarmName) }}</j-ellipsis>
+        <a-tooltip :title="displayText(record.alarmName)"><span class="alarm-record-tab__ellipsis-trigger"><j-ellipsis :tooltip="false">{{ displayText(record.alarmName) }}</j-ellipsis></span></a-tooltip>
       </template>
       <template #level="record">
         <span>{{ levelLabel(record.level ?? record.alarmLevel) }}</span>
       </template>
       <template #triggerDesc="record">
-        <span class="threshold"><j-ellipsis>{{ displayText(record.triggerDesc) }}</j-ellipsis></span>
+        <a-tooltip :title="displayText(record.triggerDesc)"><span class="alarm-record-tab__ellipsis-trigger"><span class="threshold"><j-ellipsis :tooltip="false">{{ displayText(record.triggerDesc) }}</j-ellipsis></span></span></a-tooltip>
       </template>
       <template #actualDesc="record">
-        <j-ellipsis>{{ displayText(record.actualDesc) }}</j-ellipsis>
+        <a-tooltip :title="displayText(record.actualDesc)"><span class="alarm-record-tab__ellipsis-trigger"><j-ellipsis :tooltip="false">{{ displayText(record.actualDesc) }}</j-ellipsis></span></a-tooltip>
       </template>
       <template #handleTime="record">
         {{ record.handleTime ? formatApiTime(record.handleTime) : '--' }}

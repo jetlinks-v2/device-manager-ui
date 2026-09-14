@@ -14,6 +14,7 @@ import type { DeviceCreateEntry, DeviceListProvider, UnifiedDevice } from '../..
 export function useUnifiedDeviceActions(
   rows: Ref<UnifiedDevice[]>,
   selectedIds: Ref<string[]>,
+  clearBatchSelection: () => void,
   providerOf: (device: UnifiedDevice) => DeviceListProvider | undefined,
   refresh: () => void,
   activeProvider: Ref<DeviceListProvider | undefined>,
@@ -105,10 +106,10 @@ export function useUnifiedDeviceActions(
     if (provider?.editRoute) { menu.jumpPage(provider.editRoute, { params: { id: device.id }, query: { id: device.id } }); return }
     editing.value = device; editOpen.value = true
   }
-  async function execute(work: () => Promise<unknown>) {
+  async function execute(work: () => Promise<unknown>, onSuccess?: () => void) {
     if (busy.value) return
     busy.value = true
-    try { await work(); refresh() }
+    try { await work(); onSuccess?.(); refresh() }
     catch (reason) { onlyMessage(reason instanceof Error ? reason.message : t('UnifiedDeviceList.actionFailed'), 'error') }
     finally { busy.value = false }
   }
@@ -124,14 +125,14 @@ export function useUnifiedDeviceActions(
   function batchToggle(action: 'enable' | 'disable') {
     const ids = selected.value.map(device => device.id)
     if (!ids.length) return
-    Modal.confirm({ title: t(action === 'enable' ? 'IotDeviceList.confirm.batchEnable' : 'IotDeviceList.confirm.batchDisable', { count: ids.length }), onOk: () => execute(() => action === 'enable' ? batchDeployDevice_api(ids) : batchUndeployDevice_api(ids)) })
+    Modal.confirm({ title: t(action === 'enable' ? 'IotDeviceList.confirm.batchEnable' : 'IotDeviceList.confirm.batchDisable', { count: ids.length }), onOk: () => execute(() => action === 'enable' ? batchDeployDevice_api(ids) : batchUndeployDevice_api(ids), clearBatchSelection) })
   }
   async function assignArea(areaId: string) {
     await execute(async () => {
       await reassignIotDevicesToArea(areaId, selected.value.map(device => ({ id: device.id, name: device.name, productName: device.productName, state: device.status })))
       assignAreaOpen.value = false
-    })
+    }, clearBatchSelection)
   }
-  async function assignGroup(group: DeviceGroup) { await execute(async () => { await bindDeviceGroupDevices_api(group.id, [...selectedIds.value]); assignGroupOpen.value = false }) }
+  async function assignGroup(group: DeviceGroup) { await execute(async () => { await bindDeviceGroupDevices_api(group.id, [...selectedIds.value]); assignGroupOpen.value = false }, clearBatchSelection) }
   return { projectId, editing, editOpen, createEntry, canCreate, openCreate, detailDevice, busy, selected, allowed, openDetail, edit, toggle, remove, canDelete, batchToggle, assignAreaOpen, assignGroupOpen, assignArea, assignGroup }
 }

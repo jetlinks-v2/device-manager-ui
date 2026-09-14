@@ -357,7 +357,6 @@ export function useIotDeviceDetailView() {
   const deviceNameText = computed(() => displayText(device.value?.name))
   const deviceSnText = computed(() => displayText(device.value?.identifier || device.value?.id))
   const productNameText = computed(() => displayText(productTemplate.value?.name || device.value?.productName))
-  const accessModeText = computed(() => displayText(device.value?.accessName || device.value?.accessMode))
   const deviceTypeText = computed(() => {
     const value = device.value?.deviceTypeValue || device.value?.deviceType
     if (value === 'gateway') return $t('IotDeviceList.deviceType.gateway')
@@ -365,7 +364,6 @@ export function useIotDeviceDetailView() {
     if (value === 'device') return $t('IotDeviceList.deviceType.device')
     return displayText(device.value?.deviceType)
   })
-  const deviceTypeAccessText = computed(() => `${deviceTypeText.value} / ${accessModeText.value}`)
   const regionItems = computed(() => uniqueDisplayTexts([
     ...(device.value?.areaBindings ?? []).map((item) => item.area),
     device.value?.area,
@@ -1564,7 +1562,7 @@ export function useIotDeviceDetailView() {
     deviceNameText,
     deviceSnText,
     productNameText,
-    deviceTypeAccessText,
+    deviceTypeText,
     regionText,
     regionFullText,
     businessGroupText,
