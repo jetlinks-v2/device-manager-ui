@@ -31,7 +31,6 @@ import { useInstanceStore } from '../../../../../store/instance';
 import { useProductStore } from '../../../../../store/product';
 import type { Key } from 'ant-design-vue/es/_util/type';
 import { convertMetadata, getCodecs, detail as productDetail } from '../../../../../api/product';
-import { detail } from '../../../../../api/instance'
 import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import { omit , cloneDeep } from "lodash-es";
 import { useI18n } from 'vue-i18n';
@@ -137,12 +136,10 @@ watch(
       loading.value = true
       const id = props.type === 'device' ? instanceStore.current.id : route.params.id
       if (props.type === 'device') {
-        detail(id as string).then((resp) => {
-          loading.value = false
-          // instanceStore.setCurrent(resp.result)
-          value.value = resp.result.metadata
-          hideVirtualRule(resp.result.metadata)
-        });
+        // 详情入口和保存动作已同步实例，查看文本不重复查询。
+        loading.value = false
+        value.value = metadata.value
+        hideVirtualRule(metadata.value)
       } else {
         productDetail(id as string).then((resp) => {
           loading.value = false

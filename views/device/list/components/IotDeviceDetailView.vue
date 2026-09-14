@@ -1,6 +1,8 @@
 <template>
-  <IotDeviceDetailOverlays :state="state" />
-  <main v-if="device" class="iot-device-detail">
+  <IotDeviceDefaultDetailContent v-if="embedded && device" :state="state" embedded />
+  <a-alert v-else-if="embedded" type="error" show-icon :message="state.$t('UnifiedDeviceList.loadFailed')" />
+  <IotDeviceDetailOverlays v-if="!embedded" :state="state" />
+  <main v-if="!embedded && device" class="iot-device-detail">
     <div class="iot-device-detail__content">
       <ContentPanel class="iot-device-detail__summary-card" :padding="16">
         <IotDeviceDetailHeader :state="state" />
@@ -28,10 +30,12 @@ import { reactive, toRefs } from 'vue'
 import IotDeviceDetailHeader from './device-detail/IotDeviceDetailHeader.vue'
 import IotDeviceDetailOverlays from './device-detail/IotDeviceDetailOverlays.vue'
 import IotDeviceDefaultDetailContent from './IotDeviceDefaultDetailContent.vue'
-import { useIotDeviceDetailView } from '../hooks/useIotDeviceDetailView'
+import { useIotDeviceDetailView, type IotDeviceDetailViewProps } from '../hooks/useIotDeviceDetailView'
 
 // 统一头部负责设备摘要；业务 Provider 决定下方内容，页签与助手只由当前内容宿主管理。
-const state = reactive(useIotDeviceDetailView())
+const props = defineProps<IotDeviceDetailViewProps>()
+const emit = defineEmits<{ 'metadata-changed': [] }>()
+const state = reactive(useIotDeviceDetailView(props, () => emit('metadata-changed')))
 const { device, detailContent, detailContentRef, onDetailContentChanged } = toRefs(state)
 await state.ready
 </script>

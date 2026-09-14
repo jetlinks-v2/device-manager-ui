@@ -165,6 +165,7 @@ import IotDeviceAccessPrincipalSection from './IotDeviceAccessPrincipalSection.v
 
 const emit = defineEmits<{
   (e: 'accessDetailChange', value: Record<string, any>): void
+  (e: 'configSaved', deviceId: string): void
 }>()
 
 const props = defineProps({
@@ -197,7 +198,7 @@ const {
   resettingPrincipal,
   saveConfig,
   savingConfig,
-} = useIotDeviceAccessDetail(props)
+} = useIotDeviceAccessDetail(props, deviceId => emit('configSaved', deviceId))
 
 const showRightGuide = computed(() => Boolean(accessDetail.value?.id))
 const isDisabled = computed(() => props.device.status === 'disabled' || props.device.connectionStatus === 'disabled')
