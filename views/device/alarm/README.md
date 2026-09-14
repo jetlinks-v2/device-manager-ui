@@ -1,12 +1,38 @@
 # 物联告警规则与记录工作区
 
+## 规则关键词搜索
+
+- 左侧使用 a-input-search，提示“搜索告警名称、产品或设备”，不再显示字段/运算符/条件标签。沿用视觉告警搜索控件和当前标题布局，右侧继续使用 ConditionFilter。
+- `hooks/useDeviceAlarmRuleSearch.ts` 区分输入草稿与已提交文本，回车/搜索提交，清空恢复全部规则，重复提交相同值不重复请求；提交时规则分页回到第一页，不改变已选规则或右侧搜索。
+- `hooks/useDeviceAlarmPage.ts` 使用 keyword 条件构建分页查询。复用共享 escapeLikeValue 对百分号和反斜杠的转义，补充下划线字面匹配，不重复编码。
+- 接口契约、PostgreSQL适用范围、权限与发布顺序见 `modules/device-manager/README.md` 的“物联告警关键词查询”。搜索范围是配置的告警名称、产品名或设备名，未包含通知文本与卡片摘要。
+- 验证：`node scripts/test-alarm-workspace.mjs` 的8项测试与 `pnpm run build:modules device-manager-ui` 通过；浏览器 fixture 装配真实搜索模板、Ant组件和查询hook，300/260px宽度下长输入、回车、清空、转义、标题按钮同排与无脚本错误检查通过。测试没有替代完整登录页面联调。
+- `pnpm exec vue-tsc --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json` 仍被既有 Certificate/type.d.ts:2:30 的TS1005阻断；未修改该文件。当前模块无统一lint脚本，diff --check通过。未新增页面组件或跨模块抽象，改动Vue文件不足300行；已有大型useDeviceAlarmPage仅替换搜索职责并抽出独立hook，未扩展其他业务。
+
+## 规则栏局部修复（已确认实施）
+
+- 目标：修复点击编辑时新增按钮触发加载动画的问题；标题与新增按钮同排；移除左侧搜索与规则列表之间的“全部规则”按钮。
+- 范围与入口：仅 runtime-ui/modules/device-manager-ui/views/device/alarm/index.vue 及 hooks/useDeviceAlarmWorkspace.ts；用户已确认实施，沿用当前规则筛选与记录处置工作台。
+- 根因与修复：index.vue 的新增按钮原使用共享 busy 作为 loading，而编辑、删除、保存同样调用 run 切换 busy。现在 create() 复用 run 的操作互斥，新增加载状态 creating 仅在新增动作期间开启，并在 finally 中复位；其他动作期间新增按钮禁用但不显示加载动画。加号改用按钮 icon 插槽，加载时由组件替换图标。
+- 布局：告警规则标题、现有数量与“新增告警”同排；下一行为关键词搜索框，随后直接展示规则卡片。参考 runtime-ui/modules/jetlinks-ai-ui/views/visual-alarm-preview/components/VisualAlarmCategorySidebar.vue 的标题/操作排列，复用现有 Ant Design 按钮、AIcon 及 DeviceAlarm.action.create 文案；不引入视觉告警业务逻辑。
+  ```text
+  告警规则 共 N 条     [+ 新增告警] | 告警记录
+  [筛选规则                   ] | [记录搜索]
+  [规则卡片                   ] | 查询范围 [已选规则 ×]
+  ```
+- 保持紧凑规则卡、状态与等级位置、原编辑弹窗及双栏布局；不改 ui、后端、接口、权限和时长计算。
+- 实现：已分离新增加载状态并保留重复点击保护；标题、数量和按钮同排，数量过长时省略并保留 title；已删除左侧全部入口及废弃样式。未新增组件或跨模块抽象，模板无新增复杂业务逻辑，状态隔离原因已在 hook 注释。
+- 验证：node scripts/test-alarm-workspace.mjs 的 7 项测试通过，包括规则范围切换保留记录搜索。另用真实 useDeviceAlarmWorkspace 与 Vue renderer、模拟页面异步依赖核验：编辑/删除/保存不触发 creating，新增期间重复点击和其他操作被拦截，失败后 busy/creating 均复位。git diff --check 通过；index.vue 共149行；按钮复用键的中英文解析正常。
+- 构建：runtime-ui 下 pnpm run build:modules device-manager-ui 通过；存在资源路径与 chunk 体积等已有警告。
+- 验证限制：pnpm exec vue-tsc --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json 被既有 views/link/Certificate/type.d.ts:2:30 的 TS1005 阻断；模块暂无统一 lint 脚本。未进行登录页面的浏览器验证，仍需核验真实页面编辑前后按钮位置、标题/按钮同排与窄屏无溢出，以及关闭右侧规则标签后返回全部记录。
+
 ## 已确认方案与实施边界
 用户已确认最新 HTML 原型并授权生产实现。本次为 runtime-ui 单模块页面改造，入口仍为 /alarms/rules/iot，componentCode 为 device/alarm。
 
 采用规则筛选与记录处置工作台：
 ```
-规则搜索 + 新增     | 记录独立搜索
-全部规则           | 当前规则范围 / 返回全部
+告警规则 数量 新增  | 告警记录
+规则搜索           | 记录独立搜索 / 当前规则范围 / 返回全部
 名称 状态数量 等级  | 名称 等级 状态
 产品设备阈值摘要…   | 设备 / 最近告警时间 / 持续时长 / 原因
 编辑 删除          | 告警处理 / 告警日志 / 处理记录

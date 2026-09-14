@@ -9,9 +9,34 @@ import { alarmDuration, canHandleRecord } from '../views/device/alarm/workspaceU
 import { useDeviceAlarmHistory } from '../views/device/alarm/hooks/useDeviceAlarmHistory'
 import { createEmptyNotification, matchesAlarmNotifyMethod } from '../views/device/alarm/utils'
 import type { DeviceAlarmNotifyMethod } from '../views/device/alarm/types'
+import { useDeviceAlarmRuleSearch } from '../views/device/alarm/hooks/useDeviceAlarmRuleSearch'
 
 const response = (id: string, total = 1) => ({ result: { data: [{ id, sourceName: id }], total } })
 const flush = async () => { await nextTick(); await new Promise(resolve => setTimeout(resolve, 0)); await nextTick() }
+
+test('rule keyword search submits a literal pattern and clears only the rule query', () => {
+  let page = 3
+  let requests = 0
+  const search = useDeviceAlarmRuleSearch(() => { page = 0; requests += 1 })
+  search.updateKeyword('  温度_50%\\探头  ')
+  assert.deepEqual(search.terms.value, [])
+  assert.equal(page, 3)
+  search.submit()
+  assert.deepEqual(search.terms.value, [{ column: 'keyword', termType: 'like', value: '%温度\\_50\\%\\\\探头%' }])
+  assert.equal(page, 0)
+  assert.equal(requests, 1)
+  search.submit()
+  assert.equal(requests, 1)
+  search.updateKeyword('未提交的草稿')
+  assert.equal(search.terms.value[0].value, '%温度\\_50\\%\\\\探头%')
+  search.updateKeyword('')
+  search.submit()
+  assert.deepEqual(search.terms.value, [])
+  assert.equal(requests, 2)
+  search.updateKeyword('   ')
+  search.submit()
+  assert.equal(requests, 2)
+})
 
 test('read-only notification names use the same configured channel identity as the editor', () => {
   const notification = { ...createEmptyNotification(), channelProviders: ['email'], parameters: {

@@ -1,7 +1,6 @@
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { message } from 'ant-design-vue'
-import type { ConditionFilterField, ConditionFilterTerm } from '@jetlinks-web-core/components/ConditionFilter'
-import { buildQueryFilter } from '@jetlinks-web-core/components/ConditionFilter'
+import { useDeviceAlarmRuleSearch } from './useDeviceAlarmRuleSearch'
 import {
   deviceAlarmApi,
   queryAlarmTargets,
@@ -48,8 +47,10 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
   const pageIndex = ref(0)
   const pageSize = ref(10)
   const refreshKey = ref(0)
-  const filterTerms = ref<ConditionFilterTerm[]>([])
-  const submittedTerms = ref<ConditionFilterTerm[]>([])
+  const ruleSearch = useDeviceAlarmRuleSearch(() => {
+    pageIndex.value = 0
+    refreshKey.value += 1
+  })
   const targetOptions = ref<DeviceAlarmTargetOption[]>([])
   const propertyOptions = ref<ThingModelProperty[]>([])
   const levelOptions = ref<AlarmLevelOption[]>(createDefaultLevelOptions(t))
@@ -73,36 +74,9 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
     { label: t('DeviceAlarm.trigger.inside'), value: 'inside' },
   ])
 
-  const filterFields = computed<ConditionFilterField[]>(() => [
-    {
-      dataIndex: 'productName',
-      title: t('DeviceAlarm.form.product'),
-      search: {
-        type: 'string',
-        defaultTermType: 'like',
-      },
-    },
-    {
-      dataIndex: 'deviceName',
-      title: t('DeviceAlarm.form.deviceRange'),
-      search: {
-        type: 'string',
-        defaultTermType: 'like',
-      },
-    },
-    {
-      dataIndex: 'property',
-      title: t('DeviceAlarm.column.property'),
-      search: {
-        type: 'string',
-        defaultTermType: 'like',
-      },
-    },
-  ])
-
   const tableParams = computed(() => ({
     refreshKey: refreshKey.value,
-    filterKey: JSON.stringify(submittedTerms.value),
+    filterKey: JSON.stringify(ruleSearch.terms.value),
   }))
 
   async function loadTargets(source?: DeviceAlarmSource) {
@@ -167,17 +141,6 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
     } finally {
       if (sequence === requestSequence) loading.value = false
     }
-  }
-
-  function handleFilterTermsUpdate(terms: ConditionFilterTerm[] = []) {
-    filterTerms.value = terms
-  }
-
-  function handleSearch() {
-    // 保留原始编辑模型；change 事件的 terms 已转换，不能交给 getFilterTerms 再次编码。
-    submittedTerms.value = filterTerms.value
-    pageIndex.value = 0
-    refreshKey.value += 1
   }
 
   async function openCreate() {
@@ -339,16 +302,11 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
     await refresh()
   }
 
-  function getFilterTerms() {
-    const filter = buildQueryFilter(submittedTerms.value, filterFields.value)
-    return Array.isArray(filter.terms) ? filter.terms : []
-  }
-
   function buildPageQuery(currentPageIndex = pageIndex.value, currentPageSize = pageSize.value) {
     return {
       pageSize: currentPageSize,
       pageIndex: currentPageIndex,
-      terms: getFilterTerms(),
+      terms: ruleSearch.terms.value,
       sorts: [{ name: 'id', order: 'desc' }],
     }
   }
@@ -454,8 +412,7 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
     buildPageQuery,
     total,
     tableParams,
-    filterTerms,
-    filterFields,
+    keyword: ruleSearch.keyword,
     levelOptions,
     triggerOptions,
     targetOptions,
@@ -472,8 +429,8 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
     refresh,
     tableRequest,
     formatTriggerText,
-    handleFilterTermsUpdate,
-    handleSearch,
+    updateKeyword: ruleSearch.updateKeyword,
+    handleSearch: ruleSearch.submit,
     openCreate,
     openEdit,
     onSourceChange,
