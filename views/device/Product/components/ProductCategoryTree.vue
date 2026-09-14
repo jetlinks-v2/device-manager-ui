@@ -1,5 +1,5 @@
 <template>
-  <ContentPanel class="product-category-tree" :aria-label="$t('Product.index.660348-36')">
+  <div class="product-category-tree" :aria-label="$t('Product.index.660348-36')">
     <a-input
       v-model:value="keyword"
       class="product-category-tree__search"
@@ -83,7 +83,7 @@
       <template #icon><AIcon type="PlusOutlined" /></template>
       {{ $t('Category.index.779033-15') }}
     </a-button>
-  </ContentPanel>
+  </div>
 </template>
 
 <script setup lang="ts">

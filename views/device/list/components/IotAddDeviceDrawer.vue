@@ -75,21 +75,6 @@
             :handle-image-before-upload="handleImageBeforeUpload"
             :on-select-preset-icon="selectPresetIcon"
           />
-          <a-form-item
-            v-if="creationSource === 'library' && libraryProductNeedsStorePolicy"
-            class="add-device__field add-device__field--full"
-            :label="$t('IotDeviceList.add.storePolicy')"
-            name="storePolicy"
-            required
-          >
-            <a-select
-              v-model:value="form.storePolicy"
-              :loading="libraryProductChecking"
-              :options="storagePolicyOptions"
-              :placeholder="$t('IotDeviceList.add.storePolicyPlaceholder')"
-            />
-            <p class="add-device__field-hint">{{ $t('IotDeviceList.add.storePolicySharedTip') }}</p>
-          </a-form-item>
         </template>
       </a-form>
     </section>
@@ -150,10 +135,10 @@ const editDrawerProps = {
 }
 const {
   creationSource, isLibraryAvailable, selectedProductKey, selectedTemplateKey, selectedSource,
-  libraryProductNeedsStorePolicy, libraryProductChecking,
+  productMenuAvailable,
   productMessage, productLoading, libraryLoading, libraryTagLoading, busy, submitAction, errorMessage,
   imagePreviewUrl, imageFileName, formRef, form, formRules, installProgressState,
-  areaTreeData, groupTreeData, storagePolicyOptions, configOptionsLoading,
+  areaTreeData, groupTreeData, configOptionsLoading,
   categoryTree, categoryLoading, selectedCategoryId, productCandidates, productTotal, productPageIndex, productPageSize,
   libraryProducts, libraryTagGroups, libraryPageIndex, libraryPageSize, libraryHasMore,
   selectSource, selectProduct, selectTemplate, selectProductCategory, selectUnclassifiedProductCategory,
@@ -175,12 +160,12 @@ const {
 
 const sourceOptions = computed(() => [
   { value: 'library', label: $t('IotDeviceList.add.librarySource') },
-  { value: 'product', label: $t('IotDeviceList.add.productSource') },
+  ...(productMenuAvailable.value ? [{ value: 'product', label: $t('IotDeviceList.add.productSource') }] : []),
 ])
 const activePrimaryBusy = computed(() => isEditMode.value ? editBusy.value : busy.value)
 const activeSubmitDisabled = computed(() => isEditMode.value
   ? !props.device
-  : busy.value || configOptionsLoading.value || libraryProductChecking.value,
+  : busy.value || configOptionsLoading.value,
 )
 const activeErrorMessage = computed(() => isEditMode.value ? editErrorMessage.value : errorMessage.value)
 const activeForm = computed(() => isEditMode.value ? editForm : form)

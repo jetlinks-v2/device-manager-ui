@@ -1,8 +1,13 @@
+import i18n from '@jetlinks-web-core/locales'
 import type {
   AiClientToolOrdering,
   AiClientToolOutputField,
 } from '@jetlinks-web-core/layout/components/AiChat/clientTools'
-import type { ClientToolInputAlternative } from '@jetlinks-web-core/layout/components/AiChat/clientToolApi'
+import {
+  defineClientToolAnalyticalProducer,
+  type ClientToolAnalyticalSemanticIntentBindingDefinition,
+  type ClientToolInputAlternative,
+} from '@jetlinks-web-core/layout/components/AiChat/clientToolApi'
 import type { ThingModelMetadata } from '@device-manager-ui/views/device/list/services/iotDeviceDetailReal.service'
 import {
   IOT_DEVICE_PROPERTY_AGGREGATES,
@@ -12,10 +17,50 @@ import {
 export type IotDevicePropertyAggregate = typeof IOT_DEVICE_PROPERTY_AGGREGATES[number]
 export type IotDevicePropertyAnalysisMode = typeof IOT_DEVICE_PROPERTY_ANALYSIS_MODES[number]
 
-export const IOT_DEVICE_PROPERTY_AGGREGATE_INTENTS = [
-  '分析设备属性的历史趋势、分桶统计或地理位置轨迹',
-  'analyze device property history as bucketed statistics, trends, or geographic paths',
+export const IOT_DEVICE_PROPERTY_STATISTICAL_INTENTS = [
+  '分析设备属性的历史趋势或分桶统计',
+  'analyze device property history as bucketed statistics or trends',
 ] as const
+
+export const IOT_DEVICE_PROPERTY_ORDERED_PATH_INTENTS = [
+  '分析设备属性的地理位置轨迹',
+  'analyze device property history as a geographic path',
+] as const
+
+export const IOT_DEVICE_PROPERTY_AGGREGATE_INTENTS = [
+  ...IOT_DEVICE_PROPERTY_STATISTICAL_INTENTS,
+  ...IOT_DEVICE_PROPERTY_ORDERED_PATH_INTENTS,
+] as const
+
+const IOT_DEVICE_PROPERTY_ANALYTICAL_COORDINATE = 'device_property'
+
+export const IOT_DEVICE_PROPERTY_AGGREGATE_ANALYTICAL = defineClientToolAnalyticalProducer<Record<string, any>>({
+  producerKey: 'device.property.aggregate',
+  factKey: 'device.property.aggregate-values',
+  subjects: ['device'],
+  measures: [{
+    name: IOT_DEVICE_PROPERTY_ANALYTICAL_COORDINATE,
+    aggregations: ['count', 'distinct_count', 'avg', 'max', 'min', 'first', 'last'],
+    units: [],
+  }],
+  dimensions: ['time'],
+  filters: [],
+  grains: [],
+  criteria: ['trend'],
+  semanticIntentBindings: IOT_DEVICE_PROPERTY_STATISTICAL_INTENTS.map(intent => ({
+    intent,
+    criterion: 'trend',
+    measures: [IOT_DEVICE_PROPERTY_ANALYTICAL_COORDINATE],
+    dimensions: ['time'],
+  })) as unknown as readonly [
+    ClientToolAnalyticalSemanticIntentBindingDefinition,
+    ...ClientToolAnalyticalSemanticIntentBindingDefinition[],
+  ],
+  ordering: [{ axis: 'time', direction: 'asc' }],
+  coverage: 'complete-or-partial',
+  output: 'property-aggregate',
+  outputFields: 'execution-authored',
+})
 
 export const IOT_DEVICE_PROPERTY_AGGREGATE_NOT_FOR = [
   '读取未聚合的原始属性明细',
@@ -30,6 +75,7 @@ export interface IotDevicePropertyAggregateColumn {
   agg: IotDevicePropertyAggregate
   geoPointValue: boolean
   unit?: string
+  unitLabel?: string
 }
 
 export interface IotDevicePropertyAggregatePlan {
@@ -52,6 +98,8 @@ interface AggregateCopy {
 const NUMERIC_TYPES = new Set([
   'int', 'long', 'float', 'double', 'number', 'integer', 'short', 'byte', 'decimal',
 ])
+const INTEGER_TYPES = new Set(['int', 'long', 'integer', 'short', 'byte'])
+const BOOLEAN_TYPES = new Set(['bool', 'boolean'])
 const GEO_POINT_TYPE = 'geopoint'
 const NUMERIC_ONLY_AGGREGATES = new Set<IotDevicePropertyAggregate>(['AVG', 'MAX', 'MIN'])
 const GEO_POINT_VALUE_AGGREGATES = new Set<IotDevicePropertyAggregate>(['FIRST', 'LAST'])
@@ -62,6 +110,15 @@ const TARGET_ORDERED_PATH_BUCKETS = 1000
 export const IOT_DEVICE_PROPERTY_AGGREGATE_ORDERING: AiClientToolOrdering = {
   keys: [{ field: 'time', direction: 'asc' }],
   producerGuaranteed: true,
+}
+
+export const IOT_DEVICE_PROPERTY_AGGREGATE_TIME_FIELD: AiClientToolOutputField = {
+  name: 'time',
+  type: 'timestamp',
+  role: 'temporal_dimension',
+  axis: 'time',
+  encoding: 'date-time',
+  format: 'datetime',
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> => (
@@ -175,6 +232,15 @@ const propertyUnitOf = (property: Record<string, unknown>) => {
   return text(valueType.unit || expands.unit) || undefined
 }
 
+const propertyUnitLabelOf = (property: Record<string, unknown>) => {
+  const valueType = asRecord(property.valueType)
+  const expands = asRecord(valueType.expands)
+  return text(
+    valueType.unitName ?? valueType.unitText ?? valueType.unitLabel
+      ?? expands.unitName ?? expands.unitText ?? expands.unitLabel,
+  ) || undefined
+}
+
 const supportedAggregates = (
   propertyType: string,
   requested: readonly IotDevicePropertyAggregate[],
@@ -263,6 +329,7 @@ export const createIotDevicePropertyAggregatePlan = (
         && propertyType === GEO_POINT_TYPE
         && GEO_POINT_VALUE_AGGREGATES.has(agg),
       unit: propertyUnitOf(property),
+      unitLabel: propertyUnitLabelOf(property),
     }))
   })
   const countByProperty = new Map<string, number>()
@@ -313,6 +380,14 @@ const timeSortValue = (value: unknown) => {
   const normalized = text(value).replace(' ', 'T')
   const parsed = Date.parse(normalized)
   return Number.isFinite(parsed) ? parsed : undefined
+}
+
+/** Converts the exact producer-declared timestamp value to the canonical transport encoding used by typed outputs. */
+export const normalizeIotDevicePropertyTimestamp = (value: unknown) => {
+  const timestamp = timeSortValue(value)
+  if (timestamp === undefined) return undefined
+  const date = new Date(timestamp)
+  return Number.isNaN(date.getTime()) ? undefined : date.toISOString()
 }
 
 const padTimePart = (value: number) => String(value).padStart(2, '0')
@@ -516,7 +591,7 @@ const hasAggregateMeasurement = (
   if (value === undefined || value === null) return false
   if (typeof value === 'number') return Number.isFinite(value)
   if (typeof value === 'string'
-    && ['number', 'longitude', 'latitude', 'duration'].includes(field.semanticRole)) {
+    && (field.type === 'number' || field.type === 'integer')) {
     return value.trim() !== '' && Number.isFinite(Number(value))
   }
   // Empty categories and false states can be real domain values; absence is represented by null/undefined.
@@ -531,7 +606,7 @@ export const createIotDevicePropertyAggregateTransport = (
   rows: readonly Record<string, unknown>[],
   fields: readonly AiClientToolOutputField[],
 ): IotDevicePropertyAggregateTransport => {
-  const measureFields = fields.filter(field => field.semanticRole !== 'timestamp')
+  const measureFields = fields.filter(field => field.role !== 'temporal_dimension')
   let measurementCount = 0
   const data = rows.filter((row) => {
     const count = measureFields.reduce((total, field) => (
@@ -556,8 +631,9 @@ export const normalizeIotDevicePropertyAggregateRows = (
 ) => rows
   .filter(isRecord)
   .map((row, index) => {
+    const sourceTime = row.time ?? row.timestamp ?? row.createTime
     const record: Record<string, unknown> = {
-      time: row.time ?? row.timestamp ?? row.createTime,
+      time: normalizeIotDevicePropertyTimestamp(sourceTime) ?? sourceTime,
     }
     columns.forEach((column) => {
       const value = row[column.alias] ?? row[column.property]
@@ -585,20 +661,22 @@ export const createIotDevicePropertyAggregateFields = (
   columns: readonly IotDevicePropertyAggregateColumn[],
   copy: Pick<AggregateCopy, 'longitude' | 'latitude'>,
 ): AiClientToolOutputField[] => [
-  { name: 'time', semanticRole: 'timestamp', format: 'datetime' },
+  { ...IOT_DEVICE_PROPERTY_AGGREGATE_TIME_FIELD },
   ...columns.flatMap((column): AiClientToolOutputField[] => {
     if (column.geoPointValue) {
       return [
         {
           name: coordinateField(column.alias, 'longitude'),
-          semanticRole: 'longitude',
+          type: 'number',
+          role: 'longitude',
           label: copy.longitude(column.propertyLabel),
           measure: column.alias,
           aggregation: column.agg.toLowerCase(),
         },
         {
           name: coordinateField(column.alias, 'latitude'),
-          semanticRole: 'latitude',
+          type: 'number',
+          role: 'latitude',
           label: copy.latitude(column.propertyLabel),
           measure: column.alias,
           aggregation: column.agg.toLowerCase(),
@@ -606,13 +684,26 @@ export const createIotDevicePropertyAggregateFields = (
       ]
     }
     const counted = column.agg === 'COUNT' || column.agg === 'DISTINCT_COUNT'
+    const numeric = NUMERIC_TYPES.has(column.propertyType) || counted
+    if (numeric) {
+      return [{
+        name: column.alias,
+        type: counted || INTEGER_TYPES.has(column.propertyType) ? 'integer' : 'number',
+        role: 'measure',
+        label: column.propertyLabel,
+        measure: column.alias,
+        aggregation: column.agg.toLowerCase(),
+        ...(counted
+          ? { unit: 'count', unitLabel: String(i18n.global.t('IotDeviceGroups.unit.count')) }
+          : column.unit ? { unit: column.unit } : {}),
+        ...(!counted && column.unitLabel ? { unitLabel: column.unitLabel } : {}),
+      }]
+    }
     return [{
       name: column.alias,
-      semanticRole: NUMERIC_TYPES.has(column.propertyType) || counted ? 'number' : 'category',
+      type: BOOLEAN_TYPES.has(column.propertyType) ? 'boolean' : 'string',
+      role: BOOLEAN_TYPES.has(column.propertyType) ? 'state' : 'label',
       label: column.propertyLabel,
-      measure: column.alias,
-      aggregation: column.agg.toLowerCase(),
-      ...(counted ? { unit: 'count' } : column.unit ? { unit: column.unit } : {}),
     }]
   }),
 ]
@@ -634,7 +725,7 @@ export type IotDevicePropertyAggregateOutputLabelKind =
   | 'ordered_path'
 
 /**
- * Resolves an execution label only from producer-declared field labels, aggregation, semantic roles and ordering.
+ * Resolves an execution label only from producer-declared field labels, aggregation, canonical roles and ordering.
  * Stable binding identity remains static, and no property key or sample value participates in this decision.
  */
 export const resolveIotDevicePropertyAggregateOutputLabel = (
@@ -646,10 +737,10 @@ export const resolveIotDevicePropertyAggregateOutputLabel = (
   const labels = (selected: readonly AiClientToolOutputField[]) => Array.from(new Set(
     selected.map(field => text(field.label)).filter(Boolean),
   )).slice(0, 4)
-  const longitude = normalizedFields.filter(field => field.semanticRole === 'longitude')
-  const latitude = normalizedFields.filter(field => field.semanticRole === 'latitude')
+  const longitude = normalizedFields.filter(field => field.role === 'longitude')
+  const latitude = normalizedFields.filter(field => field.role === 'latitude')
   const timestampNames = new Set(
-    normalizedFields.filter(field => field.semanticRole === 'timestamp').map(field => field.name),
+    normalizedFields.filter(field => field.role === 'temporal_dimension').map(field => field.name),
   )
   const orderedByTimestamp = !!ordering?.producerGuaranteed
     && ordering.keys.some(key => timestampNames.has(key.field))
@@ -662,9 +753,7 @@ export const resolveIotDevicePropertyAggregateOutputLabel = (
     return coordinateLabels.length ? format('ordered_path', coordinateLabels) : undefined
   }
 
-  const values = normalizedFields.filter(field => (
-    field.semanticRole === 'number' || field.semanticRole === 'duration'
-  ))
+  const values = normalizedFields.filter(field => field.role === 'measure')
   const valueLabels = labels(values)
   if (!values.length || !valueLabels.length) return undefined
   const aggregations = Array.from(new Set(values.map(field => text(field.aggregation).toLowerCase()).filter(Boolean)))

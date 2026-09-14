@@ -225,15 +225,15 @@ const setFilterValue = (filter: Record<string, any>, key: string, value: unknown
 const setLikeFilterValue = (filter: Record<string, any>, key: string, value: unknown) => {
   const text = likeValue(value);
   if (text) {
-    filter[`${key}$like`] = text;
+    filter[`${key}$like$ignoreCase`] = text;
   }
 };
 
 const setIdOrNameLikeFilter = (filter: Record<string, any>, value: unknown) => {
   const text = likeValue(value);
   if (text) {
-    filter['id$like'] = text;
-    filter['$or$name$like'] = text;
+    filter['id$like$ignoreCase'] = text;
+    filter['$or$name$like$ignoreCase'] = text;
   }
 };
 
@@ -266,10 +266,9 @@ const buildSearchFilter = (args: Record<string, any>, relationFilter: Record<str
   const idOrName = firstTextArg(args, 'idOrName', 'deviceIdOrName', 'device');
   const id = firstTextArg(args, 'id', 'deviceId');
   const name = firstTextArg(args, 'name', 'deviceName');
-  const onlyUncertainId = id && !name && !keyword && !idOrName && args.strictId !== true;
 
   const filter: Record<string, any> = {};
-  const idOrNameValue = keyword || idOrName || (onlyUncertainId ? id : '');
+  const idOrNameValue = keyword || idOrName;
   if (idOrNameValue) {
     // QueryParamEntity.filter avoids hand-built terms in the client tool.
     setIdOrNameLikeFilter(filter, idOrNameValue);
@@ -309,8 +308,8 @@ const searchOrganizations = async (keyword: string) => {
   const response = await getOrgList({
     paging: false,
     filter: {
-      'id$like': likeValue(keyword),
-      '$or$name$like': likeValue(keyword),
+      'id$like$ignoreCase': likeValue(keyword),
+      '$or$name$like$ignoreCase': likeValue(keyword),
     },
   });
 

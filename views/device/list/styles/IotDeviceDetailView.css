@@ -1,5 +1,115 @@
 /* 标签扩展会增高中间列；抵消居中布局的半程位移，保持两侧原有位置。 */
 
+/* 详情页外壳与边缘节点详情保持同一套双卡片节奏；业务内容仍由 #260 宿主决定。 */
+.iot-device-detail {
+  min-width: 0;
+  min-height: 0;
+  padding: var(--space-4);
+}
+
+.iot-device-detail__content {
+  display: grid;
+  align-content: start;
+  min-width: 0;
+  min-height: calc(100vh - 5rem);
+  gap: var(--space-3);
+}
+
+.iot-device-detail__summary-card,
+.iot-device-detail__content-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 0.0625rem solid var(--jet-theme-border);
+  border-radius: var(--jet-theme-radius-lg);
+  background: var(--jet-theme-bg-container);
+}
+
+.iot-device-detail__summary-card {
+  border-color: var(--jet-theme-border-secondary);
+  border-radius: 1rem;
+}
+
+.iot-device-detail__content-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.iot-device-detail__legacy-content {
+  min-width: 0;
+  min-height: 32rem;
+}
+
+/* ContentPanel renders an empty title row when no title is supplied. */
+.iot-device-detail__summary-card :deep(> .ant-flex:empty),
+.iot-device-detail__content-card :deep(> .ant-flex:empty) {
+  display: none;
+}
+
+/* The card is the visual boundary; the #260 tab shell supplies only its content layout. */
+.iot-device-detail__content-card :deep(.dd-tab-shell) {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+}
+
+.iot-device-detail__content-card :deep(.dd-detail-tabs),
+.iot-device-detail__content-card :deep(.device-instance-detail-content__tabs) {
+  margin: 0;
+  padding: 0 var(--space-4);
+}
+
+.iot-device-detail__content-card :deep(.dd-detail-tabs .ant-tabs-nav),
+.iot-device-detail__content-card :deep(.device-instance-detail-content__tabs .ant-tabs-nav) {
+  margin: 0;
+}
+
+.iot-device-detail__content-card :deep(.dd-detail-tabs .ant-tabs-nav::before),
+.iot-device-detail__content-card :deep(.device-instance-detail-content__tabs .ant-tabs-nav::before) {
+  border-bottom-color: var(--jet-theme-border);
+}
+
+.iot-device-detail__content-card :deep(.dd-detail-tabs .ant-tabs-tab),
+.iot-device-detail__content-card :deep(.device-instance-detail-content__tabs .ant-tabs-tab) {
+  padding: var(--space-3) 0;
+  color: var(--jet-theme-text-secondary);
+  font-size: var(--fs-14);
+}
+
+.iot-device-detail__content-card :deep(.dd-detail-tabs .ant-tabs-tab + .ant-tabs-tab),
+.iot-device-detail__content-card :deep(.device-instance-detail-content__tabs .ant-tabs-tab + .ant-tabs-tab) {
+  margin-left: var(--space-5);
+}
+
+.iot-device-detail__content-card :deep(.dd-detail-tabs .ant-tabs-tab:hover),
+.iot-device-detail__content-card :deep(.dd-detail-tabs .ant-tabs-tab-active .ant-tabs-tab-btn),
+.iot-device-detail__content-card :deep(.device-instance-detail-content__tabs .ant-tabs-tab:hover),
+.iot-device-detail__content-card :deep(.device-instance-detail-content__tabs .ant-tabs-tab-active .ant-tabs-tab-btn) {
+  color: var(--jet-theme-primary);
+}
+
+.iot-device-detail__content-card :deep(.dd-detail-tabs .ant-tabs-tab-active .ant-tabs-tab-btn),
+.iot-device-detail__content-card :deep(.device-instance-detail-content__tabs .ant-tabs-tab-active .ant-tabs-tab-btn) {
+  font-weight: 500;
+}
+
+.iot-device-detail__content-card :deep(.dd-detail-tabs .ant-tabs-ink-bar),
+.iot-device-detail__content-card :deep(.device-instance-detail-content__tabs .ant-tabs-ink-bar) {
+  height: 0.125rem;
+  background: var(--jet-theme-primary);
+}
+
+.iot-device-detail__content-card :deep(.dd-tab-content) {
+  min-width: 0;
+}
+
+@media (max-width: 62rem) {
+  .iot-device-detail__content-card :deep(.dd-tab-content) {
+    padding: var(--space-3);
+  }
+}
+
 .dd-delete-target {
   display: grid;
   gap: var(--space-1);

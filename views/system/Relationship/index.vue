@@ -1,74 +1,77 @@
 <template>
   <j-page-container>
-    <div class="relationship-container">
-      <FullPage :fixed="false" hasPadding>
-        <j-pro-table
-          ref="tableRef"
-          class="pro-table__no-padding"
-          :columns="columns"
-          :request="getRelationshipList_api"
-          mode="TABLE"
-          :params="queryParams"
-          :defaultParams="{
-            sorts: [{ name: 'createTime', order: 'desc' }],
-          }"
-        >
-          <template #headerLeftRender>
-            <a-flex gap="small">
-              <ConditionFilter
-                class="relationship-container__filter"
-                :columns="columns"
-                @change="handleSearch"
-              />
-              <j-permission-button
-                type="primary"
-                :hasPermission="`${permission}:add`"
-                @click="table.openDialog(undefined)"
-              >
-                <AIcon type="PlusOutlined" />{{
-                  $t("Relationship.index.710824-0")
-                }}
-              </j-permission-button>
-            </a-flex>
-          </template>
-          <template #action="slotProps">
-            <a-space :size="16">
-              <j-permission-button
-                :hasPermission="`${permission}:update`"
-                type="link"
-                :tooltip="{
-                  title: $t('Relationship.index.710824-1'),
-                }"
-                @click="table.openDialog(slotProps)"
-              >
-                <AIcon type="EditOutlined" />
-              </j-permission-button>
-
-              <j-permission-button
-                :danger="true"
-                :hasPermission="`${permission}:delete`"
-                type="link"
-                :tooltip="{ title: $t('Relationship.index.710824-2') }"
-                :popConfirm="{
-                  title: $t('Relationship.index.710824-3'),
-                  onConfirm: () => table.clickDel(slotProps),
-                }"
-                :disabled="slotProps.status"
-              >
-                <AIcon type="DeleteOutlined" />
-              </j-permission-button>
-            </a-space>
-          </template>
-        </j-pro-table>
-      </FullPage>
-
+	  <div class="relationship-container">
+	    <FullPage :fixed="false" hasPadding transparentBackground>
+	      <ContentPanel>
+	        
+	        <j-pro-table
+	          ref="tableRef"
+	          class="pro-table__no-padding"
+	          :columns="columns"
+	          :request="getRelationshipList_api"
+	          mode="TABLE"
+	          :params="queryParams"
+	          :defaultParams="{
+	            sorts: [{ name: 'createTime', order: 'desc' }],
+	          }"
+	        >
+	          <template #headerLeftRender>
+	            <a-flex gap="small">
+	              <ConditionFilter
+	                class="relationship-container__filter"
+	                :columns="columns"
+	                @change="handleSearch"
+	              />
+	              <j-permission-button
+	                type="primary"
+	                :hasPermission="`${permission}:add`"
+	                @click="table.openDialog(undefined)"
+	              >
+	                <AIcon type="PlusOutlined" />{{
+	                  $t("Relationship.index.710824-0")
+	                }}
+	              </j-permission-button>
+	            </a-flex>
+	          </template>
+	          <template #action="slotProps">
+	            <a-space :size="16">
+	              <j-permission-button
+	                :hasPermission="`${permission}:update`"
+	                type="link"
+	                :tooltip="{
+	                  title: $t('Relationship.index.710824-1'),
+	                }"
+	                @click="table.openDialog(slotProps)"
+	              >
+	                <AIcon type="EditOutlined" />
+	              </j-permission-button>
+	
+	              <j-permission-button
+	                :danger="true"
+	                :hasPermission="`${permission}:delete`"
+	                type="link"
+	                :tooltip="{ title: $t('Relationship.index.710824-2') }"
+	                :popConfirm="{
+	                  title: $t('Relationship.index.710824-3'),
+	                  onConfirm: () => table.clickDel(slotProps),
+	                }"
+	                :disabled="slotProps.status"
+	              >
+	                <AIcon type="DeleteOutlined" />
+	              </j-permission-button>
+	            </a-space>
+	          </template>
+	        </j-pro-table>
+	        
+	      </ContentPanel>
+	    </FullPage>
       <EditDialog
         v-if="dialog.visible"
         v-model:visible="dialog.visible"
         :data="dialog.selectRow"
         @refresh="table.refresh"
       />
-    </div>
+	  </div>
   </j-page-container>
 </template>
 

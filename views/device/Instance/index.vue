@@ -1,195 +1,197 @@
 <template>
     <j-page-container>
+    <FullPage transparentBackground>
+      <ContentPanel>
         <pro-search
             :columns="columns"
             target="device-instance"
             @search="handleSearch"
         />
-        <FullPage>
-            <JProTable
-                ref="instanceRef"
-                :columns="columns"
-                :request="queryDetails"
-                :defaultParams="{
-                    sorts: [{ name: 'createTime', order: 'desc' }, { name: 'name', order: 'desc'}],
-                    context: {
-                        includeTags: false,
-                        includeBind: false,
-                        includeRelations: false,
-                        includeFirmwareInfos: false,
-                        includeParent: false,
-                    },
-                }"
-                :rowSelection="
-                    isCheck
-                        ? {
-                              selectedRowKeys: _selectedRowKeys,
-                              onSelect: onSelectChange,
-                              onSelectAll: selectAll,
-                              onSelectNone: () => (_selectedRowKeys = []),
-                          }
-                        : false
-                "
-                :params="params"
-                modeValue="CARD"
-            >
-                <template #headerLeftRender>
-                    <RegistryComponent code="addTool" is="a-space" @save="saveBtn">
-                        <slot name="instanceAdd"></slot>
+        <JProTable
+            ref="instanceRef"
+            :columns="columns"
+            :request="queryDetails"
+            :defaultParams="{
+                sorts: [{ name: 'createTime', order: 'desc' }, { name: 'name', order: 'desc'}],
+                context: {
+                    includeTags: false,
+                    includeBind: false,
+                    includeRelations: false,
+                    includeFirmwareInfos: false,
+                    includeParent: false,
+                },
+            }"
+            :rowSelection="
+                isCheck
+                    ? {
+                          selectedRowKeys: _selectedRowKeys,
+                          onSelect: onSelectChange,
+                          onSelectAll: selectAll,
+                          onSelectNone: () => (_selectedRowKeys = []),
+                      }
+                    : false
+            "
+            :params="params"
+            modeValue="CARD"
+        >
+            <template #headerLeftRender>
+                <RegistryComponent code="addTool" is="a-space" @save="saveBtn">
+                    <slot name="instanceAdd"></slot>
+                    <j-permission-button
+                        v-if="!slots.instanceAdd"
+                        type="primary"
+                        key="add"
+                        @click="handleAdd"
+                        hasPermission="device/Instance:add"
+                    >
+                        <template #icon
+                            ><AIcon type="PlusOutlined"
+                        /></template>
+                        {{ $t('Instance.index.133466-0') }}
+                    </j-permission-button>
+                    <BatchDropdown
+                        key="batch"
+                        v-model:isCheck="isCheck"
+                        :actions="batchActions"
+                        @change="onCheckChange"
+                    />
+                </RegistryComponent>
+            </template>
+            <template #card="slotProps">
+                <CardBox
+                    :value="slotProps"
+                    @click="handleClick"
+                    :actions="getActions(slotProps, 'card')"
+                    :active="_selectedRowKeys.includes(slotProps.id)"
+                    :status="slotProps.state?.value"
+                    :statusText="slotProps.state?.text"
+                    :statusNames="{
+                        online: 'processing',
+                        offline: 'error',
+                        notActive: 'warning',
+                    }"
+                >
+                    <template #img>
+                        <Image
+                            class="card-list-img-80"
+                            :src="
+                                slotProps?.devicePhotoUrl ||
+                                slotProps?.productPhotoUrl ||
+                                device.deviceCard
+                            "
+                        />
+                    </template>
+                    <template #content>
+                        <j-ellipsis
+                            style="
+                                width: calc(100% - 100px);
+                                margin-bottom: 18px;
+                            "
+                        >
+                            <span style="font-size: 16px; font-weight: 600">
+                                {{ getI18nText(slotProps, 'name') }}
+                            </span>
+                        </j-ellipsis>
+                        <a-row>
+                            <a-col :span="12">
+                                <div class="card-item-content-text">
+                                    {{ $t('Instance.index.133466-1') }}
+                                </div>
+                                <div>{{ slotProps.deviceType?.text }}</div>
+                            </a-col>
+                            <a-col :span="12">
+                                <div class="card-item-content-text">
+                                    {{ $t('Instance.index.133466-2') }}
+                                </div>
+                                <j-ellipsis style="width: 100%">
+                                    {{ getI18nText(slotProps, 'productName') }}
+                                </j-ellipsis>
+                            </a-col>
+                        </a-row>
+                    </template>
+                    <template #actions="item">
                         <j-permission-button
-                            v-if="!slots.instanceAdd"
-                            type="primary"
-                            key="add"
-                            @click="handleAdd"
-                            hasPermission="device/Instance:add"
+                            :disabled="item.disabled"
+                            :popConfirm="item.popConfirm"
+                            :tooltip="{
+                                ...item.tooltip,
+                            }"
+                            @click="item.onClick"
+                            :hasPermission="'device/Instance:' + item.key"
+                        >
+                            <AIcon
+                                type="DeleteOutlined"
+                                v-if="item.key === 'delete'"
+                            />
+                            <template v-else>
+                                <AIcon :type="item.icon" />
+                                <span>{{ item?.text }}</span>
+                            </template>
+                        </j-permission-button>
+                    </template>
+                </CardBox>
+            </template>
+            <template #state="slotProps">
+                <j-badge-status
+                    :status="slotProps.state?.value"
+                    :text="slotProps.state?.text"
+                    :statusNames="{
+                        online: 'processing',
+                        offline: 'error',
+                        notActive: 'warning',
+                    }"
+                />
+            </template>
+            <template #name="slotProps">
+                {{ getI18nText(slotProps, 'name') }}
+            </template>
+            <template #description="slotProps">
+                {{ getI18nText(slotProps, 'description') }}
+            </template>
+            <template #productName="slotProps">
+                {{ getI18nText(slotProps, 'productName') }}
+            </template>
+            <template #createTime="slotProps">
+                <span>{{
+                    slotProps?.createTime
+                        ? dayjs(slotProps.createTime).format(
+                              'YYYY-MM-DD HH:mm:ss',
+                          )
+                        : ''
+                }}</span>
+            </template>
+            <template #action="slotProps">
+                <a-space :size="16">
+                    <template
+                        v-for="i in getActions(slotProps, 'table')"
+                        :key="i.key"
+                    >
+                        <j-permission-button
+                            :disabled="i.disabled"
+                            :popConfirm="i.popConfirm"
+                            :tooltip="{
+                                ...i.tooltip,
+                            }"
+                            @click="i.onClick"
+                            type="link"
+                            style="padding: 0 5px"
+                            :danger="i.key === 'delete'"
+                            :hasPermission="
+                                i.key === 'view'
+                                    ? true
+                                    : 'device/Instance:' + i.key
+                            "
                         >
                             <template #icon
-                                ><AIcon type="PlusOutlined"
+                                ><AIcon :type="i.icon"
                             /></template>
-                            {{ $t('Instance.index.133466-0') }}
                         </j-permission-button>
-                        <BatchDropdown
-                            key="batch"
-                            v-model:isCheck="isCheck"
-                            :actions="batchActions"
-                            @change="onCheckChange"
-                        />
-                    </RegistryComponent>
-                </template>
-                <template #card="slotProps">
-                    <CardBox
-                        :value="slotProps"
-                        @click="handleClick"
-                        :actions="getActions(slotProps, 'card')"
-                        :active="_selectedRowKeys.includes(slotProps.id)"
-                        :status="slotProps.state?.value"
-                        :statusText="slotProps.state?.text"
-                        :statusNames="{
-                            online: 'processing',
-                            offline: 'error',
-                            notActive: 'warning',
-                        }"
-                    >
-                        <template #img>
-                            <Image
-                                class="card-list-img-80"
-                                :src="
-                                    slotProps?.devicePhotoUrl ||
-                                    slotProps?.productPhotoUrl ||
-                                    device.deviceCard
-                                "
-                            />
-                        </template>
-                        <template #content>
-                            <j-ellipsis
-                                style="
-                                    width: calc(100% - 100px);
-                                    margin-bottom: 18px;
-                                "
-                            >
-                                <span style="font-size: 16px; font-weight: 600">
-                                    {{ getI18nText(slotProps, 'name') }}
-                                </span>
-                            </j-ellipsis>
-                            <a-row>
-                                <a-col :span="12">
-                                    <div class="card-item-content-text">
-                                        {{ $t('Instance.index.133466-1') }}
-                                    </div>
-                                    <div>{{ slotProps.deviceType?.text }}</div>
-                                </a-col>
-                                <a-col :span="12">
-                                    <div class="card-item-content-text">
-                                        {{ $t('Instance.index.133466-2') }}
-                                    </div>
-                                    <j-ellipsis style="width: 100%">
-                                        {{ getI18nText(slotProps, 'productName') }}
-                                    </j-ellipsis>
-                                </a-col>
-                            </a-row>
-                        </template>
-                        <template #actions="item">
-                            <j-permission-button
-                                :disabled="item.disabled"
-                                :popConfirm="item.popConfirm"
-                                :tooltip="{
-                                    ...item.tooltip,
-                                }"
-                                @click="item.onClick"
-                                :hasPermission="'device/Instance:' + item.key"
-                            >
-                                <AIcon
-                                    type="DeleteOutlined"
-                                    v-if="item.key === 'delete'"
-                                />
-                                <template v-else>
-                                    <AIcon :type="item.icon" />
-                                    <span>{{ item?.text }}</span>
-                                </template>
-                            </j-permission-button>
-                        </template>
-                    </CardBox>
-                </template>
-                <template #state="slotProps">
-                    <j-badge-status
-                        :status="slotProps.state?.value"
-                        :text="slotProps.state?.text"
-                        :statusNames="{
-                            online: 'processing',
-                            offline: 'error',
-                            notActive: 'warning',
-                        }"
-                    />
-                </template>
-                <template #name="slotProps">
-                    {{ getI18nText(slotProps, 'name') }}
-                </template>
-                <template #description="slotProps">
-                    {{ getI18nText(slotProps, 'description') }}
-                </template>
-                <template #productName="slotProps">
-                    {{ getI18nText(slotProps, 'productName') }}
-                </template>
-                <template #createTime="slotProps">
-                    <span>{{
-                        slotProps?.createTime
-                            ? dayjs(slotProps.createTime).format(
-                                  'YYYY-MM-DD HH:mm:ss',
-                              )
-                            : ''
-                    }}</span>
-                </template>
-                <template #action="slotProps">
-                    <a-space :size="16">
-                        <template
-                            v-for="i in getActions(slotProps, 'table')"
-                            :key="i.key"
-                        >
-                            <j-permission-button
-                                :disabled="i.disabled"
-                                :popConfirm="i.popConfirm"
-                                :tooltip="{
-                                    ...i.tooltip,
-                                }"
-                                @click="i.onClick"
-                                type="link"
-                                style="padding: 0 5px"
-                                :danger="i.key === 'delete'"
-                                :hasPermission="
-                                    i.key === 'view'
-                                        ? true
-                                        : 'device/Instance:' + i.key
-                                "
-                            >
-                                <template #icon
-                                    ><AIcon :type="i.icon"
-                                /></template>
-                            </j-permission-button>
-                        </template>
-                    </a-space>
-                </template>
-            </JProTable>
-        </FullPage>
+                    </template>
+                </a-space>
+            </template>
+        </JProTable>
+      </ContentPanel>
+    </FullPage>
     </j-page-container>
     <Import
         v-if="importVisible"

@@ -416,13 +416,138 @@
                 "value": "support"
               },
               "supportDataAccess": true,
-              "assetTypes": [],
+              "assetTypes": [
+                "aiScene",
+                "device",
+                "deviceGroup"
+              ],
               "options": {},
               "showPage": [
                 "device-instance",
                 "device-template"
               ],
-              "permissions": [],
+              "permissions": [
+                {
+                  "permission": "device-instance",
+                  "actions": [
+                    "delete",
+                    "import",
+                    "export",
+                    "enable",
+                    "query",
+                    "save",
+                    "disable"
+                  ]
+                },
+                {
+                  "permission": "device-product",
+                  "actions": [
+                    "query",
+                    "save"
+                  ]
+                },
+                {
+                  "permission": "device-category",
+                  "actions": [
+                    "query"
+                  ]
+                },
+                {
+                  "permission": "device-template",
+                  "actions": [
+                    "query"
+                  ]
+                },
+                {
+                  "permission": "ai_scene",
+                  "actions": [
+                    "query",
+                    "delete"
+                  ]
+                },
+                {
+                  "permission": "ai_model",
+                  "actions": [
+                    "query"
+                  ]
+                },
+                {
+                  "permission": "ai-edge-task-operation-execution",
+                  "actions": [
+                    "query",
+                    "save"
+                  ]
+                },
+                {
+                  "permission": "marketplace",
+                  "actions": [
+                    "query",
+                    "install",
+                    "upgrade"
+                  ]
+                },
+                {
+                  "permission": "system-monitor",
+                  "actions": [
+                    "query"
+                  ]
+                },
+                {
+                  "permission": "transparent-codec",
+                  "actions": [
+                    "query",
+                    "save"
+                  ]
+                },
+                {
+                  "permission": "device-gateway",
+                  "actions": [
+                    "query"
+                  ]
+                },
+                {
+                  "permission": "space-data-bind",
+                  "actions": [
+                    "query",
+                    "save"
+                  ]
+                },
+                {
+                  "permission": "media-channel",
+                  "actions": [
+                    "query"
+                  ]
+                },
+                {
+                  "permission": "device-group",
+                  "actions": ["query"]
+                },
+                {
+                  "permission": "space-management",
+                  "actions": [
+                    "query",
+                    "save"
+                  ]
+                },
+                {
+                  "permission": "space-type",
+                  "actions": [
+                    "query"
+                  ]
+                },
+                {
+                  "permission": "alarm-record",
+                  "actions": [
+                    "query"
+                  ]
+                },
+                {
+                  "permission": "edge-manager",
+                  "actions": [
+                    "proxy"
+                  ]
+                }
+              ],
               "children": [
                 {
                   "code": "iot-user/device/list",
@@ -485,6 +610,26 @@
                       ]
                     },
                     {
+                      "permission": "ai_scene",
+                      "actions": [
+                        "query",
+                        "delete"
+                      ]
+                    },
+                    {
+                      "permission": "ai_model",
+                      "actions": [
+                        "query"
+                      ]
+                    },
+                    {
+                      "permission": "ai-edge-task-operation-execution",
+                      "actions": [
+                        "query",
+                        "save"
+                      ]
+                    },
+                    {
                       "permission": "marketplace",
                       "actions": [
                         "query",
@@ -514,7 +659,14 @@
                     {
                       "permission": "space-data-bind",
                       "actions": [
+                        "query",
                         "save"
+                      ]
+                    },
+                    {
+                      "permission": "media-channel",
+                      "actions": [
+                        "query"
                       ]
                     },
                     {
@@ -538,6 +690,12 @@
                       "permission": "alarm-record",
                       "actions": [
                         "query"
+                      ]
+                    },
+                    {
+                      "permission": "edge-manager",
+                      "actions": [
+                        "proxy"
                       ]
                     }
                   ],

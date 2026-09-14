@@ -2,6 +2,7 @@ import type { AiClientToolOutputField } from '@jetlinks-web-core/layout/componen
 
 export type DevicePropertyAggregateRecord = Record<string, unknown>
 export type DevicePropertyAggregate = 'AVG' | 'MAX' | 'MIN' | 'COUNT' | 'FIRST' | 'LAST' | 'DISTINCT_COUNT'
+type DevicePropertyAggregateField = Extract<AiClientToolOutputField, { type: string; role: string }>
 
 export interface DevicePropertyAggregateTimeRange {
   start?: number
@@ -24,8 +25,10 @@ const PROPERTY_AGGREGATES = new Set<DevicePropertyAggregate>([
 ])
 const NUMERIC_REQUIRED_AGGREGATES = new Set<DevicePropertyAggregate>(['AVG', 'MAX', 'MIN'])
 const NUMERIC_PROPERTY_VALUE_TYPES = new Set([
-  'int', 'float', 'double', 'long', 'number', 'integer', 'short', 'byte',
+  'int', 'float', 'double', 'long', 'number', 'integer', 'short', 'byte', 'decimal',
 ])
+const INTEGER_PROPERTY_VALUE_TYPES = new Set(['int', 'long', 'integer', 'short', 'byte'])
+const BOOLEAN_PROPERTY_VALUE_TYPES = new Set(['bool', 'boolean'])
 const GEO_POINT_PROPERTY_VALUE_TYPE = 'geopoint'
 const AGGREGATE_INTERVALS = new Set(['1m', '1h', '1d', '1w', '1M'])
 const AGGREGATE_DEFAULT_RANGE_MS = 24 * 60 * 60 * 1000
@@ -149,11 +152,6 @@ const isSingleOrderedPathColumn = (
   columns[0].agg,
 )
 
-const aggregateTimeFieldName = (
-  metadata: DevicePropertyAggregateRecord,
-  columns: DevicePropertyAggregateColumn[],
-) => isSingleOrderedPathColumn(metadata, columns) ? 't' : 'time'
-
 const coordinateFieldName = (
   metadata: DevicePropertyAggregateRecord,
   columns: DevicePropertyAggregateColumn[],
@@ -233,6 +231,29 @@ export const devicePropertyAggregateTimeFormat = (interval: string) => (
     : 'yyyy-MM-dd HH:mm:ss'
 )
 
+export const DEVICE_PROPERTY_AGGREGATE_TIME_FIELD: DevicePropertyAggregateField = {
+  name: 'time',
+  type: 'timestamp',
+  role: 'temporal_dimension',
+  axis: 'time',
+  encoding: 'date-time',
+  format: 'datetime',
+}
+
+const timeSortValue = (value: unknown) => {
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  const parsed = Date.parse(String(value || '').trim().replace(' ', 'T'))
+  return Number.isFinite(parsed) ? parsed : undefined
+}
+
+/** Converts the producer timestamp to the exact encoding declared by the canonical time field. */
+export const normalizeDevicePropertyAggregateTimestamp = (value: unknown) => {
+  const timestamp = timeSortValue(value)
+  if (timestamp === undefined) return undefined
+  const date = new Date(timestamp)
+  return Number.isNaN(date.getTime()) ? undefined : date.toISOString()
+}
+
 export const createDevicePropertyAggregateColumns = (
   metadata: DevicePropertyAggregateRecord,
   propertyIds: string[],
@@ -261,11 +282,13 @@ export const normalizeDevicePropertyAggregateData = (
   compactValue: (value: unknown, maxLength: number) => unknown,
 ) => {
   const orderedPath = isSingleOrderedPathColumn(metadata, columns)
-  const timeField = aggregateTimeFieldName(metadata, columns)
   return asArray<DevicePropertyAggregateRecord>(devicePropertyAggregateResponseResult(response))
     .map((item) => {
+      const sourceTime = item.time ?? item.timestamp ?? item.createTime
       const record: DevicePropertyAggregateRecord = {
-        [timeField]: item.time ?? item.timestamp ?? item.createTime,
+        [DEVICE_PROPERTY_AGGREGATE_TIME_FIELD.name]: (
+          normalizeDevicePropertyAggregateTimestamp(sourceTime) ?? sourceTime
+        ),
       }
       columns.forEach(({ property: propertyId, agg }) => {
         const property = findDevicePropertyMetadata(metadata, propertyId)
@@ -287,12 +310,6 @@ export const normalizeDevicePropertyAggregateData = (
     // A closed path cannot contain a timestamp-only row. Mixed aggregates keep their other measures.
     .filter(record => !orderedPath || ('x' in record && 'y' in record))
     .reverse()
-}
-
-const timeSortValue = (value: unknown) => {
-  if (typeof value === 'number' && Number.isFinite(value)) return value
-  const parsed = Date.parse(String(value || '').trim().replace(' ', 'T'))
-  return Number.isFinite(parsed) ? parsed : undefined
 }
 
 const padTimePart = (value: number) => String(value).padStart(2, '0')
@@ -430,38 +447,48 @@ export const createDevicePropertyAggregateFields = (
   metadata: DevicePropertyAggregateRecord,
   columns: DevicePropertyAggregateColumn[],
   coordinateLabels: DevicePropertyAggregateCoordinateLabels,
-): AiClientToolOutputField[] => [
-  {
-    name: aggregateTimeFieldName(metadata, columns),
-    semanticRole: 'timestamp',
-    format: 'datetime',
-  },
-  ...columns.flatMap(({ property: propertyId, agg }): AiClientToolOutputField[] => {
+): DevicePropertyAggregateField[] => [
+  { ...DEVICE_PROPERTY_AGGREGATE_TIME_FIELD },
+  ...columns.flatMap(({ property: propertyId, agg }): DevicePropertyAggregateField[] => {
     const property = findDevicePropertyMetadata(metadata, propertyId)
     if (isGeoPointValueAggregate(property, agg)) {
       const propertyLabel = String(property?.name || propertyId)
       return [
         {
           name: coordinateFieldName(metadata, columns, propertyId, 'longitude'),
-          semanticRole: 'longitude',
+          type: 'number',
+          role: 'longitude',
           label: coordinateLabels.longitude(propertyLabel),
           measure: propertyId,
           aggregation: agg.toLowerCase(),
         },
         {
           name: coordinateFieldName(metadata, columns, propertyId, 'latitude'),
-          semanticRole: 'latitude',
+          type: 'number',
+          role: 'latitude',
           label: coordinateLabels.latitude(propertyLabel),
           measure: propertyId,
           aggregation: agg.toLowerCase(),
         },
       ]
     }
-    const numeric = isNumericProperty(property) || agg === 'COUNT' || agg === 'DISTINCT_COUNT'
-    const unit = agg === 'COUNT' || agg === 'DISTINCT_COUNT' ? 'count' : propertyUnit(property)
+    const counted = agg === 'COUNT' || agg === 'DISTINCT_COUNT'
+    const numeric = isNumericProperty(property) || counted
+    if (!numeric) {
+      const boolean = BOOLEAN_PROPERTY_VALUE_TYPES.has(String(propertyValueType(property) || '').toLowerCase())
+      return [{
+        name: propertyId,
+        type: boolean ? 'boolean' : 'string',
+        role: boolean ? 'state' : 'label',
+        ...(property?.name ? { label: String(property.name) } : {}),
+      }]
+    }
+    const propertyType = String(propertyValueType(property) || '').toLowerCase()
+    const unit = counted ? 'count' : propertyUnit(property)
     return [{
       name: propertyId,
-      semanticRole: numeric ? 'number' as const : 'category' as const,
+      type: counted || INTEGER_PROPERTY_VALUE_TYPES.has(propertyType) ? 'integer' : 'number',
+      role: 'measure',
       ...(property?.name ? { label: String(property.name) } : {}),
       measure: propertyId,
       aggregation: agg.toLowerCase(),
@@ -473,11 +500,11 @@ export const createDevicePropertyAggregateFields = (
 const normalizedFieldText = (value: unknown) => String(value || '').trim().toLowerCase()
 
 export const isDevicePropertyAggregateOrderedPath = (
-  fields: readonly AiClientToolOutputField[],
+  fields: readonly DevicePropertyAggregateField[],
 ) => {
-  const timestamps = fields.filter(field => field.semanticRole === 'timestamp')
-  const longitudes = fields.filter(field => field.semanticRole === 'longitude')
-  const latitudes = fields.filter(field => field.semanticRole === 'latitude')
+  const timestamps = fields.filter(field => field.role === 'temporal_dimension')
+  const longitudes = fields.filter(field => field.role === 'longitude')
+  const latitudes = fields.filter(field => field.role === 'latitude')
   if (timestamps.length + longitudes.length + latitudes.length !== fields.length
     || timestamps.length !== 1
     || longitudes.length !== 1
@@ -507,7 +534,7 @@ const jsonByteLength = (value: unknown) => {
  */
 export const shouldInlineDevicePropertyAggregate = (
   data: readonly DevicePropertyAggregateRecord[],
-  fields: readonly AiClientToolOutputField[],
+  fields: readonly DevicePropertyAggregateField[],
   inlineLimit: number,
 ) => data.length <= inlineLimit || (
   data.length <= MAX_ORDERED_PATH_INLINE_RECORDS
@@ -515,14 +542,18 @@ export const shouldInlineDevicePropertyAggregate = (
   && jsonByteLength(data) <= MAX_ORDERED_PATH_INLINE_BYTES
 )
 
-export const createDevicePropertyAggregateRecordSchema = (fields: AiClientToolOutputField[]) => ({
+const devicePropertyAggregateSchemaType = (field: DevicePropertyAggregateField) => {
+  if (field.type === 'timestamp' || field.type === 'string') return 'string'
+  if (field.type === 'duration') return 'number'
+  return field.type
+}
+
+export const createDevicePropertyAggregateRecordSchema = (fields: DevicePropertyAggregateField[]) => ({
   type: 'object',
   properties: Object.fromEntries(fields.map(field => [field.name, {
-    type: ['number', 'duration', 'longitude', 'latitude'].includes(field.semanticRole || '')
-      ? 'number'
-      : 'string',
-    'x-ai-role': field.semanticRole,
-    ...(field.format === 'datetime' ? { format: 'date-time' } : {}),
+    type: devicePropertyAggregateSchemaType(field),
+    'x-ai-role': field.role,
+    ...(field.type === 'timestamp' && field.encoding === 'date-time' ? { format: 'date-time' } : {}),
     ...(field.label ? { label: field.label } : {}),
     ...(field.measure ? { 'x-ai-measure': field.measure } : {}),
     ...(field.unit ? { 'x-ai-unit': field.unit } : {}),

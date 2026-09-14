@@ -12,6 +12,7 @@ import { IOT_DEVICE_LIST_EXCLUDED_ACCESS_PROVIDERS, withIotDeviceListDefaultTerm
 import { isSelectableDeviceCreationCandidate } from '@device-manager-ui/utils/deviceCreationSources'
 import { queryDeviceBoundGroups_api } from './deviceGroup'
 import { queryDeviceSpaceAreaBindings_api } from './spaceArea'
+import { prepareDeviceQueryTerm } from './deviceQueryTerms'
 import type {
   ApiResponse,
   CreateDeviceApiInput,
@@ -218,59 +219,11 @@ const pickExtension = (extensions: DeviceExtension | undefined) => ({
   tags: extensions?.iot?.tags ?? extensions?.tags,
 })
 
-const normalizeLikeTermValue = (term: DeviceQueryTerm): DeviceQueryTerm => {
-  const queryTerm = { ...term }
-  delete queryTerm.skipKeywordExpand
-  if (Array.isArray(term.terms)) {
-    return {
-      ...queryTerm,
-      terms: term.terms.map(normalizeLikeTermValue),
-    }
-  }
-
-  if (['like', 'nlike'].includes(String(term.termType || '')) && typeof term.value === 'string') {
-    const value = term.value.trim()
-    return {
-      ...queryTerm,
-      value: value.includes('%') ? value : `%${value}%`,
-    }
-  }
-
-  return queryTerm
-}
-
-const expandKeywordTerm = (term: DeviceQueryTerm): DeviceQueryTerm => {
-  if (Array.isArray(term.terms)) {
-    return {
-      ...term,
-      terms: term.terms.map(expandKeywordTerm),
-    }
-  }
-
-  if (term.skipKeywordExpand || term.column !== 'name' || String(term.termType || '') !== 'like' || typeof term.value !== 'string') {
-    return normalizeLikeTermValue(term)
-  }
-
-  const value = normalizeLikeTermValue(term).value
-
-  return {
-    type: term.type,
-    terms: [
-      { column: 'name', termType: 'like', value },
-      { column: 'id', termType: 'like', value, type: 'or' },
-      { column: 'identifier', termType: 'like', value, type: 'or' },
-      { column: 'productName', termType: 'like', value, type: 'or' },
-      { column: 'productId$product-info', value: [{ column: 'manufacturer', termType: 'like', value }], type: 'or' },
-      { column: 'productId$product-info', value: [{ column: 'model', termType: 'like', value }], type: 'or' },
-    ],
-  }
-}
-
 const buildQueryBody = (params: DeviceQueryParams = {}) => ({
   pageIndex: params.pageIndex ?? 0,
   pageSize: params.pageSize ?? 10,
   sorts: params.sorts ?? [{ name: 'createTime', order: 'desc' }],
-  terms: params.terms?.map(expandKeywordTerm),
+  terms: params.terms?.map(prepareDeviceQueryTerm),
   context: {
     includeTags: true,
     includeRelations: true,
@@ -282,7 +235,7 @@ const buildQueryBody = (params: DeviceQueryParams = {}) => ({
 
 const buildDeviceListQueryBody = (params: DeviceQueryParams = {}) => ({
   ...buildQueryBody(params),
-  terms: withIotDeviceListDefaultTerms((params.terms ?? []).map(expandKeywordTerm)),
+  terms: withIotDeviceListDefaultTerms((params.terms ?? []).map(prepareDeviceQueryTerm)),
 })
 
 const buildNoPagingBody = (terms: DeviceQueryTerm[] = []) => ({

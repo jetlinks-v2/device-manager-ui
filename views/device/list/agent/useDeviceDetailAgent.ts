@@ -6,12 +6,12 @@ import {
   createAiClientToolRuntime,
   type AiClientToolRuntime,
 } from '@jetlinks-web-core/layout/components/AiChat/clientTools'
-import { getProjectIdFromLocation } from '@jetlinks-web-core/utils/project-runtime'
-import { getDeviceDetail_api } from '@device-manager-ui/api/device'
 import { IOT_DEVICE_DETAIL_AGENT_TABS } from './deviceDetailAgent.constants'
 import { createDeviceDetailAgentService } from './deviceDetailAgent.service'
 import { createDeviceDetailAgentTools } from './deviceDetailAgent.tools'
 import { createDeviceDetailAgentWorkflows } from './deviceDetailAgent.workflows'
+import { resolveIotProjectId } from '../hooks/useIotDeviceRouting'
+import { iotDeviceService } from '../services/iotDevice.service'
 
 export const DEVICE_DETAIL_AGENT_CLIENT_ID = 'deviceDetailChat'
 
@@ -79,17 +79,18 @@ export function useDeviceDetailAgent() {
     return true
   }
 
-  const sync = async (value: unknown) => {
+  const sync = async ([projectValue, deviceValue]: readonly unknown[]) => {
     const version = ++requestVersion
-    const deviceId = normalizeText(value)
+    const projectId = normalizeText(projectValue)
+    const deviceId = normalizeText(deviceValue)
     release()
-    if (!deviceId) return
+    if (!projectId || !deviceId) return
 
-    // The detail query is the permission boundary; never create a subject or tool closure before it succeeds.
-    const device = await getDeviceDetail_api(deviceId).catch(() => null)
-    if (version !== requestVersion || !device) return
+    // Use the same project-scoped detail contract as the page; failures never create a subject or tool closure.
+    const result = await iotDeviceService.getDevice(projectId, deviceId).catch(() => null)
+    if (version !== requestVersion || !result?.ok || !result.data) return
 
-    const projectId = normalizeText(getProjectIdFromLocation())
+    const device = result.data
     const service = createDeviceDetailAgentService(device)
     activeService = service
     const tools = createDeviceDetailAgentTools(service)
@@ -166,7 +167,7 @@ export function useDeviceDetailAgent() {
   }
 
   watch(
-    () => route.params.id,
+    () => [resolveIotProjectId(route), route.params.id] as const,
     value => void sync(value),
     { immediate: true },
   )

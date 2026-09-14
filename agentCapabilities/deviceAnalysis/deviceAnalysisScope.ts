@@ -4,6 +4,10 @@ import {
 } from '@jetlinks-web-core/layout/components/AiChat/domainAgentTools'
 import { getProjectIdFromLocation } from '@jetlinks-web-core/utils/project-runtime'
 import type { DeviceQueryTerm } from '@device-manager-ui/api/device'
+import {
+  createDeviceIgnoreCaseLikeTerm,
+  createDeviceKeywordQueryTerm,
+} from '@device-manager-ui/api/deviceQueryTerms'
 import { queryDeviceGroupPage_api } from '@device-manager-ui/api/deviceGroup'
 import {
   queryProjectSpaceAreaSettings_api,
@@ -24,14 +28,7 @@ export const buildDeviceAnalysisSearchTerms = async (
   const terms: DeviceQueryTerm[] = []
   const keyword = normalizeText(args.keyword)
   if (keyword) {
-    terms.push({
-      terms: [
-        { column: 'name', termType: 'like', value: keyword },
-        { column: 'id', termType: 'like', value: keyword, type: 'or' },
-        { column: 'identifier', termType: 'like', value: keyword, type: 'or' },
-        { column: 'productName', termType: 'like', value: keyword, type: 'or' },
-      ],
-    })
+    terms.push(createDeviceKeywordQueryTerm(keyword))
   }
 
   const state = normalizeText(args.state)
@@ -42,7 +39,7 @@ export const buildDeviceAnalysisSearchTerms = async (
   if (normalizeText(args.productId)) {
     terms.push({ column: 'productId', termType: 'eq', value: normalizeText(args.productId) })
   } else if (normalizeText(args.productName)) {
-    terms.push({ column: 'productName', termType: 'like', value: normalizeText(args.productName) })
+    terms.push(createDeviceIgnoreCaseLikeTerm('productName', normalizeText(args.productName)))
   }
 
   const group = normalizeText(args.group)

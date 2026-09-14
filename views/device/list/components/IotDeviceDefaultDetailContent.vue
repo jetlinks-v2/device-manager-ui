@@ -1,6 +1,6 @@
 <template>
   <template v-if="device">
-    <div v-if="activeTab !== 'access'" class="dd-hidden-access">
+    <div v-if="!embedded && activeTab !== 'access'" class="dd-hidden-access">
       <IotDeviceAccessDetailTab
         ref="accessDetailRef"
         :device="device"
@@ -15,6 +15,7 @@
 
     <section class="dd-tab-shell" :aria-label="$t('IotDeviceDetail.detail.contentAria')">
       <a-tabs
+        v-if="!embedded"
         class="dd-detail-tabs"
         :active-key="activeTab"
         @change="(key) => setActiveTab(String(key))"
@@ -125,8 +126,8 @@ import type { IotDeviceDetailViewState } from '../hooks/useIotDeviceDetailView'
 import { useDeviceDetailAgent } from '../agent/useDeviceDetailAgent'
 
 // 默认内容与自己的助手生命周期一起挂载，替换为业务内容后不重复注册助手。
-const props = defineProps({ state: { type: Object as PropType<IotDeviceDetailViewState>, required: true } })
-useDeviceDetailAgent()
+const props = defineProps({ state: { type: Object as PropType<IotDeviceDetailViewState>, required: true }, embedded: Boolean })
+if (!props.embedded) useDeviceDetailAgent()
 const {
   $t,
   healthPath,

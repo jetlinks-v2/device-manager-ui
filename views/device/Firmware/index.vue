@@ -1,11 +1,6 @@
 <template>
     <j-page-container>
         <div>
-            <pro-search
-                :columns="columns"
-                target="search-firmware"
-                @search="handleSearch"
-            />
             <FullPage>
                 <j-pro-table
                     ref="tableRef"
@@ -18,7 +13,14 @@
                     :params="params"
                 >
                     <template #headerLeftRender>
-                        <CreateActions @add="applicationVisible = true" />
+                        <a-flex :gap="16" align="center">
+                            <ConditionFilter
+                                :columns="columns"
+                                target="search-firmware"
+                                @search="handleSearch"
+                            />
+                            <CreateActions @add="applicationVisible = true" />
+                        </a-flex>
                     </template>
                     <template #productId="slotProps">
                         <span>{{ slotProps.productName }}</span>

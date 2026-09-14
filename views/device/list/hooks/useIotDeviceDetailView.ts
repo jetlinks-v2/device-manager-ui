@@ -15,6 +15,7 @@ import { buildIotDeviceHealthPath, resolveIotProjectId } from './useIotDeviceRou
 import { getIotDeviceConnectionStatus } from './useIotDeviceStatus'
 import type { DeviceCategory, DeviceTemplate } from '../services/device-library/types'
 import { iotDeviceService } from '../services/iotDevice.service'
+import { mapApiDevice } from '../services/adapters/iotDeviceApiAdapter'
 import {
   extractRows,
   formatApiTime,
@@ -66,8 +67,18 @@ import { useInstanceStore } from '@device-manager-ui/store/instance'
 import type { DeviceInstance } from '@device-manager-ui/views/device/Instance/typings'
 import { collectOverviewPropertyKeys, isKeyMetricProperty } from '@device-manager-ui/utils/deviceThingModel'
 
+/** 嵌入面板由宿主提供设备定义与权限，保存后通知宿主更新。 */
+export interface IotDeviceDetailViewProps {
+  embedded?: {
+    deviceId: string
+    deviceDetail?: Partial<DeviceInstance>
+    panel: 'thing-model' | 'data'
+    updatePermission: boolean
+  }
+}
+
 /** 编排设备详情的加载、订阅、路由和用户操作；展示区块只消费状态与动作。 */
-export function useIotDeviceDetailView() {
+export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onEmbeddedMetadataChanged?: () => void) {
   type DataInnerTab = 'property' | 'event' | 'function' | 'trace'
   type RecordsInnerTab = 'alarm' | 'log' | 'threshold'
   type AdvancedInnerTab = 'connection' | 'thing-model' | 'parsing' | 'children' | 'health' | 'threshold'
@@ -79,7 +90,7 @@ export function useIotDeviceDetailView() {
   const { t: $t } = useI18n()
 
   const projectId = computed(() => resolveIotProjectId(route))
-  const deviceId = computed(() => String(route.params.deviceId ?? route.params.id))
+  const deviceId = computed(() => props.embedded?.deviceId ?? String(route.params.deviceId ?? route.params.id))
   const healthPath = computed(() => buildIotDeviceHealthPath(projectId.value, deviceId.value, undefined, route))
   let disposed = false
   let loadVersion = 0
@@ -93,9 +104,9 @@ export function useIotDeviceDetailView() {
   const device = ref<IotDevice | null>(null)
   const instanceStore = useInstanceStore()
   const authStore = useAuthStore()
-  const deviceUpdatePermission = computed(() => authStore.hasPermission('iot-user/device/list:update'))
+  const deviceUpdatePermission = computed(() => props.embedded?.updatePermission ?? authStore.hasPermission('iot-user/device/list:update'))
   const provider = useDeviceListProvider(device)
-  const detailContent = computed(() => provider.value?.detailContent)
+  const detailContent = computed(() => props.embedded ? undefined : provider.value?.detailContent)
   const detailContentRef = ref<{ refresh?: () => Promise<void> }>()
   const initializing = ref(true)
   const extensionTabs = useDeviceDetailTabs(device)
@@ -164,6 +175,7 @@ export function useIotDeviceDetailView() {
   }
 
   const dataInnerTab = computed<DataInnerTab>(() => {
+    if (props.embedded) return 'property'
     if (activeTab.value !== 'data') return 'property'
     if (route.query.tab === 'commands' || route.query.tab === 'function') return 'function'
     return normalizeDataInnerTab(route.query.sub)
@@ -208,7 +220,7 @@ export function useIotDeviceDetailView() {
     value?: string
   }
 
-  const activeTab = computed<DeviceDetailTab>(() => normalizeDeviceDetailTab(route.query.tab, extensionTabs.value))
+  const activeTab = computed<DeviceDetailTab>(() => props.embedded?.panel ?? normalizeDeviceDetailTab(route.query.tab, extensionTabs.value))
   const activeExtension = computed(() => extensionTabs.value.find(tab => tab.key === activeTab.value))
 
   function setActiveTab(tab: DeviceDetailTab) {
@@ -264,6 +276,16 @@ export function useIotDeviceDetailView() {
   function openEditDrawer() {
     if (!canDeviceAction('update')) return
     actionError.value = ''
+    const editRoute = provider.value?.editRoute
+    const currentDeviceId = device.value?.id
+    if (editRoute && currentDeviceId) {
+      // 业务设备沿用自身已发布的编辑页，避免把媒体接入配置降级成通用 IoT 抽屉。
+      deviceMenu.jumpPage(editRoute, {
+        params: { id: currentDeviceId },
+        query: { id: currentDeviceId },
+      })
+      return
+    }
     editDrawerOpen.value = true
   }
 
@@ -1264,6 +1286,10 @@ export function useIotDeviceDetailView() {
   }
 
   function startRealtimeSubscriptions(context = currentLoad()) {
+    if (props.embedded?.panel === 'thing-model') {
+      clearRealtimeSubscriptions()
+      return
+    }
     const current = device.value
     const properties = detailContent.value ? [] : activeRealtimePropertyKeys.value
     if (!isCurrentLoad(context) || current?.id !== context.deviceId) return
@@ -1305,9 +1331,12 @@ export function useIotDeviceDetailView() {
 
   async function loadDevice(context = beginLoad()) {
     if (!isCurrentLoad(context)) return
-    const result = await iotDeviceService.getDevice(context.projectId, context.deviceId)
+    // Tab 重建时仅映射入口数据；独立详情仍由自身加载，并保留请求版本保护。
+    const result = props.embedded ? null : await iotDeviceService.getDevice(context.projectId, context.deviceId)
     if (!isCurrentLoad(context)) return
-    device.value = result.ok ? result.data : null
+    device.value = props.embedded
+      ? (props.embedded.deviceDetail?.id === context.deviceId ? mapApiDevice(props.embedded.deviceDetail, context.projectId) : null)
+      : (result?.ok ? result.data : null)
     syncLegacyMetadataDevice(device.value)
     realtimePropertyValues.value = {}
     propertyPageRealtimeKeys.value = []
@@ -1436,6 +1465,7 @@ export function useIotDeviceDetailView() {
     await loadDevice(context)
     // 自定义内容拥有自己的数据与诊断生命周期；头部只保留设备信息和在线状态。
     if (!isCurrentLoad(context)) return
+    if (props.embedded) return
     if (detailContent.value) {
       await detailContentRef.value?.refresh?.()
       return
@@ -1480,10 +1510,16 @@ export function useIotDeviceDetailView() {
 
   function onMetadataChanged(payload?: { type?: string; id?: string }) {
     if (payload?.type !== 'device' || payload.id !== device.value?.id) return
-    void loadDevice()
+    if (props.embedded) onEmbeddedMetadataChanged?.()
+    else void loadDevice()
   }
 
   EventEmitter.subscribe(['MetadataChanged'], onMetadataChanged)
+
+  // 宿主保存后传回新定义，更新当前面板，避免各 Tab 自行重复刷新。
+  watch(() => props.embedded?.deviceDetail, () => {
+    if (props.embedded) void loadDevice()
+  })
 
 
   watch([projectId, deviceId], async ([nextProjectId, nextDeviceId], [previousProjectId, previousDeviceId]) => {
@@ -1505,7 +1541,7 @@ export function useIotDeviceDetailView() {
   )
 
 
-  watch(activeRealtimePropertyKeySignature, async () => {
+  watch([activeRealtimePropertyKeySignature, () => props.embedded?.panel], async () => {
     if (disposed || initializing.value || !device.value?.id || detailContent.value) return
     const context = currentLoad()
     await loadRealtimePropertySnapshot(undefined, context)

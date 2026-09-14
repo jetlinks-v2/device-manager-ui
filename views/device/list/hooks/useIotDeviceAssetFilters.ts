@@ -446,9 +446,9 @@ export function useIotDeviceAssetFilters(
     filterTerms.value = cloneConditionTerms(terms)
   }
 
-  function handleFilterSearch(payload?: { terms?: ConditionFilterTerm[] }) {
-    // 路由回显依赖原始字段，接口字段映射统一留给 buildQueryFilter 处理。
-    const terms = cloneConditionTerms(payload?.terms ?? filterTerms.value)
+  function handleFilterSearch() {
+    // change 携带已转换的查询条件；路由和提交快照均使用编辑态，查询时只转换一次。
+    const terms = cloneConditionTerms(filterTerms.value)
     filterTerms.value = terms
     submittedTerms.value = terms
     syncRouteQuery(terms)

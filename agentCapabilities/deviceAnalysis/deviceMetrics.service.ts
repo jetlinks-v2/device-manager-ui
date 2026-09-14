@@ -57,7 +57,6 @@ export const deviceMetricsService = {
     })
     const total = Number(summary.total || summary.deviceCount || 0)
     const data = {
-      snapshotAt: Date.now(),
       total,
       online: Number(summary.online || 0),
       offline: Number(summary.offline || 0),

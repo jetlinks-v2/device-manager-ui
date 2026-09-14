@@ -1,73 +1,75 @@
 <!--产品分类 -->
 <template>
     <j-page-container>
+    <FullPage :fixed="false" transparentBackground>
+      <ContentPanel>
         <pro-search
             :columns="columns"
             target="category"
             @search="handleSearch"
         />
-        <FullPage :fixed="false">
-            <j-pro-table
-                ref="tableRef"
-                :columns="columns"
-                :request="queryTree"
-                mode="TABLE"
-                type="TREE"
-                v-model:expandedRowKeys="expandedRowKeys"
-                :scroll="{ y: 550 }"
-                :defaultParams="{
-                    paging: false,
-                    sorts: [
-                        { name: 'sortIndex', order: 'asc' },
-                        {
-                            name: 'createTime',
-                            order: 'desc',
-                        },
-                    ],
-                }"
-                :params="params"
-                :loading="tableLoading"
-            >
-                <template #headerLeftRender>
-                    <j-permission-button
-                        type="primary"
-                        @click="add"
-                        hasPermission="device/Category:add"
+        <j-pro-table
+            ref="tableRef"
+            :columns="columns"
+            :request="queryTree"
+            mode="TABLE"
+            type="TREE"
+            v-model:expandedRowKeys="expandedRowKeys"
+            :scroll="{ y: 550 }"
+            :defaultParams="{
+                paging: false,
+                sorts: [
+                    { name: 'sortIndex', order: 'asc' },
+                    {
+                        name: 'createTime',
+                        order: 'desc',
+                    },
+                ],
+            }"
+            :params="params"
+            :loading="tableLoading"
+        >
+            <template #headerLeftRender>
+                <j-permission-button
+                    type="primary"
+                    @click="add"
+                    hasPermission="device/Category:add"
+                >
+                    <template #icon><AIcon type="PlusOutlined" /></template>
+                    {{ $t('Category.index.779033-0') }}
+                </j-permission-button>
+            </template>
+          <template #name="slotProps">
+            <j-ellipsis>{{ slotProps?.i18nName || slotProps?.name }}</j-ellipsis>
+          </template>
+            <template #action="slotProps">
+                <a-space>
+                    <template
+                        v-for="i in getActions(slotProps, 'table')"
+                        :key="i.key"
                     >
-                        <template #icon><AIcon type="PlusOutlined" /></template>
-                        {{ $t('Category.index.779033-0') }}
-                    </j-permission-button>
-                </template>
-              <template #name="slotProps">
-                <j-ellipsis>{{ slotProps?.i18nName || slotProps?.name }}</j-ellipsis>
-              </template>
-                <template #action="slotProps">
-                    <a-space>
-                        <template
-                            v-for="i in getActions(slotProps, 'table')"
-                            :key="i.key"
+                        <j-permission-button
+                            :disabled="i.disabled"
+                            :popConfirm="i.popConfirm"
+                            :hasPermission="'device/Category:' + i.key"
+                            :tooltip="{
+                                ...i.tooltip,
+                            }"
+                            @click="i.onClick"
+                            type="link"
+                            style="padding: 0; margin: 0"
+                            :danger="i.key === 'delete'"
                         >
-                            <j-permission-button
-                                :disabled="i.disabled"
-                                :popConfirm="i.popConfirm"
-                                :hasPermission="'device/Category:' + i.key"
-                                :tooltip="{
-                                    ...i.tooltip,
-                                }"
-                                @click="i.onClick"
-                                type="link"
-                                style="padding: 0; margin: 0"
-                                :danger="i.key === 'delete'"
-                            >
-                                <template #icon
-                                    ><AIcon :type="i.icon"
-                                /></template>
-                            </j-permission-button>
-                        </template>
-                    </a-space>
-                </template>
-            </j-pro-table>
-        </FullPage>
+                            <template #icon
+                                ><AIcon :type="i.icon"
+                            /></template>
+                        </j-permission-button>
+                    </template>
+                </a-space>
+            </template>
+        </j-pro-table>
+      </ContentPanel>
+    </FullPage>
         <!-- 新增和编辑弹窗 -->
         <ModifyModal
             ref="modifyRef"
