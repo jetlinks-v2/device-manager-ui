@@ -12,7 +12,8 @@
                   <strong>{{ $t('DeviceAlarm.workspace.rules') }}</strong>
                   <span :title="$t('DeviceAlarm.workspace.total', { total })">{{ $t('DeviceAlarm.workspace.total', { total }) }}</span>
                 </div>
-                <a-button type="primary" :loading="creating" :disabled="busy && !creating" @click="create">
+                <!-- 跨操作互斥由 create/run 守卫执行，避免编辑时切换原生 disabled 引发按钮变色。 -->
+                <a-button type="primary" :loading="creating" :aria-disabled="busy && !creating" @click="create">
                   <template #icon><AIcon type="PlusOutlined" /></template>
                   {{ $t('DeviceAlarm.action.create') }}
                 </a-button>
