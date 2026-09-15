@@ -16,7 +16,8 @@
 
 - 目标：修复点击编辑时新增按钮触发加载动画的问题；标题与新增按钮同排；移除左侧搜索与规则列表之间的“全部规则”按钮。
 - 范围与入口：仅 runtime-ui/modules/device-manager-ui/views/device/alarm/index.vue 及 hooks/useDeviceAlarmWorkspace.ts；用户已确认实施，沿用当前规则筛选与记录处置工作台。
-- 根因与修复：index.vue 的新增按钮原使用共享 busy 作为 loading，而编辑、删除、保存同样调用 run 切换 busy。现在 create() 复用 run 的操作互斥，新增加载状态 creating 仅在新增动作期间开启，并在 finally 中复位；其他动作期间新增按钮禁用但不显示加载动画。加号改用按钮 icon 插槽，加载时由组件替换图标。
+- 根因与修复：index.vue 的新增按钮原使用共享 busy 作为 loading，而编辑、删除、保存同样调用 run 切换 busy。分离 creating 后，原有 `:disabled="busy && !creating"` 仍使按钮在编辑期间蓝色/禁用灰色往返切换。局部修复将该绑定改为 aria-disabled，保留 create() → run() 的操作互斥；其他动作期间不触发新增按钮的禁用样式或加载动画，仅新增自身显示 loading，并在 finally 中复位。继续复用 Ant Button，不覆盖组件颜色。
+- 闪动修复验证：提取真实新增按钮模板、装配真实 useDeviceAlarmWorkspace 与 Ant Button，模拟异步页面依赖；Edge 浏览器验证编辑前/中/后背景色、文字色、尺寸及 loading 不变，鼠标、Enter、Space 触发新增均被守卫拦截，新增自身 loading、重复点击拦截及失败复位通过，无页面脚本错误。模块构建与 diff --check 通过；index.vue 147行。全模块类型检查仍受下述既有错误阻断；实际登录页面联调待执行。
 - 布局：告警规则标题、现有数量与“新增告警”同排；下一行为关键词搜索框，随后直接展示规则卡片。参考 runtime-ui/modules/jetlinks-ai-ui/views/visual-alarm-preview/components/VisualAlarmCategorySidebar.vue 的标题/操作排列，复用现有 Ant Design 按钮、AIcon 及 DeviceAlarm.action.create 文案；不引入视觉告警业务逻辑。
   ```text
   告警规则 共 N 条     [+ 新增告警] | 告警记录
