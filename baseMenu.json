@@ -619,7 +619,8 @@
                     {
                       "permission": "ai_model",
                       "actions": [
-                        "query"
+                        "query",
+                        "save"
                       ]
                     },
                     {
@@ -653,7 +654,8 @@
                     {
                       "permission": "device-gateway",
                       "actions": [
-                        "query"
+                        "query",
+                        "save"
                       ]
                     },
                     {
@@ -671,7 +673,9 @@
                     },
                     {
                       "permission": "device-group",
-                      "actions": ["query"]
+                      "actions": [
+                        "query"
+                      ]
                     },
                     {
                       "permission": "space-management",
@@ -695,7 +699,112 @@
                     {
                       "permission": "edge-manager",
                       "actions": [
-                        "proxy"
+                        "proxy",
+                        "remote"
+                      ]
+                    },
+                    {
+                      "permission": "ai-edge-task",
+                      "actions": [
+                        "query",
+                        "save"
+                      ]
+                    },
+                    {
+                      "permission": "file",
+                      "actions": [
+                        "upload-static"
+                      ]
+                    },
+                    {
+                      "permission": "device-opt-api",
+                      "actions": [
+                        "read-property",
+                        "write-property",
+                        "invoke-function"
+                      ]
+                    },
+                    {
+                      "permission": "device-gateway-manager",
+                      "actions": [
+                        "save"
+                      ]
+                    },
+                    {
+                      "permission": "edge-operations",
+                      "actions": [
+                        "invoke"
+                      ]
+                    },
+                    {
+                      "permission": "dashboard",
+                      "actions": [
+                        "query"
+                      ]
+                    },
+                    {
+                      "permission": "device-asset-firmware",
+                      "actions": [
+                        "query"
+                      ]
+                    },
+                    {
+                      "permission": "firmware-manager",
+                      "actions": [
+                        "query"
+                      ]
+                    },
+                    {
+                      "permission": "firmware-upgrade-task-manager",
+                      "actions": [
+                        "query",
+                        "save",
+                        "deploy"
+                      ]
+                    },
+                    {
+                      "permission": "ai_task",
+                      "actions": [
+                        "query",
+                        "save"
+                      ]
+                    },
+                    {
+                      "permission": "ai-agent-llm-provider",
+                      "actions": [
+                        "query"
+                      ]
+                    },
+                    {
+                      "permission": "media-device",
+                      "actions": [
+                        "query"
+                      ]
+                    },
+                    {
+                      "permission": "network-config",
+                      "actions": [
+                        "query"
+                      ]
+                    },
+                    {
+                      "permission": "protocol-supports",
+                      "actions": [
+                        "query"
+                      ]
+                    },
+                    {
+                      "permission": "device-document-bind",
+                      "actions": [
+                        "query",
+                        "save"
+                      ]
+                    },
+                    {
+                      "permission": "visualization-project",
+                      "actions": [
+                        "add",
+                        "save"
                       ]
                     }
                   ],
@@ -713,6 +822,91 @@
                           "permission": "device-instance",
                           "actions": [
                             "save"
+                          ]
+                        },
+                        {
+                          "permission": "agent-job",
+                          "actions": [
+                            "query",
+                            "save"
+                          ]
+                        },
+                        {
+                          "permission": "entity-template",
+                          "actions": [
+                            "query",
+                            "save"
+                          ]
+                        },
+                        {
+                          "permission": "edge-manager",
+                          "actions": [
+                            "proxy"
+                          ]
+                        },
+                        {
+                          "permission": "space-data-bind",
+                          "actions": [
+                            "query"
+                          ]
+                        },
+                        {
+                          "permission": "space-management",
+                          "actions": [
+                            "query"
+                          ]
+                        },
+                        {
+                          "permission": "file",
+                          "actions": [
+                            "upload-static"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "view",
+                      "name": "查看",
+                      "i18nMessages": {
+                        "zh_CN": "查看",
+                        "en_US": "View",
+                        "en": "View"
+                      },
+                      "permissions": [
+                        {
+                          "permission": "device-instance",
+                          "actions": [
+                            "query"
+                          ]
+                        },
+                        {
+                          "permission": "entity-template",
+                          "actions": [
+                            "query"
+                          ]
+                        },
+                        {
+                          "permission": "agent-job",
+                          "actions": [
+                            "query"
+                          ]
+                        },
+                        {
+                          "permission": "edge-manager",
+                          "actions": [
+                            "proxy"
+                          ]
+                        },
+                        {
+                          "permission": "space-data-bind",
+                          "actions": [
+                            "query"
+                          ]
+                        },
+                        {
+                          "permission": "space-management",
+                          "actions": [
+                            "query"
                           ]
                         }
                       ]
@@ -2080,7 +2274,8 @@
           {
             "permission": "device-gateway",
             "actions": [
-              "query"
+              "query",
+              "save"
             ]
           },
           {
@@ -2091,7 +2286,249 @@
           },
           {
             "permission": "device-group",
-            "actions": ["query"]
+            "actions": [
+              "query"
+            ]
+          },
+          {
+            "permission": "ai-edge-task",
+            "actions": [
+              "query",
+              "save"
+            ]
+          },
+          {
+            "permission": "edge-manager",
+            "actions": [
+              "remote",
+              "proxy"
+            ]
+          },
+          {
+            "permission": "file",
+            "actions": [
+              "upload-static"
+            ]
+          },
+          {
+            "permission": "device-opt-api",
+            "actions": [
+              "read-property",
+              "write-property",
+              "invoke-function"
+            ]
+          },
+          {
+            "permission": "device-gateway-manager",
+            "actions": [
+              "save"
+            ]
+          },
+          {
+            "permission": "edge-operations",
+            "actions": [
+              "invoke"
+            ]
+          },
+          {
+            "permission": "dashboard",
+            "actions": [
+              "query"
+            ]
+          },
+          {
+            "permission": "alarm-record",
+            "actions": [
+              "query"
+            ]
+          },
+          {
+            "permission": "device-asset-firmware",
+            "actions": [
+              "query"
+            ]
+          },
+          {
+            "permission": "firmware-manager",
+            "actions": [
+              "query"
+            ]
+          },
+          {
+            "permission": "firmware-upgrade-task-manager",
+            "actions": [
+              "query",
+              "save",
+              "deploy"
+            ]
+          },
+          {
+            "permission": "ai_scene",
+            "actions": [
+              "query"
+            ]
+          },
+          {
+            "permission": "ai_model",
+            "actions": [
+              "query",
+              "save"
+            ]
+          },
+          {
+            "permission": "ai_task",
+            "actions": [
+              "query",
+              "save"
+            ]
+          },
+          {
+            "permission": "ai-agent-llm-provider",
+            "actions": [
+              "query"
+            ]
+          },
+          {
+            "permission": "media-device",
+            "actions": [
+              "query"
+            ]
+          },
+          {
+            "permission": "media-channel",
+            "actions": [
+              "query"
+            ]
+          },
+          {
+            "permission": "network-config",
+            "actions": [
+              "query"
+            ]
+          },
+          {
+            "permission": "protocol-supports",
+            "actions": [
+              "query"
+            ]
+          },
+          {
+            "permission": "device-document-bind",
+            "actions": [
+              "query",
+              "save"
+            ]
+          },
+          {
+            "permission": "visualization-project",
+            "actions": [
+              "add",
+              "save"
+            ]
+          }
+        ],
+        "buttons": [
+          {
+            "id": "update",
+            "name": "编辑",
+            "i18nMessages": {
+              "zh_CN": "编辑",
+              "en_US": "Edit",
+              "en": "Edit"
+            },
+            "permissions": [
+              {
+                "permission": "device-instance",
+                "actions": [
+                  "save"
+                ]
+              },
+              {
+                "permission": "agent-job",
+                "actions": [
+                  "query",
+                  "save"
+                ]
+              },
+              {
+                "permission": "entity-template",
+                "actions": [
+                  "query",
+                  "save"
+                ]
+              },
+              {
+                "permission": "edge-manager",
+                "actions": [
+                  "proxy"
+                ]
+              },
+              {
+                "permission": "space-data-bind",
+                "actions": [
+                  "query"
+                ]
+              },
+              {
+                "permission": "space-management",
+                "actions": [
+                  "query"
+                ]
+              },
+              {
+                "permission": "file",
+                "actions": [
+                  "upload-static"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "view",
+            "name": "查看",
+            "i18nMessages": {
+              "zh_CN": "查看",
+              "en_US": "View",
+              "en": "View"
+            },
+            "permissions": [
+              {
+                "permission": "device-instance",
+                "actions": [
+                  "query"
+                ]
+              },
+              {
+                "permission": "entity-template",
+                "actions": [
+                  "query"
+                ]
+              },
+              {
+                "permission": "agent-job",
+                "actions": [
+                  "query"
+                ]
+              },
+              {
+                "permission": "edge-manager",
+                "actions": [
+                  "proxy"
+                ]
+              },
+              {
+                "permission": "space-data-bind",
+                "actions": [
+                  "query"
+                ]
+              },
+              {
+                "permission": "space-management",
+                "actions": [
+                  "query"
+                ]
+              }
+            ]
           }
         ]
       },
