@@ -2,7 +2,11 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import { createDeviceDetailAgentTools } from '../views/device/list/agent/deviceDetailAgent.tools.ts'
-import { createDeviceMetricOutput } from '../views/device/list/agent/deviceDetailAgent.metricOutput.ts'
+import { createDeviceDetailAgentWorkflows } from '../views/device/list/agent/deviceDetailAgent.workflows.ts'
+import {
+  createDeviceMetricOutput,
+  deviceMetricSeriesName,
+} from '../views/device/list/agent/deviceDetailAgent.metricOutput.ts'
 import {
   createDeviceDetailMetricsService,
   resolveDeviceMetricQueryLimit,
@@ -69,7 +73,7 @@ test('publishes fixed device metrics as raw canonical aggregate-series outputs',
   for (const metric of metricCases) {
     const output = createDeviceMetricOutput(metric.id)
 
-    assert.equal(output.name, `${metric.id}-series`)
+    assert.equal(output.name, deviceMetricSeriesName(metric.id))
     assert.equal(output.shape, 'metric.time-series')
     assert.equal(output.delivery, 'auto')
     assert.equal(output.recordPath, '$')
@@ -123,6 +127,30 @@ test('device metric analytical producers publish the same display units as outpu
       ?.map(measure => [measure.name, measure.units]),
     [['upstream_traffic', ['mb']], ['downstream_traffic', ['mb']]],
   )
+})
+
+test('compiled device metric tools lock auto delivery and series produces', () => {
+  const tools = createDeviceDetailAgentTools(detailService)
+  const evidenceNames = createDeviceDetailAgentWorkflows().flatMap(guide => (
+    (guide.steps || []).flatMap(step => {
+      if (typeof step === 'string') return []
+      return Array.isArray(step.evidence) ? step.evidence : [step.evidence]
+    })
+  ))
+  for (const metric of metricCases) {
+    const tool = tools.find(item => item.id === metric.id)
+    const seriesName = createDeviceMetricOutput(metric.id).name
+    assert.ok(tool, `${metric.id} missing from compiled device-detail tools`)
+    assert.equal(seriesName, deviceMetricSeriesName(metric.id))
+    assert.deepEqual(tool.routing?.produces, [seriesName])
+    assert.deepEqual(tool.routing?.producerPorts?.map(port => port.name), [seriesName])
+    assert.deepEqual(tool.routing?.resultDeliveries, ['auto'])
+    assert.deepEqual(tool.routing?.outputShapes, ['metric.time-series'])
+    assert.ok(evidenceNames.includes(seriesName), `${seriesName} missing from workflow evidence`)
+  }
+  for (const stale of ['activity-aggregate', 'message-aggregate', 'traffic-aggregate'] as const) {
+    assert.equal(evidenceNames.includes(stale), false, `stale workflow evidence ${stale}`)
+  }
 })
 
 test('converts 3600000ms to 1 hour and 1048576 bytes to 1 MB', () => {

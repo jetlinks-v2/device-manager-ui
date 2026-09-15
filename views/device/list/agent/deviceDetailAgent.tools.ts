@@ -45,7 +45,11 @@ import {
   type DeviceDetailAgentTabSurface,
   resolveDeviceDetailAgentTabs,
 } from './deviceDetailAgent.constants'
-import { createDeviceMetricOutput } from './deviceDetailAgent.metricOutput'
+import {
+  createDeviceMetricOutput,
+  deviceMetricSeriesName,
+  type DeviceMetricToolId,
+} from './deviceDetailAgent.metricOutput'
 import { isEdgeDiagnosisAccessProvider } from './deviceDetailEdge.shared'
 import { createDeviceDetailEdgeTools } from './deviceDetailEdge.tools'
 
@@ -121,19 +125,19 @@ const TOOL_ROUTING: Record<string, AiClientToolRoutingMetadata> = {
   },
   device_activity_aggregate: {
     capabilities: ['subject.activity.aggregate'],
-    produces: ['activity-aggregate'],
+    produces: [deviceMetricSeriesName('device_activity_aggregate')],
     intents: ['统计活跃时长', 'aggregate subject activity duration'],
     outputShapes: ['metric.time-series'],
   },
   device_message_aggregate: {
     capabilities: ['subject.message.aggregate'],
-    produces: ['message-aggregate'],
+    produces: [deviceMetricSeriesName('device_message_aggregate')],
     intents: ['统计消息量', 'aggregate message volume'],
     outputShapes: ['metric.time-series'],
   },
   device_traffic_aggregate: {
     capabilities: ['subject.traffic.aggregate'],
-    produces: ['traffic-aggregate'],
+    produces: [deviceMetricSeriesName('device_traffic_aggregate')],
     intents: ['统计上下行流量', 'aggregate uplink and downlink traffic'],
     outputShapes: ['metric.time-series'],
   },
@@ -402,11 +406,6 @@ const metricInputs = () => [
   input('interval', domainAgentEnumValueType(['1h', '1d', '1w'])),
 ]
 
-type DeviceMetricToolId =
-  | 'device_activity_aggregate'
-  | 'device_message_aggregate'
-  | 'device_traffic_aggregate'
-
 const metricSemanticIntentBindings = (id: DeviceMetricToolId, measures: readonly string[]) => (
   (TOOL_ROUTING[id].intents || []).map(intent => ({
     intent,
@@ -435,7 +434,7 @@ const metricAnalyticalProducer = (
   semanticIntentBindings: metricSemanticIntentBindings(id, measures.map(measure => measure.name)),
   ordering: [{ axis: 'time', direction: 'asc' }],
   coverage: 'complete-or-partial',
-  output: `${id}-series`,
+  output: deviceMetricSeriesName(id),
 })
 
 const DEVICE_METRIC_ANALYTICAL = {

@@ -27,12 +27,21 @@ const measureField = (
   ...(options?.format ? { format: options.format } : {}),
 })
 
+export type DeviceMetricToolId =
+  | 'device_activity_aggregate'
+  | 'device_message_aggregate'
+  | 'device_traffic_aggregate'
+
+export const deviceMetricSeriesName = <T extends DeviceMetricToolId>(id: T): `${T}-series` => (
+  `${id}-series`
+)
+
 /**
  * Keep device metrics renderer-neutral at the domain boundary. The shared presentation compiler owns ECharts
  * materialization; these tools only publish the observed time-series fields and their semantics.
  */
 export const createDeviceMetricOutput = (
-  id: 'device_activity_aggregate' | 'device_message_aggregate' | 'device_traffic_aggregate',
+  id: DeviceMetricToolId,
 ) => {
   const fields = id === 'device_activity_aggregate'
     ? [
@@ -54,7 +63,7 @@ export const createDeviceMetricOutput = (
         measureField('downstream', 'metrics.downstreamTraffic', 'downstream_traffic', 'MB', 'units.megabytes'),
       ]
   return clientToolOutput.aggregateSeries({
-    name: `${id}-series`,
+    name: deviceMetricSeriesName(id),
     shape: 'metric.time-series',
     label: t(`tools.${id}.name`),
     delivery: 'auto',

@@ -1,5 +1,6 @@
 import i18n from '@jetlinks-web-core/locales'
 import type { GeneralAgentWorkflowGuide } from '@jetlinks-web-core/layout/components/AiChat/generalAgentRuntime'
+import { deviceMetricSeriesName } from './deviceDetailAgent.metricOutput'
 
 const t = (key: string) => i18n.global.t(`IotDeviceDetailAgent.${key}`)
 const edgeT = (key: string) => i18n.global.t(`DeviceDetail.edgeGuides.${key}`)
@@ -155,9 +156,9 @@ export const createDeviceDetailAgentWorkflows = (includeEdge = false): GeneralAg
     when: t('workflows.today.when'),
     steps: [
       workflowStep('subject.context.read', 'subject-context'),
-      workflowStep('subject.activity.aggregate', 'activity-aggregate'),
-      workflowStep('subject.message.aggregate', 'message-aggregate'),
-      workflowStep('subject.traffic.aggregate', 'traffic-aggregate'),
+      workflowStep('subject.activity.aggregate', deviceMetricSeriesName('device_activity_aggregate')),
+      workflowStep('subject.message.aggregate', deviceMetricSeriesName('device_message_aggregate')),
+      workflowStep('subject.traffic.aggregate', deviceMetricSeriesName('device_traffic_aggregate')),
       workflowStep('subject.alarm.records.read', 'alarm-records', false),
       workflowStep('subject.alarm.history.summary', 'alarm-history-summary', false),
       workflowStep('subject.connection.summary', 'connection-summary', false),
@@ -174,7 +175,7 @@ export const createDeviceDetailAgentWorkflows = (includeEdge = false): GeneralAg
       workflowStep('subject.context.read', 'subject-context'),
       workflowStep('subject.access.read', 'access-configuration'),
       workflowStep('subject.connection.summary', 'connection-summary'),
-      workflowStep('subject.activity.aggregate', 'activity-aggregate', false),
+      workflowStep('subject.activity.aggregate', deviceMetricSeriesName('device_activity_aggregate'), false),
       workflowStep('subject.log.summary', 'log-summary', false),
       workflowStep('subject.alarm.records.read', 'alarm-records', false),
     ],
@@ -203,7 +204,7 @@ export const createDeviceDetailAgentWorkflows = (includeEdge = false): GeneralAg
       workflowStep('subject.access.read', 'access-configuration'),
       workflowStep('subject.schema.search', 'subject-property-id', false),
       workflowStep('subject.property.latest', 'property-snapshot', false),
-      workflowStep('subject.message.aggregate', 'message-aggregate', false),
+      workflowStep('subject.message.aggregate', deviceMetricSeriesName('device_message_aggregate'), false),
       workflowStep('subject.log.summary', 'log-summary', false),
       workflowStep('subject.connection.summary', 'connection-summary', false),
     ],
