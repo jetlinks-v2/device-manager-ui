@@ -59,33 +59,57 @@ const scaleMeasurement = (value: number | null | undefined, divisor: number) => 
   value === null || value === undefined ? null : scaleDeviceMetricValue(value, divisor)
 )
 
-export const resolveDeviceMetricQueryLimit = (
+/** Matches Java `TrendPeriod.bucketStart`: local hour for `1h`, local midnight for `1d`/`1w`. */
+export const alignDeviceMetricBucketStart = (timestamp: number, interval: MetricInterval) => {
+  const date = new Date(timestamp)
+  date.setMinutes(0, 0, 0)
+  if (interval !== '1h') {
+    date.setHours(0)
+  }
+  return date.getTime()
+}
+
+const countInclusiveDeviceMetricBuckets = (
   range: { start: number; end: number },
   interval: MetricInterval,
 ) => {
-  const duration = Math.max(range.end - range.start, 1)
-  return Math.min(MAX_BUCKETS, Math.max(1, Math.ceil(duration / INTERVAL_MILLIS[interval])))
+  const alignedStart = alignDeviceMetricBucketStart(range.start, interval)
+  const alignedEnd = alignDeviceMetricBucketStart(range.end, interval)
+  return Math.floor((alignedEnd - alignedStart) / INTERVAL_MILLIS[interval]) + 1
 }
+
+export const resolveDeviceMetricQueryLimit = (
+  range: { start: number; end: number },
+  interval: MetricInterval,
+) => Math.min(MAX_BUCKETS, Math.max(1, countInclusiveDeviceMetricBuckets(range, interval)))
+
+const resolveDeviceMetricClipRange = (
+  range: { start: number; end: number },
+  interval: MetricInterval,
+) => ({
+  start: alignDeviceMetricBucketStart(range.start, interval),
+  end: range.end,
+})
 
 const isDeviceMetricPointInRange = (time: number, range: { start: number; end: number }) => (
   time <= range.end && time >= range.start - QUERY_FROM_MS_TRUNCATION
 )
 
+const resolveDefaultDeviceMetricInterval = (range: { start: number; end: number }): MetricInterval => {
+  if (countInclusiveDeviceMetricBuckets(range, '1h') <= MAX_BUCKETS) return '1h'
+  if (countInclusiveDeviceMetricBuckets(range, '1d') <= MAX_BUCKETS) return '1d'
+  return '1w'
+}
+
 const resolveInterval = (
   args: DeviceDetailAgentArgs,
   range: { start: number; end: number },
 ): MetricInterval => {
-  const duration = Math.max(range.end - range.start, 1)
-  const defaultValue: MetricInterval = duration / INTERVAL_MILLIS['1h'] <= MAX_BUCKETS
-    ? '1h'
-    : duration / INTERVAL_MILLIS['1d'] <= MAX_BUCKETS
-      ? '1d'
-      : '1w'
   const interval = resolveDomainAgentEnum(args.interval, METRIC_INTERVALS, {
     name: 'interval',
-    defaultValue,
+    defaultValue: resolveDefaultDeviceMetricInterval(range),
   })
-  if (Math.ceil(duration / INTERVAL_MILLIS[interval]) > MAX_BUCKETS) {
+  if (countInclusiveDeviceMetricBuckets(range, interval) > MAX_BUCKETS) {
     throw inputError('DEVICE_METRIC_BUCKET_LIMIT', 'metricBucketLimit', { max: MAX_BUCKETS })
   }
   return interval
@@ -158,6 +182,7 @@ export const createDeviceDetailMetricsService = (device: IotDevice) => {
   ) => {
     const range = resolveDomainAgentTimeRange(args)
     const interval = resolveInterval(args, range)
+    const clipRange = resolveDeviceMetricClipRange(range, interval)
     const response = await iotDeviceDetailRealApi.queryOverviewSummary({
       columns,
       groupByTime: {
@@ -165,7 +190,7 @@ export const createDeviceDetailMetricsService = (device: IotDevice) => {
         alias: 'time',
         interval,
         format: 'yyyy-MM-dd HH:mm:ss',
-        from: formatAggregationTime(range.start),
+        from: formatAggregationTime(clipRange.start),
         to: formatAggregationTime(range.end),
       },
       limit: resolveDeviceMetricQueryLimit(range, interval),
@@ -173,15 +198,15 @@ export const createDeviceDetailMetricsService = (device: IotDevice) => {
         terms: [{ column: 'deviceId', termType: 'eq', value: device.id }],
       },
     })
-    return { range, interval, overview: asRecord(unwrapResult(response)) }
+    return { range, interval, clipRange, overview: asRecord(unwrapResult(response)) }
   }
 
   const activityAggregate = (args: DeviceDetailAgentArgs) => runDetailTool<Record<string, unknown>>({}, async () => {
-    const { range, interval, overview } = await queryOverview(args, [
+    const { range, interval, clipRange, overview } = await queryOverview(args, [
       { column: 'onlineDuration', alias: 'onlineDuration', aggregation: 'SUM' },
     ])
     const active = asRecord(overview.activeDuration)
-    const { points: rawPoints, cardinality } = summarizeDeviceMetricPoints(active.buckets, ['value'], range)
+    const { points: rawPoints, cardinality } = summarizeDeviceMetricPoints(active.buckets, ['value'], clipRange)
     const rangeActiveDurationRaw = rawPoints.reduce((total, point) => total + numberValue(point.value), 0)
     const points = scalePointFields(rawPoints, ['value'], MS_PER_HOUR)
     const data = {
@@ -201,13 +226,17 @@ export const createDeviceDetailMetricsService = (device: IotDevice) => {
   })
 
   const messageAggregate = (args: DeviceDetailAgentArgs) => runDetailTool<Record<string, unknown>>({}, async () => {
-    const { range, interval, overview } = await queryOverview(args, [
+    const { range, interval, clipRange, overview } = await queryOverview(args, [
       { column: 'upstreamMessages', alias: 'upstreamMessages', aggregation: 'SUM' },
       { column: 'downstreamMessages', alias: 'downstreamMessages', aggregation: 'SUM' },
     ])
     const upstream = asRecord(overview.upstream)
     const downstream = asRecord(overview.downstream)
-    const { points, cardinality } = summarizeDeviceMetricPoints(overview.messageTrend, ['upstream', 'downstream'], range)
+    const { points, cardinality } = summarizeDeviceMetricPoints(
+      overview.messageTrend,
+      ['upstream', 'downstream'],
+      clipRange,
+    )
     const data = {
       upstreamTotal: numberValue(upstream.total),
       downstreamTotal: numberValue(downstream.total),
@@ -227,7 +256,7 @@ export const createDeviceDetailMetricsService = (device: IotDevice) => {
   })
 
   const trafficAggregate = (args: DeviceDetailAgentArgs) => runDetailTool<Record<string, unknown>>({}, async () => {
-    const { range, interval, overview } = await queryOverview(args, [
+    const { range, interval, clipRange, overview } = await queryOverview(args, [
       { column: 'upstreamBytes', alias: 'upstreamBytes', aggregation: 'SUM' },
       { column: 'downstreamBytes', alias: 'downstreamBytes', aggregation: 'SUM' },
     ])
@@ -235,7 +264,7 @@ export const createDeviceDetailMetricsService = (device: IotDevice) => {
     const { points: rawPoints, cardinality } = summarizeDeviceMetricPoints(
       overview.trafficTrend,
       ['upstreamBytes', 'downstreamBytes'],
-      range,
+      clipRange,
     )
     const points = remapTrafficPoints(rawPoints)
     const data = {

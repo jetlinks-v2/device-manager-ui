@@ -8,6 +8,7 @@ import {
   deviceMetricSeriesName,
 } from '../views/device/list/agent/deviceDetailAgent.metricOutput.ts'
 import {
+  alignDeviceMetricBucketStart,
   createDeviceDetailMetricsService,
   resolveDeviceMetricQueryLimit,
   summarizeDeviceMetricPoints,
@@ -160,13 +161,109 @@ test('converts 3600000ms to 1 hour and 1048576 bytes to 1 MB', () => {
   assert.equal(toDeviceMetricMegabytes(2 * MB), 2)
 })
 
-test('7d + 1d query limit equals in-range bucket count instead of 100', () => {
-  const range = { start: 0, end: 7 * DAY_MS }
-  assert.equal(resolveDeviceMetricQueryLimit(range, '1d'), 7)
-  assert.ok(resolveDeviceMetricQueryLimit(range, '1d') < 100)
+const localTime = (year: number, month: number, day: number, hour = 0, minute = 0, second = 0, ms = 0) => (
+  new Date(year, month, day, hour, minute, second, ms).getTime()
+)
+
+const rollingSevenDayEvening = {
+  start: localTime(2026, 8, 8, 21, 34, 12, 345),
+  end: localTime(2026, 8, 15, 21, 34, 12, 345),
+}
+
+test('aligns 1h to the local hour and 1d/1w to local midnight', () => {
+  const timestamp = rollingSevenDayEvening.end
+  assert.equal(alignDeviceMetricBucketStart(timestamp, '1h'), localTime(2026, 8, 15, 21))
+  assert.equal(alignDeviceMetricBucketStart(timestamp, '1d'), localTime(2026, 8, 15))
+  assert.equal(alignDeviceMetricBucketStart(timestamp, '1w'), localTime(2026, 8, 15))
 })
 
-test('7d preset defaults to 1d and sends overview limit 7', async () => {
+test('7d + 1d query limit includes the end-day bucket instead of ceil(duration)', () => {
+  assert.equal(resolveDeviceMetricQueryLimit(rollingSevenDayEvening, '1d'), 8)
+  assert.notEqual(resolveDeviceMetricQueryLimit(rollingSevenDayEvening, '1d'), 7)
+  assert.ok(resolveDeviceMetricQueryLimit(rollingSevenDayEvening, '1d') < 100)
+  assert.equal(
+    resolveDeviceMetricQueryLimit({
+      start: localTime(2026, 8, 8),
+      end: localTime(2026, 8, 15),
+    }, '1d'),
+    8,
+  )
+})
+
+test('7d evening query aligns from to local midnight and covers today', async () => {
+  const originalNow = Date.now
+  const original = iotDeviceDetailRealApi.queryOverviewSummary
+  const queries: Record<string, unknown>[] = []
+  Date.now = () => rollingSevenDayEvening.end
+  iotDeviceDetailRealApi.queryOverviewSummary = async (data: Record<string, unknown>) => {
+    queries.push(data)
+    return { activeDuration: { buckets: [] } }
+  }
+  try {
+    await createDeviceDetailMetricsService(device).activityAggregate({ timeRange: '7d' })
+    const groupByTime = queries[0]?.groupByTime as { interval?: string; from?: string }
+    assert.equal(groupByTime.interval, '1d')
+    assert.equal(groupByTime.from, '2026-09-08 00:00:00.000')
+    assert.ok(groupByTime.from?.endsWith('00:00:00.000'))
+    assert.equal(queries[0]?.limit, 8)
+    const alignedEnd = alignDeviceMetricBucketStart(rollingSevenDayEvening.end, '1d')
+    const alignedStart = alignDeviceMetricBucketStart(rollingSevenDayEvening.start, '1d')
+    assert.equal(alignedStart + (Number(queries[0]?.limit) - 1) * DAY_MS, alignedEnd)
+  } finally {
+    Date.now = originalNow
+    iotDeviceDetailRealApi.queryOverviewSummary = original
+  }
+})
+
+test('today evening 1h query aligns from to the local hour and includes the current hour', async () => {
+  const originalNow = Date.now
+  const original = iotDeviceDetailRealApi.queryOverviewSummary
+  const queries: Record<string, unknown>[] = []
+  const evening = localTime(2026, 8, 15, 21, 34, 12, 345)
+  Date.now = () => evening
+  iotDeviceDetailRealApi.queryOverviewSummary = async (data: Record<string, unknown>) => {
+    queries.push(data)
+    return { activeDuration: { buckets: [] } }
+  }
+  try {
+    await createDeviceDetailMetricsService(device).activityAggregate({ timeRange: 'today' })
+    const groupByTime = queries[0]?.groupByTime as { interval?: string; from?: string }
+    assert.equal(groupByTime.interval, '1h')
+    assert.equal(groupByTime.from, '2026-09-15 00:00:00.000')
+    assert.match(String(groupByTime.from), /\d{2}:00:00\.000$/)
+    assert.equal(queries[0]?.limit, 22)
+  } finally {
+    Date.now = originalNow
+    iotDeviceDetailRealApi.queryOverviewSummary = original
+  }
+})
+
+test('today at an exact hour keeps the current hour that ceil(duration/interval) would drop', async () => {
+  const originalNow = Date.now
+  const original = iotDeviceDetailRealApi.queryOverviewSummary
+  const queries: Record<string, unknown>[] = []
+  const exactHour = localTime(2026, 8, 15, 21)
+  Date.now = () => exactHour
+  iotDeviceDetailRealApi.queryOverviewSummary = async (data: Record<string, unknown>) => {
+    queries.push(data)
+    return { activeDuration: { buckets: [] } }
+  }
+  try {
+    await createDeviceDetailMetricsService(device).activityAggregate({ timeRange: 'today' })
+    const start = localTime(2026, 8, 15)
+    assert.equal(Math.ceil((exactHour - start) / HOUR_MS), 21)
+    assert.equal(queries[0]?.limit, 22)
+    assert.equal(
+      alignDeviceMetricBucketStart(start, '1h') + (Number(queries[0]?.limit) - 1) * HOUR_MS,
+      exactHour,
+    )
+  } finally {
+    Date.now = originalNow
+    iotDeviceDetailRealApi.queryOverviewSummary = original
+  }
+})
+
+test('100-hour custom range falls back to 1d instead of throwing on inclusive 1h overflow', async () => {
   const original = iotDeviceDetailRealApi.queryOverviewSummary
   const queries: Record<string, unknown>[] = []
   iotDeviceDetailRealApi.queryOverviewSummary = async (data: Record<string, unknown>) => {
@@ -174,56 +271,93 @@ test('7d preset defaults to 1d and sends overview limit 7', async () => {
     return { activeDuration: { buckets: [] } }
   }
   try {
-    await createDeviceDetailMetricsService(device).activityAggregate({ timeRange: '7d' })
-    assert.equal((queries[0]?.groupByTime as { interval?: string })?.interval, '1d')
-    assert.equal(queries[0]?.limit, 7)
+    await createDeviceDetailMetricsService(device).activityAggregate({
+      timeRange: 'custom',
+      startTime: localTime(2026, 8, 11, 17),
+      endTime: localTime(2026, 8, 15, 21),
+    })
+    const groupByTime = queries[0]?.groupByTime as { interval?: string; from?: string }
+    assert.equal(groupByTime.interval, '1d')
+    assert.equal(groupByTime.from, '2026-09-11 00:00:00.000')
+    assert.equal(queries[0]?.limit, 5)
   } finally {
     iotDeviceDetailRealApi.queryOverviewSummary = original
   }
 })
 
-test('clips padded overview buckets to the requested time range', () => {
-  const range = { start: 1_700_000_000_000, end: 1_700_000_000_000 + 7 * DAY_MS }
+test('1h custom from drops minutes and includes the current hour bucket', async () => {
+  const original = iotDeviceDetailRealApi.queryOverviewSummary
+  const queries: Record<string, unknown>[] = []
+  iotDeviceDetailRealApi.queryOverviewSummary = async (data: Record<string, unknown>) => {
+    queries.push(data)
+    return { activeDuration: { buckets: [] } }
+  }
+  try {
+    await createDeviceDetailMetricsService(device).activityAggregate({
+      timeRange: 'custom',
+      startTime: localTime(2026, 8, 15, 8, 34, 12, 345),
+      endTime: localTime(2026, 8, 15, 21, 34, 12, 345),
+      interval: '1h',
+    })
+    const groupByTime = queries[0]?.groupByTime as { from?: string }
+    assert.equal(groupByTime.from, '2026-09-15 08:00:00.000')
+    assert.match(String(groupByTime.from), /\d{2}:00:00\.000$/)
+    assert.equal(queries[0]?.limit, 14)
+  } finally {
+    iotDeviceDetailRealApi.queryOverviewSummary = original
+  }
+})
+
+test('clips padded overview buckets to the aligned query window', () => {
+  const alignedStart = alignDeviceMetricBucketStart(rollingSevenDayEvening.start, '1d')
+  const todayMidnight = alignDeviceMetricBucketStart(rollingSevenDayEvening.end, '1d')
+  const clipRange = { start: alignedStart, end: rollingSevenDayEvening.end }
   const { points, cardinality } = summarizeDeviceMetricPoints(
-    paddedDailyBuckets(range.start, 100, 3_600_000),
+    paddedDailyBuckets(alignedStart, 100, 3_600_000),
     ['value'],
-    range,
+    clipRange,
   )
   assert.equal(points.length, 8)
-  assert.ok(points.every(point => point.time >= range.start && point.time <= range.end))
+  assert.ok(points.every(point => (
+    point.time >= alignedStart - 999 && point.time <= rollingSevenDayEvening.end
+  )))
   assert.equal(cardinality.bucketCount, 8)
-  assert.equal(points.at(-1)?.time, range.end)
+  assert.equal(points[0]?.time, alignedStart)
+  assert.equal(points.at(-1)?.time, todayMidnight)
   assert.equal(points[0]?.value, 3_600_000)
-  assert.equal(points.some(point => point.time === range.start + 30 * DAY_MS), false)
+  assert.equal(points.some(point => point.time === alignedStart + 30 * DAY_MS), false)
 })
 
 test('keeps second-truncated query from buckets and drops far-future padding', () => {
-  const range = { start: 1_700_000_000_123, end: 1_700_000_000_123 + 7 * DAY_MS }
+  const alignedStart = alignDeviceMetricBucketStart(rollingSevenDayEvening.start, '1d')
+  const clipRange = { start: alignedStart, end: rollingSevenDayEvening.end }
   const { points } = summarizeDeviceMetricPoints(
     [
-      { time: range.start - DAY_MS, value: 9 },
-      { time: 1_700_000_000_000, value: 3_600_000 },
-      { time: range.start, value: 3_600_000 },
-      { time: range.start + 30 * DAY_MS, value: 3_600_000 },
+      { time: alignedStart - DAY_MS, value: 9 },
+      { time: alignedStart - 123, value: 3_600_000 },
+      { time: alignedStart, value: 3_600_000 },
+      { time: alignedStart + 30 * DAY_MS, value: 3_600_000 },
     ],
     ['value'],
-    range,
+    clipRange,
   )
-  assert.deepEqual(points.map(point => point.time), [1_700_000_000_000, range.start])
+  assert.deepEqual(points.map(point => point.time), [alignedStart - 123, alignedStart])
 })
 
 test('activity aggregate converts hours and clips padded daily buckets for 7d + 1d', async () => {
   const original = iotDeviceDetailRealApi.queryOverviewSummary
   const queries: Record<string, unknown>[] = []
-  const start = 1_700_000_000_000
-  const end = start + 7 * DAY_MS
+  const start = rollingSevenDayEvening.start
+  const end = rollingSevenDayEvening.end
+  const alignedStart = alignDeviceMetricBucketStart(start, '1d')
+  const todayMidnight = alignDeviceMetricBucketStart(end, '1d')
   iotDeviceDetailRealApi.queryOverviewSummary = async (data: Record<string, unknown>) => {
     queries.push(data)
     return {
       activeDuration: {
         total: 3_600_000,
         peak: 3_600_000,
-        buckets: paddedDailyBuckets(start, 100, 3_600_000),
+        buckets: paddedDailyBuckets(alignedStart, 100, 3_600_000),
       },
     }
   }
@@ -243,16 +377,23 @@ test('activity aggregate converts hours and clips padded daily buckets for 7d + 
       points: Array<{ time: number; value: number | null }>
     }
     const range = result.evidence?.requestedRange as { start: number; end: number }
+    const groupByTime = queries[0]?.groupByTime as { from?: string }
 
-    assert.equal(queries[0]?.limit, 7)
+    assert.equal(queries[0]?.limit, 8)
+    assert.notEqual(queries[0]?.limit, 7)
     assert.notEqual(queries[0]?.limit, 100)
+    assert.equal(groupByTime.from, '2026-09-08 00:00:00.000')
     assert.equal(data.lifetimeActiveDuration, 1)
     assert.equal(data.peakActiveDuration, 1)
     assert.ok(!('lifetimeActiveDurationMs' in data))
     assert.equal(data.points.length, 8)
     assert.equal(range.start, start)
     assert.equal(range.end, end)
-    assert.ok(data.points.every(point => point.time >= range.start && point.time <= range.end))
+    assert.equal(data.points[0]?.time, alignedStart)
+    assert.equal(data.points.at(-1)?.time, todayMidnight)
+    assert.ok(data.points.every(point => (
+      point.time >= alignedStart - 999 && point.time <= range.end
+    )))
     assert.equal(data.points[0]?.value, 1)
     assert.equal(data.rangeActiveDuration, data.points.length)
   } finally {
