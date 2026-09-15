@@ -2,8 +2,10 @@ import i18n from '@jetlinks-web-core/locales'
 import type { GeneralAgentWorkflowGuide } from '@jetlinks-web-core/layout/components/AiChat/generalAgentRuntime'
 
 const t = (key: string) => i18n.global.t(`IotDeviceDetailAgent.${key}`)
+const edgeT = (key: string) => i18n.global.t(`DeviceDetail.edgeGuides.${key}`)
 
 const output = () => t('workflows.output')
+const edgeList = (prefix: string, count: number) => Array.from({ length: count }, (_, index) => edgeT(`${prefix}.${index}`))
 
 const workflowStep = (
   capability: string,
@@ -11,7 +13,142 @@ const workflowStep = (
   required = true,
 ) => ({ capability, evidence, required })
 
-export const createDeviceDetailAgentWorkflows = (): GeneralAgentWorkflowGuide[] => [
+const createDeviceDetailEdgeWorkflows = (): GeneralAgentWorkflowGuide[] => [
+  {
+    id: 'edge-health-check',
+    title: edgeT('health.name'),
+    name: edgeT('health.name'),
+    description: edgeT('health.description'),
+    when: edgeT('health.when.0'),
+    scenarios: edgeList('health.scenarios', 8),
+    keywords: [
+      edgeT('common.keywords.edgeGateway'),
+      edgeT('common.keywords.gateway'),
+      edgeT('common.keywords.edgeSide'),
+      edgeT('common.keywords.cloudEdge'),
+      edgeT('common.keywords.diagnosis'),
+      edgeT('common.keywords.analysis'),
+      edgeT('common.keywords.troubleshoot'),
+      edgeT('common.keywords.check'),
+      edgeT('common.keywords.health'),
+      edgeT('common.keywords.stable'),
+      edgeT('health.keywords.operation'),
+      edgeT('health.keywords.fullCheck'),
+      edgeT('health.keywords.normal'),
+      edgeT('common.keywords.exception'),
+      edgeT('common.keywords.fault'),
+    ],
+    priority: 120,
+    steps: [
+      workflowStep('subject.access.read', 'access-configuration'),
+      workflowStep('subject.connection.summary', 'connection-summary'),
+      workflowStep('edge.runtime.summary.read', 'edge-runtime-summary'),
+      workflowStep('edge.master.summary.read', 'edge-master-summary'),
+      workflowStep('edge.buffer.summary.read', 'edge-buffer-summary'),
+      workflowStep('edge.mbean.summary.read', 'edge-mbean-summary'),
+      workflowStep('edge.runtime.logs.summary', 'edge-runtime-logs-summary'),
+    ],
+    output: edgeList('health.output', 5),
+    notes: [edgeT('health.notes.0')],
+  },
+  {
+    id: 'edge-offline-unstable-diagnosis',
+    title: edgeT('offline.name'),
+    name: edgeT('offline.name'),
+    description: edgeT('offline.description'),
+    when: edgeT('offline.when.0'),
+    scenarios: edgeList('offline.scenarios', 10),
+    keywords: edgeList('offline.keywords', 11).concat(['refused', 'disconnect']),
+    priority: 118,
+    steps: [
+      workflowStep('subject.connection.summary', 'connection-summary'),
+      workflowStep('subject.access.read', 'access-configuration'),
+      workflowStep('edge.master.summary.read', 'edge-master-summary'),
+      workflowStep('edge.mbean.summary.read', 'edge-mbean-summary'),
+      workflowStep('edge.trace.summary.read', 'edge-trace-summary'),
+      workflowStep('edge.runtime.logs.summary', 'edge-runtime-logs-summary'),
+      workflowStep('edge.file.search', 'edge-file-search', false),
+    ],
+    output: edgeList('offline.output', 4),
+  },
+  {
+    id: 'edge-buffer-backlog-diagnosis',
+    title: edgeT('backlog.name'),
+    name: edgeT('backlog.name'),
+    description: edgeT('backlog.description'),
+    when: edgeT('backlog.when.0'),
+    scenarios: edgeList('backlog.scenarios', 10),
+    keywords: edgeList('backlog.keywords', 10).concat(['buffer', 'delay', 'backlog']),
+    priority: 116,
+    steps: [
+      workflowStep('edge.buffer.summary.read', 'edge-buffer-summary'),
+      workflowStep('edge.mbean.summary.read', 'edge-mbean-summary'),
+      workflowStep('subject.log.summary', 'log-summary', false),
+      workflowStep('subject.event.read', 'event-records', false),
+      workflowStep('subject.property.history.summary', 'property-history-summary', false),
+      workflowStep('edge.trace.summary.read', 'edge-trace-summary', false),
+      workflowStep('edge.runtime.logs.summary', 'edge-runtime-logs-summary', false),
+    ],
+    output: edgeList('backlog.output', 5),
+    notes: [edgeT('backlog.notes.0')],
+  },
+  {
+    id: 'edge-ai-runtime-diagnosis',
+    title: edgeT('ai.name'),
+    name: edgeT('ai.name'),
+    description: edgeT('ai.description'),
+    when: edgeT('ai.when.0'),
+    scenarios: edgeList('ai.scenarios', 8),
+    keywords: edgeList('ai.keywords', 10).concat(['review', 'CV', 'AI', 'llm_failed']),
+    priority: 117,
+    steps: [
+      workflowStep('edge.ai.runtime.summary.read', 'edge-ai-runtime-summary'),
+      workflowStep('edge.runtime.logs.summary', 'edge-runtime-logs-summary', false),
+      workflowStep('edge.file.search', 'edge-file-search', false),
+    ],
+    output: edgeList('ai.output', 5),
+    notes: [edgeT('ai.notes.0')],
+  },
+  {
+    id: 'edge-runtime-log-analysis',
+    title: edgeT('logs.name'),
+    name: edgeT('logs.name'),
+    description: edgeT('logs.description'),
+    when: edgeT('logs.when.0'),
+    scenarios: edgeList('logs.scenarios', 7),
+    keywords: edgeList('logs.keywords', 5).concat(['log', 'error', 'exception', 'tail', 'search']),
+    priority: 114,
+    steps: [
+      workflowStep('edge.file.workdir.read', 'edge-file-workdir'),
+      workflowStep('edge.file.list', 'edge-file-list'),
+      workflowStep('edge.file.stat', 'edge-file-stat', false),
+      workflowStep('edge.file.tail', 'edge-file-tail'),
+      workflowStep('edge.file.search', 'edge-file-search'),
+      workflowStep('edge.file.read-text', 'edge-file-read-text', false),
+      workflowStep('edge.file.archive-entries', 'edge-file-archive-entries', false),
+    ],
+    output: edgeList('logs.output', 5),
+    notes: [edgeT('logs.notes.0')],
+  },
+  {
+    id: 'edge-jvm-readonly-diagnosis',
+    title: edgeT('jvm.name'),
+    name: edgeT('jvm.name'),
+    description: edgeT('jvm.description'),
+    when: edgeT('jvm.when.0'),
+    scenarios: edgeList('jvm.scenarios', 8),
+    keywords: ['CPU', 'JVM', 'GC', 'heap', 'thread', edgeT('jvm.keywords.thread'), edgeT('jvm.keywords.memory'), edgeT('jvm.keywords.stuck'), edgeT('jvm.keywords.laggy'), edgeT('jvm.keywords.blocked')],
+    priority: 90,
+    steps: [
+      workflowStep('edge.runtime.summary.read', 'edge-runtime-summary'),
+      workflowStep('edge.mbean.summary.read', 'edge-mbean-summary'),
+      workflowStep('edge.thread.dump.summary', 'edge-thread-dump-summary', false),
+    ],
+    output: edgeList('jvm.output', 4),
+  },
+]
+
+export const createDeviceDetailAgentWorkflows = (includeEdge = false): GeneralAgentWorkflowGuide[] => [
   {
     id: 'device-detail-today-operation',
     title: t('workflows.today.title'),
@@ -110,4 +247,5 @@ export const createDeviceDetailAgentWorkflows = (): GeneralAgentWorkflowGuide[] 
     output: output(),
     notes: [t('workflows.trace.note')],
   },
+  ...(includeEdge ? createDeviceDetailEdgeWorkflows() : []),
 ]

@@ -8,6 +8,25 @@ const DEVICE_METRIC_ORDERING = {
   producerGuaranteed: true,
 }
 
+const measureField = (
+  name: string,
+  labelKey: string,
+  measure: string,
+  unit: string,
+  unitLabelKey: string,
+  options?: { format?: 'integer' | 'decimal'; type?: 'number' | 'integer' },
+) => ({
+  name,
+  type: options?.type ?? 'number' as const,
+  role: 'measure' as const,
+  label: t(labelKey),
+  measure,
+  unit,
+  unitLabel: t(unitLabelKey),
+  aggregation: 'sum' as const,
+  ...(options?.format ? { format: options.format } : {}),
+})
+
 /**
  * Keep device metrics renderer-neutral at the domain boundary. The shared presentation compiler owns ECharts
  * materialization; these tools only publish the observed time-series fields and their semantics.
@@ -17,23 +36,31 @@ export const createDeviceMetricOutput = (
 ) => {
   const fields = id === 'device_activity_aggregate'
     ? [
-      { name: 'value', type: 'number' as const, role: 'measure' as const, label: t('metrics.activeDuration'), measure: 'active_duration', unit: 'ms', aggregation: 'sum' },
+      measureField('value', 'metrics.activeDuration', 'active_duration', 'h', 'units.hours'),
     ]
     : id === 'device_message_aggregate'
       ? [
-        { name: 'upstream', type: 'number' as const, role: 'measure' as const, label: t('metrics.upstreamMessages'), measure: 'upstream_messages', unit: 'count', aggregation: 'sum' },
-        { name: 'downstream', type: 'number' as const, role: 'measure' as const, label: t('metrics.downstreamMessages'), measure: 'downstream_messages', unit: 'count', aggregation: 'sum' },
+        measureField('upstream', 'metrics.upstreamMessages', 'upstream_messages', 'count', 'units.messages', {
+          format: 'integer',
+          type: 'integer',
+        }),
+        measureField('downstream', 'metrics.downstreamMessages', 'downstream_messages', 'count', 'units.messages', {
+          format: 'integer',
+          type: 'integer',
+        }),
       ]
       : [
-        { name: 'upstreamBytes', type: 'number' as const, role: 'measure' as const, label: t('metrics.upstreamTraffic'), measure: 'upstream_traffic', unit: 'bytes', aggregation: 'sum' },
-        { name: 'downstreamBytes', type: 'number' as const, role: 'measure' as const, label: t('metrics.downstreamTraffic'), measure: 'downstream_traffic', unit: 'bytes', aggregation: 'sum' },
+        measureField('upstream', 'metrics.upstreamTraffic', 'upstream_traffic', 'MB', 'units.megabytes'),
+        measureField('downstream', 'metrics.downstreamTraffic', 'downstream_traffic', 'MB', 'units.megabytes'),
       ]
   return clientToolOutput.aggregateSeries({
     name: `${id}-series`,
     shape: 'metric.time-series',
     label: t(`tools.${id}.name`),
     delivery: 'auto',
-    select: (result: any) => (Array.isArray(result?.data?.points) ? result.data.points : []),
+    select: (result: { data?: { points?: unknown } }) => (
+      Array.isArray(result?.data?.points) ? result.data.points : []
+    ),
     recordPath: '$',
     fields: [
       {

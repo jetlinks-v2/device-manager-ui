@@ -22,6 +22,11 @@ const INTERVAL_MILLIS = {
   '1w': 7 * 24 * 60 * 60 * 1000,
 } as const
 const MAX_BUCKETS = 100
+const MS_PER_HOUR = 60 * 60 * 1000
+const BYTES_PER_MB = 1024 * 1024
+const METRIC_SCALE_DECIMALS = 6
+/** `formatAggregationTime` always writes `.000`, so query `from` can be up to 999ms before `range.start`. */
+const QUERY_FROM_MS_TRUNCATION = 999
 
 type MetricInterval = typeof METRIC_INTERVALS[number]
 type MetricColumn = {
@@ -29,6 +34,7 @@ type MetricColumn = {
   alias: string
   aggregation: 'SUM'
 }
+type MetricPoint = { time: number } & Record<string, number | null>
 
 const numberValue = (value: unknown) => {
   const number = Number(value)
@@ -40,6 +46,30 @@ const formatAggregationTime = (timestamp: number) => {
   const pad = (value: number) => String(value).padStart(2, '0')
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}.000`
 }
+
+export const scaleDeviceMetricValue = (value: number, divisor: number) => {
+  if (!Number.isFinite(value) || !Number.isFinite(divisor) || divisor === 0) return 0
+  return Number((value / divisor).toFixed(METRIC_SCALE_DECIMALS))
+}
+
+export const toDeviceMetricHours = (milliseconds: number) => scaleDeviceMetricValue(milliseconds, MS_PER_HOUR)
+export const toDeviceMetricMegabytes = (bytes: number) => scaleDeviceMetricValue(bytes, BYTES_PER_MB)
+
+const scaleMeasurement = (value: number | null | undefined, divisor: number) => (
+  value === null || value === undefined ? null : scaleDeviceMetricValue(value, divisor)
+)
+
+export const resolveDeviceMetricQueryLimit = (
+  range: { start: number; end: number },
+  interval: MetricInterval,
+) => {
+  const duration = Math.max(range.end - range.start, 1)
+  return Math.min(MAX_BUCKETS, Math.max(1, Math.ceil(duration / INTERVAL_MILLIS[interval])))
+}
+
+const isDeviceMetricPointInRange = (time: number, range: { start: number; end: number }) => (
+  time <= range.end && time >= range.start - QUERY_FROM_MS_TRUNCATION
+)
 
 const resolveInterval = (
   args: DeviceDetailAgentArgs,
@@ -55,19 +85,44 @@ const resolveInterval = (
     name: 'interval',
     defaultValue,
   })
-  const bucketCount = Math.ceil(duration / INTERVAL_MILLIS[interval])
-  if (bucketCount > MAX_BUCKETS) {
+  if (Math.ceil(duration / INTERVAL_MILLIS[interval]) > MAX_BUCKETS) {
     throw inputError('DEVICE_METRIC_BUCKET_LIMIT', 'metricBucketLimit', { max: MAX_BUCKETS })
   }
   return interval
 }
 
+const scalePointFields = (points: MetricPoint[], fields: string[], divisor: number): MetricPoint[] => (
+  points.map((point) => {
+    const scaled: MetricPoint = { time: point.time }
+    for (const field of fields) {
+      scaled[field] = scaleMeasurement(point[field], divisor)
+    }
+    return scaled
+  })
+)
+
+const remapTrafficPoints = (points: MetricPoint[]): MetricPoint[] => (
+  points.map(point => ({
+    time: point.time,
+    upstream: scaleMeasurement(point.upstreamBytes, BYTES_PER_MB),
+    downstream: scaleMeasurement(point.downstreamBytes, BYTES_PER_MB),
+  }))
+)
+
 /** Projects bounded buckets while keeping missing values distinct from real zero measurements. */
-export const summarizeDeviceMetricPoints = (value: unknown, fields: string[]) => {
+export const summarizeDeviceMetricPoints = (
+  value: unknown,
+  fields: string[],
+  range?: { start: number; end: number },
+) => {
   const rows = Array.isArray(value) ? value : []
   let populatedBucketCount = 0
   let measurementCount = 0
-  const points: Array<{ time: number } & Record<string, number | null>> = rows
+  const points: MetricPoint[] = rows
+    .filter((item) => {
+      if (!range) return true
+      return isDeviceMetricPointInRange(numberValue(asRecord(item).time), range)
+    })
     .slice(0, MAX_BUCKETS)
     .map((item) => {
       const row = asRecord(item)
@@ -95,7 +150,7 @@ export const summarizeDeviceMetricPoints = (value: unknown, fields: string[]) =>
   }
 }
 
-/** Maps the device overview aggregation into explicit duration-ms, message-count, and traffic-byte contracts. */
+/** Maps the device overview aggregation into hour, message-count, and megabyte contracts. */
 export const createDeviceDetailMetricsService = (device: IotDevice) => {
   const queryOverview = async (
     args: DeviceDetailAgentArgs,
@@ -113,7 +168,7 @@ export const createDeviceDetailMetricsService = (device: IotDevice) => {
         from: formatAggregationTime(range.start),
         to: formatAggregationTime(range.end),
       },
-      limit: MAX_BUCKETS,
+      limit: resolveDeviceMetricQueryLimit(range, interval),
       filter: {
         terms: [{ column: 'deviceId', termType: 'eq', value: device.id }],
       },
@@ -126,12 +181,13 @@ export const createDeviceDetailMetricsService = (device: IotDevice) => {
       { column: 'onlineDuration', alias: 'onlineDuration', aggregation: 'SUM' },
     ])
     const active = asRecord(overview.activeDuration)
-    const { points, cardinality } = summarizeDeviceMetricPoints(active.buckets, ['value'])
-    const rangeActiveDuration = points.reduce((total, point) => total + numberValue(point.value), 0)
+    const { points: rawPoints, cardinality } = summarizeDeviceMetricPoints(active.buckets, ['value'], range)
+    const rangeActiveDurationRaw = rawPoints.reduce((total, point) => total + numberValue(point.value), 0)
+    const points = scalePointFields(rawPoints, ['value'], MS_PER_HOUR)
     const data = {
-      lifetimeActiveDurationMs: numberValue(active.total),
-      rangeActiveDurationMs: rangeActiveDuration,
-      peakActiveDurationMs: numberValue(active.peak),
+      lifetimeActiveDuration: toDeviceMetricHours(numberValue(active.total)),
+      rangeActiveDuration: toDeviceMetricHours(rangeActiveDurationRaw),
+      peakActiveDuration: toDeviceMetricHours(numberValue(active.peak)),
       interval,
       points,
     }
@@ -151,7 +207,7 @@ export const createDeviceDetailMetricsService = (device: IotDevice) => {
     ])
     const upstream = asRecord(overview.upstream)
     const downstream = asRecord(overview.downstream)
-    const { points, cardinality } = summarizeDeviceMetricPoints(overview.messageTrend, ['upstream', 'downstream'])
+    const { points, cardinality } = summarizeDeviceMetricPoints(overview.messageTrend, ['upstream', 'downstream'], range)
     const data = {
       upstreamTotal: numberValue(upstream.total),
       downstreamTotal: numberValue(downstream.total),
@@ -176,12 +232,17 @@ export const createDeviceDetailMetricsService = (device: IotDevice) => {
       { column: 'downstreamBytes', alias: 'downstreamBytes', aggregation: 'SUM' },
     ])
     const traffic = asRecord(overview.traffic)
-    const { points, cardinality } = summarizeDeviceMetricPoints(overview.trafficTrend, ['upstreamBytes', 'downstreamBytes'])
+    const { points: rawPoints, cardinality } = summarizeDeviceMetricPoints(
+      overview.trafficTrend,
+      ['upstreamBytes', 'downstreamBytes'],
+      range,
+    )
+    const points = remapTrafficPoints(rawPoints)
     const data = {
-      upstreamBytes: numberValue(traffic.upstreamBytes),
-      downstreamBytes: numberValue(traffic.downstreamBytes),
-      totalBytes: numberValue(traffic.total),
-      peakBytes: numberValue(traffic.peak),
+      upstreamTotal: toDeviceMetricMegabytes(numberValue(traffic.upstreamBytes)),
+      downstreamTotal: toDeviceMetricMegabytes(numberValue(traffic.downstreamBytes)),
+      total: toDeviceMetricMegabytes(numberValue(traffic.total)),
+      peak: toDeviceMetricMegabytes(numberValue(traffic.peak)),
       interval,
       points,
     }

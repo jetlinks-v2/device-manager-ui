@@ -30,6 +30,7 @@ import { reactive, toRefs, type PropType } from 'vue'
 import IotDeviceDetailHeader from './device-detail/IotDeviceDetailHeader.vue'
 import IotDeviceDetailOverlays from './device-detail/IotDeviceDetailOverlays.vue'
 import IotDeviceDefaultDetailContent from './IotDeviceDefaultDetailContent.vue'
+import { useDeviceDetailAgent } from '../agent/useDeviceDetailAgent'
 import { useIotDeviceDetailView } from '../hooks/useIotDeviceDetailView'
 import type { DeviceInstance } from '@device-manager-ui/types/Instance'
 
@@ -42,13 +43,18 @@ interface IotDeviceDetailViewProps {
   }
 }
 
-// 统一头部负责设备摘要；业务 Provider 决定下方内容，页签与助手只由当前内容宿主管理。
+// 统一头部负责设备摘要；业务 Provider 决定下方内容。助手挂在详情页宿主，自定义内容区仍切换气泡。
+// 网关详情嵌入时由页面级 DeviceDetailAgentHost 持有助手，避免切离物模型/数据页签时 release。
 const props = defineProps({
   embedded: Object as PropType<IotDeviceDetailViewProps['embedded']>,
 })
 const emit = defineEmits<{ 'metadata-changed': [] }>()
 const state = reactive(useIotDeviceDetailView(props, () => emit('metadata-changed')))
 const { device, detailContent, detailContentRef, onDetailContentChanged } = toRefs(state)
+useDeviceDetailAgent({
+  device,
+  enabled: () => !props.embedded,
+})
 await state.ready
 </script>
 

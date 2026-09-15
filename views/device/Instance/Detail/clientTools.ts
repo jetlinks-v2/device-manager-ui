@@ -24,7 +24,8 @@ import { createDeviceAccessClientTools } from './accessTool'
 import { createDeviceEventClientTools } from './eventTool'
 import { createDeviceFunctionClientTools } from './functionTool'
 import { createDeviceAlarmClientTools } from './alarmTool'
-import { createEdgeDiagnosisClientTools } from './edgeDiagnosisTool'
+import { createDeviceDetailEdgeService } from '../../list/agent/deviceDetailEdge.service'
+import { createDeviceDetailEdgeTools } from '../../list/agent/deviceDetailEdge.tools'
 import { createDeviceTraceCaptureClientTools } from './traceCaptureTool'
 import {
   DEVICE_LOG_RECORDS_CONTRACT,
@@ -1639,14 +1640,7 @@ export const createDeviceDetailClientToolRuntime = (
       endTimeDescription: endTimeDescription(),
       getDeviceId
     }),
-    ...createEdgeDiagnosisClientTools({
-      t,
-      clampNumber,
-      asArray,
-      responseResult,
-      compactInlineValue,
-      getDeviceId
-    }),
+    ...createDeviceDetailEdgeTools(createDeviceDetailEdgeService(() => getDevice())),
     createDevicePropertyHistoryTool<DeviceClientToolContext>({
       copy: {
         displayName: t('DeviceDetail.agentTools.propertyHistory.displayName'),
