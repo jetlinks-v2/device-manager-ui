@@ -3,7 +3,7 @@
     <a-input
       v-bind="$attrs"
       :value="value"
-      @update:value="emit('update:value', $event)"
+      @update:value="handleValueChange"
     />
     <I18nInputTrigger class="i18n-input-field__trigger" @configure="visible = true" />
   </div>
@@ -11,7 +11,7 @@
     <a-textarea
       v-bind="$attrs"
       :value="value"
-      @update:value="emit('update:value', $event)"
+      @update:value="handleValueChange"
     />
     <I18nInputTrigger class="i18n-textarea-field__trigger" @configure="visible = true" />
   </div>
@@ -57,16 +57,35 @@ const emit = defineEmits<{
   (e: 'update:i18nMessages', value: Record<string, Record<string, string>>): void
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const visible = ref(false)
 const fieldI18nMessages = computed(() => props.i18nMessages?.[props.field] ?? {})
 const dialogTitle = computed(() => `${t('I18n.configure')} - ${props.label}`)
+const currentLanguage = computed(() => String(locale.value || 'zh').replace('_', '-').split('-')[0])
+
+/** 主输入框表示当前语言，直接编辑时同步其多语言值，确保清空可以持久化。 */
+function handleValueChange(value: string | undefined) {
+  const nextValue = value ?? ''
+  emit('update:value', nextValue)
+
+  const messages = { ...(props.i18nMessages ?? {}) }
+  const currentMessages = { ...(messages[props.field] ?? {}) }
+  const text = nextValue.trim()
+  if (text) {
+    currentMessages[currentLanguage.value] = text
+  } else {
+    delete currentMessages[currentLanguage.value]
+  }
+  messages[props.field] = currentMessages
+  emit('update:i18nMessages', messages)
+}
 
 function saveI18nMessages(messages: Record<string, string>) {
   emit('update:i18nMessages', {
     ...(props.i18nMessages ?? {}),
     [props.field]: messages,
   })
+  emit('update:value', messages[currentLanguage.value] ?? '')
 }
 </script>
 

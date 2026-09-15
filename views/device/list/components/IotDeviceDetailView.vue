@@ -30,7 +30,17 @@ import { reactive, toRefs, type PropType } from 'vue'
 import IotDeviceDetailHeader from './device-detail/IotDeviceDetailHeader.vue'
 import IotDeviceDetailOverlays from './device-detail/IotDeviceDetailOverlays.vue'
 import IotDeviceDefaultDetailContent from './IotDeviceDefaultDetailContent.vue'
-import { useIotDeviceDetailView, type IotDeviceDetailViewProps } from '../hooks/useIotDeviceDetailView'
+import { useIotDeviceDetailView } from '../hooks/useIotDeviceDetailView'
+import type { DeviceInstance } from '@device-manager-ui/types/Instance'
+
+interface IotDeviceDetailViewProps {
+  embedded?: {
+    deviceId: string
+    deviceDetail?: Partial<DeviceInstance>
+    panel: 'thing-model' | 'data'
+    updatePermission: boolean
+  }
+}
 
 // 统一头部负责设备摘要；业务 Provider 决定下方内容，页签与助手只由当前内容宿主管理。
 const props = defineProps({

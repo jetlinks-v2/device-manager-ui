@@ -9,7 +9,7 @@
 			    <a-spin v-if="!scopeCollapsed" :spinning="scopeLoading" wrapper-class-name="unified-device-list__scope">
 				    <IotDeviceScopeSidebar v-bind="sidebarProps" @change="handleScopeChange" @create-group="openCreateGroup" @create-child-group="openCreateChildGroup" @edit-group="openEditGroup" @delete-group="confirmDeleteGroup" />
 			    </a-spin>
-			    <a-button :class="['unified-device-list__scope-toggle', { 'is-collapsed': scopeCollapsed }]" type="text" :aria-label="scopeCollapsed ? '展开设备范围' : '收起设备范围'" @click="scopeCollapsed = !scopeCollapsed"><AIcon :type="scopeCollapsed ? 'RightOutlined' : 'LeftOutlined'" /></a-button>
+<!--			    <a-button :class="['unified-device-list__scope-toggle', { 'is-collapsed': scopeCollapsed }]" type="text" :aria-label="scopeCollapsed ? '展开设备范围' : '收起设备范围'" @click="scopeCollapsed = !scopeCollapsed"><AIcon :type="scopeCollapsed ? 'RightOutlined' : 'LeftOutlined'" /></a-button>-->
 		    </template>
 		    <template #right>
 			    <div class="unified-device-list__panel">
@@ -49,7 +49,7 @@
 				    </a-flex>
 				    <a-flex v-if="batchMode" wrap="wrap" :gap="12" class="unified-device-list__batch">
 					    <span>{{ t('IotDeviceList.toolbar.selected', { selected: selectedIds.length }) }}</span>
-					    <component v-if="activeProvider?.batchComponent" :is="activeProvider.batchComponent" :devices="rows" :selected-ids="selectedIds" @changed="refresh" />
+					    <component v-if="activeProvider?.batchComponent" :is="activeProvider.batchComponent" :devices="rows" :selected-ids="selectedIds" @changed="handleBatchChanged" />
 					    <template v-else>
 						    <a-button :disabled="!selectedIds.length || busy || !selected.every(device => allowed(device, 'enable'))" @click="batchToggle('enable')">{{ t('IotDeviceList.action.batchEnable') }}</a-button>
 						    <a-button :disabled="!selectedIds.length || busy || !selected.every(device => allowed(device, 'disable'))" @click="batchToggle('disable')">{{ t('IotDeviceList.action.batchDisable') }}</a-button>
@@ -153,7 +153,7 @@ function openBatchPage() {
     gatewayScope: gatewayIds.length ? undefined : 'query',
   } })
 }
-const { providers, activeType, activeProvider, scope, filterFields, commonFilterFields, searchTerms, status, rows, total, pageIndex, pageSize, loading, error, counts, statusCounts, selectedIds, batchMode, providerOf, changeType, search, changeStatus, refresh, changePage } = useUnifiedDeviceList()
+const { providers, activeType, activeProvider, scope, filterFields, commonFilterFields, searchTerms, status, rows, total, pageIndex, pageSize, loading, error, counts, statusCounts, selectedIds, batchMode, providerOf, changeType, search, changeStatus, refresh, changePage, clearBatchSelection } = useUnifiedDeviceList()
 const gatewayMonitorCell = moduleRegistry.getResourceItem<Component>('edge-master-ui', 'components', 'GatewayDeviceMonitorCell')
 const useGatewayMetrics = moduleRegistry.getResourceItem<typeof UseGatewayRuntimeMetricsLoader>('edge-master-ui', 'hooks', 'useGatewayRuntimeMetricsLoader')
 // 只监控边缘节点分类的当前页，切换分类或重新加载列表时撤掉旧查询目标。
@@ -167,7 +167,11 @@ function formatTableTime(value?: string | number | null) {
   if (!value || value === '--') return '—'
   return dayjs(value).format('YYYY-MM-DD HH:mm:ss')
 }
-const { projectId, editing, editOpen, createEntry, canCreate, openCreate, detailDevice, busy, selected, allowed, openDetail, edit, toggle, remove, canDelete, batchToggle, assignAreaOpen, assignGroupOpen, assignArea, assignGroup } = useUnifiedDeviceActions(rows, selectedIds, providerOf, refresh, activeProvider)
+const { projectId, editing, editOpen, createEntry, canCreate, openCreate, detailDevice, busy, selected, allowed, openDetail, edit, toggle, remove, canDelete, batchToggle, assignAreaOpen, assignGroupOpen, assignArea, assignGroup } = useUnifiedDeviceActions(rows, selectedIds, clearBatchSelection, providerOf, refresh, activeProvider)
+function handleBatchChanged() {
+  clearBatchSelection()
+  refresh()
+}
 const { deleteGroup, groupDialogError, groupDialogMode, groupDialogOpen, groupEditing, groupSaving, openCreateChildGroup, openCreateGroup, openEditGroup, saveGroup } = useIotDeviceGroupManagement({
   getActiveScope: () => ({ type: scope.scopeType.value, id: scope.scopeId.value }), reloadGroups: scope.reloadGroups, changeScope: handleScopeChange,
 })
@@ -239,5 +243,5 @@ const columns = computed(() => [
 .unified-device-list__table small { display: block; color: var(--ink-3); font-weight: normal; }
 .unified-device-list__name { padding: 0; height: auto; font-weight: 600; }
 .unified-device-list__pagination { text-align: right; }
-.unified-device-list__batch { justify-content: flex-end; align-items: center; min-height: 48px; padding: 8px 12px; color: #f5f8ff; background: #1f2d42; border: 1px solid #31445f; border-radius: 8px; }
+.unified-device-list__batch { justify-content: flex-end; align-items: center; min-height: 48px; padding: 8px 12px; border-radius: 8px; }
 </style>

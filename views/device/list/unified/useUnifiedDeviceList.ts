@@ -36,10 +36,19 @@ export function useUnifiedDeviceList() {
   const activeProvider = computed(() => providers.value.find(provider => provider.id === activeType.value))
   const allTerms = computed<DeviceQueryTerm[]>(() => providers.value.length ? [{ terms: providers.value.map((provider, index) => ({ type: index ? 'or' : 'and', terms: provider.terms() })) }] : [{ column: 'id', termType: 'in', value: [] }])
   const baseTerms = computed(() => activeType.value === 'all' ? [] : (activeProvider.value?.terms() || []))
-  // 左侧空间/分组统计只反映项目范围，不受右侧设备类型条件影响。
-  const scope = useDeviceScope(ref<DeviceQueryTerm[]>([]), refreshKey)
+  // 左侧空间/分组统计须与当前设备类型保持同一筛选口径。
+  const scope = useDeviceScope(baseTerms, refreshKey)
   const products = ref<DeviceLibraryProductFilterOption[]>([])
-  const filterFields = computed(() => getDeviceListFilterFields(scope.sidebarProps.value.areas, scope.sidebarProps.value.groups, products.value))
+  const productLabels = ref<Record<string, string>>({})
+  const filterProducts = computed<DeviceLibraryProductFilterOption[]>(() => [
+    ...products.value,
+    ...Object.entries(productLabels.value).map(([productId, productName]) => ({
+      templateId: productId,
+      productId,
+      productName,
+    })),
+  ])
+  const filterFields = computed(() => getDeviceListFilterFields(scope.sidebarProps.value.areas, scope.sidebarProps.value.groups, filterProducts.value))
   const commonFilterFields = computed(() => filterFields.value.map(field => String(field.dataIndex)))
   const searchTerms = ref<ConditionFilterTerm[]>([])
   const status = computed(() => String(route.query.status || 'all'))
@@ -94,6 +103,7 @@ export function useUnifiedDeviceList() {
       const reportTimes = new Map(runtime?.data.map(device => [device.id, device.lastReportTime]))
       data = data.map(device => ({ ...(extras.get(device.id) || device), lastReportTime: reportTimes.get(device.id) }))
       if (version !== requestVersion) return
+      rememberProductLabels(data)
       rows.value = data; total.value = result.total
     } catch (reason) {
       if (version === requestVersion) { rows.value = []; total.value = 0; error.value = reason instanceof Error ? reason.message : t('UnifiedDeviceList.loadFailed') }
@@ -126,13 +136,35 @@ export function useUnifiedDeviceList() {
     } catch { if (version === statusCountVersion) statusCounts.value = {} }
   }
   function changeType(type: string) {
-    batchMode.value = false
+    clearBatchSelection()
     void router.replace({ query: { ...route.query, type } })
   }
+
+  // 批量命令结束后同时清空表格选中态和操作条开关，避免残留“已选 0 台”。
+  function clearBatchSelection() {
+    selectedIds.value = []
+    batchMode.value = false
+  }
+
+  // 设备库选项只覆盖已安装模板；列表响应中的产品名称可为详情跳转的任意产品补齐筛选标签。
+  function rememberProductLabels(data: UnifiedDevice[]) {
+    const labels = { ...productLabels.value }
+    data.forEach((device) => {
+      const productId = String(device.productId ?? '').trim()
+      const productName = String(device.productName ?? '').trim()
+      if (productId && productName && productName !== '--') labels[productId] = productName
+    })
+    productLabels.value = labels
+  }
+
   function search() {
     // URL 保存编辑态；change 的查询值已转义，回填后会被再次转义并触发搜索循环。
     const q = encodeConditionFilterQuery(searchTerms.value, filterFields.value) || undefined
-    if (q === (route.query.q || undefined) && !route.query.keyword) return
+    // 同条件再次搜索仍需重新请求，供用户刷新可能发生变化的设备数据。
+    if (q === (route.query.q || undefined) && !route.query.keyword) {
+      refresh()
+      return
+    }
     void router.replace({ query: { ...route.query, keyword: undefined, q } })
   }
   // 再次点击已选状态即取消，其他搜索条件及左侧范围保持不变。
@@ -144,6 +176,7 @@ export function useUnifiedDeviceList() {
     let cancelled = false
     onCleanup(() => { cancelled = true })
     products.value = []
+    productLabels.value = {}
     if (!projectId) return
     try {
       const options = await queryDeviceLibraryProductFilterOptions_api(projectId)
@@ -160,5 +193,5 @@ export function useUnifiedDeviceList() {
   }, { immediate: true })
   void loadCounts()
   onBeforeUnmount(() => { requestVersion++; countVersion++; statusCountVersion++ })
-  return { providers, activeType, activeProvider, scope, filterFields, commonFilterFields, searchTerms, status, rows, total, pageIndex, pageSize, loading, error, counts, statusCounts, selectedIds, batchMode, providerOf, changeType, search, changeStatus, refresh, changePage }
+  return { providers, activeType, activeProvider, scope, filterFields, commonFilterFields, searchTerms, status, rows, total, pageIndex, pageSize, loading, error, counts, statusCounts, selectedIds, batchMode, providerOf, changeType, search, changeStatus, refresh, changePage, clearBatchSelection }
 }

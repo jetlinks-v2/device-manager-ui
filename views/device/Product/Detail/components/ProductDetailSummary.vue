@@ -50,9 +50,16 @@
         <div class="product-summary__line">
           <div class="product-summary__row">
             <span class="product-summary__label">{{ $t('Detail.index.478940-5') }}</span>
-            <button type="button" class="product-summary__value product-summary__count" @click="emit('view-devices')">
+            <j-permission-button
+              v-if="canViewDevices"
+              type="link"
+              class="product-summary__value product-summary__count"
+              :hasPermission="canViewDevices"
+              @click="emit('view-devices')"
+            >
               {{ product.count || 0 }}
-            </button>
+            </j-permission-button>
+            <span v-else class="product-summary__value">{{ product.count || 0 }}</span>
           </div>
           <div class="product-summary__row">
             <span class="product-summary__label">{{ $t('Product.detail.brand') }}</span>
@@ -93,7 +100,7 @@ import type { ProductItem } from '../../typings'
 import { getI18nText } from '../../../../../utils/i18n'
 import IotDeviceStatusPill from '../../../list/components/IotDeviceStatusPill.vue'
 
-const props = defineProps<{ product: Partial<ProductItem>; canUpdate: boolean; canAction: boolean }>()
+const props = defineProps<{ product: Partial<ProductItem>; canUpdate: boolean; canAction: boolean; canViewDevices: boolean }>()
 const emit = defineEmits<{ (e: 'back'): void; (e: 'edit'): void; (e: 'toggle-state'): void; (e: 'view-devices'): void }>()
 const { t: $t } = useI18n()
 const { toClipboard } = useClipboard()

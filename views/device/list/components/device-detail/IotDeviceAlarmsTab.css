@@ -12,6 +12,8 @@
   min-width: 0;
 }
 
+.alarm-record-tab__ellipsis-trigger { display: block; min-width: 0; }
+
 .threshold {
   display: inline-flex;
   max-width: 100%;
