@@ -14,6 +14,6 @@ export function useDeviceDetailPermissions(device: Ref<IotDevice | null>) {
   return (action: 'update' | 'delete' | 'enable' | 'disable'): boolean => {
     if (!device.value) return false
     const canWriteDevice = menu.hasMenu('iot-user/device/list') || auth.hasPermission(`device/Instance:${action}`)
-    return canWriteDevice && (!provider.value || auth.hasPermission(`${provider.value.menuCode}:${action}`))
+    return canWriteDevice && (!provider.value || provider.value.menuCode === 'iot-user/device/list' || auth.hasPermission(`${provider.value.menuCode}:${action}`))
   }
 }

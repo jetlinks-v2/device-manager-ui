@@ -78,7 +78,7 @@ export function useUnifiedDeviceActions(
     const provider = providerOf(device)
     if (!provider) return false
     // 编辑统一沿用设备列表的页面授权，避免复用同一编辑表单却额外依赖分类按钮权限。
-    if (action === 'update' || provider.id === 'device') return menu.hasMenu(provider.menuCode)
+    if (action === 'update' || provider.menuCode === 'iot-user/device/list') return menu.hasMenu(provider.menuCode)
     return auth.hasPermission(`${provider.menuCode}:${action}`)
   }
   function openCreate(provider?: DeviceListProvider) {
