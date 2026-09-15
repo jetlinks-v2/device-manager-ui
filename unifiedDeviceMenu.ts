@@ -4,9 +4,9 @@ import type { MenuFilterDefinition, MenuItem } from '@jetlinks-web-core/types/mo
 export const getUnifiedDeviceMenuFilters = (): MenuFilterDefinition[] => [{
   code: 'unified-device-list', order: 100,
   filter(menus) {
-    const walk = (items: MenuItem[]): MenuItem[] => items.map(item => ({
+    const walk = (items: MenuItem[]): MenuItem[] => items.filter(item => item.code !== 'iot-user/edge-gateway').map(item => ({
       ...item,
-      options: ['iot-user/device/list', 'iot-user/edge-gateway', 'media/Device'].includes(item.code)
+      options: ['iot-user/device/list', 'media/Device'].includes(item.code)
         ? { ...item.options, show: false } : item.options,
       children: item.children ? walk(item.children) : undefined,
     }))
