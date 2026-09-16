@@ -274,20 +274,18 @@ const onGroupSelect: TreeProps['onSelect'] = (keys) => select(String(keys[0] || 
 .iot-device-scope__create-group {
   margin-top: var(--space-1);
 }
-.iot-device-scope__tabs.ant-segmented { padding: 0; background: transparent; box-shadow: none; }
-.iot-device-scope__tabs :deep(.ant-segmented-group) { gap: var(--space-2); }
-.iot-device-scope__tabs :deep(.ant-segmented-item) { color: var(--ink-2); border-radius: var(--r-3); }
+.iot-device-scope__tabs.ant-segmented {
+	background: #F9FBFD;
+	border: 1px solid var(--jet-theme-border-color-1);
+	border-radius: var(--r-1);
+	padding: 0;
+}
+
+.iot-device-scope__tabs :deep(.ant-segmented-item-selected) {
+	box-shadow: none;
+}
 .iot-device-scope__tabs :deep(.ant-segmented-item-label) {
-  min-height: 32px;
-  padding: 5px 14px;
-  line-height: 22px;
+	min-height: 2rem;
+	line-height: 2rem;
 }
-.iot-device-scope__tabs :deep(.ant-segmented-item-selected),
-.iot-device-scope__tabs :deep(.ant-segmented-thumb) {
-  color: var(--primary-color);
-  background: var(--info-bg);
-  box-shadow: none;
-}
-.iot-device-scope__tabs :deep(.ant-segmented-item-selected) { font-weight: 500; }
-.iot-device-scope__tabs :deep(.ant-segmented-item:hover) { color: var(--primary-color); background: var(--info-bg); }
 </style>
