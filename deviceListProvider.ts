@@ -1,4 +1,5 @@
 import type { Component } from 'vue'
+import type { RouteLocationRaw } from 'vue-router'
 import type { DeviceQueryTerm } from './api/device'
 import type { IotDevice } from './views/device/list/types'
 
@@ -26,6 +27,8 @@ export interface DeviceListProvider {
   matches: (device: IotDevice) => boolean
   /** 弹窗遵循 open / update:open / saved；路由入口复用原新增页，返回时重载列表。 */
   create?: DeviceCreateEntry
+  /** 详情是当前列表的子路由时，由 Provider 返回保留入口上下文的目标地址。 */
+  detailPath?: (device: UnifiedDevice) => RouteLocationRaw
   detailRoute?: string
   detailParam?: string
   detailComponent?: Component

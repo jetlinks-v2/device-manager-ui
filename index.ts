@@ -14,8 +14,12 @@ const getAsyncRoutesMap = () => {
     modules[code] = routerModules[item]
     modules[`iot-user/${code}`] = routerModules[item]
   })
+  // Keep the IoT overview route available when Vite has not refreshed its glob after this page was added.
+  modules['iot-user/device/overview'] = () => import('./views/device/overview/index.vue')
   modules['iot-user-device-list'] = () => import('./views/device/list/unified/Page.vue')
-  modules['iot-user/device/list'] = () => import('./views/device/list/unified/index.vue')
+  // 两个菜单入口都由同一宿主承载，才能让资源中心与物联共用详情子路由。
+  modules['iot-user/device/list'] = () => import('./views/device/list/unified/Page.vue')
+  modules['device/list'] = () => import('./views/device/list/unified/Page.vue')
   return modules
 }
 

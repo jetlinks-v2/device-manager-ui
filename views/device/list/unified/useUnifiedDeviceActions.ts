@@ -95,6 +95,10 @@ export function useUnifiedDeviceActions(
     const provider = providerOf(device)
     if (!provider) return
     if (provider.detailComponent) { detailDevice.value = device; return }
+    if (provider.detailPath) {
+      void router.push(provider.detailPath(device))
+      return
+    }
     if (provider.detailRoute) menu.jumpPage(provider.detailRoute, {
       params: { [provider.detailParam || 'id']: device.id },
       // 子菜单也可通过 /video 等路径限定类型；详情返回统一列表时仍需保留该分类。

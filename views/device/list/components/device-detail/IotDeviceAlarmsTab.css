@@ -14,11 +14,26 @@
 
 .alarm-record-tab__ellipsis-trigger { display: block; min-width: 0; }
 
+.alarm-record-tab__ellipsis {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .threshold {
   display: inline-flex;
+  width: 100%;
+  min-width: 0;
   max-width: 100%;
   padding: 0.125rem 0.5rem;
   border-radius: var(--jet-theme-radius);
   background: var(--jet-theme-bg);
   font-family: var(--font-mono, monospace);
+}
+
+.threshold .alarm-record-tab__ellipsis {
+  flex: 1;
 }

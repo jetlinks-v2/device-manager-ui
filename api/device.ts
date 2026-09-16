@@ -186,6 +186,24 @@ const unwrapResult = <T>(response: ApiResponse<T> | T): T => {
   return response as T
 }
 
+/**
+ * 将产品筛选中的模糊匹配条件转换为 QueryParamEntity 所需的通配符形式。
+ *
+ * 条件筛选器可返回嵌套条件组，必须递归处理，避免产品选择弹窗的搜索条件在运行时失效。
+ */
+const normalizeLikeTermValue = (term: DeviceQueryTerm): DeviceQueryTerm => {
+  if (Array.isArray(term.terms)) {
+    return { ...term, terms: term.terms.map(normalizeLikeTermValue) }
+  }
+
+  if (['like', 'nlike'].includes(String(term.termType || '')) && typeof term.value === 'string') {
+    const value = term.value.trim()
+    return { ...term, value: value.includes('%') ? value : `%${value}%` }
+  }
+
+  return term
+}
+
 const streamToUtf8Text = async (payload: unknown) => {
   const data = isRecord(payload) && 'data' in payload ? payload.data : payload
   if (typeof data === 'string') return data

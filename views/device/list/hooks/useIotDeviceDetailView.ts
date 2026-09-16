@@ -1,7 +1,7 @@
 import { computed, nextTick, onMounted, onScopeDispose, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
-import { useAuthStore, useMenuStore } from '@jetlinks-web-core/store'
+import { useMenuStore } from '@jetlinks-web-core/store'
 import { EventEmitter, onlyMessage } from '@jetlinks-web/utils'
 import {
   deleteDevice_api,
@@ -11,7 +11,7 @@ import {
 import { DEVICE_CATEGORY_META } from './useDeviceLibraryMeta'
 import { useDeviceLibrary } from './useDeviceLibrary'
 import { useIotDataAccessRefresh } from './useIotDataAccessRefresh'
-import { buildIotDeviceHealthPath, resolveIotProjectId } from './useIotDeviceRouting'
+import { buildIotDeviceHealthPath, buildIotDeviceListPath, resolveIotProjectId } from './useIotDeviceRouting'
 import { getIotDeviceConnectionStatus } from './useIotDeviceStatus'
 import type { DeviceCategory, DeviceTemplate } from '../services/device-library/types'
 import { iotDeviceService } from '../services/iotDevice.service'
@@ -103,14 +103,14 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
 
   const device = ref<IotDevice | null>(null)
   const instanceStore = useInstanceStore()
-  const authStore = useAuthStore()
-  const deviceUpdatePermission = computed(() => props.embedded?.updatePermission ?? authStore.hasPermission('iot-user/device/list:update'))
   const provider = useDeviceListProvider(device)
   const detailContent = computed(() => props.embedded ? undefined : provider.value?.detailContent)
   const detailContentRef = ref<{ refresh?: () => Promise<void> }>()
   const initializing = ref(true)
   const extensionTabs = useDeviceDetailTabs(device)
   const canDeviceAction = useDeviceDetailPermissions(device)
+  // 物模型编辑与详情头部“编辑”共用同一授权规则，避免物联旧菜单缺少按钮 id 时出现权限分叉。
+  const deviceUpdatePermission = computed(() => props.embedded?.updatePermission ?? canDeviceAction('update'))
   const hasTransparentCodec = computed(() =>
     Boolean(device.value?.features?.some((item: any) => item?.id === 'transparentCodec')),
   )
@@ -290,7 +290,11 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
   }
 
   function backToDeviceList() {
-    deviceMenu.jumpPage('iot-user-device-list', { query: { ...route.query } })
+    // 返回必须沿用进入详情的菜单根路径，避免物联详情回落到资源中心。
+    void router.push({
+      path: buildIotDeviceListPath(projectId.value, route),
+      query: route.query,
+    })
   }
 
   async function onDeviceSaved() {

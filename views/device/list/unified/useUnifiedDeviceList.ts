@@ -6,7 +6,7 @@ import { moduleRegistry } from '@jetlinks-web-core/utils/module-registry'
 import { countDevice_api, queryDevicePage_api, type DeviceLibraryProductFilterOption, type DeviceQueryTerm } from '../../../../api/device'
 import { queryDeviceLibraryProductFilterOptions_api } from '../../../../api/device-library'
 import { queryRuntimeDevices_api } from '../../../../api/deviceGroup'
-import { resolveIotProjectId } from '../hooks/useIotDeviceRouting'
+import { buildIotDeviceDetailPath, getIotDeviceListMenuCode, isIotDeviceListEntry, resolveIotProjectId } from '../hooks/useIotDeviceRouting'
 import { IOT_DEVICE_LIST_DEFAULT_PRODUCT_TERM } from '../../../../api/deviceListDefaultTerms'
 import type { DeviceListProvider, UnifiedDevice } from '../../../../deviceListProvider'
 import { useDeviceScope } from '../../../../deviceScope'
@@ -21,20 +21,28 @@ export function useUnifiedDeviceList() {
   const { t } = useI18n()
   const refreshKey = ref(0)
   const deviceProvider: DeviceListProvider = {
-    id: 'device', label: () => t('UnifiedDeviceList.device'), order: 10, menuCode: 'iot-user/device/list',
+    id: 'device', label: () => t('UnifiedDeviceList.device'), order: 10, menuCode: getIotDeviceListMenuCode(route),
     terms: () => [IOT_DEVICE_LIST_DEFAULT_PRODUCT_TERM], matches: () => true,
-    detailRoute: 'iot-user-device-list/Detail', detailParam: 'id',
+    // 详情继承当前物联或资源中心入口，不能再通过另一个入口的菜单 code 查找。
+    detailPath: device => ({
+      path: buildIotDeviceDetailPath(resolveIotProjectId(route), device.id, undefined, route),
+      query: { ...route.query, type: route.query.type || device.category },
+    }),
   }
   const extensions = moduleRegistry.getAllModuleIds().flatMap(id => Object.values(
     moduleRegistry.getResource(id, 'deviceListProviders') || {},
   ) as DeviceListProvider[])
   const providers = computed(() => [deviceProvider, ...extensions].filter(provider => provider.id === 'device' || menu.hasMenu(provider.menuCode)).sort((a, b) => a.order - b.order))
+  const isIotEntry = computed(() => isIotDeviceListEntry(route))
+  // 物联入口已合并为设备列表，仅保留普通设备范围，避免路由参数重新切入网关或视频分类。
   const activeType = computed(() => {
+    if (isIotEntry.value) return 'device'
     const requested = route.query.type || (route.path.endsWith('/gateway') ? 'gateway' : route.path.endsWith('/video') ? 'video' : 'all')
     return providers.value.some(provider => provider.id !== 'device' && provider.id === requested) ? String(requested) : 'all'
   })
   const activeProvider = computed(() => providers.value.find(provider => provider.id === activeType.value))
   const allTerms = computed<DeviceQueryTerm[]>(() => providers.value.length ? [{ terms: providers.value.map((provider, index) => ({ type: index ? 'or' : 'and', terms: provider.terms() })) }] : [{ column: 'id', termType: 'in', value: [] }])
+  // 固定条件同时传入分页、状态统计与左侧范围统计，确保物联各处都排除边缘网关和视频设备。
   const baseTerms = computed(() => activeType.value === 'all' ? [] : (activeProvider.value?.terms() || []))
   // 左侧空间/分组统计须与当前设备类型保持同一筛选口径。
   const scope = useDeviceScope(baseTerms, refreshKey)
@@ -110,6 +118,10 @@ export function useUnifiedDeviceList() {
     } finally { if (version === requestVersion) loading.value = false }
   }
   async function loadCounts() {
+    if (isIotEntry.value) {
+      counts.value = {}
+      return
+    }
     const version = ++countVersion
     try {
       const values = await Promise.all([
@@ -193,5 +205,5 @@ export function useUnifiedDeviceList() {
   }, { immediate: true })
   void loadCounts()
   onBeforeUnmount(() => { requestVersion++; countVersion++; statusCountVersion++ })
-  return { providers, activeType, activeProvider, scope, filterFields, commonFilterFields, searchTerms, status, rows, total, pageIndex, pageSize, loading, error, counts, statusCounts, selectedIds, batchMode, providerOf, changeType, search, changeStatus, refresh, changePage, clearBatchSelection }
+  return { providers, isIotEntry, activeType, activeProvider, scope, filterFields, commonFilterFields, searchTerms, status, rows, total, pageIndex, pageSize, loading, error, counts, statusCounts, selectedIds, batchMode, providerOf, changeType, search, changeStatus, refresh, changePage, clearBatchSelection }
 }
