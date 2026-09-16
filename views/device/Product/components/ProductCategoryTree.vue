@@ -32,7 +32,10 @@
           <template #title="node">
             <span class="product-category-tree__node">
               <span class="product-category-tree__label">{{ node.i18nName || node.name }}</span>
-              <a-dropdown v-if="canAdd || canUpdate || canDelete" :trigger="['click']">
+              <a-dropdown
+                v-if="node.id !== unclassifiedScopeId && (canAdd || canUpdate || canDelete)"
+                :trigger="['click']"
+              >
                 <a-button
                   class="product-category-tree__node-action"
                   type="text"
@@ -65,14 +68,6 @@
         <a-empty v-else :description="$t('Product.index.660348-39')" :image="Empty.PRESENTED_IMAGE_SIMPLE" />
       </a-spin>
     </div>
-    <button
-      class="product-category-tree__unclassified"
-      :class="{ 'is-active': activeId === unclassifiedScopeId }"
-      type="button"
-      @click="emit('select-unclassified')"
-    >
-      <span class="product-category-tree__label">{{ $t('Product.index.660348-42') }}</span>
-    </button>
     <a-button
       v-if="canAdd"
       class="product-category-tree__create-category"
@@ -88,14 +83,10 @@
 
 <script setup lang="ts">
 import { Empty } from 'ant-design-vue'
+import { useI18n } from 'vue-i18n'
+import { useProductCategoryTree, type ProductCategoryTreeNode } from '../hooks/useProductCategoryTree'
 
-export interface ProductCategoryTreeNode {
-  id: string
-  name: string
-  i18nName?: string
-  children?: ProductCategoryTreeNode[]
-  [key: string]: unknown
-}
+export type { ProductCategoryTreeNode } from '../hooks/useProductCategoryTree'
 
 const props = withDefaults(defineProps<{
   treeData?: ProductCategoryTreeNode[]
@@ -122,86 +113,29 @@ const emit = defineEmits<{
   (event: 'delete', category: ProductCategoryTreeNode): void
 }>()
 
-const keyword = ref('')
-const expandedKeys = ref<string[]>([])
-const expandedBeforeSearch = ref<string[]>()
-const unclassifiedScopeId = '__product-unclassified__'
-const fieldNames = {
-  title: 'name',
-  key: 'id',
-  children: 'children',
-}
-
-const selectedKeys = computed(() => props.activeId ? [props.activeId] : [])
-const normalizedKeyword = computed(() => keyword.value.trim())
-const filteredTree = computed(() => filterTree(props.treeData, keyword.value))
-
-// 搜索仅临时接管展开状态，清空后恢复用户原来的分类浏览位置。
-watch(normalizedKeyword, (value, previous) => {
-  if (value) {
-    if (!previous) {
-      expandedBeforeSearch.value = [...expandedKeys.value]
-    }
-    expandedKeys.value = collectExpandableKeys(filteredTree.value)
-    return
-  }
-
-  if (previous) {
-    expandedKeys.value = expandedBeforeSearch.value || []
-    expandedBeforeSearch.value = undefined
-  }
+const { t: $t } = useI18n()
+const {
+  keyword,
+  expandedKeys,
+  selectedKeys,
+  filteredTree,
+  fieldNames,
+  unclassifiedScopeId,
+  handleExpand,
+  handleSelect,
+} = useProductCategoryTree({
+  treeData: () => props.treeData,
+  activeId: () => props.activeId,
+  unclassifiedLabel: () => $t('Product.index.660348-42'),
+  onSelect: (id) => emit('select', id),
+  onSelectUnclassified: () => emit('select-unclassified'),
 })
-
-watch(filteredTree, (nodes) => {
-  if (normalizedKeyword.value) {
-    expandedKeys.value = collectExpandableKeys(nodes)
-  }
-})
-
-function handleExpand(keys: Array<string | number>) {
-  expandedKeys.value = keys.map((key) => String(key))
-}
-
-function handleSelect(keys: string[]) {
-  emit('select', keys[0])
-}
-
-function collectExpandableKeys(nodes: ProductCategoryTreeNode[]): string[] {
-  const keys: string[] = []
-  const visit = (items: ProductCategoryTreeNode[]) => {
-    items.forEach((node) => {
-      if (node.children?.length) {
-        keys.push(node.id)
-        visit(node.children)
-      }
-    })
-  }
-  visit(nodes)
-  return keys
-}
-
-function filterTree(nodes: ProductCategoryTreeNode[], value: string): ProductCategoryTreeNode[] {
-  const normalizedKeyword = value.trim().toLocaleLowerCase()
-  if (!normalizedKeyword) {
-    return nodes
-  }
-
-  // 命中子分类时保留父节点，保证本地搜索仍能表达原有树层级。
-  return nodes.reduce<ProductCategoryTreeNode[]>((result, node) => {
-    const children = filterTree(node.children || [], value)
-    const name = String(node.i18nName || node.name || '').toLocaleLowerCase()
-    if (name.includes(normalizedKeyword) || children.length) {
-      result.push({ ...node, children })
-    }
-    return result
-  }, [])
-}
 </script>
 
 <style scoped lang="less">
 .product-category-tree {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   gap: var(--space-2);
   height: 100%;
   min-height: 0;
@@ -218,8 +152,7 @@ function filterTree(nodes: ProductCategoryTreeNode[], value: string): ProductCat
     overflow: auto;
   }
 
-  &__all,
-  &__unclassified {
+  &__all {
     display: block;
     width: 100%;
     padding: var(--space-2);
@@ -238,15 +171,6 @@ function filterTree(nodes: ProductCategoryTreeNode[], value: string): ProductCat
       color: var(--jet-theme-text);
       background: var(--ant-table-row-hover-bg, rgba(0, 0, 0, 0.02));
     }
-  }
-
-  &__unclassified {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid var(--jet-theme-border, var(--ant-color-border));
-    border-radius: var(--r-3);
-    text-align: center;
   }
 
   &__label {

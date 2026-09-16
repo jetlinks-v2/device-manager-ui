@@ -1,6 +1,7 @@
 <template>
   <j-page-container class="product-page">
     <FullPage transparentBackground>
+    <ContentPanel class="product-page__main">
 	    <EqualHeightColumns class="product-page__layout" left-width="15rem" right-width="1fr">
 		      <template #left>
 			      <ProductCategoryTree
@@ -20,7 +21,7 @@
 			      />
 		      </template>
 		      <template #right>
-			      <ContentPanel class="product-page__main">
+
 				      <a-flex class="product-page__toolbar" :gap="16" align="center" wrap="wrap">
 					      <ConditionFilter
 						      class="product-page__search"
@@ -67,7 +68,7 @@
 						      />
 					      </template>
 					      <template #name="slotProps">
-						      <a
+						      <span
 							      class="product-page__name-cell"
 							      href=""
 							      @click.prevent="handleView(slotProps.id)"
@@ -80,10 +81,15 @@
 								      :alt="getI18nText(slotProps, 'name')"
 							      />
 							      <span class="product-page__name-body">
-                    <j-ellipsis class="product-page__name-title">{{ getI18nText(slotProps, 'name') }}</j-ellipsis>
+                      <a
+                          href=""
+                          @click.prevent="handleView(slotProps.id)"
+                      >
+                      <j-ellipsis class="product-page__name-title">{{ getI18nText(slotProps, 'name') }}</j-ellipsis>
+                      </a>
                     <small>{{ slotProps.id }}</small>
                   </span>
-						      </a>
+						      </span>
 					      </template>
 					      <template #classifiedName="slotProps">
 						      {{ getI18nText(slotProps, 'classifiedName') || '-' }}
@@ -92,27 +98,32 @@
 						      {{ getBrandModel(slotProps) }}
 					      </template>
 					      <template #action="slotProps">
-						      <a-space :size="4">
-							      <template v-for="i in getActions(slotProps)" :key="i.key">
-								      <j-permission-button
-									      type="link"
-									      size="small"
-									      :disabled="i.disabled"
-									      :popConfirm="i.popConfirm"
-									      :hasPermission="i.permission || i.key === 'view' ? true : 'device/Product:' + i.key"
-									      :tooltip="{ ...i.tooltip }"
-									      :danger="i.key === 'delete'"
-									      @click="i.onClick"
-								      >
-									      {{ i.text }}
-								      </j-permission-button>
-							      </template>
-						      </a-space>
+                  <table-actions>
+                      <table-actions-item v-for="i in getActions(slotProps)" :key="i.key" :common="i.common === false">
+                        <j-permission-button
+                            type="link"
+                            size="small"
+                            :disabled="i.disabled"
+                            :popConfirm="i.popConfirm"
+                            :hasPermission="i.permission || i.key === 'view' ? true : 'device/Product:' + i.key"
+                            :tooltip="{ ...i.tooltip }"
+                            :danger="i.key === 'delete'"
+                            @click="i.onClick"
+                        >
+                          <template #icon>
+                            <AIcon :type="i.icon"/>
+                          </template>
+                          <template v-if="i.common !== false">{{ i.text }}</template>
+
+                        </j-permission-button>
+                      </table-actions-item>
+                  </table-actions>
+
 					      </template>
 				      </JProTable>
-			      </ContentPanel>
 		      </template>
 	    </EqualHeightColumns>
+			      </ContentPanel>
     </FullPage>
     <Save ref="saveRef" :isAdd="isAdd" :title="title" @success="refresh" />
     <ModifyModal
@@ -220,7 +231,7 @@ const columns = [
     title: $t("Product.index.660348-11"),
     key: "action",
     fixed: "right",
-    width: 250,
+    width: 80,
     scopedSlots: true,
     ellipsis: true,
   },
@@ -303,17 +314,17 @@ const getActions = (data: Partial<Record<string, any>>): any[] => {
   const parentGetActions = inject('getActions', {}).getActions;
   const parentActions = parentGetActions?.(data);
   let actions = [
-    {
-      key: "view",
-      text: $t("Product.index.660348-12"),
-      tooltip: {
-        title: $t("Product.index.660348-12"),
-      },
-      icon: "EyeOutlined",
-      onClick: () => {
-        handleView(data.id);
-      },
-    },
+    // {
+    //   key: "view",
+    //   text: $t("Product.index.660348-12"),
+    //   tooltip: {
+    //     title: $t("Product.index.660348-12"),
+    //   },
+    //   icon: "EyeOutlined",
+    //   onClick: () => {
+    //     handleView(data.id);
+    //   },
+    // },
     {
       key: "update",
       text: $t("Product.index.660348-13"),
@@ -328,6 +339,7 @@ const getActions = (data: Partial<Record<string, any>>): any[] => {
           saveRef.value.show(data);
         });
       },
+      common: false
     },
     {
       key: "export",
