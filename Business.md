@@ -4,6 +4,16 @@
 
 ## 最近变更
 
+### 设备列表状态切换抽取为 core 公共组件 SwitchGroup（已实施）
+
+- 目标：把统一设备列表工具栏中的状态切换组（状态点 + 文案 + 计数，单选）抽成 `runtime-ui/jetlinks-web-core` 的公共组件，并按设计稿重做样式：容器圆角 4px、1px `#ECEFF3` 描边、内边距 1px、底色 `#F7F8FA`、文字使用次级文本色；选中项圆角 6px、白色底、主题色文字。
+- 影响范围与 owning module：新增 `jetlinks-web-core/src/components/SwitchGroup/`（组件、类型、使用说明），在 core 组件入口注册为全局 `SwitchGroup` 并具名导出；`device-manager-ui` 只改 `views/device/list/unified/index.vue` 的模板、状态选项组装和已删除的局部样式。组件不绑定设备状态语义，类型切换、视图模式切换等单选场景都可复用。
+- 不做：不改接口、查询条件、路由回显，也不改 `changeStatus` 的“再次点击已选中项回到全部”交互；不改 `ui/` 运营端、其他设备页面、core 全局主题 token 和既有 `SegmentPanel`/`ChipGroup`。
+- 实现入口：模板改为 `<SwitchGroup :model-value="status" :options="statusOptions" :aria-label="t('IotDeviceList.filter.status')" @change="changeStatus">`，状态点通过 `#option` 插槽在页面内渲染；`statusOptions` 只组装 `label` 与 `count`（`statusCounts[value] ?? '—'`），`statusTones`（online→success、offline→error、disabled→default）留在页面侧。组件不带任何状态点/徽标字段，后续其他场景可用同一插槽自定义前缀内容。原 `.unified-device-list__status*` 五条局部样式随模板一并删除。
+- 文档：core 组件索引 `jetlinks-web-core/src/components/README.md` 的场景映射与详细文档索引已补充 `SwitchGroup`，单组件说明见 `jetlinks-web-core/src/components/SwitchGroup/README.md`（含 `option` 插槽的状态点示例）。
+- 验证：`pnpm -F jetlinks-web-core build -- --module-name device-manager-ui` 通过（exit 0）；产物 CSS 中 `--line`(#ECEFF3)、`--r-1`(4px)、`--r-2`(6px)、`--bg`、`--accent`、`--ink-2` 与 1px 内边距/描边、`#f7f8fa` 底色均已按设计落地。模块 `vue-tsc` 仍被既有 `views/link/Certificate/type.d.ts(2,30)` 语法错误提前阻断，改用仅覆盖 `views/device/list/unified/**` 的临时 tsconfig 做前后对照：改动前后错误多重集完全一致（均 273 条，逐条文案相同），即本次改动新增 0 条类型错误（临时配置已删除）。类型只按目录入口 `@jetlinks-web-core/components/SwitchGroup` 导入，避免把 core 组件根 barrel 拉进类型图。
+- 未验证：当前没有运行中的 `runtime-ui` dev server（`9100`/`9101` 属于 `ui/` 运营端），未执行浏览器视觉与交互回归；`#F7F8FA` 在 core 暂无等价语义 token，先以组件局部变量承载。
+
 ### 设备详情返回入口与摘要对齐调整（已实施）
 
 - 目标：将设备详情的返回入口移到内容面板外，明确显示“返回设备列表”；摘要中的设备图标、基础信息和操作按钮统一从顶部开始排列。
