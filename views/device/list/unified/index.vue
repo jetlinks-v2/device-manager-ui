@@ -1,6 +1,6 @@
 <template>
   <FullPage flex transparent-background class="unified-device-list">
-    <a-flex class="unified-device-list__header" align="center" justify="space-between" wrap="wrap" :gap="16">
+    <a-flex v-if="!isIotEntry" class="unified-device-list__header" align="center" justify="space-between" wrap="wrap" :gap="16">
       <a-segmented class="unified-device-list__types" :value="activeType" :options="tabs" @change="changeType(String($event))" />
     </a-flex>
     <ContentPanel>
@@ -35,7 +35,7 @@
 							    </a-button>
 						    </a-space>
 						    <a-divider type="vertical" class="unified-device-list__action-divider" />
-						    <a-button v-if="activeType === 'all'" type="primary" :disabled="busy" @click="editing = null; editOpen = true">
+						    <a-button v-if="activeType === 'all' || isIotEntry" type="primary" :disabled="busy" @click="editing = null; editOpen = true">
 							    <template #icon><AIcon type="PlusOutlined" /></template>
 							    {{ t('IotDeviceList.action.create') }}
 						    </a-button>
@@ -153,7 +153,7 @@ function openBatchPage() {
     gatewayScope: gatewayIds.length ? undefined : 'query',
   } })
 }
-const { providers, activeType, activeProvider, scope, filterFields, commonFilterFields, searchTerms, status, rows, total, pageIndex, pageSize, loading, error, counts, statusCounts, selectedIds, batchMode, providerOf, changeType, search, changeStatus, refresh, changePage, clearBatchSelection } = useUnifiedDeviceList()
+const { providers, isIotEntry, activeType, activeProvider, scope, filterFields, commonFilterFields, searchTerms, status, rows, total, pageIndex, pageSize, loading, error, counts, statusCounts, selectedIds, batchMode, providerOf, changeType, search, changeStatus, refresh, changePage, clearBatchSelection } = useUnifiedDeviceList()
 const gatewayMonitorCell = moduleRegistry.getResourceItem<Component>('edge-master-ui', 'components', 'GatewayDeviceMonitorCell')
 const useGatewayMetrics = moduleRegistry.getResourceItem<typeof UseGatewayRuntimeMetricsLoader>('edge-master-ui', 'hooks', 'useGatewayRuntimeMetricsLoader')
 // 只监控边缘节点分类的当前页，切换分类或重新加载列表时撤掉旧查询目标。

@@ -1,5 +1,5 @@
 <template>
-  <j-page-container >
+  <j-page-container>
     <IotDeviceWorkbenchView />
   </j-page-container>
 </template>

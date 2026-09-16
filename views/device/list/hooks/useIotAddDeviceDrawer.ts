@@ -178,7 +178,6 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
 
   function selectSource(source: DeviceCreationSource) {
     if (source === 'library' && !isLibraryAvailable.value) return
-    if (source === 'product' && !productMenuAvailable.value) return
     // 两种来源的产品集合不同，切换时必须撤销产品侧的在途请求并清空筛选，避免隐藏条件污染返回后的列表。
     ++productRequestSequence
     productFilterTerms.value = []
@@ -295,8 +294,16 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
     const requestSequence = openSequence
     marketplaceCapability.value = 'checking'
     try {
-      await probeDeviceLibraryCapability_api()
+      const available = await probeDeviceLibraryCapability_api()
       if (requestSequence !== openSequence || !props.open) return
+      if (!available) {
+        // 私有化未部署能力市场时，新增设备只能从当前项目产品中选择，不能保留设备库空态。
+        marketplaceCapability.value = 'unavailable'
+        creationSource.value = 'product'
+        void loadProductCategories()
+        void loadProductCandidates(true)
+        return
+      }
       marketplaceCapability.value = 'available'
       creationSource.value = 'library'
       void loadDeviceLibraryTags()
@@ -305,7 +312,9 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
       // 市场缺失、无权限或网络异常只影响设备库入口，产品创建路径始终可用。
       if (requestSequence !== openSequence || !props.open) return
       marketplaceCapability.value = 'unavailable'
-      creationSource.value = productMenuAvailable.value ? 'product' : 'library'
+      creationSource.value = 'product'
+      void loadProductCategories()
+      void loadProductCandidates(true)
     }
   }
 
@@ -340,7 +349,7 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
 
   function resetForm() {
     openSequence += 1; productRequestSequence += 1; libraryRequestSequence += 1
-    creationSource.value = productMenuAvailable.value ? 'product' : 'library'; marketplaceCapability.value = 'checking'
+    creationSource.value = 'product'; marketplaceCapability.value = 'checking'
     selectedProductKey.value = ''; selectedTemplateKey.value = ''
     selectedProduct.value = null; selectedTemplate.value = null; selectedCategoryId.value = undefined
     productCandidates.value = []; productTotal.value = 0; productPageIndex.value = 0; productFilterTerms.value = []
@@ -429,10 +438,9 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
     if (!open) return
     resetForm()
     openSequence += 1
-    if (productMenuAvailable.value) {
-      void loadProductCategories()
-      void loadProductCandidates(true)
-    }
+    // 先展示当前项目产品；仅在市场服务确认可用后才切换到设备库来源。
+    void loadProductCategories()
+    void loadProductCandidates(true)
     void probeMarketplace()
   }, { immediate: true })
 

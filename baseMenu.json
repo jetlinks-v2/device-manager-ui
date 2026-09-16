@@ -2169,11 +2169,6 @@
         "assetTypes": [
           "device","product"
         ],
-        "options": {
-          "meta": {
-            "componentCode": "iot/device"
-          }
-        },
         "showPage": [
           "device-instance"
         ],
@@ -2530,98 +2525,23 @@
               }
             ]
           }
-        ]
-      },
-      {
-        "code": "iot-user/device/groups",
-        "name": "设备分组",
-        "i18nMessages": {
-          "name": {
-            "zh_CN": "设备分组",
-            "en_US": "Device Groups",
-            "en": "Device Groups"
-          }
-        },
-        "owner": "app",
-        "id": "iot-user-device-groups",
-        "url": "/iot-center/device/groups",
-        "icon": "ClusterOutlined",
-        "sortIndex": 3,
-        "accessSupport": {
-          "text": "支持",
-          "value": "support"
-        },
-        "supportDataAccess": true,
-        "assetType": "deviceGroup",
-        "options": {
-          "meta": {
-            "componentCode": "device/groups"
-          }
-        },
-        "showPage": [
-          "device-instance"
         ],
-        "permissions": [
+        "buttons": [
           {
-            "permission": "device-instance",
-            "actions": [
-              "query"
-            ]
-          },
-          {
-            "permission": "device-group",
-            "actions": [
-              "query",
-              "save",
-              "delete"
-            ]
-          },
-          {
-            "permission": "space-data-bind",
-            "actions": [
-              "query",
-              "save",
-              "delete"
-            ]
-          }
-        ]
-      },
-      {
-        "code": "iot-user/device/health",
-        "name": "设备健康",
-        "i18nMessages": {
-          "name": {
-            "zh_CN": "设备健康",
-            "en_US": "Device Health",
-            "en": "Device Health"
-          }
-        },
-        "owner": "app",
-        "id": "iot-user-device-health",
-        "url": "iot-user/device/health",
-        "icon": "ControlOutlined",
-        "sortIndex": 4,
-        "accessSupport": {
-          "text": "支持",
-          "value": "support"
-        },
-        "supportDataAccess": true,
-        "assetTypes": [
-          "device","product"
-        ],
-        "options": {
-          "meta": {
-            "componentCode": "device/health"
-          }
-        },
-        "showPage": [
-          "device-instance"
-        ],
-        "permissions": [
-          {
-            "permission": "device-instance",
-            "actions": [
-              "query"
+            "id": "update",
+            "name": "编辑",
+            "i18nMessages": {
+              "zh_CN": "编辑",
+              "en_US": "Edit",
+              "en": "Edit"
+            },
+            "permissions": [
+              {
+                "permission": "device-instance",
+                "actions": [
+                  "save"
+                ]
+              }
             ]
           }
         ]
