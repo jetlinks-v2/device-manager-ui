@@ -12,6 +12,7 @@ import type { DeviceListProvider, UnifiedDevice } from '../../../../deviceListPr
 import { useDeviceScope } from '../../../../deviceScope'
 import { decodeConditionFilterQuery, encodeConditionFilterQuery, type ConditionFilterTerm } from '@jetlinks-web-core/components/ConditionFilter'
 import { getDeviceListFilterFields, getDeviceListSearchTerms } from '../../../../deviceListFilter'
+import type { SlantedTabOption } from '@jetlinks-web-core/components/SlantedTabs'
 
 /** 单一设备实例分页，类型 Provider 仅提供限定和字段补充，避免跨列表拼页和重复计数。 */
 export function useUnifiedDeviceList() {
@@ -59,6 +60,13 @@ export function useUnifiedDeviceList() {
   const loading = ref(false)
   const error = ref('')
   const counts = ref<Record<string, number>>({})
+  // 斜边页签以 key 识别选中项，数量独立传入以保留 0 和统一间距。
+  const tabs = computed<SlantedTabOption[]>(() => [
+    { key: 'all', label: t('UnifiedDeviceList.all'), count: counts.value.all ?? '—' },
+    ...providers.value.filter(provider => provider.id !== 'device').map(provider => ({
+      key: provider.id, label: provider.label(), count: counts.value[provider.id] ?? '—',
+    })),
+  ])
   const statusCounts = ref<Record<string, number>>({})
   const selectedIds = ref<string[]>([])
   const batchMode = ref(false)
@@ -193,5 +201,5 @@ export function useUnifiedDeviceList() {
   }, { immediate: true })
   void loadCounts()
   onBeforeUnmount(() => { requestVersion++; countVersion++; statusCountVersion++ })
-  return { providers, activeType, activeProvider, scope, filterFields, commonFilterFields, searchTerms, status, rows, total, pageIndex, pageSize, loading, error, counts, statusCounts, selectedIds, batchMode, providerOf, changeType, search, changeStatus, refresh, changePage, clearBatchSelection }
+  return { providers, activeType, activeProvider, scope, filterFields, commonFilterFields, searchTerms, status, rows, total, pageIndex, pageSize, loading, error, counts, tabs, statusCounts, selectedIds, batchMode, providerOf, changeType, search, changeStatus, refresh, changePage, clearBatchSelection }
 }

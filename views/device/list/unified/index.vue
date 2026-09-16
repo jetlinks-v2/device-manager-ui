@@ -1,8 +1,6 @@
 <template>
   <FullPage flex transparent-background class="unified-device-list">
-    <a-flex class="unified-device-list__header" align="center" justify="space-between" wrap="wrap" :gap="16">
-      <a-segmented class="unified-device-list__types" :value="activeType" :options="tabs" @change="changeType(String($event))" />
-    </a-flex>
+      <SlantedTabs class="unified-device-list__types" :activeKey="activeType" :options="tabs" @change="changeType(String($event))" />
     <ContentPanel>
 	    <EqualHeightColumns class="unified-device-list__layout" :left-width="scopeCollapsed ? '2.5rem' : '15rem'" right-width="1fr">
 		    <template #left>
@@ -173,6 +171,7 @@ import dayjs from 'dayjs'
 import { Modal } from 'ant-design-vue'
 import { useI18n } from 'vue-i18n'
 import EqualHeightColumns from '@jetlinks-web-core/components/EqualHeightColumns/index.vue'
+import SlantedTabs from '@jetlinks-web-core/components/SlantedTabs'
 import { useRoute } from 'vue-router'
 import { useMenuStore } from '@jetlinks-web-core/store'
 import { encodeConditionFilterQuery } from '@jetlinks-web-core/components/ConditionFilter'
@@ -200,7 +199,7 @@ function openBatchPage() {
     gatewayScope: gatewayIds.length ? undefined : 'query',
   } })
 }
-const { providers, activeType, activeProvider, scope, filterFields, commonFilterFields, searchTerms, status, rows, total, pageIndex, pageSize, loading, error, counts, statusCounts, selectedIds, batchMode, providerOf, changeType, search, changeStatus, refresh, changePage, clearBatchSelection } = useUnifiedDeviceList()
+const { activeType, activeProvider, scope, filterFields, commonFilterFields, searchTerms, status, rows, total, pageIndex, pageSize, loading, error, tabs, statusCounts, selectedIds, batchMode, providerOf, changeType, search, changeStatus, refresh, changePage, clearBatchSelection } = useUnifiedDeviceList()
 const gatewayMonitorCell = moduleRegistry.getResourceItem<Component>('edge-master-ui', 'components', 'GatewayDeviceMonitorCell')
 const useGatewayMetrics = moduleRegistry.getResourceItem<typeof UseGatewayRuntimeMetricsLoader>('edge-master-ui', 'hooks', 'useGatewayRuntimeMetricsLoader')
 // 只监控边缘节点分类的当前页，切换分类或重新加载列表时撤掉旧查询目标。
@@ -223,7 +222,6 @@ const { deleteGroup, groupDialogError, groupDialogMode, groupDialogOpen, groupEd
   getActiveScope: () => ({ type: scope.scopeType.value, id: scope.scopeId.value }), reloadGroups: scope.reloadGroups, changeScope: handleScopeChange,
 })
 function confirmDeleteGroup(group: DeviceGroup) { Modal.confirm({ title: t('IotDeviceList.scope.deleteGroup'), onOk: () => deleteGroup(group) }) }
-const tabs = computed(() => [{ value: 'all', label: `${t('UnifiedDeviceList.all')} ${counts.value.all ?? '—'}` }, ...providers.value.filter(provider => provider.id !== 'device').map(provider => ({ value: provider.id, label: `${provider.label()} ${counts.value[provider.id] ?? '—'}` }))])
 const statusOptions = computed(() => ['online', 'offline', 'disabled'].map(value => ({ value, label: t(`UnifiedDeviceList.${value}`) })))
 const rowSelection = computed(() => ({ selectedRowKeys: selectedIds.value, onChange: (keys: Array<string | number>) => { selectedIds.value = keys.map(String); batchMode.value = keys.length > 0 } }))
 const columns = computed(() => [
@@ -239,16 +237,17 @@ const columns = computed(() => [
 ])
 </script>
 <style scoped lang="less">
-.unified-device-list { min-width: 0; min-height: 0; gap: var(--space-4); overflow: hidden; }
+.unified-device-list {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+
+  .content-panel {
+    border-top-left-radius: 0;
+  }
+}
 .unified-device-list__header { flex-shrink: 0; }
-.unified-device-list__types.ant-segmented { padding: 0; background: transparent; box-shadow: none; }
-.unified-device-list__types :deep(.ant-segmented-group) { gap: var(--space-2); }
-.unified-device-list__types :deep(.ant-segmented-item) { color: var(--ink-2); border-radius: var(--r-3); }
-.unified-device-list__types :deep(.ant-segmented-item-label) { padding: 5px 14px; min-height: 32px; line-height: 22px; font-variant-numeric: tabular-nums; }
-.unified-device-list__types :deep(.ant-segmented-item-selected),
-.unified-device-list__types :deep(.ant-segmented-thumb) { color: var(--primary-color); background: var(--info-bg); box-shadow: none; }
-.unified-device-list__types :deep(.ant-segmented-item-selected) { font-weight: 500; }
-.unified-device-list__types :deep(.ant-segmented-item:hover) { color: var(--primary-color); background: var(--info-bg); }
+.unified-device-list__types { --slanted-tabs-background: transparent; z-index: 2; }
 .unified-device-list__layout { flex: 1 1 0; width: 100%; min-height: 0;align-items: stretch; }
 .unified-device-list :deep(.unified-device-list__scope), .unified-device-list :deep(.unified-device-list__scope > .ant-spin-container) { height: 100%; min-height: 0; }
 .unified-device-list :deep(.iot-device-scope > .ant-flex:empty) { display: none; }
