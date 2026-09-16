@@ -123,11 +123,8 @@ import IotDeviceLogsSearchTableTab from './device-detail/IotDeviceLogsSearchTabl
 import IotDeviceOverviewTab from './device-detail/IotDeviceOverviewTab.vue'
 import LegacyMetadata from '@device-manager-ui/views/device/components/Metadata/index.vue'
 import type { IotDeviceDetailViewState } from '../hooks/useIotDeviceDetailView'
-import { useDeviceDetailAgent } from '../agent/useDeviceDetailAgent'
 
-// 默认内容与自己的助手生命周期一起挂载，替换为业务内容后不重复注册助手。
 const props = defineProps({ state: { type: Object as PropType<IotDeviceDetailViewState>, required: true }, embedded: Boolean })
-if (!props.embedded) useDeviceDetailAgent()
 const {
   $t,
   healthPath,

@@ -1,20 +1,8 @@
 import type { AgentConversationWorkflowGuide } from '@jetlinks-ai-agent-ui/components/AgentConversation/types'
 
+export { isEdgeDiagnosisToolId } from '../../list/agent/deviceDetailEdge.shared'
+
 type TranslateFn = (key: string, params?: Record<string, any>) => string
-
-export const EDGE_DIAGNOSIS_TOOL_PREFIXES = [
-  'edge_runtime_',
-  'edge_mbean_',
-  'edge_master_',
-  'edge_persistence_buffer_',
-  'edge_trace_',
-  'edge_system_file_',
-  'edge_thread_'
-]
-
-export const isEdgeDiagnosisToolId = (toolId?: string) => (
-  EDGE_DIAGNOSIS_TOOL_PREFIXES.some((prefix) => String(toolId || '').startsWith(prefix))
-)
 
 export const createEdgeDiagnosisWorkflowGuides = (t: TranslateFn): AgentConversationWorkflowGuide[] => [
   {
@@ -83,6 +71,27 @@ export const createEdgeDiagnosisWorkflowGuides = (t: TranslateFn): AgentConversa
       },
     ],
     output: [t('DeviceDetail.edgeGuides.offline.output.0'), t('DeviceDetail.edgeGuides.offline.output.1'), t('DeviceDetail.edgeGuides.offline.output.2'), t('DeviceDetail.edgeGuides.offline.output.3')],
+  },
+  {
+    id: 'edge-ai-runtime-diagnosis',
+    name: t('DeviceDetail.edgeGuides.ai.name'),
+    description: t('DeviceDetail.edgeGuides.ai.description'),
+    when: [t('DeviceDetail.edgeGuides.ai.when.0')],
+    scenarios: [t('DeviceDetail.edgeGuides.ai.scenarios.0'), t('DeviceDetail.edgeGuides.ai.scenarios.1'), t('DeviceDetail.edgeGuides.ai.scenarios.2'), t('DeviceDetail.edgeGuides.ai.scenarios.3'), t('DeviceDetail.edgeGuides.ai.scenarios.4'), t('DeviceDetail.edgeGuides.ai.scenarios.5'), t('DeviceDetail.edgeGuides.ai.scenarios.6'), t('DeviceDetail.edgeGuides.ai.scenarios.7')],
+    keywords: [t('DeviceDetail.edgeGuides.ai.keywords.0'), t('DeviceDetail.edgeGuides.ai.keywords.1'), t('DeviceDetail.edgeGuides.ai.keywords.2'), t('DeviceDetail.edgeGuides.ai.keywords.3'), t('DeviceDetail.edgeGuides.ai.keywords.4'), t('DeviceDetail.edgeGuides.ai.keywords.5'), t('DeviceDetail.edgeGuides.ai.keywords.6'), t('DeviceDetail.edgeGuides.ai.keywords.7'), t('DeviceDetail.edgeGuides.ai.keywords.8'), t('DeviceDetail.edgeGuides.ai.keywords.9'), 'review', 'CV', 'AI', 'llm_failed'],
+    priority: 117,
+    steps: [
+      {
+        title: t('DeviceDetail.edgeGuides.ai.steps.summary.title'),
+        tools: ['edge_ai_runtime_summary'],
+      },
+      {
+        title: t('DeviceDetail.edgeGuides.logs.steps.tailSearch.title'),
+        tools: ['edge_runtime_logs_summary', 'edge_system_file_search'],
+      },
+    ],
+    output: [t('DeviceDetail.edgeGuides.ai.output.0'), t('DeviceDetail.edgeGuides.ai.output.1'), t('DeviceDetail.edgeGuides.ai.output.2'), t('DeviceDetail.edgeGuides.ai.output.3'), t('DeviceDetail.edgeGuides.ai.output.4')],
+    notes: [t('DeviceDetail.edgeGuides.ai.notes.0')],
   },
   {
     id: 'edge-buffer-backlog-diagnosis',

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import {
+  createDomainAgentAggregateCardinality,
   createDomainAgentRecordSetCardinality,
   createDomainAgentToolResult,
 } from '@jetlinks-web-core/layout/components/AiChat/domainAgentTools'
@@ -54,11 +55,11 @@ test('device state summary declares exact user-visible fields for terminal narra
   const trend = trendFactory.build()
   assert.ok(!Array.isArray(trend.output))
   assert.deepEqual(trend.routing?.resultDeliveries, ['auto'])
-  const trendOnlineRate = trend._meta?.clientToolContract.outputs[0]?.fields?.find(field => field.name === 'value')
-  assert.equal(trendOnlineRate?.label, onlineRate?.label)
-  assert.equal(trendOnlineRate?.format, 'percent')
-  assert.equal(trendOnlineRate?.unit, 'percent')
-  assert.equal(trendOnlineRate?.label?.includes('%'), false)
+  assert.equal(trend.routing?.analyticalCapability?.output?.fieldSet?.mode, 'execution-authored')
+  assert.deepEqual(
+    trend._meta?.clientToolContract.outputs[0]?.fields?.map(field => field.name),
+    ['timestamp'],
+  )
 })
 
 test('device state summary exposes only authoritative metrics to the model', async () => {
@@ -94,6 +95,64 @@ test('device state summary exposes only authoritative metrics to the model', asy
     assert.deepEqual(result.outputBindings?.[0]?.fields?.map((field: any) => field.name), stateSummaryFields)
   } finally {
     deviceMetricsService.stateSummary = executeStateSummary
+  }
+})
+
+test('device trend tools compile as execution-authored and emit exhaustive series bindings', async () => {
+  const points = [
+    { label: '09-08', value: 80, timestamp: 1_700_000_000_000 },
+    { label: '09-09', value: 81, timestamp: 1_700_086_400_000 },
+  ]
+  const originalOnlineRateTrend = deviceMetricsService.onlineRateTrend
+  const originalMessageTrend = deviceMetricsService.messageTrend
+  const completeSeries = async (metric: string) => createDomainAgentToolResult({
+    domain: 'device',
+    timeRange: { start: 1_700_000_000_000, end: 1_700_086_400_000 },
+    summary: { metric },
+    data: { metric, points },
+    cardinality: createDomainAgentAggregateCardinality({
+      bucketCount: 2,
+      populatedBucketCount: 2,
+      measurementCount: 2,
+    }),
+    requestSatisfied: true,
+    exhaustive: true,
+  })
+  deviceMetricsService.onlineRateTrend = async () => completeSeries('onlineRate')
+  deviceMetricsService.messageTrend = async () => completeSeries('uplinkMessages')
+  try {
+    for (const id of ['device_query_online_rate_trend', 'device_query_message_trend'] as const) {
+      const factory = createDeviceAnalysisTools().find(item => item.id === id)
+      assert.ok(factory, `${id} missing from device analysis tools`)
+      const tool = factory.build()
+      assert.equal(tool.routing?.analyticalCapability?.output?.fieldSet?.mode, 'execution-authored')
+      const result = await tool.execute(
+        { timeRange: '7d' },
+        {},
+        { id: `${id}-contract`, toolName: id },
+      ) as {
+        outputBindings?: Array<{
+          recordCount?: number
+          exhaustive?: boolean
+          fields?: Array<{ name?: string; label?: string; format?: string; unit?: string }>
+        }>
+        evidence?: { exhaustive?: boolean }
+      }
+      const binding = result.outputBindings?.[0]
+      const valueField = binding?.fields?.find(field => field.name === 'value')
+      assert.equal(binding?.recordCount, 2, `${id} binding.recordCount`)
+      assert.equal(binding?.exhaustive, true, `${id} binding.exhaustive`)
+      assert.equal(result.evidence?.exhaustive, true, `${id} evidence.exhaustive`)
+      if (id === 'device_query_online_rate_trend') {
+        assert.equal(valueField?.label, 'IotGeneralAgent.metrics.onlineRate')
+        assert.equal(valueField?.format, 'percent')
+        assert.equal(valueField?.unit, 'percent')
+        assert.equal(valueField?.label?.includes('%'), false)
+      }
+    }
+  } finally {
+    deviceMetricsService.onlineRateTrend = originalOnlineRateTrend
+    deviceMetricsService.messageTrend = originalMessageTrend
   }
 })
 
