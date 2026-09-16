@@ -18,6 +18,12 @@ import {
   parseMetadata,
 } from '../services/iotDeviceDetailReal.service'
 import { IOT_DEVICE_DETAIL_AGENT_TABS } from './deviceDetailAgent.constants'
+
+export type DeviceDetailAgentTabSurfaceOptions = {
+  tabs: readonly string[]
+  defaultTab: string
+  navigate: (tab: string) => Promise<void>
+}
 import {
   asRecord,
   inputError,
@@ -31,7 +37,10 @@ import {
 const DOCUMENT_TYPES = ['access-guide', 'protocol-doc', 'maintenance', 'market-doc', 'other'] as const
 const MAX_DOCUMENT_CHARS = 5000
 
-export const createDeviceDetailDiagnosticsService = (device: IotDevice) => {
+export const createDeviceDetailDiagnosticsService = (
+  device: IotDevice,
+  tabSurface?: DeviceDetailAgentTabSurfaceOptions,
+) => {
   const contextGet = () => Promise.resolve(createDomainAgentToolResult({
     domain: 'device',
     summary: {
@@ -182,9 +191,15 @@ export const createDeviceDetailDiagnosticsService = (device: IotDevice) => {
   })
 
   const openTab = (args: DeviceDetailAgentArgs) => runDetailTool<Record<string, unknown>>({}, async () => {
-    const tab = resolveDomainAgentEnum(args.tab, IOT_DEVICE_DETAIL_AGENT_TABS, { name: 'tab', defaultValue: 'overview' })
-    const path = buildIotDeviceDetailPath(device.projectId, device.id, { tab })
-    await router.push(path)
+    const tabs = tabSurface?.tabs?.length ? tabSurface.tabs : IOT_DEVICE_DETAIL_AGENT_TABS
+    const defaultTab = tabSurface?.defaultTab || 'overview'
+    const tab = resolveDomainAgentEnum(args.tab, tabs, { name: 'tab', defaultValue: defaultTab })
+    if (tabSurface?.navigate) {
+      await tabSurface.navigate(tab)
+    } else {
+      const path = buildIotDeviceDetailPath(device.projectId, device.id, { tab })
+      await router.push(path)
+    }
     return createDomainAgentToolResult({
       domain: 'device',
       summary: { deviceId: device.id, opened: true, tab },

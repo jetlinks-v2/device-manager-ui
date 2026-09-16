@@ -41,8 +41,17 @@ import {
   resolveIotDevicePropertyAggregateFields,
   resolveIotDevicePropertyAggregateOutputLabel,
 } from '../../../../agentCapabilities/deviceAnalysis/devicePropertyAggregate.support'
-import { IOT_DEVICE_DETAIL_AGENT_TABS } from './deviceDetailAgent.constants'
-import { createDeviceMetricOutput } from './deviceDetailAgent.metricOutput'
+import {
+  type DeviceDetailAgentTabSurface,
+  resolveDeviceDetailAgentTabs,
+} from './deviceDetailAgent.constants'
+import {
+  createDeviceMetricOutput,
+  deviceMetricSeriesName,
+  type DeviceMetricToolId,
+} from './deviceDetailAgent.metricOutput'
+import { isEdgeDiagnosisAccessProvider } from './deviceDetailEdge.shared'
+import { createDeviceDetailEdgeTools } from './deviceDetailEdge.tools'
 
 type DeviceDetailAgentService = ReturnType<typeof createDeviceDetailAgentService>
 type DeviceDetailToolContext = Record<string, unknown>
@@ -116,19 +125,19 @@ const TOOL_ROUTING: Record<string, AiClientToolRoutingMetadata> = {
   },
   device_activity_aggregate: {
     capabilities: ['subject.activity.aggregate'],
-    produces: ['activity-aggregate'],
+    produces: [deviceMetricSeriesName('device_activity_aggregate')],
     intents: ['统计活跃时长', 'aggregate subject activity duration'],
     outputShapes: ['metric.time-series'],
   },
   device_message_aggregate: {
     capabilities: ['subject.message.aggregate'],
-    produces: ['message-aggregate'],
+    produces: [deviceMetricSeriesName('device_message_aggregate')],
     intents: ['统计消息量', 'aggregate message volume'],
     outputShapes: ['metric.time-series'],
   },
   device_traffic_aggregate: {
     capabilities: ['subject.traffic.aggregate'],
-    produces: ['traffic-aggregate'],
+    produces: [deviceMetricSeriesName('device_traffic_aggregate')],
     intents: ['统计上下行流量', 'aggregate uplink and downlink traffic'],
     outputShapes: ['metric.time-series'],
   },
@@ -397,11 +406,6 @@ const metricInputs = () => [
   input('interval', domainAgentEnumValueType(['1h', '1d', '1w'])),
 ]
 
-type DeviceMetricToolId =
-  | 'device_activity_aggregate'
-  | 'device_message_aggregate'
-  | 'device_traffic_aggregate'
-
 const metricSemanticIntentBindings = (id: DeviceMetricToolId, measures: readonly string[]) => (
   (TOOL_ROUTING[id].intents || []).map(intent => ({
     intent,
@@ -430,20 +434,21 @@ const metricAnalyticalProducer = (
   semanticIntentBindings: metricSemanticIntentBindings(id, measures.map(measure => measure.name)),
   ordering: [{ axis: 'time', direction: 'asc' }],
   coverage: 'complete-or-partial',
-  output: `${id}-series`,
+  output: deviceMetricSeriesName(id),
+  outputFields: 'execution-authored',
 })
 
 const DEVICE_METRIC_ANALYTICAL = {
   device_activity_aggregate: metricAnalyticalProducer('device_activity_aggregate', [
-    { name: 'active_duration', unit: 'ms' },
+    { name: 'active_duration', unit: 'h' },
   ]),
   device_message_aggregate: metricAnalyticalProducer('device_message_aggregate', [
     { name: 'upstream_messages', unit: 'count' },
     { name: 'downstream_messages', unit: 'count' },
   ]),
   device_traffic_aggregate: metricAnalyticalProducer('device_traffic_aggregate', [
-    { name: 'upstream_traffic', unit: 'bytes' },
-    { name: 'downstream_traffic', unit: 'bytes' },
+    { name: 'upstream_traffic', unit: 'MB' },
+    { name: 'downstream_traffic', unit: 'MB' },
   ]),
 } as const
 
@@ -488,9 +493,18 @@ const logFilterInputs = () => [
   input('keyword'),
 ]
 
+export type CreateDeviceDetailAgentToolsOptions = {
+  accessProvider?: unknown
+  tabSurface?: DeviceDetailAgentTabSurface
+}
+
 /** Tool schemas intentionally omit deviceId; every execution is closed over the verified page subject. */
-export const createDeviceDetailAgentTools = (service: DeviceDetailAgentService) => (
-  defineAiClientTools<DeviceDetailToolContext>([
+export const createDeviceDetailAgentTools = (
+  service: DeviceDetailAgentService,
+  options?: CreateDeviceDetailAgentToolsOptions,
+) => {
+  const tabs = resolveDeviceDetailAgentTabs(options?.tabSurface)
+  const tools: AiClientToolDefinition<DeviceDetailToolContext>[] = [
     readTool('device_context_get', [], service.contextGet, 'detail'),
     readTool('device_model_get', [
       input('section', domainAgentEnumValueType(IOT_DEVICE_MODEL_SECTIONS)),
@@ -570,7 +584,7 @@ export const createDeviceDetailAgentTools = (service: DeviceDetailAgentService) 
         okText: t('tools.device_open_tab.okText'),
         cancelText: i18n.global.t('verify.cancel'),
       },
-      inputs: [input('tab', domainAgentEnumValueType(IOT_DEVICE_DETAIL_AGENT_TABS), true)],
+      inputs: [input('tab', domainAgentEnumValueType(tabs), true)],
       output: domainAgentResultValueType(),
       annotations: { readOnlyHint: false, idempotentHint: true },
       _meta: {
@@ -582,5 +596,9 @@ export const createDeviceDetailAgentTools = (service: DeviceDetailAgentService) 
       },
       execute: service.openTab,
     },
-  ])
-)
+  ]
+  if (isEdgeDiagnosisAccessProvider(options?.accessProvider)) {
+    tools.push(...createDeviceDetailEdgeTools(service))
+  }
+  return defineAiClientTools<DeviceDetailToolContext>(tools)
+}

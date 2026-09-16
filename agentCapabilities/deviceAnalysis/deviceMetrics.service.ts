@@ -126,6 +126,8 @@ export const deviceMetricsService = {
         populatedBucketCount: metric.populatedBucketCount,
         measurementCount: metric.points.length,
       }),
+      requestSatisfied: true,
+      exhaustive: true,
     })
   }),
 
@@ -156,6 +158,8 @@ export const deviceMetricsService = {
         populatedBucketCount: metric.populatedBucketCount,
         measurementCount: metric.points.length,
       }),
+      requestSatisfied: true,
+      exhaustive: true,
     })
   }),
 }
