@@ -24,6 +24,7 @@
           :selected-keys="selectedKeys"
           :expanded-keys="expandedKeys"
           block-node
+          showLine
           :tree-data="filteredTree"
           :field-names="fieldNames"
           @expand="handleExpand"

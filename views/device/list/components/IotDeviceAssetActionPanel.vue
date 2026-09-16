@@ -1,23 +1,30 @@
 <template>
   <div class="iot-device-list__row-actions">
-    <j-permission-button
-      type="link"
-      size="small"
-      :hasPermission="true"
-      :tooltip="{ title: $t('IotDeviceList.action.detailShort') }"
-      @click="emit('detail', device.id)"
-    >
-      <template #icon><AIcon type="EyeOutlined" /></template>
-    </j-permission-button>
-    <j-permission-button
-      type="link"
-      size="small"
-      :hasPermission="true"
-      :tooltip="{ title: $t('IotDeviceList.action.editShort') }"
-      @click="emit('edit', device)"
-    >
-      <template #icon><AIcon type="EditOutlined" /></template>
-    </j-permission-button>
+    <table-actions>
+      <table-actions-item :common="true">
+
+
+<!--    <j-permission-button-->
+<!--      type="link"-->
+<!--      size="small"-->
+<!--      :hasPermission="true"-->
+<!--      :tooltip="{ title: $t('IotDeviceList.action.detailShort') }"-->
+<!--      @click="emit('detail', device.id)"-->
+<!--    >-->
+<!--      <template #icon><AIcon type="EyeOutlined" /></template>-->
+<!--    </j-permission-button>-->
+
+      <j-permission-button
+        type="link"
+        size="small"
+        :hasPermission="true"
+        :tooltip="{ title: $t('IotDeviceList.action.editShort') }"
+        @click="emit('edit', device)"
+      >
+        <template #icon><AIcon type="EditOutlined" /></template>
+      </j-permission-button>
+      </table-actions-item>
+      <table-actions-item >
     <j-permission-button
       type="link"
       size="small"
@@ -40,6 +47,8 @@
         <AIcon :type="isDeviceDisabled(device) ? 'CheckCircleOutlined' : 'StopOutlined'" />
       </template>
     </j-permission-button>
+      </table-actions-item>
+      <table-actions-item>
     <j-permission-button
       type="link"
       size="small"
@@ -60,6 +69,8 @@
     >
       <template #icon><AIcon type="DeleteOutlined" /></template>
     </j-permission-button>
+      </table-actions-item>
+    </table-actions>
   </div>
 </template>
 

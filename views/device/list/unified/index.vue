@@ -62,7 +62,7 @@
 					    <a-table row-key="id" :columns="columns" :data-source="rows" :loading="loading" :pagination="false" :row-selection="rowSelection" :scroll="{ x: 'max-content' }">
 						    <template #bodyCell="{ column, record }">
 							    <template v-if="column.key === 'name'">
-								    <a-flex align="center" :gap="8"><a-tooltip :title="t(`UnifiedDeviceList.${record.connectionStatus}`)"><a-badge :status="record.connectionStatus === 'online' ? 'success' : record.connectionStatus === 'offline' ? 'error' : 'default'" /></a-tooltip>
+								    <a-flex align="center" :gap="8">
 									    <div>
 										    <a-flex align="center" :gap="8" wrap="wrap">
 											    <a-button type="link" class="unified-device-list__name" @click="openDetail(record)">{{ record.name }}</a-button>
@@ -72,6 +72,12 @@
 									    </div>
 								    </a-flex>
 							    </template>
+                  <template v-else-if="column.key === 'status'">
+                    <j-badge-status
+                        :text="t(`UnifiedDeviceList.${record.connectionStatus}`)"
+                        :status="record.connectionStatus === 'online' ? 'success' : record.connectionStatus === 'offline' ? 'error' : 'default'"
+                    />
+                  </template>
 							    <template v-else-if="column.key === 'product'">
 								    <div>{{ record.productName || '—' }}</div>
 								    <small>{{ [record.productManufacturer, record.productModel].filter(Boolean).join(' ') || '—' }}</small>
@@ -95,12 +101,53 @@
 								    <component :is="gatewayMonitorCell" :snapshot="gatewayMetrics?.metricsMap[record.id]" />
 							    </template>
 							    <template v-else-if="column.key === 'action'">
-								    <a-space :size="4" class="unified-device-list__row-actions">
-									    <a-button type="link" size="small" @click="openDetail(record)">{{ t('IotDeviceList.action.detailShort') }}</a-button>
-									    <a-button v-if="allowed(record, 'update')" type="link" size="small" :disabled="busy" @click="edit(record)">{{ t('IotDeviceList.action.editShort') }}</a-button>
-									    <a-button v-if="allowed(record, record.connectionStatus === 'disabled' ? 'enable' : 'disable')" type="link" size="small" :danger="record.connectionStatus !== 'disabled'" :disabled="busy" @click="toggle(record)">{{ t(record.connectionStatus === 'disabled' ? 'IotDeviceList.action.enableShort' : 'IotDeviceList.action.disableShort') }}</a-button>
-									    <a-button v-if="allowed(record, 'delete')" type="link" size="small" danger :disabled="busy || !canDelete(record)" @click="remove(record)">{{ t('IotDeviceList.action.deleteShort') }}</a-button>
-								    </a-space>
+                    <table-actions>
+                        <table-actions-item v-if="allowed(record, 'update')" :common="true">
+                          <j-permission-button
+                              type="link"
+                              size="small"
+                              :disabled="busy"
+                              :hasPermission="true"
+                              :tooltip="{ title: t('IotDeviceList.action.editShort') }"
+                              @click="edit(record)"
+                          >
+                            <template #icon>
+                              <AIcon type="EditOutlined"/>
+                            </template>
+                          </j-permission-button>
+                        </table-actions-item>
+                        <table-actions-item v-if="allowed(record, record.connectionStatus === 'disabled' ? 'enable' : 'disable')">
+                          <j-permission-button
+                              type="link"
+                              size="small"
+                              :disabled="busy"
+                              :hasPermission="true"
+                              :danger="record.connectionStatus !== 'disabled'"
+                              @click="toggle(record)"
+                          >
+                            <template #icon>
+                              <AIcon :type="record.status !== 'notActive' ? 'StopOutlined' : 'CheckCircleOutlined'"/>
+                            </template>
+                            {{ t(record.connectionStatus === 'disabled' ? 'IotDeviceList.action.enableShort' : 'IotDeviceList.action.disableShort') }}
+                          </j-permission-button>
+                        </table-actions-item>
+                        <table-actions-item v-if="allowed(record, 'delete')">
+                          <j-permission-button
+                              type="link"
+                              size="small"
+                              :disabled="busy || !canDelete(record)"
+                              :hasPermission="true"
+                              danger
+                              @click="remove(record)"
+                          >
+                            <template #icon>
+                              <AIcon type="DeleteOutlined"/>
+                            </template>
+                            {{ t('IotDeviceList.action.deleteShort') }}
+                          </j-permission-button>
+                        </table-actions-item>
+
+                    </table-actions>
 							    </template>
 						    </template>
 					    </a-table>
@@ -183,11 +230,12 @@ const columns = computed(() => [
   { title: t('UnifiedDeviceList.name'), key: 'name', width: 280, fixed: 'left' },
   { title: t('UnifiedDeviceList.product'), key: 'productName', width: 180 },
   { title: t('UnifiedDeviceList.areaAndGroup'), key: 'area', width: 220 },
+  { title: t('UnifiedDeviceList.status'), key: 'status', width: 100 },
   ...(activeType.value === 'all' ? [{ title: '最后上报时间', key: 'lastReportTime', width: 160 }] : []),
   ...(activeType.value === 'all' ? [{ title: '创建时间', key: 'createdAt', width: 160 }] : []),
   ...(activeType.value === 'gateway' ? [{ title: t('GatewayDeviceCard.monitor'), key: 'monitor', width: 220 }] : []),
   ...(['gateway', 'video'].includes(activeType.value) ? [{ title: t('UnifiedDeviceList.channel'), key: 'channel', width: 100 }] : []),
-  { title: t('UnifiedDeviceList.action'), key: 'action', width: 210, fixed: 'right', align: 'center' },
+  { title: t('UnifiedDeviceList.action'), key: 'action', width: 80, fixed: 'right', align: 'center' },
 ])
 </script>
 <style scoped lang="less">

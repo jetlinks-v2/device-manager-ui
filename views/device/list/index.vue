@@ -1,6 +1,7 @@
 <template>
   <j-page-container>
     <div class="iot-device-page">
+      12312
       <Suspense>
         <IotDeviceAssetListView />
         <template #fallback>
