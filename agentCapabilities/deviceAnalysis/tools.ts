@@ -164,6 +164,40 @@ const DEVICE_METRIC_TREND_ORDERING = {
   producerGuaranteed: true,
 }
 
+const DEVICE_ONLINE_RATE_TREND_FIELDS = [
+  { name: 'timestamp', type: 'timestamp' as const, role: 'temporal_dimension' as const, axis: 'time', encoding: 'epoch-millis' as const },
+  { name: 'label', type: 'string' as const, role: 'label' as const },
+  {
+    name: 'value',
+    type: 'number' as const,
+    role: 'measure' as const,
+    label: t('metrics.onlineRate'),
+    format: 'percent' as const,
+    measure: 'online_rate',
+    unit: 'percent',
+    aggregation: 'avg' as const,
+  },
+]
+
+const DEVICE_MESSAGE_TREND_FIELDS = [
+  { name: 'timestamp', type: 'timestamp' as const, role: 'temporal_dimension' as const, axis: 'time', encoding: 'epoch-millis' as const },
+  { name: 'label', type: 'string' as const, role: 'label' as const },
+  {
+    name: 'value',
+    type: 'integer' as const,
+    role: 'measure' as const,
+    label: t('metrics.uplinkMessages'),
+    format: 'integer' as const,
+    measure: 'uplink_messages',
+    unit: 'count',
+    unitLabel: fieldLabel('IotDeviceGroups.unit.message'),
+    aggregation: 'sum' as const,
+  },
+]
+
+const DEVICE_ONLINE_RATE_TREND_CONTRACT_FIELDS = DEVICE_ONLINE_RATE_TREND_FIELDS.slice(0, 1)
+const DEVICE_MESSAGE_TREND_CONTRACT_FIELDS = DEVICE_MESSAGE_TREND_FIELDS.slice(0, 1)
+
 // Time scope is already owned by the typed temporal binding; analytical filters require their own exact binding.
 
 const DEVICE_ONLINE_RATE_TREND_CAPABILITY = defineClientToolAnalyticalProducer<Record<string, any>>({
@@ -184,6 +218,7 @@ const DEVICE_ONLINE_RATE_TREND_CAPABILITY = defineClientToolAnalyticalProducer<R
   ordering: [{ axis: 'timestamp', direction: 'asc' }],
   coverage: 'complete',
   output: 'device-online-rate-series',
+  outputFields: 'execution-authored',
 })
 
 const DEVICE_MESSAGE_TREND_CAPABILITY = defineClientToolAnalyticalProducer<Record<string, any>>({
@@ -204,6 +239,7 @@ const DEVICE_MESSAGE_TREND_CAPABILITY = defineClientToolAnalyticalProducer<Recor
   ordering: [{ axis: 'timestamp', direction: 'asc' }],
   coverage: 'complete',
   output: 'device-message-series',
+  outputFields: 'execution-authored',
 })
 
 const DEVICE_TOOL_CONSUMES: Record<string, ClientToolConsumedResource[]> = {
@@ -300,22 +336,11 @@ const deviceOutputs = (id: string): ClientToolOutput<any> | ClientToolOutput<any
       shape: 'metric.time-series',
       label: t('tools.device_query_online_rate_trend.name'),
       delivery: 'auto',
+      optional: true,
       select: selectMetricPoints,
       recordPath: '$',
-      fields: [
-        { name: 'timestamp', type: 'timestamp', role: 'temporal_dimension', axis: 'time', encoding: 'epoch-millis' },
-        { name: 'label', type: 'string', role: 'label' },
-        {
-          name: 'value',
-          type: 'number',
-          role: 'measure',
-          label: t('metrics.onlineRate'),
-          format: 'percent',
-          measure: 'online_rate',
-          unit: 'percent',
-          aggregation: 'avg',
-        },
-      ],
+      fields: stabilizeDevicePropertyAggregateFields(DEVICE_ONLINE_RATE_TREND_CONTRACT_FIELDS),
+      resolveFields: () => stabilizeDevicePropertyAggregateFields(DEVICE_ONLINE_RATE_TREND_FIELDS),
       ordering: DEVICE_METRIC_TREND_ORDERING,
     })
   }
@@ -325,23 +350,11 @@ const deviceOutputs = (id: string): ClientToolOutput<any> | ClientToolOutput<any
       shape: 'metric.time-series',
       label: t('tools.device_query_message_trend.name'),
       delivery: 'auto',
+      optional: true,
       select: selectMetricPoints,
       recordPath: '$',
-      fields: [
-        { name: 'timestamp', type: 'timestamp', role: 'temporal_dimension', axis: 'time', encoding: 'epoch-millis' },
-        { name: 'label', type: 'string', role: 'label' },
-        {
-          name: 'value',
-          type: 'integer',
-          role: 'measure',
-          label: t('metrics.uplinkMessages'),
-          format: 'integer',
-          measure: 'uplink_messages',
-          unit: 'count',
-          unitLabel: fieldLabel('IotDeviceGroups.unit.message'),
-          aggregation: 'sum',
-        },
-      ],
+      fields: stabilizeDevicePropertyAggregateFields(DEVICE_MESSAGE_TREND_CONTRACT_FIELDS),
+      resolveFields: () => stabilizeDevicePropertyAggregateFields(DEVICE_MESSAGE_TREND_FIELDS),
       ordering: DEVICE_METRIC_TREND_ORDERING,
     })
   }

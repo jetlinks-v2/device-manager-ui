@@ -222,6 +222,8 @@ export const createDeviceDetailMetricsService = (device: IotDevice) => {
       summary: { deviceId: device.id, ...data, points: undefined },
       data,
       cardinality,
+      requestSatisfied: true,
+      exhaustive: true,
     })
   })
 
@@ -252,6 +254,8 @@ export const createDeviceDetailMetricsService = (device: IotDevice) => {
       summary: { deviceId: device.id, ...data, points: undefined },
       data,
       cardinality,
+      requestSatisfied: true,
+      exhaustive: true,
     })
   })
 
@@ -281,6 +285,8 @@ export const createDeviceDetailMetricsService = (device: IotDevice) => {
       summary: { deviceId: device.id, ...data, points: undefined },
       data,
       cardinality,
+      requestSatisfied: true,
+      exhaustive: true,
     })
   })
 

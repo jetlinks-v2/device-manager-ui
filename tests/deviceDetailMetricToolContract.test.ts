@@ -73,11 +73,14 @@ const paddedDailyBuckets = (start: number, count: number, value: number) => (
 test('publishes fixed device metrics as raw canonical aggregate-series outputs', () => {
   for (const metric of metricCases) {
     const output = createDeviceMetricOutput(metric.id)
+    const resolvedFields = output.resolveFields?.({ data: { points: [] } }, [])
 
     assert.equal(output.name, deviceMetricSeriesName(metric.id))
     assert.equal(output.shape, 'metric.time-series')
     assert.equal(output.delivery, 'auto')
+    assert.equal(output.optional, true)
     assert.equal(output.recordPath, '$')
+    assert.equal(typeof output.resolveFields, 'function')
     assert.deepEqual(output.ordering, {
       keys: [{ field: 'time', direction: 'asc' }],
       producerGuaranteed: true,
@@ -86,11 +89,17 @@ test('publishes fixed device metrics as raw canonical aggregate-series outputs',
       field.name,
       field.type,
       field.role,
+      field.axis,
+    ]), [['time', 'timestamp', 'temporal_dimension', 'time']])
+    assert.deepEqual(resolvedFields?.map(field => [
+      field.name,
+      field.type,
+      field.role,
       field.name === 'time' ? field.axis : field.measure,
     ]), metric.fields)
     assert.deepEqual(output.select?.({ data: { points: [{ time: 1 }] } }), [{ time: 1 }])
 
-    const measures = output.fields?.filter(field => field.role === 'measure') || []
+    const measures = resolvedFields?.filter(field => field.role === 'measure') || []
     assert.ok(measures.length > 0)
     for (const field of measures) {
       assert.ok(field.label, `${metric.id}.${field.name} missing label`)
@@ -140,17 +149,71 @@ test('compiled device metric tools lock auto delivery and series produces', () =
   ))
   for (const metric of metricCases) {
     const tool = tools.find(item => item.id === metric.id)
-    const seriesName = createDeviceMetricOutput(metric.id).name
+    const definitionOutput = createDeviceMetricOutput(metric.id)
+    const seriesName = definitionOutput.name
     assert.ok(tool, `${metric.id} missing from compiled device-detail tools`)
     assert.equal(seriesName, deviceMetricSeriesName(metric.id))
     assert.deepEqual(tool.routing?.produces, [seriesName])
     assert.deepEqual(tool.routing?.producerPorts?.map(port => port.name), [seriesName])
     assert.deepEqual(tool.routing?.resultDeliveries, ['auto'])
     assert.deepEqual(tool.routing?.outputShapes, ['metric.time-series'])
+    assert.equal(tool.routing?.analyticalCapability?.output?.fieldSet?.mode, 'execution-authored')
+    assert.equal(definitionOutput.optional, true)
+    assert.equal(typeof definitionOutput.resolveFields, 'function')
+    assert.deepEqual(definitionOutput.fields?.map(field => field.name), ['time'])
+    assert.deepEqual(
+      definitionOutput.resolveFields?.({ data: { points: [] } }, [])?.map(field => field.name),
+      metric.fields.map(([name]) => name),
+    )
     assert.ok(evidenceNames.includes(seriesName), `${seriesName} missing from workflow evidence`)
   }
   for (const stale of ['activity-aggregate', 'message-aggregate', 'traffic-aggregate'] as const) {
     assert.equal(evidenceNames.includes(stale), false, `stale workflow evidence ${stale}`)
+  }
+})
+
+test('executed device metric tools publish exhaustive recordCount on the series binding', async () => {
+  const original = iotDeviceDetailRealApi.queryOverviewSummary
+  const alignedStart = alignDeviceMetricBucketStart(rollingSevenDayEvening.start, '1d')
+  iotDeviceDetailRealApi.queryOverviewSummary = async () => ({
+    activeDuration: {
+      total: 3_600_000,
+      peak: 3_600_000,
+      buckets: paddedDailyBuckets(alignedStart, 8, 3_600_000),
+    },
+    messageTrend: paddedDailyBuckets(alignedStart, 8, 1),
+    trafficTrend: paddedDailyBuckets(alignedStart, 8, MB),
+    traffic: {
+      upstreamBytes: MB,
+      downstreamBytes: 2 * MB,
+      total: 3 * MB,
+      peak: 2 * MB,
+    },
+  })
+  try {
+    const metrics = createDeviceDetailMetricsService(device)
+    const tools = createDeviceDetailAgentTools(new Proxy(metrics, {
+      get: (target, prop) => Reflect.get(target, prop) ?? (async () => ({})),
+    }) as any)
+    for (const metric of metricCases) {
+      const tool = tools.find(item => item.id === metric.id)
+      assert.ok(tool, `${metric.id} missing from compiled device-detail tools`)
+      const result = await tool.execute({
+        timeRange: 'custom',
+        startTime: rollingSevenDayEvening.start,
+        endTime: rollingSevenDayEvening.end,
+        interval: '1d',
+      }, {}, { id: `${metric.id}-contract`, toolName: metric.id }) as {
+        outputBindings?: Array<{ recordCount?: number; exhaustive?: boolean }>
+        evidence?: { exhaustive?: boolean }
+      }
+      const binding = result.outputBindings?.[0]
+      assert.equal(binding?.recordCount, 8, `${metric.id} binding.recordCount`)
+      assert.equal(binding?.exhaustive, true, `${metric.id} binding.exhaustive`)
+      assert.equal(result.evidence?.exhaustive, true, `${metric.id} evidence.exhaustive`)
+    }
+  } finally {
+    iotDeviceDetailRealApi.queryOverviewSummary = original
   }
 })
 

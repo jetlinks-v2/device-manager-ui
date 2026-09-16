@@ -435,6 +435,7 @@ const metricAnalyticalProducer = (
   ordering: [{ axis: 'time', direction: 'asc' }],
   coverage: 'complete-or-partial',
   output: deviceMetricSeriesName(id),
+  outputFields: 'execution-authored',
 })
 
 const DEVICE_METRIC_ANALYTICAL = {

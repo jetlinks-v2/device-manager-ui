@@ -62,22 +62,23 @@ export const createDeviceMetricOutput = (
         measureField('upstream', 'metrics.upstreamTraffic', 'upstream_traffic', 'MB', 'units.megabytes'),
         measureField('downstream', 'metrics.downstreamTraffic', 'downstream_traffic', 'MB', 'units.megabytes'),
       ]
+  const timeField = {
+    name: 'time', type: 'timestamp' as const, role: 'temporal_dimension' as const,
+    axis: 'time', encoding: 'epoch-millis' as const, format: 'datetime',
+  }
+  const declaredFields = [timeField, ...fields]
   return clientToolOutput.aggregateSeries({
     name: deviceMetricSeriesName(id),
     shape: 'metric.time-series',
     label: t(`tools.${id}.name`),
     delivery: 'auto',
+    optional: true,
     select: (result: { data?: { points?: unknown } }) => (
       Array.isArray(result?.data?.points) ? result.data.points : []
     ),
     recordPath: '$',
-    fields: [
-      {
-        name: 'time', type: 'timestamp' as const, role: 'temporal_dimension' as const,
-        axis: 'time', encoding: 'epoch-millis' as const, format: 'datetime',
-      },
-      ...fields,
-    ],
+    fields: [timeField],
+    resolveFields: () => declaredFields.map(field => ({ ...field })),
     ordering: DEVICE_METRIC_ORDERING,
   })
 }
