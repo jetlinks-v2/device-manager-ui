@@ -4,6 +4,13 @@
 
 ## 最近变更
 
+### 设备详情返回入口与摘要对齐调整（已实施）
+
+- 目标：将设备详情的返回入口移到内容面板外，明确显示“返回设备列表”；摘要中的设备图标、基础信息和操作按钮统一从顶部开始排列。
+- 影响范围与 owning module：仅 `runtime-ui/modules/device-manager-ui` 的设备详情宿主、摘要头局部样式及中英文文案；不修改运营端 `ui/`、详情路由、接口、权限或设备操作行为。
+- 实现入口：`views/device/list/components/IotDeviceDetailView.vue` 承载面板外返回入口，`views/device/list/components/device-detail/IotDeviceDetailHeader.vue` 只保留摘要内容，`views/device/list/styles/IotDeviceDetailHeader.css` 使用顶部对齐并移除标签展开时的居中位移补偿。
+- 验证：中英文 locale JSON 解析、目标 worktree `git diff --check`、`pnpm -F jetlinks-web-core build -- --module-name device-manager-ui` 均通过（9642 个模块）；在 `http://localhost:9200/#/resources/devices/list/Detail/2100095778810372096?type=device` 实测确认返回按钮位于内容面板上方且摘要整体顶部对齐。构建仅保留既有资源路径、CSS 注释、Rollup output option 和大 chunk 警告。
+
 ### 设备批量页接入算法配置（已实施）
 
 - 目标：在设备列表的“批量操作”页中，在现有“插件配置”右侧增加“算法配置”，由 `jetlinks-ai-ui` 注册完整算法中心工作区。

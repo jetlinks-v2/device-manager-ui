@@ -1,28 +1,39 @@
 <template>
-  <IotDeviceDefaultDetailContent v-if="embedded && device" :state="state" embedded />
-  <a-alert v-else-if="embedded" type="error" show-icon :message="state.$t('UnifiedDeviceList.loadFailed')" />
-  <IotDeviceDetailOverlays v-if="!embedded" :state="state" />
-  <main v-if="!embedded && device" class="iot-device-detail">
-    <div class="iot-device-detail__content">
-      <ContentPanel class="iot-device-detail__summary-card" :padding="16">
-        <IotDeviceDetailHeader :state="state" />
-      </ContentPanel>
+  <a-button
+    v-if="!embedded && device"
+    class="iot-device-detail__back"
+    type="text"
+    @click="state.backToDeviceList"
+  >
+    <template #icon><AIcon type="LeftOutlined" /></template>
+    {{ state.$t('IotDeviceDetail.common.backToDeviceList') }}
+  </a-button>
+  <ContentPanel>
+	  <IotDeviceDefaultDetailContent v-if="embedded && device" :state="state" embedded />
+	  <a-alert v-else-if="embedded" type="error" show-icon :message="state.$t('UnifiedDeviceList.loadFailed')" />
+	  <IotDeviceDetailOverlays v-if="!embedded" :state="state" />
+	  <main v-if="!embedded && device" class="iot-device-detail">
+		  <div class="iot-device-detail__content">
+			  <div class="iot-device-detail__summary-card" :padding="16">
+				  <IotDeviceDetailHeader :state="state" />
+			  </div>
 
-      <ContentPanel class="iot-device-detail__content-card" :padding="0">
-        <FullPage v-if="detailContent" class="iot-device-detail__legacy-content" flex transparent-background>
-          <component
-            :is="detailContent.component"
-            ref="detailContentRef"
-            :key="device.id"
-            :device-id="device.id"
-            v-bind="detailContent.props?.(device)"
-            @changed="onDetailContentChanged"
-          />
-        </FullPage>
-        <IotDeviceDefaultDetailContent v-else :state="state" />
-      </ContentPanel>
-    </div>
-  </main>
+			  <div class="iot-device-detail__content-card" :padding="0">
+				  <FullPage v-if="detailContent" class="iot-device-detail__legacy-content" flex transparent-background>
+					  <component
+						  :is="detailContent.component"
+						  ref="detailContentRef"
+						  :key="device.id"
+						  :device-id="device.id"
+						  v-bind="detailContent.props?.(device)"
+						  @changed="onDetailContentChanged"
+					  />
+				  </FullPage>
+				  <IotDeviceDefaultDetailContent v-else :state="state" />
+			  </div>
+		  </div>
+	  </main>
+  </ContentPanel>
 </template>
 
 <script setup lang="ts">

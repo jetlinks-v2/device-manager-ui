@@ -25,8 +25,6 @@ const route = useRoute()
 
 <style scoped>
 .iot-device-detail-page {
-  display: flex;
-  flex-direction: column;
   min-width: 0;
   min-height: 0;
   width: 100%;

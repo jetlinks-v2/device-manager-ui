@@ -2,27 +2,13 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   gap: var(--space-3);
-  align-items: center;
+  align-items: start;
   min-height: 5rem;
   padding: 0;
   margin: 0;
   /* The surrounding ContentPanel owns the card boundary. */
   border: 0;
   border-radius: 0;
-  background: transparent;
-}
-
-.dd-hero__back.ant-btn {
-  grid-column: 1 / -1;
-  justify-self: start;
-  height: auto;
-  padding: 0;
-  color: var(--jet-theme-text-secondary);
-}
-
-.dd-hero__back.ant-btn:hover,
-.dd-hero__back.ant-btn:focus {
-  color: var(--jet-theme-primary);
   background: transparent;
 }
 
@@ -134,12 +120,6 @@
 .dd-summary-row--tags {
   grid-column: 1 / -1;
   align-items: flex-start;
-}
-
-/* 标签扩展会增高中间列；抵消居中布局的半程位移，保持两侧原有位置。 */
-.dd-hero.is-tags-expanded > .dd-hero__icon,
-.dd-hero.is-tags-expanded > .dd-hero__actions {
-  transform: translateY(var(--dd-tags-expanded-shift));
 }
 
 .dd-tags-title {

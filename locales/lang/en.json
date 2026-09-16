@@ -5353,6 +5353,7 @@
     "IotStandardModel.health.risk.watch": "Watch",
     "IotDeviceDetail.common.close": "Close",
     "IotDeviceDetail.common.back": "Back",
+    "IotDeviceDetail.common.backToDeviceList": "Back to device list",
     "IotDeviceDetail.common.action": "Actions",
     "IotDeviceDetail.common.pageTotal": "{start}-{end} / {total} items",
     "IotDeviceDetail.common.zeroItems": "0 items",
