@@ -1,7 +1,9 @@
+import { clientToolResult } from '@jetlinks-web-core/layout/components/AiChat/clientToolApi'
 import {
   createDomainAgentErrorResult,
   createDomainAgentInputError,
   DomainAgentInputError,
+  resolveDomainAgentMessage,
   type DomainAgentToolResult,
 } from '@jetlinks-web-core/layout/components/AiChat/domainAgentTools'
 import { extractRows } from '../services/iotDeviceDetailReal.service'
@@ -20,6 +22,34 @@ export const inputError = (
   key: string,
   params?: Record<string, string | number>,
 ) => createDomainAgentInputError(code, `IotDeviceDetailAgent.errors.${key}`, params)
+
+/** Typed prepare/execute failure that skips confirmation and does not send a backend request. */
+export const commandRequestFailure = (
+  code: string,
+  key: string,
+  details?: Record<string, unknown>,
+  params?: Record<string, string | number>,
+) => clientToolResult.failure({
+  code,
+  message: resolveDomainAgentMessage(`IotDeviceDetailAgent.errors.${key}`, params),
+  failureDisposition: 'request',
+  recoveryAction: 'repair',
+  retryable: true,
+  ...(details ? { details } : {}),
+})
+
+export const commandInputErrorFailure = (error: DomainAgentInputError) => clientToolResult.failure({
+  code: error.code,
+  message: error.message,
+  failureDisposition: error.failureDisposition,
+  recoveryAction: error.recoveryAction,
+  retryable: error.retryable,
+  repair: error.repair,
+})
+
+export const isCommandFailure = (value: unknown): value is { outcome: 'failure' } => (
+  Boolean(value) && typeof value === 'object' && (value as { outcome?: unknown }).outcome === 'failure'
+)
 
 export const unwrapResult = (value: unknown): unknown => {
   const record = asRecord(value)
