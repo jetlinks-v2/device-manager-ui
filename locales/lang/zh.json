@@ -5354,6 +5354,7 @@
     "IotStandardModel.health.risk.watch": "观察",
     "IotDeviceDetail.common.close": "关闭",
     "IotDeviceDetail.common.back": "返回",
+    "IotDeviceDetail.common.backToDeviceList": "返回设备列表",
     "IotDeviceDetail.common.action": "操作",
     "IotDeviceDetail.common.pageTotal": "{start}-{end} / {total} 条",
     "IotDeviceDetail.common.zeroItems": "0 条",
