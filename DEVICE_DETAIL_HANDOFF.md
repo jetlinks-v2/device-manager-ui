@@ -385,101 +385,39 @@
 3. 概览 -> 连接设备，继续优化动态认证与连接信息展示
 ```
 
-## 11. 设备助手受控操作能力优化计划（待确认）
+## 11. 设备详情助手混合能力模型
 
 ### 11.1 当前结论
 
-当前 `/iot-user/device/list/Detail/{id}` 使用的是 `iot-ui` 自己的设备详情助手，不是
-`device-manager-ui` 的设备助手。现有契约同时从三处把会话限定为只读：
+`deviceDetailChat` 已从整会话只读改为：查询工具保持 `READ`；当前绑定设备上的功能下发、写属性和告警处理是带本地确认的 `EXTERNAL_ACTION`；设备侧读属性是不弹确认的 `EXTERNAL_ACTION`。发现与可否执行只看物模型和告警记录字段，不按产品、协议、属性名、功能名或告警名特判。
 
-- `views/device/list/agent/useDeviceDetailAgent.ts` 注入 `systemPrompt.readonly`，明确禁止设备控制、属性写入和功能调用。
-- 同文件把工具组说明声明为只读，并为未单独声明风险的工具设置 `readOnly=true` 默认值。
-- `views/device/list/agent/deviceDetailAgent.tools.ts` 只注册查询、短时取证和页签导航工具，没有注册设备功能调用工具。
+Owning module：`runtime-ui/modules/device-manager-ui`。不修改 `ui/`，也不改旧 `Instance/Detail` 助手。
 
-因此模型回复“当前会话是只读模式”符合现有页面契约，不是设备离线、物模型缺少功能或全局通用智能体权限被降级。页面本身已经通过
-`views/device/list/services/iotDeviceDetailReal.service.ts` 的
-`POST /device/invoked/{deviceId}/function/{functionId}` 支持真实功能调用，缺口在设备助手的工具暴露与风险治理。
+### 11.2 能力边界
 
-### 11.2 目标与范围
+- 查询、分析、文档和诊断工具继续直接执行，`readOnlyHint=true`。`riskDefaults.readOnly=true` 只覆盖未单独声明风险的查询工具。
+- `device_property_read`：仅当 `access.deviceReadable`（`expands.type` 含 `read`）时调用 `GET /device/standard/{id}/property/{property}`。只上报属性返回结构化失败并提示快照工具，不弹确认。
+- `device_property_write`：仅当 `access.deviceWritable`（`expands.type` 含 `write`）时写入；确认后 `PUT /device-instance/{id}/property`。支持 `propertyId+value` 或最多 20 项的 `properties` map。
+- `device_function_invoke`：解析当前物模型唯一功能；缺参或不唯一时返回候选/缺失项，确认后 `POST /device/invoked/{id}/function/{functionId}`。
+- `device_alarm_handle`：消费 `alarm-record-id`，记录必须属于当前设备且 `state=warning`，`describe` 必填 ≤200；确认后 `POST /alarm/record/device/_handle`（`type=user`、`state=normal`）。不批量、不走视觉告警 API。诊断 workflow 不自动处理告警。
+- 四个动作工具 schema 不接受 `deviceId`，闭包当前详情 subject。
+- 空 `expands.type`：快照可读，不可设备侧读、不可写。`mapModelProperty` 输出 `access.reportable / deviceReadable / deviceWritable`。
 
-目标是把设备详情助手从“整会话只读”改成“查询默认只读 + 动作显式注册 + 执行前确认”的混合能力模型：
+### 11.3 代码落点
 
-- 查询、分析、文档和诊断工具继续直接执行，不弹确认。
-- 设备功能调用作为首个受控动作工具暴露；模型能发现并选择功能、补齐参数，真正下发前必须由用户确认。
-- 权限、目标设备、物模型、参数和后端运行条件在执行边界校验；不能由提示词提前推断成“无权限”或“不可执行”。
-- 设计面向所有物模型功能，不按 `informationReportRequest`、产品、协议、租户或设备 ID 特判。
+- 物模型 access：`agentCapabilities/deviceAnalysis/deviceModel.service.ts`；搜索候选：`views/device/list/agent/deviceDetailDiagnostics.service.ts`
+- 指令服务：`views/device/list/agent/deviceDetailCommand.service.ts`、`deviceDetailAlarm.service.ts` 的 handle；组合于 `deviceDetailAgent.service.ts`
+- 工具注册：`views/device/list/agent/deviceDetailAgent.tools.ts`（`defineClientTool` + `prepare` / 本地确认 / `execute` 再校验）
+- 会话文案：`locales/lang/zh.json`、`en.json` 的 `systemPrompt.readonly` 与 `toolsDescription`
+- 契约测试：`tests/deviceDetailCommandToolContract.test.ts`
 
-本轮不做：
+### 11.4 明确不做
 
-- 不全局放开属性写入、告警处理、配置修改、设备启停或删除能力。
-- 不修改 `runtime-ui/` 或 `device-manager-ui` 的另一套设备助手。
-- 不绕过后端权限，不新增前端伪权限，不让模型自行确认高风险动作。
-- 不在 WebSocket 重连后自动重放任何已确认或提交状态不明的写操作。
+属性阈值、配置修改、设备启停删除、告警认领/复判/批量、视觉告警 handle、边缘写操作、风险分级、万能 `device_command`。
 
-### 11.3 工具与权限契约
+### 11.5 验证
 
-会话不再声明“首期只读”，而是明确以下边界：
-
-1. `readOnlyHint` 是单个工具的副作用声明，不是会话级权限模式。
-2. 普通查询工具继续继承 `riskDefaults.readOnly=true`；动作工具必须显式覆盖为
-   `readOnly=false`、`parallelSafe=false`。
-3. 浏览器拥有页面上下文和确认 UI，设备功能工具使用本地确认：工具定义声明 `confirm.localConfirmation=true`；共享运行时继续把后端
-   HITL 标记归一为 `needsApproval=false`，避免前后端重复弹确认，但业务语义仍是“必须确认后执行”。
-4. 工具不接受 `deviceId`，始终闭包绑定详情查询成功后的当前 subject，防止模型越权切换目标设备。
-5. 功能 ID、名称、输入定义和必填参数来自当前设备真实物模型。功能不唯一或参数不完整时仅返回候选项 / 缺失项，不触发确认，也不调用后端。
-6. 参数完整后，确认卡展示设备、功能、关键参数和调用影响；用户取消时不得执行请求。
-7. 真正执行时复用现有真实功能调用接口，由后端继续裁决账号权限、设备状态、功能有效性和协议运行条件；前端只把错误转换为结构化业务结果，不伪造成功。
-
-工具路由声明采用通用能力语义，例如：
-
-- capability：`subject.function.invoke`
-- accepts：`subject-function-id`
-- produces：`function-invocation-receipt`
-- dataAccessMode：`action`
-
-这样 flat 模式和后续能力检索模式都能根据声明发现该动作，不依赖功能名称关键词或提示词猜测。
-
-### 11.4 实施步骤与代码落点
-
-1. **收敛会话文案**
-   - 更新 `locales/lang/zh.json`、`locales/lang/en.json`：移除“整会话只读”表述，改为查询与受控动作的分层边界。
-   - 更新 `views/device/list/agent/useDeviceDetailAgent.ts`：保留查询工具的只读默认值，但不再把它解释为会话权限；工具组说明同时列出查询与受控动作。
-
-2. **建立 subject-bound 功能调用服务**
-   - 在 `views/device/list/agent/` 内新增或抽取功能调用服务，负责加载真实物模型、按 ID/名称/说明解析唯一功能、校验必填参数并调用现有真实接口。
-   - 服务只返回稳定、有限的功能候选、缺失参数、调用回执和结构化错误；不得复用会回退到 mock 执行的路径。
-
-3. **注册通用动作工具**
-   - 在 `views/device/list/agent/deviceDetailAgent.tools.ts` 增加设备功能调用工具及 routing/result binding。
-   - 候选发现和缺参返回保持无副作用；只有功能唯一且参数完整时进入本地确认，确认后最多发送一次真实请求。
-   - 在 `views/device/list/agent/deviceDetailAgent.service.ts` 组合该能力，并删除“全部能力只读”的过期注释。
-
-4. **保持执行安全与恢复语义**
-   - 沿用 `jetlinks-web-core` 现有客户端工具确认和初始化契约指纹，不新建第二套确认协议。
-   - 工具目录变化后应触发新的初始化契约；活跃轮次结束后再刷新，避免执行中途切断客户端工具通道。
-   - 断线时取消待确认操作；对已发送但结果未知的调用返回“提交状态未知”，重连后只允许查询当前状态或由用户明确再次发起，不自动重放。
-
-5. **为后续动作保留统一扩展方式**
-   - 属性写入、告警处理、配置修改等后续能力必须各自显式注册 action 工具、声明风险与确认内容，并复用同一 subject/权限/不重放边界。
-   - 不通过移除 `riskDefaults`、把所有工具设为可写或添加场景白名单实现扩展。
-
-### 11.5 验证目标
-
-- 工具契约测试：查询工具仍为 `readOnly=true`；功能调用工具为 `readOnly=false`、`parallelSafe=false`，具有本地确认和 action routing。
-- 解析测试：无参数功能、必填参数功能、名称模糊匹配、多候选、功能不存在和非法参数均返回预期结构，测试数据不绑定具体 JT808 功能。
-- 确认测试：取消确认时真实接口调用次数为 0；确认后为 1；重复事件、超时和重连不增加调用次数。
-- 权限/业务错误测试：详情无权访问时不创建工具闭包；后端返回无权限、设备离线、功能不存在或调用失败时不得声称完成。
-- 初始化契约测试：`session.init` 中可见功能调用工具；工具目录变化或 WebSocket 重连后仍能恢复最新目录。
-- 浏览器验收：在当前设备上请求“执行驾驶员身份信息上报”，应先出现包含设备与功能名称的确认卡；确认后页面产生一次真实调用并展示回执，取消则不产生调用。
-- 回归验收：设备状态、属性历史、告警、日志等只读问题仍直接调用查询工具，不出现无意义确认。
-- 质量门禁：中英文 key 对齐，运行 `iot-ui` 单元测试、相关 `jetlinks-web-core` 客户端工具测试、类型检查和模块构建。
-
-### 11.6 风险与决策
-
-- 页面现有命令风险等级包含名称关键词推断，不能把它升级为智能体授权依据；本轮所有设备功能调用至少统一确认，高风险分级只能使用后续明确的物模型 / 平台风险元数据。
-- 当前已有客户端本地确认和后端功能调用接口，预计不需要后端改造。若联调证明后端无法返回稳定权限 / 提交状态错误，再单独进入后端设计与测试门禁，不在前端吞错或补假成功。
-- 该改动不新增常驻缓存、队列或会话管理器，MBean 不适用；前端调用链复用现有请求与 WebSocket 观测，本轮不新增后端 TraceHolder 埋点。
-- subject 绑定、确认前后边界和断线不重放属于非显而易见的安全约束，实施时需在对应服务 / 工具代码旁保留简短注释。
+`pnpm -C runtime-ui -F device-manager-ui test:agent-tools`。查询工具仍只读；写属性 / 功能下发 / 告警处理走 prepare → 确认 → execute；解析失败、access 不足、告警越权或已处理时后端调用次数为 0。
 
 ## 12. 设备属性聚合工具临时迁移计划（已确认）
 

@@ -58,6 +58,24 @@ type DeviceDetailToolContext = Record<string, unknown>
 
 const t = (key: string) => i18n.global.t(`IotDeviceDetailAgent.${key}`)
 
+const selectData = (result: any) => result?.data ?? result
+
+const executeCommand = async (runner: () => Promise<any>) => {
+  const result = await runner()
+  if (result?.outcome === 'failure' || result?.success === false) return result
+  return adaptDomainAgentClientToolResult(result)
+}
+
+const localConfirmation = (id: string) => ({
+  title: t(`tools.${id}.confirmTitle`),
+  content: t(`tools.${id}.confirmTitle`),
+  okText: t(`tools.${id}.okText`),
+  cancelText: i18n.global.t('verify.cancel'),
+  localConfirmation: true,
+})
+
+const objectValueType = { type: 'object' } as AiClientToolInput['valueType']
+
 const MODEL_FIELD_BINDINGS = [
   'subject-property-id',
   'subject-event-id',
@@ -515,10 +533,133 @@ export const createDeviceDetailAgentTools = (
       input('types', domainAgentEnumArrayValueType(IOT_DEVICE_MODEL_SECTIONS.filter(item => item !== 'all'))),
       input('limit', domainAgentIntegerValueType(1, 100)),
     ], service.modelSearch, 'discovery'),
+    defineClientTool<Record<string, any>, DeviceDetailToolContext, any>({
+      id: 'device_function_invoke',
+      description: {
+        text: t('tools.device_function_invoke.description'),
+        capabilities: ['subject.function.invoke'],
+        intents: ['下发当前设备功能', 'invoke a function on the current device'],
+      },
+      presentation: {
+        displayName: t('tools.device_function_invoke.name'),
+        progressText: t('tools.device_function_invoke.progress'),
+      },
+      inputs: [
+        input('functionId'),
+        input('keyword'),
+        input('arguments', objectValueType),
+      ],
+      consumes: [{
+        name: 'subject-function-id',
+        type: 'structured-data',
+        mediaType: 'application/json',
+        shape: 'schema.function-ids',
+        required: false,
+        sourcePolicy: 'EITHER',
+        bindArgument: defineClientToolStringArgumentBinding<Record<string, any>>('functionId'),
+      }],
+      effect: {
+        kind: 'EXTERNAL_ACTION',
+        idempotency: 'NON_IDEMPOTENT',
+        reversible: false,
+        confirmation: localConfirmation('device_function_invoke'),
+      },
+      output: clientToolOutput.stateChange({
+        name: 'function-invocation-receipt',
+        shape: 'function.invocation.receipt',
+        transition: 'MUTATION',
+        select: selectData,
+      }),
+      owner: { module: 'iot-ui', group: 'device-detail' },
+      prepare: args => service.prepareFunctionInvoke(args),
+      execute: args => executeCommand(() => service.functionInvoke(args)),
+    }),
     readTool('device_latest_properties', [
       input('propertyIds', domainAgentStringArrayValueType(20)),
       input('limit', domainAgentIntegerValueType(1, 20)),
     ], service.latestProperties, 'detail'),
+    defineClientTool<Record<string, any>, DeviceDetailToolContext, any>({
+      id: 'device_property_read',
+      description: {
+        text: t('tools.device_property_read.description'),
+        capabilities: ['subject.property.read.live'],
+        intents: ['向当前设备读取属性', 'read a live property from the current device'],
+        notFor: ['读取属性快照或历史', 'read a property snapshot or history'],
+      },
+      presentation: {
+        displayName: t('tools.device_property_read.name'),
+        progressText: t('tools.device_property_read.progress'),
+      },
+      inputs: [input('propertyId', 'string', true)],
+      consumes: [{
+        name: 'subject-property-id',
+        type: 'structured-data',
+        mediaType: 'application/json',
+        shape: 'schema.property-ids',
+        required: true,
+        sourcePolicy: 'EITHER',
+        bindArgument: defineClientToolStringArgumentBinding<Record<string, any>>('propertyId'),
+      }],
+      effect: {
+        kind: 'EXTERNAL_ACTION',
+        idempotency: 'IDEMPOTENT',
+        reversible: false,
+        confirmation: false,
+      },
+      output: clientToolOutput.detail({
+        name: 'property-live-value',
+        shape: 'property.live',
+        delivery: 'inline',
+        select: selectData,
+      }),
+      owner: { module: 'iot-ui', group: 'device-detail' },
+      execute: args => executeCommand(() => service.propertyRead(args)),
+    }),
+    defineClientTool<Record<string, any>, DeviceDetailToolContext, any>({
+      id: 'device_property_write',
+      description: {
+        text: t('tools.device_property_write.description'),
+        capabilities: ['subject.property.write'],
+        intents: ['向当前设备写入属性', 'write a property on the current device'],
+      },
+      presentation: {
+        displayName: t('tools.device_property_write.name'),
+        progressText: t('tools.device_property_write.progress'),
+      },
+      inputs: [
+        input('propertyId'),
+        input('value'),
+        input('properties', objectValueType),
+      ],
+      inputAlternatives: [
+        { required: ['propertyId', 'value'], forbidden: ['properties'] },
+        { required: ['properties'], forbidden: ['propertyId', 'value'] },
+      ],
+      consumes: [{
+        name: 'subject-property-id',
+        type: 'structured-data',
+        mediaType: 'application/json',
+        shape: 'schema.property-ids',
+        required: false,
+        sourcePolicy: 'EITHER',
+        bindArgument: defineClientToolStringArgumentBinding<Record<string, any>>('propertyId'),
+      }],
+      effect: {
+        kind: 'EXTERNAL_ACTION',
+        idempotency: 'NON_IDEMPOTENT',
+        reversible: false,
+        confirmation: localConfirmation('device_property_write'),
+      },
+      output: clientToolOutput.stateChange({
+        name: 'property-write-receipt',
+        shape: 'property.write.receipt',
+        transition: 'MUTATION',
+        select: selectData,
+      }),
+      owner: { module: 'iot-ui', group: 'device-detail' },
+      prepare: args => service.preparePropertyWrite(args),
+      execute: args => executeCommand(() => service.propertyWrite(args)),
+    }),
     timeScopedReadTool('device_property_history_summary', [
       input('propertyId', 'string', true),
       input('sampleLimit', domainAgentIntegerValueType(1, 10)),
@@ -545,6 +686,47 @@ export const createDeviceDetailAgentTools = (
     timeScopedReadTool('device_alarm_history_query', [
       input('alarmRecordId', 'string', true), ...pageInputs(),
     ], service.alarmHistoryQuery, 'records'),
+    defineClientTool<Record<string, any>, DeviceDetailToolContext, any>({
+      id: 'device_alarm_handle',
+      description: {
+        text: t('tools.device_alarm_handle.description'),
+        capabilities: ['subject.alarm.handle'],
+        intents: ['处理当前设备的一条告警记录', 'handle one alarm record on the current device'],
+        notFor: ['查询告警或自动关闭告警', 'query alarms or close them during diagnosis'],
+      },
+      presentation: {
+        displayName: t('tools.device_alarm_handle.name'),
+        progressText: t('tools.device_alarm_handle.progress'),
+      },
+      inputs: [
+        input('alarmRecordId', 'string', true),
+        input('describe', 'string', true),
+      ],
+      consumes: [{
+        name: 'alarm-record-id',
+        type: 'structured-data',
+        mediaType: 'application/json',
+        shape: 'alarm.record-ids',
+        required: true,
+        sourcePolicy: 'EITHER',
+        bindArgument: defineClientToolStringArgumentBinding<Record<string, any>>('alarmRecordId'),
+      }],
+      effect: {
+        kind: 'EXTERNAL_ACTION',
+        idempotency: 'IDEMPOTENT',
+        reversible: false,
+        confirmation: localConfirmation('device_alarm_handle'),
+      },
+      output: clientToolOutput.stateChange({
+        name: 'alarm-handle-receipt',
+        shape: 'alarm.handle.receipt',
+        transition: 'MUTATION',
+        select: selectData,
+      }),
+      owner: { module: 'iot-ui', group: 'device-detail' },
+      prepare: args => service.prepareAlarmHandle(args),
+      execute: args => executeCommand(() => service.alarmHandle(args)),
+    }),
     timeScopedReadTool('device_online_offline_summary', [
       input('type'), input('sampleLimit', domainAgentIntegerValueType(1, 20)),
     ], service.onlineOfflineSummary, 'aggregate'),

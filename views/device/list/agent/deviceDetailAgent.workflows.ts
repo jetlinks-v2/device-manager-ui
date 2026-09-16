@@ -222,6 +222,7 @@ export const createDeviceDetailAgentWorkflows = (includeEdge = false): GeneralAg
       workflowStep('subject.log.summary', 'log-summary', false),
     ],
     output: output(),
+    notes: [t('workflows.alarm.note')],
   },
   {
     id: 'device-detail-first-access',

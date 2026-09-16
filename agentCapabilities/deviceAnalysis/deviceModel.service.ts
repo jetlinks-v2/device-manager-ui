@@ -58,18 +58,32 @@ const mapModelParameter = (input: unknown) => {
   })
 }
 
-const mapModelProperty = (input: unknown) => {
+/** Same comma/array coercion as the device-detail property buttons. */
+export const normalizePropertyAccessTypes = (value: unknown): string[] => {
+  if (Array.isArray(value)) return value.map(item => String(item).trim()).filter(Boolean)
+  if (typeof value === 'string') return value.split(',').map(item => item.trim()).filter(Boolean)
+  return []
+}
+
+/** Live read/write follow expands.type; empty type stays snapshot-eligible only. */
+export const mapModelPropertyAccess = (input: unknown) => {
+  const expands = asRecord(asRecord(input).expands)
+  const types = normalizePropertyAccessTypes(expands.type)
+  return {
+    reportable: types.includes('report') || types.length === 0,
+    deviceReadable: types.includes('read'),
+    deviceWritable: types.includes('write'),
+  }
+}
+
+export const mapModelProperty = (input: unknown) => {
   const item = asRecord(input)
-  const expands = asRecord(item.expands)
-  const readOnly = expands.readOnly === true || item.readOnly === true
-  const writeDisabled = item.writable === false || item.writeable === false
-  const writable = !writeDisabled && (item.writable === true || item.writeable === true || !readOnly)
   return compactRecord({
     id: normalizeText(item.id || item.property || item.key),
     name: normalizeText(item.name || item.id || item.property || item.key),
     description: normalizeText(item.description) || undefined,
     valueType: mapValueType(item.valueType || item.dataType),
-    access: { readable: item.readable !== false, writable },
+    access: mapModelPropertyAccess(item),
   })
 }
 
