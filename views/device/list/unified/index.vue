@@ -14,26 +14,18 @@
 				    <a-flex align="center" justify="space-between" wrap="wrap" :gap="12" class="unified-device-list__filters">
 					    <IotDeviceAssetSearchBar v-model:filter-terms="searchTerms" :filter-fields="filterFields" :common-filter-fields="commonFilterFields" @search="search" />
 					    <RegistryComponent page-code="unified-device-list" code="toolbar-actions" is="a-space" :size="12" class="unified-device-list__toolbar-actions">
-						    <a-space :size="2" class="unified-device-list__statuses" role="group" :aria-label="t('IotDeviceList.filter.status')">
-							    <a-button
-								    v-for="option in statusOptions"
-								    :key="option.value"
-								    type="text"
-								    size="small"
-								    class="unified-device-list__status"
-								    :class="{ 'unified-device-list__status--selected': status === option.value }"
-								    :aria-pressed="status === option.value"
-								    @click="changeStatus(option.value)"
-							    >
-								    <a-space :size="6">
-									    <a-badge :status="option.value === 'online' ? 'success' : option.value === 'offline' ? 'error' : 'default'" />
-									    {{ option.label }}
-									    <span class="unified-device-list__status-count">{{ statusCounts[option.value] ?? '—' }}</span>
-								    </a-space>
-							    </a-button>
-						    </a-space>
+						    <SwitchGroup
+						    	:model-value="status"
+						    	:options="statusOptions"
+						    	:aria-label="t('IotDeviceList.filter.status')"
+						    	@change="changeStatus"
+						    >
+						    	<template #option="{ option }">
+						    		<span>{{ option.label }}</span>
+						    	</template>
+						    </SwitchGroup>
 						    <a-divider type="vertical" class="unified-device-list__action-divider" />
-						    <a-button v-if="activeType === 'all'" type="primary" :disabled="busy" @click="editing = null; editOpen = true">
+						    <a-button v-if="activeType === 'all' || isIotEntry" type="primary" :disabled="busy" @click="editing = null; editOpen = true">
 							    <template #icon><AIcon type="PlusOutlined" /></template>
 							    {{ t('IotDeviceList.action.create') }}
 						    </a-button>
@@ -176,6 +168,7 @@ import { useRoute } from 'vue-router'
 import { useMenuStore } from '@jetlinks-web-core/store'
 import { encodeConditionFilterQuery } from '@jetlinks-web-core/components/ConditionFilter'
 import { moduleRegistry } from '@jetlinks-web-core/utils/module-registry'
+import type { SwitchGroupOption } from '@jetlinks-web-core/components/SwitchGroup'
 import type { useGatewayRuntimeMetricsLoader as UseGatewayRuntimeMetricsLoader } from '@edge-master-ui/views/workbench/gateway/hooks/useGatewayRuntimeMetricsLoader'
 import IotDeviceScopeSidebar from '../components/IotDeviceScopeSidebar.vue'
 import IotDeviceAssetSearchBar from '../components/IotDeviceAssetSearchBar.vue'
@@ -199,7 +192,7 @@ function openBatchPage() {
     gatewayScope: gatewayIds.length ? undefined : 'query',
   } })
 }
-const { activeType, activeProvider, scope, filterFields, commonFilterFields, searchTerms, status, rows, total, pageIndex, pageSize, loading, error, tabs, statusCounts, selectedIds, batchMode, providerOf, changeType, search, changeStatus, refresh, changePage, clearBatchSelection } = useUnifiedDeviceList()
+const { providers, isIotEntry, activeType, activeProvider, scope, filterFields, commonFilterFields, searchTerms, status, rows, total, pageIndex, pageSize, loading, error, counts, statusCounts, selectedIds, batchMode, providerOf, changeType, search, changeStatus, refresh, changePage, clearBatchSelection } = useUnifiedDeviceList()
 const gatewayMonitorCell = moduleRegistry.getResourceItem<Component>('edge-master-ui', 'components', 'GatewayDeviceMonitorCell')
 const useGatewayMetrics = moduleRegistry.getResourceItem<typeof UseGatewayRuntimeMetricsLoader>('edge-master-ui', 'hooks', 'useGatewayRuntimeMetricsLoader')
 // 只监控边缘节点分类的当前页，切换分类或重新加载列表时撤掉旧查询目标。
@@ -222,7 +215,11 @@ const { deleteGroup, groupDialogError, groupDialogMode, groupDialogOpen, groupEd
   getActiveScope: () => ({ type: scope.scopeType.value, id: scope.scopeId.value }), reloadGroups: scope.reloadGroups, changeScope: handleScopeChange,
 })
 function confirmDeleteGroup(group: DeviceGroup) { Modal.confirm({ title: t('IotDeviceList.scope.deleteGroup'), onOk: () => deleteGroup(group) }) }
-const statusOptions = computed(() => ['online', 'offline', 'disabled'].map(value => ({ value, label: t(`UnifiedDeviceList.${value}`) })))
+// 状态点属于业务语义，只在页面侧维护，并通过 SwitchGroup 的 option 插槽渲染；计数由状态选项统一下发。
+const statusTones: Record<string, 'success' | 'error' | 'default'> = { online: 'success', offline: 'error', disabled: 'default' }
+const statusOptions = computed<SwitchGroupOption[]>(() => ['online', 'offline', 'disabled'].map(value => ({
+  value, label: t(`UnifiedDeviceList.${value}`), count: statusCounts.value[value] ?? '—',
+})))
 const rowSelection = computed(() => ({ selectedRowKeys: selectedIds.value, onChange: (keys: Array<string | number>) => { selectedIds.value = keys.map(String); batchMode.value = keys.length > 0 } }))
 const columns = computed(() => [
   { title: t('UnifiedDeviceList.name'), key: 'name', width: 280, fixed: 'left' },
@@ -265,15 +262,10 @@ const columns = computed(() => [
   --device-table-header-bg: color-mix(in srgb, var(--info-bg) 55%, var(--bg));
   background-color: color-mix(in srgb, var(--info-bg) 25%, var(--bg-trans-8));
 }
-.unified-device-list__filters, .unified-device-list__statuses, .unified-device-list__batch, .unified-device-list__pagination { flex-shrink: 0; }
+.unified-device-list__filters, .unified-device-list__batch, .unified-device-list__pagination { flex-shrink: 0; }
 .unified-device-list__filters { align-items: center; flex-wrap: nowrap; }
 .unified-device-list__filters > .device-asset-search { flex: 1 1 auto; width: auto; min-width: 0; }
 .unified-device-list__toolbar-actions { flex-shrink: 0; margin-inline-start: auto; gap: 8px; }
-.unified-device-list__statuses { padding: 3px; border: 1px solid color-mix(in srgb, var(--primary-color) 16%, var(--line)); border-radius: var(--r-3); background: color-mix(in srgb, var(--bg) 86%, var(--info-bg)); }
-.unified-device-list__status { height: 26px; padding-inline: 10px; color: var(--ink-2); }
-.unified-device-list__status--selected { color: var(--primary-color); background: var(--info-bg); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary-color) 12%, transparent); }
-.unified-device-list__status--selected:hover { color: var(--primary-color); background: var(--info-bg); }
-.unified-device-list__status-count { font-variant-numeric: tabular-nums; font-size: 12px; opacity: 0.75; }
 .unified-device-list__action-divider { margin: 0 2px; height: 24px; opacity: .45; }
 .unified-device-list__category { margin-inline-end: 0; color: var(--ink-3); }
 .unified-device-list__table { flex: 1; min-height: 0; overflow: auto; }

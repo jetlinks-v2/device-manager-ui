@@ -114,9 +114,8 @@ function confirm() {
 
 onMounted(async () => {
   try {
-    await probeDeviceLibraryCapability_api()
-    available.value = true
-    void loadTags()
+    available.value = await probeDeviceLibraryCapability_api()
+    if (available.value) void loadTags()
   } catch {
     // 未部署或不可访问设备库时隐藏入口，已有业务标识仍由父表单原样保存。
     available.value = false

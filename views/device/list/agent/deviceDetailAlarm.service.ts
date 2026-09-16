@@ -1,15 +1,20 @@
 import {
   createDomainAgentRecordSetCardinality,
   createDomainAgentToolResult,
+  DomainAgentInputError,
   resolveDomainAgentInteger,
+  resolveDomainAgentMessage,
   resolveDomainAgentTimeRange,
 } from '@jetlinks-web-core/layout/components/AiChat/domainAgentTools'
 import type { IotDevice } from '../types'
 import { iotDeviceDetailRealApi } from '../services/iotDeviceDetailReal.service'
 import {
   asRecord,
+  commandInputErrorFailure,
+  commandRequestFailure,
   enumValue,
   inputError,
+  isCommandFailure,
   normalizeText,
   pageResult,
   runDetailTool,
@@ -225,5 +230,95 @@ export const createDeviceDetailAlarmService = (device: IotDevice) => {
     })
   })
 
-  return { alarmRecords, alarmHistorySummary, alarmHistoryQuery }
+  const ALARM_DESCRIBE_MAX = 200
+
+  const resolveAlarmHandle = async (args: DeviceDetailAgentArgs) => {
+    const describe = normalizeText(args.describe)
+    if (!describe) return commandRequestFailure('DEVICE_ALARM_DESCRIBE_REQUIRED', 'alarmDescribeRequired')
+    if (describe.length > ALARM_DESCRIBE_MAX) {
+      return commandRequestFailure('DEVICE_ALARM_DESCRIBE_TOO_LONG', 'alarmDescribeTooLong', {
+        max: ALARM_DESCRIBE_MAX,
+      })
+    }
+    const recordId = normalizeText(args.alarmRecordId)
+    let record
+    try {
+      record = await requireRecord(recordId)
+    } catch (error) {
+      if (error instanceof DomainAgentInputError) return commandInputErrorFailure(error)
+      throw error
+    }
+    if (record.deviceId && record.deviceId !== device.id) {
+      return commandRequestFailure('DEVICE_ALARM_RECORD_NOT_FOUND', 'alarmRecordNotFound', undefined, { recordId })
+    }
+    const state = normalizeAlarmState(asRecord(record.state).value ?? record.state)
+    if (state === 'normal') {
+      return commandRequestFailure('DEVICE_ALARM_ALREADY_HANDLED', 'alarmAlreadyHandled', {
+        alarmRecordId: record.id,
+        state,
+      })
+    }
+    if (state !== 'warning') {
+      return commandRequestFailure('DEVICE_ALARM_NOT_WARNING', 'alarmNotWarning', {
+        alarmRecordId: record.id,
+        state,
+      })
+    }
+    return {
+      describe,
+      alarmRecordId: record.id,
+      alarmConfigId: normalizeText(record.alarmConfigId),
+      alarmTime: record.alarmTime,
+      name: record.name,
+    }
+  }
+
+  const prepareAlarmHandle = async (args: DeviceDetailAgentArgs) => {
+    const resolved = await resolveAlarmHandle(args)
+    if (isCommandFailure(resolved)) return resolved
+    return {
+      arguments: {
+        alarmRecordId: resolved.alarmRecordId,
+        describe: resolved.describe,
+        alarmConfigId: resolved.alarmConfigId,
+        alarmTime: resolved.alarmTime,
+      },
+      confirmation: {
+        title: resolveDomainAgentMessage('IotDeviceDetailAgent.tools.device_alarm_handle.confirmTitle'),
+        content: resolveDomainAgentMessage(
+          'IotDeviceDetailAgent.tools.device_alarm_handle.confirmContent',
+          [device.name || device.id, String(resolved.name || resolved.alarmRecordId), resolved.describe],
+        ),
+      },
+    }
+  }
+
+  const alarmHandle = (args: DeviceDetailAgentArgs) => runDetailTool<Record<string, unknown>>({}, async () => {
+    const resolved = await resolveAlarmHandle(args)
+    if (isCommandFailure(resolved)) return resolved
+    await iotDeviceDetailRealApi.handleAlarmByDevice({
+      describe: resolved.describe,
+      type: 'user',
+      state: 'normal',
+      alarmRecordId: resolved.alarmRecordId,
+      alarmConfigId: resolved.alarmConfigId,
+      alarmTime: resolved.alarmTime,
+    })
+    return createDomainAgentToolResult({
+      domain: 'device',
+      summary: {
+        handled: true,
+        deviceId: device.id,
+        alarmRecordId: resolved.alarmRecordId,
+      },
+      data: {
+        handled: true,
+        alarmRecordId: resolved.alarmRecordId,
+        alarmConfigId: resolved.alarmConfigId,
+        alarmTime: resolved.alarmTime,
+      },
+    })
+  })
+
+  return { alarmRecords, alarmHistorySummary, alarmHistoryQuery, prepareAlarmHandle, alarmHandle }
 }

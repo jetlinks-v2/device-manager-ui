@@ -1,6 +1,7 @@
 import type { IotDevice } from '../types'
 import { createDeviceDetailAccessService } from './deviceDetailAccess.service'
 import { createDeviceDetailAlarmService } from './deviceDetailAlarm.service'
+import { createDeviceDetailCommandService } from './deviceDetailCommand.service'
 import { createDeviceDetailDiagnosticsService, type DeviceDetailAgentTabSurfaceOptions } from './deviceDetailDiagnostics.service'
 import { createDeviceDetailEdgeService } from './deviceDetailEdge.service'
 import { createDeviceDetailLogService } from './deviceDetailLog.service'
@@ -12,7 +13,7 @@ export type DeviceDetailAgentServiceOptions = {
   tabSurface?: DeviceDetailAgentTabSurfaceOptions
 }
 
-/** Composes subject-bound read-only capabilities after the detail permission check succeeds. */
+/** Composes subject-bound query and confirmed action capabilities after the detail permission check succeeds. */
 export const createDeviceDetailAgentService = (
   device: IotDevice,
   options?: DeviceDetailAgentServiceOptions,
@@ -20,6 +21,7 @@ export const createDeviceDetailAgentService = (
   const diagnostics = createDeviceDetailDiagnosticsService(device, options?.tabSurface)
   const access = createDeviceDetailAccessService(device)
   const alarm = createDeviceDetailAlarmService(device)
+  const commands = createDeviceDetailCommandService(device)
   const logs = createDeviceDetailLogService(device)
   const metrics = createDeviceDetailMetricsService(device)
   const properties = createDeviceDetailPropertyService(device)
@@ -33,6 +35,7 @@ export const createDeviceDetailAgentService = (
     ...logs,
     ...metrics,
     ...properties,
+    ...commands,
     ...edge,
     traceCapture: trace.capture,
     dispose: trace.dispose,

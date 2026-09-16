@@ -13,6 +13,7 @@ import {
 } from '@device-manager-ui/api/device'
 import type { IotDevice } from '../types'
 import { buildIotDeviceDetailPath } from '../hooks/useIotDeviceRouting'
+import { mapModelPropertyAccess } from '../../../../agentCapabilities/deviceAnalysis/deviceModel.service'
 import {
   iotDeviceDetailRealApi,
   parseMetadata,
@@ -88,6 +89,7 @@ export const createDeviceDetailDiagnosticsService = (
           id: normalizeText(item.id || item.key || item.property || item.event || item.function),
           name: safeText(item.name || item.id || item.key, 300),
           description: safeText(item.description, 600) || undefined,
+          ...(section === 'properties' ? { access: mapModelPropertyAccess(item) } : {}),
         }
       })
     })

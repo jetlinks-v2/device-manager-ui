@@ -12,6 +12,11 @@ type IotRouteLike = {
 
 const firstRouteValue = (value: unknown) => Array.isArray(value) ? value[0] : value
 
+/** 物联应用的设备列表仅承载普通设备，不展示资源中心的设备类型切换。 */
+export function isIotDeviceListEntry(route?: IotRouteLike) {
+  return route?.path?.startsWith('/iot-center/') ?? false
+}
+
 // 设备页同时挂在运营端和项目态菜单下，跳转时必须沿用当前路由上下文。
 const isProjectIotRoute = (route?: IotRouteLike) => {
   if (!route) return true
@@ -30,7 +35,18 @@ export function resolveIotProjectId(route: IotRouteLike, fallback = 'doraemon') 
 }
 
 export function buildIotDeviceListPath(projectId: string, route?: IotRouteLike) {
-  return '/resources/devices/list/device'
+  // 资源中心与物联应用使用不同的菜单根路径，详情必须挂在当前入口对应的列表子路由下。
+  return route?.path?.startsWith('/iot-center/')
+    ? '/iot-center/device/list'
+    : '/resources/devices/list/device'
+}
+
+/** 返回当前设备列表入口对应的菜单 code，供父路由和菜单型跳转共享。 */
+export function getIotDeviceListMenuCode(route?: IotRouteLike) {
+  // 资源中心的设备清单实际由 /device 子菜单承载；父菜单只负责容器与跳转。
+  return route?.path?.startsWith('/iot-center/') || route?.path?.startsWith('/resources/devices/list/device')
+    ? 'iot-user/device/list'
+    : 'iot-user-device-list'
 }
 
 export function buildIotDeviceDetailPath(

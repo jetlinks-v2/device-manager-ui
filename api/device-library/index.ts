@@ -66,6 +66,8 @@ type ProjectRuntimeContext = {
   domain?: string
 }
 
+const MARKETPLACE_SERVICE_ID = 'marketplaceService'
+
 const isRecord = (value: unknown): value is Record<string, any> =>
   !!value && typeof value === 'object' && !Array.isArray(value)
 
@@ -969,6 +971,8 @@ export const queryDeviceLibraryTemplateGateway_api = async (
 }
 
 export const queryDeviceLibraryTags_api = async (): Promise<IotDeviceLibraryTagGroup[]> => {
+  if (!(await probeDeviceLibraryCapability_api())) return []
+
   const response = await queryMarketplaceTagClassifiers()
   return normalizeMarketplaceTagGroups(response)
 }
@@ -983,22 +987,22 @@ function queryMarketplaceTagClassifiers() {
 }
 
 /**
- * 以设备库实际检索接口判定入口是否可用。
- * 标签接口属于可选增强能力，不能因为私有化环境未部署标签服务而隐藏设备库选择入口。
+ * 检查能力市场命令服务是否已部署。
+ *
+ * 私有化环境可不安装能力市场；必须先通过命令服务判断，避免以市场接口的 404 作为能力探测。
  */
 export const probeDeviceLibraryCapability_api = async (): Promise<boolean> => {
-  const context = getProjectRuntimeContext(true)
-  await request.post(
-    '/marketplace/capabilities/version/_search',
-    {
-      type: 'device-template',
-      paging: true,
-      pageIndex: 0,
-      pageSize: 1,
-    },
-    { ...withProjectRuntimeRequest(context), hiddenError: true },
-  )
-  return true
+  try {
+    const response = await request.get(
+      `/command-supports/service/${MARKETPLACE_SERVICE_ID}/exists`,
+      {},
+      { hiddenError: true },
+    )
+    return unwrapResult<boolean>(response) === true
+  } catch {
+    // 探测异常时保守地关闭设备库入口，调用方仍可使用按产品创建设备。
+    return false
+  }
 }
 
 export const queryProjectInstalledDeviceLibrary_api = async (
@@ -1007,6 +1011,7 @@ export const queryProjectInstalledDeviceLibrary_api = async (
 ): Promise<Map<string, string>> => {
   const ids = capabilityIds.filter(Boolean)
   if (!ids.length) return new Map()
+  if (!(await probeDeviceLibraryCapability_api())) return new Map()
 
   const context = getProjectRuntimeContext(true)
   const rows = await mapWithConcurrency(
@@ -1031,6 +1036,9 @@ export const queryProjectInstalledDeviceLibrary_api = async (
 export const queryDeviceLibraryProductFilterOptions_api = async (
   _projectId: string,
 ): Promise<DeviceLibraryProductFilterOption[]> => {
+  // 设备列表会在首屏加载此筛选项，私有化未部署市场时直接保留空选项而非发起 404 请求。
+  if (!(await probeDeviceLibraryCapability_api())) return []
+
   const context = getProjectRuntimeContext(true)
   const response = await request.post(
     '/marketplace/capabilities/device-template/installed',
@@ -1049,6 +1057,10 @@ export const queryDeviceLibraryTemplates_api = async (
 ): Promise<DeviceLibraryTemplatePageResult> => {
   const pageIndex = Number(input.pageIndex ?? 0)
   const pageSize = Number(input.pageSize ?? 4)
+  if (!(await probeDeviceLibraryCapability_api())) {
+    return { data: [], pageIndex, pageSize, hasMore: false }
+  }
+
   const keyword = input.keyword?.trim()
   const context = getProjectRuntimeContext(true)
   const response = await request.post('/marketplace/capabilities/version/_search', {
@@ -1091,6 +1103,8 @@ export const queryDeviceLibraryTemplates_api = async (
 export const queryDeviceLibraryTemplateById_api = async (templateId: string): Promise<DeviceTemplateProductInput | null> => {
   const id = templateId.trim()
   if (!id) return null
+  if (!(await probeDeviceLibraryCapability_api())) return null
+
   const context = getProjectRuntimeContext(true)
   const response = await request.post('/marketplace/capabilities/version/_search', {
     type: 'device-template',

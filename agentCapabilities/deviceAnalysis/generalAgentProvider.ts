@@ -26,7 +26,6 @@ export const iotDeviceAnalysisGeneralAgentProvider: GeneralAgentCapabilityProvid
     const listMenu = findMenu(context, IOT_DEVICE_MENU_ANCHORS.list)
     if (!listMenu) return []
     const healthMenu = findMenu(context, IOT_DEVICE_MENU_ANCHORS.health)
-    const overviewMenu = findMenu(context, IOT_DEVICE_MENU_ANCHORS.overview)
     return [
       {
         id: 'device:analysis',
@@ -57,15 +56,6 @@ export const iotDeviceAnalysisGeneralAgentProvider: GeneralAgentCapabilityProvid
           },
         },
       },
-      ...(overviewMenu ? [{
-        id: 'device:overview',
-        name: overviewMenu.title,
-        description: i18n.global.t('IotGeneralAgent.capabilities.overview.description'),
-        kind: 'feature' as const,
-        category: IOT_DEVICE_ANALYSIS_CATEGORY,
-        menuCode: overviewMenu.code,
-        keywords: ['设备总览', '在线率', '设备数量'],
-      }] : []),
       ...(healthMenu ? [{
         id: 'device:health',
         name: healthMenu.title,

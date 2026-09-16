@@ -1,14 +1,6 @@
 <template>
   <template v-if="device">
-    <section
-      class="dd-hero"
-      :class="{ 'is-tags-expanded': tagsExpanded }"
-      :style="{ '--dd-tags-expanded-shift': `${-tagsExpandedOffset / 2}px` }"
-    >
-      <a-button class="dd-hero__back" type="text" @click="backToDeviceList">
-        <template #icon><AIcon type="LeftOutlined" /></template>
-        {{ $t('IotDeviceDetail.common.back') }}
-      </a-button>
+    <section class="dd-hero">
       <div class="dd-hero__icon" :data-category="categoryKey ?? 'sensor'">
         <IconValueView v-if="device.imageUrl" :value="device.imageUrl" :fallback-text="device.name" :size="52" />
         <AIcon v-else :type="categoryIcon" aria-hidden="true" />
@@ -159,11 +151,9 @@ type ViewState = Pick<IotDeviceDetailViewState,
   'tagsListRef' |
   'tagsExpanded' |
   'tagsOverflow' |
-  'tagsExpandedOffset' |
   'actionBusyId' |
   'actionKind' |
   'openEditDrawer' |
-  'backToDeviceList' |
   'toggleDeviceEnabled' |
   'confirmDeleteDevice' |
   'deviceNameText' |
@@ -194,11 +184,9 @@ const {
   tagsListRef,
   tagsExpanded,
   tagsOverflow,
-  tagsExpandedOffset,
   actionBusyId,
   actionKind,
   openEditDrawer,
-  backToDeviceList,
   toggleDeviceEnabled,
   confirmDeleteDevice,
   deviceNameText,

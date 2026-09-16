@@ -10,7 +10,6 @@ export const IOT_DEVICE_PROPERTY_INTERVALS = ['1m', '1h', '1d', '1w', '1M'] as c
 export const IOT_DEVICE_OPEN_DETAIL_TABS = ['overview', 'access', 'data', 'alarm', 'logs', 'advanced'] as const
 
 export const IOT_DEVICE_MENU_ANCHORS = {
-  overview: ['iot-user/device/overview', '/iot-user/device/overview'],
   list: ['iot-user/device/list', '/iot-user/device/list'],
   health: ['iot-user/device/health', '/iot-user/device/health'],
 } as const

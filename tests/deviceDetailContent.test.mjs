@@ -43,6 +43,8 @@ function fixture(t, { custom = true, properties = [] } = {}) {
   let statusCallback
   const calls = []
   const context = {
+    // 生产 hook 默认以非嵌入式详情运行；隔离执行时也需提供同一参数闭包。
+    props: {},
     deviceId: ref('A'), projectId: ref('P'), device: shallowRef(null),
     detailContent: shallowRef(custom ? {} : undefined),
     detailContentRef: shallowRef({ refresh: async () => { calls.push('content') } }),
