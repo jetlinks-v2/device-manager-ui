@@ -19,7 +19,14 @@
         >
           <template #title="node">
             <span class="iot-device-scope__group-node">
-              <span class="iot-device-scope__label">{{ node.title }}</span>
+              <span>
+                <AIcon :type="node.isLeaf ? 'icon-dizhi': 'icon-shebei2' " />
+              </span>
+              <span class="iot-device-scope__label">
+                <j-ellipsis>
+                  {{ node.title }}
+                </j-ellipsis>
+              </span>
               <em class="iot-device-scope__count">{{ countText(node.count) }}</em>
               <a-dropdown v-if="node.group && showGroupActions !== false" :trigger="['click']">
                 <a-button
@@ -130,22 +137,21 @@ const { scopeType, scopeId, scopeOptions, hasScopes, treeData, select, onSelect,
 }
 
 .iot-device-scope__label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
 }
 
 .iot-device-scope__count {
   color: var(--jet-theme-text-disabled);
   font-size: var(--fs-14);
   font-style: normal;
+  width: 2.125rem;
+  text-align: right;
 }
 
 .iot-device-scope__group-node {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  display: flex;
   gap: var(--space-2);
-  align-items: center;
   min-width: 0;
 }
 
@@ -178,20 +184,4 @@ const { scopeType, scopeId, scopeOptions, hasScopes, treeData, select, onSelect,
 .iot-device-scope__create-group {
   margin-top: var(--space-1);
 }
-.iot-device-scope__tabs.ant-segmented { padding: 0; background: transparent; box-shadow: none; }
-.iot-device-scope__tabs :deep(.ant-segmented-group) { gap: var(--space-2); }
-.iot-device-scope__tabs :deep(.ant-segmented-item) { color: var(--ink-2); border-radius: var(--r-3); }
-.iot-device-scope__tabs :deep(.ant-segmented-item-label) {
-  min-height: 32px;
-  padding: 5px 14px;
-  line-height: 22px;
-}
-.iot-device-scope__tabs :deep(.ant-segmented-item-selected),
-.iot-device-scope__tabs :deep(.ant-segmented-thumb) {
-  color: var(--primary-color);
-  background: var(--info-bg);
-  box-shadow: none;
-}
-.iot-device-scope__tabs :deep(.ant-segmented-item-selected) { font-weight: 500; }
-.iot-device-scope__tabs :deep(.ant-segmented-item:hover) { color: var(--primary-color); background: var(--info-bg); }
 </style>
