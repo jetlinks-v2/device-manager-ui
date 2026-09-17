@@ -1,39 +1,41 @@
 <template>
-  <a-button
-    v-if="!embedded && device"
-    class="iot-device-detail__back"
-    type="text"
-    @click="state.backToDeviceList"
-  >
-    <template #icon><AIcon type="LeftOutlined" /></template>
-    {{ state.$t('IotDeviceDetail.common.backToDeviceList') }}
-  </a-button>
-  <ContentPanel>
-	  <IotDeviceDefaultDetailContent v-if="embedded && device" :state="state" embedded />
-	  <a-alert v-else-if="embedded" type="error" show-icon :message="state.$t('UnifiedDeviceList.loadFailed')" />
-	  <IotDeviceDetailOverlays v-if="!embedded" :state="state" />
-	  <main v-if="!embedded && device" class="iot-device-detail">
-		  <div class="iot-device-detail__content">
-			  <div class="iot-device-detail__summary-card" :padding="16">
-				  <IotDeviceDetailHeader :state="state" />
-			  </div>
+  <!-- 返回入口属于「面板外页面头部」，由布局壳层预留的插槽位承载。 -->
+  <PageChrome v-if="!embedded && device">
+    <a-button
+      class="iot-device-detail__back"
+      type="text"
+      @click="state.backToDeviceList"
+    >
+      <template #icon><AIcon type="LeftOutlined" /></template>
+      {{ state.$t('IotDeviceDetail.common.backToDeviceList') }}
+    </a-button>
+  </PageChrome>
 
-			  <div class="iot-device-detail__content-card" :padding="0">
-				  <FullPage v-if="detailContent" class="iot-device-detail__legacy-content" flex transparent-background>
-					  <component
-						  :is="detailContent.component"
-						  ref="detailContentRef"
-						  :key="device.id"
-						  :device-id="device.id"
-						  v-bind="detailContent.props?.(device)"
-						  @changed="onDetailContentChanged"
-					  />
-				  </FullPage>
-				  <IotDeviceDefaultDetailContent v-else :state="state" />
-			  </div>
-		  </div>
-	  </main>
-  </ContentPanel>
+  <!-- 路由态与嵌入态都保留页内面板：布局壳层检测到页面已有面板会自动让位，不会双层卡片。 -->
+	<IotDeviceDefaultDetailContent v-if="embedded && device" :state="state" embedded />
+	<a-alert v-else-if="embedded" type="error" show-icon :message="state.$t('UnifiedDeviceList.loadFailed')" />
+	<IotDeviceDetailOverlays v-if="!embedded" :state="state" />
+	<main v-if="!embedded && device" class="iot-device-detail">
+		<div class="iot-device-detail__content">
+			<div class="iot-device-detail__summary-card" :padding="16">
+				<IotDeviceDetailHeader :state="state" />
+			</div>
+			
+			<div class="iot-device-detail__content-card" :padding="0">
+				<FullPage v-if="detailContent" class="iot-device-detail__legacy-content" flex transparent-background>
+					<component
+						:is="detailContent.component"
+						ref="detailContentRef"
+						:key="device.id"
+						:device-id="device.id"
+						v-bind="detailContent.props?.(device)"
+						@changed="onDetailContentChanged"
+					/>
+				</FullPage>
+				<IotDeviceDefaultDetailContent v-else :state="state" />
+			</div>
+		</div>
+	</main>
 </template>
 
 <script setup lang="ts">

@@ -1,5 +1,31 @@
 # 物联告警规则与记录工作区
 
+## 右侧记录卡改用 CardBox
+
+- 目标：`DeviceAlarmRecordCard.vue` 的骨架由 `EntityCard` 换成 `jetlinks-web-core` 的 `CardBox`，对齐用户提供的记录卡截图。
+- 影响范围与 owning module：仅 `runtime-ui/modules/device-manager-ui/views/device/alarm/components/DeviceAlarmRecordCard.vue`；不改 CardBox 源码、不改 `index.vue`、不改查询/分页/hook、不改接口与 i18n。
+- 为什么是 CardBox：截图里的两条特征就是 CardBox 的内置行为，不是需要另写的装饰——左上角状态色渐变条来自 `.card-top-line`（`linear-gradient(90deg, var(--card-status-color-solid), var(--card-status-color))`），右上角浅色斜角状态位来自 `.card-state-row` + `.card-state`（`clip-path` 斜角）；`getHexColor(code, pe = 0.1)` 默认返回 `rgba(...,0.1)`，正好是截图里的浅色斜角，传 `1` 就是那条实心色条。
+- 组装方式：`status` / `status-text` / `status-names` 走内置状态位（`statusNames = { warning: 'error' }`，其余状态由 `getHexColor` 回退灰色）；`#content` 放「标题 + 等级 StatusTag + 2×2 字段网格」；`#bottom-tool` 放「告警日志 / 处理记录 + 告警处理」。`--panel-padding: 1.25rem` 复用 CardBox 自带的内边距变量。
+- 需要注意的 CardBox 行为（已在消费侧处理，未改 core）：默认 `contentList` 是单行等分 `a-col`，做不出截图的 2×2，因此走 `#content` 插槽；不传 `#img` 时 `.card-content-main` 的 flex `gap` 会留下空位，用 `display:none` 去掉空头像位；`.card-warp` 恒定 `cursor: pointer`，记录卡不可点，覆盖为 `default`；`#bottom-tool` 渲染在 `.card-warp` 之外，底栏自带 padding 与上边框；`statusText` 默认是硬编码 key，必须显式传。
+- 保留的行为：四个字段仍是快照字段（告警设备 / 最近告警时间 / 告警原因 / 持续时长），`canHandleRecord` 继续控制「告警处理」禁用；卡片改为 flex 列布局，双列网格下底栏贴底等高。
+- 文案：沿用现有语义（`最近告警时间` / `告警处理`），未照搬截图里的「告警时长」（其值是时间戳，语义不自洽）与「处理告警」。
+- 验证：`node scripts/test-alarm-workspace.mjs` 8 项通过；`pnpm run build:modules device-manager-ui` 通过。用构建产物 `dist/assets/style.*.css` 直接渲染手写 DOM fixture（带真实 `data-v-*` scope）并截图，核对顶部色条、右上斜角状态位、标题+等级、2×2 字段与底栏按钮的位置与配色。
+- 未验证：无登录环境，未在真实应用里确认 antd 运行时样式、`j-badge-status` 与 `j-ellipsis` 的实际渲染；fixture 里的 antd 基础样式是静态近似（antd v5 为运行时 CSS-in-JS）。
+
+## 左侧规则列表高保真还原与滚动加载
+
+- 目标：按用户提供的高保真截图重做 `/alarms/rules/iot` 左侧规则列表，页脚分页改为滚动到底自动加载下一页，“新增告警”从标题行移到列表底部通栏按钮。
+- 影响范围与 owning module：仅 `runtime-ui/modules/device-manager-ui`，落点 `views/device/alarm/{index.vue,components/DeviceAlarmRuleCard.vue,hooks/useDeviceAlarmPage.ts,hooks/useDeviceAlarmWorkspace.ts}` 与 `locales/lang/{zh,en}.json`；不改接口、权限、菜单和右侧告警记录栏。
+- 视觉：标题行保留 `DeviceAlarm.workspace.rules` 与 `DeviceAlarm.workspace.total`（“告警规则 共 N 条”，数量超长时省略并保留 title），新增按钮按截图移到列表底部；搜索框圆角与卡片对齐；卡片为白色圆角块 + 蓝色渐变圆形告警灯图标 + 名称 + 单行摘要（Tooltip 全文）+ 状态/等级两枚 StatusTag，右上角 ⋮ 菜单承载编辑/删除；选中态为蓝色描边 + 主色浅底。
+- 图标：截图造型为“警灯”（穹顶 + 底座 + 五道光束），Ant Design 与仓库 iconfont 均无对应字形，因此在 `DeviceAlarmRuleCard.vue` 内联固定 SVG；⋮ 复用 `MoreOutlined` 旋转 90°。
+- 滚动加载：`useDeviceAlarmPage` 拆出 `fetchRulePage`，`tableRequest` 仍为替换语义，新增 `appendRulePage`（追加下一页，按稳定 key 去重）与 `reloadRuleRange`（编辑/删除后重取已加载 0..N 页，保留滚动深度）。`useDeviceAlarmWorkspace` 新增 `loadingMore`/`loadMoreError`/`hasMore` 与 `loadMore()`；服务端返回空页时置 `exhausted` 立即停止，避免偏移分页在总数不一致时反复请求。
+- 状态隔离：`searchKey`（搜索/首次加载，回到第一页）与 `reloadKey`（编辑/删除，保留范围）分成两个信号，替代原 `tableParams`。告警数量改为增量合并（`mergeCounts` 只保留当前列表仍显示的规则），追加页的并发结果不会被更早的全量结果抹掉；失败仍显示“状态未知”而不是 0。
+- 删除确认：删除动作由卡片菜单直接 emit，确认交给页面 `Modal.confirm`（复用 `DeviceAlarm.confirm.delete`），保持卡片为无副作用展示组件。
+- 明确不做：不改右侧告警记录栏及其分页、不改接口契约、不新增后端能力、不改 `ui/`。
+- 与截图的有意差异：搜索占位仍为语义正确的 `DeviceAlarm.workspace.keywordSearch`（“搜索产品、设备或属性标识”），未照搬原型里属于视觉告警页的“搜索建筑、楼层或区域”；状态文案沿用既有 `告警中 {count}`，未改成原型的“告警 N”；摘要沿用 `ruleSummary` 真实内容而非原型里的产品名。
+- 验证：`node scripts/test-alarm-workspace.mjs` 8 项通过；`pnpm run build:modules device-manager-ui` 通过（仅既有资源路径/chunk 体积警告）。另用与 `DeviceAlarmRuleCard.vue`、`StatusTag/index.vue` 逐行同源的 CSS 在 340px 侧栏宽度渲染静态 fixture 并用 Chrome 截图，核对标题、搜索、卡片、选中态、标签、⋮ 与底部新增按钮的位置与配色。
+- 未验证：无登录环境，未做真实数据下的滚动加载、删除确认、增量数量合并联调；模块级 `vue-tsc` 仍受既有 `views/link/Certificate/type.d.ts:2` 语法错误阻断。
+
 ## 规则关键词搜索
 
 交付入口：[前端 PR #275](https://github.com/jetlinks-v2/device-manager-ui/pull/275)。

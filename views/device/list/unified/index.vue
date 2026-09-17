@@ -1,8 +1,10 @@
 <template>
+  <!-- 卡片切换充当面板顶栏：flush 让它与布局面板贴合，左上角一起拉平。 -->
+  <PageChrome flush>
+    <SlantedTabs class="unified-device-list__types" :activeKey="activeType" :options="tabs" @change="changeType(String($event))" />
+  </PageChrome>
   <FullPage flex transparent-background class="unified-device-list">
-      <SlantedTabs class="unified-device-list__types" :activeKey="activeType" :options="tabs" @change="changeType(String($event))" />
-    <ContentPanel>
-	    <EqualHeightColumns class="unified-device-list__layout" :left-width="scopeCollapsed ? '2.5rem' : '15rem'" right-width="1fr">
+    <EqualHeightColumns class="unified-device-list__layout" :left-width="scopeCollapsed ? '2.5rem' : '15rem'" right-width="1fr">
 		    <template #left>
 			    <a-spin v-if="!scopeCollapsed" :spinning="scopeLoading" wrapper-class-name="unified-device-list__scope">
 				    <IotDeviceScopeSidebar v-bind="sidebarProps" @change="handleScopeChange" @create-group="openCreateGroup" @create-child-group="openCreateChildGroup" @edit-group="openEditGroup" @delete-group="confirmDeleteGroup" />
@@ -146,7 +148,6 @@
 			    </div>
 		    </template>
 	    </EqualHeightColumns>
-    </ContentPanel>
     <component v-if="createEntry" :is="createEntry.component" :open="true" @update:open="createEntry = undefined" @saved="refresh" />
     <IotAddDeviceDrawer v-if="!editing || editing.category === 'device'" v-model:open="editOpen" :project-id="projectId" :device="editing" @saved="refresh" @created="refresh" />
     <component v-else-if="editing && providerOf(editing)?.editComponent" :is="providerOf(editing)?.editComponent" v-model:open="editOpen" :gateway="editing" :device="editing" :project-id="projectId" @saved="refresh" />
@@ -237,11 +238,12 @@ const columns = computed(() => [
 .unified-device-list {
   min-width: 0;
   min-height: 0;
+  /*
+   * 作为布局面板的 flex 项：面板已定高，这里收缩到面板内容高度，
+   * 页内滚动交给 __table，避免出现第二条滚动条。
+   */
+  flex: 0 1 auto;
   overflow: hidden;
-
-  .content-panel {
-    border-top-left-radius: 0;
-  }
 }
 .unified-device-list__header { flex-shrink: 0; }
 .unified-device-list__types { --slanted-tabs-background: transparent; z-index: 2; }

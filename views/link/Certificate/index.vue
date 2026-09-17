@@ -11,6 +11,7 @@
                         sorts: [{ name: 'createTime', order: 'desc' }],
                     }"
                     :params="params"
+                    class="pro-table__no-padding"
                 >
                     <template #headerLeftRender>
                         <div class="access-component-list-toolbar">

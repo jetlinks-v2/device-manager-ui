@@ -2,7 +2,7 @@
 <template>
     <j-page-container>
     <FullPage :fixed="false" transparentBackground>
-      <ContentPanel>
+      
         <pro-search
             :columns="columns"
             target="category"
@@ -68,7 +68,7 @@
                 </a-space>
             </template>
         </j-pro-table>
-      </ContentPanel>
+      
     </FullPage>
         <!-- 新增和编辑弹窗 -->
         <ModifyModal
