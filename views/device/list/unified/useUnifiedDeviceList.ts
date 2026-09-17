@@ -7,7 +7,6 @@ import { countDevice_api, queryDevicePage_api, type DeviceLibraryProductFilterOp
 import { queryDeviceLibraryProductFilterOptions_api } from '../../../../api/device-library'
 import { queryRuntimeDevices_api } from '../../../../api/deviceGroup'
 import { buildIotDeviceDetailPath, getIotDeviceListMenuCode, isIotDeviceListEntry, resolveIotProjectId } from '../hooks/useIotDeviceRouting'
-import { IOT_DEVICE_LIST_DEFAULT_PRODUCT_TERM } from '../../../../api/deviceListDefaultTerms'
 import type { DeviceListProvider, UnifiedDevice } from '../../../../deviceListProvider'
 import { useDeviceScope } from '../../../../deviceScope'
 import { decodeConditionFilterQuery, encodeConditionFilterQuery, type ConditionFilterTerm } from '@jetlinks-web-core/components/ConditionFilter'
@@ -23,7 +22,7 @@ export function useUnifiedDeviceList() {
   const refreshKey = ref(0)
   const deviceProvider: DeviceListProvider = {
     id: 'device', label: () => t('UnifiedDeviceList.device'), order: 10, menuCode: getIotDeviceListMenuCode(route),
-    terms: () => [IOT_DEVICE_LIST_DEFAULT_PRODUCT_TERM], matches: () => true,
+    terms: () => [], matches: () => true,
     // 详情继承当前物联或资源中心入口，不能再通过另一个入口的菜单 code 查找。
     detailPath: device => ({
       path: buildIotDeviceDetailPath(resolveIotProjectId(route), device.id, undefined, route),
@@ -35,7 +34,7 @@ export function useUnifiedDeviceList() {
   ) as DeviceListProvider[])
   const providers = computed(() => [deviceProvider, ...extensions].filter(provider => provider.id === 'device' || menu.hasMenu(provider.menuCode)).sort((a, b) => a.order - b.order))
   const isIotEntry = computed(() => isIotDeviceListEntry(route))
-  // 物联入口已合并为设备列表，仅保留普通设备范围，避免路由参数重新切入网关或视频分类。
+  // 物联入口已合并为设备列表，不再由路由参数切换独立分类页面。
   const activeType = computed(() => {
     if (isIotEntry.value) return 'device'
     const requested = route.query.type || (route.path.endsWith('/gateway') ? 'gateway' : route.path.endsWith('/video') ? 'video' : 'all')
@@ -43,7 +42,7 @@ export function useUnifiedDeviceList() {
   })
   const activeProvider = computed(() => providers.value.find(provider => provider.id === activeType.value))
   const allTerms = computed<DeviceQueryTerm[]>(() => providers.value.length ? [{ terms: providers.value.map((provider, index) => ({ type: index ? 'or' : 'and', terms: provider.terms() })) }] : [{ column: 'id', termType: 'in', value: [] }])
-  // 固定条件同时传入分页、状态统计与左侧范围统计，确保物联各处都排除边缘网关和视频设备。
+  // 当前分类条件同时传入分页、状态统计与左侧范围统计，保持各处统计口径一致。
   const baseTerms = computed(() => activeType.value === 'all' ? [] : (activeProvider.value?.terms() || []))
   // 左侧空间/分组统计须与当前设备类型保持同一筛选口径。
   const scope = useDeviceScope(baseTerms, refreshKey)

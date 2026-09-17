@@ -15,10 +15,6 @@ import type {
   DeviceSummaryData,
   DeviceSummaryQuery,
 } from './deviceMonitoring.types'
-import {
-  createIotDeviceScopeTerm,
-  IOT_DEVICE_DASHBOARD_ACCESS_PROVIDERS,
-} from './deviceScope'
 
 type UnknownRecord = Record<string, unknown>
 
@@ -84,7 +80,6 @@ export async function loadDeviceLocationList(
   signal?: AbortSignal,
 ): Promise<DeviceLocationPageData> {
   const terms: UnknownRecord[] = []
-  if (query.scope === 'iot') terms.push(createIotDeviceScopeTerm())
   if (query.state) {
     terms.push({ column: 'state', termType: 'eq', value: query.state })
   }
@@ -123,9 +118,6 @@ export async function loadDeviceRuntimeTrend(
 
   const aggregation = resolveAggregation(startTime, endTime)
   const params = {
-    ...(query.scope === 'iot'
-      ? { accessProvider: IOT_DEVICE_DASHBOARD_ACCESS_PROVIDERS }
-      : {}),
     limit: aggregation.limit,
     from: dayjs(startTime).format('YYYY-MM-DD HH:mm:ss'),
     to: dayjs(endTime).format('YYYY-MM-DD HH:mm:ss'),
@@ -180,7 +172,6 @@ export async function loadDeviceRuntimeTrend(
 
 function createDeviceSummaryTerms(query: DeviceSummaryQuery): UnknownRecord[] {
   const terms: UnknownRecord[] = []
-  if (query.scope === 'iot') terms.push(createIotDeviceScopeTerm())
   if (query.deviceIds) {
     terms.push({ column: 'id', termType: 'in', value: query.deviceIds })
   }

@@ -5,7 +5,6 @@ import {
   collectProductCategoryScopeIds,
   hasAvailableStorePolicy,
   hasMoreDeviceLibraryRows,
-  isSelectableDeviceCreationCandidate,
 } from '../utils/deviceCreationSources.ts'
 
 test('includes all descendants when a product category is selected', () => {
@@ -17,12 +16,6 @@ test('includes all descendants when a product category is selected', () => {
 test('uses raw marketplace page size for device-library hasMore', () => {
   assert.equal(hasMoreDeviceLibraryRows(6, 6), true)
   assert.equal(hasMoreDeviceLibraryRows(5, 6), false)
-})
-
-test('uses the same device candidate exclusion for product and library sources', () => {
-  assert.equal(isSelectableDeviceCreationCandidate({ category: 'sensor', accessProvider: 'mqtt-server-gateway' }), true)
-  assert.equal(isSelectableDeviceCreationCandidate({ category: 'video', accessProvider: 'mqtt-server-gateway' }), false)
-  assert.equal(isSelectableDeviceCreationCandidate({ category: 'sensor', accessProvider: 'official-edge-gateway' }), false)
 })
 
 test('rejects an empty or stale product storage policy before device creation', () => {

@@ -8,8 +8,7 @@ import { getProjectStorage } from '@jetlinks-web-core/utils/project-storage'
 import i18n from '@jetlinks-web-core/locales'
 
 import type { IotDevice, IotDeviceConnectionStatus } from '@device-manager-ui/views/device/list/types'
-import { IOT_DEVICE_LIST_EXCLUDED_ACCESS_PROVIDERS, withIotDeviceListDefaultTerms } from './deviceListDefaultTerms'
-import { isSelectableDeviceCreationCandidate } from '@device-manager-ui/utils/deviceCreationSources'
+import { withIotDeviceListDefaultTerms } from './deviceListDefaultTerms'
 import { queryDeviceBoundGroups_api } from './deviceGroup'
 import { queryDeviceSpaceAreaBindings_api } from './spaceArea'
 import { prepareDeviceQueryTerm } from './deviceQueryTerms'
@@ -273,15 +272,6 @@ const withDeviceTypeTerm = (terms: DeviceQueryTerm[] = [], deviceType?: string) 
     },
   ]
 }
-
-// 新增设备只允许选择普通设备产品；边缘网关、视频设备等走各自业务入口。
-const IOT_DEVICE_PRODUCT_SELECT_DEFAULT_TERMS: DeviceQueryTerm[] = [
-  {
-    column: 'accessProvider',
-    termType: 'nin',
-    value: [...IOT_DEVICE_LIST_EXCLUDED_ACCESS_PROVIDERS],
-  },
-]
 
 const toDevice = (item: DeviceDetailResponse): IotDevice => {
   const state = toEnumValue(item.state)
@@ -736,7 +726,7 @@ export const queryDeviceProducts_api = async (projectId?: string, deviceType?: s
   const runtimeProjectId = firstString(getProjectStorage(projectId)?.id, projectId)
   const response = await request.post(
     '/device/product/_query/no-paging?paging=false',
-    buildNoPagingBody(withDeviceTypeTerm(IOT_DEVICE_PRODUCT_SELECT_DEFAULT_TERMS, deviceType)),
+    buildNoPagingBody(withDeviceTypeTerm([], deviceType)),
   ) as ApiResponse<ProductDetailResponse[]>
   const list = unwrapResult<ProductDetailResponse[]>(response) ?? []
 
@@ -758,7 +748,7 @@ export const queryDeviceProductCategoryTree_api = async (): Promise<TreeNodeResp
 
 /**
  * 新增设备的本地产品候选分页查询。
- * 与设备库候选共用排除边缘网关、视频接入产品的业务过滤，避免筛选路径绕过该限制。
+ * 产品来源不按接入方式过滤，新增设备可选择当前权限范围内的全部启用产品。
  */
 export const queryDeviceProductPage_api = async (
   input: DeviceProductPageQueryInput = {},
@@ -766,7 +756,6 @@ export const queryDeviceProductPage_api = async (
   const pageIndex = Math.max(0, Number(input.pageIndex ?? 0))
   const pageSize = Math.max(1, Number(input.pageSize ?? 6))
   const terms: DeviceQueryTerm[] = [
-    ...IOT_DEVICE_PRODUCT_SELECT_DEFAULT_TERMS,
     // 新增设备沿用原版产品选择逻辑：禁用产品不能用于创建设备。
     { column: 'state', termType: 'eq', value: 1 },
     // 运行时产品查询同样遵循 QueryParamEntity 的 like 语义，手工调用时也不能漏掉两端通配符。
@@ -798,8 +787,7 @@ export const queryDeviceProductPage_api = async (
   return {
     data: (page.data ?? [])
       .map(toProductTemplate)
-      // 旧产品数据也必须经过与设备库一致的本地候选限制。
-      .filter((product) => Boolean(product.id) && isSelectableDeviceCreationCandidate(product)),
+      .filter((product) => Boolean(product.id)),
     total: Number(page.total ?? 0),
     pageIndex: Number(page.pageIndex ?? pageIndex),
     // 分页大小由弹窗布局决定，不能被服务端异常的回显值（例如 1）覆盖。
@@ -826,7 +814,7 @@ export const queryDeviceGatewayById_api = async (accessId: string): Promise<Devi
 
 export const queryDeviceTemplates_api = async (deviceType?: string): Promise<DeviceTemplateProductInput[]> => {
   const response = await request.post('/device/template/_query/no-paging?paging=false', buildNoPagingBody([
-    ...withDeviceTypeTerm(IOT_DEVICE_PRODUCT_SELECT_DEFAULT_TERMS, deviceType),
+    ...withDeviceTypeTerm([], deviceType),
     {
       column: 'state',
       termType: 'eq',

@@ -41,8 +41,8 @@
 					    <span>{{ t('IotDeviceList.toolbar.selected', { selected: selectedIds.length }) }}</span>
 					    <component v-if="activeProvider?.batchComponent" :is="activeProvider.batchComponent" :devices="rows" :selected-ids="selectedIds" @changed="handleBatchChanged" />
 					    <template v-else>
-						    <a-button :disabled="!selectedIds.length || busy || !selected.every(device => allowed(device, 'enable'))" @click="batchToggle('enable')">{{ t('IotDeviceList.action.batchEnable') }}</a-button>
-						    <a-button :disabled="!selectedIds.length || busy || !selected.every(device => allowed(device, 'disable'))" @click="batchToggle('disable')">{{ t('IotDeviceList.action.batchDisable') }}</a-button>
+					    <a-button :disabled="!selectedIds.length || busy" @click="batchToggle('enable')">{{ t('IotDeviceList.action.batchEnable') }}</a-button>
+					    <a-button :disabled="!selectedIds.length || busy" @click="batchToggle('disable')">{{ t('IotDeviceList.action.batchDisable') }}</a-button>
 					    </template>
 					    <a-button :disabled="!selectedIds.length || busy" @click="assignAreaOpen = true">{{ t('IotDeviceList.action.assignArea') }}</a-button>
 					    <a-button :disabled="!selectedIds.length || busy" @click="assignGroupOpen = true">{{ t('IotDeviceList.action.assignGroup') }}</a-button>
