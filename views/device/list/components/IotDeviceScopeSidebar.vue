@@ -184,4 +184,18 @@ const { scopeType, scopeId, scopeOptions, hasScopes, treeData, select, onSelect,
 .iot-device-scope__create-group {
   margin-top: var(--space-1);
 }
+.iot-device-scope__tabs.ant-segmented {
+	background: #F9FBFD;
+	border: 1px solid var(--jet-theme-border-color-1);
+	border-radius: var(--r-1);
+	padding: 0;
+}
+
+.iot-device-scope__tabs :deep(.ant-segmented-item-selected) {
+	box-shadow: none;
+}
+.iot-device-scope__tabs :deep(.ant-segmented-item-label) {
+	min-height: 2rem;
+	line-height: 2rem;
+}
 </style>

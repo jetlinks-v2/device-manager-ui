@@ -4,16 +4,15 @@
 
 .overview-dashboard {
   overflow: hidden;
-  border: 0.0625rem solid var(--jet-theme-border-secondary);
-  border-radius: var(--jet-theme-radius);
-  background: var(--jet-theme-bg-container);
+  display: grid;
+  gap: var(--space-4);
 }
 
 .overview-stat-strip {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
   min-height: 7.125rem;
-  border-bottom: 0.0625rem solid var(--jet-theme-border-secondary);
 }
 
 .overview-stat {
@@ -24,7 +23,8 @@
   gap: 0.25rem 1rem;
   min-width: 0;
   padding: 1.25rem 1.5rem 1.125rem;
-  border-right: 0.0625rem solid color-mix(in srgb, var(--jet-theme-border-secondary) 82%, transparent);
+  border-radius: var(--r-2);
+  border: 1px solid var(--jet-theme-border-color-1);
 }
 
 .overview-stat:last-child {
@@ -109,26 +109,30 @@
 .overview-main-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.42fr) minmax(24rem, 1fr);
+  gap: var(--space-4);
 }
 
 .overview-panel {
   min-width: 0;
   padding: var(--space-4);
-  background: var(--jet-theme-bg-container);
 }
 
 .overview-panel--trend {
   min-height: 20.375rem;
-  border-bottom: 0.0625rem solid var(--jet-theme-border-secondary);
+  border: 1px solid var(--jet-theme-border-color-1);
+  border-radius: var(--r-2);
 }
 
 .overview-panel--properties {
   min-height: 20.375rem;
-  border-right: 0.0625rem solid var(--jet-theme-border-secondary);
+  border: 1px solid var(--jet-theme-border-color-1);
+  border-radius: var(--r-2);
 }
 
 .overview-panel--alerts {
   min-height: 20.375rem;
+  border: 1px solid var(--jet-theme-border-color-1);
+  border-radius: var(--r-2);
 }
 
 .overview-panel__head {
