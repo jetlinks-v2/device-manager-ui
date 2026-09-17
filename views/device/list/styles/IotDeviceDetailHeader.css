@@ -117,6 +117,22 @@
   white-space: nowrap;
 }
 
+.dd-summary-value--action {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.dd-summary-value--action:not(:disabled):hover {
+  color: var(--primary-color);
+}
+
+.dd-summary-value--action:disabled {
+  cursor: default;
+}
+
 .dd-summary-row--tags {
   grid-column: 1 / -1;
   align-items: flex-start;

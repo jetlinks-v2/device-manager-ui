@@ -1,8 +1,9 @@
 import { computed, nextTick, onMounted, onScopeDispose, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
-import { useMenuStore } from '@jetlinks-web-core/store'
+import { useAuthStore, useMenuStore } from '@jetlinks-web-core/store'
 import { EventEmitter, onlyMessage } from '@jetlinks-web/utils'
+import useClipboard from 'vue-clipboard3'
 import {
   deleteDevice_api,
   deployDevice_api,
@@ -86,8 +87,10 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
 
   const route = useRoute()
   const deviceMenu = useMenuStore()
+  const auth = useAuthStore()
   const router = useRouter()
   const { t: $t } = useI18n()
+  const { toClipboard } = useClipboard()
 
   const projectId = computed(() => resolveIotProjectId(route))
   const deviceId = computed(() => props.embedded?.deviceId ?? String(route.params.deviceId ?? route.params.id))
@@ -295,6 +298,22 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
       path: buildIotDeviceListPath(projectId.value, route),
       query: route.query,
     })
+  }
+
+  const canOpenProductDetail = computed(() => Boolean(
+    device.value?.productId || device.value?.productKey,
+  ) && auth.hasPermission('device/Product:view'))
+
+  async function copyDeviceId() {
+    if (!device.value?.id) return
+    await toClipboard(device.value.id)
+    onlyMessage($t('IotDeviceDetail.accessDetail.copied'))
+  }
+
+  function openProductDetail() {
+    const productId = device.value?.productId || device.value?.productKey
+    if (!productId || !canOpenProductDetail.value) return
+    deviceMenu.jumpPage('device/Product/Detail', { params: { id: productId } })
   }
 
   async function onDeviceSaved() {
@@ -1580,14 +1599,17 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
     editDrawerOpen,
     actionBusyId,
     actionKind,
+    canOpenProductDetail,
     accessDetailRef,
     activeTab,
     setActiveTab,
     setInnerTab,
     openEditDrawer,
+    openProductDetail,
     backToDeviceList,
     onDeviceSaved,
     toggleDeviceEnabled,
+    copyDeviceId,
     confirmDeleteDevice,
     deviceNameText,
     deviceSnText,

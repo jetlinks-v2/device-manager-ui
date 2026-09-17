@@ -16,14 +16,21 @@
           <div class="dd-summary-line">
             <div class="dd-summary-row dd-summary-row--id">
               <span class="dd-summary-label">{{ $t('IotDeviceDetail.detail.deviceId') }}</span>
-              <a-tooltip :title="deviceSnText">
-                <span class="dd-summary-value">{{ deviceSnText }}</span>
+              <a-tooltip :title="$t('IotDeviceDetail.detail.copyDeviceId')">
+                <button class="dd-summary-value dd-summary-value--action" type="button" @click="copyDeviceId">
+                  {{ deviceSnText }}
+                </button>
               </a-tooltip>
             </div>
             <div class="dd-summary-row">
               <span class="dd-summary-label">{{ $t('IotDeviceDetail.detail.product') }}</span>
               <a-tooltip :title="productNameText">
-                <span class="dd-summary-value">{{ productNameText }}</span>
+                <button
+                  class="dd-summary-value dd-summary-value--action"
+                  type="button"
+                  :disabled="!canOpenProductDetail"
+                  @click="openProductDetail"
+                >{{ productNameText }}</button>
               </a-tooltip>
             </div>
             <div class="dd-summary-row">
@@ -153,7 +160,10 @@ type ViewState = Pick<IotDeviceDetailViewState,
   'tagsOverflow' |
   'actionBusyId' |
   'actionKind' |
+  'canOpenProductDetail' |
+  'copyDeviceId' |
   'openEditDrawer' |
+  'openProductDetail' |
   'toggleDeviceEnabled' |
   'confirmDeleteDevice' |
   'deviceNameText' |
@@ -186,7 +196,10 @@ const {
   tagsOverflow,
   actionBusyId,
   actionKind,
+  canOpenProductDetail,
+  copyDeviceId,
   openEditDrawer,
+  openProductDetail,
   toggleDeviceEnabled,
   confirmDeleteDevice,
   deviceNameText,
