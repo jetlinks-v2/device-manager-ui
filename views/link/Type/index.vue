@@ -2,73 +2,77 @@
   <j-page-container>
     <div>
       <FullPage>
-        <j-pro-table
-            ref="tableRef"
-            :columns="columns"
-            :gridColumn="3"
-            :request="query"
-            :defaultParams="{
+        
+	        <j-pro-table
+		        ref="tableRef"
+		        :columns="columns"
+		        :gridColumn="3"
+		        :request="query"
+		        :defaultParams="{
                         sorts: [{ name: 'createTime', order: 'desc' }],
                     }"
-            :params="params"
-            modeValue="CARD"
-        >
-          <template #headerLeftRender>
-            <div class="access-component-list-toolbar">
-              <h2 class="access-component-list-title">
-                {{ $t('AccessComponent.listTitle.network') }}
-              </h2>
-              <ConditionFilter
-                  class="access-component-list-search"
-                  :columns="columns"
-                  target="search-type"
-                  @search="handleSearch"
-              />
-            </div>
-          </template>
-          <template #headerRightRender>
-            <j-permission-button
-                type="primary"
-                @click="handleAdd"
-                hasPermission="link/Type:add"
-            >
-              <template #icon
-              >
-                <AIcon type="PlusOutlined"
-                />
-              </template>
-              {{ $t('Type.index.196842-0') }}
-            </j-permission-button>
-          </template>
-          <template #card="slotProps">
-            <CardBox
-                :showStatus="true"
-                :value="slotProps"
-                :actions="getActions(slotProps, 'card')"
-                v-bind="slotProps"
-                :status="slotProps.state.value"
-                :statusText="slotProps.state.text"
-                :statusNames="{
+		        :params="params"
+		        modeValue="CARD"
+		        class="pro-table__no-padding"
+	        >
+		        <template #headerLeftRender>
+			        <div class="access-component-list-toolbar">
+				        <h2 class="access-component-list-title">
+					        {{ $t('AccessComponent.listTitle.network') }}
+				        </h2>
+			        </div>
+		        </template>
+		        <template #headerRightRender>
+			        <a-flex :gap="16">
+				        <ConditionFilter
+					        class="access-component-list-search"
+					        :columns="columns"
+					        target="search-type"
+					        @search="handleSearch"
+				        />
+				        <j-permission-button
+					        type="primary"
+					        @click="handleAdd"
+					        hasPermission="link/Type:add"
+				        >
+					        <template #icon
+					        >
+						        <AIcon type="PlusOutlined"
+						        />
+					        </template>
+					        {{ $t('Type.index.196842-0') }}
+				        </j-permission-button>
+			        </a-flex>
+		        </template>
+		        <template #card="slotProps">
+			        <CardBox
+				        :showStatus="true"
+				        :value="slotProps"
+				        :actions="getActions(slotProps, 'card')"
+				        v-bind="slotProps"
+				        :status="slotProps.state.value"
+				        :statusText="slotProps.state.text"
+				        :statusNames="{
                                 enabled: 'processing',
                                 disabled: 'error',
                             }"
-                @click="handleEye(slotProps.id)"
-            >
-              <template #img>
-                <slot name="img">
-                  <img :src="network.icon"/>
-                </slot>
-              </template>
-              <template #content>
-                <div class="card-item-content">
-                  <j-ellipsis
-                      style="
+				        @click="handleEye(slotProps.id)"
+			        >
+				        <template #img>
+					        <slot name="img">
+						        <img :src="network.icon"/>
+					        </slot>
+				        </template>
+				        <template #content>
+					        <div class="card-item-content">
+						        <j-ellipsis
+							        style="
                                             width: calc(100% - 100px);
                                             margin-bottom: 20px;
                                         "
-                  >
+						        >
                                         <span
-                                            style="
+	                                        style="
                                                 font-size: 18px;
                                                 font-weight: 800;
                                                 line-height: 22px;
@@ -76,123 +80,124 @@
                                         >
                                             {{ getI18nText(slotProps, 'name') }}
                                         </span>
-                  </j-ellipsis>
-                  <a-row class="card-item-content-box">
-                    <a-col :span="8">
-                      <div
-                          class="card-item-content-text-title"
-                      >
-                        {{ $t('Type.index.196842-1') }}
-                      </div>
-                      <div class="card-item-content-text">
-                        <a-tooltip>
-                          <template #title>{{
-                              slotProps.type
-                            }}
-                          </template>
-                          {{ slotProps.type }}
-                        </a-tooltip>
-                      </div>
-                    </a-col>
-
-                    <a-col :span="16">
-                      <div
-                          class="card-item-content-text-title"
-                      >
-                        {{ $t('Type.index.196842-2') }}
-                      </div>
-                      <div class="card-item-content-text">
-                        <a-tooltip>
-                          <template #title>{{
-                              getDetails(slotProps)
-                            }}
-                          </template>
-                          {{ getDetails(slotProps) }}
-                        </a-tooltip>
-                      </div>
-                    </a-col>
-                  </a-row>
-                </div>
-              </template>
-              <template #actions="item">
-                <j-permission-button
-                    :disabled="item.disabled"
-                    :popConfirm="item.popConfirm"
-                    :tooltip="{
+						        </j-ellipsis>
+						        <a-row class="card-item-content-box">
+							        <a-col :span="8">
+								        <div
+									        class="card-item-content-text-title"
+								        >
+									        {{ $t('Type.index.196842-1') }}
+								        </div>
+								        <div class="card-item-content-text">
+									        <a-tooltip>
+										        <template #title>{{
+												        slotProps.type
+											        }}
+										        </template>
+										        {{ slotProps.type }}
+									        </a-tooltip>
+								        </div>
+							        </a-col>
+							        
+							        <a-col :span="16">
+								        <div
+									        class="card-item-content-text-title"
+								        >
+									        {{ $t('Type.index.196842-2') }}
+								        </div>
+								        <div class="card-item-content-text">
+									        <a-tooltip>
+										        <template #title>{{
+												        getDetails(slotProps)
+											        }}
+										        </template>
+										        {{ getDetails(slotProps) }}
+									        </a-tooltip>
+								        </div>
+							        </a-col>
+						        </a-row>
+					        </div>
+				        </template>
+				        <template #actions="item">
+					        <j-permission-button
+						        :disabled="item.disabled"
+						        :popConfirm="item.popConfirm"
+						        :tooltip="{
                                         ...item.tooltip,
                                     }"
-                    @click="item.onClick"
-                    :hasPermission="'link/Type:' + item.key"
-                >
-                  <AIcon
-                      type="DeleteOutlined"
-                      v-if="item.key === 'delete'"
-                  />
-                  <template v-else>
-                    <AIcon :type="item.icon"/>
-                    <span>{{ item?.text }}</span>
-                  </template>
-                </j-permission-button>
-              </template>
-            </CardBox>
-          </template>
-          <template #action="slotProps">
-            <a-space :size="16">
-              <template
-                  v-for="i in getActions(slotProps, 'table')"
-                  :key="i.key"
-              >
-                <j-permission-button
-                    :disabled="i.disabled"
-                    :popConfirm="i.popConfirm"
-                    :tooltip="{
+						        @click="item.onClick"
+						        :hasPermission="'link/Type:' + item.key"
+					        >
+						        <AIcon
+							        type="DeleteOutlined"
+							        v-if="item.key === 'delete'"
+						        />
+						        <template v-else>
+							        <AIcon :type="item.icon"/>
+							        <span>{{ item?.text }}</span>
+						        </template>
+					        </j-permission-button>
+				        </template>
+			        </CardBox>
+		        </template>
+		        <template #action="slotProps">
+			        <a-space :size="16">
+				        <template
+					        v-for="i in getActions(slotProps, 'table')"
+					        :key="i.key"
+				        >
+					        <j-permission-button
+						        :disabled="i.disabled"
+						        :popConfirm="i.popConfirm"
+						        :tooltip="{
                                         ...i.tooltip,
                                     }"
-                    style="padding: 0px"
-                    type="link"
-                    :danger="i.key === 'delete'"
-                    :hasPermission="'link/Type:' + i.key"
-                    @click="i.onClick"
-                >
-                  <template #icon
-                  >
-                    <AIcon :type="i.icon"
-                    />
-                  </template>
-                </j-permission-button>
-              </template>
-            </a-space>
-          </template>
-          <template #state="slotProps">
-            <j-badge-status
-                :text="slotProps.state.text"
-                :status="slotProps.state.value"
-                :statusNames="{
+						        style="padding: 0px"
+						        type="link"
+						        :danger="i.key === 'delete'"
+						        :hasPermission="'link/Type:' + i.key"
+						        @click="i.onClick"
+					        >
+						        <template #icon
+						        >
+							        <AIcon :type="i.icon"
+							        />
+						        </template>
+					        </j-permission-button>
+				        </template>
+			        </a-space>
+		        </template>
+		        <template #state="slotProps">
+			        <j-badge-status
+				        :text="slotProps.state.text"
+				        :status="slotProps.state.value"
+				        :statusNames="{
                                 enabled: 'processing',
                                 disabled: 'error',
                             }"
-            ></j-badge-status>
-          </template>
-          <template #name="slotProps">
-            {{ getI18nText(slotProps, 'name') }}
-          </template>
-          <template #description="slotProps">
-            {{ getI18nText(slotProps, 'description') }}
-          </template>
-          <template #shareCluster="slotProps">
-            {{
-              slotProps.shareCluster === true
-                  ? $t('Type.index.196842-3')
-                  : $t('Type.index.196842-4')
-            }}
-          </template>
-          <template #type="slotProps">
-            {{ slotProps.typeObject.name }}
-          </template>
-          <template #details="slotProps">
-            {{ getDetails(slotProps) }}
-          </template>
-        </j-pro-table>
+			        ></j-badge-status>
+		        </template>
+		        <template #name="slotProps">
+			        {{ getI18nText(slotProps, 'name') }}
+		        </template>
+		        <template #description="slotProps">
+			        {{ getI18nText(slotProps, 'description') }}
+		        </template>
+		        <template #shareCluster="slotProps">
+			        {{
+				        slotProps.shareCluster === true
+					        ? $t('Type.index.196842-3')
+					        : $t('Type.index.196842-4')
+			        }}
+		        </template>
+		        <template #type="slotProps">
+			        {{ slotProps.typeObject.name }}
+		        </template>
+		        <template #details="slotProps">
+			        {{ getDetails(slotProps) }}
+		        </template>
+	        </j-pro-table>
+        
       </FullPage>
     </div>
   </j-page-container>

@@ -1,6 +1,6 @@
 <template>
   <j-page-container>
-    <FullPage :fixed="false" style="padding: 24px">
+    <FullPage :fixed="false">
       <div class="container">
         <a-form
           :model="formData"

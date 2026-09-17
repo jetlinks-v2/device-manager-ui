@@ -1,7 +1,7 @@
 <template>
   <j-page-container class="product-page">
     <FullPage transparentBackground>
-    <ContentPanel class="product-page__main">
+    <div class="product-page__main">
 	    <EqualHeightColumns class="product-page__layout" left-width="15rem" right-width="1fr">
 		      <template #left>
 			      <ProductCategoryTree
@@ -123,7 +123,7 @@
 				      </JProTable>
 		      </template>
 	    </EqualHeightColumns>
-			      </ContentPanel>
+			      </div>
     </FullPage>
     <Save ref="saveRef" :isAdd="isAdd" :title="title" @success="refresh" />
     <ModifyModal

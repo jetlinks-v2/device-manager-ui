@@ -1,6 +1,6 @@
 <template>
   <FullPage flex transparent-background>
-    <ContentPanel class="device-batch-page">
+    <div class="device-batch-page">
       <a-flex align="center" :gap="16" class="device-batch-page__header">
         <a-button type="link" @click="back"><AIcon type="ArrowLeftOutlined" />{{ t('UnifiedDeviceList.title') }}</a-button>
         <strong>{{ t('UnifiedDeviceList.batch') }}</strong>
@@ -16,7 +16,7 @@
         />
       </KeepAlive>
       <CloudEmpty v-if="!active?.component" :description="t('UnifiedDeviceList.noBatchAccess')" />
-    </ContentPanel>
+    </div>
   </FullPage>
 </template>
 <script setup lang="ts">

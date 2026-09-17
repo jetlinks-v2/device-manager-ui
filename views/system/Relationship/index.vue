@@ -2,7 +2,7 @@
   <j-page-container>
 	  <div class="relationship-container">
 	    <FullPage :fixed="false" hasPadding transparentBackground>
-	      <ContentPanel>
+	      
 	        
 	        <j-pro-table
 	          ref="tableRef"
@@ -63,7 +63,7 @@
 	          </template>
 	        </j-pro-table>
 	        
-	      </ContentPanel>
+	      
 	    </FullPage>
       <EditDialog
         v-if="dialog.visible"

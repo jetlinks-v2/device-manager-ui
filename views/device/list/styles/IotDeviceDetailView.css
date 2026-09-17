@@ -8,7 +8,6 @@
 
 .iot-device-detail__back.ant-btn {
   height: auto;
-  margin-bottom: var(--space-3);
   padding: 0;
   color: var(--jet-theme-text-secondary);
 }

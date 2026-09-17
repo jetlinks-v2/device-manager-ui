@@ -46,10 +46,12 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
   const total = ref(0)
   const pageIndex = ref(0)
   const pageSize = ref(10)
-  const refreshKey = ref(0)
+  // 搜索必须回到第一页；编辑/删除只重取已加载页范围，两个信号分开避免丢失滚动上下文。
+  const searchKey = ref(0)
+  const reloadKey = ref(0)
   const ruleSearch = useDeviceAlarmRuleSearch(() => {
     pageIndex.value = 0
-    refreshKey.value += 1
+    searchKey.value += 1
   })
   const targetOptions = ref<DeviceAlarmTargetOption[]>([])
   const propertyOptions = ref<ThingModelProperty[]>([])
@@ -73,11 +75,6 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
     { label: t('DeviceAlarm.trigger.outside'), value: 'outside' },
     { label: t('DeviceAlarm.trigger.inside'), value: 'inside' },
   ])
-
-  const tableParams = computed(() => ({
-    refreshKey: refreshKey.value,
-    filterKey: JSON.stringify(ruleSearch.terms.value),
-  }))
 
   async function loadTargets(source?: DeviceAlarmSource) {
     const sources: DeviceAlarmSource[] = source ? [source] : ['product', 'device']
@@ -109,13 +106,35 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
   }
 
   async function refresh() {
-    refreshKey.value += 1
+    reloadKey.value += 1
   }
 
   let requestSequence = 0
   onBeforeUnmount(() => { requestSequence += 1 })
 
-  async function tableRequest(params: { pageIndex?: number; pageSize?: number }, extraTerms: Record<string, unknown>[] = []) {
+  /** 只读请求单页规则，是否替换或追加列表由调用方决定。 */
+  async function fetchRulePage(index: number, size: number) {
+    const query = buildPageQuery(index, size)
+    const page = await queryDeviceAlarmPage({ ...query, terms: [{ terms: query.terms }] })
+    const data = page.data
+      .map(toDeviceAlarmPageRow)
+      .filter((item): item is DeviceAlarmRow => Boolean(item))
+    return { data, total: page.total }
+  }
+
+  function mergeRuleRows(pages: DeviceAlarmRow[][]) {
+    const seen = new Set<string>()
+    const merged: DeviceAlarmRow[] = []
+    pages.forEach(rows => rows.forEach((row) => {
+      // 偏移分页在增删期间可能重复返回同一条规则，按稳定 key 去重。
+      if (seen.has(row.key)) return
+      seen.add(row.key)
+      merged.push(row)
+    }))
+    return merged
+  }
+
+  async function tableRequest(params: { pageIndex?: number; pageSize?: number }) {
     const sequence = ++requestSequence
     const nextPageIndex = Number(params.pageIndex ?? pageIndex.value)
     const nextPageSize = Number(params.pageSize ?? pageSize.value)
@@ -124,20 +143,51 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
     loading.value = true
     try {
       await loadAlarmLevels()
-      const query = buildPageQuery(nextPageIndex, nextPageSize)
-      const page = await queryDeviceAlarmPage({ ...query, terms: [{ terms: query.terms }, ...extraTerms] })
-      const data = page.data
-        .map(toDeviceAlarmPageRow)
-        .filter((item): item is DeviceAlarmRow => Boolean(item))
+      const page = await fetchRulePage(nextPageIndex, nextPageSize)
       // 搜索与分页可能交错返回，仅最新请求更新列表和总数。
       if (sequence === requestSequence) {
-        rows.value = data
+        rows.value = page.data
         total.value = page.total
       }
       return {
         success: true,
-        result: { data, total: page.total, pageIndex: nextPageIndex, pageSize: nextPageSize },
+        result: { data: page.data, total: page.total, pageIndex: nextPageIndex, pageSize: nextPageSize },
       }
+    } finally {
+      if (sequence === requestSequence) loading.value = false
+    }
+  }
+
+  /** 滚动加载：追加下一页，返回本次真正新增的规则用于增量查询告警数量。 */
+  async function appendRulePage() {
+    const nextPageIndex = pageIndex.value + 1
+    const sequence = ++requestSequence
+    const page = await fetchRulePage(nextPageIndex, pageSize.value)
+    if (sequence !== requestSequence) return { data: [] as DeviceAlarmRow[], received: 0, stale: true }
+    const loaded = new Set(rows.value.map(row => row.key))
+    const data = page.data.filter(row => !loaded.has(row.key))
+    rows.value = [...rows.value, ...data]
+    pageIndex.value = nextPageIndex
+    total.value = page.total
+    return { data, received: page.data.length, stale: false }
+  }
+
+  /** 编辑/删除后重取已加载页范围，避免列表回退到第一页丢失滚动上下文。 */
+  async function reloadRuleRange() {
+    const pages = pageIndex.value + 1
+    const sequence = ++requestSequence
+    loading.value = true
+    try {
+      await loadAlarmLevels()
+      const results: Awaited<ReturnType<typeof fetchRulePage>>[] = []
+      // 顺序请求，避免一次性打满服务端；页数等于用户已滚动加载的深度。
+      for (let index = 0; index < pages; index += 1) {
+        results.push(await fetchRulePage(index, pageSize.value))
+      }
+      if (sequence !== requestSequence) return { stale: true }
+      rows.value = mergeRuleRows(results.map(result => result.data))
+      total.value = results[results.length - 1]?.total ?? total.value
+      return { stale: false }
     } finally {
       if (sequence === requestSequence) loading.value = false
     }
@@ -411,7 +461,8 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
     pageSize,
     buildPageQuery,
     total,
-    tableParams,
+    searchKey,
+    reloadKey,
     keyword: ruleSearch.keyword,
     levelOptions,
     triggerOptions,
@@ -428,6 +479,8 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
     form,
     refresh,
     tableRequest,
+    appendRulePage,
+    reloadRuleRange,
     formatTriggerText,
     updateKeyword: ruleSearch.updateKeyword,
     handleSearch: ruleSearch.submit,

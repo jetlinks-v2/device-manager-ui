@@ -11,6 +11,7 @@
                     }"
                     :params="params"
                     modeValue="CARD"
+                    class="pro-table__no-padding"
                 >
                     <template #headerLeftRender>
                         <div class="access-component-list-toolbar">

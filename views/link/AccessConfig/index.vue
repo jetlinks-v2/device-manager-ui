@@ -13,6 +13,7 @@
                     gridColumn="2"
                     :gridColumns="[1, 2]"
                     :params="params"
+                    class="pro-table__no-padding"
                 >
                     <template #headerLeftRender>
                         <div class="access-component-list-toolbar">

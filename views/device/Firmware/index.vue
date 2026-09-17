@@ -11,6 +11,7 @@
                         sorts: [{ name: 'createTime', order: 'desc' }],
                     }"
                     :params="params"
+                    class="pro-table__no-padding"
                 >
                     <template #headerLeftRender>
                         <a-flex :gap="16" align="center">

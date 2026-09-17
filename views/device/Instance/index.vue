@@ -1,7 +1,7 @@
 <template>
     <j-page-container>
     <FullPage transparentBackground>
-      <ContentPanel>
+      
         <pro-search
             :columns="columns"
             target="device-instance"
@@ -190,7 +190,7 @@
                 </a-space>
             </template>
         </JProTable>
-      </ContentPanel>
+      
     </FullPage>
     </j-page-container>
     <Import
