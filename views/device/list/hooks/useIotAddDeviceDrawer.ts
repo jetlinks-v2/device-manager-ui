@@ -32,7 +32,6 @@ import { saveIotDeviceAreaGroupBindings } from './iotDeviceAreaGroupBindings'
 import { useIotDeviceImageUpload } from './useIotDeviceImageUpload'
 import {
   collectProductCategoryScopeIds,
-  isSelectableDeviceCreationCandidate,
 } from '@device-manager-ui/utils/deviceCreationSources'
 import { useMenuStore } from '@jetlinks-web-core/store'
 
@@ -276,7 +275,7 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
         tags: libraryTags.value, deviceType: props.deviceType,
       })
       if (requestSequence !== libraryRequestSequence || !props.open) return
-      libraryTemplates.value = page.data.filter(isSelectableDeviceCreationCandidate)
+      libraryTemplates.value = page.data
       libraryPageIndex.value = page.pageIndex
       libraryPageSize.value = page.pageSize
       libraryHasMore.value = page.hasMore

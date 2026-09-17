@@ -35,6 +35,13 @@
             v-else-if="getTagType(record) === 'geoPoint'"
             v-model:point="record.value"
           />
+          <a-time-picker
+            v-else-if="isTimeOnlyTag(record)"
+            v-model:value="record.value"
+            format="HH:mm:ss"
+            value-format="HH:mm:ss"
+            style="width: 100%"
+          />
           <j-value-item
             v-else
             v-model:modelValue="record.value"
@@ -63,6 +70,8 @@ type TagRecord = Record<string, any>
 type TagEditorRow = TagRecord & {
   valueType: TagRecord
 }
+
+const TIME_ONLY_DATE_FORMAT = 'HH:mm:ss'
 
 const props = defineProps<{
   open: boolean
@@ -108,6 +117,14 @@ function getTagType(tag: TagRecord) {
   return String(tag.dataType?.type || tag.type || 'string')
 }
 
+function getTagDateFormat(tag: TagRecord) {
+  return String(tag.dataType?.format || tag.format || '').trim()
+}
+
+function isTimeOnlyTag(tag: TagRecord) {
+  return getTagType(tag) === 'date' && getTagDateFormat(tag) === TIME_ONLY_DATE_FORMAT
+}
+
 function getEditorType(tag: TagRecord) {
   const type = getTagType(tag)
   return type === 'array' ? 'object' : type === 'file' ? 'string' : type
@@ -147,10 +164,23 @@ function parseJsonEditorValue(value: unknown) {
   }
 }
 
+/**
+ * 时间型日期标签只表达每日时刻；优先使用接口格式化值，避免将时间戳误带入日期选择。
+ */
+function normalizeTimeOnlyValue(value: unknown): string | undefined {
+  if (value === undefined || value === null || value === '') return undefined
+  const text = String(value).trim()
+  if (/^\d{2}:\d{2}:\d{2}$/.test(text)) return text
+  const date = dayjs(value)
+  return date.isValid() ? date.format(TIME_ONLY_DATE_FORMAT) : undefined
+}
+
 function resetRows() {
   rows.value = props.tags.map((tag) => {
     const type = getTagType(tag)
-    const value = tag.value ?? tag.formatValue ?? undefined
+    const value = isTimeOnlyTag(tag)
+      ? normalizeTimeOnlyValue(tag.formatValue ?? tag.value)
+      : tag.value ?? tag.formatValue ?? undefined
     return {
       ...tag,
       value: ['object', 'array'].includes(type) ? parseJsonEditorValue(value) : value,
@@ -174,7 +204,9 @@ function submit() {
     return {
       ...tag,
       value: type === 'date' && row.value
-        ? dayjs(row.value).format('YYYY-MM-DD HH:mm:ss')
+        ? isTimeOnlyTag(row)
+          ? row.value
+          : dayjs(row.value).format('YYYY-MM-DD HH:mm:ss')
         : normalizeTagValue(type, row.value),
     }
   }))

@@ -3,21 +3,6 @@ export type DeviceCreationCategoryNode = {
   children?: DeviceCreationCategoryNode[]
 }
 
-const excludedAccessProviders = new Set([
-  'agent-device-gateway',
-  'agent-media-device-gateway',
-  'official-edge-gateway',
-  'fixed-media',
-  'gb28181-2016',
-  'media-plugin',
-  'onvif',
-])
-
-/** 两种来源共用的候选限制：边缘网关和视频设备必须从各自业务入口创建。 */
-export function isSelectableDeviceCreationCandidate(candidate: { category?: string; accessProvider?: string }): boolean {
-  return candidate.category !== 'video' && !excludedAccessProviders.has(String(candidate.accessProvider || ''))
-}
-
 /** 分类树选择父节点时需要将所有后代作为同一个产品查询范围。 */
 export function collectProductCategoryScopeIds(nodes: DeviceCreationCategoryNode[], id: string): string[] {
   const collect = (node: DeviceCreationCategoryNode): string[] => [node.id, ...(node.children ?? []).flatMap(collect)]

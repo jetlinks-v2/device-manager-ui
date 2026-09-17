@@ -1,7 +1,6 @@
 import { request } from '@jetlinks-web/core'
 import { restoreDeviceLibraryAlarms_api } from '@device-manager-ui/api/device-library'
 import {
-  IOT_DEVICE_LIST_EXCLUDED_ACCESS_PROVIDERS,
   withIotDeviceListDefaultTerms,
 } from '@device-manager-ui/api/deviceListDefaultTerms'
 import { localizeDeviceLibraryPreprocessors, resolveI18nText } from './deviceLibraryI18n'
@@ -150,14 +149,7 @@ export async function queryAlarmTargetPage(
       pageIndex,
       pageSize,
       sorts: [{ name: 'createTime', order: 'desc' }],
-      terms: [
-        {
-          column: 'accessProvider',
-          termType: 'nin',
-          value: [...IOT_DEVICE_LIST_EXCLUDED_ACCESS_PROVIDERS],
-        },
-        ...terms,
-      ],
+      terms,
     }))
     const page = normalizeAlarmTargetPage(result, pageIndex, pageSize)
     return {

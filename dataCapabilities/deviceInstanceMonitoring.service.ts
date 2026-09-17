@@ -13,7 +13,6 @@ import type {
   DeviceStateBatchQuery,
   DeviceStateRow,
 } from './deviceInstanceMonitoring.types'
-import { createIotDeviceScopeTerm } from './deviceScope'
 
 type UnknownRecord = Record<string, unknown>
 
@@ -55,7 +54,6 @@ export async function loadDeviceDetailPage(
   signal?: AbortSignal,
 ): Promise<DeviceDetailPageData> {
   const terms: UnknownRecord[] = []
-  if (query.scope === 'iot') terms.push(createIotDeviceScopeTerm())
   if (query.state) {
     terms.push({ column: 'state', termType: 'eq', value: query.state })
   }

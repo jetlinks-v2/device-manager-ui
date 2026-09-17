@@ -14,7 +14,6 @@ import type {
   DeviceGroupSummaryBatchQuery,
   DeviceGroupSummaryRow,
 } from './deviceGroupMonitoring.types'
-import { createIotDeviceScopeTerm } from './deviceScope'
 
 type UnknownRecord = Record<string, unknown>
 
@@ -98,7 +97,6 @@ export async function loadDeviceGroupDevices(
 function createGroupDeviceTerms(groupId: string): UnknownRecord[] {
   return [
     { column: 'id', termType: 'dev-group-tree', value: groupId },
-    createIotDeviceScopeTerm(),
   ]
 }
 

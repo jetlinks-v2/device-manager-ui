@@ -35,10 +35,12 @@ export function resolveIotProjectId(route: IotRouteLike, fallback = 'doraemon') 
 }
 
 export function buildIotDeviceListPath(projectId: string, route?: IotRouteLike) {
-  // 资源中心与物联应用使用不同的菜单根路径，详情必须挂在当前入口对应的列表子路由下。
+  // 资源中心根列表和隐藏的设备子菜单各自拥有详情子路由，跳转必须保留当前入口。
   return route?.path?.startsWith('/iot-center/')
     ? '/iot-center/device/list'
-    : '/resources/devices/list/device'
+    : route?.path?.startsWith('/resources/devices/list/device')
+      ? '/resources/devices/list/device'
+      : '/resources/devices/list'
 }
 
 /** 返回当前设备列表入口对应的菜单 code，供父路由和菜单型跳转共享。 */
