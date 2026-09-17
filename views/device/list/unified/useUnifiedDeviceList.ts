@@ -41,7 +41,6 @@ export function useUnifiedDeviceList() {
     return providers.value.some(provider => provider.id !== 'device' && provider.id === requested) ? String(requested) : 'all'
   })
   const activeProvider = computed(() => providers.value.find(provider => provider.id === activeType.value))
-  const allTerms = computed<DeviceQueryTerm[]>(() => providers.value.length ? [{ terms: providers.value.map((provider, index) => ({ type: index ? 'or' : 'and', terms: provider.terms() })) }] : [{ column: 'id', termType: 'in', value: [] }])
   // 当前分类条件同时传入分页、状态统计与左侧范围统计，保持各处统计口径一致。
   const baseTerms = computed(() => activeType.value === 'all' ? [] : (activeProvider.value?.terms() || []))
   // 左侧空间/分组统计须与当前设备类型保持同一筛选口径。
@@ -133,7 +132,8 @@ export function useUnifiedDeviceList() {
     try {
       const values = await Promise.all([
         ...providers.value.filter(provider => provider.id !== 'device').map(async provider => [provider.id, await countDevice_api({}, provider.terms())] as const),
-        countDevice_api({}, allTerms.value).then(value => ['all', value] as const),
+        // “全部”统计覆盖所有设备，不能继承边缘节点或视频设备的接入方式限定。
+        countDevice_api({}).then(value => ['all', value] as const),
       ])
       if (version === countVersion) counts.value = Object.fromEntries(values)
     } catch { if (version === countVersion) counts.value = {} }

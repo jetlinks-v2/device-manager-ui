@@ -5598,6 +5598,7 @@
     "IotDeviceDetail.common.cancel": "Cancel",
     "IotDeviceDetail.detail.emptyRelatedRule": "No related rule information for this todo.",
     "IotDeviceDetail.detail.deviceId": "Device ID",
+    "IotDeviceDetail.detail.copyDeviceId": "Click to copy device ID",
     "IotDeviceDetail.detail.deviceType": "Device Type",
     "IotDeviceDetail.detail.product": "Product",
     "IotDeviceDetail.detail.area": "Area Group",

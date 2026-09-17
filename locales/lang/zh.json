@@ -5599,6 +5599,7 @@
     "IotDeviceDetail.common.cancel": "取消",
     "IotDeviceDetail.detail.emptyRelatedRule": "当前待办暂无关联规则信息。",
     "IotDeviceDetail.detail.deviceId": "设备ID",
+    "IotDeviceDetail.detail.copyDeviceId": "点击复制设备 ID",
     "IotDeviceDetail.detail.deviceType": "设备类型",
     "IotDeviceDetail.detail.product": "所属产品",
     "IotDeviceDetail.detail.area": "区域分组",

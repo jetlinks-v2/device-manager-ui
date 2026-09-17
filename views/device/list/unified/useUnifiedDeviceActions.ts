@@ -77,9 +77,8 @@ export function useUnifiedDeviceActions(
   const allowed = (device: UnifiedDevice, action: string) => {
     const provider = providerOf(device)
     if (!provider) return false
-    // 普通设备的启停、删除权限由统一设备列表菜单承载；扩展分类仍按自身动作权限判断。
-    if (provider.id === 'device') return menu.hasMenu(provider.menuCode)
-    return auth.hasPermission(`${provider.menuCode}:${action}`)
+    // 设备实例的编辑、启停和删除均由所属列表菜单授权；扩展分类不应要求不存在的同名菜单按钮权限。
+    return menu.hasMenu(provider.menuCode)
   }
   function openCreate(provider?: DeviceListProvider) {
     const entry = provider?.create
