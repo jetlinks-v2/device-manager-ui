@@ -416,6 +416,7 @@
                 "value": "support"
               },
               "supportDataAccess": true,
+              "assetType": "device",
               "assetTypes": [
                 "aiScene",
                 "device",
@@ -520,7 +521,11 @@
                 },
                 {
                   "permission": "device-group",
-                  "actions": ["query"]
+                  "actions": [
+                    "query",
+                    "save",
+                    "delete"
+                  ]
                 },
                 {
                   "permission": "space-management",
@@ -548,371 +553,258 @@
                   ]
                 }
               ],
-              "children": [
-                {
-                  "code": "iot-user/device/list",
-                  "name": "设备",
-                  "i18nMessages": {
-                    "name": {
-                      "zh_CN": "设备",
-                      "en_US": "Devices",
-                      "en": "Devices"
-                    }
-                  },
-                  "owner": "iot",
-                  "id": "access-center-device-list-device",
-                  "url": "/resources/devices/list/device",
-                  "icon": "icon-yuandian",
-                  "sortIndex": 20,
-                  "accessSupport": {
-                    "text": "支持",
-                    "value": "support"
-                  },
-                  "supportDataAccess": true,
-                  "assetTypes": [
-                    "device","product"
-                  ],
-                  "options": {},
-                  "showPage": [
-                    "device-instance",
-                    "device-template"
-                  ],
-                  "permissions": [
-                    {
-                      "permission": "device-instance",
-                      "actions": [
-                        "delete",
-                        "import",
-                        "export",
-                        "enable",
-                        "query",
-                        "save",
-                        "disable"
-                      ]
-                    },
-                    {
-                      "permission": "device-product",
-                      "actions": [
-                        "query",
-                        "save"
-                      ]
-                    },
-                    {
-                      "permission": "device-category",
-                      "actions": [
-                        "query"
-                      ]
-                    },
-                    {
-                      "permission": "device-template",
-                      "actions": [
-                        "query"
-                      ]
-                    },
-                    {
-                      "permission": "ai_scene",
-                      "actions": [
-                        "query",
-                        "delete"
-                      ]
-                    },
-                    {
-                      "permission": "ai_model",
-                      "actions": [
-                        "query",
-                        "save"
-                      ]
-                    },
-                    {
-                      "permission": "ai-edge-task-operation-execution",
-                      "actions": [
-                        "query",
-                        "save"
-                      ]
-                    },
-                    {
-                      "permission": "marketplace",
-                      "actions": [
-                        "query",
-                        "install",
-                        "upgrade"
-                      ]
-                    },
-                    {
-                      "permission": "system-monitor",
-                      "actions": [
-                        "query"
-                      ]
-                    },
-                    {
-                      "permission": "transparent-codec",
-                      "actions": [
-                        "query",
-                        "save"
-                      ]
-                    },
-                    {
-                      "permission": "device-gateway",
-                      "actions": [
-                        "query",
-                        "save"
-                      ]
-                    },
-                    {
-                      "permission": "space-data-bind",
-                      "actions": [
-                        "query",
-                        "save"
-                      ]
-                    },
-                    {
-                      "permission": "media-channel",
-                      "actions": [
-                        "query"
-                      ]
-                    },
-                    {
-                      "permission": "device-group",
-                      "actions": [
-                        "query"
-                      ]
-                    },
-                    {
-                      "permission": "space-management",
-                      "actions": [
-                        "query",
-                        "save"
-                      ]
-                    },
-                    {
-                      "permission": "space-type",
-                      "actions": [
-                        "query"
-                      ]
-                    },
-                    {
-                      "permission": "alarm-record",
-                      "actions": [
-                        "query"
-                      ]
-                    },
-                    {
-                      "permission": "edge-manager",
-                      "actions": [
-                        "proxy",
-                        "remote"
-                      ]
-                    },
-                    {
-                      "permission": "ai-edge-task",
-                      "actions": [
-                        "query",
-                        "save"
-                      ]
-                    },
-                    {
-                      "permission": "file",
-                      "actions": [
-                        "upload-static"
-                      ]
-                    },
-                    {
-                      "permission": "device-opt-api",
-                      "actions": [
-                        "read-property",
-                        "write-property",
-                        "invoke-function"
-                      ]
-                    },
-                    {
-                      "permission": "device-gateway-manager",
-                      "actions": [
-                        "save"
-                      ]
-                    },
-                    {
-                      "permission": "edge-operations",
-                      "actions": [
-                        "invoke"
-                      ]
-                    },
-                    {
-                      "permission": "dashboard",
-                      "actions": [
-                        "query"
-                      ]
-                    },
-                    {
-                      "permission": "device-asset-firmware",
-                      "actions": [
-                        "query"
-                      ]
-                    },
-                    {
-                      "permission": "firmware-manager",
-                      "actions": [
-                        "query"
-                      ]
-                    },
-                    {
-                      "permission": "firmware-upgrade-task-manager",
-                      "actions": [
-                        "query",
-                        "save",
-                        "deploy"
-                      ]
-                    },
-                    {
-                      "permission": "ai_task",
-                      "actions": [
-                        "query",
-                        "save"
-                      ]
-                    },
-                    {
-                      "permission": "ai-agent-llm-provider",
-                      "actions": [
-                        "query"
-                      ]
-                    },
-                    {
-                      "permission": "media-device",
-                      "actions": [
-                        "query"
-                      ]
-                    },
-                    {
-                      "permission": "network-config",
-                      "actions": [
-                        "query"
-                      ]
-                    },
-                    {
-                      "permission": "protocol-supports",
-                      "actions": [
-                        "query"
-                      ]
-                    },
-                    {
-                      "permission": "device-document-bind",
-                      "actions": [
-                        "query",
-                        "save"
-                      ]
-                    },
-                    {
-                      "permission": "visualization-project",
-                      "actions": [
-                        "add",
-                        "save"
-                      ]
-                    }
-                  ],
-                  "buttons": [
-                    {
+              "buttons": [
+                  {
                       "id": "update",
                       "name": "编辑",
                       "i18nMessages": {
-                        "zh_CN": "编辑",
-                        "en_US": "Edit",
-                        "en": "Edit"
+                          "zh_CN": "编辑",
+                          "en_US": "Edit",
+                          "en": "Edit"
                       },
                       "permissions": [
-                        {
-                          "permission": "device-instance",
-                          "actions": [
-                            "save"
-                          ]
-                        },
-                        {
-                          "permission": "agent-job",
-                          "actions": [
-                            "query",
-                            "save"
-                          ]
-                        },
-                        {
-                          "permission": "entity-template",
-                          "actions": [
-                            "query",
-                            "save"
-                          ]
-                        },
-                        {
-                          "permission": "edge-manager",
-                          "actions": [
-                            "proxy"
-                          ]
-                        },
-                        {
-                          "permission": "space-data-bind",
-                          "actions": [
-                            "query"
-                          ]
-                        },
-                        {
-                          "permission": "space-management",
-                          "actions": [
-                            "query"
-                          ]
-                        },
-                        {
-                          "permission": "file",
-                          "actions": [
-                            "upload-static"
-                          ]
-                        }
+                          {
+                              "permission": "device-instance",
+                              "actions": [
+                                  "save"
+                              ]
+                          },
+                          {
+                              "permission": "agent-job",
+                              "actions": [
+                                  "query",
+                                  "save"
+                              ]
+                          },
+                          {
+                              "permission": "entity-template",
+                              "actions": [
+                                  "query",
+                                  "save"
+                              ]
+                          },
+                          {
+                              "permission": "edge-manager",
+                              "actions": [
+                                  "proxy"
+                              ]
+                          },
+                          {
+                              "permission": "space-data-bind",
+                              "actions": [
+                                  "query"
+                              ]
+                          },
+                          {
+                              "permission": "space-management",
+                              "actions": [
+                                  "query"
+                              ]
+                          },
+                          {
+                              "permission": "file",
+                              "actions": [
+                                  "upload-static"
+                              ]
+                          },
+                          {
+                              "permission": "device-group",
+                              "actions": [
+                                  "query",
+                                  "save"
+                              ]
+                          }
                       ]
-                    },
-                    {
+                  },
+                  {
                       "id": "view",
                       "name": "查看",
                       "i18nMessages": {
-                        "zh_CN": "查看",
-                        "en_US": "View",
-                        "en": "View"
+                          "zh_CN": "查看",
+                          "en_US": "View",
+                          "en": "View"
                       },
                       "permissions": [
-                        {
-                          "permission": "device-instance",
-                          "actions": [
-                            "query"
-                          ]
-                        },
-                        {
-                          "permission": "entity-template",
-                          "actions": [
-                            "query"
-                          ]
-                        },
-                        {
-                          "permission": "agent-job",
-                          "actions": [
-                            "query"
-                          ]
-                        },
-                        {
-                          "permission": "edge-manager",
-                          "actions": [
-                            "proxy"
-                          ]
-                        },
-                        {
-                          "permission": "space-data-bind",
-                          "actions": [
-                            "query"
-                          ]
-                        },
-                        {
-                          "permission": "space-management",
-                          "actions": [
-                            "query"
-                          ]
-                        }
+                          {
+                              "permission": "device-instance",
+                              "actions": [
+                                  "query"
+                              ]
+                          },
+                          {
+                              "permission": "entity-template",
+                              "actions": [
+                                  "query"
+                              ]
+                          },
+                          {
+                              "permission": "agent-job",
+                              "actions": [
+                                  "query"
+                              ]
+                          },
+                          {
+                              "permission": "edge-manager",
+                              "actions": [
+                                  "proxy"
+                              ]
+                          },
+                          {
+                              "permission": "space-data-bind",
+                              "actions": [
+                                  "query"
+                              ]
+                          },
+                          {
+                              "permission": "space-management",
+                              "actions": [
+                                  "query"
+                              ]
+                          }
                       ]
-                    }
-                  ]
-                }
+                  },
+                  {
+                      "id": "action",
+                      "name": "启/禁用",
+                      "i18nMessages": {
+                          "zh_CN": "启/禁用",
+                          "en_US": "Enable/Disable",
+                          "en": "Enable/Disable"
+                      },
+                      "permissions": [
+                          {
+                              "permission": "device-instance",
+                              "actions": [
+                                  "query",
+                                  "save"
+                              ]
+                          },
+                          {
+                              "permission": "entity-template",
+                              "actions": [
+                                  "query"
+                              ]
+                          },
+                          {
+                              "permission": "agent-job",
+                              "actions": [
+                                  "query"
+                              ]
+                          },
+                          {
+                              "permission": "edge-manager",
+                              "actions": [
+                                  "proxy"
+                              ]
+                          },
+                          {
+                              "permission": "space-data-bind",
+                              "actions": [
+                                  "query"
+                              ]
+                          },
+                          {
+                              "permission": "space-management",
+                              "actions": [
+                                  "query"
+                              ]
+                          }
+                      ]
+                  },
+                  {
+                      "id": "delete",
+                      "name": "删除",
+                      "i18nMessages": {
+                          "zh_CN": "删除",
+                          "en_US": "Delete",
+                          "en": "Delete"
+                      },
+                      "permissions": [
+                          {
+                              "permission": "device-instance",
+                              "actions": [
+                                  "query",
+                                  "delete"
+                              ]
+                          },
+                          {
+                              "permission": "device-group",
+                              "actions": [
+                                  "query",
+                                  "delete"
+                              ]
+                          },
+                          {
+                              "permission": "agent-job",
+                              "actions": [
+                                  "query",
+                                  "delete"
+                              ]
+                          },
+                          {
+                              "permission": "entity-template",
+                              "actions": [
+                                  "query",
+                                  "delete"
+                              ]
+                          },
+                          {
+                              "permission": "edge-manager",
+                              "actions": [
+                                  "proxy"
+                              ]
+                          },
+                          {
+                              "permission": "space-data-bind",
+                              "actions": [
+                                  "query"
+                              ]
+                          },
+                          {
+                              "permission": "space-management",
+                              "actions": [
+                                  "query"
+                              ]
+                          }
+                      ]
+                  },
+                  {
+                      "id": "add",
+                      "name": "新增",
+                      "i18nMessages": {
+                          "zh_CN": "新增",
+                          "en_US": "Add",
+                          "en": "Add"
+                      },
+                      "permissions": [
+                          {
+                              "permission": "device-instance",
+                              "actions": [
+                                  "query",
+                                  "save"
+                              ]
+                          },
+                          {
+                              "permission": "file",
+                              "actions": [
+                                  "upload-static"
+                              ]
+                          },
+                          {
+                              "permission": "device-product",
+                              "actions": [
+                                  "query"
+                              ]
+                          },
+                          {
+                              "permission": "device-group",
+                              "actions": [
+                                  "query",
+                                  "save"
+                              ]
+                          }
+                      ]
+                  }
               ]
             }
           ]
