@@ -1,12 +1,15 @@
 <template>
   <div class="product-category-tree" :aria-label="$t('Product.index.660348-36')">
+    <header class="product-category-tree__header">
+      <strong>{{ $t('Product.index.660348-36') }}</strong>
+    </header>
     <a-input
       v-model:value="keyword"
       class="product-category-tree__search"
       :placeholder="$t('Product.index.660348-37')"
       allow-clear
     >
-      <template #prefix><AIcon type="SearchOutlined" /></template>
+      <template #prefix><AIcon type="icon-gaojingzhongxin-zhinengsousuo-sousuo" /></template>
     </a-input>
 
     <div class="product-category-tree__content">
@@ -72,7 +75,6 @@
     <a-button
       v-if="canAdd"
       class="product-category-tree__create-category"
-      type="dashed"
       block
       @click="emit('add-root')"
     >
@@ -135,20 +137,36 @@ const {
 
 <style scoped lang="less">
 .product-category-tree {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
-  gap: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
   height: 100%;
   min-height: 0;
   overflow: hidden;
 
+  &__header {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    min-height: 0;
+
+    strong {
+      color: var(--jet-theme-text-title);
+      font-size: var(--fs-18);
+      font-weight: 600;
+      line-height: var(--lh-24);
+    }
+  }
+
   &__search {
     width: 100%;
     min-width: 0;
+    flex: 0 0 auto;
     box-sizing: border-box;
   }
 
   &__content {
+    flex: 1;
     min-height: 0;
     overflow: auto;
   }
