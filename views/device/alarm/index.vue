@@ -11,9 +11,11 @@
                 <span :title="$t('DeviceAlarm.workspace.total', { total })">{{ $t('DeviceAlarm.workspace.total', { total }) }}</span>
               </header>
               <div class="alarm-rule-search">
-                <a-input-search :value="keyword" allow-clear :placeholder="$t('DeviceAlarm.workspace.keywordSearch')"
-                                :aria-label="$t('DeviceAlarm.workspace.keywordSearch')"
-                                @update:value="updateKeyword" @search="handleSearch" />
+                <a-input :value="keyword" allow-clear :placeholder="$t('DeviceAlarm.workspace.keywordSearch')"
+                         :aria-label="$t('DeviceAlarm.workspace.keywordSearch')"
+                         @update:value="updateKeyword" @press-enter="handleSearch">
+                  <template #prefix><AIcon type="icon-gaojingzhongxin-zhinengsousuo-sousuo" /></template>
+                </a-input>
               </div>
               <a-alert v-if="statusError" type="warning" show-icon :message="$t('DeviceAlarm.workspace.statusError')"><template #action><a-button type="link" size="small" @click="loadCounts">{{ $t('DeviceAlarm.workspace.retry') }}</a-button></template></a-alert>
               <a-alert v-if="listError" type="error" :message="$t('DeviceAlarm.workspace.listError')"><template #action><a-button @click="load()">{{ $t('DeviceAlarm.workspace.retry') }}</a-button></template></a-alert>
@@ -143,19 +145,18 @@ function confirmRemove(row: DeviceAlarmRow) {
 .device-alarm-page { display: flex; flex-direction: column; gap: var(--space-4); }
 .alarm-content { overflow: hidden; }
 .alarm-workspace { display: grid; flex: 1; min-height: 0; grid-template-rows: minmax(0, 1fr); grid-template-columns: minmax(300px, 26%) minmax(0, 1fr); }
-.alarm-rule-list, .alarm-record-list { height: 100%; display: flex; min-width: 0; min-height: 0; flex-direction: column; gap: var(--space-3); overflow: hidden; }
+.alarm-rule-list, .alarm-record-list { height: 100%; display: flex; min-width: 0; min-height: 0; flex-direction: column; gap: var(--space-4); overflow: hidden; }
 .alarm-list-heading { display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
 .alarm-list-heading strong { font-size: var(--fs-18) }
 .alarm-list-heading span { color: var(--jet-theme-text-secondary); font-size: 12px; }
 .alarm-rule-heading { display: flex; align-items: center; gap: var(--space-2); min-width: 0; flex-shrink: 0; }
-.alarm-rule-heading strong { flex-shrink: 0; color: var(--ink-1); font-size: var(--fs-18); font-weight: 700; }
+.alarm-rule-heading strong { flex-shrink: 0; color: var(--jet-theme-text-title); font-size: var(--fs-18); font-weight: 600; }
 .alarm-rule-heading span { overflow: hidden; color: var(--jet-theme-text-secondary); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
 .alarm-rule-search { display: flex; min-width: 0; flex-shrink: 0; }
 .alarm-rule-search > :first-child { flex: 1; min-width: 0; }
 .alarm-scroll { flex: 1; min-height: 0; overflow-y: auto; }
 .alarm-rule-more { display: flex; min-height: 2.25rem; align-items: center; justify-content: center; gap: var(--space-1); color: var(--jet-theme-text-secondary); font-size: var(--fs-12); }
 .alarm-rule-footer { flex-shrink: 0; }
-.alarm-rule-create { height: 2.5rem; border-radius: var(--jet-theme-radius-sm); font-size: var(--fs-14); }
 .alarm-record-list { container: alarm-records / inline-size; }
 .alarm-record-items { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; gap: var(--space-4); }
 .alarm-record-empty { grid-column: 1 / -1; }

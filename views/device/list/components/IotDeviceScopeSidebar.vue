@@ -66,7 +66,7 @@
           </template>
         </a-tree>
       </div>
-      <a-button v-if="scopeType === 'group' && showGroupActions !== false" class="iot-device-scope__create-group" type="dashed" block @click="$emit('create-group')">
+      <a-button v-if="scopeType === 'group' && showGroupActions !== false" class="iot-device-scope__create-group" block @click="$emit('create-group')">
         <template #icon><AIcon type="PlusOutlined" /></template>
         {{ $t('IotDeviceList.scope.createGroup') }}
       </a-button>
@@ -111,7 +111,7 @@ const { scopeType, scopeId, scopeOptions, hasScopes, treeData, select, onSelect,
 .iot-device-scope {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  gap: var(--space-3);
+  gap: var(--space-4);
   min-height: 0;
   height: 100%;
   overflow: hidden;
@@ -120,7 +120,7 @@ const { scopeType, scopeId, scopeOptions, hasScopes, treeData, select, onSelect,
 .iot-device-scope__body {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
-  gap: var(--space-2);
+  gap: var(--space-4);
   min-height: 0;
 }
 
@@ -189,7 +189,7 @@ const { scopeType, scopeId, scopeOptions, hasScopes, treeData, select, onSelect,
 }
 
 .iot-device-scope__create-group {
-  margin-top: var(--space-1);
+  margin-top: 0;
 }
 .iot-device-scope__tabs.ant-segmented {
 	background: #F9FBFD;
