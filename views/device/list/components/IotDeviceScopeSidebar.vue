@@ -1,6 +1,13 @@
 <template>
   <div class="iot-device-scope" :aria-label="$t('IotDeviceList.scope.aria')">
-    <a-segmented v-model:value="scopeType" block class="iot-device-scope__tabs" :options="scopeOptions" />
+    <a-segmented v-model:value="scopeType" block class="iot-device-scope__tabs" :options="scopeOptions">
+      <template #label="{ payload }">
+        <span class="iot-device-scope__tab">
+          <AIcon :type="payload.icon" />
+          <span>{{ payload.title }}</span>
+        </span>
+      </template>
+    </a-segmented>
     <div class="iot-device-scope__body">
       <button class="iot-device-scope__all" :class="{ 'is-active': !scopeId }" type="button" @click="select('')">
         <span class="iot-device-scope__label">{{ $t(scopeType === 'area' ? 'IotDeviceList.scope.allAreas' : 'IotDeviceList.scope.allGroups') }}</span>
@@ -193,9 +200,22 @@ const { scopeType, scopeId, scopeOptions, hasScopes, treeData, select, onSelect,
 
 .iot-device-scope__tabs :deep(.ant-segmented-item-selected) {
 	box-shadow: none;
+	color: var(--jet-theme-primary);
 }
+
 .iot-device-scope__tabs :deep(.ant-segmented-item-label) {
 	min-height: 2rem;
 	line-height: 2rem;
+}
+
+.iot-device-scope__tab {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--space-1);
+}
+
+.iot-device-scope__tab :deep(.anticon) {
+	font-size: var(--fs-14);
 }
 </style>

@@ -41,9 +41,16 @@ export function useIotDeviceScopeSidebar(
     set: (type: Scope['type']) => onChange({ type, id: '' }),
   })
   const scopeId = computed(() => props.activeId)
+  // 不设置 label 字段，分段器才会把这部分交给 #label 插槽渲染（图标 + 文案）。
   const scopeOptions = computed(() => [
-    { label: t('IotDeviceList.scope.area'), value: 'area' },
-    { label: t('IotDeviceList.scope.group'), value: 'group' },
+    {
+      value: 'area',
+      payload: { title: t('IotDeviceList.scope.area'), icon: 'icon-dizhi-hui' },
+    },
+    {
+      value: 'group',
+      payload: { title: t('IotDeviceList.scope.group'), icon: 'icon-zuzhi' },
+    },
   ])
 
   const areaTree = computed<ScopeTreeNode[]>(() => {
