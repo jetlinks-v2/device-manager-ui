@@ -18,8 +18,16 @@
     <section v-if="property" class="property-read-modal">
       <div class="property-read-modal__value">
         <span>{{ $t('IotDeviceDetail.runtime.currentValue') }}</span>
-        <strong>{{ propertyDisplayValue(property) }}</strong>
-        <em v-if="propertyDisplayUnit(property)">{{ propertyDisplayUnit(property) }}</em>
+        <JsonViewer
+          v-if="structuredValue"
+          class="property-read-modal__json"
+          :expand-depth="5"
+          :value="structuredValue"
+        />
+        <template v-else>
+          <strong>{{ propertyDisplayValue(property) }}</strong>
+          <em v-if="propertyDisplayUnit(property)">{{ propertyDisplayUnit(property) }}</em>
+        </template>
         <small>{{ $t('IotDeviceDetail.propertyRead.reportedAt', { time: property.updatedAt || $t('IotDeviceDetail.common.time.justNow') }) }}</small>
       </div>
       <dl class="property-modal-meta">
@@ -34,8 +42,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { JsonViewer } from 'vue3-json-viewer'
 import type { RealtimePropertyRow } from './iotDeviceDetail.types'
-import { getPropertyDisplayUnit, getPropertyDisplayValue } from './iotDevicePropertyDisplay'
+import {
+  getPropertyDisplayUnit,
+  getPropertyDisplayValue,
+  isStructuredPropertyType,
+  parseStructuredPropertyValue,
+} from './iotDevicePropertyDisplay'
 
 const props = defineProps<{
   open: boolean
@@ -53,6 +67,11 @@ const { t: $t } = useI18n()
 const title = computed(() => props.property ? $t('IotDeviceDetail.propertyRead.titleWithName', { name: props.property.name }) : $t('IotDeviceDetail.runtime.read'))
 const propertyDisplayValue = getPropertyDisplayValue
 const propertyDisplayUnit = getPropertyDisplayUnit
+const structuredValue = computed(() => {
+  const property = props.property
+  if (!property || !isStructuredPropertyType(property.valueType, property.dataType)) return undefined
+  return parseStructuredPropertyValue(property.value)
+})
 
 function rangeText(item: RealtimePropertyRow) {
   const min = item.valueType?.min ?? item.valueType?.minimum

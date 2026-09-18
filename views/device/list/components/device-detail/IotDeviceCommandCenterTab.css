@@ -65,8 +65,12 @@
 }
 
 .runtime-row--function {
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) 4.5rem;
   min-height: 6rem;
+}
+
+.runtime-row__invoke.ant-btn {
+  width: 4.5rem;
 }
 
 .runtime-row__badge,
@@ -181,8 +185,12 @@
 }
 
 .runtime-row__param-value {
+  display: block;
+  overflow: hidden;
   min-width: 0;
   color: var(--jet-theme-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .runtime-row__value {
@@ -359,6 +367,10 @@
   .runtime-row {
     grid-template-columns: auto minmax(0, 1fr);
     padding: var(--space-3) 0;
+  }
+
+  .runtime-row--function {
+    grid-template-columns: minmax(0, 1fr) 4.5rem;
   }
 
   .runtime-row__actions {

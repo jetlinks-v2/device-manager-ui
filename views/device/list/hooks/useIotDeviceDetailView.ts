@@ -1532,7 +1532,7 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
   function onMetadataChanged(payload?: { type?: string; id?: string }) {
     if (payload?.type !== 'device' || payload.id !== device.value?.id) return
     if (props.embedded) onEmbeddedMetadataChanged?.()
-    else void loadDevice()
+    else void loadAll()
   }
 
   EventEmitter.subscribe(['MetadataChanged'], onMetadataChanged)

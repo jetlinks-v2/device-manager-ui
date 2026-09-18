@@ -1,5 +1,5 @@
 import { computed, ref, watch, type ComputedRef, type Ref } from 'vue'
-import type { RealtimeEventLevel, RealtimePropertyRow } from './iotDeviceDetail.types'
+import type { RealtimePropertyRow } from './iotDeviceDetail.types'
 import { getPropertyDisplayUnit, getPropertyDisplayValue } from './iotDevicePropertyDisplay'
 
 const propertyPageSizeOptions = ['8', '12', '24', '48']
@@ -7,7 +7,7 @@ const DEFAULT_PAGE_SIZE = 8
 
 export function useIotDevicePropertyPagination(
   properties: ComputedRef<RealtimePropertyRow[]>,
-  propertyFilter: Ref<RealtimeEventLevel | 'all'>,
+  propertyFilter: Ref<'all' | 'keyMetric'>,
   propertyGroup: Ref<string>,
 ) {
   let firstRequest = true
@@ -17,9 +17,7 @@ export function useIotDevicePropertyPagination(
     const matchesGroup = propertyGroup.value === '__all__' || item.groupId === propertyGroup.value
     if (!matchesGroup) return false
     if (propertyFilter.value === 'all') return true
-    if (propertyFilter.value === 'critical') return item.tone === 'critical'
-    if (propertyFilter.value === 'major') return item.tone === 'warning'
-    return item.tone === 'normal' || item.tone === 'stale'
+    return item.focused
   }))
 
   const propertyTableParams = ref({

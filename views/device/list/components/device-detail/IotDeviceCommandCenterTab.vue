@@ -80,9 +80,6 @@
 
           <div v-else class="runtime-list">
             <article v-for="command in filteredCommands" :key="command.id" class="runtime-row runtime-row--function">
-              <div class="runtime-row__icon">
-                <AIcon :type="commandIcon(command)" />
-              </div>
               <div class="runtime-row__body">
                 <a-space>
                   <strong>{{ command.name }}</strong><small>{{ command.identifier }}</small>
@@ -102,22 +99,18 @@
                   <a-tooltip :title="commandParameterTooltip(command.inputParams)">
                     <span class="runtime-row__param">
                       <span class="runtime-row__param-label">{{ $t('IotDeviceDetail.commandCenter.inputParameters') }}</span>
-                      <j-ellipsis class="runtime-row__param-value">
-                        {{ commandInputSummary(command) }}
-                      </j-ellipsis>
+                      <span class="runtime-row__param-value">{{ commandInputSummary(command) }}</span>
                     </span>
                   </a-tooltip>
                   <a-tooltip v-if="hasCommandOutput(command)" :title="commandParameterTooltip(command.outputParams)">
                     <span class="runtime-row__param">
                       <span class="runtime-row__param-label">{{ $t('IotDeviceDetail.commandCenter.outputParameters') }}</span>
-                      <j-ellipsis class="runtime-row__param-value">
-                        {{ commandParameterNames(command.outputParams) }}
-                      </j-ellipsis>
+                      <span class="runtime-row__param-value">{{ commandParameterNames(command.outputParams) }}</span>
                     </span>
                   </a-tooltip>
                 </div>
               </div>
-              <a-button type="primary" size="small" :disabled="!command.enabled" @click="openInvoke(command)">
+              <a-button class="runtime-row__invoke" type="primary" size="small" :disabled="!command.enabled" @click="openInvoke(command)">
                 <template #icon><AIcon type="CodeOutlined" /></template>
                 {{ $t('IotDeviceDetail.commandCenter.invoke') }}
               </a-button>
@@ -267,13 +260,6 @@ function propertyAccessText(item: RealtimePropertyRow) {
   if (mode === 'write') return $t('IotDeviceDetail.commandCenter.access.write')
   if (mode === 'read') return $t('IotDeviceDetail.commandCenter.access.read')
   return $t('IotDeviceDetail.commandCenter.access.report')
-}
-
-function commandIcon(command: IotDeviceCommandDefinition) {
-  if (command.category === 'security') return 'SafetyOutlined'
-  if (command.category === 'maintenance') return 'ToolOutlined'
-  if (command.category === 'query') return 'SearchOutlined'
-  return 'ReloadOutlined'
 }
 
 function commandCallModeText(command: IotDeviceCommandDefinition) {

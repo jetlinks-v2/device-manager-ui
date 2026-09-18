@@ -90,6 +90,7 @@ export type DeviceDetailResponse = {
   accessName?: string
   accessProvider?: string
   description?: string
+  i18nMessages?: Record<string, Record<string, string>>
   describe?: string
   identifier?: string
   configuration?: Record<string, unknown>
@@ -299,6 +300,7 @@ export type DeviceGatewayDetailResponse = DeviceLibraryGatewayDetail & {
 }
 
 export type CreateDeviceApiInput = {
+  id?: string
   projectId: string
   productKey: string
   productName?: string
@@ -313,6 +315,7 @@ export type CreateDeviceApiInput = {
   groupId?: string
   imageUrl?: string
   description?: string
+  i18nMessages?: Record<string, Record<string, string>>
   tags?: string[]
 }
 
@@ -330,6 +333,7 @@ export type UpdateDeviceBasicInfoApiInput = {
   owner?: string
   imageUrl?: string
   description?: string
+  i18nMessages?: Record<string, Record<string, string>>
   tags?: string[]
 }
 

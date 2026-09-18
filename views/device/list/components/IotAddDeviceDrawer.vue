@@ -23,6 +23,7 @@
               stack-fields
               show-icon
               :show-name="false"
+              :show-id="false"
               :show-area="false"
               :show-group="false"
               :show-description="false"
@@ -36,6 +37,7 @@
               :group-tree-data="groupTreeData"
               stack-fields
               :show-icon="false"
+              :show-id="false"
               :show-area="false"
               :show-group="false"
               :show-description="false"
@@ -49,6 +51,7 @@
               :group-tree-data="groupTreeData"
               stack-fields
               :show-name="false"
+              :show-id="false"
               :show-area="true"
               :show-group="true"
               :show-description="true"

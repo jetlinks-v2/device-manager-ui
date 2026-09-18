@@ -173,6 +173,7 @@ const buildInstallDeviceBody = (input: JoinDeviceLibraryInput) => {
   if (!input.device) return undefined
   const device = input.device
   return {
+    id: device.id?.trim() || undefined,
     name: device.name.trim(),
     productId: '',
     productName: input.productName || input.template.name,
@@ -183,6 +184,7 @@ const buildInstallDeviceBody = (input: JoinDeviceLibraryInput) => {
       .map((value) => value?.trim())
       .filter(Boolean)
       .join(' · '),
+    i18nMessages: device.i18nMessages,
     extensions: {
       iot: {
         projectId: input.projectId,

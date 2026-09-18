@@ -414,9 +414,9 @@ const showMetrics = computed(() => {
   ].includes(props.type as any)
 })
 
-// 关键属性由产品物模型统一定义，设备详情概览只读取该配置。
+// 产品和已独立编辑的设备物模型共用关键属性配置，设备概览只读取当前有效物模型。
 const showKeyProperty = computed(() => {
-  return type === 'product' && props.metadataType === 'properties'
+  return props.metadataType === 'properties'
 })
 
 const showExtra = computed(() => {

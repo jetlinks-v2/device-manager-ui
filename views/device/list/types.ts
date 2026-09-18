@@ -115,6 +115,8 @@ export interface IotDevice {
   identifier: string
   imageUrl?: string
   summary: string
+  /** 设备名称与说明的多语言值，编辑基础资料时需原样保留。 */
+  i18nMessages?: Record<string, Record<string, string>>
   aiSummary: IotDeviceAiSummary
   telemetry: IotTelemetryPoint[]
   alarms: IotDeviceAlarm[]

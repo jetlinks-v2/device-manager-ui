@@ -33,6 +33,7 @@ import {
   collectProductCategoryScopeIds,
 } from '@device-manager-ui/utils/deviceCreationSources'
 import { useMenuStore } from '@jetlinks-web-core/store'
+import { isExists } from '@device-manager-ui/api/instance'
 
 const UNCLASSIFIED_CATEGORY_ID = '__product-unclassified__'
 
@@ -40,6 +41,11 @@ type VisibleMenuNode = { name?: string | symbol; children?: VisibleMenuNode[] }
 
 const hasVisibleMenu = (menus: VisibleMenuNode[], code: string): boolean =>
   menus.some((menu) => menu.name === code || (menu.children && hasVisibleMenu(menu.children, code)))
+
+const isForbiddenRequest = (error: unknown) => (
+  (error as { response?: { status?: number }; status?: number })?.response?.status === 403
+  || (error as { status?: number })?.status === 403
+)
 
 export type IotAddDeviceDrawerProps = {
   open: boolean
@@ -119,7 +125,7 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
   let libraryRequestSequence = 0
 
   const form = reactive({
-    name: '', areaId: '', area: '', groupId: '', description: '', imageUrl: '',
+    id: '', name: '', areaId: '', area: '', groupId: '', description: '', imageUrl: '', i18nMessages: {} as Record<string, Record<string, string>>,
   })
   const selectableAreas = computed(() => areaOptions.value)
   const areaTreeData = computed(() => buildAreaTreeData(selectableAreas.value))
@@ -137,6 +143,18 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
   }))
   const libraryProducts = computed(() => libraryTemplates.value.map(toTemplateProductOption))
   const formRules: Record<string, Rule[]> = {
+    id: [
+      { pattern: /^[a-zA-Z0-9_-]+$/, message: $t('Save.index.902471-2'), trigger: 'blur' },
+      { max: 64, message: $t('Save.index.902471-3'), trigger: 'blur' },
+      {
+        validator: async (_rule, value) => {
+          if (!value) return
+          const response = await isExists(String(value))
+          if (response.success && response.result) throw new Error($t('Save.index.902471-15'))
+        },
+        trigger: 'blur',
+      },
+    ],
     name: [{ required: true, message: $t('IotDeviceList.add.nameRequired'), trigger: 'blur' }],
     areaId: [{
       validator: async (_rule, value) => {
@@ -331,7 +349,7 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
   }
 
   function clearBasicFields() {
-    form.name = ''; form.areaId = ''; form.area = ''; form.groupId = ''; form.description = ''
+    form.id = ''; form.name = ''; form.areaId = ''; form.area = ''; form.groupId = ''; form.description = ''; form.i18nMessages = {}
     imageUpload.clearImage()
     form.imageUrl = imageUpload.imageUrl.value
     errorMessage.value = ''
@@ -349,7 +367,7 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
     areaOptions.value = []; groupOptions.value = []
     productMessage.value = ''; libraryMessage.value = ''; errorMessage.value = ''; installProgressLogs.value = []
     busy.value = false; submitAction.value = ''
-    form.name = ''; form.areaId = ''; form.area = ''; form.groupId = ''; form.description = ''
+    form.id = ''; form.name = ''; form.areaId = ''; form.area = ''; form.groupId = ''; form.description = ''; form.i18nMessages = {}
     imageUpload.clearImage(); form.imageUrl = ''
   }
 
@@ -360,10 +378,10 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
 
   function buildDeviceCreateInput(product: IotDeviceProductTemplate | undefined, imageUrl: string) {
     return {
-      projectId: props.projectId, productKey: product?.id || '', productName: product?.name, productDeviceType: product?.deviceType,
+      id: form.id || undefined, projectId: props.projectId, productKey: product?.id || '', productName: product?.name, productDeviceType: product?.deviceType,
       parentId: props.parentId, name: form.name, areaId: form.areaId, area: form.area, groupId: form.groupId,
       scenario: groupOptions.value.find((group) => group.id === form.groupId)?.name,
-      imageUrl, description: form.description,
+      imageUrl, description: form.description, i18nMessages: form.i18nMessages,
     }
   }
 
@@ -418,8 +436,11 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
       handlers.updateOpen(false)
       window.setTimeout(resetForm, 200)
     } catch (error) {
-      errorMessage.value = error instanceof Error && error.message ? error.message : $t('IotDeviceList.add.createFailed')
-      if (creationSource.value === 'library') appendInstallProgress({ type: 'error', message: errorMessage.value })
+      // 403 已由请求层在右上角通知；抽屉内不重复渲染错误横幅。
+      if (!isForbiddenRequest(error)) {
+        errorMessage.value = error instanceof Error && error.message ? error.message : $t('IotDeviceList.add.createFailed')
+        if (creationSource.value === 'library') appendInstallProgress({ type: 'error', message: errorMessage.value })
+      }
     } finally {
       busy.value = false
       submitAction.value = ''
