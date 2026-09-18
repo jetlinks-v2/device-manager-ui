@@ -3,7 +3,7 @@
     <ConditionFilter
       :fields="filterFields"
       :commonFields="commonFilterFields"
-      :modelValue="filterTerms"
+      :modelValue="editorTerms"
       :placeholder="placeholder || $t('IotDeviceList.filter.conditionPlaceholder')"
       @update:modelValue="handleFilterTermsUpdate"
       @change="handleFilterSearch"
@@ -45,12 +45,34 @@ const emit = defineEmits<{
 
 const { t: $t } = useI18n()
 const latestRawTerms = ref<ConditionFilterTerm[]>([])
+const editorTerms = ref<ConditionFilterTerm[]>([])
 let skipNextSearch = false
+
+const cloneEditorTerms = (terms: ConditionFilterTerm[] = []): ConditionFilterTerm[] => terms.map((term) => {
+  if (Array.isArray(term.terms)) {
+    return { ...term, terms: cloneEditorTerms(term.terms as ConditionFilterTerm[]) }
+  }
+
+  if (['like', 'nlike'].includes(String(term.termType || '')) && typeof term.value === 'string') {
+    const value = term.value
+    const rawValue = value.startsWith('%') && value.endsWith('%')
+      ? value.slice(1, -1).replace(/\\%/g, '%').replace(/\\\\/g, '\\')
+      : value
+    return { ...term, value: rawValue }
+  }
+
+  return { ...term, value: Array.isArray(term.value) ? [...term.value] : term.value }
+})
 
 watch(
   () => props.filterTerms,
   (value) => {
-    latestRawTerms.value = Array.isArray(value) ? value : []
+    const nextTerms = cloneEditorTerms(Array.isArray(value) ? value : [])
+    latestRawTerms.value = nextTerms
+    // 同一编辑态条件不重置 ConditionFilter，避免自动查询后的外部刷新抢走输入焦点。
+    if (JSON.stringify(editorTerms.value) !== JSON.stringify(nextTerms)) {
+      editorTerms.value = nextTerms
+    }
   },
   { immediate: true, deep: true },
 )
@@ -58,6 +80,7 @@ watch(
 function handleFilterTermsUpdate(terms: ConditionFilterTerm[] = []) {
   const normalized = normalizeSwitchedFieldTerms(terms, latestRawTerms.value)
   latestRawTerms.value = normalized.terms
+  editorTerms.value = normalized.terms
   if (normalized.switched) skipNextSearch = true
   emit('update:filterTerms', normalized.terms)
 }
@@ -67,9 +90,8 @@ function handleFilterSearch(payload?: { terms?: ConditionFilterTerm[] }) {
     skipNextSearch = false
     return
   }
-  // ConditionFilter 在 change 时才补齐 like 的通配符；不能用编辑态的原始 Token 覆盖查询条件。
-  const terms = payload?.terms ?? latestRawTerms.value
-  emit('search', { terms })
+  // ConditionFilter 的 change 是查询态，like 已带 %；所有上层状态和 URL 只保存编辑态原始值。
+  emit('search', { terms: latestRawTerms.value })
 }
 
 function normalizeSwitchedFieldTerms(

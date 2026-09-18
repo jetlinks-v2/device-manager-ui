@@ -5,19 +5,67 @@
     </template>
     <section class="add-device">
       <a-alert v-if="activeErrorMessage && !isCreating" type="error" show-icon :message="activeErrorMessage" />
-      <a-form :ref="setActiveFormRef" class="add-device__form" layout="vertical" :model="activeForm" :rules="activeFormRules">
+      <template v-if="creationExtension && selectedProduct">
+        <IotAddDeviceSelectedTemplate :template="selectedProduct" @change="backToSource" />
+        <component
+          ref="creationExtensionRef"
+          :is="creationExtension.component"
+          embedded
+          :product="selectedProduct"
+          :device-form="form"
+          @created="handleExtensionCreated"
+        >
+          <template #identity-icon>
+            <IotDeviceBasicFields
+              :form="form"
+              :area-tree-data="areaTreeData"
+              :group-tree-data="groupTreeData"
+              stack-fields
+              show-icon
+              :show-name="false"
+              :show-area="false"
+              :show-group="false"
+              :show-description="false"
+              :on-area-change="onAreaChange"
+            />
+          </template>
+          <template #identity-name>
+            <IotDeviceBasicFields
+              :form="form"
+              :area-tree-data="areaTreeData"
+              :group-tree-data="groupTreeData"
+              stack-fields
+              :show-icon="false"
+              :show-area="false"
+              :show-group="false"
+              :show-description="false"
+              :on-area-change="onAreaChange"
+            />
+          </template>
+          <template #after-configuration>
+            <IotDeviceBasicFields
+              :form="form"
+              :area-tree-data="areaTreeData"
+              :group-tree-data="groupTreeData"
+              stack-fields
+              :show-name="false"
+              :show-area="true"
+              :show-group="true"
+              :show-description="true"
+              :on-area-change="onAreaChange"
+            />
+          </template>
+        </component>
+      </template>
+      <a-form v-else :ref="setActiveFormRef" class="add-device__form" layout="vertical" :model="activeForm" :rules="activeFormRules">
         <IotDeviceBasicFields
           v-if="isEditMode"
           :form="activeForm"
-          :image-preview-url="activeImagePreviewUrl"
-          :image-file-name="activeImageFileName"
           :area-tree-data="activeAreaTreeData"
           :group-tree-data="activeGroupTreeData"
           :group-multiple="true"
           show-icon
           :on-area-change="activeOnAreaChange"
-          :handle-image-before-upload="activeHandleImageBeforeUpload"
-          :on-select-preset-icon="activeSelectPresetIcon"
         />
         <template v-else-if="currentStep === 0">
           <a-segmented
@@ -48,6 +96,7 @@
             :selected-category-id="selectedCategoryId"
             :products="productCandidates"
             :selected-product-key="selectedProductKey"
+            :filter-terms="productFilterTerms"
             :total="productTotal"
             :page-index="productPageIndex"
             :page-size="productPageSize"
@@ -66,14 +115,11 @@
           <IotAddDeviceSelectedTemplate :template="selectedSource as any" @change="backToSource" />
           <IotDeviceBasicFields
             :form="form"
-            :image-preview-url="imagePreviewUrl"
-            :image-file-name="imageFileName"
             :area-tree-data="areaTreeData"
             :group-tree-data="groupTreeData"
             stack-fields
             :on-area-change="onAreaChange"
-            :handle-image-before-upload="handleImageBeforeUpload"
-            :on-select-preset-icon="selectPresetIcon"
+            show-icon
           />
         </template>
       </a-form>
@@ -105,6 +151,8 @@ import IotDeviceBasicFields from './IotDeviceBasicFields.vue'
 import { useIotAddDeviceDrawer, type IotAddDeviceCreatedPayload } from '../hooks/useIotAddDeviceDrawer'
 import { useIotEditDeviceDrawer } from '../hooks/useIotEditDeviceDrawer'
 import type { IotDevice } from '../types'
+import type { DeviceCreationExtension } from '@device-manager-ui/deviceCreationExtension'
+import { moduleRegistry } from '@jetlinks-web-core/utils/module-registry'
 
 const props = withDefaults(defineProps<{
   open: boolean
@@ -122,6 +170,7 @@ const emit = defineEmits<{
 const { t: $t } = useI18n()
 const isEditMode = computed(() => Boolean(props.device))
 const currentStep = ref(0)
+const creationExtension = ref<DeviceCreationExtension>()
 const addDrawerProps = {
   get open() { return props.open && !isEditMode.value },
   get projectId() { return props.projectId },
@@ -134,24 +183,24 @@ const editDrawerProps = {
   get device() { return props.device },
 }
 const {
-  creationSource, isLibraryAvailable, selectedProductKey, selectedTemplateKey, selectedSource,
+  creationSource, isLibraryAvailable, selectedProductKey, selectedProduct, selectedTemplateKey, selectedSource,
   productMenuAvailable,
-  productMessage, productLoading, libraryLoading, libraryTagLoading, busy, submitAction, errorMessage,
-  imagePreviewUrl, imageFileName, formRef, form, formRules, installProgressState,
+  productMessage, productLoading, productFilterTerms, libraryLoading, libraryTagLoading, busy, submitAction, errorMessage,
+  formRef, form, formRules, installProgressState,
   areaTreeData, groupTreeData, configOptionsLoading,
   categoryTree, categoryLoading, selectedCategoryId, productCandidates, productTotal, productPageIndex, productPageSize,
   libraryProducts, libraryTagGroups, libraryPageIndex, libraryPageSize, libraryHasMore,
   selectSource, selectProduct, selectTemplate, selectProductCategory, selectUnclassifiedProductCategory,
-  loadProductCandidates, loadDeviceLibraryTemplates, loadConfigOptions, clearBasicFields, onClose, onSubmit,
-  onAreaChange, handleImageBeforeUpload, selectPresetIcon,
+  loadProductCandidates, loadDeviceLibraryTemplates, loadConfigOptions, clearBasicFields, onClose, onSubmit, bindCreatedDevice,
+  onAreaChange,
 } = useIotAddDeviceDrawer(addDrawerProps, {
   updateOpen: (value) => emit('update:open', value),
   created: (payload) => emit('created', payload),
 })
 const {
-  busy: editBusy, errorMessage: editErrorMessage, imagePreviewUrl: editImagePreviewUrl, imageFileName: editImageFileName,
+  busy: editBusy, errorMessage: editErrorMessage,
   formRef: editFormRef, form: editForm, formRules: editFormRules, areaTreeData: editAreaTreeData, groupTreeData: editGroupTreeData,
-  onAreaChange: onEditAreaChange, handleImageBeforeUpload: handleEditImageBeforeUpload, selectPresetIcon: selectEditPresetIcon,
+  onAreaChange: onEditAreaChange,
   onUpdateOpen: onEditUpdateOpen, onSubmit: onEditSubmit,
 } = useIotEditDeviceDrawer(editDrawerProps, {
   updateOpen: (value) => emit('update:open', value),
@@ -165,19 +214,17 @@ const sourceOptions = computed(() => [
 const activePrimaryBusy = computed(() => isEditMode.value ? editBusy.value : busy.value)
 const activeSubmitDisabled = computed(() => isEditMode.value
   ? !props.device
-  : busy.value || configOptionsLoading.value,
+  : busy.value || configOptionsLoading.value || Boolean(creationExtension.value && !selectedProduct.value),
 )
 const activeErrorMessage = computed(() => isEditMode.value ? editErrorMessage.value : errorMessage.value)
 const activeForm = computed(() => isEditMode.value ? editForm : form)
 const activeFormRules = computed(() => isEditMode.value ? editFormRules : formRules)
-const activeImagePreviewUrl = computed(() => isEditMode.value ? editImagePreviewUrl.value : imagePreviewUrl.value)
-const activeImageFileName = computed(() => isEditMode.value ? editImageFileName.value : imageFileName.value)
 const activeAreaTreeData = computed(() => isEditMode.value ? editAreaTreeData.value : areaTreeData.value)
 const activeGroupTreeData = computed(() => isEditMode.value ? editGroupTreeData.value : groupTreeData.value)
 const activeOnAreaChange = computed(() => isEditMode.value ? onEditAreaChange : onAreaChange)
-const activeHandleImageBeforeUpload = computed(() => isEditMode.value ? handleEditImageBeforeUpload : handleImageBeforeUpload)
-const activeSelectPresetIcon = computed(() => isEditMode.value ? selectEditPresetIcon : selectPresetIcon)
 const isCreating = computed(() => !isEditMode.value && busy.value && submitAction.value === 'install')
+type CreationExtensionExpose = { submit?: () => Promise<void> | void }
+const creationExtensionRef = ref<CreationExtensionExpose | null>(null)
 const activeSubmitText = computed(() => {
   if (isEditMode.value) return editBusy.value ? $t('IotDeviceList.add.saving') : $t('IotDeviceList.add.save')
   if (currentStep.value === 0) return $t('IotDeviceList.add.next')
@@ -194,6 +241,7 @@ function onActiveClose() {
   else onClose()
 }
 function backToSource() {
+  creationExtension.value = undefined
   currentStep.value = 0
   clearBasicFields()
 }
@@ -208,6 +256,13 @@ function enterConfigurationStep() {
 
 function handleProductSelect(productId: string) {
   selectProduct(productId)
+  const product = selectedProduct.value
+  const extension = product ? findCreationExtension(product.accessProvider) : undefined
+  if (extension) {
+    creationExtension.value = extension
+    enterConfigurationStep()
+    return
+  }
   enterConfigurationStep()
 }
 
@@ -221,12 +276,42 @@ function onActiveSubmit() {
     void onEditSubmit()
     return
   }
+  if (creationExtension.value) {
+    void submitExtension()
+    return
+  }
   void onSubmit()
+}
+
+async function submitExtension() {
+  try {
+    await formRef.value?.validate?.()
+    await creationExtensionRef.value?.submit?.()
+  } catch {
+    // 基础字段与媒体专属字段各自负责呈现校验错误。
+  }
+}
+
+/** 业务模块按产品接入方式接管专属创建，不让通用抽屉知晓领域接口或配置字段。 */
+function findCreationExtension(accessProvider?: string) {
+  return moduleRegistry
+    .getAllModuleIds()
+    .flatMap((moduleId) => Object.values(
+      moduleRegistry.getResource(moduleId, 'deviceCreationExtensions') as Record<string, DeviceCreationExtension>,
+    ))
+    .find((extension) => extension.matches(accessProvider))
+}
+
+async function handleExtensionCreated(payload: IotAddDeviceCreatedPayload) {
+  if (selectedProduct.value) await bindCreatedDevice(payload.deviceId, selectedProduct.value)
+  emit('created', payload)
+  emit('update:open', false)
 }
 
 watch(() => props.open, (open) => {
   if (!open || isEditMode.value) return
   currentStep.value = 0
+  creationExtension.value = undefined
 })
 </script>
 

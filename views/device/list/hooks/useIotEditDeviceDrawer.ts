@@ -8,8 +8,6 @@ import type { ProjectArea } from '@device-manager-ui/modules/defaults/types'
 import { buildAreaTreeData, isSelectableDeviceArea } from './iotAreaTreeOptions'
 import { buildDeviceGroupTreeData } from './iotDeviceGroupTreeOptions'
 import { saveIotDeviceAreaGroupBindings } from './iotDeviceAreaGroupBindings'
-import { useIotDeviceImageUpload } from './useIotDeviceImageUpload'
-import { formatIconValueFont } from '@jetlinks-web-core/components/IconValue'
 import type { IotDevice } from '../types'
 
 export type IotEditDeviceDrawerProps = {
@@ -33,7 +31,6 @@ export function useIotEditDeviceDrawer(props: IotEditDeviceDrawerProps, handlers
     validate?: () => Promise<unknown>
     clearValidate?: () => void
   } | null>(null)
-  const imageUpload = useIotDeviceImageUpload()
 
   const form = reactive({
     name: '',
@@ -65,7 +62,6 @@ export function useIotEditDeviceDrawer(props: IotEditDeviceDrawerProps, handlers
     form.groupId = resolveGroupIds(device)
     form.description = device?.summary && device.summary !== '--' ? device.summary : ''
     form.imageUrl = device?.imageUrl || ''
-    imageUpload.setExistingImage(form.imageUrl)
     errorMessage.value = ''
     busy.value = false
     void nextTick(() => formRef.value?.clearValidate?.())
@@ -105,17 +101,6 @@ export function useIotEditDeviceDrawer(props: IotEditDeviceDrawerProps, handlers
     return ids.map((id) => findGroupNameById(id)).filter(Boolean)
   }
 
-  function clearImage() {
-    imageUpload.clearImage()
-    form.imageUrl = imageUpload.imageUrl.value
-  }
-
-  function selectPresetIcon(icon: string) {
-    imageUpload.clearImage()
-    form.imageUrl = formatIconValueFont(icon)
-    imageUpload.setExistingImage(form.imageUrl)
-  }
-
   async function loadFormOptions() {
     const [areaSettings, groups] = await Promise.all([
       queryProjectSpaceAreaSettings_api(props.projectId).catch(() => ({ areas: [] })),
@@ -149,7 +134,7 @@ export function useIotEditDeviceDrawer(props: IotEditDeviceDrawerProps, handlers
 
     busy.value = true
     try {
-      const imageUrl = await imageUpload.resolveImageUrl()
+      const imageUrl = form.imageUrl
       const previousGroupIds = resolveGroupIds(props.device)
       const selectedGroupNames = findGroupNamesByIds(form.groupId)
       const savedDevice = await updateDeviceBasicInfo_api({
@@ -204,17 +189,12 @@ export function useIotEditDeviceDrawer(props: IotEditDeviceDrawerProps, handlers
   return {
     busy,
     errorMessage,
-    imagePreviewUrl: imageUpload.imagePreviewUrl,
-    imageFileName: imageUpload.imageFileName,
     formRef,
     form,
     formRules,
     areaTreeData,
     groupTreeData,
     onAreaChange,
-    handleImageBeforeUpload: imageUpload.handleImageBeforeUpload,
-    selectPresetIcon,
-    clearImage,
     onUpdateOpen,
     onClose,
     onSubmit,

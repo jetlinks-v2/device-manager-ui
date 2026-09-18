@@ -24,7 +24,6 @@ import { queryProjectSpaceAreaSettings_api } from '@device-manager-ui/api/spaceA
 import type { ProjectArea } from '@device-manager-ui/modules/defaults/types'
 import type { ProductCategoryTreeNode } from '@device-manager-ui/views/device/Product/components/ProductCategoryTree.vue'
 import type { IotDevice } from '../types'
-import { formatIconValueFont } from '@jetlinks-web-core/components/IconValue'
 import { buildAreaTreeData, isSelectableDeviceArea } from './iotAreaTreeOptions'
 import { buildDeviceGroupTreeData } from './iotDeviceGroupTreeOptions'
 import { toTemplateProductOption } from './iotAddDeviceProductOptions'
@@ -155,12 +154,6 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
 
   function onAreaChange() {
     form.area = selectableAreas.value.find((item) => item.id === form.areaId)?.name ?? ''
-  }
-
-  function selectPresetIcon(icon: string) {
-    imageUpload.clearImage()
-    form.imageUrl = formatIconValueFont(icon)
-    imageUpload.setExistingImage(form.imageUrl)
   }
 
   function selectProduct(productId: string) {
@@ -374,7 +367,8 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
     }
   }
 
-  async function bindCreatedDeviceBestEffort(deviceId: string, product: IotDeviceProductTemplate) {
+  /** 媒体等专属创建面板完成实例保存后，仍由统一入口维护区域与业务分组绑定。 */
+  async function bindCreatedDevice(deviceId: string, product: IotDeviceProductTemplate) {
     try {
       await saveIotDeviceAreaGroupBindings({
         deviceId, deviceName: form.name, productName: product.name, areaId: form.areaId, groupId: form.groupId,
@@ -399,7 +393,7 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
     busy.value = true
     submitAction.value = 'create'
     try {
-      const imageUrl = await imageUpload.resolveImageUrl()
+      const imageUrl = form.imageUrl
       let product: IotDeviceProductTemplate | null = null
       let device: IotDevice
       if (creationSource.value === 'library' && selectedTemplate.value) {
@@ -419,7 +413,7 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
         device = await createDevice_api(buildDeviceCreateInput(product, imageUrl))
       }
       if (!product) throw new Error($t('IotDeviceList.add.selectSourceFirst'))
-      await bindCreatedDeviceBestEffort(device.id, product)
+      await bindCreatedDevice(device.id, product)
       handlers.created({ deviceId: device.id, deviceType: product.deviceType })
       handlers.updateOpen(false)
       window.setTimeout(resetForm, 200)
@@ -446,17 +440,15 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
   return {
     creationSource, marketplaceCapability, isLibraryAvailable, productMenuAvailable,
     selectedProductKey, selectedTemplateKey, selectedProduct, selectedTemplate, selectedSource,
-    productMessage, libraryMessage, errorMessage, productLoading, libraryLoading, libraryTagLoading,
+    productMessage, libraryMessage, errorMessage, productLoading, productFilterTerms, libraryLoading, libraryTagLoading,
     busy, submitAction, installProgressState,
     formRef, form, formRules, areaTreeData, groupTreeData,
     configOptionsLoading,
     categoryTree, categoryLoading, selectedCategoryId, productCandidates, productTotal, productPageIndex, productPageSize,
     libraryProducts, libraryTagGroups, libraryPageIndex, libraryPageSize, libraryHasMore,
-    onAreaChange, selectPresetIcon,
+    onAreaChange,
     selectSource, selectProduct, selectTemplate, selectProductCategory, selectUnclassifiedProductCategory,
     loadProductCandidates, loadDeviceLibraryTemplates, loadConfigOptions,
-    clearBasicFields, onClose, onSubmit,
-    handleImageBeforeUpload: imageUpload.handleImageBeforeUpload,
-    imagePreviewUrl: imageUpload.imagePreviewUrl, imageFileName: imageUpload.imageFileName,
+    clearBasicFields, onClose, onSubmit, bindCreatedDevice,
   }
 }
