@@ -21,6 +21,11 @@ type IotEditDeviceDrawerHandlers = {
   saved: (deviceId: string) => void
 }
 
+const isForbiddenRequest = (error: unknown) => (
+  (error as { response?: { status?: number }; status?: number })?.response?.status === 403
+  || (error as { status?: number })?.status === 403
+)
+
 export function useIotEditDeviceDrawer(props: IotEditDeviceDrawerProps, handlers: IotEditDeviceDrawerHandlers) {
   const { t: $t } = useI18n()
   const busy = ref(false)
@@ -33,12 +38,14 @@ export function useIotEditDeviceDrawer(props: IotEditDeviceDrawerProps, handlers
   } | null>(null)
 
   const form = reactive({
+    id: '',
     name: '',
     areaId: '',
     area: '',
     groupId: [] as string[],
     description: '',
     imageUrl: '',
+    i18nMessages: {} as Record<string, Record<string, string>>,
   })
 
   const formRules = computed<Record<string, Rule[]>>(() => ({
@@ -56,12 +63,14 @@ export function useIotEditDeviceDrawer(props: IotEditDeviceDrawerProps, handlers
   const groupTreeData = computed(() => buildDeviceGroupTreeData(groupOptions.value))
 
   function fillForm(device: IotDevice | null) {
+    form.id = device?.id || ''
     form.name = device?.name && device.name !== '--' ? device.name : ''
     form.areaId = device?.areaId || ''
     form.area = device?.area && device.area !== '--' ? device.area : ''
     form.groupId = resolveGroupIds(device)
     form.description = device?.summary && device.summary !== '--' ? device.summary : ''
     form.imageUrl = device?.imageUrl || ''
+    form.i18nMessages = device?.i18nMessages || {}
     errorMessage.value = ''
     busy.value = false
     void nextTick(() => formRef.value?.clearValidate?.())
@@ -150,6 +159,7 @@ export function useIotEditDeviceDrawer(props: IotEditDeviceDrawerProps, handlers
         scenario: selectedGroupNames[0],
         description: form.description,
         imageUrl,
+        i18nMessages: form.i18nMessages,
       })
       await saveIotDeviceAreaGroupBindings({
         deviceId: props.device.id,
@@ -164,7 +174,10 @@ export function useIotEditDeviceDrawer(props: IotEditDeviceDrawerProps, handlers
       handlers.updateOpen(false)
       handlers.saved(props.device.id)
     } catch (error) {
-      errorMessage.value = error instanceof Error ? error.message : $t('IotDeviceDetail.detail.saveFailed')
+      // 403 已由请求层在右上角通知；抽屉内不重复渲染错误横幅。
+      if (!isForbiddenRequest(error)) {
+        errorMessage.value = error instanceof Error ? error.message : $t('IotDeviceDetail.detail.saveFailed')
+      }
     } finally {
       busy.value = false
     }

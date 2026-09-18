@@ -212,10 +212,10 @@
   gap: var(--space-1) var(--space-2);
   align-items: baseline;
   margin-bottom: var(--space-4);
-  border: var(--jet-theme-stroke-width) solid color-mix(in srgb, currentColor 18%, var(--jet-theme-border-secondary));
+  border: var(--jet-theme-stroke-width) solid var(--jet-theme-border-secondary);
   border-radius: 0.5rem;
   padding: var(--space-4);
-  background: color-mix(in srgb, currentColor 7%, var(--jet-theme-bg-container));
+  background: var(--jet-theme-bg-container);
   color: var(--jet-theme-primary);
 }
 
@@ -230,6 +230,14 @@
   color: currentColor;
   font-size: var(--fs-36);
   line-height: 1;
+}
+
+.property-read-modal__json {
+  grid-column: 1 / -1;
+  max-height: 18rem;
+  overflow: auto;
+  padding: var(--space-1) 0;
+  color: var(--jet-theme-text);
 }
 
 .property-read-modal__value em {
@@ -263,10 +271,23 @@
 }
 
 .property-write-modal__current {
-  border-radius: 0.375rem;
-  padding: var(--space-2) var(--space-3);
-  background: var(--jet-theme-bg-layout);
   color: var(--jet-theme-text);
+}
+
+.property-write-modal__json {
+  max-height: 14rem;
+  overflow: auto;
+}
+
+.property-write-modal__json-editor {
+  font-family: var(--font-family-code, monospace);
+  line-height: 1.5;
+}
+
+.property-write-modal__json-error {
+  margin-top: var(--space-1);
+  color: var(--jet-theme-error);
+  font-size: var(--fs-14);
 }
 
 .detail-ranges,

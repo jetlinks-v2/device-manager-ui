@@ -2,7 +2,7 @@
   <section class="product-summary">
     <a-button class="product-summary__back" type="text" @click="emit('back')">
       <template #icon><AIcon type="LeftOutlined" /></template>
-      {{ $t('IotDeviceDetail.common.back') }}
+      {{ $t('Product.detail.backToList') }}
     </a-button>
     <div class="product-summary__icon">
       <a-avatar :size="52" shape="square" :src="product.photoUrl">
@@ -23,16 +23,11 @@
         <div class="product-summary__line">
           <div class="product-summary__row product-summary__row--id">
             <span class="product-summary__label">{{ $t('Product.detail.id') }}</span>
-            <span class="product-summary__id-content">
-              <a-tooltip :title="product.id">
-                <span class="product-summary__value">{{ product.id || '--' }}</span>
-              </a-tooltip>
-              <a-tooltip :title="$t('IotDeviceDetail.accessConfig.copy')">
-                <a-button type="text" size="small" class="product-summary__copy" @click="copyProductId">
-                  <AIcon type="CopyOutlined" />
-                </a-button>
-              </a-tooltip>
-            </span>
+            <a-tooltip :title="$t('IotDeviceDetail.accessConfig.copy')">
+              <button type="button" class="product-summary__value product-summary__value--action" @click="copyProductId">
+                {{ product.id || '--' }}
+              </button>
+            </a-tooltip>
           </div>
           <div class="product-summary__row">
             <span class="product-summary__label">{{ $t('BasicInfo.indev.028379-1') }}</span>
@@ -96,6 +91,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import useClipboard from 'vue-clipboard3'
+import { onlyMessage } from '@jetlinks-web/utils'
 import type { ProductItem } from '../../typings'
 import { getI18nText } from '../../../../../utils/i18n'
 import IotDeviceStatusPill from '../../../list/components/IotDeviceStatusPill.vue'
@@ -109,10 +105,11 @@ const classification = computed(() => getI18nText(props.product, 'classifiedName
 const deviceType = computed(() => props.product.deviceType?.text || '')
 const manufacturer = computed(() => getI18nText(props.product, 'manufacturer'))
 const model = computed(() => getI18nText(props.product, 'model'))
-function copyProductId() {
-  if (props.product.id) {
-    return toClipboard(props.product.id)
-  }
+/** 复制产品 ID，并与设备详情保持一致地反馈复制结果。 */
+async function copyProductId() {
+  if (!props.product.id) return
+  await toClipboard(props.product.id)
+  onlyMessage($t('IotDeviceDetail.accessDetail.copied'))
 }
 </script>
 
@@ -134,8 +131,8 @@ function copyProductId() {
 .product-summary__row { display:inline-flex; align-items:center; width:100%; min-width:0; line-height:1.6; }
 .product-summary__label { flex:0 0 3.75rem; margin-right:var(--space-2); color:var(--jet-theme-text-disabled); font-size:var(--fs-14); font-weight:400; text-align:left; }
 .product-summary__value { display:inline-block; flex:1 1 auto; max-width:100%; min-width:0; overflow:hidden; color:var(--jet-theme-text-secondary); font-size:var(--fs-14); font-weight:400; text-overflow:ellipsis; vertical-align:bottom; white-space:nowrap; }
-.product-summary__id-content { display:flex; flex:1 1 auto; align-items:center; min-width:0; }
-.product-summary__copy { flex:0 0 auto; margin-left:0.125rem; color:var(--jet-theme-text-secondary); }
+.product-summary__value--action { padding:0; border:0; background:transparent; cursor:pointer; text-align:left; }
+.product-summary__value--action:hover { color:var(--jet-theme-primary); }
 .product-summary__count { border:0; padding:0; background:transparent; color:var(--jet-theme-primary); cursor:pointer; text-align:left; }
 .product-summary__actions { display:flex; flex:0 0 auto; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:var(--space-2); }
 @media (max-width:64rem) { .product-summary { grid-template-columns:auto minmax(0, 1fr); } .product-summary__actions { grid-column:1 / -1; justify-content:flex-start; } }

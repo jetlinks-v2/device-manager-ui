@@ -42,6 +42,13 @@
             value-format="HH:mm:ss"
             style="width: 100%"
           />
+          <a-date-picker
+            v-else-if="isDateOnlyTag(record)"
+            v-model:value="record.value"
+            format="YYYY-MM-DD"
+            value-format="YYYY-MM-DD"
+            style="width: 100%"
+          />
           <j-value-item
             v-else
             v-model:modelValue="record.value"
@@ -72,6 +79,7 @@ type TagEditorRow = TagRecord & {
 }
 
 const TIME_ONLY_DATE_FORMAT = 'HH:mm:ss'
+const DATE_ONLY_FORMAT = 'YYYY-MM-DD'
 
 const props = defineProps<{
   open: boolean
@@ -125,6 +133,10 @@ function isTimeOnlyTag(tag: TagRecord) {
   return getTagType(tag) === 'date' && getTagDateFormat(tag) === TIME_ONLY_DATE_FORMAT
 }
 
+function isDateOnlyTag(tag: TagRecord) {
+  return getTagType(tag) === 'date' && getTagDateFormat(tag).toUpperCase() === DATE_ONLY_FORMAT
+}
+
 function getEditorType(tag: TagRecord) {
   const type = getTagType(tag)
   return type === 'array' ? 'object' : type === 'file' ? 'string' : type
@@ -175,12 +187,21 @@ function normalizeTimeOnlyValue(value: unknown): string | undefined {
   return date.isValid() ? date.format(TIME_ONLY_DATE_FORMAT) : undefined
 }
 
+function normalizeDateOnlyValue(value: unknown): string | undefined {
+  if (value === undefined || value === null || value === '') return undefined
+  const date = dayjs(value)
+  return date.isValid() ? date.format(DATE_ONLY_FORMAT) : undefined
+}
+
 function resetRows() {
   rows.value = props.tags.map((tag) => {
     const type = getTagType(tag)
+    const sourceValue = tag.formatValue ?? tag.value
     const value = isTimeOnlyTag(tag)
-      ? normalizeTimeOnlyValue(tag.formatValue ?? tag.value)
-      : tag.value ?? tag.formatValue ?? undefined
+      ? normalizeTimeOnlyValue(sourceValue)
+      : isDateOnlyTag(tag)
+        ? normalizeDateOnlyValue(sourceValue)
+        : sourceValue ?? undefined
     return {
       ...tag,
       value: ['object', 'array'].includes(type) ? parseJsonEditorValue(value) : value,
@@ -197,14 +218,14 @@ function close() {
 }
 
 function submit() {
-  // 与旧版接口保持一致：日期标签保存为后端可读的完整时间字符串。
+  // 与旧版接口保持一致：仅日期和仅时间格式不补全时分秒，其余日期仍提交完整时间字符串。
   emit('save', rows.value.map((row) => {
     const type = getTagType(row)
     const { dataType, valueType, ...tag } = row
     return {
       ...tag,
       value: type === 'date' && row.value
-        ? isTimeOnlyTag(row)
+        ? isTimeOnlyTag(row) || isDateOnlyTag(row)
           ? row.value
           : dayjs(row.value).format('YYYY-MM-DD HH:mm:ss')
         : normalizeTagValue(type, row.value),

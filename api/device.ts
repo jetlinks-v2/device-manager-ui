@@ -325,6 +325,7 @@ const toDevice = (item: DeviceDetailResponse): IotDevice => {
     // 设备保存接口写入的是 photoUrl，列表接口部分场景不会回填 devicePhotoUrl。
     imageUrl: item.devicePhotoUrl || item.photoUrl || item.productPhotoUrl || '',
     summary: item.description || item.describe || '',
+    i18nMessages: item.i18nMessages,
     aiSummary: {
       conclusion: '',
       reasons: [],
@@ -463,6 +464,7 @@ const buildDeviceExtensions = (input: CreateDeviceApiInput | UpdateDeviceBasicIn
 }
 
 const buildCreateDeviceBody = (input: CreateDeviceApiInput) => ({
+  id: input.id?.trim() || undefined,
   name: input.name.trim(),
   productId: input.productKey,
   productName: input.productName || input.productKey,
@@ -473,6 +475,7 @@ const buildCreateDeviceBody = (input: CreateDeviceApiInput) => ({
     .map((value) => value?.trim())
     .filter(Boolean)
     .join(' · '),
+  i18nMessages: input.i18nMessages,
   extensions: buildDeviceExtensions(input),
 })
 
@@ -487,6 +490,7 @@ const buildUpdateDeviceBasicInfoBody = (input: UpdateDeviceBasicInfoApiInput) =>
     .map((value) => value?.trim())
     .filter(Boolean)
     .join(' · '),
+  i18nMessages: input.i18nMessages,
   extensions: buildDeviceExtensions(input),
 })
 

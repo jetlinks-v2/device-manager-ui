@@ -1379,6 +1379,10 @@
   width: 8.5rem;
 }
 
+.add-device__identity-fields {
+  min-width: 0;
+}
+
 .add-device__fields--stacked {
   grid-template-columns: 1fr;
 }

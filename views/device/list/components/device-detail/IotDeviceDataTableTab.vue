@@ -151,7 +151,7 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { DevicePropertyValue } from '../../services/iotDeviceDetailReal.service'
-import type { RealtimeEventLevel, RealtimeEventRow, RealtimePropertyRow } from './iotDeviceDetail.types'
+import type { RealtimeEventRow, RealtimePropertyRow } from './iotDeviceDetail.types'
 import IotDevicePropertyDetailModal from './IotDevicePropertyDetailModal.vue'
 import IotDeviceEventHistoryPane from './IotDeviceEventHistoryPane.vue'
 import IotDevicePropertyReadModal from './IotDevicePropertyReadModal.vue'
@@ -176,7 +176,7 @@ const emit = defineEmits<{
 const activePane = ref<'property' | 'event'>('property')
 const propertyTimeRange = ref<'1h' | '24h' | '7d'>('1h')
 const eventTimeRange = ref<'all' | '1h' | '24h' | '7d'>('all')
-const propertyFilter = ref<RealtimeEventLevel | 'all'>('all')
+const propertyFilter = ref<'all' | 'keyMetric'>('all')
 const propertyGroup = ref('__all__')
 const propertyGroupsRef = ref<HTMLElement | null>(null)
 const propertyGroupsExpanded = ref(false)
@@ -233,9 +233,7 @@ const eventTimeRangeOptions = computed(() => [
 
 const propertyFilterOptions = computed(() => [
   { label: t('IotDeviceDetail.dataTable.allProperties'), value: 'all' },
-  { label: t('IotDeviceDetail.dataTable.filter.normal'), value: 'info' },
-  { label: t('IotDeviceDetail.dataTable.filter.alarm'), value: 'major' },
-  { label: t('IotDeviceDetail.dataTable.filter.critical'), value: 'critical' },
+  { label: t('Properties.OtherSetting.237457-36'), value: 'keyMetric' },
 ])
 
 const {
