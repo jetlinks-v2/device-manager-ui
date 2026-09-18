@@ -46,9 +46,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, type PropType } from 'vue'
+import { computed, ref, watch, type PropType } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { DeviceQueryTerm, IotDeviceProductTemplate } from '@device-manager-ui/api/device'
+import { getProviders } from '@device-manager-ui/api/product'
+import { accessConfigTypeFilter } from '@jetlinks-web-core/utils'
 import ProductCategoryTree, { type ProductCategoryTreeNode } from '@device-manager-ui/views/device/Product/components/ProductCategoryTree.vue'
 import IotAddDeviceLibraryCard from './IotAddDeviceLibraryCard.vue'
 import IotDeviceAssetSearchBar from './IotDeviceAssetSearchBar.vue'
@@ -60,6 +62,7 @@ const props = defineProps({
   selectedCategoryId: { type: String, default: undefined },
   products: { type: Array as PropType<IotDeviceProductTemplate[]>, required: true },
   selectedProductKey: { type: String, required: true },
+  filterTerms: { type: Array as PropType<ConditionFilterTerm[]>, default: () => [] },
   total: { type: Number, default: 0 },
   pageIndex: { type: Number, default: 0 },
   pageSize: { type: Number, default: 6 },
@@ -98,10 +101,19 @@ const filterFields = computed<ConditionFilterField[]>(() => [
   {
     title: $t('Product.index.660348-29'),
     dataIndex: 'accessProvider',
-    search: { type: 'string', defaultTermType: 'like' },
+    search: {
+      type: 'select',
+      defaultTermType: 'eq',
+      options: async () => accessConfigTypeFilter((await getProviders()).result || []),
+    },
   },
 ])
 const commonFilterFields = ['name', 'deviceType', 'accessProvider']
+
+// 更换设备回到产品列表时，复用 hook 中保存的提交条件，避免列表与筛选 Token 脱节。
+watch(() => props.filterTerms, (terms) => {
+  filterTerms.value = [...terms]
+}, { immediate: true, deep: true })
 
 function handleFilterTermsUpdate(terms: ConditionFilterTerm[] = []) {
   filterTerms.value = terms
@@ -109,7 +121,8 @@ function handleFilterTermsUpdate(terms: ConditionFilterTerm[] = []) {
 
 function handleFilterSearch(payload: { terms?: ConditionFilterTerm[] }) {
   emit('query-change', {
-    terms: (payload.terms ?? filterTerms.value) as DeviceQueryTerm[],
+    // 查询输出会为 like 自动增加通配符；产品选择回显必须保留编辑态原始值。
+    terms: filterTerms.value as DeviceQueryTerm[],
     pageIndex: 0,
   })
 }

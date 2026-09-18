@@ -1364,6 +1364,21 @@
   gap: var(--space-3);
 }
 
+.add-device__identity {
+  display: grid;
+  grid-template-columns: 8.5rem minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-4);
+}
+
+.add-device__identity :deep(.ant-form-item) {
+  margin-bottom: 0;
+}
+
+.add-device__identity :deep(.pro-upload) {
+  width: 8.5rem;
+}
+
 .add-device__fields--stacked {
   grid-template-columns: 1fr;
 }
