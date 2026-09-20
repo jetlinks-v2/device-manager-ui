@@ -18,25 +18,27 @@
                             <h2 class="access-component-list-title">
                                 {{ $t('AccessComponent.listTitle.certificate') }}
                             </h2>
-                            <ConditionFilter
-                                class="access-component-list-search"
-                                :columns="columns"
-                                target="search-certificate"
-                                @search="handleSearch"
-                            />
                         </div>
                     </template>
                     <template #headerRightRender>
-                        <j-permission-button
-                            type="primary"
-                            @click="handleAdd"
-                            hasPermission="link/Certificate:add"
-                        >
-                            <template #icon
-                                ><AIcon type="PlusOutlined"
-                            /></template>
-                            {{ $t('Certificate.index.646549-0') }}
-                        </j-permission-button>
+	                      <a-flex :gap="16">
+			                      <ConditionFilter
+					                      class="access-component-list-search"
+					                      :columns="columns"
+					                      target="search-certificate"
+					                      @search="handleSearch"
+			                      />
+			                      <j-permission-button
+					                      type="primary"
+					                      @click="handleAdd"
+					                      hasPermission="link/Certificate:add"
+			                      >
+					                      <template #icon
+					                      ><AIcon type="PlusOutlined"
+					                      /></template>
+					                      {{ $t('Certificate.index.646549-0') }}
+			                      </j-permission-button>
+	                      </a-flex>
                     </template>
                     <template #type="slotProps">
                         <span>{{ slotProps.type.text }}</span>
@@ -232,7 +234,7 @@ const handleSearch = (e: any) => {
 .access-component-list-title {
     margin: 0;
     color: rgba(0, 0, 0, 0.85);
-    font-size: 20px;
+    font-size: var(--fs-18);
     font-weight: 600;
     line-height: 32px;
     white-space: nowrap;
@@ -240,7 +242,7 @@ const handleSearch = (e: any) => {
 
 .access-component-list-search {
     flex: 1 1 360px;
-    min-width: 280px;
-    max-width: 640px;
+    min-width: 25rem;
+    max-width: 40rem;
 }
 </style>
