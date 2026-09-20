@@ -4,6 +4,10 @@
 
 ## 最近变更
 
+### 统一设备列表操作按钮菜单授权
+
+`views/device/list/unified/index.vue` 的编辑、启停、删除按钮复用 `getIotDeviceListMenuCode(route)` 解析当前入口：资源中心使用 `iot-user-device-list`，物联入口保持其所属菜单。动作仍分别校验 `update`、`action`、`delete`，不以菜单可见性代替按钮授权。修复写死旧菜单编码导致初始化环境按钮提示无权限的问题。验证采用源码与差异检查及 9111 服务模块响应核对，页面由用户人工验收，不执行构建、类型检查、lint、测试或浏览器操作。
+
 ### 设备列表状态切换抽取为 core 公共组件 SwitchGroup（已实施）
 
 - 目标：把统一设备列表工具栏中的状态切换组（状态点 + 文案 + 计数，单选）抽成 `runtime-ui/jetlinks-web-core` 的公共组件，并按设计稿重做样式：容器圆角 4px、1px `#ECEFF3` 描边、内边距 1px、底色 `#F7F8FA`、文字使用次级文本色；选中项圆角 6px、白色底、主题色文字。
