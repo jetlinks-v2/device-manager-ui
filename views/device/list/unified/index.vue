@@ -97,7 +97,7 @@
                         type="link"
                         size="small"
                         :disabled="busy"
-                        hasPermission="iot-user/device/list:update"
+                        hasPermission="iot-user-device-list:update"
                         :tooltip="{ title: t('IotDeviceList.action.editShort') }"
                         @click="edit(record)"
                     >
@@ -111,7 +111,7 @@
                               type="link"
                               size="small"
                               :disabled="busy"
-                              :hasPermission="`iot-user/device/list:action`"
+                              :hasPermission="`iot-user-device-list:action`"
                               :danger="record.connectionStatus !== 'disabled'"
                               @click="toggle(record)"
                           >
@@ -126,7 +126,7 @@
                               type="link"
                               size="small"
                               :disabled="busy || !canDelete(record)"
-                              hasPermission="iot-user/device/list:delete"
+                              hasPermission="iot-user-device-list:delete"
                               danger
                               @click="remove(record)"
                           >
