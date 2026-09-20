@@ -96,7 +96,7 @@
 						      </span>
 					      </template>
 					      <template #classifiedName="slotProps">
-						      {{ getI18nText(slotProps, 'classifiedName') || '-' }}
+						      {{ getI18nText(slotProps, 'classifiedName') || $t('comm.table.empty') }}
 					      </template>
 					      <template #brandModel="slotProps">
 						      {{ getBrandModel(slotProps) }}
@@ -502,7 +502,7 @@ const refresh = () => {
 const getBrandModel = (product: Record<string, any>) => {
   const manufacturer = getI18nText(product, 'manufacturer');
   const model = getI18nText(product, 'model');
-  return [manufacturer, model].filter(Boolean).join(' / ') || '-';
+  return [manufacturer, model].filter(Boolean).join(' / ') || $t('comm.table.empty');
 };
 
 const normalizeCategoryTree = (nodes: Record<string, any>[] = []): ProductCategoryTreeNode[] => {
