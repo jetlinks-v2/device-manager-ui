@@ -113,12 +113,13 @@ const getProjectRuntimeContext = (_required = true): ProjectRuntimeContext => {
   const requestHeaders = getRequestHeaders()
   const apiUrl = hasProjectRuntime
     ? normalizeProjectRuntimeApiUrl(projectStorage?.apiUrl)
-    : String(getRequestBaseApi() || '/api').trim().replace(/\/$/, '')
+    : String(getRequestBaseApi() ?? '').trim().replace(/\/$/, '')
   const token = String(requestHeaders[TOKEN_KEY] || '').trim()
   const runtimeProjectId = hasProjectRuntime ? firstString(projectStorage?.id, projectId) : ''
 
   // 私有化可能保留 SaaS 环境开关，但没有项目上下文；此时与全局普通请求保持同源和同会话。
-  if (apiUrl && token) {
+  // server 构建使用空 API 前缀，空字符串同样是有效的同源请求地址。
+  if (token) {
     return {
       projectId: runtimeProjectId,
       apiUrl,

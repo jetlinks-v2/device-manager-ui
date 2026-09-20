@@ -33,7 +33,7 @@ import {
   collectProductCategoryScopeIds,
 } from '@device-manager-ui/utils/deviceCreationSources'
 import { useMenuStore } from '@jetlinks-web-core/store'
-import { isExists } from '@device-manager-ui/api/instance'
+import { deviceCloudSave, isExists } from '@device-manager-ui/api/instance'
 
 const UNCLASSIFIED_CATEGORY_ID = '__product-unclassified__'
 
@@ -86,6 +86,7 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
   const { t: $t } = useI18n()
   const menuStore = useMenuStore()
   const creationSource = ref<DeviceCreationSource>('product')
+  const creationMode = ref<'local' | 'cloud'>('local')
   const marketplaceCapability = ref<DeviceLibraryCapabilityState>('checking')
   const selectedProductKey = ref('')
   const selectedTemplateKey = ref('')
@@ -175,6 +176,7 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
   }
 
   function selectProduct(productId: string) {
+    creationMode.value = 'local'
     selectedProductKey.value = productId
     selectedProduct.value = productCandidates.value.find((item) => item.id === productId) ?? null
     applySourceDefaults(selectedProduct.value)
@@ -188,6 +190,7 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
 
   function selectSource(source: DeviceCreationSource) {
     if (source === 'library' && !isLibraryAvailable.value) return
+    creationMode.value = 'local'
     // 两种来源的产品集合不同，切换时必须撤销产品侧的在途请求并清空筛选，避免隐藏条件污染返回后的列表。
     ++productRequestSequence
     productFilterTerms.value = []
@@ -349,6 +352,7 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
   }
 
   function clearBasicFields() {
+    creationMode.value = 'local'
     form.id = ''; form.name = ''; form.areaId = ''; form.area = ''; form.groupId = ''; form.description = ''; form.i18nMessages = {}
     imageUpload.clearImage()
     form.imageUrl = imageUpload.imageUrl.value
@@ -358,6 +362,7 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
   }
 
   function resetForm() {
+    creationMode.value = 'local'
     openSequence += 1; productRequestSequence += 1; libraryRequestSequence += 1
     creationSource.value = 'product'; marketplaceCapability.value = 'checking'
     selectedProductKey.value = ''; selectedTemplateKey.value = ''
@@ -382,6 +387,11 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
       parentId: props.parentId, name: form.name, areaId: form.areaId, area: form.area, groupId: form.groupId,
       scenario: groupOptions.value.find((group) => group.id === form.groupId)?.name,
       imageUrl, description: form.description, i18nMessages: form.i18nMessages,
+      ...(creationSource.value === 'product' && creationMode.value === 'cloud' ? {
+        configuration: { type: 'cloud' as const },
+        masterProductId: product?.masterProductId,
+        masterId: product?.edgeMasterId,
+      } : {}),
     }
   }
 
@@ -432,9 +442,22 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
       }
       if (!product) throw new Error($t('IotDeviceList.add.selectSourceFirst'))
       await bindCreatedDevice(device.id, product)
-      handlers.created({ deviceId: device.id, deviceType: product.deviceType })
-      handlers.updateOpen(false)
-      window.setTimeout(resetForm, 200)
+      try {
+        if (creationSource.value === 'product' && creationMode.value === 'cloud' && product.masterProductId) {
+          await deviceCloudSave({
+            masterProductId: product.masterProductId,
+            deviceId: device.id,
+            masterId: product.edgeMasterId,
+            masterDeviceName: device.name,
+            masterAutoCreate: true,
+          })
+        }
+      } finally {
+        // 本地设备已保存，沿用旧入口的完成语义，云端绑定失败也刷新列表，避免再次提交创建重复设备。
+        handlers.created({ deviceId: device.id, deviceType: product.deviceType })
+        handlers.updateOpen(false)
+        window.setTimeout(resetForm, 200)
+      }
     } catch (error) {
       // 403 已由请求层在右上角通知；抽屉内不重复渲染错误横幅。
       if (!isForbiddenRequest(error)) {
@@ -459,7 +482,7 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
   }, { immediate: true })
 
   return {
-    creationSource, marketplaceCapability, isLibraryAvailable, productMenuAvailable,
+    creationSource, creationMode, marketplaceCapability, isLibraryAvailable, productMenuAvailable,
     selectedProductKey, selectedTemplateKey, selectedProduct, selectedTemplate, selectedSource,
     productMessage, libraryMessage, errorMessage, productLoading, productFilterTerms, libraryLoading, libraryTagLoading,
     busy, submitAction, installProgressState,
