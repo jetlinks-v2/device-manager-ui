@@ -523,7 +523,7 @@ const handleSearch = (e: any) => {
 .access-component-list-title {
   margin: 0;
   color: rgba(0, 0, 0, 0.85);
-  font-size: 20px;
+  font-size: var(--fs-18);
   font-weight: 600;
   line-height: 32px;
   white-space: nowrap;
@@ -531,7 +531,7 @@ const handleSearch = (e: any) => {
 
 .access-component-list-search {
   flex: 1 1 360px;
-  min-width: 280px;
-  max-width: 640px;
+  min-width: 25rem;
+  max-width: 40rem;
 }
 </style>

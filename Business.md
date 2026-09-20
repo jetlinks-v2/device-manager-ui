@@ -4,6 +4,20 @@
 
 ## 最近变更
 
+### 设备详情摘要 Tooltip 文本锚点（已实施）
+
+- 目标：设备详情头部摘要字段的 Tooltip 以实际文字宽度为触发锚点；例如“直连设备”的提示框居中于该文字，而非整列剩余宽度。
+- 影响范围与 owning module：仅 `runtime-ui/modules/device-manager-ui` 的 `views/device/list/styles/IotDeviceDetailHeader.css` 和本文档；不修改详情字段、接口、路由、点击操作或 Tooltip 内容。
+- 实施步骤：将摘要值从填满剩余列宽的 flex 项调整为按内容宽度占位、但在长文本时仍可收缩并显示省略号；完成后做样式差异检查，并在现有设备详情页复查 Tooltip 触发节点的实际宽度与文字宽度一致。
+- 验证：已在 `http://localhost:9200/#/resources/devices/list/Detail/2100783691425296384?type=device` 刷新确认，“直连设备”对应触发节点宽度为 `55.109375px`，与文字内容宽度一致，不再占满整列；同一摘要行的设备 ID、产品、区域／分组和最后上报均已按内容宽度占位。长文本仍保留 `max-width`、收缩和省略样式，设备 ID／产品操作及 Tooltip 内容未改动。目标文件 `git diff --check` 通过，`pnpm --filter jetlinks-web-core build -- --module-name device-manager-ui` 通过；构建仅保留既有 Baseline 数据、资源路径解析提示。
+
+### 设备管理列表与分类树视觉统一（已实施）
+
+- 目标：统一固件、接入配置、证书、协议、接入方式与插件列表的标题、搜索和新增操作布局，并为产品分类节点补齐层级图标。
+- 影响范围与 owning module：仅本模块的 `views/device/Firmware/`、`views/device/Product/` 和 `views/link/`；不改接口、权限、筛选参数、表格列、行操作、路由或 i18n 文案。
+- 实施：搜索筛选器与新增按钮统一放置在表格右侧工具栏，标题字号改用 `--fs-18`，搜索框使用 `25rem` 至 `40rem` 的弹性宽度；产品分类从第三级起显示灰色图标，前两级显示主色图标。
+- 验证：`git diff --check` 通过；`pnpm -F jetlinks-web-core build -- --module-name device-manager-ui` 通过（36.61 秒）。在固件、接入配置、证书、协议、接入方式、插件与产品列表中仍需人工确认筛选、创建权限和分类操作保持原有行为。
+
 ### 设备列表状态切换抽取为 core 公共组件 SwitchGroup（已实施）
 
 - 目标：把统一设备列表工具栏中的状态切换组（状态点 + 文案 + 计数，单选）抽成 `runtime-ui/jetlinks-web-core` 的公共组件，并按设计稿重做样式：容器圆角 4px、1px `#ECEFF3` 描边、内边距 1px、底色 `#F7F8FA`、文字使用次级文本色；选中项圆角 6px、白色底、主题色文字。

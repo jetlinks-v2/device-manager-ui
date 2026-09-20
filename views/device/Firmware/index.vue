@@ -13,10 +13,16 @@
                     :params="params"
                     class="pro-table__no-padding"
                 >
-                    <template #headerLeftRender>
+	                  <template #headerLeftRender>
+		                  <h2 class="access-component-list-title">
+			                  {{ $t('Detail.index.478940-14') }}
+		                  </h2>
+	                  </template>
+                    <template #headerRightRender>
                         <a-flex :gap="16" align="center">
                             <ConditionFilter
                                 :columns="columns"
+                                class="firmware-list-search"
                                 target="search-firmware"
                                 @search="handleSearch"
                             />
@@ -301,3 +307,13 @@ const handleSearch = (e: any) => {
     params.value = e;
 };
 </script>
+
+<style scoped lang="less">
+.access-component-list-title {
+	font-size: var(--fs-18);
+	font-weight: 600;
+}
+.firmware-list-search {
+	min-width: 400px;
+}
+</style>

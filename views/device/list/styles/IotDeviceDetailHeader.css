@@ -105,7 +105,7 @@
 
 .dd-summary-value {
   display: inline-block;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   max-width: 100%;
   min-width: 0;
   overflow: hidden;
