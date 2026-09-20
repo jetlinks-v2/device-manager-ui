@@ -183,6 +183,7 @@ export function useIotEditDeviceDrawer(props: IotEditDeviceDrawerProps, handlers
     }
   }
 
+  // 分类编辑入口会在 open 已为 true 时动态挂载，首次执行也需回填并加载绑定选项。
   watch(
     () => props.open,
     (next) => {
@@ -190,6 +191,7 @@ export function useIotEditDeviceDrawer(props: IotEditDeviceDrawerProps, handlers
       fillForm(props.device)
       void loadFormOptions()
     },
+    { immediate: true },
   )
 
   watch(

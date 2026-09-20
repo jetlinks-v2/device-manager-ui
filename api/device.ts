@@ -6,6 +6,7 @@ import { getProjectIdFromLocation } from '@jetlinks-web-core/utils/project-runti
 import { getRequestBaseApi, getRequestHeaders } from '@jetlinks-web-core/utils/request-context'
 import { getProjectStorage } from '@jetlinks-web-core/utils/project-storage'
 import i18n from '@jetlinks-web-core/locales'
+import deviceProductImage from '@device-manager-ui/assets/device/device-product.png'
 
 import type { IotDevice, IotDeviceConnectionStatus } from '@device-manager-ui/views/device/list/types'
 import { withIotDeviceListDefaultTerms } from './deviceListDefaultTerms'
@@ -45,6 +46,18 @@ import type {
 export type * from './device-library/types'
 
 const t = (key: string) => i18n.global.t(key)
+
+const DEVICE_PRODUCT_IMAGE_PATH = '/assets/device-product.png'
+
+// 产品默认图可能以构建产物地址存储；展示时由 Vite 解析当前环境的真实资源地址。
+const resolveDeviceImageUrl = (url: string = ''): string => (
+  url === DEVICE_PRODUCT_IMAGE_PATH ? deviceProductImage : url
+)
+
+// 内置图保存为稳定地址，避免把开发服务器的模块路径写入设备数据。
+const toDevicePhotoUrl = (url?: string): string | undefined => (
+  url === deviceProductImage ? DEVICE_PRODUCT_IMAGE_PATH : url
+)
 
 const deviceStateMap: Record<string, IotDeviceConnectionStatus> = {
   online: 'online',
@@ -323,7 +336,7 @@ const toDevice = (item: DeviceDetailResponse): IotDevice => {
     gatewayName: undefined,
     identifier: item.identifier || item.id || '--',
     // 设备保存接口写入的是 photoUrl，列表接口部分场景不会回填 devicePhotoUrl。
-    imageUrl: item.devicePhotoUrl || item.photoUrl || item.productPhotoUrl || '',
+    imageUrl: resolveDeviceImageUrl(item.devicePhotoUrl || item.photoUrl || item.productPhotoUrl || ''),
     summary: item.description || item.describe || '',
     i18nMessages: item.i18nMessages,
     aiSummary: {
@@ -470,7 +483,7 @@ const buildCreateDeviceBody = (input: CreateDeviceApiInput) => ({
   productName: input.productName || input.productKey,
   deviceType: input.productDeviceType || 'device',
   parentId: input.parentId || undefined,
-  photoUrl: input.imageUrl || undefined,
+  photoUrl: toDevicePhotoUrl(input.imageUrl) || undefined,
   describe: input.description?.trim() || [input.area, input.location, input.scenario, input.owner]
     .map((value) => value?.trim())
     .filter(Boolean)
@@ -485,7 +498,7 @@ const buildUpdateDeviceBasicInfoBody = (input: UpdateDeviceBasicInfoApiInput) =>
   productId: input.productKey || undefined,
   productName: input.productName || undefined,
   deviceType: input.productDeviceType || undefined,
-  photoUrl: input.imageUrl || '',
+  photoUrl: toDevicePhotoUrl(input.imageUrl) || '',
   describe: input.description?.trim() || [input.area, input.location, input.scenario, input.owner]
     .map((value) => value?.trim())
     .filter(Boolean)
