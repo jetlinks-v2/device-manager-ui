@@ -35,7 +35,14 @@
         >
           <template #title="node">
             <span class="product-category-tree__node">
-              <span class="product-category-tree__label">{{ node.i18nName || node.name }}</span>
+              <span class="product-category-tree__node-content">
+                <AIcon
+                  class="product-category-tree__node-icon"
+                  :type="node.categoryLevel > 2 ? 'icon-shu-chanpinfenlei-hui' : 'icon-shu-chanpinfenlei'"
+                  aria-hidden="true"
+                />
+                <span class="product-category-tree__label">{{ node.i18nName || node.name }}</span>
+              </span>
               <a-dropdown
                 v-if="node.id !== unclassifiedScopeId && (canAdd || canUpdate || canDelete)"
                 :trigger="['click']"
@@ -205,6 +212,17 @@ const {
     gap: var(--space-2);
     align-items: center;
     min-width: 0;
+  }
+
+  &__node-content {
+    display: flex;
+    gap: var(--space-2);
+    align-items: center;
+    min-width: 0;
+  }
+
+  &__node-icon {
+    flex: 0 0 auto;
   }
 
   &__node-action {
