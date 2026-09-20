@@ -104,11 +104,12 @@ function getProjectRuntimeContext(required = false): ProjectRuntimeContext | und
   // 私有化可能仍启用项目存储功能开关，但没有项目 code 或对应 storage；此时必须复用普通请求上下文。
   const apiUrl = hasProjectRuntime
     ? normalizeProjectRuntimeApiUrl(projectStorage?.apiUrl)
-    : String(getRequestBaseApi() || '/api').trim().replace(/\/$/, '')
+    : String(getRequestBaseApi() ?? '').trim().replace(/\/$/, '')
   const token = String(requestHeaders[TOKEN_KEY] || '').trim()
   const runtimeProjectId = hasProjectRuntime ? firstString(projectStorage?.id, projectId) : ''
 
-  if (apiUrl && token) {
+  // server 构建使用空 API 前缀，空字符串同样是有效的同源请求地址。
+  if (token) {
     return {
       projectId: runtimeProjectId,
       apiUrl,
@@ -332,6 +333,7 @@ const toDevice = (item: DeviceDetailResponse): IotDevice => {
     onlineAt: item.onlineTime,
     offlineAt: item.offlineTime,
     accessMode: item.accessName || item.accessProvider || '--',
+    configuration: item.configuration,
     accessProvider: item.accessProvider,
     gatewayName: undefined,
     identifier: item.identifier || item.id || '--',
@@ -418,6 +420,8 @@ const toProductTemplate = (item: ProductDetailResponse): IotDeviceProductTemplat
 
   return {
     id: String(item.id || ''),
+    masterProductId: item.masterProductId,
+    edgeMasterId: item.edgeMasterId,
     name: item.name || item.id || '--',
     summary: item.describe || item.description || item.classifiedName || '--',
     category: template?.category || resolveProductCategory(item),
@@ -478,6 +482,9 @@ const buildDeviceExtensions = (input: CreateDeviceApiInput | UpdateDeviceBasicIn
 
 const buildCreateDeviceBody = (input: CreateDeviceApiInput) => ({
   id: input.id?.trim() || undefined,
+  configuration: input.configuration,
+  masterProductId: input.masterProductId,
+  masterId: input.masterId,
   name: input.name.trim(),
   productId: input.productKey,
   productName: input.productName || input.productKey,
