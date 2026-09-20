@@ -6,6 +6,7 @@
 - 实施：移除新增按钮对公共 `busy` 的原生 `disabled` 绑定，保留 `creating` 加载状态；并发操作继续由 `hooks/useDeviceAlarmWorkspace.ts` 的 `create()` → `run()` 和 `if (busy.value) return` 拦截。保持页面布局、接口、权限及编辑流程不变。
 - 验证：`pnpm check:ui-style -- --files modules/device-manager-ui/views/device/alarm/index.vue` 通过；模块内 `node scripts/test-alarm-workspace.mjs` 8 项通过；`ui/` 下 `pnpm run build:modules device-manager-ui` 通过。构建仍有资源路径、Rollup output.input、混合导入、CSS 注释及 chunk 体积警告。代码核对确认编辑不写入 `creating`，新增仍经过 `run()` 互斥；页面 180 行，未新增组件或抽象。
 - 未验证：未运行独立 typecheck，模块无统一 lint 脚本；浏览器实际交互待验证，应检查编辑打开前后新增按钮外观稳定、编辑资源加载期间点击新增不会覆盖编辑表单、新增自身加载反馈正常。
+- 交付：修复提交 `cd68dc4`；[PR #280](https://github.com/jetlinks-v2/device-manager-ui/pull/280)，合入 `2.12-uat-next`。PR 已按当前底部按钮布局更新，替代旧版标题行按钮方案。
 
 ## 右侧记录卡改用 CardBox
 
