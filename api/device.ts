@@ -6,6 +6,7 @@ import { getProjectIdFromLocation } from '@jetlinks-web-core/utils/project-runti
 import { getRequestBaseApi, getRequestHeaders } from '@jetlinks-web-core/utils/request-context'
 import { getProjectStorage } from '@jetlinks-web-core/utils/project-storage'
 import i18n from '@jetlinks-web-core/locales'
+import deviceProductImage from '@device-manager-ui/assets/device/device-product.png'
 
 import type { IotDevice, IotDeviceConnectionStatus } from '@device-manager-ui/views/device/list/types'
 import { withIotDeviceListDefaultTerms } from './deviceListDefaultTerms'
@@ -45,6 +46,18 @@ import type {
 export type * from './device-library/types'
 
 const t = (key: string) => i18n.global.t(key)
+
+const DEVICE_PRODUCT_IMAGE_PATH = '/assets/device-product.png'
+
+// 产品默认图可能以构建产物地址存储；展示时由 Vite 解析当前环境的真实资源地址。
+const resolveDeviceImageUrl = (url: string = ''): string => (
+  url === DEVICE_PRODUCT_IMAGE_PATH ? deviceProductImage : url
+)
+
+// 内置图保存为稳定地址，避免把开发服务器的模块路径写入设备数据。
+const toDevicePhotoUrl = (url?: string): string | undefined => (
+  url === deviceProductImage ? DEVICE_PRODUCT_IMAGE_PATH : url
+)
 
 const deviceStateMap: Record<string, IotDeviceConnectionStatus> = {
   online: 'online',
@@ -91,11 +104,12 @@ function getProjectRuntimeContext(required = false): ProjectRuntimeContext | und
   // 私有化可能仍启用项目存储功能开关，但没有项目 code 或对应 storage；此时必须复用普通请求上下文。
   const apiUrl = hasProjectRuntime
     ? normalizeProjectRuntimeApiUrl(projectStorage?.apiUrl)
-    : String(getRequestBaseApi() || '/api').trim().replace(/\/$/, '')
+    : String(getRequestBaseApi() ?? '').trim().replace(/\/$/, '')
   const token = String(requestHeaders[TOKEN_KEY] || '').trim()
   const runtimeProjectId = hasProjectRuntime ? firstString(projectStorage?.id, projectId) : ''
 
-  if (apiUrl && token) {
+  // server 构建使用空 API 前缀，空字符串同样是有效的同源请求地址。
+  if (token) {
     return {
       projectId: runtimeProjectId,
       apiUrl,
@@ -319,11 +333,12 @@ const toDevice = (item: DeviceDetailResponse): IotDevice => {
     onlineAt: item.onlineTime,
     offlineAt: item.offlineTime,
     accessMode: item.accessName || item.accessProvider || '--',
+    configuration: item.configuration,
     accessProvider: item.accessProvider,
     gatewayName: undefined,
     identifier: item.identifier || item.id || '--',
     // 设备保存接口写入的是 photoUrl，列表接口部分场景不会回填 devicePhotoUrl。
-    imageUrl: item.devicePhotoUrl || item.photoUrl || item.productPhotoUrl || '',
+    imageUrl: resolveDeviceImageUrl(item.devicePhotoUrl || item.photoUrl || item.productPhotoUrl || ''),
     summary: item.description || item.describe || '',
     i18nMessages: item.i18nMessages,
     aiSummary: {
@@ -405,6 +420,8 @@ const toProductTemplate = (item: ProductDetailResponse): IotDeviceProductTemplat
 
   return {
     id: String(item.id || ''),
+    masterProductId: item.masterProductId,
+    edgeMasterId: item.edgeMasterId,
     name: item.name || item.id || '--',
     summary: item.describe || item.description || item.classifiedName || '--',
     category: template?.category || resolveProductCategory(item),
@@ -465,12 +482,15 @@ const buildDeviceExtensions = (input: CreateDeviceApiInput | UpdateDeviceBasicIn
 
 const buildCreateDeviceBody = (input: CreateDeviceApiInput) => ({
   id: input.id?.trim() || undefined,
+  configuration: input.configuration,
+  masterProductId: input.masterProductId,
+  masterId: input.masterId,
   name: input.name.trim(),
   productId: input.productKey,
   productName: input.productName || input.productKey,
   deviceType: input.productDeviceType || 'device',
   parentId: input.parentId || undefined,
-  photoUrl: input.imageUrl || undefined,
+  photoUrl: toDevicePhotoUrl(input.imageUrl) || undefined,
   describe: input.description?.trim() || [input.area, input.location, input.scenario, input.owner]
     .map((value) => value?.trim())
     .filter(Boolean)
@@ -485,7 +505,7 @@ const buildUpdateDeviceBasicInfoBody = (input: UpdateDeviceBasicInfoApiInput) =>
   productId: input.productKey || undefined,
   productName: input.productName || undefined,
   deviceType: input.productDeviceType || undefined,
-  photoUrl: input.imageUrl || '',
+  photoUrl: toDevicePhotoUrl(input.imageUrl) || '',
   describe: input.description?.trim() || [input.area, input.location, input.scenario, input.owner]
     .map((value) => value?.trim())
     .filter(Boolean)

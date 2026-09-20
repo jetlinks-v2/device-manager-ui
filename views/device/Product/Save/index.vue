@@ -77,12 +77,21 @@
                 </section>
 
                 <section class="product-save__fields">
+                    <RegistryComponent
+                        page-code="device/Product"
+                        code="productSave"
+                        v-model:value="form.type"
+                        :isAdd="props.isAdd"
+                        :defaultProductName="productName"
+                        @change="typeChange"
+                        @submit="chooseCloudProduct"
+                    />
                     <a-form-item class="product-save__field product-save__field--full product-save__device-type" :label="$t('Save.index.912481-8')" name="deviceType">
                         <j-card-select
                             v-model:value="form.deviceType"
                             :column="3"
                             :options="deviceList"
-                            :disabled="productStore.detail?.accessId ? true : false"
+                            :disabled="!!productStore.detail?.accessId || form.type === 'template'"
                             @change="changeDeviceType"
                         >
                             <template #itemRender="{node}">
@@ -176,6 +185,7 @@ const dialogRef = ref();
 const treeList = ref<Record<string, any>[]>([]);
 const visible = ref<boolean>(false);
 const formRef = ref();
+const productName = ref('');
 const useForm = Form.useForm;
 const photoValue = ref(device.deviceProduct);
 const imageTypes = reactive([
@@ -218,9 +228,9 @@ const form = reactive({
     describe: undefined,
     photoUrl: device.deviceProduct,
     type: 'custom',
-    masterProductId: undefined,
-    edgeMasterId: undefined,
-    metadata: undefined,
+    masterProductId: undefined as string | undefined,
+    edgeMasterId: undefined as string | undefined,
+    metadata: undefined as string | undefined,
     i18nMessages: {} as Record<string, Record<string, string>>,
 });
 /**
@@ -235,6 +245,14 @@ const validateDeviceType = async (_rule: Rule, value: string) => {
 };
 
 const rules = reactive({
+    type: [{
+        validator: async () => {
+            if (form.type === 'template' && (!form.masterProductId || !form.edgeMasterId)) {
+                throw new Error($t('device.ProductSave.101005-7'));
+            }
+        },
+        trigger: 'change',
+    }],
     name: [
         { required: true, message: $t('Save.index.912481-5'), trigger: 'blur' },
         { max: 64, message: $t('Save.index.912481-20'), trigger: 'change' },
@@ -258,6 +276,26 @@ const rules = reactive({
 
 const valueChange = (value: string, label: string) => {
     form.classifiedName = label[0];
+};
+
+const typeChange = () => {
+    // 切回自定义时清除模板来源，避免将上一次选择的云端物模型带入新产品。
+    form.masterProductId = undefined;
+    form.edgeMasterId = undefined;
+    form.metadata = undefined;
+    productName.value = '';
+    formRef.value?.clearValidate('type');
+};
+
+const chooseCloudProduct = (data: { masterProductId: string; edgeMasterId: string; productName: string; metadata: string }) => {
+    Object.assign(form, {
+        masterProductId: data.masterProductId,
+        edgeMasterId: data.edgeMasterId,
+        metadata: data.metadata,
+        deviceType: 'childrenDevice',
+    });
+    productName.value = data.productName;
+    formRef.value?.validateFields('type');
 };
 
 /**
@@ -301,11 +339,11 @@ const show = async (data: any) => {
         form.describe = data.describe;
         form.i18nMessages = detail.i18nMessages || data.i18nMessages || {};
         form.id = data.id;
-        // 旧模板产品编辑时保留来源数据，但当前弹窗不再提供模板或云端选择入口。
-        form.type = 'custom';
-        form.masterProductId = data.masterProductId;
-        form.edgeMasterId = data.edgeMasterId;
-        form.metadata = data.metadata;
+        form.masterProductId = detail.masterProductId;
+        form.edgeMasterId = detail.edgeMasterId;
+        form.metadata = detail.metadata;
+        form.type = form.masterProductId && form.edgeMasterId ? 'template' : 'custom';
+        productName.value = form.masterProductId || '';
     } else if (props.isAdd === 1) {
         productStore.reSet();
         form.name = '';
@@ -319,6 +357,7 @@ const show = async (data: any) => {
         form.i18nMessages = {};
         form.id = undefined;
         form.type = 'custom';
+        typeChange();
     }
     visible.value = true;
 };

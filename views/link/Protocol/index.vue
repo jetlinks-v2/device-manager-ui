@@ -18,25 +18,27 @@
                             <h2 class="access-component-list-title">
                                 {{ $t('AccessComponent.listTitle.protocol') }}
                             </h2>
-                            <ConditionFilter
-                                class="access-component-list-search"
-                                :columns="columns"
-                                target="search-protocol"
-                                @search="handleSearch"
-                            />
                         </div>
                     </template>
                     <template #headerRightRender>
-                        <j-permission-button
-                            type="primary"
-                            @click="handleAdd"
-                            hasPermission="link/Protocol:add"
-                        >
-                            <template #icon
-                                ><AIcon type="PlusOutlined"
-                            /></template>
-                            {{ $t('Protocol.index.437945-0') }}
-                        </j-permission-button>
+	                      <a-flex :gap="16">
+			                      <ConditionFilter
+					                      class="access-component-list-search"
+					                      :columns="columns"
+					                      target="search-protocol"
+					                      @search="handleSearch"
+			                      />
+			                      <j-permission-button
+					                      type="primary"
+					                      @click="handleAdd"
+					                      hasPermission="link/Protocol:add"
+			                      >
+					                      <template #icon
+					                      ><AIcon type="PlusOutlined"
+					                      /></template>
+					                      {{ $t('Protocol.index.437945-0') }}
+			                      </j-permission-button>
+	                      </a-flex>
                     </template>
                     <template #card="slotProps">
                         <CardBox
@@ -369,7 +371,7 @@ const handleSearch = (e: any) => {
 .access-component-list-title {
     margin: 0;
     color: rgba(0, 0, 0, 0.85);
-    font-size: 20px;
+    font-size: var(--fs-18);
     font-weight: 600;
     line-height: 32px;
     white-space: nowrap;
@@ -377,7 +379,7 @@ const handleSearch = (e: any) => {
 
 .access-component-list-search {
     flex: 1 1 360px;
-    min-width: 280px;
-    max-width: 640px;
+    min-width: 25rem;
+    max-width: 40rem;
 }
 </style>

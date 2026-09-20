@@ -81,18 +81,22 @@
 								      :alt="getI18nText(slotProps, 'name')"
 							      />
 							      <span class="product-page__name-body">
+                    <a-flex align="center" :gap="8">
                       <a
+                          class="product-page__name-link"
                           href=""
                           @click.prevent="handleView(slotProps.id)"
                       >
                       <j-ellipsis class="product-page__name-title">{{ getI18nText(slotProps, 'name') }}</j-ellipsis>
                       </a>
+                      <RegistryComponent page-code="device/Product" code="name-badges" :record="slotProps" />
+                    </a-flex>
                     <small>{{ slotProps.id }}</small>
                   </span>
 						      </span>
 					      </template>
 					      <template #classifiedName="slotProps">
-						      {{ getI18nText(slotProps, 'classifiedName') || '-' }}
+						      {{ getI18nText(slotProps, 'classifiedName') || $t('comm.table.empty') }}
 					      </template>
 					      <template #brandModel="slotProps">
 						      {{ getBrandModel(slotProps) }}
@@ -498,7 +502,7 @@ const refresh = () => {
 const getBrandModel = (product: Record<string, any>) => {
   const manufacturer = getI18nText(product, 'manufacturer');
   const model = getI18nText(product, 'model');
-  return [manufacturer, model].filter(Boolean).join(' / ') || '-';
+  return [manufacturer, model].filter(Boolean).join(' / ') || $t('comm.table.empty');
 };
 
 const normalizeCategoryTree = (nodes: Record<string, any>[] = []): ProductCategoryTreeNode[] => {
@@ -936,6 +940,10 @@ onMounted(() => {
     flex: 1;
     flex-direction: column;
     gap: var(--space-1);
+  }
+
+  &__name-link {
+    min-width: 0;
   }
 
   &__name-title {

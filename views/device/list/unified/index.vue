@@ -58,6 +58,7 @@
 									    <div>
 										    <a-flex align="center" :gap="8" wrap="wrap">
 											    <a-button type="link" class="unified-device-list__name" @click="openDetail(record)">{{ record.name }}</a-button>
+                      <RegistryComponent page-code="device/Instance" code="name-badges" :record="record" />
 											    <a-tag v-if="activeType === 'all'" :bordered="false" class="unified-device-list__category">{{ providerOf(record)?.label() }}</a-tag>
 										    </a-flex>
 										    <small>{{ record.networkAddress || record.identifier }}</small>
@@ -93,27 +94,25 @@
 								    <component :is="gatewayMonitorCell" :snapshot="gatewayMetrics?.metricsMap[record.id]" />
 							    </template>
 							    <template v-else-if="column.key === 'action'">
+                    <j-permission-button
+                        type="link"
+                        size="small"
+                        :disabled="busy"
+                        hasPermission="iot-user-device-list:update"
+                        :tooltip="{ title: t('IotDeviceList.action.editShort') }"
+                        @click="edit(record)"
+                    >
+                      <template #icon>
+                        <AIcon type="EditOutlined"/>
+                      </template>
+                    </j-permission-button>
                     <table-actions>
-                        <table-actions-item v-if="allowed(record, 'update')" :common="true">
+                        <table-actions-item>
                           <j-permission-button
                               type="link"
                               size="small"
                               :disabled="busy"
-                              :hasPermission="true"
-                              :tooltip="{ title: t('IotDeviceList.action.editShort') }"
-                              @click="edit(record)"
-                          >
-                            <template #icon>
-                              <AIcon type="EditOutlined"/>
-                            </template>
-                          </j-permission-button>
-                        </table-actions-item>
-                        <table-actions-item v-if="allowed(record, record.connectionStatus === 'disabled' ? 'enable' : 'disable')">
-                          <j-permission-button
-                              type="link"
-                              size="small"
-                              :disabled="busy"
-                              :hasPermission="true"
+                              :hasPermission="`iot-user-device-list:action`"
                               :danger="record.connectionStatus !== 'disabled'"
                               @click="toggle(record)"
                           >
@@ -123,12 +122,12 @@
                             {{ t(record.connectionStatus === 'disabled' ? 'IotDeviceList.action.enableShort' : 'IotDeviceList.action.disableShort') }}
                           </j-permission-button>
                         </table-actions-item>
-                        <table-actions-item v-if="allowed(record, 'delete')">
+                        <table-actions-item>
                           <j-permission-button
                               type="link"
                               size="small"
                               :disabled="busy || !canDelete(record)"
-                              :hasPermission="true"
+                              hasPermission="iot-user-device-list:delete"
                               danger
                               @click="remove(record)"
                           >

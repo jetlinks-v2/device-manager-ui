@@ -11,6 +11,7 @@ export interface ProductCategoryTreeNode {
 
 interface ProductCategoryDisplayNode extends ProductCategoryTreeNode {
   key: string
+  categoryLevel: number
   children: ProductCategoryDisplayNode[]
 }
 
@@ -97,14 +98,14 @@ function collectExpandableKeys(nodes: ProductCategoryTreeNode[]): string[] {
 }
 
 /** 按展示名称过滤并补齐树控件的 key；命中子分类时保留祖先。 */
-function filterTree(nodes: ProductCategoryTreeNode[], value: string): ProductCategoryDisplayNode[] {
+function filterTree(nodes: ProductCategoryTreeNode[], value: string, level = 1): ProductCategoryDisplayNode[] {
   const normalizedKeyword = value.trim().toLocaleLowerCase()
 
   return nodes.reduce<ProductCategoryDisplayNode[]>((result, node) => {
-    const children = filterTree(node.children || [], value)
+    const children = filterTree(node.children || [], value, level + 1)
     const name = String(node.i18nName || node.name || '').toLocaleLowerCase()
     if (!normalizedKeyword || name.includes(normalizedKeyword) || children.length) {
-      result.push({ ...node, key: node.id, children })
+      result.push({ ...node, key: node.id, categoryLevel: level, children })
     }
     return result
   }, [])

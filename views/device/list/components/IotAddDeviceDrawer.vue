@@ -116,6 +116,16 @@
         </template>
         <template v-else>
           <IotAddDeviceSelectedTemplate :template="selectedSource as any" @change="backToSource" />
+          <RegistryComponent
+            v-if="creationSource === 'product'"
+            page-code="device/Instance"
+            code="instanceSave"
+            v-model:value="creationMode"
+            :type="creationMode"
+            :productId="selectedProduct?.id"
+            :masterProductId="selectedProduct?.masterProductId"
+            :disabled="busy"
+          />
           <IotDeviceBasicFields
             :form="form"
             :area-tree-data="areaTreeData"
@@ -186,7 +196,7 @@ const editDrawerProps = {
   get device() { return props.device },
 }
 const {
-  creationSource, isLibraryAvailable, selectedProductKey, selectedProduct, selectedTemplateKey, selectedSource,
+  creationSource, creationMode, isLibraryAvailable, selectedProductKey, selectedProduct, selectedTemplateKey, selectedSource,
   productMenuAvailable,
   productMessage, productLoading, productFilterTerms, libraryLoading, libraryTagLoading, busy, submitAction, errorMessage,
   formRef, form, formRules, installProgressState,
