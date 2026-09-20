@@ -81,12 +81,16 @@
 								      :alt="getI18nText(slotProps, 'name')"
 							      />
 							      <span class="product-page__name-body">
+                    <a-flex align="center" :gap="8">
                       <a
+                          class="product-page__name-link"
                           href=""
                           @click.prevent="handleView(slotProps.id)"
                       >
                       <j-ellipsis class="product-page__name-title">{{ getI18nText(slotProps, 'name') }}</j-ellipsis>
                       </a>
+                      <RegistryComponent page-code="device/Product" code="name-badges" :record="slotProps" />
+                    </a-flex>
                     <small>{{ slotProps.id }}</small>
                   </span>
 						      </span>
@@ -936,6 +940,10 @@ onMounted(() => {
     flex: 1;
     flex-direction: column;
     gap: var(--space-1);
+  }
+
+  &__name-link {
+    min-width: 0;
   }
 
   &__name-title {

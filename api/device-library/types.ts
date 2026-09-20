@@ -166,6 +166,8 @@ export type IotDeviceTemplateTagGroup = {
 
 export type IotDeviceProductTemplate = {
   id: string
+  masterProductId?: string
+  edgeMasterId?: string
   name: string
   summary: string
   category: IotDeviceProductCategory
@@ -258,6 +260,8 @@ export type DeviceProductPageResult = {
 }
 export type ProductDetailResponse = {
   id?: string
+  masterProductId?: string
+  edgeMasterId?: string
   name?: string
   createTime?: number | string
   projectId?: string
@@ -301,6 +305,9 @@ export type DeviceGatewayDetailResponse = DeviceLibraryGatewayDetail & {
 
 export type CreateDeviceApiInput = {
   id?: string
+  configuration?: { type: 'cloud' }
+  masterProductId?: string
+  masterId?: string
   projectId: string
   productKey: string
   productName?: string

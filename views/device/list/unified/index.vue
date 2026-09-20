@@ -58,6 +58,7 @@
 									    <div>
 										    <a-flex align="center" :gap="8" wrap="wrap">
 											    <a-button type="link" class="unified-device-list__name" @click="openDetail(record)">{{ record.name }}</a-button>
+                      <RegistryComponent page-code="device/Instance" code="name-badges" :record="record" />
 											    <a-tag v-if="activeType === 'all'" :bordered="false" class="unified-device-list__category">{{ providerOf(record)?.label() }}</a-tag>
 										    </a-flex>
 										    <small>{{ record.networkAddress || record.identifier }}</small>

@@ -7,6 +7,8 @@ type DeviceType = {
 
 export type ProductItem = {
   id: string;
+  masterProductId?: string;
+  edgeMasterId?: string;
   name: string;
   i18nName?: string;
   classifiedId: string | string[];

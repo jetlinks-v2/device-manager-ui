@@ -319,6 +319,7 @@ const toDevice = (item: DeviceDetailResponse): IotDevice => {
     onlineAt: item.onlineTime,
     offlineAt: item.offlineTime,
     accessMode: item.accessName || item.accessProvider || '--',
+    configuration: item.configuration,
     accessProvider: item.accessProvider,
     gatewayName: undefined,
     identifier: item.identifier || item.id || '--',
@@ -405,6 +406,8 @@ const toProductTemplate = (item: ProductDetailResponse): IotDeviceProductTemplat
 
   return {
     id: String(item.id || ''),
+    masterProductId: item.masterProductId,
+    edgeMasterId: item.edgeMasterId,
     name: item.name || item.id || '--',
     summary: item.describe || item.description || item.classifiedName || '--',
     category: template?.category || resolveProductCategory(item),
@@ -465,6 +468,9 @@ const buildDeviceExtensions = (input: CreateDeviceApiInput | UpdateDeviceBasicIn
 
 const buildCreateDeviceBody = (input: CreateDeviceApiInput) => ({
   id: input.id?.trim() || undefined,
+  configuration: input.configuration,
+  masterProductId: input.masterProductId,
+  masterId: input.masterId,
   name: input.name.trim(),
   productId: input.productKey,
   productName: input.productName || input.productKey,
