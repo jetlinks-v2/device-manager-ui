@@ -53,7 +53,7 @@ async function streamCapabilityProgress(
   onLine: (state: ProgressStatePayload) => void,
   op: StreamOp,
 ): Promise<void> {
-  const base = (import.meta as any).env?.VITE_APP_BASE_API || '/api'
+  const base = (import.meta as any).env?.VITE_APP_BASE_API ?? '/api'
   const path = `${base.replace(/\/$/, '')}/marketplace/capabilities/${encodeURIComponent(capabilityId)}/${encodeURIComponent(version)}/${op}`
   let token = ''
   try {

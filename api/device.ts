@@ -91,11 +91,12 @@ function getProjectRuntimeContext(required = false): ProjectRuntimeContext | und
   // 私有化可能仍启用项目存储功能开关，但没有项目 code 或对应 storage；此时必须复用普通请求上下文。
   const apiUrl = hasProjectRuntime
     ? normalizeProjectRuntimeApiUrl(projectStorage?.apiUrl)
-    : String(getRequestBaseApi() || '/api').trim().replace(/\/$/, '')
+    : String(getRequestBaseApi() ?? '').trim().replace(/\/$/, '')
   const token = String(requestHeaders[TOKEN_KEY] || '').trim()
   const runtimeProjectId = hasProjectRuntime ? firstString(projectStorage?.id, projectId) : ''
 
-  if (apiUrl && token) {
+  // server 构建使用空 API 前缀，空字符串同样是有效的同源请求地址。
+  if (token) {
     return {
       projectId: runtimeProjectId,
       apiUrl,
