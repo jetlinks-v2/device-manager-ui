@@ -886,6 +886,9 @@
   border-radius: var(--jet-theme-radius);
   background: var(--jet-theme-primary-soft);
   color: var(--jet-theme-primary);
+  .anticon {
+    cursor: default;
+  }
 }
 
 .add-device-modal__icon :deep(svg) {

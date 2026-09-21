@@ -196,7 +196,6 @@ const columns = [
     dataIndex: "name",
     key: "name",
     scopedSlots: true,
-    width: 240,
     ellipsis: true,
   },
   {
@@ -213,7 +212,7 @@ const columns = [
     key: "brandModel",
     scopedSlots: true,
     ellipsis: true,
-    width: 180,
+    width: 240,
   },
   {
     title: $t("Product.index.660348-9"),
@@ -221,7 +220,7 @@ const columns = [
     key: "state",
     scopedSlots: true,
     ellipsis: true,
-    width: 90,
+    width: 80,
   },
   {
     title: $t("Product.index.660348-4"),
@@ -235,9 +234,8 @@ const columns = [
     title: $t("Product.index.660348-11"),
     key: "action",
     fixed: "right",
-    width: 80,
+    width: 90,
     scopedSlots: true,
-    ellipsis: true,
   },
 ];
 const hasDepartmentMenu = menuStory.hasMenu('system/Department');

@@ -9,25 +9,24 @@
       </template>
     </a-segmented>
     <div class="iot-device-scope__body">
-      <button class="iot-device-scope__all" :class="{ 'is-active': !scopeId }" type="button" @click="select('')">
-        <span class="iot-device-scope__label">{{ $t(scopeType === 'area' ? 'IotDeviceList.scope.allAreas' : 'IotDeviceList.scope.allGroups') }}</span>
-        <em class="iot-device-scope__count">{{ countText(totalDeviceCount) }}</em>
-      </button>
       <div class="iot-device-scope__scroll">
-        <CloudEmpty v-if="!hasScopes" :description="$t(scopeType === 'area' ? 'IotDeviceList.scope.emptyAreas' : 'IotDeviceList.scope.emptyGroups')" />
         <a-tree
           :key="scopeType"
           block-node
-          showLine
+          :show-line="{ showLeafIcon: true }"
           :tree-data="treeData"
-          :selected-keys="scopeId ? [scopeId] : []"
+          :selected-keys="selectedKeys"
           :default-expand-all="scopeType === 'area'"
           @select="onSelect"
         >
+          <template #leafIcon="{ dataRef }">
+            <span v-if="dataRef.isScope" class="iot-device-scope__scope-dot" aria-hidden="true" />
+            <AIcon v-else class="ant-tree-switcher-line-icon" type="FileOutlined" aria-hidden="true" />
+          </template>
           <template #title="node">
-            <span class="iot-device-scope__group-node">
+            <span class="iot-device-scope__tree-node">
               <span>
-                <AIcon :type="node.isLeaf ? 'icon-dizhi': 'icon-shebei2' " />
+                <AIcon :type="node.icon" />
               </span>
               <span class="iot-device-scope__label">
                 <j-ellipsis>
@@ -103,7 +102,7 @@ const emit = defineEmits<{
   (event: 'edit-group', group: DeviceGroup): void
   (event: 'delete-group', group: DeviceGroup): void
 }>()
-const { scopeType, scopeId, scopeOptions, hasScopes, treeData, select, onSelect, countText } =
+const { scopeType, scopeOptions, treeData, selectedKeys, onSelect, countText } =
   useIotDeviceScopeSidebar(props, (scope) => emit('change', scope))
 </script>
 
@@ -129,20 +128,6 @@ const { scopeType, scopeId, scopeOptions, hasScopes, treeData, select, onSelect,
   overflow: auto;
 }
 
-.iot-device-scope__all {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: var(--space-2);
-  align-items: center;
-  width: 100%;
-  border: 0;
-  background: transparent;
-  padding: var(--space-2);
-  color: var(--jet-theme-text-secondary);
-  cursor: pointer;
-  text-align: left;
-}
-
 .iot-device-scope__label {
   flex: 1;
   min-width: 0;
@@ -156,7 +141,16 @@ const { scopeType, scopeId, scopeOptions, hasScopes, treeData, select, onSelect,
   text-align: right;
 }
 
-.iot-device-scope__group-node {
+.iot-device-scope__scope-dot {
+  display: inline-block;
+  width: 0.375rem;
+  height: 0.375rem;
+  vertical-align: middle;
+  background: #DDE4ED;
+  border-radius: 50%;
+}
+
+.iot-device-scope__tree-node {
   display: flex;
   gap: var(--space-2);
   min-width: 0;
@@ -166,8 +160,8 @@ const { scopeType, scopeId, scopeOptions, hasScopes, treeData, select, onSelect,
   opacity: 0;
 }
 
-.iot-device-scope__group-node:hover .iot-device-scope__group-action,
-.iot-device-scope__group-node:focus-within .iot-device-scope__group-action {
+.iot-device-scope__tree-node:hover .iot-device-scope__group-action,
+.iot-device-scope__tree-node:focus-within .iot-device-scope__group-action {
   opacity: 1;
 }
 
@@ -176,16 +170,6 @@ const { scopeType, scopeId, scopeOptions, hasScopes, treeData, select, onSelect,
   flex: 1;
   min-width: 0;
   width: 100%;
-}
-
-.iot-device-scope__all.is-active {
-  color: var(--jet-theme-primary);
-  font-weight: 600;
-}
-
-.iot-device-scope__all:not(.is-active):hover {
-  background: var(--ant-table-row-hover-bg, rgba(0, 0, 0, 0.02));
-  color: var(--jet-theme-text);
 }
 
 .iot-device-scope__create-group {
