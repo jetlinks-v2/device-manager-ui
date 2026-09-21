@@ -17,6 +17,11 @@
                   <template #prefix><AIcon type="icon-gaojingzhongxin-zhinengsousuo-sousuo" /></template>
                 </a-input>
               </div>
+              <button class="alarm-all-records" :class="{ 'is-selected': !selected }" type="button"
+                      :aria-pressed="!selected" @click="showAllRecords">
+                <AIcon type="AlertOutlined" aria-hidden="true" />
+                <span>{{ $t('DeviceAlarm.workspace.allRecords') }}</span>
+              </button>
               <a-alert v-if="statusError" type="warning" show-icon :message="$t('DeviceAlarm.workspace.statusError')"><template #action><a-button type="link" size="small" @click="loadCounts">{{ $t('DeviceAlarm.workspace.retry') }}</a-button></template></a-alert>
               <a-alert v-if="listError" type="error" :message="$t('DeviceAlarm.workspace.listError')"><template #action><a-button @click="load()">{{ $t('DeviceAlarm.workspace.retry') }}</a-button></template></a-alert>
               <div v-else class="alarm-scroll" @scroll.passive="onRuleScroll">
@@ -142,6 +147,24 @@ function confirmRemove(row: DeviceAlarmRow) {
 .alarm-rule-heading span { overflow: hidden; color: var(--jet-theme-text-secondary); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
 .alarm-rule-search { display: flex; min-width: 0; flex-shrink: 0; }
 .alarm-rule-search > :first-child { flex: 1; min-width: 0; }
+.alarm-all-records {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--jet-theme-border-color-1);
+  border-radius: var(--r-1);
+  background: var(--jet-theme-bg-container);
+  color: var(--jet-theme-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  &:hover { border-color: var(--jet-theme-primary-3); }
+  &.is-selected { border-color: var(--jet-theme-primary); background: var(--jet-theme-primary-soft); font-weight: 600; }
+  &:focus-visible { outline: 2px solid var(--jet-theme-primary); outline-offset: 2px; }
+}
 .alarm-scroll { flex: 1; min-height: 0; overflow-y: auto; }
 .alarm-rule-more { display: flex; min-height: 2.25rem; align-items: center; justify-content: center; gap: var(--space-1); color: var(--jet-theme-text-secondary); font-size: var(--fs-12); }
 .alarm-rule-footer { flex-shrink: 0; }

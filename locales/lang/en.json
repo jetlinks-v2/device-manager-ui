@@ -7485,6 +7485,7 @@
     "DeviceAlarm.workspace.record": "Device alarm record",
     "DeviceAlarm.workspace.chooseRecord": "Select a device alarm record",
     "DeviceAlarm.workspace.allRules": "All rules",
+    "DeviceAlarm.workspace.allRecords": "All alarms",
     "DeviceAlarm.workspace.records": "Alarm records",
     "DeviceAlarm.workspace.recordSearch": "Search alarm name, device, reason or status",
     "DeviceAlarm.workspace.scope": "Scope",
