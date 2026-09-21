@@ -14,25 +14,25 @@
 
     <div class="product-category-tree__content">
       <a-spin :spinning="loading">
-        <button
-          class="product-category-tree__all"
-          :class="{ 'is-active': !activeId }"
-          type="button"
-          @click="emit('select', undefined)"
-        >
-          <span class="product-category-tree__label">{{ $t('Product.index.660348-38') }}</span>
-        </button>
         <a-tree
           v-if="filteredTree.length"
           :selected-keys="selectedKeys"
           :expanded-keys="expandedKeys"
           block-node
-          showLine
+          :show-line="{ showLeafIcon: true }"
           :tree-data="filteredTree"
           :field-names="fieldNames"
           @expand="handleExpand"
           @select="handleSelect"
         >
+          <template #leafIcon="{ dataRef }">
+            <span
+              v-if="isScopeNode(dataRef.id)"
+              class="product-category-tree__scope-dot"
+              aria-hidden="true"
+            />
+            <AIcon v-else class="ant-tree-switcher-line-icon" type="FileOutlined" aria-hidden="true" />
+          </template>
           <template #title="node">
             <span class="product-category-tree__node">
               <span class="product-category-tree__node-content">
@@ -44,7 +44,7 @@
                 <span class="product-category-tree__label">{{ node.i18nName || node.name }}</span>
               </span>
               <a-dropdown
-                v-if="node.id !== unclassifiedScopeId && (canAdd || canUpdate || canDelete)"
+                v-if="!isScopeNode(node.id) && (canAdd || canUpdate || canDelete)"
                 :trigger="['click']"
               >
                 <a-button
@@ -130,12 +130,13 @@ const {
   selectedKeys,
   filteredTree,
   fieldNames,
-  unclassifiedScopeId,
+  isScopeNode,
   handleExpand,
   handleSelect,
 } = useProductCategoryTree({
   treeData: () => props.treeData,
   activeId: () => props.activeId,
+  allLabel: () => $t('Product.index.660348-38'),
   unclassifiedLabel: () => $t('Product.index.660348-42'),
   onSelect: (id) => emit('select', id),
   onSelectUnclassified: () => emit('select-unclassified'),
@@ -178,32 +179,20 @@ const {
     overflow: auto;
   }
 
-  &__all {
-    display: block;
-    width: 100%;
-    padding: var(--space-2);
-    color: var(--jet-theme-text-secondary);
-    text-align: left;
-    cursor: pointer;
-    background: transparent;
-    border: 0;
-
-    &.is-active {
-      color: var(--jet-theme-primary);
-      font-weight: 600;
-    }
-
-    &:not(.is-active):hover {
-      color: var(--jet-theme-text);
-      background: var(--ant-table-row-hover-bg, rgba(0, 0, 0, 0.02));
-    }
-  }
-
   &__label {
     display: block;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  &__scope-dot {
+    display: inline-block;
+    width: 0.375rem;
+    height: 0.375rem;
+    vertical-align: middle;
+    background: #DDE4ED;
+    border-radius: 50%;
   }
 
   &__node {

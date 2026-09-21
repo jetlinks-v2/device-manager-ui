@@ -1,13 +1,21 @@
 <template>
   <j-page-container class="product-detail-page" :showBack="true">
+		<PageChrome>
+			<a-button class="product-summary__back" type="text" @click="backToProductList">
+				<template #icon><AIcon type="LeftOutlined" /></template>
+				{{ $t('Product.detail.backToList') }}
+			</a-button>
+		</PageChrome>
     <ProductDetailSummary
       :product="productStore.current"
       :can-update="permissionStore.hasPermission('device/Product:update')"
       :can-action="permissionStore.hasPermission('device/Product:action')"
+      :can-delete="permissionStore.hasPermission('device/Product:delete')"
       :can-view-devices="canViewDevices"
       @back="backToProductList"
       @edit="openEdit"
       @toggle-state="toggleState"
+      @delete="deleteCurrent"
       @view-devices="jumpDevice"
     />
 
@@ -40,7 +48,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { useProductStore } from '../../../../store/product'
-import { _deploy, _undeploy } from '../../../../api/product'
+import { _deploy, _undeploy, deleteProduct } from '../../../../api/product'
 import { encodeConditionFilterQuery } from '@jetlinks-web-core/components/ConditionFilter'
 import { useMenuStore } from '@jetlinks-web-core/store/menu'
 import { useRouterParams } from '@jetlinks-web/hooks'
@@ -107,6 +115,22 @@ function toggleState() {
   })
 }
 
+function deleteCurrent() {
+  const productId = productStore.current?.id
+  if (!productId) return
+
+  return deleteProduct(productId).then((response: any) => {
+    if (response?.status === 200) {
+      onlyMessage($t('Product.index.660348-18'))
+      backToProductList()
+      return response
+    }
+
+    onlyMessage($t('Product.index.660348-19'), 'error')
+    return response
+  })
+}
+
 function jumpDevice() {
   const productId = typeof route.params.id === 'string' ? route.params.id : productStore.current?.id
   if (!canViewDevices.value || !productId) return
@@ -143,16 +167,12 @@ onMounted(async () => {
   gap: var(--space-3);
 }
 
+.product-summary__back {
+	padding: 0;
+}
 .product-detail-page__tabs {
   min-width: 0;
   overflow: hidden;
-  border: 0.0625rem solid var(--jet-theme-border-secondary);
-  border-radius: var(--r-6);
-  background: var(--bg-trans-8);
-}
-
-.product-detail-tabs {
-  padding: 0 var(--space-4);
 }
 
 .product-detail-tabs :deep(.ant-tabs-tab) {
@@ -183,7 +203,7 @@ onMounted(async () => {
 
 .product-detail-page__content {
   min-width: 0;
-  padding: var(--space-4);
+  padding-top: var(--space-4);
 }
 
 .product-detail-page__content :deep(.metadata-base .extra-header) {
