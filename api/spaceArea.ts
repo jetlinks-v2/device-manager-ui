@@ -54,8 +54,8 @@ type SpaceDataBindResponse = {
 
 type DeviceSpaceAreaResponse = {
   deviceId?: string
-  areaId?: string
-  areaName?: string
+  spaceId?: string
+  spaceName?: string
 }
 
 export type DeviceSpaceAreaBinding = {
@@ -230,13 +230,13 @@ export const queryDeviceSpaceAreaBindings_api = async (
   if (await existsDeviceSpaceAreaSupport_api() !== true) return []
 
   const response = await request
-    .post('/space/device-area/_query', { deviceIds: ids }, { hiddenError: true }) as ApiResponse<DeviceSpaceAreaResponse[]>
+    .post('/space/device-binding/_query', { deviceIds: ids }, { hiddenError: true }) as ApiResponse<DeviceSpaceAreaResponse[]>
 
   return unwrapList(response)
     .map((item) => ({
       deviceId: String(item.deviceId || ''),
-      areaId: String(item.areaId || ''),
-      area: typeof item.areaName === 'string' ? item.areaName : undefined,
+      areaId: String(item.spaceId || ''),
+      area: typeof item.spaceName === 'string' ? item.spaceName : undefined,
     }))
     .filter((item) => ids.includes(item.deviceId) && Boolean(item.areaId))
 }
@@ -251,7 +251,7 @@ export const bindDevicesSpaceArea_api = async (spaceId: string, deviceIds: strin
   if (!spaceId || !ids.length) return
   if (await existsDeviceSpaceAreaSupport_api() !== true) return
   try {
-    await request.post('/space/device-area/_bind', { spaceId, deviceIds: ids }, { hiddenError: true })
+    await request.post('/space/device-binding/_bind', { spaceId, deviceIds: ids }, { hiddenError: true })
   } catch (error) {
     throw toBusinessError(error)
   }

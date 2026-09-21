@@ -70,7 +70,7 @@ test('unbound-device queries do not depend on the caller visible area IDs', () =
   assert.doesNotMatch(deviceScopeSource, /space-bind\$not\$device/)
 })
 
-test('the scope tree reads binding IDs from the device-area endpoint instead of display extensions', () => {
+test('the scope tree reads binding IDs from the device-binding endpoint instead of display extensions', () => {
   assert.match(filterSource, /queryDeviceSpaceAreaBindings_api\(deviceIds\)/)
   assert.match(filterSource, /mergeVisibleDeviceAreaBindings\(bindings, fallbackBindings\)/)
   assert.match(filterSource, /fallbackVisibleDeviceAreaBindings\(rows\)/)
@@ -81,6 +81,6 @@ test('the scope tree reads binding IDs from the device-area endpoint instead of 
 
 test('device area writes use the bind endpoint', () => {
   assert.match(spaceAreaApiSource, /bindDevicesSpaceArea_api/)
-  assert.match(spaceAreaApiSource, /space\/device-area\/_bind/)
-  assert.doesNotMatch(spaceAreaApiSource, /space\/device-area\/_set/)
+  assert.match(spaceAreaApiSource, /space\/device-binding\/_bind/)
+  assert.doesNotMatch(spaceAreaApiSource, /space\/device-binding\/_set/)
 })
