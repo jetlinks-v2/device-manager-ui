@@ -13,6 +13,7 @@ type Scope = { type: 'area' | 'group'; id: string }
 export interface IotDeviceScopeSidebarProps {
   // 仅消费范围筛选的页面可关闭管理入口；设备页默认保留分组操作。
   showGroupActions?: boolean
+  showArea?: boolean
   activeType: Scope['type']
   activeId: string
   areas: Area[]
@@ -47,10 +48,10 @@ export function useIotDeviceScopeSidebar(
   const scopeId = computed(() => props.activeId)
   // 不设置 label 字段，分段器才会把这部分交给 #label 插槽渲染（图标 + 文案）。
   const scopeOptions = computed(() => [
-    {
+    ...(props.showArea === false ? [] : [{
       value: 'area',
       payload: { title: t('IotDeviceList.scope.area'), icon: 'icon-dizhi-hui' },
-    },
+    }]),
     {
       value: 'group',
       payload: { title: t('IotDeviceList.scope.group'), icon: 'icon-zuzhi' },

@@ -20,7 +20,7 @@ import {
   queryDeviceLibraryTemplates_api,
 } from '@device-manager-ui/api/device-library'
 import { queryDeviceGroupDetailList_api, type DeviceGroup } from '@device-manager-ui/api/deviceGroup'
-import { queryProjectSpaceAreaSettings_api } from '@device-manager-ui/api/spaceArea'
+import { existsDeviceSpaceAreaSupport_api, queryProjectSpaceAreaSettings_api } from '@device-manager-ui/api/spaceArea'
 import type { ProjectArea } from '@device-manager-ui/modules/defaults/types'
 import type { ProductCategoryTreeNode } from '@device-manager-ui/views/device/Product/components/ProductCategoryTree.vue'
 import type { IotDevice } from '../types'
@@ -104,6 +104,7 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
   const installProgressLogs = ref<IotAddDeviceInstallProgressLog[]>([])
   const areaOptions = ref<ProjectArea[]>([])
   const groupOptions = ref<DeviceGroup[]>([])
+  const spaceAreaSupported = ref<boolean>()
   const categoryTree = ref<ProductCategoryTreeNode[]>([])
   const categoryLoading = ref(false)
   const selectedCategoryId = ref<string>()
@@ -342,8 +343,10 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
     if (configOptionsLoading.value) return
     configOptionsLoading.value = true
     try {
+      const supported = await existsDeviceSpaceAreaSupport_api()
+      spaceAreaSupported.value = supported
       const [areaSettings, groups] = await Promise.all([
-        queryProjectSpaceAreaSettings_api(props.projectId).catch(() => ({ areas: [] })),
+        supported ? queryProjectSpaceAreaSettings_api(props.projectId).catch(() => ({ areas: [] })) : Promise.resolve({ areas: [] }),
         queryDeviceGroupDetailList_api().catch(() => []),
       ])
       areaOptions.value = areaSettings.areas
@@ -493,7 +496,7 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
     selectedProductKey, selectedTemplateKey, selectedProduct, selectedTemplate, selectedSource,
     productMessage, libraryMessage, errorMessage, productLoading, productFilterTerms, libraryLoading, libraryTagLoading,
     busy, submitAction, installProgressState,
-    formRef, form, formRules, areaTreeData, groupTreeData,
+    formRef, form, formRules, areaTreeData, groupTreeData, spaceAreaSupported,
     configOptionsLoading,
     categoryTree, categoryLoading, selectedCategoryId, productCandidates, productTotal, productPageIndex, productPageSize,
     libraryProducts, libraryTagGroups, libraryPageIndex, libraryPageSize, libraryHasMore,

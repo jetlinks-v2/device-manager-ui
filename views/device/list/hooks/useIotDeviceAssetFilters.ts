@@ -11,8 +11,14 @@ import {
 import type { DeviceLibraryProductFilterOption, DeviceQueryTerm } from '@device-manager-ui/api/device'
 import { queryDeviceLibraryProductFilterOptions_api } from '@device-manager-ui/api/device-library'
 import { queryDeviceGroupDetailList_api, type DeviceGroup } from '@device-manager-ui/api/deviceGroup'
-import { queryProjectSpaceAreaSettings_api } from '@device-manager-ui/api/spaceArea'
+import {
+  existsDeviceSpaceAreaSupport_api,
+  queryDeviceSpaceAreaBindings_api,
+  queryProjectSpaceAreaSettings_api,
+  type DeviceSpaceAreaBinding,
+} from '@device-manager-ui/api/spaceArea'
 import type { ProjectArea } from '@device-manager-ui/modules/defaults/types'
+import { mergeDeviceBoundAreas } from './iotAreaTreeOptions'
 
 import type { IotDevice, IotDeviceConnectionStatus } from '../types'
 
@@ -20,6 +26,7 @@ type ConnectionStatusMeta = (status: IotDeviceConnectionStatus) => { label: stri
 
 export const IOT_UNBOUND_AREA_SCOPE_ID = '__iot-unbound-area__'
 export const IOT_UNASSIGNED_GROUP_SCOPE_ID = '__iot-unassigned-group__'
+const ANY_SPACE_BINDING_VALUE = '__any_space_binding__'
 
 export function cloneConditionTerms(terms: ConditionFilterTerm[] = []): ConditionFilterTerm[] {
   return terms.map((item) => ({
@@ -33,7 +40,7 @@ export function cloneConditionTerms(terms: ConditionFilterTerm[] = []): Conditio
 
 export function useIotDeviceAssetFilters(
   projectId: Ref<string>,
-  _devices: Ref<IotDevice[]>,
+  devices: Ref<IotDevice[]>,
   connectionStatusMeta: ConnectionStatusMeta,
   route: RouteLocationNormalizedLoaded,
   router: Router,
@@ -42,11 +49,20 @@ export function useIotDeviceAssetFilters(
   const { t: $t } = useI18n()
   const filterTerms = ref<ConditionFilterTerm[]>([])
   const submittedTerms = ref<ConditionFilterTerm[]>([])
-  const areaOptions = ref<ProjectArea[]>([])
+  const accessibleAreaOptions = ref<ProjectArea[]>([])
+  const visibleDeviceAreaBindings = ref<DeviceSpaceAreaBinding[]>([])
+  let visibleBindingsRequestVersion = 0
   const groupOptions = ref<DeviceGroup[]>([])
+  const spaceAreaSupported = ref<boolean>()
   const deviceLibraryProducts = ref<DeviceLibraryProductFilterOption[]>([])
   const scopeType = ref<'area' | 'group'>(route.query.scopeType === 'group' ? 'group' : 'area')
   const scopeId = ref(String(route.query.scopeId || ''))
+
+  const areaOptions = computed(() => mergeDeviceBoundAreas(
+    accessibleAreaOptions.value,
+    visibleDeviceAreaBindings.value,
+    projectId.value,
+  ))
 
   const areaChildrenByParent = computed(() => {
     const map = new Map<string, ProjectArea[]>()
@@ -184,7 +200,7 @@ export function useIotDeviceAssetFilters(
         },
       },
     },
-    {
+    ...(spaceAreaSupported.value === false ? [] : [{
       dataIndex: 'areaId',
       title: $t('IotDeviceList.filter.area'),
       search: {
@@ -197,7 +213,7 @@ export function useIotDeviceAssetFilters(
           showSearch: true,
         },
       },
-    },
+    }]),
     {
       dataIndex: 'groupId',
       title: $t('IotDeviceList.filter.group'),
@@ -255,7 +271,11 @@ export function useIotDeviceAssetFilters(
       },
     },
   ])
-  const commonFilterFields = computed(() => ['name', 'id', 'deviceType', 'accessProvider', 'productManufacturer', 'productModel', 'status', 'areaId', 'groupId', 'productId', 'healthScore'])
+  const commonFilterFields = computed(() => [
+    'name', 'id', 'deviceType', 'accessProvider', 'productManufacturer', 'productModel', 'status',
+    ...(spaceAreaSupported.value === false ? [] : ['areaId']),
+    'groupId', 'productId', 'healthScore',
+  ])
 
   function collectAreaScopeIds(areaId: string): string[] {
     const ids = new Set<string>([areaId])
@@ -296,6 +316,7 @@ export function useIotDeviceAssetFilters(
     }
 
     if (term.column === 'areaId') {
+      if (spaceAreaSupported.value !== true) return null
       const ids = [...new Set(normalizeTermValues(term.value).flatMap(collectAreaScopeIds))]
       if (!ids.length) return null
       // 所属区域是独立空间绑定关系，转成后端已有的设备 ID 自定义 term 查询。
@@ -397,17 +418,15 @@ export function useIotDeviceAssetFilters(
       .map(normalizeDeviceQueryTerm)
       .filter((item): item is DeviceQueryTerm => Boolean(item))
     if (!scopeId.value) return terms
-    if (scopeType.value === 'area') {
+    if (scopeType.value === 'area' && spaceAreaSupported.value === true) {
       if (scopeId.value === IOT_UNBOUND_AREA_SCOPE_ID) {
-        const areaIds = areaOptions.value.map((area) => area.id)
-        if (areaIds.length) {
-          terms.push({ column: 'id', termType: 'space-bind$not$device', value: areaIds.length === 1 ? areaIds[0] : areaIds })
-        }
+        // 不依赖可读取的空间列表；否则无空间权限时会把全部设备误判为未绑定。
+        terms.push({ column: 'id', termType: 'space-bind$any$not', value: ANY_SPACE_BINDING_VALUE })
         return terms
       }
       const ids = collectAreaScopeIds(scopeId.value)
       if (ids.length) terms.push({ column: 'id', termType: 'space-bind$device', value: ids.length === 1 ? ids[0] : ids })
-    } else {
+    } else if (scopeType.value === 'group') {
       if (scopeId.value === IOT_UNASSIGNED_GROUP_SCOPE_ID) {
         const groupIds = groupOptions.value.map((group) => group.id).filter(Boolean)
         if (groupIds.length) terms.push({ column: 'id', termType: 'dev-group$not', value: groupIds })
@@ -419,6 +438,7 @@ export function useIotDeviceAssetFilters(
   }
 
   function handleScopeChange(scope: { type: 'area' | 'group'; id: string }) {
+    if (scope.type === 'area' && spaceAreaSupported.value !== true) return
     scopeType.value = scope.type
     scopeId.value = scope.id
     const nextQuery = { ...route.query, scopeType: scope.type }
@@ -455,28 +475,89 @@ export function useIotDeviceAssetFilters(
     onSearch()
   }
 
+  function fallbackVisibleDeviceAreaBindings(rows: IotDevice[]): DeviceSpaceAreaBinding[] {
+    return rows.flatMap((device) => (
+      device.areaBindings?.map((binding) => ({ deviceId: device.id, ...binding })) ?? []
+    ))
+  }
+
+  /**
+   * 列表加载已完成的区域关联可作为侧栏查询的兜底。
+   *
+   * 两处查询使用相同的设备视角接口；当侧栏的补查暂时返回空结果时，不能覆盖列表已拿到的无权限区域，
+   * 否则区域名称能展示、区域树却缺少对应节点。
+   */
+  function mergeVisibleDeviceAreaBindings(
+    bindings: DeviceSpaceAreaBinding[],
+    fallbackBindings: DeviceSpaceAreaBinding[],
+  ): DeviceSpaceAreaBinding[] {
+    const merged = new Map<string, DeviceSpaceAreaBinding>()
+    for (const binding of [...fallbackBindings, ...bindings]) {
+      const deviceId = String(binding.deviceId || '').trim()
+      const areaId = String(binding.areaId || '').trim()
+      if (!deviceId || !areaId) continue
+      merged.set(`${deviceId}:${areaId}`, { ...binding, deviceId, areaId })
+    }
+    return [...merged.values()]
+  }
+
+  function refreshVisibleDeviceAreaBindings(rows: IotDevice[]) {
+    const requestVersion = ++visibleBindingsRequestVersion
+    const deviceIds = rows.map((device) => device.id).filter(Boolean)
+    if (!deviceIds.length) {
+      visibleDeviceAreaBindings.value = []
+      return
+    }
+
+    const fallbackBindings = fallbackVisibleDeviceAreaBindings(rows)
+    // 设备列表自身仍负责区域名称展示；此处额外保存绑定 ID，供无空间权限的侧栏构造可筛选节点。
+    void queryDeviceSpaceAreaBindings_api(deviceIds)
+      .then((bindings) => {
+        if (requestVersion === visibleBindingsRequestVersion) {
+          visibleDeviceAreaBindings.value = mergeVisibleDeviceAreaBindings(bindings, fallbackBindings)
+        }
+      })
+      .catch(() => {
+        if (requestVersion === visibleBindingsRequestVersion) {
+          visibleDeviceAreaBindings.value = fallbackBindings
+        }
+      })
+  }
+
   watch(
     () => route.query.q,
     () => applyRouteTerms(),
     { immediate: true },
   )
 
+  watch(devices, (rows) => refreshVisibleDeviceAreaBindings(rows), { immediate: true })
+
   watch(
     projectId,
     async (value) => {
       if (!value) {
-        areaOptions.value = []
+        accessibleAreaOptions.value = []
+        visibleDeviceAreaBindings.value = []
         groupOptions.value = []
         deviceLibraryProducts.value = []
         return
       }
 
+      const supported = await existsDeviceSpaceAreaSupport_api()
+      spaceAreaSupported.value = supported
+      if (!supported && scopeType.value === 'area') {
+        scopeType.value = 'group'
+        scopeId.value = ''
+        const nextQuery = { ...route.query, scopeType: 'group' }
+        delete nextQuery.scopeId
+        void router.replace({ query: nextQuery })
+      }
       const [areaSettings, groups, products] = await Promise.all([
-        queryProjectSpaceAreaSettings_api(value).catch(() => ({ areas: [] })),
+        supported ? queryProjectSpaceAreaSettings_api(value).catch(() => ({ areas: [] })) : Promise.resolve({ areas: [] }),
         queryDeviceGroupDetailList_api().catch(() => []),
         queryDeviceLibraryProductFilterOptions_api(value).catch(() => []),
       ])
-      areaOptions.value = areaSettings.areas
+      accessibleAreaOptions.value = areaSettings.areas
     groupOptions.value = groups
       deviceLibraryProducts.value = products
       if (hasProductFilter(submittedTerms.value)) onSearch()
@@ -494,6 +575,7 @@ export function useIotDeviceAssetFilters(
     commonFilterFields,
     areaOptions,
     groupOptions,
+    spaceAreaSupported,
     scopeType,
     scopeId,
     submittedTerms,

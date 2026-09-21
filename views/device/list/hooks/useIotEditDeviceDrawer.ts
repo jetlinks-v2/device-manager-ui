@@ -3,9 +3,9 @@ import { useI18n } from 'vue-i18n'
 import type { Rule } from 'ant-design-vue/es/form'
 import { updateDeviceBasicInfo_api } from '@device-manager-ui/api/device'
 import { queryDeviceGroupDetailList_api, type DeviceGroup } from '@device-manager-ui/api/deviceGroup'
-import { queryProjectSpaceAreaSettings_api } from '@device-manager-ui/api/spaceArea'
+import { existsDeviceSpaceAreaSupport_api, queryProjectSpaceAreaSettings_api } from '@device-manager-ui/api/spaceArea'
 import type { ProjectArea } from '@device-manager-ui/modules/defaults/types'
-import { buildAreaTreeData, isSelectableDeviceArea } from './iotAreaTreeOptions'
+import { buildAreaTreeData, isSelectableDeviceArea, mergeDeviceBoundAreas } from './iotAreaTreeOptions'
 import { buildDeviceGroupTreeData } from './iotDeviceGroupTreeOptions'
 import { saveIotDeviceAreaGroupBindings } from './iotDeviceAreaGroupBindings'
 import type { IotDevice } from '../types'
@@ -32,6 +32,7 @@ export function useIotEditDeviceDrawer(props: IotEditDeviceDrawerProps, handlers
   const errorMessage = ref('')
   const areaOptions = ref<ProjectArea[]>([])
   const groupOptions = ref<DeviceGroup[]>([])
+  const spaceAreaSupported = ref<boolean>()
   const formRef = ref<{
     validate?: () => Promise<unknown>
     clearValidate?: () => void
@@ -52,13 +53,20 @@ export function useIotEditDeviceDrawer(props: IotEditDeviceDrawerProps, handlers
     name: [{ required: true, message: $t('IotDeviceList.add.nameRequired'), trigger: 'blur' }],
     areaId: [{
       validator: async (_rule, value) => {
-        if (value && !isSelectableDeviceArea(selectableAreas.value, String(value))) throw new Error($t('IotDeviceList.add.areaLevelRequired'))
+        const areaId = String(value || '')
+        // 当前不可见区域只用于回显；保持原绑定时不应阻止保存其他基础信息。
+        if (areaId && areaId !== props.device?.areaId && !isSelectableDeviceArea(selectableAreas.value, areaId)) {
+          throw new Error($t('IotDeviceList.add.areaLevelRequired'))
+        }
       },
       trigger: 'change',
     }],
   }))
 
-  const selectableAreas = computed(() => areaOptions.value)
+  const selectableAreas = computed(() => mergeDeviceBoundAreas(areaOptions.value, [{
+    areaId: form.areaId,
+    area: form.area,
+  }], props.projectId))
   const areaTreeData = computed(() => buildAreaTreeData(selectableAreas.value))
   const groupTreeData = computed(() => buildDeviceGroupTreeData(groupOptions.value))
 
@@ -111,8 +119,10 @@ export function useIotEditDeviceDrawer(props: IotEditDeviceDrawerProps, handlers
   }
 
   async function loadFormOptions() {
+    const supported = await existsDeviceSpaceAreaSupport_api()
+    spaceAreaSupported.value = supported
     const [areaSettings, groups] = await Promise.all([
-      queryProjectSpaceAreaSettings_api(props.projectId).catch(() => ({ areas: [] })),
+      supported ? queryProjectSpaceAreaSettings_api(props.projectId).catch(() => ({ areas: [] })) : Promise.resolve({ areas: [] }),
       queryDeviceGroupDetailList_api().catch(() => []),
     ])
     areaOptions.value = areaSettings.areas
@@ -209,6 +219,7 @@ export function useIotEditDeviceDrawer(props: IotEditDeviceDrawerProps, handlers
     formRules,
     areaTreeData,
     groupTreeData,
+    spaceAreaSupported,
     onAreaChange,
     onUpdateOpen,
     onClose,

@@ -38,10 +38,11 @@ export function buildAreaScopeIds(areas: ProjectArea[]): Record<string, string[]
  */
 export function useIotDeviceScopeCounts(
   projectId: Ref<string>,
-  areas: Ref<ProjectArea[]>,
+  areas: Readonly<Ref<ProjectArea[]>>,
   groups: Ref<DeviceGroup[]>,
   refreshKey: Ref<number>,
   baseTerms: Ref<DeviceQueryTerm[] | undefined> = ref(),
+  spaceAreaSupported: Ref<boolean | undefined> = ref(true),
 ) {
   const totalDeviceCount = ref(0)
   const areaDeviceCounts = ref<ScopeCounts>({})
@@ -52,13 +53,12 @@ export function useIotDeviceScopeCounts(
 
   async function refreshScopeCounts() {
     const version = ++requestVersion
-    const areaIds = areas.value.map((area) => area.id)
     const areaScopeIds = buildAreaScopeIds(areas.value)
     const groupIds = groups.value.map((group) => group.id).filter(Boolean)
     const [total, scopeSummaries] = await Promise.all([
       countDevice_api({}, baseTerms.value).catch(() => 0),
       batchDeviceNodeSummary_api([
-        ...areas.value.map((area) => {
+        ...(spaceAreaSupported.value === true ? areas.value.map((area) => {
           const scopeIds = areaScopeIds[area.id] ?? [area.id]
           return {
             id: areaScopeKey(area.id),
@@ -70,23 +70,24 @@ export function useIotDeviceScopeCounts(
               }],
             },
           }
-        }),
+        }) : []),
         ...groups.value.map((group) => ({
           id: group.id,
           query: {
             terms: [{ column: 'id', termType: 'dev-group-tree', value: group.id }],
           },
         })),
-        {
+        ...(spaceAreaSupported.value === true ? [{
           id: IOT_UNBOUND_AREA_SCOPE_ID,
           query: {
-            terms: areaIds.length ? [{
+            // 不可按当前可见空间 ID 推导未绑定设备，否则无空间权限时会命中全部设备。
+            terms: [{
               column: 'id',
-              termType: 'space-bind$not$device',
-              value: areaIds.length === 1 ? areaIds[0] : areaIds,
-            }] : [],
+              termType: 'space-bind$any$not',
+              value: '__any_space_binding__',
+            }],
           },
-        },
+        }] : []),
         {
           id: IOT_UNASSIGNED_GROUP_SCOPE_ID,
           query: {
@@ -107,7 +108,7 @@ export function useIotDeviceScopeCounts(
     unassignedGroupDeviceCount.value = scopeCountMap[IOT_UNASSIGNED_GROUP_SCOPE_ID] ?? 0
   }
 
-  watch([projectId, areas, groups, refreshKey, baseTerms], ([nextProjectId]) => {
+  watch([projectId, areas, groups, refreshKey, baseTerms, spaceAreaSupported], ([nextProjectId]) => {
     if (!nextProjectId) {
       totalDeviceCount.value = 0
       areaDeviceCounts.value = {}

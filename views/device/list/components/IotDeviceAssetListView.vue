@@ -13,6 +13,7 @@
           :group-device-counts="groupDeviceCounts"
           :unbound-area-device-count="unboundAreaDeviceCount"
           :unassigned-group-device-count="unassignedGroupDeviceCount"
+          :show-area="spaceAreaSupported !== false"
           @change="handleScopeChange"
           @create-group="openCreateGroup"
           @create-child-group="openCreateChildGroup"
@@ -85,6 +86,7 @@
   />
 
   <IotDeviceAssignAreaModal
+    v-if="spaceAreaSupported !== false"
     v-model:open="assignAreaOpen"
     :project-id="projectId"
     :saving="assignAreaSaving"
@@ -151,7 +153,7 @@ const {
   filterTerms,
   filterFields,
   commonFilterFields,
-  submittedTerms, areaOptions, groupOptions, scopeType, scopeId, reloadGroups,
+  submittedTerms, areaOptions, groupOptions, spaceAreaSupported, scopeType, scopeId, reloadGroups,
   buildDeviceQueryTerms,
   handleFilterTermsUpdate,
   handleFilterSearch, handleScopeChange: changeScope,
@@ -174,7 +176,7 @@ const {
   unboundAreaDeviceCount,
   unassignedGroupDeviceCount,
 } = useIotDeviceScopeCounts(
-  projectId, areaOptions, groupOptions, refreshKey,
+  projectId, areaOptions, groupOptions, refreshKey, undefined, spaceAreaSupported,
 )
 
 const {
@@ -248,13 +250,13 @@ const batchActions = computed(() => {
         onConfirm: () => toggleSelectedDevices('disable'),
       },
     },
-    {
+    ...(spaceAreaSupported.value !== false ? [{
       key: 'assign-area',
       text: $t('IotDeviceList.action.assignArea'),
       icon: 'EnvironmentOutlined',
-      disabled,
+      disabled: disabled || spaceAreaSupported.value !== true,
       onClick: openAssignAreaModal,
-    },
+    }] : []),
     {
       key: 'assign-group',
       text: $t('IotDeviceList.action.assignGroup'),

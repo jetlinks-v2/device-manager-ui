@@ -3,10 +3,7 @@ import {
   unbindDeviceGroupDevices_api,
 } from '@device-manager-ui/api/deviceGroup'
 import {
-  bindDevicesToSpaceArea_api,
-  bindDeviceToSpaceArea_api,
-  queryDeviceSpaceAreaBindings_api,
-  unbindDevicesFromSpaceArea_api,
+  bindDevicesSpaceArea_api,
 } from '@device-manager-ui/api/spaceArea'
 
 type SaveIotDeviceAreaGroupBindingsInput = {
@@ -32,34 +29,11 @@ type IotDeviceAreaBindingInput = {
 export async function reassignIotDevicesToArea(areaId: string, devices: IotDeviceAreaBindingInput[]) {
   if (!areaId) return
 
-  const devicesById = new Map<string, IotDeviceAreaBindingInput>()
-  for (const device of devices) {
-    if (device.id) devicesById.set(device.id, device)
-  }
-  if (!devicesById.size) return
+  const deviceIds = uniqueIds(devices.map((device) => device.id))
+  if (!deviceIds.length) return
 
-  const bindings = await queryDeviceSpaceAreaBindings_api([...devicesById.keys()])
-  const targetBoundDeviceIds = new Set<string>()
-  const deviceIdsByPreviousArea = new Map<string, string[]>()
-
-  for (const binding of bindings) {
-    if (binding.areaId === areaId) {
-      targetBoundDeviceIds.add(binding.deviceId)
-      continue
-    }
-    const deviceIds = deviceIdsByPreviousArea.get(binding.areaId) || []
-    deviceIds.push(binding.deviceId)
-    deviceIdsByPreviousArea.set(binding.areaId, deviceIds)
-  }
-
-  // 一个设备只能保留一个区域绑定；先按原区域解绑，再批量写入目标区域，避免重复绑定校验失败。
-  await Promise.all([...deviceIdsByPreviousArea.entries()].map(([previousAreaId, deviceIds]) =>
-    unbindDevicesFromSpaceArea_api(previousAreaId, uniqueIds(deviceIds)),
-  ))
-
-  const devicesToBind = [...devicesById.values()]
-    .filter((device) => !targetBoundDeviceIds.has(device.id))
-  await bindDevicesToSpaceArea_api(areaId, devicesToBind)
+  // 由设备视角接口原子完成首次绑定或换绑，不再读取、解绑不可见的旧空间。
+  await bindDevicesSpaceArea_api(areaId, deviceIds)
 }
 
 export async function saveIotDeviceAreaGroupBindings(input: SaveIotDeviceAreaGroupBindingsInput) {
@@ -69,18 +43,8 @@ export async function saveIotDeviceAreaGroupBindings(input: SaveIotDeviceAreaGro
   const previousGroupIds = uniqueIds(input.previousGroupIds ?? (input.previousGroupId ? [input.previousGroupId] : []))
   const groupIds = uniqueIds(input.groupIds ?? (input.groupId ? [input.groupId] : []))
 
-  // 区域绑定接口不支持重复绑定；编辑时只有区域变更才先解绑旧区域再绑定新区域。
-  if (areaChanged && previousAreaId) {
-    await unbindDevicesFromSpaceArea_api(previousAreaId, [input.deviceId])
-  }
-
   if ((areaChanged || previousAreaId === undefined) && input.areaId) {
-    await bindDeviceToSpaceArea_api(input.areaId, {
-      id: input.deviceId,
-      name: input.deviceName,
-      productName: input.productName,
-      state: input.state,
-    })
+    await bindDevicesSpaceArea_api(input.areaId, [input.deviceId])
   }
 
   for (const groupId of previousGroupIds.filter((id) => !groupIds.includes(id))) {
