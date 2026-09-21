@@ -80,6 +80,8 @@ import { useIotDeviceScopeSidebar } from '../hooks/useIotDeviceScopeSidebar'
 interface IotDeviceScopeSidebarProps {
   // 仅消费范围筛选的页面可关闭管理入口；设备页默认保留分组操作。
   showGroupActions?: boolean
+  // 未装配空间服务时隐藏区域范围，避免生成依赖 space-bind term 的查询。
+  showArea?: boolean
   activeType: Scope['type']
   activeId: string
   areas: Area[]
@@ -94,6 +96,7 @@ interface IotDeviceScopeSidebarProps {
 
 const props = withDefaults(defineProps<IotDeviceScopeSidebarProps>(), {
   showGroupActions: true,
+  showArea: true,
 })
 const emit = defineEmits<{
   (event: 'change', value: { type: 'area' | 'group'; id: string }): void

@@ -43,8 +43,9 @@ export function useUnifiedDeviceList() {
   const activeProvider = computed(() => providers.value.find(provider => provider.id === activeType.value))
   // 当前分类条件同时传入分页、状态统计与左侧范围统计，保持各处统计口径一致。
   const baseTerms = computed(() => activeType.value === 'all' ? [] : (activeProvider.value?.terms() || []))
+  const rows = ref<UnifiedDevice[]>([])
   // 左侧空间/分组统计须与当前设备类型保持同一筛选口径。
-  const scope = useDeviceScope(baseTerms, refreshKey)
+  const scope = useDeviceScope(baseTerms, refreshKey, rows)
   const products = ref<DeviceLibraryProductFilterOption[]>([])
   const productLabels = ref<Record<string, string>>({})
   const filterProducts = computed<DeviceLibraryProductFilterOption[]>(() => [
@@ -59,7 +60,6 @@ export function useUnifiedDeviceList() {
   const commonFilterFields = computed(() => filterFields.value.map(field => String(field.dataIndex)))
   const searchTerms = ref<ConditionFilterTerm[]>([])
   const status = computed(() => String(route.query.status || 'all'))
-  const rows = ref<UnifiedDevice[]>([])
   const total = ref(0)
   const pageIndex = ref(0)
   const pageSize = ref(10)
