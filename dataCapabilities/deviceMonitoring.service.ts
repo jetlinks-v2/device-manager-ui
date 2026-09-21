@@ -1,5 +1,7 @@
 import dayjs from 'dayjs'
 import i18n from '@jetlinks-web-core/locales'
+import { request as defaultRequest } from '@jetlinks-web/core'
+import type { DataCapabilityRequest } from '@jetlinks-web-core/data-capability'
 import { queryTree as queryDeviceCategoryTree } from '@device-manager-ui/api/category'
 import { dashboard, getDeviceGeoJson } from '@device-manager-ui/api/dashboard'
 import { countDeviceInstances } from '@device-manager-ui/api/deviceInstanceMonitoring'
@@ -31,15 +33,16 @@ const t = (key: string) => String(i18n.global.t(key))
 export async function loadDeviceSummary(
   query: DeviceSummaryQuery,
   signal?: AbortSignal,
+  client: DataCapabilityRequest = defaultRequest,
 ): Promise<DeviceSummaryData> {
   if (query.deviceIds && !query.deviceIds.length) return createEmptyDeviceSummary()
 
   const terms = createDeviceSummaryTerms(query)
   const [total, online, offline, notActive] = await Promise.all([
-    queryDeviceCount(terms, undefined, signal),
-    queryDeviceCount(terms, 'online', signal),
-    queryDeviceCount(terms, 'offline', signal),
-    queryDeviceCount(terms, 'notActive', signal),
+    queryDeviceCount(terms, undefined, signal, client),
+    queryDeviceCount(terms, 'online', signal, client),
+    queryDeviceCount(terms, 'offline', signal, client),
+    queryDeviceCount(terms, 'notActive', signal, client),
   ])
   const other = Math.max(total - online - offline - notActive, 0)
 
@@ -78,6 +81,7 @@ function createEmptyDeviceSummary(): DeviceSummaryData {
 export async function loadDeviceLocationList(
   query: DeviceLocationQuery,
   signal?: AbortSignal,
+  client: DataCapabilityRequest = defaultRequest,
 ): Promise<DeviceLocationPageData> {
   const terms: UnknownRecord[] = []
   if (query.state) {
@@ -88,7 +92,7 @@ export async function loadDeviceLocationList(
     pageIndex: query.pageIndex,
     pageSize: query.pageSize,
     terms,
-  }, { signal })
+  }, { signal }, client)
   assertResponseSuccess(response)
 
   const root = asRecord(unwrapResult(response))
@@ -111,6 +115,7 @@ export async function loadDeviceLocationList(
 export async function loadDeviceRuntimeTrend(
   query: DeviceRuntimeTrendQuery,
   signal?: AbortSignal,
+  client: DataCapabilityRequest = defaultRequest,
 ): Promise<DeviceRuntimeTrendRow[]> {
   const endTime = query.endTime ?? Date.now()
   const startTime = query.startTime ?? endTime - DEFAULT_TREND_DURATION
@@ -141,7 +146,7 @@ export async function loadDeviceRuntimeTrend(
       group: MESSAGE_COUNT_GROUP,
       params,
     },
-  ], { signal })
+  ], { signal }, client)
   assertResponseSuccess(response)
 
   const points = new Map<number, DeviceRuntimeTrendRow>()
@@ -184,17 +189,18 @@ function createDeviceSummaryTerms(query: DeviceSummaryQuery): UnknownRecord[] {
 export async function loadDeviceCategoryDistribution(
   query: DeviceCategoryDistributionQuery,
   signal?: AbortSignal,
+  client: DataCapabilityRequest = defaultRequest,
 ): Promise<DeviceCategoryDistributionRow[]> {
   const [categoryResponse, productResponse, totalDeviceCount] = await Promise.all([
     queryDeviceCategoryTree({
       paging: false,
       sorts: [{ name: 'sortIndex', order: 'asc' }],
-    }, { signal, hiddenError: true }),
+    }, { signal, hiddenError: true }, client),
     queryDeviceProducts({
       paging: false,
       terms: [],
-    }, { signal, hiddenError: true }),
-    queryDeviceCount([], undefined, signal),
+    }, { signal, hiddenError: true }, client),
+    queryDeviceCount([], undefined, signal, client),
   ])
   assertResponseSuccess(categoryResponse)
   assertResponseSuccess(productResponse)
@@ -207,7 +213,7 @@ export async function loadDeviceCategoryDistribution(
     category,
     count: await countDevicesByProducts(
       productIdsByCategory.get(category.id) || [],
-      signal,
+      signal, client,
     ),
   })))
   const ranked = rows
@@ -295,11 +301,12 @@ function collectRootCategoryIds(
 async function countDevicesByProducts(
   productIds: string[],
   signal?: AbortSignal,
+  client: DataCapabilityRequest = defaultRequest,
 ): Promise<number> {
   if (!productIds.length) return 0
   const response = await countDeviceInstances({
     terms: [{ column: 'productId', termType: 'in', value: productIds }],
-  }, { signal, hiddenError: true })
+  }, { signal, hiddenError: true }, client)
   assertResponseSuccess(response)
   const result = unwrapResult(response)
   return finiteNumber(isRecord(result) ? result.total ?? result.count : result) ?? 0
@@ -315,13 +322,14 @@ async function queryDeviceCount(
   baseTerms: UnknownRecord[],
   state: string | undefined,
   signal?: AbortSignal,
+  client: DataCapabilityRequest = defaultRequest,
 ): Promise<number> {
   const response = await countDeviceInstances({
     terms: [
       ...baseTerms,
       ...(state ? [{ column: 'state', termType: 'eq', value: state }] : []),
     ],
-  }, { signal, hiddenError: true })
+  }, { signal, hiddenError: true }, client)
   assertResponseSuccess(response)
   const result = unwrapResult(response)
   return finiteNumber(isRecord(result) ? result.total ?? result.count : result) ?? 0

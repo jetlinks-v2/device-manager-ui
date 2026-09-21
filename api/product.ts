@@ -1,4 +1,5 @@
 import { request, ndJson } from '@jetlinks-web/core'
+import type { DataCapabilityRequest } from '@jetlinks-web-core/data-capability'
 import type { DeviceMetadata, ProductItem, DepartmentItem, MetadataType  } from '../views/device/Product/typings'
 import type { OperatorItem } from '../components/FRuleEditor/Operator/typings'
 import { getBaseApi } from '@jetlinks-web-core/utils/comm'
@@ -11,9 +12,10 @@ import { getBaseApi } from '@jetlinks-web-core/utils/comm'
 export const queryNoPagingPost = (
   data: any,
   config?: Record<string, unknown>,
+  client: DataCapabilityRequest = request,
 ) => config
-  ? request.post('/device-product/_query/no-paging?paging=false', data, config)
-  : request.post('/device-product/_query/no-paging?paging=false', data)
+  ? client.post('/device-product/_query/no-paging?paging=false', data, config)
+  : client.post('/device-product/_query/no-paging?paging=false', data)
 
 /**
  * 导入第三方物模型

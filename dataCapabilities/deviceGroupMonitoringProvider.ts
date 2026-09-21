@@ -1,4 +1,5 @@
 import i18n from '@jetlinks-web-core/locales'
+import { getDataCapabilityRequest } from '@jetlinks-web-core/data-capability'
 import type {
   CapabilityOption,
   DataCapabilityProvider,
@@ -118,7 +119,7 @@ const groupListSource: DataSourceDefinition = {
     query<T = unknown>(request: DataSourceRequest, context: RuntimeContext) {
       return defer(() => loadDeviceGroups(
         toGroupListQuery(request),
-        request.signal || context.signal,
+        request.signal || context.signal, getDataCapabilityRequest(context),
       )).pipe(map(data => ({ data: data as T })))
     },
   }),
@@ -152,7 +153,7 @@ const groupSummaryBatchSource: DataSourceDefinition = {
     query<T = unknown>(request: DataSourceRequest, context: RuntimeContext) {
       return defer(() => loadDeviceGroupSummaries(
         toGroupSummaryBatchQuery(request),
-        request.signal || context.signal,
+        request.signal || context.signal, getDataCapabilityRequest(context),
       )).pipe(map(data => ({ data: data as T })))
     },
   }),
@@ -185,7 +186,7 @@ const groupDevicesPageSource: DataSourceDefinition = {
     query<T = unknown>(request: DataSourceRequest, context: RuntimeContext) {
       return defer(() => loadDeviceGroupDevices(
         toGroupDevicesQuery(request),
-        request.signal || context.signal,
+        request.signal || context.signal, getDataCapabilityRequest(context),
       )).pipe(map(page => toPageResult<T>(page)))
     },
   }),
@@ -209,11 +210,11 @@ const groupOptionSource: OptionSourceDefinition = {
   version: 1,
   name: t('DeviceGroupDataCapability.options.name'),
   owner,
-  query: async (request): Promise<{ options: CapabilityOption[]; total: number }> => {
+  query: async (request, context): Promise<{ options: CapabilityOption[]; total: number }> => {
     const groups = await loadDeviceGroups({
       limit: MAX_GROUP_LIMIT,
       keyword: optionalText(request.keyword),
-    }, request.signal)
+    }, request.signal, getDataCapabilityRequest(context))
     return {
       options: groups.map(group => ({ label: group.groupName, value: group.groupId })),
       total: groups.length,
