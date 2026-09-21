@@ -36,7 +36,18 @@
 							    {{ activeProvider.create.label() }}
 						    </a-button>
 						    <!-- 批量配置仅面向边缘节点，其他设备分类不提供入口。 -->
-						    <a-button v-if="activeType === 'gateway'" @click="openBatchPage">{{ t('UnifiedDeviceList.batch') }}</a-button>
+						    <a-dropdown v-if="activeType === 'gateway'">
+						      <a-button>
+						        {{ t('UnifiedDeviceList.batch') }}
+						        <AIcon type="DownOutlined" />
+						      </a-button>
+						      <template #overlay>
+						        <a-menu @click="openBatchPage">
+						          <a-menu-item key="algorithms">{{ t('UnifiedDeviceList.batchAlgorithms') }}</a-menu-item>
+						          <a-menu-item key="plugins">{{ t('UnifiedDeviceList.batchPlugins') }}</a-menu-item>
+						        </a-menu>
+						      </template>
+						    </a-dropdown>
 					    </RegistryComponent>
 				    </a-flex>
 				    <a-flex v-if="batchMode" wrap="wrap" :gap="12" class="unified-device-list__batch">
@@ -75,18 +86,21 @@
 								    <div>{{ record.productName || '—' }}</div>
 								    <small>{{ [record.productManufacturer, record.productModel].filter(Boolean).join(' ') || '—' }}</small>
 							    </template>
-							    <template v-else-if="column.key === 'productName'">
+						    <template v-else-if="column.key === 'productName'">
 								    <div>{{ record.productName || '—' }}</div>
-								    <small>{{ [record.productManufacturer, record.productModel].filter(Boolean).join(' ') || '—' }}</small>
-							    </template>
-							    <template v-else-if="column.key === 'area'">
-								    <div>{{ record.areaBindings?.map(area => area.area).join(' / ') || record.area || '—' }}</div>
-								    <small>{{ record.groupBindings?.map(group => group.name).join('、') || record.groupName || '—' }}</small>
-							    </template>
+						    </template>
+						    <template v-else-if="column.key === 'brandModel'">
+								    <div>{{ formatBrandModel(record.productManufacturer) }}</div>
+								    <small>{{ formatBrandModel(record.productModel) }}</small>
+						    </template>
+						    <template v-else-if="column.key === 'area'">
+								    <div>{{ formatAreaName(record) }}</div>
+								    <small>{{ record.groupBindings?.map(group => group.name).join('、') || record.groupName || t('IotDeviceList.scope.unassignedGroup') }}</small>
+						    </template>
 							    <template v-else-if="column.key === 'createdAt'">{{ formatTableTime(record.createdAt) }}</template>
 							    <template v-else-if="column.key === 'lastReportTime'">{{ formatTableTime(record.lastReportTime) }}</template>
-							    <template v-else-if="column.key === 'scope'">
-								    <div>{{ record.areaBindings?.map(area => area.area).join(' / ') || record.area || '—' }}</div>
+						    <template v-else-if="column.key === 'scope'">
+								    <div>{{ formatAreaName(record) }}</div>
 								    <small>{{ record.groupBindings?.map(group => group.name).join('、') || record.groupName || '—' }}</small>
 							    </template>
 							    <template v-else-if="column.key === 'channel'">{{ record.channelNumber ?? '—' }}</template>
@@ -186,12 +200,13 @@ const route = useRoute()
 const deviceMenuCode = computed(() => getIotDeviceListMenuCode(route))
 const menu = useMenuStore()
 // 已选网关按明确 ID 传入；未选择网关时在批量页按当前范围加载，由矩阵决定实际下发项。
-function openBatchPage() {
+function openBatchPage({ key }: { key: string | number }) {
   const gatewayIds = selected.value.filter(device => device.category === 'gateway').map(device => device.id)
   const currentQuery = encodeConditionFilterQuery(searchTerms.value, filterFields.value)
   menu.jumpPage('iot-user-device-list/Batch', { query: {
     ...route.query, q: currentQuery || route.query.q || undefined, gatewayIds: gatewayIds.length ? gatewayIds : undefined,
     gatewayScope: gatewayIds.length ? undefined : 'query',
+    batchTab: String(key),
   } })
 }
 const { providers, isIotEntry, tabs, activeType, activeProvider, scope, filterFields, commonFilterFields, searchTerms, status, rows, total, pageIndex, pageSize, loading, error, counts, statusCounts, selectedIds, batchMode, providerOf, changeType, search, changeStatus, refresh, changePage, clearBatchSelection } = useUnifiedDeviceList()
@@ -205,8 +220,19 @@ const gatewayMetrics = useGatewayMetrics?.(gatewayMetricTargets)
 const { sidebarProps, loading: scopeLoading, loadError: scopeLoadError, handleScopeChange } = scope
 const scopeCollapsed = ref(false)
 function formatTableTime(value?: string | number | null) {
-  if (!value || value === '--') return '—'
+  if (!value || value === '--') return t('IotDeviceList.scope.noReport')
   return dayjs(value).format('YYYY-MM-DD HH:mm:ss')
+}
+function formatAreaName(record: { areaBindings?: Array<{ area?: string }>; area?: string }) {
+  const boundAreas = record.areaBindings?.map(item => item.area).filter(Boolean).join(' / ')
+  const isEmptyArea = !record.area || ['--', '—'].includes(record.area)
+  return boundAreas || (isEmptyArea ? t('IotDeviceList.scope.unboundArea') : record.area)
+}
+function formatBrandModel(value?: string) {
+  const normalized = value?.trim()
+  return normalized && !['--', '—'].includes(normalized)
+    ? normalized
+    : t('IotDeviceDetail.common.unconfigured')
 }
 const { projectId, editing, editOpen, createEntry, canCreate, openCreate, detailDevice, busy, selected, allowed, openDetail, edit, toggle, remove, canDelete, batchToggle, assignAreaOpen, assignGroupOpen, assignArea, assignGroup } = useUnifiedDeviceActions(rows, selectedIds, clearBatchSelection, providerOf, refresh, activeProvider)
 function handleBatchChanged() {
@@ -226,13 +252,14 @@ const rowSelection = computed(() => ({ selectedRowKeys: selectedIds.value, onCha
 const columns = computed(() => [
   { title: t('UnifiedDeviceList.name'), key: 'name', width: 280, fixed: 'left' },
   { title: t('UnifiedDeviceList.product'), key: 'productName', width: 180 },
+  { title: t('IotDeviceList.table.brandModel'), key: 'brandModel', width: 160 },
   { title: t('UnifiedDeviceList.areaAndGroup'), key: 'area', width: 220 },
   { title: t('UnifiedDeviceList.status'), key: 'status', width: 100 },
   ...(activeType.value === 'all' ? [{ title: '最后上报时间', key: 'lastReportTime', width: 160 }] : []),
   ...(activeType.value === 'all' ? [{ title: '创建时间', key: 'createdAt', width: 160 }] : []),
   ...(activeType.value === 'gateway' ? [{ title: t('GatewayDeviceCard.monitor'), key: 'monitor', width: 220 }] : []),
   ...(['gateway', 'video'].includes(activeType.value) ? [{ title: t('UnifiedDeviceList.channel'), key: 'channel', width: 100 }] : []),
-  { title: t('UnifiedDeviceList.action'), key: 'action', width: 80, fixed: 'right', align: 'center' },
+  { title: t('UnifiedDeviceList.action'), key: 'action', width: 90, fixed: 'right', align: 'center' },
 ])
 </script>
 <style scoped lang="less">
@@ -272,15 +299,6 @@ const columns = computed(() => [
 .unified-device-list__action-divider { margin: 0 2px; height: 24px; opacity: .45; }
 .unified-device-list__category { margin-inline-end: 0; color: var(--ink-3); }
 .unified-device-list__table { flex: 1; min-height: 0; overflow: auto; }
-.unified-device-list__table :deep(.ant-table) { background: transparent; }
-.unified-device-list__table :deep(.ant-table-thead > tr > th) { background: var(--device-table-header-bg); }
-.unified-device-list__table :deep(.ant-table-tbody > tr:not(.ant-table-row-selected) > td) { background: transparent; border-bottom-color: color-mix(in srgb, var(--primary-color) 9%, transparent); }
-// 固定列保持实底，横向滚动时避免透出下方单元格文字。
-.unified-device-list__table :deep(.ant-table-tbody > tr:not(.ant-table-row-selected) > .ant-table-cell-fix-left),
-.unified-device-list__table :deep(.ant-table-tbody > tr:not(.ant-table-row-selected) > .ant-table-cell-fix-right) { background: var(--device-table-fixed-bg); }
-.unified-device-list__table :deep(.ant-table-tbody > tr:hover > td),
-.unified-device-list__table :deep(.ant-table-tbody > tr > td.ant-table-cell-row-hover),
-.unified-device-list__table :deep(.ant-table-tbody > tr.ant-table-row-selected > td) { background: var(--info-bg); }
 .unified-device-list__row-actions { width: 100%; justify-content: flex-end; }
 .unified-device-list__table small { display: block; color: var(--ink-3); font-weight: normal; }
 .unified-device-list__name { padding: 0; height: auto; font-weight: 600; }

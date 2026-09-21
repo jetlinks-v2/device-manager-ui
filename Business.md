@@ -4,6 +4,29 @@
 
 ## 最近变更
 
+本轮产品与设备列表交互调整的代码提交为 `3b6f473`，评审入口为 [PR #300](https://github.com/jetlinks-v2/device-manager-ui/pull/300)；产品详情与分类树、接入设备回退和范围树的实现入口及验证边界分别见 `views/device/Product/README.md` 与 `views/device/list/README.md`。
+
+### 统一设备列表品牌型号列（已实施）
+
+- 目标：在统一设备列表新增“品牌型号”列，展示 `productManufacturer` 与 `productModel`；任一字段为空时显示既有国际化文案“未配置”。
+- 影响范围与 owning module：仅 `runtime-ui/modules/device-manager-ui/views/device/list/unified/index.vue` 的表格列与单元格展示；不修改接口、筛选、设备数据、其他设备列表或 `ui/`。
+- 实施：沿用模块旧设备表的两行信息密度，厂商为主行、型号为副行；复用 `IotDeviceList.table.brandModel` 和 `IotDeviceDetail.common.unconfigured`。
+- 验证：定向归一化检查覆盖空值、空字符串、空白字符串、`--` 与真实厂商值，结果通过，`git diff --check -- modules/device-manager-ui` 通过。浏览器在 `http://localhost:9200/#/resources/devices/list?type=gateway` 热更新确认列位于产品名称与区域／分组之间；实际数据“萤火虫 / 123”按两行展示，空字段的两行均显示“未配置”。
+
+### 空空间区域名称国际化回退（已实施）
+
+- 目标：统一设备列表的空间为空或后端占位为 `--` / `—` 时，显示既有国际化文案 `IotDeviceList.scope.unboundArea`。
+- 影响范围与 owning module：仅 `runtime-ui/modules/device-manager-ui/views/device/list/unified/index.vue` 的区域／分组与 scope 单元格展示；不修改接口、区域数据、分组显示、筛选或 `ui/`。
+- 实施：将区域显示归一化为本地函数，并由两个同义表格分支复用；保留绑定区域和真实区域名称的原有优先级。
+- 验证：`formatAreaName` 已由区域／分组与 scope 两个单元格分支复用；定向归一化检查覆盖空值、空字符串、`--`、`—` 与真实区域值，结果通过，`git diff --check -- modules/device-manager-ui` 通过。浏览器刷新被既有 `src/components/MarkdownEditor/index.ts` 的 `ReferenceError: Cannot access 'MarkdownEditor' before initialization` 阻断，错误不涉及本次文件，待该初始化问题恢复后人工确认页面显示。
+
+### 设备列表批量配置快捷入口（已实施）
+
+- 目标：将边缘节点设备列表的“批量操作”改为下拉入口，提供“算法配置”和“插件配置”；选择后进入既有批量页并预选对应页签。
+- 影响范围与 owning module：仅 `runtime-ui/modules/device-manager-ui` 的统一设备列表、批量页和中英文文案；不修改动态页签注册、算法/插件业务组件、接口、权限、筛选逻辑或 `ui/`。
+- 实施：列表入口通过 `batchTab` 查询参数传递已验证的注册 code（`algorithms`、`plugins`）；批量页在注册表可用后优先应用该参数，返回列表时移除该临时参数。
+- 验证：中英文 locale JSON 解析与 `git diff --check -- modules/device-manager-ui` 均通过。在 `http://localhost:9200/#/resources/devices/list?type=gateway` 实测下拉菜单显示“算法配置”和“插件配置”；分别跳转至 `batchTab=algorithms`、`batchTab=plugins`，批量页对应页签均处于选中状态。交付时按实际模块目录执行 `pnpm --dir runtime-ui --filter jetlinks-web-core build -- --module-name device-manager-ui`，生产构建通过（9,621 个模块）；模块 `vue-tsc` 仍被未改动的 `views/link/Certificate/type.d.ts:2` 语法错误阻断。
+
 ### 统一设备列表操作按钮菜单授权
 
 `views/device/list/unified/index.vue` 的编辑、启停、删除按钮复用 `getIotDeviceListMenuCode(route)` 解析当前入口：资源中心使用 `iot-user-device-list`，物联入口保持其所属菜单。动作仍分别校验 `update`、`action`、`delete`，不以菜单可见性代替按钮授权。修复写死旧菜单编码导致初始化环境按钮提示无权限的问题。验证采用源码与差异检查及 9111 服务模块响应核对，页面由用户人工验收，不执行构建、类型检查、lint、测试或浏览器操作。

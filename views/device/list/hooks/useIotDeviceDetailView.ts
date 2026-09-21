@@ -384,7 +384,7 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
   }
 
   function limitedDisplayText(values: string[]) {
-    if (!values.length) return '--'
+    if (!values.length) return $t('comm.table.empty')
     const visible = values.slice(0, 2).join($t('IotDeviceList.presentation.separator'))
     return values.length > 2 ? $t('IotDeviceDetail.detail.moreItems', { value: visible, count: values.length }) : visible
   }

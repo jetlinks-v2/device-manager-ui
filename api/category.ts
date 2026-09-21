@@ -1,14 +1,15 @@
 // 产品分类
 import { request } from '@jetlinks-web/core'
+import type { DataCapabilityRequest } from '@jetlinks-web-core/data-capability'
 import type { CategoryItem } from '../views/device/Category/typings'
 /**
  * 查询产品分类树形数据
  */
 
-export const queryTree = (params?: Record<string, any>, config?: Record<string, unknown>) =>
+export const queryTree = (params?: Record<string, any>, config?: Record<string, unknown>, client: DataCapabilityRequest = request) =>
   config
-    ? request.post<CategoryItem>('/device/category/_tree', params, config)
-    : request.post<CategoryItem>('/device/category/_tree', params)
+    ? client.post<CategoryItem>('/device/category/_tree', params, config)
+    : client.post<CategoryItem>('/device/category/_tree', params)
 
 /**
  * 保存树形数据

@@ -1,4 +1,6 @@
 import i18n from '@jetlinks-web-core/locales'
+import type { DataCapabilityRequest } from '@jetlinks-web-core/data-capability'
+import { request as defaultRequest } from '@jetlinks-web/core'
 import {
   queryDeviceInstanceDetail,
   queryDeviceInstanceDetailPage,
@@ -21,11 +23,12 @@ const t = (key: string) => String(i18n.global.t(key))
 export async function loadDeviceStates(
   query: DeviceStateBatchQuery,
   signal?: AbortSignal,
+  client: DataCapabilityRequest = defaultRequest,
 ): Promise<DeviceStateRow[]> {
   const response = await queryDeviceInstanceStates({
     paging: false,
     terms: [{ column: 'id', termType: 'in', value: query.deviceIds }],
-  }, { signal, hiddenError: true })
+  }, { signal, hiddenError: true }, client)
   assertResponseSuccess(response)
 
   return extractRows(unwrapResult(response))
@@ -36,10 +39,11 @@ export async function loadDeviceStates(
 export async function loadDeviceDetail(
   query: DeviceDetailQuery,
   signal?: AbortSignal,
+  client: DataCapabilityRequest = defaultRequest,
 ): Promise<DeviceDetailData> {
   const response = await queryDeviceInstanceDetail(
     query.deviceId,
-    { signal, hiddenError: true },
+    { signal, hiddenError: true }, client,
   )
   assertResponseSuccess(response)
   const detail = asRecord(unwrapResult(response))
@@ -52,6 +56,7 @@ export async function loadDeviceDetail(
 export async function loadDeviceDetailPage(
   query: DeviceDetailPageQuery,
   signal?: AbortSignal,
+  client: DataCapabilityRequest = defaultRequest,
 ): Promise<DeviceDetailPageData> {
   const terms: UnknownRecord[] = []
   if (query.state) {
@@ -64,7 +69,7 @@ export async function loadDeviceDetailPage(
     pageSize: query.pageSize,
     sorts: [{ name: 'createTime', order: 'desc' }],
     terms,
-  }, { signal, hiddenError: true })
+  }, { signal, hiddenError: true }, client)
   assertResponseSuccess(response)
 
   const result = asRecord(unwrapResult(response))

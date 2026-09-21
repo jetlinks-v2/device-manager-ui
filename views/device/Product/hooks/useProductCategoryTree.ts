@@ -18,11 +18,13 @@ interface ProductCategoryDisplayNode extends ProductCategoryTreeNode {
 interface ProductCategoryTreeOptions {
   treeData: () => ProductCategoryTreeNode[]
   activeId: () => string | undefined
+  allLabel: () => string
   unclassifiedLabel: () => string
   onSelect: (id?: string) => void
   onSelectUnclassified: () => void
 }
 
+const allScopeId = '__product-all__'
 const unclassifiedScopeId = '__product-unclassified__'
 
 /** 管理产品分类树的本地展示和搜索状态，通过回调交给页面执行筛选。 */
@@ -33,14 +35,15 @@ export function useProductCategoryTree(options: ProductCategoryTreeOptions) {
   const fieldNames = { title: 'name', key: 'id', children: 'children' }
   const selectedKeys = computed(() => {
     const id = options.activeId()
-    return id ? [id] : []
+    return [id || allScopeId]
   })
   const normalizedKeyword = computed(() => keyword.value.trim())
 
-  // 虚拟分类只加入展示副本，参与搜索且始终排在真实分类之后。
+  // 虚拟筛选范围仅加入展示副本，始终作为树顶部节点参与搜索。
   const filteredTree = computed(() => filterTree([
-    ...options.treeData(),
+    { id: allScopeId, name: options.allLabel(), isLeaf: true },
     { id: unclassifiedScopeId, name: options.unclassifiedLabel(), isLeaf: true },
+    ...options.treeData(),
   ], normalizedKeyword.value))
 
   // 搜索仅临时接管展开状态，清空后恢复用户原来的分类浏览位置。
@@ -70,7 +73,11 @@ export function useProductCategoryTree(options: ProductCategoryTreeOptions) {
   }
 
   const handleSelect: NonNullable<TreeProps['onSelect']> = (keys, info) => {
-    // 再次点击已选节点时 keys 为空，按事件节点保留“未分类”筛选语义。
+    // 再次点击已选节点时 keys 为空，按事件节点保留虚拟筛选范围的语义。
+    if (info.node.key === allScopeId) {
+      options.onSelect()
+      return
+    }
     if (info.node.key === unclassifiedScopeId) {
       options.onSelectUnclassified()
       return
@@ -84,7 +91,7 @@ export function useProductCategoryTree(options: ProductCategoryTreeOptions) {
     selectedKeys,
     filteredTree,
     fieldNames,
-    unclassifiedScopeId,
+    isScopeNode: (id: string) => id === allScopeId || id === unclassifiedScopeId,
     handleExpand,
     handleSelect,
   }

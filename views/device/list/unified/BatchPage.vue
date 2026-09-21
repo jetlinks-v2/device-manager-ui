@@ -38,10 +38,15 @@ const tabs = computed(() => componentsRegistry.getRegistry('device-list-batch:ta
   ))
   .sort((a, b) => (a.order || 0) - (b.order || 0)))
 const activeKey = ref('')
-watch(tabs, items => { if (!items.some(item => item.code === activeKey.value)) activeKey.value = items[0]?.code || '' }, { immediate: true })
+const requestedBatchTab = computed(() => String(route.query.batchTab || ''))
+watch([tabs, requestedBatchTab], ([items, requested]) => {
+  activeKey.value = items.some(item => item.code === requested)
+    ? requested
+    : items.some(item => item.code === activeKey.value) ? activeKey.value : items[0]?.code || ''
+}, { immediate: true })
 const active = computed(() => tabs.value.find(tab => tab.code === activeKey.value))
 function back() {
-  const { gatewayIds: _ids, gatewayScope: _scope, ...query } = route.query
+  const { gatewayIds: _ids, gatewayScope: _scope, batchTab: _tab, ...query } = route.query
   menu.jumpPage('iot-user-device-list', { query })
 }
 </script>

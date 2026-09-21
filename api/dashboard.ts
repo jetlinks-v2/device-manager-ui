@@ -1,5 +1,6 @@
 // 仪表盘数据
 import { request } from '@jetlinks-web/core'
+import type { DataCapabilityRequest } from '@jetlinks-web-core/data-capability'
 /**
  * 项目数量
  */
@@ -14,16 +15,16 @@ export const deviceCount = (data?: any, config?: Record<string, unknown>) =>
 /**
  * 当前在线
  */
-export const dashboard = (data?: any, config?: Record<string, unknown>) =>
+export const dashboard = (data?: any, config?: Record<string, unknown>, client: DataCapabilityRequest = request) =>
   config
-    ? request.post('/dashboard/_multi', data, config)
-    : request.post('/dashboard/_multi', data);
+    ? client.post('/dashboard/_multi', data, config)
+    : client.post('/dashboard/_multi', data);
 /**
  * 地图数据
  */
 export const getGo = (data?:any) => request.post('/geo/object/device/_search/geo.json',data)
 
-export const getDeviceGeoJson = (data?: any, config?: Record<string, unknown>) =>
+export const getDeviceGeoJson = (data?: any, config?: Record<string, unknown>, client: DataCapabilityRequest = request) =>
   config
-    ? request.post('/geo/object/device/_search/_page', data, config)
-    : request.post('/geo/object/device/_search/_page', data)
+    ? client.post('/geo/object/device/_search/_page', data, config)
+    : client.post('/geo/object/device/_search/_page', data)

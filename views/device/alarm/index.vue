@@ -36,7 +36,8 @@
                 </a-spin>
               </div>
               <footer class="alarm-rule-footer">
-                <a-button block class="alarm-rule-create" :loading="creating" :disabled="busy && !creating" @click="create">
+                <!-- 操作互斥由 create 内的 run 保证，避免编辑时联动禁用样式导致闪烁。 -->
+                <a-button block class="alarm-rule-create" :loading="creating" @click="create">
                   <template #icon><AIcon type="PlusOutlined" /></template>
                   {{ $t('DeviceAlarm.action.create') }}
                 </a-button>

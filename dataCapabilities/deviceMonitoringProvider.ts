@@ -1,4 +1,5 @@
 import i18n from '@jetlinks-web-core/locales'
+import { getDataCapabilityRequest } from '@jetlinks-web-core/data-capability'
 import type {
   DataCapabilityProvider,
   DataSourceDefinition,
@@ -143,7 +144,7 @@ const summarySource: DataSourceDefinition = {
     query<T = unknown>(request: DataSourceRequest, context: RuntimeContext) {
       return defer(() => loadDeviceSummary(
         toSummaryQuery(request),
-        request.signal || context.signal,
+        request.signal || context.signal, getDataCapabilityRequest(context),
       ))
         .pipe(map(data => ({ data: data as T })))
     },
@@ -176,7 +177,7 @@ const locationSource: DataSourceDefinition = {
     query<T = unknown>(request: DataSourceRequest, context: RuntimeContext) {
       return defer(() => loadDeviceLocationList(
         toLocationQuery(request),
-        request.signal || context.signal,
+        request.signal || context.signal, getDataCapabilityRequest(context),
       )).pipe(map(page => toPageResult<T>(page)))
     },
   }),
@@ -213,7 +214,7 @@ const runtimeTrendSource: DataSourceDefinition = {
     query<T = unknown>(request: DataSourceRequest, context: RuntimeContext) {
       return defer(() => loadDeviceRuntimeTrend(
         toRuntimeTrendQuery(request),
-        request.signal || context.signal,
+        request.signal || context.signal, getDataCapabilityRequest(context),
       )).pipe(map(data => ({ data: data as T })))
     },
   }),
@@ -245,7 +246,7 @@ const categorySource: DataSourceDefinition = {
     query<T = unknown>(request: DataSourceRequest, context: RuntimeContext) {
       return defer(() => loadDeviceCategoryDistribution(
         toCategoryQuery(request),
-        request.signal || context.signal,
+        request.signal || context.signal, getDataCapabilityRequest(context),
       )).pipe(map(data => ({ data: data as T })))
     },
   }),

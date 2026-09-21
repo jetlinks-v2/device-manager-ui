@@ -5,6 +5,8 @@ import type { DeviceGroup } from '@device-manager-ui/api/deviceGroup'
 import { buildDeviceGroupTreeData, type DeviceGroupTreeNode } from './iotDeviceGroupTreeOptions'
 import { IOT_UNASSIGNED_GROUP_SCOPE_ID, IOT_UNBOUND_AREA_SCOPE_ID } from './useIotDeviceAssetFilters'
 
+const IOT_ALL_DEVICE_SCOPE_ID = '__iot-all-devices__'
+
 type Area = { id: string; name: string; parentId?: string }
 type Scope = { type: 'area' | 'group'; id: string }
 
@@ -26,6 +28,8 @@ type ScopeTreeNode = {
   key: string
   title: string
   count?: number
+  icon: string
+  isScope?: boolean
   group?: DeviceGroup
   children?: ScopeTreeNode[]
 }
@@ -63,6 +67,7 @@ export function useIotDeviceScopeSidebar(
       key: area.id,
       title: area.name,
       count: props.areaDeviceCounts[area.id],
+      icon: 'icon-dizhi',
       children: (byParent.get(area.id) ?? []).map(toNode),
     })
     return (byParent.get('') ?? []).map(toNode)
@@ -71,28 +76,47 @@ export function useIotDeviceScopeSidebar(
     const withCount = (node: DeviceGroupTreeNode): ScopeTreeNode => ({
       ...node,
       count: props.groupDeviceCounts[node.key],
+      icon: 'icon-zuzhi',
       children: node.children?.map(withCount),
     })
     return buildDeviceGroupTreeData(props.groups).map(withCount)
   })
 
-  const hasScopes = computed(() => (scopeType.value === 'area' ? areaTree.value : groupTree.value).length > 0)
-  // 特殊范围始终追加为最后一个根节点；不附带 group，避免出现分组管理操作。
+  // 固定范围始终排在树顶，并通过虚拟 key 映射回既有的空 scopeId 筛选语义。
   const treeData = computed<ScopeTreeNode[]>(() => scopeType.value === 'area'
-    ? [...areaTree.value, {
+    ? [{
+      key: IOT_ALL_DEVICE_SCOPE_ID,
+      title: t('IotDeviceList.scope.allAreas'),
+      count: props.totalDeviceCount,
+      icon: 'icon-shebei2',
+      isScope: true,
+    }, {
       key: IOT_UNBOUND_AREA_SCOPE_ID,
       title: t('IotDeviceList.scope.unboundArea'),
       count: props.unboundAreaDeviceCount,
-    }]
-    : [...groupTree.value, {
+      icon: 'icon-shebei2',
+      isScope: true,
+    }, ...areaTree.value]
+    : [{
+      key: IOT_ALL_DEVICE_SCOPE_ID,
+      title: t('IotDeviceList.scope.allGroups'),
+      count: props.totalDeviceCount,
+      icon: 'icon-shebei2',
+      isScope: true,
+    }, {
       key: IOT_UNASSIGNED_GROUP_SCOPE_ID,
       title: t('IotDeviceList.scope.unassignedGroup'),
       count: props.unassignedGroupDeviceCount,
-    }])
+      icon: 'icon-shebei2',
+      isScope: true,
+    }, ...groupTree.value])
+  const selectedKeys = computed(() => [scopeId.value || IOT_ALL_DEVICE_SCOPE_ID])
 
-  const select = (id: string) => onChange({ type: scopeType.value, id })
-  const onSelect: TreeProps['onSelect'] = (keys) => select(String(keys[0] || ''))
+  const onSelect: TreeProps['onSelect'] = (keys) => {
+    const key = String(keys[0] || IOT_ALL_DEVICE_SCOPE_ID)
+    onChange({ type: scopeType.value, id: key === IOT_ALL_DEVICE_SCOPE_ID ? '' : key })
+  }
   const countText = (value?: number) => t('IotDeviceList.scope.deviceCount', { count: Math.max(0, Number(value) || 0) })
 
-  return { scopeType, scopeId, scopeOptions, hasScopes, treeData, select, onSelect, countText }
+  return { scopeType, scopeOptions, treeData, selectedKeys, onSelect, countText }
 }

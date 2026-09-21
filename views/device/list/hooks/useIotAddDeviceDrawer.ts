@@ -175,17 +175,24 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
     form.area = selectableAreas.value.find((item) => item.id === form.areaId)?.name ?? ''
   }
 
-  function selectProduct(productId: string) {
+  function selectProduct(productId: string, preserveForm = false) {
     creationMode.value = 'local'
     selectedProductKey.value = productId
     selectedProduct.value = productCandidates.value.find((item) => item.id === productId) ?? null
-    applySourceDefaults(selectedProduct.value)
+    if (!preserveForm) applySourceDefaults(selectedProduct.value)
   }
 
-  function selectTemplate(templateId: string) {
+  function selectTemplate(templateId: string, preserveForm = false) {
     selectedTemplateKey.value = templateId
     selectedTemplate.value = libraryTemplates.value.find((item) => item.id === templateId) ?? null
-    applySourceDefaults(selectedTemplate.value)
+    if (!preserveForm) applySourceDefaults(selectedTemplate.value)
+  }
+
+  function clearSelectedSource() {
+    selectedProductKey.value = ''
+    selectedTemplateKey.value = ''
+    selectedProduct.value = null
+    selectedTemplate.value = null
   }
 
   function selectSource(source: DeviceCreationSource) {
@@ -365,8 +372,8 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
     creationMode.value = 'local'
     openSequence += 1; productRequestSequence += 1; libraryRequestSequence += 1
     creationSource.value = 'product'; marketplaceCapability.value = 'checking'
-    selectedProductKey.value = ''; selectedTemplateKey.value = ''
-    selectedProduct.value = null; selectedTemplate.value = null; selectedCategoryId.value = undefined
+    clearSelectedSource()
+    selectedCategoryId.value = undefined
     productCandidates.value = []; productTotal.value = 0; productPageIndex.value = 0; productFilterTerms.value = []
     libraryTemplates.value = []; libraryTagGroups.value = []; libraryPageIndex.value = 0; libraryKeyword.value = ''; libraryTags.value = []; libraryHasMore.value = false
     areaOptions.value = []; groupOptions.value = []
@@ -491,7 +498,7 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
     categoryTree, categoryLoading, selectedCategoryId, productCandidates, productTotal, productPageIndex, productPageSize,
     libraryProducts, libraryTagGroups, libraryPageIndex, libraryPageSize, libraryHasMore,
     onAreaChange,
-    selectSource, selectProduct, selectTemplate, selectProductCategory, selectUnclassifiedProductCategory,
+    selectSource, selectProduct, selectTemplate, clearSelectedSource, selectProductCategory, selectUnclassifiedProductCategory,
     loadProductCandidates, loadDeviceLibraryTemplates, loadConfigOptions,
     clearBasicFields, onClose, onSubmit, bindCreatedDevice,
   }

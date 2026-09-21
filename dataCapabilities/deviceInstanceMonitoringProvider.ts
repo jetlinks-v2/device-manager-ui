@@ -1,4 +1,5 @@
 import i18n from '@jetlinks-web-core/locales'
+import { getDataCapabilityRequest } from '@jetlinks-web-core/data-capability'
 import type {
   DataCapabilityProvider,
   DataSourceDefinition,
@@ -123,7 +124,7 @@ const stateBatchSource: DataSourceDefinition = {
     query<T = unknown>(request: DataSourceRequest, context: RuntimeContext) {
       return defer(() => loadDeviceStates(
         toStateBatchQuery(request),
-        request.signal || context.signal,
+        request.signal || context.signal, getDataCapabilityRequest(context),
       )).pipe(map(data => ({ data: data as T })))
     },
   }),
@@ -156,7 +157,7 @@ const detailSource: DataSourceDefinition = {
     query<T = unknown>(request: DataSourceRequest, context: RuntimeContext) {
       return defer(() => loadDeviceDetail(
         toDetailQuery(request),
-        request.signal || context.signal,
+        request.signal || context.signal, getDataCapabilityRequest(context),
       )).pipe(map(data => ({ data: data as T })))
     },
   }),
@@ -188,7 +189,7 @@ const detailPageSource: DataSourceDefinition = {
     query<T = unknown>(request: DataSourceRequest, context: RuntimeContext) {
       return defer(() => loadDeviceDetailPage(
         toDetailPageQuery(request),
-        request.signal || context.signal,
+        request.signal || context.signal, getDataCapabilityRequest(context),
       )).pipe(map(page => toPageResult<T>(page)))
     },
   }),

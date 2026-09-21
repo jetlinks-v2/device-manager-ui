@@ -1,4 +1,6 @@
 import i18n from '@jetlinks-web-core/locales'
+import type { DataCapabilityRequest } from '@jetlinks-web-core/data-capability'
+import { request as defaultRequest } from '@jetlinks-web/core'
 import {
   queryDeviceGroupRuntimeDevices,
   queryDeviceGroups,
@@ -27,6 +29,7 @@ const RUNTIME_STATES: DeviceGroupRuntimeState[] = [
 export async function loadDeviceGroups(
   query: DeviceGroupListQuery,
   signal?: AbortSignal,
+  client: DataCapabilityRequest = defaultRequest,
 ): Promise<DeviceGroupRow[]> {
   const response = await queryDeviceGroups({
     paging: true,
@@ -36,7 +39,7 @@ export async function loadDeviceGroups(
     terms: query.keyword
       ? [{ column: 'name', termType: 'like', value: `%${query.keyword}%` }]
       : [],
-  }, { signal })
+  }, { signal }, client)
   assertResponseSuccess(response)
 
   return extractRows(unwrapResult(response))
@@ -47,6 +50,7 @@ export async function loadDeviceGroups(
 export async function loadDeviceGroupSummaries(
   query: DeviceGroupSummaryBatchQuery,
   signal?: AbortSignal,
+  client: DataCapabilityRequest = defaultRequest,
 ): Promise<DeviceGroupSummaryRow[]> {
   if (!query.groupIds.length) return []
 
@@ -59,7 +63,7 @@ export async function loadDeviceGroupSummaries(
         terms: createGroupDeviceTerms(groupId),
       },
     })),
-    { signal },
+    { signal }, client,
   )
   assertResponseSuccess(response)
 
@@ -71,6 +75,7 @@ export async function loadDeviceGroupSummaries(
 export async function loadDeviceGroupDevices(
   query: DeviceGroupDevicesQuery,
   signal?: AbortSignal,
+  client: DataCapabilityRequest = defaultRequest,
 ): Promise<DeviceGroupDevicePageData> {
   const response = await queryDeviceGroupRuntimeDevices({
     paging: true,
@@ -78,7 +83,7 @@ export async function loadDeviceGroupDevices(
     pageSize: query.pageSize,
     sorts: [{ name: 'createTime', order: 'desc' }],
     terms: createGroupDeviceTerms(query.groupId),
-  }, { signal })
+  }, { signal }, client)
   assertResponseSuccess(response)
 
   const result = asRecord(unwrapResult(response))
