@@ -1,5 +1,17 @@
 # 设备列表范围侧栏
 
+## 暂隐视频分类页签（已实施）
+
+目标：运行时资源中心统一设备列表的顶部分类栏暂不显示“视频”页签；保留“全部”和其他分类，视频设备仍可在“全部”中查看。
+
+影响范围：`device-manager-ui/deviceListProvider.ts` 的分类可见性契约、`views/device/list/unified/useUnifiedDeviceList.ts` 的页签选项，以及 `jetlinks-media-ui/deviceListProvider.ts` 的视频分类配置。
+
+不做：不删除视频 Provider、设备数据、`?type=video` 直达处理、详情页通道能力或独立的“视频管理 / 视频列表”菜单；不改 `ui/`、后端接口与权限。
+
+实施：为分类 Provider 增加可选的页签可见性设置，仅在生成顶部页签时过滤视频；分类识别与直达 URL 仍按原逻辑运行。保持现有表格工作区、筛选和详情承载方式，不引入新的交互壳层。
+
+风险与验证：直达 `?type=video` 时视频数据仍显示，但顶部不再有对应的选中页签。`tests/unifiedDeviceTabs.test.mjs` 检查页签隐藏与分类直达逻辑，连同 `tests/deviceDetailContent.test.mjs` 共 11 项通过；三处 TypeScript 文件语法解析通过，两个模块的 `git diff --check` 通过。未执行浏览器手工验证、lint、完整 typecheck 或生产构建：本机性能有限，且设备模块已有 `views/link/Certificate/type.d.ts:2` 的类型检查语法错误。后续可运行 `pnpm --dir runtime-ui exec vue-tsc --noEmit -p modules/device-manager-ui/tsconfig.json`、媒体模块对应命令及生产构建，并实测顶部页签、“全部”列表、视频直达与独立视频菜单；部署环境需要重新发布运行时前端资源。
+
 ## 接入设备回退并保留表单
 
 目标：在运行时前端“接入设备”弹窗的设备配置步骤，将取消操作替换为“上一步”；返回设备库模板或产品选择后，用户重新选择设备时继续回显本次打开弹窗期间已经填写的设备信息。

@@ -69,7 +69,7 @@ export function useUnifiedDeviceList() {
   // 斜边页签以 key 识别选中项，数量独立传入以保留 0 和统一间距。
   const tabs = computed<SlantedTabOption[]>(() => [
     { key: 'all', label: t('UnifiedDeviceList.all'), count: counts.value.all ?? '—' },
-    ...providers.value.filter(provider => provider.id !== 'device').map(provider => ({
+    ...providers.value.filter(provider => provider.id !== 'device' && provider.showInTabs !== false).map(provider => ({
       key: provider.id, label: provider.label(), count: counts.value[provider.id] ?? '—',
     })),
   ])

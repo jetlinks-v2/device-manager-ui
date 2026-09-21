@@ -23,6 +23,8 @@ export interface DeviceListProvider {
   label: () => string
   order: number
   menuCode: string
+  /** 仅控制顶部分类页签；隐藏后仍参与设备识别和已有分类直达链接。 */
+  showInTabs?: boolean
   terms: () => DeviceQueryTerm[]
   matches: (device: IotDevice) => boolean
   /** 弹窗遵循 open / update:open / saved；路由入口复用原新增页，返回时重载列表。 */
