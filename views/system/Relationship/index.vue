@@ -16,7 +16,14 @@
 	          }"
 	        >
 	          <template #headerLeftRender>
-	            <a-flex gap="small">
+	            <div class="relationship-container__toolbar">
+	              <h2 class="relationship-container__title">
+	                {{ $t('Relationship.title.management') }}
+	              </h2>
+	            </div>
+	          </template>
+	          <template #headerRightRender>
+	            <a-flex :gap="16">
 	              <ConditionFilter
 	                class="relationship-container__filter"
 	                :columns="columns"
@@ -208,6 +215,21 @@ const dialog = reactive({
 
 <style lang="less" scoped>
 .relationship-container {
+  &__toolbar {
+    display: flex;
+    flex: 1;
+    align-items: center;
+  }
+
+  &__title {
+    margin: 0;
+    color: rgba(0, 0, 0, 0.85);
+    font-size: var(--fs-18);
+    font-weight: 600;
+    line-height: 32px;
+    white-space: nowrap;
+  }
+
   &__filter {
     width: min(34rem, 46vw);
     min-width: 20rem;
