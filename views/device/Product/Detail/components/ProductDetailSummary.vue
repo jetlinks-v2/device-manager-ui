@@ -1,13 +1,7 @@
 <template>
   <section class="product-summary">
-    <a-button class="product-summary__back" type="text" @click="emit('back')">
-      <template #icon><AIcon type="LeftOutlined" /></template>
-      {{ $t('Product.detail.backToList') }}
-    </a-button>
     <div class="product-summary__icon">
-      <a-avatar :size="52" shape="square" :src="product.photoUrl">
-        <AIcon type="AppstoreOutlined" />
-      </a-avatar>
+	    <AIcon type="AppstoreOutlined" />
     </div>
     <div class="product-summary__main">
       <div class="product-summary__headline">
@@ -23,23 +17,29 @@
         <div class="product-summary__line">
           <div class="product-summary__row product-summary__row--id">
             <span class="product-summary__label">{{ $t('Product.detail.id') }}</span>
-            <a-tooltip :title="$t('IotDeviceDetail.accessConfig.copy')">
-              <button type="button" class="product-summary__value product-summary__value--action" @click="copyProductId">
-                {{ product.id || '--' }}
-              </button>
-            </a-tooltip>
+            <span class="product-summary__value-wrapper">
+              <a-tooltip :title="$t('IotDeviceDetail.accessConfig.copy')">
+                <button type="button" class="product-summary__value product-summary__value--action" @click="copyProductId">
+                  {{ product.id || $t('comm.table.empty') }}
+                </button>
+              </a-tooltip>
+            </span>
           </div>
           <div class="product-summary__row">
             <span class="product-summary__label">{{ $t('BasicInfo.indev.028379-1') }}</span>
-            <a-tooltip :title="classification || '--'">
-              <span class="product-summary__value">{{ classification || '--' }}</span>
-            </a-tooltip>
+            <span class="product-summary__value-wrapper">
+              <a-tooltip :title="classification || $t('comm.table.empty')">
+                <span class="product-summary__value">{{ classification || $t('comm.table.empty') }}</span>
+              </a-tooltip>
+            </span>
           </div>
           <div class="product-summary__row">
             <span class="product-summary__label">{{ $t('Product.index.660348-4') }}</span>
-            <a-tooltip :title="deviceType || '--'">
-              <span class="product-summary__value">{{ deviceType || '--' }}</span>
-            </a-tooltip>
+            <span class="product-summary__value-wrapper">
+              <a-tooltip :title="deviceType || $t('comm.table.empty')">
+                <span class="product-summary__value">{{ deviceType || $t('comm.table.empty') }}</span>
+              </a-tooltip>
+            </span>
           </div>
         </div>
         <div class="product-summary__line">
@@ -58,15 +58,19 @@
           </div>
           <div class="product-summary__row">
             <span class="product-summary__label">{{ $t('Product.detail.brand') }}</span>
-            <a-tooltip :title="manufacturer || '--'">
-              <span class="product-summary__value">{{ manufacturer || '--' }}</span>
-            </a-tooltip>
+            <span class="product-summary__value-wrapper">
+              <a-tooltip :title="manufacturer || $t('comm.table.empty')">
+                <span class="product-summary__value">{{ manufacturer || $t('comm.table.empty') }}</span>
+              </a-tooltip>
+            </span>
           </div>
           <div class="product-summary__row">
             <span class="product-summary__label">{{ $t('Product.detail.model') }}</span>
-            <a-tooltip :title="model || '--'">
-              <span class="product-summary__value">{{ model || '--' }}</span>
-            </a-tooltip>
+            <span class="product-summary__value-wrapper">
+              <a-tooltip :title="model || $t('comm.table.empty')">
+                <span class="product-summary__value">{{ model || $t('comm.table.empty') }}</span>
+              </a-tooltip>
+            </span>
           </div>
         </div>
       </div>
@@ -75,6 +79,18 @@
       <j-permission-button v-if="canUpdate" type="default" :hasPermission="canUpdate" @click="emit('edit')">
         <template #icon><AIcon type="EditOutlined" /></template>
         {{ $t('Product.index.660348-13') }}
+      </j-permission-button>
+      <j-permission-button
+        v-if="canDelete"
+        type="default"
+        danger
+        :hasPermission="canDelete"
+        :disabled="product.state !== 0"
+        :tooltip="{ title: product.state !== 0 ? $t('Product.index.660348-21') : $t('Product.index.660348-20') }"
+        :popConfirm="{ title: $t('Product.index.660348-22'), onConfirm: () => emit('delete') }"
+      >
+        <template #icon><AIcon type="DeleteOutlined" /></template>
+        {{ $t('Product.index.660348-20') }}
       </j-permission-button>
       <j-permission-button
         type="primary"
@@ -96,8 +112,8 @@ import type { ProductItem } from '../../typings'
 import { getI18nText } from '../../../../../utils/i18n'
 import IotDeviceStatusPill from '../../../list/components/IotDeviceStatusPill.vue'
 
-const props = defineProps<{ product: Partial<ProductItem>; canUpdate: boolean; canAction: boolean; canViewDevices: boolean }>()
-const emit = defineEmits<{ (e: 'back'): void; (e: 'edit'): void; (e: 'toggle-state'): void; (e: 'view-devices'): void }>()
+const props = defineProps<{ product: Partial<ProductItem>; canUpdate: boolean; canAction: boolean; canDelete: boolean; canViewDevices: boolean }>()
+const emit = defineEmits<{ (e: 'back'): void; (e: 'edit'): void; (e: 'toggle-state'): void; (e: 'delete'): void; (e: 'view-devices'): void }>()
 const { t: $t } = useI18n()
 const { toClipboard } = useClipboard()
 const name = computed(() => getI18nText(props.product, 'name') || props.product.id || '-')
@@ -114,7 +130,7 @@ async function copyProductId() {
 </script>
 
 <style scoped lang="less">
-.product-summary { display:grid; grid-template-columns:auto minmax(0, 1fr) auto; gap:var(--space-3); align-items:center; min-height:5rem; margin-bottom:0.875rem; padding:var(--space-3) var(--space-4); border:0.0625rem solid var(--jet-theme-border-secondary); border-radius:var(--r-6); background:var(--bg-trans-8); }
+.product-summary { display:grid; grid-template-columns:auto minmax(0, 1fr) auto; gap:var(--space-3); align-items: flex-start; min-height:5rem; margin-bottom:0.875rem; }
 .product-summary__back.ant-btn { grid-column:1 / -1; justify-self:start; height:auto; padding:0; color:var(--jet-theme-text-secondary); }
 .product-summary__back.ant-btn:hover, .product-summary__back.ant-btn:focus { color:var(--jet-theme-primary); background:transparent; }
 .product-summary__icon { display:grid; place-items:center; width:3.25rem; height:3.25rem; overflow:hidden; border-radius:0.75rem; background:var(--jet-theme-primary-soft); color:var(--jet-theme-primary); }
@@ -130,7 +146,8 @@ async function copyProductId() {
 .product-summary__line { display:grid; grid-template-columns:minmax(0, 16rem) minmax(0, 16rem) minmax(0, 24rem); align-items:center; justify-content:start; min-width:0; column-gap:var(--space-3); row-gap:var(--space-1); }
 .product-summary__row { display:inline-flex; align-items:center; width:100%; min-width:0; line-height:1.6; }
 .product-summary__label { flex:0 0 3.75rem; margin-right:var(--space-2); color:var(--jet-theme-text-disabled); font-size:var(--fs-14); font-weight:400; text-align:left; }
-.product-summary__value { display:inline-block; flex:1 1 auto; max-width:100%; min-width:0; overflow:hidden; color:var(--jet-theme-text-secondary); font-size:var(--fs-14); font-weight:400; text-overflow:ellipsis; vertical-align:bottom; white-space:nowrap; }
+.product-summary__value-wrapper { flex:1 1 auto; min-width:0; overflow:hidden; }
+.product-summary__value { display:inline-block; max-width:100%; min-width:0; overflow:hidden; color:var(--jet-theme-text-secondary); font-size:var(--fs-14); font-weight:400; text-overflow:ellipsis; vertical-align:bottom; white-space:nowrap; }
 .product-summary__value--action { padding:0; border:0; background:transparent; cursor:pointer; text-align:left; }
 .product-summary__value--action:hover { color:var(--jet-theme-primary); }
 .product-summary__count { border:0; padding:0; background:transparent; color:var(--jet-theme-primary); cursor:pointer; text-align:left; }

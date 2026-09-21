@@ -139,11 +139,13 @@
     </section>
     <template v-if="isEditMode || (currentStep > 0 && (!isCreating || installProgressState.hasError))" #footer>
       <IotAddDeviceModalFooter
-        :show-previous="false"
+        :show-close="isEditMode || isCreating"
+        :show-previous="!isEditMode && !isCreating"
         :busy="activePrimaryBusy"
         :submit-disabled="activeSubmitDisabled"
         :submit-text="activeSubmitText"
         @close="onActiveClose"
+        @previous="backToSource"
         @submit="onActiveSubmit"
       />
     </template>
@@ -184,6 +186,7 @@ const { t: $t } = useI18n()
 const isEditMode = computed(() => Boolean(props.device))
 const currentStep = ref(0)
 const creationExtension = ref<DeviceCreationExtension>()
+const preserveFormOnSourceSelection = ref(false)
 const addDrawerProps = {
   get open() { return props.open && !isEditMode.value },
   get projectId() { return props.projectId },
@@ -203,8 +206,8 @@ const {
   areaTreeData, groupTreeData, configOptionsLoading,
   categoryTree, categoryLoading, selectedCategoryId, productCandidates, productTotal, productPageIndex, productPageSize,
   libraryProducts, libraryTagGroups, libraryPageIndex, libraryPageSize, libraryHasMore,
-  selectSource, selectProduct, selectTemplate, selectProductCategory, selectUnclassifiedProductCategory,
-  loadProductCandidates, loadDeviceLibraryTemplates, loadConfigOptions, clearBasicFields, onClose, onSubmit, bindCreatedDevice,
+  selectSource, selectProduct, selectTemplate, clearSelectedSource, selectProductCategory, selectUnclassifiedProductCategory,
+  loadProductCandidates, loadDeviceLibraryTemplates, loadConfigOptions, onClose, onSubmit, bindCreatedDevice,
   onAreaChange,
 } = useIotAddDeviceDrawer(addDrawerProps, {
   updateOpen: (value) => emit('update:open', value),
@@ -253,10 +256,13 @@ function onActiveClose() {
   if (isEditMode.value) onEditUpdateOpen(false)
   else onClose()
 }
+
+// 返回选择来源不清空本次新增已填内容，避免更换设备后重复录入。
 function backToSource() {
   creationExtension.value = undefined
   currentStep.value = 0
-  clearBasicFields()
+  preserveFormOnSourceSelection.value = true
+  clearSelectedSource()
 }
 
 /**
@@ -268,7 +274,8 @@ function enterConfigurationStep() {
 }
 
 function handleProductSelect(productId: string) {
-  selectProduct(productId)
+  selectProduct(productId, preserveFormOnSourceSelection.value)
+  preserveFormOnSourceSelection.value = false
   const product = selectedProduct.value
   const extension = product ? findCreationExtension(product.accessProvider) : undefined
   if (extension) {
@@ -280,7 +287,8 @@ function handleProductSelect(productId: string) {
 }
 
 function handleTemplateSelect(templateId: string) {
-  selectTemplate(templateId)
+  selectTemplate(templateId, preserveFormOnSourceSelection.value)
+  preserveFormOnSourceSelection.value = false
   enterConfigurationStep()
 }
 
@@ -325,6 +333,7 @@ watch(() => props.open, (open) => {
   if (!open || isEditMode.value) return
   currentStep.value = 0
   creationExtension.value = undefined
+  preserveFormOnSourceSelection.value = false
 })
 </script>
 

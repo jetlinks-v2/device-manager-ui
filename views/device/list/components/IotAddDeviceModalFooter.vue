@@ -1,6 +1,6 @@
 <template>
   <a-space>
-	  <a-button @click="$emit('close')">{{ $t('IotDeviceList.action.cancel') }}</a-button>
+	  <a-button v-if="showClose" @click="$emit('close')">{{ $t('IotDeviceList.action.cancel') }}</a-button>
 	  <a-button v-if="showPrevious" @click="$emit('previous')">
 		  {{ previousText || $t('IotDeviceList.add.prev') }}
 	  </a-button>
@@ -17,6 +17,7 @@
 import { useI18n } from 'vue-i18n'
 
 defineProps({
+  showClose: { type: Boolean, default: true },
   showPrevious: { type: Boolean, default: false },
   previousText: { type: String, default: '' },
   busy: { type: Boolean, default: false },
