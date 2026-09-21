@@ -98,7 +98,7 @@
                         type="link"
                         size="small"
                         :disabled="busy"
-                        hasPermission="iot-user-device-list:update"
+                        :hasPermission="`${deviceMenuCode}:update`"
                         :tooltip="{ title: t('IotDeviceList.action.editShort') }"
                         @click="edit(record)"
                     >
@@ -112,7 +112,7 @@
                               type="link"
                               size="small"
                               :disabled="busy"
-                              :hasPermission="`iot-user-device-list:action`"
+                              :hasPermission="`${deviceMenuCode}:action`"
                               :danger="record.connectionStatus !== 'disabled'"
                               @click="toggle(record)"
                           >
@@ -127,7 +127,7 @@
                               type="link"
                               size="small"
                               :disabled="busy || !canDelete(record)"
-                              hasPermission="iot-user-device-list:delete"
+                              :hasPermission="`${deviceMenuCode}:delete`"
                               danger
                               @click="remove(record)"
                           >
@@ -177,11 +177,13 @@ import IotDeviceAssignAreaModal from '../components/IotDeviceAssignAreaModal.vue
 import IotDeviceAssignGroupModal from '../components/IotDeviceAssignGroupModal.vue'
 import IotDeviceGroupNameModal from '../components/IotDeviceGroupNameModal.vue'
 import { useIotDeviceGroupManagement } from '../hooks/useIotDeviceGroupManagement'
+import { getIotDeviceListMenuCode } from '../hooks/useIotDeviceRouting'
 import type { DeviceGroup } from '../../../../api/deviceGroup'
 import { useUnifiedDeviceList } from './useUnifiedDeviceList'
 import { useUnifiedDeviceActions } from './useUnifiedDeviceActions'
 const { t } = useI18n()
 const route = useRoute()
+const deviceMenuCode = computed(() => getIotDeviceListMenuCode(route))
 const menu = useMenuStore()
 // 已选网关按明确 ID 传入；未选择网关时在批量页按当前范围加载，由矩阵决定实际下发项。
 function openBatchPage() {
