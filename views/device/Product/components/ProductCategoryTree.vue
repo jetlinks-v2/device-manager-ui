@@ -19,7 +19,7 @@
           :selected-keys="selectedKeys"
           :expanded-keys="expandedKeys"
           block-node
-          :show-line="{ showLeafIcon: true }"
+          :show-line="{ showLeafIcon: false }"
           :tree-data="filteredTree"
           :field-names="fieldNames"
           @expand="handleExpand"

@@ -34,7 +34,7 @@
 
 ## 范围树固定节点（已实施）
 
-目标：在运行时前端设备列表的“区域”和“分组”范围树顶部，以带图标的固定子节点展示“全部设备”及对应的“未绑定区域”或“未分组”；固定节点使用统一的设备图标，树叶图标使用圆点，点击后沿用现有范围筛选语义。
+目标：在运行时前端设备列表的“区域”和“分组”范围树顶部，以带图标的固定子节点展示“全部设备”及对应的“未绑定区域”或“未分组”；固定节点使用统一的设备图标，关闭树的内置叶图标，点击后沿用现有范围筛选语义。
 
 影响范围与 owning module：
 
@@ -46,7 +46,7 @@
 实施步骤：
 
 1. 在范围树数据的根节点开头添加“全部设备”和与当前 tab 对应的未绑定范围节点，保留现有区域或分组树及其计数。
-2. 使用树节点 title 插槽统一渲染图标、名称、计数和仅分组节点可见的管理菜单，固定节点不暴露管理操作；通过 `leafIcon` 插槽将固定节点的默认文件图标替换为圆点。
+2. 使用树节点 title 插槽统一渲染图标、名称、计数和仅分组节点可见的管理菜单，固定节点不暴露管理操作；关闭树的内置叶图标，避免与标题图标重复。
 3. 验证切换区域/分组、选择全部/未绑定范围/普通范围时，筛选和 URL 参数保持既有语义。
 
 风险与验证：
@@ -58,8 +58,8 @@
 
 - `git -C runtime-ui/modules/device-manager-ui diff --check`：通过。
 - `pnpm --dir runtime-ui --filter device-manager-ui test:device-search`：通过（1/1）。
-- `pnpm --dir runtime-ui --filter jetlinks-web-core build -- --module-name device-manager-ui`：交付时按实际模块目录名执行，生产构建通过（9,621 个模块）。
-- 浏览器验证（`http://localhost:9200/#/resources/devices/list`）：区域和分组 tab 均在树顶部显示两个固定节点，未绑定区域和未配置分组与全部设备使用同一设备图标，固定节点的树叶图标为浅灰圆点；选择“未绑定区域”后 URL 为 `scopeType=area&scopeId=__iot-unbound-area__`、列表共 12 条，选择“全部设备”后移除 `scopeId`、列表恢复 33 条；选择“未配置分组”后 URL 为 `scopeType=group&scopeId=__iot-unassigned-group__`、列表共 31 条。
+- `pnpm --dir runtime-ui --filter jetlinks-web-core build -- --module-name device-manager-ui`：按实际模块目录名执行，当前生产构建通过（9,629 个模块；仍有既有 CSS 注释、资源路径与大包告警）。
+- 先前浏览器验证（`http://localhost:9200/#/resources/devices/list`）：区域和分组 tab 均在树顶部显示两个固定节点，未绑定区域和未配置分组与全部设备使用同一设备图标；选择“未绑定区域”后 URL 为 `scopeType=area&scopeId=__iot-unbound-area__`、列表共 12 条，选择“全部设备”后移除 `scopeId`、列表恢复 33 条；选择“未配置分组”后 URL 为 `scopeType=group&scopeId=__iot-unassigned-group__`、列表共 31 条。关闭内置叶图标与回退分段控件自定义样式后的视觉效果仍待复核。
 
 剩余风险：已完成本模块生产构建；范围树的筛选、选中态已在上述本地页面验证，尚未覆盖更多数据层级与浏览器环境。
 

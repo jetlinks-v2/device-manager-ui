@@ -6,14 +6,14 @@
 
 - 影响范围：`views/device/Product/components/ProductCategoryTree.vue` 与 `hooks/useProductCategoryTree.ts`。
 - 不涉及：产品分类接口、分类数据、筛选参数或增删改分类权限。
-- 实施：在 hook 中构造并优先展示两个虚拟节点；组件复用树节点标题渲染图标，并避免为虚拟节点显示分类操作菜单。两个虚拟叶节点的树连接图标改为圆点，真实分类的展开与叶节点图标保持不变。
-- 风险与验证：确认选择“全部产品”“未分类”和真实分类仍触发原有筛选语义；核对圆点仅用于两个虚拟节点，并执行目标模块的前端构建验证。
+- 实施：在 hook 中构造并优先展示两个虚拟节点；组件复用树节点标题渲染图标，并避免为虚拟节点显示分类操作菜单。树连接线保留，内置叶图标关闭，由标题图标表达分类类型。
+- 风险与验证：确认选择“全部产品”“未分类”和真实分类仍触发原有筛选语义；核对树叶不再出现冗余图标，并执行目标模块的前端构建验证。
 
 ## 验证结果
 
-- 本地 `http://localhost:9200/#/resources/devices/products` 热更新验证：分类树前两项依次为“全部产品”和“未分类”，均作为叶节点显示圆点；真实分类仍保留原有展开与叶节点图标，且分类操作菜单未显示在这两个虚拟节点上。
+- 先前本地 `http://localhost:9200/#/resources/devices/products` 热更新验证：分类树前两项依次为“全部产品”和“未分类”，且分类操作菜单未显示在这两个虚拟节点上；关闭内置叶图标后的视觉效果仍待复核。
 - 本次交付的全部源码与文档通过 `git diff --check`。
-- 交付时改用实际模块目录名执行 `pnpm --dir runtime-ui --filter jetlinks-web-core build -- --module-name device-manager-ui`，生产构建通过（9,621 个模块）。
+- 使用实际模块目录名执行 `pnpm --dir runtime-ui --filter jetlinks-web-core build -- --module-name device-manager-ui`，当前生产构建通过（9,629 个模块；仍有既有 CSS 注释、资源路径与大包告警）。
 - 模块 `vue-tsc --noEmit` 被未改动的 `views/link/Certificate/type.d.ts:2` 语法错误阻断；模块与工作区均未提供 lint 脚本，未单独执行 lint。
 
 ## 详情摘要 Tooltip 定位

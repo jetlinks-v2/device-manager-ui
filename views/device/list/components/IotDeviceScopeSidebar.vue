@@ -13,7 +13,7 @@
         <a-tree
           :key="scopeType"
           block-node
-          :show-line="{ showLeafIcon: true }"
+          :show-line="{ showLeafIcon: false }"
           :tree-data="treeData"
           :selected-keys="selectedKeys"
           :default-expand-all="scopeType === 'area'"
@@ -177,22 +177,6 @@ const { scopeType, scopeOptions, treeData, selectedKeys, onSelect, countText } =
 
 .iot-device-scope__create-group {
   margin-top: 0;
-}
-.iot-device-scope__tabs.ant-segmented {
-	background: #F9FBFD;
-	border: 1px solid var(--jet-theme-border-color-1);
-	border-radius: var(--r-1);
-	padding: 0;
-}
-
-.iot-device-scope__tabs :deep(.ant-segmented-item-selected) {
-	box-shadow: none;
-	color: var(--jet-theme-primary);
-}
-
-.iot-device-scope__tabs :deep(.ant-segmented-item-label) {
-	min-height: 2rem;
-	line-height: 2rem;
 }
 
 .iot-device-scope__tab {
