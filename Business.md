@@ -4,6 +4,8 @@
 
 ## 最近变更
 
+本轮产品与设备列表交互调整的代码提交为 `3b6f473`，评审入口为 [PR #300](https://github.com/jetlinks-v2/device-manager-ui/pull/300)；产品详情与分类树、接入设备回退和范围树的实现入口及验证边界分别见 `views/device/Product/README.md` 与 `views/device/list/README.md`。
+
 ### 统一设备列表品牌型号列（已实施）
 
 - 目标：在统一设备列表新增“品牌型号”列，展示 `productManufacturer` 与 `productModel`；任一字段为空时显示既有国际化文案“未配置”。
