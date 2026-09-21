@@ -52,8 +52,8 @@ type SpaceDataBindResponse = {
   modifyTime?: number
 }
 
-type DeviceSpaceAreaResponse = {
-  deviceId?: string
+type SpaceDataBindInfoResponse = {
+  assetId?: string
   spaceId?: string
   spaceName?: string
 }
@@ -64,7 +64,7 @@ export type DeviceSpaceAreaBinding = {
   area?: string
 }
 
-const DEVICE_SPACE_AREA_SERVICE_ID = 'spaceService:device-space'
+const DEVICE_SPACE_AREA_SERVICE_ID = 'spaceService:space-bind'
 export type DeviceSpaceAreaSupport = boolean | undefined
 let deviceSpaceAreaSupportPromise: Promise<DeviceSpaceAreaSupport> | undefined
 
@@ -230,11 +230,11 @@ export const queryDeviceSpaceAreaBindings_api = async (
   if (await existsDeviceSpaceAreaSupport_api() !== true) return []
 
   const response = await request
-    .post('/space/device-binding/_query', { deviceIds: ids }, { hiddenError: true }) as ApiResponse<DeviceSpaceAreaResponse[]>
+    .post('/space/bind/_query', { assetType: 'device', assetIds: ids }, { hiddenError: true }) as ApiResponse<SpaceDataBindInfoResponse[]>
 
   return unwrapList(response)
     .map((item) => ({
-      deviceId: String(item.deviceId || ''),
+      deviceId: String(item.assetId || ''),
       areaId: String(item.spaceId || ''),
       area: typeof item.spaceName === 'string' ? item.spaceName : undefined,
     }))
@@ -251,7 +251,7 @@ export const bindDevicesSpaceArea_api = async (spaceId: string, deviceIds: strin
   if (!spaceId || !ids.length) return
   if (await existsDeviceSpaceAreaSupport_api() !== true) return
   try {
-    await request.post('/space/device-binding/_bind', { spaceId, deviceIds: ids }, { hiddenError: true })
+    await request.post('/space/bind/_bind', { spaceId, assetType: 'device', assetIds: ids }, { hiddenError: true })
   } catch (error) {
     throw toBusinessError(error)
   }
