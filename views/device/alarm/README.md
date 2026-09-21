@@ -1,5 +1,14 @@
 # 物联告警规则与记录工作区
 
+## 左侧“全部告警”入口
+
+- 目标：在运行时物联告警规则侧栏的搜索框下方增加“全部告警”入口，从单条规则范围返回全部告警记录；默认范围呈选中态。
+- 范围与落点：仅 `runtime-ui/modules/device-manager-ui/views/device/alarm/index.vue`、本模块中英文 locale 与定向测试。复用现有 `showAllRecords()` 和右侧记录查询；不修改 `ui/`、接口、权限或菜单。
+- 方案：沿用规则筛选与记录处置工作台。左侧“标题 → 搜索 → 全部告警 → 规则卡”，右侧保持 `ConditionFilter` 和记录卡；入口仅切换规则范围，保留左右搜索。采用当前规则卡的完整描边、弱底选中反馈，不新增页面壳、统计区或编辑弹窗。
+- 实施：`index.vue` 在搜索下方用可键盘操作的按钮和 `aria-pressed` 表示范围，点击复用 `showAllRecords()`；中英文文案位于 `locales/lang/{zh,en}.json`。记录范围测试按实际 `JProTable.request` 契约发起查询，覆盖默认、选规则、保留搜索返回全部及过期响应。
+- 验证：`node scripts/test-alarm-workspace.mjs` 8/8 通过；`pnpm run build:modules device-manager-ui` 通过（已有资源路径、CSS 注释及 chunk 体积警告）；`git diff --check` 通过，`index.vue` 184 行。`pnpm exec vue-tsc --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json` 被既有 `views/link/Certificate/type.d.ts:2:30` TS1005 阻断；当前运行时工作区无 `check:ui-style` 命令。未在登录页面核验真实权限及数据，部署后需手动检查入口默认选中、选规则、返回全部及搜索保留。
+- 交付：实现提交 `6a09587`；[PR #302](https://github.com/jetlinks-v2/device-manager-ui/pull/302)，目标分支 `2.12-uat-next`。
+
 ## 运营端编辑时新增按钮闪烁修复
 
 - 目标与范围：仅调整 `ui/modules/device-manager-ui/views/device/alarm/index.vue` 的新增按钮状态绑定，编辑规则期间保持按钮外观稳定。

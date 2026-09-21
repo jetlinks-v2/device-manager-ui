@@ -7486,6 +7486,7 @@
     "DeviceAlarm.workspace.record": "设备告警记录",
     "DeviceAlarm.workspace.chooseRecord": "选择设备告警记录",
     "DeviceAlarm.workspace.allRules": "全部规则",
+    "DeviceAlarm.workspace.allRecords": "全部告警",
     "DeviceAlarm.workspace.records": "告警记录",
     "DeviceAlarm.workspace.recordSearch": "按告警名称、设备、原因或状态查询",
     "DeviceAlarm.workspace.scope": "查询范围",
