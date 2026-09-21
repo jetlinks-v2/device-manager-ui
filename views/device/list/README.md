@@ -64,3 +64,5 @@
 剩余风险：已完成本模块生产构建；范围树的筛选、选中态已在上述本地页面验证，尚未覆盖更多数据层级与浏览器环境。
 
 本模块与工作区均未提供 lint 脚本，未单独执行 lint；模块 `vue-tsc --noEmit` 仍被未改动的 `views/link/Certificate/type.d.ts:2` 语法错误阻断。
+
+本次视觉收敛提交：`0aee5af`；PR：[device-manager-ui#303](https://github.com/jetlinks-v2/device-manager-ui/pull/303)。

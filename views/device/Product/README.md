@@ -15,6 +15,7 @@
 - 本次交付的全部源码与文档通过 `git diff --check`。
 - 使用实际模块目录名执行 `pnpm --dir runtime-ui --filter jetlinks-web-core build -- --module-name device-manager-ui`，当前生产构建通过（9,629 个模块；仍有既有 CSS 注释、资源路径与大包告警）。
 - 模块 `vue-tsc --noEmit` 被未改动的 `views/link/Certificate/type.d.ts:2` 语法错误阻断；模块与工作区均未提供 lint 脚本，未单独执行 lint。
+- 本次视觉收敛提交：`0aee5af`；PR：[device-manager-ui#303](https://github.com/jetlinks-v2/device-manager-ui/pull/303)。
 
 ## 详情摘要 Tooltip 定位
 
