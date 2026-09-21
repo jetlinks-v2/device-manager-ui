@@ -3629,6 +3629,7 @@
     "Relationship.index.710824-8": "Description",
     "Relationship.index.710824-9": "Action",
     "Relationship.index.710824-10": "Operation Successful!",
+    "Relationship.title.management": "Relationship Configuration",
     "components.EditDialog.375810-0": "Relationship Identifier",
     "components.EditDialog.375810-1": "Please enter the identifier",
     "components.EditDialog.375810-2": "Up to 64 characters allowed",

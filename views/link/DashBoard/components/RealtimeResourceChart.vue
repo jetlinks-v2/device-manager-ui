@@ -237,12 +237,12 @@ onUnmounted(() => {
 </script>
 
 <style lang="less" scoped>
-.realtime-resource { padding: var(--space-6, 1.5rem); background: var(--bg, #fff); border-radius: 0.25rem; }
+.realtime-resource { padding: var(--space-4, 1.5rem); background: var(--bg, #fff); border-radius: 0.25rem; }
 .realtime-resource__header, .realtime-resource__title, .realtime-resource__actions { display: flex; align-items: center; }
 .realtime-resource__header { justify-content: space-between; }
-.realtime-resource__header h3 { margin: 0; }
+.realtime-resource__header h3 { margin: 0; font-size: var(--fs-18); font-weight: 600 }
 .realtime-resource__header span, .realtime-resource__submetric > span { color: rgba(0, 0, 0, 0.45); }
-.realtime-resource__title, .realtime-resource__actions { gap: var(--space-2, 0.5rem); }
+.realtime-resource__title { gap: var(--space-2, 0.5rem); }
 .realtime-resource__table-wrap { height: 24.75rem; margin-top: var(--space-3, 0.75rem); overflow: auto; }
 .realtime-resource__table { width: 100%; min-width: 74rem; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
 .realtime-resource__table th:first-child, .realtime-resource__table td:first-child { width: 10.5rem; }

@@ -3630,6 +3630,7 @@
     "Relationship.index.710824-8": "说明",
     "Relationship.index.710824-9": "操作",
     "Relationship.index.710824-10": "操作成功!",
+    "Relationship.title.management": "关系配置",
     "components.EditDialog.375810-0": "关系标识",
     "components.EditDialog.375810-1": "请输入标识",
     "components.EditDialog.375810-2": "最多可输入64个字符",

@@ -233,7 +233,7 @@ watch(() => props.refreshVersion, () => {
   display: flex;
   flex-direction: column;
   min-height: 30rem;
-  padding: var(--space-6, 1.5rem);
+  padding: var(--space-4, 1.5rem);
   background: var(--bg, #fff);
   border-radius: 0.25rem;
 }
@@ -260,6 +260,8 @@ watch(() => props.refreshVersion, () => {
   h3 {
     margin: 0;
     white-space: nowrap;
+	  font-size: var(--fs-18);
+	  font-weight: 600;
   }
 }
 
