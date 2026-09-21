@@ -76,7 +76,8 @@ function createEmptyDeviceSummary(): DeviceSummaryData {
 /**
  * 查询带地理坐标的设备分页。
  *
- * Geo 接口在不同部署中可能返回 page、GeoJSON 或数组，统一在此边界收口为稳定分页结构。
+ * Geo 查询按发布用户的请求器执行，设备资产范围由后端 Geo 接口注入。
+ * 在此边界将 GeoObject 的 objectId、point 和 tags 转为设备位置分页结构。
  */
 export async function loadDeviceLocationList(
   query: DeviceLocationQuery,
@@ -85,13 +86,15 @@ export async function loadDeviceLocationList(
 ): Promise<DeviceLocationPageData> {
   const terms: UnknownRecord[] = []
   if (query.state) {
-    terms.push({ column: 'state', termType: 'eq', value: query.state })
+    terms.push({ column: 'tags.state', termType: 'eq', value: query.state })
   }
   const response = await getDeviceGeoJson({
-    paging: true,
-    pageIndex: query.pageIndex,
-    pageSize: query.pageSize,
-    terms,
+    filter: {
+      paging: true,
+      pageIndex: query.pageIndex,
+      pageSize: query.pageSize,
+      terms,
+    },
   }, { signal }, client)
   assertResponseSuccess(response)
 
@@ -336,14 +339,14 @@ async function queryDeviceCount(
 }
 
 function normalizeLocationRow(row: UnknownRecord): DeviceLocationRow | undefined {
-  const properties = asRecord(row.properties)
+  const properties = { ...asRecord(row.tags), ...asRecord(row.properties) }
   const source = { ...row, ...properties }
   const coordinates = resolveCoordinates(row, properties)
   if (!coordinates) return undefined
 
   const state = enumValue(source.state)
   return {
-    deviceId: textOrNull(source.deviceId ?? source.id),
+    deviceId: textOrNull(row.objectId ?? source.deviceId ?? source.id),
     deviceName: textOrNull(source.deviceName ?? source.name),
     longitude: coordinates[0],
     latitude: coordinates[1],
@@ -358,7 +361,10 @@ function normalizeLocationRow(row: UnknownRecord): DeviceLocationRow | undefined
 function resolveCoordinates(row: UnknownRecord, properties: UnknownRecord): [number, number] | undefined {
   const geometry = asRecord(row.geometry)
   const location = asRecord(row.location)
+  const shape = asRecord(row.shape)
   const candidates = [
+    row.point,
+    shape.coordinates,
     geometry.coordinates,
     location.coordinates,
     row.coordinates,
