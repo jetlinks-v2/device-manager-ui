@@ -829,14 +829,6 @@
     "sortIndex": 6,
     "children": [
       {
-        "options": {
-          "meta": {
-            "contentPanel": false
-          }
-        },
-        "meta": {
-          "contentPanel": false
-        },
         "code": "link/DashBoard",
         "name": "仪表盘",
         "i18nMessages": {
