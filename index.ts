@@ -122,6 +122,16 @@ const getCoreRouteOverrides = () => {
 
 const getComponents = () => ({})
 
+/**
+ * 不由布局壳层统一套 `ContentPanel` 的页面：运维中心仪表盘为整屏看板，页面自绘背景。
+ *
+ * 键为路由 `name`（即菜单 `code`）。声明在代码侧，改完随代码生效，
+ * 不需要把开关写进 `baseMenu.json` 再重新初始化菜单。
+ */
+const getContentPanelOverrides = () => ({
+  'link/DashBoard': false,
+})
+
 const register = () => {
   moduleRegistry.register(name, registerSetting)
 }
@@ -132,6 +142,7 @@ export default {
   getExtraRoutesMap,
   getCoreRouteOverrides,
   getComponents,
+  getContentPanelOverrides,
   register,
   priority: -100,
 }
