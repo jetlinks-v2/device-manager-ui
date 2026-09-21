@@ -43,69 +43,80 @@
       </aside>
 
       <div class="add-device-library__content">
+        <!-- 当前 ProTable 的 CARD 模式仅展示内部请求 loading，受控数据由外层 Spin 承载。 -->
         <a-spin :spinning="loading">
-          <div v-if="templates.length" class="add-device-library__grid">
-            <IotAddDeviceLibraryCard
-              v-for="template in templates"
-              :key="template.id"
-              :template="template"
-              :selected="template.id === selectedTemplateKey"
-              :disabled="isTemplateDisabled(template)"
-              @select="$emit('select-template', $event)"
-            />
-          </div>
-
-          <CloudEmpty
-            v-else
-            class="add-device-library__empty"
-            :description="$t('IotDeviceList.add.libraryEmpty')"
-          />
-
-          <div v-if="templates.length || (showEmptyPager && hasMore)" class="add-device-library__pager">
-            <a-space>
-              <a-tooltip :title="$t('IotDeviceList.add.prev')">
-                <a-button
-                  type="text"
-                  size="small"
-                  :aria-label="$t('IotDeviceList.add.prev')"
-                  :disabled="pageIndex === 0"
-                  @click="changePage(pageIndex - 1)"
-                >
-                  <template #icon><AIcon type="LeftOutlined" /></template>
-                </a-button>
-              </a-tooltip>
-              <span>{{ pageIndex + 1 }}</span>
-              <a-tooltip :title="$t('IotDeviceList.add.next')">
-                <a-button
-                  type="text"
-                  size="small"
-                  :aria-label="$t('IotDeviceList.add.next')"
-                  :disabled="!hasMore"
-                  @click="changePage(pageIndex + 1)"
-                >
-                  <template #icon><AIcon type="RightOutlined" /></template>
-                </a-button>
-              </a-tooltip>
-            </a-space>
-          </div>
+          <j-pro-table
+            class="add-device-library__table"
+            mode="CARD"
+            type="PAGE"
+            row-key="id"
+            :data-source="templates"
+            :grid-columns="[2, 3, 3, 3]"
+            :alert-show="false"
+            :body-style="{ padding: 0 }"
+            :scroll="false"
+          >
+            <template #card="template">
+              <IotAddDeviceLibraryCard
+                :template="template"
+                :selected="template.id === selectedTemplateKey"
+                :disabled="isTemplateDisabled(template)"
+                @select="$emit('select-template', $event)"
+              />
+            </template>
+            <template #emptyText>
+              <CloudEmpty
+                class="add-device-library__empty"
+                :description="$t('IotDeviceList.add.libraryEmpty')"
+              />
+            </template>
+          </j-pro-table>
         </a-spin>
+
+        <!-- 无总数接口保留前后翻页；二次筛选产生空页时仍可继续查找。 -->
+<!--        <div v-if="templates.length || (showEmptyPager && hasMore)" class="add-device-library__pager">-->
+<!--          <a-space>-->
+<!--            <a-tooltip :title="$t('IotDeviceList.add.prev')">-->
+<!--              <a-button-->
+<!--                type="text"-->
+<!--                size="small"-->
+<!--                :aria-label="$t('IotDeviceList.add.prev')"-->
+<!--                :disabled="loading || pageIndex === 0"-->
+<!--                @click="changePage(pageIndex - 1)"-->
+<!--              >-->
+<!--                <template #icon><AIcon type="LeftOutlined" /></template>-->
+<!--              </a-button>-->
+<!--            </a-tooltip>-->
+<!--            <span>{{ pageIndex + 1 }}</span>-->
+<!--            <a-tooltip :title="$t('IotDeviceList.add.next')">-->
+<!--              <a-button-->
+<!--                type="text"-->
+<!--                size="small"-->
+<!--                :aria-label="$t('IotDeviceList.add.next')"-->
+<!--                :disabled="loading || !hasMore"-->
+<!--                @click="changePage(pageIndex + 1)"-->
+<!--              >-->
+<!--                <template #icon><AIcon type="RightOutlined" /></template>-->
+<!--              </a-button>-->
+<!--            </a-tooltip>-->
+<!--          </a-space>-->
+<!--        </div>-->
       </div>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, type PropType } from 'vue'
+import { type PropType } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
-  normalizeDeviceTypeValue,
   type IotDeviceLibraryTagGroup,
   type IotDeviceProductTemplate,
 } from '@device-manager-ui/api/device'
 import IotAddDeviceLibraryCard from './IotAddDeviceLibraryCard.vue'
 import IotAddDeviceLibraryTagFilterRow from './IotAddDeviceLibraryTagFilterRow.vue'
 
-const COLLAPSED_TAG_GROUP_COUNT = 5
+import { useDeviceLibrarySelection, type DeviceLibrarySelectionQuery } from '../hooks/device-library/useDeviceLibrarySelection'
 
 const props = defineProps({
   templates: { type: Array as PropType<IotDeviceProductTemplate[]>, required: true },
@@ -123,78 +134,15 @@ const props = defineProps({
 
 const emit = defineEmits<{
   (e: 'select-template', templateId: string): void
-  (e: 'query-change', query: { pageIndex: number; pageSize: number; keyword: string; tags: string[] }): void
+  (e: 'query-change', query: DeviceLibrarySelectionQuery): void
 }>()
 
 const { t: $t } = useI18n()
-const keyword = ref('')
-const submittedKeyword = ref('')
-const activeTagIds = ref<string[]>([])
-const tagGroupsExpanded = ref(false)
-
-const showTagPanel = computed(() => props.tagLoading || props.tagFilterGroups.length || activeTagIds.value.length)
-const hasActiveTagFilter = computed(() => activeTagIds.value.length > 0)
-const visibleTagFilterGroups = computed(() => (
-  tagGroupsExpanded.value ? props.tagFilterGroups : props.tagFilterGroups.slice(0, COLLAPSED_TAG_GROUP_COUNT)
-))
-const hasHiddenTagFilterGroups = computed(() => props.tagFilterGroups.length > COLLAPSED_TAG_GROUP_COUNT)
-
-function handleKeywordSearch(value = keyword.value) {
-  submittedKeyword.value = value.trim()
-  updatePageAndQuery(0)
-}
-
-function handleKeywordChange(event: Event) {
-  const value = (event.target as HTMLInputElement | null)?.value ?? ''
-  if (!value && submittedKeyword.value) handleKeywordSearch('')
-}
-
-function toggleTagFilter(tagId: string) {
-  const isSelected = activeTagIds.value.includes(tagId)
-  if (!isSelected && props.tagFilterGroups.slice(COLLAPSED_TAG_GROUP_COUNT).some((group) => (
-    group.tags.some((tag) => tag.id === tagId)
-  ))) {
-    tagGroupsExpanded.value = true
-  }
-  activeTagIds.value = isSelected
-    ? activeTagIds.value.filter((item) => item !== tagId)
-    : [...activeTagIds.value, tagId]
-  updatePageAndQuery(0)
-}
-
-function clearTagFilters() {
-  activeTagIds.value = []
-  updatePageAndQuery(0)
-}
-
-function updatePageAndQuery(nextPageIndex: number) {
-  emitQuery(nextPageIndex)
-}
-
-function changePage(nextPageIndex: number) {
-  if (nextPageIndex < 0 || (nextPageIndex > props.pageIndex && !props.hasMore)) return
-  emitQuery(nextPageIndex)
-}
-
-function emitQuery(pageIndex = props.pageIndex) {
-  emit('query-change', {
-    pageIndex: Math.max(0, pageIndex),
-    pageSize: props.pageSize,
-    keyword: submittedKeyword.value,
-    tags: [...activeTagIds.value],
-  })
-}
-
-function isTemplateDisabled(template: IotDeviceProductTemplate) {
-  return Boolean(
-    props.selectableDeviceType
-    && normalizeDeviceTypeValue(template.deviceType) !== normalizeDeviceTypeValue(props.selectableDeviceType),
-  )
-}
-
-watch(() => props.tagFilterGroups, () => {
-  tagGroupsExpanded.value = false
-}, { deep: true })
+const {
+  keyword, activeTagIds, tagGroupsExpanded, showTagPanel, hasActiveTagFilter,
+  visibleTagFilterGroups, hasHiddenTagFilterGroups, handleKeywordSearch,
+  handleKeywordChange, toggleTagFilter, clearTagFilters, changePage, isTemplateDisabled,
+} = useDeviceLibrarySelection(props, (query) => emit('query-change', query))
 </script>
 
 <style scoped src="./IotAddDeviceDrawer.css"></style>

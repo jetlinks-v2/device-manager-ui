@@ -166,6 +166,7 @@ const columns = [
     search: {
       type: "string",
     },
+    columnEmpty: $t('comm.table.empty')
   },
   {
     title: $t("Relationship.index.710824-9"),
