@@ -259,7 +259,7 @@ const columns = computed(() => [
   ...(activeType.value === 'all' ? [{ title: '创建时间', key: 'createdAt', width: 160 }] : []),
   ...(activeType.value === 'gateway' ? [{ title: t('GatewayDeviceCard.monitor'), key: 'monitor', width: 220 }] : []),
   ...(['gateway', 'video'].includes(activeType.value) ? [{ title: t('UnifiedDeviceList.channel'), key: 'channel', width: 100 }] : []),
-  { title: t('UnifiedDeviceList.action'), key: 'action', width: 80, fixed: 'right', align: 'center' },
+  { title: t('UnifiedDeviceList.action'), key: 'action', width: 90, fixed: 'right', align: 'center' },
 ])
 </script>
 <style scoped lang="less">
