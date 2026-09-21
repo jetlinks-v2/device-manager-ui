@@ -45,27 +45,16 @@
           </template>
           <template #right>
             <section class="alarm-record-list">
-              <a-flex justify="space-between" :gap="16">
-	              <header class="alarm-list-heading"><a-space><strong>{{ $t('DeviceAlarm.workspace.records') }}</strong><span>{{ $t('DeviceAlarm.workspace.total', { total: recordTotal }) }}</span></a-space></header>
-	              <ConditionFilter :fields="recordFields" :modelValue="recordTerms" :placeholder="$t('DeviceAlarm.workspace.recordSearch')"
-	                               @update:modelValue="value => recordTerms = value" @change="searchRecords" />
-              </a-flex>
-              <div class="alarm-record-scope">
-                <span>{{ $t('DeviceAlarm.workspace.scope') }}</span>
-                <a-tag v-if="selected" closable @close="showAllRecords">{{ selected.name }}</a-tag>
-                <span v-else>{{ $t('DeviceAlarm.workspace.allRules') }}</span>
-                <a-button type="text" :loading="recordsLoading" :aria-label="$t('DeviceAlarm.workspace.refresh')" @click="loadRecords()"><AIcon type="ReloadOutlined" /></a-button>
-              </div>
+              <ConditionFilter :fields="recordFields" :modelValue="recordTerms" :placeholder="$t('DeviceAlarm.workspace.recordSearch')"
+                               @update:modelValue="value => recordTerms = value" @change="searchRecords" />
               <a-alert v-if="recordsError" type="error" show-icon :message="$t('DeviceAlarm.workspace.summaryError')"><template #action><a-button @click="loadRecords()">{{ $t('DeviceAlarm.workspace.retry') }}</a-button></template></a-alert>
-              <div v-else class="alarm-scroll">
-                <a-spin :spinning="recordsLoading"><div class="alarm-record-items">
-                  <DeviceAlarmRecordCard v-for="record in records" :key="record.id" :row="record" :levels="levelOptions" :now="now.getTime()"
+              <JProTable ref="recordTableRef" :key="recordTable.key" class="alarm-record-table" mode="CARD" row-key="id"
+                         :request="recordTable.request" :grid-columns="[1, 2, 3, 3]" :alert-show="false" :body-style="{ padding: 0 }">
+                <template #card="record">
+                  <DeviceAlarmRecordCard :row="record" :levels="levelOptions" :now="now.getTime()"
                                          @handle="handling.show" @history="history.show" />
-                  <CloudEmpty class="alarm-record-empty" v-if="!records.length && !recordsLoading" :description="$t('DeviceAlarm.workspace.recordsEmpty')" />
-                </div></a-spin>
-              </div>
-              <footer class="alarm-list-footer"><a-pagination size="small" :current="recordPage + 1" :page-size="recordSize" :total="recordTotal"
-                                                              show-size-changer @change="(value, size) => loadRecords(value - 1, size)" /></footer>
+                </template>
+              </JProTable>
             </section>
           </template>
         </EqualHeightColumns>
@@ -94,7 +83,6 @@ import { useNow } from '@vueuse/core'
 import { message, Modal } from 'ant-design-vue'
 import { useI18n } from 'vue-i18n'
 import ConditionFilter from '@jetlinks-web-core/components/ConditionFilter'
-import { PageHeader } from '@jetlinks-web-core/components'
 import DeviceAlarmEditorModal from './components/DeviceAlarmEditorModal.vue'
 import DeviceAlarmRuleCard from './components/DeviceAlarmRuleCard.vue'
 import DeviceAlarmRecordCard from './components/DeviceAlarmRecordCard.vue'
@@ -112,9 +100,8 @@ const { rows, total, keyword, levelOptions, triggerOptions, propertyOptions,
   selectedProductOption, selectedDeviceOption, notifyMethods, notifyUsers, notifyLoading, editorOpen, productReloadKey,
   editingRow, form, updateKeyword, handleSearch, openEdit, requestProducts, requestDevices,
   onProductChange, onDeviceChange, onPropertyChange, loadMoreNotifyUsers, save } = page
-const { rows: records, total: recordTotal, pageIndex: recordPage, pageSize: recordSize,
-  loading: recordsLoading, error: recordsError, fields: recordFields, terms: recordTerms,
-  search: searchRecords, load: loadRecords } = useDeviceAlarmRecords(ruleId, $t)
+const { tableRef: recordTableRef, table: recordTable, error: recordsError, fields: recordFields, terms: recordTerms,
+  search: searchRecords, reload: loadRecords } = useDeviceAlarmRecords(ruleId, $t)
 const history = reactive(useDeviceAlarmHistory())
 const handling = reactive(useDeviceAlarmHandling($t, async record => {
   message.success($t('DeviceAlarm.workspace.handledSuccess', { name: record.alarmName || '—' }))
@@ -157,23 +144,17 @@ function confirmRemove(row: DeviceAlarmRow) {
 .alarm-scroll { flex: 1; min-height: 0; overflow-y: auto; }
 .alarm-rule-more { display: flex; min-height: 2.25rem; align-items: center; justify-content: center; gap: var(--space-1); color: var(--jet-theme-text-secondary); font-size: var(--fs-12); }
 .alarm-rule-footer { flex-shrink: 0; }
-.alarm-record-list { container: alarm-records / inline-size; }
-.alarm-record-items { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; gap: var(--space-4); }
-.alarm-record-empty { grid-column: 1 / -1; }
-@container alarm-records (max-width: 1080px) { .alarm-record-items { grid-template-columns: repeat(2, minmax(0, 1fr)) } }
-
-@container alarm-records (max-width: 760px) { .alarm-record-items { grid-template-columns: minmax(0, 1fr); } }
+.alarm-record-table { flex: 1; min-height: 0; }
+.alarm-record-table :deep(.alarm-record-card) { width: 100%; }
 .alarm-record-scope { display: flex; align-items: center; gap: var(--space-2); font-size: 12px; min-width: 0; }
 .alarm-record-scope > span:first-child { color: var(--jet-theme-text-secondary); }
 .alarm-record-scope :deep(.ant-tag) { max-width: 75%; overflow: hidden; text-overflow: ellipsis; }
 .alarm-record-scope :deep(.ant-btn) { margin-left: auto; }
-.alarm-list-footer { margin-top: auto; display: flex; justify-content: flex-end; flex-shrink: 0; }
 .alarm-history-caption { color: var(--jet-theme-text-secondary); }
 @media (max-width: 800px) {
   .alarm-workspace { display: flex; flex-direction: column; overflow-y: auto; }
   .alarm-rule-list { border-right: 0; border-bottom: 1px solid var(--jet-theme-border); flex-shrink: 0; }
   .alarm-rule-list .alarm-scroll { max-height: 230px; flex: auto; }
   .alarm-record-list { flex: 1 0 auto; overflow: visible; }
-  .alarm-record-list .alarm-scroll { overflow: visible; }
 }
 </style>
