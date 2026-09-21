@@ -52,16 +52,70 @@ type SpaceDataBindResponse = {
   modifyTime?: number
 }
 
+type DeviceSpaceAreaResponse = {
+  deviceId?: string
+  areaId?: string
+  areaName?: string
+}
+
 export type DeviceSpaceAreaBinding = {
   deviceId: string
   areaId: string
   area?: string
 }
 
+const DEVICE_SPACE_AREA_SERVICE_ID = 'spaceService:device-space'
+export type DeviceSpaceAreaSupport = boolean | undefined
+let deviceSpaceAreaSupportPromise: Promise<DeviceSpaceAreaSupport> | undefined
+
 const unwrapList = <T>(response: ApiResponse<T[]> | T[] | undefined | null): T[] => {
   if (Array.isArray(response)) return response
   const result = response?.result
   return Array.isArray(result) ? result : []
+}
+
+// 命令服务探测在不同请求适配层下可能返回裸值或标准 { result } 响应体。
+const unwrapResult = <T>(response: ApiResponse<T> | T): T => (
+  response && typeof response === 'object' && 'result' in response
+    ? (response as ApiResponse<T>).result as T
+    : response as T
+)
+
+const normalizeIds = (ids: string[]) => [...new Set(ids.map(String).filter(Boolean))]
+
+const toBusinessError = (error: unknown): Error => {
+  const source = error as { message?: unknown; response?: { data?: { message?: unknown } }; data?: { message?: unknown } }
+  const message = [source?.response?.data?.message, source?.data?.message]
+    .find((item): item is string => typeof item === 'string' && item.trim())
+    ?.trim()
+  if (error instanceof Error && message) {
+    error.message = message
+    return error
+  }
+  return new Error(message || (error instanceof Error ? error.message : ''))
+}
+
+/**
+ * 探测设备区域关联服务。
+ *
+ * 明确返回 false 才表示未装配空间服务；网络或网关异常保持 unknown，不能被缓存为“不支持”。
+ */
+export const existsDeviceSpaceAreaSupport_api = (): Promise<DeviceSpaceAreaSupport> => {
+  if (!deviceSpaceAreaSupportPromise) {
+    deviceSpaceAreaSupportPromise = request
+      .get<ApiResponse<boolean> | boolean>(
+        `/command-supports/service/${DEVICE_SPACE_AREA_SERVICE_ID}/exists`,
+        {},
+        { hiddenError: true },
+      )
+      .then((response) => unwrapResult<boolean>(response) === true)
+      .catch(() => {
+        // 探测失败不代表模块不存在，释放缓存以便后续页面或用户操作重试。
+        deviceSpaceAreaSupportPromise = undefined
+        return undefined
+      })
+  }
+  return deviceSpaceAreaSupportPromise
 }
 
 const flattenAreas = (areas: SpaceAreaResponse[]): SpaceAreaResponse[] =>
@@ -141,14 +195,15 @@ const toProjectAreaSettings = (projectId: string, areas: ProjectArea[]): Project
 })
 
 export const queryProjectSpaceAreaSettings_api = async (projectId: string): Promise<ProjectAreaSettings> => {
+  if (await existsDeviceSpaceAreaSupport_api() !== true) return toProjectAreaSettings(projectId, [])
   const [areaResponse, spaceTypeResponse] = await Promise.all([
     request.post('/space/_query/tree', {
       paging: false,
       sorts: [{ name: 'sortIndex', order: 'asc' }],
-    }) as Promise<ApiResponse<SpaceAreaResponse[]>>,
+    }, { hiddenError: true }) as Promise<ApiResponse<SpaceAreaResponse[]>>,
     (request.post('/space/type/_query/no-paging', {
       paging: false,
-    }) as Promise<ApiResponse<SpaceTypeResponse[]>>).catch(() => undefined),
+    }, { hiddenError: true }) as Promise<ApiResponse<SpaceTypeResponse[]>>).catch(() => undefined),
   ])
   const capabilityBySpaceTypeId = new Map(
     flattenSpaceTypes(unwrapList(spaceTypeResponse))
@@ -166,121 +221,40 @@ export const queryProjectSpaceAreaSettings_api = async (projectId: string): Prom
   return toProjectAreaSettings(projectId, areas)
 }
 
-export const querySpaceAreasByIds_api = async (projectId: string, areaIds: string[]): Promise<ProjectArea[]> => {
-  const ids = [...new Set(areaIds.filter(Boolean))]
-  if (!ids.length) return []
-
-  const response = await request.post('/space/_query/no-paging', {
-    paging: false,
-    terms: [{
-      column: 'id',
-      termType: 'in',
-      value: ids,
-    }],
-  }) as ApiResponse<SpaceAreaResponse[]>
-
-  return unwrapList(response)
-    .map((item) => toProjectArea(projectId, item))
-    .filter((item) => Boolean(item.id))
-}
-
-export const bindDeviceToSpaceArea_api = async (
-  spaceId: string,
-  device: { id: string; name?: string; productName?: string; state?: string },
-): Promise<void> => {
-  await bindDevicesToSpaceArea_api(spaceId, [device])
-}
-
-export const bindDevicesToSpaceArea_api = async (
-  spaceId: string,
-  devices: Array<{ id: string; name?: string; productName?: string; state?: string }>,
-): Promise<void> => {
-  const rows = devices
-    .filter((device) => Boolean(device.id))
-    .map((device) => ({
-      spaceId,
-      deviceId: device.id,
-      extensions: {
-        assetType: 'DEVICE',
-        deviceId: device.id,
-        deviceName: device.name || device.id,
-        name: device.name || device.id,
-        productName: device.productName || '',
-        state: device.state || '',
-        stateText: device.state || '',
-        source: 'iot-device-group',
-      },
-    }))
-  if (!spaceId || !rows.length) return
-  // The page surfaces the backend business message itself; suppress the generic request toast.
-  await request.post('/space/data-bind/_batch', rows, { hiddenError: true })
-}
-
-export const unbindDevicesFromSpaceArea_api = async (
-  spaceId: string,
-  deviceIds: string[],
-): Promise<void> => {
-  const ids = [...new Set(deviceIds.filter(Boolean))]
-  if (!spaceId || !ids.length) return
-
-  const response = await request.post('/space/data-bind/_query/no-paging', {
-    paging: false,
-    terms: [
-      { column: 'spaceId', termType: 'eq', value: spaceId },
-      { column: 'deviceId', termType: 'in', value: ids },
-    ],
-  }) as ApiResponse<SpaceDataBindResponse[]>
-  const bindIds = unwrapList(response)
-    .filter((item) => String(item.extensions?.assetType || 'DEVICE').toUpperCase() === 'DEVICE')
-    .map((item) => String(item.id || ''))
-    .filter(Boolean)
-
-  await Promise.all(bindIds.map((bindId) => request.remove(`/space/data-bind/${bindId}`)))
-}
-
 export const queryDeviceSpaceAreaBindings_api = async (
   deviceIds: string[],
-  projectId = '',
+  _projectId = '',
 ): Promise<DeviceSpaceAreaBinding[]> => {
-  const ids = [...new Set(deviceIds.filter(Boolean))]
+  const ids = normalizeIds(deviceIds)
   if (!ids.length) return []
+  if (await existsDeviceSpaceAreaSupport_api() !== true) return []
 
-  const response = await request.post('/space/data-bind/_query/no-paging', {
-    paging: false,
-    sorts: [{ name: 'modifyTime', order: 'desc' }],
-    terms: [
-      { column: 'deviceId', termType: 'in', value: ids },
-    ],
-  }) as ApiResponse<SpaceDataBindResponse[]>
+  const response = await request
+    .post('/space/device-area/_query', { deviceIds: ids }, { hiddenError: true }) as ApiResponse<DeviceSpaceAreaResponse[]>
 
-  const bindings: DeviceSpaceAreaBinding[] = []
-  const seenBindings = new Set<string>()
-  for (const item of unwrapList(response)) {
-    const deviceId = getBindingDeviceId(item)
-    const areaId = String(item.spaceId || '')
-    const key = `${deviceId}:${areaId}`
-    if (!ids.includes(deviceId) || !areaId || seenBindings.has(key)) continue
-    if (String(item.extensions?.assetType || 'DEVICE').toUpperCase() !== 'DEVICE') continue
-    seenBindings.add(key)
-    bindings.push({
-      deviceId,
-      areaId,
-      area: typeof item.extensions?.spaceName === 'string' ? item.extensions.spaceName : undefined,
-    })
+  return unwrapList(response)
+    .map((item) => ({
+      deviceId: String(item.deviceId || ''),
+      areaId: String(item.areaId || ''),
+      area: typeof item.areaName === 'string' ? item.areaName : undefined,
+    }))
+    .filter((item) => ids.includes(item.deviceId) && Boolean(item.areaId))
+}
+
+/**
+ * 绑定设备到目标区域；后端会在同一事务内完成首次绑定或从旧区域换绑。
+ *
+ * 业务异常转换为后端 message，供批量操作和抽屉统一展示，而非 Axios 的英文状态描述。
+ */
+export const bindDevicesSpaceArea_api = async (spaceId: string, deviceIds: string[]): Promise<void> => {
+  const ids = normalizeIds(deviceIds)
+  if (!spaceId || !ids.length) return
+  if (await existsDeviceSpaceAreaSupport_api() !== true) return
+  try {
+    await request.post('/space/device-area/_bind', { spaceId, deviceIds: ids }, { hiddenError: true })
+  } catch (error) {
+    throw toBusinessError(error)
   }
-
-  const missingAreaNames = [...new Set(bindings
-    .filter((item) => !item.area)
-    .map((item) => item.areaId))]
-
-  if (missingAreaNames.length) {
-    const areaMap = new Map((await querySpaceAreasByIds_api(projectId, missingAreaNames)).map((item) => [item.id, item.name]))
-    for (const binding of bindings) {
-      if (!binding.area) binding.area = areaMap.get(binding.areaId) || binding.areaId
-    }
-  }
-
-  return bindings
 }
 
 export const querySpaceAreaDeviceIds_api = async (areaIds: string[]): Promise<string[]> => {
@@ -291,13 +265,14 @@ export const querySpaceAreaDeviceIds_api = async (areaIds: string[]): Promise<st
 export const querySpaceAreaDeviceBindings_api = async (
   areaIds: string[],
 ): Promise<DeviceSpaceAreaBinding[]> => {
-  const ids = [...new Set(areaIds.map(String).filter(Boolean))]
+  const ids = normalizeIds(areaIds)
   if (!ids.length) return []
+  if (await existsDeviceSpaceAreaSupport_api() !== true) return []
 
   const response = await request.post('/space/data-bind/_query/no-paging', {
     paging: false,
     terms: [{ column: 'spaceId', termType: 'in', value: ids }],
-  }) as ApiResponse<SpaceDataBindResponse[]>
+  }, { hiddenError: true }) as ApiResponse<SpaceDataBindResponse[]>
 
   const bindings: DeviceSpaceAreaBinding[] = []
   const seenBindings = new Set<string>()

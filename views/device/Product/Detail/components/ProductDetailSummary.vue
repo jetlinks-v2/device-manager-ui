@@ -46,7 +46,7 @@
           <div class="product-summary__row">
             <span class="product-summary__label">{{ $t('Detail.index.478940-5') }}</span>
             <j-permission-button
-              v-if="canViewDevices"
+              v-if="canViewDevices && hasDevices"
               type="link"
               class="product-summary__value product-summary__count"
               :hasPermission="canViewDevices"
@@ -105,6 +105,8 @@ const classification = computed(() => getI18nText(props.product, 'classifiedName
 const deviceType = computed(() => props.product.deviceType?.text || '')
 const manufacturer = computed(() => getI18nText(props.product, 'manufacturer'))
 const model = computed(() => getI18nText(props.product, 'model'))
+/** 设备数量为零时不提供无结果的设备列表跳转。 */
+const hasDevices = computed(() => Number(props.product.count ?? 0) > 0)
 /** 复制产品 ID，并与设备详情保持一致地反馈复制结果。 */
 async function copyProductId() {
   if (!props.product.id) return

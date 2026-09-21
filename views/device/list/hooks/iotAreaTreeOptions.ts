@@ -1,5 +1,15 @@
 import type { ProjectArea } from '@device-manager-ui/modules/defaults/types'
 
+export type DeviceBoundArea = ProjectArea & {
+  /** 仅由设备关联查询补齐，不能作为新的区域绑定目标。 */
+  boundOnly?: true
+}
+
+export type DeviceAreaBindingOption = {
+  areaId?: string
+  area?: string
+}
+
 export type AreaTreeNode = {
   title: string
   value: string
@@ -10,6 +20,44 @@ export type AreaTreeNode = {
 }
 
 const LEGACY_SELECTABLE_AREA_DEPTH = 4
+
+const isBoundOnlyArea = (area: ProjectArea): area is DeviceBoundArea => (
+  (area as DeviceBoundArea).boundOnly === true
+)
+
+/**
+ * 将设备已绑定但当前无空间读取权限的区域补入选项。
+ *
+ * 这类节点只包含设备关联接口已返回的 ID 和名称，保持为根节点且不可作为新的绑定目标。
+ */
+export function mergeDeviceBoundAreas(
+  areas: ProjectArea[],
+  bindings: DeviceAreaBindingOption[],
+  projectId = '',
+): DeviceBoundArea[] {
+  const result = new Map<string, DeviceBoundArea>(areas.map((area) => [area.id, area]))
+
+  bindings.forEach((binding) => {
+    const areaId = String(binding.areaId || '').trim()
+    if (!areaId || result.has(areaId)) return
+    const name = String(binding.area || areaId).trim() || areaId
+    result.set(areaId, {
+      id: areaId,
+      projectId,
+      name,
+      type: 'site',
+      canBindAsset: false,
+      code: areaId,
+      aliases: [],
+      sortOrder: 0,
+      description: '',
+      planMode: 'own',
+      boundOnly: true,
+    })
+  })
+
+  return [...result.values()]
+}
 
 const sortAreas = (items: ProjectArea[]) =>
   [...items].sort((a, b) => (a.sortOrder - b.sortOrder) || a.name.localeCompare(b.name, 'zh-CN'))
@@ -27,8 +75,8 @@ function getAreaDepth(areas: ProjectArea[], areaId: string): number {
 
 export function isSelectableDeviceArea(areas: ProjectArea[], areaId: string): boolean {
   const area = areas.find((item) => item.id === areaId)
-  if (!area) return false
-  const hasAssetBindingCapability = areas.some((item) => typeof item.canBindAsset === 'boolean')
+  if (!area || isBoundOnlyArea(area)) return false
+  const hasAssetBindingCapability = areas.some((item) => !isBoundOnlyArea(item) && typeof item.canBindAsset === 'boolean')
 
   // 老空间服务未返回能力元数据时，保留既有四级节点选择规则。
   return hasAssetBindingCapability

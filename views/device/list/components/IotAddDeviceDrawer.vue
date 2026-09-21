@@ -52,7 +52,7 @@
               stack-fields
               :show-name="false"
               :show-id="false"
-              :show-area="true"
+              :show-area="spaceAreaSupported !== false"
               :show-group="true"
               :show-description="true"
               :on-area-change="onAreaChange"
@@ -68,6 +68,7 @@
           :group-tree-data="activeGroupTreeData"
           :group-multiple="true"
           show-icon
+          :show-area="editSpaceAreaSupported !== false"
           :on-area-change="activeOnAreaChange"
         />
         <template v-else-if="currentStep === 0">
@@ -133,6 +134,7 @@
             stack-fields
             :on-area-change="onAreaChange"
             show-icon
+            :show-area="spaceAreaSupported !== false"
           />
         </template>
       </a-form>
@@ -200,7 +202,7 @@ const {
   productMenuAvailable,
   productMessage, productLoading, productFilterTerms, libraryLoading, libraryTagLoading, busy, submitAction, errorMessage,
   formRef, form, formRules, installProgressState,
-  areaTreeData, groupTreeData, configOptionsLoading,
+  areaTreeData, groupTreeData, spaceAreaSupported, configOptionsLoading,
   categoryTree, categoryLoading, selectedCategoryId, productCandidates, productTotal, productPageIndex, productPageSize,
   libraryProducts, libraryTagGroups, libraryPageIndex, libraryPageSize, libraryHasMore,
   selectSource, selectProduct, selectTemplate, selectProductCategory, selectUnclassifiedProductCategory,
@@ -213,6 +215,7 @@ const {
 const {
   busy: editBusy, errorMessage: editErrorMessage,
   formRef: editFormRef, form: editForm, formRules: editFormRules, areaTreeData: editAreaTreeData, groupTreeData: editGroupTreeData,
+  spaceAreaSupported: editSpaceAreaSupported,
   onAreaChange: onEditAreaChange,
   onUpdateOpen: onEditUpdateOpen, onSubmit: onEditSubmit,
 } = useIotEditDeviceDrawer(editDrawerProps, {
