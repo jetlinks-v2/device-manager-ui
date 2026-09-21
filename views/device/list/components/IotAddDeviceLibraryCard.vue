@@ -3,7 +3,7 @@
     :data="cardData"
     :active="selected"
     :disabled="disabled"
-    class="iot-add-device-card"
+    style="border-color:var(--color-jet-border);padding-bottom: var(--space-4)"
     @click="emit('select', template.id)"
   >
     <template #title>
@@ -46,8 +46,5 @@ const { cardData, visibleTags, hiddenTagCount, tagTooltip } = useDeviceLibraryCa
 </script>
 
 <style scoped src="./IotAddDeviceDrawer.css" lang="less">
-.iot-add-device-card {
-  border: 1px solid var(--color-jet-border) !important;
-  padding: var(--space-2);
-}
+
 </style>
