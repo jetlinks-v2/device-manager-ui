@@ -12,17 +12,17 @@
 
 验证结果：`node --test modules/device-manager-ui/tests/unifiedDeviceStatusFilter.test.mjs modules/device-manager-ui/tests/unifiedDeviceTabs.test.mjs` 4 项通过，包含页面脚本／模板编译与三状态、再次点击清除筛选的源码契约；本模块 `git diff --check` 通过。`unified/index.vue` 原本已超过 300 行，本次只是局部替换，现为 309 行。浏览器窗口正在由用户操作，本次没有切换或刷新其 SaaS 页签；实际三种状态切换、宽度与颜色仍需在 `http://localhost:9200/#/resources/devices/list?type=gateway` 人工复核。未运行完整 typecheck、lint 或生产构建；发布环境需更新运行时前端静态资源，无后端变更。
 
-## 暂隐视频分类页签（已实施）
+## 按部署方式控制视频分类页签（已实施，2026-09-22）
 
-目标：运行时资源中心统一设备列表的顶部分类栏暂不显示“视频”页签；保留“全部”和其他分类，视频设备仍可在“全部”中查看。
+目标：运行时资源中心统一设备列表在私有化构建中展示“视频”页签，在 SaaS 构建中继续隐藏该页签；两种部署方式都保留视频 Provider、设备识别、分类直达和详情能力。
 
 影响范围：`device-manager-ui/deviceListProvider.ts` 的分类可见性契约、`views/device/list/unified/useUnifiedDeviceList.ts` 的页签选项，以及 `jetlinks-media-ui/deviceListProvider.ts` 的视频分类配置。
 
 不做：不删除视频 Provider、设备数据、`?type=video` 直达处理、详情页通道能力或独立的“视频管理 / 视频列表”菜单；不改 `ui/`、后端接口与权限。
 
-实施：为分类 Provider 增加可选的页签可见性设置，仅在生成顶部页签时过滤视频；分类识别与直达 URL 仍按原逻辑运行。保持现有表格工作区、筛选和详情承载方式，不引入新的交互壳层。
+实施：保留分类 Provider 现有 `showInTabs` 契约，由 `jetlinks-media-ui/deviceListProvider.ts` 使用 `isPrivateDeployment()` 决定视频页签可见性；分类识别与 `?type=video` 直达仍按原逻辑运行。保持现有表格工作区、筛选和详情承载方式，不引入新的交互壳层。
 
-风险与验证：直达 `?type=video` 时视频数据仍显示，但顶部不再有对应的选中页签。`tests/unifiedDeviceTabs.test.mjs` 检查页签隐藏与分类直达逻辑，连同 `tests/deviceDetailContent.test.mjs` 共 11 项通过；三处 TypeScript 文件语法解析通过，两个模块的 `git diff --check` 通过。未执行浏览器手工验证、lint、完整 typecheck 或生产构建：本机性能有限，且设备模块已有 `views/link/Certificate/type.d.ts:2` 的类型检查语法错误。后续可运行 `pnpm --dir runtime-ui exec vue-tsc --noEmit -p modules/device-manager-ui/tsconfig.json`、媒体模块对应命令及生产构建，并实测顶部页签、“全部”列表、视频直达与独立视频菜单；部署环境需要重新发布运行时前端资源。
+风险与验证：部署类型由构建时的 `VITE_APP_DEPLOYMENT` 决定，不能用 `VITE_APP_ENVIRONMENT` 或 `!isSaaS` 代替。`node --test tests/unifiedDeviceTabs.test.mjs tests/deviceDetailContent.test.mjs` 共 11 项通过，覆盖私有化显示契约、SaaS 隐藏契约、隐藏 Provider 仍参与分类与直达，以及既有视频详情内容；`device-manager-ui` 与 `jetlinks-media-ui` 的 `git diff --check` 通过。未执行浏览器、完整 typecheck 或生产构建；生产环境需要重新发布对应部署类型的运行时前端资源。
 
 ## 接入设备回退并保留表单
 

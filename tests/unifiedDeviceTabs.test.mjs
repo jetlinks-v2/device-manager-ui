@@ -6,9 +6,10 @@ const listSource = await readFile(new URL('../views/device/list/unified/useUnifi
 const providerContract = await readFile(new URL('../deviceListProvider.ts', import.meta.url), 'utf8')
 const videoProvider = await readFile(new URL('../../jetlinks-media-ui/deviceListProvider.ts', import.meta.url), 'utf8')
 
-test('video is hidden only from the unified device-list tabs', () => {
+test('video tab visibility follows the deployment type', () => {
   assert.match(providerContract, /showInTabs\?: boolean/)
-  assert.match(videoProvider, /id: 'video'[\s\S]*?showInTabs: false/)
+  assert.match(videoProvider, /import \{ isPrivateDeployment \} from '@jetlinks-web-core\/utils\/deployment'/)
+  assert.match(videoProvider, /id: 'video'[\s\S]*?showInTabs: isPrivateDeployment\(\)/)
   assert.match(listSource, /const tabs = computed<SlantedTabOption\[]>\(\(\) => \[[\s\S]*?provider\.showInTabs !== false/)
 })
 
