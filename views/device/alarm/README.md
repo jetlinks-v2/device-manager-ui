@@ -1,5 +1,12 @@
 # 物联告警规则与记录工作区
 
+## 规则卡图标与操作展示统一
+
+- 目标与范围：物联告警左侧规则卡统一使用视觉告警“全部告警”的 `AlertOutlined` 图标，并让右上角编辑/删除操作入口默认隐藏、悬停卡片时显示；仅调整 `views/device/alarm/components/DeviceAlarmRuleCard.vue` 的图标与局部样式，不改规则筛选、数量、选中态、接口或权限。
+- 实施：移除规则卡原内联警灯 SVG 及渐变圆形底，复用现有 `AIcon`，尺寸、字号和主色与 `VisualAlarmCategorySidebar.vue` 的“全部告警”图标保持一致。操作入口通过卡片 `hover` 或 `focus-within` 显示，触屏设备保持可见，兼顾键盘与无悬停设备操作。
+- 验证：`node scripts/test-alarm-workspace.mjs` 8/8 通过；`pnpm --config.verify-deps-before-run=false build:modules device-manager-ui` 通过（仅有既有资源路径、CSS 注释、Rollup output.input 与 chunk 体积警告）；`git diff --check` 通过。修改后的 `DeviceAlarmRuleCard.vue` 共 136 行，未新增组件、业务逻辑或需要解释的复杂分支。
+- 交付：实现提交 `55d7dc69f9a5fa1baa662b905b749fc4d2abc554`，Pull Request：`https://github.com/jetlinks-v2/device-manager-ui/pull/306`。
+
 ## 左侧“全部告警”入口
 
 - 目标：在运行时物联告警规则侧栏的搜索框下方增加“全部告警”入口，从单条规则范围返回全部告警记录；默认范围呈选中态。

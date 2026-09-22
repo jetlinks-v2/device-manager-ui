@@ -2,16 +2,7 @@
   <article class="alarm-rule" :class="{ 'is-selected': selected }">
     <button class="alarm-rule__select" type="button" :disabled="!row.id" :aria-pressed="selected" @click="emit('select', row)">
       <span class="alarm-rule__icon" aria-hidden="true">
-        <!-- 告警灯图标沿用截图造型：无对应 Ant Design / iconfont 字形，固定内联 SVG 避免额外图标依赖。 -->
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M8 19v-7a4 4 0 0 1 8 0v7" />
-          <path d="M6.2 21h11.6" />
-          <path d="M12 3.6v2.1" />
-          <path d="M6.4 6.2l1.4 1.4" />
-          <path d="M17.6 6.2l-1.4 1.4" />
-          <path d="M3.4 12.4h2.2" />
-          <path d="M18.4 12.4h2.2" />
-        </svg>
+        <AIcon type="AlertOutlined" />
       </span>
       <span class="alarm-rule__content">
         <strong class="alarm-rule__name" :title="row.name">{{ row.name }}</strong>
@@ -79,6 +70,7 @@ const summary = computed(() => ruleSummary(props.row, $t))
   transition: border-color 0.2s ease, background-color 0.2s ease;
   &:hover { border-color: var(--jet-theme-primary-3); }
   &.is-selected { border-color: var(--jet-theme-primary); background: var(--jet-theme-primary-soft); }
+  &:hover .alarm-rule__more, &:focus-within .alarm-rule__more { opacity: 1; pointer-events: auto; }
 }
 .alarm-rule__select {
   display: grid;
@@ -100,13 +92,10 @@ const summary = computed(() => ruleSummary(props.row, $t))
 .alarm-rule__icon {
   display: grid;
   place-items: center;
-  width: 2.125rem;
-  height: 2.125rem;
-  border-radius: 50%;
-  color: #fff;
-  background: linear-gradient(135deg, #63a8ff 0%, #1f6feb 100%);
-  box-shadow: 0 0.125rem 0.375rem rgb(31 111 235 / 30%);
-  svg { width: 1.25rem; height: 1.25rem; }
+  width: 1.5rem;
+  height: 1.5rem;
+  color: var(--jet-theme-primary);
+  font-size: var(--fs-18);
 }
 .alarm-rule__content { display: grid; min-width: 0; gap: var(--space-1); }
 .alarm-rule__name {
@@ -139,5 +128,9 @@ const summary = computed(() => ruleSummary(props.row, $t))
   height: 1.5rem;
   padding: 0;
   color: var(--jet-theme-text-secondary);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
 }
+@media (hover: none) { .alarm-rule__more { opacity: 1; pointer-events: auto; } }
 </style>
