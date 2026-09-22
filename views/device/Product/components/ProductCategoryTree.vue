@@ -38,7 +38,7 @@
               <span class="product-category-tree__node-content">
                 <AIcon
                   class="product-category-tree__node-icon"
-                  :type="node.categoryLevel > 2 ? 'icon-shu-chanpinfenlei-hui' : 'icon-shu-chanpinfenlei'"
+                  :type="node.icon || (node.isLeaf ? 'icon-shu-chanpinfenlei-hui' : 'icon-shu-chanpinfenlei')"
                   aria-hidden="true"
                 />
                 <span class="product-category-tree__label">{{ node.i18nName || node.name }}</span>

@@ -41,8 +41,8 @@ export function useProductCategoryTree(options: ProductCategoryTreeOptions) {
 
   // 虚拟筛选范围仅加入展示副本，始终作为树顶部节点参与搜索。
   const filteredTree = computed(() => filterTree([
-    { id: allScopeId, name: options.allLabel(), isLeaf: true },
-    { id: unclassifiedScopeId, name: options.unclassifiedLabel(), isLeaf: true },
+    { id: allScopeId, name: options.allLabel(), isLeaf: true, icon: 'icon-quanbu' },
+    { id: unclassifiedScopeId, name: options.unclassifiedLabel(), isLeaf: true, icon: 'icon-shujiedian-weifenlei' },
     ...options.treeData(),
   ], normalizedKeyword.value))
 

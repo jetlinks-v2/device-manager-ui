@@ -660,6 +660,12 @@
                               "actions": [
                                   "query"
                               ]
+                          },
+                          {
+                              "permission": "firmware-upgrade-task-manager",
+                              "actions": [
+                                  "query"
+                              ]
                           }
                       ]
                   },

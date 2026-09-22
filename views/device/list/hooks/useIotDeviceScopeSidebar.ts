@@ -89,26 +89,26 @@ export function useIotDeviceScopeSidebar(
       key: IOT_ALL_DEVICE_SCOPE_ID,
       title: t('IotDeviceList.scope.allAreas'),
       count: props.totalDeviceCount,
-      icon: 'icon-shebei2',
+      icon: 'icon-quanbu',
       isScope: true,
     }, {
       key: IOT_UNBOUND_AREA_SCOPE_ID,
       title: t('IotDeviceList.scope.unboundArea'),
       count: props.unboundAreaDeviceCount,
-      icon: 'icon-shebei2',
+      icon: 'icon-shujiedian-weifenlei',
       isScope: true,
     }, ...areaTree.value]
     : [{
       key: IOT_ALL_DEVICE_SCOPE_ID,
       title: t('IotDeviceList.scope.allGroups'),
       count: props.totalDeviceCount,
-      icon: 'icon-shebei2',
+      icon: 'icon-quanbu',
       isScope: true,
     }, {
       key: IOT_UNASSIGNED_GROUP_SCOPE_ID,
       title: t('IotDeviceList.scope.unassignedGroup'),
       count: props.unassignedGroupDeviceCount,
-      icon: 'icon-shebei2',
+      icon: 'icon-shujiedian-weifenlei',
       isScope: true,
     }, ...groupTree.value])
   const selectedKeys = computed(() => [scopeId.value || IOT_ALL_DEVICE_SCOPE_ID])
