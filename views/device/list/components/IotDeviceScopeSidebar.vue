@@ -120,14 +120,15 @@ const { scopeType, scopeOptions, treeData, selectedKeys, onSelect, countText } =
 }
 
 .iot-device-scope__body {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  display: flex;
+  flex-direction: column;
   gap: var(--space-4);
   min-height: 0;
 }
 
 .iot-device-scope__scroll {
   min-height: 0;
+  flex: 1;
   overflow: auto;
 }
 

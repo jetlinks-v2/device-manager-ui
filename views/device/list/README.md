@@ -1,5 +1,9 @@
 # 设备列表范围侧栏
 
+## 范围树滚动区布局
+
+目标：将 `views/device/list/components/IotDeviceScopeSidebar.vue` 的侧栏内容改为纵向弹性布局，使范围树滚动区占用剩余高度，分组创建按钮保留在底部。仅调整样式，不改范围筛选、树节点、权限或接口；样式差异与 `git diff --check` 已核对。按本次交付要求不执行构建，也未运行 lint、typecheck 或浏览器验证，长列表及不同容器高度下的实际滚动效果仍需人工复核。
+
 ## 统一列表状态快捷筛选（2026-09-22）
 
 目标：将“在线 / 离线 / 禁用”从自定义切换外观收敛为与工具栏一致的 Ant Design 按钮组；仍然只有三个状态，默认均不选中，重复点击已选状态清除筛选，不增加“全部”选项。影响范围仅为 `views/device/list/unified/index.vue` 的状态控件展示，保留 `useUnifiedDeviceList.ts#changeStatus`、状态计数、URL 筛选及其他工具栏操作。

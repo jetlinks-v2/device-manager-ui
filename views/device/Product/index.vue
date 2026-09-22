@@ -220,7 +220,7 @@ const columns = [
     key: "state",
     scopedSlots: true,
     ellipsis: true,
-    width: 80,
+    width: 90,
   },
   {
     title: $t("Product.index.660348-4"),
