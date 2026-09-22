@@ -8,6 +8,7 @@
 - 实施：历史行缺少名称时，使用打开弹窗时已选告警记录的触发快照名称补齐；接口已有 `alarmConfigName` 或 `alarmName` 时保持原值。
 - 风险与验证：依赖父告警记录携带快照名称；通过定向测试覆盖处理历史缺名回退、接口名称优先及已有异步隔离，并执行模块构建、类型检查与 `git diff --check`。
 - 验证结果：`node scripts/test-alarm-workspace.mjs` 8/8 通过；`pnpm --config.verify-deps-before-run=false build:modules device-manager-ui` 与 `git diff --check` 通过。构建仅保留已有的依赖数据提示、资源路径、Rollup output、CSS 注释和 chunk 体积警告。本次未修改 Vue 文件，`useDeviceAlarmHistory.ts` 56 行；模块级 `vue-tsc` 仍被既有 `views/link/Certificate/type.d.ts:2:30` TS1005 阻断。运行时工作区没有 `check:ui-style` 命令，且未在登录环境复核真实处理记录；剩余风险是极早期异常告警记录本身也不携带名称时仍会显示 `—`。
+- 交付：实现提交 `4b81414`；[PR #308](https://github.com/jetlinks-v2/device-manager-ui/pull/308)，目标分支 `2.12-uat-next`。
 
 ## 规则卡图标与操作展示统一
 
