@@ -27,7 +27,11 @@ export function useDeviceAlarmHistory() {
       })
       // 记录、页签、范围、分页或开关弹窗变化后，旧响应不得覆盖新上下文。
       if (current !== sequence) return
-      history.rows = page.data
+      const alarmName = record.alarmName || record.alarmConfigName
+      // 处理历史实体不返回告警名称；使用当前告警记录的触发快照补齐，并保留接口未来返回的行级名称。
+      history.rows = page.data.map(row => row.alarmConfigName || row.alarmName || !alarmName
+        ? row
+        : { ...row, alarmName })
       history.total = page.total
     } catch {
       if (current === sequence) history.error = true
