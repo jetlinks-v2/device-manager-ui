@@ -1,5 +1,14 @@
 # 物联告警规则与记录工作区
 
+## 处理记录详情告警名称补齐
+
+- 目标：修复处理记录接口未返回 `alarmName` / `alarmConfigName` 时，详情中的告警名称统一显示 `—`。
+- 影响范围与 owning module：仅运行时前端 `runtime-ui/modules/device-manager-ui` 的告警历史查询 hook、定向测试与本文档；不修改后端接口、数据表、页面结构或运营端 `ui/`。
+- 明确不做：不按当前规则配置反查名称，不覆盖接口未来可能返回的行级快照名称，不改告警日志和处理记录的查询、分页、权限与展示字段。
+- 实施：历史行缺少名称时，使用打开弹窗时已选告警记录的触发快照名称补齐；接口已有 `alarmConfigName` 或 `alarmName` 时保持原值。
+- 风险与验证：依赖父告警记录携带快照名称；通过定向测试覆盖处理历史缺名回退、接口名称优先及已有异步隔离，并执行模块构建、类型检查与 `git diff --check`。
+- 验证结果：`node scripts/test-alarm-workspace.mjs` 8/8 通过；`pnpm --config.verify-deps-before-run=false build:modules device-manager-ui` 与 `git diff --check` 通过。构建仅保留已有的依赖数据提示、资源路径、Rollup output、CSS 注释和 chunk 体积警告。本次未修改 Vue 文件，`useDeviceAlarmHistory.ts` 56 行；模块级 `vue-tsc` 仍被既有 `views/link/Certificate/type.d.ts:2:30` TS1005 阻断。运行时工作区没有 `check:ui-style` 命令，且未在登录环境复核真实处理记录；剩余风险是极早期异常告警记录本身也不携带名称时仍会显示 `—`。
+
 ## 规则卡图标与操作展示统一
 
 - 目标与范围：物联告警左侧规则卡统一使用视觉告警“全部告警”的 `AlertOutlined` 图标，并让右上角编辑/删除操作入口默认隐藏、悬停卡片时显示；仅调整 `views/device/alarm/components/DeviceAlarmRuleCard.vue` 的图标与局部样式，不改规则筛选、数量、选中态、接口或权限。
