@@ -1,5 +1,13 @@
 # 设备列表范围侧栏
 
+## 统一列表状态快捷筛选（2026-09-22）
+
+目标：将“在线 / 离线 / 禁用”从自定义切换外观收敛为与工具栏一致的 Ant Design 按钮组；仍然只有三个状态，默认均不选中，重复点击已选状态清除筛选，不增加“全部”选项。影响范围仅为 `views/device/list/unified/index.vue` 的状态控件展示，保留 `useUnifiedDeviceList.ts#changeStatus`、状态计数、URL 筛选及其他工具栏操作。
+
+实施：复用 `a-button-group`、`a-button` 和 `a-badge`，显示三种状态、各自计数及明确的选中反馈；不改 API、列表字段、范围侧栏或公共 `SwitchGroup`。验证：定向测试、页面逐项点击与重复点击、差异检查；考虑本机性能，不运行全量构建。
+
+验证结果：`node --test modules/device-manager-ui/tests/unifiedDeviceStatusFilter.test.mjs modules/device-manager-ui/tests/unifiedDeviceTabs.test.mjs` 4 项通过，包含页面脚本／模板编译与三状态、再次点击清除筛选的源码契约；本模块 `git diff --check` 通过。`unified/index.vue` 原本已超过 300 行，本次只是局部替换，现为 309 行。浏览器窗口正在由用户操作，本次没有切换或刷新其 SaaS 页签；实际三种状态切换、宽度与颜色仍需在 `http://localhost:9200/#/resources/devices/list?type=gateway` 人工复核。未运行完整 typecheck、lint 或生产构建；发布环境需更新运行时前端静态资源，无后端变更。
+
 ## 暂隐视频分类页签（已实施）
 
 目标：运行时资源中心统一设备列表的顶部分类栏暂不显示“视频”页签；保留“全部”和其他分类，视频设备仍可在“全部”中查看。

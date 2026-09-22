@@ -16,24 +16,23 @@
 				    <a-flex align="center" justify="space-between" wrap="wrap" :gap="12" class="unified-device-list__filters">
 					    <IotDeviceAssetSearchBar v-model:filter-terms="searchTerms" :filter-fields="filterFields" :common-filter-fields="commonFilterFields" @search="search" />
 					    <RegistryComponent page-code="unified-device-list" code="toolbar-actions" is="a-space" :size="12" class="unified-device-list__toolbar-actions">
-						    <SwitchGroup
-						    	:model-value="status"
-						    	:options="statusOptions"
-						    	:aria-label="t('IotDeviceList.filter.status')"
-						    	@change="changeStatus"
-						    >
-						    	<template #option="{ option }">
-						    		<span>{{ option.label }}</span>
-						    	</template>
-						    </SwitchGroup>
+					    <a-button-group role="group" :aria-label="t('IotDeviceList.filter.status')">
+					      <a-button
+					        v-for="option in statusOptions"
+					        :key="option.value"
+					        :type="status === option.value ? 'primary' : 'default'"
+					        :ghost="status === option.value"
+					        :aria-pressed="status === option.value"
+					        @click="changeStatus(option.value)"
+					      >
+					        <a-badge :status="statusTones[option.value]" />
+					        {{ option.label }} {{ option.count }}
+					      </a-button>
+					    </a-button-group>
 						    <a-divider type="vertical" class="unified-device-list__action-divider" />
 						    <a-button v-if="activeType === 'all' || isIotEntry" type="primary" :disabled="busy" @click="editing = null; editOpen = true">
 							    <template #icon><AIcon type="PlusOutlined" /></template>
 							    {{ t('IotDeviceList.action.create') }}
-						    </a-button>
-						    <a-button v-if="activeProvider?.create" :key="`create-${activeProvider.id}`" type="primary" :disabled="busy || !canCreate(activeProvider)" @click="openCreate(activeProvider)">
-							    <template #icon><AIcon type="PlusOutlined" /></template>
-							    {{ activeProvider.create.label() }}
 						    </a-button>
 						    <!-- 批量配置仅面向边缘节点，其他设备分类不提供入口。 -->
 						    <a-dropdown v-if="activeType === 'gateway'">
@@ -48,6 +47,10 @@
 						        </a-menu>
 						      </template>
 						    </a-dropdown>
+						    <a-button v-if="activeProvider?.create" :key="`create-${activeProvider.id}`" type="primary" :disabled="busy || !canCreate(activeProvider)" @click="openCreate(activeProvider)">
+							    <template #icon><AIcon type="PlusOutlined" /></template>
+							    {{ activeProvider.create.label() }}
+						    </a-button>
 					    </RegistryComponent>
 				    </a-flex>
 				    <a-flex v-if="batchMode" wrap="wrap" :gap="12" class="unified-device-list__batch">
@@ -182,7 +185,6 @@ import { useRoute } from 'vue-router'
 import { useMenuStore } from '@jetlinks-web-core/store'
 import { encodeConditionFilterQuery } from '@jetlinks-web-core/components/ConditionFilter'
 import { moduleRegistry } from '@jetlinks-web-core/utils/module-registry'
-import type { SwitchGroupOption } from '@jetlinks-web-core/components/SwitchGroup'
 import type { useGatewayRuntimeMetricsLoader as UseGatewayRuntimeMetricsLoader } from '@edge-master-ui/views/workbench/gateway/hooks/useGatewayRuntimeMetricsLoader'
 import IotDeviceScopeSidebar from '../components/IotDeviceScopeSidebar.vue'
 import IotDeviceAssetSearchBar from '../components/IotDeviceAssetSearchBar.vue'
@@ -243,9 +245,9 @@ const { deleteGroup, groupDialogError, groupDialogMode, groupDialogOpen, groupEd
   getActiveScope: () => ({ type: scope.scopeType.value, id: scope.scopeId.value }), reloadGroups: scope.reloadGroups, changeScope: handleScopeChange,
 })
 function confirmDeleteGroup(group: DeviceGroup) { Modal.confirm({ title: t('IotDeviceList.scope.deleteGroup'), onOk: () => deleteGroup(group) }) }
-// 状态点属于业务语义，只在页面侧维护，并通过 SwitchGroup 的 option 插槽渲染；计数由状态选项统一下发。
+// 这组三个快捷筛选允许重复点击当前项清除，不能改用不可再次点击的单选分段控件。
 const statusTones: Record<string, 'success' | 'error' | 'default'> = { online: 'success', offline: 'error', disabled: 'default' }
-const statusOptions = computed<SwitchGroupOption[]>(() => ['online', 'offline', 'disabled'].map(value => ({
+const statusOptions = computed(() => ['online', 'offline', 'disabled'].map(value => ({
   value, label: t(`UnifiedDeviceList.${value}`), count: statusCounts.value[value] ?? '—',
 })))
 const rowSelection = computed(() => ({ selectedRowKeys: selectedIds.value, onChange: (keys: Array<string | number>) => { selectedIds.value = keys.map(String); batchMode.value = keys.length > 0 } }))
