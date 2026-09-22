@@ -273,7 +273,7 @@ import { useMenuStore } from "@jetlinks-web-core/store/menu";
 import { onlyMessage, randomString } from "@jetlinks-web/utils";
 import { useI18n } from "vue-i18n";
 import { useTabSaveSuccess, useTabSaveSuccessBack } from '@jetlinks-web-core/hooks'
-import I18nTextField from '@device-manager-ui/components/I18n/I18nTextField.vue';
+import { I18nTextField } from '@jetlinks-web-core/components';
 import DeviceLibraryBizKeyPicker from '../DeviceLibraryBizKeyPicker.vue';
 
 const { t: $t } = useI18n();
