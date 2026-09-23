@@ -44,7 +44,7 @@
       </a-form-item>
 
       <DeviceAlarmMessageTemplateConfig
-        v-if="model.source === 'device'"
+        v-if="showLegacyMessageTemplate"
         :model="model"
         :disabled="!model.notification.enabled"
       />
@@ -53,9 +53,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, watch, type PropType } from 'vue'
+import { computed, ref, watch, type PropType } from 'vue'
 import DeviceAlarmMessageTemplateConfig from './DeviceAlarmMessageTemplateConfig.vue'
-import { matchesAlarmNotifyMethod } from '../utils'
+import { getNotificationMessageMode, matchesAlarmNotifyMethod } from '../utils'
 import type {
   DeviceAlarmFormModel,
   DeviceAlarmNotifyMethod,
@@ -75,6 +75,18 @@ const emit = defineEmits<{
 
 const hasNotification = computed(() =>
   Boolean(props.model.notification.notifyChannelIds?.length || props.model.notification.channelProviders.length || props.model.notification.userIds.length),
+)
+
+const showLegacyMessageTemplate = ref(false)
+
+watch(
+  () => props.model,
+  (model) => {
+    // 自定义内容只对打开时已有自定义模板的存量规则保留；会话内切回默认后仍可撤销。
+    showLegacyMessageTemplate.value = model.source === 'device'
+      && getNotificationMessageMode(model.notification) === 'custom'
+  },
+  { immediate: true },
 )
 
 const selectedMethods = computed(() => {

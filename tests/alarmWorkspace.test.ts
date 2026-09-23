@@ -7,7 +7,12 @@ import { useDeviceAlarmRecords } from '../views/device/alarm/hooks/useDeviceAlar
 import { handleDeviceAlarm } from '../views/device/alarm/workspaceApi'
 import { alarmDuration, canHandleRecord } from '../views/device/alarm/workspaceUtils'
 import { useDeviceAlarmHistory } from '../views/device/alarm/hooks/useDeviceAlarmHistory'
-import { createEmptyNotification, matchesAlarmNotifyMethod } from '../views/device/alarm/utils'
+import {
+  clearNotificationMessageTemplate,
+  createEmptyNotification,
+  getNotificationMessageMode,
+  matchesAlarmNotifyMethod,
+} from '../views/device/alarm/utils'
 import type { DeviceAlarmNotifyMethod } from '../views/device/alarm/types'
 import { useDeviceAlarmRuleSearch } from '../views/device/alarm/hooks/useDeviceAlarmRuleSearch'
 
@@ -52,6 +57,22 @@ test('read-only notification names use the same configured channel identity as t
   assert.equal(matchesAlarmNotifyMethod(notification, method), true)
   assert.equal(matchesAlarmNotifyMethod(notification, { ...method, raw: { configuration: { notifierId: 'account-b' } } }), false)
   assert.equal(matchesAlarmNotifyMethod({ ...notification, notifyChannelIds: ['channel-a'] }, method), true)
+})
+
+test('notification content remains visible only for a legacy custom edit session', () => {
+  const defaultNotification = createEmptyNotification()
+  assert.equal(getNotificationMessageMode(defaultNotification) === 'custom', false)
+
+  const customNotification = {
+    ...createEmptyNotification(),
+    parameters: { template: { message: '${targetName}触发告警' } },
+  }
+  const showLegacyMessageTemplate = getNotificationMessageMode(customNotification) === 'custom'
+  assert.equal(showLegacyMessageTemplate, true)
+
+  clearNotificationMessageTemplate(customNotification)
+  assert.equal(getNotificationMessageMode(customNotification), 'default')
+  assert.equal(showLegacyMessageTemplate, true)
 })
 
 test('rule query preserves stable identity and caller filters; global history remains reachable', async () => {
