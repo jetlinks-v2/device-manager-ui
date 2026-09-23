@@ -28,7 +28,9 @@
 </template>
 
 <script setup lang="ts">
-import { useDashboardData } from '@visualization-dashboard-ui/hooks/useDashboardData'
+import { moduleRegistry } from '@jetlinks-web-core/utils/module-registry'
+
+const { useDashboardData } = moduleRegistry.getResource('visualization-dashboard-ui', 'hooks')
 
 const props = defineProps({
   info: {

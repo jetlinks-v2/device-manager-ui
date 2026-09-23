@@ -1,4 +1,4 @@
-import {deviceNumber} from '@visualization-dashboard-ui/assets/dashboard'
+import deviceNumber from '@device-manager-ui/assets/device/device-number.png'
 
 export const customImageCardConfig = {
   name: '数量卡片',

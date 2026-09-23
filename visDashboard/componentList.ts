@@ -1,4 +1,4 @@
-import { deviceProduct } from '@visualization-dashboard-ui/assets/dashboard'
+import deviceProduct from '@device-manager-ui/assets/device/device-product.png'
 
 import i18n from '@jetlinks-web-core/locales'
 
