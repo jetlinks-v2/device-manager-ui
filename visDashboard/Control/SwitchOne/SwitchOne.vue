@@ -29,7 +29,9 @@
 <script setup lang="ts" name="SwitchOne">
 import {moduleRegistry} from "@jetlinks-web-core/utils/module-registry";
 
-const { useDashboardData, useGridLayout, useControl } = moduleRegistry.getResource('visualization-dashboard-ui', 'hooks')
+import { useDashboardData } from '@jetlinks-web-core/components/DashBoardCanvas/runtime'
+import { useGridLayout } from '@jetlinks-web-core/components/DashBoardCanvas/runtime'
+import { useControl } from '@device-manager-ui/visDashboard/hooks/useControl'
 
 
 const props = defineProps({

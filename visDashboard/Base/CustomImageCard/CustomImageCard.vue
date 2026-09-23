@@ -79,7 +79,7 @@ import { cloneDeep } from 'lodash-es'
 
 import {moduleRegistry} from "@jetlinks-web-core/utils/module-registry";
 
-const { getImageByType } = moduleRegistry.getResource('visualization-dashboard-ui', 'utils')
+import { getDashboardImageUrl as getImageByType } from '@jetlinks-web-core/components/DashBoardCanvas/runtime'
 
 const props = defineProps({
   type: {
