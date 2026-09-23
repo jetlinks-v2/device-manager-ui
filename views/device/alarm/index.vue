@@ -7,8 +7,10 @@
           <template #left>
             <section class="alarm-rule-list">
               <header class="alarm-rule-heading">
-                <strong>{{ $t('DeviceAlarm.workspace.rules') }}</strong>
-                <span :title="$t('DeviceAlarm.workspace.total', { total })">{{ $t('DeviceAlarm.workspace.total', { total }) }}</span>
+                <div class="alarm-rule-heading__content">
+                  <strong>{{ $t('DeviceAlarm.workspace.rules') }}</strong>
+                  <span :title="$t('DeviceAlarm.workspace.total', { total })">{{ $t('DeviceAlarm.workspace.total', { total }) }}</span>
+                </div>
               </header>
               <div class="alarm-rule-search">
                 <a-input :value="keyword" allow-clear :placeholder="$t('DeviceAlarm.workspace.keywordSearch')"
@@ -19,8 +21,14 @@
               </div>
               <button class="alarm-all-records" :class="{ 'is-selected': !selected }" type="button"
                       :aria-pressed="!selected" @click="showAllRecords">
-                <AIcon type="AlertOutlined" aria-hidden="true" />
-                <span>{{ $t('DeviceAlarm.workspace.allRecords') }}</span>
+                <span class="alarm-all-records__icon">
+                  <AIcon type="AlertOutlined" aria-hidden="true" />
+                </span>
+                <span class="alarm-all-records__content">
+                  <span class="alarm-all-records__title">
+                    <strong>{{ $t('DeviceAlarm.workspace.allRecords') }}</strong>
+                  </span>
+                </span>
               </button>
               <a-alert v-if="statusError" type="warning" show-icon :message="$t('DeviceAlarm.workspace.statusError')"><template #action><a-button type="link" size="small" @click="loadCounts">{{ $t('DeviceAlarm.workspace.retry') }}</a-button></template></a-alert>
               <a-alert v-if="listError" type="error" :message="$t('DeviceAlarm.workspace.listError')"><template #action><a-button @click="load()">{{ $t('DeviceAlarm.workspace.retry') }}</a-button></template></a-alert>
@@ -135,25 +143,29 @@ function confirmRemove(row: DeviceAlarmRow) {
 </script>
 
 <style scoped lang="less">
-.device-alarm-page { display: flex; flex-direction: column; gap: var(--space-4); }
+.device-alarm-page { --visual-alarm-control-row-height: 2rem; display: flex; flex-direction: column; gap: var(--space-4); }
 .alarm-content { overflow: hidden; }
 .alarm-workspace { display: grid; flex: 1; min-height: 0; grid-template-rows: minmax(0, 1fr); grid-template-columns: minmax(300px, 26%) minmax(0, 1fr); }
 .alarm-rule-list, .alarm-record-list { height: 100%; display: flex; min-width: 0; min-height: 0; flex-direction: column; gap: var(--space-4); overflow: hidden; }
 .alarm-list-heading { display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
 .alarm-list-heading strong { font-size: var(--fs-18) }
 .alarm-list-heading span { color: var(--jet-theme-text-secondary); font-size: 12px; }
-.alarm-rule-heading { display: flex; align-items: center; gap: var(--space-2); min-width: 0; flex-shrink: 0; }
-.alarm-rule-heading strong { flex-shrink: 0; color: var(--jet-theme-text-title); font-size: var(--fs-18); font-weight: 600; }
-.alarm-rule-heading span { overflow: hidden; color: var(--jet-theme-text-secondary); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
-.alarm-rule-search { display: flex; min-width: 0; flex-shrink: 0; }
-.alarm-rule-search > :first-child { flex: 1; min-width: 0; }
+.alarm-rule-heading { display: flex; min-height: var(--visual-alarm-control-row-height); align-items: center; justify-content: space-between; gap: var(--space-3); flex: none; }
+.alarm-rule-heading__content { display: flex; min-width: 0; align-items: baseline; gap: var(--space-2); }
+.alarm-rule-heading__content strong { color: var(--ink-1); font-size: var(--fs-18); font-weight: 700; }
+.alarm-rule-heading__content span { color: var(--ink-4); font-size: var(--fs-12); white-space: nowrap; }
+.alarm-rule-search { height: var(--visual-alarm-control-row-height); flex: none; }
+.alarm-rule-search :deep(.ant-input-affix-wrapper) { height: 100%; }
 .alarm-all-records {
-  display: flex;
-  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  flex: none;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-3);
+  min-width: 0;
+  min-height: 3.5rem;
   width: 100%;
-  padding: var(--space-2) var(--space-3);
+  padding: 0.875rem;
   border: 1px solid var(--jet-theme-border-color-1);
   border-radius: var(--r-1);
   background: var(--jet-theme-bg-container);
@@ -161,10 +173,24 @@ function confirmRemove(row: DeviceAlarmRow) {
   font: inherit;
   text-align: left;
   cursor: pointer;
-  &:hover { border-color: var(--jet-theme-primary-3); }
-  &.is-selected { border-color: var(--jet-theme-primary); background: var(--jet-theme-primary-soft); font-weight: 600; }
-  &:focus-visible { outline: 2px solid var(--jet-theme-primary); outline-offset: 2px; }
+  outline: none;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+  &:hover, &:focus-visible { border-color: var(--jet-theme-primary-3); }
+  &:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  &.is-selected { border-color: var(--jet-theme-primary); background: var(--jet-theme-primary-soft); }
+  &.is-selected .alarm-all-records__title strong { color: var(--jet-theme-primary); }
 }
+.alarm-all-records__icon {
+  display: grid;
+  width: 1.5rem;
+  height: 1.5rem;
+  place-items: center;
+  color: var(--jet-theme-primary);
+  font-size: var(--fs-18);
+}
+.alarm-all-records__content { display: grid; min-width: 0; gap: var(--space-1); }
+.alarm-all-records__content strong { overflow: hidden; color: var(--ink-1); font-size: var(--fs-14); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.alarm-all-records__title { display: flex; min-width: 0; align-items: center; gap: var(--space-2); }
 .alarm-scroll { flex: 1; min-height: 0; overflow-y: auto; }
 .alarm-rule-more { display: flex; min-height: 2.25rem; align-items: center; justify-content: center; gap: var(--space-1); color: var(--jet-theme-text-secondary); font-size: var(--fs-12); }
 .alarm-rule-footer { flex-shrink: 0; }
