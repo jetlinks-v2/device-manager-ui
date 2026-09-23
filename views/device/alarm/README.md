@@ -8,6 +8,7 @@
 - 实施步骤：1. 标题行复用视觉告警的 `2rem` 行高、标题/数量基线结构、`--fs-18`/`700` 标题和 `--fs-12` 数量规格；2. 搜索框复用相同的 `2rem` 高度，左栏三排继续统一采用 `--space-4` 间距；3. 为现有 `AlertOutlined` 增加同规格图标容器，并将按钮布局、标题、最小高度、内边距、列间距、边框、悬浮/焦点和选中态完整对齐；4. 保留 `showAllRecords()`、`aria-pressed` 和键盘操作；5. 扩充定向测试覆盖结构和关键尺寸。
 - 实现结果：`index.vue` 为标题增加与视觉告警一致的内层基线容器，统一 `2rem` 标题/搜索行、`--space-4` 排间距和标题/数量字体规格；“全部告警”采用相同的两列结构、`3.5rem` 最小高度、`0.875rem` 内边距、1.5rem 主色图标、14px/600 标题以及一致的悬浮、焦点和选中反馈。查询、默认范围和 `showAllRecords()` 保持不变。
 - 验证结果：`node scripts/test-alarm-workspace.mjs` 10/10、`pnpm exec vue-tsc --noEmit --pretty false`、`pnpm --config.verify-deps-before-run=false build:modules device-manager-ui` 与模块 `git diff --check` 通过；模块独立类型检查仍被既有 `views/link/Certificate/type.d.ts:2:30` TS1005 阻断。构建仅保留既有资源路径、浏览器基线、Rollup 输出选项、CSS 注释及大 chunk 警告；`index.vue` 为 210 行。登录态下跨页面切换、不同数量宽度和浏览器缩放档位仍需目视确认。
+- 交付：实现提交 `139abd8564713438ef81c9cd397ac292e4ea0014`；Pull Request：`https://github.com/jetlinks-v2/device-manager-ui/pull/311`。
 
 ## 处理记录详情告警名称补齐
 
