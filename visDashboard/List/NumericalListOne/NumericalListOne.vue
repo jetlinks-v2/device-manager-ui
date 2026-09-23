@@ -28,7 +28,8 @@
 </template>
 
 <script setup lang="ts">
-import { useDashboardData } from '@visualization-dashboard-ui/hooks/useDashboardData'
+
+import { useDashboardData } from '@jetlinks-web-core/components/DashBoardCanvas/runtime'
 
 const props = defineProps({
   info: {

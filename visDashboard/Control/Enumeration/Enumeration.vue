@@ -31,7 +31,8 @@
 <script setup lang="ts" name="Enumeration">
 import {moduleRegistry} from "@jetlinks-web-core/utils/module-registry";
 
-const { useDashboardData, useControl } = moduleRegistry.getResource('visualization-dashboard-ui', 'hooks')
+import { useDashboardData } from '@jetlinks-web-core/components/DashBoardCanvas/runtime'
+import { useControl } from '@device-manager-ui/visDashboard/hooks/useControl'
 
 const props = defineProps({
   info: {
