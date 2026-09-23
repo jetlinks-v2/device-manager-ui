@@ -149,7 +149,7 @@ import { useProtocolTypeProviders } from '../useProtocolTypeProviders';
 import { protocolTypeFontIcon } from '../protocolTypeAssets';
 import { PROTOCOL_TYPE_ORDER } from '../protocolTypes';
 import { cloneDeep } from 'lodash-es';
-import I18nTextField from '../../../../components/I18n/I18nTextField.vue';
+import { I18nTextField } from '@jetlinks-web-core/components';
 
 const { t: $t } = useI18n();
 const loading = ref(false);

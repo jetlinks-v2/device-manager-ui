@@ -842,7 +842,7 @@ import { storeToRefs } from "pinia";
 import NodeSelect from "./NodeSelect.vue";
 import { useI18n } from "vue-i18n";
 import { useTabSaveSuccessBack } from '@jetlinks-web-core/hooks'
-import I18nTextField from '@device-manager-ui/components/I18n/I18nTextField.vue'
+import { I18nTextField } from '@jetlinks-web-core/components'
 
 const { t: $t } = useI18n();
 const route = useRoute();

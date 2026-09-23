@@ -56,7 +56,7 @@ import { Form } from "ant-design-vue";
 import { queryTree, saveTree, updateTree } from "../../../../../api/category";
 import { onlyMessage } from "@jetlinks-web-core/utils/comm";
 import { useI18n } from "vue-i18n";
-import I18nTextField from "../../../../../components/I18n/I18nTextField.vue";
+import { I18nTextField } from '@jetlinks-web-core/components';
 
 const { t: $t } = useI18n();
 

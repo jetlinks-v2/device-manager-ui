@@ -162,7 +162,7 @@ import { device } from '@device-manager-ui/assets';
 import { useI18n } from 'vue-i18n';
 import { omit } from 'lodash-es';
 import { ensureVisualizationDashboardProject } from '@device-manager-ui/utils/dashboardProject';
-import I18nTextField from '@device-manager-ui/components/I18n/I18nTextField.vue';
+import { I18nTextField } from '@jetlinks-web-core/components';
 import { getI18nText } from '@device-manager-ui/utils/i18n';
 
 const { t: $t } = useI18n();

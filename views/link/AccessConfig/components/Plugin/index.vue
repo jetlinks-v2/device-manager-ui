@@ -207,7 +207,7 @@ import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import { CreteRuleByType } from '../../../components/Form/rules';
 import { useI18n } from 'vue-i18n';
 import { useTabSaveSuccessBack } from '@jetlinks-web-core/hooks'
-import I18nTextField from '@device-manager-ui/components/I18n/I18nTextField.vue';
+import { I18nTextField } from '@jetlinks-web-core/components';
 import DeviceLibraryBizKeyPicker from '../DeviceLibraryBizKeyPicker.vue';
 
 const { t: $t } = useI18n();

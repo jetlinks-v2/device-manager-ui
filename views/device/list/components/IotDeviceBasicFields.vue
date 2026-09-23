@@ -69,7 +69,7 @@
 
 <script setup lang="ts">
 import type { AreaTreeNode } from '../hooks/iotAreaTreeOptions'
-import I18nTextField from '@device-manager-ui/components/I18n/I18nTextField.vue'
+import { I18nTextField } from '@jetlinks-web-core/components'
 
 type DeviceBasicForm = {
   id: string

@@ -325,7 +325,7 @@ import Outline from '../../Outline/index.vue'
 import { BackMap } from '../../data'
 import { useI18n } from 'vue-i18n'
 import { useTabSaveSuccess } from '@jetlinks-web-core/hooks'
-import I18nTextField from '@device-manager-ui/components/I18n/I18nTextField.vue'
+import { I18nTextField } from '@jetlinks-web-core/components'
 
 const { t: $t } = useI18n()
 const props = defineProps({

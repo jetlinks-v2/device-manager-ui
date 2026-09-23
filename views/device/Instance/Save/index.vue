@@ -167,7 +167,7 @@ import { moduleRegistry } from '@jetlinks-web-core/utils/module-registry'
 import { deviceCloudSave } from '@device-manager-ui/api/instance'
 import { ensureVisualizationDashboardProject } from '@device-manager-ui/utils/dashboardProject'
 import {isSaaS} from "@jetlinks-web-core/utils/consts";
-import I18nTextField from '@device-manager-ui/components/I18n/I18nTextField.vue'
+import { I18nTextField } from '@jetlinks-web-core/components'
 
 const { t: $t } = useI18n()
 
