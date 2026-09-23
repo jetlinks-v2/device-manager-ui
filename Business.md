@@ -166,15 +166,14 @@
   `lastSeen` 作为展示标签，并声明映射记录中已有的 `lastSeenTimestamp` 为 `timestamp` /
   `temporal_dimension` / `epoch-millis`，由通用 presentation 层格式化，不解析或猜测显示字符串的时区。
 
-### 设备告警自定义通知内容（已实现）
+### 设备告警通知内容兼容收敛（已实现）
 
-- 目标：在设备告警编辑弹窗的通知配置中支持“平台默认内容 / 自定义内容”切换；自定义内容只作用于当前设备、当前属性的告警配置，并作为统一 `${message}` 发送给站内信及已选通知渠道。
-- 影响范围与 owning module：仅修改 `ui/modules/iot-ui`，主要入口为 `views/device/alarm/components/DeviceAlarmNotificationConfig.vue`、`views/device/alarm/components/DeviceAlarmMessageTemplateConfig.vue`、`views/device/alarm/utils.ts` 以及中英文语言资源；设备详情告警配置与告警配置管理页继续复用同一编辑器。后端 `device-manager` 已支持 `parameters.template.message` 渲染，本次不新增接口、数据库字段或发送链路。
-- 不做：不修改通知中心平台模板；不为邮件标题、短信模板编码或不同渠道分别建立设备级模板；不改变告警触发、首次告警判断和通知对象/渠道选择规则；不调整页面壳层、列表或详情信息架构。
-- 实现入口：通知配置在设备级告警下提供内容模式切换，支持 `targetName`、`alarmConfigName`、`propertyName`、`propertyValue`、`level`、`alarmTime` 变量的光标位置插入与示例预览。自定义内容保存到 `parameters.template.message`；切回默认时仅移除根消息模板字段，保留各通道的 `templateId`、`notifierId` 等参数。两个保存入口都校验自定义内容不为空且最长 1024 字符。
-- 风险与兼容：存量配置没有 `parameters.template.message` 时继续使用后端默认消息；平台外部渠道模板必须引用 `${message}` 才能展示设备级内容；设备级配置优先于产品级配置，编辑产品继承项时仍按现有逻辑生成设备级覆盖。
-- 验证：中英文 JSON 语法校验通过；基于真实 `buildPreprocessPayload` 的静态请求校验已确认自定义内容保存/回显、切回默认和通道参数保留；使用 Node 22 执行 `pnpm --filter jetlinks-web-core build -- --module-name iot-ui` 通过（7911 个模块，退出码 0）。新增消息编辑组件 148 行，复用的通知配置组件 188 行；`IotDeviceAlarmConfigTab.vue` 与 `useDeviceAlarmPage.ts` 为已有超 300 行文件，本次仅窄范围接入校验并清理未接通的模板通道残留。实际外发联调仍需确认平台邮件等模板已引用 `${message}`。
-- 交付：commit `a34049e6fb626b01c2b4fe6d048d302a833f3f8c`；Pull Request `https://github.com/jetlinks-v2/cloud.jetlinks.ui/pull/318`。
+- 目标：新增设备告警和使用平台默认内容的存量告警不再展示“通知内容”选项，统一直接使用平台默认内容；只有打开编辑时已经保存自定义内容的存量告警继续展示原编辑能力。
+- 影响范围与 owning module：仅修改 `runtime-ui/modules/device-manager-ui`，实现入口为 `views/device/alarm/components/DeviceAlarmNotificationConfig.vue`；告警规则页和设备详情告警配置复用同一通知编辑器，因此遵循同一兼容口径。同步更新本说明，不修改 `ui/` 或中英文语言资源。
+- 不做：不修改后端 `device-manager` 的默认消息和自定义模板解析能力，不迁移或批量改写存量规则，不改变通知渠道、通知对象、告警触发和发送链路，也不调整页面壳层、列表或详情信息架构。
+- 实施步骤：在每次切换编辑表单模型时记录其初始通知内容模式；初始模式为自定义时保留现有 `DeviceAlarmMessageTemplateConfig`，新增规则或初始模式为默认时不渲染。历史自定义规则在当前编辑会话中切回默认后仍保留选项以便撤销，保存并再次打开后再按默认模式隐藏。
+- 风险与兼容：自定义模式仍由 `parameters.template` 对象判定，具体内容读取 `parameters.template.message`；历史异常数据若仅存在空 `template` 对象，仍按自定义模式展示并沿用现有必填校验。取消编辑不会改写服务端配置，重新打开时重新按持久化数据判定。
+- 验证：`alarmWorkspace` 定向测试 9 项通过，覆盖默认/自定义模式判定及自定义切回默认后当前会话仍可撤销；`device-manager-ui` 窄构建通过（9,640 个模块），`DeviceAlarmNotificationConfig.vue` 为 190 行，`git diff --check` 通过。`pnpm exec vue-tsc --noEmit -p modules/device-manager-ui/tsconfig.json` 仍被既有 `views/link/Certificate/type.d.ts:2` 的非法 `interface` 声明阻断，本次修改文件已由 Vite 构建完成编译。真实浏览器中保存后再次打开的显隐结果仍待联调确认。
 
 ### 设备分组侧栏统计口径修正
 
