@@ -17,7 +17,11 @@ try {
       api.onResolve({ filter: /^@jetlinks-web-core\/locales$/ }, () => ({ path: path.join(root, 'tests/alarmRequest.test-shim.ts') }))
     } }],
   })
-  process.exitCode = spawnSync(process.execPath, ['--test', entry], { stdio: 'inherit' }).status ?? 1
+  process.exitCode = spawnSync(process.execPath, [
+    '--test',
+    entry,
+    path.join(root, 'tests/alarmWorkspaceView.test.mjs'),
+  ], { stdio: 'inherit' }).status ?? 1
 } finally {
   const resolved = path.resolve(output)
   if (path.dirname(resolved) !== path.resolve(tmpdir()) || !path.basename(resolved).startsWith('iot-alarm-tests-')) {
