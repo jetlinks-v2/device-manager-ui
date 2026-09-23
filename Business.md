@@ -174,6 +174,7 @@
 - 实施步骤：在每次切换编辑表单模型时记录其初始通知内容模式；初始模式为自定义时保留现有 `DeviceAlarmMessageTemplateConfig`，新增规则或初始模式为默认时不渲染。历史自定义规则在当前编辑会话中切回默认后仍保留选项以便撤销，保存并再次打开后再按默认模式隐藏。
 - 风险与兼容：自定义模式仍由 `parameters.template` 对象判定，具体内容读取 `parameters.template.message`；历史异常数据若仅存在空 `template` 对象，仍按自定义模式展示并沿用现有必填校验。取消编辑不会改写服务端配置，重新打开时重新按持久化数据判定。
 - 验证：`alarmWorkspace` 定向测试 9 项通过，覆盖默认/自定义模式判定及自定义切回默认后当前会话仍可撤销；`device-manager-ui` 窄构建通过（9,640 个模块），`DeviceAlarmNotificationConfig.vue` 为 190 行，`git diff --check` 通过。`pnpm exec vue-tsc --noEmit -p modules/device-manager-ui/tsconfig.json` 仍被既有 `views/link/Certificate/type.d.ts:2` 的非法 `interface` 声明阻断，本次修改文件已由 Vite 构建完成编译。真实浏览器中保存后再次打开的显隐结果仍待联调确认。
+- 交付：commit `a6dfc538e117c135db651d8f43f9aad3bb4324ff`；Pull Request `https://github.com/jetlinks-v2/device-manager-ui/pull/310`。
 
 ### 设备分组侧栏统计口径修正
 
