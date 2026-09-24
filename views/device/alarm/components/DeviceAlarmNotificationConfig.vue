@@ -18,7 +18,7 @@
       </a-space>
     </header>
 
-    <a-spin :spinning="loading">
+    <a-spin v-if="model.notification.enabled" :spinning="loading">
       <a-form-item :label="$t('DeviceAlarm.notification.channel')">
         <a-select
           v-model:value="selectedChannelIds"
