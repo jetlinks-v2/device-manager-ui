@@ -27,12 +27,16 @@
 					      >
 					        <a-badge :status="statusTones[option.value]" />
 					        {{ option.label }} {{ option.count }}
-					      </a-button>
-					    </a-button-group>
+						    </a-button>
+						    </a-button-group>
 						    <a-divider type="vertical" class="unified-device-list__action-divider" />
 						    <a-button v-if="activeType === 'all' || isIotEntry" type="primary" :disabled="busy" @click="editing = null; editOpen = true">
 							    <template #icon><AIcon type="PlusOutlined" /></template>
 							    {{ t('IotDeviceList.action.create') }}
+						    </a-button>
+						    <a-button v-if="activeProvider?.create" :key="`create-${activeProvider.id}`" type="primary" :disabled="busy || !canCreate(activeProvider)" @click="openCreate(activeProvider)">
+							    <template #icon><AIcon type="PlusOutlined" /></template>
+							    {{ activeProvider.create.label() }}
 						    </a-button>
 						    <!-- 批量配置仅面向边缘节点，其他设备分类不提供入口。 -->
 						    <a-dropdown v-if="activeType === 'gateway'">
@@ -47,11 +51,7 @@
 						        </a-menu>
 						      </template>
 						    </a-dropdown>
-						    <a-button v-if="activeProvider?.create" :key="`create-${activeProvider.id}`" type="primary" :disabled="busy || !canCreate(activeProvider)" @click="openCreate(activeProvider)">
-							    <template #icon><AIcon type="PlusOutlined" /></template>
-							    {{ activeProvider.create.label() }}
-						    </a-button>
-					    </RegistryComponent>
+				    </RegistryComponent>
 				    </a-flex>
 				    <a-flex v-if="batchMode" wrap="wrap" :gap="12" class="unified-device-list__batch">
 					    <span>{{ t('IotDeviceList.toolbar.selected', { selected: selectedIds.length }) }}</span>
