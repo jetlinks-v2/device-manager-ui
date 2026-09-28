@@ -1,5 +1,15 @@
 # 设备列表范围侧栏
 
+## 范围树名称搜索
+
+目标与范围：在 `device-manager-ui` 的范围侧栏分段器与树之间增加 `a-input`，通过 `prefix` 插槽展示搜索图标，支持清空。`components/IotDeviceScopeSidebar.vue` 负责展示，`hooks/useIotDeviceScopeSidebar.ts` 复用公共树过滤能力按名称筛选，保留匹配节点的父级路径并展开结果；清空后恢复完整树，无匹配时展示空态。搜索文案同步补齐中英文资源。
+
+实施边界：搜索仅作用于已加载的空间 / 分组树，不改变设备列表查询、范围选择事件、统计或后端接口，不修改 `ui/`。按局部 S 级改动实施。
+
+验证结果：侧栏 Vue 脚本、模板、样式编译与新增中英文文案检查通过；`git diff --check` 通过。本地 `http://localhost:9200/#/resources/devices/list?scopeType=area` 已确认搜索框位于分段器与树之间、左侧显示搜索图标；搜索“接待”展示“北京南华区 → 富国街 → XX大厦 → 1楼接待”路径，清空恢复完整树，无匹配时展示“暂无匹配结果”；分组搜索“项目”仅显示两个匹配分组，切换范围清空关键词，搜索期间设备列表仍为 33 条。
+
+验证限制：`pnpm exec vue-tsc -p modules/device-manager-ui/tsconfig.json --noEmit` 被未改动的 `views/link/Certificate/type.d.ts:2` TS1005 语法错误阻断，修复后需重跑。本模块与工作区无 lint 脚本；`pnpm -F jetlinks-web-core build -- --module-name device-manager-ui` 生产构建通过（9,633 个模块转换，保留既有 CSS 注释与输出配置提示）。
+
 ## 范围树滚动区布局
 
 目标：将 `views/device/list/components/IotDeviceScopeSidebar.vue` 的侧栏内容改为纵向弹性布局，使范围树滚动区占用剩余高度，分组创建按钮保留在底部。仅调整样式，不改范围筛选、树节点、权限或接口；样式差异与 `git diff --check` 已核对。按本次交付要求不执行构建，也未运行 lint、typecheck 或浏览器验证，长列表及不同容器高度下的实际滚动效果仍需人工复核。
