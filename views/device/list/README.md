@@ -10,6 +10,8 @@
 
 验证限制：`pnpm exec vue-tsc -p modules/device-manager-ui/tsconfig.json --noEmit` 被未改动的 `views/link/Certificate/type.d.ts:2` TS1005 语法错误阻断，修复后需重跑。本模块与工作区无 lint 脚本；`pnpm -F jetlinks-web-core build -- --module-name device-manager-ui` 生产构建通过（9,633 个模块转换，保留既有 CSS 注释与输出配置提示）。
 
+交付入口：提交 `924e423`；PR https://github.com/jetlinks-v2/device-manager-ui/pull/315。
+
 ## 范围树滚动区布局
 
 目标：将 `views/device/list/components/IotDeviceScopeSidebar.vue` 的侧栏内容改为纵向弹性布局，使范围树滚动区占用剩余高度，分组创建按钮保留在底部。仅调整样式，不改范围筛选、树节点、权限或接口；样式差异与 `git diff --check` 已核对。按本次交付要求不执行构建，也未运行 lint、typecheck 或浏览器验证，长列表及不同容器高度下的实际滚动效果仍需人工复核。
