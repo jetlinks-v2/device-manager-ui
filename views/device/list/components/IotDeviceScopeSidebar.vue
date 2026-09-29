@@ -8,15 +8,24 @@
         </span>
       </template>
     </a-segmented>
+    <a-input
+      v-model:value="searchKeyword"
+      allow-clear
+      :placeholder="searchPlaceholder"
+      :aria-label="searchPlaceholder"
+    >
+      <template #prefix><AIcon type="SearchOutlined" aria-hidden="true" /></template>
+    </a-input>
     <div class="iot-device-scope__body">
       <div class="iot-device-scope__scroll">
         <a-tree
-          :key="scopeType"
+          v-if="filteredTreeData.length"
+          :key="treeKey"
           block-node
           :show-line="{ showLeafIcon: false }"
-          :tree-data="treeData"
+          :tree-data="filteredTreeData"
           :selected-keys="selectedKeys"
-          :default-expand-all="scopeType === 'area'"
+          :default-expand-all="expandAll"
           @select="onSelect"
         >
           <template #leafIcon="{ dataRef }">
@@ -64,6 +73,7 @@
             </span>
           </template>
         </a-tree>
+        <a-empty v-else :image="Empty.PRESENTED_IMAGE_SIMPLE" :description="$t('IotDeviceList.scope.noMatches')" />
       </div>
       <a-button v-if="scopeType === 'group' && showGroupActions !== false" class="iot-device-scope__create-group" block @click="$emit('create-group')">
         <template #icon><AIcon type="PlusOutlined" /></template>
@@ -74,6 +84,7 @@
 </template>
 
 <script setup lang="ts">
+import { Empty } from 'ant-design-vue'
 import type { DeviceGroup } from '@device-manager-ui/api/deviceGroup'
 import { useIotDeviceScopeSidebar } from '../hooks/useIotDeviceScopeSidebar'
 
@@ -82,9 +93,9 @@ interface IotDeviceScopeSidebarProps {
   showGroupActions?: boolean
   // 未装配空间服务时隐藏区域范围，避免生成依赖 space-bind term 的查询。
   showArea?: boolean
-  activeType: Scope['type']
+  activeType: 'area' | 'group'
   activeId: string
-  areas: Area[]
+  areas: { id: string; name: string; parentId?: string }[]
   groups: DeviceGroup[]
   totalDeviceCount: number
   areaDeviceCounts: Record<string, number>
@@ -92,7 +103,6 @@ interface IotDeviceScopeSidebarProps {
   unboundAreaDeviceCount: number
   unassignedGroupDeviceCount: number
 }
-
 
 const props = withDefaults(defineProps<IotDeviceScopeSidebarProps>(), {
   showGroupActions: true,
@@ -105,14 +115,14 @@ const emit = defineEmits<{
   (event: 'edit-group', group: DeviceGroup): void
   (event: 'delete-group', group: DeviceGroup): void
 }>()
-const { scopeType, scopeOptions, treeData, selectedKeys, onSelect, countText } =
+const { scopeType, scopeOptions, searchKeyword, searchPlaceholder, filteredTreeData, treeKey, expandAll, selectedKeys, onSelect, countText } =
   useIotDeviceScopeSidebar(props, (scope) => emit('change', scope))
 </script>
 
 <style scoped>
 .iot-device-scope {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
   gap: var(--space-4);
   min-height: 0;
   height: 100%;

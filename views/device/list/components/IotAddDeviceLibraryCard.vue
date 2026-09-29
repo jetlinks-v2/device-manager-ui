@@ -3,6 +3,7 @@
     :data="cardData"
     :active="selected"
     :disabled="disabled"
+    :class="{ 'add-device-library__card--fixed': fixedHeight }"
     style="border-color:var(--color-jet-border);padding-bottom: var(--space-4)"
     @click="emit('select', template.id)"
   >
@@ -35,6 +36,7 @@ const props = defineProps({
   template: { type: Object as PropType<IotDeviceProductTemplate>, required: true },
   selected: { type: Boolean, default: false },
   disabled: { type: Boolean, default: false },
+  fixedHeight: { type: Boolean, default: false },
 })
 
 const emit = defineEmits<{

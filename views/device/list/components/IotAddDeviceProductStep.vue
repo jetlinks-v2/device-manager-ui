@@ -35,8 +35,10 @@
             size="small"
             :total="total"
             :page-size="pageSize"
+            :disabled="loading"
             :show-size-changer="false"
-            show-less-items
+            :show-quick-jumper="false"
+            :show-total="undefined"
             @change="handlePageChange"
           />
         </div>

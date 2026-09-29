@@ -61,6 +61,7 @@
                 :template="template"
                 :selected="template.id === selectedTemplateKey"
                 :disabled="isTemplateDisabled(template)"
+                fixed-height
                 @select="$emit('select-template', $event)"
               />
             </template>
@@ -70,44 +71,28 @@
                 :description="$t('IotDeviceList.add.libraryEmpty')"
               />
             </template>
+            <template #paginationRender>
+              <a-pagination
+                size="small"
+                :current="pageIndex + 1"
+                :page-size="pageSize"
+                :total="displayPageTotal"
+                :disabled="loading"
+                :show-size-changer="false"
+                :show-quick-jumper="false"
+                :show-total="undefined"
+                @change="(page) => changePage(page - 1)"
+              />
+            </template>
           </j-pro-table>
         </a-spin>
-
-        <!-- 无总数接口保留前后翻页；二次筛选产生空页时仍可继续查找。 -->
-<!--        <div v-if="templates.length || (showEmptyPager && hasMore)" class="add-device-library__pager">-->
-<!--          <a-space>-->
-<!--            <a-tooltip :title="$t('IotDeviceList.add.prev')">-->
-<!--              <a-button-->
-<!--                type="text"-->
-<!--                size="small"-->
-<!--                :aria-label="$t('IotDeviceList.add.prev')"-->
-<!--                :disabled="loading || pageIndex === 0"-->
-<!--                @click="changePage(pageIndex - 1)"-->
-<!--              >-->
-<!--                <template #icon><AIcon type="LeftOutlined" /></template>-->
-<!--              </a-button>-->
-<!--            </a-tooltip>-->
-<!--            <span>{{ pageIndex + 1 }}</span>-->
-<!--            <a-tooltip :title="$t('IotDeviceList.add.next')">-->
-<!--              <a-button-->
-<!--                type="text"-->
-<!--                size="small"-->
-<!--                :aria-label="$t('IotDeviceList.add.next')"-->
-<!--                :disabled="loading || !hasMore"-->
-<!--                @click="changePage(pageIndex + 1)"-->
-<!--              >-->
-<!--                <template #icon><AIcon type="RightOutlined" /></template>-->
-<!--              </a-button>-->
-<!--            </a-tooltip>-->
-<!--          </a-space>-->
-<!--        </div>-->
       </div>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { type PropType } from 'vue'
+import { computed, type PropType } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   type IotDeviceLibraryTagGroup,
@@ -128,8 +113,6 @@ const props = defineProps({
   pageSize: { type: Number, default: 6 },
   loading: { type: Boolean, default: false },
   tagLoading: { type: Boolean, default: false },
-  /** 资源被调用方二次筛选时，空页仍需保留继续翻页入口。 */
-  showEmptyPager: { type: Boolean, default: false },
 })
 
 const emit = defineEmits<{
@@ -138,6 +121,10 @@ const emit = defineEmits<{
 }>()
 
 const { t: $t } = useI18n()
+
+// 运行时接口没有 total；仅在当前页已确认仍有数据时，才开放下一个页码。
+const displayPageTotal = computed(() => props.pageSize * (props.pageIndex + (props.hasMore ? 2 : 1)))
+
 const {
   keyword, activeTagIds, tagGroupsExpanded, showTagPanel, hasActiveTagFilter,
   visibleTagFilterGroups, hasHiddenTagFilterGroups, handleKeywordSearch,
