@@ -19,9 +19,9 @@
       <template #alarmName="record"><j-ellipsis>{{ text(record.alarmName) }}</j-ellipsis></template>
       <template #level="record">{{ text(record.level?.text || record.level) }}</template>
       <template #triggerDesc="record"><j-ellipsis>{{ text(record.triggerDesc) }}</j-ellipsis></template>
-      <template #actualDesc="record"><j-ellipsis>{{ text(record.actualDesc) }}</j-ellipsis></template>
-      <template #handleTime="record">{{ record.handleTime ? formatTime(record.handleTime) : '--' }}</template>
-      <template #handleType="record">{{ text(record.handleType?.text || record.handleType) }}</template>
+      <template #actualDesc="record"><j-ellipsis>{{ text(record.actualDesc, $t('comm.table.empty-2')) }}</j-ellipsis></template>
+      <template #handleTime="record">{{ record.handleTime ? formatTime(record.handleTime) : $t('comm.table.empty-2') }}</template>
+      <template #handleType="record">{{ text(record.handleType?.text || record.handleType, $t('comm.table.empty-2')) }}</template>
       <template #state="record"><a-tag :color="stateValue(record) === 'normal' ? 'success' : 'error'">{{ stateValue(record) === 'normal' ? $t('DeviceAlarm.record.handled') : $t('DeviceAlarm.record.alarming') }}</a-tag></template>
       <template #actions="record">
         <a-space>
@@ -112,9 +112,10 @@ function openHandle(record: Record<string, any>) { currentRecord.value = record;
 function openView(record: Record<string, any>) { currentRecord.value = record; handleMode.value = 'view'; handleOpen.value = true }
 function openLog(record: Record<string, any>) { currentRecord.value = record; logOpen.value = true }
 function stateValue(record: Record<string, any>) { return String(record.state?.value ?? record.state ?? '') }
-function text(value: unknown) { return value === undefined || value === null || value === '' ? '--' : String(value) }
-function formatTime(value: unknown) { const date = dayjs(value as any); return date.isValid() ? date.format('YYYY-MM-DD HH:mm:ss') : '--' }
-function formatDuration(record: Record<string, any>) { const start = dayjs(record.alarmTime); const end = stateValue(record) === 'normal' ? dayjs(record.handleTime) : dayjs(); if (!start.isValid() || !end.isValid()) return '--'; const seconds = Math.max(0, end.diff(start, 'second')); return seconds < 60 ? `${seconds} s` : seconds < 3600 ? `${(seconds / 60).toFixed(1)} min` : `${(seconds / 3600).toFixed(1)} h` }
+// 配置字段与实际触发数据使用各自的缺失提示。
+function text(value: unknown, emptyText = $t('comm.table.empty')) { return value === undefined || value === null || value === '' ? emptyText : String(value) }
+function formatTime(value: unknown) { const date = dayjs(value as any); return date.isValid() ? date.format('YYYY-MM-DD HH:mm:ss') : $t('comm.table.empty-2') }
+function formatDuration(record: Record<string, any>) { const start = dayjs(record.alarmTime); const end = stateValue(record) === 'normal' ? dayjs(record.handleTime) : dayjs(); if (!start.isValid() || !end.isValid()) return $t('comm.table.empty-2'); const seconds = Math.max(0, end.diff(start, 'second')); return seconds < 60 ? `${seconds} s` : seconds < 3600 ? `${(seconds / 60).toFixed(1)} min` : `${(seconds / 3600).toFixed(1)} h` }
 
 function emptyResponse(params: Record<string, any>) {
   return {

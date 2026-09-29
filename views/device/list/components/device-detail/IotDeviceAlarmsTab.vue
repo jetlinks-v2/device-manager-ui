@@ -59,14 +59,14 @@
         </a-tooltip>
       </template>
       <template #actualDesc="record">
-        <a-tooltip :title="displayText(record.actualDesc)">
+        <a-tooltip :title="displayText(record.actualDesc, $t('comm.table.empty-2'))">
           <span class="alarm-record-tab__ellipsis-trigger">
-            <span class="alarm-record-tab__ellipsis">{{ displayText(record.actualDesc) }}</span>
+            <span class="alarm-record-tab__ellipsis">{{ displayText(record.actualDesc, $t('comm.table.empty-2')) }}</span>
           </span>
         </a-tooltip>
       </template>
       <template #handleTime="record">
-        {{ record.handleTime ? formatApiTime(record.handleTime) : '--' }}
+        {{ record.handleTime ? formatApiTime(record.handleTime) : $t('comm.table.empty-2') }}
       </template>
       <template #handleType="record">
         {{ enumText(record.handleType) }}
@@ -274,7 +274,7 @@ function enumValue(value: unknown) {
   return value && typeof value === 'object' ? String((value as any).value ?? '') : String(value ?? '')
 }
 
-function enumText(value: unknown, fallback = '--') {
+function enumText(value: unknown, fallback = $t('comm.table.empty-2')) {
   if (value && typeof value === 'object') return String((value as any).text ?? (value as any).value ?? fallback)
   return displayText(value || fallback)
 }
@@ -288,17 +288,18 @@ function stateLabel(value: unknown) {
 function levelLabel(value: unknown) {
   const level = Number(enumValue(value))
   const option = levelOptions.value.find((item) => item.value === level)
-  return option?.label || enumText(value)
+  return option?.label || enumText(value, $t('comm.table.empty'))
 }
 
-function displayText(value: unknown) { return value === undefined || value === null || value === '' ? '--' : String(value) }
+// 配置字段与实际触发数据使用各自的缺失提示。
+function displayText(value: unknown, emptyText = $t('comm.table.empty')) { return value === undefined || value === null || value === '' ? emptyText : String(value) }
 
 function formatDuration(record: Record<string, any>) {
   const start = dayjs(record.alarmTime)
   const end = enumValue(record.state) === 'warning' ? dayjs() : dayjs(record.handleTime)
-  if (!start.isValid() || !end.isValid()) return '--'
+  if (!start.isValid() || !end.isValid()) return $t('comm.table.empty-2')
   const seconds = end.diff(start, 'second')
-  if (seconds < 0) return '--'
+  if (seconds < 0) return $t('comm.table.empty-2')
   if (seconds < 60) return `${seconds.toFixed(1)} s`
   if (seconds < 3600) return `${(seconds / 60).toFixed(1)} min`
   return `${(seconds / 3600).toFixed(1)} h`

@@ -31,10 +31,10 @@
         />
       </template>
       <template #version="slotProps">
-        <span>{{ slotProps.firmwareInfo?.version || '--' }}</span>
+        <span>{{ slotProps.firmwareInfo?.version || $t('comm.table.empty-2') }}</span>
       </template>
       <template #registerTime="slotProps">
-        <span>{{slotProps.registerTime ? dayjs(slotProps.registerTime).format('YYYY-MM-DD HH:mm:ss') : '--' }}</span>
+        <span>{{slotProps.registerTime ? dayjs(slotProps.registerTime).format('YYYY-MM-DD HH:mm:ss') : $t('comm.table.empty-2') }}</span>
       </template>
     </j-pro-table>
   </div>

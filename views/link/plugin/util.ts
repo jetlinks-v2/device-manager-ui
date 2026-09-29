@@ -10,7 +10,7 @@ export const TypeMap = {
 
 export const getPluginTypeLabel = (type?: string) => {
   if (!type) {
-    return '--'
+    return i18n.global.t('comm.table.empty')
   }
   return TypeMap[type] || type
 }

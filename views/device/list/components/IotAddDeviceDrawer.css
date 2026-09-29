@@ -97,6 +97,7 @@
   display: grid;
   gap: var(--space-3);
   min-width: 0;
+  height: 31rem;
   min-height: 31rem;
 }
 
@@ -220,7 +221,17 @@
 
 .add-device-library__content :deep(.ant-spin-nested-loading),
 .add-device-library__content :deep(.ant-spin-container) {
-  min-height: 27.5rem;
+  height: 100%;
+  min-height: 0;
+}
+
+.add-device-library__table,
+.add-device-library__table :deep(.jtable-body-spin) {
+  height: 100%;
+}
+
+.add-device-library__card--fixed {
+  height: 10.375rem;
 }
 
 .add-device-library__icon,
@@ -282,8 +293,8 @@
 }
 
 .add-device-library__pager {
-  justify-content: space-between;
-  margin-top: var(--space-3);
+  justify-content: flex-end;
+  margin-top: var(--space-4);
 }
 
 .add-device-library__meta {
@@ -1558,11 +1569,6 @@
 
   .add-device-confirm__tag-group {
     grid-template-columns: 1fr;
-  }
-
-  .add-device-library__pager {
-    align-items: flex-start;
-    flex-direction: column;
   }
 
   .add-device__type-card,

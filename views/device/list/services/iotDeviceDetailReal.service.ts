@@ -1,3 +1,5 @@
+import i18n from '@jetlinks-web-core/locales'
+
 import { request, wsClient } from '@jetlinks-web/core'
 import { randomString } from '@jetlinks-web/utils'
 import { map } from 'rxjs/operators'
@@ -46,7 +48,7 @@ export function extractRows(result: any): any[] {
   return []
 }
 
-export function formatApiTime(value: unknown, fallback = '--'): string {
+export function formatApiTime(value: unknown, fallback = i18n.global.t('comm.table.empty-2')): string {
   if (!value) return fallback
   const date = new Date(typeof value === 'number' ? value : String(value))
   if (Number.isNaN(date.getTime())) return String(value)

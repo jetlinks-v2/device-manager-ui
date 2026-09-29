@@ -130,7 +130,7 @@ const detailValue = computed(() => {
 
 const displayText = computed(() => {
   if (isEmpty(formatValue.value)) {
-    return '--'
+    return $t('comm.table.empty-2')
   }
   if (valueType.value === 'boolean') {
     return getBooleanText(rawValue.value)
@@ -200,7 +200,7 @@ const isImageFile = computed(() => fileCategory.value === 'img')
 
 const fileName = computed(() => {
   if (!fileSource.value) {
-    return props.field?.name || '--'
+    return props.field?.name || $t('comm.table.empty')
   }
   if (bodyType.value === 'base64') {
     return `${props.field?.name || fieldId.value}.${guessExtension(fileCategory.value)}`

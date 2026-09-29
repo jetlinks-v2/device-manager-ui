@@ -199,7 +199,7 @@ function deviceImageUrl(value?: string) {
 }
 
 function displayText(value?: string) {
-  return value || '--'
+  return value && value !== '--' ? value : $t('comm.table.empty')
 }
 
 function deviceTypeText(device: IotDevice) {

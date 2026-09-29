@@ -111,12 +111,12 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
   const productCandidates = ref<IotDeviceProductTemplate[]>([])
   const productTotal = ref(0)
   const productPageIndex = ref(0)
-  const productPageSize = ref(4)
+  const productPageSize = ref(6)
   const productFilterTerms = ref<DeviceQueryTerm[]>([])
   const libraryTemplates = ref<DeviceTemplateProductInput[]>([])
   const libraryTagGroups = ref<IotDeviceLibraryTagGroup[]>([])
   const libraryPageIndex = ref(0)
-  const libraryPageSize = ref(6)
+  const libraryPageSize = ref(4)
   const libraryHasMore = ref(false)
   const libraryKeyword = ref('')
   const libraryTags = ref<string[]>([])
@@ -286,14 +286,14 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
   async function loadDeviceLibraryTemplates(force = false, query: DeviceLibraryTemplateQueryInput = {}) {
     if (libraryLoading.value && !force) return
     const requestSequence = ++libraryRequestSequence
+    const requestedPageIndex = query.pageIndex ?? libraryPageIndex.value
     libraryLoading.value = true
     libraryMessage.value = ''
     if (query.keyword !== undefined) libraryKeyword.value = query.keyword.trim()
     if (query.tags !== undefined) libraryTags.value = query.tags
-    if (query.pageIndex !== undefined) libraryPageIndex.value = query.pageIndex
     try {
       const page = await queryDeviceLibraryTemplates_api({
-        pageIndex: libraryPageIndex.value, pageSize: libraryPageSize.value, keyword: libraryKeyword.value,
+        pageIndex: requestedPageIndex, pageSize: libraryPageSize.value, keyword: libraryKeyword.value,
         tags: libraryTags.value, deviceType: props.deviceType,
       })
       if (requestSequence !== libraryRequestSequence || !props.open) return

@@ -85,7 +85,7 @@
                                         {{ $t('ApplyCollector.Collector.789174-3') }}
                                     </div>
                                     <Ellipsis>{{
-                                        slotProps?.description || '--'
+                                        slotProps?.description || $t('comm.table.empty')
                                     }}</Ellipsis>
                                 </a-col>
                             </a-row>

@@ -113,7 +113,7 @@
                             ).format(
                                 'YYYY-MM-DD HH:mm:ss',
                             )
-                            : '--'
+                            : $t('comm.table.empty-2')
                       }}
                     </j-ellipsis
                     >
@@ -142,13 +142,13 @@
                   </template>
                   <template #name="scopedSlots">
                     <j-ellipsis>{{
-                        scopedSlots.name || '--'
+                        scopedSlots.name || $t('comm.table.empty')
                       }}
                     </j-ellipsis>
                   </template>
                   <template #productName="scopedSlots">
                     <j-ellipsis>{{
-                        scopedSlots.productName || '--'
+                        scopedSlots.productName || $t('comm.table.empty')
                       }}
                     </j-ellipsis>
                   </template>
@@ -233,7 +233,7 @@
                   </template>
                   <template #describe="scopedSlots">
                     <j-ellipsis>{{
-                        scopedSlots.describe || '--'
+                        scopedSlots.describe || $t('comm.table.empty')
                       }}
                     </j-ellipsis>
                   </template

@@ -50,7 +50,7 @@
         />
       </template>
       <template #time='slotProps'>
-        {{ propertyValue[slotProps?.id]?.timeString || '--' }}
+        {{ propertyValue[slotProps?.id]?.timeString || $t('comm.table.empty-2') }}
       </template>
       <template #action='slotProps'>
         <a-space :size='16'>

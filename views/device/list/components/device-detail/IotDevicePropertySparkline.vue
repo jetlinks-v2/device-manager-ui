@@ -109,7 +109,7 @@ function formatNumber(value: number) {
 }
 
 function formatTime(value?: number | string, pattern = 'HH:mm') {
-  if (!value) return '--'
+  if (!value) return $t('comm.table.empty-2')
   const time = dayjs(value)
   return time.isValid() ? time.format(pattern) : String(value)
 }

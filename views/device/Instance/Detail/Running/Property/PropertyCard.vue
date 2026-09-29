@@ -53,7 +53,7 @@
                     {{  $t('BasicInfo.indev.028379-6')  }}
                 </div>
                 <div class="time-value">
-                    {{ _props?.data?.timeString || '--' }}
+                    {{ _props?.data?.timeString || $t('comm.table.empty-2') }}
                 </div>
             </div>
         </div>

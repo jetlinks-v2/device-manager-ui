@@ -30,7 +30,7 @@
         {{
           slotProps.handleTime
               ? dayjs(slotProps.handleTime).format('YYYY-MM-DD HH:mm:ss')
-              : '--'
+              : $t('comm.table.empty-2')
         }}
       </template>
       <template #sourceName="slotProps">
@@ -44,7 +44,7 @@
         </div>
       </template>
       <template #handleType="slotProps">
-        {{ slotProps?.handleType?.text || '--' }}
+        {{ slotProps?.handleType?.text || $t('comm.table.empty-2') }}
       </template>
       <template #level="slotProps">
         {{getLevelData(slotProps) }}
@@ -397,7 +397,7 @@ const handleSearch = (e) => {
 
 const getLevelData = (slotProps) => {
   const dt = levelList.value.find(i => i.level === slotProps?.level);
-  return dt ? (dt?.i18nMessages?.[localLanguage] || dt.title) : '--'
+  return dt ? (dt?.i18nMessages?.[localLanguage] || dt.title) : $t('comm.table.empty')
 }
 const queryHandle = async (id) => {
   const res = await queryPreHandleHistory(id, {
