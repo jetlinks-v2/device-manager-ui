@@ -34,7 +34,7 @@
 
 实施：保留分类 Provider 现有 `showInTabs` 契约，由 `jetlinks-media-ui/deviceListProvider.ts` 使用 `isPrivateDeployment()` 决定视频页签可见性；分类识别与 `?type=video` 直达仍按原逻辑运行。保持现有表格工作区、筛选和详情承载方式，不引入新的交互壳层。
 
-风险与验证：部署类型由构建时的 `VITE_APP_DEPLOYMENT` 决定，不能用 `VITE_APP_ENVIRONMENT` 或 `!isSaaS` 代替。`node --test tests/unifiedDeviceTabs.test.mjs tests/deviceDetailContent.test.mjs` 共 11 项通过，覆盖私有化显示契约、SaaS 隐藏契约、隐藏 Provider 仍参与分类与直达，以及既有视频详情内容；`device-manager-ui` 与 `jetlinks-media-ui` 的 `git diff --check` 通过。未执行浏览器、完整 typecheck 或生产构建；生产环境需要重新发布对应部署类型的运行时前端资源。
+风险与验证：部署类型由构建时的 `VITE_APP_ENVIRONMENT` 决定，私有化为空字符串，SaaS 为 `saas`；不能用 `!isSaaS` 代替，因为其他非 SaaS 环境也可能使用该构建。`node --test tests/unifiedDeviceTabs.test.mjs tests/deviceDetailContent.test.mjs` 共 11 项通过，覆盖私有化显示契约、SaaS 隐藏契约、隐藏 Provider 仍参与分类与直达，以及既有视频详情内容；`device-manager-ui` 与 `jetlinks-media-ui` 的 `git diff --check` 通过。未执行浏览器、完整 typecheck 或生产构建；生产环境需要重新发布对应部署类型的运行时前端资源。
 
 ## 接入设备回退并保留表单
 
