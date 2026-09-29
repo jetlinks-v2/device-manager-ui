@@ -4,7 +4,7 @@
             v-if="value?.formatValue !== 0 && !value?.formatValue"
             :class="valueClass"
         >
-            --
+            {{ $t('comm.table.empty-2') }}
         </div>
         <div v-else-if="_data.data?.valueType?.type === 'file'">
             <template v-if="data?.valueType?.bodyType === 'base64'">

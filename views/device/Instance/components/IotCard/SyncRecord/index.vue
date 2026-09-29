@@ -31,31 +31,31 @@
 <!--          </template>-->
 <!--        </template>-->
         <template #responseTime="slotProps">
-          {{slotProps.responseTime ? dayjs(slotProps.responseTime).format('YYYY-MM-DD HH:mm:ss') : "--"}}
+          {{slotProps.responseTime ? dayjs(slotProps.responseTime).format('YYYY-MM-DD HH:mm:ss') : $t('comm.table.empty-2')}}
         </template>
         <template #source="slotProps">
           {{slotProps.source === 'manual' ? $t('CardManagement.index.427944-82') : $t('CardManagement.index.427944-83')}}
         </template>
         <template #flowPercentage="slotProps">
-          {{slotProps.flowPercentage !== undefined ? `${slotProps.flowPercentage.toFixed(2)}%` : '--'}}
+          {{slotProps.flowPercentage !== undefined ? `${slotProps.flowPercentage.toFixed(2)}%` : $t('comm.table.empty-2')}}
         </template>
         <template #usedFlow="slotProps">
-          {{slotProps.usedFlow !== undefined ? `${slotProps.usedFlow.toFixed(2)}M` : '--'}}
+          {{slotProps.usedFlow !== undefined ? `${slotProps.usedFlow.toFixed(2)}M` : $t('comm.table.empty-2')}}
         </template>
         <template #residualFlow="slotProps">
-          {{slotProps.residualFlow !== undefined ? `${slotProps.residualFlow.toFixed(2)}M` : '--'}}
+          {{slotProps.residualFlow !== undefined ? `${slotProps.residualFlow.toFixed(2)}M` : $t('comm.table.empty-2')}}
         </template>
         <template #poolResidualFlow="slotProps">
-          {{slotProps.poolResidualFlow !== undefined ? `${slotProps.poolResidualFlow.toFixed(2)}M` : '--'}}
+          {{slotProps.poolResidualFlow !== undefined ? `${slotProps.poolResidualFlow.toFixed(2)}M` : $t('comm.table.empty-2')}}
         </template>
         <template #poolTotalFlow="slotProps">
-          {{slotProps.poolTotalFlow !== undefined ? `${slotProps.poolTotalFlow.toFixed(2)}M` : '--'}}
+          {{slotProps.poolTotalFlow !== undefined ? `${slotProps.poolTotalFlow.toFixed(2)}M` : $t('comm.table.empty-2')}}
         </template>
         <template #totalFlow="slotProps">
-          {{slotProps.totalFlow !== undefined ? `${slotProps.totalFlow.toFixed(2)}M` : '--'}}
+          {{slotProps.totalFlow !== undefined ? `${slotProps.totalFlow.toFixed(2)}M` : $t('comm.table.empty-2')}}
         </template>
         <template #exceeded="slotProps">
-          {{ ((slotProps.usedFlow || 0) - (slotProps.totalFlow || 0)) > 0 ? `${((slotProps.usedFlow || 0) - (slotProps.totalFlow || 0))}M` : "--" }}
+          {{ ((slotProps.usedFlow || 0) - (slotProps.totalFlow || 0)) > 0 ? `${((slotProps.usedFlow || 0) - (slotProps.totalFlow || 0))}M` : $t('comm.table.empty-2') }}
         </template>
       </j-pro-table>
       <j-empty v-else/>

@@ -51,14 +51,14 @@
                   <AIcon class="icon" type="EnvironmentOutlined"/>
                   <span style="color: #7f7f7f; margin-left: 8px">{{ $t('RealtimePositioning.index.390590-4') }}</span>
                 </div>
-                <j-ellipsis>{{ item.latitude ? `${item.longitude},${item.latitude}` : '--' }}</j-ellipsis>
+                <j-ellipsis>{{ item.latitude ? `${item.longitude},${item.latitude}` : $t('comm.table.empty-2') }}</j-ellipsis>
               </div>
               <div class="_items">
                 <div>
                   <AIcon class="icon" type="FileSearchOutlined"/>
                   <span style="color: #7f7f7f; margin-left: 8px">{{ $t('RealtimePositioning.index.390590-5') }}</span>
                 </div>
-                <j-ellipsis>{{ item.location || '--' }}</j-ellipsis>
+                <j-ellipsis>{{ item.location || $t('comm.table.empty-2') }}</j-ellipsis>
               </div>
               <div class="_items">
                 <div>
@@ -66,7 +66,7 @@
                   <span style="color: #7f7f7f; margin-left: 8px">{{ $t('RealtimePositioning.index.390590-6') }}</span>
                 </div>
                 <j-ellipsis>{{
-                    item.locationTime ? dayjs(item.locationTime).format('YYYY-MM-DD HH:mm:ss') : '--'
+                    item.locationTime ? dayjs(item.locationTime).format('YYYY-MM-DD HH:mm:ss') : $t('comm.table.empty-2')
                   }}
                 </j-ellipsis>
               </div>

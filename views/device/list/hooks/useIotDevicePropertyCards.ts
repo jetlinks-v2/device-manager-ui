@@ -191,12 +191,12 @@ export function useIotDevicePropertyCards(
 
   function mapHistoryRow(row: any, item: RealtimePropertyRow, index: number): HistoryRow {
     const valueSource = row?.value && typeof row.value === 'object' ? row.value : row
-    const value = valueSource?.formatValue ?? valueSource?.value ?? row?.formatValue ?? row?.numberValue ?? row?.value ?? '--'
+    const value = valueSource?.formatValue ?? valueSource?.value ?? row?.formatValue ?? row?.numberValue ?? row?.value ?? $t('comm.table.empty-2')
     const timestamp = row?.timestamp ?? valueSource?.timestamp ?? row?.createTime ?? row?.time
     return {
       id: `${item.id}-history-${row?.id ?? timestamp ?? index}`,
-      reportedAt: formatApiTime(timestamp, '--'),
-      value: String(value ?? '--'),
+      reportedAt: formatApiTime(timestamp, $t('comm.table.empty-2')),
+      value: String(value ?? $t('comm.table.empty-2')),
       unit: item.unit,
       quality: toneLabel(item.tone),
       tone: item.tone,

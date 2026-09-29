@@ -67,10 +67,10 @@ const structuredValue = computed(() => (
     : undefined
 ))
 const imageSource = computed(() => getImageFileSource(props.value, props.valueType, props.dataType))
-const displayValue = computed(() => String(props.value ?? '--'))
+const displayValue = computed(() => props.value === '--' ? $t('comm.table.empty-2') : String(props.value ?? $t('comm.table.empty-2')))
 const rawText = computed(() => {
-  if (typeof props.value === 'string') return props.value
-  if (props.value === undefined || props.value === null) return '--'
+  if (typeof props.value === 'string' && props.value !== '--') return props.value
+  if (props.value === undefined || props.value === null || props.value === '--') return $t('comm.table.empty-2')
   try {
     return JSON.stringify(props.value)
   } catch {

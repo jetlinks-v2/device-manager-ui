@@ -168,7 +168,7 @@ function renderChart() {
           return $t('IotDeviceDetail.propertyChart.tooltip', {
             time: formatTime(row?.time),
             name: props.property.name,
-            value: row?.value ?? '--',
+            value: row?.value ?? $t('comm.table.empty-2'),
           })
         },
       },
@@ -230,7 +230,7 @@ function scheduleRealtimeChartRender() {
 }
 
 function formatTime(value?: number | string, pattern = 'YYYY-MM-DD HH:mm:ss') {
-  if (!value) return '--'
+  if (!value) return $t('comm.table.empty-2')
   const time = dayjs(value)
   return time.isValid() ? time.format(pattern) : String(value)
 }

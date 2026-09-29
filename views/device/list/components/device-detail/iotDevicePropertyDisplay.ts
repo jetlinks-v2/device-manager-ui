@@ -1,3 +1,5 @@
+import i18n from '@jetlinks-web-core/locales'
+
 import type { RealtimePropertyRow } from './iotDeviceDetail.types'
 
 interface DisplayValueUnit {
@@ -7,7 +9,10 @@ interface DisplayValueUnit {
 
 export function splitPropertyValueAndUnit(value: unknown, unit?: string): DisplayValueUnit {
   const text = String(value ?? '').trim()
-  if (!text || text === '--') return { value: '--', unit: '' }
+  // 接口缺失标记在展示时翻译，空值不附带单位。
+  if (!text || text === '--' || text === i18n.global.t('comm.table.empty-2')) {
+    return { value: i18n.global.t('comm.table.empty-2'), unit: '' }
+  }
 
   const normalizedUnit = String(unit ?? '').trim()
   if (!normalizedUnit) return { value: text, unit: '' }

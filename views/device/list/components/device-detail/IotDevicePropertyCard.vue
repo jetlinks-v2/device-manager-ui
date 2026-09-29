@@ -116,7 +116,7 @@ const valueUpdating = ref(false)
 let valueUpdateTimer: ReturnType<typeof setTimeout> | undefined
 
 function displayValue(value?: string | null) {
-  return value && String(value).trim() ? String(value) : '--'
+  return value && String(value).trim() && value !== '--' ? String(value) : $t('comm.table.empty-2')
 }
 
 watch(
