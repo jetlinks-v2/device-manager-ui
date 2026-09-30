@@ -421,6 +421,34 @@ export const readProperties = (deviceId: string, data: any) => request.post(`/de
 export const settingProperties = (deviceId: string, data: any) => request.put(`/device/instance/${deviceId}/property`, data)
 
 /**
+ * 查询设备通信链路保存配置。
+ *
+ * 当服务端未启用链路保存能力时，该接口不会在页面中调用。
+ */
+export const getDebugLogConfig = (deviceId: string) =>
+  request.get<{ enabled: boolean; deviceEnabled: boolean }>(`/device/debug/log/${deviceId}/config`)
+
+/** 启用指定设备的通信链路保存。 */
+export const enableDebugLog = (deviceId: string) =>
+  request.post(`/device/debug/log/${deviceId}/_enable`)
+
+/** 停用指定设备的通信链路保存。 */
+export const disableDebugLog = (deviceId: string) =>
+  request.post(`/device/debug/log/${deviceId}/_disable`)
+
+/** 分页查询已保存的设备通信链路。 */
+export const queryDebugLogList = (deviceId: string, data: Record<string, any>) =>
+  request.post(`/device/debug/log/${deviceId}/_query`, data)
+
+/** 服务端是否已装配设备通信链路保存能力。 */
+export const existsDeviceDebugLogSupport = () =>
+  request.get<boolean>(`/command-supports/service/deviceService:debug-log/exists`)
+
+/** 服务端是否已装配设备报文模拟能力。 */
+export const existsDeviceCodecSimulateSupport = () =>
+  request.get<boolean>(`/command-supports/service/deviceService:codec-simulate/exists`)
+
+/**
  * 设备功能-执行
  * @param id 设备id
  * @param action
