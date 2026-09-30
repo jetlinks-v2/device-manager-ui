@@ -5060,6 +5060,7 @@
     "IotDeviceList.action.create": "接入设备",
     "IotDeviceList.action.batchEnable": "批量启用",
     "IotDeviceList.action.batchDisable": "批量禁用",
+    "IotDeviceList.action.syncStatus": "同步状态",
     "IotDeviceList.action.assignGroup": "分配到分组",
     "IotDeviceList.action.assignArea": "分配到区域",
     "IotDeviceList.action.exportSelected": "导出选中",

@@ -212,5 +212,5 @@ export function useUnifiedDeviceList() {
   }, { immediate: true })
   void loadCounts()
   onBeforeUnmount(() => { requestVersion++; countVersion++; statusCountVersion++ })
-  return { providers, isIotEntry, tabs, activeType, activeProvider, scope, filterFields, commonFilterFields, searchTerms, status, rows, total, pageIndex, pageSize, loading, error, counts, statusCounts, selectedIds, batchMode, providerOf, changeType, search, changeStatus, refresh, changePage, clearBatchSelection }
+  return { providers, isIotEntry, tabs, activeType, activeProvider, scope, baseTerms, filterTerms, filterFields, commonFilterFields, searchTerms, status, rows, total, pageIndex, pageSize, loading, error, counts, statusCounts, selectedIds, batchMode, providerOf, changeType, search, changeStatus, refresh, changePage, clearBatchSelection }
 }
