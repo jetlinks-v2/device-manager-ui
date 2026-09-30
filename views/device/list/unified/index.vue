@@ -48,6 +48,7 @@
 						        <a-menu @click="openBatchPage">
 						          <a-menu-item key="algorithms">{{ t('UnifiedDeviceList.batchAlgorithms') }}</a-menu-item>
 						          <a-menu-item key="plugins">{{ t('UnifiedDeviceList.batchPlugins') }}</a-menu-item>
+						          <a-menu-item key="syncStatus">{{ t('IotDeviceList.action.syncStatus') }}</a-menu-item>
 						        </a-menu>
 						      </template>
 						    </a-dropdown>
@@ -171,6 +172,7 @@
     <IotDeviceAssignAreaModal v-if="spaceAreaSupported !== false" v-model:open="assignAreaOpen" :project-id="projectId" :selected-device-count="selectedIds.length" :saving="busy" @save="assignArea" />
     <IotDeviceAssignGroupModal v-model:open="assignGroupOpen" :selected-device-count="selectedIds.length" :saving="busy" @save="assignGroup" />
     <IotDeviceGroupNameModal v-model:open="groupDialogOpen" :mode="groupDialogMode" :initial-name="groupEditing?.name" :saving="groupSaving" :error="groupDialogError" @save="saveGroup" />
+    <Process v-if="syncVisible" :api="syncApi" type="sync" :data="syncData" @close="syncVisible = false" @save="handleSyncSaved" />
   </FullPage>
 </template>
 <script setup lang="ts">
@@ -179,6 +181,9 @@ import { ref } from 'vue'
 import dayjs from 'dayjs'
 import { Modal } from 'ant-design-vue'
 import { useI18n } from 'vue-i18n'
+import { getToken } from '@jetlinks-web/utils'
+import { TOKEN_KEY_URL } from '@jetlinks-web/constants'
+import { getBaseApi } from '@jetlinks-web-core/utils'
 import EqualHeightColumns from '@jetlinks-web-core/components/EqualHeightColumns/index.vue'
 import SlantedTabs from '@jetlinks-web-core/components/SlantedTabs'
 import { useRoute } from 'vue-router'
@@ -197,12 +202,17 @@ import { getIotDeviceListMenuCode } from '../hooks/useIotDeviceRouting'
 import type { DeviceGroup } from '../../../../api/deviceGroup'
 import { useUnifiedDeviceList } from './useUnifiedDeviceList'
 import { useUnifiedDeviceActions } from './useUnifiedDeviceActions'
+import Process from '../../Instance/Process/index.vue'
 const { t } = useI18n()
 const route = useRoute()
 const deviceMenuCode = computed(() => getIotDeviceListMenuCode(route))
 const menu = useMenuStore()
 // 已选网关按明确 ID 传入；未选择网关时在批量页按当前范围加载，由矩阵决定实际下发项。
 function openBatchPage({ key }: { key: string | number }) {
+  if (key === 'syncStatus') {
+    syncGatewayStatus()
+    return
+  }
   const gatewayIds = selected.value.filter(device => device.category === 'gateway').map(device => device.id)
   const currentQuery = encodeConditionFilterQuery(searchTerms.value, filterFields.value)
   menu.jumpPage('iot-user-device-list/Batch', { query: {
@@ -211,7 +221,7 @@ function openBatchPage({ key }: { key: string | number }) {
     batchTab: String(key),
   } })
 }
-const { providers, isIotEntry, tabs, activeType, activeProvider, scope, filterFields, commonFilterFields, searchTerms, status, rows, total, pageIndex, pageSize, loading, error, counts, statusCounts, selectedIds, batchMode, providerOf, changeType, search, changeStatus, refresh, changePage, clearBatchSelection } = useUnifiedDeviceList()
+const { providers, isIotEntry, tabs, activeType, activeProvider, scope, baseTerms, filterTerms, filterFields, commonFilterFields, searchTerms, status, rows, total, pageIndex, pageSize, loading, error, counts, statusCounts, selectedIds, batchMode, providerOf, changeType, search, changeStatus, refresh, changePage, clearBatchSelection } = useUnifiedDeviceList()
 const gatewayMonitorCell = moduleRegistry.getResourceItem<Component>('edge-master-ui', 'components', 'GatewayDeviceMonitorCell')
 const useGatewayMetrics = moduleRegistry.getResourceItem<typeof UseGatewayRuntimeMetricsLoader>('edge-master-ui', 'hooks', 'useGatewayRuntimeMetricsLoader')
 // 只监控边缘节点分类的当前页，切换分类或重新加载列表时撤掉旧查询目标。
@@ -237,6 +247,34 @@ function formatBrandModel(value?: string) {
     : t('IotDeviceDetail.common.unconfigured')
 }
 const { projectId, editing, editOpen, createEntry, canCreate, openCreate, detailDevice, busy, selected, allowed, openDetail, edit, toggle, remove, canDelete, batchToggle, assignAreaOpen, assignGroupOpen, assignArea, assignGroup } = useUnifiedDeviceActions(rows, selectedIds, clearBatchSelection, providerOf, refresh, activeProvider)
+const syncVisible = ref(false)
+const syncApi = ref('')
+const syncData = ref<Record<string, unknown>>({})
+function syncGatewayStatus() {
+  if (activeType.value !== 'gateway' || syncVisible.value) return
+  const terms = [...baseTerms.value, ...filterTerms.value]
+  syncData.value = { terms }
+  const params = new URLSearchParams()
+  appendQueryParams(params, terms, 'terms')
+  syncApi.value = `${getBaseApi()}/device-instance/state/_sync?${TOKEN_KEY_URL}=${getToken()}&${params.toString()}`
+  syncVisible.value = true
+}
+function appendQueryParams(params: URLSearchParams, value: unknown, path: string) {
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => appendQueryParams(params, item, `${path}[${index}]`))
+    return
+  }
+  if (value && typeof value === 'object') {
+    Object.entries(value).forEach(([key, item]) => appendQueryParams(params, item, `${path}.${key}`))
+    return
+  }
+  if (value !== undefined && value !== null) params.set(path, String(value))
+}
+function handleSyncSaved() {
+  syncVisible.value = false
+  clearBatchSelection()
+  refresh()
+}
 function handleBatchChanged() {
   clearBatchSelection()
   refresh()
