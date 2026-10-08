@@ -5059,6 +5059,7 @@
     "IotDeviceList.action.create": "Connect Device",
     "IotDeviceList.action.batchEnable": "Enable Selected",
     "IotDeviceList.action.batchDisable": "Disable Selected",
+    "IotDeviceList.action.syncStatus": "Sync Status",
     "IotDeviceList.action.assignGroup": "Assign to Group",
     "IotDeviceList.action.assignArea": "Assign to Area",
     "IotDeviceList.action.exportSelected": "Export Selected",
