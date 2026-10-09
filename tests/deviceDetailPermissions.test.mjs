@@ -46,6 +46,16 @@ test('does not grant a resource-center detail write without its update button', 
   assert.equal(useDeviceDetailPermissions({ value: { id: 'device-1' } })('update'), false)
 })
 
+test('uses the resource-center action button for device detail enable or disable', () => {
+  context.__route = { path: '/resources/devices/list/Detail/device-1' }
+  context.__hasPermission = code => code === 'iot-user-device-list:action'
+  context.__hasMenu = () => false
+
+  const canDeviceAction = useDeviceDetailPermissions({ value: { id: 'device-1' } })
+  assert.equal(canDeviceAction('enable'), true)
+  assert.equal(canDeviceAction('disable'), true)
+})
+
 test('keeps the old IoT menu visibility fallback for detail writes', () => {
   context.__route = { path: '/iot-center/device/list/Detail/device-1' }
   context.__hasPermission = () => false

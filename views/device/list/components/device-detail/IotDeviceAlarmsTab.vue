@@ -214,8 +214,9 @@ async function queryRecords(params: Record<string, any>) {
   }
 }
 
-function handleSearch(payload?: { terms?: ConditionFilterTerm[] }) {
-  submittedTerms.value = payload?.terms ?? filterTerms.value
+function handleSearch() {
+  // ConditionFilter 的 change 事件已将 like 值转换为 %关键词%；保留原始条件，避免请求前再次包装通配符。
+  submittedTerms.value = filterTerms.value
 }
 
 function resetSearch() {
