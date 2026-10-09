@@ -3,7 +3,7 @@ import type {
   AgentConversationComposerAction,
   AgentConversationReferenceCandidate,
   AgentConversationReferenceProvider,
-} from '@jetlinks-ai-agent-ui/components/AgentConversation/types'
+} from '@jetlinks-web-core/layout/components/AiChat/agentConversationContracts'
 import {
   dataTypeText,
   metadataSectionItems,

@@ -27,7 +27,7 @@ import { isEdgeDiagnosisAccessProvider } from './edgeDiagnosisTool'
 import type {
   AgentConversationMarkdownLinkHandler,
   AgentConversationWorkflowGuide,
-} from '@jetlinks-ai-agent-ui/components/AgentConversation/types'
+} from '@jetlinks-web-core/layout/components/AiChat/agentConversationContracts'
 
 export interface DeviceInstanceDetailOptions { deviceId?: string; contentOnly?: boolean }
 

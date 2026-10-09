@@ -1,4 +1,4 @@
-import type { AgentConversationWorkflowGuide } from '@jetlinks-ai-agent-ui/components/AgentConversation/types'
+import type { AgentConversationWorkflowGuide } from '@jetlinks-web-core/layout/components/AiChat/agentConversationContracts'
 
 export { isEdgeDiagnosisToolId } from '../../list/agent/deviceDetailEdge.shared'
 
