@@ -1,5 +1,25 @@
 # 设备列表范围侧栏
 
+## 概览累计活跃时长
+
+目标与范围：运行时 `device-manager-ui` 设备概览的累计活跃时长按“天、小时、分钟”完整显示，例如 `2621h 00m` 显示为 `109天 5小时 0分钟`；卡片与趋势提示复用 `components/device-detail/iotDeviceOverviewCharts.ts#formatDuration`，入口为 `components/device-detail/IotDeviceOverviewTab.vue`。
+
+实施与边界：按 S 级局部调整，将毫秒值截取为整分钟，再拆分为天、剩余小时和剩余分钟，并同步中英文文案。累计时长卡片的数值横跨两列，窄宽度下按时长分段换行，小趋势图移到说明行，避免分钟被截断；对应样式为 `components/device-detail/IotDeviceOverviewTab.css`。保留零值与负值归零行为；不改变累计在线时长数据来源、接口和其他时长指标，不修改 `ui/`。验证跨小时、跨天与零值，并检查卡片完整显示。
+
+验证结果：实际 `formatDuration` 函数的 10 个中文边界值与 1 个英文文案检查通过，覆盖零值、负值、整分钟截取、跨小时、跨天及长时长；TypeScript 语法检查与 `git diff --check` 通过。在 `runtime-ui` 执行 `pnpm -F jetlinks-web-core build -- --module-name device-manager-ui` 生产构建通过（1 分 14 秒，保留大包告警）。本地 `http://localhost:9200/#/resources/devices/list/Detail/2064898513186066432` 已确认累计时长完整显示为“109天 5小时 7分钟”，小趋势图保留。
+
+验证限制：模块与工作区未提供 lint 脚本；`pnpm exec vue-tsc -p modules/device-manager-ui/tsconfig.json --noEmit` 被未改动的 `views/link/Certificate/type.d.ts:2` TS1005 语法错误阻断，修复后需在 `runtime-ui` 重跑该命令。尚未验证其他视口下的换行效果。
+
+## 设备数据属性卡片趋势
+
+目标与范围：`device-manager-ui` 的设备数据属性卡片始终保留趋势区域，在 `components/device-detail/IotDevicePropertySparkline.vue` 中按物模型声明类型决定是否绘制折线。复用 `components/device-detail/useIotDevicePropertySparklineData.ts#isNumericProperty`，仅 `int`、`float`、`double`、`long`、`number` 显示趋势；字符串（包括纯数字字符串）、密码、时间、地理位置等非数值属性统一显示“暂无趋势”占位。
+
+实施与边界：按 S 级局部修复，导出现有数值类型判断；趋势组件对非数值属性返回空展示数据，复用原有空态。`components/device-detail/IotDeviceDataTableTab.vue` 保持渲染趋势组件；不改变属性值、数据详情弹窗、读写操作、聚合查询或订阅，不修改 `ui/`。主要风险是将纯数字文本误判为数值，判断依据必须保持为 `valueType.type`，缺失时回退到 `dataType`。
+
+验证结果：属性卡片与趋势组件的 Vue 脚本、模板编译和 TypeScript 语法检查、`git diff --check` 均通过；在 `runtime-ui` 执行 `pnpm -F jetlinks-web-core build -- --module-name device-manager-ui` 生产构建通过（47.94 秒，保留既有 CSS 注释、资源路径与大包告警）。本地 `http://localhost:9201/#/resources/devices/list/Detail/2097962396260003840?type=device&tab=data` 已确认地理位置、密码、时间、字符串均显示“暂无趋势”，没有图表；A/B/C 三个数值属性保留原有未上报空态。
+
+验证限制：模块与工作区未提供 lint 脚本；`pnpm exec vue-tsc -p modules/device-manager-ui/tsconfig.json --noEmit` 被未改动的 `views/link/Certificate/type.d.ts:2` TS1005 语法错误阻断，修复后需在 `runtime-ui` 重跑该命令。当前设备的数值属性尚未上报，浏览器已验证趋势区域保留，未覆盖有历史数值时的实际曲线。
+
 ## 范围树名称搜索
 
 目标与范围：在 `device-manager-ui` 的范围侧栏分段器与树之间增加 `a-input`，通过 `prefix` 插槽展示搜索图标，支持清空。`components/IotDeviceScopeSidebar.vue` 负责展示，`hooks/useIotDeviceScopeSidebar.ts` 复用公共树过滤能力按名称筛选，保留匹配节点的父级路径并展开结果；清空后恢复完整树，无匹配时展示空态。搜索文案同步补齐中英文资源。

@@ -15,7 +15,7 @@ import { useI18n } from 'vue-i18n'
 import { formatDeviceTrendAxisLabels } from '@device-manager-ui/api/deviceTrend'
 import type { RealtimePropertyRow } from './iotDeviceDetail.types'
 import { splitPropertyValueAndUnit } from './iotDevicePropertyDisplay'
-import type { PropertySparklinePoint } from './useIotDevicePropertySparklineData'
+import { isNumericProperty, type PropertySparklinePoint } from './useIotDevicePropertySparklineData'
 
 const props = defineProps({
   property: { type: Object as PropType<RealtimePropertyRow>, required: true },
@@ -26,6 +26,7 @@ const props = defineProps({
 
 const { t: $t } = useI18n()
 const displayRows = computed(() => {
+  if (!isNumericProperty(props.property)) return []
   const rows = [...props.rows]
   const current = Number(splitPropertyValueAndUnit(props.property.value, props.property.unit).value)
   if (Number.isFinite(current)) {

@@ -94,7 +94,8 @@ export function useIotDevicePropertySparklineData(
   }
 }
 
-function isNumericProperty(property: RealtimePropertyRow) {
+// 以物模型声明类型判断趋势能力，纯数字文本仍属于非数值属性。
+export function isNumericProperty(property: RealtimePropertyRow) {
   return ['int', 'float', 'double', 'long', 'number'].includes(property.valueType?.type || property.dataType || '')
 }
 

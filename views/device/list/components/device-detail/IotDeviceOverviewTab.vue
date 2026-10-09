@@ -9,7 +9,7 @@
 
     <div class="overview-dashboard">
       <div class="overview-stat-strip" :aria-label="$t('IotDeviceDetail.overview.messageStats')">
-        <article v-for="item in statCards" :key="item.key" class="overview-stat" :data-tone="item.tone">
+        <article v-for="item in statCards" :key="item.key" class="overview-stat" :data-key="item.key" :data-tone="item.tone">
           <div class="overview-stat__label"><span />{{ item.label }}</div>
           <div class="overview-stat__main">
             <strong>{{ item.value }}</strong>

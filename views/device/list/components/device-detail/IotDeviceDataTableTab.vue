@@ -66,10 +66,6 @@
           />
         </template>
       </div>
-      <a-button v-if="activePane === 'property'">
-        <template #icon><AIcon type="DownloadOutlined" /></template>
-        {{ t('IotDeviceDetail.dataTable.exportCsv') }}
-      </a-button>
     </header>
 
     <div v-if="activePane === 'property'" class="property-pane">
