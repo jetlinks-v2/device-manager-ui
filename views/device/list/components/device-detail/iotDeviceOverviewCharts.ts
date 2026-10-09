@@ -72,7 +72,9 @@ export function formatBytes(value: number) {
 
 export function formatDuration(value: number) {
   const minutes = Math.max(0, Math.floor(value / 60000))
-  return `${Math.floor(minutes / 60)}h ${String(minutes % 60).padStart(2, '0')}m`
+  const days = Math.floor(minutes / 1440)
+  const hours = Math.floor((minutes % 1440) / 60)
+  return $t('IotDeviceDetail.common.duration.daysHoursMinutes', { days, hours, minutes: minutes % 60 })
 }
 
 function createTrendLine(name: string, data: number[], color: string, withArea: boolean) {
