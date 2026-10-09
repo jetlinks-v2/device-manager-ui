@@ -18,9 +18,11 @@ export function useDeviceDetailPermissions(device: Ref<IotDevice | null>) {
   return (action: 'update' | 'delete' | 'enable' | 'disable'): boolean => {
     if (!device.value) return false
     const menuCode = getIotDeviceListMenuCode(route)
-    const canWriteDevice = auth.hasPermission(`${menuCode}:${action}`)
-      || auth.hasPermission(`device/Instance:${action}`)
+    // 菜单将设备启停统一定义为 action；详情页仍按当前状态区分启用/禁用文案和调用接口。
+    const permissionAction = action === 'enable' || action === 'disable' ? 'action' : action
+    const canWriteDevice = auth.hasPermission(`${menuCode}:${permissionAction}`)
+      || auth.hasPermission(`device/Instance:${permissionAction}`)
       || (menuCode === 'iot-user/device/list' && menu.hasMenu(menuCode))
-    return canWriteDevice && (!provider.value || provider.value.menuCode === 'iot-user/device/list' || auth.hasPermission(`${provider.value.menuCode}:${action}`))
+    return canWriteDevice && (!provider.value || provider.value.menuCode === 'iot-user/device/list' || auth.hasPermission(`${provider.value.menuCode}:${permissionAction}`))
   }
 }

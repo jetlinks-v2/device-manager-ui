@@ -106,7 +106,10 @@ function queryRecords(params: Record<string, any>) {
   if (!productStore.current?.id) return emptyResponse(params)
   return queryByDevice(params)
 }
-function submitSearch(payload?: { terms?: ConditionFilterTerm[] }) { submittedTerms.value = payload?.terms || filterTerms.value }
+function submitSearch() {
+  // change 载荷中的 like 值已带通配符；此处保存编辑态原值，交给 buildQueryFilter 统一转换一次。
+  submittedTerms.value = filterTerms.value
+}
 function reload() { tableRef.value?.reload?.() }
 function openHandle(record: Record<string, any>) { currentRecord.value = record; handleMode.value = 'handle'; handleOpen.value = true }
 function openView(record: Record<string, any>) { currentRecord.value = record; handleMode.value = 'view'; handleOpen.value = true }

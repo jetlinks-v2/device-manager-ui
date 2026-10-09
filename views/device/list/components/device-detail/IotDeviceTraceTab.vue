@@ -206,10 +206,10 @@
           <strong>{{ invokeResult.success ? $t('IotDeviceDetail.trace.sendSuccess') : $t('IotDeviceDetail.trace.sendFailed') }}</strong>
           <span>{{ invokeResult.time }}</span>
           <a-button
-            v-if="invokeResult.traceId"
+            v-if="invokeResult.messageId"
             type="link"
             size="small"
-            @click="focusTrace(invokeResult.traceId)"
+            @click="focusMessageTrace(invokeResult.messageId)"
           >
             {{ $t('IotDeviceDetail.trace.viewTrace') }}
           </a-button>
@@ -437,10 +437,11 @@ const functionId = ref<string>()
 const invokeInputMode = ref<'form' | 'json'>('form')
 const invokeFormValues = reactive<Record<string, any>>({})
 const invokeJsonText = ref('{}')
-const invokeResult = ref<{ success: boolean; time: string; traceId?: string; payload: string } | null>(null)
+const invokeResult = ref<{ success: boolean; time: string; messageId?: string; payload: string } | null>(null)
 const TRACE_DEBUG_MEMORY_KEY = 'jetlinks:iot-device-trace-debug-memory:v1'
 const deviceIdRef = computed(() => props.device.id || undefined)
 const { traceGroups, subscribe, unsubscribe, clear } = useIotDeviceTraceLog(deviceIdRef)
+const pendingMessageId = ref<string>()
 const sessions = ref<DeviceSessionInfo[]>([])
 const sessionsLoading = ref(false)
 const sessionsRequesting = ref(false)
@@ -580,6 +581,7 @@ function toggleSubscribe() {
 
 function clearTraces() {
   clear()
+  pendingMessageId.value = undefined
   traceReceivedTotal.value = 0
   seenTraceKeys.clear()
   detailOpen.value = false
@@ -800,10 +802,24 @@ function openDetail(group: TraceGroupView) {
   detailOpen.value = true
 }
 
-function focusTrace(traceId: string) {
-  const normalized = normalizeTraceId(traceId) || traceId
-  const group = sortedGroups.value.find((item) => item.traceId === normalized || normalizeTraceId(item.traceId) === normalized)
-  if (!group) return
+function normalizeMessageId(value: unknown) {
+  return String(value ?? '').trim()
+}
+
+/**
+ * 仅按下发响应的 messageId 定位链路；链路晚于指令响应到达时，保留该 ID 等待下一批实时数据。
+ */
+function focusMessageTrace(messageId: string) {
+  const normalized = normalizeMessageId(messageId)
+  if (!normalized) return
+  const group = sortedGroups.value.find(
+    (item) => normalizeMessageId(item.source.messageId) === normalized,
+  )
+  if (!group) {
+    pendingMessageId.value = normalized
+    return
+  }
+  pendingMessageId.value = undefined
   matchedTraceKey.value = group.key
   openDetail(group)
   if (matchedTimer) clearTimeout(matchedTimer)
@@ -939,11 +955,10 @@ function saveMemoryForCurrentDevice() {
   }
 }
 
-function extractTraceId(resp: any) {
-  const text = safePayloadText(resp)
-  const traceparent = /([0-9a-fA-F]{2}-[0-9a-fA-F]{32}-[0-9a-fA-F]{16}-[0-9a-fA-F]{2})/.exec(text)?.[1]
-  if (traceparent) return traceparent.split('-')[1]?.toLowerCase()
-  return normalizeTraceId(resp?.result?.traceId || resp?.traceId || resp?.headers?.traceparent)
+/** 接口 result 是本次指令响应数组，仅取首个响应的 messageId 进行精确关联。 */
+function extractResponseMessageId(response: { result?: Array<{ messageId?: unknown }> } | undefined) {
+  const messageId = normalizeMessageId(response?.result?.[0]?.messageId)
+  return messageId || undefined
 }
 
 function safePayloadText(resp: any) {
@@ -1004,10 +1019,9 @@ async function send() {
     invokeResult.value = {
       success,
       time: formatTime(Date.now()),
-      traceId: extractTraceId(resp),
+      messageId: extractResponseMessageId(resp),
       payload: safePayloadText(resp),
     }
-    if (invokeResult.value.traceId) focusTrace(invokeResult.value.traceId)
   } finally {
     loading.value = false
   }
@@ -1123,6 +1137,9 @@ watch(
   () => traceGroups.value.map((group) => `${group.key}:${group.version ?? 0}`).join('|'),
   () => {
     ingestNewTraceKeys()
+    if (pendingMessageId.value) {
+      focusMessageTrace(pendingMessageId.value)
+    }
     if (traceGroups.value.length) scheduleSessionAutoRefresh()
   },
   { immediate: true },
