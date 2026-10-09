@@ -3,6 +3,30 @@ import type { DeviceMetadata, ProductItem, DepartmentItem, MetadataType  } from 
 import type { OperatorItem } from '../components/FRuleEditor/Operator/typings'
 import {BASE_API} from "@jetlinks-web/constants";
 
+export interface ProductResourcePackageManifest {
+  formatVersion: string
+  product: Record<string, any>
+  categories: Record<string, any>[]
+  preprocessors: Record<string, any>[]
+  accessResources: Record<string, any>
+}
+
+export interface ProductResourcePackageParseResult {
+  fileId: string
+  fileUrl: string
+  manifest: ProductResourcePackageManifest
+}
+
+export interface ProductResourcePackageImportRequest {
+  fileId: string
+  accessMode: 'PACKAGE' | 'LOCAL_GATEWAY'
+  gatewayId?: string
+  product: Record<string, any>
+  categories: Record<string, any>[]
+  preprocessors?: Record<string, any>[]
+  resourceSelections: Record<string, any>
+}
+
 /**
  * 根据条件查询产品（不带翻页）
  * @param data 查询条件
@@ -71,7 +95,13 @@ export const category = (data: any) => request.get('/device/category/_tree?pagin
    },
   ],
  }
- export const queryGatewayList = (data: any = defaultGatewayData) => request.post('/gateway/device/_query/no-paging', data)
+export const queryGatewayList = (data: any = defaultGatewayData) => request.post('/gateway/device/_query/no-paging', data)
+
+/** 查询当前用户可选择的本地协议。 */
+export const queryProtocolList = () => request.post('/protocol/_query/no-paging?paging=false', {})
+
+/** 查询当前用户可选择的本地插件驱动。 */
+export const queryPluginDriverList = () => request.post('/plugin/driver/_query/no-paging?paging=false', {})
 
  /**
   * 查询产品列表(分页)
@@ -230,6 +260,18 @@ export const getFileType = () => request.get(`/file/media/types`)
  * @returns
  */
 export const syncProductCache = () => ndJson.post('/device/product/batch/_deploy')
+
+/** 上传并读取产品资源包的脱敏摘要。 */
+export const parseProductResourcePackage = (data: FormData) =>
+  request.post<ProductResourcePackageParseResult>('/device/product/resource-package/_parse', data)
+
+/** 提交最终导入配置并按 NDJSON 接收各阶段结果。 */
+export const importProductResourcePackage = (data: ProductResourcePackageImportRequest) =>
+  ndJson.post('/device/product/resource-package/_import', data)
+
+/** 下载单产品可移植的 ZIP 资源包。 */
+export const exportProductResourcePackage = (productId: string) =>
+  request.get(`/device/product/resource-package/${productId}/_export`, {}, { responseType: 'blob' })
 
 /**
  * 获取产品数量

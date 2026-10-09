@@ -99,7 +99,37 @@
               </a-row>
             </template>
             <template #actions="item">
+              <a-dropdown v-if="item.key === 'export'" placement="bottomRight">
+                <j-permission-button
+                  :disabled="item.disabled"
+                  :tooltip="item.tooltip"
+                  hasPermission="device/Product:export"
+                >
+                  <AIcon :type="item.icon" />
+                  <span>{{ item.text }}</span>
+                </j-permission-button>
+                <template #overlay>
+                  <a-menu>
+                    <a-menu-item
+                      v-for="child in item.children"
+                      :key="child.key"
+                    >
+                      <j-permission-button
+                        style="width: 100%"
+                        hasPermission="device/Product:export"
+                        @click.stop="child.onClick"
+                      >
+                        <template #icon>
+                          <AIcon :type="child.icon" />
+                        </template>
+                        {{ child.text }}
+                      </j-permission-button>
+                    </a-menu-item>
+                  </a-menu>
+                </template>
+              </a-dropdown>
               <j-permission-button
+                v-else
                 :disabled="item.disabled"
                 :popConfirm="item.popConfirm"
                 :tooltip="{
@@ -136,7 +166,40 @@
         <template #action="slotProps">
           <a-space>
             <template v-for="i in getActions(slotProps, 'table')" :key="i.key">
+              <a-dropdown v-if="i.key === 'export'" placement="bottomRight">
+                <j-permission-button
+                  :disabled="i.disabled"
+                  :tooltip="i.tooltip"
+                  hasPermission="device/Product:export"
+                  type="link"
+                  style="padding: 0; margin: 0"
+                >
+                  <template #icon>
+                    <AIcon :type="i.icon" />
+                  </template>
+                </j-permission-button>
+                <template #overlay>
+                  <a-menu>
+                    <a-menu-item
+                      v-for="child in i.children"
+                      :key="child.key"
+                    >
+                      <j-permission-button
+                        style="width: 100%"
+                        hasPermission="device/Product:export"
+                        @click.stop="child.onClick"
+                      >
+                        <template #icon>
+                          <AIcon :type="child.icon" />
+                        </template>
+                        {{ child.text }}
+                      </j-permission-button>
+                    </a-menu-item>
+                  </a-menu>
+                </template>
+              </a-dropdown>
               <j-permission-button
+                v-else
                 :disabled="i.disabled"
                 :popConfirm="i.popConfirm"
                 :hasPermission="
@@ -161,6 +224,7 @@
     </FullPage>
     <!-- {{ $t('Product.index.660348-0') }}、{{ $t('Product.index.660348-13') }} -->
     <Save ref="saveRef" :isAdd="isAdd" :title="title" @success="refresh" />
+    <ResourcePackage ref="resourcePackageRef" @success="refresh" />
 
     <!-- 同步缓存组件 -->
     <SyncCache v-if="syncCacheVisible" :params="params" @success="refresh" @close="syncCacheVisible = false"/>
@@ -168,7 +232,7 @@
 </template>
 
 <script setup lang="ts">
-import { onlyMessage } from "@jetlinks-web/utils";
+import { downloadFileByUrl, onlyMessage } from "@jetlinks-web/utils";
 import {
   getProviders,
   category,
@@ -179,11 +243,13 @@ import {
   _undeploy,
   deleteProduct,
   updateDevice,
+  exportProductResourcePackage,
 } from "../../../api/product";
 import { downloadJson, accessConfigTypeFilter, isNoCommunity } from "@/utils";
 import { omit, cloneDeep } from "lodash-es";
 import Save from "./Save/index.vue";
 import SyncCache from "./components/SyncCache.vue";
+import ResourcePackage from './ResourcePackage/index.vue'
 import { useMenuStore, useAuthStore } from "@/store";
 import { useRouterParams } from "@jetlinks-web/hooks";
 import { device } from "../../../assets";
@@ -275,9 +341,17 @@ const permission = useAuthStore().hasPermission(`device/Product:import`);
 const _selectedRowKeys = ref<string[]>([]);
 const currentForm = ref({});
 const syncCacheVisible = ref(false)
+const resourcePackageRef = ref<Record<string, any>>()
 
 // 批量操作配置
 const batchActions = ref([
+  {
+    key: 'resource-package-import',
+    text: $t('Product.index.660348-36'),
+    icon: 'FolderOpenOutlined',
+    permission: 'device/Product:import',
+    onClick: () => resourcePackageRef.value?.show(),
+  },
   {
     key: 'import',
     text: $t("Product.index.660348-1"),
@@ -299,7 +373,7 @@ const batchActions = ref([
   },
   {
     key: 'syncCache',
-    text: '同步缓存',
+    text: $t('Product.index.660348-37'),
     icon: 'SyncOutlined',
     permission: 'device/Product:update',
     onClick: () => {
@@ -350,18 +424,20 @@ const getActions = (
       },
 
       icon: "icon-xiazai",
-      onClick: () => {
-        console.log(data);
-        const extra = omit(data, [
-          "transportProtocol",
-          "protocolName",
-          "accessId",
-          "accessName",
-          "accessProvider",
-          "messageProtocol",
-        ]);
-        downloadJson(extra, data.name + $t("Product.index.660348-15"));
-      },
+      children: [
+        {
+          key: "resource-package",
+          text: $t("Product.resourcePackage.001-35"),
+          icon: "FolderOpenOutlined",
+          onClick: () => exportResourcePackage(data),
+        },
+        {
+          key: "product-info",
+          text: $t("Product.resourcePackage.001-37"),
+          icon: "icon-xiazai",
+          onClick: () => exportProductInfo(data),
+        },
+      ],
     },
     {
       key: "action",
@@ -427,6 +503,36 @@ const getActions = (
   ];
   if (type === "card") return actions.filter((i: any) => i.key !== "view");
   return actions;
+};
+
+/**
+ * 导出兼容旧导入流程的产品 JSON，不包含已由资源包覆盖的接入配置。
+ */
+const exportProductInfo = (data: Partial<Record<string, any>>) => {
+  const extra = omit(data, [
+    "transportProtocol",
+    "protocolName",
+    "accessId",
+    "accessName",
+    "accessProvider",
+    "messageProtocol",
+  ]);
+  downloadJson(extra, data.name + $t("Product.index.660348-15"));
+};
+
+/**
+ * 导出完整资源包，下载失败时保持原有产品列表状态并提示用户。
+ */
+const exportResourcePackage = async (data: Partial<Record<string, any>>) => {
+  try {
+    const response: any = await exportProductResourcePackage(data.id);
+    const blob = response?.data || response;
+    const url = URL.createObjectURL(blob);
+    downloadFileByUrl(url, data.name || data.id, "zip");
+    URL.revokeObjectURL(url);
+  } catch (error: any) {
+    onlyMessage(error?.response?.data?.message || error?.message || $t("Product.resourcePackage.001-36"), "error");
+  }
 };
 
 /**

@@ -3,6 +3,10 @@ import { request } from '@jetlinks-web/core'
 export const queryNetworkConfig = (params: object) =>
     request.post(`/network/config/_query`, params);
 
+/** 查询当前用户可选择的本地网络组件，不返回分页结果。 */
+export const queryNetworkConfigList = (params: object = {}) =>
+    request.post(`/network/config/_query/no-paging`, params);
+
 export const remove = (id: string) => request.remove(`/network/config/${id}`);
 
 export const shutdown = (data: object) =>
