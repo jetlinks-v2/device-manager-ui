@@ -22,6 +22,7 @@ import {
   describeDeviceToolTimeRange,
   resolveDeviceToolTimeRange,
 } from '../agentTools/timeRangeSupport';
+import { createDeviceSubjectRequiredError } from '../agentTools/deviceSubjectContract';
 
 const DEVICE_INSTANCE_MENU_CODE = 'device/Instance';
 const DEVICE_PRODUCT_MENU_CODE = 'device/Product';
@@ -709,7 +710,7 @@ const resolveModelSubject = async (
     ensureProductPermission(context);
     return fetchProductSubject(productId);
   }
-  throw new Error(i18n.global.t('Domain.homeAgent.tool.common.subjectIdRequired'));
+  throw createDeviceSubjectRequiredError('subject', i18n.global.t('Domain.homeAgent.tool.common.subjectIdRequired'));
 };
 
 const extractPropertyValue = (record: Record<string, any>, propertyId: string) => {
@@ -977,7 +978,7 @@ export const createDeviceDomainTools = (
     execute: async (args, context) => {
       ensureDevicePermission(context);
       const deviceId = firstTextArg(args, 'deviceId');
-      if (!deviceId) throw new Error(i18n.global.t('Domain.homeAgent.tool.common.deviceIdMissing'));
+      if (!deviceId) throw createDeviceSubjectRequiredError('deviceId', i18n.global.t('Domain.homeAgent.tool.common.deviceIdMissing'));
       const limit = clampNumber(args.limit, 1, 30, 15);
       const providedPropertyIds = parseListArg(args.propertyIds);
       const subject = providedPropertyIds.length ? undefined : await fetchDeviceSubject(deviceId);
@@ -1049,7 +1050,7 @@ export const createDeviceDomainTools = (
       ensureDevicePermission(context);
       const deviceId = firstTextArg(args, 'deviceId');
       const propertyId = firstTextArg(args, 'propertyId', 'property');
-      if (!deviceId) throw new Error(i18n.global.t('Domain.homeAgent.tool.common.deviceIdMissing'));
+      if (!deviceId) throw createDeviceSubjectRequiredError('deviceId', i18n.global.t('Domain.homeAgent.tool.common.deviceIdMissing'));
       if (!propertyId) throw new Error(i18n.global.t('Domain.homeAgent.tool.common.propertyIdMissing'));
       const sampleLimit = clampNumber(args.sampleLimit, 1, 10, 3);
       const timeRange = resolveDeviceToolTimeRange(args, {
@@ -1133,7 +1134,7 @@ export const createDeviceDomainTools = (
       ensureDevicePermission(context);
       const deviceId = firstTextArg(args, 'deviceId');
       const propertyId = firstTextArg(args, 'propertyId', 'property');
-      if (!deviceId) throw new Error(i18n.global.t('Domain.homeAgent.tool.common.deviceIdMissing'));
+      if (!deviceId) throw createDeviceSubjectRequiredError('deviceId', i18n.global.t('Domain.homeAgent.tool.common.deviceIdMissing'));
       if (!propertyId) throw new Error(i18n.global.t('Domain.homeAgent.tool.common.propertyIdMissing'));
       const limit = clampNumber(args.limit, 1, 50, 20);
       const timeRange = resolveDeviceToolTimeRange(args, {

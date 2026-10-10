@@ -110,15 +110,23 @@ try {
         }, () => ({
           contents: `
             const unavailable = () => { throw new Error('Node declaration test transport is unavailable') }
-            export const request = new Proxy({}, { get: () => unavailable })
+            export const request = new Proxy({}, { get: (target, key) => target[key] ?? unavailable })
             export const wsClient = new Proxy({}, { get: () => unavailable })
+            export const ndJson = new Proxy({}, { get: () => unavailable })
           `,
           loader: 'js',
         }))
         buildApi.onLoad({
           filter: exactPathFilter(webUtilsEntry),
         }, () => ({
-          contents: "export const randomString = () => 'node-declaration-test'; export const getToken = () => undefined",
+          contents: `
+            const unavailable = () => { throw new Error('Node declaration test browser utility is unavailable') }
+            export const randomString = () => 'node-declaration-test'
+            export const getToken = () => undefined
+            export const downloadFileByUrl = unavailable
+            export const getImage = unavailable
+            export const LocalStore = { get: unavailable, set: unavailable }
+          `,
           loader: 'js',
         }))
         buildApi.onResolve({ filter: /^@jetlinks-web-core\// }, args => {
