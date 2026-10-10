@@ -37,6 +37,7 @@ import {
   type DevicePropertyAggregateRecord,
 } from './propertyAggregateSupport'
 import { withDevicePropertyAggregateTimeZone } from './propertyAggregateTimeZone'
+import { createDeviceSubjectRequiredError } from './deviceSubjectContract'
 
 export {
   DEVICE_PROPERTY_ANALYSIS_OUTPUTS,
@@ -216,7 +217,7 @@ export const createDevicePropertyAggregateTool = <TContext>(
     execute: async (args, context, call) => {
       const subject = await dependencies.resolveSubject(args, context)
       const deviceId = String(subject.deviceId || '').trim()
-      if (!deviceId) throw new Error(copy.deviceIdMissing)
+      if (!deviceId) throw createDeviceSubjectRequiredError('deviceId', copy.deviceIdMissing)
       const propertyIds = normalizeDevicePropertyIds(args)
       if (!propertyIds.length) throw new Error(copy.propertyIdMissing)
       const requested = normalizeDevicePropertyAggregate(args.agg ?? args.aggregate ?? args.method)
