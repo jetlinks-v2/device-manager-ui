@@ -34,6 +34,8 @@ export const DEVICE_PROPERTY_ANALYSIS_OUTPUTS = {
   eventId: { name: 'subject-event-id', shape: 'schema.event-ids' },
   functionId: { name: 'subject-function-id', shape: 'schema.function-ids' },
   tagId: { name: 'subject-tag-id', shape: 'schema.tag-ids' },
+  modelDetail: { name: 'subject-schema-detail', shape: 'schema.definition' },
+  metadataMatches: { name: 'subject-schema-matches', shape: 'schema.field-descriptors' },
   latest: { name: 'property-snapshot', shape: 'property.snapshot' },
   historySummary: { name: 'property-history-summary', shape: 'time-series.summary' },
   history: { name: 'property-history-records', shape: 'time-series.records' },
@@ -109,6 +111,8 @@ export interface DevicePropertyAnalysisCopy {
 
 export interface DeviceModelGetResult extends JsonRecord {
   model: Partial<Record<SchemaSection, JsonRecord[]>>
+  markdown?: unknown
+  metadata?: unknown
 }
 
 export interface DeviceMetadataSearchMatch extends JsonRecord {
@@ -194,6 +198,19 @@ const searchedSchemaIds = (result: DeviceMetadataSearchResult, section: SchemaSe
   return ids.length ? Array.from(new Set(ids)) : undefined
 }
 
+const searchedSchemaMatches = (result: DeviceMetadataSearchResult) => (
+  (result.matches || [])
+    .filter(item => String(item?.id ?? '').trim())
+    .map(item => ({ ...item, id: String(item.id).trim() }))
+)
+
+// Prefer the owner's bounded presentation so field names, types and access modes survive the typed projection.
+const modelDetail = (result: DeviceModelGetResult) => {
+  if (typeof result.markdown === 'string' && result.markdown.trim()) return result.markdown
+  if (result.metadata !== undefined && result.metadata !== null) return result.metadata
+  return result.model
+}
+
 const schemaOutputs = <TResult>(selector: (result: TResult, section: SchemaSection) => string[] | undefined) => ([
   clientToolOutput.lookup<TResult>({
     ...DEVICE_PROPERTY_ANALYSIS_OUTPUTS.propertyId,
@@ -231,7 +248,13 @@ export const createDeviceModelGetTool = <TContext>(
   inputs: dependencies.inputs,
   inputAlternatives: dependencies.inputAlternatives,
   effect: { kind: 'READ' },
-  output: schemaOutputs<DeviceModelGetResult>(schemaIds),
+  output: [
+    ...schemaOutputs<DeviceModelGetResult>(schemaIds),
+    clientToolOutput.detail<DeviceModelGetResult>({
+      ...DEVICE_PROPERTY_ANALYSIS_OUTPUTS.modelDetail,
+      select: modelDetail,
+    }),
+  ],
   owner,
   execute: async (args, context, call) => toClientToolResult(
     await dependencies.execute(args, context, call),
@@ -252,7 +275,14 @@ export const createDeviceMetadataSearchTool = <TContext>(
   inputs: dependencies.inputs,
   inputAlternatives: dependencies.inputAlternatives,
   effect: { kind: 'READ' },
-  output: schemaOutputs<DeviceMetadataSearchResult>(searchedSchemaIds),
+  output: [
+    ...schemaOutputs<DeviceMetadataSearchResult>(searchedSchemaIds),
+    clientToolOutput.recordSet<DeviceMetadataSearchResult>({
+      ...DEVICE_PROPERTY_ANALYSIS_OUTPUTS.metadataMatches,
+      select: searchedSchemaMatches,
+      recordPath: '$',
+    }),
+  ],
   owner,
   execute: async (args, context, call) => toClientToolResult(
     await dependencies.execute(args, context, call),

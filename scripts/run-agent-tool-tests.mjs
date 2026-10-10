@@ -11,6 +11,7 @@ const runtimeRoot = path.resolve(packageRoot, '../..')
 const coreSourceRoot = path.join(runtimeRoot, 'jetlinks-web-core/src')
 const coreTransportEntry = realpathSync(path.join(runtimeRoot, 'node_modules/@jetlinks-web/core/dist/index.mjs'))
 const coreUtilsRequestContextEntry = realpathSync(path.join(coreSourceRoot, 'utils/request-context.ts'))
+const coreProjectRuntimeEntry = realpathSync(path.join(coreSourceRoot, 'utils/project-runtime.ts'))
 const webUtilsEntry = realpathSync(path.join(runtimeRoot, 'node_modules/@jetlinks-web/utils/dist/index.mjs'))
 const outputDirectory = await mkdtemp(path.join(tmpdir(), 'device-manager-agent-tool-tests-'))
 const outputFile = path.join(outputDirectory, 'agentTools.test.mjs')
@@ -26,6 +27,7 @@ try {
     target: 'node22',
     sourcemap: 'inline',
     logLevel: 'warning',
+    loader: { '.png': 'dataurl' },
     define: {
       'import.meta.env.BASE_URL': JSON.stringify('/'),
       'import.meta.env.VITE_APP_BASE_API': JSON.stringify('/api'),
@@ -90,11 +92,17 @@ try {
           loader: 'js',
         }))
         // TypeScript/package resolution reaches these physical entries before onResolve.
-        // They are the only two proven browser-only transport barrels in this declaration bundle.
+        // Keep declaration tests out of browser session and transport initialization.
         buildApi.onLoad({
           filter: exactPathFilter(coreUtilsRequestContextEntry),
         }, () => ({
           contents: "export const getBaseApi = () => '/api'; export const getRequestBaseApi = () => '/api'; export const getRequestHeaders = () => ({}); export const isFromCloud = () => false",
+          loader: 'js',
+        }))
+        buildApi.onLoad({
+          filter: exactPathFilter(coreProjectRuntimeEntry),
+        }, () => ({
+          contents: 'export const getProjectIdFromLocation = () => undefined',
           loader: 'js',
         }))
         buildApi.onLoad({
