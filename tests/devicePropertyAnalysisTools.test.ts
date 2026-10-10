@@ -136,6 +136,7 @@ test('two entry adapters compile identical canonical model contracts and verifie
         functions: [{ id: 'restart' }],
         tags: [{ id: 'area' }],
       },
+      markdown: '| ID | Name | Type |\n| temperature | Temperature | double |',
     }),
   })
   const domainTool = createEntryTool()
@@ -148,6 +149,7 @@ test('two entry adapters compile identical canonical model contracts and verifie
     DEVICE_PROPERTY_ANALYSIS_OUTPUTS.eventId.name,
     DEVICE_PROPERTY_ANALYSIS_OUTPUTS.functionId.name,
     DEVICE_PROPERTY_ANALYSIS_OUTPUTS.tagId.name,
+    DEVICE_PROPERTY_ANALYSIS_OUTPUTS.modelDetail.name,
   ])
   assert.equal(domainTool.annotations?.readOnlyHint, true)
 
@@ -158,13 +160,33 @@ test('two entry adapters compile identical canonical model contracts and verifie
     DEVICE_PROPERTY_ANALYSIS_OUTPUTS.eventId.name,
     DEVICE_PROPERTY_ANALYSIS_OUTPUTS.functionId.name,
     DEVICE_PROPERTY_ANALYSIS_OUTPUTS.tagId.name,
+    DEVICE_PROPERTY_ANALYSIS_OUTPUTS.modelDetail.name,
   ])
   assert.deepEqual(result.__clientToolOutputs, {
     output0: ['temperature'],
     output1: ['overheat'],
     output2: ['restart'],
     output3: ['area'],
+    output4: '| ID | Name | Type |\n| temperature | Temperature | double |',
   })
+})
+
+test('model detail preserves structured metadata or the model when markdown is absent', async () => {
+  const model = { properties: [{ id: 'humidity', name: 'Humidity', valueType: 'float' }] }
+  const metadata = { properties: [{ ...model.properties[0], access: 'read/report' }] }
+  for (const [data, expected] of [
+    [{ model, markdown: ' ', metadata }, metadata],
+    [{ model, markdown: null, metadata: null }, model],
+  ] as const) {
+    const tool = createDeviceModelGetTool<Record<string, unknown>>({
+      copy,
+      inputs: [],
+      execute: () => devicePropertyAnalysisResult(data),
+    })
+    const result = await tool.execute({}, {}, callFor(tool.id)) as any
+    assert.deepEqual(result.__clientToolOutputs.output0, ['humidity'])
+    assert.deepEqual(result.__clientToolOutputs.output4, expected)
+  }
 })
 
 test('metadata search emits only identifiers that were actually found', async () => {
@@ -173,9 +195,17 @@ test('metadata search emits only identifiers that were actually found', async ()
     inputs: [],
     execute: () => devicePropertyAnalysisResult({
       matches: [
-        { type: 'properties', id: 'battery' },
+        {
+          type: 'properties',
+          id: ' battery ',
+          name: 'Battery',
+          valueType: 'float',
+          access: 'read/report',
+          description: 'Remaining battery percentage',
+        },
         { type: 'properties', id: '' },
-        { type: 'events', id: 'lowBattery' },
+        { type: 'properties', id: '  ' },
+        { type: 'events', id: 'lowBattery', name: 'Low battery' },
       ],
     }),
   })
@@ -184,9 +214,39 @@ test('metadata search emits only identifiers that were actually found', async ()
   assert.deepEqual(result.outputBindings.map((binding: any) => binding.name), [
     DEVICE_PROPERTY_ANALYSIS_OUTPUTS.propertyId.name,
     DEVICE_PROPERTY_ANALYSIS_OUTPUTS.eventId.name,
+    DEVICE_PROPERTY_ANALYSIS_OUTPUTS.metadataMatches.name,
   ])
   assert.deepEqual(result.__clientToolOutputs.output0, ['battery'])
   assert.deepEqual(result.__clientToolOutputs.output1, ['lowBattery'])
+  assert.deepEqual(result.__clientToolOutputs.output4, [
+    {
+      type: 'properties',
+      id: 'battery',
+      name: 'Battery',
+      valueType: 'float',
+      access: 'read/report',
+      description: 'Remaining battery percentage',
+    },
+    { type: 'events', id: 'lowBattery', name: 'Low battery' },
+  ])
+})
+
+test('metadata descriptors preserve partial evidence and do not invent matches for an empty search', async () => {
+  const tool = createDeviceMetadataSearchTool<Record<string, unknown>>({
+    copy,
+    inputs: [],
+    execute: () => devicePropertyAnalysisResult({ matches: [] }, {
+      complete: false,
+      truncated: true,
+      limitReason: 'records',
+    }),
+  })
+  const result = await tool.execute({}, {}, callFor(tool.id)) as any
+  assert.equal(result.complete, false)
+  assert.equal(result.truncated, true)
+  assert.equal(result.evidence.limitReason, 'records')
+  assert.deepEqual(result.__clientToolOutputs.output4, [])
+  assert.equal(result.__clientToolOutputs.output0, undefined)
 })
 
 test('raw property history stays a record producer and preserves partial evidence', async () => {
