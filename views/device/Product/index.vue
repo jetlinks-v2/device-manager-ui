@@ -166,7 +166,7 @@ import { accessType } from "../data";
 import { useI18n } from "vue-i18n";
 import { Modal } from "ant-design-vue";
 import ConditionFilter, {
-  buildQueryFilter,
+  type ConditionFilterChangePayload,
   type ConditionFilterField,
   type ConditionFilterTerm,
 } from '@jetlinks-web-core/components/ConditionFilter';
@@ -183,7 +183,6 @@ const isAdd = ref<number>(0);
 const title = ref<string>("");
 const productSearchParams = ref<Record<string, any>>({});
 const filterTerms = ref<ConditionFilterTerm[]>([]);
-const submittedFilterTerms = ref<ConditionFilterTerm[]>([]);
 const selectedCategoryId = ref<string>();
 const categoryTree = ref<ProductCategoryTreeNode[]>([]);
 const categoryLoading = ref(false);
@@ -813,9 +812,9 @@ const handleFilterTermsUpdate = (terms: ConditionFilterTerm[] = []) => {
   filterTerms.value = terms;
 };
 
-const handleFilterSearch = (payload?: { terms?: ConditionFilterTerm[] }) => {
-  submittedFilterTerms.value = payload?.terms || filterTerms.value;
-  applyProductSearch(buildQueryFilter(submittedFilterTerms.value, filterFields.value));
+const handleFilterSearch = (payload: ConditionFilterChangePayload) => {
+  // change 输出已完成通配符补齐与转义，直接使用，避免重复处理查询值。
+  applyProductSearch(payload.filter);
 };
 const routerParams = useRouterParams();
 

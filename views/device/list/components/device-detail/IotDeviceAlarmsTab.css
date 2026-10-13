@@ -31,7 +31,6 @@
   padding: 0.125rem 0.5rem;
   border-radius: var(--jet-theme-radius);
   background: var(--jet-theme-bg);
-  font-family: var(--font-mono, monospace);
 }
 
 .threshold .alarm-record-tab__ellipsis {
