@@ -39,3 +39,9 @@
 - 不涉及：删除接口、产品列表行为、产品数据结构、路由注册或 i18n 文案；复用现有 `api/product.ts` 的 `deleteProduct` 及列表页已有的确认、提示文案。
 - 实施：详情容器传入 `device/Product:delete` 权限并执行删除请求；摘要组件新增危险样式的 `j-permission-button` 与确认弹窗，保持已启用产品不可删除的限制。成功后提示并调用现有 `backToProductList`，失败时展示既有失败提示。
 - 验证：本地详情页热更新确认删除按钮位于编辑与启停按钮之间；当前已启用产品的删除按钮禁用，符合列表页限制。源码通过 `git diff --check`；交付时使用 `--module-name device-manager-ui` 的生产构建通过（9,621 个模块）。仍未覆盖确认删除后的真实接口调用与跳转。
+
+## 条件筛选查询参数
+
+产品列表 `views/device/Product/index.vue` 直接使用 `ConditionFilter` 的 `change` 事件输出的 `filter`；“包含”和“不包含”的查询值由组件统一补齐 `%` 并转义，页面不再调用 `buildQueryFilter` 重复转换。既有条件分组与产品字段转换仍由页面处理。
+
+验证：实际查询构造函数与页面搜索处理函数的 9 组定向检查通过，覆盖 `like`、`nlike`、百分号与反斜杠转义、嵌套分组、产品字段转换及清空筛选；原实现的重复处理已复现。`pnpm --dir runtime-ui --filter jetlinks-web-core build -- --module-name device-manager-ui` 与 `git diff --check` 通过。`pnpm --dir runtime-ui exec vue-tsc --noEmit -p modules/device-manager-ui/tsconfig.json` 被未改动的 `views/link/Certificate/type.d.ts:2` 既有 TS1005 语法错误阻断，修复该错误后需重跑；工作区与模块未提供 lint 脚本。浏览器实际请求及后端搜索结果未验证。
