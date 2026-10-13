@@ -166,7 +166,7 @@ const sumDeltas = (current: object, previous: object, keys: readonly string[]) =
     (current as Record<string, unknown>)[key],
     (previous as Record<string, unknown>)[key],
   ))
-  return values.some(value => value === undefined) ? undefined : values.reduce((sum, value) => sum + value!, 0)
+  return values.some(value => value === undefined) ? undefined : values.reduce<number>((sum, value) => sum + value!, 0)
 }
 const validElapsed = (current: unknown, previous: unknown) => {
   const currentTime = numeric(current)
@@ -245,7 +245,7 @@ const deriveCpuEvidence = (current?: RealtimeCpuHealthPayload, previous?: Realti
   const keys = ['userTicks', 'niceTicks', 'systemTicks', 'idleTicks', 'ioWaitTicks', 'irqTicks', 'softIrqTicks', 'stealTicks'] as const
   const deltas = keys.map(key => delta(current[key], previous[key]))
   if (deltas.some(value => value === undefined)) return []
-  const total = deltas.reduce((sum, value) => sum + value!, 0)
+  const total = deltas.reduce<number>((sum, value) => sum + value!, 0)
   const ioWait = percentOf(deltas[4], total)
   const steal = percentOf(deltas[7], total)
   const result = [
@@ -313,7 +313,7 @@ const deriveNetworkEvidence = (current?: RealtimeNetworkHealthPayload, previous?
     const keys = ['tcpListenOverflows', 'tcpListenDrops', 'tcpBacklogDrops', 'tcpReceiveQueueDrops'] as const
     const drops = keys.map(key => delta(current[key], previous[key]))
     if (drops.every(value => value !== undefined)) {
-      const total = drops.reduce((sum, value) => sum + value!, 0)
+      const total = drops.reduce<number>((sum, value) => sum + value!, 0)
       if (total > 0) result.push(...evidence('networkKernelDrops', total >= 10 ? 'critical' : 'warning', total))
     }
   }
