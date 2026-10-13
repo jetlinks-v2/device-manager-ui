@@ -64,9 +64,8 @@ test('edge diagnosis tools keep the 2.12 ids, defineClientTool READ contract, an
 
   assert.match(factory, /isEdgeDiagnosisAccessProvider\(options\?\.accessProvider\)/)
   assert.match(factory, /createDeviceDetailEdgeTools\(service\)/)
-  assert.match(hook, /tabSurface: surface/)
-  assert.match(hook, /IOT_GATEWAY_DETAIL_AGENT_ROUTE_NAME/)
-  assert.match(hook, /surface === 'gateway'/)
+  assert.match(hook, /tabs,/)
+  assert.doesNotMatch(hook, /IOT_GATEWAY_DETAIL_AGENT_ROUTE_NAME|resolveTabSurface/)
   assert.match(hook, /router\.replace\(\{ query: \{ \.\.\.route\.query, tab \} \}\)/)
   assert.match(hook, /createDeviceDetailAgentWorkflows\(includeEdge\)/)
 
@@ -96,9 +95,9 @@ test('gateway tab enum stays separate from unified device-detail tabs', async ()
 
   assert.deepEqual(readArray('IOT_DEVICE_DETAIL_AGENT_TABS'), UNIFIED_TABS)
   assert.deepEqual(readArray('IOT_GATEWAY_DETAIL_AGENT_TABS'), GATEWAY_TABS)
-  assert.match(constants, /IOT_GATEWAY_DETAIL_AGENT_ROUTE_NAME = 'iot-user\/edge-gateway\/Detail'/)
-  assert.match(hook, /resolveDeviceDetailAgentTabs\(surface\)/)
-  assert.match(hook, /defaultTab: resolveDeviceDetailAgentDefaultTab\(surface\)/)
+  assert.doesNotMatch(constants, /IOT_GATEWAY_DETAIL_AGENT_ROUTE_NAME/)
+  assert.match(hook, /toValue\(options\?\.tabs\) \?\? IOT_DEVICE_DETAIL_AGENT_TABS/)
+  assert.match(hook, /defaultTab: resolveDefaultTab\(\)/)
 
   for (const tab of [...UNIFIED_TABS, ...GATEWAY_TABS]) {
     assert.equal(typeof zh[`IotDeviceDetailAgent.tabs.${tab}`], 'string')

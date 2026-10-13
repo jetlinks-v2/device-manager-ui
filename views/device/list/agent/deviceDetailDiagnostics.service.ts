@@ -14,6 +14,7 @@ import {
 import type { IotDevice } from '../types'
 import { buildIotDeviceDetailPath } from '../hooks/useIotDeviceRouting'
 import { mapModelPropertyAccess } from '../../../../agentCapabilities/deviceAnalysis/deviceModel.service'
+import { mapDeviceTimeContext } from '../../../../agentCapabilities/deviceAnalysis/deviceAnalysis.shared'
 import {
   iotDeviceDetailRealApi,
   parseMetadata,
@@ -61,8 +62,7 @@ export const createDeviceDetailDiagnosticsService = (
       groupName: device.groupName,
       accessProvider: device.accessProvider,
       accessName: device.accessName || device.accessMode,
-      lastSeen: device.lastSeen,
-      lastSeenTimestamp: device.lastSeenTimestamp,
+      ...mapDeviceTimeContext(device),
       tags: device.tags.slice(0, 20),
       summary: device.summary,
     },

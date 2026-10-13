@@ -7,8 +7,6 @@ export const IOT_DEVICE_DETAIL_AGENT_TABS = [
   'logs',
 ] as const
 
-export const IOT_GATEWAY_DETAIL_AGENT_ROUTE_NAME = 'iot-user/edge-gateway/Detail'
-
 export const IOT_GATEWAY_DETAIL_AGENT_TABS = [
   'runtime',
   'access',

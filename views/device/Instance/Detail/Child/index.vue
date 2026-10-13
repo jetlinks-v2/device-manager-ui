@@ -1202,7 +1202,7 @@ const onAuto = async (item) => {
 };
 
 //离开页面
-const TabsChange = (next) => {
+const TabsChange = (next, cancel) => {
     if (editStatus.value && getToken()) {
         const modal = Modal.confirm({
             content: $t('Child.index.135369-36'),
@@ -1221,6 +1221,7 @@ const TabsChange = (next) => {
                 } else {
                     // 右上角取消按钮
                     modal.destroy();
+                    cancel?.();
                 }
             },
         });
@@ -1234,7 +1235,7 @@ onBeforeRouteUpdate((to, from, next) => {
     if(isToDetail.value){
         next();
     }else{
-        TabsChange(next);
+        TabsChange(() => next(), () => next(false));
     }
 });
 
@@ -1243,7 +1244,7 @@ onBeforeRouteLeave((to, from, next) => {
     if(isToDetail.value){
         next();
     }else{
-        TabsChange(next);
+        TabsChange(() => next(), () => next(false));
     }
 });
 

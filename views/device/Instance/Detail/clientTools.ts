@@ -1264,61 +1264,15 @@ export const createDeviceDetailClientToolRuntime = (
       writeToolResultToSessionFile,
       getDeviceId
     }),
-    {
-      id: 'device_metadata_markdown',
-      name: 'device_metadata_markdown',
-      description: t('DeviceDetail.agentTools.metadataMarkdown.description'),
-      inputs: withWriteToPathInput([
-        {
-          id: 'section',
-          name: 'section',
-          description: t('DeviceDetail.agentTools.metadata.inputs.section'),
-          required: false,
-          valueType: 'string'
-        },
-        {
-          id: 'limit',
-          name: 'limit',
-          description: t('DeviceDetail.agentTools.metadataMarkdown.inputs.limit'),
-          required: false,
-          valueType: 'int'
-        }
-      ]),
-      output: { type: 'object' },
-      help: t('DeviceDetail.agentTools.metadataMarkdown.help'),
-      execute: async (args, context, call) => {
-        const section = normalizeMetadataSection(args.section)
-        const inlineLimit = clampNumber(args.limit, 1, 120, 40)
-        const markdown = buildMetadataMarkdown(context, section, inlineLimit)
-        const fullMarkdown = isWriteToPathEnabled(args)
-          ? buildMetadataMarkdown(context, section, Number.MAX_SAFE_INTEGER)
-          : markdown
-        const result = {
-          deviceId: getDeviceId(context),
-          section,
-          markdown
-        }
-        return writeToolResultToSessionFile(args, call, result, {
-          content: fullMarkdown,
-          summary: {
-            deviceId: result.deviceId,
-            section,
-            format: 'markdown',
-            fullResultWritten: true,
-            inlinePreviewLimit: inlineLimit,
-            markdownPreview: markdown
-          }
-        })
-      }
-    },
     createDeviceModelGetTool<DeviceClientToolContext>({
+      fileOutput: true,
       copy: {
         displayName: t('DeviceDetail.agentTools.modelGet.displayName'),
         progressText: t('DeviceDetail.agentTools.modelGet.progressText'),
         description: t('DeviceDetail.agentTools.modelGet.description'),
         help: t('DeviceDetail.agentTools.modelGet.help'),
       },
-      inputs: [
+      inputs: withWriteToPathInput([
         {
           id: 'section',
           name: 'section',
@@ -1340,14 +1294,14 @@ export const createDeviceDetailClientToolRuntime = (
           required: false,
           valueType: 'int'
         }
-      ],
-      execute: (args, context) => {
+      ]),
+      execute: async (args, context, call) => {
         const metadata = getMetadata(context)
         const section = normalizeMetadataSection(args.section as string | undefined)
         const limit = clampNumber(args.limit, 1, 120, 40)
         const format = String(args.format || '').trim().toLowerCase() === 'json' ? 'json' : 'markdown'
         const model = pickMetadataSections(metadata, section, limit)
-        return devicePropertyAnalysisResult({
+        const result = {
           deviceId: getDeviceId(context),
           section,
           counts: metadataCounts(metadata),
@@ -1355,7 +1309,17 @@ export const createDeviceDetailClientToolRuntime = (
           markdown: format === 'markdown' ? buildMetadataMarkdown(context, section, limit) : undefined,
           metadata: format === 'json' ? model : undefined,
           model,
-        }, {
+        }
+        // Keep bounded inline definitions while writing the full selected model only when requested.
+        let file: Record<string, any> | undefined
+        if (isWriteToPathEnabled(args)) {
+          const content = format === 'markdown'
+            ? buildMetadataMarkdown(context, section, Number.MAX_SAFE_INTEGER)
+            : stringifyToolResult(pickMetadataSections(metadata, section, Number.MAX_SAFE_INTEGER))
+          const written = await writeToolResultToSessionFile(args, call, result, { content })
+          file = { ...written.file, uri: written.uri, path: written.inputPath }
+        }
+        return devicePropertyAnalysisResult({ ...result, ...(file ? { file } : {}) }, {
           summary: {
             deviceId: getDeviceId(context),
             section,

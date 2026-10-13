@@ -178,6 +178,10 @@ export const normalizeIotDevicePropertyAggregateInput = (args: Record<string, un
   normalizedStringList(args.agg ?? args.aggregate ?? args.method, args.aggregates)[0]
 )
 
+export const normalizeIotDevicePropertyAggregateInputs = (args: Record<string, unknown>) => (
+  normalizedStringList(args.agg ?? args.aggregate ?? args.method, args.aggregates)
+)
+
 export const normalizeIotDevicePropertyAggregateInterval = (
   value: unknown,
   range: { start?: number; end?: number },
@@ -301,7 +305,7 @@ export const resolveIotDevicePropertyAggregateModeIssue = (
 export const createIotDevicePropertyAggregatePlan = (
   metadata: ThingModelMetadata,
   propertyIds: readonly string[],
-  requested: IotDevicePropertyAggregate | undefined,
+  requested: IotDevicePropertyAggregate | readonly IotDevicePropertyAggregate[] | undefined,
   analysisMode: IotDevicePropertyAnalysisMode,
   copy: Pick<AggregateCopy, 'unsupported'>,
 ): IotDevicePropertyAggregatePlan => {
@@ -315,9 +319,12 @@ export const createIotDevicePropertyAggregatePlan = (
     const propertyLabel = text(property.name) || propertyId
     const propertyType = propertyTypeOf(property)
     const modeDefault = analysisMode === 'ordered_path' ? ['LAST'] as const : defaultAggregates(propertyType)
-    const selected = requested ? supportedAggregates(propertyType, [requested]) : modeDefault
+    const requestedAggregates = requested
+      ? Array.from(new Set(typeof requested === 'string' ? [requested] : requested))
+      : []
+    const selected = requestedAggregates.length ? supportedAggregates(propertyType, requestedAggregates) : modeDefault
     const aggregates = selected.length ? selected : modeDefault
-    const ignored = requested && !aggregates.includes(requested) ? [requested] : []
+    const ignored = requestedAggregates.filter(agg => !aggregates.includes(agg))
     if (ignored.length) warnings.push(copy.unsupported(propertyLabel, ignored))
     return aggregates.map(agg => ({
       property: propertyId,
@@ -628,34 +635,39 @@ export const createIotDevicePropertyAggregateTransport = (
 export const normalizeIotDevicePropertyAggregateRows = (
   rows: readonly unknown[],
   columns: readonly IotDevicePropertyAggregateColumn[],
-) => rows
-  .filter(isRecord)
-  .map((row, index) => {
-    const sourceTime = row.time ?? row.timestamp ?? row.createTime
-    const record: Record<string, unknown> = {
-      time: normalizeIotDevicePropertyTimestamp(sourceTime) ?? sourceTime,
-    }
-    columns.forEach((column) => {
-      const value = row[column.alias] ?? row[column.property]
-      if (column.geoPointValue) {
-        const point = parseGeoPoint(value)
-        if (point) {
-          record[coordinateField(column.alias, 'longitude')] = point.longitude
-          record[coordinateField(column.alias, 'latitude')] = point.latitude
-        }
-        return
+) => {
+  const propertyCounts = new Map<string, number>()
+  columns.forEach(({ property }) => propertyCounts.set(property, (propertyCounts.get(property) ?? 0) + 1))
+  return rows
+    .filter(isRecord)
+    .map((row, index) => {
+      const sourceTime = row.time ?? row.timestamp ?? row.createTime
+      const record: Record<string, unknown> = {
+        time: normalizeIotDevicePropertyTimestamp(sourceTime) ?? sourceTime,
       }
-      if (value !== undefined) record[column.alias] = value
+      columns.forEach((column) => {
+        // A legacy property key is unambiguous only when one measure was selected for that property.
+        const value = row[column.alias] ?? (propertyCounts.get(column.property) === 1 ? row[column.property] : undefined)
+        if (column.geoPointValue) {
+          const point = parseGeoPoint(value)
+          if (point) {
+            record[coordinateField(column.alias, 'longitude')] = point.longitude
+            record[coordinateField(column.alias, 'latitude')] = point.latitude
+          }
+          return
+        }
+        if (value !== undefined) record[column.alias] = value
+      })
+      return { record, index, order: timeSortValue(record.time) }
     })
-    return { record, index, order: timeSortValue(record.time) }
-  })
-  .sort((left, right) => {
-    if (left.order === undefined && right.order === undefined) return left.index - right.index
-    if (left.order === undefined) return 1
-    if (right.order === undefined) return -1
-    return left.order - right.order
-  })
-  .map(item => item.record)
+    .sort((left, right) => {
+      if (left.order === undefined && right.order === undefined) return left.index - right.index
+      if (left.order === undefined) return 1
+      if (right.order === undefined) return -1
+      return left.order - right.order
+    })
+    .map(item => item.record)
+}
 
 export const createIotDevicePropertyAggregateFields = (
   columns: readonly IotDevicePropertyAggregateColumn[],

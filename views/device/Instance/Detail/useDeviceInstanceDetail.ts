@@ -17,6 +17,7 @@ import { useRegistryOptions } from '@jetlinks-web-core/hooks'
 import { deviceStateList } from '@device-manager-ui/views/device/data'
 import { isApplyDashboard } from '@device-manager-ui/utils/dashboardProject'
 import { createDeviceDetailClientToolRuntime } from './clientTools'
+import { DEVICE_DETAIL_AGENT_BUILTIN_PARAMETERS } from '../../list/agent/deviceDetailAgent.parameters'
 import { useDeviceMetadataReferences } from './useDeviceMetadataReferences'
 import {
   createEdgeDiagnosisWorkflowGuides,
@@ -721,6 +722,7 @@ export function useDeviceInstanceDetail(options: Readonly<DeviceInstanceDetailOp
 
     const deviceName = instanceStore.current?.name
     return {
+      ...DEVICE_DETAIL_AGENT_BUILTIN_PARAMETERS,
       deviceId,
       subjectType: DEVICE_AGENT_SUBJECT_TYPE,
       subjectId: deviceId,
