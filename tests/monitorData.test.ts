@@ -8,7 +8,7 @@ import {
   nodeSeriesVisual,
   normalizeMonitorHistory,
   sortMonitorTooltipItems,
-} from '../views/link/DashBoard/components/monitorData.ts'
+} from '../visDashboard/SystemMonitor/utils/monitorData.ts'
 import {
   calculateCpuLoadPressure,
   createRealtimeNodeNormalizer,
@@ -19,8 +19,8 @@ import {
   preserveRealtimeNodeOrder,
   resolveFocusedRealtimeNodes,
   sortRealtimeNodes,
-} from '../views/link/DashBoard/components/realtimeResourceData.ts'
-import { createNodeHealthCalculator } from '../views/link/DashBoard/components/nodeHealthData.ts'
+} from '../visDashboard/SystemMonitor/utils/realtimeResourceData.ts'
+import { createNodeHealthCalculator } from '../visDashboard/SystemMonitor/utils/nodeHealthData.ts'
 import {
   formatNetworkCount,
   formatNetworkPercent,
@@ -28,7 +28,7 @@ import {
   normalizeSystemNetworkHistory,
   normalizeTrafficHistory,
   renderNetworkMetricTooltip,
-} from '../views/link/DashBoard/components/networkData.ts'
+} from '../visDashboard/SystemMonitor/utils/networkData.ts'
 
 const history = [
   {

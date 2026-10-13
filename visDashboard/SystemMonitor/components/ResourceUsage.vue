@@ -12,7 +12,7 @@
 </template>
 
 <script lang="ts" setup name="ResourceUsage">
-import { formatMemorySize } from './monitorData'
+import { formatMemorySize } from '../utils/monitorData'
 
 const props = defineProps({
   percent: { type: Number, default: undefined },
