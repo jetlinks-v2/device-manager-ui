@@ -766,15 +766,7 @@ const normalizeProductSearchTerm = (term: any): any => {
       ...term,
       column: "id",
       termType: "dim-assets",
-      value: {
-        assetType: "product",
-        targets: [
-          {
-            type: "org",
-            id: value,
-          },
-        ],
-      },
+      value: JSON.parse(value),
     };
   }
 
