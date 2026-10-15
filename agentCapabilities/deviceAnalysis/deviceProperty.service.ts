@@ -35,7 +35,7 @@ import {
   createIotDevicePropertyAggregateTransport,
   mergeIotDevicePropertyAggregateRows,
   normalizeIotDevicePropertyAggregate,
-  normalizeIotDevicePropertyAggregateInput,
+  normalizeIotDevicePropertyAggregateInputs,
   normalizeIotDevicePropertyAggregateInterval,
   normalizeIotDevicePropertyIds,
   normalizeIotDevicePropertyAggregateRows,
@@ -43,7 +43,6 @@ import {
   refineIotDevicePropertyOrderedPathInterval,
   resolveIotDevicePropertyAggregateModeIssue,
   resolveIotDevicePropertyAggregateObservedRange,
-  type IotDevicePropertyAggregate,
 } from './devicePropertyAggregate.support'
 import {
   asRecord,
@@ -239,14 +238,14 @@ export const devicePropertyService = {
       max: 10,
     })
     if (!deviceId || !propertyIds.length) throw inputError('DEVICE_PROPERTY_REQUIRED', 'devicePropertyListRequired')
-    const aggregateInput = normalizeIotDevicePropertyAggregateInput(args)
-    const aggregate = aggregateInput
-      ? resolveDomainAgentEnum(
-          normalizeIotDevicePropertyAggregate(aggregateInput) ?? aggregateInput.toUpperCase(),
-          IOT_DEVICE_PROPERTY_AGGREGATES,
-          { name: 'aggregate' },
-        ) as Aggregate
-      : undefined
+    const aggregates = resolveDomainAgentStringList(normalizeIotDevicePropertyAggregateInputs(args), {
+      name: 'aggregates',
+      max: IOT_DEVICE_PROPERTY_AGGREGATES.length,
+    }).map(aggregateInput => resolveDomainAgentEnum(
+      normalizeIotDevicePropertyAggregate(aggregateInput) ?? aggregateInput.toUpperCase(),
+      IOT_DEVICE_PROPERTY_AGGREGATES,
+      { name: 'aggregate' },
+    ) as Aggregate)
     const analysisMode = resolveDomainAgentEnum(
       normalizeIotDevicePropertyAnalysisMode(args.analysisMode) ?? normalizeText(args.analysisMode),
       IOT_DEVICE_PROPERTY_ANALYSIS_MODES,
@@ -260,12 +259,9 @@ export const devicePropertyService = {
     )
     const { metadata } = await getMetadata(deviceId)
     propertyIds.forEach(propertyId => findProperty(metadata, propertyId))
-    const modeIssue = resolveIotDevicePropertyAggregateModeIssue(
-      metadata,
-      propertyIds,
-      aggregate as IotDevicePropertyAggregate | undefined,
-      analysisMode,
-    )
+    const modeIssue = (aggregates.length ? aggregates : [undefined]).map(aggregate => (
+      resolveIotDevicePropertyAggregateModeIssue(metadata, propertyIds, aggregate, analysisMode)
+    )).find(Boolean)
     if (modeIssue) {
       throw inputError(
         `DEVICE_PROPERTY_${modeIssue.replace(/([a-z])([A-Z])/g, '$1_$2').toUpperCase()}`,
@@ -275,7 +271,7 @@ export const devicePropertyService = {
     const plan = createIotDevicePropertyAggregatePlan(
       metadata,
       propertyIds,
-      aggregate as IotDevicePropertyAggregate | undefined,
+      aggregates,
       analysisMode,
       {
         unsupported: (propertyLabel, ignored) => aggregateText('unsupported', {
@@ -378,7 +374,7 @@ export const devicePropertyService = {
         rawRecordCount: rawRecordCount || undefined,
         bucketCount,
         populatedBucketCount,
-        measurementCount,
+        aggregateValueCount: measurementCount,
         missingBucketCount,
         samplingSemantics,
       },
@@ -393,7 +389,7 @@ export const devicePropertyService = {
         rawRecordCount: rawRecordCount || undefined,
         bucketCount,
         populatedBucketCount,
-        measurementCount,
+        aggregateValueCount: measurementCount,
         missingBucketCount,
         samplingSemantics,
       },

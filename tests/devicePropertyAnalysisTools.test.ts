@@ -22,6 +22,8 @@ import {
 import { withDevicePropertyAggregateTimeZone } from '../views/device/agentTools/propertyAggregateTimeZone.ts'
 import { createDeviceAnalysisTools } from '../agentCapabilities/deviceAnalysis/tools.ts'
 import { createDeviceDetailAgentTools } from '../views/device/list/agent/deviceDetailAgent.tools.ts'
+import { devicePropertyService } from '../agentCapabilities/deviceAnalysis/deviceProperty.service.ts'
+import { iotDeviceDetailRealApi } from '../views/device/list/services/iotDeviceDetailReal.service.ts'
 
 const copy = {
   displayName: 'Device trajectory',
@@ -80,6 +82,47 @@ const serializedTool = (tools: readonly any[], id: string) => {
   return toAiClientToolSessionDefinition(tool)
 }
 
+test('multiple aggregate measures reach one query and keep distinct result fields', async () => {
+  const originalDetail = iotDeviceDetailRealApi.getDeviceDetail
+  const originalAggregation = iotDeviceDetailRealApi.queryPropertyAggregation
+  const queries: Record<string, any>[] = []
+  iotDeviceDetailRealApi.getDeviceDetail = async () => ({ result: {
+    id: 'device-1',
+    metadata: { properties: [{ id: 'cpu', name: 'CPU', valueType: { type: 'double' } }] },
+  } }) as any
+  iotDeviceDetailRealApi.queryPropertyAggregation = async (deviceId, query) => {
+    assert.equal(deviceId, 'device-1')
+    queries.push(query)
+    return { result: [{ time: '2031-02-03 01:00:00', cpu_avg: 12.5, cpu_max: 21 }] } as any
+  }
+  try {
+    const result = await devicePropertyService.propertyAggregate({
+      deviceId: 'device-1', propertyId: 'cpu', aggregates: ['AVG', 'MAX'],
+      analysisMode: 'statistics', interval: '1h', timeRange: 'custom',
+      startTime: '2031-02-03T00:00:00+08:00', endTime: '2031-02-04T00:00:00+08:00',
+    })
+    assert.equal(queries.length, 1)
+    assert.deepEqual(queries[0].columns, [
+      { property: 'cpu', alias: 'cpu_avg', agg: 'AVG' },
+      { property: 'cpu', alias: 'cpu_max', agg: 'MAX' },
+    ])
+    assert.equal(result.data[0].cpu_avg, 12.5)
+    assert.equal(result.data[0].cpu_max, 21)
+    assert.deepEqual(result.summary.aggregates, ['AVG', 'MAX'])
+    assert.equal(result.summary.aggregateValueCount, 2)
+    assert.equal(result.evidence?.facts?.aggregateValueCount, 2)
+    assert.equal('measurementCount' in result.summary, false)
+    assert.equal('measurementCount' in (result.evidence?.facts || {}), false)
+    assert.equal(result.summary.rawRecordCount, undefined)
+    assert.equal(result.evidence?.facts?.rawRecordCount, undefined)
+    assert.ok(result.evidence?.cardinality?.kind === 'aggregate-series')
+    assert.equal(result.evidence.cardinality.measurementCount, 2)
+  } finally {
+    iotDeviceDetailRealApi.getDeviceDetail = originalDetail
+    iotDeviceDetailRealApi.queryPropertyAggregation = originalAggregation
+  }
+})
+
 test('general and device-detail sessions serialize the same property discovery-to-aggregate contract', () => {
   const general = createDeviceAnalysisTools()
     .map(factory => factory.build())
@@ -96,6 +139,7 @@ test('general and device-detail sessions serialize the same property discovery-t
     const producerMetadata = routing(producer)
 
     assert.ok(metadata, `${session.name}: aggregate routing metadata is required`)
+    assert.ok(aggregate.inputs?.some((input: any) => input.id === 'aggregates'))
     assert.ok(producerMetadata, `${session.name}: discovery routing metadata is required`)
     assert.ok(metadata.analyticalCapability)
     assert.deepEqual(metadata.resultDeliveries, ['auto'])
@@ -169,6 +213,29 @@ test('two entry adapters compile identical canonical model contracts and verifie
     output3: ['area'],
     output4: '| ID | Name | Type |\n| temperature | Temperature | double |',
   })
+})
+
+test('model file references are optional and do not replace the bounded inline definition', async () => {
+  const file = { path: 'models/device.md', uri: 'fs://models/device.md', size: 1024 }
+  for (const reference of [undefined, file]) {
+    const tool = createDeviceModelGetTool<Record<string, unknown>>({
+      copy,
+      inputs: [],
+      fileOutput: true,
+      execute: () => devicePropertyAnalysisResult({
+        model: { properties: [{ id: 'temperature' }] },
+        markdown: 'Temperature definition',
+        ...(reference ? { file: reference } : {}),
+      }),
+    })
+    const result = await tool.execute({}, {}, callFor(tool.id)) as any
+    assert.equal(result.success, true)
+    assert.equal(result.__clientToolOutputs.output4, 'Temperature definition')
+    assert.deepEqual(result.__clientToolOutputs.output0, ['temperature'])
+    assert.deepEqual(result.__clientToolOutputs.output5, reference)
+    const binding = result.outputBindings.find((item: any) => item.name === DEVICE_PROPERTY_ANALYSIS_OUTPUTS.modelFile.name)
+    assert.equal(Boolean(binding), Boolean(reference))
+  }
 })
 
 test('model detail preserves structured metadata or the model when markdown is absent', async () => {
@@ -526,6 +593,11 @@ test('empty aggregate results remain successful empty evidence without fabricati
   assert.equal(result.outputBindings[0].recordPath, '$')
   assert.equal(result.outputBindings[0].recordCount, 0)
   assert.equal(result.outputBindings[0].completeness, 'complete')
-  assert.equal(result.outputBindings[0].fields, undefined)
-  assert.equal(result.outputBindings[0].ordering, undefined)
+  assert.deepEqual(result.outputBindings[0].fields, [{
+    name: 'time', type: 'timestamp', role: 'temporal_dimension',
+    axis: 'time', encoding: 'date-time', format: 'datetime',
+  }])
+  assert.deepEqual(result.outputBindings[0].ordering, {
+    keys: [{ field: 'time', direction: 'asc' }], producerGuaranteed: true,
+  })
 })

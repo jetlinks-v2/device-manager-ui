@@ -1226,6 +1226,13 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
   function mergeRealtimePropertyValue(value: DevicePropertyValue) {
     const normalized = normalizeRealtimePropertyValue(value)
     if (!normalized) return
+    // 只合并本次实际收到的上报时间，乱序或无时间的快照不能推进最近上报事实。
+    if (device.value && typeof normalized.timestamp === 'number' && Number.isFinite(normalized.timestamp)) {
+      device.value = {
+        ...device.value,
+        lastReportAt: Math.max(device.value.lastReportAt ?? normalized.timestamp, normalized.timestamp),
+      }
+    }
     const property = normalized.property
     realtimePropertyValues.value = {
       ...realtimePropertyValues.value,
@@ -1331,7 +1338,11 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
             ...device.value,
             status,
             connectionStatus: status === 'disabled' ? 'disabled' : status === 'online' ? 'online' : 'offline',
-            lastSeen: formatApiTime(payload?.timestamp ?? Date.now(), device.value.lastSeen),
+            lastSeen: formatApiTime(payload?.timestamp, device.value.lastSeen),
+            ...(typeof payload?.timestamp === 'number' && Number.isFinite(payload.timestamp) ? {
+              lastSeenTimestamp: payload.timestamp,
+              ...(status === 'online' ? { onlineAt: payload.timestamp } : status === 'offline' ? { offlineAt: payload.timestamp } : {}),
+            } : {}),
           }
         }
       })

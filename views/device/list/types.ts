@@ -94,10 +94,13 @@ export interface IotDevice {
   businessStatuses?: IotDeviceBusinessStatus[]
   status: IotDeviceStatus
   risk: IotDeviceRisk
+  /** 最近活动/连接状态时间，不等同于最近属性上报时间。 */
   lastSeen: string
   lastSeenTimestamp?: number
   onlineAt?: number
   offlineAt?: number
+  /** 已加载的最近属性上报时间；缺失表示未知。 */
+  lastReportAt?: number
   accessMode: string
   /** 详情入口加载的设备配置，接入面板直接复用。 */
   configuration?: Record<string, unknown>

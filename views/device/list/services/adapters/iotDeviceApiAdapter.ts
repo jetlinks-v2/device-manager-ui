@@ -39,6 +39,7 @@ type IotDeviceInstanceAccessInfo = Partial<DeviceInstance> & {
   accessName?: string
   accessProviderName?: string
   devicePhotoUrl?: string
+  lastReportTime?: string | number
 }
 
 const fallbackAdapter = createIotDeviceMockAdapter()
@@ -92,6 +93,12 @@ function formatTime(value: unknown, fallback = t('IotDeviceDetail.detail.noRepor
   if (Number.isNaN(date.getTime())) return String(value)
   const pad = (input: number) => String(input).padStart(2, '0')
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+}
+
+function toTimestamp(value: unknown): number | undefined {
+  if (value === undefined || value === null || value === '') return undefined
+  const timestamp = new Date(typeof value === 'number' ? value : String(value)).getTime()
+  return Number.isFinite(timestamp) ? timestamp : undefined
 }
 
 function connectionStatusOf(instance: Partial<DeviceInstance>): IotDeviceConnectionStatus {
@@ -233,6 +240,11 @@ export function mapApiDevice(
   const connectionStatus = connectionStatusOf(instance)
   const status = statusOf(instance)
   const risk = riskOf(instance)
+  const previousTimes = !instance.id || instance.id === fallback?.id ? fallback : undefined
+  const onlineAt = toTimestamp(instance.onlineTime) ?? previousTimes?.onlineAt
+  const offlineAt = toTimestamp(instance.offlineTime) ?? previousTimes?.offlineAt
+  const connectionTimes = [onlineAt, offlineAt].filter((value): value is number => value !== undefined)
+  const lastSeenTimestamp = connectionTimes.length ? Math.max(...connectionTimes) : previousTimes?.lastSeenTimestamp
   const tags = Array.isArray(instance.tags)
     ? instance.tags.map((item: any) => item?.name || item?.id || item?.value || item).filter(Boolean)
     : fallback?.tags ?? []
@@ -257,7 +269,11 @@ export function mapApiDevice(
     businessStatuses: fallback?.businessStatuses ?? [],
     status,
     risk,
-    lastSeen: formatTime(instance.onlineTime || instance.offlineTime),
+    lastSeen: formatTime(lastSeenTimestamp, previousTimes?.lastSeen || '--'),
+    lastSeenTimestamp,
+    onlineAt,
+    offlineAt,
+    lastReportAt: toTimestamp(accessInfo.lastReportTime) ?? previousTimes?.lastReportAt,
     accessMode: instance.accessProvider || instance.protocolName || instance.transportProtocol || fallback?.accessMode || t('IotDeviceApiAdapter.accessUnset'),
     accessName: accessInfo.accessName || accessInfo.accessProviderName || fallback?.accessName,
     accessProvider: instance.accessProvider || fallback?.accessProvider,

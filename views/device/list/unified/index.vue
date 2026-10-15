@@ -30,7 +30,7 @@
 						    </a-button>
 						    </a-button-group>
 						    <a-divider type="vertical" class="unified-device-list__action-divider" />
-						    <a-button v-if="activeType === 'all' || isIotEntry" type="primary" :disabled="busy" @click="editing = null; editOpen = true">
+						    <a-button v-if="activeType === 'all' || isIotEntry" type="primary" :disabled="busy" @click="openCreateDrawer">
 							    <template #icon><AIcon type="PlusOutlined" /></template>
 							    {{ t('IotDeviceList.action.create') }}
 						    </a-button>
@@ -215,6 +215,8 @@ import type { DeviceGroup } from '../../../../api/deviceGroup'
 import { useUnifiedDeviceList } from './useUnifiedDeviceList'
 import { useUnifiedDeviceActions } from './useUnifiedDeviceActions'
 import Process from '../../Instance/Process/index.vue'
+import { useHomeAgentFeatureEntry } from '@jetlinks-web-core/layout/components/AiChat/useHomeAgentFeatureEntry'
+import { DEVICE_ONBOARDING_CAPABILITY_ID } from '@device-manager-ui/agentCapabilities/deviceGuidance/homeAgentProvider'
 const { t } = useI18n()
 const route = useRoute()
 const deviceMenuCode = computed(() => getIotDeviceListMenuCode(route))
@@ -294,6 +296,17 @@ function handleBatchChanged() {
 const { deleteGroup, groupDialogError, groupDialogMode, groupDialogOpen, groupEditing, groupSaving, openCreateChildGroup, openCreateGroup, openEditGroup, saveGroup } = useIotDeviceGroupManagement({
   getActiveScope: () => ({ type: scope.scopeType.value, id: scope.scopeId.value }), reloadGroups: scope.reloadGroups, changeScope: handleScopeChange,
 })
+
+// Use the actual button's availability; opening guidance must never overwrite another form.
+function openCreateDrawer() {
+  if (busy.value || createEntry.value || detailDevice.value || assignAreaOpen.value || assignGroupOpen.value || groupDialogOpen.value || syncVisible.value) return false
+  if (editOpen.value) return !editing.value
+  if (activeType.value !== 'all' && !isIotEntry.value) return false
+  editing.value = null
+  editOpen.value = true
+  return true
+}
+useHomeAgentFeatureEntry(DEVICE_ONBOARDING_CAPABILITY_ID, openCreateDrawer)
 function confirmDeleteGroup(group: DeviceGroup) { Modal.confirm({ title: t('IotDeviceList.scope.deleteGroup'), onOk: () => deleteGroup(group) }) }
 // 这组三个快捷筛选允许重复点击当前项清除，不能改用不可再次点击的单选分段控件。
 const statusTones: Record<string, 'success' | 'error' | 'default'> = { online: 'success', offline: 'error', disabled: 'default' }
