@@ -372,6 +372,23 @@ const metadataVisible = ref(false);
 const metadataModalCacheData = ref();
 
 const submitLoading = ref(false);
+let accessLoadVersion = 0;
+
+/**
+ * 切换产品时先清除上一个产品的接入状态，避免被复用的详情 Tab 短暂显示旧数据。
+ */
+const resetAccessState = () => {
+  access.value = {};
+  accessId.value = "";
+  config.value = {};
+  activeKey.value = "";
+  productTypes.value = [];
+  productData.id = undefined;
+  productData.metadata = {};
+  formData.data = productStore.current?.configuration || {};
+};
+
+const isCurrentAccessLoad = (version: number) => version === accessLoadVersion;
 
 const { onBack } = useTabSaveSuccessBack()
 /**
@@ -469,28 +486,31 @@ const driver1 = new Driver({
 /**
  * 查询接入方式
  */
-const queryAccessDetail = async (id: string) => {
-  const res = await queryList({
+const queryAccessDetail = async (id: string, loadVersion: number) => {
+  const res: any = await queryList({
     terms: [
       {
         column: "id",
         value: id,
       },
     ],
-  }).then((res: any) => {
-    if (res.status === 200) {
-      access.value = res.result.data[0];
-      if (access.value?.transportDetail?.metadata) {
-        const metadata = JSON.parse(access.value?.transportDetail?.metadata);
-        productData.metadata = pick(metadata, [
-          "functions",
-          "properties",
-          "events",
-          "tags",
-        ]);
-      }
-    }
   });
+
+  // 产品已切换时，旧网关详情不能覆盖新产品的空态或接入信息。
+  if (!isCurrentAccessLoad(loadVersion)) return;
+
+  if (res.status === 200) {
+    access.value = res.result.data[0] || {};
+    if (access.value?.transportDetail?.metadata) {
+      const metadata = JSON.parse(access.value?.transportDetail?.metadata);
+      productData.metadata = pick(metadata, [
+        "functions",
+        "properties",
+        "events",
+        "tags",
+      ]);
+    }
+  }
 };
 
 /**
@@ -499,8 +519,10 @@ const queryAccessDetail = async (id: string) => {
 const getConfigDetail = (
   messageProtocol: string,
   transportProtocol: string,
+  loadVersion: number,
 ) => {
   getConfigView(messageProtocol, transportProtocol).then((resp) => {
+    if (!isCurrentAccessLoad(loadVersion)) return;
     if (resp.status === 200) {
       config.value = resp.result;
     }
@@ -623,9 +645,13 @@ const getProvidersList = async () => {
  * 查询保存数据信息
  */
 const getData = async (accessId?: string) => {
+  const loadVersion = ++accessLoadVersion;
   const _accessId = accessId || productStore.current?.accessId;
+  resetAccessState();
+
   if (productStore.current?.id) {
     getConfigMetadata(productStore.current?.id).then((resp: any) => {
+      if (!isCurrentAccessLoad(loadVersion)) return;
       metadata.value = resp?.result || [
         {
           properties: [],
@@ -661,9 +687,10 @@ const getData = async (accessId?: string) => {
     // if (metadataResp.success) {
     //   metadata.value = (metadataResp.result?.[0] as ConfigMetadata[]) || [];
     // }
-    queryAccessDetail(_accessId);
+    queryAccessDetail(_accessId, loadVersion);
     if (productStore.current?.accessProvider === "plugin_gateway") {
       queryPluginAccessDetail(_accessId).then(async (res) => {
+        if (!isCurrentAccessLoad(loadVersion)) return;
         //
         if (res.success) {
           const pluginRes = await getPluginData(
@@ -671,9 +698,11 @@ const getData = async (accessId?: string) => {
             _accessId,
             productStore.current?.id,
           );
+          if (!isCurrentAccessLoad(loadVersion)) return;
           const resp = await getProductByPluginId(res.result.channelId).catch(
             () => ({ success: false, result: [] }),
           );
+          if (!isCurrentAccessLoad(loadVersion)) return;
           if (resp.success) {
             productTypes.value = resp.result.map((item) => {
               if (pluginRes?.result?.externalId === item.id) {
@@ -698,10 +727,12 @@ const getData = async (accessId?: string) => {
       getConfigDetail(
         productStore.current?.messageProtocol || "",
         productStore.current?.transportProtocol || "",
+        loadVersion,
       );
     }
   }
   getStoragList().then((resp: any) => {
+    if (!isCurrentAccessLoad(loadVersion)) return;
     if (resp.success) {
       storageList.value = resp.result;
       form.storePolicy = productStore.current?.storePolicy ||resp.result[0]?.id || 'none';
@@ -863,7 +894,6 @@ watch(
     (val) => {
       if(val){
         getData();
-        formData.data = productStore.current?.configuration || {};
       }
     },
     {
@@ -875,6 +905,7 @@ watch(
 watch(() => access.value?.id, (val) => {
   if(access.value?.provider === 'composite-device-gateway') {
     getCompositeProviderDetail(access.value?.configuration?.gateways).then((res: any) => {
+      if (access.value?.id !== val) return;
       if (res.success) {
         access.value.configuration.gateways = res.result;
         activeKey.value = [res.result?.[0].id]
