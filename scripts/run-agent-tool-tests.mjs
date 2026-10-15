@@ -138,7 +138,7 @@ try {
       },
     }],
   })
-  const result = spawnSync(process.execPath, ['--test', outputFile], {
+  const result = spawnSync(process.execPath, ['--test', outputFile, path.join(packageRoot, 'tests/deviceOnboardingEntry.test.mjs')], {
     cwd: packageRoot,
     encoding: 'utf8',
     stdio: 'inherit',

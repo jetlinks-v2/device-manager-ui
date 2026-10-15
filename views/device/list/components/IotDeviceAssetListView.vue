@@ -135,6 +135,8 @@ import { reassignIotDevicesToArea } from '../hooks/iotDeviceAreaGroupBindings'
 import { resolveSpaceAreaError } from '../services/shared/spaceAreaError'
 import type { IotDevice } from '../types'
 import type { IotAddDeviceCreatedPayload } from '../hooks/useIotAddDeviceDrawer'
+import { useHomeAgentFeatureEntry } from '@jetlinks-web-core/layout/components/AiChat/useHomeAgentFeatureEntry'
+import { DEVICE_ONBOARDING_CAPABILITY_ID } from '@device-manager-ui/agentCapabilities/deviceGuidance/homeAgentProvider'
 
 const { t: $t } = useI18n()
 const route = useRoute()
@@ -208,6 +210,11 @@ const {
   toggleDeviceEnabled,
   deleteDevice,
 } = useIotDeviceAssetActions(devices, refreshTable)
+
+useHomeAgentFeatureEntry(DEVICE_ONBOARDING_CAPABILITY_ID, () => {
+  if (assignGroupOpen.value || assignAreaOpen.value || groupDialogOpen.value) return false
+  return openCreateDrawer()
+})
 
 const presentation = useIotDeviceAssetPresentation(devices, connectionStatusMeta)
 

@@ -109,6 +109,14 @@ test('multiple aggregate measures reach one query and keep distinct result field
     assert.equal(result.data[0].cpu_avg, 12.5)
     assert.equal(result.data[0].cpu_max, 21)
     assert.deepEqual(result.summary.aggregates, ['AVG', 'MAX'])
+    assert.equal(result.summary.aggregateValueCount, 2)
+    assert.equal(result.evidence?.facts?.aggregateValueCount, 2)
+    assert.equal('measurementCount' in result.summary, false)
+    assert.equal('measurementCount' in (result.evidence?.facts || {}), false)
+    assert.equal(result.summary.rawRecordCount, undefined)
+    assert.equal(result.evidence?.facts?.rawRecordCount, undefined)
+    assert.ok(result.evidence?.cardinality?.kind === 'aggregate-series')
+    assert.equal(result.evidence.cardinality.measurementCount, 2)
   } finally {
     iotDeviceDetailRealApi.getDeviceDetail = originalDetail
     iotDeviceDetailRealApi.queryPropertyAggregation = originalAggregation
@@ -585,6 +593,11 @@ test('empty aggregate results remain successful empty evidence without fabricati
   assert.equal(result.outputBindings[0].recordPath, '$')
   assert.equal(result.outputBindings[0].recordCount, 0)
   assert.equal(result.outputBindings[0].completeness, 'complete')
-  assert.equal(result.outputBindings[0].fields, undefined)
-  assert.equal(result.outputBindings[0].ordering, undefined)
+  assert.deepEqual(result.outputBindings[0].fields, [{
+    name: 'time', type: 'timestamp', role: 'temporal_dimension',
+    axis: 'time', encoding: 'date-time', format: 'datetime',
+  }])
+  assert.deepEqual(result.outputBindings[0].ordering, {
+    keys: [{ field: 'time', direction: 'asc' }], producerGuaranteed: true,
+  })
 })

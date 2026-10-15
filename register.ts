@@ -7,13 +7,13 @@ import { useDeviceScope } from './deviceScope'
 import { getDeviceListSearchTerms } from './deviceListFilter'
 import { queryDeviceSpaceAreaBindings_api } from './api/spaceArea'
 import { queryDeviceBoundGroups_api, queryRuntimeDevices_api } from './api/deviceGroup'
-import { getDeviceListSearchTerms } from './deviceListFilter'
 import type { DataCapabilityProviderManifest } from '@jetlinks-web-core/data-capability'
 import type { AgentCapabilityProviderResource } from '@jetlinks-web-core/layout/components/AiChat/routeCapabilityLoader'
 import {
   IOT_DEVICE_ANALYSIS_EXTENSION_KEY,
   IOT_DEVICE_MENU_ANCHORS,
 } from './agentCapabilities/deviceAnalysis/constants'
+import { DEVICE_GUIDANCE_MENU_CODES } from './agentCapabilities/deviceGuidance/homeAgentProvider'
 
 type HomeAgentProviderLoader = () => Promise<unknown>
 
@@ -64,8 +64,21 @@ export default {
   stores: {
     useInstanceStore
   },
-  homeAgentProviders,
+  homeAgentProviders: {
+    ...homeAgentProviders,
+    'device/function-guidance': () => import('./agentCapabilities/deviceGuidance/homeAgentProvider'),
+  },
   generalAgentExtensions: {
+    'device/function-guidance': {
+      loader: () => import('./agentCapabilities/deviceGuidance/generalAgentExtension'),
+      activation: {
+        version: 'general-agent-provider-activation/v1',
+        scopes: [
+          { kind: 'menuCode', values: Object.values(DEVICE_GUIDANCE_MENU_CODES).flat() },
+          { kind: 'routeName', values: Object.values(DEVICE_GUIDANCE_MENU_CODES).flat() },
+        ],
+      },
+    } satisfies AgentCapabilityProviderResource,
     [IOT_DEVICE_ANALYSIS_EXTENSION_KEY]: {
       loader: () => import('./agentCapabilities/deviceAnalysis/generalAgentExtension'),
       activation: {

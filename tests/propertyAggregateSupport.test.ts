@@ -98,6 +98,20 @@ test('keeps canonical property units separate from localized display-unit text',
   })
 })
 
+test('authors distinct multi-aggregate field identities without inventing a unit or changing property labels', () => {
+  const plan = createIotDevicePropertyAggregatePlan({ properties: [
+    { id: 'signal', name: 'Signal', valueType: { type: 'double' } },
+  ] } as any, ['signal'], ['AVG', 'MAX', 'MIN'], 'statistics', { unsupported: () => '' })
+  const fields = createIotDevicePropertyAggregateFields(plan.columns, {
+    longitude: label => `${label} longitude`, latitude: label => `${label} latitude`,
+  })
+  assert.deepEqual(fields.slice(1).map(field => ({
+    name: field.name, measure: field.measure, label: field.label, aggregation: field.aggregation, unit: field.unit,
+  })), ['avg', 'max', 'min'].map(aggregation => ({
+    name: `signal_${aggregation}`, measure: `signal_${aggregation}`, label: 'Signal', aggregation, unit: undefined,
+  })))
+})
+
 test('normalizes valid geo points into ordered scalar coordinate fields', () => {
   const columns = [
     { property: 'location', alias: 'location', agg: 'LAST' as const },
