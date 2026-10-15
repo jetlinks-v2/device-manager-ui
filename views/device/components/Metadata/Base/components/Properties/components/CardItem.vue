@@ -12,7 +12,7 @@
           </a-tooltip>
         </div>
       </a-space>
-      <a-switch v-model:checked="showArea" @change="handleChange"/>
+      <a-switch v-model:checked="showArea" :disabled="disabled" @change="handleChange"/>
     </div>
     <div v-if="!!Object.keys(slot).length && showArea" class="area">
       <slot></slot>
@@ -31,6 +31,10 @@ const props = defineProps({
     default: ''
   },
   value: {
+    type: Boolean,
+    default: false
+  },
+  disabled: {
     type: Boolean,
     default: false
   }

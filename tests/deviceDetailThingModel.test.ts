@@ -17,6 +17,18 @@ test('returns an empty overview when no effective property is marked as key', ()
   assert.deepEqual(collectOverviewPropertyKeys({ properties: [{ id: 'temperature' }] }), [])
 })
 
+test('keeps every key property available to the overview pager', () => {
+  const properties = Array.from({ length: 7 }, (_, index) => ({
+    id: `property_${index + 1}`,
+    expands: { isKeyMetric: true },
+  }))
+
+  assert.deepEqual(
+    collectOverviewPropertyKeys({ properties }),
+    properties.map((item) => item.id),
+  )
+})
+
 test('uses inherited product metadata until a device has independent metadata', () => {
   const productMetadata = { properties: [{ id: 'temperature', expands: { isKeyMetric: true } }] }
   const deviceMetadata = { properties: [{ id: 'pressure', expands: { isKeyMetric: true } }] }

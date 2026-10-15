@@ -8,6 +8,7 @@ import type { ProjectArea } from '@device-manager-ui/modules/defaults/types'
 import { buildAreaTreeData, isSelectableDeviceArea, mergeDeviceBoundAreas } from './iotAreaTreeOptions'
 import { buildDeviceGroupTreeData } from './iotDeviceGroupTreeOptions'
 import { saveIotDeviceAreaGroupBindings } from './iotDeviceAreaGroupBindings'
+import { isForbiddenRequest } from '../services/shared/requestError'
 import type { IotDevice } from '../types'
 
 export type IotEditDeviceDrawerProps = {
@@ -20,11 +21,6 @@ type IotEditDeviceDrawerHandlers = {
   updateOpen: (value: boolean) => void
   saved: (deviceId: string) => void
 }
-
-const isForbiddenRequest = (error: unknown) => (
-  (error as { response?: { status?: number }; status?: number })?.response?.status === 403
-  || (error as { status?: number })?.status === 403
-)
 
 export function useIotEditDeviceDrawer(props: IotEditDeviceDrawerProps, handlers: IotEditDeviceDrawerHandlers) {
   const { t: $t } = useI18n()

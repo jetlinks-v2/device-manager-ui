@@ -102,10 +102,8 @@ export function useDeviceDetailAgent(options?: UseDeviceDetailAgentOptions) {
   }
 
   const resolveDeviceId = () => {
-    const fromOption = options && 'deviceId' in options
-      ? normalizeText(toValue(options.deviceId))
-      : ''
-    if (fromOption) return fromOption
+    // 显式 deviceId 的宿主拥有设备上下文；为空时也不能回退到正在切换页面的路由参数。
+    if (options && 'deviceId' in options) return normalizeText(toValue(options.deviceId))
     return normalizeText(route.params.deviceId ?? route.params.id ?? route.params.gatewayId)
   }
 
