@@ -1378,6 +1378,7 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
 
   /**
    * 原版 Metadata 组件以实例 store 作为数据源；SaaS 详情切换设备时必须同步有效物模型，
+   * 它还通过 features 限制物模型操作，因此不可只同步 metadata。
    * 否则会把上一台设备的 metadata 读取或保存到当前标签。
    */
   function syncLegacyMetadataDevice(current: IotDevice | null) {
@@ -1404,6 +1405,7 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
       description: current.summary,
       productId: current.productId || current.productKey || '',
       productName: current.productName,
+      features: current.features ?? [],
       metadata,
       productMetadata,
       independentMetadata: Boolean(current.independentMetadata),
