@@ -87,19 +87,31 @@
                     />
                   </template>
 							    <template v-else-if="column.key === 'product'">
-								    <div>{{ record.productName || '—' }}</div>
-								    <small>{{ [record.productManufacturer, record.productModel].filter(Boolean).join(' ') || '—' }}</small>
+								    <div>
+									    <j-ellipsis>{{ record.productName || '—' }}</j-ellipsis>
+								    </div>
+								    <small>
+									    <j-ellipsis>{{ [record.productManufacturer, record.productModel].filter(Boolean).join(' ') || '—' }}</j-ellipsis>
+								    </small>
 							    </template>
 						    <template v-else-if="column.key === 'productName'">
 								    <div>{{ record.productName || '—' }}</div>
 						    </template>
 						    <template v-else-if="column.key === 'brandModel'">
-								    <div>{{ formatBrandModel(record.productManufacturer) }}</div>
-								    <small>{{ formatBrandModel(record.productModel) }}</small>
+								    <div>
+									    <j-ellipsis>{{ formatBrandModel(record.productManufacturer) }}</j-ellipsis>
+								    </div>
+								    <small>
+									    <j-ellipsis>{{ formatBrandModel(record.productModel) }}</j-ellipsis>
+								    </small>
 						    </template>
 						    <template v-else-if="column.key === 'area'">
-								    <div>{{ formatAreaName(record) }}</div>
-								    <small>{{ record.groupBindings?.map(group => group.name).join('、') || record.groupName || t('IotDeviceList.scope.unassignedGroup') }}</small>
+								    <div>
+									    <j-ellipsis>{{ formatAreaName(record) }}</j-ellipsis>
+								    </div>
+								    <small>
+									    <j-ellipsis>{{ record.groupBindings?.map(group => group.name).join('、') || record.groupName || t('IotDeviceList.scope.unassignedGroup') }}</j-ellipsis>
+								    </small>
 						    </template>
 							    <template v-else-if="column.key === 'createdAt'">{{ formatTableTime(record.createdAt) }}</template>
 							    <template v-else-if="column.key === 'lastReportTime'">{{ formatTableTime(record.lastReportTime) }}</template>
@@ -161,7 +173,7 @@
 						    </template>
 					    </a-table>
 				    </div>
-				    <a-pagination class="unified-device-list__pagination" :current="pageIndex + 1" :page-size="pageSize" :total="total" :page-size-options="['10', '20', '50']" show-size-changer :show-total="value => t('UnifiedDeviceList.total', { count: value })" @change="changePage" />
+				    <a-pagination class="unified-device-list__pagination" :current="pageIndex + 1" :page-size="pageSize" :total="total" :page-size-options="['12', '24', '48', '96']" show-size-changer :show-total="value => t('UnifiedDeviceList.total', { count: value })" @change="changePage" />
 			    </div>
 		    </template>
 	    </EqualHeightColumns>
@@ -295,8 +307,8 @@ const columns = computed(() => [
   { title: t('IotDeviceList.table.brandModel'), key: 'brandModel', width: 160 },
   { title: t('UnifiedDeviceList.areaAndGroup'), key: 'area', width: 220 },
   { title: t('UnifiedDeviceList.status'), key: 'status', width: 100 },
-  ...(activeType.value === 'all' ? [{ title: '最后上报时间', key: 'lastReportTime', width: 160 }] : []),
-  ...(activeType.value === 'all' ? [{ title: '创建时间', key: 'createdAt', width: 160 }] : []),
+  ...(activeType.value === 'all' ? [{ title: t('IotDeviceDetail.detail.lastReport'), key: 'lastReportTime', width: 160 }] : []),
+  ...(activeType.value === 'all' ? [{ title: t('Instance.index.133466-5'), key: 'createdAt', width: 160 }] : []),
   ...(activeType.value === 'gateway' ? [{ title: t('GatewayDeviceCard.monitor'), key: 'monitor', width: 220 }] : []),
   ...(['gateway', 'video'].includes(activeType.value) ? [{ title: t('UnifiedDeviceList.channel'), key: 'channel', width: 100 }] : []),
   { title: t('UnifiedDeviceList.action'), key: 'action', width: 90, fixed: 'right', align: 'center' },

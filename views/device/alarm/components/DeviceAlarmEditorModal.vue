@@ -94,14 +94,17 @@
         <AIcon type="InfoCircleFilled" />
         <span>{{ previewText }}</span>
       </div>
-
-      <DeviceAlarmNotificationConfig
-        :model="model"
-        :methods="notifyMethods"
-        :users="notifyUsers"
-        :loading="notifyLoading"
-        @load-more-users="emit('load-more-users')"
-      />
+	    
+	    <RegistryComponent page-code="device/alarm" code="alarm-editor">
+		    <DeviceAlarmNotificationConfig
+			    key="notification"
+			    :model="model"
+			    :methods="notifyMethods"
+			    :users="notifyUsers"
+			    :loading="notifyLoading"
+			    @load-more-users="emit('load-more-users')"
+		    />
+	    </RegistryComponent>
     </a-form>
 
     <template #footer>

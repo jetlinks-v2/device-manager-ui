@@ -22,29 +22,6 @@
 		      </template>
 		      <template #right>
 
-				      <a-flex class="product-page__toolbar" :gap="16" align="center" wrap="wrap">
-					      <ConditionFilter
-						      class="product-page__search"
-						      :fields="filterFields"
-						      :common-fields="commonFilterFields"
-						      :model-value="filterTerms"
-						      :placeholder="$t('IotDeviceList.filter.conditionPlaceholder')"
-						      @update:model-value="handleFilterTermsUpdate"
-						      @change="handleFilterSearch"
-					      />
-					      <a-space class="product-page__actions">
-						      <j-permission-button
-							      type="primary"
-							      key="add"
-							      @click="add"
-							      hasPermission="device/Product:add"
-						      >
-							      <template #icon><AIcon type="PlusOutlined" /></template>
-							      {{ $t("Product.index.660348-0") }}
-						      </j-permission-button>
-						      <BatchDropdown key="batch" :actions="batchActions" />
-					      </a-space>
-				      </a-flex>
 				      <JProTable
 					      :columns="columns"
 					      :request="queryProductList"
@@ -57,6 +34,31 @@
 					      :params="tableParams"
 					      :pagination="{ isShowContent: true }"
 				      >
+					      <template #headerLeftRender>
+						      <a-flex class="product-page__toolbar" :gap="16" align="center" wrap="wrap">
+							      <ConditionFilter
+								      class="product-page__search"
+								      :fields="filterFields"
+								      :common-fields="commonFilterFields"
+								      :model-value="filterTerms"
+								      :placeholder="$t('IotDeviceList.filter.conditionPlaceholder')"
+								      @update:model-value="handleFilterTermsUpdate"
+								      @change="handleFilterSearch"
+							      />
+							      <a-space class="product-page__actions">
+								      <j-permission-button
+									      type="primary"
+									      key="add"
+									      @click="add"
+									      hasPermission="device/Product:add"
+								      >
+									      <template #icon><AIcon type="PlusOutlined" /></template>
+									      {{ $t("Product.index.660348-0") }}
+								      </j-permission-button>
+								      <BatchDropdown key="batch" :actions="batchActions" />
+							      </a-space>
+						      </a-flex>
+					      </template>
 					      <template #deviceType="slotProps">
 						      <div>{{ slotProps.deviceType?.text || '-' }}</div>
 					      </template>
@@ -888,7 +890,6 @@ onMounted(() => {
   &__toolbar {
     flex: 0 0 auto;
     justify-content: space-between;
-    margin-bottom: var(--space-4);
   }
 
   // JProTable 的主体和分页共享右侧面板剩余高度，只有表格主体可以纵向滚动。

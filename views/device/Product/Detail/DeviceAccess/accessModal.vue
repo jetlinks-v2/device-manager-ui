@@ -10,13 +10,6 @@
       @ok="submitData"
       @cancel="cancel"
   >
-    <pro-search
-        :columns="columns"
-        target="deviceModal"
-        @search="handleSearch"
-        type="simple"
-        style="padding: 0"
-    />
     <JProTable
         :columns="columns"
         :request="handleQuery"
@@ -38,7 +31,16 @@
       }"
         style="padding: 0"
     >
-      <template #headerLeftRender>
+	    <template #headerLeftRender>
+		    <ConditionFilter
+			    :columns="columns"
+			    target="deviceModal"
+			    @search="handleSearch"
+			    type="simple"
+			    style="padding: 0"
+		    />
+	    </template>
+      <template #headerRightRender>
         <j-permission-button
             type="primary"
             @click="add"
