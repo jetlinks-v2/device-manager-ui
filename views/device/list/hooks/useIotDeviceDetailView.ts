@@ -78,6 +78,11 @@ export interface IotDeviceDetailViewProps {
   }
 }
 
+const IOT_DEVICE_DETAIL_ROUTE_NAMES = new Set([
+  'iot-user-device-list/Detail',
+  'iot-user/device/list/Detail',
+])
+
 /** 编排设备详情的加载、订阅、路由和用户操作；展示区块只消费状态与动作。 */
 export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onEmbeddedMetadataChanged?: () => void) {
   type DataInnerTab = 'property' | 'event' | 'function' | 'trace'
@@ -93,7 +98,13 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
   const { toClipboard } = useClipboard()
 
   const projectId = computed(() => resolveIotProjectId(route))
-  const deviceId = computed(() => props.embedded?.deviceId ?? String(route.params.deviceId ?? route.params.id))
+  const deviceId = computed(() => {
+    if (props.embedded) return props.embedded.deviceId
+
+    // 产品和统一设备详情共享 :id；切换路由时旧详情还未卸载，不能把产品 ID 作为设备 ID 加载。
+    const isDeviceDetailRoute = route.matched.some(record => IOT_DEVICE_DETAIL_ROUTE_NAMES.has(String(record.name || '')))
+    return isDeviceDetailRoute ? String(route.params.deviceId ?? route.params.id ?? '') : ''
+  })
   const healthPath = computed(() => buildIotDeviceHealthPath(projectId.value, deviceId.value, undefined, route))
   let disposed = false
   let loadVersion = 0
@@ -1362,6 +1373,11 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
 
   async function loadDevice(context = beginLoad()) {
     if (!isCurrentLoad(context)) return
+    if (!context.deviceId) {
+      device.value = null
+      syncLegacyMetadataDevice(null)
+      return
+    }
     // Tab 重建时仅映射入口数据；独立详情仍由自身加载，并保留请求版本保护。
     const result = props.embedded ? null : await iotDeviceService.getDevice(context.projectId, context.deviceId)
     if (!isCurrentLoad(context)) return
@@ -1497,7 +1513,7 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
     const context = beginLoad()
     await loadDevice(context)
     // 自定义内容拥有自己的数据与诊断生命周期；头部只保留设备信息和在线状态。
-    if (!isCurrentLoad(context)) return
+    if (!isCurrentLoad(context) || !context.deviceId) return
     if (props.embedded) return
     if (detailContent.value) {
       await detailContentRef.value?.refresh?.()
