@@ -62,7 +62,7 @@ export function useUnifiedDeviceList() {
   const status = computed(() => String(route.query.status || 'all'))
   const total = ref(0)
   const pageIndex = ref(0)
-  const pageSize = ref(10)
+  const pageSize = ref(12)
   const loading = ref(false)
   const error = ref('')
   const counts = ref<Record<string, number>>({})

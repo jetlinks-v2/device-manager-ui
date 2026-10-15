@@ -22,29 +22,6 @@
 		      </template>
 		      <template #right>
 
-				      <a-flex class="product-page__toolbar" :gap="16" align="center" wrap="wrap">
-					      <ConditionFilter
-						      class="product-page__search"
-						      :fields="filterFields"
-						      :common-fields="commonFilterFields"
-						      :model-value="filterTerms"
-						      :placeholder="$t('IotDeviceList.filter.conditionPlaceholder')"
-						      @update:model-value="handleFilterTermsUpdate"
-						      @change="handleFilterSearch"
-					      />
-					      <a-space class="product-page__actions">
-						      <j-permission-button
-							      type="primary"
-							      key="add"
-							      @click="add"
-							      hasPermission="device/Product:add"
-						      >
-							      <template #icon><AIcon type="PlusOutlined" /></template>
-							      {{ $t("Product.index.660348-0") }}
-						      </j-permission-button>
-						      <BatchDropdown key="batch" :actions="batchActions" />
-					      </a-space>
-				      </a-flex>
 				      <JProTable
 					      :columns="columns"
 					      :request="queryProductList"
@@ -57,6 +34,31 @@
 					      :params="tableParams"
 					      :pagination="{ isShowContent: true }"
 				      >
+					      <template #headerLeftRender>
+						      <a-flex class="product-page__toolbar" :gap="16" align="center" wrap="wrap">
+							      <ConditionFilter
+								      class="product-page__search"
+								      :fields="filterFields"
+								      :common-fields="commonFilterFields"
+								      :model-value="filterTerms"
+								      :placeholder="$t('IotDeviceList.filter.conditionPlaceholder')"
+								      @update:model-value="handleFilterTermsUpdate"
+								      @change="handleFilterSearch"
+							      />
+							      <a-space class="product-page__actions">
+								      <j-permission-button
+									      type="primary"
+									      key="add"
+									      @click="add"
+									      hasPermission="device/Product:add"
+								      >
+									      <template #icon><AIcon type="PlusOutlined" /></template>
+									      {{ $t("Product.index.660348-0") }}
+								      </j-permission-button>
+								      <BatchDropdown key="batch" :actions="batchActions" />
+							      </a-space>
+						      </a-flex>
+					      </template>
 					      <template #deviceType="slotProps">
 						      <div>{{ slotProps.deviceType?.text || '-' }}</div>
 					      </template>
@@ -166,7 +168,7 @@ import { accessType } from "../data";
 import { useI18n } from "vue-i18n";
 import { Modal } from "ant-design-vue";
 import ConditionFilter, {
-  buildQueryFilter,
+  type ConditionFilterChangePayload,
   type ConditionFilterField,
   type ConditionFilterTerm,
 } from '@jetlinks-web-core/components/ConditionFilter';
@@ -183,7 +185,6 @@ const isAdd = ref<number>(0);
 const title = ref<string>("");
 const productSearchParams = ref<Record<string, any>>({});
 const filterTerms = ref<ConditionFilterTerm[]>([]);
-const submittedFilterTerms = ref<ConditionFilterTerm[]>([]);
 const selectedCategoryId = ref<string>();
 const categoryTree = ref<ProductCategoryTreeNode[]>([]);
 const categoryLoading = ref(false);
@@ -767,15 +768,7 @@ const normalizeProductSearchTerm = (term: any): any => {
       ...term,
       column: "id",
       termType: "dim-assets",
-      value: {
-        assetType: "product",
-        targets: [
-          {
-            type: "org",
-            id: value,
-          },
-        ],
-      },
+      value: JSON.parse(value),
     };
   }
 
@@ -813,9 +806,9 @@ const handleFilterTermsUpdate = (terms: ConditionFilterTerm[] = []) => {
   filterTerms.value = terms;
 };
 
-const handleFilterSearch = (payload?: { terms?: ConditionFilterTerm[] }) => {
-  submittedFilterTerms.value = payload?.terms || filterTerms.value;
-  applyProductSearch(buildQueryFilter(submittedFilterTerms.value, filterFields.value));
+const handleFilterSearch = (payload: ConditionFilterChangePayload) => {
+  // change 输出已完成通配符补齐与转义，直接使用，避免重复处理查询值。
+  applyProductSearch(payload.filter);
 };
 const routerParams = useRouterParams();
 
@@ -897,7 +890,6 @@ onMounted(() => {
   &__toolbar {
     flex: 0 0 auto;
     justify-content: space-between;
-    margin-bottom: var(--space-4);
   }
 
   // JProTable 的主体和分页共享右侧面板剩余高度，只有表格主体可以纵向滚动。
