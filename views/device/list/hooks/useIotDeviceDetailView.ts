@@ -149,7 +149,6 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
   const realtimePropertySubscriptionKey = ref('')
   const liveSimulatorTraces = ref<SimulatorTrace[]>([])
   const childDeviceCount = ref(0)
-  const OVERVIEW_PROPERTY_LIMIT = 5
   const propertyPageRealtimeKeys = ref<string[]>([])
 
   const DATA_TAB_KEYS: DataInnerTab[] = ['property', 'event', 'function', 'trace']
@@ -721,7 +720,7 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
   })
 
   const overviewRealtimePropertyKeys = computed(() => {
-    return collectOverviewPropertyKeys(device.value?.thingModelMetadata, OVERVIEW_PROPERTY_LIMIT)
+    return collectOverviewPropertyKeys(device.value?.thingModelMetadata)
   })
 
   const activeRealtimePropertyKeys = computed(() => (
