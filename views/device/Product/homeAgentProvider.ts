@@ -6,7 +6,13 @@ import {
   type HomeAgentWorkflowGuide,
 } from '@jetlinks-web-core/layout/components/AiChat/homeAgentCapabilities';
 import type { AiClientToolDefinition } from '@jetlinks-web-core/layout/components/AiChat/clientTools';
+import { compactHomeAgentCapability } from '@jetlinks-web-core/layout/components/AiChat/homeAgentCatalog';
+import { isPrivateDeployment } from '@jetlinks-web-core/utils/deployment';
 import { queryProductList } from '../../../api/product';
+import {
+  createDeviceGuidanceCapabilities,
+  DEVICE_ONBOARDING_CAPABILITY_ID,
+} from '../../../agentCapabilities/deviceGuidance/homeAgentProvider';
 
 const DEVICE_PRODUCT_MENU_CODE = 'device/Product';
 const DEVICE_PRODUCT_DETAIL_ROUTE = 'device/Product/Detail';
@@ -200,6 +206,80 @@ const getProductPromptExamples = () => [
   i18n.global.t('Product.homeAgent.prompt.ruleProduct'),
 ];
 
+/** 从已授权功能声明生成入口，沿用统一设备页的受控打开行为，不让模型按标题猜菜单。 */
+const getDeviceCreationEntry = (context: HomeAgentCapabilityContext) => {
+  const capability = createDeviceGuidanceCapabilities(context)
+    .find(item => item.id === DEVICE_ONBOARDING_CAPABILITY_ID);
+  return capability ? compactHomeAgentCapability(capability) : undefined;
+};
+
+/** 私有化产品按当前表单与详情流程引导，设备创建步骤只对可访问设备列表的账号提供。 */
+const getPrivateProductCreationGuides = (context: HomeAgentCapabilityContext): HomeAgentWorkflowGuide[] => {
+  // SaaS 产品可能来自设备库模板，不能复用私有化手工创建步骤。
+  if (!isPrivateDeployment()) {
+    return [];
+  }
+
+  const deviceEntry = getDeviceCreationEntry(context);
+
+  return [{
+    id: 'device-product:create-private-product',
+    name: i18n.global.t('Product.homeAgent.workflow.createPrivateProduct.name'),
+    description: i18n.global.t('Product.homeAgent.workflow.createPrivateProduct.description'),
+    when: i18n.global.t('Product.homeAgent.workflow.createPrivateProduct.when'),
+    keywords: ['创建产品', '新增产品', '物模型', '新增属性', '首台设备', 'create product', 'thing model', 'MQTT'],
+    priority: 100,
+    steps: [
+      {
+        title: i18n.global.t('Product.homeAgent.workflow.createPrivateProduct.step.basic.title'),
+        description: i18n.global.t('Product.homeAgent.workflow.createPrivateProduct.step.basic.description', [
+          i18n.global.t('Save.index.912481-11'),
+        ]),
+      },
+      {
+        title: i18n.global.t('Product.homeAgent.workflow.createPrivateProduct.step.access.title'),
+        description: i18n.global.t('Product.homeAgent.workflow.createPrivateProduct.step.access.description'),
+      },
+      {
+        title: i18n.global.t('Product.homeAgent.workflow.createPrivateProduct.step.metadata.title'),
+        description: i18n.global.t('Product.homeAgent.workflow.createPrivateProduct.step.metadata.description'),
+      },
+      ...(deviceEntry ? [{
+        title: i18n.global.t('Product.homeAgent.workflow.createPrivateProduct.step.device.title'),
+        description: i18n.global.t('Product.homeAgent.workflow.createPrivateProduct.step.device.description', [
+          deviceEntry.markdownLink,
+        ]),
+      }] : []),
+    ],
+    output: i18n.global.t('Product.homeAgent.workflow.createPrivateProduct.output'),
+    notes: [
+      i18n.global.t('Product.homeAgent.workflow.createPrivateProduct.notes'),
+      ...(!deviceEntry ? [i18n.global.t('Product.homeAgent.workflow.createPrivateProduct.noDeviceMenu')] : []),
+    ],
+  }];
+};
+
+/** 将页面事实随每次请求发送，避免仅有入口说明时模型自行补全不存在的字段或按钮。 */
+const getProductSystemPromptLines = (context: HomeAgentCapabilityContext) => {
+  if (!isDeviceProductAvailable(context)) {
+    return [];
+  }
+
+  const lines = [i18n.global.t('Product.homeAgent.prompt.globalSystem')];
+  if (isPrivateDeployment()) {
+    lines.push(i18n.global.t('Product.homeAgent.prompt.privateCreation', [
+      i18n.global.t('Save.index.912481-11'),
+      i18n.global.t('Save.index.912481-13'),
+      i18n.global.t('Save.index.912481-15'),
+    ]));
+    const deviceEntry = getDeviceCreationEntry(context);
+    lines.push(deviceEntry
+      ? i18n.global.t('Product.homeAgent.prompt.privateDeviceEntry', [deviceEntry.markdownLink])
+      : i18n.global.t('Product.homeAgent.workflow.createPrivateProduct.noDeviceMenu'));
+  }
+  return lines;
+};
+
 const getProductWorkflowGuides = (): HomeAgentWorkflowGuide[] => [
   {
     id: 'device-product:resolve-product-id',
@@ -285,10 +365,10 @@ export const deviceProductHomeAgentProvider: HomeAgentCapabilityProvider = {
   getCapabilities: (context) => (isDeviceProductAvailable(context) ? createProductCapabilities(context) : []),
   getClientTools: (context) => (isDeviceProductAvailable(context) ? createProductTools() : []),
   getPromptExamples: (context) => (isDeviceProductRoute(context) ? getProductPromptExamples() : []),
-  getWorkflowGuides: (context) => (isDeviceProductAvailable(context) ? getProductWorkflowGuides() : []),
-  getSystemPromptLines: (context) => (isDeviceProductAvailable(context)
-    ? i18n.global.t('Product.homeAgent.prompt.globalSystem')
+  getWorkflowGuides: (context) => (isDeviceProductAvailable(context)
+    ? [...getPrivateProductCreationGuides(context), ...getProductWorkflowGuides()]
     : []),
+  getSystemPromptLines: getProductSystemPromptLines,
 };
 
 export const registerDeviceProductHomeAgentProvider = () => (
