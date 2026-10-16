@@ -84,7 +84,7 @@
             class="center-extra-content"
             :style="{ width: centerExtraWidth }"
           >
-            <span class="desc">{{ $t('Metadata.index.838029-5') }}</span >
+            <j-ellipsis class="desc">{{ $t('Metadata.index.838029-5') }}</j-ellipsis>
           </div>
         </teleport>
         <Import
@@ -211,10 +211,10 @@ watch(
             padding: 0;
         }
     }
-    .desc {
+    .center-extra-content :deep(.desc) {
         font-size: 13px;
         color: rgba(0, 0, 0, 0.8);
-        display: inline-block;
+        white-space: normal;
         margin-top: 12px;
         margin-left: 5px;
     }
