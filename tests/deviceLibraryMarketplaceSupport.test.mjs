@@ -52,6 +52,6 @@ test('a missing marketplace service keeps device creation on project products', 
 
 test('gateway business identifier is only shown after marketplace support is confirmed', () => {
   assert.match(bizKeyPickerSource, /available\.value = await probeDeviceLibraryCapability_api\(\)/)
-  assert.match(bizKeyPickerSource, /if \(available\.value\) void loadTags\(\)/)
+  assert.match(bizKeyPickerSource, /<a-form-item v-if="available"/)
   assert.doesNotMatch(bizKeyPickerSource, /await probeDeviceLibraryCapability_api\(\)\s*\n\s*available\.value = true/)
 })
