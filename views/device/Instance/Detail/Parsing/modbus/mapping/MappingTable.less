@@ -1,0 +1,597 @@
+
+
+.mm-action-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+}
+
+
+.mm-action-header-title {
+  margin-right: 2px;
+}
+
+
+.mm-action-header-add {
+  padding: 0 4px;
+  height: auto;
+  font-size: 12px;
+}
+
+
+.mm-main-left {
+  flex: 0 0 auto;
+  width: 62%;
+  min-width: 260px;
+  max-width: 85%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+
+.mm-link-type-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+  background: #fafafa;
+  font-size: 12px;
+}
+
+
+.mm-link-type-lbl {
+  color: rgba(0, 0, 0, 0.65);
+  white-space: nowrap;
+}
+
+
+.mm-link-type-hint {
+  color: rgba(0, 0, 0, 0.45);
+  flex: 1 1 200px;
+  min-width: 0;
+  line-height: 1.45;
+}
+
+
+@media (max-width: 1100px) {
+  .mm-main {
+    flex-direction: column;
+  }
+
+  .mm-main-left {
+    width: 100% !important;
+    max-width: none;
+  }
+
+  .mm-splitter {
+    display: none;
+  }
+
+  .mm-main-right {
+    position: static;
+    min-width: 0;
+    max-height: none;
+    overflow-y: visible;
+  }
+}
+
+
+.mm-table-scroll {
+  width: 100%;
+  min-width: 0;
+  flex: 1;
+  min-height: 0;
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #fff;
+
+  :deep(.ant-table-wrapper) {
+    border-radius: 6px;
+  }
+
+  :deep(.ant-table-header) {
+    border-radius: 0;
+  }
+
+  /* 仅当表体内容高度超过 scroll.y 时出现纵向滚动条 */
+  :deep(.ant-table-body) {
+    overflow-y: auto !important;
+  }
+}
+
+
+.mm-table {
+  :deep(.ant-table-cell) {
+    vertical-align: top;
+    padding: 6px 8px !important;
+  }
+}
+
+
+.cell-hint {
+  margin-top: 2px;
+  min-height: 18px;
+  line-height: 1;
+}
+
+
+.mm-prop-desc {
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: rgba(0, 0, 0, 0.55);
+  word-break: break-word;
+}
+
+
+.mm-prop-undef-hint {
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: #d46b08;
+}
+
+
+.mm-prop-rw-tags {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+
+.mm-rw-conflict-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  cursor: help;
+}
+
+
+.mm-rw-warn-icon {
+  font-size: 13px;
+  color: #ff4d4f;
+}
+
+
+/* 属性 Select：收起态与下拉项均为「大字名称 + 小字 id」同行展示 */
+.mm-prop-select-dropdown {
+  :deep(.ant-select-item-option-content) {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .mm-prop-opt {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: nowrap;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .mm-prop-opt-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.85);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mm-prop-opt-id {
+    flex-shrink: 0;
+    font-size: 11px;
+    color: rgba(0, 0, 0, 0.45);
+  }
+}
+
+
+.mm-prop-ac-wrap {
+  position: relative;
+  width: 100%;
+}
+
+
+.mm-prop-ac-fake {
+  position: absolute;
+  left: 11px;
+  right: 28px;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  padding-right: 4px;
+  pointer-events: none;
+  overflow: hidden;
+  line-height: 28px;
+}
+
+
+.mm-prop-ac-fake-name {
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.88);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+.mm-prop-ac-fake-id {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.38);
+}
+
+
+.mm-prop-ac--ghost :deep(.ant-input),
+.mm-prop-ac--ghost :deep(input) {
+  color: transparent !important;
+  caret-color: rgba(0, 0, 0, 0.65);
+}
+
+
+.mm-prop-ac {
+  :deep(.ant-select-selector) {
+    min-height: 28px;
+  }
+}
+
+
+// ── 寄存器地址结构化 hint ──────────────────────────────────────
+.reg-hint {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+
+.reg-format-tip {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px 4px;
+  max-width: 100%;
+  margin-top: 2px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #f6f8fa;
+  color: rgba(0, 0, 0, 0.48);
+  font-size: 10px;
+  line-height: 16px;
+}
+
+
+.reg-format-tip code {
+  padding: 0 3px;
+  border-radius: 3px;
+  background: rgba(22, 119, 255, 0.08);
+  color: #1677ff;
+  font-size: 10px;
+  line-height: 14px;
+}
+
+
+.reg-hint-row1 {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  line-height: 16px;
+  flex-wrap: nowrap;
+}
+
+
+.reg-zone-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 4px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 15px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+
+.reg-zone-name {
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.55);
+  white-space: nowrap;
+}
+
+
+.reg-addr-val {
+  font-weight: 600;
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.82);
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+
+.reg-slave {
+  font-size: 10px;
+  padding: 0 4px;
+  background: #f5f5f5;
+  border-radius: 3px;
+  color: rgba(0, 0, 0, 0.45);
+  line-height: 14px;
+  white-space: nowrap;
+}
+
+
+.reg-hint-row2 {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  color: rgba(0, 0, 0, 0.38);
+  line-height: 14px;
+  flex-wrap: wrap;
+}
+
+
+.reg-hint-row3 {
+  margin-top: 2px;
+  font-size: 9px;
+  line-height: 13px;
+  color: rgba(0, 0, 0, 0.32);
+  font-style: italic;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+}
+
+
+.reg-hint-zone-explain {
+  flex: 1 1 120px;
+  min-width: 0;
+}
+
+
+.mm-reg-mask-tail {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+  font-style: normal;
+}
+
+
+.mm-reg-mask-tail-lbl {
+  font-size: 9px;
+  color: rgba(0, 0, 0, 0.42);
+  cursor: help;
+  user-select: none;
+  white-space: nowrap;
+}
+
+
+.mm-reg-mask-tail-sw {
+  transform: scale(0.82);
+  transform-origin: center center;
+}
+
+
+.reg-micro {
+  font-style: italic;
+  color: rgba(0, 0, 0, 0.28);
+}
+
+
+.reg-fc-badge {
+  font-size: 9px;
+  padding: 0 3px;
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 2px;
+  color: rgba(0, 0, 0, 0.38);
+  line-height: 12px;
+  white-space: nowrap;
+}
+
+
+.reg-meta-sep {
+  color: rgba(0, 0, 0, 0.18);
+  flex-shrink: 0;
+}
+
+
+// FC格式 inline 展示（用于 Row1 中 FC 代码）
+.reg-fc-inline {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+
+// 交叉解释标签（"Modbus" / "PLC"）
+.reg-interp-label {
+  font-size: 9px;
+  padding: 0 4px;
+  border-radius: 2px;
+  background: rgba(0, 0, 0, 0.05);
+  color: rgba(0, 0, 0, 0.35);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  line-height: 13px;
+}
+
+
+// Row2 中小号地址值（PLC 交叉解释）
+.reg-addr-val-sm {
+  font-size: 10px;
+  color: rgba(0, 0, 0, 0.55);
+  white-space: nowrap;
+}
+
+
+.reg-hint-error {
+  margin-top: 2px;
+  font-size: 10px;
+  color: #ff4d4f;
+}
+
+
+.codec-count-hint {
+  font-size: 10px;
+  color: rgba(0, 0, 0, 0.35);
+  font-style: italic;
+}
+
+
+/* 表格：解析列 — 类型 / 布局 同一行 + 缩放/小数摘要 */
+.mm-codec-layout-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+
+.mm-parse-inline-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  width: 100%;
+}
+
+
+.mm-parse-label--inline {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 0;
+  text-align: left;
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.5);
+}
+
+
+.mm-parse-inline-sel {
+  flex: 1 1 76px;
+  min-width: 56px;
+  max-width: 118px;
+}
+
+
+.mm-parse-inline-sel--layout {
+  max-width: 76px;
+}
+
+
+.mm-parse-inline-sel :deep(.ant-select-selection-item),
+.mm-parse-inline-sel :deep(.ant-select-selection-placeholder) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+.mm-parse-layout-dash {
+  font-size: 12px;
+  color: #bfbfbf;
+  padding: 0 4px;
+}
+
+
+.mm-parse-scale-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 2px;
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.55);
+  line-height: 1.35;
+  margin-top: 2px;
+}
+
+
+.mm-parse-scale-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  max-width: 100%;
+}
+
+
+.mm-parse-scale-lbl {
+  flex: 0 0 auto;
+  color: rgba(0, 0, 0, 0.38);
+  cursor: help;
+  user-select: none;
+}
+
+
+.mm-parse-scale-inn {
+  flex: 0 1 auto;
+  min-width: 0;
+  padding: 0 !important;
+  font-size: 11px !important;
+  line-height: 1.35 !important;
+  color: rgba(0, 0, 0, 0.75) !important;
+  background: transparent !important;
+  border-radius: 2px;
+  transition: background 0.15s ease;
+}
+
+
+.mm-parse-scale-inn:hover,
+.mm-parse-scale-inn.ant-input-number-focused {
+  background: rgba(0, 0, 0, 0.04) !important;
+}
+
+
+.mm-parse-scale-inn--factor {
+  width: 52px;
+}
+
+
+.mm-parse-scale-inn--scale {
+  width: 40px;
+}
+
+
+.mm-parse-scale-inn :deep(.ant-input-number-input) {
+  padding: 0 4px !important;
+  height: 20px !important;
+  text-align: left;
+}
+
+
+.mm-parse-scale-sep {
+  margin: 0 3px;
+  color: rgba(0, 0, 0, 0.25);
+}
+
+
+.mm-parse-hint {
+  margin-left: 0;
+  margin-top: 0;
+}
+
+
+/* 表格内：选项结构（弹出层样式见下方全局块） */
+.mm-codec-opt {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+}

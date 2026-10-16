@@ -1,0 +1,154 @@
+
+
+.cell-hint {
+  margin-top: 2px;
+  min-height: 18px;
+  line-height: 1;
+}
+
+
+.codec-count-hint {
+  font-size: 10px;
+  color: rgba(0, 0, 0, 0.35);
+  font-style: italic;
+}
+
+
+/* 表格：解析列 — 类型 / 布局 同一行 + 缩放/小数摘要 */
+.mm-codec-layout-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+
+.mm-parse-inline-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  width: 100%;
+}
+
+
+.mm-parse-label--inline {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 0;
+  text-align: left;
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.5);
+}
+
+
+.mm-parse-inline-sel {
+  flex: 1 1 76px;
+  min-width: 56px;
+  max-width: 118px;
+}
+
+
+.mm-parse-inline-sel--layout {
+  max-width: 76px;
+}
+
+
+.mm-parse-inline-sel :deep(.ant-select-selection-item),
+.mm-parse-inline-sel :deep(.ant-select-selection-placeholder) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+.mm-parse-layout-dash {
+  font-size: 12px;
+  color: #bfbfbf;
+  padding: 0 4px;
+}
+
+
+.mm-parse-scale-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 2px;
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.55);
+  line-height: 1.35;
+  margin-top: 2px;
+}
+
+
+.mm-parse-scale-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  max-width: 100%;
+}
+
+
+.mm-parse-scale-lbl {
+  flex: 0 0 auto;
+  color: rgba(0, 0, 0, 0.38);
+  cursor: help;
+  user-select: none;
+}
+
+
+.mm-parse-scale-inn {
+  flex: 0 1 auto;
+  min-width: 0;
+  padding: 0 !important;
+  font-size: 11px !important;
+  line-height: 1.35 !important;
+  color: rgba(0, 0, 0, 0.75) !important;
+  background: transparent !important;
+  border-radius: 2px;
+  transition: background 0.15s ease;
+}
+
+
+.mm-parse-scale-inn:hover,
+.mm-parse-scale-inn.ant-input-number-focused {
+  background: rgba(0, 0, 0, 0.04) !important;
+}
+
+
+.mm-parse-scale-inn--factor {
+  width: 52px;
+}
+
+
+.mm-parse-scale-inn--scale {
+  width: 40px;
+}
+
+
+.mm-parse-scale-inn :deep(.ant-input-number-input) {
+  padding: 0 4px !important;
+  height: 20px !important;
+  text-align: left;
+}
+
+
+.mm-parse-scale-sep {
+  margin: 0 3px;
+  color: rgba(0, 0, 0, 0.25);
+}
+
+
+.mm-parse-hint {
+  margin-left: 0;
+  margin-top: 0;
+}
+
+
+/* 表格内：选项结构（弹出层样式见下方全局块） */
+.mm-codec-opt {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+}

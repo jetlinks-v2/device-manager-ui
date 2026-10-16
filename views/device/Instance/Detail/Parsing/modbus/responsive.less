@@ -1,0 +1,70 @@
+/* 英文长文案适配；原中文样式保留在各组件的 scoped 样式中。 */
+.mm-wrap.mm-locale-en {
+  .mm-main-left { flex-shrink: 1; }
+  .mm-main-right { flex-basis: 0; }
+  .mm-link-type-hint, .reg-hint-zone-explain, .mp-fill-hint, .dvm-hint, .encode-read-hint, .decode-parse-empty {
+    overflow-wrap: anywhere;
+  }
+  .mm-main-right .ant-tabs-nav-list {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    width: 100%;
+  }
+  .mm-main-right .ant-tabs-tab {
+    min-width: 0;
+    margin-left: 0 !important;
+    padding: 8px;
+  }
+  .mm-main-right .ant-tabs-tab-btn {
+    white-space: normal;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+  }
+  .mm-main-right .ant-tabs-nav-operations { display: none; }
+  .decode-sim-bar, .mp-compact-head, .mp-compact-kv, .mp-fill-row, .encode-row {
+    flex-wrap: wrap;
+  }
+  .decode-sim-addr-input { min-width: 110px; flex: 1 1 140px; }
+  .decode-sim-hex-preview { min-width: 80px; flex: 1 1 100px; }
+  .decode-sim-actions { margin-left: auto; }
+  .decode-pdu-coil-base { flex-wrap: wrap; }
+  .encode-read-hint, .debug-output, .mp-warn-tight { overflow-wrap: anywhere; }
+}
+
+.mm-wrap.mm-locale-en {
+  .mm-action-header {
+    display: flex;
+    flex-wrap: wrap;
+    white-space: normal;
+  }
+  .mm-codec-layout-cell .mm-parse-inline-top {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: 4px 6px;
+  }
+  .mm-codec-layout-cell .mm-parse-inline-sel {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+  }
+  .mm-codec-layout-cell .codec-count-hint {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    line-height: 1.45;
+  }
+}
+
+.ant-modal.mm-fill-modal-en {
+  top: 24px;
+  padding-bottom: 24px;
+
+  .ant-modal-content {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 48px);
+  }
+
+  .ant-modal-header, .ant-modal-footer { flex-shrink: 0; }
+  .ant-modal-body { min-height: 0; overflow-y: auto; }
+}

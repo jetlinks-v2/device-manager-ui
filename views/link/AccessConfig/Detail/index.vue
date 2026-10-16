@@ -9,20 +9,18 @@
               />
             </div>
             <FullPage :fixed="false" v-else>
-                <a-card :bordered="false">
-                    <div>
-                        <div class="go-back" v-if="id === ':id'">
-                            <a @click="goBack">{{ $t('Detail.index.308483-0') }}</a>
-                        </div>
-                      <component
-                        :is="showType === 'network' ? components[provider.id] || components.network : components[showType]"
-                        :data="data"
-                        :provider="provider"
-                        :bindProduct="provider.id === `composite-device-gateway` ? undefined: bindProduct"
-                        :otherProvider="provider.id === `composite-device-gateway` ? compositeProvider : undefined"
-                      />
-                    </div>
-                </a-card>
+		            <div>
+				            <div class="go-back" v-if="id === ':id'">
+					              <a @click="goBack">{{ $t('Detail.index.308483-0') }}</a>
+				            </div>
+				            <component
+						            :is="showType === 'network' ? components[provider.id] || components.network : components[showType]"
+						            :data="data"
+						            :provider="provider"
+						            :bindProduct="provider.id === `composite-device-gateway` ? undefined: bindProduct"
+						            :otherProvider="provider.id === `composite-device-gateway` ? compositeProvider : undefined"
+			            />
+		            </div>
             </FullPage>
         </a-spin>
     </j-page-container>

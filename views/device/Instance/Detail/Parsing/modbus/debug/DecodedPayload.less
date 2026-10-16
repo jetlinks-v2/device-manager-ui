@@ -1,0 +1,738 @@
+
+
+/* PDU 与映射融合区 */
+.mp-pdu-fusion {
+  margin-top: 6px;
+  padding: 8px 8px 6px;
+  background: #fafafa;
+  border: 1px solid #f0f0f0;
+  border-radius: 4px;
+}
+
+
+.mp-pdu-fusion-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin-bottom: 6px;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+
+.mp-pdu-fusion-ttl {
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.78);
+}
+
+
+.mp-pdu-fusion-meta {
+  color: rgba(0, 0, 0, 0.45);
+  font-weight: 400;
+}
+
+
+.mp-pdu-fusion-badge {
+  font-size: 10px;
+  padding: 0 6px;
+  line-height: 18px;
+  border-radius: 2px;
+  border: 1px solid transparent;
+}
+
+
+.mp-pdu-fusion-badge--muted {
+  color: rgba(0, 0, 0, 0.45);
+  background: #fff;
+  border-color: #f0f0f0;
+}
+
+
+.mp-pdu-fusion-badge--ok {
+  color: #389e0d;
+  background: rgba(82, 196, 26, 0.08);
+  border-color: rgba(82, 196, 26, 0.25);
+}
+
+
+.mp-pdu-fusion-badge--warn {
+  color: #d46b08;
+  background: rgba(250, 173, 20, 0.1);
+  border-color: rgba(250, 173, 20, 0.35);
+}
+
+
+.mp-pdu-fusion-badge--err {
+  color: #cf1322;
+  background: rgba(255, 77, 79, 0.08);
+  border-color: rgba(255, 77, 79, 0.25);
+}
+
+
+.mp-pdu-fusion-foot {
+  margin-top: 6px;
+  font-size: 10px;
+  color: rgba(0, 0, 0, 0.38);
+  line-height: 1.35;
+}
+
+
+.mp-dvm-alert {
+  margin-top: 6px;
+  font-size: 12px;
+}
+
+
+.dvm-byte-idx {
+  text-align: center;
+  font-size: 9px;
+  color: rgba(0, 0, 0, 0.38);
+  line-height: 1.2;
+  margin-bottom: 2px;
+}
+
+
+.dvm-byte-strip--plain {
+  padding-top: 0;
+}
+
+
+.dvm-byte-bits--plain {
+  opacity: 0.85;
+}
+
+
+.dvm-bit--plain {
+  background: #f5f5f5 !important;
+  /* 边框由 dvm-bit-val-0 / dvm-bit-val-1 按位值着色 */
+}
+
+
+.decode-visual-fallback--embedded {
+  margin-top: 6px;
+}
+
+
+/* 解码结果：PDU 字节 ↔ 属性 同色对齐 */
+.decode-visual-map {
+  margin-top: 6px;
+  padding: 8px 10px;
+  background: #fbfbfb;
+  border: 1px solid #f0f0f0;
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+
+.decode-visual-map--embedded {
+  margin-top: 0;
+  padding: 4px 0 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+
+.dvm-hint {
+  font-size: 10px;
+  color: rgba(0, 0, 0, 0.38);
+  margin-bottom: 8px;
+  line-height: 1.35;
+}
+
+
+.dvm-byte-strip {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  align-items: flex-start;
+  overflow-x: auto;
+  padding: 2px 0 4px;
+}
+
+
+/* 保持/输入：每行 4 个寄存器 = 8 字节，自动换行 */
+.dvm-byte-strip--word {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px 8px;
+  width: 100%;
+  overflow-x: visible;
+  flex-wrap: unset;
+}
+
+
+.dvm-byte-strip--word .dvm-reg-wrap {
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+
+/* 线圈/离散：每行 8 个字节，自动换行；单列加宽便于读 Hex 与位格 */
+.dvm-byte-strip--bit {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(112px, 1fr));
+  gap: 14px 12px;
+  width: 100%;
+  overflow-x: visible;
+  flex-wrap: unset;
+}
+
+
+/* 未解码预览：寄存器字数据按 8 字节换行 */
+.dvm-byte-strip--word-plain {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 10px 8px;
+  width: 100%;
+  overflow-x: visible;
+  flex-wrap: unset;
+}
+
+
+/* 保持/输入：字内两字节格拉满寄存器框，略增大 Hex/位格 */
+.dvm-byte-strip--word .dvm-reg-inner {
+  width: 100%;
+}
+
+
+.dvm-byte-strip--word .dvm-byte-cell {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+
+.dvm-byte-strip--word .dvm-byte-hex {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px 4px;
+  font-size: 11px;
+  min-height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+.dvm-byte-strip--word .dvm-byte-bits {
+  width: 100%;
+  justify-content: space-between;
+  gap: 2px;
+  margin-top: 4px;
+}
+
+
+.dvm-byte-strip--word .dvm-bit {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 12px;
+}
+
+
+/* 外层：寄存器/字节块细边框（字=2 字节，线圈=1 字节） */
+.dvm-reg-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 4px 4px;
+  border: 1px solid rgba(0, 0, 0, 0.09);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.85);
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.02);
+}
+
+
+.dvm-reg-wrap--coil {
+  padding: 4px 6px 6px;
+}
+
+
+.dvm-reg-chip {
+  font-size: 9px;
+  line-height: 1;
+  color: rgba(0, 0, 0, 0.38);
+  user-select: none;
+}
+
+
+.dvm-reg-inner {
+  display: flex;
+  flex-direction: row;
+  gap: 3px;
+  align-items: flex-start;
+}
+
+
+.dvm-reg-inner--single {
+  gap: 0;
+  width: 100%;
+}
+
+
+.dvm-byte-cell {
+  flex: 0 0 auto;
+  width: 56px;
+}
+
+
+/* 线圈块内：字节格铺满列宽，Hex 与 8 位同宽 */
+.dvm-byte-strip--bit .dvm-reg-wrap {
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+
+.dvm-byte-strip--bit .dvm-reg-inner--single,
+.dvm-byte-strip--bit .dvm-byte-cell {
+  width: 100%;
+}
+
+
+.dvm-byte-strip--bit .dvm-byte-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+
+.dvm-byte-strip--bit .dvm-byte-hex {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+.dvm-byte-strip--bit .dvm-byte-bits {
+  width: 100%;
+  justify-content: space-between;
+  gap: 5px;
+  margin-top: 6px;
+}
+
+
+.dvm-byte-strip--bit .dvm-bit {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 18px;
+}
+
+
+/* 线圈：位序号（MSB→LSB 与格对齐） */
+.dvm-byte-strip--bit .dvm-bit-meta-row {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  justify-content: space-between;
+  gap: 5px;
+  margin-top: 6px;
+  align-items: center;
+}
+
+
+.dvm-byte-strip--bit .dvm-bit-idx-lbl {
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: center;
+  font-size: 9px;
+  line-height: 1.2;
+  color: rgba(0, 0, 0, 0.38);
+  user-select: none;
+}
+
+
+.dvm-byte-strip--plain .dvm-byte-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  min-width: 0;
+}
+
+
+.dvm-byte-strip--plain .dvm-byte-hex {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px 4px;
+  font-size: 11px;
+  min-height: 22px;
+}
+
+
+/* 未解码的读线圈/离散：与已映射区一致，单字节 Hex 加宽 */
+.dvm-byte-strip--plain.dvm-byte-strip--bit .dvm-byte-hex {
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+.dvm-byte-strip--plain .dvm-byte-bits {
+  width: 100%;
+  justify-content: space-between;
+  gap: 3px;
+  margin-top: 4px;
+}
+
+
+.dvm-byte-strip--plain .dvm-bit {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 14px;
+}
+
+
+.dvm-byte-strip--plain.dvm-byte-strip--bit .dvm-bit {
+  height: 18px;
+}
+
+
+.dvm-byte-hex {
+  text-align: center;
+  font-size: 12px;
+  padding: 2px 1px;
+  border-radius: 2px;
+  border: 1px solid transparent;
+  line-height: 1.2;
+}
+
+
+.dvm-byte-bits {
+  display: flex;
+  flex-direction: row;
+  gap: 0;
+  margin-top: 2px;
+  justify-content: center;
+}
+
+
+.dvm-bit {
+  box-sizing: border-box;
+  width: 4px;
+  min-width: 4px;
+  height: 10px;
+  border-radius: 1px;
+  border: 0.5px solid transparent;
+  flex-shrink: 0;
+}
+
+
+/* 按位（线圈）：位格以底色区分 0/1；下边框表示映射色号或悬停 */
+.dvm-byte-strip--bit .dvm-bit {
+  border: none !important;
+  border-radius: 4px;
+  border-bottom: 2px solid transparent !important;
+  box-sizing: border-box;
+}
+
+
+.dvm-byte-strip--bit .dvm-bit.dvm-t-0 {
+  border-bottom-color: rgba(22, 119, 255, 0.42) !important;
+}
+
+
+.dvm-byte-strip--bit .dvm-bit.dvm-t-1 {
+  border-bottom-color: rgba(82, 196, 26, 0.42) !important;
+}
+
+
+.dvm-byte-strip--bit .dvm-bit.dvm-t-2 {
+  border-bottom-color: rgba(250, 173, 20, 0.48) !important;
+}
+
+
+.dvm-byte-strip--bit .dvm-bit.dvm-t-3 {
+  border-bottom-color: rgba(196, 132, 255, 0.5) !important;
+}
+
+
+.dvm-byte-strip--bit .dvm-bit.dvm-t-4 {
+  border-bottom-color: rgba(19, 194, 194, 0.45) !important;
+}
+
+
+.dvm-byte-strip--bit .dvm-bit.dvm-t-5 {
+  border-bottom-color: rgba(255, 120, 117, 0.45) !important;
+}
+
+
+.dvm-byte-strip--bit .dvm-bit.dvm-t-6 {
+  border-bottom-color: rgba(0, 0, 0, 0.2) !important;
+}
+
+
+.dvm-byte-strip--bit .dvm-bit.dvm-t-7 {
+  border-bottom-color: rgba(47, 84, 235, 0.42) !important;
+}
+
+
+.dvm-byte-strip--bit .dvm-bit.dvm-t-x {
+  border-bottom-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+
+.dvm-byte-strip--bit .dvm-bit.dvm-bit-val-0 {
+  background: #e8e8e8 !important;
+}
+
+
+.dvm-byte-strip--bit .dvm-bit.dvm-bit-val-1 {
+  background: #bae7ff !important;
+}
+
+
+/* 与默认同为 2px 底边，只改颜色，不增厚度、不加额外阴影，避免位格高度变化 */
+.dvm-byte-strip--bit .dvm-bit.dvm-bit--hover-sel {
+  border-bottom-color: rgba(250, 140, 22, 0.95) !important;
+}
+
+
+.dvm-prop-list {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+
+.dvm-prop-compact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 8px;
+  font-size: 10px;
+  line-height: 1.35;
+  padding: 2px 0;
+  border-bottom: 1px dashed #f0f0f0;
+}
+
+
+.dvm-prop-compact:last-child {
+  border-bottom: none;
+}
+
+
+.dvm-prop-compact--hover {
+  background: rgba(24, 144, 255, 0.1);
+  border-radius: 4px;
+}
+
+
+.dvm-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  margin-top: 3px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+
+.dvm-prop-id {
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.78);
+  flex: 0 0 auto;
+  max-width: 42%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+.dvm-prop-val {
+  color: rgba(0, 0, 0, 0.82);
+  word-break: break-word;
+  flex: 1 1 120px;
+  min-width: 0;
+}
+
+
+.dvm-prop-meta {
+  flex: 1 1 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 9px;
+  color: rgba(0, 0, 0, 0.42);
+  padding-left: 13px;
+}
+
+
+.dvm-prop-reg {
+  opacity: 0.85;
+}
+
+
+.dvm-warns {
+  margin-top: 8px;
+  font-size: 10px;
+  color: #d46b08;
+  line-height: 1.45;
+}
+
+
+.dvm-unmapped {
+  margin-top: 6px;
+  font-size: 10px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+
+.dvm-t-x {
+  background: #fafafa;
+  border-color: #eee !important;
+  color: rgba(0, 0, 0, 0.32);
+}
+
+
+.dvm-t-x.dvm-byte-hex {
+  border-style: dashed;
+}
+
+
+/* 同字节内多个属性各占不同位：byteTone 无法取单一色号，用实线中性底，避免与「未映射」虚线混淆 */
+.dvm-byte-hex.dvm-byte-hex--mixed {
+  border-style: solid !important;
+  border-color: #d9d9d9 !important;
+  background: rgba(0, 0, 0, 0.04);
+  color: rgba(0, 0, 0, 0.78);
+}
+
+
+.dvm-bit.dvm-t-0,
+.dvm-dot.dvm-t-0 {
+  background: rgba(22, 119, 255, 0.22);
+  border-color: rgba(22, 119, 255, 0.45);
+  color: transparent;
+}
+
+
+.dvm-bit.dvm-t-1,
+.dvm-dot.dvm-t-1 {
+  background: rgba(82, 196, 26, 0.25);
+  border-color: rgba(82, 196, 26, 0.45);
+  color: transparent;
+}
+
+
+.dvm-bit.dvm-t-2,
+.dvm-dot.dvm-t-2 {
+  background: rgba(250, 173, 20, 0.28);
+  border-color: rgba(250, 173, 20, 0.5);
+  color: transparent;
+}
+
+
+.dvm-bit.dvm-t-3,
+.dvm-dot.dvm-t-3 {
+  background: rgba(211, 131, 255, 0.26);
+  border-color: rgba(196, 132, 255, 0.55);
+  color: transparent;
+}
+
+
+.dvm-bit.dvm-t-4,
+.dvm-dot.dvm-t-4 {
+  background: rgba(19, 194, 194, 0.24);
+  border-color: rgba(19, 194, 194, 0.48);
+  color: transparent;
+}
+
+
+.dvm-bit.dvm-t-5,
+.dvm-dot.dvm-t-5 {
+  background: rgba(255, 120, 117, 0.24);
+  border-color: rgba(255, 120, 117, 0.48);
+  color: transparent;
+}
+
+
+.dvm-bit.dvm-t-6,
+.dvm-dot.dvm-t-6 {
+  background: rgba(0, 0, 0, 0.12);
+  border-color: rgba(0, 0, 0, 0.22);
+  color: transparent;
+}
+
+
+.dvm-bit.dvm-t-7,
+.dvm-dot.dvm-t-7 {
+  background: rgba(47, 84, 235, 0.22);
+  border-color: rgba(47, 84, 235, 0.45);
+  color: transparent;
+}
+
+
+/* 位实际值：细边框（重叠位不加此类） */
+.dvm-bit.dvm-bit-val-0 {
+  border-color: rgba(0, 0, 0, 0.12) !important;
+}
+
+
+.dvm-bit.dvm-bit-val-1 {
+  border-color: rgba(24, 144, 255, 0.5) !important;
+}
+
+
+/* 按位时悬停圈选见 .dvm-byte-strip--bit .dvm-bit.dvm-bit--hover-sel */
+
+.decode-visual-fallback {
+  margin-top: 6px;
+}
+
+
+.dvm-fallback-alert :deep(.ant-alert-description) {
+  margin-top: 6px;
+}
+
+
+.dvm-fallback-hex {
+  font-size: 10px;
+  word-break: break-all;
+  margin-bottom: 8px;
+  padding: 4px 6px;
+  background: #fafafa;
+  border-radius: 2px;
+  line-height: 1.4;
+}
+
+
+.dvm-fallback-row {
+  display: flex;
+  gap: 8px;
+  font-size: 11px;
+  margin-bottom: 4px;
+  align-items: flex-start;
+}
+
+
+.dvm-fallback-k {
+  flex: 0 0 auto;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.65);
+}
+
+
+.dvm-fallback-v {
+  flex: 1 1 auto;
+  word-break: break-word;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.78);
+}
