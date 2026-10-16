@@ -1,6 +1,8 @@
 import { markRaw } from 'vue'
 import i18n from '@jetlinks-web-core/locales'
+import { useMenuStore } from '@jetlinks-web-core/store/menu'
 import { isPrivateDeployment } from '@jetlinks-web-core/utils/deployment'
+import { isNoCommunity } from '@jetlinks-web-core/utils/utils'
 import {
   buildQueryFilter,
   decodeConditionFilterQuery,
@@ -10,7 +12,7 @@ import {
 } from '@jetlinks-web-core/components/ConditionFilter'
 import { queryDeviceProductById_api, type DeviceLibraryProductFilterOption, type DeviceQueryTerm } from './api/device'
 import { queryTree } from './api/category'
-import { queryGatewayList, queryNoPagingPost } from './api/product'
+import { queryGatewayList, queryNoPagingPost, queryOrgThree } from './api/product'
 import type { DeviceGroup } from './api/deviceGroup'
 import type { ProjectArea } from './modules/defaults/types'
 import { getI18nText } from './utils/i18n'
@@ -20,12 +22,15 @@ import TagSearch from './views/device/Instance/components/TagSearch.vue'
 type SearchOption = { label: string; value: string; children?: SearchOption[] }
 type SearchOptionSource = { id: string; name: string; children?: SearchOptionSource[]; [key: string]: unknown }
 
-/** 产品、接入配置与分类树统一使用名称展示、ID 查询，保留分类层级。 */
-function toSearchOptions(items: SearchOptionSource[] = []): SearchOption[] {
+/** 引用选项按名称展示，树节点保留层级；组织节点使用设备资产关联条件作为查询值。 */
+function toSearchOptions(
+  items: SearchOptionSource[] = [],
+  getValue: (item: SearchOptionSource) => string = item => item.id,
+): SearchOption[] {
   return items.map(item => ({
     label: getI18nText(item, 'name') || item.id,
-    value: item.id,
-    ...(item.children?.length ? { children: toSearchOptions(item.children) } : {}),
+    value: getValue(item),
+    ...(item.children?.length ? { children: toSearchOptions(item.children, getValue) } : {}),
   }))
 }
 
@@ -63,7 +68,7 @@ export function getDeviceListFilterFields(
 
   // 私有化沿用设备实例页的完整字段与选项源；SaaS 继续限定为资产列表的五个字段。
   if (isPrivateDeployment()) {
-    return [
+    const fields: ConditionFilterField[] = [
       { dataIndex: 'id', title: i18n.global.t('IotDeviceList.filter.identifier'), search: { type: 'string', defaultTermType: 'eq' } },
       { dataIndex: 'name', title: i18n.global.t('IotDeviceList.filter.keyword'), search: { type: 'string', defaultTermType: 'like', first: true } },
       {
@@ -120,6 +125,27 @@ export function getDeviceListFilterFields(
       },
       { dataIndex: 'description', title: i18n.global.t('Instance.index.133466-18'), search: { type: 'string', rename: 'describe', defaultTermType: 'like' } },
     ]
+
+    // 与实例页一致，仅在非社区版且具备组织管理菜单时提供组织资产筛选。
+    if (isNoCommunity && useMenuStore().hasMenu('system/Department')) {
+      fields.splice(fields.length - 2, 0, {
+        dataIndex: 'id$dim-assets',
+        title: i18n.global.t('Instance.index.133466-16'),
+        search: {
+          type: 'treeSelect',
+          defaultTermType: 'eq',
+          termOptions: ['eq'],
+          options: async () => {
+            const response = await queryOrgThree({ paging: false })
+            return toSearchOptions(Array.isArray(response.result) ? response.result : [], item => JSON.stringify({
+              assetType: 'device',
+              targets: [{ type: 'org', id: item.id }],
+            }))
+          },
+        },
+      })
+    }
+    return fields
   }
 
   const productOptions = [...new Map(
@@ -178,10 +204,14 @@ export function getDeviceListFilterFields(
   ]
 }
 
-/** 分类和接入属于产品字段；标签编辑值则是一组保留 AND / OR 的设备标签条件。 */
+/** 组织通过设备资产关联查询，分类和接入属于产品字段；标签保留 AND / OR 条件组。 */
 function normalizeDeviceListSearchTerm(term: DeviceQueryTerm): DeviceQueryTerm {
   if (Array.isArray(term.terms)) {
     return { ...term, terms: term.terms.map(normalizeDeviceListSearchTerm) }
+  }
+  if (term.column === 'id$dim-assets') {
+    // 查询列已携带 dim-assets 操作符，沿用实例页的协议，不再提交编辑器的 eq。
+    return { type: term.type, column: term.column, value: term.value }
   }
   if (['classifiedId', 'accessId', 'accessProvider'].includes(String(term.column))) {
     return {
