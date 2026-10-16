@@ -1,7 +1,12 @@
 <template>
   <a-form-item v-if="available" name="bizKey" :label="label">
     <a-space class="biz-key-picker" :size="8">
-      <a-input class="biz-key-picker__input" :value="modelValue" readonly :placeholder="placeholder" />
+      <a-input
+        class="biz-key-picker__input"
+        :value="modelValue"
+        :placeholder="placeholder"
+        @update:value="emit('update:modelValue', $event)"
+      />
       <a-button @click="openPicker">{{ selectText }}</a-button>
     </a-space>
   </a-form-item>
