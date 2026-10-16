@@ -9,6 +9,7 @@
   <j-pro-table
       mode="TABLE"
       type="TREE"
+      class="pro-table__no-padding"
       :columns="columns"
       :request="getTreeData_api"
       :bodyStyle="{padding: 0}"

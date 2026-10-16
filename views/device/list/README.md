@@ -1,5 +1,27 @@
 # 设备列表范围侧栏
 
+## 按部署方式配置设备搜索项（已实施）
+
+目标与范围：运行时资源中心设备列表的搜索项按部署方式区分。归属 `device-manager-ui`，字段事实源为 `deviceListFilter.ts#getDeviceListFilterFields`，由 `views/device/list/unified/useUnifiedDeviceList.ts` 传给 `components/IotDeviceAssetSearchBar.vue`；条件查询、URL 解码及批量操作继续复用同一份字段配置。
+
+实现规则：
+
+1. 复用 `jetlinks-web-core/src/utils/deployment.ts#isPrivateDeployment`；`VITE_APP_ENVIRONMENT` 为空时使用私有化字段，非空环境保留现有精简字段。
+2. 私有化搜索项与 `views/device/Instance/index.vue` 对齐：设备 ID、设备名称、产品名称、创建时间、状态、产品分类、接入方式、设备类型、标签、说明。复用现有产品、分类和设备接入查询及国际化资源；产品与接入配置支持远程名称搜索、按已选 ID 回查显示名称，分类保留树形层级。
+3. SaaS 保留设备名称、设备 ID、设备类型、接入方式、产品五项；设备类型使用直连设备、网关子设备、网关设备选项，接入方式使用已安装设备库中的 `accessProvider/accessName` 去重选项，继续按 `accessProvider` 查询。私有化的接入方式则按参考页选择具体接入配置，提交 `accessId`。
+4. `getDeviceListSearchTerms` 将分类、具体接入配置和接入 Provider 转为 `productId$product-info` 关联条件；说明映射为 `describe`，标签展开为保留 AND / OR 关系的条件组。标签复用 `views/device/Instance/components/TagSearch.vue`，同时补全其 `change` 事件值，并修复超过三项、清空及逻辑连接符回显。
+
+影响边界：仅修改 `runtime-ui/modules/device-manager-ui` 的搜索配置、共享标签编辑器及相关回归测试；参考页复用的标签编辑器同步获得回显修复，未调整其搜索字段配置。通用搜索外壳、运营端 `ui/`、后端接口、菜单、权限和左侧范围筛选保持原有行为。
+
+验证结果：
+
+- 在模块根执行 `node --test tests/deviceListFilterDeployment.test.mjs tests/deviceSearchQueryContract.test.ts tests/deviceProductQuery.test.mjs`，8 项通过，覆盖部署字段集合、远程选项、URL 编解码、关联条件、日期、说明及标签编辑器回显和提交。
+- `TagSearch.vue` 与 `IotDeviceAssetSearchBar.vue` 的 Vue 脚本和模板编译通过；`git diff --check` 通过。
+- 在 `runtime-ui` 执行 `pnpm -F jetlinks-web-core build -- --module-name device-manager-ui --VITE_APP_ENVIRONMENT= --outDir /tmp/jetlinks-device-search-private-20261015`，私有化生产构建通过（11,075 个模块，4 分 53 秒）；模块构建插件将产物输出到模块 `dist/`，保留既有资源路径、大包与输出配置告警。
+- SaaS 页面已确认仍有五项筛选，设备类型展示三个中文选项；选择直连设备后结果由 4 条变为 3 条，刷新仍回显且保留筛选，清空后移除 URL 的 `q` 并保留原有范围参数。
+
+验证限制：在 `runtime-ui` 执行 `pnpm exec vue-tsc -p modules/device-manager-ui/tsconfig.json --noEmit`，被未改动的 `views/link/Certificate/type.d.ts:2` TS1005 语法错误阻断，修复后需重跑；工作区和模块未配置 lint 脚本。浏览器后续不可用，尚需在对应部署环境验证 SaaS 接入方式选择及私有化十项筛选的完整页面交互；这些条件的字段配置与查询转换已有上述自动化检查。部署方式在构建时确定，切换需要重新构建。
+
 ## 概览累计活跃时长
 
 目标与范围：运行时 `device-manager-ui` 设备概览的累计活跃时长按“天、小时、分钟”完整显示，例如 `2621h 00m` 显示为 `109天 5小时 0分钟`；卡片与趋势提示复用 `components/device-detail/iotDeviceOverviewCharts.ts#formatDuration`，入口为 `components/device-detail/IotDeviceOverviewTab.vue`。
