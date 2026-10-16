@@ -213,6 +213,12 @@
   gap: 0.75rem;
 }
 
+.property-snapshot-pagination {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-3);
+}
+
 .property-snapshot {
   min-width: 0;
   min-height: 4.875rem;

@@ -34,6 +34,7 @@ import {
 } from '@device-manager-ui/utils/deviceCreationSources'
 import { useMenuStore } from '@jetlinks-web-core/store'
 import { deviceCloudSave, isExists } from '@device-manager-ui/api/instance'
+import { isForbiddenRequest } from '../services/shared/requestError'
 
 const UNCLASSIFIED_CATEGORY_ID = '__product-unclassified__'
 
@@ -41,11 +42,6 @@ type VisibleMenuNode = { name?: string | symbol; children?: VisibleMenuNode[] }
 
 const hasVisibleMenu = (menus: VisibleMenuNode[], code: string): boolean =>
   menus.some((menu) => menu.name === code || (menu.children && hasVisibleMenu(menu.children, code)))
-
-const isForbiddenRequest = (error: unknown) => (
-  (error as { response?: { status?: number }; status?: number })?.response?.status === 403
-  || (error as { status?: number })?.status === 403
-)
 
 export type IotAddDeviceDrawerProps = {
   open: boolean

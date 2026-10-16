@@ -1,3 +1,4 @@
+import dataCapabilityProviders from './dataCapabilities'
 import { defineAsyncComponent } from 'vue'
 import { queryNoPagingPost } from '@device-manager-ui/api/product'
 import { queryNoPagingPost as queryInstanceNoPage, query } from '@device-manager-ui/api/instance'
@@ -31,6 +32,7 @@ const homeAgentProviders = Object.fromEntries(
 
 export default {
   moduleId: 'device-manager-ui',
+  dataCapabilityProviders,
   apis: {
     deviceListSearchTerms: getDeviceListSearchTerms,
     deviceSpaceAreaBindings: queryDeviceSpaceAreaBindings_api,
@@ -90,32 +92,4 @@ export default {
       },
     } satisfies AgentCapabilityProviderResource,
   },
-  dataCapabilityProviders: {
-    deviceMonitoring: {
-      capabilityIds: [
-        'device.summary',
-        'device.location.list',
-        'device.runtime.trend',
-        'device.category.distribution',
-      ],
-      loader: () => import('./dataCapabilities/deviceMonitoringProvider'),
-    },
-    deviceInstanceMonitoring: {
-      capabilityIds: [
-        'device.state.batch',
-        'device.detail',
-        'device.detail.page',
-      ],
-      loader: () => import('./dataCapabilities/deviceInstanceMonitoringProvider'),
-    },
-    deviceGroupMonitoring: {
-      capabilityIds: [
-        'device.group.list',
-        'device.group.summary.batch',
-        'device.group.devices.page',
-        'device.group.options',
-      ],
-      loader: () => import('./dataCapabilities/deviceGroupMonitoringProvider'),
-    },
-  } satisfies DataCapabilityProviderManifest,
 }

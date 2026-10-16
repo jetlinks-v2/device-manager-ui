@@ -66,6 +66,8 @@ const state = reactive(useIotDeviceDetailView(props, () => emit('metadata-change
 const { device, detailContent, detailContentRef, onDetailContentChanged } = toRefs(state)
 useDeviceDetailAgent({
   device,
+  // 详情宿主已加载设备，助手不得在路由切换期间重新读取另一个页面的 :id。
+  deviceId: () => device.value?.id,
   enabled: () => !props.embedded,
 })
 await state.ready

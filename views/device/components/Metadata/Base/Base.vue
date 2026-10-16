@@ -255,6 +255,7 @@
             :isProduct="record.expands?.isProduct"
             :target="props.target"
             :record="record"
+            :key-property-readonly="record.expands?.isProduct && props.target === 'device'"
             :disabled="
               record.expands?.isProduct &&
               !['int', 'long', 'float', 'double'].includes(
@@ -776,10 +777,8 @@ const metadataChange = () => {
   editStatus.value = true;
 };
 
-const saveOtherSetting = async () => {
+const saveOtherSetting = () => {
   editStatus.value = true;
-  await nextTick();
-  await handleSaveClick();
 };
 
 const jumpProduct = () => {

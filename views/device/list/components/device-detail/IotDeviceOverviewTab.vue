@@ -40,26 +40,42 @@
             <h3>{{ $t('IotDeviceDetail.overview.keyPropertySnapshot') }}</h3>
             <span>{{ $t('IotDeviceDetail.overview.thingModelReadonly') }}</span>
           </header>
-          <div v-if="snapshotMetrics.length" class="property-snapshot-grid">
-            <CardSummary
-              v-for="metric in snapshotMetrics"
-              :key="metric.id"
-              class="property-snapshot"
-              :data="{ title: metric.name }"
-              :data-tone="metric.tone"
-              @click="openHistory(metric)"
+          <template v-if="pagedKeyMetrics.length">
+            <div class="property-snapshot-grid">
+              <CardSummary
+                v-for="metric in pagedKeyMetrics"
+                :key="metric.id"
+                class="property-snapshot"
+                :data="{ title: metric.name }"
+                :data-tone="metric.tone"
+                @click="openHistory(metric)"
+              >
+                <template #title>
+                  {{ metric.name }} <code>{{ metric.identifier }}</code>
+                </template>
+                <template #meta>
+                  <strong>{{ propertyDisplayValue(metric) }}<em v-if="propertyDisplayUnit(metric)">{{ propertyDisplayUnit(metric) }}</em></strong>
+                </template>
+                <template #footer>
+                  <small>{{ displayText(metric.updatedAt) }}</small>
+                </template>
+              </CardSummary>
+            </div>
+            <footer
+              v-if="keyMetrics.length > keyMetricPageSize"
+              class="property-snapshot-pagination"
+              :aria-label="$t('IotDeviceDetail.overview.propertyPagination')"
             >
-              <template #title>
-                {{ metric.name }} <code>{{ metric.identifier }}</code>
-              </template>
-              <template #meta>
-                <strong>{{ propertyDisplayValue(metric) }}<em v-if="propertyDisplayUnit(metric)">{{ propertyDisplayUnit(metric) }}</em></strong>
-              </template>
-              <template #footer>
-                <small>{{ displayText(metric.updatedAt) }}</small>
-              </template>
-            </CardSummary>
-          </div>
+              <a-pagination
+                v-model:current="keyMetricPage"
+                size="small"
+                :page-size="keyMetricPageSize"
+                :show-size-changer="false"
+                :total="keyMetrics.length"
+                show-less-items
+              />
+            </footer>
+          </template>
           <CloudEmpty v-else class="overview-empty" :description="$t('IotDeviceDetail.overview.emptyPropertiesHint')" />
         </article>
 
@@ -182,8 +198,11 @@ defineEmits<{
 const {
   displayText,
   detailOpen,
+  keyMetricPage,
+  keyMetricPageSize,
   keyMetrics,
   openHistory,
+  pagedKeyMetrics,
   selectedMetric,
 } = useIotDeviceOverview(props)
 
@@ -191,7 +210,6 @@ const overviewSummary = ref<OverviewSummary>(createEmptySummary())
 const recentRecords = ref<RecentAlarmRecord[]>([])
 const recentRecordLoading = ref(false)
 const levelOptions = ref<AlarmLevelOption[]>([])
-const snapshotMetrics = computed(() => keyMetrics.value.slice(0, 6))
 const propertyDisplayValue = getPropertyDisplayValue
 const propertyDisplayUnit = getPropertyDisplayUnit
 const selectedMetricTone = computed(() => {

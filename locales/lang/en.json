@@ -7012,6 +7012,7 @@
     "IotDeviceDetail.overview.trafficLegend": "Traffic ↑{upstream} / ↓{downstream}",
     "IotDeviceDetail.overview.trafficSummary": "↑ {upstream} · ↓ {downstream}",
     "IotDeviceDetail.overview.keyPropertySnapshot": "Key Property Snapshot",
+    "IotDeviceDetail.overview.propertyPagination": "Key property pagination",
     "IotDeviceDetail.overview.thingModelReadonly": "Read-only Thing Model",
     "IotDeviceDetail.overview.stat.activeDuration": "Total Active Time",
     "IotDeviceDetail.overview.stat.activeDurationHint": "Total online time over the device lifecycle",
