@@ -1,0 +1,126 @@
+
+
+.mm-prop-desc {
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: rgba(0, 0, 0, 0.55);
+  word-break: break-word;
+}
+
+
+.mm-prop-undef-hint {
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: #d46b08;
+}
+
+
+.mm-prop-rw-tags {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+
+.mm-rw-conflict-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  cursor: help;
+}
+
+
+.mm-rw-warn-icon {
+  font-size: 13px;
+  color: #ff4d4f;
+}
+
+
+/* 属性 Select：收起态与下拉项均为「大字名称 + 小字 id」同行展示 */
+.mm-prop-select-dropdown {
+  :deep(.ant-select-item-option-content) {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .mm-prop-opt {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: nowrap;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .mm-prop-opt-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.85);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mm-prop-opt-id {
+    flex-shrink: 0;
+    font-size: 11px;
+    color: rgba(0, 0, 0, 0.45);
+  }
+}
+
+
+.mm-prop-ac-wrap {
+  position: relative;
+  width: 100%;
+}
+
+
+.mm-prop-ac-fake {
+  position: absolute;
+  left: 11px;
+  right: 28px;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  padding-right: 4px;
+  pointer-events: none;
+  overflow: hidden;
+  line-height: 28px;
+}
+
+
+.mm-prop-ac-fake-name {
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.88);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+.mm-prop-ac-fake-id {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.38);
+}
+
+
+.mm-prop-ac--ghost :deep(.ant-input),
+.mm-prop-ac--ghost :deep(input) {
+  color: transparent !important;
+  caret-color: rgba(0, 0, 0, 0.65);
+}
+
+
+.mm-prop-ac {
+  :deep(.ant-select-selector) {
+    min-height: 28px;
+  }
+}

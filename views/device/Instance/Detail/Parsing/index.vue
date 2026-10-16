@@ -2,7 +2,7 @@
 <template>
   <div class="parsing">
     <div v-if="parsingInitializing" class="parsing-loading-wrap">
-      <a-spin size="large" tip="加载解析配置中…" />
+      <a-spin size="large" :tip="t('ModbusMapping.ui.loadingConfig')" />
     </div>
     <template v-else>
     <div class="parsing-type-bar">
@@ -34,7 +34,7 @@
             @click="onTopReload"
           >
             <ReloadOutlined />
-            重新加载
+            {{ t('ModbusMapping.ui.reload') }}
           </j-permission-button>
           <j-permission-button
             v-if="ruleType === 'javascript'"
@@ -45,7 +45,7 @@
             @click="onScriptSave"
           >
             <SaveOutlined />
-            保存配置
+            {{ t('ModbusMapping.ui.save') }}
           </j-permission-button>
           <j-permission-button
             v-else
@@ -56,7 +56,7 @@
             @click="onModbusSave"
           >
             <SaveOutlined />
-            保存配置
+            {{ t('ModbusMapping.ui.save') }}
           </j-permission-button>
         </a-space>
       </div>
@@ -82,6 +82,7 @@
 </template>
 
 <script setup lang="ts" name="Parsing">
+import { useI18n } from 'vue-i18n';
 import { ReloadOutlined, SaveOutlined } from '@ant-design/icons-vue';
 import { useInstanceStore } from '../../../../../store/instance';
 import ModbusMapping from './ModbusMapping.vue';
@@ -89,6 +90,7 @@ import ScriptTransparentCodec from './ScriptTransparentCodec.vue';
 import { deviceCode, getTransparentCodecSupports } from '../../../../../api/instance';
 
 const instanceStore = useInstanceStore();
+const { t } = useI18n();
 
 const modbusMappingRef = ref<InstanceType<typeof ModbusMapping> | null>(null);
 const scriptCodecRef = ref<InstanceType<typeof ScriptTransparentCodec> | null>(null);
@@ -129,15 +131,15 @@ const PROVIDER_UI_RULE: Record<string, 'javascript' | 'modbus'> = {
 };
 
 /** 面向使用人员的说明（不涉及实现细节） */
-const TYPE_DESC: Record<'javascript' | 'modbus', string> = {
-  javascript: '自行编写解析规则，按设备实际上报格式把数据转成平台能识别的测点数据。',
-  modbus: '在表格中配置寄存器地址与设备测点的对应关系，适用于常见 Modbus 仪表与网关。',
-};
+const TYPE_DESC = computed<Record<'javascript' | 'modbus', string>>(() => ({
+  javascript: t('ModbusMapping.ui.javascriptDescription'),
+  modbus: t('ModbusMapping.ui.modbusDescription'),
+}));
 
-const TYPE_LABEL: Record<'javascript' | 'modbus', string> = {
-  javascript: '脚本解析',
-  modbus: 'Modbus 映射',
-};
+const TYPE_LABEL = computed<Record<'javascript' | 'modbus', string>>(() => ({
+  javascript: t('ModbusMapping.ui.javascriptLabel'),
+  modbus: t('ModbusMapping.ui.modbusLabel'),
+}));
 
 /** 仅按后端返回的 provider id 过滤；展示名一律用前端 TYPE_LABEL */
 const parsingCodecSupports = ref<Array<{ id: string }>>([]);
@@ -147,7 +149,7 @@ const parsingCodecMenuItems = computed(() =>
     const ruleKey = PROVIDER_UI_RULE[s.id]!;
     return {
       ruleKey,
-      label: TYPE_LABEL[ruleKey],
+      label: TYPE_LABEL.value[ruleKey],
     };
   }),
 );
@@ -189,8 +191,8 @@ async function loadCodecSupports() {
   }
 }
 
-const currentTypeLabel = computed(() => TYPE_LABEL[ruleType.value]);
-const currentTypeDesc = computed(() => TYPE_DESC[ruleType.value]);
+const currentTypeLabel = computed(() => TYPE_LABEL.value[ruleType.value]);
+const currentTypeDesc = computed(() => TYPE_DESC.value[ruleType.value]);
 
 function onRuleTypeMenuClick(info: { key: string | number }) {
   const k = String(info.key);

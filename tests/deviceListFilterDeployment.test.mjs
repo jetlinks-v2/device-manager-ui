@@ -14,10 +14,10 @@ const moduleRoot = fileURLToPath(new URL('../', import.meta.url))
 const coreRoot = fileURLToPath(new URL('../../../jetlinks-web-core/src/', import.meta.url))
 const messages = JSON.parse(await readFile(new URL('../locales/lang/zh.json', import.meta.url), 'utf8'))
 
-async function loadDeployment(environment) {
+async function loadDeployment(environment, { community = false, hasDepartmentMenu = true } = {}) {
   const result = await build({
     stdin: {
-      contents: `export * from './deviceListFilter.ts'; export * from '${coreRoot}components/ConditionFilter/utils.ts'; export { calls } from 'search-fixtures'`,
+      contents: `export * from './deviceListFilter.ts'; export * from '${coreRoot}components/ConditionFilter/utils.ts'; export { findOptionPathByValue } from '${coreRoot}components/ConditionFilter/option-display.ts'; export { calls } from 'search-fixtures'`,
       resolveDir: moduleRoot,
       loader: 'ts',
     },
@@ -34,19 +34,22 @@ async function loadDeployment(environment) {
         plugin.onResolve({ filter: /^@jetlinks-web-core\/components\/ConditionFilter$/ }, () => ({ path: `${coreRoot}components/ConditionFilter/utils.ts` }))
         plugin.onResolve({ filter: /^@jetlinks-web-core\/utils\/deployment$/ }, () => ({ path: `${coreRoot}utils/deployment.ts` }))
         plugin.onResolve({ filter: /^@jetlinks-web-core\/locales$/ }, () => ({ path: 'locales', namespace: 'search-fixture' }))
+        plugin.onResolve({ filter: /^@jetlinks-web-core\/store\/menu$/ }, () => ({ path: 'menu', namespace: 'search-fixture' }))
         plugin.onResolve({ filter: /^@jetlinks-web-core\/utils\/utils$/ }, () => ({ path: 'edition', namespace: 'search-fixture' }))
         plugin.onResolve({ filter: /^@jetlinks-web\/utils$/ }, () => ({ path: 'random', namespace: 'search-fixture' }))
         plugin.onResolve({ filter: /^(\.\/api\/(device|product|category)|search-fixtures)$/ }, () => ({ path: 'api', namespace: 'search-fixture' }))
         plugin.onResolve({ filter: /TagSearch\.vue$/ }, () => ({ path: 'tag-editor', namespace: 'search-fixture' }))
         plugin.onLoad({ filter: /.*/, namespace: 'search-fixture' }, ({ path }) => ({ contents: {
           locales: `const messages = ${JSON.stringify(messages)}; export default {global: {t: key => messages[key] || key}}`,
-          edition: 'export const isNoCommunity = true',
+          edition: `export const isNoCommunity = ${!community}`,
+          menu: `export const useMenuStore = () => ({ hasMenu: code => code === 'system/Department' && ${hasDepartmentMenu} })`,
           random: 'export const randomString = () => Math.random().toString(36).slice(2)',
           'tag-editor': 'export default {}',
           api: `export const calls = [];
             export const queryNoPagingPost = async data => { calls.push(['product', data]); return {result: [{id: 'p1', name: 'Product', i18nName: '产品一'}]} };
             export const queryGatewayList = async data => { calls.push(['gateway', data]); return {result: [{id: 'g1', name: 'MQTT 接入'}]} };
             export const queryTree = async data => { calls.push(['category', data]); return {result: [{id: 'c1', name: '分类', children: [{id: 'c2', name: '子分类'}]}]} };
+            export const queryOrgThree = async data => { calls.push(['organization', data]); return {result: [{id: 'org1', name: '一级组织', children: [{id: 'org2', name: '二级组织'}]}]} };
             export const queryDeviceProductById_api = async id => { calls.push(['product-detail', id]); return {id, name: '历史产品'} };`,
         }[path], loader: 'js' }))
       },
@@ -86,13 +89,53 @@ test('only an empty environment enables the complete private field set', async (
   const api = await loadDeployment('')
   const fields = api.getDeviceListFilterFields()
   assert.deepEqual(fields.map(field => field.dataIndex), [
-    'id', 'name', 'productId', 'createTime', 'state', 'classifiedId', 'accessId', 'deviceType', 'id$dev-tag', 'description',
+    'id', 'name', 'productId', 'createTime', 'state', 'classifiedId', 'accessId', 'deviceType', 'id$dim-assets', 'id$dev-tag', 'description',
   ])
   assert.equal(fields.find(field => field.dataIndex === 'id').search.defaultTermType, 'eq')
   assert.equal(fields.find(field => field.dataIndex === 'createTime').search.type, 'date')
   assert.equal(fields.find(field => field.dataIndex === 'classifiedId').search.type, 'treeSelect')
   assert.deepEqual(fields.find(field => field.dataIndex === 'state').search.options.map(option => option.value), ['notActive', 'offline', 'online'])
   assert.equal((await loadDeployment('cloud')).getDeviceListFilterFields().length, 5)
+})
+
+test('organization filtering follows the private edition and menu boundaries', async () => {
+  for (const [environment, options, expected] of [
+    ['', {}, true],
+    ['', { community: true }, false],
+    ['', { hasDepartmentMenu: false }, false],
+    ['saas', {}, false],
+    ['cloud', {}, false],
+  ]) {
+    const api = await loadDeployment(environment, options)
+    assert.equal(api.getDeviceListFilterFields().some(field => field.dataIndex === 'id$dim-assets'), expected)
+  }
+})
+
+test('private organization trees round-trip selected paths and query device asset bindings', async () => {
+  const api = await loadDeployment('')
+  const fields = api.getDeviceListFilterFields()
+  const organization = fields.find(field => field.dataIndex === 'id$dim-assets')
+  assert.equal(organization.title, '所属组织')
+  assert.equal(organization.search.type, 'treeSelect')
+  assert.equal(organization.search.defaultTermType, 'eq')
+  assert.deepEqual(organization.search.termOptions, ['eq'])
+  const options = await organization.search.options()
+  assert.deepEqual(api.calls.at(-1), ['organization', { paging: false }])
+  const selectedValue = options[0].children[0].value
+  assert.deepEqual(JSON.parse(selectedValue), { assetType: 'device', targets: [{ type: 'org', id: 'org2' }] })
+  const query = api.encodeConditionFilterQuery([{ terms: [
+    { column: 'deviceType', termType: 'eq', value: 'device' },
+    { column: organization.dataIndex, termType: 'eq', value: selectedValue, type: 'or' },
+  ] }], fields)
+  const selected = api.decodeConditionFilterQuery(query, fields)[0].terms[1]
+  assert.equal(selected.column, organization.dataIndex)
+  assert.equal(selected.value, selectedValue)
+  assert.equal(api.findOptionPathByValue(options, selected.value).map(option => option.label).join('/'), '一级组织/二级组织')
+  const term = api.getDeviceListSearchTerms(query)[0].terms[1]
+  assert.equal(term.column, 'id$dim-assets')
+  assert.equal(Object.hasOwn(term, 'termType'), false)
+  assert.equal(term.type, 'or')
+  assert.equal(term.value, selectedValue)
 })
 
 test('private products and gateways search remotely and recover selected labels; categories keep their tree', async () => {
