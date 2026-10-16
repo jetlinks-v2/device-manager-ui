@@ -197,7 +197,7 @@ const submitSearch = async () => {
         result = resultFilter.reduce((prev, next, index) => {
             const newItem = {
                 column: 'id$dev-tag',
-                type: index === 0 ? next.type : resultFilter[index - 1].type,
+                type: index === 0 ? 'and' : resultFilter[index - 1].type,
                 value: [{
                     key: next.key,
                     value: next.value,
@@ -209,7 +209,7 @@ const submitSearch = async () => {
     }
 
     emit('update:value',result)
-    emit('change')
+    emit('change', result)
     visible.value = false
 }
 
@@ -256,11 +256,15 @@ const filterOption = (input, option) => {
 
 watch(() => props.value, (val) => {
     if(val) {
-        props.value.forEach((item, index) => {
-            formData.list[index].key = item.value?.[0].key
-            formData.list[index].value = item.value?.[0].value
-            formData.list[index].type = item.type
-        })
+        // 按完整条件重建任意行数；查询的前置 AND / OR 对应编辑器上一行的连接选择。
+        formData.list = (val.length ? val : Array.from({ length: 3 }, () => ({}))).map((item, index) => ({
+            id: randomString(8),
+            key: item.value?.[0]?.key,
+            value: item.value?.[0]?.value,
+            label: item.value?.[0]?.key,
+            componentType: 'string',
+            type: val[index + 1]?.type || 'and'
+        }))
         listCache.value = cloneDeep(formData.list)
     }
 }, {immediate: true})

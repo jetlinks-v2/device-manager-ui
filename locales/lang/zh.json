@@ -7013,6 +7013,7 @@
     "IotDeviceDetail.overview.trafficLegend": "流量 ↑{upstream} / ↓{downstream}",
     "IotDeviceDetail.overview.trafficSummary": "↑ {upstream} · ↓ {downstream}",
     "IotDeviceDetail.overview.keyPropertySnapshot": "关键属性快照",
+    "IotDeviceDetail.overview.propertyPagination": "关键属性分页",
     "IotDeviceDetail.overview.thingModelReadonly": "物模型只读",
     "IotDeviceDetail.overview.stat.activeDuration": "累计活跃时长",
     "IotDeviceDetail.overview.stat.activeDurationHint": "设备生命周期累计在线时长",

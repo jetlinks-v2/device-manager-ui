@@ -128,6 +128,7 @@
           >
             <CardItem
               v-model:value='configValue.isKeyMetric'
+              :disabled='keyPropertyReadonly'
               :title="$t('Properties.OtherSetting.237457-36')"
               :tip="$t('Properties.OtherSetting.237457-37')"
             />
@@ -321,6 +322,10 @@ const props = defineProps({
   },
   target: String,
   isProduct: {
+    type: Boolean,
+    default: false
+  },
+  keyPropertyReadonly: {
     type: Boolean,
     default: false
   }
