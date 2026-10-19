@@ -44,6 +44,7 @@ export default {
   },
   components: {
     IotDeviceDetailView: defineAsyncComponent(() => import('./views/device/list/components/IotDeviceDetailView.vue')),
+    IotCardDetail: defineAsyncComponent(() => import('./views/device/Instance/components/IotCard/index.vue')),
     DeviceDetailAgentHost: defineAsyncComponent(() => import('./views/device/list/agent/DeviceDetailAgentHost.vue')),
     IotAddDeviceDrawer: defineAsyncComponent(() => import('./views/device/list/components/IotAddDeviceDrawer.vue')),
     UnifiedDeviceList: defineAsyncComponent(() => import('./views/device/list/unified/index.vue')),

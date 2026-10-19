@@ -170,8 +170,9 @@
                   :placeholder="$t('Composite.index.636069-5')"
                 />
               </a-form-item>
-              <a-form-item :label="$t('Composite.index.636069-7')">
-                <I18nTextField
+                <DeviceLibraryBizKeyPicker v-model="formData.bizKey" provider="composite-device-gateway" />
+                <a-form-item :label="$t('Composite.index.636069-7')">
+                  <I18nTextField
                   v-model:value="formData.description"
                   v-model:i18nMessages="formData.i18nMessages"
                   field="description"
@@ -326,6 +327,7 @@ import { BackMap } from '../../data'
 import { useI18n } from 'vue-i18n'
 import { useTabSaveSuccess } from '@jetlinks-web-core/hooks'
 import { I18nTextField } from '@jetlinks-web-core/components'
+import DeviceLibraryBizKeyPicker from '../DeviceLibraryBizKeyPicker.vue'
 
 const { t: $t } = useI18n()
 const props = defineProps({
@@ -361,6 +363,7 @@ const formRef = ref()
 const formData = reactive({
   id: route.params.id !== ':id' ? route.params.id : generateId,
   name: '',
+  bizKey: '',
   description: '',
   i18nMessages: {},
 })
@@ -519,6 +522,7 @@ const getProviderDetail = async (data: any[]) => {
 watch(() => JSON.stringify(props.data), (val) => {
   if(val) {
     formData.name = props.data.name;
+    formData.bizKey = props.data.bizKey || '';
     formData.description = props.data.description;
     if(props.data.configuration?.gateways?.length) {
       getProviderDetail(props.data.configuration?.gateways)

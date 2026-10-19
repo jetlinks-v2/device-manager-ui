@@ -410,6 +410,8 @@ const saveData = () => {
                 transport: 'plugin',
             };
             if(route.query.provider) {
+                // 复合网关是业务绑定的唯一实体，子网关配置不能携带业务标识。
+                delete params.bizKey
                 onBack({
                   ...params,
                   protocolDetail: pluginList.value.find((i: any) => i.id === AccessCurrent.value),

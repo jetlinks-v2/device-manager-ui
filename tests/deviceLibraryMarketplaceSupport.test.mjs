@@ -50,8 +50,8 @@ test('a missing marketplace service keeps device creation on project products', 
   assert.match(addDrawerSource, /creationSource\.value = 'product'; marketplaceCapability\.value = 'checking'/)
 })
 
-test('gateway business identifier is only shown after marketplace support is confirmed', () => {
-  assert.match(bizKeyPickerSource, /available\.value = await probeDeviceLibraryCapability_api\(\)/)
-  assert.match(bizKeyPickerSource, /<a-form-item v-if="available"/)
-  assert.doesNotMatch(bizKeyPickerSource, /await probeDeviceLibraryCapability_api\(\)\s*\n\s*available\.value = true/)
+test('gateway business identifier belongs to the parent configuration instead of composite children', () => {
+  assert.match(bizKeyPickerSource, /const isCompositeChild = computed\(\(\) => Boolean\(route\.query\.provider\)\)/)
+  assert.match(bizKeyPickerSource, /<a-form-item v-if="!isCompositeChild"/)
+  assert.doesNotMatch(bizKeyPickerSource, /probeDeviceLibraryCapability_api/)
 })

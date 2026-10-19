@@ -1,36 +1,35 @@
 <template>
-  <div v-if="cardId">
+  <div v-if="cardId" class="iot-card-detail">
     <Save
       v-if="visible"
       :type="saveType"
       :data="current"
       @change="saveChange"
     />
-    <a-row :gutter="[24, 24]">
+    <a-row :gutter="[16, 16]">
       <a-col :span="24">
-        <a-card>
-          <a-descriptions size="small" :column="3" bordered>
-            <template #title>
-              <Guide>
-                <template #title>
-                  <span>{{ $t('IotCard.index.369962-0') }}</span>
-                  <j-permission-button
-                    type="link"
-                    hasPermission="iot-card/CardManagement:update"
-                    @click="
-                      () => {
-                        visible = true;
-                        current = detail;
-                        saveType = 'edit';
-                      }
-                    "
-                  >
-                    <AIcon type="EditOutlined"></AIcon>
-                    {{ $t('IotCard.index.369962-1') }}
-                  </j-permission-button>
-                </template>
-              </Guide>
-            </template>
+        <SectionCard
+          class="iot-card-detail__section"
+          icon="CreditCardOutlined"
+          :title="$t('IotCard.index.369962-0')"
+        >
+          <template #actions>
+            <j-permission-button
+              type="link"
+              hasPermission="iot-card/CardManagement:update"
+              @click="
+                () => {
+                  visible = true;
+                  current = detail;
+                  saveType = 'edit';
+                }
+              "
+            >
+              <AIcon type="EditOutlined" />
+              {{ $t('IotCard.index.369962-1') }}
+            </j-permission-button>
+          </template>
+          <a-descriptions class="iot-card-detail__descriptions" size="small" :column="3" bordered>
 
             <a-descriptions-item :label="$t('IotCard.index.369962-2')">{{
                 detail.id
@@ -110,28 +109,19 @@
             </a-descriptions-item>
             <a-descriptions-item :label="$t('Detail.index.427958-13')">
               {{ detail?.cardState?.text }}
-              <span v-if="deactivateData.show" style="padding-left: 8px">
+              <span v-if="deactivateData.show" class="iot-card-detail__status-tip">
                   <a-tooltip :title="deactivateData.tip">
-                    <AIcon
-                        type="ExclamationCircleOutlined"
-                        style="color: var(--ant-error-color)"
-                    />
+                    <AIcon class="iot-card-detail__status-tip-icon" type="ExclamationCircleOutlined" />
                   </a-tooltip>
                 </span>
             </a-descriptions-item>
             <a-descriptions-item :label="$t('Detail.index.427958-14')">
-              <!--            {{ detail?.cardStateType?.text }}-->
-              <div style="display: flex; gap: 10px; align-items: center">
-                <div style="min-width: 60px">
+              <div class="iot-card-detail__status">
+                <div class="iot-card-detail__status-value">
                   {{ detail?.cardStateType?.text }}
                 </div>
                 <div
-                    style="
-                                    display: flex;
-                                    color: red;
-                                    align-items: center;
-                                    gap: 5px;
-                                  "
+                    class="iot-card-detail__status-error"
                     v-if="detail?.syncCardStatus?.value === 'failed'"
                 >
                   <AIcon type="ExclamationCircleFilled"/>
@@ -152,27 +142,11 @@
                   </a-tooltip>
                 </div>
               </template>
-              <!--            <div style="display: flex; gap: 10px; align-items: center">-->
-              <!--              <div style="min-width: 60px">-->
               {{ detail?.syncCardStatus?.text }}
-              <!--              </div>-->
-              <!--              <div-->
-              <!--                  style="-->
-              <!--                      display: flex;-->
-              <!--                      color: red;-->
-              <!--                      align-items: center;-->
-              <!--                      gap: 5px;-->
-              <!--                    "-->
-              <!--                  v-if="detail?.syncCardStatus?.value === 'failed'"-->
-              <!--              >-->
-              <!--                <AIcon type="ExclamationCircleFilled"/>-->
-              <!--                <j-ellipsis>{{ detail?.errorMessage }}</j-ellipsis>-->
-              <!--              </div>-->
-              <!--            </div>-->
             </a-descriptions-item>
             <a-descriptions-item :label="$t('Detail.index.427958-27')">
-              <div style="display: flex; gap: 10px; align-items: center">
-                <div style="min-width: 60px">
+              <div class="iot-card-detail__status">
+                <div class="iot-card-detail__status-value">
                   <template v-if="detail.flowError === true">
                     {{ $t('CardManagement.index.427944-19') }}
                   </template>
@@ -184,12 +158,7 @@
                   </template>
                 </div>
                 <div
-                    style="
-                                  display: flex;
-                                  color: red;
-                                  align-items: center;
-                                  gap: 5px;
-                                "
+                    class="iot-card-detail__status-error"
                     v-if="detail?.flowError"
                 >
                   <AIcon type="ExclamationCircleFilled"/>
@@ -211,46 +180,44 @@
                 detail?.describe
               }}</a-descriptions-item>
           </a-descriptions>
-        </a-card>
+        </SectionCard>
       </a-col>
       <a-col :span="24">
-        <!-- {{ $t('IotCard.index.369962-16') }} -->
-        <a-row :gutter="24">
-          <a-col :span="16">
-            <div class="card">
-              <Guide :title="$t('IotCard.index.369962-16')">
-                <template #extra>
-                  <TimeSelect
-                    :type="'week'"
-                    :quickBtnList="quickBtnList"
-                    @change="getEcharts"
-                    :isShowTime="false"
-                  />
-                </template>
-              </Guide>
+        <a-row :gutter="[16, 16]">
+          <a-col :xs="24" :lg="16">
+            <SectionCard
+              class="iot-card-detail__section iot-card-detail__section--traffic"
+              icon="LineChartOutlined"
+              :title="$t('IotCard.index.369962-16')"
+            >
+              <template #actions>
+                <TimeSelect
+                  :type="'week'"
+                  :quickBtnList="quickBtnList"
+                  @change="getEcharts"
+                  :isShowTime="false"
+                />
+              </template>
               <LineChart
                 :showX="true"
                 :showY="true"
-                style="min-height: 490px"
+                class="iot-card-detail__traffic-chart"
                 :chartData="flowData"
               />
-            </div>
+            </SectionCard>
           </a-col>
-          <a-col :span="8">
-            <div class="card">
-              <div class="card-head">
-                <Guide :title="$t('IotCard.index.369962-17')" />
+          <a-col :xs="24" :lg="8">
+            <SectionCard
+              class="iot-card-detail__section iot-card-detail__section--statistics"
+              icon="BarChartOutlined"
+              :title="$t('IotCard.index.369962-17')"
+            >
+              <template #actions>
                 <a-button type="link" @click="onSyncRecord">{{ $t('Detail.index.427958-29') }}</a-button>
-              </div>
-              <div
-                class="static-info"
-                style="min-height: 490px"
-              >
+              </template>
+              <div class="static-info">
                 <div class="data-statistics-item">
-                  <div
-                    class="flow-info"
-                    style="width: 100%"
-                  >
+                  <div class="flow-info">
                     <div class="label">
                       {{ $t('IotCard.index.369962-18') }}
                     </div>
@@ -272,10 +239,7 @@
                   />
                 </div>
                 <div class="data-statistics-item">
-                  <div
-                    class="flow-info"
-                    style="width: 100%"
-                  >
+                  <div class="flow-info">
                     <div class="label">
                       {{ $t('IotCard.index.369962-19') }}
                     </div>
@@ -294,10 +258,7 @@
                   <LineChart :chartData="monthOptions" />
                 </div>
                 <div class="data-statistics-item">
-                  <div
-                    class="flow-info"
-                    style="width: 100%"
-                  >
+                  <div class="flow-info">
                     <div class="label">
                       {{ $t('IotCard.index.369962-20') }}
                     </div>
@@ -319,15 +280,18 @@
                   />
                 </div>
               </div>
-            </div>
+            </SectionCard>
           </a-col>
         </a-row>
       </a-col>
       <a-col :span="24" v-if="detail.platformType?.value !== 'unicom'">
-        <div class="card">
-          <Guide :title="$t('Detail.index.427958-30')"/>
+        <SectionCard
+          class="iot-card-detail__section iot-card-detail__section--location"
+          icon="EnvironmentOutlined"
+          :title="$t('Detail.index.427958-30')"
+        >
           <a-spin :spinning="loading">
-            <div style="width: 100%; height: 500px; position: relative">
+            <div class="iot-card-detail__location-map">
               <RealTimeMap :marks="marks" :isShow="true"/>
               <div class="actions">
                 <a-tooltip :title="$t('Detail.index.427958-31')">
@@ -339,7 +303,7 @@
               </div>
             </div>
           </a-spin>
-        </div>
+        </SectionCard>
       </a-col>
     </a-row>
   </div>
@@ -361,7 +325,6 @@ import {
 } from '../../../../../api/iot-card/cardManagement';
 import TimeSelect from './TimeSelect.vue';
 import LineChart from './LineChart.vue';
-import Guide from './Guide.vue';
 import Save from './Save.vue';
 import { OperatorList, platformTypeList } from './data';
 import { useI18n } from 'vue-i18n';
@@ -380,6 +343,7 @@ const props = defineProps({
     type: String,
     default: 'card',
   },
+  deviceId: String,
 });
 
 const route = useRoute();
@@ -780,13 +744,19 @@ const getPositions = async (id: string) => {
   }
 }
 
+/**
+ * 加载运营商已同步的最后定位记录。
+ *
+ * 无历史记录时接口仍会返回成功响应但不包含 result，应按无定位数据处理。
+ */
 const getPositionsHistory = async (id: string) => {
   loading.value = true
+  marks.value = []
   const res: any = await queryLocationById(id).finally(() => {
     loading.value = false
   })
-  if (res.success) {
-    marks.value = res.result.error === false ? [res.result] : []
+  if (res.success && res.result?.error === false) {
+    marks.value = [res.result]
   }
 }
 
@@ -794,12 +764,14 @@ const getPositionsHistory = async (id: string) => {
  * 获取绑定设备的物联卡的信息
  */
 const queryCard = async () => {
+  // 新版设备详情通过页签 Provider 显式传入设备 ID；保留路由参数以兼容旧详情页。
+  const deviceId = props.deviceId || route.params.id;
   const res: any = await query({
     terms: [
       {
         column: 'deviceId',
         termType: 'eq',
-        value: route.params.id,
+        value: deviceId,
       },
     ],
   });
@@ -821,56 +793,151 @@ onMounted(async () => {
 });
 </script>
 <style scoped lang="less">
-.card {
-  padding: 24px;
-  background-color: #fff;
-  .card-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.iot-card-detail {
+  min-width: 0;
+}
+
+.iot-card-detail__section {
+  height: 100%;
+  margin-bottom: 0;
+}
+
+.iot-card-detail__descriptions {
+  :deep(.ant-descriptions-view) {
+    overflow: hidden;
+    border-color: var(--jet-theme-border-secondary);
+    border-radius: var(--r-3);
+  }
+
+  :deep(.ant-descriptions-item-label) {
+    color: var(--jet-theme-text-secondary);
+    background: var(--jet-theme-bg-layout);
+  }
+
+  :deep(.ant-descriptions-item-content) {
+    color: var(--jet-theme-text);
+    background: var(--jet-theme-bg-container);
   }
 }
 
 .static-info {
   display: flex;
   flex-direction: column;
-  justify-content: space-around;
+  min-height: 30.625rem;
+  gap: var(--space-3);
+
   .data-statistics-item {
-    height: 140px;
-    background: #fcfcfc;
-    border: 1px solid #e0e4e8;
+    flex: 1 1 0;
+    min-height: 0;
+    padding: var(--space-3);
+    border: var(--jet-theme-stroke-width) solid var(--jet-theme-border-secondary);
+    border-radius: var(--r-3);
+    background: var(--jet-theme-bg-layout);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px;
 
     .flow-info {
-      // width: 180px;
-      width: 28%;
+      flex: 1 1 auto;
+      min-width: 0;
+
       .label {
-        font-size: 14px;
-        color: rgba(0, 0, 0, 0.64);
+        color: var(--jet-theme-text-secondary);
+        font-size: var(--fs-14);
       }
+
       .value {
-        font-size: 32px;
-        font-weight: bold;
         overflow: hidden;
+        color: var(--jet-theme-text-title);
+        font-size: var(--fs-h1);
+        font-weight: bold;
         white-space: nowrap;
         text-overflow: ellipsis;
+
         .unit {
-          font-size: 20px;
+          margin-left: var(--space-1);
+          color: var(--jet-theme-text-secondary);
+          font-size: var(--fs-18);
           font-weight: normal;
         }
       }
+    }
+
+    :deep(.chart) {
+      flex: 0 0 7.5rem;
+      height: 5.5rem;
     }
   }
 }
 .actions {
   position: absolute;
-  top: 24px;
-  left: 24px;
-  background-color: #fff;
-  width: 124px;
-  height: 32px;
+  top: var(--space-3);
+  left: var(--space-3);
+}
+
+.iot-card-detail__status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.iot-card-detail__status-value {
+  flex: 0 0 auto;
+  min-width: 3.75rem;
+}
+
+.iot-card-detail__status-error {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: var(--space-1);
+  color: var(--jet-theme-error);
+}
+
+.iot-card-detail__status-tip {
+  padding-left: var(--space-2);
+}
+
+.iot-card-detail__status-tip-icon {
+  color: var(--jet-theme-error);
+}
+
+.iot-card-detail__traffic-chart {
+  display: block;
+  min-height: 30.625rem;
+}
+
+.iot-card-detail__location-map {
+  position: relative;
+  width: 100%;
+  height: 31.25rem;
+}
+
+@media (max-width: 62rem) {
+  .static-info,
+  .iot-card-detail__traffic-chart {
+    min-height: 24rem;
+  }
+
+  .iot-card-detail__location-map {
+    height: 24rem;
+  }
+}
+
+@media (max-width: 36rem) {
+  .static-info {
+    min-height: 0;
+  }
+
+  .static-info .data-statistics-item {
+    min-height: 8.75rem;
+  }
+
+  .iot-card-detail__status {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
 }
 </style>
