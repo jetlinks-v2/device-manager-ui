@@ -138,6 +138,8 @@ const onFinish = async (values: any) => {
     channel: props.provider.channel,
   };
   if(route.query.provider) {
+    // 复合网关是业务绑定的唯一实体，子网关配置不能携带业务标识。
+    delete params.bizKey
     onBack({...params})
     return
   }

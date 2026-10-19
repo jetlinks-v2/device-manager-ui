@@ -31,7 +31,9 @@ export function useDeviceLibraryCard(props: DeviceLibraryCardProps) {
   const tagTooltip = computed(() => tags.value.join('、'))
   const cardData = computed<CardSummaryData>(() => ({
     title: props.template.name,
-    subtitle: t('IotDeviceList.deviceType.' + normalizeDeviceTypeValue(props.template.deviceType)),
+    subtitle: props.template.deviceType
+      ? t('IotDeviceList.deviceType.' + normalizeDeviceTypeValue(props.template.deviceType))
+      : undefined,
     description: props.template.summary || t('IotDeviceList.add.noTemplateDesc'),
     avatar: {
       src: props.template.photoUrl?.trim() || undefined,

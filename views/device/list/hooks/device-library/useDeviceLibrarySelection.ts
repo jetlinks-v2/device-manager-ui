@@ -87,6 +87,8 @@ export function useDeviceLibrarySelection(
 
   // 网关和子设备入口限制可选择的设备类型。
   function isTemplateDisabled(template: IotDeviceProductTemplate) {
+    // 未能从详情确认类型时禁止选择，避免安装流程把空值兜底成直连设备。
+    if (!template.deviceType) return true
     return Boolean(
       props.selectableDeviceType
       && normalizeDeviceTypeValue(template.deviceType) !== normalizeDeviceTypeValue(props.selectableDeviceType),

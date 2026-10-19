@@ -55,7 +55,8 @@ export function toTemplateProductOption(template: DeviceTemplateProductInput): I
       ...(template.modelKeywords ?? []),
     ].filter((value): value is string => Boolean(value)),
     templateId: template.id,
-    deviceType: normalizeDeviceTypeValue(template.deviceType),
+    // 详情补全前保持未知，避免卡片把未返回的类型误展示为直连设备。
+    deviceType: template.deviceType ? normalizeDeviceTypeValue(template.deviceType) : undefined,
     photoUrl: template.photoUrl,
     faultCodeDict: template.faultCodeDict,
     version: template.version,

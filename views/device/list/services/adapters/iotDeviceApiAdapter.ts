@@ -279,7 +279,8 @@ export function mapApiDevice(
     accessProvider: instance.accessProvider || fallback?.accessProvider,
     protocol: (instance as any).protocol || (instance as any).messageProtocol || fallback?.protocol,
     transport: (instance as any).transport || (instance as any).transportProtocol || fallback?.transport,
-    features: Array.isArray((instance as any).features) ? (instance as any).features : fallback?.features,
+    // 数据解析等入口仅由详情接口返回的协议能力决定；缺失时不能沿用本地兜底设备的旧能力。
+    features: Array.isArray((instance as any).features) ? (instance as any).features : [],
     gatewayName: fallback?.gatewayName,
     identifier: instance.id || fallback?.identifier || '',
     configuration: instance.configuration || {},
