@@ -126,6 +126,7 @@ export interface DeviceMapConfig {
 }
 
 export interface DeviceMapPoint {
+  deviceId: string
   lnglat: [number, number]
   label: string
 }
