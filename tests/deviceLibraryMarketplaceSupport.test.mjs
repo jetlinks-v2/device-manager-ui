@@ -8,6 +8,9 @@ const source = await readFile(sourcePath, 'utf8')
 const sourceFile = ts.createSourceFile(sourcePath.pathname, source, ts.ScriptTarget.Latest, true)
 const addDrawerSource = await readFile(new URL('../views/device/list/hooks/useIotAddDeviceDrawer.ts', import.meta.url), 'utf8')
 const bizKeyPickerSource = await readFile(new URL('../views/link/AccessConfig/components/DeviceLibraryBizKeyPicker.vue', import.meta.url), 'utf8')
+const templateOptionSource = await readFile(new URL('../views/device/list/hooks/iotAddDeviceProductOptions.ts', import.meta.url), 'utf8')
+const libraryCardSource = await readFile(new URL('../views/device/list/hooks/device-library/useDeviceLibraryCard.ts', import.meta.url), 'utf8')
+const librarySelectionSource = await readFile(new URL('../views/device/list/hooks/device-library/useDeviceLibrarySelection.ts', import.meta.url), 'utf8')
 
 function exportedFunctionBody(name) {
   const statement = sourceFile.statements.find((item) => (
@@ -54,4 +57,17 @@ test('gateway business identifier belongs to the parent configuration instead of
   assert.match(bizKeyPickerSource, /const isCompositeChild = computed\(\(\) => Boolean\(route\.query\.provider\)\)/)
   assert.match(bizKeyPickerSource, /<a-form-item v-if="!isCompositeChild"/)
   assert.doesNotMatch(bizKeyPickerSource, /probeDeviceLibraryCapability_api/)
+})
+
+test('device library completes only missing device types with cached and bounded detail requests', () => {
+  const templates = exportedFunctionBody('queryDeviceLibraryTemplates_api')
+  assert.match(source, /deviceType:\s*deviceTypeValueOf\(source\.deviceType\)\s*\|\|\s*undefined/)
+  assert.match(templates, /mapWithConcurrency\(templates, 4, async \(\{ resource, template \}\)/)
+  assert.match(source, /deviceLibraryTemplateDeviceTypeCache/)
+  assert.match(source, /deviceLibraryTemplateDeviceTypeRequests/)
+  assert.match(source, /`\/marketplace\/capabilities\/\$\{encodeURIComponent\(id\)\}`/)
+  assert.match(source, /hiddenError:\s*true/)
+  assert.match(templateOptionSource, /template\.deviceType \? normalizeDeviceTypeValue\(template\.deviceType\) : undefined/)
+  assert.match(libraryCardSource, /subtitle: props\.template\.deviceType/)
+  assert.match(librarySelectionSource, /if \(!template\.deviceType\) return true/)
 })
