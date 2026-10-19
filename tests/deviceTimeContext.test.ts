@@ -29,3 +29,16 @@ test('device mapping reuses known report time without deriving it from connectio
   assert.equal(mapApiDevice({ id: 'device-2' }, 'project-1').lastReportAt, undefined)
   assert.equal(mapApiDevice({ id: 'device-2' }, 'project-1').lastSeen, '--')
 })
+
+test('device detail features exclusively determine data-parsing capability', () => {
+  const fallback = mapApiDevice({
+    id: 'device-1',
+    features: [{ id: 'transparentCodec', name: '透明编解码' }],
+  }, 'project-1')
+
+  assert.deepEqual(mapApiDevice({ id: 'device-1' }, 'project-1', fallback).features, [])
+  assert.deepEqual(
+    mapApiDevice({ id: 'device-1', features: [{ id: 'transparentCodec', name: '透明编解码' }] }, 'project-1', fallback).features,
+    [{ id: 'transparentCodec', name: '透明编解码' }],
+  )
+})

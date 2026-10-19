@@ -143,6 +143,7 @@
                                 :i18n-max-length="64"
                             />
                         </a-form-item>
+                        <DeviceLibraryBizKeyPicker v-model="formState.bizKey" :provider="provider.id" />
                         <a-form-item :label="$t('Edge.index.066653-10')" name="description">
                             <I18nTextField
                                 :placeholder="$t('Edge.index.066653-11')"
@@ -225,12 +226,14 @@ import { useMenuStore } from '@jetlinks-web-core/store/menu';
 import { useI18n } from 'vue-i18n';
 import { useTabSaveSuccess, useTabSaveSuccessBack } from '@jetlinks-web-core/hooks'
 import { I18nTextField } from '@jetlinks-web-core/components';
+import DeviceLibraryBizKeyPicker from '../DeviceLibraryBizKeyPicker.vue';
 
 const { t: $t } = useI18n();
 const menuStory = useMenuStore();
 
 interface FormState {
     name: string;
+    bizKey: string;
     description: string;
     i18nMessages?: Record<string, Record<string, string>>;
 }
@@ -255,6 +258,7 @@ const channel = ref(props.provider.channel);
 
 const formState = ref<FormState>({
     name: '',
+    bizKey: '',
     description: '',
     i18nMessages: {},
 });
@@ -355,6 +359,7 @@ onMounted(() => {
     if (id !== ':id') {
         formState.value = {
             name: props.data.name,
+            bizKey: props.data.bizKey || '',
             description: props.data?.description || '',
         };
         networkCurrent.value = props.data.channelId;

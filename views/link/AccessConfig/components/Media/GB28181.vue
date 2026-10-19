@@ -400,6 +400,7 @@
                       :placeholder="$t('Media.GB28181.666483-28')"
                     />
                   </a-form-item>
+                  <DeviceLibraryBizKeyPicker v-model="formData.bizKey" :provider="provider.id" />
 
                   <a-form-item
                     :label="$t('Media.GB28181.666483-29')"
@@ -498,6 +499,7 @@ import { testIpv4_6 } from '@jetlinks-web-core/utils/validate'
 import { useI18n } from 'vue-i18n'
 import { useTabSaveSuccessBack } from '@jetlinks-web-core/hooks'
 import { I18nTextField } from '@jetlinks-web-core/components'
+import DeviceLibraryBizKeyPicker from '../DeviceLibraryBizKeyPicker.vue'
 
 const { t: $t } = useI18n()
 interface Form2 {
@@ -547,6 +549,7 @@ const stepCurrent = ref(0)
 const steps = ref([$t('Media.GB28181.666483-36'), $t('Media.GB28181.666483-37')])
 const formData = ref({
   name: '',
+  bizKey: '',
   description: '',
   i18nMessages: {},
 })
@@ -857,7 +860,7 @@ onMounted(async () => {
   // 在sipMap数据准备好后，再恢复表单数据
   if (id !== ':id') {
     const { configuration, name, description = '' } = props.data
-    formData.value = { name, description }
+    formData.value = { name, bizKey: props.data.bizKey || '', description }
 
     formState.value = {
       ...formState.value,
