@@ -78,7 +78,7 @@
         @update:value="emit('search', $event)"
       />
       <a-spin :spinning="view.loading">
-        <a-empty
+        <CloudEmpty
           v-if="!view.rows.length"
           :description="t('components.DeviceMap.noMatches')"
         />

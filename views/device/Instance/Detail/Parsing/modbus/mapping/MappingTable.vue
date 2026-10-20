@@ -67,9 +67,9 @@
       </template>
 
       <template #emptyText>
-        <a-empty :image="Empty.PRESENTED_IMAGE_SIMPLE" :description="t('ModbusMapping.ui.noMappings')">
+        <CloudEmpty :description="t('ModbusMapping.ui.noMappings')">
           <a-button size="small" type="primary" @click="addMapping">{{ t('ModbusMapping.ui.addPoint') }}</a-button>
-        </a-empty>
+        </CloudEmpty>
       </template>
       </a-table>
         </div>
@@ -81,7 +81,6 @@ import { useI18n } from 'vue-i18n'
 import type { ModbusMappingView } from '../useModbusMapping'
 import type { ModbusSimpleMapping } from '../types'
 import { PlusOutlined, DeleteOutlined, EditOutlined, CopyOutlined } from '@ant-design/icons-vue'
-import { Empty } from 'ant-design-vue'
 import PropertyField from './PropertyField.vue'
 import RegisterField from './RegisterField.vue'
 import CodecFields from './CodecFields.vue'

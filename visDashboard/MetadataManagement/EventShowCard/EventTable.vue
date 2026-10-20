@@ -8,7 +8,7 @@
     </div>
     <template v-if="isPreview">
       <div class="event-table__status">
-        <a-empty description="预览模式暂无事件数据" />
+        <CloudEmpty description="预览模式暂无事件数据" />
       </div>
     </template>
     <template v-else>

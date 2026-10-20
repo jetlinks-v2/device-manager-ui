@@ -70,7 +70,7 @@
             v-if="!shareCluster && dynamicValidateForm.cluster.length === 0"
             style="border: 1px #d9d9d9 solid; margin-bottom: 12px"
           >
-            <a-empty style="margin-top: 12px" />
+            <CloudEmpty style="margin-top: 12px" />
           </div>
           <a-form
             ref="formRef2"

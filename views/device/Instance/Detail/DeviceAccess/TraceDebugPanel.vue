@@ -27,10 +27,9 @@
     />
 
     <div class="trace-debug-panel__body">
-      <a-empty
+      <CloudEmpty
         v-if="!hasAnyCapability && isOnline"
         :description="$t('InstanceDeviceAccess.traceDebug.empty')"
-        :image="Empty.PRESENTED_IMAGE_SIMPLE"
       />
 
       <template v-else-if="isOnline">
@@ -184,7 +183,7 @@
 
 <script lang="ts" setup>
 import { ApiOutlined } from '@ant-design/icons-vue'
-import { Empty, message } from 'ant-design-vue'
+import { message } from 'ant-design-vue'
 import { computed, ref, toRaw, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { onlyMessage } from '@jetlinks-web/utils'

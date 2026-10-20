@@ -65,7 +65,7 @@
                     >
                 </a-col>
             </a-row>
-            <a-empty v-else style="margin-top: 10%" description="暂无数据" />
+            <CloudEmpty v-else style="margin-top: 10%" description="暂无数据" />
         </div>
         <AddNetWork
             v-if="addVisible"

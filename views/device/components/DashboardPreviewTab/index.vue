@@ -21,7 +21,7 @@
       />
     </div>
 
-    <a-empty
+    <CloudEmpty
       v-else
       :description="emptyText || $t('device.DashboardPreviewTab.101001-0')"
       class="state state-center"

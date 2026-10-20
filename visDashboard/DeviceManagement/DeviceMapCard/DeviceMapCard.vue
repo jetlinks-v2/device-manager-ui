@@ -32,7 +32,7 @@
           v-else-if="!points.length"
           class="device-map-card__status"
         >
-          <a-empty :description="t(isEdit ? 'components.DeviceMap.editPlaceholder' : 'components.DeviceMap.empty')" />
+          <CloudEmpty :description="t(isEdit ? 'components.DeviceMap.editPlaceholder' : 'components.DeviceMap.empty')" />
         </div>
         <a-map-component
           v-else

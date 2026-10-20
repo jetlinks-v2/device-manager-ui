@@ -7,7 +7,7 @@
       v-if="!selectedEvents.length"
       class="event-show-card__status"
     >
-      <a-empty :description="emptyText" />
+      <CloudEmpty :description="emptyText" />
     </div>
     <div
       v-else

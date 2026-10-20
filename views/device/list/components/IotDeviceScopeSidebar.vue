@@ -73,7 +73,7 @@
             </span>
           </template>
         </a-tree>
-        <a-empty v-else :image="Empty.PRESENTED_IMAGE_SIMPLE" :description="$t('IotDeviceList.scope.noMatches')" />
+        <CloudEmpty v-else :description="$t('IotDeviceList.scope.noMatches')" />
       </div>
       <a-button v-if="scopeType === 'group' && showGroupActions !== false" class="iot-device-scope__create-group" block @click="$emit('create-group')">
         <template #icon><AIcon type="PlusOutlined" /></template>
@@ -84,7 +84,6 @@
 </template>
 
 <script setup lang="ts">
-import { Empty } from 'ant-design-vue'
 import type { DeviceGroup } from '@device-manager-ui/api/deviceGroup'
 import { useIotDeviceScopeSidebar } from '../hooks/useIotDeviceScopeSidebar'
 

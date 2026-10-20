@@ -76,7 +76,7 @@
             </span>
           </template>
         </a-tree>
-        <a-empty v-else :description="$t('Product.index.660348-39')" :image="Empty.PRESENTED_IMAGE_SIMPLE" />
+        <CloudEmpty v-else :description="$t('Product.index.660348-39')" />
       </a-spin>
     </div>
     <a-button
@@ -92,7 +92,6 @@
 </template>
 
 <script setup lang="ts">
-import { Empty } from 'ant-design-vue'
 import { useI18n } from 'vue-i18n'
 import { useProductCategoryTree, type ProductCategoryTreeNode } from '../hooks/useProductCategoryTree'
 

@@ -54,7 +54,7 @@
             <div class="browser-mask-desc">{{ $t('Terminal.index.remote-10') }}</div>
           </div>
           <div v-else-if="tab.error" class="browser-empty">
-            <a-empty :description="tab.error" />
+            <CloudEmpty :description="tab.error" />
           </div>
           <iframe
             v-else

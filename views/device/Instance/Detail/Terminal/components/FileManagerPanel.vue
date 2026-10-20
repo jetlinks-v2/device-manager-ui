@@ -410,11 +410,11 @@
             </a-dropdown>
           </div>
 
-          <a-empty v-else :description="$t('Terminal.index.remote-121')" class="file-manager-panel__empty">
+          <CloudEmpty v-else :description="$t('Terminal.index.remote-121')" class="file-manager-panel__empty">
             <template #image>
               <AIcon type="InboxOutlined" class="file-manager-panel__empty-icon" />
             </template>
-          </a-empty>
+          </CloudEmpty>
         </a-spin>
 
         <div v-if="dragActive" class="file-manager-panel__drop-mask">
@@ -502,7 +502,7 @@
           <img :src="previewImageUrl" :alt="previewRecord?.name || 'preview'" class="file-manager-panel__preview-image" />
         </div>
         <pre v-else-if="previewMode === 'text'" class="file-manager-panel__preview file-manager-panel__preview-text">{{ previewText }}</pre>
-        <a-empty v-else :description="$t('Terminal.index.remote-167')" class="file-manager-panel__preview-empty" />
+        <CloudEmpty v-else :description="$t('Terminal.index.remote-167')" class="file-manager-panel__preview-empty" />
       </a-spin>
     </a-modal>
 

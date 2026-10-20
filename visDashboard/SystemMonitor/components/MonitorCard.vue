@@ -3,11 +3,11 @@
     <header class="monitor-card__header"><h3>{{ title }}</h3><slot name="controls" /></header>
     <div v-if="state.loading" class="monitor-card__state"><a-spin /></div>
     <div v-else-if="state.error" class="monitor-card__state" role="alert">
-      <a-empty :description="$t('components.SystemMonitor.loadError')">
+      <CloudEmpty :description="$t('components.SystemMonitor.loadError')">
         <a-button @click="$emit('retry')">{{ $t('components.SystemMonitor.retry') }}</a-button>
-      </a-empty>
+      </CloudEmpty>
     </div>
-    <div v-else-if="state.empty" class="monitor-card__state"><a-empty :description="$t('components.SystemMonitor.empty')" /></div>
+    <div v-else-if="state.empty" class="monitor-card__state"><CloudEmpty :description="$t('components.SystemMonitor.empty')" /></div>
     <div v-else class="monitor-card__content"><slot /></div>
     <slot name="footer" />
   </a-card>

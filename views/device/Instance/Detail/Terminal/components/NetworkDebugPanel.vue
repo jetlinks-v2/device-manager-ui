@@ -143,7 +143,7 @@
             <span class="network-debug-panel__list-tip">{{ $t('Terminal.index.remote-88') }}</span>
           </div>
 
-          <a-empty
+          <CloudEmpty
             v-if="!displaySamples.length"
             :description="$t('Terminal.index.remote-75')"
           >
@@ -153,7 +153,7 @@
             <div class="network-debug-panel__empty-desc">
               {{ $t('Terminal.index.remote-76') }}
             </div>
-          </a-empty>
+          </CloudEmpty>
 
           <div v-else class="network-debug-panel__sample-list">
             <div
