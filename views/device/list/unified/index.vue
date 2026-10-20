@@ -15,7 +15,7 @@
 			    <div class="unified-device-list__panel">
 				    <a-flex align="center" justify="space-between" wrap="wrap" :gap="12" class="unified-device-list__filters">
 					    <IotDeviceAssetSearchBar v-model:filter-terms="searchTerms" :filter-fields="filterFields" :common-filter-fields="commonFilterFields" @search="search" />
-					    <RegistryComponent page-code="unified-device-list" code="toolbar-actions" is="a-space" :size="12" class="unified-device-list__toolbar-actions">
+					    <RegistryComponent page-code="unified-device-list" code="toolbar-actions" :active-type="activeType" @saved="refresh" is="a-space" :size="12" class="unified-device-list__toolbar-actions">
 					    <a-button-group role="group" :aria-label="t('IotDeviceList.filter.status')">
 					      <a-button
 					        v-for="option in statusOptions"
