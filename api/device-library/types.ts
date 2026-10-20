@@ -184,6 +184,8 @@ export type IotDeviceProductTemplate = {
   modelKeywords: string[]
   templateId?: string
   deviceType?: string
+  /** 设备库卡片使用的已确认类型；不参与设备创建与可选性判断。 */
+  displayDeviceType?: string
   productName?: string
   classifiedId?: string
   classifiedName?: string
@@ -235,10 +237,9 @@ export type DeviceLibraryTemplateQueryInput = {
 
 export type DeviceLibraryTemplatePageResult = {
   data: DeviceTemplateProductInput[]
+  total: number
   pageIndex: number
   pageSize: number
-  /** 运行时能力市场不返回 total，以本页原始结果是否满页判断可继续加载。 */
-  hasMore: boolean
 }
 
 export type DeviceProductPageQueryInput = {
@@ -367,6 +368,8 @@ export type DeviceTemplateProductInput = {
   supportedManufacturers?: string[]
   modelKeywords?: string[]
   deviceType?: MaybeEnum
+  /** 设备库卡片使用的已确认类型；不参与设备创建与可选性判断。 */
+  displayDeviceType?: string
   accessName?: string
   accessProvider?: string
   networkWay?: string

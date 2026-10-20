@@ -15,7 +15,7 @@ interface DeviceLibrarySelectionProps {
   loading: boolean
   pageIndex: number
   pageSize: number
-  hasMore: boolean
+  total: number
 }
 
 const COLLAPSED_TAG_GROUP_COUNT = 5
@@ -69,9 +69,9 @@ export function useDeviceLibrarySelection(
     emitQuery(0)
   }
 
-  // 接口只提供 hasMore；禁止请求越界页或在加载中重复翻页。
+  // 标准分页接口返回 total；禁止请求越界页或在加载中重复翻页。
   function changePage(nextPageIndex: number) {
-    if (props.loading || nextPageIndex < 0 || (nextPageIndex > props.pageIndex && !props.hasMore)) return
+    if (props.loading || nextPageIndex < 0 || (nextPageIndex > 0 && nextPageIndex * props.pageSize >= props.total)) return
     emitQuery(nextPageIndex)
   }
 
@@ -87,8 +87,6 @@ export function useDeviceLibrarySelection(
 
   // 网关和子设备入口限制可选择的设备类型。
   function isTemplateDisabled(template: IotDeviceProductTemplate) {
-    // 未能从详情确认类型时禁止选择，避免安装流程把空值兜底成直连设备。
-    if (!template.deviceType) return true
     return Boolean(
       props.selectableDeviceType
       && normalizeDeviceTypeValue(template.deviceType) !== normalizeDeviceTypeValue(props.selectableDeviceType),

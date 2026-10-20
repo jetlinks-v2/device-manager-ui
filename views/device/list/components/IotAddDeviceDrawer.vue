@@ -85,7 +85,7 @@
             :selected-template-key="selectedTemplateKey"
             :selectable-device-type="props.deviceType"
             :tag-filter-groups="libraryTagGroups"
-            :has-more="libraryHasMore"
+            :total="libraryTotal"
             :page-index="libraryPageIndex"
             :page-size="libraryPageSize"
             :loading="libraryLoading"
@@ -207,7 +207,7 @@ const {
   formRef, form, formRules, installProgressState,
   areaTreeData, groupTreeData, spaceAreaSupported, configOptionsLoading,
   categoryTree, categoryLoading, selectedCategoryId, productCandidates, productTotal, productPageIndex, productPageSize,
-  libraryProducts, libraryTagGroups, libraryPageIndex, libraryPageSize, libraryHasMore,
+  libraryProducts, libraryTagGroups, libraryPageIndex, libraryPageSize, libraryTotal,
   selectSource, selectProduct, selectTemplate, clearSelectedSource, selectProductCategory, selectUnclassifiedProductCategory,
   loadProductCandidates, loadDeviceLibraryTemplates, loadConfigOptions, onClose, onSubmit, bindCreatedDevice,
   onAreaChange,

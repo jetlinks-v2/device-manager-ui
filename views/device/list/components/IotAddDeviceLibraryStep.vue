@@ -76,7 +76,7 @@
                 size="small"
                 :current="pageIndex + 1"
                 :page-size="pageSize"
-                :total="displayPageTotal"
+                :total="total"
                 :disabled="loading"
                 :show-size-changer="false"
                 :show-quick-jumper="false"
@@ -92,7 +92,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, type PropType } from 'vue'
+import { type PropType } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   type IotDeviceLibraryTagGroup,
@@ -108,7 +108,7 @@ const props = defineProps({
   selectedTemplateKey: { type: String, required: true },
   selectableDeviceType: { type: String, default: '' },
   tagFilterGroups: { type: Array as PropType<IotDeviceLibraryTagGroup[]>, default: () => [] },
-  hasMore: { type: Boolean, default: false },
+  total: { type: Number, default: 0 },
   pageIndex: { type: Number, default: 0 },
   pageSize: { type: Number, default: 6 },
   loading: { type: Boolean, default: false },
@@ -121,9 +121,6 @@ const emit = defineEmits<{
 }>()
 
 const { t: $t } = useI18n()
-
-// 运行时接口没有 total；仅在当前页已确认仍有数据时，才开放下一个页码。
-const displayPageTotal = computed(() => props.pageSize * (props.pageIndex + (props.hasMore ? 2 : 1)))
 
 const {
   keyword, activeTagIds, tagGroupsExpanded, showTagPanel, hasActiveTagFilter,

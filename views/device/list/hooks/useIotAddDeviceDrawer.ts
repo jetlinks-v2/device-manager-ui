@@ -113,7 +113,7 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
   const libraryTagGroups = ref<IotDeviceLibraryTagGroup[]>([])
   const libraryPageIndex = ref(0)
   const libraryPageSize = ref(4)
-  const libraryHasMore = ref(false)
+  const libraryTotal = ref(0)
   const libraryKeyword = ref('')
   const libraryTags = ref<string[]>([])
   const formRef = ref<{ validate?: () => Promise<unknown>; clearValidate?: () => void } | null>(null)
@@ -278,7 +278,7 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
     }
   }
 
-  /** 运行时市场不返回 total，以 hasMore 而非伪造总数驱动设备库翻页。 */
+  /** 标准分页接口返回 total，设备库卡片列表可直接使用现有分页组件。 */
   async function loadDeviceLibraryTemplates(force = false, query: DeviceLibraryTemplateQueryInput = {}) {
     if (libraryLoading.value && !force) return
     const requestSequence = ++libraryRequestSequence
@@ -296,11 +296,11 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
       libraryTemplates.value = page.data
       libraryPageIndex.value = page.pageIndex
       libraryPageSize.value = page.pageSize
-      libraryHasMore.value = page.hasMore
+      libraryTotal.value = page.total
     } catch (error) {
       if (requestSequence !== libraryRequestSequence) return
       libraryTemplates.value = []
-      libraryHasMore.value = false
+      libraryTotal.value = 0
       libraryMessage.value = error instanceof Error ? error.message : $t('IotDeviceList.add.templateLoadFailed')
     } finally {
       if (requestSequence === libraryRequestSequence) libraryLoading.value = false
@@ -374,7 +374,7 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
     clearSelectedSource()
     selectedCategoryId.value = undefined
     productCandidates.value = []; productTotal.value = 0; productPageIndex.value = 0; productFilterTerms.value = []
-    libraryTemplates.value = []; libraryTagGroups.value = []; libraryPageIndex.value = 0; libraryKeyword.value = ''; libraryTags.value = []; libraryHasMore.value = false
+    libraryTemplates.value = []; libraryTagGroups.value = []; libraryPageIndex.value = 0; libraryKeyword.value = ''; libraryTags.value = []; libraryTotal.value = 0
     areaOptions.value = []; groupOptions.value = []
     productMessage.value = ''; libraryMessage.value = ''; errorMessage.value = ''; installProgressLogs.value = []
     busy.value = false; submitAction.value = ''
@@ -495,7 +495,7 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
     formRef, form, formRules, areaTreeData, groupTreeData, spaceAreaSupported,
     configOptionsLoading,
     categoryTree, categoryLoading, selectedCategoryId, productCandidates, productTotal, productPageIndex, productPageSize,
-    libraryProducts, libraryTagGroups, libraryPageIndex, libraryPageSize, libraryHasMore,
+    libraryProducts, libraryTagGroups, libraryPageIndex, libraryPageSize, libraryTotal,
     onAreaChange,
     selectSource, selectProduct, selectTemplate, clearSelectedSource, selectProductCategory, selectUnclassifiedProductCategory,
     loadProductCandidates, loadDeviceLibraryTemplates, loadConfigOptions,

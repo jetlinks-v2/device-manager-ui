@@ -16,9 +16,6 @@ export function collectProductCategoryScopeIds(nodes: DeviceCreationCategoryNode
   return find(nodes) ?? [id]
 }
 
-/** 运行时能力市场没有 total，只能按原始页是否填满判断能否请求下一页。 */
-export const hasMoreDeviceLibraryRows = (rawRowCount: number, pageSize: number) => rawRowCount === pageSize
-
 /** 存储策略必须来自当前运行时返回的策略集合，失效值不能继续创建设备。 */
 export const hasAvailableStorePolicy = (policyId: string, policies: Array<{ id?: string }>) =>
   Boolean(policyId) && policies.some((policy) => policy.id === policyId)
