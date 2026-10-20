@@ -7,7 +7,7 @@
       v-if="!selectedEvents.length"
       class="event-show-card__status"
     >
-      <a-empty :description="emptyText" />
+      <CloudEmpty :description="emptyText" />
     </div>
     <div
       v-else
@@ -31,6 +31,7 @@
 </template>
 
 <script setup lang="ts">
+import CloudEmpty from '@jetlinks-web-core/components/CloudEmpty/index.vue'
 import EventTable from './EventTable.vue'
 import { useEventShowCard } from '../../DeviceManagement/hooks/useEventShowCard'
 import type { PropType } from 'vue'

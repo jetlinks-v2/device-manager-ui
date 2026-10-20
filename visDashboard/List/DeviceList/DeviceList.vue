@@ -14,6 +14,7 @@
       :custom-row="customRow"
       :scroll="{ y: scrollY }"
     >
+      <template #emptyText><CloudEmpty /></template>
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'name'">
           <div class="device-name-cell">
@@ -44,6 +45,7 @@
 </template>
 
 <script setup lang="ts">
+import CloudEmpty from '@jetlinks-web-core/components/CloudEmpty/index.vue'
 import {moduleRegistry} from "@jetlinks-web-core/utils/module-registry";
 
 import { useDeviceListData } from '@device-manager-ui/visDashboard/hooks/useDeviceListData'

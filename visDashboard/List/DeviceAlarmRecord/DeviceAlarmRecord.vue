@@ -11,6 +11,7 @@
       :scroll="{ y: scrollY }"
       :row-key="(record) => record.id"
     >
+      <template #emptyText><CloudEmpty /></template>
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'alarmStatus'">
           <span :class="['status-tag', record.status]">
@@ -24,6 +25,7 @@
 </template>
 
 <script setup lang="ts">
+import CloudEmpty from '@jetlinks-web-core/components/CloudEmpty/index.vue'
 const props = defineProps({
   info: {
     type: Object,

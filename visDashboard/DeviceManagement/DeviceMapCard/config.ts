@@ -1,5 +1,9 @@
+import i18n from '@jetlinks-web-core/locales'
+
 export const deviceMapCardConfig = {
-  name: '设备地图',
+  get name() {
+    return i18n.global.t('components.DeviceMap.title')
+  },
   type: 'deviceMapCard',
   componentProps: {
     style: {
@@ -15,7 +19,7 @@ export const deviceMapCardConfig = {
       minH: 8
     },
     deviceMapCard: {
-      topTitle: '设备地图',
+      topTitle: '',
       isAutoRefresh: true,
       interval: 60
     }

@@ -10,6 +10,7 @@ interface DeviceGeoJsonFeature {
   }
   properties?: {
     deviceName?: unknown
+    objectId?: unknown
   }
 }
 
@@ -20,23 +21,30 @@ interface DeviceGeoJsonPayload {
 const isLngLat = (value: unknown): value is [number, number] =>
   Array.isArray(value) &&
   value.length >= 2 &&
-  Number.isFinite(Number(value[0])) &&
-  Number.isFinite(Number(value[1]))
+  typeof value[0] === 'number' &&
+  Number.isFinite(value[0]) &&
+  Math.abs(value[0]) <= 180 &&
+  typeof value[1] === 'number' &&
+  Number.isFinite(value[1]) &&
+  Math.abs(value[1]) <= 90
 
 const normalizeFeature = (feature: DeviceGeoJsonFeature): DeviceMapPoint | undefined => {
   const coordinates = feature.geometry?.coordinates
+  const deviceId = feature.properties?.objectId
 
-  if (!isLngLat(coordinates)) {
+  if (!isLngLat(coordinates) || typeof deviceId !== 'string' || !deviceId.trim()) {
     return undefined
   }
 
   return {
+    // GeoObject.id identifies a location record; objectId identifies the actual device.
+    deviceId,
     lnglat: [Number(coordinates[0]), Number(coordinates[1])],
     label: String(feature.properties?.deviceName || '')
   }
 }
 
-const parseDeviceGeoJson = (payload: string): DeviceMapPoint[] => {
+export const parseDeviceGeoJson = (payload: string): DeviceMapPoint[] => {
   try {
     const data = JSON.parse(payload) as DeviceGeoJsonPayload
 
@@ -44,9 +52,7 @@ const parseDeviceGeoJson = (payload: string): DeviceMapPoint[] => {
       return []
     }
 
-    return data.features
-      .map(normalizeFeature)
-      .filter((item): item is DeviceMapPoint => !!item)
+    return data.features.map(normalizeFeature).filter((item): item is DeviceMapPoint => !!item)
   } catch {
     return []
   }
@@ -57,7 +63,9 @@ export const createDeviceMapStream = (handlers: {
   onError: () => void
 }) => {
   const source = new EventSourcePolyfill(
-    `${getBaseApi()}/geo/object/device/_search/geo.json?${TOKEN_KEY_URL}=${LocalStore.get(TOKEN_KEY)}&filter.paging=false`
+    `${getBaseApi()}/geo/object/device/_search/geo.json?${TOKEN_KEY_URL}=${LocalStore.get(
+      TOKEN_KEY
+    )}&filter.paging=false`
   )
 
   source.onmessage = (event: MessageEvent<string>) => {

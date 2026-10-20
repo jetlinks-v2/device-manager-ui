@@ -16,7 +16,7 @@
 <script lang="ts" setup name="NodeHealthStatus">
 import type { PropType } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { NodeHealthEvidence, NodeHealthSummary } from './nodeHealthData'
+import type { NodeHealthEvidence, NodeHealthSummary } from '../utils/nodeHealthData'
 
 const props = defineProps({
   health: { type: Object as PropType<NodeHealthSummary>, required: true },

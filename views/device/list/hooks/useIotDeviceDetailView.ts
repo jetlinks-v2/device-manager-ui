@@ -78,6 +78,11 @@ export interface IotDeviceDetailViewProps {
   }
 }
 
+const IOT_DEVICE_DETAIL_ROUTE_NAMES = new Set([
+  'iot-user-device-list/Detail',
+  'iot-user/device/list/Detail',
+])
+
 /** 编排设备详情的加载、订阅、路由和用户操作；展示区块只消费状态与动作。 */
 export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onEmbeddedMetadataChanged?: () => void) {
   type DataInnerTab = 'property' | 'event' | 'function' | 'trace'
@@ -93,7 +98,13 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
   const { toClipboard } = useClipboard()
 
   const projectId = computed(() => resolveIotProjectId(route))
-  const deviceId = computed(() => props.embedded?.deviceId ?? String(route.params.deviceId ?? route.params.id))
+  const deviceId = computed(() => {
+    if (props.embedded) return props.embedded.deviceId
+
+    // 产品和统一设备详情共享 :id；切换路由时旧详情还未卸载，不能把产品 ID 作为设备 ID 加载。
+    const isDeviceDetailRoute = route.matched.some(record => IOT_DEVICE_DETAIL_ROUTE_NAMES.has(String(record.name || '')))
+    return isDeviceDetailRoute ? String(route.params.deviceId ?? route.params.id ?? '') : ''
+  })
   const healthPath = computed(() => buildIotDeviceHealthPath(projectId.value, deviceId.value, undefined, route))
   let disposed = false
   let loadVersion = 0
@@ -149,7 +160,6 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
   const realtimePropertySubscriptionKey = ref('')
   const liveSimulatorTraces = ref<SimulatorTrace[]>([])
   const childDeviceCount = ref(0)
-  const OVERVIEW_PROPERTY_LIMIT = 5
   const propertyPageRealtimeKeys = ref<string[]>([])
 
   const DATA_TAB_KEYS: DataInnerTab[] = ['property', 'event', 'function', 'trace']
@@ -721,7 +731,7 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
   })
 
   const overviewRealtimePropertyKeys = computed(() => {
-    return collectOverviewPropertyKeys(device.value?.thingModelMetadata, OVERVIEW_PROPERTY_LIMIT)
+    return collectOverviewPropertyKeys(device.value?.thingModelMetadata)
   })
 
   const activeRealtimePropertyKeys = computed(() => (
@@ -1226,6 +1236,13 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
   function mergeRealtimePropertyValue(value: DevicePropertyValue) {
     const normalized = normalizeRealtimePropertyValue(value)
     if (!normalized) return
+    // 只合并本次实际收到的上报时间，乱序或无时间的快照不能推进最近上报事实。
+    if (device.value && typeof normalized.timestamp === 'number' && Number.isFinite(normalized.timestamp)) {
+      device.value = {
+        ...device.value,
+        lastReportAt: Math.max(device.value.lastReportAt ?? normalized.timestamp, normalized.timestamp),
+      }
+    }
     const property = normalized.property
     realtimePropertyValues.value = {
       ...realtimePropertyValues.value,
@@ -1331,7 +1348,11 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
             ...device.value,
             status,
             connectionStatus: status === 'disabled' ? 'disabled' : status === 'online' ? 'online' : 'offline',
-            lastSeen: formatApiTime(payload?.timestamp ?? Date.now(), device.value.lastSeen),
+            lastSeen: formatApiTime(payload?.timestamp, device.value.lastSeen),
+            ...(typeof payload?.timestamp === 'number' && Number.isFinite(payload.timestamp) ? {
+              lastSeenTimestamp: payload.timestamp,
+              ...(status === 'online' ? { onlineAt: payload.timestamp } : status === 'offline' ? { offlineAt: payload.timestamp } : {}),
+            } : {}),
           }
         }
       })
@@ -1352,6 +1373,11 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
 
   async function loadDevice(context = beginLoad()) {
     if (!isCurrentLoad(context)) return
+    if (!context.deviceId) {
+      device.value = null
+      syncLegacyMetadataDevice(null)
+      return
+    }
     // Tab 重建时仅映射入口数据；独立详情仍由自身加载，并保留请求版本保护。
     const result = props.embedded ? null : await iotDeviceService.getDevice(context.projectId, context.deviceId)
     if (!isCurrentLoad(context)) return
@@ -1368,6 +1394,7 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
 
   /**
    * 原版 Metadata 组件以实例 store 作为数据源；SaaS 详情切换设备时必须同步有效物模型，
+   * 它还通过 features 限制物模型操作，因此不可只同步 metadata。
    * 否则会把上一台设备的 metadata 读取或保存到当前标签。
    */
   function syncLegacyMetadataDevice(current: IotDevice | null) {
@@ -1394,6 +1421,7 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
       description: current.summary,
       productId: current.productId || current.productKey || '',
       productName: current.productName,
+      features: current.features ?? [],
       metadata,
       productMetadata,
       independentMetadata: Boolean(current.independentMetadata),
@@ -1485,7 +1513,7 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
     const context = beginLoad()
     await loadDevice(context)
     // 自定义内容拥有自己的数据与诊断生命周期；头部只保留设备信息和在线状态。
-    if (!isCurrentLoad(context)) return
+    if (!isCurrentLoad(context) || !context.deviceId) return
     if (props.embedded) return
     if (detailContent.value) {
       await detailContentRef.value?.refresh?.()

@@ -372,6 +372,7 @@ const propertyAggregateTool = (
       input('propertyIds', domainAgentStringArrayValueType(10)),
       input('analysisMode', domainAgentEnumValueType(IOT_DEVICE_PROPERTY_ANALYSIS_MODES), true),
       input('agg', domainAgentEnumValueType(IOT_DEVICE_PROPERTY_AGGREGATES)),
+      input('aggregates', domainAgentEnumArrayValueType(IOT_DEVICE_PROPERTY_AGGREGATES)),
       input('interval'),
       ...contract.inputs,
     ],
@@ -514,6 +515,7 @@ const logFilterInputs = () => [
 export type CreateDeviceDetailAgentToolsOptions = {
   accessProvider?: unknown
   tabSurface?: DeviceDetailAgentTabSurface
+  tabs?: readonly string[]
 }
 
 /** Tool schemas intentionally omit deviceId; every execution is closed over the verified page subject. */
@@ -521,7 +523,7 @@ export const createDeviceDetailAgentTools = (
   service: DeviceDetailAgentService,
   options?: CreateDeviceDetailAgentToolsOptions,
 ) => {
-  const tabs = resolveDeviceDetailAgentTabs(options?.tabSurface)
+  const tabs = options?.tabs ?? resolveDeviceDetailAgentTabs(options?.tabSurface)
   const tools: AiClientToolDefinition<DeviceDetailToolContext>[] = [
     readTool('device_context_get', [], service.contextGet, 'detail'),
     readTool('device_model_get', [

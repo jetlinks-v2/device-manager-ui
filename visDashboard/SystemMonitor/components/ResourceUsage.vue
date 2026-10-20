@@ -12,7 +12,7 @@
 </template>
 
 <script lang="ts" setup name="ResourceUsage">
-import { formatMemorySize } from './monitorData'
+import { formatMemorySize } from '../utils/monitorData'
 
 const props = defineProps({
   percent: { type: Number, default: undefined },
@@ -31,5 +31,5 @@ const strokeColor = computed(() => {
 .resource-usage__percent { display: flex; align-items: center; gap: 0.375rem; line-height: 1.25; }
 .resource-usage__percent :deep(.ant-progress), .resource-usage__empty { flex: 1; min-width: 2rem; margin: 0; }
 .resource-usage strong { flex: none; width: 2.875rem; text-align: right; font-variant-numeric: tabular-nums; }
-.resource-usage small { display: block; margin-top: -0.1875rem; color: rgba(0, 0, 0, 0.45); font-variant-numeric: tabular-nums; line-height: 1.15; text-align: right; }
+.resource-usage small { display: block; margin-top: 0.25rem; color: rgba(0, 0, 0, 0.45); font-size: 0.75rem; font-variant-numeric: tabular-nums; line-height: 1.5; text-align: right; }
 </style>

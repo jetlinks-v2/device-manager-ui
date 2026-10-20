@@ -21,6 +21,18 @@ const edgeIds = (tools: readonly { id?: string }[]) => tools
   .map(tool => String(tool.id || ''))
   .filter(id => id.startsWith('edge_'))
 
+test('embedding page tabs are authoritative even for a known device provider', () => {
+  const tools = createDeviceDetailAgentTools(detailService, {
+    accessProvider: 'agent-device-gateway',
+    tabs: ['runtime', 'access', 'custom-page'],
+  })
+  const navigation = tools.find(tool => tool.id === 'device_open_tab')
+  assert.ok(navigation)
+  const tab = navigation.inputs?.find(input => input.id === 'tab')
+  assert.deepEqual((tab?.valueType as any).elements?.map((value: any) => value.value)
+    ?? (tab?.valueType as any).enum, ['runtime', 'access', 'custom-page'])
+})
+
 test('provider gate mounts the exact edge tool ids only for gateway access providers', () => {
   assert.equal(isEdgeDiagnosisAccessProvider('mqtt'), false)
   assert.equal(isEdgeDiagnosisAccessProvider('agent-device-gateway'), true)

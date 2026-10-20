@@ -16,6 +16,8 @@ import {
 import {
   createIotDevicePropertyAggregateFields,
   createIotDevicePropertyAggregatePlan,
+  normalizeIotDevicePropertyAggregateInputs,
+  normalizeIotDevicePropertyAggregateRows,
 } from '../agentCapabilities/deviceAnalysis/devicePropertyAggregate.support.ts'
 
 const metadata = {
@@ -26,6 +28,38 @@ const metadata = {
     { id: 'enabled', name: 'Enabled', valueType: { type: 'boolean' } },
   ],
 }
+
+test('preserves all requested aggregates with stable distinct aliases in one plan', () => {
+  assert.deepEqual(normalizeIotDevicePropertyAggregateInputs({ agg: 'AVG', aggregates: ['MAX', 'AVG'] }), ['AVG', 'MAX'])
+  const plan = createIotDevicePropertyAggregatePlan(metadata as any, ['temperature'], ['AVG', 'MAX', 'MIN'], 'statistics', {
+    unsupported: () => '',
+  })
+  assert.deepEqual(plan.columns.map(({ property, alias, agg }) => ({ property, alias, agg })), [
+    { property: 'temperature', alias: 'temperature_avg', agg: 'AVG' },
+    { property: 'temperature', alias: 'temperature_max', agg: 'MAX' },
+    { property: 'temperature', alias: 'temperature_min', agg: 'MIN' },
+  ])
+  assert.deepEqual(plan.warnings, [])
+  const single = createIotDevicePropertyAggregatePlan(metadata as any, ['temperature'], 'AVG', 'statistics', {
+    unsupported: () => '',
+  })
+  assert.equal(single.columns[0].alias, 'temperature')
+})
+
+test('does not reuse an ambiguous legacy property value for different aggregate measures', () => {
+  const plan = createIotDevicePropertyAggregatePlan(metadata as any, ['temperature'], ['AVG', 'MAX'], 'statistics', {
+    unsupported: () => '',
+  })
+  const rows = normalizeIotDevicePropertyAggregateRows([
+    { time: 0, temperature: 20, temperature_avg: 12 },
+  ], plan.columns)
+  assert.equal(rows[0].temperature_avg, 12)
+  assert.equal(rows[0].temperature_max, undefined)
+  const single = createIotDevicePropertyAggregatePlan(metadata as any, ['temperature'], 'MAX', 'statistics', {
+    unsupported: () => '',
+  })
+  assert.equal(normalizeIotDevicePropertyAggregateRows([{ time: 0, temperature: 20 }], single.columns)[0].temperature, 20)
+})
 
 test('selects aggregate defaults from declared property types', () => {
   const { columns, warnings } = createDevicePropertyAggregateColumns(
@@ -62,6 +96,20 @@ test('keeps canonical property units separate from localized display-unit text',
     name: 'temperature', type: 'number', role: 'measure', label: 'Temperature',
     measure: 'temperature', aggregation: 'avg', unit: 'celsius', unitLabel: 'Degrees Celsius',
   })
+})
+
+test('authors distinct multi-aggregate field identities without inventing a unit or changing property labels', () => {
+  const plan = createIotDevicePropertyAggregatePlan({ properties: [
+    { id: 'signal', name: 'Signal', valueType: { type: 'double' } },
+  ] } as any, ['signal'], ['AVG', 'MAX', 'MIN'], 'statistics', { unsupported: () => '' })
+  const fields = createIotDevicePropertyAggregateFields(plan.columns, {
+    longitude: label => `${label} longitude`, latitude: label => `${label} latitude`,
+  })
+  assert.deepEqual(fields.slice(1).map(field => ({
+    name: field.name, measure: field.measure, label: field.label, aggregation: field.aggregation, unit: field.unit,
+  })), ['avg', 'max', 'min'].map(aggregation => ({
+    name: `signal_${aggregation}`, measure: `signal_${aggregation}`, label: 'Signal', aggregation, unit: undefined,
+  })))
 })
 
 test('normalizes valid geo points into ordered scalar coordinate fields', () => {

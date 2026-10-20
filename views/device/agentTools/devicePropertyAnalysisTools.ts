@@ -35,6 +35,7 @@ export const DEVICE_PROPERTY_ANALYSIS_OUTPUTS = {
   functionId: { name: 'subject-function-id', shape: 'schema.function-ids' },
   tagId: { name: 'subject-tag-id', shape: 'schema.tag-ids' },
   modelDetail: { name: 'subject-schema-detail', shape: 'schema.definition' },
+  modelFile: { name: 'subject-schema-file', shape: 'schema.definition.file' },
   metadataMatches: { name: 'subject-schema-matches', shape: 'schema.field-descriptors' },
   latest: { name: 'property-snapshot', shape: 'property.snapshot' },
   historySummary: { name: 'property-history-summary', shape: 'time-series.summary' },
@@ -113,6 +114,7 @@ export interface DeviceModelGetResult extends JsonRecord {
   model: Partial<Record<SchemaSection, JsonRecord[]>>
   markdown?: unknown
   metadata?: unknown
+  file?: JsonRecord
 }
 
 export interface DeviceMetadataSearchMatch extends JsonRecord {
@@ -235,7 +237,7 @@ const schemaOutputs = <TResult>(selector: (result: TResult, section: SchemaSecti
 ])
 
 export const createDeviceModelGetTool = <TContext>(
-  dependencies: DevicePropertyToolDependencies<TContext, DeviceModelGetResult>,
+  dependencies: DevicePropertyToolDependencies<TContext, DeviceModelGetResult> & { fileOutput?: boolean },
 ): CompiledClientTool<TContext> => defineClientTool<JsonRecord, TContext, DeviceModelGetResult>({
   id: DEVICE_PROPERTY_ANALYSIS_TOOL_IDS.modelGet,
   description: {
@@ -254,6 +256,11 @@ export const createDeviceModelGetTool = <TContext>(
       ...DEVICE_PROPERTY_ANALYSIS_OUTPUTS.modelDetail,
       select: modelDetail,
     }),
+    ...(dependencies.fileOutput ? [clientToolOutput.detail<DeviceModelGetResult>({
+      ...DEVICE_PROPERTY_ANALYSIS_OUTPUTS.modelFile,
+      optional: true,
+      select: result => result.file,
+    })] : []),
   ],
   owner,
   execute: async (args, context, call) => toClientToolResult(

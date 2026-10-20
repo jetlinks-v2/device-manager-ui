@@ -33,9 +33,12 @@ export function useIotDeviceAssetActions(devices: Ref<IotDevice[]>, refreshTable
   }
 
   function openCreateDrawer() {
+    if (actionBusyId.value) return false
+    if (deviceFormOpen.value) return !editingDeviceId.value
     actionError.value = ''
     editingDeviceId.value = ''
     deviceFormOpen.value = true
+    return true
   }
 
   function openEditDrawer(device: IotDevice) {

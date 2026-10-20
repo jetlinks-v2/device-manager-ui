@@ -30,7 +30,7 @@
 						    </a-button>
 						    </a-button-group>
 						    <a-divider type="vertical" class="unified-device-list__action-divider" />
-						    <a-button v-if="activeType === 'all' || isIotEntry" type="primary" :disabled="busy" @click="editing = null; editOpen = true">
+						    <a-button v-if="activeType === 'all' || isIotEntry" type="primary" :disabled="busy" @click="openCreateDrawer">
 							    <template #icon><AIcon type="PlusOutlined" /></template>
 							    {{ t('IotDeviceList.action.create') }}
 						    </a-button>
@@ -87,19 +87,31 @@
                     />
                   </template>
 							    <template v-else-if="column.key === 'product'">
-								    <div>{{ record.productName || '—' }}</div>
-								    <small>{{ [record.productManufacturer, record.productModel].filter(Boolean).join(' ') || '—' }}</small>
+								    <div>
+									    <j-ellipsis>{{ record.productName || '—' }}</j-ellipsis>
+								    </div>
+								    <small>
+									    <j-ellipsis>{{ [record.productManufacturer, record.productModel].filter(Boolean).join(' ') || '—' }}</j-ellipsis>
+								    </small>
 							    </template>
 						    <template v-else-if="column.key === 'productName'">
 								    <div>{{ record.productName || '—' }}</div>
 						    </template>
 						    <template v-else-if="column.key === 'brandModel'">
-								    <div>{{ formatBrandModel(record.productManufacturer) }}</div>
-								    <small>{{ formatBrandModel(record.productModel) }}</small>
+								    <div>
+									    <j-ellipsis>{{ formatBrandModel(record.productManufacturer) }}</j-ellipsis>
+								    </div>
+								    <small>
+									    <j-ellipsis>{{ formatBrandModel(record.productModel) }}</j-ellipsis>
+								    </small>
 						    </template>
 						    <template v-else-if="column.key === 'area'">
-								    <div>{{ formatAreaName(record) }}</div>
-								    <small>{{ record.groupBindings?.map(group => group.name).join('、') || record.groupName || t('IotDeviceList.scope.unassignedGroup') }}</small>
+								    <div>
+									    <j-ellipsis>{{ formatAreaName(record) }}</j-ellipsis>
+								    </div>
+								    <small>
+									    <j-ellipsis>{{ record.groupBindings?.map(group => group.name).join('、') || record.groupName || t('IotDeviceList.scope.unassignedGroup') }}</j-ellipsis>
+								    </small>
 						    </template>
 							    <template v-else-if="column.key === 'createdAt'">{{ formatTableTime(record.createdAt) }}</template>
 							    <template v-else-if="column.key === 'lastReportTime'">{{ formatTableTime(record.lastReportTime) }}</template>
@@ -161,7 +173,7 @@
 						    </template>
 					    </a-table>
 				    </div>
-				    <a-pagination class="unified-device-list__pagination" :current="pageIndex + 1" :page-size="pageSize" :total="total" :page-size-options="['10', '20', '50']" show-size-changer :show-total="value => t('UnifiedDeviceList.total', { count: value })" @change="changePage" />
+				    <a-pagination class="unified-device-list__pagination" :current="pageIndex + 1" :page-size="pageSize" :total="total" :page-size-options="['12', '24', '48', '96']" show-size-changer :show-total="value => t('UnifiedDeviceList.total', { count: value })" @change="changePage" />
 			    </div>
 		    </template>
 	    </EqualHeightColumns>
@@ -203,6 +215,8 @@ import type { DeviceGroup } from '../../../../api/deviceGroup'
 import { useUnifiedDeviceList } from './useUnifiedDeviceList'
 import { useUnifiedDeviceActions } from './useUnifiedDeviceActions'
 import Process from '../../Instance/Process/index.vue'
+import { useHomeAgentFeatureEntry } from '@jetlinks-web-core/layout/components/AiChat/useHomeAgentFeatureEntry'
+import { DEVICE_ONBOARDING_CAPABILITY_ID } from '@device-manager-ui/agentCapabilities/deviceGuidance/homeAgentProvider'
 const { t } = useI18n()
 const route = useRoute()
 const deviceMenuCode = computed(() => getIotDeviceListMenuCode(route))
@@ -282,6 +296,17 @@ function handleBatchChanged() {
 const { deleteGroup, groupDialogError, groupDialogMode, groupDialogOpen, groupEditing, groupSaving, openCreateChildGroup, openCreateGroup, openEditGroup, saveGroup } = useIotDeviceGroupManagement({
   getActiveScope: () => ({ type: scope.scopeType.value, id: scope.scopeId.value }), reloadGroups: scope.reloadGroups, changeScope: handleScopeChange,
 })
+
+// Use the actual button's availability; opening guidance must never overwrite another form.
+function openCreateDrawer() {
+  if (busy.value || createEntry.value || detailDevice.value || assignAreaOpen.value || assignGroupOpen.value || groupDialogOpen.value || syncVisible.value) return false
+  if (editOpen.value) return !editing.value
+  if (activeType.value !== 'all' && !isIotEntry.value) return false
+  editing.value = null
+  editOpen.value = true
+  return true
+}
+useHomeAgentFeatureEntry(DEVICE_ONBOARDING_CAPABILITY_ID, openCreateDrawer)
 function confirmDeleteGroup(group: DeviceGroup) { Modal.confirm({ title: t('IotDeviceList.scope.deleteGroup'), onOk: () => deleteGroup(group) }) }
 // 这组三个快捷筛选允许重复点击当前项清除，不能改用不可再次点击的单选分段控件。
 const statusTones: Record<string, 'success' | 'error' | 'default'> = { online: 'success', offline: 'error', disabled: 'default' }
@@ -295,8 +320,8 @@ const columns = computed(() => [
   { title: t('IotDeviceList.table.brandModel'), key: 'brandModel', width: 160 },
   { title: t('UnifiedDeviceList.areaAndGroup'), key: 'area', width: 220 },
   { title: t('UnifiedDeviceList.status'), key: 'status', width: 100 },
-  ...(activeType.value === 'all' ? [{ title: '最后上报时间', key: 'lastReportTime', width: 160 }] : []),
-  ...(activeType.value === 'all' ? [{ title: '创建时间', key: 'createdAt', width: 160 }] : []),
+  ...(activeType.value === 'all' ? [{ title: t('IotDeviceDetail.detail.lastReport'), key: 'lastReportTime', width: 160 }] : []),
+  ...(activeType.value === 'all' ? [{ title: t('Instance.index.133466-5'), key: 'createdAt', width: 160 }] : []),
   ...(activeType.value === 'gateway' ? [{ title: t('GatewayDeviceCard.monitor'), key: 'monitor', width: 220 }] : []),
   ...(['gateway', 'video'].includes(activeType.value) ? [{ title: t('UnifiedDeviceList.channel'), key: 'channel', width: 100 }] : []),
   { title: t('UnifiedDeviceList.action'), key: 'action', width: 90, fixed: 'right', align: 'center' },

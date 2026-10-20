@@ -42,10 +42,10 @@
             <div class="product-text">
                 {{ $t('DialogTips.index.379211-8') }}
             </div>
-            <div class="product-main">{{ $t('DialogTips.index.379211-9') }}</div>
-            <div class="product-text">
-                {{ $t('DialogTips.index.379211-10') }}
-            </div>
+<!--            <div class="product-main">{{ $t('DialogTips.index.379211-9') }}</div>-->
+<!--            <div class="product-text">-->
+<!--                {{ $t('DialogTips.index.379211-10') }}-->
+<!--            </div>-->
             <div class="product-main">{{ $t('DialogTips.index.379211-11') }}</div>
             <div class="product-text">
                 {{ $t('DialogTips.index.379211-12') }}

@@ -23,6 +23,7 @@ import type { GeneralAgentContext } from '@jetlinks-web-core/layout/components/A
 import {
   adaptDomainAgentClientToolResult,
   createDomainAgentTimeScopeContract,
+  domainAgentEnumArrayValueType,
   domainAgentEnumValueType,
   domainAgentIntegerValueType,
   domainAgentStringArrayValueType,
@@ -516,6 +517,7 @@ export const createDeviceAnalysisTools = () => defineClientTools<GeneralAgentCon
     input('propertyIds', domainAgentStringArrayValueType(10)),
     input('analysisMode', domainAgentEnumValueType(IOT_DEVICE_PROPERTY_ANALYSIS_MODES), true),
     input('agg', domainAgentEnumValueType(IOT_DEVICE_PROPERTY_AGGREGATES)),
+    input('aggregates', domainAgentEnumArrayValueType(IOT_DEVICE_PROPERTY_AGGREGATES)),
     input('interval'),
   ], deviceAnalysisService.propertyAggregate, {
     transformAlternatives: createIotDevicePropertyAggregateInputAlternatives,

@@ -1,3 +1,4 @@
+import dataCapabilityProviders from './dataCapabilities'
 import { defineAsyncComponent } from 'vue'
 import { queryNoPagingPost } from '@device-manager-ui/api/product'
 import { queryNoPagingPost as queryInstanceNoPage, query } from '@device-manager-ui/api/instance'
@@ -7,13 +8,13 @@ import { useDeviceScope } from './deviceScope'
 import { getDeviceListSearchTerms } from './deviceListFilter'
 import { queryDeviceSpaceAreaBindings_api } from './api/spaceArea'
 import { queryDeviceBoundGroups_api, queryRuntimeDevices_api } from './api/deviceGroup'
-import { getDeviceListSearchTerms } from './deviceListFilter'
 import type { DataCapabilityProviderManifest } from '@jetlinks-web-core/data-capability'
 import type { AgentCapabilityProviderResource } from '@jetlinks-web-core/layout/components/AiChat/routeCapabilityLoader'
 import {
   IOT_DEVICE_ANALYSIS_EXTENSION_KEY,
   IOT_DEVICE_MENU_ANCHORS,
 } from './agentCapabilities/deviceAnalysis/constants'
+import { DEVICE_GUIDANCE_MENU_CODES } from './agentCapabilities/deviceGuidance/homeAgentProvider'
 
 type HomeAgentProviderLoader = () => Promise<unknown>
 
@@ -31,6 +32,7 @@ const homeAgentProviders = Object.fromEntries(
 
 export default {
   moduleId: 'device-manager-ui',
+  dataCapabilityProviders,
   apis: {
     deviceListSearchTerms: getDeviceListSearchTerms,
     deviceSpaceAreaBindings: queryDeviceSpaceAreaBindings_api,
@@ -42,6 +44,7 @@ export default {
   },
   components: {
     IotDeviceDetailView: defineAsyncComponent(() => import('./views/device/list/components/IotDeviceDetailView.vue')),
+    IotCardDetail: defineAsyncComponent(() => import('./views/device/Instance/components/IotCard/index.vue')),
     DeviceDetailAgentHost: defineAsyncComponent(() => import('./views/device/list/agent/DeviceDetailAgentHost.vue')),
     IotAddDeviceDrawer: defineAsyncComponent(() => import('./views/device/list/components/IotAddDeviceDrawer.vue')),
     UnifiedDeviceList: defineAsyncComponent(() => import('./views/device/list/unified/index.vue')),
@@ -64,8 +67,21 @@ export default {
   stores: {
     useInstanceStore
   },
-  homeAgentProviders,
+  homeAgentProviders: {
+    ...homeAgentProviders,
+    'device/function-guidance': () => import('./agentCapabilities/deviceGuidance/homeAgentProvider'),
+  },
   generalAgentExtensions: {
+    'device/function-guidance': {
+      loader: () => import('./agentCapabilities/deviceGuidance/generalAgentExtension'),
+      activation: {
+        version: 'general-agent-provider-activation/v1',
+        scopes: [
+          { kind: 'menuCode', values: Object.values(DEVICE_GUIDANCE_MENU_CODES).flat() },
+          { kind: 'routeName', values: Object.values(DEVICE_GUIDANCE_MENU_CODES).flat() },
+        ],
+      },
+    } satisfies AgentCapabilityProviderResource,
     [IOT_DEVICE_ANALYSIS_EXTENSION_KEY]: {
       loader: () => import('./agentCapabilities/deviceAnalysis/generalAgentExtension'),
       activation: {
@@ -77,32 +93,4 @@ export default {
       },
     } satisfies AgentCapabilityProviderResource,
   },
-  dataCapabilityProviders: {
-    deviceMonitoring: {
-      capabilityIds: [
-        'device.summary',
-        'device.location.list',
-        'device.runtime.trend',
-        'device.category.distribution',
-      ],
-      loader: () => import('./dataCapabilities/deviceMonitoringProvider'),
-    },
-    deviceInstanceMonitoring: {
-      capabilityIds: [
-        'device.state.batch',
-        'device.detail',
-        'device.detail.page',
-      ],
-      loader: () => import('./dataCapabilities/deviceInstanceMonitoringProvider'),
-    },
-    deviceGroupMonitoring: {
-      capabilityIds: [
-        'device.group.list',
-        'device.group.summary.batch',
-        'device.group.devices.page',
-        'device.group.options',
-      ],
-      loader: () => import('./dataCapabilities/deviceGroupMonitoringProvider'),
-    },
-  } satisfies DataCapabilityProviderManifest,
 }

@@ -75,7 +75,6 @@ const click = (value: object) => {
 .card-items {
     margin-bottom: 24px;
     background-color: #fff;
-    padding: 24px;
 
     .card-items-container {
     }

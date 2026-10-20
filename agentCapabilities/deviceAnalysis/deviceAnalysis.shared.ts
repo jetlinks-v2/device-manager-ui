@@ -44,6 +44,21 @@ export const inputError = (
   params?: Record<string, string | number>,
 ) => createDomainAgentInputError(code, `IotGeneralAgent.errors.${key}`, params)
 
+/** 描述领域时间的事实含义，未知上报时间不由活动/连接时间推断。 */
+export const mapDeviceTimeContext = (device: IotDevice) => ({
+  lastSeen: device.lastSeen,
+  lastSeenTimestamp: device.lastSeenTimestamp,
+  onlineAt: device.onlineAt,
+  offlineAt: device.offlineAt,
+  lastReportAt: device.lastReportAt,
+  timeSemantics: {
+    lastSeen: 'Last observed activity or connection-status change, not the last property report.',
+    onlineAt: 'Last online event timestamp (epoch milliseconds).',
+    offlineAt: 'Last offline event timestamp (epoch milliseconds).',
+    lastReportAt: 'Last known property report timestamp (epoch milliseconds); unknown when absent.',
+  },
+})
+
 export const mapDevice = (device: IotDevice) => ({
   id: device.id,
   name: device.name,
@@ -55,8 +70,7 @@ export const mapDevice = (device: IotDevice) => ({
   area: device.area,
   groupId: device.groupId,
   groupName: device.groupName,
-  lastSeen: device.lastSeen,
-  lastSeenTimestamp: device.lastSeenTimestamp,
+  ...mapDeviceTimeContext(device),
   navigation: buildIotDeviceDetailPath(getProjectIdFromLocation(), device.id),
 })
 

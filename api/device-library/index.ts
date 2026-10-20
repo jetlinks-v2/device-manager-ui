@@ -158,10 +158,14 @@ const buildNoPagingBody = (terms: Record<string, unknown>[] = []) => ({
   terms,
 })
 
-const normalizeDeviceTypeValue = (deviceType?: unknown) => {
-  const raw = isRecord(deviceType)
+const deviceTypeValueOf = (deviceType?: unknown) => (
+  isRecord(deviceType)
     ? firstString(deviceType.value, deviceType.name)
     : firstString(deviceType)
+)
+
+const normalizeDeviceTypeValue = (deviceType?: unknown) => {
+  const raw = deviceTypeValueOf(deviceType)
   const key = raw.replace(/[-_]/g, '').toLowerCase()
   return ({
     device: 'device', direct: 'device', directdevice: 'device',
@@ -537,19 +541,27 @@ const toDeviceLibraryCategory = (source: Record<string, any>, resource: Marketpl
   return 'sensor'
 }
 
+const deviceTemplateSourceOf = (
+  resource: MarketplaceResource,
+  version?: MarketplaceVersion,
+  versionResource?: MarketplaceResource,
+): MarketplaceResource => {
+  const resourceMetadata = isRecord(resource.metadata) ? resource.metadata : {}
+  const versionMetadata = isRecord(versionResource?.metadata) ? versionResource.metadata : {}
+  return isRecord(versionMetadata.template)
+    ? versionMetadata.template
+    : isRecord(resourceMetadata.template)
+      ? resourceMetadata.template
+      : {}
+}
+
 const toDeviceLibraryTemplateInput = (
   resource: MarketplaceResource,
   version?: MarketplaceVersion,
   versionResource?: MarketplaceResource,
   tagLookup?: MarketplaceTagLocaleLookup,
 ): DeviceTemplateProductInput => {
-  const resourceMetadata = isRecord(resource.metadata) ? resource.metadata : {}
-  const versionMetadata = isRecord(versionResource?.metadata) ? versionResource.metadata : {}
-  const source = isRecord(versionMetadata.template)
-    ? versionMetadata.template
-    : isRecord(resourceMetadata.template)
-      ? resourceMetadata.template
-      : {}
+  const source = deviceTemplateSourceOf(resource, version, versionResource)
   const accessProvider = firstString(
     source.accessProvider,
     versionResource?.accessProvider,
@@ -611,7 +623,7 @@ const toDeviceLibraryTemplateInput = (
       source.transportProtocol,
       ...(Array.isArray(marketplaceTags) ? marketplaceTags.map((tag: any) => firstString(tag.name, tag.label, tag.text, tag)) : []),
     ].map((value) => firstString(value)).filter(Boolean),
-    deviceType: firstString(source.deviceType) || 'device',
+    deviceType: deviceTypeValueOf(source.deviceType) || undefined,
     accessName: localizedAccessName,
     accessProvider,
     networkWay: firstString(source.networkWay),
@@ -696,6 +708,54 @@ async function mapWithConcurrency<T, R>(items: T[], limit: number, mapper: (item
   })
   await Promise.all(workers)
   return results
+}
+
+const deviceLibraryTemplateDeviceTypeCache = new Map<string, string>()
+const deviceLibraryTemplateDeviceTypeRequests = new Map<string, Promise<string | undefined>>()
+
+function resolveMarketplaceCapabilityResource(payload: unknown): MarketplaceResource | undefined {
+  const result = unwrapResult<unknown>(payload)
+  if (!isRecord(result)) return undefined
+  if (isRecord(result.resource)) return result.resource
+  if (isRecord(result.capability)) return result.capability
+  if (isRecord(result.data)) return result.data
+  return result
+}
+
+/**
+ * 补全当前页模板缺失的设备类型。市场检索接口未返回模板 metadata 前，不得将其默认成直连设备；
+ * 后端补齐该字段后可删除此详情回查及本地缓存。
+ */
+async function resolveDeviceLibraryTemplateDeviceType(
+  context: ProjectRuntimeContext,
+  templateId: string,
+): Promise<string | undefined> {
+  const id = templateId.trim()
+  if (!id) return undefined
+  const cacheKey = `${context.apiUrl}|${context.projectId}|${id}`
+  const cached = deviceLibraryTemplateDeviceTypeCache.get(cacheKey)
+  if (cached) return cached
+
+  const pending = deviceLibraryTemplateDeviceTypeRequests.get(cacheKey)
+  if (pending) return pending
+
+  const requestTask = request.get(
+    `/marketplace/capabilities/${encodeURIComponent(id)}`,
+    {},
+    { ...withProjectRuntimeRequest(context), hiddenError: true },
+  )
+    .then((payload) => {
+      const resource = resolveMarketplaceCapabilityResource(payload)
+      if (!resource) return undefined
+      const version = isRecord(resource.version) ? resource.version as MarketplaceVersion : undefined
+      const deviceType = deviceTypeValueOf(deviceTemplateSourceOf(resource, version, templateResourceOf(version)).deviceType)
+      if (deviceType) deviceLibraryTemplateDeviceTypeCache.set(cacheKey, deviceType)
+      return deviceType || undefined
+    })
+    .catch(() => undefined)
+    .finally(() => deviceLibraryTemplateDeviceTypeRequests.delete(cacheKey))
+  deviceLibraryTemplateDeviceTypeRequests.set(cacheKey, requestTask)
+  return requestTask
 }
 
 const extractInstalledProductId = (payload: any): string => {
@@ -1090,11 +1150,20 @@ export const queryDeviceLibraryTemplates_api = async (
       : isRecord(resource.version)
         ? resource.version as MarketplaceVersion
         : undefined
-    return toDeviceLibraryTemplateInput(resource, version, templateResourceOf(version), tagLookup)
+    return {
+      resource,
+      template: toDeviceLibraryTemplateInput(resource, version, templateResourceOf(version), tagLookup),
+    }
+  })
+  // 只补全当前页缺失类型的模板，并限制详情请求并发，避免设备库全量 N+1 请求。
+  const resolvedTemplates = await mapWithConcurrency(templates, 4, async ({ resource, template }) => {
+    if (template.deviceType) return template
+    const deviceType = await resolveDeviceLibraryTemplateDeviceType(context, String(resource.id || template.id))
+    return deviceType ? { ...template, deviceType } : template
   })
 
   return {
-    data: templates
+    data: resolvedTemplates
       .filter((template) => Boolean(template.id))
       .map((template) => ({ ...template, installed: false, installedProductId: undefined })),
     pageIndex,

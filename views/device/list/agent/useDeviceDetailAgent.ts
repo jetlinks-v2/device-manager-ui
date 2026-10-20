@@ -7,16 +7,14 @@ import {
   type AiClientToolRuntime,
 } from '@jetlinks-web-core/layout/components/AiChat/clientTools'
 import {
-  IOT_GATEWAY_DETAIL_AGENT_ROUTE_NAME,
-  type DeviceDetailAgentTabSurface,
-  resolveDeviceDetailAgentDefaultTab,
-  resolveDeviceDetailAgentTabs,
+  IOT_DEVICE_DETAIL_AGENT_TABS,
 } from './deviceDetailAgent.constants'
 import { createDeviceDetailAgentService } from './deviceDetailAgent.service'
 import { createDeviceDetailAgentTools } from './deviceDetailAgent.tools'
 import { createDeviceDetailAgentWorkflows } from './deviceDetailAgent.workflows'
+import { DEVICE_DETAIL_AGENT_BUILTIN_PARAMETERS } from './deviceDetailAgent.parameters'
 import { isEdgeDiagnosisAccessProvider } from './deviceDetailEdge.shared'
-import { buildIotDeviceDetailPath, resolveIotProjectId } from '../hooks/useIotDeviceRouting'
+import { resolveIotProjectId } from '../hooks/useIotDeviceRouting'
 import { iotDeviceService } from '../services/iotDevice.service'
 import type { IotDevice } from '../types'
 
@@ -29,17 +27,12 @@ export interface UseDeviceDetailAgentOptions {
   device?: DeviceDetailAgentDeviceSource
   deviceId?: MaybeRefOrGetter<string | undefined | null>
   enabled?: MaybeRefOrGetter<boolean>
+  tabs?: MaybeRefOrGetter<readonly string[] | undefined>
+  defaultTab?: MaybeRefOrGetter<string | undefined>
 }
 
 const t = (key: string, params?: Record<string, unknown>) => i18n.global.t(`IotDeviceDetailAgent.${key}`, params || {})
 const normalizeText = (value: unknown) => String(value || '').trim()
-const isGatewayDetailRoute = (name: unknown) => String(name || '') === IOT_GATEWAY_DETAIL_AGENT_ROUTE_NAME
-const resolveTabSurface = (name: unknown): DeviceDetailAgentTabSurface => (
-  isGatewayDetailRoute(name) ? 'gateway' : 'unified'
-)
-const isAgentTab = (value: string, surface: DeviceDetailAgentTabSurface) => (
-  (resolveDeviceDetailAgentTabs(surface) as readonly string[]).includes(value)
-)
 
 const promptKeysByStatus = {
   online: ['prompts.today', 'prompts.messages', 'prompts.alarm'],
@@ -72,6 +65,7 @@ export function useDeviceDetailAgent(options?: UseDeviceDetailAgentOptions) {
   const aiStore = useAIStore()
   let requestVersion = 0
   let activeDeviceId = ''
+  let activeTabsKey = ''
   let activeService: ReturnType<typeof createDeviceDetailAgentService> | undefined
   let activeRuntime: AiClientToolRuntime | undefined
   let unsubscribeRuntime: (() => void) | undefined
@@ -84,6 +78,7 @@ export function useDeviceDetailAgent(options?: UseDeviceDetailAgentOptions) {
     activeService?.dispose()
     activeService = undefined
     activeDeviceId = ''
+    activeTabsKey = ''
   }
 
   const release = () => {
@@ -107,10 +102,8 @@ export function useDeviceDetailAgent(options?: UseDeviceDetailAgentOptions) {
   }
 
   const resolveDeviceId = () => {
-    const fromOption = options && 'deviceId' in options
-      ? normalizeText(toValue(options.deviceId))
-      : ''
-    if (fromOption) return fromOption
+    // 显式 deviceId 的宿主拥有设备上下文；为空时也不能回退到正在切换页面的路由参数。
+    if (options && 'deviceId' in options) return normalizeText(toValue(options.deviceId))
     return normalizeText(route.params.deviceId ?? route.params.id ?? route.params.gatewayId)
   }
 
@@ -119,49 +112,42 @@ export function useDeviceDetailAgent(options?: UseDeviceDetailAgentOptions) {
     return toValue(options.device)
   }
 
+  // The embedding page owns its tab surface; route names are not a capability contract.
+  const resolveTabs = () => toValue(options?.tabs) ?? IOT_DEVICE_DETAIL_AGENT_TABS
+  const resolveDefaultTab = () => normalizeText(toValue(options?.defaultTab)) || resolveTabs()[0] || 'overview'
+  const tabsKey = () => JSON.stringify([resolveTabs(), resolveDefaultTab()])
+
   const handleMarkdownLink = ({ href, event }: { href: string; event: MouseEvent }) => {
     const tab = resolveMarkdownTab(href)
-    const surface = resolveTabSurface(route.name)
-    if (!isAgentTab(tab, surface)) return false
+    if (!resolveTabs().includes(tab)) return false
     event.preventDefault()
     void router.replace({
-      query: surface === 'gateway'
-        ? { ...route.query, tab }
-        : {
-          ...route.query,
-          tab,
-          ...(tab === 'access' ? { sub: 'connection' } : { sub: undefined }),
-        },
+      query: { ...route.query, tab },
     })
     return true
   }
 
   const queryWithDevice = async (projectId: string, device: IotDevice, version: number) => {
-    if (activeDeviceId === device.id && activeRuntime) return
+    if (activeDeviceId === device.id && activeTabsKey === tabsKey() && activeRuntime) return
 
     disposeLocal()
-    const surface = resolveTabSurface(route.name)
-    const tabs = resolveDeviceDetailAgentTabs(surface)
+    const tabs = [...resolveTabs()]
     const includeEdge = isEdgeDiagnosisAccessProvider(device.accessProvider)
     const service = createDeviceDetailAgentService(device, {
       tabSurface: {
         tabs,
-        defaultTab: resolveDeviceDetailAgentDefaultTab(surface),
+        defaultTab: resolveDefaultTab(),
         navigate: async (tab) => {
-          if (surface === 'gateway') {
-            await router.replace({ query: { ...route.query, tab } })
-            return
-          }
-          const path = buildIotDeviceDetailPath(device.projectId, device.id, { tab })
-          await router.push(path)
+          await router.replace({ query: { ...route.query, tab } })
         },
       },
     })
     activeService = service
     activeDeviceId = device.id
+    activeTabsKey = tabsKey()
     const tools = createDeviceDetailAgentTools(service, {
       accessProvider: device.accessProvider,
-      tabSurface: surface,
+      tabs,
     })
     const toolsDescription = includeEdge
       ? [
@@ -192,6 +178,7 @@ export function useDeviceDetailAgent(options?: UseDeviceDetailAgentOptions) {
       .map(tab => `[${t(`tabs.${tab}`)}](#tab=${tab})`)
       .join('、')
     const parameters = {
+      ...DEVICE_DETAIL_AGENT_BUILTIN_PARAMETERS,
       clientId: DEVICE_DETAIL_AGENT_CLIENT_ID,
       deviceId: device.id,
       deviceName: device.name,
@@ -260,7 +247,7 @@ export function useDeviceDetailAgent(options?: UseDeviceDetailAgentOptions) {
       return
     }
 
-    if (activeDeviceId === deviceId && activeRuntime) return
+    if (activeDeviceId === deviceId && activeTabsKey === tabsKey() && activeRuntime) return
 
     const version = ++requestVersion
     prepare(deviceId)
@@ -285,6 +272,7 @@ export function useDeviceDetailAgent(options?: UseDeviceDetailAgentOptions) {
       resolveIotProjectId(route),
       resolveDeviceId(),
       normalizeText(resolvePageDevice()?.id),
+      tabsKey(),
     ] as const,
     () => void sync(),
     { immediate: true },

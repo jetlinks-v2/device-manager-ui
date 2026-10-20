@@ -279,6 +279,7 @@
                                 :i18n-max-length="64"
                             />
                         </a-form-item>
+                        <DeviceLibraryBizKeyPicker v-model="formData.bizKey" :provider="provider.id" />
                         <a-form-item :label="$t('Cloud.Ctwing.076179-5')" name="description">
                             <I18nTextField
                                 :placeholder="$t('Cloud.Ctwing.076179-6')"
@@ -363,6 +364,7 @@ import { network } from '../../../../../assets';
 import { useI18n } from 'vue-i18n';
 import { useTabSaveSuccess, useTabSaveSuccessBack } from '@jetlinks-web-core/hooks'
 import { I18nTextField } from '@jetlinks-web-core/components';
+import DeviceLibraryBizKeyPicker from '../DeviceLibraryBizKeyPicker.vue';
 
 const { t: $t } = useI18n();
 const menuStory = useMenuStore();
@@ -382,6 +384,7 @@ interface FormState {
 }
 interface Form {
     name: string;
+    bizKey: string;
     description: string;
     i18nMessages?: Record<string, Record<string, string>>;
 }
@@ -416,6 +419,7 @@ const formState = ref<FormState>({
 });
 const formData = ref<Form>({
     name: '',
+    bizKey: '',
     description: '',
     i18nMessages: {},
 });
@@ -528,6 +532,7 @@ onMounted(() => {
         protocolCurrent.value = props.data.protocol;
         formData.value = {
             name: props.data.name,
+            bizKey: props.data.bizKey || '',
             description: props.data.description,
         };
     }

@@ -1,0 +1,111 @@
+
+.mm-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding-bottom: 16px;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+
+
+.mm-main {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 0;
+}
+
+
+.mm-splitter {
+  flex: 0 0 8px;
+  width: 8px;
+  cursor: col-resize;
+  align-self: stretch;
+  position: relative;
+  z-index: 5;
+  user-select: none;
+  touch-action: none;
+  background: transparent;
+}
+
+
+.mm-splitter::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 10px;
+  bottom: 10px;
+  width: 2px;
+  border-radius: 1px;
+  background: #e0e0e0;
+  transition: background 0.15s ease;
+}
+
+
+.mm-splitter:hover::after {
+  background: #1890ff;
+}
+
+
+.mm-main-right {
+  flex: 1 1 auto;
+  min-width: min(280px, 32vw);
+  width: auto;
+  max-width: none;
+  position: sticky;
+  top: 12px;
+  align-self: stretch;
+  min-height: 0;
+  max-height: calc(100vh - 96px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 4;
+  -webkit-overflow-scrolling: touch;
+}
+
+
+@media (max-width: 1100px) {
+  .mm-main {
+    flex-direction: column;
+  }
+
+  .mm-main-left {
+    width: 100% !important;
+    max-width: none;
+  }
+
+  .mm-splitter {
+    display: none;
+  }
+
+  .mm-main-right {
+    position: static;
+    min-width: 0;
+    max-height: none;
+    overflow-y: visible;
+  }
+}
+
+
+.mm-debug {
+  border: 1px solid #f0f0f0;
+  border-radius: 4px;
+  overflow: hidden;
+
+  :deep(.ant-tabs-nav) {
+    margin-bottom: 0;
+    padding: 0 8px;
+    background: #fafafa;
+  }
+}
+
+
+/* 右侧固定栏较窄，解码区改为上下布局避免两列挤压 */
+.mm-main-right .decode-debug-grid {
+  grid-template-columns: 1fr;
+}

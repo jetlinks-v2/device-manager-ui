@@ -168,6 +168,7 @@ const { scopeType, scopeOptions, searchKeyword, searchPlaceholder, filteredTreeD
   display: flex;
   gap: var(--space-2);
   min-width: 0;
+	align-items: center;
 }
 
 .iot-device-scope__group-action {

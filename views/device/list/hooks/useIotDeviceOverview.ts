@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import useClipboard from 'vue-clipboard3'
 import { onlyMessage } from '@jetlinks-web/utils'
@@ -29,11 +29,27 @@ export function useIotDeviceOverview(props: Readonly<IotDeviceOverviewProps>) {
   const { toClipboard } = useClipboard()
   const selectedMetric = ref<RealtimePropertyRow | null>(null)
   const detailOpen = ref(false)
+  const keyMetricPage = ref(1)
+  const keyMetricPageSize = 6
 
   const keyMetrics = computed(() => {
-    const focused = props.properties.filter((item) => item.focused)
     // 未配置关键属性时不回退到全部属性，避免概览展示未经确认的业务数据。
-    return focused.slice(0, 5)
+    return props.properties.filter((item) => item.focused)
+  })
+  const keyMetricPageCount = computed(() => Math.max(1, Math.ceil(keyMetrics.value.length / keyMetricPageSize)))
+  const pagedKeyMetrics = computed(() => {
+    const start = (keyMetricPage.value - 1) * keyMetricPageSize
+    return keyMetrics.value.slice(start, start + keyMetricPageSize)
+  })
+
+  // 切换设备时从关键属性的首页开始，避免延续上一台设备的分页位置。
+  watch(
+    () => props.device.id,
+    () => { keyMetricPage.value = 1 },
+  )
+
+  watch(keyMetricPageCount, (pageCount) => {
+    if (keyMetricPage.value > pageCount) keyMetricPage.value = pageCount
   })
 
   const overviewPropertyActions = computed(() => [
@@ -68,9 +84,12 @@ export function useIotDeviceOverview(props: Readonly<IotDeviceOverviewProps>) {
     copyText,
     detailOpen,
     displayText,
+    keyMetricPage,
+    keyMetricPageSize,
     keyMetrics,
     openHistory,
     overviewPropertyActions,
+    pagedKeyMetrics,
     renderAccessValue,
     selectedMetric,
   }

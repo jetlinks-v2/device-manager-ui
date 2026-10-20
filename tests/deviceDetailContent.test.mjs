@@ -29,7 +29,7 @@ for (const name of functionNames) assert.ok(selected.some(node => ts.isFunctionD
 
 // 执行生产函数及真实销毁回调，隔离详情大 hook 中与这些生命周期无关的 UI/诊断依赖。
 const { code: lifecycleCode } = await transform(selected.map(node => node.getText(detailSource)).join('\n'), { loader: 'ts', target: 'es2022' })
-const lifecycleScript = new vm.Script(`(() => { ${lifecycleCode}; return { loadAll, loadDevice, loadRealtimePropertySnapshot, onDetailContentChanged, saveTags } })()`)
+const lifecycleScript = new vm.Script(`(() => { ${lifecycleCode}; return { loadAll, loadDevice, loadRealtimePropertySnapshot, onDetailContentChanged, saveTags, syncLegacyMetadataDevice } })()`)
 
 function deferred() {
   let resolve
@@ -56,7 +56,10 @@ function fixture(t, { custom = true, properties = [] } = {}) {
     isGatewayDevice: ref(false), healthDiagnosis: shallowRef(null),
     savingTags: ref(false), tagEditorOpen: ref(true),
     onScopeDispose: callback => { dispose = callback },
-    instanceStore: { setCurrent() {} },
+    instanceStore: {
+      current: undefined,
+      setCurrent(value) { this.current = value },
+    },
     EventEmitter: { unSubscribe() {} },
     updateTagsOverflow() {}, formatApiTime: () => '', handleRealtimePropertyValue() {},
     canDeviceAction: () => true, getTagKey: tag => tag.id, isEmptyTagValue: value => value == null,
@@ -204,6 +207,24 @@ test('header tag writes refresh custom content without adding default-content qu
   response.resolve()
   await pending
   assert.deepEqual(f.calls, [], 'a completed write cannot refresh another device')
+})
+
+test('passes every device feature to the legacy metadata store', t => {
+  const f = fixture(t)
+  const features = [
+    { id: 'propertyNotInsertable', name: '属性模型不可新增' },
+    { id: 'eventNotInsertable', name: '物模型事件不可新增' },
+    { id: 'custom-rule', name: '任意后端规则' },
+  ]
+
+  f.api.syncLegacyMetadataDevice({
+    id: 'A',
+    name: 'device-a',
+    features,
+    thingModelMetadata: { properties: [], functions: [], events: [], tags: [] },
+  })
+
+  assert.deepEqual(f.context.instanceStore.current.features, features)
 })
 
 const providerSource = await parseSource('../views/device/list/hooks/useDeviceListProvider.ts')

@@ -8,7 +8,7 @@
     </div>
     <template v-if="isPreview">
       <div class="event-table__status">
-        <a-empty description="预览模式暂无事件数据" />
+        <CloudEmpty description="预览模式暂无事件数据" />
       </div>
     </template>
     <template v-else>
@@ -32,6 +32,7 @@
           :bodyStyle="{ padding: '0 0 0 0' }"
           :scroll="{ x: 'max-content' }"
         >
+          <template #emptyText><CloudEmpty /></template>
           <template
             v-for="item in renderColumns"
             :key="item.slotName"
@@ -80,6 +81,7 @@
 </template>
 
 <script setup lang="ts">
+import CloudEmpty from '@jetlinks-web-core/components/CloudEmpty/index.vue'
 import dayjs from 'dayjs'
 import { cloneDeep, omit } from 'lodash-es'
 import { JsonViewer } from 'vue3-json-viewer'

@@ -184,10 +184,10 @@ const filterFields = computed<ConditionFilterField[]>(() => [
 
 const columns = computed(() => [
   { title: $t('IotDeviceDetail.logs.column.type'), dataIndex: 'type', key: 'type', scopedSlots: true, width: 120 },
-  { title: $t('IotDeviceDetail.logs.column.direction'), dataIndex: 'direction', key: 'direction', scopedSlots: true, width: 90 },
+  { title: $t('IotDeviceDetail.logs.column.direction'), dataIndex: 'direction', key: 'direction', scopedSlots: true, width: 100 },
   { title: $t('IotDeviceDetail.logs.column.time'), dataIndex: 'time', key: 'time', scopedSlots: true, width: 168 },
   { title: $t('IotDeviceDetail.logs.column.content'), dataIndex: 'content', key: 'content', scopedSlots: true },
-  { title: $t('IotDeviceDetail.common.action'), dataIndex: 'action', key: 'action', scopedSlots: true, width: 64, align: 'center' },
+  { title: $t('IotDeviceDetail.common.action'), dataIndex: 'action', key: 'action', scopedSlots: true, width: 90, align: 'center' },
 ])
 
 const tableParams = computed(() => ({

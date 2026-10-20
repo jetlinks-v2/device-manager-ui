@@ -17,6 +17,7 @@ import { useRegistryOptions } from '@jetlinks-web-core/hooks'
 import { deviceStateList } from '@device-manager-ui/views/device/data'
 import { isApplyDashboard } from '@device-manager-ui/utils/dashboardProject'
 import { createDeviceDetailClientToolRuntime } from './clientTools'
+import { DEVICE_DETAIL_AGENT_BUILTIN_PARAMETERS } from '../../list/agent/deviceDetailAgent.parameters'
 import { useDeviceMetadataReferences } from './useDeviceMetadataReferences'
 import {
   createEdgeDiagnosisWorkflowGuides,
@@ -31,6 +32,8 @@ import type {
 
 export interface DeviceInstanceDetailOptions { deviceId?: string; contentOnly?: boolean }
 
+const DEVICE_INSTANCE_DETAIL_ROUTE_NAME = 'device/Instance/Detail'
+
 /** 旧版设备详情的设备加载、页签导航、订阅及 AI 生命周期，独立于完整页或嵌入视图。 */
 export function useDeviceInstanceDetail(options: Readonly<DeviceInstanceDetailOptions>, onChanged?: (deviceId: string) => void) {
   const { t: $t } = useI18n()
@@ -39,7 +42,13 @@ export function useDeviceInstanceDetail(options: Readonly<DeviceInstanceDetailOp
   const { showThreshold } = useSystemStore()
   const route = useRoute()
   const router = useRouter()
-  const resolvedDeviceId = computed(() => String(options.deviceId || route.params.id || route.params.deviceId || ''))
+  const resolvedDeviceId = computed(() => {
+    if (options.deviceId) return String(options.deviceId)
+
+    // 产品和设备详情都使用 :id；路由切换期间不能把产品 ID 当作设备 ID 请求详情。
+    const isDeviceDetailRoute = route.matched.some(record => record.name === DEVICE_INSTANCE_DETAIL_ROUTE_NAME)
+    return isDeviceDetailRoute ? String(route.params.id || route.params.deviceId || '') : ''
+  })
   const routerParams = useRouterParams()
   const instanceStore = useInstanceStore()
   const extensionDevice = computed(() => instanceStore.current.id === resolvedDeviceId.value ? instanceStore.current : null)
@@ -721,6 +730,7 @@ export function useDeviceInstanceDetail(options: Readonly<DeviceInstanceDetailOp
 
     const deviceName = instanceStore.current?.name
     return {
+      ...DEVICE_DETAIL_AGENT_BUILTIN_PARAMETERS,
       deviceId,
       subjectType: DEVICE_AGENT_SUBJECT_TYPE,
       subjectId: deviceId,
@@ -1273,9 +1283,13 @@ export function useDeviceInstanceDetail(options: Readonly<DeviceInstanceDetailOp
     await openEdgeUrl(instanceStore.current.id)
   }
 
-  onMounted(() => { void getDetailFn() })
+  onMounted(() => {
+    if (resolvedDeviceId.value) void getDetailFn()
+  })
 
-  watch(resolvedDeviceId, (id, previous) => { if (id !== previous) void getDetailFn() })
+  watch(resolvedDeviceId, (id, previous) => {
+    if (id && id !== previous) void getDetailFn()
+  })
 
   // URL 深链在设备和异步扩展就绪后恢复；普通设备会过滤不适用的通道页签。
   watch([() => route.query.tab, orderedOptions, detailPageLoading], () => {

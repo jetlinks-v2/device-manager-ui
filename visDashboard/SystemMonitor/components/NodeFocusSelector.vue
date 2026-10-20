@@ -48,14 +48,8 @@
 
 <script lang="ts" setup name="NodeFocusSelector">
 import type { PropType } from 'vue'
-
-interface NodeOption {
-  label: string
-  value: string
-  color: string
-  metric?: string
-  detail?: string
-}
+import type { SelectProps } from 'ant-design-vue'
+import type { NodeOption } from '../types'
 
 const props = defineProps({
   value: {
@@ -68,16 +62,17 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['update:value', 'reset'])
+const emit = defineEmits<{ 'update:value': [value: string[]]; reset: [] }>()
 const selectOptions = computed(() => props.options.map(item => ({ ...item })))
 const colorByValue = computed<Record<string, string>>(() => Object.fromEntries(
   props.options.map(item => [item.value, item.color]),
 ))
 
-const filterOption = (input: string, option?: NodeOption) =>
-  option?.label.toLowerCase().includes(input.toLowerCase()) ?? false
+const filterOption = (input: string, option?: { label?: unknown }) =>
+  String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
 
-const updateValue = (value: string[]) => emit('update:value', [...value])
+const updateValue = (value: SelectProps['value']) => emit('update:value',
+  Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [])
 const removeValue = (value: string | number) => {
   emit('update:value', props.value.filter(nodeId => nodeId !== String(value)))
 }
