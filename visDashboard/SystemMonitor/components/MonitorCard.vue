@@ -13,6 +13,7 @@
   </a-card>
 </template>
 <script setup lang="ts">
+import CloudEmpty from '@jetlinks-web-core/components/CloudEmpty/index.vue'
 import type { PropType } from 'vue'
 import type { MonitorState } from '../types'
 defineProps({ title: { type: String, required: true }, state: { type: Object as PropType<MonitorState>, required: true } })

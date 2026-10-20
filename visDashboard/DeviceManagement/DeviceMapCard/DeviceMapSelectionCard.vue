@@ -132,6 +132,7 @@
 </template>
 
 <script setup lang="ts">
+import CloudEmpty from '@jetlinks-web-core/components/CloudEmpty/index.vue'
 import type { PropType } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ArrowLeftOutlined, CloseOutlined, InfoCircleOutlined, RightOutlined } from '@ant-design/icons-vue'

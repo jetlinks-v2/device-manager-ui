@@ -5,12 +5,13 @@
       <template #extra><a-button @click="reload">{{ $t('components.SystemMonitor.retry') }}</a-button></template>
     </a-result>
     <DashBoardCanvas v-else :model-value="dashboard" :catalog="catalog"
-      :editable="false" :layout-editable="true" :preview-mode="false" storage-key="infrastructure-dashboard" />
+      :editable="false" :layout-editable="true" :preview-mode="false" :storage-key="infrastructureLayoutStorageKey" />
   </main>
 </template>
 <script setup lang="ts" name="DashBoardPage">
 import { DashBoardCanvas } from '@jetlinks-web-core/components/DashBoardCanvas'
 import { useInfrastructureDashboard } from './useInfrastructureDashboard'
+import { infrastructureLayoutStorageKey } from './infrastructureDashboardLayout'
 const { catalog, loading, errors, reload, dashboard } = useInfrastructureDashboard()
 </script>
 <style scoped>

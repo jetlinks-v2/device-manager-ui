@@ -4,6 +4,14 @@
 
 `views/link/DashBoard` 使用与概览相同的 `jetlinks-web-core/src/components/DashBoardCanvas`，作为只读监控感知页展示实时资源、CPU、内存和网络趋势。业务组件归属 `visDashboard/SystemMonitor`；用户可以拖动和缩放卡片，个人布局以 `infrastructure-dashboard` 独立保存，不开放组件增删和业务配置抽屉。
 
+### 少量节点密度与指标切换样式
+
+- 指标留白：容量 / 堆外说明取消负上边距，与主数值间隔 4px，字号 12px、行高 18px；CPU / 内存两组及磁盘容量 / 读写之间间隔 8px，节点行上下内边距各 8px。默认高度同步容纳完整摘要，单节点无需内滚动。
+- 目标与方案：沿用当前监控感知页和资源中心组件内的 Ant Design Segmented 风格。节点实时资源默认高度按当前节点数生成：单节点 8 行（254px）、2 个节点 11 行（356px）、3 个以上节点最多 13 行（424px），超出时在表内滚动；保留 7 行的手工缩放下限。CPU / 内存趋势随节点卡片上移，网络趋势仍位于两者下方。保留现有指标、时间选择、排序、拖动和缩放交互。
+- 实施入口：`views/link/DashBoard/useInfrastructureDashboard.ts` 复用页面共享实时节点集合计算默认坐标；同目录布局工具识别并调整旧的完整默认布局，仅改自动生成的坐标，不清空缓存或覆盖手工布局。`RealtimeResources/config.ts` 单独放开紧凑最小高度；`components/TrendToolbar.vue` 对齐资源中心 `ResourceWidget.vue` 的灰底、白色选中项、蓝字、圆角和内边距。
+- 验证：`node --test tests/infrastructureDashboardLayout.test.ts` 3/3 通过，覆盖节点数与下方坐标联动、旧默认缓存及早期 7/9 行默认缓存适配、输入不变、任一卡片手工位置或尺寸的保护。相关 Vue SFC / Less、TypeScript 语法检查及 `git diff --check` 通过。复用现有 9200 开发服务，在隔离页渲染真实节点组件并注入模拟节点：1 → 4 → 1 时高度为 254 → 424 → 254px，单节点表格可用高度与滚动高度均为 151px，行高约 108px，内容完整且没有内滚动，4 个节点保留表内滚动，页面无横向溢出。既有真实画布检查覆盖趋势间距 18px、CPU / 内存 / 网络六项切换及日期面板打开；这些交互本次未改动，沿用已有通过证据。切换控件计算样式与资源中心一致（灰底 `#F2F3F5`、选中蓝字 `#165DFF`、2px 内边距、4px 外圆角）。
+- 联调与交付边界：当前浏览器工具访问 9200 正式页面会跳转登录，本轮浏览器结果是模拟节点隔离验证，尚未在真实登录页面联调；临时隔离页已移除，不修改后端数据。按性能约束未执行全量 lint/typecheck/build；完整类型检查与发布构建可执行 `pnpm -C runtime-ui exec vue-tsc --noEmit -p modules/device-manager-ui/tsconfig.json`、`pnpm -C runtime-ui build:standalone`。本地已有开发服务可热更新，9000 环境需发布更新后的 runtime-ui 静态资源，无后端重启要求。
+
 监控行为：
 
 1. CPU 趋势支持“JVM 使用率 / 系统使用率”切换，默认展示 JVM；内存趋势同样默认 JVM。

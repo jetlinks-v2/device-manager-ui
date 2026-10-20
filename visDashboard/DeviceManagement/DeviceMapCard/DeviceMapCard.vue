@@ -14,19 +14,20 @@
           v-if="supportMessage"
           class="device-map-card__status error"
         >
-          {{ supportMessage }}
+          <CloudEmpty :description="supportMessage" />
         </div>
         <div
           v-else-if="error"
           class="device-map-card__status error"
         >
-          <span>{{ t('components.DeviceMap.loadError') }}</span>
-          <a-button
-            size="small"
-            @click="refresh"
-          >
-            {{ t('components.DeviceMap.retry') }}
-          </a-button>
+          <CloudEmpty :description="t('components.DeviceMap.loadError')">
+            <a-button
+              size="small"
+              @click="refresh"
+            >
+              {{ t('components.DeviceMap.retry') }}
+            </a-button>
+          </CloudEmpty>
         </div>
         <div
           v-else-if="!points.length"
@@ -61,6 +62,7 @@
 </template>
 
 <script setup lang="ts">
+import CloudEmpty from '@jetlinks-web-core/components/CloudEmpty/index.vue'
 import { computed, toRef, type CSSProperties, type PropType } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElAmapMarkerCluster } from '@vuemap/vue-amap'
