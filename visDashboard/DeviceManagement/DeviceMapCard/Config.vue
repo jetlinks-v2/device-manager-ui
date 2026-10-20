@@ -1,15 +1,15 @@
 <template>
   <div class="card-container">
-    <config-item label="标题">
+    <config-item :label="t('components.DeviceMap.configTitle')">
       <a-input
         v-model:value="config.topTitle"
         :maxlength="32"
-        placeholder="请输入标题"
+        :placeholder="t('components.DeviceMap.titlePlaceholder')"
         @change="emitChange"
       />
     </config-item>
 
-    <config-item label="自动刷新">
+    <config-item :label="t('components.DeviceMap.autoRefresh')">
       <a-switch
         v-model:checked="config.isAutoRefresh"
         @change="emitChange"
@@ -18,7 +18,7 @@
 
     <config-item
       v-if="config.isAutoRefresh"
-      label="刷新间隔"
+      :label="t('components.DeviceMap.refreshInterval')"
     >
       <a-space>
         <InputNumber
@@ -29,14 +29,15 @@
           style="width: 100%"
           @change="emitChange"
         />
-        <span>秒</span>
+        <span>{{ t('components.DeviceMap.seconds') }}</span>
       </a-space>
     </config-item>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { PropType } from 'vue'
+import { ref, watch, type PropType } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { moduleRegistry } from '@jetlinks-web-core/utils/module-registry'
 import { cloneDeep } from 'lodash-es'
 import { deviceMapCardConfig } from './config'
@@ -47,6 +48,7 @@ defineOptions({
 })
 
 const { ConfigItem, InputNumber } = moduleRegistry.getResource('visualization-designer-ui', 'components')
+const { t } = useI18n()
 
 const props = defineProps({
   configData: {
@@ -66,7 +68,9 @@ const emitChange = () => {
 }
 
 watch(
-  () => (props.configData as { componentProps?: { deviceMapCard?: DeviceMapConfig } } | undefined)?.componentProps?.deviceMapCard,
+  () =>
+    (props.configData as { componentProps?: { deviceMapCard?: DeviceMapConfig } } | undefined)?.componentProps
+      ?.deviceMapCard,
   (value) => {
     config.value = cloneDeep((value as DeviceMapConfig) || deviceMapCardConfig.componentProps.deviceMapCard)
   },
