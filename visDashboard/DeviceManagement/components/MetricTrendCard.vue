@@ -38,13 +38,13 @@
             :option="option"
             autoresize
           />
-          <div
+          <CloudEmpty
             v-else
             class="chart-status"
             :class="{ error: !!error }"
-          >
-            {{ error || '暂无数据' }}
-          </div>
+            :description="error || undefined"
+            :image-style="{ height: '32px' }"
+          />
         </a-spin>
       </div>
     </div>
@@ -59,6 +59,7 @@
 </template>
 
 <script setup lang="ts">
+import CloudEmpty from '@jetlinks-web-core/components/CloudEmpty/index.vue'
 import { use } from 'echarts/core'
 import { LineChart } from 'echarts/charts'
 import { GridComponent, TooltipComponent } from 'echarts/components'
@@ -204,6 +205,8 @@ const option = computed(() => ({
   justify-content: flex-start;
   color: #ff4d4f;
 }
+
+.chart-status :deep(.ant-empty) { margin: 0; }
 
 .top-card-footer {
   display: flex;

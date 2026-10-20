@@ -78,7 +78,7 @@
         @update:value="emit('search', $event)"
       />
       <a-spin :spinning="view.loading">
-        <a-empty
+        <CloudEmpty
           v-if="!view.rows.length"
           :description="t('components.DeviceMap.noMatches')"
         />
@@ -132,6 +132,7 @@
 </template>
 
 <script setup lang="ts">
+import CloudEmpty from '@jetlinks-web-core/components/CloudEmpty/index.vue'
 import type { PropType } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ArrowLeftOutlined, CloseOutlined, InfoCircleOutlined, RightOutlined } from '@ant-design/icons-vue'

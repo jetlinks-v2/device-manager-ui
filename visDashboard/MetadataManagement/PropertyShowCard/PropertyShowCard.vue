@@ -19,11 +19,9 @@
           :actions="getActions(item, )"
         />
       </div>
-      <Card
+      <CloudEmpty
         v-else
         class="property-show-card__empty-card"
-        :data="{}"
-        :actions="[]"
       />
     </div>
     <Save v-if='editVisible' @close='editVisible = false' :data='currentInfo' />
@@ -41,6 +39,7 @@
 </template>
 
 <script setup lang="ts">
+import CloudEmpty from '@jetlinks-web-core/components/CloudEmpty/index.vue'
 import type { PropType } from 'vue'
 import { dashboard } from '@device-manager-ui/api/dashboard'
 import {detail, getProperty, queryPropertyMetric} from '@device-manager-ui/api/instance'
