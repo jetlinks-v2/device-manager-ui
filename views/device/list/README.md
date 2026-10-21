@@ -18,6 +18,8 @@
 
 验证限制：工作区和模块未配置 lint 脚本；本次重新执行 `pnpm exec vue-tsc -p modules/device-manager-ui/tsconfig.json --noEmit --pretty false`，完整检查仍被未改动的 `views/link/Certificate/type.d.ts:2:30` TS1005 语法错误阻断，修复后需重跑，不能据此宣称完整类型检查通过。浏览器复用上述真实页面记录，本轮未重跑；无接口或业务行为变更。
 
+交付：功能提交 `7b263e6`；分支 `codex/2.20-device-metadata-ellipsis-fix`；PR：[device-manager-ui#335](https://github.com/jetlinks-v2/device-manager-ui/pull/335)，目标分支为 `2.20`。
+
 ## Modbus 映射组件与国际化
 
 当前结论：已按业务职责原样拆分原 6,897 行组件，主入口缩减为 56 行，补齐 396 对中英文国际化资源。以 Git 基线中的原文件为事实来源，保持原业务逻辑、中文内容、DOM 结构、控件参数、样式值及顺序；英文布局扩展仅在英文语言条件下生效。
