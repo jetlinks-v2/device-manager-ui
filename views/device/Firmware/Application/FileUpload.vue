@@ -2,8 +2,7 @@
     <a-upload
         name="file"
         accept=".jar,.zip"
-        :action="FileStaticPath()"
-        :headers="getUploadHeaders()"
+        :custom-request="uploadFirmware"
         :file-list="fileList"
         :max-count="1"
         :disabled="props.disabled || uploading"
@@ -19,17 +18,17 @@
 </template>
 
 <script setup lang="ts" name="ApplicationFirmwareFileUpload">
-import { FileStaticPath } from '@jetlinks-web-core/api/comm';
-import { getUploadHeaders, onlyMessage } from '@jetlinks-web-core/utils/comm';
+import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import { notification as Notification } from 'ant-design-vue';
 import type { UploadChangeParam, UploadProps } from 'ant-design-vue';
 import { useI18n } from 'vue-i18n';
+import { uploadFirmware } from './uploadFirmware';
 import type {
     ApplicationFirmwareFile,
     FirmwareUploadResult,
 } from '../type';
 
-interface UploadResponse {
+interface FirmwareUploadResponse {
     success?: boolean;
     message?: string;
     result?: FirmwareUploadResult;
@@ -85,10 +84,17 @@ const handleChange = (info: UploadChangeParam) => {
         return;
     }
     if (info.file.status === 'done') {
-        const response = info.file.response as UploadResponse | undefined;
+        const response = info.file.response as FirmwareUploadResponse | undefined;
+        if (response?.success === false) {
+            Notification.error({
+                message: $t('Application.FileUpload.385271-2'),
+                description: response.message || $t('Application.FileUpload.385271-2'),
+            });
+            clearFile();
+            return;
+        }
         const result = response?.result;
         if (
-            response?.success === false ||
             !result?.accessUrl ||
             !result.sha256 ||
             typeof result.length !== 'number'
@@ -114,12 +120,7 @@ const handleChange = (info: UploadChangeParam) => {
         return;
     }
     if (info.file.status === 'error') {
-        const response = info.file.response as UploadResponse | undefined;
-        Notification.error({
-            message: $t('Application.FileUpload.385271-2'),
-            description:
-                response?.message || $t('Application.FileUpload.385271-3'),
-        });
+        // 请求异常由统一请求层提示，这里只清理上传状态，避免重复弹窗。
         clearFile();
     }
 };

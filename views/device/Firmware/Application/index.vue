@@ -59,26 +59,26 @@
                     :column="2"
                 >
                     <a-descriptions-item
-                        :label="$t('Application.index.385271-12')"
+                        :label="$t('Firmware.index.858355-2')"
                     >
-                        {{ preview.releaseVersion }}
+                        {{ preview.version }}
                     </a-descriptions-item>
                     <a-descriptions-item
                         :label="$t('Application.index.385271-13')"
                     >
-                        {{ preview.buildVersion }}
+                        {{ preview.metadata.application.buildVersion }}
                     </a-descriptions-item>
                     <a-descriptions-item
                         :label="$t('Application.index.385271-14')"
                     >
-                        {{ preview.requiredJavaVersion }}
+                        {{ preview.metadata.application.requiredJavaVersion }}
                     </a-descriptions-item>
                     <a-descriptions-item
                         :label="$t('Application.index.385271-15')"
                     >
                         <a-space wrap>
                             <a-tag
-                                v-for="version in preview.upgradeToVersions"
+                                v-for="version in preview.metadata.application.upgradeToVersions"
                                 :key="version"
                             >
                                 {{ version }}
@@ -122,7 +122,7 @@ import {
 import FileUpload from './FileUpload.vue';
 import type {
     ApplicationFirmwareFile,
-    ApplicationFirmwareInfo,
+    ApplicationFirmwareParseResult,
     FirmwareProductOption,
     FormDataType,
 } from '../type';
@@ -145,7 +145,7 @@ const formData = reactive({
     description: '',
 });
 const file = ref<ApplicationFirmwareFile>();
-const preview = ref<ApplicationFirmwareInfo>();
+const preview = ref<ApplicationFirmwareParseResult>();
 const uploading = ref(false);
 const parsing = ref(false);
 const submitting = ref(false);
@@ -207,11 +207,11 @@ const parseFirmware = async () => {
         });
         // 产品或文件切换后，只接收最后一次解析结果，避免展示过期版本。
         if (currentRequestId === parseRequestId) {
-            const application = response.status === 200
-                ? response.result?.metadata.application
+            const parsed = response.status === 200
+                ? response.result
                 : undefined;
-            if (application) {
-                preview.value = application;
+            if (parsed?.metadata.application) {
+                preview.value = parsed;
             } else {
                 fallbackToManual(currentRequestId);
             }
