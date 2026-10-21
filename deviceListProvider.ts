@@ -29,6 +29,8 @@ export interface DeviceListProvider {
   matches: (device: IotDevice) => boolean
   /** 弹窗遵循 open / update:open / saved；路由入口复用原新增页，返回时重载列表。 */
   create?: DeviceCreateEntry
+  /** 列表引导宿主接收 active/request/projectId，发出 refresh；request 递增代表用户主动接入，忽略自动提示偏好。 */
+  listGuide?: Component
   /** 详情是当前列表的子路由时，由 Provider 返回保留入口上下文的目标地址。 */
   detailPath?: (device: UnifiedDevice) => RouteLocationRaw
   detailRoute?: string

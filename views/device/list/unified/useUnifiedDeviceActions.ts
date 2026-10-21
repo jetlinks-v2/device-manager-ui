@@ -29,6 +29,7 @@ export function useUnifiedDeviceActions(
   const editOpen = ref(false)
   // 固定打开时的新增入口，切换列表分类不会替换正在填写的表单。
   const createEntry = shallowRef<Extract<DeviceCreateEntry, { component: unknown }>>()
+  const guideRequest = ref(0)
   const canCreate = (provider?: DeviceListProvider) => !!provider?.create && (!provider.create.permission || auth.hasPermission(provider.create.permission))
   // 消费一次性创建动作，刷新页面不重开；未提供新增弹层的分类只保留列表。
   watch([() => route.query.action, activeProvider, () => route.query.type], ([action, provider, requestedType]) => {
@@ -53,7 +54,10 @@ export function useUnifiedDeviceActions(
 
     // 其它扩展分类（如网关、视频等）
     if (canCreate(provider)) {
-      if (provider.create && 'component' in provider.create) {
+      if (provider.listGuide) {
+        guideRequest.value++
+        void router.replace({ query })
+      } else if (provider.create && 'component' in provider.create) {
         createEntry.value = provider.create
         void router.replace({ query })
       } else if (provider.create) {
@@ -83,7 +87,9 @@ export function useUnifiedDeviceActions(
   function openCreate(provider?: DeviceListProvider) {
     const entry = provider?.create
     if (!entry || busy.value || !canCreate(provider)) return
-    if (entry.route !== undefined) {
+    if (provider?.listGuide) {
+      guideRequest.value++
+    } else if (entry.route !== undefined) {
       // 原新增页通过 query.id 判定编辑；列表上下文由浏览器返回历史保留。
       menu.jumpPage(entry.route, { params: entry.params })
     } else {
@@ -137,5 +143,5 @@ export function useUnifiedDeviceActions(
     }, clearBatchSelection)
   }
   async function assignGroup(group: DeviceGroup) { await execute(async () => { await bindDeviceGroupDevices_api(group.id, [...selectedIds.value]); assignGroupOpen.value = false }, clearBatchSelection) }
-  return { projectId, editing, editOpen, createEntry, canCreate, openCreate, detailDevice, busy, selected, allowed, openDetail, edit, toggle, remove, canDelete, batchToggle, assignAreaOpen, assignGroupOpen, assignArea, assignGroup }
+  return { projectId, editing, editOpen, createEntry, guideRequest, canCreate, openCreate, detailDevice, busy, selected, allowed, openDetail, edit, toggle, remove, canDelete, batchToggle, assignAreaOpen, assignGroupOpen, assignArea, assignGroup }
 }

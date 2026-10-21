@@ -177,6 +177,9 @@
 			    </div>
 		    </template>
 	    </EqualHeightColumns>
+    <component v-for="provider in providers.filter(item => item.listGuide)" :key="`guide-${provider.id}`"
+      :is="provider.listGuide" :active="activeType === provider.id" :request="guideRequest"
+      :project-id="guideProjectId" @refresh="refresh" />
     <component v-if="createEntry" :is="createEntry.component" :open="true" @update:open="createEntry = undefined" @saved="refresh" />
     <IotAddDeviceDrawer v-if="!editing || editing.category === 'device'" v-model:open="editOpen" :project-id="projectId" :device="editing" @saved="refresh" @created="refresh" />
     <component v-else-if="editing && providerOf(editing)?.editComponent" :is="providerOf(editing)?.editComponent" v-model:open="editOpen" :gateway="editing" :device="editing" :project-id="projectId" @saved="refresh" />
@@ -210,7 +213,7 @@ import IotDeviceAssignAreaModal from '../components/IotDeviceAssignAreaModal.vue
 import IotDeviceAssignGroupModal from '../components/IotDeviceAssignGroupModal.vue'
 import IotDeviceGroupNameModal from '../components/IotDeviceGroupNameModal.vue'
 import { useIotDeviceGroupManagement } from '../hooks/useIotDeviceGroupManagement'
-import { getIotDeviceListMenuCode } from '../hooks/useIotDeviceRouting'
+import { getIotDeviceListMenuCode, resolveIotProjectId } from '../hooks/useIotDeviceRouting'
 import type { DeviceGroup } from '../../../../api/deviceGroup'
 import { useUnifiedDeviceList } from './useUnifiedDeviceList'
 import { useUnifiedDeviceActions } from './useUnifiedDeviceActions'
@@ -219,6 +222,7 @@ import { useHomeAgentFeatureEntry } from '@jetlinks-web-core/layout/components/A
 import { DEVICE_ONBOARDING_CAPABILITY_ID } from '@device-manager-ui/agentCapabilities/deviceGuidance/homeAgentProvider'
 const { t } = useI18n()
 const route = useRoute()
+const guideProjectId = computed(() => resolveIotProjectId(route, ''))
 const deviceMenuCode = computed(() => getIotDeviceListMenuCode(route))
 const menu = useMenuStore()
 // 已选网关按明确 ID 传入；未选择网关时在批量页按当前范围加载，由矩阵决定实际下发项。
@@ -260,7 +264,7 @@ function formatBrandModel(value?: string) {
     ? normalized
     : t('IotDeviceDetail.common.unconfigured')
 }
-const { projectId, editing, editOpen, createEntry, canCreate, openCreate, detailDevice, busy, selected, allowed, openDetail, edit, toggle, remove, canDelete, batchToggle, assignAreaOpen, assignGroupOpen, assignArea, assignGroup } = useUnifiedDeviceActions(rows, selectedIds, clearBatchSelection, providerOf, refresh, activeProvider)
+const { projectId, editing, editOpen, createEntry, guideRequest, canCreate, openCreate, detailDevice, busy, selected, allowed, openDetail, edit, toggle, remove, canDelete, batchToggle, assignAreaOpen, assignGroupOpen, assignArea, assignGroup } = useUnifiedDeviceActions(rows, selectedIds, clearBatchSelection, providerOf, refresh, activeProvider)
 const syncVisible = ref(false)
 const syncApi = ref('')
 const syncData = ref<Record<string, unknown>>({})
