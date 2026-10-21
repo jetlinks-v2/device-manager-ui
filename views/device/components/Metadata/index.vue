@@ -84,7 +84,9 @@
             class="center-extra-content"
             :style="{ width: centerExtraWidth }"
           >
-            <span class="desc">{{ $t('Metadata.index.838029-5') }}</span >
+            <j-ellipsis class="desc">
+                {{ $t('Metadata.index.838029-5') }}
+            </j-ellipsis>
           </div>
         </teleport>
         <Import
@@ -211,15 +213,21 @@ watch(
             padding: 0;
         }
     }
-    .desc {
-        font-size: 13px;
-        color: rgba(0, 0, 0, 0.8);
-        display: inline-block;
-        margin-top: 12px;
-        margin-left: 5px;
-    }
     .center-extra-content {
-      overflow: hidden;
+        display: flex;
+        align-items: center;
+        min-width: 0;
+        padding-inline: var(--space-1);
+        overflow: hidden;
+
+        /* Tooltip 内的文本节点不携带当前组件的 scoped 标记。 */
+        :deep(.desc) {
+            width: 100%;
+            min-width: 0;
+            font-size: 13px;
+            color: rgba(0, 0, 0, 0.8);
+            white-space: normal;
+        }
     }
 }
 </style>

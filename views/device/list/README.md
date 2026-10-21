@@ -8,6 +8,16 @@
 
 验证：edge 模块的网关引导与详情定向测试 37/37 通过，包含本模块激活状态、项目上下文、刷新及手动接入接线契约；本模块现有分类、状态与批量回归 6/7 通过，批量权限测试的旧 `<table-actions>` 正则在 HEAD 同样失败，本次未改变权限行为。`pnpm -F jetlinks-web-core build -- --module-name device-manager-ui` 生产构建和 `git diff --check` 通过；工作区／模块未配置 lint。`pnpm exec vue-tsc -p modules/device-manager-ui/tsconfig.json --noEmit` 仍被既有 `views/link/Certificate/type.d.ts:2` TS1005 阻断，修复后需重跑。浏览器用模拟接口验证引导宿主的顺序、跳转和偏好；真实统一列表、用户／项目切换与权限联调仍待部署环境验收。详见 [网关功能说明](../../../../edge-master-ui/docs/设备资产我的网关列表说明.md)。
 
+## 设备详情物模型继承提示
+
+目标与范围：运行时 `device-manager-ui` 的设备详情物模型页使用 `j-ellipsis` 展示继承提示，超出可用宽度时单行省略，悬浮查看完整文案。实现入口为 `views/device/components/Metadata/index.vue`，由 `views/device/list/components/IotDeviceDefaultDetailContent.vue` 复用。
+
+实施：使用现有 `j-ellipsis`，保留既有宽度计算、翻译和物模型操作。真实 Tabs 页中，组件文本节点未带当前 SFC 的 scoped 标记，原 `.desc` 样式未命中，继承的 `white-space: nowrap` 导致只有横向溢出，无法触发基于高度的省略和 Tooltip；提示容器也缺少居中约束。通过容器内的 `:deep(.desc)` 将换行与宽度约束作用到实际文本节点，容器使用 flex 垂直居中，并移除文本固定上边距。仅修改运行时前端，不调整运营端、接口、权限或路由。
+
+验证结果：同步最新 `2.20` 基线后，Vue 脚本、模板与 scoped Less 编译通过，确认编译后的后代选择器能跨越组件边界，组件为 233 行；`git diff --check` 及在 `runtime-ui` 执行 `node ../ui/scripts/check-ui-style.mjs --files modules/device-manager-ui/views/device/components/Metadata/index.vue` 通过。`pnpm run build:modules device-manager-ui` 通过（11,169 个模块，1 分 2 秒），保留现有资源路径、输出配置、循环分块、CSS 注释及大包告警。此前已在真实页面 `http://localhost:9201/#/resources/devices/list/Detail/2112790596200452096?type=device&tab=thing-model` 验证省略号、悬浮完整英文 Tooltip 和垂直居中：1479×899 视口下文本宽 456px、可见高度 20px、内容高度 41px；默认较窄视口下宽 146px、可见高度 20px、内容高度 123px。两种尺寸中，文本与页签导航的垂直中心偏差均小于 0.01px，旁边 Model TSL 操作保持可见；临时视口设置已恢复。先前的独立预览未覆盖 Tabs 的 scoped 样式和继承规则，不能作为真实页签的验收依据。
+
+验证限制：工作区和模块未配置 lint 脚本；本次重新执行 `pnpm exec vue-tsc -p modules/device-manager-ui/tsconfig.json --noEmit --pretty false`，完整检查仍被未改动的 `views/link/Certificate/type.d.ts:2:30` TS1005 语法错误阻断，修复后需重跑，不能据此宣称完整类型检查通过。浏览器复用上述真实页面记录，本轮未重跑；无接口或业务行为变更。
+
 ## Modbus 映射组件与国际化
 
 当前结论：已按业务职责原样拆分原 6,897 行组件，主入口缩减为 56 行，补齐 396 对中英文国际化资源。以 Git 基线中的原文件为事实来源，保持原业务逻辑、中文内容、DOM 结构、控件参数、样式值及顺序；英文布局扩展仅在英文语言条件下生效。
