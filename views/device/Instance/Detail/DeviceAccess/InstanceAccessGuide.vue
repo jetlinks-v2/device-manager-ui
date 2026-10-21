@@ -89,7 +89,7 @@
             </a-list>
           </div>
 
-          <!-- 右侧：协议返回的 Markdown 说明（getConfigView document） -->
+          <!-- 右侧：设备接入详情返回的 Markdown 说明 -->
           <aside
             v-if="showProtocolDoc"
             class="access-guide-doc"
@@ -115,14 +115,12 @@
 <script lang="ts" setup>
 import Config from '../Info/components/Config/index.vue'
 import Principal from '../Info/components/Principal/index.vue'
+import { getProviders } from '../../../../../api/product'
 import {
-  queryList,
-  getConfigView,
-  detail as productDetail,
-  getProviders,
-} from '../../../../../api/product'
-import { getCompositeProviderDetail } from '../../../../../api/link/accessConfig'
-import { existsDevicePrincipalSupport, getDevicePrincipal } from '../../../../../api/instance'
+  existsDevicePrincipalSupport,
+  getDevicePrincipal,
+  queryDeviceAccessDetail,
+} from '../../../../../api/instance'
 import { useInstanceStore } from '../../../../../store/instance'
 import { useMenuStore } from '@jetlinks-web-core/store/menu'
 import { marked } from 'marked'
@@ -542,44 +540,21 @@ function onProtocolDocClick(e: MouseEvent) {
   void copyProtocolDocText(text)
 }
 
-const loadConfigDetail = (messageProtocol: string, transportProtocol: string) => {
-  if (!messageProtocol || !transportProtocol) return
-  getConfigView(messageProtocol, transportProtocol).then((resp: any) => {
-    if (resp.status === 200) {
-      config.value = resp.result
-      handleColumns()
-      refreshMarkdownDocument()
-    }
-  })
-}
-
 const onConfigSaved = () => {
   principalRef.value?.refresh?.()
 }
 
-const queryAccessDetail = async (id: string) => {
-  const res: any = await queryList({
-    terms: [{ column: 'id', value: id }],
-  })
-  if (res.status === 200 && res.result?.data?.[0]) {
-    access.value = res.result.data[0]
-    if (access.value.provider === 'composite-device-gateway') {
-      getCompositeProviderDetail(access.value.configuration?.gateways || []).then((r: any) => {
-        if (r.success && access.value.configuration) {
-          access.value.configuration.gateways = r.result
-        }
-      })
-      return
-    }
+const queryAccessDetail = async (deviceId: string) => {
+  const res: any = await queryDeviceAccessDetail(deviceId)
+  if (res.status === 200 && res.result) {
+    access.value = res.result
+    config.value = access.value.transportDetail || {}
     if (access.value.provider === 'plugin_gateway') {
       pluginOnly.value = true
       return
     }
-    const inst = instanceStore.current
-    loadConfigDetail(
-      inst.messageProtocol || access.value.protocol,
-      inst.transportProtocol || access.value.transport,
-    )
+    handleColumns()
+    refreshMarkdownDocument()
   } else {
     empty.value = true
   }
@@ -598,18 +573,11 @@ const load = async () => {
   try {
     const inst = instanceStore.current
     await loadPrincipal(inst?.id)
-    let accessId = inst.accessId
-    if (!accessId && inst.productId) {
-      const pr: any = await productDetail(inst.productId)
-      if (pr.status === 200) {
-        accessId = pr.result?.accessId
-      }
-    }
-    if (!accessId) {
+    if (!inst?.id) {
       empty.value = true
       return
     }
-    await queryAccessDetail(accessId)
+    await queryAccessDetail(inst.id)
   } finally {
     loading.value = false
   }

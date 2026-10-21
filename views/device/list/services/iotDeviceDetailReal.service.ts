@@ -21,6 +21,40 @@ export type DevicePropertyValue = {
   [key: string]: any
 }
 
+export type DeviceAccessDetail = {
+  id?: string
+  name?: string
+  description?: string
+  provider?: string
+  enabled?: boolean
+  protocolId?: string
+  transport?: string
+  channel?: string
+  channelId?: string
+  channelInfo?: {
+    address?: string
+    addresses?: Array<{ address: string; health?: number }>
+    [key: string]: unknown
+  }
+  protocolDetail?: {
+    id?: string
+    name?: string
+    description?: string
+    [key: string]: unknown
+  }
+  transportDetail?: {
+    id?: string
+    name?: string
+    description?: string
+    document?: string
+    routes?: Array<Record<string, unknown>>
+    allConfig?: Array<Record<string, unknown>>
+    [key: string]: unknown
+  }
+  providerDetail?: { description?: string }
+  sessionInfo?: { lastPingTime?: number | string }
+}
+
 export function parseMetadata(value: unknown): ThingModelMetadata {
   if (!value) return { properties: [], functions: [], events: [], tags: [] }
   if (typeof value === 'object') {
@@ -111,7 +145,10 @@ export const iotDeviceDetailRealApi = {
   existsDevicePrincipalSupport: () => request.get<boolean>(`/command-supports/service/deviceService:principal/exists`),
   getProductDetail: (productId: string) => request.get(`/device-product/${productId}`),
   getGatewayDetail: (id: string) => request.get(`/gateway/device/${id}`),
-  queryGatewayDetail: (id: string) => request.get(`/gateway/device/${id}/detail`),
+  /** Queries the access summary through the device asset permission boundary. */
+  getDeviceAccessDetail: (deviceId: string) => request.get<DeviceAccessDetail>(
+    `/device/instance/${encodeURIComponent(deviceId)}/access/detail`,
+  ),
   queryDeviceConfig: (id: string) => request.get(`/device-instance/${id}/config-metadata`),
   queryProtocolDetail: (type: string, transport: string) => request.get(`/protocol/${type}/transport/${transport}`),
   sendDeviceMessage: (deviceId: string, data: Record<string, any>) => request.post(`/device/instance/${deviceId}/message`, data),

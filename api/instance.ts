@@ -374,11 +374,13 @@ export const editDevice = (params: any) => request.patch('/device-instance', par
 export const addDevice = (params: any) => request.post("/device-instance", params)
 
 /**
- * 设备接入网关状态
- * @param id 设备接入网关id
+ * 查询设备接入详情
+ * @param deviceId 设备ID
  * @returns
  */
-export const queryGatewayState = (id: string) => request.get(`/gateway/device/${id}/detail`)
+export const queryDeviceAccessDetail = (deviceId: string) => request.get(
+  `/device/instance/${encodeURIComponent(deviceId)}/access/detail`,
+)
 
 /**
  * 网络组件状态
