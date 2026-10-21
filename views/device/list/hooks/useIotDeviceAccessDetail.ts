@@ -4,7 +4,7 @@ import useClipboard from 'vue-clipboard3'
 import { marked } from 'marked'
 import { onlyMessage } from '@jetlinks-web/utils'
 
-import { iotDeviceDetailRealApi } from '../services/iotDeviceDetailReal.service'
+import { iotDeviceDetailRealApi, type DeviceAccessDetail } from '../services/iotDeviceDetailReal.service'
 import type { IotDevice } from '../types'
 import { useIotDeviceAccessGuideDocument } from './useIotDeviceAccessGuideDocument'
 
@@ -53,7 +53,7 @@ export type IotDeviceAccessDetailProps = {
 export function useIotDeviceAccessDetail(props: Readonly<IotDeviceAccessDetailProps>, onConfigSaved: (deviceId: string) => void) {
   const { t: $t } = useI18n()
   const { toClipboard } = useClipboard()
-  const accessDetail = ref<Record<string, any>>({})
+  const accessDetail = ref<DeviceAccessDetail>({})
   const configView = ref<Record<string, any>>({})
   const deviceConfiguration = ref<Record<string, any>>({})
   // 保存和切设备后的配置以详情宿主为准，不在 Tab 挂载时重复查询。
@@ -136,7 +136,7 @@ export function useIotDeviceAccessDetail(props: Readonly<IotDeviceAccessDetailPr
     const addresses = addressRows.value.map((item) => item.address).join(' / ')
     return [
       { label: $t('IotDeviceDetail.connection.field.address'), value: addresses || accessDetail.value?.channelInfo?.address || '--' },
-      { label: $t('IotHealthPage.detail.field.protocol'), value: accessDetail.value?.protocol || '--' },
+      { label: $t('IotHealthPage.detail.field.protocol'), value: accessDetail.value?.protocolDetail?.name || accessDetail.value?.protocolId || '--' },
       { label: $t('IotDeviceDetail.accessDetail.transport'), value: accessDetail.value?.transport || '--' },
       { label: $t('IotDeviceDetail.connection.field.gateway'), value: accessDetail.value?.name || '--' },
       { label: $t('IotDeviceDetail.connection.field.lastCommunication'), value: session.lastPingTime || props.device.lastSeen || '--' },
@@ -208,27 +208,11 @@ export function useIotDeviceAccessDetail(props: Readonly<IotDeviceAccessDetailPr
   }
 
   async function loadAccessDetail() {
-    const productId = props.device.productId || props.device.productKey
-    if (!productId) return
-    const productResp: any = await iotDeviceDetailRealApi.getProductDetail(productId)
-    const accessId = productResp?.result?.accessId
-    if (!accessId) return
-
-    const accessResp: any = await iotDeviceDetailRealApi.queryGatewayDetail(accessId)
-    const queryAccessResp: any = accessResp?.status === 200 && accessResp.result
-      ? accessResp
-      : await iotDeviceDetailRealApi.getGatewayDetail(accessId)
-    const access = queryAccessResp?.result?.data?.[0] || queryAccessResp?.result
+    if (!props.device.id) return
+    const accessResp: any = await iotDeviceDetailRealApi.getDeviceAccessDetail(props.device.id)
+    const access = accessResp?.result
     accessDetail.value = access || {}
-
-    const protocolId = props.device.messageProtocol || access?.protocol || props.device.accessMode
-    const transport = props.device.transportProtocol || access?.transport
-    if (protocolId && transport) {
-      const protocolResp: any = await iotDeviceDetailRealApi.queryProtocolDetail(protocolId, transport)
-      configView.value = protocolResp?.result || {}
-    } else {
-      configView.value = {}
-    }
+    configView.value = access?.transportDetail || {}
   }
 
   async function loadDeviceConfiguration() {

@@ -20,6 +20,14 @@
 
 交付：功能提交 `7b263e6`；分支 `codex/2.20-device-metadata-ellipsis-fix`；PR：[device-manager-ui#335](https://github.com/jetlinks-v2/device-manager-ui/pull/335)，目标分支为 `2.20`。
 
+## 设备接入详情数据源
+
+目标与范围：运行时 `device-manager-ui` 的设备详情按设备 ID 查询接入信息，统一使用后端 `GET /device/instance/{deviceId}/access/detail`。接口在设备资产权限边界内返回接入网关、协议、传输配置、通道信息及启用状态，前端不再通过产品接入 ID 查询 `/gateway/device/{accessId}/detail`，从而避免设备详情依赖网关管理权限。
+
+实现入口：`api/instance.ts#queryDeviceAccessDetail` 供旧版设备详情与诊断页使用；新版设备详情由 `views/device/list/services/iotDeviceDetailReal.service.ts#getDeviceAccessDetail` 封装，`useIotDeviceAccessDetail.ts`、`deviceDetailAccess.service.ts` 分别提供页面与智能体摘要数据。调用方直接消费接口返回的 `protocolId`、`protocolDetail`、`transportDetail`、`channelInfo` 和 `enabled`。
+
+边界与验证：只调整设备详情的接入信息查询，不替换设备库产品同步等以接入配置 ID 为语义的网关接口，也不修改运营端 `ui/`。运行端生产构建已通过；本地 Vite 源码已确认生成 `/device/instance/${deviceId}/access/detail` 请求。该接口依赖配套后端版本，前后端未同时部署时会返回资源不存在，仍需在集成环境验证资产权限允许与拒绝两条路径。
+
 ## Modbus 映射组件与国际化
 
 当前结论：已按业务职责原样拆分原 6,897 行组件，主入口缩减为 56 行，补齐 396 对中英文国际化资源。以 Git 基线中的原文件为事实来源，保持原业务逻辑、中文内容、DOM 结构、控件参数、样式值及顺序；英文布局扩展仅在英文语言条件下生效。
