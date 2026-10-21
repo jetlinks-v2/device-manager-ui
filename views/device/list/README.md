@@ -1,5 +1,11 @@
 # 设备列表范围侧栏
 
+## 物模型继承说明
+
+当前结论与范围：`device-manager-ui` 的 `views/device/components/Metadata/index.vue` 使用共享 `j-ellipsis` 展示继承说明，在页签导航剩余宽度内单行省略，溢出时提供完整内容提示。局部样式通过容器内的深度选择器保留原有字号和间距，使用 `white-space: normal` 覆盖页签导航继承的禁止换行样式，使组件自身的单行截断和溢出判断生效。
+
+验证结果：组件脚本、模板与 Less 编译、`git diff --check` 通过；在英文设备详情的物模型页签确认单行省略与完整内容提示均生效。在 `runtime-ui` 执行 `pnpm -F jetlinks-web-core build -- --module-name device-manager-ui --VITE_APP_ENVIRONMENT=` 通过（11,157 个模块，1 分 5 秒，保留既有构建告警）。本次仅调整模板与样式，沿用已确认的类型检查限制：`pnpm exec vue-tsc -p modules/device-manager-ui/tsconfig.json --noEmit` 仍需先修复未改动的 `views/link/Certificate/type.d.ts:2` TS1005；模块与工作区未配置 lint 脚本。
+
 ## Modbus 映射组件与国际化
 
 当前结论：已按业务职责原样拆分原 6,897 行组件，主入口缩减为 56 行，补齐 396 对中英文国际化资源。以 Git 基线中的原文件为事实来源，保持原业务逻辑、中文内容、DOM 结构、控件参数、样式值及顺序；英文布局扩展仅在英文语言条件下生效。
