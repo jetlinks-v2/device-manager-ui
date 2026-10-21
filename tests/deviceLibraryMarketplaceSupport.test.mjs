@@ -33,7 +33,7 @@ test('marketplace reads are short-circuited before their marketplace request', (
     ['queryProjectInstalledDeviceLibrary_api', 'new Map()', '/marketplace/'],
     ['queryDeviceLibraryTags_api', '[]', 'queryMarketplaceTagClassifiers()'],
     ['queryDeviceLibraryProductFilterOptions_api', '[]', '/marketplace/'],
-    ['queryDeviceLibraryTemplates_api', 'hasMore: false', '/marketplace/'],
+    ['queryDeviceLibraryTemplates_api', 'total: 0', '/marketplace/'],
     ['queryDeviceLibraryTemplateById_api', 'null', '/marketplace/'],
   ]
 
@@ -59,15 +59,24 @@ test('gateway business identifier belongs to the parent configuration instead of
   assert.doesNotMatch(bizKeyPickerSource, /probeDeviceLibraryCapability_api/)
 })
 
-test('device library completes only missing device types with cached and bounded detail requests', () => {
+test('device library reads card display type from version resources returned by the marketplace search', () => {
   const templates = exportedFunctionBody('queryDeviceLibraryTemplates_api')
-  assert.match(source, /deviceType:\s*deviceTypeValueOf\(source\.deviceType\)\s*\|\|\s*undefined/)
-  assert.match(templates, /mapWithConcurrency\(templates, 4, async \(\{ resource, template \}\)/)
-  assert.match(source, /deviceLibraryTemplateDeviceTypeCache/)
-  assert.match(source, /deviceLibraryTemplateDeviceTypeRequests/)
-  assert.match(source, /`\/marketplace\/capabilities\/\$\{encodeURIComponent\(id\)\}`/)
-  assert.match(source, /hiddenError:\s*true/)
-  assert.match(templateOptionSource, /template\.deviceType \? normalizeDeviceTypeValue\(template\.deviceType\) : undefined/)
-  assert.match(libraryCardSource, /subtitle: props\.template\.deviceType/)
-  assert.match(librarySelectionSource, /if \(!template\.deviceType\) return true/)
+  const templateMapperStart = source.indexOf('const toDeviceLibraryTemplateInput =')
+  const templateMapperEnd = source.indexOf('\nconst getMarketplaceCapabilityVersions', templateMapperStart)
+  const templateMapper = source.slice(templateMapperStart, templateMapperEnd)
+  assert.match(templateMapper, /const resourceMetadata = isRecord\(resource\.metadata\) \? resource\.metadata : \{\}/)
+  assert.match(templateMapper, /const versionMetadata = isRecord\(versionResource\?\.metadata\) \? versionResource\.metadata : \{\}/)
+  assert.match(source, /deviceType:\s*deviceTypeValueOf\(source\.deviceType\)\s*\|\|\s*'device'/)
+  assert.match(source, /displayDeviceType:\s*deviceTypeValueOf\(source\.deviceType\)\s*\|\|\s*undefined/)
+  assert.match(templates, /includeVersionResources:\s*true/)
+  assert.match(templates, /capabilities\/version\/_query/)
+  assert.match(templates, /unwrapPage<MarketplaceResource>\(response, pageIndex, pageSize\)/)
+  assert.match(templates, /return toDeviceLibraryTemplateInput\(resource, version, templateResourceOf\(version\), tagLookup\)/)
+  assert.doesNotMatch(templates, /resource,\s*template:\s*toDeviceLibraryTemplateInput/)
+  assert.doesNotMatch(source, /resolveDeviceLibraryTemplateDisplayType/)
+  assert.doesNotMatch(source, /deviceLibraryTemplateDisplayTypeCache/)
+  assert.match(templateOptionSource, /deviceType: normalizeDeviceTypeValue\(template\.deviceType\)/)
+  assert.match(templateOptionSource, /displayDeviceType: template\.displayDeviceType/)
+  assert.match(libraryCardSource, /subtitle: props\.template\.displayDeviceType/)
+  assert.doesNotMatch(librarySelectionSource, /if \(!template\.deviceType\) return true/)
 })

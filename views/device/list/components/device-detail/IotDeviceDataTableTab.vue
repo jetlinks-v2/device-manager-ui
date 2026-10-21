@@ -124,9 +124,7 @@
               :time-range="propertyTimeRange"
             />
             <footer>
-              <span>{{ propertyStatusText(liveProperty(item), propertyCardIndex(liveProperty(item))) }}</span>
-              <i />
-              <span>{{ propertyTimeText(liveProperty(item), propertyCardIndex(liveProperty(item))) }}</span>
+              <span>{{ propertyReportTime(liveProperty(item)) }}</span>
             </footer>
           </article>
         </template>
@@ -321,14 +319,6 @@ function liveProperty(item: RealtimePropertyRow) {
   return propertyByIdentifier.value.get(item.identifier.toLowerCase()) ?? item
 }
 
-function propertyStatusText(item: RealtimePropertyRow, index: number) {
-  if (item.tone === 'critical') return t('IotDeviceDetail.dataTable.trend.rising')
-  if (item.tone === 'warning') return t('IotDeviceDetail.dataTable.trend.good')
-  if (index === 3) return t('IotDeviceDetail.dataTable.trend.declining')
-  if (index === 7) return t('IotDeviceDetail.dataTable.trend.noChanges')
-  return t('IotWorkbench.trend.stable')
-}
-
 function openDetail(item: RealtimePropertyRow) {
   selectedProperty.value = item
   detailOpen.value = true
@@ -342,12 +332,11 @@ function canWriteProperty(item: RealtimePropertyRow) {
   return item.accessMode === 'write' || item.accessMode === 'readwrite'
 }
 
-function propertyTimeText(item: RealtimePropertyRow, index: number) {
-  if (index === 3) return t('IotDeviceDetail.dataTable.minutesAgo', { value: 5 })
-  if (index === 4) return t('IotDeviceDetail.dataTable.minutesAgo', { value: 2 })
+// 无上报记录时只显示空态，避免与“最后上报”字段标签重复表达。
+function propertyReportTime(item: RealtimePropertyRow) {
   return item.updatedAt && item.updatedAt !== '--'
-    ? item.updatedAt
-    : t('IotDeviceDetail.dataTable.minutesAgo', { value: 1 })
+    ? `${t('IotDeviceDetail.detail.lastReport')}：${item.updatedAt}`
+    : t('IotDeviceDetail.detail.noReport')
 }
 
 </script>

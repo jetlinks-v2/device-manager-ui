@@ -5,7 +5,6 @@ import { getRequestBaseApi, getRequestHeaders } from '@jetlinks-web-core/utils/r
 import { getProjectStorage } from '@jetlinks-web-core/utils/project-storage'
 import { langKey } from '@jetlinks-web-core/utils/consts'
 import i18n from '@jetlinks-web-core/locales'
-import { hasMoreDeviceLibraryRows } from '@device-manager-ui/utils/deviceCreationSources'
 
 import type { IotDevice } from '@device-manager-ui/views/device/list/types'
 import type {
@@ -562,6 +561,9 @@ const toDeviceLibraryTemplateInput = (
   tagLookup?: MarketplaceTagLocaleLookup,
 ): DeviceTemplateProductInput => {
   const source = deviceTemplateSourceOf(resource, version, versionResource)
+  // 设备库搜索结果与版本资源都可能携带接入配置；模板正文优先读取 source，下面保留两层 metadata 作为兼容回退。
+  const resourceMetadata = isRecord(resource.metadata) ? resource.metadata : {}
+  const versionMetadata = isRecord(versionResource?.metadata) ? versionResource.metadata : {}
   const accessProvider = firstString(
     source.accessProvider,
     versionResource?.accessProvider,
@@ -623,7 +625,9 @@ const toDeviceLibraryTemplateInput = (
       source.transportProtocol,
       ...(Array.isArray(marketplaceTags) ? marketplaceTags.map((tag: any) => firstString(tag.name, tag.label, tag.text, tag)) : []),
     ].map((value) => firstString(value)).filter(Boolean),
-    deviceType: deviceTypeValueOf(source.deviceType) || undefined,
+    // 设备创建仍沿用历史直连兜底；展示层使用 displayDeviceType，不能以展示补全影响安装流程。
+    deviceType: deviceTypeValueOf(source.deviceType) || 'device',
+    displayDeviceType: deviceTypeValueOf(source.deviceType) || undefined,
     accessName: localizedAccessName,
     accessProvider,
     networkWay: firstString(source.networkWay),
@@ -708,54 +712,6 @@ async function mapWithConcurrency<T, R>(items: T[], limit: number, mapper: (item
   })
   await Promise.all(workers)
   return results
-}
-
-const deviceLibraryTemplateDeviceTypeCache = new Map<string, string>()
-const deviceLibraryTemplateDeviceTypeRequests = new Map<string, Promise<string | undefined>>()
-
-function resolveMarketplaceCapabilityResource(payload: unknown): MarketplaceResource | undefined {
-  const result = unwrapResult<unknown>(payload)
-  if (!isRecord(result)) return undefined
-  if (isRecord(result.resource)) return result.resource
-  if (isRecord(result.capability)) return result.capability
-  if (isRecord(result.data)) return result.data
-  return result
-}
-
-/**
- * 补全当前页模板缺失的设备类型。市场检索接口未返回模板 metadata 前，不得将其默认成直连设备；
- * 后端补齐该字段后可删除此详情回查及本地缓存。
- */
-async function resolveDeviceLibraryTemplateDeviceType(
-  context: ProjectRuntimeContext,
-  templateId: string,
-): Promise<string | undefined> {
-  const id = templateId.trim()
-  if (!id) return undefined
-  const cacheKey = `${context.apiUrl}|${context.projectId}|${id}`
-  const cached = deviceLibraryTemplateDeviceTypeCache.get(cacheKey)
-  if (cached) return cached
-
-  const pending = deviceLibraryTemplateDeviceTypeRequests.get(cacheKey)
-  if (pending) return pending
-
-  const requestTask = request.get(
-    `/marketplace/capabilities/${encodeURIComponent(id)}`,
-    {},
-    { ...withProjectRuntimeRequest(context), hiddenError: true },
-  )
-    .then((payload) => {
-      const resource = resolveMarketplaceCapabilityResource(payload)
-      if (!resource) return undefined
-      const version = isRecord(resource.version) ? resource.version as MarketplaceVersion : undefined
-      const deviceType = deviceTypeValueOf(deviceTemplateSourceOf(resource, version, templateResourceOf(version)).deviceType)
-      if (deviceType) deviceLibraryTemplateDeviceTypeCache.set(cacheKey, deviceType)
-      return deviceType || undefined
-    })
-    .catch(() => undefined)
-    .finally(() => deviceLibraryTemplateDeviceTypeRequests.delete(cacheKey))
-  deviceLibraryTemplateDeviceTypeRequests.set(cacheKey, requestTask)
-  return requestTask
 }
 
 const extractInstalledProductId = (payload: any): string => {
@@ -1115,26 +1071,33 @@ export const queryDeviceLibraryProductFilterOptions_api = async (
   )
 }
 
+/**
+ * 查询设备库模板分页。
+ *
+ * 使用版本详情分页接口获取准确总数，卡片仍只从同页版本资源读取展示字段。
+ */
 export const queryDeviceLibraryTemplates_api = async (
   input: DeviceLibraryTemplateQueryInput = {},
 ): Promise<DeviceLibraryTemplatePageResult> => {
   const pageIndex = Number(input.pageIndex ?? 0)
   const pageSize = Number(input.pageSize ?? 4)
   if (!(await probeDeviceLibraryCapability_api())) {
-    return { data: [], pageIndex, pageSize, hasMore: false }
+    return { data: [], total: 0, pageIndex, pageSize }
   }
 
   const keyword = input.keyword?.trim()
   const context = getProjectRuntimeContext(true)
-  const response = await request.post('/marketplace/capabilities/version/_search', {
+  const response = await request.post('/marketplace/capabilities/version/_query', {
     type: 'device-template',
     keyword: keyword || undefined,
     tags: input.tags?.length ? [...input.tags] : undefined,
     paging: true,
     pageIndex,
     pageSize,
+    includeVersionResources: true,
   }, withProjectRuntimeRequest(context))
-  const rows = unwrapArray<MarketplaceResource>(response)
+  const page = unwrapPage<MarketplaceResource>(response, pageIndex, pageSize)
+  const rows = page.data
   const tagClassifiers = await queryMarketplaceTagClassifiers().catch(() => [])
   const tagLookup = createMarketplaceTagLocaleLookup(tagClassifiers)
   const templates = rows.map((row) => {
@@ -1150,25 +1113,15 @@ export const queryDeviceLibraryTemplates_api = async (
       : isRecord(resource.version)
         ? resource.version as MarketplaceVersion
         : undefined
-    return {
-      resource,
-      template: toDeviceLibraryTemplateInput(resource, version, templateResourceOf(version), tagLookup),
-    }
+    return toDeviceLibraryTemplateInput(resource, version, templateResourceOf(version), tagLookup)
   })
-  // 只补全当前页缺失类型的模板，并限制详情请求并发，避免设备库全量 N+1 请求。
-  const resolvedTemplates = await mapWithConcurrency(templates, 4, async ({ resource, template }) => {
-    if (template.deviceType) return template
-    const deviceType = await resolveDeviceLibraryTemplateDeviceType(context, String(resource.id || template.id))
-    return deviceType ? { ...template, deviceType } : template
-  })
-
   return {
-    data: resolvedTemplates
+    data: templates
       .filter((template) => Boolean(template.id))
       .map((template) => ({ ...template, installed: false, installedProductId: undefined })),
-    pageIndex,
-    pageSize,
-    hasMore: hasMoreDeviceLibraryRows(rows.length, pageSize),
+    total: page.total,
+    pageIndex: page.pageIndex,
+    pageSize: page.pageSize,
   }
 }
 
@@ -1183,6 +1136,7 @@ export const queryDeviceLibraryTemplateById_api = async (templateId: string): Pr
     // 运行时市场按 keyword 查询单个能力；保留旧版快速更新的按模板 ID 回查语义。
     keyword: id,
     paging: false,
+    includeVersionResources: true,
   }, withProjectRuntimeRequest(context))
   const row = unwrapArray<MarketplaceResource>(response).find((item) =>
     firstString(item.id, item.resourceId, item.resource?.id, item.capability?.id) === id,

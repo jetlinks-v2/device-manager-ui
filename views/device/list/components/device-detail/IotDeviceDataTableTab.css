@@ -185,13 +185,6 @@
   font-size: var(--fs-14);
 }
 
-.data-property-card footer i {
-  width: 0.125rem;
-  height: 0.125rem;
-  border-radius: 50%;
-  background: currentColor;
-}
-
 .property-read-title-icon {
   width: 1.75rem;
   height: 1.75rem;
