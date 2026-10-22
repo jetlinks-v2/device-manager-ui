@@ -4,7 +4,7 @@ import styles from './index.module.less'
 import type { ListProps } from './util'
 import { networkInitList, childInitList, cloudInitList, mediaInitList, TextColorMap, StatusMap, modifyArrayList, isExit, gatewayList, urlMap } from './util'
 import { useInstanceStore } from "../../../../../../store/instance"
-import { startNetwork, startGateway, getGatewayDetail, queryGatewayState, queryProtocolDetail, detail, queryProductState, queryProductConfig, queryDeviceConfig, _deploy } from '../../../../../../api/instance'
+import { startNetwork, startGateway, getGatewayDetail, queryDeviceAccessDetail, queryProtocolDetail, detail, queryProductState, queryProductConfig, queryDeviceConfig, _deploy } from '../../../../../../api/instance'
 import { PropType, VNode } from "vue"
 import { _deploy as _deployProduct } from "../../../../../../api/product"
 import { uniq, map} from "lodash-es"
@@ -92,9 +92,9 @@ const Status = defineComponent({
             } else {
                 const _device = unref(device)
                 if (_device.accessId) {
-                    const response: Record<string, any> = await queryGatewayState(_device.accessId)
+                    const response: Record<string, any> = await queryDeviceAccessDetail(_device.id)
                     if (response.status === 200) {
-                        gateway.value = response.request
+                        gateway.value = response.result
                         const address = response.result?.channelInfo?.addresses || [];
                         const _label = address.some((i: any) => i.health === -1);
                         const __label = address.every((i: any) => i.health === 1);
@@ -213,10 +213,10 @@ const Status = defineComponent({
                 if (!unref(gateway)?.id) {
                     const accessId = unref(device)?.accessId
                     if (accessId) {
-                        const response: Record<string, any> = await queryGatewayState(accessId)
+                        const response: Record<string, any> = await queryDeviceAccessDetail(unref(device).id)
                         if (response.status === 200) {
                             gateway.value = response.result
-                            if (response.result?.state?.value === 'enabled') {
+                            if (response.result?.enabled) {
                                 if (props.providerType === 'cloud' || unref(device)?.accessProvider === 'gb28181-2016') {
                                     _item = {
                                         key: 'gateway',
@@ -347,7 +347,7 @@ const Status = defineComponent({
                         onlyMessage(i18n.global.t('Status.index.565893-11'), 'error')
                     }
                 } else {
-                    if (unref(gateway)?.state?.value === 'enabled') {
+                    if (unref(gateway)?.enabled) {
                         if (props.providerType === 'cloud' || unref(device)?.accessProvider === 'gb28181-2016') {
                             _item = {
                                 key: 'gateway',
@@ -1616,7 +1616,7 @@ const Status = defineComponent({
                             let flag: boolean = true;
                             if (
                                 Object.keys(unref(gateway)).length > 0 &&
-                                unref(gateway)?.state?.value !== 'enabled'
+                                !unref(gateway)?.enabled
                             ) {
                                 const resp = await startGateway(unref(device).accessId || '');
                                 if (resp.status === 200) {

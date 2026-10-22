@@ -1,8 +1,11 @@
 import { request } from '@jetlinks-web/core'
+import type { AxiosRequestConfig } from 'axios';
+import { FileStatic } from '@jetlinks-web-core/api/comm';
 import type {
     ApplicationFirmwareCreateRequest,
     ApplicationFirmwareParseResult,
     ApplicationFirmwareParseRequest,
+    FirmwareUploadResult,
 } from '../views/device/Firmware/type';
 
 export const save = (data: object) => request.post(`/firmware`, data);
@@ -93,6 +96,14 @@ export const validateVersion = (
     productId: string,
     versionOrder: number | string,
 ) => request.get(`/firmware/${productId}/${versionOrder}/exists`);
+
+export const uploadApplicationFirmware = (
+    data: FormData,
+    options: Pick<AxiosRequestConfig, 'signal' | 'onUploadProgress'>,
+) => request.post<FirmwareUploadResult>(FileStatic, data, {
+    ...options,
+    timeout: 5 * 60 * 1000,
+});
 
 export const parseApplicationFirmware = (data: ApplicationFirmwareParseRequest) =>
     request.post<ApplicationFirmwareParseResult>('/firmware/_parse', data);

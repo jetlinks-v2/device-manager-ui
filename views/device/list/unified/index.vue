@@ -118,12 +118,15 @@
 								    </small>
 						    </template>
 						    <template v-else-if="column.key === 'area'">
+							    <template v-if="spaceAreaSupported !== false">
 								    <div>
 									    <j-ellipsis>{{ formatAreaName(record) }}</j-ellipsis>
 								    </div>
 								    <small>
-									    <j-ellipsis>{{ record.groupBindings?.map(group => group.name).join('、') || record.groupName || t('IotDeviceList.scope.unassignedGroup') }}</j-ellipsis>
+									    <j-ellipsis>{{ formatGroupName(record) }}</j-ellipsis>
 								    </small>
+							    </template>
+							    <j-ellipsis v-else>{{ formatGroupName(record) }}</j-ellipsis>
 						    </template>
 							    <template v-else-if="column.key === 'createdAt'">{{ formatTableTime(record.createdAt) }}</template>
 							    <template v-else-if="column.key === 'lastReportTime'">{{ formatTableTime(record.lastReportTime) }}</template>
@@ -193,7 +196,7 @@
       :is="provider.listGuide" :active="activeType === provider.id" :request="guideRequest"
       :project-id="guideProjectId" @refresh="refresh" />
     <component v-if="createEntry" :is="createEntry.component" :open="true" @update:open="createEntry = undefined" @saved="refresh" />
-    <IotAddDeviceDrawer v-if="!editing || editing.category === 'device'" v-model:open="editOpen" :project-id="projectId" :device="editing" @saved="refresh" @created="refresh" />
+    <IotAddDeviceDrawer v-if="!editing || editing.category === 'device'" v-model:open="editOpen" :project-id="projectId" :device="editing" :product-filter="createDrawerOptions" @saved="refresh" @created="refresh" />
     <component v-else-if="editing && providerOf(editing)?.editComponent" :is="providerOf(editing)?.editComponent" v-model:open="editOpen" :gateway="editing" :device="editing" :project-id="projectId" @saved="refresh" />
     <component v-if="detailDevice && providerOf(detailDevice)?.detailComponent" :is="providerOf(detailDevice)?.detailComponent" v-bind="providerOf(detailDevice)?.detailProps?.(detailDevice)" @close-drawer="detailDevice = null" @close="detailDevice = null" />
     <IotDeviceAssignAreaModal v-if="spaceAreaSupported !== false" v-model:open="assignAreaOpen" :project-id="projectId" :selected-device-count="selectedIds.length" :saving="busy" @save="assignArea" />
@@ -272,13 +275,18 @@ function formatAreaName(record: { areaBindings?: Array<{ area?: string }>; area?
   const isEmptyArea = !record.area || ['--', '—'].includes(record.area)
   return boundAreas || (isEmptyArea ? t('IotDeviceList.scope.unboundArea') : record.area)
 }
+function formatGroupName(record: { groupBindings?: Array<{ name?: string }>; groupName?: string }) {
+  return record.groupBindings?.map(group => group.name).filter(Boolean).join('、')
+    || record.groupName
+    || t('IotDeviceList.scope.unassignedGroup')
+}
 function formatBrandModel(value?: string) {
   const normalized = value?.trim()
   return normalized && !['--', '—'].includes(normalized)
     ? normalized
     : t('IotDeviceDetail.common.unconfigured')
 }
-const { projectId, editing, editOpen, createEntry, guideRequest, canCreate, openCreate, detailDevice, busy, selected, allowed, openDetail, edit, toggle, remove, canDelete, batchToggle, assignAreaOpen, assignGroupOpen, assignArea, assignGroup } = useUnifiedDeviceActions(rows, selectedIds, clearBatchSelection, providerOf, refresh, activeProvider)
+const { projectId, editing, editOpen, createDrawerOptions, createEntry, guideRequest, canCreate, openCreate, detailDevice, busy, selected, allowed, openDetail, edit, toggle, remove, canDelete, batchToggle, assignAreaOpen, assignGroupOpen, assignArea, assignGroup } = useUnifiedDeviceActions(rows, selectedIds, clearBatchSelection, providerOf, refresh, activeProvider)
 const syncVisible = ref(false)
 const syncApi = ref('')
 const syncData = ref<Record<string, unknown>>({})
@@ -321,6 +329,7 @@ function openCreateDrawer() {
   if (editOpen.value) return !editing.value
   if (activeType.value !== 'all' && !isIotEntry.value) return false
   editing.value = null
+  createDrawerOptions.value = undefined
   editOpen.value = true
   return true
 }
@@ -332,11 +341,17 @@ const statusOptions = computed(() => ['online', 'offline', 'disabled'].map(value
   value, label: t(`UnifiedDeviceList.${value}`), count: statusCounts.value[value] ?? '—',
 })))
 const rowSelection = computed(() => ({ selectedRowKeys: selectedIds.value, onChange: (keys: Array<string | number>) => { selectedIds.value = keys.map(String); batchMode.value = keys.length > 0 } }))
+// 未启用空间模块时，列表不展示无意义的空间空态，仅保留设备分组。
+const scopeColumn = computed(() => ({
+  title: t(spaceAreaSupported.value === false ? 'UnifiedDeviceList.group' : 'UnifiedDeviceList.areaAndGroup'),
+  key: 'area',
+  width: spaceAreaSupported.value === false ? 180 : 220,
+}))
 const columns = computed(() => [
   { title: t('UnifiedDeviceList.name'), key: 'name', width: 280, fixed: 'left' },
   { title: t('UnifiedDeviceList.product'), key: 'productName', width: 180 },
   { title: t('IotDeviceList.table.brandModel'), key: 'brandModel', width: 160 },
-  { title: t('UnifiedDeviceList.areaAndGroup'), key: 'area', width: 220 },
+  scopeColumn.value,
   { title: t('UnifiedDeviceList.status'), key: 'status', width: 100 },
   ...(activeType.value === 'all' ? [{ title: t('IotDeviceDetail.detail.lastReport'), key: 'lastReportTime', width: 160 }] : []),
   ...(activeType.value === 'all' ? [{ title: t('Instance.index.133466-5'), key: 'createdAt', width: 160 }] : []),

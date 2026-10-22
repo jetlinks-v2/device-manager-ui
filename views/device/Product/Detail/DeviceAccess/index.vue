@@ -1000,9 +1000,11 @@ watch(() => access.value?.id, (val) => {
 }
 
 .product-device-access :deep(.title-before) {
+  top: 50%;
   width: 0.1875rem;
   height: var(--space-3);
   border-radius: var(--r-1);
+  transform: translateY(-50%);
 }
 
 .product-device-access :deep(.config.title) {
