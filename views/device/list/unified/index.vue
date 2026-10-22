@@ -46,7 +46,7 @@
 						      </a-button>
 						      <template #overlay>
 						        <a-menu @click="openBatchPage">
-						          <a-menu-item key="algorithms">{{ t('UnifiedDeviceList.batchAlgorithms') }}</a-menu-item>
+						          <a-menu-item v-if="menu.hasMenu('algorithm-center')" key="algorithms">{{ t('UnifiedDeviceList.batchAlgorithms') }}</a-menu-item>
 						          <a-menu-item key="plugins">{{ t('UnifiedDeviceList.batchPlugins') }}</a-menu-item>
 						          <a-menu-item key="syncStatus">{{ t('IotDeviceList.action.syncStatus') }}</a-menu-item>
 						        </a-menu>
@@ -206,7 +206,6 @@ import EqualHeightColumns from '@jetlinks-web-core/components/EqualHeightColumns
 import SlantedTabs from '@jetlinks-web-core/components/SlantedTabs'
 import { useRoute } from 'vue-router'
 import { useMenuStore } from '@jetlinks-web-core/store'
-import { encodeConditionFilterQuery } from '@jetlinks-web-core/components/ConditionFilter'
 import { moduleRegistry } from '@jetlinks-web-core/utils/module-registry'
 import type { useGatewayRuntimeMetricsLoader as UseGatewayRuntimeMetricsLoader } from '@edge-master-ui/views/workbench/gateway/hooks/useGatewayRuntimeMetricsLoader'
 import IotDeviceScopeSidebar from '../components/IotDeviceScopeSidebar.vue'
@@ -220,6 +219,7 @@ import { getIotDeviceListMenuCode, resolveIotProjectId } from '../hooks/useIotDe
 import type { DeviceGroup } from '../../../../api/deviceGroup'
 import { useUnifiedDeviceList } from './useUnifiedDeviceList'
 import { useUnifiedDeviceActions } from './useUnifiedDeviceActions'
+import { useUnifiedDeviceBatchNavigation } from './useUnifiedDeviceBatchNavigation'
 import Process from '../../Instance/Process/index.vue'
 import { useHomeAgentFeatureEntry } from '@jetlinks-web-core/layout/components/AiChat/useHomeAgentFeatureEntry'
 import { DEVICE_ONBOARDING_CAPABILITY_ID } from '@device-manager-ui/agentCapabilities/deviceGuidance/homeAgentProvider'
@@ -228,20 +228,6 @@ const route = useRoute()
 const guideProjectId = computed(() => resolveIotProjectId(route, ''))
 const deviceMenuCode = computed(() => getIotDeviceListMenuCode(route))
 const menu = useMenuStore()
-// 已选网关按明确 ID 传入；未选择网关时在批量页按当前范围加载，由矩阵决定实际下发项。
-function openBatchPage({ key }: { key: string | number }) {
-  if (key === 'syncStatus') {
-    syncGatewayStatus()
-    return
-  }
-  const gatewayIds = selected.value.filter(device => device.category === 'gateway').map(device => device.id)
-  const currentQuery = encodeConditionFilterQuery(searchTerms.value, filterFields.value)
-  menu.jumpPage('iot-user-device-list/Batch', { query: {
-    ...route.query, q: currentQuery || route.query.q || undefined, gatewayIds: gatewayIds.length ? gatewayIds : undefined,
-    gatewayScope: gatewayIds.length ? undefined : 'query',
-    batchTab: String(key),
-  } })
-}
 const { providers, isIotEntry, tabs, activeType, activeProvider, scope, baseTerms, filterTerms, filterFields, commonFilterFields, searchTerms, status, rows, total, pageIndex, pageSize, loading, error, counts, statusCounts, selectedIds, batchMode, providerOf, changeType, search, changeStatus, refresh, changePage, clearBatchSelection } = useUnifiedDeviceList()
 const gatewayMonitorCell = moduleRegistry.getResourceItem<Component>('edge-master-ui', 'components', 'GatewayDeviceMonitorCell')
 const useGatewayMetrics = moduleRegistry.getResourceItem<typeof UseGatewayRuntimeMetricsLoader>('edge-master-ui', 'hooks', 'useGatewayRuntimeMetricsLoader')
@@ -273,6 +259,7 @@ function formatBrandModel(value?: string) {
     : t('IotDeviceDetail.common.unconfigured')
 }
 const { projectId, editing, editOpen, createDrawerOptions, createEntry, guideRequest, canCreate, openCreate, detailDevice, busy, selected, allowed, openDetail, edit, toggle, remove, canDelete, batchToggle, assignAreaOpen, assignGroupOpen, assignArea, assignGroup } = useUnifiedDeviceActions(rows, selectedIds, clearBatchSelection, providerOf, refresh, activeProvider)
+const { openBatchPage } = useUnifiedDeviceBatchNavigation({ selected, searchTerms, filterFields, syncGatewayStatus })
 const syncVisible = ref(false)
 const syncApi = ref('')
 const syncData = ref<Record<string, unknown>>({})
