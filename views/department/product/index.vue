@@ -1,5 +1,15 @@
 <template>
-    <div class="product-container">
+
+    <DefineEmptyCreate>
+      <j-permission-button
+          :hasPermission="`${permission}:assert`"
+          type="primary"
+          @click="dialogs.addShow = true"
+      >
+          <AIcon type="PlusOutlined" />{{ $t('product.index.083446-0') }}
+      </j-permission-button>
+    </DefineEmptyCreate>
+    <div v-bind="$attrs" class="product-container">
         <pro-search
             :columns="columns"
             target="category-product"
@@ -23,15 +33,14 @@
                 }"
                 :columns="columns"
             >
+              <template #emptyText>
+                <CloudEmpty :search="queryParams?.terms" :search-name="$t('Department.index.945805-0')">
+                  <EmptyCreateButton />
+                </CloudEmpty>
+              </template>
                 <template #headerLeftRender>
                     <a-space>
-                        <j-permission-button
-                            :hasPermission="`${permission}:assert`"
-                            type="primary"
-                            @click="dialogs.addShow = true"
-                        >
-                            <AIcon type="PlusOutlined" />{{ $t('product.index.083446-0') }}
-                        </j-permission-button>
+                        <EmptyCreateButton />
                         <a-dropdown trigger="hover">
                             <a-button>{{ $t('product.index.083446-1') }}</a-button>
                             <template #overlay>
@@ -241,6 +250,10 @@
 </template>
 
 <script setup lang="ts" name="product">
+import type { ConditionTerm } from '@jetlinks-web-core/components/ConditionFilter'
+
+import { createReusableTemplate } from '@vueuse/core'
+
 
 import AddDeviceOrProductDialog from '../components/AddDeviceOrProductDialog.vue';
 import EditPermissionDialog from '../components/EditPermissionDialog.vue';
@@ -333,7 +346,7 @@ const columns = [
         scopedSlots: true,
     },
 ];
-const queryParams = ref({});
+const queryParams = ref<{ terms?: ConditionTerm[] }>({});
 
 const tableRef = ref();
 const searchRef = ref();
@@ -632,6 +645,8 @@ const nextConfirm = () =>{
     departmentStore.setProductId(Temporary);
     emits('openDeviceBind')
 }
+
+const [DefineEmptyCreate, EmptyCreateButton] = createReusableTemplate()
 </script>
 
 <style lang="less" scoped>

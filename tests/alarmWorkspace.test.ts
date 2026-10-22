@@ -5,19 +5,31 @@ import { setAlarmRequestHandler } from './alarmRequest.test-shim'
 import { queryRuleRecords, queryRecordHistory, queryActiveRuleCounts } from '../views/device/alarm/workspaceApi'
 import { useDeviceAlarmRecords } from '../views/device/alarm/hooks/useDeviceAlarmRecords'
 import { handleDeviceAlarm } from '../views/device/alarm/workspaceApi'
-import { alarmDuration, canHandleRecord } from '../views/device/alarm/workspaceUtils'
+import { alarmDeviceId, alarmDuration, canHandleRecord } from '../views/device/alarm/workspaceUtils'
 import { useDeviceAlarmHistory } from '../views/device/alarm/hooks/useDeviceAlarmHistory'
 import {
+  buildPreprocessPayload,
   clearNotificationMessageTemplate,
   createEmptyNotification,
   getNotificationMessageMode,
+  isDeviceAlarmPreprocess,
   matchesAlarmNotifyMethod,
+  toDeviceAlarmRow,
 } from '../views/device/alarm/utils'
-import type { DeviceAlarmNotifyMethod } from '../views/device/alarm/types'
+import type { DeviceAlarmFormModel, DeviceAlarmNotifyMethod } from '../views/device/alarm/types'
 import { useDeviceAlarmRuleSearch } from '../views/device/alarm/hooks/useDeviceAlarmRuleSearch'
+import i18n from '@jetlinks-web-core/locales'
+import { localizeDeviceLibraryPreprocessors } from '../views/device/alarm/deviceLibraryI18n'
 
 const response = (id: string, total = 1) => ({ result: { data: [{ id, sourceName: id }], total } })
 const flush = async () => { await nextTick(); await new Promise(resolve => setTimeout(resolve, 0)); await nextTick() }
+
+test('alarm record resolves a device id from source first and device target as a compatibility fallback', () => {
+  assert.equal(alarmDeviceId({ id: 'record-a', sourceType: 'device', sourceId: ' device-a ', targetType: 'device', targetId: 'device-b' }), 'device-a')
+  assert.equal(alarmDeviceId({ id: 'record-b', targetType: 'device', targetId: ' device-b ' }), 'device-b')
+  assert.equal(alarmDeviceId({ id: 'record-c', sourceType: 'product', sourceId: 'product-a', targetType: 'product', targetId: 'product-b' }), undefined)
+  assert.equal(alarmDeviceId({ id: 'record-d', targetType: 'device', targetId: '   ' }), undefined)
+})
 
 test('rule keyword search groups three existing conditions and clears only the rule query', () => {
   let page = 3
@@ -73,6 +85,124 @@ test('notification content remains visible only for a legacy custom edit session
   clearNotificationMessageTemplate(customNotification)
   assert.equal(getNotificationMessageMode(customNotification), 'default')
   assert.equal(showLegacyMessageTemplate, true)
+})
+
+test('automatic relief uses complementary matchers and remains editable', () => {
+  const form: DeviceAlarmFormModel = {
+    name: '温度异常',
+    source: 'product',
+    targetId: 'product-a',
+    productId: 'product-a',
+    property: 'temperature',
+    propertyName: '温度',
+    level: 2,
+    trigger: 'outside',
+    limit: { lower: 10, upper: 20 },
+    autoRelieve: true,
+    notification: createEmptyNotification(),
+  }
+
+  const payload = buildPreprocessPayload(form)
+  assert.equal(payload.provider, 'composite')
+  const [alarmBranch, relieveBranch] = payload.configuration.processors
+  assert.deepEqual(alarmBranch.configuration.matcher.configuration, { min: 10, max: 20, not: true })
+  assert.deepEqual(relieveBranch.configuration.matcher.configuration, { min: 10, max: 20, not: false })
+  assert.equal(relieveBranch.configuration.processors[0].provider, 'device-alarm-relieve')
+  assert.deepEqual(relieveBranch.configuration.processors[0].configuration, {
+    alarmName: '温度异常',
+    alarmLevel: 2,
+  })
+
+  const row = toDeviceAlarmRow({
+    id: 'alarm-a',
+    templateId: 'product-a',
+    thingId: '@all',
+    property: 'temperature',
+    provider: payload.provider,
+    configuration: payload.configuration,
+  }, 'product', '产品 A')
+  assert.equal(row?.autoRelieve, true)
+  assert.equal(row?.trigger, 'outside')
+  assert.deepEqual(row?.limit, { lower: 10, upper: 20 })
+
+  const simplePayload = buildPreprocessPayload({ ...form, autoRelieve: false })
+  assert.equal(simplePayload.provider, 'simple')
+  assert.equal('processors' in simplePayload.configuration, true)
+  assert.equal(JSON.stringify(simplePayload).includes('device-alarm-relieve'), false)
+  assert.equal(toDeviceAlarmRow({
+    provider: simplePayload.provider,
+    configuration: simplePayload.configuration,
+  }, 'product', '产品 A')?.autoRelieve, false)
+
+  const insidePayload = buildPreprocessPayload({ ...form, trigger: 'inside' })
+  const [insideAlarm, insideRelieve] = insidePayload.configuration.processors
+  assert.equal(insideAlarm.configuration.matcher.configuration.not, false)
+  assert.equal(insideRelieve.configuration.matcher.configuration.not, true)
+})
+
+test('alarm editor ignores composite preprocessors outside its canonical shape', () => {
+  const customComposite = {
+    provider: 'composite',
+    configuration: {
+      processors: [{
+        provider: 'simple',
+        configuration: {
+          matcher: { provider: 'number-range', configuration: { min: 10, max: 20, not: true } },
+          processors: [{ provider: 'device-alarm', configuration: { alarmName: '温度异常', alarmLevel: 2 } }],
+        },
+      }, {
+        provider: 'simple',
+        configuration: {
+          matcher: { provider: 'number-range', configuration: { min: 10, max: 20, not: false } },
+          processors: [{ provider: 'device-alarm-relieve', configuration: { alarmName: '温度异常', alarmLevel: 2 } }],
+        },
+      }, {
+        provider: 'scale',
+        configuration: { scale: 0.1 },
+      }],
+    },
+  }
+
+  assert.equal(isDeviceAlarmPreprocess(customComposite), false)
+  assert.equal(toDeviceAlarmRow(customComposite, 'product', '产品 A'), null)
+})
+
+test('device library localizes nested alarm processor without dropping relief branch', () => {
+  i18n.global.locale.value = 'en-US'
+  const [localized] = localizeDeviceLibraryPreprocessors([{
+    id: 'alarm-a',
+    name: '温度异常',
+    property: 'temperature',
+    provider: 'composite',
+    i18nMessages: { name: { zh_CN: '温度异常', en_US: 'Temperature alarm' } },
+    configuration: {
+      processors: [{
+        provider: 'simple',
+        configuration: {
+          processors: [{ provider: 'device-alarm', configuration: { alarmName: '温度异常' } }],
+        },
+      }, {
+        provider: 'simple',
+        configuration: {
+          processors: [{
+            provider: 'device-alarm-relieve',
+            configuration: { alarmName: '温度异常', alarmLevel: 2 },
+          }],
+        },
+      }],
+    },
+  } as any], {
+    thingModel: { properties: [{ id: 'temperature', name: '温度', i18nMessages: { name: { en_US: 'Temperature' } } }] },
+  })
+
+  assert.equal(localized.name, 'Temperature alarm')
+  assert.equal(localized.propertyName, 'Temperature')
+  const [alarmBranch, relieveBranch] = (localized.configuration as any).processors
+  assert.equal(alarmBranch.configuration.processors[0].configuration.alarmName, 'Temperature alarm')
+  assert.equal(relieveBranch.configuration.processors[0].provider, 'device-alarm-relieve')
+  assert.equal(relieveBranch.configuration.processors[0].configuration.alarmName, 'Temperature alarm')
+  assert.equal(relieveBranch.configuration.processors[0].configuration.alarmLevel, 2)
+  i18n.global.locale.value = 'zh'
 })
 
 test('rule query preserves stable identity and caller filters; global history remains reachable', async () => {

@@ -1,5 +1,17 @@
 <template>
-  <j-page-container>
+
+  <DefineEmptyCreate>
+    <j-permission-button
+      type="primary"
+      :hasPermission="`${permission}:add`"
+      @click="table.openDialog(undefined)"
+    >
+      <AIcon type="PlusOutlined" />{{
+        $t("Relationship.index.710824-0")
+      }}
+    </j-permission-button>
+  </DefineEmptyCreate>
+  <j-page-container v-bind="$attrs">
 	  <div class="relationship-container">
 	    <FullPage :fixed="false" hasPadding transparentBackground>
 	      
@@ -15,6 +27,11 @@
 	            sorts: [{ name: 'createTime', order: 'desc' }],
 	          }"
 	        >
+	          <template #emptyText>
+	            <CloudEmpty :search="queryParams.terms" :search-name="$t('EmptyCreate.names.relationships')">
+	              <EmptyCreateButton />
+	            </CloudEmpty>
+	          </template>
 	          <template #headerLeftRender>
 	            <div class="relationship-container__toolbar">
 	              <h2 class="relationship-container__title">
@@ -29,15 +46,7 @@
 	                :columns="columns"
 	                @change="handleSearch"
 	              />
-	              <j-permission-button
-	                type="primary"
-	                :hasPermission="`${permission}:add`"
-	                @click="table.openDialog(undefined)"
-	              >
-	                <AIcon type="PlusOutlined" />{{
-	                  $t("Relationship.index.710824-0")
-	                }}
-	              </j-permission-button>
+	              <EmptyCreateButton />
 	            </a-flex>
 	          </template>
 	          <template #action="slotProps">
@@ -83,6 +92,8 @@
 </template>
 
 <script setup lang="ts" name="Relationship">
+import { createReusableTemplate } from '@vueuse/core'
+
 import {
   getRelationshipList_api,
   delRelation_api,
@@ -212,6 +223,8 @@ const dialog = reactive({
   selectRow: {} as any,
   visible: false,
 });
+
+const [DefineEmptyCreate, EmptyCreateButton] = createReusableTemplate()
 </script>
 
 <style lang="less" scoped>

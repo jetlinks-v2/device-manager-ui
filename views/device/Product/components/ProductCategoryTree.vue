@@ -178,6 +178,20 @@ const {
     overflow: auto;
   }
 
+  &__content:has(.cloud-empty) {
+    display: flex;
+    flex-direction: column;
+
+    :deep(.ant-spin-nested-loading),
+    :deep(.ant-spin-container) {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+      flex-direction: column;
+      justify-content: safe center;
+    }
+  }
+
   &__label {
     display: block;
     overflow: hidden;

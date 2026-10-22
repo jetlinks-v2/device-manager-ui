@@ -16,7 +16,16 @@ export type DeviceCreateEntry = {
 } & (
   | { component: Component; route?: never }
   | { route: string; params?: Record<string, string>; component?: never }
+  | { drawer: DeviceCreateDrawerOptions; component?: never; route?: never }
 )
+
+/** 通用新增设备抽屉的受限产品来源；由分类 Provider 声明，设备模块负责实际渲染。 */
+export type DeviceCreateDrawerOptions = {
+  /** 产品接入方式白名单，会作为产品查询的固定条件，不能被页面筛选移除。 */
+  accessProviders?: string[]
+  /** 不探测或展示设备库，只允许从当前环境的产品创建。 */
+  productOnly?: boolean
+}
 /** 各模块提供分类及详情/编辑入口，列表、分页和范围统计统一由宿主管理。 */
 export interface DeviceListProvider {
   id: string

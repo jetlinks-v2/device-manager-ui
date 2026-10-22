@@ -12,6 +12,7 @@ export function useIotDeviceChildFilters(onSearch: () => void) {
   const { t: $t } = useI18n()
   const filterTerms = ref<ConditionFilterTerm[]>([])
   const submittedTerms = ref<ConditionFilterTerm[]>([])
+  const hasSearch = computed(() => submittedTerms.value.length > 0)
 
   const statusOptions = computed(() => [
     { label: $t('IotWorkbench.option.connection.disabled'), value: 'disabled' },
@@ -104,6 +105,7 @@ export function useIotDeviceChildFilters(onSearch: () => void) {
   }
 
   return {
+    hasSearch,
     filterTerms,
     filterFields: filterFields as ComputedRef<ConditionFilterField[]>,
     commonFilterFields,

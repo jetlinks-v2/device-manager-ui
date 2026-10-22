@@ -1,4 +1,27 @@
 <template>
+
+    <DefineEmptyCreateAction1>
+      <j-permission-button
+          :tooltip="{
+                        title: $t('Child.index.135369-5'),
+                    }"
+          type="link"
+          @click="onClick('add')"
+      >
+        <AIcon type="PlusOutlined"/>
+      </j-permission-button>
+    </DefineEmptyCreateAction1>
+    <DefineEmptyCreateAction2>
+      <j-permission-button
+          :tooltip="{
+                        title: $t('Child.index.135369-6'),
+                    }"
+          type="link"
+          @click="onClick('bind')"
+      >
+        <AIcon type="DisconnectOutlined"/>
+      </j-permission-button>
+    </DefineEmptyCreateAction2>
     <div class="container">
       <div class="header">
         <div>
@@ -24,24 +47,8 @@
               />
             </a-tooltip>
             <a-space>
-              <j-permission-button
-                  :tooltip="{
-                                title: $t('Child.index.135369-5'),
-                            }"
-                  type="link"
-                  @click="onClick('add')"
-              >
-                <AIcon type="PlusOutlined"/>
-              </j-permission-button>
-              <j-permission-button
-                  :tooltip="{
-                                title: $t('Child.index.135369-6'),
-                            }"
-                  type="link"
-                  @click="onClick('bind')"
-              >
-                <AIcon type="DisconnectOutlined"/>
-              </j-permission-button>
+              <EmptyCreateButtonAction1 />
+              <EmptyCreateButtonAction2 />
             </a-space>
           </div>
           <pro-search
@@ -104,6 +111,11 @@
                                 "
                                 :height="430"
                 >
+                  <template #emptyText>
+                    <CloudEmpty :search="emptyCreateSearch" :search-name="$t('Detail.index.957187-23')">
+                      <a-space><EmptyCreateButtonAction1 /><EmptyCreateButtonAction2 /></a-space>
+                    </CloudEmpty>
+                  </template>
                   <template #registryTime="slotProps">
                     <j-ellipsis>
                       {{
@@ -379,6 +391,8 @@
 </template>
 
 <script setup name="Child">
+import { createReusableTemplate } from '@vueuse/core'
+
 import { stateMap, columns, statusMap } from './data';
 import {
     queryNoPagingPost,
@@ -399,6 +413,9 @@ import actionModal from './actionModal.vue';
 import { Modal } from 'ant-design-vue';
 import { EventEmitter } from '@jetlinks-web/utils';
 import { useI18n } from 'vue-i18n';
+import { ref as emptyCreateSearchRef } from 'vue'
+const emptyCreateSearch = emptyCreateSearchRef(false)
+
 
 const { t: $t } = useI18n();
 
@@ -518,6 +535,8 @@ const searchColumns = [
     },
 ];
 const handleSearch = async (e) => {
+  emptyCreateSearch.value = Boolean(e?.terms?.length)
+
     if (detail.value.id && e) {
         const terms = [
             {
@@ -1276,6 +1295,9 @@ defineExpose({
     // 宿主分类和详情 Tab 切换沿用原有未保存映射提示。
     beforeLeave: TabsChange,
 })
+
+const [DefineEmptyCreateAction1, EmptyCreateButtonAction1] = createReusableTemplate()
+const [DefineEmptyCreateAction2, EmptyCreateButtonAction2] = createReusableTemplate()
 </script>
 
 <style lang="less" scoped>

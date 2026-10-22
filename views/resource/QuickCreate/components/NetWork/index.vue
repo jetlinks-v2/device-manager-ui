@@ -1,5 +1,9 @@
 <template>
-    <a-modal
+
+    <DefineEmptyCreate>
+      <a-button @click="addVisible = true">新增</a-button>
+    </DefineEmptyCreate>
+    <a-modal v-bind="$attrs"
         title="网络组件"
         open
         :width="1000"
@@ -14,7 +18,7 @@
                 placeholder="请输入"
                 @search="networkSearch"
             ></a-input-search>
-            <a-button @click="addVisible = true">新增</a-button>
+            <EmptyCreateButton />
         </div>
         <div class="content">
             <a-row :gutter="[12, 12]" v-if="networkList.length > 0">
@@ -65,7 +69,9 @@
                     >
                 </a-col>
             </a-row>
-            <CloudEmpty v-else style="margin-top: 10%" description="暂无数据" />
+            <CloudEmpty v-else style="margin-top: 10%" description="暂无数据" :search="emptyCreateSearch" :search-name="$t('Status.index.565893-0')">
+              <EmptyCreateButton />
+            </CloudEmpty>
         </div>
         <AddNetWork
             v-if="addVisible"
@@ -77,12 +83,17 @@
 </template>
 
 <script setup>
+import { createReusableTemplate } from '@vueuse/core'
+
 import { queryNetWork,queryAliveNetWork } from '@device-manager-ui/api/resource/quickCreate';
 import AccessCard from '../AccessCard/index.vue';
 import { cloneDeep } from 'lodash-es';
 import { NetworkTypeMapping, descriptionList } from './data';
 import AddNetWork from './AddNetWork.vue';
 import {onlyMessage} from "@jetlinks-web/utils";
+import { ref as emptyCreateSearchRef } from 'vue'
+const emptyCreateSearch = emptyCreateSearchRef(false)
+
 const props = defineProps({
     type: {
         type: String,
@@ -115,10 +126,13 @@ const queryNetworkList = async (data = {}) => {
     if(res.success){
         networkList.value = res.result;
         allNetworkList.value = res.result;
+        emptyCreateSearch.value = false;
     }
 };
 
 const networkSearch = (val) => {
+  emptyCreateSearch.value = Boolean(val?.trim())
+
     networkList.value = val
         ? allNetworkList.value.filter(
               (i) =>
@@ -162,6 +176,8 @@ onMounted(() => {
     networkCurrent.value = cloneDeep(props.data);
     queryNetworkList();
 });
+
+const [DefineEmptyCreate, EmptyCreateButton] = createReusableTemplate()
 </script>
 <style lang="less" scoped>
 .header {

@@ -13,6 +13,11 @@
                     :params="params"
                     class="pro-table__no-padding"
                 >
+                  <template #emptyText>
+                    <CloudEmpty :search="params?.terms" :search-name="$t('EmptyCreate.names.firmware')">
+                      <CreateActions @add="applicationVisible = true" />
+                    </CloudEmpty>
+                  </template>
 	                  <template #headerLeftRender>
 		                  <h2 class="access-component-list-title">
 			                  {{ $t('Detail.index.478940-14') }}

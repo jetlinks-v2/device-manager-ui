@@ -1,20 +1,27 @@
 <template>
-  <section class="children-tab">
+
+  <DefineEmptyCreateAction1>
+    <a-button v-if="canCreateChild" type="primary" @click="openCreate">
+      <template #icon>
+        <AIcon type="PlusOutlined" aria-hidden="true" />
+      </template>
+      {{ $t('IotDeviceChildren.create.button') }}
+    </a-button>
+  </DefineEmptyCreateAction1>
+  <DefineEmptyCreateAction2>
+    <a-button type="primary" @click="openBind">
+      <template #icon>
+        <AIcon type="LinkOutlined" aria-hidden="true" />
+      </template>
+      {{ $t('IotDeviceChildren.bind.button') }}
+    </a-button>
+  </DefineEmptyCreateAction2>
+  <section v-bind="$attrs" class="children-tab">
     <header class="children-tab__head">
       <span class="children-tab__summary">{{ $t('IotDeviceChildren.summary', { total: pagination.total }) }}</span>
       <a-space>
-        <a-button v-if="canCreateChild" type="primary" @click="openCreate">
-          <template #icon>
-            <AIcon type="PlusOutlined" aria-hidden="true" />
-          </template>
-          {{ $t('IotDeviceChildren.create.button') }}
-        </a-button>
-        <a-button type="primary" @click="openBind">
-          <template #icon>
-            <AIcon type="LinkOutlined" aria-hidden="true" />
-          </template>
-          {{ $t('IotDeviceChildren.bind.button') }}
-        </a-button>
+        <EmptyCreateButtonAction1 v-if="canCreateChild" />
+        <EmptyCreateButtonAction2 />
         <a-popconfirm
           v-if="selectedRowKeys.length"
           :title="$t('IotDeviceChildren.unbind.confirmBatch')"
@@ -123,7 +130,9 @@
         </template>
       </template>
       <template #emptyText>
-        <CloudEmpty :description="$t('IotDeviceChildren.empty')" />
+        <CloudEmpty :description="$t('IotDeviceChildren.empty')" :search="hasSearch" :search-name="$t('Detail.index.957187-23')">
+          <a-space><EmptyCreateButtonAction1 /><EmptyCreateButtonAction2 /></a-space>
+        </CloudEmpty>
       </template>
     </a-table>
 
@@ -197,6 +206,8 @@
 </template>
 
 <script setup lang="ts">
+import { createReusableTemplate } from '@vueuse/core'
+
 import type { PropType } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -231,6 +242,7 @@ const {
   createOpen,
   filterFields,
   filterTerms,
+  hasSearch,
   formatTime,
   handleFilterSearch,
   handleFilterTermsUpdate,
@@ -261,6 +273,9 @@ const {
 defineExpose({
   refresh,
 })
+
+const [DefineEmptyCreateAction1, EmptyCreateButtonAction1] = createReusableTemplate()
+const [DefineEmptyCreateAction2, EmptyCreateButtonAction2] = createReusableTemplate()
 </script>
 
 <style scoped lang="less" src="./IotDeviceChildrenTab.less"></style>

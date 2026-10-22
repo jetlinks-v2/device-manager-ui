@@ -1,5 +1,22 @@
 # 产品管理
 
+## 产品资源包导入导出
+
+产品列表支持将单个产品导出为可移植的 ZIP 资源包，并从工具栏导入同一格式的资源包。产品 JSON 的既有导入导出入口保持不变。
+
+资源包导入使用 `ResourcePackage/index.vue` 的分步弹窗：上传并预览脱敏清单、补充产品信息、选择本地协议/插件/证书/网络/网关后确认导入。存储策略属于产品基础信息，策略在当前环境不存在时会在“基础信息”步骤显示错误并禁止继续；网络类型、端口等接入资源校验保留在“设备接入”步骤。清单不含接入资源时跳过“设备接入”步骤，直接开始导入。导入进度使用 NDJSON 展示；关闭弹窗或组件卸载会取消订阅并清理导入状态。
+
+接口定义位于 `api/product.ts` 与 `api/link/type.ts`，对应后端 `/device/product/resource-package` 的解析、导入和导出接口。解析和导入均提交原始 ZIP，前端仅在当前向导会话内保留 `File`，不会依赖文件服务生成的资源包 ID。用户可见文案统一使用 `Product.resourcePackage.*` 的中英文语言包；资源包导出复用 `device/Product:export` 权限。
+
+## 列表空态新增与搜索提示
+
+- 当前行为：`runtime-ui` 产品列表通过公共 `useEmptyCreateState` 读取已提交筛选与分类状态。没有搜索时，在原空态下展示与工具栏一致的新增按钮；有搜索时隐藏空态新增，使用 core 公共词条 `components.CloudEmpty.searchEmpty`，传入 `name: $t('Product.index.660348-15')`，显示“未找到匹配的产品”。
+- 实现入口：`views/device/Product/index.vue` 与 `runtime-ui/jetlinks-web-core/src/hooks/useEmptyCreateState.ts`；工具栏与空态通过页面内 `createReusableTemplate` 共用新增按钮，移除专用按钮组件，复用原 `add()`、权限、弹窗和查询，不增加基础集合查询，不使用 `CrudTable`。
+- 按钮复用调整验证：两页 SFC 编译、告警定向回归 10/10、旧组件引用清理与目标文件 `git diff --check` 通过。本地 9201 登录态下，产品工具栏与空态的新增按钮均打开原新增弹窗，未提交数据。本次仅调整模板复用，未重跑全量构建或类型检查，沿用下述既有结果与限制。
+- 验证结果：运行时根目录执行 `pnpm -F jetlinks-web-core test:empty-create`，3/3 通过，覆盖响应式搜索 / 清空、默认条件隔离和严格类型契约；`pnpm -F jetlinks-web-core build -- --module-name device-manager-ui` 通过，保留既有构建警告。已核对中英文文案、两处按钮复用同一 `device/Product:add` 权限与 `add()`，`git diff --check` 通过。
+- 公共文案调整验证：实际 `createRuntimeI18n` 合并 core / 模块资源后的中英文参数插值、页面 SFC 编译与旧词条引用清理通过；本次仅修改文案，未重跑完整构建和类型检查，复用前述验证证据。
+- 验证限制：完整模块 `pnpm exec vue-tsc --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json` 被既有 `views/link/Certificate/type.d.ts:2:30` TS1005 阻断，工作区与模块无独立 lint 脚本。本次浏览器验证覆盖零数据场景下的两处新增入口；有数据时的筛选提交 / 清空、分类筛选和不同权限账号仍待复核。
+
 ## 列表状态列宽
 
 目标：将产品列表的状态列宽从 80 调整为 90，减少状态内容拥挤。仅涉及 `views/device/Product/index.vue` 的表格展示；不改状态值、筛选、接口或其他列。列定义与 `git diff --check` 已核对；按本次交付要求不执行构建，也未运行 lint、typecheck 或浏览器验证，页面实际宽度仍需人工复核。
