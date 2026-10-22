@@ -8,8 +8,12 @@ const source = await readFile(sourcePath, 'utf8')
 const sourceFile = ts.createSourceFile(sourcePath.pathname, source, ts.ScriptTarget.Latest, true)
 const deviceScopePath = new URL('../deviceScope.ts', import.meta.url)
 const unifiedListPath = new URL('../views/device/list/unified/index.vue', import.meta.url)
+const assetListTablePath = new URL('../views/device/list/components/IotDeviceAssetTable.vue', import.meta.url)
+const assetListColumnsPath = new URL('../views/device/list/components/useIotDeviceAssetTableColumns.ts', import.meta.url)
 const deviceScopeSource = await readFile(deviceScopePath, 'utf8')
 const unifiedListSource = await readFile(unifiedListPath, 'utf8')
+const assetListTableSource = await readFile(assetListTablePath, 'utf8')
+const assetListColumnsSource = await readFile(assetListColumnsPath, 'utf8')
 
 function exportedFunctionBody(name) {
   const statement = sourceFile.statements.find((item) => (
@@ -43,4 +47,11 @@ test('the unified list hides area operations only after space service absence is
   assert.match(deviceScopeSource, /useIotDeviceScopeCounts\([\s\S]*spaceAreaSupported\)/)
   assert.match(unifiedListSource, /v-if="spaceAreaSupported !== false"/)
   assert.match(unifiedListSource, /spaceAreaSupported !== true/)
+  assert.match(unifiedListSource, /spaceAreaSupported\.value === false \? 'UnifiedDeviceList\.group' : 'UnifiedDeviceList\.areaAndGroup'/)
+  assert.match(unifiedListSource, /v-if="spaceAreaSupported !== false"/)
+})
+
+test('the legacy list falls back to a group-only column when space support is unavailable', () => {
+  assert.match(assetListTableSource, /v-if="showArea"/)
+  assert.match(assetListColumnsSource, /showArea\(\) \? 'IotDeviceList\.table\.areaGroup' : 'UnifiedDeviceList\.group'/)
 })

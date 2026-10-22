@@ -1,5 +1,17 @@
 <template>
-    <div>
+
+    <DefineEmptyCreate>
+      <j-permission-button
+          v-if='showAddBtn'
+          type="primary"
+          @click="addProtocol"
+          hasPermission="link/Protocol:add"
+      >
+          <template #icon><AIcon type="PlusOutlined" /></template>
+          {{ $t('Cloud.Ctwing.076179-24') }}
+      </j-permission-button>
+    </DefineEmptyCreate>
+    <div v-bind="$attrs">
         <a-steps class="steps-steps" :current="stepCurrent">
             <a-step disabled v-for="item in steps" :key="item" :title="item" />
         </a-steps>
@@ -205,15 +217,7 @@
                         style="width: 300px"
                         @search="protocolSearch"
                     />
-                    <j-permission-button
-                        v-if='showAddBtn'
-                        type="primary"
-                        @click="addProtocol"
-                        hasPermission="link/Protocol:add"
-                    >
-                        <template #icon><AIcon type="PlusOutlined" /></template>
-                        {{ $t('Cloud.Ctwing.076179-24') }}
-                    </j-permission-button>
+                    <EmptyCreateButton v-if='showAddBtn' />
                 </div>
                 <j-scrollbar height="480">
                     <a-row
@@ -235,11 +239,12 @@
                             </AccessCard>
                         </a-col>
                     </a-row>
-                    <j-empty
+                    <CloudEmpty
                         style="margin-top: 10%"
                         v-else
-                        :description="$t('Cloud.Ctwing.076179-25')"
-                    />
+                        :description="$t('Cloud.Ctwing.076179-25')" :search="emptyCreateSearch" :search-name="$t('DeviceAccess.accessModal.132524-4')">
+                      <EmptyCreateButton />
+                    </CloudEmpty>
                 </j-scrollbar>
             </div>
         </div>
@@ -354,6 +359,8 @@
 </template>
 
 <script lang="ts" setup name="AccessCloudCtwing">
+import { createReusableTemplate } from '@vueuse/core'
+
 import type { FormInstance } from 'ant-design-vue';
 import { update, save, getProtocolList } from '../../../../../api/link/accessConfig';
 import { ProtocolMapping } from '../../data';
@@ -365,6 +372,9 @@ import { useI18n } from 'vue-i18n';
 import { useTabSaveSuccess, useTabSaveSuccessBack } from '@jetlinks-web-core/hooks'
 import { I18nTextField } from '@jetlinks-web-core/components';
 import DeviceLibraryBizKeyPicker from '../DeviceLibraryBizKeyPicker.vue';
+import { ref as emptyCreateSearchRef } from 'vue'
+const emptyCreateSearch = emptyCreateSearchRef(false)
+
 
 const { t: $t } = useI18n();
 const menuStory = useMenuStore();
@@ -449,6 +459,8 @@ const protocolChange = (id: string) => {
 };
 
 const protocolSearch = (value: string) => {
+  emptyCreateSearch.value = Boolean(value?.trim())
+
     protocolList.value = value
         ? allProtocolList.value.filter(
               (i: any) =>
@@ -499,6 +511,7 @@ const queryProtocolList = async (id: string, params = {}) => {
     if (resp.status === 200) {
         protocolList.value = resp.result;
         allProtocolList.value = resp.result;
+        emptyCreateSearch.value = false;
     }
 };
 
@@ -548,6 +561,8 @@ watch(
         immediate: true,
     },
 );
+
+const [DefineEmptyCreate, EmptyCreateButton] = createReusableTemplate()
 </script>
 
 <style lang="less" scoped>

@@ -1,5 +1,18 @@
 <template>
   <!-- 卡片切换充当面板顶栏：flush 让它与布局面板贴合，左上角一起拉平。 -->
+
+  <DefineEmptyCreateAction1>
+    <a-button v-if="activeType === 'all' || isIotEntry" type="primary" :disabled="busy" @click="openCreateDrawer">
+     <template #icon><AIcon type="PlusOutlined" /></template>
+     {{ t('IotDeviceList.action.create') }}
+    </a-button>
+  </DefineEmptyCreateAction1>
+  <DefineEmptyCreateAction2>
+    <a-button v-if="activeProvider?.create" :key="`create-${activeProvider.id}`" type="primary" :disabled="busy || !canCreate(activeProvider)" @click="openCreate(activeProvider)">
+     <template #icon><AIcon type="PlusOutlined" /></template>
+     {{ activeProvider.create.label() }}
+    </a-button>
+  </DefineEmptyCreateAction2>
   <PageChrome flush>
     <SlantedTabs class="unified-device-list__types" :activeKey="activeType" :options="tabs" @change="changeType(String($event))" />
   </PageChrome>
@@ -30,14 +43,8 @@
 						    </a-button>
 						    </a-button-group>
 						    <a-divider type="vertical" class="unified-device-list__action-divider" />
-						    <a-button v-if="activeType === 'all' || isIotEntry" type="primary" :disabled="busy" @click="openCreateDrawer">
-							    <template #icon><AIcon type="PlusOutlined" /></template>
-							    {{ t('IotDeviceList.action.create') }}
-						    </a-button>
-						    <a-button v-if="activeProvider?.create" :key="`create-${activeProvider.id}`" type="primary" :disabled="busy || !canCreate(activeProvider)" @click="openCreate(activeProvider)">
-							    <template #icon><AIcon type="PlusOutlined" /></template>
-							    {{ activeProvider.create.label() }}
-						    </a-button>
+						    <EmptyCreateButtonAction1 v-if="activeType === 'all' || isIotEntry" />
+						    <EmptyCreateButtonAction2 v-if="activeProvider?.create" />
 						    <!-- 批量配置仅面向边缘节点，其他设备分类不提供入口。 -->
 						    <a-dropdown v-if="activeType === 'gateway'">
 						      <a-button>
@@ -46,7 +53,7 @@
 						      </a-button>
 						      <template #overlay>
 						        <a-menu @click="openBatchPage">
-						          <a-menu-item key="algorithms">{{ t('UnifiedDeviceList.batchAlgorithms') }}</a-menu-item>
+						          <a-menu-item v-if="menu.hasMenu('algorithm-center')" key="algorithms">{{ t('UnifiedDeviceList.batchAlgorithms') }}</a-menu-item>
 						          <a-menu-item key="plugins">{{ t('UnifiedDeviceList.batchPlugins') }}</a-menu-item>
 						          <a-menu-item key="syncStatus">{{ t('IotDeviceList.action.syncStatus') }}</a-menu-item>
 						        </a-menu>
@@ -67,6 +74,11 @@
 				    <a-alert v-if="error || scopeLoadError" type="error" show-icon :message="error || t('UnifiedDeviceList.loadFailed')"><template #action><a-button @click="refresh">{{ t('UnifiedDeviceList.refresh') }}</a-button></template></a-alert>
 				    <div class="unified-device-list__table">
 					    <a-table row-key="id" :columns="columns" :data-source="rows" :loading="loading" :pagination="false" :row-selection="rowSelection" :scroll="{ x: 'max-content' }">
+					      <template #emptyText>
+					        <CloudEmpty :search="hasSearch" :search-name="$t('UnifiedDeviceList.device')">
+					          <template v-if="!error"><a-space><EmptyCreateButtonAction1 /><EmptyCreateButtonAction2 /></a-space></template>
+					        </CloudEmpty>
+					      </template>
 						    <template #bodyCell="{ column, record }">
 							    <template v-if="column.key === 'name'">
 								    <a-flex align="center" :gap="8">
@@ -106,12 +118,15 @@
 								    </small>
 						    </template>
 						    <template v-else-if="column.key === 'area'">
+							    <template v-if="spaceAreaSupported !== false">
 								    <div>
 									    <j-ellipsis>{{ formatAreaName(record) }}</j-ellipsis>
 								    </div>
 								    <small>
-									    <j-ellipsis>{{ record.groupBindings?.map(group => group.name).join('、') || record.groupName || t('IotDeviceList.scope.unassignedGroup') }}</j-ellipsis>
+									    <j-ellipsis>{{ formatGroupName(record) }}</j-ellipsis>
 								    </small>
+							    </template>
+							    <j-ellipsis v-else>{{ formatGroupName(record) }}</j-ellipsis>
 						    </template>
 							    <template v-else-if="column.key === 'createdAt'">{{ formatTableTime(record.createdAt) }}</template>
 							    <template v-else-if="column.key === 'lastReportTime'">{{ formatTableTime(record.lastReportTime) }}</template>
@@ -181,7 +196,7 @@
       :is="provider.listGuide" :active="activeType === provider.id" :request="guideRequest"
       :project-id="guideProjectId" @refresh="refresh" />
     <component v-if="createEntry" :is="createEntry.component" :open="true" @update:open="createEntry = undefined" @saved="refresh" />
-    <IotAddDeviceDrawer v-if="!editing || editing.category === 'device'" v-model:open="editOpen" :project-id="projectId" :device="editing" @saved="refresh" @created="refresh" />
+    <IotAddDeviceDrawer v-if="!editing || editing.category === 'device'" v-model:open="editOpen" :project-id="projectId" :device="editing" :product-filter="createDrawerOptions" @saved="refresh" @created="refresh" />
     <component v-else-if="editing && providerOf(editing)?.editComponent" :is="providerOf(editing)?.editComponent" v-model:open="editOpen" :gateway="editing" :device="editing" :project-id="projectId" @saved="refresh" />
     <component v-if="detailDevice && providerOf(detailDevice)?.detailComponent" :is="providerOf(detailDevice)?.detailComponent" v-bind="providerOf(detailDevice)?.detailProps?.(detailDevice)" @close-drawer="detailDevice = null" @close="detailDevice = null" />
     <IotDeviceAssignAreaModal v-if="spaceAreaSupported !== false" v-model:open="assignAreaOpen" :project-id="projectId" :selected-device-count="selectedIds.length" :saving="busy" @save="assignArea" />
@@ -191,6 +206,8 @@
   </FullPage>
 </template>
 <script setup lang="ts">
+import { createReusableTemplate } from '@vueuse/core'
+
 import { computed, type Component } from 'vue'
 import { ref } from 'vue'
 import dayjs from 'dayjs'
@@ -203,7 +220,6 @@ import EqualHeightColumns from '@jetlinks-web-core/components/EqualHeightColumns
 import SlantedTabs from '@jetlinks-web-core/components/SlantedTabs'
 import { useRoute } from 'vue-router'
 import { useMenuStore } from '@jetlinks-web-core/store'
-import { encodeConditionFilterQuery } from '@jetlinks-web-core/components/ConditionFilter'
 import { moduleRegistry } from '@jetlinks-web-core/utils/module-registry'
 import type { useGatewayRuntimeMetricsLoader as UseGatewayRuntimeMetricsLoader } from '@edge-master-ui/views/workbench/gateway/hooks/useGatewayRuntimeMetricsLoader'
 import IotDeviceScopeSidebar from '../components/IotDeviceScopeSidebar.vue'
@@ -217,6 +233,7 @@ import { getIotDeviceListMenuCode, resolveIotProjectId } from '../hooks/useIotDe
 import type { DeviceGroup } from '../../../../api/deviceGroup'
 import { useUnifiedDeviceList } from './useUnifiedDeviceList'
 import { useUnifiedDeviceActions } from './useUnifiedDeviceActions'
+import { useUnifiedDeviceBatchNavigation } from './useUnifiedDeviceBatchNavigation'
 import Process from '../../Instance/Process/index.vue'
 import { useHomeAgentFeatureEntry } from '@jetlinks-web-core/layout/components/AiChat/useHomeAgentFeatureEntry'
 import { DEVICE_ONBOARDING_CAPABILITY_ID } from '@device-manager-ui/agentCapabilities/deviceGuidance/homeAgentProvider'
@@ -225,21 +242,7 @@ const route = useRoute()
 const guideProjectId = computed(() => resolveIotProjectId(route, ''))
 const deviceMenuCode = computed(() => getIotDeviceListMenuCode(route))
 const menu = useMenuStore()
-// 已选网关按明确 ID 传入；未选择网关时在批量页按当前范围加载，由矩阵决定实际下发项。
-function openBatchPage({ key }: { key: string | number }) {
-  if (key === 'syncStatus') {
-    syncGatewayStatus()
-    return
-  }
-  const gatewayIds = selected.value.filter(device => device.category === 'gateway').map(device => device.id)
-  const currentQuery = encodeConditionFilterQuery(searchTerms.value, filterFields.value)
-  menu.jumpPage('iot-user-device-list/Batch', { query: {
-    ...route.query, q: currentQuery || route.query.q || undefined, gatewayIds: gatewayIds.length ? gatewayIds : undefined,
-    gatewayScope: gatewayIds.length ? undefined : 'query',
-    batchTab: String(key),
-  } })
-}
-const { providers, isIotEntry, tabs, activeType, activeProvider, scope, baseTerms, filterTerms, filterFields, commonFilterFields, searchTerms, status, rows, total, pageIndex, pageSize, loading, error, counts, statusCounts, selectedIds, batchMode, providerOf, changeType, search, changeStatus, refresh, changePage, clearBatchSelection } = useUnifiedDeviceList()
+const { providers, isIotEntry, tabs, activeType, activeProvider, scope, baseTerms, filterTerms, filterFields, commonFilterFields, searchTerms, hasSearch, status, rows, total, pageIndex, pageSize, loading, error, counts, statusCounts, selectedIds, batchMode, providerOf, changeType, search, changeStatus, refresh, changePage, clearBatchSelection } = useUnifiedDeviceList()
 const gatewayMonitorCell = moduleRegistry.getResourceItem<Component>('edge-master-ui', 'components', 'GatewayDeviceMonitorCell')
 const useGatewayMetrics = moduleRegistry.getResourceItem<typeof UseGatewayRuntimeMetricsLoader>('edge-master-ui', 'hooks', 'useGatewayRuntimeMetricsLoader')
 // 只监控边缘节点分类的当前页，切换分类或重新加载列表时撤掉旧查询目标。
@@ -258,13 +261,19 @@ function formatAreaName(record: { areaBindings?: Array<{ area?: string }>; area?
   const isEmptyArea = !record.area || ['--', '—'].includes(record.area)
   return boundAreas || (isEmptyArea ? t('IotDeviceList.scope.unboundArea') : record.area)
 }
+function formatGroupName(record: { groupBindings?: Array<{ name?: string }>; groupName?: string }) {
+  return record.groupBindings?.map(group => group.name).filter(Boolean).join('、')
+    || record.groupName
+    || t('IotDeviceList.scope.unassignedGroup')
+}
 function formatBrandModel(value?: string) {
   const normalized = value?.trim()
   return normalized && !['--', '—'].includes(normalized)
     ? normalized
     : t('IotDeviceDetail.common.unconfigured')
 }
-const { projectId, editing, editOpen, createEntry, guideRequest, canCreate, openCreate, detailDevice, busy, selected, allowed, openDetail, edit, toggle, remove, canDelete, batchToggle, assignAreaOpen, assignGroupOpen, assignArea, assignGroup } = useUnifiedDeviceActions(rows, selectedIds, clearBatchSelection, providerOf, refresh, activeProvider)
+const { projectId, editing, editOpen, createDrawerOptions, createEntry, guideRequest, canCreate, openCreate, detailDevice, busy, selected, allowed, openDetail, edit, toggle, remove, canDelete, batchToggle, assignAreaOpen, assignGroupOpen, assignArea, assignGroup } = useUnifiedDeviceActions(rows, selectedIds, clearBatchSelection, providerOf, refresh, activeProvider)
+const { openBatchPage } = useUnifiedDeviceBatchNavigation({ selected, searchTerms, filterFields, syncGatewayStatus })
 const syncVisible = ref(false)
 const syncApi = ref('')
 const syncData = ref<Record<string, unknown>>({})
@@ -307,6 +316,7 @@ function openCreateDrawer() {
   if (editOpen.value) return !editing.value
   if (activeType.value !== 'all' && !isIotEntry.value) return false
   editing.value = null
+  createDrawerOptions.value = undefined
   editOpen.value = true
   return true
 }
@@ -318,11 +328,17 @@ const statusOptions = computed(() => ['online', 'offline', 'disabled'].map(value
   value, label: t(`UnifiedDeviceList.${value}`), count: statusCounts.value[value] ?? '—',
 })))
 const rowSelection = computed(() => ({ selectedRowKeys: selectedIds.value, onChange: (keys: Array<string | number>) => { selectedIds.value = keys.map(String); batchMode.value = keys.length > 0 } }))
+// 未启用空间模块时，列表不展示无意义的空间空态，仅保留设备分组。
+const scopeColumn = computed(() => ({
+  title: t(spaceAreaSupported.value === false ? 'UnifiedDeviceList.group' : 'UnifiedDeviceList.areaAndGroup'),
+  key: 'area',
+  width: spaceAreaSupported.value === false ? 180 : 220,
+}))
 const columns = computed(() => [
   { title: t('UnifiedDeviceList.name'), key: 'name', width: 280, fixed: 'left' },
   { title: t('UnifiedDeviceList.product'), key: 'productName', width: 180 },
   { title: t('IotDeviceList.table.brandModel'), key: 'brandModel', width: 160 },
-  { title: t('UnifiedDeviceList.areaAndGroup'), key: 'area', width: 220 },
+  scopeColumn.value,
   { title: t('UnifiedDeviceList.status'), key: 'status', width: 100 },
   ...(activeType.value === 'all' ? [{ title: t('IotDeviceDetail.detail.lastReport'), key: 'lastReportTime', width: 160 }] : []),
   ...(activeType.value === 'all' ? [{ title: t('Instance.index.133466-5'), key: 'createdAt', width: 160 }] : []),
@@ -330,6 +346,9 @@ const columns = computed(() => [
   ...(['gateway', 'video'].includes(activeType.value) ? [{ title: t('UnifiedDeviceList.channel'), key: 'channel', width: 100 }] : []),
   { title: t('UnifiedDeviceList.action'), key: 'action', width: 90, fixed: 'right', align: 'center' },
 ])
+
+const [DefineEmptyCreateAction1, EmptyCreateButtonAction1] = createReusableTemplate()
+const [DefineEmptyCreateAction2, EmptyCreateButtonAction2] = createReusableTemplate()
 </script>
 <style scoped lang="less">
 .unified-device-list {

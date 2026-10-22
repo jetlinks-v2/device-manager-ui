@@ -1,123 +1,198 @@
 <template>
   <a-modal
     :open="open"
-    :width="720"
+    width="min(100rem, calc(100vw - 2.25rem))"
     :mask-closable="false"
+    :body-style="{ padding: 0 }"
+    wrap-class-name="device-alarm-editor-modal-wrap"
     centered
-    :title="title"
-    class="device-alarm-editor-modal"
-    @cancel="emit('update:open', false)"
+    @cancel="close"
   >
+    <template #title>
+      <div class="device-alarm-editor__heading">
+        <h2>{{ title }}</h2>
+        <p>{{ $t('DeviceAlarm.editor.description') }}</p>
+      </div>
+    </template>
 
     <a-form class="device-alarm-editor" layout="vertical" :model="model">
-      <a-form-item :label="$t('DeviceAlarm.form.name')" required>
-        <a-input
-          v-model:value="model.name"
-          :maxlength="64"
-          :placeholder="$t('DeviceAlarm.placeholder.name')"
-        />
-      </a-form-item>
+      <div class="device-alarm-editor__workspace">
+        <aside class="device-alarm-editor__base">
+          <h3>{{ $t('DeviceAlarm.editor.baseConfig') }}</h3>
 
-      <a-row v-if="!fixedProductScope" :gutter="12">
-        <a-col :span="12">
-          <a-form-item :label="$t('DeviceAlarm.form.product')" required>
-            <IotAlarmTargetSelect
-              :model-value="model.productId"
-              :request="productRequest"
-              :selected-option="productOption"
-              :reload-key="productReloadKey"
-              load-on-reload
-              :placeholder="$t('DeviceAlarm.placeholder.productSearch')"
-              :disabled="readonlyScope"
-              @change="(_value, option) => emit('product-change', option)"
+          <a-form-item :label="$t('DeviceAlarm.form.name')" required>
+            <a-input
+              v-model:value="model.name"
+              :maxlength="64"
+              :placeholder="$t('DeviceAlarm.placeholder.name')"
             />
           </a-form-item>
-        </a-col>
-        <a-col :span="12">
-          <a-form-item :label="$t('DeviceAlarm.form.deviceRange')" required>
-            <IotAlarmTargetSelect
-              :model-value="deviceValue"
-              :request="deviceRequest"
-              :selected-option="deviceOption"
-              :static-options="allDeviceOption"
-              :reload-key="model.productId"
-              :placeholder="$t('DeviceAlarm.placeholder.deviceSearch')"
-              :disabled="readonlyScope"
-              @change="(value, option) => emit('device-change', value, option)"
-            />
+
+          <a-form-item :label="$t('DeviceAlarm.form.level')" required>
+            <j-card-select v-model:value="model.level" :column="2" :options="levelOptions">
+              <template #itemRender="{ node }">
+                <a-space :size="6">
+                  <span :class="['level-icon', `level-icon--${levelTone(node.value)}`]">
+                    <AIcon type="WarningFilled" />
+                  </span>
+                  <span>{{ node.label }}</span>
+                </a-space>
+              </template>
+            </j-card-select>
           </a-form-item>
-        </a-col>
-      </a-row>
 
-      <a-form-item :label="$t('DeviceAlarm.form.property')" required>
-        <a-select
-          show-search
-          :value="model.property"
-          :disabled="readonlyScope"
-          :options="propertySelectOptions"
-          :placeholder="$t('DeviceAlarm.placeholder.property')"
-          @change="(value) => emit('property-change', String(value))"
-        />
-      </a-form-item>
-
-      <a-form-item :label="$t('DeviceAlarm.form.level')" required>
-        <j-card-select v-model:value="model.level" :column="5" :options="levelOptions">
-          <template #itemRender="{ node }">
-            <a-space>
-              <span :class="['level-icon', `level-icon--${levelTone(node.value)}`]">
-                <AIcon type="WarningFilled" />
+          <nav class="device-alarm-editor__settings" :aria-label="$t('DeviceAlarm.editor.configNavigation')">
+            <button
+              v-for="panel in panels"
+              :key="panel.key"
+              type="button"
+              class="device-alarm-editor__setting"
+              :class="{ 'is-selected': activePanel === panel.key }"
+              :aria-pressed="activePanel === panel.key"
+              @click="activePanel = panel.key"
+            >
+              <span class="device-alarm-editor__setting-icon"><AIcon :type="panel.icon" /></span>
+              <span class="device-alarm-editor__setting-copy">
+                <small>{{ $t(panel.labelKey) }}</small>
+                <strong :title="panelSummaries[panel.key]">{{ panelSummaries[panel.key] }}</strong>
               </span>
-              <span>{{ node.label }}</span>
-            </a-space>
-          </template>
-        </j-card-select>
-      </a-form-item>
+              <AIcon type="RightOutlined" />
+            </button>
+          </nav>
+        </aside>
 
-      <a-form-item class="device-alarm-editor__trigger" :label="$t('DeviceAlarm.form.trigger')" required>
-        <a-radio-group v-model:value="model.trigger" :options="triggerOptions" />
-      </a-form-item>
+        <section class="device-alarm-editor__panel device-alarm-editor__main" :data-panel="activePanel">
+          <header class="device-alarm-editor__section-heading">
+            <div>
+              <h3>{{ $t(activePanelMeta.labelKey) }}</h3>
+              <p>{{ $t(activePanelMeta.descriptionKey) }}</p>
+            </div>
+          </header>
 
-      <a-row :gutter="12">
-        <a-col :span="12">
-          <a-form-item :label="$t('DeviceAlarm.form.lower')" required>
-            <a-input-number v-model:value="model.limit.lower" class="device-alarm-editor__number" />
-          </a-form-item>
-        </a-col>
-        <a-col :span="12">
-          <a-form-item :label="$t('DeviceAlarm.form.upper')" required>
-            <a-input-number v-model:value="model.limit.upper" class="device-alarm-editor__number" />
-          </a-form-item>
-        </a-col>
-      </a-row>
+          <div v-show="activePanel === 'target'" class="device-alarm-editor__section">
+            <a-row v-if="!fixedProductScope" :gutter="12">
+              <a-col :xs="24" :md="12">
+                <a-form-item :label="$t('DeviceAlarm.form.product')" required>
+                  <IotAlarmTargetSelect
+                    :model-value="model.productId"
+                    :request="productRequest"
+                    :selected-option="productOption"
+                    :reload-key="productReloadKey"
+                    load-on-reload
+                    :placeholder="$t('DeviceAlarm.placeholder.productSearch')"
+                    :disabled="readonlyScope"
+                    @change="(_value, option) => emit('product-change', option)"
+                  />
+                </a-form-item>
+              </a-col>
+              <a-col :xs="24" :md="12">
+                <a-form-item :label="$t('DeviceAlarm.form.deviceRange')" required>
+                  <IotAlarmTargetSelect
+                    :model-value="deviceValue"
+                    :request="deviceRequest"
+                    :selected-option="deviceOption"
+                    :static-options="allDeviceOption"
+                    :reload-key="model.productId"
+                    :placeholder="$t('DeviceAlarm.placeholder.deviceSearch')"
+                    :disabled="readonlyScope"
+                    @change="(value, option) => emit('device-change', value, option)"
+                  />
+                </a-form-item>
+              </a-col>
+            </a-row>
 
-      <div class="device-alarm-editor__preview">
-        <AIcon type="InfoCircleFilled" />
-        <span>{{ previewText }}</span>
+            <a-form-item :label="$t('DeviceAlarm.form.property')" required>
+              <a-select
+                show-search
+                :value="model.property"
+                :disabled="readonlyScope"
+                :options="propertySelectOptions"
+                :placeholder="$t('DeviceAlarm.placeholder.property')"
+                @change="(value) => emit('property-change', String(value))"
+              />
+            </a-form-item>
+          </div>
+
+          <div v-show="activePanel === 'trigger'" class="device-alarm-editor__section">
+            <a-form-item class="device-alarm-editor__trigger" :label="$t('DeviceAlarm.form.trigger')" required>
+              <a-radio-group v-model:value="model.trigger" :options="triggerOptions" />
+            </a-form-item>
+
+            <a-row :gutter="12">
+              <a-col :xs="24" :md="12">
+                <a-form-item :label="$t('DeviceAlarm.form.lower')" required>
+                  <a-input-number v-model:value="model.limit.lower" class="device-alarm-editor__number" />
+                </a-form-item>
+              </a-col>
+              <a-col :xs="24" :md="12">
+                <a-form-item :label="$t('DeviceAlarm.form.upper')" required>
+                  <a-input-number v-model:value="model.limit.upper" class="device-alarm-editor__number" />
+                </a-form-item>
+              </a-col>
+            </a-row>
+
+            <div class="device-alarm-editor__preview">
+              <AIcon type="InfoCircleFilled" />
+              <span>{{ previewText }}</span>
+            </div>
+
+            <div class="device-alarm-editor__auto-relieve">
+              <div class="device-alarm-editor__auto-relieve-header">
+                <div>
+                  <strong>{{ $t('DeviceAlarm.autoRelieve.title') }}</strong>
+                  <p>{{ $t('DeviceAlarm.autoRelieve.description') }}</p>
+                </div>
+                <a-switch v-model:checked="model.autoRelieve" />
+              </div>
+              <div v-if="model.autoRelieve" class="device-alarm-editor__relieve-preview">
+                <AIcon type="CheckCircleFilled" />
+                <span>{{ $t('DeviceAlarm.autoRelieve.condition') }}{{ relievePreviewText }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div v-show="activePanel === 'notification'" class="device-alarm-editor__section">
+            <RegistryComponent page-code="device/alarm" code="alarm-editor">
+              <DeviceAlarmNotificationConfig
+                key="notification"
+                :model="model"
+                :methods="notifyMethods"
+                :users="notifyUsers"
+                :loading="notifyLoading"
+                @load-more-users="emit('load-more-users')"
+              />
+            </RegistryComponent>
+          </div>
+        </section>
+
+        <aside class="device-alarm-editor__panel device-alarm-editor__summary">
+          <header class="device-alarm-editor__section-heading">
+            <div>
+              <h3>{{ $t('DeviceAlarm.editor.summaryTitle') }}</h3>
+              <p>{{ $t('DeviceAlarm.editor.summaryDescription') }}</p>
+            </div>
+          </header>
+          <dl class="device-alarm-editor__summary-list">
+            <div v-for="item in summaryItems" :key="item.key">
+              <dt><AIcon :type="item.icon" />{{ $t(item.labelKey) }}</dt>
+              <dd :title="item.value">{{ item.value }}</dd>
+            </div>
+          </dl>
+        </aside>
       </div>
-	    
-	    <RegistryComponent page-code="device/alarm" code="alarm-editor">
-		    <DeviceAlarmNotificationConfig
-			    key="notification"
-			    :model="model"
-			    :methods="notifyMethods"
-			    :users="notifyUsers"
-			    :loading="notifyLoading"
-			    @load-more-users="emit('load-more-users')"
-		    />
-	    </RegistryComponent>
     </a-form>
 
     <template #footer>
-      <a-space>
-        <a-button @click="emit('update:open', false)">{{ $t('DeviceAlarm.action.cancel') }}</a-button>
+      <div class="device-alarm-editor__footer">
+        <a-button @click="close">{{ $t('DeviceAlarm.action.cancel') }}</a-button>
         <a-button type="primary" @click="emit('save')">{{ $t('DeviceAlarm.action.save') }}</a-button>
-      </a-space>
+      </div>
     </template>
   </a-modal>
 </template>
 
 <script setup lang="ts">
-import { computed, type PropType } from 'vue'
+import { computed, ref, watch, type PropType } from 'vue'
 import { useI18n } from 'vue-i18n'
 import DeviceAlarmNotificationConfig from './DeviceAlarmNotificationConfig.vue'
 import IotAlarmTargetSelect from './IotAlarmTargetSelect.vue'
@@ -128,8 +203,10 @@ import type {
   DeviceAlarmTargetOption,
   ThingModelProperty,
 } from '../types'
-import { formatTriggerText, propertyIdOf, propertyNameOf } from '../utils'
+import { formatRelieveText, formatTriggerText, propertyIdOf, propertyNameOf } from '../utils'
 import type { IotAlarmTargetSelectOption, IotAlarmTargetSelectQuery } from './IotAlarmTargetSelect.vue'
+
+type EditorPanel = 'target' | 'trigger' | 'notification'
 
 const props = defineProps({
   open: { type: Boolean, default: false },
@@ -166,10 +243,23 @@ const emit = defineEmits<{
 }>()
 
 const { t: $t } = useI18n()
+const activePanel = ref<EditorPanel>('target')
+const panels = [
+  { key: 'target', icon: 'AimOutlined', labelKey: 'DeviceAlarm.editor.target', descriptionKey: 'DeviceAlarm.editor.targetDescription' },
+  { key: 'trigger', icon: 'ThunderboltOutlined', labelKey: 'DeviceAlarm.editor.trigger', descriptionKey: 'DeviceAlarm.editor.triggerDescription' },
+  { key: 'notification', icon: 'BellOutlined', labelKey: 'DeviceAlarm.editor.notification', descriptionKey: 'DeviceAlarm.editor.notificationDescription' },
+] as const
+
+watch(() => props.open, (open) => {
+  if (open) activePanel.value = 'target'
+})
 
 const title = computed(() =>
   props.readonlyScope ? $t('DeviceAlarm.title.edit') : $t('DeviceAlarm.title.create'),
 )
+
+const activePanelMeta = computed(() => panels.find(panel => panel.key === activePanel.value) ?? panels[0])
+const emptySummary = computed(() => $t('DeviceAlarm.editor.notSelected'))
 
 const propertySelectOptions = computed(() =>
   props.propertyOptions.map((property) => ({
@@ -192,107 +282,63 @@ const levelTone = (level: unknown) => {
   }
 }
 
-const previewText = computed(() => {
-  return formatTriggerText({
-    ...props.model,
-    propertyName: props.model.propertyName || $t('DeviceAlarm.preview.property'),
-  })
+const previewText = computed(() => formatTriggerText({
+  ...props.model,
+  propertyName: props.model.propertyName || $t('DeviceAlarm.preview.property'),
+}))
+
+const relievePreviewText = computed(() => formatRelieveText({
+  ...props.model,
+  propertyName: props.model.propertyName || $t('DeviceAlarm.preview.property'),
+}))
+
+const productSummary = computed(() => props.model.productName || props.productOption?.label || emptySummary.value)
+const deviceSummary = computed(() => props.model.source === 'device'
+  ? (props.model.targetName || props.deviceOption?.label || emptySummary.value)
+  : $t('DeviceAlarm.deviceRange.all'))
+const targetSummary = computed(() => [productSummary.value, deviceSummary.value].filter(Boolean).join(' / '))
+const propertySummary = computed(() => props.model.propertyName || props.model.property || emptySummary.value)
+const levelSummary = computed(() => props.levelOptions.find(option => option.value === props.model.level)?.label || emptySummary.value)
+const notificationSummary = computed(() => {
+  if (!props.model.notification.enabled) return $t('DeviceAlarm.notification.disabled')
+  const configured = Boolean(
+    props.model.notification.channelProviders.length
+    || props.model.notification.notifyChannelIds?.length
+    || props.model.notification.userIds.length,
+  )
+  return $t(configured ? 'DeviceAlarm.notification.configured' : 'DeviceAlarm.notification.enabled')
 })
+const triggerPanelSummary = computed(() =>
+  `${previewText.value} · ${
+    props.model.autoRelieve
+      ? relievePreviewText.value
+      : $t('DeviceAlarm.editor.off')
+  }`,
+)
+
+const panelSummaries = computed<Record<EditorPanel, string>>(() => ({
+  target: targetSummary.value,
+  trigger: triggerPanelSummary.value,
+  notification: notificationSummary.value,
+}))
+
+const summaryItems = computed(() => [
+  { key: 'target', icon: 'AimOutlined', labelKey: 'DeviceAlarm.editor.target', value: targetSummary.value },
+  { key: 'property', icon: 'ApartmentOutlined', labelKey: 'DeviceAlarm.form.property', value: propertySummary.value },
+  { key: 'level', icon: 'WarningOutlined', labelKey: 'DeviceAlarm.form.level', value: levelSummary.value },
+  { key: 'trigger', icon: 'ThunderboltOutlined', labelKey: 'DeviceAlarm.column.trigger', value: previewText.value },
+  {
+    key: 'relieve',
+    icon: 'CheckCircleOutlined',
+    labelKey: 'DeviceAlarm.editor.relieve',
+    value: props.model.autoRelieve ? relievePreviewText.value : $t('DeviceAlarm.editor.off'),
+  },
+  { key: 'notification', icon: 'BellOutlined', labelKey: 'DeviceAlarm.editor.notification', value: notificationSummary.value },
+])
+
+function close() {
+  emit('update:open', false)
+}
 </script>
 
-<style scoped lang="less">
-.device-alarm-editor__number {
-  width: 100%;
-}
-
-.device-alarm-editor {
-  padding-top: var(--space-2);
-	height: 34.75rem;
-	overflow-y: auto;
-	overflow-x: hidden;
-}
-
-.device-alarm-editor__title {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-.device-alarm-editor__title h3 {
-  margin: 0;
-  color: var(--jet-theme-text);
-  font-size: var(--fs-h3);
-  font-weight: 700;
-}
-
-.device-alarm-editor__title-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.75rem;
-  height: 2.75rem;
-  border-radius: var(--jet-theme-radius-lg);
-  background: rgba(117, 80, 255, 0.12);
-  color: var(--ant-primary-color);
-  font-size: 1.25rem;
-}
-
-.device-alarm-editor__trigger :deep(.ant-radio-wrapper) {
-  margin-right: var(--space-5);
-}
-
-.device-alarm-editor__preview {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  border: 0.0625rem solid var(--ant-primary-color-outline);
-  border-radius: var(--jet-theme-radius);
-  background: var(--jet-theme-primary-bg);
-  padding: var(--space-3);
-  color: var(--jet-theme-text);
-  font-weight: 600;
-}
-
-.device-alarm-editor__preview :deep(.anticon) {
-  color: var(--ant-primary-color);
-}
-
-.level-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 50%;
-  font-size: var(--fs-16);
-}
-
-.level-icon--emergency {
-  background: #ffe8e8;
-  color: #ff4d4f;
-}
-
-.level-icon--urgent {
-  background: #fff4e4;
-  color: #ff8a00;
-}
-
-.level-icon--severity {
-  background: #fffae8;
-  color: #ffb800;
-}
-
-.level-icon--ordinary {
-  background: #e8f3ff;
-  color: #2277e9;
-}
-
-.level-icon--warn {
-  background: #e6fcfc;
-  color: #13c2c2;
-}
-
-:deep(.j-card-select .j-card-select-item) {
-	border-radius: var(--r-3);
-}
-</style>
+<style scoped lang="less" src="./DeviceAlarmEditorModal.less"></style>

@@ -1,4 +1,15 @@
 <template>
+
+    <DefineEmptyCreate>
+      <j-permission-button
+          v-if="!props?.showPosition"
+          type="primary"
+          hasPermission="device/Firmware:add"
+          @click="handleAdd"
+      >
+          {{ $t('Task.index.219743-1') }}
+      </j-permission-button>
+    </DefineEmptyCreate>
     <a-drawer
         open
         :title="$t('Task.index.219743-0')"
@@ -8,14 +19,7 @@
         @close="$emit('closeDrawer')"
     >
         <template #extra>
-            <j-permission-button
-                v-if="!props?.showPosition"
-                type="primary"
-                hasPermission="device/Firmware:add"
-                @click="handleAdd"
-            >
-                {{ $t('Task.index.219743-1') }}
-            </j-permission-button>
+            <EmptyCreateButton v-if="!props?.showPosition" />
         </template>
         <div class="search-box">
             <a-space>
@@ -121,7 +125,9 @@
             </div>
           </div>
         </div>
-        <JEmpty v-if="taskList.length === 0"></JEmpty>
+        <CloudEmpty v-if="taskList.length === 0" :search="params?.terms" :search-name="$t('Save.index.646914-2')">
+          <EmptyCreateButton />
+        </CloudEmpty>
     </a-drawer>
     <Save
         v-if="visible"
@@ -143,6 +149,8 @@
 </template>
 
 <script setup name="TaskDrawer">
+import { createReusableTemplate } from '@vueuse/core'
+
 import { queryTaskPaginateNot, deleteTask } from '../../../../api/firmware';
 import Save from './Save/index.vue';
 import TaskDetail from './Detail/index.vue';
@@ -360,6 +368,8 @@ const closeDetail = () => {
 onMounted(() => {
     queryTaskList();
 });
+
+const [DefineEmptyCreate, EmptyCreateButton] = createReusableTemplate()
 </script>
 <style lang="less" scoped>
 .search-box {

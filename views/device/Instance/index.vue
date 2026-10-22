@@ -1,4 +1,22 @@
 <template>
+
+    <DefineEmptyCreateAction1>
+      <slot name="instanceAdd"></slot>
+    </DefineEmptyCreateAction1>
+    <DefineEmptyCreateAction2>
+      <j-permission-button
+          v-if="!slots.instanceAdd"
+          type="primary"
+          key="add"
+          @click="handleAdd"
+          hasPermission="device/Instance:add"
+      >
+          <template #icon
+              ><AIcon type="PlusOutlined"
+          /></template>
+          {{ $t('Instance.index.133466-0') }}
+      </j-permission-button>
+    </DefineEmptyCreateAction2>
     <j-page-container>
     <FullPage transparentBackground>
       
@@ -34,21 +52,15 @@
             :params="params"
             modeValue="CARD"
         >
+          <template #emptyText>
+            <CloudEmpty :search="params?.terms" :search-name="$t('UnifiedDeviceList.device')">
+              <a-space><EmptyCreateButtonAction1 /><EmptyCreateButtonAction2 /></a-space>
+            </CloudEmpty>
+          </template>
             <template #headerLeftRender>
                 <RegistryComponent code="addTool" is="a-space" @save="saveBtn">
-                    <slot name="instanceAdd"></slot>
-                    <j-permission-button
-                        v-if="!slots.instanceAdd"
-                        type="primary"
-                        key="add"
-                        @click="handleAdd"
-                        hasPermission="device/Instance:add"
-                    >
-                        <template #icon
-                            ><AIcon type="PlusOutlined"
-                        /></template>
-                        {{ $t('Instance.index.133466-0') }}
-                    </j-permission-button>
+                    <EmptyCreateButtonAction1 />
+                    <EmptyCreateButtonAction2 v-if="!slots.instanceAdd" />
                     <BatchDropdown
                         key="batch"
                         v-model:isCheck="isCheck"
@@ -221,6 +233,8 @@
 </template>
 
 <script setup lang="ts">
+import { createReusableTemplate } from '@vueuse/core'
+
 import {
     queryDetails,
     _delete,
@@ -1005,4 +1019,7 @@ defineExpose({
     activeAllDevice,
     disabledSelectedDevice
 })
+
+const [DefineEmptyCreateAction1, EmptyCreateButtonAction1] = createReusableTemplate()
+const [DefineEmptyCreateAction2, EmptyCreateButtonAction2] = createReusableTemplate()
 </script>

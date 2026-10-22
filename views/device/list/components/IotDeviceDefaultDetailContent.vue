@@ -35,15 +35,7 @@
         <IotDeviceOverviewTab
           v-if="activeTab === 'overview'"
           :device="device"
-          :product-template="productTemplate"
-          :health-path="healthPath"
-          :health-diagnosis="healthDiagnosis"
-          :todos="deviceTodos"
-          :simulator-session="simulatorSession"
-          :access-summary="overviewAccessSummary"
           :properties="overviewRealtimeProperties"
-          @jump-tab="setActiveTab"
-          @jump-sub-tab="setInnerTab"
         />
 
         <IotDeviceAccessDetailTab
@@ -127,9 +119,7 @@ import type { IotDeviceDetailViewState } from '../hooks/useIotDeviceDetailView'
 const props = defineProps({ state: { type: Object as PropType<IotDeviceDetailViewState>, required: true }, embedded: Boolean })
 const {
   $t,
-  healthPath,
   device,
-  healthDiagnosis,
   deviceCommands,
   commandExecution,
   commandBusy,
@@ -138,15 +128,12 @@ const {
   accessDetailRef,
   activeTab,
   setActiveTab,
-  setInnerTab,
   productTemplate,
   thingModelDefinition,
-  overviewAccessSummary,
   deviceTodos,
   realtimeProperties,
   overviewRealtimeProperties,
   realtimeEvents,
-  simulatorSession,
   healthConnectionRules,
   healthDeviationProperties,
   tabOptions,

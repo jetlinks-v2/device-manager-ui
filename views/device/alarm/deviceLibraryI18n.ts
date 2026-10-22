@@ -68,7 +68,14 @@ function localizeAlarmConfiguration(configuration: unknown, alarmName: string): 
   if (!alarmName || !Array.isArray(localized.processors)) return localized
   localized.processors = localized.processors.map((processor) => {
     const item = asRecord(processor)
-    if (item.provider !== 'device-alarm') return item
+    if (item.provider !== 'device-alarm' && item.provider !== 'device-alarm-relieve') {
+      const nestedConfiguration = asRecord(item.configuration)
+      if (!Array.isArray(nestedConfiguration.processors)) return item
+      return {
+        ...item,
+        configuration: localizeAlarmConfiguration(nestedConfiguration, alarmName),
+      }
+    }
     return {
       ...item,
       configuration: {
