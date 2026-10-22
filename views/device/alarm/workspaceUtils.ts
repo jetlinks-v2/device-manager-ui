@@ -15,6 +15,16 @@ export function canHandleRecord(record: DeviceAlarmEvent) {
     && Number.isFinite(record.alarmTime)
 }
 
+/** 优先使用设备来源 ID，兼容只保存了设备告警目标的旧记录。 */
+export function alarmDeviceId(record: DeviceAlarmEvent) {
+  const sourceId = record.sourceId?.trim()
+  if (sourceId && (!record.sourceType || record.sourceType === 'device')) return sourceId
+
+  const targetId = record.targetId?.trim()
+  if (targetId && record.targetType === 'device') return targetId
+  return undefined
+}
+
 export function alarmDuration(record: DeviceAlarmEvent, now: number) {
   const start = record.alarmTime
   const end = enumValue(record.state) === 'warning' ? now : record.handleTime
