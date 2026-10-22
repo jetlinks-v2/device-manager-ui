@@ -25,7 +25,7 @@
 - 当前入口：边缘节点分类的“批量操作”提供“算法配置”“插件配置”和状态同步。算法配置跳转 AI 模块注册的“资源中心 → 算法配置”独立菜单 `algorithm-center`（`/resources/algorithm-center`），不携带当前列表选择或查询；快捷项通过新菜单授权控制显示。插件配置继续进入批量页并使用 `batchTab=plugins`，状态同步继续调用原流程。
 - 影响范围与 owning modules：仅 `runtime-ui/modules/device-manager-ui` 的统一列表及批量导航 hook，以及 `runtime-ui/modules/jetlinks-ai-ui` 的菜单、页签注销和路由壳。统一列表被网关工作台复用，相关网关入口同步生效；接口、插件组件、列表筛选及运营端 `ui/` 不变。完整共享影响和 AI 侧权限说明见 `../jetlinks-ai-ui/docs/plans/project-algorithm-center-prototype.md` 的“算法配置独立菜单恢复”。
 - 实施入口：`views/device/list/unified/index.vue` 负责入口显示与事件绑定；`useUnifiedDeviceBatchNavigation.ts` 负责按快捷项导航，复用 core 菜单 store 和 `ConditionFilter` 查询编码。插件批量页保留已选网关 ID 或原列表查询范围；批量页仍优先应用注册表中存在的 `batchTab`，返回列表时移除临时批量参数。
-- 验证：算法跳转不传列表上下文；插件的已选网关、未选且保留原查询、未选且使用新查询三种情况和状态同步在内存执行中与原处理器一致。列表 SFC 脚本/模板/样式及新 hook TS 语法检查、`git diff --check` 通过；已有列表由 376 行减至 363 行，作为窄范围菜单恢复保留现有页面结构。未新增或修改测试、未执行浏览器和全量 lint/typecheck/build；runtime 没有独立 lint 或样式门禁脚本，本次未新增 CSS。完整复验可在 `runtime-ui/` 执行 `pnpm exec vue-tsc --noEmit -p modules/device-manager-ui/tsconfig.json`、`pnpm build:modules device-manager-ui`；实际菜单同步、授权及页面交互待人工验收。
+- 验证：算法独立跳转、三种插件查询范围和状态同步共 5 种内存导航场景通过；同步最新 `2.20` 后保留新增设备配置与空间展示逻辑。列表 SFC 脚本/模板/样式、新 hook TS 语法和 `git diff --check` 通过，列表由基线 391 行减至 378 行，作为窄范围菜单修正保留现有结构。`pnpm --config.verify-deps-before-run=false -F jetlinks-web-core build -- --module-name device-manager-ui` 构建通过（10,934 个模块，3 分 18 秒）；`pnpm exec vue-tsc --noEmit -p modules/device-manager-ui/tsconfig.json` 被未修改的 `views/link/Certificate/type.d.ts:2` 语法错误阻断。没有独立 lint 或样式门禁脚本；未新增或修改测试、CSS，未打开浏览器。实际菜单同步、授权及页面交互待人工验收。
 
 ### 统一设备列表操作按钮菜单授权
 
