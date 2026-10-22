@@ -25,6 +25,7 @@ const step = ref(0)
 const loading = ref(false)
 const importing = ref(false)
 const parsed = ref<ProductResourcePackageParseResult>()
+const packageFile = ref<File>()
 const progress = ref<any[]>([])
 const productFormRef = ref()
 const product = reactive<Record<string, any>>({})
@@ -108,6 +109,7 @@ const reset = () => {
   loading.value = false
   importing.value = false
   parsed.value = undefined
+  packageFile.value = undefined
   progress.value = []
   metadataVisible.value = false
   showSelectionValidation.value = false
@@ -141,6 +143,7 @@ const beforeUpload = async (file: File) => {
     if (!parsed.value?.manifest?.product?.id) {
       throw new Error($t('Product.resourcePackage.001-20'))
     }
+    packageFile.value = file
     Object.assign(product, JSON.parse(JSON.stringify(parsed.value.manifest.product)))
     product.deviceType = getEnumValue(product.deviceType)
     product.photoUrl = product.photoUrl || device.deviceProduct
@@ -275,17 +278,19 @@ const progressStatus = (type: string) => {
 }
 
 const startImport = () => {
-  if (!parsed.value || importing.value) return
+  if (!parsed.value || !packageFile.value || importing.value) return
   importing.value = true
   step.value = 3
-  subscription = importProductResourcePackage({
-    fileId: parsed.value.fileId,
+  const data = new FormData()
+  data.append('file', packageFile.value)
+  data.append('request', new Blob([JSON.stringify({
     accessMode: isLocalGateway.value ? 'LOCAL_GATEWAY' : 'PACKAGE',
     gatewayId: isLocalGateway.value ? resourceSelections.gateway?.id : undefined,
     product,
     categories: manifest.value!.categories,
     resourceSelections,
-  }).subscribe({
+  })], { type: 'application/json' }))
+  subscription = importProductResourcePackage(data).subscribe({
     next: (item: any) => {
       progress.value.push(item)
       if (item.type === 'completed') {

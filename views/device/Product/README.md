@@ -6,7 +6,7 @@
 
 资源包导入使用 `ResourcePackage/index.vue` 的分步弹窗：上传并预览脱敏清单、补充产品信息、选择本地协议/插件/证书/网络/网关后确认导入。存储策略属于产品基础信息，策略在当前环境不存在时会在“基础信息”步骤显示错误并禁止继续；网络类型、端口等接入资源校验保留在“设备接入”步骤。清单不含接入资源时跳过“设备接入”步骤，直接开始导入。导入进度使用 NDJSON 展示；关闭弹窗或组件卸载会取消订阅并清理导入状态。
 
-接口定义位于 `api/product.ts` 与 `api/link/type.ts`，对应后端 `/device-product/resource-package` 的解析、导入和导出接口。用户可见文案统一使用 `Product.resourcePackage.*` 的中英文语言包；资源包导出复用 `device/Product:export` 权限。
+接口定义位于 `api/product.ts` 与 `api/link/type.ts`，对应后端 `/device/product/resource-package` 的解析、导入和导出接口。解析和导入均提交原始 ZIP，前端仅在当前向导会话内保留 `File`，不会依赖文件服务生成的资源包 ID。用户可见文案统一使用 `Product.resourcePackage.*` 的中英文语言包；资源包导出复用 `device/Product:export` 权限。
 
 ## 列表状态列宽
 

@@ -1,4 +1,4 @@
-import { request, ndJson } from '@jetlinks-web/core'
+import { createNdJson, request, ndJson } from '@jetlinks-web/core'
 import type { DataCapabilityRequest } from '@jetlinks-web-core/data-capability'
 import type { DeviceMetadata, ProductItem, DepartmentItem, MetadataType  } from '../views/device/Product/typings'
 import type { OperatorItem } from '../components/FRuleEditor/Operator/typings'
@@ -13,13 +13,10 @@ export interface ProductResourcePackageManifest {
 }
 
 export interface ProductResourcePackageParseResult {
-  fileId: string
-  fileUrl: string
   manifest: ProductResourcePackageManifest
 }
 
 export interface ProductResourcePackageImportRequest {
-  fileId: string
   accessMode: 'PACKAGE' | 'LOCAL_GATEWAY'
   gatewayId?: string
   product: Record<string, any>
@@ -27,6 +24,21 @@ export interface ProductResourcePackageImportRequest {
   preprocessors?: Record<string, any>[]
   resourceSelections: Record<string, any>
 }
+
+/**
+ * 资源包导入请求体为 FormData，必须让浏览器写入含 boundary 的 multipart Content-Type。
+ * 默认 NDJSON 客户端会为 POST 设置 application/x-ndjson，故仅对此接口隔离处理。
+ */
+const resourcePackageNdJson = createNdJson({
+  handleRequest: config => {
+    if (config.data instanceof FormData) {
+      const headers = new Headers(config.headers)
+      headers.delete('Content-Type')
+      config.headers = headers
+    }
+    return config
+  },
+})
 
 /**
  * 根据条件查询产品（不带翻页）
@@ -283,15 +295,15 @@ export const syncProductCache = () => ndJson.post('/device/product/batch/_deploy
 
 /** 上传并读取产品资源包的脱敏摘要。 */
 export const parseProductResourcePackage = (data: FormData) =>
-  request.post<ProductResourcePackageParseResult>('/device-product/resource-package/_parse', data)
+  request.post<ProductResourcePackageParseResult>('/device/product/resource-package/_parse', data)
 
-/** 提交最终导入配置并按 NDJSON 接收各阶段结果。 */
-export const importProductResourcePackage = (data: ProductResourcePackageImportRequest) =>
-  ndJson.post('/device-product/resource-package/_import', data)
+/** 提交原始资源包与最终导入配置，并按 NDJSON 接收各阶段结果。 */
+export const importProductResourcePackage = (data: FormData) =>
+  resourcePackageNdJson.post('/device/product/resource-package/_import', data)
 
 /** 下载单产品可移植的 ZIP 资源包。 */
 export const exportProductResourcePackage = (productId: string) =>
-  request.get(`/device-product/resource-package/${productId}/_export`, {}, { responseType: 'blob' })
+  request.get(`/device/product/resource-package/${productId}/_export`, {}, { responseType: 'blob' })
 
 /**
  * 获取产品数量
