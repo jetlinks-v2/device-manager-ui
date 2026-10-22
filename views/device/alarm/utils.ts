@@ -13,8 +13,18 @@ import type {
 import i18n from '@jetlinks-web-core/locales'
 
 const DEVICE_ALARM_PROCESSOR = 'device-alarm'
+const DEVICE_ALARM_RELIEVE_PROCESSOR = 'device-alarm-relieve'
 const NOTIFY_PROCESSOR = 'notify'
 const NUMBER_RANGE_MATCHER = 'number-range'
+const SIMPLE_PROCESSOR = 'simple'
+const COMPOSITE_PROCESSOR = 'composite'
+
+interface DeviceAlarmConfiguration {
+  alarmProcessor: Record<string, any>
+  matcher: Record<string, any>
+  notifyProcessor?: Record<string, any>
+  relieveProcessor?: Record<string, any>
+}
 
 /** 旧配置仅保存提供者和参数；同一提供者可能存在多个通知通道，必须同时匹配参数。 */
 export function matchesAlarmNotifyMethod(notification: DeviceAlarmNotificationConfig, method: DeviceAlarmNotifyMethod) {
@@ -76,24 +86,23 @@ export function isNumberProperty(property: ThingModelProperty): boolean {
 }
 
 export function getAlarmProcessor(row?: ThingPropertyPreprocess) {
-  const processors = row?.configuration?.processors
-  if (!Array.isArray(processors)) return undefined
-  return processors.find((item) => item?.provider === DEVICE_ALARM_PROCESSOR)
+  return parseDeviceAlarmConfiguration(row)?.alarmProcessor
 }
 
 export function getNotifyProcessor(row?: ThingPropertyPreprocess) {
-  const processors = row?.configuration?.processors
-  if (!Array.isArray(processors)) return undefined
-  return processors.find((item) => item?.provider === NOTIFY_PROCESSOR)
+  return parseDeviceAlarmConfiguration(row)?.notifyProcessor
 }
 
 export function getAlarmMatcher(row?: ThingPropertyPreprocess) {
-  const matcher = row?.configuration?.matcher
-  return matcher?.provider === NUMBER_RANGE_MATCHER ? matcher : undefined
+  return parseDeviceAlarmConfiguration(row)?.matcher
+}
+
+export function hasAlarmRelieveProcessor(row?: ThingPropertyPreprocess): boolean {
+  return Boolean(parseDeviceAlarmConfiguration(row)?.relieveProcessor)
 }
 
 export function isDeviceAlarmPreprocess(row?: ThingPropertyPreprocess): boolean {
-  return Boolean(getAlarmProcessor(row))
+  return Boolean(parseDeviceAlarmConfiguration(row))
 }
 
 export function normalizeAlarmSource(row?: ThingPropertyPreprocess): DeviceAlarmSource {
@@ -110,10 +119,11 @@ export function toDeviceAlarmRow(
   targetName: string,
   property?: ThingModelProperty,
 ): DeviceAlarmRow | null {
-  if (!isDeviceAlarmPreprocess(row)) return null
-  const processorConfig = getAlarmProcessor(row)?.configuration ?? {}
-  const notifyConfig = normalizeNotification(row.notifyConfig ?? getNotifyProcessor(row)?.configuration)
-  const matcherConfig = getAlarmMatcher(row)?.configuration ?? {}
+  const alarmConfiguration = parseDeviceAlarmConfiguration(row)
+  if (!alarmConfiguration) return null
+  const processorConfig = alarmConfiguration.alarmProcessor.configuration ?? {}
+  const notifyConfig = normalizeNotification(row.notifyConfig ?? alarmConfiguration.notifyProcessor?.configuration)
+  const matcherConfig = alarmConfiguration.matcher.configuration ?? {}
   const propertyId = String(row.property ?? propertyIdOf(property ?? {}))
   const propertyName = String(row.propertyName ?? propertyNameOf(property ?? { id: propertyId }))
   const productId = String(row.templateId ?? '')
@@ -139,6 +149,7 @@ export function toDeviceAlarmRow(
       lower: toOptionalNumber(matcherConfig.min),
       upper: toOptionalNumber(matcherConfig.max),
     },
+    autoRelieve: Boolean(alarmConfiguration.relieveProcessor),
     notificationConfigured: Boolean(row.notificationConfigured ?? isNotificationConfigured(notifyConfig)),
     notificationEnabled: Boolean(row.notificationEnabled ?? isNotificationEnabled(notifyConfig)),
     notification: notifyConfig,
@@ -172,13 +183,14 @@ export function toDeviceAlarmPageRow(row: ThingPropertyPreprocess): DeviceAlarmR
 
 export function buildPreprocessPayload(form: DeviceAlarmFormModel) {
   const notification = buildNotifyConfig(form)
+  const alarmProcessorConfiguration = {
+    alarmName: form.name,
+    alarmLevel: form.level,
+  }
   const processors: Array<Record<string, any>> = [
     {
       provider: DEVICE_ALARM_PROCESSOR,
-      configuration: {
-        alarmName: form.name,
-        alarmLevel: form.level,
-      },
+      configuration: alarmProcessorConfiguration,
     },
   ]
   if (notification) {
@@ -188,21 +200,138 @@ export function buildPreprocessPayload(form: DeviceAlarmFormModel) {
     })
   }
 
+  const alarmConfiguration = {
+    matcher: buildNumberRangeMatcher(form),
+    processors,
+  }
+  if (!form.autoRelieve) {
+    return {
+      thingType: 'device',
+      provider: SIMPLE_PROCESSOR,
+      configuration: alarmConfiguration,
+    }
+  }
+
   return {
     thingType: 'device',
-    provider: 'simple',
+    provider: COMPOSITE_PROCESSOR,
     configuration: {
-      matcher: {
-        provider: NUMBER_RANGE_MATCHER,
-        configuration: {
-          min: form.limit.lower,
-          max: form.limit.upper,
-          not: form.trigger === 'outside',
+      processors: [
+        {
+          provider: SIMPLE_PROCESSOR,
+          configuration: alarmConfiguration,
         },
-      },
-      processors,
+        {
+          provider: SIMPLE_PROCESSOR,
+          configuration: {
+            matcher: buildNumberRangeMatcher(form, true),
+            processors: [
+              {
+                provider: DEVICE_ALARM_RELIEVE_PROCESSOR,
+                configuration: { ...alarmProcessorConfiguration },
+              },
+            ],
+          },
+        },
+      ],
     },
   }
+}
+
+function buildNumberRangeMatcher(form: DeviceAlarmFormModel, inverted = false) {
+  const not = form.trigger === 'outside'
+  return {
+    provider: NUMBER_RANGE_MATCHER,
+    configuration: {
+      min: form.limit.lower,
+      max: form.limit.upper,
+      not: inverted ? !not : not,
+    },
+  }
+}
+
+/**
+ * 只解析本页面拥有的两种配置：历史 simple 告警，或自动解除生成的标准 composite。
+ * 任意其他复合处理器都不进入编辑链路，避免保存时丢失未知分支。
+ */
+function parseDeviceAlarmConfiguration(row?: ThingPropertyPreprocess): DeviceAlarmConfiguration | undefined {
+  if (!row || !isRecord(row.configuration)) return undefined
+  if (row.provider === SIMPLE_PROCESSOR) {
+    return parseAlarmBranch(row.configuration)
+  }
+  if (row.provider !== COMPOSITE_PROCESSOR) return undefined
+
+  const branches = directProcessors(row.configuration)
+  if (!branches || branches.length !== 2 || branches.some(item => item.provider !== SIMPLE_PROCESSOR)) {
+    return undefined
+  }
+  const parsedBranches = branches.map(item => {
+    const configuration = isRecord(item.configuration) ? item.configuration : undefined
+    if (!configuration) return undefined
+    return {
+      alarm: parseAlarmBranch(configuration),
+      relieve: parseRelieveBranch(configuration),
+    }
+  })
+  const alarmBranches = parsedBranches.filter(item => item?.alarm)
+  const relieveBranches = parsedBranches.filter(item => item?.relieve)
+  if (alarmBranches.length !== 1 || relieveBranches.length !== 1) return undefined
+
+  const alarm = alarmBranches[0]!.alarm!
+  const relieve = relieveBranches[0]!.relieve!
+  if (!areComplementaryMatchers(alarm.matcher, relieve.matcher)) return undefined
+  return { ...alarm, relieveProcessor: relieve.processor }
+}
+
+function parseAlarmBranch(configuration: Record<string, unknown>): DeviceAlarmConfiguration | undefined {
+  const matcher = numberRangeMatcher(configuration.matcher)
+  const processors = directProcessors(configuration)
+  if (!matcher || !processors) return undefined
+  const alarms = processors.filter(item => item.provider === DEVICE_ALARM_PROCESSOR)
+  const notifications = processors.filter(item => item.provider === NOTIFY_PROCESSOR)
+  if (alarms.length !== 1 || notifications.length > 1 || alarms.length + notifications.length !== processors.length) {
+    return undefined
+  }
+  return {
+    alarmProcessor: alarms[0],
+    matcher,
+    notifyProcessor: notifications[0],
+  }
+}
+
+function parseRelieveBranch(configuration: Record<string, unknown>) {
+  const matcher = numberRangeMatcher(configuration.matcher)
+  const processors = directProcessors(configuration)
+  if (!matcher || !processors || processors.length !== 1) return undefined
+  const processor = processors[0]
+  return processor.provider === DEVICE_ALARM_RELIEVE_PROCESSOR ? { matcher, processor } : undefined
+}
+
+function directProcessors(configuration: Record<string, unknown>): Array<Record<string, any>> | undefined {
+  if (!Array.isArray(configuration.processors) || !configuration.processors.every(isRecord)) return undefined
+  return configuration.processors as Array<Record<string, any>>
+}
+
+function numberRangeMatcher(value: unknown): Record<string, any> | undefined {
+  if (!isRecord(value) || value.provider !== NUMBER_RANGE_MATCHER || !isRecord(value.configuration)) return undefined
+  return value as Record<string, any>
+}
+
+function areComplementaryMatchers(left: Record<string, any>, right: Record<string, any>): boolean {
+  const leftConfig = left.configuration as Record<string, unknown>
+  const rightConfig = right.configuration as Record<string, unknown>
+  return toOptionalNumber(leftConfig.min) === toOptionalNumber(rightConfig.min)
+    && toOptionalNumber(leftConfig.max) === toOptionalNumber(rightConfig.max)
+    && typeof leftConfig.not === 'boolean'
+    && typeof rightConfig.not === 'boolean'
+    && leftConfig.not !== rightConfig.not
+}
+
+export function formatRelieveText(row: Pick<DeviceAlarmRow, 'trigger' | 'limit' | 'propertyName'>) {
+  return formatTriggerText({
+    ...row,
+    trigger: row.trigger === 'inside' ? 'outside' : 'inside',
+  })
 }
 
 export function formatTriggerText(row: Pick<DeviceAlarmRow, 'trigger' | 'limit' | 'propertyName'>) {
