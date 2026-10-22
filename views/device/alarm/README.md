@@ -1,5 +1,13 @@
 # 物联告警规则与记录工作区
 
+## 通知对象已选人员名称回显修复
+
+- 目标与 owning module：修复运行时设备详情、产品详情编辑设备告警时，已选通知对象不在人员首屏数据中便显示用户 ID 的问题；统一显示人员名称。
+- 影响范围：仅 `runtime-ui/modules/device-manager-ui` 的设备详情、产品详情告警配置入口及告警工作区定向测试，复用告警主页面已有的“人员首屏 + 按已选 ID 查询 + 按 ID 合并”逻辑。
+- 明确不做：不修改后端接口、通知配置结构、人员权限、分页交互、告警保存链路及页面样式，不修改运营端 `ui/`。
+- 实施步骤：打开编辑器时提取已保存的 `userIds`，并行查询人员首屏和已选人员详情，合并后再传给通知对象选择框；滚动加载继续按 ID 去重合并。
+- 验证结果：`node --test tests/alarmWorkspaceView.test.mjs` 4/4 通过，`pnpm -F jetlinks-web-core build -- --module-name device-manager-ui` 在 Node 22.18.0 下构建通过（共转换 10297 个模块），`git diff --check` 通过。9200 运行页面实测确认：设备详情编辑告警时，原 UUID 标签已回显为人员名称，同时保留人员本身为数字的名称。
+
 ## 告警自动解除 V1
 
 - 目标与 owning module：在 `modules/device-manager` 和 `runtime-ui/modules/device-manager-ui` 现有设备属性预处理告警中增加“自动解除告警”开关；开启后以告警匹配条件的严格反向条件执行解除。物联告警、产品详情和设备详情复用同一公共编辑弹窗与配置协议。
