@@ -58,22 +58,36 @@ export const parseDeviceGeoJson = (payload: string): DeviceMapPoint[] => {
   }
 }
 
+/** Geo queries are finite streams: a clean EOF completes even when no location was emitted. */
 export const createDeviceMapStream = (handlers: {
   onMessage: (points: DeviceMapPoint[]) => void
+  onComplete: () => void
   onError: () => void
 }) => {
+  let opened = false
   const source = new EventSourcePolyfill(
     `${getBaseApi()}/geo/object/device/_search/geo.json?${TOKEN_KEY_URL}=${LocalStore.get(
       TOKEN_KEY
     )}&filter.paging=false`
   )
 
+  source.onopen = () => {
+    opened = true
+  }
+
   source.onmessage = (event: MessageEvent<string>) => {
     handlers.onMessage(parseDeviceGeoJson(event.data))
   }
 
-  source.onerror = () => {
-    handlers.onError()
+  source.onerror = (event: Event & { error?: unknown }) => {
+    // The polyfill reports clean EOF through onerror with a null/undefined error.
+    // An accepted SSE response is required so HTTP/protocol failures stay failures.
+    source.close()
+    if (opened && 'error' in event && event.error == null) {
+      handlers.onComplete()
+    } else {
+      handlers.onError()
+    }
   }
 
   return source

@@ -86,6 +86,11 @@ export const useDeviceMap = (info: Ref<DashboardCardInfo | undefined>, isEdit: R
         points.value = [...devices.values()]
         closeStreamLater()
       },
+      onComplete: () => {
+        if (currentRequestId !== requestId) return
+        stopStream()
+        loading.value = false
+      },
       onError: () => {
         if (currentRequestId !== requestId) return
         stopStream()
