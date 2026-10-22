@@ -1,4 +1,17 @@
 <template>
+
+  <DefineEmptyCreate>
+    <j-permission-button
+      hasPermission="link/Type:add"
+      type="primary"
+      @click="handleAdd"
+    >
+      <template #icon>
+        <AIcon type="PlusOutlined" />
+      </template>
+      {{ $t('Composite.index.636069-2') }}
+    </j-permission-button>
+  </DefineEmptyCreate>
   <div>
     <a-steps :current="stepCurrent">
       <a-step :title="$t('Composite.index.636069-17')" :key="0"></a-step>
@@ -17,16 +30,7 @@
             style="width: 300px"
             @search="handleSearch"
           />
-          <j-permission-button
-            hasPermission="link/Type:add"
-            type="primary"
-            @click="handleAdd"
-          >
-            <template #icon>
-              <AIcon type="PlusOutlined" />
-            </template>
-            {{ $t('Composite.index.636069-2') }}
-          </j-permission-button>
+          <EmptyCreateButton />
         </div>
         <j-scrollbar height="480">
           <j-pro-table
@@ -37,6 +41,11 @@
             :gridColumn="2"
             :gridColumns="[1, 2]"
           >
+            <template #emptyText>
+              <CloudEmpty :search="searchValue" :search-name="$t('DeviceDetail.edgeGuides.common.keywords.gateway')">
+                <EmptyCreateButton />
+              </CloudEmpty>
+            </template>
             <template #card="slotProps">
               <CardBox
                 :showStatus="false"
@@ -314,6 +323,8 @@
 </template>
 
 <script setup lang="ts">
+import { createReusableTemplate } from '@vueuse/core'
+
 import type { PropType } from 'vue';
 import ProviderListDrawer from './ProviderListDrawer.vue'
 import { save, update, getCompositeProviderDetail } from '@device-manager-ui/api/link/accessConfig'
@@ -531,6 +542,8 @@ watch(() => JSON.stringify(props.data), (val) => {
     }
   }
 }, {immediate: true})
+
+const [DefineEmptyCreate, EmptyCreateButton] = createReusableTemplate()
 </script>
 
 <style scoped lang="less">

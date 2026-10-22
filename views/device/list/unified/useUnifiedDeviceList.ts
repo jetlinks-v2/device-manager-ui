@@ -80,9 +80,12 @@ export function useUnifiedDeviceList() {
   let countVersion = 0
   let statusCountVersion = 0
 
+  // 搜索以已提交路由条件为准，固定所属范围和输入草稿不影响空态操作。
+  const submittedSearchTerms = computed(() => getDeviceListSearchTerms(route.query.q, scope.sidebarProps.value.areas))
+  const hasSearch = computed(() => submittedSearchTerms.value.length > 0 || status.value !== 'all')
   const scopeSearchTerms = computed<DeviceQueryTerm[]>(() => {
     const terms: DeviceQueryTerm[] = [...scope.terms.value]
-    const conditions = getDeviceListSearchTerms(route.query.q, scope.sidebarProps.value.areas)
+    const conditions = submittedSearchTerms.value
     if (conditions.length) terms.push({ terms: conditions })
     return terms
   })
@@ -212,5 +215,5 @@ export function useUnifiedDeviceList() {
   }, { immediate: true })
   void loadCounts()
   onBeforeUnmount(() => { requestVersion++; countVersion++; statusCountVersion++ })
-  return { providers, isIotEntry, tabs, activeType, activeProvider, scope, baseTerms, filterTerms, filterFields, commonFilterFields, searchTerms, status, rows, total, pageIndex, pageSize, loading, error, counts, statusCounts, selectedIds, batchMode, providerOf, changeType, search, changeStatus, refresh, changePage, clearBatchSelection }
+  return { providers, isIotEntry, tabs, activeType, activeProvider, scope, baseTerms, filterTerms, filterFields, commonFilterFields, searchTerms, hasSearch, status, rows, total, pageIndex, pageSize, loading, error, counts, statusCounts, selectedIds, batchMode, providerOf, changeType, search, changeStatus, refresh, changePage, clearBatchSelection }
 }

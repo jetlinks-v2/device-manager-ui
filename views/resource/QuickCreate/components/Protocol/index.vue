@@ -1,15 +1,19 @@
 <template>
-    <a-modal open title="协议" :width="1000" :maskClosable="false" @ok="submitData"
+
+    <DefineEmptyCreate>
+      <j-permission-button type="primary" @click="addVisible = true" hasPermission="link/Protocol:add">
+          <template #icon>
+              <AIcon type="PlusOutlined" />
+          </template>
+          新增
+      </j-permission-button>
+    </DefineEmptyCreate>
+    <a-modal v-bind="$attrs" open title="协议" :width="1000" :maskClosable="false" @ok="submitData"
         @cancel="emits('close')">
         <div class="header">
             <a-input-search allowClear style="margin-right: 8px;" placeholder="请输入"
                 @search="protocolSearch"></a-input-search>
-            <j-permission-button type="primary" @click="addVisible = true" hasPermission="link/Protocol:add">
-                <template #icon>
-                    <AIcon type="PlusOutlined" />
-                </template>
-                新增
-            </j-permission-button>
+            <EmptyCreateButton />
         </div>
         <div class="content">
             <a-row :gutter="[12, 12]" v-if="protocolList.length > 0">
@@ -24,13 +28,17 @@
                     </AccessCard>
                 </a-col>
             </a-row>
-            <CloudEmpty v-else style="margin-top: 10%" description="暂无数据" />
+            <CloudEmpty v-else style="margin-top: 10%" description="暂无数据" :search="emptyCreateSearch" :search-name="$t('DeviceAccess.accessModal.132524-4')">
+              <EmptyCreateButton />
+            </CloudEmpty>
         </div>
         <Save v-if="addVisible" :data="{}" @change="saveChange" />
     </a-modal>
 </template>
 
 <script setup>
+import { createReusableTemplate } from '@vueuse/core'
+
 import { cloneDeep } from 'lodash-es';
 import AccessCard from '../AccessCard/index.vue'
 import { getProtocolList } from '@device-manager-ui/api/link/accessConfig';
@@ -38,6 +46,9 @@ import { queryProtocolDetail } from '@device-manager-ui/api/resource/quickCreate
 import { ProtocolMapping } from './data';
 import Save from '@device-manager-ui/views/link/Protocol/Save/index.vue'
 import { onlyMessage } from "@jetlinks-web/utils";
+import { ref as emptyCreateSearchRef } from 'vue'
+const emptyCreateSearch = emptyCreateSearchRef(false)
+
 
 const props = defineProps({
     type: {
@@ -56,6 +67,8 @@ const allProtocolList = ref([])
 const addVisible = ref(false)
 const protocolCurrent = ref()
 const protocolSearch = (value) => {
+  emptyCreateSearch.value = Boolean(value?.trim())
+
     protocolList.value = value
         ? allProtocolList.value.filter(
             (i) =>
@@ -79,6 +92,7 @@ const queryProtocolList = async () => {
     if (resp.status === 200) {
         protocolList.value = resp.result;
         allProtocolList.value = resp.result;
+        emptyCreateSearch.value = false;
     }
 };
 
@@ -105,6 +119,8 @@ onMounted(() => {
     protocolCurrent.value = cloneDeep(props.data)
     queryProtocolList()
 })
+
+const [DefineEmptyCreate, EmptyCreateButton] = createReusableTemplate()
 </script>
 <style lang='less' scoped>
 .header {

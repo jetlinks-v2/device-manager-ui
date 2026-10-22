@@ -93,7 +93,7 @@
       </template>
 
       <template #deviceGroup="record">
-        <a-tooltip>
+        <a-tooltip v-if="showArea">
           <template #title>
             <span v-if="!shouldBreakDeviceGroupTooltip(record)">{{ deviceGroupFullText(record) }}</span>
             <span v-else class="iot-device-list__tooltip-stack">
@@ -110,6 +110,9 @@
             </span>
           </span>
         </a-tooltip>
+        <a-tooltip v-else :title="groupFullText(record)">
+          <span class="iot-device-list__cell-text">{{ groupText(record) }}</span>
+        </a-tooltip>
       </template>
 
       <template #action="record">
@@ -125,13 +128,15 @@
       </template>
 
       <template #emptyText>
-        <CloudEmpty type="page">
+        <CloudEmpty type="page" :search="!loadError && hasSearch" :search-name="$t('UnifiedDeviceList.device')">
           <template #description>
             <div class="iot-device-list__empty">
               <strong>{{ $t('IotDeviceList.empty.title') }}</strong>
               <span>{{ $t('IotDeviceList.empty.description') }}</span>
             </div>
           </template>
+
+          <slot v-if="!loadError" name="empty-create" />
         </CloudEmpty>
       </template>
     </j-pro-table>
@@ -152,6 +157,7 @@ const props = defineProps<{
   totalDevices: number
   selectedCount: number
   hasActiveFilters: boolean
+  hasSearch?: boolean
   loadError: string
   tableParams: Record<string, unknown>
   tablePagination: Record<string, unknown>
@@ -163,6 +169,7 @@ const props = defineProps<{
   areaFullText: (device: IotDevice) => string
   groupText: (device: IotDevice) => string
   groupFullText: (device: IotDevice) => string
+  showArea: boolean
   isDeviceDisabled: (device: IotDevice) => boolean
   actionBusyId: string
   onDetail: (deviceId: string) => void
@@ -170,7 +177,7 @@ const props = defineProps<{
   onToggle: (device: IotDevice) => void | Promise<void>
   onDelete: (device: IotDevice) => void | Promise<void>
 }>()
-const columns = useIotDeviceAssetTableColumns($t)
+const columns = useIotDeviceAssetTableColumns($t, () => props.showArea)
 const resultSummaryText = computed(() =>
   props.hasActiveFilters
     ? $t('IotDeviceList.toolbar.filteredSummary', { total: props.totalDevices })
@@ -219,6 +226,7 @@ function brandModelFullText(device: IotDevice) {
 }
 
 function deviceGroupFullText(device: IotDevice) {
+  if (!props.showArea) return props.groupFullText(device)
   return `${$t('IotDeviceList.table.areaGroupLabel')}${props.areaFullText(device)} / ${$t('IotDeviceList.table.businessGroupLabel')}${props.groupFullText(device)}`
 }
 

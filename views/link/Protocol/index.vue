@@ -1,5 +1,18 @@
 <template>
-    <j-page-container>
+
+    <DefineEmptyCreate>
+      <j-permission-button
+        type="primary"
+        @click="handleAdd"
+        hasPermission="link/Protocol:add"
+      >
+        <template #icon
+        ><AIcon type="PlusOutlined"
+        /></template>
+        {{ $t('Protocol.index.437945-0') }}
+      </j-permission-button>
+    </DefineEmptyCreate>
+    <j-page-container v-bind="$attrs">
         <div>
             <FullPage>
                 <j-pro-table
@@ -13,6 +26,11 @@
                     modeValue="CARD"
                     class="pro-table__no-padding"
                 >
+                  <template #emptyText>
+                    <CloudEmpty :search="params?.terms" :search-name="$t('DeviceAccess.accessModal.132524-4')">
+                      <EmptyCreateButton />
+                    </CloudEmpty>
+                  </template>
                     <template #headerLeftRender>
                         <div class="access-component-list-toolbar">
                             <h2 class="access-component-list-title">
@@ -28,16 +46,7 @@
 					                      target="search-protocol"
 					                      @search="handleSearch"
 			                      />
-			                      <j-permission-button
-					                      type="primary"
-					                      @click="handleAdd"
-					                      hasPermission="link/Protocol:add"
-			                      >
-					                      <template #icon
-					                      ><AIcon type="PlusOutlined"
-					                      /></template>
-					                      {{ $t('Protocol.index.437945-0') }}
-			                      </j-permission-button>
+			                      <EmptyCreateButton />
 	                      </a-flex>
                     </template>
                     <template #card="slotProps">
@@ -169,6 +178,8 @@
     </j-page-container>
 </template>
 <script lang="ts" setup name="AccessConfigPage">
+import { createReusableTemplate } from '@vueuse/core'
+
 import { list, remove } from '../../../api/link/protocol';
 import { onlyMessage } from '@jetlinks-web/utils';
 import Save from './Save/index.vue';
@@ -332,6 +343,8 @@ watch(
 const handleSearch = (e: any) => {
     params.value = e;
 };
+
+const [DefineEmptyCreate, EmptyCreateButton] = createReusableTemplate()
 </script>
 <style lang="less" scoped>
 .card-item-content {

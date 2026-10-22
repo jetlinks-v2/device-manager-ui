@@ -6,7 +6,7 @@
         class="access-guide-doc__tabs"
         size="small"
       >
-        <a-tab-pane key="guide" :tab="$t('IotDeviceAccess.guide.tab')">
+        <a-tab-pane v-if="props.showAccessGuide" key="guide" :tab="$t('IotDeviceAccess.guide.tab')">
           <a-spin :spinning="accessGuideLoading">
             <div
               v-if="accessGuideDocument"
@@ -43,7 +43,8 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-defineProps({
+const props = defineProps({
+  showAccessGuide: { type: Boolean, default: true },
   accessGuideDocument: { type: String, default: '' },
   accessGuideLoading: { type: Boolean, default: false },
   accessGuideLoadFailed: { type: Boolean, default: false },
@@ -56,7 +57,7 @@ defineEmits<{
 }>()
 
 const { t: $t } = useI18n()
-const guideTab = ref<'guide' | 'protocol'>('guide')
+const guideTab = ref<'guide' | 'protocol'>(props.showAccessGuide ? 'guide' : 'protocol')
 </script>
 
 <style scoped>

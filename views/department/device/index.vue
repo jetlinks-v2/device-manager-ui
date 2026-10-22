@@ -1,5 +1,16 @@
 <template>
-  <div class="product-container">
+
+  <DefineEmptyCreate>
+    <j-permission-button
+      :hasPermission="`${permission}:assert`"
+      type="primary"
+      @click="table.clickAdd('handle')"
+    >
+      <AIcon type="PlusOutlined"/>
+      {{ $t('device.index.988419-0') }}
+    </j-permission-button>
+  </DefineEmptyCreate>
+  <div v-bind="$attrs" class="product-container">
     <pro-search
       :columns="columns"
       target="category-device"
@@ -23,16 +34,14 @@
         }"
         :columns="columns"
       >
+        <template #emptyText>
+          <CloudEmpty :search="queryParams?.terms" :search-name="$t('UnifiedDeviceList.device')">
+            <EmptyCreateButton />
+          </CloudEmpty>
+        </template>
         <template #headerLeftRender>
           <a-space>
-            <j-permission-button
-              :hasPermission="`${permission}:assert`"
-              type="primary"
-              @click="table.clickAdd('handle')"
-            >
-              <AIcon type="PlusOutlined"/>
-              {{ $t('device.index.988419-0') }}
-            </j-permission-button>
+            <EmptyCreateButton />
             <a-dropdown trigger="hover">
               <a-button>{{ $t('device.index.988419-1') }}</a-button>
               <template #overlay>
@@ -221,6 +230,10 @@
 </template>
 
 <script setup lang="ts" name="device">
+import type { ConditionTerm } from '@jetlinks-web-core/components/ConditionFilter'
+
+import { createReusableTemplate } from '@vueuse/core'
+
 import AddDeviceOrProductDialog from '../components/AddDeviceOrProductDialog.vue';
 import EditPermissionDialog from '../components/EditPermissionDialog.vue';
 import {onlyMessage} from '@jetlinks-web-core/utils/comm';
@@ -348,7 +361,7 @@ const columns = [
     scopedSlots: true,
   },
 ];
-const queryParams = ref({});
+const queryParams = ref<{ terms?: ConditionTerm[] }>({});
 
 const tableRef = ref();
 const searchRef = ref();
@@ -613,6 +626,8 @@ watchEffect(() => {
   props.bindBool && table.clickAdd();
   emits('update:bindBool', false);
 });
+
+const [DefineEmptyCreate, EmptyCreateButton] = createReusableTemplate()
 </script>
 
 <style lang="less" scoped>

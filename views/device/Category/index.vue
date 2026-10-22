@@ -1,6 +1,17 @@
 <!--产品分类 -->
 <template>
-    <j-page-container>
+
+    <DefineEmptyCreate>
+      <j-permission-button
+          type="primary"
+          @click="add"
+          hasPermission="device/Category:add"
+      >
+          <template #icon><AIcon type="PlusOutlined" /></template>
+          {{ $t('Category.index.779033-0') }}
+      </j-permission-button>
+    </DefineEmptyCreate>
+    <j-page-container v-bind="$attrs">
     <FullPage :fixed="false" transparentBackground>
       
         <pro-search
@@ -29,15 +40,13 @@
             :params="params"
             :loading="tableLoading"
         >
+          <template #emptyText>
+            <CloudEmpty :search="params?.terms" :search-name="$t('Search.Search.673421-3')">
+              <EmptyCreateButton />
+            </CloudEmpty>
+          </template>
             <template #headerLeftRender>
-                <j-permission-button
-                    type="primary"
-                    @click="add"
-                    hasPermission="device/Category:add"
-                >
-                    <template #icon><AIcon type="PlusOutlined" /></template>
-                    {{ $t('Category.index.779033-0') }}
-                </j-permission-button>
+                <EmptyCreateButton />
             </template>
           <template #name="slotProps">
             <j-ellipsis>{{ slotProps?.i18nName || slotProps?.name }}</j-ellipsis>
@@ -82,6 +91,8 @@
     </j-page-container>
 </template>
 <script lang="ts" name="Category" setup>
+import { createReusableTemplate } from '@vueuse/core'
+
 import { queryTree, deleteTree } from '../../../api/category';
 import ModifyModal from './components/modifyModal/index.vue';
 import { onlyMessage } from '@jetlinks-web-core/utils/comm';
@@ -280,6 +291,8 @@ const { add, refresh } = toRefs(table);
 /**
  * 初始化
  */
+
+const [DefineEmptyCreate, EmptyCreateButton] = createReusableTemplate()
 </script>
 <style scoped lang="less">
 :deep(._jtable-body_1eyxz_1 ._jtable-pagination_1eyxz_43) {

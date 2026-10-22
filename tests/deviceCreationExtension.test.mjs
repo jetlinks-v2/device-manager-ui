@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url'
 
 const directory = fileURLToPath(new URL('..', import.meta.url))
 const drawerSource = readFileSync(resolve(directory, 'views/device/list/components/IotAddDeviceDrawer.vue'), 'utf8')
+const addDrawerHookSource = readFileSync(resolve(directory, 'views/device/list/hooks/useIotAddDeviceDrawer.ts'), 'utf8')
 const extensionSource = readFileSync(resolve(directory, 'deviceCreationExtension.ts'), 'utf8')
 const mediaSaveSource = readFileSync(resolve(directory, '../jetlinks-media-ui/views/Device/Save/index.vue'), 'utf8')
 const mediaProviderSource = readFileSync(resolve(directory, '../jetlinks-media-ui/deviceListProvider.ts'), 'utf8')
@@ -25,11 +26,11 @@ test('embedded media creation keeps common fields and the dialog footer in the d
   assert.match(drawerSource, /IotDeviceBasicFields[\s\S]*stack-fields[\s\S]*:on-area-change="onAreaChange"/)
   assert.match(drawerSource, /creationExtensionRef\.value\?\.submit\?\.\(\)/)
   assert.match(mediaSaveSource, /v-if="!embedded"[\s\S]*name="channel"/)
-  assert.match(mediaSaveSource, /v-if="!embedded"[\s\S]*label="ID"/)
+  assert.match(mediaSaveSource, /v-if="!embedded"[\s\S]*name="id"/)
   assert.match(mediaSaveSource, /v-if="!embedded"[\s\S]*:span="12"/)
-  assert.match(mediaSaveSource, /v-if="embedded"[\s\S]*label="ID"[\s\S]*required:\s*formData\.channel === 'gb28181-2016'/)
+  assert.match(mediaSaveSource, /v-if="embedded"[\s\S]*name="id"[\s\S]*required:\s*formData\.channel === 'gb28181-2016'/)
   assert.match(drawerSource, /:show-group="false"[\s\S]*:show-description="false"[\s\S]*creationExtensionRef/)
-  assert.match(drawerSource, /#after-configuration[\s\S]*:show-area="true"[\s\S]*:show-group="true"[\s\S]*:show-description="true"/)
+  assert.match(drawerSource, /#after-configuration[\s\S]*:show-area="spaceAreaSupported !== false"[\s\S]*:show-group="true"[\s\S]*group-multiple[\s\S]*:show-description="true"/)
   assert.match(drawerSource, /#identity-icon[\s\S]*#identity-name[\s\S]*#after-configuration/)
   assert.match(mediaSaveSource, /name="identity-icon"[\s\S]*name="identity-name"[\s\S]*name="after-configuration"/)
   assert.match(mediaSaveSource, /embedded \? 'div' : 'a-card'/)
@@ -44,6 +45,15 @@ test('device basics expose group by default and restore product search condition
   assert.match(drawerSource, /:filter-terms="productFilterTerms"/)
   assert.match(productStepSource, /watch\(\(\) => props\.filterTerms/)
   assert.match(productStepSource, /type: 'select'[\s\S]*options: async \(\) => accessConfigTypeFilter/)
+})
+
+test('device creation and editing keep group bindings multi-select while preserving a single selected space', () => {
+  assert.match(drawerSource, /:width="960"/)
+  assert.match(drawerSource, /:group-multiple="true"[\s\S]*stack-fields[\s\S]*show-icon/)
+  assert.match(drawerSource, /stack-fields[\s\S]*group-multiple[\s\S]*:on-area-change="onAreaChange"/)
+  assert.match(addDrawerHookSource, /groupId:\s*\[\]\s*as string\[\]/)
+  assert.match(addDrawerHookSource, /groupId:\s*form\.groupId\[0\][\s\S]*scenario:[\s\S]*form\.groupId\[0\]/)
+  assert.match(addDrawerHookSource, /groupIds:\s*form\.groupId/)
 })
 
 test('device icons reuse product-style upload and searches preserve raw editor terms', () => {

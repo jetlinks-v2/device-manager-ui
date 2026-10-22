@@ -1,4 +1,28 @@
  <template>
+
+    <DefineEmptyCreateAction1>
+      <j-permission-button
+          type="primary"
+          v-if="
+              detail?.accessProvider === 'official-edge-gateway'
+          "
+          hasPermission="device/Instance:update"
+          @click="
+              _current = {};
+              childVisible = true;
+          "
+          >{{ $t('ChildDevice.index.370771-0') }}</j-permission-button
+      >
+    </DefineEmptyCreateAction1>
+    <DefineEmptyCreateAction2>
+      <j-permission-button
+          type="primary"
+          @click="visible = true"
+          hasPermission="device/Instance:update"
+      >
+          {{ $t('ChildDevice.index.370771-1') }}</j-permission-button
+      >
+    </DefineEmptyCreateAction2>
     <SaveChild
         v-if="childVisible"
         @close-child-save="closeChildSave"
@@ -36,27 +60,17 @@
             :params="params"
             mode='TABLE'
         >
+          <template #emptyText>
+            <CloudEmpty :search="params?.terms" :search-name="$t('Detail.index.957187-23')">
+              <a-space><EmptyCreateButtonAction1 /><EmptyCreateButtonAction2 /></a-space>
+            </CloudEmpty>
+          </template>
             <template #headerRightRender>
                 <a-space>
-                    <j-permission-button
-                        type="primary"
-                        v-if="
+                    <EmptyCreateButtonAction1 v-if="
                             detail?.accessProvider === 'official-edge-gateway'
-                        "
-                        hasPermission="device/Instance:update"
-                        @click="
-                            _current = {};
-                            childVisible = true;
-                        "
-                        >{{ $t('ChildDevice.index.370771-0') }}</j-permission-button
-                    >
-                    <j-permission-button
-                        type="primary"
-                        @click="visible = true"
-                        hasPermission="device/Instance:update"
-                    >
-                        {{ $t('ChildDevice.index.370771-1') }}</j-permission-button
-                    >
+                        " />
+                    <EmptyCreateButtonAction2 />
                     <j-permission-button
                         type="primary"
                         hasPermission="device/Instance:update"
@@ -122,6 +136,8 @@
 </template>
 
 <script setup lang="ts">
+import { createReusableTemplate } from '@vueuse/core'
+
 import dayjs from 'dayjs';
 import {
     query,
@@ -349,6 +365,9 @@ const closeChildSave = () => {
 onMounted(() => {
     console.log(detail.value.accessProvider);
 });
+
+const [DefineEmptyCreateAction1, EmptyCreateButtonAction1] = createReusableTemplate()
+const [DefineEmptyCreateAction2, EmptyCreateButtonAction2] = createReusableTemplate()
 </script>
 
 <style lang="less">

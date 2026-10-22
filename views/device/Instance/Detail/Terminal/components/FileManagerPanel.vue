@@ -1,5 +1,33 @@
 <template>
-  <div class="file-manager-panel">
+
+  <DefineEmptyCreateAction1>
+    <a-upload
+      :show-upload-list="false"
+      :before-upload="handleBeforeUpload"
+      :disabled="!online || uploading || !displayPath"
+      multiple
+    >
+      <a-button size="small" :loading="uploading" :disabled="!online || !displayPath">
+        <template #icon>
+          <AIcon type="UploadOutlined" />
+        </template>
+        {{ $t('Terminal.index.remote-106') }}
+      </a-button>
+    </a-upload>
+  </DefineEmptyCreateAction1>
+  <DefineEmptyCreateAction2>
+    <a-button
+      size="small"
+      :disabled="!online || loading || !displayPath"
+      @click="openCreateDir"
+    >
+      <template #icon>
+        <AIcon type="FolderAddOutlined" />
+      </template>
+      {{ $t('Terminal.index.remote-107') }}
+    </a-button>
+  </DefineEmptyCreateAction2>
+  <div v-bind="$attrs" class="file-manager-panel">
     <div class="file-manager-panel__header">
       <div class="file-manager-panel__title-row">
         <div class="file-manager-panel__title-main">
@@ -67,29 +95,8 @@
           </div>
 
           <div class="file-manager-panel__toolbar-actions">
-            <a-upload
-              :show-upload-list="false"
-              :before-upload="handleBeforeUpload"
-              :disabled="!online || uploading || !displayPath"
-              multiple
-            >
-              <a-button size="small" :loading="uploading" :disabled="!online || !displayPath">
-                <template #icon>
-                  <AIcon type="UploadOutlined" />
-                </template>
-                {{ $t('Terminal.index.remote-106') }}
-              </a-button>
-            </a-upload>
-            <a-button
-              size="small"
-              :disabled="!online || loading || !displayPath"
-              @click="openCreateDir"
-            >
-              <template #icon>
-                <AIcon type="FolderAddOutlined" />
-              </template>
-              {{ $t('Terminal.index.remote-107') }}
-            </a-button>
+            <EmptyCreateButtonAction1 />
+            <EmptyCreateButtonAction2 />
           </div>
 
           <a-input-search
@@ -410,10 +417,12 @@
             </a-dropdown>
           </div>
 
-          <CloudEmpty v-else :description="$t('Terminal.index.remote-121')" class="file-manager-panel__empty">
+          <CloudEmpty v-else :description="$t('Terminal.index.remote-121')" class="file-manager-panel__empty" :search="emptyCreateSearch" :search-name="$t('device.data.751276-10')">
             <template #image>
               <AIcon type="InboxOutlined" class="file-manager-panel__empty-icon" />
             </template>
+
+            <a-space><EmptyCreateButtonAction1 /><EmptyCreateButtonAction2 /></a-space>
           </CloudEmpty>
         </a-spin>
 
@@ -537,6 +546,8 @@
 </template>
 
 <script setup lang="ts">
+import { createReusableTemplate } from '@vueuse/core'
+
 import dayjs from 'dayjs'
 import { Modal } from 'ant-design-vue'
 import { getToken, onlyMessage } from '@jetlinks-web/utils'
@@ -553,6 +564,9 @@ import {
   type RemoteSystemFileInfo,
 } from '../../../../../../api/instance'
 import { useI18n } from 'vue-i18n'
+import { ref as emptyCreateSearchRef } from 'vue'
+const emptyCreateSearch = emptyCreateSearchRef(false)
+
 
 const props = defineProps<{
   deviceId: string
@@ -1037,6 +1051,8 @@ const initFileManager = async () => {
 }
 
 const refreshFileList = () => {
+  emptyCreateSearch.value = Boolean(searchText.value.trim())
+
   loadFileList(displayPath.value)
 }
 
@@ -1780,6 +1796,9 @@ watch(
     }
   },
 )
+
+const [DefineEmptyCreateAction1, EmptyCreateButtonAction1] = createReusableTemplate()
+const [DefineEmptyCreateAction2, EmptyCreateButtonAction2] = createReusableTemplate()
 </script>
 
 <style scoped lang="less">

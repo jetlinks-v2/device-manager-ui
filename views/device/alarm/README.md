@@ -1,5 +1,102 @@
 # 物联告警规则与记录工作区
 
+## 通知对象已选人员名称回显修复
+
+- 目标与 owning module：修复运行时设备详情、产品详情编辑设备告警时，已选通知对象不在人员首屏数据中便显示用户 ID 的问题；统一显示人员名称。
+- 影响范围：仅 `runtime-ui/modules/device-manager-ui` 的设备详情、产品详情告警配置入口及告警工作区定向测试，复用告警主页面已有的“人员首屏 + 按已选 ID 查询 + 按 ID 合并”逻辑。
+- 明确不做：不修改后端接口、通知配置结构、人员权限、分页交互、告警保存链路及页面样式，不修改运营端 `ui/`。
+- 实施步骤：打开编辑器时提取已保存的 `userIds`，并行查询人员首屏和已选人员详情，合并后再传给通知对象选择框；滚动加载继续按 ID 去重合并。
+- 验证结果：`node --test tests/alarmWorkspaceView.test.mjs` 4/4 通过，`pnpm -F jetlinks-web-core build -- --module-name device-manager-ui` 在 Node 22.18.0 下构建通过（共转换 10297 个模块），`git diff --check` 通过。9200 运行页面实测确认：设备详情编辑告警时，原 UUID 标签已回显为人员名称，同时保留人员本身为数字的名称。
+
+## 告警自动解除 V1
+
+- 目标与 owning module：在 `modules/device-manager` 和 `runtime-ui/modules/device-manager-ui` 现有设备属性预处理告警中增加“自动解除告警”开关；开启后以告警匹配条件的严格反向条件执行解除。物联告警、产品详情和设备详情复用同一公共编辑弹窗与配置协议。
+- 配置契约：关闭时继续保存已发布的 `simple` 结构；开启时保存为 `composite`，其中一个 `simple` 分支使用原 `number-range` 条件执行 `device-alarm` 及可选 `notify`，另一个 `simple` 分支反转 `not` 后执行 `device-alarm-relieve`。不额外持久化 `autoRelieve` 字段，编辑时由解除分支反推开关状态。
+- 后端落点：在 `modules/device-manager/src/main/java/org/jetlinks/pro/device/message/preprocessor/` 增加 `DeviceMessageAlarmRelievePreprocessor`，注册到 `DeviceMessagePreprocessorConfiguration`，复用 `RelievedAlarmCommand` 和规则引擎已有解除、幂等、历史及事件能力。`DeviceAlarmPreprocessService` 同时兼容从 `composite` 解析通知配置。
+- 前端落点：`views/device/alarm/components/DeviceAlarmEditorModal.vue` 在告警条件预览与通知配置之间增加开关和实时解除条件预览；`types.ts` 与 `utils.ts` 统一读写新旧配置。设备库本期不展示开关，但编辑、发布、安装和还原时保留已有 `composite` 解除分支。
+- 明确不做：不新增数据库字段或 REST 接口，不修改规则引擎告警状态核心，不配置独立解除阈值、回差、延时解除或解除通知，不处理设备消息乱序，不修改运营端 `ui/modules/device-manager-ui` 边界。
+- 兼容与风险：历史 `simple` 配置不迁移；解除和触发共用同一 `alarmConfigId` 及目标标识，无活动告警时由已有规则服务按无效解除处理。编辑端只接管历史 `simple` 和本功能生成的标准双分支 `composite`，其他复合预处理器不进入编辑链路，避免保存时丢失未知分支。V1 保持当前消息到达/处理顺序语义，乱序上报仍是剩余风险。
+- 联调修复：真实设备恢复消息触发解除时，规则服务在写解除历史处因 `alarmTime` 为空发生拆箱异常。公共告警上下文与自动解除处理器统一沿用有效的设备消息时间，并以同一事件时间填充 `alarmTime` 与 `relieveTime`；规则服务继续据此拒绝早于当前告警的历史或乱序恢复消息。消息时间无效时保持为空，由规则服务按既有处理时间逻辑兜底。修复位于 `modules/jetlinks-components/things-component/src/main/java/org/jetlinks/pro/things/impl/preprocessor/internal/AbstractMessageAlarmPreprocessor.java` 与 `modules/device-manager/src/main/java/org/jetlinks/pro/device/message/preprocessor/DeviceMessageAlarmRelievePreprocessor.java`，未修改规则引擎核心。
+- 验证结果：`iot-service` Reactor 编译 52/52 模块通过；后端 3 个定向测试类共 20 项通过，覆盖公共告警上下文的消息时间透传、无效时间回退、自动解除命令参数、原消息返回及错误向上游传播。公共告警命令方法使用 `Command<Mono<R>>` 强类型执行，不再依赖运行时 `Class.cast`。前端定向测试覆盖 `simple`/`composite` 回显、区间内外两类 matcher 严格互补、关闭后回归 `simple`、非标准 `composite` 不进入编辑链路，以及触发与解除分支共用告警名称/等级、设备库 `composite` 内两个告警处理器名称的递归本地化。Node 22 下 `device-manager-ui` 运行时模块构建通过，中英文 locale JSON 解析、构建产物中的开关与 `device-alarm-relieve` 配置检查及 `git diff --check` 通过。模块级 `vue-tsc` 仍被既有 `views/link/Certificate/type.d.ts:2:30` 的 TS1005 阻断，本次未修改该文件。真实设备恢复消息的服务重载与再次上报验证仍待部署后复核。
+
+## 设备告警站内信可选状态
+
+- 目标与 owning module：在运行时前端 `runtime-ui/modules/device-manager-ui` 的物联告警、产品告警和设备告警共用通知选择中，消息模板的“设备告警” Provider 启用时允许选择站内信，不要求站内信配置模板；Provider 禁用时不可选。
+- 影响范围：仅调整 `views/device/alarm/api.ts` 的通知通道映射及告警工作区定向测试；继续以 `/notify/channel/all` 返回的 `alarm-device` Provider 和通道状态为真值源。
+- 明确不做：不修改运营端 `ui/`、后端接口、消息模板保存协议、告警保存协议、权限或其他通知通道规则。
+- 实施：移除前端对 `inside-mail` 的额外排除，保留现有通道启用状态过滤；补充“无模板的启用站内信可选、禁用站内信不可选”回归测试。
+- 风险与验证：重点确认站内信保持 `inside-mail` 的通道 ID/Provider ID，不会因缺少 `templateId` 被丢弃；执行告警工作区定向测试、模块构建和 `git diff --check`。
+- 验证结果：Node 22.18.0 下 `node scripts/test-alarm-workspace.mjs` 19/19 通过，覆盖站内信不依赖模板且禁用通道仍会被过滤；`pnpm --config.verify-deps-before-run=false build:modules device-manager-ui` 构建通过，`git diff --check` 通过。构建仅保留现有的资源路径、CSS `//` 注释、Rollup output/循环分块和大 chunk 警告；未在登录态页面上实测消息模板启停后的下拉选项刷新。
+
+## 新增/修改弹窗对齐视觉告警
+
+- 目标与 owning module：将 `runtime-ui/modules/device-manager-ui` 的物联告警新增/修改弹窗改造成与视觉告警新增/修改弹窗一致的三栏配置工作区；物联告警主页面、产品详情和设备详情继续复用 `views/device/alarm/components/DeviceAlarmEditorModal.vue`。
+- 任务级别：M。属于已有弹窗壳层和信息架构调整，方案已确认并完成页面、国际化和测试变更。
+- 参考对象：`runtime-ui/modules/jetlinks-ai-ui/views/visual-alarm-preview/components/VisualAlarmRuleDialog.vue`。两者的共同任务都是围绕单条告警规则完成多组强校验配置；只借鉴大弹层、顶部标题说明、左侧基础配置与分区导航、中间编辑区、右侧摘要和底部操作栏，不复制视觉算法、摄像头、时间计划或通知业务实现。
+
+### 交互方案档案
+
+- `solutionName`：视觉告警式三栏配置工作区，对应“配置向导 / 能力开通页”的单页分区变体；配置项之间没有强制先后关系，因此使用分区导航，不增加步骤提交语义。
+- `primaryFilterSurface`：无。
+- `contentSurface`：左侧承载告警名称、告警等级和“告警对象 / 触发与解除 / 通知配置”导航；中间将互补的触发条件与自动解除放在同一配置面板。
+- `detailCarrier`：右侧实时规则摘要，展示当前告警对象、属性、触发条件、解除条件和通知状态，不引入虚构统计数据。
+- `editMode`：新增、编辑继续共用完整配置弹层；名称、等级与各分区直接编辑，不新增独立路由。
+- `coreComponents`：继续复用 Ant Design Vue 表单控件、现有 `j-card-select`、`RegistryComponent`、`DeviceAlarmNotificationConfig` 和 `IotAlarmTargetSelect`；实施时核验当前工作区是否已有合适的固定底部操作组件，没有则沿用弹层 footer。
+- `actionPlacement`：右下固定“取消 / 保存”，保持现有保存事件和校验入口。
+- `densityTarget`：左栏紧凑；中栏每个分区只展示当前任务字段；右栏摘要不超过 8 项，长文本省略并提供完整提示。
+- `sidebarMode`：仅为弹窗内部配置导航，不新增应用级侧栏；选中态使用完整描边或弱底，不使用单侧彩色线条。
+- `confirmationMode`：按本计划确认后实施。
+- `rejectedAlternatives`：不直接导入 `jetlinks-ai-ui` 私有组件；不抽取跨模块公共三栏弹窗并同步重构视觉告警；不保留 `720px` 单列长表单；不把无强顺序的配置拆成多步提交。
+- `searchShellDecision`：不涉及搜索页壳；对象选择继续使用现有远程选择组件。
+
+### 首屏结构
+
+```text
+┌ 标题：新增/编辑告警 · 一句配置说明                         [×] ┐
+├──────────────┬────────────────────────┬──────────────────────┤
+│ 基础配置      │ 当前配置面板            │ 规则摘要             │
+│ 告警名称      │                        │ 告警对象             │
+│ 告警等级      │                        │ 触发条件             │
+│              │                        │ 解除条件             │
+│ [告警对象]    │ 对象 / 触发与解除 /     │ 通知状态             │
+│ [触发与解除]  │ 通知的当前编辑内容       │                      │
+│ [通知配置]    │                        │                      │
+├──────────────┴────────────────────────┴──────────────────────┤
+│                                             [取消] [保存]     │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### 实施边界与步骤
+
+1. 仅重构 `DeviceAlarmEditorModal.vue` 的弹层壳层、字段分区、当前分区状态和摘要展示，保留现有 `props`、`emits`、表单 model、校验和保存契约。
+2. 保留 `RegistryComponent page-code="device/alarm" code="alarm-editor"`、产品/设备固定范围与只读逻辑、自动解除配置和通知配置；通知区是否可用继续服从现有注册扩展能力。
+3. 在 `locales/lang/{zh,en}.json` 增加弹窗说明、三个配置分区、规则摘要及摘要字段文案，用户可见文本不在组件内硬编码。
+4. 宽屏采用三栏；中等宽度降级为两栏并让摘要下沉；窄屏使用全屏单栏，保持字段和底部操作可滚动、可触达。
+5. 扩充 `scripts/test-alarm-workspace.mjs` 对应结构测试，覆盖三栏壳层、分区导航、摘要、自动解除、通知扩展锚点及三个既有入口继续复用同一弹窗。
+
+### 明确不做
+
+- 不修改后端、REST 接口、配置 JSON 协议、数据库、权限、菜单和路由。
+- 不修改运营端 `ui/`，不改视觉告警模块，不新增跨模块直接依赖。
+- 不改变自动解除 V1 的 `simple` / `composite` 兼容逻辑，不增加独立解除阈值、回差或延时能力。
+- 不顺带重构物联告警列表、记录卡、查询、处理和历史弹窗。
+
+### 风险与验证
+
+- 风险：同一弹窗在主页面、产品详情和设备详情三种上下文复用，必须验证固定产品范围、只读设备范围和普通可选范围；自定义大弹层还需验证遮罩关闭、焦点、滚动和窄屏操作区。
+- 验证：运行 `node modules/device-manager-ui/scripts/test-alarm-workspace.mjs`、中英文 locale JSON 解析、`pnpm --config.verify-deps-before-run=false build:modules device-manager-ui` 和 `git diff --check`；补充大/中/小视口的新增与编辑交互检查。
+- 已知限制：模块级 `vue-tsc` 可能继续被既有 `views/link/Certificate/type.d.ts:2:30` 的 TS1005 阻断；若仍发生，只记录为既有阻塞并提供本次定向验证结果。
+
+### 实现与验证结果
+
+- `DeviceAlarmEditorModal.vue` 已改为最大 `100rem` 的三栏配置工作区：左侧保留名称、等级和“告警对象 / 触发与解除 / 通知配置”三个入口，中间将触发条件与自动解除合并编辑，右侧仍分别展示触发和解除摘要；取消、保存及关闭行为继续沿用原事件契约。
+- 新增 `DeviceAlarmEditorModal.less` 承载弹层壳层、选中态与宽屏三栏 / 中屏两栏 / 窄屏全屏单栏响应式样式。标题区仅保留平台 `.ant-modal-title` 的统一分隔线，不再给 `.ant-modal-header` 叠加通栏边框；构建产物已核对 `.device-alarm-editor-modal-wrap .ant-modal-*` 后代选择器，避免 scoped LESS 将 Modal 样式错误压平到遮罩容器。
+- 中英文资源保持 `DeviceAlarm.editor.*` key 对称，触发分区文案已表达触发与解除的合并关系；用户可见说明、导航、摘要与关闭状态均未在组件中硬编码。
+- `node modules/device-manager-ui/scripts/test-alarm-workspace.mjs` 通过，共 13 项，新增覆盖三栏结构、三分区、触发与解除合并、通知扩展锚点、响应式断点和三个入口继续复用公共弹窗。
+- Node `22.18.0` 下 `pnpm --config.verify-deps-before-run=false build:modules device-manager-ui` 通过；仅有既有资源路径、浏览器基线数据、Rollup output、CSS 注释和 chunk 体积警告。`git diff --check` 通过。
+- `pnpm exec vue-tsc --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json` 仍被既有 `views/link/Certificate/type.d.ts:2:30` 的 TS1005 阻断，本次未修改该文件。当前无登录态浏览器环境，真实新增/编辑、三个入口及大中小视口的目视交互仍待部署后复核。
+- 交付：实现提交 `498855d`；[前端 PR #340](https://github.com/jetlinks-v2/device-manager-ui/pull/340)，目标分支 `2.20`。
+
 ## 左栏前三排复用视觉告警样式（已完成，2026-09-23）
 
 - 目标与 owning module：在 `runtime-ui/modules/device-manager-ui` 中让物联告警左侧标题、搜索框和“全部告警”前三排复用视觉告警的尺寸、间距与视觉规格，确保两个页面切换时这三排没有位置跳动；视觉告警同时移除入口右侧数量，关联计划记录在 `runtime-ui/modules/jetlinks-ai-ui/docs/plans/visual-alarm-preview.md`。
@@ -55,6 +152,15 @@
 - 文案：沿用现有语义（`最近告警时间` / `告警处理`），未照搬截图里的「告警时长」（其值是时间戳，语义不自洽）与「处理告警」。
 - 验证：`node scripts/test-alarm-workspace.mjs` 8 项通过；`pnpm run build:modules device-manager-ui` 通过。用构建产物 `dist/assets/style.*.css` 直接渲染手写 DOM fixture（带真实 `data-v-*` scope）并截图，核对顶部色条、右上斜角状态位、标题+等级、2×2 字段与底栏按钮的位置与配色。
 - 未验证：无登录环境，未在真实应用里确认 antd 运行时样式、`j-badge-status` 与 `j-ellipsis` 的实际渲染；fixture 里的 antd 基础样式是静态近似（antd v5 为运行时 CSS-in-JS）。
+
+## 告警设备下钻设备告警
+
+- 目标与 owning module：在运行时前端 `runtime-ui/modules/device-manager-ui` 的物联告警记录卡中，让“告警设备”名称可点击下钻到该设备详情的设备告警页签。
+- 影响范围：仅调整运行时告警记录卡、页面容器、记录类型、设备 ID 解析工具与定向测试；复用设备来源 ID，并兼容 `targetType=device` 时的 `targetId`、现有设备详情路由和 `tab=alarm` 契约。
+- 明确不做：不修改 `ui/`，不新增路由、菜单、接口或权限，不修改整张记录卡的点击行为，不用设备名称反查 ID。
+- 实施与风险：设备 ID 优先取 `sourceType=device` 的 `sourceId`，来源 ID 缺失时仅在 `targetType=device` 时回退到 `targetId`；来源与设备目标都无有效 ID 时保持普通文本，非设备目标不伪造跳转。
+- 验证：定向测试覆盖来源 ID、设备目标 ID 回退、非设备目标降级和 `tab=alarm` 路由；执行运行时模块的定向测试、UI 样式门禁、Node 22 模块构建及 `git diff --check`。
+- 验证结果：本次新增的设备 ID 解析与下钻路由测试通过；最新 `2.20` 定向套件共 19 项，18 项通过，1 项因基线 `mapNotifyChannel` 仍过滤 `inside-mail` 与新增断言不一致而失败，与本次 7 个变更文件无关。Node 22.18.0 下 `device-manager-ui` 模块构建和 `git diff --check` 通过；`runtime-ui` 未提供 `check:ui-style` 脚本。真实页面中告警设备已渲染为按钮，点击“官方协议”后进入 `#/resources/devices/list/Detail/2110610307903660032?tab=alarm`，并正确打开“设备告警”页签。构建仅有仓库已有的资源路径、Rollup output、CSS 注释和 chunk 体积警告。
 
 ## 左侧规则列表高保真还原与滚动加载
 

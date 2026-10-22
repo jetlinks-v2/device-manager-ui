@@ -794,7 +794,10 @@ export const queryDeviceProductPage_api = async (
   if (input.deviceType) {
     terms.push({ column: 'deviceType', termType: 'eq', value: input.deviceType })
   }
-  if (input.accessProvider) {
+  const accessProviders = [...new Set(input.accessProviders?.filter(Boolean) ?? [])]
+  if (accessProviders.length) {
+    terms.push({ column: 'accessProvider', termType: 'in', value: accessProviders })
+  } else if (input.accessProvider) {
     terms.push({ column: 'accessProvider', termType: 'eq', value: input.accessProvider })
   }
 

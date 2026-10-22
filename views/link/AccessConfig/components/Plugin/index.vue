@@ -1,5 +1,17 @@
 <template>
-    <div>
+
+    <DefineEmptyCreate>
+      <j-permission-button
+          v-if="showAddBtn"
+          type="primary"
+          @click="addPlugin"
+          hasPermission="link/plugin:add"
+      >
+          <template #icon><AIcon type="PlusOutlined" /></template>
+          {{ $t('Plugin.index.626239-3') }}
+      </j-permission-button>
+    </DefineEmptyCreate>
+    <div v-bind="$attrs">
         <a-steps :current="current">
             <a-step disabled :key="0" :title="$t('Plugin.index.626239-0')" />
             <a-step disabled :key="1" :title="$t('Plugin.index.626239-1')" />
@@ -13,15 +25,7 @@
                         style="width: 300px"
                         @search="pluginSearch"
                     />
-                    <j-permission-button
-                        v-if="showAddBtn"
-                        type="primary"
-                        @click="addPlugin"
-                        hasPermission="link/plugin:add"
-                    >
-                        <template #icon><AIcon type="PlusOutlined" /></template>
-                        {{ $t('Plugin.index.626239-3') }}
-                    </j-permission-button>
+                    <EmptyCreateButton v-if="showAddBtn" />
                 </div>
                 <j-scrollbar height="480">
                     <a-row
@@ -67,11 +71,12 @@
                             </AccessCard>
                         </a-col>
                     </a-row>
-                    <j-empty
+                    <CloudEmpty
                         style="margin-top: 10%"
                         v-else
-                        :description="$t('Plugin.index.626239-6')"
-                    />
+                        :description="$t('Plugin.index.626239-6')" :search="emptyCreateSearch" :search-name="$t('components.SecondKind.311605-0')">
+                      <EmptyCreateButton />
+                    </CloudEmpty>
                 </j-scrollbar>
             </div>
             <div class="steps-box" v-else-if="current === 1">
@@ -195,6 +200,8 @@
 </template>
 
 <script lang="ts" setup name="AccessConfigPlugin">
+import { createReusableTemplate } from '@vueuse/core'
+
 import {
     save,
     update,
@@ -209,6 +216,9 @@ import { useI18n } from 'vue-i18n';
 import { useTabSaveSuccessBack } from '@jetlinks-web-core/hooks'
 import { I18nTextField } from '@jetlinks-web-core/components';
 import DeviceLibraryBizKeyPicker from '../DeviceLibraryBizKeyPicker.vue';
+import { ref as emptyCreateSearchRef } from 'vue'
+const emptyCreateSearch = emptyCreateSearchRef(false)
+
 
 const { t: $t } = useI18n();
 const props = defineProps({
@@ -250,6 +260,8 @@ const config = ref<any>([]);
 const { onBack } = useTabSaveSuccessBack()
 
 const queryPlugin = (params = {}) => {
+  emptyCreateSearch.value = 'terms' in params && Array.isArray(params.terms) && params.terms.some(term => String(term.value ?? '').replace(/%/g, '').trim().length > 0)
+
     getPluginList({
         terms: [
             {
@@ -456,6 +468,8 @@ onMounted(() => {
 });
 
 queryPlugin();
+
+const [DefineEmptyCreate, EmptyCreateButton] = createReusableTemplate()
 </script>
 
 <style scoped lang="less">

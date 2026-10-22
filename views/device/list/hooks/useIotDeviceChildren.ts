@@ -75,6 +75,7 @@ export function useIotDeviceChildren(
   const productOptions = computed(() => childProducts.value.map((item) => ({ label: item.name, value: item.id })))
 
   const {
+    hasSearch,
     filterTerms,
     filterFields,
     commonFilterFields,
@@ -401,6 +402,7 @@ export function useIotDeviceChildren(
     filterFields,
     filterTerms,
     formatTime,
+    hasSearch,
     handleFilterSearch,
     handleFilterTermsUpdate,
     loading,
