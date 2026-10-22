@@ -205,6 +205,19 @@ function confirmRemove(row: DeviceAlarmRow) {
 .alarm-all-records__content strong { overflow: hidden; color: var(--ink-1); font-size: var(--fs-14); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .alarm-all-records__title { display: flex; min-width: 0; align-items: center; gap: var(--space-2); }
 .alarm-scroll { flex: 1; min-height: 0; overflow-y: auto; }
+.alarm-scroll:has(.cloud-empty) {
+  display: flex;
+  flex-direction: column;
+
+  :deep(.ant-spin-nested-loading),
+  :deep(.ant-spin-container) {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    flex-direction: column;
+    justify-content: safe center;
+  }
+}
 .alarm-rule-more { display: flex; min-height: 2.25rem; align-items: center; justify-content: center; gap: var(--space-1); color: var(--jet-theme-text-secondary); font-size: var(--fs-12); }
 .alarm-rule-footer { flex-shrink: 0; }
 .alarm-record-table { flex: 1; min-height: 0; }
