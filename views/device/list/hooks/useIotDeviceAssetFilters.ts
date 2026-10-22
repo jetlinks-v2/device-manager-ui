@@ -207,7 +207,7 @@ export function useIotDeviceAssetFilters(
         type: 'select',
         defaultTermType: 'eq',
         options: areaFilterOptions.value,
-        matchTokens: ['区域分组', '所属区域', '区域', 'area'],
+        matchTokens: ['空间', '所属空间', '区域分组', '所属区域', '区域', 'area'],
         optionPanel: {
           multiple: false,
           showSearch: true,
@@ -319,7 +319,7 @@ export function useIotDeviceAssetFilters(
       if (spaceAreaSupported.value !== true) return null
       const ids = [...new Set(normalizeTermValues(term.value).flatMap(collectAreaScopeIds))]
       if (!ids.length) return null
-      // 所属区域是独立空间绑定关系，转成后端已有的设备 ID 自定义 term 查询。
+      // 所属空间是独立空间绑定关系，转成后端已有的设备 ID 自定义 term 查询。
       return {
         column: 'id',
         termType: 'space-bind$device',
