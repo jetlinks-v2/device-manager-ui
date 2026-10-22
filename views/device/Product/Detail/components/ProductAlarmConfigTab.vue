@@ -96,6 +96,7 @@ import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
 import { useAuthStore } from '@jetlinks-web-core/store'
 import { useProductStore } from '@device-manager-ui/store/product'
+import { mergeNotifyUsersById } from '@device-manager-ui/utils/notifyUser'
 import DeviceAlarmEditorModal from '@device-manager-ui/views/device/alarm/components/DeviceAlarmEditorModal.vue'
 import {
   deviceAlarmApi,
@@ -237,15 +238,24 @@ async function remove(row: ProductAlarmRow) {
   await load()
 }
 
+/** 同时解析已保存的通知用户，避免未出现在首屏的选中项回退显示用户 ID。 */
 async function loadNotifyResources() {
   notifyLoading.value = true
   try {
-    const [methods, users] = await Promise.all([
+    const selectedUserIds = [...new Set(form.value.notification.userIds.map(String).filter(Boolean))]
+    const [methods, users, selectedUsers] = await Promise.all([
       queryDeviceAlarmNotifyMethods().catch(() => []),
       queryDeviceAlarmNotifyUsers({ pageIndex: 0 }).catch(() => ({ data: [], total: 0 })),
+      selectedUserIds.length
+        ? queryDeviceAlarmNotifyUsers({ paging: false, userIds: selectedUserIds }).catch(() => ({ data: [], total: 0 }))
+        : Promise.resolve({ data: [], total: 0 }),
     ])
     notifyMethods.value = methods
-    notifyUsers.value = users.data
+    const retainedUsers = notifyUsers.value.filter((user) => selectedUserIds.includes(user.id))
+    notifyUsers.value = mergeNotifyUsersById(
+      retainedUsers,
+      mergeNotifyUsersById(selectedUsers.data, users.data),
+    )
     notifyUserPageIndex.value = 0
     notifyUserTotal.value = users.total
   } finally {
@@ -258,9 +268,7 @@ async function loadMoreNotifyUsers() {
   notifyLoading.value = true
   try {
     const page = await queryDeviceAlarmNotifyUsers({ pageIndex: notifyUserPageIndex.value + 1 })
-    const userMap = new Map(notifyUsers.value.map((user) => [user.id, user]))
-    page.data.forEach((user) => userMap.set(user.id, user))
-    notifyUsers.value = [...userMap.values()]
+    notifyUsers.value = mergeNotifyUsersById(notifyUsers.value, page.data)
     notifyUserPageIndex.value += 1
     notifyUserTotal.value = page.total
   } finally {
