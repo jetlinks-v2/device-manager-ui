@@ -99,6 +99,7 @@
 
       <IotDeviceAccessGuideAside
         v-if="showRightGuide"
+        :show-access-guide="showAccessGuide"
         :access-guide-document="accessGuideDocument"
         :access-guide-loading="accessGuideLoading"
         :access-guide-load-failed="accessGuideLoadFailed"
@@ -156,6 +157,7 @@
 import type { PropType } from 'vue'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { isPrivateDeployment } from '@jetlinks-web-core/utils/deployment'
 import type { DeviceTemplate } from '../../services/device-library/types'
 import { useIotDeviceAccessDetail } from '../../hooks/useIotDeviceAccessDetail'
 import type { IotDevice } from '../../types'
@@ -200,7 +202,8 @@ const {
   savingConfig,
 } = useIotDeviceAccessDetail(props, deviceId => emit('configSaved', deviceId))
 
-const showRightGuide = computed(() => Boolean(accessDetail.value?.id))
+const showAccessGuide = !isPrivateDeployment()
+const showRightGuide = computed(() => Boolean(accessDetail.value?.id) && (showAccessGuide || Boolean(protocolDocument.value)))
 const isDisabled = computed(() => props.device.status === 'disabled' || props.device.connectionStatus === 'disabled')
 const isOnline = computed(() => props.device.status === 'online' || props.device.status === 'alarm')
 const accessModeText = computed(() => displayText(accessDetail.value?.name || props.device.accessName || props.device.accessMode))

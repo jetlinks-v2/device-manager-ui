@@ -106,12 +106,15 @@
 								    </small>
 						    </template>
 						    <template v-else-if="column.key === 'area'">
+							    <template v-if="spaceAreaSupported !== false">
 								    <div>
 									    <j-ellipsis>{{ formatAreaName(record) }}</j-ellipsis>
 								    </div>
 								    <small>
-									    <j-ellipsis>{{ record.groupBindings?.map(group => group.name).join('、') || record.groupName || t('IotDeviceList.scope.unassignedGroup') }}</j-ellipsis>
+									    <j-ellipsis>{{ formatGroupName(record) }}</j-ellipsis>
 								    </small>
+							    </template>
+							    <j-ellipsis v-else>{{ formatGroupName(record) }}</j-ellipsis>
 						    </template>
 							    <template v-else-if="column.key === 'createdAt'">{{ formatTableTime(record.createdAt) }}</template>
 							    <template v-else-if="column.key === 'lastReportTime'">{{ formatTableTime(record.lastReportTime) }}</template>
@@ -258,6 +261,11 @@ function formatAreaName(record: { areaBindings?: Array<{ area?: string }>; area?
   const isEmptyArea = !record.area || ['--', '—'].includes(record.area)
   return boundAreas || (isEmptyArea ? t('IotDeviceList.scope.unboundArea') : record.area)
 }
+function formatGroupName(record: { groupBindings?: Array<{ name?: string }>; groupName?: string }) {
+  return record.groupBindings?.map(group => group.name).filter(Boolean).join('、')
+    || record.groupName
+    || t('IotDeviceList.scope.unassignedGroup')
+}
 function formatBrandModel(value?: string) {
   const normalized = value?.trim()
   return normalized && !['--', '—'].includes(normalized)
@@ -319,11 +327,17 @@ const statusOptions = computed(() => ['online', 'offline', 'disabled'].map(value
   value, label: t(`UnifiedDeviceList.${value}`), count: statusCounts.value[value] ?? '—',
 })))
 const rowSelection = computed(() => ({ selectedRowKeys: selectedIds.value, onChange: (keys: Array<string | number>) => { selectedIds.value = keys.map(String); batchMode.value = keys.length > 0 } }))
+// 未启用空间模块时，列表不展示无意义的空间空态，仅保留设备分组。
+const scopeColumn = computed(() => ({
+  title: t(spaceAreaSupported.value === false ? 'UnifiedDeviceList.group' : 'UnifiedDeviceList.areaAndGroup'),
+  key: 'area',
+  width: spaceAreaSupported.value === false ? 180 : 220,
+}))
 const columns = computed(() => [
   { title: t('UnifiedDeviceList.name'), key: 'name', width: 280, fixed: 'left' },
   { title: t('UnifiedDeviceList.product'), key: 'productName', width: 180 },
   { title: t('IotDeviceList.table.brandModel'), key: 'brandModel', width: 160 },
-  { title: t('UnifiedDeviceList.areaAndGroup'), key: 'area', width: 220 },
+  scopeColumn.value,
   { title: t('UnifiedDeviceList.status'), key: 'status', width: 100 },
   ...(activeType.value === 'all' ? [{ title: t('IotDeviceDetail.detail.lastReport'), key: 'lastReportTime', width: 160 }] : []),
   ...(activeType.value === 'all' ? [{ title: t('Instance.index.133466-5'), key: 'createdAt', width: 160 }] : []),

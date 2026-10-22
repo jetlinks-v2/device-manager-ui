@@ -125,7 +125,7 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
   let libraryRequestSequence = 0
 
   const form = reactive({
-    id: '', name: '', areaId: '', area: '', groupId: '', description: '', imageUrl: '', i18nMessages: {} as Record<string, Record<string, string>>,
+    id: '', name: '', areaId: '', area: '', groupId: [] as string[], description: '', imageUrl: '', i18nMessages: {} as Record<string, Record<string, string>>,
   })
   const selectableAreas = computed(() => areaOptions.value)
   const areaTreeData = computed(() => buildAreaTreeData(selectableAreas.value))
@@ -375,7 +375,7 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
 
   function clearBasicFields() {
     creationMode.value = 'local'
-    form.id = ''; form.name = ''; form.areaId = ''; form.area = ''; form.groupId = ''; form.description = ''; form.i18nMessages = {}
+    form.id = ''; form.name = ''; form.areaId = ''; form.area = ''; form.groupId = []; form.description = ''; form.i18nMessages = {}
     imageUpload.clearImage()
     form.imageUrl = imageUpload.imageUrl.value
     errorMessage.value = ''
@@ -394,7 +394,7 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
     areaOptions.value = []; groupOptions.value = []
     productMessage.value = ''; libraryMessage.value = ''; errorMessage.value = ''; installProgressLogs.value = []
     busy.value = false; submitAction.value = ''
-    form.id = ''; form.name = ''; form.areaId = ''; form.area = ''; form.groupId = ''; form.description = ''; form.i18nMessages = {}
+    form.id = ''; form.name = ''; form.areaId = ''; form.area = ''; form.groupId = []; form.description = ''; form.i18nMessages = {}
     imageUpload.clearImage(); form.imageUrl = ''
   }
 
@@ -406,8 +406,9 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
   function buildDeviceCreateInput(product: IotDeviceProductTemplate | undefined, imageUrl: string) {
     return {
       id: form.id || undefined, projectId: props.projectId, productKey: product?.id || '', productName: product?.name, productDeviceType: product?.deviceType,
-      parentId: props.parentId, name: form.name, areaId: form.areaId, area: form.area, groupId: form.groupId,
-      scenario: groupOptions.value.find((group) => group.id === form.groupId)?.name,
+      parentId: props.parentId, name: form.name, areaId: form.areaId, area: form.area, groupId: form.groupId[0],
+      // 设备实例的历史场景字段只能存一个值，完整分组关系在创建后通过绑定接口保存。
+      scenario: groupOptions.value.find((group) => group.id === form.groupId[0])?.name,
       imageUrl, description: form.description, i18nMessages: form.i18nMessages,
       ...(creationSource.value === 'product' && creationMode.value === 'cloud' ? {
         configuration: { type: 'cloud' as const },
@@ -421,10 +422,10 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
   async function bindCreatedDevice(deviceId: string, product: IotDeviceProductTemplate) {
     try {
       await saveIotDeviceAreaGroupBindings({
-        deviceId, deviceName: form.name, productName: product.name, areaId: form.areaId, groupId: form.groupId,
+        deviceId, deviceName: form.name, productName: product.name, areaId: form.areaId, groupIds: form.groupId,
       })
     } catch (error) {
-      console.warn('[iot-ui] 设备已创建，但区域或分组绑定失败', error)
+      console.warn('[iot-ui] 设备已创建，但空间或分组绑定失败', error)
     }
   }
 

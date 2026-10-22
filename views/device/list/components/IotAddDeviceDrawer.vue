@@ -1,5 +1,5 @@
 <template>
-  <a-modal :open="open" :width="isEditMode ? 680 : 960" :mask-closable="false" centered @cancel="onActiveClose">
+  <a-modal :open="open" :width="960" :mask-closable="false" centered @cancel="onActiveClose">
     <template #title>
       <IotAddDeviceModalTitle :edit-mode="isEditMode" :current-step="currentStep" :creating="isCreating" :creation-source="creationSource" />
     </template>
@@ -54,6 +54,7 @@
               :show-id="false"
               :show-area="spaceAreaSupported !== false"
               :show-group="true"
+              group-multiple
               :show-description="true"
               :on-area-change="onAreaChange"
             />
@@ -67,6 +68,7 @@
           :area-tree-data="activeAreaTreeData"
           :group-tree-data="activeGroupTreeData"
           :group-multiple="true"
+          stack-fields
           show-icon
           :show-area="editSpaceAreaSupported !== false"
           :on-area-change="activeOnAreaChange"
@@ -132,6 +134,7 @@
             :area-tree-data="areaTreeData"
             :group-tree-data="groupTreeData"
             stack-fields
+            group-multiple
             :on-area-change="onAreaChange"
             show-icon
             :show-area="spaceAreaSupported !== false"

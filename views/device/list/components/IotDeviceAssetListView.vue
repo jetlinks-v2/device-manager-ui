@@ -56,6 +56,7 @@
               :area-full-text="areaFullText"
               :group-text="groupText"
               :group-full-text="groupFullText"
+              :show-area="spaceAreaSupported !== false"
               :is-device-disabled="isDeviceDisabled"
               :action-busy-id="actionBusyId"
               :on-detail="goToDetail"

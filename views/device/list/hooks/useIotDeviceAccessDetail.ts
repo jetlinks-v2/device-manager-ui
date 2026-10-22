@@ -3,6 +3,7 @@ import { useI18n } from 'vue-i18n'
 import useClipboard from 'vue-clipboard3'
 import { marked } from 'marked'
 import { onlyMessage } from '@jetlinks-web/utils'
+import { isPrivateDeployment } from '@jetlinks-web-core/utils/deployment'
 
 import { iotDeviceDetailRealApi, type DeviceAccessDetail } from '../services/iotDeviceDetailReal.service'
 import type { IotDevice } from '../types'
@@ -66,6 +67,7 @@ export function useIotDeviceAccessDetail(props: Readonly<IotDeviceAccessDetailPr
   const savingConfig = ref(false)
   const resettingPrincipal = ref(false)
   const configDraft = ref<Record<string, any>>({})
+  const showAccessGuide = !isPrivateDeployment()
   const {
     accessGuideDocument,
     accessGuideLoadFailed,
@@ -251,7 +253,7 @@ export function useIotDeviceAccessDetail(props: Readonly<IotDeviceAccessDetailPr
       loadAccessDetail(),
       loadDeviceConfiguration(),
       loadPrincipal(),
-      loadAccessGuideDocument(),
+      ...(showAccessGuide ? [loadAccessGuideDocument()] : []),
     ])
   }
 
