@@ -8121,5 +8121,7 @@
     "ModbusMapping.ui.modbusDescription": "在表格中配置寄存器地址与设备测点的对应关系，适用于常见 Modbus 仪表与网关。",
     "ModbusMapping.ui.javascriptLabel": "脚本解析",
     "ModbusMapping.ui.javascriptDescription": "自行编写解析规则，按设备实际上报格式把数据转成平台能识别的测点数据。",
-    "ModbusMapping.ui.bitIndexLabel": "第 {index} 位"
+    "ModbusMapping.ui.bitIndexLabel": "第 {index} 位",
+  "EmptyCreate.names.relationships": "关系",
+  "EmptyCreate.names.firmware": "固件"
 }

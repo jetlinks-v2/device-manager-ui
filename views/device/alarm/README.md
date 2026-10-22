@@ -1,5 +1,13 @@
 # 物联告警规则与记录工作区
 
+## 通知对象已选人员名称回显修复
+
+- 目标与 owning module：修复运行时设备详情、产品详情编辑设备告警时，已选通知对象不在人员首屏数据中便显示用户 ID 的问题；统一显示人员名称。
+- 影响范围：仅 `runtime-ui/modules/device-manager-ui` 的设备详情、产品详情告警配置入口及告警工作区定向测试，复用告警主页面已有的“人员首屏 + 按已选 ID 查询 + 按 ID 合并”逻辑。
+- 明确不做：不修改后端接口、通知配置结构、人员权限、分页交互、告警保存链路及页面样式，不修改运营端 `ui/`。
+- 实施步骤：打开编辑器时提取已保存的 `userIds`，并行查询人员首屏和已选人员详情，合并后再传给通知对象选择框；滚动加载继续按 ID 去重合并。
+- 验证结果：`node --test tests/alarmWorkspaceView.test.mjs` 4/4 通过，`pnpm -F jetlinks-web-core build -- --module-name device-manager-ui` 在 Node 22.18.0 下构建通过（共转换 10297 个模块），`git diff --check` 通过。9200 运行页面实测确认：设备详情编辑告警时，原 UUID 标签已回显为人员名称，同时保留人员本身为数字的名称。
+
 ## 告警自动解除 V1
 
 - 目标与 owning module：在 `modules/device-manager` 和 `runtime-ui/modules/device-manager-ui` 现有设备属性预处理告警中增加“自动解除告警”开关；开启后以告警匹配条件的严格反向条件执行解除。物联告警、产品详情和设备详情复用同一公共编辑弹窗与配置协议。
@@ -10,6 +18,15 @@
 - 兼容与风险：历史 `simple` 配置不迁移；解除和触发共用同一 `alarmConfigId` 及目标标识，无活动告警时由已有规则服务按无效解除处理。编辑端只接管历史 `simple` 和本功能生成的标准双分支 `composite`，其他复合预处理器不进入编辑链路，避免保存时丢失未知分支。V1 保持当前消息到达/处理顺序语义，乱序上报仍是剩余风险。
 - 联调修复：真实设备恢复消息触发解除时，规则服务在写解除历史处因 `alarmTime` 为空发生拆箱异常。公共告警上下文与自动解除处理器统一沿用有效的设备消息时间，并以同一事件时间填充 `alarmTime` 与 `relieveTime`；规则服务继续据此拒绝早于当前告警的历史或乱序恢复消息。消息时间无效时保持为空，由规则服务按既有处理时间逻辑兜底。修复位于 `modules/jetlinks-components/things-component/src/main/java/org/jetlinks/pro/things/impl/preprocessor/internal/AbstractMessageAlarmPreprocessor.java` 与 `modules/device-manager/src/main/java/org/jetlinks/pro/device/message/preprocessor/DeviceMessageAlarmRelievePreprocessor.java`，未修改规则引擎核心。
 - 验证结果：`iot-service` Reactor 编译 52/52 模块通过；后端 3 个定向测试类共 20 项通过，覆盖公共告警上下文的消息时间透传、无效时间回退、自动解除命令参数、原消息返回及错误向上游传播。公共告警命令方法使用 `Command<Mono<R>>` 强类型执行，不再依赖运行时 `Class.cast`。前端定向测试覆盖 `simple`/`composite` 回显、区间内外两类 matcher 严格互补、关闭后回归 `simple`、非标准 `composite` 不进入编辑链路，以及触发与解除分支共用告警名称/等级、设备库 `composite` 内两个告警处理器名称的递归本地化。Node 22 下 `device-manager-ui` 运行时模块构建通过，中英文 locale JSON 解析、构建产物中的开关与 `device-alarm-relieve` 配置检查及 `git diff --check` 通过。模块级 `vue-tsc` 仍被既有 `views/link/Certificate/type.d.ts:2:30` 的 TS1005 阻断，本次未修改该文件。真实设备恢复消息的服务重载与再次上报验证仍待部署后复核。
+
+## 设备告警站内信可选状态
+
+- 目标与 owning module：在运行时前端 `runtime-ui/modules/device-manager-ui` 的物联告警、产品告警和设备告警共用通知选择中，消息模板的“设备告警” Provider 启用时允许选择站内信，不要求站内信配置模板；Provider 禁用时不可选。
+- 影响范围：仅调整 `views/device/alarm/api.ts` 的通知通道映射及告警工作区定向测试；继续以 `/notify/channel/all` 返回的 `alarm-device` Provider 和通道状态为真值源。
+- 明确不做：不修改运营端 `ui/`、后端接口、消息模板保存协议、告警保存协议、权限或其他通知通道规则。
+- 实施：移除前端对 `inside-mail` 的额外排除，保留现有通道启用状态过滤；补充“无模板的启用站内信可选、禁用站内信不可选”回归测试。
+- 风险与验证：重点确认站内信保持 `inside-mail` 的通道 ID/Provider ID，不会因缺少 `templateId` 被丢弃；执行告警工作区定向测试、模块构建和 `git diff --check`。
+- 验证结果：Node 22.18.0 下 `node scripts/test-alarm-workspace.mjs` 19/19 通过，覆盖站内信不依赖模板且禁用通道仍会被过滤；`pnpm --config.verify-deps-before-run=false build:modules device-manager-ui` 构建通过，`git diff --check` 通过。构建仅保留现有的资源路径、CSS `//` 注释、Rollup output/循环分块和大 chunk 警告；未在登录态页面上实测消息模板启停后的下拉选项刷新。
 
 ## 新增/修改弹窗对齐视觉告警
 
@@ -135,6 +152,15 @@
 - 文案：沿用现有语义（`最近告警时间` / `告警处理`），未照搬截图里的「告警时长」（其值是时间戳，语义不自洽）与「处理告警」。
 - 验证：`node scripts/test-alarm-workspace.mjs` 8 项通过；`pnpm run build:modules device-manager-ui` 通过。用构建产物 `dist/assets/style.*.css` 直接渲染手写 DOM fixture（带真实 `data-v-*` scope）并截图，核对顶部色条、右上斜角状态位、标题+等级、2×2 字段与底栏按钮的位置与配色。
 - 未验证：无登录环境，未在真实应用里确认 antd 运行时样式、`j-badge-status` 与 `j-ellipsis` 的实际渲染；fixture 里的 antd 基础样式是静态近似（antd v5 为运行时 CSS-in-JS）。
+
+## 告警设备下钻设备告警
+
+- 目标与 owning module：在运行时前端 `runtime-ui/modules/device-manager-ui` 的物联告警记录卡中，让“告警设备”名称可点击下钻到该设备详情的设备告警页签。
+- 影响范围：仅调整运行时告警记录卡、页面容器、记录类型、设备 ID 解析工具与定向测试；复用设备来源 ID，并兼容 `targetType=device` 时的 `targetId`、现有设备详情路由和 `tab=alarm` 契约。
+- 明确不做：不修改 `ui/`，不新增路由、菜单、接口或权限，不修改整张记录卡的点击行为，不用设备名称反查 ID。
+- 实施与风险：设备 ID 优先取 `sourceType=device` 的 `sourceId`，来源 ID 缺失时仅在 `targetType=device` 时回退到 `targetId`；来源与设备目标都无有效 ID 时保持普通文本，非设备目标不伪造跳转。
+- 验证：定向测试覆盖来源 ID、设备目标 ID 回退、非设备目标降级和 `tab=alarm` 路由；执行运行时模块的定向测试、UI 样式门禁、Node 22 模块构建及 `git diff --check`。
+- 验证结果：本次新增的设备 ID 解析与下钻路由测试通过；最新 `2.20` 定向套件共 19 项，18 项通过，1 项因基线 `mapNotifyChannel` 仍过滤 `inside-mail` 与新增断言不一致而失败，与本次 7 个变更文件无关。Node 22.18.0 下 `device-manager-ui` 模块构建和 `git diff --check` 通过；`runtime-ui` 未提供 `check:ui-style` 脚本。真实页面中告警设备已渲染为按钮，点击“官方协议”后进入 `#/resources/devices/list/Detail/2110610307903660032?tab=alarm`，并正确打开“设备告警”页签。构建仅有仓库已有的资源路径、Rollup output、CSS 注释和 chunk 体积警告。
 
 ## 左侧规则列表高保真还原与滚动加载
 

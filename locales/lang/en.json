@@ -8120,5 +8120,7 @@
     "ModbusMapping.ui.modbusDescription": "Map register addresses to device data points in the table for common Modbus instruments and gateways.",
     "ModbusMapping.ui.javascriptLabel": "Script Codec",
     "ModbusMapping.ui.javascriptDescription": "Write custom parsing rules to convert the device payload format into data points recognized by the platform.",
-    "ModbusMapping.ui.bitIndexLabel": "Bit {index}"
+    "ModbusMapping.ui.bitIndexLabel": "Bit {index}",
+  "EmptyCreate.names.relationships": "relationships",
+  "EmptyCreate.names.firmware": "firmware"
 }

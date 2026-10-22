@@ -66,7 +66,7 @@
                          :request="recordTable.request" :grid-columns="[1, 2, 3, 3]" :alert-show="false" :body-style="{ padding: 0 }">
                 <template #card="record">
                   <DeviceAlarmRecordCard :row="record" :levels="levelOptions" :now="now.getTime()"
-                                         @handle="handling.show" @history="history.show" />
+                                         @handle="handling.show" @history="history.show" @device-alarm="openDeviceAlarm" />
                 </template>
               </JProTable>
             </section>
@@ -96,6 +96,7 @@ import { reactive } from 'vue'
 import { useNow } from '@vueuse/core'
 import { message, Modal } from 'ant-design-vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter } from 'vue-router'
 import ConditionFilter from '@jetlinks-web-core/components/ConditionFilter'
 import DeviceAlarmEditorModal from './components/DeviceAlarmEditorModal.vue'
 import DeviceAlarmRuleCard from './components/DeviceAlarmRuleCard.vue'
@@ -106,8 +107,13 @@ import { useDeviceAlarmWorkspace } from './hooks/useDeviceAlarmWorkspace'
 import { useDeviceAlarmRecords } from './hooks/useDeviceAlarmRecords'
 import { useDeviceAlarmHistory } from './hooks/useDeviceAlarmHistory'
 import { useDeviceAlarmHandling } from './hooks/useDeviceAlarmHandling'
+import { alarmDeviceId } from './workspaceUtils'
+import { buildIotDeviceDetailPath, resolveIotProjectId } from '../list/hooks/useIotDeviceRouting'
 import type { DeviceAlarmRow } from './types'
+import type { DeviceAlarmEvent } from './workspaceTypes'
 const { t: $t } = useI18n()
+const route = useRoute()
+const router = useRouter()
 const { page, selected, ruleId, activeCounts, statusError, listError, loading, busy, creating,
   loadingMore, loadMoreError, hasMore, load, loadCounts, loadMore, select, showAllRecords, remove, run, create } = useDeviceAlarmWorkspace($t)
 const { rows, total, keyword, levelOptions, triggerOptions, propertyOptions,
@@ -122,6 +128,13 @@ const handling = reactive(useDeviceAlarmHandling($t, async record => {
   await Promise.all([loadRecords(), loadCounts()])
 }))
 const now = useNow({ interval: 1000 })
+
+// 沿用当前设备列表入口的详情路由，并直接落到设备告警页签。
+function openDeviceAlarm(record: DeviceAlarmEvent) {
+  const deviceId = alarmDeviceId(record)
+  if (!deviceId) return
+  void router.push(buildIotDeviceDetailPath(resolveIotProjectId(route), deviceId, { tab: 'alarm' }, route))
+}
 
 function onRuleScroll(event: Event) {
   // 失败后停止自动加载，改由页脚重试，避免同一滚动位置反复触发失败请求。

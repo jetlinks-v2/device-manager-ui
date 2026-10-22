@@ -1,5 +1,14 @@
 <template>
-  <div class="threshold-page">
+
+  <DefineEmptyCreate>
+    <j-permission-button type="primary" @click="openCreate">
+      <template #icon>
+        <AIcon type="PlusOutlined" />
+      </template>
+      {{ $t('Threshold.index.000001-9') }}
+    </j-permission-button>
+  </DefineEmptyCreate>
+  <div v-bind="$attrs" class="threshold-page">
     <JProTable
       ref="tableRef"
       :columns="columns"
@@ -9,13 +18,13 @@
         sorts: [{ name: 'id', order: 'desc' }],
       }"
     >
+      <template #emptyText>
+        <CloudEmpty :search-name="$t('Detail.index.478940-21')">
+          <EmptyCreateButton />
+        </CloudEmpty>
+      </template>
       <template #headerLeftRender>
-        <j-permission-button type="primary" @click="openCreate">
-          <template #icon>
-            <AIcon type="PlusOutlined" />
-          </template>
-          {{ $t('Threshold.index.000001-9') }}
-        </j-permission-button>
+        <EmptyCreateButton />
       </template>
       <template #card="slotProps">
         <CardBox
@@ -132,6 +141,8 @@
 </template>
 
 <script setup lang="ts">
+import { createReusableTemplate } from '@vueuse/core'
+
 import { onlyMessage } from '@jetlinks-web/utils';
 import { cloneDeep } from 'lodash-es';
 import { useI18n } from 'vue-i18n';
@@ -455,6 +466,8 @@ const getActions = (record: any) => {
     },
   ];
 };
+
+const [DefineEmptyCreate, EmptyCreateButton] = createReusableTemplate()
 </script>
 
 <style scoped lang="less">

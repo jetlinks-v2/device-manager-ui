@@ -1,15 +1,19 @@
 <template>
-    <a-modal open title="协议" :width="1000" :maskClosable="false" @ok="onSave"
+
+    <DefineEmptyCreate>
+      <j-permission-button type="primary" @click="addVisible = true" hasPermission="link/plugin:add">
+          <template #icon>
+              <AIcon type="PlusOutlined" />
+          </template>
+          新增
+      </j-permission-button>
+    </DefineEmptyCreate>
+    <a-modal v-bind="$attrs" open title="协议" :width="1000" :maskClosable="false" @ok="onSave"
         @cancel="emits('close')">
         <div class="header">
             <a-input-search allowClear style="margin-right: 8px;" placeholder="请输入"
                 @search="pluginSearch"></a-input-search>
-            <j-permission-button type="primary" @click="addVisible = true" hasPermission="link/plugin:add">
-                <template #icon>
-                    <AIcon type="PlusOutlined" />
-                </template>
-                新增
-            </j-permission-button>
+            <EmptyCreateButton />
         </div>
         <div class="content">
             <a-row :gutter="[12, 12]" v-if="pluginList.length > 0">
@@ -24,18 +28,25 @@
                     </AccessCard>
                 </a-col>
             </a-row>
-            <CloudEmpty v-else style="margin-top: 10%" description="暂无数据" />
+            <CloudEmpty v-else style="margin-top: 10%" description="暂无数据" :search="emptyCreateSearch" :search-name="$t('components.SecondKind.311605-0')">
+              <EmptyCreateButton />
+            </CloudEmpty>
         </div>
         <Save v-if="addVisible" :data="{}" @cancel="addVisible = false" @ok="saveChange" />
     </a-modal>
 </template>
 
 <script setup>
+import { createReusableTemplate } from '@vueuse/core'
+
 import { cloneDeep } from 'lodash-es';
 import AccessCard from '../AccessCard/index.vue'
 import { getPluginList } from '@device-manager-ui/api/link/accessConfig';
 import Save from '@device-manager-ui/views/link/plugin/Save.vue'
 import {onlyMessage} from "@jetlinks-web/utils";
+import { ref as emptyCreateSearchRef } from 'vue'
+const emptyCreateSearch = emptyCreateSearchRef(false)
+
 const props = defineProps({
     type: {
         type: String,
@@ -53,6 +64,8 @@ const addVisible = ref(false)
 const pluginCurrent = ref()
 
 const queryPlugin = (params = {}) => {
+  emptyCreateSearch.value = 'terms' in params && Array.isArray(params.terms) && params.terms.some(term => String(term.value ?? '').replace(/%/g, '').trim().length > 0)
+
     getPluginList({
         terms: [
             {
@@ -75,7 +88,7 @@ const queryPlugin = (params = {}) => {
         }
     });
 };
-const pluginSearch = () => {
+const pluginSearch = (val) => {
     queryPlugin({
         terms: [
             {
@@ -111,6 +124,8 @@ onMounted(() => {
     pluginCurrent.value = cloneDeep(props.data)
     queryPlugin()
 })
+
+const [DefineEmptyCreate, EmptyCreateButton] = createReusableTemplate()
 </script>
 <style lang='less' scoped>
 .header {

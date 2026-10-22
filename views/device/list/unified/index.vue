@@ -1,5 +1,18 @@
 <template>
   <!-- 卡片切换充当面板顶栏：flush 让它与布局面板贴合，左上角一起拉平。 -->
+
+  <DefineEmptyCreateAction1>
+    <a-button v-if="activeType === 'all' || isIotEntry" type="primary" :disabled="busy" @click="openCreateDrawer">
+     <template #icon><AIcon type="PlusOutlined" /></template>
+     {{ t('IotDeviceList.action.create') }}
+    </a-button>
+  </DefineEmptyCreateAction1>
+  <DefineEmptyCreateAction2>
+    <a-button v-if="activeProvider?.create" :key="`create-${activeProvider.id}`" type="primary" :disabled="busy || !canCreate(activeProvider)" @click="openCreate(activeProvider)">
+     <template #icon><AIcon type="PlusOutlined" /></template>
+     {{ activeProvider.create.label() }}
+    </a-button>
+  </DefineEmptyCreateAction2>
   <PageChrome flush>
     <SlantedTabs class="unified-device-list__types" :activeKey="activeType" :options="tabs" @change="changeType(String($event))" />
   </PageChrome>
@@ -30,14 +43,8 @@
 						    </a-button>
 						    </a-button-group>
 						    <a-divider type="vertical" class="unified-device-list__action-divider" />
-						    <a-button v-if="activeType === 'all' || isIotEntry" type="primary" :disabled="busy" @click="openCreateDrawer">
-							    <template #icon><AIcon type="PlusOutlined" /></template>
-							    {{ t('IotDeviceList.action.create') }}
-						    </a-button>
-						    <a-button v-if="activeProvider?.create" :key="`create-${activeProvider.id}`" type="primary" :disabled="busy || !canCreate(activeProvider)" @click="openCreate(activeProvider)">
-							    <template #icon><AIcon type="PlusOutlined" /></template>
-							    {{ activeProvider.create.label() }}
-						    </a-button>
+						    <EmptyCreateButtonAction1 v-if="activeType === 'all' || isIotEntry" />
+						    <EmptyCreateButtonAction2 v-if="activeProvider?.create" />
 						    <!-- 批量配置仅面向边缘节点，其他设备分类不提供入口。 -->
 						    <a-dropdown v-if="activeType === 'gateway'">
 						      <a-button>
@@ -67,6 +74,11 @@
 				    <a-alert v-if="error || scopeLoadError" type="error" show-icon :message="error || t('UnifiedDeviceList.loadFailed')"><template #action><a-button @click="refresh">{{ t('UnifiedDeviceList.refresh') }}</a-button></template></a-alert>
 				    <div class="unified-device-list__table">
 					    <a-table row-key="id" :columns="columns" :data-source="rows" :loading="loading" :pagination="false" :row-selection="rowSelection" :scroll="{ x: 'max-content' }">
+					      <template #emptyText>
+					        <CloudEmpty :search="hasSearch" :search-name="$t('UnifiedDeviceList.device')">
+					          <template v-if="!error"><a-space><EmptyCreateButtonAction1 /><EmptyCreateButtonAction2 /></a-space></template>
+					        </CloudEmpty>
+					      </template>
 						    <template #bodyCell="{ column, record }">
 							    <template v-if="column.key === 'name'">
 								    <a-flex align="center" :gap="8">
@@ -194,6 +206,8 @@
   </FullPage>
 </template>
 <script setup lang="ts">
+import { createReusableTemplate } from '@vueuse/core'
+
 import { computed, type Component } from 'vue'
 import { ref } from 'vue'
 import dayjs from 'dayjs'
@@ -228,7 +242,7 @@ const route = useRoute()
 const guideProjectId = computed(() => resolveIotProjectId(route, ''))
 const deviceMenuCode = computed(() => getIotDeviceListMenuCode(route))
 const menu = useMenuStore()
-const { providers, isIotEntry, tabs, activeType, activeProvider, scope, baseTerms, filterTerms, filterFields, commonFilterFields, searchTerms, status, rows, total, pageIndex, pageSize, loading, error, counts, statusCounts, selectedIds, batchMode, providerOf, changeType, search, changeStatus, refresh, changePage, clearBatchSelection } = useUnifiedDeviceList()
+const { providers, isIotEntry, tabs, activeType, activeProvider, scope, baseTerms, filterTerms, filterFields, commonFilterFields, searchTerms, hasSearch, status, rows, total, pageIndex, pageSize, loading, error, counts, statusCounts, selectedIds, batchMode, providerOf, changeType, search, changeStatus, refresh, changePage, clearBatchSelection } = useUnifiedDeviceList()
 const gatewayMonitorCell = moduleRegistry.getResourceItem<Component>('edge-master-ui', 'components', 'GatewayDeviceMonitorCell')
 const useGatewayMetrics = moduleRegistry.getResourceItem<typeof UseGatewayRuntimeMetricsLoader>('edge-master-ui', 'hooks', 'useGatewayRuntimeMetricsLoader')
 // 只监控边缘节点分类的当前页，切换分类或重新加载列表时撤掉旧查询目标。
@@ -332,6 +346,9 @@ const columns = computed(() => [
   ...(['gateway', 'video'].includes(activeType.value) ? [{ title: t('UnifiedDeviceList.channel'), key: 'channel', width: 100 }] : []),
   { title: t('UnifiedDeviceList.action'), key: 'action', width: 90, fixed: 'right', align: 'center' },
 ])
+
+const [DefineEmptyCreateAction1, EmptyCreateButtonAction1] = createReusableTemplate()
+const [DefineEmptyCreateAction2, EmptyCreateButtonAction2] = createReusableTemplate()
 </script>
 <style scoped lang="less">
 .unified-device-list {
