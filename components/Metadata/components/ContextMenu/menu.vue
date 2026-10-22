@@ -85,7 +85,7 @@ onMounted(async () => {
 // 确保组件已经渲染
   await nextTick();
 // 触发组件focus
-  contextMenu.value.focus();
+  contextMenu.value.focus({ preventScroll: true });
 });
 
 </script>
@@ -93,6 +93,7 @@ onMounted(async () => {
 <style lang="less">
 .metadata-context-menu{
   position: fixed;
+  z-index: 1050;
   box-shadow: 0 0 12px rgba(0, 0, 0 ,.2);
   border-radius: 4px;
   overflow: hidden;
