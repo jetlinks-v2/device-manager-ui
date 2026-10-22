@@ -5,6 +5,7 @@ import test from 'node:test'
 const page = await readFile(new URL('../views/device/alarm/index.vue', import.meta.url), 'utf8')
 const editor = await readFile(new URL('../views/device/alarm/components/DeviceAlarmEditorModal.vue', import.meta.url), 'utf8')
 const editorStyle = await readFile(new URL('../views/device/alarm/components/DeviceAlarmEditorModal.less', import.meta.url), 'utf8')
+const alarmPageHook = await readFile(new URL('../views/device/alarm/hooks/useDeviceAlarmPage.ts', import.meta.url), 'utf8')
 const productAlarmTab = await readFile(new URL('../views/device/Product/Detail/components/ProductAlarmConfigTab.vue', import.meta.url), 'utf8')
 const deviceAlarmTab = await readFile(new URL('../views/device/list/components/device-detail/IotDeviceAlarmConfigTab.vue', import.meta.url), 'utf8')
 
@@ -47,4 +48,12 @@ test('all three device alarm entry points keep using the shared editor', () => {
   assert.match(productAlarmTab, /fixed-product-scope/)
   assert.match(deviceAlarmTab, /<DeviceAlarmEditorModal/)
   assert.match(deviceAlarmTab, /readonly-scope/)
+})
+
+test('all three device alarm entry points resolve selected notification user names', () => {
+  for (const source of [alarmPageHook, productAlarmTab, deviceAlarmTab]) {
+    assert.match(source, /const selectedUserIds =/)
+    assert.match(source, /queryDeviceAlarmNotifyUsers\(\{ paging: false, userIds: selectedUserIds \}\)/)
+    assert.match(source, /mergeNotifyUsersById\(selectedUsers\.data, users\.data\)/)
+  }
 })
