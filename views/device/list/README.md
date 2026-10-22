@@ -2,11 +2,13 @@
 
 ## 网关列表引导扩展
 
-实施计划（已确认）：Provider 增加可选列表引导组件，统一列表传递激活状态与手动接入意图，接收列表刷新事件；弹窗、待办、偏好和轮询由 edge-master-ui 持有。进入网关分类按扫码说明、待办顺序提示，筛选／翻页不重开；其他分类沿用原有新增入口。跨模块复用走注册表，不修改菜单权限、后端和运营端。关键入口为 deviceListProvider.ts 与 views/device/list/unified/。
+当前方案：Provider 提供可选列表引导组件，统一列表传递激活状态与手动接入意图，接收列表刷新事件；弹窗、待办、偏好和轮询由 edge-master-ui 持有。每次进入或切回网关分类都显示“网关待完善配置”，没有待办也展示空态，保留“不再提示”偏好；点击“接入网关”或 `action=create` 时优先显示扫码说明，确认、关闭或 Esc 后等待关闭动画完成再显示待完善配置。普通进入不自动弹扫码说明，筛选／翻页不重开；其他分类沿用原有新增入口。跨模块复用走注册表，不修改菜单权限、后端和运营端。关键入口为 deviceListProvider.ts 与 views/device/list/unified/，弹窗触发及优先级由 edge-master-ui 的 `views/workbench/gateway/guide/useGatewayListGuide.ts` 负责。
 
 当前契约：`DeviceListProvider.listGuide?: Component` 接收 `active`、递增的手动接入 `request`、可选 `projectId`，发出 `refresh`。`useUnifiedDeviceActions.ts` 优先将扩展分类的手动按钮及 `action=create` 交给引导；无扩展时继续使用原组件／路由入口。`unified/index.vue` 传入 `resolveIotProjectId(route, '')`，避免默认示例项目进入偏好键。引导实际逻辑及独立视频详情由 edge 模块负责，查询不附带设备列表的搜索、分页或范围条件。
 
-验证：edge 模块的网关引导与详情定向测试 37/37 通过，包含本模块激活状态、项目上下文、刷新及手动接入接线契约；本模块现有分类、状态与批量回归 6/7 通过，批量权限测试的旧 `<table-actions>` 正则在 HEAD 同样失败，本次未改变权限行为。`pnpm -F jetlinks-web-core build -- --module-name device-manager-ui` 生产构建和 `git diff --check` 通过；工作区／模块未配置 lint。`pnpm exec vue-tsc -p modules/device-manager-ui/tsconfig.json --noEmit` 仍被既有 `views/link/Certificate/type.d.ts:2` TS1005 阻断，修复后需重跑。浏览器用模拟接口验证引导宿主的顺序、跳转和偏好；真实统一列表、用户／项目切换与权限联调仍待部署环境验收。详见 [网关功能说明](../../../../edge-master-ui/docs/设备资产我的网关列表说明.md)。
+触发与优先级验证：edge 模块相关回归 47/47 通过，含每次进入的空态、扫码优先级、关闭动画与异步待办恢复；本模块源码与测试未变化，复用 `node --test tests/unifiedDeviceTabs.test.mjs tests/unifiedDeviceStatusFilter.test.mjs` 4/4 通过的证据。edge 模块生产构建及两个模块差异检查通过。edge 完整类型检查仍有 382 条既有诊断，修改的引导 hook 无诊断；未配置 lint。前轮浏览器访问本地 9200 设备列表返回 403，本轮未重复浏览器操作，真实分类切换、空态和主动接入尚需在可访问环境验收。完整命令与风险见下方网关功能说明。
+
+原接线验证：edge 模块的网关引导与详情定向测试 37/37 通过，包含本模块激活状态、项目上下文、刷新及手动接入接线契约；本模块现有分类、状态与批量回归 6/7 通过，批量权限测试的旧 `<table-actions>` 正则在 HEAD 同样失败，本次未改变权限行为。`pnpm -F jetlinks-web-core build -- --module-name device-manager-ui` 生产构建和 `git diff --check` 通过；工作区／模块未配置 lint。`pnpm exec vue-tsc -p modules/device-manager-ui/tsconfig.json --noEmit` 仍被既有 `views/link/Certificate/type.d.ts:2` TS1005 阻断，修复后需重跑。浏览器用模拟接口验证引导宿主的顺序、跳转和偏好；真实统一列表、用户／项目切换与权限联调仍待部署环境验收。详见 [网关功能说明](../../../../edge-master-ui/docs/设备资产我的网关列表说明.md)。
 
 ## 设备详情物模型继承提示
 
