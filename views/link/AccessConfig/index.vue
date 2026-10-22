@@ -218,6 +218,26 @@
                             </template>
                         </CardBox>
                     </template>
+                    <template #action="slotProps">
+                        <a-space :size="16">
+                            <j-permission-button
+                                v-for="item in getActions(slotProps)"
+                                :key="item.key"
+                                type="link"
+                                style="padding: 0"
+                                :disabled="item.disabled"
+                                :danger="item.key === 'delete'"
+                                :popConfirm="item.popConfirm"
+                                :tooltip="item.tooltip"
+                                :hasPermission="'link/AccessConfig:' + item.key"
+                                @click="item.onClick"
+                            >
+                                <template #icon>
+                                    <AIcon :type="item.icon" />
+                                </template>
+                            </j-permission-button>
+                        </a-space>
+                    </template>
                     <template #state="slotProps">
                         <a-badge
                             :text="slotProps.state.text"
