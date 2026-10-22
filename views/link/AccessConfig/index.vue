@@ -340,7 +340,7 @@ const columns = [
         title: $t('AccessConfig.index.764793-8'),
         key: 'action',
         fixed: 'right',
-        width: 200,
+        width: 140,
         scopedSlots: true,
     },
 ];
