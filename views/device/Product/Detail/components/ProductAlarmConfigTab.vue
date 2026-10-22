@@ -284,6 +284,7 @@ function createUnconfiguredRow(propertyId: string, property: ThingModelProperty)
     level: 4,
     trigger: 'outside',
     limit: {},
+    autoRelieve: false,
     notification: createEmptyNotification(),
     configured: false,
   }
@@ -314,6 +315,7 @@ function createEmptyForm(): DeviceAlarmFormModel {
     level: 4,
     trigger: 'outside',
     limit: {},
+    autoRelieve: false,
     notification: createEmptyNotification(),
   }
 }

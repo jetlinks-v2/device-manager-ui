@@ -4,6 +4,6 @@ export const setAlarmRequestHandler = (next: Handler) => { handler = next }
 export const request = {
   post: (url: string, body: Record<string, unknown>) => handler(url, body),
 }
-export default { global: { t: (key: string) => key } }
+export default { global: { t: (key: string) => key, locale: { value: 'zh' } } }
 
 export const randomString = () => 'test-id'

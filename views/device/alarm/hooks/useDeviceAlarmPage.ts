@@ -515,6 +515,7 @@ function createEmptyForm(): DeviceAlarmFormModel {
     level: 4,
     trigger: 'outside',
     limit: {},
+    autoRelieve: false,
     notification: createEmptyNotification(),
   }
 }
