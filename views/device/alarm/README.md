@@ -78,6 +78,7 @@
 - `node modules/device-manager-ui/scripts/test-alarm-workspace.mjs` 通过，共 13 项，新增覆盖三栏结构、三分区、触发与解除合并、通知扩展锚点、响应式断点和三个入口继续复用公共弹窗。
 - Node `22.18.0` 下 `pnpm --config.verify-deps-before-run=false build:modules device-manager-ui` 通过；仅有既有资源路径、浏览器基线数据、Rollup output、CSS 注释和 chunk 体积警告。`git diff --check` 通过。
 - `pnpm exec vue-tsc --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json` 仍被既有 `views/link/Certificate/type.d.ts:2:30` 的 TS1005 阻断，本次未修改该文件。当前无登录态浏览器环境，真实新增/编辑、三个入口及大中小视口的目视交互仍待部署后复核。
+- 交付：实现提交 `498855d`；[前端 PR #340](https://github.com/jetlinks-v2/device-manager-ui/pull/340)，目标分支 `2.20`。
 
 ## 左栏前三排复用视觉告警样式（已完成，2026-09-23）
 
