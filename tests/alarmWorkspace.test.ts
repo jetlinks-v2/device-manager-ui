@@ -5,7 +5,7 @@ import { setAlarmRequestHandler } from './alarmRequest.test-shim'
 import { queryRuleRecords, queryRecordHistory, queryActiveRuleCounts } from '../views/device/alarm/workspaceApi'
 import { useDeviceAlarmRecords } from '../views/device/alarm/hooks/useDeviceAlarmRecords'
 import { handleDeviceAlarm } from '../views/device/alarm/workspaceApi'
-import { alarmDuration, canHandleRecord } from '../views/device/alarm/workspaceUtils'
+import { alarmDeviceId, alarmDuration, canHandleRecord } from '../views/device/alarm/workspaceUtils'
 import { useDeviceAlarmHistory } from '../views/device/alarm/hooks/useDeviceAlarmHistory'
 import {
   buildPreprocessPayload,
@@ -23,6 +23,13 @@ import { localizeDeviceLibraryPreprocessors } from '../views/device/alarm/device
 
 const response = (id: string, total = 1) => ({ result: { data: [{ id, sourceName: id }], total } })
 const flush = async () => { await nextTick(); await new Promise(resolve => setTimeout(resolve, 0)); await nextTick() }
+
+test('alarm record resolves a device id from source first and device target as a compatibility fallback', () => {
+  assert.equal(alarmDeviceId({ id: 'record-a', sourceType: 'device', sourceId: ' device-a ', targetType: 'device', targetId: 'device-b' }), 'device-a')
+  assert.equal(alarmDeviceId({ id: 'record-b', targetType: 'device', targetId: ' device-b ' }), 'device-b')
+  assert.equal(alarmDeviceId({ id: 'record-c', sourceType: 'product', sourceId: 'product-a', targetType: 'product', targetId: 'product-b' }), undefined)
+  assert.equal(alarmDeviceId({ id: 'record-d', targetType: 'device', targetId: '   ' }), undefined)
+})
 
 test('rule keyword search groups three existing conditions and clears only the rule query', () => {
   let page = 3
