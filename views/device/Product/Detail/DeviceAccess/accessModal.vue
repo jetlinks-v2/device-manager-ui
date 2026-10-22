@@ -1,5 +1,15 @@
 <template>
-  <a-modal
+
+  <DefineEmptyCreate>
+    <j-permission-button
+        type="primary"
+        @click="add"
+        hasPermission="link/AccessConfig:add"
+    >{{ $t('DeviceAccess.accessModal.132524-3') }}
+    </j-permission-button
+    >
+  </DefineEmptyCreate>
+  <a-modal v-bind="$attrs"
       :title="$t('DeviceAccess.accessModal.132524-0')"
       open
       width="1200px"
@@ -31,6 +41,11 @@
       }"
         style="padding: 0"
     >
+      <template #emptyText>
+        <CloudEmpty :search="params?.terms" :search-name="$t('Status.index.565893-14')">
+          <EmptyCreateButton />
+        </CloudEmpty>
+      </template>
 	    <template #headerLeftRender>
 		    <ConditionFilter
 			    :columns="columns"
@@ -41,13 +56,7 @@
 		    />
 	    </template>
       <template #headerRightRender>
-        <j-permission-button
-            type="primary"
-            @click="add"
-            hasPermission="link/AccessConfig:add"
-        >{{ $t('DeviceAccess.accessModal.132524-3') }}
-        </j-permission-button
-        >
+        <EmptyCreateButton />
       </template>
       <template #deviceType="slotProps">
         <div>{{ slotProps.deviceType.text }}</div>
@@ -137,6 +146,8 @@
 </template>
 
 <script setup lang='ts' name='accessModal'>
+import { createReusableTemplate } from '@vueuse/core'
+
 import type {PropType} from 'vue'
 import {onlyMessage, randomString} from '@jetlinks-web/utils';
 import {queryList, getAccessConfig} from '../../../../../api/product'
@@ -355,6 +366,8 @@ const add = () => {
   })
 };
 
+
+const [DefineEmptyCreate, EmptyCreateButton] = createReusableTemplate()
 </script>
 
 <style scoped>

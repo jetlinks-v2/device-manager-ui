@@ -1,5 +1,16 @@
 <template>
-    <div v-if="type === 'edge'">
+
+    <DefineEmptyCreate>
+      <j-permission-button
+          type="primary"
+          @click="addNetwork"
+          hasPermission="link/Type:add"
+      >
+          <template #icon><AIcon type="PlusOutlined" /></template>
+          {{ $t('Edge.index.066653-2') }}
+      </j-permission-button>
+    </DefineEmptyCreate>
+    <div v-bind="$attrs" v-if="type === 'edge'">
         <a-steps
             v-if="channel !== 'edge-child-device'"
             class="steps-steps"
@@ -20,14 +31,7 @@
                         style="width: 300px"
                         @search="networkSearch"
                     />
-                    <j-permission-button
-                        type="primary"
-                        @click="addNetwork"
-                        hasPermission="link/Type:add"
-                    >
-                        <template #icon><AIcon type="PlusOutlined" /></template>
-                        {{ $t('Edge.index.066653-2') }}
-                    </j-permission-button>
+                    <EmptyCreateButton />
                 </div>
                 <j-scrollbar height="480">
                     <a-row
@@ -95,11 +99,12 @@
                             </AccessCard>
                         </a-col>
                     </a-row>
-                    <j-empty
+                    <CloudEmpty
                         style="margin-top: 10%"
                         v-else
-                        :description="$t('Edge.index.066653-5')"
-                    />
+                        :description="$t('Edge.index.066653-5')" :search="emptyCreateSearch" :search-name="$t('Status.index.565893-0')">
+                      <EmptyCreateButton />
+                    </CloudEmpty>
                 </j-scrollbar>
             </div>
         </div>
@@ -213,6 +218,8 @@
 </template>
 
 <script lang="ts" setup name="AccessEdge">
+import { createReusableTemplate } from '@vueuse/core'
+
 import { onlyMessage, randomString } from '@jetlinks-web/utils';
 import type { FormInstance } from 'ant-design-vue';
 import { update, save, getNetworkList } from '../../../../../api/link/accessConfig';
@@ -227,6 +234,9 @@ import { useI18n } from 'vue-i18n';
 import { useTabSaveSuccess, useTabSaveSuccessBack } from '@jetlinks-web-core/hooks'
 import { I18nTextField } from '@jetlinks-web-core/components';
 import DeviceLibraryBizKeyPicker from '../DeviceLibraryBizKeyPicker.vue';
+import { ref as emptyCreateSearchRef } from 'vue'
+const emptyCreateSearch = emptyCreateSearchRef(false)
+
 
 const { t: $t } = useI18n();
 const menuStory = useMenuStore();
@@ -315,10 +325,13 @@ const queryNetworkList = async (id: string, include: string, data = {}) => {
     if (resp.status === 200) {
         networkList.value = resp.result;
         allNetworkList.value = resp.result;
+        emptyCreateSearch.value = false;
     }
 };
 
 const networkSearch = (value: string) => {
+  emptyCreateSearch.value = Boolean(value?.trim())
+
     networkList.value = value
         ? allNetworkList.value.filter(
               (i: any) =>
@@ -383,6 +396,8 @@ const addressesTip = (data:any)=>{
     })
     return tip
 }
+
+const [DefineEmptyCreate, EmptyCreateButton] = createReusableTemplate()
 </script>
 
 <style lang="less" scoped>

@@ -1,5 +1,18 @@
 <template>
-    <j-page-container>
+
+    <DefineEmptyCreate>
+      <j-permission-button
+        type="primary"
+        hasPermission="link/AccessConfig:add"
+        @click="handleAdd"
+      >
+        <template #icon
+        ><AIcon type="PlusOutlined"
+        /></template>
+        {{ $t('AccessConfig.index.764793-0') }}
+      </j-permission-button>
+    </DefineEmptyCreate>
+    <j-page-container v-bind="$attrs">
         <div>
             <FullPage>
                 <j-pro-table
@@ -15,6 +28,11 @@
                     :params="params"
                     class="pro-table__no-padding"
                 >
+                  <template #emptyText>
+                    <CloudEmpty :search="params?.terms" :search-name="$t('Status.index.565893-14')">
+                      <EmptyCreateButton />
+                    </CloudEmpty>
+                  </template>
                     <template #headerLeftRender>
                         <div class="access-component-list-toolbar">
                             <h2 class="access-component-list-title">
@@ -30,16 +48,7 @@
 					                      target="search-link-access-config"
 					                      @search="handleSearch"
 			                      />
-			                      <j-permission-button
-					                      type="primary"
-					                      hasPermission="link/AccessConfig:add"
-					                      @click="handleAdd"
-			                      >
-					                      <template #icon
-					                      ><AIcon type="PlusOutlined"
-					                      /></template>
-					                      {{ $t('AccessConfig.index.764793-0') }}
-			                      </j-permission-button>
+			                      <EmptyCreateButton />
 	                      </a-flex>
 
                     </template>
@@ -222,6 +231,8 @@
     </j-page-container>
 </template>
 <script lang="ts" setup name="AccessConfigPage">
+import { createReusableTemplate } from '@vueuse/core'
+
 import {
     list,
     getProviders,
@@ -451,6 +462,8 @@ const addressesTip = (data) => {
   });
   return tip;
 };
+
+const [DefineEmptyCreate, EmptyCreateButton] = createReusableTemplate()
 </script>
 <style lang="less" scoped>
 .table {
