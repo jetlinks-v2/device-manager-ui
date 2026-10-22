@@ -81,7 +81,7 @@
 
 目标与范围：运行时 `device-manager-ui` 设备概览的累计活跃时长按“天、小时、分钟”完整显示，例如 `2621h 00m` 显示为 `109天 5小时 0分钟`；卡片与趋势提示复用 `components/device-detail/iotDeviceOverviewCharts.ts#formatDuration`，入口为 `components/device-detail/IotDeviceOverviewTab.vue`。
 
-实施与边界：按 S 级局部调整，将毫秒值截取为整分钟，再拆分为天、剩余小时和剩余分钟，并同步中英文文案。累计时长卡片的数值横跨两列，窄宽度下按时长分段换行，小趋势图移到说明行，避免分钟被截断；对应样式为 `components/device-detail/IotDeviceOverviewTab.css`。保留零值与负值归零行为；不改变累计在线时长数据来源、接口和其他时长指标，不修改 `ui/`。验证跨小时、跨天与零值，并检查卡片完整显示。
+实施与边界：按 S 级局部调整，将毫秒值截取为整分钟，再拆分为天、剩余小时和剩余分钟，并同步中英文文案。累计时长卡片的数值横跨两列，窄宽度下按时长分段换行，小趋势图移到说明行，避免分钟被截断；对应展示与样式现位于 `visDashboard/DeviceDetail/components/StatPanel.vue`，默认布局为紧凑宽度预留足够高度。保留零值与负值归零行为；不改变累计在线时长数据来源、接口和其他时长指标，不修改 `ui/`。验证跨小时、跨天与零值，并检查卡片完整显示。
 
 验证结果：实际 `formatDuration` 函数的 10 个中文边界值与 1 个英文文案检查通过，覆盖零值、负值、整分钟截取、跨小时、跨天及长时长；TypeScript 语法检查与 `git diff --check` 通过。在 `runtime-ui` 执行 `pnpm -F jetlinks-web-core build -- --module-name device-manager-ui` 生产构建通过（1 分 14 秒，保留大包告警）。本地 `http://localhost:9200/#/resources/devices/list/Detail/2064898513186066432` 已确认累计时长完整显示为“109天 5小时 7分钟”，小趋势图保留。
 
@@ -199,3 +199,34 @@
 本模块与工作区均未提供 lint 脚本，未单独执行 lint；模块 `vue-tsc --noEmit` 仍被未改动的 `views/link/Certificate/type.d.ts:2` 语法错误阻断。
 
 本次视觉收敛提交：`0aee5af`；PR：[device-manager-ui#303](https://github.com/jetlinks-v2/device-manager-ui/pull/303)。
+
+
+## 设备详情概览仪表盘组件化
+
+实现范围（M 级，已实施）：仅修改运行时 `device-manager-ui`，将新版设备详情概览接入资源中心使用的 core `DashBoardCanvas`。主要用户为设备管理员和运维人员，首屏查看单台设备的在线时长、消息、流量、关键属性和近期告警，并保留属性历史入口。
+
+- 组件拆分：在 `visDashboard/DeviceDetail/` 新建独立分组，提供累计活跃时长、今日上行、今日下行、今日流量、消息趋势、关键属性快照、近期告警七个稳定类型。沿用 manifest、运行组件 / 配置组件 / 默认配置三组导出、懒加载及缩略图协议。四张指标卡共用展示面板，不复制请求与图表实现。
+- 页面入口：`views/device/list/components/device-detail/IotDeviceOverviewTab.vue` 只负责提供当前设备上下文和装配画布；`IotDeviceDefaultDetailContent.vue` 保持设备详情接线。组件运行不依赖硬编码设备 ID 或路由参数，详情宿主统一绑定当前设备，独立使用时可显式配置设备 ID；缺少设备上下文时展示 CloudEmpty。
+- 数据归属：将原 SFC 中的请求、统计归一化和近期告警映射移入分组 services / hooks；复用 `iotDeviceDetailRealApi.queryOverviewSummary`、`queryAlarmByDevice`、现有关键属性选择 / 实时值、属性历史弹窗和格式化。四张指标及消息趋势共享同一次概览统计，错误不伪装为业务零值；上下文按当前项目 / 设备隔离，切换设备立即撤销旧结果，暂停页面 / 卸载清理刷新和订阅。现有累计时长格式与当天统计范围不因组件拆分改变。
+- 交互方案：沿用监控感知页及当前三层密度，布局为 `[活跃时长][今日上行][今日下行][今日流量] / [消息趋势整行] / [关键属性快照][近期告警]`；末行默认横向均分；可用宽度不足 900px 时指标按两列排布、趋势与末行卡片占满整行，不足 560px 时提高指标卡高度以完整展示长时长。以设备运行数据为主要视觉锚点，保留加载、失败重试、真实零值和空态，所有文案沿用模块 i18n，样式使用主题 token。
+- 画布能力：与资源中心一致，正式设备详情默认展示上述七项，支持拖动、缩放和本地布局恢复；本次不开放正式页增删组件或全功能设计入口。布局保存复用 core，按账号与项目上下文隔离，切换设备只更新数据，避免串设备请求和状态。组件配置支持标题、刷新间隔及业务展示项，设计预览不发真实设备请求。
+- 范围边界：保留详情头部、其他 Tab、设备读写权限、物模型、接口和后端不变，不修改 `ui/` 或资源中心所属模块。不将整个旧页面包成单一大组件，避免无法独立装配和调整。
+- 验证计划：先验证注册发现与七种默认配置，再验证共享请求去重、两设备切换及迟到结果丢弃、预览请求隔离、错误 / 零值 / 空态、关键属性分页与历史入口、告警等级及请求次数、宽窄布局和缓存恢复。执行定向 Node 测试、目标 SFC / TypeScript / CSS 语法与 diff 检查；按本机性能约束不执行全量构建。本地 `http://localhost:9200` 通过 Vite 连接 `http://192.168.33.76:9000/api`，已使用登录会话复验设备详情。
+
+关键代码入口：
+
+- `visDashboard/DeviceDetail/manifest.json`、七个子目录的 `index.ts` / `config.ts`：独立发现、默认配置、配置组件与缩略图。
+- `visDashboard/DeviceDetail/hooks/context.ts`、`resourcePool.ts`、`useDeviceDetailWidget.ts`：设备 / 账号 / 项目 / API 上下文、共享请求、轮询和订阅生命周期。
+- `visDashboard/DeviceDetail/hooks/deviceDetailLayout.ts`、`useDeviceDetailDashboard.ts`：24 列默认布局、组件目录和按账号 / 项目 / 宽度模式隔离的布局缓存。
+- `visDashboard/DeviceDetail/services/`、`components/`：统计 / 属性 / 告警边界、展示面板、业务配置和独立编辑预览。
+- `views/device/list/components/device-detail/IotDeviceOverviewTab.vue`：仅提供当前设备 / 实时属性上下文并装配画布；旧专用样式已移除。
+
+验证结果：
+
+- `node --test tests/deviceDetailDashboard.test.mjs tests/deviceDetailContent.test.mjs tests/deviceDetailThingModel.test.ts`：25/25 通过；新增 10 项覆盖真实 core 发现协议、默认布局、共享请求、迟到响应、上下文切换、合法零值、失败重试、独立属性订阅、告警映射及资源释放。
+- 目标 Vue SFC 的脚本 / 模板 / 样式编译、TypeScript 语法、相对导入、manifest / 中英文 JSON 和 `git diff --check`：通过。
+- 本地真实后端页面：七组件正常呈现；五个统计消费者首次仅发一次请求，手动缩放后仍仅一次。卡片高度由 152px 调整到 220px，刷新后恢复 220px；近期告警由右列拖到左列，刷新后保持 x=0。两台真实设备切换与 660px 视口通过，页面无横向溢出。
+- 数据缺失场景仅在临时测试页拦截只读响应：8 个关键属性按 6+2 分页，属性 7 历史弹窗请求指向当前设备 / 属性并展示样本值；切换设备关闭旧弹窗并重置分页。非空告警的触发条件 / 原因提示正常；紧凑布局完整显示 `109天 5小时 7分钟`；模拟 503 后五个组件展示错误，点击一次重试仅发一次共享统计请求。
+- 临时独立画布复验：配置取消不改变运行值，应用后标题 / 设备 ID / 0 秒刷新配置正确；编辑预览无真实统计请求，切到运行模式只请求配置的设备。上述测试页无 JavaScript 页面异常，测试布局缓存与用户真实缓存隔离并已清理。
+- 定向 `vue-tsc --noEmit`：本次新增分组及概览宿主无诊断，但传递依赖链仍有 314 项类型诊断，整体退出码为 2，不能视为类型检查通过；临时检查配置已移除。需在依赖类型基线修复后执行 `pnpm exec vue-tsc --noEmit -p modules/device-manager-ui/tsconfig.json` 复验。
+- 本模块 / 工作区没有可用 lint 脚本，未执行单独 lint；按本机性能限制未运行生产构建。生产环境仍需构建并部署 runtime-ui 前端静态资源，无后端服务重启要求。未创建 commit / PR。

@@ -8104,5 +8104,15 @@
     "ModbusMapping.ui.modbusDescription": "在表格中配置寄存器地址与设备测点的对应关系，适用于常见 Modbus 仪表与网关。",
     "ModbusMapping.ui.javascriptLabel": "脚本解析",
     "ModbusMapping.ui.javascriptDescription": "自行编写解析规则，按设备实际上报格式把数据转成平台能识别的测点数据。",
-    "ModbusMapping.ui.bitIndexLabel": "第 {index} 位"
+    "ModbusMapping.ui.bitIndexLabel": "第 {index} 位",
+    "deviceDetailDashboard.title": "标题",
+    "deviceDetailDashboard.deviceId": "设备 ID",
+    "deviceDetailDashboard.deviceHelp": "设备详情中跟随当前设备，独立使用时填写设备 ID。",
+    "deviceDetailDashboard.selectDevice": "请选择设备或配置设备 ID",
+    "deviceDetailDashboard.refresh": "刷新间隔（秒）",
+    "deviceDetailDashboard.refreshHelp": "0 表示不自动刷新，自动刷新最短为 15 秒。",
+    "deviceDetailDashboard.pageSize": "每页属性数",
+    "deviceDetailDashboard.limit": "告警展示数量",
+    "deviceDetailDashboard.loadError": "数据加载失败，请重试",
+    "deviceDetailDashboard.retry": "重试"
 }
