@@ -169,6 +169,7 @@ import { useIotAddDeviceDrawer, type IotAddDeviceCreatedPayload } from '../hooks
 import { useIotEditDeviceDrawer } from '../hooks/useIotEditDeviceDrawer'
 import type { IotDevice } from '../types'
 import type { DeviceCreationExtension } from '@device-manager-ui/deviceCreationExtension'
+import type { DeviceCreateDrawerOptions } from '@device-manager-ui/deviceListProvider'
 import { moduleRegistry } from '@jetlinks-web-core/utils/module-registry'
 
 const props = withDefaults(defineProps<{
@@ -177,6 +178,7 @@ const props = withDefaults(defineProps<{
   deviceType?: string
   parentId?: string
   device?: IotDevice | null
+  productFilter?: DeviceCreateDrawerOptions
 }>(), { device: null })
 const emit = defineEmits<{
   (event: 'update:open', value: boolean): void
@@ -194,6 +196,7 @@ const addDrawerProps = {
   get projectId() { return props.projectId },
   get deviceType() { return props.deviceType },
   get parentId() { return props.parentId },
+  get productFilter() { return props.productFilter },
 }
 const editDrawerProps = {
   get open() { return props.open && isEditMode.value },

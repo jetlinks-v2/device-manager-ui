@@ -181,7 +181,7 @@
       :is="provider.listGuide" :active="activeType === provider.id" :request="guideRequest"
       :project-id="guideProjectId" @refresh="refresh" />
     <component v-if="createEntry" :is="createEntry.component" :open="true" @update:open="createEntry = undefined" @saved="refresh" />
-    <IotAddDeviceDrawer v-if="!editing || editing.category === 'device'" v-model:open="editOpen" :project-id="projectId" :device="editing" @saved="refresh" @created="refresh" />
+    <IotAddDeviceDrawer v-if="!editing || editing.category === 'device'" v-model:open="editOpen" :project-id="projectId" :device="editing" :product-filter="createDrawerOptions" @saved="refresh" @created="refresh" />
     <component v-else-if="editing && providerOf(editing)?.editComponent" :is="providerOf(editing)?.editComponent" v-model:open="editOpen" :gateway="editing" :device="editing" :project-id="projectId" @saved="refresh" />
     <component v-if="detailDevice && providerOf(detailDevice)?.detailComponent" :is="providerOf(detailDevice)?.detailComponent" v-bind="providerOf(detailDevice)?.detailProps?.(detailDevice)" @close-drawer="detailDevice = null" @close="detailDevice = null" />
     <IotDeviceAssignAreaModal v-if="spaceAreaSupported !== false" v-model:open="assignAreaOpen" :project-id="projectId" :selected-device-count="selectedIds.length" :saving="busy" @save="assignArea" />
@@ -264,7 +264,7 @@ function formatBrandModel(value?: string) {
     ? normalized
     : t('IotDeviceDetail.common.unconfigured')
 }
-const { projectId, editing, editOpen, createEntry, guideRequest, canCreate, openCreate, detailDevice, busy, selected, allowed, openDetail, edit, toggle, remove, canDelete, batchToggle, assignAreaOpen, assignGroupOpen, assignArea, assignGroup } = useUnifiedDeviceActions(rows, selectedIds, clearBatchSelection, providerOf, refresh, activeProvider)
+const { projectId, editing, editOpen, createDrawerOptions, createEntry, guideRequest, canCreate, openCreate, detailDevice, busy, selected, allowed, openDetail, edit, toggle, remove, canDelete, batchToggle, assignAreaOpen, assignGroupOpen, assignArea, assignGroup } = useUnifiedDeviceActions(rows, selectedIds, clearBatchSelection, providerOf, refresh, activeProvider)
 const syncVisible = ref(false)
 const syncApi = ref('')
 const syncData = ref<Record<string, unknown>>({})
@@ -307,6 +307,7 @@ function openCreateDrawer() {
   if (editOpen.value) return !editing.value
   if (activeType.value !== 'all' && !isIotEntry.value) return false
   editing.value = null
+  createDrawerOptions.value = undefined
   editOpen.value = true
   return true
 }

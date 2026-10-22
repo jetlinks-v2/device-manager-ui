@@ -24,6 +24,7 @@ import { existsDeviceSpaceAreaSupport_api, queryProjectSpaceAreaSettings_api } f
 import type { ProjectArea } from '@device-manager-ui/modules/defaults/types'
 import type { ProductCategoryTreeNode } from '@device-manager-ui/views/device/Product/components/ProductCategoryTree.vue'
 import type { IotDevice } from '../types'
+import type { DeviceCreateDrawerOptions } from '@device-manager-ui/deviceListProvider'
 import { buildAreaTreeData, isSelectableDeviceArea } from './iotAreaTreeOptions'
 import { buildDeviceGroupTreeData } from './iotDeviceGroupTreeOptions'
 import { toTemplateProductOption } from './iotAddDeviceProductOptions'
@@ -49,6 +50,7 @@ export type IotAddDeviceDrawerProps = {
   initialProductId?: string
   deviceType?: string
   parentId?: string
+  productFilter?: DeviceCreateDrawerOptions
 }
 
 export type IotAddDeviceCreatedPayload = {
@@ -128,7 +130,8 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
   const selectableAreas = computed(() => areaOptions.value)
   const areaTreeData = computed(() => buildAreaTreeData(selectableAreas.value))
   const groupTreeData = computed(() => buildDeviceGroupTreeData(groupOptions.value))
-  const isLibraryAvailable = computed(() => marketplaceCapability.value === 'available')
+  const isProductOnly = computed(() => props.productFilter?.productOnly === true)
+  const isLibraryAvailable = computed(() => !isProductOnly.value && marketplaceCapability.value === 'available')
   // hasMenu 还会包含 hideInMenu 的权限路由；这里只按当前项目实际可见菜单决定是否开放按产品创建。
   const productMenuAvailable = computed(() => hasVisibleMenu(menuStore.siderMenus, 'device/Product'))
   const selectedSource = computed<IotDeviceProductTemplate | DeviceTemplateProductInput | null>(() => (
@@ -140,6 +143,13 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
     hasError: installProgressLogs.value.some((item) => item.type === 'error'),
   }))
   const libraryProducts = computed(() => libraryTemplates.value.map(toTemplateProductOption))
+  // 入口预设同时回显在条件筛选中；接口层仍会附加同一白名单，避免用户编辑条件后越过网关产品范围。
+  const createProductFilterTerms = (): DeviceQueryTerm[] => {
+    const accessProviders = [...new Set(props.productFilter?.accessProviders?.filter(Boolean) ?? [])]
+    return accessProviders.length
+      ? [{ column: 'accessProvider', termType: 'in', value: accessProviders }]
+      : []
+  }
   const formRules: Record<string, Rule[]> = {
     id: [
       { pattern: /^[a-zA-Z0-9_-]+$/, message: $t('Save.index.902471-2'), trigger: 'blur' },
@@ -197,7 +207,7 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
     creationMode.value = 'local'
     // 两种来源的产品集合不同，切换时必须撤销产品侧的在途请求并清空筛选，避免隐藏条件污染返回后的列表。
     ++productRequestSequence
-    productFilterTerms.value = []
+    productFilterTerms.value = source === 'product' ? createProductFilterTerms() : []
     productPageIndex.value = 0
     productTotal.value = 0
     creationSource.value = source
@@ -246,6 +256,7 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
           : undefined,
         unclassified: selectedCategoryId.value === UNCLASSIFIED_CATEGORY_ID,
         deviceType: props.deviceType,
+        accessProviders: props.productFilter?.accessProviders,
       })
       if (requestSequence !== productRequestSequence || !props.open) return
       productCandidates.value = page.data
@@ -308,6 +319,11 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
   }
 
   async function probeMarketplace() {
+    if (isProductOnly.value) {
+      marketplaceCapability.value = 'unavailable'
+      creationSource.value = 'product'
+      return
+    }
     const requestSequence = openSequence
     marketplaceCapability.value = 'checking'
     try {
@@ -373,7 +389,7 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
     creationSource.value = 'product'; marketplaceCapability.value = 'checking'
     clearSelectedSource()
     selectedCategoryId.value = undefined
-    productCandidates.value = []; productTotal.value = 0; productPageIndex.value = 0; productFilterTerms.value = []
+    productCandidates.value = []; productTotal.value = 0; productPageIndex.value = 0; productFilterTerms.value = createProductFilterTerms()
     libraryTemplates.value = []; libraryTagGroups.value = []; libraryPageIndex.value = 0; libraryKeyword.value = ''; libraryTags.value = []; libraryTotal.value = 0
     areaOptions.value = []; groupOptions.value = []
     productMessage.value = ''; libraryMessage.value = ''; errorMessage.value = ''; installProgressLogs.value = []
@@ -481,6 +497,14 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
     if (!open) return
     resetForm()
     openSequence += 1
+    // 受限新增（如私有化边缘网关）只允许从产品创建，不探测设备库能力。
+    if (isProductOnly.value) {
+      marketplaceCapability.value = 'unavailable'
+      creationSource.value = 'product'
+      void loadProductCategories()
+      void loadProductCandidates(true)
+      return
+    }
     // 先展示当前项目产品；仅在市场服务确认可用后才切换到设备库来源。
     void loadProductCategories()
     void loadProductCandidates(true)
