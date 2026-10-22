@@ -6,7 +6,7 @@ import {omit} from "lodash-es";
 let curInstance: Record<string, any> | null = null
 let seed = 1
 let copyValue: any
-const contextMenu = (e: Event, data: any, context: any) => {
+const contextMenu = (e: MouseEvent, data: any, context: any) => {
     if (curInstance) {
         curInstance.destroy()
     }
@@ -15,13 +15,14 @@ const contextMenu = (e: Event, data: any, context: any) => {
     let id = seed++
     // 创建一个临时的div，用于挂载我们的菜单
     const container = document.createElement('div') as HTMLElement
-    // 获取body标签，用于挂载整个菜单
-    const appendTo = context.getPopupContainer() || document.body
+    // 固定定位挂到视口根节点，避免表格祖先的 backdrop-filter 改变包含块；全屏菜单必须留在全屏元素内。
+    const appendTo = document.fullscreenElement || document.body
     // 传给menu组件的props
     const props = {
         data: data,
         onClose: () => {
-            if(curInstance){
+            // 失焦回调可能在下一次右键后才执行，只允许关闭所属菜单。
+            if (curInstance?.id === id) {
                 curInstance.destroy()
             }
         },
@@ -49,33 +50,24 @@ const contextMenu = (e: Event, data: any, context: any) => {
     // 首先需要先把菜单真正渲染到页面，才能拿到它的宽度和高度
     appendTo.appendChild(container.firstElementChild as Node)
     // 当前真正的菜单节点，上面输出的vnode中可以看到，el就是我们的菜单节点
-    const curMenu = vnode.el!
+    const curMenu = vnode.el as HTMLElement
     // 获取curMenu的高度和宽度，用于临界的计算
-    const { offsetWidth, offsetHeight } = curMenu!
-    // 获取body的可视区域的宽度
-    const { clientWidth } = appendTo
-    // 取出右键点击时的坐标，clientX是距离左侧的位置，clientY是距离顶部的位置
+    const { offsetWidth, offsetHeight } = curMenu
+    const { clientWidth, clientHeight } = document.documentElement
     const { clientX, clientY } = e
 
-    // 当前可视区域的宽度 - 当前鼠标距离浏览器左边的距离
-    // 如果 大于菜单的宽度，说明正常设置菜单距离左边界的距离,即设置style.left
-    // 否则菜单需要在鼠标左侧展示，即需要设置style.right组件距离可视区域右侧的距离
-    const leftOrRight = clientWidth - clientX > offsetWidth ? "left" : "right"
-
-    // 当前浏览器的高度(不包含滚动条) - 当前鼠标距离浏览器上边的距离
-    // 如果 大于菜单的高度，说明可以正常设置菜单距离上边界的距离,即设置style.top
-    // 否则需要设置菜单距离底部边界的位置，即style.bottom
-    const topOrBottom = window.innerHeight - clientY > offsetHeight ? "top" : "bottom"
-    const offsetLeft = Math.abs(clientWidth - clientX)
-    // 设置left或者right的style
-    curMenu.style[leftOrRight] = leftOrRight === "left" ? `${clientX + 20}px` : `${offsetLeft}px`
-    // 设置top或者bottom的style
-    curMenu.style[topOrBottom] = topOrBottom === 'bottom' ? '2px' : `${clientY}px`
+    // 与鼠标使用同一视口坐标系，空间不足时向鼠标左侧或上方展开，并限制在视口内。
+    const left = clientX + offsetWidth <= clientWidth ? clientX : clientX - offsetWidth
+    const top = clientY + offsetHeight <= clientHeight ? clientY : clientY - offsetHeight
+    curMenu.style.left = `${Math.max(0, Math.min(left, clientWidth - offsetWidth))}px`
+    curMenu.style.top = `${Math.max(0, Math.min(top, clientHeight - offsetHeight))}px`
 
     const instance = {
         id,
         destroy: () => {
-            curInstance = null
+            if (curInstance?.id === id) {
+                curInstance = null
+            }
             render(null, container)
         },
         cleanCopy: () => {
