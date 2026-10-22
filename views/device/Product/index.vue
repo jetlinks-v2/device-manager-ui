@@ -1,5 +1,11 @@
 <template>
-  <j-page-container class="product-page">
+  <DefineEmptyCreate>
+    <j-permission-button type="primary" hasPermission="device/Product:add" @click="add">
+      <template #icon><AIcon type="PlusOutlined" /></template>
+      {{ $t('Product.index.660348-0') }}
+    </j-permission-button>
+  </DefineEmptyCreate>
+  <j-page-container v-bind="$attrs" class="product-page">
     <FullPage transparentBackground>
     <div class="product-page__main">
 	    <EqualHeightColumns class="product-page__layout" left-width="15rem" right-width="1fr">
@@ -46,18 +52,17 @@
 								      @change="handleFilterSearch"
 							      />
 							      <a-space class="product-page__actions">
-								      <j-permission-button
-									      type="primary"
-									      key="add"
-									      @click="add"
-									      hasPermission="device/Product:add"
-								      >
-									      <template #icon><AIcon type="PlusOutlined" /></template>
-									      {{ $t("Product.index.660348-0") }}
-								      </j-permission-button>
+								      <EmptyCreateButton key="add" />
 								      <BatchDropdown key="batch" :actions="batchActions" />
 							      </a-space>
 						      </a-flex>
+					      </template>
+					      <template #emptyText>
+					        <CloudEmpty :description="hasSearch
+                        ? $t('components.CloudEmpty.searchEmpty', { name: $t('Product.index.660348-15') })
+                        : undefined">
+					          <EmptyCreateButton v-if="showEmptyCreate" />
+					        </CloudEmpty>
 					      </template>
 					      <template #deviceType="slotProps">
 						      <div>{{ slotProps.deviceType?.text || '-' }}</div>
@@ -176,8 +181,11 @@ import { useTermOptions } from '@jetlinks-web/components/es/Search/hooks/useTerm
 import BatchDropdown from "@jetlinks-web-core/components/BatchDropdown/index.vue";
 import { IconBadge } from '@jetlinks-web-core/components'
 import { getI18nText } from '../../../utils/i18n'
+import { createReusableTemplate } from '@vueuse/core'
+import { useEmptyCreateState } from '@jetlinks-web-core/hooks'
 
 const { t: $t } = useI18n();
+const [DefineEmptyCreate, EmptyCreateButton] = createReusableTemplate()
 
 const menuStory = useMenuStore();
 const authStore = useAuthStore();
@@ -275,6 +283,7 @@ const tableParams = computed(() => {
     ],
   };
 });
+const { hasSearch, showEmptyCreate } = useEmptyCreateState(() => tableParams.value.terms);
 
 // 产品管理入口同时服务私有化与运行时，不能按 SaaS 编译标识隐藏导入和缓存同步能力。
 const batchActions = computed(() => {

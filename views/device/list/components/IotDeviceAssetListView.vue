@@ -1,4 +1,11 @@
 <template>
+
+  <DefineEmptyCreate>
+    <j-permission-button class="project-onboarding-target--iot-device-create" type="primary" :hasPermission="true" @click="openCreateDrawer">
+      <template #icon><AIcon type="PlusOutlined" /></template>
+      {{ $t('IotDeviceList.action.create') }}
+    </j-permission-button>
+  </DefineEmptyCreate>
   <FullPage transparentBackground :fixed="false" class="iot-device-list">
     <EqualHeightColumns class="iot-device-list__layout" left-width="15rem" right-width="1fr">
       <template #left>
@@ -35,16 +42,14 @@
               />
               <a-flex class="iot-device-list__action-group" :gap="16" align="center" wrap="wrap">
                 <BatchDropdown :actions="batchActions" />
-                <j-permission-button class="project-onboarding-target--iot-device-create" type="primary" :hasPermission="true" @click="openCreateDrawer">
-                  <template #icon><AIcon type="PlusOutlined" /></template>
-                  {{ $t('IotDeviceList.action.create') }}
-                </j-permission-button>
+                <EmptyCreateButton />
               </a-flex>
             </a-flex>
             <IotDeviceAssetTable
               :total-devices="totalDevices"
               :selected-count="selectedRowKeys.length"
               :has-active-filters="hasActiveFilters"
+              :has-search="submittedTerms.some(hasFilterValue)"
               :load-error="loadError"
               :table-params="tableParams"
               :table-pagination="tablePagination"
@@ -62,7 +67,9 @@
               :on-edit="openEditDrawer"
               :on-toggle="toggleDeviceEnabled"
               :on-delete="deleteDevice"
-            />
+            >
+              <template #empty-create><EmptyCreateButton /></template>
+            </IotDeviceAssetTable>
           </ContentPanel>
         </section>
       </template>
@@ -106,6 +113,8 @@
 </template>
 
 <script setup lang="ts">
+import { createReusableTemplate } from '@vueuse/core'
+
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
@@ -396,6 +405,8 @@ async function assignSelectedDevicesToGroup(group: DeviceGroup) {
     assignGroupSaving.value = false
   }
 }
+
+const [DefineEmptyCreate, EmptyCreateButton] = createReusableTemplate()
 </script>
 
 <style scoped src="../styles/device-list-view.less" lang="less"></style>

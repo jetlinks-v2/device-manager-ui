@@ -1,5 +1,20 @@
 <template>
-  <j-page-container>
+
+  <DefineEmptyCreate>
+    <j-permission-button
+     type="primary"
+     @click="handleAdd"
+     hasPermission="link/Type:add"
+    >
+     <template #icon
+     >
+      <AIcon type="PlusOutlined"
+      />
+     </template>
+     {{ $t('Type.index.196842-0') }}
+    </j-permission-button>
+  </DefineEmptyCreate>
+  <j-page-container v-bind="$attrs">
     <div>
       <FullPage>
         
@@ -15,6 +30,11 @@
 		        modeValue="CARD"
 		        class="pro-table__no-padding"
 	        >
+	          <template #emptyText>
+	            <CloudEmpty :search="params?.terms" :search-name="$t('Status.index.565893-0')">
+	              <EmptyCreateButton />
+	            </CloudEmpty>
+	          </template>
 		        <template #headerLeftRender>
 			        <div class="access-component-list-toolbar">
 				        <h2 class="access-component-list-title">
@@ -30,18 +50,7 @@
 					        target="search-type"
 					        @search="handleSearch"
 				        />
-				        <j-permission-button
-					        type="primary"
-					        @click="handleAdd"
-					        hasPermission="link/Type:add"
-				        >
-					        <template #icon
-					        >
-						        <AIcon type="PlusOutlined"
-						        />
-					        </template>
-					        {{ $t('Type.index.196842-0') }}
-				        </j-permission-button>
+				        <EmptyCreateButton />
 			        </a-flex>
 		        </template>
 		        <template #card="slotProps">
@@ -203,6 +212,8 @@
   </j-page-container>
 </template>
 <script lang="ts" setup name="TypePage">
+import { createReusableTemplate } from '@vueuse/core'
+
 import {supports, query, remove, start, shutdown} from '../../../api/link/type';
 import {onlyMessage} from '@jetlinks-web-core/utils/comm';
 import {useMenuStore} from '@jetlinks-web-core/store';
@@ -481,6 +492,8 @@ const getDetails = (slotProps: Partial<Record<string, any>>) => {
 const handleSearch = (e: any) => {
   params.value = e;
 };
+
+const [DefineEmptyCreate, EmptyCreateButton] = createReusableTemplate()
 </script>
 <style lang="less" scoped>
 .card-item-content {

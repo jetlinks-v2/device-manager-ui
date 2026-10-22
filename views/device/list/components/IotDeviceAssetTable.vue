@@ -125,13 +125,15 @@
       </template>
 
       <template #emptyText>
-        <CloudEmpty type="page">
+        <CloudEmpty type="page" :search="!loadError && hasSearch" :search-name="$t('UnifiedDeviceList.device')">
           <template #description>
             <div class="iot-device-list__empty">
               <strong>{{ $t('IotDeviceList.empty.title') }}</strong>
               <span>{{ $t('IotDeviceList.empty.description') }}</span>
             </div>
           </template>
+
+          <slot v-if="!loadError" name="empty-create" />
         </CloudEmpty>
       </template>
     </j-pro-table>
@@ -152,6 +154,7 @@ const props = defineProps<{
   totalDevices: number
   selectedCount: number
   hasActiveFilters: boolean
+  hasSearch?: boolean
   loadError: string
   tableParams: Record<string, unknown>
   tablePagination: Record<string, unknown>

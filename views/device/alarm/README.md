@@ -1,5 +1,11 @@
 # 物联告警规则与记录工作区
 
+## 规则侧栏新增入口
+
+规则侧栏恢复原有底部通栏“新增告警”按钮，继续使用 `create`、`creating` 和原有操作互斥。成功空态仅展示原描述，不额外放置新增按钮；原搜索查询与提示保持页面原有实现。已撤回本次空态新增的复用模板、公共 Hook 接入及底部入口显隐条件。
+
+实现入口：`index.vue` 与 `hooks/useDeviceAlarmPage.ts`。专项回归仍为 `node scripts/test-alarm-workspace.mjs`，撤回验证结果与现有类型检查限制见运行时根 `README.md` 的“空状态新增入口”。
+
 ## 左栏前三排复用视觉告警样式（已完成，2026-09-23）
 
 - 目标与 owning module：在 `runtime-ui/modules/device-manager-ui` 中让物联告警左侧标题、搜索框和“全部告警”前三排复用视觉告警的尺寸、间距与视觉规格，确保两个页面切换时这三排没有位置跳动；视觉告警同时移除入口右侧数量，关联计划记录在 `runtime-ui/modules/jetlinks-ai-ui/docs/plans/visual-alarm-preview.md`。
