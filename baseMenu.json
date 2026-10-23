@@ -274,6 +274,47 @@
                   ]
                 },
                 {
+                  "id": "resource-package-import",
+                  "name": "导入产品资源包",
+                  "i18nMessages": {
+                    "zh_CN": "导入产品资源包",
+                    "en_US": "Import Product Resource Package",
+                    "en": "Import Product Resource Package"
+                  },
+                  "permissions": [
+                    {
+                      "permission": "protocol-supports",
+                      "actions": [
+                        "query"
+                      ]
+                    },
+                    {
+                      "permission": "plugin-driver",
+                      "actions": [
+                        "query"
+                      ]
+                    },
+                    {
+                      "permission": "certificate",
+                      "actions": [
+                        "query"
+                      ]
+                    },
+                    {
+                      "permission": "device-gateway",
+                      "actions": [
+                        "query"
+                      ]
+                    },
+                    {
+                      "permission": "device-product",
+                      "actions": [
+                        "resource-package-import"
+                      ]
+                    }
+                  ]
+                },
+                {
                   "id": "delete",
                   "name": "删除",
                   "i18nMessages": {
