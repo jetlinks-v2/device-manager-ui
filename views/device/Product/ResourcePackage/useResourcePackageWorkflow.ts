@@ -62,6 +62,9 @@ const preflightErrors = preflight.errors
 const storagePolicyError = computed(() => preflight.isStoragePolicyAvailable(product.storePolicy)
   ? undefined
   : $t('Product.resourcePackage.001-57'))
+// 存储策略在基础信息步骤已单独处理，设备接入页只展示接入资源的校验结果。
+const accessPreflightErrors = computed(() => preflightErrors.value
+  .filter(error => error !== $t('Product.resourcePackage.001-57')))
 const hasAccessResources = computed(() => resourceTypes
   .some(type => !!manifest.value?.accessResources?.[type.key]))
 const visibleSteps = computed(() => [
@@ -257,6 +260,8 @@ const next = async () => {
       startImport()
       return
     }
+    // 使用当前基础信息重算预检，避免资源包原始存储策略的历史错误带入下一步。
+    validate()
     step.value = 2
     return
   }
@@ -317,6 +322,7 @@ const startImport = () => {
     product,
     metadataVisible,
     preflightErrors,
+    accessPreflightErrors,
     storagePolicyError,
     showSelectionValidation,
     categoryTree,

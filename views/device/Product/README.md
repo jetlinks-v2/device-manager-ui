@@ -38,6 +38,14 @@
 - 模块 `vue-tsc --noEmit` 被未改动的 `views/link/Certificate/type.d.ts:2` 语法错误阻断；模块与工作区均未提供 lint 脚本，未单独执行 lint。
 - 本次视觉收敛提交：`0aee5af`；PR：[device-manager-ui#303](https://github.com/jetlinks-v2/device-manager-ui/pull/303)。
 
+## 物模型表格右键菜单定位与连续打开
+
+- 目标与范围：修复产品详情物模型表格右键菜单偏离鼠标的问题，归属 `device-manager-ui/components/Metadata/components/ContextMenu/`，保留现有菜单操作与物模型数据逻辑。
+- 实施：固定定位菜单挂载到 `document.body`，全屏时挂载到当前全屏元素，避免内容面板的 `backdrop-filter` 改变定位参照；统一使用鼠标视口坐标及视口尺寸，空间不足时向左或向上展开，并在聚焦时禁止自动滚动。
+- 连续打开修复：旧菜单失焦的 300ms 延迟关闭回调不能操作后续打开的菜单；在 `components/Metadata/components/ContextMenu/index.ts` 按实例 ID 限定关闭与全局引用清理，保留现有延迟及菜单操作时序。浏览器已复现修复前第二次右键后菜单消失；修复后连续在三个位置右键始终只保留最新菜单，20 秒后仍可见，外部点击关闭及关闭后重开正常；在数据类型单元格重复验证，12 秒后菜单仍显示在新位置。
+- 浏览器验证：`localhost:9201` 右键 `(845,606)` 后菜单左上角为 `(845,606)`；右下角 `(1380,860)` 触发时向左上展开且完整可见。页面滚动 197px、表格内部滚动 190px 后仍对齐点击坐标，聚焦未改变滚动位置；原生全屏下菜单挂载在全屏表格内并对齐目标行中心，点击外部可关闭。未保存物模型数据。
+- 工程验证：交付前在 `runtime-ui/jetlinks-web-core` 再次执行模块生产构建（`pnpm exec vite build --outDir <临时目录> -- --module-name device-manager-ui`）通过，共转换 11,253 个模块，耗时 37.86 秒；构建仍有资源路径、插件加载提示及分块告警。修改文件的 Vue SFC 脚本 / 模板编译、TypeScript 语法检查及 `git diff --check` 通过。在 `runtime-ui` 执行 `pnpm exec vue-tsc --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json` 仍被未改动的 `views/device/Product/ResourcePackage/index.vue:187:23` 与 `views/link/Certificate/type.d.ts:2:30` 两处 TS1005 语法错误阻断，修复后需重跑；工作区与模块均未配置 lint 脚本。浏览器结论复用上述已有记录，本次交付未重新执行，其他浏览器尚未验证。
+
 ## 详情摘要 Tooltip 定位
 
 目标：使产品详情摘要中产品 ID、产品分类、设备类型、品牌和型号的 Tooltip 对齐各自文字，而非整列字段区域。
