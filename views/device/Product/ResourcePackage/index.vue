@@ -105,7 +105,7 @@
     </template>
 
     <template v-else-if="step === 2">
-      <a-alert v-for="error in preflightErrors" :key="error" class="resource-alert" type="error" show-icon :message="error" />
+      <a-alert v-for="error in accessPreflightErrors" :key="error" class="resource-alert" type="error" show-icon :message="error" />
       <a-alert v-if="showSelectionValidation && hasIncompleteLocalSelection" class="resource-alert" type="warning" show-icon :message="$t('Product.resourcePackage.001-48')" />
       <a-descriptions v-if="product.accessProvider" class="gateway-type" size="small" :column="1" bordered>
         <a-descriptions-item :label="$t('Product.resourcePackage.001-9')">{{ gatewayProviderName }}</a-descriptions-item>
@@ -175,7 +175,7 @@ import { useResourcePackageWorkflow } from './useResourcePackageWorkflow'
 
 const emit = defineEmits<{ success: [] }>()
 const {
-  visible, step, loading, importing, productFormRef, product, metadataVisible, preflightErrors, storagePolicyError,
+  visible, step, loading, importing, productFormRef, product, metadataVisible, accessPreflightErrors, storagePolicyError,
   showSelectionValidation, categoryTree, resourceSelections, localOptions, manifest,
   storagePolicyOptions, dependentResourceTypes, isLocalGateway, gatewayProviderName,
   metadataPreview, hasIncompleteLocalSelection, canContinue, imageTypes, productRules,
