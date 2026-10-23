@@ -26,6 +26,10 @@
   gap: var(--space-3);
 }
 
+.iot-device-detail__summary-card {
+  margin-block: var(--space-4);
+}
+
 .iot-device-detail__summary-card,
 .iot-device-detail__content-card {
   min-width: 0;
@@ -86,38 +90,13 @@
   overflow: hidden;
 }
 
-.dd-detail-tabs {
-  padding: 0;
-}
-
-.dd-detail-tabs :deep(.ant-tabs-tab) {
-  padding: 0;
-}
-
-.dd-detail-tabs :deep(.ant-tabs-tab + .ant-tabs-tab) {
-  margin-left: var(--space-5);
-}
-
-.dd-detail-tabs :deep(.ant-tabs-nav),
 .dd-inline-tabs :deep(.ant-tabs-nav) {
   margin: 0;
 }
 
-.dd-detail-tabs :deep(.ant-tabs-content-holder),
 .dd-inline-tabs :deep(.ant-tabs-content-holder) {
   display: none;
 }
-
-.dd-detail-tabs__item {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 2.625rem;
-  font-size: var(--fs-14);
-  font-weight: 600;
-  white-space: nowrap;
-}
-
 
 .dd-tab-content {
   padding: var(--space-4) 0;

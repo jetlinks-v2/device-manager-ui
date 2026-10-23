@@ -11,15 +11,23 @@
     </a-button>
   </PageChrome>
 
-  <!-- 路由态与嵌入态都保留页内面板：布局壳层检测到页面已有面板会自动让位，不会双层卡片。 -->
+  <!-- 嵌入网关的物模型与数据面板由外层详情承载导航。 -->
 	<IotDeviceDefaultDetailContent v-if="embedded && device" :state="state" embedded />
 	<a-alert v-else-if="embedded" type="error" show-icon :message="state.$t('UnifiedDeviceList.loadFailed')" />
 	<IotDeviceDetailOverlays v-if="!embedded" :state="state" />
 	<main v-if="!embedded && device" class="iot-device-detail">
 		<div class="iot-device-detail__content">
-			<div class="iot-device-detail__summary-card" :padding="16">
-				<IotDeviceDetailHeader :state="state" />
-			</div>
+			<PageChrome :flush="!detailContent">
+				<ContentPanel class="iot-device-detail__summary-card" fill>
+					<IotDeviceDetailHeader :state="state" />
+				</ContentPanel>
+				<SlantedTabs
+					v-if="!detailContent"
+					:active-key="state.activeTab"
+					:options="state.tabOptions"
+					@change="state.setActiveTab(String($event))"
+				/>
+			</PageChrome>
 			
 			<div class="iot-device-detail__content-card" :padding="0">
 				<FullPage v-if="detailContent" class="iot-device-detail__legacy-content" flex transparent-background>
@@ -40,6 +48,7 @@
 
 <script setup lang="ts">
 import { reactive, toRefs, type PropType } from 'vue'
+import SlantedTabs from '@jetlinks-web-core/components/SlantedTabs'
 import IotDeviceDetailHeader from './device-detail/IotDeviceDetailHeader.vue'
 import IotDeviceDetailOverlays from './device-detail/IotDeviceDetailOverlays.vue'
 import IotDeviceDefaultDetailContent from './IotDeviceDefaultDetailContent.vue'
