@@ -94,19 +94,20 @@ export function useUnifiedDeviceActions(
   function openCreate(provider?: DeviceListProvider) {
     const entry = provider?.create
     if (!entry || busy.value || !canCreate(provider)) return
+    // 私有化网关声明产品新增抽屉时，不能被列表待办引导的扫码入口覆盖。
+    if ('drawer' in entry) {
+      editing.value = null
+      createDrawerOptions.value = entry.drawer
+      editOpen.value = true
+      return
+    }
     if (provider?.listGuide) {
       guideRequest.value++
     } else if (entry.route !== undefined) {
       // 原新增页通过 query.id 判定编辑；列表上下文由浏览器返回历史保留。
       menu.jumpPage(entry.route, { params: entry.params })
     } else {
-      if ('drawer' in entry) {
-        editing.value = null
-        createDrawerOptions.value = entry.drawer
-        editOpen.value = true
-      } else {
-        createEntry.value = entry
-      }
+      createEntry.value = entry
     }
   }
   function openDetail(device: UnifiedDevice) {

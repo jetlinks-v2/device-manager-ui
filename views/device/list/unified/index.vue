@@ -194,9 +194,9 @@
 	    </EqualHeightColumns>
     <component v-for="provider in providers.filter(item => item.listGuide)" :key="`guide-${provider.id}`"
       :is="provider.listGuide" :active="activeType === provider.id" :request="guideRequest"
-      :project-id="guideProjectId" @refresh="refresh" />
+      :configuration-request="configurationRequest" :project-id="guideProjectId" @refresh="refresh" />
     <component v-if="createEntry" :is="createEntry.component" :open="true" @update:open="createEntry = undefined" @saved="refresh" />
-    <IotAddDeviceDrawer v-if="!editing || editing.category === 'device'" v-model:open="editOpen" :project-id="projectId" :device="editing" :product-filter="createDrawerOptions" @saved="refresh" @created="refresh" />
+    <IotAddDeviceDrawer v-if="!editing || editing.category === 'device'" v-model:open="editOpen" :project-id="projectId" :device="editing" :product-filter="createDrawerOptions" @saved="refresh" @created="handleDeviceCreated" />
     <component v-else-if="editing && providerOf(editing)?.editComponent" :is="providerOf(editing)?.editComponent" v-model:open="editOpen" :gateway="editing" :device="editing" :project-id="projectId" @saved="refresh" />
     <component v-if="detailDevice && providerOf(detailDevice)?.detailComponent" :is="providerOf(detailDevice)?.detailComponent" v-bind="providerOf(detailDevice)?.detailProps?.(detailDevice)" @close-drawer="detailDevice = null" @close="detailDevice = null" />
     <IotDeviceAssignAreaModal v-if="spaceAreaSupported !== false" v-model:open="assignAreaOpen" :project-id="projectId" :selected-device-count="selectedIds.length" :saving="busy" @save="assignArea" />
@@ -274,6 +274,16 @@ function formatBrandModel(value?: string) {
 }
 const { projectId, editing, editOpen, createDrawerOptions, createEntry, guideRequest, canCreate, openCreate, detailDevice, busy, selected, allowed, openDetail, edit, toggle, remove, canDelete, batchToggle, assignAreaOpen, assignGroupOpen, assignArea, assignGroup } = useUnifiedDeviceActions(rows, selectedIds, clearBatchSelection, providerOf, refresh, activeProvider)
 const { openBatchPage } = useUnifiedDeviceBatchNavigation({ selected, searchTerms, filterFields, syncGatewayStatus })
+const configurationRequest = ref(0)
+
+// 私有化网关由产品抽屉直接创建；完成后单独通知待办引导，不能复用 SaaS 的扫码请求。
+function handleDeviceCreated() {
+  refresh()
+  if (activeProvider.value?.id === 'gateway' && createDrawerOptions.value?.productOnly) {
+    configurationRequest.value++
+  }
+}
+
 const syncVisible = ref(false)
 const syncApi = ref('')
 const syncData = ref<Record<string, unknown>>({})
