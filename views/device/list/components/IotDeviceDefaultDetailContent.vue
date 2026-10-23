@@ -14,22 +14,6 @@
     </div>
 
     <section class="dd-tab-shell" :aria-label="$t('IotDeviceDetail.detail.contentAria')">
-      <a-tabs
-        v-if="!embedded"
-        class="dd-detail-tabs"
-        :active-key="activeTab"
-        @change="(key) => setActiveTab(String(key))"
-      >
-        <a-tab-pane v-for="option in tabOptions" :key="option.key">
-          <template #tab>
-            <span class="dd-detail-tabs__item">
-              <AIcon :type="option.icon" aria-hidden="true" />
-              {{ option.label }}
-              <span v-if="option.count !== undefined" class="dd-detail-tabs__count">{{ option.count }}</span>
-            </span>
-          </template>
-        </a-tab-pane>
-      </a-tabs>
 
       <div class="dd-tab-content">
         <IotDeviceOverviewTab
@@ -149,7 +133,6 @@ const {
   simulatorSession,
   healthConnectionRules,
   healthDeviationProperties,
-  tabOptions,
   openRelatedRules,
   openTodoHandler,
   mergeRealtimePropertyValue,

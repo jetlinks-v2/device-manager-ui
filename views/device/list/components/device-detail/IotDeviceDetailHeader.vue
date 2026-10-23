@@ -99,44 +99,19 @@
         </div>
       </div>
       <div class="dd-hero__actions">
-        <a-button v-if="canDeviceAction('update')" size="small" :disabled="Boolean(actionBusyId)" @click="openEditDrawer">
-          <template #icon><AIcon type="EditOutlined" /></template>
-          {{ $t('IotDeviceDetail.detail.edit') }}
-        </a-button>
-        <a-popconfirm
-          v-if="canDeviceAction(isDeviceDisabled ? 'enable' : 'disable')"
-          :title="isDeviceDisabled
-            ? $t('IotDeviceList.confirm.enableOne', { name: device.name })
-            : $t('IotDeviceList.confirm.disableOne', { name: device.name })"
-          :ok-button-props="{ loading: actionBusyId === device.id && actionKind === 'toggle' }"
-          @confirm="toggleDeviceEnabled"
-        >
-          <a-button
-            size="small"
-            :loading="actionBusyId === device.id && actionKind === 'toggle'"
-            :disabled="Boolean(actionBusyId && actionKind !== 'toggle')"
-          >
-            <template #icon><AIcon :type="isDeviceDisabled ? 'CheckSquareOutlined' : 'StopOutlined'" /></template>
-            {{ isDeviceDisabled ? $t('IotDeviceDetail.detail.enable') : $t('IotDeviceDetail.detail.disable') }}
-          </a-button>
-        </a-popconfirm>
-        <a-popconfirm
-          v-if="canDeviceAction('delete')"
-          :title="$t('IotDeviceList.confirm.deleteOne', { name: device.name })"
-          :disabled="deleteActionDisabled"
-          :ok-button-props="{ loading: actionBusyId === device.id && actionKind === 'delete' }"
-          @confirm="confirmDeleteDevice"
-        >
-          <a-button
-            size="small"
-            danger
-            :loading="actionBusyId === device.id && actionKind === 'delete'"
-            :disabled="deleteActionDisabled"
-          >
-            <template #icon><AIcon type="DeleteOutlined" /></template>
-            {{ $t('IotDeviceDetail.detail.delete') }}
-          </a-button>
-        </a-popconfirm>
+        <DeviceDetailActions
+          :name="device.name"
+          :disabled="isDeviceDisabled"
+          :permissions="{
+            update: canDeviceAction('update'),
+            action: canDeviceAction(isDeviceDisabled ? 'enable' : 'disable'),
+            delete: canDeviceAction('delete'),
+          }"
+          :busy-action="actionBusyId ? actionKind : ''"
+          @edit="openEditDrawer"
+          @toggle="toggleDeviceEnabled"
+          @delete="confirmDeleteDevice"
+        />
       </div>
     </section>
   </template>
@@ -146,6 +121,7 @@
 import { toRefs, type PropType } from 'vue'
 import { IconValueView } from '@jetlinks-web-core/components/IconValue'
 import IotDeviceStatusPill from '../IotDeviceStatusPill.vue'
+import DeviceDetailActions from './DeviceDetailActions.vue'
 import type { IotDeviceDetailViewState } from '../../hooks/useIotDeviceDetailView'
 
 /** 设备标识、范围、标签与快捷操作摘要。 */
@@ -176,7 +152,6 @@ type ViewState = Pick<IotDeviceDetailViewState,
   'businessGroupFullText' |
   'lastSeenText' |
   'isDeviceDisabled' |
-  'deleteActionDisabled' |
   'thingModelTags' |
   'getTagKey' |
   'formatTagLine' |
@@ -212,7 +187,6 @@ const {
   businessGroupFullText,
   lastSeenText,
   isDeviceDisabled,
-  deleteActionDisabled,
   thingModelTags,
   getTagKey,
   formatTagLine,
