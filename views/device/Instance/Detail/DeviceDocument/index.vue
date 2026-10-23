@@ -1,20 +1,24 @@
 <template>
-  <div class="device-document-page">
+
+  <DefineEmptyCreate>
+    <j-permission-button
+      type="primary"
+      hasPermission="device/Instance:update"
+      @click="openCreate"
+    >
+      <template #icon>
+        <AIcon type="PlusOutlined" />
+      </template>
+      {{ $t('DeviceDocument.index.000001-1') }}
+    </j-permission-button>
+  </DefineEmptyCreate>
+  <div v-bind="$attrs" class="device-document-page">
     <div class="device-document-toolbar">
       <div class="device-document-toolbar__title">
         {{ $t('DeviceDocument.index.000001-0') }}
         <span class="device-document-toolbar__count">{{ documents.length }}</span>
       </div>
-      <j-permission-button
-        type="primary"
-        hasPermission="device/Instance:update"
-        @click="openCreate"
-      >
-        <template #icon>
-          <AIcon type="PlusOutlined" />
-        </template>
-        {{ $t('DeviceDocument.index.000001-1') }}
-      </j-permission-button>
+      <EmptyCreateButton />
     </div>
     <a-table
       rowKey="id"
@@ -86,7 +90,9 @@
         </template>
       </template>
       <template #emptyText>
-        <j-empty :description="$t('DeviceDocument.index.000001-3')" />
+        <CloudEmpty :description="$t('DeviceDocument.index.000001-3')" :search-name="$t('Api.index.558884-2')">
+          <EmptyCreateButton />
+        </CloudEmpty>
       </template>
     </a-table>
     <SaveModal
@@ -101,6 +107,8 @@
 </template>
 
 <script setup lang="ts">
+import { createReusableTemplate } from '@vueuse/core'
+
 import dayjs from 'dayjs'
 import { useI18n } from 'vue-i18n'
 import { onlyMessage } from '@jetlinks-web/utils'
@@ -215,6 +223,8 @@ watch(
   () => loadDocuments(),
   { immediate: true }
 )
+
+const [DefineEmptyCreate, EmptyCreateButton] = createReusableTemplate()
 </script>
 
 <style scoped lang="less">

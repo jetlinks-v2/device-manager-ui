@@ -1,5 +1,18 @@
 <template>
-    <j-page-container>
+
+    <DefineEmptyCreate>
+      <j-permission-button
+        type="primary"
+        @click="handleAdd"
+        hasPermission="link/Certificate:add"
+      >
+        <template #icon
+        ><AIcon type="PlusOutlined"
+        /></template>
+        {{ $t('Certificate.index.646549-0') }}
+      </j-permission-button>
+    </DefineEmptyCreate>
+    <j-page-container v-bind="$attrs">
         <div>
             <FullPage>
                 <j-pro-table
@@ -13,6 +26,11 @@
                     :params="params"
                     class="pro-table__no-padding"
                 >
+                  <template #emptyText>
+                    <CloudEmpty :search="params?.terms" :search-name="$t('Detail.index.258513-43')">
+                      <EmptyCreateButton />
+                    </CloudEmpty>
+                  </template>
                     <template #headerLeftRender>
                         <div class="access-component-list-toolbar">
                             <h2 class="access-component-list-title">
@@ -28,16 +46,7 @@
 					                      target="search-certificate"
 					                      @search="handleSearch"
 			                      />
-			                      <j-permission-button
-					                      type="primary"
-					                      @click="handleAdd"
-					                      hasPermission="link/Certificate:add"
-			                      >
-					                      <template #icon
-					                      ><AIcon type="PlusOutlined"
-					                      /></template>
-					                      {{ $t('Certificate.index.646549-0') }}
-			                      </j-permission-button>
+			                      <EmptyCreateButton />
 	                      </a-flex>
                     </template>
                     <template #type="slotProps">
@@ -74,6 +83,8 @@
     </j-page-container>
 </template>
 <script lang="ts" setup name="CertificatePage">
+import { createReusableTemplate } from '@vueuse/core'
+
 import { query, remove } from '../../../api/link/certificate';
 import { onlyMessage } from '@jetlinks-web/utils';
 import { useMenuStore } from '@jetlinks-web-core/store';
@@ -220,6 +231,8 @@ const handleDelete = (id: string) => {
 const handleSearch = (e: any) => {
     params.value = e;
 };
+
+const [DefineEmptyCreate, EmptyCreateButton] = createReusableTemplate()
 </script>
 
 <style lang="less" scoped>

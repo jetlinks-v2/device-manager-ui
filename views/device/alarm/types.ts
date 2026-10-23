@@ -56,6 +56,7 @@ export interface DeviceAlarmFormModel {
   level: DeviceAlarmLevel
   trigger: DeviceAlarmTrigger
   limit: DeviceAlarmLimit
+  autoRelieve: boolean
   notification: DeviceAlarmNotificationConfig
 }
 

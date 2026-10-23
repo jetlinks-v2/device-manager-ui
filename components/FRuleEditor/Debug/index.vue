@@ -1,5 +1,32 @@
 <template>
-    <div class="debug-container">
+
+    <DefineEmptyCreate1>
+      <a-button
+          type="dashed"
+          block
+          style="margin-top: 5px"
+          @click="addItem"
+      >
+          <template #icon>
+              <AIcon type="PlusOutlined" />
+          </template>
+          {{ $t('Debug.index.853800-4') }}
+      </a-button>
+    </DefineEmptyCreate1>
+    <DefineEmptyCreate2>
+      <a-button
+          type="dashed"
+          block
+          style="margin-top: 5px"
+          @click="addTagItem"
+      >
+          <template #icon>
+              <AIcon type="PlusOutlined" />
+          </template>
+          {{ $t('Debug.index.853800-4') }}
+      </a-button>
+    </DefineEmptyCreate2>
+    <div v-bind="$attrs" class="debug-container">
         <div class="top">
             <div class="header">
                 <a-tabs v-model:activeKey="headerType">
@@ -38,6 +65,11 @@
                     size="small"
                     :scroll="{ y: 180 }"
                 >
+                  <template #emptyText>
+                    <CloudEmpty :search-name="$t('Operator.index.745665-8')">
+                      <EmptyCreateButton1 />
+                    </CloudEmpty>
+                  </template>
                     <template #bodyCell="{ column, record, index }">
                         <template v-if="column.key === 'id'">
                             <a-select
@@ -73,17 +105,7 @@
                         </template>
                     </template>
                 </a-table>
-                <a-button
-                    type="dashed"
-                    block
-                    style="margin-top: 5px"
-                    @click="addItem"
-                >
-                    <template #icon>
-                        <AIcon type="PlusOutlined" />
-                    </template>
-                    {{ $t('Debug.index.853800-4') }}
-                </a-button>
+                <EmptyCreateButton1 />
             </div>
             <div class="top-bottom" v-if="headerType === 'tag'">
                 <a-table
@@ -94,6 +116,11 @@
                     size="small"
                     :scroll="{ y: 200 }"
                 >
+                  <template #emptyText>
+                    <CloudEmpty :search-name="$t('Product.index.660348-8')">
+                      <EmptyCreateButton2 />
+                    </CloudEmpty>
+                  </template>
                     <template #bodyCell="{ column, record, index }">
                         <template v-if="column.key === 'id'">
                             <a-select
@@ -123,17 +150,7 @@
                         </template>
                     </template>
                 </a-table>
-                <a-button
-                    type="dashed"
-                    block
-                    style="margin-top: 5px"
-                    @click="addTagItem"
-                >
-                    <template #icon>
-                        <AIcon type="PlusOutlined" />
-                    </template>
-                    {{ $t('Debug.index.853800-4') }}
-                </a-button>
+                <EmptyCreateButton2 />
             </div>
         </div>
         <div class="bottom">
@@ -193,6 +210,8 @@
     </div>
 </template>
 <script setup lang="ts" name="Debug">
+import { createReusableTemplate } from '@vueuse/core'
+
 import { PropType, Ref } from 'vue';
 import { useRuleEditorStore } from '../../../store/ruleEditor';
 import dayjs from 'dayjs';
@@ -461,6 +480,9 @@ defineExpose({
 //     options.value =
 // };
 // getProperty();
+
+const [DefineEmptyCreate1, EmptyCreateButton1] = createReusableTemplate()
+const [DefineEmptyCreate2, EmptyCreateButton2] = createReusableTemplate()
 </script>
 <style lang="less" scoped>
 .debug-container {

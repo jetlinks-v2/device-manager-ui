@@ -251,6 +251,8 @@ export type DeviceProductPageQueryInput = {
   unclassified?: boolean
   deviceType?: string
   accessProvider?: string
+  /** 固定产品接入方式白名单，用于受限新增入口。 */
+  accessProviders?: string[]
 }
 
 export type DeviceProductPageResult = {

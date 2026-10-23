@@ -8,7 +8,7 @@ import { deployDevice_api, undeployDevice_api, deleteDevice_api, batchDeployDevi
 import { bindDeviceGroupDevices_api, type DeviceGroup } from '../../../../api/deviceGroup'
 import { reassignIotDevicesToArea } from '../hooks/iotDeviceAreaGroupBindings'
 import { resolveIotProjectId } from '../hooks/useIotDeviceRouting'
-import type { DeviceCreateEntry, DeviceListProvider, UnifiedDevice } from '../../../../deviceListProvider'
+import type { DeviceCreateDrawerOptions, DeviceCreateEntry, DeviceListProvider, UnifiedDevice } from '../../../../deviceListProvider'
 
 /** 统一列表操作与新增弹层状态；快捷入口仅调用当前分类已有的新增能力。 */
 export function useUnifiedDeviceActions(
@@ -27,6 +27,7 @@ export function useUnifiedDeviceActions(
   const projectId = computed(() => resolveIotProjectId(route))
   const editing = ref<UnifiedDevice | null>(null)
   const editOpen = ref(false)
+  const createDrawerOptions = shallowRef<DeviceCreateDrawerOptions>()
   // 固定打开时的新增入口，切换列表分类不会替换正在填写的表单。
   const createEntry = shallowRef<Extract<DeviceCreateEntry, { component: unknown }>>()
   const guideRequest = ref(0)
@@ -47,6 +48,7 @@ export function useUnifiedDeviceActions(
     // 设备接入（默认全部或明确为 device）：打开设备接入抽屉
     if (targetCategory === 'device' || !provider || provider.id === 'device') {
       editing.value = null
+      createDrawerOptions.value = undefined
       editOpen.value = true
       void router.replace({ query })
       return
@@ -59,6 +61,11 @@ export function useUnifiedDeviceActions(
         void router.replace({ query })
       } else if (provider.create && 'component' in provider.create) {
         createEntry.value = provider.create
+        void router.replace({ query })
+      } else if (provider.create && 'drawer' in provider.create) {
+        editing.value = null
+        createDrawerOptions.value = provider.create.drawer
+        editOpen.value = true
         void router.replace({ query })
       } else if (provider.create) {
         // 路由型新增使用 replace 跳转，避免将中转列表页压入历史栈导致浏览器需要后退两次。
@@ -87,6 +94,13 @@ export function useUnifiedDeviceActions(
   function openCreate(provider?: DeviceListProvider) {
     const entry = provider?.create
     if (!entry || busy.value || !canCreate(provider)) return
+    // 私有化网关声明产品新增抽屉时，不能被列表待办引导的扫码入口覆盖。
+    if ('drawer' in entry) {
+      editing.value = null
+      createDrawerOptions.value = entry.drawer
+      editOpen.value = true
+      return
+    }
     if (provider?.listGuide) {
       guideRequest.value++
     } else if (entry.route !== undefined) {
@@ -143,5 +157,5 @@ export function useUnifiedDeviceActions(
     }, clearBatchSelection)
   }
   async function assignGroup(group: DeviceGroup) { await execute(async () => { await bindDeviceGroupDevices_api(group.id, [...selectedIds.value]); assignGroupOpen.value = false }, clearBatchSelection) }
-  return { projectId, editing, editOpen, createEntry, guideRequest, canCreate, openCreate, detailDevice, busy, selected, allowed, openDetail, edit, toggle, remove, canDelete, batchToggle, assignAreaOpen, assignGroupOpen, assignArea, assignGroup }
+  return { projectId, editing, editOpen, createDrawerOptions, createEntry, guideRequest, canCreate, openCreate, detailDevice, busy, selected, allowed, openDetail, edit, toggle, remove, canDelete, batchToggle, assignAreaOpen, assignGroupOpen, assignArea, assignGroup }
 }

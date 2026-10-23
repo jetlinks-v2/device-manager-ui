@@ -8,32 +8,13 @@
       <a-spin
         :spinning="loading"
         :tip="t('components.DeviceMap.loading')"
-        class="device-map-card__spin"
+        wrapper-class-name="device-map-card__spin"
       >
         <div
-          v-if="supportMessage"
+          v-if="configurationMessage"
           class="device-map-card__status error"
         >
-          <CloudEmpty :description="supportMessage" />
-        </div>
-        <div
-          v-else-if="error"
-          class="device-map-card__status error"
-        >
-          <CloudEmpty :description="t('components.DeviceMap.loadError')">
-            <a-button
-              size="small"
-              @click="refresh"
-            >
-              {{ t('components.DeviceMap.retry') }}
-            </a-button>
-          </CloudEmpty>
-        </div>
-        <div
-          v-else-if="!points.length"
-          class="device-map-card__status"
-        >
-          <CloudEmpty :description="t(isEdit ? 'components.DeviceMap.editPlaceholder' : 'components.DeviceMap.empty')" />
+          <CloudEmpty :description="configurationMessage" />
         </div>
         <a-map-component
           v-else
@@ -41,11 +22,35 @@
           @init="onMapInit"
         >
           <el-amap-marker-cluster
+            v-if="points.length"
             :points="points"
             :extraOptions="extraOptions"
             @click="onClusterClick"
           />
         </a-map-component>
+        <a-alert
+          v-if="!configurationMessage && error"
+          class="device-map-card__notice"
+          type="error"
+          show-icon
+          :message="t('components.DeviceMap.loadError')"
+        >
+          <template #action>
+            <a-button
+              size="small"
+              @click="refresh"
+            >
+              {{ t('components.DeviceMap.retry') }}
+            </a-button>
+          </template>
+        </a-alert>
+        <a-alert
+          v-else-if="isEdit && !configurationMessage && !loading && !points.length"
+          class="device-map-card__notice"
+          type="info"
+          show-icon
+          :message="t('components.DeviceMap.editPlaceholder')"
+        />
         <DeviceMapSelectionCard
           :view="selection.view"
           @close="selection.close"
@@ -66,7 +71,6 @@ import CloudEmpty from '@jetlinks-web-core/components/CloudEmpty/index.vue'
 import { computed, toRef, type CSSProperties, type PropType } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElAmapMarkerCluster } from '@vuemap/vue-amap'
-import { isNoCommunity } from '@jetlinks-web-core/utils/utils'
 import { useSystemStore } from '@jetlinks-web-core/store/system'
 import SectionHeader from '../components/SectionHeader.vue'
 import { useDeviceMap } from '../hooks/useDeviceMap'
@@ -94,20 +98,11 @@ const isEditRef = toRef(props, 'isEdit')
 const system = useSystemStore()
 const { t } = useI18n()
 
-const hasMapKey = computed(() => !!system.systemInfo.amap?.apiKey)
-const supportMessage = computed(() => {
-  if (!hasMapKey.value) {
-    return t('components.DeviceMap.missingKey')
-  }
-
-  if (!isNoCommunity) {
-    return t('components.DeviceMap.unsupported')
-  }
-
-  return ''
+const isMapEnabled = computed(() => {
+  const { apiKey, secretKey } = system.systemInfo.amap || {}
+  return !!(apiKey?.trim() && secretKey?.trim())
 })
-
-const isMapEnabled = computed(() => !supportMessage.value)
+const configurationMessage = computed(() => isMapEnabled.value ? '' : t('components.DeviceMap.missingKey'))
 
 const { config, points, loading, error, extraOptions, selection, refresh, onMapInit, onClusterClick } = useDeviceMap(
   infoRef,
@@ -138,6 +133,7 @@ const title = computed(() =>
   min-height: 320px;
 }
 
+/* Spin 的满高样式绑定外层容器，避免内容高度随转圈结束归零。 */
 .device-map-card__spin,
 .device-map-card__spin :deep(.ant-spin-container),
 .device-map-card__map {
@@ -157,6 +153,14 @@ const title = computed(() =>
 
 .device-map-card__status.error {
   color: #ff4d4f;
+}
+
+.device-map-card__notice {
+  position: absolute;
+  top: var(--space-3, 12px);
+  right: var(--space-3, 12px);
+  left: var(--space-3, 12px);
+  z-index: 200;
 }
 </style>
 

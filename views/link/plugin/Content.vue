@@ -1,4 +1,17 @@
 <template>
+
+  <DefineEmptyCreate>
+    <j-permission-button
+     type="primary"
+     @click="handleAdd"
+     :hasPermission="`${permissionKey}:add`"
+    >
+     <template #icon>
+      <AIcon type="PlusOutlined"/>
+     </template>
+     {{ $t('plugin.index.293829-0') }}
+    </j-permission-button>
+  </DefineEmptyCreate>
   <FullPage>
     <JProTable
       ref="instanceRef"
@@ -11,6 +24,11 @@
       :params="params"
       class="pro-table__no-padding"
     >
+      <template #emptyText>
+        <CloudEmpty :search="params?.terms" :search-name="$t('components.SecondKind.311605-0')">
+          <EmptyCreateButton />
+        </CloudEmpty>
+      </template>
       <template #headerLeftRender>
         <div class="access-component-list-toolbar">
           <h2 class="access-component-list-title">
@@ -27,16 +45,7 @@
 			      target="link-plugin"
 			      @search="handleSearch"
 		      />
-		      <j-permission-button
-			      type="primary"
-			      @click="handleAdd"
-			      :hasPermission="`${permissionKey}:add`"
-		      >
-			      <template #icon>
-				      <AIcon type="PlusOutlined"/>
-			      </template>
-			      {{ $t('plugin.index.293829-0') }}
-		      </j-permission-button>
+		      <EmptyCreateButton />
 	      </a-flex>
       </template>
 
@@ -156,6 +165,8 @@
   <Detail v-if="visibleDetail" :data="editData" @close="visibleDetail = false"/>
 </template>
 <script setup lang="ts" name="PluginContent">
+import { createReusableTemplate } from '@vueuse/core'
+
 import SaveModal from './Save.vue';
 import {onlyMessage} from '@jetlinks-web/utils';
 import {queryPage, removeFn, getTypes} from '../../../api/link/plugin';
@@ -348,6 +359,8 @@ onMounted(() => {
   const parentTableRef = inject('tableRef')
   parentTableRef?.initTableRef?.(instanceRef.value)
 });
+
+const [DefineEmptyCreate, EmptyCreateButton] = createReusableTemplate()
 </script>
 
 <style scoped lang="less">

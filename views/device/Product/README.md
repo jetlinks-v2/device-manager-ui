@@ -1,5 +1,22 @@
 # 产品管理
 
+## 产品资源包导入导出
+
+产品列表支持将单个产品导出为可移植的 ZIP 资源包，并从工具栏导入同一格式的资源包。产品 JSON 的既有导入导出入口保持不变。
+
+资源包导入使用 `ResourcePackage/index.vue` 的分步弹窗：上传并预览脱敏清单、补充产品信息、选择本地协议/插件/证书/网络/网关后确认导入。存储策略属于产品基础信息，策略在当前环境不存在时会在“基础信息”步骤显示错误并禁止继续；网络类型、端口等接入资源校验保留在“设备接入”步骤。清单不含接入资源时跳过“设备接入”步骤，直接开始导入。导入进度使用 NDJSON 展示；关闭弹窗或组件卸载会取消订阅并清理导入状态。
+
+接口定义位于 `api/product.ts` 与 `api/link/type.ts`，对应后端 `/device/product/resource-package` 的解析、导入和导出接口。解析和导入均提交原始 ZIP，前端仅在当前向导会话内保留 `File`，不会依赖文件服务生成的资源包 ID。用户可见文案统一使用 `Product.resourcePackage.*` 的中英文语言包；资源包导出复用 `device/Product:export` 权限。
+
+## 列表空态新增与搜索提示
+
+- 当前行为：`runtime-ui` 产品列表通过公共 `useEmptyCreateState` 读取已提交筛选与分类状态。没有搜索时，在原空态下展示与工具栏一致的新增按钮；有搜索时隐藏空态新增，使用 core 公共词条 `components.CloudEmpty.searchEmpty`，传入 `name: $t('Product.index.660348-15')`，显示“未找到匹配的产品”。
+- 实现入口：`views/device/Product/index.vue` 与 `runtime-ui/jetlinks-web-core/src/hooks/useEmptyCreateState.ts`；工具栏与空态通过页面内 `createReusableTemplate` 共用新增按钮，移除专用按钮组件，复用原 `add()`、权限、弹窗和查询，不增加基础集合查询，不使用 `CrudTable`。
+- 按钮复用调整验证：两页 SFC 编译、告警定向回归 10/10、旧组件引用清理与目标文件 `git diff --check` 通过。本地 9201 登录态下，产品工具栏与空态的新增按钮均打开原新增弹窗，未提交数据。本次仅调整模板复用，未重跑全量构建或类型检查，沿用下述既有结果与限制。
+- 验证结果：运行时根目录执行 `pnpm -F jetlinks-web-core test:empty-create`，3/3 通过，覆盖响应式搜索 / 清空、默认条件隔离和严格类型契约；`pnpm -F jetlinks-web-core build -- --module-name device-manager-ui` 通过，保留既有构建警告。已核对中英文文案、两处按钮复用同一 `device/Product:add` 权限与 `add()`，`git diff --check` 通过。
+- 公共文案调整验证：实际 `createRuntimeI18n` 合并 core / 模块资源后的中英文参数插值、页面 SFC 编译与旧词条引用清理通过；本次仅修改文案，未重跑完整构建和类型检查，复用前述验证证据。
+- 验证限制：完整模块 `pnpm exec vue-tsc --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json` 被既有 `views/link/Certificate/type.d.ts:2:30` TS1005 阻断，工作区与模块无独立 lint 脚本。本次浏览器验证覆盖零数据场景下的两处新增入口；有数据时的筛选提交 / 清空、分类筛选和不同权限账号仍待复核。
+
 ## 列表状态列宽
 
 目标：将产品列表的状态列宽从 80 调整为 90，减少状态内容拥挤。仅涉及 `views/device/Product/index.vue` 的表格展示；不改状态值、筛选、接口或其他列。列定义与 `git diff --check` 已核对；按本次交付要求不执行构建，也未运行 lint、typecheck 或浏览器验证，页面实际宽度仍需人工复核。
@@ -20,6 +37,14 @@
 - 使用实际模块目录名执行 `pnpm --dir runtime-ui --filter jetlinks-web-core build -- --module-name device-manager-ui`，当前生产构建通过（9,629 个模块；仍有既有 CSS 注释、资源路径与大包告警）。
 - 模块 `vue-tsc --noEmit` 被未改动的 `views/link/Certificate/type.d.ts:2` 语法错误阻断；模块与工作区均未提供 lint 脚本，未单独执行 lint。
 - 本次视觉收敛提交：`0aee5af`；PR：[device-manager-ui#303](https://github.com/jetlinks-v2/device-manager-ui/pull/303)。
+
+## 物模型表格右键菜单定位与连续打开
+
+- 目标与范围：修复产品详情物模型表格右键菜单偏离鼠标的问题，归属 `device-manager-ui/components/Metadata/components/ContextMenu/`，保留现有菜单操作与物模型数据逻辑。
+- 实施：固定定位菜单挂载到 `document.body`，全屏时挂载到当前全屏元素，避免内容面板的 `backdrop-filter` 改变定位参照；统一使用鼠标视口坐标及视口尺寸，空间不足时向左或向上展开，并在聚焦时禁止自动滚动。
+- 连续打开修复：旧菜单失焦的 300ms 延迟关闭回调不能操作后续打开的菜单；在 `components/Metadata/components/ContextMenu/index.ts` 按实例 ID 限定关闭与全局引用清理，保留现有延迟及菜单操作时序。浏览器已复现修复前第二次右键后菜单消失；修复后连续在三个位置右键始终只保留最新菜单，20 秒后仍可见，外部点击关闭及关闭后重开正常；在数据类型单元格重复验证，12 秒后菜单仍显示在新位置。
+- 浏览器验证：`localhost:9201` 右键 `(845,606)` 后菜单左上角为 `(845,606)`；右下角 `(1380,860)` 触发时向左上展开且完整可见。页面滚动 197px、表格内部滚动 190px 后仍对齐点击坐标，聚焦未改变滚动位置；原生全屏下菜单挂载在全屏表格内并对齐目标行中心，点击外部可关闭。未保存物模型数据。
+- 工程验证：交付前在 `runtime-ui/jetlinks-web-core` 再次执行模块生产构建（`pnpm exec vite build --outDir <临时目录> -- --module-name device-manager-ui`）通过，共转换 11,253 个模块，耗时 37.86 秒；构建仍有资源路径、插件加载提示及分块告警。修改文件的 Vue SFC 脚本 / 模板编译、TypeScript 语法检查及 `git diff --check` 通过。在 `runtime-ui` 执行 `pnpm exec vue-tsc --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json` 仍被未改动的 `views/device/Product/ResourcePackage/index.vue:187:23` 与 `views/link/Certificate/type.d.ts:2:30` 两处 TS1005 语法错误阻断，修复后需重跑；工作区与模块均未配置 lint 脚本。浏览器结论复用上述已有记录，本次交付未重新执行，其他浏览器尚未验证。
 
 ## 详情摘要 Tooltip 定位
 

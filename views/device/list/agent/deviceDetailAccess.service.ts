@@ -82,40 +82,20 @@ const mapPrincipals = (value: unknown) => arrayValue(value).slice(0, 20).map((in
 /** Mirrors the user-facing access-configuration page while excluding runtime node details. */
 export const createDeviceDetailAccessService = (device: IotDevice) => {
   const accessSummary = () => runDetailTool<Record<string, unknown>>({}, async () => {
-    const productId = device.productId || device.productKey
-    const [detailResult, productResult, configResult, principalSupportResult] = await Promise.allSettled([
+    const [detailResult, accessResult, configResult, principalSupportResult] = await Promise.allSettled([
       iotDeviceDetailRealApi.getDeviceDetail(device.id),
-      productId ? iotDeviceDetailRealApi.getProductDetail(productId) : Promise.resolve(undefined),
+      iotDeviceDetailRealApi.getDeviceAccessDetail(device.id),
       iotDeviceDetailRealApi.queryDeviceConfig(device.id),
       iotDeviceDetailRealApi.existsDevicePrincipalSupport(),
     ])
     const detail = detailResult.status === 'fulfilled' ? firstRecord(detailResult.value) : {}
-    const product = productResult.status === 'fulfilled' ? firstRecord(productResult.value) : {}
-    const accessId = normalizeText(product.accessId)
+    const access = accessResult.status === 'fulfilled' ? firstRecord(accessResult.value) : {}
+    const accessFailed = accessResult.status === 'rejected'
 
-    let access: Record<string, unknown> = {}
-    let accessFailed = false
-    if (accessId) {
-      try {
-        const queried = await iotDeviceDetailRealApi.queryGatewayDetail(accessId)
-        access = firstRecord(queried)
-        if (!Object.keys(access).length) access = firstRecord(await iotDeviceDetailRealApi.getGatewayDetail(accessId))
-      } catch {
-        accessFailed = true
-      }
-    }
-
-    const protocol = normalizeText(detail.messageProtocol || access.protocol || device.protocol)
+    const protocol = normalizeText(detail.messageProtocol || access.protocolId || device.protocol)
     const transport = normalizeText(detail.transportProtocol || access.transport || device.transport)
-    let protocolView: Record<string, unknown> = {}
-    let protocolFailed = false
-    if (protocol && transport) {
-      try {
-        protocolView = firstRecord(await iotDeviceDetailRealApi.queryProtocolDetail(protocol, transport))
-      } catch {
-        protocolFailed = true
-      }
-    }
+    const protocolView = asRecord(access.transportDetail)
+    const protocolFailed = Boolean(protocol && transport && !Object.keys(protocolView).length)
 
     let principals: unknown[] = []
     let principalFailed = false
@@ -154,7 +134,7 @@ export const createDeviceDetailAccessService = (device: IotDevice) => {
       onlineAt: detail.onlineTime || device.onlineAt,
       offlineAt: detail.offlineTime || device.offlineAt,
     }
-    const partial = [detailResult, productResult, configResult].some(item => item.status === 'rejected')
+    const partial = [detailResult, accessResult, configResult].some(item => item.status === 'rejected')
       || accessFailed || protocolFailed || principalFailed
     const hasData = Boolean(data.access.name || addresses.length || data.configuration.length || data.connectionParameters.length)
     return createDomainAgentToolResult({

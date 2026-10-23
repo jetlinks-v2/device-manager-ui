@@ -2,11 +2,33 @@
 
 ## 网关列表引导扩展
 
-实施计划（已确认）：Provider 增加可选列表引导组件，统一列表传递激活状态与手动接入意图，接收列表刷新事件；弹窗、待办、偏好和轮询由 edge-master-ui 持有。进入网关分类按扫码说明、待办顺序提示，筛选／翻页不重开；其他分类沿用原有新增入口。跨模块复用走注册表，不修改菜单权限、后端和运营端。关键入口为 deviceListProvider.ts 与 views/device/list/unified/。
+当前方案：Provider 提供可选列表引导组件，统一列表传递激活状态与手动接入意图，接收列表刷新事件；弹窗、待办、偏好和轮询由 edge-master-ui 持有。每次进入或切回网关分类都显示“网关待完善配置”，没有待办也展示空态，保留“不再提示”偏好；点击“接入网关”或 `action=create` 时优先显示扫码说明，确认、关闭或 Esc 后等待关闭动画完成再显示待完善配置。普通进入不自动弹扫码说明，筛选／翻页不重开；其他分类沿用原有新增入口。跨模块复用走注册表，不修改菜单权限、后端和运营端。关键入口为 deviceListProvider.ts 与 views/device/list/unified/，弹窗触发及优先级由 edge-master-ui 的 `views/workbench/gateway/guide/useGatewayListGuide.ts` 负责。
 
 当前契约：`DeviceListProvider.listGuide?: Component` 接收 `active`、递增的手动接入 `request`、可选 `projectId`，发出 `refresh`。`useUnifiedDeviceActions.ts` 优先将扩展分类的手动按钮及 `action=create` 交给引导；无扩展时继续使用原组件／路由入口。`unified/index.vue` 传入 `resolveIotProjectId(route, '')`，避免默认示例项目进入偏好键。引导实际逻辑及独立视频详情由 edge 模块负责，查询不附带设备列表的搜索、分页或范围条件。
 
-验证：edge 模块的网关引导与详情定向测试 37/37 通过，包含本模块激活状态、项目上下文、刷新及手动接入接线契约；本模块现有分类、状态与批量回归 6/7 通过，批量权限测试的旧 `<table-actions>` 正则在 HEAD 同样失败，本次未改变权限行为。`pnpm -F jetlinks-web-core build -- --module-name device-manager-ui` 生产构建和 `git diff --check` 通过；工作区／模块未配置 lint。`pnpm exec vue-tsc -p modules/device-manager-ui/tsconfig.json --noEmit` 仍被既有 `views/link/Certificate/type.d.ts:2` TS1005 阻断，修复后需重跑。浏览器用模拟接口验证引导宿主的顺序、跳转和偏好；真实统一列表、用户／项目切换与权限联调仍待部署环境验收。详见 [网关功能说明](../../../../edge-master-ui/docs/设备资产我的网关列表说明.md)。
+触发与优先级验证：edge 模块相关回归 47/47 通过，含每次进入的空态、扫码优先级、关闭动画与异步待办恢复；本模块源码与测试未变化，复用 `node --test tests/unifiedDeviceTabs.test.mjs tests/unifiedDeviceStatusFilter.test.mjs` 4/4 通过的证据。edge 模块生产构建及两个模块差异检查通过。edge 完整类型检查仍有 382 条既有诊断，修改的引导 hook 无诊断；未配置 lint。前轮浏览器访问本地 9200 设备列表返回 403，本轮未重复浏览器操作，真实分类切换、空态和主动接入尚需在可访问环境验收。完整命令与风险见下方网关功能说明。
+
+原接线验证：edge 模块的网关引导与详情定向测试 37/37 通过，包含本模块激活状态、项目上下文、刷新及手动接入接线契约；本模块现有分类、状态与批量回归 6/7 通过，批量权限测试的旧 `<table-actions>` 正则在 HEAD 同样失败，本次未改变权限行为。`pnpm -F jetlinks-web-core build -- --module-name device-manager-ui` 生产构建和 `git diff --check` 通过；工作区／模块未配置 lint。`pnpm exec vue-tsc -p modules/device-manager-ui/tsconfig.json --noEmit` 仍被既有 `views/link/Certificate/type.d.ts:2` TS1005 阻断，修复后需重跑。浏览器用模拟接口验证引导宿主的顺序、跳转和偏好；真实统一列表、用户／项目切换与权限联调仍待部署环境验收。详见 [网关功能说明](../../../../edge-master-ui/docs/设备资产我的网关列表说明.md)。
+
+## 设备详情物模型继承提示
+
+目标与范围：运行时 `device-manager-ui` 的设备详情物模型页使用 `j-ellipsis` 展示继承提示，超出可用宽度时单行省略，悬浮查看完整文案。实现入口为 `views/device/components/Metadata/index.vue`，由 `views/device/list/components/IotDeviceDefaultDetailContent.vue` 复用。
+
+实施：使用现有 `j-ellipsis`，保留既有宽度计算、翻译和物模型操作。真实 Tabs 页中，组件文本节点未带当前 SFC 的 scoped 标记，原 `.desc` 样式未命中，继承的 `white-space: nowrap` 导致只有横向溢出，无法触发基于高度的省略和 Tooltip；提示容器也缺少居中约束。通过容器内的 `:deep(.desc)` 将换行与宽度约束作用到实际文本节点，容器使用 flex 垂直居中，并移除文本固定上边距。仅修改运行时前端，不调整运营端、接口、权限或路由。
+
+验证结果：同步最新 `2.20` 基线后，Vue 脚本、模板与 scoped Less 编译通过，确认编译后的后代选择器能跨越组件边界，组件为 233 行；`git diff --check` 及在 `runtime-ui` 执行 `node ../ui/scripts/check-ui-style.mjs --files modules/device-manager-ui/views/device/components/Metadata/index.vue` 通过。`pnpm run build:modules device-manager-ui` 通过（11,169 个模块，1 分 2 秒），保留现有资源路径、输出配置、循环分块、CSS 注释及大包告警。此前已在真实页面 `http://localhost:9201/#/resources/devices/list/Detail/2112790596200452096?type=device&tab=thing-model` 验证省略号、悬浮完整英文 Tooltip 和垂直居中：1479×899 视口下文本宽 456px、可见高度 20px、内容高度 41px；默认较窄视口下宽 146px、可见高度 20px、内容高度 123px。两种尺寸中，文本与页签导航的垂直中心偏差均小于 0.01px，旁边 Model TSL 操作保持可见；临时视口设置已恢复。先前的独立预览未覆盖 Tabs 的 scoped 样式和继承规则，不能作为真实页签的验收依据。
+
+验证限制：工作区和模块未配置 lint 脚本；本次重新执行 `pnpm exec vue-tsc -p modules/device-manager-ui/tsconfig.json --noEmit --pretty false`，完整检查仍被未改动的 `views/link/Certificate/type.d.ts:2:30` TS1005 语法错误阻断，修复后需重跑，不能据此宣称完整类型检查通过。浏览器复用上述真实页面记录，本轮未重跑；无接口或业务行为变更。
+
+交付：功能提交 `7b263e6`；分支 `codex/2.20-device-metadata-ellipsis-fix`；PR：[device-manager-ui#335](https://github.com/jetlinks-v2/device-manager-ui/pull/335)，目标分支为 `2.20`。
+
+## 设备接入详情数据源
+
+目标与范围：运行时 `device-manager-ui` 的设备详情按设备 ID 查询接入信息，统一使用后端 `GET /device/instance/{deviceId}/access/detail`。接口在设备资产权限边界内返回接入网关、协议、传输配置、通道信息及启用状态，前端不再通过产品接入 ID 查询 `/gateway/device/{accessId}/detail`，从而避免设备详情依赖网关管理权限。
+
+实现入口：`api/instance.ts#queryDeviceAccessDetail` 供旧版设备详情与诊断页使用；新版设备详情由 `views/device/list/services/iotDeviceDetailReal.service.ts#getDeviceAccessDetail` 封装，`useIotDeviceAccessDetail.ts`、`deviceDetailAccess.service.ts` 分别提供页面与智能体摘要数据。调用方直接消费接口返回的 `protocolId`、`protocolDetail`、`transportDetail`、`channelInfo` 和 `enabled`。
+
+边界与验证：只调整设备详情的接入信息查询，不替换设备库产品同步等以接入配置 ID 为语义的网关接口，也不修改运营端 `ui/`。运行端生产构建已通过；本地 Vite 源码已确认生成 `/device/instance/${deviceId}/access/detail` 请求。该接口依赖配套后端版本，前后端未同时部署时会返回资源不存在，仍需在集成环境验证资产权限允许与拒绝两条路径。
 
 ## Modbus 映射组件与国际化
 
@@ -61,7 +83,7 @@
 
 目标与范围：运行时 `device-manager-ui` 设备概览的累计活跃时长按“天、小时、分钟”完整显示，例如 `2621h 00m` 显示为 `109天 5小时 0分钟`；卡片与趋势提示复用 `components/device-detail/iotDeviceOverviewCharts.ts#formatDuration`，入口为 `components/device-detail/IotDeviceOverviewTab.vue`。
 
-实施与边界：按 S 级局部调整，将毫秒值截取为整分钟，再拆分为天、剩余小时和剩余分钟，并同步中英文文案。累计时长卡片的数值横跨两列，窄宽度下按时长分段换行，小趋势图移到说明行，避免分钟被截断；对应样式为 `components/device-detail/IotDeviceOverviewTab.css`。保留零值与负值归零行为；不改变累计在线时长数据来源、接口和其他时长指标，不修改 `ui/`。验证跨小时、跨天与零值，并检查卡片完整显示。
+实施与边界：按 S 级局部调整，将毫秒值截取为整分钟，再拆分为天、剩余小时和剩余分钟，并同步中英文文案。累计时长卡片的数值横跨两列，窄宽度下按时长分段换行，小趋势图移到说明行，避免分钟被截断；对应展示与样式现位于 `visDashboard/DeviceDetail/components/StatPanel.vue`，默认布局为紧凑宽度预留足够高度。保留零值与负值归零行为；不改变累计在线时长数据来源、接口和其他时长指标，不修改 `ui/`。验证跨小时、跨天与零值，并检查卡片完整显示。
 
 验证结果：实际 `formatDuration` 函数的 10 个中文边界值与 1 个英文文案检查通过，覆盖零值、负值、整分钟截取、跨小时、跨天及长时长；TypeScript 语法检查与 `git diff --check` 通过。在 `runtime-ui` 执行 `pnpm -F jetlinks-web-core build -- --module-name device-manager-ui` 生产构建通过（1 分 14 秒，保留大包告警）。本地 `http://localhost:9200/#/resources/devices/list/Detail/2064898513186066432` 已确认累计时长完整显示为“109天 5小时 7分钟”，小趋势图保留。
 
@@ -179,3 +201,34 @@
 本模块与工作区均未提供 lint 脚本，未单独执行 lint；模块 `vue-tsc --noEmit` 仍被未改动的 `views/link/Certificate/type.d.ts:2` 语法错误阻断。
 
 本次视觉收敛提交：`0aee5af`；PR：[device-manager-ui#303](https://github.com/jetlinks-v2/device-manager-ui/pull/303)。
+
+
+## 设备详情概览仪表盘组件化
+
+实现范围（M 级，已实施）：仅修改运行时 `device-manager-ui`，将新版设备详情概览接入资源中心使用的 core `DashBoardCanvas`。主要用户为设备管理员和运维人员，首屏查看单台设备的在线时长、消息、流量、关键属性和近期告警，并保留属性历史入口。
+
+- 组件拆分：在 `visDashboard/DeviceDetail/` 新建独立分组，提供累计活跃时长、今日上行、今日下行、今日流量、消息趋势、关键属性快照、近期告警七个稳定类型。沿用 manifest、运行组件 / 配置组件 / 默认配置三组导出、懒加载及缩略图协议。四张指标卡共用展示面板，不复制请求与图表实现。
+- 页面入口：`views/device/list/components/device-detail/IotDeviceOverviewTab.vue` 只负责提供当前设备上下文和装配画布；`IotDeviceDefaultDetailContent.vue` 保持设备详情接线。组件运行不依赖硬编码设备 ID 或路由参数，详情宿主统一绑定当前设备，独立使用时可显式配置设备 ID；缺少设备上下文时展示 CloudEmpty。
+- 数据归属：将原 SFC 中的请求、统计归一化和近期告警映射移入分组 services / hooks；复用 `iotDeviceDetailRealApi.queryOverviewSummary`、`queryAlarmByDevice`、现有关键属性选择 / 实时值、属性历史弹窗和格式化。四张指标及消息趋势共享同一次概览统计，错误不伪装为业务零值；上下文按当前项目 / 设备隔离，切换设备立即撤销旧结果，暂停页面 / 卸载清理刷新和订阅。现有累计时长格式与当天统计范围不因组件拆分改变。
+- 交互方案：沿用监控感知页及当前三层密度，布局为 `[活跃时长][今日上行][今日下行][今日流量] / [消息趋势整行] / [关键属性快照][近期告警]`；末行默认横向均分；可用宽度不足 900px 时指标按两列排布、趋势与末行卡片占满整行，不足 560px 时提高指标卡高度以完整展示长时长。以设备运行数据为主要视觉锚点，保留加载、失败重试、真实零值和空态，所有文案沿用模块 i18n，样式使用主题 token。
+- 画布能力：与资源中心一致，正式设备详情默认展示上述七项，支持拖动、缩放和本地布局恢复；本次不开放正式页增删组件或全功能设计入口。布局保存复用 core，按账号与项目上下文隔离，切换设备只更新数据，避免串设备请求和状态。组件配置支持标题、刷新间隔及业务展示项，设计预览不发真实设备请求。
+- 范围边界：保留详情头部、其他 Tab、设备读写权限、物模型、接口和后端不变，不修改 `ui/` 或资源中心所属模块。不将整个旧页面包成单一大组件，避免无法独立装配和调整。
+- 验证计划：先验证注册发现与七种默认配置，再验证共享请求去重、两设备切换及迟到结果丢弃、预览请求隔离、错误 / 零值 / 空态、关键属性分页与历史入口、告警等级及请求次数、宽窄布局和缓存恢复。执行定向 Node 测试、目标 SFC / TypeScript / CSS 语法与 diff 检查；按本机性能约束不执行全量构建。本地 `http://localhost:9200` 通过 Vite 连接 `http://192.168.33.76:9000/api`，已使用登录会话复验设备详情。
+
+关键代码入口：
+
+- `visDashboard/DeviceDetail/manifest.json`、七个子目录的 `index.ts` / `config.ts`：独立发现、默认配置、配置组件与缩略图。
+- `visDashboard/DeviceDetail/hooks/context.ts`、`resourcePool.ts`、`useDeviceDetailWidget.ts`：设备 / 账号 / 项目 / API 上下文、共享请求、轮询和订阅生命周期。
+- `visDashboard/DeviceDetail/hooks/deviceDetailLayout.ts`、`useDeviceDetailDashboard.ts`：24 列默认布局、组件目录和按账号 / 项目 / 宽度模式隔离的布局缓存。
+- `visDashboard/DeviceDetail/services/`、`components/`：统计 / 属性 / 告警边界、展示面板、业务配置和独立编辑预览。
+- `views/device/list/components/device-detail/IotDeviceOverviewTab.vue`：仅提供当前设备 / 实时属性上下文并装配画布；旧专用样式已移除。
+
+验证结果：
+
+- `node --test tests/deviceDetailDashboard.test.mjs tests/deviceDetailContent.test.mjs tests/deviceDetailThingModel.test.ts`：25/25 通过；新增 10 项覆盖真实 core 发现协议、默认布局、共享请求、迟到响应、上下文切换、合法零值、失败重试、独立属性订阅、告警映射及资源释放。
+- 目标 Vue SFC 的脚本 / 模板 / 样式编译、TypeScript 语法、相对导入、manifest / 中英文 JSON 和 `git diff --check`：通过。
+- 本地真实后端页面：七组件正常呈现；五个统计消费者首次仅发一次请求，手动缩放后仍仅一次。卡片高度由 152px 调整到 220px，刷新后恢复 220px；近期告警由右列拖到左列，刷新后保持 x=0。两台真实设备切换与 660px 视口通过，页面无横向溢出。
+- 数据缺失场景仅在临时测试页拦截只读响应：8 个关键属性按 6+2 分页，属性 7 历史弹窗请求指向当前设备 / 属性并展示样本值；切换设备关闭旧弹窗并重置分页。非空告警的触发条件 / 原因提示正常；紧凑布局完整显示 `109天 5小时 7分钟`；模拟 503 后五个组件展示错误，点击一次重试仅发一次共享统计请求。
+- 临时独立画布复验：配置取消不改变运行值，应用后标题 / 设备 ID / 0 秒刷新配置正确；编辑预览无真实统计请求，切到运行模式只请求配置的设备。上述测试页无 JavaScript 页面异常，测试布局缓存与用户真实缓存隔离并已清理。
+- 定向 `vue-tsc --noEmit`：本次新增分组及概览宿主无诊断，但传递依赖链仍有 314 项类型诊断，整体退出码为 2，不能视为类型检查通过；临时检查配置已移除。需在依赖类型基线修复后执行 `pnpm exec vue-tsc --noEmit -p modules/device-manager-ui/tsconfig.json` 复验。
+- 本模块 / 工作区没有可用 lint 脚本，未执行单独 lint；按本机性能限制未运行生产构建。生产环境仍需构建并部署 runtime-ui 前端静态资源，无后端服务重启要求。未创建 commit / PR。

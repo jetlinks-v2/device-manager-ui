@@ -8,8 +8,10 @@ export interface DeviceAlarmEvent {
   alarmName?: string
   alarmConfigName?: string
   targetType?: string
+  targetId?: string
   sourceType?: string
   level?: number
+  sourceId?: string
   targetName?: string
   sourceName?: string
   state?: EnumLike

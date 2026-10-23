@@ -22,10 +22,10 @@
 
 ### 设备列表批量配置快捷入口（已实施）
 
-- 目标：将边缘节点设备列表的“批量操作”改为下拉入口，提供“算法配置”和“插件配置”；选择后进入既有批量页并预选对应页签。
-- 影响范围与 owning module：仅 `runtime-ui/modules/device-manager-ui` 的统一设备列表、批量页和中英文文案；不修改动态页签注册、算法/插件业务组件、接口、权限、筛选逻辑或 `ui/`。
-- 实施：列表入口通过 `batchTab` 查询参数传递已验证的注册 code（`algorithms`、`plugins`）；批量页在注册表可用后优先应用该参数，返回列表时移除该临时参数。
-- 验证：中英文 locale JSON 解析与 `git diff --check -- modules/device-manager-ui` 均通过。在 `http://localhost:9200/#/resources/devices/list?type=gateway` 实测下拉菜单显示“算法配置”和“插件配置”；分别跳转至 `batchTab=algorithms`、`batchTab=plugins`，批量页对应页签均处于选中状态。交付时按实际模块目录执行 `pnpm --dir runtime-ui --filter jetlinks-web-core build -- --module-name device-manager-ui`，生产构建通过（9,621 个模块）；模块 `vue-tsc` 仍被未改动的 `views/link/Certificate/type.d.ts:2` 语法错误阻断。
+- 当前入口：边缘节点分类的“批量操作”提供“算法配置”“插件配置”和状态同步。算法配置跳转 AI 模块注册的“资源中心 → 算法配置”独立菜单 `algorithm-center`（`/resources/algorithm-center`），不携带当前列表选择或查询；快捷项通过新菜单授权控制显示。插件配置继续进入批量页并使用 `batchTab=plugins`，状态同步继续调用原流程。
+- 影响范围与 owning modules：仅 `runtime-ui/modules/device-manager-ui` 的统一列表及批量导航 hook，以及 `runtime-ui/modules/jetlinks-ai-ui` 的菜单、页签注销和路由壳。统一列表被网关工作台复用，相关网关入口同步生效；接口、插件组件、列表筛选及运营端 `ui/` 不变。完整共享影响和 AI 侧权限说明见 `../jetlinks-ai-ui/docs/plans/project-algorithm-center-prototype.md` 的“算法配置独立菜单恢复”。
+- 实施入口：`views/device/list/unified/index.vue` 负责入口显示与事件绑定；`useUnifiedDeviceBatchNavigation.ts` 负责按快捷项导航，复用 core 菜单 store 和 `ConditionFilter` 查询编码。插件批量页保留已选网关 ID 或原列表查询范围；批量页仍优先应用注册表中存在的 `batchTab`，返回列表时移除临时批量参数。
+- 验证：算法独立跳转、三种插件查询范围和状态同步共 5 种内存导航场景通过；同步最新 `2.20` 后保留新增设备配置与空间展示逻辑。列表 SFC 脚本/模板/样式、新 hook TS 语法和 `git diff --check` 通过，列表由基线 391 行减至 378 行，作为窄范围菜单修正保留现有结构。`pnpm --config.verify-deps-before-run=false -F jetlinks-web-core build -- --module-name device-manager-ui` 构建通过（10,934 个模块，3 分 18 秒）；`pnpm exec vue-tsc --noEmit -p modules/device-manager-ui/tsconfig.json` 被未修改的 `views/link/Certificate/type.d.ts:2` 语法错误阻断。没有独立 lint 或样式门禁脚本；未新增或修改测试、CSS，未打开浏览器。实际菜单同步、授权及页面交互待人工验收。
 
 ### 统一设备列表操作按钮菜单授权
 
@@ -62,16 +62,12 @@
 - 实现入口：`views/device/list/components/IotDeviceDetailView.vue` 承载面板外返回入口，`views/device/list/components/device-detail/IotDeviceDetailHeader.vue` 只保留摘要内容，`views/device/list/styles/IotDeviceDetailHeader.css` 使用顶部对齐并移除标签展开时的居中位移补偿。
 - 验证：中英文 locale JSON 解析、目标 worktree `git diff --check`、`pnpm -F jetlinks-web-core build -- --module-name device-manager-ui` 均通过（9642 个模块）；在 `http://localhost:9200/#/resources/devices/list/Detail/2100095778810372096?type=device` 实测确认返回按钮位于内容面板上方且摘要整体顶部对齐。构建仅保留既有资源路径、CSS 注释、Rollup output option 和大 chunk 警告。
 
-### 设备批量页接入算法配置（已实施）
+### 设备批量页扩展约定（算法配置已迁至独立菜单）
 
-- 目标：在设备列表的“批量操作”页中，在现有“插件配置”右侧增加“算法配置”，由 `jetlinks-ai-ui` 注册完整算法中心工作区。
-- 影响范围与 owning module：`device-manager-ui` 调整 `views/device/list/unified/BatchPage.vue` 的扩展页签承载契约，并维护资源中心设备列表菜单权限；算法页签注册、业务内容、文案和草稿保护由 `jetlinks-ai-ui` 负责。
-- 方案档案：沿用“多对象对比页”的高密度矩阵工作区；批量页只增加同级分段入口，不改算法中心的筛选、矩阵、参数面板和保存流程。页签通过现有 `device-list-batch:tabs` 注册表动态装配，以 `menuCode` 复用原页面菜单授权，并缓存已打开工作区以保留未提交草稿。
-- 不做：不改 `edge-master-ui`、`jetlinks-web-core`、后端接口、请求体、响应体和依赖锁文件；不将设备列表当前勾选或查询条件转换为算法中心的摄像头范围。
-- 实现入口：`views/device/list/unified/BatchPage.vue` 同时识别注册项声明的按钮权限与 `menuCode` 菜单所有权；动态页签组件通过 `KeepAlive + code key` 保留已打开工作区状态。算法模块以 `order=20` 注册，继续排在现有 `order=10` 的插件配置右侧。
-- 权限同步结果：资源中心设备菜单 `iot-user/device/list` 已合并算法中心工作区所需的接口权限；已有权限只合并缺失动作，不重复声明同一 permission。旧的 `/iot-center/device/list` 兼容菜单保持不变。
-- 验证：`pnpm run build:modules device-manager-ui` 通过（9568 个模块）；`git diff --check` 通过，目标 Vue 文件 52 行。完整模块 `vue-tsc` 被既有 `views/link/Certificate/type.d.ts:2` 语法错误提前阻断，本次批量页已由模块构建完成编译验证；未自动发起浏览器交互验证。
-- 本次权限同步验证：`baseMenu.json` 解析通过；算法中心 9 组权限的全部动作均被资源中心设备列表菜单覆盖；目标文件 `git diff --check` 通过。仅调整菜单元数据和文档，未重复执行模块构建，也未自动发起浏览器交互验证。
+- 当前结论：算法工作区由 AI 模块的独立菜单承载，AI 模块不再向 `device-list-batch:tabs` 注册 `algorithms`。网关列表的“算法配置”仍作为快捷跳转入口；批量页继续承载插件配置等实际注册的工作区。
+- 宿主契约：`views/device/list/unified/BatchPage.vue` 仍按动态注册表装配页签，同时识别注册项声明的按钮权限与 `menuCode` 菜单所有权；`KeepAlive + code key` 保留已打开工作区状态，本次不改宿主及插件业务。
+- 权限边界：设备列表菜单现有权限不做无关删减；独立算法配置菜单在 AI 模块声明当前工作区所需权限，不依赖设备菜单授予其接口权限。接口、矩阵业务、草稿保护和保存下发保持原流程。
+- 验证与生效方式：导航、页签注销、语法与差异检查结果见上方“设备列表批量配置快捷入口”；系统同步/初始化并授权新菜单后刷新页面，人工验收独立算法配置及插件批量页。
 
 ### 通用智能体设备分析能力 canonical activation（已实施）
 

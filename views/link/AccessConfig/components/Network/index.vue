@@ -1,5 +1,28 @@
 <template>
-  <div>
+
+  <DefineEmptyCreate1>
+    <j-permission-button
+      type="primary"
+      @click="addNetwork"
+      hasPermission="link/Type:add"
+    >
+      <template #icon><AIcon type="PlusOutlined" /></template>
+      {{ $t("Network.index.041705-2") }}
+    </j-permission-button>
+  </DefineEmptyCreate1>
+  <DefineEmptyCreate2>
+    <j-permission-button
+      v-if="showAddBtn"
+      type="primary"
+      @click="addProcotol"
+      hasPermission="link/Protocol:add"
+      :disabled="id !== ':id'"
+    >
+      <template #icon><AIcon type="PlusOutlined" /></template>
+      {{ $t("Network.index.041705-2") }}
+    </j-permission-button>
+  </DefineEmptyCreate2>
+  <div v-bind="$attrs">
     <a-steps :current="stepCurrent">
       <a-step disabled v-for="item in steps" :key="item" :title="item" />
     </a-steps>
@@ -16,14 +39,7 @@
             style="width: 300px"
             @search="networkSearch"
           />
-          <j-permission-button
-            type="primary"
-            @click="addNetwork"
-            hasPermission="link/Type:add"
-          >
-            <template #icon><AIcon type="PlusOutlined" /></template>
-            {{ $t("Network.index.041705-2") }}
-          </j-permission-button>
+          <EmptyCreateButton1 />
         </div>
         <j-scrollbar height="480">
           <a-row
@@ -67,11 +83,12 @@
               </AccessCard>
             </a-col>
           </a-row>
-          <j-empty
+          <CloudEmpty
             style="margin-top: 10%"
             v-else
-            :description="$t('Network.index.041705-5')"
-          />
+            :description="$t('Network.index.041705-5')" :search="emptyNetworkSearch" :search-name="$t('Status.index.565893-0')">
+            <EmptyCreateButton1 />
+          </CloudEmpty>
         </j-scrollbar>
       </div>
       <div class="steps-box" v-else-if="current === 1">
@@ -86,16 +103,7 @@
             style="width: 300px"
             @search="procotolSearch"
           />
-          <j-permission-button
-            v-if="showAddBtn"
-            type="primary"
-            @click="addProcotol"
-            hasPermission="link/Protocol:add"
-            :disabled="id !== ':id'"
-          >
-            <template #icon><AIcon type="PlusOutlined" /></template>
-            {{ $t("Network.index.041705-2") }}
-          </j-permission-button>
+          <EmptyCreateButton2 v-if="showAddBtn" />
         </div>
         <j-scrollbar height="480">
           <a-row
@@ -113,11 +121,12 @@
               </AccessCard>
             </a-col>
           </a-row>
-          <j-empty
+          <CloudEmpty
             style="margin-top: 10%"
             v-else
-            :description="$t('Network.index.041705-5')"
-          />
+            :description="$t('Network.index.041705-5')" :search="emptyProtocolSearch" :search-name="$t('DeviceAccess.accessModal.132524-4')">
+            <EmptyCreateButton2 />
+          </CloudEmpty>
         </j-scrollbar>
       </div>
       <div class="steps-box" v-else>
@@ -250,6 +259,8 @@
 </template>
 
 <script lang="ts" setup name="AccessNetwork">
+import { createReusableTemplate } from '@vueuse/core'
+
 import {
   getNetworkList,
   getProtocolList,
@@ -275,6 +286,10 @@ import { useI18n } from "vue-i18n";
 import { useTabSaveSuccess, useTabSaveSuccessBack } from '@jetlinks-web-core/hooks'
 import { I18nTextField } from '@jetlinks-web-core/components';
 import DeviceLibraryBizKeyPicker from '../DeviceLibraryBizKeyPicker.vue';
+import { ref as emptyCreateSearchRef } from 'vue'
+const emptyNetworkSearch = emptyCreateSearchRef(false)
+const emptyProtocolSearch = emptyCreateSearchRef(false)
+
 
 const { t: $t } = useI18n();
 const menuStory = useMenuStore();
@@ -387,6 +402,7 @@ const queryNetworkList = async (id: string, include: string, data = {}) => {
   if (resp.status === 200) {
     networkList.value = resp.result;
     allNetworkList.value = resp.result;
+    emptyNetworkSearch.value = false;
   }
 };
 
@@ -399,6 +415,7 @@ const queryProcotolList = async (id: string, params = {}) => {
   if (resp.status === 200) {
     procotolList.value = resp.result;
     allProcotolList.value = resp.result;
+    emptyProtocolSearch.value = false;
   }
 };
 
@@ -439,6 +456,8 @@ const checkedChange = (id: string) => {
 };
 
 const networkSearch = (value: string) => {
+  emptyNetworkSearch.value = Boolean(value?.trim())
+
   networkList.value = value
     ? allNetworkList.value.filter(
         (i: any) =>
@@ -454,6 +473,8 @@ const procotolChange = (id: string) => {
 };
 
 const procotolSearch = (value: string) => {
+  emptyProtocolSearch.value = Boolean(value?.trim())
+
   procotolList.value = value
     ? allProcotolList.value.filter(
         (i: any) =>
@@ -670,6 +691,9 @@ const addressesTip = (data: any) => {
   });
   return tip;
 };
+
+const [DefineEmptyCreate1, EmptyCreateButton1] = createReusableTemplate()
+const [DefineEmptyCreate2, EmptyCreateButton2] = createReusableTemplate()
 </script>
 
 <style lang="less" scoped>

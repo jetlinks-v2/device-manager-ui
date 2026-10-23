@@ -141,6 +141,11 @@ const { scopeType, scopeOptions, searchKeyword, searchPlaceholder, filteredTreeD
   overflow: auto;
 }
 
+.iot-device-scope__scroll:has(> .cloud-empty) {
+  display: flex;
+  align-items: safe center;
+}
+
 .iot-device-scope__label {
   flex: 1;
   min-width: 0;

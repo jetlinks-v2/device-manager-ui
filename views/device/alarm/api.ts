@@ -284,7 +284,6 @@ function mapNotifyChannel(channel: Record<string, any>): DeviceAlarmNotifyMethod
   if (!isEnabledState(channel.state)) return undefined
   const channelProvider = stringify(channel.channelProvider ?? channel.provider ?? channel.id ?? channel.value)
   if (!channelProvider) return undefined
-  if (isInsideMailChannel(channelProvider)) return undefined
   const key = notifyMethodKey(channelProvider)
   return {
     id: stringify(channel.id) || channelProvider,
@@ -569,10 +568,6 @@ function notifyMethodKey(providerId: string): DeviceAlarmNotifyMethod['key'] {
   if (id.includes('webhook')) return 'webhook'
   if (id.includes('weixin') || id.includes('wechat') || id.includes('dingtalk')) return 'wechat'
   return 'inbox'
-}
-
-function isInsideMailChannel(providerId: string) {
-  return providerId.toLowerCase() === 'inside-mail'
 }
 
 function notifyMethodIcon(key: DeviceAlarmNotifyMethod['key']) {

@@ -1,8 +1,44 @@
-import { request, ndJson } from '@jetlinks-web/core'
+import { createNdJson, request, ndJson } from '@jetlinks-web/core'
 import type { DataCapabilityRequest } from '@jetlinks-web-core/data-capability'
 import type { DeviceMetadata, ProductItem, DepartmentItem, MetadataType  } from '../views/device/Product/typings'
 import type { OperatorItem } from '../components/FRuleEditor/Operator/typings'
 import { getBaseApi } from '@jetlinks-web-core/utils/comm'
+
+export interface ProductResourcePackageManifest {
+  formatVersion: string
+  product: Record<string, any>
+  categories: Record<string, any>[]
+  preprocessors: Record<string, any>[]
+  accessResources: Record<string, any>
+}
+
+export interface ProductResourcePackageParseResult {
+  manifest: ProductResourcePackageManifest
+}
+
+export interface ProductResourcePackageImportRequest {
+  accessMode: 'PACKAGE' | 'LOCAL_GATEWAY'
+  gatewayId?: string
+  product: Record<string, any>
+  categories: Record<string, any>[]
+  preprocessors?: Record<string, any>[]
+  resourceSelections: Record<string, any>
+}
+
+/**
+ * 资源包导入请求体为 FormData，必须让浏览器写入含 boundary 的 multipart Content-Type。
+ * 默认 NDJSON 客户端会为 POST 设置 application/x-ndjson，故仅对此接口隔离处理。
+ */
+const resourcePackageNdJson = createNdJson({
+  handleRequest: config => {
+    if (config.data instanceof FormData) {
+      const headers = new Headers(config.headers)
+      headers.delete('Content-Type')
+      config.headers = headers
+    }
+    return config
+  },
+})
 
 /**
  * 根据条件查询产品（不带翻页）
@@ -78,7 +114,13 @@ export const category = (data: any) => request.get('/device/category/_tree?pagin
    },
   ],
  }
- export const queryGatewayList = (data: any = defaultGatewayData) => request.post('/gateway/device/_query/no-paging', data)
+export const queryGatewayList = (data: any = defaultGatewayData) => request.post('/gateway/device/_query/no-paging', data)
+
+/** 查询当前用户可选择的本地协议。 */
+export const queryProtocolList = () => request.post('/protocol/_query/no-paging?paging=false', {})
+
+/** 查询当前用户可选择的本地插件驱动。 */
+export const queryPluginDriverList = () => request.post('/plugin/driver/_query/no-paging?paging=false', {})
 
  /**
   * 查询产品列表(分页)
@@ -250,6 +292,18 @@ export const getFileType = () => request.get(`/file/media/types`)
  * @returns
  */
 export const syncProductCache = () => ndJson.post('/device/product/batch/_deploy')
+
+/** 上传并读取产品资源包的脱敏摘要。 */
+export const parseProductResourcePackage = (data: FormData) =>
+  request.post<ProductResourcePackageParseResult>('/device/product/resource-package/_parse', data)
+
+/** 提交原始资源包与最终导入配置，并按 NDJSON 接收各阶段结果。 */
+export const importProductResourcePackage = (data: FormData) =>
+  resourcePackageNdJson.post('/device/product/resource-package/_import', data)
+
+/** 下载单产品可移植的 ZIP 资源包。 */
+export const exportProductResourcePackage = (productId: string) =>
+  request.get(`/device/product/resource-package/${productId}/_export`, {}, { responseType: 'blob' })
 
 /**
  * 获取产品数量

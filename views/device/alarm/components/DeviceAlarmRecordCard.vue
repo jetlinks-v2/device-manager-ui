@@ -9,7 +9,13 @@
       <dl class="alarm-record-fields">
         <div v-for="field in fields" :key="field.label">
           <dt>{{ field.label }}</dt>
-          <dd><j-ellipsis>{{ field.value }}</j-ellipsis></dd>
+          <dd>
+            <a-button v-if="field.deviceId" type="link" class="alarm-record-device-link"
+                      @click="emit('device-alarm', row)">
+              <j-ellipsis>{{ field.value }}</j-ellipsis>
+            </a-button>
+            <j-ellipsis v-else>{{ field.value }}</j-ellipsis>
+          </dd>
         </div>
       </dl>
     </template>
@@ -40,7 +46,7 @@ import CardBox from '@jetlinks-web-core/components/CardBox/index.vue'
 import StatusTag from '@jetlinks-web-core/components/StatusTag/index.vue'
 import { formatApiTime } from '../../list/services/iotDeviceDetailReal.service'
 import { enumText, enumValue } from '../utils'
-import { alarmDuration, canHandleRecord } from '../workspaceUtils'
+import { alarmDeviceId, alarmDuration, canHandleRecord } from '../workspaceUtils'
 import type { AlarmLevelOption } from '../types'
 import type { DeviceAlarmEvent, HistoryTab } from '../workspaceTypes'
 
@@ -48,6 +54,7 @@ const props = defineProps<{ row: DeviceAlarmEvent; levels: AlarmLevelOption[]; n
 const emit = defineEmits<{
   (event: 'handle', record: DeviceAlarmEvent): void
   (event: 'history', record: DeviceAlarmEvent, tab: HistoryTab): void
+  (event: 'device-alarm', record: DeviceAlarmEvent): void
 }>()
 const { t: $t } = useI18n()
 
@@ -69,7 +76,11 @@ const levelLabel = computed(() => props.levels.find(level => level.value === pro
 const levelStatus = computed(() => props.row.level === 1 ? 'error' : (props.row.level || 4) <= 3 ? 'warning' : 'info')
 // 字段顺序与截图一致：设备/时间在上，原因/时长在下；快照字段缺失时显示占位符。
 const fields = computed(() => [
-  { label: $t('DeviceAlarm.workspace.alarmDevice'), value: props.row.sourceName || props.row.targetName || '—' },
+  {
+    label: $t('DeviceAlarm.workspace.alarmDevice'),
+    value: props.row.sourceName || props.row.targetName || '—',
+    deviceId: alarmDeviceId(props.row),
+  },
   { label: $t('DeviceAlarm.workspace.lastAlarmTime'), value: formatApiTime(props.row.lastAlarmTime || props.row.alarmTime) },
   { label: $t('DeviceAlarm.record.reason'), value: props.row.actualDesc || '—' },
   { label: $t('DeviceAlarm.workspace.duration'), value: alarmDuration(props.row, props.now) },
@@ -100,6 +111,7 @@ const fields = computed(() => [
 .alarm-record-fields > div { display: grid; min-width: 0; gap: var(--space-1); }
 .alarm-record-fields dt { color: var(--jet-theme-text-secondary); font-size: var(--fs-14); font-weight: normal; }
 .alarm-record-fields dd { min-width: 0; margin: 0; color: var(--ink-1); font-size: var(--fs-16); }
+.alarm-record-device-link { display: block; max-width: 100%; height: auto; padding: 0; font-size: inherit; text-align: left; }
 .alarm-record-actions {
   display: flex;
   align-items: center;

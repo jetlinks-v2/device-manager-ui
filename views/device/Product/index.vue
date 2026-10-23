@@ -1,5 +1,11 @@
 <template>
-  <j-page-container class="product-page">
+  <DefineEmptyCreate>
+    <j-permission-button type="primary" hasPermission="device/Product:add" @click="add">
+      <template #icon><AIcon type="PlusOutlined" /></template>
+      {{ $t('Product.index.660348-0') }}
+    </j-permission-button>
+  </DefineEmptyCreate>
+  <j-page-container v-bind="$attrs" class="product-page">
     <FullPage transparentBackground>
     <div class="product-page__main">
 	    <EqualHeightColumns class="product-page__layout" left-width="15rem" right-width="1fr">
@@ -46,18 +52,17 @@
 								      @change="handleFilterSearch"
 							      />
 							      <a-space class="product-page__actions">
-								      <j-permission-button
-									      type="primary"
-									      key="add"
-									      @click="add"
-									      hasPermission="device/Product:add"
-								      >
-									      <template #icon><AIcon type="PlusOutlined" /></template>
-									      {{ $t("Product.index.660348-0") }}
-								      </j-permission-button>
+								      <EmptyCreateButton key="add" />
 								      <BatchDropdown key="batch" :actions="batchActions" />
 							      </a-space>
 						      </a-flex>
+					      </template>
+					      <template #emptyText>
+					        <CloudEmpty :description="hasSearch
+                        ? $t('components.CloudEmpty.searchEmpty', { name: $t('Product.index.660348-15') })
+                        : undefined">
+					          <EmptyCreateButton v-if="showEmptyCreate" />
+					        </CloudEmpty>
 					      </template>
 					      <template #deviceType="slotProps">
 						      <div>{{ slotProps.deviceType?.text || '-' }}</div>
@@ -140,11 +145,12 @@
       @refresh="handleCategoryChanged"
     />
     <SyncCache v-if="syncCacheVisible" :params="tableParams" @success="refresh" @close="syncCacheVisible = false" />
+    <ResourcePackage ref="resourcePackageRef" @success="refresh" />
   </j-page-container>
 </template>
 
 <script setup lang="ts">
-import { onlyMessage } from "@jetlinks-web/utils";
+import { downloadFileByUrl, onlyMessage } from "@jetlinks-web/utils";
 import {
   getProviders,
   queryOrgThree,
@@ -154,6 +160,7 @@ import {
   _undeploy,
   deleteProduct,
   updateDevice,
+  exportProductResourcePackage,
 } from "../../../api/product";
 import { downloadJson, accessConfigTypeFilter, isNoCommunity, mergeObjectArrays } from "@jetlinks-web-core/utils";
 import { omit, cloneDeep } from "lodash-es";
@@ -176,8 +183,12 @@ import { useTermOptions } from '@jetlinks-web/components/es/Search/hooks/useTerm
 import BatchDropdown from "@jetlinks-web-core/components/BatchDropdown/index.vue";
 import { IconBadge } from '@jetlinks-web-core/components'
 import { getI18nText } from '../../../utils/i18n'
+import ResourcePackage from './ResourcePackage/index.vue'
+import { createReusableTemplate } from '@vueuse/core'
+import { useEmptyCreateState } from '@jetlinks-web-core/hooks'
 
 const { t: $t } = useI18n();
+const [DefineEmptyCreate, EmptyCreateButton] = createReusableTemplate()
 
 const menuStory = useMenuStore();
 const authStore = useAuthStore();
@@ -242,6 +253,7 @@ const columns = [
 const hasDepartmentMenu = menuStory.hasMenu('system/Department');
 const currentForm = ref({});
 const syncCacheVisible = ref(false)
+const resourcePackageRef = ref<{ show: () => void }>()
 const categoryModalRef = ref();
 const categoryModalMode = ref(0);
 const categoryModalChildMode = ref(0);
@@ -275,6 +287,7 @@ const tableParams = computed(() => {
     ],
   };
 });
+const { hasSearch, showEmptyCreate } = useEmptyCreateState(() => tableParams.value.terms);
 
 // 产品管理入口同时服务私有化与运行时，不能按 SaaS 编译标识隐藏导入和缓存同步能力。
 const batchActions = computed(() => {
@@ -297,6 +310,13 @@ const batchActions = computed(() => {
         };
         input.click();
       }
+    },
+    {
+      key: 'resource-package-import',
+      text: $t('Product.resourcePackage.001-0'),
+      icon: 'FolderOpenOutlined',
+      permission: 'device/Product:import',
+      onClick: () => resourcePackageRef.value?.show(),
     },
     {
       key: 'syncCache',
@@ -365,6 +385,16 @@ const getActions = (data: Partial<Record<string, any>>): any[] => {
       },
     },
     {
+      key: 'resource-package-export',
+      text: $t('Product.resourcePackage.001-35'),
+      tooltip: {
+        title: $t('Product.resourcePackage.001-35'),
+      },
+      icon: 'FolderOpenOutlined',
+      permission: 'device/Product:export',
+      onClick: () => exportResourcePackage(data),
+    },
+    {
       key: "action",
       text:
         data.state !== 0
@@ -430,6 +460,19 @@ const getActions = (data: Partial<Record<string, any>>): any[] => {
     actions = mergeObjectArrays(actions, parentActions)
   }
   return actions;
+};
+
+/** 下载可携带接入资源和附件的产品资源包，不影响现有 JSON 导出。 */
+const exportResourcePackage = async (data: Partial<Record<string, any>>) => {
+  try {
+    const response: any = await exportProductResourcePackage(String(data.id));
+    const blob = response?.data || response;
+    const url = URL.createObjectURL(blob);
+    downloadFileByUrl(url, data.name || String(data.id), 'zip');
+    URL.revokeObjectURL(url);
+  } catch (error: any) {
+    onlyMessage(error?.response?.data?.message || error?.message || $t('Product.resourcePackage.001-36'), 'error');
+  }
 };
 
 /**
