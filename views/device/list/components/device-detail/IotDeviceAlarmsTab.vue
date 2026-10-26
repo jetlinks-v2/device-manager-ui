@@ -188,7 +188,7 @@ const columns = computed(() => [
   { title: $t('DeviceAlarm.record.condition'), dataIndex: 'triggerDesc', key: 'triggerDesc', scopedSlots: true, ellipsis: true, width: 180 },
   { title: $t('DeviceAlarm.record.reason'), dataIndex: 'actualDesc', key: 'actualDesc', scopedSlots: true, ellipsis: true },
   { title: $t('DeviceAlarm.record.handleTime'), dataIndex: 'handleTime', key: 'handleTime', scopedSlots: true, width: 180 },
-  { title: $t('DeviceAlarm.record.handleType'), dataIndex: 'handleType', key: 'handleType', scopedSlots: true, width: 110 },
+  { title: $t('DeviceAlarm.record.handleType'), dataIndex: 'handleType', key: 'handleType', scopedSlots: true, width: 130 },
   { title: $t('DeviceAlarm.record.status'), dataIndex: 'state', key: 'state', scopedSlots: true, width: 100 },
   { title: $t('DeviceAlarm.column.action'), dataIndex: 'actions', key: 'actions', scopedSlots: true, fixed: 'right', width: 130 },
 ])
