@@ -1,4 +1,5 @@
 import { createNodeHealthCalculator, type NodeHealthSummary, type RealtimeHealthPayloadItem } from './nodeHealthData'
+import { deriveBytesPerSecond } from './counterData'
 
 export type RealtimeSortKey = 'pressure' | 'nodeId' | 'system' | 'jvm' | 'disk' | 'network'
 export type RealtimeSortOrder = 'asc' | 'desc'
@@ -63,6 +64,8 @@ export interface RealtimePayloadItem {
 
 export interface RealtimeNode {
   nodeId: string
+  /** 原始 CPU 快照的采样时间；缺失时不能据此证明连续的新采样。 */
+  cpuSampleAt?: number
   cpuSystem?: number
   cpuJvm?: number
   cpuLogicalProcessors?: number
@@ -187,19 +190,6 @@ const toDiskSnapshot = (disk?: RealtimeDiskPayload): DiskRateSnapshot => ({
   readBytes: numeric(disk?.readBytes),
   writeBytes: numeric(disk?.writeBytes),
 })
-
-const deriveBytesPerSecond = (
-  currentTime: number | undefined,
-  previousTime: number | undefined,
-  currentBytes: number | undefined,
-  previousBytes: number | undefined,
-): number | undefined => {
-  if ([currentTime, previousTime, currentBytes, previousBytes].some(value => value === undefined)) return undefined
-  const elapsedSeconds = (currentTime! - previousTime!) / 1000
-  const bytesDelta = currentBytes! - previousBytes!
-  if (elapsedSeconds <= 0 || bytesDelta < 0) return undefined
-  return bytesDelta / elapsedSeconds
-}
 
 const deriveCounterRate = (
   currentTime: number | undefined,
@@ -381,6 +371,7 @@ export const normalizeRealtimeNodes = (
 
   return {
     nodeId,
+    cpuSampleAt: numeric(item.value?.cpu?.sampleTime),
     cpuSystem,
     cpuJvm,
     cpuLogicalProcessors,

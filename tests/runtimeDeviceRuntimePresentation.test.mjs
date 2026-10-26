@@ -1,0 +1,134 @@
+import assert from 'node:assert/strict'
+import test from 'node:test'
+import { readFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
+import { dirname, resolve } from 'node:path'
+import { transformSync } from 'esbuild'
+import * as vue from 'vue'
+import { parse, compileScript } from 'vue/compiler-sfc'
+import { renderToString } from 'vue/server-renderer'
+const require=createRequire(import.meta.url), root=resolve(import.meta.dirname,'..'), cache=new Map(), received=[], buttons=[]
+const messages=JSON.parse(readFileSync(resolve(root,'locales/lang/zh.json'))), t=(key,args={})=>(messages[key]??key).replace(/\{(\w+)\}/g,(_,name)=>args[name]??`{${name}}`)
+const empty=vue.defineComponent({setup:()=>()=>null})
+const chart=vue.defineComponent({props:['option','events'],setup:props=>{received.push(props);return()=>vue.h('div',{class:'real-chart-contract'})}})
+function load(filename){
+ if(cache.has(filename))return cache.get(filename)
+ let source=readFileSync(filename,'utf8');if(filename.endsWith('.vue'))source=compileScript(parse(source,{filename}).descriptor,{id:filename,inlineTemplate:true}).content
+ const module={exports:{}},{code}=transformSync(source,{loader:'ts',format:'cjs'})
+ new Function('require','module','exports',code)(id=>{
+  if(id==='vue')return vue
+  if(id==='vue-i18n')return {useI18n:()=>({t,locale:vue.ref('zh')})}
+  if(id==='ant-design-vue')return {Button:vue.defineComponent({setup:(_,ctx)=>()=>{buttons.push(ctx.attrs);return vue.h('button',ctx.attrs,ctx.slots.default?.())}}),theme:{useToken:()=>({token:vue.ref({})})}}
+  if(id==='@ant-design/icons-vue')return {InfoCircleOutlined:vue.defineComponent({setup:(_,ctx)=>()=>vue.h('span',ctx.attrs)}),ArrowRightOutlined:empty,LinkOutlined:empty,UploadOutlined:empty,DownloadOutlined:empty,DatabaseOutlined:empty,ApiOutlined:empty}
+  if(id==='echarts/charts')return {LineChart:{}}
+  if(id==='echarts/components')return {GridComponent:{},TooltipComponent:{},LegendComponent:{},DataZoomComponent:{}}
+  if(id.endsWith('/Echarts/Echarts.vue'))return {__esModule:true,default:chart}
+  return id.startsWith('.')?load(resolve(dirname(filename),/\.(ts|vue)$/.test(id)?id:`${id}.ts`)):require(id)
+ },module,module.exports);cache.set(filename,module.exports);return module.exports
+}
+const Component=load(resolve(root,'views/link/diagnostics/overview/DeviceRuntimeTrend.vue')).default
+const session={key:'sessions',history:[{timestamp:4000,value:'12'},{timestamp:7000,value:'14'}],state:{status:'ready',sampledAt:7000},retainedValue:'14',facts:[],details:'session'}
+const communication={supported:true,state:{status:'ready',sampledAt:7700},history:[{timestamp:4700,startTime:'1000',counters:{upstreamMessages:'9007199254740993',receivedBytes:'1000',sentBytes:'0',propertyReports:'0',propertyValues:'0',eventReports:'0',receivedPackets:'9007199254740993',sentPackets:'0'},qps:{ready:true,timestamp:4500,windowMillis:1000,sequence:'45',values:{receivedQps:8,sentQps:2,communicationQps:10}}},{timestamp:7700,startTime:'1000',counters:{upstreamMessages:'9007199254741002',receivedBytes:'4072',sentBytes:'0',propertyReports:'6',propertyValues:'12',eventReports:'3',receivedPackets:'9007199254741005',sentPackets:'3'},qps:{ready:true,timestamp:7500,windowMillis:1000,sequence:'75',values:{receivedQps:17,sentQps:5,communicationQps:22}}}]}
+async function render(props){received.length=0;buttons.length=0;const app=vue.createSSRApp(Component,props);for(const name of ['a-button','a-tooltip','a-segmented'])app.component(name,{setup:(_,ctx)=>()=>vue.h('span',{'data-control':name},ctx.slots.default?.())});const html=await renderToString(app);return{html,chart:received.at(-1),buttons:[...buttons]}}
+test('real component projects independent capabilities with actual session and rate axes, and formats cumulative differences',async()=>{
+ let view=await render({session,communication})
+ assert.match(view.html,/会话记录/);assert.match(view.html,/上行速率/);assert.match(view.html,/>3<\/b>/)
+ assert.equal(view.chart.option.yAxis[0].min,0);assert.equal(view.chart.option.yAxis[0].max,undefined)
+ const data=view.chart.option.series.find(item=>item.id==='sessions').data;assert.equal(data[1].value[1],14)
+ const message=view.chart.option.series.find(item=>item.id==='upstreamMessages').data;assert.equal(message[1].value[1],3)
+ view=await render({session});assert.equal(view.chart.option.yAxis[1].show,false);assert.doesNotMatch(view.html,/data-control="a-segmented"/)
+ view=await render({communication});assert.equal(view.chart.option.yAxis[0].show,false);assert.equal(view.chart.option.yAxis[1].show,true)
+ view=await render({});assert.equal(view.chart,undefined)
+})
+test('first snapshot displays waiting, zero is a real rate, and tooltip preserves each source actual time and exact count',async()=>{
+ let view=await render({communication:{...communication,history:communication.history.slice(0,1)}});assert.match(view.html,/等待下一次采集/)
+ view=await render({communication:{...communication,history:[communication.history[0],{...communication.history[0],timestamp:7700},{...communication.history[0],timestamp:10700}]}});assert.match(view.html,/>0<\/b>/);assert.doesNotMatch(view.html,/等待下一次采集/)
+ const exact='9223372036854775807';view=await render({session:{...session,history:[{timestamp:4000,value:exact}]},communication})
+ const options=view.chart.option, s=options.series.find(item=>item.id==='sessions').data[0], m=options.series.find(item=>item.id==='upstreamMessages').data[1]
+ const tooltip=options.tooltip.formatter([{seriesId:'sessions',data:s},{seriesId:'upstreamMessages',data:m}])
+ assert.ok(tooltip.includes(BigInt(exact).toLocaleString()));assert.ok(tooltip.includes(new Date(4000).toLocaleTimeString()));assert.ok(tooltip.includes(new Date(7700).toLocaleTimeString()))
+})
+test('mode keeps stable series identities, traffic uses bytes/s, and legend empty selection plus zoom emit bounded preferences',async()=>{
+ const patches=[],view=await render({session,communication,config:{deviceRuntimeMode:'traffic',deviceRuntimeSeries:[]},onConfigure:value=>patches.push(value)})
+ const option=view.chart.option;assert.equal(option.yAxis[1].name,'B/s');assert.equal(option.series.length,7)
+ assert.deepEqual(option.series.find(item=>item.id==='upstreamMessages').data,[]);assert.equal(option.series.find(item=>item.id==='receivedBytes').data[1].value[1],1024)
+ assert.ok(Object.values(option.legend.selected).every(selected=>selected===false))
+ view.chart.events.legendselectchanged({selected:{会话记录:false,接收:false,发送:false}});assert.deepEqual(patches.at(-1),{deviceRuntimeSeries:[],deviceRuntimeMode:'traffic'})
+ view.chart.events.datazoom({batch:[{start:20,end:80}]});assert.deepEqual(patches.at(-1),{deviceRuntimeZoom:{start:20,end:80}})
+ assert.equal(option.dataZoom[0].zoomOnMouseWheel,'ctrl');assert.equal(option.animation,false)
+})
+test('partial communication getter availability cannot fabricate missing series or an upstream reading',async()=>{
+ const source={...communication,partial:true,history:communication.history.map(point=>({...point,counters:{sentBytes:point.counters.sentBytes}}))}
+ const view=await render({communication:source,config:{deviceRuntimeMode:'traffic'}})
+ assert.ok(view.chart.option.series.find(item=>item.id==='receivedBytes').data.every(point=>point.value[1]===null))
+ assert.equal(view.chart.option.series.find(item=>item.id==='sentBytes').data[1].value[1],0)
+ const tooltip=view.chart.option.tooltip.formatter([{seriesId:'receivedBytes',data:view.chart.option.series.find(item=>item.id==='receivedBytes').data[1]}]);assert.equal(tooltip,'')
+})
+
+test('QPS adds a third default message curve, keeps raw packet units and direction details, and stays a reading in traffic mode',async()=>{
+ let view=await render({session,communication})
+ assert.equal(view.chart.option.yAxis[1].name,'/s')
+ assert.equal(view.chart.option.legend.selected['通信 QPS'],true)
+ const qps=view.chart.option.series.find(item=>item.id==='communicationQps');assert.equal(qps.data[1].value[1],22)
+ const tooltip=view.chart.option.tooltip.formatter([{seriesId:'communicationQps',data:qps.data[1]}]);assert.match(tooltip,/22 次\/s/);assert.match(tooltip,/接收 17/);assert.match(tooltip,/发送 5/)
+ view=await render({session,communication,config:{deviceRuntimeMode:'traffic'}})
+ assert.deepEqual(view.chart.option.series.find(item=>item.id==='communicationQps').data,[]);assert.match(view.html,/通信/);assert.match(view.html,/>22<\/b>/)
+})
+test('legacy eight-attribute sources keep upstream and session while unavailable or reset QPS never renders a false zero',async()=>{
+ const old={...communication,history:communication.history.map(point=>{const {receivedPackets,sentPackets,...counters}=point.counters;return {...point,counters,qps:undefined}})}
+ let view=await render({session,communication:old});assert.equal(view.chart.option.legend.data.includes('通信 QPS'),false);assert.equal(view.chart.option.series.find(item=>item.id==='upstreamMessages').data[1].value[1],3)
+ const partial={...communication,history:communication.history.map(point=>({...point,counters:{...point.counters,sentPackets:undefined},qps:{ready:false,invalid:true}}))}
+ view=await render({communication:partial});assert.ok(view.chart.option.series.find(item=>item.id==='communicationQps').data.every(point=>point.value[1]===null));assert.doesNotMatch(view.html,/>0<\/b>/)
+ const reset={...communication,history:[communication.history[0],{...communication.history[1],startTime:'2000',qps:{ready:false}}]}
+ view=await render({communication:reset});assert.equal(view.chart.option.series.find(item=>item.id==='communicationQps').data.at(-1).value[1],null);assert.match(view.html,/等待首个窗口/)
+})
+
+test('QPS geometry uses its own source time, repeats no source points and compacts large message-axis ticks',async()=>{
+ const repeated={...communication,history:[...communication.history,{...communication.history[1],timestamp:7800}]}
+ const view=await render({communication:repeated}),points=view.chart.option.series.find(item=>item.id==='communicationQps').data
+ assert.deepEqual(points.map(point=>point.value[0]),[4500,7500]);assert.equal(view.chart.option.yAxis[1].axisLabel.formatter(1600000),'1.6M')
+ const tooltip=view.chart.option.tooltip.formatter([{seriesId:'communicationQps',data:points[1]}]);assert.match(tooltip,/采样窗口 1秒/);assert.ok(tooltip.includes(new Date(7500).toLocaleTimeString()))
+})
+
+test('all metrics off stays explicit and recoverable, missing selected metrics explain the gap, and traffic legend changes one unit axis',async()=>{
+ let patches=[],view=await render({session,communication,config:{deviceRuntimeSeries:[]},onConfigure:patch=>patches.push(patch)})
+ assert.match(view.html,/未选择指标/);assert.match(view.html,/恢复默认/);assert.doesNotMatch(view.html,/data-control="a-segmented"/)
+ view.chart.events.legendselectchanged({name:'接收流量',selected:{会话记录:false,上行消息:false,'通信 QPS':false,属性上报:false,事件上报:false,接收流量:true,发送流量:false}})
+ assert.equal(patches.at(-1).deviceRuntimeMode,'traffic');assert.ok(patches.at(-1).deviceRuntimeSeries.includes('receivedBytes'))
+ view=await render({session,communication,config:{deviceRuntimeMode:'traffic',deviceRuntimeSeries:['sessions','receivedBytes']},onConfigure:patch=>patches.push(patch)})
+ assert.ok(view.chart.option.legend.data.includes('上行消息'),'message legend remains a return path')
+ view.chart.events.legendselectchanged({name:'上行消息',selected:{会话记录:true,上行消息:true,'通信 QPS':false,属性上报:false,事件上报:false,接收流量:true,发送流量:false}})
+ assert.equal(patches.at(-1).deviceRuntimeMode,'messages')
+ const missing={...communication,history:communication.history.map(point=>({...point,counters:{upstreamMessages:point.counters.upstreamMessages}}))}
+ view=await render({communication:missing,config:{deviceRuntimeSeries:['propertyReports']}});assert.match(view.html,/暂无有效采样/)
+ assert.ok(240-view.chart.option.grid.top-view.chart.option.grid.bottom>=145)
+})
+test('clock rollback keeps latest source readings visible without stretching a chart across old future session coordinates',async()=>{
+ const old=1700000000000,current=old-259200000
+ const view=await render({session:{...session,history:[{timestamp:old,value:'3'}]},communication:{supported:true,state:{status:'ready'},history:[{timestamp:current,startTime:String(old),counters:{upstreamMessages:'9'},qps:{ready:true,timestamp:current,windowMillis:1000,sequence:'101',values:{receivedQps:7,sentQps:2,communicationQps:9}}}]}})
+ assert.match(view.html,/>9<\/b>/);assert.equal(view.chart.option.xAxis.min,current);assert.equal(view.chart.option.series.find(series=>series.id==='sessions').data.length,0)
+})
+test('line presentation keeps hover symbols available and explains a single point before a line exists',async()=>{
+ const view=await render({communication:{...communication,history:communication.history.slice(0,1)},config:{deviceRuntimeSeries:['communicationQps']}})
+ assert.ok(view.chart.option.series.every(series=>series.showSymbol===false&&series.symbol!=='none'&&series.connectNulls===false))
+ assert.equal(view.chart.option.legend.icon,'rect');assert.equal(view.chart.option.legend.itemHeight,2);assert.match(view.html,/等待下一次采集/)
+ const completed=await render({communication,config:{deviceRuntimeSeries:['communicationQps']}})
+ assert.doesNotMatch(completed.html,/device-runtime-empty/)
+})
+test('native chart media lowers narrow time-axis density and restores wide ticks on resize',async()=>{
+ const {init}=await import('echarts'),view=await render({session,communication}),chart=init(null,undefined,{renderer:'svg',ssr:true,width:328,height:216})
+ try{chart.setOption(view.chart.option);assert.equal(chart.getModel().getComponent('xAxis').get('splitNumber'),2)
+ const icons=[...chart.renderToSVGString().matchAll(/<path[^>]+ecmeta_ssr_type="legend"[^>]*>/g)].map(match=>match[0]).filter(path=>path.includes('ecmeta_silent="true"'))
+ assert.ok(icons.length>0);assert.ok(icons.every(path=>path.includes('d="M0 0l16 0l0 2l-16 0Z"')&&/fill="(?!none")[^"]+"/.test(path)),'legend markers need painted area; fill-only line paths are invisible')
+ chart.resize({width:1008});assert.equal(chart.getModel().getComponent('xAxis').get('splitNumber'),4)
+ }finally{chart.dispose()}
+})
+test('cache exposes exact counts and direct navigation while preserving missing fields, stale state and the session gate',async()=>{
+ const target='org.jetlinks:type=ThingsDataManager,name=local',events=[],count='9223372036854775807',cache={key:'property-cache',history:[],state:{status:'stale',sampledAt:7000},retainedValue:count,dirtyCount:'0',facts:[{label:'RuntimeMonitor.overviewDirtyKeys',value:'0'},{label:'RuntimeMonitor.overviewDirtyQueue',value:'2'}],details:target}
+ let view=await render({session,communication,cache,onDetails:value=>events.push(value)})
+ assert.ok(view.html.includes(BigInt(count).toLocaleString()));assert.match(view.html,/待落盘 <b>0<\/b>/);assert.match(view.html,/刷盘队列项: 2/);assert.match(view.html,/上次采集/);assert.doesNotMatch(view.html,/查看详情|ant-tag|data-control="a-tag"/)
+ const link=view.buttons.find(button=>button.class==='device-runtime-cache-link');assert.equal(link.type,'link');link.onClick();assert.deepEqual(events,[target])
+ view=await render({session,cache:{...cache,details:undefined,dirtyCount:undefined,facts:[]}})
+ assert.equal(view.buttons.some(button=>button.class==='device-runtime-cache-link'),false);assert.doesNotMatch(view.html,/>· 待落盘 |刷盘排队/)
+ view=await render({communication,cache});assert.doesNotMatch(view.html,/device-runtime-cache/)
+})

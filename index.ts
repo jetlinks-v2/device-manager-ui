@@ -20,6 +20,8 @@ const getAsyncRoutesMap = () => {
   // 两个菜单入口都由同一宿主承载，才能让资源中心与物联共用详情子路由。
   modules['iot-user/device/list'] = () => import('./views/device/list/unified/Page.vue')
   modules['device/list'] = () => import('./views/device/list/unified/Page.vue')
+  modules['link/RuntimeMonitor'] = () => import('./views/link/RuntimeWorkspace.vue')
+  modules['link/Tracing'] = () => import('./views/link/RuntimeWorkspace.vue')
   return modules
 }
 
@@ -123,7 +125,7 @@ const getCoreRouteOverrides = () => {
 const getComponents = () => ({})
 
 /**
- * 不由布局壳层统一套 `ContentPanel` 的页面：运维中心仪表盘为整屏看板，页面自绘背景。
+ * 仪表盘自绘背景；其余页面沿用平台默认 ContentPanel 的留白和背景。
  *
  * 键为路由 `name`（即菜单 `code`）。声明在代码侧，改完随代码生效，
  * 不需要把开关写进 `baseMenu.json` 再重新初始化菜单。

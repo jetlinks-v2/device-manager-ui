@@ -15,6 +15,18 @@ export async function loadResourceHistory(metric: MonitorMetric, range: MonitorT
   return normalizeMonitorHistory(await query<MonitorHistoryResponseItem>(defaultParamsData(metric, { time: range })), metric)
 }
 
+/** 概览批量读取系统资源、主机网络和业务流量，保留不同来源的单位与节点边界。 */
+export async function loadResourceOverviewHistory(range: MonitorTimeRange) {
+  const items = await query<NetworkHistoryResponseItem & MonitorHistoryResponseItem>([
+    ...defaultParamsData('cpuJvm', { time: range }), ...defaultParamsData('memoryJvm', { time: range }),
+    ...networkHistoryParams({ time: range }), ...networkParams({ time: { time: range } }),
+  ])
+  const resources = Object.fromEntries((['cpuSystem', 'cpuJvm', 'memorySystem', 'memoryJvm'] as const)
+    .map(metric => [metric, normalizeMonitorHistory(items, metric)])) as Record<MonitorMetric, ReturnType<typeof normalizeMonitorHistory>>
+  return { ...resources, traffic: normalizeTrafficHistory(items),
+    network: normalizeSystemNetworkHistory(items.filter(item => item.group === 'network')) }
+}
+
 /** Business traffic is bucketed device communication; host counters keep their original semantics. */
 export async function loadNetworkHistory(metric: NetworkTrendMetric, range: MonitorTimeRange) {
   const items = await query<NetworkHistoryResponseItem>(metric === 'traffic'

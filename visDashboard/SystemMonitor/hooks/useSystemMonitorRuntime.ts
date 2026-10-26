@@ -6,8 +6,11 @@ import { FOCUSED_NODES_STORAGE_KEY, readFocusedNodes, reconcileFocusedNodes } fr
 import type { FocusScope, FocusSelections } from '../types'
 
 interface RuntimeOptions {
+  enabled?: Ref<boolean>
   subscribe?: MonitorSubscriber
   storage?: Storage
+  /** 独立监控工作台复用订阅时，不读取或覆盖仪表盘的图表聚焦偏好。 */
+  persistFocus?: boolean
   staleAfterMs?: number
 }
 const runtimeKey: InjectionKey<SystemMonitorRuntime> = Symbol('system-monitor-runtime')
@@ -22,8 +25,8 @@ export function createSystemMonitorRuntime(isEdit: Ref<boolean>, options: Runtim
   const selectedNodes = reactive<FocusSelections>({ cpu: [], memory: [], network: [] })
   const initialized: Record<FocusScope, boolean> = { cpu: false, memory: false, network: false }
   const scopes: FocusScope[] = ['cpu', 'memory', 'network']
-  let storage = options.storage
-  try { storage ??= typeof localStorage === 'undefined' ? undefined : localStorage } catch { /* Disabled browser storage. */ }
+  let storage = options.persistFocus === false ? undefined : options.storage
+  try { if (options.persistFocus !== false) storage ??= typeof localStorage === 'undefined' ? undefined : localStorage } catch { /* Disabled browser storage. */ }
   const cachedNodes = readFocusedNodes(storage)
   const normalize = createRealtimeNodeNormalizer()
   let subscription: MonitorSubscription | undefined
@@ -110,7 +113,10 @@ export type SystemMonitorRuntime = ReturnType<typeof createSystemMonitorRuntime>
 
 /** Provide instance-local node discovery; moving or resizing widgets does not restart this owner. */
 export function provideSystemMonitorRuntime(options: RuntimeOptions = {}) {
-  const runtime = createSystemMonitorRuntime(ref(false), options)
+  const runtime = createSystemMonitorRuntime(computed(() => options.enabled?.value === false), options)
+  if (options.enabled) watch(options.enabled, enabled => {
+    if (!enabled) { runtime.nodes.value = []; runtime.updatedAt.value = '' }
+  })
   provide(runtimeKey, runtime)
   return runtime
 }
