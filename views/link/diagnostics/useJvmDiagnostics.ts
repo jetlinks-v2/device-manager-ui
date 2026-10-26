@@ -1,15 +1,15 @@
 import { computed, onActivated, onDeactivated, onScopeDispose, ref, shallowRef, watch, type Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useDiagnosticQuery } from '@jetlinks-web-core/hooks/useDiagnosticQuery'
-import { createFlameGraphHtml, type FlameFrame, type JfrSnapshot, type JvmDiagnosticAccess, type SamplingState } from '@jetlinks-web-core/components/RuntimeDiagnostics'
+import { createFlameGraphHtml, createJvmDiagnosticReport, createJvmDiagnosticHtml, type JvmDiagnosticHtmlOptions, type FlameFrame, type JfrSnapshot, type JvmDiagnosticAccess, type JvmDiagnosticExport, type SamplingState } from '@jetlinks-web-core/components/RuntimeDiagnostics'
 import { streamDiagnostic } from '../../../api/link/diagnosticStream'
-import { sampleThreads, saveDiagnosticFile } from '../../../api/link/diagnostics'
+import { sampleThreads, saveDiagnosticBlob } from '../../../api/link/diagnostics'
 import { normalizeThreads } from './normalize'
 import { useDiagnosticsAccess } from './useDiagnosticsAccess'
 import { useDiagnosticPreferences } from './useDiagnosticPreferences'
 import { diagnosticContentState, diagnosticErrorState } from './status'
 
-type JvmTab = 'threads' | 'performance' | 'memory'
+type JvmTab = 'performance' | 'snapshots'
 const FIRST_FRAME_DELAY_SECONDS = 15, UPDATE_DELAY_SECONDS = 5
 const record = (value: unknown): Record<string, unknown> => value && typeof value === 'object' ? value as Record<string, unknown> : {}
 /** 服务端发累计快照，整份替换；未知/无效计数不能转成健康的0样本。 */
@@ -44,7 +44,7 @@ export function useJvmDiagnostics(node: Ref<string>, tool: Ref<string>, pageActi
     threadDump: { allowed: permissions.value.threads }, jfr: { allowed: permissions.value.jfr }, jfrView: { allowed: permissions.value.jfr },
     jfrExport: { allowed: permissions.value.exportJfr }, heapDump: { allowed: permissions.value.heapDump }, heapExport: { allowed: permissions.value.heap },
   }))
-  const activeTab = computed<JvmTab>(() => preferences?.value.value.nodes[node.value]?.jvmTab ?? (permissions.value.threads ? 'threads' : permissions.value.jfr ? 'performance' : 'memory'))
+  const activeTab = computed<JvmTab>(() => preferences?.value.value.nodes[node.value]?.jvmTab ?? (permissions.value.jfr ? 'performance' : 'snapshots'))
   function selectTab(value: JvmTab) { preferences?.updateNode(node.value, { jvmTab: value }) }
   /** 只度量本页实际接收间隔，不因等待时间增加而制造远端样本或自动中断录制。 */
   function tick() {
@@ -98,14 +98,12 @@ export function useJvmDiagnostics(node: Ref<string>, tool: Ref<string>, pageActi
     if (!active || !pageActive.value || tool.value !== 'jvm' || !node.value || !(kind === 'jfr' ? permissions.value.exportJfr : permissions.value.heap)) return
     captureLive.value = live; captureKind.value = kind
   }
-  async function exportHtml() {
-    if (!active || !pageActive.value || tool.value !== 'jvm' || !permissions.value.jfr || !permissions.value.exportJfr || !snapshot.value || !node.value) return
-    const target = node.value, frozen = snapshot.value, current = generation
-    exportController?.abort(); exportController = new AbortController()
-    const html = createFlameGraphHtml({ nodeId: target, snapshot: frozen, platformPrefixes: ['org.jetlinks.'], labels: {
+  function flameLabels(): NonNullable<JvmDiagnosticHtmlOptions['flame']> {
+    return {
       title: t('runtimeDiagnostics.performance'), search: t('runtimeDiagnostics.flameSearch'), reset: t('runtimeDiagnostics.resetFocus'), samples: t('runtimeDiagnostics.samples'), platform: t('runtimeDiagnostics.platformHotspot'), range: t('runtimeDiagnostics.sampleRange'),
       categories: ['all', 'network', 'platform', 'gc', 'reactive', 'other'].map(key => t(`runtimeDiagnostics.flameCategory.${key}`)),
       noMatches: t('runtimeDiagnostics.noMatchingFrames'),
+      navigation: { zoomIn: t('runtimeDiagnostics.flameNavigation.zoomIn'), zoomOut: t('runtimeDiagnostics.flameNavigation.zoomOut'), fit: t('runtimeDiagnostics.flameNavigation.fit'), compact: t('runtimeDiagnostics.flameNavigation.compact'), shortcuts: t('runtimeDiagnostics.flameNavigation.shortcuts') },
       insights: {
         samplingHints: t('runtimeDiagnostics.flameInsights.samplingHints'), limited: t('runtimeDiagnostics.flameInsights.limited', { count: '{count}' }),
         invalid: t('runtimeDiagnostics.flameInsights.invalid'), self: t('runtimeDiagnostics.flameInsights.self', { name: '{name}', count: '{count}', total: '{total}' }),
@@ -116,9 +114,16 @@ export function useJvmDiagnostics(node: Ref<string>, tool: Ref<string>, pageActi
         inclusiveSamples: t('runtimeDiagnostics.flameInsights.inclusiveSamples'), selfUnavailable: t('runtimeDiagnostics.flameInsights.selfUnavailable'), selfBoundary: t('runtimeDiagnostics.flameInsights.selfBoundary'),
         rawName: t('runtimeDiagnostics.flameInsights.rawName'), copy: t('runtimeDiagnostics.flameInsights.copy'), copied: t('runtimeDiagnostics.flameInsights.copied'), copyFailed: t('runtimeDiagnostics.flameInsights.copyFailed'),
       },
-    } })
-    try { if (current === generation && permissions.value.exportJfr) await saveDiagnosticFile(new Blob([html], { type: 'text/html' }), `flame-${target}-${Date.now()}.html`, exportController.signal) }
-    catch (error) { exportState.value = diagnosticErrorState(error).message }
+      hotspots: t('runtimeDiagnostics.hotspotDetails'),
+    }
+  }
+  async function exportHtml() {
+    if (!active || !pageActive.value || tool.value !== 'jvm' || !permissions.value.jfr || !permissions.value.exportJfr || !snapshot.value || !node.value) return
+    const target = node.value, frozen = snapshot.value, current = generation
+    exportController?.abort(); const request = new AbortController(); exportController = request
+    const html = createFlameGraphHtml({ nodeId: target, snapshot: frozen, platformPrefixes: ['org.jetlinks.'], labels: flameLabels() })
+    try { if (current === generation && permissions.value.exportJfr) await saveDiagnosticBlob(new Blob([html], { type: 'text/html' }), `flame-${target}-${Date.now()}.html`, request.signal) }
+    catch (error) { if (current === generation && target === node.value && !request.signal.aborted) exportState.value = diagnosticErrorState(error).message }
   }
   watch([node, permissions], () => { stop(); snapshot.value = undefined; sampling.value = { status: 'idle' }; elapsedSeconds.value = 0; threads.clear(); captureKind.value = undefined; exportState.value = undefined }, { flush: 'sync' })
   watch([tool, pageActive], ([value, enabled]) => { if (value !== 'jvm' || !enabled) { stop(); threads.cancel(); captureKind.value = undefined } })
@@ -126,5 +131,58 @@ export function useJvmDiagnostics(node: Ref<string>, tool: Ref<string>, pageActi
   onActivated(() => { active = true })
   onScopeDispose(stop)
   const threadState = computed(() => diagnosticContentState(threads.state.value, !!threads.data.value?.length))
-  return { threads, threadState, snapshot, sampling, streamPhase, elapsedSeconds, access, activeTab, selectTab, start, stop, sample, exportHtml, exportState, captureKind, captureLive, requestCapture }
+  const canExportSnapshot = computed(() => permissions.value.exportJfr && ((permissions.value.jfr && !!snapshot.value) || (permissions.value.threads && !!threads.data.value?.length)))
+  /** 导出只读取当前节点已授权证据，冻结后不再跟随流更新，也不启动新的采集。 */
+  function frozenExport(): JvmDiagnosticExport | undefined {
+    if (!active || !pageActive.value || tool.value !== 'jvm' || !node.value || !canExportSnapshot.value) return
+    return JSON.parse(JSON.stringify({ version: 1, nodeId: node.value, exportedAt: Date.now(), threads: permissions.value.threads ? threads.data.value ?? [] : [], threadState: permissions.value.threads ? threadState.value : { status: 'forbidden' }, snapshot: permissions.value.jfr ? snapshot.value : undefined, sampling: permissions.value.jfr ? sampling.value : { status: 'idle' } })) as JvmDiagnosticExport
+  }
+  function reportOptions(frozen: JvmDiagnosticExport): JvmDiagnosticHtmlOptions {
+    const label = (key: string) => t(`runtimeDiagnostics.report.${key}`)
+    const report: JvmDiagnosticHtmlOptions['report'] = { title: label('title'), savePdf: label('savePdf'), exportedAt: label('exportedAt'), range: t('runtimeDiagnostics.sampleRange'), notCollected: label('notCollected'), boundary: label('boundary'), threads: t('runtimeDiagnostics.threads'), flame: t('runtimeDiagnostics.performance'), frames: label('frames'), allocations: t('runtimeDiagnostics.memoryEvidence'), method: label('method'), samples: t('runtimeDiagnostics.samples'), parent: label('parent'), bytes: label('bytes'), state: `${label('stateAtExport')} · ${t(`runtimeDiagnostics.samplingStatus.${frozen.sampling.status}`)}`, all: t('runtimeDiagnostics.flameCategory.all'), threadFields: { lock: t('runtimeDiagnostics.waitingLock'), lockOwner: t('runtimeDiagnostics.lockOwner'), blockedCount: t('runtimeDiagnostics.blockedCount'), blockedTime: label('blockedTime'), waitedCount: t('runtimeDiagnostics.waitedCount'), waitedTime: label('waitedTime'), inNative: label('inNative'), suspended: label('suspended') }, formatTime: value => new Date(value).toLocaleString() }
+    return { report, flame: flameLabels(), platformPrefixes: ['org.jetlinks.'], interaction: {
+      live: t('runtimeDiagnostics.realtimeAnalysis'), snapshots: t('runtimeDiagnostics.diagnosticSnapshots'), offline: label('offline'), details: label('details'),
+      allocationSearch: t('runtimeDiagnostics.allocationSearch'), threadSearch: t('runtimeDiagnostics.threadSearch'),
+      allocations: t('runtimeDiagnostics.recordedAllocations'), allocationHint: t('runtimeDiagnostics.allocationHint'), thread: t('runtimeDiagnostics.threads'),
+      state: t('runtimeDiagnostics.state'), stackDepth: t('runtimeDiagnostics.stackDepth'), name: t('runtimeDiagnostics.thread'), bytes: t('runtimeDiagnostics.recordedBytes'),
+      share: t('runtimeDiagnostics.allocationShare'), all: t('runtimeDiagnostics.all'), noMatches: t('runtimeDiagnostics.noMatches'), noStack: t('runtimeDiagnostics.noStack'),
+      loadMore: label('loadMore'), notCollected: label('notCollected'), unavailable: label('unavailable'), noExecutionSamples: label('noExecutionSamples'), noAllocationSamples: t('runtimeDiagnostics.noAllocationEvents'), noThreads: label('noThreads'), scriptRequired: label('scriptRequired'), threadFields: report.threadFields,
+    } }
+  }
+  async function exportReportHtml() {
+    const frozen = frozenExport()
+    if (!frozen) return
+    exportState.value = undefined
+    exportController?.abort(); const request = new AbortController(); exportController = request
+    try {
+      const html = createJvmDiagnosticHtml(frozen, reportOptions(frozen))
+      await saveDiagnosticBlob(new Blob([html], { type: 'text/html;charset=utf-8' }), `diagnostics-${frozen.nodeId}-${frozen.exportedAt}.html`, request.signal)
+    } catch (error) { if (!request.signal.aborted && node.value === frozen.nodeId) exportState.value = diagnosticErrorState(error).message }
+  }
+  async function exportSnapshot() {
+    const frozen = frozenExport()
+    if (!frozen) return
+    exportState.value = undefined
+    exportController?.abort(); const request = new AbortController(); exportController = request
+    try { await saveDiagnosticBlob(new Blob([JSON.stringify(frozen, null, 2)], { type: 'application/json' }), `diagnostics-${frozen.nodeId}-${frozen.exportedAt}.json`, request.signal) }
+    catch (error) { if (!request.signal.aborted && node.value === frozen.nodeId) exportState.value = diagnosticErrorState(error).message }
+  }
+  function exportPdf() {
+    const frozen = frozenExport()
+    if (!frozen) return
+    exportState.value = undefined
+    let report: Window | null = null
+    const failed = (error: unknown) => { if (node.value === frozen.nodeId && permissions.value.exportJfr) exportState.value = diagnosticErrorState(error).message }
+    try {
+      report = window.open('', '_blank')
+      if (!report) throw new Error(t('runtimeDiagnostics.report.popupBlocked'))
+      report.opener = null
+      const html = createJvmDiagnosticReport(frozen, reportOptions(frozen).report)
+      report.document.open(); report.document.write(html); report.document.close()
+      // 报告无外部依赖；等待本地字体排版后交给浏览器原生打印 / 存为 PDF。
+      const target = report
+      void target.document.fonts.ready.then(() => { if (!target.closed) target.print() }).catch(failed)
+    } catch (error) { report?.close(); failed(error) }
+  }
+  return { threads, threadState, snapshot, sampling, streamPhase, elapsedSeconds, access, activeTab, selectTab, start, stop, sample, exportHtml, canExportSnapshot, exportReportHtml, exportSnapshot, exportPdf, exportState, captureKind, captureLive, requestCapture }
 }

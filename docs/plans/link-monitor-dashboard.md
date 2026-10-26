@@ -2,6 +2,54 @@
 
 ## 当前结论与目标
 
+### 火焰图阅读与诊断导出（已实现并完成集中检查）
+
+目标：大量样本 / 深调用栈仍能迅速辨认热点、阅读调用路径并保存诊断证据。Owning module 为 core `RuntimeDiagnostics/FlameGraphViewer.vue`、`flameGraph.ts`、`flameGraphHtml.ts` 与宿主 `diagnostics/useJvmDiagnostics.ts`，沿用现有 JFR 样本、权限与主题。本阶段不改变采样口径，不将样本占比表示为精确 CPU 耗时，不增加监控历史持久化或服务端 PDF 服务。
+
+已确认现状：布局按调用路径聚合，宽度为包含样本；筛选仅将不匹配帧降到 0.22 透明度，不压缩调用路径。现有图内已有 overflow:auto 和固定层高，但系统浮动滚动条不可发现，没有显式缩放；帧优先显示完整包名，窄帧存在文本外溢风险。当前 HTML 已冻结并内嵌样本，支持离线交互；尚无 PDF 导出。图二体现的是更紧凑的短方法名、库调用折叠和实色块，不能据截图断定两者采样口径相同。
+
+建议布局：
+
+```text
+查找类名或方法     返回上层   缩小 100% 放大 适应   全屏   ⓘ   导出
+┌──────────────────────────────────────────────────────────┐
+│ 实色调用块；短类名.方法为主；选中路径强调；全文在悬停中展示 │↕
+│ 根调用保留在底部；固定层高；连续库调用可按 +N 折叠 / 展开   │
+└──────────────────────────────────────────────────────────┘
+                 横向导航 / 缩放范围
+全部  网络通信  平台业务  GC  响应式操作符  其他
+```
+
+步骤：1）先修正文字裁剪及实色 / 选中层次，短名称为主、包名作为详情；2）保留内部纵向滚动并提供可见导航，支持横向缩放 / 平移、点击聚焦、上一级和适应，快捷键仅图表获焦时生效（+ / - 放缩、0 适应、Esc 返回；修饰键 + 滚轮只在图内生效）；3）增加可展开的连续库调用折叠，保留真实父子路径、样本分母和原始帧，不以分类筛选制造虚假调用边；4）对仅存在本页内存的诊断数据增加信息 icon，明确刷新 / 关闭后的丢失边界及服务端历史可回读范围；5）导出默认当前节点已采集的诊断快照，提供交互 HTML、原始 JSON 与可打印 PDF 报告。PDF 冻结采集时间、节点、采样范围与限制，深栈分段、明细分页，包含当前已取得的线程 / 火焰图 / 分配证据，不以屏幕截图代替全部数据；尚未采集项标注，不擅自执行堆转储或跨节点重新采集。是否扩大为所有已观测节点需用户确认。
+
+用户已确认并实施当前节点导出范围与两个页签：**实时分析 / 诊断快照**。节点外层仍为“运行概览 / 性能剖析 / MBean / 日志”。实时分析上方展示火焰图，下方展示同一次 JFR 采集的内存分配信息，不再将内存分配单独切换，也不混入线程或堆转储操作。诊断快照集中提供“采集线程栈”和“导出堆快照”，两项均由用户显式点击执行，线程结果原位展开；进入页签本身不触发采集，开始实时分析也不额外采集线程。堆快照操作展示已有影响说明和确认，保留存活对象选项。沿用 `tool=jvm` 与现有权限，切换页签或节点不销毁已取得证据，实时采样状态持续可见；各区域标明自己的采集时间。旧线程偏好映射到诊断快照，旧内存偏好映射到实时分析。
+
+方案档案：`solutionName=既有节点工作台内的分析钻取`；`primaryFilterSurface=帧搜索＋既有分类`；`contentSurface=实时分析中火焰图与内存分配上下排列，诊断快照中按需采集并展示线程证据`；`detailCarrier=图内聚焦、热点证据与原位线程展开`；`editMode=只读诊断＋显式采集操作`；`coreComponents=JvmDiagnosticPanel、FlameGraphViewer、AllocationRanking、ThreadViewer、Ant Design Tabs/Tooltip/Button`；`actionPlacement=实时分析工具栏控制统一采样，诊断快照工具栏提供线程采集与堆导出，当前节点导出入口保持统一`；`densityTarget=两个清晰页签，实时分析一张主图，下方紧凑分配明细，辅助说明收纳到 icon`；`sidebarMode=保留既有节点栏`；`confirmationMode=阅读、当前节点导出和两页签布局均已确认`；`rejectedAlternatives=线程与内存成为节点外层Tab、三类证据全部堆在一页、点击页签直接堆转储、截图冒充完整报告、默认跨节点采集`。只读诊断不增加编辑壳或管理表格，不叠加 KPI 卡与大段说明。
+
+最新布局实施与验收计划：1）在 core `RuntimeDiagnostics/JvmDiagnosticPanel.vue` 收敛为两个页签，默认实时分析，复用宿主已有节点数据和事件；2）将 `AllocationRanking.vue` 放到火焰图下方，明确内存分配为采样估算，处理只有分配样本而没有执行样本的状态；3）将 `ThreadViewer.vue` 与显式堆导出放到诊断快照，移除开始采样时顺带采线程的行为，保留每项已有授权与失败反馈；4）在宿主 `NodeDiagnostics.vue` / `useJvmDiagnostics.ts` 核对采样持续、节点隔离与导出范围；5）集中运行 core / host 相关测试、类型检查与模块构建，再进行两轮浏览器走查，覆盖空态、采集中切换、历史结果恢复、窄容器、键盘和堆导出确认。不新增后端接口、权限、菜单或持久化策略。风险是旧模式偏好映射与隐藏页签中的采样可见性，须验证旧偏好不会导致空白或额外请求；堆操作保持显式确认，不在走查中无故生成真实大文件。
+
+风险与验证：服务器本身截断的栈不能在前端还原，折叠必须保留原始路径；浏览器 PDF 是静态报告，原始样本及离线分析由 JSON / HTML 保存。集中验证深栈 / 大样本、短帧文字边界、折叠可逆、缩放定位、Tab 恢复与键盘作用域，至少两轮真实 UI 走查，并验证多页 PDF 无截断、分页与导出期间采样快照一致。
+
+实施结果：`JvmDiagnosticPanel.vue` 负责两页签与显式操作，`FlameGraphViewer.vue` 保留缩放、聚焦和搜索，组合布局内热点明细默认收起、图高随视口调整，下方 `AllocationRanking.vue` 原位展示分配；`ThreadViewer.vue` 使用内部滚动和原位展开。宿主 `NodeDiagnostics.vue` / `useJvmDiagnostics.ts` / `preferences.ts` 对接受控页签与旧偏好迁移。客户端生成的 HTML / JSON 通过 `saveDiagnosticBlob` 保存，服务端二进制响应仍由 `saveDiagnosticFile` 拒绝错误 JSON；导出冻结当前节点授权证据，取消或过期导出失败不能污染新节点反馈。
+
+集中检查：core 209/209、host 289/289 通过；core 诊断类型检查 0 错误，host 仍为 167 个既有类型诊断，按路径和行列归一化后新增 0。模块最终构建成功（35.97 秒），保留已有 chunk / re-export 警告；无独立 lint 脚本，SFC 编译检查由回归覆盖。两轮真实 UI 走查覆盖 1396×984 与 1060×853，窄屏自动收起节点栏且无页面横向溢出；实时采样时切换快照、搜索和 150% 缩放恢复、253 线程按栈深排序及展开保留、file-service / IoT 往返恢复均已验证。堆快照仅验证确认与存活对象选项，未执行真实堆转储。日志为 `/private/tmp/runtime-profile-{core-tests,host-tests,core-types,host-types,build}.log`；截图为 `runtime-ui/output/playwright/runtime-profiling-final.png`、`runtime-profiling-narrow.png`、`runtime-diagnostic-snapshots.png`。
+
+真实 JSON 下载成功并解析，包含 IoT 节点 251 线程、277 调用帧、421 分配类型。相同报告生成器用这份真实证据经 Chrome 打印为 137 页 A4 横向 PDF，核对首页、分配与线程页中文、完整明细及分页，无空白页；PDF 为浏览器打印能力，不是服务端直出文件。IAB 中点击 PDF 入口后没有可观测的新报告 Tab，原生打印窗口的完整端到端流程尚未确认，不能将分页夹具当作该交互已通过。本轮未启停服务、提交或更新 PR。
+
+完整 HTML 导出方案（已实现并完成真实下载验收）：默认导出“交互诊断报告.html”，当前节点证据冻结后内嵌，沿用实时分析 / 诊断快照两页签。火焰图复用既有离线运行时，保留搜索、缩放、聚焦、分类与库调用折叠；下方内存分配支持搜索和排序，线程支持名称 / 状态筛选、按栈深排序和完整栈展开。元信息包含节点、导出时间、各证据采集时间及采样口径，采集状态明确标为“导出时状态”；报告离线只读，无外部资源、请求或凭据。JSON 保留原始证据，打印 / PDF 留作次要入口；完整 PDF 已出现 137 页，阅读和查找体验弱于 HTML。
+
+本次方案档案：`solutionName=节点分析钻取的离线报告`；`primaryFilterSurface=火焰图帧搜索、分配类型搜索、线程名称与状态`；`contentSurface=实时分析上图下分配，诊断快照原位线程展开`；`detailCarrier=聚焦路径与原位展开`；`editMode=离线只读`；`coreComponents=复用 flameGraphHtml 的分析及交互片段、allocation 与 thread 格式化、原生语义化控件匹配 Ant 风格`；`actionPlacement=默认 HTML 下载，更多菜单 JSON 与打印`；`densityTarget=一个主图、紧凑辅助明细和元信息`；`sidebarMode=无侧栏`；`confirmationMode=用户已执行确认`；`rejectedAlternatives=截图报告、远程 CDN、另起火焰图算法、自动补采、导出账号状态`。
+
+实施步骤与边界：只改 core `RuntimeDiagnostics` 报告生成 / 离线运行时与宿主 `useJvmDiagnostics.ts`、`NodeDiagnostics.vue`、中英文文案和相关测试；抽取可嵌入火焰图片段，生成完整离线报告，接入默认下载并保留现有导出权限和取消隔离。重点防止脚本闭合注入、动态文本 HTML 注入、大列表阻塞与筛选改变样本分母。集中验证安全转义、完整数据、冻结与取消、英文 / 空态、核心与宿主类型及构建，再以真实导出进行离线交互和宽窄屏两轮走查。不改后端、菜单、权限、设备会话、采集口径或持久化策略，不启停服务或提交 PR。
+
+完整 HTML 实施结果：core `jvmDiagnosticHtml.ts` / `jvmDiagnosticHtmlRuntime.ts` 生成自包含报告，`flameGraphHtml.ts` 抽取共享片段，宿主默认下载按钮调用 `exportReportHtml()`，JSON 与打印入口移至相邻更多菜单。全部授权证据嵌入文件，内存分配与线程首屏分别有界展示 100 / 60 条，加载更多可访问全部，搜索与排序始终覆盖全量；线程展开与页签状态独立保留。中英文报告、安全转义、最小化生产 bundle 执行、证据冻结、撤权和取消隔离均有回归覆盖。
+
+本阶段集中验证：core 214/214、host 291/291 通过（`/private/tmp/runtime-html-{core,host}-tests.log`）；最终“导出时状态”文案修正后，受影响 core 33/33、host 25/25 再次通过（`/private/tmp/runtime-html-{core,host}-final.log`）。core 诊断类型检查 0 错误，宿主最终仍为 167 条既有诊断，归一化对比新增 0（`/private/tmp/runtime-html-host-final-types.log`）；最终模块构建成功，38.59 秒（`/private/tmp/runtime-html-final-build.log`），保留既有 chunk 警告。两个模块 `git diff --check` 通过；未配置独立 lint 命令，未宣称全量类型或 lint 通过。
+
+用户重启前端后，真实页面完成线程采集、JFR 实时更新、停止与默认 HTML 下载，实际文件含 IoT 节点 250 线程、367 调用帧、602 分配类型，41 个执行样本。两轮 IAB 走查覆盖 1396×984 与 680×853、中文及英文：搜索 / 分类、缩放及 0 复位、调用聚焦与 Esc、连续库调用折叠、分配全量分母和加载更多、线程名称 / 状态筛选、完整栈与页签往返保留均已核验，页面无横向溢出。报告加载后通过浏览器断网设置再次验证交互，不依赖账号、API 或外部资源，控制台无错误。浏览器工具不允许直接导航 file 协议，因此以现有开发服务的 @fs 路径打开同一份实际下载文件后断网验收，未声称完成 file 协议端到端测试。报告及截图为 `runtime-ui/output/playwright/runtime-diagnostic-report.html`、`runtime-diagnostic-report.png`、`runtime-diagnostic-report-narrow.png`、`runtime-diagnostic-report-threads-narrow.png`。本轮未启停服务、执行真实堆转储、提交或更新 PR。
+
+PR 隔离交付核验：沿用 [core#195](https://github.com/jetlinks-v2/jetlinks-web-core/pull/195) 与 [host#352](https://github.com/jetlinks-v2/device-manager-ui/pull/352)，本次增量仅同步性能剖析阅读、两页签、当前节点离线报告及相关回归，其他未提交功能继续留在原开发工作区。隔离工作区 core 217/217、host 264/264 通过（`/private/tmp/runtime-html-pr-{core,host}-tests.log`）；合入最新 `origin/2.20` 后，基线没有修改这些测试及其诊断实现，复用该回归证据。最终 core 类型检查 0 错误，host 166 条既有类型诊断，按错误身份与开发环境基线比较新增 0；组合生产构建成功，28.18 秒（`/private/tmp/runtime-html-pr-{core-types,host-types,build}.log`），两个边界 diff 检查通过。宿主仍无独立 lint 命令；PDF 原生打印窗口与 file 协议端到端限制沿用上述边界。
+
 ### 历史趋势时间联动修复（已完成）
 
 同节点、同时间范围的资源历史图保持悬停时间游标和缩放范围联动；各图图例独立，设备运行和 Buffer 近实时趋势不加入本组。旧实现只在属性更新后扫描一次 DOM，隐藏容器延迟初始化时没有实例可注册；改由共享 ECharts 的 ready / dispose 信号注册、释放历史区实例，KeepAlive 暂停和恢复成对处理，不增加轮询或改动数据采集。入口为 core `history/useLinkedHistoryCharts.ts`、`HistoryMetricCharts.vue` 与 ECharts 生命周期；定向验证覆盖延迟初始化、实例重建、时间对齐、缩放单次提交、独立图例和 Tab 恢复，真实浏览器验收由总控集中执行。

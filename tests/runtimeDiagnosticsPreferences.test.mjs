@@ -13,6 +13,13 @@ const load = (path, imports = {}) => {
 const pure = load('../views/link/diagnostics/preferences.ts')
 const { createDiagnosticPreferences } = load('../views/link/diagnostics/useDiagnosticPreferences.ts', { vue, './preferences': pure })
 
+test('JVM page preferences migrate thread and memory modes to two coherent pages', () => {
+  for (const [from, to] of [['threads', 'snapshots'], ['memory', 'performance'], ['snapshots', 'snapshots'], ['performance', 'performance']]) {
+    assert.equal(pure.sanitizeDiagnosticPreferences({ version: 1, nodes: { node: { jvmTab: from } } }).nodes.node.jvmTab, to)
+  }
+  assert.equal(pure.sanitizeDiagnosticPreferences({ version: 1, nodes: { node: { jvmTab: 'unknown' } } }).nodes.node.jvmTab, undefined)
+})
+
 test('browser preferences only retain bounded display settings', () => {
   const saved = pure.sanitizeDiagnosticPreferences({ version: 1, nodeId: 'a', tool: 'logs', token: 'secret', following: true, nodes: {
     a: { bean: 'jetlinks:type=Buffer,name=a', mbeanDisplay: { expandedKeys: ['a'], section: 'attributes' }, bufferFilter: 'pending', logDisplay: { level: 'ERROR', wrap: true }, keyword: 'private', args: ['secret'], records: ['private'] },

@@ -10,17 +10,24 @@
         <span v-for="metric in lifetime" :key="metric.key" class="node-lifetime"><span>{{ metric.label }}</span> {{ metric.value }}</span>
         <a-tooltip v-if="reloaded" :title="t('RuntimeMonitor.reloadedNodeHint')"><span class="node-cache-note">{{ t('RuntimeMonitor.reloadedNode') }}</span></a-tooltip>
       </div>
-      <span class="node-header-actions"><slot name="actions" /></span>
+      <span class="node-header-actions">
+        <template v-if="tab === 'jvm'">
+          <a-tooltip :title="t('runtimeDiagnostics.localEvidenceHint')" :trigger="['hover', 'focus']"><a-button type="text" size="small" :aria-label="t('runtimeDiagnostics.localEvidenceHint')"><InfoCircleOutlined /></a-button></a-tooltip>
+          <a-button type="text" size="small" :disabled="!jvm.canExportSnapshot.value" :title="t('runtimeDiagnostics.report.html')" :aria-label="t('runtimeDiagnostics.report.html')" @click="jvm.exportReportHtml"><DownloadOutlined /></a-button>
+          <a-dropdown :trigger="['click']" :disabled="!jvm.canExportSnapshot.value"><a-button type="text" size="small" :disabled="!jvm.canExportSnapshot.value" :title="t('runtimeDiagnostics.report.more')" :aria-label="t('runtimeDiagnostics.report.more')"><DownOutlined /></a-button><template #overlay><a-menu @click="value => value.key === 'pdf' ? jvm.exportPdf() : jvm.exportSnapshot()"><a-menu-item key="json"><FileTextOutlined /> {{ t('runtimeDiagnostics.report.json') }}</a-menu-item><a-menu-item key="pdf"><FilePdfOutlined /> {{ t('runtimeDiagnostics.report.savePdf') }}</a-menu-item></a-menu></template></a-dropdown>
+        </template>
+        <slot name="actions" />
+      </span>
     </header>
     <a-tabs :active-key="tab" @change="value => emit('tab', String(value))">
       <a-tab-pane key="overview" :tab="t('runtimeDiagnostics.overview')" />
-      <a-tab-pane v-if="access.threads || access.jfr || access.heap" key="jvm" :tab="t('RuntimeMonitor.jvmDiagnostics')" />
+      <a-tab-pane v-if="access.threads || access.jfr || access.heap" key="jvm" :tab="t('runtimeDiagnostics.performance')" />
       <a-tab-pane v-if="access.monitor" key="mbean" tab="MBean" />
       <a-tab-pane v-if="access.logs" key="logs" :tab="t('runtimeDiagnostics.logs')" />
     </a-tabs>
     <NodeOverview v-if="visitedTools.has('overview')" v-show="tab === 'overview'" :node-id="nodeId" :live="live" :stale="stale" :bottlenecks="bottlenecks.issues.value" @diagnose="openDiagnosis" @inspect="openBean" @settings="emit('settings')" @session="openSessions" />
     <div v-if="visitedTools.has('jvm')" v-show="tab === 'jvm'" class="node-jvm-canvas">
-      <JvmDiagnosticPanel :node-id="nodeId" :threads="jvm.threads.data.value ?? []" :thread-state="jvm.threadState.value" :snapshot="jvm.snapshot.value" :sampling-state="jvm.sampling.value" :stream-phase="jvm.streamPhase.value" :elapsed-seconds="jvm.elapsedSeconds.value" :access="jvm.access.value" :active="active && tab === 'jvm'" :active-tab="jvm.activeTab.value" @update:active-tab="jvm.selectTab" @sample="jvm.sample" @start="jvm.start" @stop="jvm.stop" @export-html="jvm.exportHtml" @capture-jfr="jvm.requestCapture('jfr')" @heap-dump="value => jvm.requestCapture('heap-dump', value.live)" />
+      <JvmDiagnosticPanel :node-id="nodeId" :active-tab="jvm.activeTab.value" :threads="jvm.threads.data.value ?? []" :thread-state="jvm.threadState.value" :snapshot="jvm.snapshot.value" :sampling-state="jvm.sampling.value" :stream-phase="jvm.streamPhase.value" :elapsed-seconds="jvm.elapsedSeconds.value" :access="jvm.access.value" :active="active && tab === 'jvm'" @update:active-tab="jvm.selectTab" @sample="jvm.sample" @start="jvm.start" @stop="jvm.stop" @export-html="jvm.exportHtml" @capture-jfr="jvm.requestCapture('jfr')" @heap-dump="value => jvm.requestCapture('heap-dump', value.live)" />
       <a-alert v-if="jvm.exportState.value" type="error" :message="jvm.exportState.value" />
       <DiagnosticCapture :node-id="nodeId" :open="!!jvm.captureKind.value" :kind="jvm.captureKind.value" :live="jvm.captureLive.value" @close="jvm.captureKind.value = undefined" />
     </div>
@@ -33,6 +40,7 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, ref, toRef, watch, type PropType } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { DownloadOutlined, DownOutlined, FilePdfOutlined, FileTextOutlined, InfoCircleOutlined } from '@ant-design/icons-vue'
 import { useRoute, useRouter } from 'vue-router'
 import { JvmDiagnosticPanel, MBeanBrowser, type MetricValue } from '@jetlinks-web-core/components/RuntimeDiagnostics'
 import type { RealtimeNode } from '../../../visDashboard/SystemMonitor/utils/realtimeResourceData'

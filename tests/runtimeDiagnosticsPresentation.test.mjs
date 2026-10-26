@@ -196,7 +196,7 @@ test('diagnostic controls share compact navigation, actionable capture confirmat
   assert.match(viewer, /@keydown\.esc\.stop="closeMenus\(true\)"/)
   assert.match(viewer, /class="log-disabled-action" tabindex="0" :aria-label="exportReason"/)
   assert.match(viewer, /watch\(\(\) => props\.fileId, \(\) => \{ activeMatch\.value = ''; detailId\.value = ''; closeMenus\(\); reading\.reset\(\) \}\)/)
-  assert.match(capture, /:ok-text="t\(kind === 'jfr' \? 'runtimeDiagnostics\.startRecording' : 'runtimeDiagnostics\.exportHeapDump'\)"/)
+  assert.match(capture, /:ok-text="t\(kind === 'jfr' \? 'runtimeDiagnostics\.startRecording' : 'runtimeDiagnostics\.exportHeapSnapshot'\)"/)
   assert.match(diagnostics, /:active="active && tab === 'jvm'"/)
 })
 

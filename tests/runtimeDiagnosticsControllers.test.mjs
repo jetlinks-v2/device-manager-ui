@@ -16,7 +16,7 @@ function harness(filename, options = {}) {
   const scopeKey = vue.ref({ accountId: 'alice', projectId: 'p1' }), route = vue.reactive({ path: options.path ?? (filename.startsWith('Tracing') ? '/infrastructure/tracing' : '/infrastructure/runtime-monitor'), query: options.query ?? {} }), navigation = [], calls = [], streams = [], deactivations = [], activations = []
   const pageActive = vue.ref(true), node = vue.ref('node-a'), tool = vue.ref(options.tool ?? 'jvm'), cache = new Map(), preference = vue.ref({ nodes: {} })
   const api = {
-    sampleThreads: async () => [], saveDiagnosticFile: async () => calls.push('save'),
+    sampleThreads: async () => [], saveDiagnosticBlob: async () => calls.push('save'),
     queryMBeans: async () => ({}), invokeMBean: async (...args) => { calls.push(['invoke', ...args]); return { success: true, result: 'done' } },
     queryTrace: async id => { calls.push(['trace', id]); return [] }, queryMonitorNodes: async () => [{ id: 'node-a', alias: 'iot-service' }], logNodes: async () => [], queryOperationalMBeans: async () => [], queryDeviceSessions: async () => [],
     ...options.api,
@@ -33,7 +33,7 @@ function harness(filename, options = {}) {
       if (id === '@jetlinks-web-core/locales') return { __esModule: true, default: { global: { t: key => key } } }
       if (id === '@jetlinks-web-core/hooks/useDiagnosticQuery') return load(resolve(import.meta.dirname, '../../../jetlinks-web-core/src/hooks/useDiagnosticQuery.ts'))
       if (id === '@jetlinks-web-core/components/RuntimeDiagnostics/utils') return load(resolve(import.meta.dirname, '../../../jetlinks-web-core/src/components/RuntimeDiagnostics/utils.ts'))
-      if (id === '@jetlinks-web-core/components/RuntimeDiagnostics') return { createFlameGraphHtml: () => '<html>safe export</html>' }
+      if (id === '@jetlinks-web-core/components/RuntimeDiagnostics') return { createFlameGraphHtml: () => '<html>safe export</html>', createJvmDiagnosticHtml: options.createJvmDiagnosticHtml ?? (data => `<html>interactive report ${data.nodeId}</html>`), createJvmDiagnosticReport: () => '<html>diagnostic report</html>' }
       if (id.endsWith('api/link/diagnostics')) return api
       if (id.endsWith('api/link/diagnosticStream')) return { streamDiagnostic: (node, kind, signal, events) => {
         const source = new Subject(); streams.push({ node, kind, signal, events, source }); return source
@@ -73,6 +73,67 @@ test('JVM sampling is explicit, cumulative snapshots replace, stop preserves evi
     assert.equal(h.view.snapshot.value, undefined); assert.equal(h.streams[1].signal.aborted, true)
     h.view.start(); assert.equal(h.streams.length, 2)
     assert.equal(h.calls.some(call => String(call).includes('stop')), false)
+  } finally { h.effect.stop() }
+})
+
+test('diagnostic exports freeze the current node evidence and never start another collection', async () => {
+  const saved = []
+  const h = harness('diagnostics/useJvmDiagnostics.ts', { api: { saveDiagnosticBlob: async (blob, name, signal) => saved.push({ data: JSON.parse(await blob.text()), name, signal }) } })
+  try {
+    assert.equal(h.view.canExportSnapshot.value, false)
+    h.view.start(); h.streams[0].source.next(frame(8))
+    const pending = h.view.exportSnapshot()
+    h.streams[0].source.next(frame(99)); await pending
+    assert.equal(saved[0].data.nodeId, 'node-a'); assert.equal(saved[0].data.snapshot.flameGraph[0].samples, 8)
+    assert.equal(h.view.snapshot.value.flameGraph[0].samples, 99)
+    assert.equal(h.streams.length, 1)
+    h.pageActive.value = false; await flush(); await h.view.exportSnapshot()
+    assert.equal(saved.length, 1)
+  } finally { h.effect.stop() }
+})
+
+test('superseded or cancelled export failures cannot overwrite the current node feedback', async () => {
+  const requests = []
+  const h = harness('diagnostics/useJvmDiagnostics.ts', { api: { saveDiagnosticBlob: (blob, name, signal) => new Promise((resolve, reject) => requests.push({ resolve, reject, signal })) } })
+  try {
+    h.view.start(); h.streams[0].source.next(frame(8))
+    const first = h.view.exportSnapshot(), second = h.view.exportSnapshot()
+    assert.equal(requests[0].signal.aborted, true)
+    requests[0].reject(new Error('old export')); await first
+    assert.equal(h.view.exportState.value, undefined)
+    h.node.value = 'node-b'; await flush()
+    requests[1].reject(new Error('previous node')); await second
+    assert.equal(h.view.exportState.value, undefined)
+  } finally { h.effect.stop() }
+})
+
+test('default HTML report freezes all authorized evidence and does not collect more data', async () => {
+  const reports = [], saved = []
+  const h = harness('diagnostics/useJvmDiagnostics.ts', { createJvmDiagnosticHtml: (data, options) => { reports.push({ data, options }); return '<html>complete report</html>' }, api: { saveDiagnosticBlob: async (blob, name) => saved.push({ text: await blob.text(), name }) } })
+  try {
+    h.view.start(); h.streams[0].source.next(frame(8)); h.view.threads.data.value = [{ id: '7', name: 'worker', state: 'RUNNABLE', stack: 'work', sampledAt: 1 }]
+    await h.view.exportReportHtml(); h.streams[0].source.next(frame(99))
+    assert.equal(reports[0].data.snapshot.flameGraph[0].samples, 8)
+    assert.equal(reports[0].data.threads[0].id, '7'); assert.equal(reports[0].data.nodeId, 'node-a')
+    assert.ok(reports[0].options.interaction.live); assert.match(saved[0].name, /diagnostics-node-a-\d+\.html/)
+    assert.match(reports[0].options.report.state, /report\.stateAtExport.*samplingStatus\.recording/)
+    assert.equal(saved[0].text, '<html>complete report</html>'); assert.equal(h.streams.length, 1)
+    h.access.value = { ...h.access.value, exportJfr: false }; await flush(); await h.view.exportReportHtml()
+    assert.equal(saved.length, 1)
+  } finally { h.effect.stop() }
+})
+
+test('HTML report excludes revoked evidence and ignores failures after leaving its node', async () => {
+  const reports = [], requests = []
+  const h = harness('diagnostics/useJvmDiagnostics.ts', { access: { jfr: false }, createJvmDiagnosticHtml: data => { reports.push(data); return 'html' }, api: { saveDiagnosticBlob: (blob, name, signal) => new Promise((resolve, reject) => requests.push({ reject, signal })) } })
+  try {
+    h.view.threads.data.value = [{ id: '1', name: 'worker', stack: 'work', state: 'RUNNABLE', sampledAt: 1 }]
+    h.view.snapshot.value = { flameGraph: [{ className: 'revoked', samples: 5 }], objectAllocations: [] }
+    const exporting = h.view.exportReportHtml()
+    assert.equal(reports[0].snapshot, undefined); assert.equal(reports[0].threads.length, 1)
+    h.node.value = 'node-b'; await flush(); assert.equal(requests[0].signal.aborted, true)
+    requests[0].reject(new Error('old node export failed')); await exporting
+    assert.equal(h.view.exportState.value, undefined)
   } finally { h.effect.stop() }
 })
 

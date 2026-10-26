@@ -10,7 +10,7 @@ export interface DiagnosticNodePreference {
   bufferScale?: 'linear' | 'compressed'
   bufferGrouping?: 'aggregate' | 'queues'
   logDisplay?: { level: string; wrap: boolean }
-  jvmTab?: 'threads' | 'performance' | 'memory'
+  jvmTab?: 'performance' | 'snapshots'
   deviceRuntimeMode?: 'messages' | 'traffic'
   deviceRuntimeSeries?: string[]
   deviceRuntimeZoom?: { start: number; end: number }
@@ -58,7 +58,8 @@ export function sanitizeDiagnosticPreferences(value: unknown): DiagnosticPrefere
     if (!text(nodeId) || !object(config)) continue
     const node: DiagnosticNodePreference = {}
     if (text(config.bean)) node.bean = config.bean
-    if (['threads', 'performance', 'memory'].includes(String(config.jvmTab))) node.jvmTab = config.jvmTab as DiagnosticNodePreference['jvmTab']
+    if (config.jvmTab === 'threads' || config.jvmTab === 'snapshots') node.jvmTab = 'snapshots'
+    else if (config.jvmTab === 'memory' || config.jvmTab === 'performance') node.jvmTab = 'performance'
     if (['messages', 'traffic'].includes(String(config.deviceRuntimeMode))) node.deviceRuntimeMode = config.deviceRuntimeMode as DiagnosticNodePreference['deviceRuntimeMode']
     if (Array.isArray(config.deviceRuntimeSeries)) node.deviceRuntimeSeries = [...new Set(config.deviceRuntimeSeries.filter((id): id is string => typeof id === 'string' && ['sessions', 'upstreamMessages', 'communicationQps', 'propertyReports', 'eventReports', 'receivedBytes', 'sentBytes'].includes(id)))]
     if (object(config.deviceRuntimeZoom) && Number.isFinite(config.deviceRuntimeZoom.start) && Number.isFinite(config.deviceRuntimeZoom.end)) {

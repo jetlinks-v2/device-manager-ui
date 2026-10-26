@@ -148,6 +148,16 @@ test('download validation refuses error blobs and aborted saves before clicking 
   assert.equal(clicks, 0)
   await api.saveDiagnosticFile(new Blob(['FLR:binary']), 'recording.jfr')
   assert.equal(clicks, 1)
+  const localJson = new Blob(['{"version":1,"nodeId":"iot","threads":[]}'], { type: 'application/json' })
+  // 客户端生成的 JSON 是合法证据，不能按服务端错误信封处理。
+  api.saveDiagnosticBlob(localJson, 'diagnostics.json')
+  assert.equal(clicks, 2)
+  api.saveDiagnosticBlob(localJson, 'diagnostics.json', cancelled.signal)
+  assert.equal(clicks, 2)
+  await assert.rejects(api.saveDiagnosticFile(localJson, 'server.json'), /Diagnostic download failed/)
+  await assert.rejects(api.saveDiagnosticFile(new Blob(['{"success":false,"message":"Denied"}']), 'recording.jfr'), /Denied/)
+  assert.throws(() => api.saveDiagnosticBlob(new Blob([]), 'empty.json'), /Diagnostic download failed/)
+  assert.equal(clicks, 2)
 })
 
 test('device communication reads one exact projection with composite QPS, never scalar QPS fields or an extra request',async()=>{

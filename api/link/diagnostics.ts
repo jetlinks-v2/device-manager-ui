@@ -74,6 +74,12 @@ export async function saveDiagnosticFile(response: unknown, name: string, signal
     try { error = JSON.parse(prefix) } catch { throw new Error('Diagnostic download failed') }
     if (/json/.test(data.type) || error.success === false) throw new Error(error.message || 'Diagnostic download failed')
   }
+  saveDiagnosticBlob(data, name, signal)
+}
+
+/** 保存本地生成的诊断内容；服务端响应须先经 saveDiagnosticFile 校验。 */
+export function saveDiagnosticBlob(data: Blob, name: string, signal?: AbortSignal) {
+  if (!(data instanceof Blob) || data.size === 0) throw new Error('Diagnostic download failed')
   if (signal?.aborted) return
   const url = URL.createObjectURL(data)
   const anchor = document.createElement('a'); anchor.href = url; anchor.download = name; anchor.click()
