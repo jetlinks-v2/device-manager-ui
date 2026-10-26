@@ -1,5 +1,15 @@
 # 设备列表范围侧栏
 
+## 设备详情启停权限
+
+目标与范围：修复统一设备详情中视频设备缺少启用/禁用按钮的问题，归属运行时 `device-manager-ui`，入口为 `views/device/list/hooks/useDeviceDetailPermissions.ts`。启停调用设备实例接口，使用当前设备列表入口或 `device/Instance:action` 授权；业务 Provider 的菜单不一定定义 `action`，例如 `video/resources`，不能把该按钮作为额外前提。编辑、删除继续保留原有设备实例与业务模块权限检查。
+
+实现：启停在完成设备实例授权判断后直接返回结果；编辑、删除继续检查业务 Provider 的对应按钮。`tests/deviceDetailPermissions.test.mjs` 增加真实 Provider 存在时的权限场景，覆盖视频、有无设备实例授权及编辑/删除权限边界。仅调整详情权限判定，不新增菜单权限，不改变接口、路由、启停请求和运营端 `ui/`。
+
+验证：模块根执行 `node --test tests/deviceDetailPermissions.test.mjs`，10/10 通过；新增的两个视频授权用例在修复前失败、修复后通过，媒体权限或编辑权限不能代替设备实例启停授权，网关与原物联入口行为保持兼容。`git diff --check` 通过。在 `runtime-ui/jetlinks-web-core` 通过现有 Vite CLI 执行 `node --max_old_space_size=8192 --max-semi-space-size=64 ../node_modules/vite/bin/vite.js build -- --module-name device-manager-ui`，模块生产构建通过（44.12 秒，保留资源路径和大包告警）。本地 `http://localhost:9200/#/resources/devices/list/Detail/34020000002000000159?type=video&tab=overview` 已显示“启用”，点击后确认弹层正常，未提交真实设备状态变更。
+
+验证限制：工作区与模块均无 lint 脚本。完整类型检查在 `runtime-ui` 执行 `node node_modules/vue-tsc/bin/vue-tsc.js -p modules/device-manager-ui/tsconfig.json --noEmit --pretty false`，被未改动的 `views/device/Product/ResourcePackage/index.vue:187:23` 与 `views/link/Certificate/type.d.ts:2:30` 的 TS1005 语法错误阻断；修复这些基线错误后需重跑。尚未执行真实设备启用/禁用请求联调。
+
 ## 网关列表引导扩展
 
 当前方案：Provider 提供可选列表引导组件，统一列表传递激活状态与手动接入意图，接收列表刷新事件；弹窗、待办、偏好和轮询由 edge-master-ui 持有。每次进入或切回网关分类都显示“网关待完善配置”，没有待办也展示空态，保留“不再提示”偏好；点击“接入网关”或 `action=create` 时优先显示扫码说明，确认、关闭或 Esc 后等待关闭动画完成再显示待完善配置。普通进入不自动弹扫码说明，筛选／翻页不重开；其他分类沿用原有新增入口。跨模块复用走注册表，不修改菜单权限、后端和运营端。关键入口为 deviceListProvider.ts 与 views/device/list/unified/，弹窗触发及优先级由 edge-master-ui 的 `views/workbench/gateway/guide/useGatewayListGuide.ts` 负责。
