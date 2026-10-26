@@ -1,4 +1,5 @@
 import dataCapabilityProviders from './dataCapabilities'
+import { deviceMetricsSupported, deviceMetricsAggregate, deviceOverviewSummary } from './runtimeMetrics'
 import { defineAsyncComponent } from 'vue'
 import { queryNoPagingPost } from '@device-manager-ui/api/product'
 import { queryNoPagingPost as queryInstanceNoPage, query } from '@device-manager-ui/api/instance'
@@ -34,6 +35,9 @@ export default {
   moduleId: 'device-manager-ui',
   dataCapabilityProviders,
   apis: {
+    deviceMetricsSupported,
+    deviceMetricsAggregate,
+    deviceOverviewSummary,
     deviceListSearchTerms: getDeviceListSearchTerms,
     deviceSpaceAreaBindings: queryDeviceSpaceAreaBindings_api,
     deviceBoundGroups: queryDeviceBoundGroups_api,
