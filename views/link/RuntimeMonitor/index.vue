@@ -103,8 +103,8 @@ const mobileOptions = computed(() => view.nodes.value.map(node => ({ value: node
 .runtime-monitor { display:flex; flex:1 1 auto; min-height:0; width:100%; min-width:0; }
 .runtime-monitor-grid { display:grid; flex:1 1 auto; min-width:0; min-height:0; gap:16px; align-items:stretch; transition:grid-template-columns .2s ease; }
 .runtime-monitor-grid--logs { min-height:0; }
-/* 顶部位置由布局测量；底部间距交给 CSS token 换算，兼容 rem 和主题字号。 */
-.runtime-monitor--logs { flex:0 0 auto; height:max(0px,calc(var(--runtime-log-available-height) - var(--space-3,12px))); overflow:hidden; }
+/* 高度已扣除祖先容器实际留白，不再叠加固定偏移。 */
+.runtime-monitor--logs { flex:0 0 auto; height:var(--runtime-log-available-height); overflow:hidden; }
 .cluster-sidebar,.cluster-detail { min-width:0; }
 .cluster-sidebar,.cluster-detail { height:100%; }
 .cluster-detail--logs { display:flex; flex-direction:column; min-height:0; overflow:hidden; }

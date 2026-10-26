@@ -14,7 +14,15 @@ export function useLogWorkspaceLayout(target: Ref<HTMLElement | undefined>, enab
       if (!element.isConnected || !rect.width) return
       const viewport = window.visualViewport
       const bottom = viewport ? viewport.offsetTop + viewport.height : window.innerHeight
-      availableHeight.value = Math.max(0, bottom - Math.max(0, rect.top))
+      // 还原未滚动的布局位置，避免外层滚动后可用高度随之增大。
+      let top = rect.top, bottomInset = 0
+      for (let ancestor = element.parentElement; ancestor; ancestor = ancestor.parentElement) {
+        top += ancestor.scrollTop
+        const css = window.getComputedStyle(ancestor)
+        bottomInset += (parseFloat(css.paddingBottom) || 0) + (parseFloat(css.borderBottomWidth) || 0) + (parseFloat(css.marginBottom) || 0)
+      }
+      // 底部还需容纳路由容器的实际留白，不能把这些空间挤到视口外。
+      availableHeight.value = Math.max(0, bottom - Math.max(0, top) - bottomInset)
     }
     const schedule = () => { if (frame === undefined) frame = window.requestAnimationFrame(measure) }
     const observer = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(schedule)

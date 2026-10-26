@@ -22,10 +22,11 @@ function load(relative, imports = {}, inline = false) {
 function layoutHarness(t) {
   const original = { window: globalThis.window, ResizeObserver: globalThis.ResizeObserver }
   const hooks = { activated: [], deactivated: [] }, listeners = new Map(), frames = new Map(), observers = []
-  const viewport = new EventTarget(), parentElement = {}, rect = { top: 64, width: 900, height: 1600 }
+  const viewport = new EventTarget(), parentElement = { scrollTop: 0 }, rect = { top: 64, width: 900, height: 1600 }
   Object.assign(viewport, { offsetTop: 0, height: 853 })
   let sequence = 0
   globalThis.window = { innerHeight: 853, visualViewport: viewport,
+    getComputedStyle: element => ({ paddingBottom: '0px', borderBottomWidth: '0px', marginBottom: '0px', ...element.style }),
     requestAnimationFrame: callback => { frames.set(++sequence, callback); return sequence },
     cancelAnimationFrame: id => frames.delete(id),
     addEventListener: (name, callback) => listeners.set(name, callback),
@@ -58,6 +59,25 @@ test('log layout bounds an oversized natural page by its measured top and resize
     assert.equal(h.style.value['--runtime-log-available-height'], '316px')
     h.rect.top = 900; h.listeners.get('scroll')(); h.frame()
     assert.equal(h.style.value['--runtime-log-available-height'], '0px', 'an offscreen work area cannot receive negative geometry')
+  } finally { h.scope.stop() }
+})
+
+test('outer scrolling cannot grow log height and ancestor bottom spacing stays inside the viewport', t => {
+  const h = layoutHarness(t)
+  try {
+    const parent = h.element.parentElement
+    parent.style = { paddingBottom: '16px', borderBottomWidth: '2px' }
+    parent.parentElement = { scrollTop: 0, style: { paddingBottom: '12px', marginBottom: '6px' } }
+    h.listeners.get('resize')(); h.frame()
+    assert.equal(h.style.value['--runtime-log-available-height'], '753px')
+    // 浏览器外层滚动会等量减少 rect.top；滚动后的内容坐标不应变成新的高度预算。
+    parent.scrollTop = 80; parent.parentElement.scrollTop = 16; h.rect.top = -32
+    h.listeners.get('scroll')(); h.frame()
+    assert.equal(h.style.value['--runtime-log-available-height'], '753px')
+    h.element.scrollTop = 500; h.listeners.get('scroll')(); h.frame()
+    assert.equal(h.style.value['--runtime-log-available-height'], '753px', 'reading log rows does not resize the page')
+    h.viewport.height = 640; h.listeners.get('resize')(); h.frame()
+    assert.equal(h.style.value['--runtime-log-available-height'], '540px', 'actual viewport resizing still updates the budget')
   } finally { h.scope.stop() }
 })
 
