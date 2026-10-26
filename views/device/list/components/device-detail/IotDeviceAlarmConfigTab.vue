@@ -176,7 +176,7 @@ const columns = computed(() => [
   { title: $t('DeviceAlarm.column.source'), dataIndex: 'source', key: 'source', width: 110 },
   { title: $t('DeviceAlarm.column.name'), dataIndex: 'name', key: 'name' },
   { title: $t('DeviceAlarm.column.trigger'), dataIndex: 'trigger', key: 'trigger' },
-  { title: $t('DeviceAlarm.column.level'), dataIndex: 'level', key: 'level', width: 110 },
+  { title: $t('DeviceAlarm.column.level'), dataIndex: 'level', key: 'level', width: 110, ellipsis: true },
   { title: $t('DeviceAlarm.column.action'), key: 'action', width: 130 },
 ])
 
