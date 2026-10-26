@@ -1,5 +1,5 @@
 <template>
-  <section class="node-diagnostics" :class="{ 'node-diagnostics--logs': tab === 'logs', 'node-diagnostics--jvm': tab === 'jvm' }">
+  <section class="node-diagnostics" :class="{ 'node-diagnostics--overview': tab === 'overview', 'node-diagnostics--logs': tab === 'logs', 'node-diagnostics--jvm': tab === 'jvm' }">
     <header>
       <div class="node-header-info">
         <slot name="node-leading" />
@@ -85,6 +85,7 @@ function openSessions() { if (props.active && access.value.sessions && sessionSn
 </script>
 <style scoped>
 .node-diagnostics { min-width:0; }
+.node-diagnostics--overview > :deep(.ant-tabs > .ant-tabs-nav) { margin-bottom:var(--space-2,8px); }
 .node-diagnostics--logs { display:flex; flex:1 1 0; flex-direction:column; min-height:0; overflow:hidden; }
 .node-diagnostics--logs > header,.node-diagnostics--logs > :deep(.ant-tabs) { flex:0 0 auto; }
 .node-diagnostics--jvm { display:flex; flex:1 1 0; flex-direction:column; min-height:0; overflow:hidden; }

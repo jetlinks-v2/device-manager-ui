@@ -10,6 +10,7 @@ import { renderToString } from 'vue/server-renderer'
 const require=createRequire(import.meta.url), root=resolve(import.meta.dirname,'..'), cache=new Map(), received=[], buttons=[]
 const messages=JSON.parse(readFileSync(resolve(root,'locales/lang/zh.json'))), t=(key,args={})=>(messages[key]??key).replace(/\{(\w+)\}/g,(_,name)=>args[name]??`{${name}}`)
 const empty=vue.defineComponent({setup:()=>()=>null})
+const sampleTime=timestamp=>new Date(timestamp).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false,fractionalSecondDigits:3})
 const chart=vue.defineComponent({props:['option','events'],setup:props=>{received.push(props);return()=>vue.h('div',{class:'real-chart-contract'})}})
 function load(filename){
  if(cache.has(filename))return cache.get(filename)
@@ -43,14 +44,14 @@ test('real component projects independent capabilities with actual session and r
 test('first snapshot displays waiting, zero is a real rate, and tooltip preserves each source actual time and exact count',async()=>{
  let view=await render({communication:{...communication,history:communication.history.slice(0,1)}});assert.match(view.html,/等待下一次采集/)
  view=await render({communication:{...communication,history:[communication.history[0],{...communication.history[0],timestamp:7700},{...communication.history[0],timestamp:10700}]}});assert.match(view.html,/>0<\/b>/);assert.doesNotMatch(view.html,/等待下一次采集/)
- const exact='9223372036854775807';view=await render({session:{...session,history:[{timestamp:4000,value:exact}]},communication})
- const options=view.chart.option, s=options.series.find(item=>item.id==='sessions').data[0], m=options.series.find(item=>item.id==='upstreamMessages').data[1]
- const tooltip=options.tooltip.formatter([{seriesId:'sessions',data:s},{seriesId:'upstreamMessages',data:m}])
- assert.ok(tooltip.includes(BigInt(exact).toLocaleString()));assert.ok(tooltip.includes(new Date(4000).toLocaleTimeString()));assert.ok(tooltip.includes(new Date(7700).toLocaleTimeString()))
+ const exact='9223372036854775807';view=await render({session:{...session,history:[{timestamp:7000,value:exact}]},communication})
+ const options=view.chart.option, m=options.series.find(item=>item.id==='upstreamMessages').data[1]
+ const tooltip=options.tooltip.formatter([{axisValue:7700,seriesId:'upstreamMessages',data:m}])
+ assert.ok(tooltip.includes(BigInt(exact).toLocaleString()));assert.ok(tooltip.includes(sampleTime(7000)));assert.ok(tooltip.includes(sampleTime(7700)))
 })
 test('mode keeps stable series identities, traffic uses bytes/s, and legend empty selection plus zoom emit bounded preferences',async()=>{
  const patches=[],view=await render({session,communication,config:{deviceRuntimeMode:'traffic',deviceRuntimeSeries:[]},onConfigure:value=>patches.push(value)})
- const option=view.chart.option;assert.equal(option.yAxis[1].name,'B/s');assert.equal(option.series.length,7)
+ const option=view.chart.option;assert.equal(option.yAxis[1].name,'');assert.match(view.html,/右轴：流量（B\/s）/);assert.equal(option.series.length,7)
  assert.deepEqual(option.series.find(item=>item.id==='upstreamMessages').data,[]);assert.equal(option.series.find(item=>item.id==='receivedBytes').data[1].value[1],1024)
  assert.ok(Object.values(option.legend.selected).every(selected=>selected===false))
  view.chart.events.legendselectchanged({selected:{会话记录:false,接收:false,发送:false}});assert.deepEqual(patches.at(-1),{deviceRuntimeSeries:[],deviceRuntimeMode:'traffic'})
@@ -62,17 +63,39 @@ test('partial communication getter availability cannot fabricate missing series 
  const view=await render({communication:source,config:{deviceRuntimeMode:'traffic'}})
  assert.ok(view.chart.option.series.find(item=>item.id==='receivedBytes').data.every(point=>point.value[1]===null))
  assert.equal(view.chart.option.series.find(item=>item.id==='sentBytes').data[1].value[1],0)
- const tooltip=view.chart.option.tooltip.formatter([{seriesId:'receivedBytes',data:view.chart.option.series.find(item=>item.id==='receivedBytes').data[1]}]);assert.equal(tooltip,'')
+ const tooltip=view.chart.option.tooltip.formatter([{seriesId:'receivedBytes',data:view.chart.option.series.find(item=>item.id==='receivedBytes').data[1]}]).replace(/<[^>]+>/g,' ');assert.match(tooltip,/接收流量\s+—/);assert.match(tooltip,/发送流量\s+0 B\/s/)
 })
 
 test('QPS adds a third default message curve, keeps raw packet units and direction details, and stays a reading in traffic mode',async()=>{
  let view=await render({session,communication})
- assert.equal(view.chart.option.yAxis[1].name,'/s')
+ assert.equal(view.chart.option.yAxis[1].name,'');assert.match(view.html,/左轴：会话记录（条）/);assert.match(view.html,/右轴：消息（条\/s） · 通信 QPS（次\/s）/)
  assert.equal(view.chart.option.legend.selected['通信 QPS'],true)
  const qps=view.chart.option.series.find(item=>item.id==='communicationQps');assert.equal(qps.data[1].value[1],22)
- const tooltip=view.chart.option.tooltip.formatter([{seriesId:'communicationQps',data:qps.data[1]}]);assert.match(tooltip,/22 次\/s/);assert.match(tooltip,/接收 17/);assert.match(tooltip,/发送 5/)
+ const tooltip=view.chart.option.tooltip.formatter([{seriesId:'communicationQps',data:qps.data[1]}]).replace(/<[^>]+>/g,' ');assert.match(tooltip,/22 次\/s/);assert.match(tooltip,/接收\s+17/);assert.match(tooltip,/发送\s+5/)
  view=await render({session,communication,config:{deviceRuntimeMode:'traffic'}})
  assert.deepEqual(view.chart.option.series.find(item=>item.id==='communicationQps').data,[]);assert.match(view.html,/通信/);assert.match(view.html,/>22<\/b>/)
+})
+test('tooltip groups only equal source timestamps and keeps subordinate values, full units and stale markers',async()=>{
+ const view=await render({session:{...session,state:{status:'stale',sampledAt:7000}},communication}),option=view.chart.option
+ const tooltip=option.tooltip.formatter(['sessions','upstreamMessages','propertyReports','communicationQps'].map(seriesId=>({seriesId,data:option.series.find(series=>series.id===seriesId).data.at(-1)})))
+ assert.equal((tooltip.match(/<time>/g)??[]).length,3)
+ assert.match(tooltip,/<time>\d{2}:\d{2}:\d{2}\.\d{3}<\/time>/)
+ assert.equal(tooltip.split(`<time>${sampleTime(7700)}</time>`).length-1,1)
+ const text=tooltip.replace(/<[^>]+>/g,' ')
+ assert.match(text,/会话记录\s+上次采集\s+14 条/);assert.match(text,/上行消息\s+3 条\/s/);assert.match(text,/属性上报\s+2 条\/s\s+属性点位\s+4 点\/s/)
+ assert.match(text,/通信 QPS\s+22 次\/s/);assert.match(text,/采样窗口 1秒/)
+})
+test('one hovered timestamp includes hidden message and traffic details in either mode without carrying values across gaps',async()=>{
+ for(const deviceRuntimeMode of ['messages','traffic']){
+  const view=await render({session,communication,config:{deviceRuntimeMode,deviceRuntimeSeries:['sessions','upstreamMessages','receivedBytes']}})
+  const text=view.chart.option.tooltip.formatter([{axisValue:7700}]).replace(/<[^>]+>/g,' ')
+  assert.match(text,/会话记录\s+14 条/);assert.match(text,/通信 QPS\s+22 次\/s/);assert.match(text,/属性上报\s+2 条\/s/);assert.match(text,/属性点位\s+4 点\/s/);assert.match(text,/事件上报\s+1 条\/s/);assert.match(text,/接收流量\s+1 KB\/s/);assert.match(text,/发送流量\s+0 B\/s/)
+ }
+ const view=await render({session:{...session,history:[session.history[0],{timestamp:7000}]},communication:{...communication,history:[...communication.history,{timestamp:7700}]}})
+ const text=view.chart.option.tooltip.formatter([{axisValue:7700}]).replace(/<[^>]+>/g,' ')
+ assert.match(text,/会话记录\s+—/);assert.match(text,/通信 QPS\s+—/);assert.match(text,/上行消息\s+—/)
+ assert.doesNotMatch(view.chart.option.tooltip.formatter([{axisValue:100000}]),/22 次\/s|3 条\/s|14 条/)
+ assert.equal(view.chart.option.tooltip.formatter([]),'')
 })
 test('legacy eight-attribute sources keep upstream and session while unavailable or reset QPS never renders a false zero',async()=>{
  const old={...communication,history:communication.history.map(point=>{const {receivedPackets,sentPackets,...counters}=point.counters;return {...point,counters,qps:undefined}})}
@@ -87,7 +110,7 @@ test('QPS geometry uses its own source time, repeats no source points and compac
  const repeated={...communication,history:[...communication.history,{...communication.history[1],timestamp:7800}]}
  const view=await render({communication:repeated}),points=view.chart.option.series.find(item=>item.id==='communicationQps').data
  assert.deepEqual(points.map(point=>point.value[0]),[4500,7500]);assert.equal(view.chart.option.yAxis[1].axisLabel.formatter(1600000),'1.6M')
- const tooltip=view.chart.option.tooltip.formatter([{seriesId:'communicationQps',data:points[1]}]);assert.match(tooltip,/采样窗口 1秒/);assert.ok(tooltip.includes(new Date(7500).toLocaleTimeString()))
+ const tooltip=view.chart.option.tooltip.formatter([{seriesId:'communicationQps',data:points[1]}]);assert.match(tooltip,/采样窗口 1秒/);assert.ok(tooltip.includes(sampleTime(7500)))
 })
 
 test('all metrics off stays explicit and recoverable, missing selected metrics explain the gap, and traffic legend changes one unit axis',async()=>{

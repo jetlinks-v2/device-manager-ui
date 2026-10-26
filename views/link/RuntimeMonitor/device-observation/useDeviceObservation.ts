@@ -1,26 +1,25 @@
 import { computed, onScopeDispose, ref, shallowRef, watch, type Ref } from 'vue'
-import { appendDeviceObservation, deviceObservationSample, deviceObservationColors, type DeviceObservationEntry, type DeviceObservationMetric } from '@jetlinks-web-core/components/RuntimeDiagnostics'
+import { appendDeviceObservation, deviceObservationSample, deviceObservationColors, deviceObservationMetrics, type DeviceObservationEntry, type DeviceObservationMetric } from '@jetlinks-web-core/components/RuntimeDiagnostics'
 import { queryDeviceSessions } from '../../../../api/link/diagnostics'
 import { normalizeDeviceSessions } from '../../diagnostics/useDeviceSessions'
 import { diagnosticErrorState } from '../../diagnostics/status'
 
 interface ObservationJob { id: string; dueAt: number; finishedAt?: number; controller?: AbortController; halted?: boolean; manual?: boolean }
-interface ObservationPreferences { devices: Array<{ id: string; label: string }>; interval: number; metric: DeviceObservationMetric }
+interface ObservationPreferences { devices: Array<{ id: string; label: string }>; interval: number; metrics: DeviceObservationMetric[] }
 const intervals = [5, 10, 30, 60]
-const metrics: DeviceObservationMetric[] = ['receive', 'send', 'messages', 'pending']
 const storageKey = (scope: string) => `runtime-device-observation:v1:${scope}`
 
 /** 五设备共享有界调度；每设备完成后计时，暂停保留快照，身份/授权变化清除证据。 */
 export function useDeviceObservation(active: Ref<boolean>, permitted: Ref<boolean>, capability: Ref<boolean>, scope: Ref<string>, supported: Ref<boolean | undefined> = ref(undefined)) {
-  const entries = shallowRef<DeviceObservationEntry[]>([]), interval = ref(5), metric = ref<DeviceObservationMetric>('receive'), paused = ref(false)
+  const entries = shallowRef<DeviceObservationEntry[]>([]), interval = ref(5), metrics = ref<DeviceObservationMetric[]>([...deviceObservationMetrics]), paused = ref(false)
   const jobs = new Map<string, ObservationJob>(), running = new Set<ObservationJob>()
-  const allowed = computed(() => active.value && permitted.value && capability.value && !paused.value)
+  const readable = computed(() => active.value && permitted.value && capability.value)
   let timer: ReturnType<typeof setTimeout> | undefined, disposed = false, restoring = false
   const current = (job: ObservationJob, manual = false) => !disposed && active.value && permitted.value && capability.value && (manual || !paused.value) && jobs.get(job.id) === job
   function update(id: string, patch: Partial<DeviceObservationEntry>) { entries.value = entries.value.map(entry => entry.id === id ? { ...entry, ...patch } : entry) }
   function persist() {
     if (restoring || !scope.value || !permitted.value) return
-    const value: ObservationPreferences = { devices: entries.value.map(({ id, label }) => ({ id, label })), interval: interval.value, metric: metric.value }
+    const value: ObservationPreferences = { devices: entries.value.map(({ id, label }) => ({ id, label })), interval: interval.value, metrics: metrics.value }
     try { localStorage.setItem(storageKey(scope.value), JSON.stringify(value)) } catch { /* 存储不可用只影响偏好恢复。 */ }
   }
   function interrupt() {
@@ -83,7 +82,13 @@ export function useDeviceObservation(active: Ref<boolean>, permitted: Ref<boolea
     // 暂停观测时仍允许一次显式刷新，随后回到暂停状态。
     pump()
   }
-  watch(allowed, enabled => { if (!enabled) interrupt(); else pump() }, { flush: 'sync' })
+  // 每次进入且授权/能力就绪时立即取一次快照，暂停偏好只停止后续周期采样。
+  watch(readable, enabled => {
+    if (!enabled) { interrupt(); return }
+    for (const job of jobs.values()) if (!job.halted && !running.has(job)) { job.dueAt = Date.now(); job.manual = paused.value }
+    pump()
+  }, { immediate: true, flush: 'sync' })
+  watch(paused, value => { if (readable.value) { if (value) interrupt(); else pump() } }, { flush: 'sync' })
   watch(supported, value => {
     if (value === false) {
       interrupt()
@@ -95,11 +100,12 @@ export function useDeviceObservation(active: Ref<boolean>, permitted: Ref<boolea
     clear()
     if (!permission || !key) return
     restoring = true
-    interval.value = 5; metric.value = 'receive'; paused.value = false
+    interval.value = 5; metrics.value = [...deviceObservationMetrics]; paused.value = false
     try {
       const value = JSON.parse(localStorage.getItem(storageKey(key)) || '{}') as Partial<ObservationPreferences>
       if (intervals.includes(Number(value.interval))) interval.value = Number(value.interval)
-      if (metrics.includes(value.metric as DeviceObservationMetric)) metric.value = value.metric!
+      // 旧单指标偏好保留设备与频率；首次使用多指标布局默认全部显示。
+      if (Array.isArray(value.metrics)) metrics.value = deviceObservationMetrics.filter(metric => value.metrics!.includes(metric))
       for (const device of Array.isArray(value.devices) ? value.devices.slice(0, 5) : []) if (typeof device.id === 'string') add(device.id, typeof device.label === 'string' ? device.label : device.id)
     } catch { /* 损坏偏好不影响查询。 */ }
     finally { restoring = false }
@@ -109,7 +115,7 @@ export function useDeviceObservation(active: Ref<boolean>, permitted: Ref<boolea
     for (const job of jobs.values()) if (job.finishedAt !== undefined && !job.manual) job.dueAt = job.finishedAt + interval.value * 1000
     persist(); pump()
   })
-  watch(metric, persist)
+  watch(metrics, persist)
   onScopeDispose(() => { disposed = true; clear() })
-  return { entries, interval, metric, paused, add, remove, refresh }
+  return { entries, interval, metrics, paused, add, remove, refresh }
 }

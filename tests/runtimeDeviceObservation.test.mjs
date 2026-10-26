@@ -17,8 +17,8 @@ function loadTs(entry, overrides = {}) {
   }
   return load(entry)
 }
-function harness(loader = async id => [{ deviceId: id, serverId: 'node', pendingMessages: 0 }]) {
-  const active = vue.ref(true), permission = vue.ref(true), capability = vue.ref(true), scope = vue.ref('alice'), supported = vue.ref(true), calls = []
+function harness(loader = async id => [{ deviceId: id, serverId: 'node', pendingMessages: 0 }], initial = {}) {
+  const active = vue.ref(initial.active ?? true), permission = vue.ref(true), capability = vue.ref(initial.capability ?? true), scope = vue.ref('alice'), supported = vue.ref(true), calls = []
   const model = loadTs(resolve(import.meta.dirname, '../../../jetlinks-web-core/src/components/RuntimeDiagnostics/device-sessions/observation.ts'))
   const normalizer = loadTs(resolve(import.meta.dirname, '../views/link/diagnostics/useDeviceSessions.ts'), {
     '@jetlinks-web-core/hooks/useDiagnosticQuery': {}, '../../../api/link/diagnostics': {}, './useDiagnosticsAccess': {}, './status': {},
@@ -33,6 +33,24 @@ function harness(loader = async id => [{ deviceId: id, serverId: 'node', pending
   return { view, effect, active, permission, capability, scope, supported, calls }
 }
 
+test('restored selections load immediately on entry after capability is ready, then wait for completion plus interval', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 10000 })
+  if (!('localStorage' in globalThis)) { Object.defineProperty(globalThis, 'localStorage', { value: undefined, writable: true, configurable: true }); t.after(() => { delete globalThis.localStorage }) }
+  t.mock.property(globalThis, 'localStorage', { getItem: () => JSON.stringify({ devices: [{ id: 'saved' }], interval: 30 }), setItem() {} })
+  const h = harness(undefined, { active: false, capability: false })
+  try {
+    assert.equal(h.view.entries.value.length, 1); assert.equal(h.calls.length, 0)
+    h.active.value = true; assert.equal(h.calls.length, 0, 'wait for authorized capability')
+    h.capability.value = true; assert.equal(h.calls.length, 1, 'no initial interval delay'); await flush()
+    t.mock.timers.tick(29999); await flush(); assert.equal(h.calls.length, 1)
+    t.mock.timers.tick(1); await flush(); assert.equal(h.calls.length, 2)
+    h.active.value = false; h.active.value = true; assert.equal(h.calls.length, 3, 're-entry refreshes immediately'); await flush()
+    h.view.paused.value = true; h.active.value = false; h.active.value = true
+    assert.equal(h.calls.length, 4, 'paused re-entry still gets one fresh snapshot'); await flush()
+    t.mock.timers.tick(60000); await flush(); assert.equal(h.calls.length, 4); assert.equal(h.view.paused.value, true)
+  } finally { h.effect.stop() }
+})
+
 test('five devices share three slots; duplicates and refresh do not overlap; colors survive removals', async () => {
   const pending = [], h = harness((id, signal) => new Promise(done => pending.push({ id, signal, done })))
   try {
@@ -45,6 +63,19 @@ test('five devices share three slots; duplicates and refresh do not overlap; col
     const color = h.view.entries.value.find(entry => entry.id === 'c').color
     h.view.remove('a'); assert.equal(h.view.entries.value.find(entry => entry.id === 'c').color, color)
     assert.equal(new Set(h.view.entries.value.map(entry => entry.color)).size, 4)
+  } finally { h.effect.stop() }
+})
+test('old single-metric preferences keep devices and interval while multi-metric preferences are bounded and may hide all curves', t => {
+  if (!('localStorage' in globalThis)) { Object.defineProperty(globalThis, 'localStorage', { value: undefined, writable: true, configurable: true }); t.after(() => { delete globalThis.localStorage }) }
+  const values = { alice: { devices: [{ id: 'a' }], interval: 10, metric: 'pending' }, bob: { metrics: ['send', 'send', 'unknown', 'pending'] }, carol: { metrics: [] } }
+  t.mock.property(globalThis, 'localStorage', { getItem: key => JSON.stringify(values[key.split(':').at(-1)]), setItem() {} })
+  const h = harness(undefined, { active: false })
+  try {
+    assert.equal(h.view.entries.value[0].id, 'a'); assert.equal(h.view.interval.value, 10)
+    assert.deepEqual(h.view.metrics.value, ['receive', 'send', 'messages', 'pending'])
+    h.scope.value = 'bob'; assert.deepEqual(h.view.metrics.value, ['send', 'pending'])
+    h.scope.value = 'carol'; assert.deepEqual(h.view.metrics.value, [])
+    assert.equal(h.calls.length, 0)
   } finally { h.effect.stop() }
 })
 test('paused explicit refresh visits all five devices with at most three concurrent requests and remains paused', async () => {
@@ -117,9 +148,9 @@ test('only bounded selections and settings persist; telemetry is memory-only and
   t.mock.property(globalThis, 'localStorage', { getItem: key => saved.get(key), setItem: (key, value) => saved.set(key, value) })
   const h = harness()
   try {
-    h.view.add('private-device', 'Device'); await flush(); h.view.metric.value = 'pending'; await flush()
+    h.view.add('private-device', 'Device'); await flush(); h.view.metrics.value = ['pending']; await flush()
     const value = JSON.parse(saved.get('runtime-device-observation:v1:alice'))
-    assert.deepEqual(value, { devices: [{ id: 'private-device', label: 'Device' }], interval: 5, metric: 'pending' })
+    assert.deepEqual(value, { devices: [{ id: 'private-device', label: 'Device' }], interval: 5, metrics: ['pending'] })
     assert.ok(!JSON.stringify(value).includes('serverId')); assert.ok(!JSON.stringify(value).includes('history'))
     saved.set('runtime-device-observation:v1:bob', '{bad-json'); h.scope.value = 'bob'; await flush(); assert.deepEqual(h.view.entries.value, [])
   } finally { h.effect.stop() }
