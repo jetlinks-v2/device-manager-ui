@@ -1,5 +1,5 @@
 
-export interface TypeObjType = {
+export interface TypeObjType {
     text: string;
     value: string;
 };
