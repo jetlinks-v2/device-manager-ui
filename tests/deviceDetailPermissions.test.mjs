@@ -6,11 +6,12 @@ import { transform } from 'esbuild'
 
 const routingSourcePath = new URL('../views/device/list/hooks/useIotDeviceRouting.ts', import.meta.url)
 const permissionSourcePath = new URL('../views/device/list/hooks/useDeviceDetailPermissions.ts', import.meta.url)
-const routingSource = (await readFile(routingSourcePath, 'utf8')).replace(
+const routingSource = (await readFile(routingSourcePath, 'utf8')).replace(/\r\n/g, '\n').replace(
   "import { getProjectIdFromLocation } from '@jetlinks-web-core/utils/project-runtime'",
   "const getProjectIdFromLocation = () => ''",
 )
 const permissionSource = (await readFile(permissionSourcePath, 'utf8'))
+  .replace(/\r\n/g, '\n')
   .replace("import type { Ref } from 'vue'\n", '')
   .replace("import { useRoute } from 'vue-router'", 'const useRoute = () => globalThis.__route')
   .replace(
