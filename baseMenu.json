@@ -2074,7 +2074,7 @@
             "en": "IoT"
           }
         },
-        "owner": "iot",
+        "owner": "app",
         "id": "alarm-center-device-alarm",
         "url": "/alarm-center/device",
         "icon": "icon-yuandian",

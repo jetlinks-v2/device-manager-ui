@@ -2,6 +2,12 @@
 
 `DeviceManagement/DeviceMapCard` 是设备地图的画布组件，保留 `deviceMapCard` 类型与现有配置。遵循 `runtime-ui/AGENTS.md`：展示组件只消费 props/emits，状态和生命周期放 hooks，连接与数据转换放 services；单个 Vue 文件不超过 300 行。文案统一维护于本模块 `locales/lang/{zh,en}.json`。
 
+## 请求凭证
+
+`DeviceManagement/services/deviceMap.ts` 与模块内 `views/device/DashBoard/components/Amap.vue` 的 GeoJSON SSE 请求统一通过 `@jetlinks-web/utils` 的 `getToken()` 获取凭证。项目环境按当前项目读取 `project_<项目编码>.token`，独立部署读取全局 Token，避免直接读取 `LocalStore.get(TOKEN_KEY)` 导致项目凭证为空或误用残留的全局凭证。范围仅限这两处读取及现有测试 mock；接口、查询参数、项目会话结构和地图交互沿用现有行为。
+
+验证：模块目录执行 `node --test tests/deviceMapCluster.test.mjs tests/dashboardRuntime.test.mjs tests/deviceLocationGeoContract.test.mjs`，24/24 通过。使用已安装工具库的真实存储实现和模拟 localStorage，执行 service 与编译后的 Amap 组件，覆盖项目会话没有全局凭证、存在残留全局凭证、不同项目、独立部署及根入口，10/10 通过；Amap 脚本与模板编译、差异空白检查通过。工作区与模块无 lint 脚本。在 `runtime-ui/` 执行 `pnpm exec vue-tsc --noEmit -p modules/device-manager-ui/tsconfig.json`，修改前后均被 `views/device/Product/ResourcePackage/index.vue:187` 与 `views/link/Certificate/type.d.ts:2` 两处原有 TS1005 语法错误阻断，输出完全一致，修复后需重跑。本次未运行完整生产构建，待执行 `pnpm -F jetlinks-web-core build -- --module-name device-manager-ui`；真实项目页面与后端尚未联调，需刷新地图确认请求携带当前项目凭证。
+
 ## 位置流空结果
 
 已确认现象：用户补齐地图查询权限后，`GET /geo/object/device/_search/geo.json` 返回 200、响应为空，页面仍显示加载失败。后端查询是有限事件流，无位置记录时不发送消息即正常结束；当前 `event-source-polyfill` 将正常 EOF 与传输失败都通知到 `onerror`，原 Hook 未区分完成和失败。

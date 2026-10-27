@@ -17,8 +17,8 @@
 import {ElAmapMarkerCluster} from "@vuemap/vue-amap";
 import { getCenterPoint } from "../../../../utils/map";
 import { EventSourcePolyfill } from 'event-source-polyfill';
-import {TOKEN_KEY, TOKEN_KEY_URL} from "@jetlinks-web/constants";
-import { LocalStore } from "@jetlinks-web/utils";
+import {TOKEN_KEY_URL} from "@jetlinks-web/constants";
+import { getToken } from "@jetlinks-web/utils";
 import markerPng from '@device-manager-ui/assets/marker.png'
 import { debounce } from 'lodash-es'
 import {getBaseApi} from "@jetlinks-web-core/utils";
@@ -77,9 +77,7 @@ const closeLoading = debounce(() => {
 
 const queryDeviceGeoJson = async () => {
     source = new EventSourcePolyfill(
-        `${getBaseApi()}/geo/object/device/_search/geo.json?${TOKEN_KEY_URL}=${LocalStore.get(
-            TOKEN_KEY,
-        )}&filter.paging=false`
+        `${getBaseApi()}/geo/object/device/_search/geo.json?${TOKEN_KEY_URL}=${getToken()}&filter.paging=false`
     )
 
     source.onmessage = (e) => {

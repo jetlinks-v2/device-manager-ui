@@ -1,10 +1,10 @@
 {
   "components.DeviceMap.title": "Device map",
-  "components.DeviceMap.loading": "Loading map",
+  "components.DeviceMap.loading": "Loading device locations",
   "components.DeviceMap.empty": "No device locations",
   "components.DeviceMap.editPlaceholder": "Device locations appear at runtime",
-  "components.DeviceMap.loadError": "Failed to load device map",
-  "components.DeviceMap.missingKey": "AMap API key is not configured",
+  "components.DeviceMap.loadError": "Failed to load device locations",
+  "components.DeviceMap.missingKey": "Configure the AMap JS API key and security key in System Settings → Basic Info → Map Configuration",
   "components.DeviceMap.unsupported": "Device map is unavailable in Community Edition",
   "components.DeviceMap.nearby": "Nearby devices",
   "components.DeviceMap.nearbyCount": "Nearby devices · {count}",

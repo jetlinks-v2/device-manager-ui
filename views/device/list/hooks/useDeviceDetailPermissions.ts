@@ -6,7 +6,7 @@ import { getIotDeviceListMenuCode } from './useIotDeviceRouting'
 import type { IotDevice } from '../types'
 
 /**
- * 详情头部操作调用设备实例 API：需要当前入口的 IoT 写授权，并保留业务模块自己的按钮限制。
+ * 详情头部操作调用设备实例 API：需要当前入口的 IoT 写授权，编辑与删除另保留业务模块的按钮限制。
  * 资源中心与物联入口的菜单码不同，旧物联菜单缺少按钮定义时才以菜单可见性兼容。
  * 媒体按钮只授予媒体资源能力，不能据此推断设备实例也具有写权限。
  */
@@ -23,6 +23,8 @@ export function useDeviceDetailPermissions(device: Ref<IotDevice | null>) {
     const canWriteDevice = auth.hasPermission(`${menuCode}:${permissionAction}`)
       || auth.hasPermission(`device/Instance:${permissionAction}`)
       || (menuCode === 'iot-user/device/list' && menu.hasMenu(menuCode))
+    // 启停统一由设备实例授权，视频等业务菜单可能没有定义对应的 action 按钮。
+    if (permissionAction === 'action') return canWriteDevice
     return canWriteDevice && (!provider.value || provider.value.menuCode === 'iot-user/device/list' || auth.hasPermission(`${provider.value.menuCode}:${permissionAction}`))
   }
 }

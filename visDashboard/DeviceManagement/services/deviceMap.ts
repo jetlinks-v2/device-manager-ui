@@ -1,5 +1,5 @@
-import { TOKEN_KEY, TOKEN_KEY_URL } from '@jetlinks-web/constants'
-import { LocalStore } from '@jetlinks-web/utils'
+import { TOKEN_KEY_URL } from '@jetlinks-web/constants'
+import { getToken } from '@jetlinks-web/utils'
 import { getBaseApi } from '@jetlinks-web-core/utils'
 import { EventSourcePolyfill } from 'event-source-polyfill'
 import type { DeviceMapPoint } from '../shared'
@@ -66,9 +66,7 @@ export const createDeviceMapStream = (handlers: {
 }) => {
   let opened = false
   const source = new EventSourcePolyfill(
-    `${getBaseApi()}/geo/object/device/_search/geo.json?${TOKEN_KEY_URL}=${LocalStore.get(
-      TOKEN_KEY
-    )}&filter.paging=false`
+    `${getBaseApi()}/geo/object/device/_search/geo.json?${TOKEN_KEY_URL}=${getToken()}&filter.paging=false`
   )
 
   source.onopen = () => {
