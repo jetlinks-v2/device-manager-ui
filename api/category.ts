@@ -2,6 +2,12 @@
 import { request } from '@jetlinks-web/core'
 import type { DataCapabilityRequest } from '@jetlinks-web-core/data-capability'
 import type { CategoryItem } from '../views/device/Category/typings'
+
+export interface ProductCategoryTreeStatistics {
+  categories: Array<CategoryItem & { productCount?: number }>
+  total: number
+  unclassified: number
+}
 /**
  * 查询产品分类树形数据
  */
@@ -10,6 +16,10 @@ export const queryTree = (params?: Record<string, any>, config?: Record<string, 
   config
     ? client.post<CategoryItem>('/device/category/_tree', params, config)
     : client.post<CategoryItem>('/device/category/_tree', params)
+
+/** 查询当前用户可见产品的分类树及各分类范围数量。 */
+export const queryTreeStatistics = (params?: Record<string, any>) =>
+  request.post<ProductCategoryTreeStatistics>('/device/category/_tree/_statistics', params)
 
 /**
  * 保存树形数据

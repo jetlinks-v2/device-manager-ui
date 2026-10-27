@@ -15,6 +15,8 @@
 				      :tree-data="categoryTree"
 				      :active-id="selectedCategoryId"
 				      :loading="categoryLoading"
+			      :total-product-count="totalProductCount"
+			      :unclassified-product-count="unclassifiedProductCount"
 				      :can-add="canAddCategory"
 				      :can-update="canUpdateCategory"
 				      :can-delete="canDeleteCategory"
@@ -168,7 +170,7 @@ import Save from "./Save/index.vue";
 import SyncCache from "./components/SyncCache.vue";
 import ProductCategoryTree, { type ProductCategoryTreeNode } from "./components/ProductCategoryTree.vue";
 import ModifyModal from "../Category/components/modifyModal/index.vue";
-import { queryTree, deleteTree } from "../../../api/category";
+import { queryTreeStatistics, deleteTree } from "../../../api/category";
 import { useMenuStore, useAuthStore } from "@jetlinks-web-core/store";
 import { useRouterParams } from "@jetlinks-web/hooks";
 import { accessType } from "../data";
@@ -199,6 +201,8 @@ const filterTerms = ref<ConditionFilterTerm[]>([]);
 const selectedCategoryId = ref<string>();
 const categoryTree = ref<ProductCategoryTreeNode[]>([]);
 const categoryLoading = ref(false);
+const totalProductCount = ref(0);
+const unclassifiedProductCount = ref(0);
 const productUnclassifiedScopeId = '__product-unclassified__';
 const { termOptions: dimAssetsTermOptions } = useTermOptions({ pick: ['eq']})
 
@@ -539,6 +543,7 @@ const handleView = (id: string) => {
  */
 const refresh = () => {
   tableRef.value?.reload();
+  void refreshCategoryTree();
 };
 
 const getBrandModel = (product: Record<string, any>) => {
@@ -586,12 +591,14 @@ const collectCategoryScopeIds = (nodes: ProductCategoryTreeNode[], id: string): 
 const refreshCategoryTree = async () => {
   categoryLoading.value = true;
   try {
-    const response = await queryTree({
+    const response = await queryTreeStatistics({
       paging: false,
       sorts: [{ name: 'sortIndex', order: 'asc' }],
     });
     if (response.status === 200) {
-      categoryTree.value = normalizeCategoryTree(response.result || []);
+      categoryTree.value = normalizeCategoryTree(response.result?.categories || []);
+      totalProductCount.value = Math.max(0, Number(response.result?.total) || 0);
+      unclassifiedProductCount.value = Math.max(0, Number(response.result?.unclassified) || 0);
       if (
         selectedCategoryId.value !== productUnclassifiedScopeId
         && !hasCategory(categoryTree.value, selectedCategoryId.value)
@@ -654,7 +661,7 @@ const confirmDeleteCategory = (category: ProductCategoryTreeNode) => {
 
 const handleCategoryChanged = async () => {
   await refreshCategoryTree();
-  refresh();
+  tableRef.value?.reload();
 };
 
 // 筛选
