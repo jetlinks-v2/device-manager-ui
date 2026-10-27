@@ -12,7 +12,7 @@ function loadTs(entry, overrides = {}) {
   function load(path) {
     if (cache.has(path)) return cache.get(path)
     const module = { exports: {} }, { code } = transformSync(readFileSync(path, 'utf8'), { loader: 'ts', format: 'cjs' })
-    const imports = id => id === 'vue' ? vue : id in overrides ? overrides[id] : id.startsWith('.') ? load(resolve(dirname(path), `${id}.ts`)) : require(id)
+    const imports = id => id === 'vue' ? vue : id in overrides ? overrides[id] : id === '@jetlinks-web-core/components/RuntimeDiagnostics' ? load(resolve(import.meta.dirname, '../../../jetlinks-web-core/src/components/RuntimeDiagnostics/samplingInterval.ts')) : id.startsWith('.') ? load(resolve(dirname(path), `${id}.ts`)) : require(id)
     new Function('require', 'module', 'exports', code)(imports, module, module.exports); cache.set(path, module.exports); return module.exports
   }
   return load(entry)

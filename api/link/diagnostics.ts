@@ -21,6 +21,8 @@ export const queryBufferMBeans = (nodeId: string, signal: AbortSignal) => queryM
 export const querySessionMBeans = (nodeId: string, signal: AbortSignal) => queryMBeans(nodeId, signal, 'org.jetlinks:type=DeviceSessionManager,*', ['Sessions', 'KeepOnlineSize'])
 /** 节点级网关通信累计；精确读取单个只读 MBean，不扫描或查询单设备。 */
 export const queryDeviceMessageMBeans = (nodeId: string, signal: AbortSignal) => queryMBeans(nodeId, signal, 'org.jetlinks:type=DeviceMessageMonitor,name=DeviceMessageMonitor', ['StartTime', 'SnapshotTime', 'ReceivedBytesTotal', 'SentBytesTotal', 'UpstreamMessagesTotal', 'PropertyReportsTotal', 'PropertyValuesTotal', 'EventReportsTotal', 'ReceivedPacketsTotal', 'SentPacketsTotal', 'QpsSnapshot'])
+/** 仅当前节点读取秒级历史；大的一小时响应只在用户定位峰值时请求。 */
+export const queryDeviceMessageRecording = (nodeId: string, signal: AbortSignal, hour = false) => queryMBeans(nodeId, signal, 'org.jetlinks:type=DeviceMessageMonitor,name=DeviceMessageMonitor', ['HistorySummary', hour ? 'HourHistory' : 'RecentHistory'])
 export const queryDeviceSessions = (deviceId: string, signal: AbortSignal) => diagnosticResult<unknown[]>(request.get(`/device/instance/${segment(deviceId)}/sessions`, {}, { signal }))
 /** 前三个源位置稳定；堆证据独立轻读，属性缓存仅在会话能力确认后读取。 */
 export const queryOperationalMBeans = (nodeId: string, signal: AbortSignal, includeCache = false) => Promise.allSettled([
@@ -29,9 +31,9 @@ export const queryOperationalMBeans = (nodeId: string, signal: AbortSignal, incl
   queryMBeans(nodeId, signal, 'org.jetlinks:type=SystemMonitorCollector,*', ['LastFailureTime', 'LastSuccessTime']),
   queryMBeans(nodeId, signal, 'java.lang:type=Memory', ['HeapMemoryUsage']),
 ])
-/** JVM概览与集群Buffer采样独立，生命周期首次有效取得后不重复投影。 */
+/** JVM概览保留启动身份用于识别短时重启；运行时长仅在建立或更新基线时读取。 */
 export async function queryOverviewMBeans(nodeId: string, signal: AbortSignal, includeLifetime = true) {
-  const source = await queryMBeans(nodeId, signal, 'java.lang:*', [...(includeLifetime ? ['StartTime', 'Uptime'] : []), 'ThreadCount', 'PeakThreadCount', 'DaemonThreadCount', 'CollectionCount', 'CollectionTime'])
+  const source = await queryMBeans(nodeId, signal, 'java.lang:*', ['StartTime', ...(includeLifetime ? ['Uptime'] : []), 'ThreadCount', 'PeakThreadCount', 'DaemonThreadCount', 'CollectionCount', 'CollectionTime'])
   return { sources: [source], partial: false }
 }
 export const sampleThreads = (nodeId: string, signal: AbortSignal) => collectDiagnosticStream(streamDiagnostic<RawThread>(nodeId, 'thread', signal), signal)
@@ -39,10 +41,19 @@ export const invokeMBean = (nodeId: string, invocation: MBeanInvocation, signal:
 /** TracingController返回Flux裸数组；仅兼容标准成功信封，不把失败或未知形状当空结果。 */
 export async function queryTrace(traceId: string, signal: AbortSignal): Promise<RawSpan[]> {
   const response: unknown = await request.get(`/system/trace/${segment(traceId)}`, {}, { signal, timeout: 20000 })
+  return traceResponse(response, traceId)
+}
+/** 只代理对应边缘的只读链路接口；边缘资产与代理权限由现有后端入口校验。 */
+export async function queryEdgeTrace(target: EdgeTraceTarget, traceId: string, signal: AbortSignal): Promise<RawSpan[]> {
+  const response: unknown = await request.get(`/edge/${segment(target.thingType)}/${segment(target.thingId)}/_/system/trace/${segment(traceId)}`, {}, { signal, timeout: 10000, hiddenError: true })
+  return traceResponse(response, traceId)
+}
+/** 远端不能带入页面来源身份，且其他 Trace 的记录不能拼入当前调用树。 */
+function traceResponse(response: unknown, traceId: string): RawSpan[] {
   const envelope = response && typeof response === 'object' && !Array.isArray(response) ? response as Envelope<unknown> & { status?: number } : undefined
   const result = Array.isArray(response) ? response : envelope?.success === true ? envelope.result : undefined
-  if (!Array.isArray(result) || !result.every(isRawSpan)) throw Object.assign(new Error(envelope?.message || 'Diagnostic trace response invalid'), { status: envelope?.status })
-  return result
+  if (!Array.isArray(result) || !result.every(isRawSpan) || result.some(span => span.traceId.toLowerCase() !== traceId.toLowerCase())) throw Object.assign(new Error(envelope?.message || 'Diagnostic trace response invalid'), { status: envelope?.status })
+  return result.map(span => { const clean = { ...span }; delete clean.edgeSource; return clean })
 }
 function isRawSpan(value: unknown): value is RawSpan {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false
@@ -61,7 +72,8 @@ export const logEntries = (nodeId: string, file: LogFile, signal: AbortSignal) =
 export const downloadLog = (nodeId: string, file: LogFile, signal: AbortSignal) => request.get(`${logUrl(nodeId, file)}/download`, {}, { signal, responseType: 'blob' })
 export const captureDiagnostic = (nodeId: string, kind: 'jfr' | 'heap-dump', seconds: number, signal: AbortSignal, live = false) => request.post(`${monitor}/${kind === 'jfr' ? 'jfr' : 'heap'}/_dump`, kind === 'jfr' ? { duration: `${seconds}s` } : { alive: live, autoDelete: true }, { params: { serverId: nodeId }, signal, responseType: 'blob', timeout: 600000 })
 export interface RawThread { threadId: string | number; threadName: string; threadState: string; lockName?: string; lockOwnerName?: string; lockOwnerId?: string | number; blockedCount?: number; blockedTime?: number; waitedCount?: number; waitedTime?: number; inNative?: boolean; suspended?: boolean; stackTrace?: Array<{ className: string; methodName: string; fileName?: string; lineNumber?: number }> }
-export interface RawSpan { app?: string; spanId: string; parentSpanId?: string; traceId: string; name: string; startWithNanos: string | number; endWithNanos: string | number; startWithNanosText?: string; endWithNanosText?: string; attributes?: Record<string, unknown>; events?: unknown[] }
+export interface EdgeTraceTarget { key: string; thingType: string; thingId: string }
+export interface RawSpan { app?: string; spanId: string; parentSpanId?: string; traceId: string; name: string; startWithNanos: string | number; endWithNanos: string | number; startWithNanosText?: string; endWithNanosText?: string; attributes?: Record<string, unknown>; events?: unknown[]; edgeSource?: EdgeTraceTarget }
 export interface LogWindow { lines: string[]; startPosition: number; endPosition: number; previousPosition?: number; nextPosition?: number; truncated: boolean }
 
 /** 二进制请求只在响应确认为Blob后保存，错误信封不能下载成诊断文件。 */

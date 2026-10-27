@@ -31,6 +31,18 @@ const Component=load(resolve(root,'views/link/diagnostics/overview/DeviceRuntime
 const session={key:'sessions',history:[{timestamp:4000,value:'12'},{timestamp:7000,value:'14'}],state:{status:'ready',sampledAt:7000},retainedValue:'14',facts:[],details:'session'}
 const communication={supported:true,state:{status:'ready',sampledAt:7700},history:[{timestamp:4700,startTime:'1000',counters:{upstreamMessages:'9007199254740993',receivedBytes:'1000',sentBytes:'0',propertyReports:'0',propertyValues:'0',eventReports:'0',receivedPackets:'9007199254740993',sentPackets:'0'},qps:{ready:true,timestamp:4500,windowMillis:1000,sequence:'45',values:{receivedQps:8,sentQps:2,communicationQps:10}}},{timestamp:7700,startTime:'1000',counters:{upstreamMessages:'9007199254741002',receivedBytes:'4072',sentBytes:'0',propertyReports:'6',propertyValues:'12',eventReports:'3',receivedPackets:'9007199254741005',sentPackets:'3'},qps:{ready:true,timestamp:7500,windowMillis:1000,sequence:'75',values:{receivedQps:17,sentQps:5,communicationQps:22}}}]}
 async function render(props){received.length=0;buttons.length=0;const app=vue.createSSRApp(Component,props);for(const name of ['a-button','a-tooltip','a-segmented'])app.component(name,{setup:(_,ctx)=>()=>vue.h('span',{'data-control':name},ctx.slots.default?.())});const html=await renderToString(app);return{html,chart:received.at(-1),buttons:[...buttons]}}
+test('recorded chart uses the node timezone and its own freshness, independently of live QPS',async()=>{
+ const timestamp=Date.UTC(2026,9,26,1,0,1),values={Communication:12,ReceivedPackets:10,SentPackets:2,UpstreamMessages:4,PropertyReports:3,PropertyValues:8,EventReports:1,ReceivedBytes:1024,SentBytes:64}
+ const data={generation:'42',statisticsStartTime:timestamp-60000,sampledAt:timestamp,firstSequence:0,endSequence:60,zoneId:'Asia/Tokyo',todayStartTime:timestamp-3600000,hourPeaks:[],todayPeaks:[],points:[{timestamp:timestamp-1000,sequence:58,values},{timestamp,sequence:59,values}]}
+ const source={...communication,state:{status:'stale',sampledAt:7700}}
+ let view=await render({communication:source,recording:{data,points:data.points,state:'ready',busy:false,active:true,outside:false}})
+ assert.equal(view.chart.option.xAxis.axisLabel.formatter(timestamp),'10:00:01')
+ let text=view.chart.option.tooltip.formatter([{axisValue:timestamp}]).replace(/<[^>]+>/g,' ')
+ assert.match(text,/10:00:01\.000/);assert.match(text,/通信 QPS\s+12 次\/s/);assert.doesNotMatch(text,/上次采集/)
+ view=await render({communication,recording:{data,points:data.points,state:'stale',busy:false,active:true,outside:false}})
+ text=view.chart.option.tooltip.formatter([{axisValue:timestamp}]).replace(/<[^>]+>/g,' ')
+ assert.match(text,/上行消息\s+上次采集\s+4 条\/s/)
+})
 test('real component projects independent capabilities with actual session and rate axes, and formats cumulative differences',async()=>{
  let view=await render({session,communication})
  assert.match(view.html,/会话记录/);assert.match(view.html,/上行速率/);assert.match(view.html,/>3<\/b>/)
@@ -51,7 +63,7 @@ test('first snapshot displays waiting, zero is a real rate, and tooltip preserve
 })
 test('mode keeps stable series identities, traffic uses bytes/s, and legend empty selection plus zoom emit bounded preferences',async()=>{
  const patches=[],view=await render({session,communication,config:{deviceRuntimeMode:'traffic',deviceRuntimeSeries:[]},onConfigure:value=>patches.push(value)})
- const option=view.chart.option;assert.equal(option.yAxis[1].name,'');assert.match(view.html,/右轴：流量（B\/s）/);assert.equal(option.series.length,7)
+ const option=view.chart.option;assert.equal(option.yAxis[1].name,'');assert.match(view.html,/右轴：流量（B\/s）/);assert.equal(option.series.length,8)
  assert.deepEqual(option.series.find(item=>item.id==='upstreamMessages').data,[]);assert.equal(option.series.find(item=>item.id==='receivedBytes').data[1].value[1],1024)
  assert.ok(Object.values(option.legend.selected).every(selected=>selected===false))
  view.chart.events.legendselectchanged({selected:{会话记录:false,接收:false,发送:false}});assert.deepEqual(patches.at(-1),{deviceRuntimeSeries:[],deviceRuntimeMode:'traffic'})

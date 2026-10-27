@@ -59,11 +59,59 @@ test('session overview excludes confirmed unsupported nodes from distribution an
 function suggestionHarness(loader) {
   const active = vue.ref(true), scope = vue.ref('alice')
   const module = loadTs(resolve(import.meta.dirname, '../views/link/diagnostics/useDeviceSuggestions.ts'), {
-    '../../../api/link/deviceConnections': { queryConnectionDeviceCandidates: loader },
+    '../../../api/link/deviceConnections': { queryConnectionDeviceCandidates: loader, connectionDevicePageSize: 12 },
   })
   const effect = vue.effectScope()
   return { ...effect.run(() => module.useDeviceSuggestions(active, scope)), effect, active, scope }
 }
+
+test('candidate lookup requests twelve stable lightweight records without a count endpoint', async () => {
+  const calls = [], api = loadTs(resolve(import.meta.dirname, '../api/link/deviceConnections.ts'), {
+    '@jetlinks-web/core': { request: { post: async (...args) => { calls.push(args); return { result: [] } } } },
+  })
+  const signal = new AbortController().signal
+  await api.queryConnectionDeviceCandidates('sensor', signal, 2)
+  assert.equal(calls.length, 1); assert.equal(calls[0][0], '/device/instance/_query/no-paging')
+  assert.equal(calls[0][1].pageSize, 12); assert.equal(calls[0][1].pageIndex, 2); assert.equal(calls[0][1].paging, true)
+  assert.deepEqual(calls[0][1].includes, ['id', 'name', 'productName'])
+  assert.deepEqual(calls[0][1].sorts, [{ name: 'id', order: 'asc' }]); assert.equal(calls[0][2].signal, signal)
+})
+
+test('candidate pages append unique records, retry the failed page, and stop at the final short page', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] })
+  const calls = []; let failed = false
+  const h = suggestionHarness(async (keyword, signal, page) => {
+    calls.push(page)
+    if (page === 1 && !failed) { failed = true; throw new Error('offline') }
+    return { result: page === 2 ? [] : Array.from({ length: 12 }, (_, i) => ({ id: String(page * 11 + i), name: `device-${page * 11 + i}` })) }
+  })
+  try {
+    h.search('device'); t.mock.timers.tick(200); await flush()
+    assert.equal(h.options.value.length, 12); assert.equal(h.hasMore.value, true)
+    h.loadMore(); h.loadMore(); await flush()
+    assert.deepEqual(calls, [0, 1]); assert.equal(h.options.value.length, 12)
+    h.loadMore(); await flush(); assert.equal(h.options.value.length, 23)
+    assert.deepEqual(calls, [0, 1, 1]); assert.equal(h.options.value[11].value, '11')
+    h.loadMore(); await flush(); assert.equal(h.hasMore.value, false)
+    h.loadMore(); await flush(); assert.deepEqual(calls, [0, 1, 1, 2])
+  } finally { h.effect.stop() }
+})
+
+test('changing a keyword cancels an in-flight next page and cannot append its late records', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] })
+  let complete, moreSignal
+  const h = suggestionHarness((keyword, signal, page) => {
+    if (page) { moreSignal = signal; return new Promise(done => { complete = done }) }
+    return Promise.resolve(Array.from({ length: 12 }, (_, i) => ({ id: `${keyword}-${i}` })))
+  })
+  try {
+    h.search('old'); t.mock.timers.tick(200); await flush(); h.loadMore()
+    h.search('new'); assert.equal(moreSignal.aborted, true)
+    t.mock.timers.tick(200); await flush()
+    complete([{ id: 'wrong-page' }]); await flush()
+    assert.equal(h.options.value.length, 12); assert.ok(h.options.value.every(option => option.value.startsWith('new-')))
+  } finally { h.effect.stop() }
+})
 
 test('device suggestions isolate races, deactivation, and scope revocation from session identity', async () => {
   const pending = [], h = suggestionHarness((keyword, signal) => new Promise(done => pending.push({ keyword, signal, done })))
@@ -127,7 +175,7 @@ function workspaceHarness({ supported = undefined, active = true, deviceId = 'de
     '@jetlinks-web-core/hooks/useDiagnosticQuery': {}, '../../../api/link/diagnostics': {}, './useDiagnosticsAccess': {}, './status': {},
   })
   const hooks = loadTs(resolve(import.meta.dirname, '../views/link/RuntimeMonitor/device-observation/useDeviceObservation.ts'), {
-    '@jetlinks-web-core/components/RuntimeDiagnostics': observationModel,
+    '@jetlinks-web-core/components/RuntimeDiagnostics': { ...observationModel, ...loadTs(resolve(import.meta.dirname, '../../../jetlinks-web-core/src/components/RuntimeDiagnostics/samplingInterval.ts')) },
     '../../../../api/link/diagnostics': { queryDeviceSessions: (id, signal) => { calls.push(id); return loader ? loader(id, signal) : Promise.resolve([{ deviceId: id, serverId: 'a' }, { deviceId: id, serverId: 'b' }]) } },
     '../../diagnostics/useDeviceSessions': normalizer,
     '../../diagnostics/status': { diagnosticErrorState: error => ({ status: error.status === 403 ? 'forbidden' : 'error' }) },

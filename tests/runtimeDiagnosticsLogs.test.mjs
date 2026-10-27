@@ -65,6 +65,147 @@ function harness(options = {}) {
 }
 const flush = async () => { await vue.nextTick(); await new Promise(resolve => setImmediate(resolve)) }
 
+test('tree branches load on demand, deduplicate requests and cache independently of expansion and reading', async () => {
+  const h = harness()
+  try {
+    await flush(); await h.view.select(key('current'))
+    const window = h.view.windowData.value, a = { ...directory, id: 'a' }, b = { ...directory, id: 'b' }
+    h.view.tree.setRoots([a, b, current])
+    const pending = new Map(), calls = []
+    h.api.logChildren = (_, file) => { calls.push(file.id); return new Promise(resolve => pending.set(file.id, resolve)) }
+    assert.equal(calls.length, 0)
+    const first = h.view.tree.load(key('a')), duplicate = h.view.tree.load(key('a')), second = h.view.tree.load(key('b'))
+    assert.equal(first, duplicate)
+    h.view.tree.setExpanded([key('a'), key('b')]); await flush()
+    assert.deepEqual(calls, ['a', 'b'])
+    h.view.tree.setExpanded([key('b')])
+    pending.get('b')([{ ...current, id: 'b-file' }]); await second
+    pending.get('a')([{ ...current, id: 'a-file' }]); await first
+    assert.equal(h.view.tree.locate(key('a-file')).parents[0].id, 'a')
+    assert.equal(h.view.tree.locate(key('b-file')).parents[0].id, 'b')
+    assert.deepEqual(h.view.tree.expandedKeys.value, [key('b')], 'late directory completion must not reopen a folded branch')
+    await h.view.tree.load(key('a')); assert.equal(calls.length, 2)
+    assert.equal(h.view.windowData.value, window); assert.equal(h.view.file.value.id, 'current')
+    h.view.tree.reveal([a]); assert.deepEqual(h.view.tree.expandedKeys.value, [key('b'), key('a')])
+  } finally { h.scope.stop() }
+})
+
+test('tree errors retry locally, empty folders stay explicit and ZIP entry identity differs from GZ leaves', async () => {
+  const h = harness()
+  try {
+    await flush()
+    const root = { ...directory, id: 'retry' }, empty = { ...directory, id: 'empty' }, gz = { ...current, id: 'gzip', name: 'app.log.gz' }
+    h.view.tree.setRoots([root, empty])
+    h.api.logChildren = async () => { throw new Error('Directory offline') }
+    await assert.rejects(h.view.tree.load(key('retry')), /offline/)
+    const failed = h.view.tree.nodes.value.find(node => node.file.id === 'retry').children.at(-1)
+    assert.equal(failed.state.status, 'error'); assert.equal(failed.branchKey, key('retry')); assert.equal(failed.selectable, false)
+    h.api.logChildren = async (_, file) => file.id === 'empty' ? [] : [archive, gz]
+    await h.view.tree.load(key('retry'), true); await h.view.tree.load(key('archive'))
+    const entry = h.view.tree.locate(key('archive', 'app.log'))
+    assert.deepEqual(entry.parents.map(file => file.id), ['retry', 'archive'])
+    assert.equal(entry.file.name, 'app.log'); assert.equal(entry.file.exportName, 'history.zip')
+    const leaf = h.view.tree.nodes.value.find(node => node.file.id === 'retry').children.find(node => node.file.id === 'gzip')
+    assert.equal(leaf.isLeaf, true); assert.equal(leaf.selectable, true)
+    await assert.rejects(h.view.tree.load(key('gzip')), /unavailable/)
+    await h.view.tree.load(key('empty'))
+    assert.equal(h.view.tree.nodes.value.find(node => node.file.id === 'empty').children[0].state.status, 'empty')
+    assert.ok(h.view.tree.loadedKeys.value.includes(key('empty')))
+  } finally { h.scope.stop() }
+})
+
+test('tree cancellation rejects late results, retains confirmed branches and clears on node or permission change', async () => {
+  const h = harness()
+  try {
+    await flush()
+    const root = { ...directory, id: 'pending' }
+    h.view.tree.setRoots([directory, root, current]); h.view.tree.setExpanded([key('logs'), key('pending')])
+    let complete, signal
+    h.api.logChildren = async (_, file, nextSignal) => { signal = nextSignal; return new Promise(resolve => complete = resolve) }
+    const loading = h.view.tree.load(key('pending')).catch(error => error)
+    await flush(); h.tab.value = ''; await flush(); assert.equal(signal.aborted, true)
+    complete([{ ...current, id: 'late' }]); assert.equal((await loading).name, 'AbortError')
+    assert.equal(h.view.tree.locate(key('late')), undefined)
+    assert.ok(h.view.tree.locate(key('archive')), 'completed branches remain cached when the workspace hides')
+    assert.ok(!h.view.tree.loadedKeys.value.includes(key('pending')))
+    h.tab.value = 'logs'; await flush()
+    h.view.tree.reveal([directory]); assert.ok(h.view.tree.expandedKeys.value.includes(key('pending')))
+    const next = h.view.tree.load(key('pending')).catch(error => error); await flush()
+    const oldNodeSignal = signal, oldNodeComplete = complete
+    h.node.value = 'node-b'; await flush(); assert.equal(oldNodeSignal.aborted, true)
+    oldNodeComplete([{ ...current, id: 'old-node' }]); await next
+    assert.equal(h.view.tree.locate(key('old-node')), undefined)
+    h.access.value = { logs: false, exportLogs: false }; await flush()
+    assert.deepEqual(h.view.tree.roots.value, []); assert.deepEqual(h.view.tree.expandedKeys.value, [])
+  } finally { h.scope.stop() }
+})
+
+test('file changes commit only after success and failures keep the old file and readable evidence', async () => {
+  const h = harness()
+  try {
+    await flush(); await h.view.select(key('current'))
+    const other = { ...current, id: 'other', name: 'other.log' }, before = h.view.windowData.value, entries = h.view.entries.value
+    h.view.tree.setRoots([current, other])
+    for (const status of [500, 403, 404]) {
+      h.api.readLog = async () => { throw { status, message: 'New file unavailable' } }
+      assert.equal(await h.view.select(key('other')), false)
+      assert.equal(h.view.fileId.value, key('current')); assert.equal(h.view.windowData.value, before)
+      assert.equal(h.view.entries.value, entries); assert.equal(h.view.state.value.status, 'stale')
+      const reads = h.reads.length
+      assert.equal(await h.view.select(key('current')), true)
+      assert.equal(h.view.state.value.status, 'ready', 'dismissing a failed target by selecting the current file restores its successful state')
+      assert.equal(h.view.windowData.value, before); assert.equal(h.reads.length, reads)
+    }
+    let complete
+    h.api.readLog = async () => new Promise(resolve => complete = resolve)
+    const selection = h.view.select(key('other')); await flush()
+    assert.equal(h.view.selectingKey.value, key('other')); assert.equal(h.view.fileId.value, key('current'))
+    assert.equal(h.view.windowData.value, before)
+    complete({ lines: ['INFO other file'], startPosition: 0, endPosition: 20 }); assert.equal(await selection, true)
+    assert.equal(h.view.fileId.value, key('other')); assert.equal(h.view.entries.value[0].text, 'INFO other file')
+    assert.equal(h.view.selectingKey.value, ''); assert.equal(h.view.state.value.status, 'ready')
+    h.api.readLog = async () => { throw { status: 403 } }; await h.view.read()
+    assert.equal(h.view.windowData.value, undefined); assert.equal(h.view.state.value.status, 'forbidden', 'refusal of the current file still clears that evidence')
+  } finally { h.scope.stop() }
+})
+
+test('returning to the current file cancels pending selection and only the latest new file can commit', async () => {
+  const h = harness()
+  try {
+    await flush(); await h.view.select(key('current'))
+    h.view.tree.setRoots([current, { ...current, id: 'a' }, { ...current, id: 'b' }])
+    const pending = new Map(), signals = new Map(), before = h.view.windowData.value
+    h.api.readLog = async (_, file, signal) => { signals.set(file.id, signal); return new Promise(resolve => pending.set(file.id, resolve)) }
+    const abandoned = h.view.select(key('a')); await flush()
+    assert.equal(await h.view.select(key('current')), true); assert.equal(signals.get('a').aborted, true)
+    pending.get('a')({ lines: ['late a'], startPosition: 0, endPosition: 20 }); await abandoned
+    assert.equal(h.view.fileId.value, key('current')); assert.equal(h.view.windowData.value, before)
+    const first = h.view.select(key('a')); await flush()
+    const last = h.view.select(key('b')); await flush(); assert.equal(signals.get('a').aborted, true)
+    pending.get('b')({ lines: ['latest b'], startPosition: 0, endPosition: 20 }); assert.equal(await last, true)
+    pending.get('a')({ lines: ['late a again'], startPosition: 0, endPosition: 20 }); await first
+    assert.equal(h.view.fileId.value, key('b')); assert.equal(h.view.entries.value[0].text, 'latest b')
+  } finally { h.scope.stop() }
+})
+
+test('tree refresh reloads expanded branches only and a root refresh failure keeps known files', async () => {
+  const h = harness()
+  try {
+    await flush(); await h.view.select(key('current'))
+    const a = { ...directory, id: 'a' }, b = { ...directory, id: 'b' }, calls = []
+    h.api.logRoots = async () => [a, b, current]
+    h.api.logChildren = async (_, file) => { calls.push(file.id); return [{ ...current, id: `${file.id}-file` }] }
+    await h.view.discoverProviders(true)
+    await h.view.tree.load(key('a')); await h.view.tree.load(key('b'))
+    h.view.tree.setExpanded([key('a')]); await h.view.refreshTree()
+    assert.deepEqual(calls, ['a', 'b', 'a'])
+    const known = h.view.tree.nodes.value, window = h.view.windowData.value
+    h.api.logRoots = async () => { throw new Error('Temporary provider error') }; await h.view.refreshTree()
+    assert.equal(h.view.tree.nodes.value, known); assert.equal(h.view.windowData.value, window)
+    assert.equal(h.view.providers.state.value.status, 'error')
+  } finally { h.scope.stop() }
+})
+
 test('related log time survives login query cleanup and omits invalid or ambiguous ranges', () => {
   const h = harness(), panel = h.panel()
   try {
@@ -208,6 +349,61 @@ test('platform Spring Boot records split cleanly while unknown formats and multi
 })
 
 const header = (level, message) => `2026-10-22 12:34:56.789 ${level} 4512 --- [reactor-http-nio-3] org.jetlinks.Service : ${message}`
+test('empty log headers own unindented body, separators and exceptions until the next record', () => {
+  const h = harness()
+  try {
+    const body = ['', '=================', 'Check the database connection settings.', '=================', '']
+    const stack = ['io.r2dbc.postgresql.client.ReactorNettyClient$PostgresConnectionException: connection failed', '\tat app.Database.connect(Database.java:12)']
+    const lines = [header('WARN', body[0]), ...body.slice(1), ...stack, header('INFO', 'Application started')]
+    const entries = h.normalizeLogs(lines, 40)
+    assert.equal(entries.length, 2)
+    assert.equal(entries[0].id, '40:0'); assert.equal(entries[0].level, 'WARN')
+    // The blank immediately before the exception belongs to the stack; the full original remains lossless.
+    assert.equal(entries[0].message, body.slice(1, -1).join('\n'))
+    assert.equal(entries[0].stack, ['', ...stack].join('\n'))
+    assert.equal(entries[0].raw, lines.slice(0, -1).join('\n'))
+    assert.equal(entries[1].message, 'Application started')
+    assert.equal(entries.map(entry => entry.raw).join('\n'), lines.join('\n'))
+  } finally { h.scope.stop() }
+})
+
+test('free-form multiline messages and blank lines share one record without inventing a stack', () => {
+  const h = harness()
+  try {
+    const body = ['Notice', '', 'Unindented first paragraph.', '', 'Second paragraph, with ERROR as ordinary text.', '']
+    const lines = [header('INFO', body[0]), ...body.slice(1), header('WARN', 'Next record'), '2026/10/22 12:35:00 custom format', 'unattributed text']
+    const entries = h.normalizeLogs(lines)
+    assert.equal(entries.length, 4)
+    assert.equal(entries[0].message, body.join('\n')); assert.equal(entries[0].stack, undefined)
+    assert.equal(entries[1].message, 'Next record')
+    assert.equal(entries[2].time, undefined); assert.equal(entries[3].level, undefined)
+    assert.equal(entries.map(entry => entry.raw).join('\n'), lines.join('\n'))
+  } finally { h.scope.stop() }
+})
+
+test('an empty header adds no display-only blank line while explicit blank body lines remain lossless', () => {
+  const h = harness()
+  try {
+    const lines = [header('INFO', ''), '', '', 'First paragraph.', '', 'Second paragraph.']
+    const [entry] = h.normalizeLogs(lines)
+    assert.equal(entry.message, '\n\nFirst paragraph.\n\nSecond paragraph.')
+    assert.equal(entry.raw, lines.join('\n')); assert.equal(entry.text, entry.raw)
+  } finally { h.scope.stop() }
+})
+
+test('exception trailers remain with their structured record but independent prefixes end attribution', () => {
+  const h = harness()
+  try {
+    const lines = [header('ERROR', 'Failed'), 'java.lang.IllegalStateException: failure', '\tat app.Worker.run(Worker.java:1)', '',
+      'Additional diagnostic context.', '[custom] independent message', 'separate text', header('INFO', 'Next')]
+    const entries = h.normalizeLogs(lines)
+    assert.equal(entries.length, 4)
+    assert.equal(entries[0].message, 'Failed'); assert.equal(entries[0].stack, lines.slice(1, 5).join('\n'))
+    assert.equal(entries[1].time, undefined); assert.equal(entries[2].level, undefined)
+    assert.equal(entries.map(entry => entry.raw).join('\n'), lines.join('\n'))
+  } finally { h.scope.stop() }
+})
+
 test('Java root exceptions and Reactor assembly/checkpoint sections form one lossless log record', () => {
   const h = harness()
   try {
@@ -483,7 +679,7 @@ test('late directory responses never replace a newer catalog or clear selected f
     let complete, oldSignal
     h.api.logChildren = async (_, file, signal) => file.id === 'logs' ? new Promise(resolve => { complete = resolve; oldSignal = signal }) : [{ ...archive, id: 'other-archive' }]
     const earlier = h.view.select(key('logs')); await flush()
-    await h.view.select(key('other')); assert.equal(oldSignal.aborted, true)
+    await h.view.select(key('other')); assert.equal(oldSignal.aborted, false, 'independent tree branches may finish loading into their own cache')
     complete([archive]); await earlier
     assert.equal(h.view.parents.value[0].id, 'other'); assert.equal(h.view.catalog.data.value[0].id, 'other-archive')
     assert.equal(h.view.windowData.value, original); assert.equal(h.view.file.value.id, 'current')

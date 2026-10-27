@@ -16,18 +16,9 @@
           <template v-if="sidebar.canToggle.value" #node-leading><a-button class="cluster-sidebar-toggle" size="small" type="text" :aria-label="t(sidebar.expanded.value ? 'components.EqualHeightColumns.collapse' : 'components.EqualHeightColumns.expand')" :aria-expanded="sidebar.expanded.value" aria-controls="runtime-monitor-node-sidebar" @click="sidebar.toggle"><MenuFoldOutlined v-if="sidebar.expanded.value" /><MenuUnfoldOutlined v-else /></a-button></template>
           <template v-if="sidebar.compact.value" #node-name><a-select class="cluster-heading-select" size="small" :bordered="false" :value="view.selected.value" :options="mobileOptions" :title="view.selected.value" :aria-label="t('runtimeDiagnostics.nodeSearch')" show-search option-filter-prop="label" @change="value => view.select(String(value))" /></template>
           <template #actions>
-            <a-popover :open="settingsOpen" trigger="click" placement="bottomRight" @open-change="setSettingsOpen">
-              <template #content>
-                <div ref="settingsContent" class="monitor-settings" tabindex="-1" @keydown.esc.stop="closeSettings">
-                  <div v-if="view.access.value.monitor && view.nodes.value.length" class="monitor-settings-frequency" role="group" :aria-label="t('RuntimeMonitor.bufferSamplingInterval')">
-                    <div class="monitor-settings-caption"><ClockCircleOutlined /><span>{{ t('RuntimeMonitor.bufferSamplingInterval') }}</span></div>
-                    <a-segmented size="small" :value="bufferInterval" :options="bufferIntervalOptions" @change="setBufferInterval" />
-                  </div>
-                  <div class="monitor-settings-footer"><a-button size="small" type="text" @click="clearPreferences"><UndoOutlined />{{ t('RuntimeMonitor.clearPreferences') }}</a-button></div>
-                </div>
-              </template>
-              <a-button ref="settingsTrigger" class="monitor-settings-trigger" size="small" type="text" :title="t('RuntimeMonitor.settings')" :aria-label="t('RuntimeMonitor.settings')" :aria-expanded="settingsOpen" @keydown.esc.stop="closeSettings"><template v-if="view.access.value.monitor && view.nodes.value.length"><ClockCircleOutlined /><span>{{ t('RuntimeMonitor.bufferSamplingSeconds', { seconds: bufferInterval }) }}</span><DownOutlined class="monitor-settings-chevron" /></template><SettingOutlined v-else /></a-button>
-            </a-popover>
+            <SamplingIntervalControl v-model:open="settingsOpen" :value="bufferInterval" :show-interval="!!(view.access.value.monitor && view.nodes.value.length)" @change="setBufferInterval">
+              <template #footer="{ close }"><a-button size="small" type="text" @click="clearPreferences(); close()"><UndoOutlined />{{ t('RuntimeMonitor.clearPreferences') }}</a-button></template>
+            </SamplingIntervalControl>
           </template>
         </RuntimeNodeWorkspace></KeepAlive>
         <template v-if="!view.selected.value"><a-spin v-if="view.membership.state.value.status === 'loading'" />
@@ -40,14 +31,14 @@
   </main>
 </template>
 <script setup lang="ts" name="RuntimeMonitorPage">
-import { computed, defineAsyncComponent, nextTick, ref, shallowRef, watch } from 'vue'
+import { computed, defineAsyncComponent, ref, shallowRef, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { ClockCircleOutlined, DownOutlined, MenuFoldOutlined, MenuUnfoldOutlined, SettingOutlined, UndoOutlined } from '@ant-design/icons-vue'
+import { MenuFoldOutlined, MenuUnfoldOutlined, UndoOutlined } from '@ant-design/icons-vue'
 import { useClusterWorkspace } from './useClusterWorkspace'
 import { useLogWorkspaceLayout } from './useLogWorkspaceLayout'
 import { useClusterSidebarLayout } from './useClusterSidebarLayout'
-import type { MetricValue } from '@jetlinks-web-core/components/RuntimeDiagnostics'
+import { SamplingIntervalControl, type MetricValue } from '@jetlinks-web-core/components/RuntimeDiagnostics'
 import NodeSummary from './NodeSummary.vue'
 import { provideClusterBuffers } from './useClusterBuffers'
 import { useClusterSessionContext } from './useClusterSessions'
@@ -60,15 +51,12 @@ const sidebar = useClusterSidebarLayout(workspaceElement, view.showNodeSelector,
 const logLayoutActive = computed(() => view.active.value && view.access.value.enter && view.access.value.logs && view.tab.value === 'logs')
 const jvmCanvasActive = computed(() => view.active.value && view.access.value.enter && (view.access.value.threads || view.access.value.jfr || view.access.value.heap) && view.tab.value === 'jvm')
 const logWorkspaceStyle = useLogWorkspaceLayout(workspaceElement, logLayoutActive)
-const settingsOpen = ref(false), settingsTrigger = ref<{ focus: () => void }>(), settingsContent = ref<HTMLElement>()
+const settingsOpen = ref(false)
 watch(view.active, active => { if (!active) settingsOpen.value = false }, { flush: 'sync' })
-async function setSettingsOpen(open: boolean) { settingsOpen.value = open; if (open) { await nextTick(); if (settingsOpen.value) settingsContent.value?.focus() } }
-function closeSettings() { settingsOpen.value = false; settingsTrigger.value?.focus() }
-function openSettings() { void setSettingsOpen(true) }
-function clearPreferences() { view.preferences.clear(); closeSettings() }
+function openSettings() { settingsOpen.value = true }
+function clearPreferences() { view.preferences.clear(); settingsOpen.value = false }
 const connection = { stale: view.runtime.error }
 const bufferInterval = computed(() => diagnosticIntervalSeconds(view.preferences.value.value.bufferIntervalSeconds))
-const bufferIntervalOptions = computed(() => bufferIntervals.map(value => ({ value, label: t('RuntimeMonitor.bufferSamplingSeconds', { seconds: value }) })))
 const buffers = provideClusterBuffers(computed(() => view.nodes.value.map(node => node.id)), computed(() => view.active.value && view.access.value.monitor), view.scopeKey, bufferInterval, view.discoveryScope, computed(() => view.access.value.monitor))
 const sessions = useClusterSessionContext()!
 /** 同时定位节点、概览与队列，避免两次路由替换互相覆盖；只接收当前可见证据。 */
@@ -119,12 +107,4 @@ const mobileOptions = computed(() => view.nodes.value.map(node => ({ value: node
 .cluster-sidebar-toggle { flex:0 0 auto; }
 .cluster-heading-select { width:180px; max-width:100%; font-weight:600; }.cluster-heading-select :deep(.ant-select-selector) { padding-inline:0 !important; }
 .cluster-heading-select :deep(.ant-select-selection-item) { font-size:var(--fs-title-4,16px); font-weight:600; }
-.monitor-settings { width:max-content; max-width:calc(100vw - 48px); outline:none; }
-.monitor-settings-frequency { display:grid; gap:var(--space-2,8px); padding:0 0 var(--space-3,12px); }
-.monitor-settings-caption { display:flex; align-items:center; gap:var(--space-2,8px); color:var(--ink-2); font-size:var(--fs-caption,12px); }
-.monitor-settings-footer { border-top:1px solid var(--jet-theme-border-color-1); padding-top:var(--space-2,8px); }
-.monitor-settings-footer :deep(.ant-btn) { padding-inline:4px; color:var(--ink-3); }
-.monitor-settings-trigger { display:inline-flex; align-items:center; gap:4px; flex:0 0 auto; color:var(--ink-2); font-variant-numeric:tabular-nums; }
-.monitor-settings-trigger :deep(.anticon + span),.monitor-settings-trigger :deep(span + .anticon) { margin-inline-start:0; }
-.monitor-settings-chevron { font-size:var(--fs-caption,12px); }
 </style>

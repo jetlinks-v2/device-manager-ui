@@ -20,6 +20,7 @@ function harness(ids = ['node-a'], loader = async () => raw(), retainOnPause = f
     const module = { exports: {} }, { code } = transformSync(readFileSync(path, 'utf8'), { loader: 'ts', format: 'cjs' })
     const imports = id => {
       if (id === 'vue') return vue
+      if (id === '@jetlinks-web-core/components/RuntimeDiagnostics') return load(resolve(import.meta.dirname, '../../../jetlinks-web-core/src/components/RuntimeDiagnostics/samplingInterval.ts'))
       if (id === '@jetlinks-web-core/locales') return { __esModule: true, default: { global: { t: key => key } } }
       if (id === '@jetlinks-web-core/components/RuntimeDiagnostics/utils') return load(resolve(import.meta.dirname, '../../../jetlinks-web-core/src/components/RuntimeDiagnostics/utils.ts'))
       if (id.endsWith('api/link/diagnostics')) return api
@@ -32,14 +33,14 @@ function harness(ids = ['node-a'], loader = async () => raw(), retainOnPause = f
   return { scope, view, nodes, enabled, permitted, identity, interval, discoveryScope, calls, api, summarize: module.summarizeBufferQueues }
 }
 
-test('three-second Buffer sampling preserves its five-minute history', async t => {
+test('two-second Buffer sampling preserves its five-minute history', async t => {
   t.mock.timers.enable({ apis: ['Date', 'setTimeout'], now: 1000 })
   const h = harness()
   try {
-    h.interval.value = 3; await flush()
-    for (let index = 0; index < 105; index++) { t.mock.timers.tick(3000); await flush() }
+    h.interval.value = 2; await flush()
+    for (let index = 0; index < 155; index++) { t.mock.timers.tick(2000); await flush() }
     const history = h.view.snapshots.value.get('node-a').history
-    assert.equal(history.length, 101)
+    assert.equal(history.length, 151)
     assert.equal(history.at(-1).sampledAt - history[0].sampledAt, 300000)
   } finally { h.scope.stop() }
 })

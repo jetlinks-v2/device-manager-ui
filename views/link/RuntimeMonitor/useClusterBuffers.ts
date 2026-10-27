@@ -53,7 +53,7 @@ export function useClusterBuffers(nodeIds: Ref<string[]>, enabled: Ref<boolean>,
     running.clear()
   }
   function append(history: BufferHistorySample[], buffers: BufferHistorySample['buffers'], sampledAt: number) {
-    return [...history.filter(sample => sample.sampledAt >= sampledAt - 300000), { sampledAt, buffers }].slice(-128)
+    return [...history.filter(sample => sample.sampledAt >= sampledAt - 300000), { sampledAt, buffers }].slice(-301)
   }
   function current(job: BufferJob) { return !disposed && canCollect.value && jobs.get(job.nodeId) === job }
   async function sample(job: BufferJob) {

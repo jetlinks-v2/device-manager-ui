@@ -32,7 +32,7 @@ export function appendDeviceMessageSample(history: readonly DeviceMessageSample[
   const previous = history.findLast(point => point.startTime !== undefined)
   if (previous?.startTime === sample.startTime && previous?.qps?.sequence !== undefined && sample.qps?.sequence !== undefined && BigInt(sample.qps.sequence) < BigInt(previous.qps.sequence)) return interruptDeviceMessageHistory(history)
   if (deviceMessageClockDiscontinuity(previous, sample)) return [sample]
-  return [...history.filter(point => point.timestamp >= sample.timestamp - 600000), sample].slice(-256)
+  return [...history.filter(point => point.timestamp >= sample.timestamp - 600000), sample].slice(-601)
 }
 
 /** 时钟校准不能永久拒收新快照；只重建受影响趋势的坐标与非QPS差值基线。 */
@@ -46,7 +46,7 @@ export function deviceMessageClockDiscontinuity(previous: DeviceMessageSample | 
 /** 断点沿用最后服务端时间，避免服务端时钟偏移把中断边界过滤掉。 */
 export function interruptDeviceMessageHistory(history: readonly DeviceMessageSample[] = []) {
   const last = history[history.length - 1]
-  return last?.startTime === undefined ? [...history] : [...history, { timestamp: last.timestamp }].slice(-256)
+  return last?.startTime === undefined ? [...history] : [...history, { timestamp: last.timestamp }].slice(-601)
 }
 
 /** 按相同统计代次和真实 SnapshotTime 求差；首样本、回退、重建、长间隔均未知。 */

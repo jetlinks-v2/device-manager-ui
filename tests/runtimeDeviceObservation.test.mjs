@@ -24,7 +24,7 @@ function harness(loader = async id => [{ deviceId: id, serverId: 'node', pending
     '@jetlinks-web-core/hooks/useDiagnosticQuery': {}, '../../../api/link/diagnostics': {}, './useDiagnosticsAccess': {}, './status': {},
   })
   const module = loadTs(resolve(import.meta.dirname, '../views/link/RuntimeMonitor/device-observation/useDeviceObservation.ts'), {
-    '@jetlinks-web-core/components/RuntimeDiagnostics': model,
+    '@jetlinks-web-core/components/RuntimeDiagnostics': { ...model, ...loadTs(resolve(import.meta.dirname, '../../../jetlinks-web-core/src/components/RuntimeDiagnostics/samplingInterval.ts')) },
     '../../../../api/link/diagnostics': { queryDeviceSessions: (id, signal) => { calls.push({ id, signal }); return loader(id, signal) } },
     '../../diagnostics/useDeviceSessions': normalizer,
     '../../diagnostics/status': { diagnosticErrorState: error => ({ status: error.status === 403 ? 'forbidden' : 'error' }) },
@@ -103,6 +103,27 @@ test('sampling waits after completion, interval changes apply to the next due sa
     t.mock.timers.tick(120000); await flush(); assert.equal(h.calls.length, 2)
   } finally { h.effect.stop() }
 })
+test('sampling intervals accept the shared options, migrate legacy three seconds and restore per identity', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 10000 })
+  if (!('localStorage' in globalThis)) { Object.defineProperty(globalThis, 'localStorage', { value: undefined, writable: true, configurable: true }); t.after(() => { delete globalThis.localStorage }) }
+  const saved = new Map([['runtime-device-observation:v1:alice', JSON.stringify({ interval: 3 })]])
+  t.mock.property(globalThis, 'localStorage', { getItem: key => saved.get(key), setItem: (key, value) => saved.set(key, value) })
+  const h = harness()
+  try {
+    assert.equal(h.view.interval.value, 2)
+    h.view.add('a'); await flush()
+    t.mock.timers.tick(1999); await flush(); assert.equal(h.calls.length, 1)
+    t.mock.timers.tick(1); await flush(); assert.equal(h.calls.length, 2)
+    const firstHistory = h.view.entries.value[0].history
+    for (const value of [1, 2, 5, 10, 30, 60]) { h.view.interval.value = value; await flush(); assert.equal(h.view.interval.value, value) }
+    assert.equal(h.view.entries.value[0].history, firstHistory)
+    h.view.interval.value = 1; await flush(); t.mock.timers.tick(999); await flush(); assert.equal(h.calls.length, 2)
+    t.mock.timers.tick(1); await flush(); assert.equal(h.calls.length, 3)
+    h.scope.value = 'bob'; await flush(); assert.equal(h.view.interval.value, 2)
+    h.scope.value = 'alice'; await flush(); assert.equal(h.view.interval.value, 1)
+    h.view.interval.value = 7; await flush(); assert.equal(h.view.interval.value, 2)
+  } finally { h.effect.stop() }
+})
 test('adding a device while paused takes exactly one initial snapshot and preserves pause', async t => {
   t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 10000 })
   const h = harness()
@@ -150,7 +171,7 @@ test('only bounded selections and settings persist; telemetry is memory-only and
   try {
     h.view.add('private-device', 'Device'); await flush(); h.view.metrics.value = ['pending']; await flush()
     const value = JSON.parse(saved.get('runtime-device-observation:v1:alice'))
-    assert.deepEqual(value, { devices: [{ id: 'private-device', label: 'Device' }], interval: 5, metrics: ['pending'] })
+    assert.deepEqual(value, { devices: [{ id: 'private-device', label: 'Device' }], interval: 2, metrics: ['pending'] })
     assert.ok(!JSON.stringify(value).includes('serverId')); assert.ok(!JSON.stringify(value).includes('history'))
     saved.set('runtime-device-observation:v1:bob', '{bad-json'); h.scope.value = 'bob'; await flush(); assert.deepEqual(h.view.entries.value, [])
   } finally { h.effect.stop() }

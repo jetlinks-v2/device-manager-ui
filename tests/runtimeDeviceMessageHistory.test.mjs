@@ -27,9 +27,9 @@ test('exact capability requires frozen domain/type/name and available metadata; 
  assert.equal(pure.deviceMessageSample({...bean,name:'other'}),undefined);assert.equal(pure.deviceMessageSample({...bean,domain:'other'}),undefined)
  assert.equal(pure.deviceMessageSample({...bean,attributes:bean.attributes.filter(a=>a.name!=='SnapshotTime')}),undefined)
 })
-test('device message history is bounded by ten minutes and 256 real samples',()=>{
+test('device message history retains ten minutes at one-second sampling with a bounded 601 samples',()=>{
  let history=[];for(let i=0;i<1000;i++)history=pure.appendDeviceMessageSample(history,point(i*1000,String(i)))
- assert.equal(history.length,256);assert.ok(history.every(p=>p.timestamp>=399000))
+ assert.equal(history.length,601);assert.ok(history.every(p=>p.timestamp>=399000))
  history=pure.appendDeviceMessageSample(history,point(2000000,'1000'));assert.equal(history.length,1)
 })
 

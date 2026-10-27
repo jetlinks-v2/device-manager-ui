@@ -28,6 +28,7 @@ function harness(options = {}) {
       if (id === 'vue-i18n') return { useI18n: () => ({ t: (key, values) => values ? JSON.stringify(values) : key }) }
       if (id === '@jetlinks-web-core/locales') return { __esModule: true, default: { global: { t: (key, values) => values ? JSON.stringify(values) : key } } }
       if (id === '@jetlinks-web-core/hooks/useDiagnosticQuery') return load(resolve(import.meta.dirname, '../../../jetlinks-web-core/src/hooks/useDiagnosticQuery.ts'))
+      if (id === '@jetlinks-web-core/components/RuntimeDiagnostics') return load(resolve(import.meta.dirname, '../../../jetlinks-web-core/src/components/RuntimeDiagnostics/samplingInterval.ts'))
       if (id === '@jetlinks-web-core/components/RuntimeDiagnostics/utils') return load(resolve(import.meta.dirname, '../../../jetlinks-web-core/src/components/RuntimeDiagnostics/utils.ts'))
       if (id.endsWith('api/link/diagnostics')) return api
       if (id.endsWith('services/history')) return { loadResourceOverviewHistory: async range => { calls.push({ kind: 'history', range }); return options.history ? options.history(range) : {} } }
@@ -42,7 +43,7 @@ function harness(options = {}) {
   }
   const module = load(resolve(import.meta.dirname, '../views/link/diagnostics/useNodeMetrics.ts')), scope = vue.effectScope()
   const view = scope.run(() => module.useNodeMetrics(node, enabled, identity, connection, header))
-  return { view, scope, node, enabled, identity, access, api, calls, cluster, connection, header, advance: value => monotonic += value, activations, deactivations }
+  return { view, scope, node, enabled, identity, access, api, calls, cluster, sessions, connection, header, advance: value => monotonic += value, activations, deactivations }
 }
 
 test('JVM overview loads once per activation, history refresh stays independent and Buffer reuses the cluster session', async t => {
@@ -98,6 +99,45 @@ test('tool deactivation cancels late JVM reads but retains completed evidence; n
 })
 
 const uptime = h => JSON.parse(h.view.metrics.value.find(metric => metric.key === 'uptime').value)
+test('a silent monitor restart across a sampling gap reloads the JVM baseline once without polling uptime', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'], now: 1000000 })
+  const h = harness(), sample = startTime => new Map([['node-a', { communication: { history: [{ startTime }] } }]])
+  const flags = []
+  try {
+    await flush()
+    h.sessions.snapshots.value = sample('10'); await flush()
+    h.api.queryOverviewMBeans = async (node, signal, includeLifetime) => { flags.push(includeLifetime); return { sources: [runtime(900000, 2000)] } }
+    h.sessions.snapshots.value = sample('10'); await flush(); assert.deepEqual(flags, [])
+    h.sessions.snapshots.value = new Map(); await flush()
+    h.sessions.snapshots.value = sample('20'); await flush()
+    assert.deepEqual(flags, [true]); assert.equal(uptime(h).seconds, 2)
+    assert.equal(h.view.metrics.value.find(metric => metric.key === 'startTime').value, new Date(900000).toLocaleString())
+    h.advance(3000); t.mock.timers.tick(3000); await flush(); assert.equal(uptime(h).seconds, 5)
+    h.sessions.snapshots.value = sample('20'); await flush(); assert.deepEqual(flags, [true])
+    h.enabled.value = false; await flush()
+    assert.equal(h.calls.filter(call => call.kind === 'lifetime').length, 0)
+  } finally { h.scope.stop() }
+})
+
+test('a JVM identity change discovered by an ordinary overview read refreshes uptime only once', async () => {
+  const h = harness(), flags = []
+  try {
+    await flush()
+    h.api.queryOverviewMBeans = async (node, signal, includeLifetime) => {
+      flags.push(includeLifetime)
+      const result = runtime(900000, 2000)
+      if (!includeLifetime) {
+        delete result['java.lang'].Runtime.runtime.Uptime
+        result['java.lang'].Runtime.runtime['@attributes'] = result['java.lang'].Runtime.runtime['@attributes'].filter(attribute => attribute.name !== 'Uptime')
+      }
+      return { sources: [result] }
+    }
+    await h.view.loadMBeans(); await flush()
+    assert.deepEqual(flags, [false, true]); assert.equal(uptime(h).seconds, 2)
+    await h.view.loadMBeans(); await flush(); assert.deepEqual(flags, [false, true, false])
+  } finally { h.scope.stop() }
+})
+
 test('lifetime uses a local monotonic clock across tools, freezes on disconnect and reloads the real restart baseline', async t => {
   t.mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'], now: 1000000 })
   const h = harness()

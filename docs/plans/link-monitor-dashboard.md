@@ -50,6 +50,39 @@
 
 PR 隔离交付核验：沿用 [core#195](https://github.com/jetlinks-v2/jetlinks-web-core/pull/195) 与 [host#352](https://github.com/jetlinks-v2/device-manager-ui/pull/352)，本次增量仅同步性能剖析阅读、两页签、当前节点离线报告及相关回归，其他未提交功能继续留在原开发工作区。隔离工作区 core 217/217、host 264/264 通过（`/private/tmp/runtime-html-pr-{core,host}-tests.log`）；合入最新 `origin/2.20` 后，基线没有修改这些测试及其诊断实现，复用该回归证据。最终 core 类型检查 0 错误，host 166 条既有类型诊断，按错误身份与开发环境基线比较新增 0；组合生产构建成功，28.18 秒（`/private/tmp/runtime-html-pr-{core-types,host-types,build}.log`），两个边界 diff 检查通过。宿主仍无独立 lint 命令；PDF 原生打印窗口与 file 协议端到端限制沿用上述边界。
 
+### 设备通信峰值与近期历史（已实现并完成真实联调）
+
+目标：增强 `device-manager/message/monitor/DeviceMessageMonitor`，由节点独立保存通信的整秒统计，提供近 60 秒快照、滚动一小时及今日各项峰值和发生时间。复用现有网关观察点和标准 JMX，只保留八项固定计数，不记录设备 ID、属性值或报文；业务热路径不扫描历史、不启动定时任务。今日按节点配置的时区统计，公开实际覆盖起点和统计代次；重启、校时、未完成窗口与真实零分别处理。既有 100ms 推进的滚动一秒实时 QPS 保持原口径，历史明确为完整整秒窗口。
+
+前端 owning module 为 `runtime-ui/modules/device-manager-ui`：沿用设备运行图和原有监控按钮授权，为当前节点按需读取峰值摘要、60 秒 / 一小时曲线，峰值定位与既有资源历史时间范围联动；保留曲线选择与节点状态。会话、Buffer 和缓存来源、原仪表盘、其他会话修改、菜单与权限声明保持现有职责。本轮不承诺进程重启后的历史持久化，今日峰值超过一小时保留数值和时间，峰值周边冻结快照作为后续可选能力。
+
+集中验证：边界时间、空闲补零、并发写入和换桶、迟到写者、滚动过期、午夜 / 时区、校时、关闭与重新创建、标准 JMX 到 JSON 契约；再验证前端解析、取消 / 恢复、峰值定位、类型与构建，并至少两轮浏览器走查。性能以同环境下关闭 / 开启监控及高频 JMX 读取作对照；真实后端须由用户重启加载新实现。
+
+实施入口：后端 `message/monitor/DeviceMessageHistory.java` 使用固定 3,600 槽原始数组归档八项计数，`DeviceMessageHistoryData.java` 输出标准 CompositeData / TabularData；同一 `DeviceMessageMonitor` 新增 `HistorySummary`、`RecentHistory`、`HourHistory` 三个只读属性，共 20 属性。前端 `RuntimeMonitor/device-runtime/deviceMessageRecording.ts` 解析标准索引对象，`useDeviceMessageRecording.ts` 取消过期请求、隔离节点及身份并在权限拒绝后清理全部证据；`diagnostics/overview/DeviceRuntimePeaks.vue` 提供峰值选择，`DeviceRuntimeTrend.vue` 回填整秒曲线并标记峰值，`NodeOverview.vue` 同步资源历史范围。峰值、图轴和浮层按节点时区显示，历史与实时 QPS 分别标记各自的新鲜度。正常只读摘要与最近 60 秒，较早峰值才按需读取一小时；已完成定位在 Tab 暂停时保留，旧服务降级时清除定位标记。
+
+集中验证结果：`mvn -o -Dtest=DeviceMessageHistoryTest,DeviceMessageMonitorTest,RecentCommunicationWindowTest test` 编译成功，27/27 通过，含真实 StandardMBean → MBeanCommand → JSON 契约。`node --test modules/device-manager-ui/tests/runtime*.test.mjs` 279/279 通过；`pnpm exec vue-tsc -p modules/device-manager-ui/tsconfig.runtime-diagnostics.json --noEmit` 仍为 167 个既有错误，与 `/tmp/runtime-ui-r4-host-types.log` 按路径、错误码及内容归一化后新增 0。`pnpm build -- --module-name device-manager-ui` 成功（35.38 秒），保留既有大 chunk / 循环 re-export 警告；没有独立 lint 脚本。最终预览 SFC、中英 JSON 和三个 owning repo 的 diff 空白检查通过。日志为 `/private/tmp/device-message-history-{backend-final,ui-all,types-final,build-final}.log`。
+
+性能探针每组执行一次接收、两次业务消息记录及一次发送，100 万组、五轮中位数：旧实现 / 新实现 CPU 为 106.3 / 170.3 ns/组，均分配 360 B/组；吞吐约 927 / 581 万组/秒。增加约 64 ns/组、探针吞吐下降约 37%，没有新增逐消息分配，不能据此宣称无性能开销或已完成真实协议压测。100Hz 管理读取下为 106.6 / 170.7 ns/组，分配相同。填满一小时后，摘要 / 60 秒 / 一小时读取 CPU 约 8.96 μs / 45.63 μs / 2.31 ms，分配约 9.5 KB / 51 KB / 3.10 MB 每次；这也是一小时只按需读取的依据。原始数组约 0.3 MiB/节点。探针源位于同目录测试中的 `DeviceMessageMonitorPerformanceProbe.java`、`DeviceMessageHistoryReadProbe.java`，结果为 `/private/tmp/device-message-history-{perf-baseline,perf-current,read-perf}.csv`；探针使用可控时钟，不代表真实网络吞吐。
+
+两轮 IAB 走查使用正式组件与明确标注的合成数据：1040px 内容宽下验证九项峰值对齐、选择后回到触发点、属性点粉色曲线 / 峰值线及返回实时；360px 内容宽及英文下验证自然换行、原生图例分页、浮层和 Esc 关闭回焦。另验证真实零值曲线与超出一小时的今日峰值提示，后者明确图中仍展示近 60 秒。窄内容宽不是手机 viewport，不据此宣称手机端验收。截图为 `runtime-ui/output/playwright/device-message-peaks-final.png`、`device-message-peak-focus.png`、`device-message-peaks-narrow-en.png`。
+
+真实联调：用户重启后的 IoT 启动于 2026/10/26 17:54:56，Monitor 启动于 17:55:10.079；标准 MBean 返回 20 属性，含三个历史属性。一小时实际已有 180 行，sequence 0–179 连续；属性点峰值 168 出现在 sequence 19 / 17:55:30.079，同窗口 PropertyReports / UpstreamMessages 均为 10；通信峰值 16 次/s 出现在 17:55:29。页面成功回填打开前历史，点击属性点峰值以粉线定位，资源时间同步到 17:54–17:56，Tab / 节点往返恢复正常。今日峰值超出一小时后仅保留值和时间，尚无冻结周边快照；重启与明显校时会重开覆盖范围，历史不持久化。本轮没有启停服务或提交变更。
+
+重启联调发现顶部生命周期在未观测到断线时仍使用旧基线。修复范围仅为宿主 `useNodeMetrics.ts` 与 JVM 概览读取：复用通信 Monitor 的实例变化信号重新核对 JVM 生命周期；既有 JVM 概览读取保留轻量 `StartTime` 身份，发现变化才补读一次 `Uptime`。不增加定时请求，普通 Tab 切换仍使用本地递增。验证覆盖短时重启漏掉断线、采样间隙、迟到请求和正常 Tab 往返。
+
+设备搜索选择器按反馈调整：宿主 `api/link/deviceConnections.ts` 改用 `/device/instance/_query/no-paging`，每页 12 条、稳定 ID 排序，只取 ID / 名称 / 产品名；`useDeviceSuggestions.ts` 管理触底分页、请求取消与候选去重。core `DeviceSessionObservation.vue` 仅转发下拉触底事件，宿主工作台接入加载下一页，不改会话采集与图表。以不足 12 条判断结束，取消 count 依赖；验证分页追加、空页结束、失败重试和换关键词时的迟到响应。
+
+采集周期统一：集群与设备连接改用 core `SamplingIntervalControl.vue` 和同一白名单 1 / 2 / 5 / 10 / 30 / 60 秒，共用时钟按钮、秒数、弹层选择与 Esc 回焦；默认 2 秒，旧 3 秒偏好迁移为 2 秒，两处各自保留其他有效周期，不互相覆盖。集群仍保留重置偏好入口，设备观测仍按每次请求完成后调度，变频保留曲线和已有选择。集中检查偏好迁移、合法周期、慢请求不重叠、两处设置与页面往返恢复。
+
+### 边缘链路补全（已实现）
+
+
+沿用现有链路瀑布图，只按已知 `spanName` 格式识别 `/agent-proxy/{thingType}/{thingId}` 与 `/agent-command/{thingType}:{thingId}/…`；不增加后端属性，不修改设备会话代码。平台结果先展示，再通过现有 `/edge/{thingType}/{thingId}/_/system/trace/{traceId}` 代理补查直接关联的边缘，最多 8 个、每条链路并发 3 个，每次查询只展开一层。每个边缘独立保留加载、无记录、失败和重试状态；按真实 Trace / Span 身份合并，来源单独标记，边缘节点不匹配云端节点目录。按用户确认，前端沿用 `link/Tracing:query`，不新增独立边缘按钮；代理后端继续以现有注解校验 `edge-manager:proxy` 和边缘资产权限，拒绝只影响该边缘。账号、项目或链路读取权限改变清理全部证据并取消请求，离页取消而保留已完成数据。
+
+实施入口：`views/link/Tracing`、`store/traceWorkspace.ts`、`api/link/diagnostics.ts` 与 core `RuntimeDiagnostics` 的来源展示。集中验证识别边界、代理 URL / 返回契约、去重与父子挂接、独立失败、重试及取消竞态，再进行浏览器布局和交互走查；真实云边完整性需要有在线边缘及仍在保留期内的同一 Trace 数据。
+
+验证结果：host 链路 / 传输 / 权限定向 41/41、宿主回归 25/25、core 链路回归 43/43；core 诊断类型检查通过，host 仍为 167 个既有错误，归一化后错误身份新增 0。最终 `pnpm build -- --module-name device-manager-ui` 成功（32.17 秒），保留既有大 chunk 警告；工程无独立 lint 脚本。两轮 IAB 验收覆盖宽 / 窄布局、边缘子调用合并、失败单独重试、来源浮层及视图恢复。真实 Trace 验收识别到一个边缘，代理成功返回空数组，平台六个 Span 保留且边缘标明无记录；真实非空云边拼接仍缺样本，不能据样例声称已验收。截图为 `runtime-ui/output/playwright/runtime-edge-trace-real.png`，验证日志为 `/private/tmp/runtime-edge-{trace-tests,host-regression,core-tests,host-types,core-types,build}.log`。本轮未修改后端或设备会话代码，也未新增菜单按钮。
+
 ### 历史趋势时间联动修复（已完成）
 
 同节点、同时间范围的资源历史图保持悬停时间游标和缩放范围联动；各图图例独立，设备运行和 Buffer 近实时趋势不加入本组。旧实现只在属性更新后扫描一次 DOM，隐藏容器延迟初始化时没有实例可注册；改由共享 ECharts 的 ready / dispose 信号注册、释放历史区实例，KeepAlive 暂停和恢复成对处理，不增加轮询或改动数据采集。入口为 core `history/useLinkedHistoryCharts.ts`、`HistoryMetricCharts.vue` 与 ECharts 生命周期；定向验证覆盖延迟初始化、实例重建、时间对齐、缩放单次提交、独立图例和 Tab 恢复，真实浏览器验收由总控集中执行。
@@ -462,6 +495,12 @@ Buffer 队列 ⓘ                 [堆积|吞吐] [按队列] [设置]
 Buffer 图例保存用户期望的完整队列身份，显示时与当前快照取交集。首次加载为空、部分队列迟到或暂时缺测时不销毁偏好，恢复后继续显示；显式空选择保持全部关闭。当前接口没有永久删除信号，因此不因一次缺席写回删除偏好；用户操作图例时才明确替换选择集合。重置必须匹配当前实际存在的唯一队列，目标暂时消失即关闭确认。
 
 日志 Provider 只读能力发现独立于文件 / 控制台模式。初次未完成时显示等待，失败可原地重试，只有确认没有 Java Provider 时才显示不支持；发现和重试不自动读取文件或启动控制台。相同节点的无关按钮权限更新和后台能力复查保留已有控制台证据，实际日志撤权、节点变化或能力移除才清理。目录和文件独立代际，根目录刷新等待能力期间也不能覆盖较新的手动导航。
+
+日志文件选择器采用已确认的顶部树形浮层方案：`LogFileExplorer.vue` 用 Ant Design 目录树展示 Provider、目录、ZIP 内部文件，GZ 作为可读文件；去掉逐级返回和面包屑。`useLogFileTree.ts` 在当前节点工作区内缓存分支，按展开加载，去重同分支请求，失败可局部重试；复用最新文件发现已读取的目录。打开浮层时展开当前文件路径并定位，保留其他展开状态及阅读上下文；文件读取成功后才提交选择并关闭，失败保留旧正文。点回当前文件取消未提交的切换，迟到请求不能覆盖当前正文。浮层固定最大高度，列表独立滚动；目录树采用平台浅色选中态，活动行显式受控，支持方向键与 Enter 选择。范围仅为宿主日志选择器、目录缓存、日志读取编排和中英文案，不改变页面壳层、后端接口、Provider 权限或服务。
+
+目录树验收：宿主日志 / 文件窗口 / 目录组件 49 项与 core 日志展示 11 项回归通过，覆盖独立分支并行与去重、取消迟到响应、空目录 / 局部重试、ZIP 身份与 GZ 叶子、切换失败保留正文及当前文件拒绝后的证据清理。宿主类型检查仍有原有 167 项平台错误，诊断路径无错误；工程没有独立 lint 命令，SFC / 样式编译和空白检查通过，最终模块生产构建通过（27.90s，保留既有 chunk 提示）。真实浏览器两轮检查确认 Java 目录原位折叠、ZLMediaKit 空目录、GZ 读取 428 条后关闭、重新打开定位和保留其他分支、刷新不改正文、MBean / 日志往返保留正文与位置、方向键 / Enter 选文件和 Escape 回焦。最终归档读取曾发生一次 15 秒超时：浮层保持打开、原文件及 40 条正文保留；原位重试后成功切至归档的 428 条。浮层内列表高度 375px、内容 479px，仅内部滚动；768px 下页面宽度为 768px，440px 浮层没有越界，临时视口覆盖已恢复。真实环境没有 ZIP 样例或可控的权限拒绝，相关行为由回归覆盖，未伪称真实接口验收；未启停服务；交付入口为 [host#352](https://github.com/jetlinks-v2/device-manager-ui/pull/352) 与 [core#195](https://github.com/jetlinks-v2/jetlinks-web-core/pull/195)。截图：`runtime-ui/output/playwright/runtime-log-file-tree.png`。
+
+多行日志补充修复：宿主 `views/link/diagnostics/normalize.ts` 在识别到完整日志头后，以新日志头或独立日志前缀作为下一条记录边界。无缩进的正文、分隔线、空行及异常附加内容归入同一记录，正文保留换行，时间、级别、详情操作仅出现一次；空日志头不额外占据正文首行，显式空续行仍保留。原文复制与跨窗口首行身份保持完整。窗口开头缺少日志头时仍保守识别，不推造时间或级别。本次只修复日志归组，不调整工具栏、后端接口或权限。空正文日志头、普通多行、异常及独立格式边界、跨窗口追加与前插等宿主回归 39/39、core 日志展示回归 4/4 通过；模块生产构建通过（27.40s，保留既有大 chunk 提示）。宿主目标类型检查仍为 167 项平台错误，诊断路径无错误；未配置独立 lint 命令，变更空白检查通过。浏览器插件在真实 IoT 日志找到用户反馈的 `09:01:12.703 WARN`：分隔线和提示归于记录 21，仅一个时间与详情入口，异常 14 行可原位展开；完整复制与页面原文逐字相同，共 18 行且不含下一条日志。窗口查找命中一条，概览 / 日志往返保留 212 条记录、查找词及 scrollTop=986。截图：`runtime-ui/output/playwright/runtime-log-multiline-record.png`。初始平台入口加载失败在用户恢复后已复验；未启停服务。相关增量通过同一组 PR 交付。
 
 本轮增量验收：日志 / 目录 / Buffer 与偏好相关回归 97 项通过（宿主 64、core 33），core 目标类型检查通过，宿主与原 167 条错误逐条一致，无新增；core 中英诊断文案各 509 项且集合一致、无重复键。未配置独立 lint 脚本，SFC 编译与变更空白检查通过；统一模块构建 27.76 秒通过，保留既有资源 / chunk 告警。真实浏览器验证 200px 固定目录、单行查找工具栏、规则引擎节点目录往返与正文刷新保持 25 条记录及 scrollTop 951，历史 .gz 文件加载 136 条记录（4 组异常堆栈）；查找 subscribe 命中 4 条，MBean / 日志往返保留查找与 scrollTop 335.5。IoT / 规则引擎往返保留 IoT 111 条记录及 scrollTop 5862；IoT 的目录接口一度 15 秒超时，错误仅出现在目录区，正文仍可阅读，最终复核该节点已恢复，根目录 / Java 目录往返均正常，正文和 scrollTop 5862 保持。768px 下目录默认收起、展开为 220px 覆盖层，Escape 关闭并回焦入口，页面宽度仍为 768px，临时视口设置已清除。Buffer 实页验证 240px 图高、全关 / 全选 / 单队列、压缩刻度和 Tab 往返保留，未执行重置；原仪表盘及共享监控基线 49 个文件校验均未改变。普通多行消息的生产 MQTT 格式、通用字段块与跨窗口边界由回归覆盖，本次实时日志未复现用户原截图中的同一条消息。未改后端 / 延迟迁移的日志权限，未启停服务、采集 JFR 或执行真实导出 / reset。 最终展示截图为 runtime-ui/output/playwright/runtime-log-explorer.png，Buffer 截图为 runtime-ui/output/playwright/runtime-buffer-legend.png。
 

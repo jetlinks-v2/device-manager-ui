@@ -12,7 +12,7 @@
       <template #source><div class="log-source-tabs" role="group" :aria-label="t('runtimeDiagnostics.logs')"><a-button type="text" size="small" :class="{ 'log-source-tabs__active': mode === 'file' }" :aria-pressed="mode === 'file'" @click="changeMode('file')">{{ t('runtimeDiagnostics.fileSource') }}</a-button><a-button type="text" size="small" :class="{ 'log-source-tabs__active': mode === 'console' }" :aria-pressed="mode === 'console'" @click="changeMode('console')">{{ t('runtimeDiagnostics.consoleSource') }}</a-button></div></template>
       <template #file-selector>
         <a-popover :open="layout.open.value" trigger="click" placement="bottomLeft" @open-change="setExplorerOpen">
-          <template #content><div ref="explorerContent" class="log-directory-popup" tabindex="-1" @keydown.esc.stop="closeExplorer"><LogFileExplorer :model="catalogModel" @select="selectFile" @parent="logs.parent" @navigate="logs.navigate" @refresh="logs.refreshCatalog"><template #actions><a-button type="text" size="small" :title="t('runtimeDiagnostics.closeDirectory')" :aria-label="t('runtimeDiagnostics.closeDirectory')" @click="closeExplorer"><CloseOutlined /></a-button></template></LogFileExplorer></div></template>
+          <template #content><div ref="explorerContent" class="log-directory-popup" tabindex="-1" @keydown.esc.stop="closeExplorer"><LogFileExplorer :model="catalogModel" :active="layout.open.value && explorerVisible" @select="selectFile" @expand="logs.tree.setExpanded" @retry="retryDirectory" @refresh="logs.refreshTree"><template #actions><a-button type="text" size="small" :title="t('runtimeDiagnostics.closeDirectory')" :aria-label="t('runtimeDiagnostics.closeDirectory')" @click="closeExplorer"><CloseOutlined /></a-button></template></LogFileExplorer></div></template>
           <a-button ref="explorerToggle" type="text" size="small" class="log-current-file" :disabled="!access.logs" :title="logs.filePath.value || t('runtimeDiagnostics.fileDirectory')" :aria-label="`${t('runtimeDiagnostics.fileDirectory')}: ${logs.file.value?.name || t('runtimeDiagnostics.noSelectedLogFile')}`" :aria-expanded="layout.open.value" @keydown.esc.stop="closeExplorer"><FolderOpenOutlined /><strong>{{ logs.file.value?.name || t('runtimeDiagnostics.fileDirectory') }}</strong><DownOutlined /></a-button>
         </a-popover>
       </template>
@@ -61,14 +61,16 @@ const providersKnown = computed(() => logs.providers.data.value !== undefined)
 const consoleState = computed(() => !access.value.logs ? { status: 'forbidden' as const } : !providersKnown.value ? logs.providers.state.value : !logs.consoleAvailable.value ? { status: 'unsupported' as const } : consoleLogs.status.value === 'error' ? { status: consoleLogs.entries.value.length ? 'stale' as const : 'error' as const, message: consoleLogs.message.value } : { status: 'ready' as const })
 const files = computed(() => logs.file.value ? [{ ...logs.file.value, id: logs.fileId.value }] : [])
 const fileFollowAccess = computed(() => ({ allowed: !!logs.file.value && !logs.file.value.entry && !/\.(zip|gz)$/i.test(logs.file.value.name) }))
-const catalogModel = computed(() => ({ files: logs.catalog.data.value ?? [], parents: logs.parents.value, selectedKey: logs.fileId.value, state: logs.catalog.state.value }))
+// 分支错误由树内状态行呈现，消费拒绝以避免 Ant Tree 自动折叠错误分支。
+const catalogModel = computed(() => ({ nodes: logs.tree.nodes.value, expandedKeys: logs.tree.expandedKeys.value, loadedKeys: logs.tree.loadedKeys.value, selectedKey: logs.fileId.value, selectingKey: logs.selectingKey.value, state: logs.providers.state.value, loadData: (node: { key: string | number }) => logs.tree.load(String(node.key)).catch(() => undefined) }))
 let appliedTrace = ''
 watch([() => props.traceId, () => props.active], ([value, active]) => { if (active && value && value !== appliedTrace) { logs.search(value); appliedTrace = value } }, { immediate: true })
 function openTrace(traceId: string) { if (props.active && access.value.trace) void router.push({ path: access.value.enter ? '/infrastructure/runtime-monitor' : '/infrastructure/tracing', query: { view: 'tracing', traceId, nodeId: props.nodeId } }) }
 function changeMode(value: 'file' | 'console') { layout.close(); logs.follow(false); mode.value = value }
 function refreshConsole() { if (!providersKnown.value) void logs.discoverProviders(true); else consoleLogs.start() }
 function follow(value: boolean) { if (mode.value === 'file') logs.follow(value); else consoleLogs.following.value = value }
-function setExplorerOpen(open: boolean) { layout.setOpen(open) }
+function setExplorerOpen(open: boolean) { if (open) logs.tree.reveal(logs.selectedParents.value); layout.setOpen(open) }
+function retryDirectory(key: string) { void logs.tree.load(key, true).catch(() => undefined) }
 async function selectFile(key: string) { if (await logs.select(key) && layout.open.value) closeExplorer() }
 function closeExplorer() { layout.close(); void nextTick(() => { if (props.active && mode.value === 'file') explorerToggle.value?.$el?.focus() }) }
 watch(() => props.nodeId, () => layout.close())
@@ -76,7 +78,7 @@ watch(() => props.nodeId, () => layout.close())
 <style scoped>
 .node-log-panel { display:flex; flex:1 1 0; flex-direction:column; min-width:0; min-height:0; gap:var(--space-2,8px); }
 .node-log-workspace { position:relative; display:flex; flex:1 1 0; min-width:0; min-height:0; border:1px solid var(--line); border-radius:6px; overflow:hidden; }.node-log-viewer { flex:1 1 0; min-width:0; min-height:0; height:auto; }
-.log-directory-popup { width:420px; max-width:calc(100vw - 48px); height:min(420px,65vh); outline:none; }
+.log-directory-popup { width:440px; max-width:calc(100vw - 48px); height:min(420px,65vh); min-height:0; overflow:hidden; outline:none; }
 .log-current-file { display:flex; align-items:center; gap:6px; flex:1 1 140px; min-width:90px; max-width:240px; font-size:var(--fs-sm,13px); }.log-current-file > .anticon { flex:none; color:var(--ink-3); }.log-current-file strong { flex:1; text-align:start; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }.log-source-tabs { display:flex; align-items:center; gap:2px; }.log-source-tabs__active { color:var(--primary-color); font-weight:600; box-shadow:inset 0 -2px var(--primary-color); }
 .node-log-context { display:flex; flex-wrap:wrap; gap:var(--space-1,4px) var(--space-3,12px); font-size:var(--fs-12,12px); color:var(--ink-3); overflow-wrap:anywhere; }
 .node-log-context,.node-log-panel > :deep(.ant-alert) { flex:0 0 auto; }

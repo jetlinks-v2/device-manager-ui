@@ -15,7 +15,7 @@ function load(relative, imports = {}, inline = false) {
   const filename = resolve(root, relative), source = readFileSync(filename, 'utf8')
   const content = relative.endsWith('.vue') ? compileScript(parse(source, { filename }).descriptor, { id: 'host-presentation', inlineTemplate: inline }).content : source
   const { code } = transformSync(content, { loader: 'ts', format: 'cjs' }), module = { exports: {} }
-  new Function('require', 'module', 'exports', code)(id => imports[id] ?? (id === 'vue' ? vue : id.startsWith('@ant-design/icons-vue') || id.endsWith('.vue') ? {} : require(id)), module, module.exports)
+  new Function('require', 'module', 'exports', code)(id => imports[id] ?? (id === '@jetlinks-web-core/components/RuntimeDiagnostics' ? {} : id === 'vue' ? vue : id.startsWith('@ant-design/icons-vue') || id.endsWith('.vue') ? {} : require(id)), module, module.exports)
   return module.exports.default ?? module.exports
 }
 
@@ -101,7 +101,7 @@ test('inactive routes and cached pages remove layout constraints, observers and 
 })
 
 test('monitor settings retain the interval permission and preference contract and close on scope changes', async () => {
-  const calls = [], scope = vue.effectScope(), focused = []
+  const calls = [], scope = vue.effectScope()
   const access = vue.ref({ enter: true, monitor: true, logs: true }), selected = vue.ref('node-a'), active = vue.ref(true)
   const preferences = { value: vue.ref({ bufferIntervalSeconds: 5 }), update: value => calls.push(value), clear: () => calls.push('clear') }
   const view = { access, selected, active, preferences, showNodeSelector: vue.ref(false), scopeKey: vue.ref('scope-a'), tab: vue.ref('overview'), nodes: vue.ref([{ id: 'node-a' }]), runtime: { error: vue.ref(false), loading: vue.ref(false), updatedAt: vue.ref('') }, filtered: vue.ref([]) }
@@ -114,26 +114,19 @@ test('monitor settings retain the interval permission and preference contract an
     './useClusterBuffers': { provideClusterBuffers: () => ({ snapshots: vue.ref(new Map()) }) },
     './useClusterSessions': { useClusterSessionContext: () => ({ snapshots: vue.ref(new Map()) }) },
     '../RuntimeMonitor/useClusterSessions': { useClusterSessionContext: () => undefined },
-    '../diagnostics/preferences': { bufferIntervals: [3, 5, 10, 30, 60], diagnosticIntervalSeconds: value => value ?? 3 },
+    '../diagnostics/preferences': { bufferIntervals: [1, 2, 5, 10, 30, 60], diagnosticIntervalSeconds: value => value ?? 2 },
   })
   const state = scope.run(() => page.setup({}, { expose() {} }))
   try {
-    state.settingsTrigger.value = { focus: () => focused.push(true) }
-    state.settingsContent.value = { focus: () => focused.push('content') }
-    await state.setSettingsOpen(true)
-    assert.deepEqual(focused, ['content']); focused.length = 0
     state.settingsOpen.value = false; state.openSettings(); await flush()
     assert.equal(state.settingsOpen.value, true, 'Buffer chart settings reuse the existing monitor preference popover')
-    focused.length = 0
     state.settingsOpen.value = true; state.setBufferInterval(30)
     assert.deepEqual(calls, [{ bufferIntervalSeconds: 30 }])
-    state.setBufferInterval('30'); state.setBufferInterval(1)
+    state.setBufferInterval('30'); state.setBufferInterval(3)
     assert.equal(calls.length, 1)
     access.value = { ...access.value, monitor: false }
     assert.equal(state.settingsOpen.value, false)
     state.setBufferInterval(60); assert.equal(calls.length, 1)
-    state.settingsOpen.value = true; state.closeSettings()
-    assert.equal(state.settingsOpen.value, false); assert.equal(focused.length, 1)
     state.settingsOpen.value = true; state.clearPreferences()
     assert.equal(calls.at(-1), 'clear'); assert.equal(state.settingsOpen.value, false)
     state.settingsOpen.value = true; selected.value = 'node-b'

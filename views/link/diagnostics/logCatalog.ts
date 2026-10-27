@@ -13,7 +13,7 @@ export function sortLogCatalog(files: readonly LogFile[]) {
 }
 
 /** 只发现普通目录，不展开归档；current 优先，再以真实修改时间选最新文件。 */
-export async function latestLogFile(node: string, roots: LogFile[], signal: AbortSignal): Promise<LatestLogSelection | undefined> {
+export async function latestLogFile(node: string, roots: LogFile[], signal: AbortSignal, loadDirectory = logChildren): Promise<LatestLogSelection | undefined> {
   const candidates: LatestLogSelection[] = []
   const pending = [{ files: roots, parents: [] as LogFile[] }]
   let visited = 0
@@ -23,7 +23,7 @@ export async function latestLogFile(node: string, roots: LogFile[], signal: Abor
       if (!file.directory && file.operations?.includes('readWindow') && !file.compressed && !/\.(zip|gz)$/i.test(file.name)) candidates.push({ file, siblings: branch.files, parents: branch.parents })
       else if (file.directory && branch.parents.length < 3 && visited++ < 12) {
         try {
-          const children = await logChildren(node, file, signal)
+          const children = await loadDirectory(node, file, signal)
           if (!signal.aborted) pending.push({ files: children, parents: [...branch.parents, file] })
         } catch (error) {
           // 根目录已单独完成授权读取。自动发现只跳过失败分支；手动进入该目录仍呈现原始错误。

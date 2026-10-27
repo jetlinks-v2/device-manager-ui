@@ -9,7 +9,7 @@ import * as vue from 'vue'
 import { renderToString } from 'vue/server-renderer'
 const require = createRequire(import.meta.url), cache = new Map()
 const root = resolve(import.meta.dirname, '../views/link/diagnostics')
-const dictionary = JSON.parse(readFileSync(resolve(import.meta.dirname, '../../../jetlinks-web-core/src/locales/lang/en.json'), 'utf8'))
+const dictionary = { ...JSON.parse(readFileSync(resolve(import.meta.dirname, '../../../jetlinks-web-core/src/locales/lang/en.json'), 'utf8')), ...JSON.parse(readFileSync(resolve(import.meta.dirname, '../locales/lang/en.json'), 'utf8')) }
 function load(filename) {
   if (cache.has(filename)) return cache.get(filename)
   const source = readFileSync(filename, 'utf8')
@@ -17,6 +17,7 @@ function load(filename) {
   const module = { exports: {} }
   new Function('require', 'module', 'exports', transformSync(script, { loader: 'ts', format: 'cjs' }).code)(id => {
     if (id === 'vue-i18n') return { useI18n: () => ({ t: key => dictionary[key] ?? key }) }
+    if (id === '@jetlinks-web-core/hooks/useRetainedScroll') return load(resolve(import.meta.dirname, '../../../jetlinks-web-core/src/hooks/useRetainedScroll.ts'))
     if (id.startsWith('.')) { const path = resolve(dirname(filename), id); return load(existsSync(path) ? path : `${path}.ts`) }
     return require(id)
   }, module, module.exports)
@@ -25,18 +26,21 @@ function load(filename) {
 const { logFileKey, logFileMetadata } = load(resolve(root, 'logFilePresentation.ts'))
 const file = { id: 'active', providerId: 'java', name: 'a-very-long-application-log-name.log', directory: false, operations: ['readWindow', 'download'], size: 1536, lastModified: 1792840000000 }
 async function render(state = { status: 'ready' }) {
-  const app = vue.createSSRApp({ render: () => vue.h(load(resolve(root, 'LogFileExplorer.vue')).default, { model: { files: [{ ...file, id: 'folder', name: 'history', directory: true, size: undefined }, file], parents: [{ ...file, id: 'root', name: 'Java logs', directory: true }], selectedKey: logFileKey(file), state } }) })
-  const { Button, Breadcrumb, BreadcrumbItem, Spin, Empty, SpaceCompact } = require('ant-design-vue')
-  for (const [name, component] of Object.entries({ 'a-button': Button, 'a-breadcrumb': Breadcrumb, 'a-breadcrumb-item': BreadcrumbItem, 'a-spin': Spin, 'a-empty': Empty, 'a-space-compact': SpaceCompact })) app.component(name, component)
+  const folder = { ...file, id: 'folder', name: 'Java logs', directory: true, size: undefined }
+  const nodes = [{ key: logFileKey(folder), title: folder.name, file: folder, isLeaf: false, selectable: false, children: [{ key: logFileKey(file), title: file.name, file, isLeaf: true, selectable: true }] }]
+  const app = vue.createSSRApp({ render: () => vue.h(load(resolve(root, 'LogFileExplorer.vue')).default, { model: { nodes, expandedKeys: [logFileKey(folder)], loadedKeys: [logFileKey(folder)], selectedKey: logFileKey(file), selectingKey: '', state, loadData: async () => [] } }) })
+  const { Button, DirectoryTree, Empty, SpaceCompact } = require('ant-design-vue')
+  for (const [name, component] of Object.entries({ 'a-button': Button, 'a-directory-tree': DirectoryTree, 'a-empty': Empty, 'a-space-compact': SpaceCompact })) app.component(name, component)
   return renderToString(app)
 }
 
-test('file explorer uses actual Ant controls, one selected row, compact metadata and distinct directory breadcrumbs', async () => {
+test('file explorer uses the real Ant directory tree with one current file and no parent navigation', async () => {
   const html = await render()
   assert.ok(html.includes(file.name)); assert.ok(html.includes('1.5 KB'))
-  assert.equal((html.match(/aria-pressed="true"/g) ?? []).length, 1)
-  assert.ok(html.includes('log-file-entry--selected')); assert.ok(html.includes('Java logs'))
-  for (const key of ['fileDirectory', 'refreshDirectory', 'fileParent', 'fileRoot']) assert.ok(html.includes(dictionary[`runtimeDiagnostics.${key}`]), key)
+  assert.equal((html.match(/aria-selected="true"/g) ?? []).length, 1)
+  assert.ok(html.includes('log-file-current')); assert.ok(html.includes('Java logs'))
+  for (const key of ['selectFile', 'refreshDirectory']) assert.ok(html.includes(dictionary[`runtimeDiagnostics.${key}`]), key)
+  assert.ok(!html.includes('log-catalog-breadcrumb')); assert.ok(!html.includes(dictionary['runtimeDiagnostics.fileParent']))
   assert.ok(!html.includes('log-reader-window'), 'directory is only navigation, not a second reader or card')
   const failed = await render({ status: 'error', message: 'Directory unavailable' })
   assert.ok(failed.includes('Directory unavailable')); assert.ok(failed.includes(file.name), 'a failed refresh retains the last coherent directory')

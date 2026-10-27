@@ -10,6 +10,7 @@ import { useDiagnosticScope } from '../diagnostics/useDiagnosticScope'
 import { diagnosticErrorState } from '../diagnostics/status'
 import { useTraceSession } from '../../../store/traceWorkspace'
 import { parseTraceInput } from './parseTraceInput'
+import { combinedTraceSpans } from './edgeTrace'
 
 /** 工作区在同身份的跨页排查中保留；app只与授权目录精确匹配，不猜测第三方scope。 */
 export function useClusterTrace(pageActive?: Ref<boolean>) {
@@ -21,7 +22,7 @@ export function useClusterTrace(pageActive?: Ref<boolean>) {
   const workspace = useTraceSession()
   const traceId = computed(() => workspace.active.value?.traceId ?? '')
   const query = { data: computed(() => workspace.active.value?.data), state: computed(() => workspace.active.value?.state ?? { status: 'ready' as const }) }
-  const spans = computed(() => normalizeTrace(query.data.value ?? [], directory.data.value ?? []))
+  const spans = computed(() => normalizeTrace(workspace.active.value ? combinedTraceSpans(workspace.active.value) : [], directory.data.value ?? []))
   const state = computed(() => access.value.trace ? query.state.value : { status: 'forbidden' as const })
   const text = (value: unknown) => typeof value === 'string' ? value : ''
   function syncUrl(method: 'push' | 'replace' = 'replace') {

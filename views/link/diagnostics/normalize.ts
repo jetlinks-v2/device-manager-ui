@@ -63,9 +63,10 @@ export function normalizeTrace(raw: RawSpan[], nodes: DiagnosticNode[] = []): Tr
   return raw.map(span => {
     const events = normalizeTraceEvents(span.events)
     const aliases = nodes.filter(node => node.alias === span.app)
-    const node = span.app && span.app !== 'default' ? nodes.find(node => node.id === span.app) ?? (aliases.length === 1 ? aliases[0] : undefined) : undefined
+    const node = !span.edgeSource && span.app && span.app !== 'default' ? nodes.find(node => node.id === span.app) ?? (aliases.length === 1 ? aliases[0] : undefined) : undefined
     return { id: span.spanId, parentId: span.parentSpanId, name: span.name, traceId: span.traceId, nodeId: node?.id, app: span.app,
       startNanos: nanosText(span.startWithNanos, span.startWithNanosText) ?? '', endNanos: nanosText(span.endWithNanos, span.endWithNanosText) ?? '', attributes: span.attributes, events,
+      source: span.edgeSource ? { id: span.edgeSource.key, label: `${span.edgeSource.thingType}:${span.edgeSource.thingId}` } : undefined,
       error: events.some(event => event.name === 'exception') }
   })
 }
@@ -106,7 +107,7 @@ function isThrowableHeader(text: string, followsStack: boolean) {
   return /^(?:[\w$]+\.)*[\w$]*(?:Exception|Error|Throwable)(?::.*)?$/.test(value)
     || followsStack && /^(?:[\w$]+\.)+[A-Z][\w$]*:.*$/.test(value)
 }
-/** 完整头始终开启新记录；缩进/结构块/连续字段构成普通多行消息，异常栈另存，未知独立行不附会元数据。 */
+/** 完整日志头建立续行归属，独立前缀结束归属；无头片段仅合并有明确证据的结构，原文始终保留。 */
 export function normalizeLogs(lines: string[], windowStart = 0): LogEntry[] {
   const entries: LogEntry[] = []
   let structured: LogEntry | undefined, exception: LogEntry | undefined, reactor = false, messageMode = false, fieldMode = false, payloadMode = false, blockDepth = 0
@@ -120,9 +121,10 @@ export function normalizeLogs(lines: string[], windowStart = 0): LogEntry[] {
     return entry
   }
   const append = (entry: LogEntry, text: string, kind: 'message' | 'stack' = 'stack') => {
-    entry.text += `\n${text}`; entry.raw = entry.text
-    if (kind === 'message') entry.message = `${entry.message ?? ''}\n${text}`
+    // 空日志头不占正文首行；显式的空续行仍按原样保留，完整原文始终包含日志头。
+    if (kind === 'message') entry.message = `${entry.message ?? ''}${entry.time && entry.message === '' && !entry.text.includes('\n') ? '' : '\n'}${text}`
     else entry.stack = entry.stack === undefined ? text : `${entry.stack}\n${text}`
+    entry.text += `\n${text}`; entry.raw = entry.text
   }
   const flushBlanks = (owner?: LogEntry, kind: 'message' | 'stack' = 'stack') => {
     blanks.forEach(({ text, index }) => owner ? append(owner, text, kind) : create(text, index))
@@ -132,7 +134,7 @@ export function normalizeLogs(lines: string[], windowStart = 0): LogEntry[] {
     // 平台沿用Spring Boot文件格式；只有完整结构匹配才拆列，消息中的ERROR或[]不猜为字段。
     const header = text.match(bootLogHeader) ?? text.match(standardLogHeader)
     if (header) {
-      flushBlanks(exception ?? (messageMode ? structured : undefined), exception ? 'stack' : 'message')
+      flushBlanks(exception ?? (structured?.time || messageMode ? structured : undefined), exception ? 'stack' : 'message')
       structured = create(text, index, header)
       exception = isThrowableHeader(header[4], false) ? structured : undefined
       reactor = false; messageMode = false; fieldMode = false; payloadMode = false
@@ -160,11 +162,12 @@ export function normalizeLogs(lines: string[], windowStart = 0): LogEntry[] {
     const explicitBlockStart = structured && /:\s*$/.test(structured.message ?? '') && /^[({[]\s*$/.test(text)
     const messageEvidence = structured ? indented || blockDepth > 0 || fieldBlock || explicitBlockStart || payloadStart || payloadMode
       || messageMode && (field || messageSentinel.test(text) || /^\s*[}\])]+[;,]?\s*$/.test(text)) : fieldBlock
-    const messageContinuation = !exception && !independentLogPrefix.test(text) && messageEvidence
+    // 完整日志头已确定记录身份；普通段落/分隔线无需缩进或字段证据，不能再次拆成无元数据的行。
+    const messageContinuation = !independentLogPrefix.test(text) && (structured?.time || !exception && messageEvidence)
     if (messageContinuation) {
-      const owner = structured
-      flushBlanks(owner, 'message')
-      if (owner) append(owner, text, 'message')
+      const owner = exception ?? structured, kind = exception ? 'stack' : 'message'
+      flushBlanks(owner, kind)
+      if (owner) append(owner, text, kind)
       else structured = create(text, index)
       messageMode = true
       fieldMode ||= fieldBlock
@@ -172,10 +175,10 @@ export function normalizeLogs(lines: string[], windowStart = 0): LogEntry[] {
       blockDepth = blockDepth > 0 || /[({[]\s*$/.test(text) ? Math.max(0, blockDepth + messageBracketDelta(text)) : 0
       return
     }
-    flushBlanks(exception ?? (messageMode ? structured : undefined), exception ? 'stack' : 'message')
+    flushBlanks(exception ?? (structured?.time || messageMode ? structured : undefined), exception ? 'stack' : 'message')
     create(text, index)
     structured = undefined; exception = undefined; reactor = false; messageMode = false; fieldMode = false; payloadMode = false; blockDepth = 0
   })
-  flushBlanks(exception ?? (messageMode ? structured : undefined), exception ? 'stack' : 'message')
+  flushBlanks(exception ?? (structured?.time || messageMode ? structured : undefined), exception ? 'stack' : 'message')
   return entries
 }

@@ -1,6 +1,7 @@
 export interface GaugeSample { timestamp: number; value?: string }
 export const gaugeWindowMs = 10 * 60 * 1000
-const maxSamples = 256
+// 最短 1 秒采集下保留完整十分钟，另保留窗口起点；手动刷新仍有硬上限。
+const maxSamples = 601
 
 /** Java long 的十进制文本保持精确；JSON 已损失精度的 number 不能成为证据。 */
 export function gaugeCount(value: unknown): string | undefined {

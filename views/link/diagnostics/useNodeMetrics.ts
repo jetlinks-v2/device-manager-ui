@@ -92,6 +92,12 @@ export function useNodeMetrics(nodeId: Ref<string>, enabled: Ref<boolean>, scope
     if (result) {
       beans.value = result
       if (includeLifetime) applyLifetime(result)
+      else {
+        const startTime = runtimeBeanOverview(result).startTime
+        if (startTime !== undefined && lifetimeBase.value?.startTime !== undefined && startTime !== lifetimeBase.value.startTime) {
+          markDisconnected(); void loadMBeans(); return
+        }
+      }
       lastState.value = { status: 'ready', sampledAt: Date.now() }
     } else {
       const state = jvmQuery.state.value
@@ -119,6 +125,18 @@ export function useNodeMetrics(nodeId: Ref<string>, enabled: Ref<boolean>, scope
   watch([enabled, active], () => { if (enabled.value && active.value) loadHistory(); else history.cancel() }, { flush: 'sync' })
   watch(range, loadHistory)
   watch(connectionStale, value => { if (value) markDisconnected(); else { resumeClock(); if (canReadMBeans.value) void loadMBeans(); else void loadLifetime() } })
+  // 短时重启可能落在两次连接采样之间；实例变化只触发一次真实 JVM 基线核对。
+  let instanceOwner = '', monitorInstance: string | undefined
+  watch([nodeId, scopeKey, () => clusterSessions?.snapshots.value.get(nodeId.value)?.communication?.history.findLast(point => point.startTime !== undefined)?.startTime], ([node, scope, instance]) => {
+    const owner = `${scope}\0${node}`
+    if (owner !== instanceOwner) { instanceOwner = owner; monitorInstance = instance; return }
+    if (instance === undefined) return
+    const changed = monitorInstance !== undefined && monitorInstance !== instance
+    monitorInstance = instance
+    if (!changed) return
+    pauseMBeans(); markDisconnected()
+    if (canReadMBeans.value) void loadMBeans(); else void loadLifetime()
+  }, { immediate: true, flush: 'sync' })
   watch(range, value => preferences?.update({ historyRange: { from: value[0].valueOf(), to: value[1].valueOf() } }))
   onDeactivated(() => { active.value = false })
   onActivated(() => { active.value = true })

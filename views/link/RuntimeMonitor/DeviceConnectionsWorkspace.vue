@@ -3,7 +3,7 @@
     <SessionOverview v-if="access.monitor" :overview="overview" :active="active" />
     <DeviceSessionObservation :entries="observation.entries.value" :device-options="suggestions.options.value" :device-searching="suggestions.searching.value" :active="active" :access="{ allowed: access.sessions }" :unsupported="supported === false" :waiting="supported === undefined && access.monitor"
       :paused="observation.paused.value" :interval="observation.interval.value" :metrics="observation.metrics.value"
-      @add="add" @remove="remove" @refresh="observation.refresh" @search-device="suggestions.search" @update:paused="value => observation.paused.value = value" @update:interval="value => observation.interval.value = value" @update:metrics="value => observation.metrics.value = value" />
+      @add="add" @remove="remove" @refresh="observation.refresh" @search-device="suggestions.search" @load-more-devices="suggestions.loadMore" @update:paused="value => observation.paused.value = value" @update:interval="value => observation.interval.value = value" @update:metrics="value => observation.metrics.value = value" />
   </section>
 </template>
 <script setup lang="ts">

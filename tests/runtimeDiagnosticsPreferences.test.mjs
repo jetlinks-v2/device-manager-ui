@@ -10,7 +10,8 @@ const load = (path, imports = {}) => {
   new Function('require', 'module', 'exports', code)(id => imports[id], module, module.exports)
   return module.exports
 }
-const pure = load('../views/link/diagnostics/preferences.ts')
+const sampling = load('../../../jetlinks-web-core/src/components/RuntimeDiagnostics/samplingInterval.ts')
+const pure = load('../views/link/diagnostics/preferences.ts', { '@jetlinks-web-core/components/RuntimeDiagnostics': sampling })
 const { createDiagnosticPreferences } = load('../views/link/diagnostics/useDiagnosticPreferences.ts', { vue, './preferences': pure })
 
 test('JVM page preferences migrate thread and memory modes to two coherent pages', () => {
@@ -70,9 +71,10 @@ test('malformed stored JSON and prototype-like identities cannot leak configurat
 
 
 test('Buffer interval is an account/project scoped display preference with a strict whitelist', () => {
-  assert.equal(pure.diagnosticIntervalSeconds(undefined), 3)
-  for (const value of [3, 5, 10, 30, 60]) assert.equal(pure.sanitizeDiagnosticPreferences({ version: 1, nodes: {}, bufferIntervalSeconds: value }).bufferIntervalSeconds, value)
-  for (const value of [0, 1, -5, 5000, '3', '10', null]) assert.equal(pure.sanitizeDiagnosticPreferences({ version: 1, nodes: {}, bufferIntervalSeconds: value }).bufferIntervalSeconds, undefined)
+  assert.equal(pure.diagnosticIntervalSeconds(undefined), 2)
+  for (const value of [1, 2, 5, 10, 30, 60]) assert.equal(pure.sanitizeDiagnosticPreferences({ version: 1, nodes: {}, bufferIntervalSeconds: value }).bufferIntervalSeconds, value)
+  assert.equal(pure.sanitizeDiagnosticPreferences({ version: 1, nodes: {}, bufferIntervalSeconds: 3 }).bufferIntervalSeconds, 2)
+  for (const value of [0, -5, 5000, '3', '10', null]) assert.equal(pure.sanitizeDiagnosticPreferences({ version: 1, nodes: {}, bufferIntervalSeconds: value }).bufferIntervalSeconds, undefined)
   const identity = vue.ref({ accountId: 'alice', projectId: 'p1' }), values = new Map(), scope = vue.effectScope()
   try {
     const view = scope.run(() => createDiagnosticPreferences(identity, () => ({ getItem: key => values.get(key), setItem: (key, value) => values.set(key, value), removeItem: key => values.delete(key) })))

@@ -121,6 +121,7 @@
         @select="view.select"
         @logs="view.logs"
         @node="view.node"
+        @retry-edge="workspace.retryEdge(tab.key, $event)"
       />
     </template>
   </main>

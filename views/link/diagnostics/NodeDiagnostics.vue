@@ -25,7 +25,7 @@
       <a-tab-pane v-if="access.monitor" key="mbean" tab="MBean" />
       <a-tab-pane v-if="access.logs" key="logs" :tab="t('runtimeDiagnostics.logs')" />
     </a-tabs>
-    <NodeOverview v-if="visitedTools.has('overview')" v-show="tab === 'overview'" :node-id="nodeId" :live="live" :stale="stale" :bottlenecks="bottlenecks.issues.value" @diagnose="openDiagnosis" @inspect="openBean" @settings="emit('settings')" @session="openSessions" />
+    <NodeOverview v-if="visitedTools.has('overview')" v-show="tab === 'overview'" :node-id="nodeId" :active="active && tab === 'overview'" :scope-key="scopeKey" :live="live" :stale="stale" :bottlenecks="bottlenecks.issues.value" @diagnose="openDiagnosis" @inspect="openBean" @settings="emit('settings')" @session="openSessions" />
     <div v-if="visitedTools.has('jvm')" v-show="tab === 'jvm'" class="node-jvm-canvas">
       <JvmDiagnosticPanel :node-id="nodeId" :active-tab="jvm.activeTab.value" :threads="jvm.threads.data.value ?? []" :thread-state="jvm.threadState.value" :snapshot="jvm.snapshot.value" :sampling-state="jvm.sampling.value" :stream-phase="jvm.streamPhase.value" :elapsed-seconds="jvm.elapsedSeconds.value" :access="jvm.access.value" :active="active && tab === 'jvm'" @update:active-tab="jvm.selectTab" @sample="jvm.sample" @start="jvm.start" @stop="jvm.stop" @export-html="jvm.exportHtml" @capture-jfr="jvm.requestCapture('jfr')" @heap-dump="value => jvm.requestCapture('heap-dump', value.live)" />
       <a-alert v-if="jvm.exportState.value" type="error" :message="jvm.exportState.value" />

@@ -1,31 +1,69 @@
 <template>
-  <nav class="log-file-explorer" :aria-label="t('runtimeDiagnostics.fileDirectory')">
-    <header><strong>{{ t('runtimeDiagnostics.fileDirectory') }}</strong><a-space-compact><a-button type="text" size="small" :disabled="!model.parents.length" :title="t('runtimeDiagnostics.fileParent')" :aria-label="t('runtimeDiagnostics.fileParent')" @click="emit('parent')"><ArrowUpOutlined /></a-button><a-button type="text" size="small" :loading="model.state.status === 'loading'" :title="t('runtimeDiagnostics.refreshDirectory')" :aria-label="t('runtimeDiagnostics.refreshDirectory')" @click="emit('refresh')"><ReloadOutlined /></a-button><slot name="actions" /></a-space-compact></header>
-    <div class="log-catalog-breadcrumb" :title="model.parents.map(file => file.name).join(' / ')"><a-breadcrumb><a-breadcrumb-item><a-button type="text" size="small" :title="t('runtimeDiagnostics.fileRoot')" :aria-label="t('runtimeDiagnostics.fileRoot')" @click="emit('navigate', -1)"><HomeOutlined /></a-button></a-breadcrumb-item><a-breadcrumb-item v-for="(file, index) in model.parents" :key="logFileKey(file)"><a-button type="text" size="small" class="log-path-part" :title="file.name" @click="emit('navigate', index)">{{ file.name }}</a-button></a-breadcrumb-item></a-breadcrumb></div>
-    <div v-if="failed" class="log-catalog-error" role="status"><WarningOutlined /><span>{{ model.state.message || t(`runtimeDiagnostics.${model.state.status === 'forbidden' ? 'forbidden' : model.state.status === 'unsupported' ? 'unsupported' : 'failed'}`) }}</span></div>
-    <a-spin :spinning="model.state.status === 'loading'" class="log-catalog-list-state"><div class="log-catalog-list">
-      <a-button v-for="file in model.files" :key="logFileKey(file)" type="text" block class="log-file-entry" :class="{ 'log-file-entry--selected': logFileKey(file) === model.selectedKey }" :aria-pressed="logFileKey(file) === model.selectedKey" :title="[file.name, logFileMetadata(file).modified].filter(Boolean).join('\n')" @click="emit('select', logFileKey(file))"><span class="log-file-entry-name"><FolderOutlined v-if="file.directory" /><FileZipOutlined v-else-if="/\.zip$/i.test(file.name) && !file.entry" /><FileTextOutlined v-else /><span>{{ file.name }}</span></span><span v-if="logFileMetadata(file).summary" class="log-file-entry-meta">{{ logFileMetadata(file).summary }}</span></a-button>
-      <a-empty v-if="!model.files.length && model.state.status !== 'loading' && !failed" :description="t('runtimeDiagnostics.emptyDirectory')" :image="Empty.PRESENTED_IMAGE_SIMPLE" />
-    </div></a-spin>
+  <nav class="log-file-explorer" :aria-label="t('runtimeDiagnostics.selectFile')">
+    <header><strong>{{ t('runtimeDiagnostics.selectFile') }}</strong><a-space-compact><a-button type="text" size="small" :loading="model.state.status === 'loading'" :title="t('runtimeDiagnostics.refreshDirectory')" :aria-label="t('runtimeDiagnostics.refreshDirectory')" @click="emit('refresh')"><ReloadOutlined /></a-button><slot name="actions" /></a-space-compact></header>
+    <div v-if="failed" class="log-catalog-error" role="status"><WarningOutlined /><span>{{ model.state.message || t(`runtimeDiagnostics.${model.state.status === 'forbidden' ? 'forbidden' : model.state.status === 'unsupported' ? 'unsupported' : 'failed'}`) }}</span><a-button type="link" size="small" @click="emit('refresh')">{{ t('runtimeDiagnostics.retry') }}</a-button></div>
+    <div ref="scroller" class="log-catalog-tree" @scroll.passive="retained.onScroll">
+      <a-directory-tree v-if="model.nodes.length" :tree-data="model.nodes" :expanded-keys="model.expandedKeys" :loaded-keys="model.loadedKeys" :selected-keys="model.selectedKey ? [model.selectedKey] : []" :active-key="active ? activeKey : undefined" :load-data="model.loadData" :auto-expand-parent="false" :virtual="false" show-icon block-node @active-change="setActiveKey" @expand="keys => emit('expand', keys)" @select="select">
+        <template #icon="{ dataRef, expanded }"><LoadingOutlined v-if="model.selectingKey === dataRef.key" /><FolderOpenOutlined v-else-if="dataRef.file?.directory && expanded" /><FolderOutlined v-else-if="dataRef.file?.directory" /><FileZipOutlined v-else-if="/\.(zip|gz)$/i.test(dataRef.file?.name || '') && !dataRef.file?.entry" /><FileTextOutlined v-else-if="dataRef.file" /></template>
+        <template #title="{ dataRef }">
+          <span v-if="dataRef.file" class="log-file-entry" :data-log-key="dataRef.key" :title="[dataRef.file.name, logFileMetadata(dataRef.file).modified].filter(Boolean).join('\n')">
+            <span class="log-file-entry-heading"><span class="log-file-entry-name">{{ dataRef.file.name }}</span><small v-if="dataRef.key === model.selectedKey" class="log-file-current">{{ t('RuntimeMonitor.currentLogFile') }}</small></span>
+            <small v-if="logFileMetadata(dataRef.file).summary" class="log-file-entry-meta">{{ logFileMetadata(dataRef.file).summary }}</small>
+          </span>
+          <span v-else-if="dataRef.state" class="log-branch-status" role="status"><LoadingOutlined v-if="dataRef.state.status === 'loading'" /><span>{{ branchText(dataRef.state) }}</span><a-button v-if="branchFailed(dataRef.state)" type="link" size="small" @click.stop="emit('retry', dataRef.branchKey)" @keydown.stop>{{ t('runtimeDiagnostics.retry') }}</a-button></span>
+        </template>
+      </a-directory-tree>
+      <div v-else-if="model.state.status === 'loading'" class="log-catalog-loading" role="status"><LoadingOutlined />{{ t('RuntimeMonitor.loadingLogDirectory') }}</div>
+      <a-empty v-else-if="!failed" :description="t('runtimeDiagnostics.emptyDirectory')" :image="Empty.PRESENTED_IMAGE_SIMPLE" />
+    </div>
   </nav>
 </template>
 <script setup lang="ts">
-import { computed, type PropType } from 'vue'
+import { computed, nextTick, onScopeDispose, ref, watch, type PropType } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Empty } from 'ant-design-vue'
-import { ArrowUpOutlined, FileTextOutlined, FileZipOutlined, FolderOutlined, HomeOutlined, ReloadOutlined, WarningOutlined } from '@ant-design/icons-vue'
-import type { LogFile, ViewState } from '@jetlinks-web-core/components/RuntimeDiagnostics'
-import { logFileKey, logFileMetadata } from './logFilePresentation'
-const props = defineProps({ model: { type: Object as PropType<{ files: LogFile[]; parents: LogFile[]; selectedKey: string; state: ViewState }>, required: true } })
-const emit = defineEmits<{ (event: 'select', key: string): void; (event: 'parent' | 'refresh'): void; (event: 'navigate', index: number): void }>()
-const { t } = useI18n()
-const failed = computed(() => ['error', 'forbidden', 'unsupported'].includes(props.model.state.status))
+import { FileTextOutlined, FileZipOutlined, FolderOpenOutlined, FolderOutlined, LoadingOutlined, ReloadOutlined, WarningOutlined } from '@ant-design/icons-vue'
+import { useRetainedScroll } from '@jetlinks-web-core/hooks/useRetainedScroll'
+import type { ViewState } from '@jetlinks-web-core/components/RuntimeDiagnostics'
+import type { LogFileTreeNode } from './useLogFileTree'
+import { logFileMetadata } from './logFilePresentation'
+const props = defineProps({ active: { type: Boolean, default: false }, model: { type: Object as PropType<{ nodes: LogFileTreeNode[]; expandedKeys: string[]; loadedKeys: string[]; selectedKey: string; selectingKey: string; state: ViewState; loadData: (node: { key: string | number }) => Promise<unknown> }>, required: true } })
+const emit = defineEmits<{ (event: 'select' | 'retry', key: string): void; (event: 'refresh'): void; (event: 'expand', keys: Array<string | number>): void }>()
+const { t } = useI18n(), scroller = ref<HTMLElement>(), activeKey = ref('')
+const retained = useRetainedScroll(scroller, () => props.active)
+const branchFailed = (state: ViewState) => ['error', 'forbidden', 'unsupported'].includes(state.status)
+const failed = computed(() => branchFailed(props.model.state))
+function branchText(state: ViewState) { return state.message || t(state.status === 'loading' ? 'RuntimeMonitor.loadingLogDirectory' : `runtimeDiagnostics.${state.status === 'empty' ? 'emptyDirectory' : state.status === 'forbidden' ? 'forbidden' : state.status === 'unsupported' ? 'unsupported' : 'failed'}`) }
+function select(keys: Array<string | number>) { if (keys.length) emit('select', String(keys[0])) }
+let reveal = '', frame: number | undefined
+/** 当前文件与键盘活动行分别受控；独立分支更新不能把列表拉回当前文件。 */
+watch([() => props.active, () => props.model.selectedKey], () => { activeKey.value = props.model.selectedKey || props.model.nodes[0]?.key || ''; reveal = props.active ? activeKey.value : ''; locateSelected() }, { flush: 'post', immediate: true })
+watch(() => props.model.nodes, locateSelected, { flush: 'post' })
+function setActiveKey(key: string | number | null) { activeKey.value = key == null ? '' : String(key); if (activeKey.value) { reveal = activeKey.value; locateSelected() } }
+async function locateSelected() {
+  if (!reveal || !props.active || frame !== undefined) return
+  await nextTick()
+  if (frame !== undefined || !props.active) return
+  frame = requestAnimationFrame(() => {
+    frame = undefined
+    const container = scroller.value, selected = container && Array.from(container.querySelectorAll<HTMLElement>('[data-log-key]')).find(element => element.dataset.logKey === reveal)
+    if (!container || !selected || !container.clientHeight) return
+    const viewport = container.getBoundingClientRect(), row = selected.getBoundingClientRect()
+    if (row.top < viewport.top) container.scrollTop += row.top - viewport.top
+    else if (row.bottom > viewport.bottom) container.scrollTop += row.bottom - viewport.bottom
+    reveal = ''
+  })
+}
+onScopeDispose(() => { if (frame !== undefined) cancelAnimationFrame(frame) })
 </script>
 <style scoped>
-.log-file-explorer { display:flex; flex-direction:column; min-width:0; min-height:0; height:100%; background:var(--bg-surface); }
-header { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px; min-height:42px; border-bottom:1px solid var(--line); flex:none; }header strong { font-size:var(--fs-body,14px); font-weight:600; }header :deep(.ant-btn) { padding-inline:5px; }
-.log-catalog-breadcrumb { padding:4px 6px; overflow-x:auto; flex:none; border-bottom:1px solid var(--line); }.log-catalog-breadcrumb :deep(.ant-breadcrumb ol) { display:flex; flex-wrap:nowrap; align-items:center; width:max-content; }.log-catalog-breadcrumb :deep(.ant-breadcrumb li) { display:flex; align-items:center; }.log-catalog-breadcrumb :deep(.ant-btn) { padding-inline:3px; font-size:var(--fs-caption,12px); }.log-path-part { max-width:100px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.log-catalog-error { display:flex; align-items:flex-start; gap:6px; color:var(--warning); padding:8px; font-size:var(--fs-caption,12px); overflow-wrap:anywhere; flex:none; }.log-catalog-error > .anticon { margin-top:3px; }
-.log-catalog-list-state { display:flex; flex:1; min-height:0; }.log-catalog-list-state :deep(.ant-spin-container) { flex:1; min-height:0; overflow:auto; }.log-catalog-list { padding:4px; min-width:0; }
-.log-file-entry { display:flex; flex-direction:column; align-items:stretch; justify-content:center; text-align:start; height:auto; min-height:34px; padding:6px; border-radius:3px; margin-bottom:1px; }.log-file-entry-name { display:flex; align-items:center; gap:7px; min-width:0; font-size:var(--fs-sm,13px); }.log-file-entry-name > .anticon { flex:none; color:var(--ink-3); }.log-file-entry-name > span:last-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }.log-file-entry-meta { padding-inline-start:21px; font-size:var(--fs-caption,12px); color:var(--ink-3); line-height:1.6; white-space:nowrap; }.log-file-entry--selected { background:var(--accent-soft); color:var(--accent); font-weight:500; }.log-file-entry--selected .anticon { color:var(--accent); }.log-catalog-list :deep(.ant-empty) { margin-block:28px; font-size:var(--fs-caption,12px); }
+.log-file-explorer { display:flex; flex-direction:column; min-width:0; min-height:0; height:100%; overflow:hidden; background:var(--bg-surface,var(--component-background,#fff)); }
+header { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 8px; min-height:36px; border-bottom:1px solid var(--line); flex:none; }header strong { font-size:var(--fs-sm,13px); font-weight:600; }header :deep(.ant-btn) { padding-inline:5px; }
+.log-catalog-tree { flex:1 1 0; min-height:0; overflow:auto; overscroll-behavior:contain; padding:6px 4px; }
+.log-catalog-tree :deep(.ant-tree) { background:transparent; font-size:var(--fs-sm,13px); }.log-catalog-tree :deep(.ant-tree-treenode) { align-items:flex-start; padding:0 0 2px; }.log-catalog-tree :deep(.ant-tree-node-content-wrapper) { display:flex; align-items:flex-start; min-width:0; padding:4px; line-height:22px; }.log-catalog-tree :deep(.ant-tree-title) { flex:1; min-width:0; }.log-catalog-tree :deep(.ant-tree-iconEle),.log-catalog-tree :deep(.ant-tree-switcher) { flex:none; font-size:14px; line-height:30px; }.log-catalog-tree :deep(.ant-tree-iconEle) { line-height:22px; color:var(--ink-3); }.log-catalog-tree :deep(.ant-tree-node-selected) { font-weight:400; }
+/* DirectoryTree 默认深蓝底与平台 Tree 的蓝色标题冲突；沿用平台浅色选中行。 */
+.log-catalog-tree :deep(.ant-tree.ant-tree-directory .ant-tree-treenode-selected::before) { background:transparent; }
+.log-catalog-tree :deep(.ant-tree.ant-tree-directory .ant-tree-treenode-selected .ant-tree-node-content-wrapper),.log-catalog-tree :deep(.ant-tree.ant-tree-directory .ant-tree-treenode-selected .ant-tree-iconEle) { color:var(--primary-color); }
+.log-file-entry { display:block; min-width:0; }.log-file-entry-heading { display:flex; align-items:baseline; gap:8px; min-width:0; }.log-file-entry-name { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }.log-file-current { flex:none; color:inherit; opacity:.8; font-size:var(--fs-caption,12px); }.log-file-entry-meta { display:block; color:var(--ink-3); font-size:var(--fs-caption,12px); font-weight:400; line-height:18px; white-space:nowrap; }.log-catalog-tree :deep(.ant-tree-node-selected) .log-file-entry-meta { color:inherit; opacity:.8; }
+.log-catalog-error,.log-branch-status,.log-catalog-loading { display:flex; align-items:center; gap:6px; font-size:var(--fs-caption,12px); color:var(--ink-3); }.log-catalog-error { padding:8px; flex:none; color:var(--warning); }.log-catalog-error > span,.log-branch-status > span { min-width:0; overflow-wrap:anywhere; }.log-branch-status :deep(.ant-btn) { height:22px; padding:0 4px; font-size:inherit; }.log-catalog-loading { justify-content:center; padding:28px 0; }.log-catalog-tree :deep(.ant-empty) { margin-block:28px; font-size:var(--fs-caption,12px); }
 </style>

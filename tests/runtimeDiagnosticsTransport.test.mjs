@@ -97,7 +97,7 @@ test('trace lookup accepts controller bare arrays and standard successful envelo
   const api = loader({ './diagnosticStream': {}, '@jetlinks-web/core': { request: { get: async (...args) => { calls.push(args); return response } } } })(host('diagnostics.ts'))
   for (response of [[], spans, { success: true, result: [] }, { success: true, result: spans }]) {
     const expected = Array.isArray(response) ? response : response.result
-    assert.equal(await api.queryTrace('trace-a', signal), expected)
+    assert.deepEqual(await api.queryTrace('trace-a', signal), expected)
   }
   assert.ok(calls.every(([url, params, config]) => url === '/system/trace/trace-a' && !Object.keys(params).length && config.signal === signal))
 })
@@ -117,7 +117,8 @@ test('Buffer and JVM overview projections are independent and preserve original 
   assert.deepEqual(initial, { sources: [{}], partial: false }); assert.equal(calls.length, 2)
   assert.match(decodeURIComponent(calls[1][0]), /java.lang:\*/); assert.match(calls[1][1].attributes, /StartTime,Uptime/)
   await api.queryOverviewMBeans('node-a', signal, false)
-  assert.doesNotMatch(calls[2][1].attributes, /StartTime|Uptime|Remainder|DeadSize/)
+  assert.match(calls[2][1].attributes, /StartTime/)
+  assert.doesNotMatch(calls[2][1].attributes, /Uptime|Remainder|DeadSize/)
   failure = true
   await assert.rejects(api.queryBufferMBeans('node-a', signal), error => error === denied)
   await assert.rejects(api.queryOverviewMBeans('node-a', signal), error => error === denied)

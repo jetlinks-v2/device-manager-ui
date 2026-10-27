@@ -54,3 +54,19 @@ test('ordinary message fields and payload across adjacent windows stay lossless 
   assert.equal(entries[0].message, 'request dump\nmethod: POST\npath: /api\n\nplain body\n  nested detail')
   assert.equal(entries[0].stack, undefined); assert.equal(entries[0].raw, [...a.lines, ...b.lines].join('\n'))
 })
+
+test('empty-header multiline records keep one identity across appended and prepended file windows', () => {
+  const a = window(40, 80, ['2026-10-22 12:34:56.789 WARN 1 --- [main] app.Logger : '])
+  const b = window(80, 130, ['====', 'Check database settings.', '====', ''])
+  const c = window(130, 200, ['java.lang.IllegalStateException: connection failed', '\tat app.Database.connect(Database.java:1)',
+    '2026-10-22 12:34:57.789 INFO 1 --- [main] app.Logger : recovered'])
+  const before = entriesForLogWindows([a]), first = mergeLogWindows([a], b, 'forward')
+  const appended = entriesForLogWindows(mergeLogWindows(first.chunks, c, 'forward').chunks)
+  assert.equal(appended.length, 2); assert.equal(appended[0].id, before[0].id)
+  assert.equal(appended[0].raw, [...a.lines, ...b.lines, ...c.lines.slice(0, -1)].join('\n'))
+  assert.match(appended[0].message, /Check database settings/); assert.match(appended[0].stack, /Database.connect/)
+  const later = entriesForLogWindows([b, c])
+  const prepended = entriesForLogWindows(mergeLogWindows([b, c], a, 'backward').chunks)
+  assert.deepEqual(prepended, appended)
+  assert.equal(prepended[1].id, later.at(-1).id, 'prepending a missing header preserves the next complete record identity')
+})

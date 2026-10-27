@@ -33,7 +33,7 @@ function harness(filename, options = {}) {
       if (id === '@jetlinks-web-core/locales') return { __esModule: true, default: { global: { t: key => key } } }
       if (id === '@jetlinks-web-core/hooks/useDiagnosticQuery') return load(resolve(import.meta.dirname, '../../../jetlinks-web-core/src/hooks/useDiagnosticQuery.ts'))
       if (id === '@jetlinks-web-core/components/RuntimeDiagnostics/utils') return load(resolve(import.meta.dirname, '../../../jetlinks-web-core/src/components/RuntimeDiagnostics/utils.ts'))
-      if (id === '@jetlinks-web-core/components/RuntimeDiagnostics') return { createFlameGraphHtml: () => '<html>safe export</html>', createJvmDiagnosticHtml: options.createJvmDiagnosticHtml ?? (data => `<html>interactive report ${data.nodeId}</html>`), createJvmDiagnosticReport: () => '<html>diagnostic report</html>' }
+      if (id === '@jetlinks-web-core/components/RuntimeDiagnostics') return { ...load(resolve(import.meta.dirname, '../../../jetlinks-web-core/src/components/RuntimeDiagnostics/samplingInterval.ts')), createFlameGraphHtml: () => '<html>safe export</html>', createJvmDiagnosticHtml: options.createJvmDiagnosticHtml ?? (data => `<html>interactive report ${data.nodeId}</html>`), createJvmDiagnosticReport: () => '<html>diagnostic report</html>' }
       if (id.endsWith('api/link/diagnostics')) return api
       if (id.endsWith('api/link/diagnosticStream')) return { streamDiagnostic: (node, kind, signal, events) => {
         const source = new Subject(); streams.push({ node, kind, signal, events, source }); return source

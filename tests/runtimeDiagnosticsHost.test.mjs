@@ -38,7 +38,7 @@ function harness(query = {}, permissions = {}) {
     if (modules.has(filename)) return modules.get(filename)
     const module = { exports: {} }
     const { code } = transformSync(readFileSync(filename, 'utf8'), { loader: 'ts', format: 'cjs' })
-    new Function('require', 'module', 'exports', code)(id => imports(id) ?? (id === '@jetlinks-web-core/hooks/useDiagnosticQuery'
+    new Function('require', 'module', 'exports', code)(id => imports(id) ?? (id === '@jetlinks-web-core/components/RuntimeDiagnostics' ? load(resolve(import.meta.dirname, '../../../jetlinks-web-core/src/components/RuntimeDiagnostics/samplingInterval.ts')) : id === '@jetlinks-web-core/hooks/useDiagnosticQuery'
       ? load(resolve(import.meta.dirname, '../../../jetlinks-web-core/src/hooks/useDiagnosticQuery.ts'))
       : id.startsWith('.') ? load(resolve(dirname(filename), `${id}.ts`)) : require(id)), module, module.exports)
     modules.set(filename, module.exports)

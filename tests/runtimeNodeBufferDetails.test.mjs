@@ -22,7 +22,7 @@ function load(filename) {
     if (id === 'vue-i18n') return { useI18n: () => ({ t }) }
     if (id === 'ant-design-vue') return { theme: { useToken: () => ({ token: vue.ref({}) }) } }
     if (id === '@ant-design/icons-vue') return { ArrowRightOutlined: empty, InfoCircleOutlined: empty, LinkOutlined: empty, UploadOutlined: empty, DownloadOutlined: empty, DatabaseOutlined: empty, ApiOutlined: empty }
-    if (id === '@jetlinks-web-core/components/RuntimeDiagnostics') return { ...load(resolve(core, 'buffer/history.ts')), ...load(resolve(core, 'buffer/counters.ts')) }
+    if (id === '@jetlinks-web-core/components/RuntimeDiagnostics') return { ...load(resolve(core, 'samplingInterval.ts')), ...load(resolve(core, 'buffer/history.ts')), ...load(resolve(core, 'buffer/counters.ts')) }
     if (id.startsWith('.')) return /NodeResource(Meter|Summary)\.vue$/.test(id) ? { __esModule: true, default: empty } : load(resolve(dirname(filename), /\.(ts|vue)$/.test(id) ? id : `${id}.ts`))
     return require(id)
   }, module, module.exports)
@@ -231,6 +231,7 @@ test('production host all-queue navigation clears a prior queue and routes once;
     if (id === 'vue-router') return { useRoute: () => route, useRouter: () => ({ replace: value => navigation.push(value) }) }
     if (id === 'vue-i18n') return { useI18n: () => ({ t }) }
     if (id === './useClusterWorkspace') return { useClusterWorkspace: () => view }
+    if (id === '@jetlinks-web-core/components/RuntimeDiagnostics') return load(resolve(core, 'samplingInterval.ts'))
     if (id === './useClusterSidebarLayout') return { useClusterSidebarLayout: () => ({}) }
     if (id === './useClusterBuffers') return { provideClusterBuffers: () => ({ snapshots: vue.ref(queues) }) }
     if (id === './useClusterSessions') return { useClusterSessionContext: () => ({ snapshots: vue.ref(new Map()) }) }

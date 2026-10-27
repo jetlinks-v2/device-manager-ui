@@ -1,3 +1,5 @@
+import { diagnosticSamplingIntervals, defaultDiagnosticSamplingInterval, isDiagnosticSamplingInterval, normalizeDiagnosticSamplingInterval, type DiagnosticSamplingInterval } from '@jetlinks-web-core/components/RuntimeDiagnostics'
+
 export type DiagnosticTool = 'overview' | 'jvm' | 'sessions' | 'mbean' | 'logs'
 export interface DiagnosticPreferenceScope { accountId: string; projectId: string }
 export interface DiagnosticNodePreference {
@@ -24,12 +26,12 @@ export interface DiagnosticPreferences {
   nodes: Record<string, DiagnosticNodePreference>
 }
 
-export const bufferIntervals = [3, 5, 10, 30, 60] as const
-export type BufferInterval = typeof bufferIntervals[number]
-export const defaultDiagnosticInterval: BufferInterval = 3
+export const bufferIntervals = diagnosticSamplingIntervals
+export type BufferInterval = DiagnosticSamplingInterval
+export const defaultDiagnosticInterval = defaultDiagnosticSamplingInterval
 /** 兼容既有 Buffer 偏好，概览各采集者使用同一白名单和默认值。 */
 export function diagnosticIntervalSeconds(value: unknown): BufferInterval {
-  return bufferIntervals.includes(value as BufferInterval) ? value as BufferInterval : defaultDiagnosticInterval
+  return normalizeDiagnosticSamplingInterval(value)
 }
 
 export const diagnosticTools: DiagnosticTool[] = ['overview', 'jvm', 'sessions', 'mbean', 'logs']
@@ -52,7 +54,7 @@ export function sanitizeDiagnosticPreferences(value: unknown): DiagnosticPrefere
     result.historyRange = { from: Number(value.historyRange.from), to: Number(value.historyRange.to) }
   }
   if (diagnosticTools.includes(value.tool as DiagnosticTool)) result.tool = value.tool as DiagnosticTool
-  if (bufferIntervals.includes(value.bufferIntervalSeconds as BufferInterval)) result.bufferIntervalSeconds = value.bufferIntervalSeconds as BufferInterval
+  if (isDiagnosticSamplingInterval(value.bufferIntervalSeconds) || value.bufferIntervalSeconds === 3) result.bufferIntervalSeconds = diagnosticIntervalSeconds(value.bufferIntervalSeconds)
   if (!object(value.nodes)) return result
   for (const [nodeId, config] of Object.entries(value.nodes).slice(-30)) {
     if (!text(nodeId) || !object(config)) continue
@@ -61,7 +63,7 @@ export function sanitizeDiagnosticPreferences(value: unknown): DiagnosticPrefere
     if (config.jvmTab === 'threads' || config.jvmTab === 'snapshots') node.jvmTab = 'snapshots'
     else if (config.jvmTab === 'memory' || config.jvmTab === 'performance') node.jvmTab = 'performance'
     if (['messages', 'traffic'].includes(String(config.deviceRuntimeMode))) node.deviceRuntimeMode = config.deviceRuntimeMode as DiagnosticNodePreference['deviceRuntimeMode']
-    if (Array.isArray(config.deviceRuntimeSeries)) node.deviceRuntimeSeries = [...new Set(config.deviceRuntimeSeries.filter((id): id is string => typeof id === 'string' && ['sessions', 'upstreamMessages', 'communicationQps', 'propertyReports', 'eventReports', 'receivedBytes', 'sentBytes'].includes(id)))]
+    if (Array.isArray(config.deviceRuntimeSeries)) node.deviceRuntimeSeries = [...new Set(config.deviceRuntimeSeries.filter((id): id is string => typeof id === 'string' && ['sessions', 'upstreamMessages', 'communicationQps', 'propertyReports', 'eventReports', 'receivedBytes', 'sentBytes', 'propertyValues'].includes(id)))]
     if (object(config.deviceRuntimeZoom) && Number.isFinite(config.deviceRuntimeZoom.start) && Number.isFinite(config.deviceRuntimeZoom.end)) {
       const start = Number(config.deviceRuntimeZoom.start), end = Number(config.deviceRuntimeZoom.end)
       if (start >= 0 && end <= 100 && start < end) node.deviceRuntimeZoom = { start, end }

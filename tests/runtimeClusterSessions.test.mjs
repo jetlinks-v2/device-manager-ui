@@ -15,13 +15,14 @@ const raw = (sessions = 0, available = true) => ({ org: {}, 'org.jetlinks': { De
 } } } })
 
 function harness(ids = ['a'], loader = async () => raw(), retainOnPause = false, communicationLoader = async () => ({})) {
-  const cache = new Map(), nodes = vue.ref(ids), enabled = vue.ref(true), scopeKey = vue.ref('alice'), discoveryScope = vue.ref('alice'), interval = vue.ref(3), calls = [], messageCalls = []
+  const cache = new Map(), nodes = vue.ref(ids), enabled = vue.ref(true), scopeKey = vue.ref('alice'), discoveryScope = vue.ref('alice'), interval = vue.ref(2), calls = [], messageCalls = []
   const api = { queryDeviceMessageMBeans: (node, signal) => { messageCalls.push({ node, signal }); return communicationLoader(node, signal) }, querySessionMBeans: (node, signal) => { calls.push({ node, signal }); return loader(node, signal) } }
   function load(path) {
     if (cache.has(path)) return cache.get(path)
     const module = { exports: {} }, { code } = transformSync(readFileSync(path, 'utf8'), { loader: 'ts', format: 'cjs' })
     const imports = id => {
       if (id === 'vue') return vue
+      if (id === '@jetlinks-web-core/components/RuntimeDiagnostics') return load(resolve(import.meta.dirname, '../../../jetlinks-web-core/src/components/RuntimeDiagnostics/samplingInterval.ts'))
       if (id === '@jetlinks-web-core/locales') return { __esModule: true, default: { global: { t: key => key } } }
       if (id === '@jetlinks-web-core/components/RuntimeDiagnostics/utils') return {}
       if (id.endsWith('api/link/diagnostics')) return api
@@ -89,13 +90,13 @@ test('late session responses cannot cross node, discovery, scope, or revoked-per
   } finally { h.effect.stop() }
 })
 
-test('a slow session sample completes before its 3-second successor begins and never overlaps itself', async t => {
+test('a slow session sample completes before its 2-second successor begins and never overlaps itself', async t => {
   t.mock.timers.enable({ apis: ['Date', 'setTimeout'], now: 1000 })
   const pending = [], h = harness(['a'], (node, signal) => new Promise(done => pending.push({ node, signal, done })))
   try {
     assert.equal(pending.length, 1)
     pending[0].done(raw(1)); await flush()
-    t.mock.timers.tick(2999); await flush(); assert.equal(pending.length, 1)
+    t.mock.timers.tick(1999); await flush(); assert.equal(pending.length, 1)
     t.mock.timers.tick(1); await flush(); assert.equal(pending.length, 2)
     t.mock.timers.tick(60000); await flush(); assert.equal(pending.length, 2, 'an unresolved successor cannot overlap with itself')
     pending[1].done(raw(2)); await flush()
@@ -149,11 +150,11 @@ test('session interval changes reschedule from completion without clearing histo
     t.mock.timers.tick(8999); await flush(); assert.equal(pending.length, 1)
     t.mock.timers.tick(1); await flush(); assert.equal(pending.length, 2)
     const first = h.snapshots.value.get('a').history[0]
-    h.interval.value = 3; t.mock.timers.tick(20000); await flush()
+    h.interval.value = 2; t.mock.timers.tick(20000); await flush()
     assert.equal(pending.length, 2); assert.equal(h.calls[1].signal.aborted, false)
     pending[1](raw(2)); await flush()
     assert.deepEqual(h.snapshots.value.get('a').history[0], first)
-    t.mock.timers.tick(2999); await flush(); assert.equal(pending.length, 2)
+    t.mock.timers.tick(1999); await flush(); assert.equal(pending.length, 2)
     t.mock.timers.tick(1); await flush(); assert.equal(pending.length, 3)
     h.interval.value = 60; h.enabled.value = false
     pending[2](raw(99)); await flush()
@@ -161,14 +162,14 @@ test('session interval changes reschedule from completion without clearing histo
   } finally { h.effect.stop() }
 })
 
-test('three-second session sampling retains the complete ten-minute observation window', async t => {
+test('one-second session sampling retains the complete ten-minute observation window', async t => {
   t.mock.timers.enable({ apis: ['Date', 'setTimeout'], now: 1000 })
   const h = harness()
   try {
-    await flush()
-    for (let index = 0; index < 205; index++) { t.mock.timers.tick(3000); await flush() }
+    await flush(); h.interval.value = 1; await flush()
+    for (let index = 0; index < 605; index++) { t.mock.timers.tick(1000); await flush() }
     const history = h.snapshots.value.get('a').history
-    assert.equal(history.length, 201)
+    assert.equal(history.length, 601)
     assert.equal(history.at(-1).timestamp - history[0].timestamp, 600000)
   } finally { h.effect.stop() }
 })

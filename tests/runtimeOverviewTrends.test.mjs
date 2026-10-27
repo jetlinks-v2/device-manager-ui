@@ -17,13 +17,14 @@ const sources = (cache = raw()) => [fulfilled({}), fulfilled(cache), fulfilled({
 const session = (value = '0') => ({ supported: true, state: { status: 'ready', sampledAt: Date.now() }, sessions: value, keepOnline: '0', history: [{ timestamp: Date.now(), value }] })
 
 function harness(loader = async () => sources(), initiallySupported = true) {
-  const modules = new Map(), node = vue.ref('a'), enabled = vue.ref(true), identity = vue.ref('alice:p1'), interval = vue.ref(3), access = vue.ref({ monitor: true, sessions: true })
+  const modules = new Map(), node = vue.ref('a'), enabled = vue.ref(true), identity = vue.ref('alice:p1'), interval = vue.ref(2), access = vue.ref({ monitor: true, sessions: true })
   const snapshots = vue.shallowRef(new Map([['a', { ...session(), supported: initiallySupported === 'unknown' ? undefined : initiallySupported }]])), calls = []
   function load(path) {
     if (modules.has(path)) return modules.get(path)
     const module = { exports: {} }, { code } = transformSync(readFileSync(path, 'utf8'), { loader: 'ts', format: 'cjs' })
     const imports = id => {
       if (id === 'vue') return vue
+      if (id === '@jetlinks-web-core/components/RuntimeDiagnostics') return load(resolve(import.meta.dirname, '../../../jetlinks-web-core/src/components/RuntimeDiagnostics/samplingInterval.ts'))
       if (id.endsWith('useDiagnosticsAccess')) return { useDiagnosticsAccess: () => access }
       if (id.endsWith('useClusterSessions')) return { useClusterSessionContext: () => ({ snapshots }) }
       if (id === '@jetlinks-web-core/locales') return { __esModule: true, default: { global: { t: key => key } } }
@@ -105,7 +106,7 @@ test('3 second cache polling waits after completion, never overlaps, pauses on T
     assert.equal(pending.length, 1)
     t.mock.timers.tick(90000); await flush(); assert.equal(pending.length, 1)
     pending[0].done(sources(raw({ InMemorySize: 1 }))); await flush()
-    t.mock.timers.tick(2999); await flush(); assert.equal(pending.length, 1)
+    t.mock.timers.tick(1999); await flush(); assert.equal(pending.length, 1)
     t.mock.timers.tick(1); await flush(); assert.equal(pending.length, 2)
     h.enabled.value = false; await flush(); assert.equal(pending[1].signal.aborted, true)
     assert.equal(h.view.cache.value.inMemorySize, '1'); assert.equal(h.view.cache.value.history.at(-1).value, undefined)
@@ -125,13 +126,13 @@ test('overview interval updates preserve cache evidence and apply after completi
     h.interval.value = 10
     t.mock.timers.tick(9999); await flush(); assert.equal(pending.length, 1)
     t.mock.timers.tick(1); await flush(); assert.equal(pending.length, 2)
-    h.interval.value = 3
+    h.interval.value = 2
     t.mock.timers.tick(60000); await flush(); assert.equal(pending.length, 2)
     assert.equal(pending[1].signal.aborted, false)
     pending[1].done(sources(raw({ InMemorySize: 2 }))); await flush()
     assert.equal(h.view.cache.value.history.length, 2)
     assert.equal(h.view.cache.value.history[0].value, '1')
-    t.mock.timers.tick(2999); await flush(); assert.equal(pending.length, 2)
+    t.mock.timers.tick(1999); await flush(); assert.equal(pending.length, 2)
     t.mock.timers.tick(1); await flush(); assert.equal(pending.length, 3)
   } finally { h.effect.stop() }
 })
@@ -167,7 +168,7 @@ test('history is limited to ten minutes and bounded under manual refresh; missin
     const { appendGaugeSample, gaugeObservation, gaugePlot } = h.pure
     let history = []
     for (let i = 0; i <= 1000; i++) history = appendGaugeSample(history, i * 1000, String(i))
-    assert.equal(history.length, 256); assert.ok(history.every(point => point.timestamp >= 400000))
+    assert.equal(history.length, 601); assert.ok(history.every(point => point.timestamp >= 400000))
     history = appendGaugeSample(history, 2000000, '1'); assert.equal(history.length, 1); assert.equal(gaugeObservation(history).collecting, true)
     history = appendGaugeSample(history, 2030000, '0'); assert.equal(gaugeObservation(history).change, '-1')
     history = appendGaugeSample(history, 2060000); history = appendGaugeSample(history, 2090000, '10')

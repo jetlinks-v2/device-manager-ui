@@ -1,17 +1,16 @@
 import { computed, onScopeDispose, ref, shallowRef, watch, type Ref } from 'vue'
-import { appendDeviceObservation, deviceObservationSample, deviceObservationColors, deviceObservationMetrics, type DeviceObservationEntry, type DeviceObservationMetric } from '@jetlinks-web-core/components/RuntimeDiagnostics'
+import { appendDeviceObservation, deviceObservationSample, deviceObservationColors, deviceObservationMetrics, defaultDiagnosticSamplingInterval, normalizeDiagnosticSamplingInterval, type DeviceObservationEntry, type DeviceObservationMetric } from '@jetlinks-web-core/components/RuntimeDiagnostics'
 import { queryDeviceSessions } from '../../../../api/link/diagnostics'
 import { normalizeDeviceSessions } from '../../diagnostics/useDeviceSessions'
 import { diagnosticErrorState } from '../../diagnostics/status'
 
 interface ObservationJob { id: string; dueAt: number; finishedAt?: number; controller?: AbortController; halted?: boolean; manual?: boolean }
 interface ObservationPreferences { devices: Array<{ id: string; label: string }>; interval: number; metrics: DeviceObservationMetric[] }
-const intervals = [5, 10, 30, 60]
 const storageKey = (scope: string) => `runtime-device-observation:v1:${scope}`
 
 /** 五设备共享有界调度；每设备完成后计时，暂停保留快照，身份/授权变化清除证据。 */
 export function useDeviceObservation(active: Ref<boolean>, permitted: Ref<boolean>, capability: Ref<boolean>, scope: Ref<string>, supported: Ref<boolean | undefined> = ref(undefined)) {
-  const entries = shallowRef<DeviceObservationEntry[]>([]), interval = ref(5), metrics = ref<DeviceObservationMetric[]>([...deviceObservationMetrics]), paused = ref(false)
+  const entries = shallowRef<DeviceObservationEntry[]>([]), interval = ref<number>(defaultDiagnosticSamplingInterval), metrics = ref<DeviceObservationMetric[]>([...deviceObservationMetrics]), paused = ref(false)
   const jobs = new Map<string, ObservationJob>(), running = new Set<ObservationJob>()
   const readable = computed(() => active.value && permitted.value && capability.value)
   let timer: ReturnType<typeof setTimeout> | undefined, disposed = false, restoring = false
@@ -100,10 +99,10 @@ export function useDeviceObservation(active: Ref<boolean>, permitted: Ref<boolea
     clear()
     if (!permission || !key) return
     restoring = true
-    interval.value = 5; metrics.value = [...deviceObservationMetrics]; paused.value = false
+    interval.value = defaultDiagnosticSamplingInterval; metrics.value = [...deviceObservationMetrics]; paused.value = false
     try {
       const value = JSON.parse(localStorage.getItem(storageKey(key)) || '{}') as Partial<ObservationPreferences>
-      if (intervals.includes(Number(value.interval))) interval.value = Number(value.interval)
+      interval.value = normalizeDiagnosticSamplingInterval(value.interval)
       // 旧单指标偏好保留设备与频率；首次使用多指标布局默认全部显示。
       if (Array.isArray(value.metrics)) metrics.value = deviceObservationMetrics.filter(metric => value.metrics!.includes(metric))
       for (const device of Array.isArray(value.devices) ? value.devices.slice(0, 5) : []) if (typeof device.id === 'string') add(device.id, typeof device.label === 'string' ? device.label : device.id)
@@ -111,7 +110,7 @@ export function useDeviceObservation(active: Ref<boolean>, permitted: Ref<boolea
     finally { restoring = false }
   }, { immediate: true, flush: 'sync' })
   watch(interval, () => {
-    if (!intervals.includes(interval.value)) interval.value = 5
+    interval.value = normalizeDiagnosticSamplingInterval(interval.value)
     for (const job of jobs.values()) if (job.finishedAt !== undefined && !job.manual) job.dueAt = job.finishedAt + interval.value * 1000
     persist(); pump()
   })

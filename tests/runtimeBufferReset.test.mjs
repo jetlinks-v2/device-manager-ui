@@ -28,6 +28,7 @@ function harness(options = {}) {
     new Function('require', 'module', 'exports', code)(id => {
       if (id === 'vue') return { ...vue, onActivated: () => {}, onDeactivated: () => {} }
       if (id === 'vue-router') return { useRoute: () => route, useRouter: () => ({ replace: async value => route.query = value.query }) }
+      if (id === '@jetlinks-web-core/components/RuntimeDiagnostics') return load(resolve(import.meta.dirname, '../../../jetlinks-web-core/src/components/RuntimeDiagnostics/samplingInterval.ts'))
       if (id === '@jetlinks-web-core/locales') return { __esModule: true, default: { global: { t: key => key } } }
       if (id === '@jetlinks-web-core/components/RuntimeDiagnostics/utils') return load(resolve(import.meta.dirname, '../../../jetlinks-web-core/src/components/RuntimeDiagnostics/utils.ts'))
       if (id === '@jetlinks-web-core/hooks/useDiagnosticQuery') return load(resolve(import.meta.dirname, '../../../jetlinks-web-core/src/hooks/useDiagnosticQuery.ts'))
