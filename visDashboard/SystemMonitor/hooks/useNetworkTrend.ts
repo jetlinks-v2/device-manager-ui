@@ -1,4 +1,4 @@
-import { computed, reactive, ref, type Ref } from 'vue'
+import { computed, reactive, ref, watch, type Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSystemMonitorRuntime } from './useSystemMonitorRuntime'
 import { useMonitorHistory } from './useMonitorHistory'
@@ -62,6 +62,23 @@ export function useNetworkTrend(isEdit: Ref<boolean>): TrendView {
   const latestMetric = (nodeId: string) => Math.max(
     ...metricKinds.value.map(kind => latestNetworkValue(nodeId, currentSeries.value[kind] || {} ) ?? -1),
   )
+  const defaultNodes = computed(() => availableNodeIds.value
+    .map(nodeId => ({ nodeId, value: latestMetric(nodeId) }))
+    .filter(node => node.value >= 0)
+    .sort((left, right) => right.value - left.value || left.nodeId.localeCompare(right.nodeId))
+    .slice(0, 5)
+    .map(node => node.nodeId))
+  const canSelectDefaults = () => !isEdit.value && !history.loading.value && !history.error.value
+
+  // 等当前指标的历史请求成功后再选节点；旧缓存仅在漏掉所有有效数据时纠正。
+  // 明确的手动选择（含清空）不被时间切换、刷新或自动推荐覆盖。
+  watch([defaultNodes, history.loading, history.error, runtime.networkFocusMode], () => {
+    if (!canSelectDefaults() || runtime.networkFocusMode.value === 'manual') return
+    if (runtime.networkFocusMode.value === 'legacy'
+      && (!defaultNodes.value.length || selectedNodes.value.some(nodeId => latestMetric(nodeId) >= 0))) return
+    runtime.selectNetworkDefaults(defaultNodes.value)
+  }, { immediate: true })
+
   const nodeOptions = computed(() => availableNodeIds.value.map(nodeId => ({
     label: nodeId,
     value: nodeId,
@@ -78,7 +95,7 @@ export function useNetworkTrend(isEdit: Ref<boolean>): TrendView {
     const connections = activeMetric.value === 'tcpConnections'
     return {
       animationDuration: 240,
-      grid: { left: 70, right: 24, bottom: 44, top: 24 },
+      grid: { left: 70, right: 24, bottom: 26, top: 24 },
       xAxis: traffic
         ? { type: 'category', boundaryGap: false, axisLabel: { hideOverlap: true }, data: ('times' in history.data.value ? history.data.value.times : []) }
         : { type: 'time', boundaryGap: false, axisLabel: { hideOverlap: true } },
@@ -86,10 +103,8 @@ export function useNetworkTrend(isEdit: Ref<boolean>): TrendView {
         type: 'value', min: 0, minInterval: connections ? 1 : undefined,
         axisLabel: { formatter: (value: unknown) => formatter.value(value) },
       },
-      dataZoom: [
-        { type: 'inside', start: history.shortcut.value === 'hour' ? 0 : 70, end: 100 },
-        { type: 'slider', height: 20, bottom: 4, start: history.shortcut.value === 'hour' ? 0 : 70, end: 100 },
-      ],
+      // 时间筛选后展示完整范围，保留图内缩放，不常驻底部缩放条。
+      dataZoom: [{ type: 'inside', start: 0, end: 100 }],
       tooltip: {
         trigger: 'axis',
         formatter: (items: NetworkTooltipItem[]) => renderNetworkMetricTooltip(
@@ -113,14 +128,14 @@ export function useNetworkTrend(isEdit: Ref<boolean>): TrendView {
     title: computed(() => t('components.NetworkTrend.title')),
     activeMetric, metricOptions, metricScope, legendItems, timeRange: history.timeRange, shortcut: history.shortcut,
     disabled: isEdit, loading: history.loading, error: history.error,
-    empty: computed(() => !visibleSeries.value.some(({ nodeId, kind }) => currentSeries.value[kind]?.[nodeId]?._data.length)),
+    empty: computed(() => !visibleSeries.value.some(({ nodeId, kind }) => latestNetworkValue(nodeId, currentSeries.value[kind] || {}) !== undefined)),
     chartOptions, nodeOptions, selectedNodes,
     selectMetric(value: string | number) {
       if (metricOptions.value.some(item => item.value === value)) activeMetric.value = value as NetworkTrendMetric
     },
     selectRange: history.selectRange, selectShortcut: history.selectShortcut, refresh: history.refresh,
     selectNodes: (values: string[]) => runtime.selectNodes('network', values),
-    resetNodes: () => runtime.selectNodes('network', runtime.defaultNodes.value),
+    resetNodes: () => runtime.selectNetworkDefaults(canSelectDefaults() ? defaultNodes.value : []),
   })
   return view
 }

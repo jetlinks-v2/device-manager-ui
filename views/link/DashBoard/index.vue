@@ -18,7 +18,12 @@ const { catalog, loading, errors, reload, dashboard } = useInfrastructureDashboa
 .infrastructure-dashboard { width: 100%; min-width: 0; padding-bottom: var(--space-4, 16px); }
 .infrastructure-dashboard__state { min-height: 30rem; display: grid; place-items: center; }
 .infrastructure-dashboard :deep(.dashboard-card-layout),
-.infrastructure-dashboard :deep(.dashboard-card-content) { height: auto; overflow: visible; }
+.infrastructure-dashboard :deep(.dashboard-card-content) {
+  height: auto;
+  /* 网格负 margin 贴齐卡片边缘；横向裁切避免撑宽整页，纵向仍由页面滚动。 */
+  overflow-x: clip;
+  overflow-y: visible;
+}
 .infrastructure-dashboard :deep(.dashboard-card-content) { scrollbar-gutter: auto; }
 .infrastructure-dashboard :deep(.dashboard-grid) { min-height: 0; }
 </style>

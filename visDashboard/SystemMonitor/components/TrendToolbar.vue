@@ -7,19 +7,32 @@
       </a-tooltip>
     </div>
     <div class="trend-controls__time">
-      <a-range-picker :value="view.timeRange" :allow-clear="false" :disabled="view.disabled"
-        :show-time="{ format: 'HH:mm:ss' }" format="YYYY-MM-DD HH:mm:ss" @change="view.selectRange">
-        <template #suffixIcon><AIcon type="CalendarOutlined" /></template>
-        <template #renderExtraFooter>
-          <a-radio-group :value="view.shortcut" button-style="solid" size="small" @update:value="view.selectShortcut">
-            <a-radio-button value="hour">{{ $t('components.MonitorTrend.lastHour') }}</a-radio-button>
-            <a-radio-button value="day">{{ $t('components.MonitorTrend.lastDay') }}</a-radio-button>
-            <a-radio-button value="week">{{ $t('components.MonitorTrend.lastWeek') }}</a-radio-button>
-          </a-radio-group>
+      <a-popover :open="open" trigger="click" placement="bottomRight" @open-change="setOpen">
+        <template #content>
+          <div class="trend-time-panel" @keydown.esc.stop="setOpen(false)">
+            <a-segmented class="trend-controls__switch trend-time-panel__shortcuts" :value="view.shortcut ?? ''" :options="shortcuts" :disabled="view.disabled" @change="selectShortcut" />
+            <div class="trend-time-panel__label">{{ t('components.MonitorTrend.customRange') }}</div>
+            <a-range-picker :value="draft" :disabled="view.disabled" :allow-clear="true"
+              :show-time="{ format: 'HH:mm:ss' }" format="YYYY-MM-DD HH:mm:ss"
+              :placeholder="[t('components.MonitorTrend.startTime'), t('components.MonitorTrend.endTime')]"
+              :get-popup-container="rangeContainer" popup-class-name="system-monitor-range-dropdown" @change="setDraft">
+              <template #suffixIcon><AIcon type="CalendarOutlined" /></template>
+            </a-range-picker>
+            <p v-if="error" class="trend-time-panel__error" role="alert">{{ error }}</p>
+            <div class="trend-time-panel__actions">
+              <a-button size="small" @click="setOpen(false)">{{ t('components.MonitorTrend.cancel') }}</a-button>
+              <a-button type="primary" size="small" :disabled="view.disabled" @click="apply">{{ t('components.MonitorTrend.apply') }}</a-button>
+            </div>
+          </div>
         </template>
-      </a-range-picker>
-      <a-tooltip :title="$t('components.MonitorRefresh.button')">
-        <a-button type="text" :loading="view.loading" :disabled="view.disabled" :aria-label="$t('components.MonitorRefresh.button')" @click="view.refresh">
+        <a-button class="trend-controls__range" type="text" size="small" :disabled="view.disabled"
+          :aria-label="t('components.MonitorTrend.rangeFor', [view.title])" :aria-expanded="open" aria-haspopup="dialog" @keydown.esc="setOpen(false)">
+          <AIcon type="CalendarOutlined" /> {{ label }}
+        </a-button>
+      </a-popover>
+      <a-tooltip :title="t('components.MonitorRefresh.button')">
+        <a-button type="text" :loading="view.loading" :disabled="view.disabled"
+          :aria-label="t('components.MonitorTrend.refreshFor', [view.title])" @click="view.refresh">
           <template #icon><AIcon type="ReloadOutlined" /></template>
         </a-button>
       </a-tooltip>
@@ -28,22 +41,42 @@
 </template>
 <script setup lang="ts">
 import type { PropType } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { TrendView } from '../types'
-defineProps({ view: { type: Object as PropType<TrendView>, required: true } })
+import { useTrendTimeControls } from '../hooks/useTrendTimeControls'
+const props = defineProps({ view: { type: Object as PropType<TrendView>, required: true } })
+const { t } = useI18n()
+const { open, draft, error, shortcuts, label, setOpen, setDraft, selectShortcut, apply } = useTrendTimeControls(() => props.view)
+// 日期选择面板挂在当前浮层内，选择日期不会被外层 Popover 当作外部点击。
+const rangeContainer = (trigger: HTMLElement) => trigger.closest<HTMLElement>('.trend-time-panel') ?? trigger.parentElement!
 </script>
 <style scoped>
-.trend-controls { display: flex; flex: 1 1 auto; align-items: center; flex-wrap: wrap; gap: var(--space-3, 12px); min-width: 0; }
+.trend-controls { display: flex; flex: 1 1 auto; align-items: center; flex-wrap: wrap; gap: var(--space-2, 8px); min-width: 0; }
 .trend-controls__metric { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2, 8px); min-width: 0; }
-.trend-controls__switch.ant-segmented { max-width: 100%; overflow-x: auto; padding: 2px; border-radius: 4px; background: #F2F3F5; color: #4E5969; font-size: 12px; }
+.trend-controls__switch.ant-segmented { max-width: 100%; overflow-x: auto; padding: 2px; border-radius: 4px; background: var(--bg-2, #f2f3f5); color: var(--ink-2, #4e5969); font-size: 12px; }
 .trend-controls__switch :deep(.ant-segmented-group) { gap: 2px; }
 .trend-controls__switch :deep(.ant-segmented-item) { border-radius: 3px; transition: color .2s; }
-.trend-controls__switch :deep(.ant-segmented-item-label) { min-height: 22px; padding: 2px 10px; line-height: 18px; font-size: 12px; font-weight: 400; }
-.trend-controls__switch :deep(.ant-segmented-item-selected),
-.trend-controls__switch :deep(.ant-segmented-thumb) { border-radius: 3px; background: #fff; color: #165DFF; font-weight: 500; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08); }
-.trend-controls__switch :deep(.ant-segmented-item:hover:not(.ant-segmented-item-selected)) { color: #1D2129; }
-.trend-controls__switch :deep(.ant-segmented-item:has(input:focus-visible)) { outline: 2px solid #1677ff; outline-offset: -1px; }
-.trend-controls__scope { color: var(--ink-3); font-size: 12px; white-space: nowrap; cursor: help; }
-.trend-controls__time { display: flex; align-items: center; gap: var(--space-2, 8px); margin-left: auto; min-width: 0; flex: 0 1 430px; }
-.trend-controls__time :deep(.ant-picker) { flex: 1; min-width: 0; }
-.trend-controls__time :deep(.ant-btn) { flex: none; }
+.trend-controls__switch :deep(.ant-segmented-item-label) { min-height: 22px; padding: 2px 8px; line-height: 18px; font-size: 12px; font-weight: 400; }
+.trend-controls__switch :deep(.ant-segmented-item-selected), .trend-controls__switch :deep(.ant-segmented-thumb) { border-radius: 3px; background: var(--bg, #fff); color: var(--primary-color, #165dff); font-weight: 500; box-shadow: 0 1px 2px rgb(0 0 0 / 8%); }
+.trend-controls__switch :deep(.ant-segmented-item:has(input:focus-visible)) { outline: 2px solid var(--primary-color, #1677ff); outline-offset: -1px; }
+.trend-controls__scope { color: var(--ink-3, #86909c); font-size: 12px; white-space: nowrap; cursor: help; }
+.trend-controls__time { display: flex; align-items: center; gap: 4px; margin-left: auto; flex: none; }
+.trend-controls__range { background: var(--primary-1, #eef5ff); color: var(--primary-color, #1677ff); border-radius: 4px; font-size: 12px; }
+.trend-time-panel { position: relative; width: min(360px, calc(100vw - 64px)); color: var(--ink-1, #1d2129); }
+.trend-time-panel__shortcuts { width: 100%; }
+.trend-time-panel__shortcuts :deep(.ant-segmented-group) { display: flex; }
+.trend-time-panel__shortcuts :deep(.ant-segmented-item) { flex: 1; text-align: center; }
+.trend-time-panel__label { margin: 12px 0 8px; color: var(--ink-3, #86909c); font-size: 12px; }
+.trend-time-panel :deep(.ant-picker-range) { width: 100%; }
+.trend-time-panel__error { color: var(--danger-color, #ff4d4f); font-size: 12px; margin: 8px 0 0; }
+.trend-time-panel__actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+</style>
+<style>
+@media (max-width: 640px) {
+  .system-monitor-range-dropdown .ant-picker-panel-container { max-width: calc(100vw - 32px); max-height: calc(100vh - 80px); overflow: auto; }
+  .system-monitor-range-dropdown .ant-picker-datetime-panel { flex-direction: column; }
+  .system-monitor-range-dropdown .ant-picker-time-panel { border-left: 0; border-top: 1px solid var(--line, #f0f0f0); }
+  .system-monitor-range-dropdown .ant-picker-time-panel-column { height: 144px; }
+  .system-monitor-range-dropdown .ant-picker-panels { flex-wrap: wrap; }
+}
 </style>

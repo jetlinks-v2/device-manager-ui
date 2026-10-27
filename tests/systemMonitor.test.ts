@@ -73,7 +73,9 @@ test('dashboard widgets share one live owner and independently persist focus', a
     assert.equal(children[0].topologyVersion.value, 1)
     assert.deepEqual(children[0].selectedNodes.cpu, [])
     assert.ok(!children[0].selectedNodes.memory.includes('b'))
-    assert.deepEqual(readFocusedNodes(storage), JSON.parse(storage.getItem(FOCUSED_NODES_STORAGE_KEY)!))
+    const { networkMode, ...saved } = JSON.parse(storage.getItem(FOCUSED_NODES_STORAGE_KEY)!)
+    assert.equal(networkMode, 'auto')
+    assert.deepEqual(readFocusedNodes(storage), saved)
   } finally { app.unmount() }
   assert.equal(source.released, 1)
   source.observers[0].next(samples('stale'))
