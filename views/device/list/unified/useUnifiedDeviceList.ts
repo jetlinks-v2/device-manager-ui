@@ -108,15 +108,20 @@ export function useUnifiedDeviceList() {
       let data = result.data.map(device => ({ ...device, category: '' } as UnifiedDevice))
       data.forEach(device => { device.category = classify(device) })
       // 时间列只在全部分类显示，按当前页 ID 批量补齐真实上报时间，关闭无关告警聚合。
+      const selectedProvider = activeProvider.value
+      // 补齐字段只服务当前分类；“全部设备”不能因未打开的视频或网关扩展发起额外查询。
+      const enrichment = selectedProvider?.enrich
+        ? selectedProvider.enrich(data.filter(device => device.category === selectedProvider.id))
+        : Promise.resolve<UnifiedDevice[]>([])
       const [enriched, runtime] = await Promise.all([
-        Promise.all(providers.value.filter(provider => provider.enrich).map(async provider => provider.enrich!(data.filter(device => device.category === provider.id)))),
+        enrichment,
         activeType.value === 'all' && data.length ? queryRuntimeDevices_api({
           pageIndex: 0, pageSize: data.length,
           terms: [{ column: 'id', termType: 'in', value: data.map(device => device.id) }],
           withAlarmInfo: false,
         }, baseTerms.value) : undefined,
       ])
-      const extras = new Map(enriched.flat().map(device => [device.id, device]))
+      const extras = new Map(enriched.map(device => [device.id, device]))
       const reportTimes = new Map(runtime?.data.map(device => [device.id, device.lastReportTime]))
       data = data.map(device => ({ ...(extras.get(device.id) || device), lastReportTime: reportTimes.get(device.id) }))
       if (version !== requestVersion) return

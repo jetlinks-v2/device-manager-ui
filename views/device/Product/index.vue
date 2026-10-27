@@ -315,7 +315,7 @@ const batchActions = computed(() => {
       key: 'resource-package-import',
       text: $t('Product.resourcePackage.001-0'),
       icon: 'FolderOpenOutlined',
-      permission: 'device/Product:import',
+      permission: 'device/Product:resource-package-import',
       onClick: () => resourcePackageRef.value?.show(),
     },
     {

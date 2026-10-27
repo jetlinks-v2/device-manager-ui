@@ -1,7 +1,8 @@
 import { computed, nextTick, onMounted, onScopeDispose, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
-import { useAuthStore, useMenuStore } from '@jetlinks-web-core/store'
+import { useAuthStore, useMenuStore, useSystemStore } from '@jetlinks-web-core/store'
+import { isNoCommunity } from '@jetlinks-web-core/utils/utils'
 import { EventEmitter, onlyMessage } from '@jetlinks-web/utils'
 import useClipboard from 'vue-clipboard3'
 import {
@@ -93,6 +94,7 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
   const route = useRoute()
   const deviceMenu = useMenuStore()
   const auth = useAuthStore()
+  const { showThreshold } = useSystemStore()
   const router = useRouter()
   const { t: $t } = useI18n()
   const { toClipboard } = useClipboard()
@@ -996,6 +998,10 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
   const connectionCount = computed(() => getDeviceConnectionCount(device.value))
   const recordsCount = computed(() => (device.value?.alarms.length ?? 0) + (device.value?.logs.length ?? 0))
   const advancedCount = computed(() => deviceCommands.value.length + healthConnectionRules.value.length + healthDeviationProperties.value.length + (isGatewayDevice.value ? childDeviceCount.value : 0))
+  // 无效数据与物模型阈值配置同属预处理能力，保持两处入口的可见条件一致。
+  const canViewInvalidData = computed(() =>
+    isNoCommunity && showThreshold,
+  )
 
   const tabOptions = computed<Array<{ key: DeviceDetailTab; label: string; icon: string; count?: number }>>(() => [
     { key: 'overview', label: $t('IotDeviceDetail.detail.tab.overview'), icon: 'AppstoreOutlined' },
@@ -1004,6 +1010,7 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
     { key: 'commands', label: $t('IotDeviceDetail.detail.tab.commands'), icon: 'CodeOutlined' },
     { key: 'data', label: $t('IotDeviceDetail.detail.tab.data'), icon: 'LineChartOutlined' },
     { key: 'alarm', label: $t('DeviceAlarm.title.page'), icon: 'AlertOutlined' },
+    ...(canViewInvalidData.value ? [{ key: 'invalid' as const, label: $t('Detail.index.957187-29'), icon: 'FileTextOutlined' }] : []),
     { key: 'logs', label: $t('IotDeviceDetail.detail.tab.logs'), icon: 'FileTextOutlined' },
     ...extensionTabs.value.map(tab => ({ key: tab.key, label: tab.label(), icon: tab.icon })),
   ])
