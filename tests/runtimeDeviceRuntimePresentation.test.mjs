@@ -20,7 +20,7 @@ function load(filename){
   if(id==='vue')return vue
   if(id==='vue-i18n')return {useI18n:()=>({t,locale:vue.ref('zh')})}
   if(id==='ant-design-vue')return {Button:vue.defineComponent({setup:(_,ctx)=>()=>{buttons.push(ctx.attrs);return vue.h('button',ctx.attrs,ctx.slots.default?.())}}),theme:{useToken:()=>({token:vue.ref({})})}}
-  if(id==='@ant-design/icons-vue')return {InfoCircleOutlined:vue.defineComponent({setup:(_,ctx)=>()=>vue.h('span',ctx.attrs)}),ArrowRightOutlined:empty,LinkOutlined:empty,UploadOutlined:empty,DownloadOutlined:empty,DatabaseOutlined:empty,ApiOutlined:empty}
+  if(id==='@ant-design/icons-vue')return {InfoCircleOutlined:vue.defineComponent({setup:(_,ctx)=>()=>vue.h('span',ctx.attrs)}),ArrowRightOutlined:empty,LinkOutlined:empty,UploadOutlined:empty,DownloadOutlined:empty,DatabaseOutlined:empty,ApiOutlined:empty,LineChartOutlined:empty,DownOutlined:empty,LoadingOutlined:empty,RollbackOutlined:empty,AimOutlined:empty,WarningOutlined:empty}
   if(id==='echarts/charts')return {LineChart:{}}
   if(id==='echarts/components')return {GridComponent:{},TooltipComponent:{},LegendComponent:{},DataZoomComponent:{}}
   if(id.endsWith('/Echarts/Echarts.vue'))return {__esModule:true,default:chart}
@@ -30,7 +30,7 @@ function load(filename){
 const Component=load(resolve(root,'views/link/diagnostics/overview/DeviceRuntimeTrend.vue')).default
 const session={key:'sessions',history:[{timestamp:4000,value:'12'},{timestamp:7000,value:'14'}],state:{status:'ready',sampledAt:7000},retainedValue:'14',facts:[],details:'session'}
 const communication={supported:true,state:{status:'ready',sampledAt:7700},history:[{timestamp:4700,startTime:'1000',counters:{upstreamMessages:'9007199254740993',receivedBytes:'1000',sentBytes:'0',propertyReports:'0',propertyValues:'0',eventReports:'0',receivedPackets:'9007199254740993',sentPackets:'0'},qps:{ready:true,timestamp:4500,windowMillis:1000,sequence:'45',values:{receivedQps:8,sentQps:2,communicationQps:10}}},{timestamp:7700,startTime:'1000',counters:{upstreamMessages:'9007199254741002',receivedBytes:'4072',sentBytes:'0',propertyReports:'6',propertyValues:'12',eventReports:'3',receivedPackets:'9007199254741005',sentPackets:'3'},qps:{ready:true,timestamp:7500,windowMillis:1000,sequence:'75',values:{receivedQps:17,sentQps:5,communicationQps:22}}}]}
-async function render(props){received.length=0;buttons.length=0;const app=vue.createSSRApp(Component,props);for(const name of ['a-button','a-tooltip','a-segmented'])app.component(name,{setup:(_,ctx)=>()=>vue.h('span',{'data-control':name},ctx.slots.default?.())});const html=await renderToString(app);return{html,chart:received.at(-1),buttons:[...buttons]}}
+async function render(props){received.length=0;buttons.length=0;const app=vue.createSSRApp(Component,props);for(const name of ['a-button','a-tooltip','a-segmented','a-popover'])app.component(name,{setup:(_,ctx)=>()=>vue.h('span',{'data-control':name},ctx.slots.default?.())});const html=await renderToString(app);return{html,chart:received.at(-1),buttons:[...buttons]}}
 test('recorded chart uses the node timezone and its own freshness, independently of live QPS',async()=>{
  const timestamp=Date.UTC(2026,9,26,1,0,1),values={Communication:12,ReceivedPackets:10,SentPackets:2,UpstreamMessages:4,PropertyReports:3,PropertyValues:8,EventReports:1,ReceivedBytes:1024,SentBytes:64}
  const data={generation:'42',statisticsStartTime:timestamp-60000,sampledAt:timestamp,firstSequence:0,endSequence:60,zoneId:'Asia/Tokyo',todayStartTime:timestamp-3600000,hourPeaks:[],todayPeaks:[],points:[{timestamp:timestamp-1000,sequence:58,values},{timestamp,sequence:59,values}]}
@@ -61,12 +61,12 @@ test('first snapshot displays waiting, zero is a real rate, and tooltip preserve
  const tooltip=options.tooltip.formatter([{axisValue:7700,seriesId:'upstreamMessages',data:m}])
  assert.ok(tooltip.includes(BigInt(exact).toLocaleString()));assert.ok(tooltip.includes(sampleTime(7000)));assert.ok(tooltip.includes(sampleTime(7700)))
 })
-test('mode keeps stable series identities, traffic uses bytes/s, and legend empty selection plus zoom emit bounded preferences',async()=>{
+test('empty legend selection hides all unit axes and zoom emits bounded preferences',async()=>{
  const patches=[],view=await render({session,communication,config:{deviceRuntimeMode:'traffic',deviceRuntimeSeries:[]},onConfigure:value=>patches.push(value)})
- const option=view.chart.option;assert.equal(option.yAxis[1].name,'');assert.match(view.html,/右轴：流量（B\/s）/);assert.equal(option.series.length,8)
- assert.deepEqual(option.series.find(item=>item.id==='upstreamMessages').data,[]);assert.equal(option.series.find(item=>item.id==='receivedBytes').data[1].value[1],1024)
+ const option=view.chart.option;assert.ok(option.yAxis.every(axis=>!axis.show));assert.equal(option.series.length,8)
+ assert.equal(option.series.find(item=>item.id==='receivedBytes').data[1].value[1],1024)
  assert.ok(Object.values(option.legend.selected).every(selected=>selected===false))
- view.chart.events.legendselectchanged({selected:{会话记录:false,接收:false,发送:false}});assert.deepEqual(patches.at(-1),{deviceRuntimeSeries:[],deviceRuntimeMode:'traffic'})
+ view.chart.events.legendselectchanged({selected:{会话记录:false,接收流量:false,发送流量:false}});assert.deepEqual(patches.at(-1),{deviceRuntimeSeries:[]})
  view.chart.events.datazoom({batch:[{start:20,end:80}]});assert.deepEqual(patches.at(-1),{deviceRuntimeZoom:{start:20,end:80}})
  assert.equal(option.dataZoom[0].zoomOnMouseWheel,'ctrl');assert.equal(option.animation,false)
 })
@@ -85,7 +85,7 @@ test('QPS adds a third default message curve, keeps raw packet units and directi
  const qps=view.chart.option.series.find(item=>item.id==='communicationQps');assert.equal(qps.data[1].value[1],22)
  const tooltip=view.chart.option.tooltip.formatter([{seriesId:'communicationQps',data:qps.data[1]}]).replace(/<[^>]+>/g,' ');assert.match(tooltip,/22 次\/s/);assert.match(tooltip,/接收\s+17/);assert.match(tooltip,/发送\s+5/)
  view=await render({session,communication,config:{deviceRuntimeMode:'traffic'}})
- assert.deepEqual(view.chart.option.series.find(item=>item.id==='communicationQps').data,[]);assert.match(view.html,/通信/);assert.match(view.html,/>22<\/b>/)
+ assert.equal(view.chart.option.legend.selected['通信 QPS'],false);assert.equal(view.chart.option.yAxis[1].show,false);assert.equal(view.chart.option.yAxis[2].show,true);assert.match(view.html,/右轴：流量（B\/s）/);assert.match(view.html,/通信/);assert.match(view.html,/>22<\/b>/)
 })
 test('tooltip groups only equal source timestamps and keeps subordinate values, full units and stale markers',async()=>{
  const view=await render({session:{...session,state:{status:'stale',sampledAt:7000}},communication}),option=view.chart.option
@@ -125,15 +125,24 @@ test('QPS geometry uses its own source time, repeats no source points and compac
  const tooltip=view.chart.option.tooltip.formatter([{seriesId:'communicationQps',data:points[1]}]);assert.match(tooltip,/采样窗口 1秒/);assert.ok(tooltip.includes(sampleTime(7500)))
 })
 
-test('all metrics off stays explicit and recoverable, missing selected metrics explain the gap, and traffic legend changes one unit axis',async()=>{
+test('legends freely combine message and traffic curves, persist across samples, and recover from all-off',async()=>{
  let patches=[],view=await render({session,communication,config:{deviceRuntimeSeries:[]},onConfigure:patch=>patches.push(patch)})
  assert.match(view.html,/未选择指标/);assert.match(view.html,/恢复默认/);assert.doesNotMatch(view.html,/data-control="a-segmented"/)
  view.chart.events.legendselectchanged({name:'接收流量',selected:{会话记录:false,上行消息:false,'通信 QPS':false,属性上报:false,事件上报:false,接收流量:true,发送流量:false}})
- assert.equal(patches.at(-1).deviceRuntimeMode,'traffic');assert.ok(patches.at(-1).deviceRuntimeSeries.includes('receivedBytes'))
+ assert.deepEqual(patches.at(-1),{deviceRuntimeSeries:['receivedBytes']})
  view=await render({session,communication,config:{deviceRuntimeMode:'traffic',deviceRuntimeSeries:['sessions','receivedBytes']},onConfigure:patch=>patches.push(patch)})
- assert.ok(view.chart.option.legend.data.includes('上行消息'),'message legend remains a return path')
+ assert.ok(view.chart.option.legend.data.includes('上行消息'))
  view.chart.events.legendselectchanged({name:'上行消息',selected:{会话记录:true,上行消息:true,'通信 QPS':false,属性上报:false,事件上报:false,接收流量:true,发送流量:false}})
- assert.equal(patches.at(-1).deviceRuntimeMode,'messages')
+ assert.deepEqual(patches.at(-1),{deviceRuntimeSeries:['sessions','receivedBytes','upstreamMessages']})
+ const config={deviceRuntimeMode:'traffic',...patches.at(-1)}
+ view=await render({session,communication,config})
+ assert.deepEqual(view.chart.option.yAxis.map(axis=>axis.show),[true,true,true])
+ assert.equal(view.chart.option.legend.selected['上行消息'],true);assert.equal(view.chart.option.legend.selected['接收流量'],true)
+ assert.match(view.html,/右外轴：流量（B\/s）/)
+ assert.equal(view.chart.option.series.find(series=>series.id==='receivedBytes').yAxisIndex,2)
+ assert.equal(view.chart.option.series.find(series=>series.id==='upstreamMessages').yAxisIndex,1)
+ view=await render({session,communication:{...communication,history:[...communication.history,{...communication.history[1],timestamp:10700}]},config})
+ assert.equal(view.chart.option.legend.selected['上行消息'],true);assert.equal(view.chart.option.legend.selected['接收流量'],true)
  const missing={...communication,history:communication.history.map(point=>({...point,counters:{upstreamMessages:point.counters.upstreamMessages}}))}
  view=await render({communication:missing,config:{deviceRuntimeSeries:['propertyReports']}});assert.match(view.html,/暂无有效采样/)
  assert.ok(240-view.chart.option.grid.top-view.chart.option.grid.bottom>=145)

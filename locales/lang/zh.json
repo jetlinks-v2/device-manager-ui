@@ -20,6 +20,7 @@
   "RuntimeMonitor.deviceRuntimeAxisMetric": "{metric}（{unit}）",
   "RuntimeMonitor.deviceRuntimeLeftAxis": "左轴：{metrics}",
   "RuntimeMonitor.deviceRuntimeRightAxis": "右轴：{metrics}",
+  "RuntimeMonitor.deviceRuntimeOuterAxis": "右外轴：{metrics}",
   "RuntimeMonitor.deviceRuntime": "设备运行",
   "RuntimeMonitor.deviceRuntimeHelp": "设备会话是本节点持有的会话记录，并非去重在线设备数。通信 QPS 是网关每秒收发的原始报文次数；上行消息是成功解码后的消息条数，包含属性、事件等业务消息。趋势保留本页近10分钟采样。",
   "RuntimeMonitor.deviceRuntimeSessions": "会话记录",

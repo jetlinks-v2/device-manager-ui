@@ -20,6 +20,7 @@
   "RuntimeMonitor.deviceRuntimeAxisMetric": "{metric} ({unit})",
   "RuntimeMonitor.deviceRuntimeLeftAxis": "Left axis: {metrics}",
   "RuntimeMonitor.deviceRuntimeRightAxis": "Right axis: {metrics}",
+  "RuntimeMonitor.deviceRuntimeOuterAxis": "Outer right axis: {metrics}",
   "RuntimeMonitor.deviceRuntime": "Device runtime",
   "RuntimeMonitor.deviceRuntimeHelp": "Sessions are records held by this node, not a unique online-device count. Communication QPS counts raw gateway packets sent and received each second. Upstream messages are decoded messages, including property reports, events and other business messages. The trend keeps this page’s last 10 minutes of samples.",
   "RuntimeMonitor.deviceRuntimeSessions": "Session records",
