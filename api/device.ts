@@ -771,7 +771,7 @@ export interface DeviceProductCategoryTreeStatistics {
  */
 export const queryDeviceProductCategoryTree_api = async (): Promise<DeviceProductCategoryTreeStatistics> => {
   const context = getProjectRuntimeContext(true)
-  const response = await request.post('/device/category/_tree/_statistics', {
+  const response = await request.post('/device/category/detail/_query/tree', {
     paging: false,
     sorts: [{ name: 'sortIndex', order: 'asc' }],
   }, withProjectRuntimeRequest(context)) as ApiResponse<DeviceProductCategoryTreeStatistics>

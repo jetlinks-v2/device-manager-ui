@@ -19,7 +19,7 @@ export const queryTree = (params?: Record<string, any>, config?: Record<string, 
 
 /** 查询当前用户可见产品的分类树及各分类范围数量。 */
 export const queryTreeStatistics = (params?: Record<string, any>) =>
-  request.post<ProductCategoryTreeStatistics>('/device/category/_tree/_statistics', params)
+  request.post<ProductCategoryTreeStatistics>('/device/category/detail/_query/tree', params)
 
 /**
  * 保存树形数据
