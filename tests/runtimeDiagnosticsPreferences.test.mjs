@@ -31,6 +31,13 @@ test('browser preferences only retain bounded display settings', () => {
   assert.deepEqual(pure.sanitizeDiagnosticPreferences({ version: 0, nodeId: 'old' }), pure.emptyDiagnosticPreferences())
 })
 
+test('history preferences preserve relative duration explicitly and keep legacy absolute ranges fixed', () => {
+  const base = { version: 1, nodes: {}, historyRange: { from: 1000, to: 3601000 } }
+  assert.deepEqual(pure.sanitizeDiagnosticPreferences(base).historyRange, base.historyRange)
+  for (const seconds of [900, 3600, 21600, 86400]) assert.deepEqual(pure.sanitizeDiagnosticPreferences({ ...base, historyRange: { ...base.historyRange, relativeSeconds: seconds } }).historyRange, { ...base.historyRange, relativeSeconds: seconds })
+  for (const seconds of [0, -1, 86401, 1.5, '3600', null, NaN, Infinity]) assert.deepEqual(pure.sanitizeDiagnosticPreferences({ ...base, historyRange: { ...base.historyRange, relativeSeconds: seconds } }).historyRange, base.historyRange)
+})
+
 test('accounts and projects isolate restore, logout clears memory and disabled storage degrades', () => {
   const cache = new Map(), identity = vue.ref({ accountId: 'alice', projectId: 'p1' })
   const storage = { getItem: key => cache.get(key), setItem: (key, value) => cache.set(key, value), removeItem: key => cache.delete(key) }

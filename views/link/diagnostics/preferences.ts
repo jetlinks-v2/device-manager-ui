@@ -21,7 +21,7 @@ export interface DiagnosticPreferences {
   version: 1
   nodeId?: string
   tool?: DiagnosticTool
-  historyRange?: { from: number; to: number }
+  historyRange?: { from: number; to: number; relativeSeconds?: number }
   bufferIntervalSeconds?: BufferInterval
   nodes: Record<string, DiagnosticNodePreference>
 }
@@ -52,6 +52,7 @@ export function sanitizeDiagnosticPreferences(value: unknown): DiagnosticPrefere
   if (text(value.nodeId)) result.nodeId = value.nodeId
   if (object(value.historyRange) && Number.isFinite(value.historyRange.from) && Number.isFinite(value.historyRange.to) && Number(value.historyRange.to) > Number(value.historyRange.from)) {
     result.historyRange = { from: Number(value.historyRange.from), to: Number(value.historyRange.to) }
+    if (Number.isSafeInteger(value.historyRange.relativeSeconds) && Number(value.historyRange.relativeSeconds) > 0 && Number(value.historyRange.relativeSeconds) <= 86400) result.historyRange.relativeSeconds = Number(value.historyRange.relativeSeconds)
   }
   if (diagnosticTools.includes(value.tool as DiagnosticTool)) result.tool = value.tool as DiagnosticTool
   if (isDiagnosticSamplingInterval(value.bufferIntervalSeconds) || value.bufferIntervalSeconds === 3) result.bufferIntervalSeconds = diagnosticIntervalSeconds(value.bufferIntervalSeconds)

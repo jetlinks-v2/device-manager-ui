@@ -15,7 +15,8 @@ const runtime = (startTime = 100000, uptime = 60000) => ({ 'java.lang': { Runtim
 function harness(options = {}) {
   const sessions = { snapshots: vue.shallowRef(new Map()), refresh: node => calls.push({ kind: 'session-refresh', node }) }
   const cluster = { snapshots: vue.shallowRef(new Map()), refresh: node => calls.push({ kind: 'buffer-refresh', node }) }
-  const cache = new Map(), calls = [], activations = [], deactivations = []
+  const cache = new Map(), calls = [], activations = [], deactivations = [], preferenceWrites = []
+  const preferences = { value: vue.ref({ nodes: {}, historyRange: options.historyRange }), update: patch => { preferenceWrites.push(patch); preferences.value.value = { ...preferences.value.value, ...patch } } }
   let monotonic = 0
   const connection = vue.ref(false), header = vue.ref(true)
   const node = vue.ref('node-a'), enabled = vue.ref(options.enabled ?? true), identity = vue.ref('alice:p1'), access = vue.ref({ query: true, monitor: true })
@@ -35,7 +36,7 @@ function harness(options = {}) {
       if (id.endsWith('useClusterSessions')) return { useClusterSessionContext: () => sessions }
       if (id.endsWith('useClusterBuffers')) return { useClusterBufferContext: () => cluster }
       if (id.endsWith('useDiagnosticsAccess')) return { useDiagnosticsAccess: () => access }
-      if (id.endsWith('useDiagnosticPreferences')) return { useDiagnosticPreferences: () => ({ value: vue.ref({ nodes: {} }), update() {} }) }
+      if (id.endsWith('useDiagnosticPreferences')) return { useDiagnosticPreferences: () => preferences }
       return id.startsWith('.') ? load(resolve(dirname(path), `${id}.ts`)) : require(id)
     }
     new Function('require', 'module', 'exports', 'performance', code)(imports, module, module.exports, { now: () => monotonic })
@@ -43,8 +44,65 @@ function harness(options = {}) {
   }
   const module = load(resolve(import.meta.dirname, '../views/link/diagnostics/useNodeMetrics.ts')), scope = vue.effectScope()
   const view = scope.run(() => module.useNodeMetrics(node, enabled, identity, connection, header))
-  return { view, scope, node, enabled, identity, access, api, calls, cluster, sessions, connection, header, advance: value => monotonic += value, activations, deactivations }
+  return { view, scope, node, enabled, identity, access, api, calls, cluster, sessions, connection, header, advance: value => monotonic += value, activations, deactivations, preferenceWrites }
 }
+
+test('the default history window advances to now once per refresh and reactivation without persisting fixed timestamps', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'], now: 1800000000000 })
+  const h = harness(), historyCalls = () => h.calls.filter(call => call.kind === 'history')
+  const assertCurrent = () => assert.deepEqual(historyCalls().at(-1).range.map(date => date.valueOf()), [Date.now() - 3600000, Date.now()])
+  try {
+    await flush(); assertCurrent(); assert.equal(historyCalls().length, 1)
+    t.mock.timers.tick(120000); await flush(); assert.equal(historyCalls().length, 1, 'no history polling is introduced')
+    h.view.refresh(); await flush(); assertCurrent(); assert.equal(historyCalls().length, 2, 'updating the default range does not issue a duplicate query')
+    h.enabled.value = false; await flush(); t.mock.timers.tick(600000); h.view.refresh(); await flush()
+    assert.equal(historyCalls().length, 2, 'hidden tools do not refresh')
+    h.enabled.value = true; await flush(); assertCurrent(); assert.equal(historyCalls().length, 3)
+    h.deactivations.forEach(callback => callback()); await flush(); t.mock.timers.tick(600000)
+    h.activations.forEach(callback => callback()); await flush(); assertCurrent(); assert.equal(historyCalls().length, 4)
+    assert.deepEqual(h.preferenceWrites, [], 'automatic ranges must not restore as a manual selection on the next visit')
+  } finally { h.scope.stop() }
+})
+
+test('manual and restored history ranges remain fixed when refreshing or returning to overview', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'], now: 1800000000000 })
+  const saved = { from: Date.now() - 7200000, to: Date.now() - 3600000 }, h = harness()
+  const assertFixed = view => assert.deepEqual(view.calls.filter(call => call.kind === 'history').at(-1).range.map(date => date.valueOf()), [saved.from, saved.to])
+  try {
+    await flush(); h.view.range.value = [dayjs(saved.from), dayjs(saved.to)]; await flush(); assertFixed(h)
+    assert.deepEqual(h.preferenceWrites, [{ historyRange: saved }])
+    t.mock.timers.tick(120000); h.view.refresh(); await flush(); assertFixed(h)
+    assert.equal(h.calls.filter(call => call.kind === 'history').length, 3)
+    h.enabled.value = false; await flush(); h.enabled.value = true; await flush(); assertFixed(h)
+    assert.equal(h.preferenceWrites.length, 1, 'refresh does not rewrite the manual preference')
+  } finally { h.scope.stop() }
+  const restored = harness({ historyRange: saved })
+  try {
+    await flush(); assertFixed(restored)
+    t.mock.timers.tick(120000); restored.view.refresh(); await flush(); assertFixed(restored)
+    assert.deepEqual(restored.preferenceWrites, [])
+  } finally { restored.scope.stop() }
+})
+
+test('quick history ranges retain their duration on refresh and restore without freezing their previous end time', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'], now: 1800000000000 })
+  const saved = { from: Date.now() - 7200000, to: Date.now() - 6300000, relativeSeconds: 900 }, h = harness()
+  const assertCurrent = view => assert.deepEqual(view.calls.filter(call => call.kind === 'history').at(-1).range.map(date => date.valueOf()), [Date.now() - 900000, Date.now()])
+  try {
+    await flush(); h.view.selectRange(saved); await flush(); assertCurrent(h)
+    assert.deepEqual(h.preferenceWrites, [{ historyRange: saved }])
+    t.mock.timers.tick(120000); h.view.refresh(); await flush(); assertCurrent(h)
+    assert.equal(h.calls.filter(call => call.kind === 'history').length, 3)
+    assert.equal(h.preferenceWrites.length, 1)
+  } finally { h.scope.stop() }
+  const restored = harness({ historyRange: saved })
+  try {
+    await flush(); assertCurrent(restored)
+    t.mock.timers.tick(120000); restored.view.refresh(); await flush(); assertCurrent(restored)
+    assert.equal(restored.view.relativeSeconds.value, 900)
+    assert.deepEqual(restored.preferenceWrites, [])
+  } finally { restored.scope.stop() }
+})
 
 test('JVM overview loads once per activation, history refresh stays independent and Buffer reuses the cluster session', async t => {
   t.mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'], now: 1000000 })

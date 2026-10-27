@@ -85,6 +85,12 @@ PR 隔离交付核验：沿用 [core#195](https://github.com/jetlinks-v2/jetlink
 
 ### 历史趋势时间联动修复（已完成）
 
+业务流量时间轴修复（已完成）：`visDashboard/SystemMonitor/utils/historyParams.ts` 的聚合时间格式包含完整年份与对应粒度：分钟 / 小时为 `yyyy-MM-dd HH:mm`、日为 `yyyy-MM-dd`、月为 `yyyy-MM`。后端 `NetworkMeasurementProvider` 使用该格式将分组键解析成时间戳；缺少年份会按 2000 年解析，导致已有曲线落在当前时间范围外。共用查询参数已修正，保留既有聚合间隔、条数和周期字节量口径，无需后端接口或采集变更。概览 / 时间 / 偏好定向回归 30/30 通过，覆盖所有粒度及跨年查询；宿主类型检查保留 167 个既有诊断，与此前基线一致，新增 0。模块构建通过（29.14s，保留既有 chunk 提示），无独立 lint 脚本，变更空白检查通过。日志为 `/private/tmp/runtime-traffic-history-{tests,types,build}.log`。真实 IAB 中上下行折线恢复至可见时间轴，2026-10-27 13:21:00 的上行读数为 11.75KB、下行为 291B，六图同刻提示仍联动，近一小时刷新更新至 14:05:21。切换范围期间曾出现一次 15s 查询超时，重试恢复，不能据此宣称已修复后端查询性能；截图为 `/private/tmp/runtime-business-traffic-fixed.png`。未启停服务，沿用 [core#195](https://github.com/jetlinks-v2/jetlinks-web-core/pull/195) 与 [host#352](https://github.com/jetlinks-v2/device-manager-ui/pull/352) 交付。
+
+历史时间范围由宿主 `views/link/diagnostics/useNodeMetrics.ts` 区分相对窗口和固定范围：默认近一小时及快捷范围每次查询都以当前时间结束；自定义时间、缩放或峰值定位后保留指定范围，刷新不移动。共享 `TimeWindow.relativeSeconds` 传递快捷范围的时长语义，恢复偏好时仍按当前时间解析；旧偏好只有绝对时间，不猜测其来源，继续视为固定范围。默认窗口不写入固定时间偏好。此次局部修复不改变图表联动、后端接口或采集频率；验证覆盖默认 / 快捷范围刷新推进、固定 / 恢复范围保持、重新激活及单次查询。
+
+本次刷新修复验收：宿主定向回归 31/31、core 时间选择与图表联动回归 10/10 通过；core 诊断类型检查 0 错误，宿主保留 167 个既有类型诊断，归一化后新增 0。组合生产构建通过（33.13s，保留既有大 chunk 警告），最终补充的元组类型注释不改变运行代码。工程没有独立 lint 命令，变更空白检查通过。真实浏览器中，近一小时刷新后结束时间从 13:50:08 推进到 13:50:55；自定义的 10-26 12:50:55 至 13:50:55 在刷新后完全保持。验收后恢复近一小时，未启停服务。
+
 同节点、同时间范围的资源历史图保持悬停时间游标和缩放范围联动；各图图例独立，设备运行和 Buffer 近实时趋势不加入本组。旧实现只在属性更新后扫描一次 DOM，隐藏容器延迟初始化时没有实例可注册；改由共享 ECharts 的 ready / dispose 信号注册、释放历史区实例，KeepAlive 暂停和恢复成对处理，不增加轮询或改动数据采集。入口为 core `history/useLinkedHistoryCharts.ts`、`HistoryMetricCharts.vue` 与 ECharts 生命周期；定向验证覆盖延迟初始化、实例重建、时间对齐、缩放单次提交、独立图例和 Tab 恢复，真实浏览器验收由总控集中执行。
 
 定向验证：`node --test tests/runtimeHistoryLinking.test.mjs tests/runtimeDiagnosticsHostPresentation.test.mjs` 10/10 通过，其中 6 项以真实 ECharts SVG SSR 实例验证时间联动；`pnpm exec vue-tsc -p tsconfig.runtime-diagnostics.json --noEmit` 通过（0 错误），`git diff --check` 通过。悬停按时间值同步，不复制样本下标或像素；同一范围刷新不重置缩放，进入新的查询范围才复位。原生工具栏显隐也不再将缩放重置到 0–100%。没有重跑全量构建，也未把 SSR 结果当作真实浏览器验收结论。

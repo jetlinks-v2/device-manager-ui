@@ -85,6 +85,28 @@ test('host traffic never fills unavailable, first or rollback counters with zero
   assert.deepEqual(result.series.hostReceive['node-a']._data, [[60000, null], [120000, null], [180000, null], [240000, null], [300000, 1000 / 60]])
 })
 
+test('traffic aggregation keys retain the calendar year at every bucket granularity', () => {
+  const { networkParams } = load(resolve(import.meta.dirname, '../visDashboard/SystemMonitor/utils/historyParams.ts'))
+  const start = new Date('2025-12-31T23:45:00+08:00')
+  for (const [duration, interval, format] of [
+    [30 * 60_000, '1m', 'yyyy-MM-dd HH:mm'],
+    [24 * 3600_000, '1h', 'yyyy-MM-dd HH:mm'],
+    [31 * 24 * 3600_000, '1d', 'yyyy-MM-dd'],
+    [180 * 24 * 3600_000, '1M', 'yyyy-MM'],
+    [730 * 24 * 3600_000, '1M', 'yyyy-MM'],
+  ]) {
+    const end = new Date(start.valueOf() + duration)
+    const queries = networkParams({ time: { time: [start, end] } })
+    assert.deepEqual(queries.map(query => query.group), ['bytesRead', 'bytesSent'])
+    for (const query of queries) {
+      assert.equal(query.params.interval, interval)
+      assert.equal(query.params.format, format, 'backend timestamp reconstruction requires complete calendar keys')
+      assert.equal(query.params.from, start.valueOf())
+      assert.equal(query.params.to, end.valueOf())
+    }
+  }
+})
+
 test('JVM overview requests projected read-only attributes independently from Buffer failures', async () => {
   const { queryOverviewMBeans, queryBufferMBeans } = load(resolve(import.meta.dirname, '../api/link/diagnostics.ts'))
   const result = await queryOverviewMBeans('node-a', new AbortController().signal)

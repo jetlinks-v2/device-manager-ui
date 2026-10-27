@@ -2,7 +2,7 @@ import { computed, inject, onActivated, onDeactivated, onScopeDispose, provide, 
 import dayjs, { type Dayjs } from 'dayjs'
 import { useI18n } from 'vue-i18n'
 import { useDiagnosticQuery } from '@jetlinks-web-core/hooks/useDiagnosticQuery'
-import type { MBeanDescriptor, MetricValue, ViewState } from '@jetlinks-web-core/components/RuntimeDiagnostics'
+import type { MBeanDescriptor, MetricValue, TimeWindow, ViewState } from '@jetlinks-web-core/components/RuntimeDiagnostics'
 import { runtimeBeanOverview } from '@jetlinks-web-core/components/RuntimeDiagnostics/utils'
 import { loadResourceOverviewHistory } from '../../../visDashboard/SystemMonitor/services/history'
 import { queryMBeans, queryOverviewMBeans } from '../../../api/link/diagnostics'
@@ -30,7 +30,15 @@ export function useNodeMetrics(nodeId: Ref<string>, enabled: Ref<boolean>, scope
   const { t } = useI18n()
   const access = useDiagnosticsAccess()
   const preferences = useDiagnosticPreferences(), saved = preferences?.value.value.historyRange
-  const range = ref<[Dayjs, Dayjs]>(saved ? [dayjs(saved.from), dayjs(saved.to)] : [dayjs().subtract(1, 'hour'), dayjs()])
+  const movingRange = ref<[Dayjs, Dayjs]>([dayjs().subtract(1, 'hour'), dayjs()])
+  const selectedRange = ref<TimeWindow | undefined>(saved)
+  const relativeSeconds = computed(() => selectedRange.value ? selectedRange.value.relativeSeconds : 3600)
+  // 仅显式选择持久化范围语义；解析相对窗口不触发新的选择或第二次查询。
+  const range = computed<[Dayjs, Dayjs]>({
+    get: (): [Dayjs, Dayjs] => relativeSeconds.value !== undefined || !selectedRange.value ? movingRange.value : [dayjs(selectedRange.value.from), dayjs(selectedRange.value.to)],
+    set: (value: [Dayjs, Dayjs]) => selectRange({ from: value[0].valueOf(), to: value[1].valueOf() }),
+  })
+  function selectRange(value: TimeWindow) { selectedRange.value = { ...value }; preferences?.update({ historyRange: { ...value } }) }
   const history = useDiagnosticQuery<Awaited<ReturnType<typeof loadResourceOverviewHistory>>>({ retainOnDeactivate: true })
   const jvmQuery = useDiagnosticQuery<MBeanDescriptor[]>({ retainOnDeactivate: true }), beans = shallowRef<MBeanDescriptor[]>()
   const lifetimeQuery = useDiagnosticQuery<MBeanDescriptor[]>({ retainOnDeactivate: true })
@@ -75,7 +83,11 @@ export function useNodeMetrics(nodeId: Ref<string>, enabled: Ref<boolean>, scope
   }
   function loadHistory() {
     if (!active.value || !enabled.value || !nodeId.value) return
-    if (access.value.query) void history.run(() => loadResourceOverviewHistory(range.value), true, { errorState: diagnosticErrorState, retainData: true })
+    if (access.value.query) {
+      if (relativeSeconds.value !== undefined) { const to = dayjs(); movingRange.value = [to.subtract(relativeSeconds.value, 'second'), to] }
+      const queryRange = range.value
+      void history.run(() => loadResourceOverviewHistory(queryRange), true, { errorState: diagnosticErrorState, retainData: true })
+    }
     else history.clear({ status: 'forbidden' })
   }
   async function loadMBeans() {
@@ -123,7 +135,7 @@ export function useNodeMetrics(nodeId: Ref<string>, enabled: Ref<boolean>, scope
   watch([enabled, active, headerEnabled], () => { pauseMBeans(); if (canReadMBeans.value) void loadMBeans(); else void loadLifetime(); if (canReadHeader.value) resumeClock(); else pauseClock() }, { flush: 'sync' })
   watch([nodeId, scopeKey, () => access.value.query], () => { history.clear(); loadHistory() }, { immediate: true })
   watch([enabled, active], () => { if (enabled.value && active.value) loadHistory(); else history.cancel() }, { flush: 'sync' })
-  watch(range, loadHistory)
+  watch(selectedRange, loadHistory)
   watch(connectionStale, value => { if (value) markDisconnected(); else { resumeClock(); if (canReadMBeans.value) void loadMBeans(); else void loadLifetime() } })
   // 短时重启可能落在两次连接采样之间；实例变化只触发一次真实 JVM 基线核对。
   let instanceOwner = '', monitorInstance: string | undefined
@@ -137,7 +149,6 @@ export function useNodeMetrics(nodeId: Ref<string>, enabled: Ref<boolean>, scope
     pauseMBeans(); markDisconnected()
     if (canReadMBeans.value) void loadMBeans(); else void loadLifetime()
   }, { immediate: true, flush: 'sync' })
-  watch(range, value => preferences?.update({ historyRange: { from: value[0].valueOf(), to: value[1].valueOf() } }))
   onDeactivated(() => { active.value = false })
   onActivated(() => { active.value = true })
   onScopeDispose(() => { resetMBeans(); history.clear() })
@@ -157,5 +168,5 @@ export function useNodeMetrics(nodeId: Ref<string>, enabled: Ref<boolean>, scope
   })
   const mbeanState = computed<ViewState>(() => jvmQuery.state.value.status === 'loading' && !beans.value ? jvmQuery.state.value : lastState.value)
   const jvm = { ...jvmQuery, data: beans }
-  return { range, history, historyState, jvm, metrics, charts, load, refresh, loadMBeans, loadHistory, mbeanState, bufferBeans, bufferState, bufferHistory, refreshBuffers, bufferResetAccess, bufferReset, operational, access }
+  return { range, relativeSeconds, selectRange, history, historyState, jvm, metrics, charts, load, refresh, loadMBeans, loadHistory, mbeanState, bufferBeans, bufferState, bufferHistory, refreshBuffers, bufferResetAccess, bufferReset, operational, access }
 }

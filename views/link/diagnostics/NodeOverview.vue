@@ -5,7 +5,6 @@
 </template>
 <script setup lang="ts">
 import { computed, ref, toRef, type PropType } from 'vue'
-import dayjs from 'dayjs'
 import { RuntimeMetricsPanel, RuntimeMBeanOverview, type TimeWindow, type BufferDisplayConfig } from '@jetlinks-web-core/components/RuntimeDiagnostics'
 import type { RealtimeNode } from '../../../visDashboard/SystemMonitor/utils/realtimeResourceData'
 import { useNodeMetricsContext } from './useNodeMetrics'
@@ -38,11 +37,11 @@ function selectPeak(selection: DevicePeakSelection) { void recording.select(sele
 const deviceRuntimeConfig = computed(() => preferences?.value.value.nodes[props.nodeId] ?? {})
 function configureDeviceRuntime(value: Partial<DiagnosticNodePreference>) { preferences?.updateNode(props.nodeId, value) }
 const bufferConfig = computed<BufferDisplayConfig>(() => { const saved = preferences?.value.value.nodes[props.nodeId]; return { filter: saved?.bufferFilter ?? 'all', objectName: saved?.bufferObjectName, view: saved?.bufferView ?? 'backlog', visibleObjectNames: saved?.bufferVisibleObjectNames, scale: saved?.bufferScale ?? 'linear', grouping: saved?.bufferGrouping ?? 'aggregate' } })
-const historyRange = computed(() => ({ from: view.range.value[0].valueOf(), to: view.range.value[1].valueOf() }))
+const historyRange = computed(() => ({ from: view.range.value[0].valueOf(), to: view.range.value[1].valueOf(), relativeSeconds: view.relativeSeconds.value }))
 const state = computed(() => props.stale && view.access.value.query ? { status: 'stale' as const } : { status: 'ready' as const })
 function configureBuffer(config: BufferDisplayConfig) { preferences?.updateNode(props.nodeId, { bufferFilter: config.filter, bufferObjectName: config.objectName, bufferView: config.view, bufferVisibleObjectNames: config.visibleObjectNames, bufferScale: config.scale, bufferGrouping: config.grouping }) }
 function refreshOverview() { view.refresh() }
-function selectRange(value: TimeWindow) { if (view.access.value.query && Number.isFinite(value.from) && value.to > value.from && (value.from !== historyRange.value.from || value.to !== historyRange.value.to)) view.range.value = [dayjs(value.from), dayjs(value.to)] }
+function selectRange(value: TimeWindow) { if (view.access.value.query && Number.isFinite(value.from) && value.to > value.from && (value.from !== historyRange.value.from || value.to !== historyRange.value.to || value.relativeSeconds !== historyRange.value.relativeSeconds)) view.selectRange(value) }
 </script>
 <style scoped>
 .node-resource-fallback { min-width:0; }
