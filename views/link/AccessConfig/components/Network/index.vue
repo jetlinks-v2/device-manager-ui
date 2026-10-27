@@ -505,6 +505,7 @@ const saveData = () => {
       const params = {
         ...props.data,
         ...values,
+        bizKey: formData.value.bizKey,
         protocol: procotolCurrent.value,
         channel: "network", // 网络组件
         channelId: networkCurrent.value,
