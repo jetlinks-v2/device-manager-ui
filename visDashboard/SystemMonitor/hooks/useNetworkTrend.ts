@@ -43,6 +43,8 @@ export function useNetworkTrend(isEdit: Ref<boolean>): TrendView {
   const kindLabels = computed<Record<NetworkSeriesKind, string>>(() => ({
     trafficUp: t('DeviceAccess.index.594346-26'),
     trafficDown: t('DeviceAccess.index.594346-27'),
+    hostReceive: t('components.NetworkTrend.receive'),
+    hostSend: t('components.NetworkTrend.send'),
     packetLoss: t('components.NetworkTrend.packetLoss'),
     interfaceErrors: t('components.NetworkTrend.interfaceErrors'),
     tcpRetransmission: t('components.NetworkTrend.retransmission'),

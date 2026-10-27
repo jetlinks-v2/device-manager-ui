@@ -1,0 +1,4 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["views/link/DashBoard/**/*.ts", "views/link/DashBoard/index.vue", "views/link/RuntimeMonitor/**/*", "views/link/RuntimeWorkspace.vue", "views/link/useRuntimeWorkspace.ts", "unifiedDeviceMenu.ts", "views/link/diagnostics/**/*", "views/link/Tracing/**/*", "api/link/diagnostics.ts", "../../jetlinks-web-core/src/auto-imports.d.ts", "../../jetlinks-web-core/src/env.d.ts"]
+}

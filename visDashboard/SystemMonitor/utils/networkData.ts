@@ -1,7 +1,11 @@
-export type NetworkTrendMetric = 'traffic' | 'quality' | 'tcpRetransmission' | 'tcpConnections'
+import { deriveBytesPerSecond } from './counterData'
+
+export type NetworkTrendMetric = 'traffic' | 'hostTraffic' | 'quality' | 'tcpRetransmission' | 'tcpConnections'
 export type NetworkSeriesKind =
   | 'trafficUp'
   | 'trafficDown'
+  | 'hostReceive'
+  | 'hostSend'
   | 'packetLoss'
   | 'interfaceErrors'
   | 'tcpRetransmission'
@@ -24,6 +28,7 @@ export interface NetworkTooltipItem {
 
 export interface TrafficHistoryResult {
   times: string[]
+  timestamps: number[]
   nodes: string[]
   series: Pick<NetworkSeriesByKind, 'trafficUp' | 'trafficDown'>
 }
@@ -31,6 +36,8 @@ export interface TrafficHistoryResult {
 export interface SystemNetworkHistoryValue {
   timestamp?: unknown
   networkInterfaceMetricsAvailable?: unknown
+  networkReceivedBytes?: unknown
+  networkSentBytes?: unknown
   networkReceivedPackets?: unknown
   networkSentPackets?: unknown
   networkReceiveErrors?: unknown
@@ -132,7 +139,7 @@ export const normalizeTrafficHistory = (items: NetworkHistoryResponseItem[] | un
       _data: times.map(time => raw[kind][nodeId]?.[time] ?? null),
     }]))])) as TrafficHistoryResult['series']
 
-  return { times, nodes, series }
+  return { times, timestamps: times.map(time => timestamps.get(time)!), nodes, series }
 }
 
 const deltaRatio = (
@@ -156,7 +163,9 @@ const deltaRatio = (
 }
 
 const emptySystemSeries = (): Pick<NetworkSeriesByKind,
-  'packetLoss' | 'interfaceErrors' | 'tcpRetransmission' | 'tcpConnections'> => ({
+  'hostReceive' | 'hostSend' | 'packetLoss' | 'interfaceErrors' | 'tcpRetransmission' | 'tcpConnections'> => ({
+  hostReceive: {},
+  hostSend: {},
   packetLoss: {},
   interfaceErrors: {},
   tcpRetransmission: {},
@@ -183,6 +192,8 @@ export const normalizeSystemNetworkHistory = (items: NetworkHistoryResponseItem[
       .filter(value => numeric(value.timestamp) !== undefined)
       .sort((left, right) => numeric(left.timestamp)! - numeric(right.timestamp)!)
     const points = {
+      hostReceive: new Map<number, number | null>(),
+      hostSend: new Map<number, number | null>(),
       packetLoss: new Map<number, number | null>(),
       interfaceErrors: new Map<number, number | null>(),
       tcpRetransmission: new Map<number, number | null>(),
@@ -202,6 +213,12 @@ export const normalizeSystemNetworkHistory = (items: NetworkHistoryResponseItem[
         && isAvailable(previous.networkTcpMetricsAvailable))
 
       // Counter 派生仅接受同一节点相邻的完整快照，首点、回退和能力不可用都保留为图表断点。
+      points.hostReceive.set(timestamp, interfaceAvailable
+        ? deriveBytesPerSecond(rawTimestamp, numeric(previous!.timestamp), numeric(current.networkReceivedBytes), numeric(previous!.networkReceivedBytes)) ?? null
+        : null)
+      points.hostSend.set(timestamp, interfaceAvailable
+        ? deriveBytesPerSecond(rawTimestamp, numeric(previous!.timestamp), numeric(current.networkSentBytes), numeric(previous!.networkSentBytes)) ?? null
+        : null)
       points.packetLoss.set(timestamp, interfaceAvailable
         ? deltaRatio(previous!, current, ['networkReceiveDrops'], ['networkReceivedPackets', 'networkReceiveDrops']) ?? null
         : null)

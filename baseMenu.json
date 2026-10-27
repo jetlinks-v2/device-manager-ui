@@ -874,6 +874,45 @@
         "supportDataAccess": false
       },
       {
+        "code": "link/RuntimeMonitor",
+        "name": "运行监控",
+        "i18nMessages": { "name": { "zh_CN": "运行监控", "en_US": "Runtime monitoring", "en": "Runtime monitoring" } },
+        "owner": "iot",
+        "id": "runtime-instance-monitor",
+        "sortIndex": 12,
+        "url": "/infrastructure/runtime-monitor",
+        "icon": "FundProjectionScreenOutlined",
+        "showPage": ["dashboard"],
+        "permissions": [{ "permission": "dashboard", "actions": ["query"] }],
+        "supportDataAccess": false,
+        "buttons": [
+          { "id": "query", "name": "查看指标", "i18nMessages": { "zh_CN": "查看指标", "en_US": "View metrics", "en": "View metrics" }, "permissions": [{ "permission": "dashboard", "actions": ["query"] }] },
+          { "id": "monitor-query", "name": "查看JVM与MBean", "i18nMessages": { "zh_CN": "查看JVM与MBean", "en_US": "View JVM and MBeans", "en": "View JVM and MBeans" }, "permissions": [{ "permission": "system-monitor", "actions": ["query"] }] },
+          { "id": "session-query", "name": "查看设备会话", "i18nMessages": { "zh_CN": "查看设备会话", "en_US": "View device sessions", "en": "View device sessions" }, "permissions": [{ "permission": "device-instance", "actions": ["query"] }] },
+          { "id": "mbean-invoke", "name": "调用MBean", "i18nMessages": { "zh_CN": "调用MBean", "en_US": "Invoke MBean", "en": "Invoke MBean" }, "permissions": [{ "permission": "system-monitor", "actions": ["invoke"] }] },
+          { "id": "thread-dump", "name": "线程采样", "i18nMessages": { "zh_CN": "线程采样", "en_US": "Sample threads", "en": "Sample threads" }, "permissions": [{ "permission": "system-monitor", "actions": ["thread-dump"] }] },
+          { "id": "log-query", "name": "查看日志", "i18nMessages": { "zh_CN": "查看日志", "en_US": "View logs", "en": "View logs" }, "permissions": [{ "permission": "system-logger", "actions": ["query"] }] },
+          { "id": "log-export", "name": "导出日志", "i18nMessages": { "zh_CN": "导出日志", "en_US": "Export logs", "en": "Export logs" }, "permissions": [{ "permission": "system-logger", "actions": ["export"] }] },
+          { "id": "jfr", "name": "JFR采集", "i18nMessages": { "zh_CN": "JFR采集", "en_US": "Capture JFR", "en": "Capture JFR" }, "permissions": [{ "permission": "system-monitor", "actions": ["jfr"] }] },
+          { "id": "heap-dump", "name": "堆采集", "i18nMessages": { "zh_CN": "堆采集", "en_US": "Capture heap", "en": "Capture heap" }, "permissions": [{ "permission": "system-monitor", "actions": ["heap-dump"] }] },
+          { "id": "diagnostic-export", "name": "导出诊断产物", "i18nMessages": { "zh_CN": "导出诊断产物", "en_US": "Export diagnostic artifacts", "en": "Export diagnostic artifacts" }, "permissions": [{ "permission": "system-monitor", "actions": ["export"] }] }
+        ]
+      },
+      {
+        "code": "link/Tracing",
+        "name": "链路追踪",
+        "i18nMessages": { "name": { "zh_CN": "链路追踪", "en_US": "Tracing", "en": "Tracing" } },
+        "owner": "iot",
+        "id": "runtime-cluster-tracing",
+        "sortIndex": 15,
+        "url": "/infrastructure/tracing",
+        "icon": "icon-yuandian",
+        "showPage": ["system-trace"],
+        "permissions": [{ "permission": "system-trace", "actions": ["query"] }],
+        "buttons": [{ "id": "query", "name": "查询链路", "i18nMessages": { "zh_CN": "查询链路", "en_US": "Query traces", "en": "Query traces" }, "permissions": [{ "permission": "system-trace", "actions": ["query"] }] }],
+        "supportDataAccess": false
+      },
+      {
         "code": "link-Access",
         "name": "接入组件",
         "i18nMessages": {
