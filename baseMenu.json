@@ -460,6 +460,7 @@
               "assetType": "device",
               "assetTypes": [
                 "aiScene",
+                "alarmConfig",
                 "device",
                 "deviceGroup"
               ],
@@ -583,6 +584,12 @@
                 },
                 {
                   "permission": "alarm-record",
+                  "actions": [
+                    "query"
+                  ]
+                },
+                {
+                  "permission": "alarm-config",
                   "actions": [
                     "query"
                   ]
