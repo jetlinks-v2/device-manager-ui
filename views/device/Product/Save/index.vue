@@ -299,15 +299,18 @@ const chooseCloudProduct = (data: { masterProductId: string; edgeMasterId: strin
 };
 
 /**
- * 查询产品分类
+ * 每次打开产品弹窗时刷新分类树，使刚新增的自定义分类可以立即选择。
  */
 const queryProductTree = async () => {
-    category(encodeQuery({ sorts: { sortIndex: 'asc' } })).then((resp) => {
+    try {
+        const resp = await category(encodeQuery({ sorts: { sortIndex: 'asc' } }));
         if (resp.status === 200) {
             treeList.value = resp.result;
             treeList.value = dealProductTree(treeList.value);
         }
-    });
+    } catch {
+        // 分类刷新失败时保留上次已加载的数据，不阻断产品新增或编辑。
+    }
 };
 /**
  * 处理产品分类key
@@ -325,6 +328,7 @@ const dealProductTree = (arr: any) => {
  * 显示弹窗
  */
 const show = async (data: any) => {
+    await queryProductTree();
     if (props.isAdd === 2) {
         await productStore.refresh(data.id);
         const detail = productStore.current;
@@ -433,11 +437,6 @@ const submitData = () => {
         })
         .catch((err: any) => {});
 };
-/**
- * 初始化
- */
-queryProductTree();
-
 const changeDeviceType = (value: Array<string>) => {
     form.deviceType = value[0];
 };
