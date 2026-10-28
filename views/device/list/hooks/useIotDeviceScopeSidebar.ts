@@ -133,7 +133,8 @@ export function useIotDeviceScopeSidebar(
     const key = String(keys[0] || IOT_ALL_DEVICE_SCOPE_ID)
     onChange({ type: scopeType.value, id: key === IOT_ALL_DEVICE_SCOPE_ID ? '' : key })
   }
-  const countText = (value?: number) => t('IotDeviceList.scope.deviceCount', { count: Math.max(0, Number(value) || 0) })
+  // 树节点只展示数字，避免单位占用名称列；列表和统计卡仍保留各自的业务单位。
+  const countValue = (value?: number) => Math.max(0, Number(value) || 0)
 
-  return { scopeType, scopeOptions, searchKeyword, searchPlaceholder, filteredTreeData, treeKey, expandAll, selectedKeys, onSelect, countText }
+  return { scopeType, scopeOptions, searchKeyword, searchPlaceholder, filteredTreeData, treeKey, expandAll, selectedKeys, onSelect, countValue }
 }

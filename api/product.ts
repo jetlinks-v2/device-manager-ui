@@ -25,6 +25,16 @@ export interface ProductResourcePackageImportRequest {
   resourceSelections: Record<string, any>
 }
 
+/** 资源包导入过程中按 NDJSON 逐条返回的阶段结果。 */
+export interface ProductResourcePackageImportProgress {
+  type: string
+  stage?: string
+  resourceType?: string
+  resourceId?: string
+  action?: string
+  message?: string
+}
+
 /**
  * 资源包导入请求体为 FormData，必须让浏览器写入含 boundary 的 multipart Content-Type。
  * 默认 NDJSON 客户端会为 POST 设置 application/x-ndjson，故仅对此接口隔离处理。

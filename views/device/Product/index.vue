@@ -15,6 +15,8 @@
 				      :tree-data="categoryTree"
 				      :active-id="selectedCategoryId"
 				      :loading="categoryLoading"
+			      :total-product-count="totalProductCount"
+			      :unclassified-product-count="unclassifiedProductCount"
 				      :can-add="canAddCategory"
 				      :can-update="canUpdateCategory"
 				      :can-delete="canDeleteCategory"
@@ -145,12 +147,22 @@
       @refresh="handleCategoryChanged"
     />
     <SyncCache v-if="syncCacheVisible" :params="tableParams" @success="refresh" @close="syncCacheVisible = false" />
-    <ResourcePackage ref="resourcePackageRef" @success="refresh" />
+    <ResourcePackage
+      ref="resourcePackageRef"
+      :can-import-basic="canImportBasic"
+      :can-import-resource-package="canImportResourcePackage"
+      @success="refresh"
+    />
+    <ProductExportModal
+      v-model:open="exportVisible"
+      :loading="exporting"
+      @export="exportProduct"
+    />
   </j-page-container>
 </template>
 
 <script setup lang="ts">
-import { downloadFileByUrl, onlyMessage } from "@jetlinks-web/utils";
+import { onlyMessage } from "@jetlinks-web/utils";
 import {
   getProviders,
   queryOrgThree,
@@ -159,16 +171,14 @@ import {
   _deploy,
   _undeploy,
   deleteProduct,
-  updateDevice,
-  exportProductResourcePackage,
 } from "../../../api/product";
-import { downloadJson, accessConfigTypeFilter, isNoCommunity, mergeObjectArrays } from "@jetlinks-web-core/utils";
-import { omit, cloneDeep } from "lodash-es";
+import { accessConfigTypeFilter, isNoCommunity, mergeObjectArrays } from "@jetlinks-web-core/utils";
+import { cloneDeep } from "lodash-es";
 import Save from "./Save/index.vue";
 import SyncCache from "./components/SyncCache.vue";
 import ProductCategoryTree, { type ProductCategoryTreeNode } from "./components/ProductCategoryTree.vue";
 import ModifyModal from "../Category/components/modifyModal/index.vue";
-import { queryTree, deleteTree } from "../../../api/category";
+import { queryTreeStatistics, deleteTree } from "../../../api/category";
 import { useMenuStore, useAuthStore } from "@jetlinks-web-core/store";
 import { useRouterParams } from "@jetlinks-web/hooks";
 import { accessType } from "../data";
@@ -186,6 +196,8 @@ import { getI18nText } from '../../../utils/i18n'
 import ResourcePackage from './ResourcePackage/index.vue'
 import { createReusableTemplate } from '@vueuse/core'
 import { useEmptyCreateState } from '@jetlinks-web-core/hooks'
+import ProductExportModal from './components/ProductExportModal.vue'
+import { useProductTransfer } from './hooks/useProductTransfer'
 
 const { t: $t } = useI18n();
 const [DefineEmptyCreate, EmptyCreateButton] = createReusableTemplate()
@@ -199,6 +211,8 @@ const filterTerms = ref<ConditionFilterTerm[]>([]);
 const selectedCategoryId = ref<string>();
 const categoryTree = ref<ProductCategoryTreeNode[]>([]);
 const categoryLoading = ref(false);
+const totalProductCount = ref(0);
+const unclassifiedProductCount = ref(0);
 const productUnclassifiedScopeId = '__product-unclassified__';
 const { termOptions: dimAssetsTermOptions } = useTermOptions({ pick: ['eq']})
 
@@ -253,7 +267,7 @@ const columns = [
 const hasDepartmentMenu = menuStory.hasMenu('system/Department');
 const currentForm = ref({});
 const syncCacheVisible = ref(false)
-const resourcePackageRef = ref<{ show: () => void }>()
+const resourcePackageRef = ref<{ show: () => void; close: () => void }>()
 const categoryModalRef = ref();
 const categoryModalMode = ref(0);
 const categoryModalChildMode = ref(0);
@@ -261,6 +275,15 @@ const categoryTitle = ref('');
 const canAddCategory = computed(() => authStore.hasPermission('device/Product:category-add'));
 const canUpdateCategory = computed(() => authStore.hasPermission('device/Product:category-update'));
 const canDeleteCategory = computed(() => authStore.hasPermission('device/Product:category-delete'));
+const canImportBasic = computed(() => authStore.hasPermission('device/Product:import'))
+const canImportResourcePackage = computed(() => authStore.hasPermission('device/Product:resource-package-import'))
+const canImportProduct = computed(() => canImportBasic.value || canImportResourcePackage.value)
+const {
+  exportVisible,
+  exporting,
+  openExport,
+  exportProduct,
+} = useProductTransfer()
 
 const tableParams = computed(() => {
   const params = cloneDeep(productSearchParams.value);
@@ -292,32 +315,12 @@ const { hasSearch, showEmptyCreate } = useEmptyCreateState(() => tableParams.val
 // 产品管理入口同时服务私有化与运行时，不能按 SaaS 编译标识隐藏导入和缓存同步能力。
 const batchActions = computed(() => {
   return [
-    {
+    ...(canImportProduct.value ? [{
       key: 'import',
       text: $t("Product.index.660348-1"),
       icon: 'UploadOutlined',
-      permission: 'device/Product:import',
-      onClick: () => {
-        // 触发文件选择
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.json';
-        input.onchange = (e: any) => {
-          const file = e.target.files[0];
-          if (file) {
-            beforeUpload(file);
-          }
-        };
-        input.click();
-      }
-    },
-    {
-      key: 'resource-package-import',
-      text: $t('Product.resourcePackage.001-0'),
-      icon: 'FolderOpenOutlined',
-      permission: 'device/Product:resource-package-import',
       onClick: () => resourcePackageRef.value?.show(),
-    },
+    }] : []),
     {
       key: 'syncCache',
       text: $t('Product.index.660348-41'),
@@ -372,27 +375,7 @@ const getActions = (data: Partial<Record<string, any>>): any[] => {
       },
 
       icon: "icon-xiazai",
-      onClick: () => {
-        const extra = omit(data, [
-          "transportProtocol",
-          "protocolName",
-          "accessId",
-          "accessName",
-          "accessProvider",
-          "messageProtocol",
-        ]);
-        downloadJson(extra, data.name + $t("Product.index.660348-15"));
-      },
-    },
-    {
-      key: 'resource-package-export',
-      text: $t('Product.resourcePackage.001-35'),
-      tooltip: {
-        title: $t('Product.resourcePackage.001-35'),
-      },
-      icon: 'FolderOpenOutlined',
-      permission: 'device/Product:export',
-      onClick: () => exportResourcePackage(data),
+      onClick: () => openExport(data),
     },
     {
       key: "action",
@@ -462,19 +445,6 @@ const getActions = (data: Partial<Record<string, any>>): any[] => {
   return actions;
 };
 
-/** 下载可携带接入资源和附件的产品资源包，不影响现有 JSON 导出。 */
-const exportResourcePackage = async (data: Partial<Record<string, any>>) => {
-  try {
-    const response: any = await exportProductResourcePackage(String(data.id));
-    const blob = response?.data || response;
-    const url = URL.createObjectURL(blob);
-    downloadFileByUrl(url, data.name || String(data.id), 'zip');
-    URL.revokeObjectURL(url);
-  } catch (error: any) {
-    onlyMessage(error?.response?.data?.message || error?.message || $t('Product.resourcePackage.001-36'), 'error');
-  }
-};
-
 /**
  * 新增
  */
@@ -487,47 +457,6 @@ const add = () => {
 };
 
 /**
- * 导入
- */
-const beforeUpload = (file: any) => {
-  const reader = new FileReader();
-  reader.readAsText(file);
-  reader.onload = async (result) => {
-    const text = result.target?.result as string;
-    // console.log(text);
-    if (!file.type.includes("json")) {
-      onlyMessage($t("Product.index.660348-23"), "error");
-      return false;
-    }
-    if (!text) {
-      onlyMessage($t("Product.index.660348-24"), "error");
-      return false;
-    }
-    const data = JSON.parse(text);
-    // 设置导入的产品状态为未发布
-    data.state = 0;
-    if (Array.isArray(data)) {
-      onlyMessage($t("Product.index.660348-25"), "error");
-      return false;
-    }
-    delete data.state;
-    if (!data?.name) {
-      data.name = $t("Product.index.660348-15") + Date.now();
-    }
-    if (!data?.deviceType || JSON.stringify(data?.deviceType) === "{}") {
-      onlyMessage($t("Product.index.660348-26"), "error");
-      return false;
-    }
-    const res = await updateDevice(data);
-    if (res.status === 200) {
-      onlyMessage($t("Product.index.660348-27"));
-      tableRef.value?.reload();
-    }
-    return true;
-  };
-  return false;
-};
-/**
  * 查看
  */
 const handleView = (id: string) => {
@@ -539,6 +468,7 @@ const handleView = (id: string) => {
  */
 const refresh = () => {
   tableRef.value?.reload();
+  void refreshCategoryTree();
 };
 
 const getBrandModel = (product: Record<string, any>) => {
@@ -586,12 +516,14 @@ const collectCategoryScopeIds = (nodes: ProductCategoryTreeNode[], id: string): 
 const refreshCategoryTree = async () => {
   categoryLoading.value = true;
   try {
-    const response = await queryTree({
+    const response = await queryTreeStatistics({
       paging: false,
       sorts: [{ name: 'sortIndex', order: 'asc' }],
     });
     if (response.status === 200) {
-      categoryTree.value = normalizeCategoryTree(response.result || []);
+      categoryTree.value = normalizeCategoryTree(response.result?.categories || []);
+      totalProductCount.value = Math.max(0, Number(response.result?.total) || 0);
+      unclassifiedProductCount.value = Math.max(0, Number(response.result?.unclassified) || 0);
       if (
         selectedCategoryId.value !== productUnclassifiedScopeId
         && !hasCategory(categoryTree.value, selectedCategoryId.value)
@@ -654,7 +586,7 @@ const confirmDeleteCategory = (category: ProductCategoryTreeNode) => {
 
 const handleCategoryChanged = async () => {
   await refreshCategoryTree();
-  refresh();
+  tableRef.value?.reload();
 };
 
 // 筛选

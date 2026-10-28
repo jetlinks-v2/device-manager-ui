@@ -99,6 +99,8 @@
             v-else
             :category-tree="categoryTree"
             :category-loading="categoryLoading"
+            :total-product-count="totalProductCount"
+            :unclassified-product-count="unclassifiedProductCount"
             :selected-category-id="selectedCategoryId"
             :products="productCandidates"
             :selected-product-key="selectedProductKey"
@@ -212,7 +214,7 @@ const {
   productMessage, productLoading, productFilterTerms, libraryLoading, libraryTagLoading, busy, submitAction, errorMessage,
   formRef, form, formRules, installProgressState,
   areaTreeData, groupTreeData, spaceAreaSupported, configOptionsLoading,
-  categoryTree, categoryLoading, selectedCategoryId, productCandidates, productTotal, productPageIndex, productPageSize,
+  categoryTree, categoryLoading, totalProductCount, unclassifiedProductCount, selectedCategoryId, productCandidates, productTotal, productPageIndex, productPageSize,
   libraryProducts, libraryTagGroups, libraryPageIndex, libraryPageSize, libraryTotal,
   selectSource, selectProduct, selectTemplate, clearSelectedSource, selectProductCategory, selectUnclassifiedProductCategory,
   loadProductCandidates, loadDeviceLibraryTemplates, loadConfigOptions, onClose, onSubmit, bindCreatedDevice,

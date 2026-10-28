@@ -105,6 +105,8 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
   const spaceAreaSupported = ref<boolean>()
   const categoryTree = ref<ProductCategoryTreeNode[]>([])
   const categoryLoading = ref(false)
+  const totalProductCount = ref(0)
+  const unclassifiedProductCount = ref(0)
   const selectedCategoryId = ref<string>()
   const productCandidates = ref<IotDeviceProductTemplate[]>([])
   const productTotal = ref(0)
@@ -228,11 +230,15 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
     void loadProductCandidates(true)
   }
 
+  // 分类树及“全部/未分类”数量必须来自同一统计响应，避免筛选范围与展示数量不一致。
   async function loadProductCategories() {
     if (categoryLoading.value) return
     categoryLoading.value = true
     try {
-      categoryTree.value = normalizeCategoryTree(await queryDeviceProductCategoryTree_api())
+      const statistics = await queryDeviceProductCategoryTree_api()
+      categoryTree.value = normalizeCategoryTree(statistics.categories)
+      totalProductCount.value = statistics.total
+      unclassifiedProductCount.value = statistics.unclassified
     } finally {
       categoryLoading.value = false
     }
@@ -519,7 +525,7 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
     busy, submitAction, installProgressState,
     formRef, form, formRules, areaTreeData, groupTreeData, spaceAreaSupported,
     configOptionsLoading,
-    categoryTree, categoryLoading, selectedCategoryId, productCandidates, productTotal, productPageIndex, productPageSize,
+    categoryTree, categoryLoading, totalProductCount, unclassifiedProductCount, selectedCategoryId, productCandidates, productTotal, productPageIndex, productPageSize,
     libraryProducts, libraryTagGroups, libraryPageIndex, libraryPageSize, libraryTotal,
     onAreaChange,
     selectSource, selectProduct, selectTemplate, clearSelectedSource, selectProductCategory, selectUnclassifiedProductCategory,

@@ -34,46 +34,40 @@
             <AIcon v-else class="ant-tree-switcher-line-icon" type="FileOutlined" aria-hidden="true" />
           </template>
           <template #title="node">
-            <span class="product-category-tree__node">
-              <span class="product-category-tree__node-content">
+            <IotTreeNodeRow
+              :count="Math.max(0, Number(node.productCount) || 0)"
+              :count-tooltip="$t('Product.index.660348-44', { count: Math.max(0, Number(node.productCount) || 0) })"
+              :show-action="!isScopeNode(node.id) && (canAdd || canUpdate || canDelete)"
+              :reserve-action-space="canAdd || canUpdate || canDelete"
+              :action-aria-label="$t('Category.index.779033-4')"
+            >
+              <template #icon>
                 <AIcon
                   class="product-category-tree__node-icon"
                   :type="node.icon || (node.isLeaf ? 'icon-shu-chanpinfenlei-hui' : 'icon-shu-chanpinfenlei')"
                   aria-hidden="true"
                 />
-                <span class="product-category-tree__label">{{ node.i18nName || node.name }}</span>
-              </span>
-              <a-dropdown
-                v-if="!isScopeNode(node.id) && (canAdd || canUpdate || canDelete)"
-                :trigger="['click']"
-              >
-                <a-button
-                  class="product-category-tree__node-action"
-                  type="text"
-                  size="small"
-                  :aria-label="$t('Category.index.779033-4')"
-                  @click.stop
-                >
-                  <AIcon type="EllipsisOutlined" aria-hidden="true" />
-                </a-button>
-                <template #overlay>
-                  <a-menu>
-                    <a-menu-item v-if="canAdd" @click="emit('add-child', node)">
-                      <AIcon type="PlusOutlined" aria-hidden="true" />
-                      {{ $t('Category.index.779033-7') }}
-                    </a-menu-item>
-                    <a-menu-item v-if="canUpdate" @click="emit('edit', node)">
-                      <AIcon type="EditOutlined" aria-hidden="true" />
-                      {{ $t('Category.index.779033-5') }}
-                    </a-menu-item>
-                    <a-menu-item v-if="canDelete" danger @click="emit('delete', node)">
-                      <AIcon type="DeleteOutlined" aria-hidden="true" />
-                      {{ $t('Category.index.779033-9') }}
-                    </a-menu-item>
-                  </a-menu>
-                </template>
-              </a-dropdown>
-            </span>
+              </template>
+              <template #label>{{ node.i18nName || node.name }}</template>
+              <template #action>
+                <a-menu-item v-if="canAdd" @click="emit('add-root')">
+                  <AIcon type="PlusOutlined" aria-hidden="true" />
+                  {{ $t('Category.index.779033-15') }}
+                </a-menu-item>
+                <a-menu-item v-if="canAdd" @click="emit('add-child', node)">
+                  <AIcon type="PlusOutlined" aria-hidden="true" />
+                  {{ $t('Category.index.779033-7') }}
+                </a-menu-item>
+                <a-menu-item v-if="canUpdate" @click="emit('edit', node)">
+                  <AIcon type="EditOutlined" aria-hidden="true" />
+                  {{ $t('Category.index.779033-5') }}
+                </a-menu-item>
+                <a-menu-item v-if="canDelete" danger @click="emit('delete', node)">
+                  <AIcon type="DeleteOutlined" aria-hidden="true" />
+                  {{ $t('Category.index.779033-9') }}
+                </a-menu-item>
+              </template>
+            </IotTreeNodeRow>
           </template>
         </a-tree>
         <CloudEmpty v-else :description="$t('Product.index.660348-39')" />
@@ -93,6 +87,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import IotTreeNodeRow from '@device-manager-ui/components/IotTreeNodeRow.vue'
 import { useProductCategoryTree, type ProductCategoryTreeNode } from '../hooks/useProductCategoryTree'
 
 export type { ProductCategoryTreeNode } from '../hooks/useProductCategoryTree'
@@ -101,6 +96,8 @@ const props = withDefaults(defineProps<{
   treeData?: ProductCategoryTreeNode[]
   activeId?: string
   loading?: boolean
+  totalProductCount?: number
+  unclassifiedProductCount?: number
   canAdd?: boolean
   canUpdate?: boolean
   canDelete?: boolean
@@ -108,6 +105,8 @@ const props = withDefaults(defineProps<{
   treeData: () => [],
   activeId: undefined,
   loading: false,
+  totalProductCount: 0,
+  unclassifiedProductCount: 0,
   canAdd: false,
   canUpdate: false,
   canDelete: false,
@@ -137,6 +136,8 @@ const {
   activeId: () => props.activeId,
   allLabel: () => $t('Product.index.660348-38'),
   unclassifiedLabel: () => $t('Product.index.660348-42'),
+  totalProductCount: () => props.totalProductCount,
+  unclassifiedProductCount: () => props.unclassifiedProductCount,
   onSelect: (id) => emit('select', id),
   onSelectUnclassified: () => emit('select-unclassified'),
 })
@@ -192,13 +193,6 @@ const {
     }
   }
 
-  &__label {
-    display: block;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
   &__scope-dot {
     display: inline-block;
     width: 0.375rem;
@@ -208,32 +202,8 @@ const {
     border-radius: 50%;
   }
 
-  &__node {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: var(--space-2);
-    align-items: center;
-    min-width: 0;
-  }
-
-  &__node-content {
-    display: flex;
-    gap: var(--space-2);
-    align-items: center;
-    min-width: 0;
-  }
-
   &__node-icon {
     flex: 0 0 auto;
-  }
-
-  &__node-action {
-    opacity: 0;
-  }
-
-  &__node:hover &__node-action,
-  &__node:focus-within &__node-action {
-    opacity: 1;
   }
 
   &__create-category {

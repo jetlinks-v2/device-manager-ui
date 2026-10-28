@@ -33,44 +33,38 @@
             <AIcon v-else class="ant-tree-switcher-line-icon" type="FileOutlined" aria-hidden="true" />
           </template>
           <template #title="node">
-            <span class="iot-device-scope__tree-node">
-              <span>
+            <IotTreeNodeRow
+              :count="countValue(node.count)"
+              :count-tooltip="$t('IotDeviceList.scope.deviceCountTip', { count: countValue(node.count) })"
+              :show-action="Boolean(node.group && showGroupActions !== false)"
+              :reserve-action-space="scopeType === 'group' && showGroupActions !== false"
+              :action-aria-label="$t('IotDeviceList.scope.groupActions', { name: node.group?.name })"
+            >
+              <template #icon>
                 <AIcon :type="node.icon" />
-              </span>
-              <span class="iot-device-scope__label">
-                <j-ellipsis>
-                  {{ node.title }}
-                </j-ellipsis>
-              </span>
-              <em class="iot-device-scope__count">{{ countText(node.count) }}</em>
-              <a-dropdown v-if="node.group && showGroupActions !== false" :trigger="['click']">
-                <a-button
-                  class="iot-device-scope__group-action"
-                  type="text"
-                  size="small"
-                  :aria-label="$t('IotDeviceList.scope.groupActions', { name: node.group.name })"
-                  @click.stop
-                >
-                  <AIcon type="EllipsisOutlined" aria-hidden="true" />
-                </a-button>
-                <template #overlay>
-                  <a-menu>
-                    <a-menu-item @click="$emit('create-child-group', node.group)">
-                      <AIcon type="PlusOutlined" aria-hidden="true" />
-                      {{ $t('IotDeviceList.scope.createChildGroup') }}
-                    </a-menu-item>
-                    <a-menu-item @click="$emit('edit-group', node.group)">
-                      <AIcon type="EditOutlined" aria-hidden="true" />
-                      {{ $t('IotDeviceList.scope.editGroup') }}
-                    </a-menu-item>
-                    <a-menu-item danger @click="$emit('delete-group', node.group)">
-                      <AIcon type="DeleteOutlined" aria-hidden="true" />
-                      {{ $t('IotDeviceList.scope.deleteGroup') }}
-                    </a-menu-item>
-                  </a-menu>
+              </template>
+              <template #label>{{ node.title }}</template>
+              <template #action>
+                <template v-if="node.group && showGroupActions !== false">
+                  <a-menu-item @click="$emit('create-group')">
+                    <AIcon type="PlusOutlined" aria-hidden="true" />
+                    {{ $t('IotDeviceList.scope.createGroup') }}
+                  </a-menu-item>
+                  <a-menu-item @click="$emit('create-child-group', node.group)">
+                    <AIcon type="PlusOutlined" aria-hidden="true" />
+                    {{ $t('IotDeviceList.scope.createChildGroup') }}
+                  </a-menu-item>
+                  <a-menu-item @click="$emit('edit-group', node.group)">
+                    <AIcon type="EditOutlined" aria-hidden="true" />
+                    {{ $t('IotDeviceList.scope.editGroup') }}
+                  </a-menu-item>
+                  <a-menu-item danger @click="$emit('delete-group', node.group)">
+                    <AIcon type="DeleteOutlined" aria-hidden="true" />
+                    {{ $t('IotDeviceList.scope.deleteGroup') }}
+                  </a-menu-item>
                 </template>
-              </a-dropdown>
-            </span>
+              </template>
+            </IotTreeNodeRow>
           </template>
         </a-tree>
         <CloudEmpty v-else :description="$t('IotDeviceList.scope.noMatches')" />
@@ -85,6 +79,7 @@
 
 <script setup lang="ts">
 import type { DeviceGroup } from '@device-manager-ui/api/deviceGroup'
+import IotTreeNodeRow from '@device-manager-ui/components/IotTreeNodeRow.vue'
 import { useIotDeviceScopeSidebar } from '../hooks/useIotDeviceScopeSidebar'
 
 interface IotDeviceScopeSidebarProps {
@@ -114,7 +109,7 @@ const emit = defineEmits<{
   (event: 'edit-group', group: DeviceGroup): void
   (event: 'delete-group', group: DeviceGroup): void
 }>()
-const { scopeType, scopeOptions, searchKeyword, searchPlaceholder, filteredTreeData, treeKey, expandAll, selectedKeys, onSelect, countText } =
+const { scopeType, scopeOptions, searchKeyword, searchPlaceholder, filteredTreeData, treeKey, expandAll, selectedKeys, onSelect, countValue } =
   useIotDeviceScopeSidebar(props, (scope) => emit('change', scope))
 </script>
 
@@ -146,19 +141,6 @@ const { scopeType, scopeOptions, searchKeyword, searchPlaceholder, filteredTreeD
   align-items: safe center;
 }
 
-.iot-device-scope__label {
-  flex: 1;
-  min-width: 0;
-}
-
-.iot-device-scope__count {
-  color: var(--jet-theme-text-disabled);
-  font-size: var(--fs-14);
-  font-style: normal;
-  width: 2.125rem;
-  text-align: right;
-}
-
 .iot-device-scope__scope-dot {
   display: inline-block;
   width: 0.375rem;
@@ -166,22 +148,6 @@ const { scopeType, scopeOptions, searchKeyword, searchPlaceholder, filteredTreeD
   vertical-align: middle;
   background: #DDE4ED;
   border-radius: 50%;
-}
-
-.iot-device-scope__tree-node {
-  display: flex;
-  gap: var(--space-2);
-  min-width: 0;
-	align-items: center;
-}
-
-.iot-device-scope__group-action {
-  opacity: 0;
-}
-
-.iot-device-scope__tree-node:hover .iot-device-scope__group-action,
-.iot-device-scope__tree-node:focus-within .iot-device-scope__group-action {
-  opacity: 1;
 }
 
 .iot-device-scope :deep(.ant-tree-title) {

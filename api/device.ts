@@ -760,14 +760,26 @@ export const queryDeviceProducts_api = async (projectId?: string, deviceType?: s
     .filter((product) => Boolean(product.id))
 }
 
-/** 新增设备使用当前项目运行时的产品分类树，避免回落到 SaaS 运营端。 */
-export const queryDeviceProductCategoryTree_api = async (): Promise<TreeNodeResponse[]> => {
+export interface DeviceProductCategoryTreeStatistics {
+  categories: TreeNodeResponse[]
+  total: number
+  unclassified: number
+}
+
+/**
+ * 新增设备使用当前项目运行时的分类统计，避免回落到 SaaS 运营端且保证数量口径一致。
+ */
+export const queryDeviceProductCategoryTree_api = async (): Promise<DeviceProductCategoryTreeStatistics> => {
   const context = getProjectRuntimeContext(true)
-  const response = await request.post('/device/category/_tree', {
+  const response = await request.post('/device/category/detail/_query/tree', {
     paging: false,
     sorts: [{ name: 'sortIndex', order: 'asc' }],
-  }, withProjectRuntimeRequest(context)) as ApiResponse<TreeNodeResponse[]>
-  return unwrapResult<TreeNodeResponse[]>(response) ?? []
+  }, withProjectRuntimeRequest(context)) as ApiResponse<DeviceProductCategoryTreeStatistics>
+  return unwrapResult<DeviceProductCategoryTreeStatistics>(response) ?? {
+    categories: [],
+    total: 0,
+    unclassified: 0,
+  }
 }
 
 /**

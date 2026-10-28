@@ -5,6 +5,7 @@ export interface ProductCategoryTreeNode {
   id: string
   name: string
   i18nName?: string
+  productCount?: number
   children?: ProductCategoryTreeNode[]
   [key: string]: unknown
 }
@@ -20,6 +21,8 @@ interface ProductCategoryTreeOptions {
   activeId: () => string | undefined
   allLabel: () => string
   unclassifiedLabel: () => string
+  totalProductCount: () => number
+  unclassifiedProductCount: () => number
   onSelect: (id?: string) => void
   onSelectUnclassified: () => void
 }
@@ -41,8 +44,8 @@ export function useProductCategoryTree(options: ProductCategoryTreeOptions) {
 
   // 虚拟筛选范围仅加入展示副本，始终作为树顶部节点参与搜索。
   const filteredTree = computed(() => filterTree([
-    { id: allScopeId, name: options.allLabel(), isLeaf: true, icon: 'icon-quanbu' },
-    { id: unclassifiedScopeId, name: options.unclassifiedLabel(), isLeaf: true, icon: 'icon-shujiedian-weifenlei' },
+    { id: allScopeId, name: options.allLabel(), productCount: options.totalProductCount(), isLeaf: true, icon: 'icon-quanbu' },
+    { id: unclassifiedScopeId, name: options.unclassifiedLabel(), productCount: options.unclassifiedProductCount(), isLeaf: true, icon: 'icon-shujiedian-weifenlei' },
     ...options.treeData(),
   ], normalizedKeyword.value))
 

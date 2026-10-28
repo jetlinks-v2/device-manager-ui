@@ -5,6 +5,8 @@
       :tree-data="categoryTree"
       :active-id="selectedCategoryId"
       :loading="categoryLoading"
+      :total-product-count="totalProductCount"
+      :unclassified-product-count="unclassifiedProductCount"
       @select="emit('select-category', $event)"
       @select-unclassified="emit('select-unclassified')"
     />
@@ -61,6 +63,8 @@ import type { ConditionFilterField, ConditionFilterTerm } from '@jetlinks-web-co
 const props = defineProps({
   categoryTree: { type: Array as PropType<ProductCategoryTreeNode[]>, default: () => [] },
   categoryLoading: { type: Boolean, default: false },
+  totalProductCount: { type: Number, default: 0 },
+  unclassifiedProductCount: { type: Number, default: 0 },
   selectedCategoryId: { type: String, default: undefined },
   products: { type: Array as PropType<IotDeviceProductTemplate[]>, required: true },
   selectedProductKey: { type: String, required: true },
