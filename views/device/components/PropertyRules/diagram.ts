@@ -89,16 +89,17 @@ export function buildRuleExample(draft: RuleDraft, property: ThingModelProperty,
       if (!skip && drop) alive = false
     }
     const matches = typeof value !== 'object' && value !== null && draft.values.includes(value)
+    // Raw cleaning keeps decimal/large values; only the calibration stage applies NumberType conversion.
     if (draft.valuesEnabled) {
       const replace = alive && !candidate && matches && draft.valuesMode === 'replace'
-      if (replace) value = numeric && typeof draft.replacementValue === 'number' ? scaleExample(draft.replacementValue, 1, property) : draft.replacementValue ?? null
+      if (replace) value = draft.replacementValue ?? null
       visit('values', draft.valuesMode === 'keep' ? !matches : draft.valuesMode === 'ignore' && matches, false, candidate)
       if (replace) stages[stages.length - 1].status = 'processed'
     }
     if (draft.rangeEnabled) {
       const outside = numeric && (Number(value) < Number(draft.min) || Number(value) > Number(draft.max))
       const clamp = outside && draft.rangeAction === 'clamp' && alive && !candidate
-      if (clamp) value = scaleExample(Math.max(draft.min!, Math.min(draft.max!, Number(value))), 1, property)
+      if (clamp) value = Math.max(draft.min!, Math.min(draft.max!, Number(value)))
       visit('range', outside && draft.rangeAction !== 'clamp', false, candidate)
       if (clamp) stages[stages.length - 1].status = 'processed'
     }

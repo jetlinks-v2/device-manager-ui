@@ -2,9 +2,10 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { createRenderer, defineComponent, nextTick, reactive } from 'vue'
 import { createI18n } from 'vue-i18n'
+import type { RouteLocationNormalized } from 'vue-router'
 import { usePropertyRules } from '../views/device/components/PropertyRules/usePropertyRules'
 import { setAlarmRequestHandler } from './alarmRequest.test-shim'
-import { ruleRoute } from './propertyRuleScope.test-shim'
+import { routeGuards, ruleRoute, setConfirmHandler, type TestConfirmation } from './propertyRuleScope.test-shim'
 import { usePropertyRuleEditor, type RuleEditorProps } from '../views/device/components/PropertyRules/usePropertyRuleEditor'
 import { useRuleResources } from '../views/device/components/PropertyRules/useRuleResources'
 import { useRuleExample } from '../views/device/components/PropertyRules/useRuleExample'
@@ -27,6 +28,155 @@ const mountPanel = (props: Parameters<typeof usePropertyRules>[0]) => {
   const { state, unmount } = mountState(() => usePropertyRules(props))
   return { panel: state, unmount }
 }
+
+function mountEditor(changed: (props: RuleEditorProps) => void | Promise<void> = () => {}) {
+  Object.defineProperty(globalThis, 'window', { configurable: true, value: { addEventListener() {}, removeEventListener() {} } })
+  const props = reactive<RuleEditorProps>({ open: true, inline: true, scope: { productId: 'p1', deviceId: 'd1' },
+    property: { id: 'temperature', valueType: { type: 'double' } },
+    snapshot: { hasOverride: true, raw: { provider: 'ratio-sampling', configuration: { ratio: 0.5 } } } })
+  const mounted = mountState(() => usePropertyRuleEditor(props, () => {}, () => changed(props)))
+  const dialogs: TestConfirmation[] = []
+  setConfirmHandler(options => { dialogs.push(options) })
+  let active = true
+  const unmount = () => { if (active) { mounted.unmount(); active = false } }
+  return { props, editor: mounted.state, dialogs, unmount,
+    cleanup() { unmount(); setConfirmHandler(); Reflect.deleteProperty(globalThis, 'window') } }
+}
+
+const editorRoute = (id: string): RouteLocationNormalized => ({ path: `/products/${id}`, fullPath: `/products/${id}`,
+  name: 'product-detail', params: { id }, query: { tab: 'AlarmConfig', ruleProperty: 'temperature' }, hash: '', matched: [], meta: {}, redirectedFrom: undefined })
+
+test('restore confirmation is explicit and restores only the captured device property', async () => {
+  const calls: string[] = []
+  setAlarmRequestHandler(async (url, body) => { assert.equal(body.method, 'DELETE'); calls.push(url); return { result: {} } })
+  const view = mountEditor(props => { props.snapshot = { hasOverride: false } })
+  try {
+    await settle()
+    await view.editor.restore()
+    assert.equal(calls.length, 0)
+    await view.dialogs[0].onCancel?.()
+    assert.equal(calls.length, 0)
+    await view.editor.restore()
+    await view.dialogs[1].onOk?.()
+    assert.deepEqual(calls, ['/message/preprocessor/device/p1/d1/property/temperature'])
+    assert.equal(view.editor.hasOverride.value, false)
+    assert.equal(view.editor.custom.value, false)
+    assert.equal(view.editor.saving.value, false)
+  } finally { view.cleanup() }
+})
+
+test('stale restore confirmations cannot delete a changed or unmounted target', async () => {
+  for (const change of ['product', 'device', 'property', 'permission', 'close', 'unmount']) {
+    const calls: string[] = []
+    setAlarmRequestHandler(async url => { calls.push(url); return { result: {} } })
+    const view = mountEditor()
+    try {
+      await settle()
+      await view.editor.restore()
+      if (change === 'product') view.props.scope.productId = 'p2'
+      else if (change === 'device') view.props.scope.deviceId = 'd2'
+      else if (change === 'property') view.props.property = { id: 'pressure' }
+      else if (change === 'permission') view.props.scope.canUpdate = false
+      else if (change === 'close') view.props.open = false
+      else view.unmount()
+      // Confirm in the same tick: identity checks must not depend on the watcher having run.
+      await view.dialogs[0].onOk?.()
+      await settle()
+      assert.deepEqual(calls, [], change)
+      assert.equal(view.editor.saving.value, false)
+    } finally { view.cleanup() }
+  }
+})
+
+test('changing target during the discard confirmation never opens a restore confirmation', async () => {
+  const calls: string[] = []
+  setAlarmRequestHandler(async url => { calls.push(url); return { result: {} } })
+  const view = mountEditor()
+  try {
+    await settle()
+    view.editor.draft.value!.percent = 60
+    const pending = view.editor.restore()
+    assert.equal(view.dialogs.length, 1)
+    view.props.scope.deviceId = 'd2'
+    await view.dialogs[0].onOk?.()
+    await pending
+    assert.equal(view.dialogs.length, 1)
+    assert.deepEqual(calls, [])
+  } finally { view.cleanup() }
+})
+
+test('a late restore response cannot refresh or reset the next target', async () => {
+  let release!: (value: unknown) => void
+  let refreshes = 0
+  const calls: string[] = []
+  setAlarmRequestHandler(url => { calls.push(url); return new Promise(resolve => { release = resolve }) })
+  const view = mountEditor(() => { refreshes++ })
+  try {
+    await settle()
+    await view.editor.restore()
+    const pending = view.dialogs[0].onOk?.()
+    assert.equal(view.editor.saving.value, true)
+    view.props.scope.deviceId = 'd2'
+    view.props.snapshot = { hasOverride: true, raw: { provider: 'ratio-sampling', configuration: { ratio: 0.75 } } }
+    await settle()
+    release({ result: {} })
+    await pending
+    assert.deepEqual(calls, ['/message/preprocessor/device/p1/d1/property/temperature'])
+    assert.equal(refreshes, 0)
+    assert.equal(view.editor.draft.value?.percent, 75)
+    assert.equal(view.editor.hasOverride.value, true)
+    assert.equal(view.editor.saving.value, false)
+  } finally { view.cleanup() }
+})
+
+test('a failed restore keeps the current override editable', async () => {
+  setAlarmRequestHandler(async () => { throw new Error('write failed') })
+  const view = mountEditor()
+  try {
+    await settle()
+    await view.editor.restore()
+    await view.dialogs[0].onOk?.()
+    assert.equal(view.editor.saving.value, false)
+    assert.equal(view.editor.hasOverride.value, true)
+    assert.equal(view.editor.editable.value, true)
+    assert.equal(view.editor.draft.value?.percent, 50)
+  } finally { view.cleanup() }
+})
+
+test('path changes with identical query parameters preserve the unsaved navigation guard', async () => {
+  const view = mountEditor()
+  try {
+    await settle()
+    view.editor.draft.value!.percent = 60
+    const guard = routeGuards.update.at(-1)!
+    assert.equal(await guard(editorRoute('p1'), editorRoute('p1'), () => {}), true)
+    assert.equal(view.dialogs.length, 0)
+    const cancelled = guard(editorRoute('p2'), editorRoute('p1'), () => {})
+    assert.equal(view.dialogs.length, 1)
+    await view.dialogs[0].onCancel?.()
+    assert.equal(await cancelled, false)
+    const accepted = guard(editorRoute('p2'), editorRoute('p1'), () => {})
+    await view.dialogs[1].onOk?.()
+    assert.equal(await accepted, true)
+  } finally { view.cleanup() }
+})
+
+test('an active write blocks path changes and leaving without opening another dialog', async () => {
+  let release!: (value: unknown) => void
+  setAlarmRequestHandler(() => new Promise(resolve => { release = resolve }))
+  const view = mountEditor()
+  try {
+    await settle()
+    view.editor.draft.value!.percent = 60
+    const saving = view.editor.save()
+    assert.equal(view.editor.saving.value, true)
+    assert.equal(await routeGuards.update.at(-1)!(editorRoute('p2'), editorRoute('p1'), () => {}), false)
+    assert.equal(await routeGuards.leave.at(-1)!(editorRoute('p2'), editorRoute('p1'), () => {}), false)
+    assert.equal(view.dialogs.length, 0)
+    release({ result: {} })
+    await saving
+  } finally { view.cleanup() }
+})
 
 test('recipient directory is lazy, pages independently from selected hydration and searches remotely', async () => {
   const calls: Array<Record<string, any>> = []
@@ -103,7 +253,7 @@ test('editing and resetting a preview never dirties the saved rule; config chang
     assert.equal(editor.pendingSave.value, false)
     example.inputs.value[0].value = null
     assert.equal(example.error.value, 'PropertyRules.diagram.invalidValue')
-    assert.deepEqual(example.points.value, [])
+    assert.equal(example.points.value.length, 0)
     example.reset()
     assert.equal(example.error.value, undefined)
     assert.equal(example.inputs.value[0].value, 10)

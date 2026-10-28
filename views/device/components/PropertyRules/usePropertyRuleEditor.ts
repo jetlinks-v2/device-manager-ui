@@ -260,15 +260,27 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
   }
   async function restore() {
     if (!hasOverride.value || !canSave.value || saving.value) return
-    if (!await confirmLeave()) return
+    const token = generation
+    const scope = { ...props.scope }
+    const property = propertyIdOf(props.property)
+    // Both confirmations belong to the original target; reactive props may change while either is open.
+    const isCurrent = () => token === generation && props.open
+      && scope.productId === props.scope.productId && scope.deviceId === props.scope.deviceId
+      && property === propertyIdOf(props.property)
+    if (!await confirmLeave() || !isCurrent()) return
     Modal.confirm({ title: t('PropertyRules.restoreConfirm'), onOk: async () => {
+      if (!isCurrent() || saving.value || !hasOverride.value || !canSave.value) return
       saving.value = true
       try {
-        await restoreRule(props.scope, propertyIdOf(props.property))
+        await restoreRule(scope, property)
+        if (!isCurrent()) return
         initial.value = JSON.stringify(draft.value)
-        await changed()
-        await load()
-      } catch { message.error(t('PropertyRules.saveFailed')) }
+        // A successful deletion must not be reported as a retryable write failure when refresh fails.
+        try {
+          await changed()
+          if (isCurrent()) await load()
+        } catch { if (isCurrent()) message.warning(t('PropertyRules.refreshFailed')) }
+      } catch { if (isCurrent()) message.error(t('PropertyRules.saveFailed')) }
       finally { saving.value = false }
     } })
   }
@@ -277,7 +289,8 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
   onBeforeUnmount(() => { generation++; clearFeedback(); window.removeEventListener('beforeunload', beforeUnload) })
   onBeforeRouteLeave(async () => !props.open || (!saving.value && await confirmLeave()))
   onBeforeRouteUpdate(async (to, from) => !props.open
-    || (to.query.ruleProperty === from.query.ruleProperty && to.query.tab === from.query.tab)
+    // Identical query parameters can still refer to a different product/device in the path.
+    || (to.path === from.path && to.query.ruleProperty === from.query.ruleProperty && to.query.tab === from.query.tab)
     || (!saving.value && await confirmLeave()))
   watch([() => props.open, () => props.scope.productId, () => props.scope.deviceId, () => propertyIdOf(props.property)], load, { immediate: true })
   return { loading, failed, saving, draft, parsed, numeric, alarmAvailable, canSave, editable, source, hasOverride,

@@ -25,6 +25,33 @@ function draft(): RuleDraft {
   }
 }
 
+test('integer diagrams retain raw replacement and clamp values until calibration', () => {
+  const property = { valueType: { type: 'int' } }
+  for (const mode of ['replace', 'clamp']) {
+    const current = draft()
+    current.valuesMode = 'replace'; current.values = [-999]; current.replacementValue = 2.5
+    current.valuesEnabled = mode === 'replace'; current.rangeEnabled = true
+    current.rangeAction = mode === 'clamp' ? 'clamp' : 'ignore'
+    current.min = mode === 'clamp' ? 2.5 : 2.4; current.max = 2.6
+    current.scaleEnabled = true; current.scale = '2'
+    current.alarmEnabled = current.samplingEnabled = false
+    const point = buildRuleExample(current, property, [{ value: -999, arrivalMillis: 0 }])[0]
+    assert.equal(point.filtered, false)
+    assert.equal(point.stages.find(stage => stage.key === 'range')?.value, '2.5')
+    assert.equal(point.stages.find(stage => stage.key === 'scale')?.value, '5')
+  }
+})
+
+test('integer diagrams do not overflow a raw replacement before calibration', () => {
+  const current = draft()
+  current.valuesMode = 'replace'; current.values = [-999]; current.replacementValue = 2500000000
+  current.scaleEnabled = true; current.scale = '0.1'
+  current.rangeEnabled = current.alarmEnabled = current.samplingEnabled = false
+  const point = buildRuleExample(current, { valueType: { type: 'int' } }, [{ value: -999, arrivalMillis: 0 }])[0]
+  assert.equal(point.stages.find(stage => stage.key === 'values')?.value, '2500000000')
+  assert.equal(point.stages.find(stage => stage.key === 'scale')?.value, '250000000')
+})
+
 test('canonical automatic relief remains one editable alarm unit inside a property chain', () => {
   const current = draft()
   current.alarm.autoRelieve = true
@@ -121,7 +148,7 @@ test('fallback round-trips opt-ins and removes optional fixed value without losi
     fallbackValue: 0, fallbackMissing: true, fallbackEmpty: false }
   const raw = buildRule(parseRule(), current)
   const node = parseRule(raw).nodes.fallback!
-  assert.deepEqual(node.configuration, { mode: 'previous', maxAgeMillis: 300000, value: 0, includeEmpty: false, includeMissing: true })
+  assert.deepEqual({ ...node.configuration }, { mode: 'previous', maxAgeMillis: 300000, value: 0, includeEmpty: false, includeMissing: true })
   node.configuration.custom = 'keep'
   const updated = buildRule({ ...parseRule(raw), nodes: { ...parseRule(raw).nodes, fallback: node } }, { ...current, fallbackValue: null })
   assert.equal(parseRule(updated).nodes.fallback!.configuration.value, undefined)
@@ -662,7 +689,7 @@ test('generated examples reflect configured ranges and business allowlists', () 
   current.values = ['RUNNING', 'STOPPED']
   const strings = createRuleExampleInputs(current, { valueType: { type: 'string' } })
   assert.ok(strings.some(input => input.value === 'RUNNING'))
-  assert.ok(strings.some(input => !current.values.includes(input.value!)))
+  assert.ok(strings.some(input => typeof input.value === 'string' && !current.values.includes(input.value)))
 })
 
 test('new saved strategy summaries match loaded drafts and display exact units', () => {
