@@ -8,6 +8,7 @@ const source = await readFile(sourcePath, 'utf8')
 const sourceFile = ts.createSourceFile(sourcePath.pathname, source, ts.ScriptTarget.Latest, true)
 const addDrawerSource = await readFile(new URL('../views/device/list/hooks/useIotAddDeviceDrawer.ts', import.meta.url), 'utf8')
 const bizKeyPickerSource = await readFile(new URL('../views/link/AccessConfig/components/DeviceLibraryBizKeyPicker.vue', import.meta.url), 'utf8')
+const networkAccessConfigSource = await readFile(new URL('../views/link/AccessConfig/components/Network/index.vue', import.meta.url), 'utf8')
 const templateOptionSource = await readFile(new URL('../views/device/list/hooks/iotAddDeviceProductOptions.ts', import.meta.url), 'utf8')
 const libraryCardSource = await readFile(new URL('../views/device/list/hooks/device-library/useDeviceLibraryCard.ts', import.meta.url), 'utf8')
 const librarySelectionSource = await readFile(new URL('../views/device/list/hooks/device-library/useDeviceLibrarySelection.ts', import.meta.url), 'utf8')
@@ -57,6 +58,14 @@ test('gateway business identifier belongs to the parent configuration instead of
   assert.match(bizKeyPickerSource, /const isCompositeChild = computed\(\(\) => Boolean\(route\.query\.provider\)\)/)
   assert.match(bizKeyPickerSource, /<a-form-item v-if="!isCompositeChild"/)
   assert.doesNotMatch(bizKeyPickerSource, /probeDeviceLibraryCapability_api/)
+})
+
+test('network gateway submits the current business identifier', () => {
+  const saveDataStart = networkAccessConfigSource.indexOf('const saveData = () => {')
+  const saveDataEnd = networkAccessConfigSource.indexOf('\nconst next = async () => {', saveDataStart)
+  assert.ok(saveDataStart >= 0 && saveDataEnd > saveDataStart, 'Network gateway save handler exists')
+  const saveDataSource = networkAccessConfigSource.slice(saveDataStart, saveDataEnd)
+  assert.match(saveDataSource, /bizKey:\s*formData\.value\.bizKey/)
 })
 
 test('device library reads card display type from version resources returned by the marketplace search', () => {

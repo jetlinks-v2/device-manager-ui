@@ -795,6 +795,8 @@ const updateAccessData = async (id: string, values: any) => {
   // 更新选择设备(设备接入)
   const accessObj = {
     ...productStore.current,
+    // 首次更新会先校验该请求体，必须覆盖缓存中的旧策略。
+    storePolicy,
     metadata: _metadata,
     transportProtocol: access.value?.transport,
     protocolName: access.value?.protocolDetail?.name,

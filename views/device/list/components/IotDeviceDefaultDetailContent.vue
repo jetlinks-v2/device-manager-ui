@@ -71,6 +71,11 @@
           @open-rules="openRelatedRules"
         />
 
+        <IotDeviceInvalidDataTab
+          v-else-if="activeTab === 'invalid'"
+          :device="device"
+        />
+
         <component
           v-else-if="activeExtension"
           :is="activeExtension.component"
@@ -95,6 +100,7 @@ import IotDeviceAccessDetailTab from './device-detail/IotDeviceAccessDetailTab.v
 import IotDeviceCommandCenterTab from './device-detail/IotDeviceCommandCenterTab.vue'
 import IotDeviceDataTableTab from './device-detail/IotDeviceDataTableTab.vue'
 import IotDeviceAlarmTab from './device-detail/IotDeviceAlarmTab.vue'
+import IotDeviceInvalidDataTab from './device-detail/IotDeviceInvalidDataTab.vue'
 import IotDeviceLogsSearchTableTab from './device-detail/IotDeviceLogsSearchTableTab.vue'
 import IotDeviceOverviewTab from './device-detail/IotDeviceOverviewTab.vue'
 import LegacyMetadata from '@device-manager-ui/views/device/components/Metadata/index.vue'
