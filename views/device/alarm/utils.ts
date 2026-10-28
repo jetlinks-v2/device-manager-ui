@@ -86,23 +86,43 @@ export function isNumberProperty(property: ThingModelProperty): boolean {
 }
 
 export function getAlarmProcessor(row?: ThingPropertyPreprocess) {
-  return parseDeviceAlarmConfiguration(row)?.alarmProcessor
+  return findAlarmConfiguration(row)?.alarmProcessor
 }
 
 export function getNotifyProcessor(row?: ThingPropertyPreprocess) {
-  return parseDeviceAlarmConfiguration(row)?.notifyProcessor
+  return findAlarmConfiguration(row)?.notifyProcessor
 }
 
 export function getAlarmMatcher(row?: ThingPropertyPreprocess) {
-  return parseDeviceAlarmConfiguration(row)?.matcher
+  return findAlarmConfiguration(row)?.matcher
 }
 
 export function hasAlarmRelieveProcessor(row?: ThingPropertyPreprocess): boolean {
   return Boolean(parseDeviceAlarmConfiguration(row)?.relieveProcessor)
 }
 
+/** 复合属性链只提取唯一告警单元，其他处理段仍由完整配置编解码器保护。 */
+function findAlarmConfiguration(row?: ThingPropertyPreprocess, depth = 0): DeviceAlarmConfiguration | undefined {
+  if (!row || depth > 16) return undefined
+  const direct = parseDeviceAlarmConfiguration(row)
+  if (direct) return direct
+  const processors = row.configuration?.processors
+  if (row.provider !== COMPOSITE_PROCESSOR || !Array.isArray(processors)) return undefined
+  // 解除分支必须与告警组成已识别的单元，不能把未知平铺复合链误读成普通告警。
+  if (processors.some(child => child?.provider === SIMPLE_PROCESSOR
+    && directProcessors(child.configuration ?? {})?.some(item => item.provider === DEVICE_ALARM_RELIEVE_PROCESSOR))) return undefined
+  let result: DeviceAlarmConfiguration | undefined
+  for (const child of processors) {
+    const found = findAlarmConfiguration(child, depth + 1)
+    if (!found) continue
+    if (result) return undefined
+    result = found
+  }
+  return result
+}
+
 export function isDeviceAlarmPreprocess(row?: ThingPropertyPreprocess): boolean {
-  return Boolean(parseDeviceAlarmConfiguration(row))
+  return Boolean(findAlarmConfiguration(row))
 }
 
 export function normalizeAlarmSource(row?: ThingPropertyPreprocess): DeviceAlarmSource {
@@ -119,7 +139,7 @@ export function toDeviceAlarmRow(
   targetName: string,
   property?: ThingModelProperty,
 ): DeviceAlarmRow | null {
-  const alarmConfiguration = parseDeviceAlarmConfiguration(row)
+  const alarmConfiguration = findAlarmConfiguration(row)
   if (!alarmConfiguration) return null
   const processorConfig = alarmConfiguration.alarmProcessor.configuration ?? {}
   const notifyConfig = normalizeNotification(row.notifyConfig ?? alarmConfiguration.notifyProcessor?.configuration)
@@ -251,8 +271,8 @@ function buildNumberRangeMatcher(form: DeviceAlarmFormModel, inverted = false) {
 }
 
 /**
- * 只解析本页面拥有的两种配置：历史 simple 告警，或自动解除生成的标准 composite。
- * 任意其他复合处理器都不进入编辑链路，避免保存时丢失未知分支。
+ * 只解析单个告警单元：历史 simple 告警，或自动解除生成的标准 composite。
+ * 混合属性链由上层查找唯一单元，未知分支的编辑由完整配置编解码器拒绝。
  */
 function parseDeviceAlarmConfiguration(row?: ThingPropertyPreprocess): DeviceAlarmConfiguration | undefined {
   if (!row || !isRecord(row.configuration)) return undefined
@@ -289,7 +309,8 @@ function parseAlarmBranch(configuration: Record<string, unknown>): DeviceAlarmCo
   if (!matcher || !processors) return undefined
   const alarms = processors.filter(item => item.provider === DEVICE_ALARM_PROCESSOR)
   const notifications = processors.filter(item => item.provider === NOTIFY_PROCESSOR)
-  if (alarms.length !== 1 || notifications.length > 1 || alarms.length + notifications.length !== processors.length) {
+  if (alarms.length !== 1 || notifications.length > 1
+    || processors.some(item => ![DEVICE_ALARM_PROCESSOR, NOTIFY_PROCESSOR, 'device-record'].includes(item.provider))) {
     return undefined
   }
   return {

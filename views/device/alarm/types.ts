@@ -67,17 +67,29 @@ export interface DeviceAlarmRow extends DeviceAlarmFormModel {
   raw?: ThingPropertyPreprocess
 }
 
+export interface ThingModelValueType {
+  type?: string
+  unit?: string
+  scale?: number
+  maxLength?: number
+  bodyType?: string
+  format?: string
+  trueText?: string
+  falseText?: string
+  elements?: Array<{ text?: string; value: string | number | boolean }>
+  elementType?: ThingModelValueType
+  properties?: ThingModelProperty[]
+}
+
 export interface ThingModelProperty {
   id?: string
   identifier?: string
   key?: string
   name?: string
+  expands?: { groupId?: string; groupName?: string }
   alarmConfigured?: boolean
   dataType?: string
-  valueType?: {
-    type?: string
-    unit?: string
-  }
+  valueType?: ThingModelValueType
   type?: string
 }
 

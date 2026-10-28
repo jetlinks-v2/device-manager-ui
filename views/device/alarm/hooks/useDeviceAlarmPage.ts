@@ -7,7 +7,6 @@ import {
   queryAlarmTargetPage,
   queryDefaultAlarmLevels,
   queryDeviceAlarmPage,
-  queryDeviceAlarmNotifyUsers,
   queryDeviceAlarmNotifyProviders,
   queryProductMetadata,
   toNotifyMethods,
@@ -16,14 +15,12 @@ import type {
   AlarmLevelOption,
   DeviceAlarmFormModel,
   DeviceAlarmNotifyMethod,
-  DeviceAlarmNotifyUser,
   DeviceAlarmRow,
   DeviceAlarmSource,
   DeviceAlarmTargetOption,
   ThingModelProperty,
 } from '../types'
 import {
-  buildPreprocessPayload,
   createEmptyNotification,
   DEVICE_ALARM_NOTIFICATION_MESSAGE_MAX_LENGTH,
   formatTriggerText,
@@ -38,9 +35,11 @@ import {
   validateNotificationMessage,
 } from '../utils'
 import type { IotAlarmTargetSelectOption, IotAlarmTargetSelectQuery } from '../components/IotAlarmTargetSelect.vue'
-import { mergeNotifyUsersById } from '../../../../utils/notifyUser'
+import { parseRule, replaceAlarm } from '../../components/PropertyRules/codec'
+import { loadRules, saveRule } from '../../components/PropertyRules/service'
 
 export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unknown>) => string) {
+  const saving = ref(false)
   const loading = ref(false)
   const rows = ref<DeviceAlarmRow[]>([])
   const total = ref(0)
@@ -57,11 +56,8 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
   const propertyOptions = ref<ThingModelProperty[]>([])
   const levelOptions = ref<AlarmLevelOption[]>(createDefaultLevelOptions(t))
   const notifyMethods = ref<DeviceAlarmNotifyMethod[]>([])
-  const notifyUsers = ref<DeviceAlarmNotifyUser[]>([])
   const levelLoaded = ref(false)
   const notifyLoading = ref(false)
-  const notifyUserPageIndex = ref(-1)
-  const notifyUserTotal = ref(0)
   const editorOpen = ref(false)
   // The editor stays mounted after close; use this key to refresh product options for every open.
   const productReloadKey = ref(0)
@@ -205,6 +201,7 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
   }
 
   async function openEdit(row: DeviceAlarmRow) {
+    if (!parseRule(row.raw).editable) { message.warning(t('PropertyRules.readonly')); return }
     editingRow.value = row
     form.value = {
       ...row,
@@ -257,6 +254,7 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
   }
 
   async function save() {
+    if (saving.value) return
     const current = form.value
     const error = validateForm(current)
     if (error) {
@@ -267,15 +265,17 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
       message.warning(t('DeviceAlarm.validation.duplicate'))
       return
     }
-    const payload = buildPreprocessPayload(current)
-    if (current.source === 'product') {
-      await deviceAlarmApi.saveProductAlarm(String(current.productId || current.targetId), current.property, payload)
-    } else {
-      await deviceAlarmApi.saveDeviceAlarm(String(current.productId), String(current.deviceId || current.targetId), current.property, payload)
-    }
-    message.success(t('DeviceAlarm.message.saveSuccess', { name: current.name }))
-    editorOpen.value = false
-    await refresh()
+    saving.value = true
+    try {
+      const scope = { productId: String(current.productId || current.targetId), deviceId: current.source === 'device' ? String(current.deviceId || current.targetId) : undefined }
+      const loaded = await loadRules(scope, current.property)
+      const raw = loaded.device[0] ?? loaded.product[0]
+      if (!parseRule(raw).editable) { message.warning(t('PropertyRules.readonly')); return }
+      await saveRule(scope, current.property, replaceAlarm(raw, current))
+      message.success(t('DeviceAlarm.message.saveSuccess', { name: current.name }))
+      editorOpen.value = false
+      await refresh()
+    } finally { saving.value = false }
   }
 
   async function queryConfiguredPropertyIds(target: DeviceAlarmTargetOption) {
@@ -307,47 +307,19 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
   async function loadNotifyResources() {
     notifyLoading.value = true
     try {
-      const selectedUserIds = [...new Set(form.value.notification.userIds.map(String).filter(Boolean))]
-      // Saved recipients may be outside the first dropdown page, so resolve them separately.
-      const [channels, users, selectedUsers] = await Promise.all([
-        queryDeviceAlarmNotifyProviders().catch(() => []),
-        queryDeviceAlarmNotifyUsers({ pageIndex: 0 }).catch(() => ({ data: [], total: 0 })),
-        selectedUserIds.length
-          ? queryDeviceAlarmNotifyUsers({ paging: false, userIds: selectedUserIds }).catch(() => ({ data: [], total: 0 }))
-          : Promise.resolve({ data: [], total: 0 }),
-      ])
+      const channels = await queryDeviceAlarmNotifyProviders().catch(() => [])
       notifyMethods.value = toNotifyMethods(channels)
-      const retainedUsers = notifyUsers.value.filter((user) => selectedUserIds.includes(user.id))
-      notifyUsers.value = mergeNotifyUsersById(
-        retainedUsers,
-        mergeNotifyUsersById(selectedUsers.data, users.data),
-      )
-      notifyUserPageIndex.value = 0
-      notifyUserTotal.value = users.total
-    } finally {
-      notifyLoading.value = false
-    }
-  }
-
-  async function loadMoreNotifyUsers() {
-    if (notifyLoading.value || notifyUsers.value.length >= notifyUserTotal.value) return
-    notifyLoading.value = true
-    try {
-      const page = await queryDeviceAlarmNotifyUsers({ pageIndex: notifyUserPageIndex.value + 1 })
-      notifyUsers.value = mergeNotifyUsersById(notifyUsers.value, page.data)
-      notifyUserPageIndex.value += 1
-      notifyUserTotal.value = page.total
     } finally {
       notifyLoading.value = false
     }
   }
 
   async function remove(row: DeviceAlarmRow) {
-    if (row.source === 'product') {
-      await deviceAlarmApi.deleteProductAlarm(String(row.productId), row.property)
-    } else {
-      await deviceAlarmApi.deleteDeviceAlarm(String(row.productId), String(row.deviceId), row.property)
-    }
+    const scope = { productId: String(row.productId), deviceId: row.source === 'device' ? row.deviceId : undefined }
+    const loaded = await loadRules(scope, row.property)
+    const raw = loaded.device[0] ?? loaded.product[0]
+    if (!parseRule(raw).editable) { message.warning(t('PropertyRules.readonly')); return }
+    await saveRule(scope, row.property, replaceAlarm(raw))
     message.success(t('DeviceAlarm.message.deleteSuccess', { name: row.name }))
     await refresh()
   }
@@ -471,9 +443,9 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
     selectedProductOption,
     selectedDeviceOption,
     notifyMethods,
-    notifyUsers,
     notifyLoading,
     editorOpen,
+    saving,
     productReloadKey,
     editingRow,
     form,
@@ -493,7 +465,6 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
     onProductChange,
     onDeviceChange,
     onPropertyChange,
-    loadMoreNotifyUsers,
     save,
     remove,
   }

@@ -1,52 +1,48 @@
 <template>
   <section class="device-alarm-notify">
     <header class="device-alarm-notify__head">
-      <h4>{{ $t('DeviceAlarm.notification.title') }}</h4>
-      <a-space>
-        <span class="device-alarm-notify__switch-label">
-          {{ model.notification.enabled ? $t('DeviceAlarm.notification.enabled') : $t('DeviceAlarm.notification.disabled') }}
-        </span>
-        <a-switch v-model:checked="model.notification.enabled" />
+      <span class="device-alarm-notify__title"><AIcon :type="model.notification.enabled ? 'BellFilled' : 'BellOutlined'" />{{ $t('DeviceAlarm.notification.title') }}</span>
+      <a-space size="small">
+        <a-switch v-model:checked="model.notification.enabled" size="small" :disabled="disabled" :aria-label="$t('DeviceAlarm.notification.title')" />
         <a-button
           v-if="hasNotification"
-          type="link"
+          type="text"
           size="small"
+          :disabled="disabled"
+          :title="$t('DeviceAlarm.notification.clear')"
+          :aria-label="$t('DeviceAlarm.notification.clear')"
           @click="clearNotification"
         >
-          {{ $t('DeviceAlarm.notification.clear') }}
+          <AIcon type="ClearOutlined" />
         </a-button>
       </a-space>
     </header>
 
     <a-spin v-if="model.notification.enabled" :spinning="loading">
-      <a-form-item :label="$t('DeviceAlarm.notification.channel')">
+      <a-form-item>
+        <template #label><AIcon type="SendOutlined" />{{ $t('DeviceAlarm.notification.channel') }}</template>
         <a-select
           v-model:value="selectedChannelIds"
           mode="multiple"
           :options="methodOptions"
           :placeholder="$t('DeviceAlarm.notification.channelPlaceholder')"
-          :disabled="!model.notification.enabled"
+          size="small"
+          :max-tag-count="'responsive'"
+          :aria-label="$t('DeviceAlarm.notification.channel')"
+          :disabled="disabled"
           @change="syncParameters"
         />
       </a-form-item>
 
-      <a-form-item :label="$t('DeviceAlarm.notification.user')">
-        <a-select
-          v-model:value="model.notification.userIds"
-          mode="multiple"
-          show-search
-          :filter-option="filterUserOption"
-          :options="userOptions"
-          :placeholder="$t('DeviceAlarm.notification.userPlaceholder')"
-          :disabled="!model.notification.enabled"
-          @popupScroll="handleUserPopupScroll"
-        />
+      <a-form-item>
+        <template #label><AIcon type="TeamOutlined" />{{ $t('DeviceAlarm.notification.user') }}</template>
+        <DeviceAlarmRecipients v-model:value="model.notification.userIds" :scope-key="`${model.source}:${model.targetId}:${model.property}`" :disabled="disabled" />
       </a-form-item>
 
       <DeviceAlarmMessageTemplateConfig
         v-if="showLegacyMessageTemplate"
         :model="model"
-        :disabled="!model.notification.enabled"
+        :disabled="disabled"
       />
     </a-spin>
   </section>
@@ -55,23 +51,19 @@
 <script setup lang="ts">
 import { computed, ref, watch, type PropType } from 'vue'
 import DeviceAlarmMessageTemplateConfig from './DeviceAlarmMessageTemplateConfig.vue'
+import DeviceAlarmRecipients from './DeviceAlarmRecipients.vue'
 import { getNotificationMessageMode, matchesAlarmNotifyMethod } from '../utils'
 import type {
   DeviceAlarmFormModel,
   DeviceAlarmNotifyMethod,
-  DeviceAlarmNotifyUser,
 } from '../types'
 
 const props = defineProps({
   model: { type: Object as PropType<DeviceAlarmFormModel>, required: true },
   methods: { type: Array as PropType<DeviceAlarmNotifyMethod[]>, default: () => [] },
-  users: { type: Array as PropType<DeviceAlarmNotifyUser[]>, default: () => [] },
   loading: { type: Boolean, default: false },
+  disabled: { type: Boolean, default: false },
 })
-
-const emit = defineEmits<{
-  'load-more-users': []
-}>()
 
 const hasNotification = computed(() =>
   Boolean(props.model.notification.notifyChannelIds?.length || props.model.notification.channelProviders.length || props.model.notification.userIds.length),
@@ -117,19 +109,14 @@ const methodOptions = computed(() =>
 watch(
   selectedMethods,
   (methods) => {
+    // Saved channel IDs remain authoritative while options load or a channel becomes unavailable.
+    if (props.model.notification.notifyChannelIds?.length || !props.methods.length) return
     const channelIds = methods.map((method) => method.channelId).filter((id): id is string => Boolean(id))
     if (!sameStringArray(props.model.notification.notifyChannelIds ?? [], channelIds)) {
       props.model.notification.notifyChannelIds = channelIds
     }
   },
   { immediate: true },
-)
-
-const userOptions = computed(() =>
-  props.users.map((user) => ({
-    label: `${user.name}${user.desc ? `（${user.desc}）` : ''}`,
-    value: user.id,
-  })),
 )
 
 function clearNotification() {
@@ -159,17 +146,6 @@ function syncParameters() {
     }
   })
   props.model.notification.parameters = parameters
-}
-
-function filterUserOption(input: string, option?: { label?: string }) {
-  return String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-}
-
-function handleUserPopupScroll(event: Event) {
-  const target = event.target as HTMLElement
-  if (target.scrollTop + target.clientHeight >= target.scrollHeight - 24) {
-    emit('load-more-users')
-  }
 }
 
 function firstText(...values: unknown[]) {

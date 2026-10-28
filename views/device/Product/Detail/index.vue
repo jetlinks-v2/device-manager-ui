@@ -20,7 +20,7 @@
     />
 
     <section class="product-detail-page__tabs">
-      <a-tabs v-model:activeKey="activeTab" class="product-detail-tabs" @change="handleTabChange">
+      <a-tabs :activeKey="activeTab" class="product-detail-tabs" @change="handleTabChange">
         <a-tab-pane v-for="tab in visibleTabs" :key="tab.key">
           <template #tab>
             <span class="product-detail-tabs__item">
@@ -64,6 +64,7 @@ import { buildProductDetailTabs, resolveProductDetailTab, type ProductDetailTabK
 
 const { t: $t } = useI18n()
 const route = useRoute()
+const router = useRouter()
 const routerParams = useRouterParams()
 const productStore = useProductStore()
 const permissionStore = useAuthStore()
@@ -74,6 +75,7 @@ const activeTab = ref<ProductDetailTabKey>('Device')
 const canViewDevices = computed(() => menuStore.hasMenu('iot-user-device-list'))
 
 const visibleTabs = computed(() => buildProductDetailTabs(productStore.current, {
+  showRules: true,
   showAlarm: permissionStore.hasPermission('rule-engine/Alarm/Log:view') && showThreshold,
   showFirmware: permissionStore.hasPermission('device/Firmware:view'),
   showDashboard: isApplyDashboard(),
@@ -87,11 +89,15 @@ function syncActiveTab(tab?: unknown) {
 }
 
 function handleTabChange(key: string) {
+  const change = () => {
+    const query = { ...route.query, tab: key, ruleProperty: undefined }
+    return router.replace({ query })
+  }
   if (activeTab.value === 'Metadata') {
-    EventEmitter.emit('MetadataTabs', () => syncActiveTab(key))
+    EventEmitter.emit('MetadataTabs', change)
     return
   }
-  syncActiveTab(key)
+  void change()
 }
 
 function refreshCurrent() {
@@ -153,11 +159,12 @@ function backToProductList() {
 }
 
 watch(() => productStore.current, () => syncActiveTab(), { deep: true })
+watch(() => route.query.tab, (tab) => syncActiveTab(tab))
 
 onMounted(async () => {
   productStore.reSet()
   await productStore.refresh(route.params.id as string)
-  syncActiveTab(routerParams.params?.value.tab)
+  syncActiveTab(route.query.tab ?? routerParams.params?.value.tab)
 })
 </script>
 

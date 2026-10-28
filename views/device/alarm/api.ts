@@ -3,8 +3,9 @@ import { restoreDeviceLibraryAlarms_api } from '@device-manager-ui/api/device-li
 import {
   withIotDeviceListDefaultTerms,
 } from '@device-manager-ui/api/deviceListDefaultTerms'
+import { replaceAlarm } from '../components/PropertyRules/codec'
 import { localizeDeviceLibraryPreprocessors, resolveI18nText } from './deviceLibraryI18n'
-import { buildPreprocessPayload, normalizeNotification, toDeviceAlarmPageRow, toDeviceAlarmRow } from './utils'
+import { normalizeNotification, toDeviceAlarmPageRow, toDeviceAlarmRow } from './utils'
 import type {
   AlarmLevelOption,
   DeviceAlarmNotifyMethod,
@@ -66,13 +67,13 @@ export const deviceAlarmApi = {
       await request.post(`/message/preprocessor/product/${encodeURIComponent(productId)}/${encodeURIComponent(deviceId)}/property/_list`, data),
     ),
   saveProductAlarm: (productId: string, propertyId: string, data: Record<string, any>) =>
-    request.put(`/message/preprocessor/product/${productId}/property/${propertyId}`, data),
+    request.put(`/message/preprocessor/product/${encodeURIComponent(productId)}/property/${encodeURIComponent(propertyId)}`, data),
   saveDeviceAlarm: (productId: string, deviceId: string, propertyId: string, data: Record<string, any>) =>
-    request.put(`/message/preprocessor/device/${productId}/${deviceId}/property/${propertyId}`, data),
+    request.put(`/message/preprocessor/device/${encodeURIComponent(productId)}/${encodeURIComponent(deviceId)}/property/${encodeURIComponent(propertyId)}`, data),
   deleteProductAlarm: (productId: string, propertyId: string, data?: Record<string, any>) =>
-    request.remove(`/message/preprocessor/product/${productId}/property/${propertyId}`, data),
+    request.remove(`/message/preprocessor/product/${encodeURIComponent(productId)}/property/${encodeURIComponent(propertyId)}`, data),
   deleteDeviceAlarm: (productId: string, deviceId: string, propertyId: string, data?: Record<string, any>) =>
-    request.remove(`/message/preprocessor/device/${productId}/${deviceId}/property/${propertyId}`, data),
+    request.remove(`/message/preprocessor/device/${encodeURIComponent(productId)}/${encodeURIComponent(deviceId)}/property/${encodeURIComponent(propertyId)}`, data),
   queryNotifyChannels: () =>
     request.get('/notify/channel/all'),
   queryNotifyUsers: (data: {
@@ -80,14 +81,18 @@ export const deviceAlarmApi = {
     pageSize?: number
     paging?: boolean
     userIds?: string[]
+    keyword?: string
   }) => {
-    const { userIds, ...params } = data
+    const { userIds, keyword, ...params } = data
     return request.post('/user/detail/_query', {
       ...params,
       terms: userIds?.length
         ? [{ column: 'id', termType: 'in', value: userIds }]
-        : undefined,
-      sorts: [{ name: 'name', order: 'asc' }],
+        : keyword?.trim() ? [{ terms: [
+          { column: 'name', termType: 'like', value: `%${keyword.trim()}%` },
+          { column: 'username', termType: 'like', value: `%${keyword.trim()}%`, type: 'or' },
+        ] }] : undefined,
+      sorts: [{ name: 'name', order: 'asc' }, { name: 'id', order: 'asc' }],
     })
   },
   queryInstalledDeviceLibrary: (capabilityId: string) =>
@@ -251,7 +256,7 @@ export function toNotifyMethods(providers: unknown[]): DeviceAlarmNotifyMethod[]
 }
 
 export async function queryDeviceAlarmNotifyUsers(
-  params: { pageIndex?: number; pageSize?: number; paging?: boolean; userIds?: string[] } = {},
+  params: { pageIndex?: number; pageSize?: number; paging?: boolean; userIds?: string[]; keyword?: string } = {},
 ): Promise<{ data: DeviceAlarmNotifyUser[]; total: number }> {
   const pageIndex = Math.max(0, Number(params.pageIndex ?? 0))
   const pageSize = Math.max(1, Number(params.pageSize ?? 20))
@@ -396,7 +401,7 @@ async function restoreProductAlarmNotifications(productId: string, snapshots: Pr
     const row = restoredRows.find((item) => item.property === snapshot.property)
     if (!row) return
     // 设备库模板不维护通知链路；还原阈值后，只基于当前项目可见的产品告警行写回原通知配置。
-    await deviceAlarmApi.saveProductAlarm(productId, snapshot.property, buildPreprocessPayload({
+    await deviceAlarmApi.saveProductAlarm(productId, snapshot.property, replaceAlarm(row.raw, {
       ...row,
       notification: snapshot.notification,
     }))

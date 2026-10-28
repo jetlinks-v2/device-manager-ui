@@ -60,6 +60,8 @@
           @visible-keys-change="setPropertyPageRealtimeKeys"
         />
 
+        <IotDeviceAlarmConfigTab v-else-if="activeTab === 'property-rules'" :device="device" :properties="thingModelDefinition.properties" />
+
         <IotDeviceAlarmTab
           v-else-if="activeTab === 'alarm'"
           :device="device"
@@ -99,6 +101,7 @@ import { toRefs, type PropType } from 'vue'
 import IotDeviceAccessDetailTab from './device-detail/IotDeviceAccessDetailTab.vue'
 import IotDeviceCommandCenterTab from './device-detail/IotDeviceCommandCenterTab.vue'
 import IotDeviceDataTableTab from './device-detail/IotDeviceDataTableTab.vue'
+import IotDeviceAlarmConfigTab from './device-detail/IotDeviceAlarmConfigTab.vue'
 import IotDeviceAlarmTab from './device-detail/IotDeviceAlarmTab.vue'
 import IotDeviceInvalidDataTab from './device-detail/IotDeviceInvalidDataTab.vue'
 import IotDeviceLogsSearchTableTab from './device-detail/IotDeviceLogsSearchTableTab.vue'

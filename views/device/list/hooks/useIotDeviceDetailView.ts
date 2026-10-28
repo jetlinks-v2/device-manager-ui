@@ -235,7 +235,7 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
     value?: string
   }
 
-  const activeTab = computed<DeviceDetailTab>(() => props.embedded?.panel ?? normalizeDeviceDetailTab(route.query.tab, extensionTabs.value))
+  const activeTab = computed<DeviceDetailTab>(() => props.embedded?.panel ?? (['advanced', 'records'].includes(String(route.query.tab)) && route.query.sub === 'threshold' ? 'property-rules' : normalizeDeviceDetailTab(route.query.tab, extensionTabs.value)))
   const activeExtension = computed(() => extensionTabs.value.find(tab => tab.key === activeTab.value))
 
   function setActiveTab(tab: DeviceDetailTab) {
@@ -1009,6 +1009,7 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
     { key: 'thing-model', label: $t('IotDeviceDetail.detail.tab.thingModel'), icon: 'ApartmentOutlined' },
     { key: 'commands', label: $t('IotDeviceDetail.detail.tab.commands'), icon: 'CodeOutlined' },
     { key: 'data', label: $t('IotDeviceDetail.detail.tab.data'), icon: 'LineChartOutlined' },
+    { key: 'property-rules', label: $t('PropertyRules.title'), icon: 'ControlOutlined' },
     { key: 'alarm', label: $t('DeviceAlarm.title.page'), icon: 'AlertOutlined' },
     ...(canViewInvalidData.value ? [{ key: 'invalid' as const, label: $t('Detail.index.957187-29'), icon: 'FileTextOutlined' }] : []),
     { key: 'logs', label: $t('IotDeviceDetail.detail.tab.logs'), icon: 'FileTextOutlined' },

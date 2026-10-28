@@ -81,12 +81,12 @@
           @tab="history.changeTab" @range="history.changeRange" @page="history.changePage" @retry="history.loadHistory" />
       </a-modal>
       <DeviceAlarmHandleModal :state="handling" @description="value => handling.description = value" @close="handling.close" @submit="handling.submit" />
-      <DeviceAlarmEditorModal v-model:open="editorOpen" :model="form" :readonly-scope="Boolean(editingRow)"
+      <DeviceAlarmEditorModal v-model:open="editorOpen" :model="form" :readonly-scope="Boolean(editingRow)" :saving="saving"
         :level-options="levelOptions" :trigger-options="triggerOptions" :product-option="selectedProductOption"
         :device-option="selectedDeviceOption" :product-request="requestProducts" :device-request="requestDevices"
-        :property-options="propertyOptions" :notify-methods="notifyMethods" :notify-users="notifyUsers" :notify-loading="notifyLoading"
+        :property-options="propertyOptions" :notify-methods="notifyMethods" :notify-loading="notifyLoading"
         :product-reload-key="productReloadKey" @product-change="onProductChange" @device-change="onDeviceChange"
-        @property-change="onPropertyChange" @load-more-users="loadMoreNotifyUsers" @save="run(save)" />
+        @property-change="onPropertyChange" @save="run(save)" />
     </main>
   </j-page-container>
 </template>
@@ -117,9 +117,9 @@ const router = useRouter()
 const { page, selected, ruleId, activeCounts, statusError, listError, loading, busy, creating,
   loadingMore, loadMoreError, hasMore, load, loadCounts, loadMore, select, showAllRecords, remove, run, create } = useDeviceAlarmWorkspace($t)
 const { rows, total, keyword, levelOptions, triggerOptions, propertyOptions,
-  selectedProductOption, selectedDeviceOption, notifyMethods, notifyUsers, notifyLoading, editorOpen, productReloadKey,
+  selectedProductOption, selectedDeviceOption, notifyMethods, notifyLoading, editorOpen, saving, productReloadKey,
   editingRow, form, updateKeyword, handleSearch, openEdit, requestProducts, requestDevices,
-  onProductChange, onDeviceChange, onPropertyChange, loadMoreNotifyUsers, save } = page
+  onProductChange, onDeviceChange, onPropertyChange, save } = page
 const { tableRef: recordTableRef, table: recordTable, error: recordsError, fields: recordFields, terms: recordTerms,
   search: searchRecords, reload: loadRecords } = useDeviceAlarmRecords(ruleId, $t)
 const history = reactive(useDeviceAlarmHistory())

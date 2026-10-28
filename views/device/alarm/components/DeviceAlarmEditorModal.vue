@@ -3,6 +3,8 @@
     :open="open"
     width="min(100rem, calc(100vw - 2.25rem))"
     :mask-closable="false"
+    :closable="!saving"
+    :keyboard="!saving"
     :body-style="{ padding: 0 }"
     wrap-class-name="device-alarm-editor-modal-wrap"
     centered
@@ -15,7 +17,7 @@
       </div>
     </template>
 
-    <a-form class="device-alarm-editor" layout="vertical" :model="model">
+    <a-form class="device-alarm-editor" layout="vertical" :model="model" :disabled="saving">
       <div class="device-alarm-editor__workspace">
         <aside class="device-alarm-editor__base">
           <h3>{{ $t('DeviceAlarm.editor.baseConfig') }}</h3>
@@ -108,7 +110,7 @@
                 :disabled="readonlyScope"
                 :options="propertySelectOptions"
                 :placeholder="$t('DeviceAlarm.placeholder.property')"
-                @change="(value) => emit('property-change', String(value))"
+                @change="(value: unknown) => emit('property-change', String(value))"
               />
             </a-form-item>
           </div>
@@ -157,9 +159,8 @@
                 key="notification"
                 :model="model"
                 :methods="notifyMethods"
-                :users="notifyUsers"
                 :loading="notifyLoading"
-                @load-more-users="emit('load-more-users')"
+                :disabled="saving"
               />
             </RegistryComponent>
           </div>
@@ -184,8 +185,8 @@
 
     <template #footer>
       <div class="device-alarm-editor__footer">
-        <a-button @click="close">{{ $t('DeviceAlarm.action.cancel') }}</a-button>
-        <a-button type="primary" @click="emit('save')">{{ $t('DeviceAlarm.action.save') }}</a-button>
+        <a-button :disabled="saving" @click="close">{{ $t('DeviceAlarm.action.cancel') }}</a-button>
+        <a-button type="primary" :loading="saving" @click="emit('save')">{{ $t('DeviceAlarm.action.save') }}</a-button>
       </div>
     </template>
   </a-modal>
@@ -199,7 +200,6 @@ import IotAlarmTargetSelect from './IotAlarmTargetSelect.vue'
 import type {
   DeviceAlarmFormModel,
   DeviceAlarmNotifyMethod,
-  DeviceAlarmNotifyUser,
   DeviceAlarmTargetOption,
   ThingModelProperty,
 } from '../types'
@@ -209,6 +209,7 @@ import type { IotAlarmTargetSelectOption, IotAlarmTargetSelectQuery } from './Io
 type EditorPanel = 'target' | 'trigger' | 'notification'
 
 const props = defineProps({
+  saving: { type: Boolean, default: false },
   open: { type: Boolean, default: false },
   model: { type: Object as PropType<DeviceAlarmFormModel>, required: true },
   // 产品详情只允许维护当前产品配置，不能在表单中切换到其他产品或设备。
@@ -229,7 +230,6 @@ const props = defineProps({
   },
   propertyOptions: { type: Array as PropType<ThingModelProperty[]>, default: () => [] },
   notifyMethods: { type: Array as PropType<DeviceAlarmNotifyMethod[]>, default: () => [] },
-  notifyUsers: { type: Array as PropType<DeviceAlarmNotifyUser[]>, default: () => [] },
   notifyLoading: { type: Boolean, default: false },
 })
 
@@ -238,7 +238,6 @@ const emit = defineEmits<{
   (e: 'product-change', option?: IotAlarmTargetSelectOption): void
   (e: 'device-change', value?: string, option?: IotAlarmTargetSelectOption): void
   (e: 'property-change', value: string): void
-  (e: 'load-more-users'): void
   (e: 'save'): void
 }>()
 
@@ -337,6 +336,7 @@ const summaryItems = computed(() => [
 ])
 
 function close() {
+  if (props.saving) return
   emit('update:open', false)
 }
 </script>
