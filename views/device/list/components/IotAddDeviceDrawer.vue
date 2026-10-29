@@ -144,9 +144,9 @@
         </template>
       </a-form>
     </section>
-    <template v-if="isEditMode || (currentStep > 0 && (!isCreating || installProgressState.hasError))" #footer>
+    <template v-if="isEditMode || !isCreating || installProgressState.hasError" #footer>
       <IotAddDeviceModalFooter
-        :show-close="isEditMode || isCreating"
+        :show-close="isEditMode || isCreating || currentStep === 0"
         :show-previous="!isEditMode && !isCreating"
         :busy="activePrimaryBusy"
         :submit-disabled="activeSubmitDisabled"
@@ -183,6 +183,7 @@ const props = withDefaults(defineProps<{
   deviceType?: string
   parentId?: string
   device?: IotDevice | null
+  initialProductId?: string
   productFilter?: DeviceCreateDrawerOptions
 }>(), { device: null })
 const emit = defineEmits<{
@@ -196,11 +197,14 @@ const isEditMode = computed(() => Boolean(props.device))
 const currentStep = ref(0)
 const creationExtension = ref<DeviceCreationExtension>()
 const preserveFormOnSourceSelection = ref(false)
+const pendingInitialGuideAdvance = ref(false)
+let guidedProductAdvanceVersion = 0
 const addDrawerProps = {
   get open() { return props.open && !isEditMode.value },
   get projectId() { return props.projectId },
   get deviceType() { return props.deviceType },
   get parentId() { return props.parentId },
+  get initialProductId() { return props.initialProductId },
   get productFilter() { return props.productFilter },
 }
 const editDrawerProps = {
@@ -216,7 +220,7 @@ const {
   areaTreeData, groupTreeData, spaceAreaSupported, configOptionsLoading,
   categoryTree, categoryLoading, totalProductCount, unclassifiedProductCount, selectedCategoryId, productCandidates, productTotal, productPageIndex, productPageSize,
   libraryProducts, libraryTagGroups, libraryPageIndex, libraryPageSize, libraryTotal,
-  selectSource, selectProduct, selectTemplate, clearSelectedSource, selectProductCategory, selectUnclassifiedProductCategory,
+  selectSource, selectProduct, selectTemplate, selectProductCategory, selectUnclassifiedProductCategory,
   loadProductCandidates, loadDeviceLibraryTemplates, loadConfigOptions, onClose, onSubmit, bindCreatedDevice,
   onAreaChange,
 } = useIotAddDeviceDrawer(addDrawerProps, {
@@ -241,7 +245,7 @@ const sourceOptions = computed(() => [
 const activePrimaryBusy = computed(() => isEditMode.value ? editBusy.value : busy.value)
 const activeSubmitDisabled = computed(() => isEditMode.value
   ? !props.device
-  : busy.value || configOptionsLoading.value || Boolean(creationExtension.value && !selectedProduct.value),
+  : busy.value || configOptionsLoading.value || (currentStep.value === 0 && !selectedSource.value) || Boolean(creationExtension.value && !selectedProduct.value),
 )
 const activeErrorMessage = computed(() => isEditMode.value ? editErrorMessage.value : errorMessage.value)
 const activeForm = computed(() => isEditMode.value ? editForm : form)
@@ -270,16 +274,20 @@ function onActiveClose() {
 
 // 返回选择来源不清空本次新增已填内容，避免更换设备后重复录入。
 function backToSource() {
+  guidedProductAdvanceVersion++
   creationExtension.value = undefined
   currentStep.value = 0
   preserveFormOnSourceSelection.value = true
-  clearSelectedSource()
+  // 返回后保留选中的产品/模板，用户可看见当前选择并手动确认“下一步”。
+  pendingInitialGuideAdvance.value = false
 }
 
-/**
- * 两种来源在选中卡片后都进入同一份设备配置，避免首步因没有操作栏而停留。
- */
+/** 确认来源后进入设备基础信息，并按产品接入方式启用专属创建表单。 */
 function enterConfigurationStep() {
+  const product = selectedProduct.value
+  creationExtension.value = creationSource.value === 'product' && product
+    ? findCreationExtension(product.accessProvider)
+    : undefined
   currentStep.value = 1
   void loadConfigOptions()
 }
@@ -287,25 +295,47 @@ function enterConfigurationStep() {
 function handleProductSelect(productId: string) {
   selectProduct(productId, preserveFormOnSourceSelection.value)
   preserveFormOnSourceSelection.value = false
-  const product = selectedProduct.value
-  const extension = product ? findCreationExtension(product.accessProvider) : undefined
-  if (extension) {
-    creationExtension.value = extension
-    enterConfigurationStep()
-    return
-  }
-  enterConfigurationStep()
+  creationExtension.value = undefined
 }
 
 function handleTemplateSelect(templateId: string) {
   selectTemplate(templateId, preserveFormOnSourceSelection.value)
   preserveFormOnSourceSelection.value = false
-  enterConfigurationStep()
+  creationExtension.value = undefined
 }
+
+watch(selectedProduct, async (product) => {
+  // 仅首次异步预选的引导产品自动进入基础信息；返回选择页后与普通入口一致，必须手动点击“下一步”。
+  if (
+    props.open
+    && !isEditMode.value
+    && pendingInitialGuideAdvance.value
+    && creationSource.value === 'product'
+    && product?.id === props.initialProductId
+    && currentStep.value === 0
+  ) {
+    pendingInitialGuideAdvance.value = false
+    const advanceVersion = ++guidedProductAdvanceVersion
+    // 预选状态需先可见，再进入基础信息，避免用户误以为产品选择被跳过。
+    await new Promise<void>((resolve) => window.setTimeout(resolve, 450))
+    if (
+      advanceVersion !== guidedProductAdvanceVersion
+      || !props.open
+      || selectedProduct.value?.id !== product.id
+      || currentStep.value !== 0
+    ) return
+    enterConfigurationStep()
+  }
+})
 
 function onActiveSubmit() {
   if (isEditMode.value) {
     void onEditSubmit()
+    return
+  }
+  if (currentStep.value === 0) {
+    // 普通选择由此确认进入下一步；引导预选会由 watcher 自动进入，不会落回默认“确定”。
+    if (selectedSource.value) enterConfigurationStep()
     return
   }
   if (creationExtension.value) {
@@ -341,6 +371,8 @@ async function handleExtensionCreated(payload: IotAddDeviceCreatedPayload) {
 }
 
 watch(() => props.open, (open) => {
+  guidedProductAdvanceVersion++
+  pendingInitialGuideAdvance.value = Boolean(open && !isEditMode.value && props.initialProductId)
   if (!open || isEditMode.value) return
   currentStep.value = 0
   creationExtension.value = undefined

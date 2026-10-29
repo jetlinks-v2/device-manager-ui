@@ -181,6 +181,7 @@ import ModifyModal from "../Category/components/modifyModal/index.vue";
 import { queryTreeStatistics, deleteTree } from "../../../api/category";
 import { useMenuStore, useAuthStore } from "@jetlinks-web-core/store";
 import { useRouterParams } from "@jetlinks-web/hooks";
+import { useRoute, useRouter } from 'vue-router'
 import { accessType } from "../data";
 import { useI18n } from "vue-i18n";
 import { Modal } from "ant-design-vue";
@@ -200,6 +201,8 @@ import ProductExportModal from './components/ProductExportModal.vue'
 import { useProductTransfer } from './hooks/useProductTransfer'
 
 const { t: $t } = useI18n();
+const route = useRoute()
+const router = useRouter()
 const [DefineEmptyCreate, EmptyCreateButton] = createReusableTemplate()
 
 const menuStory = useMenuStore();
@@ -717,6 +720,20 @@ const filterFields = computed<ConditionFilterField[]>(() =>
 const commonFilterFields = ['name', 'id', 'deviceType', 'accessProvider', 'state'];
 const saveRef = ref();
 
+watch(() => route.query.productOnboarding, async (intent) => {
+  if (intent !== 'resume') return
+  const productId = typeof route.query.productId === 'string' ? route.query.productId : ''
+  if (productId) await nextTick(() => saveRef.value?.resumeGuide?.(productId))
+  const { productOnboarding: _intent, productId: _productId, ...query } = route.query
+  await router.replace({ query })
+}, { immediate: true })
+
+/** A deferred guide resumes only after returning to the product list, never when the user clicks “Do this later”. */
+const resumePendingProductGuide = async () => {
+  await nextTick()
+  saveRef.value?.resumePendingGuide?.()
+}
+
 /**
  * 兼容 ConditionFilter 直接条件与嵌套分组两种输出，保留产品列表已有的后端字段转换。
  */
@@ -788,6 +805,7 @@ const handleFilterSearch = (payload: ConditionFilterChangePayload) => {
 const routerParams = useRouterParams();
 
 onMounted(() => {
+  void resumePendingProductGuide()
   if (routerParams.params.value?.save) {
     add();
   }
@@ -845,6 +863,10 @@ onMounted(() => {
   }
   refreshCategoryTree();
 });
+
+onActivated(() => {
+  void resumePendingProductGuide()
+})
 </script>
 
 <style lang="less" scoped>

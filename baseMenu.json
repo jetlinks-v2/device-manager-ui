@@ -603,6 +603,66 @@
               ],
               "buttons": [
                   {
+                      "id": "export",
+                      "name": "导出",
+                      "i18nMessages": {
+                          "zh_CN": "导出",
+                          "en_US": "Export",
+                          "en": "Export"
+                      },
+                      "permissions": [
+                          {
+                              "permission": "device-instance",
+                              "actions": [
+                                  "query",
+                                  "export"
+                              ]
+                          }
+                      ]
+                  },
+                  {
+                      "id": "import",
+                      "name": "导入",
+                      "i18nMessages": {
+                          "zh_CN": "导入",
+                          "en_US": "Import",
+                          "en": "Import"
+                      },
+                      "permissions": [
+                          {
+                              "permission": "device-instance",
+                              "actions": [
+                                  "query",
+                                  "import"
+                              ]
+                          },
+                          {
+                              "permission": "file",
+                              "actions": [
+                                  "upload-static"
+                              ]
+                          }
+                      ]
+                  },
+                  {
+                      "id": "enable",
+                      "name": "启用全部设备",
+                      "i18nMessages": {
+                          "zh_CN": "启用全部设备",
+                          "en_US": "Enable All Devices",
+                          "en": "Enable All Devices"
+                      },
+                      "permissions": [
+                          {
+                              "permission": "device-instance",
+                              "actions": [
+                                  "query",
+                                  "enable"
+                              ]
+                          }
+                      ]
+                  },
+                  {
                       "id": "update",
                       "name": "编辑",
                       "i18nMessages": {

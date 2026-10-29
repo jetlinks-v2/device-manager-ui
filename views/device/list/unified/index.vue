@@ -45,16 +45,18 @@
 						    <a-divider type="vertical" class="unified-device-list__action-divider" />
 						    <EmptyCreateButtonAction1 v-if="activeType === 'all' || isIotEntry" />
 						    <EmptyCreateButtonAction2 v-if="activeProvider?.create" />
-						    <!-- 批量配置仅面向边缘节点，其他设备分类不提供入口。 -->
-						    <a-dropdown v-if="activeType === 'gateway'">
+						    <a-dropdown>
 						      <a-button>
 						        {{ t('UnifiedDeviceList.batch') }}
 						        <AIcon type="DownOutlined" />
 						      </a-button>
 						      <template #overlay>
-						        <a-menu @click="openBatchPage">
-						          <a-menu-item v-if="menu.hasMenu('algorithm-center')" key="algorithms">{{ t('UnifiedDeviceList.batchAlgorithms') }}</a-menu-item>
-						          <a-menu-item key="plugins">{{ t('UnifiedDeviceList.batchPlugins') }}</a-menu-item>
+						        <a-menu @click="handleBatchMenuClick">
+					          <a-menu-item v-if="canDeviceBatchAction('export')" key="export">{{ t('Instance.index.133466-30') }}</a-menu-item>
+					          <a-menu-item v-if="!isSaaS && canDeviceBatchAction('import')" key="import">{{ t('Instance.index.133466-31') }}</a-menu-item>
+					          <a-menu-item v-if="canDeviceBatchAction('enable')" key="activateAll">{{ t('Instance.index.133466-32') }}</a-menu-item>
+						          <a-menu-item v-if="activeType === 'gateway' && menu.hasMenu('algorithm-center')" key="algorithms">{{ t('UnifiedDeviceList.batchAlgorithms') }}</a-menu-item>
+						          <a-menu-item v-if="activeType === 'gateway'" key="plugins">{{ t('UnifiedDeviceList.batchPlugins') }}</a-menu-item>
 						          <a-menu-item key="syncStatus">{{ t('IotDeviceList.action.syncStatus') }}</a-menu-item>
 						        </a-menu>
 						      </template>
@@ -67,6 +69,7 @@
 					    <template v-else>
 					    <a-button :disabled="!selectedIds.length || busy" @click="batchToggle('enable')">{{ t('IotDeviceList.action.batchEnable') }}</a-button>
 					    <a-button :disabled="!selectedIds.length || busy" @click="batchToggle('disable')">{{ t('IotDeviceList.action.batchDisable') }}</a-button>
+					    <a-button v-if="canDeviceBatchAction('delete')" danger :disabled="!selectedIds.length || busy" @click="batchRemove">{{ t('Instance.index.133466-35') }}</a-button>
 					    </template>
 					    <a-button v-if="spaceAreaSupported !== false" :disabled="!selectedIds.length || busy || spaceAreaSupported !== true" @click="assignAreaOpen = true">{{ t('IotDeviceList.action.assignArea') }}</a-button>
 					    <a-button :disabled="!selectedIds.length || busy" @click="assignGroupOpen = true">{{ t('IotDeviceList.action.assignGroup') }}</a-button>
@@ -196,13 +199,15 @@
       :is="provider.listGuide" :active="activeType === provider.id" :request="guideRequest"
       :configuration-request="configurationRequest" :project-id="guideProjectId" @refresh="refresh" />
     <component v-if="createEntry" :is="createEntry.component" :open="true" @update:open="createEntry = undefined" @saved="refresh" />
-    <IotAddDeviceDrawer v-if="!editing || editing.category === 'device'" v-model:open="editOpen" :project-id="projectId" :device="editing" :product-filter="createDrawerOptions" @saved="refresh" @created="handleDeviceCreated" />
+    <IotAddDeviceDrawer v-if="!editing || editing.category === 'device'" v-model:open="editOpen" :project-id="projectId" :device="editing" :initial-product-id="initialProductId" :product-filter="createDrawerOptions" @saved="refresh" @created="handleDeviceCreated" />
+    <DeviceImport v-if="deviceImportOpen" :initial-product-id="deviceImportProductId" :auto-advance-initial-product="productOnboardingDeviceImport" @cancel="deviceImportOpen = false" @save="handleDeviceImportSaved" />
+    <DeviceExport v-if="deviceExportOpen" :data="bulkQuery" @close="deviceExportOpen = false" />
     <component v-else-if="editing && providerOf(editing)?.editComponent" :is="providerOf(editing)?.editComponent" v-model:open="editOpen" :gateway="editing" :device="editing" :project-id="projectId" @saved="refresh" />
     <component v-if="detailDevice && providerOf(detailDevice)?.detailComponent" :is="providerOf(detailDevice)?.detailComponent" v-bind="providerOf(detailDevice)?.detailProps?.(detailDevice)" @close-drawer="detailDevice = null" @close="detailDevice = null" />
     <IotDeviceAssignAreaModal v-if="spaceAreaSupported !== false" v-model:open="assignAreaOpen" :project-id="projectId" :selected-device-count="selectedIds.length" :saving="busy" @save="assignArea" />
     <IotDeviceAssignGroupModal v-model:open="assignGroupOpen" :selected-device-count="selectedIds.length" :saving="busy" @save="assignGroup" />
     <IotDeviceGroupNameModal v-model:open="groupDialogOpen" :mode="groupDialogMode" :initial-name="groupEditing?.name" :saving="groupSaving" :error="groupDialogError" @save="saveGroup" />
-    <Process v-if="syncVisible" :api="syncApi" type="sync" :data="syncData" @close="syncVisible = false" @save="handleSyncSaved" />
+    <Process v-if="syncVisible" :api="syncApi" :type="bulkProcessType" :data="syncData" @close="syncVisible = false" @save="handleSyncSaved" />
   </FullPage>
 </template>
 <script setup lang="ts">
@@ -213,13 +218,13 @@ import { ref } from 'vue'
 import dayjs from 'dayjs'
 import { Modal } from 'ant-design-vue'
 import { useI18n } from 'vue-i18n'
-import { getToken } from '@jetlinks-web/utils'
+import { getToken, onlyMessage } from '@jetlinks-web/utils'
 import { TOKEN_KEY_URL } from '@jetlinks-web/constants'
 import { getBaseApi } from '@jetlinks-web-core/utils'
 import EqualHeightColumns from '@jetlinks-web-core/components/EqualHeightColumns/index.vue'
 import SlantedTabs from '@jetlinks-web-core/components/SlantedTabs'
 import { useRoute } from 'vue-router'
-import { useMenuStore } from '@jetlinks-web-core/store'
+import { useAuthStore, useMenuStore } from '@jetlinks-web-core/store'
 import { moduleRegistry } from '@jetlinks-web-core/utils/module-registry'
 import type { useGatewayRuntimeMetricsLoader as UseGatewayRuntimeMetricsLoader } from '@edge-master-ui/views/workbench/gateway/hooks/useGatewayRuntimeMetricsLoader'
 import IotDeviceScopeSidebar from '../components/IotDeviceScopeSidebar.vue'
@@ -237,11 +242,31 @@ import { useUnifiedDeviceBatchNavigation } from './useUnifiedDeviceBatchNavigati
 import Process from '../../Instance/Process/index.vue'
 import { useHomeAgentFeatureEntry } from '@jetlinks-web-core/layout/components/AiChat/useHomeAgentFeatureEntry'
 import { DEVICE_ONBOARDING_CAPABILITY_ID } from '@device-manager-ui/agentCapabilities/deviceGuidance/homeAgentProvider'
+import DeviceImport from '../../Instance/Import/modal.vue'
+import DeviceExport from '../../Instance/Export/index.vue'
+import { isSaaS } from '@jetlinks-web-core/utils/consts'
 const { t } = useI18n()
 const route = useRoute()
 const guideProjectId = computed(() => resolveIotProjectId(route, ''))
 const deviceMenuCode = computed(() => getIotDeviceListMenuCode(route))
 const menu = useMenuStore()
+const authStore = useAuthStore()
+/**
+ * The resource-center root and its device child both host this view, so deployments may return either menu code.
+ * The server declares “enable” separately; old menus used the combined “action” button.
+ */
+function canDeviceBatchAction(action: 'delete' | 'enable' | 'export' | 'import') {
+  const menuCodes = new Set([deviceMenuCode.value, 'iot-user-device-list', 'iot-user/device/list', 'device/Instance'])
+  const actionCodes = action === 'enable' ? ['enable', 'action'] : [action]
+
+  const hasButtonPermission = actionCodes.some((actionCode) =>
+    [...menuCodes].some((menuCode) => authStore.hasPermission(`${menuCode}:${actionCode}`)),
+  )
+  if (hasButtonPermission) return true
+
+  // 已部署的资源中心菜单可能还没有导入、导出和启用这三个按钮节点；列表菜单本身仍是该组批量操作的授权边界。
+  return menu.hasMenu(deviceMenuCode.value)
+}
 const { providers, isIotEntry, tabs, activeType, activeProvider, scope, baseTerms, filterTerms, filterFields, commonFilterFields, searchTerms, hasSearch, status, rows, total, pageIndex, pageSize, loading, error, counts, statusCounts, selectedIds, batchMode, providerOf, changeType, search, changeStatus, refresh, changePage, clearBatchSelection } = useUnifiedDeviceList()
 const gatewayMonitorCell = moduleRegistry.getResourceItem<Component>('edge-master-ui', 'components', 'GatewayDeviceMonitorCell')
 const useGatewayMetrics = moduleRegistry.getResourceItem<typeof UseGatewayRuntimeMetricsLoader>('edge-master-ui', 'hooks', 'useGatewayRuntimeMetricsLoader')
@@ -272,13 +297,31 @@ function formatBrandModel(value?: string) {
     ? normalized
     : t('IotDeviceDetail.common.unconfigured')
 }
-const { projectId, editing, editOpen, createDrawerOptions, createEntry, guideRequest, canCreate, openCreate, detailDevice, busy, selected, allowed, openDetail, edit, toggle, remove, canDelete, batchToggle, assignAreaOpen, assignGroupOpen, assignArea, assignGroup } = useUnifiedDeviceActions(rows, selectedIds, clearBatchSelection, providerOf, refresh, activeProvider)
+const { projectId, editing, editOpen, initialProductId, productOnboardingDeviceCreation, createDrawerOptions, createEntry, guideRequest, canCreate, openCreate, detailDevice, busy, selected, allowed, openDetail, edit, toggle, remove, canDelete, batchToggle, batchRemove, assignAreaOpen, assignGroupOpen, assignArea, assignGroup, deviceImportOpen, deviceImportProductId, productOnboardingDeviceImport, openDeviceImport, enableOnboardedDeviceAndOpenAccess } = useUnifiedDeviceActions(rows, selectedIds, clearBatchSelection, providerOf, refresh, activeProvider)
 const { openBatchPage } = useUnifiedDeviceBatchNavigation({ selected, searchTerms, filterFields, syncGatewayStatus })
 const configurationRequest = ref(0)
 
 // 私有化网关由产品抽屉直接创建；完成后单独通知待办引导，不能复用 SaaS 的扫码请求。
-function handleDeviceCreated() {
+function handleDeviceCreated(payload?: { deviceId: string; deviceName?: string }) {
   refresh()
+  if (productOnboardingDeviceCreation.value && payload?.deviceId) {
+    const deviceName = payload.deviceName || payload.deviceId
+    Modal.confirm({
+      title: t('IotDeviceList.onboarding.enableDevice.title'),
+      content: t('IotDeviceList.onboarding.enableDevice.content', { name: deviceName }),
+      okText: t('IotDeviceList.onboarding.enableDevice.confirm'),
+      cancelText: t('IotDeviceList.onboarding.enableDevice.later'),
+      onOk: async () => {
+        try {
+          await enableOnboardedDeviceAndOpenAccess(payload.deviceId)
+          onlyMessage(t('IotDeviceDetail.detail.enabledMessage', { name: deviceName }))
+        } catch (error) {
+          onlyMessage(error instanceof Error ? error.message : t('UnifiedDeviceList.actionFailed'), 'error')
+          throw error
+        }
+      },
+    })
+  }
   if (activeProvider.value?.id === 'gateway' && createDrawerOptions.value?.productOnly) {
     configurationRequest.value++
   }
@@ -287,13 +330,27 @@ function handleDeviceCreated() {
 const syncVisible = ref(false)
 const syncApi = ref('')
 const syncData = ref<Record<string, unknown>>({})
+const bulkProcessType = ref<'active' | 'sync'>('sync')
+const deviceExportOpen = ref(false)
+const bulkQuery = computed(() => ({ terms: [...baseTerms.value, ...filterTerms.value] }))
 function syncGatewayStatus() {
-  if (activeType.value !== 'gateway' || syncVisible.value) return
+  if (syncVisible.value) return
   const terms = [...baseTerms.value, ...filterTerms.value]
   syncData.value = { terms }
+  bulkProcessType.value = 'sync'
   const params = new URLSearchParams()
   appendQueryParams(params, terms, 'terms')
   syncApi.value = `${getBaseApi()}/device-instance/state/_sync?${TOKEN_KEY_URL}=${getToken()}&${params.toString()}`
+  syncVisible.value = true
+}
+function activateAllDevices() {
+  if (syncVisible.value) return
+  const terms = [...baseTerms.value, ...filterTerms.value]
+  syncData.value = { terms }
+  bulkProcessType.value = 'active'
+  const params = new URLSearchParams()
+  appendQueryParams(params, terms, 'terms')
+  syncApi.value = `${getBaseApi()}/device-instance/deploy?${TOKEN_KEY_URL}=${getToken()}&${params.toString()}`
   syncVisible.value = true
 }
 function appendQueryParams(params: URLSearchParams, value: unknown, path: string) {
@@ -314,6 +371,25 @@ function handleSyncSaved() {
 }
 function handleBatchChanged() {
   clearBatchSelection()
+  refresh()
+}
+function handleBatchMenuClick({ key }: { key: string | number }) {
+  if (key === 'export') {
+    deviceExportOpen.value = true
+    return
+  }
+  if (key === 'import') {
+    openDeviceImport()
+    return
+  }
+  if (key === 'activateAll') {
+    Modal.confirm({ title: t('Instance.index.133466-33'), onOk: activateAllDevices })
+    return
+  }
+  openBatchPage({ key })
+}
+function handleDeviceImportSaved() {
+  deviceImportOpen.value = false
   refresh()
 }
 const { deleteGroup, groupDialogError, groupDialogMode, groupDialogOpen, groupEditing, groupSaving, openCreateChildGroup, openCreateGroup, openEditGroup, saveGroup } = useIotDeviceGroupManagement({

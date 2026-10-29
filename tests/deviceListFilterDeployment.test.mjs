@@ -11,7 +11,7 @@ import { effectScope, nextTick, reactive, ref, watch } from 'vue'
 import ts from 'typescript'
 
 const moduleRoot = fileURLToPath(new URL('../', import.meta.url))
-const coreRoot = fileURLToPath(new URL('../../../jetlinks-web-core/src/', import.meta.url))
+const coreRoot = fileURLToPath(new URL('../../../jetlinks-web-core/src/', import.meta.url)).replaceAll('\\', '/')
 const messages = JSON.parse(await readFile(new URL('../locales/lang/zh.json', import.meta.url), 'utf8'))
 
 async function loadDeployment(environment, { community = false, hasDepartmentMenu = true } = {}) {

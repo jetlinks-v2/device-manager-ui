@@ -147,12 +147,28 @@
             </a-form>
         </div>
     </a-modal>
-    <DialogTips ref="dialogRef" />
+    <DialogTips
+        v-model:open="createdGuideOpen"
+        :product-id="createdGuideState?.id"
+        :product-name="createdGuideState?.name"
+        :access-configured="createdGuideState?.accessConfigured"
+        :metadata-saved="createdGuideState?.metadataSaved"
+        :product-enabled="createdGuideState?.enabled"
+        :enabling-product="enablingCreatedProduct"
+        :show-batch-import="!isSaaS"
+        @configure-access="configureCreatedProductAccess"
+        @configure-metadata="configureCreatedProductMetadata"
+        @enable-product="handleEnableCreatedProduct"
+        @add-device="addCreatedProductDevice"
+        @batch-import="importCreatedProductDevices"
+        @skip="skipCreatedProductGuide"
+        @defer="closeCreatedProductGuide"
+    />
 </template>
 
 <script lang="ts" setup>
 import { category, addProduct, editProduct } from '@device-manager-ui/api/product';
-import { Form } from 'ant-design-vue';
+import { Form, Modal } from 'ant-design-vue';
 import DialogTips from '../DialogTips/index.vue';
 import { useProductStore } from '@device-manager-ui/store/product';
 import { filterSelectNode, encodeQuery } from '@jetlinks-web-core/utils';
@@ -164,6 +180,8 @@ import { omit } from 'lodash-es';
 import { ensureVisualizationDashboardProject } from '@device-manager-ui/utils/dashboardProject';
 import { I18nTextField } from '@jetlinks-web-core/components';
 import { getI18nText } from '@device-manager-ui/utils/i18n';
+import { isSaaS } from '@jetlinks-web-core/utils/consts'
+import { useProductCreatedGuide } from '../hooks/useProductCreatedGuide'
 
 const { t: $t } = useI18n();
 
@@ -181,7 +199,34 @@ const props = defineProps({
     }
 });
 const loading = ref<boolean>(false);
-const dialogRef = ref();
+const {
+    open: createdGuideOpen,
+    state: createdGuideState,
+    enabling: enablingCreatedProduct,
+    show: showCreatedProductGuide,
+    resume: resumeCreatedProductGuide,
+    resumePending: resumePendingCreatedProductGuide,
+    close: closeCreatedProductGuide,
+    skip: skipCreatedProductGuide,
+    configureAccess: configureCreatedProductAccess,
+    configureMetadata: configureCreatedProductMetadata,
+    enableProduct: enableCreatedProduct,
+    addDevice: addCreatedProductDevice,
+    batchImport: importCreatedProductDevices,
+} = useProductCreatedGuide()
+
+/** 引导启用与详情页共用确认节奏，避免点击步骤后立即改变产品状态。 */
+const handleEnableCreatedProduct = () => {
+    Modal.confirm({
+        title: $t('DialogTips.index.379211-29'),
+        content: $t('DialogTips.index.379211-30'),
+        okText: $t('DialogTips.index.379211-27'),
+        cancelText: $t('DialogTips.index.379211-17'),
+        onOk: async () => {
+            if (await enableCreatedProduct()) emit('success')
+        },
+    })
+}
 const treeList = ref<Record<string, any>[]>([]);
 const visible = ref<boolean>(false);
 const formRef = ref();
@@ -415,7 +460,7 @@ const submitData = () => {
                     onlyMessage($t('Save.index.912481-22'));
                     visible.value = false;
                     emit('success');
-                    dialogRef.value.show(res.result.id);
+                    showCreatedProductGuide(res.result, form.name);
                 } else {
                     onlyMessage($t('Save.index.912481-23'), 'error');
                 }
@@ -443,6 +488,8 @@ const changeDeviceType = (value: Array<string>) => {
 
 defineExpose({
     show: show,
+    resumeGuide: resumeCreatedProductGuide,
+    resumePendingGuide: resumePendingCreatedProductGuide,
 });
 </script>
 <style scoped lang="less">

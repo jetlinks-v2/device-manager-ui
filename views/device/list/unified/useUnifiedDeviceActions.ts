@@ -5,10 +5,12 @@ import { Modal } from 'ant-design-vue'
 import { useAuthStore, useMenuStore } from '@jetlinks-web-core/store'
 import { onlyMessage } from '@jetlinks-web/utils'
 import { deployDevice_api, undeployDevice_api, deleteDevice_api, batchDeployDevice_api, batchUndeployDevice_api } from '../../../../api/device'
+import { batchDeleteDevice } from '../../../../api/instance'
 import { bindDeviceGroupDevices_api, type DeviceGroup } from '../../../../api/deviceGroup'
 import { reassignIotDevicesToArea } from '../hooks/iotDeviceAreaGroupBindings'
-import { resolveIotProjectId } from '../hooks/useIotDeviceRouting'
+import { buildIotDeviceDetailPath, resolveIotProjectId } from '../hooks/useIotDeviceRouting'
 import type { DeviceCreateDrawerOptions, DeviceCreateEntry, DeviceListProvider, UnifiedDevice } from '../../../../deviceListProvider'
+import { isSaaS } from '@jetlinks-web-core/utils/consts'
 
 /** 统一列表操作与新增弹层状态；快捷入口仅调用当前分类已有的新增能力。 */
 export function useUnifiedDeviceActions(
@@ -27,14 +29,19 @@ export function useUnifiedDeviceActions(
   const projectId = computed(() => resolveIotProjectId(route))
   const editing = ref<UnifiedDevice | null>(null)
   const editOpen = ref(false)
+  const initialProductId = ref<string>()
+  const productOnboardingDeviceCreation = ref(false)
+  const deviceImportOpen = ref(false)
+  const deviceImportProductId = ref<string>()
+  const productOnboardingDeviceImport = ref(false)
   const createDrawerOptions = shallowRef<DeviceCreateDrawerOptions>()
   // 固定打开时的新增入口，切换列表分类不会替换正在填写的表单。
   const createEntry = shallowRef<Extract<DeviceCreateEntry, { component: unknown }>>()
   const guideRequest = ref(0)
   const canCreate = (provider?: DeviceListProvider) => !!provider?.create && (!provider.create.permission || auth.hasPermission(provider.create.permission))
   // 消费一次性创建动作，刷新页面不重开；未提供新增弹层的分类只保留列表。
-  watch([() => route.query.action, activeProvider, () => route.query.type], ([action, provider, requestedType]) => {
-    if (action !== 'create') return
+  watch([() => route.query.action, () => route.query.onboarding, () => route.query.productId, activeProvider, () => route.query.type], async ([action, onboarding, productId, provider, requestedType]) => {
+    if (action !== 'create' && action !== 'import') return
 
     const targetCategory = requestedType || (route.path.endsWith('/gateway') ? 'gateway' : route.path.endsWith('/video') ? 'video' : 'device')
 
@@ -43,12 +50,31 @@ export function useUnifiedDeviceActions(
       return
     }
 
-    const { action: _action, ...query } = route.query
+    const { action: _action, onboarding: _onboarding, productId: _productId, ...query } = route.query
+
+    // Product creation is intentionally shown as a short, visible sequence: list first, then its dialog.
+    if (onboarding === 'product-created') {
+      await new Promise<void>((resolve) => window.setTimeout(resolve, 350))
+      if (route.query.action !== action || route.query.onboarding !== onboarding) return
+    }
+
+    // Legacy batch import is deliberately unavailable in SaaS; do not consume its route intent there.
+    if (action === 'import') {
+      if (isSaaS) return
+      deviceImportProductId.value = typeof productId === 'string' ? productId : undefined
+      productOnboardingDeviceImport.value = onboarding === 'product-created'
+      deviceImportOpen.value = true
+      void router.replace({ query })
+      return
+    }
 
     // 设备接入（默认全部或明确为 device）：打开设备接入抽屉
     if (targetCategory === 'device' || !provider || provider.id === 'device') {
       editing.value = null
       createDrawerOptions.value = undefined
+      initialProductId.value = typeof productId === 'string' ? productId : undefined
+      // 设备创建后的启用和接入配置只属于刚创建产品的引导，不能影响普通“接入设备”。
+      productOnboardingDeviceCreation.value = onboarding === 'product-created'
       editOpen.value = true
       void router.replace({ query })
       return
@@ -85,6 +111,18 @@ export function useUnifiedDeviceActions(
   const assignAreaOpen = ref(false)
   const assignGroupOpen = ref(false)
   const selected = computed(() => rows.value.filter(device => selectedIds.value.includes(device.id)))
+  watch(editOpen, open => {
+    if (!open) {
+      initialProductId.value = undefined
+      productOnboardingDeviceCreation.value = false
+    }
+  })
+  watch(deviceImportOpen, open => {
+    if (!open) {
+      deviceImportProductId.value = undefined
+      productOnboardingDeviceImport.value = false
+    }
+  })
   const allowed = (device: UnifiedDevice, action: string) => {
     const provider = providerOf(device)
     if (!provider) return false
@@ -150,6 +188,11 @@ export function useUnifiedDeviceActions(
     if (!ids.length) return
     Modal.confirm({ title: t(action === 'enable' ? 'IotDeviceList.confirm.batchEnable' : 'IotDeviceList.confirm.batchDisable', { count: ids.length }), onOk: () => execute(() => action === 'enable' ? batchDeployDevice_api(ids) : batchUndeployDevice_api(ids), clearBatchSelection) })
   }
+  function batchRemove() {
+    const ids = selected.value.map(device => device.id)
+    if (!ids.length) return
+    Modal.confirm({ title: t('Instance.index.133466-36'), okButtonProps: { danger: true }, onOk: () => execute(() => batchDeleteDevice(ids), clearBatchSelection) })
+  }
   async function assignArea(areaId: string) {
     await execute(async () => {
       await reassignIotDevicesToArea(areaId, selected.value.map(device => ({ id: device.id, name: device.name, productName: device.productName, state: device.status })))
@@ -157,5 +200,21 @@ export function useUnifiedDeviceActions(
     }, clearBatchSelection)
   }
   async function assignGroup(group: DeviceGroup) { await execute(async () => { await bindDeviceGroupDevices_api(group.id, [...selectedIds.value]); assignGroupOpen.value = false }, clearBatchSelection) }
-  return { projectId, editing, editOpen, createDrawerOptions, createEntry, guideRequest, canCreate, openCreate, detailDevice, busy, selected, allowed, openDetail, edit, toggle, remove, canDelete, batchToggle, assignAreaOpen, assignGroupOpen, assignArea, assignGroup }
+  function openDeviceImport(productId?: string) {
+    if (isSaaS) return
+    deviceImportProductId.value = productId
+    productOnboardingDeviceImport.value = false
+    deviceImportOpen.value = true
+  }
+
+  /** 将引导创建的设备启用后带到接入配置，普通新增设备不调用此流程。 */
+  async function enableOnboardedDeviceAndOpenAccess(deviceId: string) {
+    await deployDevice_api(deviceId)
+    refresh()
+    await router.push({
+      path: buildIotDeviceDetailPath(projectId.value, deviceId, { tab: 'access', sub: 'connection' }, route),
+    })
+  }
+
+  return { projectId, editing, editOpen, initialProductId, productOnboardingDeviceCreation, createDrawerOptions, createEntry, guideRequest, canCreate, openCreate, detailDevice, busy, selected, allowed, openDetail, edit, toggle, remove, canDelete, batchToggle, batchRemove, assignAreaOpen, assignGroupOpen, assignArea, assignGroup, deviceImportOpen, deviceImportProductId, productOnboardingDeviceImport, openDeviceImport, enableOnboardedDeviceAndOpenAccess }
 }
