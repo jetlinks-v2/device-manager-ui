@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { allResources, resourceClusters, supports } from '../../../../api/link/type'
 import { getProviders, getStoragList } from '../../../../api/product'
 
@@ -20,11 +21,16 @@ interface NetworkPortBinding {
  * 复用网络组件页面的环境数据源，为导入确认提供客户端预检；服务端启动仍是最终端口校验。
  */
 export const useResourcePackagePreflight = () => {
+  const { t: $t } = useI18n()
   const environment = ref<ResourcePackageEnvironment>({
     resources: [], clusters: [], networkTypes: [], gatewayProviders: [], storagePolicies: [],
   })
   const errors = ref<string[]>([])
   const loading = ref(false)
+
+  /** 产品存储策略只依赖基础信息，应在进入接入资源选择前单独校验。 */
+  const isStoragePolicyAvailable = (policy?: string) => !policy
+    || environment.value.storagePolicies.some(item => item.id === policy)
 
   const load = async () => {
     loading.value = true
@@ -51,12 +57,12 @@ export const useResourcePackagePreflight = () => {
   const validate = (product: Record<string, any>, network?: Record<string, any>, localNetworks: Record<string, any>[] = []) => {
     const messages: string[] = []
     const policy = product.storePolicy
-    if (policy && !environment.value.storagePolicies.some(item => item.id === policy)) {
-      messages.push('产品存储策略在当前环境不可用')
+    if (!isStoragePolicyAvailable(policy)) {
+      messages.push($t('Product.resourcePackage.001-57'))
     }
     const networkType = getEnumValue(network?.type)
     if (networkType && !environment.value.networkTypes.some(item => item.id === networkType)) {
-      messages.push('网络组件类型在当前环境不受支持')
+      messages.push($t('Product.resourcePackage.001-58'))
     }
     const bindings = getPortBindings(network)
     const current = localNetworks.find(item => item.id === network?.id)
@@ -65,14 +71,14 @@ export const useResourcePackagePreflight = () => {
       if (isCurrentNetworkBinding) return
       const candidates = environment.value.resources.filter(resource => host === '0.0.0.0' || resource.host === host)
       if (!candidates.length || candidates.some(resource => !resource.ports?.[transport]?.includes(port))) {
-        messages.push(`监听端口 ${host}:${port} 不在当前可用 ${transport} 端口资源中`)
+        messages.push($t('Product.resourcePackage.001-59', { host, port, transport }))
       }
     })
     errors.value = messages
     return messages.length === 0
   }
 
-  return { environment, errors, loading, load, validate }
+  return { environment, errors, loading, load, validate, isStoragePolicyAvailable }
 }
 
 /** 将单机与集群网络组件收敛成可比较的监听端口集合。 */

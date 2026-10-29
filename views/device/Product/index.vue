@@ -99,7 +99,7 @@
               </a-row>
             </template>
             <template #actions="item">
-              <a-dropdown v-if="item.key === 'export'" placement="bottomRight">
+              <a-dropdown v-if="item.children?.length" placement="bottomRight">
                 <j-permission-button
                   :disabled="item.disabled"
                   :tooltip="item.tooltip"
@@ -137,7 +137,7 @@
                 }"
                 @click="item.onClick"
                 :hasPermission="
-                  item.key === 'view' ? true : 'device/Product:' + item.key
+                  item.key === 'view' ? true : item.key === 'export' ? 'device/Product:export' : 'device/Product:' + item.key
                 "
               >
                 <AIcon type="DeleteOutlined" v-if="item.key === 'delete'" />
@@ -166,7 +166,7 @@
         <template #action="slotProps">
           <a-space>
             <template v-for="i in getActions(slotProps, 'table')" :key="i.key">
-              <a-dropdown v-if="i.key === 'export'" placement="bottomRight">
+              <a-dropdown v-if="i.children?.length" placement="bottomRight">
                 <j-permission-button
                   :disabled="i.disabled"
                   :tooltip="i.tooltip"
@@ -203,7 +203,7 @@
                 :disabled="i.disabled"
                 :popConfirm="i.popConfirm"
                 :hasPermission="
-                  i.key === 'view' ? true : 'device/Product:' + i.key
+                  i.key === 'view' ? true : i.key === 'export' ? 'device/Product:export' : 'device/Product:' + i.key
                 "
                 :tooltip="{
                   ...i.tooltip,
@@ -225,6 +225,7 @@
     <!-- {{ $t('Product.index.660348-0') }}、{{ $t('Product.index.660348-13') }} -->
     <Save ref="saveRef" :isAdd="isAdd" :title="title" @success="refresh" />
     <ResourcePackage ref="resourcePackageRef" @success="refresh" />
+    <ProductExportModal v-model:open="exportVisible" :loading="exporting" @export="exportProduct" />
 
     <!-- 同步缓存组件 -->
     <SyncCache v-if="syncCacheVisible" :params="params" @success="refresh" @close="syncCacheVisible = false"/>
@@ -242,7 +243,6 @@ import {
   _deploy,
   _undeploy,
   deleteProduct,
-  updateDevice,
   exportProductResourcePackage,
 } from "../../../api/product";
 import { downloadJson, accessConfigTypeFilter, isNoCommunity } from "@/utils";
@@ -250,6 +250,7 @@ import { omit, cloneDeep } from "lodash-es";
 import Save from "./Save/index.vue";
 import SyncCache from "./components/SyncCache.vue";
 import ResourcePackage from './ResourcePackage/index.vue'
+import ProductExportModal from './components/ProductExportModal.vue'
 import { useMenuStore, useAuthStore } from "@/store";
 import { useRouterParams } from "@jetlinks-web/hooks";
 import { device } from "../../../assets";
@@ -342,34 +343,18 @@ const _selectedRowKeys = ref<string[]>([]);
 const currentForm = ref({});
 const syncCacheVisible = ref(false)
 const resourcePackageRef = ref<Record<string, any>>()
+const exportVisible = ref(false)
+const exporting = ref(false)
+const exportRecord = ref<Partial<Record<string, any>>>()
 
 // 批量操作配置
 const batchActions = ref([
   {
-    key: 'resource-package-import',
-    text: $t('Product.index.660348-36'),
-    icon: 'FolderOpenOutlined',
-    permission: 'device/Product:import',
-    onClick: () => resourcePackageRef.value?.show(),
-  },
-  {
     key: 'import',
-    text: $t("Product.index.660348-1"),
+    text: $t('Product.transfer.001-0'),
     icon: 'UploadOutlined',
     permission: 'device/Product:import',
-    onClick: () => {
-      // 触发文件选择
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = '.json';
-      input.onchange = (e: any) => {
-        const file = e.target.files[0];
-        if (file) {
-          beforeUpload(file);
-        }
-      };
-      input.click();
-    }
+    onClick: () => resourcePackageRef.value?.show(),
   },
   {
     key: 'syncCache',
@@ -424,20 +409,7 @@ const getActions = (
       },
 
       icon: "icon-xiazai",
-      children: [
-        {
-          key: "resource-package",
-          text: $t("Product.resourcePackage.001-35"),
-          icon: "FolderOpenOutlined",
-          onClick: () => exportResourcePackage(data),
-        },
-        {
-          key: "product-info",
-          text: $t("Product.resourcePackage.001-37"),
-          icon: "icon-xiazai",
-          onClick: () => exportProductInfo(data),
-        },
-      ],
+      onClick: () => openExport(data),
     },
     {
       key: "action",
@@ -535,6 +507,28 @@ const exportResourcePackage = async (data: Partial<Record<string, any>>) => {
   }
 };
 
+const openExport = (data: Partial<Record<string, any>>) => {
+  exportRecord.value = data
+  exportVisible.value = true
+}
+
+/** 根据用户在统一导出弹窗中的选择保留既有 JSON 与 ZIP 下载契约。 */
+const exportProduct = async (type: 'basic' | 'resource') => {
+  const data = exportRecord.value
+  if (!data) return
+  exporting.value = true
+  try {
+    if (type === 'basic') {
+      exportProductInfo(data)
+    } else {
+      await exportResourcePackage(data)
+    }
+    exportVisible.value = false
+  } finally {
+    exporting.value = false
+  }
+}
+
 /**
  * 新增
  */
@@ -550,47 +544,6 @@ const handleAdd = () => {
   add();
 };
 
-/**
- * 导入
- */
-const beforeUpload = (file: any) => {
-  const reader = new FileReader();
-  reader.readAsText(file);
-  reader.onload = async (result) => {
-    const text = result.target?.result as string;
-    // console.log(text);
-    if (!file.type.includes("json")) {
-      onlyMessage($t("Product.index.660348-23"), "error");
-      return false;
-    }
-    if (!text) {
-      onlyMessage($t("Product.index.660348-24"), "error");
-      return false;
-    }
-    const data = JSON.parse(text);
-    // 设置导入的产品状态为未发布
-    data.state = 0;
-    if (Array.isArray(data)) {
-      onlyMessage($t("Product.index.660348-25"), "error");
-      return false;
-    }
-    delete data.state;
-    if (!data?.name) {
-      data.name = $t("Product.index.660348-15") + Date.now();
-    }
-    if (!data?.deviceType || JSON.stringify(data?.deviceType) === "{}") {
-      onlyMessage($t("Product.index.660348-26"), "error");
-      return false;
-    }
-    const res = await updateDevice(data);
-    if (res.status === 200) {
-      onlyMessage($t("Product.index.660348-27"));
-      tableRef.value?.reload();
-    }
-    return true;
-  };
-  return false;
-};
 /**
  * 查看
  */

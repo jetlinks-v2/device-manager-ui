@@ -1,31 +1,54 @@
 <template>
   <a-modal
     v-model:open="visible"
-    :title="$t('Product.resourcePackage.001-0')"
+    :title="$t('Product.transfer.001-0')"
     :width="900"
     :mask-closable="false"
     :confirm-loading="importing"
     @cancel="close"
   >
-    <a-steps :current="step" size="small" class="resource-package-steps">
-      <a-step :title="$t('Product.resourcePackage.001-1')" />
-      <a-step :title="$t('Product.resourcePackage.001-38')" />
-      <a-step :title="$t('Product.resourcePackage.001-39')" />
-      <a-step :title="$t('Product.resourcePackage.001-3')" />
+    <a-steps :current="visibleStep" size="small" class="resource-package-steps">
+      <a-step v-for="item in visibleSteps" :key="item.key" :title="$t(item.label)" />
     </a-steps>
 
-    <a-upload-dragger
-      v-if="step === 0"
-      :show-upload-list="false"
-      :before-upload="beforeUpload"
-      accept=".zip,application/zip,application/x-zip-compressed"
-    >
-      <p class="ant-upload-drag-icon"><AIcon type="InboxOutlined" /></p>
-      <p class="ant-upload-text">{{ $t('Product.resourcePackage.001-4') }}</p>
-      <p class="ant-upload-hint">{{ $t('Product.resourcePackage.001-5') }}</p>
-    </a-upload-dragger>
+    <template v-if="step === 0">
+      <div class="resource-package-type" role="radiogroup">
+        <button
+          v-for="option in importOptions"
+          :key="option.type"
+          type="button"
+          class="resource-package-type__card"
+          :class="{ 'is-selected': selectedImportType === option.type }"
+          :aria-pressed="selectedImportType === option.type"
+          @click="selectedImportType = option.type"
+        >
+          <span class="resource-package-type__icon"><AIcon :type="option.icon" /></span>
+          <span class="resource-package-type__content">
+            <strong>{{ $t(option.label) }}</strong>
+            <small>{{ $t(option.description) }}</small>
+          </span>
+          <AIcon v-if="selectedImportType === option.type" type="CheckCircleFilled" class="resource-package-type__check" />
+        </button>
+      </div>
+      <a-upload-dragger
+        :show-upload-list="false"
+        :before-upload="handleUpload"
+        :accept="uploadAccept"
+      >
+        <p class="ant-upload-drag-icon"><AIcon type="InboxOutlined" /></p>
+        <p class="ant-upload-text">{{ uploadText }}</p>
+        <p class="ant-upload-hint">{{ $t(isBasicImport ? 'Product.transfer.001-10' : 'Product.transfer.001-11') }}</p>
+      </a-upload-dragger>
+    </template>
 
     <template v-else-if="step === 1">
+      <a-alert
+        v-if="storagePolicyError"
+        class="resource-alert resource-alert--basic"
+        type="error"
+        show-icon
+        :message="storagePolicyError"
+      />
       <a-form ref="productFormRef" :model="product" :rules="productRules" layout="vertical">
         <a-row :gutter="16" type="flex">
           <a-col flex="180px">
@@ -100,12 +123,9 @@
       </a-modal>
     </template>
 
-    <template v-else-if="step === 2">
-      <a-alert v-for="error in preflightErrors" :key="error" class="resource-alert" type="error" show-icon :message="error" />
+    <template v-else-if="step === 2 && !isBasicImport">
+      <a-alert v-for="error in accessPreflightErrors" :key="error" class="resource-alert" type="error" show-icon :message="error" />
       <a-alert v-if="showSelectionValidation && hasIncompleteLocalSelection" class="resource-alert" type="warning" show-icon :message="$t('Product.resourcePackage.001-48')" />
-      <a-descriptions v-if="product.accessProvider" class="gateway-type" size="small" :column="1" bordered>
-        <a-descriptions-item :label="$t('Product.resourcePackage.001-9')">{{ gatewayProviderName }}</a-descriptions-item>
-      </a-descriptions>
       <a-row :gutter="[12, 0]" class="resource-grid">
         <a-col v-if="manifest?.accessResources?.gateway" :span="24">
           <ResourceSelection
@@ -114,6 +134,8 @@
             :title="$t('Product.resourcePackage.001-26')"
             :package-resource="manifest.accessResources.gateway"
             :options="localOptions.gateway"
+            :resource-type-label="gatewayProviderName"
+            :show-validation="showSelectionValidation"
             @update:model-value="handleGatewaySelection"
           />
         </a-col>
@@ -121,7 +143,7 @@
           <a-col
             v-for="type in dependentResourceTypes"
             :key="type.key"
-            :span="type.key === 'network' ? 24 : 12"
+            :span="24"
           >
             <ResourceSelection
               v-model="resourceSelections[type.key]"
@@ -129,6 +151,7 @@
               :title="$t(type.label)"
               :package-resource="manifest?.accessResources?.[type.key]"
               :options="localOptions[type.key]"
+              :show-validation="showSelectionValidation"
               @update:model-value="handleResourceSelection"
             />
           </a-col>
@@ -137,13 +160,13 @@
       <a-alert v-if="isLocalGateway" class="resource-alert" type="info" show-icon :message="$t('Product.resourcePackage.001-46')" />
     </template>
 
-    <template v-else>
+    <template v-else-if="isResultStep">
       <a-list size="small" :data-source="progress">
         <template #renderItem="{ item }">
           <a-list-item>
             <a-space>
               <a-badge :status="progressStatus(item.type)" />
-              <span>{{ item.message }}</span>
+              <span>{{ formatProgressMessage(item) }}</span>
             </a-space>
           </a-list-item>
         </template>
@@ -151,20 +174,20 @@
     </template>
 
     <template #footer>
-      <a-button v-if="step > 0 && step < 3" @click="previous">{{ $t('Product.resourcePackage.001-16') }}</a-button>
-      <a-button v-if="step > 0 && step < 2" type="primary" :disabled="!canContinue" :loading="loading" @click="next">
-        {{ $t('Product.resourcePackage.001-47') }}
+      <a-button v-if="step > 0 && !isResultStep" @click="previous">{{ $t('Product.resourcePackage.001-16') }}</a-button>
+      <a-button v-if="step === 1" type="primary" :disabled="!canContinue || !!storagePolicyError" :loading="loading" @click="next">
+        {{ $t(isBasicImport ? 'Product.resourcePackage.001-17' : 'Product.resourcePackage.001-47') }}
       </a-button>
-      <a-button v-if="step === 2" type="primary" :disabled="!canContinue" :loading="loading" @click="next">
+      <a-button v-if="step === 2 && !isBasicImport" type="primary" :disabled="!canContinue" :loading="loading" @click="next">
         {{ $t('Product.resourcePackage.001-17') }}
       </a-button>
-      <a-button v-if="step === 3" @click="close">{{ $t('Product.resourcePackage.001-18') }}</a-button>
+      <a-button v-if="isResultStep" @click="close">{{ $t('Product.resourcePackage.001-18') }}</a-button>
     </template>
   </a-modal>
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { JsonViewer } from 'vue3-json-viewer'
 import 'vue3-json-viewer/dist/index.css'
@@ -178,6 +201,7 @@ import {
   queryPluginDriverList,
   queryProtocolList,
   queryGatewayList,
+  updateDevice,
   type ProductResourcePackageManifest,
   type ProductResourcePackageParseResult,
 } from '../../../../api/product'
@@ -194,13 +218,14 @@ const loading = ref(false)
 const importing = ref(false)
 const parsed = ref<ProductResourcePackageParseResult>()
 const progress = ref<any[]>([])
+const selectedImportType = ref<'basic' | 'resource'>('resource')
 const productFormRef = ref()
 const product = reactive<Record<string, any>>({})
 const metadataVisible = ref(false)
 const showSelectionValidation = ref(false)
 const categoryTree = ref<Record<string, any>[]>([])
 const resourceSelections = reactive<Record<string, any>>({})
-const localOptions = reactive<Record<string, { label: string; value: string }[]>>({ protocol: [], plugin: [], certificate: [], network: [], gateway: [] })
+const localOptions = reactive<Record<string, LocalResourceOption[]>>({ protocol: [], plugin: [], certificate: [], network: [], gateway: [] })
 const localNetworks = ref<Record<string, any>[]>([])
 const preflight = useResourcePackagePreflight()
 const resourceTypes = [
@@ -223,9 +248,49 @@ const deviceTypes = [
 ]
 let subscription: { unsubscribe: () => void } | undefined
 
+interface LocalResourceOption {
+  label: string
+  value: string
+  type?: string
+  version?: string
+  description?: string
+  resource?: Record<string, any>
+}
+
 const manifest = computed<ProductResourcePackageManifest | undefined>(() => parsed.value?.manifest)
 const storagePolicyOptions = computed(() => preflight.environment.value.storagePolicies.map(item => ({ label: item.name, value: item.id })))
 const preflightErrors = preflight.errors
+const storagePolicyError = computed(() => preflight.isStoragePolicyAvailable(product.storePolicy)
+  ? undefined
+  : $t('Product.resourcePackage.001-57'))
+// 存储策略属于基础信息，设备接入步骤只显示接入资源的预检结果。
+const accessPreflightErrors = computed(() => preflightErrors.value
+  .filter(error => error !== $t('Product.resourcePackage.001-57')))
+const isBasicImport = computed(() => selectedImportType.value === 'basic')
+const isResultStep = computed(() => isBasicImport.value ? step.value === 2 : step.value === 3)
+const visibleSteps = computed(() => isBasicImport.value
+  ? [
+      { key: 'upload', label: 'Product.transfer.001-9' },
+      { key: 'basic', label: 'Product.resourcePackage.001-38' },
+      { key: 'result', label: 'Product.resourcePackage.001-3' },
+    ]
+  : [
+      { key: 'upload', label: 'Product.transfer.001-9' },
+      { key: 'basic', label: 'Product.resourcePackage.001-38' },
+      { key: 'access', label: 'Product.resourcePackage.001-39' },
+      { key: 'result', label: 'Product.resourcePackage.001-3' },
+    ])
+const visibleStep = computed(() => isResultStep.value ? visibleSteps.value.length - 1 : step.value)
+const uploadAccept = computed(() => isBasicImport.value
+  ? '.json,application/json'
+  : '.zip,application/zip,application/x-zip-compressed')
+const uploadText = computed(() => $t(isBasicImport.value
+  ? 'Product.transfer.001-6'
+  : 'Product.transfer.001-7'))
+const importOptions = [
+  { type: 'basic' as const, label: 'Product.transfer.001-2', description: 'Product.transfer.001-4', icon: 'FileTextOutlined' },
+  { type: 'resource' as const, label: 'Product.transfer.001-3', description: 'Product.transfer.001-5', icon: 'FolderOpenOutlined' },
+]
 const dependentResourceTypes = computed(() => resourceTypes
   .filter(type => type.key !== 'gateway' && !!manifest.value?.accessResources?.[type.key]))
 const isLocalGateway = computed(() => resourceSelections.gateway?.source === 'LOCAL')
@@ -253,11 +318,14 @@ const canContinue = computed(() => {
 
 const show = () => {
   reset()
+  selectedImportType.value = 'resource'
   visible.value = true
 }
 
 const reset = () => {
   step.value = 0
+  loading.value = false
+  importing.value = false
   parsed.value = undefined
   progress.value = []
   metadataVisible.value = false
@@ -276,11 +344,15 @@ const close = () => {
   visible.value = false
 }
 
+/** 统一处理两种已发布导入格式，避免旧 JSON 导入绕过确认表单。 */
+const handleUpload = (file: File) => isBasicImport.value ? prepareBasicProduct(file) : beforeUpload(file)
+
 const beforeUpload = async (file: File) => {
   if (!file.name.toLowerCase().endsWith('.zip')) {
     onlyMessage($t('Product.resourcePackage.001-19'), 'warning')
     return false
   }
+  reset()
   loading.value = true
   try {
     const data = new FormData()
@@ -293,7 +365,7 @@ const beforeUpload = async (file: File) => {
     Object.assign(product, JSON.parse(JSON.stringify(parsed.value.manifest.product)))
     product.deviceType = getEnumValue(product.deviceType)
     product.photoUrl = product.photoUrl || device.deviceProduct
-    await Promise.all([preflight.load(), loadLocalOptions(), loadCompatibleGateways(), loadCategoryTree()])
+    await Promise.all([preflight.load(), loadCategoryTree(), loadLocalOptions(), loadCompatibleGateways()])
     validate()
     step.value = 1
   } catch (error: any) {
@@ -304,6 +376,58 @@ const beforeUpload = async (file: File) => {
   return false
 }
 
+/** 旧 JSON 仅导入产品基础信息；关联资源仍由 ZIP 资源包流程处理。 */
+const prepareBasicProduct = async (file: File) => {
+  if (!file.name.toLowerCase().endsWith('.json')) {
+    onlyMessage($t('Product.index.660348-23'), 'error')
+    return false
+  }
+  reset()
+  loading.value = true
+  try {
+    const content = await readUtf8File(file)
+    if (!content.trim()) {
+      onlyMessage($t('Product.index.660348-24'), 'error')
+      return false
+    }
+    const data: unknown = JSON.parse(content)
+    if (!data || Array.isArray(data) || typeof data !== 'object') {
+      onlyMessage($t('Product.index.660348-25'), 'error')
+      return false
+    }
+    Object.assign(product, data as Record<string, any>)
+    clearProductAuditFields(product)
+    delete product.state
+    if (!product.name) product.name = `${$t('Product.index.660348-15')}${Date.now()}`
+    product.deviceType = getEnumValue(product.deviceType)
+    if (!product.deviceType) {
+      onlyMessage($t('Product.index.660348-26'), 'error')
+      return false
+    }
+    await Promise.all([preflight.load(), loadCategoryTree()])
+    validate()
+    step.value = 1
+  } catch (error: any) {
+    onlyMessage(error?.message || $t('Product.index.660348-19'), 'error')
+  } finally {
+    loading.value = false
+  }
+  return false
+}
+
+const readUtf8File = (file: File) => new Promise<string>((resolve, reject) => {
+  const reader = new FileReader()
+  reader.onload = () => resolve(String(reader.result || ''))
+  reader.onerror = () => reject(reader.error)
+  reader.readAsText(file, 'UTF-8')
+})
+
+// 旧 JSON 导出包含来源环境的审计信息，不能覆盖导入环境的创建和修改记录。
+const clearProductAuditFields = (data: Record<string, any>) => {
+  ['creatorId', 'creatorName', 'createTime', 'modifierId', 'modifierName', 'modifyTime']
+    .forEach(field => delete data[field])
+}
+
 const loadCompatibleGateways = async () => {
   const response = await queryGatewayList({
     paging: false,
@@ -312,6 +436,10 @@ const loadCompatibleGateways = async () => {
   localOptions.gateway = (response.result || []).map((gateway: any) => ({
     label: gateway.name,
     value: gateway.id,
+    type: getEnumValue(gateway.provider || gateway.type),
+    version: gateway.version,
+    description: gateway.description || gateway.describe,
+    resource: gateway,
   }))
 }
 
@@ -320,7 +448,14 @@ const loadLocalOptions = async () => {
   const [protocols, plugins, certificatesResult, networks] = await Promise.all([
     queryProtocolList(), queryPluginDriverList(), certificates(), queryNetworkConfigList(),
   ])
-  const toOptions = (response: any) => (response.result || []).map((item: any) => ({ label: item.name, value: item.id }))
+  const toOptions = (response: any) => (response.result || []).map((item: any) => ({
+    label: item.name,
+    value: item.id,
+    type: getEnumValue(item.type || item.provider),
+    version: item.version,
+    description: item.description || item.describe,
+    resource: item,
+  }))
   localOptions.protocol = toOptions(protocols)
   localOptions.plugin = toOptions(plugins)
   localOptions.certificate = toOptions(certificatesResult)
@@ -392,7 +527,15 @@ const next = async () => {
     } catch {
       return
     }
+    if (storagePolicyError.value) return
     showSelectionValidation.value = false
+    if (isBasicImport.value) {
+      if (!validate()) return
+      startBasicImport()
+      return
+    }
+    // 使用当前基础信息重算预检，避免资源包内的旧存储策略错误带入设备接入步骤。
+    validate()
     step.value = 2
     return
   }
@@ -404,6 +547,22 @@ const next = async () => {
   }
 }
 
+const startBasicImport = async () => {
+  if (importing.value) return
+  importing.value = true
+  step.value = 2
+  try {
+    const response = await updateDevice(product)
+    if (response.status !== 200) throw new Error($t('Product.index.660348-19'))
+    progress.value.push({ type: 'completed', message: $t('Product.transfer.001-12', { name: product.name }) })
+    emit('success')
+  } catch (error: any) {
+    progress.value.push({ type: 'error', message: error?.message || $t('Product.index.660348-19') })
+  } finally {
+    importing.value = false
+  }
+}
+
 const previous = () => {
   step.value -= 1
 }
@@ -411,6 +570,31 @@ const previous = () => {
 const progressStatus = (type: string) => {
   if (type === 'error') return 'error'
   return type === 'success' || type === 'completed' ? 'success' : 'processing'
+}
+
+/** 以资源名称替代内部 ID 和阶段字段，日志只暴露用户能理解的导入结果。 */
+const formatProgressMessage = (event: any) => {
+  if (!event.resourceType || !event.action) return event.message || ''
+  const labels: Record<string, string> = {
+    gateway: 'Product.resourcePackage.001-26', network: 'Product.resourcePackage.001-25',
+    protocol: 'Product.resourcePackage.001-22', certificate: 'Product.resourcePackage.001-24',
+    plugin: 'Product.resourcePackage.001-23', category: 'Product.resourcePackage.001-64',
+    product: 'Product.resourcePackage.001-63', preprocessor: 'Product.resourcePackage.001-65',
+  }
+  const messages: Record<string, string> = {
+    create: 'Product.resourcePackage.001-66', save: 'Product.resourcePackage.001-66',
+    update: 'Product.resourcePackage.001-67', reference: 'Product.resourcePackage.001-68',
+  }
+  const resourceType = labels[event.resourceType]
+  const message = messages[event.action]
+  if (!resourceType || !message) return event.message || ''
+  const id = event.resourceId
+  const name = event.resourceType === 'product' ? product.name
+    : event.resourceType === 'category' ? manifest.value?.categories?.find(item => item.id === id)?.name
+      : event.resourceType === 'preprocessor' ? manifest.value?.preprocessors?.find(item => item.id === id)?.name
+        : localOptions[event.resourceType]?.find(item => item.value === id)?.label
+          || manifest.value?.accessResources?.[event.resourceType]?.name || id
+  return name ? $t(message, { resourceType: $t(resourceType), name }) : event.message || ''
 }
 
 const startImport = () => {
@@ -439,6 +623,8 @@ const startImport = () => {
   })
 }
 
+onBeforeUnmount(close)
+
 defineExpose({ show })
 </script>
 
@@ -450,4 +636,14 @@ defineExpose({ show })
 .metadata-preview { max-height: 520px; overflow: auto; background: #fafafa; }
 .storage-policy-help { margin-left: 2px; }
 .device-type-option { display: flex; align-items: center; justify-content: space-between; }
+.resource-package-type { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+.resource-package-type__card { display: grid; grid-template-columns: 36px minmax(0, 1fr) 20px; align-items: center; gap: 12px; min-height: 88px; padding: 16px; border: 1px solid var(--color-jet-border, rgba(0, 0, 0, 0.09)); border-radius: 8px; background: var(--color-jet-fill, #fff); color: inherit; text-align: left; cursor: pointer; transition: border-color 0.2s, background 0.2s; }
+.resource-package-type__card:hover, .resource-package-type__card.is-selected { border-color: var(--jet-theme-primary); }
+.resource-package-type__card.is-selected { background: var(--color-jet-primary-bg, rgba(22, 119, 255, 0.06)); }
+.resource-package-type__icon { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; background: var(--color-jet-primary-bg, rgba(22, 119, 255, 0.08)); color: var(--jet-theme-primary); font-size: 18px; }
+.resource-package-type__content { display: flex; min-width: 0; flex-direction: column; gap: 4px; }
+.resource-package-type__content strong { font-weight: 500; }
+.resource-package-type__content small { color: var(--color-jet-text-secondary, rgba(0, 0, 0, 0.45)); line-height: 1.5; }
+.resource-package-type__check { color: var(--jet-theme-primary); font-size: 18px; }
+@media (max-width: 640px) { .resource-package-type { grid-template-columns: 1fr; } }
 </style>
