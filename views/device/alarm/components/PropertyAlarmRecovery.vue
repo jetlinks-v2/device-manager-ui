@@ -43,7 +43,7 @@ function changeMode(value: string) {
 .property-alarm-recovery { display: grid; grid-template-columns: 18px minmax(0, 1fr); align-items: start; column-gap: 6px; min-width: 0; font-size: var(--fs-12); line-height: 24px; }
 .recovery-icon { display: flex; align-items: center; justify-content: center; height: 24px; color: var(--jet-theme-success, #52c41a); font-size: 14px; }
 .recovery-body { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; min-width: 0; color: var(--jet-theme-text); }
-.recovery-action { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 2px; font: inherit; line-height: 24px; }
+.recovery-action { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0; font: inherit; line-height: 24px; }
 .recovery-action :deep(.anticon) { font-size: 10px; color: var(--jet-theme-text-secondary); }
 .is-off .recovery-icon, .is-off .recovery-body, .is-off .recovery-action { color: var(--jet-theme-text-secondary); }
 @media (pointer: coarse) { .recovery-action { min-height: 36px; } }

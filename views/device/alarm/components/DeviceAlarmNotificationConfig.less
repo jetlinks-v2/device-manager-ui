@@ -29,10 +29,11 @@
   line-height: 22px;
 }
 .notification-toggle { justify-content: center; width: 18px; padding: 0; color: var(--jet-theme-primary); }
-.notification-toggle > :deep(.anticon) { font-size: 14px; }
-.device-alarm-notify .notification-toggle.is-off { display: inline-grid; grid-template-columns: 18px max-content; column-gap: 6px; width: auto; }
+.notification-toggle > :deep(.anticon) { display: flex; align-items: center; justify-content: center; width: 18px; height: 24px; font-size: 14px; }
+/* The outline preserves the shared icon and sentence columns. */
+.device-alarm-notify .notification-toggle.is-off { display: inline-grid; grid-template-columns: 18px max-content; column-gap: 6px; width: auto; padding-inline: 0 var(--space-1); border-radius: var(--radius-sm, 4px); background: var(--bg-sunken); box-shadow: 0 0 0 1px var(--line); color: var(--jet-theme-text-secondary); }
 .notification-toggle.is-off > .notification-enable-label { margin-inline-start: 0; }
-.notification-toggle.is-off:not(:disabled):hover { background: var(--jet-theme-primary-soft); color: var(--jet-theme-primary); }
+.device-alarm-notify .notification-toggle.is-off:not(:disabled):hover { box-shadow: 0 0 0 1px var(--jet-theme-text-secondary); color: var(--jet-theme-text); }
 .notification-toggle:disabled { color: var(--jet-theme-text-secondary); }
 .device-alarm-notify__sentence .notification-chip {
   max-width: 176px;
