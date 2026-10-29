@@ -23,6 +23,8 @@
                         sorts: [{ name: 'createTime', order: 'desc' }],
                     }"
                     :params="params"
+                    :gridColumn="3"
+                    :gridColumns="[2, 3]"
                     modeValue="CARD"
                     class="pro-table__no-padding"
                 >
@@ -51,6 +53,8 @@
                     </template>
                     <template #card="slotProps">
                         <CardBox
+                            action-layout="split"
+                            primary-action-key="update"
                             :showStatus="false"
                             :value="slotProps"
                             :actions="getActions(slotProps, 'card')"
@@ -120,6 +124,8 @@
                             </template>
                             <template #actions="item">
                                 <j-permission-button
+                                    :type="item.buttonType"
+                                    :danger="item.key === 'delete'"
                                     :disabled="item.disabled"
                                     :popConfirm="item.popConfirm"
                                     :tooltip="{
@@ -128,14 +134,8 @@
                                     @click="item.onClick"
                                     :hasPermission="'link/Protocol:' + item.key"
                                 >
-                                    <AIcon
-                                        type="DeleteOutlined"
-                                        v-if="item.key === 'delete'"
-                                    />
-                                    <template v-else>
-                                        <AIcon :type="item.icon" />
-                                        <span>{{ item?.text }}</span>
-                                    </template>
+                                    <AIcon v-if="!item.isPrimary" :type="item.icon" />
+                                    <span>{{ item?.text }}</span>
                                 </j-permission-button>
                             </template>
                         </CardBox>

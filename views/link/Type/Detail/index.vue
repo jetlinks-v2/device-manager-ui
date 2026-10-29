@@ -1,4 +1,15 @@
 <template>
+	<!-- 返回入口属于「面板外页面头部」，由布局壳层预留的插槽位承载。 -->
+	<PageChrome>
+		<a-button
+			class="router-detail-back"
+			type="text"
+			@click="menuStore.jumpPage('link/Type')"
+		>
+			<template #icon><AIcon type="LeftOutlined" /></template>
+			{{ $t('Network.detail.backToList') }}
+		</a-button>
+	</PageChrome>
   <j-page-container>
     <FullPage :fixed="false">
       <div class="container">
@@ -843,8 +854,10 @@ import NodeSelect from "./NodeSelect.vue";
 import { useI18n } from "vue-i18n";
 import { useTabSaveSuccessBack } from '@jetlinks-web-core/hooks'
 import { I18nTextField } from '@jetlinks-web-core/components'
+import { useMenuStore } from '@jetlinks-web-core/store'
 
 const { t: $t } = useI18n();
+const menuStore = useMenuStore();
 const route = useRoute();
 const NetworkType = route.query.type as string;
 const view = NetworkType ? "false" : (route.query.view as string);
@@ -1347,12 +1360,11 @@ onMounted(async () => {
 
 <style lang="less" scoped>
 .container {
-  width: 70%;
+  width: 100%;
   min-height: 400px;
 }
 .footer {
   width: 100%;
-  margin-top: 24px;
 }
 .form2 {
   :deep(.ant-collapse-content-box) {

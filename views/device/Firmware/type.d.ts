@@ -1,3 +1,5 @@
+import type { I18nMessages } from '@jetlinks-web-core/components';
+
 export type FormDataType = {
     description: string;
     name: string;
@@ -14,6 +16,7 @@ export type FormDataType = {
     mode?: object;
     creatorId?: string;
     createTime?: number;
+    i18nMessages?: I18nMessages;
 };
 
 export interface Properties {
@@ -66,6 +69,7 @@ export interface ApplicationFirmwareCreateRequest
     extends ApplicationFirmwareParseRequest {
     name: string;
     description?: string;
+    i18nMessages?: I18nMessages;
     sign: string;
     signMethod: FirmwareSignMethod;
     size: number;

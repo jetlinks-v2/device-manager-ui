@@ -17,8 +17,10 @@
             <FullPage>
                 <j-pro-table
                     ref="tableRef"
-                    modeValue="TABLE"
+                    modeValue="CARD"
                     :columns="columns"
+                    :gridColumn="3"
+                    :gridColumns="[2, 3]"
                     :request="query"
                     :defaultParams="{
                         sorts: [{ name: 'createTime', order: 'desc' }],
@@ -48,6 +50,25 @@
 			                      />
 			                      <EmptyCreateButton />
 	                      </a-flex>
+                    </template>
+                    <template #card="slotProps">
+                        <CardBox
+		                        action-layout="split"
+		                        primary-action-key="update"
+                            :value="slotProps"
+                            :showStatus="false"
+                            :actions="getActions(slotProps)"
+                            :contentList="[
+                                {
+                                    text: $t('Certificate.index.646549-1'),
+                                    value: slotProps.type?.text,
+                                },
+                                {
+                                    text: $t('Certificate.index.646549-4'),
+                                    value: slotProps.description || $t('comm.table.empty'),
+                                },
+                            ]"
+                        />
                     </template>
                     <template #type="slotProps">
                         <span>{{ slotProps.type.text }}</span>
@@ -90,6 +111,7 @@ import { onlyMessage } from '@jetlinks-web/utils';
 import { useMenuStore } from '@jetlinks-web-core/store';
 import { useI18n } from 'vue-i18n';
 import ConditionFilter from '@jetlinks-web-core/components/ConditionFilter';
+import { link } from '../../../assets';
 
 const { t: $t } = useI18n();
 const menuStory = useMenuStore();
@@ -161,6 +183,7 @@ const getActions = (data: Partial<Record<string, any>>): any[] => {
         // },
         {
             key: 'update',
+            hasPermission: 'link/Certificate:update',
             text: $t('Certificate.index.646549-6'),
             tooltip: {
                 title: $t('Certificate.index.646549-6'),
@@ -172,6 +195,7 @@ const getActions = (data: Partial<Record<string, any>>): any[] => {
         },
         {
             key: 'delete',
+            hasPermission: 'link/Certificate:delete',
             text: $t('Certificate.index.646549-7'),
             tooltip: {
                 title: $t('Certificate.index.646549-7'),

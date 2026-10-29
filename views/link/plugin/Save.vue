@@ -29,12 +29,17 @@
                     />
                 </a-form-item>
                 <a-form-item :label="$t('plugin.Save.128565-5')" name="name" :rules="nameRules">
-                    <a-input
+                    <I18nTextField
                         :placeholder="$t('plugin.Save.128565-6')"
                         v-model:value="modelRef.name"
+                        v-model:i18nMessages="modelRef.i18nMessages"
+                        field="name"
+                        :label="$t('plugin.Save.128565-5')"
+                        :i18n-max-length="64"
                     />
                 </a-form-item>
                 <a-form-item
+	                  v-if="displayProviders.length > 1"
                     :label="$t('plugin.Save.providerLabel', '来源')"
                     name="provider"
                     :rules="providerRules"
@@ -128,11 +133,15 @@
                     name="description"
                     :rules="Max_Length_200"
                 >
-                    <a-textarea
+                    <I18nTextField
                         v-model:value="modelRef.description"
+                        v-model:i18nMessages="modelRef.i18nMessages"
+                        field="description"
+                        :label="$t('plugin.Save.128565-10')"
                         :placeholder="$t('plugin.Save.128565-11')"
                         showCount
                         :maxlength="200"
+                        textarea
                     />
                 </a-form-item>
             </a-form>
@@ -149,6 +158,7 @@
 
 <script setup lang="ts" name="PluginSave">
 import { computed, watch } from 'vue';
+import { I18nTextField, type I18nMessages } from '@jetlinks-web-core/components';
 import {
     ID_Rule,
     Max_Length_64,
@@ -191,6 +201,7 @@ const modelRef = reactive<any>({
     id: props.data.id,
     name: props.data.name,
     description: props.data.description,
+    i18nMessages: { ...(props.data.i18nMessages || {}) } as I18nMessages,
     type: props.data.type,
     provider: props.data.provider || 'jar',
     version: props.data.version,
@@ -304,6 +315,7 @@ const marketplaceOpenButtonText = computed(() =>
 const installPayload = computed(() => ({
     name: modelRef.name,
     description: modelRef.description,
+    i18nMessages: modelRef.i18nMessages,
     ...(pluginId.value ? { id: pluginId.value } : {}),
     ...(modelRef.type ? { type: modelRef.type } : {}),
     provider: 'marketplace',
@@ -407,6 +419,7 @@ const handleSave = async () => {
                 id: modelRef.id ? modelRef.id : null,
                 name: data.name,
                 description: data.description,
+                i18nMessages: modelRef.i18nMessages,
                 type: modelRef.type,
                 provider: currentProviderId(),
                 version: modelRef.version,
