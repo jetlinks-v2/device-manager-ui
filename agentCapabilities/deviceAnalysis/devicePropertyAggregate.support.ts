@@ -12,6 +12,7 @@ import type { ThingModelMetadata } from '@device-manager-ui/views/device/list/se
 import {
   IOT_DEVICE_PROPERTY_AGGREGATES,
   IOT_DEVICE_PROPERTY_ANALYSIS_MODES,
+  IOT_DEVICE_PROPERTY_INTERVALS,
 } from './constants'
 
 export type IotDevicePropertyAggregate = typeof IOT_DEVICE_PROPERTY_AGGREGATES[number]
@@ -103,7 +104,7 @@ const BOOLEAN_TYPES = new Set(['bool', 'boolean'])
 const GEO_POINT_TYPE = 'geopoint'
 const NUMERIC_ONLY_AGGREGATES = new Set<IotDevicePropertyAggregate>(['AVG', 'MAX', 'MIN'])
 const GEO_POINT_VALUE_AGGREGATES = new Set<IotDevicePropertyAggregate>(['FIRST', 'LAST'])
-const PROPERTY_AGGREGATE_INTERVALS = new Set(['1m', '1h', '1d', '1w', '1M'])
+const PROPERTY_AGGREGATE_INTERVALS = new Set<string>(IOT_DEVICE_PROPERTY_INTERVALS)
 const TARGET_ORDERED_PATH_BUCKETS = 1000
 
 /** The producer sorts every aggregate row by the canonical time field before delivery. */
@@ -199,11 +200,64 @@ export const normalizeIotDevicePropertyAggregateInterval = (
     month: '1M', months: '1M', '1月': '1M', 月: '1M', 按月: '1M',
   } as Record<string, string | undefined>)[normalized]
   if (alias && PROPERTY_AGGREGATE_INTERVALS.has(alias)) return alias
+  // Keep explicit grain unchanged; syntax and the output point budget are checked separately.
+  if (raw) return raw
   const duration = (range.end ?? Date.now()) - (range.start ?? 0)
   if (duration <= 60 * 60 * 1000) return '1m'
   if (duration <= 30 * 24 * 60 * 60 * 1000) return '1h'
   if (duration <= 180 * 24 * 60 * 60 * 1000) return '1d'
   return '1w'
+}
+
+type AggregateIntervalUnit = 'm' | 'h' | 'd' | 'w' | 'M'
+
+export const IOT_DEVICE_PROPERTY_AGGREGATE_POINT_LIMIT = 5000
+
+export const parseIotDevicePropertyAggregateInterval = (interval: string) => {
+  const match = /^([1-9]\d*)([mhdwM])$/.exec(interval)
+  if (!match) return undefined
+  const amount = Number(match[1])
+  return Number.isSafeInteger(amount) && amount <= 2_147_483_647
+    ? { amount, unit: match[2] as AggregateIntervalUnit }
+    : undefined
+}
+
+const truncateBucketStart = (timestamp: number, unit: AggregateIntervalUnit) => {
+  const date = new Date(timestamp)
+  if (unit === 'm') date.setSeconds(0, 0)
+  else if (unit === 'h') date.setMinutes(0, 0, 0)
+  else {
+    date.setHours(0, 0, 0, 0)
+    if (unit === 'w') date.setDate(date.getDate() - (date.getDay() || 7) + 1)
+    if (unit === 'M') date.setDate(1)
+  }
+  return date
+}
+
+const advanceBucket = (date: Date, unit: AggregateIntervalUnit, amount: number) => {
+  if (unit === 'm') date.setMinutes(date.getMinutes() + amount)
+  else if (unit === 'h') date.setHours(date.getHours() + amount)
+  else if (unit === 'd') date.setDate(date.getDate() + amount)
+  else if (unit === 'w') date.setDate(date.getDate() + 7 * amount)
+  else date.setMonth(date.getMonth() + amount)
+}
+
+/** Same inclusive, base-unit-aligned domain as the aggregation API, with calendar-aware stepping. */
+export const exceedsIotDevicePropertyAggregatePointBudget = (
+  interval: string,
+  range: { start: number; end: number },
+  metricCount: number,
+) => {
+  const parsed = parseIotDevicePropertyAggregateInterval(interval)!
+  const cursor = truncateBucketStart(range.start, parsed.unit)
+  const end = truncateBucketStart(range.end, parsed.unit).getTime()
+  let points = 0
+  while (cursor.getTime() <= end) {
+    points += metricCount
+    if (points > IOT_DEVICE_PROPERTY_AGGREGATE_POINT_LIMIT) return true
+    advanceBucket(cursor, parsed.unit, parsed.amount)
+  }
+  return false
 }
 
 export const createIotDevicePropertyAggregateInputAlternatives = (
@@ -399,22 +453,19 @@ export const normalizeIotDevicePropertyTimestamp = (value: unknown) => {
 
 const padTimePart = (value: number) => String(value).padStart(2, '0')
 
-const formatBucketTime = (timestamp: number, interval: string) => {
-  const date = new Date(timestamp)
-  if (interval === '1m') date.setSeconds(0, 0)
-  else if (interval === '1h') date.setMinutes(0, 0, 0)
-  else if (interval === '1d') date.setHours(0, 0, 0, 0)
-  else if (interval === '1w') {
-    const day = date.getDay() || 7
-    date.setDate(date.getDate() - day + 1)
-    date.setHours(0, 0, 0, 0)
-  }
-  else if (interval === '1M') {
-    date.setDate(1)
-    date.setHours(0, 0, 0, 0)
-  }
+export const formatIotDevicePropertyAggregateBucketTime = (timestamp: number, interval: string, origin: number) => {
+  const { amount, unit } = parseIotDevicePropertyAggregateInterval(interval)!
+  const date = truncateBucketStart(origin, unit)
+  const value = new Date(timestamp)
+  // SQL stores local timestamps; compare calendar coordinates before stepping from the query origin.
+  const localMillis = (time: Date) => Date.UTC(time.getFullYear(), time.getMonth(), time.getDate(),
+    time.getHours(), time.getMinutes(), time.getSeconds(), time.getMilliseconds())
+  const elapsed = unit === 'M'
+    ? (value.getFullYear() - date.getFullYear()) * 12 + value.getMonth() - date.getMonth()
+    : (localMillis(value) - localMillis(date)) / ({ m: 60_000, h: 3_600_000, d: 86_400_000, w: 604_800_000 }[unit])
+  advanceBucket(date, unit, Math.floor(elapsed / amount) * amount)
   return `${date.getFullYear()}-${padTimePart(date.getMonth() + 1)}-${padTimePart(date.getDate())}`
-    + (interval === '1d' || interval === '1w' || interval === '1M'
+    + (unit === 'd' || unit === 'w' || unit === 'M'
       ? ''
       : ` ${padTimePart(date.getHours())}:${padTimePart(date.getMinutes())}:00`)
 }
@@ -538,6 +589,7 @@ export const aggregateIotDeviceGeoPointHistory = (
   recordsByProperty: Readonly<Record<string, readonly unknown[]>>,
   columns: readonly IotDevicePropertyAggregateColumn[],
   interval: string,
+  origin?: number,
 ) => {
   const buckets = new Map<string, Record<string, unknown>>()
   const byProperty = new Map<string, IotDevicePropertyAggregateColumn[]>()
@@ -552,7 +604,7 @@ export const aggregateIotDeviceGeoPointHistory = (
       .filter((record): record is { timestamp: number; value: unknown } => record.timestamp !== undefined)
       .sort((left, right) => left.timestamp - right.timestamp)
     records.forEach((record) => {
-      const time = formatBucketTime(record.timestamp, interval)
+      const time = formatIotDevicePropertyAggregateBucketTime(record.timestamp, interval, origin ?? records[0].timestamp)
       const bucket = buckets.get(time) || { time }
       propertyColumns.forEach((column) => {
         if (column.agg === 'FIRST') {

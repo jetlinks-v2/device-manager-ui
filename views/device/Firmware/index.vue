@@ -34,6 +34,12 @@
                             <CreateActions @add="applicationVisible = true" />
                         </a-flex>
                     </template>
+                    <template #name="slotProps">
+                        {{ getI18nText(slotProps, 'name') }}
+                    </template>
+                    <template #description="slotProps">
+                        {{ getI18nText(slotProps, 'description') }}
+                    </template>
                     <template #productId="slotProps">
                         <span>{{ slotProps.productName }}</span>
                     </template>
@@ -99,6 +105,7 @@ import CreateActions from './CreateActions.vue';
 import type { FirmwareProductOption, FormDataType } from './type';
 import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import { useI18n } from 'vue-i18n';
+import { getI18nText } from '../../../utils/i18n';
 
 const { t: $t } = useI18n();
 
@@ -118,6 +125,7 @@ const columns = [
         title: $t('Firmware.index.858355-1'),
         key: 'name',
         dataIndex: 'name',
+        scopedSlots: true,
         fixed: 'left',
         width: 200,
         ellipsis: true,
@@ -180,6 +188,7 @@ const columns = [
     {
         title: $t('Firmware.index.858355-6'),
         dataIndex: 'description',
+        scopedSlots: true,
         key: 'description',
         ellipsis: true,
         search: {

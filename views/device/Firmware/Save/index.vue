@@ -6,6 +6,7 @@
         :open="true"
         width="700px"
         :confirm-loading="loading"
+        :ok-button-props="{ disabled: uploading }"
         :maskClosable="false"
         @cancel="handleCancel"
         @ok="handleOk"
@@ -20,10 +21,15 @@
             >
                 <a-row :gutter="[24, 0]">
                     <a-col :span="24">
-                        <a-form-item :label="$t('Save.index.978508-4')" v-bind="validateInfos.name">
-                            <a-input
-                                :placeholder="$t('Save.index.978508-5')"
+                        <a-form-item :label="$t('Application.index.385271-3')" v-bind="validateInfos.name">
+                            <I18nTextField
+                                :placeholder="$t('Application.index.385271-4')"
                                 v-model:value="formData.name"
+                                v-model:i18nMessages="formData.i18nMessages"
+                                field="name"
+                                :label="$t('Application.index.385271-3')"
+                                :i18n-max-length="64"
+                                :maxlength="64"
                         /></a-form-item>
                     </a-col>
                     <a-col :span="24"
@@ -107,6 +113,7 @@
                             <FileUpload
                                 v-model:modelValue="formData.url"
                                 v-model:extraValue="extraValue"
+                                v-model:uploading="uploading"
                             /> </a-form-item
                     ></a-col>
                     <a-col :span="24">
@@ -197,9 +204,13 @@
                             :label="$t('Save.index.978508-24')"
                             v-bind="validateInfos.description"
                         >
-                            <a-textarea
+                            <I18nTextField
                                 :placeholder="$t('Save.index.978508-25')"
                                 v-model:value="formData.description"
+                                v-model:i18nMessages="formData.i18nMessages"
+                                field="description"
+                                :label="$t('Save.index.978508-24')"
+                                textarea
                                 :maxlength="200"
                                 :rows="3"
                                 showCount
@@ -212,6 +223,8 @@
 </template>
 <script lang="ts" setup>
 import { Form } from 'ant-design-vue';
+import { cloneDeep } from 'lodash-es';
+import { I18nTextField, type I18nMessages } from '@jetlinks-web-core/components';
 import FileUpload from './FileUpload.vue';
 import {
     save,
@@ -222,6 +235,7 @@ import type { FormInstance } from 'ant-design-vue';
 import type { Properties } from '../type';
 import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import { useI18n } from 'vue-i18n';
+import { getI18nText } from '../../../../utils/i18n';
 
 const { t: $t } = useI18n();
 const formRef = ref<FormInstance>();
@@ -244,6 +258,7 @@ const addList = () => {
 };
 
 const loading = ref(false);
+const uploading = ref(false);
 const _loading = ref(false);
 const useForm = Form.useForm;
 
@@ -275,6 +290,7 @@ const formData: any = ref({
     url: '',
     properties: [],
     description: '',
+    i18nMessages: {} as I18nMessages,
     size: ''
 });
 
@@ -335,7 +351,7 @@ const { resetFields, validate, validateInfos } = useForm(
     formData,
     reactive({
         name: [
-            { required: true, message: $t('Save.index.978508-5') },
+            { required: true, message: $t('Application.index.385271-4') },
             { max: 64, message: $t('Save.index.978508-30') },
         ],
         productId: [
@@ -418,7 +434,15 @@ watch(
         const properties = Array.isArray(value.properties)
             ? value.properties
             : [];
-        formData.value = { ...formData.value, ...value, properties };
+        // 展示值按当前请求语言初始化，翻译独立复制以保留其他语言并隔离取消操作。
+        formData.value = {
+            ...formData.value,
+            ...value,
+            name: getI18nText(value, 'name'),
+            description: getI18nText(value, 'description'),
+            i18nMessages: cloneDeep(value.i18nMessages || {}),
+            properties,
+        };
         dynamicValidateForm.properties = properties;
     },
     { immediate: true, deep: true },

@@ -9,6 +9,7 @@ import {
   isDevicePropertyAggregateOrderedPath,
   mergeDevicePropertyAggregateRows,
   normalizeDevicePropertyAggregateData,
+  normalizeDevicePropertyAggregateInterval,
   refineDevicePropertyOrderedPathInterval,
   resolveDevicePropertyOrderedPathInterval,
   shouldInlineDevicePropertyAggregate,
@@ -16,8 +17,12 @@ import {
 import {
   createIotDevicePropertyAggregateFields,
   createIotDevicePropertyAggregatePlan,
+  aggregateIotDeviceGeoPointHistory,
+  exceedsIotDevicePropertyAggregatePointBudget,
   normalizeIotDevicePropertyAggregateInputs,
+  normalizeIotDevicePropertyAggregateInterval,
   normalizeIotDevicePropertyAggregateRows,
+  parseIotDevicePropertyAggregateInterval,
 } from '../agentCapabilities/deviceAnalysis/devicePropertyAggregate.support.ts'
 
 const metadata = {
@@ -28,6 +33,50 @@ const metadata = {
     { id: 'enabled', name: 'Enabled', valueType: { type: 'boolean' } },
   ],
 }
+
+test('aggregate interval inference only applies to absent input and preserves explicit values', () => {
+  const range = { start: 0, end: 60 * 60 * 1000 }
+  assert.equal(normalizeIotDevicePropertyAggregateInterval(undefined, range), '1m')
+  assert.equal(normalizeIotDevicePropertyAggregateInterval('', range), '1m')
+  assert.equal(normalizeIotDevicePropertyAggregateInterval(undefined, { start: 0, end: 2 * 24 * 60 * 60 * 1000 }), '1h')
+  assert.equal(normalizeIotDevicePropertyAggregateInterval('按小时', range), '1h')
+  assert.equal(normalizeIotDevicePropertyAggregateInterval('1M', range), '1M')
+  assert.equal(normalizeIotDevicePropertyAggregateInterval('5m', range), '5m')
+  assert.equal(normalizeIotDevicePropertyAggregateInterval('unknown', range), 'unknown')
+})
+
+test('combined intervals accept positive integers, preserve month case and use inclusive calendar buckets', () => {
+  for (const interval of ['5m', '7m', '15m', '2h', '3d', '2w', '2M']) {
+    assert.ok(parseIotDevicePropertyAggregateInterval(interval), interval)
+    assert.equal(normalizeDevicePropertyAggregateInterval(interval, { start: 0, end: 3_600_000 }), interval)
+  }
+  for (const interval of ['0m', '-2h', '1.5h', '5x', '2147483648m']) {
+    assert.equal(parseIotDevicePropertyAggregateInterval(interval), undefined, interval)
+  }
+  assert.equal(parseIotDevicePropertyAggregateInterval('5m')?.unit, 'm')
+  assert.equal(parseIotDevicePropertyAggregateInterval('5M')?.unit, 'M')
+  const range = { start: new Date(2031, 0, 31, 18, 3, 30).getTime(), end: new Date(2031, 0, 31, 18, 17, 59).getTime() }
+  assert.equal(exceedsIotDevicePropertyAggregatePointBudget('7m', range, 1666), false)
+  assert.equal(exceedsIotDevicePropertyAggregatePointBudget('7m', range, 1667), true)
+  const months = { start: new Date(2031, 0, 31).getTime(), end: new Date(2031, 4, 1).getTime() }
+  assert.equal(exceedsIotDevicePropertyAggregatePointBudget('2M', months, 1666), false)
+  assert.equal(exceedsIotDevicePropertyAggregatePointBudget('2M', months, 1667), true)
+})
+
+test('GeoPoint combined buckets share the requested origin with scalar aggregation', () => {
+  const start = new Date(2031, 0, 1, 18, 3).getTime()
+  const plan = createIotDevicePropertyAggregatePlan(metadata as any, ['location'], 'LAST', 'ordered_path', {
+    unsupported: () => '',
+  })
+  const rows = aggregateIotDeviceGeoPointHistory({ location: [
+    { timestamp: start, value: { lon: 1, lat: 2 } },
+    { timestamp: start + 6 * 60_000, value: { lon: 3, lat: 4 } },
+    { timestamp: start + 7 * 60_000, value: { lon: 5, lat: 6 } },
+  ] }, plan.columns, '7m', start)
+  assert.equal(rows.length, 2)
+  assert.equal(new Date(String(rows[0].time)).getTime(), start)
+  assert.equal(new Date(String(rows[1].time)).getTime(), start + 7 * 60_000)
+})
 
 test('preserves all requested aggregates with stable distinct aliases in one plan', () => {
   assert.deepEqual(normalizeIotDevicePropertyAggregateInputs({ agg: 'AVG', aggregates: ['MAX', 'AVG'] }), ['AVG', 'MAX'])

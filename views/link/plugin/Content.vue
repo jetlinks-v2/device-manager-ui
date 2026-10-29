@@ -22,6 +22,8 @@
                     sorts: [{ name: 'createTime', order: 'desc' }],
                 }"
       :params="params"
+      :gridColumn="3"
+      :gridColumns="[2, 3]"
       class="pro-table__no-padding"
     >
       <template #emptyText>
@@ -51,6 +53,8 @@
 
       <template #card="slotProps">
         <CardBox
+          action-layout="split"
+          primary-action-key="update"
           :value="slotProps"
           :actions="getActions(slotProps,'card')"
           :showStatus="false"
@@ -83,7 +87,7 @@
                                             font-weight: 600;
                                         "
                                     >
-                                        {{ slotProps.name }}
+                                        {{ getI18nText(slotProps, 'name') }}
                                     </span>
               </j-ellipsis>
             </div>
@@ -109,6 +113,8 @@
 
           <template #actions="item">
             <j-permission-button
+              :type="item.buttonType"
+              :danger="item.key === 'delete'"
               :disabled="item.disabled"
               :popConfirm="item.popConfirm"
               :tooltip="{
@@ -117,18 +123,18 @@
               @click="item.onClick"
               :hasPermission="permissionKey + ':' + item.key"
             >
-              <AIcon
-                type="DeleteOutlined"
-                v-if="item.key === 'delete'"
-              />
-              <template v-else>
-                <AIcon :type="item.icon"/>
-                <span>{{ item?.text }}</span>
-              </template>
+              <AIcon v-if="!item.isPrimary" :type="item.icon" />
+              <span>{{ item?.text }}</span>
             </j-permission-button>
           </template>
         </CardBox>
       </template>
+	    <template #name="slotProps">
+		    {{ getI18nText(slotProps, 'name') }}
+	    </template>
+	    <template #description="slotProps">
+		    {{ getI18nText(slotProps, 'description') }}
+	    </template>
       <template #type="slotProps">
         <span>{{ getPluginTypeLabel(slotProps.type) }}</span>
       </template>
@@ -177,6 +183,7 @@ import Detail from './Detail.vue';
 import { usePluginPermission } from '@device-manager-ui/hooks/usePermission'
 import { mergeObjectArrays } from '@jetlinks-web-core/utils'
 import ConditionFilter from '@jetlinks-web-core/components/ConditionFilter'
+import { getI18nText } from '../../../utils/i18n'
 
 const {t: $t} = useI18n();
 const route = useRoute();
@@ -205,6 +212,7 @@ const columns = [
     search: {
       type: 'string',
     },
+	  scopedSlots: true
   },
   {
     title: $t('plugin.index.293829-4'),
@@ -248,6 +256,7 @@ const columns = [
     search: {
       type: 'string',
     },
+	  scopedSlots: true
   },
   {
     title: $t('plugin.index.293829-7'),

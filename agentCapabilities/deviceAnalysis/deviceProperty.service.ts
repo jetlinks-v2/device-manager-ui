@@ -2,6 +2,7 @@ import i18n from '@jetlinks-web-core/locales'
 import {
   createDomainAgentAggregateCardinality,
   createDomainAgentClaim,
+  createDomainAgentInputError,
   createDomainAgentRecordSetCardinality,
   createDomainAgentToolResult,
   resolveDomainAgentEnum,
@@ -25,7 +26,6 @@ import {
 import {
   IOT_DEVICE_PROPERTY_AGGREGATES,
   IOT_DEVICE_PROPERTY_ANALYSIS_MODES,
-  IOT_DEVICE_PROPERTY_INTERVALS,
 } from './constants'
 import {
   aggregateIotDeviceGeoPointHistory,
@@ -33,6 +33,8 @@ import {
   createIotDevicePropertyAggregateFields,
   createIotDevicePropertyAggregatePlan,
   createIotDevicePropertyAggregateTransport,
+  exceedsIotDevicePropertyAggregatePointBudget,
+  IOT_DEVICE_PROPERTY_AGGREGATE_POINT_LIMIT,
   mergeIotDevicePropertyAggregateRows,
   normalizeIotDevicePropertyAggregate,
   normalizeIotDevicePropertyAggregateInputs,
@@ -40,6 +42,7 @@ import {
   normalizeIotDevicePropertyIds,
   normalizeIotDevicePropertyAggregateRows,
   normalizeIotDevicePropertyAnalysisMode,
+  parseIotDevicePropertyAggregateInterval,
   refineIotDevicePropertyOrderedPathInterval,
   resolveIotDevicePropertyAggregateModeIssue,
   resolveIotDevicePropertyAggregateObservedRange,
@@ -55,6 +58,7 @@ import {
   runDeviceTool,
   runDeviceToolExecution,
   unwrapResult,
+  type DeviceMetadataResolver,
 } from './deviceAnalysis.shared'
 
 type Aggregate = typeof IOT_DEVICE_PROPERTY_AGGREGATES[number]
@@ -149,14 +153,14 @@ export const devicePropertyService = {
     })
   }),
 
-  propertyHistory: (args: Record<string, unknown>) => runDeviceTool<Array<Record<string, unknown>>>([], async () => {
+  propertyHistory: (args: Record<string, unknown>, resolveMetadata: DeviceMetadataResolver = getMetadata) => runDeviceTool<Array<Record<string, unknown>>>([], async () => {
     const deviceId = normalizeText(args.deviceId)
     const propertyId = normalizeText(args.propertyId)
     if (!deviceId || !propertyId) throw inputError('DEVICE_PROPERTY_REQUIRED', 'devicePropertyRequired')
     const range = resolveDomainAgentTimeRange(args)
     const pageIndex = resolveDomainAgentInteger(args.pageIndex, { name: 'pageIndex', defaultValue: 0, min: 0, max: 10000 })
     const pageSize = resolveDomainAgentInteger(args.pageSize ?? args.limit, { name: 'pageSize', defaultValue: 20, min: 1, max: 50 })
-    const { metadata } = await getMetadata(deviceId)
+    const { metadata } = await resolveMetadata(deviceId)
     findProperty(metadata, propertyId)
     const response = await iotDeviceDetailRealApi.queryPropertyData(deviceId, propertyId, {
       pageIndex,
@@ -200,12 +204,13 @@ export const devicePropertyService = {
 
   propertyHistoryRecords: (
     args: Record<string, unknown>,
+    resolveMetadata: DeviceMetadataResolver = getMetadata,
   ) => runDeviceToolExecution([], async () => {
     const deviceId = normalizeText(args.deviceId)
     const propertyId = normalizeText(args.propertyId)
     if (!deviceId || !propertyId) throw inputError('DEVICE_PROPERTY_REQUIRED', 'devicePropertyRequired')
     const range = resolveDomainAgentTimeRange(args)
-    const { metadata } = await getMetadata(deviceId)
+    const { metadata } = await resolveMetadata(deviceId)
     findProperty(metadata, propertyId)
     return createDomainAgentToolResult({
       domain: 'device',
@@ -231,7 +236,7 @@ export const devicePropertyService = {
     })
   }),
 
-  propertyAggregate: (args: Record<string, unknown>) => runDeviceTool<Array<Record<string, unknown>>>([], async () => {
+  propertyAggregate: (args: Record<string, unknown>, resolveMetadata: DeviceMetadataResolver = getMetadata) => runDeviceTool<Array<Record<string, unknown>>>([], async () => {
     const deviceId = normalizeText(args.deviceId)
     const propertyIds = resolveDomainAgentStringList(normalizeIotDevicePropertyIds(args), {
       name: 'propertyIds',
@@ -252,12 +257,12 @@ export const devicePropertyService = {
       { name: 'analysisMode' },
     )
     const range = resolveDomainAgentTimeRange(args)
-    const interval = resolveDomainAgentEnum(
-      normalizeIotDevicePropertyAggregateInterval(args.interval, range),
-      IOT_DEVICE_PROPERTY_INTERVALS,
-      { name: 'interval' },
+    const interval = normalizeIotDevicePropertyAggregateInterval(args.interval, range)
+    const parsedInterval = parseIotDevicePropertyAggregateInterval(interval)
+    if (!parsedInterval) throw createDomainAgentInputError(
+      'AGGREGATE_INTERVAL_INVALID', 'IotGeneralAgent.propertyAggregate.invalidInterval', { interval },
     )
-    const { metadata } = await getMetadata(deviceId)
+    const { metadata } = await resolveMetadata(deviceId)
     propertyIds.forEach(propertyId => findProperty(metadata, propertyId))
     const modeIssue = (aggregates.length ? aggregates : [undefined]).map(aggregate => (
       resolveIotDevicePropertyAggregateModeIssue(metadata, propertyIds, aggregate, analysisMode)
@@ -282,12 +287,19 @@ export const devicePropertyService = {
     )
     const scalarColumns = plan.columns.filter(column => !column.geoPointValue)
     const geoPointColumns = plan.columns.filter(column => column.geoPointValue)
+    const metricCount = plan.columns.reduce((count, column) => count + (column.geoPointValue ? 2 : 1), 0)
+    if (analysisMode === 'statistics' && exceedsIotDevicePropertyAggregatePointBudget(interval, range, metricCount)) {
+      throw createDomainAgentInputError(
+        'AGGREGATE_POINT_LIMIT', 'IotGeneralAgent.propertyAggregate.pointLimit',
+        { limit: IOT_DEVICE_PROPERTY_AGGREGATE_POINT_LIMIT }, 'terminal',
+      )
+    }
     const aggregateRows = scalarColumns.length
       ? await iotDeviceDetailRealApi.queryPropertyAggregation(deviceId, {
           columns: scalarColumns.map(({ property, alias, agg }) => ({ property, alias, agg })),
           query: {
             interval,
-            format: interval === '1d' || interval === '1w' || interval === '1M'
+            format: ['d', 'w', 'M'].includes(parsedInterval.unit)
               ? 'yyyy-MM-dd'
               : 'yyyy-MM-dd HH:mm:ss',
             from: range.start,
@@ -331,6 +343,7 @@ export const devicePropertyService = {
       geoPointRecords,
       geoPointColumns,
       effectiveInterval,
+      range.start,
     )
     const resolutionAdjusted = effectiveInterval !== interval
     const warnings = [

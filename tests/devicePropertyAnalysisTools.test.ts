@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { createDomainAgentTimeScopeContract } from '@jetlinks-web-core/layout/components/AiChat/domainAgentTools'
+import { createDomainAgentTimeScopeContract, resolveDomainAgentEnum } from '@jetlinks-web-core/layout/components/AiChat/domainAgentTools'
 import { toAiClientToolSessionDefinition } from '@jetlinks-web-core/layout/components/AiChat/clientToolApi'
 
 import {
@@ -98,10 +98,11 @@ test('multiple aggregate measures reach one query and keep distinct result field
   try {
     const result = await devicePropertyService.propertyAggregate({
       deviceId: 'device-1', propertyId: 'cpu', aggregates: ['AVG', 'MAX'],
-      analysisMode: 'statistics', interval: '1h', timeRange: 'custom',
+      analysisMode: 'statistics', interval: '5m', timeRange: 'custom',
       startTime: '2031-02-03T00:00:00+08:00', endTime: '2031-02-04T00:00:00+08:00',
     })
     assert.equal(queries.length, 1)
+    assert.equal(queries[0].query.interval, '5m')
     assert.deepEqual(queries[0].columns, [
       { property: 'cpu', alias: 'cpu_avg', agg: 'AVG' },
       { property: 'cpu', alias: 'cpu_max', agg: 'MAX' },
@@ -121,6 +122,54 @@ test('multiple aggregate measures reach one query and keep distinct result field
     iotDeviceDetailRealApi.getDeviceDetail = originalDetail
     iotDeviceDetailRealApi.queryPropertyAggregation = originalAggregation
   }
+})
+
+test('malformed aggregate interval fails before metadata or aggregate HTTP requests', async () => {
+  const originalDetail = iotDeviceDetailRealApi.getDeviceDetail
+  const originalAggregation = iotDeviceDetailRealApi.queryPropertyAggregation
+  let requests = 0
+  iotDeviceDetailRealApi.getDeviceDetail = async () => { requests += 1; throw new Error('unexpected detail query') }
+  iotDeviceDetailRealApi.queryPropertyAggregation = async () => { requests += 1; throw new Error('unexpected aggregation') }
+  try {
+    await assert.rejects(devicePropertyService.propertyAggregate({
+      deviceId: 'device-1', propertyId: 'cpu', agg: 'AVG',
+      analysisMode: 'statistics', interval: '0m', timeRange: 'custom',
+      startTime: '2031-02-03T00:00:00+08:00', endTime: '2031-02-03T01:00:00+08:00',
+    }), { name: 'DomainAgentInputError', code: 'AGGREGATE_INTERVAL_INVALID', recoveryAction: 'repair' })
+    assert.equal(requests, 0)
+  } finally {
+    iotDeviceDetailRealApi.getDeviceDetail = originalDetail
+    iotDeviceDetailRealApi.queryPropertyAggregation = originalAggregation
+  }
+})
+
+test('point budget counts all metrics and rejects before aggregate HTTP without changing the grain', async () => {
+  const originalAggregation = iotDeviceDetailRealApi.queryPropertyAggregation
+  let requests = 0
+  iotDeviceDetailRealApi.queryPropertyAggregation = async () => { requests += 1; return { result: [] } as any }
+  const metadata = async () => ({ device: { id: 'device-1' }, metadata: {
+    properties: [{ id: 'cpu', valueType: { type: 'double' } }],
+  } }) as any
+  const args = {
+    deviceId: 'device-1', propertyId: 'cpu', analysisMode: 'statistics', interval: '1m', timeRange: 'custom',
+    startTime: '2031-02-01T00:00:00+08:00', endTime: '2031-02-03T00:00:00+08:00',
+  }
+  try {
+    await devicePropertyService.propertyAggregate({ ...args, agg: 'AVG' }, metadata)
+    assert.equal(requests, 1)
+    await assert.rejects(devicePropertyService.propertyAggregate({ ...args, aggregates: ['AVG', 'MAX'] }, metadata), {
+      name: 'DomainAgentInputError', code: 'AGGREGATE_POINT_LIMIT', recoveryAction: 'terminal', retryable: false,
+    })
+    assert.equal(requests, 1)
+  } finally {
+    iotDeviceDetailRealApi.queryPropertyAggregation = originalAggregation
+  }
+})
+
+test('ordinary enum failures retain their existing argument-repair contract', () => {
+  assert.throws(() => resolveDomainAgentEnum('unsupported', ['supported'], { name: 'ordinary' }), {
+    name: 'DomainAgentInputError', code: 'ENUM_UNSUPPORTED', recoveryAction: 'repair', retryable: true,
+  })
 })
 
 test('general and device-detail sessions serialize the same property discovery-to-aggregate contract', () => {
@@ -143,6 +192,8 @@ test('general and device-detail sessions serialize the same property discovery-t
     assert.ok(producerMetadata, `${session.name}: discovery routing metadata is required`)
     assert.ok(metadata.analyticalCapability)
     assert.deepEqual(metadata.resultDeliveries, ['auto'])
+    assert.equal(aggregate.expands?.cacheableWithinTurn, true)
+    assert.equal(producer.expands?.cacheableWithinTurn, undefined)
     const propertyConsumer = metadata.consumerPorts?.find((consume: any) => consume.name === 'subject-property-id')
     assert.ok(propertyConsumer, JSON.stringify(metadata))
     assert.equal(propertyConsumer.argumentBinding?.argument, 'propertyId')

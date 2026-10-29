@@ -6,6 +6,70 @@
 
 本轮产品与设备列表交互调整的代码提交为 `3b6f473`，评审入口为 [PR #300](https://github.com/jetlinks-v2/device-manager-ui/pull/300)；产品详情与分类树、接入设备回退和范围树的实现入口及验证边界分别见 `views/device/Product/README.md` 与 `views/device/list/README.md`。
 
+### 2.20 交付验证与配套要求
+
+- 2026-10-29 基于最新 `origin/2.20`（`08a5b17`）核验本模块的上传、国际化和接入页面改动；26 个文件的原有源码完整迁移，中英文资源同时保留远端新增词条。17 个改动 Vue 文件的脚本／模板、证书详情 Less 及中英文 JSON 检查通过。
+- 公共国际化测试 `node scripts/test-i18n-components.mjs` 通过（10/10）；固件国际化流程检查通过（7 组），手工固件、协议包及插件上传适配检查通过，覆盖编辑回显、后缀大小写、上传状态、异常响应、失败恢复、凭证编码、结果回填与移除。定向检查使用真实 Vue 响应式及平台边界替身，不代表真实上传、解析和持久化联调。
+- 在 `runtime-ui/jetlinks-web-core/` 执行 `node --max-old-space-size=8192 --max-semi-space-size=64 ../node_modules/vite/bin/vite.js build --outDir /tmp/codex-device-manager-ui-delivery-build-20261029 -- --module-name device-manager-ui` 通过（11,310 个模块，2 分 30 秒），保留既有资源路径、Rollup 输出选项、CSS 注释和包体积告警；`git diff --check` 通过，工作区与模块无独立 lint 脚本。
+- 完整类型检查命令为在 `runtime-ui/` 执行 `node node_modules/vue-tsc/bin/vue-tsc.js --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json`。原先两处 TS1005 已由最新基线修复；基线和改动后均报告 1,824 项类型诊断。忽略位置变化后 1,823 项完全一致，插件列表另 1 项仅列联合类型展开变化，底层仍是原有 `search.options` 的 `Promise<unknown>` 类型不兼容，未发现新增诊断原因；完整类型检查仍未通过。
+- 文件回显下载及返回按钮公共样式需配套 [jetlinks-web-core PR #201](https://github.com/jetlinks-v2/jetlinks-web-core/pull/201)。插件与固件翻译持久化分别需要支持 `PluginDriverEntity.i18nMessages` 和 `FirmwareEntity.i18nMessages` 的后端；固件还需同步 `dev_firmware.i18n_messages` 映射。真实后端上传／解析／保存、浏览器下载落盘及卡片／证书页面最终视觉效果仍待联调或人工验收，本次未重新执行浏览器验证。
+
+### 接入列表卡片与行操作
+
+- `views/link/AccessConfig/index.vue`、`Certificate/index.vue`、`Protocol/index.vue`、`Type/index.vue` 和 `plugin/Content.vue` 使用现有 `CardBox` 的分区操作布局，编辑为主要操作，删除沿用危险色及原有权限／确认。卡片配置统一提供两列／三列选择；证书管理默认展示卡片，保留表格切换。
+- 网络组件表格复用 `TableActions` 收纳次要操作，保留已有查看、编辑、启停、删除回调及权限。协议类型和插件来源只有多个候选时才显示选择区，单一候选继续沿用原有默认值与保存参数。
+
+### 协议包拖拽上传
+
+- `views/link/Protocol/Save/FileUpload.vue` 复用 core `FileUpload`，`useProtocolFileUpload.ts` 将上传结果适配为携带访问凭证的文件地址；支持 JAR／ZIP 单文件、大小写后缀、编辑回显及移除，不增加文件大小上限。
+- `Save/index.vue` 在上传期间禁用确认，沿用原有协议类型、地址字段和保存接口；缺少文件 ID 或访问凭证时保留原配置。表单通过 `FormItemRest` 隔离上传过程中的文件列表变化，仅在完成地址变化后触发校验。
+
+### 插件名称与描述国际化编辑
+
+- 运行时插件新增、编辑入口 `views/link/plugin/Save.vue` 复用 core 根入口的 `I18nTextField`，名称和描述均可编辑中文、英文文本，分别沿用 64、200 字符限制。
+- 表单回显已有 `i18nMessages`；普通新增、编辑随完整参数提交 `i18nMessages: { name: { zh, en }, description: { zh, en } }`，能力市场安装参数同步携带该映射。取消国际化弹窗不提交草稿，取消插件表单不修改原记录。
+- 后端需加载支持 `PluginDriverEntity.i18nMessages` 的新版 `plugin-component`；运行时插件卡片及表格的名称、说明通过 `utils/i18n.ts` 的 `getI18nText` 回显当前语言，缺少翻译时沿用原值；不调整运营端或插件包元数据。
+- 验证：在 `runtime-ui/jetlinks-web-core/` 执行 `node scripts/test-i18n-components.mjs`，10 项通过；执行 `node --max-old-space-size=8192 --max-semi-space-size=64 ../node_modules/vite/bin/vite.js build --outDir /tmp/codex-plugin-i18n-build-20261028 -- --module-name device-manager-ui`，11,178 个模块构建通过（2 分 30 秒），保留既有资源路径、Rollup 配置、循环依赖与包体积告警。目标文件 `git diff --check` 通过。
+- 页面验证：本地 `9200` 新增弹窗的名称、描述均出现国际化入口；中文自动回填、英文录入确认、再次打开回显及取消名称修改保留原翻译通过。没有保存业务记录；真实后端持久化、已有翻译记录回显与能力市场安装仍需加载新版后端后联调。
+- 验证限制：完整类型检查及配套后端要求以“2.20 交付验证与配套要求”为准；真实翻译保存、编辑回显和能力市场安装仍待联调。
+
+### 插件包拖拽上传
+
+- 当前实现：运行时 `device-manager-ui` 的 `views/link/plugin/UploadFile.vue` 复用 core 根入口 `FileUpload` 的点击和拖拽能力；插件专属的版本、类型和地址回填由同目录 `usePluginFileUpload.ts` 适配，`api/link/plugin.ts` 通过公共上传请求工具调用插件解析接口。
+- 实施边界：单个 JAR/ZIP、不增加文件大小上限，沿用 `/plugin/driver/upload` 和现有保存字段；不修改公共组件、运营端或能力市场安装流程。重点保留编辑回显、上传中禁用、失败恢复原文件和移除清空。
+- 验证：组件脚本、模板和两个 TypeScript 文件编译、目标文件 `git diff --check` 通过；新增 hook 使用真实 Vue、Ant Design Vue 与 i18n 类型独立严格检查通过。在 `runtime-ui/jetlinks-web-core/` 执行 `node --max-old-space-size=8192 --max-semi-space-size=64 ../node_modules/vite/bin/vite.js build --outDir /tmp/codex-plugin-drag-build-20261028 -- --module-name device-manager-ui` 通过（11,178 个模块，1 分 23 秒），保留既有资源路径、Rollup 配置、循环依赖和包体积警告；随后仅补充父级 `uploading` 禁用条件，最终脚本与模板重新编译通过。
+- 页面验证：本地 `9200` 插件新增弹窗显示公共拖拽区、JAR/ZIP 提示，点击可打开单文件选择器；编辑弹窗正确回显已有文件，移除后文件名、版本及类型信息区清空，取消后未持久化。未实际上传插件或保存业务数据，拖放上传、后端解析和失败恢复仍待有效插件包联调。
+- 验证限制：完整类型检查以“2.20 交付验证与配套要求”为准；真实插件包上传、后端解析及失败恢复仍待联调。
+
+### 固件名称与说明国际化
+
+- 行为与范围：本模块 `views/device/Firmware/Application/index.vue` 和 `Save/index.vue` 复用 core 根入口 `I18nTextField`，支持固件名称、说明的中英文编辑，分别沿用 64、200 字符限制；`index.vue` 的远程升级列表同步按请求语言回显。运营端 `ui/`、固件上传与版本解析、任务发布、权限／资产关联和筛选参数不变。
+- 保存契约：`type.d.ts` 声明 `i18nMessages: { name: { zh, en }, description: { zh, en } }`。自动创建显式携带翻译映射，解析失败时连同已有文件与表单内容传入手工弹窗；手工新增／编辑随完整表单保存映射，编辑时独立复制，取消不会修改原记录。
+- 后端落点：`modules/device-manager/src/main/java/org/jetlinks/pro/device/entity/FirmwareEntity.java` 沿用 `DeviceProductEntity` 的 `MultipleI18nSupportEntity` 与 JSON 列映射，保留原始 `name`、`description`，提供只读 `i18nName`、`i18nDescription`。`web/request/FirmwareCreateRequest.java` 和 `service/ProtocolFirmwareService.java` 将翻译传入自动创建记录，手工新增／编辑继续使用现有 CRUD 接口。
+- 显示与兼容：列表和编辑初始化复用 `utils/i18n.ts` 的 `getI18nText`，优先使用后端展示字段；没有对应翻译的已持久化固件继续显示原值。没有批量翻译历史数据，也没有增加接口路径、常驻状态、手动追踪或 MBean。
+- 后端验证：使用 JDK 21，在 `modules/device-manager/` 执行 `JAVA_HOME=/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home /opt/homebrew/bin/mvn -o -Dtest=FirmwareEntityTest,ProtocolFirmwareServiceTest,FirmwareControllerTest test`，模块编译及 21 项测试通过。覆盖实体 JSON 列映射与编解码、清空翻译、只读字段、按语言／响应式请求上下文序列化、旧值回退、请求绑定和自动／可信创建透传。
+- 前端验证：定向检查 `/tmp/codex-firmware-i18n-flow-20261028.mjs` 的 7 组场景通过，覆盖自动创建、解析失败回退、手工草稿隔离、新增／编辑保存、旧值回退及列表真实模板插槽的中英文显示。在 `runtime-ui/jetlinks-web-core/` 执行 `node --max-old-space-size=8192 --max-semi-space-size=64 ../node_modules/vite/bin/vite.js build --outDir /tmp/codex-firmware-i18n-build-20261028 -- --module-name device-manager-ui`，11,179 个模块构建通过（2 分 27 秒），保留既有资源路径、Rollup 配置与包体积告警。
+- 页面验证：本地 `9200` 的两个固件弹窗均出现名称、说明国际化入口；中文直接输入回填、英文录入确认、重新打开回显、修改后取消均通过。切换英文后旧固件原名称正常回显，验证后恢复中文、关闭草稿，没有上传或保存业务记录。
+- 验证与发布限制：完整类型检查以“2.20 交付验证与配套要求”为准。后端需发布／重启以加载新实体并同步 `dev_firmware.i18n_messages` 的映射；真实数据库保存、重新查询及语言切换联调尚未执行，前端单独发布不能保证翻译持久化。
+
+### 固件拖拽上传
+
+- 目标与范围：运行时 `device-manager-ui` 的 `views/device/Firmware/Application/FileUpload.vue` 与 `views/device/Firmware/Save/` 复用 core 根入口导出的 `FileUpload`，新增、解析回退和编辑弹窗均支持点击和拖拽上传；公共回显下载由 `../../jetlinks-web-core/src/components/Upload/README.md` 的“回显文件下载”维护。
+- 自动解析入口：保持 JAR/ZIP 单文件、不额外限制文件大小，通过自定义请求与全过程上传事件接回既有上传、SHA256 回填、版本解析和提交禁用流程；非法文件不替换已有列表。
+- 手工表单：`Save/FileUpload.vue` 移除地址输入框，仅展示任意格式的固件拖拽区和回显列表；`useFirmwareFileUpload.ts` 清理手填绑定，继续适配原 `/file/upload`、访问凭证和文件元信息回填。上传时禁用确认，移除时清空地址和文件元信息、大小归零；签名输入及校验、保存字段和解析回退流程保持原样。
+- 公共下载：`jetlinks-web-core/src/components/Upload/File/` 为能够解析地址的回显文件提供下载按钮，保留文件名和访问凭证，兼容文件 ID 与本次上传响应；无地址、上传中和失败文件不提供下载。跨源读取被限制时使用原生附件下载，保留当前表单；不修改运营端、后端接口或固件数据结构。
+- 定向验证：公共下载检查覆盖列表／文件 ID／响应回显、名称和凭证、状态过滤、跨源请求去重、失败提示及原生链接回退、图片预览与移除；手工固件适配检查覆盖已有文件回显、上传状态、失败恢复、异常响应拒绝、访问地址／摘要／大小回填和移除。SFC 脚本、模板、样式及中英文资源检查、目标差异空白检查通过；公共组件与固件适配器的隔离严格类型检查仅保留原组件 `minScale` 的既有 TS2353，与原始组件基线一致。
+- 构建：在 `runtime-ui/jetlinks-web-core/` 执行 `node --max-old-space-size=8192 --max-semi-space-size=64 ../node_modules/vite/bin/vite.js build --outDir /tmp/codex-file-download-final-build-20261028 -- --module-name device-manager-ui` 通过（11,179 个模块，1 分 12 秒），保留既有资源路径、Rollup 配置与包体积警告。
+- 页面与文件验证：本地 `9200` 的编辑表单已确认无地址输入框、公共拖拽区、回显文件和下载按钮；移除后列表及下载按钮消失、地址清空、大小归零并出现校验提示，签名不变。取消后重新编辑恢复原文件和大小。已有文件直接请求返回 HTTP 200、3,506,305 字节，SHA256 与表单一致；带当前页面 Origin 的跨源请求返回 403，故启用原生附件下载路径。内置浏览器自动化未捕获下载落盘事件，最终浏览器下载需人工验收；未上传或保存业务数据。
+- 验证限制：完整类型检查以“2.20 交付验证与配套要求”为准。实际拖放上传和后端版本解析仍需有效固件联调。
+
+### 网络组件详情返回入口（已实施）
+
+- 目标与范围：完善 `views/link/Type/Detail/index.vue` 已有 `PageChrome` 返回按钮的点击行为和国际化文本，仅涉及运行时设备管理模块。
+- 实现：返回按钮调用 `useMenuStore().jumpPage('link/Type')` 回到网络组件列表，使用 `Network.detail.backToList` 词条，在 `locales/lang/{zh,en}.json` 同步“返回网络组件 / Back to Network Components”；保留现有布局、表单与保存流程，不依赖浏览器历史。
+- 验证：SFC 脚本、模板及 scoped Less 编译、中英文 JSON 校验、相对任务前快照的增量核对与目标文件 `git diff --check` 通过。在 `runtime-ui/jetlinks-web-core/` 使用现有 Node 运行时执行 `node --max-old-space-size=8192 --max-semi-space-size=64 ../node_modules/vite/bin/vite.js build --outDir <临时输出目录> -- --module-name device-manager-ui` 通过（11,178 个模块，1 分 14 秒），保留已有资源路径、CSS 注释、Baseline 数据及大分块告警。真实 `9200` 临时页直接打开详情后，中文按钮返回网络组件列表通过；切换英文后显示完整返回文案并可正确回到列表，验证后恢复中文，未保存业务数据。
+- 验证限制：完整类型检查以“2.20 交付验证与配套要求”为准。
+
 ### 统一设备列表品牌型号列（已实施）
 
 - 目标：在统一设备列表新增“品牌型号”列，展示 `productManufacturer` 与 `productModel`；任一字段为空时显示既有国际化文案“未配置”。
@@ -44,6 +108,22 @@
 - 影响范围与 owning module：仅本模块的 `views/device/Firmware/`、`views/device/Product/` 和 `views/link/`；不改接口、权限、筛选参数、表格列、行操作、路由或 i18n 文案。
 - 实施：搜索筛选器与新增按钮统一放置在表格右侧工具栏，标题字号改用 `--fs-18`，搜索框使用 `25rem` 至 `40rem` 的弹性宽度；产品分类从第三级起显示灰色图标，前两级显示主色图标。
 - 验证：`git diff --check` 通过；`pnpm -F jetlinks-web-core build -- --module-name device-manager-ui` 通过（36.61 秒）。在固件、接入配置、证书、协议、接入方式、插件与产品列表中仍需人工确认筛选、创建权限和分类操作保持原有行为。
+- 证书卡片已补齐：仅修改 `runtime-ui/modules/device-manager-ui/views/link/Certificate/index.vue`，参考 `runtime-ui/modules/authentication-manager-ui/views/system/Apply/index.vue` 的卡片布局，复用 core `CardBox`、现有证书图标和字段文案，展示名称、证书标准的 `type.text` 与说明；说明为空时显示公共词条 `comm.table.empty`。卡片使用现有编辑、删除回调及相同权限码，默认展示卡片并保留表格切换，搜索、分页、接口和路由保持原契约。
+- 证书卡片验证：脚本、模板、样式编译与 `node ../ui/scripts/check-ui-style.mjs --files modules/device-manager-ui/views/link/Certificate/index.vue` 样式门禁通过。在 `runtime-ui/jetlinks-web-core/` 执行 `node --max-old-space-size=8192 --max-semi-space-size=64 ../node_modules/vite/bin/vite.js build --outDir /tmp/codex-certificate-card-build-20261027 -- --module-name device-manager-ui` 通过，转换 11,043 个模块，耗时 1 分 3 秒，保留既有 Baseline 数据、资源路径与大分块提示；目标文件 `git diff --check` 通过。本地 `9200` 已验证表格/卡片切换、证书图标/字段及空说明、编辑跳转、删除确认取消，以及无匹配筛选空态和清空后列表恢复，未保存或删除业务数据。编辑详情页仍有既有 Form.Item 多控件收集告警，未改动详情表单。
+- 证书卡片验证限制：完整类型检查以“2.20 交付验证与配套要求”为准；此前在管理员账号下完成交互验证，未切换无权限账号，也未执行实际删除。
+- 证书上传入口已调整：`views/link/Certificate/Detail/CertificateFile.vue` 使用同一相对定位容器，将证书文件与证书私钥的上传按钮放到各自文本域内部右下角；按钮距右边与下边均为 `--space-2`，文本域底部使用 `--space-12` 为文字预留空间，并同步 `locales/lang/{zh,en}.json` 中两处位置说明。上传地址、文件类型限制、上传状态、值回填和表单事件保持原契约，脚本与改动前完全一致，组件为 107 行。
+- 上传布局验证：SFC 脚本、模板、样式编译，中文/英文 JSON 校验，样式门禁与目标文件 `git diff --check` 均通过；本轮布局版本在 `runtime-ui/jetlinks-web-core/` 执行 `node --max-old-space-size=8192 --max-semi-space-size=64 ../node_modules/vite/bin/vite.js build --outDir /tmp/codex-certificate-upload-position-build-20261027 -- --module-name device-manager-ui` 构建通过（1 分 20 秒），说明词条随后完成 JSON 校验。本地 `9200` 的空白新增表单已确认两个按钮均位于各自文本域内部，右、下边距各 8px，按钮高度 32px，小于底部预留的 48px，输入框继续支持竖向缩放；未上传文件或保存业务数据。完整类型检查以“2.20 交付验证与配套要求”为准。
+
+### 证书配置页布局
+
+- 目标与范围：`runtime-ui/modules/device-manager-ui/views/link/Certificate/Detail/index.vue` 将原右栏概述、配置说明完整上移，左栏依次为“证书标准 / 证书名称 / 说明”，右栏依次为“证书文件 / 证书类型 / 证书私钥”，保存操作置于底部右侧；窄屏按左栏、右栏顺序堆叠。本次只移动既有表单项，复用现有 `FullPage`、`ContentPanel`、`ResponsiveGrid`、Ant Design 表单及 `CertificateFile`，保留同目录 `detail.less` 中的布局样式；通过模板编译、表单项契约对照和浏览器布局检查验证。
+- 实施边界：保留现有表单文案、字段、校验、上传入口、数据回填和保存逻辑；上传按钮仍在文本域右下角，不新增参考图中的字段提示或取消按钮。分栏调整仅移动模板，页面和上传组件脚本保持原样。
+- 顶部返回入口：完善同页已有的 `PageChrome` 返回按钮，复用 `menuStore.jumpPage('link/Certificate')` 回到证书管理列表，并在 `locales/lang/{zh,en}.json` 补齐“返回证书管理 / Back to Certificate Management”；仅修改按钮事件与其文案，不依赖浏览器历史记录。通过 SFC 编译、语言资源校验、模块构建及浏览器返回 / 语言切换验证。
+- 验证结果：页面 SFC 脚本、模板编译通过；与分栏调整前工作区快照对照，六个表单项的完整契约、业务脚本和 `detail.less` 均保持一致，仅移动表单项位置，页面为 212 行。`node ../ui/scripts/check-ui-style.mjs --files modules/device-manager-ui/views/link/Certificate/Detail/index.vue` 与目标文件 `git diff --check` 通过。上传组件、中英文资源及样式未改动，复用上一布局版本的编译与交互验证。
+- 构建与浏览器：在 `runtime-ui/jetlinks-web-core/` 执行 `node --max-old-space-size=8192 --max-semi-space-size=64 ../node_modules/vite/bin/vite.js build --outDir /tmp/codex-certificate-columns-build-20261028 -- --module-name device-manager-ui` 通过（1 分 32 秒），保留既有 Baseline 数据与大分块提示。本地 `9200` 当前编辑页在 `1404×899` 下，左栏为“证书标准 / 证书名称 / 说明”，右栏为“证书文件 / 证书类型 / 证书私钥”，两栏各宽 540.5px，无横向溢出；空白新增页也已确认同一分组及顶部说明、底部右侧保存按钮。窄屏堆叠、客户端 / 服务端私钥显隐、字数统计和必填校验沿用上次通过证据，本次未改变相关布局或逻辑。未上传文件或保存业务数据，验证用的临时新增页已关闭。
+- 返回入口验证：SFC 脚本 / 模板编译、中英文 JSON 和新词条校验、样式门禁、目标文件 `git diff --check` 均通过；与本次改动前的定向快照对照，已有业务脚本、表单模板及其他词条完全一致。使用同一模块构建命令、输出目录 `/tmp/codex-certificate-back-build-20261028` 构建通过（11,178 个模块，3 分 58 秒），保留资源路径、Rollup output option、navigation/menu 循环依赖与大分块警告。本地 `9200` 的空白新增页实测中英文按钮均返回 `/infrastructure/access/Cert` 并显示证书管理列表标题，按钮位于面板外顶部；英文按钮显示完整且无横向溢出，验证后恢复中文，未上传文件或保存业务数据。
+- 预览补充：功能实测完成后本地开发服务中断，已重新启动 `9200` 服务；最终效果截图受浏览器连接错误页限制未能生成，未将空白截图作为验收证据。
+- 验证限制：完整类型检查以“2.20 交付验证与配套要求”为准。原有 Form.Item 收集 Textarea / Upload 多控件告警仍存在；未验证实际上传、持久化保存、英文长文案与其他浏览器。
 
 ### 设备列表状态切换抽取为 core 公共组件 SwitchGroup（已实施）
 

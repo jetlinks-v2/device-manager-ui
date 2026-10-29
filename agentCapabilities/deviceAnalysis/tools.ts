@@ -426,6 +426,7 @@ const readonlyTool = (
   inputAlternatives?: ClientToolInputAlternative[],
   temporal?: ReturnType<typeof createDomainAgentTimeScopeContract>['temporal'],
   analytical?: ClientToolAnalyticalAuthoring<Record<string, any>>,
+  cacheableWithinTurn = false,
 ): CompiledClientTool<GeneralAgentContext> => defineClientTool<Record<string, any>, GeneralAgentContext, any>({
   id,
   description: {
@@ -441,7 +442,7 @@ const readonlyTool = (
   consumes: DEVICE_TOOL_CONSUMES[id],
   ...(temporal ? { temporal } : {}),
   ...(analytical ? { analytical } : {}),
-  effect: { kind: 'READ' },
+  effect: { kind: 'READ', cacheableWithinTurn },
   output: deviceOutputs(id),
   owner: { module: 'iot-ui', group: 'device' },
   execute: async (args, context, call) => adaptDomainAgentClientToolResult(
@@ -456,6 +457,7 @@ const timeScope = () => createDomainAgentTimeScopeContract({
 })
 
 interface TimeScopedReadonlyToolOptions {
+  cacheableWithinTurn?: boolean
   transformAlternatives?: (
     alternatives: readonly ClientToolInputAlternative[],
   ) => ClientToolInputAlternative[]
@@ -478,6 +480,7 @@ const timeScopedReadonlyTool = (
       : contract.inputAlternatives,
     contract.temporal,
     options.analytical,
+    options.cacheableWithinTurn,
   )
 }
 
@@ -520,6 +523,7 @@ export const createDeviceAnalysisTools = () => defineClientTools<GeneralAgentCon
     input('aggregates', domainAgentEnumArrayValueType(IOT_DEVICE_PROPERTY_AGGREGATES)),
     input('interval'),
   ], deviceAnalysisService.propertyAggregate, {
+    cacheableWithinTurn: true,
     transformAlternatives: createIotDevicePropertyAggregateInputAlternatives,
     analytical: IOT_DEVICE_PROPERTY_AGGREGATE_ANALYTICAL,
   })),

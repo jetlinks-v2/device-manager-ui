@@ -1,25 +1,23 @@
 <template>
-    <a-upload
-        name="file"
+    <CoreFileUpload
+        :value="fileList"
         accept=".jar,.zip"
+        :size="Infinity"
+        :multiple="false"
         :custom-request="uploadFirmware"
-        :file-list="fileList"
         :max-count="1"
         :disabled="props.disabled || uploading"
         :before-upload="beforeUpload"
-        @change="handleChange"
+        drag
+        @upload-change="handleChange"
         @remove="handleRemove"
-    >
-        <a-button :loading="uploading" :disabled="props.disabled">
-            <template #icon><AIcon type="UploadOutlined" /></template>
-            {{ $t('Application.FileUpload.385271-0') }}
-        </a-button>
-    </a-upload>
+    />
 </template>
 
 <script setup lang="ts" name="ApplicationFirmwareFileUpload">
 import { onlyMessage } from '@jetlinks-web-core/utils/comm';
-import { notification as Notification } from 'ant-design-vue';
+import { FileUpload as CoreFileUpload } from '@jetlinks-web-core/components';
+import { notification as Notification, Upload } from 'ant-design-vue';
 import type { UploadChangeParam, UploadProps } from 'ant-design-vue';
 import { useI18n } from 'vue-i18n';
 import { uploadFirmware } from './uploadFirmware';
@@ -59,8 +57,9 @@ const beforeUpload: UploadProps['beforeUpload'] = (file) => {
     const valid = extension === 'jar' || extension === 'zip';
     if (!valid) {
         onlyMessage($t('Application.FileUpload.385271-1'), 'error');
+        return Upload.LIST_IGNORE;
     }
-    return valid;
+    return true;
 };
 
 const clearFile = () => {
