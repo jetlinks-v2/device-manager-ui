@@ -1,12 +1,12 @@
 <template>
   <span class="device-alarm-notify">
-    <span class="device-alarm-notify__sentence">
       <a-button type="text" size="small" class="notification-toggle" :class="{ 'is-off': !model.notification.enabled }"
         :disabled="disabled" :aria-pressed="model.notification.enabled" :aria-label="$t(model.notification.enabled ? 'DeviceAlarm.notification.turnOff' : 'DeviceAlarm.notification.turnOn')"
         :title="$t(model.notification.enabled ? 'DeviceAlarm.notification.turnOff' : 'DeviceAlarm.notification.turnOn')" @click="notification.toggleEnabled">
         <AIcon :type="model.notification.enabled ? 'BellFilled' : 'BellOutlined'" />
-        <span v-if="!model.notification.enabled">{{ $t('DeviceAlarm.notification.short') }}</span>
       </a-button>
+    <span class="device-alarm-notify__sentence">
+      <span v-if="!model.notification.enabled">{{ $t('DeviceAlarm.notification.off') }}</span>
       <template v-if="model.notification.enabled">
         <span class="notification-clause">
           <span>{{ $t('DeviceAlarm.notification.using') }}</span>
@@ -31,7 +31,14 @@
           <span>{{ $t('DeviceAlarm.notification.sendTo') }}</span>
           <DeviceAlarmRecipients v-model:value="model.notification.userIds" :scope-key="notification.scopeKey" :open="notification.activePanel === 'recipients'" :disabled="disabled" @update:open="notification.setPanel('recipients', $event)" />
         </span>
+        <a-tooltip :title="$t(model.autoRelieve ? 'DeviceAlarm.notification.includeRelieveHint' : 'DeviceAlarm.notification.requireRelieve')">
+          <a-checkbox class="notification-include-relieve" :checked="Boolean(model.autoRelieve && model.notification.includeRelieve)" :disabled="disabled || !model.autoRelieve" @update:checked="model.notification.includeRelieve = $event">{{ $t('DeviceAlarm.notification.includeRelieve') }}</a-checkbox>
+        </a-tooltip>
       </template>
+      <a-popover :trigger="['hover', 'focus', 'click']" placement="top">
+        <template #content><div class="notification-help">{{ $t(model.notification.enabled ? 'DeviceAlarm.notification.explanation' : 'DeviceAlarm.notification.explanationOff') }}</div></template>
+        <a-button type="text" size="small" class="notification-info" :aria-label="$t('DeviceAlarm.notification.help')"><AIcon type="InfoCircleOutlined" /></a-button>
+      </a-popover>
     </span>
     <DeviceAlarmMessageTemplateConfig v-if="model.notification.enabled && notification.showLegacyMessageTemplate" :model="model" :disabled="disabled" />
   </span>

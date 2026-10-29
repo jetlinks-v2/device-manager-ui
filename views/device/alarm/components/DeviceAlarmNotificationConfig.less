@@ -1,8 +1,8 @@
 .device-alarm-notify {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-1) var(--space-2);
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: start;
+  column-gap: 6px;
   min-width: 0;
   color: var(--jet-theme-text-secondary);
   font-size: var(--fs-12);
@@ -15,6 +15,7 @@
   min-width: 0;
 }
 .device-alarm-notify__sentence { flex-wrap: wrap; }
+.device-alarm-notify > :deep(.device-alarm-message) { grid-column: 2; min-width: 0; }
 .notification-clause { white-space: nowrap; }
 .notification-toggle, .notification-chip {
   display: inline-flex;
@@ -26,9 +27,9 @@
   font: inherit;
   line-height: 22px;
 }
-.notification-toggle { padding-inline: 2px; color: var(--jet-theme-primary); }
+.notification-toggle { justify-content: center; width: 18px; padding: 0; color: var(--jet-theme-primary); font-size: 14px; }
 .notification-toggle.is-off { color: var(--jet-theme-text-secondary); }
-.notification-chip {
+.device-alarm-notify__sentence .notification-chip {
   max-width: 176px;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm, 4px);
@@ -38,7 +39,11 @@
 .notification-chip__label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .notification-chip__count { padding-inline: 3px; border-radius: 3px; background: var(--jet-theme-primary-soft); color: var(--jet-theme-primary); font-variant-numeric: tabular-nums; }
 .notification-chip__arrow { font-size: 10px; color: var(--jet-theme-text-secondary); }
-.notification-chip:not(:disabled):hover, .notification-chip[aria-expanded='true'] { border-color: var(--jet-theme-primary); background: var(--jet-theme-primary-soft); }
+.notification-include-relieve { display: inline-flex; align-items: center; margin: 0; color: var(--jet-theme-text-secondary); font-size: inherit; line-height: 24px; }
+.notification-include-relieve :deep(.ant-checkbox) { top: 0; }
+.notification-info { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; color: var(--jet-theme-text-secondary); font-size: 14px; }
+.notification-help { max-width: min(320px, calc(100vw - 48px)); font-size: var(--fs-12); line-height: 1.7; }
+.device-alarm-notify__sentence .notification-chip:not(:disabled):hover, .device-alarm-notify__sentence .notification-chip[aria-expanded='true'] { border-color: var(--jet-theme-primary); background: var(--jet-theme-primary-soft); }
 .notification-toggle:focus-visible, .notification-chip:focus-visible { outline: 1px solid var(--jet-theme-primary); outline-offset: 2px; }
 .notification-option-panel { width: min(300px, calc(100vw - 48px)); font-size: var(--fs-12); }
 .notification-option-panel :deep(.condition-option-panel__list) { max-height: min(220px, 30vh); }

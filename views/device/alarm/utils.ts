@@ -10,6 +10,7 @@ import type {
   ThingPropertyPreprocess,
 } from './types'
 import i18n from '@jetlinks-web-core/locales'
+import { isEqual } from 'lodash-es'
 import { buildCondition, invertCondition, readCondition, recoveryCondition, conditionSymbols } from './conditions'
 import type { DeviceAlarmCondition } from './types'
 
@@ -248,6 +249,8 @@ export function buildPreprocessPayload(form: DeviceAlarmFormModel) {
                 provider: DEVICE_ALARM_RELIEVE_PROCESSOR,
                 configuration: { ...alarmProcessorConfiguration },
               },
+              ...(notification?.includeRelieve ? [{ provider: NOTIFY_PROCESSOR,
+                configuration: { ...notification, event: 'relieve' } }] : []),
             ],
           },
         },
@@ -285,6 +288,12 @@ function parseDeviceAlarmConfiguration(row?: ThingPropertyPreprocess): DeviceAla
 
   const alarm = alarmBranches[0]!.alarm!
   const relieve = relieveBranches[0]!.relieve!
+  // 单一通知入口只编辑两分支共享的通道与对象；不一致的外部配置保持只读。
+  if (relieve.notification) {
+    const { event, ...configuration } = relieve.notification.configuration ?? {}
+    if (event !== 'relieve' || !alarm.notifyProcessor?.configuration?.includeRelieve
+      || !isEqual(configuration, alarm.notifyProcessor.configuration)) return undefined
+  } else if (alarm.notifyProcessor?.configuration?.includeRelieve) return undefined
   // 回显只判断结构；类型与互斥性在保存时结合物模型校验，枚举的有限值域不能按无限集合推断。
   return { ...alarm, relieveProcessor: relieve.processor, relieveMatcher: relieve.matcher }
 }
@@ -309,9 +318,11 @@ function parseAlarmBranch(configuration: Record<string, unknown>): DeviceAlarmCo
 function parseRelieveBranch(configuration: Record<string, unknown>) {
   const matcher = supportedMatcher(configuration.matcher)
   const processors = directProcessors(configuration)
-  if (!matcher || !processors || processors.length !== 1) return undefined
+  if (!matcher || !processors || processors.length < 1 || processors.length > 2) return undefined
   const processor = processors[0]
-  return processor.provider === DEVICE_ALARM_RELIEVE_PROCESSOR ? { matcher, processor } : undefined
+  const notification = processors[1]
+  return processor.provider === DEVICE_ALARM_RELIEVE_PROCESSOR && (!notification || notification.provider === NOTIFY_PROCESSOR)
+    ? { matcher, processor, notification } : undefined
 }
 
 function directProcessors(configuration: Record<string, unknown>): Array<Record<string, any>> | undefined {
@@ -373,6 +384,7 @@ export function levelTone(level: DeviceAlarmLevel): 'error' | 'warning' | 'proce
 export function createEmptyNotification() {
   return {
     enabled: false,
+    includeRelieve: false,
     userIds: [],
     channelProviders: [],
     parameters: {},
@@ -441,6 +453,7 @@ export function normalizeNotification(value: unknown) {
     ...source,
     // 空通知配置不能被视为已启用；已有通知沿用后端省略 enabled 时的启用语义。
     enabled: source.enabled === undefined ? isNotificationConfigured(source) : Boolean(source.enabled),
+    includeRelieve: source.includeRelieve === true,
     userIds: Array.isArray(source.userIds) ? source.userIds.map(String).filter(Boolean) : [],
     dimensions: Array.isArray(source.dimensions) ? source.dimensions : [],
     channelProviders: Array.isArray(source.channelProviders) ? source.channelProviders.map(String).filter(Boolean) : [],
@@ -468,6 +481,7 @@ function buildNotifyConfig(form: DeviceAlarmFormModel) {
   }
   return {
     enabled: notification.enabled,
+    includeRelieve: Boolean(form.autoRelieve && notification.includeRelieve),
     userIds: [...notification.userIds],
     dimensions: [...(notification.dimensions ?? [])],
     channelProviders: [...notification.channelProviders],

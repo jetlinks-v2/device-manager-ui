@@ -27,6 +27,40 @@ function draft(): RuleDraft {
   }
 }
 
+test('recovery notification shares recipients and channels and survives full-chain save/read', () => {
+  const current = draft()
+  current.alarm.autoRelieve = true
+  current.alarm.notification = { enabled: true, includeRelieve: true, userIds: ['u1'], channelProviders: ['inbox'], parameters: {} }
+  const saved = buildRule(parseRule(), current)
+  assert.equal(parseRule(saved).editable, true)
+  const loaded = toDeviceAlarmRow(saved, 'product', 'Product')!
+  assert.equal(loaded.notification.includeRelieve, true)
+  assert.deepEqual(buildRule(parseRule(saved), { ...current, alarm: loaded }), saved)
+  const alarm = parseRule(saved).nodes.alarm!
+  const [trigger, recovery] = alarm.configuration.processors
+  assert.deepEqual(recovery.configuration.processors[1].configuration,
+    { ...trigger.configuration.processors[1].configuration, event: 'relieve' })
+  recovery.configuration.processors[1].configuration.userIds = ['someone-else']
+  assert.equal(parseRule(saved).editable, false)
+})
+
+test('recovery notification is opt-in and follows automatic recovery and notification enablement', () => {
+  const form = draft().alarm
+  form.notification = { enabled: true, userIds: ['u1'], channelProviders: ['inbox'], parameters: {} }
+  form.autoRelieve = true
+  const optedOut = buildPreprocessPayload(form)
+  assert.equal(optedOut.configuration.processors[1].configuration.processors.length, 1)
+  form.notification.includeRelieve = true
+  form.notification.enabled = false
+  const disabled = buildPreprocessPayload(form)
+  assert.equal(disabled.configuration.processors[1].configuration.processors[1].configuration.enabled, false)
+  assert.equal(toDeviceAlarmRow(disabled, 'product', 'Product')?.notification.includeRelieve, true)
+  form.autoRelieve = false
+  const manual = buildPreprocessPayload(form)
+  assert.equal(manual.provider, 'simple')
+  assert.equal(getNotifyProcessor(manual)?.configuration.includeRelieve, false)
+})
+
 test('simple numeric conditions preserve all comparison boundaries and reject invalid values', () => {
   const expected = { gt: [false, false, true], gte: [false, true, true], lt: [true, false, false], lte: [true, true, false], eq: [false, true, false], neq: [true, false, true] }
   for (const [operator, matches] of Object.entries(expected)) {

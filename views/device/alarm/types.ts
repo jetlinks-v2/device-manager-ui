@@ -41,6 +41,7 @@ export interface DeviceAlarmNotifyUser {
 
 export interface DeviceAlarmNotificationConfig {
   enabled: boolean
+  includeRelieve?: boolean
   userIds: string[]
   dimensions?: Array<Record<string, unknown>>
   channelProviders: string[]

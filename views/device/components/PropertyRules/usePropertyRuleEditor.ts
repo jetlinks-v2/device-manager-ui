@@ -41,7 +41,7 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
   const notificationOpen = ref(false)
   const alarmNameEditing = ref(false)
   const alarmNameInput = ref<{ focus: () => void }>()
-  let previousAlarmName = ''
+  const alarmNameValue = ref('')
   let generation = 0
   const parsed = computed(() => parseRule(raw.value))
   const numeric = computed(() => isNumberProperty(props.property))
@@ -168,7 +168,7 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
   }
   async function editAlarmName() {
     if (!editable.value || !draft.value) return
-    previousAlarmName = draft.value.alarm.name
+    alarmNameValue.value = draft.value.alarm.name
     alarmNameEditing.value = true
     await nextTick()
     alarmNameInput.value?.focus()
@@ -179,7 +179,7 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
   }
   function stopAlarmName(cancel = false) {
     if (!alarmNameEditing.value) return
-    if (cancel && draft.value) draft.value.alarm.name = previousAlarmName
+    if (!cancel && editable.value && draft.value && alarmNameValue.value.trim()) draft.value.alarm.name = alarmNameValue.value.trim()
     alarmNameEditing.value = false
   }
   function customize() { custom.value = true }
@@ -286,6 +286,6 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
   watch([() => props.open, () => props.scope.productId, () => props.scope.deviceId, () => propertyIdOf(props.property)], load, { immediate: true })
   return { loading, failed, saving, draft, parsed, numeric, alarmAvailable, canSave, editable, source, hasOverride,
     custom, dirty, pendingSave, saveState, resources, type, boolean, scalar, unit, cleaningUnit, cleaningHint, booleanOptions, enumOptions, levelOptions,
-    steps, activeSection, notificationOpen, setNotificationsOpen, alarmNameEditing, setAlarmNameInput, editAlarmName, stopAlarmName, toggleStep, setValues, addableParts, addPart,
+    steps, activeSection, notificationOpen, setNotificationsOpen, alarmNameEditing, alarmNameValue, setAlarmNameInput, editAlarmName, stopAlarmName, toggleStep, setValues, addableParts, addPart,
     load, requestClose, prepareLeave, discard, customize, clear, save, restore }
 }

@@ -106,7 +106,7 @@ async function previewProperty(property: ThingModelProperty) {
 .property-rule-groups :deep(.ant-collapse-header-text) { flex: none !important; width: auto; }
 .property-rule-groups :deep(.ant-collapse-content-box) { padding: 0 0 var(--space-3) !important; }
 .property-rule-list :deep(.ant-list-items) { display: grid; grid-template-columns: minmax(0, 1fr); column-gap: var(--space-6); align-items: stretch; }
-.property-rule-row { display: grid; grid-template-columns: 176px minmax(0, 700px); min-width: 0; justify-content: start; align-content: start; align-items: start; column-gap: var(--space-4); row-gap: var(--space-1); padding: var(--space-3) var(--space-2); }
+.property-rule-row { display: grid; grid-template-columns: 176px minmax(0, 1fr); min-width: 0; justify-content: start; align-content: start; align-items: start; column-gap: var(--space-4); row-gap: var(--space-1); padding: var(--space-3) var(--space-2); }
 .property-rule-header { display: contents; }
 .property-rule-row-empty { align-items: center; padding-block: var(--space-2); }
 .property-rule-row-active { background: var(--jet-theme-primary-soft); outline: 1px solid var(--line); border-radius: 6px; }

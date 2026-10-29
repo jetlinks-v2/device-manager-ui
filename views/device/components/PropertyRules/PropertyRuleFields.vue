@@ -50,15 +50,28 @@
             </PropertyRuleStage>
             <PropertyRuleStage v-if="editor.draft.alarmEnabled" section="alarm" :caption="multipleStages">
             <PropertyRuleLine icon="AlertOutlined" :title="$t('PropertyRules.sentence.alarm')" color="orange" class="rule-line-alarm">
-              <template #label><a-tag color="orange" class="rule-alarm-identity"><AIcon type="AlertOutlined" /><a-input v-if="editor.alarmNameEditing" :ref="editor.setAlarmNameInput" v-model:value="editor.draft.alarm.name" size="small" :maxlength="64" :aria-label="$t('DeviceAlarm.form.name')" @blur="editor.stopAlarmName()" @press-enter="editor.stopAlarmName()" @keydown.esc.stop.prevent="editor.stopAlarmName(true)" /><a-button v-else type="text" size="small" :disabled="!editor.editable" class="rule-alarm-name" :title="editor.draft.alarm.name" :aria-label="$t('PropertyRules.editAlarmName')" @click="editor.editAlarmName">{{ editor.draft.alarm.name || $t('DeviceAlarm.form.name') }}</a-button></a-tag></template>
-              <PropertyAlarmCondition :model="editor.draft.alarm" :property="property" />
-              <template #details>
+              <template #label>
+                <span class="rule-alarm-name-anchor" :class="{ 'is-editing': editor.alarmNameEditing }">
+                  <a-tag color="orange" class="rule-alarm-identity" :aria-hidden="editor.alarmNameEditing || undefined"><AIcon type="AlertOutlined" /><a-button ref="nameTrigger" type="text" size="small" :disabled="!editor.editable" class="rule-alarm-name" :title="editor.draft.alarm.name" :aria-label="$t('PropertyRules.editAlarmName')" @click="editor.editAlarmName">{{ editor.draft.alarm.name || $t('DeviceAlarm.form.name') }}</a-button></a-tag>
+                  <a-tag v-if="editor.alarmNameEditing" color="orange" class="rule-name-editing" @keydown.esc.stop.prevent="closeName(true)">
+                      <AIcon type="AlertOutlined" />
+                      <span class="rule-name-input"><span class="rule-name-measure" aria-hidden="true">{{ editor.alarmNameValue || ' ' }}</span><a-textarea :ref="editor.setAlarmNameInput" v-model:value="editor.alarmNameValue" :rows="1" :maxlength="64" :aria-label="$t('DeviceAlarm.form.name')" @blur="editor.stopAlarmName()" @keydown.enter="confirmName" /></span>
+                  </a-tag>
+                </span>
+              </template>
+              <span class="alarm-flow">
+                <span class="alarm-flow-row">
+                  <AIcon type="ThunderboltOutlined" class="alarm-trigger-icon" />
+                  <I18nT keypath="DeviceAlarm.sentence.trigger" scope="global" tag="span" class="alarm-flow-body">
+                    <template #condition><PropertyAlarmCondition :model="editor.draft.alarm" :property="property" /></template>
+                    <template #level><PropertyRuleAlarmActions :editor="editor" /></template>
+                  </I18nT>
+                </span>
                 <PropertyAlarmRecovery :model="editor.draft.alarm" :property="property" :disabled="!editor.editable" />
                 <RegistryComponent page-code="device/alarm" code="alarm-editor">
                   <DeviceAlarmNotificationConfig :model="editor.draft.alarm" :methods="editor.resources.methods" :loading="editor.resources.loading" :failed="editor.resources.failed" :disabled="!editor.editable" :reveal="editor.notificationOpen" @request-methods="editor.resources.load" @open-change="editor.setNotificationsOpen" />
                 </RegistryComponent>
-              </template>
-              <template #extra><PropertyRuleAlarmActions :editor="editor" /></template>
+              </span>
               <template #action><a-button type="text" size="small" :aria-label="$t('PropertyRules.removePart', { name: $t('PropertyRules.alarm') })" @click="editor.draft.alarmEnabled = false"><AIcon type="CloseOutlined" /></a-button></template>
             </PropertyRuleLine>
             </PropertyRuleStage>
@@ -80,7 +93,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { computed, type UnwrapNestedRefs } from 'vue'
+import { computed, nextTick, ref, type UnwrapNestedRefs } from 'vue'
 import { I18nT, useI18n } from 'vue-i18n'
 import type { ThingModelProperty } from '../../alarm/types'
 import type { RuleScope } from './service'
@@ -100,6 +113,17 @@ import PropertyAlarmRecovery from '../../alarm/components/PropertyAlarmRecovery.
 import DeviceAlarmNotificationConfig from '../../alarm/components/DeviceAlarmNotificationConfig.vue'
 const props = defineProps<{ editor: UnwrapNestedRefs<ReturnType<typeof usePropertyRuleEditor>>; scope: RuleScope; property: ThingModelProperty; withActions?: boolean }>()
 const { t: $t } = useI18n()
+const nameTrigger = ref<{ focus: () => void }>()
+async function closeName(cancel: boolean) {
+  props.editor.stopAlarmName(cancel)
+  await nextTick()
+  nameTrigger.value?.focus()
+}
+function confirmName(event: KeyboardEvent) {
+  if (event.isComposing) return
+  event.preventDefault()
+  if (props.editor.alarmNameValue.trim()) closeName(false)
+}
 const summaryRows = computed(() => summarizeRuleRows(props.editor.parsed, props.property, $t))
 const multipleStages = computed(() => props.editor.steps.filter(step => step.enabled).length > 1)
 const valueModes = computed(() => [
@@ -115,8 +139,19 @@ const rangeActions = computed(() => [{ value: 'ignore', label: $t('PropertyRules
 .rule-add { margin-top: var(--space-1); }
 .rule-source { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-2); padding-inline-end: 92px; color: var(--jet-theme-text-secondary); font-size: var(--fs-12); }
 .rule-warning { margin-top: var(--space-2); }
-.rule-alarm-identity { align-items: center; gap: var(--space-1); width: 100%; min-width: 0; white-space: nowrap; }
+/* Preserve the label footprint while the editor grows over the rule, within its container. */
+.rule-alarm-name-anchor { position: relative; display: inline-flex; min-width: 0; max-width: min(160px, 100%); }
+.rule-alarm-name-anchor.is-editing > .rule-alarm-identity { visibility: hidden; }
+.rule-alarm-identity { align-items: center; gap: var(--space-1); width: fit-content; max-width: 100%; min-width: 0; white-space: nowrap; }
 .rule-alarm-identity > :deep(.anticon) { flex-shrink: 0; }
 .rule-alarm-name { min-width: 0; height: 20px; padding: 0; border: 0; overflow: hidden; text-overflow: ellipsis; color: inherit; font-size: inherit; line-height: 20px; text-align: left; }
-.rule-alarm-identity :deep(.ant-input) { flex: 1; min-width: 0; width: 0; padding: 0; border: 0; border-bottom: 1px solid currentColor; border-radius: 0; background: transparent; color: inherit; box-shadow: none; font-size: var(--fs-12); }
+.rule-alarm-name-anchor > .rule-name-editing { position: absolute; inset-block-start: 0; inset-inline-start: 0; z-index: 10; display: inline-flex; align-items: flex-start; gap: 4px; width: max-content; min-width: 100%; max-width: min(440px, 100cqi); height: auto; min-height: 22px; margin: 0; padding: 0 4px; font-size: var(--fs-12); line-height: 20px; transition: none; }
+.rule-name-editing > :deep(.anticon) { flex-shrink: 0; margin-top: 4px; }
+.rule-name-editing > .rule-name-input { position: relative; display: inline-grid; flex: 1; min-width: 0; min-height: 20px; margin-inline-start: 0; }
+.rule-name-measure { grid-area: 1 / 1; visibility: hidden; overflow-wrap: anywhere; white-space: pre-wrap; }
+.rule-name-input :deep(textarea) { position: absolute; inset: 0; width: 100%; height: 100%; min-width: 0; min-height: 0; padding: 0; border: 0; border-radius: 0; background: transparent; color: inherit; box-shadow: none; font: inherit; line-height: 20px; overflow-wrap: anywhere; resize: none; transition: none; }
+.alarm-flow { display: flex; flex-direction: column; gap: 4px; width: 100%; min-width: 0; }
+.alarm-flow-row { display: grid; grid-template-columns: 18px minmax(0, 1fr); align-items: start; column-gap: 6px; }
+.alarm-trigger-icon { display: flex; align-items: center; justify-content: center; height: 24px; color: var(--jet-theme-warning, #faad14); font-size: 14px; }
+.alarm-flow-body { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; min-width: 0; line-height: 24px; }
 </style>
