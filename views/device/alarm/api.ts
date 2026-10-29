@@ -1,4 +1,5 @@
 import { request } from '@jetlinks-web/core'
+import i18n from '@jetlinks-web-core/locales'
 import { restoreDeviceLibraryAlarms_api } from '@device-manager-ui/api/device-library'
 import {
   withIotDeviceListDefaultTerms,
@@ -47,6 +48,17 @@ const unwrapArray = <T>(response: unknown): T[] => {
   return []
 }
 
+/** Failed or malformed configuration responses are unknown, never an authoritative empty rule list. */
+function unwrapPreprocessList(response: unknown): ThingPropertyPreprocess[] {
+  const result = unwrapResult(response as ApiResponse<unknown>)
+  if (!Array.isArray(result)
+    || isRecord(response) && (response.success === false || Number(response.status) >= 400)
+    || result.some(row => !isRecord(row) || typeof row.property !== 'string' || !row.property)) {
+    throw new Error(i18n.global.t('PropertyRules.loadFailed'))
+  }
+  return result
+}
+
 export const deviceAlarmApi = {
   queryDefaultAlarmLevels: () =>
     request.get('/alarm/config/default/level'),
@@ -59,11 +71,11 @@ export const deviceAlarmApi = {
   queryDeviceAlarmPage: (data: Record<string, any>) =>
     request.post('/message/preprocessor/device-alarm/_query', data),
   queryProductAlarmList: async (productId: string, data: Record<string, any>) =>
-    unwrapArray<ThingPropertyPreprocess>(
+    unwrapPreprocessList(
       await request.post(`/message/preprocessor/product/${encodeURIComponent(productId)}/property/_list`, data),
     ),
   queryDeviceAlarmList: async (productId: string, deviceId: string, data: Record<string, any>) =>
-    unwrapArray<ThingPropertyPreprocess>(
+    unwrapPreprocessList(
       await request.post(`/message/preprocessor/product/${encodeURIComponent(productId)}/${encodeURIComponent(deviceId)}/property/_list`, data),
     ),
   saveProductAlarm: (productId: string, propertyId: string, data: Record<string, any>) =>
@@ -76,6 +88,8 @@ export const deviceAlarmApi = {
     request.remove(`/message/preprocessor/device/${encodeURIComponent(productId)}/${encodeURIComponent(deviceId)}/property/${encodeURIComponent(propertyId)}`, data),
   queryNotifyChannels: () =>
     request.get('/notify/channel/all'),
+  queryNotifyTypes: () =>
+    request.get('/notify/channel/providers'),
   queryNotifyUsers: (data: {
     pageIndex?: number
     pageSize?: number
@@ -233,26 +247,45 @@ export async function queryDeviceAlarmPage(data: Record<string, any>): Promise<D
 }
 
 export async function queryDeviceAlarmNotifyMethods(): Promise<DeviceAlarmNotifyMethod[]> {
-  const providers = await queryDeviceAlarmNotifyProviders()
-  return toNotifyMethods(providers)
+  const [types, providers] = await Promise.allSettled([
+    deviceAlarmApi.queryNotifyTypes().then(unwrapNotifyList), deviceAlarmApi.queryNotifyChannels().then(unwrapNotifyList),
+  ])
+  if (types.status === 'rejected') throw types.reason
+  return toNotifyMethods(types.value, providers.status === 'fulfilled' ? providers.value : undefined)
 }
 
-export async function queryDeviceAlarmNotifyProviders(): Promise<Record<string, any>[]> {
-  return unwrapArray<Record<string, any>>(await deviceAlarmApi.queryNotifyChannels())
-    // 设备告警预处理器固定以 alarm-device 作为通知提供商发布消息。
-    .filter(provider => provider.provider === DEVICE_ALARM_NOTIFY_PROVIDER)
+function unwrapNotifyList(response: unknown): unknown[] {
+  const result = unwrapResult(response as ApiResponse<unknown>)
+  if (!Array.isArray(result) || isRecord(response) && (response.success === false || Number(response.status) >= 400)) {
+    throw new Error('Unable to load notification configuration')
+  }
+  return result
 }
 
-export function toNotifyMethods(providers: unknown[]): DeviceAlarmNotifyMethod[] {
-  const methods = new Map<string, DeviceAlarmNotifyMethod>()
-  providers.filter(isRecord).forEach((provider) => {
-    normalizeRecords(provider.channels).forEach((channel) => {
-      const method = mapNotifyChannel(channel)
-      const key = method?.channelId || method?.providerId || ''
-      if (method && key && !methods.has(key)) methods.set(key, method)
-    })
+/** Select types only; accessible channel configuration is used solely for status and legacy readback. */
+export function toNotifyMethods(types: unknown[], providers?: unknown[]): DeviceAlarmNotifyMethod[] {
+  const available = (providers ?? []).filter(isRecord).filter(provider => isEnabledState(provider.state))
+  return types.filter(isRecord).filter(type => stringify(type.receiverPolicy?.value ?? type.receiverPolicy) !== 'explicit').flatMap(type => {
+    const id = stringify(type.id)
+    if (!id) return []
+    const key = notifyMethodKey(id)
+    const channels = (topic: string) => available.filter(provider => provider.provider === topic)
+      .flatMap(provider => normalizeRecords(provider.channels))
+      .filter(channel => channel.channelProvider === id && isEnabledState(channel.state))
+    const status = (topic: string): NonNullable<DeviceAlarmNotifyMethod['templates']>['trigger'] => {
+      if (id === 'inside-mail') return 'unneeded'
+      if (providers === undefined) return 'unknown'
+      return channels(topic).some(channel => {
+        const config = channel.channelConfiguration ?? channel.configuration ?? {}
+        return Boolean(config.templateId && config.notifierId)
+      }) ? 'ready' : 'missing'
+    }
+    return [{
+      id, providerId: id, key, label: stringify(type.name) || id, desc: '', icon: notifyMethodIcon(key),
+      channelIds: channels(DEVICE_ALARM_NOTIFY_PROVIDER).map(channel => stringify(channel.id)).filter(Boolean),
+      templates: { trigger: status(DEVICE_ALARM_NOTIFY_PROVIDER), relieve: status('alarm-device-relieve') },
+    }]
   })
-  return [...methods.values()]
 }
 
 export async function queryDeviceAlarmNotifyUsers(
@@ -282,23 +315,6 @@ export async function queryDeviceAlarmNotifyUsers(
     })
     .filter((item): item is DeviceAlarmNotifyUser => Boolean(item)),
     total: page.total,
-  }
-}
-
-function mapNotifyChannel(channel: Record<string, any>): DeviceAlarmNotifyMethod | undefined {
-  if (!isEnabledState(channel.state)) return undefined
-  const channelProvider = stringify(channel.channelProvider ?? channel.provider ?? channel.id ?? channel.value)
-  if (!channelProvider) return undefined
-  const key = notifyMethodKey(channelProvider)
-  return {
-    id: stringify(channel.id) || channelProvider,
-    providerId: channelProvider,
-    channelId: stringify(channel.id),
-    key,
-    label: stringify(channel.name ?? channel.text ?? channel.label) || channelProvider,
-    desc: stringify(channel.description ?? channel.desc) || channelProvider,
-    icon: notifyMethodIcon(key),
-    raw: channel,
   }
 }
 
@@ -571,7 +587,8 @@ function notifyMethodKey(providerId: string): DeviceAlarmNotifyMethod['key'] {
   if (id.includes('sms')) return 'sms'
   if (id.includes('voice') || id.includes('phone')) return 'phone'
   if (id.includes('webhook')) return 'webhook'
-  if (id.includes('weixin') || id.includes('wechat') || id.includes('dingtalk')) return 'wechat'
+  if (id.includes('dingtalk')) return 'dingtalk'
+  if (id.includes('weixin') || id.includes('wechat')) return 'wechat'
   return 'inbox'
 }
 
@@ -581,6 +598,7 @@ function notifyMethodIcon(key: DeviceAlarmNotifyMethod['key']) {
     sms: 'MessageOutlined',
     email: 'MailOutlined',
     wechat: 'WechatOutlined',
+    dingtalk: 'DingdingOutlined',
     phone: 'PhoneOutlined',
     webhook: 'ApiOutlined',
   }

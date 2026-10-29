@@ -3,6 +3,7 @@ import {
   createDomainAgentToolResult,
   resolveDomainAgentEnum,
   resolveDomainAgentInteger,
+  searchDomainAgentItems,
 } from '@jetlinks-web-core/layout/components/AiChat/domainAgentTools'
 import type { ThingModelMetadata } from '@device-manager-ui/views/device/list/services/iotDeviceDetailReal.service'
 import { IOT_DEVICE_MODEL_SECTIONS } from './constants'
@@ -135,27 +136,29 @@ export const deviceModelService = {
     if (!deviceId) throw inputError('DEVICE_ID_REQUIRED', 'deviceIdRequired')
     const limit = resolveDomainAgentInteger(args.limit, { name: 'limit', defaultValue: 20, min: 1, max: 50 })
     const section = resolveDomainAgentEnum(args.section, IOT_DEVICE_MODEL_SECTIONS, { name: 'section', defaultValue: 'all' })
+    const keyword = normalizeText(args.keyword)
     const { device, metadata } = await resolveMetadata(deviceId)
     const sections: ThingModelSection[] = section === 'all'
       ? ['properties', 'events', 'functions', 'tags']
       : [section]
     // Protocol extensions and backend-only fields stay inside this bounded semantic adapter.
-    const data = Object.fromEntries(sections.map(key => [
-      key,
-      metadata[key].slice(0, limit).map(MODEL_SECTION_MAPPERS[key]),
-    ]))
-    const total = sections.reduce((count, key) => count + metadata[key].length, 0)
-    const returned = sections.reduce((count, key) => count + Math.min(metadata[key].length, limit), 0)
+    // Search the complete authorized model before limiting; a named field may be beyond the first page.
+    const matches = sections.map(key => ({ key, result: searchDomainAgentItems(metadata[key], keyword,
+      item => [item.id, item.name, item.description], limit) }))
+    const data = Object.fromEntries(matches.map(({ key, result }) => [key, result.data.map(MODEL_SECTION_MAPPERS[key])]))
+    const total = matches.reduce((count, { result }) => count + result.total, 0)
+    const returned = matches.reduce((count, { result }) => count + result.data.length, 0)
     return createDomainAgentToolResult({
       domain: 'device',
       summary: { deviceId, deviceName: device.name, section, total },
+      ...(keyword ? { filters: { keyword } } : {}),
       data,
       total,
       cardinality: createDomainAgentRecordSetCardinality({
         returnedCount: returned,
         totalCount: total,
       }),
-      truncated: sections.some(key => metadata[key].length > limit),
+      truncated: returned < total,
       supportsAbsenceClaim: total === 0,
     })
   }),

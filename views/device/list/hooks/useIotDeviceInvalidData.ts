@@ -3,6 +3,7 @@ import { useI18n } from 'vue-i18n'
 import { type ConditionFilterField, type ConditionFilterTerm } from '@jetlinks-web-core/components/ConditionFilter'
 import { extractRows, formatApiTime, iotDeviceDetailRealApi } from '../services/iotDeviceDetailReal.service'
 import type { IotDevice } from '../types'
+import { invalidRecordDescription } from '../../components/PropertyRules/invalidRecord'
 
 interface InvalidDataRow {
   id: string
@@ -88,7 +89,7 @@ export function useIotDeviceInvalidData(getDevice: () => IotDevice) {
       const nextRows = extractRows(result).map((item: any, index) => ({
         id: item.id || `${item.createTime || index}-${item.thingId || device.id}`,
         createTime: formatApiTime(item.createTime),
-        description: item.description || item.reason || '--',
+        description: invalidRecordDescription(item, $t),
         value: item.value == null || item.value === '' ? '--' : String(item.value),
       }))
       rows.value = nextRows

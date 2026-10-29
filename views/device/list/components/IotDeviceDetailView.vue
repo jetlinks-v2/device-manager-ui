@@ -11,7 +11,7 @@
     </a-button>
   </PageChrome>
 
-  <!-- 嵌入网关的物模型与数据面板由外层详情承载导航。 -->
+  <!-- 嵌入网关的物模型、规则与数据面板由外层详情承载导航。 -->
 	<IotDeviceDefaultDetailContent v-if="embedded && device" :state="state" embedded />
 	<a-alert v-else-if="embedded" type="error" show-icon :message="state.$t('UnifiedDeviceList.loadFailed')" />
 	<IotDeviceDetailOverlays v-if="!embedded" :state="state" />
@@ -53,17 +53,7 @@ import IotDeviceDetailHeader from './device-detail/IotDeviceDetailHeader.vue'
 import IotDeviceDetailOverlays from './device-detail/IotDeviceDetailOverlays.vue'
 import IotDeviceDefaultDetailContent from './IotDeviceDefaultDetailContent.vue'
 import { useDeviceDetailAgent } from '../agent/useDeviceDetailAgent'
-import { useIotDeviceDetailView } from '../hooks/useIotDeviceDetailView'
-import type { DeviceInstance } from '@device-manager-ui/types/Instance'
-
-interface IotDeviceDetailViewProps {
-  embedded?: {
-    deviceId: string
-    deviceDetail?: Partial<DeviceInstance>
-    panel: 'thing-model' | 'data'
-    updatePermission: boolean
-  }
-}
+import { useIotDeviceDetailView, type IotDeviceDetailViewProps } from '../hooks/useIotDeviceDetailView'
 
 // 统一头部负责设备摘要；业务 Provider 决定下方内容。助手挂在详情页宿主，自定义内容区仍切换气泡。
 // 网关详情嵌入时由页面级 DeviceDetailAgentHost 持有助手，避免切离物模型/数据页签时 release。

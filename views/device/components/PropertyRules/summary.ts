@@ -24,6 +24,7 @@ export interface RuleRowSummary {
   sentence: string
   notice?: string
   details?: string
+  recordInvalid?: boolean
 }
 
 export function ruleStageOf(part: RulePart): RuleSection { return ['values', 'range', 'step'].includes(part) ? 'cleaning' : ['scale', 'fallback', 'file'].includes(part) ? 'processing' : part === 'alarm' ? 'alarm' : 'sampling' }
@@ -86,6 +87,10 @@ function summarizeEffectRows(effects: RuleEffects, property: ThingModelProperty,
   }
   if (effects.fileEnabled) rows.push({ key: 'file', icon: 'FileOutlined', title: t('PropertyRules.part.file'), color: 'purple',
     sentence: `Base64 → ${t('PropertyRules.sentence.fileUrl')}`, notice: t('PropertyRules.fileHint') })
+  for (const row of rows) {
+    if (effects.recordInvalid && (row.key === 'values' && effects.valuesMode !== 'replace'
+      || row.key === 'range' && effects.rangeAction !== 'clamp' || row.key === 'step')) row.recordInvalid = true
+  }
   return rows
 
   function bounds(value: { min?: number | null; max?: number | null }, suffix = unit) {
@@ -109,6 +114,7 @@ function effectsOf(rule: ParsedRule): RuleEffects {
   const { values, range, scale, alarm, sampling, file } = rule.nodes
   const alarmRow = alarm && toDeviceAlarmRow(alarm, 'product', '')
   return {
+    recordInvalid: rule.raw?.configuration?.recordInvalid === true,
     valuesEnabled: Boolean(values), valuesMode: values?.configuration.processors[0]?.provider === 'replace-value' ? 'replace' : values?.configuration.matcher.configuration.not ? 'keep' : 'ignore', values: values?.configuration.matcher.configuration.values ?? [],
     rangeEnabled: Boolean(range), min: range?.configuration.matcher.configuration.min,
     max: range?.configuration.matcher.configuration.max,

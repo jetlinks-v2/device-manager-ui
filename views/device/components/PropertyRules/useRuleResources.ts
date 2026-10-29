@@ -1,8 +1,11 @@
-import { onBeforeUnmount, ref } from 'vue'
+import { onBeforeUnmount, provide, ref, watch } from 'vue'
 import { queryDefaultAlarmLevels, queryDeviceAlarmNotifyMethods } from '../../alarm/api'
 import type { AlarmLevelOption, DeviceAlarmNotifyMethod } from '../../alarm/types'
+import { alarmRecipientCacheKey, createAlarmRecipientCache } from '../../alarm/hooks/alarmRecipientCache'
 
-export function useRuleResources() {
+export function useRuleResources(scope?: () => unknown) {
+  const recipients = createAlarmRecipientCache()
+  provide(alarmRecipientCacheKey, recipients)
   const levels = ref<AlarmLevelOption[]>([])
   const methods = ref<DeviceAlarmNotifyMethod[]>([])
   const loading = ref(false)
@@ -12,14 +15,20 @@ export function useRuleResources() {
   const levelsFailed = ref(false)
   let levelsLoaded = false
   let generation = 0
-  // Ignore late option responses after changing the edited property or leaving the panel.
+  // Keep resources across properties; only the owning device/product/auth context invalidates them.
   function reset() {
     generation++
+    recipients.reset()
     levels.value = []
     methods.value = []
     loading.value = failed.value = false
     ready.value = levelsLoading.value = levelsFailed.value = levelsLoaded = false
   }
+  if (scope) watch(scope, () => {
+    const wasRequested = ready.value || loading.value
+    reset()
+    if (wasRequested) void load()
+  }, { deep: true, flush: 'sync' })
   async function loadLevels() {
     if (levelsLoaded || levelsLoading.value) return
     const token = generation
@@ -40,6 +49,7 @@ export function useRuleResources() {
       const methodList = await queryDeviceAlarmNotifyMethods()
       if (token !== generation) return
       methods.value = methodList
+      failed.value = methodList.some(method => method.templates?.trigger === 'unknown' || method.templates?.relieve === 'unknown')
       ready.value = true
     } catch { if (token === generation) failed.value = true }
     finally { if (token === generation) loading.value = false }

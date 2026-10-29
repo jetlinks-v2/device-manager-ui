@@ -36,7 +36,7 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
   const custom = ref(false)
   const draft = ref<RuleDraft>()
   const initial = ref('')
-  const resources = useRuleResources()
+  const resources = useRuleResources(() => [props.scope.productId, props.scope.deviceId, permission.permissions])
   const activeSection = ref<RuleSection | undefined>('cleaning')
   const notificationOpen = ref(false)
   const alarmNameEditing = ref(false)
@@ -109,7 +109,6 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
     loading.value = true
     failed.value = false
     draft.value = undefined
-    resources.reset()
     try {
       const id = propertyIdOf(props.property)
       // The list already owns a full snapshot; selecting a row must not repeat its requests.
@@ -122,6 +121,7 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
       const rule = parsed.value
       const alarm = raw.value && toDeviceAlarmRow(raw.value, props.scope.deviceId ? 'device' : 'product', props.scope.name ?? '', props.property)
       draft.value = {
+        recordInvalid: raw.value?.configuration?.recordInvalid === true,
         valuesEnabled: Boolean(rule.nodes.values), valuesMode: rule.nodes.values?.configuration.processors[0]?.provider === 'replace-value'
           ? 'replace' : rule.nodes.values?.configuration.matcher.configuration.not ? 'keep' : 'ignore',
         values: [...(rule.nodes.values?.configuration.matcher.configuration.values ?? [])],

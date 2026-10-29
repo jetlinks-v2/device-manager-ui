@@ -39,7 +39,7 @@ export function useDeviceInstanceDetail(options: Readonly<DeviceInstanceDetailOp
   const { t: $t } = useI18n()
   const menuStory = useMenuStore()
   const userStore = useUserStore()
-  const { showThreshold } = useSystemStore()
+  const system = useSystemStore()
   const route = useRoute()
   const router = useRouter()
   const resolvedDeviceId = computed(() => {
@@ -529,9 +529,12 @@ export function useDeviceInstanceDetail(options: Readonly<DeviceInstanceDetailOp
     invalid: 'Invalid',
     invaliddata: 'Invalid',
     无效数据: 'Invalid',
-    threshold: 'Threshold',
-    thresholdconfig: 'Threshold',
-    阈值配置: 'Threshold',
+    threshold: 'AlarmConfig',
+    thresholdconfig: 'AlarmConfig',
+    阈值配置: 'AlarmConfig',
+    alarmconfig: 'AlarmConfig',
+    propertyrules: 'AlarmConfig',
+    规则配置: 'AlarmConfig',
     dashboard: 'Dashboard',
     仪表盘: 'Dashboard',
     child: 'Child',
@@ -990,7 +993,12 @@ export function useDeviceInstanceDetail(options: Readonly<DeviceInstanceDetailOp
   const getDetail = () => {
     list.value = [...initList];
     const keys = list.value.map((i) => i.key)
-    if (permissionStore.hasPermission('rule-engine/Alarm/Log:view') && showThreshold) {
+    // Property cleaning is available independently of alarm-log permission and edition.
+    if (system.showThreshold) {
+      const metadataIndex = list.value.findIndex(item => item.key === 'Metadata')
+      list.value.splice(metadataIndex + 1, 0, { key: 'AlarmConfig', tab: $t('PropertyRules.title') })
+    }
+    if (permissionStore.hasPermission('rule-engine/Alarm/Log:view') && system.showThreshold) {
       list.value.push({
         key: 'AlarmRecord',
         tab: $t('Detail.index.957187-16')
@@ -999,10 +1007,6 @@ export function useDeviceInstanceDetail(options: Readonly<DeviceInstanceDetailOp
         list.value.push({
           key: 'Invalid',
           tab: $t('Detail.index.957187-29')
-        })
-        list.value.push({
-          key: 'Threshold',
-          tab: $t('Detail.index.957187-42')
         })
       }
     }

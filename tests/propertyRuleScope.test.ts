@@ -5,12 +5,13 @@ import { createI18n } from 'vue-i18n'
 import type { RouteLocationNormalized } from 'vue-router'
 import { usePropertyRules } from '../views/device/components/PropertyRules/usePropertyRules'
 import { setAlarmRequestHandler } from './alarmRequest.test-shim'
-import { routeGuards, ruleRoute, setConfirmHandler, type TestConfirmation } from './propertyRuleScope.test-shim'
+import { routeGuards, ruleRoute, ruleMenus, ruleMenuVisits, setConfirmHandler, type TestConfirmation } from './propertyRuleScope.test-shim'
 import { usePropertyRuleEditor, type RuleEditorProps } from '../views/device/components/PropertyRules/usePropertyRuleEditor'
 import { useRuleResources } from '../views/device/components/PropertyRules/useRuleResources'
 import { useRuleExample } from '../views/device/components/PropertyRules/useRuleExample'
 import { useAlarmRecipients } from '../views/device/alarm/hooks/useAlarmRecipients'
 import { useAlarmNotification } from '../views/device/alarm/hooks/useAlarmNotification'
+import { createAlarmRecipientCache } from '../views/device/alarm/hooks/alarmRecipientCache'
 import { buildPreprocessPayload, createEmptyNotification, toDeviceAlarmRow } from '../views/device/alarm/utils'
 import type { DeviceAlarmFormModel, DeviceAlarmNotifyMethod, ThingPropertyPreprocess } from '../views/device/alarm/types'
 
@@ -53,13 +54,13 @@ function notificationProps() {
     level: 4, trigger: 'gte', value: 80, limit: {}, autoRelieve: true, relieveCondition: { trigger: 'lte', value: 75, limit: {} },
     notification: { ...createEmptyNotification(), userIds: ['u1'], notifyChannelIds: ['inbox-1'], channelProviders: ['inbox'], parameters: { template: 'Existing content' } } }
   const methods: DeviceAlarmNotifyMethod[] = [
-    { id: 'inbox-1', channelId: 'inbox-1', providerId: 'inbox', key: 'inbox', label: 'Inbox', desc: '', icon: 'MailOutlined' },
-    { id: 'email-1', channelId: 'email-1', providerId: 'email', key: 'email', label: 'Email', desc: '', icon: 'MailOutlined', raw: { configuration: { templateId: 't1', notifierId: 'n1' } } },
+    { id: 'inbox', channelIds: ['inbox-1'], providerId: 'inbox', key: 'inbox', label: 'Inbox', desc: '', icon: 'MailOutlined' },
+    { id: 'email', channelIds: ['email-1'], providerId: 'email', key: 'email', label: 'Email', desc: '', icon: 'MailOutlined' },
   ]
   return reactive({ model, methods, disabled: false, reveal: false })
 }
 
-test('notification enable and disable retain draft selections without eager requests', () => {
+test('disabled notifications defer requests and toggling retains the saved draft', () => {
   const props = notificationProps()
   let requests = 0
   const { state: notification, unmount } = mountState(() => useAlarmNotification(props, () => { requests++ }, () => {}))
@@ -86,11 +87,11 @@ test('notification chips have one active panel and reveal the missing selection'
   const { state: notification, unmount } = mountState(() => useAlarmNotification(props, () => { requests++ }, open => { props.reveal = open }))
   try {
     notification.setPanel('recipients', true)
-    assert.equal(requests, 0)
+    assert.equal(requests, 1, 'saved notification types hydrate on first display')
     notification.setPanel('channels', true)
     notification.setPanel('recipients', false)
     assert.equal(notification.activePanel.value, 'channels', 'late close of previous panel is ignored')
-    assert.equal(requests, 1)
+    assert.equal(requests, 2)
     props.reveal = false
     await settle()
     assert.equal(notification.activePanel.value, undefined)
@@ -106,64 +107,179 @@ test('notification chips have one active panel and reveal the missing selection'
   } finally { unmount() }
 })
 
-test('notification channel changes preserve message content and alarm recovery on save and readback', () => {
+test('notification type changes preserve message content and recovery, without channel bindings on save', () => {
   const props = notificationProps()
   const { state: notification, unmount } = mountState(() => useAlarmNotification(props, () => {}, () => {}))
   try {
     props.model.notification.enabled = true
-    notification.channelIds.value = ['email-1']
+    notification.channelIds.value = ['email']
     assert.deepEqual(props.model.notification.channelProviders, ['email'])
-    assert.deepEqual(props.model.notification.parameters, { template: 'Existing content', email: { templateId: 't1', notifierId: 'n1' } })
+    assert.deepEqual(props.model.notification.parameters, { template: 'Existing content' })
     const row = toDeviceAlarmRow(buildPreprocessPayload(props.model), 'device', 'Device')!
     assert.equal(row.autoRelieve, true)
     assert.equal(row.relieveCondition?.trigger, 'lte')
     assert.equal(row.relieveCondition?.value, 75)
-    assert.deepEqual(row.notification.notifyChannelIds, ['email-1'])
+    assert.deepEqual(row.notification.notifyChannelIds, [])
     assert.deepEqual(row.notification.userIds, ['u1'])
     assert.deepEqual(row.notification.parameters, props.model.notification.parameters)
   } finally { unmount() }
 })
 
-test('unavailable selected channels retain their IDs and parameters until explicitly deselected', () => {
+test('opening unavailable legacy selections preserves bindings; explicit type edits remove them', () => {
   const props = notificationProps()
   props.model.notification.notifyChannelIds = ['gone']
   props.model.notification.channelProviders = ['old-provider']
   props.model.notification.parameters['old-provider'] = { notifierId: 'old-notifier' }
   const { state: notification, unmount } = mountState(() => useAlarmNotification(props, () => {}, () => {}))
   try {
-    assert.deepEqual(notification.channelIds.value, ['gone'])
-    assert.ok(notification.channelOptions.value.some(option => option.value === 'gone'))
-    notification.channelIds.value = ['gone', 'email-1']
-    assert.deepEqual(props.model.notification.notifyChannelIds, ['gone', 'email-1'])
+    assert.deepEqual(notification.channelIds.value, ['old-provider'])
+    assert.ok(notification.channelOptions.value.some(option => option.value === 'old-provider'))
+    assert.deepEqual(props.model.notification.notifyChannelIds, ['gone'])
     assert.deepEqual(props.model.notification.parameters['old-provider'], { notifierId: 'old-notifier' })
-    notification.channelIds.value = ['email-1']
+    notification.channelIds.value = ['email']
+    assert.deepEqual(props.model.notification.notifyChannelIds, [])
     assert.deepEqual(props.model.notification.channelProviders, ['email'])
     assert.equal('old-provider' in props.model.notification.parameters, false)
   } finally { unmount() }
 })
 
-test('controlled recipient popovers load lazily and ignore replies after switching panels', async () => {
+test('first enabling recovery uses its independent template and the shared notification types', () => {
+  const props = notificationProps()
+  props.model.notification.relieveTopicProvider = 'alarm-device'
+  const { state: notification, unmount } = mountState(() => useAlarmNotification(props, () => {}, () => {}))
+  try {
+    assert.deepEqual(props.model.notification.notifyChannelIds, ['inbox-1'])
+    notification.setIncludeRelieve(true)
+    assert.equal(props.model.notification.relieveTopicProvider, 'alarm-device-relieve')
+    assert.deepEqual(props.model.notification.notifyChannelIds, [])
+    assert.deepEqual(props.model.notification.channelProviders, ['inbox'])
+    assert.equal(props.model.notification.includeRelieve, true)
+    notification.setIncludeRelieve(false)
+    assert.equal(props.model.notification.includeRelieve, false)
+    props.model.autoRelieve = false
+    notification.setIncludeRelieve(true)
+    assert.equal(props.model.notification.includeRelieve, false)
+  } finally { unmount() }
+})
+
+test('saved recipient names hydrate before opening and remain visible after switching panels', async () => {
   const props = reactive({ value: ['u1'], scopeKey: 'device:d1:temperature', open: false })
   let requests = 0
   let release!: (value: unknown) => void
   setAlarmRequestHandler(() => { requests++; return new Promise(resolve => { release = resolve }) })
   const { state: directory, unmount } = mountState(() => useAlarmRecipients(props))
   try {
-    assert.equal(requests, 0)
+    assert.equal(requests, 1)
     assert.ok(directory.selectionLabel.value)
     props.open = true
     const pending = directory.config.value.loadSelectedOptions!(['u1'])
     props.open = false
     release({ result: { data: [{ id: 'u1', name: 'Old response' }] } })
-    assert.deepEqual(await pending, [])
+    assert.equal((await pending)[0].label, 'Old response')
     assert.equal(directory.open.value, false)
-    assert.equal(directory.options.value.length, 0)
+    assert.equal(directory.selectionLabel.value, 'Old response')
     props.open = true
     const latest = directory.config.value.loadSelectedOptions!(['u1'])
-    release({ result: { data: [{ id: 'u1', name: 'Selected user' }] } })
     await latest
-    assert.equal(directory.selectionLabel.value, 'Selected user')
+    assert.equal(directory.selectionLabel.value, 'Old response')
+    assert.equal(requests, 1, 'opening the selector reuses the selected-name query')
+  } finally { unmount() }
+})
+
+test('enabled read-only notifications resolve types without changing persisted bindings', async () => {
+  const props = notificationProps()
+  props.model.notification.enabled = true
+  props.disabled = true
+  const before = JSON.stringify(props.model)
+  let requests = 0
+  const { state, unmount } = mountState(() => useAlarmNotification(props, () => { requests++ }, () => {}))
+  try {
+    assert.equal(requests, 1)
+    assert.equal(state.channelLabel.value, 'Inbox')
+    assert.equal(state.deliveryHints.value[0].text, 'DeviceAlarm.delivery.address.inbox')
+    assert.equal(JSON.stringify(props.model), before)
+    state.setPanel('channels', true)
+    assert.equal(state.activePanel.value, undefined)
+  } finally { unmount() }
+})
+
+test('recipient cache batches selected IDs and coalesces overlapping in-flight lookups', async () => {
+  const calls: string[][] = []
+  const releases: Array<() => void> = []
+  setAlarmRequestHandler((_url, body) => new Promise(resolve => {
+    const ids = (body.terms as Array<{ value: string[] }>)[0].value
+    calls.push(ids)
+    releases.push(() => resolve({ result: { data: ids.map(id => ({ id, name: `Name ${id}`, email: 'private@example.test' })) } }))
+  }))
+  const cache = createAlarmRecipientCache()
+  const first = cache.load(['u1', 'u2', 'u1'])
+  const second = cache.load(['u2', 'u3'])
+  assert.deepEqual(calls, [['u1', 'u2'], ['u3']])
+  releases.forEach(release => release())
+  await Promise.all([first, second])
+  await cache.load(['u2', 'u1'])
+  assert.equal(calls.length, 2)
+  assert.equal(cache.options.value.get('u1')?.label, 'Name u1')
+  assert.equal(JSON.stringify([...cache.options.value]).includes('private@example.test'), false)
+})
+
+test('recipient cache invalidation rejects old names without losing the new in-flight request', async () => {
+  const releases: Array<(value: unknown) => void> = []
+  setAlarmRequestHandler(() => new Promise(resolve => { releases.push(resolve) }))
+  const cache = createAlarmRecipientCache()
+  const old = cache.load(['u1'])
+  cache.reset()
+  const current = cache.load(['u1'])
+  releases[0]({ result: { data: [{ id: 'u1', name: 'Old account' }] } })
+  await old
+  assert.equal(cache.options.value.size, 0)
+  const joined = cache.load(['u1'])
+  assert.equal(releases.length, 2)
+  releases[1]({ result: { data: [{ id: 'u1', name: 'Current account' }] } })
+  await Promise.all([current, joined])
+  assert.equal(cache.options.value.get('u1')?.label, 'Current account')
+})
+
+test('initial name failure is retryable without changing saved IDs or prefetching candidates', async () => {
+  const props = reactive({ value: ['u1', 'missing'], scopeKey: 'device:d1:temperature', open: false })
+  const calls: Array<Record<string, unknown>> = []
+  setAlarmRequestHandler(async (_url, body) => { calls.push(body); throw new Error('offline') })
+  const { state: directory, unmount } = mountState(() => useAlarmRecipients(props))
+  try {
+    await settle()
+    assert.equal(directory.selectedFailed.value, true)
+    assert.equal(directory.selectedLoading.value, false)
+    setAlarmRequestHandler(async (_url, body) => { calls.push(body); return { result: { data: [{ id: 'u1', name: 'Alice' }] } } })
+    directory.retry()
+    await settle()
+    assert.equal(directory.selectedFailed.value, false)
+    assert.equal(directory.selectionLabel.value, 'Alice')
+    assert.equal(directory.additionalCount.value, 1)
+    assert.equal(directory.selected.value[1].unavailable, true)
+    assert.deepEqual(props.value, ['u1', 'missing'])
+    assert.equal(calls.length, 2)
+    assert.ok(calls.every(body => body.paging === false))
+  } finally { unmount() }
+})
+
+test('notification resources survive property changes and refresh after a target or permission change', async () => {
+  const scope = reactive({ productId: 'p1', deviceId: 'd1', property: 'cpu', permissions: { user: ['query'] } })
+  let requests = 0
+  setAlarmRequestHandler(async () => { requests++; return { result: [] } })
+  const { state: resources, unmount } = mountState(() => useRuleResources(() => [scope.productId, scope.deviceId, scope.permissions]))
+  try {
+    await resources.load()
     assert.equal(requests, 2)
+    scope.property = 'memory'
+    await settle()
+    await resources.load()
+    assert.equal(requests, 2)
+    scope.deviceId = 'd2'
+    await settle()
+    assert.equal(requests, 4)
+    scope.permissions.user = []
+    await settle()
+    assert.equal(requests, 6)
   } finally { unmount() }
 })
 
@@ -299,7 +415,7 @@ test('an active write blocks path changes and leaving without opening another di
   } finally { view.cleanup() }
 })
 
-test('recipient directory is lazy, pages independently from selected hydration and searches remotely', async () => {
+test('recipient names hydrate immediately while candidate pages and searches remain lazy', async () => {
   const calls: Array<Record<string, any>> = []
   setAlarmRequestHandler(async (url, body) => {
     assert.equal(url, '/user/detail/_query')
@@ -310,10 +426,15 @@ test('recipient directory is lazy, pages independently from selected hydration a
   const props = reactive({ value: ['saved', 'unavailable'], scopeKey: 'p1:cpu' })
   const { state: directory, unmount } = mountState(() => useAlarmRecipients(props))
   try {
-    assert.equal(calls.length, 0)
+    await settle()
+    assert.equal(calls.length, 1)
+    assert.equal(calls[0].paging, false)
+    assert.deepEqual(calls[0].terms, [{ column: 'id', termType: 'in', value: ['saved', 'unavailable'] }])
+    assert.equal(directory.selectionLabel.value, 'Saved user')
+    assert.equal(directory.additionalCount.value, 1)
     directory.setOpen(true)
     await directory.config.value.loadSelectedOptions!(props.value)
-    assert.deepEqual(directory.selected.value.map(user => user.label), ['Saved user', 'unavailable'])
+    assert.deepEqual(directory.selected.value.map(user => user.label), ['Saved user', 'DeviceAlarm.notification.unavailableUser'])
     const first = await directory.config.value.loadOptions!('', { pageIndex: 0 })
     const next = await directory.config.value.loadOptions!('', { pageIndex: 1 })
     assert.equal(first.length, 20)
@@ -332,15 +453,16 @@ test('recipient directory is lazy, pages independently from selected hydration a
 
 test('recipient failures are explicit and stale responses cannot cross close or scope changes', async () => {
   const props = reactive({ value: ['saved'], scopeKey: 'p1:cpu' })
+  setAlarmRequestHandler(async () => { throw new Error('offline') })
   const { state: directory, unmount } = mountState(() => useAlarmRecipients(props))
   try {
+    await settle()
     directory.setOpen(true)
     setAlarmRequestHandler(async () => { throw new Error('offline') })
     await assert.rejects(directory.config.value.loadOptions!('', { pageIndex: 0 }))
     assert.equal(directory.candidateFailed.value, true)
     await assert.rejects(directory.config.value.loadSelectedOptions!(props.value))
     assert.equal(directory.selectedFailed.value, true)
-    directory.retry()
     let release!: (value: unknown) => void
     setAlarmRequestHandler(() => new Promise(resolve => { release = resolve }))
     const pending = directory.config.value.loadOptions!('', { pageIndex: 0 })
@@ -350,12 +472,16 @@ test('recipient failures are explicit and stale responses cannot cross close or 
     assert.equal(directory.options.value.length, 0)
     directory.setOpen(true)
     const previous = directory.config.value.loadSelectedOptions!(props.value)
+    const releasePrevious = release
     props.scopeKey = 'p2:cpu'
     await nextTick()
-    release({ result: { data: [{ id: 'saved', name: 'Wrong scope' }], total: 1 } })
+    releasePrevious({ result: { data: [{ id: 'saved', name: 'Wrong scope' }], total: 1 } })
     assert.deepEqual(await previous, [])
     assert.equal(directory.open.value, false)
     assert.equal(directory.selected.value[0].label, 'saved')
+    release({ result: { data: [{ id: 'saved', name: 'Current scope' }], total: 1 } })
+    await settle()
+    assert.equal(directory.selectionLabel.value, 'Current scope')
   } finally { unmount() }
 })
 
@@ -392,7 +518,7 @@ test('alarm options load only on demand, cache successes and ignore responses af
   setAlarmRequestHandler(async (url) => {
     requests.push(url)
     if (url === '/alarm/config/default/level') return { result: { levels: [{ level: 4, title: 'Custom level' }] } }
-    return { result: { data: [], total: 0 } }
+    return { result: [] }
   })
   const { state: resources, unmount } = mountState(useRuleResources)
   try {
@@ -410,7 +536,7 @@ test('alarm options load only on demand, cache successes and ignore responses af
     resources.reset()
     let release!: (value: unknown) => void
     setAlarmRequestHandler(url => url === '/notify/channel/all'
-      ? new Promise(resolve => { release = resolve }) : Promise.resolve({ result: { data: [], total: 0 } }))
+      ? new Promise(resolve => { release = resolve }) : Promise.resolve({ result: [] }))
     const pending = resources.load()
     resources.reset()
     release({ result: [] })
@@ -424,7 +550,7 @@ test('alarm options load only on demand, cache successes and ignore responses af
     assert.equal(resources.failed.value, false, 'a level lookup failure does not invalidate notification options')
     await resources.load()
     assert.equal(resources.failed.value, true)
-    setAlarmRequestHandler(async () => ({ result: { data: [], total: 0 } }))
+    setAlarmRequestHandler(async () => ({ result: [] }))
     await resources.load()
     assert.equal(resources.ready.value, true)
     assert.equal(resources.failed.value, false)
@@ -502,6 +628,11 @@ test('property categories preserve model order and identity; search includes col
   try {
     await settle()
     assert.deepEqual(panel.groups.value.map(group => group.id), ['id:a', 'id:b', 'name:Legacy group', 'unclassified'])
+    assert.deepEqual(panel.expandedGroups.value, ['id:a'])
+    panel.setExpandedGroup('id:b')
+    assert.deepEqual(panel.expandedGroups.value, ['id:b'])
+    panel.setExpandedGroup([])
+    assert.deepEqual(panel.expandedGroups.value, [])
     assert.equal(panel.groups.value[0].visibleRows.length, 30)
     assert.equal(panel.groups.value[0].remaining, 5)
     panel.showMore('id:a')
@@ -512,12 +643,111 @@ test('property categories preserve model order and identity; search includes col
     assert.deepEqual(panel.groups.value.flatMap(group => group.visibleRows.map(row => row.id)), ['p34'])
     assert.deepEqual(panel.expandedGroups.value, ['id:a'])
     panel.keyword.value = ''
-    panel.configuredOnly.value = true
+    panel.configurationFilter.value = 'configured'
     await settle()
     assert.deepEqual(panel.rows.value.map(row => row.id), ['p34'])
     panel.keyword.value = 'missing'
     await settle()
     assert.equal(panel.groups.value.length, 0)
+  } finally { unmount() }
+})
+
+test('configuration filters count inherited rules and explicit empty overrides without extra requests', async () => {
+  let requests = 0
+  const ratio = { provider: 'ratio-sampling', configuration: { ratio: 0.5 } }
+  setAlarmRequestHandler(async url => {
+    requests++
+    return { result: url.includes('/product/product/device/')
+      ? [{ property: 'disabled', provider: 'composite', configuration: { processors: [] } }]
+      : [{ property: 'inherited', ...ratio }, { property: 'disabled', ...ratio }] }
+  })
+  ruleRoute.query = {}
+  const properties = ['inherited', 'disabled', 'none'].map(id => ({ id, expands: { groupId: 'a' } }))
+  const { panel, unmount } = mountPanel(reactive({ scope: { productId: 'product', deviceId: 'device', canUpdate: false }, properties }))
+  try {
+    await settle()
+    assert.equal(panel.canSave.value, false)
+    assert.deepEqual(panel.rows.value.map(row => row.source), ['product', 'disabled', 'none'])
+    panel.configurationFilter.value = 'configured'
+    await settle()
+    assert.deepEqual(panel.rows.value.map(row => row.id), ['inherited', 'disabled'])
+    assert.equal(panel.groups.value[0].configured, 2)
+    assert.equal(panel.groups.value[0].total, 3)
+    panel.configurationFilter.value = 'unconfigured'
+    await settle()
+    assert.deepEqual(panel.rows.value.map(row => row.id), ['none'])
+    assert.equal(panel.groups.value[0].configured, 2)
+    assert.equal(panel.groups.value[0].total, 3)
+    panel.keyword.value = 'none'
+    await settle()
+    assert.equal(panel.groups.value[0].configured, 0)
+    assert.equal(panel.groups.value[0].total, 1)
+    assert.equal(requests, 2)
+  } finally { unmount() }
+})
+
+test('property deep links open only their group and reveal rows beyond the first chunk', async () => {
+  setAlarmRequestHandler(async () => ({ result: [] }))
+  ruleRoute.query = { ruleProperty: 'p34' }
+  const properties = [{ id: 'first', expands: { groupId: 'a' } },
+    ...Array.from({ length: 35 }, (_, index) => ({ id: `p${index}`, expands: { groupId: 'b' } }))]
+  const { panel, unmount } = mountPanel(reactive({ scope: { productId: 'product' }, properties }))
+  try {
+    await settle()
+    assert.deepEqual(panel.expandedGroups.value, ['id:b'])
+    assert.equal(panel.groups.value[1].visibleRows.length, 35)
+    assert.equal(panel.selected.value?.id, 'p34')
+    panel.configurationFilter.value = 'configured'
+    await settle()
+    assert.equal(panel.groups.value.length, 0)
+    assert.equal(panel.editorOpen.value, true, 'hiding a row does not close its draft')
+    panel.configurationFilter.value = 'all'
+    panel.keyword.value = 'first'
+    await settle()
+    ruleRoute.query = { ruleProperty: 'p33' }
+    await settle()
+    assert.equal(panel.keyword.value, '')
+    assert.deepEqual(panel.expandedGroups.value, ['id:b'])
+    assert.equal(panel.selected.value?.id, 'p33')
+  } finally { unmount(); ruleRoute.query = {} }
+})
+
+test('scene navigation follows accessible menus without fetching or creating scene rules', async () => {
+  setAlarmRequestHandler(async () => ({ result: [] }))
+  ruleRoute.query = {}
+  ruleMenus.clear()
+  ruleMenuVisits.length = 0
+  const { panel, unmount } = mountPanel(reactive({ scope: { productId: 'product' }, properties: [] }))
+  try {
+    assert.equal(panel.sceneMenu.value, undefined)
+    panel.openScene()
+    assert.deepEqual(ruleMenuVisits, [])
+    ruleMenus.add('rule-engine/Scene')
+    panel.openScene()
+    assert.deepEqual(ruleMenuVisits, ['rule-engine/Scene'])
+    ruleMenus.clear()
+    ruleMenus.add('iot-user/scene-linkage')
+    panel.openScene()
+    assert.deepEqual(ruleMenuVisits, ['rule-engine/Scene', 'iot-user/scene-linkage'])
+    await settle()
+  } finally { unmount(); ruleMenus.clear(); ruleMenuVisits.length = 0 }
+})
+
+test('rule load failures stay explicit and can retry without classifying them as unconfigured', async () => {
+  let fail = true
+  setAlarmRequestHandler(async () => {
+    if (fail) throw new Error('Unavailable')
+    return { result: [{ property: 'p', provider: 'ratio-sampling', configuration: { ratio: 0.5 } }] }
+  })
+  ruleRoute.query = {}
+  const { panel, unmount } = mountPanel(reactive({ scope: { productId: 'product' }, properties: [{ id: 'p' }] }))
+  try {
+    await settle()
+    assert.equal(panel.failed.value, true)
+    fail = false
+    await panel.load()
+    assert.equal(panel.failed.value, false)
+    assert.equal(panel.groups.value[0].configured, 1)
   } finally { unmount() }
 })
 

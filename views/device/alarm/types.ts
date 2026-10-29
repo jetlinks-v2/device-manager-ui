@@ -24,12 +24,13 @@ export interface DeviceAlarmLimit {
 export interface DeviceAlarmNotifyMethod {
   id: string
   providerId: string
-  channelId?: string
-  key: 'inbox' | 'sms' | 'email' | 'wechat' | 'phone' | 'webhook'
+  key: 'inbox' | 'sms' | 'email' | 'wechat' | 'dingtalk' | 'phone' | 'webhook'
   label: string
   desc: string
   icon: string
-  raw?: Record<string, any>
+  /** Accessible channel IDs are read only for persisted legacy selections. */
+  channelIds?: string[]
+  templates?: Record<'trigger' | 'relieve', 'ready' | 'missing' | 'unknown' | 'unneeded'>
 }
 
 export interface DeviceAlarmNotifyUser {
@@ -42,6 +43,8 @@ export interface DeviceAlarmNotifyUser {
 export interface DeviceAlarmNotificationConfig {
   enabled: boolean
   includeRelieve?: boolean
+  /** Persisted legacy rules may still use the trigger provider for recovery. */
+  relieveTopicProvider?: 'alarm-device' | 'alarm-device-relieve'
   userIds: string[]
   dimensions?: Array<Record<string, unknown>>
   channelProviders: string[]

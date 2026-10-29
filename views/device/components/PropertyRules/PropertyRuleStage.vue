@@ -1,6 +1,9 @@
 <template>
   <div class="rule-stage" :class="{ 'rule-stage-caption': caption }">
-    <span v-if="caption" class="rule-stage-title"><AIcon :type="icons[section]" />{{ $t(`PropertyRules.stage.${section}`) }}</span>
+    <div v-if="caption || $slots.extra" class="rule-stage-heading">
+      <span class="rule-stage-title"><AIcon :type="icons[section]" />{{ $t(`PropertyRules.stage.${section}`) }}</span>
+      <slot name="extra" />
+    </div>
     <div class="rule-stage-lines"><slot /></div>
   </div>
 </template>
@@ -16,5 +19,7 @@ const icons: Record<RuleSection, string> = { cleaning: 'ClearOutlined', processi
 .rule-stage + .rule-stage { margin-top: var(--space-1); }
 .rule-stage-title { display: flex; align-items: center; gap: var(--space-1); min-height: 16px; margin-bottom: 2px; color: var(--jet-theme-text-secondary); font-size: var(--fs-12); line-height: 16px; white-space: nowrap; }
 .rule-stage-title::after { content: ''; flex: 1; border-top: 1px solid var(--line); }
+.rule-stage-heading { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); margin-bottom: 2px; }
+.rule-stage-heading .rule-stage-title { flex: 1; margin-bottom: 0; }
 .rule-stage-lines { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 </style>

@@ -144,7 +144,9 @@
       :disabled='disabled'
       :has-permission='hasPermission'
       :tooltip='tooltip'
-      type='primary'
+      type='text'
+      size='small'
+      class='metadata-setting-action'
     >
       <AIcon type='EditOutlined' />
       {{ $t('Properties.OtherSetting.237457-18') }}
@@ -156,20 +158,19 @@
     :disabled='disabled'
     :has-permission='hasPermission'
     :tooltip='tooltip'
-    type='primary'
+    type='text'
+    size='small'
+    class='metadata-setting-action'
   >
     <AIcon type='EditOutlined' />
     {{ $t('Properties.OtherSetting.237457-18') }}
   </j-permission-button>
-  <PropertyRuleShortcut v-if="metadataType === 'properties' && id" :target="target"
-    :property="{ ...record, id, name, valueType: { ...record.valueType, type: props.type } }" />
 </template>
 
 <script setup lang='ts' name='OtherSetting'>
 import Metrics from './Metrics/Metrics.vue'
 import { useI18n } from 'vue-i18n'
 import { PopoverModal } from '../../../../../../../components/Metadata'
-import PropertyRuleShortcut from '../../../../PropertyRules/PropertyRuleShortcut.vue'
 import CardItem from './components/CardItem.vue'
 import { usePropertyOtherSettings } from './usePropertyOtherSettings'
 const { t: $t } = useI18n()
@@ -225,6 +226,16 @@ const { modalVisible, confirm, cancel, showContent, activeKey, visible, config, 
 .extra-tip {
   padding: 8px;
   background-color: rgba(#000, 0.05);
+}
+
+.metadata-setting-action {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding-inline: var(--space-1);
+  color: var(--jet-theme-primary);
+  font-size: var(--fs-12);
+  :deep(.anticon + span) { margin-inline-start: 0; }
 }
 
 .extra-title {

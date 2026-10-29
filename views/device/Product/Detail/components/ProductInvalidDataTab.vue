@@ -66,6 +66,7 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { queryInvalidData } from '@device-manager-ui/api/rule-engine/log'
+import { invalidRecordDescription } from '../../../components/PropertyRules/invalidRecord'
 import { useProductStore } from '@device-manager-ui/store/product'
 import { extractRows, formatApiTime } from '@device-manager-ui/views/device/list/services/iotDeviceDetailReal.service'
 
@@ -127,7 +128,7 @@ async function loadRows() {
       id: item.id || `${item.createTime || index}-${item.thingId || productId}`,
       createTime: formatApiTime(item.createTime),
       thingName: item.thingName || item.thingId || '--',
-      description: item.description || item.reason || '--',
+      description: invalidRecordDescription(item, $t),
       value: item.value == null || item.value === '' ? '--' : String(item.value),
     }))
     rows.value = nextRows

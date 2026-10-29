@@ -151,6 +151,20 @@ const createDeviceDetailEdgeWorkflows = (): GeneralAgentWorkflowGuide[] => [
 
 export const createDeviceDetailAgentWorkflows = (includeEdge = false): GeneralAgentWorkflowGuide[] => [
   {
+    id: 'device-detail-property-rules',
+    title: i18n.global.t('PropertyRuleAgent.workflow.title'),
+    description: i18n.global.t('PropertyRuleAgent.workflow.description'),
+    when: i18n.global.t('PropertyRuleAgent.workflow.when'),
+    scenarios: ['threshold', 'recovery', 'notification', 'data'].map(key => i18n.global.t(`PropertyRuleAgent.workflow.scenarios.${key}`)),
+    steps: [
+      { ...workflowStep('subject.schema.search', 'subject-property-id', false),
+        tips: [i18n.global.t('PropertyRuleAgent.workflow.resolveProperty')] },
+      workflowStep('subject.property.rules.read', 'property-rule-configuration'),
+    ],
+    output: i18n.global.t('PropertyRuleAgent.workflow.output'),
+    notes: [i18n.global.t('PropertyRuleAgent.workflow.note'), i18n.global.t('PropertyRuleAgent.workflow.evidence')],
+  },
+  {
     id: 'device-detail-today-operation',
     title: t('workflows.today.title'),
     when: t('workflows.today.when'),
@@ -173,6 +187,7 @@ export const createDeviceDetailAgentWorkflows = (includeEdge = false): GeneralAg
     when: t('workflows.offline.when'),
     steps: [
       workflowStep('subject.context.read', 'subject-context'),
+      workflowStep('subject.connection.sessions.read', 'connection-sessions', false),
       workflowStep('subject.access.read', 'access-configuration'),
       workflowStep('subject.connection.summary', 'connection-summary'),
       workflowStep('subject.activity.aggregate', deviceMetricSeriesName('device_activity_aggregate'), false),
@@ -180,7 +195,7 @@ export const createDeviceDetailAgentWorkflows = (includeEdge = false): GeneralAg
       workflowStep('subject.alarm.records.read', 'alarm-records', false),
     ],
     output: output(),
-    notes: [t('workflows.offline.note')],
+    notes: [t('workflows.offline.note'), i18n.global.t('DeviceConnectionAgent.usage')],
   },
   {
     id: 'device-detail-property-anomaly',
@@ -188,12 +203,14 @@ export const createDeviceDetailAgentWorkflows = (includeEdge = false): GeneralAg
     when: t('workflows.property.when'),
     steps: [
       workflowStep('subject.schema.search', 'subject-property-id'),
+      workflowStep('subject.property.rules.read', 'property-rule-configuration', false),
       workflowStep('subject.property.aggregate', 'property-aggregate'),
       workflowStep('subject.property.latest', 'property-snapshot', false),
       workflowStep('subject.property.history.summary', 'property-history-summary', false),
       workflowStep('subject.property.history.read', 'property-history-records', false),
     ],
     output: output(),
+    notes: [i18n.global.t('PropertyRuleAgent.workflow.dataNote')],
   },
   {
     id: 'device-detail-no-data',
@@ -203,12 +220,14 @@ export const createDeviceDetailAgentWorkflows = (includeEdge = false): GeneralAg
       workflowStep('subject.context.read', 'subject-context'),
       workflowStep('subject.access.read', 'access-configuration'),
       workflowStep('subject.schema.search', 'subject-property-id', false),
+      workflowStep('subject.property.rules.read', 'property-rule-configuration', false),
       workflowStep('subject.property.latest', 'property-snapshot', false),
       workflowStep('subject.message.aggregate', deviceMetricSeriesName('device_message_aggregate'), false),
       workflowStep('subject.log.summary', 'log-summary', false),
       workflowStep('subject.connection.summary', 'connection-summary', false),
     ],
     output: output(),
+    notes: [i18n.global.t('PropertyRuleAgent.workflow.dataNote')],
   },
   {
     id: 'device-detail-alarm-diagnosis',
@@ -216,13 +235,15 @@ export const createDeviceDetailAgentWorkflows = (includeEdge = false): GeneralAg
     when: t('workflows.alarm.when'),
     steps: [
       workflowStep('subject.alarm.records.read', ['alarm-record-id', 'alarm-records']),
-      workflowStep('subject.alarm.history.summary', 'alarm-history-summary'),
+      workflowStep('subject.property.rules.read', 'property-rule-configuration', false),
+      workflowStep('subject.alarm.history.summary', 'alarm-history-summary', false),
       workflowStep('subject.event.read', 'event-records', false),
       workflowStep('subject.property.history.summary', 'property-history-summary', false),
       workflowStep('subject.log.summary', 'log-summary', false),
     ],
     output: output(),
-    notes: [t('workflows.alarm.note')],
+    notes: [t('workflows.alarm.note'), i18n.global.t('PropertyRuleAgent.workflow.alarmNote'),
+      i18n.global.t('PropertyRuleAgent.workflow.evidence')],
   },
   {
     id: 'device-detail-first-access',

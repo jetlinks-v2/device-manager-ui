@@ -1,6 +1,6 @@
 <template>
   <a-popover :trigger="['hover', 'focus', 'click']" placement="top">
-    <template #content><div class="rule-notice-content">{{ message }}</div></template>
+    <template #content><div class="rule-notice-content"><slot>{{ message }}</slot></div></template>
     <a-button type="text" size="small" class="rule-notice" :class="{ 'is-info': kind === 'info' }" :disabled="false" :aria-label="label ?? message" @click.stop @keydown.stop><AIcon :type="kind === 'info' ? 'InfoCircleOutlined' : 'ExclamationCircleOutlined'" aria-hidden="true" /></a-button>
   </a-popover>
 </template>

@@ -11,6 +11,8 @@ import { buildRuleExample, createRuleExampleInputs, validateRuleExampleInputs } 
 import { MAX_INTERVAL_MILLIS, readSampling } from '../views/device/components/PropertyRules/sampling'
 import { buildCondition, conditionsOverlap, conditionOperators, matchesCondition, readCondition, switchConditionOperator, validateAlarmConditions } from '../views/device/alarm/conditions'
 import type { DeviceAlarmCondition } from '../views/device/alarm/types'
+import { invalidRecordDescription } from '../views/device/components/PropertyRules/invalidRecord'
+import en from '../locales/lang/en.json'
 
 const translate: RuleTranslator = (key, values = {}) => {
   const text = (zh as Record<string, string>)[key]
@@ -27,6 +29,72 @@ function draft(): RuleDraft {
   }
 }
 
+test('invalid data recording is opt-in and preserved through rule and alarm edits', () => {
+  const current = draft()
+  const legacy = buildRule(parseRule(), current)
+  assert.equal(legacy.configuration.recordInvalid, undefined)
+  current.recordInvalid = true
+  const saved = buildRule(parseRule(legacy), current)
+  assert.equal(saved.configuration.recordInvalid, true)
+  assert.equal(parseRule(saved).editable, true)
+  assert.deepEqual(buildRule(parseRule(saved), current), saved)
+  assert.equal(replaceAlarm(saved, { ...current.alarm, name: 'Renamed' }).configuration.recordInvalid, true)
+  current.recordInvalid = false
+  assert.equal(buildRule(parseRule(saved), current).configuration.recordInvalid, undefined)
+})
+
+test('recording applies only to rejecting cleaning stages and not corrections or sampling', () => {
+  const current = draft()
+  current.recordInvalid = true
+  current.valuesMode = 'replace'; current.replacementValue = 0; current.rangeAction = 'clamp'
+  assert.equal(buildRule(parseRule(), current).configuration.recordInvalid, undefined)
+  assert.ok(summarizeDraftRows(current, {}, translate).every(row => !row.recordInvalid))
+  current.valuesMode = 'keep'
+  const rows = summarizeDraftRows(current, {}, translate)
+  assert.deepEqual(rows.filter(row => row.recordInvalid).map(row => row.key), ['values'])
+  current.valuesEnabled = false; current.rangeEnabled = false
+  current.stepEnabled = true; current.maxStep = 1; current.baselineTtl = 300000
+  assert.equal(buildRule(parseRule(), current).configuration.recordInvalid, true)
+  assert.deepEqual(summarizeRuleRows(parseRule(buildRule(parseRule(), current)), {}, translate)
+    .filter(row => row.recordInvalid).map(row => row.key), ['step'])
+})
+
+test('invalid recording preview marks only the stage that actually discards each value', () => {
+  const current = draft()
+  current.recordInvalid = true
+  const example = buildRuleExample(current, { valueType: { type: 'double' } }, [-9999, 121, 10]
+    .map(value => ({ value, arrivalMillis: 0 })))
+  assert.deepEqual(example.map(point => point.stages.filter(stage => stage.recordInvalid).map(stage => stage.key)), [['values'], ['range'], []])
+  current.recordInvalid = false
+  assert.ok(buildRuleExample(current, { valueType: { type: 'double' } }).every(point => point.stages.every(stage => !stage.recordInvalid)))
+})
+
+test('unknown or nested recording settings remain read-only without losing saved content', () => {
+  const current = draft()
+  const saved = buildRule(parseRule(), current)
+  for (const value of ['true', 1, null]) {
+    const raw = structuredClone(saved)
+    raw.configuration.recordInvalid = value
+    assert.equal(parseRule(raw).editable, false)
+  }
+  const raw = structuredClone(saved)
+  raw.configuration.processors[0].configuration.recordInvalid = true
+  assert.equal(parseRule(raw).editable, false)
+  assert.equal(parseRule(raw).raw, raw)
+})
+
+test('invalid data reasons translate at display time and legacy descriptions remain intact', () => {
+  for (const messages of [zh, en]) {
+    const t: RuleTranslator = key => (messages as Record<string, string>)[key]
+    for (const reason of ['value-set', 'number-range', 'max-step']) {
+      const record = { reason, description: 'old language', valueTruncated: true }
+      assert.equal(invalidRecordDescription(record, t), `${t(`PropertyRules.invalidReason.${reason}`)} · ${t('PropertyRules.invalidValueTruncated')}`)
+    }
+    assert.equal(invalidRecordDescription({ description: 'Legacy custom text' }, t), 'Legacy custom text')
+    assert.equal(invalidRecordDescription({ reason: 'extension', description: 'Custom rule' }, t), 'Custom rule')
+  }
+})
+
 test('recovery notification shares recipients and channels and survives full-chain save/read', () => {
   const current = draft()
   current.alarm.autoRelieve = true
@@ -39,7 +107,7 @@ test('recovery notification shares recipients and channels and survives full-cha
   const alarm = parseRule(saved).nodes.alarm!
   const [trigger, recovery] = alarm.configuration.processors
   assert.deepEqual(recovery.configuration.processors[1].configuration,
-    { ...trigger.configuration.processors[1].configuration, event: 'relieve' })
+    { ...trigger.configuration.processors[1].configuration, event: 'relieve', topicProvider: 'alarm-device-relieve' })
   recovery.configuration.processors[1].configuration.userIds = ['someone-else']
   assert.equal(parseRule(saved).editable, false)
 })
@@ -59,6 +127,24 @@ test('recovery notification is opt-in and follows automatic recovery and notific
   const manual = buildPreprocessPayload(form)
   assert.equal(manual.provider, 'simple')
   assert.equal(getNotifyProcessor(manual)?.configuration.includeRelieve, false)
+})
+
+test('persisted shared recovery template and exact channels round trip without silent migration', () => {
+  const current = draft()
+  current.alarm.autoRelieve = true
+  current.alarm.notification = { enabled: true, includeRelieve: true, userIds: ['u1'], channelProviders: ['notifier-email'],
+    notifyChannelIds: ['legacy-channel'], parameters: { 'notifier-email': { templateId: 'legacy-template', notifierId: 'sender' } } }
+  const saved = buildPreprocessPayload(current.alarm)
+  const recovery = saved.configuration.processors[1].configuration.processors[1].configuration
+  delete recovery.topicProvider
+  const original = JSON.stringify(saved)
+  const loaded = toDeviceAlarmRow(saved, 'product', 'Product')!
+  assert.ok(loaded)
+  assert.equal(loaded.notification.relieveTopicProvider, 'alarm-device')
+  assert.deepEqual(buildPreprocessPayload(loaded), saved)
+  assert.equal(JSON.stringify(saved), original)
+  recovery.topicProvider = 'another-provider'
+  assert.equal(parseRule(saved).editable, false)
 })
 
 test('simple numeric conditions preserve all comparison boundaries and reject invalid values', () => {
@@ -533,7 +619,7 @@ test('clear product deletes; clear device persists empty override; restore alone
 
 test('raw reads distinguish device absence from an explicit empty override and propagate failures', async () => {
   const empty = { property: 'temp', provider: 'composite', configuration: { processors: [] } }
-  setAlarmRequestHandler(async (url) => ({ result: url.includes('/p1/d1/') ? [empty] : [buildRule(parseRule(), draft())] }))
+  setAlarmRequestHandler(async (url) => ({ result: url.includes('/p1/d1/') ? [empty] : [{ ...buildRule(parseRule(), draft()), property: 'temp' }] }))
   const rules = await loadRules({ productId: 'p1', deviceId: 'd1' }, 'temp')
   assert.equal(isEmptyRule(rules.device[0]), true)
   assert.equal(isEmptyRule(rules.product[0]), false)

@@ -156,7 +156,7 @@ test('device trend tools compile as execution-authored and emit exhaustive serie
   }
 })
 
-test('device health summary keeps a display label separate from its authoritative timestamp', () => {
+test('device health summary exposes the offline event without inventing recent activity', () => {
   const factory = createDeviceAnalysisTools().find(item => item.id === 'device_health_summary')
   assert.ok(factory)
   const tool = factory.build()
@@ -164,14 +164,11 @@ test('device health summary keeps a display label separate from its authoritativ
   const output = tool._meta?.clientToolContract.outputs[0]
   assert.equal(output?.recordPath, '$.offlineDevices')
 
-  assert.deepEqual(output?.fields?.filter(field => field.name === 'lastSeen' || field.name === 'lastSeenTimestamp'), [
+  assert.deepEqual(output?.fields?.filter((field: { name?: string }) => field.name === 'lastSeen' || field.name === 'lastSeenTimestamp'), [])
+  assert.deepEqual(output?.fields?.filter((field: { name?: string }) => field.name === 'offlineAt'), [
     {
-      name: 'lastSeen', type: 'string', role: 'label',
-      label: 'IotHealthPage.detail.field.lastSeen',
-    },
-    {
-      name: 'lastSeenTimestamp', type: 'timestamp', role: 'temporal_dimension',
-      label: 'IotHealthPage.detail.field.lastSeen', encoding: 'epoch-millis',
+      name: 'offlineAt', type: 'timestamp', role: 'temporal_dimension',
+      label: 'IotDeviceDetail.connection.field.lastOffline', encoding: 'epoch-millis',
     },
   ])
 })

@@ -9,7 +9,7 @@
       </div>
     </template>
     <a-button ref="trigger" type="text" size="small" class="notification-chip" :disabled="disabled" :aria-label="$t('DeviceAlarm.notification.user')" :aria-expanded="directory.open" :title="directory.selectionTitle">
-      <AIcon type="TeamOutlined" /><span class="notification-chip__label">{{ directory.selectionLabel }}</span>
+      <AIcon :type="directory.selectedLoading ? 'LoadingOutlined' : directory.selectedFailed ? 'ExclamationCircleOutlined' : 'TeamOutlined'" :spin="directory.selectedLoading" /><span class="notification-chip__label">{{ directory.selectionLabel }}</span>
       <span v-if="directory.additionalCount" class="notification-chip__count">+{{ directory.additionalCount }}</span>
       <AIcon type="DownOutlined" class="notification-chip__arrow" />
     </a-button>

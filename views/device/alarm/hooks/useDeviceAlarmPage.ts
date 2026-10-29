@@ -7,9 +7,8 @@ import {
   queryAlarmTargetPage,
   queryDefaultAlarmLevels,
   queryDeviceAlarmPage,
-  queryDeviceAlarmNotifyProviders,
+  queryDeviceAlarmNotifyMethods,
   queryProductMetadata,
-  toNotifyMethods,
 } from '../api'
 import type {
   AlarmLevelOption,
@@ -305,8 +304,9 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
   async function loadNotifyResources() {
     notifyLoading.value = true
     try {
-      const channels = await queryDeviceAlarmNotifyProviders().catch(() => [])
-      notifyMethods.value = toNotifyMethods(channels)
+      notifyMethods.value = await queryDeviceAlarmNotifyMethods()
+    } catch {
+      message.warning(t('PropertyRules.resourcesFailed'))
     } finally {
       notifyLoading.value = false
     }

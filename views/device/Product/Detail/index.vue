@@ -69,14 +69,14 @@ const routerParams = useRouterParams()
 const productStore = useProductStore()
 const permissionStore = useAuthStore()
 const menuStore = useMenuStore()
-const { showThreshold } = useSystemStore()
+const system = useSystemStore()
 const saveRef = ref()
 const activeTab = ref<ProductDetailTabKey>('Device')
 const canViewDevices = computed(() => menuStore.hasMenu('iot-user-device-list'))
 
 const visibleTabs = computed(() => buildProductDetailTabs(productStore.current, {
-  showRules: true,
-  showAlarm: permissionStore.hasPermission('rule-engine/Alarm/Log:view') && showThreshold,
+  showRules: system.showThreshold,
+  showAlarm: permissionStore.hasPermission('rule-engine/Alarm/Log:view') && system.showThreshold,
   showFirmware: permissionStore.hasPermission('device/Firmware:view'),
   showDashboard: isApplyDashboard(),
   isNoCommunity,

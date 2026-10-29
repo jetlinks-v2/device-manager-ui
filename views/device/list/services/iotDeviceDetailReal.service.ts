@@ -97,6 +97,7 @@ const withDefaultDeviceListQuery = (data: Record<string, any> = {}) => ({
 
 export const iotDeviceDetailRealApi = {
   getDeviceDetail: (deviceId: string) => request.get(`/device-instance/${deviceId}/detail`),
+  getDeviceState: (deviceId: string) => request.get(`/device-instance/${encodeURIComponent(deviceId)}/state`),
   queryDashboard: (data: any) => request.post('/dashboard/_multi', data),
   readProperty: (deviceId: string, property: string) => request.get(`/device/standard/${deviceId}/property/${property}`),
   setProperty: (deviceId: string, data: Record<string, any>) => request.put(`/device-instance/${deviceId}/property`, data),
@@ -152,7 +153,7 @@ export const iotDeviceDetailRealApi = {
   queryDeviceConfig: (id: string) => request.get(`/device-instance/${id}/config-metadata`),
   queryProtocolDetail: (type: string, transport: string) => request.get(`/protocol/${type}/transport/${transport}`),
   sendDeviceMessage: (deviceId: string, data: Record<string, any>) => request.post(`/device/instance/${deviceId}/message`, data),
-  getDeviceSessions: (deviceId: string) => request.get(`/device/instance/${deviceId}/sessions`),
+  getDeviceSessions: (deviceId: string) => request.get(`/device/instance/${encodeURIComponent(deviceId)}/sessions`),
   getTransparentCodecSupports: () => request.post<Array<{ id: string; name: string }>>('/device/transparent-codec/supports'),
   getDeviceTransparentCodec: (productId: string, deviceId: string) =>
     request.get(`/device/transparent-codec/${productId}/${deviceId}`),

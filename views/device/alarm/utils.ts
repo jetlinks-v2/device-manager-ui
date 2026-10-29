@@ -13,6 +13,7 @@ import i18n from '@jetlinks-web-core/locales'
 import { isEqual } from 'lodash-es'
 import { buildCondition, invertCondition, readCondition, recoveryCondition, conditionSymbols } from './conditions'
 import type { DeviceAlarmCondition } from './types'
+import { notificationDateVariables, notificationDateFormat } from './notificationMessageVariables'
 
 const DEVICE_ALARM_PROCESSOR = 'device-alarm'
 const DEVICE_ALARM_RELIEVE_PROCESSOR = 'device-alarm-relieve'
@@ -26,20 +27,25 @@ interface DeviceAlarmConfiguration {
   notifyProcessor?: Record<string, any>
   relieveProcessor?: Record<string, any>
   relieveMatcher?: Record<string, any>
+  relieveNotifyProcessor?: Record<string, any>
 }
 
-/** 旧配置仅保存提供者和参数；同一提供者可能存在多个通知通道，必须同时匹配参数。 */
+/** Display notification types; saved channel IDs are mapped for legacy readback only. */
 export function matchesAlarmNotifyMethod(notification: DeviceAlarmNotificationConfig, method: DeviceAlarmNotifyMethod) {
-  if (notification.notifyChannelIds?.includes(method.channelId || method.id)) return true
-  if (!notification.channelProviders.includes(method.providerId)) return false
-  const parameter = notification.parameters?.[method.providerId]
-  if (!isRecord(parameter)) return true
-  const raw = method.raw ?? {}
-  const configuration = raw.channelConfiguration ?? raw.configuration ?? {}
-  const notifierId = String(parameter.notifierId || '')
-  const templateId = String(parameter.templateId || '')
-  return (!notifierId || notifierId === String(configuration.notifierId || raw.notifierId || ''))
-    && (!templateId || templateId === String(configuration.templateId || raw.templateId || ''))
+  return notification.channelProviders.includes(method.providerId)
+    || Boolean(notification.notifyChannelIds?.some(id => method.channelIds?.includes(id)))
+}
+
+/** Explicit user selection removes obsolete channel bindings; simply opening a rule never migrates it. */
+export function selectAlarmNotificationTypes(notification: DeviceAlarmNotificationConfig, providers: string[]) {
+  const bindings = new Set([...notification.channelProviders, ...providers])
+  return {
+    ...notification,
+    channelProviders: [...new Set(providers)],
+    notifyChannelIds: [],
+    relieveTopicProvider: 'alarm-device-relieve' as const,
+    parameters: Object.fromEntries(Object.entries(notification.parameters ?? {}).filter(([key]) => !bindings.has(key))),
+  }
 }
 
 export const DEVICE_ALARM_NOTIFICATION_MESSAGE_MAX_LENGTH = 1024
@@ -145,6 +151,10 @@ export function toDeviceAlarmRow(
   if (!alarmConfiguration) return null
   const processorConfig = alarmConfiguration.alarmProcessor.configuration ?? {}
   const notifyConfig = normalizeNotification(row.notifyConfig ?? alarmConfiguration.notifyProcessor?.configuration)
+  // Read the persisted recovery branch before applying the default for newly created notifications.
+  notifyConfig.relieveTopicProvider = alarmConfiguration.relieveNotifyProcessor
+    ? alarmConfiguration.relieveNotifyProcessor.configuration?.topicProvider ?? 'alarm-device'
+    : 'alarm-device-relieve'
   const propertyId = String(row.property ?? propertyIdOf(property ?? {}))
   const propertyName = String(row.propertyName ?? propertyNameOf(property ?? { id: propertyId }))
   const productId = String(row.templateId ?? '')
@@ -250,7 +260,9 @@ export function buildPreprocessPayload(form: DeviceAlarmFormModel) {
                 configuration: { ...alarmProcessorConfiguration },
               },
               ...(notification?.includeRelieve ? [{ provider: NOTIFY_PROCESSOR,
-                configuration: { ...notification, event: 'relieve' } }] : []),
+                configuration: { ...notification, event: 'relieve',
+                  ...(form.notification.relieveTopicProvider === 'alarm-device' ? {} : { topicProvider: 'alarm-device-relieve' }),
+                } }] : []),
             ],
           },
         },
@@ -288,14 +300,18 @@ function parseDeviceAlarmConfiguration(row?: ThingPropertyPreprocess): DeviceAla
 
   const alarm = alarmBranches[0]!.alarm!
   const relieve = relieveBranches[0]!.relieve!
-  // 单一通知入口只编辑两分支共享的通道与对象；不一致的外部配置保持只读。
+  // 只允许独立解除模板这一已知差异，其余外部通知差异保持只读。
   if (relieve.notification) {
-    const { event, ...configuration } = relieve.notification.configuration ?? {}
+    const { event, topicProvider, ...configuration } = relieve.notification.configuration ?? {}
+    const triggerConfiguration = { ...alarm.notifyProcessor?.configuration }
+    if (topicProvider !== undefined && !(topicProvider === 'alarm-device-relieve' && !triggerConfiguration.topicProvider)) {
+      configuration.topicProvider = topicProvider
+    }
     if (event !== 'relieve' || !alarm.notifyProcessor?.configuration?.includeRelieve
-      || !isEqual(configuration, alarm.notifyProcessor.configuration)) return undefined
+      || !isEqual(configuration, triggerConfiguration)) return undefined
   } else if (alarm.notifyProcessor?.configuration?.includeRelieve) return undefined
   // 回显只判断结构；类型与互斥性在保存时结合物模型校验，枚举的有限值域不能按无限集合推断。
-  return { ...alarm, relieveProcessor: relieve.processor, relieveMatcher: relieve.matcher }
+  return { ...alarm, relieveProcessor: relieve.processor, relieveMatcher: relieve.matcher, relieveNotifyProcessor: relieve.notification }
 }
 
 function parseAlarmBranch(configuration: Record<string, unknown>): DeviceAlarmConfiguration | undefined {
@@ -385,6 +401,7 @@ export function createEmptyNotification() {
   return {
     enabled: false,
     includeRelieve: false,
+    relieveTopicProvider: 'alarm-device-relieve' as const,
     userIds: [],
     channelProviders: [],
     parameters: {},
@@ -412,15 +429,21 @@ export function setNotificationMessageTemplate(
   const template = isRecord(parameters.template) ? parameters.template : {}
   const {
     messageTemplate: _messageTemplate,
-    variableDefinitions: _variableDefinitions,
     ...rest
   } = parameters
+  const definitions = Array.isArray(parameters.variableDefinitions) ? [...parameters.variableDefinitions] : []
+  for (const id of notificationDateVariables) {
+    if (message.includes(`\${${id}}`) && !definitions.some(item => item?.id === id)) {
+      definitions.push({ id, type: 'date', format: notificationDateFormat })
+    }
+  }
   notification.parameters = {
     ...rest,
     template: {
       ...template,
       message,
     },
+    ...(definitions.length ? { variableDefinitions: definitions } : {}),
   }
 }
 
@@ -454,6 +477,7 @@ export function normalizeNotification(value: unknown) {
     // 空通知配置不能被视为已启用；已有通知沿用后端省略 enabled 时的启用语义。
     enabled: source.enabled === undefined ? isNotificationConfigured(source) : Boolean(source.enabled),
     includeRelieve: source.includeRelieve === true,
+    relieveTopicProvider: source.relieveTopicProvider === 'alarm-device' ? 'alarm-device' as const : 'alarm-device-relieve' as const,
     userIds: Array.isArray(source.userIds) ? source.userIds.map(String).filter(Boolean) : [],
     dimensions: Array.isArray(source.dimensions) ? source.dimensions : [],
     channelProviders: Array.isArray(source.channelProviders) ? source.channelProviders.map(String).filter(Boolean) : [],

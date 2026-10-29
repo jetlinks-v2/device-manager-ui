@@ -18,6 +18,7 @@ export interface ParsedRule {
   providers: string[]
 }
 export interface RuleDraft extends SamplingDraft, ValueRuleDraft {
+  recordInvalid?: boolean
   valuesEnabled: boolean
   valuesMode: 'ignore' | 'keep' | 'replace'
   values: Array<string | number | boolean>
@@ -90,6 +91,14 @@ function classify(node: RuleNode): RulePart | undefined {
 function isScalar(value: unknown): value is string | number | boolean {
   return typeof value === 'string' || typeof value === 'boolean' || (typeof value === 'number' && Number.isFinite(value))
 }
+
+/** The editor owns one property-wide switch; nested overrides cannot be represented losslessly. */
+function hasNestedRecordSetting(node: RuleNode, depth = 0): boolean {
+  if (depth > 16) return true
+  if (depth > 0 && node.configuration.recordInvalid !== undefined) return true
+  const children = node.configuration.processors
+  return Array.isArray(children) && children.some(child => isNode(child) && hasNestedRecordSetting(child, depth + 1))
+}
 function validRange(config: Record<string, unknown>) {
   return typeof config.min === 'number' && Number.isFinite(config.min)
     && typeof config.max === 'number' && Number.isFinite(config.max) && config.min <= config.max
@@ -106,6 +115,9 @@ export function parseRule(raw?: ThingPropertyPreprocess): ParsedRule {
   const result: ParsedRule = { editable: true, nodes: {}, raw, providers: [] }
   if (!raw) return result
   if (!isNode(raw)) return { ...result, editable: false }
+  if (raw.configuration.recordInvalid !== undefined
+    && (raw.provider !== 'composite' || typeof raw.configuration.recordInvalid !== 'boolean')
+    || hasNestedRecordSetting(raw)) return { ...result, editable: false }
   const children = raw.provider === 'composite' && !hasAlarmRelieveProcessor(raw) ? raw.configuration.processors : [raw]
   if (!Array.isArray(children)) return { ...result, editable: false }
   let last = -1
@@ -163,7 +175,7 @@ function updateAlarmBranch(previous: RuleNode | undefined, next: RuleNode): Rule
   return updateNode(previous, { ...next, configuration: { matcher, processors } })
 }
 
-function packRule(parsed: ParsedRule, nodes: Partial<Record<RulePart, RuleNode>>): ThingPropertyPreprocess {
+function packRule(parsed: ParsedRule, nodes: Partial<Record<RulePart, RuleNode>>): ThingPropertyPreprocess & RuleNode {
   if (!parsed.editable) throw new Error('PropertyRules.readonly')
   const processors = order.flatMap((part) => nodes[part] ? [nodes[part]!] : [])
   const raw = clone(parsed.raw ?? {})
@@ -175,7 +187,7 @@ function packRule(parsed: ParsedRule, nodes: Partial<Record<RulePart, RuleNode>>
   }
 }
 
-export function buildRule(parsed: ParsedRule, draft: RuleDraft): ThingPropertyPreprocess {
+export function buildRule(parsed: ParsedRule, draft: RuleDraft): ThingPropertyPreprocess & RuleNode {
   const nodes: ParsedRule['nodes'] = {}
   if (draft.valuesEnabled) {
     const previous = parsed.nodes.values
@@ -204,7 +216,16 @@ export function buildRule(parsed: ParsedRule, draft: RuleDraft): ThingPropertyPr
   if (draft.alarmEnabled) nodes.alarm = updateAlarm(parsed.nodes.alarm, draft.alarm)
   if (draft.samplingEnabled) nodes.sampling = buildSampling(draft, parsed.nodes.sampling)
   if (draft.fileEnabled) nodes.file = updateNode(parsed.nodes.file, { provider: 'file-storage', configuration: {} })
-  return packRule(parsed, nodes)
+  const rule = packRule(parsed, nodes)
+  if (draft.recordInvalid && hasDiscardingCleaning(draft)) rule.configuration.recordInvalid = true
+  else delete rule.configuration.recordInvalid
+  return rule
+}
+
+/** Only rejected cleaning values qualify; correction and report suppression remain independent. */
+export function hasDiscardingCleaning(draft: RuleDraft): boolean {
+  return Boolean(draft.valuesEnabled && draft.valuesMode !== 'replace'
+    || draft.rangeEnabled && draft.rangeAction !== 'clamp' || draft.stepEnabled)
 }
 
 /** All alarm entry points update the full property configuration through the same codec. */

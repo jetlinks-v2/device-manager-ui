@@ -21,6 +21,7 @@ export interface RuleExampleStage {
   key: RulePart
   status: 'kept' | 'filtered' | 'alarm' | 'skipped' | 'processed' | 'recovered'
   skipReason?: 'missing' | 'filled'
+  recordInvalid?: boolean
   baseline?: string
   value?: string
   elapsedMillis?: number
@@ -85,6 +86,7 @@ export function buildRuleExample(draft: RuleDraft, property: ThingModelProperty,
     let filled = false
     function visit(key: RulePart, drop: boolean, alarm = false, skip = false) {
       stages.push({ key, status: skip || !alive ? 'skipped' : drop ? 'filtered' : alarm ? 'alarm' : 'kept',
+        ...(alive && !skip && drop && draft.recordInvalid && ['values', 'range', 'step'].includes(key) ? { recordInvalid: true } : {}),
         ...(skip ? { skipReason: filled ? 'filled' as const : 'missing' as const } : {}),
         ...(alive && (draft.scaleEnabled || draft.fileEnabled || draft.fallbackEnabled || draft.valuesMode === 'replace' || draft.rangeAction === 'clamp') ? { value: labelOf(value) } : {}) })
       if (!skip && drop) alive = false

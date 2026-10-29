@@ -1,6 +1,6 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { getNotificationMessageMode, matchesAlarmNotifyMethod } from '../utils'
+import { getNotificationMessageMode, matchesAlarmNotifyMethod, selectAlarmNotificationTypes } from '../utils'
 import type { DeviceAlarmFormModel, DeviceAlarmNotifyMethod } from '../types'
 
 interface NotificationProps {
@@ -19,33 +19,32 @@ export function useAlarmNotification(props: NotificationProps, requestMethods: (
   const scopeKey = computed(() => `${props.model.source}:${props.model.targetId}:${props.model.property}`)
   const selectedMethods = computed(() => props.methods.filter(method => matchesAlarmNotifyMethod(props.model.notification, method)))
   const channelIds = computed({
-    get: () => props.model.notification.notifyChannelIds?.length
-      ? props.model.notification.notifyChannelIds
-      : selectedMethods.value.map(method => method.channelId || method.id),
+    get: () => [...new Set([
+      ...props.model.notification.channelProviders,
+      ...selectedMethods.value.map(method => method.providerId),
+    ])],
     set: (values: string[]) => {
       if (props.disabled) return
-      const selected = new Set(values)
-      const methods = props.methods.filter(method => selected.has(method.channelId || method.id))
-      const knownProviders = new Set(props.methods.map(method => method.providerId))
-      const hasUnavailable = values.some(id => !props.methods.some(method => (method.channelId || method.id) === id))
-      // Explicit saved IDs remain selectable even if a channel has become unavailable.
-      const unavailableProviders = hasUnavailable ? props.model.notification.channelProviders.filter(id => !knownProviders.has(id)) : []
-      props.model.notification.notifyChannelIds = [...values]
-      props.model.notification.channelProviders = [...new Set([...methods.map(method => method.providerId), ...unavailableProviders])]
-      syncParameters()
+      props.model.notification = selectAlarmNotificationTypes(props.model.notification, values)
     },
   })
   const channelOptions = computed(() => {
-    const options = props.methods.map(method => ({ value: method.channelId || method.id, label: method.label, icon: method.icon }))
+    const options = props.methods.map(method => ({ value: method.providerId, label: method.label, icon: method.icon, templates: method.templates,
+      description: t(`DeviceAlarm.delivery.short.${method.key}`) }))
     const known = new Set(options.map(option => option.value))
     return [...options, ...channelIds.value.filter(id => !known.has(id)).map(id => ({
-      value: id, label: t('DeviceAlarm.notification.unavailableChannel'), icon: 'ExclamationCircleOutlined',
+      value: id, label: t('DeviceAlarm.notification.unavailableChannel'), icon: 'ExclamationCircleOutlined', templates: undefined,
+      description: t('DeviceAlarm.delivery.unavailableType'),
     }))]
   })
-  const channelCount = computed(() => channelIds.value.length || props.model.notification.channelProviders.length)
+  const channelCount = computed(() => channelIds.value.length || props.model.notification.notifyChannelIds?.length || 0)
   const channelLabel = computed(() => selectedMethods.value[0]?.label
     ?? (channelCount.value ? t('DeviceAlarm.notification.channelCount', { count: channelCount.value }) : t('DeviceAlarm.notification.channelShort')))
   const channelTitle = computed(() => selectedMethods.value.map(method => method.label).join('、') || channelLabel.value)
+  const deliveryHints = computed(() => selectedMethods.value.map(method => ({
+    id: method.providerId, label: method.label, icon: method.icon, text: t(`DeviceAlarm.delivery.address.${method.key}`),
+  })))
+  const hasContactType = computed(() => selectedMethods.value.some(method => ['email', 'sms', 'phone'].includes(method.key)))
 
   /** A closing event from the previous popover must not close the next chip's panel. */
   function setPanel(panel: NotificationPanel, open: boolean) {
@@ -57,28 +56,11 @@ export function useAlarmNotification(props: NotificationProps, requestMethods: (
     if (props.disabled) return
     props.model.notification.enabled = !props.model.notification.enabled
     activePanel.value = undefined
-    if (props.model.notification.enabled) requestMethods()
   }
-  /** Rebuild channel parameters while retaining the existing device-specific message template. */
-  function syncParameters() {
-    const previous = props.model.notification.parameters ?? {}
-    const parameters: Record<string, unknown> = {}
-    // Unknown providers may belong to unavailable selected channels; retain their configuration.
-    for (const provider of props.model.notification.channelProviders) {
-      if (Object.prototype.hasOwnProperty.call(previous, provider)) parameters[provider] = previous[provider]
-    }
-    for (const method of selectedMethods.value) {
-      const raw = method.raw ?? {}
-      const configuration = raw.channelConfiguration ?? raw.configuration ?? {}
-      parameters[method.providerId] = {
-        templateId: firstText(configuration.templateId, raw.templateId),
-        notifierId: firstText(configuration.notifierId, raw.notifierId),
-      }
-    }
-    for (const key of ['template', 'messageTemplate', 'variableDefinitions']) {
-      if (Object.prototype.hasOwnProperty.call(previous, key)) parameters[key] = previous[key]
-    }
-    props.model.notification.parameters = parameters
+  function setIncludeRelieve(value: boolean) {
+    if (props.disabled || !props.model.autoRelieve) return
+    if (value) channelIds.value = channelIds.value
+    props.model.notification.includeRelieve = value
   }
 
   watch(() => props.model, model => {
@@ -88,22 +70,15 @@ export function useAlarmNotification(props: NotificationProps, requestMethods: (
   }, { immediate: true })
   watch(scopeKey, () => { activePanel.value = undefined })
   watch(() => props.disabled, disabled => { if (disabled) activePanel.value = undefined })
-  watch(() => props.model.notification.enabled, enabled => { if (!enabled) activePanel.value = undefined })
+  // Resolve saved types on first display; the owner deduplicates and caches resource requests.
+  watch(() => [scopeKey.value, props.model.notification.enabled] as const, ([, enabled]) => {
+    if (enabled) requestMethods()
+    else activePanel.value = undefined
+  }, { immediate: true, flush: 'sync' })
   watch(activePanel, value => panelChanged(Boolean(value)), { flush: 'sync' })
   watch(() => props.reveal, reveal => {
     if (reveal && !activePanel.value) setPanel(!channelCount.value ? 'channels' : !props.model.notification.userIds.length ? 'recipients' : 'channels', true)
     else if (reveal === false) activePanel.value = undefined
   }, { immediate: true, flush: 'sync' })
-  watch(selectedMethods, methods => {
-    // Provider-only saved rules gain concrete IDs after options arrive; explicit IDs are authoritative.
-    if (props.model.notification.notifyChannelIds?.length || !props.methods.length) return
-    const ids = methods.map(method => method.channelId).filter((id): id is string => Boolean(id))
-    if (ids.length) props.model.notification.notifyChannelIds = ids
-  }, { immediate: true })
-
-  return { activePanel, scopeKey, showLegacyMessageTemplate, channelIds, channelOptions, channelCount, channelLabel, channelTitle, selectedMethods, setPanel, toggleEnabled }
-}
-
-function firstText(...values: unknown[]) {
-  return values.map(value => typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' ? String(value) : '').find(Boolean) || ''
+  return { activePanel, scopeKey, showLegacyMessageTemplate, channelIds, channelOptions, channelCount, channelLabel, channelTitle, selectedMethods, deliveryHints, hasContactType, setPanel, toggleEnabled, setIncludeRelieve }
 }

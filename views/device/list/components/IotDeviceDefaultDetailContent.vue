@@ -60,7 +60,12 @@
           @visible-keys-change="setPropertyPageRealtimeKeys"
         />
 
-        <IotDeviceAlarmConfigTab v-else-if="activeTab === 'property-rules'" :device="device" :properties="thingModelDefinition.properties" />
+        <IotDeviceAlarmConfigTab
+          v-else-if="activeTab === 'property-rules'"
+          :device="device"
+          :properties="device.thingModelMetadata?.properties ?? []"
+          :can-update="deviceUpdatePermission"
+        />
 
         <IotDeviceAlarmTab
           v-else-if="activeTab === 'alarm'"

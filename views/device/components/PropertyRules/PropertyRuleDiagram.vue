@@ -33,6 +33,7 @@
           <span class="diagram-label" :title="`${row.title} · ${row.sentence} ${row.details ?? ''}`"><a-tag :color="row.color"><AIcon :type="row.icon" /><span class="diagram-rule-title">{{ row.title }}</span></a-tag><small class="diagram-rule-sentence">{{ row.sentence }}</small><small v-if="row.details">{{ row.details }}</small></span>
           <span v-for="(point, index) in example.points" :key="index" class="diagram-cell" :class="`diagram-${point.stages[rowIndex].status}`" :data-state="point.stages[rowIndex].status" :title="stageTitle(point.stages[rowIndex], point.inputLabel ?? point.label)">
             <span class="diagram-node"><AIcon :type="statusIcons[point.stages[rowIndex].status]" /></span>
+            <small v-if="point.stages[rowIndex].recordInvalid" class="diagram-transformed">{{ $t('PropertyRules.recordInvalidShort') }}</small>
             <small v-if="point.stages[rowIndex].value && point.stages[rowIndex].status === 'processed'" class="diagram-transformed">{{ row.key === 'scale' ? '≈ ' : '' }}{{ point.stages[rowIndex].value }}</small>
           </span>
         </div>

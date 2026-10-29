@@ -63,6 +63,16 @@ const DEVICE_TOOL_USAGE: Record<string, Omit<ClientToolDescription, 'text'>> = {
     intents: ['统计设备在线离线状态', 'aggregate device state counts'],
     notFor: ['查询设备明细', 'read device records'],
   },
+  device_state_get: {
+    capabilities: ['subject.state.read'],
+    intents: ['确认单台设备当前是否在线', 'check a device current online state'],
+    notFor: ['具体连接或通信时间', 'connection details or communication times'],
+  },
+  device_connection_sessions_get: {
+    capabilities: ['subject.connection.sessions.read'],
+    intents: ['查询具体连接、会话及最近通信', 'inspect connections, sessions and recent communication'],
+    notFor: ['判断在线离线状态或最后属性上报', 'determine online state or last property report'],
+  },
   device_query_online_rate_trend: {
     capabilities: ['asset.device.online-rate.aggregate'],
     intents: ['分析设备在线率趋势', 'analyze device online rate trend'],
@@ -83,6 +93,12 @@ const DEVICE_TOOL_USAGE: Record<string, Omit<ClientToolDescription, 'text'>> = {
   device_latest_properties: {
     capabilities: ['subject.property.latest'],
     intents: ['读取设备属性当前值', 'read latest device property values'],
+  },
+  device_property_rules_get: {
+    capabilities: ['subject.property.rules.read'],
+    intents: ['解释属性阈值、解除、通知及继承', '排查属性未告警、不解除、收不到通知或数据被过滤',
+      'read effective property rules', 'explain thresholds and recovery; diagnose missing alarms, notifications or filtered values'],
+    notFor: ['代替实际告警或投递记录、读取场景联动配置、修改规则', 'replace event or delivery evidence, read scene rules, or modify configuration'],
   },
   device_property_raw_records: {
     capabilities: ['subject.property.history.read'],
@@ -244,7 +260,10 @@ const DEVICE_MESSAGE_TREND_CAPABILITY = defineClientToolAnalyticalProducer<Recor
 })
 
 const DEVICE_TOOL_CONSUMES: Record<string, ClientToolConsumedResource[]> = {
+  device_state_get: [DEVICE_MODEL_ID_CONSUMER],
+  device_connection_sessions_get: [DEVICE_MODEL_ID_CONSUMER],
   device_model_get: [DEVICE_MODEL_ID_CONSUMER],
+  device_property_rules_get: [DEVICE_PROPERTY_DEVICE_ID_CONSUMER],
   device_latest_properties: [DEVICE_ID_CONSUMER],
   device_property_raw_records: [
     DEVICE_PROPERTY_DEVICE_ID_CONSUMER,
@@ -284,6 +303,12 @@ const stabilizeDevicePropertyAggregateFields = (
 ): AiClientToolOutputField[] => fields.map(field => ({ ...field }))
 
 const deviceOutputs = (id: string): ClientToolOutput<any> | ClientToolOutput<any>[] => {
+  if (id === 'device_state_get') {
+    return clientToolOutput.detail({ name: 'device-state', shape: 'device.state', select: selectData })
+  }
+  if (id === 'device_connection_sessions_get') {
+    return clientToolOutput.detail({ name: 'connection-sessions', shape: 'connection.sessions', select: selectData })
+  }
   if (id === 'device_search') {
     return [
       clientToolOutput.lookup({
@@ -306,6 +331,9 @@ const deviceOutputs = (id: string): ClientToolOutput<any> | ClientToolOutput<any
   }
   if (id === 'device_latest_properties') {
     return clientToolOutput.detail({ name: 'property-snapshot', shape: 'property.snapshot', select: selectData })
+  }
+  if (id === 'device_property_rules_get') {
+    return clientToolOutput.detail({ name: 'property-rule-configuration', shape: 'property.rules', select: selectData })
   }
   if (id === 'device_property_raw_records') {
     return clientToolOutput.recordSet({ name: 'property-history-records', shape: 'time-series.records', select: selectData })
@@ -385,16 +413,10 @@ const deviceOutputs = (id: string): ClientToolOutput<any> | ClientToolOutput<any
           label: fieldLabel('IotDeviceList.add.productName'),
         },
         {
-          name: 'lastSeen',
-          type: 'string',
-          role: 'label',
-          label: fieldLabel('IotHealthPage.detail.field.lastSeen'),
-        },
-        {
-          name: 'lastSeenTimestamp',
+          name: 'offlineAt',
           type: 'timestamp',
           role: 'temporal_dimension',
-          label: fieldLabel('IotHealthPage.detail.field.lastSeen'),
+          label: fieldLabel('IotDeviceDetail.connection.field.lastOffline'),
           encoding: 'epoch-millis',
         },
       ],
@@ -485,6 +507,12 @@ const timeScopedReadonlyTool = (
 }
 
 export const createDeviceAnalysisTools = () => defineClientTools<GeneralAgentContext>([
+  defineClientToolFactory('device_state_get', () => readonlyTool('device_state_get', [
+    input('deviceId', 'string', true),
+  ], deviceAnalysisService.stateGet)),
+  defineClientToolFactory('device_connection_sessions_get', () => readonlyTool('device_connection_sessions_get', [
+    input('deviceId', 'string', true),
+  ], deviceAnalysisService.connectionSessions)),
   defineClientToolFactory('device_search', () => readonlyTool('device_search', [
     input('keyword'), input('state', domainAgentEnumValueType(IOT_DEVICE_STATES)), input('productId'), input('productName'), input('area'), input('group'),
     input('pageIndex', domainAgentIntegerValueType(0, 10000)), input('pageSize', domainAgentIntegerValueType(1, 50)),
@@ -505,12 +533,18 @@ export const createDeviceAnalysisTools = () => defineClientTools<GeneralAgentCon
     { analytical: DEVICE_MESSAGE_TREND_CAPABILITY },
   )),
   defineClientToolFactory('device_model_get', () => readonlyTool('device_model_get', [
-    input('deviceId', 'string', true), input('section', domainAgentEnumValueType(IOT_DEVICE_MODEL_SECTIONS)), input('limit', domainAgentIntegerValueType(1, 50)),
+    input('deviceId', 'string', true), input('section', domainAgentEnumValueType(IOT_DEVICE_MODEL_SECTIONS)),
+    { ...input('keyword'), description: i18n.global.t('PropertyRuleAgent.modelKeyword') },
+    input('limit', domainAgentIntegerValueType(1, 50)),
   ], deviceAnalysisService.getModel)),
   defineClientToolFactory('device_latest_properties', () => readonlyTool('device_latest_properties', [
     input('deviceIds', domainAgentStringArrayValueType(20), true),
     input('propertyIds', domainAgentStringArrayValueType(20), true),
   ], deviceAnalysisService.latestProperties)),
+  defineClientToolFactory('device_property_rules_get', () => readonlyTool('device_property_rules_get', [
+    input('deviceId', 'string', true), input('propertyId'),
+    input('pageIndex', domainAgentIntegerValueType(0, 10000)), input('pageSize', domainAgentIntegerValueType(1, 50)),
+  ], deviceAnalysisService.propertyRules)),
   defineClientToolFactory('device_property_raw_records', () => timeScopedReadonlyTool('device_property_raw_records', [
     input('deviceId', 'string', true), input('propertyId', 'string', true),
   ], deviceAnalysisService.propertyHistoryRecords)),

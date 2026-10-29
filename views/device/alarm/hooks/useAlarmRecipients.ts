@@ -1,34 +1,51 @@
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, inject, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ConditionOptionPanelConfig } from '@jetlinks-web-core/components/ConditionFilter'
 import { queryDeviceAlarmNotifyUsers } from '../api'
+import { alarmRecipientCacheKey, createAlarmRecipientCache, type AlarmRecipientOption } from './alarmRecipientCache'
 
-interface RecipientOption { value: string; label: string; description?: string; icon?: string }
 interface RecipientProps { value: string[]; scopeKey: string; open?: boolean; disabled?: boolean }
 
-/** Resolve names and candidates only when the recipient chip is opened. */
+/** Hydrate saved names immediately; search candidates only when the selector is open. */
 export function useAlarmRecipients(props: RecipientProps) {
   const { t } = useI18n()
+  const shared = inject(alarmRecipientCacheKey, undefined)
+  const cache = shared ?? createAlarmRecipientCache()
   const open = ref(false)
   const revision = ref(0)
   const candidateFailed = ref(false)
   const selectedFailed = ref(false)
-  const labels = ref(new Map<string, RecipientOption>())
+  const selectedLoading = ref(false)
   let generation = 0
   let candidateVersion = 0
   let selectedVersion = 0
-  function remember(options: RecipientOption[]) {
-    labels.value = new Map([...labels.value, ...options.map(item => [item.value, item] as const)])
-    return options
-  }
-  const options = computed(() => [...labels.value.values()])
-  const selected = computed(() => props.value.map(id => labels.value.get(id) ?? { value: id, label: id }))
-  const selectionResolved = computed(() => props.value.length > 0 && props.value.every(id => labels.value.has(id)))
+  const displayOption = (option: AlarmRecipientOption): AlarmRecipientOption => option.unavailable
+    ? { ...option, label: t('DeviceAlarm.notification.unavailableUser'), icon: 'ExclamationCircleOutlined' } : option
+  const options = computed(() => [...cache.options.value.values()].map(displayOption))
+  const selected = computed(() => props.value.map(id => displayOption(cache.options.value.get(id) ?? { value: id, label: id })))
+  const selectionResolved = computed(() => props.value.length > 0 && props.value.every(id => cache.options.value.has(id)))
   const selectionLabel = computed(() => selectionResolved.value ? selected.value[0]?.label ?? ''
     : t(props.value.length ? 'DeviceAlarm.notification.recipientCount' : 'DeviceAlarm.notification.userShort', { count: props.value.length }))
   const additionalCount = computed(() => selectionResolved.value && props.value.length > 1 ? props.value.length - 1 : 0)
-  const selectionTitle = computed(() => selectionResolved.value
-    ? selected.value.map(user => user.label).join('、') : selectionLabel.value)
+  const selectionTitle = computed(() => selectedFailed.value ? t('DeviceAlarm.notification.usersFailed') : selectionResolved.value
+    ? selected.value.map(user => user.unavailable ? `${user.label} (${user.value})` : user.label).join('、') : selectionLabel.value)
+  async function hydrate(values: string[]) {
+    const scope = generation
+    const request = ++selectedVersion
+    selectedLoading.value = values.some(id => !cache.options.value.has(id))
+    try {
+      await cache.load(values)
+      if (scope !== generation || request !== selectedVersion) return []
+      selectedFailed.value = false
+      return values.flatMap(id => {
+        const option = cache.options.value.get(id)
+        return option ? [displayOption(option)] : []
+      })
+    } catch (error) {
+      if (scope === generation && request === selectedVersion) selectedFailed.value = true
+      throw error
+    } finally { if (scope === generation && request === selectedVersion) selectedLoading.value = false }
+  }
   const config = computed<ConditionOptionPanelConfig>(() => {
     // A new loader identity lets the shared panel restart safely after an explicit retry.
     const token = revision.value
@@ -37,59 +54,44 @@ export function useAlarmRecipients(props: RecipientProps) {
       keywordPlaceholder: t('DeviceAlarm.notification.userSearch'), hintText: '',
       loadOptions: async (keyword, page) => {
         const scope = generation
+        const cacheScope = cache.revision.value
         const request = ++candidateVersion
         try {
           const result = await queryDeviceAlarmNotifyUsers({ keyword, pageIndex: page?.pageIndex, pageSize: 20 })
-          if (scope !== generation || token !== revision.value || request !== candidateVersion || !open.value) return []
+          if (scope !== generation || cacheScope !== cache.revision.value || token !== revision.value || request !== candidateVersion || !open.value) return []
           candidateFailed.value = false
-          return remember(result.data.map(user => ({ value: user.id, label: user.name, description: user.desc, icon: 'UserOutlined' })))
+          return cache.remember(result.data.map(user => ({ value: user.id, label: user.name, description: user.desc, icon: 'UserOutlined' })))
         } catch (error) {
-          if (scope === generation && token === revision.value && request === candidateVersion && open.value) candidateFailed.value = true
+          if (scope === generation && cacheScope === cache.revision.value && token === revision.value && request === candidateVersion && open.value) candidateFailed.value = true
           throw error
         }
       },
-      loadSelectedOptions: async (values) => {
-        const scope = generation
-        const request = ++selectedVersion
-        const ids = (values ?? []).map(String)
-        const missing = ids.filter(id => !labels.value.has(id))
-        try {
-          if (missing.length) {
-            const result = await queryDeviceAlarmNotifyUsers({ paging: false, userIds: missing })
-            if (scope !== generation || token !== revision.value || request !== selectedVersion || !open.value) return []
-            remember(result.data.map(user => ({ value: user.id, label: user.name, description: user.desc, icon: 'UserOutlined' })))
-            // Retain unavailable IDs without querying them again for each selection change.
-            remember(missing.filter(id => !labels.value.has(id)).map(id => ({ value: id, label: id })))
-          }
-          if (scope !== generation || token !== revision.value || request !== selectedVersion || !open.value) return []
-          selectedFailed.value = false
-          return ids.map(id => labels.value.get(id)!)
-        } catch (error) {
-          if (scope === generation && token === revision.value && request === selectedVersion && open.value) selectedFailed.value = true
-          throw error
-        }
-      },
+      loadSelectedOptions: values => hydrate((values ?? []).map(String)),
     }
   })
   function setOpen(value: boolean) {
     if (props.disabled) return
-    if (open.value !== value) generation++
+    if (open.value !== value) candidateVersion++
     open.value = value
   }
-  // Controlled popovers share one active panel; closing invalidates in-flight option responses.
+  // Closing invalidates candidate pages, while selected-name hydration remains useful for the summary.
   watch(() => props.open, value => { if (value !== undefined) setOpen(value) }, { immediate: true, flush: 'sync' })
   function retry() {
-    generation++
     candidateFailed.value = selectedFailed.value = false
     revision.value++
+    void hydrate(props.value).catch(() => {})
   }
   watch(() => props.scopeKey, () => {
     generation++
     open.value = false
     candidateFailed.value = selectedFailed.value = false
-    labels.value = new Map()
+    if (!shared) cache.reset()
   })
-  watch(() => props.disabled, value => { if (value) { generation++; open.value = false } })
-  onBeforeUnmount(() => { generation++ })
-  return { open, selected, options, config, revision, candidateFailed, selectedFailed, selectionLabel, additionalCount, selectionTitle, setOpen, retry }
+  // Selection-only queries are bounded by saved IDs, including in read-only mode.
+  watch([() => props.scopeKey, () => props.value.join('\0'), () => cache.revision.value], () => {
+    void hydrate(props.value).catch(() => {})
+  }, { immediate: true })
+  watch(() => props.disabled, value => { if (value) { candidateVersion++; open.value = false } })
+  onBeforeUnmount(() => { generation++; if (!shared) cache.reset() })
+  return { open, selected, options, config, revision, candidateFailed, selectedFailed, selectedLoading, selectionLabel, additionalCount, selectionTitle, setOpen, retry }
 }

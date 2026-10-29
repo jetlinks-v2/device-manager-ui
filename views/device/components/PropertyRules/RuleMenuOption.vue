@@ -16,4 +16,6 @@ defineProps<{ icon: string; title: string; description: string; compact?: boolea
 .rule-menu-option-description { color: var(--jet-theme-text-secondary); font-size: var(--fs-12); line-height: 18px; white-space: normal; }
 .rule-menu-option-compact .rule-menu-option-title { font-size: var(--fs-12); line-height: 22px; }
 .rule-menu-option-compact .rule-menu-option-icon { height: 22px; font-size: 14px; }
+:global(.rule-select-menu) { max-width: calc(100vw - 48px); }
+:global(.rule-select-menu .ant-select-item-option) { padding: 6px 12px; }
 </style>

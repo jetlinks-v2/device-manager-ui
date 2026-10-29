@@ -19,12 +19,7 @@ import {
   mapDeviceTimeContext,
 } from '../../../../agentCapabilities/deviceAnalysis/deviceAnalysis.shared'
 import { IOT_DEVICE_DETAIL_AGENT_TABS } from './deviceDetailAgent.constants'
-
-export type DeviceDetailAgentTabSurfaceOptions = {
-  tabs: readonly string[]
-  defaultTab: string
-  navigate: (tab: string) => Promise<void>
-}
+import { readDeviceState } from '../../../../agentCapabilities/deviceAnalysis/deviceConnection.service'
 import {
   asRecord,
   inputError,
@@ -34,6 +29,12 @@ import {
   type DeviceDetailAgentArgs,
 } from './deviceDetailAgent.shared'
 
+export type DeviceDetailAgentTabSurfaceOptions = {
+  tabs: readonly string[]
+  defaultTab: string
+  navigate: (tab: string) => Promise<void>
+}
+
 const DOCUMENT_TYPES = ['access-guide', 'protocol-doc', 'maintenance', 'market-doc', 'other'] as const
 const MAX_DOCUMENT_CHARS = 5000
 
@@ -41,31 +42,37 @@ export const createDeviceDetailDiagnosticsService = (
   device: IotDevice,
   tabSurface?: DeviceDetailAgentTabSurfaceOptions,
   resolveMetadata = createDeviceMetadataResolver(() => device),
+  getDevice = () => device,
 ) => {
-  const contextGet = () => Promise.resolve(createDomainAgentToolResult({
-    domain: 'device',
-    summary: {
-      deviceId: device.id,
-      deviceName: device.name,
-      status: device.connectionStatus || device.status,
-    },
-    data: {
-      id: device.id,
-      name: device.name,
-      identifier: device.identifier,
-      productId: device.productId,
-      productName: device.productName,
-      deviceType: { value: device.deviceTypeValue, text: device.deviceType },
-      status: { value: device.connectionStatus || device.status, text: device.status },
-      area: device.area,
-      groupName: device.groupName,
-      accessProvider: device.accessProvider,
-      accessName: device.accessName || device.accessMode,
-      ...mapDeviceTimeContext(device),
-      tags: device.tags.slice(0, 20),
-      summary: device.summary,
-    },
-  }))
+  const contextGet = () => runDetailTool<Record<string, unknown>>({}, async () => {
+    const current = getDevice()
+    // State is checked on demand; a failed check must not masquerade as the page's old online state.
+    const status = await readDeviceState(device.id)
+    return createDomainAgentToolResult({
+      domain: 'device',
+      summary: {
+        deviceId: device.id,
+        deviceName: current.name,
+        status: status.value,
+      },
+      data: {
+        id: device.id,
+        name: current.name,
+        identifier: current.identifier,
+        productId: current.productId,
+        productName: current.productName,
+        deviceType: { value: current.deviceTypeValue, text: current.deviceType },
+        status,
+        area: current.area,
+        groupName: current.groupName,
+        accessProvider: current.accessProvider,
+        accessName: current.accessName || current.accessMode,
+        ...mapDeviceTimeContext(current),
+        tags: current.tags.slice(0, 20),
+        summary: current.summary,
+      },
+    })
+  })
 
   const modelSearch = (args: DeviceDetailAgentArgs) => runDetailTool<Array<Record<string, unknown>>>([], async () => {
     const keyword = normalizeText(args.keyword)

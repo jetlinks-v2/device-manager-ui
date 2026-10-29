@@ -4,8 +4,9 @@ import { isEmptyRule } from './codec'
 
 export interface RuleScope { productId: string; deviceId?: string; name?: string; canUpdate?: boolean }
 
-export async function loadRules(scope: RuleScope, property?: string) {
-  const query = { paging: false, terms: property ? [{ column: 'property', value: property }] : [] }
+export async function loadRules(scope: RuleScope, property?: string | string[]) {
+  const query = { paging: false, terms: property ? [{ column: 'property',
+    ...(Array.isArray(property) ? { termType: 'in' } : {}), value: property }] : [] }
   const [product, device] = await Promise.all([
     deviceAlarmApi.queryProductAlarmList(scope.productId, query),
     scope.deviceId ? deviceAlarmApi.queryDeviceAlarmList(scope.productId, scope.deviceId, query) : Promise.resolve([]),

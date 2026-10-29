@@ -14,6 +14,7 @@
           <PropertyRuleSummary v-if="!editor.custom || !editor.canSave" :rows="summaryRows" />
           <a-form v-else class="rule-sentences" :class="{ 'rule-set-has-alarm': editor.draft.alarmEnabled }" layout="inline" :disabled="!editor.editable">
             <PropertyRuleStage v-if="editor.draft.valuesEnabled || editor.draft.rangeEnabled || editor.draft.stepEnabled" section="cleaning" :caption="multipleStages">
+              <template v-if="hasDiscardingCleaning(editor.draft)" #extra><RuleInvalidRecord v-model="editor.draft.recordInvalid" :disabled="!editor.editable" /></template>
             <PropertyRuleLine v-if="editor.draft.valuesEnabled" icon="StopOutlined" :title="$t('PropertyRules.part.values')" color="blue" :notice="editor.cleaningHint">
               <I18nT keypath="PropertyRules.sentence.valueRule" scope="global" tag="span" class="rule-clause">
                 <template #values>
@@ -21,13 +22,13 @@
                   <a-select v-else-if="editor.type === 'enum'" v-model:value="editor.draft.values" mode="multiple" size="small" :options="editor.enumOptions" :aria-label="$t('PropertyRules.valueFilter')" class="rule-value-list" />
                   <a-select v-else mode="tags" size="small" :value="editor.draft.values.map(String)" :token-separators="[',']" :open="false" :aria-label="$t('PropertyRules.valueFilter')" :title="$t('PropertyRules.valuesPlaceholder')" :placeholder="$t('PropertyRules.valuesPlaceholder')" class="rule-value-list" @change="editor.setValues" />
                 </template>
-                <template #action><a-select v-model:value="editor.draft.valuesMode" size="small" :bordered="false" :dropdown-match-select-width="false" :aria-label="$t('PropertyRules.valuesMode')" :options="valueModes" /></template>
+                <template #action><a-select v-model:value="editor.draft.valuesMode" size="small" :bordered="false" :dropdown-match-select-width="288" :virtual="false" dropdown-class-name="rule-select-menu" :aria-label="$t('PropertyRules.valuesMode')" :options="valueModes"><template #option="option"><RuleMenuOption compact :icon="option.icon" :title="option.label" :description="$t(option.description)" /></template></a-select></template>
                 <template #replacement><span v-if="editor.draft.valuesMode === 'replace'" class="rule-phrase">{{ $t('PropertyRules.sentence.withValue') }}<ValueInput v-model:value="editor.draft.replacementValue" :property="property" :label="$t('PropertyRules.replacement')" class="rule-value-entry" /></span></template>
               </I18nT>
               <template #action><a-button type="text" size="small" :aria-label="$t('PropertyRules.removePart', { name: $t('PropertyRules.valueFilter') })" @click="editor.draft.valuesEnabled = false"><AIcon type="CloseOutlined" /></a-button></template>
             </PropertyRuleLine>
             <PropertyRuleLine v-if="editor.draft.rangeEnabled" icon="SafetyOutlined" :title="$t('PropertyRules.part.range')" color="blue" :notice="[editor.cleaningHint, editor.draft.rangeAction === 'clamp' ? $t('PropertyRules.clampHint') : ''].filter(Boolean).join(' ')">
-              <a-select v-model:value="editor.draft.rangeAction" size="small" :bordered="false" :dropdown-match-select-width="false" :aria-label="$t('PropertyRules.rangeAction')" :options="rangeActions" />
+              <a-select v-model:value="editor.draft.rangeAction" size="small" :bordered="false" :dropdown-match-select-width="288" :virtual="false" dropdown-class-name="rule-select-menu" :aria-label="$t('PropertyRules.rangeAction')" :options="rangeActions"><template #option="option"><RuleMenuOption compact :icon="option.icon" :title="option.title" :description="$t(option.description)" /></template></a-select>
               <span class="rule-phrase"><a-input-number v-model:value="editor.draft.min" size="small" :controls="false" :placeholder="$t('PropertyRules.lowerPlaceholder')" :aria-label="$t('PropertyRules.minValue')" /><span>～</span><a-input-number v-model:value="editor.draft.max" size="small" :controls="false" :placeholder="$t('PropertyRules.upperPlaceholder')" :aria-label="$t('PropertyRules.maxValue')" /><span v-if="editor.cleaningUnit">{{ editor.cleaningUnit }}</span></span>
               <template #action><a-button type="text" size="small" :aria-label="$t('PropertyRules.removePart', { name: $t('PropertyRules.validRange') })" @click="editor.draft.rangeEnabled = false"><AIcon type="CloseOutlined" /></a-button></template>
             </PropertyRuleLine>
@@ -99,6 +100,8 @@ import type { ThingModelProperty } from '../../alarm/types'
 import type { RuleScope } from './service'
 import type { usePropertyRuleEditor } from './usePropertyRuleEditor'
 import { summarizeRuleRows } from './summary'
+import { hasDiscardingCleaning } from './codec'
+import RuleInvalidRecord from './RuleInvalidRecord.vue'
 import PropertyRuleActions from './PropertyRuleActions.vue'
 import PropertyRuleLine from './PropertyRuleLine.vue'
 import PropertyRuleSummary from './PropertyRuleSummary.vue'
@@ -106,6 +109,7 @@ import PropertyRuleStage from './PropertyRuleStage.vue'
 import PropertySamplingFields from './PropertySamplingFields.vue'
 import PropertyRuleAlarmActions from './PropertyRuleAlarmActions.vue'
 import RuleAddMenu from './RuleAddMenu.vue'
+import RuleMenuOption from './RuleMenuOption.vue'
 import FallbackFields from './values/FallbackFields.vue'
 import ValueInput from './values/ValueInput.vue'
 import PropertyAlarmCondition from '../../alarm/components/PropertyAlarmCondition.vue'
@@ -127,10 +131,14 @@ function confirmName(event: KeyboardEvent) {
 const summaryRows = computed(() => summarizeRuleRows(props.editor.parsed, props.property, $t))
 const multipleStages = computed(() => props.editor.steps.filter(step => step.enabled).length > 1)
 const valueModes = computed(() => [
-  { value: 'ignore', label: $t('PropertyRules.sentence.ignore') }, { value: 'keep', label: $t('PropertyRules.sentence.keepOnly') },
-  { value: 'replace', label: $t('PropertyRules.replace') },
+  { value: 'ignore', label: $t('PropertyRules.sentence.ignore'), icon: 'StopOutlined', description: 'PropertyRules.choice.ignore' },
+  { value: 'keep', label: $t('PropertyRules.sentence.keepOnly'), icon: 'CheckSquareOutlined', description: 'PropertyRules.choice.keep' },
+  { value: 'replace', label: $t('PropertyRules.replace'), icon: 'SwapOutlined', description: 'PropertyRules.choice.replace' },
 ])
-const rangeActions = computed(() => [{ value: 'ignore', label: $t('PropertyRules.sentence.keep') }, { value: 'clamp', label: $t('PropertyRules.sentence.clampTo') }])
+const rangeActions = computed(() => [
+  { value: 'ignore', label: $t('PropertyRules.sentence.keep'), title: $t('PropertyRules.choice.rangeKeep'), icon: 'SafetyOutlined', description: 'PropertyRules.choice.rangeIgnore' },
+  { value: 'clamp', label: $t('PropertyRules.sentence.clampTo'), title: $t('PropertyRules.sentence.clampTo'), icon: 'CompressOutlined', description: 'PropertyRules.choice.clamp' },
+])
 </script>
 <style scoped>
 .rule-editor { position: relative; }
