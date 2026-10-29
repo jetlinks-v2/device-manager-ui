@@ -9,9 +9,9 @@
   </a-form-item>
   <template v-if="!actionsOnly">
   <a-form-item :label="$t('DeviceAlarm.form.trigger')" required>
-    <a-radio-group v-model:value="model.trigger" :options="triggerOptions" />
+    <PropertyAlarmCondition :model="model" :property="conditionProperty" />
   </a-form-item>
-  <PropertyRangeFields v-model:lower="model.limit.lower" v-model:upper="model.limit.upper" />
+  <PropertyAlarmRecovery :model="model" :property="conditionProperty" />
   <p class="alarm-fields-preview"><AIcon type="InfoCircleOutlined" /> {{ previewText }}</p>
   </template>
   <a-button v-if="notificationDisclosure" class="alarm-notification-disclosure" type="text" block
@@ -30,13 +30,14 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import DeviceAlarmNotificationConfig from './DeviceAlarmNotificationConfig.vue'
-import PropertyRangeFields from '../../components/PropertyRules/PropertyRangeFields.vue'
-import type { AlarmLevelOption, DeviceAlarmFormModel, DeviceAlarmNotifyMethod } from '../types'
+import PropertyAlarmCondition from './PropertyAlarmCondition.vue'
+import PropertyAlarmRecovery from './PropertyAlarmRecovery.vue'
+import type { AlarmLevelOption, DeviceAlarmFormModel, DeviceAlarmNotifyMethod, ThingModelProperty } from '../types'
 import { formatTriggerText } from '../utils'
 const props = defineProps<{
   model: DeviceAlarmFormModel
   levelOptions: AlarmLevelOption[]
-  triggerOptions: Array<{ label: string; value: string }>
+  property?: ThingModelProperty
   notifyMethods: DeviceAlarmNotifyMethod[]
   notifyLoading: boolean
   notificationDisclosure?: { open: boolean; summary: string }
@@ -45,6 +46,7 @@ const props = defineProps<{
 }>()
 defineEmits<{ (e: 'toggle-notification'): void }>()
 const { t: $t } = useI18n()
+const conditionProperty = computed(() => props.property ?? { valueType: { type: 'double' } })
 const previewText = computed(() => formatTriggerText({ ...props.model, propertyName: props.model.propertyName || $t('DeviceAlarm.preview.property') }))
 </script>
 <style scoped>

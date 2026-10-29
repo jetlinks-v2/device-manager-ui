@@ -1,6 +1,6 @@
 <template>
   <a-input-number v-if="numeric" :value="typeof value === 'number' ? value : undefined" size="small" :controls="false" :placeholder="placeholder ?? label" :aria-label="label" @update:value="$emit('update:value', $event)" />
-  <a-select v-else-if="type === 'boolean'" :value="value" size="small" :aria-label="label" :placeholder="placeholder ?? label" :options="[{ value: true, label: 'true' }, { value: false, label: 'false' }]" :get-popup-container="getPopupContainer" @update:value="$emit('update:value', $event)" />
+  <a-select v-else-if="type === 'boolean'" :value="value == null ? undefined : String(value)" size="small" :aria-label="label" :placeholder="placeholder ?? label" :options="booleanOptions" :get-popup-container="getPopupContainer" @update:value="$emit('update:value', $event === 'true')" />
   <a-select v-else-if="type === 'enum'" :value="value" size="small" :aria-label="label" :placeholder="placeholder ?? label" :options="options" :get-popup-container="getPopupContainer" @update:value="$emit('update:value', $event)" />
   <a-input v-else :value="typeof value === 'string' ? value : ''" size="small" :aria-label="label" :placeholder="placeholder ?? label" @update:value="$emit('update:value', $event)" />
 </template>
@@ -13,5 +13,6 @@ const props = defineProps<{ property: ThingModelProperty; value?: ScalarValue | 
 defineEmits<{ (e: 'update:value', value: ScalarValue | null): void }>()
 const type = computed(() => props.property.valueType?.type ?? props.property.type ?? props.property.dataType)
 const numeric = computed(() => isNumberProperty(props.property))
+const booleanOptions = computed(() => [{ value: 'true', label: props.property.valueType?.trueText ?? 'true' }, { value: 'false', label: props.property.valueType?.falseText ?? 'false' }])
 const options = computed(() => props.property.valueType?.elements?.map(item => ({ value: item.value, label: item.text ?? String(item.value) })) ?? [])
 </script>

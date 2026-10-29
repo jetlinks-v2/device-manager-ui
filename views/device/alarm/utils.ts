@@ -5,17 +5,17 @@ import type {
   DeviceAlarmNotifyMethod,
   DeviceAlarmRow,
   DeviceAlarmSource,
-  DeviceAlarmTrigger,
   EnumLike,
   ThingModelProperty,
   ThingPropertyPreprocess,
 } from './types'
 import i18n from '@jetlinks-web-core/locales'
+import { buildCondition, invertCondition, readCondition, recoveryCondition, conditionSymbols } from './conditions'
+import type { DeviceAlarmCondition } from './types'
 
 const DEVICE_ALARM_PROCESSOR = 'device-alarm'
 const DEVICE_ALARM_RELIEVE_PROCESSOR = 'device-alarm-relieve'
 const NOTIFY_PROCESSOR = 'notify'
-const NUMBER_RANGE_MATCHER = 'number-range'
 const SIMPLE_PROCESSOR = 'simple'
 const COMPOSITE_PROCESSOR = 'composite'
 
@@ -24,6 +24,7 @@ interface DeviceAlarmConfiguration {
   matcher: Record<string, any>
   notifyProcessor?: Record<string, any>
   relieveProcessor?: Record<string, any>
+  relieveMatcher?: Record<string, any>
 }
 
 /** 旧配置仅保存提供者和参数；同一提供者可能存在多个通知通道，必须同时匹配参数。 */
@@ -143,7 +144,6 @@ export function toDeviceAlarmRow(
   if (!alarmConfiguration) return null
   const processorConfig = alarmConfiguration.alarmProcessor.configuration ?? {}
   const notifyConfig = normalizeNotification(row.notifyConfig ?? alarmConfiguration.notifyProcessor?.configuration)
-  const matcherConfig = alarmConfiguration.matcher.configuration ?? {}
   const propertyId = String(row.property ?? propertyIdOf(property ?? {}))
   const propertyName = String(row.propertyName ?? propertyNameOf(property ?? { id: propertyId }))
   const productId = String(row.templateId ?? '')
@@ -164,12 +164,10 @@ export function toDeviceAlarmRow(
     propertyName,
     propertyUnit: formatPropertyUnit(property?.valueType?.unit),
     level: normalizeLevel(processorConfig.alarmLevel),
-    trigger: matcherConfig.not === false ? 'inside' : 'outside',
-    limit: {
-      lower: toOptionalNumber(matcherConfig.min),
-      upper: toOptionalNumber(matcherConfig.max),
-    },
+    ...readCondition(alarmConfiguration.matcher)!,
     autoRelieve: Boolean(alarmConfiguration.relieveProcessor),
+    relieveCondition: alarmConfiguration.relieveMatcher && !areComplementaryMatchers(alarmConfiguration.matcher, alarmConfiguration.relieveMatcher)
+      ? readCondition(alarmConfiguration.relieveMatcher) : undefined,
     notificationConfigured: Boolean(row.notificationConfigured ?? isNotificationConfigured(notifyConfig)),
     notificationEnabled: Boolean(row.notificationEnabled ?? isNotificationEnabled(notifyConfig)),
     notification: notifyConfig,
@@ -221,7 +219,7 @@ export function buildPreprocessPayload(form: DeviceAlarmFormModel) {
   }
 
   const alarmConfiguration = {
-    matcher: buildNumberRangeMatcher(form),
+    matcher: buildCondition(form),
     processors,
   }
   if (!form.autoRelieve) {
@@ -244,7 +242,7 @@ export function buildPreprocessPayload(form: DeviceAlarmFormModel) {
         {
           provider: SIMPLE_PROCESSOR,
           configuration: {
-            matcher: buildNumberRangeMatcher(form, true),
+            matcher: buildCondition(recoveryCondition(form)),
             processors: [
               {
                 provider: DEVICE_ALARM_RELIEVE_PROCESSOR,
@@ -254,18 +252,6 @@ export function buildPreprocessPayload(form: DeviceAlarmFormModel) {
           },
         },
       ],
-    },
-  }
-}
-
-function buildNumberRangeMatcher(form: DeviceAlarmFormModel, inverted = false) {
-  const not = form.trigger === 'outside'
-  return {
-    provider: NUMBER_RANGE_MATCHER,
-    configuration: {
-      min: form.limit.lower,
-      max: form.limit.upper,
-      not: inverted ? !not : not,
     },
   }
 }
@@ -299,12 +285,12 @@ function parseDeviceAlarmConfiguration(row?: ThingPropertyPreprocess): DeviceAla
 
   const alarm = alarmBranches[0]!.alarm!
   const relieve = relieveBranches[0]!.relieve!
-  if (!areComplementaryMatchers(alarm.matcher, relieve.matcher)) return undefined
-  return { ...alarm, relieveProcessor: relieve.processor }
+  // 回显只判断结构；类型与互斥性在保存时结合物模型校验，枚举的有限值域不能按无限集合推断。
+  return { ...alarm, relieveProcessor: relieve.processor, relieveMatcher: relieve.matcher }
 }
 
 function parseAlarmBranch(configuration: Record<string, unknown>): DeviceAlarmConfiguration | undefined {
-  const matcher = numberRangeMatcher(configuration.matcher)
+  const matcher = supportedMatcher(configuration.matcher)
   const processors = directProcessors(configuration)
   if (!matcher || !processors) return undefined
   const alarms = processors.filter(item => item.provider === DEVICE_ALARM_PROCESSOR)
@@ -321,7 +307,7 @@ function parseAlarmBranch(configuration: Record<string, unknown>): DeviceAlarmCo
 }
 
 function parseRelieveBranch(configuration: Record<string, unknown>) {
-  const matcher = numberRangeMatcher(configuration.matcher)
+  const matcher = supportedMatcher(configuration.matcher)
   const processors = directProcessors(configuration)
   if (!matcher || !processors || processors.length !== 1) return undefined
   const processor = processors[0]
@@ -333,35 +319,37 @@ function directProcessors(configuration: Record<string, unknown>): Array<Record<
   return configuration.processors as Array<Record<string, any>>
 }
 
-function numberRangeMatcher(value: unknown): Record<string, any> | undefined {
-  if (!isRecord(value) || value.provider !== NUMBER_RANGE_MATCHER || !isRecord(value.configuration)) return undefined
+function supportedMatcher(value: unknown): Record<string, any> | undefined {
+  if (!isRecord(value) || !readCondition(value)) return undefined
   return value as Record<string, any>
 }
 
 function areComplementaryMatchers(left: Record<string, any>, right: Record<string, any>): boolean {
-  const leftConfig = left.configuration as Record<string, unknown>
-  const rightConfig = right.configuration as Record<string, unknown>
-  return toOptionalNumber(leftConfig.min) === toOptionalNumber(rightConfig.min)
-    && toOptionalNumber(leftConfig.max) === toOptionalNumber(rightConfig.max)
-    && typeof leftConfig.not === 'boolean'
-    && typeof rightConfig.not === 'boolean'
-    && leftConfig.not !== rightConfig.not
+  const condition = readCondition(left), recovery = readCondition(right)
+  return Boolean(condition && recovery && JSON.stringify(buildCondition(invertCondition(condition))) === JSON.stringify(buildCondition(recovery)))
 }
 
-export function formatRelieveText(row: Pick<DeviceAlarmRow, 'trigger' | 'limit' | 'propertyName'>) {
-  return formatTriggerText({
-    ...row,
-    trigger: row.trigger === 'inside' ? 'outside' : 'inside',
-  })
+export function formatRelieveText(row: DeviceAlarmCondition & { propertyName?: string; relieveCondition?: DeviceAlarmCondition }, property?: ThingModelProperty) {
+  return formatTriggerText({ ...row, ...(row.relieveCondition ?? invertCondition(row)) }, property)
 }
 
-export function formatTriggerText(row: Pick<DeviceAlarmRow, 'trigger' | 'limit' | 'propertyName'>) {
+export function formatTriggerText(row: DeviceAlarmCondition & { propertyName?: string }, property?: ThingModelProperty,
+  t: (key: string, values?: Record<string, string | number>) => string = i18n.global.t) {
   const lower = row.limit.lower ?? '-'
   const upper = row.limit.upper ?? '-'
   const propertyName = row.propertyName ? `${row.propertyName}` : ''
+  if (row.trigger !== 'inside' && row.trigger !== 'outside') {
+    const label = (value: unknown) => {
+      if (property?.valueType?.type === 'boolean') return value === true ? property.valueType.trueText ?? 'true' : property.valueType.falseText ?? 'false'
+      return property?.valueType?.elements?.find(item => item.value === value)?.text ?? (typeof value === 'string' ? JSON.stringify(value) : String(value ?? '—'))
+    }
+    const operator = ['in', 'nin'].includes(row.trigger) ? t(`DeviceAlarm.condition.${row.trigger}`) : conditionSymbols[row.trigger]
+    const expected = ['in', 'nin'].includes(row.trigger) ? (row.values ?? []).map(label).join('、') : label(row.value)
+    return `${propertyName}${propertyName ? ' ' : ''}${operator} ${expected}`
+  }
   return row.trigger === 'inside'
-    ? i18n.global.t('DeviceAlarm.triggerText.inside', { propertyName, lower, upper })
-    : i18n.global.t('DeviceAlarm.triggerText.outside', { propertyName, lower, upper })
+    ? t('DeviceAlarm.triggerText.inside', { propertyName, lower, upper })
+    : t('DeviceAlarm.triggerText.outside', { propertyName, lower, upper })
 }
 
 export function formatPropertyUnit(value: unknown): string | undefined {

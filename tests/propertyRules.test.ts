@@ -9,6 +9,8 @@ import { summarizeDraft, summarizeDraftRows, summarizeRule, summarizeRuleRows, t
 import zh from '../locales/lang/zh.json'
 import { buildRuleExample, createRuleExampleInputs, validateRuleExampleInputs } from '../views/device/components/PropertyRules/diagram'
 import { MAX_INTERVAL_MILLIS, readSampling } from '../views/device/components/PropertyRules/sampling'
+import { buildCondition, conditionsOverlap, conditionOperators, matchesCondition, readCondition, switchConditionOperator, validateAlarmConditions } from '../views/device/alarm/conditions'
+import type { DeviceAlarmCondition } from '../views/device/alarm/types'
 
 const translate: RuleTranslator = (key, values = {}) => {
   const text = (zh as Record<string, string>)[key]
@@ -24,6 +26,89 @@ function draft(): RuleDraft {
     samplingEnabled: true, ...readSampling(), scaleEnabled: false, scale: '1', fileEnabled: false,
   }
 }
+
+test('simple numeric conditions preserve all comparison boundaries and reject invalid values', () => {
+  const expected = { gt: [false, false, true], gte: [false, true, true], lt: [true, false, false], lte: [true, true, false], eq: [false, true, false], neq: [true, false, true] }
+  for (const [operator, matches] of Object.entries(expected)) {
+    const condition: DeviceAlarmCondition = { trigger: operator as DeviceAlarmCondition['trigger'], value: 80, limit: {} }
+    assert.deepEqual([79, 80, 81].map(value => matchesCondition(condition, value)), matches)
+    assert.equal(matchesCondition(condition, null), false)
+    assert.equal(matchesCondition(condition, NaN), false)
+    assert.deepEqual(readCondition(buildCondition(condition)), condition)
+  }
+})
+
+test('typed scalar alarm conditions retain false, zero and empty strings', () => {
+  for (const value of [false, 0, '', '0']) {
+    const current = draft().alarm
+    current.trigger = 'eq'; current.value = value; current.limit = {}
+    const saved = buildPreprocessPayload(current)
+    const loaded = toDeviceAlarmRow(saved, 'product', 'Product')!
+    assert.equal(loaded.value, value)
+    assert.equal(matchesCondition(loaded, value), true)
+    assert.equal(matchesCondition(loaded, value === 0 ? '0' : 0), false)
+    assert.equal(parseRule(saved).editable, true)
+  }
+  assert.deepEqual(conditionOperators({ valueType: { type: 'boolean' } }), ['eq', 'neq'])
+  assert.ok(availableRuleParts({ valueType: { type: 'string' } }, {}, true).some(item => item === 'alarm'))
+  const model = { ...draft().alarm, trigger: 'in' as const, values: [1], limit: {} }
+  assert.equal(validateAlarmConditions(model, { valueType: { type: 'enum', elements: [{ value: '1', text: 'One' }] } }), 'DeviceAlarm.validation.condition')
+})
+
+test('custom recovery round trips and leaves the neutral band without an action', () => {
+  const current = draft()
+  current.valuesEnabled = current.rangeEnabled = current.samplingEnabled = false
+  Object.assign(current.alarm, { trigger: 'gte', value: 80, limit: {}, autoRelieve: true,
+    relieveCondition: { trigger: 'lte', value: 75, limit: {} } })
+  assert.equal(validateAlarmConditions(current.alarm), undefined)
+  const saved = buildRule(parseRule(), current)
+  const loaded = toDeviceAlarmRow(saved, 'product', 'Product')!
+  assert.deepEqual(loaded.relieveCondition, current.alarm.relieveCondition)
+  assert.equal(parseRule(saved).editable, true)
+  assert.deepEqual(buildRuleExample(current, { valueType: { type: 'double' } }, [75, 76, 79, 80].map(value => ({ value, arrivalMillis: 0 })))
+    .map(point => point.stages[0].status), ['recovered', 'kept', 'kept', 'alarm'])
+  current.alarm.relieveCondition!.value = 80
+  assert.equal(validateAlarmConditions(current.alarm), 'DeviceAlarm.validation.overlap')
+})
+
+test('condition intersection respects open endpoints and inverse scalar sets', () => {
+  const a: DeviceAlarmCondition = { trigger: 'gt', value: 80, limit: {} }
+  assert.equal(conditionsOverlap(a, { trigger: 'lte', value: 80, limit: {} }), false)
+  assert.equal(conditionsOverlap(a, { trigger: 'lt', value: 81, limit: {} }), true)
+  assert.equal(conditionsOverlap({ ...a, trigger: 'gte' }, { trigger: 'lte', value: 80, limit: {} }), true)
+  assert.equal(conditionsOverlap({ trigger: 'neq', value: false, limit: {} }, { trigger: 'neq', value: true, limit: {} }), false)
+  assert.equal(conditionsOverlap({ trigger: 'nin', values: ['fault'], limit: {} }, { trigger: 'nin', values: ['good'], limit: {} }), true)
+})
+
+test('operator changes retain meaningful selections without keeping hidden parameters', () => {
+  for (const value of [false, 0, '', 'fault']) {
+    const set = switchConditionOperator({ trigger: 'eq', value, limit: {} }, 'in')
+    assert.deepEqual(set.values, [value])
+    assert.equal(set.value, undefined)
+    assert.equal(switchConditionOperator(set, 'neq').value, value)
+  }
+  const single = switchConditionOperator({ trigger: 'inside', limit: { lower: 0, upper: 100 } }, 'gte')
+  assert.deepEqual(single.limit, {})
+  assert.equal(single.value, undefined)
+})
+
+test('changing alarm matcher removes obsolete keys and preserves actions, extensions and history identity', () => {
+  const current = draft()
+  current.alarm.autoRelieve = true
+  const saved = buildRule(parseRule(), current)
+  const unit = parseRule(saved).nodes.alarm!
+  unit.configuration.processors.forEach((branch: any, i: number) => {
+    branch.configuration.matcher.configuration.extension = 'keep'
+    branch.configuration.processors[0].id = `action-${i}`
+  })
+  Object.assign(current.alarm, { trigger: 'gte', value: 80, limit: {}, relieveCondition: { trigger: 'lte', value: 75, limit: {} } })
+  const changed = buildRule(parseRule(saved), current)
+  const branches = parseRule(changed).nodes.alarm!.configuration.processors
+  assert.deepEqual(branches[0].configuration.matcher, { provider: 'number-compare', configuration: { operator: 'gte', value: 80, extension: 'keep' } })
+  assert.equal(branches[0].configuration.processors[0].id, 'action-0')
+  assert.equal(branches[1].configuration.processors[0].id, 'action-1')
+  assert.deepEqual(parseRule(changed).nodes.sampling, parseRule(saved).nodes.sampling)
+})
 
 test('integer diagrams retain raw replacement and clamp values until calibration', () => {
   const property = { valueType: { type: 'int' } }
@@ -102,12 +187,23 @@ test('disabling or removing automatic relief keeps the other property rules', ()
   assert.equal(JSON.stringify(removed).includes('device-alarm-relieve'), false)
 })
 
-test('noncomplementary relief branches remain read-only', () => {
+test('unknown relief matchers remain read-only', () => {
   const current = draft()
   current.alarm.autoRelieve = true
   const raw = buildPreprocessPayload(current.alarm)
-  raw.configuration.processors[1].configuration.matcher.configuration.max = 90
+  raw.configuration.processors[1].configuration.matcher.provider = 'unknown'
   assert.equal(parseRule(raw).editable, false)
+})
+
+test('finite enum recovery can be edited without losing the metadata domain', () => {
+  const form = draft().alarm
+  Object.assign(form, { trigger: 'neq', value: 'fault', limit: {}, autoRelieve: true,
+    relieveCondition: { trigger: 'neq', value: 'normal', limit: {} } })
+  const property = { valueType: { type: 'enum', elements: [{ value: 'fault' }, { value: 'normal' }] } }
+  assert.equal(validateAlarmConditions(form, property), undefined)
+  const saved = buildPreprocessPayload(form)
+  assert.equal(parseRule(saved).editable, true)
+  assert.deepEqual(toDeviceAlarmRow(saved, 'product', '', property)?.relieveCondition, form.relieveCondition)
 })
 
 test('cleaning uses raw-value labels while alarm and sampling retain calibrated units', () => {
@@ -238,7 +334,7 @@ test('fixed sequence serializes percentage and round-trips every section', () =>
 test('direct add menus offer only applicable missing rules and respect alarm availability', () => {
   assert.deepEqual(availableRuleParts({ valueType: { type: 'double' } }, { sampling: true }, true), ['values', 'range', 'step', 'scale', 'fallback', 'alarm'])
   assert.deepEqual(availableRuleParts({ valueType: { type: 'double' } }, {}, false), ['values', 'range', 'step', 'scale', 'fallback', 'sampling', 'interval', 'change'])
-  assert.deepEqual(availableRuleParts({ valueType: { type: 'boolean' } }, {}, true), ['values', 'fallback', 'sampling', 'interval', 'change'])
+  assert.deepEqual(availableRuleParts({ valueType: { type: 'boolean' } }, {}, true), ['values', 'fallback', 'alarm', 'sampling', 'interval', 'change'])
   assert.deepEqual(availableRuleParts({ valueType: { type: 'object' } }, {}, true), ['sampling', 'interval'])
   assert.ok(availableRuleParts({ valueType: { type: 'file', bodyType: 'base64' } }, {}, true).includes('file'))
   assert.ok(!availableRuleParts({ valueType: { type: 'file', bodyType: 'url' } }, {}, true).includes('file'))

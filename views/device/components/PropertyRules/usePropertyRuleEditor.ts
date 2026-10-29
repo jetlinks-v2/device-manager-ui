@@ -8,6 +8,7 @@ import { createEmptyNotification, isNumberProperty, propertyIdOf, propertyNameOf
   formatPropertyUnit, matchesAlarmNotifyMethod, validateNotificationMessage, DEVICE_ALARM_NOTIFICATION_MESSAGE_MAX_LENGTH } from '../../alarm/utils'
 import { availableRuleParts, buildRule, isEmptyRule, parseRule, validateDraft, type RuleDraft, type RuleAddPart } from './codec'
 import { readSampling } from './sampling'
+import { defaultCondition } from '../../alarm/conditions'
 import { readValueRules } from './values/config'
 import { loadRules, restoreRule, saveRule, type RuleScope } from './service'
 import { useRuleResources } from './useRuleResources'
@@ -52,7 +53,6 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
   const cleaningHint = computed(() => draft.value?.scaleEnabled ? t('PropertyRules.rawValueHint') : '')
   const booleanOptions = [{ label: 'true', value: true }, { label: 'false', value: false }]
   const enumOptions = computed(() => (props.property.valueType?.elements ?? []).map(item => ({ value: item.value, label: item.text ?? String(item.value) })))
-  const triggerOptions = computed(() => ['outside', 'inside'].map(value => ({ value, label: t(`DeviceAlarm.trigger.${value}`) })))
   const levelOptions = computed(() => resources.levels.value.length ? resources.levels.value
     : ['emergency', 'urgent', 'severity', 'ordinary', 'warn'].map((key, index) => ({ value: index + 1, label: t(`DeviceAlarm.level.${key}`) })))
   const alarmAvailable = computed(() => Boolean(system.showThreshold))
@@ -77,7 +77,7 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
   const source = computed(() => props.scope.deviceId && hasOverride.value
     ? raw.value && isEmptyRule(raw.value) ? 'disabled' : 'device' : raw.value ? 'product' : 'none')
   const steps = computed(() => draft.value ? summarizeDraft(draft.value, props.property, t)
-    .filter(step => step.key !== 'alarm' || (numeric.value && (alarmAvailable.value || draft.value!.alarmEnabled)))
+    .filter(step => step.key !== 'alarm' || (scalar.value && (alarmAvailable.value || draft.value!.alarmEnabled)))
     .map(step => step.key === 'cleaning' && !scalar.value ? { ...step, text: t('PropertyRules.unsupportedCleaning') } : step) : [])
   const notificationSummary = computed(() => {
     const notification = draft.value?.alarm.notification
@@ -138,7 +138,7 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
         alarmEnabled: Boolean(rule.nodes.alarm),
         alarm: alarm ?? { name: t('PropertyRules.defaultAlarmName', { name: propertyNameOf(props.property) }), source: props.scope.deviceId ? 'device' : 'product',
           targetId: props.scope.deviceId ?? props.scope.productId, productId: props.scope.productId, deviceId: props.scope.deviceId,
-          property: id, propertyName: propertyNameOf(props.property), level: 4, trigger: 'outside', limit: {}, autoRelieve: false, notification: createEmptyNotification() },
+          property: id, propertyName: propertyNameOf(props.property), level: 4, ...defaultCondition(props.property), autoRelieve: false, notification: createEmptyNotification() },
         samplingEnabled: Boolean(rule.nodes.sampling), ...readSampling(rule.nodes.sampling),
         scaleEnabled: Boolean(rule.nodes.scale), scale: rule.nodes.scale?.configuration.scale ?? '1', fileEnabled: Boolean(rule.nodes.file),
         ...readValueRules(rule.nodes),
@@ -212,7 +212,7 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
   async function save() {
     if (!draft.value || !editable.value) return
     const current = draft.value
-    const error = validateDraft(current, numeric.value)
+    const error = validateDraft(current, numeric.value, props.property)
     if (error) {
       // Hidden fields must become visible on failure; reuse the same validator to locate cleaning errors.
       activeSection.value = ['percent', 'interval', 'deadband', 'strategy'].some(key => error === `PropertyRules.validation.${key}`) ? 'sampling'
@@ -294,7 +294,7 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
     || (!saving.value && await confirmLeave()))
   watch([() => props.open, () => props.scope.productId, () => props.scope.deviceId, () => propertyIdOf(props.property)], load, { immediate: true })
   return { loading, failed, saving, draft, parsed, numeric, alarmAvailable, canSave, editable, source, hasOverride,
-    custom, dirty, pendingSave, saveState, resources, type, boolean, scalar, unit, cleaningUnit, cleaningHint, booleanOptions, enumOptions, triggerOptions, levelOptions,
+    custom, dirty, pendingSave, saveState, resources, type, boolean, scalar, unit, cleaningUnit, cleaningHint, booleanOptions, enumOptions, levelOptions,
     steps, activeSection, notificationOpen, notificationSummary, setNotificationsOpen, alarmNameEditing, setAlarmNameInput, editAlarmName, stopAlarmName, toggleStep, setValues, addableParts, addPart,
     load, requestClose, prepareLeave, discard, customize, clear, save, restore }
 }

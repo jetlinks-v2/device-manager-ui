@@ -1,5 +1,6 @@
 import type { ThingModelProperty } from '../../alarm/types'
 import { isNumberProperty } from '../../alarm/utils'
+import { matchesCondition, recoveryCondition } from '../../alarm/conditions'
 import type { RuleDraft, RulePart } from './codec'
 import { intervalMillis } from './sampling'
 
@@ -18,7 +19,7 @@ export interface RuleExampleInput { value: RuleExampleValue | null; arrivalMilli
 export interface FallbackExampleState { value: string | number | boolean | null; time: number; outcome: 'ready' | 'missing' | 'error' }
 export interface RuleExampleStage {
   key: RulePart
-  status: 'kept' | 'filtered' | 'alarm' | 'skipped' | 'processed'
+  status: 'kept' | 'filtered' | 'alarm' | 'skipped' | 'processed' | 'recovered'
   skipReason?: 'missing' | 'filled'
   baseline?: string
   value?: string
@@ -130,9 +131,11 @@ export function buildRuleExample(draft: RuleDraft, property: ThingModelProperty,
       } else visit('fallback', false)
     }
     const filtered = !alive
-    const inside = Number(value) >= Number(draft.alarm.limit.lower) && Number(value) <= Number(draft.alarm.limit.upper)
-    const alarm = alive && !filled && numeric && draft.alarmEnabled && (draft.alarm.trigger === 'inside' ? inside : !inside)
+    const alarm = alive && !filled && draft.alarmEnabled && matchesCondition(draft.alarm, value)
     if (draft.alarmEnabled) visit('alarm', false, alarm, filled)
+    if (alive && !filled && !alarm && draft.alarmEnabled && draft.alarm.autoRelieve && matchesCondition(recoveryCondition(draft.alarm), value)) {
+      stages[stages.length - 1].status = 'recovered'
+    }
     const previous = baseline
     const previousArrival = lastArrival
     let sampled = false
@@ -168,8 +171,9 @@ export function buildRuleExample(draft: RuleDraft, property: ThingModelProperty,
 
 function numericExamples(draft: RuleDraft) {
   if (!draft.samplingEnabled || draft.samplingMode !== 'change') {
-    const low = draft.rangeEnabled ? draft.min! : draft.alarmEnabled ? draft.alarm.limit.lower! : 0
-    const high = draft.rangeEnabled ? draft.max! : draft.alarmEnabled ? draft.alarm.limit.upper! : 100
+    const threshold = typeof draft.alarm.value === 'number' ? draft.alarm.value : undefined
+    const low = draft.rangeEnabled ? draft.min! : draft.alarmEnabled ? draft.alarm.limit.lower ?? (threshold == null ? 0 : threshold - Math.max(Math.abs(threshold) * 0.2, 1)) : 0
+    const high = draft.rangeEnabled ? draft.max! : draft.alarmEnabled ? draft.alarm.limit.upper ?? (threshold == null ? 100 : threshold + Math.max(Math.abs(threshold) * 0.2, 1)) : 100
     const span = high - low || Math.max(Math.abs(low) * 0.1, 1)
     const ignored = draft.valuesEnabled && draft.valuesMode === 'ignore' ? draft.values.find(value => typeof value === 'number') : undefined
     const values = [ignored ?? low - span * 0.3, ...[0.12, 0.65, 0.95, 1.3].map(factor => Number((low + span * factor).toPrecision(12)))] as number[]

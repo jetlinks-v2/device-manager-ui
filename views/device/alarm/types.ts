@@ -1,5 +1,12 @@
 export type DeviceAlarmSource = 'product' | 'device'
-export type DeviceAlarmTrigger = 'outside' | 'inside'
+export type DeviceAlarmTrigger = 'outside' | 'inside' | 'gt' | 'gte' | 'lt' | 'lte' | 'eq' | 'neq' | 'in' | 'nin'
+export type DeviceAlarmValue = string | number | boolean
+export interface DeviceAlarmCondition {
+  trigger: DeviceAlarmTrigger
+  limit: DeviceAlarmLimit
+  value?: DeviceAlarmValue | null
+  values?: DeviceAlarmValue[]
+}
 export type DeviceAlarmLevel = number
 
 export type EnumLike = string | {
@@ -41,7 +48,7 @@ export interface DeviceAlarmNotificationConfig {
   parameters: Record<string, unknown>
 }
 
-export interface DeviceAlarmFormModel {
+export interface DeviceAlarmFormModel extends DeviceAlarmCondition {
   id?: string
   name: string
   source: DeviceAlarmSource
@@ -54,9 +61,8 @@ export interface DeviceAlarmFormModel {
   propertyName?: string
   propertyUnit?: string
   level: DeviceAlarmLevel
-  trigger: DeviceAlarmTrigger
-  limit: DeviceAlarmLimit
   autoRelieve: boolean
+  relieveCondition?: DeviceAlarmCondition
   notification: DeviceAlarmNotificationConfig
 }
 

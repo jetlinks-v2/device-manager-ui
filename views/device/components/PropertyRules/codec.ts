@@ -1,5 +1,6 @@
 import type { DeviceAlarmFormModel, ThingModelProperty, ThingPropertyPreprocess } from '../../alarm/types'
 import { buildPreprocessPayload, hasAlarmRelieveProcessor, isNumberProperty } from '../../alarm/utils'
+import { isAlarmProperty, readCondition, validateAlarmConditions } from '../../alarm/conditions'
 import { buildSampling, isSamplingNode, validateSampling, type SamplingDraft } from './sampling'
 import { buildFallback, scalarValue, validFallback, type ValueRuleDraft } from './values/config'
 
@@ -44,7 +45,7 @@ export function availableRuleParts(property: ThingModelProperty, configured: Par
   const parts: RuleAddPart[] = order.filter(part => !configured[part] && (part === 'sampling'
     || part === 'values' && (numeric || ['string', 'boolean', 'enum'].includes(String(type)))
     || part === 'fallback' && (numeric || ['string', 'boolean', 'enum'].includes(String(type)))
-    || (part === 'range' || part === 'step' || part === 'scale') && numeric || part === 'alarm' && numeric && alarmAvailable
+    || (part === 'range' || part === 'step' || part === 'scale') && numeric || part === 'alarm' && isAlarmProperty(property) && alarmAvailable
     || part === 'file' && type === 'file' && property.valueType?.bodyType === 'base64'))
   if (!configured.sampling) {
     parts.push('interval')
@@ -80,7 +81,7 @@ function classify(node: RuleNode): RulePart | undefined {
       && (actions[0].provider === 'ignore' || actions[0].provider === 'clamp'
         && actions[0].configuration.min === matcher.configuration.min && actions[0].configuration.max === matcher.configuration.max)) return 'range'
   }
-  if (matcher.provider === 'number-range' && validRange(matcher.configuration)
+  if (readCondition(matcher)
     && actions.filter((item) => item.provider === 'device-alarm').length === 1
     && actions.filter((item) => item.provider === 'notify').length <= 1
     && actions.every((item) => ['device-alarm', 'device-record', 'notify'].includes(item.provider))) return 'alarm'
@@ -147,7 +148,10 @@ function updateAlarm(previous: RuleNode | undefined, form: DeviceAlarmFormModel)
 
 function updateAlarmBranch(previous: RuleNode | undefined, next: RuleNode): RuleNode {
   if (!previous) return next
-  const matcher = updateNode(previous.configuration.matcher, next.configuration.matcher)
+  // 只保留扩展字段，清除旧条件专属参数；避免切换运算符后出现多个真值源。
+  const oldMatcher = clone(previous.configuration.matcher) as RuleNode
+  for (const key of ['min', 'max', 'not', 'operator', 'value', 'values']) delete oldMatcher.configuration[key]
+  const matcher = updateNode(oldMatcher, next.configuration.matcher)
   const replacements = new Map<string, RuleNode>((next.configuration.processors as RuleNode[]).map(node => [node.provider, node]))
   const processors: RuleNode[] = []
   for (const node of previous.configuration.processors as RuleNode[]) {
@@ -215,7 +219,7 @@ export function replaceAlarm(raw: ThingPropertyPreprocess | undefined, form?: De
 export const isEmptyRule = (raw: ThingPropertyPreprocess) => raw.provider === 'composite'
   && Array.isArray(raw.configuration?.processors) && raw.configuration.processors.length === 0
 
-export function validateDraft(draft: RuleDraft, numeric: boolean): string | undefined {
+export function validateDraft(draft: RuleDraft, numeric: boolean, property?: ThingModelProperty): string | undefined {
   if (draft.valuesEnabled && (!['ignore', 'keep', 'replace'].includes(draft.valuesMode) || !draft.values.length || !draft.values.every(isScalar)
     || (numeric && draft.values.some((value) => typeof value !== 'number')))) return 'PropertyRules.validation.values'
   if (draft.valuesEnabled && draft.valuesMode === 'replace' && (!scalarValue(draft.replacementValue)
@@ -227,8 +231,9 @@ export function validateDraft(draft: RuleDraft, numeric: boolean): string | unde
     || numeric && draft.fallbackValue != null && typeof draft.fallbackValue !== 'number')) return 'PropertyRules.validation.fallback'
   if (draft.fileEnabled && (numeric || draft.valuesEnabled || draft.rangeEnabled || draft.stepEnabled || draft.scaleEnabled || draft.fallbackEnabled || draft.alarmEnabled)) return 'PropertyRules.validation.file'
   if (draft.alarmEnabled) {
-    if (!numeric || !draft.alarm.name.trim()) return 'DeviceAlarm.validation.name'
-    if (!validRange({ min: draft.alarm.limit.lower, max: draft.alarm.limit.upper })) return 'PropertyRules.validation.range'
+    if (!draft.alarm.name.trim()) return 'DeviceAlarm.validation.name'
+    const error = validateAlarmConditions(draft.alarm, property)
+    if (error) return error
   }
   if (draft.samplingEnabled) return validateSampling(draft, numeric)
 }

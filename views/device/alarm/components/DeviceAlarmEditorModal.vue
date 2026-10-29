@@ -117,21 +117,8 @@
 
           <div v-show="activePanel === 'trigger'" class="device-alarm-editor__section">
             <a-form-item class="device-alarm-editor__trigger" :label="$t('DeviceAlarm.form.trigger')" required>
-              <a-radio-group v-model:value="model.trigger" :options="triggerOptions" />
+              <PropertyAlarmCondition :model="model" :property="selectedProperty" />
             </a-form-item>
-
-            <a-row :gutter="12">
-              <a-col :xs="24" :md="12">
-                <a-form-item :label="$t('DeviceAlarm.form.lower')" required>
-                  <a-input-number v-model:value="model.limit.lower" class="device-alarm-editor__number" />
-                </a-form-item>
-              </a-col>
-              <a-col :xs="24" :md="12">
-                <a-form-item :label="$t('DeviceAlarm.form.upper')" required>
-                  <a-input-number v-model:value="model.limit.upper" class="device-alarm-editor__number" />
-                </a-form-item>
-              </a-col>
-            </a-row>
 
             <div class="device-alarm-editor__preview">
               <AIcon type="InfoCircleFilled" />
@@ -139,13 +126,7 @@
             </div>
 
             <div class="device-alarm-editor__auto-relieve">
-              <div class="device-alarm-editor__auto-relieve-header">
-                <div>
-                  <strong>{{ $t('DeviceAlarm.autoRelieve.title') }}</strong>
-                  <p>{{ $t('DeviceAlarm.autoRelieve.description') }}</p>
-                </div>
-                <a-switch v-model:checked="model.autoRelieve" />
-              </div>
+              <PropertyAlarmRecovery :model="model" :property="selectedProperty" />
               <div v-if="model.autoRelieve" class="device-alarm-editor__relieve-preview">
                 <AIcon type="CheckCircleFilled" />
                 <span>{{ $t('DeviceAlarm.autoRelieve.condition') }}{{ relievePreviewText }}</span>
@@ -196,6 +177,8 @@
 import { computed, ref, watch, type PropType } from 'vue'
 import { useI18n } from 'vue-i18n'
 import DeviceAlarmNotificationConfig from './DeviceAlarmNotificationConfig.vue'
+import PropertyAlarmCondition from './PropertyAlarmCondition.vue'
+import PropertyAlarmRecovery from './PropertyAlarmRecovery.vue'
 import IotAlarmTargetSelect from './IotAlarmTargetSelect.vue'
 import type {
   DeviceAlarmFormModel,
@@ -216,7 +199,6 @@ const props = defineProps({
   fixedProductScope: { type: Boolean, default: false },
   readonlyScope: { type: Boolean, default: false },
   levelOptions: { type: Array as PropType<Array<{ label: string; value: number }>>, default: () => [] },
-  triggerOptions: { type: Array as PropType<Array<{ label: string; value: string }>>, default: () => [] },
   productOption: { type: Object as PropType<DeviceAlarmTargetOption | undefined>, default: undefined },
   deviceOption: { type: Object as PropType<DeviceAlarmTargetOption | undefined>, default: undefined },
   productReloadKey: { type: Number, default: 0 },
@@ -267,6 +249,8 @@ const propertySelectOptions = computed(() =>
     disabled: Boolean(property.alarmConfigured),
   })),
 )
+const selectedProperty = computed(() => props.propertyOptions.find(property => propertyIdOf(property) === props.model.property)
+  ?? { valueType: { type: typeof props.model.value === 'string' ? 'string' : typeof props.model.value === 'boolean' ? 'boolean' : 'double' } })
 
 const allDeviceOption = computed(() => [{ label: $t('DeviceAlarm.deviceRange.all'), value: '__all__' }])
 const deviceValue = computed(() => props.model.source === 'device' ? props.model.deviceId : '__all__')

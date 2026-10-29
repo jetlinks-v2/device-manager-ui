@@ -1,6 +1,6 @@
 import type { DeviceAlarmFormModel, ThingModelProperty } from '../../alarm/types'
-import { formatPropertyUnit, isNumberProperty, propertyNameOf } from '../../alarm/utils'
-import type { ParsedRule, RuleDraft, RuleNode, RulePart } from './codec'
+import { formatPropertyUnit, formatTriggerText, formatRelieveText, isNumberProperty, propertyNameOf, toDeviceAlarmRow } from '../../alarm/utils'
+import type { ParsedRule, RuleDraft, RulePart } from './codec'
 import { readSampling, validateSampling, type SamplingDraft } from './sampling'
 import { readValueRules } from './values/config'
 
@@ -14,7 +14,7 @@ export interface RuleStepSummary {
   enabled: boolean
 }
 
-type RuleEffects = Omit<RuleDraft, 'alarm'> & { alarm: Pick<DeviceAlarmFormModel, 'name' | 'trigger' | 'limit'> }
+type RuleEffects = Omit<RuleDraft, 'alarm'> & { alarm: Pick<DeviceAlarmFormModel, 'name' | 'trigger' | 'limit' | 'value' | 'values' | 'autoRelieve' | 'relieveCondition'> }
 
 export interface RuleRowSummary {
   key: RulePart
@@ -68,7 +68,10 @@ function summarizeEffectRows(effects: RuleEffects, property: ThingModelProperty,
       otherwise: effects.fallbackValue != null ? t('PropertyRules.sentence.fallbackOtherwise', { value: `${formatValues([effects.fallbackValue], property, t)}${isNumberProperty(property) ? unit : ''}` }) : '',
     }).trim(), notice: t('PropertyRules.fallback.hint') })
   if (effects.alarmEnabled) rows.push({ key: 'alarm', icon: 'AlertOutlined', title: effects.alarm.name || t('PropertyRules.defaultAlarmName', { name: propertyNameOf(property) }), color: 'orange',
-    sentence: `${t(effects.alarm.trigger === 'outside' ? 'PropertyRules.sentence.outside' : 'PropertyRules.sentence.inside')} ${bounds({ min: effects.alarm.limit.lower, max: effects.alarm.limit.upper })}` })
+    sentence: ['inside', 'outside'].includes(effects.alarm.trigger)
+      ? `${t(effects.alarm.trigger === 'outside' ? 'PropertyRules.sentence.outside' : 'PropertyRules.sentence.inside')} ${bounds({ min: effects.alarm.limit.lower, max: effects.alarm.limit.upper })}`
+      : formatTriggerText(effects.alarm, property, t),
+    details: effects.alarm.autoRelieve ? `${t('DeviceAlarm.autoRelieve.condition')}${formatRelieveText(effects.alarm)}` : undefined })
   if (effects.samplingEnabled) {
     const draft = effects
     const mode = draft.samplingMode
@@ -104,15 +107,12 @@ export function summarizeRule(rule: ParsedRule, property: ThingModelProperty, t:
 
 function effectsOf(rule: ParsedRule): RuleEffects {
   const { values, range, scale, alarm, sampling, file } = rule.nodes
+  const alarmRow = alarm && toDeviceAlarmRow(alarm, 'product', '')
   return {
     valuesEnabled: Boolean(values), valuesMode: values?.configuration.processors[0]?.provider === 'replace-value' ? 'replace' : values?.configuration.matcher.configuration.not ? 'keep' : 'ignore', values: values?.configuration.matcher.configuration.values ?? [],
     rangeEnabled: Boolean(range), min: range?.configuration.matcher.configuration.min,
     max: range?.configuration.matcher.configuration.max,
-    alarmEnabled: Boolean(alarm), alarm: {
-      name: String(alarm?.configuration.processors.find((node: RuleNode) => node.provider === 'device-alarm')?.configuration.alarmName ?? rule.raw?.name ?? ''),
-      trigger: alarm?.configuration.matcher.configuration.not ? 'outside' : 'inside',
-      limit: { lower: alarm?.configuration.matcher.configuration.min, upper: alarm?.configuration.matcher.configuration.max },
-    },
+    alarmEnabled: Boolean(alarm), alarm: alarmRow ?? { name: '', trigger: 'outside', limit: {}, autoRelieve: false },
     samplingEnabled: Boolean(sampling), ...readSampling(sampling),
     scaleEnabled: Boolean(scale), scale: scale?.configuration.scale ?? '1', fileEnabled: Boolean(file),
     ...readValueRules(rule.nodes),
@@ -135,8 +135,9 @@ function summarizeEffects(effects: RuleEffects, property: ThingModelProperty, t:
   if (effects.rangeEnabled) cleaning.push(`${effects.rangeAction === 'clamp' ? t('PropertyRules.clamp') + ' ' : ''}${boundsText('PropertyRules.rangeSummary', effects.min, effects.max)}`)
   if (effects.stepEnabled) cleaning.push(`${t('PropertyRules.part.step')} ≤ ${effects.maxStep}`)
   const alarm = effects.alarmEnabled
-    ? boundsText(effects.alarm.trigger === 'outside' ? 'PropertyRules.alarmOutsideSummary' : 'PropertyRules.alarmInsideSummary',
-      effects.alarm.limit.lower, effects.alarm.limit.upper)
+    ? ['inside', 'outside'].includes(effects.alarm.trigger)
+      ? boundsText(effects.alarm.trigger === 'outside' ? 'PropertyRules.alarmOutsideSummary' : 'PropertyRules.alarmInsideSummary', effects.alarm.limit.lower, effects.alarm.limit.upper)
+      : formatTriggerText(effects.alarm, property, t)
     : t('PropertyRules.off')
   const sampling = effects.samplingEnabled
     ? samplingText(effects, isNumberProperty(property), t)

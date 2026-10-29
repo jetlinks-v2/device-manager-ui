@@ -56,7 +56,7 @@ test('alarm create and edit share the three-section visual-alarm-style configura
   assert.match(editor, /activePanel === 'trigger'[\s\S]*?model\.autoRelieve/)
   assert.match(editor, /device-alarm-editor__summary/)
   assert.match(editor, /<RegistryComponent page-code="device\/alarm" code="alarm-editor">/)
-  assert.match(editor, /v-model:checked="model\.autoRelieve"/)
+  assert.match(editor, /<PropertyAlarmRecovery :model="model" :property="selectedProperty"/)
   assert.match(editorStyle, /@media \(max-width: 68\.75rem\)/)
   assert.match(editorStyle, /@media \(max-width: 45rem\)/)
 })

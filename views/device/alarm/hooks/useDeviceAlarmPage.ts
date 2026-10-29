@@ -1,4 +1,4 @@
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { onBeforeUnmount, ref } from 'vue'
 import { message } from 'ant-design-vue'
 import { useDeviceAlarmRuleSearch } from './useDeviceAlarmRuleSearch'
 import {
@@ -26,7 +26,6 @@ import {
   formatTriggerText,
   formatPropertyUnit,
   isDeviceAlarmPreprocess,
-  isNumberProperty,
   normalizeNotification,
   parseMetadata,
   propertyIdOf,
@@ -36,6 +35,7 @@ import {
 } from '../utils'
 import type { IotAlarmTargetSelectOption, IotAlarmTargetSelectQuery } from '../components/IotAlarmTargetSelect.vue'
 import { parseRule, replaceAlarm } from '../../components/PropertyRules/codec'
+import { defaultCondition, isAlarmProperty, validateAlarmConditions } from '../conditions'
 import { loadRules, saveRule } from '../../components/PropertyRules/service'
 
 export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unknown>) => string) {
@@ -67,11 +67,6 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
 
   const form = ref<DeviceAlarmFormModel>(createEmptyForm())
 
-  const triggerOptions = computed(() => [
-    { label: t('DeviceAlarm.trigger.outside'), value: 'outside' },
-    { label: t('DeviceAlarm.trigger.inside'), value: 'inside' },
-  ])
-
   async function loadTargets(source?: DeviceAlarmSource) {
     const sources: DeviceAlarmSource[] = source ? [source] : ['product', 'device']
     const result = await Promise.all(sources.map((item) => queryAlarmTargets(item).catch(() => [])))
@@ -82,7 +77,7 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
     const metadata = parseMetadata(target?.metadata).properties.length
       ? target?.metadata
       : await queryProductMetadata(target?.productId)
-    const properties = parseMetadata(metadata).properties.filter(isNumberProperty)
+    const properties = parseMetadata(metadata).properties.filter(isAlarmProperty)
     if (!excludeConfigured || !target) {
       propertyOptions.value = properties
       return
@@ -206,6 +201,8 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
     form.value = {
       ...row,
       limit: { ...row.limit },
+      values: row.values?.slice(),
+      relieveCondition: row.relieveCondition ? { ...row.relieveCondition, limit: { ...row.relieveCondition.limit }, values: row.relieveCondition.values?.slice() } : undefined,
       notification: normalizeNotification(row.notification),
     }
     selectedProductOption.value = {
@@ -251,6 +248,7 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
     form.value.property = propertyId
     form.value.propertyName = property ? propertyNameOf(property) : propertyId
     form.value.propertyUnit = formatPropertyUnit(property?.valueType?.unit)
+    Object.assign(form.value, defaultCondition(property ?? {}), { value: undefined, values: undefined, relieveCondition: undefined })
   }
 
   async function save() {
@@ -337,12 +335,8 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
     if (!current.name.trim()) return t('DeviceAlarm.validation.name')
     if (!current.targetId) return t('DeviceAlarm.validation.target')
     if (!current.property) return t('DeviceAlarm.validation.property')
-    if (current.limit.lower === undefined || current.limit.upper === undefined) {
-      return t('DeviceAlarm.validation.limit')
-    }
-    if (Number(current.limit.lower) > Number(current.limit.upper)) {
-      return t('DeviceAlarm.validation.limitOrder')
-    }
+    const conditionError = validateAlarmConditions(current, propertyOptions.value.find(item => propertyIdOf(item) === current.property))
+    if (conditionError) return t(conditionError)
     const hasChannel = Boolean(current.notification.channelProviders.length || current.notification.notifyChannelIds?.length)
     const hasRecipient = Boolean(current.notification.userIds.length || current.notification.dimensions?.length)
     if (current.notification.enabled && !hasChannel) {
@@ -437,7 +431,6 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
     reloadKey,
     keyword: ruleSearch.keyword,
     levelOptions,
-    triggerOptions,
     targetOptions,
     propertyOptions,
     selectedProductOption,

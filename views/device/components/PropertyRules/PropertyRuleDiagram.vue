@@ -42,7 +42,7 @@
         </div>
       </template>
     </div>
-    <div class="diagram-note diagram-legend"><span><AIcon type="CheckOutlined" />{{ $t('PropertyRules.diagram.status.kept') }}</span><span><AIcon type="CloseOutlined" />{{ $t('PropertyRules.diagram.status.filtered') }}</span><span v-if="draft.scaleEnabled || draft.fileEnabled || draft.fallbackEnabled || draft.valuesMode === 'replace' || draft.rangeAction === 'clamp'"><AIcon type="SwapOutlined" />{{ $t('PropertyRules.diagram.status.processed') }}</span><span v-if="draft.alarmEnabled"><AIcon type="WarningOutlined" />{{ $t('PropertyRules.diagram.alarmContinues') }}</span></div>
+    <div class="diagram-note diagram-legend"><span><AIcon type="CheckOutlined" />{{ $t('PropertyRules.diagram.status.kept') }}</span><span><AIcon type="CloseOutlined" />{{ $t('PropertyRules.diagram.status.filtered') }}</span><span v-if="draft.scaleEnabled || draft.fileEnabled || draft.fallbackEnabled || draft.valuesMode === 'replace' || draft.rangeAction === 'clamp'"><AIcon type="SwapOutlined" />{{ $t('PropertyRules.diagram.status.processed') }}</span><span v-if="draft.alarmEnabled"><AIcon type="WarningOutlined" />{{ $t('PropertyRules.diagram.alarmContinues') }}</span><span v-if="draft.alarmEnabled && draft.alarm.autoRelieve"><AIcon type="CheckCircleOutlined" />{{ $t('PropertyRules.diagram.status.recovered') }}</span></div>
     <div v-if="draft.samplingEnabled" class="diagram-note">{{ $t(draft.samplingMode !== 'ratio' ? `PropertyRules.diagram.${draft.samplingMode}` : 'PropertyRules.diagram.example') }}</div>
     <div v-if="draft.scaleEnabled" class="diagram-note">{{ $t('PropertyRules.diagram.scaleNote') }}</div>
     <div v-if="draft.fileEnabled" class="diagram-note">{{ $t('PropertyRules.diagram.fileNote') }}</div>
@@ -61,7 +61,7 @@ defineEmits<{ (e: 'close'): void }>()
 const { t: $t } = useI18n()
 const example = reactive(useRuleExample(props))
 const fallbackOutcomes = ['ready', 'missing', 'error'].map(value => ({ value, label: $t('PropertyRules.fallback.outcome.' + value) }))
-const statusIcons = { kept: 'CheckOutlined', filtered: 'CloseOutlined', alarm: 'WarningOutlined', skipped: 'MinusOutlined', processed: 'SwapOutlined' }
+const statusIcons = { kept: 'CheckOutlined', filtered: 'CloseOutlined', alarm: 'WarningOutlined', skipped: 'MinusOutlined', processed: 'SwapOutlined', recovered: 'CheckCircleOutlined' }
 const popupContainer = (trigger: HTMLElement) => trigger.parentElement!
 function stageTitle(stage: RuleExampleStage, value: string) {
   const elapsed = stage.elapsedMillis === undefined ? '' : ` · ${$t(stage.key === 'fallback' ? 'PropertyRules.fallback.exampleAge' : 'PropertyRules.diagram.elapsed', { value: Number((stage.elapsedMillis / props.draft.intervalUnit).toPrecision(8)), unit: example.timeUnit })}`
@@ -99,6 +99,7 @@ function stageTitle(stage: RuleExampleStage, value: string) {
 .diagram-cell::before { content: '↓'; display: block; height: 12px; line-height: 12px; color: var(--jet-theme-text-disabled); font-size: 12px; }
 .diagram-node { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border: 1px solid var(--line); border-radius: 50%; }
 .diagram-kept .diagram-node { color: var(--jet-theme-primary); border-color: var(--jet-theme-primary); background: var(--jet-theme-primary-soft); }
+.diagram-recovered .diagram-node { color: var(--jet-theme-success); border-color: var(--jet-theme-success); background: var(--jet-theme-success-soft); }
 .diagram-alarm .diagram-node { color: var(--jet-theme-warning); border-color: var(--jet-theme-warning); background: var(--warn-bg); }
 .diagram-filtered .diagram-node, .diagram-skipped { color: var(--jet-theme-text-secondary); }
 .diagram-skipped::before { visibility: hidden; }

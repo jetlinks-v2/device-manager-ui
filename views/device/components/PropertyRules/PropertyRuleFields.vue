@@ -51,8 +51,8 @@
             <PropertyRuleStage v-if="editor.draft.alarmEnabled" section="alarm" :caption="multipleStages">
             <PropertyRuleLine icon="AlertOutlined" :title="$t('PropertyRules.sentence.alarm')" color="orange" class="rule-line-alarm">
               <template #label><a-tag color="orange" class="rule-alarm-identity"><AIcon type="AlertOutlined" /><a-input v-if="editor.alarmNameEditing" :ref="editor.setAlarmNameInput" v-model:value="editor.draft.alarm.name" size="small" :maxlength="64" :aria-label="$t('DeviceAlarm.form.name')" @blur="editor.stopAlarmName()" @press-enter="editor.stopAlarmName()" @keydown.esc.stop.prevent="editor.stopAlarmName(true)" /><a-button v-else type="text" size="small" :disabled="!editor.editable" class="rule-alarm-name" :title="editor.draft.alarm.name" :aria-label="$t('PropertyRules.editAlarmName')" @click="editor.editAlarmName">{{ editor.draft.alarm.name || $t('DeviceAlarm.form.name') }}</a-button></a-tag></template>
-              <a-select v-model:value="editor.draft.alarm.trigger" size="small" :bordered="false" :dropdown-match-select-width="false" :aria-label="$t('DeviceAlarm.form.trigger')" :options="[{ value: 'outside', label: $t('PropertyRules.sentence.outside') }, { value: 'inside', label: $t('PropertyRules.sentence.inside') }]" />
-              <span class="rule-phrase"><a-input-number v-model:value="editor.draft.alarm.limit.lower" size="small" :controls="false" :placeholder="$t('PropertyRules.lowerPlaceholder')" :aria-label="$t('PropertyRules.alarmLower')" /><span>～</span><a-input-number v-model:value="editor.draft.alarm.limit.upper" size="small" :controls="false" :placeholder="$t('PropertyRules.upperPlaceholder')" :aria-label="$t('PropertyRules.alarmUpper')" /><span v-if="editor.unit">{{ editor.unit }}</span></span>
+              <PropertyAlarmCondition :model="editor.draft.alarm" :property="property" />
+              <template #details><PropertyAlarmRecovery :model="editor.draft.alarm" :property="property" /></template>
               <template #extra><PropertyRuleAlarmActions :editor="editor" /></template>
               <template #action><a-button type="text" size="small" :aria-label="$t('PropertyRules.removePart', { name: $t('PropertyRules.alarm') })" @click="editor.draft.alarmEnabled = false"><AIcon type="CloseOutlined" /></a-button></template>
             </PropertyRuleLine>
@@ -90,6 +90,8 @@ import PropertyRuleAlarmActions from './PropertyRuleAlarmActions.vue'
 import RuleAddMenu from './RuleAddMenu.vue'
 import FallbackFields from './values/FallbackFields.vue'
 import ValueInput from './values/ValueInput.vue'
+import PropertyAlarmCondition from '../../alarm/components/PropertyAlarmCondition.vue'
+import PropertyAlarmRecovery from '../../alarm/components/PropertyAlarmRecovery.vue'
 const props = defineProps<{ editor: UnwrapNestedRefs<ReturnType<typeof usePropertyRuleEditor>>; scope: RuleScope; property: ThingModelProperty; withActions?: boolean }>()
 const { t: $t } = useI18n()
 const summaryRows = computed(() => summarizeRuleRows(props.editor.parsed, props.property, $t))

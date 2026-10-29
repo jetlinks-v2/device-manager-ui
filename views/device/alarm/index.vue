@@ -82,7 +82,7 @@
       </a-modal>
       <DeviceAlarmHandleModal :state="handling" @description="value => handling.description = value" @close="handling.close" @submit="handling.submit" />
       <DeviceAlarmEditorModal v-model:open="editorOpen" :model="form" :readonly-scope="Boolean(editingRow)" :saving="saving"
-        :level-options="levelOptions" :trigger-options="triggerOptions" :product-option="selectedProductOption"
+        :level-options="levelOptions" :product-option="selectedProductOption"
         :device-option="selectedDeviceOption" :product-request="requestProducts" :device-request="requestDevices"
         :property-options="propertyOptions" :notify-methods="notifyMethods" :notify-loading="notifyLoading"
         :product-reload-key="productReloadKey" @product-change="onProductChange" @device-change="onDeviceChange"
@@ -116,7 +116,7 @@ const route = useRoute()
 const router = useRouter()
 const { page, selected, ruleId, activeCounts, statusError, listError, loading, busy, creating,
   loadingMore, loadMoreError, hasMore, load, loadCounts, loadMore, select, showAllRecords, remove, run, create } = useDeviceAlarmWorkspace($t)
-const { rows, total, keyword, levelOptions, triggerOptions, propertyOptions,
+const { rows, total, keyword, levelOptions, propertyOptions,
   selectedProductOption, selectedDeviceOption, notifyMethods, notifyLoading, editorOpen, saving, productReloadKey,
   editingRow, form, updateKeyword, handleSearch, openEdit, requestProducts, requestDevices,
   onProductChange, onDeviceChange, onPropertyChange, save } = page
