@@ -149,7 +149,8 @@ const rangeActions = computed(() => [{ value: 'ignore', label: $t('PropertyRules
 .rule-name-editing > :deep(.anticon) { flex-shrink: 0; margin-top: 4px; }
 .rule-name-editing > .rule-name-input { position: relative; display: inline-grid; flex: 1; min-width: 0; min-height: 20px; margin-inline-start: 0; }
 .rule-name-measure { grid-area: 1 / 1; visibility: hidden; overflow-wrap: anywhere; white-space: pre-wrap; }
-.rule-name-input :deep(textarea) { position: absolute; inset: 0; width: 100%; height: 100%; min-width: 0; min-height: 0; padding: 0; border: 0; border-radius: 0; background: transparent; color: inherit; box-shadow: none; font: inherit; line-height: 20px; overflow-wrap: anywhere; resize: none; transition: none; }
+/* A native scrollbar steals width while typing and keeps the text wrapped after the mirror grows. */
+.rule-name-input :deep(textarea) { position: absolute; inset: 0; width: 100%; height: 100%; min-width: 0; min-height: 0; padding: 0; border: 0; border-radius: 0; background: transparent; color: inherit; box-shadow: none; font: inherit; line-height: 20px; overflow-wrap: anywhere; overflow: hidden; resize: none; transition: none; }
 .alarm-flow { display: flex; flex-direction: column; gap: 4px; width: 100%; min-width: 0; }
 .alarm-flow-row { display: grid; grid-template-columns: 18px minmax(0, 1fr); align-items: start; column-gap: 6px; }
 .alarm-trigger-icon { display: flex; align-items: center; justify-content: center; height: 24px; color: var(--jet-theme-warning, #faad14); font-size: 14px; }

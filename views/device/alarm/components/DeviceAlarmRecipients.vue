@@ -10,7 +10,7 @@
     </template>
     <a-button ref="trigger" type="text" size="small" class="notification-chip" :disabled="disabled" :aria-label="$t('DeviceAlarm.notification.user')" :aria-expanded="directory.open" :title="directory.selectionTitle">
       <AIcon type="TeamOutlined" /><span class="notification-chip__label">{{ directory.selectionLabel }}</span>
-      <span v-if="value.length > 1 && directory.firstSelectedLabel" class="notification-chip__count">+{{ value.length - 1 }}</span>
+      <span v-if="directory.selectionCount" class="notification-chip__count">{{ $t('DeviceAlarm.notification.recipientCount', { count: directory.selectionCount }) }}</span>
       <AIcon type="DownOutlined" class="notification-chip__arrow" />
     </a-button>
   </a-popover>

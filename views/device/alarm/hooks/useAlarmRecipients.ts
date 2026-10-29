@@ -23,10 +23,11 @@ export function useAlarmRecipients(props: RecipientProps) {
   }
   const options = computed(() => [...labels.value.values()])
   const selected = computed(() => props.value.map(id => labels.value.get(id) ?? { value: id, label: id }))
-  const firstSelectedLabel = computed(() => labels.value.get(props.value[0])?.label)
-  const selectionLabel = computed(() => firstSelectedLabel.value
-    ?? t(props.value.length ? 'DeviceAlarm.notification.recipientCount' : 'DeviceAlarm.notification.userShort', { count: props.value.length }))
-  const selectionTitle = computed(() => props.value.length && props.value.every(id => labels.value.has(id))
+  const selectionResolved = computed(() => props.value.length > 0 && props.value.every(id => labels.value.has(id)))
+  const selectionLabel = computed(() => selectionResolved.value ? selected.value.slice(0, 2).map(user => user.label).join('、')
+    : t(props.value.length ? 'DeviceAlarm.notification.recipientCount' : 'DeviceAlarm.notification.userShort', { count: props.value.length }))
+  const selectionCount = computed(() => selectionResolved.value && props.value.length > 2 ? props.value.length : 0)
+  const selectionTitle = computed(() => selectionResolved.value
     ? selected.value.map(user => user.label).join('、') : selectionLabel.value)
   const config = computed<ConditionOptionPanelConfig>(() => {
     // A new loader identity lets the shared panel restart safely after an explicit retry.
@@ -90,5 +91,5 @@ export function useAlarmRecipients(props: RecipientProps) {
   })
   watch(() => props.disabled, value => { if (value) { generation++; open.value = false } })
   onBeforeUnmount(() => { generation++ })
-  return { open, selected, options, config, revision, candidateFailed, selectedFailed, firstSelectedLabel, selectionLabel, selectionTitle, setOpen, retry }
+  return { open, selected, options, config, revision, candidateFailed, selectedFailed, selectionLabel, selectionCount, selectionTitle, setOpen, retry }
 }

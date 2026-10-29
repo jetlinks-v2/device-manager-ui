@@ -157,7 +157,7 @@ test('controlled recipient popovers load lazily and ignore replies after switchi
     release({ result: { data: [{ id: 'u1', name: 'Old response' }] } })
     assert.deepEqual(await pending, [])
     assert.equal(directory.open.value, false)
-    assert.equal(directory.firstSelectedLabel.value, undefined)
+    assert.equal(directory.options.value.length, 0)
     props.open = true
     const latest = directory.config.value.loadSelectedOptions!(['u1'])
     release({ result: { data: [{ id: 'u1', name: 'Selected user' }] } })
