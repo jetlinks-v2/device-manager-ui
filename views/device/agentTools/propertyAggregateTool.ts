@@ -7,7 +7,12 @@ import {
   type ClientToolInput,
   type CompiledClientTool,
 } from '@jetlinks-web-core/layout/components/AiChat/clientToolApi'
-import { createDomainAgentTimeScopeContract } from '@jetlinks-web-core/layout/components/AiChat/domainAgentTools'
+import { createDomainAgentInputError, createDomainAgentTimeScopeContract } from '@jetlinks-web-core/layout/components/AiChat/domainAgentTools'
+import {
+  exceedsIotDevicePropertyAggregatePointBudget,
+  IOT_DEVICE_PROPERTY_AGGREGATE_POINT_LIMIT,
+  parseIotDevicePropertyAggregateInterval,
+} from '@device-manager-ui/agentCapabilities/deviceAnalysis/devicePropertyAggregate.support'
 import {
   createDevicePropertyAggregateDefinition,
   createDevicePropertySelectorAlternatives,
@@ -223,6 +228,9 @@ export const createDevicePropertyAggregateTool = <TContext>(
       const requested = normalizeDevicePropertyAggregate(args.agg ?? args.aggregate ?? args.method)
       const range = normalizeDevicePropertyAggregateTimeRange(dependencies.resolveTimeRange(args))
       const requestedInterval = normalizeDevicePropertyAggregateInterval(args.interval, range)
+      if (!parseIotDevicePropertyAggregateInterval(requestedInterval)) throw createDomainAgentInputError(
+        'AGGREGATE_INTERVAL_INVALID', 'IotGeneralAgent.propertyAggregate.invalidInterval', { interval: requestedInterval },
+      )
       const { columns, warnings } = createDevicePropertyAggregateColumns(
         subject.metadata,
         propertyIds,
@@ -235,6 +243,12 @@ export const createDevicePropertyAggregateTool = <TContext>(
       const geoPointColumns = columns.filter(column => (
         isDevicePropertyAggregateGeoPointValueColumn(subject.metadata, column)
       ))
+      const metricCount = scalarColumns.length + geoPointColumns.length * 2
+      const orderedPath = columns.length === 1 && geoPointColumns.length === 1
+      if (!orderedPath && exceedsIotDevicePropertyAggregatePointBudget(requestedInterval, range, metricCount)) {
+        throw createDomainAgentInputError('AGGREGATE_POINT_LIMIT', 'IotGeneralAgent.propertyAggregate.pointLimit',
+          { limit: IOT_DEVICE_PROPERTY_AGGREGATE_POINT_LIMIT }, 'terminal')
+      }
       const scalarResponse = scalarColumns.length
         ? await getPropertiesInfo(deviceId, {
             columns: scalarColumns,
@@ -279,6 +293,7 @@ export const createDevicePropertyAggregateTool = <TContext>(
         geoPointHistory,
         geoPointColumns,
         interval,
+        range.start,
       )
       const resolutionAdjusted = interval !== requestedInterval
       const aggregateWarnings = [

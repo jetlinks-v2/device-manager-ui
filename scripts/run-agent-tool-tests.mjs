@@ -113,6 +113,8 @@ try {
             export const request = new Proxy({}, { get: (target, key) => target[key] ?? unavailable })
             export const wsClient = new Proxy({}, { get: () => unavailable })
             export const ndJson = new Proxy({}, { get: () => unavailable })
+            // Product API modules construct this client on import; network operations stay unavailable.
+            export const createNdJson = () => ndJson
           `,
           loader: 'js',
         }))

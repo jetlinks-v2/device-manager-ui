@@ -418,7 +418,7 @@ export const createDevicePropertyAggregateDefinition = <TContext>(
   }],
   analytical: DEVICE_PROPERTY_AGGREGATE_ANALYTICAL,
   ...(dependencies.temporal ? { temporal: dependencies.temporal } : {}),
-  effect: { kind: 'READ' },
+  effect: { kind: 'READ', cacheableWithinTurn: true },
   output: clientToolOutput.aggregateSeries<DevicePropertyAggregateResult>({
     ...DEVICE_PROPERTY_ANALYSIS_OUTPUTS.aggregate,
     label: dependencies.copy.displayName,

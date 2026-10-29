@@ -12,6 +12,7 @@ import {
   inputError,
   normalizeText,
   runDeviceTool,
+  type DeviceMetadataResolver,
 } from './deviceAnalysis.shared'
 
 type ThingModelSection = keyof Pick<ThingModelMetadata, 'properties' | 'events' | 'functions' | 'tags'>
@@ -129,12 +130,12 @@ const MODEL_SECTION_MAPPERS: Record<ThingModelSection, (input: unknown) => Recor
 }
 
 export const deviceModelService = {
-  getModel: (args: Record<string, unknown>) => runDeviceTool<Record<string, unknown>>({}, async () => {
+  getModel: (args: Record<string, unknown>, resolveMetadata: DeviceMetadataResolver = getMetadata) => runDeviceTool<Record<string, unknown>>({}, async () => {
     const deviceId = normalizeText(args.deviceId)
     if (!deviceId) throw inputError('DEVICE_ID_REQUIRED', 'deviceIdRequired')
     const limit = resolveDomainAgentInteger(args.limit, { name: 'limit', defaultValue: 20, min: 1, max: 50 })
     const section = resolveDomainAgentEnum(args.section, IOT_DEVICE_MODEL_SECTIONS, { name: 'section', defaultValue: 'all' })
-    const { device, metadata } = await getMetadata(deviceId)
+    const { device, metadata } = await resolveMetadata(deviceId)
     const sections: ThingModelSection[] = section === 'all'
       ? ['properties', 'events', 'functions', 'tags']
       : [section]

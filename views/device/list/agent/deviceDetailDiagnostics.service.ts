@@ -14,11 +14,10 @@ import {
 import type { IotDevice } from '../types'
 import { buildIotDeviceDetailPath } from '../hooks/useIotDeviceRouting'
 import { mapModelPropertyAccess } from '../../../../agentCapabilities/deviceAnalysis/deviceModel.service'
-import { mapDeviceTimeContext } from '../../../../agentCapabilities/deviceAnalysis/deviceAnalysis.shared'
 import {
-  iotDeviceDetailRealApi,
-  parseMetadata,
-} from '../services/iotDeviceDetailReal.service'
+  createDeviceMetadataResolver,
+  mapDeviceTimeContext,
+} from '../../../../agentCapabilities/deviceAnalysis/deviceAnalysis.shared'
 import { IOT_DEVICE_DETAIL_AGENT_TABS } from './deviceDetailAgent.constants'
 
 export type DeviceDetailAgentTabSurfaceOptions = {
@@ -32,7 +31,6 @@ import {
   normalizeText,
   runDetailTool,
   safeText,
-  unwrapResult,
   type DeviceDetailAgentArgs,
 } from './deviceDetailAgent.shared'
 
@@ -42,6 +40,7 @@ const MAX_DOCUMENT_CHARS = 5000
 export const createDeviceDetailDiagnosticsService = (
   device: IotDevice,
   tabSurface?: DeviceDetailAgentTabSurfaceOptions,
+  resolveMetadata = createDeviceMetadataResolver(() => device),
 ) => {
   const contextGet = () => Promise.resolve(createDomainAgentToolResult({
     domain: 'device',
@@ -73,11 +72,7 @@ export const createDeviceDetailDiagnosticsService = (
     const types = resolveDomainAgentStringList(args.types, { name: 'types', max: 4 })
     const sections = types.length ? types : ['properties', 'events', 'functions', 'tags']
     const limit = resolveDomainAgentInteger(args.limit, { name: 'limit', defaultValue: 20, min: 1, max: 100 })
-    let metadata = device.thingModelMetadata
-    if (!metadata) {
-      const detail = asRecord(unwrapResult(await iotDeviceDetailRealApi.getDeviceDetail(device.id)))
-      metadata = parseMetadata(detail.metadata || detail.deriveMetadata || detail.productMetadata)
-    }
+    const { metadata } = await resolveMetadata(device.id)
     const candidates = sections.flatMap((section) => {
       const items = Array.isArray(metadata[section as keyof typeof metadata])
         ? metadata[section as keyof typeof metadata]
