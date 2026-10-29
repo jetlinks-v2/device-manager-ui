@@ -1,12 +1,15 @@
 <template>
     <a-spin :spinning="loading">
+      <div class="certificate-file-editor">
         <a-textarea
+            class="certificate-file-textarea"
             :rows="4"
             @change="textChange"
             v-model:value="keystoreBase64"
             :placeholder="placeholder"
         />
         <a-upload
+            class="certificate-file-upload"
             :accept="accept"
             listType="text"
             :action="NETWORK_CERTIFICATE_UPLOAD()"
@@ -14,11 +17,12 @@
             :showUploadList="false"
             @change="handleChange"
         >
-            <a-button style="margin-top: 10px">
+            <a-button>
                 <AIcon type="UploadOutlined" />
                 {{ $t('Import.Import.317604-2') }}</a-button
             >
         </a-upload>
+      </div>
     </a-spin>
 </template>
 
@@ -86,4 +90,18 @@ watch(
 );
 </script>
 
-<style lang="less" scoped></style>
+<style lang="less" scoped>
+.certificate-file-editor {
+    position: relative;
+}
+
+.certificate-file-textarea {
+    padding-bottom: var(--space-12);
+}
+
+.certificate-file-upload {
+    position: absolute;
+    right: var(--space-2);
+    bottom: var(--space-2);
+}
+</style>

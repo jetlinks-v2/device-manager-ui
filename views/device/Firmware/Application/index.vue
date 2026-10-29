@@ -16,8 +16,12 @@
                 :label="$t('Application.index.385271-3')"
                 v-bind="validateInfos.name"
             >
-                <a-input
+                <I18nTextField
                     v-model:value="formData.name"
+                    v-model:i18nMessages="formData.i18nMessages"
+                    field="name"
+                    :label="$t('Application.index.385271-3')"
+                    :i18n-max-length="64"
                     :maxlength="64"
                     :placeholder="$t('Application.index.385271-4')"
                 />
@@ -97,8 +101,12 @@
                 :label="$t('Application.index.385271-17')"
                 v-bind="validateInfos.description"
             >
-                <a-textarea
+                <I18nTextField
                     v-model:value="formData.description"
+                    v-model:i18nMessages="formData.i18nMessages"
+                    field="description"
+                    :label="$t('Application.index.385271-17')"
+                    textarea
                     :maxlength="200"
                     :rows="3"
                     show-count
@@ -113,6 +121,7 @@
 import { Form } from 'ant-design-vue';
 import type { SelectProps } from 'ant-design-vue';
 import type { PropType } from 'vue';
+import { I18nTextField, type I18nMessages } from '@jetlinks-web-core/components';
 import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import { useI18n } from 'vue-i18n';
 import {
@@ -143,6 +152,7 @@ const formData = reactive({
     name: '',
     productId: undefined as string | undefined,
     description: '',
+    i18nMessages: {} as I18nMessages,
 });
 const file = ref<ApplicationFirmwareFile>();
 const preview = ref<ApplicationFirmwareParseResult>();
@@ -250,6 +260,7 @@ const handleOk = async () => {
             productId: values.productId,
             name: values.name,
             description: values.description || undefined,
+            i18nMessages: formData.i18nMessages,
             url: file.value.url,
             sign: file.value.sign,
             signMethod: file.value.signMethod,

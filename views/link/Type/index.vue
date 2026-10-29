@@ -22,6 +22,7 @@
 		        ref="tableRef"
 		        :columns="columns"
 		        :gridColumn="3"
+		        :gridColumns="[2, 3]"
 		        :request="query"
 		        :defaultParams="{
                         sorts: [{ name: 'createTime', order: 'desc' }],
@@ -55,6 +56,8 @@
 		        </template>
 		        <template #card="slotProps">
 			        <CardBox
+				        action-layout="split"
+				        primary-action-key="update"
 				        :showStatus="true"
 				        :value="slotProps"
 				        :actions="getActions(slotProps, 'card')"
@@ -129,6 +132,8 @@
 				        </template>
 				        <template #actions="item">
 					        <j-permission-button
+						        :type="item.buttonType"
+						        :danger="item.key === 'delete'"
 						        :disabled="item.disabled"
 						        :popConfirm="item.popConfirm"
 						        :tooltip="{
@@ -137,23 +142,19 @@
 						        @click="item.onClick"
 						        :hasPermission="'link/Type:' + item.key"
 					        >
-						        <AIcon
-							        type="DeleteOutlined"
-							        v-if="item.key === 'delete'"
-						        />
-						        <template v-else>
-							        <AIcon :type="item.icon"/>
-							        <span>{{ item?.text }}</span>
-						        </template>
+						        <AIcon :type="item.icon" />
+						        <span>{{ item?.text }}</span>
 					        </j-permission-button>
 				        </template>
 			        </CardBox>
 		        </template>
 		        <template #action="slotProps">
-			        <a-space :size="16">
-				        <template
+			        <TableActions>
+				        <TableActionsItem
 					        v-for="i in getActions(slotProps, 'table')"
 					        :key="i.key"
+					        :common="i.key === 'view' || i.key === 'update'"
+					        v-slot="{ placement }"
 				        >
 					        <j-permission-button
 						        :disabled="i.disabled"
@@ -161,8 +162,8 @@
 						        :tooltip="{
                                         ...i.tooltip,
                                     }"
-						        style="padding: 0px"
-						        type="link"
+						        :style="placement === 'inline' ? { padding: 0 } : undefined"
+						        :type="placement === 'inline' ? 'link' : 'text'"
 						        :danger="i.key === 'delete'"
 						        :hasPermission="'link/Type:' + i.key"
 						        @click="i.onClick"
@@ -172,9 +173,10 @@
 							        <AIcon :type="i.icon"
 							        />
 						        </template>
+						        <span v-if="placement === 'more'">{{ i.text }}</span>
 					        </j-permission-button>
-				        </template>
-			        </a-space>
+				        </TableActionsItem>
+			        </TableActions>
 		        </template>
 		        <template #state="slotProps">
 			        <j-badge-status
@@ -271,7 +273,7 @@ const columns = [
     title: $t('Type.index.196842-7'),
     dataIndex: 'state',
     key: 'state',
-    width: 100,
+    width: 120,
     ellipsis: true,
     scopedSlots: true,
     search: {
@@ -296,7 +298,7 @@ const columns = [
     title: $t('Type.index.196842-11'),
     key: 'action',
     fixed: 'right',
-    width: 200,
+    width: 140,
     scopedSlots: true,
   },
 ];

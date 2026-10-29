@@ -1,9 +1,15 @@
 import { request } from '@jetlinks-web/core'
 import {getBaseApi} from "@jetlinks-web-core/utils";
+import { createUploadCustomRequest } from '@jetlinks-web-core/components/Upload/utils';
+
+const pluginUploadPath = '/plugin/driver/upload';
 
 export const queryPage = (data: any) => request.post(`/plugin/driver/_query`, data)
 
-export const uploadFile = () => `${getBaseApi()}/plugin/driver/upload`
+export const uploadFile = () => `${getBaseApi()}${pluginUploadPath}`
+
+// 使用统一请求上下文上传插件包，保留后端解析版本和插件类型的专用接口。
+export const uploadPluginFile = createUploadCustomRequest({ url: pluginUploadPath });
 
 export const add = (data: any) => request.post('/plugin/driver', data)
 

@@ -23,8 +23,8 @@
                     :defaultParams="{
                         sorts: [{ name: 'createTime', order: 'desc' }],
                     }"
-                    gridColumn="2"
-                    :gridColumns="[1, 2]"
+                    gridColumn="3"
+                    :gridColumns="[2, 3]"
                     :params="params"
                     class="pro-table__no-padding"
                 >
@@ -54,6 +54,8 @@
                     </template>
                     <template #card="slotProps">
                         <CardBox
+                            action-layout="split"
+                            primary-action-key="update"
                             :showStatus="true"
                             :value="slotProps"
                             :actions="getActions(slotProps)"
@@ -196,6 +198,8 @@
 
                             <template #actions="item">
                                 <j-permission-button
+                                    :type="item.buttonType"
+                                    :danger="item.key === 'delete'"
                                     :disabled="item.disabled"
                                     :popConfirm="item.popConfirm"
                                     :tooltip="{
@@ -206,14 +210,8 @@
                                         'link/AccessConfig:' + item.key
                                     "
                                 >
-                                    <AIcon
-                                        type="DeleteOutlined"
-                                        v-if="item.key === 'delete'"
-                                    />
-                                    <template v-else>
-                                        <AIcon :type="item.icon" />
-                                        <span>{{ item?.text }}</span>
-                                    </template>
+                                    <AIcon :type="item.icon" />
+                                    <span>{{ item?.text }}</span>
                                 </j-permission-button>
                             </template>
                         </CardBox>
@@ -340,7 +338,7 @@ const columns = [
         title: $t('AccessConfig.index.764793-8'),
         key: 'action',
         fixed: 'right',
-        width: 140,
+        width: 150,
         scopedSlots: true,
     },
 ];

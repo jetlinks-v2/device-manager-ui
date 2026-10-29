@@ -32,6 +32,7 @@
                 />
             </a-form-item>
             <a-form-item
+	              v-if="displayTypes.length > 1"
                 :label="$t('Save.index.903552-5')"
                 name="type"
                 :rules="[
@@ -79,6 +80,7 @@
                 <FileUpload
                     v-else-if="currentTypeId() === 'jar'"
                     v-model:modelValue="formData.configuration.location"
+                    @loading-change="fileLoading = $event"
                     @change="handleFileUploadChange"
                 />
             </a-form-item>
@@ -119,6 +121,7 @@
                 key="submit"
                 type="primary"
                 :loading="loading"
+                :disabled="fileLoading"
                 @click="handleOk"
                 style="margin-left: 8px"
                 :hasPermission="`link/Protocol:${protocolId ? 'update' : 'add'}`"
@@ -136,8 +139,7 @@
     />
 </template>
 <script lang="ts" setup>
-import { onlyMessage } from '@jetlinks-web-core/utils/comm';
-import type { UploadChangeParam, FormInstance } from 'ant-design-vue';
+import type { FormInstance } from 'ant-design-vue';
 import FileUpload from './FileUpload.vue';
 import MarketplaceProtocolInstallModal from '../components/MarketplaceProtocolInstallModal.vue';
 import { save, update } from '../../../../api/link/protocol';
@@ -365,18 +367,8 @@ const onSubmit = async () => {
     loading.value = false;
 };
 
-const handleChange = (info: UploadChangeParam) => {
-    fileLoading.value = true;
-    if (info.file.status === 'done') {
-        onlyMessage($t('Save.index.903552-13'), 'success');
-        const result = info.file.response?.result;
-        formData.value.configuration.location = result;
-        fileLoading.value = false;
-    }
-};
-
 const handleFileUploadChange = () => {
-    formRef.value?.validate()
+    formRef.value?.validateFields([['configuration', 'location']]).catch(() => {});
 };
 
 const handleOk = () => {
@@ -413,7 +405,7 @@ watch(
     gap: 8px;
 }
 .protocol-type-inline-row--readonly .protocol-type-inline-item {
-    cursor: default;
+    cursor: not-allowed;
 }
 .protocol-type-inline-item {
     display: inline-flex;

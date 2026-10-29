@@ -1,0 +1,129 @@
+.certificate-detail {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+}
+
+.certificate-guide {
+    flex: none;
+    padding: var(--space-6);
+    border: 1px solid var(--primary-color-1);
+    background: color-mix(in srgb, var(--primary-color-1) 45%, var(--bg));
+
+    h1,
+    h2 {
+        margin: 0 0 var(--space-3);
+        color: var(--text-color);
+        font-size: var(--fs-h4);
+        font-weight: var(--chrome-label-font-weight);
+        line-height: var(--lh-snug);
+    }
+
+    h2 {
+        margin-bottom: var(--space-2);
+        font-size: var(--fs-body);
+    }
+
+    p {
+        margin: 0;
+        color: var(--text-color-secondary);
+        line-height: var(--lh-relaxed);
+        overflow-wrap: anywhere;
+    }
+}
+
+.certificate-guide-overview {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-4);
+}
+
+.certificate-guide-config {
+    height: 100%;
+    padding-left: var(--space-6);
+    border-left: 1px solid var(--primary-color-2);
+}
+
+.certificate-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+}
+
+.certificate-fields {
+    border: 1px solid var(--line);
+
+    :deep(.ant-form-item-label > label) {
+        color: var(--text-color);
+        font-weight: var(--chrome-label-font-weight);
+    }
+
+    :deep(.ant-form-item:last-child) {
+        margin-bottom: 0;
+    }
+}
+
+.certificate-standard-option {
+    width: 100%;
+    height: 5rem;
+    padding: 0;
+    border-radius: var(--r-2);
+    overflow: hidden;
+
+    &.ant-radio-button-wrapper-checked {
+        background: color-mix(in srgb, var(--primary-color-1) 35%, var(--bg));
+    }
+
+    :deep(.ant-radio-button + span) {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 100%;
+        padding-right: var(--space-4);
+    }
+
+    img {
+        width: 9.25rem;
+        height: 100%;
+        object-fit: contain;
+    }
+}
+
+.certificate-standard-check {
+    color: var(--primary-color);
+    font-size: var(--fs-18);
+}
+
+.certificate-mode :deep(.ant-radio-button-wrapper) {
+    min-width: 6rem;
+    text-align: center;
+}
+
+.certificate-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--line);
+
+    .form-submit {
+        min-width: 6rem;
+    }
+}
+
+@media (max-width: 1199px) {
+    .certificate-guide-config {
+        padding-left: 0;
+        border-left: 0;
+    }
+}
+
+@media (max-width: 767px) {
+    .certificate-detail,
+    .certificate-guide {
+        padding: var(--space-4);
+    }
+
+    .certificate-detail {
+        gap: var(--space-4);
+    }
+}

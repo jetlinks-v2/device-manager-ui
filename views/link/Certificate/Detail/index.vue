@@ -1,80 +1,98 @@
 <template>
+    <PageChrome>
+        <a-button class="router-detail-back" type="text" @click="menuStore.jumpPage('link/Certificate')">
+            <template #icon><AIcon type="LeftOutlined" /></template>
+            {{ $t('Certificate.detail.backToList') }}
+        </a-button>
+    </PageChrome>
     <j-page-container>
-        <FullPage :fixed="false">
-          <a-row :gutter="[24, 24]" style="padding: 24px">
-            <a-col :span="12">
-              <a-form class="form" layout="vertical" :model="formData" name="basic" :label-col="{ span: 8 }"
-                      :wrapper-col="{ span: 24 }" autocomplete="off" ref="formRef">
-                <a-form-item :label="$t('Detail.index.247061-0')" name="type"
-                             :rules="[{ required: true, message: $t('Detail.index.247061-1'), trigger: 'blur' }]">
-                  <a-radio-group v-model:value="formData.type">
-                    <a-radio-button class="form-radio-button" value="common">
-                      <img :src="link.certificate" />
-                    </a-radio-button>
-                  </a-radio-group>
-                </a-form-item>
-                <a-form-item :label="$t('Detail.index.247061-2')" name="name" :rules="[
-                                { required: true, message: $t('Detail.index.247061-3'), trigger: 'blur' },
-                                { max: 64, message: $t('Detail.index.247061-4') },
-                            ]">
-                  <a-input :placeholder="$t('Detail.index.247061-3')" v-model:value="formData.name" />
-                </a-form-item>
-                <a-form-item :label="$t('Detail.index.247061-5')" :name="['configs','cert']" :rules="[
-                                { required: true, message: $t('Detail.index.247061-6'), trigger: 'change' },
-                            ]">
-                  <CertificateFile name="cert" accept=".pem" v-model:modelValue="formData.configs.cert"
-                                   :placeholder="$t('Detail.index.247061-7')" />
-                </a-form-item>
-                <a-form-item :label="$t('Detail.index.247061-8')" name="mode"
-                             :rules="[{ required: true, message: $t('Detail.index.247061-9'), trigger: 'blur' }]">
-                  <a-radio-group v-model:value="formData.mode" button-style="solid">
-                    <a-radio-button value="client" style="margin-right: 30px;"
-                                    size="large">{{ $t('Detail.index.247061-10') }}</a-radio-button>
-                    <a-radio-button value="server" size="large">{{ $t('Detail.index.247061-11') }}</a-radio-button>
-                  </a-radio-group>
-                </a-form-item>
-                <!-- <a-form-item label="认证方式" v-if="formData.mode === 'client'" v-bind="validateInfos.authenticationMethod">
-                    <a-radio-group button-style="solid" v-model:value="formData.authenticationMethod">
-                        <a-radio-button value="single" style="margin-right: 30px;" size="large">单向认证</a-radio-button>
-                        <a-radio-button value="binomial" size="large">双向认证</a-radio-button>
-                    </a-radio-group>
-                </a-form-item> -->
-                <a-form-item :label="$t('Detail.index.247061-12')" v-if="formData.mode !== 'client'" :name="['configs','key']" :rules="[
-                                { required: true, message: $t('Detail.index.247061-6'), trigger: 'change' },
-                            ]">
-                  <CertificateFile name="key" v-model:modelValue="formData.configs.key"
-                                   :placeholder="$t('Detail.index.247061-13')" />
-                </a-form-item>
-                <a-form-item :label="$t('Detail.index.247061-14')" name="description" :rules="[{ max: 200, message: $t('Detail.index.247061-15') }]">
-                  <a-textarea :placeholder="$t('Detail.index.247061-16')" v-model:value="formData.description" :maxlength="200"
-                              :rows="3" showCount />
-                </a-form-item>
+        <FullPage class="certificate-detail" :fixed="false" margin="0">
+            <ContentPanel class="certificate-guide" :fill="true" :background="false">
+                <a-row :gutter="[24, 16]">
+                    <a-col :xs="24" :xl="8">
+                        <div class="certificate-guide-overview">
+                            <div>
+                                <h1>{{ $t('Detail.index.247061-18') }}</h1>
+                                <p>{{ $t('Detail.index.247061-19') }}</p>
+                            </div>
+                        </div>
+                    </a-col>
+                    <a-col :xs="24" :xl="16">
+                        <div class="certificate-guide-config">
+                            <h1>{{ $t('Detail.index.247061-20') }}</h1>
+                            <a-row :gutter="[24, 16]">
+                                <a-col :xs="24" :md="12">
+                                    <h2>1、{{ $t('Detail.index.247061-5') }}</h2>
+                                    <p>{{ $t('Detail.index.247061-22') }}</p>
+                                </a-col>
+                                <a-col :xs="24" :md="12">
+                                    <h2>2、{{ $t('Detail.index.247061-12') }}</h2>
+                                    <p>
+                                        {{ $t('Detail.index.247061-24') }}
+                                        {{ $t('Detail.index.247061-25') }}
+                                    </p>
+                                </a-col>
+                            </a-row>
+                        </div>
+                    </a-col>
+                </a-row>
+            </ContentPanel>
 
-                <a-form-item>
-                  <a-button v-if="view === 'false'" class="form-submit" html-type="submit" type="primary"
-                            @click.prevent="onSubmit" :loading="loading">{{ $t('Detail.index.247061-17') }}</a-button>
-                </a-form-item>
-              </a-form>
-            </a-col>
-            <a-col :span="12">
-              <div class="doc">
-                <h1>{{ $t('Detail.index.247061-18') }}</h1>
-                <div>
-                  {{ $t('Detail.index.247061-19') }}
+            <a-form class="certificate-form" layout="vertical" :model="formData" name="basic"
+                    :label-col="{ span: 8 }" :wrapper-col="{ span: 24 }" autocomplete="off" ref="formRef">
+                <ResponsiveGrid min="min(100%, 20rem)" fill="auto-fit" gap="var(--space-4)">
+                    <ContentPanel class="certificate-fields" :fill="true" :background="false">
+                        <a-form-item :label="$t('Detail.index.247061-0')" name="type"
+                                     :rules="[{ required: true, message: $t('Detail.index.247061-1'), trigger: 'blur' }]">
+                            <a-radio-group class="certificate-standard" v-model:value="formData.type">
+                                <a-radio-button class="certificate-standard-option" value="common">
+                                    <img :src="link.certificate" alt="" />
+                                    <AIcon class="certificate-standard-check" type="CheckCircleFilled" aria-hidden="true" />
+                                </a-radio-button>
+                            </a-radio-group>
+                        </a-form-item>
+                        <a-form-item :label="$t('Detail.index.247061-2')" name="name" :rules="[
+                            { required: true, message: $t('Detail.index.247061-3'), trigger: 'blur' },
+                            { max: 64, message: $t('Detail.index.247061-4') },
+                        ]">
+                            <a-input :placeholder="$t('Detail.index.247061-3')" v-model:value="formData.name" />
+                        </a-form-item>
+                        <a-form-item :label="$t('Detail.index.247061-14')" name="description"
+                                     :rules="[{ max: 200, message: $t('Detail.index.247061-15') }]">
+                            <a-textarea :placeholder="$t('Detail.index.247061-16')" v-model:value="formData.description"
+                                        :maxlength="200" :rows="8" showCount />
+                        </a-form-item>
+                    </ContentPanel>
+
+                    <ContentPanel class="certificate-fields" :fill="true" :background="false">
+                        <a-form-item :label="$t('Detail.index.247061-5')" :name="['configs','cert']" :rules="[
+                            { required: true, message: $t('Detail.index.247061-6'), trigger: 'change' },
+                        ]">
+                            <CertificateFile name="cert" accept=".pem" v-model:modelValue="formData.configs.cert"
+                                             :placeholder="$t('Detail.index.247061-7')" />
+                        </a-form-item>
+                        <a-form-item :label="$t('Detail.index.247061-8')" name="mode"
+                                     :rules="[{ required: true, message: $t('Detail.index.247061-9'), trigger: 'blur' }]">
+                            <a-radio-group class="certificate-mode" v-model:value="formData.mode" button-style="solid">
+                                <a-radio-button value="client" size="large">{{ $t('Detail.index.247061-10') }}</a-radio-button>
+                                <a-radio-button value="server" size="large">{{ $t('Detail.index.247061-11') }}</a-radio-button>
+                            </a-radio-group>
+                        </a-form-item>
+                        <a-form-item :label="$t('Detail.index.247061-12')" v-if="formData.mode !== 'client'" :name="['configs','key']" :rules="[
+                            { required: true, message: $t('Detail.index.247061-6'), trigger: 'change' },
+                        ]">
+                            <CertificateFile name="key" v-model:modelValue="formData.configs.key"
+                                             :placeholder="$t('Detail.index.247061-13')" />
+                        </a-form-item>
+                    </ContentPanel>
+
+                </ResponsiveGrid>
+
+                <div v-if="view === 'false'" class="certificate-actions">
+                    <a-button class="form-submit" html-type="submit" type="primary"
+                              @click.prevent="onSubmit" :loading="loading">{{ $t('Detail.index.247061-17') }}</a-button>
                 </div>
-                <h1>{{ $t('Detail.index.247061-20') }}</h1>
-                <h2>1、{{ $t('Detail.index.247061-5') }}</h2>
-                <div>
-                  {{ $t('Detail.index.247061-22') }}
-                </div>
-                <h2>2、{{ $t('Detail.index.247061-12') }}</h2>
-                <div>
-                  {{ $t('Detail.index.247061-24') }}
-                  {{ $t('Detail.index.247061-25') }}
-                </div>
-              </div>
-            </a-col>
-          </a-row>
+            </a-form>
         </FullPage>
     </j-page-container>
 </template>
@@ -194,17 +212,4 @@ const detail = async (id: string) => {
 detail(id);
 </script>
 
-<style lang="less" scoped>
-.form {
-    .form-radio-button {
-        width: 148px;
-        height: 80px;
-        padding: 0;
-
-        img {
-            width: 100%;
-            height: 100%;
-        }
-    }
-}
-</style>
+<style lang="less" scoped src="./detail.less"></style>
