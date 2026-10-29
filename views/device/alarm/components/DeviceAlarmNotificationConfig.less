@@ -15,6 +15,7 @@
   min-width: 0;
 }
 .device-alarm-notify__sentence { flex-wrap: wrap; }
+.device-alarm-notify.notification-is-off { grid-template-columns: max-content minmax(0, 1fr); }
 .device-alarm-notify > :deep(.device-alarm-message) { grid-column: 2; min-width: 0; }
 .notification-clause { white-space: nowrap; }
 .notification-toggle, .notification-chip {
@@ -27,8 +28,12 @@
   font: inherit;
   line-height: 22px;
 }
-.notification-toggle { justify-content: center; width: 18px; padding: 0; color: var(--jet-theme-primary); font-size: 14px; }
-.notification-toggle.is-off { color: var(--jet-theme-text-secondary); }
+.notification-toggle { justify-content: center; width: 18px; padding: 0; color: var(--jet-theme-primary); }
+.notification-toggle > :deep(.anticon) { font-size: 14px; }
+.device-alarm-notify .notification-toggle.is-off { display: inline-grid; grid-template-columns: 18px max-content; column-gap: 6px; width: auto; }
+.notification-toggle.is-off > .notification-enable-label { margin-inline-start: 0; }
+.notification-toggle.is-off:not(:disabled):hover { background: var(--jet-theme-primary-soft); color: var(--jet-theme-primary); }
+.notification-toggle:disabled { color: var(--jet-theme-text-secondary); }
 .device-alarm-notify__sentence .notification-chip {
   max-width: 176px;
   border: 1px solid var(--line);
