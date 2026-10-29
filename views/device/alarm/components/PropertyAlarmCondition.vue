@@ -40,7 +40,7 @@ function changeOperator(value: DeviceAlarmTrigger) {
 .property-alarm-condition :deep(.ant-input-number) { width: 76px; }
 .property-alarm-condition :deep(.ant-input) { width: 112px; }
 .property-alarm-condition :deep(.ant-select-selector), .property-alarm-condition :deep(input) { font-size: inherit; }
-.condition-values { min-width: 160px; max-width: 260px; }
+.condition-values { width: max-content; min-width: 80px; max-width: min(260px, 100%); }
 .condition-unit { color: var(--jet-theme-text-secondary); }
 :global(.alarm-condition-menu) { max-width: calc(100vw - 48px); }
 :global(.alarm-condition-menu .ant-select-item-option) { padding: 6px 12px; }

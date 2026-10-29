@@ -1,6 +1,6 @@
 <template>
   <span class="rule-line">
-    <span class="rule-kind"><slot name="label"><a-tag :color="color" :title="title"><AIcon :type="icon" /> {{ title }}<RuleNotice v-if="notice" :message="notice" /></a-tag></slot></span>
+    <span class="rule-kind"><slot name="label"><a-tag :color="color"><AIcon :type="icon" /> {{ title }}<RuleNotice v-if="notice" :message="notice" /></a-tag></slot></span>
     <span class="rule-sentence"><slot name="sentence"><slot /></slot><span v-if="$slots.extra" class="rule-sentence-extra"><slot name="extra" /></span></span>
     <span class="rule-line-action"><slot name="action" /></span>
     <span v-if="$slots.details" class="rule-line-details"><slot name="details" /></span>
@@ -40,7 +40,7 @@ defineProps<{ icon: string; title: string; color: string; notice?: string }>()
 .rule-sentence :deep(.ant-input-number-input) { height: var(--rule-control-height); padding-inline: var(--space-1); line-height: var(--rule-control-height); text-align: center; }
 .rule-sentence :deep(input::placeholder), .rule-sentence :deep(.ant-select-selection-placeholder) { color: var(--jet-theme-text-secondary); }
 .rule-sentence :deep(.rule-value-entry.ant-input), .rule-sentence :deep(.rule-value-entry.ant-select) { width: 96px; }
-.rule-sentence :deep(.rule-value-list) { width: 160px; min-width: 80px; max-width: 100%; }
+.rule-sentence :deep(.rule-value-list) { width: max-content; min-width: 80px; max-width: min(260px, 100%); }
 .rule-sentence :deep(.ant-select-selection-placeholder) { inset-inline-end: 7px; max-width: calc(100% - 14px); overflow: hidden; text-overflow: ellipsis; }
 .rule-sentence :deep(.ant-select-selection-search-input) { max-width: 100%; height: var(--rule-control-height); line-height: var(--rule-control-height); }
 .rule-sentence :deep(.ant-select-multiple .ant-select-selector) { min-height: var(--rule-control-height); padding: 0 4px; border-radius: 3px; cursor: text; }

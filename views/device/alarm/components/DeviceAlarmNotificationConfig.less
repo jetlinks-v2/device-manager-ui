@@ -41,12 +41,10 @@
   color: var(--jet-theme-text);
 }
 .notification-chip__label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.notification-chip__count { padding-inline: 3px; border-radius: 3px; background: var(--jet-theme-primary-soft); color: var(--jet-theme-primary); font-variant-numeric: tabular-nums; }
+.notification-chip__count { flex-shrink: 0; color: inherit; font-variant-numeric: tabular-nums; }
 .notification-chip__arrow { font-size: 10px; color: var(--jet-theme-text-secondary); }
 .notification-include-relieve { display: inline-flex; align-items: center; margin: 0; color: var(--jet-theme-text-secondary); font-size: inherit; line-height: 24px; }
 .notification-include-relieve :deep(.ant-checkbox) { top: 0; }
-.notification-info { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; color: var(--jet-theme-text-secondary); font-size: 14px; }
-.notification-help { max-width: min(320px, calc(100vw - 48px)); font-size: var(--fs-12); line-height: 1.7; }
 .device-alarm-notify__sentence .notification-chip:not(:disabled):hover, .device-alarm-notify__sentence .notification-chip[aria-expanded='true'] { border-color: var(--jet-theme-primary); background: var(--jet-theme-primary-soft); }
 .notification-toggle:focus-visible, .notification-chip:focus-visible { outline: 1px solid var(--jet-theme-primary); outline-offset: 2px; }
 .notification-option-panel { width: min(300px, calc(100vw - 48px)); font-size: var(--fs-12); }

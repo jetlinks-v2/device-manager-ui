@@ -1,14 +1,17 @@
 <template>
   <PropertyRuleLine :icon="mode.icon" :title="$t(mode.title)" color="cyan">
     <template #label>
-      <a-dropdown v-model:open="menuOpen" :trigger="['click']" :disabled="!editor.editable">
-        <a-button type="text" size="small" class="sampling-kind" :aria-label="$t('PropertyRules.strategy')">
-          <a-tooltip :open="menuOpen ? false : undefined" :title="draft.samplingMode === 'ratio' ? $t('PropertyRules.samplingHint') : undefined"><a-tag color="cyan"><AIcon :type="mode.icon" />{{ $t(mode.title) }}<RuleNotice v-if="draft.samplingMode !== 'ratio'" :message="`${$t(draft.samplingMode === 'interval' ? 'PropertyRules.intervalHint' : 'PropertyRules.deadbandHint')} ${$t('PropertyRules.statefulHint')}`" /><AIcon type="DownOutlined" /></a-tag></a-tooltip>
-        </a-button>
-        <template #overlay><a-menu class="rule-choice-menu" :selected-keys="[draft.samplingMode]">
-          <a-menu-item v-for="option in modes" :key="option.value" @click="draft.samplingMode = option.value; menuOpen = false"><RuleMenuOption :icon="option.icon" :title="$t(option.label)" :description="$t(option.description)" /></a-menu-item>
-        </a-menu></template>
-      </a-dropdown>
+      <a-tooltip :open="menuOpen ? false : undefined" :title="draft.samplingMode === 'ratio' ? $t('PropertyRules.samplingHint') : undefined">
+        <a-tag color="cyan" class="sampling-kind">
+          <a-dropdown v-model:open="menuOpen" :trigger="['click']" :disabled="!editor.editable">
+            <a-button type="text" size="small" class="sampling-trigger" :aria-label="$t('PropertyRules.strategy')"><AIcon :type="mode.icon" />{{ $t(mode.title) }}<AIcon type="DownOutlined" /></a-button>
+            <template #overlay><a-menu class="rule-choice-menu" :selected-keys="[draft.samplingMode]">
+              <a-menu-item v-for="option in modes" :key="option.value" @click="draft.samplingMode = option.value; menuOpen = false"><RuleMenuOption :icon="option.icon" :title="$t(option.label)" :description="$t(option.description)" /></a-menu-item>
+            </a-menu></template>
+          </a-dropdown>
+          <RuleNotice v-if="draft.samplingMode !== 'ratio'" :message="`${$t(draft.samplingMode === 'interval' ? 'PropertyRules.intervalHint' : 'PropertyRules.deadbandHint')} ${$t('PropertyRules.statefulHint')}`" />
+        </a-tag>
+      </a-tooltip>
     </template>
     <template v-if="draft.samplingMode === 'ratio'">
       <span>{{ $t('PropertyRules.sentence.sample') }}</span><span class="rule-phrase"><a-input-number v-model:value="draft.percent" size="small" :min="0" :max="100" :controls="false" :aria-label="$t('PropertyRules.keepPercent')" />%</span>
@@ -17,7 +20,7 @@
       <I18nT keypath="PropertyRules.sentence.intervalRule" scope="global" tag="span" class="rule-clause"><template #interval><span class="rule-phrase"><a-input-number v-model:value="draft.interval" size="small" :min="1 / draft.intervalUnit" :controls="false" :aria-label="$t('PropertyRules.intervalAmount')" /><a-select v-model:value="draft.intervalUnit" size="small" :bordered="false" :dropdown-match-select-width="false" :aria-label="$t('PropertyRules.intervalUnit')" :options="units" /></span></template></I18nT>
     </template>
     <template v-else-if="editor.numeric">
-      <I18nT keypath="PropertyRules.sentence.changeRule" scope="global" tag="span" class="rule-clause"><template #kind><a-tooltip :title="$t('PropertyRules.deadbandHint')"><a-select v-model:value="draft.deadbandType" size="small" :bordered="false" :dropdown-match-select-width="false" :aria-label="$t('PropertyRules.deadbandType')" :options="deadbandTypes" /></a-tooltip></template><template #operator>{{ Number(draft.deadband) === 0 ? '>' : '≥' }}</template><template #threshold><span class="rule-phrase"><a-input-number v-model:value="draft.deadband" size="small" :min="0" :controls="false" :aria-label="$t('PropertyRules.deadband')" />{{ draft.deadbandType === 'percent' ? '%' : editor.unit }}</span></template></I18nT>
+      <I18nT keypath="PropertyRules.sentence.changeRule" scope="global" tag="span" class="rule-clause"><template #kind><a-select v-model:value="draft.deadbandType" size="small" :bordered="false" :dropdown-match-select-width="false" :aria-label="$t('PropertyRules.deadbandType')" :options="deadbandTypes" /></template><template #operator>{{ Number(draft.deadband) === 0 ? '>' : '≥' }}</template><template #threshold><span class="rule-phrase"><a-input-number v-model:value="draft.deadband" size="small" :min="0" :controls="false" :aria-label="$t('PropertyRules.deadband')" />{{ draft.deadbandType === 'percent' ? '%' : editor.unit }}</span></template></I18nT>
     </template>
     <span v-else>{{ $t('PropertyRules.sentence.changeScalar') }}</span>
     <span v-if="draft.samplingMode === 'change'" class="rule-phrase rule-optional">
@@ -50,7 +53,7 @@ const deadbandTypes = computed(() => ['absolute', 'percent'].map(value => ({ val
 </script>
 <style scoped lang="less">
 @import './rule-menu.less';
-.sampling-kind { padding: 0; height: auto; }
+.sampling-trigger { display: inline-flex; align-items: center; gap: var(--space-1); height: 20px; padding: 0; color: inherit; font: inherit; line-height: 20px; }
 .rule-optional { color: var(--jet-theme-text-secondary); font-size: var(--fs-12); }
 .rule-optional :deep(.ant-checkbox-wrapper) { color: inherit; font-size: inherit; }
 </style>

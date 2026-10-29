@@ -36,10 +36,7 @@
           <a-checkbox class="notification-include-relieve" :checked="Boolean(model.autoRelieve && model.notification.includeRelieve)" :disabled="disabled || !model.autoRelieve" @update:checked="model.notification.includeRelieve = $event">{{ $t('DeviceAlarm.notification.includeRelieve') }}</a-checkbox>
         </a-tooltip>
       </template>
-      <a-popover :trigger="['hover', 'focus', 'click']" placement="top">
-        <template #content><div class="notification-help">{{ $t(model.notification.enabled ? 'DeviceAlarm.notification.explanation' : 'DeviceAlarm.notification.explanationOff') }}</div></template>
-        <a-button type="text" size="small" class="notification-info" :aria-label="$t('DeviceAlarm.notification.help')"><AIcon type="InfoCircleOutlined" /></a-button>
-      </a-popover>
+      <RuleNotice kind="info" :label="$t('DeviceAlarm.notification.help')" :message="$t(model.notification.enabled ? 'DeviceAlarm.notification.explanation' : 'DeviceAlarm.notification.explanationOff')" />
     </span>
     <DeviceAlarmMessageTemplateConfig v-if="model.notification.enabled && notification.showLegacyMessageTemplate" :model="model" :disabled="disabled" />
   </span>
@@ -51,6 +48,7 @@ import { useI18n } from 'vue-i18n'
 import { ConditionOptionPanel } from '@jetlinks-web-core/components/ConditionFilter'
 import DeviceAlarmMessageTemplateConfig from './DeviceAlarmMessageTemplateConfig.vue'
 import DeviceAlarmRecipients from './DeviceAlarmRecipients.vue'
+import RuleNotice from '../../components/PropertyRules/RuleNotice.vue'
 import { useAlarmNotification } from '../hooks/useAlarmNotification'
 import type { DeviceAlarmFormModel, DeviceAlarmNotifyMethod } from '../types'
 
