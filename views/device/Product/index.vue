@@ -32,7 +32,7 @@
 
 				      <JProTable
 					      :columns="columns"
-					      :request="queryProductList"
+					      :request="queryDetailList"
 					      class="product-page__table pro-table__no-padding"
 					      ref="tableRef"
 					      :defaultParams="{
@@ -110,6 +110,16 @@
 					      <template #brandModel="slotProps">
 						      {{ getBrandModel(slotProps) }}
 					      </template>
+					      <template #deviceCount="slotProps">
+						      <a-button
+						        class="product-page__device-count"
+						        type="link"
+						        :disabled="!canViewDevices || Number(slotProps.deviceCount ?? 0) === 0"
+						        @click="jumpDevice(slotProps.id)"
+						      >
+						        {{ Number(slotProps.deviceCount ?? 0) }}
+						      </a-button>
+					      </template>
 					      <template #action="slotProps">
                   <table-actions>
                       <table-actions-item v-for="i in getActions(slotProps)" :key="i.key" :common="i.common === false">
@@ -167,7 +177,7 @@ import {
   getProviders,
   queryOrgThree,
   queryGatewayList,
-  queryProductList,
+  queryDetailList,
   _deploy,
   _undeploy,
   deleteProduct,
@@ -186,6 +196,7 @@ import { accessType } from "../data";
 import { useI18n } from "vue-i18n";
 import { Modal } from "ant-design-vue";
 import ConditionFilter, {
+  encodeConditionFilterQuery,
   type ConditionFilterChangePayload,
   type ConditionFilterField,
   type ConditionFilterTerm,
@@ -199,6 +210,7 @@ import { createReusableTemplate } from '@vueuse/core'
 import { useEmptyCreateState } from '@jetlinks-web-core/hooks'
 import ProductExportModal from './components/ProductExportModal.vue'
 import { useProductTransfer } from './hooks/useProductTransfer'
+import { getDeviceListFilterFields } from '../../../deviceListFilter'
 
 const { t: $t } = useI18n();
 const route = useRoute()
@@ -207,6 +219,7 @@ const [DefineEmptyCreate, EmptyCreateButton] = createReusableTemplate()
 
 const menuStory = useMenuStore();
 const authStore = useAuthStore();
+const canViewDevices = computed(() => menuStory.hasMenu('iot-user-device-list'));
 const isAdd = ref<number>(0);
 const title = ref<string>("");
 const productSearchParams = ref<Record<string, any>>({});
@@ -242,6 +255,13 @@ const columns = [
     scopedSlots: true,
     ellipsis: true,
     width: 240,
+  },
+  {
+    title: $t("Product.index.660348-45"),
+    dataIndex: "deviceCount",
+    key: "deviceCount",
+    scopedSlots: true,
+    width: 100,
   },
   {
     title: $t("Product.index.660348-9"),
@@ -464,6 +484,21 @@ const add = () => {
  */
 const handleView = (id: string) => {
   menuStory.jumpPage("device/Product/Detail", { params: { id } });
+};
+
+/** 复用统一设备列表的产品筛选编码，确保钻取结果与设备列表的筛选契约一致。 */
+const jumpDevice = (productId: string) => {
+  if (!canViewDevices.value || !productId) return;
+
+  menuStory.jumpPage('iot-user-device-list', {
+    query: {
+      type: 'device',
+      q: encodeConditionFilterQuery(
+        [{ column: 'productId', termType: 'eq', value: productId }],
+        getDeviceListFilterFields(),
+      ),
+    },
+  });
 };
 
 /**
