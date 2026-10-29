@@ -52,7 +52,12 @@
             <PropertyRuleLine icon="AlertOutlined" :title="$t('PropertyRules.sentence.alarm')" color="orange" class="rule-line-alarm">
               <template #label><a-tag color="orange" class="rule-alarm-identity"><AIcon type="AlertOutlined" /><a-input v-if="editor.alarmNameEditing" :ref="editor.setAlarmNameInput" v-model:value="editor.draft.alarm.name" size="small" :maxlength="64" :aria-label="$t('DeviceAlarm.form.name')" @blur="editor.stopAlarmName()" @press-enter="editor.stopAlarmName()" @keydown.esc.stop.prevent="editor.stopAlarmName(true)" /><a-button v-else type="text" size="small" :disabled="!editor.editable" class="rule-alarm-name" :title="editor.draft.alarm.name" :aria-label="$t('PropertyRules.editAlarmName')" @click="editor.editAlarmName">{{ editor.draft.alarm.name || $t('DeviceAlarm.form.name') }}</a-button></a-tag></template>
               <PropertyAlarmCondition :model="editor.draft.alarm" :property="property" />
-              <template #details><PropertyAlarmRecovery :model="editor.draft.alarm" :property="property" /></template>
+              <template #details>
+                <PropertyAlarmRecovery :model="editor.draft.alarm" :property="property" :disabled="!editor.editable" />
+                <RegistryComponent page-code="device/alarm" code="alarm-editor">
+                  <DeviceAlarmNotificationConfig :model="editor.draft.alarm" :methods="editor.resources.methods" :loading="editor.resources.loading" :failed="editor.resources.failed" :disabled="!editor.editable" :reveal="editor.notificationOpen" @request-methods="editor.resources.load" @open-change="editor.setNotificationsOpen" />
+                </RegistryComponent>
+              </template>
               <template #extra><PropertyRuleAlarmActions :editor="editor" /></template>
               <template #action><a-button type="text" size="small" :aria-label="$t('PropertyRules.removePart', { name: $t('PropertyRules.alarm') })" @click="editor.draft.alarmEnabled = false"><AIcon type="CloseOutlined" /></a-button></template>
             </PropertyRuleLine>
@@ -92,6 +97,7 @@ import FallbackFields from './values/FallbackFields.vue'
 import ValueInput from './values/ValueInput.vue'
 import PropertyAlarmCondition from '../../alarm/components/PropertyAlarmCondition.vue'
 import PropertyAlarmRecovery from '../../alarm/components/PropertyAlarmRecovery.vue'
+import DeviceAlarmNotificationConfig from '../../alarm/components/DeviceAlarmNotificationConfig.vue'
 const props = defineProps<{ editor: UnwrapNestedRefs<ReturnType<typeof usePropertyRuleEditor>>; scope: RuleScope; property: ThingModelProperty; withActions?: boolean }>()
 const { t: $t } = useI18n()
 const summaryRows = computed(() => summarizeRuleRows(props.editor.parsed, props.property, $t))
@@ -105,7 +111,7 @@ const rangeActions = computed(() => [{ value: 'ignore', label: $t('PropertyRules
 <style scoped>
 .rule-editor { position: relative; }
 .rule-editor-actions { display: flex; margin-bottom: var(--space-2); }
-.rule-sentences { container: rule-fields / inline-size; display: flex; flex-direction: column; align-items: stretch; width: 100%; max-width: 700px; }
+.rule-sentences { container: rule-fields / inline-size; display: flex; flex-direction: column; align-items: stretch; width: 100%; max-width: 100%; }
 .rule-add { margin-top: var(--space-1); }
 .rule-source { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-2); padding-inline-end: 92px; color: var(--jet-theme-text-secondary); font-size: var(--fs-12); }
 .rule-warning { margin-top: var(--space-2); }

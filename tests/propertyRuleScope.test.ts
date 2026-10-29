@@ -10,7 +10,9 @@ import { usePropertyRuleEditor, type RuleEditorProps } from '../views/device/com
 import { useRuleResources } from '../views/device/components/PropertyRules/useRuleResources'
 import { useRuleExample } from '../views/device/components/PropertyRules/useRuleExample'
 import { useAlarmRecipients } from '../views/device/alarm/hooks/useAlarmRecipients'
-import type { ThingPropertyPreprocess } from '../views/device/alarm/types'
+import { useAlarmNotification } from '../views/device/alarm/hooks/useAlarmNotification'
+import { buildPreprocessPayload, createEmptyNotification, toDeviceAlarmRow } from '../views/device/alarm/utils'
+import type { DeviceAlarmFormModel, DeviceAlarmNotifyMethod, ThingPropertyPreprocess } from '../views/device/alarm/types'
 
 const settle = async () => { await new Promise(resolve => setImmediate(resolve)); await nextTick() }
 function mountState<T>(setup: () => T) {
@@ -45,6 +47,125 @@ function mountEditor(changed: (props: RuleEditorProps) => void | Promise<void> =
 
 const editorRoute = (id: string): RouteLocationNormalized => ({ path: `/products/${id}`, fullPath: `/products/${id}`,
   name: 'product-detail', params: { id }, query: { tab: 'AlarmConfig', ruleProperty: 'temperature' }, hash: '', matched: [], meta: {}, redirectedFrom: undefined })
+
+function notificationProps() {
+  const model: DeviceAlarmFormModel = { source: 'device', targetId: 'd1', productId: 'p1', property: 'temperature', name: 'Temperature',
+    level: 4, trigger: 'gte', value: 80, limit: {}, autoRelieve: true, relieveCondition: { trigger: 'lte', value: 75, limit: {} },
+    notification: { ...createEmptyNotification(), userIds: ['u1'], notifyChannelIds: ['inbox-1'], channelProviders: ['inbox'], parameters: { template: 'Existing content' } } }
+  const methods: DeviceAlarmNotifyMethod[] = [
+    { id: 'inbox-1', channelId: 'inbox-1', providerId: 'inbox', key: 'inbox', label: 'Inbox', desc: '', icon: 'MailOutlined' },
+    { id: 'email-1', channelId: 'email-1', providerId: 'email', key: 'email', label: 'Email', desc: '', icon: 'MailOutlined', raw: { configuration: { templateId: 't1', notifierId: 'n1' } } },
+  ]
+  return reactive({ model, methods, disabled: false, reveal: false })
+}
+
+test('notification enable and disable retain draft selections without eager requests', () => {
+  const props = notificationProps()
+  let requests = 0
+  const { state: notification, unmount } = mountState(() => useAlarmNotification(props, () => { requests++ }, () => {}))
+  try {
+    assert.equal(requests, 0)
+    const previous = JSON.stringify(props.model.notification)
+    notification.toggleEnabled()
+    assert.equal(requests, 1)
+    notification.toggleEnabled()
+    assert.equal(JSON.stringify(props.model.notification), previous)
+    props.disabled = true
+    notification.toggleEnabled()
+    notification.channelIds.value = ['email-1']
+    assert.equal(requests, 1)
+    assert.equal(JSON.stringify(props.model.notification), previous)
+  } finally { unmount() }
+})
+
+test('notification chips have one active panel and reveal the missing selection', async () => {
+  const props = notificationProps()
+  props.model.notification.enabled = true
+  props.model.notification.userIds = []
+  let requests = 0
+  const { state: notification, unmount } = mountState(() => useAlarmNotification(props, () => { requests++ }, open => { props.reveal = open }))
+  try {
+    notification.setPanel('recipients', true)
+    assert.equal(requests, 0)
+    notification.setPanel('channels', true)
+    notification.setPanel('recipients', false)
+    assert.equal(notification.activePanel.value, 'channels', 'late close of previous panel is ignored')
+    assert.equal(requests, 1)
+    props.reveal = false
+    await settle()
+    assert.equal(notification.activePanel.value, undefined)
+    props.reveal = true
+    await settle()
+    assert.equal(notification.activePanel.value, 'recipients', 'save validation opens the missing recipient field')
+    props.model.targetId = 'd2'
+    await settle()
+    assert.equal(notification.activePanel.value, undefined)
+    props.disabled = true
+    notification.setPanel('channels', true)
+    assert.equal(notification.activePanel.value, undefined)
+  } finally { unmount() }
+})
+
+test('notification channel changes preserve message content and alarm recovery on save and readback', () => {
+  const props = notificationProps()
+  const { state: notification, unmount } = mountState(() => useAlarmNotification(props, () => {}, () => {}))
+  try {
+    props.model.notification.enabled = true
+    notification.channelIds.value = ['email-1']
+    assert.deepEqual(props.model.notification.channelProviders, ['email'])
+    assert.deepEqual(props.model.notification.parameters, { template: 'Existing content', email: { templateId: 't1', notifierId: 'n1' } })
+    const row = toDeviceAlarmRow(buildPreprocessPayload(props.model), 'device', 'Device')!
+    assert.equal(row.autoRelieve, true)
+    assert.equal(row.relieveCondition?.trigger, 'lte')
+    assert.equal(row.relieveCondition?.value, 75)
+    assert.deepEqual(row.notification.notifyChannelIds, ['email-1'])
+    assert.deepEqual(row.notification.userIds, ['u1'])
+    assert.deepEqual(row.notification.parameters, props.model.notification.parameters)
+  } finally { unmount() }
+})
+
+test('unavailable selected channels retain their IDs and parameters until explicitly deselected', () => {
+  const props = notificationProps()
+  props.model.notification.notifyChannelIds = ['gone']
+  props.model.notification.channelProviders = ['old-provider']
+  props.model.notification.parameters['old-provider'] = { notifierId: 'old-notifier' }
+  const { state: notification, unmount } = mountState(() => useAlarmNotification(props, () => {}, () => {}))
+  try {
+    assert.deepEqual(notification.channelIds.value, ['gone'])
+    assert.ok(notification.channelOptions.value.some(option => option.value === 'gone'))
+    notification.channelIds.value = ['gone', 'email-1']
+    assert.deepEqual(props.model.notification.notifyChannelIds, ['gone', 'email-1'])
+    assert.deepEqual(props.model.notification.parameters['old-provider'], { notifierId: 'old-notifier' })
+    notification.channelIds.value = ['email-1']
+    assert.deepEqual(props.model.notification.channelProviders, ['email'])
+    assert.equal('old-provider' in props.model.notification.parameters, false)
+  } finally { unmount() }
+})
+
+test('controlled recipient popovers load lazily and ignore replies after switching panels', async () => {
+  const props = reactive({ value: ['u1'], scopeKey: 'device:d1:temperature', open: false })
+  let requests = 0
+  let release!: (value: unknown) => void
+  setAlarmRequestHandler(() => { requests++; return new Promise(resolve => { release = resolve }) })
+  const { state: directory, unmount } = mountState(() => useAlarmRecipients(props))
+  try {
+    assert.equal(requests, 0)
+    assert.ok(directory.selectionLabel.value)
+    props.open = true
+    const pending = directory.config.value.loadSelectedOptions!(['u1'])
+    props.open = false
+    release({ result: { data: [{ id: 'u1', name: 'Old response' }] } })
+    assert.deepEqual(await pending, [])
+    assert.equal(directory.open.value, false)
+    assert.equal(directory.firstSelectedLabel.value, undefined)
+    props.open = true
+    const latest = directory.config.value.loadSelectedOptions!(['u1'])
+    release({ result: { data: [{ id: 'u1', name: 'Selected user' }] } })
+    await latest
+    assert.equal(directory.selectionLabel.value, 'Selected user')
+    assert.equal(requests, 2)
+  } finally { unmount() }
+})
 
 test('restore confirmation is explicit and restores only the captured device property', async () => {
   const calls: string[] = []

@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore, useSystemStore } from '@jetlinks-web-core/store'
 import type { ThingModelProperty, ThingPropertyPreprocess } from '../../alarm/types'
 import { createEmptyNotification, isNumberProperty, propertyIdOf, propertyNameOf, toDeviceAlarmRow,
-  formatPropertyUnit, matchesAlarmNotifyMethod, validateNotificationMessage, DEVICE_ALARM_NOTIFICATION_MESSAGE_MAX_LENGTH } from '../../alarm/utils'
+  formatPropertyUnit, validateNotificationMessage, DEVICE_ALARM_NOTIFICATION_MESSAGE_MAX_LENGTH } from '../../alarm/utils'
 import { availableRuleParts, buildRule, isEmptyRule, parseRule, validateDraft, type RuleDraft, type RuleAddPart } from './codec'
 import { readSampling } from './sampling'
 import { defaultCondition } from '../../alarm/conditions'
@@ -79,14 +79,6 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
   const steps = computed(() => draft.value ? summarizeDraft(draft.value, props.property, t)
     .filter(step => step.key !== 'alarm' || (scalar.value && (alarmAvailable.value || draft.value!.alarmEnabled)))
     .map(step => step.key === 'cleaning' && !scalar.value ? { ...step, text: t('PropertyRules.unsupportedCleaning') } : step) : [])
-  const notificationSummary = computed(() => {
-    const notification = draft.value?.alarm.notification
-    if (!notification?.enabled) return t('PropertyRules.notificationOff')
-    const parts = resources.methods.value.filter(method => matchesAlarmNotifyMethod(notification, method)).map(method => method.label)
-    if (notification.userIds.length) parts.push(t('PropertyRules.notificationUsers', { count: notification.userIds.length }))
-    if (notification.dimensions?.length) parts.push(t('PropertyRules.notificationDimensions'))
-    return parts.join(' · ') || t('PropertyRules.notificationOn')
-  })
   const addableParts = computed(() => draft.value ? availableRuleParts(props.property, {
     values: draft.value.valuesEnabled, range: draft.value.rangeEnabled,
     scale: draft.value.scaleEnabled, file: draft.value.fileEnabled,
@@ -173,7 +165,6 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
   }
   function setNotificationsOpen(value: boolean) {
     notificationOpen.value = value
-    if (value && draft.value) void resources.load()
   }
   async function editAlarmName() {
     if (!editable.value || !draft.value) return
@@ -295,6 +286,6 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
   watch([() => props.open, () => props.scope.productId, () => props.scope.deviceId, () => propertyIdOf(props.property)], load, { immediate: true })
   return { loading, failed, saving, draft, parsed, numeric, alarmAvailable, canSave, editable, source, hasOverride,
     custom, dirty, pendingSave, saveState, resources, type, boolean, scalar, unit, cleaningUnit, cleaningHint, booleanOptions, enumOptions, levelOptions,
-    steps, activeSection, notificationOpen, notificationSummary, setNotificationsOpen, alarmNameEditing, setAlarmNameInput, editAlarmName, stopAlarmName, toggleStep, setValues, addableParts, addPart,
+    steps, activeSection, notificationOpen, setNotificationsOpen, alarmNameEditing, setAlarmNameInput, editAlarmName, stopAlarmName, toggleStep, setValues, addableParts, addPart,
     load, requestClose, prepareLeave, discard, customize, clear, save, restore }
 }

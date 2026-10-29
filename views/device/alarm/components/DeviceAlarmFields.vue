@@ -11,7 +11,7 @@
   <a-form-item :label="$t('DeviceAlarm.form.trigger')" required>
     <PropertyAlarmCondition :model="model" :property="conditionProperty" />
   </a-form-item>
-  <PropertyAlarmRecovery :model="model" :property="conditionProperty" />
+  <PropertyAlarmRecovery :model="model" :property="conditionProperty" :disabled="disabled" />
   <p class="alarm-fields-preview"><AIcon type="InfoCircleOutlined" /> {{ previewText }}</p>
   </template>
   <a-button v-if="notificationDisclosure" class="alarm-notification-disclosure" type="text" block

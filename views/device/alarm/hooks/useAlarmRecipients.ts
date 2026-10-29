@@ -4,9 +4,9 @@ import type { ConditionOptionPanelConfig } from '@jetlinks-web-core/components/C
 import { queryDeviceAlarmNotifyUsers } from '../api'
 
 interface RecipientOption { value: string; label: string; description?: string; icon?: string }
-interface RecipientProps { value: string[]; scopeKey: string; disabled?: boolean }
+interface RecipientProps { value: string[]; scopeKey: string; open?: boolean; disabled?: boolean }
 
-/** The directory lives only in the active notification editor, never in every property row. */
+/** Resolve names and candidates only when the recipient chip is opened. */
 export function useAlarmRecipients(props: RecipientProps) {
   const { t } = useI18n()
   const open = ref(false)
@@ -23,6 +23,11 @@ export function useAlarmRecipients(props: RecipientProps) {
   }
   const options = computed(() => [...labels.value.values()])
   const selected = computed(() => props.value.map(id => labels.value.get(id) ?? { value: id, label: id }))
+  const firstSelectedLabel = computed(() => labels.value.get(props.value[0])?.label)
+  const selectionLabel = computed(() => firstSelectedLabel.value
+    ?? t(props.value.length ? 'DeviceAlarm.notification.recipientCount' : 'DeviceAlarm.notification.userShort', { count: props.value.length }))
+  const selectionTitle = computed(() => props.value.length && props.value.every(id => labels.value.has(id))
+    ? selected.value.map(user => user.label).join('、') : selectionLabel.value)
   const config = computed<ConditionOptionPanelConfig>(() => {
     // A new loader identity lets the shared panel restart safely after an explicit retry.
     const token = revision.value
@@ -70,6 +75,8 @@ export function useAlarmRecipients(props: RecipientProps) {
     if (open.value !== value) generation++
     open.value = value
   }
+  // Controlled popovers share one active panel; closing invalidates in-flight option responses.
+  watch(() => props.open, value => { if (value !== undefined) setOpen(value) }, { immediate: true, flush: 'sync' })
   function retry() {
     generation++
     candidateFailed.value = selectedFailed.value = false
@@ -83,5 +90,5 @@ export function useAlarmRecipients(props: RecipientProps) {
   })
   watch(() => props.disabled, value => { if (value) { generation++; open.value = false } })
   onBeforeUnmount(() => { generation++ })
-  return { open, selected, options, config, revision, candidateFailed, selectedFailed, setOpen, retry }
+  return { open, selected, options, config, revision, candidateFailed, selectedFailed, firstSelectedLabel, selectionLabel, selectionTitle, setOpen, retry }
 }
