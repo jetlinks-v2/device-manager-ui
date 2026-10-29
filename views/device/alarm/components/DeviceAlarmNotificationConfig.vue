@@ -1,11 +1,12 @@
 <template>
-  <span class="device-alarm-notify" :class="{ 'notification-is-off': !model.notification.enabled }">
-    <a-button type="text" size="small" class="notification-toggle" :class="{ 'is-off': !model.notification.enabled }"
-      :disabled="disabled" :aria-pressed="model.notification.enabled" :aria-label="$t(model.notification.enabled ? 'DeviceAlarm.notification.turnOff' : 'DeviceAlarm.notification.turnOn')"
-      :title="$t(model.notification.enabled ? 'DeviceAlarm.notification.turnOff' : 'DeviceAlarm.notification.turnOn')" @click="notification.toggleEnabled">
-      <AIcon :type="model.notification.enabled ? 'BellFilled' : 'BellOutlined'" />
-      <span v-if="!model.notification.enabled" class="notification-enable-label">{{ $t('DeviceAlarm.notification.turnOn') }}</span>
-    </a-button>
+  <span class="device-alarm-notify">
+    <a-tooltip :title="$t(model.notification.enabled ? 'DeviceAlarm.notification.turnOff' : 'DeviceAlarm.notification.turnOn')" :trigger="['hover', 'focus']">
+      <a-button type="text" size="small" class="notification-toggle" :class="{ 'is-off': !model.notification.enabled }"
+        :disabled="disabled" :aria-pressed="model.notification.enabled" :aria-label="$t(model.notification.enabled ? 'DeviceAlarm.notification.turnOff' : 'DeviceAlarm.notification.turnOn')"
+        @click="notification.toggleEnabled">
+        <span class="notification-bell" aria-hidden="true"><AIcon :type="model.notification.enabled ? 'BellFilled' : 'BellOutlined'" /></span>
+      </a-button>
+    </a-tooltip>
     <span class="device-alarm-notify__sentence">
       <template v-if="model.notification.enabled">
         <span class="notification-clause">

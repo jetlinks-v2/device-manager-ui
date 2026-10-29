@@ -15,7 +15,6 @@
   min-width: 0;
 }
 .device-alarm-notify__sentence { flex-wrap: wrap; }
-.device-alarm-notify.notification-is-off { grid-template-columns: max-content minmax(0, 1fr); }
 .device-alarm-notify > :deep(.device-alarm-message) { grid-column: 2; min-width: 0; }
 .notification-clause { white-space: nowrap; }
 .notification-toggle, .notification-chip {
@@ -28,12 +27,11 @@
   font: inherit;
   line-height: 22px;
 }
-.notification-toggle { justify-content: center; width: 18px; padding: 0; color: var(--jet-theme-primary); }
-.notification-toggle > :deep(.anticon) { display: flex; align-items: center; justify-content: center; width: 18px; height: 24px; font-size: 14px; }
-/* The outline preserves the shared icon and sentence columns. */
-.device-alarm-notify .notification-toggle.is-off { display: inline-grid; grid-template-columns: 18px max-content; column-gap: 6px; width: auto; padding-inline: 0 var(--space-1); border-radius: var(--radius-sm, 4px); background: var(--bg-sunken); box-shadow: 0 0 0 1px var(--line); color: var(--jet-theme-text-secondary); }
-.notification-toggle.is-off > .notification-enable-label { margin-inline-start: 0; }
-.device-alarm-notify .notification-toggle.is-off:not(:disabled):hover { box-shadow: 0 0 0 1px var(--jet-theme-text-secondary); color: var(--jet-theme-text); }
+.notification-toggle { justify-content: center; width: 24px; margin-inline: -3px; padding: 0; border-radius: var(--radius-sm, 4px); color: var(--jet-theme-primary); }
+.notification-bell { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 24px; font-size: 14px; }
+.notification-toggle.is-off { color: var(--jet-theme-text-secondary); }
+.notification-toggle.is-off .notification-bell::after { position: absolute; top: 11px; left: 1px; width: 16px; height: 1.5px; border-radius: 1px; background: currentColor; content: ''; transform: rotate(-45deg); }
+.notification-toggle.is-off:not(:disabled):hover, .notification-toggle.is-off:not(:disabled):focus-visible { background: var(--bg-sunken); color: var(--jet-theme-text); }
 .notification-toggle:disabled { color: var(--jet-theme-text-secondary); }
 .device-alarm-notify__sentence .notification-chip {
   max-width: 176px;
