@@ -92,7 +92,8 @@ test('GeoJSON retains real device IDs even when names and coordinates coincide',
     '@jetlinks-web/constants': {},
     '@jetlinks-web/utils': {},
     '@jetlinks-web-core/utils': {},
-    'event-source-polyfill': {}
+    'event-source-polyfill': {},
+    '../../../dataCapabilities/deviceInstanceMonitoring.service': {}
   })
   const feature = (id, coordinates = [116.4, 39.9]) => ({
     geometry: { coordinates },
@@ -388,4 +389,73 @@ test('marker renderer treats device names as text and retains aggregation at zoo
   assert.equal(content.children[0].textContent, '<img src=x onerror=alert(1)>')
   options.renderClusterMarker({ marker, count: 3, data: [] })
   assert.equal(content.textContent, '3')
+})
+
+test('distribution preserves states, geometry proportions and independent point identity', () => {
+  const {buildDeviceDistributionOption,distributionColors} = load('DeviceMapCard/distribution.ts', {
+    '@jetlinks-web-core/components/Echarts/library': {use(){},registerMap(){}},
+    'echarts/components': {GeoComponent:{}},
+    './distributionLand.json': {type:'FeatureCollection',features:[]},
+  })
+  const points = [
+    {...point('on'),state:'online'}, {...point('off'),state:'offline'},
+    {...point('disabled'),state:'notActive'}, point('unknown'),
+  ]
+  const labels={online:'在线',offline:'离线',disabled:'禁用',unknown:'未知'}
+  const option=buildDeviceDistributionOption(points,labels,{width:400,height:300})
+  assert.equal(option.series[0].data.length,4)
+  const byId=Object.fromEntries(option.series[0].data.map(p=>[p.deviceId,p]))
+  assert.deepEqual(['on','off','disabled','unknown'].map(id=>byId[id].itemStyle.color),[distributionColors.online,distributionColors.offline,distributionColors.disabled,distributionColors.unknown])
+  assert.ok(option.geo.projection.project([116,54])[1] < option.geo.projection.project([116,17])[1])
+  assert.ok(option.geo.layoutSize<=388)
+  const narrow=buildDeviceDistributionOption(points,labels,{width:100,height:300})
+  assert.equal(narrow.geo.layoutSize,88)
+})
+
+test('distribution state requests batch and retain unknown points on partial failure', async () => {
+  const calls=[]
+  const {loadDeviceMapStates}=load('services/deviceMap.ts', {
+    '@jetlinks-web/constants':{},'@jetlinks-web/utils':{},'@jetlinks-web-core/utils':{},'event-source-polyfill':{},
+    '../../../dataCapabilities/deviceInstanceMonitoring.service': {loadDeviceStates:async ({deviceIds})=>{
+      calls.push(deviceIds)
+      if(calls.length===2) throw Error('failure')
+      return deviceIds.map(deviceId=>({deviceId,state:'online',stateText:'在线'}))
+    }},
+  })
+  const points=Array.from({length:201},(_,i)=>point(String(i)))
+  const result=await loadDeviceMapStates(points,new AbortController().signal)
+  assert.deepEqual(calls.map(c=>c.length),[100,100,1])
+  assert.equal(result.failed,true)
+  assert.equal(result.points.length,201)
+  assert.equal(result.points[0].state,'online')
+  assert.equal(result.points[100].state,undefined)
+  assert.equal(result.points[200].state,'online')
+  const aborted=new AbortController();aborted.abort()
+  await assert.rejects(loadDeviceMapStates(points,aborted.signal),/cancelled/)
+})
+
+test('distribution hook rejects stale state responses on scope change and selects overlapping devices', async () => {
+  const streams=[], pending=[], factory=selectionFactory()
+  const {useDeviceMap}=load('hooks/useDeviceMap.ts', {
+    '../DeviceMapCard/config': {deviceMapCardConfig:{componentProps:{deviceMapCard:{presentation:'distribution',scope:'a',isAutoRefresh:false,interval:60}}}},
+    '../shared':shared,
+    '../services/deviceMap': {
+      createDeviceMapStream(handlers){const stream={...handlers,close(){}};streams.push(stream);return stream},
+      loadDeviceMapStates(points,signal){const d=deferred();pending.push({...d,points,signal});return d.promise},
+    },
+    '../DeviceMapCard/markers':{createDeviceMapMarkerOptions:()=>({})},
+    '../DeviceMapCard/cluster':cluster,'./useDeviceMapSelection':factory,'../../../utils/map':load('../../utils/map.ts'),
+  })
+  const info=vue.ref({componentProps:{deviceMapCard:{presentation:'distribution',scope:'a',isAutoRefresh:false}}})
+  const {value,unmount}=mount(()=>useDeviceMap(info,vue.ref(false),vue.ref(false)))
+  streams[0].onMessage([point('a'),point('b')]);streams[0].onComplete();await settle()
+  assert.equal(pending.length,1)
+  info.value={componentProps:{deviceMapCard:{presentation:'distribution',scope:'b',isAutoRefresh:false}}};await settle()
+  assert.equal(pending[0].signal.aborted,true)
+  streams[1].onMessage([point('new'),point('other')]);streams[1].onComplete();await settle()
+  pending[1].resolve({points:[{...point('new'),state:'online'},point('other')],failed:false});await settle()
+  pending[0].resolve({points:[point('stale')],failed:false});await settle()
+  assert.deepEqual(value.points.value.map(p=>p.deviceId),['new','other'])
+  value.onPointSelect('new');assert.equal(value.selection.view.count,2)
+  unmount()
 })
