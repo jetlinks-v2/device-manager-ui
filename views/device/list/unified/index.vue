@@ -346,12 +346,12 @@ const scopeColumn = computed(() => ({
 }))
 const columns = computed(() => [
   { title: t('UnifiedDeviceList.name'), key: 'name', width: 280, fixed: 'left' },
-  { title: t('UnifiedDeviceList.product'), key: 'productName', width: 180 },
+  { title: t('UnifiedDeviceList.product'), key: 'productName', width: 180, ellipsis: true },
   { title: t('IotDeviceList.table.brandModel'), key: 'brandModel', width: 160 },
   scopeColumn.value,
   { title: t('UnifiedDeviceList.status'), key: 'status', width: 100 },
-  ...(activeType.value === 'all' ? [{ title: t('IotDeviceDetail.detail.lastReport'), key: 'lastReportTime', width: 160 }] : []),
-  ...(activeType.value === 'all' ? [{ title: t('Instance.index.133466-5'), key: 'createdAt', width: 160 }] : []),
+  ...(activeType.value === 'all' ? [{ title: t('IotDeviceDetail.detail.lastReport'), key: 'lastReportTime', width: 160, ellipsis: true }] : []),
+  ...(activeType.value === 'all' ? [{ title: t('Instance.index.133466-5'), key: 'createdAt', width: 160, ellipsis: true }] : []),
   ...(activeType.value === 'gateway' ? [{ title: t('GatewayDeviceCard.monitor'), key: 'monitor', width: 220 }] : []),
   ...(['gateway', 'video'].includes(activeType.value) ? [{ title: t('UnifiedDeviceList.channel'), key: 'channel', width: 100 }] : []),
   { title: t('UnifiedDeviceList.action'), key: 'action', width: 90, fixed: 'right', align: 'center' },

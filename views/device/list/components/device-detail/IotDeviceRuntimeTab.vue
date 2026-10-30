@@ -154,7 +154,7 @@
 import { computed, ref, watch, type PropType } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import JlDrawerShell from '../common/JlDrawerShell.vue'
+import JlDrawerShell from '@jetlinks-web-core/components/JlDrawerShell/index.vue'
 import type {
 
   RealtimeAccessMode,

@@ -17,11 +17,21 @@ export interface OverviewTrendSeries {
   down: number[]
 }
 
+/** 使用原生图例独立切换消息曲线，绘图区为右上方图例预留空间。 */
 export function createMessageTrendOption(labels: string[], series: OverviewTrendSeries, maxValue: number) {
   return {
     animation: false,
     color: ['#8b5cf6', '#f59e0b'],
-    grid: { top: 12, right: 32, bottom: 28, left: 32, containLabel: true },
+    legend: {
+      top: 0,
+      right: 0,
+      padding: 0,
+      itemWidth: 24,
+      itemHeight: 8,
+      itemGap: 16,
+      textStyle: { color: '#7e8da9', fontSize: 12 },
+    },
+    grid: { top: 36, right: 32, bottom: 12, left: 32, containLabel: true },
     tooltip: {
       trigger: 'axis',
       confine: true,
