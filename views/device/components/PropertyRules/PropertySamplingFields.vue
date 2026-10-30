@@ -9,7 +9,7 @@
               <a-menu-item v-for="option in modes" :key="option.value" @click="draft.samplingMode = option.value; menuOpen = false"><RuleMenuOption compact :icon="option.icon" :title="$t(option.label)" :description="$t(option.description)" /></a-menu-item>
             </a-menu></template>
           </a-dropdown>
-          <RuleNotice v-if="draft.samplingMode !== 'ratio'" :message="`${$t(draft.samplingMode === 'interval' ? 'PropertyRules.intervalHint' : 'PropertyRules.deadbandHint')} ${$t('PropertyRules.statefulHint')}`" />
+          <RuleNotice v-if="draft.samplingMode !== 'ratio'" :message="`${$t(draft.samplingMode === 'interval' ? 'PropertyRules.intervalHint' : 'PropertyRules.deadbandHint')} ${draft.samplingMode === 'change' && draft.deadbandType === 'absolute' && editor.unit === '%' ? $t('PropertyRules.percentagePointsHint') + ' ' : ''}${$t('PropertyRules.statefulHint')}`" />
         </a-tag>
       </a-tooltip>
     </template>
@@ -20,7 +20,7 @@
       <I18nT keypath="PropertyRules.sentence.intervalRule" scope="global" tag="span" class="rule-clause"><template #interval><span class="rule-phrase"><a-input-number v-model:value="draft.interval" size="small" :min="1 / draft.intervalUnit" :controls="false" :aria-label="$t('PropertyRules.intervalAmount')" /><a-select v-model:value="draft.intervalUnit" size="small" :bordered="false" :dropdown-match-select-width="288" :virtual="false" dropdown-class-name="rule-select-menu" :aria-label="$t('PropertyRules.intervalUnit')" :options="units"><template #option="option"><RuleMenuOption compact icon="ClockCircleOutlined" :title="option.label" :description="$t(option.description)" /></template></a-select></span></template></I18nT>
     </template>
     <template v-else-if="editor.numeric">
-      <I18nT keypath="PropertyRules.sentence.changeRule" scope="global" tag="span" class="rule-clause"><template #kind><a-select v-model:value="draft.deadbandType" size="small" :bordered="false" :dropdown-match-select-width="288" :virtual="false" dropdown-class-name="rule-select-menu" :aria-label="$t('PropertyRules.deadbandType')" :options="deadbandTypes"><template #option="option"><RuleMenuOption compact :icon="option.icon" :title="option.label" :description="$t(option.description)" /></template></a-select></template><template #operator>{{ Number(draft.deadband) === 0 ? '>' : '≥' }}</template><template #threshold><span class="rule-phrase"><a-input-number v-model:value="draft.deadband" size="small" :min="0" :controls="false" :aria-label="$t('PropertyRules.deadband')" />{{ draft.deadbandType === 'percent' ? '%' : editor.unit }}</span></template></I18nT>
+      <I18nT keypath="PropertyRules.sentence.changeRule" scope="global" tag="span" class="rule-clause"><template #kind><a-select v-model:value="draft.deadbandType" size="small" :bordered="false" :dropdown-match-select-width="288" :virtual="false" dropdown-class-name="rule-select-menu" :aria-label="$t('PropertyRules.deadbandType')" :options="deadbandTypes"><template #option="option"><RuleMenuOption compact :icon="option.icon" :title="option.label" :description="$t(option.description)" /></template></a-select></template><template #operator>{{ Number(draft.deadband) === 0 ? '>' : '≥' }}</template><template #threshold><span class="rule-phrase"><a-input-number v-model:value="draft.deadband" size="small" :min="0" :controls="false" :aria-label="$t('PropertyRules.deadband')" />{{ draft.deadbandType === 'percent' ? '%' : editor.differenceUnit }}</span></template></I18nT>
     </template>
     <span v-else>{{ $t('PropertyRules.sentence.changeScalar') }}</span>
     <span v-if="draft.samplingMode === 'change'" class="rule-phrase rule-optional">
@@ -50,7 +50,7 @@ const modes = computed(() => ([
 const mode = computed(() => modes.value.find(item => item.value === draft.value.samplingMode) ?? modes.value[0])
 const units = computed(() => [1, 1000, 60000].map((value, index) => ({ value, label: $t(`PropertyRules.timeUnit.${['ms', 's', 'min'][index]}`), description: `PropertyRules.choice.unit.${['ms', 's', 'min'][index]}` })))
 const deadbandTypes = computed(() => [
-  { value: 'absolute', label: $t('PropertyRules.deadbandType.absolute'), icon: 'MinusOutlined', description: 'PropertyRules.choice.absolute' },
+  { value: 'absolute', label: $t('PropertyRules.deadbandType.absolute'), icon: 'MinusOutlined', description: props.editor.unit === '%' ? 'PropertyRules.percentagePointsHint' : 'PropertyRules.choice.absolute' },
   { value: 'percent', label: $t('PropertyRules.sentence.relativeChange'), icon: 'PercentageOutlined', description: 'PropertyRules.choice.percent' },
 ])
 </script>

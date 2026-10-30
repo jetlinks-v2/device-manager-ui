@@ -12,7 +12,7 @@ import { defaultCondition } from '../../alarm/conditions'
 import { readValueRules } from './values/config'
 import { loadRules, restoreRule, saveRule, type RuleScope } from './service'
 import { useRuleResources } from './useRuleResources'
-import { summarizeDraft, type RuleSection } from './summary'
+import { formatRuleDifferenceUnit, summarizeDraft, type RuleSection } from './summary'
 
 export interface RuleEditorProps {
   open: boolean
@@ -50,6 +50,8 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
   const scalar = computed(() => numeric.value || ['string', 'boolean', 'enum'].includes(type.value))
   const unit = computed(() => formatPropertyUnit(props.property.valueType?.unit))
   const cleaningUnit = computed(() => draft.value?.scaleEnabled ? t('PropertyRules.rawValue') : unit.value)
+  const differenceUnit = computed(() => formatRuleDifferenceUnit(props.property, t))
+  const cleaningDifferenceUnit = computed(() => draft.value?.scaleEnabled ? t('PropertyRules.rawValue') : differenceUnit.value)
   const cleaningHint = computed(() => draft.value?.scaleEnabled ? t('PropertyRules.rawValueHint') : '')
   const booleanOptions = [{ label: 'true', value: true }, { label: 'false', value: false }]
   const enumOptions = computed(() => (props.property.valueType?.elements ?? []).map(item => ({ value: item.value, label: item.text ?? String(item.value) })))
@@ -285,7 +287,7 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
     || (!saving.value && await confirmLeave()))
   watch([() => props.open, () => props.scope.productId, () => props.scope.deviceId, () => propertyIdOf(props.property)], load, { immediate: true })
   return { loading, failed, saving, draft, parsed, numeric, alarmAvailable, canSave, editable, source, hasOverride,
-    custom, dirty, pendingSave, saveState, resources, type, boolean, scalar, unit, cleaningUnit, cleaningHint, booleanOptions, enumOptions, levelOptions,
+    custom, dirty, pendingSave, saveState, resources, type, boolean, scalar, unit, cleaningUnit, differenceUnit, cleaningDifferenceUnit, cleaningHint, booleanOptions, enumOptions, levelOptions,
     steps, activeSection, notificationOpen, setNotificationsOpen, alarmNameEditing, alarmNameValue, setAlarmNameInput, editAlarmName, stopAlarmName, toggleStep, setValues, addableParts, addPart,
     load, requestClose, prepareLeave, discard, customize, clear, save, restore }
 }

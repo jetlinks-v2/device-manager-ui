@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { availableRuleParts, buildRule, isEmptyRule, parseRule, replaceAlarm, validateDraft, type RuleDraft } from '../views/device/components/PropertyRules/codec'
-import { buildPreprocessPayload, createEmptyNotification, getAlarmMatcher, getAlarmProcessor, getNotifyProcessor, toDeviceAlarmRow } from '../views/device/alarm/utils'
+import { buildPreprocessPayload, createEmptyNotification, formatPropertyUnit, getAlarmMatcher, getAlarmProcessor, getNotifyProcessor, toDeviceAlarmRow } from '../views/device/alarm/utils'
 import type { ThingPropertyPreprocess } from '../views/device/alarm/types'
 import { saveRule, restoreRule, loadRules } from '../views/device/components/PropertyRules/service'
 import { setAlarmRequestHandler } from './alarmRequest.test-shim'
@@ -337,9 +337,40 @@ test('cleaning uses raw-value labels while alarm and sampling retain calibrated 
   assert.doesNotMatch(rows.find(row => row.key === 'step')!.sentence, /10%/)
   assert.match(rows.find(row => row.key === 'range')!.notice!, /校正前/)
   assert.match(rows.find(row => row.key === 'alarm')!.sentence, /%/)
-  assert.match(rows.find(row => row.key === 'sampling')!.sentence, /2%/)
+  assert.match(rows.find(row => row.key === 'sampling')!.sentence, /2个百分点/)
   const direct = summarizeDraftRows({ ...current, scaleEnabled: false }, property, translate)
-  assert.match(direct.find(row => row.key === 'step')!.sentence, /10%/)
+  assert.match(direct.find(row => row.key === 'step')!.sentence, /10个百分点/)
+})
+
+test('percentage points distinguish absolute changes from relative changes and retention ratios', () => {
+  for (const messages of [zh, en]) {
+    const t: RuleTranslator = (key, values = {}) => (messages as Record<string, string>)[key]
+      .replace(/\{(\w+)\}/g, (_match, name) => String(values[name]))
+    for (const unit of ['%', 'percent', formatPropertyUnit({ id: 'percent' })]) {
+      const property = { valueType: { type: 'double', unit } }
+      const current = { ...draft(), stepEnabled: true, maxStep: 10, baselineTtl: 300000,
+        samplingMode: 'change' as const, deadband: 10 }
+      const rows = summarizeRuleRows(parseRule(buildRule(parseRule(), current)), property, t)
+      const points = t('PropertyRules.percentagePoints')
+      assert.ok(rows.find(row => row.key === 'step')!.sentence.includes(`10${points}`))
+      assert.ok(rows.find(row => row.key === 'sampling')!.sentence.includes(`10${points}`))
+      assert.ok(rows.find(row => row.key === 'alarm')!.sentence.endsWith('%'))
+      assert.ok(rows.find(row => row.key === 'range')!.sentence.endsWith('%'))
+      const relative = summarizeDraftRows({ ...current, deadbandType: 'percent', deadband: 50 }, property, t)
+        .find(row => row.key === 'sampling')!
+      assert.ok(relative.sentence.includes(t('PropertyRules.sentence.relativeChange')))
+      assert.ok(relative.sentence.includes('50%'))
+      assert.ok(!relative.sentence.includes(points))
+      const ratio = summarizeDraftRows({ ...current, samplingMode: 'ratio', percent: 10 }, property, t)
+        .find(row => row.key === 'sampling')!
+      assert.ok(ratio.sentence.includes('10%'))
+      assert.ok(!ratio.sentence.includes(points))
+      const raw = summarizeDraftRows({ ...current, scaleEnabled: true, scale: '0.1' }, property, t)
+      assert.ok(raw.find(row => row.key === 'step')!.sentence.includes(t('PropertyRules.rawValue')))
+      assert.ok(!raw.find(row => row.key === 'step')!.sentence.includes(points))
+      assert.ok(raw.find(row => row.key === 'sampling')!.sentence.includes(`10${points}`))
+    }
+  }
 })
 
 test('raw replacement can be calibrated into the model range and diagram hides display tails', () => {
@@ -663,7 +694,7 @@ test('state lifetimes and silence remain part of the same readable condition', (
     stepEnabled: true, maxStep: 5, baselineTtl: 300000, fallbackEnabled: true, fallbackMode: 'previous' as const,
     fallbackMaxAge: 60000, fallbackValue: 20, samplingMode: 'change' as const, deadband: 0, maxSilence: 10000 }
   const rows = summarizeRuleRows(parseRule(buildRule(parseRule(), current)), property, translate)
-  assert.equal(rows[0].sentence, '与 300 秒 内的上次保留值相比，变化 ≤ 5℃ 时保留')
+  assert.equal(rows[0].sentence, '与 300 秒 内的上次保留值相比，差值 ≤ 5℃ 时保留')
   assert.equal(rows[0].details, undefined)
   assert.equal(rows[1].sentence, '空值 时取 60 秒 内的 上一值 无可用值时取 20℃')
   assert.equal(rows[1].details, undefined)

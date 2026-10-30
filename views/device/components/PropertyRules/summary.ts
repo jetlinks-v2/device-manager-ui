@@ -29,6 +29,12 @@ export interface RuleRowSummary {
 
 export function ruleStageOf(part: RulePart): RuleSection { return ['values', 'range', 'step'].includes(part) ? 'cleaning' : ['scale', 'fallback', 'file'].includes(part) ? 'processing' : part === 'alarm' ? 'alarm' : 'sampling' }
 
+/** A difference between percentage values is measured in percentage points, not relative percent. */
+export function formatRuleDifferenceUnit(property: ThingModelProperty, t: RuleTranslator): string {
+  const unit = formatPropertyUnit(property.valueType?.unit) ?? ''
+  return unit === '%' ? t('PropertyRules.percentagePoints') : unit
+}
+
 /** Read-only rows share the editor's sentence order without creating forms for every property. */
 export function summarizeRuleRows(rule: ParsedRule, property: ThingModelProperty, t: RuleTranslator): RuleRowSummary[] {
   return summarizeEffectRows(effectsOf(rule), property, t)
@@ -43,6 +49,9 @@ function summarizeEffectRows(effects: RuleEffects, property: ThingModelProperty,
   const rows: RuleRowSummary[] = []
   const unit = formatPropertyUnit(property.valueType?.unit) ?? ''
   const cleaningUnit = effects.scaleEnabled ? ` ${t('PropertyRules.rawValue')}` : unit
+  const differenceUnit = formatRuleDifferenceUnit(property, t)
+  const cleaningDifferenceUnit = effects.scaleEnabled ? cleaningUnit : differenceUnit
+  const differenceHint = unit === '%' ? t('PropertyRules.percentagePointsHint') : ''
   const cleaningHint = effects.scaleEnabled ? t('PropertyRules.rawValueHint') : ''
   const durationText = (millis?: number | null) => `${millis == null ? '—' : millis / 1000} ${t('PropertyRules.timeUnit.s')}`
   if (effects.valuesEnabled) {
@@ -56,8 +65,8 @@ function summarizeEffectRows(effects: RuleEffects, property: ThingModelProperty,
   if (effects.rangeEnabled) rows.push({ key: 'range', icon: 'SafetyOutlined', title: t('PropertyRules.part.range'), color: 'blue',
     sentence: `${t(effects.rangeAction === 'clamp' ? 'PropertyRules.sentence.clampTo' : 'PropertyRules.sentence.keep')} ${bounds(effects, cleaningUnit)}`, notice: [cleaningHint, effects.rangeAction === 'clamp' ? t('PropertyRules.clampHint') : ''].filter(Boolean).join(' ') || undefined })
   if (effects.stepEnabled) rows.push({ key: 'step', icon: 'LineChartOutlined', title: t('PropertyRules.part.step'), color: 'blue',
-    sentence: t('PropertyRules.sentence.maxStep', { age: durationText(effects.baselineTtl), threshold: `${effects.maxStep ?? '—'}${cleaningUnit}` }),
-    notice: [cleaningHint, t('PropertyRules.stepHint'), t('PropertyRules.statefulHint')].filter(Boolean).join(' ') })
+    sentence: t('PropertyRules.sentence.maxStep', { age: durationText(effects.baselineTtl), threshold: `${effects.maxStep ?? '—'}${cleaningDifferenceUnit}` }),
+    notice: [cleaningHint, t('PropertyRules.stepHint'), effects.scaleEnabled ? '' : differenceHint, t('PropertyRules.statefulHint')].filter(Boolean).join(' ') })
   if (effects.scaleEnabled) rows.push({ key: 'scale', icon: 'CalculatorOutlined', title: t('PropertyRules.part.scale'), color: 'purple',
     sentence: `${t('PropertyRules.sentence.multiply')} ${effects.scale ?? '—'} + ${Number(effects.offset) < 0 ? `(${effects.offset})` : effects.offset ?? '0'}` })
   if (effects.fallbackEnabled) rows.push({ key: 'fallback', icon: 'HistoryOutlined', title: t('PropertyRules.part.fallback'), color: 'purple',
@@ -78,12 +87,12 @@ function summarizeEffectRows(effects: RuleEffects, property: ThingModelProperty,
     const mode = draft.samplingMode
     const sentence = mode === 'ratio' ? `${t('PropertyRules.sentence.sample')} ${draft.percent == null ? '—' : Number(draft.percent.toFixed(2))}%`
       : mode === 'interval' ? t('PropertyRules.sentence.intervalRule', { interval: `${draft.interval ?? '—'} ${intervalUnitText(draft, t)}` })
-        : isNumberProperty(property) ? t('PropertyRules.sentence.changeRule', { kind: t(draft.deadbandType === 'percent' ? 'PropertyRules.sentence.relativeChange' : 'PropertyRules.deadbandType.absolute'), operator: Number(draft.deadband) === 0 ? '>' : '≥', threshold: `${draft.deadband ?? '—'}${draft.deadbandType === 'percent' ? '%' : unit}` })
+        : isNumberProperty(property) ? t('PropertyRules.sentence.changeRule', { kind: t(draft.deadbandType === 'percent' ? 'PropertyRules.sentence.relativeChange' : 'PropertyRules.deadbandType.absolute'), operator: Number(draft.deadband) === 0 ? '>' : '≥', threshold: `${draft.deadband ?? '—'}${draft.deadbandType === 'percent' ? '%' : differenceUnit}` })
           : t('PropertyRules.sentence.changeScalar')
     rows.push({ key: 'sampling', icon: mode === 'ratio' ? 'FilterOutlined' : mode === 'interval' ? 'ClockCircleOutlined' : 'SwapOutlined',
       title: t(`PropertyRules.part.${mode === 'ratio' ? 'sampling' : mode}`), color: 'cyan',
       sentence: `${sentence}${mode === 'change' && draft.maxSilence != null ? ` · ${t('PropertyRules.sentence.orInterval')} ${durationText(draft.maxSilence)}` : ''}`,
-      notice: mode === 'ratio' ? undefined : `${t(mode === 'interval' ? 'PropertyRules.intervalHint' : 'PropertyRules.deadbandHint')} ${t('PropertyRules.statefulHint')}` })
+      notice: mode === 'ratio' ? undefined : [t(mode === 'interval' ? 'PropertyRules.intervalHint' : 'PropertyRules.deadbandHint'), mode === 'change' && draft.deadbandType === 'absolute' ? differenceHint : '', t('PropertyRules.statefulHint')].filter(Boolean).join(' ') })
   }
   if (effects.fileEnabled) rows.push({ key: 'file', icon: 'FileOutlined', title: t('PropertyRules.part.file'), color: 'purple',
     sentence: `Base64 → ${t('PropertyRules.sentence.fileUrl')}`, notice: t('PropertyRules.fileHint') })
@@ -139,14 +148,14 @@ function summarizeEffects(effects: RuleEffects, property: ThingModelProperty, t:
         : effects.values.length > 3 ? 'PropertyRules.valuesMoreSummary' : 'PropertyRules.valuesSummary', { values: labels, count: effects.values.length }))
   }
   if (effects.rangeEnabled) cleaning.push(`${effects.rangeAction === 'clamp' ? t('PropertyRules.clamp') + ' ' : ''}${boundsText('PropertyRules.rangeSummary', effects.min, effects.max)}`)
-  if (effects.stepEnabled) cleaning.push(`${t('PropertyRules.part.step')} ≤ ${effects.maxStep}`)
+  if (effects.stepEnabled) cleaning.push(`${t('PropertyRules.part.step')} ≤ ${effects.maxStep}${effects.scaleEnabled ? ` ${t('PropertyRules.rawValue')}` : formatRuleDifferenceUnit(property, t)}`)
   const alarm = effects.alarmEnabled
     ? ['inside', 'outside'].includes(effects.alarm.trigger)
       ? boundsText(effects.alarm.trigger === 'outside' ? 'PropertyRules.alarmOutsideSummary' : 'PropertyRules.alarmInsideSummary', effects.alarm.limit.lower, effects.alarm.limit.upper)
       : formatTriggerText(effects.alarm, property, t)
     : t('PropertyRules.off')
   const sampling = effects.samplingEnabled
-    ? samplingText(effects, isNumberProperty(property), t)
+    ? samplingText(effects, isNumberProperty(property), t, formatRuleDifferenceUnit(property, t))
     : t('PropertyRules.fullRetention')
   return [
     { key: 'cleaning', icon: 'ClearOutlined', title: t('PropertyRules.cleaning'),
@@ -169,9 +178,9 @@ function summarizeEffects(effects: RuleEffects, property: ThingModelProperty, t:
 function intervalUnitText(draft: SamplingDraft, t: RuleTranslator) {
   return t(`PropertyRules.timeUnit.${draft.intervalUnit === 60000 ? 'min' : draft.intervalUnit === 1000 ? 's' : 'ms'}`)
 }
-function samplingText(draft: SamplingDraft, numeric: boolean, t: RuleTranslator) {
+function samplingText(draft: SamplingDraft, numeric: boolean, t: RuleTranslator, differenceUnit: string) {
   if (validateSampling(draft, numeric)) return t(draft.samplingMode === 'ratio' ? 'PropertyRules.percentIncomplete' : 'PropertyRules.samplingIncomplete')
   if (draft.samplingMode === 'ratio') return t('PropertyRules.keepSummary', { percent: Number(draft.percent!.toFixed(2)) })
   if (draft.samplingMode === 'interval') return t('PropertyRules.intervalSummary', { amount: draft.interval!, unit: intervalUnitText(draft, t) })
-  return t(draft.deadband === 0 ? 'PropertyRules.changeSummary' : 'PropertyRules.deadbandSummary', { amount: draft.deadband!, unit: draft.deadbandType === 'percent' ? '%' : '' })
+  return t(draft.deadband === 0 ? 'PropertyRules.changeSummary' : 'PropertyRules.deadbandSummary', { amount: draft.deadband!, unit: draft.deadbandType === 'percent' ? '%' : differenceUnit })
 }
