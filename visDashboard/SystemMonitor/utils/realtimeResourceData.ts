@@ -2,6 +2,7 @@ import { createNodeHealthCalculator, type NodeHealthSummary, type RealtimeHealth
 import { deriveBytesPerSecond } from './counterData'
 
 export type RealtimeSortKey = 'pressure' | 'nodeId' | 'system' | 'jvm' | 'disk' | 'network'
+  | 'cpuJvm' | 'memoryJvm' | 'cpuSystem' | 'memorySystem' | 'tcpConnectionsEstablished'
 export type RealtimeSortOrder = 'asc' | 'desc'
 export type CpuLoadPressureLevel = 'normal' | 'elevated' | 'overloaded'
 
@@ -452,7 +453,14 @@ export const sortRealtimeNodes = (
     result = throughput(left) - throughput(right)
       || compareNumber(left.networkRisk, right.networkRisk)
       || compareNumber(left.tcpConnectionsEstablished, right.tcpConnectionsEstablished)
-  } else result = compareNumber(left[key], right[key])
+  } else {
+    // 独立指标按实际列值排序；缺失数据始终放在末尾，不混同为零。
+    if (key !== 'pressure') {
+      if (left[key] === undefined) return right[key] === undefined ? 0 : 1
+      if (right[key] === undefined) return -1
+    }
+    result = compareNumber(left[key], right[key])
+  }
   return order === 'asc' ? result : -result
 })
 

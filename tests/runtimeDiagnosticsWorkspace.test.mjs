@@ -26,6 +26,7 @@ function harness() {
     if (id === '../utils/focusedNodes') return {
       FOCUSED_NODES_STORAGE_KEY: 'dashboard-focus',
       readFocusedNodes: value => { value?.getItem('dashboard-focus'); return {} },
+      readNetworkFocusMode: () => 'auto',
       reconcileFocusedNodes: nodes => nodes.map(node => node.nodeId),
     }
     return require(id)

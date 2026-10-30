@@ -19,6 +19,19 @@ export function readFocusedNodes(storage?: StorageReader): Partial<FocusSelectio
   } catch { return {} }
 }
 
+export type NetworkFocusMode = 'auto' | 'manual' | 'legacy'
+
+/** 旧版未记录选择来源，保留到历史数据能确认是否需要修正；新手动空选择同样有效。 */
+export function readNetworkFocusMode(storage?: StorageReader): NetworkFocusMode {
+  try {
+    const value = JSON.parse(storage?.getItem(FOCUSED_NODES_STORAGE_KEY) || 'null')
+    if (validNodes(value?.network) && (value.networkMode === 'auto' || value.networkMode === 'manual')) {
+      return value.networkMode
+    }
+    return readFocusedNodes(storage).network?.length ? 'legacy' : 'auto'
+  } catch { return 'auto' }
+}
+
 /** Reconcile topology changes without undoing an explicitly cleared selection during this visit. */
 export function reconcileFocusedNodes(nodes: RealtimeNode[], selected: string[], initialized: boolean, cached?: string[]) {
   if (!initialized) return resolveFocusedRealtimeNodes(nodes, cached)
