@@ -21,6 +21,8 @@
 
 验证结果：交付复核中，7 个变更 Vue SFC 的脚本、模板与内联样式编译及核心导入解析通过，1 个 TypeScript 文件语法编译通过；core 中 `node --test tests/drawerShell.test.mjs` 1/1 通过，覆盖关闭期间宽度保持、400px 视口响应及监听清理；模块中 `node --test tests/deviceDetailContent.test.mjs tests/deviceDetailTabs.test.mjs tests/iotDeviceTraceMessageLink.test.mjs tests/deviceDetailDashboard.test.mjs tests/unifiedDeviceTabs.test.mjs` 28/28 通过。模块 `git diff --check` 通过。在 `runtime-ui` 执行 `pnpm -F jetlinks-web-core build -- --module-name device-manager-ui`，模块生产构建通过（约 63 秒；仍有资源解析、Rollup 配置、循环依赖、CSS 注释及大包告警）。
 
+交付入口：抽屉复用、链路列表滚动、消息趋势及统一列表省略显示的代码提交为 `70a6a4c`，合入 `2.20` 的 PR 为 [#363](https://github.com/jetlinks-v2/device-manager-ui/pull/363)。
+
 验证限制：工作区与模块未配置 lint 脚本。在 `runtime-ui` 执行 `node node_modules/vue-tsc/bin/vue-tsc.js -p modules/device-manager-ui/tsconfig.json --noEmit --pretty false`，完整类型检查未通过，共 1824 项诊断，涉及未修改文件中的依赖声明、API 泛型、共享组件及页面类型；本次 5 个组件与核心抽屉组件均无诊断，类型基线修复后仍需重跑。浏览器已确认本地 9200 的设备详情、设备数据及通信链路空态可打开；后续在真实链路数据下补充验证，链路详情已采用核心头部渐变样式，打开、760px 宽度及关闭均通过。其余迁移抽屉的开关、底栏及长内容滚动仍需有可用入口时复验。发布需要更新运行时前端静态资源。
 
 ## 设备详情启停权限
