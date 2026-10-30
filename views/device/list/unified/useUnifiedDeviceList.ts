@@ -7,7 +7,7 @@ import { countDevice_api, queryDevicePage_api, type DeviceLibraryProductFilterOp
 import { queryDeviceLibraryProductFilterOptions_api } from '../../../../api/device-library'
 import { queryRuntimeDevices_api } from '../../../../api/deviceGroup'
 import { buildIotDeviceDetailPath, getIotDeviceListMenuCode, isIotDeviceListEntry, resolveIotProjectId } from '../hooks/useIotDeviceRouting'
-import type { DeviceListProvider, UnifiedDevice } from '../../../../deviceListProvider'
+import { getIotDeviceScopeTerms, type DeviceListProvider, type UnifiedDevice } from '../../../../deviceListProvider'
 import { useDeviceScope } from '../../../../deviceScope'
 import { decodeConditionFilterQuery, encodeConditionFilterQuery, type ConditionFilterTerm } from '@jetlinks-web-core/components/ConditionFilter'
 import { getDeviceListFilterFields, getDeviceListSearchTerms } from '../../../../deviceListFilter'
@@ -20,9 +20,16 @@ export function useUnifiedDeviceList() {
   const menu = useMenuStore()
   const { t } = useI18n()
   const refreshKey = ref(0)
+  const isIotEntry = computed(() => isIotDeviceListEntry(route))
+  // 概览和资源中心显式下钻时使用物联口径；未指定类型仍进入全部设备。
+  const isIotScope = computed(() => route.query.type === 'device')
   const deviceProvider: DeviceListProvider = {
     id: 'device', label: () => t('UnifiedDeviceList.device'), order: 10, menuCode: getIotDeviceListMenuCode(route),
-    terms: () => [], matches: () => true,
+    terms: () => isIotScope.value ? getIotDeviceScopeTerms() : [], matches: () => true,
+    get create() {
+      return isIotScope.value && !isIotEntry.value ? { label: () => t('IotDeviceList.action.create'),
+        permission: `${getIotDeviceListMenuCode(route)}:add`, drawer: {} } : undefined
+    },
     // 详情继承当前物联或资源中心入口，不能再通过另一个入口的菜单 code 查找。
     detailPath: device => ({
       path: buildIotDeviceDetailPath(resolveIotProjectId(route), device.id, undefined, route),
@@ -33,10 +40,9 @@ export function useUnifiedDeviceList() {
     moduleRegistry.getResource(id, 'deviceListProviders') || {},
   ) as DeviceListProvider[])
   const providers = computed(() => [deviceProvider, ...extensions].filter(provider => provider.id === 'device' || menu.hasMenu(provider.menuCode)).sort((a, b) => a.order - b.order))
-  const isIotEntry = computed(() => isIotDeviceListEntry(route))
-  // 物联入口已合并为设备列表，不再由路由参数切换独立分类页面。
+  // SaaS 与私有化的显式物联下钻共用统一列表和统计口径。
   const activeType = computed(() => {
-    if (isIotEntry.value) return 'device'
+    if (isIotEntry.value || isIotScope.value) return 'device'
     const requested = route.query.type || (route.path.endsWith('/gateway') ? 'gateway' : route.path.endsWith('/video') ? 'video' : 'all')
     return providers.value.some(provider => provider.id !== 'device' && provider.id === requested) ? String(requested) : 'all'
   })
@@ -69,6 +75,7 @@ export function useUnifiedDeviceList() {
   // 斜边页签以 key 识别选中项，数量独立传入以保留 0 和统一间距。
   const tabs = computed<SlantedTabOption[]>(() => [
     { key: 'all', label: t('UnifiedDeviceList.all'), count: counts.value.all ?? '—' },
+    ...(isIotScope.value ? [{ key: 'device', label: t('UnifiedDeviceList.iotScope'), count: counts.value.device ?? '—' }] : []),
     ...providers.value.filter(provider => provider.id !== 'device' && provider.showInTabs !== false).map(provider => ({
       key: provider.id, label: provider.label(), count: counts.value[provider.id] ?? '—',
     })),
@@ -132,14 +139,14 @@ export function useUnifiedDeviceList() {
     } finally { if (version === requestVersion) loading.value = false }
   }
   async function loadCounts() {
-    if (isIotEntry.value) {
+    if (isIotEntry.value && !isIotScope.value) {
       counts.value = {}
       return
     }
     const version = ++countVersion
     try {
       const values = await Promise.all([
-        ...providers.value.filter(provider => provider.id !== 'device').map(async provider => [provider.id, await countDevice_api({}, provider.terms())] as const),
+        ...providers.value.filter(provider => provider.id !== 'device' || isIotScope.value).map(async provider => [provider.id, await countDevice_api({}, provider.terms())] as const),
         // “全部”统计覆盖所有设备，不能继承边缘节点或视频设备的接入方式限定。
         countDevice_api({}).then(value => ['all', value] as const),
       ])
@@ -218,7 +225,7 @@ export function useUnifiedDeviceList() {
   watch([baseTerms, () => route.query.q, scope.scopeType, scope.scopeId, () => resolveIotProjectId(route), refreshKey], () => {
     void loadStatusCounts()
   }, { immediate: true })
-  void loadCounts()
+  watch(isIotScope, loadCounts, { immediate: true })
   onBeforeUnmount(() => { requestVersion++; countVersion++; statusCountVersion++ })
   return { providers, isIotEntry, tabs, activeType, activeProvider, scope, baseTerms, filterTerms, filterFields, commonFilterFields, searchTerms, hasSearch, status, rows, total, pageIndex, pageSize, loading, error, counts, statusCounts, selectedIds, batchMode, providerOf, changeType, search, changeStatus, refresh, changePage, clearBatchSelection }
 }

@@ -55,3 +55,9 @@ export interface DeviceListProvider {
   remove?: (device: UnifiedDevice) => Promise<unknown>
   canDelete?: (device: UnifiedDevice) => boolean
 }
+
+/** 物联设备范围排除边缘及视频接入，与概览物联统计使用同一产品查询契约。 */
+export function getIotDeviceScopeTerms(): DeviceQueryTerm[] {
+  const excluded = ['agent-device-gateway', 'agent-media-device-gateway', 'official-edge-gateway', 'fixed-media', 'gb28181-2016', 'media-plugin', 'onvif']
+  return [{ column: 'productId$product-info', value: `accessProvider nin (${excluded.join(',')})` }]
+}

@@ -37,7 +37,7 @@ export function useResourceTrend(scope: 'cpu' | 'memory', isEdit: Ref<boolean>):
   const chartOptions = computed(() => ({
     animationDuration: 240,
     color: visibleSeries.value.map(item => nodeColor(item.nodeId)),
-    grid: { left: 52, right: 24, top: 26, bottom: 46 },
+    grid: { left: 52, right: 24, top: 26, bottom: 26 },
     xAxis: {
       type: 'time',
       boundaryGap: false,
@@ -49,10 +49,8 @@ export function useResourceTrend(scope: 'cpu' | 'memory', isEdit: Ref<boolean>):
       max: 100,
       axisLabel: { formatter: '{value}%' },
     },
-    dataZoom: [
-      { type: 'inside', start: history.shortcut.value === 'hour' ? 0 : 70, end: 100 },
-      { type: 'slider', height: 20, bottom: 4, start: history.shortcut.value === 'hour' ? 0 : 70, end: 100 },
-    ],
+    // 时间筛选后展示完整范围，保留图内缩放，不常驻底部缩放条。
+    dataZoom: [{ type: 'inside', start: 0, end: 100 }],
     tooltip: {
       trigger: 'axis',
       formatter: (items: Array<{ seriesName: string; marker: string; data: MonitorPointTuple }>) => {

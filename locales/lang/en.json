@@ -176,6 +176,9 @@
   "RuntimeMonitor.clearPreferences": "Reset preferences",
   "RuntimeMonitor.discoveryUnavailable": "Node discovery is unavailable. Open an authorized node entry to continue.",
   "components.DeviceMap.title": "Device map",
+  "components.DeviceMap.online": "Online",
+  "components.DeviceMap.offline": "Offline",
+  "components.DeviceMap.disabled": "Disabled",
   "components.DeviceMap.loading": "Loading device locations",
   "components.DeviceMap.empty": "No device locations",
   "components.DeviceMap.editPlaceholder": "Device locations appear at runtime",
@@ -8501,5 +8504,6 @@
   "Tracing.edgeRetentionHint": "Queries directly related edges only. Records may not have been collected or may have expired.",
   "Tracing.edgeLimit": "{count} more edges exceed the query limit",
   "RuntimeMonitor.currentLogFile": "Current",
-  "RuntimeMonitor.loadingLogDirectory": "Loading directory"
+  "RuntimeMonitor.loadingLogDirectory": "Loading directory",
+  "UnifiedDeviceList.iotScope": "IoT devices"
 }
