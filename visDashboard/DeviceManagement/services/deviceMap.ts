@@ -3,6 +3,7 @@ import { getToken } from '@jetlinks-web/utils'
 import { getBaseApi } from '@jetlinks-web-core/utils'
 import { EventSourcePolyfill } from 'event-source-polyfill'
 import type { DeviceMapPoint } from '../shared'
+import { loadDeviceStates } from '../../../dataCapabilities/deviceInstanceMonitoring.service'
 
 interface DeviceGeoJsonFeature {
   geometry?: {
@@ -56,6 +57,28 @@ export const parseDeviceGeoJson = (payload: string): DeviceMapPoint[] => {
   } catch {
     return []
   }
+}
+
+/** 位置接口不带状态，复用设备状态查询分批补齐；失败批次保留位置并标为未知。 */
+export async function loadDeviceMapStates(points: DeviceMapPoint[], signal: AbortSignal) {
+  const result: DeviceMapPoint[] = []
+  let failed = false
+  for (let offset = 0; offset < points.length; offset += 100) {
+    if (signal.aborted) throw new Error('Device map query cancelled')
+    const batch = points.slice(offset, offset + 100)
+    try {
+      const states = await loadDeviceStates({ deviceIds: batch.map(point => point.deviceId) }, signal)
+      const byId = new Map(states.map(state => [state.deviceId, state]))
+      result.push(...batch.map(point => ({ ...point, state: byId.get(point.deviceId)?.state,
+        stateText: byId.get(point.deviceId)?.stateText })))
+    } catch (error) {
+      if (signal.aborted) throw error
+      failed = true
+      result.push(...batch.map(point => ({ ...point, state: undefined, stateText: undefined })))
+    }
+  }
+  if (signal.aborted) throw new Error('Device map query cancelled')
+  return { points: result, failed }
 }
 
 /** Geo queries are finite streams: a clean EOF completes even when no location was emitted. */

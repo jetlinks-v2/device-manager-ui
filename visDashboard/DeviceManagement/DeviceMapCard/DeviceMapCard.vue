@@ -3,7 +3,16 @@
     class="device-map-card"
     :style="style"
   >
-    <SectionHeader :title="title" />
+    <SectionHeader :title="title">
+      <template #extra>
+        <div v-if="distribution" class="device-map-legend">
+          <span v-for="state in legendStates" :key="state">
+            <i :style="{ background: distributionColors[state] }" />
+            {{ t(`components.DeviceMap.${state === 'unknown' ? 'unknownState' : state}`) }}
+          </span>
+        </div>
+      </template>
+    </SectionHeader>
     <div class="device-map-card__body">
       <a-spin
         :spinning="loading"
@@ -16,6 +25,7 @@
         >
           <CloudEmpty :description="configurationMessage" />
         </div>
+        <DeviceDistributionMap v-else-if="distribution" :points="points" @select="onPointSelect" />
         <a-map-component
           v-else
           class="device-map-card__map"
@@ -29,11 +39,11 @@
           />
         </a-map-component>
         <a-alert
-          v-if="!configurationMessage && error"
+          v-if="!configurationMessage && (error || stateError)"
           class="device-map-card__notice"
           type="error"
           show-icon
-          :message="t('components.DeviceMap.loadError')"
+          :message="t(error ? 'components.DeviceMap.loadError' : 'components.DeviceMap.stateError')"
         >
           <template #action>
             <a-button
@@ -51,6 +61,9 @@
           show-icon
           :message="t('components.DeviceMap.editPlaceholder')"
         />
+        <div v-if="distribution && !isEdit && !loading && !error && !points.length" class="device-map-card__empty">
+          <CloudEmpty :description="t('components.DeviceMap.empty')" :image-style="{ height: '40px' }" />
+        </div>
         <DeviceMapSelectionCard
           :view="selection.view"
           @close="selection.close"
@@ -75,6 +88,8 @@ import { useSystemStore } from '@jetlinks-web-core/store/system'
 import SectionHeader from '../components/SectionHeader.vue'
 import { useDeviceMap } from '../hooks/useDeviceMap'
 import DeviceMapSelectionCard from './DeviceMapSelectionCard.vue'
+import DeviceDistributionMap from './DeviceDistributionMap.vue'
+import { distributionColors, distributionState, type DistributionState } from './distribution'
 import type { DashboardCardInfo } from '../shared'
 
 defineOptions({
@@ -102,13 +117,15 @@ const isMapEnabled = computed(() => {
   const { apiKey, secretKey } = system.systemInfo.amap || {}
   return !!(apiKey?.trim() && secretKey?.trim())
 })
-const configurationMessage = computed(() => isMapEnabled.value ? '' : t('components.DeviceMap.missingKey'))
-
-const { config, points, loading, error, extraOptions, selection, refresh, onMapInit, onClusterClick } = useDeviceMap(
+const { config, distribution, points, loading, error, stateError, extraOptions, selection, refresh, onMapInit, onClusterClick, onPointSelect } = useDeviceMap(
   infoRef,
   isEditRef,
   isMapEnabled
 )
+const configurationMessage = computed(() => distribution.value || isMapEnabled.value ? '' : t('components.DeviceMap.missingKey'))
+const legendStates = computed<DistributionState[]>(() => ['online', 'offline',
+  ...(['disabled', 'unknown'] as const).filter(state => points.value.some(point => distributionState(point) === state)),
+])
 const title = computed(() =>
   !config.value.topTitle || config.value.topTitle === '设备地图'
     ? t('components.DeviceMap.title')
@@ -132,6 +149,12 @@ const title = computed(() =>
   flex: 1;
   min-height: 320px;
 }
+
+.device-map-legend { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px 12px; font-size: 12px; color: var(--ant-color-text-secondary, #64748b); }
+.device-map-legend > span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.device-map-legend i { width: 7px; height: 7px; border-radius: 50%; }
+.device-map-card__empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+.device-map-card__empty :deep(.ant-empty-description) { padding: 4px 10px; border-radius: 4px; background: rgb(255 255 255 / 85%); }
 
 /* Spin 的满高样式绑定外层容器，避免内容高度随转圈结束归零。 */
 .device-map-card__spin,

@@ -6,6 +6,7 @@ import { queryNoPagingPost as queryInstanceNoPage, query } from '@device-manager
 import { usePluginPermissionContext } from '@device-manager-ui/hooks/usePermission'
 import { useInstanceStore } from '@device-manager-ui/store/instance'
 import { useDeviceScope } from './deviceScope'
+import { useSystemMonitorOverview } from './visDashboard/SystemMonitor/hooks/useSystemMonitorOverview'
 import { getDeviceListSearchTerms } from './deviceListFilter'
 import { queryDeviceSpaceAreaBindings_api } from './api/spaceArea'
 import { queryDeviceBoundGroups_api, queryRuntimeDevices_api } from './api/deviceGroup'
@@ -66,6 +67,7 @@ export default {
     InstanceDetailPage: defineAsyncComponent(() => import('./views/device/Instance/Detail/index.vue')),
   },
   hooks: {
+    useSystemMonitorOverview,
     useDeviceScope,
     usePluginPermissionContext
   },

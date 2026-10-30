@@ -123,12 +123,16 @@ export interface DeviceMapConfig {
   topTitle: string
   isAutoRefresh: boolean
   interval: number
+  presentation?: 'distribution'
+  scope?: string
 }
 
 export interface DeviceMapPoint {
   deviceId: string
   lnglat: [number, number]
   label: string
+  state?: string | null
+  stateText?: string | null
 }
 
 export interface TimeRangePayload {
