@@ -1,4 +1,5 @@
 import type { IotDevice } from '../types'
+import { createDeviceMetadataResolver } from '../../../../agentCapabilities/deviceAnalysis/deviceAnalysis.shared'
 import { createDeviceDetailAccessService } from './deviceDetailAccess.service'
 import { createDeviceDetailAlarmService } from './deviceDetailAlarm.service'
 import { createDeviceDetailCommandService } from './deviceDetailCommand.service'
@@ -11,6 +12,7 @@ import { createDeviceDetailTraceService } from './deviceDetailTrace.service'
 
 export type DeviceDetailAgentServiceOptions = {
   tabSurface?: DeviceDetailAgentTabSurfaceOptions
+  getDevice?: () => IotDevice
 }
 
 /** Composes subject-bound query and confirmed action capabilities after the detail permission check succeeds. */
@@ -18,13 +20,14 @@ export const createDeviceDetailAgentService = (
   device: IotDevice,
   options?: DeviceDetailAgentServiceOptions,
 ) => {
-  const diagnostics = createDeviceDetailDiagnosticsService(device, options?.tabSurface)
+  const resolveMetadata = createDeviceMetadataResolver(options?.getDevice ?? (() => device))
+  const diagnostics = createDeviceDetailDiagnosticsService(device, options?.tabSurface, resolveMetadata)
   const access = createDeviceDetailAccessService(device)
   const alarm = createDeviceDetailAlarmService(device)
   const commands = createDeviceDetailCommandService(device)
   const logs = createDeviceDetailLogService(device)
   const metrics = createDeviceDetailMetricsService(device)
-  const properties = createDeviceDetailPropertyService(device)
+  const properties = createDeviceDetailPropertyService(device, resolveMetadata)
   const trace = createDeviceDetailTraceService(device.id)
   const edge = createDeviceDetailEdgeService(() => device)
 

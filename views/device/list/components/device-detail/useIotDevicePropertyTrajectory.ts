@@ -58,11 +58,11 @@ export function useIotDevicePropertyTrajectory(options: IotDevicePropertyTraject
   }
 
   watch(
-    () => [
-      options.deviceId.value,
-      options.property.value?.identifier,
-      options.timeRange.value?.[0]?.valueOf(),
-      options.timeRange.value?.[1]?.valueOf(),
+    [
+      options.deviceId,
+      () => options.property.value?.identifier,
+      () => options.timeRange.value?.[0]?.valueOf(),
+      () => options.timeRange.value?.[1]?.valueOf(),
     ],
     () => {
       void queryTrajectory()

@@ -7,6 +7,7 @@ import {
   resolveDomainAgentStringList,
 } from '@jetlinks-web-core/layout/components/AiChat/domainAgentTools'
 import { deviceAnalysisService } from '../../../../agentCapabilities/deviceAnalysis/deviceAnalysis.service'
+import { createDeviceMetadataResolver } from '../../../../agentCapabilities/deviceAnalysis/deviceAnalysis.shared'
 import type { IotDevice } from '../types'
 import {
   asRecord,
@@ -16,23 +17,19 @@ import {
   withDeviceDetailModelSample,
   type DeviceDetailAgentArgs,
 } from './deviceDetailAgent.shared'
-import {
-  iotDeviceDetailRealApi,
-  parseMetadata,
-} from '../services/iotDeviceDetailReal.service'
-
-export const createDeviceDetailPropertyService = (device: IotDevice) => {
+export const createDeviceDetailPropertyService = (
+  device: IotDevice,
+  resolveMetadata = createDeviceMetadataResolver(() => device),
+) => {
   const withSubject = (args: DeviceDetailAgentArgs) => ({ ...args, deviceId: device.id })
 
-  const modelGet = (args: DeviceDetailAgentArgs) => deviceAnalysisService.getModel(withSubject(args))
+  const modelGet = (args: DeviceDetailAgentArgs) => deviceAnalysisService.getModel(withSubject(args), resolveMetadata)
 
   const latestProperties = (args: DeviceDetailAgentArgs) => runDetailTool<Array<Record<string, unknown>>>([], async () => {
     let propertyIds = resolveDomainAgentStringList(args.propertyIds, { name: 'propertyIds', max: 20 })
     if (!propertyIds.length) {
       const limit = resolveDomainAgentInteger(args.limit, { name: 'limit', defaultValue: 10, min: 1, max: 20 })
-      const response = await iotDeviceDetailRealApi.getDeviceDetail(device.id)
-      const detail = asRecord(asRecord(response).result ?? response)
-      const metadata = parseMetadata(detail.metadata || detail.deriveMetadata || detail.productMetadata)
+      const { metadata } = await resolveMetadata(device.id)
       propertyIds = metadata.properties
         .map(value => normalizeText(asRecord(value).id || asRecord(value).property || asRecord(value).key))
         .filter(Boolean)
@@ -50,7 +47,7 @@ export const createDeviceDetailPropertyService = (device: IotDevice) => {
       ...withSubject(args),
       pageIndex: 0,
       pageSize: sampleLimit,
-    })
+    }, resolveMetadata)
     if (result.success === false) return result
     const samples = Array.isArray(result.data) ? result.data : []
     const total = Number(result.total || 0)
@@ -93,7 +90,7 @@ export const createDeviceDetailPropertyService = (device: IotDevice) => {
     propertyHistorySummary,
     propertyHistory: (
       args: DeviceDetailAgentArgs,
-    ) => deviceAnalysisService.propertyHistoryRecords(withSubject(args)),
-    propertyAggregate: (args: DeviceDetailAgentArgs) => deviceAnalysisService.propertyAggregate(withSubject(args)),
+    ) => deviceAnalysisService.propertyHistoryRecords(withSubject(args), resolveMetadata),
+    propertyAggregate: (args: DeviceDetailAgentArgs) => deviceAnalysisService.propertyAggregate(withSubject(args), resolveMetadata),
   }
 }

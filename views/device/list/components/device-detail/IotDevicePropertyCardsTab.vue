@@ -154,7 +154,7 @@ import { useI18n } from 'vue-i18n'
 
 import type { DevicePropertyValue } from '../../services/iotDeviceDetailReal.service'
 import { useIotDevicePropertyCards } from '../../hooks/useIotDevicePropertyCards'
-import JlDrawerShell from '../common/JlDrawerShell.vue'
+import JlDrawerShell from '@jetlinks-web-core/components/JlDrawerShell/index.vue'
 import IotDevicePropertyCard from './IotDevicePropertyCard.vue'
 import IotDevicePropertyHistoryDetailModal from './IotDevicePropertyHistoryDetailModal.vue'
 import IotDevicePropertyHistoryChart from './IotDevicePropertyHistoryChart.vue'

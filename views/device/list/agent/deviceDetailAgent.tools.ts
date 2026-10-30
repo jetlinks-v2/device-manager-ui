@@ -388,7 +388,7 @@ const propertyAggregateTool = (
     }],
     temporal: contract.temporal,
     analytical: IOT_DEVICE_PROPERTY_AGGREGATE_ANALYTICAL,
-    effect: { kind: 'READ' },
+    effect: { kind: 'READ', cacheableWithinTurn: true },
     output: clientToolOutput.aggregateSeries({
       name: 'property-aggregate',
       shape: 'time-series.aggregate',

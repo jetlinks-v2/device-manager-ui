@@ -1,5 +1,30 @@
 # 设备列表范围侧栏
 
+## 通信链路列表滚动
+
+当前行为（S 级局部样式修复）：`views/device/list/components/device-detail/IotDeviceTraceTab.css` 为 `.trace-list-panel` 增加随视口变化的高度上限与 `min-height: 0`，标题栏保留在滚动区外；`.trace-list` 继续承担内部滚动，并以 `overscroll-behavior-y: contain` 阻止列表到达边缘后带动整页。仅调整列表面板样式，沿用已有双栏与窄屏单栏布局，不改变数据订阅、排序、清空或设备指令。
+
+验证：scoped CSS 编译、在 `runtime-ui` 执行 `node ../ui/scripts/check-ui-style.mjs --files modules/device-manager-ui/views/device/list/components/device-detail/IotDeviceTraceTab.css` 及模块 `git diff --check` 通过；模块生产构建通过（54.56 秒，命令同下节）。真实本地 9200 页面在 1280×720 视口下接收超过 20 条链路记录，列表可见高度 242px，滚动位置可从 0 移到 526px 及底部 904px；标题顶部保持 408px，调试区顶部保持 407px，窗口与外层面板滚动位置均为 0，列表边缘不会带动整页。链路详情抽屉打开、760px 宽度、核心头部渐变样式及关闭通过。仅有 CSS 变化，复用下节类型检查限制，未重复执行完整类型检查；工作区无 lint 脚本。原 1513×899 页面已恢复到通信链路页签，面板高度为 467px、列表可见高度为 421px；窄屏单栏未另行复验。
+
+## 统一复用核心抽屉组件
+
+当前结论：运行时 `device-manager-ui` 中所有现有 `JlDrawerShell` 调用统一使用 `runtime-ui/jetlinks-web-core/src/components/JlDrawerShell/index.vue`。核心组件已经通过组件插件全局注册；本模块沿用相邻组件的显式路径导入方式，直接从 `@jetlinks-web-core/components/JlDrawerShell/index.vue` 导入，便于核对依赖来源。
+
+实现入口：
+
+1. `views/device/list/components/IotTodoHandlerDrawer.vue` 和 `views/device/list/components/device-detail/` 下的 `IotDeviceDetailOverlays.vue`、`IotDevicePropertyCardsTab.vue`、`IotDeviceRuntimeTab.vue`、`IotDeviceTraceTab.vue` 共 5 处已直接导入核心组件，保留各自的开关、宽度参数、标题、业务内容、事件与插槽。
+2. 已删除 `views/device/list/components/common/JlDrawerShell.vue`，模块源码无残留本地导入，不保留转发包装；后续抽屉壳层修复与样式调整由 core 统一维护。
+
+范围边界：仅修改 `runtime-ui/modules/device-manager-ui`；不修改核心组件实现、运营端 `ui/`、其他业务弹层、接口、权限或路由。当前工作区已有的概览趋势图等改动不属于本次迁移。
+
+兼容性：核心组件支持现有调用方的 props、事件与插槽；迁移后采用核心组件头部样式及其视口宽度约束（通常预留 32px）。
+
+验证结果：交付复核中，7 个变更 Vue SFC 的脚本、模板与内联样式编译及核心导入解析通过，1 个 TypeScript 文件语法编译通过；core 中 `node --test tests/drawerShell.test.mjs` 1/1 通过，覆盖关闭期间宽度保持、400px 视口响应及监听清理；模块中 `node --test tests/deviceDetailContent.test.mjs tests/deviceDetailTabs.test.mjs tests/iotDeviceTraceMessageLink.test.mjs tests/deviceDetailDashboard.test.mjs tests/unifiedDeviceTabs.test.mjs` 28/28 通过。模块 `git diff --check` 通过。在 `runtime-ui` 执行 `pnpm -F jetlinks-web-core build -- --module-name device-manager-ui`，模块生产构建通过（约 63 秒；仍有资源解析、Rollup 配置、循环依赖、CSS 注释及大包告警）。
+
+交付入口：抽屉复用、链路列表滚动、消息趋势及统一列表省略显示的代码提交为 `70a6a4c`，合入 `2.20` 的 PR 为 [#363](https://github.com/jetlinks-v2/device-manager-ui/pull/363)。
+
+验证限制：工作区与模块未配置 lint 脚本。在 `runtime-ui` 执行 `node node_modules/vue-tsc/bin/vue-tsc.js -p modules/device-manager-ui/tsconfig.json --noEmit --pretty false`，完整类型检查未通过，共 1824 项诊断，涉及未修改文件中的依赖声明、API 泛型、共享组件及页面类型；本次 5 个组件与核心抽屉组件均无诊断，类型基线修复后仍需重跑。浏览器已确认本地 9200 的设备详情、设备数据及通信链路空态可打开；后续在真实链路数据下补充验证，链路详情已采用核心头部渐变样式，打开、760px 宽度及关闭均通过。其余迁移抽屉的开关、底栏及长内容滚动仍需有可用入口时复验。发布需要更新运行时前端静态资源。
+
 ## 设备详情启停权限
 
 目标与范围：修复统一设备详情中视频设备缺少启用/禁用按钮的问题，归属运行时 `device-manager-ui`，入口为 `views/device/list/hooks/useDeviceDetailPermissions.ts`。启停调用设备实例接口，使用当前设备列表入口或 `device/Instance:action` 授权；业务 Provider 的菜单不一定定义 `action`，例如 `video/resources`，不能把该按钮作为额外前提。编辑、删除继续保留原有设备实例与业务模块权限检查。
@@ -221,6 +246,8 @@
 - 页面入口：`views/device/list/components/device-detail/IotDeviceOverviewTab.vue` 只负责提供当前设备上下文和装配画布；`IotDeviceDefaultDetailContent.vue` 保持设备详情接线。组件运行不依赖硬编码设备 ID 或路由参数，详情宿主统一绑定当前设备，独立使用时可显式配置设备 ID；缺少设备上下文时展示 CloudEmpty。
 - 数据归属：将原 SFC 中的请求、统计归一化和近期告警映射移入分组 services / hooks；复用 `iotDeviceDetailRealApi.queryOverviewSummary`、`queryAlarmByDevice`、现有关键属性选择 / 实时值、属性历史弹窗和格式化。四张指标及消息趋势共享同一次概览统计，错误不伪装为业务零值；上下文按当前项目 / 设备隔离，切换设备立即撤销旧结果，暂停页面 / 卸载清理刷新和订阅。现有累计时长格式与当天统计范围不因组件拆分改变。
 - 交互方案：沿用监控感知页及当前三层密度，布局为 `[活跃时长][今日上行][今日下行][今日流量] / [消息趋势整行] / [关键属性快照][近期告警]`；末行默认横向均分；可用宽度不足 900px 时指标按两列排布、趋势与末行卡片占满整行，不足 560px 时提高指标卡高度以完整展示长时长。以设备运行数据为主要视觉锚点，保留加载、失败重试、真实零值和空态，所有文案沿用模块 i18n，样式使用主题 token。
+- 消息趋势：`visDashboard/DeviceDetail/components/MessageTrendPanel.vue` 将累计消息数放到标题下方、流量放到右上方，移除底部汇总条；`views/device/list/components/device-detail/iotDeviceOverviewCharts.ts#createMessageTrendOption` 使用右上角原生 ECharts 图例控制上行、下行曲线，绘图区为图例预留空间。沿用现有 `JEcharts`、i18n、数据、统计口径、配色和画布布局。
+- 消息趋势验证：真实 `9200` 页面已确认两条曲线可独立隐藏和恢复；660px 视口下趋势内容宽 295px，汇总行与面板均无横向溢出，临时视口已恢复。目标 SFC 的脚本 / 模板 / scoped CSS 及图表 TypeScript 语法编译、`node ../ui/scripts/check-ui-style.mjs --files modules/device-manager-ui/visDashboard/DeviceDetail/components/MessageTrendPanel.vue` 和模块 `git diff --check` 通过；组件为 28 行。`pnpm exec vue-tsc -p modules/device-manager-ui/tsconfig.json --noEmit --pretty false` 未通过，包含共享依赖声明与未改动 API、系统监控页面等类型诊断，不能据此宣称完整类型检查通过；工作区 / 模块未配置 lint。交付复核已在 `runtime-ui` 执行 `pnpm -F jetlinks-web-core build -- --module-name device-manager-ui`，模块生产构建通过（约 63 秒，告警见上文）。
 - 画布能力：与资源中心一致，正式设备详情默认展示上述七项，支持拖动、缩放和本地布局恢复；本次不开放正式页增删组件或全功能设计入口。布局保存复用 core，按账号与项目上下文隔离，切换设备只更新数据，避免串设备请求和状态。组件配置支持标题、刷新间隔及业务展示项，设计预览不发真实设备请求。
 - 范围边界：保留详情头部、其他 Tab、设备读写权限、物模型、接口和后端不变，不修改 `ui/` 或资源中心所属模块。不将整个旧页面包成单一大组件，避免无法独立装配和调整。
 - 验证计划：先验证注册发现与七种默认配置，再验证共享请求去重、两设备切换及迟到结果丢弃、预览请求隔离、错误 / 零值 / 空态、关键属性分页与历史入口、告警等级及请求次数、宽窄布局和缓存恢复。执行定向 Node 测试、目标 SFC / TypeScript / CSS 语法与 diff 检查；按本机性能约束不执行全量构建。本地 `http://localhost:9200` 通过 Vite 连接 `http://192.168.33.76:9000/api`，已使用登录会话复验设备详情。

@@ -349,7 +349,14 @@ function resetDetailStateForOpen() {
 }
 
 watch(
-  () => [props.open, props.deviceId, props.property?.identifier, detailMode.value, detailTimeRange.value?.[0]?.valueOf(), detailTimeRange.value?.[1]?.valueOf()] as const,
+  [
+    () => props.open,
+    () => props.deviceId,
+    () => props.property?.identifier,
+    detailMode,
+    () => detailTimeRange.value?.[0]?.valueOf(),
+    () => detailTimeRange.value?.[1]?.valueOf(),
+  ],
   ([open, deviceId, propertyId], prev) => {
     const opened = open && !prev?.[0]
     const deviceChanged = prev?.[1] !== deviceId

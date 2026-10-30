@@ -134,6 +134,10 @@ export function useDeviceDetailAgent(options?: UseDeviceDetailAgentOptions) {
     const tabs = [...resolveTabs()]
     const includeEdge = isEdgeDiagnosisAccessProvider(device.accessProvider)
     const service = createDeviceDetailAgentService(device, {
+      getDevice: () => {
+        const current = resolvePageDevice()
+        return current?.id === device.id ? current : device
+      },
       tabSurface: {
         tabs,
         defaultTab: resolveDefaultTab(),

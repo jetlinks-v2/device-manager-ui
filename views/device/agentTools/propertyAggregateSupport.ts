@@ -1,4 +1,8 @@
 import type { AiClientToolOutputField } from '@jetlinks-web-core/layout/components/AiChat/clientTools'
+import {
+  formatIotDevicePropertyAggregateBucketTime,
+  normalizeIotDevicePropertyAggregateInterval,
+} from '@device-manager-ui/agentCapabilities/deviceAnalysis/devicePropertyAggregate.support'
 
 export type DevicePropertyAggregateRecord = Record<string, unknown>
 export type DevicePropertyAggregate = 'AVG' | 'MAX' | 'MIN' | 'COUNT' | 'FIRST' | 'LAST' | 'DISTINCT_COUNT'
@@ -30,7 +34,6 @@ const NUMERIC_PROPERTY_VALUE_TYPES = new Set([
 const INTEGER_PROPERTY_VALUE_TYPES = new Set(['int', 'long', 'integer', 'short', 'byte'])
 const BOOLEAN_PROPERTY_VALUE_TYPES = new Set(['bool', 'boolean'])
 const GEO_POINT_PROPERTY_VALUE_TYPE = 'geopoint'
-const AGGREGATE_INTERVALS = new Set(['1m', '1h', '1d', '1w', '1M'])
 const AGGREGATE_DEFAULT_RANGE_MS = 24 * 60 * 60 * 1000
 const DEFAULT_INLINE_LIMIT = 200
 const MAX_INLINE_LIMIT = 1000
@@ -204,29 +207,10 @@ export const normalizeDevicePropertyAggregateTimeRange = (
 export const normalizeDevicePropertyAggregateInterval = (
   value: unknown,
   range: DevicePropertyAggregateTimeRange,
-) => {
-  const raw = String(value ?? '').trim()
-  if (raw && AGGREGATE_INTERVALS.has(raw)) return raw
-  const lower = raw.toLowerCase()
-  if (lower && AGGREGATE_INTERVALS.has(lower)) return lower
-  const normalized = lower.replace(/[\s_\-./|,，、]+/g, '')
-  const alias = ({
-    minute: '1m', minutes: '1m', min: '1m', '1分钟': '1m', 分钟: '1m', 按分钟: '1m',
-    hour: '1h', hours: '1h', '1小时': '1h', 小时: '1h', 按小时: '1h',
-    day: '1d', days: '1d', '1天': '1d', 天: '1d', 按天: '1d',
-    week: '1w', weeks: '1w', '1周': '1w', 周: '1w', 按周: '1w',
-    month: '1M', months: '1M', '1月': '1M', 月: '1M', 按月: '1M',
-  } as Record<string, string | undefined>)[normalized]
-  if (alias && AGGREGATE_INTERVALS.has(alias)) return alias
-  const duration = (range.end ?? Date.now()) - (range.start ?? 0)
-  if (duration <= 60 * 60 * 1000) return '1m'
-  if (duration <= 30 * 24 * 60 * 60 * 1000) return '1h'
-  if (duration <= 180 * 24 * 60 * 60 * 1000) return '1d'
-  return '1w'
-}
+) => normalizeIotDevicePropertyAggregateInterval(value, range)
 
 export const devicePropertyAggregateTimeFormat = (interval: string) => (
-  interval === '1d' || interval === '1w' || interval === '1M'
+  ['d', 'w', 'M'].includes(interval.slice(-1))
     ? 'yyyy-MM-dd'
     : 'yyyy-MM-dd HH:mm:ss'
 )
@@ -312,27 +296,6 @@ export const normalizeDevicePropertyAggregateData = (
     .reverse()
 }
 
-const padTimePart = (value: number) => String(value).padStart(2, '0')
-
-const formatAggregateBucketTime = (timestamp: number, interval: string) => {
-  const date = new Date(timestamp)
-  if (interval === '1m') date.setSeconds(0, 0)
-  else if (interval === '1h') date.setMinutes(0, 0, 0)
-  else if (interval === '1d') date.setHours(0, 0, 0, 0)
-  else if (interval === '1w') {
-    const day = date.getDay() || 7
-    date.setDate(date.getDate() - day + 1)
-    date.setHours(0, 0, 0, 0)
-  } else if (interval === '1M') {
-    date.setDate(1)
-    date.setHours(0, 0, 0, 0)
-  }
-  return `${date.getFullYear()}-${padTimePart(date.getMonth() + 1)}-${padTimePart(date.getDate())}`
-    + (interval === '1d' || interval === '1w' || interval === '1M'
-      ? ''
-      : ` ${padTimePart(date.getHours())}:${padTimePart(date.getMinutes())}:00`)
-}
-
 const rawPropertyHistoryValue = (input: unknown) => {
   const row = asRecord(input)
   const nested = asRecord(row.value)
@@ -388,6 +351,7 @@ export const aggregateDevicePropertyGeoPointHistory = (
   recordsByProperty: Readonly<Record<string, readonly unknown[]>>,
   columns: readonly DevicePropertyAggregateColumn[],
   interval: string,
+  origin?: number,
 ) => {
   const buckets = new Map<string, DevicePropertyAggregateRecord>()
   const columnsByProperty = new Map<string, DevicePropertyAggregateColumn[]>()
@@ -403,7 +367,7 @@ export const aggregateDevicePropertyGeoPointHistory = (
       .filter((record): record is { timestamp: number; value: unknown } => record.timestamp !== undefined)
       .sort((left, right) => left.timestamp - right.timestamp)
     records.forEach((record) => {
-      const time = formatAggregateBucketTime(record.timestamp, interval)
+      const time = formatIotDevicePropertyAggregateBucketTime(record.timestamp, interval, origin ?? records[0].timestamp)
       const bucket = buckets.get(time) || { time }
       propertyColumns.forEach((column) => {
         if (column.agg === 'FIRST') {

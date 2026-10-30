@@ -90,6 +90,39 @@ export const getMetadata = async (deviceId: string) => {
   }
 }
 
+export type DeviceMetadataResolver = (deviceId: string) => Promise<{
+  device: Pick<RawDevice, 'id' | 'name'>
+  metadata: ThingModelMetadata
+}>
+
+/** 页面拥有物模型的新鲜度；缺省加载只在当前助手实例内复用。 */
+export const createDeviceMetadataResolver = (
+  getDevice: () => Pick<IotDevice, 'id' | 'name' | 'thingModelMetadata'> | null | undefined,
+): DeviceMetadataResolver => {
+  let cached: { deviceId: string, promise: ReturnType<DeviceMetadataResolver> } | undefined
+  let previousDevice: ReturnType<typeof getDevice>
+  return async (deviceId) => {
+    const device = getDevice()
+    if (device !== previousDevice) {
+      cached = undefined
+      previousDevice = device
+    }
+    if (device?.id === deviceId && device.thingModelMetadata) {
+      return { device: { id: device.id, name: device.name }, metadata: device.thingModelMetadata }
+    }
+    if (cached?.deviceId !== deviceId) {
+      const promise = getMetadata(deviceId).then(({ device, metadata }) => ({
+        device: { id: device.id, name: device.name }, metadata,
+      }))
+      cached = { deviceId, promise }
+      void promise.catch(() => {
+        if (cached?.promise === promise) cached = undefined
+      })
+    }
+    return cached.promise
+  }
+}
+
 export const findProperty = (metadata: ThingModelMetadata, propertyId: string) => {
   const property = metadata.properties
     .map(asRecord)

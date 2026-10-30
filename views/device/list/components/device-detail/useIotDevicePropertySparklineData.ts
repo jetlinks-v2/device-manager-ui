@@ -78,8 +78,13 @@ export function useIotDevicePropertySparklineData(
     }
   }
 
+  // 属性实时值更新会重建卡片数据，不能把新数组引用误判为趋势查询条件变化。
   watch(
-    () => [deviceId.value, timeRange.value, numericVisibleProperties.value.map((item) => item.identifier).join('|')],
+    [
+      deviceId,
+      timeRange,
+      () => numericVisibleProperties.value.map((item) => item.identifier).join('|'),
+    ],
     scheduleLoad,
     { immediate: true },
   )

@@ -255,8 +255,14 @@ function formatChartTime(value: number | string) {
   return date.format(cycle.value === '1d' ? 'YYYY-MM-DD' : 'YYYY-MM-DD\nHH:mm:ss')
 }
 
+// 实时上报会替换属性对象；仅查询输入变化时才重新加载整段历史。
 watch(
-  () => [props.property?.identifier, props.property?.valueType?.type, timeValues.value?.[0], timeValues.value?.[1]],
+  [
+    () => props.property?.identifier,
+    () => props.property?.valueType?.type,
+    () => timeValues.value?.[0],
+    () => timeValues.value?.[1],
+  ],
   async () => {
     updatePeriodOptions()
     await queryCharts()

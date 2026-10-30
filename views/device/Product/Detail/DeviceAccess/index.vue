@@ -301,6 +301,7 @@ import {
 } from "../../../../../api/link/plugin";
 import {detail as queryPluginAccessDetail, getCompositeProviderDetail} from "../../../../../api/link/accessConfig";
 import {onlyMessage} from "@jetlinks-web-core/utils/comm";
+import { EventEmitter } from '@jetlinks-web/utils'
 import {pick} from "lodash-es";
 import {useI18n} from "vue-i18n";
 import { useTabSaveSuccessBack } from '@jetlinks-web-core/hooks'
@@ -411,6 +412,10 @@ const cancel = () => {
 const showDevice = () => {
   visible.value = true;
 };
+
+defineExpose({
+  openAccessSelector: showDevice,
+})
 
 const param = ref<Record<string, any>>({
   pageSize: 4,
@@ -833,6 +838,8 @@ const updateAccessData = async (id: string, values: any) => {
   if (resp.status === 200) {
     onlyMessage($t("DeviceAccess.index.594346-30"));
     productStore.current!.storePolicy = storePolicy;
+    // A newly-created product must finish every access field before the next-step prompt can appear.
+    EventEmitter.emit('ProductAccessConfigured', { id });
     const isTabBack = await onBack(resp)
     if (!isTabBack) {
       getDetailInfo();
