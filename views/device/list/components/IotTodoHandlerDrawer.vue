@@ -254,7 +254,7 @@ import { computed, reactive, ref, watch, type PropType } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
-import JlDrawerShell from './common/JlDrawerShell.vue'
+import JlDrawerShell from '@jetlinks-web-core/components/JlDrawerShell/index.vue'
 import IotDeviceStatusPill from './IotDeviceStatusPill.vue'
 import { buildIotDeviceDiagnosisPath } from '../hooks/useIotDeviceRouting'
 import { iotDeviceService } from '../services/iotDevice.service'
