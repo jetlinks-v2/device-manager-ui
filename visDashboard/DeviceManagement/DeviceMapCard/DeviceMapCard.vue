@@ -25,6 +25,11 @@
         >
           <CloudEmpty :description="configurationMessage" />
         </div>
+        <div v-else-if="error && !points.length" class="device-map-card__status error">
+          <CloudEmpty :description="t('components.DeviceMap.loadError')">
+            <a-button size="small" @click="refresh">{{ t('components.DeviceMap.retry') }}</a-button>
+          </CloudEmpty>
+        </div>
         <DeviceDistributionMap v-else-if="distribution" :points="points" @select="onPointSelect" />
         <a-map-component
           v-else
@@ -39,31 +44,12 @@
           />
         </a-map-component>
         <a-alert
-          v-if="!configurationMessage && (error || stateError)"
-          class="device-map-card__notice"
-          type="error"
-          show-icon
-          :message="t(error ? 'components.DeviceMap.loadError' : 'components.DeviceMap.stateError')"
-        >
-          <template #action>
-            <a-button
-              size="small"
-              @click="refresh"
-            >
-              {{ t('components.DeviceMap.retry') }}
-            </a-button>
-          </template>
-        </a-alert>
-        <a-alert
-          v-else-if="isEdit && !configurationMessage && !loading && !points.length"
+          v-if="isEdit && !configurationMessage && !loading && !error && !points.length"
           class="device-map-card__notice"
           type="info"
           show-icon
           :message="t('components.DeviceMap.editPlaceholder')"
         />
-        <div v-if="distribution && !isEdit && !loading && !error && !points.length" class="device-map-card__empty">
-          <CloudEmpty :description="t('components.DeviceMap.empty')" :image-style="{ height: '40px' }" />
-        </div>
         <DeviceMapSelectionCard
           :view="selection.view"
           @close="selection.close"
@@ -117,7 +103,7 @@ const isMapEnabled = computed(() => {
   const { apiKey, secretKey } = system.systemInfo.amap || {}
   return !!(apiKey?.trim() && secretKey?.trim())
 })
-const { config, distribution, points, loading, error, stateError, extraOptions, selection, refresh, onMapInit, onClusterClick, onPointSelect } = useDeviceMap(
+const { config, distribution, points, loading, error, extraOptions, selection, refresh, onMapInit, onClusterClick, onPointSelect } = useDeviceMap(
   infoRef,
   isEditRef,
   isMapEnabled
@@ -153,8 +139,6 @@ const title = computed(() =>
 .device-map-legend { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px 12px; font-size: 12px; color: var(--ant-color-text-secondary, #64748b); }
 .device-map-legend > span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .device-map-legend i { width: 7px; height: 7px; border-radius: 50%; }
-.device-map-card__empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
-.device-map-card__empty :deep(.ant-empty-description) { padding: 4px 10px; border-radius: 4px; background: rgb(255 255 255 / 85%); }
 
 /* Spin 的满高样式绑定外层容器，避免内容高度随转圈结束归零。 */
 .device-map-card__spin,
