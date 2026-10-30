@@ -32,8 +32,9 @@
       </a-tabs>
       <div class="product-detail-page__content">
         <component
+          ref="activeTabView"
           :is="tabs[activeTab]"
-          v-if="tabs[activeTab]"
+          v-if="tabs[activeTab] && productStore.current?.id"
           type="product"
           :update-permission="permissionStore.hasPermission('device/Product:update')"
         />
@@ -44,9 +45,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useProductStore } from '../../../../store/product'
 import { _deploy, _undeploy, deleteProduct } from '../../../../api/product'
 import { encodeConditionFilterQuery } from '@jetlinks-web-core/components/ConditionFilter'
@@ -61,6 +62,8 @@ import Save from '../Save/index.vue'
 import ProductDetailSummary from './components/ProductDetailSummary.vue'
 import { tabs } from './asyncComponent'
 import { buildProductDetailTabs, resolveProductDetailTab, type ProductDetailTabKey } from './detailTabs'
+import { hasProductCreatedGuide, updateProductCreatedGuide } from '../hooks/useProductCreatedGuide'
+import { Modal } from 'ant-design-vue'
 
 const { t: $t } = useI18n()
 const route = useRoute()
@@ -71,8 +74,13 @@ const permissionStore = useAuthStore()
 const menuStore = useMenuStore()
 const system = useSystemStore()
 const saveRef = ref()
-const activeTab = ref<ProductDetailTabKey>('Device')
+// 物模型引导必须以目标页签作为首屏，避免详情先渲染设备接入后再切换。
+const activeTab = ref<ProductDetailTabKey>(route.query.tab === 'Metadata' ? 'Metadata' : 'Device')
+const activeTabView = ref<{ openAccessSelector?: () => void }>()
+let openingAccessGuide = false
 const canViewDevices = computed(() => menuStore.hasMenu('iot-user-device-list'))
+const isCreatedProductOnboarding = computed(() => route.query.onboarding === 'product-created'
+  && hasProductCreatedGuide(typeof route.params.id === 'string' ? route.params.id : undefined))
 
 const visibleTabs = computed(() => buildProductDetailTabs(productStore.current, {
   showRules: system.showThreshold,
@@ -114,6 +122,9 @@ function toggleState() {
   const request = productStore.current.state === 1 ? _undeploy : _deploy
   return request(productStore.current.id).then((response: any) => {
     if (response?.status === 200) {
+      if (request === _deploy && isCreatedProductOnboarding.value) {
+        updateProductCreatedGuide(productStore.current.id, { enabled: true })
+      }
       onlyMessage($t('Detail.index.478940-12'))
       return refreshCurrent()
     }
@@ -158,13 +169,95 @@ function backToProductList() {
   menuStore.jumpPage('device/Product')
 }
 
+function returnToCreatedProductGuide() {
+  const productId = typeof route.params.id === 'string' ? route.params.id : productStore.current?.id
+  if (!productId) return
+  menuStore.jumpPage('device/Product', { query: { productOnboarding: 'resume', productId } })
+}
+
+/** Handles the only two transitions that may interrupt a newly-created product's detail workflow. */
+function promptEnableProduct() {
+  const productId = typeof route.params.id === 'string' ? route.params.id : productStore.current?.id
+  if (!productId || !isCreatedProductOnboarding.value) return
+  Modal.confirm({
+    title: $t('DialogTips.index.379211-29'),
+    content: $t('DialogTips.index.379211-30'),
+    okText: $t('DialogTips.index.379211-27'),
+    cancelText: $t('DialogTips.index.379211-17'),
+    onOk: () => _deploy(productId).then(async (response: any) => {
+      if (response?.status !== 200) return response
+      updateProductCreatedGuide(productId, { enabled: true })
+      await refreshCurrent()
+      returnToCreatedProductGuide()
+      return response
+    }),
+    onCancel: returnToCreatedProductGuide,
+  })
+}
+
+function handleAccessConfigured(data: { id?: string }) {
+  const productId = typeof route.params.id === 'string' ? route.params.id : productStore.current?.id
+  if (!productId || data?.id !== productId || !isCreatedProductOnboarding.value) return
+  updateProductCreatedGuide(productId, { accessConfigured: true })
+  Modal.confirm({
+    title: $t('DialogTips.index.379211-31'),
+    content: $t('DialogTips.index.379211-32'),
+    okText: $t('DialogTips.index.379211-20'),
+    cancelText: $t('DialogTips.index.379211-17'),
+    onOk: () => syncActiveTab('Metadata'),
+    onCancel: returnToCreatedProductGuide,
+  })
+}
+
+function handleMetadataChanged(data: { type?: string; id?: string }) {
+  const productId = typeof route.params.id === 'string' ? route.params.id : productStore.current?.id
+  if (!productId || data?.type !== 'product' || data.id !== productId || !isCreatedProductOnboarding.value) return
+  updateProductCreatedGuide(productId, { metadataSaved: true })
+  promptEnableProduct()
+}
+
 watch(() => productStore.current, () => syncActiveTab(), { deep: true })
-watch(() => route.query.tab, (tab) => syncActiveTab(tab))
+
+// 引导入口通过标准 query 指定物模型页；同一详情页复用时也要响应 query 中的 Tab 变化。
+watch(() => route.query.tab, (tab) => {
+  syncActiveTab(tab)
+})
+
+watch([() => route.query.guide, activeTab, activeTabView, () => productStore.current?.id], async ([guide, tab, view, productId]) => {
+  if (guide === 'enable-product' && productId && isCreatedProductOnboarding.value) {
+    const { guide: _guide, ...query } = route.query
+    await router.replace({ query })
+    promptEnableProduct()
+    return
+  }
+  if (guide !== 'configure-access' || tab !== 'Device' || !productId || !view?.openAccessSelector || openingAccessGuide) return
+
+  // Route intent is consumed only once the async access tab exposes its stable command.
+  openingAccessGuide = true
+  try {
+    await nextTick()
+    // Leave the product summary visible briefly before presenting the next configuration step.
+    await new Promise<void>((resolve) => window.setTimeout(resolve, 350))
+    if (route.query.guide !== 'configure-access') return
+    view.openAccessSelector()
+    const { guide: _guide, ...query } = route.query
+    await router.replace({ query })
+  } finally {
+    openingAccessGuide = false
+  }
+}, { flush: 'post' })
 
 onMounted(async () => {
+  EventEmitter.subscribe(['ProductAccessConfigured'], handleAccessConfigured)
+  EventEmitter.subscribe(['MetadataChanged'], handleMetadataChanged)
   productStore.reSet()
   await productStore.refresh(route.params.id as string)
   syncActiveTab(route.query.tab ?? routerParams.params?.value.tab)
+})
+
+onBeforeUnmount(() => {
+  EventEmitter.unSubscribe(['ProductAccessConfigured'], handleAccessConfigured)
+  EventEmitter.unSubscribe(['MetadataChanged'], handleMetadataChanged)
 })
 </script>
 

@@ -240,7 +240,11 @@ function resizeChart() {
 }
 
 watch(
-  () => [props.deviceId, props.property.identifier, props.property.valueType?.type],
+  [
+    () => props.deviceId,
+    () => props.property.identifier,
+    () => props.property.valueType?.type,
+  ],
   queryMiniChart,
   { immediate: true },
 )
@@ -252,7 +256,10 @@ watch(
 )
 
 watch(
-  () => [props.property.value, props.property.updatedAt],
+  [
+    () => props.property.value,
+    () => props.property.updatedAt,
+  ],
   scheduleRealtimeChartRender,
 )
 

@@ -1,11 +1,13 @@
 <template>
   <div class="detail-message">
+    <div class="detail-message__summary">
+      <div class="detail-message__totals">
+        <span>{{ t('IotDeviceDetail.overview.upstreamMessages') }} <strong>{{ formatCount(totals.up) }}</strong></span>
+        <span>{{ t('IotDeviceDetail.overview.downstreamMessages') }} <strong>{{ formatCount(totals.down) }}</strong></span>
+      </div>
+      <span class="detail-message__traffic">{{ t('IotDeviceDetail.overview.trafficLegend', { upstream: traffic.up, downstream: traffic.down }) }}</span>
+    </div>
     <JEcharts class="detail-message__chart" :option="option" />
-    <footer class="detail-message__legend">
-      <span><i class="up" />{{ t('IotDeviceDetail.overview.upstreamMessages') }} <strong>{{ formatCount(totals.up) }}</strong></span>
-      <span><i class="down" />{{ t('IotDeviceDetail.overview.downstreamMessages') }} <strong>{{ formatCount(totals.down) }}</strong></span>
-      <em>{{ t('IotDeviceDetail.overview.trafficLegend', { upstream: traffic.up, downstream: traffic.down }) }}</em>
-    </footer>
   </div>
 </template>
 <script setup lang="ts">
@@ -16,11 +18,11 @@ defineProps({ option: { type: Object, required: true }, totals: { type: Object a
 const { t } = useI18n()
 </script>
 <style scoped>
-.detail-message { display: flex; flex-direction: column; height: 100%; min-height: 0; gap: var(--space-3); }
+.detail-message { display: flex; flex-direction: column; height: 100%; min-height: 0; gap: var(--space-2); }
+.detail-message__summary { display: flex; flex-shrink: 0; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-2) var(--space-4); color: var(--jet-theme-text-secondary); font-size: var(--fs-12); }
+.detail-message__totals { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); }
+.detail-message__totals span { display: inline-flex; align-items: baseline; gap: var(--space-2); }
+.detail-message__totals strong { color: var(--jet-theme-text); font-size: var(--fs-16); font-weight: 600; font-variant-numeric: tabular-nums; }
+.detail-message__traffic { margin-left: auto; }
 .detail-message__chart { flex: 1; min-height: 0; width: 100%; }
-.detail-message__legend { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2) var(--space-4); padding: var(--space-3); background: var(--jet-theme-primary-soft); border-radius: var(--r-2); color: var(--jet-theme-text); }
-.detail-message__legend span { display: inline-flex; align-items: center; gap: var(--space-2); }
-.detail-message__legend i { width: .375rem; height: .375rem; border-radius: var(--r-pill); background: var(--jet-theme-primary); }
-.detail-message__legend .down { background: var(--jet-theme-warning); }
-.detail-message__legend em { margin-left: auto; font-style: normal; color: var(--jet-theme-text-secondary); }
 </style>

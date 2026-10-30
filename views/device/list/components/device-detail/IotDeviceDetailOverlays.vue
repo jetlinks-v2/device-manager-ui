@@ -55,7 +55,7 @@
 
 <script setup lang="ts">
 import { toRefs, type PropType } from 'vue'
-import JlDrawerShell from '../common/JlDrawerShell.vue'
+import JlDrawerShell from '@jetlinks-web-core/components/JlDrawerShell/index.vue'
 import IotAddDeviceDrawer from '../IotAddDeviceDrawer.vue'
 import IotDeviceTagEditorModal from '../IotDeviceTagEditorModal.vue'
 import IotDeviceStatusPill from '../IotDeviceStatusPill.vue'

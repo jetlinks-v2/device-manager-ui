@@ -339,7 +339,7 @@ import { computed, onMounted, onUnmounted, type PropType, reactive, ref, toRaw, 
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
 
-import JlDrawerShell from '../common/JlDrawerShell.vue'
+import JlDrawerShell from '@jetlinks-web-core/components/JlDrawerShell/index.vue'
 import { formatApiTime, iotDeviceDetailRealApi } from '../../services/iotDeviceDetailReal.service'
 import type { IotDevice, IotDeviceCommandDefinition } from '../../types'
 import type { RealtimePropertyRow } from './iotDeviceDetail.types'

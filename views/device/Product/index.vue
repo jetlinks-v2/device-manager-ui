@@ -32,7 +32,7 @@
 
 				      <JProTable
 					      :columns="columns"
-					      :request="queryProductList"
+					      :request="queryDetailList"
 					      class="product-page__table pro-table__no-padding"
 					      ref="tableRef"
 					      :defaultParams="{
@@ -110,6 +110,16 @@
 					      <template #brandModel="slotProps">
 						      {{ getBrandModel(slotProps) }}
 					      </template>
+					      <template #deviceCount="slotProps">
+						      <a-button
+						        class="product-page__device-count"
+						        type="link"
+						        :disabled="!canViewDevices || Number(slotProps.deviceCount ?? 0) === 0"
+						        @click="jumpDevice(slotProps.id)"
+						      >
+						        {{ Number(slotProps.deviceCount ?? 0) }}
+						      </a-button>
+					      </template>
 					      <template #action="slotProps">
                   <table-actions>
                       <table-actions-item v-for="i in getActions(slotProps)" :key="i.key" :common="i.common === false">
@@ -167,7 +177,7 @@ import {
   getProviders,
   queryOrgThree,
   queryGatewayList,
-  queryProductList,
+  queryDetailList,
   _deploy,
   _undeploy,
   deleteProduct,
@@ -181,10 +191,12 @@ import ModifyModal from "../Category/components/modifyModal/index.vue";
 import { queryTreeStatistics, deleteTree } from "../../../api/category";
 import { useMenuStore, useAuthStore } from "@jetlinks-web-core/store";
 import { useRouterParams } from "@jetlinks-web/hooks";
+import { useRoute, useRouter } from 'vue-router'
 import { accessType } from "../data";
 import { useI18n } from "vue-i18n";
 import { Modal } from "ant-design-vue";
 import ConditionFilter, {
+  encodeConditionFilterQuery,
   type ConditionFilterChangePayload,
   type ConditionFilterField,
   type ConditionFilterTerm,
@@ -198,12 +210,16 @@ import { createReusableTemplate } from '@vueuse/core'
 import { useEmptyCreateState } from '@jetlinks-web-core/hooks'
 import ProductExportModal from './components/ProductExportModal.vue'
 import { useProductTransfer } from './hooks/useProductTransfer'
+import { getDeviceListFilterFields } from '../../../deviceListFilter'
 
 const { t: $t } = useI18n();
+const route = useRoute()
+const router = useRouter()
 const [DefineEmptyCreate, EmptyCreateButton] = createReusableTemplate()
 
 const menuStory = useMenuStore();
 const authStore = useAuthStore();
+const canViewDevices = computed(() => menuStory.hasMenu('iot-user-device-list'));
 const isAdd = ref<number>(0);
 const title = ref<string>("");
 const productSearchParams = ref<Record<string, any>>({});
@@ -239,6 +255,13 @@ const columns = [
     scopedSlots: true,
     ellipsis: true,
     width: 240,
+  },
+  {
+    title: $t("Product.index.660348-45"),
+    dataIndex: "deviceCount",
+    key: "deviceCount",
+    scopedSlots: true,
+    width: 100,
   },
   {
     title: $t("Product.index.660348-9"),
@@ -461,6 +484,21 @@ const add = () => {
  */
 const handleView = (id: string) => {
   menuStory.jumpPage("device/Product/Detail", { params: { id } });
+};
+
+/** 复用统一设备列表的产品筛选编码，确保钻取结果与设备列表的筛选契约一致。 */
+const jumpDevice = (productId: string) => {
+  if (!canViewDevices.value || !productId) return;
+
+  menuStory.jumpPage('iot-user-device-list', {
+    query: {
+      type: 'device',
+      q: encodeConditionFilterQuery(
+        [{ column: 'productId', termType: 'eq', value: productId }],
+        getDeviceListFilterFields(),
+      ),
+    },
+  });
 };
 
 /**
@@ -717,6 +755,20 @@ const filterFields = computed<ConditionFilterField[]>(() =>
 const commonFilterFields = ['name', 'id', 'deviceType', 'accessProvider', 'state'];
 const saveRef = ref();
 
+watch(() => route.query.productOnboarding, async (intent) => {
+  if (intent !== 'resume') return
+  const productId = typeof route.query.productId === 'string' ? route.query.productId : ''
+  if (productId) await nextTick(() => saveRef.value?.resumeGuide?.(productId))
+  const { productOnboarding: _intent, productId: _productId, ...query } = route.query
+  await router.replace({ query })
+}, { immediate: true })
+
+/** A deferred guide resumes only after returning to the product list, never when the user clicks “Do this later”. */
+const resumePendingProductGuide = async () => {
+  await nextTick()
+  saveRef.value?.resumePendingGuide?.()
+}
+
 /**
  * 兼容 ConditionFilter 直接条件与嵌套分组两种输出，保留产品列表已有的后端字段转换。
  */
@@ -788,6 +840,7 @@ const handleFilterSearch = (payload: ConditionFilterChangePayload) => {
 const routerParams = useRouterParams();
 
 onMounted(() => {
+  void resumePendingProductGuide()
   if (routerParams.params.value?.save) {
     add();
   }
@@ -845,6 +898,10 @@ onMounted(() => {
   }
   refreshCategoryTree();
 });
+
+onActivated(() => {
+  void resumePendingProductGuide()
+})
 </script>
 
 <style lang="less" scoped>
