@@ -87,11 +87,12 @@ test('invalid data reasons translate at display time and legacy descriptions rem
   for (const messages of [zh, en]) {
     const t: RuleTranslator = key => (messages as Record<string, string>)[key]
     for (const reason of ['value-set', 'number-range', 'max-step']) {
-      const record = { reason, description: 'old language', valueTruncated: true }
+      const record = { detail: { reason, valueTruncated: true }, description: 'old language' }
       assert.equal(invalidRecordDescription(record, t), `${t(`PropertyRules.invalidReason.${reason}`)} · ${t('PropertyRules.invalidValueTruncated')}`)
     }
     assert.equal(invalidRecordDescription({ description: 'Legacy custom text' }, t), 'Legacy custom text')
-    assert.equal(invalidRecordDescription({ reason: 'extension', description: 'Custom rule' }, t), 'Custom rule')
+    assert.equal(invalidRecordDescription({ detail: { reason: 'extension' }, description: 'Custom rule' }, t), 'Custom rule')
+    assert.equal(invalidRecordDescription({ detail: 'invalid', description: 'Legacy text' }, t), 'Legacy text')
   }
 })
 
