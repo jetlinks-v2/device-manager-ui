@@ -58,12 +58,12 @@
 .notification-type :deep(.ant-checkbox) { top: 0; align-self: flex-start; margin-top: 3px; }
 .notification-type > :deep(.notification-template-status) { align-self: flex-start; margin-top: 6px; }
 .notification-types-empty { display: block; padding: var(--space-2); color: var(--jet-theme-text-secondary); }
+.notification-option-help { padding: var(--space-2); border-top: 1px solid var(--line); color: var(--jet-theme-text-secondary); line-height: 18px; }
+.notification-option-help p { margin: 0; }
+.notification-option-help p + p { margin-top: var(--space-1); }
 .notification-help { display: flex; flex-direction: column; gap: var(--space-3); width: min(320px, calc(100vw - 72px)); }
 .notification-help strong { display: block; margin-bottom: var(--space-1); font-size: var(--fs-12); font-weight: 500; }
 .notification-help p { margin: 0; }
-.notification-help-address { display: grid; grid-template-columns: 18px minmax(0, 1fr); align-items: start; gap: var(--space-1); margin-bottom: var(--space-1); }
-.notification-help-address > :deep(.anticon) { margin-top: 4px; color: var(--jet-theme-text-secondary); font-size: 14px; }
-.notification-help-address b { margin-inline-end: var(--space-1); font-weight: 500; }
 .notification-help-secondary { color: var(--jet-theme-text-secondary); }
 .notification-help p + p { margin-top: var(--space-1); }
 @media (pointer: coarse) { .notification-toggle, .notification-chip { min-height: 36px; } }

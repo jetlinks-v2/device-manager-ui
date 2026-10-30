@@ -11,7 +11,7 @@
         </div>
         <a-alert v-if="!editor.parsed.editable" type="info" show-icon :message="$t('PropertyRules.readonly')" />
         <template v-else>
-          <PropertyRuleSummary v-if="!editor.custom || !editor.canSave" :rows="summaryRows" />
+          <PropertyRuleSummary v-if="!editor.custom || !editor.canSave" :rows="summaryRows" :levels="editor.levelOptions" />
           <a-form v-else class="rule-sentences" :class="{ 'rule-set-has-alarm': editor.draft.alarmEnabled }" layout="inline" :disabled="!editor.editable">
             <PropertyRuleStage v-if="editor.draft.valuesEnabled || editor.draft.rangeEnabled || editor.draft.stepEnabled" section="cleaning" :caption="multipleStages">
               <template v-if="hasDiscardingCleaning(editor.draft)" #extra><RuleInvalidRecord v-model="editor.draft.recordInvalid" :disabled="!editor.editable" /></template>

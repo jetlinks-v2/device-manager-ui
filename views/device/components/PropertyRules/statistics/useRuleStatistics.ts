@@ -92,7 +92,12 @@ export function useRuleStatistics(props: StatisticsProps) {
     void refresh()
   }
 
-  function retry() { unavailable = false; void refresh() }
+  function retry() {
+    unavailable = false
+    const target = openProperty.value ? targets.value.get(openProperty.value) : undefined
+    if (target) denied.delete(target.source)
+    void refresh()
+  }
 
   /** Save/reload invalidates the baseline without pretending that runtime propagation is immediate. */
   function reset() {

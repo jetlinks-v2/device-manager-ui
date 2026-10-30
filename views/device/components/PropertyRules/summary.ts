@@ -14,7 +14,7 @@ export interface RuleStepSummary {
   enabled: boolean
 }
 
-type RuleEffects = Omit<RuleDraft, 'alarm'> & { alarm: Pick<DeviceAlarmFormModel, 'name' | 'trigger' | 'limit' | 'value' | 'values' | 'autoRelieve' | 'relieveCondition'> }
+type RuleEffects = Omit<RuleDraft, 'alarm'> & { alarm: Pick<DeviceAlarmFormModel, 'name' | 'trigger' | 'limit' | 'value' | 'values' | 'autoRelieve' | 'relieveCondition'> & Partial<Pick<DeviceAlarmFormModel, 'level' | 'notification'>> }
 
 export interface RuleRowSummary {
   key: RulePart
@@ -25,6 +25,7 @@ export interface RuleRowSummary {
   notice?: string
   details?: string
   recordInvalid?: boolean
+  alarm?: Pick<RuleEffects['alarm'], 'level' | 'notification' | 'autoRelieve'>
 }
 
 export function ruleStageOf(part: RulePart): RuleSection { return ['values', 'range', 'step'].includes(part) ? 'cleaning' : ['scale', 'fallback', 'file'].includes(part) ? 'processing' : part === 'alarm' ? 'alarm' : 'sampling' }
@@ -80,8 +81,11 @@ function summarizeEffectRows(effects: RuleEffects, property: ThingModelProperty,
   if (effects.alarmEnabled) rows.push({ key: 'alarm', icon: 'AlertOutlined', title: effects.alarm.name || t('PropertyRules.defaultAlarmName', { name: propertyNameOf(property) }), color: 'orange',
     sentence: ['inside', 'outside'].includes(effects.alarm.trigger)
       ? `${t(effects.alarm.trigger === 'outside' ? 'PropertyRules.sentence.outside' : 'PropertyRules.sentence.inside')} ${bounds({ min: effects.alarm.limit.lower, max: effects.alarm.limit.upper })}`
-      : formatTriggerText(effects.alarm, property, t),
-    details: effects.alarm.autoRelieve ? `${t('DeviceAlarm.autoRelieve.condition')}${formatRelieveText(effects.alarm)}` : undefined })
+      : `${formatTriggerText(effects.alarm, property, t)}${isNumberProperty(property) ? unit : ''}`,
+    alarm: { level: effects.alarm.level, notification: effects.alarm.notification, autoRelieve: effects.alarm.autoRelieve },
+    details: effects.alarm.autoRelieve
+      ? t('DeviceAlarm.sentence.recovery', { condition: `${formatRelieveText(effects.alarm, property, t)}${isNumberProperty(property) ? unit : ''}` })
+      : undefined })
   if (effects.samplingEnabled) {
     const draft = effects
     const mode = draft.samplingMode

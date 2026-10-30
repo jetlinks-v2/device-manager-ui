@@ -196,7 +196,7 @@ test('enabled read-only notifications resolve types without changing persisted b
   try {
     assert.equal(requests, 1)
     assert.equal(state.channelLabel.value, 'Inbox')
-    assert.equal(state.deliveryHints.value[0].text, 'DeviceAlarm.delivery.address.inbox')
+    assert.equal(state.channelOptions.value[0].description, 'DeviceAlarm.delivery.address.inbox')
     assert.equal(JSON.stringify(props.model), before)
     state.setPanel('channels', true)
     assert.equal(state.activePanel.value, undefined)

@@ -1,4 +1,5 @@
 import type {
+  AlarmLevelOption,
   DeviceAlarmFormModel,
   DeviceAlarmLevel,
   DeviceAlarmNotificationConfig,
@@ -356,8 +357,9 @@ function areComplementaryMatchers(left: Record<string, any>, right: Record<strin
   return Boolean(condition && recovery && JSON.stringify(buildCondition(invertCondition(condition))) === JSON.stringify(buildCondition(recovery)))
 }
 
-export function formatRelieveText(row: DeviceAlarmCondition & { propertyName?: string; relieveCondition?: DeviceAlarmCondition }, property?: ThingModelProperty) {
-  return formatTriggerText({ ...row, ...(row.relieveCondition ?? invertCondition(row)) }, property)
+export function formatRelieveText(row: DeviceAlarmCondition & { propertyName?: string; relieveCondition?: DeviceAlarmCondition }, property?: ThingModelProperty,
+  t: (key: string, values?: Record<string, string | number>) => string = i18n.global.t) {
+  return formatTriggerText({ ...row, ...(row.relieveCondition ?? invertCondition(row)) }, property, t)
 }
 
 export function formatTriggerText(row: DeviceAlarmCondition & { propertyName?: string }, property?: ThingModelProperty,
@@ -395,6 +397,12 @@ export function levelTone(level: DeviceAlarmLevel): 'error' | 'warning' | 'proce
   if (level === 3) return 'warning'
   if (level === 4) return 'processing'
   return 'default'
+}
+
+/** Use the same localized fallback until the configured alarm levels are available. */
+export function defaultAlarmLevelOptions(t: (key: string) => string): AlarmLevelOption[] {
+  return ['emergency', 'urgent', 'severity', 'ordinary', 'warn']
+    .map((key, index) => ({ value: index + 1, label: t(`DeviceAlarm.level.${key}`) }))
 }
 
 export function createEmptyNotification() {

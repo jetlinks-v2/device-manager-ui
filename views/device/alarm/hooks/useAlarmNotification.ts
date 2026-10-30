@@ -30,7 +30,7 @@ export function useAlarmNotification(props: NotificationProps, requestMethods: (
   })
   const channelOptions = computed(() => {
     const options = props.methods.map(method => ({ value: method.providerId, label: method.label, icon: method.icon, templates: method.templates,
-      description: t(`DeviceAlarm.delivery.short.${method.key}`) }))
+      description: t(`DeviceAlarm.delivery.address.${method.key}`) }))
     const known = new Set(options.map(option => option.value))
     return [...options, ...channelIds.value.filter(id => !known.has(id)).map(id => ({
       value: id, label: t('DeviceAlarm.notification.unavailableChannel'), icon: 'ExclamationCircleOutlined', templates: undefined,
@@ -41,10 +41,7 @@ export function useAlarmNotification(props: NotificationProps, requestMethods: (
   const channelLabel = computed(() => selectedMethods.value[0]?.label
     ?? (channelCount.value ? t('DeviceAlarm.notification.channelCount', { count: channelCount.value }) : t('DeviceAlarm.notification.channelShort')))
   const channelTitle = computed(() => selectedMethods.value.map(method => method.label).join('、') || channelLabel.value)
-  const deliveryHints = computed(() => selectedMethods.value.map(method => ({
-    id: method.providerId, label: method.label, icon: method.icon, text: t(`DeviceAlarm.delivery.address.${method.key}`),
-  })))
-  const hasContactType = computed(() => selectedMethods.value.some(method => ['email', 'sms', 'phone'].includes(method.key)))
+  const hasContactType = computed(() => props.methods.some(method => ['email', 'sms', 'phone'].includes(method.key)))
 
   /** A closing event from the previous popover must not close the next chip's panel. */
   function setPanel(panel: NotificationPanel, open: boolean) {
@@ -80,5 +77,5 @@ export function useAlarmNotification(props: NotificationProps, requestMethods: (
     if (reveal && !activePanel.value) setPanel(!channelCount.value ? 'channels' : !props.model.notification.userIds.length ? 'recipients' : 'channels', true)
     else if (reveal === false) activePanel.value = undefined
   }, { immediate: true, flush: 'sync' })
-  return { activePanel, scopeKey, showLegacyMessageTemplate, channelIds, channelOptions, channelCount, channelLabel, channelTitle, selectedMethods, deliveryHints, hasContactType, setPanel, toggleEnabled, setIncludeRelieve }
+  return { activePanel, scopeKey, showLegacyMessageTemplate, channelIds, channelOptions, channelCount, channelLabel, channelTitle, selectedMethods, hasContactType, setPanel, toggleEnabled, setIncludeRelieve }
 }

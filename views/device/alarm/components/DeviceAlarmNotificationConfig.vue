@@ -26,6 +26,10 @@
                   </a-checkbox-group>
                   <span v-if="!loading && !notification.channelOptions.length" class="notification-types-empty">{{ $t('DeviceAlarm.notification.noTypes') }}</span>
                 </a-spin>
+                <div v-if="notification.channelOptions.length" class="notification-option-help">
+                  <p v-if="notification.hasContactType">{{ $t('DeviceAlarm.delivery.contactSettings') }}</p>
+                  <p>{{ $t('DeviceAlarm.delivery.templateOverride') }}</p>
+                </div>
               </div>
             </template>
             <a-button ref="channelTrigger" type="text" size="small" class="notification-chip" :disabled="disabled" :aria-label="$t('DeviceAlarm.notification.type')" :aria-expanded="notification.activePanel === 'channels'" :title="notification.channelTitle">
@@ -48,13 +52,6 @@
       <RuleNotice kind="info" :label="$t('DeviceAlarm.notification.help')" :message="$t('DeviceAlarm.notification.help')">
         <div class="notification-help">
           <section><strong>{{ $t('DeviceAlarm.delivery.whenTitle') }}</strong><p>{{ $t(model.notification.enabled ? 'DeviceAlarm.delivery.when' : 'DeviceAlarm.delivery.off') }}</p><p v-if="model.notification.enabled && model.autoRelieve && model.notification.includeRelieve">{{ $t('DeviceAlarm.delivery.recovery') }}</p></section>
-          <section v-if="model.notification.enabled">
-            <strong>{{ $t('DeviceAlarm.delivery.addressTitle') }}</strong>
-            <div v-for="hint in notification.deliveryHints" :key="hint.id" class="notification-help-address"><AIcon :type="hint.icon" /><p><b>{{ hint.label }}</b>{{ hint.text }}</p></div>
-            <p v-if="!notification.deliveryHints.length">{{ $t('DeviceAlarm.delivery.selectType') }}</p>
-            <p v-if="notification.hasContactType" class="notification-help-secondary">{{ $t('DeviceAlarm.delivery.contactSettings') }}</p>
-            <p class="notification-help-secondary">{{ $t('DeviceAlarm.delivery.templateOverride') }}</p>
-          </section>
           <section><strong>{{ $t('DeviceAlarm.delivery.missingTitle') }}</strong><p>{{ $t('DeviceAlarm.delivery.missing') }}</p><p class="notification-help-secondary">{{ $t('DeviceAlarm.delivery.statusLimit') }}</p></section>
         </div>
       </RuleNotice>

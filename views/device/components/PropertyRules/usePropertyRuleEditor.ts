@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore, useSystemStore } from '@jetlinks-web-core/store'
 import type { ThingModelProperty, ThingPropertyPreprocess } from '../../alarm/types'
 import { createEmptyNotification, isNumberProperty, propertyIdOf, propertyNameOf, toDeviceAlarmRow,
-  formatPropertyUnit, validateNotificationMessage, DEVICE_ALARM_NOTIFICATION_MESSAGE_MAX_LENGTH } from '../../alarm/utils'
+  defaultAlarmLevelOptions, formatPropertyUnit, validateNotificationMessage, DEVICE_ALARM_NOTIFICATION_MESSAGE_MAX_LENGTH } from '../../alarm/utils'
 import { availableRuleParts, buildRule, isEmptyRule, parseRule, validateDraft, type RuleDraft, type RuleAddPart } from './codec'
 import { readSampling } from './sampling'
 import { defaultCondition } from '../../alarm/conditions'
@@ -55,8 +55,7 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
   const cleaningHint = computed(() => draft.value?.scaleEnabled ? t('PropertyRules.rawValueHint') : '')
   const booleanOptions = [{ label: 'true', value: true }, { label: 'false', value: false }]
   const enumOptions = computed(() => (props.property.valueType?.elements ?? []).map(item => ({ value: item.value, label: item.text ?? String(item.value) })))
-  const levelOptions = computed(() => resources.levels.value.length ? resources.levels.value
-    : ['emergency', 'urgent', 'severity', 'ordinary', 'warn'].map((key, index) => ({ value: index + 1, label: t(`DeviceAlarm.level.${key}`) })))
+  const levelOptions = computed(() => resources.levels.value.length ? resources.levels.value : defaultAlarmLevelOptions(t))
   const alarmAvailable = computed(() => Boolean(system.showThreshold))
   const canSave = computed(() => props.scope.canUpdate ?? permission.hasPermission(props.scope.deviceId ? 'device/Instance:update' : 'device/Product:update'))
   const editable = computed(() => canSave.value && custom.value && parsed.value.editable && !loading.value && !failed.value && !saving.value)

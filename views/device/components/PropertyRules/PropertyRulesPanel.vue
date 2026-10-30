@@ -80,7 +80,7 @@ import PropertyRuleActions from './PropertyRuleActions.vue'
 import RuleNotice from './RuleNotice.vue'
 import PropertyRuleStatistics from './statistics/PropertyRuleStatistics.vue'
 import { useRuleStatistics } from './statistics/useRuleStatistics'
-import type { StatisticsTarget } from './statistics/model'
+import { canReadStatistics, type StatisticsTarget } from './statistics/model'
 import { availableRuleParts, type RuleAddPart } from './codec'
 const props = defineProps<{ scope: RuleScope; properties: ThingModelProperty[] }>()
 const { t: $t } = useI18n()
@@ -92,7 +92,7 @@ const statisticsTargets = computed(() => {
   const rows = groups.value.find(group => group.id === expandedGroups.value[0])?.visibleRows ?? []
   return new Map(rows.filter(row => row.raw).map(row => [row.id, {
     property: row.id, source: row.source as StatisticsTarget['source'],
-    permitted: permission.hasPermission(row.source === 'product' ? 'device/Product:view' : 'device/Instance:view'),
+    permitted: canReadStatistics(row.source, props.scope, permission.hasPermission('device/Product:view')),
   }]))
 })
 const statistics = useRuleStatistics(reactive({ scope: computed(() => props.scope), targets: computed(() => [...statisticsTargets.value.values()]) }))

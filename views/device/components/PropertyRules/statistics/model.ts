@@ -1,3 +1,5 @@
+import type { RuleScope } from '../service'
+
 /** Single-node counters for a saved property chain, never a device or notification health check. */
 export interface RuleStatisticsSnapshot {
   ruleId: string
@@ -27,6 +29,16 @@ export interface StatisticsEntry {
   snapshot?: RuleStatisticsSnapshot
   rate?: number
   restarted?: boolean
+}
+
+/**
+ * Rendered rules have already passed the owning scope's query authorization.
+ * An inherited rule alone does not grant access to statistics for the whole product.
+ * The statistics endpoint independently checks query and asset permissions.
+ */
+export function canReadStatistics(source: string, scope: RuleScope, canViewProduct: boolean) {
+  if (source === 'device') return Boolean(scope.deviceId)
+  return source === 'product' && (!scope.deviceId || canViewProduct)
 }
 
 /** A version/node reset invalidates the rate baseline, including counter rollback. */

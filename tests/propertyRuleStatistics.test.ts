@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { createRenderer, defineComponent, nextTick, reactive } from 'vue'
-import { inputRate, statisticsStatus, type RuleStatisticsSnapshot, type StatisticsTarget } from '../views/device/components/PropertyRules/statistics/model'
+import { canReadStatistics, inputRate, statisticsStatus, type RuleStatisticsSnapshot, type StatisticsTarget } from '../views/device/components/PropertyRules/statistics/model'
 import { queryRuleStatistics } from '../views/device/components/PropertyRules/statistics/api'
 import { useRuleStatistics } from '../views/device/components/PropertyRules/statistics/useRuleStatistics'
 import { setAlarmRequestHandler } from './alarmRequest.test-shim'
@@ -25,6 +25,18 @@ function mount(targets = [target()]) {
   app.mount({})
   return { props, state, document, unmount() { app.unmount(); Reflect.deleteProperty(globalThis, 'document') } }
 }
+
+test('statistics reuse authorized scope reads without granting inherited product-wide access', () => {
+  const product = { productId: 'p1' }
+  const device = { ...product, deviceId: 'd1' }
+  assert.equal(canReadStatistics('product', product, false), true)
+  assert.equal(canReadStatistics('device', device, false), true)
+  assert.equal(canReadStatistics('product', device, false), false)
+  assert.equal(canReadStatistics('product', device, true), true)
+  assert.equal(canReadStatistics('disabled', device, true), false)
+  assert.equal(canReadStatistics('none', product, true), false)
+  assert.equal(canReadStatistics('device', product, true), false)
+})
 
 test('rates only compare valid snapshots of one rule, node and generation', () => {
   const first = snapshot()
@@ -120,6 +132,25 @@ test('one poller refreshes only the open rule and stops on close, failure, hidde
   } finally { panel.unmount() }
   context.mock.timers.tick(15000); await settle()
   assert.equal(requests, 6)
+})
+
+test('manual refresh rechecks a rejected authorization while automatic retries stay stopped', async () => {
+  let requests = 0
+  setAlarmRequestHandler(async () => {
+    if (++requests === 1) throw { response: { status: 403 } }
+    return { result: [snapshot()] }
+  })
+  const panel = mount()
+  try {
+    await settle()
+    assert.equal(panel.state.entries.temperature.failure, 'forbidden')
+    panel.state.toggle('temperature', true); await settle()
+    assert.equal(requests, 1)
+    await panel.state.refresh(); await settle()
+    assert.equal(requests, 2)
+    assert.equal(panel.state.entries.temperature.failure, undefined)
+    assert.equal(panel.state.entries.temperature.snapshot?.loaded, true)
+  } finally { panel.unmount() }
 })
 
 test('late responses cannot cross categories, scopes or permission changes', async () => {

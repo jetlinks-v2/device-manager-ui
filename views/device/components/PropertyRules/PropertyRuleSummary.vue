@@ -4,15 +4,9 @@
       <template v-if="group.rows.some(row => row.recordInvalid)" #extra><RuleInvalidRecord readonly /></template>
       <template v-for="row in group.rows" :key="row.key">
         <a-button v-if="interactive" type="text" size="small" class="rule-summary-button" @click="$emit('edit')">
-          <PropertyRuleLine :icon="row.icon" :title="row.title" :color="row.color" :notice="row.notice" :class="{ 'rule-line-alarm': row.key === 'alarm' }">
-            <template #sentence>{{ row.sentence }}</template>
-            <template v-if="row.details" #details>{{ row.details }}</template>
-          </PropertyRuleLine>
+          <PropertyRuleSummaryLine :row="row" :levels="levels" />
         </a-button>
-        <PropertyRuleLine v-else :icon="row.icon" :title="row.title" :color="row.color" :notice="row.notice" :class="{ 'rule-line-alarm': row.key === 'alarm' }">
-          <template #sentence>{{ row.sentence }}</template>
-          <template v-if="row.details" #details>{{ row.details }}</template>
-        </PropertyRuleLine>
+        <PropertyRuleSummaryLine v-else :row="row" :levels="levels" />
       </template>
     </PropertyRuleStage>
   </div>
@@ -20,10 +14,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { ruleStageOf, type RuleRowSummary, type RuleSection } from './summary'
-import PropertyRuleLine from './PropertyRuleLine.vue'
+import type { AlarmLevelOption } from '../../alarm/types'
+import PropertyRuleSummaryLine from './PropertyRuleSummaryLine.vue'
 import PropertyRuleStage from './PropertyRuleStage.vue'
 import RuleInvalidRecord from './RuleInvalidRecord.vue'
-const props = defineProps<{ rows: RuleRowSummary[]; interactive?: boolean }>()
+const props = defineProps<{ rows: RuleRowSummary[]; interactive?: boolean; levels?: AlarmLevelOption[] }>()
 defineEmits<{ (e: 'edit'): void }>()
 const groups = computed(() => props.rows.reduce<{ section: RuleSection; rows: RuleRowSummary[] }[]>((result, row) => {
   const section = ruleStageOf(row.key)
@@ -35,6 +30,6 @@ const groups = computed(() => props.rows.reduce<{ section: RuleSection; rows: Ru
 </script>
 <style scoped>
 .rule-summary { container: rule-fields / inline-size; display: flex; flex-direction: column; width: 700px; max-width: 100%; }
-.rule-summary :deep(.rule-line-alarm .ant-tag) { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rule-summary :deep(.rule-line-alarm > .rule-kind .ant-tag) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rule-summary-button { display: block; width: 100%; height: auto; padding: 0; text-align: left; white-space: normal; }
 </style>

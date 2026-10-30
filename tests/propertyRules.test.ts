@@ -688,6 +688,39 @@ test('rule sentences preserve processing order, exact enum identities and thresh
   assert.equal(alarmOnly[0].sentence, '处于 0～80')
 })
 
+test('saved alarm summaries retain units, level, notification and localized recovery labels', () => {
+  const current = { ...draft(), valuesEnabled: false, rangeEnabled: false, samplingEnabled: false }
+  current.alarm.trigger = 'lt'
+  current.alarm.value = 1
+  current.alarm.autoRelieve = true
+  current.alarm.relieveCondition = { trigger: 'gte', value: 1, limit: {} }
+  current.alarm.notification = { ...createEmptyNotification(), enabled: true, includeRelieve: true,
+    channelProviders: ['notifier-email'], userIds: ['u1'] }
+  const property = { valueType: { type: 'double', unit: 'percent' } }
+  const row = summarizeRuleRows(parseRule(buildRule(parseRule(), current)), property, translate)[0]
+  assert.equal(row.sentence, '< 1%')
+  assert.equal(row.details, '≥ 1% 时，解除告警')
+  assert.equal(row.alarm?.level, current.alarm.level)
+  assert.equal(row.alarm?.notification?.enabled, true)
+  assert.deepEqual(row.alarm?.notification?.channelProviders, ['notifier-email'])
+  assert.deepEqual(row.alarm?.notification?.userIds, ['u1'])
+  assert.equal(row.alarm?.notification?.includeRelieve, true)
+  const draftRow = summarizeDraftRows(current, property, translate)[0]
+  assert.equal(draftRow.sentence, row.sentence)
+  assert.equal(draftRow.details, row.details)
+  assert.equal(draftRow.alarm?.level, row.alarm?.level)
+  assert.deepEqual(draftRow.alarm?.notification?.userIds, row.alarm?.notification?.userIds)
+
+  const enumProperty = { valueType: { type: 'enum', elements: [{ value: 1, text: '运行' }, { value: 0, text: '停止' }] } }
+  const enumDraft = { ...current, alarm: { ...current.alarm, trigger: 'eq' as const, value: 0,
+    relieveCondition: { trigger: 'in' as const, values: [1], limit: {} } } }
+  const english: RuleTranslator = (key, values = {}) => String((en as Record<string, string>)[key])
+    .replace(/\{(\w+)\}/g, (_match, name) => String(values[name]))
+  const enumRow = summarizeDraftRows(enumDraft, enumProperty, english)[0]
+  assert.equal(enumRow.sentence, '= 停止')
+  assert.equal(enumRow.details, 'Clear the alarm when In 运行')
+})
+
 test('state lifetimes and silence remain part of the same readable condition', () => {
   const property = { valueType: { type: 'double', unit: 'celsius' } }
   const current = { ...draft(), valuesEnabled: false, rangeEnabled: false, alarmEnabled: false,
