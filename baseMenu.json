@@ -509,6 +509,12 @@
                   ]
                 },
                 {
+                  "permission": "ai-agent-llm-provider",
+                  "actions": [
+                    "query"
+                  ]
+                },
+                {
                   "permission": "ai_model",
                   "actions": [
                     "query"
