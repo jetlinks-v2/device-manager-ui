@@ -27,9 +27,12 @@ import type { RuleScope } from './service'
 import type { usePropertyRuleEditor } from './usePropertyRuleEditor'
 import { useRuleActions } from './useRuleActions'
 import PropertyRuleDiagram from './PropertyRuleDiagram.vue'
-const props = defineProps<{ editor: UnwrapNestedRefs<ReturnType<typeof usePropertyRuleEditor>>; property: ThingModelProperty; scope: RuleScope; previewRequest?: number }>()
+const props = defineProps<{ editor: UnwrapNestedRefs<ReturnType<typeof usePropertyRuleEditor>>; property: ThingModelProperty; scope: RuleScope; previewRequest?: number; statisticsOpen?: boolean }>()
+const emit = defineEmits<{ preview: [] }>()
 const { t: $t } = useI18n()
-const { root, panel, trigger, diagram, showDiagram, enterPanel, leavePanel, focusPanel, blurPanel, escape, focusDiagram, toggleDiagram } = useRuleActions()
+const { root, panel, trigger, diagram, showDiagram, dismiss, enterPanel, leavePanel, focusPanel, blurPanel, escape, focusDiagram, toggleDiagram } = useRuleActions()
+watch(() => props.statisticsOpen, open => { if (open) dismiss() })
+watch(() => diagram.open, open => { if (open) emit('preview') })
 const hasRules = computed(() => props.editor.parsed.editable && props.editor.steps.some(step => step.enabled))
 const canWrite = computed(() => props.editor.custom && props.editor.canSave && props.editor.parsed.editable)
 const canClear = computed(() => props.editor.custom && props.editor.canSave && hasRules.value)

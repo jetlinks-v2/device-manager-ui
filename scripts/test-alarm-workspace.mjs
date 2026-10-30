@@ -9,7 +9,7 @@ const output = await mkdtemp(path.join(tmpdir(), 'iot-alarm-tests-'))
 try {
   const entry = path.join(output, 'alarmWorkspace.test.mjs')
   await build({ entryPoints: [
-    ...['alarmWorkspace', 'propertyRules', 'propertyRuleScope'].map(name => path.join(root, `tests/${name}.test.ts`)),
+    ...['alarmWorkspace', 'propertyRules', 'propertyRuleScope', 'propertyRuleStatistics'].map(name => path.join(root, `tests/${name}.test.ts`)),
     path.join(root, 'tests/notificationMessage.test.mjs'),
   ], outdir: output,
     bundle: true, platform: 'node', format: 'esm', outExtension: { '.js': '.mjs' }, target: 'node22', logLevel: 'warning',
@@ -27,6 +27,7 @@ try {
     entry,
     path.join(output, 'propertyRules.test.mjs'),
     path.join(output, 'propertyRuleScope.test.mjs'),
+    path.join(output, 'propertyRuleStatistics.test.mjs'),
     path.join(output, 'notificationMessage.test.mjs'),
     path.join(root, 'tests/alarmWorkspaceView.test.mjs'),
   ], { stdio: 'inherit' }).status ?? 1

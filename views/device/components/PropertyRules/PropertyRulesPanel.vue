@@ -37,8 +37,11 @@
                   <a-tag v-if="scope.deviceId && item.raw && !(editorOpen && selectedId === item.id)" :color="item.source === 'device' ? 'blue' : undefined"><AIcon :type="item.source === 'disabled' ? 'StopOutlined' : item.source === 'device' ? 'HddOutlined' : 'CloudOutlined'" /> {{ $t(`PropertyRules.source.${item.source}`) }}</a-tag>
                   <span class="property-rule-id">{{ item.id }}</span>
                 </div>
-                <PropertyRuleActions v-if="editorOpen && selectedId === item.id" :editor="editor" :property="item.property" :scope="scope" :preview-request="previewRequest" class="property-rule-actions" />
-                <a-button v-else-if="item.effects.length && item.rule.editable" type="text" size="small" class="property-rule-preview property-rule-actions" :aria-label="`${item.name} · ${$t('PropertyRules.diagram.show')}`" :disabled="editor.saving" @click="previewProperty(item.property)"><AIcon type="PartitionOutlined" />{{ $t('PropertyRules.diagram.show') }}</a-button>
+                <span class="property-rule-actions property-rule-action-group">
+                  <PropertyRuleStatistics v-if="statisticsTargets.has(item.id)" :target="statisticsTargets.get(item.id)!" :entry="statistics.entries[item.id] ?? {}" :open="statistics.openProperty.value === item.id" :dirty="editorOpen && selectedId === item.id && editor.pendingSave" :inherited="!!scope.deviceId && item.source === 'product'" @toggle="statistics.toggle(item.id, $event)" @refresh="statistics.refresh" />
+                  <PropertyRuleActions v-if="editorOpen && selectedId === item.id" :editor="editor" :property="item.property" :scope="scope" :preview-request="previewRequest" :statistics-open="!!statistics.openProperty.value" @preview="statistics.close" />
+                  <a-button v-else-if="item.effects.length && item.rule.editable" type="text" size="small" class="property-rule-preview" :aria-label="`${item.name} · ${$t('PropertyRules.diagram.show')}`" :disabled="editor.saving" @click="previewProperty(item.property)"><AIcon type="PartitionOutlined" />{{ $t('PropertyRules.diagram.show') }}</a-button>
+                </span>
                 </div>
                 <div class="property-rule-content">
                   <PropertyRuleFields v-if="editorOpen && selectedId === item.id" :editor="editor" :scope="scope" :property="item.property" :with-actions="false" />
@@ -62,6 +65,7 @@
 </template>
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { useAuthStore } from '@jetlinks-web-core/store'
 import { computed, nextTick, reactive, ref } from 'vue'
 import type { ThingModelProperty } from '../../alarm/types'
 import { propertyIdOf } from '../../alarm/utils'
@@ -74,17 +78,29 @@ import PropertyRuleSummary from './PropertyRuleSummary.vue'
 import PropertyRuleMetadata from './PropertyRuleMetadata.vue'
 import PropertyRuleActions from './PropertyRuleActions.vue'
 import RuleNotice from './RuleNotice.vue'
+import PropertyRuleStatistics from './statistics/PropertyRuleStatistics.vue'
+import { useRuleStatistics } from './statistics/useRuleStatistics'
+import type { StatisticsTarget } from './statistics/model'
 import { availableRuleParts, type RuleAddPart } from './codec'
 const props = defineProps<{ scope: RuleScope; properties: ThingModelProperty[] }>()
 const { t: $t } = useI18n()
 const { loading, failed, keyword, configurationFilter, groups, expandedGroups, setExpandedGroup, showMore, canSave, sceneMenu, openScene, selected, selectedRow, editorOpen, load, open, close } = usePropertyRules(props)
 const selectedId = computed(() => propertyIdOf(selected.value ?? {}))
 const previewRequest = ref(0)
+const permission = useAuthStore()
+const statisticsTargets = computed(() => {
+  const rows = groups.value.find(group => group.id === expandedGroups.value[0])?.visibleRows ?? []
+  return new Map(rows.filter(row => row.raw).map(row => [row.id, {
+    property: row.id, source: row.source as StatisticsTarget['source'],
+    permitted: permission.hasPermission(row.source === 'product' ? 'device/Product:view' : 'device/Instance:view'),
+  }]))
+})
+const statistics = useRuleStatistics(reactive({ scope: computed(() => props.scope), targets: computed(() => [...statisticsTargets.value.values()]) }))
 // Keep one editor outside the filtered/collapsed DOM so hiding a row never discards its draft.
 const editor = reactive(usePropertyRuleEditor(reactive({
   open: editorOpen, scope: computed(() => props.scope), property: computed(() => selected.value ?? {}),
   snapshot: computed(() => selectedRow.value && { raw: selectedRow.value.raw, hasOverride: selectedRow.value.hasOverride }), inline: true,
-}), () => close(false), load))
+}), () => close(false), async () => { await load(); statistics.reset() }))
 async function selectProperty(property: ThingModelProperty, part?: RuleAddPart) {
   if (!editorOpen.value || selectedId.value !== propertyIdOf(property)) {
     if (!await editor.prepareLeave()) return false
@@ -100,11 +116,13 @@ async function selectProperty(property: ThingModelProperty, part?: RuleAddPart) 
   return true
 }
 async function previewProperty(property: ThingModelProperty) {
+  statistics.close()
   if (await selectProperty(property)) previewRequest.value++
 }
 </script>
 <style scoped>
 .property-rules { container: property-rules / inline-size; padding: var(--space-4); border: 1px solid var(--line); border-radius: 8px; }
+.property-rule-action-group { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-1); }
 .property-rules-heading { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2) var(--space-4); margin-bottom: var(--space-3); }
 .property-rules-scope-hint { color: var(--jet-theme-text-secondary); font-size: var(--fs-12); }
 .property-rules-scene { display: inline-flex; align-items: center; gap: var(--space-1); margin-inline-start: auto; color: var(--jet-theme-text-secondary); font-size: var(--fs-12); }
