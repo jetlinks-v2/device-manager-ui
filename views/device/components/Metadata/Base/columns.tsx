@@ -318,7 +318,7 @@ export const useColumns = (dataSource: Ref<MetadataItem[]>, type?: MetadataType,
     {
       title: i18n.global.t('Base.columns.448718-25'),
       dataIndex: 'other',
-      width: i18n.global.locale === 'zh' ? 110 : 170,
+      width: i18n.global.locale.value === 'zh' ? 110 : 170,
     },
   ]);
 

@@ -74,7 +74,7 @@ export interface IotDeviceDetailViewProps {
   embedded?: {
     deviceId: string
     deviceDetail?: Partial<DeviceInstance>
-    panel: 'thing-model' | 'data'
+    panel: 'thing-model' | 'data' | 'property-rules'
     updatePermission: boolean
   }
 }
@@ -94,7 +94,7 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
   const route = useRoute()
   const deviceMenu = useMenuStore()
   const auth = useAuthStore()
-  const { showThreshold } = useSystemStore()
+  const system = useSystemStore()
   const router = useRouter()
   const { t: $t } = useI18n()
   const { toClipboard } = useClipboard()
@@ -235,7 +235,11 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
     value?: string
   }
 
-  const activeTab = computed<DeviceDetailTab>(() => props.embedded?.panel ?? normalizeDeviceDetailTab(route.query.tab, extensionTabs.value))
+  const activeTab = computed<DeviceDetailTab>(() => {
+    const tab = props.embedded?.panel ?? (['advanced', 'records'].includes(String(route.query.tab)) && route.query.sub === 'threshold'
+      ? 'property-rules' : normalizeDeviceDetailTab(route.query.tab, extensionTabs.value))
+    return tab === 'property-rules' && !system.showThreshold ? 'overview' : tab
+  })
   const activeExtension = computed(() => extensionTabs.value.find(tab => tab.key === activeTab.value))
 
   function setActiveTab(tab: DeviceDetailTab) {
@@ -1000,7 +1004,7 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
   const advancedCount = computed(() => deviceCommands.value.length + healthConnectionRules.value.length + healthDeviationProperties.value.length + (isGatewayDevice.value ? childDeviceCount.value : 0))
   // 无效数据与物模型阈值配置同属预处理能力，保持两处入口的可见条件一致。
   const canViewInvalidData = computed(() =>
-    isNoCommunity && showThreshold,
+    isNoCommunity && system.showThreshold,
   )
 
   const tabOptions = computed<Array<{ key: DeviceDetailTab; label: string; icon: string; count?: number }>>(() => [
@@ -1009,6 +1013,7 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
     { key: 'thing-model', label: $t('IotDeviceDetail.detail.tab.thingModel'), icon: 'ApartmentOutlined' },
     { key: 'commands', label: $t('IotDeviceDetail.detail.tab.commands'), icon: 'CodeOutlined' },
     { key: 'data', label: $t('IotDeviceDetail.detail.tab.data'), icon: 'LineChartOutlined' },
+    ...(system.showThreshold ? [{ key: 'property-rules' as const, label: $t('PropertyRules.title'), icon: 'ControlOutlined' }] : []),
     { key: 'alarm', label: $t('DeviceAlarm.title.page'), icon: 'AlertOutlined' },
     ...(canViewInvalidData.value ? [{ key: 'invalid' as const, label: $t('Detail.index.957187-29'), icon: 'FileTextOutlined' }] : []),
     { key: 'logs', label: $t('IotDeviceDetail.detail.tab.logs'), icon: 'FileTextOutlined' },
@@ -1286,6 +1291,8 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
   }
 
   async function loadRealtimePropertySnapshot(properties = activeRealtimePropertyKeys.value, context = currentLoad()) {
+    // 嵌入配置面板只消费宿主的设备定义，实时数据由数据面板独立管理。
+    if (props.embedded && props.embedded.panel !== 'data') return
     const current = device.value
     const productId = current?.productKey
     if (!isCurrentLoad(context) || current?.id !== context.deviceId || !productId || !properties.length) return
@@ -1331,7 +1338,7 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
   }
 
   function startRealtimeSubscriptions(context = currentLoad()) {
-    if (props.embedded?.panel === 'thing-model') {
+    if (props.embedded && props.embedded.panel !== 'data') {
       clearRealtimeSubscriptions()
       return
     }

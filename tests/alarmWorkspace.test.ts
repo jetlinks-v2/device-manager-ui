@@ -14,12 +14,14 @@ import {
   getNotificationMessageMode,
   isDeviceAlarmPreprocess,
   matchesAlarmNotifyMethod,
+  selectAlarmNotificationTypes,
   toDeviceAlarmRow,
 } from '../views/device/alarm/utils'
 import type { DeviceAlarmFormModel, DeviceAlarmNotifyMethod } from '../views/device/alarm/types'
 import { useDeviceAlarmRuleSearch } from '../views/device/alarm/hooks/useDeviceAlarmRuleSearch'
 import i18n from '@jetlinks-web-core/locales'
 import { localizeDeviceLibraryPreprocessors } from '../views/device/alarm/deviceLibraryI18n'
+import { queryDeviceAlarmNotifyMethods, toNotifyMethods } from '../views/device/alarm/api'
 
 const response = (id: string, total = 1) => ({ result: { data: [{ id, sourceName: id }], total } })
 const flush = async () => { await nextTick(); await new Promise(resolve => setTimeout(resolve, 0)); await nextTick() }
@@ -60,15 +62,15 @@ test('rule keyword search groups three existing conditions and clears only the r
   assert.equal(requests, 2)
 })
 
-test('read-only notification names use the same configured channel identity as the editor', () => {
+test('read-only notification names use the same type identity as the editor and resolve legacy channel IDs', () => {
   const notification = { ...createEmptyNotification(), channelProviders: ['email'], parameters: {
     email: { notifierId: 'account-a', templateId: 'template-a' },
   } }
-  const method: DeviceAlarmNotifyMethod = { id: 'channel-a', providerId: 'email', channelId: 'channel-a',
-    key: 'email', label: 'Email', desc: '', icon: '', raw: { configuration: { notifierId: 'account-a', templateId: 'template-a' } } }
+  const method: DeviceAlarmNotifyMethod = { id: 'email', providerId: 'email', channelIds: ['channel-a'],
+    key: 'email', label: 'Email', desc: '', icon: '' }
   assert.equal(matchesAlarmNotifyMethod(notification, method), true)
-  assert.equal(matchesAlarmNotifyMethod(notification, { ...method, raw: { configuration: { notifierId: 'account-b' } } }), false)
-  assert.equal(matchesAlarmNotifyMethod({ ...notification, notifyChannelIds: ['channel-a'] }, method), true)
+  assert.equal(matchesAlarmNotifyMethod({ ...notification, channelProviders: ['sms'] }, method), false)
+  assert.equal(matchesAlarmNotifyMethod({ ...notification, channelProviders: [], notifyChannelIds: ['channel-a'] }, method), true)
 })
 
 test('notification content remains visible only for a legacy custom edit session', () => {
@@ -85,6 +87,61 @@ test('notification content remains visible only for a legacy custom edit session
   clearNotificationMessageTemplate(customNotification)
   assert.equal(getNotificationMessageMode(customNotification), 'default')
   assert.equal(showLegacyMessageTemplate, true)
+})
+
+test('notification options are types with event-specific template status, never concrete channels', () => {
+  const types = [{ id: 'inside-mail', name: 'Inbox' }, { id: 'notifier-email', name: 'Email', receiverPolicy: 'subscriber' },
+    { id: 'notifier-sms', name: 'SMS' }, { id: 'notifier-webhook', receiverPolicy: 'explicit' }]
+  const channel = (id: string, type: string, config = { templateId: 'template', notifierId: 'sender' }) => ({
+    id, name: 'Private channel name', channelProvider: type, state: { value: 'enabled' }, channelConfiguration: config,
+  })
+  const methods = toNotifyMethods(types, [
+    { provider: 'alarm-device', state: 'enabled', channels: [channel('email-a', 'notifier-email'), channel('email-b', 'notifier-email')] },
+    { provider: 'alarm-device-relieve', channels: [channel('recovery-email', 'notifier-email', { templateId: '', notifierId: '' })] },
+    { provider: 'alarm-device-relieve', state: 'disabled', channels: [channel('disabled-email', 'notifier-email')] },
+    { provider: 'alarm-other', channels: [channel('other-sms', 'notifier-sms')] },
+  ])
+  assert.deepEqual(methods.map(method => method.id), ['inside-mail', 'notifier-email', 'notifier-sms'])
+  const email = methods[1]
+  assert.equal(email.label, 'Email')
+  assert.equal('channelId' in email, false)
+  assert.deepEqual(email.channelIds, ['email-a', 'email-b'])
+  assert.deepEqual(email.templates, { trigger: 'ready', relieve: 'missing' })
+  assert.deepEqual(methods[2].templates, { trigger: 'missing', relieve: 'missing' })
+  assert.deepEqual(methods[0].templates, { trigger: 'unneeded', relieve: 'unneeded' })
+  assert.equal(toNotifyMethods(types)[1].templates?.trigger, 'unknown')
+  assert.equal(toNotifyMethods(types)[0].templates?.trigger, 'unneeded')
+  assert.equal(matchesAlarmNotifyMethod({ ...createEmptyNotification(), notifyChannelIds: ['email-b'] }, email), true)
+})
+
+test('explicit type selection drops channel bindings but preserves recipients and custom message formats', () => {
+  const original = { ...createEmptyNotification(), includeRelieve: true, relieveTopicProvider: 'alarm-device' as const,
+    userIds: ['u1'], notifyChannelIds: ['private-channel'], channelProviders: ['notifier-email'], parameters: {
+      'notifier-email': { templateId: 'old-template', notifierId: 'old-notifier' },
+      template: { message: '${targetName} ${eventText}' }, variableDefinitions: [{ id: 'alarmTime', format: 'yyyy' }],
+    } }
+  const before = JSON.stringify(original)
+  const selected = selectAlarmNotificationTypes(original, ['notifier-email', 'notifier-sms', 'notifier-email'])
+  assert.equal(JSON.stringify(original), before)
+  assert.deepEqual(selected.channelProviders, ['notifier-email', 'notifier-sms'])
+  assert.deepEqual(selected.notifyChannelIds, [])
+  assert.deepEqual(selected.userIds, ['u1'])
+  assert.equal(selected.relieveTopicProvider, 'alarm-device-relieve')
+  assert.deepEqual(selected.parameters, { template: original.parameters.template, variableDefinitions: original.parameters.variableDefinitions })
+})
+
+test('template lookup failures stay unknown while supported types remain selectable', async () => {
+  const calls: string[] = []
+  setAlarmRequestHandler(async url => {
+    calls.push(url)
+    return url === '/notify/channel/providers'
+      ? { result: [{ id: 'notifier-email', name: 'Email' }] } : { success: false, status: 403, result: [] }
+  })
+  const methods = await queryDeviceAlarmNotifyMethods()
+  assert.equal(methods[0].templates?.relieve, 'unknown')
+  assert.deepEqual(calls.sort(), ['/notify/channel/all', '/notify/channel/providers'])
+  setAlarmRequestHandler(async () => ({ success: false, status: 403, result: [] }))
+  await assert.rejects(queryDeviceAlarmNotifyMethods())
 })
 
 test('automatic relief uses complementary matchers and remains editable', () => {

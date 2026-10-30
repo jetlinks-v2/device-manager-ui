@@ -19,7 +19,7 @@ const exactPathFilter = (entry) => new RegExp(`^${entry.replace(/[.*+?^${}()|[\]
 
 try {
   await build({
-    entryPoints: [path.join(packageRoot, 'tests/agentTools.test.ts')],
+    entryPoints: [path.resolve(packageRoot, process.argv[2] || 'tests/agentTools.test.ts')],
     outfile: outputFile,
     bundle: true,
     platform: 'node',
@@ -65,6 +65,11 @@ try {
           filter: /[/\\]jetlinks-web-core[/\\]src[/\\]router[/\\]index\.ts$/,
         }, () => ({
           contents: 'export default { push: async () => undefined }',
+          loader: 'js',
+        }))
+        // Alarm queries share an API barrel with library restoration; that unrelated action owns browser-only storage.
+        buildApi.onLoad({ filter: /[/\\]api[/\\]device-library[/\\]index\.ts$/ }, () => ({
+          contents: "export const restoreDeviceLibraryAlarms_api = () => { throw new Error('Library restoration is outside the agent query test boundary') }",
           loader: 'js',
         }))
         buildApi.onResolve({
@@ -143,8 +148,10 @@ try {
   const result = spawnSync(process.execPath, [
     '--test',
     outputFile,
-    path.join(packageRoot, 'tests/deviceOnboardingEntry.test.mjs'),
-    path.join(packageRoot, 'tests/productCreationGuidance.test.mjs'),
+    ...(!process.argv[2] ? [
+      path.join(packageRoot, 'tests/deviceOnboardingEntry.test.mjs'),
+      path.join(packageRoot, 'tests/productCreationGuidance.test.mjs'),
+    ] : []),
   ], {
     cwd: packageRoot,
     encoding: 'utf8',

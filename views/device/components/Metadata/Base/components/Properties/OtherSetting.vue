@@ -90,7 +90,7 @@
                                                     zIndex: 1071,
                                                 },
                                                 disabled: _disabled(record.property),
-                                                getPopupContainer: (node) => tableWrapperRef || node
+                                                getPopupContainer: (node: HTMLElement) => tableWrapperRef || node
                                             }'
                       :options='getOptions(item, index)'
                     />
@@ -133,112 +133,6 @@
               :tip="$t('Properties.OtherSetting.237457-37')"
             />
           </a-collapse-panel>
-          <a-collapse-panel key='extra' v-if='showExtra || showExtraFile'
-                            :header="$t('Properties.OtherSetting.237457-28')">
-            <CardItem
-              v-if='showExtra'
-              :value='show.limit'
-              :title="$t('Properties.OtherSetting.237457-29')"
-              :tip="$t('Properties.OtherSetting.237457-31')"
-              @change='onChange'
-            >
-              <a-form
-                :model='extraForm'
-                ref='ThresholdRef'
-                layout='vertical'
-              >
-                <a-form-item
-                  v-if='extraForm.type'
-                  name='limit'
-                  :rules="[
-                                    {
-                                        required: true,
-                                        message: $t('Properties.OtherSetting.237457-8'),
-                                    },
-                                    {
-                                        validator: validateLimit,
-                                        trigger: 'change',
-                                    },
-                                ]"
-                >
-                  <template #label
-                  >
-                    <div class='extra-title'>
-                      {{ $t('Properties.OtherSetting.237457-9') }}
-                    </div>
-                  </template
-                  >
-                  <a-space
-                    v-if="extraForm.type === 'number-range'"
-                  >
-                    <a-input-number
-                      v-model:value='extraForm.limit.lower'
-                      style='width: 178px'
-                      :placeholder="$t('Properties.OtherSetting.237457-10')"
-                    />
-                    <span>~</span>
-                    <a-input-number
-                      v-model:value='extraForm.limit.upper'
-                      style='width: 178px'
-                      :min='extraForm.limit.lower'
-                      :placeholder="$t('Properties.OtherSetting.237457-11')"
-                    />
-                  </a-space>
-                </a-form-item>
-                <a-form-item
-                  v-if='extraForm.type'
-                  name='mode'
-                  :rules="[
-                                    {
-                                        required: true,
-                                        message: $t('Properties.OtherSetting.237457-12'),
-                                    },
-                                ]"
-                >
-                  <template #label>
-                    <div class='extra-title'>
-                      {{ $t('Properties.OtherSetting.237457-13') }}
-                    </div>
-                  </template
-                  >
-                  <div class='extra-handle extra-check-group'>
-                    <j-card-select
-                      v-model:value='extraForm.mode'
-                      :column='4'
-                      :options="[
-                            { label: $t('Properties.OtherSetting.237457-14'), value: 'ignore' },
-                            {
-                                label: $t('Properties.OtherSetting.237457-15'),
-                                value: 'device-record',
-                            },
-                            {
-                                label: $t('Properties.OtherSetting.237457-16'),
-                                value: 'device-alarm',
-                            },
-                            {
-                                label: $t('Properties.OtherSetting.237457-33'),
-                                value: 'record-alarm',
-                            },
-                        ]"
-                      :showImage='false'
-                    />
-                    <div style='margin: 8px 0'>
-                      {{ handleTip }}
-                    </div>
-                  </div>
-                </a-form-item
-                >
-              </a-form>
-            </CardItem>
-            <div style='margin-top: 16px' v-if='showExtraFile'>
-              <CardItem
-                @change='onFileChange'
-                :value='show.file'
-                :title="$t('Properties.OtherSetting.237457-30')"
-                :tip="$t('Properties.OtherSetting.237457-32')"
-              />
-            </div>
-          </a-collapse-panel>
         </a-collapse>
       </div>
       <div v-else style='padding-top: 24px'>
@@ -250,7 +144,9 @@
       :disabled='disabled'
       :has-permission='hasPermission'
       :tooltip='tooltip'
-      type='primary'
+      type='text'
+      size='small'
+      class='metadata-setting-action'
     >
       <AIcon type='EditOutlined' />
       {{ $t('Properties.OtherSetting.237457-18') }}
@@ -262,7 +158,9 @@
     :disabled='disabled'
     :has-permission='hasPermission'
     :tooltip='tooltip'
-    type='primary'
+    type='text'
+    size='small'
+    class='metadata-setting-action'
   >
     <AIcon type='EditOutlined' />
     {{ $t('Properties.OtherSetting.237457-18') }}
@@ -271,23 +169,12 @@
 
 <script setup lang='ts' name='OtherSetting'>
 import Metrics from './Metrics/Metrics.vue'
-import { watch } from 'vue'
-import { useProductStore } from '../../../../../../../store/product'
-import { useInstanceStore } from '../../../../../../../store/instance'
-import {
-    getMetadataConfig,
-    getMetadataDeviceConfig,
-} from '../../../../../../../api/product';
-import { PopoverModal } from '../../../../../../../components/Metadata';
-import { useTableWrapper } from '../../../../../../../components/Metadata/context';
-import { omit, cloneDeep } from 'lodash-es';
-import { useMetrics, useThreshold } from './hooks';
-import { useSystemStore } from '@jetlinks-web-core/store';
-import { useI18n } from 'vue-i18n';
-import {isNoCommunity} from "@jetlinks-web-core/utils";
+import { useI18n } from 'vue-i18n'
+import { PopoverModal } from '../../../../../../../components/Metadata'
 import CardItem from './components/CardItem.vue'
-
+import { usePropertyOtherSettings } from './usePropertyOtherSettings'
 const { t: $t } = useI18n()
+const emit = defineEmits(['update:value', 'save'])
 
 const props = defineProps({
   value: {
@@ -331,414 +218,24 @@ const props = defineProps({
   }
 })
 
-const type = inject('_metadataType')
-
-const { showThreshold } = useSystemStore()
-const productStore = useProductStore()
-const deviceStore = useInstanceStore()
-const tableWrapperRef = useTableWrapper()
-
-const {
-  thresholdUpdate,
-  thresholdDetail,
-  thresholdDetailQuery,
-  thresholdDelete
-} = useThreshold(props)
-
-const { metrics, metricsQuery, metricsUpdate } = useMetrics(props)
-
-const emit = defineEmits(['update:value', 'save'])
-
-const ThresholdRef = ref()
-const activeKey = ref()
-const metricsRef = ref()
-const show = reactive({
-  file: false,
-  limit: false,
-  preprocess: false
-})
-const myValue = ref(props.value)
-const visible = ref(false)
-const modalVisible = ref(false)
-
-const config = ref<any>([])
-const configValue = ref(props.value || {})
-
-const extraForm = reactive({
-  limit: {
-    upper: 0,
-    lower: 0
-  },
-  mode: 'ignore',
-  type: ''
-})
-
-const typeMap = {
-  properties: 'property',
-  functions: 'function',
-  events: 'event',
-  tags: 'tag'
-}
-
-const handleTip = computed(() => {
-  if (extraForm.mode === 'ignore') {
-    return $t('Properties.OtherSetting.237457-19')
-  } else if (extraForm.mode === 'device-record') {
-    return $t('Properties.OtherSetting.237457-20')
-  } else if (extraForm.mode === 'record-alarm') {
-    return $t('Properties.OtherSetting.237457-34')
-  }
-  return $t('Properties.OtherSetting.237457-21')
-})
-
-// const showContent = computed(() => {
-//     if (props.isProduct && props.target === 'device') {
-//         // 继承的物模型
-//         return showExtra.value;
-//     }
-//
-//     return (showMetrics.value || config.value.length > 0) && props.id;
-// });
-
-const showContent = computed(() => {
-  if (props.isProduct) {
-    return showKeyProperty.value || showExtra.value || showExtraFile.value
-  }
-  return (showKeyProperty.value || showMetrics.value || config.value.length > 0 || (showExtra.value || showExtraFile.value)) && props.id
-})
-
-const showMetrics = computed(() => {
-  return [
-    'int',
-    'long',
-    'float',
-    'double',
-    'string',
-    'boolean',
-    'date'
-  ].includes(props.type as any)
-})
-
-// 产品和已独立编辑的设备物模型共用关键属性配置，设备概览只读取当前有效物模型。
-const showKeyProperty = computed(() => {
-  return props.metadataType === 'properties'
-})
-
-const showExtra = computed(() => {
-  return (
-    ['int', 'long', 'float', 'double'].includes(props.type as any) &&
-    props.metadataType === 'properties' &&
-    showThreshold && isNoCommunity
-  )
-})
-
-const showExtraFile = computed(() => {
-  return (
-    ['file'].includes(props.type as any) &&
-    props.metadataType === 'properties' &&
-    showThreshold && isNoCommunity
-  )
-})
-
-const booleanOptions = ref([
-  { label: $t('Properties.OtherSetting.237457-22'), value: 'false' },
-  { label: $t('Properties.OtherSetting.237457-23'), value: 'true' }
-])
-
-const columns = ref([
-  {
-    title: $t('Properties.OtherSetting.237457-24'),
-    dataIndex: 'name',
-    width: 150,
-    ellipsis: true
-  },
-  {
-    title: $t('Properties.OtherSetting.237457-25'),
-    dataIndex: 'type',
-    width: 150
-  },
-  {
-    title: $t('Properties.OtherSetting.237457-26'),
-    dataIndex: 'value'
-  }
-])
-
-const popContainer = (e) => {
-  return e
-}
-
-// const limitSelect = (keys: string[], key: string, isSelected: boolean) => {
-//     if (!isSelected) {
-//         // 删除
-//         if (key === 'number-range') {
-//             extraForm.limit.lower = 0;
-//             extraForm.limit.upper = 0;
-//         }
-//     }
-//
-//     if (keys.length === 0) {
-//         extraForm.mode = 'ignore';
-//     }
-// };
-
-const onChange = async (val: boolean) => {
-  if (val) {
-    extraForm.type = 'number-range'
-  } else {
-    await resetThreshold('number')
-  }
-  show.limit = val
-}
-
-const onFileChange = async (val: boolean) => {
-  if (!val) {
-    await resetThreshold('file')
-  }
-  show.file = val
-}
-const resetValue = () => {
-  extraForm.mode = 'ignore'
-  extraForm.type = ''
-  extraForm.limit.lower = 0
-  extraForm.limit.upper = 0
-}
-const resetThreshold = async (type: string) => {
-  if (type === 'number') {
-    resetValue()
-  }
-  if (thresholdDetail.value && !!Object.keys(thresholdDetail.value).length) {
-    await thresholdDelete()
-    setTimeout(() => { // 后端删除了，还是会返回数据
-      thresholdDetailQuery()
-    }, 500)
-  }
-}
-
-const validateLimit = (_: any, value: any) => {
-  if (value.lower !== null && value.upper !== null) {
-    return value.upper < value.lower
-      ? Promise.reject($t('Properties.OtherSetting.237457-27'))
-      : Promise.resolve()
-  } else {
-    return Promise.reject($t('Properties.OtherSetting.237457-8'))
-  }
-}
-
-const getConfig = async () => {
-  const id =
-    type === 'product' ? productStore.current?.id : deviceStore.current.id
-
-  if (!props.id || !id || !props.type) return
-
-  if (props.type === 'boolean') {
-    const booleanValue = props.record.valueType
-    booleanOptions.value[0] = {
-      label: booleanValue.falseText || $t('Properties.OtherSetting.237457-22'),
-      value: booleanValue.falseValue || 'false'
-    }
-    booleanOptions.value[1] = {
-      label: booleanValue.trueText || $t('Properties.OtherSetting.237457-23'),
-      value: booleanValue.trueValue || 'true'
-    }
-  }
-
-  const params: any = {
-    deviceId: id,
-    metadata: {
-      id: props.id,
-      type: typeMap[props.metadataType],
-      dataType: props.type
-    }
-  }
-  if (!(props.isProduct && props.target === 'device')) {
-    const resp =
-      type === 'product'
-        ? await getMetadataConfig(params)
-        : await getMetadataDeviceConfig(params)
-    if (resp.success) {
-      config.value = resp.result
-      if (resp.result.length && !configValue.value) {
-        resp.result.forEach((a) => {
-          if (a.properties) {
-            a.properties.forEach((b) => {
-              configValue.value[b.property] = undefined
-            })
-          }
-        })
-      }
-    }
-  }
-  if (config.value.length > 0) {
-    activeKey.value = ['store_0']
-  } else if (showKeyProperty.value) {
-    activeKey.value = ['overview']
-  } else if (showMetrics.value) {
-    activeKey.value = ['metrics']
-  } else if (showExtra.value) {
-    activeKey.value = ['extra']
-  }
-  visible.value = true
-}
-
-const confirm = () => {
-  return new Promise(async (resolve, reject) => {
-    try {
-      let metrics: any
-      metrics = await metricsRef.value?.getData()
-
-      const expands = {
-        ...(configValue.value || {})
-      }
-
-      if (metrics) {
-        expands.metrics = metrics
-        if (props.target === 'device') {
-          // 保存指标
-          await metricsUpdate(metrics)
-        }
-      }
-
-      if (showExtra.value || (showExtraFile.value && show.file)) {
-        let obj = undefined
-        if (showExtra.value && extraForm.type) {
-          const _threshold = ThresholdRef.value?.validate()
-          if (_threshold) {
-            obj = {
-              ...extraForm,
-              configuration: {
-                max: extraForm.limit.upper,
-                min: extraForm.limit.lower,
-                not: true
-              }
-            }
-          } else {
-            reject(false)
-          }
-        } else if (showExtraFile.value && show.file) {
-          obj = {
-            type: 'file-matcher',
-            configuration: {},
-            mode: 'file-storage'
-          }
-        }
-        if (obj) {
-          await thresholdUpdate(obj)
-        }
-      }
-      expands.otherEdit = true
-      emit('update:value', {
-        ...props.value,
-        ...expands
-      })
-      emit('save')
-      modalVisible.value = false
-      resolve(true)
-    } catch (err) {
-      reject(false)
-    }
-  })
-}
-
-//获取下拉选择
-const getOptions = (item: any, index: any) => {
-  if (item.properties[index].type?.type === 'boolean') {
-    return [
-      {
-        label: item.properties[index].type?.trueText,
-        value: item.properties[index].type?.trueValue
-      },
-      {
-        label: item.properties[index].type?.falseText,
-        value: item.properties[index].type?.falseValue
-      }
-    ]
-  } else {
-    return (item.properties[index].type?.elements || []).map((a) => ({
-      label: a.text,
-      value: a.value
-    }))
-  }
-}
-
-//判断设备接入配置项是否跟物模型字段冲突
-const conflictData = computed(() => {
-  let arr: any = []
-  if (props.metadataType === 'properties') {
-    arr = ['groupId', 'groupName', 'source', 'type', 'virtualRule']
-  }
-  if (props.metadataType === 'events') {
-    arr = ['level']
-  }
-  return [...arr, 'metrics']
-})
-
-const _disabled = (_property: any) => {
-  return conflictData.value.includes(_property)
-}
-
-watch(
-  () => modalVisible.value,
-  async () => {
-    if (modalVisible.value) {
-      configValue.value = omit(props.value, [
-        'source',
-        'type',
-        'metrics',
-        'required'
-      ])
-      getConfig()
-      if (showExtra.value || showExtraFile.value) {
-        thresholdDetailQuery()
-      }
-      if (showMetrics.value) {
-        metricsQuery()
-      }
-    }
-  },
-  { immediate: true }
-)
-
-const cancel = () => {
-  myValue.value = cloneDeep(props.value)
-}
-
-watch(
-  () => thresholdDetail,
-  () => {
-    if (
-      thresholdDetail.value &&
-      JSON.stringify(thresholdDetail.value) !== '{}'
-    ) {
-      show.limit = false
-      show.file = false
-      if (thresholdDetail.value?.type === 'number-range') {
-        extraForm.mode = thresholdDetail.value?.mode
-        extraForm.type = thresholdDetail.value?.type || ''
-        extraForm.limit = thresholdDetail.value?.limit
-        show.limit = true
-      }
-
-      if (thresholdDetail.value?.type === 'file-matcher') {
-        show.file = true
-      }
-    }
-  },
-  { immediate: true, deep: true }
-)
-
-watch(
-  () => JSON.stringify(props.value),
-  () => {
-    myValue.value = cloneDeep(props.value)
-  },
-  { immediate: true }
-)
+const { modalVisible, confirm, cancel, showContent, activeKey, visible, config, columns, _disabled, popContainer,
+  conflictData, configValue, tableWrapperRef, getOptions, showMetrics, metricsRef, booleanOptions, metrics, showKeyProperty } = usePropertyOtherSettings(props, emit)
 </script>
 
 <style scoped lang='less'>
 .extra-tip {
   padding: 8px;
   background-color: rgba(#000, 0.05);
+}
+
+.metadata-setting-action {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding-inline: var(--space-1);
+  color: var(--jet-theme-primary);
+  font-size: var(--fs-12);
+  :deep(.anticon + span) { margin-inline-start: 0; }
 }
 
 .extra-title {

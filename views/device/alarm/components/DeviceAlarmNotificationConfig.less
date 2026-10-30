@@ -1,25 +1,69 @@
 .device-alarm-notify {
   display: grid;
-  gap: var(--space-3);
-  border-top: 0.0625rem solid var(--jet-theme-border-secondary);
-  padding-top: var(--space-3);
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: start;
+  column-gap: 6px;
+  min-width: 0;
+  color: var(--jet-theme-text-secondary);
+  font-size: var(--fs-12);
+  line-height: 24px;
 }
-
-.device-alarm-notify__head {
-  display: flex;
+.device-alarm-notify__sentence, .notification-clause {
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
+  gap: var(--space-1);
+  min-width: 0;
 }
-
-.device-alarm-notify__head h4 {
-  margin: 0;
+.device-alarm-notify__sentence { flex-wrap: wrap; }
+.device-alarm-notify > :deep(.device-alarm-message) { grid-column: 2; min-width: 0; }
+.notification-clause { white-space: nowrap; }
+.notification-toggle, .notification-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: 24px;
+  padding: 0 var(--space-1);
+  color: var(--jet-theme-text-secondary);
+  font: inherit;
+  line-height: 22px;
+}
+.notification-toggle { justify-content: center; width: 24px; margin-inline: -3px; padding: 0; border-radius: var(--radius-sm, 4px); color: var(--jet-theme-primary); }
+.notification-bell { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 24px; font-size: 14px; }
+.notification-toggle.is-off { color: var(--jet-theme-text-secondary); }
+.notification-toggle.is-off .notification-bell::after { position: absolute; top: 11px; left: 1px; width: 16px; height: 1.5px; border-radius: 1px; background: currentColor; content: ''; transform: rotate(-45deg); }
+.notification-toggle.is-off:not(:disabled):hover, .notification-toggle.is-off:not(:disabled):focus-visible { background: var(--bg-sunken); color: var(--jet-theme-text); }
+.notification-toggle:disabled { color: var(--jet-theme-text-secondary); }
+.device-alarm-notify__sentence .notification-chip {
+  max-width: 176px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 4px);
+  background: var(--bg-sunken);
   color: var(--jet-theme-text);
-  font-size: var(--fs-body);
-  font-weight: 700;
 }
-
-.device-alarm-notify__switch-label {
-  color: var(--jet-theme-text-disabled);
-  font-size: var(--fs-14);
-}
+.notification-chip__label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.notification-chip__count { flex-shrink: 0; color: inherit; font-variant-numeric: tabular-nums; }
+.notification-chip__arrow { font-size: 10px; color: var(--jet-theme-text-secondary); }
+.notification-include-relieve { display: inline-flex; align-items: center; margin: 0; color: var(--jet-theme-text-secondary); font-size: inherit; line-height: 24px; }
+.notification-include-relieve :deep(.ant-checkbox) { top: 0; }
+.device-alarm-notify__sentence .notification-chip:not(:disabled):hover, .device-alarm-notify__sentence .notification-chip[aria-expanded='true'] { border-color: var(--jet-theme-primary); background: var(--jet-theme-primary-soft); }
+.notification-toggle:focus-visible, .notification-chip:focus-visible { outline: 1px solid var(--jet-theme-primary); outline-offset: 2px; }
+.notification-option-panel { width: min(300px, calc(100vw - 48px)); font-size: var(--fs-12); }
+.notification-option-panel :deep(.ant-alert) { margin-bottom: var(--space-2); }
+.notification-types { display: flex; flex-direction: column; flex-wrap: nowrap; width: 100%; max-height: min(288px, 40vh); overflow-y: auto; padding: var(--space-1) 0; }
+.notification-type { display: flex; flex-shrink: 0; align-items: center; gap: var(--space-2); min-height: 32px; border-radius: var(--radius-sm, 4px); }
+.notification-type:hover { background: var(--bg-sunken); }
+.notification-type :deep(.ant-checkbox-wrapper) { display: flex; flex: 1; align-items: flex-start; min-width: 0; margin: 0; padding: 6px var(--space-2); color: var(--jet-theme-text); font-size: var(--fs-12); line-height: 24px; }
+.notification-type :deep(.ant-checkbox + span) { flex: 1; min-width: 0; }
+// Move the whole control so its checked outline and inner box keep the same bounds.
+.notification-type :deep(.ant-checkbox) { top: 0; align-self: flex-start; margin-top: 3px; }
+.notification-type > :deep(.notification-template-status) { align-self: flex-start; margin-top: 6px; }
+.notification-types-empty { display: block; padding: var(--space-2); color: var(--jet-theme-text-secondary); }
+.notification-option-help { padding: var(--space-2); border-top: 1px solid var(--line); color: var(--jet-theme-text-secondary); line-height: 18px; }
+.notification-option-help p { margin: 0; }
+.notification-option-help p + p { margin-top: var(--space-1); }
+.notification-help { display: flex; flex-direction: column; gap: var(--space-3); width: min(320px, calc(100vw - 72px)); }
+.notification-help strong { display: block; margin-bottom: var(--space-1); font-size: var(--fs-12); font-weight: 500; }
+.notification-help p { margin: 0; }
+.notification-help-secondary { color: var(--jet-theme-text-secondary); }
+.notification-help p + p { margin-top: var(--space-1); }
+@media (pointer: coarse) { .notification-toggle, .notification-chip { min-height: 36px; } }

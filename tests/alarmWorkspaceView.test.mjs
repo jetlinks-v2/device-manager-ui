@@ -8,10 +8,12 @@ const workspaceTypes = await readFile(new URL('../views/device/alarm/workspaceTy
 const workspaceUtils = await readFile(new URL('../views/device/alarm/workspaceUtils.ts', import.meta.url), 'utf8')
 const editor = await readFile(new URL('../views/device/alarm/components/DeviceAlarmEditorModal.vue', import.meta.url), 'utf8')
 const editorStyle = await readFile(new URL('../views/device/alarm/components/DeviceAlarmEditorModal.less', import.meta.url), 'utf8')
-const alarmApi = await readFile(new URL('../views/device/alarm/api.ts', import.meta.url), 'utf8')
 const alarmPageHook = await readFile(new URL('../views/device/alarm/hooks/useDeviceAlarmPage.ts', import.meta.url), 'utf8')
 const productAlarmTab = await readFile(new URL('../views/device/Product/Detail/components/ProductAlarmConfigTab.vue', import.meta.url), 'utf8')
 const deviceAlarmTab = await readFile(new URL('../views/device/list/components/device-detail/IotDeviceAlarmConfigTab.vue', import.meta.url), 'utf8')
+const notificationConfig = await readFile(new URL('../views/device/alarm/components/DeviceAlarmNotificationConfig.vue', import.meta.url), 'utf8')
+const recipientSelector = await readFile(new URL('../views/device/alarm/components/DeviceAlarmRecipients.vue', import.meta.url), 'utf8')
+const recipientHook = await readFile(new URL('../views/device/alarm/hooks/useAlarmRecipients.ts', import.meta.url), 'utf8')
 
 test('alarm sidebar top rows use the visual alarm dimensions and spacing', () => {
   assert.match(page, /class="alarm-rule-heading__content">\s*<strong>/)
@@ -53,35 +55,25 @@ test('alarm create and edit share the three-section visual-alarm-style configura
   assert.match(editor, /activePanel === 'trigger'[\s\S]*?model\.autoRelieve/)
   assert.match(editor, /device-alarm-editor__summary/)
   assert.match(editor, /<RegistryComponent page-code="device\/alarm" code="alarm-editor">/)
-  assert.match(editor, /v-model:checked="model\.autoRelieve"/)
+  assert.match(editor, /<PropertyAlarmRecovery :model="model" :property="selectedProperty"/)
   assert.match(editorStyle, /@media \(max-width: 68\.75rem\)/)
   assert.match(editorStyle, /@media \(max-width: 45rem\)/)
 })
 
-test('all three device alarm entry points keep using the shared editor', () => {
+test('global alarms retain the shared editor while product and device configuration use complete property rules', () => {
   assert.match(page, /<DeviceAlarmEditorModal/)
-  assert.match(productAlarmTab, /<DeviceAlarmEditorModal/)
-  assert.match(productAlarmTab, /fixed-product-scope/)
-  assert.match(deviceAlarmTab, /<DeviceAlarmEditorModal/)
-  assert.match(deviceAlarmTab, /readonly-scope/)
+  assert.match(productAlarmTab, /<PropertyRulesPanel :scope="scope" :properties="properties"/)
+  assert.match(productAlarmTab, /productId: String\(store.current\?\.id/)
+  assert.match(deviceAlarmTab, /<PropertyRulesPanel/)
+  assert.match(deviceAlarmTab, /canUpdate: props\.canUpdate/)
+  assert.match(deviceAlarmTab, /deviceId: props\.device\.id/)
 })
 
-test('inside mail selection follows channel state without requiring a template', () => {
-  const mapper = alarmApi.slice(
-    alarmApi.indexOf('function mapNotifyChannel'),
-    alarmApi.indexOf('function normalizeRecords'),
-  )
-  assert.match(mapper, /if \(!isEnabledState\(channel\.state\)\) return undefined/)
-  assert.doesNotMatch(mapper, /isInsideMailChannel|templateId|notifierId/)
-  assert.match(mapper, /providerId: channelProvider/)
-  assert.match(mapper, /channelId: stringify\(channel\.id\)/)
-  assert.match(alarmApi, /function notifyMethodKey[\s\S]*?return 'inbox'/)
-})
-
-test('all three device alarm entry points resolve selected notification user names', () => {
-  for (const source of [alarmPageHook, productAlarmTab, deviceAlarmTab]) {
-    assert.match(source, /const selectedUserIds =/)
-    assert.match(source, /queryDeviceAlarmNotifyUsers\(\{ paging: false, userIds: selectedUserIds \}\)/)
-    assert.match(source, /mergeNotifyUsersById\(selectedUsers\.data, users\.data\)/)
-  }
+test('alarm notification entry points share selected-name hydration and lazy candidate search', () => {
+  assert.match(editor, /<DeviceAlarmNotificationConfig/)
+  assert.match(notificationConfig, /<DeviceAlarmRecipients/)
+  assert.match(recipientSelector, /useAlarmRecipients/)
+  assert.match(recipientHook, /await cache\.load\(values\)/)
+  assert.match(recipientHook, /queryDeviceAlarmNotifyUsers\(\{ keyword, pageIndex: page\?\.pageIndex, pageSize: 20 \}\)/)
+  assert.match(recipientHook, /request !== selectedVersion/)
 })

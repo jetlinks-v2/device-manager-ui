@@ -1,5 +1,12 @@
 export type DeviceAlarmSource = 'product' | 'device'
-export type DeviceAlarmTrigger = 'outside' | 'inside'
+export type DeviceAlarmTrigger = 'outside' | 'inside' | 'gt' | 'gte' | 'lt' | 'lte' | 'eq' | 'neq' | 'in' | 'nin'
+export type DeviceAlarmValue = string | number | boolean
+export interface DeviceAlarmCondition {
+  trigger: DeviceAlarmTrigger
+  limit: DeviceAlarmLimit
+  value?: DeviceAlarmValue | null
+  values?: DeviceAlarmValue[]
+}
 export type DeviceAlarmLevel = number
 
 export type EnumLike = string | {
@@ -17,12 +24,13 @@ export interface DeviceAlarmLimit {
 export interface DeviceAlarmNotifyMethod {
   id: string
   providerId: string
-  channelId?: string
-  key: 'inbox' | 'sms' | 'email' | 'wechat' | 'phone' | 'webhook'
+  key: 'inbox' | 'sms' | 'email' | 'wechat' | 'dingtalk' | 'phone' | 'webhook'
   label: string
   desc: string
   icon: string
-  raw?: Record<string, any>
+  /** Accessible channel IDs are read only for persisted legacy selections. */
+  channelIds?: string[]
+  templates?: Record<'trigger' | 'relieve', 'ready' | 'missing' | 'unknown' | 'unneeded'>
 }
 
 export interface DeviceAlarmNotifyUser {
@@ -34,6 +42,9 @@ export interface DeviceAlarmNotifyUser {
 
 export interface DeviceAlarmNotificationConfig {
   enabled: boolean
+  includeRelieve?: boolean
+  /** Persisted legacy rules may still use the trigger provider for recovery. */
+  relieveTopicProvider?: 'alarm-device' | 'alarm-device-relieve'
   userIds: string[]
   dimensions?: Array<Record<string, unknown>>
   channelProviders: string[]
@@ -41,7 +52,7 @@ export interface DeviceAlarmNotificationConfig {
   parameters: Record<string, unknown>
 }
 
-export interface DeviceAlarmFormModel {
+export interface DeviceAlarmFormModel extends DeviceAlarmCondition {
   id?: string
   name: string
   source: DeviceAlarmSource
@@ -54,9 +65,8 @@ export interface DeviceAlarmFormModel {
   propertyName?: string
   propertyUnit?: string
   level: DeviceAlarmLevel
-  trigger: DeviceAlarmTrigger
-  limit: DeviceAlarmLimit
   autoRelieve: boolean
+  relieveCondition?: DeviceAlarmCondition
   notification: DeviceAlarmNotificationConfig
 }
 
@@ -67,17 +77,29 @@ export interface DeviceAlarmRow extends DeviceAlarmFormModel {
   raw?: ThingPropertyPreprocess
 }
 
+export interface ThingModelValueType {
+  type?: string
+  unit?: string
+  scale?: number
+  maxLength?: number
+  bodyType?: string
+  format?: string
+  trueText?: string
+  falseText?: string
+  elements?: Array<{ text?: string; value: string | number | boolean }>
+  elementType?: ThingModelValueType
+  properties?: ThingModelProperty[]
+}
+
 export interface ThingModelProperty {
   id?: string
   identifier?: string
   key?: string
   name?: string
+  expands?: { groupId?: string; groupName?: string }
   alarmConfigured?: boolean
   dataType?: string
-  valueType?: {
-    type?: string
-    unit?: string
-  }
+  valueType?: ThingModelValueType
   type?: string
 }
 
