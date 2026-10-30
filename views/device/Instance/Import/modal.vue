@@ -61,11 +61,22 @@ import { onlyMessage } from '@jetlinks-web/utils'
 import File from './file.vue'
 import Plugin from './plugin.vue'
 import { importDeviceByPlugin } from '../../../../api/instance'
+import { useInitialDeviceImportProduct } from './hooks/useInitialDeviceImportProduct'
 import { device } from '../../../../assets'
 import { useI18n } from 'vue-i18n';
 
 const { t: $t } = useI18n();
 const emit = defineEmits(['cancel', 'save']);
+const props = defineProps({
+  initialProductId: {
+    type: String,
+    default: '',
+  },
+  autoAdvanceInitialProduct: {
+    type: Boolean,
+    default: false,
+  },
+})
 const steps = ref(0) // 步骤
 const importData = reactive<{productId?: string, type?: string}>({
   productId: undefined,
@@ -106,6 +117,10 @@ const productChange = (detail: any) => {
   productDetail.value = detail
 }
 
+function selectInitialProduct(product: { id?: string }) {
+  importData.productId = product.id
+  productDetail.value = product
+}
 const next = () => {
   if (steps.value === 0) {
     if (!importData.productId) {
@@ -123,6 +138,16 @@ const next = () => {
   }
   steps.value += 1
 }
+
+function advanceInitialProduct() {
+  if (props.autoAdvanceInitialProduct) next()
+}
+
+useInitialDeviceImportProduct(
+  () => props.initialProductId,
+  selectInitialProduct,
+  advanceInitialProduct,
+)
 
 const prev = () => {
   if (productDetail.value?.accessProvider !== 'plugin_gateway') {
@@ -166,6 +191,7 @@ const importCancel = () => {
   emit('save')
   cancel()
 }
+
 </script>
 
 <style scoped>

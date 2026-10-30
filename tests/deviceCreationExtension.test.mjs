@@ -22,6 +22,18 @@ test('generic device drawer delegates specialized creation through a public exte
   assert.doesNotMatch(drawerSource, /media\/device|fixed-media|gb28181-2016|media-plugin|onvif/)
 })
 
+test('guided product preselection enters basic device information while manual selection waits for next step', () => {
+  assert.match(drawerSource, /watch\(selectedProduct, async \(product\) => \{[\s\S]*pendingInitialGuideAdvance\.value[\s\S]*product\?\.id === props\.initialProductId[\s\S]*pendingInitialGuideAdvance\.value = false[\s\S]*enterConfigurationStep\(\)/)
+  assert.match(drawerSource, /watch\(\(\) => props\.open, \(open\) => \{[\s\S]*pendingInitialGuideAdvance\.value = Boolean\(open && !isEditMode\.value && props\.initialProductId\)/)
+  const productSelectionHandler = drawerSource.slice(drawerSource.indexOf('function handleProductSelect'), drawerSource.indexOf('function handleTemplateSelect'))
+  const templateSelectionHandler = drawerSource.slice(drawerSource.indexOf('function handleTemplateSelect'), drawerSource.indexOf('watch(selectedProduct'))
+  assert.doesNotMatch(productSelectionHandler, /enterConfigurationStep\(\)/)
+  assert.doesNotMatch(templateSelectionHandler, /enterConfigurationStep\(\)/)
+  assert.match(drawerSource, /currentStep\.value === 0 && !selectedSource\.value/)
+  assert.match(drawerSource, /if \(currentStep\.value === 0\) \{[\s\S]*enterConfigurationStep\(\)/)
+  assert.match(drawerSource, /:show-close="isEditMode \|\| isCreating \|\| currentStep === 0"/)
+})
+
 test('embedded media creation keeps common fields and the dialog footer in the device module', () => {
   assert.match(drawerSource, /IotDeviceBasicFields[\s\S]*stack-fields[\s\S]*:on-area-change="onAreaChange"/)
   assert.match(drawerSource, /creationExtensionRef\.value\?\.submit\?\.\(\)/)

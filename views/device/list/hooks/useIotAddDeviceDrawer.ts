@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import {
   createDevice_api,
   queryDeviceProductCategoryTree_api,
+  queryDeviceProductById_api,
   queryDeviceProductPage_api,
   type DeviceCreationSource,
   type DeviceLibraryCapabilityState,
@@ -55,6 +56,7 @@ export type IotAddDeviceDrawerProps = {
 
 export type IotAddDeviceCreatedPayload = {
   deviceId: string
+  deviceName?: string
   deviceType?: string
 }
 
@@ -270,8 +272,17 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
       productPageIndex.value = page.pageIndex
       productPageSize.value = page.pageSize
       if (props.initialProductId && !selectedProduct.value) {
+        // A just-created product may not appear on the current page; resolve it by ID before selecting it.
         const initial = page.data.find((item) => item.id === props.initialProductId)
-        if (initial) selectProduct(initial.id)
+          ?? await queryDeviceProductById_api(props.initialProductId)
+        if (initial && requestSequence === productRequestSequence && props.open) {
+          // Keep the product cards visible long enough for the guided selection to be perceptible.
+          await new Promise<void>((resolve) => window.setTimeout(resolve, 250))
+        }
+        if (initial && requestSequence === productRequestSequence && props.open) {
+          if (!productCandidates.value.some((item) => item.id === initial.id)) productCandidates.value.unshift(initial)
+          selectProduct(initial.id)
+        }
       }
     } catch (error) {
       if (requestSequence !== productRequestSequence) return
@@ -483,7 +494,7 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
         }
       } finally {
         // 本地设备已保存，沿用旧入口的完成语义，云端绑定失败也刷新列表，避免再次提交创建重复设备。
-        handlers.created({ deviceId: device.id, deviceType: product.deviceType })
+        handlers.created({ deviceId: device.id, deviceName: device.name, deviceType: product.deviceType })
         handlers.updateOpen(false)
         window.setTimeout(resetForm, 200)
       }
@@ -507,6 +518,13 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
     // 受限新增（如私有化边缘网关）只允许从产品创建，不探测设备库能力。
     if (isProductOnly.value) {
       marketplaceCapability.value = 'unavailable'
+      creationSource.value = 'product'
+      void loadProductCategories()
+      void loadProductCandidates(true)
+      return
+    }
+    if (props.initialProductId) {
+      // Guided creation must remain on the selected product even when the device library is available.
       creationSource.value = 'product'
       void loadProductCategories()
       void loadProductCandidates(true)
