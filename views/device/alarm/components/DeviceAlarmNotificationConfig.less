@@ -54,8 +54,8 @@
 .notification-type:hover { background: var(--bg-sunken); }
 .notification-type :deep(.ant-checkbox-wrapper) { display: flex; flex: 1; align-items: flex-start; min-width: 0; margin: 0; padding: 6px var(--space-2); color: var(--jet-theme-text); font-size: var(--fs-12); line-height: 24px; }
 .notification-type :deep(.ant-checkbox + span) { flex: 1; min-width: 0; }
-.notification-type :deep(.ant-checkbox) { top: 0; align-self: flex-start; }
-.notification-type :deep(.ant-checkbox-inner) { margin-top: 3px; }
+// Move the whole control so its checked outline and inner box keep the same bounds.
+.notification-type :deep(.ant-checkbox) { top: 0; align-self: flex-start; margin-top: 3px; }
 .notification-type > :deep(.notification-template-status) { align-self: flex-start; margin-top: 6px; }
 .notification-types-empty { display: block; padding: var(--space-2); color: var(--jet-theme-text-secondary); }
 .notification-help { display: flex; flex-direction: column; gap: var(--space-3); width: min(320px, calc(100vw - 72px)); }
