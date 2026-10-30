@@ -15,6 +15,16 @@ test('first cumulative sample is unknown, real zero remains zero, and large long
  assert.equal(rates[1].upstreamMessages,1);assert.equal(rates[2].upstreamMessages,0)
  assert.equal(pure.deviceMessageRates([point(4000,'0'),point(7000,'9007199254740992')])[1].upstreamMessages,undefined)
 })
+test('a long-history summary reads only the latest baseline and preserves full-series gap and reset semantics',()=>{
+ let reads=0
+ const history=Array.from({length:601},(_,index)=>({timestamp:(index+1)*1000,startTime:'1000',get counters(){reads++;return {upstreamMessages:String(index*3)}}}))
+ assert.equal(pure.latestDeviceMessageRates(history).upstreamMessages,3)
+ assert.ok(reads<=24,'summary work must not scan counters across ten minutes of samples')
+ for(const suffix of [[],[{timestamp:601000}], [point(602000,'1803','2000')], [point(900000,'1803')], [point(602000,'1')]]){
+  const samples=[...history,...suffix],last=samples.findLastIndex(sample=>sample.startTime!==undefined)
+  assert.deepEqual(pure.latestDeviceMessageRates(samples),pure.deviceMessageRates(samples)[last])
+ }
+})
 test('counter rollback, generation change, long gaps and interruption never calculate an apparent rate',()=>{
  for(const history of [[point(4000,'6'),point(7000,'3')],[point(4000,'6'),point(7000,'9','2000')],[point(4000,'6'),point(200000,'9')],[point(4000,'6'),{timestamp:4000},point(7000,'9')]])assert.equal(pure.deviceMessageRates(history).at(-1).upstreamMessages,undefined)
  const interrupted=pure.interruptDeviceMessageHistory([point(4000,'6')]);assert.equal(interrupted.at(-1).timestamp,4000)

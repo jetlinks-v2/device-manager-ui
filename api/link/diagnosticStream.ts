@@ -4,12 +4,13 @@ import { langKey } from '@jetlinks-web-core/utils/consts'
 import { map, Observable } from 'rxjs'
 
 /** 沿用平台的分包解码、取消与身份上下文，订阅销毁只释放本页请求。 */
-const createDiagnosticsStream = (onRequest?: () => void) => createNdJson({
+export const createDiagnosticsStream = (onRequest?: () => void) => createNdJson({
   langKey,
   handleRequest(config) {
     const headers = new Headers(config.headers)
     Object.entries(getRequestHeaders()).forEach(([key, value]) => headers.set(key, value))
     headers.set('Accept', 'application/x-ndjson')
+    headers.set('Content-Type', 'application/json')
     // 仅表示本页请求已配置、开始等待响应；不声称远端Recording已经启动。
     onRequest?.()
     return { ...config, baseURL: getRequestBaseApi(), headers }

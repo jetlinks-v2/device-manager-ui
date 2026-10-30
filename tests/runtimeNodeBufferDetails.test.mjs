@@ -235,6 +235,7 @@ test('production host all-queue navigation clears a prior queue and routes once;
     if (id === './useClusterSidebarLayout') return { useClusterSidebarLayout: () => ({}) }
     if (id === './useClusterBuffers') return { provideClusterBuffers: () => ({ snapshots: vue.ref(queues) }) }
     if (id === './useClusterSessions') return { useClusterSessionContext: () => ({ snapshots: vue.ref(new Map()) }) }
+    if (id === '../diagnostics/overview/useResourceHistory') return { provideResourceHistoryCache() {} }
     if (id.endsWith('.vue')) return { default: empty }
     return id.startsWith('.') ? load(resolve(dirname(filename), `${id}.ts`)) : require(id)
   }, module, module.exports)

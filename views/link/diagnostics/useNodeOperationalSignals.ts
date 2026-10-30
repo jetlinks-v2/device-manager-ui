@@ -1,11 +1,12 @@
 import { computed, onScopeDispose, ref, shallowRef, watch, type Ref } from 'vue'
 import type { MBeanDescriptor, ViewState } from '@jetlinks-web-core/components/RuntimeDiagnostics'
-import { queryOperationalMBeans } from '../../../api/link/diagnostics'
+import { useMBeanCollection } from './collection/useMBeanCollection'
+import type { MBeanResult } from './collection/manager'
 import { normalizeMBeans } from './normalize'
 import { useDiagnosticsAccess } from './useDiagnosticsAccess'
 import { diagnosticErrorState } from './status'
 import { appendGaugeSample, gaugeCount, interruptGaugeHistory, type GaugeSample } from './overview/gaugeHistory'
-import { defaultDiagnosticInterval, diagnosticIntervalSeconds, type BufferInterval } from './preferences'
+import { defaultDiagnosticInterval, type BufferInterval } from './preferences'
 
 export interface OperationalSignal { objectName: string; title: string; facts: Array<{ label: string; value: string }>; warning?: string; stale?: boolean }
 export interface PropertyCacheSnapshot {
@@ -46,6 +47,7 @@ export function heapEvidenceSnapshot(source: PromiseSettledResult<Record<string,
 function attentionSignals(sources: PromiseSettledResult<Record<string, unknown>>[], previous: OperationalSignal[]): OperationalSignal[] {
   const result: OperationalSignal[] = []
   for (const [index, type] of [[0, 'EventBus'], [2, 'SystemMonitorCollector']] as const) {
+    if (!sources[index]) { result.push(...previous.filter(value => value.title === `runtimeDiagnostics.catalog.${type}.name`)); continue }
     if (sources[index]?.status === 'rejected') {
       const failure = diagnosticErrorState(sources[index].reason)
       if (failure.status === 'forbidden' || failure.status === 'unsupported') continue
@@ -89,50 +91,16 @@ function cacheSnapshot(source: PromiseSettledResult<Record<string, unknown>> | u
     history: appendGaugeSample(previous?.objectName === bean.objectName ? previous.history : [], sampledAt, inMemorySize) }
 }
 
-/** 概览激活时按统一频率完成后计时；节点/工具暂停保留证据，身份与撤权释放证据。 */
-export function useNodeOperationalSignals(nodeId: Ref<string>, enabled: Ref<boolean>, scopeKey: Ref<string>, sessionSupported: Ref<boolean | undefined> = ref(undefined), interval: Ref<BufferInterval> = ref(defaultDiagnosticInterval)) {
+/** 概览声明四个独立源；周期归页面管理器，节点暂停保留证据，身份与撤权释放证据。 */
+export function useNodeOperationalSignals(nodeId: Ref<string>, enabled: Ref<boolean>, scopeKey: Ref<string>, sessionSupported: Ref<boolean | undefined> = ref(undefined), _interval: Ref<BufferInterval> = ref(defaultDiagnosticInterval)) {
   const access = useDiagnosticsAccess(), saved = new Map<string, OperationalSnapshot>(), snapshot = shallowRef<OperationalSnapshot>(empty())
   const allowed = computed(() => enabled.value && !!nodeId.value && access.value.monitor)
-  let timer: ReturnType<typeof setTimeout> | undefined, generation = 0, disposed = false
-  let finishedAt: number | undefined
-  let job: { nodeId: string; generation: number; controller: AbortController } | undefined
+  const sources: PromiseSettledResult<Record<string, unknown>>[] = []
 
   function commit(value: OperationalSnapshot) {
     snapshot.value = value
     saved.set(nodeId.value, value)
     if (saved.size > 30) saved.delete(saved.keys().next().value!)
-  }
-  function pause(retain = true) {
-    generation++; clearTimeout(timer); timer = undefined; job?.controller.abort(); job = undefined
-    const previous = saved.get(nodeId.value)
-    if (retain && previous) commit({ ...previous, heap: previous.heap ? { ...previous.heap, interrupted: true } : undefined, cache: previous.cache ? { ...previous.cache, history: interruptGaugeHistory(previous.cache.history) } : undefined })
-  }
-  function clear() { pause(); saved.clear(); snapshot.value = empty() }
-  function schedule() {
-    clearTimeout(timer); timer = undefined
-    if (!disposed && allowed.value && !job && finishedAt !== undefined) timer = setTimeout(() => { void refresh() }, Math.max(0, finishedAt + diagnosticIntervalSeconds(interval.value) * 1000 - Date.now()))
-  }
-  async function refresh() {
-    if (!allowed.value || disposed || job) return
-    clearTimeout(timer); timer = undefined
-    const current = { nodeId: nodeId.value, generation, controller: new AbortController() }, includeCache = sessionSupported.value === true
-    job = current
-    const isCurrent = () => !disposed && job === current && current.generation === generation && allowed.value && nodeId.value === current.nodeId
-    try {
-      const sources = await queryOperationalMBeans(current.nodeId, current.controller.signal, includeCache)
-      if (!isCurrent()) return
-      const previous = snapshot.value, failed = sources.length > 0 && sources.every(source => source.status === 'rejected'), sampledAt = Date.now()
-      const failure = failed && sources[0].status === 'rejected' ? diagnosticErrorState(sources[0].reason) : undefined
-      const state: ViewState = failure ? { ...failure, status: previous.state.sampledAt === undefined || failure.status === 'forbidden' || failure.status === 'unsupported' ? failure.status : 'stale', sampledAt: previous.state.sampledAt } : { status: 'ready', sampledAt }
-      commit({ signals: attentionSignals(sources, previous.signals), state, heap: heapEvidenceSnapshot(sources[3], sampledAt, previous.heap), cache: includeCache ? cacheSnapshot(sources[1], previous.cache, sampledAt) : undefined })
-    } catch (error) {
-      if (!isCurrent()) return
-      const failure = diagnosticErrorState(error), previous = snapshot.value
-      commit({ signals: failure.status === 'forbidden' || failure.status === 'unsupported' ? [] : previous.signals.map(value => ({ ...value, stale: true })), state: failure, heap: heapEvidenceSnapshot({ status: 'rejected', reason: error }, Date.now(), previous.heap),
-        cache: includeCache ? cacheSnapshot({ status: 'rejected', reason: error }, previous.cache, Date.now()) : undefined })
-    } finally {
-      if (isCurrent()) { job = undefined; finishedAt = Date.now(); schedule() }
-    }
   }
   // 单一 watcher 合并相同变化，避免身份切换和激活分别启动重复请求。
   watch([nodeId, scopeKey, () => access.value.monitor, enabled, sessionSupported], (next, previous) => {
@@ -143,14 +111,32 @@ export function useNodeOperationalSignals(nodeId: Ref<string>, enabled: Ref<bool
       const old = saved.get(previousNodeId)
       if (old?.cache) saved.set(previousNodeId, { ...old, cache: { ...old.cache, history: interruptGaugeHistory(old.cache.history) } })
     }
-    pause(!previous || next[0] === previous[0])
+    sources.length = 0
     if (identityChanged || permissionChanged) { saved.clear(); snapshot.value = empty() }
     else snapshot.value = saved.get(nodeId.value) ?? empty()
     if (sessionSupported.value !== true && snapshot.value.cache) commit({ ...snapshot.value, cache: undefined })
     if (!access.value.monitor) { snapshot.value = { signals: [], state: { status: 'forbidden' } }; return }
-    if (allowed.value) void refresh()
+    if (!allowed.value && snapshot.value.cache) commit({ ...snapshot.value, cache: { ...snapshot.value.cache, history: interruptGaugeHistory(snapshot.value.cache.history) } })
   }, { immediate: true, flush: 'sync' })
-  watch(interval, schedule, { flush: 'sync' })
-  onScopeDispose(() => { disposed = true; clear() })
+  function apply(index: number, result: MBeanResult) {
+    if (!allowed.value || nodeId.value !== result.nodeId) return
+    const source: PromiseSettledResult<Record<string, unknown>> = result.status === 'fulfilled' ? { status: 'fulfilled', value: result.value } : { status: 'rejected', reason: result.reason }
+    sources[index] = source
+    const previous = snapshot.value, sampledAt = result.collectedAt
+    const failure = source.status === 'rejected' ? diagnosticErrorState(source.reason) : undefined
+    const state: ViewState = failure ? { ...failure, status: previous.state.sampledAt === undefined || ['forbidden', 'unsupported'].includes(failure.status) ? failure.status : 'stale', sampledAt: previous.state.sampledAt } : { status: 'ready', sampledAt }
+    commit({ signals: attentionSignals(sources, previous.signals), state,
+      heap: index === 3 ? heapEvidenceSnapshot(source, sampledAt, previous.heap) : previous.heap,
+      cache: sessionSupported.value === true ? index === 1 ? cacheSnapshot(source, previous.cache, sampledAt) : previous.cache : undefined })
+  }
+  const queries = [
+    ['org.jetlinks:type=EventBus,*', ['StructuredBufferedEventCount', 'StructuredPendingSyncPeerCount']],
+    ['org.jetlinks:type=ThingsDataManager,*', ['InMemorySize', 'DirtyCount', 'QueueDepth', 'LastCommitTime', 'LastFlushDuration']],
+    ['org.jetlinks:type=SystemMonitorCollector,*', ['LastFailureTime', 'LastSuccessTime']],
+    ['java.lang:type=Memory', ['HeapMemoryUsage']],
+  ] as const
+  const collections = queries.map(([name, attributes], index) => useMBeanCollection(() => ({ nodeIds: [nodeId.value], name, attributes: [...attributes], enabled: allowed.value && (index !== 1 || sessionSupported.value === true) }), result => apply(index, result)))
+  function refresh() { if (allowed.value) collections[0].refresh() }
+  onScopeDispose(() => { saved.clear(); snapshot.value = empty() })
   return { signals: computed(() => access.value.monitor ? snapshot.value.signals : []), heap: computed(() => access.value.monitor ? snapshot.value.heap : undefined), cache: computed(() => access.value.monitor && sessionSupported.value === true ? snapshot.value.cache : undefined), state: computed(() => snapshot.value.state), refresh }
 }

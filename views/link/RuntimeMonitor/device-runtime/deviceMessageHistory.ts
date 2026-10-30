@@ -68,7 +68,7 @@ export function deviceMessageRates(history: readonly DeviceMessageSample[], maxG
 
 /** 摘要保留最后完成快照，失败/暂停仍由外部状态明确标记；新基线不补旧速率。 */
 export function latestDeviceMessageRates(history: readonly DeviceMessageSample[]) {
-  const rates = deviceMessageRates(history)
-  for (let index = history.length - 1; index >= 0; index--) if (history[index].startTime !== undefined) return rates[index]
-  return undefined
+  const index = history.findLastIndex(point => point.startTime !== undefined)
+  // 摘要仅需要最后真实样本及其紧邻基线；中间缺测仍会打断速率。
+  return index < 0 ? undefined : deviceMessageRates(history.slice(Math.max(0, index - 1), index + 1)).at(-1)
 }

@@ -113,6 +113,7 @@ test('monitor settings retain the interval permission and preference contract an
     './useClusterSidebarLayout': { useClusterSidebarLayout: () => ({}) },
     './useClusterBuffers': { provideClusterBuffers: () => ({ snapshots: vue.ref(new Map()) }) },
     './useClusterSessions': { useClusterSessionContext: () => ({ snapshots: vue.ref(new Map()) }) },
+    '../diagnostics/overview/useResourceHistory': { provideResourceHistoryCache() {} },
     '../RuntimeMonitor/useClusterSessions': { useClusterSessionContext: () => undefined },
     '../diagnostics/preferences': { bufferIntervals: [1, 2, 5, 10, 30, 60], diagnosticIntervalSeconds: value => value ?? 2 },
   })
