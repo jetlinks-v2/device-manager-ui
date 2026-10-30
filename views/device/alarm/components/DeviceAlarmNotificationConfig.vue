@@ -1,189 +1,103 @@
 <template>
-  <section class="device-alarm-notify">
-    <header class="device-alarm-notify__head">
-      <h4>{{ $t('DeviceAlarm.notification.title') }}</h4>
-      <a-space>
-        <span class="device-alarm-notify__switch-label">
-          {{ model.notification.enabled ? $t('DeviceAlarm.notification.enabled') : $t('DeviceAlarm.notification.disabled') }}
+  <span class="device-alarm-notify">
+    <a-tooltip :title="$t(model.notification.enabled ? 'DeviceAlarm.notification.turnOff' : 'DeviceAlarm.notification.turnOn')" :trigger="['hover', 'focus']">
+      <a-button type="text" size="small" class="notification-toggle" :class="{ 'is-off': !model.notification.enabled }"
+        :disabled="disabled" :aria-pressed="model.notification.enabled" :aria-label="$t(model.notification.enabled ? 'DeviceAlarm.notification.turnOff' : 'DeviceAlarm.notification.turnOn')"
+        @click="notification.toggleEnabled">
+        <span class="notification-bell" aria-hidden="true"><AIcon :type="model.notification.enabled ? 'BellFilled' : 'BellOutlined'" /></span>
+      </a-button>
+    </a-tooltip>
+    <span class="device-alarm-notify__sentence">
+      <template v-if="model.notification.enabled">
+        <span class="notification-clause">
+          <span>{{ $t('DeviceAlarm.notification.using') }}</span>
+          <a-popover :open="notification.activePanel === 'channels'" :trigger="['click']" placement="bottomLeft" :destroy-tooltip-on-hide="true" @open-change="notification.setPanel('channels', $event)">
+            <template #content>
+              <div class="notification-option-panel" @keydown.esc.stop.prevent="closeChannels">
+                <a-alert v-if="failed" type="warning" show-icon :message="$t('PropertyRules.resourcesFailed')">
+                  <template #action><a-button size="small" type="link" @click="$emit('request-methods')">{{ $t('PropertyRules.retry') }}</a-button></template>
+                </a-alert>
+                <a-spin :spinning="loading">
+                  <a-checkbox-group v-model:value="notification.channelIds" class="notification-types" :disabled="disabled">
+                    <div v-for="option in notification.channelOptions" :key="option.value" class="notification-type">
+                      <a-checkbox :value="option.value"><RuleMenuOption compact :icon="option.icon" :title="option.label" :description="option.description" /></a-checkbox>
+                      <DeviceAlarmTemplateStatus :templates="option.templates" :include-relieve="Boolean(model.autoRelieve && model.notification.includeRelieve)" />
+                    </div>
+                  </a-checkbox-group>
+                  <span v-if="!loading && !notification.channelOptions.length" class="notification-types-empty">{{ $t('DeviceAlarm.notification.noTypes') }}</span>
+                </a-spin>
+                <div v-if="notification.channelOptions.length" class="notification-option-help">
+                  <p v-if="notification.hasContactType">{{ $t('DeviceAlarm.delivery.contactSettings') }}</p>
+                  <p>{{ $t('DeviceAlarm.delivery.templateOverride') }}</p>
+                </div>
+              </div>
+            </template>
+            <a-button ref="channelTrigger" type="text" size="small" class="notification-chip" :disabled="disabled" :aria-label="$t('DeviceAlarm.notification.type')" :aria-expanded="notification.activePanel === 'channels'" :title="notification.channelTitle">
+              <AIcon :type="loading ? 'LoadingOutlined' : notification.selectedMethods[0]?.icon || 'SendOutlined'" :spin="loading" />
+              <span class="notification-chip__label">{{ notification.channelLabel }}</span>
+              <span v-if="notification.channelCount > 1 && notification.selectedMethods.length" class="notification-chip__count">+{{ notification.channelCount - 1 }}</span>
+              <AIcon type="DownOutlined" class="notification-chip__arrow" />
+            </a-button>
+          </a-popover>
+          <DeviceAlarmTemplateStatus v-if="notification.channelCount" :templates="selectedTemplateStatus" :include-relieve="Boolean(model.autoRelieve && model.notification.includeRelieve)" @open="$emit('request-methods')" />
         </span>
-        <a-switch v-model:checked="model.notification.enabled" />
-        <a-button
-          v-if="hasNotification"
-          type="link"
-          size="small"
-          @click="clearNotification"
-        >
-          {{ $t('DeviceAlarm.notification.clear') }}
-        </a-button>
-      </a-space>
-    </header>
-
-    <a-spin v-if="model.notification.enabled" :spinning="loading">
-      <a-form-item :label="$t('DeviceAlarm.notification.channel')">
-        <a-select
-          v-model:value="selectedChannelIds"
-          mode="multiple"
-          :options="methodOptions"
-          :placeholder="$t('DeviceAlarm.notification.channelPlaceholder')"
-          :disabled="!model.notification.enabled"
-          @change="syncParameters"
-        />
-      </a-form-item>
-
-      <a-form-item :label="$t('DeviceAlarm.notification.user')">
-        <a-select
-          v-model:value="model.notification.userIds"
-          mode="multiple"
-          show-search
-          :filter-option="filterUserOption"
-          :options="userOptions"
-          :placeholder="$t('DeviceAlarm.notification.userPlaceholder')"
-          :disabled="!model.notification.enabled"
-          @popupScroll="handleUserPopupScroll"
-        />
-      </a-form-item>
-
-      <DeviceAlarmMessageTemplateConfig
-        v-if="showLegacyMessageTemplate"
-        :model="model"
-        :disabled="!model.notification.enabled"
-      />
-    </a-spin>
-  </section>
+        <span class="notification-clause">
+          <span>{{ $t('DeviceAlarm.notification.sendTo') }}</span>
+          <DeviceAlarmRecipients v-model:value="model.notification.userIds" :scope-key="notification.scopeKey" :open="notification.activePanel === 'recipients'" :disabled="disabled" @update:open="notification.setPanel('recipients', $event)" />
+        </span>
+        <a-tooltip :title="$t(model.autoRelieve ? 'DeviceAlarm.notification.includeRelieveHint' : 'DeviceAlarm.notification.requireRelieve')">
+          <a-checkbox class="notification-include-relieve" :checked="Boolean(model.autoRelieve && model.notification.includeRelieve)" :disabled="disabled || !model.autoRelieve" @update:checked="notification.setIncludeRelieve">{{ $t('DeviceAlarm.notification.includeRelieve') }}</a-checkbox>
+        </a-tooltip>
+      </template>
+      <RuleNotice kind="info" :label="$t('DeviceAlarm.notification.help')" :message="$t('DeviceAlarm.notification.help')">
+        <div class="notification-help">
+          <section><strong>{{ $t('DeviceAlarm.delivery.whenTitle') }}</strong><p>{{ $t(model.notification.enabled ? 'DeviceAlarm.delivery.when' : 'DeviceAlarm.delivery.off') }}</p><p v-if="model.notification.enabled && model.autoRelieve && model.notification.includeRelieve">{{ $t('DeviceAlarm.delivery.recovery') }}</p></section>
+          <section><strong>{{ $t('DeviceAlarm.delivery.missingTitle') }}</strong><p>{{ $t('DeviceAlarm.delivery.missing') }}</p><p class="notification-help-secondary">{{ $t('DeviceAlarm.delivery.statusLimit') }}</p></section>
+        </div>
+      </RuleNotice>
+    </span>
+    <DeviceAlarmMessageTemplateConfig v-if="model.notification.enabled && notification.showLegacyMessageTemplate" :model="model" :disabled="disabled" />
+  </span>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, type PropType } from 'vue'
+import { computed, reactive, ref, type PropType } from 'vue'
+import { useI18n } from 'vue-i18n'
 import DeviceAlarmMessageTemplateConfig from './DeviceAlarmMessageTemplateConfig.vue'
-import { getNotificationMessageMode, matchesAlarmNotifyMethod } from '../utils'
-import type {
-  DeviceAlarmFormModel,
-  DeviceAlarmNotifyMethod,
-  DeviceAlarmNotifyUser,
-} from '../types'
+import DeviceAlarmRecipients from './DeviceAlarmRecipients.vue'
+import DeviceAlarmTemplateStatus from './DeviceAlarmTemplateStatus.vue'
+import RuleNotice from '../../components/PropertyRules/RuleNotice.vue'
+import RuleMenuOption from '../../components/PropertyRules/RuleMenuOption.vue'
+import { useAlarmNotification } from '../hooks/useAlarmNotification'
+import type { DeviceAlarmFormModel, DeviceAlarmNotifyMethod } from '../types'
 
 const props = defineProps({
   model: { type: Object as PropType<DeviceAlarmFormModel>, required: true },
   methods: { type: Array as PropType<DeviceAlarmNotifyMethod[]>, default: () => [] },
-  users: { type: Array as PropType<DeviceAlarmNotifyUser[]>, default: () => [] },
   loading: { type: Boolean, default: false },
+  failed: { type: Boolean, default: false },
+  disabled: { type: Boolean, default: false },
+  reveal: { type: Boolean, default: undefined },
 })
-
-const emit = defineEmits<{
-  'load-more-users': []
-}>()
-
-const hasNotification = computed(() =>
-  Boolean(props.model.notification.notifyChannelIds?.length || props.model.notification.channelProviders.length || props.model.notification.userIds.length),
-)
-
-const showLegacyMessageTemplate = ref(false)
-
-watch(
-  () => props.model,
-  (model) => {
-    // 自定义内容只对打开时已有自定义模板的存量规则保留；会话内切回默认后仍可撤销。
-    showLegacyMessageTemplate.value = model.source === 'device'
-      && getNotificationMessageMode(model.notification) === 'custom'
-  },
-  { immediate: true },
-)
-
-const selectedMethods = computed(() => {
-  return props.methods.filter(method => matchesAlarmNotifyMethod(props.model.notification, method))
-})
-
-const selectedChannelIds = computed({
-  get() {
-    return selectedMethods.value.map((method) => method.channelId || method.id).filter(Boolean)
-  },
-  set(value: string[]) {
-    const selected = new Set(value)
-    const methods = props.methods.filter((method) => selected.has(method.channelId || method.id))
-    props.model.notification.notifyChannelIds = methods
-      .map((method) => method.channelId)
-      .filter((id): id is string => Boolean(id))
-    props.model.notification.channelProviders = Array.from(new Set(methods.map((method) => method.providerId).filter(Boolean)))
-  },
-})
-
-const methodOptions = computed(() =>
-  props.methods.map((method) => ({
-    label: method.label,
-    value: method.channelId || method.id,
-  })),
-)
-
-watch(
-  selectedMethods,
-  (methods) => {
-    const channelIds = methods.map((method) => method.channelId).filter((id): id is string => Boolean(id))
-    if (!sameStringArray(props.model.notification.notifyChannelIds ?? [], channelIds)) {
-      props.model.notification.notifyChannelIds = channelIds
-    }
-  },
-  { immediate: true },
-)
-
-const userOptions = computed(() =>
-  props.users.map((user) => ({
-    label: `${user.name}${user.desc ? `（${user.desc}）` : ''}`,
-    value: user.id,
-  })),
-)
-
-function clearNotification() {
-  props.model.notification.channelProviders = []
-  props.model.notification.notifyChannelIds = []
-  props.model.notification.userIds = []
-  props.model.notification.parameters = {}
-  props.model.notification.enabled = false
-}
-
-function syncParameters() {
-  const parameters: Record<string, unknown> = {}
-  selectedMethods.value.forEach((method) => {
-    const raw = method.raw ?? {}
-    const configuration = raw.channelConfiguration ?? raw.configuration ?? {}
-    parameters[method.providerId] = {
-      templateId: firstText(configuration.templateId, raw.templateId),
-      notifierId: firstText(configuration.notifierId, raw.notifierId),
-    }
-  })
-  // 通道参数会随选择结果重建，但设备告警消息模板属于通知根配置，切换通道时必须保留。
-  const currentParameters = props.model.notification.parameters ?? {}
-  const messageParameterKeys = ['template', 'messageTemplate', 'variableDefinitions']
-  messageParameterKeys.forEach((key) => {
-    if (Object.prototype.hasOwnProperty.call(currentParameters, key)) {
-      parameters[key] = currentParameters[key]
-    }
-  })
-  props.model.notification.parameters = parameters
-}
-
-function filterUserOption(input: string, option?: { label?: string }) {
-  return String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-}
-
-function handleUserPopupScroll(event: Event) {
-  const target = event.target as HTMLElement
-  if (target.scrollTop + target.clientHeight >= target.scrollHeight - 24) {
-    emit('load-more-users')
+const emit = defineEmits<{ (e: 'request-methods'): void; (e: 'open-change', value: boolean): void }>()
+const { t: $t } = useI18n()
+const notification = reactive(useAlarmNotification(props, () => emit('request-methods'), value => emit('open-change', value)))
+const channelTrigger = ref<{ focus: () => void }>()
+// Selected types share an overall status; legacy recovery rules still use their saved trigger template.
+const selectedTemplateStatus = computed(() => {
+  const legacy = props.model.notification.relieveTopicProvider === 'alarm-device'
+  const statuses = notification.channelIds.map(id => props.methods.find(method => method.providerId === id)?.templates)
+  const aggregate = (event: 'trigger' | 'relieve'): NonNullable<DeviceAlarmNotifyMethod['templates']>['trigger'] => {
+    if (!statuses.length) return 'unknown'
+    const values = statuses.map(status => status?.[legacy && event === 'relieve' ? 'trigger' : event] ?? 'unknown')
+    return values.includes('unknown') ? 'unknown' : values.includes('missing') ? 'missing'
+      : values.every(value => value === 'unneeded') ? 'unneeded' : 'ready'
   }
-}
-
-function firstText(...values: unknown[]) {
-  return values.map((value) => {
-    if (value == null) return ''
-    if (typeof value === 'string') return value
-    if (typeof value === 'number' || typeof value === 'boolean') return String(value)
-    return ''
-  }).find(Boolean) || ''
-}
-
-function sameStringArray(left: string[], right: string[]) {
-  if (left.length !== right.length) return false
-  return left.every((item, index) => item === right[index])
+  return { trigger: aggregate('trigger'), relieve: aggregate('relieve') }
+})
+function closeChannels() {
+  notification.setPanel('channels', false)
+  channelTrigger.value?.focus()
 }
 </script>
 

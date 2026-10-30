@@ -20,7 +20,7 @@
     />
 
     <section class="product-detail-page__tabs">
-      <a-tabs v-model:activeKey="activeTab" class="product-detail-tabs" @change="handleTabChange">
+      <a-tabs :activeKey="activeTab" class="product-detail-tabs" @change="handleTabChange">
         <a-tab-pane v-for="tab in visibleTabs" :key="tab.key">
           <template #tab>
             <span class="product-detail-tabs__item">
@@ -72,7 +72,7 @@ const routerParams = useRouterParams()
 const productStore = useProductStore()
 const permissionStore = useAuthStore()
 const menuStore = useMenuStore()
-const { showThreshold } = useSystemStore()
+const system = useSystemStore()
 const saveRef = ref()
 // 物模型引导必须以目标页签作为首屏，避免详情先渲染设备接入后再切换。
 const activeTab = ref<ProductDetailTabKey>(route.query.tab === 'Metadata' ? 'Metadata' : 'Device')
@@ -83,7 +83,8 @@ const isCreatedProductOnboarding = computed(() => route.query.onboarding === 'pr
   && hasProductCreatedGuide(typeof route.params.id === 'string' ? route.params.id : undefined))
 
 const visibleTabs = computed(() => buildProductDetailTabs(productStore.current, {
-  showAlarm: permissionStore.hasPermission('rule-engine/Alarm/Log:view') && showThreshold,
+  showRules: system.showThreshold,
+  showAlarm: permissionStore.hasPermission('rule-engine/Alarm/Log:view') && system.showThreshold,
   showFirmware: permissionStore.hasPermission('device/Firmware:view'),
   showDashboard: isApplyDashboard(),
   isNoCommunity,
@@ -96,11 +97,15 @@ function syncActiveTab(tab?: unknown) {
 }
 
 function handleTabChange(key: string) {
+  const change = () => {
+    const query = { ...route.query, tab: key, ruleProperty: undefined }
+    return router.replace({ query })
+  }
   if (activeTab.value === 'Metadata') {
-    EventEmitter.emit('MetadataTabs', () => syncActiveTab(key))
+    EventEmitter.emit('MetadataTabs', change)
     return
   }
-  syncActiveTab(key)
+  void change()
 }
 
 function refreshCurrent() {
@@ -215,7 +220,7 @@ watch(() => productStore.current, () => syncActiveTab(), { deep: true })
 
 // 引导入口通过标准 query 指定物模型页；同一详情页复用时也要响应 query 中的 Tab 变化。
 watch(() => route.query.tab, (tab) => {
-  if (tab) syncActiveTab(tab)
+  syncActiveTab(tab)
 })
 
 watch([() => route.query.guide, activeTab, activeTabView, () => productStore.current?.id], async ([guide, tab, view, productId]) => {

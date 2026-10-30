@@ -92,6 +92,14 @@ const TOOL_ROUTING: Record<string, AiClientToolRoutingMetadata> = {
     outputShapes: ['subject.detail'],
     cost: 'low',
   },
+  device_connection_sessions_get: {
+    capabilities: ['subject.connection.sessions.read'],
+    produces: ['connection-sessions'],
+    intents: ['查询具体连接、会话及最近通信', 'inspect connections, sessions and recent communication'],
+    notFor: ['判断在线离线状态或最后属性上报', 'determine online state or last property report'],
+    outputShapes: ['connection.sessions'],
+    cost: 'low',
+  },
   device_model_get: {
     capabilities: ['subject.schema.read'],
     produces: MODEL_FIELD_BINDINGS,
@@ -112,6 +120,16 @@ const TOOL_ROUTING: Record<string, AiClientToolRoutingMetadata> = {
     produces: ['property-snapshot'],
     intents: ['读取属性当前值', 'read current property values'],
     outputShapes: ['property.snapshot'],
+    cost: 'low',
+  },
+  device_property_rules_get: {
+    capabilities: ['subject.property.rules.read'],
+    accepts: ['subject-property-id'],
+    produces: ['property-rule-configuration'],
+    intents: ['解释属性阈值、解除、通知及继承', '排查属性未告警、不解除、收不到通知或数据被过滤',
+      'read effective property rules', 'explain thresholds and recovery; diagnose missing alarms, notifications or filtered values'],
+    notFor: ['代替实际告警或投递记录、读取场景联动配置、修改规则', 'replace event or delivery evidence, read scene rules, or modify configuration'],
+    outputShapes: ['property.rules'],
     cost: 'low',
   },
   device_property_history_summary: {
@@ -195,7 +213,8 @@ const TOOL_ROUTING: Record<string, AiClientToolRoutingMetadata> = {
   device_online_offline_summary: {
     capabilities: ['subject.connection.summary'],
     produces: ['connection-summary'],
-    intents: ['分析上下线', 'summarize online and offline sessions'],
+    intents: ['分析历史上下线事件', 'summarize historical online and offline events'],
+    notFor: ['当前具体连接与通信时间', 'current connection details and communication times'],
     outputShapes: ['connection.summary'],
   },
   device_logs_summary: {
@@ -214,6 +233,7 @@ const TOOL_ROUTING: Record<string, AiClientToolRoutingMetadata> = {
     capabilities: ['subject.access.read'],
     produces: ['access-configuration'],
     intents: ['读取接入配置', 'read subject access configuration'],
+    notFor: ['当前具体连接与通信时间', 'current connection details and communication times'],
     outputShapes: ['access.detail'],
     cost: 'low',
   },
@@ -526,6 +546,7 @@ export const createDeviceDetailAgentTools = (
   const tabs = options?.tabs ?? resolveDeviceDetailAgentTabs(options?.tabSurface)
   const tools: AiClientToolDefinition<DeviceDetailToolContext>[] = [
     readTool('device_context_get', [], service.contextGet, 'detail'),
+    readTool('device_connection_sessions_get', [], service.connectionSessions, 'detail'),
     readTool('device_model_get', [
       input('section', domainAgentEnumValueType(IOT_DEVICE_MODEL_SECTIONS)),
       input('limit', domainAgentIntegerValueType(1, 50)),
@@ -535,6 +556,9 @@ export const createDeviceDetailAgentTools = (
       input('types', domainAgentEnumArrayValueType(IOT_DEVICE_MODEL_SECTIONS.filter(item => item !== 'all'))),
       input('limit', domainAgentIntegerValueType(1, 100)),
     ], service.modelSearch, 'discovery'),
+    readTool('device_property_rules_get', [
+      input('propertyId'), ...pageInputs(),
+    ], service.propertyRules, 'detail'),
     defineClientTool<Record<string, any>, DeviceDetailToolContext, any>({
       id: 'device_function_invoke',
       description: {

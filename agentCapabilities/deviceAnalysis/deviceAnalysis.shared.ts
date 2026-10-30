@@ -2,6 +2,7 @@ import {
   createDomainAgentErrorResult,
   createDomainAgentInputError,
   DomainAgentInputError,
+  resolveDomainAgentMessage,
   type DomainAgentToolResult,
 } from '@jetlinks-web-core/layout/components/AiChat/domainAgentTools'
 import { getProjectIdFromLocation } from '@jetlinks-web-core/utils/project-runtime'
@@ -44,18 +45,15 @@ export const inputError = (
   params?: Record<string, string | number>,
 ) => createDomainAgentInputError(code, `IotGeneralAgent.errors.${key}`, params)
 
-/** 描述领域时间的事实含义，未知上报时间不由活动/连接时间推断。 */
+/** Only expose explicit event/report times; page lastSeen is derived from connection events, not observed communication. */
 export const mapDeviceTimeContext = (device: IotDevice) => ({
-  lastSeen: device.lastSeen,
-  lastSeenTimestamp: device.lastSeenTimestamp,
   onlineAt: device.onlineAt,
   offlineAt: device.offlineAt,
   lastReportAt: device.lastReportAt,
   timeSemantics: {
-    lastSeen: 'Last observed activity or connection-status change, not the last property report.',
-    onlineAt: 'Last online event timestamp (epoch milliseconds).',
-    offlineAt: 'Last offline event timestamp (epoch milliseconds).',
-    lastReportAt: 'Last known property report timestamp (epoch milliseconds); unknown when absent.',
+    onlineAt: resolveDomainAgentMessage('DeviceConnectionAgent.time.onlineAt'),
+    offlineAt: resolveDomainAgentMessage('DeviceConnectionAgent.time.offlineAt'),
+    lastReportAt: resolveDomainAgentMessage('DeviceConnectionAgent.time.lastReportAt'),
   },
 })
 

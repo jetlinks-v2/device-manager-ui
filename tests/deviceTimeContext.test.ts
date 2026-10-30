@@ -1,20 +1,28 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { mapApiDevice } from '../views/device/list/services/adapters/iotDeviceApiAdapter.ts'
-import { createDeviceDetailDiagnosticsService } from '../views/device/list/agent/deviceDetailDiagnostics.service.ts'
-import { mapDevice } from '../agentCapabilities/deviceAnalysis/deviceAnalysis.shared.ts'
+import { mapApiDevice } from '../views/device/list/services/adapters/iotDeviceApiAdapter'
+import { createDeviceDetailDiagnosticsService } from '../views/device/list/agent/deviceDetailDiagnostics.service'
+import { mapDevice } from '../agentCapabilities/deviceAnalysis/deviceAnalysis.shared'
+import { iotDeviceDetailRealApi } from '../views/device/list/services/iotDeviceDetailReal.service'
 
-test('device context uses the later connection event without claiming it is a report', async () => {
-  for (const [onlineTime, offlineTime] of [[10000, 20000], [30000, 20000]]) {
-    const device = mapApiDevice({ id: 'device-1', onlineTime, offlineTime }, 'project-1')
-    const result = await createDeviceDetailDiagnosticsService(device).contextGet()
-    assert.equal(device.lastSeenTimestamp, Math.max(onlineTime, offlineTime))
-    assert.equal(device.onlineAt, onlineTime)
-    assert.equal(device.offlineAt, offlineTime)
-    assert.equal(result.data.lastReportAt, undefined)
-    assert.match(result.data.timeSemantics.lastSeen, /not the last property report/)
-    assert.match(result.data.timeSemantics.lastReportAt, /unknown when absent/)
-    assert.deepEqual(mapDevice(device).timeSemantics, result.data.timeSemantics)
+test('device context exposes state events without claiming they are communication or reports', async () => {
+  const original = iotDeviceDetailRealApi.getDeviceState
+  iotDeviceDetailRealApi.getDeviceState = (async () => ({ result: { value: 'online', text: '在线' } })) as typeof original
+  try {
+    for (const [onlineTime, offlineTime] of [[10000, 20000], [30000, 20000]]) {
+      const device = mapApiDevice({ id: 'device-1', onlineTime, offlineTime }, 'project-1')
+      const result = await createDeviceDetailDiagnosticsService(device).contextGet()
+      assert.equal(device.lastSeenTimestamp, Math.max(onlineTime, offlineTime))
+      assert.equal(device.onlineAt, onlineTime)
+      assert.equal(device.offlineAt, offlineTime)
+      assert.equal(result.data.lastReportAt, undefined)
+      assert.equal('lastSeen' in result.data, false)
+      assert.equal('lastSeenTimestamp' in result.data, false)
+      assert.equal((result.data.timeSemantics as Record<string, unknown>).lastReportAt, 'DeviceConnectionAgent.time.lastReportAt')
+      assert.deepEqual(mapDevice(device).timeSemantics, result.data.timeSemantics)
+    }
+  } finally {
+    iotDeviceDetailRealApi.getDeviceState = original
   }
 })
 

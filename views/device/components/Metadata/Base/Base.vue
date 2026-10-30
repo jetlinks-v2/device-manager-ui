@@ -241,7 +241,7 @@
         </EditTableFormItem>
       </template>
       <template #other="{ record }">
-        <div style='z-index: 6; position: relative'>
+        <div class="metadata-setting-actions">
           <OtherSetting
             v-model:value="record.expands"
             :type="
@@ -257,7 +257,7 @@
             :record="record"
             :key-property-readonly="record.expands?.isProduct && props.target === 'device'"
             :disabled="
-              record.expands?.isProduct &&
+              !hasMetadataUpdatePermission() || record.expands?.isProduct &&
               !['int', 'long', 'float', 'double'].includes(
                 record.valueType?.type,
               )
@@ -910,6 +910,14 @@ const onTypeChange = (index) => {
 </script>
 
 <style scoped lang="less">
+.metadata-setting-actions {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: var(--space-1);
+  white-space: nowrap;
+}
+
 .extra-header {
   display: flex;
   justify-content: space-between;

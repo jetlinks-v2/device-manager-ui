@@ -33,6 +33,7 @@ const legacyTabMap: Record<string, ProductDetailTabKey> = {
 /** Builds direct product-detail entries while preserving existing feature switches. */
 export function buildProductDetailTabs(product: Partial<ProductItem>, options: {
   showAlarm: boolean
+  showRules?: boolean
   showFirmware: boolean
   showDashboard: boolean
   isNoCommunity: boolean
@@ -41,10 +42,10 @@ export function buildProductDetailTabs(product: Partial<ProductItem>, options: {
     { key: 'Device', labelKey: 'Detail.index.478940-11', icon: 'WifiOutlined' },
     { key: 'Metadata', labelKey: 'Detail.index.478940-10', icon: 'ApartmentOutlined' },
   ]
+  if (options.showRules !== false) tabs.push({ key: 'AlarmConfig', labelKey: 'PropertyRules.title', icon: 'ControlOutlined' })
   const features = (product as any)?.features || []
   if (options.showAlarm) {
     tabs.push({ key: 'AlarmRecord', labelKey: 'Product.detail.alarmRecords', icon: 'AlertOutlined' })
-    tabs.push({ key: 'AlarmConfig', labelKey: 'Product.detail.alarmConfig', icon: 'SettingOutlined' })
     if (options.isNoCommunity) tabs.push({ key: 'Invalid', labelKey: 'Detail.index.478940-17', icon: 'FileTextOutlined' })
   }
   if (features.some((item: any) => item.id === 'transparentCodec')) {

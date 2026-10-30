@@ -3,6 +3,8 @@
     :open="open"
     width="min(100rem, calc(100vw - 2.25rem))"
     :mask-closable="false"
+    :closable="!saving"
+    :keyboard="!saving"
     :body-style="{ padding: 0 }"
     wrap-class-name="device-alarm-editor-modal-wrap"
     centered
@@ -15,7 +17,7 @@
       </div>
     </template>
 
-    <a-form class="device-alarm-editor" layout="vertical" :model="model">
+    <a-form class="device-alarm-editor" layout="vertical" :model="model" :disabled="saving">
       <div class="device-alarm-editor__workspace">
         <aside class="device-alarm-editor__base">
           <h3>{{ $t('DeviceAlarm.editor.baseConfig') }}</h3>
@@ -108,28 +110,15 @@
                 :disabled="readonlyScope"
                 :options="propertySelectOptions"
                 :placeholder="$t('DeviceAlarm.placeholder.property')"
-                @change="(value) => emit('property-change', String(value))"
+                @change="(value: unknown) => emit('property-change', String(value))"
               />
             </a-form-item>
           </div>
 
           <div v-show="activePanel === 'trigger'" class="device-alarm-editor__section">
             <a-form-item class="device-alarm-editor__trigger" :label="$t('DeviceAlarm.form.trigger')" required>
-              <a-radio-group v-model:value="model.trigger" :options="triggerOptions" />
+              <PropertyAlarmCondition :model="model" :property="selectedProperty" />
             </a-form-item>
-
-            <a-row :gutter="12">
-              <a-col :xs="24" :md="12">
-                <a-form-item :label="$t('DeviceAlarm.form.lower')" required>
-                  <a-input-number v-model:value="model.limit.lower" class="device-alarm-editor__number" />
-                </a-form-item>
-              </a-col>
-              <a-col :xs="24" :md="12">
-                <a-form-item :label="$t('DeviceAlarm.form.upper')" required>
-                  <a-input-number v-model:value="model.limit.upper" class="device-alarm-editor__number" />
-                </a-form-item>
-              </a-col>
-            </a-row>
 
             <div class="device-alarm-editor__preview">
               <AIcon type="InfoCircleFilled" />
@@ -137,13 +126,7 @@
             </div>
 
             <div class="device-alarm-editor__auto-relieve">
-              <div class="device-alarm-editor__auto-relieve-header">
-                <div>
-                  <strong>{{ $t('DeviceAlarm.autoRelieve.title') }}</strong>
-                  <p>{{ $t('DeviceAlarm.autoRelieve.description') }}</p>
-                </div>
-                <a-switch v-model:checked="model.autoRelieve" />
-              </div>
+              <PropertyAlarmRecovery :model="model" :property="selectedProperty" />
               <div v-if="model.autoRelieve" class="device-alarm-editor__relieve-preview">
                 <AIcon type="CheckCircleFilled" />
                 <span>{{ $t('DeviceAlarm.autoRelieve.condition') }}{{ relievePreviewText }}</span>
@@ -157,9 +140,8 @@
                 key="notification"
                 :model="model"
                 :methods="notifyMethods"
-                :users="notifyUsers"
                 :loading="notifyLoading"
-                @load-more-users="emit('load-more-users')"
+                :disabled="saving"
               />
             </RegistryComponent>
           </div>
@@ -184,8 +166,8 @@
 
     <template #footer>
       <div class="device-alarm-editor__footer">
-        <a-button @click="close">{{ $t('DeviceAlarm.action.cancel') }}</a-button>
-        <a-button type="primary" @click="emit('save')">{{ $t('DeviceAlarm.action.save') }}</a-button>
+        <a-button :disabled="saving" @click="close">{{ $t('DeviceAlarm.action.cancel') }}</a-button>
+        <a-button type="primary" :loading="saving" @click="emit('save')">{{ $t('DeviceAlarm.action.save') }}</a-button>
       </div>
     </template>
   </a-modal>
@@ -195,11 +177,12 @@
 import { computed, ref, watch, type PropType } from 'vue'
 import { useI18n } from 'vue-i18n'
 import DeviceAlarmNotificationConfig from './DeviceAlarmNotificationConfig.vue'
+import PropertyAlarmCondition from './PropertyAlarmCondition.vue'
+import PropertyAlarmRecovery from './PropertyAlarmRecovery.vue'
 import IotAlarmTargetSelect from './IotAlarmTargetSelect.vue'
 import type {
   DeviceAlarmFormModel,
   DeviceAlarmNotifyMethod,
-  DeviceAlarmNotifyUser,
   DeviceAlarmTargetOption,
   ThingModelProperty,
 } from '../types'
@@ -209,13 +192,13 @@ import type { IotAlarmTargetSelectOption, IotAlarmTargetSelectQuery } from './Io
 type EditorPanel = 'target' | 'trigger' | 'notification'
 
 const props = defineProps({
+  saving: { type: Boolean, default: false },
   open: { type: Boolean, default: false },
   model: { type: Object as PropType<DeviceAlarmFormModel>, required: true },
   // 产品详情只允许维护当前产品配置，不能在表单中切换到其他产品或设备。
   fixedProductScope: { type: Boolean, default: false },
   readonlyScope: { type: Boolean, default: false },
   levelOptions: { type: Array as PropType<Array<{ label: string; value: number }>>, default: () => [] },
-  triggerOptions: { type: Array as PropType<Array<{ label: string; value: string }>>, default: () => [] },
   productOption: { type: Object as PropType<DeviceAlarmTargetOption | undefined>, default: undefined },
   deviceOption: { type: Object as PropType<DeviceAlarmTargetOption | undefined>, default: undefined },
   productReloadKey: { type: Number, default: 0 },
@@ -229,7 +212,6 @@ const props = defineProps({
   },
   propertyOptions: { type: Array as PropType<ThingModelProperty[]>, default: () => [] },
   notifyMethods: { type: Array as PropType<DeviceAlarmNotifyMethod[]>, default: () => [] },
-  notifyUsers: { type: Array as PropType<DeviceAlarmNotifyUser[]>, default: () => [] },
   notifyLoading: { type: Boolean, default: false },
 })
 
@@ -238,7 +220,6 @@ const emit = defineEmits<{
   (e: 'product-change', option?: IotAlarmTargetSelectOption): void
   (e: 'device-change', value?: string, option?: IotAlarmTargetSelectOption): void
   (e: 'property-change', value: string): void
-  (e: 'load-more-users'): void
   (e: 'save'): void
 }>()
 
@@ -268,6 +249,8 @@ const propertySelectOptions = computed(() =>
     disabled: Boolean(property.alarmConfigured),
   })),
 )
+const selectedProperty = computed(() => props.propertyOptions.find(property => propertyIdOf(property) === props.model.property)
+  ?? { valueType: { type: typeof props.model.value === 'string' ? 'string' : typeof props.model.value === 'boolean' ? 'boolean' : 'double' } })
 
 const allDeviceOption = computed(() => [{ label: $t('DeviceAlarm.deviceRange.all'), value: '__all__' }])
 const deviceValue = computed(() => props.model.source === 'device' ? props.model.deviceId : '__all__')
@@ -337,6 +320,7 @@ const summaryItems = computed(() => [
 ])
 
 function close() {
+  if (props.saving) return
   emit('update:open', false)
 }
 </script>

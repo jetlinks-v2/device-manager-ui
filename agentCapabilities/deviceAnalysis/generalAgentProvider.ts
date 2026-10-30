@@ -34,7 +34,7 @@ export const iotDeviceAnalysisGeneralAgentProvider: GeneralAgentCapabilityProvid
         kind: 'tool',
         category: IOT_DEVICE_ANALYSIS_CATEGORY,
         menuCode: listMenu.code,
-        keywords: ['设备', '物联', '在线率', '消息量', '上报量', '属性', '物模型', 'device', 'iot', 'uplink'],
+        keywords: ['设备', '物联', '在线率', '消息量', '上报量', '属性', '物模型', '告警配置', '预处理', 'device', 'iot', 'uplink', 'alarm configuration'],
         metadata: { promptExamples: getDeviceLandingPromptExamples() },
       },
       {
@@ -68,7 +68,24 @@ export const iotDeviceAnalysisGeneralAgentProvider: GeneralAgentCapabilityProvid
     ]
   },
   getClientTools: context => findMenu(context, IOT_DEVICE_MENU_ANCHORS.list) ? createDeviceAnalysisTools() : [],
+  getSystemPromptLines: context => findMenu(context, IOT_DEVICE_MENU_ANCHORS.list)
+    ? [i18n.global.t('PropertyRuleAgent.usage'), i18n.global.t('DeviceConnectionAgent.usage')] : [],
   getWorkflowGuides: context => findMenu(context, IOT_DEVICE_MENU_ANCHORS.list) ? [
+    {
+      id: 'device-property-rules',
+      title: i18n.global.t('PropertyRuleAgent.workflow.title'),
+      description: i18n.global.t('PropertyRuleAgent.workflow.description'),
+      when: i18n.global.t('PropertyRuleAgent.workflow.when'),
+      scenarios: ['threshold', 'recovery', 'notification', 'data'].map(key => i18n.global.t(`PropertyRuleAgent.workflow.scenarios.${key}`)),
+      steps: [
+        { capability: 'asset.device.search', evidence: 'device-id', required: true },
+        { capability: 'subject.schema.read', evidence: 'subject-property-id', required: false,
+          tips: [i18n.global.t('PropertyRuleAgent.workflow.resolveProperty')] },
+        { capability: 'subject.property.rules.read', evidence: 'property-rule-configuration', required: true },
+      ],
+      output: i18n.global.t('PropertyRuleAgent.workflow.output'),
+      notes: [i18n.global.t('PropertyRuleAgent.workflow.note'), i18n.global.t('PropertyRuleAgent.workflow.evidence')],
+    },
     {
       id: 'device-runtime-analysis',
       title: i18n.global.t('IotGeneralAgent.workflows.overview.title'),
@@ -88,10 +105,12 @@ export const iotDeviceAnalysisGeneralAgentProvider: GeneralAgentCapabilityProvid
       steps: [
         { capability: 'asset.device.search', evidence: 'device-id', required: true },
         { capability: 'subject.schema.read', evidence: 'subject-property-id', required: true },
+        { capability: 'subject.property.rules.read', evidence: 'property-rule-configuration', required: false },
         { capability: 'subject.property.aggregate', evidence: 'property-aggregate', required: true },
         { capability: 'subject.property.history.read', evidence: 'property-history-records', required: false },
       ],
       output: i18n.global.t('IotGeneralAgent.workflows.output'),
+      notes: [i18n.global.t('PropertyRuleAgent.workflow.dataNote')],
     },
     {
       id: 'device-detail-handoff',

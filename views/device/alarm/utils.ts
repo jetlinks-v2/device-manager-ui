@@ -1,21 +1,24 @@
 import type {
+  AlarmLevelOption,
   DeviceAlarmFormModel,
   DeviceAlarmLevel,
   DeviceAlarmNotificationConfig,
   DeviceAlarmNotifyMethod,
   DeviceAlarmRow,
   DeviceAlarmSource,
-  DeviceAlarmTrigger,
   EnumLike,
   ThingModelProperty,
   ThingPropertyPreprocess,
 } from './types'
 import i18n from '@jetlinks-web-core/locales'
+import { isEqual } from 'lodash-es'
+import { buildCondition, invertCondition, readCondition, recoveryCondition, conditionSymbols } from './conditions'
+import type { DeviceAlarmCondition } from './types'
+import { notificationDateVariables, notificationDateFormat } from './notificationMessageVariables'
 
 const DEVICE_ALARM_PROCESSOR = 'device-alarm'
 const DEVICE_ALARM_RELIEVE_PROCESSOR = 'device-alarm-relieve'
 const NOTIFY_PROCESSOR = 'notify'
-const NUMBER_RANGE_MATCHER = 'number-range'
 const SIMPLE_PROCESSOR = 'simple'
 const COMPOSITE_PROCESSOR = 'composite'
 
@@ -24,20 +27,26 @@ interface DeviceAlarmConfiguration {
   matcher: Record<string, any>
   notifyProcessor?: Record<string, any>
   relieveProcessor?: Record<string, any>
+  relieveMatcher?: Record<string, any>
+  relieveNotifyProcessor?: Record<string, any>
 }
 
-/** 旧配置仅保存提供者和参数；同一提供者可能存在多个通知通道，必须同时匹配参数。 */
+/** Display notification types; saved channel IDs are mapped for legacy readback only. */
 export function matchesAlarmNotifyMethod(notification: DeviceAlarmNotificationConfig, method: DeviceAlarmNotifyMethod) {
-  if (notification.notifyChannelIds?.includes(method.channelId || method.id)) return true
-  if (!notification.channelProviders.includes(method.providerId)) return false
-  const parameter = notification.parameters?.[method.providerId]
-  if (!isRecord(parameter)) return true
-  const raw = method.raw ?? {}
-  const configuration = raw.channelConfiguration ?? raw.configuration ?? {}
-  const notifierId = String(parameter.notifierId || '')
-  const templateId = String(parameter.templateId || '')
-  return (!notifierId || notifierId === String(configuration.notifierId || raw.notifierId || ''))
-    && (!templateId || templateId === String(configuration.templateId || raw.templateId || ''))
+  return notification.channelProviders.includes(method.providerId)
+    || Boolean(notification.notifyChannelIds?.some(id => method.channelIds?.includes(id)))
+}
+
+/** Explicit user selection removes obsolete channel bindings; simply opening a rule never migrates it. */
+export function selectAlarmNotificationTypes(notification: DeviceAlarmNotificationConfig, providers: string[]) {
+  const bindings = new Set([...notification.channelProviders, ...providers])
+  return {
+    ...notification,
+    channelProviders: [...new Set(providers)],
+    notifyChannelIds: [],
+    relieveTopicProvider: 'alarm-device-relieve' as const,
+    parameters: Object.fromEntries(Object.entries(notification.parameters ?? {}).filter(([key]) => !bindings.has(key))),
+  }
 }
 
 export const DEVICE_ALARM_NOTIFICATION_MESSAGE_MAX_LENGTH = 1024
@@ -86,23 +95,43 @@ export function isNumberProperty(property: ThingModelProperty): boolean {
 }
 
 export function getAlarmProcessor(row?: ThingPropertyPreprocess) {
-  return parseDeviceAlarmConfiguration(row)?.alarmProcessor
+  return findAlarmConfiguration(row)?.alarmProcessor
 }
 
 export function getNotifyProcessor(row?: ThingPropertyPreprocess) {
-  return parseDeviceAlarmConfiguration(row)?.notifyProcessor
+  return findAlarmConfiguration(row)?.notifyProcessor
 }
 
 export function getAlarmMatcher(row?: ThingPropertyPreprocess) {
-  return parseDeviceAlarmConfiguration(row)?.matcher
+  return findAlarmConfiguration(row)?.matcher
 }
 
 export function hasAlarmRelieveProcessor(row?: ThingPropertyPreprocess): boolean {
   return Boolean(parseDeviceAlarmConfiguration(row)?.relieveProcessor)
 }
 
+/** 复合属性链只提取唯一告警单元，其他处理段仍由完整配置编解码器保护。 */
+function findAlarmConfiguration(row?: ThingPropertyPreprocess, depth = 0): DeviceAlarmConfiguration | undefined {
+  if (!row || depth > 16) return undefined
+  const direct = parseDeviceAlarmConfiguration(row)
+  if (direct) return direct
+  const processors = row.configuration?.processors
+  if (row.provider !== COMPOSITE_PROCESSOR || !Array.isArray(processors)) return undefined
+  // 解除分支必须与告警组成已识别的单元，不能把未知平铺复合链误读成普通告警。
+  if (processors.some(child => child?.provider === SIMPLE_PROCESSOR
+    && directProcessors(child.configuration ?? {})?.some(item => item.provider === DEVICE_ALARM_RELIEVE_PROCESSOR))) return undefined
+  let result: DeviceAlarmConfiguration | undefined
+  for (const child of processors) {
+    const found = findAlarmConfiguration(child, depth + 1)
+    if (!found) continue
+    if (result) return undefined
+    result = found
+  }
+  return result
+}
+
 export function isDeviceAlarmPreprocess(row?: ThingPropertyPreprocess): boolean {
-  return Boolean(parseDeviceAlarmConfiguration(row))
+  return Boolean(findAlarmConfiguration(row))
 }
 
 export function normalizeAlarmSource(row?: ThingPropertyPreprocess): DeviceAlarmSource {
@@ -119,11 +148,14 @@ export function toDeviceAlarmRow(
   targetName: string,
   property?: ThingModelProperty,
 ): DeviceAlarmRow | null {
-  const alarmConfiguration = parseDeviceAlarmConfiguration(row)
+  const alarmConfiguration = findAlarmConfiguration(row)
   if (!alarmConfiguration) return null
   const processorConfig = alarmConfiguration.alarmProcessor.configuration ?? {}
   const notifyConfig = normalizeNotification(row.notifyConfig ?? alarmConfiguration.notifyProcessor?.configuration)
-  const matcherConfig = alarmConfiguration.matcher.configuration ?? {}
+  // Read the persisted recovery branch before applying the default for newly created notifications.
+  notifyConfig.relieveTopicProvider = alarmConfiguration.relieveNotifyProcessor
+    ? alarmConfiguration.relieveNotifyProcessor.configuration?.topicProvider ?? 'alarm-device'
+    : 'alarm-device-relieve'
   const propertyId = String(row.property ?? propertyIdOf(property ?? {}))
   const propertyName = String(row.propertyName ?? propertyNameOf(property ?? { id: propertyId }))
   const productId = String(row.templateId ?? '')
@@ -144,12 +176,10 @@ export function toDeviceAlarmRow(
     propertyName,
     propertyUnit: formatPropertyUnit(property?.valueType?.unit),
     level: normalizeLevel(processorConfig.alarmLevel),
-    trigger: matcherConfig.not === false ? 'inside' : 'outside',
-    limit: {
-      lower: toOptionalNumber(matcherConfig.min),
-      upper: toOptionalNumber(matcherConfig.max),
-    },
+    ...readCondition(alarmConfiguration.matcher)!,
     autoRelieve: Boolean(alarmConfiguration.relieveProcessor),
+    relieveCondition: alarmConfiguration.relieveMatcher && !areComplementaryMatchers(alarmConfiguration.matcher, alarmConfiguration.relieveMatcher)
+      ? readCondition(alarmConfiguration.relieveMatcher) : undefined,
     notificationConfigured: Boolean(row.notificationConfigured ?? isNotificationConfigured(notifyConfig)),
     notificationEnabled: Boolean(row.notificationEnabled ?? isNotificationEnabled(notifyConfig)),
     notification: notifyConfig,
@@ -201,7 +231,7 @@ export function buildPreprocessPayload(form: DeviceAlarmFormModel) {
   }
 
   const alarmConfiguration = {
-    matcher: buildNumberRangeMatcher(form),
+    matcher: buildCondition(form),
     processors,
   }
   if (!form.autoRelieve) {
@@ -224,12 +254,16 @@ export function buildPreprocessPayload(form: DeviceAlarmFormModel) {
         {
           provider: SIMPLE_PROCESSOR,
           configuration: {
-            matcher: buildNumberRangeMatcher(form, true),
+            matcher: buildCondition(recoveryCondition(form)),
             processors: [
               {
                 provider: DEVICE_ALARM_RELIEVE_PROCESSOR,
                 configuration: { ...alarmProcessorConfiguration },
               },
+              ...(notification?.includeRelieve ? [{ provider: NOTIFY_PROCESSOR,
+                configuration: { ...notification, event: 'relieve',
+                  ...(form.notification.relieveTopicProvider === 'alarm-device' ? {} : { topicProvider: 'alarm-device-relieve' }),
+                } }] : []),
             ],
           },
         },
@@ -238,21 +272,9 @@ export function buildPreprocessPayload(form: DeviceAlarmFormModel) {
   }
 }
 
-function buildNumberRangeMatcher(form: DeviceAlarmFormModel, inverted = false) {
-  const not = form.trigger === 'outside'
-  return {
-    provider: NUMBER_RANGE_MATCHER,
-    configuration: {
-      min: form.limit.lower,
-      max: form.limit.upper,
-      not: inverted ? !not : not,
-    },
-  }
-}
-
 /**
- * 只解析本页面拥有的两种配置：历史 simple 告警，或自动解除生成的标准 composite。
- * 任意其他复合处理器都不进入编辑链路，避免保存时丢失未知分支。
+ * 只解析单个告警单元：历史 simple 告警，或自动解除生成的标准 composite。
+ * 混合属性链由上层查找唯一单元，未知分支的编辑由完整配置编解码器拒绝。
  */
 function parseDeviceAlarmConfiguration(row?: ThingPropertyPreprocess): DeviceAlarmConfiguration | undefined {
   if (!row || !isRecord(row.configuration)) return undefined
@@ -279,17 +301,28 @@ function parseDeviceAlarmConfiguration(row?: ThingPropertyPreprocess): DeviceAla
 
   const alarm = alarmBranches[0]!.alarm!
   const relieve = relieveBranches[0]!.relieve!
-  if (!areComplementaryMatchers(alarm.matcher, relieve.matcher)) return undefined
-  return { ...alarm, relieveProcessor: relieve.processor }
+  // 只允许独立解除模板这一已知差异，其余外部通知差异保持只读。
+  if (relieve.notification) {
+    const { event, topicProvider, ...configuration } = relieve.notification.configuration ?? {}
+    const triggerConfiguration = { ...alarm.notifyProcessor?.configuration }
+    if (topicProvider !== undefined && !(topicProvider === 'alarm-device-relieve' && !triggerConfiguration.topicProvider)) {
+      configuration.topicProvider = topicProvider
+    }
+    if (event !== 'relieve' || !alarm.notifyProcessor?.configuration?.includeRelieve
+      || !isEqual(configuration, triggerConfiguration)) return undefined
+  } else if (alarm.notifyProcessor?.configuration?.includeRelieve) return undefined
+  // 回显只判断结构；类型与互斥性在保存时结合物模型校验，枚举的有限值域不能按无限集合推断。
+  return { ...alarm, relieveProcessor: relieve.processor, relieveMatcher: relieve.matcher, relieveNotifyProcessor: relieve.notification }
 }
 
 function parseAlarmBranch(configuration: Record<string, unknown>): DeviceAlarmConfiguration | undefined {
-  const matcher = numberRangeMatcher(configuration.matcher)
+  const matcher = supportedMatcher(configuration.matcher)
   const processors = directProcessors(configuration)
   if (!matcher || !processors) return undefined
   const alarms = processors.filter(item => item.provider === DEVICE_ALARM_PROCESSOR)
   const notifications = processors.filter(item => item.provider === NOTIFY_PROCESSOR)
-  if (alarms.length !== 1 || notifications.length > 1 || alarms.length + notifications.length !== processors.length) {
+  if (alarms.length !== 1 || notifications.length > 1
+    || processors.some(item => ![DEVICE_ALARM_PROCESSOR, NOTIFY_PROCESSOR, 'device-record'].includes(item.provider))) {
     return undefined
   }
   return {
@@ -300,11 +333,13 @@ function parseAlarmBranch(configuration: Record<string, unknown>): DeviceAlarmCo
 }
 
 function parseRelieveBranch(configuration: Record<string, unknown>) {
-  const matcher = numberRangeMatcher(configuration.matcher)
+  const matcher = supportedMatcher(configuration.matcher)
   const processors = directProcessors(configuration)
-  if (!matcher || !processors || processors.length !== 1) return undefined
+  if (!matcher || !processors || processors.length < 1 || processors.length > 2) return undefined
   const processor = processors[0]
-  return processor.provider === DEVICE_ALARM_RELIEVE_PROCESSOR ? { matcher, processor } : undefined
+  const notification = processors[1]
+  return processor.provider === DEVICE_ALARM_RELIEVE_PROCESSOR && (!notification || notification.provider === NOTIFY_PROCESSOR)
+    ? { matcher, processor, notification } : undefined
 }
 
 function directProcessors(configuration: Record<string, unknown>): Array<Record<string, any>> | undefined {
@@ -312,35 +347,38 @@ function directProcessors(configuration: Record<string, unknown>): Array<Record<
   return configuration.processors as Array<Record<string, any>>
 }
 
-function numberRangeMatcher(value: unknown): Record<string, any> | undefined {
-  if (!isRecord(value) || value.provider !== NUMBER_RANGE_MATCHER || !isRecord(value.configuration)) return undefined
+function supportedMatcher(value: unknown): Record<string, any> | undefined {
+  if (!isRecord(value) || !readCondition(value)) return undefined
   return value as Record<string, any>
 }
 
 function areComplementaryMatchers(left: Record<string, any>, right: Record<string, any>): boolean {
-  const leftConfig = left.configuration as Record<string, unknown>
-  const rightConfig = right.configuration as Record<string, unknown>
-  return toOptionalNumber(leftConfig.min) === toOptionalNumber(rightConfig.min)
-    && toOptionalNumber(leftConfig.max) === toOptionalNumber(rightConfig.max)
-    && typeof leftConfig.not === 'boolean'
-    && typeof rightConfig.not === 'boolean'
-    && leftConfig.not !== rightConfig.not
+  const condition = readCondition(left), recovery = readCondition(right)
+  return Boolean(condition && recovery && JSON.stringify(buildCondition(invertCondition(condition))) === JSON.stringify(buildCondition(recovery)))
 }
 
-export function formatRelieveText(row: Pick<DeviceAlarmRow, 'trigger' | 'limit' | 'propertyName'>) {
-  return formatTriggerText({
-    ...row,
-    trigger: row.trigger === 'inside' ? 'outside' : 'inside',
-  })
+export function formatRelieveText(row: DeviceAlarmCondition & { propertyName?: string; relieveCondition?: DeviceAlarmCondition }, property?: ThingModelProperty,
+  t: (key: string, values?: Record<string, string | number>) => string = i18n.global.t) {
+  return formatTriggerText({ ...row, ...(row.relieveCondition ?? invertCondition(row)) }, property, t)
 }
 
-export function formatTriggerText(row: Pick<DeviceAlarmRow, 'trigger' | 'limit' | 'propertyName'>) {
+export function formatTriggerText(row: DeviceAlarmCondition & { propertyName?: string }, property?: ThingModelProperty,
+  t: (key: string, values?: Record<string, string | number>) => string = i18n.global.t) {
   const lower = row.limit.lower ?? '-'
   const upper = row.limit.upper ?? '-'
   const propertyName = row.propertyName ? `${row.propertyName}` : ''
+  if (row.trigger !== 'inside' && row.trigger !== 'outside') {
+    const label = (value: unknown) => {
+      if (property?.valueType?.type === 'boolean') return value === true ? property.valueType.trueText ?? 'true' : property.valueType.falseText ?? 'false'
+      return property?.valueType?.elements?.find(item => item.value === value)?.text ?? (typeof value === 'string' ? JSON.stringify(value) : String(value ?? '—'))
+    }
+    const operator = ['in', 'nin'].includes(row.trigger) ? t(`DeviceAlarm.condition.${row.trigger}`) : conditionSymbols[row.trigger]
+    const expected = ['in', 'nin'].includes(row.trigger) ? (row.values ?? []).map(label).join('、') : label(row.value)
+    return `${propertyName}${propertyName ? ' ' : ''}${operator} ${expected}`
+  }
   return row.trigger === 'inside'
-    ? i18n.global.t('DeviceAlarm.triggerText.inside', { propertyName, lower, upper })
-    : i18n.global.t('DeviceAlarm.triggerText.outside', { propertyName, lower, upper })
+    ? t('DeviceAlarm.triggerText.inside', { propertyName, lower, upper })
+    : t('DeviceAlarm.triggerText.outside', { propertyName, lower, upper })
 }
 
 export function formatPropertyUnit(value: unknown): string | undefined {
@@ -361,9 +399,17 @@ export function levelTone(level: DeviceAlarmLevel): 'error' | 'warning' | 'proce
   return 'default'
 }
 
+/** Use the same localized fallback until the configured alarm levels are available. */
+export function defaultAlarmLevelOptions(t: (key: string) => string): AlarmLevelOption[] {
+  return ['emergency', 'urgent', 'severity', 'ordinary', 'warn']
+    .map((key, index) => ({ value: index + 1, label: t(`DeviceAlarm.level.${key}`) }))
+}
+
 export function createEmptyNotification() {
   return {
     enabled: false,
+    includeRelieve: false,
+    relieveTopicProvider: 'alarm-device-relieve' as const,
     userIds: [],
     channelProviders: [],
     parameters: {},
@@ -391,15 +437,21 @@ export function setNotificationMessageTemplate(
   const template = isRecord(parameters.template) ? parameters.template : {}
   const {
     messageTemplate: _messageTemplate,
-    variableDefinitions: _variableDefinitions,
     ...rest
   } = parameters
+  const definitions = Array.isArray(parameters.variableDefinitions) ? [...parameters.variableDefinitions] : []
+  for (const id of notificationDateVariables) {
+    if (message.includes(`\${${id}}`) && !definitions.some(item => item?.id === id)) {
+      definitions.push({ id, type: 'date', format: notificationDateFormat })
+    }
+  }
   notification.parameters = {
     ...rest,
     template: {
       ...template,
       message,
     },
+    ...(definitions.length ? { variableDefinitions: definitions } : {}),
   }
 }
 
@@ -432,6 +484,8 @@ export function normalizeNotification(value: unknown) {
     ...source,
     // 空通知配置不能被视为已启用；已有通知沿用后端省略 enabled 时的启用语义。
     enabled: source.enabled === undefined ? isNotificationConfigured(source) : Boolean(source.enabled),
+    includeRelieve: source.includeRelieve === true,
+    relieveTopicProvider: source.relieveTopicProvider === 'alarm-device' ? 'alarm-device' as const : 'alarm-device-relieve' as const,
     userIds: Array.isArray(source.userIds) ? source.userIds.map(String).filter(Boolean) : [],
     dimensions: Array.isArray(source.dimensions) ? source.dimensions : [],
     channelProviders: Array.isArray(source.channelProviders) ? source.channelProviders.map(String).filter(Boolean) : [],
@@ -459,6 +513,7 @@ function buildNotifyConfig(form: DeviceAlarmFormModel) {
   }
   return {
     enabled: notification.enabled,
+    includeRelieve: Boolean(form.autoRelieve && notification.includeRelieve),
     userIds: [...notification.userIds],
     dimensions: [...(notification.dimensions ?? [])],
     channelProviders: [...notification.channelProviders],

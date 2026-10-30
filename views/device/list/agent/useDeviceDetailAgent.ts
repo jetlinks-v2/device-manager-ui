@@ -206,6 +206,8 @@ export function useDeviceDetailAgent(options?: UseDeviceDetailAgentOptions) {
         t('systemPrompt.internal'),
         t('systemPrompt.navigation'),
         t('systemPrompt.tabs', { links: tabLinks }),
+        i18n.global.t('PropertyRuleAgent.usage'),
+        i18n.global.t('DeviceConnectionAgent.usage'),
       ].join('\n'),
       openingStatement: t(`opening.${status}`, { device: device.name }),
       promptExamples: promptKeysByStatus[status].map(key => t(key)),

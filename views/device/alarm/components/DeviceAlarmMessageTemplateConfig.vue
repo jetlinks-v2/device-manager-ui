@@ -39,7 +39,17 @@
       </div>
 
       <div class="device-alarm-message__preview">
-        <span>{{ $t('DeviceAlarm.notification.messagePreview') }}</span>
+        <div class="device-alarm-message__preview-heading">
+          <span>{{ $t('DeviceAlarm.notification.messagePreview') }}</span>
+          <a-radio-group
+            v-if="model.autoRelieve"
+            v-model:value="previewEvent"
+            size="small"
+            :options="previewEvents"
+            :aria-label="$t('DeviceAlarm.notification.preview.event')"
+            option-type="button"
+          />
+        </div>
         <p>{{ previewText || $t('DeviceAlarm.notification.messagePreviewEmpty') }}</p>
       </div>
     </template>
@@ -50,6 +60,7 @@
 import { computed, nextTick, ref, type PropType } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { DeviceAlarmFormModel } from '../types'
+import { createDefaultNotificationMessageTemplate, notificationMessageVariables, renderNotificationMessagePreview } from '../notificationMessageVariables'
 import {
   clearNotificationMessageTemplate,
   DEVICE_ALARM_NOTIFICATION_MESSAGE_MAX_LENGTH,
@@ -67,14 +78,9 @@ const props = defineProps({
 const { t: $t } = useI18n()
 const textareaRef = ref<{ resizableTextArea?: { textArea?: HTMLTextAreaElement } }>()
 const messageMaxLength = DEVICE_ALARM_NOTIFICATION_MESSAGE_MAX_LENGTH
-const variables = [
-  { id: 'targetName', labelKey: 'DeviceAlarm.notification.variable.targetName' },
-  { id: 'alarmConfigName', labelKey: 'DeviceAlarm.notification.variable.alarmConfigName' },
-  { id: 'propertyName', labelKey: 'DeviceAlarm.notification.variable.propertyName' },
-  { id: 'propertyValue', labelKey: 'DeviceAlarm.notification.variable.propertyValue' },
-  { id: 'level', labelKey: 'DeviceAlarm.notification.variable.level' },
-  { id: 'alarmTime', labelKey: 'DeviceAlarm.notification.variable.alarmTime' },
-]
+const variables = notificationMessageVariables
+const previewEvent = ref<'trigger' | 'relieve'>('trigger')
+const previewEvents = computed(() => ['trigger', 'relieve'].map(value => ({ value, label: $t(`DeviceAlarm.notification.preview.${value}`) })))
 
 const messageModeOptions = computed(() => [
   { label: $t('DeviceAlarm.notification.messageModeDefault'), value: 'default' },
@@ -91,7 +97,7 @@ const messageMode = computed<DeviceAlarmNotificationMessageMode>({
     const current = getNotificationMessageTemplate(props.model.notification)
     setNotificationMessageTemplate(
       props.model.notification,
-      current || $t('DeviceAlarm.notification.messageDefaultTemplate'),
+      current || createDefaultNotificationMessageTemplate($t),
     )
   },
 })
@@ -101,7 +107,7 @@ const messageTemplate = computed({
   set: (value: string) => setNotificationMessageTemplate(props.model.notification, value),
 })
 
-const previewText = computed(() => renderPreview(messageTemplate.value))
+const previewText = computed(() => renderNotificationMessagePreview(messageTemplate.value, props.model, $t, props.model.autoRelieve ? previewEvent.value : 'trigger'))
 
 function insertVariable(id: string) {
   const token = variableToken(id)
@@ -125,24 +131,6 @@ function variableToken(id: string) {
   return `\${${id}}`
 }
 
-function renderPreview(template: string) {
-  const values: Record<string, string> = {
-    targetName: props.model.targetName || props.model.deviceId || $t('DeviceAlarm.notification.preview.targetName'),
-    alarmConfigName: props.model.name || $t('DeviceAlarm.notification.preview.alarmConfigName'),
-    propertyName: props.model.propertyName || props.model.property || $t('DeviceAlarm.notification.preview.propertyName'),
-    propertyValue: $t('DeviceAlarm.notification.preview.propertyValue'),
-    level: $t(`DeviceAlarm.level.${levelKey(props.model.level)}`),
-    alarmTime: new Intl.DateTimeFormat(undefined, {
-      year: 'numeric', month: '2-digit', day: '2-digit',
-      hour: '2-digit', minute: '2-digit', second: '2-digit',
-    }).format(new Date()),
-  }
-  return template.replace(/\$\{([^}]+)}/g, (token, id: string) => values[id] ?? token)
-}
-
-function levelKey(level: number) {
-  return ['emergency', 'urgent', 'severity', 'ordinary', 'warn'][level - 1] ?? 'ordinary'
-}
 </script>
 
 <style scoped lang="less" src="./DeviceAlarmMessageTemplateConfig.less"></style>

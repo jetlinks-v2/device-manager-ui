@@ -103,6 +103,31 @@ test('a detail response arriving after disposal cannot rebuild subscriptions or 
   assert.deepEqual(f.calls, [])
 })
 
+test('embedded configuration panels reuse the host definition without snapshots or realtime subscriptions', async t => {
+  const f = fixture(t, { custom: false, properties: ['temperature'] })
+  const device = { id: 'A', productKey: 'product', name: 'Gateway', thingModelMetadata: { properties: [{ id: 'temperature' }] } }
+  f.context.props.embedded = { deviceId: 'A', deviceDetail: device, panel: 'property-rules', updatePermission: false }
+  f.context.mapApiDevice = value => value
+  let snapshots = 0
+  f.context.iotDeviceDetailRealApi.queryDashboard = async () => { snapshots++; return { result: [] } }
+
+  for (const panel of ['property-rules', 'thing-model']) {
+    f.context.props.embedded.panel = panel
+    await f.api.loadAll()
+    assert.equal(f.context.device.value.id, 'A')
+    assert.equal(f.context.instanceStore.current.productId, 'product')
+    assert.equal(snapshots, 0)
+    assert.equal(f.activeSubscriptions(), 0)
+    assert.deepEqual(f.calls, [])
+  }
+
+  f.context.props.embedded.panel = 'data'
+  await f.api.loadAll()
+  assert.equal(snapshots, 1, 'the data panel still loads its requested property snapshot')
+  assert.equal(f.activeSubscriptions(), 1)
+  assert.deepEqual(f.calls, [], 'embedded data must not load independent detail diagnostics')
+})
+
 test('a snapshot for the previous route cannot write values or start subscriptions', async t => {
   const f = fixture(t, { custom: false, properties: ['temperature'] })
   const response = deferred(), requested = deferred()

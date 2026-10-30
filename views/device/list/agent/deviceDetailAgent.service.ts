@@ -9,6 +9,10 @@ import { createDeviceDetailLogService } from './deviceDetailLog.service'
 import { createDeviceDetailMetricsService } from './deviceDetailMetrics.service'
 import { createDeviceDetailPropertyService } from './deviceDetailProperty.service'
 import { createDeviceDetailTraceService } from './deviceDetailTrace.service'
+import { queryDevicePropertyRules } from '../../../../agentCapabilities/deviceAnalysis/propertyRules/service'
+import { runDetailTool } from './deviceDetailAgent.shared'
+import type { PropertyRuleExplanation } from '../../../../agentCapabilities/deviceAnalysis/propertyRules/explain'
+import { queryDeviceConnectionSessions } from '../../../../agentCapabilities/deviceAnalysis/deviceConnection.service'
 
 export type DeviceDetailAgentServiceOptions = {
   tabSurface?: DeviceDetailAgentTabSurfaceOptions
@@ -20,8 +24,13 @@ export const createDeviceDetailAgentService = (
   device: IotDevice,
   options?: DeviceDetailAgentServiceOptions,
 ) => {
-  const resolveMetadata = createDeviceMetadataResolver(options?.getDevice ?? (() => device))
-  const diagnostics = createDeviceDetailDiagnosticsService(device, options?.tabSurface, resolveMetadata)
+  // A replacement page object can refresh facts, but cannot switch this service's authorized subject.
+  const getCurrentDevice = () => {
+    const latest = options?.getDevice?.()
+    return latest?.id === device.id ? latest : device
+  }
+  const resolveMetadata = createDeviceMetadataResolver(getCurrentDevice)
+  const diagnostics = createDeviceDetailDiagnosticsService(device, options?.tabSurface, resolveMetadata, getCurrentDevice)
   const access = createDeviceDetailAccessService(device)
   const alarm = createDeviceDetailAlarmService(device)
   const commands = createDeviceDetailCommandService(device)
@@ -40,6 +49,14 @@ export const createDeviceDetailAgentService = (
     ...properties,
     ...commands,
     ...edge,
+    connectionSessions: () => queryDeviceConnectionSessions(device.id),
+    // The verified host owns identity and metadata; tool arguments cannot switch to another device.
+    propertyRules: (args: Record<string, unknown>) => runDetailTool<PropertyRuleExplanation[]>([], async () => {
+      const current = getCurrentDevice()
+      const { metadata } = await resolveMetadata(device.id)
+      return queryDevicePropertyRules({ id: device.id, productId: current.productId ?? current.productKey ?? '',
+        properties: metadata.properties }, args)
+    }),
     traceCapture: trace.capture,
     dispose: trace.dispose,
   }
