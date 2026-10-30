@@ -114,6 +114,14 @@
 
 验证限制：在 `runtime-ui` 执行 `pnpm exec vue-tsc -p modules/device-manager-ui/tsconfig.json --noEmit`，被未改动的 `views/link/Certificate/type.d.ts:2` TS1005 语法错误阻断，修复后需重跑；工作区和模块未配置 lint 脚本。尚需在对应部署环境验证 SaaS 接入方式选择及私有化筛选（含所属组织）的完整页面交互；这些条件的字段配置与查询转换已有上述自动化检查。部署方式在构建时确定，切换需要重新构建。
 
+## 范围树计数量词
+
+目标与范围：运行时 `device-manager-ui` 左侧空间 / 分组树的中文计数保留“台”，英文只展示数字，避免将量词译为 `devices` 后挤占计数列并换行。按 S 级局部修复，调整 `locales/lang/en.json` 的 `IotDeviceList.scope.deviceCount` 为 `{count}`，沿用 `views/device/list/hooks/useIotDeviceScopeSidebar.ts#countText` 与现有侧栏布局；不改筛选、统计、接口或运营端 `ui/`。
+
+验证结果：所有模块语言资源 JSON 解析通过；实际 Vue I18n 中英文计数渲染 8 项检查通过，覆盖 `0`、`1`、`36`、`9999`，英文无量词，中文保留“台”；`git diff --check` 通过。
+
+验证限制：在 `runtime-ui` 执行 `pnpm exec vue-tsc -p modules/device-manager-ui/tsconfig.json --noEmit` 被未改动的 `views/link/Certificate/type.d.ts:2` TS1005 语法错误阻断，修复后需重跑。本模块与工作区无 lint 脚本；本次仅调整翻译资源，未运行生产构建或浏览器验证，发布前可执行 `pnpm -F jetlinks-web-core build -- --module-name device-manager-ui`，并在英文设备列表的空间 / 分组树确认计数单行展示。
+
 ## 概览累计活跃时长
 
 目标与范围：运行时 `device-manager-ui` 设备概览的累计活跃时长按“天、小时、分钟”完整显示，例如 `2621h 00m` 显示为 `109天 5小时 0分钟`；卡片与趋势提示复用 `components/device-detail/iotDeviceOverviewCharts.ts#formatDuration`，入口为 `components/device-detail/IotDeviceOverviewTab.vue`。

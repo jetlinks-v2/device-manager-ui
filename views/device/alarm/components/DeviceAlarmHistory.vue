@@ -67,12 +67,12 @@ function onRangeChange(value: [Dayjs, Dayjs] | [string, string] | null) {
 // 切换规则或页签时关闭旧快照，防止详情弹窗残留上一规则的记录。
 watch(() => [props.ruleKey, props.state.tab], () => { current.value = undefined })
 const columns = computed(() => props.state.tab === 'logs' ? [
-  { title: $t('DeviceAlarm.record.alarmTime'), dataIndex: 'alarmTime', key: 'time', width: 168 },
+  { title: $t('DeviceAlarm.record.alarmTime'), dataIndex: 'alarmTime', key: 'time', width: 180 },
   { title: $t('DeviceAlarm.record.sourceDevice'), dataIndex: 'sourceName', key: 'sourceName', ellipsis: true },
   { title: $t('DeviceAlarm.record.reason'), dataIndex: 'actualDesc', key: 'actualDesc', ellipsis: true },
   { title: $t('DeviceAlarm.column.action'), key: 'action', width: 60 },
 ] : [
-  { title: $t('DeviceAlarm.workspace.handleTime'), dataIndex: 'handleTime', key: 'time', width: 168 },
+  { title: $t('DeviceAlarm.workspace.handleTime'), dataIndex: 'handleTime', key: 'time', width: 180 },
   { title: $t('DeviceAlarm.workspace.handleType'), dataIndex: 'handleType', key: 'type', width: 110 },
   { title: $t('DeviceAlarm.workspace.handler'), dataIndex: 'creatorName', key: 'creatorName', width: 100 },
   { title: $t('DeviceAlarm.record.handleDescription'), dataIndex: 'description', key: 'description', ellipsis: true },
