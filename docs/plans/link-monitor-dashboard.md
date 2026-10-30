@@ -2,6 +2,34 @@
 
 ## 当前结论与目标
 
+### 统一声明与批量采集
+
+已确认将 Buffer、会话 / 通信、当前节点运维指标和近期历史的周期读取收敛到 `RuntimeWorkspace` 提供的页面采集管理器。业务 hook 声明节点、pattern、属性与 enabled，管理器统一去重、属性合并、周期、身份、取消及重连，按节点更新浅响应式快照。组件不持有周期 HTTP 任务；现有资源 WebSocket 与按需大窗口查询保留。后端 `POST /system/monitor/mbean/_batch` 不传 interval 仅一轮，传入后持续，Accept 独立协商 JSON / NDJSON；页面复用 NDJSON reader。
+
+实现入口：`api/link/mbeanCollection.ts` 复用平台 NDJSON reader、项目身份和取消；请求正文为 JSON，响应 Accept 为 NDJSON。`diagnostics/collection/manager.ts` 合并相同节点与 pattern 的属性，再仅按相同投影合并节点，避免将当前节点的近期历史扩大到全群。相同计划不重连，身份、周期、需求变化同步取消旧 revision，并在微任务中合并重建；同一次操作中多个业务源 refresh 只建立一个替代请求。断流指数退避，权限与永久 HTTP 请求错误不自动重试。`provideMBeanCollection.ts` 在 document 隐藏、页面停用与销毁时停止，恢复重新首采。Buffer reset 撤销目标需求建立屏障，结束后恢复首采，不再叠加显式读取。JVM 生命周期使用共享流的真实基线及本地单调显示时钟；一小时历史、显式操作和既有资源 WS 保持独立。
+
+长时间运行约束：reader 只保留未结束的一行，不累计整份响应；页面每帧只保留每个节点与查询的最新结果，保留首轮操作元数据，避免 SDK 每行 await 引起逐行 Vue 提交。元数据最多 4096 对象、2000000 字符；Buffer 保留 5 分钟，Session / 通信保留 10 分钟，按需历史和节点缓存各自有上限。离页 / 销毁同步撤销订阅并清空缓存，网络失败清掉待提交旧帧，隐藏暂停会通知历史断点。后端值与投影预算限制单条合法输出；平台 reader 尚无独立的异常无换行行长上限，因此本页只消费该受限接口。持续普通 JSON 的服务端编码同样增量；消费端若调用 `response.json()` 等待无限数组结束仍会积累内存，不适用于页面持续订阅。
+
+验证：运行监控 runtime 测试 324 项、模块构建及差异检查通过；新增声明、元数据帧合并、隐藏 / 恢复、错误取消、Buffer reset、权限、身份隔离、旧序号和历史窗口都有回归。全量类型检查未通过：当前 215 项，使用当前工作区依赖与 Git HEAD 宿主源码重建的基线 218 项，按文件 / TS 诊断归一比较无新增错误；本次文件无类型错误。本包没有独立 lint 脚本。后端契约与资源边界见 `jetlinks-components/common-component/README.md` 的“MBean 批量采集”；四种 Accept / interval 组合、授权与 RPC 及内存验证补充记录见根 `docs/plans/java-runtime-diagnostics.md`。
+
+浏览器长稳：真实平台 NDJSON reader、管理器、Vue、Buffer 与 Session / 通信业务 hook，300 个模拟节点、1 秒周期、每轮 900 条记录，持续约 31 分钟累计 1664100 条，仅建立 1 条 HTTP 请求。11–31 分钟 GC 后 JS 堆为 81.05 / 78.40 / 78.94 / 79.46 / 78.46 MiB；Buffer 历史固定约 300 点，Session 与通信约 600 点，渲染约 2 次/秒；共 21 次长任务，最长 59ms。Chrome 测试渲染进程累计 CPU 约 140 秒（约单核 7.6%），22–31 分钟 RSS 约 322→346 MiB，原生内存与 V8 保留仍有变化，不能将 JS 堆稳定等同总进程零增长。暂停后活动连接为 0，恢复为 1；最终代码另外反复重连 20 次并卸载，活动连接为 0、两类节点 Map 归零、GC 后 JS 堆约 2.6 MiB。夹具仅展示 12 行数据，不包含完整生产页面图表，不等价真实 300 节点集群或 24 小时运行。
+
+真实联调：8 个开发服务重启后，登录态页面正常展示 IoT 会话、通信近期历史、Buffer 与生命周期，批量流覆盖 8 节点，样本为 ready 或节点未提供该 MBean 时的 unsupported，没有采集 error / forbidden。固定需求连续观察 88 秒只有同一条活动 MBean 流；初次异步组件挂载会合并后取消旧计划，稳定后不随采集周期重建 HTTP。IoT / AI 节点往返、2 秒→5 秒→2 秒切换均取消旧流且仅保留一个替代流，5 秒实际采样间隔 5002–5007 ms。离开运行监控后活动采集请求为 0；后端单节点计数探针仅观察到自身 1 条流 / 1 个计划，重新进入恢复为一条持续流。真实接口四种 Accept / interval 组合均 HTTP 200；持续普通 JSON 在响应未结束时已读到两轮样本，随后可取消。
+
+本轮真实完整页面自然堆观测约 110–131 MiB，期间包含节点切换、图表历史和开发模块加载，未完成强制 GC 对照，不能据此宣称长期内存稳定；长期有界持有量证据仍以上述 31 分钟隔离测试及销毁结果为准。真实 300 节点、完整页面 24 小时运行与受限角色矩阵尚未验收。页面已恢复 IoT 节点及 2 秒偏好。
+
+### 多节点运行监控性能
+
+目标：节点数量增加时，单节点采样与秒级运行时长只更新相关展示，节点列表仅挂载可见行，历史证据不在每个节点工作区重复保存全群副本。用户已确认执行优化与验证；owning module 为 `runtime-ui/modules/device-manager-ui`。
+
+实施计划：1）移除 `RuntimeMonitor/index.vue` 与 `RuntimeNodeWorkspace.vue` 间未消费的 metrics 回传，保持运行时长在节点详情内更新；2）会话与 Buffer 采集使用稳定、浅响应式的节点 Map，以 key 隔离依赖并避免逐响应复制全群；3）沿用 Ant Tree，按可用视口提供高度及可测量行高，保留搜索、选择、Popover 和折叠；4）摘要复用按历史引用缓存的当前速率 / QPS 投影，避免每行反复构造完整曲线；5）收敛概览历史在同一身份 / 时间范围内的请求与缓存，节点工作区仅保留自身图表。范围不包含后端接口、原仪表盘交互、`ui/`、采集频率或权限调整。
+
+实现：`RuntimeMonitor/index.vue` 移除未消费的 metrics 回传，目录元数据与实时值分离，Tree 接入视口高度；`useClusterBuffers.ts` / `useClusterSessions.ts` 使用稳定的浅响应式 Map，保持快照不可变并按节点 key 通知；`useClusterWorkspace.ts` 保持未变化节点目录的引用。`NodeSummary.vue` 按通信历史引用缓存投影，`deviceMessageHistory.ts` 只计算最后速率所需的相邻样本，`deviceQps.ts` 的摘要保留代次和单调窗口校验但跳过曲线点构造。`diagnostics/overview/useResourceHistory.ts` 在页面内共享一个全群历史快照与在途请求，自动读取最多复用 60 秒，显式刷新绕过缓存，身份 / 查询权限变更同步清空，取消消费者独立计数；`useNodeMetrics.ts` 只保留本节点历史，显示真实查询范围与采样时间。
+
+验证结果：`node --test tests/runtime*.test.mjs` 全部 **318 / 318** 通过，覆盖采集并发 / 暂停 / 撤权 / 迟到响应、摘要精度与缺测 / 重启 / 校时、历史共享 / 到期 / 强制刷新及清理。真实根模板的 300 节点回归中，详情时钟变化从原先 300 行摘要更新降为 0 行，单节点 Buffer / 会话变化各更新 1 行，单节点资源更新不重建 Tree 目录，其他节点结果不使当前趋势对象失效。`pnpm build -- --module-name device-manager-ui` 通过（39.73 秒），仍有既有的大 chunk 提示；本包没有独立 lint 脚本，`git diff --check` 通过。`pnpm exec vue-tsc -p modules/device-manager-ui/tsconfig.runtime-diagnostics.json --noEmit` 未全量通过：当前与按 Git HEAD 源码读取的基线均为 **164 项既有错误**，诊断输出完全一致，本次没有新增错误。
+
+浏览器验证：当前 8 节点页面完成实时更新、搜索、节点往返、显式刷新与恢复；短时间往返未重复发起资源历史查询，显式刷新观察到 `/dashboard/_multi` 历史请求。820 × 900 视口自动使用节点选择器，无横向溢出，已恢复原视口与 `iot-service:8200`。额外在当前页面的临时区域挂载真实 Ant Tree 和 NodeSummary 的 300 个合成节点：测量后稳定挂载 8–9 行，可滚动并选择 `test-node-299`，92 / 114px 可变行高与 Buffer 提示消失后均无重叠；验证后已销毁临时区域。截图为 `/private/tmp/runtime-monitor-optimized.jpg`。多节点证据属于真实组件合成验证，尚未取得真实 300 节点集群的 FPS / 长任务数据；先前后端采样超时不计为前端性能改善。前端开发进程已按原后端代理配置重启并监听 9200。
+
 ### 火焰图阅读与诊断导出（已实现并完成集中检查）
 
 目标：大量样本 / 深调用栈仍能迅速辨认热点、阅读调用路径并保存诊断证据。Owning module 为 core `RuntimeDiagnostics/FlameGraphViewer.vue`、`flameGraph.ts`、`flameGraphHtml.ts` 与宿主 `diagnostics/useJvmDiagnostics.ts`，沿用现有 JFR 样本、权限与主题。本阶段不改变采样口径，不将样本占比表示为精确 CPU 耗时，不增加监控历史持久化或服务端 PDF 服务。

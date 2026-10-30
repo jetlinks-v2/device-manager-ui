@@ -60,6 +60,7 @@ function mountWorkspace(h, sessionSnapshots = new Map([['iot', { supported: true
     './RuntimeMonitor/useClusterWorkspace': { provideClusterWorkspace: () => ({ nodes: vue.ref([{ id: 'iot', alias: 'IoT' }]), scopeKey: vue.ref('scope'), discoveryScope: vue.ref('scope'), preferences }) },
     './RuntimeMonitor/useClusterSessions': { provideClusterSessions: (...args) => { sessionInterval = args[5]; return { snapshots: vue.ref(sessionSnapshots) } } },
     './diagnostics/preferences': { diagnosticIntervalSeconds: value => value ?? 3 },
+    './diagnostics/collection/provideMBeanCollection': { provideMBeanCollection: () => ({}) },
     './useRuntimeWorkspace': { useRuntimeWorkspace: () => h, clusterSessionSupport: h.module.clusterSessionSupport },
   }
   new Function('require', 'module', 'exports', code)(id => imports[id] ?? require(id), module, module.exports)

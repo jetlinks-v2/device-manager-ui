@@ -41,6 +41,7 @@ test('thread NDJSON uses platform context, decodes split multi-line records, and
   const headers = new Headers(requests[0].init.headers)
   assert.equal(headers.get('X-Access-Token'), 'context-token'); assert.equal(headers.get('X-Project-Id'), 'project-a')
   assert.equal(headers.get('Accept'), 'application/x-ndjson')
+  assert.equal(headers.get('Content-Type'), 'application/json')
   assert.deepEqual(JSON.parse(requests[0].init.body), {})
   await api.collectDiagnosticStream(api.streamDiagnostic('service:7100', 'jfr', signal), signal)
   assert.equal(requests[1].url, '/project-api/system/monitor/jfr/realtime?serverId=service%3A7100')
@@ -56,6 +57,30 @@ test('JFR request preparation is not a server acknowledgement; a real empty firs
   await flush(); assert.equal(prepare, 1)
   completeResponse(new Response('{"flameGraph":[],"objectAllocations":[]}\n'))
   assert.deepEqual(await pending, [{ flameGraph: [], objectAllocations: [] }])
+})
+
+test('batch collection posts a JSON plan, incrementally delivers NDJSON before EOF and cancels its reader', async t => {
+  const previous = globalThis.fetch, requests = [], rows = []
+  let cancelled = false
+  t.after(() => { globalThis.fetch = previous })
+  globalThis.fetch = async (url, init) => {
+    requests.push({ url, init })
+    return new Response(new ReadableStream({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode('{"success":true,"result":{"type":"sample","sequence":1}}\n{"type":"sample","sequence":2}\n'))
+      },
+      cancel() { cancelled = true },
+    }))
+  }
+  const api = loader({ './diagnosticStream': streamHarness() })(host('mbeanCollection.ts'))
+  const plan = { interval: '2s', queries: [{ id: 'count', nodeIds: ['a', 'b'], name: 'test:*', attributes: ['Count'] }] }
+  const subscription = api.streamMBeanCollection(plan).subscribe(row => rows.push(row))
+  await flush(); assert.deepEqual(rows.map(row => row.sequence), [1, 2])
+  assert.equal(requests[0].url, '/project-api/system/monitor/mbean/_batch')
+  assert.deepEqual(JSON.parse(requests[0].init.body), plan)
+  const headers = new Headers(requests[0].init.headers)
+  assert.equal(headers.get('Content-Type'), 'application/json'); assert.equal(headers.get('Accept'), 'application/x-ndjson')
+  subscription.unsubscribe(); await flush(); assert.equal(cancelled, true)
 })
 
 test('NDJSON failures reject rather than becoming empty snapshots; cancel releases its reader', async t => {

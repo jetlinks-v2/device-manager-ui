@@ -6,12 +6,14 @@ import { dirname, resolve } from 'node:path'
 import { transformSync } from 'esbuild'
 import * as vue from 'vue'
 import * as piniaRuntime from 'pinia'
+import { declarations } from './helpers/mbeanDeclarations.mjs'
 import { Subject } from 'rxjs'
 
 const require = createRequire(import.meta.url)
 const { createPinia, disposePinia, setActivePinia } = piniaRuntime
 const flush = async () => { await vue.nextTick(); await new Promise(done => setImmediate(done)); await vue.nextTick() }
 function harness(filename, options = {}) {
+  const collection = declarations(vue)
   const access = vue.ref({ enter: true, query: false, monitor: true, sessions: true, threads: true, jfr: true, exportJfr: true, heapDump: true, heap: true, invoke: true, trace: true, logs: true, ...options.access })
   const scopeKey = vue.ref({ accountId: 'alice', projectId: 'p1' }), route = vue.reactive({ path: options.path ?? (filename.startsWith('Tracing') ? '/infrastructure/tracing' : '/infrastructure/runtime-monitor'), query: options.query ?? {} }), navigation = [], calls = [], streams = [], deactivations = [], activations = []
   const pageActive = vue.ref(true), node = vue.ref('node-a'), tool = vue.ref(options.tool ?? 'jvm'), cache = new Map(), preference = vue.ref({ nodes: {} })
@@ -26,6 +28,7 @@ function harness(filename, options = {}) {
     if (cache.has(path)) return cache.get(path)
     const module = { exports: {} }, { code } = transformSync(readFileSync(path, 'utf8'), { loader: 'ts', format: 'cjs' })
     const imports = id => {
+      if (id.endsWith('collection/useMBeanCollection')) return collection
       if (id === 'vue') return { ...vue, onActivated: callback => activations.push(callback), onDeactivated: callback => deactivations.push(callback) }
       if (id === 'pinia') return piniaRuntime
       if (id === 'vue-router') return { useRoute: () => route, useRouter: () => router }
@@ -52,7 +55,7 @@ function harness(filename, options = {}) {
   let effect = vue.effectScope()
   const mount = () => effect.run(() => { setActivePinia(pinia); return filename.startsWith('Tracing') ? hook.useClusterTrace() : filename.includes('Operational') ? hook.useNodeOperationalSignals(node, pageActive, scopeKey) : filename.includes('DeviceSessions') ? hook.useDeviceSessions(node, pageActive, vue.ref(true)) : filename.includes('Jvm') ? hook.useJvmDiagnostics(node, tool, pageActive) : hook.useNodeDiagnostics(node, tool, pageActive) })
   const view = mount()
-  return { effect: { stop: () => { effect.stop(); disposePinia(pinia) } }, view, access, scopeKey, route, navigation, calls, streams, deactivations, activations, node, tool, pageActive, api,
+  return { collection, effect: { stop: () => { effect.stop(); disposePinia(pinia) } }, view, access, scopeKey, route, navigation, calls, streams, deactivations, activations, node, tool, pageActive, api,
     unmount: () => effect.stop(), remount: () => { effect.stop(); effect = vue.effectScope(); return mount() },
   }
 }
@@ -297,24 +300,18 @@ test('MBean specialized invocation receipts belong only to the settled request',
   } finally { changed.effect.stop() }
 })
 
-test('operational signals clear on identity changes without duplicate reads and reject late responses', async () => {
-  const pending = []
-  const source = (node, subscribers) => [{ status: 'fulfilled', value: { 'org.jetlinks': { EventBus: { events: { '@objectName': `org.jetlinks:type=EventBus,name=${node}`, StructuredBufferedEventCount: subscribers } } } } }, { status: 'rejected', reason: new Error('unavailable') }]
-  const h = harness('diagnostics/useNodeOperationalSignals.ts', { api: { queryOperationalMBeans: node => new Promise(done => pending.push({ node, done })) } })
+test('operational declarations clear evidence on identity changes and stop on permission withdrawal', () => {
+  const h = harness('diagnostics/useNodeOperationalSignals.ts')
+  const source = count => ({ 'org.jetlinks': { EventBus: { events: { '@objectName': 'org.jetlinks:type=EventBus,name=events', StructuredBufferedEventCount: count } } } })
   try {
-    assert.equal(pending.length, 1); pending[0].done(source('node-a', 1)); await flush()
-    assert.equal(h.view.signals.value[0].facts[0].value, '1')
-    h.node.value = 'node-b'; await flush()
-    assert.equal(pending.length, 2, 'a node switch starts one replacement request')
-    assert.equal(h.view.signals.value.length, 0, 'the old node facts are cleared before replacement')
-    h.scopeKey.value = 'scope-b'; await flush()
-    assert.equal(pending.length, 3, 'a scope switch starts one replacement request')
-    pending[1].done(source('node-b', 2)); await flush()
-    assert.equal(h.view.signals.value.length, 0, 'a canceled identity response cannot restore stale facts')
-    pending[2].done(source('node-b', 3)); await flush()
-    assert.equal(h.view.signals.value[0].facts[0].value, '3')
-    h.access.value = { ...h.access.value, monitor: false }; await flush()
-    assert.equal(h.view.signals.value.length, 0, 'permission revocation clears sensitive facts')
+    const push = (node, count) => h.collection.push(node, 'org.jetlinks:type=EventBus,*', source(count))
+    push('node-a', 1); assert.equal(h.view.signals.value[0].facts[0].value, '1')
+    h.node.value = 'node-b'; assert.equal(h.view.signals.value.length, 0)
+    push('node-a', 2); assert.equal(h.view.signals.value.length, 0)
+    h.scopeKey.value = 'scope-b'; assert.equal(h.view.signals.value.length, 0)
+    push('node-b', 3); assert.equal(h.view.signals.value[0].facts[0].value, '3')
+    h.access.value = { ...h.access.value, monitor: false }
+    assert.equal(h.view.signals.value.length, 0); assert.ok(h.collection.entries.every(entry => !entry.demand.enabled))
   } finally { h.effect.stop() }
 })
 

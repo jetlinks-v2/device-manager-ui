@@ -6,11 +6,20 @@ import { transformSync } from 'esbuild'
 const filename=resolve(import.meta.dirname,'../views/link/RuntimeMonitor/device-runtime/deviceQps.ts'),module={exports:{}},code=transformSync(readFileSync(filename,'utf8'),{loader:'ts',format:'cjs'}).code
 const gaugeModule={exports:{}};new Function('require','module','exports',transformSync(readFileSync(resolve(import.meta.dirname,'../views/link/diagnostics/overview/gaugeHistory.ts'),'utf8'),{loader:'ts',format:'cjs'}).code)(()=>{},gaugeModule,gaugeModule.exports)
 new Function('require','module','exports',code)(id=>id.endsWith('gaugeHistory')?gaugeModule.exports:undefined,module,module.exports)
-const {readDeviceQps,deviceQpsView}=module.exports
+const {readDeviceQps,deviceQpsView,deviceQpsSummary}=module.exports
 const values={receivedQps:4.1,sentQps:1.1,communicationQps:5.2}
 const qps=(timestamp=6500,extra={})=>({ready:true,timestamp,windowMillis:1000,sequence:String(Math.floor(timestamp/100)),values:{...values},...extra})
 const sample=(timestamp=7000,source=qps(),startTime='1000')=>({timestamp,startTime,counters:{receivedPackets:'999999',sentPackets:'888888'},qps:source})
 const bean=(patch={},missing=[])=>({attributes:[{name:'QpsSnapshot',available:true,value:Object.fromEntries(Object.entries({ReceivedQps:4.1,SentQps:1.1,CommunicationQps:5.2,QpsSampleTime:6500,QpsWindowMillis:1000,QpsReady:true,QpsWindowSequence:'65',...patch}).filter(([key])=>!missing.includes(key)))}]})
+
+test('summary shares chart semantics for gaps, repeated windows, rollback, resets, unsupported and invalid sources',()=>{
+ const cases=[[],[sample()],[sample(),{timestamp:7000}],[sample(),sample(10000)],[sample(),sample(7100)],
+  [sample(),sample(8000,qps(6000))],[sample(),sample(10000,qps(9500),'9000')],
+  [sample(),{timestamp:7000},sample(10000,qps(9500))],[sample(),{...sample(8000),qps:undefined}],
+  [sample(),sample(8000,{ready:false,invalid:true})],
+  [sample(),sample(700,{...qps(600),sequence:'80'})]]
+ for(const samples of cases){const {history,...expected}=deviceQpsView(samples);assert.deepEqual(deviceQpsSummary(samples),expected)}
+})
 
 test('QPS is available from the first ready backend window without two frontend reads and preserves backend total exactly',()=>{
  const source=readDeviceQps(bean(),1000);assert.deepEqual(source.values,values);assert.equal(readDeviceQps(bean({QpsSampleTime:900})).ready,true)

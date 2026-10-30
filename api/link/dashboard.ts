@@ -1,7 +1,7 @@
 import { request } from '@jetlinks-web/core'
 
-export const dashboard = (data: object) =>
-    request.post(`/dashboard/_multi`, data);
+export const dashboard = (data: object, signal?: AbortSignal) =>
+    request.post(`/dashboard/_multi`, data, { signal });
 export const productCount = (data: object) =>
     request.post(`/device-product/_count`, data);
 export const getGeo = (data: object) =>

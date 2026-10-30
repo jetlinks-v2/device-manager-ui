@@ -44,6 +44,10 @@ function createClusterWorkspace(viewActive?: Ref<boolean>, workspaceActive?: Ref
   })
   // 搜索只过滤树内容，不能把多实例误判成单实例布局。
   const showNodeSelector = computed(() => nodes.value.length > 1)
+  const nodeIds = computed<string[]>((previous) => {
+    const next = nodes.value.map(node => node.id)
+    return previous && previous.length === next.length && next.every((id, index) => id === previous[index]) ? previous : next
+  })
   const scopeKey = computed(() => preferences.key.value ?? JSON.stringify(scope.value))
   const filtered = computed(() => nodes.value.filter(node => `${node.id} ${node.alias ?? ''}`.toLowerCase().includes(search.value.toLowerCase())))
   const current = computed(() => nodes.value.find(node => node.id === selected.value))
@@ -89,7 +93,7 @@ function createClusterWorkspace(viewActive?: Ref<boolean>, workspaceActive?: Ref
     const next = typeof route.query.tool === 'string' && allowedTool(tab.value) ? tab.value : cached && allowedTool(cached) ? cached : 'overview'
     if (tab.value !== next || route.query.tool === undefined && next !== 'overview') selectTab(next)
   }, { immediate: true })
-  return { runtime, access, membership, discoveryScope, search, selected, tab, nodes, filtered, current, showNodeSelector, canDiscover, scopeKey, active, ownerActive, preferences, select, selectTab, loadNodes }
+  return { runtime, access, membership, discoveryScope, search, selected, tab, nodes, nodeIds, filtered, current, showNodeSelector, canDiscover, scopeKey, active, ownerActive, preferences, select, selectTab, loadNodes }
 }
 export function useClusterWorkspace() { return inject(workspaceContext, undefined) ?? createClusterWorkspace() }
 export function provideClusterWorkspace(...args: Parameters<typeof createClusterWorkspace>) { const value = createClusterWorkspace(...args); provide(workspaceContext, value); return value }
