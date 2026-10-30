@@ -2,7 +2,7 @@ import { computed, inject, onActivated, onDeactivated, onMounted, onScopeDispose
 import dayjs from 'dayjs'
 import { subscribeRealtimeResources, type MonitorSubscriber, type MonitorSubscription } from '../services/realtime'
 import { createRealtimeNodeNormalizer, defaultFocusedRealtimeNodes, type RealtimeNode } from '../utils/realtimeResourceData'
-import { FOCUSED_NODES_STORAGE_KEY, readFocusedNodes, reconcileFocusedNodes } from '../utils/focusedNodes'
+import { FOCUSED_NODES_STORAGE_KEY, readFocusedNodes, readNetworkFocusMode, reconcileFocusedNodes } from '../utils/focusedNodes'
 import type { FocusScope, FocusSelections } from '../types'
 
 interface RuntimeOptions {
@@ -24,10 +24,13 @@ export function createSystemMonitorRuntime(isEdit: Ref<boolean>, options: Runtim
   const topologyVersion = ref(0)
   const selectedNodes = reactive<FocusSelections>({ cpu: [], memory: [], network: [] })
   const initialized: Record<FocusScope, boolean> = { cpu: false, memory: false, network: false }
-  const scopes: FocusScope[] = ['cpu', 'memory', 'network']
+  const resourceScopes: FocusScope[] = ['cpu', 'memory']
   let storage = options.persistFocus === false ? undefined : options.storage
   try { if (options.persistFocus !== false) storage ??= typeof localStorage === 'undefined' ? undefined : localStorage } catch { /* Disabled browser storage. */ }
   const cachedNodes = readFocusedNodes(storage)
+  const networkFocusMode = ref(readNetworkFocusMode(storage))
+  // 历史可能先于实时返回，保存网络默认时也需保留尚未核对拓扑的 CPU / 内存缓存。
+  Object.assign(selectedNodes, cachedNodes)
   const normalize = createRealtimeNodeNormalizer()
   let subscription: MonitorSubscription | undefined
   let timeout: ReturnType<typeof setTimeout> | undefined
@@ -39,12 +42,24 @@ export function createSystemMonitorRuntime(isEdit: Ref<boolean>, options: Runtim
   const nodeIds = computed(() => nodes.value.map(node => node.nodeId))
 
   function persist() {
-    try { storage?.setItem(FOCUSED_NODES_STORAGE_KEY, JSON.stringify(selectedNodes)) } catch { /* Keep in-session focus. */ }
+    try { storage?.setItem(FOCUSED_NODES_STORAGE_KEY, JSON.stringify({ ...selectedNodes, networkMode: networkFocusMode.value })) } catch { /* Keep in-session focus. */ }
   }
 
   function selectNodes(scope: FocusScope, values: string[]) {
     initialized[scope] = true
+    if (scope === 'network') networkFocusMode.value = 'manual'
     selectedNodes[scope] = [...new Set(values)]
+    persist()
+  }
+
+  /** 网络默认由当前历史指标提供；相同选择不重置图表缩放或重复写缓存。 */
+  function selectNetworkDefaults(values: string[]) {
+    const next = [...new Set(values)]
+    const unchanged = next.length === selectedNodes.network.length
+      && next.every((value, index) => value === selectedNodes.network[index])
+    if (networkFocusMode.value === 'auto' && unchanged) return
+    networkFocusMode.value = 'auto'
+    if (!unchanged) selectedNodes.network = next
     persist()
   }
 
@@ -84,10 +99,14 @@ export function createSystemMonitorRuntime(isEdit: Ref<boolean>, options: Runtim
           signature = nextSignature
           nodes.value = next
           if (next.length) {
-            for (const scope of scopes) {
+            for (const scope of resourceScopes) {
               selectedNodes[scope] = reconcileFocusedNodes(next, selectedNodes[scope], initialized[scope], cachedNodes[scope])
               initialized[scope] = true
             }
+            // 网络只清理离开的节点，不使用 CPU / 内存压力补回默认选择。
+            const available = new Set(next.map(node => node.nodeId))
+            const retained = selectedNodes.network.filter(nodeId => available.has(nodeId))
+            if (retained.length !== selectedNodes.network.length) selectedNodes.network = retained
             persist()
           }
           updatedAt.value = dayjs().format('HH:mm:ss')
@@ -106,7 +125,7 @@ export function createSystemMonitorRuntime(isEdit: Ref<boolean>, options: Runtim
   onDeactivated(() => { active = false; stop() })
   onScopeDispose(stop)
   watch(isEdit, () => { stop(); start() })
-  return { nodes, nodeIds, defaultNodes, selectedNodes, topologyVersion, loading, error, updatedAt, selectNodes, refresh }
+  return { nodes, nodeIds, defaultNodes, selectedNodes, topologyVersion, loading, error, updatedAt, networkFocusMode, selectNodes, selectNetworkDefaults, refresh }
 }
 
 export type SystemMonitorRuntime = ReturnType<typeof createSystemMonitorRuntime>
