@@ -5,15 +5,17 @@ import { createRequire } from 'node:module'
 import { dirname, resolve } from 'node:path'
 import { transformSync } from 'esbuild'
 import * as vue from 'vue'
+import { declarations } from './helpers/mbeanDeclarations.mjs'
 
 const require = createRequire(import.meta.url), root = resolve(import.meta.dirname, '..')
 const epoch = Date.UTC(2026, 9, 26, 1), flush = async () => { await vue.nextTick(); await new Promise(done => setImmediate(done)); await vue.nextTick() }
-function loader(api = {}) {
+function loader(api = {}, collection) {
   const cache = new Map()
   function load(path) {
     if (cache.has(path)) return cache.get(path)
     const module = { exports: {} }, { code } = transformSync(readFileSync(path, 'utf8'), { loader: 'ts', format: 'cjs' })
     new Function('require', 'module', 'exports', code)(id => {
+      if (id.endsWith('collection/useMBeanCollection')) return collection
       if (id === 'vue') return vue
       if (id === '@jetlinks-web-core/components/RuntimeDiagnostics') return load(resolve(import.meta.dirname, '../../../jetlinks-web-core/src/components/RuntimeDiagnostics/samplingInterval.ts'))
       if (id.endsWith('api/link/diagnostics')) return api
@@ -78,105 +80,86 @@ test('summary and history attributes can cross several second boundaries without
   assert.equal(pure.readDeviceRecording(b).points.at(-1).sequence, 59)
 })
 
-function harness(fetch = async (node, signal, hour) => raw({ hour })) {
-  const calls = [], api = { queryDeviceMessageRecording: (node, signal, hour) => { calls.push({ node, signal, hour }); return fetch(node, signal, hour) } }
-  const module = loader(api)(resolve(root, 'views/link/RuntimeMonitor/device-runtime/useDeviceMessageRecording.ts'))
+function harness(fetch = async () => raw({ hour: true })) {
+  const collection = declarations(vue), calls = []
+  const api = { queryDeviceMessageRecording: (node, signal, hour) => { calls.push({ node, signal, hour }); return fetch(node, signal, hour) } }
+  const module = loader(api, collection)(resolve(root, 'views/link/RuntimeMonitor/device-runtime/useDeviceMessageRecording.ts'))
   const node = vue.ref('a'), enabled = vue.ref(true), scope = vue.ref('alice'), interval = vue.ref(3), generation = vue.ref('42'), effect = vue.effectScope()
-  return { ...effect.run(() => module.useDeviceMessageRecording(node, enabled, scope, interval, generation)), node, enabled, scope, interval, generation, effect, calls }
+  return { ...effect.run(() => module.useDeviceMessageRecording(node, enabled, scope, interval, generation)), node, enabled, scope, interval, generation, effect, calls, collection,
+    push: (value = raw(), target = node.value) => collection.push(target, 'org.jetlinks:type=DeviceMessageMonitor,name=DeviceMessageMonitor', value),
+    fail: reason => collection.fail(node.value, 'org.jetlinks:type=DeviceMessageMonitor,name=DeviceMessageMonitor', reason) }
 }
-
-test('recent history polls after completion; hour history is fetched only on demand and focus survives tab pause', async t => {
-  t.mock.timers.enable({ apis: ['setTimeout'] })
+test('recent history declares its projection; hour history stays on demand and focus survives pause', async () => {
   const h = harness()
   try {
-    await flush(); assert.equal(h.calls.length, 1); assert.equal(h.calls[0].hour, undefined)
+    assert.deepEqual(h.collection.entries[0].demand.attributes, ['HistorySummary', 'RecentHistory'])
+    assert.equal(h.calls.length, 0); h.push()
     const selection = { peak: h.view.value.data.hourPeaks[0], scope: 'hour' }
-    await h.select(selection); assert.equal(h.calls.length, 1)
+    await h.select(selection); assert.equal(h.calls.length, 0); assert.equal(h.view.value.focus.peak.sequence, 30)
+    h.enabled.value = false; assert.equal(h.collection.entries[0].demand.enabled, false)
     assert.equal(h.view.value.focus.peak.sequence, 30)
-    h.enabled.value = false; await flush(); assert.equal(h.view.value.focus.peak.sequence, 30)
-    t.mock.timers.tick(60000); await flush(); assert.equal(h.calls.length, 1)
-    h.enabled.value = true; await flush(); assert.equal(h.calls.length, 2)
+    h.enabled.value = true; h.push()
     await h.select({ peak: { ...selection.peak, sequence: -100 }, scope: 'today' })
-    assert.equal(h.calls.at(-1).hour, true); assert.equal(h.view.value.outside, true)
-    assert.equal(h.view.value.points.length, 60)
+    assert.equal(h.calls.length, 1); assert.equal(h.calls[0].hour, true)
+    assert.equal(h.view.value.outside, true); assert.equal(h.view.value.points.length, 60)
     h.live(); assert.equal(h.view.value.focus, undefined)
   } finally { h.effect.stop() }
 })
-
-test('node changes cancel late responses, restore completed evidence and isolate identity', async () => {
-  const pending = [], h = harness((node, signal) => new Promise(done => pending.push({ node, signal, done })))
+test('node changes restore completed evidence, isolate identity and reject old-node samples', () => {
+  const h = harness()
   try {
-    pending[0].done(raw()); await flush()
-    h.node.value = 'b'; await flush(); assert.equal(h.view.value.data, undefined)
-    h.node.value = 'a'; await flush(); assert.equal(pending[1].signal.aborted, true)
-    assert.equal(h.view.value.data.generation, '42')
-    pending[1].done(raw({ generation: 99 })); await flush(); assert.equal(h.view.value.data.generation, '42')
-    h.scope.value = 'bob'; await flush(); assert.equal(h.view.value.data, undefined)
-    assert.equal(pending[2].signal.aborted, true)
+    h.push(); h.node.value = 'b'; assert.equal(h.view.value.data, undefined)
+    h.node.value = 'a'; assert.equal(h.view.value.data.generation, '42')
+    h.push(raw({ generation: 99 }), 'b'); assert.equal(h.view.value.data.generation, '42')
+    h.scope.value = 'bob'; assert.equal(h.view.value.data, undefined)
+    h.push(); h.generation.value = '99'; assert.equal(h.view.value.data, undefined)
   } finally { h.effect.stop() }
 })
-
-test('temporary failure retains evidence and malformed history cannot overwrite a completed curve', async () => {
-  let attempt = 0
-  const h = harness(async () => { if (attempt++ === 0) return raw(); throw new Error('offline') })
+test('transient errors preserve completed curves and refresh delegates to page collection', () => {
+  const h = harness()
   try {
-    await flush(); await h.refresh()
-    assert.equal(h.view.value.state, 'stale'); assert.equal(h.view.value.points.length, 60)
+    h.push(); h.fail(new Error('offline')); assert.equal(h.view.value.state, 'stale'); assert.equal(h.view.value.points.length, 60)
+    h.refresh(); assert.equal(h.collection.refreshes.length, 1)
   } finally { h.effect.stop() }
 })
-
-test('authorization denial clears retained evidence and stops automatic retries', async t => {
-  t.mock.timers.enable({ apis: ['setTimeout'] })
-  let attempt = 0
-  const h = harness(async () => { if (attempt++ === 0) return raw(); throw { status: 403 } })
+test('authorization denial clears evidence and reactively withdraws the declaration until explicit retry', () => {
+  const h = harness()
   try {
-    await flush(); await h.refresh()
+    h.push(); h.fail({ status: 403 })
     assert.equal(h.view.value.state, 'error'); assert.equal(h.view.value.data, undefined)
-    t.mock.timers.tick(60000); await flush(); assert.equal(attempt, 2)
+    assert.equal(h.collection.entries[0].demand.enabled, false)
+    h.push(); assert.equal(h.view.value.data, undefined)
+    h.refresh(); assert.equal(h.collection.entries[0].demand.enabled, true)
+    h.push(); assert.equal(h.view.value.state, 'ready')
   } finally { h.effect.stop() }
 })
-
-test('malformed MBean source stays retryable and retains the last completed history', async () => {
+test('malformed source stays retryable and never overwrites the completed curve', () => {
   for (const invalid of [null, [], { 'org.jetlinks': [] }, { 'org.jetlinks': { DeviceMessageMonitor: { invalid: null } } }]) {
-    let attempt = 0
-    const h = harness(async () => attempt++ === 0 ? raw() : invalid)
+    const h = harness()
     try {
-      await flush(); await h.refresh()
+      h.push(); h.push(invalid)
       assert.equal(h.view.value.state, 'stale'); assert.equal(h.view.value.points.length, 60)
     } finally { h.effect.stop() }
   }
 })
-
-test('a node without the history capability returns to live data without keeping a previous peak marker', async () => {
-  let attempt = 0
-  const h = harness(async () => attempt++ === 0 ? raw() : {})
+test('withdrawn history capability clears previous peak marker and data', async () => {
+  const h = harness()
   try {
-    await flush()
-    await h.select({ peak: h.view.value.data.hourPeaks[0], scope: 'hour' })
-    assert.ok(h.view.value.focus)
-    await h.refresh()
-    assert.equal(h.view.value.state, 'unsupported'); assert.equal(h.view.value.data, undefined)
+    h.push(); await h.select({ peak: h.view.value.data.hourPeaks[0], scope: 'hour' }); assert.ok(h.view.value.focus)
+    h.push({}); assert.equal(h.view.value.state, 'unsupported'); assert.equal(h.view.value.data, undefined)
     assert.equal(h.view.value.focus, undefined); assert.equal(h.view.value.outside, false)
   } finally { h.effect.stop() }
 })
-
-test('hour history denial also cancels a concurrent refresh and clears all retained evidence', async t => {
-  t.mock.timers.enable({ apis: ['setTimeout'] })
-  let attempt = 0, late
-  const h = harness((node, signal, hour) => {
-    attempt++
-    if (hour) return Promise.reject({ response: { status: 403 } })
-    return attempt === 1 ? Promise.resolve(raw()) : new Promise(done => { late = done })
-  })
+test('hour denial withdraws recent collection and canceled hour response cannot restore old identity', async () => {
+  const pending = [], h = harness((_node, signal) => new Promise(done => pending.push({ signal, done })))
   try {
-    await flush()
-    const selection = { peak: { ...h.view.value.data.hourPeaks[0], sequence: -100 }, scope: 'today' }
-    const refresh = h.refresh()
-    await h.select(selection)
-    assert.equal(h.calls[1].signal.aborted, true)
-    late(raw()); await refresh; await flush()
+    h.push(); const selection = { peak: { ...h.view.value.data.hourPeaks[0], sequence: -100 }, scope: 'today' }
+    const first = h.select(selection); h.node.value = 'b'; assert.equal(pending[0].signal.aborted, true)
+    pending[0].done(raw({ hour: true })); await first; assert.equal(h.view.value.data, undefined)
+    h.node.value = 'a'; h.push()
+    const second = h.select(selection); h.fail({ response: { status: 403 } })
+    assert.equal(pending[1].signal.aborted, true); assert.equal(h.collection.entries[0].demand.enabled, false)
+    pending[1].done(raw({ hour: true })); await second
     assert.equal(h.view.value.state, 'error'); assert.equal(h.view.value.data, undefined)
-    assert.equal(h.view.value.focus, undefined)
-    t.mock.timers.tick(60000); await flush(); assert.equal(attempt, 3)
   } finally { h.effect.stop() }
 })

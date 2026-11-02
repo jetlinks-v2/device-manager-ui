@@ -39,6 +39,16 @@ export function qpsClockDiscontinuity(previous?: DeviceQpsSnapshot, current?: De
 
 /** 独立服务端采样时间去重；代次、暂停、非法快照和过期快照均打断曲线。 */
 export function deviceQpsView(samples: readonly DeviceMessageSample[]): DeviceQpsView {
+  return projectDeviceQps(samples, true)
+}
+
+/** 摘要沿用完整代次 / 单调窗口校验，但不创建图表点或查找重复点。 */
+export function deviceQpsSummary(samples: readonly DeviceMessageSample[]): Omit<DeviceQpsView, 'history'> {
+  const { history: _, ...summary } = projectDeviceQps(samples, false)
+  return summary
+}
+
+function projectDeviceQps(samples: readonly DeviceMessageSample[], includeHistory: boolean): DeviceQpsView {
   const history: DeviceQpsPoint[] = []
   let result: DeviceQpsView = { supported: false, ready: false, stale: false, history }
   let generation: string | undefined, latestSequence: string | undefined, latestSource: DeviceQpsSnapshot | undefined, latestReadTime: number | undefined
@@ -59,6 +69,7 @@ export function deviceQpsView(samples: readonly DeviceMessageSample[]): DeviceQp
     latestSequence = source.sequence
     latestSource = source
     if (stale) { interrupt(); continue }
+    if (!includeHistory) continue
     const point = { timestamp: source.timestamp, windowMillis: source.windowMillis, sequence: source.sequence, values: source.values }
     if (repeated) {
       const index = history.findLastIndex(item => item.sequence === source.sequence)

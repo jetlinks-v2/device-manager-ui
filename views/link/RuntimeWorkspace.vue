@@ -16,11 +16,13 @@ import { provideClusterWorkspace } from './RuntimeMonitor/useClusterWorkspace'
 import { provideClusterSessions } from './RuntimeMonitor/useClusterSessions'
 import { clusterSessionSupport, useRuntimeWorkspace } from './useRuntimeWorkspace'
 import { diagnosticIntervalSeconds } from './diagnostics/preferences'
+import { provideMBeanCollection } from './diagnostics/collection/provideMBeanCollection'
 const DeviceConnectionsWorkspace = defineAsyncComponent(() => import('./RuntimeMonitor/DeviceConnectionsWorkspace.vue'))
 const { root, active, view, access, selectView } = useRuntimeWorkspace(), { t } = useI18n()
 const cluster = provideClusterWorkspace(computed(() => active.value && view.value === 'cluster'), active)
+const collection = provideMBeanCollection(cluster.scopeKey, computed(() => active.value && access.value.monitor), computed(() => cluster.preferences.value.value.bufferIntervalSeconds))
 // 能力目录属于整个工作区，切换一级视图仍可轻量发现；完整设备结果由连接页按需查询。
-const sessions = provideClusterSessions(computed(() => cluster.nodes.value.map(node => node.id)), computed(() => active.value && access.value.monitor), cluster.scopeKey, cluster.discoveryScope, computed(() => access.value.monitor), computed(() => diagnosticIntervalSeconds(cluster.preferences.value.value.bufferIntervalSeconds)))
+const sessions = provideClusterSessions(cluster.nodeIds, computed(() => active.value && access.value.monitor), cluster.scopeKey, cluster.discoveryScope, computed(() => access.value.monitor), computed(() => diagnosticIntervalSeconds(cluster.preferences.value.value.bufferIntervalSeconds)), collection)
 const supported = computed(() => clusterSessionSupport(cluster.nodes.value.map(node => node.id), sessions.snapshots.value))
 const tabs = computed<SlantedTabOption[]>(() => [
   ...(access.value.enter ? [{ key: 'cluster', label: t('RuntimeMonitor.clusterMonitoring') }] : []),
