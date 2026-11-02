@@ -5,12 +5,14 @@ import {
   type HomeAgentCapabilityProvider,
 } from '@jetlinks-web-core/layout/components/AiChat/homeAgentCapabilities';
 import type { AiClientToolDefinition } from '@jetlinks-web-core/layout/components/AiChat/clientTools';
+import { clientToolOutput, defineClientTool } from '@jetlinks-web-core/layout/components/AiChat/clientToolApi';
+import { adaptDeviceSearchPage } from '../../../agentCapabilities/deviceSearchResult';
 import { saveAiAgentHandoff } from '@jetlinks-web-core/layout/components/AiChat/agentHandoff';
-import { getOrgList, query } from '../../../api/instance';
+import { getOrgList, queryDetails } from '../../../api/instance';
+import { findDeviceAgentMenu, isDeviceAgentMenuRoute } from '../../../agentCapabilities/deviceMenus';
+import { resolveDeviceAgentDetailNavigation } from '../../../agentCapabilities/deviceAgentNavigation';
+import { toDevice } from '../../../api/device';
 
-const DEVICE_INSTANCE_MENU_CODE = 'device/Instance';
-const DEVICE_INSTANCE_DETAIL_ROUTE = 'device/Instance/Detail';
-const DEVICE_INSTANCE_PATH = '/iot/device/Instance';
 const DEVICE_INSTANCE_SEARCH_TOOL = 'device_instance_search';
 const DEVICE_DETAIL_AGENT_CLIENT_ID = 'deviceDetailChat';
 const DEVICE_AGENT_SUBJECT_TYPE = 'device';
@@ -90,6 +92,7 @@ const isPositiveHandoffIntent = (value: unknown) => {
 };
 
 const createDeviceAgentHandoff = (
+  target: NonNullable<ReturnType<typeof resolveDeviceAgentDetailNavigation>>,
   deviceId: string,
   userGoal: unknown,
   fallbackPrompt: string,
@@ -107,16 +110,18 @@ const createDeviceAgentHandoff = (
     prompt,
     context,
     source: 'device-instance-home',
-    routeName: DEVICE_INSTANCE_DETAIL_ROUTE,
-    menuCode: DEVICE_INSTANCE_MENU_CODE,
+    routeName: target.routeName,
+    menuCode: target.menu.code,
+    path: target.path,
   });
 };
 
-const buildDeviceDetailLink = (deviceId: string) => {
+const buildDeviceDetailLink = (target: NonNullable<ReturnType<typeof resolveDeviceAgentDetailNavigation>>) => {
   const params = new URLSearchParams({
-    route: DEVICE_INSTANCE_DETAIL_ROUTE,
-    menu: DEVICE_INSTANCE_MENU_CODE,
-    id: deviceId,
+    route: target.routeName,
+    menu: target.menu.code,
+    params: JSON.stringify(target.params),
+    query: JSON.stringify(target.query),
   });
   return `#${params.toString()}`;
 };
@@ -127,14 +132,11 @@ const toPageIndex = (value: unknown) => {
 };
 
 const isDeviceInstanceRoute = (context: HomeAgentCapabilityContext) => (
-  context.currentRoute.path === DEVICE_INSTANCE_PATH
-  || context.currentRoute.name === DEVICE_INSTANCE_MENU_CODE
-  || context.currentView === DEVICE_INSTANCE_MENU_CODE
+  isDeviceAgentMenuRoute(context, 'instance')
 );
 
 const isDeviceInstanceAvailable = (context: HomeAgentCapabilityContext) => (
-  !!context.findMenu(DEVICE_INSTANCE_MENU_CODE)
-  || !!context.findMenu(DEVICE_INSTANCE_PATH)
+  !!findDeviceAgentMenu(context, 'instance')
 );
 
 const getPromptExamples = () => [
@@ -446,20 +448,23 @@ const resolveLatestUserGoal = (context: HomeAgentCapabilityContext) => (
 
 const compactDevice = (
   item: Record<string, any>,
+  context: HomeAgentCapabilityContext,
   userGoal?: unknown,
   prepareHandoff = false,
   searchContext: Record<string, any> = {},
 ) => {
   const id = normalizeText(item.id);
   const title = normalizeText(item.name) || id;
-  const handoffReady = createDeviceAgentHandoff(
+  const target = resolveDeviceAgentDetailNavigation(context, toDevice(item));
+  const handoffReady = target && createDeviceAgentHandoff(
+    target,
     id,
     userGoal,
     resolveDeviceHandoffPrompt(title, userGoal),
     prepareHandoff,
     buildDeviceHandoffContext(item, userGoal, searchContext.sourceContext, searchContext),
   );
-  const detailLink = buildDeviceDetailLink(id);
+  const detailLink = target ? buildDeviceDetailLink(target) : undefined;
   return {
     id,
     name: item.name,
@@ -475,12 +480,9 @@ const compactDevice = (
     },
     accessProvider: item.accessProvider,
     createTime: item.createTime,
-    detailRoute: {
-      routeName: DEVICE_INSTANCE_DETAIL_ROUTE,
-      params: { id },
-    },
+    detailRoute: target ? { routeName: target.routeName, params: target.params, query: target.query } : undefined,
     detailLink,
-    markdownLink: `[${i18n.global.t('Instance.homeAgent.detailLink', [title])}](${detailLink})`,
+    markdownLink: detailLink ? `[${i18n.global.t('Instance.homeAgent.detailLink', [title])}](${detailLink})` : undefined,
     handoff: {
       nextStep: i18n.global.t('Instance.homeAgent.tool.search.handoffNextStep'),
       singleDeviceDiagnosis: i18n.global.t('Instance.homeAgent.tool.search.handoffSingleDeviceDiagnosis'),
@@ -496,7 +498,8 @@ const buildHomeReplyPolicy = () => [
 ];
 
 const searchDevices = async (args: Record<string, any>, context: HomeAgentCapabilityContext) => {
-  if (!isDeviceInstanceAvailable(context)) {
+  const menu = findDeviceAgentMenu(context, 'instance');
+  if (!menu) {
     return {
       ok: false,
       error: i18n.global.t('Instance.homeAgent.tool.search.noPermission'),
@@ -542,7 +545,7 @@ const searchDevices = async (args: Record<string, any>, context: HomeAgentCapabi
 
   const pageSize = clampPageSize(args.limit ?? args.pageSize);
   const pageIndex = toPageIndex(args.pageIndex);
-  const response = await query({
+  const response = await queryDetails({
     paging: true,
     pageIndex,
     pageSize,
@@ -592,14 +595,15 @@ const searchDevices = async (args: Record<string, any>, context: HomeAgentCapabi
     pageIndex,
     pageSize,
     menu: {
-      code: DEVICE_INSTANCE_MENU_CODE,
-      path: DEVICE_INSTANCE_PATH,
-      markdownLink: `[${i18n.global.t('Instance.homeAgent.menu.deviceInstance')}](#menu=${encodeURIComponent(DEVICE_INSTANCE_MENU_CODE)})`,
+      code: menu.code,
+      path: menu.path,
+      markdownLink: `[${i18n.global.t('Instance.homeAgent.menu.deviceInstance')}](#menu=${encodeURIComponent(menu.code)})`,
     },
     organizationCandidates: organizationFilter.candidates,
     selectedOrganizations: organizationFilter.selected,
     items: list.map((item) => compactDevice(
       item,
+      context,
       handoffPromptSource,
       shouldPrepareHandoff,
       handoffSearchContext,
@@ -618,13 +622,17 @@ const searchDevices = async (args: Record<string, any>, context: HomeAgentCapabi
 };
 
 const createDeviceInstanceTools = (): AiClientToolDefinition<HomeAgentCapabilityContext>[] => ([
-  {
+  defineClientTool<Record<string, any>, HomeAgentCapabilityContext, Awaited<ReturnType<typeof searchDevices>>>({
     id: DEVICE_INSTANCE_SEARCH_TOOL,
-    name: DEVICE_INSTANCE_SEARCH_TOOL,
-    displayName: i18n.global.t('Instance.homeAgent.tool.search.displayName'),
-    progressText: i18n.global.t('Instance.homeAgent.tool.search.progressText'),
-    description: i18n.global.t('Instance.homeAgent.tool.search.description'),
-    help: i18n.global.t('Instance.homeAgent.tool.search.help'),
+    presentation: {
+      displayName: i18n.global.t('Instance.homeAgent.tool.search.displayName'),
+      progressText: i18n.global.t('Instance.homeAgent.tool.search.progressText'),
+    },
+    description: {
+      text: i18n.global.t('Instance.homeAgent.tool.search.description'),
+      help: i18n.global.t('Instance.homeAgent.tool.search.help'),
+      capabilities: ['asset.device.search'],
+    },
     inputs: [
       {
         id: 'keyword',
@@ -767,14 +775,20 @@ const createDeviceInstanceTools = (): AiClientToolDefinition<HomeAgentCapability
         valueType: 'int',
       },
     ],
-    output: { type: 'object' },
-    annotations: { readOnlyHint: true },
-    execute: searchDevices,
-  },
+    output: [
+      clientToolOutput.lookup({ name: 'device-id', shape: 'device.ids', select: result => result.items?.map(item => item.id) || [] }),
+      clientToolOutput.recordSet({ name: 'device-records', shape: 'tabular.records', select: result => result.items || [] }),
+    ],
+    effect: { kind: 'READ' },
+    owner: { module: 'device-manager-ui', group: 'device-search' },
+    execute: async (args, context) => adaptDeviceSearchPage(await searchDevices(args, context)),
+  }),
 ]);
 
 const createDeviceInstanceCapabilities = (context: HomeAgentCapabilityContext) => {
   const currentRoute = isDeviceInstanceRoute(context);
+  const menu = findDeviceAgentMenu(context, 'instance');
+  if (!menu) return [];
   return [
     {
       id: 'device-instance:search',
@@ -782,9 +796,9 @@ const createDeviceInstanceCapabilities = (context: HomeAgentCapabilityContext) =
       description: i18n.global.t('Instance.homeAgent.capability.search.description'),
       kind: 'tool' as const,
       category: 'device-instance',
-      menuCode: DEVICE_INSTANCE_MENU_CODE,
-      routeName: DEVICE_INSTANCE_MENU_CODE,
-      path: DEVICE_INSTANCE_PATH,
+      menuCode: menu.code,
+      routeName: menu.routeName || menu.code,
+      path: menu.path,
       order: 10,
       keywords: ['device', 'instance', 'search', '设备', '实例', '搜索'],
       metadata: {

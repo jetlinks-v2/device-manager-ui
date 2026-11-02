@@ -4,14 +4,15 @@ import type {
   HomeAgentCapabilityContext,
   HomeAgentCapabilityProvider,
 } from '@jetlinks-web-core/layout/components/AiChat/homeAgentContracts'
+import { DEVICE_AGENT_MENU_CODES } from '../deviceMenus'
 
 export const DEVICE_GUIDANCE_PROVIDER_ID = 'device:function-guidance'
 export const DEVICE_ONBOARDING_CAPABILITY_ID = 'device-entry:onboarding'
 
 // These are device-owned menu identities, not deployment-specific URLs or external module routes.
 export const DEVICE_GUIDANCE_MENU_CODES = {
-  onboarding: ['iot-user-device-list', 'iot-user/device/list', 'device/Instance'],
-  product: ['device/Product'],
+  onboarding: DEVICE_AGENT_MENU_CODES.instance,
+  product: DEVICE_AGENT_MENU_CODES.product,
   gateway: ['link/AccessConfig'],
   network: ['link/Type'],
   plugin: ['link/plugin'],

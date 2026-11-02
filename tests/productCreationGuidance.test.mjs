@@ -72,6 +72,12 @@ async function loadProvider(environment) {
         buildApi.onResolve({ filter: /^@jetlinks-web-core\/layout\/components\/AiChat\/homeAgentCapabilities$/ }, () => ({
           path: 'registration', namespace: 'product-creation-test',
         }))
+        buildApi.onResolve({ filter: /^@jetlinks-web-core\/layout\/components\/AiChat\/clientToolApi$/ }, () => ({
+          path: path.join(coreRoot, 'layout/components/AiChat/clientToolDefinition.ts'),
+        }))
+        buildApi.onResolve({ filter: /^@jetlinks-web-core\// }, ({ path: id }) => ({
+          path: path.join(coreRoot, `${id.slice('@jetlinks-web-core/'.length)}.ts`),
+        }))
         buildApi.onLoad({ filter: /^registration$/, namespace: 'product-creation-test' }, () => ({
           contents: 'export const registerHomeAgentCapabilityProvider = () => () => {}',
           loader: 'js',

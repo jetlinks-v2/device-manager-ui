@@ -5,8 +5,8 @@ import {
   resolveDomainAgentMessage,
   type DomainAgentToolResult,
 } from '@jetlinks-web-core/layout/components/AiChat/domainAgentTools'
-import { getProjectIdFromLocation } from '@jetlinks-web-core/utils/project-runtime'
-import { buildIotDeviceDetailPath } from '@device-manager-ui/views/device/list/hooks/useIotDeviceRouting'
+import type { HomeAgentCapabilityContext } from '@jetlinks-web-core/layout/components/AiChat/homeAgentContracts'
+import { resolveDeviceAgentDetailNavigation } from '../deviceAgentNavigation'
 import {
   iotDeviceDetailRealApi,
   parseMetadata,
@@ -57,7 +57,7 @@ export const mapDeviceTimeContext = (device: IotDevice) => ({
   },
 })
 
-export const mapDevice = (device: IotDevice) => ({
+export const mapDevice = (device: IotDevice, context?: HomeAgentCapabilityContext) => ({
   id: device.id,
   name: device.name,
   productId: device.productId,
@@ -69,7 +69,7 @@ export const mapDevice = (device: IotDevice) => ({
   groupId: device.groupId,
   groupName: device.groupName,
   ...mapDeviceTimeContext(device),
-  navigation: buildIotDeviceDetailPath(getProjectIdFromLocation(), device.id),
+  ...(context ? { navigation: resolveDeviceAgentDetailNavigation(context, device)?.path } : {}),
 })
 
 export const getRawDevice = async (deviceId: string) => {

@@ -1,3 +1,5 @@
+import { DEVICE_AGENT_MENU_CODES, DEVICE_AGENT_MENU_PATHS } from '../deviceMenus'
+
 export const IOT_DEVICE_ANALYSIS_EXTENSION_KEY = 'iot/device-analysis'
 export const IOT_DEVICE_ANALYSIS_PROVIDER_ID = 'iot:device-analysis'
 export const IOT_DEVICE_ANALYSIS_CATEGORY = 'device'
@@ -10,6 +12,6 @@ export const IOT_DEVICE_PROPERTY_INTERVALS = ['1m', '1h', '1d', '1w', '1M'] as c
 export const IOT_DEVICE_OPEN_DETAIL_TABS = ['overview', 'access', 'data', 'alarm', 'logs', 'advanced'] as const
 
 export const IOT_DEVICE_MENU_ANCHORS = {
-  list: ['iot-user/device/list', '/iot-user/device/list'],
+  list: [...DEVICE_AGENT_MENU_CODES.instance, ...DEVICE_AGENT_MENU_PATHS.instance],
   health: ['iot-user/device/health', '/iot-user/device/health'],
 } as const

@@ -23,6 +23,7 @@ import {
   resolveDeviceToolTimeRange,
 } from '../agentTools/timeRangeSupport';
 import { createDeviceSubjectRequiredError } from '../agentTools/deviceSubjectContract';
+import { findDeviceAgentMenu } from '../../../agentCapabilities/deviceMenus';
 
 const DEVICE_INSTANCE_MENU_CODE = 'device/Instance';
 const DEVICE_PRODUCT_MENU_CODE = 'device/Product';
@@ -63,11 +64,11 @@ interface CreateDeviceDomainToolsOptions {
 }
 
 export const isDeviceInstanceAvailable = (context: HomeAgentCapabilityContext) => (
-  !!context.findMenu(DEVICE_INSTANCE_MENU_CODE)
+  !!findDeviceAgentMenu(context, 'instance')
 );
 
 export const isDeviceProductAvailable = (context: HomeAgentCapabilityContext) => (
-  !!context.findMenu(DEVICE_PRODUCT_MENU_CODE)
+  !!findDeviceAgentMenu(context, 'product')
 );
 
 export const isDeviceDomainAvailable = (context: HomeAgentCapabilityContext) => (

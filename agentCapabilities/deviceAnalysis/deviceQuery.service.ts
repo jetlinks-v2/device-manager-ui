@@ -12,11 +12,14 @@ import {
   runDeviceTool,
 } from './deviceAnalysis.shared'
 import { buildDeviceAnalysisSearchTerms } from './deviceAnalysisScope'
-
-const DEVICE_DETAIL_MENU_CODE = 'iot-user/device/list'
+import type { GeneralAgentContext } from '@jetlinks-web-core/layout/components/AiChat/generalAgentRuntime'
+import { findDeviceAgentMenu } from '../deviceMenus'
+import { resolveDeviceAgentDetailNavigation } from '../deviceAgentNavigation'
 
 export const deviceQueryService = {
-  search: (args: Record<string, unknown>) => runDeviceTool<Array<Record<string, unknown>>>([], async () => {
+  search: (args: Record<string, unknown>, context: GeneralAgentContext) => runDeviceTool<Array<Record<string, unknown>>>([], async () => {
+    const menu = findDeviceAgentMenu(context, 'instance')
+    if (!menu) throw Object.assign(new Error(resolveDomainAgentMessage('Instance.homeAgent.tool.search.noPermission')), { status: 403 })
     const pageIndex = resolveDomainAgentInteger(args.pageIndex, { name: 'pageIndex', defaultValue: 0, min: 0, max: 10000 })
     const pageSize = resolveDomainAgentInteger(args.pageSize, { name: 'pageSize', defaultValue: 20, min: 1, max: 50 })
     const terms = await buildDeviceAnalysisSearchTerms(args)
@@ -26,8 +29,9 @@ export const deviceQueryService = {
       terms,
       sorts: [{ name: 'createTime', order: 'desc' }],
     })
-    const mapped = page.data.map(mapDevice)
+    const mapped = page.data.map(device => mapDevice(device, context))
     const singleResult = page.total === 1 && mapped.length === 1 ? mapped[0] : undefined
+    const singleNavigation = singleResult ? resolveDeviceAgentDetailNavigation(context, page.data[0]) : undefined
     return createDomainAgentToolResult({
       domain: 'device',
       filters: {
@@ -41,6 +45,9 @@ export const deviceQueryService = {
       summary: {
         returned: mapped.length,
         total: page.total,
+        pageIndex,
+        pageSize,
+        nextPage: (pageIndex + 1) * pageSize < page.total ? pageIndex + 1 : undefined,
         matchType: page.total === 1 ? 'single' : page.total > 1 ? 'multiple' : 'none',
       },
       data: mapped,
@@ -51,18 +58,18 @@ export const deviceQueryService = {
       }),
       truncated: (pageIndex + 1) * pageSize < page.total,
       nextPage: (pageIndex + 1) * pageSize < page.total ? pageIndex + 1 : undefined,
-      navigation: singleResult ? [{
+      navigation: singleResult?.navigation ? [{
         kind: 'detail',
         label: singleResult.name || singleResult.id,
         path: singleResult.navigation,
-        menuCode: DEVICE_DETAIL_MENU_CODE,
+        menuCode: singleNavigation?.menu.code,
         subject: { type: 'device', id: singleResult.id, name: singleResult.name },
         requiresConfirmation: true,
       }] : undefined,
     })
   }),
 
-  healthSummary: (args: Record<string, unknown>) => runDeviceTool<Record<string, unknown>>({}, async () => {
+  healthSummary: (args: Record<string, unknown>, context: GeneralAgentContext) => runDeviceTool<Record<string, unknown>>({}, async () => {
     const limit = resolveDomainAgentInteger(args.limit, { name: 'limit', defaultValue: 10, min: 1, max: 20 })
     const terms = await buildDeviceAnalysisSearchTerms(args)
     const [summary, offlinePage] = await Promise.all([
@@ -81,7 +88,7 @@ export const deviceQueryService = {
       noData: summary.noData,
       watch: summary.watch,
       normal: summary.normal,
-      offlineDevices: offlinePage.data.map(mapDevice),
+      offlineDevices: offlinePage.data.map(device => mapDevice(device, context)),
     }
     return createDomainAgentToolResult({
       domain: 'device',
