@@ -9,6 +9,7 @@ import {
   IOT_DEVICE_MENU_ANCHORS,
 } from './constants'
 import { createDeviceAnalysisTools } from './tools'
+import { findDeviceAgentMenu } from '../deviceMenus'
 
 const findMenu = (context: GeneralAgentContext, anchors: readonly string[]) => (
   anchors.map(anchor => context.findMenu(anchor)).find(Boolean)
@@ -23,7 +24,7 @@ export const iotDeviceAnalysisGeneralAgentProvider: GeneralAgentCapabilityProvid
   id: IOT_DEVICE_ANALYSIS_PROVIDER_ID,
   order: 10,
   getCapabilities: (context) => {
-    const listMenu = findMenu(context, IOT_DEVICE_MENU_ANCHORS.list)
+    const listMenu = findDeviceAgentMenu(context, 'instance')
     if (!listMenu) return []
     const healthMenu = findMenu(context, IOT_DEVICE_MENU_ANCHORS.health)
     return [
@@ -67,10 +68,10 @@ export const iotDeviceAnalysisGeneralAgentProvider: GeneralAgentCapabilityProvid
       }] : []),
     ]
   },
-  getClientTools: context => findMenu(context, IOT_DEVICE_MENU_ANCHORS.list) ? createDeviceAnalysisTools() : [],
-  getSystemPromptLines: context => findMenu(context, IOT_DEVICE_MENU_ANCHORS.list)
+  getClientTools: context => findDeviceAgentMenu(context, 'instance') ? createDeviceAnalysisTools() : [],
+  getSystemPromptLines: context => findDeviceAgentMenu(context, 'instance')
     ? [i18n.global.t('PropertyRuleAgent.usage'), i18n.global.t('DeviceConnectionAgent.usage')] : [],
-  getWorkflowGuides: context => findMenu(context, IOT_DEVICE_MENU_ANCHORS.list) ? [
+  getWorkflowGuides: context => findDeviceAgentMenu(context, 'instance') ? [
     {
       id: 'device-property-rules',
       title: i18n.global.t('PropertyRuleAgent.workflow.title'),
@@ -120,7 +121,7 @@ export const iotDeviceAnalysisGeneralAgentProvider: GeneralAgentCapabilityProvid
       notes: [i18n.global.t('IotGeneralAgent.workflows.handoff.note')],
     },
   ] : [],
-  getPromptExamples: context => findMenu(context, IOT_DEVICE_MENU_ANCHORS.list) ? [
+  getPromptExamples: context => findDeviceAgentMenu(context, 'instance') ? [
     ...getDeviceLandingPromptExamples(),
     i18n.global.t('IotGeneralAgent.prompts.property'),
     i18n.global.t('IotGeneralAgent.prompts.openDetail'),

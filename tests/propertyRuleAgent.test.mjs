@@ -86,7 +86,7 @@ test('named field discovery searches beyond the first model page without exposin
 })
 
 test('rule guidance keeps discovery before configuration and event evidence conditional for both entry points', () => {
-  const context = { findMenu: () => ({ code: 'device' }) }
+  const context = { currentRoute: {}, findMenu: () => ({ code: 'device' }) }
   const global = iotDeviceAnalysisGeneralAgentProvider.getWorkflowGuides(context).find(guide => guide.id === 'device-property-rules')
   const detail = createDeviceDetailAgentWorkflows(true)
   const local = detail.find(guide => guide.id === 'device-detail-property-rules')

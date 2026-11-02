@@ -9,13 +9,24 @@ import {
 } from '@jetlinks-web-core/layout/components/AiChat/homeAgentCapabilities';
 import type { AiClientToolDefinition } from '@jetlinks-web-core/layout/components/AiChat/clientTools';
 import {
+  clientToolOutput,
+  clientToolResult,
+  defineClientTool,
+  defineClientToolAnalyticalProducer,
+  type ClientToolOutput,
+} from '@jetlinks-web-core/layout/components/AiChat/clientToolApi';
+import {
+  createDomainAgentTimeScopeContract,
+  resolveDomainAgentTimeRange,
+} from '@jetlinks-web-core/layout/components/AiChat/domainAgentTools';
+import {
   dashboard,
   deviceCount,
   productCount,
 } from '../../../api/dashboard';
+import { findDeviceAgentMenu, isDeviceAgentMenuRoute } from '../../../agentCapabilities/deviceMenus';
+import { createDeviceMessageTrendFields } from '../../../agentCapabilities/deviceTrendFields';
 
-const DEVICE_DASHBOARD_MENU_CODE = 'device/DashBoard';
-const DEVICE_DASHBOARD_PATH = '/iot/device/DashBoard';
 const DEVICE_DASHBOARD_OVERVIEW_TOOL = 'device_dashboard_get_overview';
 const DEVICE_DASHBOARD_PRODUCT_STATS_TOOL = 'device_dashboard_get_product_stats';
 const DEVICE_DASHBOARD_DEVICE_STATS_TOOL = 'device_dashboard_get_device_stats';
@@ -23,21 +34,29 @@ const DEVICE_DASHBOARD_ONLINE_TREND_TOOL = 'device_dashboard_get_online_trend';
 const DEVICE_DASHBOARD_MESSAGE_AGGREGATION_TOOL = 'device_dashboard_analyze_message_aggregation';
 
 const isDeviceDashboardRoute = (context: HomeAgentCapabilityContext) => (
-  context.currentRoute.path === DEVICE_DASHBOARD_PATH
-  || context.currentRoute.name === DEVICE_DASHBOARD_MENU_CODE
-  || context.currentView === DEVICE_DASHBOARD_MENU_CODE
+  isDeviceAgentMenuRoute(context, 'dashboard')
 );
 
 const isDeviceDashboardAvailable = (context: HomeAgentCapabilityContext) => (
-  !!context.findMenu(DEVICE_DASHBOARD_MENU_CODE)
-  || !!context.findMenu(DEVICE_DASHBOARD_PATH)
+  !!findDeviceAgentMenu(context, 'dashboard') || !!findDeviceAgentMenu(context, 'instance')
 );
 
-const getPromptExamples = () => [
+// The legacy dashboard includes product statistics; the new list grants device statistics only.
+const isProductStatsAvailable = (context: HomeAgentCapabilityContext) => (
+  !!findDeviceAgentMenu(context, 'dashboard') || !!findDeviceAgentMenu(context, 'product')
+);
+
+const isDashboardToolAvailable = (context: HomeAgentCapabilityContext, toolId: string) => (
+  isDeviceDashboardAvailable(context)
+  && (![DEVICE_DASHBOARD_OVERVIEW_TOOL, DEVICE_DASHBOARD_PRODUCT_STATS_TOOL].includes(toolId)
+    || isProductStatsAvailable(context))
+);
+
+const getPromptExamples = (context: HomeAgentCapabilityContext) => [
   i18n.global.t('DashBoard.homeAgent.prompt.deviceStatus'),
   i18n.global.t('DashBoard.homeAgent.prompt.messageAggregation'),
   i18n.global.t('DashBoard.homeAgent.prompt.messagePeak'),
-  i18n.global.t('DashBoard.homeAgent.prompt.overview'),
+  ...(isProductStatsAvailable(context) ? [i18n.global.t('DashBoard.homeAgent.prompt.overview')] : []),
   i18n.global.t('DashBoard.homeAgent.prompt.messageTrend'),
 ];
 
@@ -59,7 +78,7 @@ const getWorkflowGuides = (): HomeAgentWorkflowGuide[] => [
       {
         title: i18n.global.t('DashBoard.homeAgent.workflow.messageAggregation.step.range.title'),
         description: i18n.global.t('DashBoard.homeAgent.workflow.messageAggregation.step.range.description'),
-        inputs: { shortcut: 'today|day|week|month', from: 'optional-start-time', to: 'optional-end-time' },
+        inputs: { timeRange: 'today|24h|7d|30d|custom', startTime: 'custom-start', endTime: 'custom-end' },
         required: true,
       },
       {
@@ -96,19 +115,10 @@ const toNumber = (value: unknown) => {
   return Number.isFinite(numberValue) ? numberValue : 0;
 };
 
-const getCurrentDayRange = () => ({
-  from: dayjs().startOf('day').format('YYYY-MM-DD HH:mm:ss'),
-  to: dayjs().format('YYYY-MM-DD HH:mm:ss'),
-});
-
 const getYesterdayRange = () => ({
   from: dayjs().subtract(1, 'day').startOf('day').format('YYYY-MM-DD HH:mm:ss'),
   to: dayjs().subtract(1, 'day').endOf('day').format('YYYY-MM-DD HH:mm:ss'),
 });
-
-const normalizeRangeShortcut = (value: unknown) => String(value || 'today').trim().toLowerCase();
-
-const isShortcutIn = (shortcut: string, candidates: string[]) => candidates.includes(shortcut);
 
 const toPlainRecord = (value: unknown): Record<string, any> => (
   value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, any> : {}
@@ -117,68 +127,28 @@ const toPlainRecord = (value: unknown): Record<string, any> => (
 const resolveDashboardTimeRange = (args: Record<string, any> = {}) => {
   const timeRangeRecord = toPlainRecord(args.timeRange);
   const nestedRange = Object.keys(timeRangeRecord).length ? timeRangeRecord : toPlainRecord(args.range);
-  const from = args.from ?? args.start ?? args.startTime ?? nestedRange.from ?? nestedRange.start ?? nestedRange.startTime;
-  const to = args.to ?? args.end ?? args.endTime ?? nestedRange.to ?? nestedRange.end ?? nestedRange.endTime;
-  // Different models may pass shortcut as a flat field or as a nested timeRange object.
-  const shortcut = normalizeRangeShortcut(
-    args.shortcut
-    || nestedRange.shortcut
-    || nestedRange.value
-    || nestedRange.type
-    || args.timeRange
-    || args.range,
-  );
-  const now = dayjs();
-  if (from && to) {
-    const startMs = dayjs(from).valueOf();
-    const endMs = dayjs(to).valueOf();
-    if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || startMs >= endMs) {
-      throw new Error(i18n.global.t('DashBoard.homeAgent.tool.timeRange.invalidRange'));
-    }
-    return {
-      from,
-      to,
-      label: 'custom',
-      startMs,
-      endMs,
-    };
-  }
-  if (isShortcutIn(shortcut, ['day', '24h', 'last24h', 'last_24h', '最近24小时', '近24小时'])) {
-    const start = now.subtract(24, 'hour');
-    return {
-      from: start.valueOf(),
-      to: now.valueOf(),
-      label: 'day',
-      startMs: start.valueOf(),
-      endMs: now.valueOf(),
-    };
-  }
-  if (isShortcutIn(shortcut, ['week', '7d', 'last7d', 'last_7d', '最近7天', '近7天', '近一周'])) {
-    const start = now.subtract(6, 'day').startOf('day');
-    return {
-      from: start.valueOf(),
-      to: now.valueOf(),
-      label: 'week',
-      startMs: start.valueOf(),
-      endMs: now.valueOf(),
-    };
-  }
-  if (isShortcutIn(shortcut, ['month', '30d', 'last30d', 'last_30d', '最近30天', '近30天', '近一个月'])) {
-    const start = now.subtract(30, 'day').startOf('day');
-    return {
-      from: start.valueOf(),
-      to: now.valueOf(),
-      label: 'month',
-      startMs: start.valueOf(),
-      endMs: now.valueOf(),
-    };
-  }
-  const currentRange = getCurrentDayRange();
+  const from = args.startTime ?? args.from ?? args.start ?? nestedRange.from ?? nestedRange.start ?? nestedRange.startTime;
+  const to = args.endTime ?? args.to ?? args.end ?? nestedRange.to ?? nestedRange.end ?? nestedRange.endTime;
+  const rawPreset = typeof args.timeRange === 'string' ? args.timeRange
+    : args.shortcut ?? nestedRange.shortcut ?? nestedRange.value ?? nestedRange.type
+      ?? (typeof args.range === 'string' ? args.range : undefined);
+  // Keep valid historical aliases at execution only; the published schema uses the shared time contract.
+  const aliases: Record<string, string> = {
+    day: '24h', last24h: '24h', last_24h: '24h', '最近24小时': '24h', '近24小时': '24h',
+    week: '7d', last7d: '7d', last_7d: '7d', '最近7天': '7d', '近7天': '7d', '近一周': '7d',
+    month: '30d', last30d: '30d', last_30d: '30d', '最近30天': '30d', '近30天': '30d', '近一个月': '30d',
+  };
+  const preset = rawPreset === undefined ? undefined : String(rawPreset).trim().toLowerCase();
+  const range = resolveDomainAgentTimeRange({
+    timeRange: preset === undefined
+      ? (from !== undefined || to !== undefined ? 'custom' : 'today')
+      : aliases[preset] ?? preset,
+    startTime: from,
+    endTime: to,
+  });
   return {
-    ...currentRange,
-    label: 'today',
-    startMs: dayjs(currentRange.from).valueOf(),
-    endMs: dayjs(currentRange.to).valueOf(),
+    from: range.start, to: range.end, label: range.label,
+    startMs: range.start, endMs: range.end,
   };
 };
 
@@ -205,11 +175,14 @@ const resolveDashboardAggregationQuery = (range: { startMs: number; endMs: numbe
 const buildSeries = (items: any[], group?: string) => {
   const source = group ? items.filter((item) => item?.group === group) : items;
   return source
-    .map((item) => ({
-      time: item?.data?.timeString,
-      value: toNumber(item?.data?.value),
-    }))
-    .reverse();
+    .map((item) => {
+      const time = item?.data?.timeString;
+      if (typeof time !== 'string' || !dayjs(time).isValid()) {
+        throw new Error(i18n.global.t('DashBoard.homeAgent.tool.timeRange.invalidRange'));
+      }
+      return { time, label: time, timestamp: dayjs(time).valueOf(), value: toNumber(item?.data?.value) };
+    })
+    .sort((left, right) => left.timestamp - right.timestamp);
 };
 
 const summarizeSeries = (series: Array<{ time?: string; value: number }>) => {
@@ -332,6 +305,8 @@ const queryOnlineTrend = async (args: Record<string, any> = {}) => {
   return {
     ok: true,
     range: {
+      start: range.startMs,
+      end: range.endMs,
       from: range.from,
       to: range.to,
       shortcut: range.label,
@@ -381,6 +356,8 @@ const analyzeMessageAggregation = async (args: Record<string, any> = {}) => {
   return {
     ok: true,
     range: {
+      start: range.startMs,
+      end: range.endMs,
       from: range.from,
       to: range.to,
       shortcut: range.label,
@@ -444,126 +421,125 @@ const getDashboardOverview = async () => {
   };
 };
 
+/** Declare summary and reusable series separately so quantities cannot be mistaken for row counts. */
+const defineDashboardTool = <TResult extends Record<string, unknown>>(
+  id: string,
+  localeKey: string,
+  query: (args: Record<string, any>) => Promise<TResult>,
+  trend?: { output: ClientToolOutput<TResult>; measure: 'uplink_messages' | 'online_devices' },
+) => {
+  const seriesOutput = trend?.output;
+  const timeScope = seriesOutput ? dashboardTimeScope() : undefined;
+  return defineClientTool<Record<string, any>, HomeAgentCapabilityContext, TResult>({
+    id,
+    description: {
+      text: i18n.global.t(`DashBoard.homeAgent.tool.${localeKey}.description`),
+      help: i18n.global.t(`DashBoard.homeAgent.tool.${localeKey}.help`),
+      capabilities: [`device.dashboard.${localeKey}.read`],
+    },
+    presentation: {
+      displayName: i18n.global.t(`DashBoard.homeAgent.tool.${localeKey}.displayName`),
+      progressText: i18n.global.t(`DashBoard.homeAgent.tool.${localeKey}.progressText`),
+    },
+    inputs: timeScope?.inputs || [],
+    ...(trend && timeScope ? {
+      inputAlternatives: timeScope.inputAlternatives,
+      temporal: timeScope.temporal,
+      analytical: dashboardTrendCapability(trend.measure, trend.output.name),
+    } : {}),
+    effect: { kind: 'READ' },
+    output: seriesOutput || clientToolOutput.detail({
+      name: 'dashboard-statistics', shape: 'device.dashboard.statistics',
+    }),
+    owner: { module: 'device-manager-ui', group: 'device-dashboard' },
+    execute: async (args, context) => {
+      if (!isDashboardToolAvailable(context, id)) {
+        throw new Error(i18n.global.t('Instance.homeAgent.tool.search.noPermission'));
+      }
+      const value = await query(args);
+      const { series, summary, ...statistics } = value;
+      return clientToolResult.success(value, {
+        summary: { ...statistics, ...(typeof summary === 'string' ? { description: summary } : {}) },
+        ...(seriesOutput && Array.isArray(series) ? {
+          cardinality: {
+            kind: 'aggregate-series', bucketCount: series.length,
+            populatedBucketCount: series.length, measurementCount: series.length,
+          },
+          requestedRange: {
+            start: (value.range as Record<string, unknown>).start,
+            end: (value.range as Record<string, unknown>).end,
+          },
+          requestSatisfied: true,
+          exhaustive: true,
+        } : {}),
+      });
+    },
+  });
+};
+
+const dashboardTimeScope = () => createDomainAgentTimeScopeContract({
+  timeRange: i18n.global.t('IotGeneralAgent.inputs.timeRange'),
+  startTime: i18n.global.t('IotGeneralAgent.inputs.startTime'),
+  endTime: i18n.global.t('IotGeneralAgent.inputs.endTime'),
+});
+
+const dashboardTrendCapability = (measure: 'uplink_messages' | 'online_devices', output: string) => defineClientToolAnalyticalProducer({
+  producerKey: `device.dashboard.${measure}.trend`,
+  factKey: measure === 'uplink_messages' ? 'device.uplink-messages' : 'device.online-devices',
+  subjects: ['device'],
+  measures: [{
+    name: measure,
+    aggregations: [measure === 'uplink_messages' ? 'sum' : 'avg'],
+    units: ['count'],
+  }],
+  dimensions: ['time'], filters: [], grains: [], criteria: ['trend'],
+  ordering: [{ axis: 'timestamp', direction: 'asc' }],
+  coverage: 'complete', output,
+});
+
+const dashboardSeriesOutput = <TResult extends { series: Array<{ timestamp: number; value: number }> }>(
+  name: string,
+  measure: 'count' | 'gauge',
+) => clientToolOutput.aggregateSeries<TResult>({
+  name,
+  shape: 'time-series.aggregate',
+  select: result => result.series.map(({ timestamp, value }) => ({ timestamp, value })),
+  recordPath: '$',
+  fields: measure === 'count' ? createDeviceMessageTrendFields() : [
+    { name: 'timestamp', type: 'timestamp', role: 'temporal_dimension', axis: 'time', encoding: 'epoch-millis' },
+    {
+      name: 'value', type: 'number', role: 'measure',
+      label: i18n.global.t('IotGeneralAgent.metrics.onlineDevices'),
+      measure: 'online_devices', unit: 'count',
+      unitLabel: i18n.global.t('IotDeviceGroups.unit.device'), aggregation: 'avg',
+    },
+  ],
+  ordering: { keys: [{ field: 'timestamp', direction: 'asc' }], producerGuaranteed: true },
+});
+
 const createDeviceDashboardTools = (): AiClientToolDefinition<HomeAgentCapabilityContext>[] => ([
-  {
-    id: DEVICE_DASHBOARD_OVERVIEW_TOOL,
-    name: DEVICE_DASHBOARD_OVERVIEW_TOOL,
-    displayName: i18n.global.t('DashBoard.homeAgent.tool.overview.displayName'),
-    progressText: i18n.global.t('DashBoard.homeAgent.tool.overview.progressText'),
-    description: i18n.global.t('DashBoard.homeAgent.tool.overview.description'),
-    help: i18n.global.t('DashBoard.homeAgent.tool.overview.help'),
-    inputs: [],
-    output: { type: 'object' },
-    annotations: { readOnlyHint: true },
-    execute: getDashboardOverview,
-  },
-  {
-    id: DEVICE_DASHBOARD_PRODUCT_STATS_TOOL,
-    name: DEVICE_DASHBOARD_PRODUCT_STATS_TOOL,
-    displayName: i18n.global.t('DashBoard.homeAgent.tool.productStats.displayName'),
-    progressText: i18n.global.t('DashBoard.homeAgent.tool.productStats.progressText'),
-    description: i18n.global.t('DashBoard.homeAgent.tool.productStats.description'),
-    help: i18n.global.t('DashBoard.homeAgent.tool.productStats.help'),
-    inputs: [],
-    output: { type: 'object' },
-    annotations: { readOnlyHint: true },
-    execute: async () => ({
-      ok: true,
-      product: await getProductStats(),
-    }),
-  },
-  {
-    id: DEVICE_DASHBOARD_DEVICE_STATS_TOOL,
-    name: DEVICE_DASHBOARD_DEVICE_STATS_TOOL,
-    displayName: i18n.global.t('DashBoard.homeAgent.tool.deviceStats.displayName'),
-    progressText: i18n.global.t('DashBoard.homeAgent.tool.deviceStats.progressText'),
-    description: i18n.global.t('DashBoard.homeAgent.tool.deviceStats.description'),
-    help: i18n.global.t('DashBoard.homeAgent.tool.deviceStats.help'),
-    inputs: [],
-    output: { type: 'object' },
-    annotations: { readOnlyHint: true },
-    execute: async () => ({
-      ok: true,
-      device: await getDeviceStats(),
-    }),
-  },
-  {
-    id: DEVICE_DASHBOARD_ONLINE_TREND_TOOL,
-    name: DEVICE_DASHBOARD_ONLINE_TREND_TOOL,
-    displayName: i18n.global.t('DashBoard.homeAgent.tool.onlineTrend.displayName'),
-    progressText: i18n.global.t('DashBoard.homeAgent.tool.onlineTrend.progressText'),
-    description: i18n.global.t('DashBoard.homeAgent.tool.onlineTrend.description'),
-    help: i18n.global.t('DashBoard.homeAgent.tool.onlineTrend.help'),
-    inputs: [
-      {
-        id: 'shortcut',
-        name: 'shortcut',
-        description: i18n.global.t('DashBoard.homeAgent.tool.timeRange.shortcut'),
-        required: false,
-        valueType: 'string',
-      },
-      {
-        id: 'from',
-        name: 'from',
-        description: i18n.global.t('DashBoard.homeAgent.tool.timeRange.from'),
-        required: false,
-        valueType: 'string',
-      },
-      {
-        id: 'to',
-        name: 'to',
-        description: i18n.global.t('DashBoard.homeAgent.tool.timeRange.to'),
-        required: false,
-        valueType: 'string',
-      },
-    ],
-    output: { type: 'object' },
-    annotations: { readOnlyHint: true },
-    execute: queryOnlineTrend,
-  },
-  {
-    id: DEVICE_DASHBOARD_MESSAGE_AGGREGATION_TOOL,
-    name: DEVICE_DASHBOARD_MESSAGE_AGGREGATION_TOOL,
-    displayName: i18n.global.t('DashBoard.homeAgent.tool.messageAggregation.displayName'),
-    progressText: i18n.global.t('DashBoard.homeAgent.tool.messageAggregation.progressText'),
-    description: i18n.global.t('DashBoard.homeAgent.tool.messageAggregation.description'),
-    help: i18n.global.t('DashBoard.homeAgent.tool.messageAggregation.help'),
-    inputs: [
-      {
-        id: 'shortcut',
-        name: 'shortcut',
-        description: i18n.global.t('DashBoard.homeAgent.tool.timeRange.shortcut'),
-        required: false,
-        valueType: 'string',
-      },
-      {
-        id: 'from',
-        name: 'from',
-        description: i18n.global.t('DashBoard.homeAgent.tool.timeRange.from'),
-        required: false,
-        valueType: 'string',
-      },
-      {
-        id: 'to',
-        name: 'to',
-        description: i18n.global.t('DashBoard.homeAgent.tool.timeRange.to'),
-        required: false,
-        valueType: 'string',
-      },
-    ],
-    output: { type: 'object' },
-    annotations: { readOnlyHint: true },
-    execute: analyzeMessageAggregation,
-  },
+  defineDashboardTool(DEVICE_DASHBOARD_OVERVIEW_TOOL, 'overview', getDashboardOverview),
+  defineDashboardTool(DEVICE_DASHBOARD_PRODUCT_STATS_TOOL, 'productStats', async () => ({
+    ok: true, product: await getProductStats(),
+  })),
+  defineDashboardTool(DEVICE_DASHBOARD_DEVICE_STATS_TOOL, 'deviceStats', async () => ({
+    ok: true, device: await getDeviceStats(),
+  })),
+  defineDashboardTool(DEVICE_DASHBOARD_ONLINE_TREND_TOOL, 'onlineTrend', queryOnlineTrend,
+    { output: dashboardSeriesOutput<Awaited<ReturnType<typeof queryOnlineTrend>>>('device-online-trend', 'gauge'), measure: 'online_devices' }),
+  defineDashboardTool(DEVICE_DASHBOARD_MESSAGE_AGGREGATION_TOOL, 'messageAggregation', analyzeMessageAggregation,
+    { output: dashboardSeriesOutput<Awaited<ReturnType<typeof analyzeMessageAggregation>>>('device-message-trend', 'count'), measure: 'uplink_messages' }),
 ]);
 
 const createDeviceDashboardCapabilities = (context: HomeAgentCapabilityContext) => {
   const currentRoute = isDeviceDashboardRoute(context);
+  const menu = findDeviceAgentMenu(context, 'dashboard') || findDeviceAgentMenu(context, 'instance');
+  if (!menu) return [];
   const base = {
     category: 'device-dashboard',
-    menuCode: DEVICE_DASHBOARD_MENU_CODE,
-    routeName: DEVICE_DASHBOARD_MENU_CODE,
-    path: DEVICE_DASHBOARD_PATH,
+    menuCode: menu.code,
+    routeName: menu.routeName || menu.code,
+    path: menu.path,
     metadata: {
       currentRoute,
     },
@@ -580,7 +556,7 @@ const createDeviceDashboardCapabilities = (context: HomeAgentCapabilityContext) 
       keywords: ['device', 'dashboard', 'overview', 'statistics', '设备', '仪表盘', '概览', '统计'],
       metadata: {
         ...base.metadata,
-        promptExamples: getPromptExamples(),
+        promptExamples: getPromptExamples(context),
       },
     },
     {
@@ -619,7 +595,10 @@ const createDeviceDashboardCapabilities = (context: HomeAgentCapabilityContext) 
       order: 50,
       keywords: ['message', 'aggregation', 'trend', 'quantity', '消息', '聚合', '趋势', '数量'],
     },
-  ];
+  ].filter(capability => (
+    !['device-dashboard:overview', 'device-dashboard:product-stats'].includes(capability.id)
+    || isProductStatsAvailable(context)
+  ));
 };
 
 export const deviceDashboardHomeAgentProvider: HomeAgentCapabilityProvider = {
@@ -628,9 +607,10 @@ export const deviceDashboardHomeAgentProvider: HomeAgentCapabilityProvider = {
   getCapabilities: (context) => (isDeviceDashboardAvailable(context)
     ? createDeviceDashboardCapabilities(context)
     : []),
-  getClientTools: (context) => (isDeviceDashboardAvailable(context) ? createDeviceDashboardTools() : []),
+  getClientTools: (context) => createDeviceDashboardTools()
+    .filter(tool => isDashboardToolAvailable(context, tool.id)),
   getPromptExamples: (context) => (isDeviceDashboardRoute(context)
-    ? getPromptExamples()
+    ? getPromptExamples(context)
     : []),
   getWorkflowGuides: (context) => (isDeviceDashboardAvailable(context)
     ? getWorkflowGuides()

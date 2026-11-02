@@ -56,7 +56,7 @@ try {
           filter: /^device-manager-test-router$/,
           namespace: 'device-manager-tests',
         }, () => ({
-          contents: 'export default { push: async () => undefined }',
+          contents: 'export default { push: async () => undefined, hasRoute: () => false }',
           loader: 'js',
         }))
         // TypeScript path resolution expands this exact import before onResolve; keep the
@@ -64,7 +64,12 @@ try {
         buildApi.onLoad({
           filter: /[/\\]jetlinks-web-core[/\\]src[/\\]router[/\\]index\.ts$/,
         }, () => ({
-          contents: 'export default { push: async () => undefined }',
+          contents: 'export default { push: async () => undefined, hasRoute: () => false }',
+          loader: 'js',
+        }))
+        // These Node tests have no loaded application modules; navigation assembly uses the real registry in Core tests.
+        buildApi.onLoad({ filter: /[/\\]jetlinks-web-core[/\\]src[/\\]utils[/\\]module-registry\.ts$/ }, () => ({
+          contents: 'export const moduleRegistry = { getAllModuleIds: () => [], getResource: () => undefined }',
           loader: 'js',
         }))
         // Alarm queries share an API barrel with library restoration; that unrelated action owns browser-only storage.
