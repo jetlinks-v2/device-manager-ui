@@ -9037,5 +9037,19 @@
   "Tracing.edgeLimit": "{count} more edges exceed the query limit",
   "RuntimeMonitor.currentLogFile": "Current",
   "RuntimeMonitor.loadingLogDirectory": "Loading directory",
-  "UnifiedDeviceList.iotScope": "IoT devices"
+  "UnifiedDeviceList.iotScope": "IoT devices",
+    "DeviceMetrics.title": "Metrics",
+    "DeviceMetrics.devices": "Devices",
+    "DeviceMetrics.templates": "Metric templates",
+    "DeviceMetrics.save": "Configure metrics",
+  "DeviceMetrics.businessMetrics": "Business metrics",
+  "DeviceMetrics.ruleAndCalculation": "Rules and calculations",
+  "DeviceMetrics.products": "Products",
+  "DeviceMetrics.groups": "Groups",
+  "DeviceMetrics.searchObjects": "Search objects",
+  "DeviceMetrics.objectLoadError": "Unable to load objects. Retry.",
+  "DeviceMetrics.retry": "Retry",
+  "DeviceMetrics.noObjects": "No accessible objects",
+  "DeviceMetrics.openWorkspace": "Open in business metrics",
+  "DeviceMetrics.openBusiness": "Open business page"
 }

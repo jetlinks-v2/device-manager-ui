@@ -9038,5 +9038,19 @@
   "Tracing.edgeLimit": "另有 {count} 个边缘超出本次查询上限",
   "RuntimeMonitor.currentLogFile": "当前",
   "RuntimeMonitor.loadingLogDirectory": "正在加载目录",
-  "UnifiedDeviceList.iotScope": "物联设备"
+  "UnifiedDeviceList.iotScope": "物联设备",
+    "DeviceMetrics.title": "指标",
+    "DeviceMetrics.devices": "设备",
+    "DeviceMetrics.templates": "指标模板",
+    "DeviceMetrics.save": "配置指标",
+  "DeviceMetrics.businessMetrics": "业务指标",
+  "DeviceMetrics.ruleAndCalculation": "规则与计算",
+  "DeviceMetrics.products": "产品",
+  "DeviceMetrics.groups": "分组",
+  "DeviceMetrics.searchObjects": "搜索对象",
+  "DeviceMetrics.objectLoadError": "对象加载失败，请重试",
+  "DeviceMetrics.retry": "重试",
+  "DeviceMetrics.noObjects": "暂无可访问对象",
+  "DeviceMetrics.openWorkspace": "在指标工作区打开",
+  "DeviceMetrics.openBusiness": "返回业务页面"
 }
