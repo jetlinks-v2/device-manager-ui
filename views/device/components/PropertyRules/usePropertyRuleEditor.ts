@@ -33,7 +33,9 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
   let feedbackTimer: ReturnType<typeof setTimeout> | undefined
   const raw = ref<ThingPropertyPreprocess>()
   const hasOverride = ref(false)
-  const custom = ref(false)
+  const overrideRequested = ref(false)
+  // Empty devices are editable; only an explicit customization requests an override before any edit.
+  const custom = computed(() => !props.scope.deviceId || hasOverride.value || !raw.value || overrideRequested.value)
   const draft = ref<RuleDraft>()
   const initial = ref('')
   const resources = useRuleResources(() => [props.scope.productId, props.scope.deviceId, permission.permissions])
@@ -59,7 +61,7 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
   const editable = computed(() => canSave.value && custom.value && parsed.value.editable && !loading.value && !failed.value && !saving.value)
   const draftJson = computed(() => JSON.stringify(draft.value))
   const dirty = computed(() => Boolean(draft.value && draftJson.value !== initial.value))
-  const pendingSave = computed(() => dirty.value || Boolean(props.scope.deviceId && custom.value && !hasOverride.value))
+  const pendingSave = computed(() => dirty.value || Boolean(props.scope.deviceId && overrideRequested.value && !hasOverride.value))
   const saveState = computed(() => saving.value ? 'saving' : saveFeedback.value !== 'idle' ? saveFeedback.value : pendingSave.value ? 'dirty' : 'idle')
   function clearFeedback() {
     clearTimeout(feedbackTimer)
@@ -75,6 +77,7 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
   watch(draftJson, () => { if (!saving.value) clearFeedback() }, { flush: 'sync' })
   const source = computed(() => props.scope.deviceId && hasOverride.value
     ? raw.value && isEmptyRule(raw.value) ? 'disabled' : 'device' : raw.value ? 'product' : 'none')
+  const displaySource = computed(() => props.scope.deviceId && custom.value && pendingSave.value && !hasOverride.value ? 'device' : source.value)
   const steps = computed(() => draft.value ? summarizeDraft(draft.value, props.property, t)
     .filter(step => step.key !== 'alarm' || (scalar.value && (alarmAvailable.value || draft.value!.alarmEnabled)))
     .map(step => step.key === 'cleaning' && !scalar.value ? { ...step, text: t('PropertyRules.unsupportedCleaning') } : step) : [])
@@ -116,7 +119,7 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
       const own = result?.device.find((item) => item.property === id)
       raw.value = props.snapshot ? props.snapshot.raw : own ?? result?.product.find((item) => item.property === id)
       hasOverride.value = props.snapshot?.hasOverride ?? Boolean(own)
-      custom.value = !props.scope.deviceId || hasOverride.value
+      overrideRequested.value = false
       const rule = parsed.value
       const alarm = raw.value && toDeviceAlarmRow(raw.value, props.scope.deviceId ? 'device' : 'product', props.scope.name ?? '', props.property)
       draft.value = {
@@ -160,7 +163,7 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
     clearFeedback()
     alarmNameEditing.value = false
     draft.value = JSON.parse(initial.value) as RuleDraft
-    custom.value = !props.scope.deviceId || hasOverride.value
+    overrideRequested.value = false
   }
   function setNotificationsOpen(value: boolean) {
     notificationOpen.value = value
@@ -181,7 +184,7 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
     if (!cancel && editable.value && draft.value && alarmNameValue.value.trim()) draft.value.alarm.name = alarmNameValue.value.trim()
     alarmNameEditing.value = false
   }
-  function customize() { custom.value = true }
+  function customize() { overrideRequested.value = true }
   function toggleStep(section: RuleSection, enabled: boolean) {
     if (!draft.value || !editable.value || section === 'cleaning' || section === 'processing') return
     if (section === 'alarm') draft.value.alarmEnabled = enabled
@@ -228,6 +231,7 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
       initial.value = JSON.stringify(current)
       raw.value = !props.scope.deviceId && isEmptyRule(next) ? undefined : next
       hasOverride.value = Boolean(props.scope.deviceId)
+      overrideRequested.value = false
       if (!props.inline) message.success(t('PropertyRules.saved'))
       // The write already succeeded. A failed refresh must not become a retryable write failure.
       try {
@@ -279,7 +283,7 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
     || (to.path === from.path && to.query.ruleProperty === from.query.ruleProperty && to.query.tab === from.query.tab)
     || (!saving.value && await confirmLeave()))
   watch([() => props.open, () => props.scope.productId, () => props.scope.deviceId, () => propertyIdOf(props.property)], load, { immediate: true })
-  return { loading, failed, saving, draft, parsed, numeric, alarmAvailable, canSave, editable, source, hasOverride,
+  return { loading, failed, saving, draft, parsed, numeric, alarmAvailable, canSave, editable, source, displaySource, hasOverride,
     custom, dirty, pendingSave, saveState, resources, type, boolean, scalar, unit, cleaningUnit, differenceUnit, cleaningDifferenceUnit, cleaningHint, levelOptions,
     steps, activeSection, notificationOpen, setNotificationsOpen, alarmNameEditing, alarmNameValue, setAlarmNameInput, editAlarmName, stopAlarmName, toggleStep, addableParts, addPart,
     load, requestClose, prepareLeave, discard, customize, clear, save, restore }
