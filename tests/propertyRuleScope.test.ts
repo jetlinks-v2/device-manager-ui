@@ -568,7 +568,8 @@ test('inline editor saves the selected report strategy and whitelist without ext
     assert.equal(editor.draft.value?.alarm.name, 'temperature alarm')
     editor.addPart('values')
     editor.draft.value!.valuesMode = 'keep'
-    editor.setValues(['0', '12.5'])
+    // ValueSetInput now emits typed values directly into the shared draft.
+    editor.draft.value!.values = [0, 12.5]
     editor.addPart('interval')
     assert.equal(editor.draft.value?.samplingMode, 'interval')
     assert.equal(writes.length, 0)

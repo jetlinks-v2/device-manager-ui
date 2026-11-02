@@ -3,6 +3,7 @@ import { buildPreprocessPayload, hasAlarmRelieveProcessor, isNumberProperty } fr
 import { isAlarmProperty, readCondition, validateAlarmConditions } from '../../alarm/conditions'
 import { buildSampling, isSamplingNode, validateSampling, type SamplingDraft } from './sampling'
 import { buildFallback, scalarValue, validFallback, type ValueRuleDraft } from './values/config'
+import { validPropertyOutput } from './values/metadata'
 
 export interface RuleNode {
   provider: string
@@ -244,12 +245,15 @@ export function validateDraft(draft: RuleDraft, numeric: boolean, property?: Thi
   if (draft.valuesEnabled && (!['ignore', 'keep', 'replace'].includes(draft.valuesMode) || !draft.values.length || !draft.values.every(isScalar)
     || (numeric && draft.values.some((value) => typeof value !== 'number')))) return 'PropertyRules.validation.values'
   if (draft.valuesEnabled && draft.valuesMode === 'replace' && (!scalarValue(draft.replacementValue)
-    || numeric && typeof draft.replacementValue !== 'number')) return 'PropertyRules.validation.replacement'
+    || numeric && typeof draft.replacementValue !== 'number'
+    || property && !numeric && !validPropertyOutput(draft.replacementValue, property))) return 'PropertyRules.validation.replacement'
   if (draft.rangeEnabled && (!numeric || !validRange({ min: draft.min, max: draft.max }))) return 'PropertyRules.validation.range'
   if (draft.stepEnabled && (!numeric || !validStep({ maxStep: draft.maxStep, baselineTtlMillis: draft.baselineTtl }))) return 'PropertyRules.validation.step'
   if (draft.scaleEnabled && (!numeric || !validScale(draft.scale) || draft.offset !== undefined && !validScale(draft.offset))) return 'PropertyRules.validation.scale'
   if (draft.fallbackEnabled && (!validFallback(buildFallback(draft).configuration)
-    || numeric && draft.fallbackValue != null && typeof draft.fallbackValue !== 'number')) return 'PropertyRules.validation.fallback'
+    || draft.fallbackMode === 'previous' && draft.fallbackFixedEnabled && !scalarValue(draft.fallbackValue)
+    || numeric && draft.fallbackValue != null && typeof draft.fallbackValue !== 'number'
+    || property && draft.fallbackValue != null && !validPropertyOutput(draft.fallbackValue, property))) return 'PropertyRules.validation.fallback'
   if (draft.fileEnabled && (numeric || draft.valuesEnabled || draft.rangeEnabled || draft.stepEnabled || draft.scaleEnabled || draft.fallbackEnabled || draft.alarmEnabled)) return 'PropertyRules.validation.file'
   if (draft.alarmEnabled) {
     if (!draft.alarm.name.trim()) return 'DeviceAlarm.validation.name'

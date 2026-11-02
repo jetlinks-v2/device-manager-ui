@@ -53,8 +53,6 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
   const differenceUnit = computed(() => formatRuleDifferenceUnit(props.property, t))
   const cleaningDifferenceUnit = computed(() => draft.value?.scaleEnabled ? t('PropertyRules.rawValue') : differenceUnit.value)
   const cleaningHint = computed(() => draft.value?.scaleEnabled ? t('PropertyRules.rawValueHint') : '')
-  const booleanOptions = [{ label: 'true', value: true }, { label: 'false', value: false }]
-  const enumOptions = computed(() => (props.property.valueType?.elements ?? []).map(item => ({ value: item.value, label: item.text ?? String(item.value) })))
   const levelOptions = computed(() => resources.levels.value.length ? resources.levels.value : defaultAlarmLevelOptions(t))
   const alarmAvailable = computed(() => Boolean(system.showThreshold))
   const canSave = computed(() => props.scope.canUpdate ?? permission.hasPermission(props.scope.deviceId ? 'device/Instance:update' : 'device/Product:update'))
@@ -190,10 +188,6 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
     else draft.value.samplingEnabled = enabled
     if (enabled) activeSection.value = section
   }
-  function setValues(values: string[]) {
-    if (!draft.value) return
-    draft.value.values = numeric.value ? values.map(value => value.trim() !== '' && Number.isFinite(Number(value)) ? Number(value) : value) : values
-  }
   function clear() {
     if (!draft.value || !editable.value) return
     draft.value.fallbackEnabled = false
@@ -286,7 +280,7 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
     || (!saving.value && await confirmLeave()))
   watch([() => props.open, () => props.scope.productId, () => props.scope.deviceId, () => propertyIdOf(props.property)], load, { immediate: true })
   return { loading, failed, saving, draft, parsed, numeric, alarmAvailable, canSave, editable, source, hasOverride,
-    custom, dirty, pendingSave, saveState, resources, type, boolean, scalar, unit, cleaningUnit, differenceUnit, cleaningDifferenceUnit, cleaningHint, booleanOptions, enumOptions, levelOptions,
-    steps, activeSection, notificationOpen, setNotificationsOpen, alarmNameEditing, alarmNameValue, setAlarmNameInput, editAlarmName, stopAlarmName, toggleStep, setValues, addableParts, addPart,
+    custom, dirty, pendingSave, saveState, resources, type, boolean, scalar, unit, cleaningUnit, differenceUnit, cleaningDifferenceUnit, cleaningHint, levelOptions,
+    steps, activeSection, notificationOpen, setNotificationsOpen, alarmNameEditing, alarmNameValue, setAlarmNameInput, editAlarmName, stopAlarmName, toggleStep, addableParts, addPart,
     load, requestClose, prepareLeave, discard, customize, clear, save, restore }
 }
