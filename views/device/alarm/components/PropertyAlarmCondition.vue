@@ -8,7 +8,7 @@
       <span>～</span>
       <a-input-number v-model:value="model.limit.upper" size="small" :controls="false" :placeholder="$t('PropertyRules.upperPlaceholder')" :aria-label="$t(recovery ? 'DeviceAlarm.condition.recovery.upper' : 'PropertyRules.alarmUpper')" />
     </template>
-    <a-select v-else-if="model.trigger === 'in' || model.trigger === 'nin'" :value="model.values" :mode="type === 'enum' ? 'multiple' : 'tags'" size="small" class="condition-values" :options="enumOptions" :placeholder="$t(type === 'enum' ? 'DeviceAlarm.condition.selectValues' : 'DeviceAlarm.condition.values')" :aria-label="$t(type === 'enum' ? 'DeviceAlarm.condition.selectValues' : 'DeviceAlarm.condition.values')" :token-separators="[',', '，']" @update:value="model.values = $event" />
+    <ValueSetInput v-else-if="model.trigger === 'in' || model.trigger === 'nin'" :value="model.values ?? []" :property="property" class="condition-values" :label="$t(type === 'enum' ? 'DeviceAlarm.condition.selectValues' : 'DeviceAlarm.condition.values')" @update:value="model.values = $event" />
     <ValueInput v-else :property="property" v-model:value="model.value" :label="$t('DeviceAlarm.condition.value')" />
     <span v-if="unit && numeric" class="condition-unit">{{ unit }}</span>
   </span>
@@ -20,23 +20,24 @@ import type { DeviceAlarmCondition, DeviceAlarmTrigger, ThingModelProperty } fro
 import { conditionOperators, conditionSymbols, switchConditionOperator } from '../conditions'
 import { isNumberProperty, formatPropertyUnit } from '../utils'
 import ValueInput from '../../components/PropertyRules/values/ValueInput.vue'
+import ValueSetInput from '../../components/PropertyRules/values/ValueSetInput.vue'
 import RuleMenuOption from '../../components/PropertyRules/RuleMenuOption.vue'
 const props = defineProps<{ model: DeviceAlarmCondition; property: ThingModelProperty; recovery?: boolean }>()
 const { t: $t } = useI18n()
 const type = computed(() => props.property.valueType?.type ?? props.property.type ?? props.property.dataType)
 const numeric = computed(() => isNumberProperty(props.property))
 const unit = computed(() => formatPropertyUnit(props.property.valueType?.unit))
-const enumOptions = computed(() => props.property.valueType?.elements?.map(item => ({ value: item.value, label: item.text ?? String(item.value) })) ?? [])
 const operators = computed(() => conditionOperators(props.property).map(value => ({ value,
   icon: ({ inside: 'CompressOutlined', outside: 'ExpandOutlined', in: 'CheckSquareOutlined', nin: 'StopOutlined' } as Partial<Record<DeviceAlarmTrigger, string>>)[value],
   label: ['inside', 'outside', 'in', 'nin'].includes(value) ? $t(`DeviceAlarm.condition.${value}`) : conditionSymbols[value],
 })))
-function changeOperator(value: DeviceAlarmTrigger) {
-  Object.assign(props.model, switchConditionOperator(props.model, value))
+function changeOperator(value: unknown) {
+  const operator = operators.value.find(option => option.value === value)?.value
+  if (operator) Object.assign(props.model, switchConditionOperator(props.model, operator))
 }
 </script>
 <style scoped>
-.property-alarm-condition { display: inline-flex; align-items: center; flex-wrap: wrap; gap: var(--space-1); min-width: 0; font-size: inherit; line-height: 24px; }
+.property-alarm-condition { display: inline-flex; align-items: center; flex-wrap: wrap; gap: var(--space-1); min-width: 0; max-width: 100%; font-size: inherit; line-height: 24px; }
 .property-alarm-condition :deep(.ant-input-number) { width: 76px; }
 .property-alarm-condition :deep(.ant-input) { width: 112px; }
 .property-alarm-condition :deep(.ant-select-selector), .property-alarm-condition :deep(input) { font-size: inherit; }

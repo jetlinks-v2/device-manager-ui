@@ -5,7 +5,7 @@
       <template v-else-if="editor.draft">
         <PropertyRuleActions v-if="withActions !== false && (editor.steps.some(item => item.enabled) || editor.pendingSave || editor.saveState !== 'idle' || editor.hasOverride)" :editor="editor" :property="property" :scope="scope" class="rule-editor-actions" />
         <div v-if="scope.deviceId || !editor.canSave" class="rule-source">
-          <a-tag v-if="scope.deviceId" :color="editor.custom ? 'blue' : undefined"><AIcon :type="editor.source === 'disabled' ? 'StopOutlined' : editor.custom ? 'HddOutlined' : 'CloudOutlined'" /> {{ $t('PropertyRules.source.' + (editor.custom ? (editor.hasOverride ? editor.source : 'device') : editor.source)) }}</a-tag>
+          <a-tag v-if="scope.deviceId" :color="['device', 'disabled'].includes(editor.displaySource) ? 'blue' : undefined"><AIcon :type="editor.displaySource === 'disabled' ? 'StopOutlined' : editor.displaySource === 'device' ? 'HddOutlined' : 'CloudOutlined'" /> {{ $t('PropertyRules.source.' + editor.displaySource) }}</a-tag>
           <a-button v-if="scope.deviceId && !editor.custom && editor.canSave && editor.parsed.editable" type="link" size="small" @click="editor.customize"><AIcon type="EditOutlined" /> {{ $t('PropertyRules.customize') }}</a-button>
           <a-tooltip v-if="!editor.canSave" :title="$t('PropertyRules.permissionHint')"><a-tag><AIcon type="LockOutlined" /> {{ $t('PropertyRules.viewOnly') }}</a-tag></a-tooltip>
         </div>
@@ -18,9 +18,7 @@
             <PropertyRuleLine v-if="editor.draft.valuesEnabled" icon="StopOutlined" :title="$t('PropertyRules.part.values')" color="blue" :notice="editor.cleaningHint">
               <I18nT keypath="PropertyRules.sentence.valueRule" scope="global" tag="span" class="rule-clause">
                 <template #values>
-                  <a-checkbox-group v-if="editor.boolean" v-model:value="editor.draft.values" :options="editor.booleanOptions" />
-                  <a-select v-else-if="editor.type === 'enum'" v-model:value="editor.draft.values" mode="multiple" size="small" :options="editor.enumOptions" :aria-label="$t('PropertyRules.valueFilter')" class="rule-value-list" />
-                  <a-select v-else mode="tags" size="small" :value="editor.draft.values.map(String)" :token-separators="[',']" :open="false" :aria-label="$t('PropertyRules.valueFilter')" :title="$t('PropertyRules.valuesPlaceholder')" :placeholder="$t('PropertyRules.valuesPlaceholder')" class="rule-value-list" @change="editor.setValues" />
+                  <ValueSetInput v-model:value="editor.draft.values" :property="property" :label="$t('PropertyRules.valueFilter')" :placeholder="$t('PropertyRules.valuesPlaceholder')" allow-unknown />
                 </template>
                 <template #action><a-select v-model:value="editor.draft.valuesMode" size="small" :bordered="false" :dropdown-match-select-width="288" :virtual="false" dropdown-class-name="rule-select-menu" :aria-label="$t('PropertyRules.valuesMode')" :options="valueModes"><template #option="option"><RuleMenuOption compact :icon="option.icon" :title="option.label" :description="$t(option.description)" /></template></a-select></template>
                 <template #replacement><span v-if="editor.draft.valuesMode === 'replace'" class="rule-phrase">{{ $t('PropertyRules.sentence.withValue') }}<ValueInput v-model:value="editor.draft.replacementValue" :property="property" :label="$t('PropertyRules.replacement')" class="rule-value-entry" /></span></template>
@@ -70,7 +68,7 @@
                 </span>
                 <PropertyAlarmRecovery :model="editor.draft.alarm" :property="property" :disabled="!editor.editable" />
                 <RegistryComponent page-code="device/alarm" code="alarm-editor">
-                  <DeviceAlarmNotificationConfig :model="editor.draft.alarm" :methods="editor.resources.methods" :loading="editor.resources.loading" :failed="editor.resources.failed" :disabled="!editor.editable" :reveal="editor.notificationOpen" @request-methods="editor.resources.load" @open-change="editor.setNotificationsOpen" />
+                  <DeviceAlarmNotificationConfig :model="editor.draft.alarm" :methods="editor.resources.methods" :loading="editor.resources.loading" :failed="editor.resources.failed" :disabled="!editor.editable" :reveal="editor.notificationOpen" @request-methods="editor.resources.load" @retry-methods="editor.resources.retry" @open-change="editor.setNotificationsOpen" />
                 </RegistryComponent>
               </span>
               <template #action><a-button type="text" size="small" :aria-label="$t('PropertyRules.removePart', { name: $t('PropertyRules.alarm') })" @click="editor.draft.alarmEnabled = false"><AIcon type="CloseOutlined" /></a-button></template>
@@ -112,6 +110,7 @@ import RuleAddMenu from './RuleAddMenu.vue'
 import RuleMenuOption from './RuleMenuOption.vue'
 import FallbackFields from './values/FallbackFields.vue'
 import ValueInput from './values/ValueInput.vue'
+import ValueSetInput from './values/ValueSetInput.vue'
 import PropertyAlarmCondition from '../../alarm/components/PropertyAlarmCondition.vue'
 import PropertyAlarmRecovery from '../../alarm/components/PropertyAlarmRecovery.vue'
 import DeviceAlarmNotificationConfig from '../../alarm/components/DeviceAlarmNotificationConfig.vue'

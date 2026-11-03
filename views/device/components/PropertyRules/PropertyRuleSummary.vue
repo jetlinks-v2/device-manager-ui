@@ -29,7 +29,7 @@ const groups = computed(() => props.rows.reduce<{ section: RuleSection; rows: Ru
 }, []))
 </script>
 <style scoped>
-.rule-summary { container: rule-fields / inline-size; display: flex; flex-direction: column; width: 700px; max-width: 100%; }
+.rule-summary { container: rule-fields / inline-size; display: flex; flex-direction: column; width: 100%; max-width: 100%; }
 .rule-summary :deep(.rule-line-alarm > .rule-kind .ant-tag) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rule-summary-button { display: block; width: 100%; height: auto; padding: 0; text-align: left; white-space: normal; }
 </style>

@@ -1,4 +1,5 @@
 import type { ThingModelProperty } from '../../alarm/types'
+import { formatPropertyValue, propertyValueType } from './values/metadata'
 import { isNumberProperty } from '../../alarm/utils'
 import { matchesCondition, recoveryCondition } from '../../alarm/conditions'
 import type { RuleDraft, RulePart } from './codec'
@@ -66,7 +67,7 @@ export function buildRuleExample(draft: RuleDraft, property: ThingModelProperty,
   const timed = draft.samplingEnabled && (draft.samplingMode === 'interval' || draft.samplingMode === 'change' && draft.maxSilence != null) || Boolean(draft.fallbackEnabled || draft.stepEnabled)
   if (validateRuleExampleInputs(inputs, numeric, timed, Boolean(draft.fallbackEnabled))) return []
   const labelOf = (value: RuleExampleValue | null) => value === null ? '∅' : typeof value === 'object' ? JSON.stringify(value)
-    : String(property.valueType?.elements?.find(item => item.value === value)?.text ?? formatExampleValue(value))
+    : propertyValueType(property) === 'enum' || typeof value === 'boolean' ? formatPropertyValue(value, property) : String(formatExampleValue(value))
   const scores = [0.04, 0.72, 0.21, 0.34, 0.83]
   let lastArrival: number | undefined
   let baseline: RuleExampleValue | undefined

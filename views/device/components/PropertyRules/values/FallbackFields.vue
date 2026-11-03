@@ -18,8 +18,8 @@
       <template #value><span class="rule-phrase"><ValueInput v-model:value="draft.fallbackValue" :property="property" :label="$t('PropertyRules.fallback.fixedValue')" :placeholder="$t('PropertyRules.fallback.valuePlaceholder')" class="rule-fallback-value" /><span v-if="unit">{{ unit }}</span></span></template>
       <template #otherwise>
         <span class="fallback-fixed">
-          <a-checkbox :checked="draft.fallbackValue != null" @update:checked="setFixed">{{ $t('PropertyRules.fallback.otherwise') }}</a-checkbox>
-          <span v-if="draft.fallbackValue != null" class="rule-phrase"><ValueInput v-model:value="draft.fallbackValue" :property="property" :label="$t('PropertyRules.fallback.fixedValue')" :placeholder="$t('PropertyRules.fallback.valuePlaceholder')" class="rule-fallback-value" /><span v-if="unit">{{ unit }}</span></span>
+          <a-checkbox :checked="draft.fallbackFixedEnabled || draft.fallbackValue != null" @update:checked="setFixed">{{ $t('PropertyRules.fallback.otherwise') }}</a-checkbox>
+          <span v-if="draft.fallbackFixedEnabled || draft.fallbackValue != null" class="rule-phrase"><ValueInput v-model:value="draft.fallbackValue" :property="property" :label="$t('PropertyRules.fallback.fixedValue')" :placeholder="$t('PropertyRules.fallback.valuePlaceholder')" class="rule-fallback-value" /><span v-if="unit">{{ unit }}</span></span>
         </span>
       </template>
     </I18nT>
@@ -49,8 +49,8 @@ const modes = computed(() => [
   { value: 'fixed', label: $t('PropertyRules.fallback.fixed'), icon: 'EditOutlined', description: 'PropertyRules.choice.fixed' },
 ])
 function setFixed(enabled: boolean) {
-  props.draft.fallbackValue = enabled ? isNumberProperty(props.property) ? 0 : type.value === 'boolean' ? false
-    : type.value === 'enum' ? props.property.valueType?.elements?.[0]?.value ?? null : '' : null
+  props.draft.fallbackFixedEnabled = enabled
+  if (!enabled) props.draft.fallbackValue = null
 }
 </script>
 <style scoped>

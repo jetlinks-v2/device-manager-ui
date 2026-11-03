@@ -8,6 +8,8 @@ export interface ValueRuleDraft {
   fallbackEnabled?: boolean
   fallbackMode?: 'fixed' | 'previous'
   fallbackValue?: ScalarValue | null
+  /** Draft-only intent: an enabled optional fallback still needs an explicit value. */
+  fallbackFixedEnabled?: boolean
   fallbackMaxAge?: number | null
   fallbackEmpty?: boolean
   fallbackMissing?: boolean
@@ -26,6 +28,7 @@ export function readValueRules(nodes: Partial<Record<string, RuleNode>>): ValueR
     offset: nodes.scale?.configuration.offset ?? '0',
     fallbackEnabled: Boolean(fallback), fallbackMode: fallback?.mode ?? 'previous',
     fallbackValue: fallback?.value ?? null, fallbackMaxAge: fallback?.maxAgeMillis ?? 300000,
+    fallbackFixedEnabled: fallback?.value != null,
     fallbackEmpty: fallback?.includeEmpty ?? false, fallbackMissing: fallback?.includeMissing ?? false,
     stepEnabled: Boolean(nodes.step), maxStep: nodes.step?.configuration.maxStep ?? null,
     baselineTtl: nodes.step?.configuration.baselineTtlMillis ?? 300000,

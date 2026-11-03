@@ -1,4 +1,6 @@
 {
+  "PropertyRules.valueUnavailable": "{value} (not in the current values)",
+  "PropertyRules.noValueOptions": "No values defined in the thing model",
   "PropertyRules.recordInvalid": "Record invalid data",
   "PropertyRules.recordInvalidShort": "Record",
   "PropertyRules.recordInvalidHint": "Keep values discarded by this property's cleaning rules in Invalid Data for troubleshooting. Replacement, clamping and report suppression do not create records. Cleaning still applies when recording fails or capacity is exceeded, so records may be incomplete. Long text values are truncated.",

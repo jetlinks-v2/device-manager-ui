@@ -13,6 +13,8 @@ import { buildCondition, conditionsOverlap, conditionOperators, matchesCondition
 import type { DeviceAlarmCondition } from '../views/device/alarm/types'
 import { invalidRecordDescription } from '../views/device/components/PropertyRules/invalidRecord'
 import en from '../locales/lang/en.json'
+import { formatPropertyValue, propertyValueChoices, propertyValueKey, propertyValueOptions, readPropertyValueKeys, readValueTags, validPropertyOutput } from '../views/device/components/PropertyRules/values/metadata'
+import { readValueRules } from '../views/device/components/PropertyRules/values/config'
 
 const translate: RuleTranslator = (key, values = {}) => {
   const text = (zh as Record<string, string>)[key]
@@ -28,6 +30,77 @@ function draft(): RuleDraft {
     samplingEnabled: true, ...readSampling(), scaleEnabled: false, scale: '1', fileEnabled: false,
   }
 }
+
+test('metadata choices preserve scalar identity and expose removed values without changing selections', () => {
+  const property = { valueType: { type: 'enum', elements: [
+    { value: 0, text: '数字零' }, { value: '0', text: '字符串零' }, { value: false, text: '关闭' }, { value: '' },
+  ] } }
+  const selected = [0, '0', false, '', 'removed']
+  const original = structuredClone(selected)
+  const choices = propertyValueChoices(property, selected)
+  assert.equal(new Set(choices.map(choice => choice.value)).size, 5)
+  assert.deepEqual(readPropertyValueKeys(selected.map(propertyValueKey), property, selected), selected)
+  assert.deepEqual(selected, original)
+  assert.equal(choices.find(choice => choice.rawValue === 'removed')?.unavailable, true)
+  assert.equal(choices.find(choice => choice.rawValue === '')?.label, '""')
+  assert.deepEqual(readPropertyValueKeys(['unknown key'], property, selected), [])
+  assert.deepEqual(propertyValueChoices({ valueType: { type: 'enum' } }), [])
+})
+
+test('boolean labels are shared by choices, cleaning, alarms and example output', () => {
+  const property = { valueType: { type: 'boolean', trueText: '打开', falseText: '关闭' } }
+  assert.deepEqual(propertyValueOptions(property), [{ value: true, label: '打开' }, { value: false, label: '关闭' }])
+  assert.equal(formatPropertyValue(undefined, property), '—')
+  assert.equal(formatPropertyValue('false', property), '"false"')
+  const current = { ...draft(), values: [false], rangeEnabled: false, alarmEnabled: false, samplingEnabled: false }
+  assert.match(summarizeDraftRows(current, property, translate)[0].sentence, /关闭/)
+  assert.equal(buildRuleExample(current, property, [{ value: true, arrivalMillis: 0 }])[0].label, '打开')
+})
+
+test('free input parses only finite numeric tags and keeps string reports literal', () => {
+  assert.deepEqual(readValueTags(['0', '12.5', '-1e2', 'Infinity', ' ', 'fault'], true), [0, 12.5, -100, 'Infinity', ' ', 'fault'])
+  const strings = ['0', 'false', '', '["string","x"]']
+  assert.deepEqual(readValueTags(strings, false), strings)
+})
+
+test('replacement and fixed fallback round trips keep zero, false and empty strings in their metadata domains', () => {
+  for (const [type, value] of [['enum', 0], ['enum', '0'], ['enum', false], ['enum', ''], ['boolean', false], ['string', '']] as const) {
+    const property = { valueType: { type, elements: [{ value, text: '业务值' }] } }
+    const current = { ...draft(), values: ['invalid raw report'], valuesMode: 'replace' as const, replacementValue: value,
+      rangeEnabled: false, alarmEnabled: false, samplingEnabled: false, fallbackEnabled: true,
+      fallbackMode: 'fixed' as const, fallbackValue: value }
+    assert.equal(validateDraft(current, false, property), undefined)
+    const raw = buildRule(parseRule(), current)
+    const loaded = readValueRules(parseRule(raw).nodes)
+    assert.equal(loaded.replacementValue, value)
+    assert.equal(loaded.fallbackValue, value)
+    assert.equal(JSON.stringify(raw).includes('fallbackFixedEnabled'), false)
+  }
+})
+
+test('non-numeric output validation rejects stale metadata values without narrowing raw cleaning sets', () => {
+  const property = { valueType: { type: 'enum', elements: [{ value: '0' }] } }
+  const current = { ...draft(), values: ['removed raw report'], rangeEnabled: false, alarmEnabled: false, samplingEnabled: false }
+  assert.equal(validateDraft(current, false, property), undefined)
+  for (const value of [0, false, '', 'removed']) {
+    assert.equal(validateDraft({ ...current, valuesMode: 'replace', replacementValue: value }, false, property), 'PropertyRules.validation.replacement')
+    assert.equal(validateDraft({ ...current, fallbackEnabled: true, fallbackMode: 'fixed', fallbackValue: value }, false, property), 'PropertyRules.validation.fallback')
+  }
+  assert.equal(validPropertyOutput('false', { valueType: { type: 'boolean' } }), false)
+  assert.equal(validPropertyOutput(false, { valueType: { type: 'string' } }), false)
+  assert.equal(validPropertyOutput('long', { valueType: { type: 'string', maxLength: 3 } }), false)
+})
+
+test('enabling optional fixed fallback requires an explicit selection and never writes draft intent', () => {
+  const current = { ...draft(), valuesEnabled: false, rangeEnabled: false, alarmEnabled: false, samplingEnabled: false,
+    fallbackEnabled: true, fallbackMode: 'previous' as const, fallbackMaxAge: 300000, fallbackFixedEnabled: true, fallbackValue: null }
+  const property = { valueType: { type: 'boolean' } }
+  assert.equal(validateDraft(current, false, property), 'PropertyRules.validation.fallback')
+  assert.equal(validateDraft({ ...current, fallbackValue: false }, false, property), undefined)
+  const saved = buildRule(parseRule(), { ...current, fallbackValue: false })
+  assert.equal(readValueRules(parseRule(saved).nodes).fallbackValue, false)
+  assert.equal(JSON.stringify(saved).includes('fallbackFixedEnabled'), false)
+})
 
 test('invalid data recording is opt-in and preserved through rule and alarm edits', () => {
   const current = draft()
