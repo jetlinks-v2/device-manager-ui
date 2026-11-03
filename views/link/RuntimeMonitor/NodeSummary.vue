@@ -29,7 +29,6 @@ import { computed, nextTick, ref, watch, type PropType } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { theme } from 'ant-design-vue'
 import { InfoCircleOutlined, LinkOutlined, UploadOutlined, ApiOutlined } from '@ant-design/icons-vue'
-import type { MetricValue } from '@jetlinks-web-core/components/RuntimeDiagnostics'
 import type { RealtimeNode } from '../../../visDashboard/SystemMonitor/utils/realtimeResourceData'
 import NodeResourceMeter from '../diagnostics/NodeResourceMeter.vue'
 import { hasNodeMonitoringData } from './nodeSummary'
@@ -39,9 +38,9 @@ import { bufferQuantity as quantity } from './nodeBufferOverview'
 import { formatMemorySize } from '../../../visDashboard/SystemMonitor/utils/monitorData'
 import { formatNetworkSize } from '../../../visDashboard/SystemMonitor/utils/networkData'
 import type { NodeSessionSnapshot } from './useClusterSessions'
-import { latestDeviceMessageRates } from './device-runtime/deviceMessageHistory'
-import { deviceQpsView } from './device-runtime/deviceQps'
-const props = defineProps({ nodeId: { type: String, required: true }, label: { type: String, required: true }, live: { type: Object as PropType<RealtimeNode>, default: undefined }, stale: { type: Boolean, default: false }, waiting: { type: Boolean, default: false }, metrics: { type: Array as PropType<MetricValue[]>, default: () => [] }, buffer: { type: Object as PropType<ClusterBufferSnapshot>, default: undefined }, session: { type: Object as PropType<NodeSessionSnapshot>, default: undefined }, canOpenBuffer: { type: Boolean, default: false } })
+import { latestDeviceMessageRates, type DeviceMessageSample } from './device-runtime/deviceMessageHistory'
+import { deviceQpsSummary } from './device-runtime/deviceQps'
+const props = defineProps({ nodeId: { type: String, required: true }, label: { type: String, required: true }, live: { type: Object as PropType<RealtimeNode>, default: undefined }, stale: { type: Boolean, default: false }, waiting: { type: Boolean, default: false }, buffer: { type: Object as PropType<ClusterBufferSnapshot>, default: undefined }, session: { type: Object as PropType<NodeSessionSnapshot>, default: undefined }, canOpenBuffer: { type: Boolean, default: false } })
 const { t } = useI18n(), { token } = theme.useToken()
 const emit = defineEmits<{ openQueue: [target: { nodeId: string; objectName: string }]; openBuffers: [nodeId: string] }>()
 const open = ref(false), trigger = ref<HTMLElement>(), popoverContent = ref<HTMLElement>(), keyboardFocus = ref(false)
@@ -81,9 +80,12 @@ const sessionCount = computed(() => sessionQuantity(session.value?.sessions))
 const keepOnlineCount = computed(() => sessionQuantity(session.value?.keepOnline))
 const sessionVisible = computed(() => session.value?.supported === true && !!sessionCount.value)
 const popoverSessionVisible = computed(() => session.value?.supported === true && !!(sessionCount.value || keepOnlineCount.value) || upstream.value !== undefined)
-const communicationRates = computed(() => props.session?.communication?.supported === true ? latestDeviceMessageRates(props.session.communication.history) : undefined)
+const emptyHistory: readonly DeviceMessageSample[] = []
+// 会话计数与通信分别到达；计数变化不能使同一份通信历史的投影失效。
+const communicationHistory = computed(() => props.session?.communication?.supported === true ? props.session.communication.history : emptyHistory)
+const communicationRates = computed(() => latestDeviceMessageRates(communicationHistory.value))
 const upstream = computed(() => communicationRates.value?.upstreamMessages)
-const qps = computed(() => deviceQpsView(props.session?.communication?.supported === true ? props.session.communication.history : []))
+const qps = computed(() => deviceQpsSummary(communicationHistory.value))
 const communicationQps = computed(() => qps.value.values?.communicationQps)
 const upstreamText = computed(() => upstream.value === undefined ? undefined : t('RuntimeMonitor.deviceRuntimePreview', { rate: upstream.value.toLocaleString(undefined, { maximumFractionDigits: 1 }) }))
 const qpsText = computed(() => communicationQps.value === undefined ? undefined : t('RuntimeMonitor.deviceRuntimeQpsPreview', { rate: communicationQps.value.toLocaleString(undefined, { maximumFractionDigits: 1 }) }))

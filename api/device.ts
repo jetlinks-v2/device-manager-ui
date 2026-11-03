@@ -287,7 +287,8 @@ const withDeviceTypeTerm = (terms: DeviceQueryTerm[] = [], deviceType?: string) 
   ]
 }
 
-const toDevice = (item: DeviceDetailResponse): IotDevice => {
+/** Normalize query records once for list rendering and registered device-type consumers. */
+export const toDevice = (item: DeviceDetailResponse): IotDevice => {
   const state = toEnumValue(item.state)
   const connectionStatus = deviceStateMap[state] ?? 'disabled'
   const deviceTypeValue = toEnumValue(item.deviceType)

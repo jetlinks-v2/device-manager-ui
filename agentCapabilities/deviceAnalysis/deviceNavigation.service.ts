@@ -5,9 +5,9 @@ import {
   resolveDomainAgentMessage,
 } from '@jetlinks-web-core/layout/components/AiChat/domainAgentTools'
 import type { GeneralAgentContext } from '@jetlinks-web-core/layout/components/AiChat/generalAgentRuntime'
-import { getProjectIdFromLocation } from '@jetlinks-web-core/utils/project-runtime'
 import { getDeviceDetail_api } from '@device-manager-ui/api/device'
-import { buildIotDeviceDetailPath } from '@device-manager-ui/views/device/list/hooks/useIotDeviceRouting'
+import { findDeviceAgentMenu } from '../deviceMenus'
+import { resolveDeviceAgentDetailNavigation } from '../deviceAgentNavigation'
 import { IOT_DEVICE_OPEN_DETAIL_TABS } from './constants'
 import {
   inputError,
@@ -18,21 +18,25 @@ import {
 } from './deviceAnalysis.shared'
 import { prepareDeviceDetailHandoff } from './deviceHandoff.service'
 
-const resolveDeviceDetailTarget = async (args: Record<string, unknown>) => {
+const resolveDeviceDetailTarget = async (args: Record<string, unknown>, context: GeneralAgentContext) => {
+  const menu = findDeviceAgentMenu(context, 'instance')
+  if (!menu) throw Object.assign(new Error(resolveDomainAgentMessage('Instance.homeAgent.tool.search.noPermission')), { status: 403 })
   const deviceId = normalizeText(args.deviceId)
   if (!deviceId) throw inputError('DEVICE_ID_REQUIRED', 'deviceIdRequired')
   const tab = resolveDomainAgentEnum(args.tab, IOT_DEVICE_OPEN_DETAIL_TABS, { name: 'tab', defaultValue: 'overview' })
   const device = await getDeviceDetail_api(deviceId)
   if (!device) throw inputError('DEVICE_NOT_FOUND', 'deviceNotFound', { deviceId })
   const handoff = isDeviceDetailHandoffRequested(args.handoff)
-  const projectId = getProjectIdFromLocation()
-  const path = buildIotDeviceDetailPath(projectId, device.id, tab === 'overview' ? undefined : { tab })
-  return { device, deviceId: device.id, handoff, path, tab }
+  const navigation = resolveDeviceAgentDetailNavigation(context, device)
+  if (!navigation) throw Object.assign(new Error(resolveDomainAgentMessage('Instance.homeAgent.tool.search.noPermission')), { status: 403 })
+  const detailPath = navigation.path
+  const path = tab === 'overview' ? detailPath : `${detailPath}${detailPath.includes('?') ? '&' : '?'}tab=${encodeURIComponent(tab)}`
+  return { device, deviceId: device.id, handoff, path, tab, menu: navigation.menu }
 }
 
 export const deviceNavigationService = {
-  prepareOpenDetail: async (args: Record<string, unknown>) => {
-    const target = await resolveDeviceDetailTarget(args)
+  prepareOpenDetail: async (args: Record<string, unknown>, context: GeneralAgentContext) => {
+    const target = await resolveDeviceDetailTarget(args, context)
     const targetLabel = target.device.name
       ? `${target.device.name} (${target.device.id})`
       : target.device.id
@@ -56,7 +60,7 @@ export const deviceNavigationService = {
 
   openDetail: (args: Record<string, unknown>, context: GeneralAgentContext) => runDeviceTool<Record<string, unknown>>({}, async () => {
     // Device state and permission may change while confirmation is open, so the target is resolved again before dispatch.
-    const target = await resolveDeviceDetailTarget(args)
+    const target = await resolveDeviceDetailTarget(args, context)
     const handoffPrepared = target.handoff && prepareDeviceDetailHandoff(target.device, target.path, context)
     await router.push(target.path)
     return createDomainAgentToolResult({
@@ -72,7 +76,7 @@ export const deviceNavigationService = {
       data: {
         opened: true,
         path: target.path,
-        device: mapDevice(target.device),
+        device: mapDevice(target.device, context),
         handoffPrepared,
       },
       warnings: target.handoff && !handoffPrepared
@@ -82,7 +86,7 @@ export const deviceNavigationService = {
         kind: handoffPrepared ? 'handoff' : 'detail',
         label: target.device.name,
         path: target.path,
-        menuCode: 'iot-user/device/list',
+        menuCode: target.menu.code,
         subject: { type: 'device', id: target.device.id, name: target.device.name },
         requiresConfirmation: true,
       }],

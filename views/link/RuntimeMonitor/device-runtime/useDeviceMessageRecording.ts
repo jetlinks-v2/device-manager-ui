@@ -1,7 +1,7 @@
 import { computed, onScopeDispose, ref, shallowRef, watch, type Ref } from 'vue'
 import { queryDeviceMessageRecording } from '../../../../api/link/diagnostics'
 import { normalizeMBeans } from '../../diagnostics/normalize'
-import { diagnosticIntervalSeconds } from '../../diagnostics/preferences'
+import { useMBeanCollection } from '../../diagnostics/collection/useMBeanCollection'
 import { peakNeighborhood, readDeviceRecording, type DeviceRecording, type DeviceRecordingView, type DevicePeakSelection, type DeviceSecond } from './deviceMessageRecording'
 
 function sourceBeans(raw: unknown) {
@@ -15,28 +15,27 @@ export function useDeviceMessageRecording(nodeId: Ref<string>, enabled: Ref<bool
   const cache = new Map<string, DeviceRecording>()
   const data = shallowRef<DeviceRecording>(), state = ref<DeviceRecordingView['state']>('loading')
   const focus = shallowRef<DevicePeakSelection>(), focusedPoints = shallowRef<DeviceSecond[]>(), outside = ref(false), busy = ref(false)
-  let timer: ReturnType<typeof setTimeout> | undefined, pending: AbortController | undefined, peakRequest: AbortController | undefined, revision = 0, disposed = false, halted = false
+  let peakRequest: AbortController | undefined, revision = 0, disposed = false
+  const halted = ref(false)
   const key = () => `${scope.value}\0${nodeId.value}`
   let owner = '', ownerGeneration: string | undefined
 
-  function cancel() { clearTimeout(timer); pending?.abort(); pending = undefined; if (peakRequest && !focusedPoints.value) focus.value = undefined; peakRequest?.abort(); peakRequest = undefined; busy.value = false; revision++ }
+  function cancel() { if (peakRequest && !focusedPoints.value) focus.value = undefined; peakRequest?.abort(); peakRequest = undefined; busy.value = false; revision++ }
   function live() { peakRequest?.abort(); peakRequest = undefined; busy.value = false; focus.value = undefined; focusedPoints.value = undefined; outside.value = false }
   function denied(error: unknown) {
     const failure = error as { status?: number; response?: { status?: number } } | undefined
     if (![401, 403].includes(failure?.status ?? failure?.response?.status ?? 0)) return false
-    cancel(); cache.clear(); data.value = undefined; live(); halted = true; state.value = 'error'
+    cancel(); cache.clear(); data.value = undefined; live(); halted.value = true; state.value = 'error'
     return true
   }
 
-  async function refresh() {
-    if (!enabled.value || disposed || pending) return
-    clearTimeout(timer)
-    halted = false
-    const controller = new AbortController(), current = revision, identity = key()
-    pending = controller
+  const collection = useMBeanCollection(() => ({ nodeIds: [nodeId.value], enabled: enabled.value && !halted.value,
+    name: 'org.jetlinks:type=DeviceMessageMonitor,name=DeviceMessageMonitor', attributes: ['HistorySummary', 'RecentHistory'] }), result => {
+    if (!enabled.value || halted.value || disposed || result.nodeId !== nodeId.value) return
+    const identity = key()
     try {
-      const beans = sourceBeans(await queryDeviceMessageRecording(nodeId.value, controller.signal))
-      if (controller.signal.aborted || revision !== current) return
+      if (result.status === 'rejected') throw result.reason
+      const beans = sourceBeans(result.value)
       const next = readDeviceRecording(beans.find(bean => bean.type === 'DeviceMessageMonitor'))
       if (!next) { cache.delete(identity); data.value = undefined; live(); state.value = 'unsupported'; return }
       if (data.value && (data.value.generation !== next.generation || data.value.statisticsStartTime !== next.statisticsStartTime || data.value.firstSequence !== next.firstSequence)) live()
@@ -45,16 +44,10 @@ export function useDeviceMessageRecording(nodeId: Ref<string>, enabled: Ref<bool
       if (cache.size > 32) cache.delete(cache.keys().next().value!)
       state.value = 'ready'
     } catch (error) {
-      if (!controller.signal.aborted && revision === current) {
-        if (!denied(error)) state.value = data.value ? 'stale' : 'error'
-      }
-    } finally {
-      if (pending === controller) {
-        pending = undefined
-        if (enabled.value && !disposed && !halted && state.value !== 'unsupported') timer = setTimeout(refresh, diagnosticIntervalSeconds(interval.value) * 1000)
-      }
+      if (!denied(error)) state.value = data.value ? 'stale' : 'error'
     }
-  }
+  })
+  function refresh() { if (enabled.value && !disposed) { halted.value = false; collection.refresh() } }
 
   /** 大窗口只在点击峰值时加载一次；统计实例改变时拒绝拼接旧代次。 */
   async function select(selection: DevicePeakSelection) {
@@ -92,10 +85,9 @@ export function useDeviceMessageRecording(nodeId: Ref<string>, enabled: Ref<bool
       live()
     }
     state.value = data.value ? 'ready' : 'loading'
-    if (enabled.value) void refresh()
+    halted.value = false
   }, { immediate: true, flush: 'sync' })
-  watch(interval, () => { clearTimeout(timer); if (enabled.value && !pending && !halted && state.value !== 'unsupported') timer = setTimeout(refresh, diagnosticIntervalSeconds(interval.value) * 1000) })
-  onScopeDispose(() => { disposed = true; cancel(); cache.clear() })
+  onScopeDispose(() => { disposed = true; cancel(); cache.clear(); data.value = undefined; live() })
   const view = computed<DeviceRecordingView>(() => ({ data: data.value, points: focusedPoints.value ?? data.value?.points ?? [], state: state.value, busy: busy.value, active: enabled.value, focus: focus.value, outside: outside.value }))
   return { view, select, live, refresh }
 }

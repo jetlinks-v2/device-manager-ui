@@ -4,15 +4,17 @@
     <div v-else class="runtime-monitor-grid" :class="{ 'runtime-monitor-grid--logs': logLayoutActive }" :style="sidebar.gridStyle.value">
       <aside id="runtime-monitor-node-sidebar" v-show="sidebar.expanded.value" class="cluster-sidebar" :inert="!sidebar.expanded.value || undefined" :aria-hidden="!sidebar.expanded.value || undefined">
         <a-input-search v-model:value="view.search.value" :placeholder="t('runtimeDiagnostics.nodeSearch')" allow-clear />
-        <a-spin class="cluster-node-list" :spinning="view.membership.state.value.status === 'loading'">
-          <a-tree :tree-data="tree" :selected-keys="[view.selected.value]" block-node @select="keys => keys[0] && view.select(String(keys[0]))">
-            <template #title="{ dataRef }"><NodeSummary :node-id="dataRef.key" :label="dataRef.label" :live="dataRef.live" :stale="view.runtime.error.value" :waiting="waitingForMetrics" :metrics="dataRef.key === view.selected.value ? selectedMetrics : []" :buffer="buffers.snapshots.value.get(dataRef.key)" :session="sessions.snapshots.value.get(dataRef.key)" :can-open-buffer="view.access.value.monitor && view.active.value" @open-queue="openBufferQueue" @open-buffers="nodeId => openBufferQueue({ nodeId })" /></template>
-          </a-tree>
-        </a-spin>
+        <div ref="nodeListElement" class="cluster-node-list">
+          <a-spin :spinning="view.membership.state.value.status === 'loading'">
+            <a-tree :tree-data="tree" :selected-keys="[view.selected.value]" :height="sidebar.listHeight.value" :item-height="28" virtual block-node @select="keys => keys[0] && view.select(String(keys[0]))">
+              <template #title="{ dataRef }"><NodeSummary :node-id="dataRef.key" :label="dataRef.label" :live="liveNodes.get(dataRef.key)" :stale="view.runtime.error.value" :waiting="waitingForMetrics" :buffer="buffers.snapshots.value.get(dataRef.key)" :session="sessions.snapshots.value.get(dataRef.key)" :can-open-buffer="view.access.value.monitor && view.active.value" @open-queue="openBufferQueue" @open-buffers="nodeId => openBufferQueue({ nodeId })" /></template>
+            </a-tree>
+          </a-spin>
+        </div>
         <a-alert v-if="view.membership.state.value.status === 'error'" type="error" :message="t('runtimeDiagnostics.failed')" />
       </aside>
       <section class="cluster-detail" :class="{ 'cluster-detail--logs': logLayoutActive, 'cluster-detail--jvm': jvmCanvasActive }">
-        <KeepAlive :key="workspaceKey" :max="8"><RuntimeNodeWorkspace v-if="view.selected.value" :key="view.selected.value" :node-id="view.selected.value" :scope-key="workspaceKey" :tab="view.tab.value" :live="view.current.value?.live" :stale="view.runtime.error.value || !view.current.value?.live" :page-active="view.active.value" :connection="connection" :sampled-at="view.runtime.updatedAt.value" :trace-id="clusterTraceId" :reloaded="reloaded" @tab="view.selectTab" @metrics="acceptMetrics" @settings="openSettings">
+        <KeepAlive :key="workspaceKey" :max="8"><RuntimeNodeWorkspace v-if="view.selected.value" :key="view.selected.value" :node-id="view.selected.value" :scope-key="workspaceKey" :tab="view.tab.value" :live="view.current.value?.live" :stale="view.runtime.error.value || !view.current.value?.live" :page-active="view.active.value" :connection="connection" :sampled-at="view.runtime.updatedAt.value" :trace-id="clusterTraceId" :reloaded="reloaded" @tab="view.selectTab" @settings="openSettings">
           <template v-if="sidebar.canToggle.value" #node-leading><a-button class="cluster-sidebar-toggle" size="small" type="text" :aria-label="t(sidebar.expanded.value ? 'components.EqualHeightColumns.collapse' : 'components.EqualHeightColumns.expand')" :aria-expanded="sidebar.expanded.value" aria-controls="runtime-monitor-node-sidebar" @click="sidebar.toggle"><MenuFoldOutlined v-if="sidebar.expanded.value" /><MenuUnfoldOutlined v-else /></a-button></template>
           <template v-if="sidebar.compact.value" #node-name><a-select class="cluster-heading-select" size="small" :bordered="false" :value="view.selected.value" :options="mobileOptions" :title="view.selected.value" :aria-label="t('runtimeDiagnostics.nodeSearch')" show-search option-filter-prop="label" @change="value => view.select(String(value))" /></template>
           <template #actions>
@@ -31,23 +33,26 @@
   </main>
 </template>
 <script setup lang="ts" name="RuntimeMonitorPage">
-import { computed, defineAsyncComponent, ref, shallowRef, watch } from 'vue'
+import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { MenuFoldOutlined, MenuUnfoldOutlined, UndoOutlined } from '@ant-design/icons-vue'
 import { useClusterWorkspace } from './useClusterWorkspace'
 import { useLogWorkspaceLayout } from './useLogWorkspaceLayout'
 import { useClusterSidebarLayout } from './useClusterSidebarLayout'
-import { SamplingIntervalControl, type MetricValue } from '@jetlinks-web-core/components/RuntimeDiagnostics'
+import { SamplingIntervalControl } from '@jetlinks-web-core/components/RuntimeDiagnostics'
 import NodeSummary from './NodeSummary.vue'
 import { provideClusterBuffers } from './useClusterBuffers'
 import { useClusterSessionContext } from './useClusterSessions'
 import { bufferIntervals, diagnosticIntervalSeconds, type BufferInterval } from '../diagnostics/preferences'
+import { provideResourceHistoryCache } from '../diagnostics/overview/useResourceHistory'
 const RuntimeNodeWorkspace = defineAsyncComponent(() => import('./RuntimeNodeWorkspace.vue'))
 const { t } = useI18n(); const route = useRoute(), router = useRouter()
 const view = useClusterWorkspace()
+provideResourceHistoryCache(view.scopeKey, computed(() => view.access.value.query), view.active)
 const workspaceElement = ref<HTMLElement>()
-const sidebar = useClusterSidebarLayout(workspaceElement, view.showNodeSelector, computed(() => view.access.value.enter))
+const nodeListElement = ref<HTMLElement>()
+const sidebar = useClusterSidebarLayout(workspaceElement, view.showNodeSelector, computed(() => view.access.value.enter), nodeListElement)
 const logLayoutActive = computed(() => view.active.value && view.access.value.enter && view.access.value.logs && view.tab.value === 'logs')
 const jvmCanvasActive = computed(() => view.active.value && view.access.value.enter && (view.access.value.threads || view.access.value.jfr || view.access.value.heap) && view.tab.value === 'jvm')
 const logWorkspaceStyle = useLogWorkspaceLayout(workspaceElement, logLayoutActive)
@@ -57,7 +62,7 @@ function openSettings() { settingsOpen.value = true }
 function clearPreferences() { view.preferences.clear(); settingsOpen.value = false }
 const connection = { stale: view.runtime.error }
 const bufferInterval = computed(() => diagnosticIntervalSeconds(view.preferences.value.value.bufferIntervalSeconds))
-const buffers = provideClusterBuffers(computed(() => view.nodes.value.map(node => node.id)), computed(() => view.active.value && view.access.value.monitor), view.scopeKey, bufferInterval, view.discoveryScope, computed(() => view.access.value.monitor))
+const buffers = provideClusterBuffers(view.nodeIds, computed(() => view.active.value && view.access.value.monitor), view.scopeKey, bufferInterval, view.discoveryScope, computed(() => view.access.value.monitor))
 const sessions = useClusterSessionContext()!
 /** 同时定位节点、概览与队列，避免两次路由替换互相覆盖；只接收当前可见证据。 */
 function openBufferQueue(target: { nodeId: string; objectName?: string }) {
@@ -73,18 +78,21 @@ function setBufferInterval(value: unknown) { if (view.access.value.monitor && bu
 const clusterTraceId = ref('')
 watch([view.active, () => route.query.traceId], ([active, traceId]) => { if (active) clusterTraceId.value = typeof traceId === 'string' ? traceId : '' }, { immediate: true, flush: 'sync' })
 const workspaceKey = computed(() => JSON.stringify([view.scopeKey.value, view.access.value]))
-const selectedMetrics = shallowRef<MetricValue[]>([]), reloaded = ref(false)
+const reloaded = ref(false)
 let cachedNodes: string[] = [], visited = new Set<string>()
 watch([view.selected, workspaceKey], ([nodeId, scope], previous) => {
   settingsOpen.value = false
   if (scope !== previous?.[1]) { cachedNodes = []; visited = new Set() }
-  selectedMetrics.value = []
   reloaded.value = !!nodeId && visited.has(nodeId) && !cachedNodes.includes(nodeId)
   if (nodeId) { visited.add(nodeId); cachedNodes = [...cachedNodes.filter(id => id !== nodeId), nodeId].slice(-8) }
 }, { immediate: true, flush: 'sync' })
-function acceptMetrics(value: { nodeId: string; scopeKey: string; metrics: MetricValue[] }) { if (view.active.value && value.nodeId === view.selected.value && value.scopeKey === workspaceKey.value) selectedMetrics.value = value.metrics }
 const waitingForMetrics = computed(() => view.access.value.query && view.runtime.loading.value && !view.runtime.updatedAt.value && !view.runtime.error.value)
-const tree = computed(() => view.filtered.value.map(node => ({ key: node.id, label: node.alias || node.id, live: node.live })))
+const liveNodes = computed(() => new Map(view.nodes.value.map(node => [node.id, node.live])))
+// 数值帧不改变目录身份，避免 Tree 重新展开、索引与测量全部节点。
+const tree = computed<Array<{ key: string; label: string }>>((previous) => {
+  const next = view.filtered.value.map(node => ({ key: node.id, label: node.alias || node.id }))
+  return previous && previous.length === next.length && next.every((node, index) => node.key === previous[index].key && node.label === previous[index].label) ? previous : next
+})
 const mobileOptions = computed(() => view.nodes.value.map(node => ({ value: node.id, label: node.alias || node.id })))
 </script>
 <style scoped>
@@ -99,7 +107,7 @@ const mobileOptions = computed(() => view.nodes.value.map(node => ({ value: node
 .cluster-detail--jvm { display:flex; flex-direction:column; min-height:0; overflow:hidden; }
 .cluster-detail--jvm > :deep(.node-diagnostics) { flex:1 1 0; min-height:0; }
 .cluster-sidebar { display:flex; flex-direction:column; min-height:0; align-self:stretch; overflow:hidden; padding-inline-end:var(--space-4,16px); border-inline-end:1px solid var(--jet-theme-border-color-1); }
-.cluster-node-list { flex:1 1 0; min-height:0; margin-top:12px; overflow:auto; }
+.cluster-node-list { flex:0 0 auto; min-height:0; margin-top:12px; overflow:hidden; }
 .cluster-sidebar :deep(.ant-tree) { min-height:0; }
 .cluster-sidebar :deep(.ant-tree-node-content-wrapper) { min-width:0; }
 .cluster-sidebar :deep(.ant-tree-switcher) { display:none; }.cluster-sidebar :deep(.ant-tree-title) { display:block; }.cluster-sidebar :deep(.ant-tree-node-content-wrapper) { padding-inline:6px; }

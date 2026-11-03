@@ -15,6 +15,7 @@ import { isEqual } from 'lodash-es'
 import { buildCondition, invertCondition, readCondition, recoveryCondition, conditionSymbols } from './conditions'
 import type { DeviceAlarmCondition } from './types'
 import { notificationDateVariables, notificationDateFormat } from './notificationMessageVariables'
+import { formatPropertyValue } from '../components/PropertyRules/values/metadata'
 
 const DEVICE_ALARM_PROCESSOR = 'device-alarm'
 const DEVICE_ALARM_RELIEVE_PROCESSOR = 'device-alarm-relieve'
@@ -368,10 +369,7 @@ export function formatTriggerText(row: DeviceAlarmCondition & { propertyName?: s
   const upper = row.limit.upper ?? '-'
   const propertyName = row.propertyName ? `${row.propertyName}` : ''
   if (row.trigger !== 'inside' && row.trigger !== 'outside') {
-    const label = (value: unknown) => {
-      if (property?.valueType?.type === 'boolean') return value === true ? property.valueType.trueText ?? 'true' : property.valueType.falseText ?? 'false'
-      return property?.valueType?.elements?.find(item => item.value === value)?.text ?? (typeof value === 'string' ? JSON.stringify(value) : String(value ?? '—'))
-    }
+    const label = (value: unknown) => formatPropertyValue(value, property)
     const operator = ['in', 'nin'].includes(row.trigger) ? t(`DeviceAlarm.condition.${row.trigger}`) : conditionSymbols[row.trigger]
     const expected = ['in', 'nin'].includes(row.trigger) ? (row.values ?? []).map(label).join('、') : label(row.value)
     return `${propertyName}${propertyName ? ' ' : ''}${operator} ${expected}`

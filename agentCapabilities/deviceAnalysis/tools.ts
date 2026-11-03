@@ -1,4 +1,5 @@
 import i18n from '@jetlinks-web-core/locales'
+import { createDeviceMessageTrendFields } from '../deviceTrendFields'
 import {
   clientToolOutput,
   defineClientTool,
@@ -183,7 +184,6 @@ const DEVICE_METRIC_TREND_ORDERING = {
 
 const DEVICE_ONLINE_RATE_TREND_FIELDS = [
   { name: 'timestamp', type: 'timestamp' as const, role: 'temporal_dimension' as const, axis: 'time', encoding: 'epoch-millis' as const },
-  { name: 'label', type: 'string' as const, role: 'label' as const },
   {
     name: 'value',
     type: 'number' as const,
@@ -196,21 +196,7 @@ const DEVICE_ONLINE_RATE_TREND_FIELDS = [
   },
 ]
 
-const DEVICE_MESSAGE_TREND_FIELDS = [
-  { name: 'timestamp', type: 'timestamp' as const, role: 'temporal_dimension' as const, axis: 'time', encoding: 'epoch-millis' as const },
-  { name: 'label', type: 'string' as const, role: 'label' as const },
-  {
-    name: 'value',
-    type: 'integer' as const,
-    role: 'measure' as const,
-    label: t('metrics.uplinkMessages'),
-    format: 'integer' as const,
-    measure: 'uplink_messages',
-    unit: 'count',
-    unitLabel: fieldLabel('IotDeviceGroups.unit.message'),
-    aggregation: 'sum' as const,
-  },
-]
+const DEVICE_MESSAGE_TREND_FIELDS = createDeviceMessageTrendFields()
 
 const DEVICE_ONLINE_RATE_TREND_CONTRACT_FIELDS = DEVICE_ONLINE_RATE_TREND_FIELDS.slice(0, 1)
 const DEVICE_MESSAGE_TREND_CONTRACT_FIELDS = DEVICE_MESSAGE_TREND_FIELDS.slice(0, 1)
@@ -289,8 +275,11 @@ const input = (
 })
 
 const selectData = (result: any) => result.data
+// A single-metric temporal source needs coordinates and measurements, not a second copy of the time label.
 const selectMetricPoints = (result: any) => (
-  Array.isArray(result?.data?.points) ? result.data.points : []
+  Array.isArray(result?.data?.points)
+    ? result.data.points.map(({ timestamp, value }: { timestamp?: number; value: number }) => ({ timestamp, value }))
+    : []
 )
 const selectListIds = (path: string) => (result: any) => {
   const values = result?.data?.[path]
@@ -601,7 +590,7 @@ export const createDeviceAnalysisTools = () => defineClientTools<GeneralAgentCon
       select: selectData,
     }),
     owner: { module: 'iot-ui', group: 'device' },
-    prepare: (args, context, call) => deviceAnalysisService.prepareOpenDetail(args, context, call),
+    prepare: (args, context) => deviceAnalysisService.prepareOpenDetail(args, context),
     execute: async (args, context) => adaptDomainAgentClientToolResult(
       await deviceAnalysisService.openDetail(args, context),
     ),

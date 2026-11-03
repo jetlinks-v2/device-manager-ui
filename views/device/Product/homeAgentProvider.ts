@@ -6,6 +6,8 @@ import {
   type HomeAgentWorkflowGuide,
 } from '@jetlinks-web-core/layout/components/AiChat/homeAgentCapabilities';
 import type { AiClientToolDefinition } from '@jetlinks-web-core/layout/components/AiChat/clientTools';
+import { clientToolOutput, defineClientTool } from '@jetlinks-web-core/layout/components/AiChat/clientToolApi';
+import { adaptDeviceSearchPage } from '../../../agentCapabilities/deviceSearchResult';
 import { compactHomeAgentCapability } from '@jetlinks-web-core/layout/components/AiChat/homeAgentCatalog';
 import { isPrivateDeployment } from '@jetlinks-web-core/utils/deployment';
 import { queryProductList } from '../../../api/product';
@@ -13,10 +15,10 @@ import {
   createDeviceGuidanceCapabilities,
   DEVICE_ONBOARDING_CAPABILITY_ID,
 } from '../../../agentCapabilities/deviceGuidance/homeAgentProvider';
+import { findDeviceAgentMenu, isDeviceAgentMenuRoute } from '../../../agentCapabilities/deviceMenus';
 
 const DEVICE_PRODUCT_MENU_CODE = 'device/Product';
 const DEVICE_PRODUCT_DETAIL_ROUTE = 'device/Product/Detail';
-const DEVICE_PRODUCT_PATH = '/iot/device/Product';
 const DEVICE_PRODUCT_SEARCH_TOOL = 'device_product_search';
 const PRODUCT_SEARCH_INPUT_IDS = [
   'keyword', 'idOrName', 'id', 'name', 'state', 'deviceType',
@@ -94,14 +96,11 @@ const resolvePagedResult = (response: any) => {
 };
 
 const isDeviceProductRoute = (context: HomeAgentCapabilityContext) => (
-  context.currentRoute.path === DEVICE_PRODUCT_PATH
-  || context.currentRoute.name === DEVICE_PRODUCT_MENU_CODE
-  || context.currentView === DEVICE_PRODUCT_MENU_CODE
+  isDeviceAgentMenuRoute(context, 'product')
 );
 
 const isDeviceProductAvailable = (context: HomeAgentCapabilityContext) => (
-  !!context.findMenu(DEVICE_PRODUCT_MENU_CODE)
-  || !!context.findMenu(DEVICE_PRODUCT_PATH)
+  !!findDeviceAgentMenu(context, 'product')
 );
 
 const buildProductSearchFilter = (args: Record<string, any>) => {
@@ -160,7 +159,8 @@ const compactProduct = (item: Record<string, any>) => {
 };
 
 const searchProducts = async (args: Record<string, any>, context: HomeAgentCapabilityContext) => {
-  if (!isDeviceProductAvailable(context)) {
+  const menu = findDeviceAgentMenu(context, 'product');
+  if (!menu) {
     return {
       ok: false,
       error: i18n.global.t('Product.homeAgent.tool.search.noPermission'),
@@ -187,9 +187,9 @@ const searchProducts = async (args: Record<string, any>, context: HomeAgentCapab
     pageIndex,
     pageSize,
     menu: {
-      code: DEVICE_PRODUCT_MENU_CODE,
-      path: DEVICE_PRODUCT_PATH,
-      markdownLink: `[${i18n.global.t('Product.homeAgent.menu.deviceProduct')}](#menu=${encodeURIComponent(DEVICE_PRODUCT_MENU_CODE)})`,
+      code: menu.code,
+      path: menu.path,
+      markdownLink: `[${i18n.global.t('Product.homeAgent.menu.deviceProduct')}](#menu=${encodeURIComponent(menu.code)})`,
     },
     items: list.map(compactProduct),
     summary: i18n.global.t('Product.homeAgent.tool.search.summary', [
@@ -317,13 +317,17 @@ const getProductWorkflowGuides = (): HomeAgentWorkflowGuide[] => [
 ];
 
 const createProductTools = (): AiClientToolDefinition<HomeAgentCapabilityContext>[] => ([
-  {
+  defineClientTool<Record<string, any>, HomeAgentCapabilityContext, Awaited<ReturnType<typeof searchProducts>>>({
     id: DEVICE_PRODUCT_SEARCH_TOOL,
-    name: DEVICE_PRODUCT_SEARCH_TOOL,
-    displayName: i18n.global.t('Product.homeAgent.tool.search.displayName'),
-    progressText: i18n.global.t('Product.homeAgent.tool.search.progressText'),
-    description: i18n.global.t('Product.homeAgent.tool.search.description'),
-    help: i18n.global.t('Product.homeAgent.tool.search.help'),
+    presentation: {
+      displayName: i18n.global.t('Product.homeAgent.tool.search.displayName'),
+      progressText: i18n.global.t('Product.homeAgent.tool.search.progressText'),
+    },
+    description: {
+      text: i18n.global.t('Product.homeAgent.tool.search.description'),
+      help: i18n.global.t('Product.homeAgent.tool.search.help'),
+      capabilities: ['asset.product.search'],
+    },
     inputs: PRODUCT_SEARCH_INPUT_IDS.map((id) => ({
       id,
       name: id,
@@ -331,14 +335,20 @@ const createProductTools = (): AiClientToolDefinition<HomeAgentCapabilityContext
       required: false,
       valueType: ['limit', 'pageIndex'].includes(id) ? 'int' : 'string',
     })),
-    output: { type: 'object' },
-    annotations: { readOnlyHint: true },
-    execute: searchProducts,
-  },
+    output: [
+      clientToolOutput.lookup({ name: 'product-id', shape: 'product.ids', select: result => result.items?.map(item => item.id) || [] }),
+      clientToolOutput.recordSet({ name: 'product-records', shape: 'tabular.records', select: result => result.items || [] }),
+    ],
+    effect: { kind: 'READ' },
+    owner: { module: 'device-manager-ui', group: 'device-search' },
+    execute: async (args, context) => adaptDeviceSearchPage(await searchProducts(args, context)),
+  }),
 ]);
 
 const createProductCapabilities = (context: HomeAgentCapabilityContext) => {
   const currentRoute = isDeviceProductRoute(context);
+  const menu = findDeviceAgentMenu(context, 'product');
+  if (!menu) return [];
   return [
     {
       id: 'device-product:search',
@@ -346,9 +356,9 @@ const createProductCapabilities = (context: HomeAgentCapabilityContext) => {
       description: i18n.global.t('Product.homeAgent.capability.search.description'),
       kind: 'tool' as const,
       category: 'device-product',
-      menuCode: DEVICE_PRODUCT_MENU_CODE,
-      routeName: DEVICE_PRODUCT_MENU_CODE,
-      path: DEVICE_PRODUCT_PATH,
+      menuCode: menu.code,
+      routeName: menu.routeName || menu.code,
+      path: menu.path,
       order: 10,
       keywords: ['product', 'device product', 'search', '产品', '设备产品', '搜索'],
       metadata: {

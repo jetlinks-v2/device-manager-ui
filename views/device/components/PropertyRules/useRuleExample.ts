@@ -17,10 +17,9 @@ export function useRuleExample(props: { draft: RuleDraft; property: ThingModelPr
   const type = computed(() => props.property.valueType?.type ?? props.property.type ?? props.property.dataType)
   const scalar = computed(() => numeric.value || ['string', 'boolean', 'enum'].includes(String(type.value)))
   const textual = computed(() => scalar.value || type.value === 'file')
-  const enumOptions = computed(() => props.property.valueType?.elements?.map(element => ({ value: element.value, label: element.text ?? String(element.value) })) ?? [])
   const interval = computed(() => props.draft.samplingEnabled && (props.draft.samplingMode === 'interval' || props.draft.samplingMode === 'change' && props.draft.maxSilence != null) || Boolean(props.draft.fallbackEnabled || props.draft.stepEnabled))
   const timeUnit = computed(() => t(`PropertyRules.timeUnit.${props.draft.intervalUnit === 60000 ? 'min' : props.draft.intervalUnit === 1000 ? 's' : 'ms'}`))
-  const error = computed(() => validateDraft(props.draft, numeric.value)
+  const error = computed(() => validateDraft(props.draft, numeric.value, props.property)
     ?? validateRuleExampleInputs(inputs.value, numeric.value, interval.value, Boolean(props.draft.fallbackEnabled))
     ?? (props.draft.scaleEnabled && inputs.value.some(input => input.value != null && !input.missing && !Number.isFinite(Number(input.value) * Number(props.draft.scale) + Number(props.draft.offset ?? 0))) ? 'PropertyRules.diagram.scaleOverflow' : undefined))
   const points = computed(() => error.value ? [] : buildRuleExample(props.draft, props.property, inputs.value, fallback.value))
@@ -35,5 +34,5 @@ export function useRuleExample(props: { draft: RuleDraft; property: ThingModelPr
     inputs.value[index].arrivalMillis = value === null || value === '' ? null : Number(value) * props.draft.intervalUnit
   }
   const displayInput = (value: unknown) => typeof value === 'object' ? JSON.stringify(value) : String(value ?? '')
-  return { inputs, fallback, numeric, type, scalar, textual, enumOptions, interval, timeUnit, error, points, rows, reset, setArrival, setInputState, displayInput }
+  return { inputs, fallback, numeric, type, scalar, textual, interval, timeUnit, error, points, rows, reset, setArrival, setInputState, displayInput }
 }

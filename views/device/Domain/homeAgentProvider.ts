@@ -6,24 +6,27 @@ import {
 } from '@jetlinks-web-core/layout/components/AiChat/homeAgentCapabilities';
 import {
   createDeviceDomainTools,
-  DEVICE_DOMAIN_MENU_CODES,
   isDeviceDomainAvailable,
   isDeviceInstanceAvailable,
   isDeviceProductAvailable,
 } from './agentDeviceDomainTools';
+import { findDeviceAgentMenu } from '../../../agentCapabilities/deviceMenus';
 
 const createDeviceDomainCapabilities = (context: HomeAgentCapabilityContext) => {
   const capabilities = [];
+  const productMenu = findDeviceAgentMenu(context, 'product');
+  const instanceMenu = findDeviceAgentMenu(context, 'instance');
 
-  if (isDeviceProductAvailable(context)) {
+  if (productMenu) {
     capabilities.push({
       id: 'device-domain:product-model',
       name: i18n.global.t('Domain.homeAgent.capability.productModel.name'),
       description: i18n.global.t('Domain.homeAgent.capability.productModel.description'),
       kind: 'tool' as const,
       category: 'device-domain',
-      menuCode: DEVICE_DOMAIN_MENU_CODES.product,
-      routeName: DEVICE_DOMAIN_MENU_CODES.product,
+      menuCode: productMenu.code,
+      routeName: productMenu.routeName || productMenu.code,
+      path: productMenu.path,
       order: 30,
       keywords: ['product', 'metadata', 'model', 'thing model', '物模型', '产品', '规则配置'],
       metadata: {
@@ -34,7 +37,7 @@ const createDeviceDomainCapabilities = (context: HomeAgentCapabilityContext) => 
     });
   }
 
-  if (isDeviceInstanceAvailable(context)) {
+  if (instanceMenu) {
     capabilities.push(
       {
         id: 'device-domain:device-model',
@@ -42,8 +45,9 @@ const createDeviceDomainCapabilities = (context: HomeAgentCapabilityContext) => 
         description: i18n.global.t('Domain.homeAgent.capability.deviceModel.description'),
         kind: 'tool' as const,
         category: 'device-domain',
-        menuCode: DEVICE_DOMAIN_MENU_CODES.instance,
-        routeName: DEVICE_DOMAIN_MENU_CODES.instance,
+        menuCode: instanceMenu.code,
+        routeName: instanceMenu.routeName || instanceMenu.code,
+        path: instanceMenu.path,
         order: 31,
         keywords: ['device', 'metadata', 'model', 'thing model', '物模型', '设备', '规则配置'],
         metadata: {
@@ -58,8 +62,9 @@ const createDeviceDomainCapabilities = (context: HomeAgentCapabilityContext) => 
         description: i18n.global.t('Domain.homeAgent.capability.deviceHistory.description'),
         kind: 'tool' as const,
         category: 'device-domain',
-        menuCode: DEVICE_DOMAIN_MENU_CODES.instance,
-        routeName: DEVICE_DOMAIN_MENU_CODES.instance,
+        menuCode: instanceMenu.code,
+        routeName: instanceMenu.routeName || instanceMenu.code,
+        path: instanceMenu.path,
         order: 32,
         keywords: ['device', 'property history', 'aggregate', 'diagnosis', '历史数据', '属性历史', '规则诊断'],
         metadata: {

@@ -1,195 +1,135 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { readFileSync } from 'node:fs'
-import { createRequire } from 'node:module'
-import { dirname, resolve } from 'node:path'
-import { transformSync } from 'esbuild'
 import * as vue from 'vue'
+import { runtimeModules } from './helpers/runtimeModules.mjs'
 
-const require = createRequire(import.meta.url)
-const flush = async () => { await vue.nextTick(); await new Promise(done => setImmediate(done)); await vue.nextTick() }
-const fulfilled = value => ({ status: 'fulfilled', value })
-const rejected = reason => ({ status: 'rejected', reason })
+const names = ['org.jetlinks:type=EventBus,*', 'org.jetlinks:type=ThingsDataManager,*', 'org.jetlinks:type=SystemMonitorCollector,*', 'java.lang:type=Memory']
 const raw = (attributes = { InMemorySize: 0 }, type = 'ThingsDataManager', domain = 'org.jetlinks', unavailable = []) => ({ [domain]: { [type]: { local: {
   '@objectName': `${domain}:type=${type},name=local`, '@attributes': Object.keys(attributes).map(name => ({ name, available: !unavailable.includes(name), readable: true, type: 'long' })), ...attributes,
 } } } })
-const sources = (cache = raw()) => [fulfilled({}), fulfilled(cache), fulfilled({})]
 const session = (value = '0') => ({ supported: true, state: { status: 'ready', sampledAt: Date.now() }, sessions: value, keepOnline: '0', history: [{ timestamp: Date.now(), value }] })
-
-function harness(loader = async () => sources(), initiallySupported = true) {
-  const modules = new Map(), node = vue.ref('a'), enabled = vue.ref(true), identity = vue.ref('alice:p1'), interval = vue.ref(2), access = vue.ref({ monitor: true, sessions: true })
-  const snapshots = vue.shallowRef(new Map([['a', { ...session(), supported: initiallySupported === 'unknown' ? undefined : initiallySupported }]])), calls = []
-  function load(path) {
-    if (modules.has(path)) return modules.get(path)
-    const module = { exports: {} }, { code } = transformSync(readFileSync(path, 'utf8'), { loader: 'ts', format: 'cjs' })
-    const imports = id => {
-      if (id === 'vue') return vue
-      if (id === '@jetlinks-web-core/components/RuntimeDiagnostics') return load(resolve(import.meta.dirname, '../../../jetlinks-web-core/src/components/RuntimeDiagnostics/samplingInterval.ts'))
-      if (id.endsWith('useDiagnosticsAccess')) return { useDiagnosticsAccess: () => access }
-      if (id.endsWith('useClusterSessions')) return { useClusterSessionContext: () => ({ snapshots }) }
-      if (id === '@jetlinks-web-core/locales') return { __esModule: true, default: { global: { t: key => key } } }
-      if (id === '@jetlinks-web-core/components/RuntimeDiagnostics/utils') return {}
-      if (id.endsWith('api/link/diagnostics')) return { queryOperationalMBeans: (node, signal, includeCache) => { calls.push({ node, signal, includeCache }); return loader(node, signal, includeCache) } }
-      return id.startsWith('.') ? load(resolve(dirname(path), `${id}.ts`)) : require(id)
-    }
-    new Function('require', 'module', 'exports', code)(imports, module, module.exports); modules.set(path, module.exports); return module.exports
-  }
-  const path = resolve(import.meta.dirname, '../views/link/diagnostics'), operational = load(`${path}/useNodeOperationalSignals.ts`), overview = load(`${path}/overview/useOverviewTrends.ts`), pure = load(`${path}/overview/gaugeHistory.ts`), effect = vue.effectScope()
-  const supported = vue.computed(() => snapshots.value.get(node.value)?.supported)
-  const view = effect.run(() => operational.useNodeOperationalSignals(node, enabled, identity, supported, interval))
+function harness(support = true) {
+  const snapshots = vue.shallowRef(new Map([['a', { ...session(), supported: support }]]))
+  const modules = runtimeModules({ '../../RuntimeMonitor/useClusterSessions': { useClusterSessionContext: () => ({ snapshots }) } })
+  const node = vue.ref('a'), enabled = vue.ref(true), identity = vue.ref('alice'), interval = vue.ref(2), effect = vue.effectScope()
+  const operational = modules.load('views/link/diagnostics/useNodeOperationalSignals.ts')
+  const overview = modules.load('views/link/diagnostics/overview/useOverviewTrends.ts')
+  const view = effect.run(() => operational.useNodeOperationalSignals(node, enabled, identity, vue.computed(() => snapshots.value.get(node.value)?.supported), interval))
   const trends = effect.run(() => overview.useOverviewTrends(node, view.cache))
   function capability(value, target = node.value) { const next = new Map(snapshots.value); if (value === 'removed') next.delete(target); else next.set(target, { ...session(), supported: value }); snapshots.value = next }
-  return { view, trends, pure, effect, node, enabled, identity, interval, access, snapshots, calls, capability }
+  return { ...modules, node, enabled, identity, interval, effect, view, trends, snapshots, capability,
+    push: (value = raw(), index = 1, target = node.value, at = Date.now()) => modules.collection.push(target, names[index], value, at),
+    fail: (reason, index = 1) => modules.collection.fail(node.value, names[index], reason),
+    pure: modules.load('views/link/diagnostics/overview/gaugeHistory.ts') }
 }
-
-test('both trends require confirmed session capability; cache also requires exact own capability, and genuine zero displays', async () => {
-  const h = harness(async (_node, _signal, cache) => cache ? sources() : sources({}), 'unknown')
+test('cache declares only after confirmed session capability; exact capability and genuine zero drive trends', () => {
+  const h = harness(undefined)
   try {
-    await flush(); assert.equal(h.calls[0].includeCache, false); assert.deepEqual(h.trends.value, [])
-    h.capability(true); await flush()
-    assert.equal(h.calls.at(-1).includeCache, true)
-    assert.deepEqual(h.trends.value.map(value => value.key), ['sessions', 'property-cache'])
+    h.capability(undefined)
+    assert.equal(h.collection.entries[1].demand.enabled, false); assert.deepEqual(h.trends.value, [])
+    h.capability(true); assert.equal(h.collection.entries[1].demand.enabled, true)
+    h.push(); assert.deepEqual(h.trends.value.map(value => value.key), ['sessions', 'property-cache'])
     assert.equal(h.trends.value[0].history[0].value, '0'); assert.equal(h.trends.value[1].history[0].value, '0')
-    h.access.value = { monitor: true, sessions: false }; await flush()
-    assert.equal(h.trends.value[0].details, undefined, 'connection action obeys the session menu button')
-    assert.equal(h.trends.value.length, 2, 'read-only monitor still displays real capability and zero counts')
-    h.capability(false); await flush()
-    assert.deepEqual(h.trends.value, []); assert.equal(h.view.cache.value, undefined); assert.equal(h.calls.at(-1).includeCache, false)
-    h.capability(true); await flush(); assert.equal(h.trends.value.length, 2)
-    h.capability('removed'); await flush(); assert.deepEqual(h.trends.value, []); assert.equal(h.view.cache.value, undefined)
-    h.access.value = { monitor: false, sessions: true }; await flush()
-    assert.equal(h.view.signals.value.length, 0); assert.equal(h.view.cache.value, undefined)
+    h.access.value = { monitor: true, sessions: false }; assert.equal(h.trends.value[0].details, undefined)
+    h.capability(false); assert.deepEqual(h.trends.value, []); assert.equal(h.view.cache.value, undefined)
+    h.capability(true); h.push(); assert.equal(h.trends.value.length, 2)
+    h.capability('removed'); assert.equal(h.view.cache.value, undefined)
+    h.access.value = { monitor: false }; assert.equal(h.view.signals.value.length, 0)
   } finally { h.effect.stop() }
 })
-
-test('absent and wrong-domain cache MBeans hide the strip; partial or unsafe values remain missing while exact decimal longs stay precise', async () => {
-  let response = raw({ InMemorySize: '9223372036854775807', DirtyCount: '0', QueueDepth: '0' })
-  const h = harness(async () => sources(response))
-  try {
-    await flush(); assert.equal(h.view.cache.value.inMemorySize, '9223372036854775807')
-    assert.equal(h.trends.value[1].history[0].value, '9223372036854775807')
-    assert.equal(h.trends.value[1].dirtyCount, '0'); assert.equal(h.trends.value[1].facts.find(fact => fact.label === 'RuntimeMonitor.overviewDirtyQueue').value, '0')
-    response = raw({ InMemorySize: Number.MAX_SAFE_INTEGER + 1, DirtyCount: '7' }); await h.view.refresh()
-    assert.equal(h.view.cache.value.inMemorySize, undefined); assert.equal(h.view.cache.value.dirtyCount, '7')
-    assert.equal(h.view.cache.value.history.at(-1).value, undefined); assert.equal(h.trends.value.length, 2)
-    assert.equal(h.trends.value[1].dirtyCount, '7'); assert.equal(h.trends.value[1].facts.some(fact => fact.label === 'RuntimeMonitor.overviewDirtyQueue'), false)
-    response = raw({ InMemorySize: 1, DirtyCount: 3 }, 'ThingsDataManager', 'org.jetlinks', ['InMemorySize']); await h.view.refresh()
-    assert.equal(h.view.cache.value.inMemorySize, undefined, 'unavailable metadata wins over a numeric field')
-    response = raw({ InMemorySize: 99 }, 'ThingsDataManager', 'other.domain'); await h.view.refresh()
-    assert.equal(h.view.cache.value.supported, false); assert.equal(h.trends.value.length, 1)
-    response = {}; await h.view.refresh(); assert.equal(h.trends.value.length, 1)
-    response = raw({ InMemorySize: 0 }); await h.view.refresh(); assert.equal(h.trends.value[1].history.length, 1); assert.equal(h.trends.value[1].history[0].value, '0')
-  } finally { h.effect.stop() }
-})
-
-test('cache failure appends gaps without advancing its last valid time; denial removes evidence and recovery starts real sampling', async t => {
-  t.mock.timers.enable({ apis: ['Date', 'setTimeout'], now: 1000 })
-  let source = fulfilled(raw({ InMemorySize: '9', DirtyCount: '3' }))
-  const h = harness(async () => [fulfilled({}), source, fulfilled({})])
-  try {
-    await flush(); assert.equal(h.view.cache.value.state.sampledAt, 1000)
-    source = rejected(new Error('offline')); t.mock.timers.tick(30000); await flush()
-    assert.equal(h.view.cache.value.state.status, 'stale'); assert.equal(h.view.cache.value.state.sampledAt, 1000)
-    assert.equal(h.view.cache.value.inMemorySize, '9'); assert.equal(h.view.cache.value.history.at(-1).value, undefined)
-    assert.equal(h.trends.value[1].dirtyCount, '3'); assert.equal(h.trends.value[1].state.sampledAt, 1000)
-    assert.equal(h.pure.gaugeObservation(h.trends.value[1].history).retained.value, '9')
-    source = rejected({ status: 403 }); await h.view.refresh(); assert.equal(h.trends.value.length, 1); assert.equal(h.view.cache.value.history.length, 0)
-    source = fulfilled(raw({ InMemorySize: 0 })); await h.view.refresh(); assert.equal(h.trends.value.length, 2)
-    assert.equal(h.view.cache.value.history.length, 1); assert.equal(h.pure.gaugeObservation(h.view.cache.value.history).collecting, true)
-  } finally { h.effect.stop() }
-})
-
-test('3 second cache polling waits after completion, never overlaps, pauses on Tab changes and rejects canceled late responses after resume', async t => {
-  t.mock.timers.enable({ apis: ['Date', 'setTimeout'], now: 1000 })
-  const pending = [], h = harness((node, signal, cache) => new Promise(done => pending.push({ node, signal, cache, done })))
-  try {
-    assert.equal(pending.length, 1)
-    t.mock.timers.tick(90000); await flush(); assert.equal(pending.length, 1)
-    pending[0].done(sources(raw({ InMemorySize: 1 }))); await flush()
-    t.mock.timers.tick(1999); await flush(); assert.equal(pending.length, 1)
-    t.mock.timers.tick(1); await flush(); assert.equal(pending.length, 2)
-    h.enabled.value = false; await flush(); assert.equal(pending[1].signal.aborted, true)
-    assert.equal(h.view.cache.value.inMemorySize, '1'); assert.equal(h.view.cache.value.history.at(-1).value, undefined)
-    t.mock.timers.tick(60000); await flush(); assert.equal(pending.length, 2)
-    h.enabled.value = true; await flush(); assert.equal(pending.length, 3)
-    pending[1].done(sources(raw({ InMemorySize: 99 }))); await flush(); assert.equal(h.view.cache.value.inMemorySize, '1')
-    pending[2].done(sources(raw({ InMemorySize: 2 }))); await flush(); assert.equal(h.view.cache.value.inMemorySize, '2')
-    assert.ok(h.view.cache.value.history.some(point => point.value === '1')); assert.ok(h.view.cache.value.history.some(point => point.value === undefined))
-  } finally { h.effect.stop() }
-})
-
-test('overview interval updates preserve cache evidence and apply after completion without canceling or overlapping reads', async t => {
-  t.mock.timers.enable({ apis: ['Date', 'setTimeout'], now: 1000 })
-  const pending = [], h = harness((_node, signal) => new Promise(done => pending.push({ done, signal })))
-  try {
-    pending[0].done(sources(raw({ InMemorySize: 1 }))); await flush()
-    h.interval.value = 10
-    t.mock.timers.tick(9999); await flush(); assert.equal(pending.length, 1)
-    t.mock.timers.tick(1); await flush(); assert.equal(pending.length, 2)
-    h.interval.value = 2
-    t.mock.timers.tick(60000); await flush(); assert.equal(pending.length, 2)
-    assert.equal(pending[1].signal.aborted, false)
-    pending[1].done(sources(raw({ InMemorySize: 2 }))); await flush()
-    assert.equal(h.view.cache.value.history.length, 2)
-    assert.equal(h.view.cache.value.history[0].value, '1')
-    t.mock.timers.tick(1999); await flush(); assert.equal(pending.length, 2)
-    t.mock.timers.tick(1); await flush(); assert.equal(pending.length, 3)
-  } finally { h.effect.stop() }
-})
-
-test('node switches retain each node history; capability removal, scope and permission cleanup isolate all in-flight responses', async () => {
-  const pending = [], h = harness((node, signal, cache) => new Promise(done => pending.push({ node, signal, cache, done })))
-  try {
-    pending[0].done(sources(raw({ InMemorySize: 1 }))); await flush()
-    h.capability(true, 'b'); h.node.value = 'b'; await flush(); pending.at(-1).done(sources(raw({ InMemorySize: 2 }))); await flush()
-    assert.equal(h.view.cache.value.inMemorySize, '2')
-    h.node.value = 'a'; await flush(); assert.equal(h.view.cache.value.inMemorySize, '1')
-    const staleNode = pending.at(-1)
-    h.identity.value = 'bob:p2'; await flush(); assert.equal(staleNode.signal.aborted, true); assert.equal(h.view.cache.value, undefined)
-    staleNode.done(sources(raw({ InMemorySize: 99 }))); await flush(); assert.equal(h.view.cache.value, undefined)
-    const next = pending.at(-1); h.access.value = { monitor: false, sessions: true }; await flush()
-    assert.equal(next.signal.aborted, true); next.done(sources(raw({ InMemorySize: 98 }))); await flush(); assert.equal(h.view.cache.value, undefined)
-    h.access.value = { monitor: true, sessions: true }; await flush(); pending.at(-1).done(sources(raw({ InMemorySize: 0 }))); await flush()
-    assert.equal(h.view.cache.value.history.length, 1)
-    h.enabled.value = false; h.capability('removed'); await flush(); assert.equal(h.view.cache.value, undefined)
-  } finally { h.effect.stop() }
-})
-
-test('default attention excludes raw topology and lifetime counters and only includes current gauge or recent failure evidence', async () => {
-  const h = harness(async () => [fulfilled(raw({ TotalTopics: 7, TotalSubscribers: 8, StructuredBufferedEventCount: 0 }, 'EventBus')), fulfilled(raw()), fulfilled(raw({ FailureCount: 99, LastFailureTime: 1000, LastSuccessTime: 2000 }, 'SystemMonitorCollector'))])
-  try {
-    await flush(); assert.deepEqual(h.view.signals.value, [])
-  } finally { h.effect.stop() }
-})
-
-test('history is limited to ten minutes and bounded under manual refresh; missing samples break deltas and large decimal changes remain exact', () => {
+test('absent and wrong-domain capability hide cache; missing and unsafe values remain unknown, decimal longs stay exact', () => {
   const h = harness()
   try {
-    const { appendGaugeSample, gaugeObservation, gaugePlot } = h.pure
-    let history = []
-    for (let i = 0; i <= 1000; i++) history = appendGaugeSample(history, i * 1000, String(i))
-    assert.equal(history.length, 601); assert.ok(history.every(point => point.timestamp >= 400000))
-    history = appendGaugeSample(history, 2000000, '1'); assert.equal(history.length, 1); assert.equal(gaugeObservation(history).collecting, true)
-    history = appendGaugeSample(history, 2030000, '0'); assert.equal(gaugeObservation(history).change, '-1')
-    history = appendGaugeSample(history, 2060000); history = appendGaugeSample(history, 2090000, '10')
-    assert.equal(gaugeObservation(history).change, undefined); assert.equal(gaugePlot(history)[2][1], null)
-    const exact = [{ timestamp: 0, value: '9223372036854775806' }, { timestamp: 30000, value: '9223372036854775807' }]
-    assert.equal(gaugeObservation(exact).change, '1'); assert.deepEqual(gaugePlot(exact), [[0, 0], [30000, 1]])
+    h.push(raw({ InMemorySize: '9223372036854775807', DirtyCount: '0', QueueDepth: '0' }))
+    assert.equal(h.view.cache.value.inMemorySize, '9223372036854775807')
+    assert.equal(h.trends.value[1].history[0].value, '9223372036854775807')
+    h.push(raw({ InMemorySize: Number.MAX_SAFE_INTEGER + 1, DirtyCount: '7' }))
+    assert.equal(h.view.cache.value.inMemorySize, undefined); assert.equal(h.view.cache.value.dirtyCount, '7')
+    assert.equal(h.view.cache.value.history.at(-1).value, undefined)
+    h.push(raw({ InMemorySize: 1 }, 'ThingsDataManager', 'org.jetlinks', ['InMemorySize']))
+    assert.equal(h.view.cache.value.inMemorySize, undefined)
+    h.push(raw({ InMemorySize: 99 }, 'ThingsDataManager', 'other.domain'))
+    assert.equal(h.view.cache.value.supported, false); assert.equal(h.trends.value.length, 1)
+    h.push({}); assert.equal(h.trends.value.length, 1)
+    h.push(); assert.equal(h.trends.value[1].history.length, 1)
   } finally { h.effect.stop() }
 })
-
-
-test('capability withdrawal cancels cache reads and ignores a late result after capability recovers', async () => {
-  const pending = [], h = harness((node, signal, cache) => new Promise(done => pending.push({ node, signal, cache, done })))
+test('failure adds gaps, preserves sampledAt and evidence; denial clears it and recovery starts fresh', t => {
+  t.mock.timers.enable({ apis: ['Date'], now: 1000 })
+  const h = harness()
   try {
-    assert.equal(pending[0].cache, true)
-    h.capability(undefined); await flush()
-    assert.equal(pending[0].signal.aborted, true); assert.equal(pending.at(-1).cache, false)
-    h.capability(true); await flush()
-    assert.equal(pending[1].signal.aborted, true); assert.equal(pending.at(-1).cache, true)
-    pending[0].done(sources(raw({ InMemorySize: 99 }))); pending[1].done(sources(raw({ InMemorySize: 88 }))); await flush()
-    assert.equal(h.view.cache.value, undefined)
-    pending[2].done(sources(raw({ InMemorySize: 0 }))); await flush()
-    assert.equal(h.view.cache.value.inMemorySize, '0'); assert.equal(h.view.cache.value.history.length, 1)
+    h.push(raw({ InMemorySize: '9', DirtyCount: '3' })); t.mock.timers.tick(30000); h.fail(new Error('offline'))
+    assert.equal(h.view.cache.value.state.status, 'stale'); assert.equal(h.view.cache.value.state.sampledAt, 1000)
+    assert.equal(h.view.cache.value.inMemorySize, '9'); assert.equal(h.view.cache.value.history.at(-1).value, undefined)
+    assert.equal(h.pure.gaugeObservation(h.trends.value[1].history).retained.value, '9')
+    h.fail({ status: 403 }); assert.equal(h.trends.value.length, 1); assert.equal(h.view.cache.value.history.length, 0)
+    h.push(); assert.equal(h.view.cache.value.history.length, 1)
   } finally { h.effect.stop() }
+})
+test('pause withdraws declarations and interrupts trends; resumed samples retain prior evidence', () => {
+  const h = harness()
+  try {
+    h.push(raw({ InMemorySize: 1 })); h.enabled.value = false
+    assert.ok(h.collection.entries.every(entry => !entry.demand.enabled))
+    assert.equal(h.view.cache.value.history.at(-1).value, undefined)
+    h.push(raw({ InMemorySize: 99 })); assert.equal(h.view.cache.value.inMemorySize, '1')
+    h.enabled.value = true; h.push(raw({ InMemorySize: 2 }))
+    assert.equal(h.view.cache.value.inMemorySize, '2')
+    assert.ok(h.view.cache.value.history.some(point => point.value === '1'))
+  } finally { h.effect.stop() }
+})
+test('page interval does not create a private timer; refresh delegates and retains cache', () => {
+  const h = harness()
+  try {
+    h.push(); const before = h.view.cache.value
+    h.interval.value = 10; assert.equal(h.view.cache.value, before)
+    h.view.refresh(); assert.equal(h.collection.refreshes.length, 1)
+    h.enabled.value = false; h.view.refresh(); assert.equal(h.collection.refreshes.length, 1)
+  } finally { h.effect.stop() }
+})
+test('node history is isolated; identity, capability and permission changes release sensitive evidence', () => {
+  const h = harness()
+  try {
+    h.push(raw({ InMemorySize: 1 }))
+    h.capability(true, 'b'); h.node.value = 'b'; h.push(raw({ InMemorySize: 2 }))
+    assert.equal(h.view.cache.value.inMemorySize, '2')
+    h.node.value = 'a'; assert.equal(h.view.cache.value.inMemorySize, '1')
+    h.identity.value = 'bob'; assert.equal(h.view.cache.value, undefined)
+    h.push(raw({ InMemorySize: 99 }), 1, 'b'); assert.equal(h.view.cache.value, undefined)
+    h.push(); h.access.value = { monitor: false }; assert.equal(h.view.cache.value, undefined)
+    h.push(raw({ InMemorySize: 98 })); assert.equal(h.view.cache.value, undefined)
+    h.access.value = { monitor: true }; h.push(); assert.equal(h.view.cache.value.history.length, 1)
+  } finally { h.effect.stop() }
+})
+test('attention excludes topology and lifetime totals and independently retains actionable failures', () => {
+  const h = harness()
+  try {
+    h.push(raw({ TotalTopics: 7, TotalSubscribers: 8, StructuredBufferedEventCount: 0 }, 'EventBus'), 0)
+    h.push(raw({ FailureCount: 99, LastFailureTime: 1000, LastSuccessTime: 2000 }, 'SystemMonitorCollector'), 2)
+    assert.deepEqual(h.view.signals.value, [])
+    h.push(raw({ StructuredBufferedEventCount: 2 }, 'EventBus'), 0); assert.equal(h.view.signals.value.length, 1)
+    h.fail(new Error('offline'), 0); assert.equal(h.view.signals.value[0].stale, true)
+    h.fail({ status: 403 }, 0); assert.deepEqual(h.view.signals.value, [])
+  } finally { h.effect.stop() }
+})
+test('ten-minute gauge history is bounded; gaps break deltas and decimal changes remain exact', () => {
+  const h = harness()
+  try {
+    let history = []
+    for (let i = 0; i <= 1000; i++) history = h.pure.appendGaugeSample(history, i * 1000, String(i))
+    assert.equal(history.length, 601)
+    history = h.pure.appendGaugeSample(history, 2000000, '1'); assert.equal(history.length, 1)
+    history = h.pure.appendGaugeSample(history, 2030000, '0'); assert.equal(h.pure.gaugeObservation(history).change, '-1')
+    history = h.pure.appendGaugeSample(history, 2060000); history = h.pure.appendGaugeSample(history, 2090000, '10')
+    assert.equal(h.pure.gaugeObservation(history).change, undefined); assert.equal(h.pure.gaugePlot(history)[2][1], null)
+    assert.equal(h.pure.gaugeObservation([{ timestamp: 0, value: '9223372036854775806' }, { timestamp: 30000, value: '9223372036854775807' }]).change, '1')
+  } finally { h.effect.stop() }
+})
+test('capability withdrawal disables only cache and disposal removes all consumers', () => {
+  const h = harness()
+  h.push(); h.capability(undefined)
+  assert.equal(h.collection.entries[1].demand.enabled, false); assert.equal(h.collection.entries[0].demand.enabled, true)
+  h.push(raw({ InMemorySize: 99 })); assert.equal(h.view.cache.value, undefined)
+  h.capability(true); h.push(); assert.equal(h.view.cache.value.history.length, 1)
+  h.effect.stop(); assert.ok(h.collection.entries.every(entry => !entry.live))
 })

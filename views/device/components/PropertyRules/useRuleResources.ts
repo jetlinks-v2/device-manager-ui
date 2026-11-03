@@ -24,11 +24,12 @@ export function useRuleResources(scope?: () => unknown) {
     loading.value = failed.value = false
     ready.value = levelsLoading.value = levelsFailed.value = levelsLoaded = false
   }
-  if (scope) watch(scope, () => {
+  // Compare a value snapshot: equivalent owner objects must not clear options, while nested auth changes must.
+  if (scope) watch(() => JSON.stringify(scope()), () => {
     const wasRequested = ready.value || loading.value
     reset()
     if (wasRequested) void load()
-  }, { deep: true, flush: 'sync' })
+  }, { flush: 'sync' })
   async function loadLevels() {
     if (levelsLoaded || levelsLoading.value) return
     const token = generation
@@ -40,8 +41,8 @@ export function useRuleResources(scope?: () => unknown) {
     } catch { if (token === generation) levelsFailed.value = true }
     finally { if (token === generation) levelsLoading.value = false }
   }
-  async function load() {
-    if (loading.value || ready.value && !failed.value) return
+  async function load(force = false) {
+    if (loading.value || ready.value && !force) return
     const token = generation
     loading.value = true
     failed.value = false
@@ -50,10 +51,16 @@ export function useRuleResources(scope?: () => unknown) {
       if (token !== generation) return
       methods.value = methodList
       failed.value = methodList.some(method => method.templates?.trigger === 'unknown' || method.templates?.relieve === 'unknown')
-      ready.value = true
     } catch { if (token === generation) failed.value = true }
-    finally { if (token === generation) loading.value = false }
+    finally {
+      if (token === generation) {
+        // Cache settled failures too; ordinary display/popover events only ensure, never retry.
+        ready.value = true
+        loading.value = false
+      }
+    }
   }
+  function retry() { return load(true) }
   onBeforeUnmount(reset)
-  return { levels, methods, loading, levelsLoading, levelsFailed, failed, ready, loadLevels, load, reset }
+  return { levels, methods, loading, levelsLoading, levelsFailed, failed, ready, loadLevels, load, retry, reset }
 }

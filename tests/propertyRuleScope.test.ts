@@ -125,6 +125,22 @@ test('notification type changes preserve message content and recovery, without c
   } finally { unmount() }
 })
 
+test('changing notification selections does not repeat the initial type lookup', async () => {
+  const props = notificationProps()
+  props.model.notification.enabled = true
+  let requests = 0
+  const { state, unmount } = mountState(() => useAlarmNotification(props, () => { requests++ }, () => {}))
+  try {
+    assert.equal(requests, 1)
+    state.channelIds.value = ['email']
+    await settle()
+    assert.equal(requests, 1, 'selection replaces the notification object but does not change its scope or enabled state')
+    props.model.property = 'humidity'
+    await settle()
+    assert.equal(requests, 2, 'a different property still hydrates its saved types')
+  } finally { unmount() }
+})
+
 test('opening unavailable legacy selections preserves bindings; explicit type edits remove them', () => {
   const props = notificationProps()
   props.model.notification.notifyChannelIds = ['gone']
@@ -283,6 +299,56 @@ test('notification resources survive property changes and refresh after a target
   } finally { unmount() }
 })
 
+test('partial notification failures remain stable until an explicit retry', async () => {
+  const calls: string[] = []
+  let failChannels = true
+  setAlarmRequestHandler(async url => {
+    calls.push(url)
+    if (url === '/notify/channel/all' && failChannels) throw new Error('channel configuration unavailable')
+    return { result: url === '/notify/channel/providers' ? [{ id: 'email', name: 'Email' }] : [] }
+  })
+  const { state: resources, unmount } = mountState(useRuleResources)
+  try {
+    await resources.load()
+    assert.equal(resources.failed.value, true)
+    assert.equal(resources.methods.value[0].providerId, 'email')
+    const previous = resources.methods.value
+    await resources.load()
+    await resources.load()
+    assert.equal(calls.length, 2, 'ordinary display and popover opening must not start another failed lookup')
+    assert.equal(resources.methods.value, previous)
+    failChannels = false
+    await resources.retry()
+    assert.equal(calls.length, 4)
+    assert.equal(resources.failed.value, false)
+    assert.equal(resources.loading.value, false)
+  } finally { unmount() }
+})
+
+test('equivalent owner snapshots keep notification resources while actual scope and permission changes invalidate them', async () => {
+  const owner = reactive({ scope: { productId: 'p1', deviceId: 'd1', name: 'Before' }, permissions: { notify: ['query'] } })
+  let requests = 0
+  setAlarmRequestHandler(async () => { requests++; return { result: [] } })
+  const { state: resources, unmount } = mountState(() => useRuleResources(() => [owner.scope.productId, owner.scope.deviceId, owner.permissions]))
+  try {
+    await resources.load()
+    const previous = resources.methods.value
+    owner.scope = { ...owner.scope, name: 'After' }
+    await settle()
+    assert.equal(requests, 2, 'a replacement scope object with the same target must not clear and reload options')
+    assert.equal(resources.methods.value, previous)
+    owner.permissions = { notify: ['query'] }
+    await settle()
+    assert.equal(requests, 2, 'equivalent permission snapshots must keep the cached resources')
+    owner.scope.deviceId = 'd2'
+    await settle()
+    assert.equal(requests, 4)
+    owner.permissions.notify.push('update')
+    await settle()
+    assert.equal(requests, 6, 'nested permission changes must still invalidate old resources')
+  } finally { unmount() }
+})
+
 test('restore confirmation is explicit and restores only the captured device property', async () => {
   const calls: string[] = []
   setAlarmRequestHandler(async (url, body) => { assert.equal(body.method, 'DELETE'); calls.push(url); return { result: {} } })
@@ -297,7 +363,7 @@ test('restore confirmation is explicit and restores only the captured device pro
     await view.dialogs[1].onOk?.()
     assert.deepEqual(calls, ['/message/preprocessor/device/p1/d1/property/temperature'])
     assert.equal(view.editor.hasOverride.value, false)
-    assert.equal(view.editor.custom.value, false)
+    assert.equal(view.editor.custom.value, true)
     assert.equal(view.editor.saving.value, false)
   } finally { view.cleanup() }
 })
@@ -550,8 +616,11 @@ test('alarm options load only on demand, cache successes and ignore responses af
     assert.equal(resources.failed.value, false, 'a level lookup failure does not invalidate notification options')
     await resources.load()
     assert.equal(resources.failed.value, true)
+    assert.equal(resources.ready.value, true)
     setAlarmRequestHandler(async () => ({ result: [] }))
     await resources.load()
+    assert.equal(resources.failed.value, true, 'ordinary display must keep a settled failure until an explicit retry')
+    await resources.retry()
     assert.equal(resources.ready.value, true)
     assert.equal(resources.failed.value, false)
   } finally { unmount() }
@@ -568,7 +637,8 @@ test('inline editor saves the selected report strategy and whitelist without ext
     assert.equal(editor.draft.value?.alarm.name, 'temperature alarm')
     editor.addPart('values')
     editor.draft.value!.valuesMode = 'keep'
-    editor.setValues(['0', '12.5'])
+    // ValueSetInput now emits typed values directly into the shared draft.
+    editor.draft.value!.values = [0, 12.5]
     editor.addPart('interval')
     assert.equal(editor.draft.value?.samplingMode, 'interval')
     assert.equal(writes.length, 0)
@@ -782,18 +852,48 @@ test('inline editor uses the list snapshot, keeps editing after save and refresh
 test('inline device inheritance remains read-only until customized; undo restores inheritance', async () => {
   Object.defineProperty(globalThis, 'window', { configurable: true, value: { addEventListener() {}, removeEventListener() {} } })
   setAlarmRequestHandler(async () => { throw new Error('No request expected') })
-  const props = reactive<RuleEditorProps>({ open: true, inline: true, scope: { productId: 'p1', deviceId: 'd1' }, property: { id: 'temperature' }, snapshot: { hasOverride: false } })
+  const props = reactive<RuleEditorProps>({ open: true, inline: true, scope: { productId: 'p1', deviceId: 'd1' }, property: { id: 'temperature' },
+    snapshot: { hasOverride: false, raw: { provider: 'ratio-sampling', configuration: { ratio: 0.5 } } } })
   const { state: editor, unmount } = mountState(() => usePropertyRuleEditor(props, () => {}, () => {}))
   try {
     await settle()
     assert.equal(editor.editable.value, false)
     editor.customize()
     assert.equal(editor.editable.value, true)
-    editor.draft.value!.samplingEnabled = true
+    editor.draft.value!.samplingEnabled = false
     editor.discard()
     assert.equal(editor.custom.value, false)
     assert.equal(editor.dirty.value, false)
   } finally { unmount(); Reflect.deleteProperty(globalThis, 'window') }
+})
+
+test('a device without product or device rules stays directly editable after discarding or reloading an unsaved draft', async () => {
+  const calls: string[] = []
+  setAlarmRequestHandler(async url => { calls.push(url); return { result: [] } })
+  const view = mountEditor()
+  try {
+    view.props.snapshot = { hasOverride: false }
+    await view.editor.load()
+    const { editor } = view
+    assert.equal(editor.source.value, 'none')
+    assert.equal(editor.displaySource.value, 'none')
+    assert.equal(editor.editable.value, true)
+    assert.equal(editor.pendingSave.value, false)
+    editor.addPart('range')
+    assert.equal(editor.pendingSave.value, true)
+    assert.equal(editor.displaySource.value, 'device')
+    editor.discard()
+    assert.equal(editor.editable.value, true)
+    assert.equal(editor.pendingSave.value, false)
+    assert.equal(editor.displaySource.value, 'none')
+    editor.addPart('range')
+    await editor.load()
+    assert.equal(editor.editable.value, true)
+    assert.equal(editor.hasOverride.value, false)
+    assert.equal(editor.draft.value?.rangeEnabled, false)
+    assert.equal(editor.pendingSave.value, false)
+    assert.deepEqual(calls, [], 'unsaved editing, discard and reload never create a device override')
+  } finally { view.cleanup() }
 })
 
 test('save feedback follows the real write, expires once, and a new edit cancels the success feedback', async (context) => {

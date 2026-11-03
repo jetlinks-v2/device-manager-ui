@@ -17,6 +17,7 @@ import {
   IOT_DEVICE_MENU_ANCHORS,
 } from './agentCapabilities/deviceAnalysis/constants'
 import { DEVICE_GUIDANCE_MENU_CODES } from './agentCapabilities/deviceGuidance/homeAgentProvider'
+import { DEVICE_AGENT_MENU_CODES, DEVICE_AGENT_MENU_PATHS } from './agentCapabilities/deviceMenus'
 
 type HomeAgentProviderLoader = () => Promise<unknown>
 
@@ -24,12 +25,36 @@ const toHomeAgentProviderKey = (path: string) => (
   path.replace('./views/', '').replace('/homeAgentProvider.ts', '')
 )
 
+const homeAgentProviderMenus: Record<string, { codes: readonly string[], paths: readonly string[] }> = {
+  'device/Instance': { codes: DEVICE_AGENT_MENU_CODES.instance, paths: DEVICE_AGENT_MENU_PATHS.instance },
+  'device/Product': { codes: DEVICE_AGENT_MENU_CODES.product, paths: DEVICE_AGENT_MENU_PATHS.product },
+  'device/DashBoard': {
+    codes: [...DEVICE_AGENT_MENU_CODES.dashboard, ...DEVICE_AGENT_MENU_CODES.instance],
+    paths: [...DEVICE_AGENT_MENU_PATHS.dashboard, ...DEVICE_AGENT_MENU_PATHS.instance],
+  },
+  'device/Domain': {
+    codes: [...DEVICE_AGENT_MENU_CODES.instance, ...DEVICE_AGENT_MENU_CODES.product],
+    paths: [...DEVICE_AGENT_MENU_PATHS.instance, ...DEVICE_AGENT_MENU_PATHS.product],
+  },
+}
+
 const homeAgentProviderModules = import.meta.glob('./views/**/homeAgentProvider.ts') as Record<string, HomeAgentProviderLoader>
 const homeAgentProviders = Object.fromEntries(
-  Object.entries(homeAgentProviderModules).map(([path, loader]) => [
-    toHomeAgentProviderKey(path),
-    loader
-  ])
+  Object.entries(homeAgentProviderModules).map(([path, loader]) => {
+    const key = toHomeAgentProviderKey(path)
+    const { codes, paths } = homeAgentProviderMenus[key]
+    return [key, {
+      loader,
+      activation: {
+        version: 'general-agent-provider-activation/v1',
+        scopes: [
+          { kind: 'menuCode', values: [...codes] },
+          { kind: 'routeName', values: [...codes] },
+          { kind: 'path', values: [...paths] },
+        ],
+      },
+    } satisfies AgentCapabilityProviderResource]
+  })
 )
 
 export default {
@@ -76,7 +101,16 @@ export default {
   },
   homeAgentProviders: {
     ...homeAgentProviders,
-    'device/function-guidance': () => import('./agentCapabilities/deviceGuidance/homeAgentProvider'),
+    'device/function-guidance': {
+      loader: () => import('./agentCapabilities/deviceGuidance/homeAgentProvider'),
+      activation: {
+        version: 'general-agent-provider-activation/v1',
+        scopes: [
+          { kind: 'menuCode', values: Object.values(DEVICE_GUIDANCE_MENU_CODES).flat() },
+          { kind: 'routeName', values: Object.values(DEVICE_GUIDANCE_MENU_CODES).flat() },
+        ],
+      },
+    } satisfies AgentCapabilityProviderResource,
   },
   generalAgentExtensions: {
     'device/function-guidance': {
