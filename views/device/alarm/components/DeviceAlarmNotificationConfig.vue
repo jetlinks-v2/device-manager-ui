@@ -15,7 +15,7 @@
             <template #content>
               <div class="notification-option-panel" @keydown.esc.stop.prevent="closeChannels">
                 <a-alert v-if="failed" type="warning" show-icon :message="$t('PropertyRules.resourcesFailed')">
-                  <template #action><a-button size="small" type="link" @click="$emit('request-methods')">{{ $t('PropertyRules.retry') }}</a-button></template>
+                  <template #action><a-button size="small" type="link" @click="$emit('retry-methods')">{{ $t('PropertyRules.retry') }}</a-button></template>
                 </a-alert>
                 <a-spin :spinning="loading">
                   <a-checkbox-group v-model:value="notification.channelIds" class="notification-types" :disabled="disabled">
@@ -79,7 +79,7 @@ const props = defineProps({
   disabled: { type: Boolean, default: false },
   reveal: { type: Boolean, default: undefined },
 })
-const emit = defineEmits<{ (e: 'request-methods'): void; (e: 'open-change', value: boolean): void }>()
+const emit = defineEmits<{ (e: 'request-methods'): void; (e: 'retry-methods'): void; (e: 'open-change', value: boolean): void }>()
 const { t: $t } = useI18n()
 const notification = reactive(useAlarmNotification(props, () => emit('request-methods'), value => emit('open-change', value)))
 const channelTrigger = ref<{ focus: () => void }>()

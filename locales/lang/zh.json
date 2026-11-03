@@ -1,4 +1,6 @@
 {
+  "PropertyRules.valueUnavailable": "{value}（不在当前取值中）",
+  "PropertyRules.noValueOptions": "物模型未定义可选值",
   "PropertyRules.recordInvalid": "记录无效数据",
   "PropertyRules.recordInvalidShort": "记录",
   "PropertyRules.recordInvalidHint": "将本属性被清洗丢弃的值记录到无效数据，便于排查。替换、限幅和上报控制省略的数据不记录。记录失败或超过处理能力时，仍按规则清洗，记录可能不完整；较长文本只保留部分内容。",

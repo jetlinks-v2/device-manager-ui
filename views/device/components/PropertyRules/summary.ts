@@ -3,6 +3,7 @@ import { formatPropertyUnit, formatTriggerText, formatRelieveText, isNumberPrope
 import type { ParsedRule, RuleDraft, RulePart } from './codec'
 import { readSampling, validateSampling, type SamplingDraft } from './sampling'
 import { readValueRules } from './values/config'
+import { formatPropertyValue } from './values/metadata'
 
 export type RuleSection = 'cleaning' | 'processing' | 'alarm' | 'sampling'
 export type RuleTranslator = (key: string, values?: Record<string, string | number>) => string
@@ -115,7 +116,7 @@ function summarizeEffectRows(effects: RuleEffects, property: ThingModelProperty,
 }
 
 function formatValues(values: Array<string | number | boolean>, property: ThingModelProperty, t: RuleTranslator) {
-  return values.map(value => property.valueType?.elements?.find(item => item.value === value)?.text ?? JSON.stringify(value)).join(t('PropertyRules.valueSeparator'))
+  return values.map(value => formatPropertyValue(value, property)).join(t('PropertyRules.valueSeparator'))
 }
 
 /** Saved rules and unsaved inputs share the same effect descriptions; this never builds a runnable rule. */

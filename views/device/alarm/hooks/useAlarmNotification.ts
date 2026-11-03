@@ -68,7 +68,7 @@ export function useAlarmNotification(props: NotificationProps, requestMethods: (
   watch(scopeKey, () => { activePanel.value = undefined })
   watch(() => props.disabled, disabled => { if (disabled) activePanel.value = undefined })
   // Resolve saved types on first display; the owner deduplicates and caches resource requests.
-  watch(() => [scopeKey.value, props.model.notification.enabled] as const, ([, enabled]) => {
+  watch([scopeKey, () => props.model.notification.enabled], ([, enabled]) => {
     if (enabled) requestMethods()
     else activePanel.value = undefined
   }, { immediate: true, flush: 'sync' })

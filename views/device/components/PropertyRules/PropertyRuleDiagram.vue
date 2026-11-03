@@ -16,9 +16,7 @@
         <div v-for="(input, index) in example.inputs" :key="index" class="diagram-input" :class="{ 'diagram-input-missing': input.missing }">
           <a-dropdown v-if="draft.fallbackEnabled" :trigger="['click']" :get-popup-container="popupContainer"><a-button type="text" size="small" :aria-label="$t('PropertyRules.fallback.inputState')"><AIcon :type="input.missing ? 'MinusCircleOutlined' : input.value === null ? 'StopOutlined' : 'EditOutlined'" /></a-button><template #overlay><a-menu><a-menu-item @click="example.setInputState(index, 'null')">{{ $t('PropertyRules.fallback.null') }}</a-menu-item><a-menu-item @click="example.setInputState(index, 'missing')">{{ $t('PropertyRules.fallback.missing') }}</a-menu-item><a-menu-item @click="example.setInputState(index, 'real')">{{ $t('PropertyRules.fallback.real') }}</a-menu-item></a-menu></template></a-dropdown>
           <span v-if="input.missing || input.value === null" class="diagram-input-static">{{ $t(input.missing ? 'PropertyRules.fallback.absent' : 'PropertyRules.fallback.null') }}</span>
-          <a-input-number v-else-if="example.numeric" :value="typeof input.value === 'number' ? input.value : undefined" size="small" :controls="false" :aria-label="$t('PropertyRules.diagram.valueLabel', { index: index + 1 })" @update:value="input.value = $event" />
-          <a-switch v-else-if="example.type === 'boolean'" :disabled="Boolean(input.missing)" :checked="input.value === true" checked-children="true" un-checked-children="false" :aria-label="$t('PropertyRules.diagram.valueLabel', { index: index + 1 })" @update:checked="input.value = $event" />
-          <a-select v-else-if="example.type === 'enum' && example.enumOptions.length" :disabled="Boolean(input.missing)" v-model:value="input.value" size="small" :options="example.enumOptions" :get-popup-container="popupContainer" :aria-label="$t('PropertyRules.diagram.valueLabel', { index: index + 1 })" />
+          <ValueInput v-else-if="example.scalar" :value="scalarValue(input.value) ? input.value : undefined" :property="property" :get-popup-container="popupContainer" :label="$t('PropertyRules.diagram.valueLabel', { index: index + 1 })" @update:value="input.value = $event" />
           <a-input v-else-if="example.textual" :disabled="Boolean(input.missing)" :value="String(input.value ?? '')" size="small" :aria-label="$t('PropertyRules.diagram.valueLabel', { index: index + 1 })" @update:value="input.value = $event" />
           <span v-else class="diagram-input-static" :title="example.displayInput(input.value)">{{ example.displayInput(input.value) }}</span>
         </div>
@@ -57,6 +55,7 @@ import type { RuleDraft } from './codec'
 import type { RuleExampleStage } from './diagram'
 import { useRuleExample } from './useRuleExample'
 import ValueInput from './values/ValueInput.vue'
+import { scalarValue } from './values/config'
 const props = defineProps<{ draft: RuleDraft; property: ThingModelProperty }>()
 defineEmits<{ (e: 'close'): void }>()
 const { t: $t } = useI18n()
