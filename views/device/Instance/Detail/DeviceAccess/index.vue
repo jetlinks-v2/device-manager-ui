@@ -115,7 +115,7 @@
             @change="handleTraceModeChange"
           />
           <a-button
-            v-if="codecSimulateSupport"
+            v-if="canShowCodecSimulator"
             size="small"
             @click="codecSimulatorOpen = true"
           >
@@ -216,7 +216,7 @@
       />
     </a-drawer>
     <a-drawer
-      v-if="codecSimulateSupport"
+      v-if="canShowCodecSimulator"
       v-model:open="codecSimulatorOpen"
       :width="1180"
       :title="$t('InstanceDeviceAccess.codecDebug.title')"
@@ -224,7 +224,13 @@
       placement="right"
       :body-style="{ padding: 0, height: '100%' }"
     >
-      <CodecSimulatorPanel v-if="codecSimulatorOpen" />
+      <CodecSimulatorPanel
+        v-if="codecSimulatorOpen && deviceId"
+        :device-id="deviceId"
+        :metadata="instanceStore.current?.metadata"
+        :product-metadata="instanceStore.current?.productMetadata"
+        :transport="instanceStore.current?.transport"
+      />
     </a-drawer>
   </div>
 </template>
@@ -235,6 +241,7 @@ import Status from '../Diagnose/Status/index'
 import InstanceAccessGuide from './InstanceAccessGuide.vue'
 import TraceChainList from './TraceChainList.vue'
 import CodecSimulatorPanel from './CodecSimulatorPanel.vue'
+import { isCodecSimulatorTransportSupported } from './composables/useCodecSimulator'
 import { useDeviceTraceLog } from './composables/useDeviceTraceLog'
 import { useTraceReceivedTotal } from './composables/useTraceReceivedTotal'
 import { useInstanceStore } from '../../../../../store/instance'
@@ -284,6 +291,10 @@ const diagnoseOpen = ref(false)
 const codecSimulatorOpen = ref(false)
 const debugLogSupport = ref(false)
 const codecSimulateSupport = ref(false)
+// Do not expose a simulator that the debug backend cannot construct a packet for.
+const canShowCodecSimulator = computed(() =>
+  codecSimulateSupport.value && isCodecSimulatorTransportSupported(instanceStore.current?.transport),
+)
 const debugLogLoading = ref(false)
 const debugHistoryLoading = ref(false)
 const historyPageIndex = ref(0)

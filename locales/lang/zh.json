@@ -3062,6 +3062,8 @@
     "InstanceDeviceAccess.codecDebug.subtitle": "模拟协议编解码，不向真实设备发送报文",
     "InstanceDeviceAccess.codecDebug.topic": "Topic",
     "InstanceDeviceAccess.codecDebug.topicPlaceholder": "请输入 Topic 或路径",
+    "InstanceDeviceAccess.codecDebug.webSocketText": "文本",
+    "InstanceDeviceAccess.codecDebug.webSocketBinary": "二进制",
     "InstanceDeviceAccess.codecDebug.encoding": "编码",
     "InstanceDeviceAccess.codecDebug.payload": "报文",
     "InstanceDeviceAccess.codecDebug.payloadPlaceholder": "请输入设备原始报文",

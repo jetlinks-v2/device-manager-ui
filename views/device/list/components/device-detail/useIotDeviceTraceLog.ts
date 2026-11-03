@@ -605,6 +605,14 @@ export function useIotDeviceTraceLog(deviceId: Ref<string | undefined>) {
     scheduleFlush()
   }
 
+  /** Appends persisted trace rows through the same grouping and de-duplication path as live WebSocket events. */
+  const appendTracePayload = (payload: IotTraceEventItem) => {
+    enqueue({
+      key: randomString(),
+      ...payload,
+    })
+  }
+
   const subscribe = () => {
     unsubscribe()
     const id = deviceId.value
@@ -646,5 +654,6 @@ export function useIotDeviceTraceLog(deviceId: Ref<string | undefined>) {
     subscribe,
     unsubscribe,
     clear,
+    appendTracePayload,
   }
 }
