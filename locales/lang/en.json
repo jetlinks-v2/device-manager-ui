@@ -3062,6 +3062,8 @@
     "InstanceDeviceAccess.codecDebug.subtitle": "Simulate protocol codec without sending to the real device.",
     "InstanceDeviceAccess.codecDebug.topic": "Topic",
     "InstanceDeviceAccess.codecDebug.topicPlaceholder": "Enter topic or path",
+    "InstanceDeviceAccess.codecDebug.webSocketText": "Text",
+    "InstanceDeviceAccess.codecDebug.webSocketBinary": "Binary",
     "InstanceDeviceAccess.codecDebug.encoding": "Encoding",
     "InstanceDeviceAccess.codecDebug.payload": "Payload",
     "InstanceDeviceAccess.codecDebug.payloadPlaceholder": "Enter raw device payload",

@@ -154,6 +154,17 @@ export const iotDeviceDetailRealApi = {
   queryProtocolDetail: (type: string, transport: string) => request.get(`/protocol/${type}/transport/${transport}`),
   sendDeviceMessage: (deviceId: string, data: Record<string, any>) => request.post(`/device/instance/${deviceId}/message`, data),
   getDeviceSessions: (deviceId: string) => request.get(`/device/instance/${encodeURIComponent(deviceId)}/sessions`),
+  /** Queries whether persisted communication traces are enabled for one device. */
+  getDeviceDebugLogConfig: (deviceId: string) => request.get(`/device/debug/log/${encodeURIComponent(deviceId)}/config`),
+  /** Enables persisted communication traces for one device. */
+  enableDeviceDebugLog: (deviceId: string) => request.post(`/device/debug/log/${encodeURIComponent(deviceId)}/_enable`),
+  /** Disables new persisted communication traces without deleting existing history. */
+  disableDeviceDebugLog: (deviceId: string) => request.post(`/device/debug/log/${encodeURIComponent(deviceId)}/_disable`),
+  /** Pages persisted communication traces for one device. */
+  queryDeviceDebugLogs: (deviceId: string, data: Record<string, unknown>) => request.post(`/device/debug/log/${encodeURIComponent(deviceId)}/_query`, data),
+  /** Probes optional backend capabilities so unsupported private deployments keep the existing trace UI. */
+  existsDeviceDebugLogSupport: () => request.get<boolean>('/command-supports/service/deviceService:debug-log/exists'),
+  existsDeviceCodecSimulateSupport: () => request.get<boolean>('/command-supports/service/deviceService:codec-simulate/exists'),
   getTransparentCodecSupports: () => request.post<Array<{ id: string; name: string }>>('/device/transparent-codec/supports'),
   getDeviceTransparentCodec: (productId: string, deviceId: string) =>
     request.get(`/device/transparent-codec/${productId}/${deviceId}`),

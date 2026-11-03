@@ -223,11 +223,41 @@
         <div>
           <AIcon type="BranchesOutlined" aria-hidden="true" />
           <span>{{ $t('IotDeviceDetail.trace.communicationTrace') }}</span>
-          <em>{{ $t('IotDeviceDetail.trace.receivedCount', { count: traceReceivedTotal }) }}</em>
+          <em>{{ $t('IotDeviceDetail.trace.receivedCount', { count: displayedTraceTotal }) }}</em>
         </div>
         <a-space size="small">
+          <a-segmented
+            v-if="debugLogSupport"
+            v-model:value="traceMode"
+            size="small"
+            :options="traceModeOptions"
+          />
+          <a-popconfirm
+            v-if="debugLogSupport"
+            :title="debugLogConfig.deviceEnabled
+              ? $t('InstanceDeviceAccess.debugLog.disableConfirm')
+              : $t('InstanceDeviceAccess.debugLog.enableConfirm')"
+            :disabled="!debugLogConfig.enabled || debugLogLoading"
+            @confirm="toggleDebugLog(!debugLogConfig.deviceEnabled)"
+          >
+            <a-tooltip :title="$t('InstanceDeviceAccess.debugLog.saveTip')">
+              <a-space size="small">
+                <span>{{ $t('InstanceDeviceAccess.debugLog.save') }}</span>
+                <a-switch
+                  size="small"
+                  :checked="debugLogConfig.deviceEnabled"
+                  :disabled="!debugLogConfig.enabled"
+                  :loading="debugLogLoading"
+                />
+              </a-space>
+            </a-tooltip>
+          </a-popconfirm>
+          <a-button v-if="canShowCodecSimulator" size="small" @click="codecSimulatorOpen = true">
+            <AIcon type="ExperimentOutlined" aria-hidden="true" />
+            {{ $t('InstanceDeviceAccess.codecDebug.title') }}
+          </a-button>
           <a-popconfirm :title="$t('IotDeviceDetail.trace.clearConfirm')" @confirm="clearTraces">
-            <a-button size="small" :disabled="!traceGroups.length">
+            <a-button size="small" :disabled="!activeTraceGroups.length">
               {{ $t('IotDeviceDetail.trace.clear') }}
             </a-button>
           </a-popconfirm>
@@ -258,6 +288,11 @@
           class="trace-empty"
           :description="$t('IotDeviceDetail.trace.emptyTrace')"
         />
+        <div v-if="traceMode === 'history' && (historyHasMore || debugHistoryLoading)" class="trace-history-more">
+          <a-button size="small" :loading="debugHistoryLoading" @click="loadDebugHistory">
+            {{ $t('InstanceDeviceAccess.debugLog.loadMore') }}
+          </a-button>
+        </div>
       </div>
     </section>
 
@@ -331,6 +366,24 @@
         </ol>
       </section>
     </JlDrawerShell>
+
+    <a-drawer
+      v-if="canShowCodecSimulator"
+      v-model:open="codecSimulatorOpen"
+      :width="1180"
+      :title="$t('InstanceDeviceAccess.codecDebug.title')"
+      destroy-on-close
+      placement="right"
+      :body-style="{ padding: 0, height: '100%' }"
+    >
+      <CodecSimulatorPanel
+        v-if="codecSimulatorOpen"
+        :device-id="props.device.id"
+        :metadata="props.device.deviceThingModelMetadata"
+        :product-metadata="props.device.productThingModelMetadata ?? props.device.thingModelMetadata"
+        :transport="props.device.transport"
+      />
+    </a-drawer>
   </section>
 </template>
 
@@ -352,6 +405,8 @@ import {
   type IotTraceGroup,
   useIotDeviceTraceLog,
 } from './useIotDeviceTraceLog'
+import CodecSimulatorPanel from '../../../Instance/Detail/DeviceAccess/CodecSimulatorPanel.vue'
+import { isCodecSimulatorTransportSupported } from '../../../Instance/Detail/DeviceAccess/composables/useCodecSimulator'
 
 type Mode = 'read' | 'write' | 'invoke'
 type TraceGroupView = {
@@ -425,6 +480,20 @@ const { t: $t } = useI18n()
 const mode = ref<Mode>('read')
 const loading = ref(false)
 const subscribed = ref(true)
+const traceMode = ref<'realtime' | 'history'>('realtime')
+const debugLogSupport = ref(false)
+const codecSimulateSupport = ref(false)
+const debugLogLoading = ref(false)
+const debugHistoryLoading = ref(false)
+const codecSimulatorOpen = ref(false)
+// The generic debug backend has native wrappers only for its built-in transport set.
+const canShowCodecSimulator = computed(() =>
+  codecSimulateSupport.value && isCodecSimulatorTransportSupported(props.device.transport),
+)
+const debugLogConfig = reactive({ enabled: false, deviceEnabled: false })
+const historyPageIndex = ref(0)
+const historyHasMore = ref(true)
+const historySnapshotTime = ref<number | undefined>()
 const traceReceivedTotal = ref(0)
 const seenTraceKeys = new Set<string>()
 const matchedTraceKey = ref('')
@@ -440,7 +509,17 @@ const invokeJsonText = ref('{}')
 const invokeResult = ref<{ success: boolean; time: string; messageId?: string; payload: string } | null>(null)
 const TRACE_DEBUG_MEMORY_KEY = 'jetlinks:iot-device-trace-debug-memory:v1'
 const deviceIdRef = computed(() => props.device.id || undefined)
-const { traceGroups, subscribe, unsubscribe, clear } = useIotDeviceTraceLog(deviceIdRef)
+const {
+  traceGroups: realtimeTraceGroups,
+  subscribe,
+  unsubscribe,
+  clear,
+} = useIotDeviceTraceLog(deviceIdRef)
+const {
+  traceGroups: historyTraceGroups,
+  clear: clearHistory,
+  appendTracePayload: appendHistoryTracePayload,
+} = useIotDeviceTraceLog(deviceIdRef)
 const pendingMessageId = ref<string>()
 const sessions = ref<DeviceSessionInfo[]>([])
 const sessionsLoading = ref(false)
@@ -455,6 +534,10 @@ const modeOptions = [
   { label: $t('IotDeviceDetail.trace.mode.write'), value: 'write' },
   { label: $t('IotDeviceDetail.trace.mode.invoke'), value: 'invoke' },
 ]
+const traceModeOptions = computed(() => [
+  { label: $t('InstanceDeviceAccess.debugLog.realtimeMode'), value: 'realtime' },
+  { label: $t('InstanceDeviceAccess.debugLog.historyMode'), value: 'history' },
+])
 const invokeModeOptions = [
   { label: $t('IotDeviceDetail.trace.mode.form'), value: 'form' },
   { label: 'JSON', value: 'json' },
@@ -497,6 +580,8 @@ const MESSAGE_TYPE_NORMALIZE: Record<string, string> = {
 }
 
 const isOnline = computed(() => props.device.status === 'online')
+const activeTraceGroups = computed(() => traceMode.value === 'history' ? historyTraceGroups.value : realtimeTraceGroups.value)
+const displayedTraceTotal = computed(() => traceMode.value === 'history' ? historyTraceGroups.value.length : traceReceivedTotal.value)
 const readPropsList = computed(() => props.properties.filter((item) => item.accessMode === 'read' || item.accessMode === 'readwrite'))
 const writePropsList = computed(() => props.properties.filter((item) => item.writable || item.accessMode === 'write' || item.accessMode === 'readwrite'))
 const readPropertyOptions = computed(() => readPropsList.value.map((item) => ({ label: `${item.name} (${item.identifier})`, value: item.identifier })))
@@ -559,7 +644,7 @@ const connectionCountHint = computed(() => {
   return ''
 })
 const sortedGroups = computed<TraceGroupView[]>(() =>
-  traceGroups.value
+  activeTraceGroups.value
     .map(buildTraceGroupView)
     .sort((a, b) => b.lastTime - a.lastTime),
 )
@@ -580,12 +665,91 @@ function toggleSubscribe() {
 }
 
 function clearTraces() {
+  if (traceMode.value === 'history') {
+    resetHistoryTrace()
+    detailOpen.value = false
+    detailGroup.value = null
+    return
+  }
   clear()
   pendingMessageId.value = undefined
   traceReceivedTotal.value = 0
   seenTraceKeys.clear()
   detailOpen.value = false
   detailGroup.value = null
+}
+
+/** Queries backend capability registrations before exposing optional trace persistence and packet simulation. */
+async function loadDeviceDebugSupport() {
+  const [debugLogResp, codecSimulateResp]: any[] = await Promise.all([
+    iotDeviceDetailRealApi.existsDeviceDebugLogSupport(),
+    iotDeviceDetailRealApi.existsDeviceCodecSimulateSupport(),
+  ])
+  debugLogSupport.value = debugLogResp?.status === 200 && !!debugLogResp.result
+  codecSimulateSupport.value = codecSimulateResp?.status === 200 && !!codecSimulateResp.result
+  if (!debugLogSupport.value) {
+    traceMode.value = 'realtime'
+    debugLogConfig.enabled = false
+    debugLogConfig.deviceEnabled = false
+  }
+  if (!codecSimulateSupport.value) codecSimulatorOpen.value = false
+}
+
+/** Reads the per-device persistence switch after the debug-log capability is confirmed. */
+async function loadDebugLogConfig() {
+  if (!props.device.id || !debugLogSupport.value) return
+  const resp: any = await iotDeviceDetailRealApi.getDeviceDebugLogConfig(props.device.id)
+  const result = resp?.result || {}
+  debugLogConfig.enabled = !!result.enabled
+  debugLogConfig.deviceEnabled = !!result.deviceEnabled
+}
+
+/** Enables or disables future persisted traces without altering existing history. */
+async function toggleDebugLog(enabled: boolean) {
+  if (!props.device.id || !debugLogSupport.value) return
+  debugLogLoading.value = true
+  try {
+    const resp: any = enabled
+      ? await iotDeviceDetailRealApi.enableDeviceDebugLog(props.device.id)
+      : await iotDeviceDetailRealApi.disableDeviceDebugLog(props.device.id)
+    if (resp?.status === 200 || resp?.success === true) {
+      debugLogConfig.deviceEnabled = enabled
+      message.success($t(enabled ? 'InstanceDeviceAccess.debugLog.enabled' : 'InstanceDeviceAccess.debugLog.disabled'))
+    }
+  } finally {
+    debugLogLoading.value = false
+  }
+}
+
+function resetHistoryTrace() {
+  clearHistory()
+  historyPageIndex.value = 0
+  historyHasMore.value = true
+  historySnapshotTime.value = undefined
+}
+
+/** Loads a stable, reverse-chronological history snapshot so newer writes cannot reshuffle the current pages. */
+async function loadDebugHistory() {
+  if (!props.device.id || !debugLogSupport.value || debugHistoryLoading.value || !historyHasMore.value) return
+  if (!historySnapshotTime.value) historySnapshotTime.value = Date.now()
+  debugHistoryLoading.value = true
+  try {
+    const pageIndex = historyPageIndex.value
+    const resp: any = await iotDeviceDetailRealApi.queryDeviceDebugLogs(props.device.id, {
+      pageIndex,
+      pageSize: 50,
+      terms: [{ column: 'startTime', termType: 'lte', value: historySnapshotTime.value }],
+      sorts: [{ name: 'startTime', order: 'desc' }, { name: 'endTime', order: 'desc' }],
+    })
+    const result = resp?.result || {}
+    const records = Array.isArray(result.data) ? result.data : []
+    records.reverse().forEach((record: IotTraceEventItem) => appendHistoryTracePayload(record))
+    const total = Number(result.total)
+    historyHasMore.value = Number.isFinite(total) ? (pageIndex + 1) * 50 < total : records.length >= 50
+    historyPageIndex.value = pageIndex + 1
+  } finally {
+    debugHistoryLoading.value = false
+  }
 }
 
 function normalizeTraceId(value: unknown) {
@@ -1099,7 +1263,7 @@ function scheduleSessionAutoRefresh() {
 }
 
 function ingestNewTraceKeys() {
-  for (const group of traceGroups.value) {
+  for (const group of realtimeTraceGroups.value) {
     if (seenTraceKeys.has(group.key)) continue
     seenTraceKeys.add(group.key)
     traceReceivedTotal.value += 1
@@ -1108,11 +1272,15 @@ function ingestNewTraceKeys() {
 
 watch(
   () => props.device.id,
-  () => {
-    clearTraces()
+  async () => {
+    clear()
+    resetHistoryTrace()
+    traceMode.value = 'realtime'
     startSubscribe()
     loadMemoryForCurrentDevice()
     if (isOnline.value) loadSessions()
+    await loadDeviceDebugSupport()
+    await loadDebugLogConfig()
   },
   { immediate: true },
 )
@@ -1134,16 +1302,22 @@ watch(
 )
 
 watch(
-  () => traceGroups.value.map((group) => `${group.key}:${group.version ?? 0}`).join('|'),
+  () => realtimeTraceGroups.value.map((group) => `${group.key}:${group.version ?? 0}`).join('|'),
   () => {
     ingestNewTraceKeys()
     if (pendingMessageId.value) {
       focusMessageTrace(pendingMessageId.value)
     }
-    if (traceGroups.value.length) scheduleSessionAutoRefresh()
+    if (realtimeTraceGroups.value.length) scheduleSessionAutoRefresh()
   },
   { immediate: true },
 )
+
+watch(traceMode, (value) => {
+  if (value === 'history' && historyPageIndex.value === 0) {
+    void loadDebugHistory()
+  }
+})
 
 watch(invokeInputMode, (value, oldValue) => {
   if (value === 'json' && oldValue !== 'json') syncInvokeJson()
