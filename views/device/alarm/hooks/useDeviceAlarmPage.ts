@@ -57,6 +57,7 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
   const notifyMethods = ref<DeviceAlarmNotifyMethod[]>([])
   const levelLoaded = ref(false)
   const notifyLoading = ref(false)
+  const notifyFailed = ref(false)
   const editorOpen = ref(false)
   // The editor stays mounted after close; use this key to refresh product options for every open.
   const productReloadKey = ref(0)
@@ -302,10 +303,14 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
   }
 
   async function loadNotifyResources() {
+    if (notifyLoading.value) return
     notifyLoading.value = true
+    notifyFailed.value = false
+    notifyMethods.value = []
     try {
       notifyMethods.value = await queryDeviceAlarmNotifyMethods()
     } catch {
+      notifyFailed.value = true
       message.warning(t('PropertyRules.resourcesFailed'))
     } finally {
       notifyLoading.value = false
@@ -437,6 +442,8 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
     selectedDeviceOption,
     notifyMethods,
     notifyLoading,
+    notifyFailed,
+    loadNotifyResources,
     editorOpen,
     saving,
     productReloadKey,

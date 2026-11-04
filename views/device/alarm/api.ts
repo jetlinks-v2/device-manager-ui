@@ -247,11 +247,10 @@ export async function queryDeviceAlarmPage(data: Record<string, any>): Promise<D
 }
 
 export async function queryDeviceAlarmNotifyMethods(): Promise<DeviceAlarmNotifyMethod[]> {
-  const [types, providers] = await Promise.allSettled([
+  const [types, providers] = await Promise.all([
     deviceAlarmApi.queryNotifyTypes().then(unwrapNotifyList), deviceAlarmApi.queryNotifyChannels().then(unwrapNotifyList),
   ])
-  if (types.status === 'rejected') throw types.reason
-  return toNotifyMethods(types.value, providers.status === 'fulfilled' ? providers.value : undefined)
+  return toNotifyMethods(types, providers)
 }
 
 function unwrapNotifyList(response: unknown): unknown[] {
@@ -262,9 +261,10 @@ function unwrapNotifyList(response: unknown): unknown[] {
   return result
 }
 
-/** Select types only; accessible channel configuration is used solely for status and legacy readback. */
+/** Only the current user's enabled device-alarm configuration grants selectable delivery types. */
 export function toNotifyMethods(types: unknown[], providers?: unknown[]): DeviceAlarmNotifyMethod[] {
   const available = (providers ?? []).filter(isRecord).filter(provider => isEnabledState(provider.state))
+  if (!available.some(provider => provider.provider === DEVICE_ALARM_NOTIFY_PROVIDER)) return []
   return types.filter(isRecord).filter(type => stringify(type.receiverPolicy?.value ?? type.receiverPolicy) !== 'explicit').flatMap(type => {
     const id = stringify(type.id)
     if (!id) return []
@@ -274,16 +274,17 @@ export function toNotifyMethods(types: unknown[], providers?: unknown[]): Device
       .filter(channel => channel.channelProvider === id && isEnabledState(channel.state))
     const status = (topic: string): NonNullable<DeviceAlarmNotifyMethod['templates']>['trigger'] => {
       if (id === 'inside-mail') return 'unneeded'
-      if (providers === undefined) return 'unknown'
       return channels(topic).some(channel => {
         const config = channel.channelConfiguration ?? channel.configuration ?? {}
         return Boolean(config.templateId && config.notifierId)
       }) ? 'ready' : 'missing'
     }
+    const templates = { trigger: status(DEVICE_ALARM_NOTIFY_PROVIDER), relieve: status('alarm-device-relieve') }
+    if (templates.trigger !== 'ready' && id !== 'inside-mail') return []
     return [{
       id, providerId: id, key, label: stringify(type.name) || id, desc: '', icon: notifyMethodIcon(key),
       channelIds: channels(DEVICE_ALARM_NOTIFY_PROVIDER).map(channel => stringify(channel.id)).filter(Boolean),
-      templates: { trigger: status(DEVICE_ALARM_NOTIFY_PROVIDER), relieve: status('alarm-device-relieve') },
+      templates,
     }]
   })
 }

@@ -1,5 +1,5 @@
 <template>
-  <section class="property-rules">
+  <section class="property-rules" :class="{ 'property-rules-detail': presentation === 'detail' }">
     <div class="property-rules-heading">
       <span class="property-rules-scope"><AIcon type="CloudUploadOutlined" /> {{ $t('PropertyRules.propertyReports') }}<RuleNotice kind="info" :message="$t('PropertyRules.help.processing')" :label="$t('PropertyRules.help.title')"><div class="property-rules-help"><strong>{{ $t('PropertyRules.help.title') }}</strong><p>{{ $t('PropertyRules.help.processing') }}</p><p>{{ $t(scope.deviceId ? 'PropertyRules.help.device' : 'PropertyRules.help.product') }}</p></div></RuleNotice></span>
       <span class="property-rules-scope-hint">{{ $t(scope.deviceId ? 'PropertyRules.scope.device' : 'PropertyRules.scope.product') }}</span>
@@ -12,7 +12,7 @@
       <a-input v-model:value="keyword" allow-clear :placeholder="$t('PropertyRules.search')" style="max-width: 280px">
         <template #prefix><AIcon type="SearchOutlined" /></template>
       </a-input>
-      <a-radio-group v-model:value="configurationFilter" size="small" button-style="solid">
+      <a-radio-group v-model:value="configurationFilter" :size="presentation === 'detail' ? 'default' : 'small'" button-style="solid">
         <a-radio-button value="all">{{ $t('PropertyRules.allProperties') }}</a-radio-button>
         <a-radio-button value="configured">{{ $t('PropertyRules.configured') }}</a-radio-button>
         <a-radio-button value="unconfigured">{{ $t('PropertyRules.unconfigured') }}</a-radio-button>
@@ -30,29 +30,33 @@
           </template>
           <a-list :data-source="group.visibleRows" class="property-rule-list">
             <template #renderItem="{ item }">
-              <a-list-item :key="item.id" class="property-rule-row" :class="{ 'property-rule-row-active': editorOpen && selectedId === item.id, 'property-rule-row-configured': item.effects.length && item.rule.editable, 'property-rule-row-empty': !item.effects.length && !(editorOpen && selectedId === item.id) }">
+              <template v-for="rowEditor in [editorFor(item.id)]" :key="item.id">
+              <a-list-item class="property-rule-row" :class="{ 'property-rule-row-active': !!rowEditor, 'property-rule-row-configured': item.effects.length && item.rule.editable, 'property-rule-row-empty': rowEditor ? presentation === 'detail' && !rowEditor.steps.some(step => step.enabled) : !item.effects.length }">
                 <div class="property-rule-header">
                 <div class="property-rule-identity">
                   <div class="property-rule-identity-title"><span class="property-rule-name" :title="item.name">{{ item.name }}</span><PropertyRuleMetadata :property="item.property" /></div>
-                  <a-tag v-if="scope.deviceId && item.raw && !(editorOpen && selectedId === item.id)" :color="item.source === 'device' ? 'blue' : undefined"><AIcon :type="item.source === 'disabled' ? 'StopOutlined' : item.source === 'device' ? 'HddOutlined' : 'CloudOutlined'" /> {{ $t(`PropertyRules.source.${item.source}`) }}</a-tag>
+                  <template v-if="scope.deviceId && (item.raw || presentation === 'detail') && (presentation === 'detail' || !rowEditor)">
+                    <a-tag v-for="source in [rowEditor ? rowEditor.displaySource : item.source]" :key="source" :color="source === 'device' ? 'blue' : undefined"><AIcon :type="source === 'disabled' ? 'StopOutlined' : source === 'device' ? 'HddOutlined' : 'CloudOutlined'" /> {{ $t(`PropertyRules.source.${source}`) }}</a-tag>
+                  </template>
                   <span class="property-rule-id">{{ item.id }}</span>
                 </div>
                 <span class="property-rule-actions property-rule-action-group">
-                  <PropertyRuleStatistics v-if="statisticsTargets.has(item.id)" :target="statisticsTargets.get(item.id)!" :entry="statistics.entries[item.id] ?? {}" :open="statistics.openProperty.value === item.id" :dirty="editorOpen && selectedId === item.id && editor.pendingSave" :inherited="!!scope.deviceId && item.source === 'product'" @toggle="statistics.toggle(item.id, $event)" @refresh="statistics.refresh" />
-                  <PropertyRuleActions v-if="editorOpen && selectedId === item.id" :editor="editor" :property="item.property" :scope="scope" :preview-request="previewRequest" :statistics-open="!!statistics.openProperty.value" @preview="statistics.close" />
-                  <a-button v-else-if="item.effects.length && item.rule.editable" type="text" size="small" class="property-rule-preview" :aria-label="`${item.name} · ${$t('PropertyRules.diagram.show')}`" :disabled="editor.saving" @click="previewProperty(item.property)"><AIcon type="PartitionOutlined" />{{ $t('PropertyRules.diagram.show') }}</a-button>
+                  <PropertyRuleStatistics v-if="statisticsTargets.has(item.id)" :target="statisticsTargets.get(item.id)!" :entry="statistics.entries[item.id] ?? {}" :open="statistics.openProperty.value === item.id" :dirty="!!rowEditor?.pendingSave" :inherited="!!scope.deviceId && item.source === 'product'" @toggle="statistics.toggle(item.id, $event)" @refresh="statistics.refresh" />
+                  <PropertyRuleActions v-if="rowEditor" :editor="rowEditor" :property="item.property" :scope="scope" :preview-request="previewRequest" :statistics-open="!!statistics.openProperty.value" @preview="statistics.close" />
+                  <a-button v-else-if="item.effects.length && item.rule.editable" type="text" size="small" class="property-rule-preview" :aria-label="`${item.name} · ${$t('PropertyRules.diagram.show')}`" :disabled="busy" @click="previewProperty(item.property)"><AIcon type="PartitionOutlined" />{{ $t('PropertyRules.diagram.show') }}</a-button>
                 </span>
                 </div>
                 <div class="property-rule-content">
-                  <PropertyRuleFields v-if="editorOpen && selectedId === item.id" :editor="editor" :scope="scope" :property="item.property" :with-actions="false" />
+                  <PropertyRuleFields v-if="rowEditor" :editor="rowEditor" :scope="scope" :property="item.property" :with-actions="false" :with-source="presentation !== 'detail'" :card="presentation === 'detail'" />
                   <div v-else class="property-rule-effects">
                     <a-button v-if="!item.rule.editable" type="text" size="small" @click="selectProperty(item.property)"><AIcon type="LockOutlined" /> {{ $t('PropertyRules.legacy') }}</a-button>
                     <PropertyRuleSummary v-else-if="item.effects.length" :rows="item.effects" interactive @edit="selectProperty(item.property)" />
-                    <RuleAddMenu v-if="canSave && item.rule.editable && availableRuleParts(item.property, item.rule.nodes, editor.alarmAvailable).length" :parts="availableRuleParts(item.property, item.rule.nodes, editor.alarmAvailable)" :disabled="loading || editor.saving" @add="selectProperty(item.property, $event)" />
+                    <RuleAddMenu v-if="canSave && item.rule.editable && availableRuleParts(item.property, item.rule.nodes, alarmAvailable).length" :parts="availableRuleParts(item.property, item.rule.nodes, alarmAvailable)" :disabled="loading || busy" @add="selectProperty(item.property, $event)" />
                     <a-button v-else-if="item.rule.editable && !item.effects.length" type="text" size="small" @click="selectProperty(item.property)"><AIcon :type="canSave ? 'EditOutlined' : 'EyeOutlined'" />{{ $t(canSave ? 'PropertyRules.configure' : 'PropertyRules.view') }}</a-button>
                   </div>
                 </div>
               </a-list-item>
+              </template>
             </template>
           </a-list>
           <a-button v-if="group.remaining" type="link" @click="showMore(group.id)">
@@ -72,6 +76,7 @@ import { propertyIdOf } from '../../alarm/utils'
 import type { RuleScope } from './service'
 import { usePropertyRules } from './usePropertyRules'
 import { usePropertyRuleEditor } from './usePropertyRuleEditor'
+import { usePropertyRuleCards } from './cards/usePropertyRuleCards'
 import PropertyRuleFields from './PropertyRuleFields.vue'
 import RuleAddMenu from './RuleAddMenu.vue'
 import PropertyRuleSummary from './PropertyRuleSummary.vue'
@@ -82,9 +87,9 @@ import PropertyRuleStatistics from './statistics/PropertyRuleStatistics.vue'
 import { useRuleStatistics } from './statistics/useRuleStatistics'
 import { canReadStatistics, type StatisticsTarget } from './statistics/model'
 import { availableRuleParts, type RuleAddPart } from './codec'
-const props = defineProps<{ scope: RuleScope; properties: ThingModelProperty[] }>()
+const props = defineProps<{ scope: RuleScope; properties: ThingModelProperty[]; presentation?: 'inline' | 'detail' }>()
 const { t: $t } = useI18n()
-const { loading, failed, keyword, configurationFilter, groups, expandedGroups, setExpandedGroup, showMore, canSave, sceneMenu, openScene, selected, selectedRow, editorOpen, load, open, close } = usePropertyRules(props)
+const { loading, failed, keyword, configurationFilter, propertyRows, groups, expandedGroups, setExpandedGroup, showMore, canSave, sceneMenu, openScene, selected, selectedRow, editorOpen, load, open, close } = usePropertyRules(props)
 const selectedId = computed(() => propertyIdOf(selected.value ?? {}))
 const previewRequest = ref(0)
 const permission = useAuthStore()
@@ -96,22 +101,31 @@ const statisticsTargets = computed(() => {
   }]))
 })
 const statistics = useRuleStatistics(reactive({ scope: computed(() => props.scope), targets: computed(() => [...statisticsTargets.value.values()]) }))
-// Keep one editor outside the filtered/collapsed DOM so hiding a row never discards its draft.
-const editor = reactive(usePropertyRuleEditor(reactive({
+// Product inline layout keeps one selected editor; device cards retain their own drafts below.
+const editor = props.presentation === 'detail' ? undefined : reactive(usePropertyRuleEditor(reactive({
   open: editorOpen, scope: computed(() => props.scope), property: computed(() => selected.value ?? {}),
   snapshot: computed(() => selectedRow.value && { raw: selectedRow.value.raw, hasOverride: selectedRow.value.hasOverride }), inline: true,
 }), () => close(false), async () => { await load(); statistics.reset() }))
+const visibleRows = computed(() => groups.value.find(group => group.id === expandedGroups.value[0])?.visibleRows ?? [])
+const cards = props.presentation === 'detail' ? usePropertyRuleCards(reactive({
+  scope: computed(() => props.scope), rows: propertyRows, visibleRows, loading,
+}), async () => { await load(); statistics.reset() }) : undefined
+const busy = computed(() => cards?.saving.value ?? editor?.saving ?? false)
+const alarmAvailable = computed(() => cards?.alarmAvailable.value ?? editor?.alarmAvailable ?? false)
+function editorFor(id: string) {
+  return cards ? cards.editors.get(id)?.editor : editorOpen.value && selectedId.value === id ? editor : undefined
+}
 async function selectProperty(property: ThingModelProperty, part?: RuleAddPart) {
   if (!editorOpen.value || selectedId.value !== propertyIdOf(property)) {
-    if (!await editor.prepareLeave()) return false
+    if (!editor || !await editor.prepareLeave()) return false
     // Finish URL guards before creating the new draft; otherwise they see the new edits as an old draft.
     await open(property)
     await nextTick()
   }
   if (part) {
     // Choosing a rule on an inherited device row explicitly starts its local override.
-    if (!editor.custom) editor.customize()
-    editor.addPart(part)
+    if (!editor?.custom) editor?.customize()
+    editor?.addPart(part)
   }
   return true
 }
@@ -168,5 +182,51 @@ async function previewProperty(property: ThingModelProperty) {
   .property-rule-identity { flex: 1 1 160px; flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: var(--space-2); }
   .property-rule-actions { margin-inline-start: auto; }
   .property-rule-content { grid-column: 1; grid-row: 2; }
+}
+</style>
+<style scoped lang="less">
+.property-rules.property-rules-detail {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+
+  .property-rules-heading { margin-bottom: var(--space-4); }
+  .property-rules-scope { font-size: var(--fs-16); font-weight: 600; }
+  .property-rules-toolbar { gap: var(--space-3); margin-bottom: 0; padding-bottom: var(--space-4); }
+  .property-rule-list :deep(.ant-list-items) { grid-template-columns: minmax(0, 1fr); gap: var(--panel-gap); }
+  .property-rule-row { grid-template-columns: minmax(0, 1fr); gap: var(--space-3); padding: var(--panel-padding); border: 1px solid var(--line); border-radius: var(--panel-radius); background: var(--panel-background); }
+  .property-rule-header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); grid-column: 1; grid-row: 1; }
+  .property-rule-identity { display: grid; grid-template-columns: minmax(0, auto) auto; align-items: center; justify-content: start; gap: var(--space-1) var(--space-3); min-width: 0; }
+  .property-rule-identity-title { grid-column: 1; gap: var(--space-2); }
+  .property-rule-identity > .ant-tag { grid-column: 2; margin: 0; white-space: nowrap; }
+  .property-rule-id { grid-column: 1 / -1; }
+  .property-rule-name { white-space: normal; overflow-wrap: anywhere; }
+  .property-rule-actions { flex: none; margin: 0; }
+  .property-rule-content { grid-column: 1; grid-row: 2; }
+  .property-rule-row-empty { row-gap: var(--space-2); }
+  .property-rule-row-active { outline: none; }
+  .property-rule-effects { padding-top: var(--space-1); }
+  :deep(.rule-add-trigger) { height: 32px; padding-inline: var(--space-2); color: var(--jet-theme-primary); }
+  :deep(.rule-summary) { max-width: 100%; }
+  :deep(.rule-line) { --rule-control-height: 28px; --rule-row-height: 36px; font-size: var(--fs-14); }
+  :deep(.rule-stage-lines) { gap: var(--space-2); }
+  :deep(.rule-source) { padding-inline-end: 0; }
+}
+
+@container property-rules (min-width: 1100px) {
+  .property-rules.property-rules-detail .property-rule-list :deep(.ant-list-items) { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 1fr; align-items: stretch; }
+}
+
+@container property-rules (max-width: 680px) {
+  .property-rules.property-rules-detail {
+    .property-rule-row { padding: var(--space-3) var(--space-2); }
+    .property-rule-header { flex-wrap: wrap; align-items: flex-start; }
+    .property-rule-identity { flex: 1 1 100%; }
+    .property-rule-identity-title { flex-wrap: wrap; }
+    .property-rule-actions { justify-content: flex-start; }
+    .property-rule-group-count { margin-inline-start: 0; }
+    .property-rule-group-name { flex-wrap: wrap; }
+    .property-rules-scene { margin-inline-start: 0; }
+  }
 }
 </style>
