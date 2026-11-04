@@ -44,6 +44,7 @@ export function selectAlarmNotificationTypes(notification: DeviceAlarmNotificati
   return {
     ...notification,
     channelProviders: [...new Set(providers)],
+    userIds: providers.length ? notification.userIds : [],
     notifyChannelIds: [],
     relieveTopicProvider: 'alarm-device-relieve' as const,
     parameters: Object.fromEntries(Object.entries(notification.parameters ?? {}).filter(([key]) => !bindings.has(key))),

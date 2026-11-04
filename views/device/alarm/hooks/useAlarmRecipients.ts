@@ -26,7 +26,7 @@ export function useAlarmRecipients(props: RecipientProps) {
   const selectionResolved = computed(() => props.value.length > 0 && props.value.every(id => cache.options.value.has(id)))
   const selectionLabel = computed(() => selectionResolved.value ? selected.value[0]?.label ?? ''
     : t(props.value.length ? 'DeviceAlarm.notification.recipientCount' : 'DeviceAlarm.notification.userShort', { count: props.value.length }))
-  const additionalCount = computed(() => selectionResolved.value && props.value.length > 1 ? props.value.length - 1 : 0)
+  const selectionLabels = computed(() => selectionResolved.value ? selected.value.map(user => user.label) : [])
   const selectionTitle = computed(() => selectedFailed.value ? t('DeviceAlarm.notification.usersFailed') : selectionResolved.value
     ? selected.value.map(user => user.unavailable ? `${user.label} (${user.value})` : user.label).join('、') : selectionLabel.value)
   async function hydrate(values: string[]) {
@@ -93,5 +93,5 @@ export function useAlarmRecipients(props: RecipientProps) {
   }, { immediate: true })
   watch(() => props.disabled, value => { if (value) { candidateVersion++; open.value = false } })
   onBeforeUnmount(() => { generation++; if (!shared) cache.reset() })
-  return { open, selected, options, config, revision, candidateFailed, selectedFailed, selectedLoading, selectionLabel, additionalCount, selectionTitle, setOpen, retry }
+  return { open, selected, options, config, revision, candidateFailed, selectedFailed, selectedLoading, selectionLabel, selectionLabels, selectionTitle, setOpen, retry }
 }

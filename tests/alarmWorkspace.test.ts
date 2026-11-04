@@ -89,7 +89,7 @@ test('notification content remains visible only for a legacy custom edit session
   assert.equal(showLegacyMessageTemplate, true)
 })
 
-test('notification options are types with event-specific template status, never concrete channels', () => {
+test('notification options require accessible enabled trigger templates and keep event-specific status', () => {
   const types = [{ id: 'inside-mail', name: 'Inbox' }, { id: 'notifier-email', name: 'Email', receiverPolicy: 'subscriber' },
     { id: 'notifier-sms', name: 'SMS' }, { id: 'notifier-webhook', receiverPolicy: 'explicit' }]
   const channel = (id: string, type: string, config = { templateId: 'template', notifierId: 'sender' }) => ({
@@ -101,16 +101,22 @@ test('notification options are types with event-specific template status, never 
     { provider: 'alarm-device-relieve', state: 'disabled', channels: [channel('disabled-email', 'notifier-email')] },
     { provider: 'alarm-other', channels: [channel('other-sms', 'notifier-sms')] },
   ])
-  assert.deepEqual(methods.map(method => method.id), ['inside-mail', 'notifier-email', 'notifier-sms'])
+  assert.deepEqual(methods.map(method => method.id), ['inside-mail', 'notifier-email'])
   const email = methods[1]
   assert.equal(email.label, 'Email')
   assert.equal('channelId' in email, false)
   assert.deepEqual(email.channelIds, ['email-a', 'email-b'])
   assert.deepEqual(email.templates, { trigger: 'ready', relieve: 'missing' })
-  assert.deepEqual(methods[2].templates, { trigger: 'missing', relieve: 'missing' })
   assert.deepEqual(methods[0].templates, { trigger: 'unneeded', relieve: 'unneeded' })
-  assert.equal(toNotifyMethods(types)[1].templates?.trigger, 'unknown')
-  assert.equal(toNotifyMethods(types)[0].templates?.trigger, 'unneeded')
+  assert.deepEqual(toNotifyMethods(types), [])
+  assert.deepEqual(toNotifyMethods(types, []), [])
+  assert.deepEqual(toNotifyMethods(types, [{ provider: 'alarm-device', state: 'disabled', channels: [channel('e', 'notifier-email')] }]), [])
+  assert.deepEqual(toNotifyMethods(types, [{ provider: 'alarm-device-relieve', channels: [channel('e', 'notifier-email')] }]), [])
+  assert.deepEqual(toNotifyMethods(types, [{ provider: 'alarm-device', channels: [] }]).map(method => method.id), ['inside-mail'])
+  assert.deepEqual(toNotifyMethods(types, [{ provider: 'alarm-device', channels: [
+    { ...channel('e', 'notifier-email'), state: 'disabled' },
+    channel('s', 'notifier-sms', { templateId: '', notifierId: 'sender' }),
+  ] }]).map(method => method.id), ['inside-mail'])
   assert.equal(matchesAlarmNotifyMethod({ ...createEmptyNotification(), notifyChannelIds: ['email-b'] }, email), true)
 })
 
@@ -130,15 +136,14 @@ test('explicit type selection drops channel bindings but preserves recipients an
   assert.deepEqual(selected.parameters, { template: original.parameters.template, variableDefinitions: original.parameters.variableDefinitions })
 })
 
-test('template lookup failures stay unknown while supported types remain selectable', async () => {
+test('template lookup failures reject instead of exposing unconfigured notification types', async () => {
   const calls: string[] = []
   setAlarmRequestHandler(async url => {
     calls.push(url)
     return url === '/notify/channel/providers'
       ? { result: [{ id: 'notifier-email', name: 'Email' }] } : { success: false, status: 403, result: [] }
   })
-  const methods = await queryDeviceAlarmNotifyMethods()
-  assert.equal(methods[0].templates?.relieve, 'unknown')
+  await assert.rejects(queryDeviceAlarmNotifyMethods())
   assert.deepEqual(calls.sort(), ['/notify/channel/all', '/notify/channel/providers'])
   setAlarmRequestHandler(async () => ({ success: false, status: 403, result: [] }))
   await assert.rejects(queryDeviceAlarmNotifyMethods())

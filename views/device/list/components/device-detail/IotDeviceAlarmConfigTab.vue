@@ -1,5 +1,5 @@
 <template>
-  <PropertyRulesPanel :scope="scope" :properties="properties" />
+  <PropertyRulesPanel :scope="scope" :properties="properties" presentation="detail" />
 </template>
 <script setup lang="ts">
 import { computed } from 'vue'

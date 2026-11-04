@@ -46,12 +46,13 @@ export function useRuleResources(scope?: () => unknown) {
     const token = generation
     loading.value = true
     failed.value = false
+    methods.value = []
     try {
       const methodList = await queryDeviceAlarmNotifyMethods()
       if (token !== generation) return
       methods.value = methodList
       failed.value = methodList.some(method => method.templates?.trigger === 'unknown' || method.templates?.relieve === 'unknown')
-    } catch { if (token === generation) failed.value = true }
+    } catch { if (token === generation) { methods.value = []; failed.value = true } }
     finally {
       if (token === generation) {
         // Cache settled failures too; ordinary display/popover events only ensure, never retry.

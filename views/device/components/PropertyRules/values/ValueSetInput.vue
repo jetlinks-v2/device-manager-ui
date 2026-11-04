@@ -1,6 +1,6 @@
 <template>
   <a-checkbox-group v-if="type === 'boolean'" :value="value" :options="booleanOptions" :aria-label="label" @update:value="$emit('update:value', $event)" />
-  <a-select v-else :value="selectedKeys" :mode="type === 'enum' ? 'multiple' : 'tags'" size="small" class="rule-value-list"
+  <a-select v-else :value="selectedKeys" :mode="type === 'enum' ? 'multiple' : 'tags'" :size="size ?? 'small'" class="rule-value-list"
     :options="type === 'enum' ? options : undefined" :aria-label="label" :placeholder="placeholder ?? label" :token-separators="[',', '，']"
     :open="type === 'enum' ? undefined : false" :status="invalid ? allowUnknown ? 'warning' : 'error' : undefined" :title="invalid || undefined"
     :not-found-content="$t('PropertyRules.noValueOptions')" @update:value="updateValues" />
@@ -12,7 +12,7 @@ import type { ThingModelProperty } from '../../../alarm/types'
 import { isNumberProperty } from '../../../alarm/utils'
 import type { ScalarValue } from './config'
 import { propertyValueChoices, propertyValueKey, propertyValueType, readPropertyValueKeys, readValueTags } from './metadata'
-const props = defineProps<{ property: ThingModelProperty; value: ScalarValue[]; label: string; placeholder?: string; allowUnknown?: boolean }>()
+const props = defineProps<{ property: ThingModelProperty; value: ScalarValue[]; label: string; size?: 'small' | 'middle'; placeholder?: string; allowUnknown?: boolean }>()
 const emit = defineEmits<{ (e: 'update:value', value: ScalarValue[]): void }>()
 const { t: $t } = useI18n()
 const type = computed(() => propertyValueType(props.property))

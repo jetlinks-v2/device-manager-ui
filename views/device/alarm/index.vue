@@ -84,7 +84,8 @@
       <DeviceAlarmEditorModal v-model:open="editorOpen" :model="form" :readonly-scope="Boolean(editingRow)" :saving="saving"
         :level-options="levelOptions" :product-option="selectedProductOption"
         :device-option="selectedDeviceOption" :product-request="requestProducts" :device-request="requestDevices"
-        :property-options="propertyOptions" :notify-methods="notifyMethods" :notify-loading="notifyLoading"
+        :property-options="propertyOptions" :notify-methods="notifyMethods" :notify-loading="notifyLoading" :notify-failed="notifyFailed"
+        @retry-methods="loadNotifyResources"
         :product-reload-key="productReloadKey" @product-change="onProductChange" @device-change="onDeviceChange"
         @property-change="onPropertyChange" @save="run(save)" />
     </main>
@@ -117,7 +118,7 @@ const router = useRouter()
 const { page, selected, ruleId, activeCounts, statusError, listError, loading, busy, creating,
   loadingMore, loadMoreError, hasMore, load, loadCounts, loadMore, select, showAllRecords, remove, run, create } = useDeviceAlarmWorkspace($t)
 const { rows, total, keyword, levelOptions, propertyOptions,
-  selectedProductOption, selectedDeviceOption, notifyMethods, notifyLoading, editorOpen, saving, productReloadKey,
+  selectedProductOption, selectedDeviceOption, notifyMethods, notifyLoading, notifyFailed, loadNotifyResources, editorOpen, saving, productReloadKey,
   editingRow, form, updateKeyword, handleSearch, openEdit, requestProducts, requestDevices,
   onProductChange, onDeviceChange, onPropertyChange, save } = page
 const { tableRef: recordTableRef, table: recordTable, error: recordsError, fields: recordFields, terms: recordTerms,

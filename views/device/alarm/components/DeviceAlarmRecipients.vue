@@ -9,8 +9,8 @@
       </div>
     </template>
     <a-button ref="trigger" type="text" size="small" class="notification-chip" :disabled="disabled" :aria-label="$t('DeviceAlarm.notification.user')" :aria-expanded="directory.open" :title="directory.selectionTitle">
-      <AIcon :type="directory.selectedLoading ? 'LoadingOutlined' : directory.selectedFailed ? 'ExclamationCircleOutlined' : 'TeamOutlined'" :spin="directory.selectedLoading" /><span class="notification-chip__label">{{ directory.selectionLabel }}</span>
-      <span v-if="directory.additionalCount" class="notification-chip__count">+{{ directory.additionalCount }}</span>
+      <AIcon :type="directory.selectedLoading ? 'LoadingOutlined' : directory.selectedFailed ? 'ExclamationCircleOutlined' : 'TeamOutlined'" :spin="directory.selectedLoading" />
+      <DeviceAlarmSelectionSummary :labels="directory.selectionLabels" :placeholder="directory.selectionLabel" />
       <AIcon type="DownOutlined" class="notification-chip__arrow" />
     </a-button>
   </a-popover>
@@ -20,6 +20,7 @@ import { reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ConditionOptionPanel } from '@jetlinks-web-core/components/ConditionFilter'
 import { useAlarmRecipients } from '../hooks/useAlarmRecipients'
+import DeviceAlarmSelectionSummary from './DeviceAlarmSelectionSummary.vue'
 const props = defineProps<{ value: string[]; scopeKey: string; open: boolean; disabled?: boolean }>()
 const emit = defineEmits<{ (e: 'update:value', value: string[]): void; (e: 'update:open', value: boolean): void }>()
 const { t: $t } = useI18n()

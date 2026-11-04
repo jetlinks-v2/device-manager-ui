@@ -138,5 +138,5 @@ export function usePropertyRules(props: { scope: RuleScope; properties: ThingMod
     }
   }, { immediate: true })
   onBeforeUnmount(() => { generation++ })
-  return { loading, failed, keyword, configurationFilter, rows, groups, expandedGroups, setExpandedGroup, showMore, canSave, sceneMenu, openScene, selected, selectedRow, editorOpen, load, open, close }
+  return { loading, failed, keyword, configurationFilter, propertyRows, rows, groups, expandedGroups, setExpandedGroup, showMore, canSave, sceneMenu, openScene, selected, selectedRow, editorOpen, load, open, close }
 }
