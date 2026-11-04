@@ -32,6 +32,8 @@ export interface DeviceListProvider {
   label: () => string
   order: number
   menuCode: string
+  /** 查询后端是否支持此设备类型；确认支持前不展示入口或查询分类统计。 */
+  isSupported?: () => Promise<boolean>
   /** 仅控制顶部分类页签；隐藏后仍参与设备识别和已有分类直达链接。 */
   showInTabs?: boolean
   terms: () => DeviceQueryTerm[]
