@@ -492,7 +492,9 @@
                 "aiScene",
                 "alarmConfig",
                 "device",
-                "deviceGroup"
+                "deviceGroup",
+                "product",
+                "space"
               ],
               "options": {},
               "showPage": [
