@@ -12,6 +12,7 @@ import { useDeviceScope } from '../../../../deviceScope'
 import { decodeConditionFilterQuery, encodeConditionFilterQuery, type ConditionFilterTerm } from '@jetlinks-web-core/components/ConditionFilter'
 import { getDeviceListFilterFields, getDeviceListSearchTerms } from '../../../../deviceListFilter'
 import type { SlantedTabOption } from '@jetlinks-web-core/components/SlantedTabs'
+import { useSupportedDeviceListProviders } from '../hooks/useSupportedDeviceListProviders'
 
 /** 单一设备实例分页，类型 Provider 仅提供限定和字段补充，避免跨列表拼页和重复计数。 */
 export function useUnifiedDeviceList() {
@@ -39,7 +40,8 @@ export function useUnifiedDeviceList() {
   const extensions = moduleRegistry.getAllModuleIds().flatMap(id => Object.values(
     moduleRegistry.getResource(id, 'deviceListProviders') || {},
   ) as DeviceListProvider[])
-  const providers = computed(() => [deviceProvider, ...extensions].filter(provider => provider.id === 'device' || menu.hasMenu(provider.menuCode)).sort((a, b) => a.order - b.order))
+  const authorizedProviders = computed(() => [deviceProvider, ...extensions].filter(provider => provider.id === 'device' || menu.hasMenu(provider.menuCode)).sort((a, b) => a.order - b.order))
+  const providers = useSupportedDeviceListProviders(authorizedProviders)
   // SaaS 与私有化的显式物联下钻共用统一列表和统计口径。
   const activeType = computed(() => {
     if (isIotEntry.value || isIotScope.value) return 'device'
@@ -225,7 +227,7 @@ export function useUnifiedDeviceList() {
   watch([baseTerms, () => route.query.q, scope.scopeType, scope.scopeId, () => resolveIotProjectId(route), refreshKey], () => {
     void loadStatusCounts()
   }, { immediate: true })
-  watch(isIotScope, loadCounts, { immediate: true })
+  watch([isIotScope, providers], loadCounts, { immediate: true })
   onBeforeUnmount(() => { requestVersion++; countVersion++; statusCountVersion++ })
   return { providers, isIotEntry, tabs, activeType, activeProvider, scope, baseTerms, filterTerms, filterFields, commonFilterFields, searchTerms, hasSearch, status, rows, total, pageIndex, pageSize, loading, error, counts, statusCounts, selectedIds, batchMode, providerOf, changeType, search, changeStatus, refresh, changePage, clearBatchSelection }
 }
