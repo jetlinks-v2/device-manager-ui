@@ -52,7 +52,7 @@ test('300-node host isolates clock, Buffer and session updates and keeps tree id
     '@ant-design/icons-vue': { MenuFoldOutlined: empty, MenuUnfoldOutlined: empty, UndoOutlined: empty },
     './useClusterWorkspace': { useClusterWorkspace: () => view },
     './useLogWorkspaceLayout': { useLogWorkspaceLayout: () => undefined },
-    './useClusterSidebarLayout': { useClusterSidebarLayout: () => ({ expanded: vue.ref(true), gridStyle: vue.ref({}), canToggle: vue.ref(false), compact: vue.ref(false), listHeight: vue.ref(700) }) },
+    './useClusterSidebarLayout': { useClusterSidebarLayout: () => ({ expanded: vue.ref(true), gridStyle: vue.ref({}), canToggle: vue.ref(false), compact: vue.ref(false), listHeight: vue.ref(700), itemHeight: 28, virtual: vue.ref(true) }) },
     './useClusterBuffers': { provideClusterBuffers: () => buffers }, './useClusterSessions': { useClusterSessionContext: () => sessions },
     '../diagnostics/preferences': { bufferIntervals: [1, 2, 5, 10, 30, 60], diagnosticIntervalSeconds: value => value ?? 2 },
     '../diagnostics/overview/useResourceHistory': { provideResourceHistoryCache() {} },
