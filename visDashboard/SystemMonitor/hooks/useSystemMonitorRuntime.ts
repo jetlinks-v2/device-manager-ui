@@ -34,6 +34,8 @@ export function createSystemMonitorRuntime(isEdit: Ref<boolean>, options: Runtim
   const normalize = createRealtimeNodeNormalizer()
   let subscription: MonitorSubscription | undefined
   let timeout: ReturnType<typeof setTimeout> | undefined
+  let recovery: ReturnType<typeof setTimeout> | undefined
+  let failures = 0
   let generation = 0
   let signature: string | undefined
   let mounted = false
@@ -67,21 +69,30 @@ export function createSystemMonitorRuntime(isEdit: Ref<boolean>, options: Runtim
   function stop() {
     generation++
     clearTimeout(timeout)
+    clearTimeout(recovery)
+    recovery = undefined
     subscription?.unsubscribe()
     subscription = undefined
     loading.value = false
   }
 
-  function start() {
+  function start(recovering = false) {
     if (!mounted || !active || isEdit.value || subscription) return
     const current = ++generation
-    loading.value = true
-    error.value = false
-    const failed = () => {
+    loading.value = !recovering
+    if (!recovering) error.value = false
+    // The shared topic can fail before its first frame or remain silent after transport recovery.
+    // Retain the last evidence and retry one owner, never one timer per widget.
+    const failed = (reason?: unknown) => {
       if (current !== generation) return
       clearTimeout(timeout)
       loading.value = false
       error.value = true
+      clearTimeout(recovery)
+      const detail = reason && typeof reason === 'object' ? reason as { status?: unknown; code?: unknown; response?: { status?: unknown } } : undefined
+      const status = Number(detail?.status ?? detail?.response?.status ?? detail?.code)
+      if (status >= 400 && status < 500 && ![408, 429].includes(status)) return
+      recovery = setTimeout(() => { stop(); start(true) }, Math.min(30000, 1000 * 2 ** Math.min(failures++, 5)))
     }
     const armTimeout = () => {
       clearTimeout(timeout)
@@ -92,6 +103,9 @@ export function createSystemMonitorRuntime(isEdit: Ref<boolean>, options: Runtim
       subscription = (options.subscribe ?? subscribeRealtimeResources)({
         next(items) {
           if (current !== generation) return
+          clearTimeout(recovery)
+          recovery = undefined
+          failures = 0
           const next = normalize(items)
           const nextSignature = next.map(node => node.nodeId).sort().join('\n')
           // Sampling updates values only; a changed node set refreshes each history chart once.
@@ -116,10 +130,10 @@ export function createSystemMonitorRuntime(isEdit: Ref<boolean>, options: Runtim
         },
         error: failed,
       })
-    } catch { failed() }
+    } catch (reason) { failed(reason) }
   }
 
-  function refresh() { stop(); start() }
+  function refresh() { failures = 0; stop(); start() }
   onMounted(() => { mounted = true; start() })
   onActivated(() => { active = true; start() })
   onDeactivated(() => { active = false; stop() })

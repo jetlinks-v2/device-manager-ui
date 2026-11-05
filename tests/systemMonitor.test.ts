@@ -145,6 +145,52 @@ test('cached route deactivation releases realtime and activation opens exactly o
   assert.equal(source.released, 2)
 })
 
+test('silent first subscription retries with backoff, isolates late frames and resets after recovery', t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] })
+  const source = transport()
+  const mounted = mount(() => createSystemMonitorRuntime(ref(false), { subscribe: source.subscribe, staleAfterMs: 100 }))
+  try {
+    t.mock.timers.tick(100); assert.equal(mounted.value.error.value, true)
+    t.mock.timers.tick(999); assert.equal(source.observers.length, 1)
+    t.mock.timers.tick(1); assert.equal(source.observers.length, 2); assert.equal(source.released, 1)
+    source.observers[0].next(samples('late')); assert.deepEqual(mounted.value.nodeIds.value, [])
+    source.observers[1].error({ status: 503 })
+    t.mock.timers.tick(1999); assert.equal(source.observers.length, 2)
+    t.mock.timers.tick(1); assert.equal(source.observers.length, 3)
+    source.observers[2].next(samples('ready')); assert.equal(mounted.value.error.value, false)
+    source.observers[2].error({ status: 503 }); t.mock.timers.tick(1000)
+    assert.equal(source.observers.length, 4, 'a successful frame resets retry delay')
+  } finally { mounted.unmount(); t.mock.timers.reset() }
+})
+
+test('permanent denials stop automatic retry while explicit retry remains available', t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] })
+  const source = transport(), mounted = mount(() => createSystemMonitorRuntime(ref(false), { subscribe: source.subscribe }))
+  try {
+    source.observers[0].error({ status: 403 }); t.mock.timers.tick(120000)
+    assert.equal(source.observers.length, 1); assert.equal(mounted.value.error.value, true)
+    mounted.value.refresh(); assert.equal(source.observers.length, 2)
+    source.observers[1].next(samples('ok')); t.mock.timers.tick(15000)
+    source.observers[1].next(samples('recovered')); t.mock.timers.tick(1000)
+    assert.equal(source.observers.length, 2, 'a late valid frame cancels scheduled recovery')
+  } finally { mounted.unmount(); t.mock.timers.reset() }
+})
+
+test('deactivation cancels scheduled recovery and ignores retired callbacks', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] })
+  const source = transport(), shown = ref(true)
+  const Probe = defineComponent({ setup() { createSystemMonitorRuntime(ref(false), { subscribe: source.subscribe }); return () => h('div') } })
+  const app = renderer.createApp({ setup: () => () => h(KeepAlive, () => shown.value ? h(Probe) : null) })
+  app.mount(node())
+  try {
+    source.observers[0].error(); shown.value = false; await nextTick(); t.mock.timers.tick(120000)
+    source.observers[0].error(); t.mock.timers.tick(120000); assert.equal(source.observers.length, 1)
+    shown.value = true; await nextTick(); assert.equal(source.observers.length, 2)
+    source.observers[1].error(); app.unmount(); t.mock.timers.tick(120000)
+    assert.equal(source.observers.length, 2)
+  } finally { app.unmount(); t.mock.timers.reset() }
+})
+
 function historyHarness(preview = false) {
   const pending: Array<{ metric: string; range: MonitorTimeRange; resolve: (data: string[]) => void; reject: (error: Error) => void }> = []
   const metric = ref('cpuJvm')

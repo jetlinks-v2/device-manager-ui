@@ -2,7 +2,7 @@ import { wsClient } from '@jetlinks-web/core'
 import type { RealtimePayloadItem } from '../utils/realtimeResourceData'
 
 export interface MonitorSubscription { unsubscribe: () => void }
-export interface MonitorObserver { next: (items: RealtimePayloadItem[]) => void; error: () => void }
+export interface MonitorObserver { next: (items: RealtimePayloadItem[]) => void; error: (reason?: unknown) => void }
 export type MonitorSubscriber = (observer: MonitorObserver) => MonitorSubscription
 let sequence = 0
 
