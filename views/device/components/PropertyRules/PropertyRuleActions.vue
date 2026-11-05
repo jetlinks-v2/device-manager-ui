@@ -8,9 +8,9 @@
       </template>
       <a-button ref="trigger" type="text" size="small" :aria-label="`${property.name || property.id} · ${$t('PropertyRules.diagram.show')}`" :aria-expanded="diagram.open" aria-haspopup="dialog" @click="toggleDiagram" @keydown.down.stop.prevent="focusDiagram" @keydown.esc.stop.prevent="escape"><AIcon type="PartitionOutlined" />{{ $t('PropertyRules.diagram.show') }}</a-button>
     </a-popover>
-    <a-button v-if="canWrite && (editor.pendingSave || editor.saving)" type="text" size="small" :disabled="editor.saving" @click="editor.discard"><AIcon type="UndoOutlined" />{{ $t('PropertyRules.undo') }}</a-button>
-    <a-button v-if="canWrite && (editor.pendingSave || editor.saveState !== 'idle')" type="text" size="small" class="rule-save" :class="`rule-save-${editor.saveState}`" :disabled="editor.saving || editor.saveState === 'saved'" :aria-label="savePresentation.text" @click="editor.save"><AIcon :type="savePresentation.icon" :spin="editor.saving" /><span aria-live="polite">{{ savePresentation.text }}</span></a-button>
-    <a-dropdown v-if="canClear || editor.hasOverride && editor.canSave" :trigger="['click']" :disabled="editor.saving || editor.loading">
+    <a-button v-if="canWrite && (editor.pendingSave || editor.saving)" type="text" size="small" :disabled="editor.saving" @click="editor.discard(); emit('discard')"><AIcon type="UndoOutlined" />{{ $t('PropertyRules.undo') }}</a-button>
+    <a-button v-if="canWrite && (editor.pendingSave || editor.saveState !== 'idle')" type="text" size="small" class="rule-save" :class="`rule-save-${editor.saveState}`" :disabled="!editor.editable || editor.saveState === 'saved'" :aria-label="savePresentation.text" @click="editor.save"><AIcon :type="savePresentation.icon" :spin="editor.saving" /><span aria-live="polite">{{ savePresentation.text }}</span></a-button>
+    <a-dropdown v-if="canClear || editor.hasOverride && editor.canSave" :trigger="['click']" :disabled="editor.saving || editor.loading || editor.blocked">
       <a-button type="text" size="small"><AIcon type="MoreOutlined" />{{ $t('PropertyRules.more') }}<AIcon type="DownOutlined" class="rule-more-arrow" /></a-button>
       <template #overlay><a-menu>
         <a-menu-item v-if="editor.hasOverride && editor.canSave" key="restore" @click="editor.restore"><AIcon type="RollbackOutlined" /> {{ $t('PropertyRules.restore') }}</a-menu-item>
@@ -28,7 +28,7 @@ import type { usePropertyRuleEditor } from './usePropertyRuleEditor'
 import { useRuleActions } from './useRuleActions'
 import PropertyRuleDiagram from './PropertyRuleDiagram.vue'
 const props = defineProps<{ editor: UnwrapNestedRefs<ReturnType<typeof usePropertyRuleEditor>>; property: ThingModelProperty; scope: RuleScope; previewRequest?: number; statisticsOpen?: boolean }>()
-const emit = defineEmits<{ preview: [] }>()
+const emit = defineEmits<{ preview: []; discard: [] }>()
 const { t: $t } = useI18n()
 const { root, panel, trigger, diagram, showDiagram, dismiss, enterPanel, leavePanel, focusPanel, blurPanel, escape, focusDiagram, toggleDiagram } = useRuleActions()
 watch(() => props.statisticsOpen, open => { if (open) dismiss() })

@@ -6,7 +6,7 @@
         <a-input-search v-model:value="view.search.value" :placeholder="t('runtimeDiagnostics.nodeSearch')" allow-clear />
         <div ref="nodeListElement" class="cluster-node-list">
           <a-spin :spinning="view.membership.state.value.status === 'loading'">
-            <a-tree :tree-data="tree" :selected-keys="[view.selected.value]" :height="sidebar.listHeight.value" :item-height="28" virtual block-node @select="keys => keys[0] && view.select(String(keys[0]))">
+            <a-tree :tree-data="tree" :selected-keys="[view.selected.value]" :height="sidebar.listHeight.value" :item-height="sidebar.itemHeight" :virtual="sidebar.virtual.value" block-node @select="keys => keys[0] && view.select(String(keys[0]))">
               <template #title="{ dataRef }"><NodeSummary :node-id="dataRef.key" :label="dataRef.label" :live="liveNodes.get(dataRef.key)" :stale="view.runtime.error.value" :waiting="waitingForMetrics" :buffer="buffers.snapshots.value.get(dataRef.key)" :session="sessions.snapshots.value.get(dataRef.key)" :can-open-buffer="view.access.value.monitor && view.active.value" @open-queue="openBufferQueue" @open-buffers="nodeId => openBufferQueue({ nodeId })" /></template>
             </a-tree>
           </a-spin>
@@ -52,7 +52,7 @@ const view = useClusterWorkspace()
 provideResourceHistoryCache(view.scopeKey, computed(() => view.access.value.query), view.active)
 const workspaceElement = ref<HTMLElement>()
 const nodeListElement = ref<HTMLElement>()
-const sidebar = useClusterSidebarLayout(workspaceElement, view.showNodeSelector, computed(() => view.access.value.enter), nodeListElement)
+const sidebar = useClusterSidebarLayout(workspaceElement, view.showNodeSelector, computed(() => view.access.value.enter), nodeListElement, computed(() => view.filtered.value.length))
 const logLayoutActive = computed(() => view.active.value && view.access.value.enter && view.access.value.logs && view.tab.value === 'logs')
 const jvmCanvasActive = computed(() => view.active.value && view.access.value.enter && (view.access.value.threads || view.access.value.jfr || view.access.value.heap) && view.tab.value === 'jvm')
 const logWorkspaceStyle = useLogWorkspaceLayout(workspaceElement, logLayoutActive)

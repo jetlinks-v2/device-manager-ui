@@ -1,4 +1,4 @@
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, onScopeDispose, ref, watch } from 'vue'
 import { onBeforeRouteLeave, onBeforeRouteUpdate } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
 import { useI18n } from 'vue-i18n'
@@ -19,13 +19,21 @@ export interface RuleEditorProps {
   scope: RuleScope
   property: ThingModelProperty
   inline?: boolean
+  blocked?: boolean
   snapshot?: { raw?: ThingPropertyPreprocess; hasOverride: boolean }
 }
 
-export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void, changed: () => void | Promise<void>) {
+/** A device card collection shares resources; standalone editors retain their own context. */
+export function usePropertyRuleEditorContext(props: Pick<RuleEditorProps, 'scope'>) {
   const { t } = useI18n()
   const permission = useAuthStore()
   const system = useSystemStore()
+  const resources = useRuleResources(() => [props.scope.productId, props.scope.deviceId, permission.permissions])
+  return { t, permission, system, resources }
+}
+
+export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void, changed: () => void | Promise<void>, context?: ReturnType<typeof usePropertyRuleEditorContext>) {
+  const { t, permission, system, resources } = context ?? usePropertyRuleEditorContext(props)
   const loading = ref(false)
   const failed = ref(false)
   const saving = ref(false)
@@ -38,7 +46,6 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
   const custom = computed(() => !props.scope.deviceId || hasOverride.value || !raw.value || overrideRequested.value)
   const draft = ref<RuleDraft>()
   const initial = ref('')
-  const resources = useRuleResources(() => [props.scope.productId, props.scope.deviceId, permission.permissions])
   const activeSection = ref<RuleSection | undefined>('cleaning')
   const notificationOpen = ref(false)
   const alarmNameEditing = ref(false)
@@ -58,7 +65,8 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
   const levelOptions = computed(() => resources.levels.value.length ? resources.levels.value : defaultAlarmLevelOptions(t))
   const alarmAvailable = computed(() => Boolean(system.showThreshold))
   const canSave = computed(() => props.scope.canUpdate ?? permission.hasPermission(props.scope.deviceId ? 'device/Instance:update' : 'device/Product:update'))
-  const editable = computed(() => canSave.value && custom.value && parsed.value.editable && !loading.value && !failed.value && !saving.value)
+  const blocked = computed(() => Boolean(props.blocked))
+  const editable = computed(() => canSave.value && custom.value && parsed.value.editable && !loading.value && !failed.value && !saving.value && !blocked.value)
   const draftJson = computed(() => JSON.stringify(draft.value))
   const dirty = computed(() => Boolean(draft.value && draftJson.value !== initial.value))
   const pendingSave = computed(() => dirty.value || Boolean(props.scope.deviceId && overrideRequested.value && !hasOverride.value))
@@ -249,7 +257,7 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
     finally { saving.value = false }
   }
   async function restore() {
-    if (!hasOverride.value || !canSave.value || saving.value) return
+    if (!hasOverride.value || !canSave.value || saving.value || blocked.value) return
     const token = generation
     const scope = { ...props.scope }
     const property = propertyIdOf(props.property)
@@ -259,7 +267,7 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
       && property === propertyIdOf(props.property)
     if (!await confirmLeave() || !isCurrent()) return
     Modal.confirm({ title: t('PropertyRules.restoreConfirm'), onOk: async () => {
-      if (!isCurrent() || saving.value || !hasOverride.value || !canSave.value) return
+      if (!isCurrent() || saving.value || blocked.value || !hasOverride.value || !canSave.value) return
       saving.value = true
       try {
         await restoreRule(scope, property)
@@ -275,15 +283,20 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
     } })
   }
   function beforeUnload(event: BeforeUnloadEvent) { if (props.open && dirty.value) event.preventDefault() }
-  window.addEventListener('beforeunload', beforeUnload)
-  onBeforeUnmount(() => { generation++; clearFeedback(); window.removeEventListener('beforeunload', beforeUnload) })
-  onBeforeRouteLeave(async () => !props.open || (!saving.value && await confirmLeave()))
-  onBeforeRouteUpdate(async (to, from) => !props.open
-    // Identical query parameters can still refer to a different product/device in the path.
-    || (to.path === from.path && to.query.ruleProperty === from.query.ruleProperty && to.query.tab === from.query.tab)
-    || (!saving.value && await confirmLeave()))
+  // Managed cards outlive filtered DOM rows; their owner installs one navigation/unload guard.
+  if (!context) {
+    window.addEventListener('beforeunload', beforeUnload)
+    onBeforeRouteLeave(async () => !props.open || (!saving.value && await confirmLeave()))
+    onBeforeRouteUpdate(async (to, from) => !props.open
+      // Identical query parameters can still refer to a different product/device in the path.
+      || (to.path === from.path && to.query.ruleProperty === from.query.ruleProperty && to.query.tab === from.query.tab)
+      || (!saving.value && await confirmLeave()))
+  }
+  onScopeDispose(() => { generation++; clearFeedback(); if (!context) window.removeEventListener('beforeunload', beforeUnload) })
   watch([() => props.open, () => props.scope.productId, () => props.scope.deviceId, () => propertyIdOf(props.property)], load, { immediate: true })
-  return { loading, failed, saving, draft, parsed, numeric, alarmAvailable, canSave, editable, source, displaySource, hasOverride,
+  // Reopening observes template changes made elsewhere; ordinary popover events still reuse the snapshot.
+  watch(() => props.open, (open, previous) => { if (open && previous === false && resources.ready.value) void resources.retry() })
+  return { loading, failed, saving, blocked, draft, parsed, numeric, alarmAvailable, canSave, editable, source, displaySource, hasOverride,
     custom, dirty, pendingSave, saveState, resources, type, boolean, scalar, unit, cleaningUnit, differenceUnit, cleaningDifferenceUnit, cleaningHint, levelOptions,
     steps, activeSection, notificationOpen, setNotificationsOpen, alarmNameEditing, alarmNameValue, setAlarmNameInput, editAlarmName, stopAlarmName, toggleStep, addableParts, addPart,
     load, requestClose, prepareLeave, discard, customize, clear, save, restore }

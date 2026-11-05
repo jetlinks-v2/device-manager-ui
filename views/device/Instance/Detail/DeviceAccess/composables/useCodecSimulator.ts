@@ -1,8 +1,9 @@
 import dayjs from 'dayjs'
-import { nextTick, onUnmounted, ref } from 'vue'
+import { nextTick, onUnmounted, ref, unref, type MaybeRef } from 'vue'
 import { wsClient } from '@jetlinks-web/core'
 import { onlyMessage, randomString } from '@jetlinks-web/utils'
 import type {
+  CodecSimulatorTransport,
   CommandType,
   ExecutionLogItem,
   MetadataFunctionItem,
@@ -12,6 +13,13 @@ import type {
 } from '../codecSimulatorTypes'
 
 const DEBUG_TIMEOUT = 15000
+
+export type CodecSimulatorDeviceContext = {
+  id?: string
+  metadata?: unknown
+  productMetadata?: unknown
+  transport?: string
+}
 
 export function safeParseMetadata(metadata: unknown): MetadataModel {
   if (!metadata) return {}
@@ -54,6 +62,45 @@ function normalizePayload(item: SimulationItem) {
   return source
 }
 
+/** Normalizes transports that the current simulator can complete end-to-end. */
+export function normalizeCodecSimulatorTransport(transport: unknown): CodecSimulatorTransport {
+  const value = String(transport || '').trim().replace(/[\s_-]/g, '').toUpperCase()
+  if (value === 'MQTT') return 'MQTT'
+  if (value === 'TCP') return 'TCP'
+  if (value === 'UDP') return 'UDP'
+  if (value === 'WEBSOCKET') return 'WEBSOCKET'
+  if (value === 'COAP') return 'COAP'
+  return 'UNKNOWN'
+}
+
+/** Returns whether the current simulator can safely expose the transport. */
+export function isCodecSimulatorTransportSupported(transport: unknown): boolean {
+  return normalizeCodecSimulatorTransport(transport) !== 'UNKNOWN'
+}
+
+/** Builds the transport-shaped uplink payload consumed by DeviceCodecSimulateSubscriptionProvider. */
+export function buildUplinkSimulatorPayload(
+  item: SimulationItem,
+  transport: unknown,
+): Record<string, unknown> {
+  const payload = normalizePayload(item)
+  switch (normalizeCodecSimulatorTransport(transport)) {
+    case 'MQTT':
+      return {
+        topic: item.topic || '',
+        qosLevel: Number(item.qos ?? 0),
+        payload,
+      }
+    case 'WEBSOCKET':
+      return {
+        type: item.webSocketType || (item.encoding === 'Hex' ? 'BINARY' : 'TEXT'),
+        payload,
+      }
+    default:
+      return { payload }
+  }
+}
+
 function formatResult(value: unknown) {
   if (value === undefined || value === null || value === '') return ''
   if (typeof value === 'string') {
@@ -77,7 +124,7 @@ function parseDetailText(detail: unknown) {
 }
 
 export function useCodecSimulator(
-  instanceStore: any,
+  deviceContext: MaybeRef<CodecSimulatorDeviceContext>,
   $t: (key: string) => string,
 ) {
   const list = ref<SimulationItem[]>([])
@@ -85,14 +132,17 @@ export function useCodecSimulator(
   const simulatorContainerRef = ref<HTMLElement>()
   const activeSubscriptions = new Set<any>()
 
+  const currentDevice = () => unref(deviceContext) || {}
+
   const getMetadataModel = (): MetadataModel => {
-    const deviceMetadata = safeParseMetadata(instanceStore.current?.metadata)
+    const device = currentDevice()
+    const deviceMetadata = safeParseMetadata(device.metadata)
     const hasDeviceModel = !!(
       (deviceMetadata.properties?.length || 0) + (deviceMetadata.functions?.length || 0)
     )
     return hasDeviceModel
       ? deviceMetadata
-      : safeParseMetadata(instanceStore.current?.productMetadata || '{}')
+      : safeParseMetadata(device.productMetadata || '{}')
   }
 
   const normalizeInvokeInputs = (item: SimulationItem) => {
@@ -131,11 +181,7 @@ export function useCodecSimulator(
     if (item.type === 'uplink') {
       return {
         encode: false,
-        payload: {
-          topic: item.topic || '',
-          qosLevel: Number(item.qos ?? 0),
-          payload: normalizePayload(item),
-        },
+        payload: buildUplinkSimulatorPayload(item, currentDevice().transport),
       }
     }
     const commandId = String(item.commandId || '').trim()
@@ -228,12 +274,15 @@ export function useCodecSimulator(
     })
 
   const handleAdd = (type: SimulatorType, data: Partial<SimulationItem> = {}, toTop?: boolean) => {
+    const transport = normalizeCodecSimulatorTransport(currentDevice().transport)
+    const isWebSocketUplink = type === 'uplink' && transport === 'WEBSOCKET'
     const newItem: SimulationItem = {
       id: randomString(),
       type,
       encoding: data.encoding ?? (type === 'uplink' ? 'JSON' : 'Hex'),
       qos: data.qos ?? 0,
       commandType: data.commandType ?? 'read',
+      webSocketType: isWebSocketUplink ? (data.webSocketType ?? 'TEXT') : data.webSocketType,
       ...data,
     }
     toTop ? list.value.unshift(newItem) : list.value.push(newItem)
@@ -262,7 +311,7 @@ export function useCodecSimulator(
   }
 
   const handleSend = (item: SimulationItem) => {
-    const deviceId = String(instanceStore.current?.id || '').trim()
+    const deviceId = String(currentDevice().id || '').trim()
     if (!deviceId) {
       addLog($t('InstanceDeviceAccess.codecDebug.noDeviceId'), 'warn')
       onlyMessage($t('InstanceDeviceAccess.codecDebug.noDeviceId'), 'warning')

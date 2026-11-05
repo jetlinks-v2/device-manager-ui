@@ -4,13 +4,25 @@
 }
 
 :global(.device-alarm-editor-modal-wrap .ant-modal-content) {
+  display: flex;
+  max-height: calc(100dvh - 2.25rem);
+  flex-direction: column;
   overflow: hidden;
   border: 0.0625rem solid var(--line);
   border-radius: 1.125rem;
   box-shadow: 0 1.5rem 5rem rgb(15 23 42 / 22%);
 }
 
+:global(.device-alarm-editor-modal-wrap .ant-modal-body) {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 :global(.device-alarm-editor-modal-wrap .ant-modal-header) {
+  flex: none;
   margin: 0;
   padding: 1.375rem 1.5rem 1rem;
 }
@@ -21,6 +33,7 @@
 }
 
 :global(.device-alarm-editor-modal-wrap .ant-modal-footer) {
+  flex: none;
   margin: 0;
   padding: 0.875rem 1.375rem 1.25rem;
   border-top: 0.0625rem solid var(--line);
@@ -51,17 +64,18 @@
 }
 
 .device-alarm-editor {
+  flex: 1;
   height: min(40.625rem, calc(100dvh - 10.625rem));
-  min-height: 27.5rem;
+  min-height: 0;
 }
 
 .device-alarm-editor__workspace {
   display: grid;
   height: 100%;
   min-height: 0;
-  grid-template-columns: 18.75rem minmax(26.875rem, 1.1fr) minmax(22.5rem, 1fr);
+  grid-template-columns: 18.75rem minmax(0, 1fr) 18.75rem;
   gap: var(--space-4);
-  padding: var(--space-4) 1.375rem 1.125rem;
+  padding: var(--space-4) var(--space-6);
   overflow: hidden;
 }
 
@@ -69,10 +83,10 @@
 .device-alarm-editor__panel {
   min-width: 0;
   min-height: 0;
-  padding: 1.125rem;
+  padding: var(--space-4);
   overflow: auto;
   border: 0.0625rem solid var(--line);
-  border-radius: 0.875rem;
+  border-radius: var(--panel-radius);
   background: var(--bg-2);
 }
 
@@ -139,20 +153,32 @@
 }
 
 .device-alarm-editor__setting-copy small {
-  color: var(--ink-3);
-  font-size: var(--fs-12);
+  color: var(--ink-1);
+  font-size: var(--fs-14);
+  font-weight: 600;
 }
 
 .device-alarm-editor__setting-copy strong {
+  display: -webkit-box;
   overflow: hidden;
-  color: var(--ink-1);
-  font-size: var(--fs-13);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  color: var(--ink-3);
+  font-size: var(--fs-12);
+  font-weight: 400;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .device-alarm-editor__setting > :deep(.anticon:last-child) {
   color: var(--ink-4);
+}
+
+.device-alarm-editor__section-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
 }
 
 .device-alarm-editor__section-heading {
@@ -165,77 +191,17 @@
   padding-top: var(--space-5);
 }
 
-.device-alarm-editor__number {
-  width: 100%;
-}
-
-.device-alarm-editor__trigger :deep(.ant-radio-wrapper) {
-  margin-right: var(--space-5);
-}
-
-.device-alarm-editor__preview,
-.device-alarm-editor__relieve-preview {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-  padding: var(--space-3);
-  border: 0.0625rem solid var(--ant-primary-color-outline);
-  border-radius: var(--r-4);
-  color: var(--jet-theme-text);
-  background: var(--jet-theme-primary-bg);
-  font-weight: 600;
-  line-height: 1.6;
-}
-
-.device-alarm-editor__preview :deep(.anticon),
-.device-alarm-editor__relieve-preview :deep(.anticon) {
-  flex: none;
-  margin-top: 0.2em;
-  color: var(--ant-primary-color);
-}
-
-.device-alarm-editor__auto-relieve {
-  display: grid;
-  gap: var(--space-4);
-  margin-top: var(--space-5);
-  padding: var(--space-5);
-  border: 0.0625rem solid var(--line);
-  border-radius: var(--r-5);
-  background: var(--bg);
-}
-
-.device-alarm-editor__auto-relieve-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-4);
-}
-
-.device-alarm-editor__auto-relieve-header p {
-  margin: var(--space-1) 0 0;
-  color: var(--jet-theme-text-secondary);
-  font-size: var(--fs-12);
-  line-height: 1.6;
-}
-
-.device-alarm-editor__section :deep(.device-alarm-notify) {
-  padding-top: 0;
-  border-top: 0;
-}
-
 .device-alarm-editor__summary-list {
   display: grid;
   gap: var(--space-3);
-  margin: var(--space-5) 0 0;
+  margin: var(--space-4) 0 0;
 }
 
 .device-alarm-editor__summary-list > div {
   display: grid;
   gap: var(--space-2);
   padding: var(--space-3);
-  border: 0.0625rem solid var(--line-2);
-  border-radius: var(--r-4);
-  background: var(--bg);
+  border-bottom: 0.0625rem solid var(--line);
 }
 
 .device-alarm-editor__summary-list dt {
@@ -259,7 +225,8 @@
   font-weight: 600;
   line-height: 1.55;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
+  overflow-wrap: anywhere;
 }
 
 .device-alarm-editor__footer {
@@ -317,18 +284,24 @@
   white-space: nowrap;
 }
 
-@media (max-width: 68.75rem) {
+@media (max-width: 75rem) {
   .device-alarm-editor {
     height: min(43.75rem, calc(100dvh - 10.625rem));
   }
 
   .device-alarm-editor__workspace {
-    grid-template-columns: 15.625rem minmax(0, 1fr);
+    grid-template-columns: 16rem minmax(0, 1fr);
+    grid-auto-rows: max-content;
+    align-items: start;
     overflow: auto;
   }
 
+  .device-alarm-editor__base,
+  .device-alarm-editor__panel {
+    overflow: visible;
+  }
+
   .device-alarm-editor__summary {
-    min-height: 16.25rem;
     grid-column: 1 / -1;
   }
 
@@ -350,7 +323,9 @@
   }
 
   :global(.device-alarm-editor-modal-wrap .ant-modal-content) {
-    min-height: 100dvh;
+    height: 100dvh;
+    max-height: 100dvh;
+    min-height: 0;
     border-radius: 0;
   }
 
@@ -363,7 +338,7 @@
   }
 
   .device-alarm-editor {
-    height: calc(100dvh - 8.75rem);
+    height: 100%;
     min-height: 0;
     overflow: auto;
   }
@@ -373,6 +348,7 @@
     height: auto;
     min-height: 100%;
     flex-direction: column;
+    align-items: stretch;
     padding: var(--space-3);
     overflow: visible;
   }
@@ -383,7 +359,7 @@
   }
 
   .device-alarm-editor__settings {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
   }
 
   .device-alarm-editor__setting {

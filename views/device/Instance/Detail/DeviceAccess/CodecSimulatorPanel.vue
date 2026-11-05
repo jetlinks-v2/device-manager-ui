@@ -20,6 +20,9 @@
           :key="item.id"
           v-model="list[index]"
           :type="item.type"
+          :metadata="metadata"
+          :product-metadata="productMetadata"
+          :transport="transport"
           @delete="handleDelete(index)"
           @send="handleSend"
           @move-up="handleMove(index, -1)"
@@ -60,13 +63,26 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useInstanceStore } from '../../../../../store/instance'
 import CodecSimulatorItem from './CodecSimulatorItem.vue'
 import { useCodecSimulator } from './composables/useCodecSimulator'
 
 const { t: $t } = useI18n()
-const instanceStore = useInstanceStore()
+const props = defineProps<{
+  deviceId: string
+  metadata?: unknown
+  productMetadata?: unknown
+  transport?: string
+}>()
+
+// The panel is shared by both device detail shells and must debug the explicitly supplied device.
+const deviceContext = computed(() => ({
+  id: props.deviceId,
+  metadata: props.metadata,
+  productMetadata: props.productMetadata,
+  transport: props.transport,
+}))
 
 const {
   list,
@@ -78,7 +94,7 @@ const {
   handleSend,
   reset,
   fillData,
-} = useCodecSimulator(instanceStore, $t)
+} = useCodecSimulator(deviceContext, $t)
 
 defineExpose({ reset, fillData })
 </script>

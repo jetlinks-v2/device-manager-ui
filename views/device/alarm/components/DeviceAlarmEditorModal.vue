@@ -66,82 +66,40 @@
         <section class="device-alarm-editor__panel device-alarm-editor__main" :data-panel="activePanel">
           <header class="device-alarm-editor__section-heading">
             <div>
-              <h3>{{ $t(activePanelMeta.labelKey) }}</h3>
+              <div class="device-alarm-editor__section-title">
+                <h3>{{ $t(activePanelMeta.labelKey) }}</h3>
+                <DeviceAlarmNotificationHelp v-if="activePanel === 'notification'" :model="model" show-label />
+              </div>
               <p>{{ $t(activePanelMeta.descriptionKey) }}</p>
             </div>
           </header>
 
           <div v-show="activePanel === 'target'" class="device-alarm-editor__section">
-            <a-row v-if="!fixedProductScope" :gutter="12">
-              <a-col :xs="24" :md="12">
-                <a-form-item :label="$t('DeviceAlarm.form.product')" required>
-                  <IotAlarmTargetSelect
-                    :model-value="model.productId"
-                    :request="productRequest"
-                    :selected-option="productOption"
-                    :reload-key="productReloadKey"
-                    load-on-reload
-                    :placeholder="$t('DeviceAlarm.placeholder.productSearch')"
-                    :disabled="readonlyScope"
-                    @change="(_value, option) => emit('product-change', option)"
-                  />
-                </a-form-item>
-              </a-col>
-              <a-col :xs="24" :md="12">
-                <a-form-item :label="$t('DeviceAlarm.form.deviceRange')" required>
-                  <IotAlarmTargetSelect
-                    :model-value="deviceValue"
-                    :request="deviceRequest"
-                    :selected-option="deviceOption"
-                    :static-options="allDeviceOption"
-                    :reload-key="model.productId"
-                    :placeholder="$t('DeviceAlarm.placeholder.deviceSearch')"
-                    :disabled="readonlyScope"
-                    @change="(value, option) => emit('device-change', value, option)"
-                  />
-                </a-form-item>
-              </a-col>
-            </a-row>
-
-            <a-form-item :label="$t('DeviceAlarm.form.property')" required>
-              <a-select
-                show-search
-                :value="model.property"
-                :disabled="readonlyScope"
-                :options="propertySelectOptions"
-                :placeholder="$t('DeviceAlarm.placeholder.property')"
-                @change="(value: unknown) => emit('property-change', String(value))"
-              />
-            </a-form-item>
+            <DeviceAlarmTargetForm
+              :model="model" :fixed-product-scope="fixedProductScope" :readonly-scope="readonlyScope"
+              :product-option="productOption" :device-option="deviceOption" :product-reload-key="productReloadKey"
+              :product-request="productRequest" :device-request="deviceRequest" :property-options="propertyOptions"
+              @product-change="option => emit('product-change', option)"
+              @device-change="(value, option) => emit('device-change', value, option)"
+              @property-change="value => emit('property-change', value)"
+            />
           </div>
 
           <div v-show="activePanel === 'trigger'" class="device-alarm-editor__section">
-            <a-form-item class="device-alarm-editor__trigger" :label="$t('DeviceAlarm.form.trigger')" required>
-              <PropertyAlarmCondition :model="model" :property="selectedProperty" />
-            </a-form-item>
-
-            <div class="device-alarm-editor__preview">
-              <AIcon type="InfoCircleFilled" />
-              <span>{{ previewText }}</span>
-            </div>
-
-            <div class="device-alarm-editor__auto-relieve">
-              <PropertyAlarmRecovery :model="model" :property="selectedProperty" />
-              <div v-if="model.autoRelieve" class="device-alarm-editor__relieve-preview">
-                <AIcon type="CheckCircleFilled" />
-                <span>{{ $t('DeviceAlarm.autoRelieve.condition') }}{{ relievePreviewText }}</span>
-              </div>
-            </div>
+            <DeviceAlarmTriggerForm :model="model" :property="selectedProperty" :preview="previewText" :relieve-preview="relievePreviewText" :disabled="saving" />
           </div>
 
           <div v-show="activePanel === 'notification'" class="device-alarm-editor__section">
             <RegistryComponent page-code="device/alarm" code="alarm-editor">
               <DeviceAlarmNotificationConfig
                 key="notification"
+                layout="form"
                 :model="model"
                 :methods="notifyMethods"
                 :loading="notifyLoading"
+                :failed="notifyFailed"
                 :disabled="saving"
+                @retry-methods="emit('retry-methods')"
               />
             </RegistryComponent>
           </div>
@@ -177,16 +135,16 @@
 import { computed, ref, watch, type PropType } from 'vue'
 import { useI18n } from 'vue-i18n'
 import DeviceAlarmNotificationConfig from './DeviceAlarmNotificationConfig.vue'
-import PropertyAlarmCondition from './PropertyAlarmCondition.vue'
-import PropertyAlarmRecovery from './PropertyAlarmRecovery.vue'
-import IotAlarmTargetSelect from './IotAlarmTargetSelect.vue'
+import DeviceAlarmNotificationHelp from './editor/DeviceAlarmNotificationHelp.vue'
+import DeviceAlarmTargetForm from './editor/DeviceAlarmTargetForm.vue'
+import DeviceAlarmTriggerForm from './editor/DeviceAlarmTriggerForm.vue'
 import type {
   DeviceAlarmFormModel,
   DeviceAlarmNotifyMethod,
   DeviceAlarmTargetOption,
   ThingModelProperty,
 } from '../types'
-import { formatRelieveText, formatTriggerText, propertyIdOf, propertyNameOf } from '../utils'
+import { formatRelieveText, formatTriggerText, propertyIdOf } from '../utils'
 import type { IotAlarmTargetSelectOption, IotAlarmTargetSelectQuery } from './IotAlarmTargetSelect.vue'
 
 type EditorPanel = 'target' | 'trigger' | 'notification'
@@ -213,6 +171,7 @@ const props = defineProps({
   propertyOptions: { type: Array as PropType<ThingModelProperty[]>, default: () => [] },
   notifyMethods: { type: Array as PropType<DeviceAlarmNotifyMethod[]>, default: () => [] },
   notifyLoading: { type: Boolean, default: false },
+  notifyFailed: { type: Boolean, default: false },
 })
 
 const emit = defineEmits<{
@@ -221,6 +180,7 @@ const emit = defineEmits<{
   (e: 'device-change', value?: string, option?: IotAlarmTargetSelectOption): void
   (e: 'property-change', value: string): void
   (e: 'save'): void
+  (e: 'retry-methods'): void
 }>()
 
 const { t: $t } = useI18n()
@@ -242,18 +202,8 @@ const title = computed(() =>
 const activePanelMeta = computed(() => panels.find(panel => panel.key === activePanel.value) ?? panels[0])
 const emptySummary = computed(() => $t('DeviceAlarm.editor.notSelected'))
 
-const propertySelectOptions = computed(() =>
-  props.propertyOptions.map((property) => ({
-    label: propertyNameOf(property),
-    value: propertyIdOf(property),
-    disabled: Boolean(property.alarmConfigured),
-  })),
-)
 const selectedProperty = computed(() => props.propertyOptions.find(property => propertyIdOf(property) === props.model.property)
   ?? { valueType: { type: typeof props.model.value === 'string' ? 'string' : typeof props.model.value === 'boolean' ? 'boolean' : 'double' } })
-
-const allDeviceOption = computed(() => [{ label: $t('DeviceAlarm.deviceRange.all'), value: '__all__' }])
-const deviceValue = computed(() => props.model.source === 'device' ? props.model.deviceId : '__all__')
 
 const levelTone = (level: unknown) => {
   switch (Number(level)) {

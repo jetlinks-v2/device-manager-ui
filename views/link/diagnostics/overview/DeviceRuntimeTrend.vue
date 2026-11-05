@@ -11,7 +11,7 @@
       </template>
       <DeviceRuntimePeaks v-if="recording" :view="recording" @retry="emit('retry-recording')" @select="selectPeak" @live="emit('live')" />
     </header>
-    <div class="device-runtime-chart"><Echarts :option="option" :library="library" :events="events" renderer="svg" /><div v-if="!hasVisibleValues" class="device-runtime-empty"><span>{{ t(emptyMessage) }}</span><a-button v-if="!hasSelectedSeries" type="link" size="small" @click="restoreDefaults">{{ t('RuntimeMonitor.deviceRuntimeRestoreSeries') }}</a-button></div></div>
+    <div class="device-runtime-chart"><Echarts :option="option" :data-option="dataOption" defer-offscreen :library="library" :events="events" renderer="svg" /><div v-if="!hasVisibleValues" class="device-runtime-empty"><span>{{ t(emptyMessage) }}</span><a-button v-if="!hasSelectedSeries" type="link" size="small" @click="restoreDefaults">{{ t('RuntimeMonitor.deviceRuntimeRestoreSeries') }}</a-button></div></div>
     <div class="device-runtime-axes"><span v-if="sessionAxisVisible">{{ t('RuntimeMonitor.deviceRuntimeLeftAxis', { metrics: axisMetric(label('sessions'), t('RuntimeMonitor.deviceRuntimeRecordsUnit')) }) }}</span><span v-if="messageAxisVisible">{{ t('RuntimeMonitor.deviceRuntimeRightAxis', { metrics: rateAxisDescription }) }}</span><span v-if="trafficAxisVisible">{{ t(messageAxisVisible ? 'RuntimeMonitor.deviceRuntimeOuterAxis' : 'RuntimeMonitor.deviceRuntimeRightAxis', { metrics: axisMetric(t('RuntimeMonitor.deviceRuntimeTraffic'), 'B/s') }) }}</span></div>
     <small v-if="incomparableClocks" class="device-runtime-clock-note">{{ t('RuntimeMonitor.deviceRuntimeClockMismatch') }}</small>
     <small v-if="recording?.outside" class="device-runtime-clock-note">{{ t('RuntimeMonitor.devicePeakOutside') }}</small>
@@ -48,7 +48,16 @@ const props = defineProps({
 })
 const emit = defineEmits<{ details: [value: string]; configure: [value: Partial<DiagnosticNodePreference>]; peak: [selection: DevicePeakSelection]; live: []; 'retry-recording': [] }>()
 const { t, locale } = useI18n(), { token } = theme.useToken(), library = [LineChart, GridComponent, TooltipComponent, LegendComponent, DataZoomComponent, MarkLineComponent]
-const timeOptions = computed<Intl.DateTimeFormatOptions>(() => ({ timeZone: props.recording?.data?.zoneId, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }))
+// Freshness/reading wrappers change independently of the plotted samples and interaction state.
+const recordedZone = computed(() => props.recording?.data?.zoneId)
+const recordedPoints = computed(() => props.recording?.data ? props.recording.points : undefined)
+const focusedRecording = computed(() => !!props.recording?.focus)
+const zoomedRecording = computed(() => focusedRecording.value && !props.recording?.outside)
+const recordedPeak = computed(() => zoomedRecording.value ? props.recording?.focus?.peak : undefined)
+const configuredZoom = computed(() => props.config.deviceRuntimeZoom)
+const hasSession = computed(() => !!props.session)
+const sessionHistory = computed(() => props.session?.history)
+const timeOptions = computed<Intl.DateTimeFormatOptions>(() => ({ timeZone: recordedZone.value, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }))
 const axisTime = computed(() => new Intl.DateTimeFormat(locale.value, timeOptions.value))
 const tooltipTime = computed(() => new Intl.DateTimeFormat(locale.value, { ...timeOptions.value, fractionalSecondDigits: 3 }))
 const seriesIds = ['sessions', 'upstreamMessages', 'communicationQps', 'propertyReports', 'eventReports', 'receivedBytes', 'sentBytes', 'propertyValues'] as const
@@ -85,7 +94,10 @@ const observed = (time?: number) => time === undefined ? '' : t('RuntimeMonitor.
 const cacheDescription = computed(() => [t('RuntimeMonitor.deviceRuntimeCacheHelp'), ...(props.cache?.facts ?? []).map(fact => `${t(fact.label)}: ${fact.value}`), observed(props.cache?.state.sampledAt)].filter(Boolean).join('\n'))
 const windowDescription = (millis?: number) => millis === undefined ? '' : t('RuntimeMonitor.deviceRuntimeQpsWindow', { seconds: rate(millis / 1000) })
 const qpsDescription = computed(() => [t('RuntimeMonitor.deviceRuntimeQpsHelp'), qps.value.values ? `${t('RuntimeMonitor.deviceRuntimeReceived')} ${rate(qps.value.values.receivedQps)} ${t('RuntimeMonitor.deviceRuntimeQpsUnit')} · ${t('RuntimeMonitor.deviceRuntimeSent')} ${rate(qps.value.values.sentQps)} ${t('RuntimeMonitor.deviceRuntimeQpsUnit')}` : t(qps.value.invalid ? 'RuntimeMonitor.deviceRuntimeQpsUnavailable' : 'RuntimeMonitor.deviceRuntimeQpsWaiting'), windowDescription(qps.value.windowMillis), observed(qps.value.timestamp)].filter(Boolean).join('\n'))
-const legendIds = computed<SeriesId[]>(() => [...(props.session ? ['sessions' as const] : []), ...(props.communication?.supported === true ? ['upstreamMessages' as const, ...(qps.value.supported ? ['communicationQps' as const] : []), 'propertyReports' as const, 'eventReports' as const, 'receivedBytes' as const, 'sentBytes' as const, ...(props.recording?.data ? ['propertyValues' as const] : [])] : [])])
+const legendIds = computed<SeriesId[]>(previous => {
+  const ids: SeriesId[] = [...(hasSession.value ? ['sessions' as const] : []), ...(props.communication?.supported === true ? ['upstreamMessages' as const, ...(qps.value.supported ? ['communicationQps' as const] : []), 'propertyReports' as const, 'eventReports' as const, 'receivedBytes' as const, 'sentBytes' as const, ...(recordedPoints.value ? ['propertyValues' as const] : [])] : [])]
+  return previous && ids.length === previous.length && ids.every((id, index) => id === previous[index]) ? previous : ids
+})
 const defaultSeries: SeriesId[] = ['sessions', 'upstreamMessages', 'communicationQps']
 // 旧模式仅恢复未配置系列的默认选择；显式图例选择始终允许跨单位组合。
 const selectedIds = computed(() => props.config.deviceRuntimeSeries ?? (props.config.deviceRuntimeMode === 'traffic' ? ['sessions', 'receivedBytes', 'sentBytes'] : defaultSeries))
@@ -96,13 +108,13 @@ const hasSelectedSeries = computed(() => selectedActiveIds.value.length > 0)
 function restoreDefaults() { emit('configure', { deviceRuntimeSeries: [...defaultSeries] }) }
 interface PlotPoint { value: [number, number | null]; exact?: string; timestamp: number; propertyValues?: number; receivedQps?: number; sentQps?: number; windowMillis?: number }
 const sampledPlots = computed(() => Object.fromEntries(seriesIds.map(id => [id, id === 'sessions'
-  ? (props.session?.history ?? []).map(point => ({ value: [point.timestamp, point.value === undefined ? null : Number(point.value)], timestamp: point.timestamp, exact: point.value }))
+  ? (sessionHistory.value ?? []).map(point => ({ value: [point.timestamp, point.value === undefined ? null : Number(point.value)], timestamp: point.timestamp, exact: point.value }))
   : id === 'communicationQps' ? qps.value.history.map(point => ({ value: [point.timestamp, point.values?.communicationQps ?? null], timestamp: point.timestamp, receivedQps: point.values?.receivedQps, sentQps: point.values?.sentQps, windowMillis: point.windowMillis }))
   : rates.value.map(point => ({ value: [point.timestamp, point[id as Exclude<keyof DeviceMessageRates, 'timestamp'>] ?? null], timestamp: point.timestamp, propertyValues: point.propertyValues }))])) as Record<SeriesId, PlotPoint[]>)
 /** 后端整秒历史直接补齐首次打开页面前的曲线；会话沿用自己的真实采样，不插值补点。 */
 const allPlots = computed(() => {
-  if (!props.recording?.data) return sampledPlots.value
-  const points = props.recording.points, from = points[0]?.timestamp, to = points.at(-1)?.timestamp
+  if (!recordedPoints.value) return sampledPlots.value
+  const points = recordedPoints.value, from = points[0]?.timestamp, to = points.at(-1)?.timestamp
   const result = { ...sampledPlots.value }
   for (const [id, metric] of Object.entries(recordingSeriesMetric)) result[id as Exclude<SeriesId, 'sessions'>] = points.map(point => ({ value: [point.timestamp, point.values[metric]], timestamp: point.timestamp, propertyValues: point.values.PropertyValues, receivedQps: point.values.ReceivedPackets, sentQps: point.values.SentPackets, windowMillis: 1000 }))
   result.sessions = result.sessions.filter(point => from !== undefined && to !== undefined && point.timestamp >= from && point.timestamp <= to)
@@ -114,7 +126,7 @@ function selectPeak(selection: DevicePeakSelection) {
   emit('peak', selection)
 }
 const sourcePlots = computed(() => Object.fromEntries(seriesIds.map(id => [id, legendIds.value.includes(id) ? allPlots.value[id] : []])) as Record<SeriesId, PlotPoint[]>)
-const sessionAxisVisible = computed(() => selectedActiveIds.value.includes('sessions') && (!props.recording?.focus || allPlots.value.sessions.length > 0))
+const sessionAxisVisible = computed(() => selectedActiveIds.value.includes('sessions') && (!focusedRecording.value || allPlots.value.sessions.length > 0))
 const tooltipRadius = computed(() => {
   const intervals = [props.session?.history ?? [], history.value].flatMap(points => points.flatMap((point, index) => index && point.timestamp > points[index - 1].timestamp ? [point.timestamp - points[index - 1].timestamp] : [])).sort((left, right) => left - right)
   return (intervals[Math.floor(intervals.length / 2)] ?? 0) / 2
@@ -183,12 +195,11 @@ const events = {
 }
 /** 系列与三个单位轴使用固定身份，图例自由组合，隐藏轴不挤占绘图区域。 */
 const option = computed(() => {
-  const times = selectedActiveIds.value.flatMap(id => plotted.value[id].map(point => point.timestamp)), start = times.length ? Math.min(...times) : undefined, end = times.length ? Math.max(...times) : undefined
-  const zoom = props.recording?.focus && !props.recording.outside ? { start: 0, end: 100 } : props.config.deviceRuntimeZoom ?? { start: 0, end: 100 }
+  const zoom = zoomedRecording.value ? { start: 0, end: 100 } : configuredZoom.value ?? { start: 0, end: 100 }
   return { animation: false, textStyle: { fontFamily: token.value.fontFamily, fontSize: 12 }, grid: { top: 32, left: sessionAxisVisible.value ? 50 : 16, right: trafficAxisVisible.value && messageAxisVisible.value ? 120 : trafficAxisVisible.value || messageAxisVisible.value ? 64 : 16, bottom: 40 },
     legend: { top: 0, left: 0, type: 'scroll', icon: 'rect', selectedMode: true, data: legendIds.value.map(label), selected: Object.fromEntries(seriesIds.map(id => [label(id), legendIds.value.includes(id) && selectedIds.value.includes(id)])), itemWidth: 16, itemHeight: 2, textStyle: { color: token.value.colorTextSecondary } },
     tooltip: { trigger: 'axis', confine: true, enterable: true, renderMode: 'html', backgroundColor: token.value.colorBgElevated, borderColor: token.value.colorBorderSecondary, textStyle: { fontSize: 12 }, formatter: tooltip },
-    xAxis: { type: 'time', min: start, max: start === end && end !== undefined ? end + 30000 : end, splitNumber: 4, axisLabel: { hideOverlap: true, color: token.value.colorTextTertiary, formatter: (value: number) => axisTime.value.format(value) }, splitLine: { show: false } },
+    xAxis: { type: 'time', splitNumber: 4, axisLabel: { hideOverlap: true, color: token.value.colorTextTertiary, formatter: (value: number) => axisTime.value.format(value) }, splitLine: { show: false } },
     media: [{ query: { maxWidth: 480 }, option: { xAxis: { splitNumber: 2 } } }, { option: { xAxis: { splitNumber: 4 } } }],
     yAxis: [
       { id: 'sessions', type: 'value', position: 'left', show: sessionAxisVisible.value, name: '', min: 0, minInterval: 1, axisLabel: { color: token.value.colorTextTertiary, formatter: compactCount }, splitLine: { lineStyle: { color: token.value.colorSplit } } },
@@ -196,8 +207,13 @@ const option = computed(() => {
       { id: 'traffic', type: 'value', position: 'right', offset: messageAxisVisible.value ? 64 : 0, show: trafficAxisVisible.value, name: '', min: 0, axisLabel: { color: token.value.colorTextTertiary, formatter: (value: number) => bytes(value).replace('/s', '') }, splitLine: { show: !sessionAxisVisible.value && !messageAxisVisible.value, lineStyle: { color: token.value.colorSplit } } },
     ],
     dataZoom: [{ id: 'device-runtime-inside', type: 'inside', filterMode: 'none', zoomOnMouseWheel: 'ctrl', moveOnMouseWheel: false, ...zoom }, { id: 'device-runtime-slider', type: 'slider', height: 14, bottom: 0, showDetail: false, brushSelect: false, borderColor: 'transparent', ...zoom }],
-    series: seriesIds.map((id, index) => ({ id, name: label(id), type: 'line', yAxisIndex: id === 'sessions' ? 0 : id.endsWith('Bytes') ? 2 : 1, data: plotted.value[id], connectNulls: false, showSymbol: false, symbolSize: 4, lineStyle: { width: 1.8 }, itemStyle: { color: seriesColors.value[index] }, emphasis: { focus: 'series' }, markLine: { symbol: 'none', silent: true, lineStyle: { color: token.value.colorWarning, type: 'dashed' }, label: { show: false }, data: props.recording?.focus && !props.recording.outside && peakSeries(props.recording.focus.peak.metric) === id ? [{ xAxis: props.recording.focus.peak.timestamp }] : [] } })),
+    series: seriesIds.map((id, index) => ({ id, name: label(id), type: 'line', yAxisIndex: id === 'sessions' ? 0 : id.endsWith('Bytes') ? 2 : 1, connectNulls: false, showSymbol: false, symbolSize: 4, lineStyle: { width: 1.8 }, itemStyle: { color: seriesColors.value[index] }, emphasis: { focus: 'series' }, markLine: { symbol: 'none', silent: true, lineStyle: { color: token.value.colorWarning, type: 'dashed' }, label: { show: false }, data: recordedPeak.value && peakSeries(recordedPeak.value.metric) === id ? [{ xAxis: recordedPeak.value.timestamp }] : [] } })),
   }
+})
+const dataOption = computed(() => {
+  const times = selectedActiveIds.value.flatMap(id => plotted.value[id].map(point => point.timestamp))
+  const start = times.length ? Math.min(...times) : undefined, end = times.length ? Math.max(...times) : undefined
+  return { xAxis: { min: start, max: start === end && end !== undefined ? end + 30000 : end }, series: seriesIds.map(id => ({ id, data: plotted.value[id] })) }
 })
 </script>
 <style scoped>

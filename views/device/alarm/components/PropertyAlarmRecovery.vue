@@ -1,13 +1,14 @@
 <template>
-  <span class="property-alarm-recovery" :class="{ 'is-off': !model.autoRelieve }">
-    <AIcon type="CheckCircleOutlined" class="recovery-icon" />
-    <span class="recovery-body">
+  <span class="property-alarm-recovery" :class="{ 'is-off': !model.autoRelieve, 'is-form': layout === 'form' }">
+    <a-select v-if="layout === 'form'" :value="mode" :options="options" :disabled="disabled" :aria-label="$t('DeviceAlarm.autoRelieve.title')" @change="value => changeMode(String(value))" />
+    <AIcon v-else type="CheckCircleOutlined" class="recovery-icon" />
+    <span v-if="layout !== 'form' || (model.autoRelieve && model.relieveCondition)" class="recovery-body">
       <template v-if="model.autoRelieve">
-        <PropertyAlarmCondition v-if="model.relieveCondition" :model="model.relieveCondition" :property="property" recovery />
+        <PropertyAlarmCondition v-if="model.relieveCondition" :model="model.relieveCondition" :property="property" :layout="layout" recovery />
         <span v-else :title="$t('DeviceAlarm.condition.recovery.inverseHint')">{{ inferredText }}</span>
-        <span>{{ $t('DeviceAlarm.sentence.when') }}</span>
+        <span v-if="layout !== 'form'">{{ $t('DeviceAlarm.sentence.when') }}</span>
       </template>
-      <a-dropdown :trigger="['click']" :disabled="disabled">
+      <a-dropdown v-if="layout !== 'form'" :trigger="['click']" :disabled="disabled">
         <a-button type="text" size="small" class="recovery-action" :disabled="disabled" :aria-label="$t('DeviceAlarm.autoRelieve.title')">
           {{ $t(model.autoRelieve ? 'DeviceAlarm.condition.recovery.action' : 'DeviceAlarm.condition.recovery.off') }}<AIcon type="DownOutlined" />
         </a-button>
@@ -24,7 +25,7 @@ import { invertCondition } from '../conditions'
 import { formatTriggerText, formatPropertyUnit, isNumberProperty } from '../utils'
 import PropertyAlarmCondition from './PropertyAlarmCondition.vue'
 import RuleMenuOption from '../../components/PropertyRules/RuleMenuOption.vue'
-const props = defineProps<{ model: DeviceAlarmFormModel; property: ThingModelProperty; disabled?: boolean }>()
+const props = defineProps<{ model: DeviceAlarmFormModel; property: ThingModelProperty; disabled?: boolean; layout?: 'inline' | 'form' }>()
 const { t: $t } = useI18n()
 const mode = computed(() => !props.model.autoRelieve ? 'off' : props.model.relieveCondition ? 'custom' : 'inverse')
 const options = computed(() => [{ value: 'off', icon: 'StopOutlined' }, { value: 'inverse', icon: 'SwapOutlined' }, { value: 'custom', icon: 'EditOutlined' }]
@@ -47,4 +48,7 @@ function changeMode(value: string) {
 .recovery-action :deep(.anticon) { font-size: 10px; color: var(--jet-theme-text-secondary); }
 .is-off .recovery-icon, .is-off .recovery-body, .is-off .recovery-action { color: var(--jet-theme-text-secondary); }
 @media (pointer: coarse) { .recovery-action { min-height: 36px; } }
+.property-alarm-recovery.is-form { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-3); font-size: var(--fs-14); }
+.is-form .recovery-body { width: 100%; line-height: 1.6; overflow-wrap: anywhere; }
+.is-form .recovery-body > .property-alarm-condition { width: 100%; }
 </style>

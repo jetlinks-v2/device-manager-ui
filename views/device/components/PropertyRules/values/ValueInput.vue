@@ -1,9 +1,9 @@
 <template>
-  <a-input-number v-if="numeric" :value="typeof value === 'number' ? value : undefined" size="small" :controls="false" class="rule-scalar-input" :placeholder="placeholder ?? label" :aria-label="label" @update:value="$emit('update:value', $event)" />
-  <a-select v-else-if="type === 'boolean' || type === 'enum'" :value="value == null ? undefined : propertyValueKey(value)" size="small" class="rule-scalar-input"
+  <a-input-number v-if="numeric" :value="typeof value === 'number' ? value : undefined" :size="size ?? 'small'" :controls="false" class="rule-scalar-input" :placeholder="placeholder ?? label" :aria-label="label" @update:value="$emit('update:value', $event)" />
+  <a-select v-else-if="type === 'boolean' || type === 'enum'" :value="value == null ? undefined : propertyValueKey(value)" :size="size ?? 'small'" class="rule-scalar-input"
     :aria-label="label" :placeholder="placeholder ?? label" :options="options" :get-popup-container="getPopupContainer"
     :status="invalid ? 'error' : undefined" :title="invalid || undefined" :not-found-content="$t('PropertyRules.noValueOptions')" @update:value="updateValue" />
-  <a-input v-else :value="typeof value === 'string' ? value : ''" size="small" class="rule-scalar-input" :aria-label="label" :placeholder="placeholder ?? label" @update:value="$emit('update:value', $event)" />
+  <a-input v-else :value="typeof value === 'string' ? value : ''" :size="size ?? 'small'" class="rule-scalar-input" :aria-label="label" :placeholder="placeholder ?? label" @update:value="$emit('update:value', $event)" />
 </template>
 <script setup lang="ts">
 import { computed } from 'vue'
@@ -12,7 +12,7 @@ import type { ThingModelProperty } from '../../../alarm/types'
 import { isNumberProperty } from '../../../alarm/utils'
 import type { ScalarValue } from './config'
 import { propertyValueChoices, propertyValueKey, propertyValueType, readPropertyValueKeys } from './metadata'
-const props = defineProps<{ property: ThingModelProperty; value?: ScalarValue | null; label: string; placeholder?: string; getPopupContainer?: (trigger: HTMLElement) => HTMLElement }>()
+const props = defineProps<{ property: ThingModelProperty; value?: ScalarValue | null; label: string; size?: 'small' | 'middle'; placeholder?: string; getPopupContainer?: (trigger: HTMLElement) => HTMLElement }>()
 const emit = defineEmits<{ (e: 'update:value', value: ScalarValue | null): void }>()
 const { t: $t } = useI18n()
 const type = computed(() => propertyValueType(props.property))

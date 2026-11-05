@@ -1,8 +1,11 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { createRenderer, defineComponent, nextTick, reactive } from 'vue'
+import { computed, createRenderer, defineComponent, nextTick, reactive } from 'vue'
 import { createI18n } from 'vue-i18n'
 import type { RouteLocationNormalized } from 'vue-router'
+import { usePropertyRuleCards } from '../views/device/components/PropertyRules/cards/usePropertyRuleCards'
+import { parseRule } from '../views/device/components/PropertyRules/codec'
+import type { RuleScope } from '../views/device/components/PropertyRules/service'
 import { usePropertyRules } from '../views/device/components/PropertyRules/usePropertyRules'
 import { setAlarmRequestHandler } from './alarmRequest.test-shim'
 import { routeGuards, ruleRoute, ruleMenus, ruleMenuVisits, setConfirmHandler, type TestConfirmation } from './propertyRuleScope.test-shim'
@@ -11,6 +14,7 @@ import { useRuleResources } from '../views/device/components/PropertyRules/useRu
 import { useRuleExample } from '../views/device/components/PropertyRules/useRuleExample'
 import { useAlarmRecipients } from '../views/device/alarm/hooks/useAlarmRecipients'
 import { useAlarmNotification } from '../views/device/alarm/hooks/useAlarmNotification'
+import { alarmSelectionVisibleCount } from '../views/device/alarm/hooks/useAlarmSelectionOverflow'
 import { createAlarmRecipientCache } from '../views/device/alarm/hooks/alarmRecipientCache'
 import { buildPreprocessPayload, createEmptyNotification, toDeviceAlarmRow } from '../views/device/alarm/utils'
 import type { DeviceAlarmFormModel, DeviceAlarmNotifyMethod, ThingPropertyPreprocess } from '../views/device/alarm/types'
@@ -57,8 +61,19 @@ function notificationProps() {
     { id: 'inbox', channelIds: ['inbox-1'], providerId: 'inbox', key: 'inbox', label: 'Inbox', desc: '', icon: 'MailOutlined' },
     { id: 'email', channelIds: ['email-1'], providerId: 'email', key: 'email', label: 'Email', desc: '', icon: 'MailOutlined' },
   ]
-  return reactive({ model, methods, disabled: false, reveal: false })
+  return reactive({ model, methods, disabled: false, loading: false, reveal: false })
 }
+
+test('notification name summaries use all available space before reserving overflow counts', () => {
+  const widths = [40, 50, 60]
+  assert.equal(alarmSelectionVisibleCount(widths, 150, [20, 20, 20], 4), 3, 'all names fit without reserving a counter')
+  assert.equal(alarmSelectionVisibleCount(widths, 149, [20, 20, 20], 4), 2)
+  assert.equal(alarmSelectionVisibleCount(widths, 113, [20, 20, 20], 4), 1)
+  assert.equal(alarmSelectionVisibleCount(widths, 400, [20, 20, 20], 4), 3, 'growing the container reveals names again')
+  assert.equal(alarmSelectionVisibleCount([200, 40], 80, [20, 20], 4), 1, 'long first name ellipsizes beside the counter')
+  assert.equal(alarmSelectionVisibleCount([200], 80, [20], 4), 1, 'a single name needs no redundant count')
+  assert.equal(alarmSelectionVisibleCount([], 80, [], 4), 0)
+})
 
 test('disabled notifications defer requests and toggling retains the saved draft', () => {
   const props = notificationProps()
@@ -149,13 +164,75 @@ test('opening unavailable legacy selections preserves bindings; explicit type ed
   const { state: notification, unmount } = mountState(() => useAlarmNotification(props, () => {}, () => {}))
   try {
     assert.deepEqual(notification.channelIds.value, ['old-provider'])
-    assert.ok(notification.channelOptions.value.some(option => option.value === 'old-provider'))
+    assert.equal(notification.channelOptions.value.some(option => option.value === 'old-provider'), false)
     assert.deepEqual(props.model.notification.notifyChannelIds, ['gone'])
     assert.deepEqual(props.model.notification.parameters['old-provider'], { notifierId: 'old-notifier' })
     notification.channelIds.value = ['email']
     assert.deepEqual(props.model.notification.notifyChannelIds, [])
     assert.deepEqual(props.model.notification.channelProviders, ['email'])
     assert.equal('old-provider' in props.model.notification.parameters, false)
+    notification.channelIds.value = ['old-provider']
+    assert.deepEqual(notification.channelIds.value, [], 'explicit selection cannot retain an unavailable provider')
+    assert.deepEqual(props.model.notification.userIds, [])
+  } finally { unmount() }
+})
+
+test('new notification drafts wait for inbox availability and explicit clears survive reload and remount', async () => {
+  const props = notificationProps()
+  props.model.notification = { ...createEmptyNotification(), enabled: true }
+  props.methods = []
+  const mount = () => mountState(() => useAlarmNotification(props, () => {}, () => {}))
+  let mounted = mount()
+  try {
+    assert.deepEqual(mounted.state.channelIds.value, [])
+    mounted.state.setPanel('recipients', true)
+    assert.equal(mounted.state.activePanel.value, undefined)
+    props.loading = true
+    props.methods = [{ id: 'inside-mail', providerId: 'inside-mail', key: 'inbox', label: 'Inbox', icon: 'MailOutlined', desc: '' }]
+    await settle()
+    assert.deepEqual(mounted.state.channelIds.value, [], 'pending refresh must not initialize from an older availability snapshot')
+    props.loading = false
+    await settle()
+    assert.deepEqual(mounted.state.channelIds.value, ['inside-mail'])
+    props.model.notification.userIds = ['u1', 'u2']
+    mounted.state.toggleEnabled()
+    mounted.state.toggleEnabled()
+    assert.deepEqual(props.model.notification.userIds, ['u1', 'u2'], 'notification master switch preserves the draft')
+    mounted.state.setPanel('recipients', true)
+    mounted.state.channelIds.value = []
+    assert.deepEqual(props.model.notification.userIds, [])
+    assert.equal(mounted.state.channelCount.value, 0)
+    assert.equal(mounted.state.activePanel.value, undefined)
+    props.methods = [...props.methods]
+    mounted.state.toggleEnabled()
+    mounted.state.toggleEnabled()
+    await settle()
+    assert.deepEqual(mounted.state.channelIds.value, [], 'availability and enabled changes cannot undo an explicit clear')
+    mounted.unmount()
+    mounted = mount()
+    assert.deepEqual(mounted.state.channelIds.value, [])
+    mounted.state.channelIds.value = ['inside-mail']
+    assert.deepEqual(props.model.notification.userIds, [], 'old recipients are not restored')
+  } finally { mounted.unmount() }
+})
+
+test('inbox defaults never overwrite existing selections, saved rules or disabled drafts', async () => {
+  const props = notificationProps()
+  props.methods.push({ id: 'inside-mail', providerId: 'inside-mail', key: 'inbox', label: 'Inbox', icon: 'MailOutlined', desc: '' })
+  props.model.notification.enabled = true
+  const { state, unmount } = mountState(() => useAlarmNotification(props, () => {}, () => {}))
+  try {
+    const saved = [...props.model.notification.channelProviders]
+    await settle()
+    assert.deepEqual(props.model.notification.channelProviders, saved)
+    props.model = { ...props.model, id: 'saved', notification: { ...createEmptyNotification(), enabled: true } }
+    await settle()
+    assert.deepEqual(state.channelIds.value, [])
+    props.model = { ...props.model, id: undefined, notification: createEmptyNotification() }
+    await settle()
+    assert.deepEqual(state.channelIds.value, [])
+    state.toggleEnabled()
+    assert.deepEqual(state.channelIds.value, ['inside-mail'])
   } finally { unmount() }
 })
 
@@ -270,7 +347,7 @@ test('initial name failure is retryable without changing saved IDs or prefetchin
     await settle()
     assert.equal(directory.selectedFailed.value, false)
     assert.equal(directory.selectionLabel.value, 'Alice')
-    assert.equal(directory.additionalCount.value, 1)
+    assert.deepEqual(directory.selectionLabels.value, ['Alice', 'DeviceAlarm.notification.unavailableUser'])
     assert.equal(directory.selected.value[1].unavailable, true)
     assert.deepEqual(props.value, ['u1', 'missing'])
     assert.equal(calls.length, 2)
@@ -311,7 +388,7 @@ test('partial notification failures remain stable until an explicit retry', asyn
   try {
     await resources.load()
     assert.equal(resources.failed.value, true)
-    assert.equal(resources.methods.value[0].providerId, 'email')
+    assert.deepEqual(resources.methods.value, [])
     const previous = resources.methods.value
     await resources.load()
     await resources.load()
@@ -323,6 +400,24 @@ test('partial notification failures remain stable until an explicit retry', asyn
     assert.equal(resources.failed.value, false)
     assert.equal(resources.loading.value, false)
   } finally { unmount() }
+})
+
+test('reopening a property editor refreshes changed notification template availability', async () => {
+  let enabled = true
+  setAlarmRequestHandler(async url => ({ result: url === '/notify/channel/providers'
+    ? [{ id: 'inside-mail', name: 'Inbox' }] : enabled ? [{ provider: 'alarm-device', channels: [] }] : [] }))
+  const { props, editor, cleanup } = mountEditor()
+  try {
+    await editor.resources.load()
+    assert.deepEqual(editor.resources.methods.value.map(method => method.id), ['inside-mail'])
+    props.open = false
+    await settle()
+    enabled = false
+    props.open = true
+    await settle()
+    assert.deepEqual(editor.resources.methods.value, [])
+    assert.equal(editor.resources.failed.value, false)
+  } finally { cleanup() }
 })
 
 test('equivalent owner snapshots keep notification resources while actual scope and permission changes invalidate them', async () => {
@@ -497,7 +592,7 @@ test('recipient names hydrate immediately while candidate pages and searches rem
     assert.equal(calls[0].paging, false)
     assert.deepEqual(calls[0].terms, [{ column: 'id', termType: 'in', value: ['saved', 'unavailable'] }])
     assert.equal(directory.selectionLabel.value, 'Saved user')
-    assert.equal(directory.additionalCount.value, 1)
+    assert.deepEqual(directory.selectionLabels.value, ['Saved user', 'DeviceAlarm.notification.unavailableUser'])
     directory.setOpen(true)
     await directory.config.value.loadSelectedOptions!(props.value)
     assert.deepEqual(directory.selected.value.map(user => user.label), ['Saved user', 'DeviceAlarm.notification.unavailableUser'])
@@ -974,4 +1069,211 @@ test('invalid fields never start saving and an explicit empty device override re
     assert.equal(editor.pendingSave.value, false)
     assert.equal(editor.saveState.value, 'saved')
   } finally { unmount(); Reflect.deleteProperty(globalThis, 'window') }
+})
+
+
+function cardRows() {
+  return ['temperature', 'humidity', 'battery'].map(id => {
+    const raw: ThingPropertyPreprocess = { id: `rule-${id}`, property: id, provider: 'ratio-sampling', configuration: { ratio: 0.5 } }
+    return { id, name: id, property: { id, valueType: { type: 'double' } }, raw, hasOverride: true,
+      source: 'device' as 'device' | 'product' | 'disabled' | 'none', rule: parseRule(raw), effects: [] }
+  })
+}
+function mountCards() {
+  Object.defineProperty(globalThis, 'window', { configurable: true, value: { addEventListener() {}, removeEventListener() {} } })
+  const input = reactive({ scope: { productId: 'p1', deviceId: 'd1' } as RuleScope, rows: cardRows(), visible: ['temperature', 'humidity'], loading: false })
+  let refreshes = 0
+  const mounted = mountState(() => usePropertyRuleCards(reactive({ scope: computed(() => input.scope),
+    rows: computed(() => input.rows), visibleRows: computed(() => input.rows.filter(row => input.visible.includes(row.id))), loading: computed(() => input.loading),
+  }), () => { refreshes++ }))
+  return { input, cards: mounted.state, refreshes: () => refreshes,
+    cleanup() { mounted.unmount(); setConfirmHandler(); Reflect.deleteProperty(globalThis, 'window') } }
+}
+
+test('persistent cards keep controls and independent drafts across filtering, saving and revisiting', async () => {
+  let writes = 0
+  setAlarmRequestHandler(async () => { writes++; return { result: [] } })
+  const view = mountCards()
+  try {
+    await settle()
+    assert.equal(view.cards.editors.size, 2, 'unvisited properties do not create editors')
+    assert.equal(writes, 0, 'all cards reuse the list snapshot')
+    const first = view.cards.editors.get('temperature')!.editor
+    const second = view.cards.editors.get('humidity')!.editor
+    first.draft!.percent = 25
+    second.draft!.percent = 75
+    view.input.visible = ['humidity', 'battery']
+    await settle()
+    assert.equal(view.cards.editors.size, 3)
+    assert.equal(first.draft!.percent, 25, 'filtering does not dispose a hidden draft')
+    assert.equal(second.draft!.percent, 75)
+    await first.save()
+    assert.equal(writes, 1)
+    assert.equal(view.refreshes(), 1)
+    assert.equal(first.pendingSave, false)
+    assert.equal(first.draft!.percent, 25, 'saving retains the same configuration form')
+    assert.equal(second.draft!.percent, 75, 'saving one card cannot discard its neighbour')
+    assert.equal(second.pendingSave, true)
+    view.input.visible = ['temperature']
+    await settle()
+    assert.equal(view.cards.editors.get('temperature')!.editor, first)
+    first.draft!.percent = 10
+    first.discard()
+    assert.equal(first.draft!.percent, 25, 'undo uses the last saved baseline')
+    second.discard()
+    assert.equal(second.draft!.percent, 50)
+  } finally { view.cleanup() }
+})
+
+test('card snapshot refreshes update clean neighbours while retaining unsaved or hidden drafts', async () => {
+  const view = mountCards()
+  try {
+    await settle()
+    const first = view.cards.editors.get('temperature')!.editor
+    const second = view.cards.editors.get('humidity')!.editor
+    first.draft!.percent = 25
+    view.input.visible = ['temperature']
+    view.input.rows = cardRows().map(row => ({ ...row, raw: { ...row.raw, configuration: { ratio: 0.1 } } }))
+    await settle()
+    assert.equal(first.draft!.percent, 25)
+    assert.equal(first.pendingSave, true)
+    assert.equal(second.draft!.percent, 10, 'hidden clean card receives the refreshed server baseline')
+    assert.equal(second.pendingSave, false)
+    view.input.scope = { productId: 'p2', deviceId: 'd2' }
+    await settle()
+    assert.notEqual(view.cards.editors.get('temperature')!.editor, first)
+    assert.equal(view.cards.editors.size, 1, 'new owner does not inherit old card caches')
+    assert.equal(view.cards.editors.get('temperature')!.editor.draft!.percent, 10)
+  } finally { view.cleanup() }
+})
+
+test('one leave confirmation covers hidden card drafts and cancellation preserves every draft', async () => {
+  const leaveGuards = routeGuards.leave.length
+  const updateGuards = routeGuards.update.length
+  const view = mountCards()
+  try {
+    await settle()
+    assert.equal(routeGuards.leave.length, leaveGuards + 1, 'guards belong to the collection, not each card')
+    assert.equal(routeGuards.update.length, updateGuards + 1)
+    const first = view.cards.editors.get('temperature')!.editor
+    const second = view.cards.editors.get('humidity')!.editor
+    first.draft!.percent = 25
+    second.draft!.percent = 75
+    view.input.visible = []
+    await settle()
+    const dialogs: TestConfirmation[] = []
+    setConfirmHandler(options => dialogs.push(options))
+    const cancelled = view.cards.confirmLeave()
+    assert.equal(dialogs.length, 1)
+    dialogs[0].onCancel?.()
+    assert.equal(await cancelled, false)
+    assert.equal(first.draft!.percent, 25)
+    assert.equal(second.draft!.percent, 75)
+    const accepted = view.cards.confirmLeave()
+    dialogs[1].onOk?.()
+    assert.equal(await accepted, true)
+    assert.equal(first.pendingSave, true, 'an unrelated guard can still cancel navigation without discarding drafts')
+  } finally { view.cleanup() }
+  assert.equal(routeGuards.leave.length, leaveGuards)
+  assert.equal(routeGuards.update.length, updateGuards)
+})
+
+test('cards serialize writes, share lazy notification resources and reject late saves after owner change', async () => {
+  let finish!: (value: { result: [] }) => void
+  let methodRequests = 0
+  let writes = 0
+  setAlarmRequestHandler(async url => {
+    if (url === '/notify/channel/all' || url === '/notify/channel/providers') { methodRequests++; return { result: [] } }
+    writes++
+    return new Promise(resolve => { finish = resolve })
+  })
+  const view = mountCards()
+  try {
+    await settle()
+    const first = view.cards.editors.get('temperature')!.editor
+    const second = view.cards.editors.get('humidity')!.editor
+    assert.equal(first.resources, second.resources)
+    assert.equal(methodRequests, 0)
+    await Promise.all([first.resources.load(), second.resources.load()])
+    assert.equal(methodRequests, 2, 'one shared methods load makes one request per underlying endpoint')
+    first.draft!.percent = 25
+    second.draft!.percent = 75
+    const pending = first.save()
+    await settle()
+    assert.equal(second.blocked, true)
+    await second.save()
+    assert.equal(writes, 1, 'a second card cannot submit during a write')
+    assert.equal(await view.cards.confirmLeave(), false)
+    view.input.scope = { productId: 'p2', deviceId: 'd2' }
+    await settle()
+    finish({ result: [] })
+    await pending
+    assert.equal(view.refreshes(), 0, 'a stale owner response cannot refresh the new device')
+    assert.equal(view.cards.editors.get('temperature')!.editor.draft!.percent, 50)
+  } finally { view.cleanup() }
+})
+
+
+test('persistent card controls preserve inheritance, permissions and explicit empty device overrides', async () => {
+  let writes = 0
+  setAlarmRequestHandler(async () => { writes++; return { result: [] } })
+  const view = mountCards()
+  try {
+    view.input.rows = cardRows().map(row => ({ ...row, hasOverride: false, source: 'product' as const }))
+    await settle()
+    const first = view.cards.editors.get('temperature')!.editor
+    assert.equal(first.draft!.percent, 50, 'inherited data is available for the fixed controls')
+    assert.equal(first.editable, false)
+    first.customize()
+    assert.equal(first.pendingSave, true)
+    assert.equal(first.dirty, false)
+    let confirmation: TestConfirmation | undefined
+    setConfirmHandler(options => { confirmation = options })
+    const leave = view.cards.confirmLeave()
+    assert.ok(confirmation, 'an explicit override is protected even before changing a field')
+    confirmation.onCancel?.()
+    assert.equal(await leave, false)
+    first.discard()
+    assert.equal(first.custom, false)
+    view.input.scope.canUpdate = false
+    await settle()
+    first.customize()
+    await first.save()
+    assert.equal(first.editable, false)
+    assert.equal(writes, 0, 'showing controls cannot grant write permission')
+    first.discard()
+    view.input.scope.canUpdate = true
+    view.input.rows = cardRows().map(row => ({ ...row, raw: { ...row.raw, provider: 'composite', configuration: { processors: [] } }, source: 'disabled' as const }))
+    await settle()
+    assert.equal(first.displaySource, 'disabled')
+    assert.equal(first.steps.some(step => step.enabled), false)
+    first.addPart('sampling')
+    assert.equal(first.pendingSave, true)
+    first.clear()
+    assert.equal(first.displaySource, 'disabled')
+    assert.equal(first.draft!.samplingEnabled, false)
+    assert.equal(writes, 0, 'clearing or undoing a form never implicitly removes an override')
+  } finally { view.cleanup() }
+})
+
+
+test('loading a different device never initializes editable cards from the previous device snapshot', async () => {
+  const view = mountCards()
+  try {
+    await settle()
+    const old = view.cards.editors.get('temperature')!.editor
+    view.input.loading = true
+    await settle()
+    assert.equal(old.blocked, true, 'list refresh blocks writes against an outdated snapshot')
+    view.input.scope = { productId: 'p2', deviceId: 'd2' }
+    await settle()
+    assert.equal(view.cards.editors.size, 0)
+    view.input.rows = cardRows().map(row => ({ ...row, raw: { ...row.raw, configuration: { ratio: 0.2 } } }))
+    view.input.loading = false
+    await settle()
+    const next = view.cards.editors.get('temperature')!.editor
+    assert.notEqual(next, old)
+    assert.equal(next.draft!.percent, 20)
+    assert.equal(next.blocked, false)
+  } finally { view.cleanup() }
 })

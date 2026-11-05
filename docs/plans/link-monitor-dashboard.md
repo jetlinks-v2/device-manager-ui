@@ -2,6 +2,80 @@
 
 ## 当前结论与目标
 
+### Buffer 历史共享与图表流式提交（已实现）
+
+目标：消除多队列历史重复扫描，减少实时图表完整配置提交和视口外绘制。用户已确认执行上一轮提出的两步方案。Owning 边界为 core 的 `RuntimeDiagnostics/buffer`、`hooks/Echarts`、`components/Echarts/Echarts.vue`，以及宿主 `diagnostics/overview/DeviceRuntimeTrend.vue`。不改变后端、采集频率、指标口径、页面结构、既有图表深监听契约或启动资源加载策略。
+
+步骤：1）为不可变历史快照统一规范化、建立队列索引并共享曲线/明细/tooltip 投影；最新速率只读取规范化后的相邻样本，保留缺测、集合变化、重置、长整数和节点重启规则；2）为共享 ECharts 增加可选流式数据入口，初始化/配置变化提交完整配置，常规采样只提交曲线数据及动态轴范围；两个实时图使用该入口，保持旧调用方兼容；3）共享图表按可见性暂缓绘制，继续采集且只保留最新数据，恢复时一次提交，保留导出、缩放、图例、renderer 切换和销毁清理；4）实现阶段结束后集中验证指标等价性、快照更新、交互/生命周期和 6/30/100 队列基准，完成类型与模块构建。
+
+风险与验证边界：缓存必须随快照身份失效且可回收，不缓存可变数组的旧结果；数据补丁与完整配置需保持顺序及系列增删正确，视口外不能造成数据或交互状态丢失。其他任务正在修改/重启 9200 开发服务，浏览器采样需校验页面代次，受热更新污染的窗口不用于前后对比。实施前纯函数基准（150 样本）为 6/30/100 队列曲线约 0.85/8.54/55.72ms，明细最新速率约 0.58/3.59/20.59ms；最终使用固定源码在同一进程交替测量。
+
+实现：core `buffer/historyProjection.ts` 为每个历史快照规范化时间、复制并索引队列、解析精确计数；`history.ts` 的旧数组 API 仍按当前内容重新计算，显式投影才复用缓存。曲线、`BufferQueueDetails.vue` 最新速率与 tooltip 共享同一投影；最新读数仅访问最后相邻样本，tooltip 按时间索引，不重新构造全量历史。单队列缓存限于已观测身份，数组范围缓存用 WeakMap，生命周期随快照结束，无全局强引用。
+
+`hooks/Echarts/streamOption.ts` 按稳定 id / 轴索引组合初始配置与数据，数据数组整体替换，兼容显式 baseOption 和 media。`useEcharts.ts` 的 `dataOption` 浅监听与旧 `option` 深监听共享同一 RAF，配置变化组合最新数据，常规采样只提交数据字段；`deferOffscreen` 可选启用 IntersectionObserver，视口外/零尺寸/KeepAlive 保留最新快照，导出同步提交最新数据，renderer 重建保留 getOption 交互。`BufferOverviewChart.vue` 和宿主 `DeviceRuntimeTrend.vue` 已拆分配置与数据入口，旧调用方默认行为不变。公共使用契约见 core `components/Echarts/README.md`。
+
+固定源码基准：同一 Node 进程交替运行改前/改后，150 个样本，预热后取 11 次中位数；改后每轮重新建立投影，计入初始化成本。合计包含所有队列曲线、明细最新速率和一次全部队列 tooltip；以下是纯计算耗时，不是页面 CPU / 帧率。
+
+| 队列数 | 曲线改前→改后 | 明细改前→改后 | tooltip 改前→改后 | 合计改前→改后 |
+| --- | --- | --- | --- | --- |
+| 6 | 0.830→0.288ms | 0.582→0.002ms | 0.833→0.185ms | 2.388→0.480ms |
+| 30 | 8.057→1.476ms | 4.111→0.006ms | 5.030→0.761ms | 16.837→2.267ms |
+| 100 | 67.521→6.406ms | 26.817→0.024ms | 29.012→2.375ms | 123.644→8.904ms |
+
+验证：7350 项改前/改后指标差分全部一致，覆盖时间乱序/重复、无效字段、缺失与重复身份、范围选择、长整数和重置；基准与差分脚本为 `/private/tmp/runtime-buffer-comparison.mjs`，改前源码为 `/private/tmp/runtime-buffer-history-before.ts`。核心 Buffer / 图表调度 / 生命周期 / 实际 ECharts 回归 38/38，通过浅监听、同帧配置+数据、数据数组缩短、显式 baseOption/media、图例/缩放/markLine、离屏/KeepAlive、导出和销毁边界；几何回归 22/22。SystemMonitor 回归 60/60；宿主运行监控广泛回归 329 项中 327 通过，仍为下节已记录的两项既有失败，设备曲线 16 项均通过。
+
+质量门禁：core `vue-tsc -p tsconfig.diagnostics-a.json --noEmit` 通过。宿主 `vue-tsc -p modules/device-manager-ui/tsconfig.runtime-diagnostics.json --noEmit` 当前与覆盖本次全部已修改生产文件的 Git HEAD 虚拟基线均为 214 项，忽略行号后的诊断完全相同，无新增错误。两包没有独立 lint 脚本，`git diff --check` 通过。`pnpm build -- --module-name device-manager-ui` 成功，最终集中构建约 73 秒，仍有既有大 chunk 提示。
+
+浏览器边界：用户本地 IoT 页面确认两张图均启用新数据入口与离屏选项；受控替换现有快照后图形更新，静态配置引用保持不变。1396×600 视口中，两张图完全离屏（bottom 分别约 -368px / -18px）时连续替换三个数据快照，SVG 内容保持不变；恢复绘制与缩放/图例/导出行为由上述自动回归覆盖。真实页面期间出现采样过期及多次并行热更新/重启，未获得可靠的持续采样 CPU 前后对比，不能将本节纯函数收益换算为整体页面改善百分比。自然首次访问失败仍未复现，启动资源拆分仍属独立待评估项。
+
+### UAT 首次加载与持续刷新复查（已实现）
+
+目标：修复运行监控、仪表盘共用实时资源链路的订阅恢复问题，减少完整监控页面持续刷新时的同步布局开销。用户已确认“按方案修复订阅和图表调度”，并补充修复左侧节点显示不全。属于跨共享 SDK、core 与设备模块的 L 级变更。
+
+已取得的线上证据（2026-11-05，`https://rt-uat.jetlinks.cn`）：
+
+- 普通刷新和关闭缓存刷新均成功进入运行监控，未直接复现自然首次访问失败。一次普通刷新中节点目录约 35 ms、资源历史约 115 ms；当次实时资源订阅约 198 ms 后收到首帧。这些是后端已运行情况下的样本，不能排除后端冷启动或其他首次失败。
+- 受控短暂离线后恢复网络，WebSocket 继续收到 `/dashboard/systemMonitor/stats/info/realTime` 的 result 帧，仪表盘仍提示“监控数据加载失败，请重试”。点击重试后发出新订阅，约 58 ms 收到首帧，节点表恢复。诊断结束已恢复在线及正常缓存策略，移除临时计数器、断点和性能采样；仪表盘当前正常。
+- 已核对线上发布代码与安装的 `@jetlinks-web/core@2.3.7`：`src/websocket.ts` 的 offline 监听调用 `cacheSubscriptions()` 清空活动映射；online 只调用 `reconnect()`，连接仍打开时跳过恢复，后续 result 找不到消费者。真实重连路径也只恢复 Subject 映射，没有保存并重发原订阅声明；重复缓存还可能覆盖待恢复集合。后两项是代码可见缺陷，本轮未完成对应浏览器故障注入，不能当作已复现现象。
+- `visDashboard/SystemMonitor/hooks/useSystemMonitorRuntime.ts` 的 15 秒无帧超时仅更新 error，保留 subscription，没有自动重新建立业务订阅；因此丢失消费映射后不会自行恢复。运行监控和仪表盘都消费该 owner。SDK 的 error 帧只走全局提示，没有传入单条订阅的 error 回调，需在 SDK 层统一核对错误分发和终态。
+- 完整运行监控页面、队列明细展开时，23.36 秒 CPU 采样期间主线程任务耗时约 3.90 秒，样式重算约 1.57 秒。热点栈为共享 `src/hooks/Echarts/useEcharts.ts` 的 option watch → setOption → size → clientWidth/clientHeight，属于配置更新期间的同步布局读取。另一次明细收起的约 24 秒 trace 中，样式重算 420 次 / 570 ms，出现 2 个超过 50 ms 的任务，最长 54.1 ms；两轮界面条件不同，不能作为优化前后对比。
+- 临时条件断点统计 12.2 秒内，设备运行图与 Buffer 图各提交配置 10 次，每图 3 次与前一次可序列化配置完全相同。只用作诊断，不采用运行时 JSON 序列化去重方案；6 幅资源历史图没有出现这些配置提交。
+- 关闭缓存的一次加载中，Resource Timing 记录 227 项资源，合计传输约 15.53 MB，首次内容绘制约 6.12 秒；全局入口包含约 2.17 MB 的 index chunk、2.01 MB 的 menu chunk 及约 0.91 MB 的模块样式。该资源集合包含全局启动依赖，不能全部归因于运行监控，也不能将这次成功但偏慢的加载认定为用户所述首次失败的根因。
+
+已确认的实施范围与代码落点：
+
+1. 共享 SDK 源码属于 `jetlinks-v2/jetlinks-project-ui-cli` 的 `packages/core/src/websocket.ts`，目标分支为 `3.0`。上游 PR [#57](https://github.com/jetlinks-v2/jetlinks-project-ui-cli/pull/57) 已实现有效订阅重放、连接退避、心跳和 `connectionEvents$`，并发布为 `@jetlinks-web/core@2.3.8`；运行时从 2.3.7 升级到该正式版本。剩余主题错误分发、惰性订阅/消费者计数、显式断开终态和鉴权关闭处理直接提交 SDK 上游，保留既有重连及微应用委托。运行时不维护 SDK 补丁，也不修改依赖产物；新增 SDK 行为需上游合入并发版后再升级锁文件，2.3.8 仅提供已发布的恢复能力。
+2. `visDashboard/SystemMonitor/hooks/useSystemMonitorRuntime.ts` 为仪表盘和运行监控共用 owner，首帧或持续采样 15 秒无结果后进入失败态，使用 1–30 秒退避重新订阅；有效帧取消待恢复任务并重置退避。永久 4xx 不自动重试，408/429 仍可恢复；停用、卸载和手动重试取消旧任务，代次隔离迟到结果。
+3. `jetlinks-web-core/src/hooks/Echarts/useEcharts.ts` 只在挂载、尺寸变化和恢复时测量布局，采样配置提交复用尺寸并按绘制帧合并；相同尺寸不执行 resize，隐藏/停用保留最新配置，销毁取消调度。显式 setOption 仍同步，导出在有待提交配置时先刷新，保留 renderer 切换与已有交互。`diagnostics/overview/DeviceRuntimeTrend.vue` 将曲线样本、时区、图例、缩放和峰值输入与新鲜度包装对象分离；core `buffer/BufferOverviewChart.vue` 稳定队列身份，读数变化不重置选择或重复投影曲线，不在运行时序列化完整配置去重。
+4. 修复节点侧栏的小集合可变行高滚动：线上 holder 可视高度 968 px，真实内容 1046 px，最后一行有 78 px 被裁切。Ant 在 `itemHeight × count` 未超过高度时跳过虚拟范围计算，但仍隐藏原生滚动；该路径改用原生滚动，大集合继续使用既有虚拟化，不按具体服务名或行高写例外。
+5. 按共用行为集中验证 SDK 源码与构建入口、SystemMonitor owner、图表调度、侧栏和相邻运行监控回归，再检查类型、模块构建及真实浏览器行为。浏览器验证使用用户提供的 localhost:9200；SDK 正式版本升级后的联调需确认实际预构建版本，不能复用旧依赖验证来证明新增上游行为已交付。
+
+范围限制：本轮建议优先交付共享订阅恢复和图表调度；全局启动资源拆分先保留为独立测量项，不直接重构模块加载、菜单、路由、权限或后端采集，也不改采集间隔、`ui/` 或发布生产依赖。
+
+集中验证：SDK 上游 `tests/websocketLifecycle.test.cjs` 对源码和 esbuild 构建入口各验证 8 项，结合现有 `tests/sharedRequestLifecycle.test.cjs` 共 28/28 通过；WebSocket 源码 strict TypeScript 检查通过。另从 npm 下载正式 2.3.8 包、核对 integrity 与源码，已发布源码和上游基线仅换行不同，发布包断线自动恢复回归 1/1 通过。隔离 PR 工作区 core ECharts/Buffer 回归 38/38、侧栏与设备展示回归 20/20、SystemMonitor 60/60 通过，另有既有 geometry 22/22 证据。运行监控广泛回归 329 项中 327 项通过，剩余两项为未改动的旧测试与当前源码不一致：`runtimeDiagnosticsAccess.test.mjs` 的 baseMenu 替身缺少 metricMenuCatalog，`runtimeNodeBufferDetails.test.mjs` 对 NodeOverview refresh 函数的旧源码正则断言；对应测试与实现均无本次差异。本次影响的 300 节点模板测试已适配新增 sidebar 属性并通过。
+
+类型检查：core `vue-tsc -p tsconfig.diagnostics-a.json --noEmit` 通过。宿主 `vue-tsc -p modules/device-manager-ui/tsconfig.runtime-diagnostics.json --noEmit` 为 214 项既有错误；在同一依赖与工作区上，仅将本次修改源码虚拟替换为各 owning repo 的 HEAD 内容得到基线也是 214 项，忽略行号后诊断集合完全相同。本次源码无新增错误。两包无独立 lint 脚本，使用差异检查；模块构建和最终页面验证见下。
+
+浏览器恢复（早期本地修复依赖的阶段证据）：完整运行监控离线约 49 秒后恢复，侧栏 28 个资源读数与 8 幅图恢复、没有遗留过期提示；主动关闭真实 WebSocket 后新建连接，通知、公告、资源共 3 个有效主题各声明一次，资源继续更新。验证未点击手动重试。下述仪表盘恢复与刷新性能也来自该阶段；这些结果支持业务 owner/图表变化，但不作为当前正式 SDK 2.3.8 或新增上游源码的浏览器联调结论。其他任务持续修改/重启开发服务，本次交付不重启该服务；正式依赖和后续上游版本仍需发布环境联调。
+
+图表交互：真实设备曲线设置 20–80% 缩放与关闭会话图例后，持续更新、折叠/展开侧栏及性能剖析→运行概览切换均保留同一实例及交互；恢复后 chart/DOM 宽度同为 674px。测试结束恢复原缩放和图例选择，没有启动 JFR、堆或线程采集。
+
+仪表盘联调：页面切换后只有 1 个资源订阅。离线约 56 秒出现“监控数据加载失败，请重试”，恢复网络后未点击重试，失败提示自动消失，7 个已上报节点的资源行和更新时间恢复；始终只有 1 个当前资源主题。
+
+最终关闭浏览器缓存重新进入运行监控，页面恢复 28 个资源读数和 8 幅图，无加载失败或过期提示；随后恢复默认缓存与在线状态，保留用户本地运行监控 IoT 节点页面。首次 HTTP 请求事件缓冲发生截断，因此不以该轮事件摘要证明完整启动链路无错误。自然首次失败仍未复现。验证截图：`/private/tmp/runtime-monitor-fixed.svg`。
+
+侧栏浏览器回归：真实 Ant Tree 配合当前 layout hook，8 个 58/92/142px 可变高度节点的内容为 852px、可视范围 618px，原生滚动到 234px 后末行底部与 holder 底部均为 968px。改为 300 个节点后保留虚拟化，稳定挂载约 8 行，可滚动并选择第 299 个节点；临时夹具已销毁。
+
+刷新性能：本地完整页面、IoT 节点、2 秒采集、队列明细收起、8 幅图，约 58.26 秒 CPU/Performance 采样中主线程任务约 3703ms，样式重算约 185ms/1191 次，布局约 144ms，未观察到超过 50ms 的长任务。Profiler 中 option watch → scheduleOption → setOption 不再包含逐采样的尺寸测量。该数据来自开发构建，与前述 UAT 生产构建、数据量和服务器条件不同，不计算性能提升比例或作为生产大集群容量结论。
+
+构建：`pnpm build -- --module-name device-manager-ui` 阶段通过（36.94 秒），最终图表阶段集中构建约 73 秒；保留既有大 chunk、动态导入与部分静态资源构建警告。构建证据对应阶段代码与当时安装依赖，正式 SDK 升级后需补充联调；各 owning repo 的 `git diff --check` 通过。提交与 PR 在各源码仓库交付，当前不执行 npm 发版或环境部署。
+
+剩余风险：用户自然首次访问失败及部分区域持续加载仍需捕获原始 HTTP/WS/NDJSON 失败帧；不能将所有首次失败归因于同一缺陷。全局启动资源拆分、真实大集群长期运行和 UAT/生产部署不在本次范围。SDK 剩余修复通过上游 PR 评审，待正式版本发布再升级运行时；不把未发布源码伪装成 2.3.8 的现有能力。运行时集成基线另有既有锁文件问题：`@jetlinks-web/components` 清单为 `^3.3.22`，锁定 specifier/版本仍为 `^3.3.19` / `3.3.19`，`pnpm install --lockfile-only --frozen-lockfile --ignore-scripts` 因此失败；基线 HEAD 已存在同一差异，本次不混入该组件的依赖升级。
+
+交付：SDK 源码提交 `7cd5cd5` / [PR #61](https://github.com/jetlinks-v2/jetlinks-project-ui-cli/pull/61)，共享 core 提交 `7d96937` / [PR #216](https://github.com/jetlinks-v2/jetlinks-web-core/pull/216)，设备模块实现提交 `5b51b38b` / [PR #375](https://github.com/jetlinks-v2/device-manager-ui/pull/375)，运行时集成提交 `8f66e03` / [PR #75](https://github.com/jetlinks-v2/saas-runtime-ui/pull/75)。前三个为源码评审，集成 PR 保持草稿，等待 SDK #61 发版、升级实际依赖并完成最终联调；当前 2.3.8 不包含新增终态/错误分发。
+
+集成指针边界：运行时基线的设备子模块指针到当前 owning repo 的 2.20 另有 9 个已合入提交；原 core 指针 `6d7e9b5ee91bd1b3fc905466ac9493886eaa74ba` 无法从 origin 获取（not our ref）。集成草稿指向两个源码 PR 的实际提交，因此也会消费各子仓库既有上游变更，需按集成范围复核；不混入当前工作区其他任务的未提交文件或本地提交。
+
 ### 统一声明与批量采集
 
 已确认将 Buffer、会话 / 通信、当前节点运维指标和近期历史的周期读取收敛到 `RuntimeWorkspace` 提供的页面采集管理器。业务 hook 声明节点、pattern、属性与 enabled，管理器统一去重、属性合并、周期、身份、取消及重连，按节点更新浅响应式快照。组件不持有周期 HTTP 任务；现有资源 WebSocket 与按需大窗口查询保留。后端 `POST /system/monitor/mbean/_batch` 不传 interval 仅一轮，传入后持续，Accept 独立协商 JSON / NDJSON；页面复用 NDJSON reader。

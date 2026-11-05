@@ -4,10 +4,15 @@ export type CodecEncoding = 'Hex' | 'JSON' | 'Text'
 
 export type CommandType = 'read' | 'write' | 'invoke'
 
+export type CodecSimulatorTransport = 'MQTT' | 'TCP' | 'UDP' | 'WEBSOCKET' | 'COAP' | 'UNKNOWN'
+
+export type WebSocketPayloadType = 'TEXT' | 'BINARY'
+
 export interface SimulationItem {
   id: string
   type: SimulatorType
   topic?: string
+  webSocketType?: WebSocketPayloadType
   encoding?: CodecEncoding
   qos?: 0 | 1 | 2
   payload?: string

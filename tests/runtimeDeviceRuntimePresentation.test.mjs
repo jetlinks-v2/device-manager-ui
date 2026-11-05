@@ -1,3 +1,4 @@
+import { composeStreamOption } from '../../../jetlinks-web-core/tests/echartsStreamFixture.mjs'
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
@@ -11,10 +12,10 @@ const require=createRequire(import.meta.url), root=resolve(import.meta.dirname,'
 const messages=JSON.parse(readFileSync(resolve(root,'locales/lang/zh.json'))), t=(key,args={})=>(messages[key]??key).replace(/\{(\w+)\}/g,(_,name)=>args[name]??`{${name}}`)
 const empty=vue.defineComponent({setup:()=>()=>null})
 const sampleTime=timestamp=>new Date(timestamp).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false,fractionalSecondDigits:3})
-const chart=vue.defineComponent({props:['option','events'],setup:props=>{received.push(props);return()=>vue.h('div',{class:'real-chart-contract'})}})
-function load(filename){
- if(cache.has(filename))return cache.get(filename)
- let source=readFileSync(filename,'utf8');if(filename.endsWith('.vue'))source=compileScript(parse(source,{filename}).descriptor,{id:filename,inlineTemplate:true}).content
+const chart=vue.defineComponent({props:['option','dataOption','events'],setup:props=>{received.push({get option(){return composeStreamOption(props.option,props.dataOption)},get events(){return props.events}});return()=>vue.h('div',{class:'real-chart-contract'})}})
+function load(filename,inlineTemplate=true){
+ const key=`${filename}:${inlineTemplate}`;if(cache.has(key))return cache.get(key)
+ let source=readFileSync(filename,'utf8');if(filename.endsWith('.vue'))source=compileScript(parse(source,{filename}).descriptor,{id:filename,inlineTemplate}).content
  const module={exports:{}},{code}=transformSync(source,{loader:'ts',format:'cjs'})
  new Function('require','module','exports',code)(id=>{
   if(id==='vue')return vue
@@ -25,11 +26,29 @@ function load(filename){
   if(id==='echarts/components')return {GridComponent:{},TooltipComponent:{},LegendComponent:{},DataZoomComponent:{}}
   if(id.endsWith('/Echarts/Echarts.vue'))return {__esModule:true,default:chart}
   return id.startsWith('.')?load(resolve(dirname(filename),/\.(ts|vue)$/.test(id)?id:`${id}.ts`)):require(id)
- },module,module.exports);cache.set(filename,module.exports);return module.exports
+ },module,module.exports);cache.set(key,module.exports);return module.exports
 }
 const Component=load(resolve(root,'views/link/diagnostics/overview/DeviceRuntimeTrend.vue')).default
 const session={key:'sessions',history:[{timestamp:4000,value:'12'},{timestamp:7000,value:'14'}],state:{status:'ready',sampledAt:7000},retainedValue:'14',facts:[],details:'session'}
 const communication={supported:true,state:{status:'ready',sampledAt:7700},history:[{timestamp:4700,startTime:'1000',counters:{upstreamMessages:'9007199254740993',receivedBytes:'1000',sentBytes:'0',propertyReports:'0',propertyValues:'0',eventReports:'0',receivedPackets:'9007199254740993',sentPackets:'0'},qps:{ready:true,timestamp:4500,windowMillis:1000,sequence:'45',values:{receivedQps:8,sentQps:2,communicationQps:10}}},{timestamp:7700,startTime:'1000',counters:{upstreamMessages:'9007199254741002',receivedBytes:'4072',sentBytes:'0',propertyReports:'6',propertyValues:'12',eventReports:'3',receivedPackets:'9007199254741005',sentPackets:'3'},qps:{ready:true,timestamp:7500,windowMillis:1000,sequence:'75',values:{receivedQps:17,sentQps:5,communicationQps:22}}}]}
+
+test('freshness and reading wrapper changes retain chart options until plotted inputs change',async()=>{
+ const props=vue.reactive({session:{...session},communication:{...communication},config:{},recording:undefined})
+ const scope=vue.effectScope(),Component=load(resolve(root,'views/link/diagnostics/overview/DeviceRuntimeTrend.vue'),false).default
+ const chart=scope.run(()=>Component.setup(props,{expose(){},emit(){}}))
+ try{
+  const original=chart.option.value, originalData=chart.dataOption.value
+  props.session={...props.session,state:{status:'stale',sampledAt:8000},retainedValue:'15'}
+  props.communication={...props.communication,state:{status:'stale',sampledAt:8000}}
+  await vue.nextTick();assert.equal(chart.option.value,original)
+  props.session={...props.session,history:[...props.session.history,{timestamp:9000,value:'15'}]}
+  await vue.nextTick();assert.equal(chart.option.value,original);assert.notEqual(chart.dataOption.value,originalData)
+  const points=[{timestamp:1000,values:{Communication:3}}],data={points,zoneId:'Asia/Shanghai'}
+  props.recording={data,points,state:'ready',busy:false,active:true,outside:false};await vue.nextTick()
+  const recorded=chart.option.value
+  props.recording={...props.recording,state:'stale',busy:true};await vue.nextTick();assert.equal(chart.option.value,recorded)
+ }finally{scope.stop()}
+})
 async function render(props){received.length=0;buttons.length=0;const app=vue.createSSRApp(Component,props);for(const name of ['a-button','a-tooltip','a-segmented','a-popover'])app.component(name,{setup:(_,ctx)=>()=>vue.h('span',{'data-control':name},ctx.slots.default?.())});const html=await renderToString(app);return{html,chart:received.at(-1),buttons:[...buttons]}}
 test('recorded chart uses the node timezone and its own freshness, independently of live QPS',async()=>{
  const timestamp=Date.UTC(2026,9,26,1,0,1),values={Communication:12,ReceivedPackets:10,SentPackets:2,UpstreamMessages:4,PropertyReports:3,PropertyValues:8,EventReports:1,ReceivedBytes:1024,SentBytes:64}

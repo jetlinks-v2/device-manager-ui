@@ -40,3 +40,15 @@ test('tree viewport stays bounded through scrolling, resize and a temporarily un
     top.value = 100; assert.equal(layout.listHeight.value, 484)
   } finally { scope.stop() }
 })
+
+test('small variable-height lists use native scrolling and large lists retain virtualization', () => {
+  const scope = vue.effectScope(), count = vue.ref(8)
+  height.value = 984; top.value = 0
+  const layout = scope.run(() => module.exports.useClusterSidebarLayout(vue.ref(), vue.ref(true), vue.ref(true), vue.ref(), count))
+  try {
+    assert.equal(layout.virtual.value, false)
+    count.value = 300; assert.equal(layout.virtual.value, true)
+    count.value = 10; assert.equal(layout.virtual.value, false, 'search results switch to native scrolling')
+    height.value = 200; assert.equal(layout.virtual.value, true, 'the threshold follows the actual viewport')
+  } finally { scope.stop() }
+})

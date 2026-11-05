@@ -6,9 +6,21 @@
           {{ type === 'uplink' ? $t('InstanceDeviceAccess.codecDebug.uplinkTag') : $t('InstanceDeviceAccess.codecDebug.downlinkTag') }}
         </a-tag>
         <template v-if="type === 'uplink'">
-          <a-input v-model:value="model.topic" class="codec-simulator-item__topic" :placeholder="$t('InstanceDeviceAccess.codecDebug.topicPlaceholder')" />
-          <a-select v-model:value="model.encoding" :options="encodingOptions" size="small" class="codec-simulator-item__select-sm" />
-          <a-select v-model:value="model.qos" :options="qosOptions" size="small" class="codec-simulator-item__select-sm" />
+          <template v-if="isMqttTransport">
+            <a-input v-model:value="model.topic" class="codec-simulator-item__topic" :placeholder="$t('InstanceDeviceAccess.codecDebug.topicPlaceholder')" />
+            <a-select v-model:value="model.encoding" :options="encodingOptions" size="small" class="codec-simulator-item__select-sm" />
+            <a-select v-model:value="model.qos" :options="qosOptions" size="small" class="codec-simulator-item__select-sm" />
+          </template>
+          <template v-else>
+            <a-select
+              v-if="isWebSocketTransport"
+              v-model:value="model.webSocketType"
+              :options="webSocketTypeOptions"
+              size="small"
+              class="codec-simulator-item__select-md"
+            />
+            <a-select v-model:value="model.encoding" :options="encodingOptions" size="small" class="codec-simulator-item__select-sm" />
+          </template>
         </template>
         <template v-else>
           <a-select v-model:value="model.commandType" :options="commandTypeOptions" size="small" class="codec-simulator-item__select-md" />
@@ -105,14 +117,16 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useInstanceStore } from '../../../../../store/instance'
-import { safeParseMetadata } from './composables/useCodecSimulator'
+import { normalizeCodecSimulatorTransport, safeParseMetadata } from './composables/useCodecSimulator'
 import type { MetadataModel, MetadataValueType, SimulationItem, SimulatorType } from './codecSimulatorTypes'
 import './CodecSimulatorItem.less'
 
 const props = defineProps<{
   type: SimulatorType
   modelValue: SimulationItem
+  metadata?: unknown
+  productMetadata?: unknown
+  transport?: string
 }>()
 
 const emit = defineEmits<{
@@ -124,7 +138,6 @@ const emit = defineEmits<{
 }>()
 
 const { t: $t } = useI18n()
-const instanceStore = useInstanceStore()
 const model = reactive<SimulationItem>({ ...props.modelValue, isExecuted: !!props.modelValue.result })
 
 const encodingOptions = [
@@ -133,6 +146,10 @@ const encodingOptions = [
   { label: 'Text', value: 'Text' },
 ]
 const qosOptions = [0, 1, 2].map((value) => ({ label: `QoS ${value}`, value }))
+const webSocketTypeOptions = computed(() => [
+  { label: $t('InstanceDeviceAccess.codecDebug.webSocketText'), value: 'TEXT' },
+  { label: $t('InstanceDeviceAccess.codecDebug.webSocketBinary'), value: 'BINARY' },
+])
 const commandTypeOptions = computed(() => [
   { label: $t('InstanceDeviceAccess.codecDebug.readProperty'), value: 'read' },
   { label: $t('InstanceDeviceAccess.codecDebug.writeProperty'), value: 'write' },
@@ -144,9 +161,9 @@ const tableColumns = computed(() => [
 ])
 
 const metadataModel = computed<MetadataModel>(() => {
-  const deviceMetadata = safeParseMetadata(instanceStore.current?.metadata)
+  const deviceMetadata = safeParseMetadata(props.metadata)
   const hasDeviceModel = !!((deviceMetadata.properties?.length || 0) + (deviceMetadata.functions?.length || 0))
-  return hasDeviceModel ? deviceMetadata : safeParseMetadata(instanceStore.current?.productMetadata || '{}')
+  return hasDeviceModel ? deviceMetadata : safeParseMetadata(props.productMetadata || '{}')
 })
 
 const getPropertyActionTypes = (item: any) => {
@@ -167,6 +184,9 @@ const commandOptions = computed(() => {
 })
 
 const tableRows = ref<any[]>([])
+const transport = computed(() => normalizeCodecSimulatorTransport(props.transport))
+const isMqttTransport = computed(() => transport.value === 'MQTT')
+const isWebSocketTransport = computed(() => transport.value === 'WEBSOCKET')
 const isReadOnlyParam = computed(() => props.type === 'downlink' && model.commandType === 'read')
 const isDownlinkTableMode = computed(() => props.type === 'downlink' && !isReadOnlyParam.value)
 const byteCount = computed(() => new Blob([model.payload || '']).size)
