@@ -1,4 +1,5 @@
 import { computed, type ComputedRef, type Ref } from 'vue'
+import type { DeviceQueryTerm } from '../../api/device'
 
 export type DashboardComponentProps = Record<string, unknown>
 export type DashboardCardStyle = Record<string, unknown>
@@ -125,6 +126,12 @@ export interface DeviceMapConfig {
   interval: number
   presentation?: 'distribution'
   scope?: string
+  /** 组合卡片由宿主提供标题与外框，地图仍保留自身加载、错误及交互状态。 */
+  embedded?: boolean
+  /** 未设置时保留全部位置；显式传入（含空数组）时，先按设备查询校验可见 ID，再展示位置。 */
+  deviceTerms?: DeviceQueryTerm[]
+  /** 地图点位显示设备实时状态；未设置时保留原地图样式。 */
+  showStatus?: boolean
 }
 
 export interface DeviceMapPoint {
