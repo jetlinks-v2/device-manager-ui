@@ -2214,7 +2214,8 @@
               "device",
               "notifySubscriberProvider",
               "notifyConfig",
-              "product"
+              "product",
+              "user"
             ],
             "options": {
               "meta": {
@@ -2343,7 +2344,8 @@
           "device",
           "notifySubscriberProvider",
           "notifyConfig",
-          "product"
+          "product",
+          "user"
         ],
         "options": {},
         "showPage": [
