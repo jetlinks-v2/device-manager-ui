@@ -27,20 +27,21 @@ export function useClusterBuffers(nodeIds: Ref<string[]>, enabled: Ref<boolean>,
   const entries = shallowReactive(new Map<string, ClusterBufferSnapshot>())
   const snapshots = shallowRef<ReadonlyMap<string, ClusterBufferSnapshot>>(entries)
   const epochs = new Map<string, Map<string, number>>(), suspended = shallowReactive(new Set<string>())
+  const structured = shallowReactive(new Set<string>())
   const canCollect = computed(() => enabled.value && permitted.value && discoveryScope.value === scopeKey.value)
   let generation = 0
   function interrupt(nodeId: string) {
     const previous = entries.get(nodeId)
     if (previous) entries.set(nodeId, { ...previous, diagnosticHistory: appendBufferEvidence(previous.diagnosticHistory, { observedAt: Date.now(), queues: [] }) })
   }
-  watch([scopeKey, discoveryScope, permitted], () => { generation++; entries.clear(); epochs.clear(); suspended.clear() }, { flush: 'sync' })
+  watch([scopeKey, discoveryScope, permitted], () => { generation++; entries.clear(); epochs.clear(); suspended.clear(); structured.clear() }, { flush: 'sync' })
   watch(canCollect, collecting => { if (!collecting) for (const node of entries.keys()) interrupt(node) }, { flush: 'sync' })
   watch(nodeIds, ids => {
-    for (const node of entries.keys()) if (!ids.includes(node)) { entries.delete(node); epochs.delete(node); suspended.delete(node) }
+    for (const node of entries.keys()) if (!ids.includes(node)) { entries.delete(node); epochs.delete(node); suspended.delete(node); structured.delete(node) }
     for (const node of ids) if (!entries.has(node)) entries.set(node, emptySnapshot())
   }, { immediate: true, flush: 'sync' })
-  const collection = useMBeanCollection(() => ({ nodeIds: nodeIds.value.filter(node => !suspended.has(node)), enabled: canCollect.value,
-    name: 'org.jetlinks:type=PersistenceBuffer,*', attributes: ['Remainder', 'DeadSize', 'Monitor', 'WriterPending', 'Wip'] }), result => {
+  type CollectionResult = Parameters<Parameters<typeof useMBeanCollection>[1]>[0]
+  const receive = (result: CollectionResult) => {
     if (!canCollect.value || suspended.has(result.nodeId)) return
     const previous = entries.get(result.nodeId) ?? emptySnapshot()
     if (result.status === 'rejected') {
@@ -50,13 +51,21 @@ export function useClusterBuffers(nodeIds: Ref<string[]>, enabled: Ref<boolean>,
       return
     }
     const beans = normalizeMBeans(result.value), queues = runtimeBeanOverview(beans).buffers, sampledAt = result.collectedAt
+    if (queues.length && queues.every(queue => queue.observation)) structured.add(result.nodeId)
+    else structured.delete(result.nodeId)
     const counterEpochs = epochs.get(result.nodeId) ?? new Map<string, number>()
-    const buffers = queues.map(({ objectName, pending, dead, written, attempted }) => ({ objectName,
+    const buffers = queues.map(({ objectName, pending, dead, written, attempted, observation }) => ({ objectName,
       ...(pending === undefined ? {} : { pending }), ...(dead === undefined ? {} : { dead }),
-      ...(written === undefined ? {} : { written }), ...(attempted === undefined ? {} : { attempted }), counterEpoch: counterEpochs.get(objectName) ?? 0 }))
+      ...(written === undefined ? {} : { written }), ...(attempted === undefined ? {} : { attempted }),
+      ...(observation ? { observation: { generation: observation.generation, sampledAt: observation.sampledAt, windowMillis: observation.windowMillis, fresh: observation.fresh, values: observation.values } } : {}), counterEpoch: counterEpochs.get(objectName) ?? 0 }))
     const incomplete = queues.some(queue => queue.pending === undefined || queue.dead === undefined)
     entries.set(result.nodeId, { beans, queues, history: append(previous.history, buffers, sampledAt), diagnosticHistory: appendBufferEvidence(previous.diagnosticHistory, bufferEvidence(beans, sampledAt, counterEpochs)), state: { status: incomplete ? 'stale' : 'ready', sampledAt }, ...summarizeBufferQueues(queues) })
-  })
+  }
+  // 首采探测能力；新节点随后不再周期读取会扫描开口批的 Monitor 文本。
+  const collection = useMBeanCollection(() => ({ nodeIds: nodeIds.value.filter(node => !suspended.has(node) && !structured.has(node)), enabled: canCollect.value,
+    name: 'org.jetlinks:type=PersistenceBuffer,*', attributes: ['Remainder', 'DeadSize', 'Monitor', 'WriterPending', 'Wip', 'ObservationSnapshot'] }), receive)
+  useMBeanCollection(() => ({ nodeIds: nodeIds.value.filter(node => !suspended.has(node) && structured.has(node)), enabled: canCollect.value,
+    name: 'org.jetlinks:type=PersistenceBuffer,*', attributes: ['Remainder', 'DeadSize', 'WriterPending', 'Wip', 'ObservationSnapshot'] }), receive)
   function append(history: BufferHistorySample[], buffers: BufferHistorySample['buffers'], sampledAt: number) {
     return [...history.filter(sample => sample.sampledAt >= sampledAt - 300000), { sampledAt, buffers }].slice(-301)
   }
@@ -73,7 +82,7 @@ export function useClusterBuffers(nodeIds: Ref<string[]>, enabled: Ref<boolean>,
       finished = true; suspended.delete(nodeId)
     } }
   }
-  onScopeDispose(() => { generation++; entries.clear(); epochs.clear(); suspended.clear() })
+  onScopeDispose(() => { generation++; entries.clear(); epochs.clear(); suspended.clear(); structured.clear() })
   return { snapshots, refresh, beginReset }
 }
 export function provideClusterBuffers(...args: Parameters<typeof useClusterBuffers>) {

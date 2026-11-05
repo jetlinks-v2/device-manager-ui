@@ -11,7 +11,7 @@
       <div class="node-buffer-metrics">
         <span v-if="overview.pending !== undefined">{{ t('runtimeDiagnostics.queue.pending') }} <b>{{ quantity(overview.pending) }}</b> {{ t('runtimeDiagnostics.items') }} <small v-if="overview.pendingDelta" :title="t('RuntimeMonitor.bufferWindowChange', { change: quantity(overview.pendingDelta) })">({{ overview.pendingDelta > 0 ? '+' : '' }}{{ quantity(overview.pendingDelta) }})</small></span>
         <span v-if="overview.dead !== undefined">{{ t('runtimeDiagnostics.queue.dead') }} <b>{{ quantity(overview.dead) }}</b> {{ t('runtimeDiagnostics.items') }}</span>
-        <span v-for="item in rates" :key="item.key">{{ t(item.key) }} <b>{{ rate(item.value) }}</b> {{ t('runtimeDiagnostics.bufferItemsPerSecond') }}</span>
+        <span v-for="item in rates" :key="item.key">{{ t(item.key) }} <b>{{ rate(item.value) }}</b> {{ t(item.unit) }}</span>
       </div>
       <p v-if="overview.window" class="node-buffer-window">{{ t('RuntimeMonitor.bufferMeasuredWindow', { from: clock(overview.window.from), to: clock(overview.window.to), seconds: windowSeconds(overview.window.seconds) }) }}</p>
       <p v-else-if="!rates.length" class="node-buffer-window">{{ t(overview.firstSample ? 'RuntimeMonitor.bufferRateSampling' : 'RuntimeMonitor.bufferRateWaiting') }}</p>
@@ -38,9 +38,11 @@ const emit = defineEmits<{ openQueue: [objectName: string]; openBuffers: [] }>()
 const { t } = useI18n()
 const overview = computed(() => nodeBufferOverview(props.snapshot))
 const rates = computed(() => [
-  { key: 'runtimeDiagnostics.bufferWriteRate', value: overview.value.writtenRate },
-  { key: 'runtimeDiagnostics.bufferAttemptRate', value: overview.value.attemptedRate },
-].filter((item): item is { key: string; value: number } => item.value !== undefined))
+  { key: 'runtimeDiagnostics.bufferWriteRate', value: overview.value.writtenRate, unit: 'runtimeDiagnostics.bufferItemsPerSecond' },
+  { key: 'runtimeDiagnostics.bufferAttemptRate', value: overview.value.attemptedRate, unit: 'runtimeDiagnostics.bufferItemsPerSecond' },
+  { key: 'runtimeDiagnostics.bufferObservation.InRowsRate', value: overview.value.inRowsRate, unit: 'runtimeDiagnostics.bufferRowsPerSecond' },
+  { key: 'runtimeDiagnostics.bufferObservation.OutRowsRate', value: overview.value.outRowsRate, unit: 'runtimeDiagnostics.bufferRowsPerSecond' },
+].filter((item): item is { key: string; value: number; unit: string } => item.value !== undefined))
 const clock = (time: number) => new Date(time).toLocaleTimeString([], { hour12: false })
 const windowSeconds = (value: number) => value.toLocaleString(undefined, { maximumFractionDigits: 1, minimumFractionDigits: 1 })
 </script>

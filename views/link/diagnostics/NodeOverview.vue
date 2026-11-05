@@ -6,6 +6,7 @@
       <NodeOperationalSignals v-if="view.access.value.monitor" :trends="trends" :communication="communication" :recording="recording.view.value" :config="deviceRuntimeConfig" @retry-recording="recording.refresh" @peak="selectPeak" @live="recording.live" @configure="configureDeviceRuntime" :signals="view.operational.signals.value" :state="view.operational.state.value" @session="emit('session')" @inspect="value => emit('inspect', value)" />
       <RuntimeMBeanExtensions v-if="view.access.value.monitor" :entries="extensions.entries.value" :target="nodeId" :active="active" @refresh="extensions.refresh" @inspect="value => emit('inspect', value)" />
       <RuntimeMBeanOverview v-if="view.access.value.monitor" :beans="view.bufferBeans.value" :history="view.bufferHistory.value" :state="view.bufferState.value" :show-lifetime="false" :config="bufferConfig" :reset-access="view.bufferResetAccess.value" :reset-state="view.bufferReset.state.value" @reset="view.bufferReset.reset" @update:config="configureBuffer" @refresh="view.refreshBuffers" @settings="emit('settings')" @inspect="value => emit('inspect', value)" />
+      <NodeBufferHistory v-if="view.access.value.monitor" :beans="view.bufferBeans.value" :node-id="nodeId" :scope-key="scopeKey" :active="active" :permitted="view.access.value.monitor" />
       <span ref="historyAnchor" class="node-history-anchor" />
     </template>
   </RuntimeMetricsPanel>
@@ -17,6 +18,7 @@ import type { RealtimeNode } from '../../../visDashboard/SystemMonitor/utils/rea
 import { useNodeMetricsContext } from './useNodeMetrics'
 import { useNodeMBeanOverviews } from './useNodeMBeanOverviews'
 import NodeResourceSummary from './NodeResourceSummary.vue'
+import NodeBufferHistory from './NodeBufferHistory.vue'
 import { useDiagnosticPreferences } from './useDiagnosticPreferences'
 import NodeOperationalSignals from './NodeOperationalSignals.vue'
 import { useOverviewTrends } from './overview/useOverviewTrends'
