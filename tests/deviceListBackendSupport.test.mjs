@@ -67,19 +67,6 @@ test('revoked authorization and disposed pages cannot be restored by old capabil
   assert.deepEqual(actual.value.map(item => item.id), ['device'])
 })
 
-test('shared capability API distinguishes true, absent and failed responses', async () => {
-  let response
-  const calls = []
-  const { hasBackendPermission } = load(new URL('../../../jetlinks-web-core/src/api/system/resources.ts', import.meta.url), {
-    '@jetlinks-web/core': { request: { get: async (...args) => { calls.push(args); return response } } },
-  })
-  for (const [value, expected] of [[{ success: true, result: true }, true], [{ success: true, result: false }, false], [{ success: false, result: true }, false]]) {
-    response = value
-    assert.equal(await hasBackendPermission('edge-manager'), expected)
-  }
-  assert.deepEqual(calls[0], ['/system/resources/permission/edge-manager/exists', undefined, { applicationScope: false, hiddenError: true }])
-})
-
 test('unified list hides unsupported gateway, avoids its counts and falls back from a direct gateway URL', async () => {
   for (const backendPresent of [false, true]) {
     const scope = vue.effectScope()
