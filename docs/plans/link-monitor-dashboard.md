@@ -72,6 +72,10 @@
 
 剩余风险：用户自然首次访问失败及部分区域持续加载仍需捕获原始 HTTP/WS/NDJSON 失败帧；不能将所有首次失败归因于同一缺陷。全局启动资源拆分、真实大集群长期运行和 UAT/生产部署不在本次范围。SDK 剩余修复通过上游 PR 评审，待正式版本发布再升级运行时；不把未发布源码伪装成 2.3.8 的现有能力。运行时集成基线另有既有锁文件问题：`@jetlinks-web/components` 清单为 `^3.3.22`，锁定 specifier/版本仍为 `^3.3.19` / `3.3.19`，`pnpm install --lockfile-only --frozen-lockfile --ignore-scripts` 因此失败；基线 HEAD 已存在同一差异，本次不混入该组件的依赖升级。
 
+交付：SDK 源码提交 `7cd5cd5` / [PR #61](https://github.com/jetlinks-v2/jetlinks-project-ui-cli/pull/61)，共享 core 提交 `7d96937` / [PR #216](https://github.com/jetlinks-v2/jetlinks-web-core/pull/216)，设备模块实现提交 `5b51b38b` / [PR #375](https://github.com/jetlinks-v2/device-manager-ui/pull/375)，运行时集成提交 `8f66e03` / [PR #75](https://github.com/jetlinks-v2/saas-runtime-ui/pull/75)。前三个为源码评审，集成 PR 保持草稿，等待 SDK #61 发版、升级实际依赖并完成最终联调；当前 2.3.8 不包含新增终态/错误分发。
+
+集成指针边界：运行时基线的设备子模块指针到当前 owning repo 的 2.20 另有 9 个已合入提交；原 core 指针 `6d7e9b5ee91bd1b3fc905466ac9493886eaa74ba` 无法从 origin 获取（not our ref）。集成草稿指向两个源码 PR 的实际提交，因此也会消费各子仓库既有上游变更，需按集成范围复核；不混入当前工作区其他任务的未提交文件或本地提交。
+
 ### 统一声明与批量采集
 
 已确认将 Buffer、会话 / 通信、当前节点运维指标和近期历史的周期读取收敛到 `RuntimeWorkspace` 提供的页面采集管理器。业务 hook 声明节点、pattern、属性与 enabled，管理器统一去重、属性合并、周期、身份、取消及重连，按节点更新浅响应式快照。组件不持有周期 HTTP 任务；现有资源 WebSocket 与按需大窗口查询保留。后端 `POST /system/monitor/mbean/_batch` 不传 interval 仅一轮，传入后持续，Accept 独立协商 JSON / NDJSON；页面复用 NDJSON reader。
