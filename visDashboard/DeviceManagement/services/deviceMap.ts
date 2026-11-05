@@ -2,7 +2,10 @@ import { TOKEN_KEY_URL } from '@jetlinks-web/constants'
 import { getToken } from '@jetlinks-web/utils'
 import { getBaseApi } from '@jetlinks-web-core/utils'
 import { EventSourcePolyfill } from 'event-source-polyfill'
+import { cloneDeep } from 'lodash-es'
 import type { DeviceMapPoint } from '../shared'
+import type { DeviceQueryTerm } from '../../../api/device'
+import { queryDeviceInstanceStates } from '../../../api/deviceInstanceMonitoring'
 import { loadDeviceStates } from '../../../dataCapabilities/deviceInstanceMonitoring.service'
 
 interface DeviceGeoJsonFeature {
@@ -57,6 +60,45 @@ export const parseDeviceGeoJson = (payload: string): DeviceMapPoint[] => {
   } catch {
     return []
   }
+}
+
+/** 按真实设备条件过滤位置，ID 批次与调用方条件始终为 AND；任一批次失败都不返回未过滤位置。 */
+export async function filterDeviceMapPoints(
+  points: DeviceMapPoint[],
+  deviceTerms: readonly DeviceQueryTerm[],
+  signal: AbortSignal,
+): Promise<DeviceMapPoint[]> {
+  const allowed = new Set<string>()
+  // 条件属于本次查询快照，父页面后续原地修改配置不能混入未完成的批次。
+  const terms = cloneDeep(deviceTerms)
+  for (let offset = 0; offset < points.length; offset += 100) {
+    if (signal.aborted) throw new Error('Device map query cancelled')
+    const ids = points.slice(offset, offset + 100).map(point => point.deviceId)
+    const response = await queryDeviceInstanceStates({
+      paging: false,
+      includes: ['id'],
+      terms: [
+        { column: 'id', termType: 'in', value: ids },
+        ...(terms.length ? [{ type: 'and', terms }] : []),
+      ],
+    }, { signal, hiddenError: true })
+    const source = response as unknown as { success?: boolean; status?: number; result?: unknown }
+    if (source?.success === false || (typeof source?.status === 'number' && source.status >= 400)) {
+      throw new Error('Device map scope query failed')
+    }
+    const result = source && 'result' in source ? source.result : source
+    const page = result && typeof result === 'object' ? result as { data?: unknown; total?: unknown } : undefined
+    const rows = Array.isArray(result) ? result : page?.data
+    if (!Array.isArray(rows) || Number(page?.total) > rows.length) throw new Error('Incomplete device map scope response')
+    for (const row of rows) {
+      if (!row || typeof row !== 'object' || typeof row.id !== 'string' || !row.id) {
+        throw new Error('Missing device map scope identity')
+      }
+      if (ids.includes(row.id)) allowed.add(row.id)
+    }
+  }
+  if (signal.aborted) throw new Error('Device map query cancelled')
+  return points.filter(point => allowed.has(point.deviceId))
 }
 
 /** 位置接口不带状态，复用设备状态查询分批补齐；失败批次保留位置并标为未知。 */
