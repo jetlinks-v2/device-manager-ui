@@ -9037,5 +9037,19 @@
   "Tracing.edgeLimit": "{count} more edges exceed the query limit",
   "RuntimeMonitor.currentLogFile": "Current",
   "RuntimeMonitor.loadingLogDirectory": "Loading directory",
-  "UnifiedDeviceList.iotScope": "IoT devices"
+  "UnifiedDeviceList.iotScope": "IoT devices",
+  "ObjectPresentation.product": "Product",
+  "ObjectPresentation.protocol": "Protocol",
+  "ObjectPresentation.category": "Category",
+  "ObjectPresentation.enabled": "Enabled",
+  "ObjectPresentation.disabled": "Disabled",
+  "ObjectPresentation.state": "State",
+  "ObjectPresentation.online": "Online",
+  "ObjectPresentation.offline": "Offline",
+  "ObjectPresentation.notActive": "Inactive",
+  "ObjectPresentation.deviceType": "Device type",
+  "ObjectPresentation.device": "Device",
+  "ObjectPresentation.childrenDevice": "Child device",
+  "ObjectPresentation.gateway": "Gateway",
+  "ObjectPresentation.deviceCount": "Visible devices"
 }

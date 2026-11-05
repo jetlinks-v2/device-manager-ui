@@ -1,6 +1,7 @@
 import dataCapabilityProviders from './dataCapabilities'
 import { deviceMetricsSupported, deviceMetricsAggregate, deviceOverviewSummary } from './runtimeMetrics'
 import { defineAsyncComponent } from 'vue'
+import objectPresentations from './objectPresentations'
 import { queryNoPagingPost } from '@device-manager-ui/api/product'
 import { queryNoPagingPost as queryInstanceNoPage, query } from '@device-manager-ui/api/instance'
 import { usePluginPermissionContext } from '@device-manager-ui/hooks/usePermission'
@@ -59,6 +60,7 @@ const homeAgentProviders = Object.fromEntries(
 
 export default {
   moduleId: 'device-manager-ui',
+  objectPresentations,
   dataCapabilityProviders,
   apis: {
     deviceMetricsSupported,

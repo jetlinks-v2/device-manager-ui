@@ -9038,5 +9038,19 @@
   "Tracing.edgeLimit": "另有 {count} 个边缘超出本次查询上限",
   "RuntimeMonitor.currentLogFile": "当前",
   "RuntimeMonitor.loadingLogDirectory": "正在加载目录",
-  "UnifiedDeviceList.iotScope": "物联设备"
+  "UnifiedDeviceList.iotScope": "物联设备",
+  "ObjectPresentation.product": "所属产品",
+  "ObjectPresentation.protocol": "消息协议",
+  "ObjectPresentation.category": "品类",
+  "ObjectPresentation.enabled": "正常",
+  "ObjectPresentation.disabled": "禁用",
+  "ObjectPresentation.state": "状态",
+  "ObjectPresentation.online": "在线",
+  "ObjectPresentation.offline": "离线",
+  "ObjectPresentation.notActive": "未激活",
+  "ObjectPresentation.deviceType": "设备类型",
+  "ObjectPresentation.device": "直连设备",
+  "ObjectPresentation.childrenDevice": "网关子设备",
+  "ObjectPresentation.gateway": "网关",
+  "ObjectPresentation.deviceCount": "可见设备"
 }
