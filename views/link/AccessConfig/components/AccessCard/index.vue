@@ -1,131 +1,25 @@
 <template>
-    <a-card
-        hoverable
-        :class="[
-            'card-render',
-            `access-${data.type || 'network'}`,
-            checked === data.id ? 'checked' : '',
-            disabled ? 'disabled' : ''
-        ]"
-        @click="checkedChange(data.id)"
-    >
-        <div class="title">
-            <j-ellipsis style="width: calc(100% - 100px); margin-bottom: 24px">
-                {{ data.name }}
-            </j-ellipsis>
-        </div>
-
-        <slot name="other"></slot>
-        <div class="desc">
-            <a-tooltip placement="topLeft" :title="data.description">{{
-                data.description || $t('Plugin.index.626239-29')
-            }}</a-tooltip>
-        </div>
-        <div class="checked-icon">
-            <div><a-icon type='CheckOutlined' /></div>
-        </div>
-    </a-card>
+  <button type="button" class="gateway-resource" :class="{ 'is-selected': checked === data.id }"
+    :disabled="disabled" :aria-pressed="checked === data.id" @click="emit('checkedChange', data.id)">
+    <strong>{{ data.name }}</strong>
+    <AIcon v-if="checked === data.id" class="gateway-resource__check" type="CheckCircleFilled" />
+    <slot name="other" />
+    <span class="gateway-resource__description" :title="data.description">{{ data.description || t('Plugin.index.626239-29') }}</span>
+  </button>
 </template>
-
-<script lang="ts" setup name="AccessCard">
-import {useI18n} from "vue-i18n";
-
-const emit = defineEmits(['checkedChange']);
-const { t: $t } = useI18n();
-const props = defineProps({
-    checked: {
-        type: String,
-        default: undefined,
-    },
-    data: {
-        type: Object,
-        default: () => {},
-    },
-    disabled: {
-        type: Boolean,
-        default: false
-    }
-});
-
-const checkedChange = (id: string) => {
-  if (!props.disabled) {
-    emit('checkedChange', id);
-  }
-};
+<script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+defineProps<{ checked?: string; data: { id: string; name?: string; description?: string; type?: string }; disabled?: boolean }>()
+const emit = defineEmits<{ checkedChange: [id: string] }>()
+const { t } = useI18n()
 </script>
-
-<style lang="less" scoped>
-.card-render {
-    width: 100%;
-    overflow: hidden;
-    // background: url('/public/images/access.png') no-repeat;
-    // background-size: 100% 100%;
-    height: 140px;
-    background: #fafafa;
-    border: 1px solid #e6e6e6;
-    .title {
-        font-style: normal;
-        font-weight: 800;
-        font-size: 16px;
-        line-height: 22px;
-        color: rgba(0, 0, 0, 0.85);
-        opacity: 0.85;
-    }
-
-    .desc {
-        width: 100%;
-        margin-top: 10px;
-        color: rgba(0, 0, 0, 0.55);
-        font-weight: 400;
-        font-size: 13px;
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-    }
-
-    .checked-icon {
-        position: absolute;
-        right: -22px;
-        bottom: -22px;
-        z-index: 2;
-        display: none;
-        width: 44px;
-        height: 44px;
-        color: #fff;
-        background-color: @primary-color;
-        transform: rotate(-45deg);
-
-        > div {
-            position: relative;
-            height: 100%;
-            transform: rotate(45deg);
-            font-size: 12px;
-            padding: 4px 0 0 6px;
-        }
-    }
-    &.checked {
-        position: relative;
-        color: @primary-color;
-        border-color: @primary-color;
-        z-index: 0;
-        .checked-icon {
-            display: block;
-        }
-    }
-  &.disabled {
-    cursor: not-allowed;
-  }
-}
-.access-media {
-    background: url('@device-manager-ui/assets/access-media.png') no-repeat;
-    background-position: bottom right;
-}
-.access-network, .access-plugin {
-    background: url('@device-manager-ui/assets/access-network.png') no-repeat;
-    background-position: bottom right;
-}
-.access-protocol {
-    background: url('@device-manager-ui/assets/access-protocol.png') no-repeat;
-    background-position: bottom right;
-}
+<style scoped>
+.gateway-resource { position: relative; display: flex; flex-direction: column; gap: var(--space-2); width: 100%; text-align: left; padding: var(--space-4); border: 1px solid var(--line); border-radius: var(--r-3); background: var(--bg); color: var(--text-color); cursor: pointer; }
+.gateway-resource strong { padding-right: var(--space-5); font-size: var(--fs-14); font-weight: 600; }
+.gateway-resource:hover, .gateway-resource.is-selected { border-color: var(--primary-color); }
+.gateway-resource.is-selected { background: var(--primary-color-deprecated-bg, #e8f1ff); outline: 1px solid var(--primary-color); outline-offset: -2px; }
+.gateway-resource__check { position: absolute; right: var(--space-4); top: var(--space-4); color: var(--primary-color); }
+.gateway-resource__description { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: var(--text-color-secondary); font-size: var(--fs-12); line-height: 1.6; }
+.gateway-resource:disabled { cursor: not-allowed; }
+.gateway-resource:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
 </style>

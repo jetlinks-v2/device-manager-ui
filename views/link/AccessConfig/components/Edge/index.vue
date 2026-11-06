@@ -1,63 +1,45 @@
 <template>
-
-    <DefineEmptyCreate>
-      <j-permission-button
-          type="primary"
-          @click="addNetwork"
-          hasPermission="link/Type:add"
-      >
-          <template #icon><AIcon type="PlusOutlined" /></template>
-          {{ $t('Edge.index.066653-2') }}
-      </j-permission-button>
-    </DefineEmptyCreate>
-    <div v-bind="$attrs" v-if="type === 'edge'">
-        <a-steps
-            v-if="channel !== 'edge-child-device'"
-            class="steps-steps"
-            :current="stepCurrent"
-        >
-            <a-step disabled v-for="item in steps" :key="item" :title="item" />
-        </a-steps>
-        <div v-if="channel !== 'edge-child-device'" class="steps-content">
-            <div class="steps-box" v-if="current === 0">
-                <div class="alert">
-                    <AIcon type="InfoCircleOutlined" />
-                    {{ $t('Edge.index.066653-0') }}
-                </div>
-                <div class="search">
-                    <a-input-search
-                        allowClear
-                        :placeholder="$t('Edge.index.066653-1')"
-                        style="width: 300px"
-                        @search="networkSearch"
-                    />
-                    <EmptyCreateButton />
-                </div>
-                <j-scrollbar height="480">
-                    <a-row
-                        :gutter="[24, 24]"
-                        style="width: 100%"
-                        v-if="networkList.length > 0"
-                    >
-                        <a-col
-                            :span="8"
-                            v-for="item in networkList"
-                            :key="item.id"
-                        >
-                            <AccessCard
-                                @checkedChange="checkedChange"
-                                :checked="networkCurrent"
-                                :data="{
-                                    ...item,
-                                    description: item.description
-                                        ? item.description
-                                        : descriptionList[provider.id],
-                                }"
-                            >
-                                <template #other>
-                                    <div class="other">
-                                        <a-tooltip placement="top" :title="addressesTip(item.addresses)">
-                                            <!-- <div
+  <DefineEmptyCreate>
+    <j-permission-button type="primary" @click="addNetwork" hasPermission="link/Type:add">
+      <template #icon><AIcon type="PlusOutlined" /></template>
+      {{ $t('Edge.index.066653-2') }}
+    </j-permission-button>
+  </DefineEmptyCreate>
+  <GatewayFrame
+    :wizard="wizard"
+    v-bind="$attrs"
+    v-if="type === 'edge'"
+    :provider="provider"
+    :form="formState"
+    :steps="channel === 'edge-child-device' ? undefined : steps"
+    :current="stepCurrent"
+    :network="
+      channel === 'edge-child-device' ? undefined : findGatewayResource(allNetworkList, networkCurrent)
+    "
+    :protocol="{ name: 'official-edge-protocol' }"
+    :transport="ProtocolMapping.get(provider.id)"
+  >
+    <div v-if="channel !== 'edge-child-device'" class="steps-content">
+      <div class="steps-box" v-show="current === 0">
+        <div class="alert">
+          <AIcon type="InfoCircleOutlined" />
+          {{ $t('Edge.index.066653-0') }}
+        </div>
+        <div class="gateway-options">
+          <a-row :gutter="[24, 24]" style="width: 100%" v-if="networkList.length > 0">
+            <a-col :xs="24" :xl="12" v-for="item in networkList" :key="item.id">
+              <AccessCard
+                @checkedChange="checkedChange"
+                :checked="networkCurrent"
+                :data="{
+                  ...item,
+                  description: item.description ? item.description : descriptionList[provider.id]
+                }"
+              >
+                <template #other>
+                  <div class="other">
+                    <a-tooltip placement="top" :title="addressesTip(item.addresses)">
+                      <!-- <div
                                                 v-if="
                                                     (item.addresses || [])
                                                         .length > 1
@@ -74,330 +56,122 @@
                                                     />{{ i.address }}
                                                 </div>
                                             </div> -->
-                                            <div
-                                                v-for="i in (
-                                                    item.addresses || []
-                                                ).slice(0, 1)"
-                                                :key="i.address"
-                                                class="item"
-                                            >
-                                                <a-badge
-                                                    :status="getColor(i)"
-                                                    :text="i.address"
-                                                />
-                                                <span
-                                                    v-if="
-                                                        (item.addresses || [])
-                                                            .length > 1
-                                                    "
-                                                    >{{ $t('Edge.index.066653-3') }}{{ item.addresses.length }}{{ $t('Edge.index.066653-4') }}</span
-                                                >
-                                            </div>
-                                        </a-tooltip>
-                                    </div>
-                                </template>
-                            </AccessCard>
-                        </a-col>
-                    </a-row>
-                    <CloudEmpty
-                        style="margin-top: 10%"
-                        v-else
-                        :description="$t('Edge.index.066653-5')" :search="emptyCreateSearch" :search-name="$t('Status.index.565893-0')">
-                      <EmptyCreateButton />
-                    </CloudEmpty>
-                </j-scrollbar>
-            </div>
+                      <div v-for="i in (item.addresses || []).slice(0, 1)" :key="i.address" class="item">
+                        <a-badge :status="getColor(i)" :text="i.address" />
+                        <span v-if="(item.addresses || []).length > 1">
+                          {{ $t('Edge.index.066653-3') }}{{ item.addresses.length
+                          }}{{ $t('Edge.index.066653-4') }}
+                        </span>
+                      </div>
+                    </a-tooltip>
+                  </div>
+                </template>
+              </AccessCard>
+            </a-col>
+          </a-row>
+          <CloudEmpty
+            style="margin-top: 10%"
+            v-else
+            :description="$t('Edge.index.066653-5')"
+            :search="emptyCreateSearch"
+            :search-name="$t('Status.index.565893-0')"
+          >
+            <EmptyCreateButton />
+          </CloudEmpty>
         </div>
-        <div
-            v-if="channel === 'edge-child-device' || current === 1"
-            class="card-last"
-        >
-            <a-row :gutter="[24, 24]">
-                <a-col :span="12">
-                    <title-component :data="$t('Edge.index.066653-6')" />
-                    <a-form
-                        :model="formState"
-                        name="basic"
-                        autocomplete="off"
-                        layout="vertical"
-                        @finish="onFinish"
-                        ref="formRef"
-                    >
-                        <a-form-item
-                            :label="$t('Edge.index.066653-7')"
-                            name="name"
-                            :rules="[
-                                {
-                                    required: true,
-                                    message: $t('Edge.index.066653-8'),
-                                    trigger: 'blur',
-                                },
-                                {
-                                    max: 64,
-                                    message: $t('Edge.index.066653-9'),
-                                    trigger: 'blur',
-                                },
-                            ]"
-                        >
-                            <I18nTextField
-                                :placeholder="$t('Edge.index.066653-8')"
-                                v-model:value="formState.name"
-                                v-model:i18nMessages="formState.i18nMessages"
-                                field="name"
-                                :label="$t('Edge.index.066653-7')"
-                                :i18n-max-length="64"
-                            />
-                        </a-form-item>
-                        <DeviceLibraryBizKeyPicker v-model="formState.bizKey" :provider="provider.id" />
-                        <a-form-item :label="$t('Edge.index.066653-10')" name="description">
-                            <I18nTextField
-                                :placeholder="$t('Edge.index.066653-11')"
-                                :rows="4"
-                                v-model:value="formState.description"
-                                v-model:i18nMessages="formState.i18nMessages"
-                                field="description"
-                                :label="$t('Edge.index.066653-10')"
-                                textarea
-                                show-count
-                                :maxlength="200"
-                            />
-                        </a-form-item>
-                        <a-form-item>
-                            <j-permission-button
-                                v-if="current !== 1 && view === 'false'"
-                                type="primary"
-                                html-type="submit"
-                                :hasPermission="`link/AccessConfig:${
-                                    id === ':id' ? 'add' : 'update'
-                                }`"
-                                :loading="loading"
-                            >
-                                {{ $t('Edge.index.066653-12') }}
-                            </j-permission-button>
-                        </a-form-item>
-                    </a-form>
-                </a-col>
-                <a-col :span="12">
-                    <div class="doc" style="height: 600px">
-                        <TitleComponent :data="$t('Edge.index.066653-13')" />
-                        <p>{{ $t('Edge.index.066653-14') }}{{ provider.name }}</p>
-                        <p>
-                            {{ provider.description }}
-                        </p>
-                        <p>{{ $t('Edge.index.066653-15') }}{{ provider.id }}</p>
-                    </div>
-                </a-col>
-            </a-row>
-        </div>
-        <div
-            v-if="channel !== 'edge-child-device'"
-            :class="current !== 1 ? 'steps-action' : 'steps-action-save'"
-        >
-            <a-button v-if="current > 0" @click="prev" style="margin-right: 8px"> {{ $t('Edge.index.066653-16') }} </a-button>
-            <j-permission-button
-                v-if="current === 1 && view === 'false'"
-                type="primary"
-                style="margin-right: 8px"
-                @click="saveData"
-                :hasPermission="`link/AccessConfig:${
-                    id === ':id' ? 'add' : 'update'
-                }`"
-                :loading="loading"
-            >
-                {{ $t('Edge.index.066653-12') }}
-            </j-permission-button>
-            <a-button
-              v-if="[0].includes(current)"
-
-              @click="next"
-            >
-              {{ $t('Edge.index.066653-17') }}
-            </a-button>
-        </div>
+      </div>
     </div>
+    <div v-show="channel === 'edge-child-device' || current === 1" class="card-last">
+      <title-component :data="$t('Edge.index.066653-6')" />
+      <a-form
+        id="gateway-edge-config"
+        :model="formState"
+        name="basic"
+        autocomplete="off"
+        layout="vertical"
+        @finish="wizard.submit"
+        ref="formRef"
+      >
+        <a-form-item
+          :label="$t('Edge.index.066653-7')"
+          name="name"
+          :rules="[
+            {
+              required: true,
+              message: $t('Edge.index.066653-8'),
+              trigger: 'blur'
+            },
+            {
+              max: 64,
+              message: $t('Edge.index.066653-9'),
+              trigger: 'blur'
+            }
+          ]"
+        >
+          <I18nTextField
+            :placeholder="$t('Edge.index.066653-8')"
+            v-model:value="formState.name"
+            v-model:i18nMessages="formState.i18nMessages"
+            field="name"
+            :label="$t('Edge.index.066653-7')"
+            :i18n-max-length="64"
+          />
+        </a-form-item>
+        <DeviceLibraryBizKeyPicker v-model="formState.bizKey" :provider="provider.id" />
+        <a-form-item :label="$t('Edge.index.066653-10')" name="description">
+          <I18nTextField
+            :placeholder="$t('Edge.index.066653-11')"
+            :rows="4"
+            v-model:value="formState.description"
+            v-model:i18nMessages="formState.i18nMessages"
+            field="description"
+            :label="$t('Edge.index.066653-10')"
+            textarea
+            show-count
+            :maxlength="200"
+          />
+        </a-form-item>
+      </a-form>
+    </div>
+    <template #summary>
+      <GatewayGuide v-show="channel === 'edge-child-device' || current === 1">
+        <div class="doc">
+          <TitleComponent :data="$t('Edge.index.066653-13')" />
+          <p>{{ $t('Edge.index.066653-14') }}{{ provider.name }}</p>
+          <p>
+            {{ provider.description }}
+          </p>
+          <p>{{ $t('Edge.index.066653-15') }}{{ provider.id }}</p>
+        </div>
+      </GatewayGuide>
+    </template>
+    <template #actions>
+      <j-permission-button v-if="view === 'false'" type="primary" :loading="loading || wizard.pending.value"
+        :hasPermission="`link/AccessConfig:${id === ':id' ? 'add' : 'update'}`" @click="wizard.submit">
+        {{ $t('GatewayEditor.confirm') }}
+      </j-permission-button>
+    </template>
+  </GatewayFrame>
 </template>
 
-<script lang="ts" setup name="AccessEdge">
-import { createReusableTemplate } from '@vueuse/core'
-
-import { onlyMessage, randomString } from '@jetlinks-web/utils';
-import type { FormInstance } from 'ant-design-vue';
-import { update, save, getNetworkList } from '../../../../../api/link/accessConfig';
-import {
-    descriptionList,
-    ProtocolMapping,
-    NetworkTypeMapping,
-} from '../../data';
+<script setup lang="ts">
+import { useEdgeWizard } from './useEdgeWizard';
+import GatewayFrame from '../GatewayFrame.vue';
+import { findGatewayResource } from '../gatewayOverview';
+import GatewayGuide from '../GatewayGuide.vue';
 import AccessCard from '../AccessCard/index.vue';
-import { useMenuStore } from '@jetlinks-web-core/store/menu';
-import { useI18n } from 'vue-i18n';
-import { useTabSaveSuccess, useTabSaveSuccessBack } from '@jetlinks-web-core/hooks'
 import { I18nTextField } from '@jetlinks-web-core/components';
 import DeviceLibraryBizKeyPicker from '../DeviceLibraryBizKeyPicker.vue';
-import { ref as emptyCreateSearchRef } from 'vue'
-const emptyCreateSearch = emptyCreateSearchRef(false)
-
-
-const { t: $t } = useI18n();
-const menuStory = useMenuStore();
-
-interface FormState {
-    name: string;
-    bizKey: string;
-    description: string;
-    i18nMessages?: Record<string, Record<string, string>>;
-}
-const route = useRoute();
-const view = route.query.view as string;
-const id = route.params.id as string;
-
-const loading = ref(false)
-const props = defineProps({
-    provider: {
-        type: Object,
-        default: () => {},
-    },
-    data: {
-        type: Object,
-        default: () => {},
-    },
-});
-
-const type = ref(props.provider.type || props.data.type);
-const channel = ref(props.provider.channel);
-
-const formState = ref<FormState>({
-    name: '',
-    bizKey: '',
-    description: '',
-    i18nMessages: {},
-});
-
-const formRef = ref<FormInstance>();
-
-const current = ref(0);
-const stepCurrent = ref(0);
-const steps = ref([$t('Edge.index.066653-18'), $t('Edge.index.066653-19')]);
-const networkCurrent: any = ref('');
-const networkList: any = ref([]);
-const allNetworkList: any = ref([]);
-
-const { onBack } = useTabSaveSuccessBack()
-
-const { onOpen } = useTabSaveSuccess('link/Type/Detail', {
-  onSuccess(value) {
-    networkCurrent.value = value.result.id;
-    queryNetworkList(props.provider?.id, networkCurrent.value || '');
-  }
-})
-
-const onFinish = async (values: any) => {
-    loading.value = true
-    const providerId = props.provider.id;
-    const params = {
-        ...values,
-        protocol: 'official-edge-protocol',
-        provider: providerId,
-        transport: ProtocolMapping.get(providerId),
-    };
-    if (networkCurrent.value) params.channelId = networkCurrent.value;
-    const resp =
-        id === ':id' ? await save(params) : await update({ ...params, id });
-    if (resp.status === 200) {
-        onlyMessage($t('Edge.index.066653-20'), 'success');
-        history.back();
-        onBack(resp)
-    }
-    loading.value = false
-};
-
-const checkedChange = (id: string) => {
-    networkCurrent.value = id;
-};
-const getColor = (i: any) => (i.health === -1 ? 'error' : 'processing');
-
-const queryNetworkList = async (id: string, include: string, data = {}) => {
-    const resp = await getNetworkList(
-        NetworkTypeMapping.get(id),
-        include,
-        data,
-    );
-    if (resp.status === 200) {
-        networkList.value = resp.result;
-        allNetworkList.value = resp.result;
-        emptyCreateSearch.value = false;
-    }
-};
-
-const networkSearch = (value: string) => {
-  emptyCreateSearch.value = Boolean(value?.trim())
-
-    networkList.value = value
-        ? allNetworkList.value.filter(
-              (i: any) =>
-                  i.name &&
-                  i.name
-                      .toLocaleLowerCase()
-                      .includes(value.toLocaleLowerCase()),
-          )
-        : allNetworkList.value;
-};
-
-const saveData = async () => {
-    const data: any = await formRef.value?.validate();
-    onFinish(data);
-};
-
-const addNetwork = () => {
-  onOpen({
-    type: NetworkTypeMapping.get(props.provider?.id) || ''
-  })
-};
-
-const next = async () => {
-    if (!networkCurrent.value) {
-        onlyMessage($t('Edge.index.066653-21'), 'error');
-    } else {
-        current.value = current.value + 1;
-    }
-};
-const prev = () => {
-    current.value = current.value - 1;
-};
-
-onMounted(() => {
-    if (props.provider.id === 'official-edge-gateway') {
-        queryNetworkList(props.provider.id, '');
-    }
-    if (id !== ':id') {
-        formState.value = {
-            name: props.data.name,
-            bizKey: props.data.bizKey || '',
-            description: props.data?.description || '',
-        };
-        networkCurrent.value = props.data.channelId;
-    }
-});
-watch(
-    current,
-    (v) => {
-        stepCurrent.value = v;
-    },
-    {
-        deep: true,
-        immediate: true,
-    },
-);
-
-const addressesTip = (data:any)=>{
-    let tip:any = ''
-    data.forEach((item:any)=>{
-        tip =  tip + " " +item.address
-    })
-    return tip
-}
-
-const [DefineEmptyCreate, EmptyCreateButton] = createReusableTemplate()
+import { useEdgeEditor, editorProps } from './useEdgeEditor';
+const props = defineProps(editorProps);
+const editor = useEdgeEditor(props);
+const wizard = useEdgeWizard(editor);
+const {
+  update, descriptionList, ProtocolMapping, emptyCreateSearch, $t, view, id, loading, type, channel,
+  formState, formRef, current, stepCurrent, steps, networkCurrent, networkList, allNetworkList, onFinish,
+  checkedChange, getColor, networkSearch, saveData, addNetwork, next, prev, addressesTip, DefineEmptyCreate,
+  EmptyCreateButton
+} = editor;
 </script>
 
 <style lang="less" scoped>

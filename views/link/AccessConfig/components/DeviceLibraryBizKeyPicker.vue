@@ -8,6 +8,7 @@
       allow-clear
       @update:value="emit('update:modelValue', $event)"
     />
+    <div class="biz-key-hint">{{ t('GatewayEditor.bizKeyHint') }}</div>
   </a-form-item>
 </template>
 
@@ -32,6 +33,7 @@ const placeholder = computed(() => t('AccessConfig.bizKey.placeholder'))
 </script>
 
 <style scoped lang="less">
+.biz-key-hint { color: var(--text-color-secondary); font-size: var(--fs-12); margin-top: var(--space-2); }
 .biz-key-input {
   width: 100%;
 }
