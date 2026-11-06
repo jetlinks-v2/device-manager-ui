@@ -4,7 +4,7 @@ import { getCenterPoint } from '../../../utils/map'
 import { deviceMapCardConfig } from '../DeviceMapCard/config'
 import type { DashboardCardInfo, DeviceMapConfig, DeviceMapPoint } from '../shared'
 import { getComponentConfig } from '../shared'
-import { createDeviceMapStream, loadDeviceMapStates } from '../services/deviceMap'
+import { createDeviceMapStream, filterDeviceMapPoints, loadDeviceMapStates } from '../services/deviceMap'
 import { createDeviceMapMarkerOptions } from '../DeviceMapCard/markers'
 import {
   DEVICE_MAP_MAX_ZOOM,
@@ -45,11 +45,12 @@ export const useDeviceMap = (info: Ref<DashboardCardInfo | undefined>, isEdit: R
   const available = computed(() => active.value && (distribution.value || enabled.value))
   const map = shallowRef<MapInstanceLike>()
   const selection = useDeviceMapSelection()
-  const extraOptions = createDeviceMapMarkerOptions()
+  const extraOptions = computed(() => createDeviceMapMarkerOptions(!!config.value.showStatus))
   let stream: { close: () => void } | undefined
   let refreshTimer: ReturnType<typeof setInterval> | undefined
   let requestId = 0
   let statesController: AbortController | undefined
+  let pendingPoints: DeviceMapPoint[] = []
 
   const closeStreamLater = debounce(() => {
     void finishLocations()
@@ -72,10 +73,28 @@ export const useDeviceMap = (info: Ref<DashboardCardInfo | undefined>, isEdit: R
   async function finishLocations() {
     stopStream()
     const currentRequestId = requestId
-    if (!distribution.value || !points.value.length) { loading.value = false; return }
+    const locations = pendingPoints
+    const deviceTerms = config.value.deviceTerms
+    if (!locations.length || (deviceTerms === undefined && !distribution.value && !config.value.showStatus)) { loading.value = false; return }
     const controller = new AbortController()
     statesController = controller
     try {
+      if (deviceTerms !== undefined) {
+        // 分类校验完成前不发布流中的点位，失败也不能回退为全部设备。
+        const filtered = await filterDeviceMapPoints(locations, deviceTerms, controller.signal)
+        if (currentRequestId !== requestId || controller.signal.aborted) return
+        points.value = filtered
+      }
+    } catch {
+      if (currentRequestId === requestId && !controller.signal.aborted) {
+        points.value = []
+        error.value = true
+        loading.value = false
+      }
+      return
+    }
+    try {
+      if ((!distribution.value && !config.value.showStatus) || !points.value.length) return
       const result = await loadDeviceMapStates(points.value, controller.signal)
       if (currentRequestId !== requestId || controller.signal.aborted) return
       points.value = result.points
@@ -90,6 +109,7 @@ export const useDeviceMap = (info: Ref<DashboardCardInfo | undefined>, isEdit: R
   const refresh = () => {
     stopStream()
     selection.close()
+    pendingPoints = []
     if (isEdit.value || !available.value) {
       points.value = []
       loading.value = false
@@ -108,7 +128,8 @@ export const useDeviceMap = (info: Ref<DashboardCardInfo | undefined>, isEdit: R
         if (currentRequestId !== requestId) return
         // Different devices may have identical names and coordinates; only identity deduplicates them.
         nextPoints.forEach((item) => devices.set(item.deviceId, item))
-        points.value = [...devices.values()]
+        pendingPoints = [...devices.values()]
+        if (config.value.deviceTerms === undefined) points.value = pendingPoints
         closeStreamLater()
       },
       onComplete: () => {

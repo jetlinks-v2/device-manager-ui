@@ -1,5 +1,6 @@
 import markerPng from '@device-manager-ui/assets/marker.png'
 import { DEVICE_MAP_GRID_SIZE, DEVICE_MAP_MAX_ZOOM } from './cluster'
+import { distributionColors, distributionState } from './deviceMapStatus'
 
 interface MarkerContext {
   count: number
@@ -8,11 +9,11 @@ interface MarkerContext {
     setContent: (content: HTMLElement) => void
     setAnchor: (anchor: string) => void
   }
-  data: Array<{ label?: string }>
+  data: Array<{ label?: string; state?: string | null; stateText?: string | null }>
 }
 
 /** Build marker DOM using textContent so device names are never interpreted as HTML. */
-export function createDeviceMapMarkerOptions() {
+export function createDeviceMapMarkerOptions(showStatus = false) {
   const getPixel = (x: number, y: number) => {
     const api = (window as Window & { AMap?: { Pixel: new (x: number, y: number) => unknown } }).AMap
     return api ? new api.Pixel(x, y) : undefined
@@ -31,6 +32,18 @@ export function createDeviceMapMarkerOptions() {
     renderMarker(context: MarkerContext) {
       const content = document.createElement('div')
       content.className = 'device-dashboard-marker-content'
+      if (showStatus) {
+        const point = context.data[0] || {}
+        const state = distributionState(point)
+        const dot = document.createElement('span')
+        dot.className = `device-dashboard-marker-dot is-${state}`
+        dot.style.backgroundColor = distributionColors[state]
+        content.title = [point.label, point.stateText].filter(Boolean).join(' · ')
+        content.append(dot)
+        context.marker.setContent(content)
+        context.marker.setAnchor('center')
+        return
+      }
       const label = document.createElement('span')
       label.className = 'device-dashboard-marker-label'
       label.textContent = context.data[0]?.label || ''
