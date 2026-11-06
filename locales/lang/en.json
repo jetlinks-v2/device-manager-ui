@@ -1,4 +1,7 @@
 {
+  "ObjectPresentation.chooseProperties": "Select properties (up to 8)",
+  "ObjectPresentation.currentProductScope": "Applies to this product's devices; each reading retains its own schema",
+  "ObjectPresentation.propertiesUnavailable": "Property definitions are unavailable",
   "PropertyRules.valueUnavailable": "{value} (not in the current values)",
   "PropertyRules.noValueOptions": "No values defined in the thing model",
   "PropertyRules.recordInvalid": "Record invalid data",

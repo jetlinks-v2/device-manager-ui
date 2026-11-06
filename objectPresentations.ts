@@ -1,4 +1,5 @@
 import i18n from '@jetlinks-web-core/locales'
+import { defineAsyncComponent } from 'vue'
 import type { ObjectPresentation } from '@jetlinks-web-core/types/object-presentation'
 
 // Navigation is loaded on demand because the menu itself loads module declarations.
@@ -44,6 +45,13 @@ const enumValue = (value: unknown) => {
 export default {
   device: {
     typeId: 'device',
+    queries: {
+      propertySnapshot: {
+        nodeField: 'value',
+        icon: 'DashboardOutlined',
+        parameters: defineAsyncComponent(() => import('./components/ObjectPropertyFocus.vue'))
+      }
+    },
     open: (object) => openDevice(object.id),
     fields: [
       {
@@ -68,6 +76,7 @@ export default {
   },
   product: {
     typeId: 'product',
+    queries: { deviceSummary: { nodeField: 'deviceCount', icon: 'HddOutlined' } },
     open: (object) => openPage('device/Product/Detail', { params: { id: object.id } }),
     fields: [
       {
