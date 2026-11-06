@@ -27,7 +27,9 @@
           v-if="configurationMessage"
           class="device-map-card__status error"
         >
-          <CloudEmpty :description="configurationMessage" />
+          <CloudEmpty :description="configurationMessage">
+            <AMapConfigAction />
+          </CloudEmpty>
         </div>
         <div v-else-if="error && !points.length" class="device-map-card__status error">
           <CloudEmpty :description="t('components.DeviceMap.loadError')">
@@ -71,6 +73,7 @@
 
 <script setup lang="ts">
 import CloudEmpty from '@jetlinks-web-core/components/CloudEmpty/index.vue'
+import { AMapConfigAction } from '@jetlinks-web-core/components'
 import { computed, toRef, type CSSProperties, type PropType } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElAmapMarkerCluster } from '@vuemap/vue-amap'
