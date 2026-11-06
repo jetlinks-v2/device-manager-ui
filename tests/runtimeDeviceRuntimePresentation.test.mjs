@@ -8,7 +8,7 @@ import { transformSync } from 'esbuild'
 import * as vue from 'vue'
 import { parse, compileScript } from 'vue/compiler-sfc'
 import { renderToString } from 'vue/server-renderer'
-const require=createRequire(import.meta.url), root=resolve(import.meta.dirname,'..'), cache=new Map(), received=[], buttons=[]
+const require=createRequire(import.meta.url), root=resolve(import.meta.dirname,'..'), cache=new Map(), received=[], buttons=[], panels=[]
 const messages=JSON.parse(readFileSync(resolve(root,'locales/lang/zh.json'))), t=(key,args={})=>(messages[key]??key).replace(/\{(\w+)\}/g,(_,name)=>args[name]??`{${name}}`)
 const empty=vue.defineComponent({setup:()=>()=>null})
 const sampleTime=timestamp=>new Date(timestamp).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false,fractionalSecondDigits:3})
@@ -21,10 +21,11 @@ function load(filename,inlineTemplate=true){
   if(id==='vue')return vue
   if(id==='vue-i18n')return {useI18n:()=>({t,locale:vue.ref('zh')})}
   if(id==='ant-design-vue')return {Button:vue.defineComponent({setup:(_,ctx)=>()=>{buttons.push(ctx.attrs);return vue.h('button',ctx.attrs,ctx.slots.default?.())}}),theme:{useToken:()=>({token:vue.ref({})})}}
-  if(id==='@ant-design/icons-vue')return {InfoCircleOutlined:vue.defineComponent({setup:(_,ctx)=>()=>vue.h('span',ctx.attrs)}),ArrowRightOutlined:empty,LinkOutlined:empty,UploadOutlined:empty,DownloadOutlined:empty,DatabaseOutlined:empty,ApiOutlined:empty,LineChartOutlined:empty,DownOutlined:empty,LoadingOutlined:empty,RollbackOutlined:empty,AimOutlined:empty,WarningOutlined:empty}
+  if(id==='@ant-design/icons-vue')return {InfoCircleOutlined:vue.defineComponent({setup:(_,ctx)=>()=>vue.h('span',ctx.attrs)}),ArrowRightOutlined:empty,ClockCircleOutlined:empty,LinkOutlined:empty,UploadOutlined:empty,DownloadOutlined:empty,DatabaseOutlined:empty,ApiOutlined:empty,LineChartOutlined:empty,DownOutlined:empty,LoadingOutlined:empty,RollbackOutlined:empty,AimOutlined:empty,WarningOutlined:empty}
   if(id==='echarts/charts')return {LineChart:{}}
   if(id==='echarts/components')return {GridComponent:{},TooltipComponent:{},LegendComponent:{},DataZoomComponent:{}}
   if(id.endsWith('/Echarts/Echarts.vue'))return {__esModule:true,default:chart}
+  if(id==='@jetlinks-web-core/components/RuntimeDiagnostics')return {HistoryMetricCharts:vue.defineComponent({props:['charts','compact','tooltipFormatter'],setup:props=>{panels.push(props);return()=>vue.h('div',{'data-compact-panels':props.charts.length})}})}
   return id.startsWith('.')?load(resolve(dirname(filename),/\.(ts|vue)$/.test(id)?id:`${id}.ts`)):require(id)
  },module,module.exports);cache.set(key,module.exports);return module.exports
 }
@@ -49,7 +50,27 @@ test('freshness and reading wrapper changes retain chart options until plotted i
   props.recording={...props.recording,state:'stale',busy:true};await vue.nextTick();assert.equal(chart.option.value,recorded)
  }finally{scope.stop()}
 })
-async function render(props){received.length=0;buttons.length=0;const app=vue.createSSRApp(Component,props);for(const name of ['a-button','a-tooltip','a-segmented','a-popover'])app.component(name,{setup:(_,ctx)=>()=>vue.h('span',{'data-control':name},ctx.slots.default?.())});const html=await renderToString(app);return{html,chart:received.at(-1),buttons:[...buttons]}}
+async function render(props,component=Component){received.length=0;buttons.length=0;const app=vue.createSSRApp(component,props);for(const name of ['a-button','a-tooltip','a-segmented','a-popover','a-progress'])app.component(name,{setup:(_,ctx)=>()=>vue.h('span',{'data-control':name},ctx.slots.default?.())});const html=await renderToString(app);return{html,chart:received.at(-1),buttons:[...buttons]}}
+
+test('runtime summary preserves unknown, zero, retained queues and large session counts without charts', async () => {
+ const Summary=load(resolve(root,'views/link/diagnostics/overview/NodeRuntimeSummary.vue')).default
+ const props={communication,session,buffer:{queues:[{}],pending:0,dead:7,state:{status:'stale',sampledAt:7700}},live:{cpuJvm:0,memoryJvm:25,memoryJvmUsed:256,memoryJvmTotal:1024}}
+ let view=await render({...props,metric:'messages'},Summary)
+ assert.match(view.html,/>3<\/strong>/);assert.doesNotMatch(view.html,/data-control="a-button"|arrow-right/)
+ view=await render({...props,metric:'backlog'},Summary)
+ assert.match(view.html,/>0<\/strong>/);assert.match(view.html,/失败留存 7 条目/);assert.match(view.html,/上次采样/)
+ view=await render({...props,metric:'heap'},Summary);assert.match(view.html,/256 MB \/ 1 GB/)
+ assert.equal(view.chart,undefined)
+ for(const metric of ['messages','backlog','cpu','heap']) {
+  view=await render({...props,metric,communication:{...communication,history:communication.history.slice(0,1)},buffer:{...props.buffer,pending:undefined},live:undefined},Summary)
+  assert.match(view.html,/<strong[^>]*>—<\/strong>/)
+ }
+ const exact='9223372036854775807'
+ view=await render({metric:'messages',session:{...session,history:[{timestamp:7000,value:exact}]}},Summary)
+ assert.ok(view.html.includes(BigInt(exact).toLocaleString()));assert.doesNotMatch(view.html,/条\/s/)
+ view=await render(props,Summary);assert.doesNotMatch(view.html,/<section/)
+ view=await render({...props,metric:'cpu'},Summary);assert.doesNotMatch(view.html,/Buffer 待处理|上行消息/)
+})
 test('recorded chart uses the node timezone and its own freshness, independently of live QPS',async()=>{
  const timestamp=Date.UTC(2026,9,26,1,0,1),values={Communication:12,ReceivedPackets:10,SentPackets:2,UpstreamMessages:4,PropertyReports:3,PropertyValues:8,EventReports:1,ReceivedBytes:1024,SentBytes:64}
  const data={generation:'42',statisticsStartTime:timestamp-60000,sampledAt:timestamp,firstSequence:0,endSequence:60,zoneId:'Asia/Tokyo',todayStartTime:timestamp-3600000,hourPeaks:[],todayPeaks:[],points:[{timestamp:timestamp-1000,sequence:58,values},{timestamp,sequence:59,values}]}
@@ -61,6 +82,8 @@ test('recorded chart uses the node timezone and its own freshness, independently
  view=await render({communication,recording:{data,points:data.points,state:'stale',busy:false,active:true,outside:false}})
  text=view.chart.option.tooltip.formatter([{axisValue:timestamp}]).replace(/<[^>]+>/g,' ')
  assert.match(text,/上行消息\s+上次采集\s+4 条\/s/)
+ await render({communication,compact:true,recording:{data,points:data.points,state:'ready',busy:false,active:true,outside:false}})
+ assert.ok(panels.at(-1).charts.every(chart=>chart.formatTime(timestamp)==='10:00:01'))
 })
 test('real component projects independent capabilities with actual session and rate axes, and formats cumulative differences',async()=>{
  let view=await render({session,communication})
@@ -194,4 +217,33 @@ test('cache exposes exact counts and direct navigation while preserving missing 
  view=await render({session,cache:{...cache,details:undefined,dirtyCount:undefined,facts:[]}})
  assert.equal(view.buttons.some(button=>button.class==='device-runtime-cache-link'),false);assert.doesNotMatch(view.html,/>· 待落盘 |刷盘排队/)
  view=await render({communication,cache});assert.doesNotMatch(view.html,/device-runtime-cache/)
+})
+
+test('compact overview separates message and packet units independently of saved detail legend preferences',async()=>{
+ panels.length=0
+ const view=await render({session,communication,compact:true,config:{deviceRuntimeSeries:[]}})
+ assert.equal(view.chart,undefined)
+ assert.equal(panels.at(-1).tooltipFormatter,undefined,'overview uses only the hovered chart series, not the full detail table')
+ const charts=panels.at(-1).charts
+ assert.deepEqual(charts.map(item=>item.unit),['条/s','次/s'])
+ assert.deepEqual(charts[0].series.map(item=>item.key),['upstreamMessages','propertyReports','eventReports'])
+ assert.deepEqual(charts[1].series.map(item=>item.key),['receivedQps','sentQps'])
+ assert.equal(charts[0].series[0].samples.at(-1).value,3)
+ assert.match(view.html,/详细观测/)
+})
+
+test('compact overview keeps missing messages unknown and falls back to a session chart for legacy nodes',async()=>{
+ panels.length=0
+ const partial={...communication,history:communication.history.map(point=>({...point,counters:{sentBytes:point.counters.sentBytes}}))}
+ await render({communication:partial,compact:true})
+ assert.ok(panels.at(-1).charts[0].series.every(series=>series.samples.every(point=>point.value===undefined)))
+ const legacy=await render({session,compact:true})
+ assert.deepEqual(panels.at(-1).charts.map(chart=>chart.key),['sessions'])
+ assert.equal(panels.at(-1).charts[0].series[0].samples.at(-1).value,14)
+ assert.doesNotMatch(legacy.html,/device-runtime-clock-note/)
+ const exact='9223372036854775807'
+ await render({session:{...session,history:[{timestamp:7000,value:exact}]},compact:true})
+ const tooltip=panels.at(-1).tooltipFormatter([{axisValue:7000}]).replace(/<[^>]+>/g,' ')
+ assert.ok(tooltip.includes(BigInt(exact).toLocaleString()),'the legacy session tooltip preserves exact counts')
+ assert.doesNotMatch(tooltip,/上行消息|通信 QPS|属性上报/)
 })

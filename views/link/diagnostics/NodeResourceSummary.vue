@@ -1,5 +1,9 @@
 <template>
-  <div class="node-resource-shell"><div class="node-resource-summary">
+  <div class="node-resource-shell"><div v-if="compact" class="node-resource-readouts">
+    <span>{{ t('components.RealtimeResource.disk') }} <b>{{ live?.disk === undefined ? '—' : `${live.disk.toFixed(1)}%` }}</b></span>
+    <span v-for="metric in jvmMetrics" :key="metric.key">{{ metric.label }} <b>{{ metric.value }}</b></span>
+    <RealtimeMetricGroup v-if="live" :items="view.networkTrafficItems(live)" inline />
+  </div><div v-else class="node-resource-summary">
     <section>
       <h4>{{ t('components.RealtimeResource.system') }}</h4>
       <NodeResourceMeter label="CPU" :percent="live?.cpuSystem" />
@@ -34,7 +38,7 @@ import NodeResourceMeter from './NodeResourceMeter.vue'
 import { formatMemorySize } from '../../../visDashboard/SystemMonitor/utils/monitorData'
 import RealtimeMetricGroup from '../../../visDashboard/SystemMonitor/components/RealtimeMetricGroup.vue'
 import { useRealtimeResourcePresentation } from '../../../visDashboard/SystemMonitor/hooks/useRealtimeResourcePresentation'
-const props = defineProps({ live: { type: Object as PropType<RealtimeNode>, default: undefined }, metrics: { type: Array as PropType<MetricValue[]>, default: () => [] } })
+const props = defineProps({ live: { type: Object as PropType<RealtimeNode>, default: undefined }, metrics: { type: Array as PropType<MetricValue[]>, default: () => [] }, compact: { type: Boolean, default: false } })
 const { t } = useI18n()
 const view = useRealtimeResourcePresentation()
 const jvmMetrics = computed(() => props.metrics.filter(metric => ['threads', 'gc'].includes(metric.key) && metric.value !== undefined))
@@ -50,4 +54,5 @@ section > :deep(.node-resource-meter) { margin-block:5px; }section > :deep(.real
 small { display:block; color:var(--ink-3); font-size:12px; line-height:18px; }
 .node-resource-jvm-metrics { display:flex; flex-wrap:wrap; gap:4px 8px; margin:4px 0 0; font-size:12px; line-height:18px; }.node-resource-jvm-metrics dt { color:var(--ink-3); }.node-resource-jvm-metrics dd { margin:0 8px 0 0; }
 .node-resource-summary :deep(.realtime-metric-group__item span) { color:var(--ink-3); }
+.node-resource-readouts { display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 16px; border-top:1px solid var(--line); padding-top:8px; margin-top:8px; color:var(--ink-3); font-size:12px; }.node-resource-readouts b { color:var(--ink-2); font-weight:500; margin-inline-start:4px; }.node-resource-readouts > span { white-space:nowrap; }.node-resource-readouts :deep(.realtime-metric-group) { display:inline-flex; flex-wrap:wrap; gap:4px 12px; }
 </style>

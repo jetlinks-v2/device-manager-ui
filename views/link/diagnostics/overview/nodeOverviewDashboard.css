@@ -1,0 +1,16 @@
+/* 仅仪表盘中的分组填满已分配高度；详情视图继续使用原有自然尺寸。 */
+.node-overview-group { display:flex; flex-direction:column; height:100%; min-width:0; min-height:0; padding:18px 8px 6px; overflow:auto; overscroll-behavior:contain; container-type:inline-size; }
+.node-overview-group .node-operational-overview,
+.node-overview-group .device-runtime-trend--compact,
+.node-overview-group .buffer-overview-chart--compact,
+.node-overview-group .runtime-mbean-overview,
+.node-overview-group .node-history-anchor,
+.node-overview-group .ant-spin-nested-loading,
+.node-overview-group .ant-spin-container {
+  display:flex; flex-direction:column; flex:1; min-height:0;
+}
+.node-overview-group .runtime-mbean-overview { margin:0; }
+.node-overview-group .history-chart-shell { display:flex; flex-direction:column; flex:1; }
+.node-overview-group .history-chart-grid--compact { flex:1; grid-auto-rows:minmax(min-content,1fr); }
+.node-overview-group .history-panel--compact { display:flex; flex-direction:column; }
+.node-overview-group .history-panel--compact .history-chart { flex:1 0 120px; min-height:120px; height:auto; }
