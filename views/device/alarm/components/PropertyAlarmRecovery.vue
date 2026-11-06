@@ -25,7 +25,7 @@ import { invertCondition } from '../conditions'
 import { formatTriggerText, formatPropertyUnit, isNumberProperty } from '../utils'
 import PropertyAlarmCondition from './PropertyAlarmCondition.vue'
 import RuleMenuOption from '../../components/PropertyRules/RuleMenuOption.vue'
-const props = defineProps<{ model: DeviceAlarmFormModel; property: ThingModelProperty; disabled?: boolean; layout?: 'inline' | 'form' }>()
+const props = defineProps<{ model: DeviceAlarmFormModel; property: ThingModelProperty; disabled?: boolean; layout?: 'inline' | 'form' | 'detail' }>()
 const { t: $t } = useI18n()
 const mode = computed(() => !props.model.autoRelieve ? 'off' : props.model.relieveCondition ? 'custom' : 'inverse')
 const options = computed(() => [{ value: 'off', icon: 'StopOutlined' }, { value: 'inverse', icon: 'SwapOutlined' }, { value: 'custom', icon: 'EditOutlined' }]

@@ -62,11 +62,11 @@
                 <span class="alarm-flow-row">
                   <AIcon type="ThunderboltOutlined" class="alarm-trigger-icon" />
                   <I18nT keypath="DeviceAlarm.sentence.trigger" scope="global" tag="span" class="alarm-flow-body">
-                    <template #condition><PropertyAlarmCondition :model="editor.draft.alarm" :property="property" /></template>
+                    <template #condition><PropertyAlarmCondition :model="editor.draft.alarm" :property="property" :layout="card ? 'detail' : 'inline'" /></template>
                     <template #level><PropertyRuleAlarmActions :editor="editor" /></template>
                   </I18nT>
                 </span>
-                <PropertyAlarmRecovery :model="editor.draft.alarm" :property="property" :disabled="!editor.editable" />
+                <PropertyAlarmRecovery :model="editor.draft.alarm" :property="property" :disabled="!editor.editable" :layout="card ? 'detail' : 'inline'" />
                 <RegistryComponent page-code="device/alarm" code="alarm-editor">
                   <DeviceAlarmNotificationConfig :model="editor.draft.alarm" :methods="editor.resources.methods" :loading="editor.resources.loading" :failed="editor.resources.failed" :disabled="!editor.editable" :reveal="editor.notificationOpen" @request-methods="editor.resources.load" @retry-methods="editor.resources.retry" @open-change="editor.setNotificationsOpen" />
                 </RegistryComponent>
