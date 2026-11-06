@@ -15,7 +15,7 @@ interface CardEntry {
 const createEditor = (...args: Parameters<typeof usePropertyRuleEditor>) => reactive(usePropertyRuleEditor(...args))
 
 /** Keep visited cards' drafts outside the filtered DOM, with one resource cache and leave guard. */
-export function usePropertyRuleCards(props: CardProps, changed: () => void | Promise<void>) {
+export function usePropertyRuleCards(props: CardProps, changed: (id: string) => void | Promise<void>) {
   const context = usePropertyRuleEditorContext(props)
   const editors = shallowReactive(new Map<string, CardEntry>())
   const saving = computed(() => [...editors.values()].some(entry => entry.editor.saving))
@@ -51,7 +51,7 @@ export function usePropertyRuleCards(props: CardProps, changed: () => void | Pro
         snapshot: { raw: row.raw, hasOverride: row.hasOverride },
         blocked: computed(() => Boolean(props.loading) || [...editors].some(([id, entry]) => id !== row.id && entry.editor.saving)),
       })
-      const editor = lifetime.run(() => createEditor(input, () => {}, changed, context))!
+      const editor = lifetime.run(() => createEditor(input, () => {}, () => changed(row.id), context))!
       editors.set(row.id, { props: input, editor, lifetime })
     }
   }
