@@ -1,5 +1,6 @@
 import type { MBeanDescriptor } from '@jetlinks-web-core/components/RuntimeDiagnostics'
 import { gaugeCount } from '../../diagnostics/overview/gaugeHistory'
+import { latestDeviceMessageRates, type DeviceMessageRates, type DeviceMessageSample } from './deviceMessageHistory'
 
 export const recordingMetrics = ['Communication', 'ReceivedPackets', 'SentPackets', 'UpstreamMessages', 'PropertyReports', 'PropertyValues', 'EventReports', 'ReceivedBytes', 'SentBytes'] as const
 export type RecordingMetric = typeof recordingMetrics[number]
@@ -13,6 +14,14 @@ export interface DevicePeakSelection { peak: DevicePeak; scope: 'hour' | 'today'
 export interface DeviceRecordingView {
   data?: DeviceRecording; points: DeviceSecond[]; state: 'loading' | 'ready' | 'stale' | 'error' | 'unsupported'
   busy: boolean; active: boolean; focus?: DevicePeakSelection; outside?: boolean
+}
+
+/** 当前值使用最后完整秒；定位历史峰值只改变曲线范围，不改变当前摘要。旧节点沿用相邻快照差分。 */
+export function latestDeviceRuntimeRates(history: readonly DeviceMessageSample[], recording?: DeviceRecordingView): DeviceMessageRates | undefined {
+  if (!recording?.data) return latestDeviceMessageRates(history)
+  const point = recording.data.points.at(-1)
+  return point ? { timestamp: point.timestamp, upstreamMessages: point.values.UpstreamMessages, propertyReports: point.values.PropertyReports,
+    propertyValues: point.values.PropertyValues, eventReports: point.values.EventReports, receivedBytes: point.values.ReceivedBytes, sentBytes: point.values.SentBytes } : undefined
 }
 const object = (value: unknown): Record<string, unknown> | undefined => value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : undefined
 const integer = (value: unknown) => { const text = gaugeCount(value), number = text === undefined ? NaN : Number(text); return Number.isSafeInteger(number) && number >= 0 ? number : undefined }

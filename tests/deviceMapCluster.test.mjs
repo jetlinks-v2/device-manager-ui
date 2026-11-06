@@ -9,7 +9,7 @@ import { createI18n } from 'vue-i18n'
 const require = createRequire(import.meta.url)
 const base = '../visDashboard/DeviceManagement/'
 function load(relative, dependencies = {}, globals = {}) {
-  const source = readFileSync(new URL(base + relative, import.meta.url), 'utf8')
+  const source = readFileSync(new URL(base + relative, import.meta.url), 'utf8').replaceAll('import.meta.env.DEV', 'false')
   const output = ts.transpileModule(source, {
     compilerOptions: {
       module: ts.ModuleKind.CommonJS,
@@ -20,7 +20,7 @@ function load(relative, dependencies = {}, globals = {}) {
   const exports = {}
   new Function('exports', 'require', ...Object.keys(globals), output)(
     exports,
-    (id) => dependencies[id] ?? require(id),
+    (id) => dependencies[id] ?? (id === './deviceMapStatus' ? load('DeviceMapCard/deviceMapStatus.ts') : require(id)),
     ...Object.values(globals)
   )
   return exports
@@ -93,6 +93,7 @@ test('GeoJSON retains real device IDs even when names and coordinates coincide',
     '@jetlinks-web/utils': {},
     '@jetlinks-web-core/utils': {},
     'event-source-polyfill': {},
+    '../../../api/deviceInstanceMonitoring': {},
     '../../../dataCapabilities/deviceInstanceMonitoring.service': {}
   })
   const feature = (id, coordinates = [116.4, 39.9]) => ({
@@ -416,6 +417,7 @@ test('distribution state requests batch and retain unknown points on partial fai
   const calls=[]
   const {loadDeviceMapStates}=load('services/deviceMap.ts', {
     '@jetlinks-web/constants':{},'@jetlinks-web/utils':{},'@jetlinks-web-core/utils':{},'event-source-polyfill':{},
+    '../../../api/deviceInstanceMonitoring':{},
     '../../../dataCapabilities/deviceInstanceMonitoring.service': {loadDeviceStates:async ({deviceIds})=>{
       calls.push(deviceIds)
       if(calls.length===2) throw Error('failure')

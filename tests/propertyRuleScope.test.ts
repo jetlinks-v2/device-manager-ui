@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { computed, createRenderer, defineComponent, nextTick, reactive } from 'vue'
+import { computed, createRenderer, defineComponent, nextTick, reactive, watch } from 'vue'
 import { createI18n } from 'vue-i18n'
 import type { RouteLocationNormalized } from 'vue-router'
 import { usePropertyRuleCards } from '../views/device/components/PropertyRules/cards/usePropertyRuleCards'
@@ -1079,6 +1079,144 @@ function cardRows() {
       source: 'device' as 'device' | 'product' | 'disabled' | 'none', rule: parseRule(raw), effects: [] }
   })
 }
+
+const savedParts = (property: string, count: number): ThingPropertyPreprocess => ({ property, provider: 'composite', configuration: {
+  processors: [...(count === 3 ? [{ provider: 'simple', configuration: {
+    matcher: { provider: 'number-range', configuration: { not: true, min: 0, max: 100 } }, processors: [{ provider: 'ignore', configuration: {} }],
+  } }] : []), { provider: 'scale', configuration: { scale: '1' } },
+    { provider: 'ratio-sampling', configuration: { ratio: 0.5 } }].slice(0, count),
+} })
+
+test('detail lists only effective saved rules, preserves disabled overrides and sorts each group stably', async () => {
+  ruleRoute.query = {}
+  setAlarmRequestHandler(async url => ({ result: url.includes('/p1/d1/')
+    ? [savedParts('disabled', 0)]
+    : [savedParts('one', 1), savedParts('three', 3), savedParts('tie', 1), savedParts('disabled', 2),
+      { property: 'legacy', provider: 'custom-handler', configuration: {} }] }))
+  const { panel, unmount } = mountPanel(reactive({ presentation: 'detail', scope: { productId: 'p1', deviceId: 'd1' },
+    properties: ['one', 'three', 'tie', 'disabled', 'legacy', 'none'].map(id => ({ id })) }))
+  try {
+    await settle()
+    assert.deepEqual(panel.groups.value[0].rows.map(row => row.id), ['three', 'one', 'tie', 'legacy'])
+    assert.equal(panel.configuredCount.value, 4)
+    assert.equal(panel.unconfiguredCount.value, 2)
+    assert.deepEqual(panel.unconfiguredRows.value.map(row => [row.id, row.source]), [['disabled', 'disabled'], ['none', 'none']])
+    assert.equal(panel.propertyRows.value.find(row => row.id === 'disabled')?.rule.nodes.sampling, undefined, 'empty override never falls back to product rules')
+    panel.draftIds.value = ['disabled']
+    assert.ok(panel.rows.value.some(row => row.id === 'disabled'), 'an external refresh cannot hide a dirty card')
+    assert.ok(!panel.unconfiguredRows.value.some(row => row.id === 'disabled'), 'a retained draft cannot be added twice')
+  } finally { unmount() }
+})
+
+test('detail additions reveal their group first, support cancellation and retain saved chunk boundaries', async () => {
+  ruleRoute.query = {}
+  setAlarmRequestHandler(async () => ({ result: Array.from({ length: 35 }, (_, index) => savedParts(`p${index}`, 1)) }))
+  const input = reactive({ presentation: 'detail' as const, scope: { productId: 'p1', canUpdate: true }, properties: [
+    ...Array.from({ length: 35 }, (_, index) => ({ id: `p${index}`, expands: { groupId: 'a' } })),
+    { id: 'blank', expands: { groupId: 'b' } }, { id: 'other', expands: { groupId: 'b' } },
+  ] })
+  const { panel, unmount } = mountPanel(input)
+  try {
+    await settle()
+    assert.equal(panel.groups.value[0].visibleRows.length, 30)
+    panel.showMore('id:a')
+    assert.equal(panel.groups.value[0].visibleRows.length, 35)
+    panel.keyword.value = 'p3'
+    await panel.addProperty('blank')
+    assert.equal(panel.keyword.value, '')
+    assert.deepEqual(panel.expandedGroups.value, ['id:b'])
+    assert.deepEqual(panel.groups.value[1].visibleRows.map(row => row.id), ['blank'])
+    await panel.addProperty('blank')
+    assert.deepEqual(panel.addedIds.value, ['blank'], 'duplicate selection is ignored')
+    await panel.addProperty('other')
+    assert.deepEqual(panel.groups.value[1].rows.map(row => row.id), ['other', 'blank'])
+    panel.finishAdding('other')
+    assert.ok(panel.unconfiguredRows.value.some(row => row.id === 'other'))
+    input.scope.canUpdate = false
+    await panel.addProperty('other')
+    assert.deepEqual(panel.addedIds.value, ['blank'], 'read-only users cannot add cards')
+    input.scope.productId = 'p2'
+    await settle()
+    assert.deepEqual(panel.addedIds.value, [], 'owner changes clear temporary additions')
+  } finally { unmount() }
+})
+
+test('detail empty deep links stay reachable without resurrecting cancelled cards on refresh', async () => {
+  ruleRoute.query = { ruleProperty: 'blank' }
+  setAlarmRequestHandler(async () => ({ result: [savedParts('saved', 1)] }))
+  const { panel, unmount } = mountPanel(reactive({ presentation: 'detail', scope: { productId: 'p1', canUpdate: false },
+    properties: [{ id: 'saved', expands: { groupId: 'a' } }, { id: 'blank', expands: { groupId: 'b' } }] }))
+  try {
+    await settle()
+    assert.deepEqual(panel.expandedGroups.value, ['id:b'])
+    assert.equal(panel.groups.value[1].visibleRows[0].id, 'blank')
+    panel.finishAdding('blank')
+    await panel.load()
+    await settle()
+    assert.ok(!panel.rows.value.some(row => row.id === 'blank'))
+    ruleRoute.query = {}
+    await settle()
+    ruleRoute.query = { ruleProperty: 'blank' }
+    await settle()
+    assert.deepEqual(panel.expandedGroups.value, ['id:b'], 'a later explicit link can reveal the same property again')
+  } finally { unmount(); ruleRoute.query = {} }
+})
+
+test('detail cards stay pinned while editing and after failure, then rank by saved parts and disappear after clearing', async () => {
+  Object.defineProperty(globalThis, 'window', { configurable: true, value: { addEventListener() {}, removeEventListener() {} } })
+  ruleRoute.query = {}
+  const saved = new Map(['many', 'few', 'tie'].map((id, index) => [id, savedParts(id, index === 0 ? 3 : 1)]))
+  let failWrite = false
+  let writes = 0
+  setAlarmRequestHandler(async (url, body) => {
+    const property = decodeURIComponent(url.split('/').pop()!)
+    if (body.method === 'PUT') {
+      writes++
+      if (failWrite) throw new Error('Write failed')
+      const { method, ...raw } = body
+      saved.set(property, { ...raw, property } as unknown as ThingPropertyPreprocess)
+    }
+    if (body.method === 'DELETE') saved.delete(property)
+    return { result: url.includes('/p1/property/_list') ? [] : [...saved.values()] }
+  })
+  const mounted = mountState(() => {
+    const panel = usePropertyRules(reactive({ presentation: 'detail', scope: { productId: 'p1', deviceId: 'd1' },
+      properties: ['few', 'many', 'new', 'tie'].map(id => ({ id, valueType: { type: 'double' } })) }))
+    const cards = usePropertyRuleCards(reactive({ scope: { productId: 'p1', deviceId: 'd1' }, rows: panel.propertyRows,
+      visibleRows: computed(() => panel.groups.value[0]?.visibleRows ?? []), loading: panel.loading,
+    }), async id => { await panel.load(); if (!panel.failed.value) panel.finishAdding(id) })
+    watch(() => [...cards.editors].filter(([, entry]) => entry.editor.pendingSave || entry.editor.saving).map(([id]) => id), ids => { panel.draftIds.value = ids })
+    return { panel, cards }
+  })
+  const { panel, cards } = mounted.state
+  try {
+    await settle()
+    await panel.addProperty('new')
+    await settle()
+    const editor = cards.editors.get('new')!.editor
+    editor.addPart('scale')
+    editor.addPart('sampling')
+    assert.deepEqual(panel.groups.value[0].rows.map(row => row.id), ['new', 'many', 'few', 'tie'])
+    failWrite = true
+    await editor.save()
+    assert.equal(editor.saveState, 'error')
+    assert.deepEqual(panel.addedIds.value, ['new'])
+    failWrite = false
+    await editor.save()
+    await settle()
+    assert.equal(writes, 2)
+    assert.equal(editor.pendingSave, false)
+    assert.deepEqual(panel.addedIds.value, [])
+    assert.deepEqual(panel.groups.value[0].rows.map(row => row.id), ['many', 'new', 'few', 'tie'])
+    editor.clear()
+    assert.ok(panel.rows.value.some(row => row.id === 'new'), 'clearing a draft does not hide it before save')
+    await editor.save()
+    await settle()
+    assert.ok(!panel.rows.value.some(row => row.id === 'new'))
+    assert.ok(panel.unconfiguredRows.value.some(row => row.id === 'new'))
+    assert.equal(saved.get('new')?.provider, 'composite', 'device clear persists an empty override rather than deleting it')
+  } finally { mounted.unmount(); Reflect.deleteProperty(globalThis, 'window') }
+})
 function mountCards() {
   Object.defineProperty(globalThis, 'window', { configurable: true, value: { addEventListener() {}, removeEventListener() {} } })
   const input = reactive({ scope: { productId: 'p1', deviceId: 'd1' } as RuleScope, rows: cardRows(), visible: ['temperature', 'humidity'], loading: false })

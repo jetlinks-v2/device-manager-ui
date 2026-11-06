@@ -13,11 +13,37 @@ function harness(ids = ['a']) {
   return { ...h, view, nodes, enabled, identity, interval, discovery, permitted, scope, summarize: module.summarizeBufferQueues,
     push: (node, value, time) => h.collection.push(node, pattern, value, time) }
 }
+
+test('new nodes switch away from Monitor and large histories while old nodes keep the compatibility projection', () => {
+  const h = harness(['new', 'old'])
+  const now = 10000, values = raw()
+  const bean = values['org.jetlinks'].PersistenceBuffer.queue
+  bean.ObservationSnapshot = { StartTime: 1, StatisticsStartTime: 1, SampleTime: now, ReadTime: now + 1,
+    Generation: 1, WindowMillis: 1000, RowsEnabled: true, ZoneId: 'Asia/Shanghai', TodayStartTime: 1,
+    Written: '20', Attempted: '10', Values: { row: { Metric: 'InRowsRate', Value: 100, Time: now } }, TodayPeaks: {} }
+  bean['@attributes'].push({ name: 'ObservationSnapshot', available: true, readable: true, type: 'javax.management.openmbean.CompositeData' })
+  try {
+    h.push('new', values, now)
+    assert.deepEqual(h.collection.entries[0].demand.nodeIds, ['old'])
+    assert.deepEqual(h.collection.entries[1].demand.nodeIds, ['new'])
+    assert.equal(h.collection.entries[1].demand.attributes.includes('Monitor'), false)
+    assert.equal(h.collection.entries[1].demand.attributes.some(name => /History/.test(name)), false)
+    assert.equal(h.view.snapshots.value.get('new').history.at(-1).buffers[0].observation.values.InRowsRate, 100)
+    assert.equal(h.view.snapshots.value.get('new').history.at(-1).buffers[0].observation.todayPeaks, undefined)
+    h.view.beginReset('new', bean['@objectName']).finish(true)
+    assert.deepEqual(h.collection.entries[1].demand.nodeIds, ['new'])
+    h.push('new', raw(), now + 1000)
+    assert.deepEqual(h.collection.entries[1].demand.nodeIds, [])
+    assert.deepEqual(h.collection.entries[0].demand.nodeIds, ['new', 'old'])
+    h.push('old', raw(2), now)
+    assert.equal(h.view.snapshots.value.get('old').pending, 2)
+  } finally { h.scope.stop() }
+})
 test('Buffer declares exact lightweight attributes and never creates a local sampling timer', t => {
   t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 1000 })
   const h = harness(['a', 'b'])
   try {
-    assert.deepEqual(h.collection.entries[0].demand.attributes, ['Remainder', 'DeadSize', 'Monitor', 'WriterPending', 'Wip'])
+    assert.deepEqual(h.collection.entries[0].demand.attributes, ['Remainder', 'DeadSize', 'Monitor', 'WriterPending', 'Wip', 'ObservationSnapshot'])
     assert.deepEqual(h.collection.entries[0].demand.nodeIds, ['a', 'b'])
     h.push('a', raw()); t.mock.timers.tick(60000)
     assert.equal(h.view.snapshots.value.get('a').history.length, 1, 'only delivered backend samples advance history')

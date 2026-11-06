@@ -29,6 +29,17 @@ function loader(api = {}, collection) {
   return load
 }
 const pure = loader()(resolve(root, 'views/link/RuntimeMonitor/device-runtime/deviceMessageRecording.ts'))
+
+test('current summary shares completed-second values with charts and ignores a focused historical peak', () => {
+  const history = [{ timestamp: 1000, startTime: '1', counters: { upstreamMessages: '10' } }, { timestamp: 3000, startTime: '1', counters: { upstreamMessages: '16' } }]
+  assert.equal(pure.latestDeviceRuntimeRates(history).upstreamMessages, 3)
+  const data = { points: [{ timestamp: 4000, values: { UpstreamMessages: 0, PropertyReports: 0, PropertyValues: 0, EventReports: 0, ReceivedBytes: 0, SentBytes: 0 } }] }
+  const view = { data, points: [{ timestamp: 2000, values: { UpstreamMessages: 100 } }], focus: { peak: { timestamp: 2000 } }, state: 'ready' }
+  assert.equal(pure.latestDeviceRuntimeRates(history, view).upstreamMessages, 0)
+  assert.equal(pure.latestDeviceRuntimeRates(history, view).timestamp, 4000)
+  assert.equal(pure.latestDeviceRuntimeRates(history, { ...view, data: { points: [] } }), undefined)
+  assert.equal(pure.latestDeviceRuntimeRates(history.slice(0, 1)).upstreamMessages, undefined)
+})
 function bean({ generation = 42, peakSequence = 30, hour = false, empty = false } = {}) {
   const point = sequence => ({ Sequence: sequence, Time: epoch + (sequence + 1) * 1000, ReceivedPackets: sequence === peakSequence ? 20 : 0, SentPackets: 0, UpstreamMessages: 1, PropertyReports: 1, PropertyValues: 8, EventReports: 0, ReceivedBytes: 128, SentBytes: 0 })
   const summary = { StartTime: generation, StatisticsStartTime: epoch, SampleTime: epoch + 60000, WindowMillis: 1000, FirstSequence: 0, EndSequence: 60, ZoneId: 'Asia/Shanghai', TodayStartTime: epoch - 3600000, HourPeaks: { arbitrary: { Metric: 'Communication', Value: 20, Time: epoch + (peakSequence + 1) * 1000, Sequence: peakSequence } }, TodayPeaks: {} }

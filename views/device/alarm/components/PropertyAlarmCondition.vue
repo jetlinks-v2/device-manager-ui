@@ -1,6 +1,6 @@
 <template>
   <span class="property-alarm-condition" :class="{ 'is-form': layout === 'form' }">
-    <a-select :value="model.trigger" :size="controlSize" :bordered="layout === 'form'" :dropdown-match-select-width="288" :list-height="360" :virtual="false" dropdown-class-name="alarm-condition-menu" :aria-label="$t(recovery ? 'DeviceAlarm.condition.recovery.condition' : 'DeviceAlarm.form.trigger')" :options="operators" @update:value="changeOperator">
+    <a-select class="condition-operator" :value="model.trigger" :size="controlSize" :bordered="layout === 'form'" :dropdown-match-select-width="288" :list-height="360" :virtual="false" dropdown-class-name="alarm-condition-menu" :aria-label="$t(recovery ? 'DeviceAlarm.condition.recovery.condition' : 'DeviceAlarm.form.trigger')" :options="operators" @update:value="changeOperator">
       <template #option="option"><RuleMenuOption compact :icon="option.icon || 'CalculatorOutlined'" :title="$t(`DeviceAlarm.condition.label.${option.value}`)" :description="$t(`DeviceAlarm.condition.hint.${option.value}`)"><template v-if="!option.icon" #icon><span>{{ option.symbol }}</span></template></RuleMenuOption></template>
     </a-select>
     <template v-if="model.trigger === 'inside' || model.trigger === 'outside'">
@@ -22,7 +22,7 @@ import { isNumberProperty, formatPropertyUnit } from '../utils'
 import ValueInput from '../../components/PropertyRules/values/ValueInput.vue'
 import ValueSetInput from '../../components/PropertyRules/values/ValueSetInput.vue'
 import RuleMenuOption from '../../components/PropertyRules/RuleMenuOption.vue'
-const props = defineProps<{ model: DeviceAlarmCondition; property: ThingModelProperty; recovery?: boolean; layout?: 'inline' | 'form' }>()
+const props = defineProps<{ model: DeviceAlarmCondition; property: ThingModelProperty; recovery?: boolean; layout?: 'inline' | 'form' | 'detail' }>()
 const { t: $t } = useI18n()
 const controlSize = computed(() => props.layout === 'form' ? 'middle' : 'small')
 const type = computed(() => props.property.valueType?.type ?? props.property.type ?? props.property.dataType)
@@ -30,7 +30,7 @@ const numeric = computed(() => isNumberProperty(props.property))
 const unit = computed(() => formatPropertyUnit(props.property.valueType?.unit))
 const operators = computed(() => conditionOperators(props.property).map(value => ({ value,
   icon: ({ inside: 'CompressOutlined', outside: 'ExpandOutlined', in: 'CheckSquareOutlined', nin: 'StopOutlined' } as Partial<Record<DeviceAlarmTrigger, string>>)[value],
-  label: props.layout === 'form' ? $t(`DeviceAlarm.condition.label.${value}`)
+  label: props.layout === 'form' || props.layout === 'detail' ? $t(`DeviceAlarm.condition.label.${value}`)
     : ['inside', 'outside', 'in', 'nin'].includes(value) ? $t(`DeviceAlarm.condition.${value}`) : conditionSymbols[value],
   symbol: conditionSymbols[value],
 })))

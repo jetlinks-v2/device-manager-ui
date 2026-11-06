@@ -8,6 +8,14 @@
 
 接口定义位于 `api/product.ts` 与 `api/link/type.ts`，对应后端 `/device/product/resource-package` 的解析、导入和导出接口。解析和导入均提交原始 ZIP，前端仅在当前向导会话内保留 `File`，不会依赖文件服务生成的资源包 ID。用户可见文案统一使用 `Product.resourcePackage.*` 的中英文语言包；资源包导出复用 `device/Product:export` 权限，资源包导入使用独立的 `device/Product:resource-package-import` 按钮权限，并在菜单配置中映射到后端 `device-product:resource-package-import` 动作。
 
+### 普通角色导入权限
+
+- 目标与范围：在 `baseMenu.json` 的 `device/Product:resource-package-import` 按钮关联 `device-product`、`device-category`、`protocol-supports`、`plugin-driver`、`network-config`、`certificate`、`device-gateway` 的 `save`，保留本地资源查询权限。仅调整运行时导入按钮，不扩大父菜单或其他按钮的功能授权。
+- 实施边界：后端资源包保存检查与标准 CRUD 新增语义一致，允许真正不存在的新资产通过存在性检查；保留功能权限、已有资产数据范围及本地引用读取权限校验。权限实现与验证见 `modules/device-manager/doc/product-resource-package.md`。
+- 生效要求：更新前后端后同步运行时菜单，重新保存角色的导入按钮授权，并刷新登录态；既有角色不会仅因初始化文件变更立即获得权限。
+- 验证：Node 22 执行 `node --test tests/resourcePackageMenuPermissions.test.mjs`，真实 `baseMenu.ts` 初始化后的菜单权限回归 2/2 通过；在 `runtime-ui/jetlinks-web-core` 直接运行 `node ../node_modules/vite/bin/vite.js build --outDir /tmp/resource-package-permission-build -- --module-name device-manager-ui`，生产构建通过（10,868 个模块），生成的 `dist/baseMenu.json` 与源码一致，构建入口非空。构建仍报告资源路径、循环分块、输出选项和大包告警；`git diff --check` 通过。
+- 验证限制：在 `runtime-ui` 执行 `node node_modules/vue-tsc/bin/vue-tsc.js --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json` 未通过，报告 1,841 处未修改代码的 TS 错误，例如 `jetlinks-web-core/src/api/account/center.ts` 的 TS2347、`visDashboard/SystemMonitor/hooks/useNetworkTrend.ts` 的 TS2339 和三方依赖 JSX 声明错误；未报告 `baseMenu` 错误。工作区和模块无独立 lint 脚本。完整普通角色 ZIP 导入仍需在部署后的联调环境回归。
+
 ## 列表空态新增与搜索提示
 
 - 当前行为：`runtime-ui` 产品列表通过公共 `useEmptyCreateState` 读取已提交筛选与分类状态。没有搜索时，在原空态下展示与工具栏一致的新增按钮；有搜索时隐藏空态新增，使用 core 公共词条 `components.CloudEmpty.searchEmpty`，传入 `name: $t('Product.index.660348-15')`，显示“未找到匹配的产品”。

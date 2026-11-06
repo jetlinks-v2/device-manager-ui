@@ -14,7 +14,7 @@ test('private list scope equals overview counting scope and does not share mutab
  terms[0].value='mutated';assert.notEqual(mod.exports.getIotDeviceScopeTerms()[0].value,'mutated')
 })
 
-test('unified hook scopes explicit device in both editions and preserves all and gateway', async () => {
+test('legacy device links resolve to all in both editions and preserve gateway', async () => {
  const vue=require('vue'), {transformSync}=require('esbuild'), fs=require('fs')
  const filename=path.join(root,'views/device/list/unified/useUnifiedDeviceList.ts')
  const code=transformSync(fs.readFileSync(filename,'utf8'),{loader:'ts',format:'cjs'}).code
@@ -27,6 +27,7 @@ test('unified hook scopes explicit device in both editions and preserves all and
    '@jetlinks-web-core/utils/module-registry':{moduleRegistry:{getAllModuleIds:()=>['edge'],getResource:()=>({gateway:{id:'gateway',menuCode:'gateway',order:20,label:()=> 'gateway',terms:()=>[{column:'gateway'}]}})}},
    '../../../../api/device':{countDevice_api:async (_q,terms)=>{seen.push(terms);return 0},queryDevicePage_api:async (_q,terms)=>{seen.push(terms);return {data:[],total:0}}},
    '../../../../api/device-library':{queryDeviceLibraryProductFilterOptions_api:async()=>[]},'../../../../api/deviceGroup':{queryRuntimeDevices_api:async()=>({data:[]})},
+   '../hooks/useSupportedDeviceListProviders':{useSupportedDeviceListProviders:providers=>providers},
    '../hooks/useIotDeviceRouting':{isIotDeviceListEntry:()=>false,getIotDeviceListMenuCode:()=> 'iot-user-device-list',resolveIotProjectId:()=>'',buildIotDeviceDetailPath:()=>''},
    '../../../../deviceListProvider':{getIotDeviceScopeTerms:modScope},
    '../../../../deviceScope':{useDeviceScope:(base)=>({terms:vue.computed(()=>[]),scopeType:vue.ref('space'),scopeId:vue.ref(''),sidebarProps:vue.ref({areas:[],groups:[]}),ensureReady:async()=>{}})},
@@ -39,11 +40,11 @@ test('unified hook scopes explicit device in both editions and preserves all and
  function modScope(){return mod.exports.getIotDeviceScopeTerms()}
  const oldWarn=console.warn;console.warn=()=>{}
  try {
-  for(const [privateMode,type,expected] of [[true,'device','device'],[true,undefined,'all'],[false,'device','device'],[false,undefined,'all'],[false,'all','all'],[false,'gateway','gateway']]){
+  for(const [privateMode,type,expected] of [[true,'device','all'],[true,undefined,'all'],[false,'device','all'],[false,undefined,'all'],[false,'all','all'],[false,'gateway','gateway']]){
    const h=run(privateMode,type);await vue.nextTick();await new Promise(r=>setImmediate(r))
    assert.equal(h.view.activeType.value,expected)
    assert.equal(h.view.tabs.value.some(tab=>tab.key==='device'),expected==='device')
-   const terms=expected==='device'?modScope():expected==='gateway'?[{column:'gateway'}]:[]
+   const terms=expected==='gateway'?[{column:'gateway'}]:[]
    assert.deepEqual(h.view.baseTerms.value,terms)
    assert.ok(h.seen.some(value=>JSON.stringify(value??[])===JSON.stringify(terms)))
    h.scope.stop()

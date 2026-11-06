@@ -1,11 +1,12 @@
 <template>
   <div
     class="device-map-card"
+    :class="{ 'device-map-card--embedded': config.embedded }"
     :style="style"
   >
-    <SectionHeader :title="title">
+    <SectionHeader v-if="!config.embedded" :title="title">
       <template #extra>
-        <div v-if="distribution" class="device-map-legend">
+        <div v-if="distribution || config.showStatus" class="device-map-legend">
           <span v-for="state in legendStates" :key="state">
             <i :style="{ background: distributionColors[state] }" />
             {{ t(`components.DeviceMap.${state === 'unknown' ? 'unknownState' : state}`) }}
@@ -14,6 +15,9 @@
       </template>
     </SectionHeader>
     <div class="device-map-card__body">
+      <div v-if="config.embedded && (distribution || config.showStatus)" class="device-map-legend device-map-legend--embedded">
+        <span v-for="state in legendStates" :key="state"><i :style="{ background: distributionColors[state] }" />{{ t(`components.DeviceMap.${state === 'unknown' ? 'unknownState' : state}`) }}</span>
+      </div>
       <a-spin
         :spinning="loading"
         :tip="t('components.DeviceMap.loading')"
@@ -136,9 +140,14 @@ const title = computed(() =>
   min-height: 320px;
 }
 
+/* 嵌入宿主卡片时只提供地图内容，保持其他独立消费者的默认外观。 */
+.device-map-card--embedded { padding: 0; background: transparent; }
+.device-map-card--embedded .device-map-card__body { min-height: 0; }
+
 .device-map-legend { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px 12px; font-size: 12px; color: var(--ant-color-text-secondary, #64748b); }
 .device-map-legend > span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .device-map-legend i { width: 7px; height: 7px; border-radius: 50%; }
+.device-map-legend--embedded { position: absolute; z-index: 300; top: 8px; right: 8px; padding: 4px 8px; border-radius: 4px; background: var(--ant-color-bg-container, #fff); pointer-events: none; }
 
 /* Spin 的满高样式绑定外层容器，避免内容高度随转圈结束归零。 */
 .device-map-card__spin,
@@ -208,4 +217,5 @@ const title = computed(() =>
     -webkit-line-clamp: 1;
   }
 }
+.device-dashboard-marker-dot { display: block; width: 14px; height: 14px; border: 2px solid #fff; border-radius: 50%; box-sizing: border-box; box-shadow: 0 1px 4px rgb(0 0 0 / 25%); }
 </style>

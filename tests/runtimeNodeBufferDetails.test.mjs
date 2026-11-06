@@ -50,6 +50,16 @@ const dispatch = (handlers, event) => { for (const handler of Array.isArray(hand
 const render = props => renderToString(register(vue.createSSRApp(NodeBufferDetails, props)))
 const renderSummary = props => renderToString(register(vue.createSSRApp(NodeSummary, props)))
 
+test('node row rates retain the server window rather than the page refresh interval', () => {
+  const values = { generation: '1:1', fresh: true, sampledAt: 9000, windowMillis: 1000,
+    values: { WrittenRate: 100, AttemptedRate: 200, InRowsRate: 1000, OutRowsRate: 800 } }
+  const history = [sample(100000, queue('q', 3, 0, '10', '8', { observation: values }))]
+  const model = nodeBufferOverview(snapshot(history))
+  assert.equal(model.inRowsRate, 1000)
+  assert.equal(model.outRowsRate, 800)
+  assert.deepEqual(model.window, { from: 8000, to: 9000, seconds: 1 })
+})
+
 test('uses exact adjacent counters and actual interval even with zero backlog', () => {
   const history = [sample(1000, queue('q', 0, 0, '9007199254740993', '80')), sample(3500, queue('q', 0, 0, '9007199254741003', '85'))]
   const model = nodeBufferOverview(snapshot(history))
@@ -187,7 +197,7 @@ test('sidebar session preview shows verified zero and stale counts without inven
   assert.match(source, /:trigger="\['hover', 'focus'\]"/)
   const overview = readFileSync(resolve(host, 'views/link/diagnostics/NodeOverview.vue'), 'utf8')
   assert.match(overview, /@refresh="refreshOverview"/)
-  assert.match(overview, /function refreshOverview\(\) \{ view\.refresh\(\) \}/)
+  assert.match(overview, /function refreshOverview\(\) \{ view\.refresh\(\); void extensions\.refresh\(\) \}/)
   assert.doesNotMatch(overview, /sessionContext\?\.refresh/)
 })
 
