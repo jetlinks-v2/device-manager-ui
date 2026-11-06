@@ -1,19 +1,25 @@
 <template>
-  <section v-if="session || communication?.supported === true" class="device-runtime-trend" :aria-label="t('RuntimeMonitor.deviceRuntime')">
+  <section v-if="session || communication?.supported === true" class="device-runtime-trend" :class="{ 'device-runtime-trend--compact': compact }" :aria-label="t('RuntimeMonitor.deviceRuntime')">
     <header class="device-runtime-heading">
-      <div class="device-runtime-title"><strong>{{ t('RuntimeMonitor.deviceRuntime') }}</strong><a-tooltip :title="t(recording?.data ? 'RuntimeMonitor.deviceRuntimeRecordedHelp' : 'RuntimeMonitor.deviceRuntimeHelp')" :trigger="['hover', 'focus']"><InfoCircleOutlined tabindex="0" :aria-label="t(recording?.data ? 'RuntimeMonitor.deviceRuntimeRecordedHelp' : 'RuntimeMonitor.deviceRuntimeHelp')" /></a-tooltip></div>
+      <div class="device-runtime-title"><strong>{{ t(compact ? 'RuntimeMonitor.deviceCommunication' : 'RuntimeMonitor.deviceRuntime') }}</strong><a-tooltip :title="t(recording?.data ? 'RuntimeMonitor.deviceRuntimeRecordedHelp' : 'RuntimeMonitor.deviceRuntimeHelp')" :trigger="['hover', 'focus']"><InfoCircleOutlined tabindex="0" :aria-label="t(recording?.data ? 'RuntimeMonitor.deviceRuntimeRecordedHelp' : 'RuntimeMonitor.deviceRuntimeHelp')" /></a-tooltip></div>
       <component v-if="sessionValue !== undefined" :is="session?.details ? AButton : 'span'" :type="session?.details ? 'link' : undefined" class="device-runtime-session" :class="{ 'device-runtime-retained': sessionRetained, 'device-runtime-reading--action': !!session?.details }" :title="[t('RuntimeMonitor.deviceRuntimeSessions'), observed(session?.state.sampledAt), session?.details ? t('RuntimeMonitor.overviewViewConnections') : undefined].filter(Boolean).join(' · ')" @click="session?.details && emit('details', session.details)"><span class="device-runtime-reading"><LinkOutlined aria-hidden="true" /><span>{{ t('RuntimeMonitor.deviceRuntimeSessionsShort') }}</span><b>{{ exact(sessionValue) }}</b><small v-if="sessionRetained">{{ t('RuntimeMonitor.deviceRuntimeStale') }}</small></span></component>
-      <template v-if="communication?.supported === true">
+      <template v-if="!compact && communication?.supported === true">
         <a-tooltip v-if="qps.supported" :title="qpsDescription" :trigger="['hover', 'focus']"><span class="device-runtime-reading" :class="{ 'device-runtime-retained': qps.stale || realtimeRetained }" tabindex="0" :aria-label="qpsDescription"><ApiOutlined aria-hidden="true" /><span>{{ t('RuntimeMonitor.deviceRuntimeCommunication') }}</span><b>{{ rate(qps.values?.communicationQps) }}</b><small v-if="qps.values?.communicationQps !== undefined">{{ t('RuntimeMonitor.deviceRuntimeQpsUnit') }}</small><small v-else>{{ t(qps.invalid ? 'RuntimeMonitor.deviceRuntimeQpsUnavailable' : 'RuntimeMonitor.deviceRuntimeQpsWaiting') }}</small><small v-if="qps.stale">{{ t('RuntimeMonitor.deviceRuntimeStale') }}</small></span></a-tooltip>
         <span class="device-runtime-reading" :class="{ 'device-runtime-retained': communicationRetained }" :title="[t('RuntimeMonitor.deviceRuntimeUpstream'), observed(communication.state.sampledAt)].join(' · ')"><UploadOutlined aria-hidden="true" /><span>{{ t('RuntimeMonitor.deviceRuntimeUpstreamShort') }}</span><b>{{ rate(latest?.upstreamMessages) }}</b><small v-if="latest?.upstreamMessages !== undefined">{{ t('RuntimeMonitor.deviceRuntimeMessagesUnit') }}</small></span>
         <small v-if="communicationRetained">{{ t('RuntimeMonitor.deviceRuntimeStale') }}</small>
         <small v-else-if="waitingRate">{{ t('RuntimeMonitor.deviceRuntimeWaitingRate') }}</small>
       </template>
-      <DeviceRuntimePeaks v-if="recording" :view="recording" @retry="emit('retry-recording')" @select="selectPeak" @live="emit('live')" />
+      <DeviceRuntimePeaks v-if="!compact && recording" :view="recording" @retry="emit('retry-recording')" @select="selectPeak" @live="emit('live')" />
+      <span v-if="compact" class="device-runtime-detail-actions"><small>{{ recording?.focus ? t('RuntimeMonitor.devicePeakFocused', { metric: t(`RuntimeMonitor.devicePeakMetric.${recording.focus.peak.metric}`) }) : t('runtimeDiagnostics.sampleCoverageSeconds', { seconds: overviewSeconds }) }}</small><a-button type="link" size="small" @click="detailsOpen = true">{{ t('RuntimeMonitor.deviceObservationDetails') }}</a-button></span>
     </header>
-    <div class="device-runtime-chart"><Echarts :option="option" :data-option="dataOption" defer-offscreen :library="library" :events="events" renderer="svg" /><div v-if="!hasVisibleValues" class="device-runtime-empty"><span>{{ t(emptyMessage) }}</span><a-button v-if="!hasSelectedSeries" type="link" size="small" @click="restoreDefaults">{{ t('RuntimeMonitor.deviceRuntimeRestoreSeries') }}</a-button></div></div>
-    <div class="device-runtime-axes"><span v-if="sessionAxisVisible">{{ t('RuntimeMonitor.deviceRuntimeLeftAxis', { metrics: axisMetric(label('sessions'), t('RuntimeMonitor.deviceRuntimeRecordsUnit')) }) }}</span><span v-if="messageAxisVisible">{{ t('RuntimeMonitor.deviceRuntimeRightAxis', { metrics: rateAxisDescription }) }}</span><span v-if="trafficAxisVisible">{{ t(messageAxisVisible ? 'RuntimeMonitor.deviceRuntimeOuterAxis' : 'RuntimeMonitor.deviceRuntimeRightAxis', { metrics: axisMetric(t('RuntimeMonitor.deviceRuntimeTraffic'), 'B/s') }) }}</span></div>
-    <small v-if="incomparableClocks" class="device-runtime-clock-note">{{ t('RuntimeMonitor.deviceRuntimeClockMismatch') }}</small>
+    <!-- 概览使用本图指标提示；旧节点仅有会话曲线，保留原格式以准确展示长整数。 -->
+    <HistoryMetricCharts v-if="compact" :charts="overviewCharts" compact :tooltip-formatter="communication?.supported === true ? undefined : tooltip" />
+    <template v-else>
+      <div class="device-runtime-chart"><Echarts :option="option" :data-option="dataOption" defer-offscreen :library="library" :events="events" renderer="svg" /><div v-if="!hasVisibleValues" class="device-runtime-empty"><span>{{ t(emptyMessage) }}</span><a-button v-if="!hasSelectedSeries" type="link" size="small" @click="restoreDefaults">{{ t('RuntimeMonitor.deviceRuntimeRestoreSeries') }}</a-button></div></div>
+      <div class="device-runtime-axes"><span v-if="sessionAxisVisible">{{ t('RuntimeMonitor.deviceRuntimeLeftAxis', { metrics: axisMetric(label('sessions'), t('RuntimeMonitor.deviceRuntimeRecordsUnit')) }) }}</span><span v-if="messageAxisVisible">{{ t('RuntimeMonitor.deviceRuntimeRightAxis', { metrics: rateAxisDescription }) }}</span><span v-if="trafficAxisVisible">{{ t(messageAxisVisible ? 'RuntimeMonitor.deviceRuntimeOuterAxis' : 'RuntimeMonitor.deviceRuntimeRightAxis', { metrics: axisMetric(t('RuntimeMonitor.deviceRuntimeTraffic'), 'B/s') }) }}</span></div>
+      <small v-if="incomparableClocks" class="device-runtime-clock-note">{{ t('RuntimeMonitor.deviceRuntimeClockMismatch') }}</small>
+    </template>
+    <small v-if="compact && communicationRetained && (recording?.data?.sampledAt ?? communication?.state.sampledAt) !== undefined" class="device-runtime-clock-note">{{ t('RuntimeMonitor.deviceRuntimeStale') }} · {{ observed(recording?.data ? recording.data.sampledAt : communication?.state.sampledAt) }}</small>
     <small v-if="recording?.outside" class="device-runtime-clock-note">{{ t('RuntimeMonitor.devicePeakOutside') }}</small>
     <div v-if="session && cache" class="device-runtime-cache" :class="{ 'device-runtime-retained': cache.state.status === 'stale' }">
       <DatabaseOutlined aria-hidden="true" />
@@ -23,31 +29,38 @@
       <a-tooltip :trigger="['hover', 'focus']" :overlay-style="{ maxWidth: 'min(360px, calc(100vw - 24px))' }"><template #title><div>{{ t('RuntimeMonitor.deviceRuntimeCacheHelp') }}</div><div v-for="fact in cache.facts" :key="fact.label">{{ t(fact.label) }}：{{ fact.value }}</div><div>{{ observed(cache.state.sampledAt) }}</div></template><InfoCircleOutlined tabindex="0" :aria-label="cacheDescription" /></a-tooltip>
       <small v-if="cache.state.status === 'stale'">{{ t('RuntimeMonitor.deviceRuntimeStale') }}</small>
     </div>
+    <a-modal v-if="compact" v-model:open="detailsOpen" :title="t('RuntimeMonitor.deviceObservationDetails')" :footer="null" :width="1000" :style="{ maxWidth: 'calc(100vw - 32px)' }" destroy-on-close>
+      <DeviceRuntimeTrend v-if="detailsOpen" :session="session" :cache="cache" :communication="communication" :recording="recording" :config="config" @details="value => emit('details', value)" @configure="value => emit('configure', value)" @peak="value => emit('peak', value)" @live="emit('live')" @retry-recording="emit('retry-recording')" />
+    </a-modal>
   </section>
 </template>
 <script setup lang="ts">
-import { computed, type PropType } from 'vue'
+import { computed, ref, watch, type PropType } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Button as AButton, theme } from 'ant-design-vue'
 import { InfoCircleOutlined, LinkOutlined, UploadOutlined, DatabaseOutlined, ApiOutlined } from '@ant-design/icons-vue'
 import { LineChart } from 'echarts/charts'
 import { GridComponent, TooltipComponent, LegendComponent, DataZoomComponent, MarkLineComponent } from 'echarts/components'
 import Echarts from '@jetlinks-web-core/components/Echarts/Echarts.vue'
-import { deviceMessageRates, latestDeviceMessageRates, type NodeDeviceMessageSnapshot, type DeviceMessageRates } from '../../RuntimeMonitor/device-runtime/deviceMessageHistory'
+import { HistoryMetricCharts, type MetricChart } from '@jetlinks-web-core/components/RuntimeDiagnostics'
+import { deviceMessageRates, type NodeDeviceMessageSnapshot, type DeviceMessageRates } from '../../RuntimeMonitor/device-runtime/deviceMessageHistory'
 import { deviceQpsView } from '../../RuntimeMonitor/device-runtime/deviceQps'
 import type { DiagnosticNodePreference } from '../preferences'
 import type { OverviewTrend } from './useOverviewTrends'
 import DeviceRuntimePeaks from './DeviceRuntimePeaks.vue'
-import { peakSeries, recordingSeriesMetric, type DeviceRecordingView, type DevicePeakSelection } from '../../RuntimeMonitor/device-runtime/deviceMessageRecording'
+import { latestDeviceRuntimeRates, peakSeries, recordingSeriesMetric, type DeviceRecordingView, type DevicePeakSelection } from '../../RuntimeMonitor/device-runtime/deviceMessageRecording'
 
 const props = defineProps({
   session: { type: Object as PropType<OverviewTrend>, default: undefined }, cache: { type: Object as PropType<OverviewTrend>, default: undefined },
   communication: { type: Object as PropType<NodeDeviceMessageSnapshot>, default: undefined },
   recording: { type: Object as PropType<DeviceRecordingView>, default: undefined },
   config: { type: Object as PropType<DiagnosticNodePreference>, default: () => ({}) },
+  compact: { type: Boolean, default: false }, active: { type: Boolean, default: true },
 })
 const emit = defineEmits<{ details: [value: string]; configure: [value: Partial<DiagnosticNodePreference>]; peak: [selection: DevicePeakSelection]; live: []; 'retry-recording': [] }>()
 const { t, locale } = useI18n(), { token } = theme.useToken(), library = [LineChart, GridComponent, TooltipComponent, LegendComponent, DataZoomComponent, MarkLineComponent]
+const detailsOpen = ref(false)
+watch(() => props.active, value => { if (!value) detailsOpen.value = false })
 // Freshness/reading wrappers change independently of the plotted samples and interaction state.
 const recordedZone = computed(() => props.recording?.data?.zoneId)
 const recordedPoints = computed(() => props.recording?.data ? props.recording.points : undefined)
@@ -72,11 +85,7 @@ const rateAxisDescription = computed(() => [
 ].join(' · '))
 const history = computed(() => props.communication?.history ?? [])
 const qps = computed(() => deviceQpsView(history.value))
-const rates = computed(() => deviceMessageRates(history.value)), latest = computed(() => {
-  if (!props.recording?.data) return latestDeviceMessageRates(history.value)
-  const point = props.recording.data.points.at(-1)
-  return point ? { timestamp: point.timestamp, upstreamMessages: point.values.UpstreamMessages, propertyReports: point.values.PropertyReports, propertyValues: point.values.PropertyValues, eventReports: point.values.EventReports, receivedBytes: point.values.ReceivedBytes, sentBytes: point.values.SentBytes } : undefined
-})
+const rates = computed(() => deviceMessageRates(history.value)), latest = computed(() => latestDeviceRuntimeRates(history.value, props.recording))
 const sessionValue = computed(() => props.session?.history[props.session.history.length - 1]?.value ?? props.session?.retainedValue)
 const sessionRetained = computed(() => props.session?.state.status === 'stale' || props.session?.history.at(-1)?.value === undefined)
 const realtimeRetained = computed(() => props.communication?.state.status === 'stale' || history.value.at(-1)?.startTime === undefined)
@@ -119,6 +128,20 @@ const allPlots = computed(() => {
   for (const [id, metric] of Object.entries(recordingSeriesMetric)) result[id as Exclude<SeriesId, 'sessions'>] = points.map(point => ({ value: [point.timestamp, point.values[metric]], timestamp: point.timestamp, propertyValues: point.values.PropertyValues, receivedQps: point.values.ReceivedPackets, sentQps: point.values.SentPackets, windowMillis: 1000 }))
   result.sessions = result.sessions.filter(point => from !== undefined && to !== undefined && point.timestamp >= from && point.timestamp <= to)
   return result
+})
+/** 概览按单位拆图，复用同一份节点历史；详细图例偏好不改变概览的固定口径。 */
+const overviewCharts = computed<MetricChart[]>(() => {
+  const series = (id: SeriesId) => ({ key: id, label: label(id), color: seriesColors.value[seriesIds.indexOf(id)], samples: allPlots.value[id].map(point => ({ timestamp: point.timestamp, value: point.value[1] ?? undefined })) })
+  const formatTime = axisTime.value.format
+  if (props.communication?.supported !== true) return [{ key: 'sessions', label: label('sessions'), unit: t('RuntimeMonitor.deviceRuntimeRecordsUnit'), minInterval: 1, formatTime, series: [series('sessions')] }]
+  return [
+    { key: 'messages', label: t('RuntimeMonitor.deviceRuntimeMessages'), unit: t('RuntimeMonitor.deviceRuntimeMessagesUnit'), formatTime, series: [series('upstreamMessages'), series('propertyReports'), series('eventReports')] },
+    { key: 'communication', label: label('communicationQps'), unit: t('RuntimeMonitor.deviceRuntimeQpsUnit'), formatTime, series: (['receivedQps', 'sentQps'] as const).map((key, index) => ({ key, label: t(index ? 'RuntimeMonitor.deviceRuntimeSent' : 'RuntimeMonitor.deviceRuntimeReceived'), color: [token.value.colorPrimary, token.value.colorSuccess][index], samples: allPlots.value.communicationQps.map(point => ({ timestamp: point.timestamp, value: point.value[1] === null ? undefined : point[key] })) })) },
+  ]
+})
+const overviewSeconds = computed(() => {
+  const series = overviewCharts.value.flatMap(chart => chart.series).filter(series => series.samples.length)
+  return series.length ? Math.max(0, Math.round((Math.max(...series.map(series => series.samples.at(-1)!.timestamp)) - Math.min(...series.map(series => series.samples[0].timestamp))) / 1000)) : 0
 })
 function selectPeak(selection: DevicePeakSelection) {
   const id = peakSeries(selection.peak.metric)
@@ -222,17 +245,19 @@ const dataOption = computed(() => {
 .device-runtime-title { display:inline-flex; align-items:center; gap:6px; line-height:22px; }.device-runtime-title > strong { color:var(--ink-1); font-size:var(--fs-body,14px); font-weight:600; }.device-runtime-title > :deep(.anticon) { font-size:14px; }
 .device-runtime-reading { display:inline-flex; align-items:center; gap:6px; line-height:22px; white-space:nowrap; }.device-runtime-session { display:inline-flex; height:auto; padding:0; border:0; color:var(--ink-2); font-size:inherit; line-height:inherit; }.device-runtime-heading .device-runtime-reading--action b { color:var(--brand-5,#1677ff); }.device-runtime-reading > :deep(.anticon) { font-size:14px; }.device-runtime-reading b { color:var(--ink-1); font-size:var(--fs-16,16px); line-height:inherit; font-weight:600; font-variant-numeric:tabular-nums; }.device-runtime-heading small { font-size:var(--fs-12,12px); font-weight:400; }.device-runtime-retained { opacity:.65; }.device-runtime-chart { position:relative; height:240px; min-width:0; }.device-runtime-empty { position:absolute; inset:32px 20px 40px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; color:var(--ink-2); font-size:var(--fs-12,12px); pointer-events:none; }.device-runtime-empty :deep(.ant-btn) { height:auto; padding:0; font-size:inherit; pointer-events:auto; }
 .device-runtime-axes { display:flex; flex-wrap:wrap; gap:4px 16px; margin-top:6px; color:var(--ink-2); font-size:var(--fs-12,12px); line-height:20px; }
-.device-runtime-chart :deep(.device-runtime-tooltip) { min-width:220px; max-width:min(320px,calc(100vw - 48px)); max-height:300px; overflow:auto; white-space:normal; color:var(--ink-2); }
-.device-runtime-chart :deep(.device-runtime-tooltip-marker) { display:inline-block; width:8px; height:8px; margin-right:6px; border-radius:50%; vertical-align:middle; }
-.device-runtime-chart :deep(.device-runtime-tooltip section + section) { margin-top:10px; padding-top:8px; border-top:1px solid var(--line); }
-.device-runtime-chart :deep(.device-runtime-tooltip time) { display:block; margin-bottom:4px; color:var(--ink-2); font-size:12px; font-variant-numeric:tabular-nums; }
-.device-runtime-chart :deep(.device-runtime-tooltip table) { width:100%; border-collapse:collapse; font-size:12px; line-height:20px; }
-.device-runtime-chart :deep(.device-runtime-tooltip td) { padding:2px 0; vertical-align:top; }
-.device-runtime-chart :deep(.device-runtime-tooltip td + td) { padding-left:16px; text-align:right; white-space:nowrap; color:var(--ink-1); font-weight:600; font-variant-numeric:tabular-nums; }
-.device-runtime-chart :deep(.device-runtime-tooltip td small) { margin-left:6px; color:var(--ink-2); font-size:11px; }
-.device-runtime-chart :deep(.device-runtime-tooltip .device-runtime-tooltip-detail td) { color:var(--ink-2); font-size:11px; font-weight:400; }
-.device-runtime-chart :deep(.device-runtime-tooltip-detail td:first-child) { padding-left:14px; }
+.device-runtime-trend :deep(.device-runtime-tooltip) { min-width:220px; max-width:min(320px,calc(100vw - 48px)); max-height:300px; overflow:auto; white-space:normal; color:var(--ink-2); }
+.device-runtime-trend :deep(.device-runtime-tooltip-marker) { display:inline-block; width:8px; height:8px; margin-right:6px; border-radius:50%; vertical-align:middle; }
+.device-runtime-trend :deep(.device-runtime-tooltip section + section) { margin-top:10px; padding-top:8px; border-top:1px solid var(--line); }
+.device-runtime-trend :deep(.device-runtime-tooltip time) { display:block; margin-bottom:4px; color:var(--ink-2); font-size:12px; font-variant-numeric:tabular-nums; }
+.device-runtime-trend :deep(.device-runtime-tooltip table) { width:100%; border-collapse:collapse; font-size:12px; line-height:20px; }
+.device-runtime-trend :deep(.device-runtime-tooltip td) { padding:2px 0; vertical-align:top; }
+.device-runtime-trend :deep(.device-runtime-tooltip td + td) { padding-left:16px; text-align:right; white-space:nowrap; color:var(--ink-1); font-weight:600; font-variant-numeric:tabular-nums; }
+.device-runtime-trend :deep(.device-runtime-tooltip td small) { margin-left:6px; color:var(--ink-2); font-size:11px; }
+.device-runtime-trend :deep(.device-runtime-tooltip .device-runtime-tooltip-detail td) { color:var(--ink-2); font-size:11px; font-weight:400; }
+.device-runtime-trend :deep(.device-runtime-tooltip-detail td:first-child) { padding-left:14px; }
 .device-runtime-cache { display:flex; flex-wrap:wrap; align-items:center; gap:4px 6px; margin-top:8px; color:var(--ink-2); font-size:var(--fs-sm,13px); }.device-runtime-cache b { color:var(--ink-2); font-weight:500; font-variant-numeric:tabular-nums; }.device-runtime-cache :deep(.ant-btn) { height:auto; padding:0; font-size:inherit; line-height:inherit; }.device-runtime-cache small { font-size:var(--fs-12,12px); }.device-runtime-cache > :deep(.anticon) { font-size:14px; }.device-runtime-cache-value { white-space:nowrap; }
 .device-runtime-clock-note { display:block; margin-top:6px; color:var(--ink-2); font-size:var(--fs-12,12px); font-weight:400; }
+.device-runtime-detail-actions { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-inline-start:auto; }.device-runtime-detail-actions small { color:var(--ink-3); }.device-runtime-detail-actions :deep(.ant-btn) { height:auto; padding-inline:0; font-size:12px; }
+.device-runtime-trend--compact { padding-block:4px 10px; }.device-runtime-trend--compact .device-runtime-title > strong { font-size:13px; }.device-runtime-trend--compact .device-runtime-session b { font-size:13px; }.device-runtime-trend--compact .device-runtime-cache { font-size:12px; }
 @media (max-width:560px) { .device-runtime-heading { gap:6px 14px; } }
 </style>
