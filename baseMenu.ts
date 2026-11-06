@@ -1,6 +1,7 @@
 import baseMenu from './baseMenu.json'
 import p from './package.json'
 import i18n from '@jetlinks-web-core/locales'
+import { metricMenuCatalog } from './metricMenu'
 
 const buttonNameKeys: Record<string, string> = {
   record: 'IotMenu.button.record',
@@ -18,7 +19,8 @@ type MenuItem = {
   [key: string]: unknown
 }
 
-const handleMenu = (menus: MenuItem[], inheritedRuntime = false): MenuItem[] => menus.map(item => {
+const handleMenu = (menus: MenuItem[], inheritedRuntime = false): MenuItem[] => menus.map(original => {
+  const item = original
   const isRuntime = inheritedRuntime || item.owner === 'cloud' || item.owner === 'app'
 
   return {
@@ -46,5 +48,5 @@ const handleMenu = (menus: MenuItem[], inheritedRuntime = false): MenuItem[] => 
 })
 
 export default () => {
-  return handleMenu(baseMenu)
+  return handleMenu(metricMenuCatalog(baseMenu))
 }
