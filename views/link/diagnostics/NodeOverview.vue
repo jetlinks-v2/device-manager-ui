@@ -1,9 +1,11 @@
 <template>
   <div ref="root" class="node-overview">
     <NodeBottleneckHints :issues="bottlenecks" :access="{ jvm: view.access.value.threads || view.access.value.jfr || view.access.value.heap, monitor: view.access.value.monitor, query: view.access.value.query }" @inspect="inspectIssue" />
-    <DashBoardCanvas :key="`${scopeKey}:${nodeId}:${layout}`" :model-value="dashboard" :catalog="catalog" :editable="false" layout-editable :preview-mode="false" :storage-key="layoutKey">
+    <a-skeleton v-if="!dashboard" active :paragraph="{ rows: 6 }" />
+    <DashBoardCanvas v-if="dashboard" :key="`${scopeKey}:${nodeId}:${layout}`" :model-value="dashboard" :catalog="catalog" :editable="false" layout-editable :preview-mode="false" :storage-key="layoutKey" :aria-busy="initialLoading">
       <template #widget="{ widget }">
-        <NodeRuntimeSummary v-if="widget.type === 'summary'" :metric="nodeOverviewSummaryMetric(widget.id)" :communication="communication" :recording="recording.view.value" :session="trends.find(trend => trend.key === 'sessions')" :buffer="bufferSnapshot" :live="live" :stale="stale" />
+        <a-skeleton v-if="initialLoading" class="node-overview-skeleton" active :paragraph="{ rows: widget.type === 'summary' ? 1 : 4 }" />
+        <NodeRuntimeSummary v-else-if="widget.type === 'summary'" :metric="nodeOverviewSummaryMetric(widget.id)" :communication="communication" :recording="recording.view.value" :session="trends.find(trend => trend.key === 'sessions')" :buffer="bufferSnapshot" :live="live" :stale="stale" />
         <section v-else class="node-overview-group" :data-overview-group="widget.type" tabindex="-1">
         <NodeOperationalSignals v-if="widget.type === 'device'" compact :active="active" :trends="trends" :communication="communication" :recording="recording.view.value" :config="deviceRuntimeConfig" @retry-recording="recording.refresh" @peak="selectPeak" @live="recording.live" @configure="configureDeviceRuntime" :signals="view.operational.signals.value" :state="view.operational.state.value" @session="emit('session')" @inspect="value => emit('inspect', value)" />
         <RuntimeMBeanOverview v-else-if="widget.type === 'buffer'" compact :beans="view.bufferBeans.value" :history="view.bufferHistory.value" :state="view.bufferState.value" :show-lifetime="false" :config="bufferConfig" :reset-access="view.bufferResetAccess.value" :reset-state="view.bufferReset.state.value" @reset="view.bufferReset.reset" @update:config="configureBuffer" @refresh="view.refreshBuffers" @settings="emit('settings')" @inspect="value => emit('inspect', value)">
@@ -22,8 +24,9 @@
 import { computed, ref, toRef, type PropType } from 'vue'
 import { useElementSize } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
+import { Skeleton as ASkeleton } from 'ant-design-vue'
 import { DashBoardCanvas } from '@jetlinks-web-core/components/DashBoardCanvas'
-import { nodeOverviewCatalog, nodeOverviewDashboard, nodeOverviewLayout, nodeOverviewLayoutKey, nodeOverviewSummaryMetric, nodeResourceChartCapacity, type NodeOverviewGroup } from './overview/nodeOverviewDashboard'
+import { nodeOverviewCatalog, nodeOverviewDashboard, nodeOverviewLayout, nodeOverviewLayoutKey, nodeOverviewSummaryMetric, nodeResourceChartCapacity, type NodeOverviewGroup, type NodeOverviewLayout } from './overview/nodeOverviewDashboard'
 import './overview/nodeOverviewDashboard.css'
 import { RuntimeMetricsPanel, RuntimeMBeanOverview, RuntimeMBeanExtensions, type TimeWindow, type BufferDisplayConfig } from '@jetlinks-web-core/components/RuntimeDiagnostics'
 import type { RealtimeNode } from '../../../visDashboard/SystemMonitor/utils/realtimeResourceData'
@@ -45,11 +48,14 @@ import type { DevicePeakSelection } from '../RuntimeMonitor/device-runtime/devic
 const props = defineProps({ nodeId: { type: String, required: true }, active: { type: Boolean, default: true }, scopeKey: { type: String, default: '' }, live: { type: Object as PropType<RealtimeNode>, default: undefined }, stale: { type: Boolean, default: false }, bottlenecks: { type: Array as PropType<Bottleneck[]>, default: () => [] } })
 const emit = defineEmits<{ (event: 'inspect', objectName: string): void; (event: 'diagnose', target: Bottleneck['target']): void; (event: 'settings' | 'session'): void }>()
 const { t } = useI18n(), root = ref<HTMLElement>(), { width } = useElementSize(root)
-const layout = computed(() => nodeOverviewLayout(width.value)), resourcesExpanded = ref(false)
+// 缓存页隐藏时尺寸会归零；首次测量后保留最后档位，避免切节点重建画布。
+const layout = computed<NodeOverviewLayout | undefined>(previous => width.value > 0 ? nodeOverviewLayout(width.value) : previous)
+const resourcesExpanded = ref(false)
 const catalog = computed(() => nodeOverviewCatalog(t))
 const historyAnchor = ref<HTMLElement>()
 const resourceSize = useElementSize(historyAnchor)
-const resourceCapacity = computed(() => nodeResourceChartCapacity(resourceSize.width.value, resourceSize.height.value))
+const resourceCapacity = computed((previous: number | undefined) => resourceSize.width.value > 0 && resourceSize.height.value > 0
+  ? nodeResourceChartCapacity(resourceSize.width.value, resourceSize.height.value) : previous ?? 2)
 function inspectIssue(target: Bottleneck['target']) { if (target.tool === 'overview') historyAnchor.value?.scrollIntoView({ behavior: 'smooth', block: 'start' }); else emit('diagnose', target) }
 const view = useNodeMetricsContext(toRef(props, 'nodeId'), computed(() => true))
 const extensions = useNodeMBeanOverviews(toRef(props, 'nodeId'), toRef(props, 'active'), toRef(props, 'scopeKey'), computed(() => view.access.value.monitor))
@@ -63,14 +69,21 @@ const sessions = useClusterSessionContext()
 const communication = computed(() => sessions?.snapshots.value.get(props.nodeId)?.communication)
 const buffers = useClusterBufferContext()
 const bufferSnapshot = computed(() => buffers?.snapshots.value.get(props.nodeId))
+// 仅等待尚无证据的首轮加载；缓存刷新由原有状态保留正文，失败或能力缺失不阻塞展示。
+const initialLoading = computed(() => {
+  const buffer = view.bufferState.value, session = sessions?.snapshots.value.get(props.nodeId)?.state
+  return view.access.value.query && view.historyState.value.status === 'loading'
+    || view.access.value.monitor && (buffer.status === 'loading' && buffer.sampledAt === undefined
+      || session?.status === 'loading' && session.sampledAt === undefined)
+})
 // 只跟踪能力集合与宽窄模式，普通采样不能重建画布配置或恢复坐标。
 const availableGroups = computed(() => [
   ...(view.access.value.monitor && (trends.value.length > 0 || communication.value?.supported === true || view.operational.signals.value.length > 0) ? ['device'] : []),
   ...(view.access.value.monitor && (view.bufferBeans.value.length > 0 || !['ready', 'empty', 'unsupported'].includes(view.bufferState.value.status)) ? ['buffer'] : []),
   ...(view.access.value.query ? ['resources'] : []),
 ].join(','))
-const dashboard = computed(() => nodeOverviewDashboard(layout.value, availableGroups.value.split(',') as NodeOverviewGroup[], resourcesExpanded.value))
-const layoutKey = computed(() => nodeOverviewLayoutKey(preferences?.key.value, props.nodeId, layout.value))
+const dashboard = computed(() => layout.value ? nodeOverviewDashboard(layout.value, availableGroups.value.split(',') as NodeOverviewGroup[], resourcesExpanded.value) : undefined)
+const layoutKey = computed(() => layout.value ? nodeOverviewLayoutKey(preferences?.key.value, props.nodeId, layout.value) : undefined)
 const recording = useDeviceMessageRecording(toRef(props, 'nodeId'), computed(() => props.active && view.access.value.monitor && communication.value?.supported === true), toRef(props, 'scopeKey'), computed(() => preferences?.value.value.bufferIntervalSeconds), computed(() => communication.value?.history.findLast(point => point.startTime !== undefined)?.startTime))
 /** 定位同一真实时刻，设备曲线与资源历史共享排查范围。 */
 function selectPeak(selection: DevicePeakSelection) { void recording.select(selection); selectRange({ from: selection.peak.timestamp - 60000, to: selection.peak.timestamp + 60000 }) }
@@ -85,6 +98,7 @@ function selectRange(value: TimeWindow) { if (view.access.value.query && Number.
 </script>
 <style scoped>
 .node-overview { min-width:0; container-type:inline-size; }
+.node-overview-skeleton { box-sizing:border-box; height:100%; padding:20px 12px; overflow:hidden; }
 .node-history-anchor { scroll-margin-block-start:var(--space-3,12px); }
 .node-overview :deep(.dashboard-card-layout),.node-overview :deep(.dashboard-card-content) { height:auto; overflow-x:clip; overflow-y:visible; }
 .node-overview :deep(.dashboard-card-content) { scrollbar-gutter:auto; }.node-overview :deep(.dashboard-grid) { min-height:0; }
