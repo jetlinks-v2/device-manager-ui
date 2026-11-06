@@ -9046,11 +9046,18 @@
   "DeviceMetrics.businessMetrics": "业务指标",
   "DeviceMetrics.ruleAndCalculation": "规则与计算",
   "DeviceMetrics.products": "产品",
+  "DeviceMetrics.deviceInheritance": "产品下每台设备",
   "DeviceMetrics.groups": "分组",
   "DeviceMetrics.searchObjects": "搜索对象",
+  "DeviceMetrics.online": "在线",
+  "DeviceMetrics.offline": "离线",
+  "DeviceMetrics.notActive": "未激活",
   "DeviceMetrics.objectLoadError": "对象加载失败，请重试",
   "DeviceMetrics.retry": "重试",
   "DeviceMetrics.noObjects": "暂无可访问对象",
   "DeviceMetrics.openWorkspace": "在指标工作区打开",
-  "DeviceMetrics.openBusiness": "返回业务页面"
+  "DeviceMetrics.openBusiness": "返回业务页面",
+  "DeviceMetrics.descendantMetrics": "下级分组指标",
+  "DeviceMetrics.memberMetrics": "成员设备指标",
+  "DeviceMetrics.platformOnline": "平台连接状态"
 }

@@ -9045,11 +9045,18 @@
   "DeviceMetrics.businessMetrics": "Business metrics",
   "DeviceMetrics.ruleAndCalculation": "Rules and calculations",
   "DeviceMetrics.products": "Products",
+  "DeviceMetrics.deviceInheritance": "Each device in this product",
   "DeviceMetrics.groups": "Groups",
   "DeviceMetrics.searchObjects": "Search objects",
+  "DeviceMetrics.online": "Online",
+  "DeviceMetrics.offline": "Offline",
+  "DeviceMetrics.notActive": "Inactive",
   "DeviceMetrics.objectLoadError": "Unable to load objects. Retry.",
   "DeviceMetrics.retry": "Retry",
   "DeviceMetrics.noObjects": "No accessible objects",
   "DeviceMetrics.openWorkspace": "Open in business metrics",
-  "DeviceMetrics.openBusiness": "Open business page"
+  "DeviceMetrics.openBusiness": "Open business page",
+  "DeviceMetrics.descendantMetrics": "Descendant group metrics",
+  "DeviceMetrics.memberMetrics": "Member device metrics",
+  "DeviceMetrics.platformOnline": "Platform connection state"
 }

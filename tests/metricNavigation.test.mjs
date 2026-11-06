@@ -40,6 +40,24 @@ test('group tree uses authorized ordinary query and keeps hierarchy without fetc
   await assert.rejects(api.queryMetricGroupTree(),/not allowed/)
 })
 
+test('device navigation preserves product, image and real enum state from the same paged query',async()=>{
+  let calls=0
+  const rows=[
+    {id:'a',name:'Machine',productName:'Pump',photoUrl:'/pump.png',state:{value:'online',text:'Connected'}},
+    {id:'b',name:'Machine',state:'offline'},
+    {id:'c',name:'Unknown'},
+  ]
+  globalThis.__metricNav={device:async()=>{calls++;return {result:{data:rows,total:3}}}}
+  const page=await api.queryMetricOwnerPage('device','',0)
+  assert.equal(calls,1)
+  assert.deepEqual(page.data,[
+    {ownerId:'a',label:'Machine',productName:'Pump',photoUrl:'/pump.png',state:{value:'online',text:'Connected'}},
+    {ownerId:'b',label:'Machine',state:'offline'},
+    {ownerId:'c',label:'Unknown'},
+  ])
+  assert.equal(Object.hasOwn(page.data[2],'state'),false)
+})
+
 test('empty accessible sets remain empty and unnamed objects use authorized IDs',async()=>{
   let body
   globalThis.__metricNav={device:async q=>{body=q;return {result:{data:[{id:'device-no-name'}]}}},product:async()=>({result:{}}),request:async()=>({result:{data:[{id:'orphan',parentId:'hidden-parent'},{id:'self',parentId:'self'}]}})}
@@ -110,6 +128,17 @@ test('tree initialization reuses its authorized load; local search preserves anc
   assert.equal(state.visibleNodes.value[0].ownerId,'parent')
   assert.equal(emitted.at(-1).ownerId,'child')
   scope.stop()
+})
+
+test('automatic ID confirmation and explicit object selection expose their origin independently',async()=>{
+  const scope=effectScope(),selected=ref('a'),events=[]
+  const state=scope.run(()=>useMetricNavigator(async()=>({data:[{ownerId:'a',label:'A'}],total:1}),selected,(...args)=>events.push(args)))
+  try{
+    await flush();assert.equal(events.at(-1)[1],'validation')
+    state.select('a');assert.equal(events.at(-1)[1],'user')
+    selected.value=undefined;await flush()
+    assert.deepEqual(events.at(-1),[undefined,'validation'])
+  }finally{scope.stop()}
 })
 
 test('failed selected ID remains retryable after parent clears the invalid confirmation',async()=>{

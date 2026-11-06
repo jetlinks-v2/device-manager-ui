@@ -1,5 +1,5 @@
 <template>
-  <MetricWorkspace v-if="scopeKey" :key="scopeKey" :scope-key="scopeKey" :selection="selection" :initial-reference="initialReference" :editable="auth.hasPermission('device/Metric:save')" :alarm-enabled="links.alarmEnabled.value" @update:selection="changeSelection" @create-alarm="links.createAlarm" @to-business="toBusiness" />
+  <MetricWorkspace v-if="scopeKey" :key="scopeKey" :scope-key="scopeKey" :selection="selection" :initial-reference="initialReference" :editable="auth.hasPermission('device/Metric:save')" @update:selection="changeSelection" @to-business="toBusiness" />
 </template>
 <script setup lang="ts">
 import { computed } from 'vue'
@@ -10,12 +10,10 @@ import { MetricWorkspace, type MetricWorkspaceSelection, type MetricReference } 
 import { useProjectRouter } from '@jetlinks-web-core/hooks'
 import { getRequestTenantDomain } from '@jetlinks-web-core/utils/request-context'
 import { metricReferenceFromQuery, metricBusinessQuery, metricScopeKey, metricWorkspaceQuery, metricWorkspaceSelectionFromQuery } from '../../device/metrics/metricLocation'
-import { useMetricLinks } from '../../device/metrics/useMetricLinks'
 const route = useRoute()
 const router = useProjectRouter()
 const user = useUserStore()
 const auth = useAuthStore()
-const links = useMetricLinks()
 const selection = computed(() => metricWorkspaceSelectionFromQuery(route.query))
 const scopeKey = computed(() => metricScopeKey(user.userInfo.id || '', router.projectId.value || '', getRequestTenantDomain() || ''))
 const initialReference = computed(() => selection.value && metricReferenceFromQuery(route.query, selection.value))

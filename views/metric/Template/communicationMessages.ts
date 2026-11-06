@@ -1,0 +1,16 @@
+export const communicationMessages = {
+  zh: {
+    communication:{ name:'设备通信质量', description:'基于平台连接历史与设备会话，逐设备诊断连接稳定性和通信活跃情况。', notes:'平台连接绑定 $online，最近通信时间绑定 $lastCommunicationTime；不需要设备上报专用业务属性。会话最近通信来自平台会话管理器，不等同于业务属性上报。通信静默评估默认关闭，仅在协议确有通信周期约束时开启；静默不改判设备离线。当前会话缺失时不补0、不重建过去会话。历史窗口固定1小时，每60秒更新；滚动窗口不可跨时间求和。连接评分=在线比例×80+掉线稳定度×20，覆盖不足不给完整评分。没有RTT、序号或收发确认数据，不输出时延、丢包率或交付率。' },
+    communicationState:'通信健康状态', linkQualityScore:'连接质量评分', observedOnlineRatio:'已观测时段在线率', windowOfflineSeconds:'近1小时离线时长', windowDisconnectCount:'近1小时确认掉线次数', currentConnection:'当前连接状态', windowUnknownSeconds:'近1小时未知时长', communicationAgeSeconds:'距最近会话通信',
+    communicationConnection:'平台连接状态', communicationReport:'最近会话通信时间', communicationStatistics:'近1小时连接统计', communicationCoverage:'连接观测覆盖率',
+    activityAssessmentEnabled:'评估会话通信静默', communicationIdleSeconds:'会话通信静默阈值', minCoveragePercent:'最低观测覆盖率', disconnectLimit:'掉线关注阈值', scoreBaseline:'评分掉线基准',
+    communicationNormal:'连接正常', communicationOffline:'离线', communicationUnstable:'连接不稳定', communicationInterrupted:'在线但通信静默', communicationWaiting:'评估条件不足', communicationUnknown:'连接状态未知',
+  },
+  en: {
+    communication:{ name:'Device communication quality', description:'Diagnose each device using platform connection history and session activity.', notes:'Bind connection to $online and last session communication to $lastCommunicationTime. No dedicated business property is required. Session activity does not mean a business property was reported. Silence assessment is off until the protocol has a known activity cadence; silence never changes the device to offline. Missing sessions remain unknown and cannot reconstruct past sessions. A rolling one-hour window updates every 60 seconds; do not sum overlapping windows. Score=80×observed availability+20×disconnect stability, withheld when coverage is insufficient. No RTT, sequence or acknowledgement facts means no latency, packet-loss or delivery-rate claims.' },
+    communicationState:'Communication health', linkQualityScore:'Connection quality score', observedOnlineRatio:'Observed-time online ratio', windowOfflineSeconds:'Offline time in last hour', windowDisconnectCount:'Confirmed disconnects in last hour', currentConnection:'Current connection', windowUnknownSeconds:'Unknown time in last hour', communicationAgeSeconds:'Time since session communication',
+    communicationConnection:'Platform connection state', communicationReport:'Last session communication time', communicationStatistics:'One-hour connection statistics', communicationCoverage:'Connection observation coverage',
+    activityAssessmentEnabled:'Assess session silence', communicationIdleSeconds:'Session silence threshold', minCoveragePercent:'Minimum observation coverage', disconnectLimit:'Disconnect warning threshold', scoreBaseline:'Disconnect score baseline',
+    communicationNormal:'Connection normal', communicationOffline:'Offline', communicationUnstable:'Unstable connection', communicationInterrupted:'Online, session silent', communicationWaiting:'Assessment requirements not met', communicationUnknown:'Connection state unknown',
+  },
+}
