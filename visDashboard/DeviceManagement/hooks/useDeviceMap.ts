@@ -1,5 +1,6 @@
 import { computed, onActivated, onDeactivated, onUnmounted, ref, shallowRef, watch, type Ref } from 'vue'
 import { debounce } from 'lodash-es'
+import { useMenuStore } from '@jetlinks-web-core/store/menu'
 import { getCenterPoint } from '../../../utils/map'
 import { deviceMapCardConfig } from '../DeviceMapCard/config'
 import type { DashboardCardInfo, DeviceMapConfig, DeviceMapPoint } from '../shared'
@@ -31,6 +32,12 @@ interface MapInstanceLike {
 
 /** Owns the location stream, cluster navigation and the selected device card. */
 export const useDeviceMap = (info: Ref<DashboardCardInfo | undefined>, isEdit: Ref<boolean>, enabled: Ref<boolean>) => {
+  const menu = useMenuStore()
+  const canConfigureMap = computed(() => !isEdit.value && menu.hasMenu('system/Basis'))
+  /** 配置页沿用当前菜单准入，设计预览不执行导航。 */
+  const openMapConfig = () => {
+    if (canConfigureMap.value) void menu.jumpPage('system/Basis')
+  }
   const config = getComponentConfig<DeviceMapConfig>(
     info,
     'deviceMapCard',
@@ -202,5 +209,5 @@ export const useDeviceMap = (info: Ref<DashboardCardInfo | undefined>, isEdit: R
     stopRefreshTimer()
     stopStream()
   })
-  return { config, distribution, points, loading, error, stateError, extraOptions, selection, refresh, onMapInit, onClusterClick, onPointSelect }
+  return { config, distribution, points, loading, error, stateError, extraOptions, selection, refresh, onMapInit, onClusterClick, onPointSelect, canConfigureMap, openMapConfig }
 }
