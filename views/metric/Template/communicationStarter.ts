@@ -13,7 +13,7 @@ export function createCommunicationStarter(t:(key:string)=>string):MetricTemplat
     icon:['color:#52c41a','color:#ff4d4f','color:#faad14','color:#fa8c16','color:#1677ff','color:#8c8c8c'][value] }))
   const output = (metricId:string, semantic:'state'|'score'|'duration'|'numeric'|'ratio', unit?:string):MetricTemplateOutput => ({ metricId, label:t(metricId),
     unit, valueType:semantic === 'state' ? 'int' : 'double', metricKind:semantic, persist:true, publish:true,
-    options:{ readAggregation:{ semantic, operations:semantic === 'state' ? ['collection','distribution'] : semantic === 'ratio' ? ['collection'] : ['collection','average','min','max'],
+    options:{ explain:['communicationState','linkQualityScore'].includes(metricId), readAggregation:{ semantic, operations:semantic === 'state' ? ['collection','distribution'] : semantic === 'ratio' ? ['collection'] : ['collection','average','min','max'],
       defaultOperation:semantic === 'state' ? 'distribution' : semantic === 'ratio' ? 'collection' : semantic === 'duration' ? 'max' : 'average', defaultView:'list' } } })
   const param = (id:string, value:unknown, min?:number, max?:number, unit?:string) => ({ id, name:t(id), valueType:typeof value === 'boolean' ? { type:'boolean' } : { ...numeric, min, max, unit }, expands:{ defaultValue:value,editable:true } })
   const stats = "connectionStatistics";
@@ -26,7 +26,7 @@ export function createCommunicationStarter(t:(key:string)=>string):MetricTemplat
       formula('currentConnection',['connectionState'],'connectionState', { stateTracking:{ maxNoData:'PT2M' }, options:{ stateLabels:[{ value:0,name:t('communicationOffline'),nameI18n:{ zh:'离线',en:'Offline' },icon:'color:#ff4d4f' },{ value:1,name:'在线',nameI18n:{ zh:'在线',en:'Online' },icon:'color:#52c41a' }] } }),
       { id:stats, name:t('communicationStatistics'), type:'composite', inputs:[{ id:'state',metricId:'connectionState' }], window:schedule,
         calculator:{ provider:'state',providerVersion:'1',inputTypes:{ state:{ type:'array',elementType:{ type:'int' } } },
-          outputType:{ type:'object',properties:['activeDuration','inactiveDuration','unknownDuration','activeCount','inactiveCount','coverage'].map(id => ({ id,name:id,valueType:numeric })) },
+          outputType:{ type:'object',properties:['activeDuration','inactiveDuration','unknownDuration','activeCount','inactiveCount','coverage'].map(id => ({ id,name:t(`communicationField_${id}`),valueType:{...numeric,...(id.endsWith('Duration') ? {unit:'s'} : {})} })) },
           parameters:{ duration:'PT1H',maxHold:'PT2M',activeValue:1,inactiveValue:0 } } },
       formula('observedOnlineRatio',[stats],`${stats} == null || ${stats}['activeDuration'] + ${stats}['inactiveDuration'] <= 0 ? null : 100.0 * ${stats}['activeDuration'] / (${stats}['activeDuration'] + ${stats}['inactiveDuration'])`),
       formula('windowOfflineSeconds',[stats],`${stats} == null ? null : ${stats}['inactiveDuration']`),

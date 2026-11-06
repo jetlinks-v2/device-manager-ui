@@ -28,6 +28,9 @@ test('communication quality is one device template with platform session sources
   assert.deepEqual(Object.values(starter.simulation.configuration.inputMappings).map(item=>item.id),['$online','$lastCommunicationTime'])
   assert.ok(starter.template.outputs.every(item=>item.options.readAggregation))
   assert.equal(starter.template.outputs.find(item=>item.metricId === 'observedOnlineRatio').options.readAggregation.operations.includes('sum'),false)
+  assert.deepEqual(starter.template.outputs.filter(item=>item.options.explain).map(item=>item.metricId),['communicationState','linkQualityScore'])
+  const fields=starter.template.definitions.find(item=>item.id==='connectionStatistics').calculator.outputType.properties
+  assert.ok(fields.every(item=>item.name && item.name !== item.id))
 })
 
 // 独立前端 checkout 不依赖聚合工作区的相对路径；联合验收显式传入正式引擎的场景目录。

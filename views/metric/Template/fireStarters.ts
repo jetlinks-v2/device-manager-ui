@@ -17,7 +17,7 @@ export function createFireStarters(t: Translate): MetricTemplateStarter[] {
   const hintLabels = labels(['fireUnknown','fireHintAbsent','fireHintPresent'], [-1, 0, 1])
   const output = (metricId: string, kind:'state'|'numeric'|'ratio'|'duration', unit?: string): MetricTemplateOutput => ({ metricId, label:t(metricId), metricKind:kind,
     valueType:kind === 'state' ? 'int' : 'double', unit, persist:true, publish:true,
-    options:{ readAggregation:{ semantic:kind, operations:kind === 'state' ? ['collection','distribution'] : ['collection'], defaultOperation:kind === 'state' ? 'distribution' : 'collection', defaultView:'list' } } })
+    options:{ explain:['fireCurrentState','fireReviewDecision','fireFalseAlarmPercent','fireReviewCoverage'].includes(metricId), readAggregation:{ semantic:kind, operations:kind === 'state' ? ['collection','distribution'] : ['collection'], defaultOperation:kind === 'state' ? 'distribution' : 'collection', defaultView:'list' } } })
   const eventKnown = "fireEvent != null && fireEvent['eventId'] != null && fireEvent['eventId'] != ''"
   const evidenceKnown = `${eventKnown} && evidence != null && evidence['eventId'] == fireEvent['eventId'] && evidence['observedAt'] != null && evidence['observedAt'] > 0 && evidence['observedAt'] <= sample.getProcessTime() && (fireEvent['startedAt'] == null || evidence['observedAt'] >= fireEvent['startedAt'])`
   const evidence: MetricTemplate = { id:'fireEvidence', version:'1', name:t('fireEvidence.name'), thingType:'device', enabled:true,
