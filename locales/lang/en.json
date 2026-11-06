@@ -9,7 +9,7 @@
   "RuntimeMonitor.runtimeSummary.queueCount": "{count} queues",
   "RuntimeMonitor.runtimeSummary.retained": "Previous sample",
   "RuntimeMonitor.runtimeSummary.retainedFailures": "{count} retained failures",
-  "RuntimeMonitor.runtimeSummary.sessions": "{count} session records",
+  "RuntimeMonitor.runtimeSummary.sessions": "{count} device sessions",
   "RuntimeMonitor.runtimeSummary.title": "Current runtime summary",
   "PropertyRules.valueUnavailable": "{value} (not in the current values)",
   "PropertyRules.noValueOptions": "No values defined in the thing model",

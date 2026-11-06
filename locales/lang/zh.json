@@ -9,7 +9,7 @@
   "RuntimeMonitor.runtimeSummary.queueCount": "{count} 个队列",
   "RuntimeMonitor.runtimeSummary.retained": "上次采样",
   "RuntimeMonitor.runtimeSummary.retainedFailures": "失败留存 {count} 条目",
-  "RuntimeMonitor.runtimeSummary.sessions": "会话记录 {count} 条",
+  "RuntimeMonitor.runtimeSummary.sessions": "设备会话 {count} 条",
   "RuntimeMonitor.runtimeSummary.title": "当前运行摘要",
   "PropertyRules.valueUnavailable": "{value}（不在当前取值中）",
   "PropertyRules.noValueOptions": "物模型未定义可选值",
