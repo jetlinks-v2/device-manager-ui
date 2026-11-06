@@ -250,9 +250,11 @@ test('errors allow retry, locale changes reload translated state/detail, and unm
 test('actual map hook deduplicates by device ID, expands normal clusters, opens terminal cards, and stops in edit mode', async () => {
   const factory = selectionFactory()
   const streams = []
+  const navigation = [], granted = vue.ref(true)
   const mapHook = load(
     'hooks/useDeviceMap.ts',
     {
+      '@jetlinks-web-core/store/menu': { useMenuStore: () => ({ hasMenu: code => granted.value && code === 'system/Basis', jumpPage: code => navigation.push(code) }) },
       '../DeviceMapCard/config': {
         deviceMapCardConfig: { componentProps: { deviceMapCard: { topTitle: '', isAutoRefresh: false, interval: 60 } } }
       },
@@ -298,6 +300,15 @@ test('actual map hook deduplicates by device ID, expands normal clusters, opens 
     enabled = vue.ref(true),
     moves = []
   const { value, unmount } = mount(() => mapHook.useDeviceMap(vue.ref({}), edit, enabled))
+  assert.equal(value.canConfigureMap.value, true)
+  value.openMapConfig()
+  granted.value = false
+  value.openMapConfig()
+  granted.value = true
+  edit.value = true
+  value.openMapConfig()
+  assert.deepEqual(navigation, ['system/Basis'])
+  edit.value = false
   streams[0].onMessage([point('d1'), point('d2'), point('d3')])
   streams[0].onMessage([{ ...point('d1'), label: 'Updated name' }])
   assert.equal(value.points.value.length, 3)
@@ -439,6 +450,7 @@ test('distribution state requests batch and retain unknown points on partial fai
 test('distribution hook rejects stale state responses on scope change and selects overlapping devices', async () => {
   const streams=[], pending=[], factory=selectionFactory()
   const {useDeviceMap}=load('hooks/useDeviceMap.ts', {
+    '@jetlinks-web-core/store/menu': { useMenuStore: () => ({ hasMenu: () => false, jumpPage() {} }) },
     '../DeviceMapCard/config': {deviceMapCardConfig:{componentProps:{deviceMapCard:{presentation:'distribution',scope:'a',isAutoRefresh:false,interval:60}}}},
     '../shared':shared,
     '../services/deviceMap': {
