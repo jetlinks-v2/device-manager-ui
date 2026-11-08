@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { createRenderer, defineComponent, nextTick, ref } from 'vue'
+import { createRenderer, defineComponent, nextTick, reactive, ref } from 'vue'
+import { useDeviceAlarmEditor } from '../views/device/alarm/components/editor/useDeviceAlarmEditor'
 import { setAlarmRequestHandler } from './alarmRequest.test-shim'
 import { queryRuleRecords, queryRecordHistory, queryActiveRuleCounts } from '../views/device/alarm/workspaceApi'
 import { useDeviceAlarmRecords } from '../views/device/alarm/hooks/useDeviceAlarmRecords'
@@ -398,4 +399,87 @@ test('handling targets one record and its alarm cycle, validates description, an
   assert.equal(canHandleRecord({ ...record, state: 'normal' }), false)
   assert.equal(alarmDuration(record, 61000), '1.0 min')
   assert.equal(alarmDuration({ ...record, state: 'normal' }, 61000), '—')
+})
+
+
+function editorProps() {
+  const model: DeviceAlarmFormModel = {
+    name: '', source: 'product', targetId: '', property: '', level: 4,
+    trigger: 'outside', limit: {}, autoRelieve: false, notification: createEmptyNotification(),
+  }
+  return reactive({ open: true, saving: false, model,
+    levelOptions: [{ label: 'General', value: 4 }, { label: 'Critical', value: 1 }],
+    propertyOptions: [{ id: 'temperature', name: 'Temperature', valueType: { type: 'double' } }],
+  })
+}
+
+test('editor preview follows completeness without losing zero, false, or pending recovery values', () => {
+  const props = editorProps()
+  const { state, unmount } = mount(() => useDeviceAlarmEditor(props, key => key))
+  assert.equal(state.panelStates.value.target, 'pending')
+  assert.equal(state.previewText.value, 'DeviceAlarm.editor.pending')
+  props.model.targetId = 'product-a'
+  props.model.property = 'temperature'
+  props.model.trigger = 'eq'
+  props.model.value = 0
+  assert.equal(state.panelStates.value.target, 'complete')
+  assert.equal(state.panelStates.value.trigger, 'complete')
+  assert.match(state.previewText.value, /0/)
+  props.model.autoRelieve = true
+  props.model.relieveCondition = { trigger: 'gt', value: 0, limit: {} }
+  assert.equal(state.panelStates.value.trigger, 'complete')
+  props.model.relieveCondition.value = -1
+  assert.equal(state.panelStates.value.trigger, 'pending')
+  assert.equal(state.relievePreviewText.value, 'DeviceAlarm.editor.pending')
+  props.model.autoRelieve = false
+  props.model.property = 'boolean-property'
+  props.model.value = false
+  assert.match(state.previewText.value, /false/)
+  props.model.trigger = 'outside'
+  props.model.limit = { lower: 0 }
+  assert.equal(state.previewText.value, 'DeviceAlarm.editor.pending')
+  unmount()
+})
+
+test('editor notifications distinguish off from incomplete and accept persisted recipient dimensions', () => {
+  const props = editorProps()
+  const { state, unmount } = mount(() => useDeviceAlarmEditor(props, key => key))
+  assert.equal(state.panelStates.value.notification, 'off')
+  props.model.notification.enabled = true
+  props.model.notification.channelProviders = ['email']
+  assert.equal(state.panelStates.value.notification, 'pending')
+  props.model.notification.dimensions = [{ id: 'tenant-a' }]
+  assert.equal(state.panelStates.value.notification, 'complete')
+  props.model.source = 'device'
+  props.model.notification.parameters = { template: { message: '' } }
+  assert.equal(state.panelStates.value.notification, 'pending')
+  props.model.notification.enabled = false
+  assert.equal(state.panelStates.value.notification, 'off')
+  unmount()
+})
+
+test('editor preview destinations preserve drafts, block navigation during save and reset on reopen', async () => {
+  const props = editorProps()
+  const { state, unmount } = mount(() => useDeviceAlarmEditor(props, key => key))
+  assert.equal(state.activePanel.value, 'level')
+  props.model.name = 'Unsaved alarm'
+  props.model.level = 1
+  for (const item of state.summaryItems.value) {
+    state.selectPanel(item.panel)
+    assert.equal(state.activePanel.value, item.panel)
+  }
+  assert.equal(state.summaryItems.value.find(item => item.key === 'property')?.panel, 'target')
+  assert.equal(state.summaryItems.value.find(item => item.key === 'relieve')?.panel, 'trigger')
+  props.saving = true
+  state.selectPanel('level')
+  assert.equal(state.activePanel.value, 'notification')
+  props.saving = false
+  props.open = false
+  await nextTick()
+  props.open = true
+  await nextTick()
+  assert.equal(state.activePanel.value, 'level')
+  assert.equal(props.model.name, 'Unsaved alarm')
+  assert.equal(props.model.level, 1)
+  unmount()
 })

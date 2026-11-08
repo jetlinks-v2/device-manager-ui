@@ -45,13 +45,13 @@ test('alarm device name drills into the selected device alarm tab with source or
   assert.match(page, /buildIotDeviceDetailPath\(resolveIotProjectId\(route\), deviceId, \{ tab: 'alarm' \}, route\)/)
 })
 
-test('alarm create and edit share the three-section visual-alarm-style configuration workspace', () => {
+test('alarm create and edit share the four-section visual-alarm-style configuration workspace', () => {
   assert.match(editor, /width="min\(100rem, calc\(100vw - 2\.25rem\)\)"/)
   assert.match(editor, /class="device-alarm-editor__workspace"/)
-  assert.match(editorStyle, /grid-template-columns: 18\.75rem minmax\(0, 1fr\) 18\.75rem;/)
+  assert.match(editorStyle, /grid-template-columns: 18\.75rem minmax\(0, 1fr\) 23\.75rem;/)
   assert.match(editorStyle, /:global\(\.device-alarm-editor-modal-wrap \.ant-modal-content\)/)
   assert.doesNotMatch(editorStyle, /\.device-alarm-editor-modal-wrap \.ant-modal-header\)[^{]*\{[^}]*border-bottom:/)
-  assert.match(editor, /type EditorPanel = 'target' \| 'trigger' \| 'notification'/)
+  assert.match(editor, /useDeviceAlarmEditor\(props, \$t\)/)
   assert.doesNotMatch(editor, /activePanel === 'relieve'/)
   assert.match(editor, /activePanel === 'trigger'[\s\S]*?<DeviceAlarmTriggerForm/)
   assert.match(triggerForm, /v-if="model\.autoRelieve"/)
