@@ -18,6 +18,13 @@ const {default:space}=await loadMetricTestModule('../../jetlinks-space-ui/metric
 const allowed=new Set(),menus=new Set()
 globalThis.__metricHost={auth:{hasPermission:codes=>(Array.isArray(codes)?codes:[codes]).some(code=>allowed.has(code))},menu:{hasMenu:code=>menus.has(code),getMenu:code=>menus.has(code)?{routeName:`project/${code}`}:undefined},resource:()=>undefined}
 
+test('business modules register recognizable dimension icons',()=>{
+  assert.equal(device.device.icon,'DesktopOutlined')
+  assert.equal(device.deviceGroup.icon,'FolderOutlined')
+  assert.equal(device.product.icon,'AppstoreOutlined')
+  assert.equal(space.space.icon,'EnvironmentOutlined')
+})
+
 test('four dimensions reuse business maintenance rights independently of rule permissions',()=>{
   for(const provider of [...Object.values(device),space.space]) assert.equal(provider.available(),false)
   for(const code of ['iot-user-device-list','device/Product','space/Situation']) {allowed.add(`${code}:view`);menus.add(code);menus.add(`${code}/Detail`)}
@@ -38,44 +45,144 @@ test('four dimensions reuse business maintenance rights independently of rule pe
   allowed.clear();menus.clear()
 })
 
-test('business destinations are optional when menus are absent, without revoking object viewing',()=>{
+test('each dimension requires both its business menu and view permission',()=>{
   for(const code of ['iot-user-device-list','device/Product','space/Situation']) allowed.add(`${code}:view`)
   globalThis.__metricHost.resource=(_module,type)=>type==='hooks'?()=>({pickSource:async()=>undefined}):{name:'Navigator'}
   for(const provider of [...Object.values(device),space.space]) {
-    assert.equal(provider.available(),true)
+    assert.equal(provider.available(),false)
     assert.equal(provider.toBusiness({ownerId:'id',label:'Object'}),undefined)
   }
   allowed.clear()
+  for(const code of ['iot-user-device-list','device/Product','space/Situation']) menus.add(code)
+  for(const provider of [...Object.values(device),space.space]) assert.equal(provider.available(),false)
+  menus.clear()
+})
+
+test('device menu aliases cannot combine a menu from one code with permissions from another',()=>{
+  menus.add('iot-user-device-list');allowed.add('device/Instance:view')
+  assert.equal(device.device.available(),false)
+  assert.equal(device.deviceGroup.available(),false)
+  allowed.add('iot-user-device-list:view')
+  assert.equal(device.device.available(),true)
+  assert.equal(device.deviceGroup.available(),true)
+  menus.delete('iot-user-device-list')
+  assert.equal(device.device.available(),false)
+  assert.equal(device.deviceGroup.available(),false)
+  allowed.clear();menus.clear()
 })
 
 const {useMetricLinks}=await loadMetricTestModule('../views/device/metrics/useMetricLinks.ts',{
   '@jetlinks-web-core/store':store,
   'vue-router':'export const useRoute=()=>globalThis.__metricLinks.route;export const useRouter=()=>({resolve:to=>({fullPath:JSON.stringify(to)})})',
 })
-test('cross-entry and alarm navigation keep exact IDs and require their own authorized menus',()=>{
+test('cross-entry navigation keeps exact IDs and requires its authorized menu',()=>{
   const calls=[]
   globalThis.__metricLinks={route:{path:'/business',hash:'',query:{projectId:'p'}}}
   globalThis.__metricHost.menu.jumpPage=(...args)=>calls.push(args)
   const links=useMetricLinks(), reference={ownerType:'deviceGroup',ownerId:'g',configId:'config-2',outputId:'output-2'}
-  links.openWorkspace(reference);links.createAlarm(reference)
+  links.openWorkspace(reference)
   assert.equal(calls.length,0)
   menus.add('device/Metric');allowed.add('device/Metric:view')
   useMetricLinks().openWorkspace(reference)
   assert.deepEqual(calls[0],['device/Metric',{query:{projectId:'p',metricOwnerType:'deviceGroup',metricOwnerId:'g',metricConfigId:'config-2',metricOutputId:'output-2'}}])
-  menus.add('rule-engine/Scene');allowed.add('rule-engine/Scene:add');allowed.add('rule-engine/Alarm/Configuration:update')
-  // Auth/menu fixtures are plain sets; recreate computed state after changing the fixture.
-  const enabled=useMetricLinks()
-  enabled.createAlarm(reference)
-  assert.equal(calls[1][0],'rule-engine/Scene/Editor')
-  const returnTo=JSON.parse(calls[1][1].query.metricReturnTo)
-  assert.equal(returnTo.query.metricConfigId,'config-2')
-  assert.equal(returnTo.query.metricOutputId,'output-2')
-  assert.equal(returnTo.query.scopeId,'g')
   allowed.clear();menus.clear()
 })
 
 const {useMetricSourceAdapter}=await loadMetricTestModule('../views/device/metrics/useMetricSourceAdapter.ts',{
-  '../../../api/metricSources':'export const queryMetricDevices=async()=>({data:[],total:0});export const loadMetricDevice=async id=>({device:{id,name:id},properties:[]})',
+  'vue-i18n':'import {ref} from "vue";export const useI18n=()=>({t:key=>key.replace(/^metricSources\\./,""),mergeLocaleMessage:()=>{},locale:ref("zh")})',
+  '../../../api/metricSources':`export const queryMetricDevices=async()=>({data:[],total:0});export const loadMetricDevice=async id=>({device:{id,name:id},properties:[{id:"$online",name:"在线状态",platform:true,history:true}]});export const loadMetricProduct=async()=>[{id:"power",name:"Power"},{id:"$online",name:"在线状态",platform:true,history:true}];export const loadMetricBuiltins=async()=>[];
+    const item={config:{id:"source",name:"Temperature",state:"enabled",scope:"single",targetType:"device",targetId:"d1"},template:{id:"t",version:"1",name:"Temperature",options:{},inputDefinitions:[],parameterDefinitions:[],definitions:[],outputs:[{metricId:"average",label:"Average",persist:true,unit:"℃"}]},output:{metricId:"average",label:"Average",persist:true,unit:"℃"}};
+    export const loadMetricOutputs=async()=>[item];export const loadMetricOutput=async()=>item;
+    export const loadMetricInheritedOutputs=async()=>[];export const loadMetricProductName=async id=>id;export const queryMetricProducts=async()=>({data:[],total:0});`,
+})
+test('inline source selection reuses the device model and does not open a second modal',async()=>{
+  const scope=effectScope(), context=ref({ownerType:'device',ownerId:'d1'})
+  const adapter=scope.run(()=>useMetricSourceAdapter(context))
+  const state=adapter.pickSource.editor.setup()().props.state
+  try {
+    const pending=adapter.pickSource({context:context.value,input:{id:'running'},inline:true})
+    await new Promise(resolve=>setImmediate(resolve));await nextTick()
+    assert.equal(adapter.host.setup()(),null)
+    assert.equal(state.deviceId.value,'d1')
+    assert.equal(state.propertyLoading.value,false)
+    state.propertyId.value='$online';state.confirm('在线状态')
+    assert.equal((await pending).mapping.thingId,'d1')
+  } finally {scope.stop()}
+})
+test('source descriptions resolve business names and report a removed property explicitly',async()=>{
+  const scope=effectScope(), context=ref({ownerType:'product',ownerId:'pumps',scope:'children'})
+  const adapter=scope.run(()=>useMetricSourceAdapter(context))
+  try {
+    const descriptions=await adapter.pickSource.describe(context.value,{
+      power:{kind:'property',id:'power'},missing:{kind:'property',id:'removed'},online:{kind:'property',id:'$online'},external:{kind:'metric',id:'other'}
+    })
+    assert.equal(descriptions.power.label,'currentDevice / Power')
+    assert.equal(descriptions.missing.error,'sourceMissing')
+    assert.equal(descriptions.online.label,'currentDevice / online')
+    assert.equal(descriptions.external.error,'unsupported')
+  } finally {scope.stop()}
+})
+
+test('same-object context refresh keeps inline source selection while changing owner cancels it',async()=>{
+  const scope=effectScope(),context=ref({ownerType:'device',ownerId:'d1',label:'Device'})
+  const adapter=scope.run(()=>useMetricSourceAdapter(context))
+  const state=adapter.pickSource.editor.setup()().props.state
+  try {
+    const pending=adapter.pickSource({context:context.value,input:{id:'power'},inline:true})
+    await flushSource()
+    context.value={...context.value,label:'Renamed device'}
+    await nextTick()
+    assert.equal(state.open.value,true)
+    assert.equal(state.deviceId.value,'d1')
+    state.changeCategory('builtin')
+    context.value={...context.value}
+    await nextTick()
+    assert.equal(state.category.value,'builtin')
+    assert.equal(state.open.value,true)
+    context.value={ownerType:'device',ownerId:'d2',label:'Other device'}
+    await nextTick()
+    assert.equal(await pending,undefined)
+    assert.equal(state.open.value,false)
+  } finally {scope.stop()}
+})
+
+test('existing metrics bind public outputs, exclude self and recover authorized names',async()=>{
+  const scope=effectScope(),context=ref({ownerType:'device',ownerId:'d1',targetType:'device',targetId:'d1'})
+  const adapter=scope.run(()=>useMetricSourceAdapter(context))
+  const state=adapter.pickSource.editor.setup()().props.state
+  try {
+    const pending=adapter.pickSource({context:context.value,configId:'dependent',input:{id:'value'},inline:true})
+    await flushSource()
+    assert.equal(state.choosingObject.value,false)
+    state.changeCategory('metric');await flushSource()
+    assert.equal(state.metricSources.items.value.length,1)
+    const item=state.metricSources.items.value[0]
+    state.confirmMetric(item,'d1 / Average')
+    assert.deepEqual((await pending).mapping,{kind:'metric',configId:'source',thingType:'device',thingId:'d1',id:'average'})
+    const descriptions=await adapter.pickSource.describe(context.value,{value:{kind:'metric',configId:'source',thingType:'device',thingId:'d1',id:'average'}})
+    assert.equal(descriptions.value.label,'Temperature / Average')
+    const self=adapter.pickSource({context:context.value,configId:'source',input:{id:'value',source:{kind:'metric'}},inline:true})
+    await flushSource()
+    assert.equal(state.metricSources.items.value.length,0)
+    state.cancel();await self
+  } finally {scope.stop()}
+})
+const flushSource=async()=>{await new Promise(resolve=>setImmediate(resolve));await nextTick()}
+test('product inheritance picks the current member property without fixing a device ID',async()=>{
+  const scope=effectScope(),context=ref({ownerType:'product',ownerId:'pumps'})
+  const adapter=scope.run(()=>useMetricSourceAdapter(context))
+  const state=adapter.host.setup()().props.state
+  try {
+    const pending=adapter.pickSource({context:{...context.value,scope:'children'},input:{id:'reading'}})
+    await new Promise(resolve=>setImmediate(resolve));await nextTick()
+    assert.equal(state.inherited.value,true)
+    assert.deepEqual(state.devices.value,[])
+    assert.equal(state.deviceId.value,'')
+    state.propertyId.value='power'
+    assert.equal(state.canConfirm.value,true)
+    state.confirm()
+    assert.deepEqual((await pending).mapping,{kind:'property',thingType:'device',id:'power'})
+  } finally {scope.stop()}
 })
 test('public source adapter owns its modal and cancels pending selection when owner changes or unmounts',async()=>{
   const scope=effectScope(),context=ref({ownerType:'space',ownerId:'s1'})
@@ -89,4 +196,20 @@ test('public source adapter owns its modal and cancels pending selection when ow
   const second=adapter.pickSource({context:context.value,input:{id:'power'}})
   scope.stop()
   assert.equal(await second,undefined)
+})
+
+test('source confirmation keeps the visible built-in name and stable mapping ID',async()=>{
+  const scope=effectScope(),context=ref({ownerType:'device',ownerId:'d1'})
+  const adapter=scope.run(()=>useMetricSourceAdapter(context))
+  const state=adapter.host.setup()().props.state
+  try {
+    const pending=adapter.pickSource({context:context.value,input:{id:'running'}})
+    await state.selectDevice('d1')
+    state.propertyId.value='$online'
+    state.confirm('在线状态')
+    const selection=await pending
+    assert.equal(selection.label,'d1 / 在线状态')
+    assert.equal(selection.mapping.id,'$online')
+    assert.equal(selection.mapping.thingId,'d1')
+  } finally {scope.stop()}
 })

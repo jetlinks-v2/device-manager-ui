@@ -3,7 +3,7 @@ import { query } from './instance'
 import { queryProductList } from './product'
 import type { MetricNavigationNode, MetricNavigationPage } from '../views/device/metrics/navigation/useMetricNavigator'
 
-type Owner = { id: string; name?: string; parentId?: string }
+type Owner = { id: string; name?: string; parentId?: string; productName?: string; photoUrl?: string; state?: MetricNavigationNode['state'] }
 type OwnerResponse = { status?: number; success?: boolean; message?: string; result?: { data?: Owner[]; total?: number } }
 
 function requireResult(response: OwnerResponse) {
@@ -19,7 +19,11 @@ export async function queryMetricOwnerPage(type: 'device' | 'product', keyword: 
       : keyword.trim() ? [{ column: 'name', termType: 'like', value: `%${keyword.trim()}%` }] : [],
   })
   const result = requireResult(response)
-  return { data: (result.data || []).map(item => ({ ownerId: item.id, label: item.name || item.id })), total: result.total || 0 }
+  return { data: (result.data || []).map(item => ({ ownerId:item.id, label:item.name || item.id,
+    ...(item.photoUrl ? { photoUrl:item.photoUrl } : {}),
+    ...(type === 'device' && item.productName ? { productName:item.productName } : {}),
+    ...(type === 'device' && item.state ? { state:item.state } : {}),
+  })), total:result.total || 0 }
 }
 
 /** 分组导航只需要层级与名称，避免 _detail 的设备统计查询。 */

@@ -1,7 +1,12 @@
 import { computed, onScopeDispose, ref, watch, type Ref } from 'vue'
-import type { MetricObjectSelection } from '@jetlinks-web-core/components'
+import type { MetricObjectSelection, MetricSelectionOrigin } from '@jetlinks-web-core/components'
 
-export type MetricNavigationNode = MetricObjectSelection & { children?: MetricNavigationNode[] }
+export type MetricNavigationNode = MetricObjectSelection & {
+  children?: MetricNavigationNode[]
+  productName?: string
+  photoUrl?: string
+  state?: string | { value: string; text?: string }
+}
 export type MetricNavigationPage = { data: MetricNavigationNode[]; total: number }
 export type MetricNavigationQuery = (keyword: string, pageIndex: number, exactId?: string) => Promise<MetricNavigationPage>
 
@@ -24,7 +29,7 @@ export function filterMetricTree(nodes: MetricNavigationNode[], keyword: string)
 }
 
 /** 分页查询和已选 ID 的授权校验分别隔离，搜索失败不会冒充“没有对象”。 */
-export function useMetricNavigator(query: MetricNavigationQuery, selectedId: Ref<string | undefined>, emit: (selection?: MetricObjectSelection) => void, tree = false) {
+export function useMetricNavigator(query: MetricNavigationQuery, selectedId: Ref<string | undefined>, emit: (selection?: MetricObjectSelection, origin?: MetricSelectionOrigin) => void, tree = false) {
   const nodes = ref<MetricNavigationNode[]>([])
   const keyword = ref('')
   const page = ref(1)
@@ -55,16 +60,16 @@ export function useMetricNavigator(query: MetricNavigationQuery, selectedId: Ref
   async function validate(id = selectedId.value) {
     const version = ++selectionVersion
     selectionError.value = false
-    if (!id) { emit(); return }
+    if (!id) { emit(undefined, 'validation'); return }
     retryId = id
     try {
       const result = await (tree && loading.value && pendingList ? pendingList : query('', 0, id))
       if (version !== selectionVersion) return
       const node = findMetricNode(result.data, id)
       retryId = undefined
-      emit(node && { ownerId: node.ownerId, label: node.label, targetType: node.targetType, targetId: node.targetId })
+      emit(node && { ownerId: node.ownerId, label: node.label, targetType: node.targetType, targetId: node.targetId }, 'validation')
     } catch {
-      if (version === selectionVersion) { selectionError.value = true; emit() }
+      if (version === selectionVersion) { selectionError.value = true; emit(undefined, 'validation') }
     }
   }
   function select(id: string) {
@@ -73,7 +78,7 @@ export function useMetricNavigator(query: MetricNavigationQuery, selectedId: Ref
     selectionVersion += 1
     retryId = undefined
     selectionError.value = false
-    emit({ ownerId: node.ownerId, label: node.label, targetType: node.targetType, targetId: node.targetId })
+    emit({ ownerId: node.ownerId, label: node.label, targetType: node.targetType, targetId: node.targetId }, 'user')
     return true
   }
   function changePage(value: number) { page.value = value; return search() }
