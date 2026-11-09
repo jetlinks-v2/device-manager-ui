@@ -31,7 +31,7 @@ export function useMetricSourcePicker(locale:Ref<string> = ref('zh')) {
   let lastDeclaration:{session:string;type:string;id:string;name:string} | undefined
   const open = computed(()=>!!request.value), inherited = computed(()=>request.value?.context.scope === 'children')
   const currentMember = computed(()=>objectType.value === 'member')
-  const historyInput = computed(()=>!!request.value?.input.source?.lookback)
+  const historyInput = computed(()=>request.value?.purpose !== 'declaration' && !!request.value?.input.source?.lookback)
   const deviceId = computed(()=>objectType.value === 'device' ? objectId.value : '')
   const hasOwnerBuiltins = computed(()=>!!objectId.value && !currentMember.value)
   const ownerBuiltin = computed(()=>category.value === 'builtin' && hasOwnerBuiltins.value)
@@ -39,7 +39,7 @@ export function useMetricSourcePicker(locale:Ref<string> = ref('zh')) {
   const error = computed(()=>queryError.value || propertyError.value)
   const businessObject = computed(()=>currentMember.value ? {type:'device',id:'',name:object.value.name} : object.value)
   const queriesVisible = computed(()=>showAllSources.value || !suggestedSources.value.length || suggestedSources.value.includes('businessQuery') || category.value === 'businessQuery')
-  const business = useBusinessSources(request,businessObject,dataKeyword,queriesVisible)
+  const business = useBusinessSources(request,businessObject,queriesVisible)
   const metricSources = useMetricOutputSources(request,deviceId,computed(()=>open.value && !choosingObject.value && metricsExpanded.value),object)
   const statistics = useMetricMemberStatistics(request,builtinScope,includeChildren,finish)
   const methods = computed<SourceMethod[]>(()=>[
@@ -62,14 +62,15 @@ export function useMetricSourcePicker(locale:Ref<string> = ref('zh')) {
     if (category.value === 'metric') return !!method.value && !metricSources.loading.value && !metricSources.error.value
     if (category.value === 'event') return !propertyLoading.value && !propertyError.value && events.value.some(item=>item.id === propertyId.value) && propertyAllowed.value
     if (category.value === 'property' || selectedProperty.value?.platform) return !propertyLoading.value && !propertyError.value && !!selectedProperty.value && propertyAllowed.value && (!historyInput.value || !selectedProperty.value.platform || selectedProperty.value.history)
-    return !builtinLoading.value && !builtinError.value && !historyInput.value && request.value.scheduled !== false && builtins.value.some(item=>item.id === propertyId.value && !item.configurationRequired)
+    return !builtinLoading.value && !builtinError.value && !historyInput.value && (request.value.purpose === 'declaration' || request.value.scheduled !== false) && builtins.value.some(item=>item.id === propertyId.value && (request.value?.purpose === 'declaration' || !item.configurationRequired))
   })
-  const requiresConfirmation = computed(()=>!!method.value && (selected.value!.methods.length > 1 || category.value === 'businessQuery'
-    || category.value === 'businessEvent' && request.value?.purpose !== 'declaration'
+  const requiresConfirmation = computed(()=>request.value?.purpose !== 'declaration' && !!method.value && (selected.value!.methods.length > 1 || category.value === 'businessQuery'
+    || category.value === 'businessEvent'
     || category.value === 'builtin' && !!builtins.value.find(item=>item.id === propertyId.value)?.supportsChildren))
 
 /** 能力提示反映模板当前的读取需求；产品属性不能误存成产品ID的设备读取。 */
   function issue(item:SourceMethod):string | undefined {
+    if (request.value?.purpose === 'declaration') return
     if (['property','event'].includes(item.kind) || item.kind === 'builtin' && item.id.startsWith('$')) {
       if (!propertyAllowed.value) return 'productPropertyBinding'
     }
@@ -183,7 +184,7 @@ export function useMetricSourcePicker(locale:Ref<string> = ref('zh')) {
     selectedKey.value = items.value.find(value=>value.methods.some(value=>value.key === item.key))?.key || item.key
     methodKey.value = item.key; category.value = item.kind; propertyId.value = item.id
     if (item.kind === 'businessEvent' || item.kind === 'businessQuery') business.select(item,restoring)
-    if (item.kind === 'builtin' && builtins.value.find(value=>value.id === item.id)?.configurationRequired && !restoring) statistics.open()
+    if (request.value?.purpose !== 'declaration' && item.kind === 'builtin' && builtins.value.find(value=>value.id === item.id)?.configurationRequired && !restoring) statistics.open()
   }
   /** 简单来源一次选择即完成；需要参数、字段或读取方式时才保留确认步骤。 */
   function chooseMethod(item:SourceMethod) {
@@ -212,12 +213,12 @@ export function useMetricSourcePicker(locale:Ref<string> = ref('zh')) {
       const item = events.value.find(item=>item.id === propertyId.value)!
       const original = request.value?.mapping
       const source = original && sameObject(original) && mappingSourceKind(original) === 'event' && original.id === item.id ? original.providerSource : undefined
-      finish({mapping:{kind:'provider',thingType:'device',...(objectType.value === 'device' ? {thingId:objectId.value} : {}),id:item.id,providerSource:{...source,provider:source?.provider || 'device-events',sourceType:'event',configuration:{...source?.configuration,...(objectType.value !== 'device' ? {templateId:objectId.value} : {})}}},label:`${object.value.name} / ${item.name}`,declaration:{name:item.name,valueType:item.valueType}}); return
+      finish({mapping:{kind:'provider',thingType:'device',...(objectType.value === 'device' ? {thingId:objectId.value} : {}),id:item.id,providerSource:{...source,provider:source?.provider || 'device-events',sourceType:'event',configuration:{...source?.configuration,...(objectType.value !== 'device' ? {templateId:objectId.value} : {})}}},label:`${object.value.name} / ${item.name}`,declaration:{id:item.id,name:item.name,valueType:item.valueType}}); return
     }
     const item = selectedProperty.value
-    if (item) { finish({mapping:{kind:'property',thingType:'device',...(objectType.value === 'device' ? {thingId:objectId.value} : {}),id:item.id},label:`${object.value.name} / ${item.name}`,declaration:{name:item.name,unit:item.unit,valueType:item.valueType}}); return }
+    if (item) { finish({mapping:{kind:'property',thingType:'device',...(objectType.value === 'device' ? {thingId:objectId.value} : {}),id:item.id},label:`${object.value.name} / ${item.name}`,declaration:{id:item.id,name:item.name,unit:item.unit,valueType:item.valueType}}); return }
     const builtin = builtins.value.find(item=>item.id === propertyId.value)!
-    finish({mapping:{kind:'builtin',thingType:objectType.value,thingId:objectId.value,id:builtin.id,includeChildren:!!builtin.supportsChildren && includeChildren.value},label:`${object.value.name} / ${builtin.name}`,declaration:{name:builtin.name,unit:builtin.unit,valueType:{type:builtin.valueType || 'long'}}})
+    finish({mapping:{kind:'builtin',thingType:objectType.value,thingId:objectId.value,id:builtin.id,includeChildren:!!builtin.supportsChildren && includeChildren.value},label:`${object.value.name} / ${builtin.name}`,declaration:{id:builtin.id,name:builtin.name,unit:builtin.unit,valueType:{type:builtin.valueType || 'long'}}})
   }
   onScopeDispose(cancel)
   return {request,open,inherited,currentMember,object,objectType,objectTypes,objectId,objectName,devices,properties,events,builtins,builtinScope,includeChildren,

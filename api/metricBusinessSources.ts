@@ -2,7 +2,8 @@ import { request } from '@jetlinks-web/core'
 import { collectMetricResources } from '@jetlinks-web-core/components/Metric/extensions/registry'
 
 export interface BusinessEvent { id:string; name:string; description?:string; group?:string; schema:Record<string,unknown> }
-export interface BusinessCommand { id:string; name:string; inputs?:{id:string;name?:string;valueType?:Record<string,unknown>}[]; output?:Record<string,unknown>; expands?:Record<string,unknown> }
+export interface BusinessCommand { id:string; name:string; description?:string; inputs?:{id:string;name?:string;valueType?:Record<string,unknown>}[]; output?:Record<string,unknown>; expands?:Record<string,unknown> }
+interface SourceCommandService { id:string; metadata?:{metricSource?:{objectTypes?:string[]}} }
 export interface SourceObjectType { id:string; name:string; description?:string; icon?:string; metricSource?:{root:boolean;icon?:string}; i18nName?:string }
 const options = { hiddenError:true }
 async function read<T>(url:string):Promise<T> {
@@ -11,7 +12,11 @@ async function read<T>(url:string):Promise<T> {
   return response.result
 }
 export const loadMetricEvents = () => read<BusinessEvent[]>('/metric/configs/sources/events')
-export const loadMetricCommandServices = () => read<{id:string;name:string}[]>('/command-supports/services')
+/** 内部服务不是业务选项；只有显式声明当前对象类型的服务才发现其查询元数据。 */
+export async function loadMetricCommandServices(objectType:string) {
+  return (await read<SourceCommandService[]>('/command-supports/services'))
+    .filter(service=>Array.isArray(service.metadata?.metricSource?.objectTypes) && service.metadata.metricSource.objectTypes.includes(objectType))
+}
 /** 关系类型全集不是来源根目录；业务维度及显式root声明负责UI发现，后端绑定仍按原权限执行。 */
 export async function loadMetricObjectTypes():Promise<SourceObjectType[]> {
   const types = await read<SourceObjectType[]>('/relation/types')

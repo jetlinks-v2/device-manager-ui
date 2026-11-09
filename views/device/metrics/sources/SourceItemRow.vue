@@ -7,12 +7,19 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { metricHostMessages } from '../messages'
+import { metricMessages } from '@jetlinks-web-core/components/Metric/messages'
+import { parameterTypeKeys } from '@jetlinks-web-core/components/Metric/parameterPresentation'
 import type { SourceItem } from './catalog'
-const props=defineProps<{item:SourceItem;selected:boolean}>()
+const props=defineProps<{item:SourceItem;selected:boolean;declaration?:boolean}>()
 defineEmits<{(event:'select'):void}>()
-const {t}=useI18n({useScope:'local',messages:metricHostMessages})
+const {t}=useI18n({useScope:'local',messages:{zh:{...metricMessages.zh,...metricHostMessages.zh},en:{...metricMessages.en,...metricHostMessages.en}}})
 const kindIcon = (kind:string)=>({property:'DatabaseOutlined',event:'ThunderboltOutlined',builtin:'ApiOutlined',metric:'NodeIndexOutlined',businessEvent:'ThunderboltOutlined',businessQuery:'SearchOutlined'}[kind] || 'DatabaseOutlined')
-const summary=computed(()=>[...new Set(props.item.methods.flatMap(method=>method.capabilities))].map(value=>t(`capability_${value}`)).join(' · '))
+const summary=computed(()=>{
+  if (!props.declaration) return [...new Set(props.item.methods.flatMap(method=>method.capabilities))].map(value=>t(`capability_${value}`)).join(' · ')
+  const method=props.item.methods[0], schema=method.valueType, type=String(schema?.type || '')
+  const detail=Array.isArray(schema?.elements) ? t('referenceChoices',{count:schema.elements.length}) : Array.isArray(schema?.properties) ? t('referenceFields',{count:schema.properties.length}) : ''
+  return [method.id,t(type === 'date' ? 'inputDateType' : parameterTypeKeys[type] || 'inputUndeclaredType'),detail].filter(Boolean).join(' · ')
+})
 </script>
 <style scoped>
 .source-row { display:flex; align-items:center; gap:8px; width:100%; min-width:0; min-height:44px; padding:8px; border:1px solid transparent; border-radius:var(--r-2,6px); background:transparent; text-align:left; color:var(--ink-2); cursor:pointer }

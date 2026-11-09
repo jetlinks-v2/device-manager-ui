@@ -3,15 +3,15 @@ import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { createMetricLoader } from '../../../jetlinks-web-core/tests/helpers/metricRuntime.mjs'
 
-let types=[],dimensions=[],calls=[]
+let types=[],dimensions=[],calls=[],services=[]
 const load=createMetricLoader({
   '@jetlinks-web/core':{request:{
-    get:async url=>({result:url==='/relation/types' ? types : [{id:'read',expands:{functionKind:'query'}},{id:'operate',expands:{functionKind:'function'}}]}),
+    get:async url=>({result:url==='/relation/types' ? types : url==='/command-supports/services' ? services : [{id:'read',expands:{functionKind:'query'}},{id:'operate',expands:{functionKind:'function'}}]}),
     post:async(url,body)=>{calls.push({url,body});return {result:{data:[{id:'old',name:'旧对象'}],total:1}}},
   }},
   '@jetlinks-web-core/components/Metric/extensions/registry':{collectMetricResources:()=>({dimensions})},
 })
-const {loadMetricObjectTypes,queryMetricBusinessObjects,loadMetricCommands}=load(fileURLToPath(new URL('../api/metricBusinessSources.ts',import.meta.url)))
+const {loadMetricObjectTypes,queryMetricBusinessObjects,loadMetricCommands,loadMetricCommandServices}=load(fileURLToPath(new URL('../api/metricBusinessSources.ts',import.meta.url)))
 
 test('根对象来自可用指标维度及显式来源声明，保留名称、图标、说明且不按业务类型黑名单过滤',async()=>{
   dimensions=[{provider:{ownerType:'device',label:()=> '设备',icon:'DesktopOutlined'}},{provider:{ownerType:'space',label:'空间',icon:'EnvironmentOutlined'}}]
@@ -34,4 +34,12 @@ test('根目录提示不限制旧对象查询；目录只发现只读命令，�
   assert.equal(calls[0].body.query.terms[0].value,'%历史%')
   calls=[];assert.deepEqual((await loadMetricCommands('inspection')).map(item=>item.id),['read'])
   assert.deepEqual(calls,[])
+})
+
+test('内部服务只按显式适用对象发现，支持多选对象且不按服务名称过滤',async()=>{
+  services=[{id:'authorization',metadata:{metricSource:{objectTypes:['device','zone']}}},{id:'inspection'},
+    {id:'templates',metadata:{metricSource:{objectTypes:['space']}}},{id:'invalid',metadata:{metricSource:{objectTypes:'device'}}}]
+  assert.deepEqual((await loadMetricCommandServices('device')).map(item=>item.id),['authorization'])
+  assert.deepEqual((await loadMetricCommandServices('zone')).map(item=>item.id),['authorization'])
+  assert.deepEqual(await loadMetricCommandServices('product'),[])
 })

@@ -1,5 +1,6 @@
 export const metricHostMessages = {
   zh: {
+    referenceChoices:'{count} 个选项',referenceFields:'{count} 个字段',
     deviceSourceHint:'设备属性、上报事件与平台状态',productSourceHint:'产品物模型声明与范围统计',sourceObjectHint:'选择业务对象，再读取其关联数据',
     product:'产品',chooseObject:'选择来源对象',searchObject:'搜索对象名称',noObjects:'没有可选对象',searchData:'搜索数据名称或标识',ungrouped:'未分组',noData:'没有匹配的数据项',sourceLoading:'正在补充其他来源…',
     readingHistory:'本输入读取历史序列',readingCurrent:'本输入读取当前数据或上报数据',capability_current:'当前值',capability_history:'历史序列',capability_subscribe:'实时上报',
@@ -39,7 +40,7 @@ export const metricHostMessages = {
     searchMetric:'搜索输出或指标名称', noMetrics:'没有可引用的已启用输出', metricHistoryMissing:'未保存历史，不能用于此历史输入', metricMissing:'来源指标已停用或输出不可用，请重新选择',
     back:'返回', currentDevice:'当前设备', sourceMissing:'来源属性不存在，请重新选择', searchProperty:'搜索属性名称或标识', noProperties:'没有匹配的属性', onlineHint:'平台连接状态，不代表机械工况',
     currentDeviceHint: '选择当前设备的属性；该产品下每台设备分别计算。',
-    title: '指标', devices: '设备', sourceTitle: '选择数据来源', device: '设备', property: '属性',
+    title: '指标', devices: '设备', sourceTitle: '选择数据来源', referenceTitle:'参考已有数据',referenceHelp:'参考名称、标识与类型；应用模板时再绑定实际来源。', device: '设备', property: '属性',
     scope: '当前对象', all: '全部可读设备', search: '搜索设备名称', selectDevice: '选择设备',
     selectProperty: '选择属性', empty: '当前范围没有可选设备', online: '在线状态',
     failed: '来源加载失败，请重试', retry: '重试', cancel: '取消', confirm: '确定',
@@ -48,6 +49,7 @@ export const metricHostMessages = {
     noAccess: '没有查看指标的权限', templates: '指标模板', saveMetrics: '配置指标',
   },
   en: {
+    referenceChoices:'{count} options',referenceFields:'{count} fields',
     deviceSourceHint:'Device properties, events and platform state',productSourceHint:'Product model declarations and scope statistics',sourceObjectHint:'Select a business object and read its related data',
     product:'Product',chooseObject:'Choose source object',searchObject:'Search object name',noObjects:'No objects available',searchData:'Search data name or ID',ungrouped:'Ungrouped',noData:'No matching data',sourceLoading:'Loading other sources…',
     readingHistory:'This input reads a historical series',readingCurrent:'This input reads current or reported data',capability_current:'Current value',capability_history:'History',capability_subscribe:'Live reports',
@@ -87,7 +89,7 @@ export const metricHostMessages = {
     searchMetric:'Search outputs or metric names', noMetrics:'No enabled outputs are available', metricHistoryMissing:'History is not stored; unavailable for this history input', metricMissing:'Source metric is disabled or its output is unavailable. Choose another.',
     back:'Back', currentDevice:'Current device', sourceMissing:'Source property is unavailable. Choose another.', searchProperty:'Search property name or ID', noProperties:'No matching properties', onlineHint:'Platform connection state, not machine operating state',
     currentDeviceHint: 'Choose a current-device property. Each device in this product computes independently.',
-    title: 'Metrics', devices: 'Devices', sourceTitle: 'Select source', device: 'Device', property: 'Property',
+    title: 'Metrics', devices: 'Devices', sourceTitle: 'Select source', referenceTitle:'Reference existing data',referenceHelp:'Copy the name, identifier and type. Bind the actual source when applying the template.', device: 'Device', property: 'Property',
     scope: 'Current object', all: 'All readable devices', search: 'Search device name', selectDevice: 'Select device',
     selectProperty: 'Select property', empty: 'No devices in this scope', online: 'Online status',
     failed: 'Unable to load source. Retry.', retry: 'Retry', cancel: 'Cancel', confirm: 'Confirm',

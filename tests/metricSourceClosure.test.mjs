@@ -50,7 +50,7 @@ test('产品直接导入物模型不查样例设备；绑定属性按设备解�
     state.changeObjectType('product');await state.selectObject('product');await flush()
     assert.equal(deviceReads,before);assert.equal(productReads,products+1)
     const method=state.items.value.flatMap(item=>item.methods).find(item=>item.kind==='property')
-    state.selectMethod(method);state.confirm();assert.deepEqual((await pending).declaration,{name:'温度',unit:undefined,valueType:{type:'double'}})
+    state.selectMethod(method);state.confirm();assert.deepEqual((await pending).declaration,{id:'temperature',name:'温度',unit:undefined,valueType:{type:'double'}})
     pending=state.pickSource({context:{ownerType:'product',ownerId:'product',scope:'children'},input:{id:'reading'}})
     await flush();state.selectMethod(state.items.value.flatMap(item=>item.methods).find(item=>item.kind==='property'))
     state.confirm();assert.deepEqual((await pending).mapping,{kind:'property',thingType:'device',id:'temperature'})
@@ -60,12 +60,12 @@ test('产品直接导入物模型不查样例设备；绑定属性按设备解�
   } finally {scope.stop()}
 })
 
-test('事件和查询共用目录，仅显式关联才合并；元数据按服务惰性加载，选择保留0和动态参数',async()=>{
+test('事件和查询共用目录，仅显式关联才合并；只发现已声明服务，选择保留0和动态参数',async()=>{
   const scope=effectScope(),state=scope.run(useMetricSourcePicker)
   try {
     const before=commandReads
     let pending=state.pickSource({context,input:{id:'assessment'},scheduled:false})
-    await flush();assert.equal(commandReads,before)
+    await flush();assert.equal(commandReads,before+1)
     await state.business.loadService('inspection');await flush();assert.equal(commandReads,before+1)
     await state.business.loadService('inspection');assert.equal(commandReads,before+1)
     const merged=state.items.value.find(item=>item.key==='businessEvent:fire-analysis')
@@ -156,26 +156,47 @@ test('部分业务目录失败不阻止属性选择；换对象清空查询参�
   } finally {business.loadMetricEvents=events;business.loadMetricCommands=commands;scope.stop()}
 })
 
-test('大量查询服务分页搜索，浏览不预取命令，旧绑定跨页仍可见',async()=>{
-  const scope=effectScope(),state=scope.run(useMetricSourcePicker),original=business.loadMetricCommandServices
+test('业务声明直接展示，隐藏建议时惰性加载，旧服务只恢复精确绑定',async()=>{
+  const scope=effectScope(),state=scope.run(useMetricSourcePicker),original=business.loadMetricCommandServices,commands=business.loadMetricCommands
+  const loaded=[]
   try {
-    business.loadMetricCommandServices=async()=>Array.from({length:150},(_,i)=>({id:`service-${i}`,name:`巡检${i}`}))
-    const reads=commandReads
+    business.loadMetricCommands=async service=>{loaded.push(service);return [
+      {id:'get',name:'核查结果',output:{type:'boolean'},expands:{metricSource:{group:'人工核查'}}},
+      {id:'other',name:'其他查询',output:{type:'boolean'},expands:{metricSource:{}}},
+      {id:'internal',name:'内部查询',output:{type:'boolean'}}]}
     let pending=state.pickSource({context,input:{id:'reading'},hint:{sources:['property']}})
-    await flush();assert.equal(state.business.services.value.length,0)
+    await flush();assert.deepEqual(loaded,[])
     state.showAllSources.value=true;await flush()
-    assert.equal(state.business.services.value.length,10);assert.equal(state.business.serviceCount.value,150)
-    state.business.servicePage.value=2;assert.equal(state.business.services.value[0].id,'service-10')
-    state.dataKeyword.value='巡检149';await flush()
-    assert.equal(state.business.servicePage.value,1);assert.equal(state.business.services.value.length,1)
-    assert.equal(state.business.services.value[0].id,'service-149');assert.equal(commandReads,reads)
+    assert.deepEqual(loaded,['inspection'])
+    assert.deepEqual(state.business.methods.value.filter(item=>item.kind==='businessQuery').map(item=>item.id),['get','other'])
     state.cancel();await pending
-    pending=state.pickSource({context,input:{id:'assessment'},mapping:{kind:'provider',thingType:'device',thingId:'gateway',id:'get',providerSource:{provider:'objects',sourceType:'query',configuration:{commandService:'service-149',parameters:{count:0}}}}})
+    business.loadMetricCommandServices=async()=>[];loaded.length=0
+    pending=state.pickSource({context,input:{id:'assessment'},mapping:{kind:'provider',thingType:'device',thingId:'gateway',id:'get',providerSource:{provider:'objects',sourceType:'query',configuration:{commandService:'legacy',parameters:{count:0}}}}})
     await flush();assert.equal(state.canConfirm.value,true)
-    assert.equal(state.business.services.value.some(item=>item.id==='service-149'),true)
-    assert.ok(state.business.services.value.length<=11)
-    state.cancel();await pending
-  } finally {business.loadMetricCommandServices=original;scope.stop()}
+    assert.deepEqual(loaded,['legacy'])
+    assert.deepEqual(state.business.methods.value.filter(item=>item.kind==='businessQuery').map(item=>item.id),['get'])
+    state.confirm();assert.equal((await pending).mapping.providerSource.configuration.parameters.count,0)
+  } finally {business.loadMetricCommandServices=original;business.loadMetricCommands=commands;scope.stop()}
+})
+
+test('业务目录最大四路并发，同一服务请求复用；切换对象时迟到响应隔离',async()=>{
+  const scope=effectScope(),state=scope.run(useMetricSourcePicker),original=business.loadMetricCommandServices,commands=business.loadMetricCommands
+  const waiting=[];let active=0,maximum=0
+  try {
+    business.loadMetricCommandServices=async()=>Array.from({length:9},(_,i)=>({id:`service-${i}`}))
+    business.loadMetricCommands=service=>{active++;maximum=Math.max(maximum,active);return new Promise(resolve=>waiting.push(()=>{active--;resolve([{id:service,expands:{metricSource:{}}}])}))}
+    const pending=state.pickSource({context,input:{id:'reading'}})
+    await flush();assert.equal(waiting.length,4)
+    const first=state.business.loadService('service-0'),same=state.business.loadService('service-0')
+    assert.equal(first,same)
+    waiting.splice(0).forEach(resolve=>resolve());await flush()
+    assert.equal(waiting.length,4);waiting.splice(0).forEach(resolve=>resolve());await flush()
+    assert.equal(waiting.length,1);waiting.splice(0).forEach(resolve=>resolve());await flush()
+    assert.equal(maximum,4);assert.equal(Object.keys(state.business.commands.value).length,9)
+    await state.selectObject('external');await flush()
+    state.cancel();await pending;waiting.splice(0).forEach(resolve=>resolve());await flush()
+    assert.deepEqual(state.business.commands.value,{})
+  } finally {business.loadMetricCommandServices=original;business.loadMetricCommands=commands;scope.stop()}
 })
 
 test('简单来源一击完成；必要参数保留确认，不兼容来源不会关闭',async()=>{
@@ -203,6 +224,19 @@ test('简单来源一击完成；必要参数保留确认，不兼容来源不�
     assert.equal(state.open.value,true);assert.equal(state.requiresConfirmation.value,true)
     state.business.parameters.value={count:0};state.confirm()
     assert.equal((await pending).mapping.providerSource.configuration.parameters.count,0)
+  } finally {scope.stop()}
+})
+
+test('参考业务声明一击完成，不要求查询参数、定时或历史读取配置',async()=>{
+  const scope=effectScope(),state=scope.run(useMetricSourcePicker)
+  try {
+    const pending=state.pickSource({context,input:{id:'history',source:{lookback:'2h'}},purpose:'declaration',scheduled:false})
+    await state.selectObject('gateway');await flush()
+    const method=state.items.value.flatMap(item=>item.methods).find(item=>item.kind==='businessQuery')
+    state.chooseMethod(method)
+    const result=await pending
+    assert.equal(result.declaration.id,'get');assert.equal(result.declaration.valueType.type,'boolean')
+    assert.equal(state.open.value,false)
   } finally {scope.stop()}
 })
 
