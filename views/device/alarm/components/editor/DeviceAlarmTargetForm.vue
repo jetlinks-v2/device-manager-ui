@@ -12,9 +12,13 @@
           :disabled="readonlyScope" @change="(value, option) => emit('device-change', value, option)" />
       </a-form-item>
     </template>
-    <a-form-item :label="$t('DeviceAlarm.form.property')" required>
+    <a-form-item :label="$t('DeviceAlarm.form.property')" required :extra="configuredPropertyHint">
       <a-select show-search :value="model.property" :disabled="readonlyScope" :options="propertySelectOptions"
-        :placeholder="$t('DeviceAlarm.placeholder.property')" @change="(value: unknown) => emit('property-change', String(value))" />
+        :placeholder="$t('DeviceAlarm.placeholder.property')" @change="(value: unknown) => emit('property-change', String(value))">
+        <template #option="{ label, disabled }">
+          {{ label }}<template v-if="disabled">{{ $t('DeviceAlarm.property.configuredSuffix') }}</template>
+        </template>
+      </a-select>
     </a-form-item>
   </div>
 </template>
@@ -47,6 +51,9 @@ const allDeviceOption = computed(() => [{ label: $t('DeviceAlarm.deviceRange.all
 const propertySelectOptions = computed(() => props.propertyOptions.map(property => ({
   label: propertyNameOf(property), value: propertyIdOf(property), disabled: Boolean(property.alarmConfigured),
 })))
+const configuredPropertyHint = computed(() => !props.readonlyScope && propertySelectOptions.value.some(option => option.disabled)
+  ? $t('DeviceAlarm.property.configuredHint')
+  : undefined)
 </script>
 <style scoped>
 .alarm-target-form { display: grid; gap: var(--space-5); }

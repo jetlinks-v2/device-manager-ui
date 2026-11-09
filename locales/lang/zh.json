@@ -5463,6 +5463,8 @@
     "DeviceAlarm.form.product": "产品",
     "DeviceAlarm.form.deviceRange": "设备",
     "DeviceAlarm.form.property": "物模型属性",
+    "DeviceAlarm.property.configuredSuffix": "（已配置告警）",
+    "DeviceAlarm.property.configuredHint": "已配置告警的属性不可重复选择，请选择其他属性或编辑已有告警。",
     "DeviceAlarm.form.level": "告警级别",
     "DeviceAlarm.form.trigger": "触发方式",
     "DeviceAlarm.form.lower": "阈值下限",

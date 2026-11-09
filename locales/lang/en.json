@@ -5462,6 +5462,8 @@
     "DeviceAlarm.form.product": "Product",
     "DeviceAlarm.form.deviceRange": "Device",
     "DeviceAlarm.form.property": "Thing Model Property",
+    "DeviceAlarm.property.configuredSuffix": " (Alarm already configured)",
+    "DeviceAlarm.property.configuredHint": "Properties with an existing alarm cannot be selected again. Select another property or edit the existing alarm.",
     "DeviceAlarm.form.level": "Alarm Level",
     "DeviceAlarm.form.trigger": "Trigger",
     "DeviceAlarm.form.lower": "Lower Limit",

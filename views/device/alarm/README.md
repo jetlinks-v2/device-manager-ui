@@ -1,5 +1,15 @@
 # 物联告警规则与记录工作区
 
+## 物模型属性已配置告警提示
+
+- 目标与范围：运行时新增告警选择物模型属性时，清楚说明已配置属性不可选择的原因；仅修改 `components/editor/DeviceAlarmTargetForm.vue` 和本模块中、英、日文资源。
+- 实施：复用 `alarmConfigured` 禁用标记，在下拉选项后显示“已配置告警”，并在存在此类选项时通过 Form.Item 的辅助说明提示不可重复选择、可选择其他属性或编辑已有告警；保留原有选择、编辑和保存语义。
+- 验证：Node 22.18.0 下执行 `node scripts/test-alarm-workspace.mjs`，原工作区 151/151 通过，迁移至最新远端 `2.20` 后复跑 158/158 通过（临时运行器仅调整依赖定位）；迁移前在运行时根目录执行 `pnpm --config.verify-deps-before-run=false build:modules device-manager-ui` 成功，产物含新增文案，仍有资源路径与 chunk 体积等构建提示；`git diff --check` 通过。运行时无独立 lint / 样式门禁脚本。
+- 类型检查：迁移前在运行时根目录执行 `pnpm exec vue-tsc --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json`，报告 1841 条诊断，涉及模块与共享依赖；本次修改的 `DeviceAlarmTargetForm.vue` 无诊断，全模块类型检查不能视为通过。
+- 页面核验：本地临时样例装配真实 TargetForm 与 Ant Select，确认温度禁用并显示“已配置告警”、湿度可选择、全部可选时隐藏辅助说明、编辑只读时隐藏重复配置说明，中英日文切换正常；未连接真实后端，登录环境联调仍待验证。组件共 62 行，保留现有表单结构，无新增组件或公共抽象；不涉及后端接口、权限或运营端。
+- 作者 Review：PASS。提示复用现有禁用标记，未扩展公共模型、请求或保存行为。
+
+
 ## 运行时新增 / 编辑弹窗展示优化
 
 - 目标：设备管理员配置单条物联告警时，能清楚识别当前配置项、编辑其内容，并从预览直接返回修改；新增和编辑采用一致布局。采用已确认的 M 级方案，已在运行时实现。
