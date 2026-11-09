@@ -335,6 +335,7 @@ const columns = [
         search: {
             type: 'string',
         },
+	      ellipsis: true
     },
     {
         title: $t('AccessConfig.index.764793-8'),

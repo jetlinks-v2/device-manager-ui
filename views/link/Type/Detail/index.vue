@@ -1211,8 +1211,8 @@ const getCertificates = async () => {
   }
 };
 
-const getResourcesCurrent =async () => {
-  allResources().then((resp: any) => {
+const getResourcesCurrent = () => {
+  return allResources().then((resp: any) => {
     if (resp.status === 200) {
       _typeStore.setConfigRef(resp.result || []);
 
@@ -1312,6 +1312,16 @@ watch(
   { deep: true, immediate: true }
 );
 
+// 详情类型和资源可能以任意顺序回填，共享端口必须基于最新的两者重算。
+watch(
+  [() => formData.value.type, configRef],
+  () => {
+    if (shareCluster.value) {
+      getPortOptions(configRef.value);
+    }
+  }
+);
+
 watch(
   () => dynamicValidateForm.cluster?.length,
   () => {
@@ -1341,14 +1351,14 @@ watch(
   { deep: true, immediate: true }
 );
 
-onMounted(async () => {
+onMounted(() => {
   getSupports();
   getCertificates();
 
   if (isNoCommunity) {
     getResourcesClusters();
   }
-  await getResourcesCurrent();
+  getResourcesCurrent();
   if (id !== ":id") {
     getDetail();
   }
