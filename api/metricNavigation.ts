@@ -11,6 +11,15 @@ function requireResult(response: OwnerResponse) {
   return response.result || {}
 }
 
+/** 引用名称沿原业务查询权限读取，调用方每批最多32个已列出的对象，不拉取完整目录。 */
+export async function resolveMetricObjects(type: 'device' | 'product' | 'deviceGroup', ids: string[]) {
+  if (!ids.length) return []
+  const params = { pageIndex:0, pageSize:ids.length, terms:[{ column:'id', termType:'in', value:ids }] }
+  const response = type === 'deviceGroup' ? await request.post('/device/group/_query', params)
+    : await (type === 'device' ? query : queryProductList)(params)
+  return (requireResult(response).data || []).map(item => ({ ownerId:item.id, label:item.name || item.id }))
+}
+
 /** 对象列表与精确定位使用相同授权查询，URL 中的名称和 ID 不能代替查询结果。 */
 export async function queryMetricOwnerPage(type: 'device' | 'product', keyword: string, pageIndex: number, exactId?: string): Promise<MetricNavigationPage> {
   const response = await (type === 'device' ? query : queryProductList)({

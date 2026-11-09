@@ -12,6 +12,20 @@ const { useMetricNavigator, findMetricNode, filterMetricTree } = await load('../
 const flush = async () => { await nextTick(); await new Promise(resolve => setImmediate(resolve)); await nextTick() }
 const deferred = () => { let resolve, reject; const promise = new Promise((a,b) => {resolve=a;reject=b}); return {promise,resolve,reject} }
 
+test('引用名称通过授权查询批量读取，不展开全量对象或按对象逐次请求', async () => {
+  const calls = []
+  const query = type => async body => { calls.push([type, body]); return {status:200,result:{data:[{id:'a',name:'授权对象'},{id:'b'}]}} }
+  globalThis.__metricNav = { device:query('device'),product:query('product'),request:async (url,body) => {assert.equal(url,'/device/group/_query');return query('deviceGroup')(body)} }
+  for (const type of ['device','product','deviceGroup']) {
+    assert.deepEqual(await api.resolveMetricObjects(type, ['a','b']), [{ownerId:'a',label:'授权对象'},{ownerId:'b',label:'b'}])
+    assert.deepEqual(calls.at(-1), [type,{pageIndex:0,pageSize:2,terms:[{column:'id',termType:'in',value:['a','b']}]}])
+    assert.deepEqual(await api.resolveMetricObjects(type, []), [])
+  }
+  assert.equal(calls.length, 3)
+  globalThis.__metricNav.device = async () => ({status:403,message:'denied'})
+  await assert.rejects(api.resolveMetricObjects('device',['a']), /denied/)
+})
+
 test('device and product queries stay paged; exact IDs replace keyword search', async () => {
   const calls = []
   globalThis.__metricNav = Object.fromEntries(['device', 'product'].map(type => [type, async q => { calls.push(q); return { status: 200, result: { data: [{id:'allowed',name:'授权对象'}],total:41 } } }]))
