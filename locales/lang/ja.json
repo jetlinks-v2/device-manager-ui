@@ -4587,6 +4587,8 @@
   "DeviceAlarm.form.product": "プロダクト",
   "DeviceAlarm.form.deviceRange": "デバイス",
   "DeviceAlarm.form.property": "物理モデルプロパティ",
+  "DeviceAlarm.property.configuredSuffix": "（アラーム設定済み）",
+  "DeviceAlarm.property.configuredHint": "アラーム設定済みのプロパティは重複して選択できません。他のプロパティを選択するか、既存のアラームを編集してください。",
   "DeviceAlarm.form.level": "アラームレベル",
   "DeviceAlarm.form.trigger": "トリガー方式",
   "DeviceAlarm.form.lower": "しきい値下限",
