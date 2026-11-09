@@ -20,8 +20,13 @@
       <div ref="footerHost" class="gateway-editor-footer" />
     </template>
     <a-spin :spinning="loading">
-      <div v-if="type && id === ':id'">
-        <component :is="components.provider" :dataSource="dataSource" @onClick="goProviders" />
+      <div v-if="type && id === ':id'" class="gateway-editor-body" :aria-busy="loading">
+        <a-alert v-if="providerLoadFailed" type="error" show-icon :message="$t('GatewayEditor.loadFailed')">
+          <template #action>
+            <a-button size="small" @click="getProvidersData">{{ $t('GatewayEditor.retry') }}</a-button>
+          </template>
+        </a-alert>
+        <component v-else-if="!loading" :is="components.provider" :dataSource="dataSource" @onClick="goProviders" />
       </div>
       <div v-else class="gateway-editor-body">
         <component
@@ -41,8 +46,8 @@
 import { useGatewayDetail } from './useGatewayDetail';
 const editor = useGatewayDetail();
 const {
-  $t, id, components, dataSource, type, loading, provider, data, showType, bindProduct, footerHost, titleProvider, activeComponent,
-  goProviders, cancelEditor, compositeProvider
+  $t, id, components, dataSource, type, loading, providerLoadFailed, provider, data, showType, bindProduct, footerHost, titleProvider, activeComponent,
+  goProviders, cancelEditor, compositeProvider, getProvidersData
 } = editor;
 </script>
 

@@ -19,6 +19,15 @@
 - `views/link/AccessConfig/index.vue`、`Certificate/index.vue`、`Protocol/index.vue`、`Type/index.vue` 和 `plugin/Content.vue` 使用现有 `CardBox` 的分区操作布局，编辑为主要操作，删除沿用危险色及原有权限／确认。卡片配置统一提供两列／三列选择；证书管理默认展示卡片，保留表格切换。
 - 网络组件表格复用 `TableActions` 收纳次要操作，保留已有查看、编辑、启停、删除回调及权限。协议类型和插件来源只有多个候选时才显示选择区，单一候选继续沿用原有默认值与保存参数。
 
+### 接入方式弹窗加载反馈（已实施）
+
+- 目标与范围（S 级局部修复）：仅调整运行时 `views/link/AccessConfig/Detail/{index.vue,useGatewayDetail.ts}` 和 `components/Provider/index.vue`，让“选择接入方式”在请求期间显示 Spin，失败可重试，成功无数据时沿用 CloudEmpty；不调整接入分类、接口、保存参数、权限或运营端。
+- 实现：等待提供者请求完成后结束 loading；为弹窗内容保留最小高度并避免加载中显示空态；静态导入轻量列表，消除打开后的额外组件加载；描述使用 CSS 两行省略与独立 Tooltip，避免 Typography 的 tooltip 配置触发逐卡片 JavaScript 文本测量。请求失败展示错误与重试，中英文文案维护在本模块 `locales/lang/{zh,en}.json`。
+- 已确认原因：原新增分支调用 `queryProviders()` 后立即结束 loading，且列表使用异步组件。当前 Ant Design Vue 的 Typography 在 ellipsis 中设置 tooltip 时禁用 CSS 省略，转为克隆节点、读取布局并测量截断位置；这些主线程工作不计入接口和图片下载时间。三四秒的具体耗时占比仍需 Performance 录制确认，不能仅凭源码认定唯一性能瓶颈。
+- 验证：使用真实 Vue 响应式、生命周期与编译后的弹窗和列表模板，在本地验证宿主中复现原版请求未返回时 loading 已关闭；修复后的慢请求等待、成功展示、排序、独立全文提示、网络失败、真实重试按钮、重试加载、成功空态、业务失败收束及已有快捷配置免请求分支均通过。两个 SFC 的脚本、模板和样式编译、中英文 JSON 与新增词条、`node ../ui/scripts/check-ui-style.mjs --files modules/device-manager-ui/views/link/AccessConfig/Detail/index.vue modules/device-manager-ui/views/link/AccessConfig/components/Provider/index.vue` 及模块 `git diff --check` 通过；两个 Vue 文件分别为 59、76 行。
+- 构建与类型：在 `runtime-ui/jetlinks-web-core/` 执行 `node --max-old-space-size=8192 --max-semi-space-size=64 ../node_modules/vite/bin/vite.js build --outDir /tmp/jetlinks-gateway-access-build-20261109 -- --module-name device-manager-ui` 通过（11,620 个模块，1 分 40 秒），保留资源路径、Rollup 输出选项、navigation/menu 循环依赖和大分块告警。在 `runtime-ui/` 执行 `node node_modules/vue-tsc/bin/vue-tsc.js --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json` 未通过，共 1,825 条类型诊断；本次修改的三个源文件无诊断，完整检查仍需在修复其余类型问题后重跑。工作区与模块未配置独立 lint 脚本。
+- 浏览器与发布限制：上述验证宿主使用组件与接口边界替身，不代表浏览器性能录制或真实后端联调。当前 Work 设置禁用浏览器诊断，真实开发环境打开耗时及交互效果待在 `http://localhost:9200/#/infrastructure/access/gateway` 和 `http://192.168.33.76:9000/#/infrastructure/access/gateway` 复核；远端需发布新的运行时前端资源，本次未部署。
+
 ### 协议包拖拽上传
 
 - `views/link/Protocol/Save/FileUpload.vue` 复用 core `FileUpload`，`useProtocolFileUpload.ts` 将上传结果适配为携带访问凭证的文件地址；支持 JAR／ZIP 单文件、大小写后缀、编辑回显及移除，不增加文件大小上限。

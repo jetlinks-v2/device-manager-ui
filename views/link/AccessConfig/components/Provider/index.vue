@@ -28,11 +28,13 @@
               <img class="gateway-provider__icon" :src="BackMap.get(item.id)" alt="" />
               <div class="gateway-provider__text">
                 <strong>{{ item.name }}</strong>
-                <a-typography-paragraph
-                  type="secondary"
-                  :ellipsis="{ rows: 2, tooltip: item.description }"
-                  :content="item.description || '—'"
-                />
+                <a-tooltip :title="item.description">
+                  <a-typography-paragraph
+                    type="secondary"
+                    :ellipsis="{ rows: 2 }"
+                    :content="item.description || '—'"
+                  />
+                </a-tooltip>
               </div>
               <a-button type="primary" size="small" @click.stop="emit('onClick', item)">{{ $t('GatewayEditor.access') }}</a-button>
             </a-flex>
