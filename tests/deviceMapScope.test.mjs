@@ -33,6 +33,7 @@ function mount(setup) {
 function hook(filter, loadStates = async points => ({ points, failed: false })) {
   const streams = []
   const { useDeviceMap } = load('hooks/useDeviceMap.ts', {
+    '@jetlinks-web-core/store/menu': { useMenuStore: () => ({ hasMenu: () => false, jumpPage() {} }) },
     '../DeviceMapCard/config': { deviceMapCardConfig: { componentProps: { deviceMapCard: { isAutoRefresh: false } } } },
     '../shared': load('shared.ts'),
     '../services/deviceMap': { createDeviceMapStream(handlers) { const stream = { ...handlers, close() {} }; streams.push(stream); return stream }, filterDeviceMapPoints: filter, loadDeviceMapStates: loadStates },
