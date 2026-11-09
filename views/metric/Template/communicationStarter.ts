@@ -2,7 +2,7 @@ import type { MetricConfig, MetricTemplate, MetricTemplateOutput, MetricTemplate
 import { communicationMessages } from './communicationMessages'
 import { structureMetricTemplate } from '@jetlinks-web-core/components'
 
-/** 普通DAG模板：连接与上报分支独立，未绑定周期契约时不声称通信业务正常。 */
+/** 当前连接/会话与历史评分独立，历史未知区间不改判当前通信状态。 */
 export function createCommunicationStarter(t:(key:string)=>string):MetricTemplateStarter {
   const numeric = { type:'double', scale:4 }
   const schedule = { mode:'none', timeMode:'processing', emitPolicy:'onSchedule', emitInterval:'PT1M' }
@@ -35,7 +35,8 @@ export function createCommunicationStarter(t:(key:string)=>string):MetricTemplat
       formula('windowUnknownSeconds',[stats],`${stats} == null ? null : ${stats}['unknownDuration']`),
       formula('communicationAgeSeconds',['lastCommunicationTime'],"lastCommunicationTime == null || lastCommunicationTime <= 0 || lastCommunicationTime > sample.getProcessTime() ? null : (sample.getProcessTime() - lastCommunicationTime) / 1000.0", { window:schedule }),
       formula('linkQualityScore',['currentConnection',stats,'observedOnlineRatio'],`currentConnection == 0 ? 0 : currentConnection != 1 || ${stats} == null || ${stats}['coverage'] * 100 < params.minCoveragePercent || observedOnlineRatio == null ? null : observedOnlineRatio * 0.8 + 20.0 * (${stats}['inactiveCount'] >= params.scoreBaseline ? 0 : 1.0 - ${stats}['inactiveCount'] / params.scoreBaseline)`),
-      formula('communicationState',['currentConnection',stats,'communicationAgeSeconds'],`currentConnection == null ? 5 : currentConnection == 0 ? 1 : currentConnection != 1 ? 5 : params.activityAssessmentEnabled && communicationAgeSeconds != null && communicationAgeSeconds > params.communicationIdleSeconds ? 3 : ${stats} == null || ${stats}['coverage'] * 100 < params.minCoveragePercent || params.disconnectLimit > params.scoreBaseline || params.activityAssessmentEnabled && communicationAgeSeconds == null ? 4 : ${stats}['inactiveCount'] >= params.disconnectLimit ? 2 : 0`,
+      // 静默评估关闭时短路会话读取；历史统计只影响独立评分，不污染当前状态的质量。
+      formula('communicationState',['currentConnection','communicationAgeSeconds'],`currentConnection == null ? 5 : currentConnection == 0 ? 1 : currentConnection != 1 ? 5 : !params.activityAssessmentEnabled ? 0 : communicationAgeSeconds == null ? 4 : communicationAgeSeconds > params.communicationIdleSeconds ? 3 : 0`,
         { options:{ stateLabels:labels } }),
     ],
     outputs:[output('communicationState','state'),output('linkQualityScore','score'),output('observedOnlineRatio','ratio','%'),output('windowOfflineSeconds','duration','s'),

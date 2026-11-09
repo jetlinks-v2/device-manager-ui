@@ -44,6 +44,12 @@ test('communication quality is one device template with platform session sources
   assert.deepEqual(starter.template.outputs.filter(item=>item.options.explain).map(item=>item.metricId),['communicationState','linkQualityScore'])
   const fields=starter.template.definitions.find(item=>item.id==='connectionStatistics').calculator.outputType.properties
   assert.ok(fields.every(item=>item.name && item.name !== item.id))
+  const current=starter.template.definitions.find(item=>item.id==='communicationState')
+  assert.deepEqual(current.dependsOn,['currentConnection','communicationAgeSeconds'])
+  assert.ok(!JSON.stringify(current.expressionTree).includes('connectionStatistics'))
+  // 旧历史中的状态值仍有原解释，当前规则不再用历史掉线和覆盖率判断当前状态。
+  assert.deepEqual(current.options.stateLabels.map(item=>item.value),[0,1,2,3,4,5])
+  assert.equal(starter.template.parameterDefinitions.find(item=>item.id==='minCoveragePercent').expands.defaultValue,95)
 })
 
 // 独立前端 checkout 不依赖聚合工作区的相对路径；联合验收显式传入正式引擎的场景目录。
