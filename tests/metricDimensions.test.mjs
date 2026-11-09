@@ -6,7 +6,7 @@ const store='export const useAuthStore=()=>globalThis.__metricHost.auth;export c
 const mocks={
   '@jetlinks-web-core/locales':'export default {global:{t:key=>key}}',
   '@jetlinks-web-core/store':store,
-  './api/metricNavigation':'export const queryMetricGroupTree=async()=>({data:[],total:0});export const queryMetricOwnerPage=async()=>({data:[],total:0})',
+  './api/metricNavigation':'export const queryMetricGroupTree=async()=>({data:[],total:0});export const queryMetricOwnerPage=async()=>({data:[],total:0});export const resolveMetricObjects=async()=>[]',
   './views/device/metrics/useMetricSourceAdapter':'export const useMetricSourceAdapter=()=>({pickSource:async()=>undefined})',
 }
 const {default:device}=await loadMetricTestModule('../metricDimensions.ts',mocks)

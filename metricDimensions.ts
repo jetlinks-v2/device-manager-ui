@@ -41,7 +41,7 @@ export default {
       return { name: menu.getMenu('device/Product/Detail')?.routeName || 'device/Product/Detail', params: { id: selection.ownerId }, query: { tab: 'Metrics' } }
     },
   },
-  device: { ownerType: 'device', label: () => i18n.global.t('DeviceMetrics.devices'), icon: 'DesktopOutlined', order: 40,
+  device: { ownerType: 'device', label: () => i18n.global.t('DeviceMetrics.devices'), icon: 'DesktopOutlined', order: 0,
     resolveObjects: ids => resolveMetricObjects('device', ids),
     available: () => Boolean(deviceMenu()), canEdit: () => has(deviceCodes, 'update'), navigator: navigator('device'), useSourcePicker: useMetricSourceAdapter,
     toBusiness: selection => {
