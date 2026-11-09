@@ -1,26 +1,34 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFile } from 'node:fs/promises'
+import { fileURLToPath } from 'node:url'
 import { effectScope, nextTick } from 'vue'
 import { loadMetricTestModule } from './metricTestModule.mjs'
 
 const { useMetricSourcePicker } = await loadMetricTestModule('../views/device/metrics/useMetricSourcePicker.ts', {
+  '../../../api/metricBusinessSources': 'export const loadMetricObjectTypes=async()=>[];export const queryMetricBusinessObjects=async()=>({data:[],total:0});',
+  '../../../../api/metricBusinessSources': 'export const loadMetricEvents=async()=>[];export const loadMetricCommandServices=async()=>[];export const loadMetricCommands=async()=>[];',
   '../../../api/metricSources': `export const queryMetricDevices=()=>{throw new Error('must not enumerate devices')};
     export const loadMetricDevice=(...args)=>globalThis.__metricBuiltinDevice(...args);
-    export const loadMetricProduct=async()=>[];
+    export const loadMetricProduct=async()=>[];export const loadMetricProductSources=async()=>({properties:[],events:[]});
     export const loadMetricProductName=async id=>id;
     export const loadMetricBuiltins=(...args)=>globalThis.__metricBuiltinApi(...args);
     export const loadMetricInheritedOutputs=async()=>[];
     export const queryMetricProducts=async()=>({data:[],total:0});`,
   './useMetricOutputSources': `export const useMetricOutputSources=()=>({loading:{value:false},error:{value:false},items:{value:[]}})`,
+  '@jetlinks-web-core/components': `export const metricSourceSchema=schema=>schema`,
 })
 const { addSimulationSample, sampleInputs } = await loadMetricTestModule('../../../jetlinks-web-core/src/components/Metric/template/simulation.ts')
-const { createMetricStarters, starterMessages } = await loadMetricTestModule('../views/metric/Template/starters.ts')
+const { structureMetricTemplate } = await loadMetricTestModule('../../../jetlinks-web-core/src/components/Metric/template/structureExpressions.ts')
+const { createMetricStarters, starterMessages } = await loadMetricTestModule('../views/metric/Template/starters.ts', {
+  '@jetlinks-web-core/components': `export { structureMetricTemplate } from ${JSON.stringify(fileURLToPath(new URL('../../../jetlinks-web-core/src/components/Metric/template/structureExpressions.ts',import.meta.url)))}`,
+})
 
-test('object scope example is identical to the backend real-engine fixture', async () => {
+test('object scope example preserves the backend real-engine fixture after structured conversion', async () => {
   const translate = key => key.split('.').reduce((value, part) => value[part], starterMessages.zh)
   const fixture = createMetricStarters(translate).find(item => item.id === 'fleetConnections')
   const snapshot = JSON.parse(await readFile(new URL('../../../../modules/jetlinks-components/things-component/src/test/resources/metric-scenarios/object-builtin-counts.json', import.meta.url), 'utf8'))
+  snapshot.template = structureMetricTemplate(snapshot.template).template
   assert.deepEqual(JSON.parse(JSON.stringify({ template:fixture.template, ...fixture.simulation })), snapshot)
 })
 
@@ -70,7 +78,7 @@ test('builtin history is unavailable and failed metadata never becomes a zero or
     assert.equal(state.canConfirm.value,false)
     globalThis.__metricBuiltinApi = async () => {throw new Error('denied')}
     await state.loadBuiltins()
-    assert.equal(state.error.value,true)
+    assert.equal(state.builtinError.value,true)
     assert.equal(state.canConfirm.value,false)
     state.cancel()
     assert.equal(await pending,undefined)

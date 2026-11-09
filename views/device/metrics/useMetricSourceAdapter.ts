@@ -2,7 +2,8 @@ import { defineComponent, h, watch, type Ref } from 'vue'
 import type { MetricContext } from '@jetlinks-web-core/components'
 import { useI18n } from 'vue-i18n'
 import type { MetricInputMapping, MetricSourceDescription } from '@jetlinks-web-core/components'
-import { loadMetricDevice, loadMetricProduct, loadMetricProductName, loadMetricOutput, loadMetricBuiltins } from '../../../api/metricSources'
+import { metricSourceSchema, metricSourceField } from '@jetlinks-web-core/components/Metric/sourceSchema'
+import { loadMetricDevice, loadMetricProductSources, loadMetricProductName, loadMetricOutput, loadMetricBuiltins, describeMetricProvider, readMetricProvider } from '../../../api/metricSources'
 import { localizedTemplate } from '@jetlinks-web-core/components/Metric/template/text'
 import { metricOutputName } from '@jetlinks-web-core/components/Metric/presentation'
 import { durationParts } from '@jetlinks-web-core/components/Metric/template/window'
@@ -13,8 +14,8 @@ import { metricHostMessages } from './messages'
 
 /** 公开来源适配：调用者仅消费 picker 与 host，不依赖设备模块私有弹窗状态。 */
 export function useMetricSourceAdapter(context: Ref<MetricContext>) {
-  const state = useMetricSourcePicker()
   const composer = useI18n({ useScope:'local' })
+  const state = useMetricSourcePicker(composer.locale)
   // 宿主可能已创建 local composer；显式合并命名空间，避免后一次 useI18n 的消息被忽略。
   for (const [language, messages] of Object.entries(metricHostMessages)) {
     composer.mergeLocaleMessage(language, { metricSources:messages })
@@ -31,9 +32,25 @@ export function useMetricSourceAdapter(context: Ref<MetricContext>) {
     const metrics = new Map<string, ReturnType<typeof loadMetricOutput>>()
     const builtins = new Map<string, ReturnType<typeof loadMetricBuiltins>>()
     const productNames = new Map<string, Promise<string>>()
-    const product = owner.scope === 'children' ? loadMetricProduct(owner.ownerId) : undefined
+    let product:ReturnType<typeof loadMetricProductSources> | undefined
+    const currentMember = (mapping:MetricInputMapping)=>owner.scope === 'children' && !mapping.thingId && !mapping.providerSource?.configuration.thingId
+    const productSource = ()=>product ||= loadMetricProductSources(owner.ownerId)
     const entries = await Promise.all(Object.entries(mappings).map(async ([id, mapping]):Promise<[string,MetricSourceDescription]> => {
       try {
+        if (mapping.kind === 'provider' && mapping.providerSource) {
+          const reference = mapping.providerSource
+          const member = currentMember(mapping)
+          const thingId = mapping.thingId || String(reference.configuration.thingId || '') || (member ? '*' : owner.targetId || owner.ownerId)
+          if (['things','device-events'].includes(reference.provider) && reference.sourceType === 'event') {
+            if (!member && !reads.has(thingId)) reads.set(thingId,loadMetricDevice(thingId))
+            const device = member ? undefined : await reads.get(thingId)!
+            const event = (member ? (await productSource()).events : device!.events).find(item=>item.id === mapping.id)
+            return [id,event ? { label:`${device?.device.name || t('currentDevice')} / ${event.name}`,valueType:event.valueType,capabilities:['subscribe','history'] } : {error:t('sourceMissing')}]
+          }
+          const result = await describeMetricProvider({id:mapping.id,provider:reference.provider,thingType:mapping.thingType || owner.targetType || owner.ownerType,sourceType:reference.sourceType,replayable:false,configuration:{...reference.configuration,thingId}})
+          const schema = metricSourceSchema(result.schema)
+          return [id,{label:result.name,detail:member ? t('currentDevice') : thingId,valueType:reference.provider === 'events' ? metricSourceField(schema,String(reference.configuration.valuePath || mapping.id)) : schema,capabilities:result.capabilities}]
+        }
         if (mapping.kind === 'builtin') {
           const type = mapping.thingType || owner.targetType || owner.ownerType
           const objectId = mapping.thingId || owner.targetId || owner.ownerId
@@ -77,17 +94,28 @@ export function useMetricSourceAdapter(context: Ref<MetricContext>) {
             detail:output.metricId, unit:output.unit, valueType:output.valueType ? { type:output.valueType } : undefined }]
         }
         const deviceId = mapping.thingId || owner.targetId || owner.ownerId
-        if (!product && !reads.has(deviceId)) reads.set(deviceId, loadMetricDevice(deviceId))
-        const device = product ? undefined : await reads.get(deviceId)!
-        const properties = product ? await product : device!.properties
+        const member = currentMember(mapping)
+        if (!member && !reads.has(deviceId)) reads.set(deviceId, loadMetricDevice(deviceId))
+        const device = member ? undefined : await reads.get(deviceId)!
+        const properties = member ? (await productSource()).properties : device!.properties
         const property = properties.find(item => item.id === mapping.id)
         if (!property && mapping.id !== '$online') return [id, { error:t('sourceMissing') }]
         const label = mapping.id === '$online' ? t('online') : property!.name
-        return [id, { label:`${product ? t('currentDevice') : device!.device.name} / ${label}`, detail:mapping.id,
+        return [id, { label:`${member ? t('currentDevice') : device!.device.name} / ${label}`, detail:mapping.id,
           unit:property?.unit, valueType:property?.valueType }]
       } catch { return [id, { error:t('failed') }] }
     }))
     return Object.fromEntries(entries)
   }
-  return { pickSource: Object.assign(state.pickSource, { editor, describe, cancel:state.cancel }), host }
+  const readCurrent = (owner:MetricContext,mapping:MetricInputMapping) => {
+    const reference = mapping.providerSource
+    if (!reference) return Promise.resolve(undefined)
+    return readMetricProvider({id:mapping.id,provider:reference.provider,sourceType:reference.sourceType,thingType:mapping.thingType || owner.targetType || owner.ownerType,
+      configuration:{...reference.configuration,thingId:mapping.thingId || owner.targetId || owner.ownerId}})
+  }
+  const pickSource = Object.defineProperty(Object.assign(state.pickSource,{editor,describe,readCurrent,cancel:state.cancel}),'sourceOptions',{get:()=>[
+    {value:'property',label:t('propertyData')},{value:'event',label:t('eventData')},{value:'builtin',label:t('builtinData')},{value:'metric',label:t('metrics')},
+    {value:'businessEvent',label:t('businessEvent')},{value:'businessQuery',label:t('businessQuery')},
+  ]})
+  return { pickSource, host }
 }

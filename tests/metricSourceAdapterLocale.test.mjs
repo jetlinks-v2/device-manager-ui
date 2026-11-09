@@ -19,6 +19,9 @@ test('source descriptions merge into an existing host composer and follow its lo
   const load = createMetricLoader({
     'vue-i18n':i18nRuntime,
     '../../../api/metricSources':api,
+    [fileURLToPath(new URL('../api/metricBusinessSources.ts',import.meta.url))]:{
+      loadMetricEvents:async()=>[],loadMetricCommandServices:async()=>[],loadMetricCommands:async()=>[],loadMetricObjectTypes:async()=>[],queryMetricBusinessObjects:async()=>({data:[],total:0}),
+    },
   })
   const adapterFile = fileURLToPath(new URL('../views/device/metrics/useMetricSourceAdapter.ts', import.meta.url))
   const { useMetricSourceAdapter } = load(adapterFile)
@@ -82,5 +85,21 @@ test('source descriptions merge into an existing host composer and follow its lo
     assert.match(localized.count.detail,/10 分钟内更新/)
     assert.doesNotMatch(localized.count.detail,/PT10M/)
     assert.match(counts.stale.error,/changed/)
+    const modelReads=[]
+    api.loadMetricDevice=async id=>{modelReads.push(id);return {device:{id,name:'外部设备'},properties:[{id:'power',name:'外部功率'}],events:[{id:'alarm',name:'外部事件'}]}}
+    api.loadMetricProductSources=async id=>{modelReads.push(id);return {properties:[{id:'power',name:'产品功率'}],events:[{id:'alarm',name:'产品事件'}]}}
+    api.describeMetricProvider=async spec=>{assert.equal(spec.configuration.thingId,'*');return {name:'业务事件',schema:{type:'number'},capabilities:['subscribe']}}
+    const inherited=await adapter.pickSource.describe({ownerType:'product',ownerId:'product',targetType:'device',scope:'children'}, {
+      member:{kind:'property',id:'power'},external:{kind:'property',id:'power',thingId:'external'},
+      memberEvent:{kind:'provider',id:'alarm',providerSource:{provider:'device-events',sourceType:'event',configuration:{}}},
+      externalEvent:{kind:'provider',id:'alarm',thingId:'external',providerSource:{provider:'device-events',sourceType:'event',configuration:{}}},
+      business:{kind:'provider',id:'$',providerSource:{provider:'events',sourceType:'assessment',configuration:{}}},
+    })
+    assert.equal(inherited.member.label,'当前设备 / 产品功率')
+    assert.equal(inherited.external.label,'外部设备 / 外部功率')
+    assert.equal(inherited.memberEvent.label,'当前设备 / 产品事件')
+    assert.equal(inherited.externalEvent.label,'外部设备 / 外部事件')
+    assert.equal(inherited.business.detail,'当前设备')
+    assert.deepEqual(modelReads.sort(),['external','product'])
   } finally { app.unmount() }
 })

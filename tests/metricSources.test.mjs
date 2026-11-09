@@ -21,7 +21,7 @@ const bundled = await build({
       : 'export const query=(...args)=>globalThis.__metricSourceApi.query(...args);export const detail=(...args)=>globalThis.__metricSourceApi.detail(...args)' }))
   } }],
 })
-const { queryMetricDevices, loadMetricDevice, loadMetricProduct, loadMetricOutputs, loadMetricOutput } = await import(`data:text/javascript;base64,${Buffer.from(bundled.outputFiles[0].text).toString('base64')}`)
+const { queryMetricDevices, loadMetricDevice, loadMetricProduct, loadMetricProductSources, loadMetricOutputs, loadMetricOutput } = await import(`data:text/javascript;base64,${Buffer.from(bundled.outputFiles[0].text).toString('base64')}`)
 
 test('platform directory failures remain visible, share an in-flight request and can retry immediately', async () => {
   const isolated = await import(`data:text/javascript;base64,${Buffer.from(`${bundled.outputFiles[0].text}\n// directory-retry`).toString('base64')}`)
@@ -107,4 +107,16 @@ test('metric sources expose only active single-target public outputs and propaga
   globalThis.__metricSourceApi.configTemplate = async () => { throw new Error('source denied') }
   await assert.rejects(loadMetricOutputs('device', 'meter'), /source denied/)
   await assert.rejects(loadMetricOutput('active'), /source denied/)
+})
+
+test('产品属性与事件保留声明分组，未声明时不按名称推测分组',async()=>{
+  globalThis.__metricSourceApi={productDetail:async()=>({status:200,result:{id:'gateway',name:'网关',metadata:JSON.stringify({
+    properties:[{id:'temperature',name:'环境温度',expands:{groupName:'环境'},valueType:{type:'double',unit:'℃'}},{id:'smoke',name:'环境烟雾',valueType:{type:'boolean'}}],
+    events:[{id:'alarm',name:'火警',group:'消防',valueType:{type:'object',properties:[]}}],
+  })}})}
+  const result=await loadMetricProductSources('gateway')
+  assert.equal(result.properties.find(item=>item.id==='temperature').group,'环境')
+  assert.equal(result.properties.find(item=>item.id==='smoke').group,undefined)
+  assert.equal(result.events[0].group,'消防')
+  assert.equal(result.product.name,'网关')
 })

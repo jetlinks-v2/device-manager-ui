@@ -1,5 +1,5 @@
 <template>
-  <MetricWorkspace v-if="scopeKey" :key="scopeKey" :scope-key="scopeKey" :selection="selection" :initial-reference="initialReference" :editable="auth.hasPermission('device/Metric:save')" @update:selection="changeSelection" @to-business="toBusiness" />
+  <MetricWorkspace v-if="scopeKey" :key="scopeKey" :scope-key="scopeKey" :selection="selection" :initial-reference="initialReference" :initial-template="initialTemplate" :editable="auth.hasPermission('device/Metric:save')" @apply-started="consumeTemplate" @update:selection="changeSelection" @to-business="toBusiness" />
 </template>
 <script setup lang="ts">
 import { computed } from 'vue'
@@ -17,6 +17,12 @@ const auth = useAuthStore()
 const selection = computed(() => metricWorkspaceSelectionFromQuery(route.query))
 const scopeKey = computed(() => metricScopeKey(user.userInfo.id || '', router.projectId.value || '', getRequestTenantDomain() || ''))
 const initialReference = computed(() => selection.value && metricReferenceFromQuery(route.query, selection.value))
+const initialTemplate = computed(()=>typeof route.query.metricApplyTemplate === 'string' && typeof route.query.metricApplyVersion === 'string'
+  ? {id:route.query.metricApplyTemplate,version:route.query.metricApplyVersion} : undefined)
+function consumeTemplate() {
+  const query = {...route.query}; delete query.metricApplyTemplate; delete query.metricApplyVersion
+  void router.replace({path:route.path,query})
+}
 function changeSelection(value?: MetricWorkspaceSelection) {
   if (value?.ownerType === selection.value?.ownerType && value?.ownerId === selection.value?.ownerId) return
   void router.replace({ path: route.path, query: metricWorkspaceQuery(route.query, value) })

@@ -2,120 +2,131 @@
   <section class="metric-source-fields">
     <header v-if="inline && !state.statistics.active.value"><b>{{ t('sourceTitle') }}</b><a-button type="text" size="small" @click="state.cancel"><AIcon type="ArrowLeftOutlined" />{{ t('back') }}</a-button></header>
     <template v-if="state.request.value">
-      <template v-if="!state.statistics.active.value">
-        <p v-if="state.inherited.value" class="source-context"><AIcon type="ClusterOutlined" />{{ t('currentDeviceHint') }}</p>
-        <button v-else class="source-object" type="button" @click="state.changeObject"><AIcon :type="objectIcon" /><span class="source-object__copy"><b :title="objectLabel">{{ objectLabel }}</b><small>{{ t('changeObject') }}</small></span><AIcon type="SwapOutlined" /></button>
-        <div class="source-kinds" role="group" :aria-label="t('sourceKind')"><button v-for="kind in kinds" :key="kind.value" type="button" :aria-pressed="state.category.value === kind.value" :disabled="kind.value === 'metric' && state.inherited.value" :title="t(kind.value === 'metric' && state.inherited.value ? 'inheritedMetricHint' : kind.hint)" @click="chooseKind(kind.value)"><AIcon :type="kind.icon" />{{ t(kind.label) }}</button></div>
-      </template>
+      <button v-if="!state.statistics.active.value && !state.choosingObject.value" class="source-object" type="button" @click="state.changeObject">
+        <AIcon :type="objectIcon" /><span class="source-object__copy"><b>{{ state.object.value.name || t('chooseObject') }}</b><small>{{ state.currentMember.value ? t('currentDeviceHint') : `${objectTypeLabel} · ${t('changeObject')}` }}</small></span><AIcon type="SwapOutlined" />
+      </button>
       <template v-if="state.choosingObject.value">
-        <div class="source-scope"><button v-for="item in scopes" :key="String(item.value)" type="button" :aria-pressed="state.scoped.value === item.value" @click="state.changeScope(item.value)">{{ item.label }}</button></div>
-        <label class="source-search"><AIcon type="SearchOutlined" /><input v-model="state.keyword.value" type="search" :placeholder="t('search')" :aria-label="t('search')" @input="searchDevices" /></label>
-        <a-spin :spinning="state.loading.value"><div class="source-devices" role="group" :aria-label="t('device')">
-          <button v-if="state.category.value === 'metric' || state.category.value === 'builtin' && state.hasOwnerBuiltins.value" type="button" @click="state.useOwner"><AIcon :type="objectIcon" /><span class="source-option__copy">{{ state.request.value?.context.label || t('scope') }}<small>{{ t(state.category.value === 'builtin' ? 'objectBuiltins' : 'currentObjectMetrics') }}</small></span></button>
-          <button v-for="device in state.devices.value" :key="device.id" type="button" :aria-pressed="state.deviceId.value === device.id" :title="`${device.name} · ${device.id}`" @click="state.selectDevice(device.id)"><AIcon type="DesktopOutlined" /><span class="source-option__copy">{{ device.name }}<small>{{ device.id }}</small></span><AIcon v-if="state.deviceId.value === device.id" type="CheckOutlined" /></button>
-          <a-empty v-if="!state.loading.value && !state.error.value && !state.devices.value.length" :description="t('empty')" :image-style="{ height:'36px' }" />
+        <a-select :value="state.objectType.value" :options="objectTypes" :aria-label="t('businessSubject')" @change="state.changeObjectType(String($event))"><template #option="option"><SelectOption :label="option.label" :icon="option.icon" :description="option.description" /></template></a-select>
+        <a-alert v-if="state.objectTypesError.value" type="warning" :message="t('objectTypesFailed')"><template #action><a-button type="link" size="small" @click="state.loadObjectTypes">{{ t('retry') }}</a-button></template></a-alert>
+        <div v-if="state.objectType.value === 'device'" class="source-scope"><a-button v-for="value in [true,false]" :key="String(value)" type="text" size="small" :class="{active:state.scoped.value === value}" @click="state.changeScope(value)">{{ t(value ? 'scope' : 'all') }}</a-button></div>
+        <a-input v-model:value="state.keyword.value" allow-clear :placeholder="t('searchObject')" :aria-label="t('searchObject')" @change="searchObjects"><template #prefix><AIcon type="SearchOutlined" /></template></a-input>
+        <a-alert v-if="state.error.value" type="error" show-icon :message="t('failed')"><template #action><a-button type="link" @click="state.search">{{ t('retry') }}</a-button></template></a-alert>
+        <a-spin :spinning="state.loading.value"><div class="source-objects">
+          <button v-if="state.request.value.context.ownerId" type="button" @click="state.useOwner"><AIcon type="EnvironmentOutlined" /><span>{{ state.request.value.context.label || t('scope') }}<small>{{ t('scope') }}</small></span></button>
+          <button v-for="item in state.devices.value" :key="item.id" type="button" @click="state.selectObject(item.id,item.name)"><AIcon :type="objectIcon" /><span>{{ item.name }}<small>{{ item.id }}</small></span><AIcon type="RightOutlined" /></button>
+          <a-empty v-if="!state.loading.value && !state.error.value && !state.devices.value.length" :description="t('noObjects')" :image-style="{height:'36px'}" />
         </div></a-spin>
         <a-pagination v-if="state.total.value > 20" size="small" :current="state.page.value" :total="state.total.value" :page-size="20" :show-size-changer="false" @change="state.changePage" />
       </template>
-      <a-alert v-if="state.error.value && state.category.value !== 'metric' && !state.statistics.active.value" type="error" :message="t('failed')" show-icon><template #action><a-button type="link" size="small" @click="retry">{{ t('retry') }}</a-button></template></a-alert>
-      <MetricOutputOptions v-if="!state.choosingObject.value && state.category.value === 'metric'" :state="state" :object-label="objectLabel" />
-      <template v-else-if="!state.choosingObject.value && state.ownerBuiltin.value">
-        <p v-if="!state.statistics.active.value" class="source-context" :role="state.request.value?.scheduled === false ? 'alert' : undefined"><AIcon type="ClockCircleOutlined" />{{ t(state.historyInput.value ? 'builtinNoHistory' : state.request.value?.scheduled === false ? 'builtinScheduleRequired' : 'builtinScheduleHint') }}</p>
-        <div v-if="!state.statistics.active.value && state.builtins.value.some(item => item.supportsChildren)" class="source-scope" role="group" :aria-label="t('memberScope')">
-          <button v-for="item in memberScopes" :key="String(item.value)" type="button" :aria-pressed="state.includeChildren.value === item.value" @click="state.includeChildren.value = item.value"><AIcon :type="item.value ? 'ApartmentOutlined' : 'EnvironmentOutlined'" /> {{ item.label }}</button>
+      <MetricMemberStatistics v-else-if="state.statistics.active.value" :state="state.statistics" :scope-label="state.object.value.name" :include-children="state.includeChildren.value" />
+      <template v-else>
+        <div class="source-search"><a-input v-model:value="state.dataKeyword.value" allow-clear :placeholder="t('searchData')" :aria-label="t('searchData')"><template #prefix><AIcon type="SearchOutlined" /></template></a-input><a-button v-if="state.suggestedSources.value.length" type="link" size="small" @click="state.showAllSources.value = !state.showAllSources.value">{{ t(state.showAllSources.value ? 'suggestedSources' : 'allSources') }}</a-button></div>
+        <p class="source-note">{{ t(state.historyInput.value ? 'readingHistory' : 'readingCurrent') }}</p>
+        <a-alert v-if="state.propertyError.value" type="error" show-icon :message="t('failed')"><template #action><a-button type="link" size="small" @click="state.loadObject">{{ t('retry') }}</a-button></template></a-alert>
+        <a-alert v-if="state.builtinError.value" type="warning" show-icon :message="t('builtinFailed')"><template #action><a-button type="link" size="small" @click="state.loadBuiltins">{{ t('retry') }}</a-button></template></a-alert>
+        <a-alert v-if="state.business.failed.value" type="warning" show-icon :message="t('businessFailed')"><template #action><a-button type="link" size="small" @click="state.business.load">{{ t('retry') }}</a-button></template></a-alert>
+        <a-alert v-if="state.metricSources.error.value" type="warning" show-icon :message="t('metricsFailed')"><template #action><a-button type="link" size="small" @click="state.metricSources.load">{{ t('retry') }}</a-button></template></a-alert>
+        <a-spin :spinning="state.propertyLoading.value">
+          <div class="source-catalog">
+            <div v-if="state.builtinLoading.value || state.business.loading.value" class="source-note" role="status"><a-spin size="small" /> {{ t('sourceLoading') }}</div>
+            <section v-for="group in mainGroups" :key="group.name" class="source-group">
+              <h4><AIcon type="FolderOutlined" />{{ group.name || t('ungrouped') }}<small>{{ group.items.length }}</small></h4>
+              <SourceItemRow v-for="item in group.items" :key="item.key" :item="item" :selected="state.selectedKey.value === item.key" @select="selectItem(item)" />
+            </section>
+            <a-empty v-if="!state.groups.value.length && !services.length" :description="t('noData')" :image-style="{height:'36px'}" />
+            <details v-if="!state.inherited.value && state.request.value.purpose !== 'declaration' && showKind('metric')" :open="state.metricsExpanded.value" class="source-service" @toggle="state.metricsExpanded.value = ($event.target as HTMLDetailsElement).open">
+              <summary><AIcon type="NodeIndexOutlined" />{{ t('metrics') }}</summary>
+              <a-spin v-if="state.metricSources.loading.value" size="small" />
+              <SourceItemRow v-for="item in metricItems" :key="item.key" :item="item" :selected="state.selectedKey.value === item.key" @select="selectItem(item)" />
+              <p v-if="!state.metricSources.loading.value && !state.metricSources.error.value && !metricItems.length" class="source-note">{{ t('noMetrics') }}</p>
+            </details>
+            <details v-for="service in services" :key="service.id" :open="state.method.value?.service === service.id || undefined" class="source-service" @toggle="event=>{if ((event.target as HTMLDetailsElement).open) state.business.loadService(service.id)}">
+              <summary><AIcon type="SearchOutlined" />{{ service.name || service.id }}<small>{{ t('queryData') }}</small></summary>
+              <a-spin v-if="state.business.loadingService.value === service.id" />
+              <a-button v-if="state.business.failedService.value === service.id" type="link" size="small" @click="state.business.loadService(service.id)">{{ t('retry') }}</a-button>
+              <p v-else-if="state.business.commands.value[service.id]?.length === 0" class="source-note">{{ t('noQueries') }}</p>
+              <template v-else>
+                <section v-for="group in serviceGroups(service.id)" :key="group.name" class="source-group">
+                  <h4 v-if="group.name"><AIcon type="FolderOutlined" />{{ group.name }}</h4>
+                  <SourceItemRow v-for="item in group.items" :key="item.key" :item="item" :selected="state.selectedKey.value === item.key" @select="selectItem(item)" />
+                </section>
+                <p v-if="linkedService(service.id)" class="source-note">{{ t('queriesLoaded') }}</p>
+              </template>
+            </details>
+            <a-pagination v-if="serviceCount > 10" size="small" :current="servicePage" :total="serviceCount" :page-size="10" :show-size-changer="false" @change="servicePage = $event" />
+          </div>
+        </a-spin>
+        <a-alert v-if="state.category.value === 'unsupported'" type="info" show-icon :message="t('unsupported')" />
+        <div v-if="state.selected.value && state.method.value" class="source-selection">
+          <b>{{ state.selected.value.name }}</b>
+          <a-radio-group v-if="state.selected.value.methods.length > 1" :value="state.methodKey.value" size="small" @change="state.selectMethod(state.selected.value!.methods.find(method=>method.key === $event.target.value)!)"><a-radio-button v-for="method in state.selected.value.methods" :key="method.key" :value="method.key">{{ t(method.kind === 'businessEvent' ? 'readOnReport' : 'readOnQuery') }}</a-radio-button></a-radio-group>
+          <p v-if="state.method.value.description" class="source-note">{{ state.method.value.description }}</p>
+          <p v-if="state.issue(state.method.value)" class="source-note" role="status">{{ t(state.issue(state.method.value)!) }}</p>
+          <BusinessSourceOptions v-if="state.method.value.kind === 'businessEvent' || state.method.value.kind === 'businessQuery'" :state="state.business" />
+          <a-checkbox v-if="state.builtins.value.find(item=>item.id === state.method.value?.id)?.supportsChildren" v-model:checked="state.includeChildren.value">{{ t('includeChildren') }}</a-checkbox>
+          <p v-if="state.request.value.input.unit && state.method.value.unit && state.request.value.input.unit !== state.method.value.unit" class="source-note">{{ t('unitHint') }}</p>
         </div>
-        <MetricMemberStatistics v-if="state.statistics.active.value" :state="state.statistics" :scope-label="objectLabel" :include-children="state.includeChildren.value" />
-        <a-spin v-else :spinning="state.builtinLoading.value"><div class="source-properties" role="group" :aria-label="t('builtinData')">
-          <button v-for="item in state.deviceId.value ? state.properties.value.filter(value => value.platform) : []" :key="item.id" type="button" :disabled="state.historyInput.value && !item.history" :aria-pressed="state.propertyId.value === item.id" @click="select(item.id,item.name)"><AIcon :type="item.icon || 'ApiOutlined'" /><span class="source-option__copy"><b>{{ item.name }}</b><small>{{ item.description || t('builtinHint') }}</small></span><AIcon v-if="state.propertyId.value === item.id" type="CheckOutlined" /></button>
-          <button v-for="item in state.builtins.value" :key="item.id" type="button" :disabled="state.request.value?.scheduled === false || state.historyInput.value || state.builtinLoading.value || state.error.value" :aria-pressed="state.propertyId.value === item.id" @click="item.configurationRequired ? state.statistics.open() : select(item.id, item.name)">
-            <AIcon :type="item.icon || builtinIcon(item.id)" /><span class="source-option__copy"><b>{{ item.name }}<small v-if="item.unit">{{ item.unit }}</small></b><small :title="item.description">{{ item.description }}</small></span><AIcon v-if="state.propertyId.value === item.id" type="CheckOutlined" />
-          </button>
-          <a-empty v-if="!state.builtinLoading.value && !state.error.value && !state.builtins.value.length" :description="t('noBuiltins')" :image-style="{ height:'36px' }" />
-        </div></a-spin>
+        <footer v-if="inline && state.requiresConfirmation.value"><a-button type="primary" :disabled="!state.canConfirm.value" @click="state.confirm">{{ t('confirm') }}</a-button></footer>
       </template>
-      <template v-else-if="!state.choosingObject.value && (state.inherited.value || state.deviceId.value)">
-        <p class="source-context">{{ t(state.category.value === 'builtin' ? 'builtinHint' : 'propertyHint') }}</p>
-        <label class="source-search"><AIcon type="SearchOutlined" /><input v-model="keyword" type="search" :placeholder="t('searchProperty')" :aria-label="t('searchProperty')" /></label>
-        <a-spin :spinning="state.propertyLoading.value"><div class="source-properties" role="group" :aria-label="t('property')">
-          <button v-for="property in properties" :key="property.id" type="button" :disabled="state.propertyLoading.value || state.error.value" :aria-pressed="state.propertyId.value === property.id" :title="`${property.name} · ${property.description || property.id}`" @click="select(property.id, property.name)">
-            <AIcon :type="property.icon || 'DatabaseOutlined'" /><span class="source-option__copy"><b><span>{{ property.name }}</span><small v-if="property.unit">{{ property.unit }}</small></b><small>{{ property.description || property.id }}</small><small v-if="enumText(property.valueType)">{{ enumText(property.valueType) }}</small></span><AIcon v-if="state.propertyId.value === property.id" type="CheckOutlined" />
-          </button>
-          <a-empty v-if="!state.propertyLoading.value && !state.error.value && !properties.length" :description="t('noProperties')" :image-style="{ height:'36px' }" />
-        </div></a-spin>
-      </template>
-      <p v-if="state.request.value?.input.unit && selected?.unit && state.request.value.input.unit !== selected.unit" class="source-unit"><AIcon type="InfoCircleOutlined" />{{ t('unitHint') }}</p>
     </template>
   </section>
 </template>
 <script setup lang="ts">
-import { computed, onScopeDispose, ref } from 'vue'
+import { computed, onScopeDispose } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { SelectOption } from '@jetlinks-web-core/components'
 import { metricHostMessages } from './messages'
 import type { MetricSourcePickerState } from './useMetricSourcePicker'
-import MetricOutputOptions from './MetricOutputOptions.vue'
+import type { SourceItem } from './sources/catalog'
 import MetricMemberStatistics from './MetricMemberStatistics.vue'
-const props = defineProps<{ state:MetricSourcePickerState; inline?:boolean }>()
-const { t } = useI18n({ useScope:'local', messages:metricHostMessages })
-const keyword = ref('')
-const scopes = computed(() => [{ value:true, label:t('scope') }, { value:false, label:t('all') }])
-const memberScopes = computed(() => [{ value:false, label:t('directMembers') }, { value:true, label:t('includeChildren') }])
-const objectIcon = computed(() => props.state.deviceId.value ? 'DesktopOutlined' : ({ product:'AppstoreOutlined', deviceGroup:'ClusterOutlined', space:'EnvironmentOutlined' }[(props.state.ownerBuiltin.value ? props.state.builtinScope.value?.type : props.state.request.value?.context.ownerType) || ''] || 'EnvironmentOutlined'))
-const builtinIcon = (id:string) => ({ deviceCount:'ClusterOutlined', onlineDeviceCount:'CheckCircleOutlined', offlineDeviceCount:'DisconnectOutlined' }[id] || 'ThunderboltOutlined')
-const kinds = [
-  { value:'property', icon:'DatabaseOutlined', label:'propertyData', hint:'propertyHint' },
-  { value:'builtin', icon:'ThunderboltOutlined', label:'builtinData', hint:'builtinHint' },
-  { value:'metric', icon:'NodeIndexOutlined', label:'metrics', hint:'metricHint' },
-] as const
-const objectLabel = computed(() => {
-  const context = props.state.request.value?.context
-  const source = props.state.builtinScope.value
-  if (props.state.ownerBuiltin.value && source && (source.type !== context?.ownerType || source.id !== context?.ownerId)) return source.id
-  return props.state.selectedDevice.value?.name || context?.label || context?.ownerId || t('selectDevice')
+import BusinessSourceOptions from './sources/BusinessSourceOptions.vue'
+import SourceItemRow from './sources/SourceItemRow.vue'
+const props = defineProps<{state:MetricSourcePickerState;inline?:boolean}>()
+const {t}=useI18n({useScope:'local',messages:metricHostMessages})
+const objectIcons:Record<string,string>={device:'DesktopOutlined',product:'AppstoreOutlined',member:'ClusterOutlined',space:'EnvironmentOutlined',deviceGroup:'FolderOutlined'}
+const objectTypes = computed(()=>{
+  const options=new Map(['device','product'].map(id=>[id,{value:id,label:t(id),icon:objectIcons[id],description:t(`${id}SourceHint`)}]))
+  for (const type of props.state.objectTypes.value) options.set(type.id,{value:type.id,label:type.name,icon:type.icon || objectIcons[type.id] || 'DeploymentUnitOutlined',description:options.get(type.id)?.description || type.description || t('sourceObjectHint')})
+  return [...options.values()]
 })
-const properties = computed(() => props.state.properties.value.filter(property => (props.state.category.value === 'builtin' ? property.platform && (!props.state.historyInput.value || property.history) : !property.platform) && `${property.name} ${property.id}`.toLowerCase().includes(keyword.value.trim().toLowerCase())))
-const selected = computed(() => props.state.properties.value.find(property => property.id === props.state.propertyId.value))
+const objectTypeLabel = computed(()=>objectTypes.value.find(item=>item.value === props.state.objectType.value)?.label || props.state.objectType.value)
+const objectIcon = computed(()=>objectTypes.value.find(item=>item.value === props.state.objectType.value)?.icon || objectIcons[props.state.objectType.value] || 'DeploymentUnitOutlined')
+const mainGroups=computed(()=>props.state.groups.value.map(group=>({...group,items:group.items.filter(item=>!item.methods.every(method=>['businessQuery','metric'].includes(method.kind)))})).filter(group=>group.items.length))
+const serviceGroups=(id:string)=>props.state.groups.value.map(group=>({...group,items:group.items.filter(item=>item.methods.every(method=>method.kind === 'businessQuery' && method.service === id))})).filter(group=>group.items.length)
+const linkedService=(id:string)=>mainGroups.value.some(group=>group.items.some(item=>item.methods.some(method=>method.kind === 'businessQuery' && method.service === id)))
+const metricItems=computed(()=>props.state.groups.value.flatMap(group=>group.items).filter(item=>item.methods.every(method=>method.kind === 'metric')))
+const showKind=(kind:string)=>props.state.showAllSources.value || !props.state.suggestedSources.value.length || props.state.suggestedSources.value.includes(kind) || props.state.method.value?.kind === kind
+const {services,serviceCount,servicePage}=props.state.business
+const selectItem=(item:SourceItem)=>props.state.chooseMethod(item.methods.find(method=>!props.state.issue(method)) || item.methods[0])
 let timer:ReturnType<typeof setTimeout> | undefined
-function searchDevices() { clearTimeout(timer); timer = setTimeout(() => { props.state.page.value = 1; void props.state.search() }, 250) }
-function retry() { if (props.state.ownerBuiltin.value) void props.state.loadBuiltins(); else if (props.state.inherited.value) void props.state.loadProduct(); else { void props.state.search(); if (props.state.deviceId.value) void props.state.selectDevice(props.state.deviceId.value, true) } }
-function select(id:string, label:string) { props.state.propertyId.value = id; if (props.inline) props.state.confirm(label) }
-function chooseKind(value:'property'|'builtin'|'metric') { keyword.value = ''; props.state.changeCategory(value) }
-function enumText(type?:Record<string, unknown>) {
-  return Array.isArray(type?.elements) ? type.elements.map(item => `${item.value} · ${item.text || item.label || item.value}`).join(' / ') : ''
-}
-onScopeDispose(() => clearTimeout(timer))
+function searchObjects() { clearTimeout(timer); timer=setTimeout(()=>{props.state.page.value=1;void props.state.search()},250) }
+onScopeDispose(()=>clearTimeout(timer))
 </script>
 <style scoped>
-.metric-source-fields { display:grid; gap:10px; min-width:0 }
-.metric-source-fields header { display:flex; justify-content:space-between; align-items:center; gap:8px }
-.source-context,.source-unit { display:flex; align-items:flex-start; gap:6px; margin:0; color:var(--ink-3); font-size:12px; line-height:1.6 }
-.source-scope { display:flex; gap:12px; font-size:12px }
-.source-scope button { border:0; padding:4px 0; background:transparent; color:var(--ink-3); cursor:pointer }
-.source-scope button[aria-pressed=true] { color:var(--accent) }
-.source-search { display:flex; align-items:center; gap:8px; min-height:32px; border-bottom:1px solid var(--line); color:var(--ink-3) }
-.source-search input { width:100%; min-width:0; border:0; outline:0; background:transparent; color:var(--ink-1); font-size:12px }
-.source-search:focus-within { border-color:var(--accent) }
-.source-devices,.source-properties { display:grid; gap:4px; overflow:auto; scrollbar-gutter:stable }
-.source-devices { max-height:unset }
-.source-properties { max-height:unset }
-.source-devices button,.source-properties button { display:flex; align-items:center; gap:8px; padding:9px; border:1px solid transparent; border-radius:var(--r-2,6px); color:var(--ink-2); background:transparent; text-align:left; cursor:pointer; min-width:0 }
-.source-devices button:hover,.source-properties button:hover { background:var(--bg-sunken) }
-.source-devices button[aria-pressed=true],.source-properties button[aria-pressed=true] { color:var(--accent); background:var(--accent-soft); border-color:var(--accent) }
-.source-devices button:focus-visible,.source-properties button:focus-visible,.source-scope button:focus-visible { outline:2px solid var(--accent) }
-.source-option__copy { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
-.source-devices button>.anticon,.source-properties button>.anticon,.source-object>.anticon { flex:none; width:16px; font-size:14px }
-.source-properties button b { display:flex; gap:6px; align-items:baseline; font-weight:500 }
-.source-properties button b>span { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
-.source-properties button b small { flex:none; margin-left:auto }
-.source-devices small,.source-properties small { display:block; font-size:11px; color:var(--ink-3); font-weight:400 }
-.source-option__copy>small { overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
-.source-properties button:disabled { opacity:.5; cursor:default }
-.source-object { display:flex; align-items:center; gap:10px; width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:var(--r-2,6px); color:var(--ink-2); background:var(--bg-sunken); text-align:left; cursor:pointer }
-.source-object__copy { flex:1; min-width:0 }
-.source-object b { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; font-weight:500 }
-.source-object small { display:block; margin-top:3px; color:var(--ink-3); font-size:11px }
-.source-kinds { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:3px; padding:3px; border-radius:var(--r-2,6px); background:var(--bg-sunken) }
-.source-kinds button { display:flex; align-items:center; justify-content:center; gap:4px; min-height:32px; padding:4px; border:0; border-radius:4px; background:transparent; color:var(--ink-3); font-size:11px; cursor:pointer }
-.source-kinds button[aria-pressed=true] { background:var(--panel-background); color:var(--accent); box-shadow:0 1px 3px #0000000a }
-.source-kinds button:disabled { opacity:.45; cursor:default }
-.source-kinds button:focus-visible,.source-object:focus-visible { outline:2px solid var(--accent) }
+.metric-source-fields { display:grid; gap:10px; min-width:0; color:var(--ink-2); font-size:12px }
+.metric-source-fields header,.source-search { display:flex; align-items:center; justify-content:space-between; gap:8px }
+.source-search :deep(.ant-input-affix-wrapper) { min-width:0 }
+.source-object,.source-objects button { display:flex; align-items:center; gap:8px; width:100%; min-width:0; text-align:left; color:inherit; cursor:pointer }
+.source-object { padding:8px 10px; border:1px solid var(--line); border-radius:var(--r-2,6px); background:var(--bg-sunken) }
+.source-object__copy,.source-objects button>span:not(.anticon) { flex:1; min-width:0 }
+.source-object>.anticon,.source-objects button>.anticon { flex:none; width:16px }
+.source-object b,.source-object small,.source-objects small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+.source-object:disabled { cursor:default }
+.source-object b { font-size:13px; font-weight:500 }
+.source-object small,.source-objects small,.source-note { font-size:12px; color:var(--ink-3); line-height:1.5 }
+.source-note { margin:0 }
+.source-scope { display:flex; gap:8px }.source-scope .active { color:var(--accent) }
+.source-objects { display:grid; gap:4px }
+.source-objects button { padding:8px; min-height:44px; border:1px solid transparent; border-radius:var(--r-2,6px); background:transparent }
+.source-objects button:hover { background:var(--bg-sunken) }
+button:focus-visible,summary:focus-visible { outline:2px solid var(--accent); outline-offset:1px }
+.source-catalog { display:grid; gap:12px; max-height:min(360px,42vh); overflow:auto; scrollbar-gutter:stable }
+.source-group { min-width:0 }
+.source-group h4 { display:flex; align-items:center; gap:6px; margin:0 0 4px; font-size:12px; color:var(--ink-3); font-weight:500 }
+.source-group h4 small { margin-left:auto; font-weight:400 }
+.source-service summary { display:flex; gap:6px; align-items:center; cursor:pointer; min-height:32px; font-size:13px }
+.source-service summary small { margin-left:auto; color:var(--ink-3); font-size:12px }
+.source-selection { display:grid; gap:8px; border-top:1px solid var(--line); padding-top:10px; min-width:0 }
+.source-selection>b { font-weight:500; font-size:13px }
+footer { display:flex; justify-content:flex-end }
 </style>

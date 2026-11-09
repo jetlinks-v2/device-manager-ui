@@ -1,7 +1,7 @@
 <template>
   <a-modal :open="state.open.value" :title="t('sourceTitle')" :width="640" :mask-closable="false" @cancel="state.cancel">
     <MetricSourceFields :state="state" />
-    <template #footer><a-button @click="state.cancel">{{ t('cancel') }}</a-button><a-button v-if="!state.statistics.active.value" type="primary" :disabled="!state.canConfirm.value || state.request.value?.input.source?.kind === 'metric'" @click="state.confirm()">{{ t('confirm') }}</a-button></template>
+    <template #footer><a-button @click="state.cancel">{{ t('cancel') }}</a-button><a-button v-if="!state.statistics.active.value && state.requiresConfirmation.value" type="primary" :disabled="!state.canConfirm.value" @click="state.confirm()">{{ t('confirm') }}</a-button></template>
   </a-modal>
 </template>
 <script setup lang="ts">
