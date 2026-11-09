@@ -1,84 +1,29 @@
 <template>
-  <a-drawer
-    open
-    :title="$t('Composite.index.636069-2')"
-    width="600px"
-    :maskClosable="false"
-    @close="emit('close')"
-  >
-    <div class="provider-list">
-      <CardBox
-        v-for="item in otherProvider"
-        :key="item.id"
-        :showStatus="false"
-      >
-        <template #content>
-          <div class="provider-content">
-            <a-space>
-              <div class="images">
-                <img :src="BackMap.get(item.id)" />
-              </div>
-              <div>
-                <h2>
-                  {{ item.name }}
-                </h2>
-                <span>
-                  {{ item.description }}
-                </span>
-              </div>
-            </a-space>
-            <div>
-              <a-button type="primary" @click="handleClick(item)">
-                {{ $t('provider.index.8501947-0') }}
-              </a-button>
-            </div>
-          </div>
-        </template>
-      </CardBox>
+  <div class="composite-provider">
+    <div class="composite-provider__hint">{{ t('GatewayEditor.childChooseHint') }}</div>
+    <div class="composite-provider__grid">
+      <button v-for="item in otherProvider" :key="item.id" type="button" @click="emit('choose', item)">
+        <strong>{{ item.name }}</strong><span>{{ item.description }}</span>
+      </button>
     </div>
-  </a-drawer>
+    <Teleport v-if="footerHost" :to="footerHost"><a-button @click="emit('close')">{{ t('GatewayEditor.back') }}</a-button></Teleport>
+  </div>
 </template>
-
 <script setup lang="ts">
-import { BackMap } from '../../data'
-import { randomString } from '@jetlinks-web/utils'
-import { useTabSaveSuccess } from '@jetlinks-web-core/hooks'
-
-const props = defineProps({
-  otherProvider: {
-    type: Array,
-    default: () => ([])
-  }
-})
-
-const emit = defineEmits(['close', 'save'])
-
-const { onOpen } = useTabSaveSuccess('link/AccessConfig/Detail', {
-  onSuccess(value) {
-    emit('save', value)
-  }
-})
-
-const handleClick = (item: any) => {
-  onOpen({
-    view: false,
-    provider: JSON.stringify(item)
-  })
-}
+import { useI18n } from 'vue-i18n'
+import { inject } from 'vue'
+import { gatewayFooterHostKey } from '../gatewayEditorContext'
+import type { GatewayChildDraft } from '../gatewayEditorContext'
+defineProps<{ otherProvider: GatewayChildDraft['provider'][] }>()
+const emit = defineEmits<{ close: []; choose: [provider: GatewayChildDraft['provider']] }>()
+const { t } = useI18n()
+const footerHost = inject(gatewayFooterHostKey, undefined)
 </script>
-
-<style scoped lang="less">
-.provider-list {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  .provider-content {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-  }
-}
+<style scoped>
+.composite-provider__hint { color: var(--primary-color); background: var(--primary-color-deprecated-bg, #e8f1ff); padding: var(--space-3); margin-bottom: var(--space-4); border-radius: var(--r-2); }
+.composite-provider__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); max-height: 65vh; overflow: auto; padding-bottom: var(--space-4); }
+.composite-provider__grid button { display: flex; flex-direction: column; gap: var(--space-2); text-align: left; padding: var(--space-4); border: 1px solid var(--line); border-radius: var(--r-3); background: var(--bg); cursor: pointer; }
+.composite-provider__grid button:hover { border-color: var(--primary-color); }
+.composite-provider__grid span { color: var(--text-color-secondary); font-size: var(--fs-12); }
+@media (max-width: 640px) { .composite-provider__grid { grid-template-columns: 1fr; } }
 </style>
