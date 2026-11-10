@@ -7,9 +7,9 @@ type Translate = (key: string) => string
 export function createFireStarters(t: Translate): MetricTemplateStarter[] {
   const start = Date.UTC(2026, 10, 1)
   const schedule = { mode:'none', timeMode:'processing', emitPolicy:'onSchedule', emitInterval:'PT1M' }
-  const fields = (definitions: Record<string, string>) => ({ type:'object', properties:Object.entries(definitions)
-    .map(([id, type]) => ({ id, name:t(id), valueType:{ type } })) })
-  const input = (id: string, name: string, properties: Record<string, string>, optional = false) => ({ id, name:t(name), valueType:fields(properties), ...(optional ? { presence:'optional' as const } : {}) })
+  const fields = (definitions: Record<string, string | Record<string, unknown>>) => ({ type:'object', properties:Object.entries(definitions)
+    .map(([id, type]) => ({ id, name:t(id), valueType:typeof type === 'string' ? { type } : type })) })
+  const input = (id: string, name: string, properties: Record<string, string | Record<string, unknown>>, optional = false) => ({ id, name:t(name), valueType:fields(properties), ...(optional ? { presence:'optional' as const } : {}) })
   const formula = (id: string, dependencies: string[], expression: string, extra = {}) => ({ id, name:t(id), type:'composite', dependsOn:dependencies,
     inputs:dependencies.map(metricId => ({ id:metricId, metricId, presence:'optional' })), expression, window:schedule, ...extra })
   const labels = (names: string[], values = names.map((_, index) => index)) => names.map((key, index) => ({ value:values[index], name:t(key),
@@ -22,9 +22,9 @@ export function createFireStarters(t: Translate): MetricTemplateStarter[] {
   const eventKnown = "fireEvent != null && fireEvent['eventId'] != null && fireEvent['eventId'] != ''"
   const evidenceKnown = `${eventKnown} && evidence != null && evidence['eventId'] == fireEvent['eventId'] && evidence['observedAt'] != null && evidence['observedAt'] > 0 && evidence['observedAt'] <= sample.getProcessTime() && (fireEvent['startedAt'] == null || evidence['observedAt'] >= fireEvent['startedAt'])`
   const evidence: MetricTemplate = { id:'fireEvidence', version:'1', name:t('fireEvidence.name'), thingType:'device', enabled:true,
-    inputDefinitions:[input('fireEvent','fireEvent',{ eventId:'string', active:'boolean', startedAt:'long' }),
-      input('evidence','fireEvidenceInput',{ eventId:'string', observedAt:'long', pollution:'boolean', humidityPercent:'double', independentResponses:'int' }, true),
-      input('fireReview','fireReview',{ eventId:'string', decision:'int', reviewedAt:'long' }, true)],
+    inputDefinitions:[input('fireEvent','fireEvent',{ eventId:'string', active:'boolean', startedAt:'date' }),
+      input('evidence','fireEvidenceInput',{ eventId:'string', observedAt:'date', pollution:'boolean', humidityPercent:'double', independentResponses:'int' }, true),
+      input('fireReview','fireReview',{ eventId:'string', decision:{ type:'enum',valueType:{ type:'int' },elements:labels(['firePending','fireConfirmed','fireFalse','fireTest','fireUndetermined']).map(({value,name}) => ({value,text:name})) }, reviewedAt:'date' }, true)],
     parameterDefinitions:[{ id:'fireHumidityLimit', name:t('fireHumidityLimit'), valueType:{ type:'double', min:0, max:100, unit:'%' }, expands:{ editable:true, defaultValue:90 } },
       { id:'fireIndependentLimit', name:t('fireIndependentLimit'), valueType:{ type:'int', min:2, max:10000 }, expands:{ editable:true, defaultValue:2 } }], parameters:{},
     definitions:[
@@ -45,7 +45,7 @@ export function createFireStarters(t: Translate): MetricTemplateStarter[] {
     + " && fireReviewBucket['total'] == fireReviewBucket['confirmedFire'] + fireReviewBucket['falseAlarm'] + fireReviewBucket['plannedTest'] + fireReviewBucket['undetermined'] + fireReviewBucket['pending']"
   const countOutputs = { fireTotalCount:'total', fireTrueCount:'confirmedFire', fireFalseCount:'falseAlarm', fireTestCount:'plannedTest', fireUndeterminedCount:'undetermined', firePendingCount:'pending' }
   const governance: MetricTemplate = { id:'fireGovernance', version:'1', name:t('fireGovernance.name'), thingType:'device', enabled:true,
-    inputDefinitions:[input('fireReviewBucket','fireReviewBucket',{ from:'long',to:'long',...Object.fromEntries(counts.map(id => [id,'long'])),reviewDurationSum:'double',reviewDurationCount:'long' })], parameterDefinitions:[],parameters:{},
+    inputDefinitions:[input('fireReviewBucket','fireReviewBucket',{ from:'date',to:'date',...Object.fromEntries(counts.map(id => [id,'long'])),reviewDurationSum:'double',reviewDurationCount:'long' })], parameterDefinitions:[],parameters:{},
     definitions:[formula('fireBucketValid',['fireReviewBucket'],`${validBucket} ? 1 : 0`, { options:{ stateLabels:labels(['fireBucketInvalid','fireBucketComplete']) } }),
       ...Object.entries(countOutputs).map(([id, field]) => formula(id,['fireReviewBucket','fireBucketValid'],`fireBucketValid == 1 ? fireReviewBucket['${field}'] : null`)),
       formula('fireClassifiedCount',['fireTrueCount','fireFalseCount'],"fireTrueCount == null || fireFalseCount == null ? null : fireTrueCount + fireFalseCount"),

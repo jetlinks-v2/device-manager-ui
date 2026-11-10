@@ -11,6 +11,7 @@ const start = Date.UTC(2026, 10, 1)
 
 /** 场景只提供普通配置与观测事实，不包含前端计算或专用运行分支。 */
 export function createMetricStarters(t: Translate): MetricTemplateStarter[] {
+  const states = (names: string[]) => ({ type:'enum', valueType:{ type:'int' }, elements:names.map((name,value) => ({ value,text:t(`state_${name}`) })) })
   const input = (id: string, unit?: string, extra = {}): MetricTemplateInput => ({ id, name: t(id), valueType: number, unit, ...extra })
   const output = (metricId: string, unit?: string) => ({ metricId, label: t(metricId), unit, persist: true, publish: true })
   const parameter = (id: string, defaultValue: unknown, unit?: string, editable = true) => ({ id, name: t(id), valueType: { ...number, ...(unit ? { unit } : {}) }, expands: { editable, defaultValue } })
@@ -62,7 +63,7 @@ export function createMetricStarters(t: Translate): MetricTemplateStarter[] {
     formula('healthScore', ['temperature', 'vibration'], '100 - (temperature > params.temperatureLimit ? 40 : 0) - (vibration > params.vibrationLimit ? 60 : 0)'),
   ], [output('healthScore')])
   health.parameterDefinitions = [parameter('temperatureLimit', 80), parameter('vibrationLimit', 7.1)]
-  const state = base('runtime', [input('operating', undefined, { valueType: { type: 'int' }, source: { lookback: 'PT2H', maxPoints: 256 }, maxAge: 'PT2H' })], [{
+  const state = base('runtime', [input('operating', undefined, { valueType: states(['stopped', 'running', 'standby', 'fault', 'maintenance']), source: { lookback: 'PT2H', maxPoints: 256 }, maxAge: 'PT2H' })], [{
     id: 'running', dependsOn: ['operating'],
     inputs: [{ id:'operating', metricId:'operating' }], expression:'operating', stateTracking:{ maxNoData:'PT20M' },
     options:{ stateLabels:['stopped', 'running', 'standby', 'fault', 'maintenance'].map((name,value) => ({ value, name:t(`state_${name}`) })) },
@@ -131,7 +132,7 @@ export function createMetricStarters(t: Translate): MetricTemplateStarter[] {
   const schedule = () => ({ mode: 'none', timeMode: 'processing', emitPolicy: 'onSchedule', emitInterval: 'PT5M' })
   // 工况编码由模板定义；维修、大修、故障、保养不合并，也不据此猜测是否通电。
   const equipmentStates = ['shutdown', 'running', 'standby', 'repair', 'overhaul', 'fault', 'service']
-  const equipmentState = base('equipmentStates', [input('operating', undefined, { valueType: { type: 'int' }, maxAge: 'PT20M' })], [
+  const equipmentState = base('equipmentStates', [input('operating', undefined, { valueType: states(equipmentStates), maxAge: 'PT20M' })], [
     formula('equipmentState', ['operating'], 'operating', { stateTracking: { maxNoData: 'PT20M' }, window: schedule(),
       options: { stateLabels: equipmentStates.map((name, value) => ({ value, name: t(`state_${name}`) })) } }),
     ...equipmentStates.map((name, value) => formula(`${name}Seconds`, ['equipmentState'],
@@ -200,7 +201,7 @@ export function createMetricStarters(t: Translate): MetricTemplateStarter[] {
   const equipmentSamples = [-10, ...Array.from({ length: 49 }, (_, index) => index * 10)].flatMap(minute => frame(monday + minute, {
     workingFlag: minute >= 0 && minute < 240, energizedFlag: minute >= 0 && minute < 360,
   }))
-  const online = base('online', [input('connectionState', undefined, { valueType:{ type:'int' }, source:{ lookback:'PT2H', maxPoints:256 } })], [
+  const online = base('online', [input('connectionState', undefined, { valueType:states(['offline','online']), source:{ lookback:'PT2H', maxPoints:256 } })], [
     formula('connection', ['connectionState'], 'connectionState', { inputs:[{ id:'connectionState', metricId:'connectionState' }], stateTracking:{ maxNoData:'PT20M' },
       window:{ ...schedule(), emitInterval:'PT1M' }, options:{ stateLabels:[{ value:0, name:t('state_offline'), icon:'color:#ff4d4f' }, { value:1, name:t('state_online'), icon:'color:#52c41a' }] } }),
     ...['offline', 'online'].map((name, value) => formula(`${name}Seconds`, ['connection'], `connection == ${value} ? metricValues['connection'].getState().getDuration() : 0`, { window:{ ...schedule(), emitInterval:'PT1M' } })),

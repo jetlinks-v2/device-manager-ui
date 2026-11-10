@@ -19,7 +19,7 @@ export function createCommunicationStarter(t:(key:string)=>string):MetricTemplat
   const param = (id:string, value:unknown, min?:number, max?:number, unit?:string) => ({ id, name:t(id), valueType:typeof value === 'boolean' ? { type:'boolean' } : { ...numeric, min, max, unit }, expands:{ defaultValue:value,editable:true } })
   const stats = "connectionStatistics";
   const template:MetricTemplate = { id:'communication', version:'1', name:t('communication.name'), thingType:'device', enabled:true,
-    inputDefinitions:[{ id:'connectionState', name:t('communicationConnection'), valueType:{ type:'int' }, source:{ lookback:'PT2H', maxPoints:512 } },
+    inputDefinitions:[{ id:'connectionState', name:t('communicationConnection'), valueType:{ type:'enum',valueType:{ type:'int' },elements:[{ value:0,text:t('communicationOffline') },{ value:1,text:t('state_online') }] }, source:{ lookback:'PT2H', maxPoints:512 } },
       { id:'lastCommunicationTime', name:t('communicationReport'), valueType:{ type:'date' }, presence:'optional' }],
     parameterDefinitions:[param('activityAssessmentEnabled',false), param('communicationIdleSeconds',180,1,604800,'s'),
       param('minCoveragePercent',95,0,100,'%'), param('disconnectLimit',3,1,1000), param('scoreBaseline',6,1,1000)], parameters:{},

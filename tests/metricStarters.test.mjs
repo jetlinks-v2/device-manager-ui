@@ -52,6 +52,38 @@ test('communication quality is one device template with platform session sources
   assert.equal(starter.template.parameterDefinitions.find(item=>item.id==='minCoveragePercent').expands.defaultValue,95)
 })
 
+test('explicit state and time inputs retain numeric values with enum and date metadata', () => {
+  for (const language of ['zh', 'en']) {
+    const t = key => key.split('.').reduce((value, part) => value[part], starterMessages[language])
+    const starters = createMetricStarters(t)
+    for (const [id, inputId, ruleId] of [['communication','connectionState','currentConnection'], ['online','connectionState','connection'],
+      ['runtime','operating','running'], ['equipmentStates','operating','equipmentState']]) {
+      const {template, simulation} = starters.find(item => item.id === id)
+      const schema = template.inputDefinitions.find(input => input.id === inputId).valueType
+      const states = template.definitions.find(rule => rule.id === ruleId).options.stateLabels
+      assert.equal(schema.type, 'enum')
+      assert.deepEqual(schema.valueType, {type:'int'})
+      assert.deepEqual(schema.elements.map(item => item.value), states.map(item => item.value))
+      assert.ok(schema.elements.every(item => item.text && item.text !== 'state_online'))
+      assert.ok(simulation.samples.filter(sample => sample.metricId === (id === 'communication' ? '$online' : inputId))
+        .every(sample => typeof sample.value === 'number' && schema.elements.some(item => item.value === sample.value)))
+    }
+    const communication = starters.find(item => item.id === 'communication')
+    assert.deepEqual(communication.template.inputDefinitions.find(input => input.id === 'lastCommunicationTime').valueType, {type:'date'})
+    assert.equal(typeof communication.simulation.samples.find(sample => sample.metricId === '$lastCommunicationTime').value, 'number')
+    const fire = starters.find(item => item.id === 'fireEvidence').template
+    for (const [inputId, fieldId] of [['fireEvent','startedAt'], ['evidence','observedAt'], ['fireReview','reviewedAt']]) {
+      assert.equal(fire.inputDefinitions.find(input => input.id === inputId).valueType.properties.find(field => field.id === fieldId).valueType.type, 'date')
+    }
+    const review = fire.inputDefinitions.find(input => input.id === 'fireReview').valueType.properties.find(field => field.id === 'decision').valueType
+    assert.equal(review.type, 'enum')
+    assert.deepEqual(review.elements.map(item => item.value), [0,1,2,3,4])
+    const bucket = starters.find(item => item.id === 'fireGovernance').template.inputDefinitions[0].valueType.properties
+    assert.ok(bucket.filter(field => ['from','to'].includes(field.id)).every(field => field.valueType.type === 'date'))
+    assert.equal(bucket.find(field => field.id === 'total').valueType.type, 'long')
+  }
+})
+
 // 独立前端 checkout 不依赖聚合工作区的相对路径；联合验收显式传入正式引擎的场景目录。
 test('communication and fire starters match the real-engine scenarios', { skip: !process.env.METRIC_SCENARIO_FIXTURES }, async () => {
   const { join } = await import('node:path')
