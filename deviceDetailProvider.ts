@@ -4,6 +4,8 @@ import type { Component } from 'vue'
 export interface DeviceDetailSubject {
   id: string
   accessProvider?: string
+  protocol?: string
+  features?: ReadonlyArray<{ id?: string }>
 }
 
 /**

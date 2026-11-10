@@ -234,7 +234,7 @@ test('header tag writes refresh custom content without adding default-content qu
   assert.deepEqual(f.calls, [], 'a completed write cannot refresh another device')
 })
 
-test('passes every device feature to the legacy metadata store', t => {
+test('syncs device features and mapping protocol context without retaining the previous transport', t => {
   const f = fixture(t)
   const features = [
     { id: 'propertyNotInsertable', name: '属性模型不可新增' },
@@ -246,10 +246,21 @@ test('passes every device feature to the legacy metadata store', t => {
     id: 'A',
     name: 'device-a',
     features,
+    protocol: 'mapping-protocol',
+    transport: 'MQTT',
+    accessProvider: 'network',
     thingModelMetadata: { properties: [], functions: [], events: [], tags: [] },
   })
 
   assert.deepEqual(f.context.instanceStore.current.features, features)
+  assert.equal(f.context.instanceStore.current.protocol, 'mapping-protocol')
+  assert.equal(f.context.instanceStore.current.transport, 'MQTT')
+  assert.equal(f.context.instanceStore.current.accessProvider, 'network')
+  f.api.syncLegacyMetadataDevice({ id: 'B', protocol: 'collector-gateway' })
+  assert.equal(f.context.instanceStore.current.id, 'B')
+  assert.equal(f.context.instanceStore.current.protocol, 'collector-gateway')
+  assert.equal(f.context.instanceStore.current.transport, undefined)
+  assert.equal(f.context.instanceStore.current.accessProvider, undefined)
 })
 
 const providerSource = await parseSource('../views/device/list/hooks/useDeviceListProvider.ts')
