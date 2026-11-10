@@ -3,6 +3,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useMenuStore } from '@jetlinks-web-core/store'
 import { moduleRegistry } from '@jetlinks-web-core/utils/module-registry'
+import { isPrivateDeployment } from '@jetlinks-web-core/utils/deployment'
 import { countDevice_api, queryDevicePage_api, type DeviceLibraryProductFilterOption, type DeviceQueryTerm } from '../../../../api/device'
 import { queryDeviceLibraryProductFilterOptions_api } from '../../../../api/device-library'
 import { queryRuntimeDevices_api } from '../../../../api/deviceGroup'
@@ -58,7 +59,10 @@ export function useUnifiedDeviceList() {
       productName,
     })),
   ])
-  const filterFields = computed(() => getDeviceListFilterFields(scope.sidebarProps.value.areas, scope.sidebarProps.value.groups, filterProducts.value))
+  // 私有化字段自行按 ID 回查选项，不依赖侧栏和当前页产品；避免异步刷新重建字段后清空已解析的名称。
+  const filterFields = computed(() => isPrivateDeployment()
+    ? getDeviceListFilterFields()
+    : getDeviceListFilterFields([], [], filterProducts.value))
   const commonFilterFields = computed(() => filterFields.value.map(field => String(field.dataIndex)))
   const searchTerms = ref<ConditionFilterTerm[]>([])
   const status = computed(() => String(route.query.status || 'all'))
