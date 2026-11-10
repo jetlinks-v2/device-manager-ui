@@ -110,6 +110,7 @@
 3. SaaS 保留设备名称、设备 ID、设备类型、接入方式、产品五项；设备类型使用直连设备、网关子设备、网关设备选项，接入方式使用已安装设备库中的 `accessProvider/accessName` 去重选项，继续按 `accessProvider` 查询。私有化的接入方式则按参考页选择具体接入配置，提交 `accessId`。
 4. `getDeviceListSearchTerms` 将分类、具体接入配置和接入 Provider 转为 `productId$product-info` 关联条件；说明映射为 `describe`，标签展开为保留 AND / OR 关系的条件组。标签复用 `views/device/Instance/components/TagSearch.vue`，同时补全其 `change` 事件值，并修复超过三项、清空及逻辑连接符回显。
 5. 所属组织复用 `api/product.ts#queryOrgThree`，按组织名称展示完整树路径；节点值为 `id$dim-assets` 所需的设备资产关联条件，`assetType` 为 `device`、目标类型为 `org`。查询列已携带 `dim-assets` 操作符，提交时移除编辑器使用的 `eq`，与实例页查询协议一致；URL 回显继续使用同一份树形字段配置。
+6. 私有化筛选字段仅依赖部署、权限和语言；空间 / 分组侧栏、设备分页结果及设备库加载不重建字段，避免清空已选产品名称并重复按 ID 回查。SaaS 产品与接入方式选项继续响应已安装产品和当前设备的名称补齐。
 
 影响边界：仅修改 `runtime-ui/modules/device-manager-ui` 的搜索配置、共享标签编辑器及相关回归测试；参考页复用的标签编辑器同步获得回显修复，未调整其搜索字段配置。通用搜索外壳、运营端 `ui/`、后端接口、菜单、权限和左侧范围筛选保持原有行为。
 
