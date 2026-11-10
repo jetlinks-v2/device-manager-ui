@@ -1,5 +1,7 @@
 export const metricHostMessages = {
   zh: {
+    sourceHint_property:'物模型属性的当前值或历史记录',sourceHint_event:'设备上报的物模型事件',sourceHint_builtin:'平台状态、会话与范围统计等数据',
+    sourceHint_metric:'复用已有指标的计算结果',sourceHint_businessEvent:'对象关联的业务更新事件',sourceHint_businessQuery:'计算时读取对象关联的业务数据',
     referenceChoices:'{count} 个选项',referenceFields:'{count} 个字段',
     deviceSourceHint:'设备属性、上报事件与平台状态',productSourceHint:'产品物模型声明与范围统计',sourceObjectHint:'选择业务对象，再读取其关联数据',
     product:'产品',chooseObject:'选择来源对象',searchObject:'搜索对象名称',noObjects:'没有可选对象',searchData:'搜索数据名称或标识',ungrouped:'未分组',noData:'没有匹配的数据项',sourceLoading:'正在补充其他来源…',
@@ -49,6 +51,8 @@ export const metricHostMessages = {
     noAccess: '没有查看指标的权限', templates: '指标模板', saveMetrics: '配置指标',
   },
   en: {
+    sourceHint_property:'Current values or history of model properties',sourceHint_event:'Model events reported by devices',sourceHint_builtin:'Platform state, sessions and scope statistics',
+    sourceHint_metric:'Reuse existing metric results',sourceHint_businessEvent:'Business updates associated with an object',sourceHint_businessQuery:'Read associated business data when calculating',
     referenceChoices:'{count} options',referenceFields:'{count} fields',
     deviceSourceHint:'Device properties, events and platform state',productSourceHint:'Product model declarations and scope statistics',sourceObjectHint:'Select a business object and read its related data',
     product:'Product',chooseObject:'Choose source object',searchObject:'Search object name',noObjects:'No objects available',searchData:'Search data name or ID',ungrouped:'Ungrouped',noData:'No matching data',sourceLoading:'Loading other sources…',

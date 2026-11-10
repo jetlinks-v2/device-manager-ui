@@ -51,6 +51,9 @@ test('source descriptions merge into an existing host composer and follow its lo
     assert.equal(zh.denied.error,'来源加载失败，请重试')
     assert.deepEqual(calls,[['deviceGroup','line']])
     assert.equal(host.t('title'),'宿主')
+    const sourceKinds=adapter.pickSource.sourceOptions
+    assert.equal(sourceKinds.find(option=>option.value === 'property').icon,'DatabaseOutlined')
+    assert.equal(sourceKinds.find(option=>option.value === 'businessQuery').description,'计算时读取对象关联的业务数据')
 
     host.locale.value = 'en'
     await nextTick()
@@ -60,6 +63,8 @@ test('source descriptions merge into an existing host composer and follow its lo
     assert.equal(en.missing.error,'No built-in data for this object')
     assert.equal(en.denied.error,'Unable to load source. Retry.')
     assert.equal(host.t('title'),'Host')
+    assert.equal(adapter.pickSource.sourceOptions.find(option=>option.value === 'property').icon,'DatabaseOutlined')
+    assert.equal(adapter.pickSource.sourceOptions.find(option=>option.value === 'businessQuery').description,'Read associated business data when calculating')
     assert.equal(calls.length,2)
     const alarm = await adapter.pickSource.describe({ownerType:'device',ownerId:'pump',label:'Pump'}, {
       active:{kind:'builtin',id:'alarmActive'},duration:{kind:'builtin',id:'longestAlarmDuration'},

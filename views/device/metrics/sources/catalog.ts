@@ -3,6 +3,8 @@ import type { MetricPropertyOption } from '../metricSources'
 import type { MetricInputMapping } from '@jetlinks-web-core/components'
 
 export type SourceKind = 'property'|'event'|'builtin'|'metric'|'businessEvent'|'businessQuery'
+/** 来源目录与建议来源使用同一套图标，只影响展示。 */
+export const sourceKindIcon = (kind:string) => ({property:'DatabaseOutlined',event:'ThunderboltOutlined',builtin:'ApiOutlined',metric:'NodeIndexOutlined',businessEvent:'ThunderboltOutlined',businessQuery:'SearchOutlined'}[kind] || 'DatabaseOutlined')
 export interface SourceMethod {
   key:string
   kind:SourceKind

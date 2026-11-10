@@ -11,6 +11,7 @@ import MetricSourceModal from './MetricSourceModal.vue'
 import MetricSourceFields from './MetricSourceFields.vue'
 import { useMetricSourcePicker } from './useMetricSourcePicker'
 import { metricHostMessages } from './messages'
+import { sourceKindIcon } from './sources/catalog'
 
 /** 公开来源适配：调用者仅消费 picker 与 host，不依赖设备模块私有弹窗状态。 */
 export function useMetricSourceAdapter(context: Ref<MetricContext>) {
@@ -116,6 +117,6 @@ export function useMetricSourceAdapter(context: Ref<MetricContext>) {
   const pickSource = Object.defineProperty(Object.assign(state.pickSource,{editor,describe,readCurrent,cancel:state.cancel}),'sourceOptions',{get:()=>[
     {value:'property',label:t('propertyData')},{value:'event',label:t('eventData')},{value:'builtin',label:t('builtinData')},{value:'metric',label:t('metrics')},
     {value:'businessEvent',label:t('businessEvent')},{value:'businessQuery',label:t('businessQuery')},
-  ]})
+  ].map(option=>({...option,icon:sourceKindIcon(option.value),description:t(`sourceHint_${option.value}`)}))})
   return { pickSource, host }
 }
