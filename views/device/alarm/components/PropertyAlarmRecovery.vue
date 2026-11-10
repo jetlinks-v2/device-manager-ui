@@ -32,7 +32,7 @@ const options = computed(() => [{ value: 'off', icon: 'StopOutlined' }, { value:
   .map(item => ({ ...item, label: $t(`DeviceAlarm.condition.recovery.${item.value}`) })))
 // 跟随模式只展示推导结果，不提供会误改主触发条件的输入框。
 const inferredText = computed(() => [formatTriggerText(invertCondition(props.model), props.property, $t),
-  isNumberProperty(props.property) ? formatPropertyUnit(props.property.valueType?.unit) : undefined].filter(Boolean).join(' '))
+  isNumberProperty(props.property) ? formatPropertyUnit(props.property.valueType) : undefined].filter(Boolean).join(' '))
 function changeMode(value: string) {
   if (props.disabled || value === mode.value) return
   props.model.autoRelieve = value !== 'off'

@@ -2,6 +2,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { getNotificationMessageMode, matchesAlarmNotifyMethod, selectAlarmNotificationTypes } from '../utils'
 import type { DeviceAlarmFormModel, DeviceAlarmNotifyMethod } from '../types'
+import { aggregateTemplateState } from '../notificationTemplateStatus'
 
 interface NotificationProps {
   model: DeviceAlarmFormModel
@@ -37,6 +38,13 @@ export function useAlarmNotification(props: NotificationProps, requestMethods: (
   const channelOptions = computed(() => props.methods.map(method => ({ value: method.providerId, label: method.label,
     icon: method.icon, templates: method.templates, description: t(`DeviceAlarm.delivery.address.${method.key}`) })))
   const channelCount = computed(() => channelIds.value.length || props.model.notification.notifyChannelIds?.length || 0)
+  // Legacy recovery uses the trigger topic; never turn a template-free selection into configured.
+  const selectedTemplateStatus = computed(() => {
+    const statuses = channelIds.value.map(id => props.methods.find(method => method.providerId === id)?.templates)
+    const eventStatus = (event: 'trigger' | 'relieve') => aggregateTemplateState(statuses.map(status =>
+      status?.[event === 'relieve' && props.model.notification.relieveTopicProvider === 'alarm-device' ? 'trigger' : event] ?? 'unknown'))
+    return { trigger: eventStatus('trigger'), relieve: eventStatus('relieve') }
+  })
   const channelLabel = computed(() => selectedMethods.value[0]?.label
     ?? (channelCount.value ? t('DeviceAlarm.notification.channelCount', { count: channelCount.value }) : t('DeviceAlarm.notification.channelShort')))
   const channelLabels = computed(() => channelIds.value.map(id => props.methods.find(method => method.providerId === id)?.label
@@ -85,5 +93,5 @@ export function useAlarmNotification(props: NotificationProps, requestMethods: (
     if (reveal && !activePanel.value) setPanel(!channelCount.value ? 'channels' : !props.model.notification.userIds.length ? 'recipients' : 'channels', true)
     else if (reveal === false) activePanel.value = undefined
   }, { immediate: true, flush: 'sync' })
-  return { activePanel, scopeKey, showLegacyMessageTemplate, channelIds, channelOptions, channelCount, channelLabel, channelLabels, channelTitle, selectedMethods, hasContactType, setPanel, toggleEnabled, setIncludeRelieve }
+  return { activePanel, scopeKey, showLegacyMessageTemplate, channelIds, channelOptions, channelCount, selectedTemplateStatus, channelLabel, channelLabels, channelTitle, selectedMethods, hasContactType, setPanel, toggleEnabled, setIncludeRelieve }
 }

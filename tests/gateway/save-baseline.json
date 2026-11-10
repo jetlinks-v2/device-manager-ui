@@ -1,0 +1,5148 @@
+{
+  "revision": "53aa23bacb20f550f11383609417ad04e1b224a3",
+  "results": {
+    "mqtt-server-gateway/add/0": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "protocol": "protocol-1",
+            "channel": "network",
+            "channelId": "network-1",
+            "provider": "mqtt-server-gateway",
+            "transport": "MQTT"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "mqtt-server-gateway/add/1": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "protocol": "protocol-1",
+            "channel": "network",
+            "channelId": "network-1",
+            "provider": "mqtt-server-gateway",
+            "transport": "MQTT"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "mqtt-server-gateway/add/2": {
+      "requests": [],
+      "callbacks": [
+        {
+          "name": "网关名称",
+          "description": "网关说明",
+          "protocol": "protocol-1",
+          "channel": "network",
+          "channelId": "network-1",
+          "provider": "mqtt-server-gateway",
+          "transport": "MQTT",
+          "channelInfo": {
+            "id": "network-1",
+            "name": "网络组件",
+            "type": "MQTT_SERVER",
+            "addresses": [
+              {
+                "address": "127.0.0.1:1883",
+                "health": 1
+              }
+            ]
+          },
+          "protocolDetail": {
+            "id": "protocol-1",
+            "name": "协议",
+            "description": "协议说明"
+          }
+        }
+      ],
+      "events": [
+        "callback"
+      ],
+      "errors": []
+    },
+    "mqtt-server-gateway/edit/0": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "id": "gateway-existing",
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "provider": "mqtt-server-gateway",
+            "channel": "network",
+            "channelId": "network-1",
+            "protocol": "protocol-1",
+            "configuration": {
+              "apiAddress": "https://example.test/api",
+              "apiKey": "api-key",
+              "appKey": "app-key",
+              "appSecret": "secret",
+              "validateToken": "token",
+              "aesKey": "aes",
+              "enabled": false,
+              "retries": 0,
+              "modes": []
+            },
+            "i18nMessages": {
+              "name": {
+                "en": "Existing gateway"
+              }
+            },
+            "extension": {
+              "zero": 0,
+              "enabled": false,
+              "empty": []
+            },
+            "transport": "MQTT"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "mqtt-server-gateway/edit/1": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "id": "gateway-existing",
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "provider": "mqtt-server-gateway",
+            "channel": "network",
+            "channelId": "network-1",
+            "protocol": "protocol-1",
+            "configuration": {
+              "apiAddress": "https://example.test/api",
+              "apiKey": "api-key",
+              "appKey": "app-key",
+              "appSecret": "secret",
+              "validateToken": "token",
+              "aesKey": "aes",
+              "enabled": false,
+              "retries": 0,
+              "modes": []
+            },
+            "i18nMessages": {
+              "name": {
+                "en": "Existing gateway"
+              }
+            },
+            "extension": {
+              "zero": 0,
+              "enabled": false,
+              "empty": []
+            },
+            "transport": "MQTT"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "mqtt-server-gateway/edit/2": {
+      "requests": [],
+      "callbacks": [
+        {
+          "id": "gateway-existing",
+          "name": "网关名称",
+          "description": "网关说明",
+          "provider": "mqtt-server-gateway",
+          "channel": "network",
+          "channelId": "network-1",
+          "protocol": "protocol-1",
+          "configuration": {
+            "apiAddress": "https://example.test/api",
+            "apiKey": "api-key",
+            "appKey": "app-key",
+            "appSecret": "secret",
+            "validateToken": "token",
+            "aesKey": "aes",
+            "enabled": false,
+            "retries": 0,
+            "modes": []
+          },
+          "i18nMessages": {
+            "name": {
+              "en": "Existing gateway"
+            }
+          },
+          "extension": {
+            "zero": 0,
+            "enabled": false,
+            "empty": []
+          },
+          "transport": "MQTT",
+          "channelInfo": {
+            "id": "network-1",
+            "name": "网络组件",
+            "type": "MQTT_SERVER",
+            "addresses": [
+              {
+                "address": "127.0.0.1:1883",
+                "health": 1
+              }
+            ]
+          },
+          "protocolDetail": {
+            "id": "protocol-1",
+            "name": "协议",
+            "description": "协议说明"
+          }
+        }
+      ],
+      "events": [
+        "callback"
+      ],
+      "errors": []
+    },
+    "mqtt-client-gateway/add/0": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "protocol": "protocol-1",
+            "channel": "network",
+            "channelId": "network-1",
+            "provider": "mqtt-client-gateway",
+            "transport": "MQTT"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "mqtt-client-gateway/add/1": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "protocol": "protocol-1",
+            "channel": "network",
+            "channelId": "network-1",
+            "provider": "mqtt-client-gateway",
+            "transport": "MQTT"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "mqtt-client-gateway/add/2": {
+      "requests": [],
+      "callbacks": [
+        {
+          "name": "网关名称",
+          "description": "网关说明",
+          "protocol": "protocol-1",
+          "channel": "network",
+          "channelId": "network-1",
+          "provider": "mqtt-client-gateway",
+          "transport": "MQTT",
+          "channelInfo": {
+            "id": "network-1",
+            "name": "网络组件",
+            "type": "MQTT_SERVER",
+            "addresses": [
+              {
+                "address": "127.0.0.1:1883",
+                "health": 1
+              }
+            ]
+          },
+          "protocolDetail": {
+            "id": "protocol-1",
+            "name": "协议",
+            "description": "协议说明"
+          }
+        }
+      ],
+      "events": [
+        "callback"
+      ],
+      "errors": []
+    },
+    "mqtt-client-gateway/edit/0": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "id": "gateway-existing",
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "provider": "mqtt-client-gateway",
+            "channel": "network",
+            "channelId": "network-1",
+            "protocol": "protocol-1",
+            "configuration": {
+              "apiAddress": "https://example.test/api",
+              "apiKey": "api-key",
+              "appKey": "app-key",
+              "appSecret": "secret",
+              "validateToken": "token",
+              "aesKey": "aes",
+              "enabled": false,
+              "retries": 0,
+              "modes": []
+            },
+            "i18nMessages": {
+              "name": {
+                "en": "Existing gateway"
+              }
+            },
+            "extension": {
+              "zero": 0,
+              "enabled": false,
+              "empty": []
+            },
+            "transport": "MQTT"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "mqtt-client-gateway/edit/1": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "id": "gateway-existing",
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "provider": "mqtt-client-gateway",
+            "channel": "network",
+            "channelId": "network-1",
+            "protocol": "protocol-1",
+            "configuration": {
+              "apiAddress": "https://example.test/api",
+              "apiKey": "api-key",
+              "appKey": "app-key",
+              "appSecret": "secret",
+              "validateToken": "token",
+              "aesKey": "aes",
+              "enabled": false,
+              "retries": 0,
+              "modes": []
+            },
+            "i18nMessages": {
+              "name": {
+                "en": "Existing gateway"
+              }
+            },
+            "extension": {
+              "zero": 0,
+              "enabled": false,
+              "empty": []
+            },
+            "transport": "MQTT"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "mqtt-client-gateway/edit/2": {
+      "requests": [],
+      "callbacks": [
+        {
+          "id": "gateway-existing",
+          "name": "网关名称",
+          "description": "网关说明",
+          "provider": "mqtt-client-gateway",
+          "channel": "network",
+          "channelId": "network-1",
+          "protocol": "protocol-1",
+          "configuration": {
+            "apiAddress": "https://example.test/api",
+            "apiKey": "api-key",
+            "appKey": "app-key",
+            "appSecret": "secret",
+            "validateToken": "token",
+            "aesKey": "aes",
+            "enabled": false,
+            "retries": 0,
+            "modes": []
+          },
+          "i18nMessages": {
+            "name": {
+              "en": "Existing gateway"
+            }
+          },
+          "extension": {
+            "zero": 0,
+            "enabled": false,
+            "empty": []
+          },
+          "transport": "MQTT",
+          "channelInfo": {
+            "id": "network-1",
+            "name": "网络组件",
+            "type": "MQTT_SERVER",
+            "addresses": [
+              {
+                "address": "127.0.0.1:1883",
+                "health": 1
+              }
+            ]
+          },
+          "protocolDetail": {
+            "id": "protocol-1",
+            "name": "协议",
+            "description": "协议说明"
+          }
+        }
+      ],
+      "events": [
+        "callback"
+      ],
+      "errors": []
+    },
+    "websocket-server/add/0": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "protocol": "protocol-1",
+            "channel": "network",
+            "channelId": "network-1",
+            "provider": "websocket-server",
+            "transport": "WebSocket"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "websocket-server/add/1": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "protocol": "protocol-1",
+            "channel": "network",
+            "channelId": "network-1",
+            "provider": "websocket-server",
+            "transport": "WebSocket"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "websocket-server/add/2": {
+      "requests": [],
+      "callbacks": [
+        {
+          "name": "网关名称",
+          "description": "网关说明",
+          "protocol": "protocol-1",
+          "channel": "network",
+          "channelId": "network-1",
+          "provider": "websocket-server",
+          "transport": "WebSocket",
+          "channelInfo": {
+            "id": "network-1",
+            "name": "网络组件",
+            "type": "MQTT_SERVER",
+            "addresses": [
+              {
+                "address": "127.0.0.1:1883",
+                "health": 1
+              }
+            ]
+          },
+          "protocolDetail": {
+            "id": "protocol-1",
+            "name": "协议",
+            "description": "协议说明"
+          }
+        }
+      ],
+      "events": [
+        "callback"
+      ],
+      "errors": []
+    },
+    "websocket-server/edit/0": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "id": "gateway-existing",
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "provider": "websocket-server",
+            "channel": "network",
+            "channelId": "network-1",
+            "protocol": "protocol-1",
+            "configuration": {
+              "apiAddress": "https://example.test/api",
+              "apiKey": "api-key",
+              "appKey": "app-key",
+              "appSecret": "secret",
+              "validateToken": "token",
+              "aesKey": "aes",
+              "enabled": false,
+              "retries": 0,
+              "modes": []
+            },
+            "i18nMessages": {
+              "name": {
+                "en": "Existing gateway"
+              }
+            },
+            "extension": {
+              "zero": 0,
+              "enabled": false,
+              "empty": []
+            },
+            "transport": "WebSocket"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "websocket-server/edit/1": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "id": "gateway-existing",
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "provider": "websocket-server",
+            "channel": "network",
+            "channelId": "network-1",
+            "protocol": "protocol-1",
+            "configuration": {
+              "apiAddress": "https://example.test/api",
+              "apiKey": "api-key",
+              "appKey": "app-key",
+              "appSecret": "secret",
+              "validateToken": "token",
+              "aesKey": "aes",
+              "enabled": false,
+              "retries": 0,
+              "modes": []
+            },
+            "i18nMessages": {
+              "name": {
+                "en": "Existing gateway"
+              }
+            },
+            "extension": {
+              "zero": 0,
+              "enabled": false,
+              "empty": []
+            },
+            "transport": "WebSocket"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "websocket-server/edit/2": {
+      "requests": [],
+      "callbacks": [
+        {
+          "id": "gateway-existing",
+          "name": "网关名称",
+          "description": "网关说明",
+          "provider": "websocket-server",
+          "channel": "network",
+          "channelId": "network-1",
+          "protocol": "protocol-1",
+          "configuration": {
+            "apiAddress": "https://example.test/api",
+            "apiKey": "api-key",
+            "appKey": "app-key",
+            "appSecret": "secret",
+            "validateToken": "token",
+            "aesKey": "aes",
+            "enabled": false,
+            "retries": 0,
+            "modes": []
+          },
+          "i18nMessages": {
+            "name": {
+              "en": "Existing gateway"
+            }
+          },
+          "extension": {
+            "zero": 0,
+            "enabled": false,
+            "empty": []
+          },
+          "transport": "WebSocket",
+          "channelInfo": {
+            "id": "network-1",
+            "name": "网络组件",
+            "type": "MQTT_SERVER",
+            "addresses": [
+              {
+                "address": "127.0.0.1:1883",
+                "health": 1
+              }
+            ]
+          },
+          "protocolDetail": {
+            "id": "protocol-1",
+            "name": "协议",
+            "description": "协议说明"
+          }
+        }
+      ],
+      "events": [
+        "callback"
+      ],
+      "errors": []
+    },
+    "coap-server-gateway/add/0": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "protocol": "protocol-1",
+            "channel": "network",
+            "channelId": "network-1",
+            "provider": "coap-server-gateway",
+            "transport": "CoAP"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "coap-server-gateway/add/1": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "protocol": "protocol-1",
+            "channel": "network",
+            "channelId": "network-1",
+            "provider": "coap-server-gateway",
+            "transport": "CoAP"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "coap-server-gateway/add/2": {
+      "requests": [],
+      "callbacks": [
+        {
+          "name": "网关名称",
+          "description": "网关说明",
+          "protocol": "protocol-1",
+          "channel": "network",
+          "channelId": "network-1",
+          "provider": "coap-server-gateway",
+          "transport": "CoAP",
+          "channelInfo": {
+            "id": "network-1",
+            "name": "网络组件",
+            "type": "MQTT_SERVER",
+            "addresses": [
+              {
+                "address": "127.0.0.1:1883",
+                "health": 1
+              }
+            ]
+          },
+          "protocolDetail": {
+            "id": "protocol-1",
+            "name": "协议",
+            "description": "协议说明"
+          }
+        }
+      ],
+      "events": [
+        "callback"
+      ],
+      "errors": []
+    },
+    "coap-server-gateway/edit/0": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "id": "gateway-existing",
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "provider": "coap-server-gateway",
+            "channel": "network",
+            "channelId": "network-1",
+            "protocol": "protocol-1",
+            "configuration": {
+              "apiAddress": "https://example.test/api",
+              "apiKey": "api-key",
+              "appKey": "app-key",
+              "appSecret": "secret",
+              "validateToken": "token",
+              "aesKey": "aes",
+              "enabled": false,
+              "retries": 0,
+              "modes": []
+            },
+            "i18nMessages": {
+              "name": {
+                "en": "Existing gateway"
+              }
+            },
+            "extension": {
+              "zero": 0,
+              "enabled": false,
+              "empty": []
+            },
+            "transport": "CoAP"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "coap-server-gateway/edit/1": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "id": "gateway-existing",
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "provider": "coap-server-gateway",
+            "channel": "network",
+            "channelId": "network-1",
+            "protocol": "protocol-1",
+            "configuration": {
+              "apiAddress": "https://example.test/api",
+              "apiKey": "api-key",
+              "appKey": "app-key",
+              "appSecret": "secret",
+              "validateToken": "token",
+              "aesKey": "aes",
+              "enabled": false,
+              "retries": 0,
+              "modes": []
+            },
+            "i18nMessages": {
+              "name": {
+                "en": "Existing gateway"
+              }
+            },
+            "extension": {
+              "zero": 0,
+              "enabled": false,
+              "empty": []
+            },
+            "transport": "CoAP"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "coap-server-gateway/edit/2": {
+      "requests": [],
+      "callbacks": [
+        {
+          "id": "gateway-existing",
+          "name": "网关名称",
+          "description": "网关说明",
+          "provider": "coap-server-gateway",
+          "channel": "network",
+          "channelId": "network-1",
+          "protocol": "protocol-1",
+          "configuration": {
+            "apiAddress": "https://example.test/api",
+            "apiKey": "api-key",
+            "appKey": "app-key",
+            "appSecret": "secret",
+            "validateToken": "token",
+            "aesKey": "aes",
+            "enabled": false,
+            "retries": 0,
+            "modes": []
+          },
+          "i18nMessages": {
+            "name": {
+              "en": "Existing gateway"
+            }
+          },
+          "extension": {
+            "zero": 0,
+            "enabled": false,
+            "empty": []
+          },
+          "transport": "CoAP",
+          "channelInfo": {
+            "id": "network-1",
+            "name": "网络组件",
+            "type": "MQTT_SERVER",
+            "addresses": [
+              {
+                "address": "127.0.0.1:1883",
+                "health": 1
+              }
+            ]
+          },
+          "protocolDetail": {
+            "id": "protocol-1",
+            "name": "协议",
+            "description": "协议说明"
+          }
+        }
+      ],
+      "events": [
+        "callback"
+      ],
+      "errors": []
+    },
+    "tcp-server-gateway/add/0": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "protocol": "protocol-1",
+            "channel": "network",
+            "channelId": "network-1",
+            "provider": "tcp-server-gateway",
+            "transport": "TCP"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "tcp-server-gateway/add/1": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "protocol": "protocol-1",
+            "channel": "network",
+            "channelId": "network-1",
+            "provider": "tcp-server-gateway",
+            "transport": "TCP"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "tcp-server-gateway/add/2": {
+      "requests": [],
+      "callbacks": [
+        {
+          "name": "网关名称",
+          "description": "网关说明",
+          "protocol": "protocol-1",
+          "channel": "network",
+          "channelId": "network-1",
+          "provider": "tcp-server-gateway",
+          "transport": "TCP",
+          "channelInfo": {
+            "id": "network-1",
+            "name": "网络组件",
+            "type": "MQTT_SERVER",
+            "addresses": [
+              {
+                "address": "127.0.0.1:1883",
+                "health": 1
+              }
+            ]
+          },
+          "protocolDetail": {
+            "id": "protocol-1",
+            "name": "协议",
+            "description": "协议说明"
+          }
+        }
+      ],
+      "events": [
+        "callback"
+      ],
+      "errors": []
+    },
+    "tcp-server-gateway/edit/0": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "id": "gateway-existing",
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "provider": "tcp-server-gateway",
+            "channel": "network",
+            "channelId": "network-1",
+            "protocol": "protocol-1",
+            "configuration": {
+              "apiAddress": "https://example.test/api",
+              "apiKey": "api-key",
+              "appKey": "app-key",
+              "appSecret": "secret",
+              "validateToken": "token",
+              "aesKey": "aes",
+              "enabled": false,
+              "retries": 0,
+              "modes": []
+            },
+            "i18nMessages": {
+              "name": {
+                "en": "Existing gateway"
+              }
+            },
+            "extension": {
+              "zero": 0,
+              "enabled": false,
+              "empty": []
+            },
+            "transport": "TCP"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "tcp-server-gateway/edit/1": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "id": "gateway-existing",
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "provider": "tcp-server-gateway",
+            "channel": "network",
+            "channelId": "network-1",
+            "protocol": "protocol-1",
+            "configuration": {
+              "apiAddress": "https://example.test/api",
+              "apiKey": "api-key",
+              "appKey": "app-key",
+              "appSecret": "secret",
+              "validateToken": "token",
+              "aesKey": "aes",
+              "enabled": false,
+              "retries": 0,
+              "modes": []
+            },
+            "i18nMessages": {
+              "name": {
+                "en": "Existing gateway"
+              }
+            },
+            "extension": {
+              "zero": 0,
+              "enabled": false,
+              "empty": []
+            },
+            "transport": "TCP"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "tcp-server-gateway/edit/2": {
+      "requests": [],
+      "callbacks": [
+        {
+          "id": "gateway-existing",
+          "name": "网关名称",
+          "description": "网关说明",
+          "provider": "tcp-server-gateway",
+          "channel": "network",
+          "channelId": "network-1",
+          "protocol": "protocol-1",
+          "configuration": {
+            "apiAddress": "https://example.test/api",
+            "apiKey": "api-key",
+            "appKey": "app-key",
+            "appSecret": "secret",
+            "validateToken": "token",
+            "aesKey": "aes",
+            "enabled": false,
+            "retries": 0,
+            "modes": []
+          },
+          "i18nMessages": {
+            "name": {
+              "en": "Existing gateway"
+            }
+          },
+          "extension": {
+            "zero": 0,
+            "enabled": false,
+            "empty": []
+          },
+          "transport": "TCP",
+          "channelInfo": {
+            "id": "network-1",
+            "name": "网络组件",
+            "type": "MQTT_SERVER",
+            "addresses": [
+              {
+                "address": "127.0.0.1:1883",
+                "health": 1
+              }
+            ]
+          },
+          "protocolDetail": {
+            "id": "protocol-1",
+            "name": "协议",
+            "description": "协议说明"
+          }
+        }
+      ],
+      "events": [
+        "callback"
+      ],
+      "errors": []
+    },
+    "udp-device-gateway/add/0": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "protocol": "protocol-1",
+            "channel": "network",
+            "channelId": "network-1",
+            "provider": "udp-device-gateway",
+            "transport": "UDP"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "udp-device-gateway/add/1": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "protocol": "protocol-1",
+            "channel": "network",
+            "channelId": "network-1",
+            "provider": "udp-device-gateway",
+            "transport": "UDP"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "udp-device-gateway/add/2": {
+      "requests": [],
+      "callbacks": [
+        {
+          "name": "网关名称",
+          "description": "网关说明",
+          "protocol": "protocol-1",
+          "channel": "network",
+          "channelId": "network-1",
+          "provider": "udp-device-gateway",
+          "transport": "UDP",
+          "channelInfo": {
+            "id": "network-1",
+            "name": "网络组件",
+            "type": "MQTT_SERVER",
+            "addresses": [
+              {
+                "address": "127.0.0.1:1883",
+                "health": 1
+              }
+            ]
+          },
+          "protocolDetail": {
+            "id": "protocol-1",
+            "name": "协议",
+            "description": "协议说明"
+          }
+        }
+      ],
+      "events": [
+        "callback"
+      ],
+      "errors": []
+    },
+    "udp-device-gateway/edit/0": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "id": "gateway-existing",
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "provider": "udp-device-gateway",
+            "channel": "network",
+            "channelId": "network-1",
+            "protocol": "protocol-1",
+            "configuration": {
+              "apiAddress": "https://example.test/api",
+              "apiKey": "api-key",
+              "appKey": "app-key",
+              "appSecret": "secret",
+              "validateToken": "token",
+              "aesKey": "aes",
+              "enabled": false,
+              "retries": 0,
+              "modes": []
+            },
+            "i18nMessages": {
+              "name": {
+                "en": "Existing gateway"
+              }
+            },
+            "extension": {
+              "zero": 0,
+              "enabled": false,
+              "empty": []
+            },
+            "transport": "UDP"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "udp-device-gateway/edit/1": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "id": "gateway-existing",
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "provider": "udp-device-gateway",
+            "channel": "network",
+            "channelId": "network-1",
+            "protocol": "protocol-1",
+            "configuration": {
+              "apiAddress": "https://example.test/api",
+              "apiKey": "api-key",
+              "appKey": "app-key",
+              "appSecret": "secret",
+              "validateToken": "token",
+              "aesKey": "aes",
+              "enabled": false,
+              "retries": 0,
+              "modes": []
+            },
+            "i18nMessages": {
+              "name": {
+                "en": "Existing gateway"
+              }
+            },
+            "extension": {
+              "zero": 0,
+              "enabled": false,
+              "empty": []
+            },
+            "transport": "UDP"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "udp-device-gateway/edit/2": {
+      "requests": [],
+      "callbacks": [
+        {
+          "id": "gateway-existing",
+          "name": "网关名称",
+          "description": "网关说明",
+          "provider": "udp-device-gateway",
+          "channel": "network",
+          "channelId": "network-1",
+          "protocol": "protocol-1",
+          "configuration": {
+            "apiAddress": "https://example.test/api",
+            "apiKey": "api-key",
+            "appKey": "app-key",
+            "appSecret": "secret",
+            "validateToken": "token",
+            "aesKey": "aes",
+            "enabled": false,
+            "retries": 0,
+            "modes": []
+          },
+          "i18nMessages": {
+            "name": {
+              "en": "Existing gateway"
+            }
+          },
+          "extension": {
+            "zero": 0,
+            "enabled": false,
+            "empty": []
+          },
+          "transport": "UDP",
+          "channelInfo": {
+            "id": "network-1",
+            "name": "网络组件",
+            "type": "MQTT_SERVER",
+            "addresses": [
+              {
+                "address": "127.0.0.1:1883",
+                "health": 1
+              }
+            ]
+          },
+          "protocolDetail": {
+            "id": "protocol-1",
+            "name": "协议",
+            "description": "协议说明"
+          }
+        }
+      ],
+      "events": [
+        "callback"
+      ],
+      "errors": []
+    },
+    "http-server-gateway/add/0": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "protocol": "protocol-1",
+            "channel": "network",
+            "channelId": "network-1",
+            "provider": "http-server-gateway",
+            "transport": "HTTP"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "http-server-gateway/add/1": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "protocol": "protocol-1",
+            "channel": "network",
+            "channelId": "network-1",
+            "provider": "http-server-gateway",
+            "transport": "HTTP"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "http-server-gateway/add/2": {
+      "requests": [],
+      "callbacks": [
+        {
+          "name": "网关名称",
+          "description": "网关说明",
+          "protocol": "protocol-1",
+          "channel": "network",
+          "channelId": "network-1",
+          "provider": "http-server-gateway",
+          "transport": "HTTP",
+          "channelInfo": {
+            "id": "network-1",
+            "name": "网络组件",
+            "type": "MQTT_SERVER",
+            "addresses": [
+              {
+                "address": "127.0.0.1:1883",
+                "health": 1
+              }
+            ]
+          },
+          "protocolDetail": {
+            "id": "protocol-1",
+            "name": "协议",
+            "description": "协议说明"
+          }
+        }
+      ],
+      "events": [
+        "callback"
+      ],
+      "errors": []
+    },
+    "http-server-gateway/edit/0": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "id": "gateway-existing",
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "provider": "http-server-gateway",
+            "channel": "network",
+            "channelId": "network-1",
+            "protocol": "protocol-1",
+            "configuration": {
+              "apiAddress": "https://example.test/api",
+              "apiKey": "api-key",
+              "appKey": "app-key",
+              "appSecret": "secret",
+              "validateToken": "token",
+              "aesKey": "aes",
+              "enabled": false,
+              "retries": 0,
+              "modes": []
+            },
+            "i18nMessages": {
+              "name": {
+                "en": "Existing gateway"
+              }
+            },
+            "extension": {
+              "zero": 0,
+              "enabled": false,
+              "empty": []
+            },
+            "transport": "HTTP"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "http-server-gateway/edit/1": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "id": "gateway-existing",
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "provider": "http-server-gateway",
+            "channel": "network",
+            "channelId": "network-1",
+            "protocol": "protocol-1",
+            "configuration": {
+              "apiAddress": "https://example.test/api",
+              "apiKey": "api-key",
+              "appKey": "app-key",
+              "appSecret": "secret",
+              "validateToken": "token",
+              "aesKey": "aes",
+              "enabled": false,
+              "retries": 0,
+              "modes": []
+            },
+            "i18nMessages": {
+              "name": {
+                "en": "Existing gateway"
+              }
+            },
+            "extension": {
+              "zero": 0,
+              "enabled": false,
+              "empty": []
+            },
+            "transport": "HTTP"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "http-server-gateway/edit/2": {
+      "requests": [],
+      "callbacks": [
+        {
+          "id": "gateway-existing",
+          "name": "网关名称",
+          "description": "网关说明",
+          "provider": "http-server-gateway",
+          "channel": "network",
+          "channelId": "network-1",
+          "protocol": "protocol-1",
+          "configuration": {
+            "apiAddress": "https://example.test/api",
+            "apiKey": "api-key",
+            "appKey": "app-key",
+            "appSecret": "secret",
+            "validateToken": "token",
+            "aesKey": "aes",
+            "enabled": false,
+            "retries": 0,
+            "modes": []
+          },
+          "i18nMessages": {
+            "name": {
+              "en": "Existing gateway"
+            }
+          },
+          "extension": {
+            "zero": 0,
+            "enabled": false,
+            "empty": []
+          },
+          "transport": "HTTP",
+          "channelInfo": {
+            "id": "network-1",
+            "name": "网络组件",
+            "type": "MQTT_SERVER",
+            "addresses": [
+              {
+                "address": "127.0.0.1:1883",
+                "health": 1
+              }
+            ]
+          },
+          "protocolDetail": {
+            "id": "protocol-1",
+            "name": "协议",
+            "description": "协议说明"
+          }
+        }
+      ],
+      "events": [
+        "callback"
+      ],
+      "errors": []
+    },
+    "child-device/add/0": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "protocol": "protocol-1",
+            "channel": "network",
+            "channelId": "",
+            "provider": "child-device",
+            "transport": "Gateway"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "child-device/add/1": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "protocol": "protocol-1",
+            "channel": "network",
+            "channelId": "",
+            "provider": "child-device",
+            "transport": "Gateway"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "child-device/add/2": {
+      "requests": [],
+      "callbacks": [
+        {
+          "name": "网关名称",
+          "description": "网关说明",
+          "protocol": "protocol-1",
+          "channel": "network",
+          "channelId": "",
+          "provider": "child-device",
+          "transport": "Gateway",
+          "protocolDetail": {
+            "id": "protocol-1",
+            "name": "协议",
+            "description": "协议说明"
+          }
+        }
+      ],
+      "events": [
+        "callback"
+      ],
+      "errors": []
+    },
+    "child-device/edit/0": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "id": "gateway-existing",
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "provider": "child-device",
+            "channel": "network",
+            "channelId": "",
+            "protocol": "protocol-1",
+            "configuration": {
+              "apiAddress": "https://example.test/api",
+              "apiKey": "api-key",
+              "appKey": "app-key",
+              "appSecret": "secret",
+              "validateToken": "token",
+              "aesKey": "aes",
+              "enabled": false,
+              "retries": 0,
+              "modes": []
+            },
+            "i18nMessages": {
+              "name": {
+                "en": "Existing gateway"
+              }
+            },
+            "extension": {
+              "zero": 0,
+              "enabled": false,
+              "empty": []
+            },
+            "transport": "Gateway"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "child-device/edit/1": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "id": "gateway-existing",
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "provider": "child-device",
+            "channel": "network",
+            "channelId": "",
+            "protocol": "protocol-1",
+            "configuration": {
+              "apiAddress": "https://example.test/api",
+              "apiKey": "api-key",
+              "appKey": "app-key",
+              "appSecret": "secret",
+              "validateToken": "token",
+              "aesKey": "aes",
+              "enabled": false,
+              "retries": 0,
+              "modes": []
+            },
+            "i18nMessages": {
+              "name": {
+                "en": "Existing gateway"
+              }
+            },
+            "extension": {
+              "zero": 0,
+              "enabled": false,
+              "empty": []
+            },
+            "transport": "Gateway"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "child-device/edit/2": {
+      "requests": [],
+      "callbacks": [
+        {
+          "id": "gateway-existing",
+          "name": "网关名称",
+          "description": "网关说明",
+          "provider": "child-device",
+          "channel": "network",
+          "channelId": "",
+          "protocol": "protocol-1",
+          "configuration": {
+            "apiAddress": "https://example.test/api",
+            "apiKey": "api-key",
+            "appKey": "app-key",
+            "appSecret": "secret",
+            "validateToken": "token",
+            "aesKey": "aes",
+            "enabled": false,
+            "retries": 0,
+            "modes": []
+          },
+          "i18nMessages": {
+            "name": {
+              "en": "Existing gateway"
+            }
+          },
+          "extension": {
+            "zero": 0,
+            "enabled": false,
+            "empty": []
+          },
+          "transport": "Gateway",
+          "protocolDetail": {
+            "id": "protocol-1",
+            "name": "协议",
+            "description": "协议说明"
+          }
+        }
+      ],
+      "events": [
+        "callback"
+      ],
+      "errors": []
+    },
+    "agent-device-gateway/add/0": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "protocol": "agent-device-gateway",
+            "channel": "network",
+            "channelId": "network-1",
+            "provider": "agent-device-gateway",
+            "transport": "HTTP"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "agent-device-gateway/add/1": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "protocol": "agent-device-gateway",
+            "channel": "network",
+            "channelId": "network-1",
+            "provider": "agent-device-gateway",
+            "transport": "HTTP"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "agent-device-gateway/add/2": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "protocol": "agent-device-gateway",
+            "channel": "network",
+            "channelId": "network-1",
+            "provider": "agent-device-gateway",
+            "transport": "MQTT"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "agent-device-gateway/add/3": {
+      "requests": [],
+      "callbacks": [
+        {
+          "name": "网关名称",
+          "description": "网关说明",
+          "protocol": "agent-device-gateway",
+          "channel": "network",
+          "channelId": "network-1",
+          "provider": "agent-device-gateway",
+          "transport": "HTTP",
+          "channelInfo": {
+            "id": "network-1",
+            "name": "网络组件",
+            "type": "HTTP_SERVER",
+            "addresses": [
+              {
+                "address": "127.0.0.1:1883",
+                "health": 1
+              }
+            ]
+          }
+        }
+      ],
+      "events": [
+        "callback"
+      ],
+      "errors": []
+    },
+    "agent-device-gateway/edit/0": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "id": "gateway-existing",
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "provider": "agent-device-gateway",
+            "channel": "network",
+            "channelId": "network-1",
+            "protocol": "agent-device-gateway",
+            "configuration": {
+              "apiAddress": "https://example.test/api",
+              "apiKey": "api-key",
+              "appKey": "app-key",
+              "appSecret": "secret",
+              "validateToken": "token",
+              "aesKey": "aes",
+              "enabled": false,
+              "retries": 0,
+              "modes": []
+            },
+            "i18nMessages": {
+              "name": {
+                "en": "Existing gateway"
+              }
+            },
+            "extension": {
+              "zero": 0,
+              "enabled": false,
+              "empty": []
+            },
+            "transport": "HTTP"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "agent-device-gateway/edit/1": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "id": "gateway-existing",
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "provider": "agent-device-gateway",
+            "channel": "network",
+            "channelId": "network-1",
+            "protocol": "agent-device-gateway",
+            "configuration": {
+              "apiAddress": "https://example.test/api",
+              "apiKey": "api-key",
+              "appKey": "app-key",
+              "appSecret": "secret",
+              "validateToken": "token",
+              "aesKey": "aes",
+              "enabled": false,
+              "retries": 0,
+              "modes": []
+            },
+            "i18nMessages": {
+              "name": {
+                "en": "Existing gateway"
+              }
+            },
+            "extension": {
+              "zero": 0,
+              "enabled": false,
+              "empty": []
+            },
+            "transport": "HTTP"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "agent-device-gateway/edit/2": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "id": "gateway-existing",
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "provider": "agent-device-gateway",
+            "channel": "network",
+            "channelId": "network-1",
+            "protocol": "agent-device-gateway",
+            "configuration": {
+              "apiAddress": "https://example.test/api",
+              "apiKey": "api-key",
+              "appKey": "app-key",
+              "appSecret": "secret",
+              "validateToken": "token",
+              "aesKey": "aes",
+              "enabled": false,
+              "retries": 0,
+              "modes": []
+            },
+            "i18nMessages": {
+              "name": {
+                "en": "Existing gateway"
+              }
+            },
+            "extension": {
+              "zero": 0,
+              "enabled": false,
+              "empty": []
+            },
+            "transport": "MQTT"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "agent-device-gateway/edit/3": {
+      "requests": [],
+      "callbacks": [
+        {
+          "id": "gateway-existing",
+          "name": "网关名称",
+          "description": "网关说明",
+          "provider": "agent-device-gateway",
+          "channel": "network",
+          "channelId": "network-1",
+          "protocol": "agent-device-gateway",
+          "configuration": {
+            "apiAddress": "https://example.test/api",
+            "apiKey": "api-key",
+            "appKey": "app-key",
+            "appSecret": "secret",
+            "validateToken": "token",
+            "aesKey": "aes",
+            "enabled": false,
+            "retries": 0,
+            "modes": []
+          },
+          "i18nMessages": {
+            "name": {
+              "en": "Existing gateway"
+            }
+          },
+          "extension": {
+            "zero": 0,
+            "enabled": false,
+            "empty": []
+          },
+          "transport": "HTTP",
+          "channelInfo": {
+            "id": "network-1",
+            "name": "网络组件",
+            "type": "HTTP_SERVER",
+            "addresses": [
+              {
+                "address": "127.0.0.1:1883",
+                "health": 1
+              }
+            ]
+          }
+        }
+      ],
+      "events": [
+        "callback"
+      ],
+      "errors": []
+    },
+    "agent-media-device-gateway/add/0": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "protocol": "agent-media-device-gateway",
+            "channel": "network",
+            "channelId": "network-1",
+            "provider": "agent-media-device-gateway",
+            "transport": "HTTP"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "agent-media-device-gateway/add/1": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "protocol": "agent-media-device-gateway",
+            "channel": "network",
+            "channelId": "network-1",
+            "provider": "agent-media-device-gateway",
+            "transport": "HTTP"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "agent-media-device-gateway/add/2": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "protocol": "agent-media-device-gateway",
+            "channel": "network",
+            "channelId": "network-1",
+            "provider": "agent-media-device-gateway",
+            "transport": "MQTT"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "agent-media-device-gateway/add/3": {
+      "requests": [],
+      "callbacks": [
+        {
+          "name": "网关名称",
+          "description": "网关说明",
+          "protocol": "agent-media-device-gateway",
+          "channel": "network",
+          "channelId": "network-1",
+          "provider": "agent-media-device-gateway",
+          "transport": "HTTP",
+          "channelInfo": {
+            "id": "network-1",
+            "name": "网络组件",
+            "type": "HTTP_SERVER",
+            "addresses": [
+              {
+                "address": "127.0.0.1:1883",
+                "health": 1
+              }
+            ]
+          }
+        }
+      ],
+      "events": [
+        "callback"
+      ],
+      "errors": []
+    },
+    "agent-media-device-gateway/edit/0": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "id": "gateway-existing",
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "provider": "agent-media-device-gateway",
+            "channel": "network",
+            "channelId": "network-1",
+            "protocol": "agent-media-device-gateway",
+            "configuration": {
+              "apiAddress": "https://example.test/api",
+              "apiKey": "api-key",
+              "appKey": "app-key",
+              "appSecret": "secret",
+              "validateToken": "token",
+              "aesKey": "aes",
+              "enabled": false,
+              "retries": 0,
+              "modes": []
+            },
+            "i18nMessages": {
+              "name": {
+                "en": "Existing gateway"
+              }
+            },
+            "extension": {
+              "zero": 0,
+              "enabled": false,
+              "empty": []
+            },
+            "transport": "HTTP"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "agent-media-device-gateway/edit/1": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "id": "gateway-existing",
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "provider": "agent-media-device-gateway",
+            "channel": "network",
+            "channelId": "network-1",
+            "protocol": "agent-media-device-gateway",
+            "configuration": {
+              "apiAddress": "https://example.test/api",
+              "apiKey": "api-key",
+              "appKey": "app-key",
+              "appSecret": "secret",
+              "validateToken": "token",
+              "aesKey": "aes",
+              "enabled": false,
+              "retries": 0,
+              "modes": []
+            },
+            "i18nMessages": {
+              "name": {
+                "en": "Existing gateway"
+              }
+            },
+            "extension": {
+              "zero": 0,
+              "enabled": false,
+              "empty": []
+            },
+            "transport": "HTTP"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "agent-media-device-gateway/edit/2": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "id": "gateway-existing",
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "provider": "agent-media-device-gateway",
+            "channel": "network",
+            "channelId": "network-1",
+            "protocol": "agent-media-device-gateway",
+            "configuration": {
+              "apiAddress": "https://example.test/api",
+              "apiKey": "api-key",
+              "appKey": "app-key",
+              "appSecret": "secret",
+              "validateToken": "token",
+              "aesKey": "aes",
+              "enabled": false,
+              "retries": 0,
+              "modes": []
+            },
+            "i18nMessages": {
+              "name": {
+                "en": "Existing gateway"
+              }
+            },
+            "extension": {
+              "zero": 0,
+              "enabled": false,
+              "empty": []
+            },
+            "transport": "MQTT"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "agent-media-device-gateway/edit/3": {
+      "requests": [],
+      "callbacks": [
+        {
+          "id": "gateway-existing",
+          "name": "网关名称",
+          "description": "网关说明",
+          "provider": "agent-media-device-gateway",
+          "channel": "network",
+          "channelId": "network-1",
+          "protocol": "agent-media-device-gateway",
+          "configuration": {
+            "apiAddress": "https://example.test/api",
+            "apiKey": "api-key",
+            "appKey": "app-key",
+            "appSecret": "secret",
+            "validateToken": "token",
+            "aesKey": "aes",
+            "enabled": false,
+            "retries": 0,
+            "modes": []
+          },
+          "i18nMessages": {
+            "name": {
+              "en": "Existing gateway"
+            }
+          },
+          "extension": {
+            "zero": 0,
+            "enabled": false,
+            "empty": []
+          },
+          "transport": "HTTP",
+          "channelInfo": {
+            "id": "network-1",
+            "name": "网络组件",
+            "type": "HTTP_SERVER",
+            "addresses": [
+              {
+                "address": "127.0.0.1:1883",
+                "health": 1
+              }
+            ]
+          }
+        }
+      ],
+      "events": [
+        "callback"
+      ],
+      "errors": []
+    },
+    "plugin_gateway/add/0": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "configuration": {
+              "enabled": false,
+              "retries": 0,
+              "modes": []
+            },
+            "protocol": "plugin_gateway",
+            "channel": "plugin",
+            "channelId": "plugin-1",
+            "provider": "plugin_gateway",
+            "transport": "plugin"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "plugin_gateway/add/1": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "configuration": {
+              "enabled": false,
+              "retries": 0,
+              "modes": []
+            },
+            "protocol": "plugin_gateway",
+            "channel": "plugin",
+            "channelId": "plugin-1",
+            "provider": "plugin_gateway",
+            "transport": "plugin"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "plugin_gateway/add/2": {
+      "requests": [],
+      "callbacks": [
+        {
+          "name": "网关名称",
+          "description": "网关说明",
+          "i18nMessages": {
+            "name": {
+              "en": "Gateway"
+            }
+          },
+          "configuration": {
+            "enabled": false,
+            "retries": 0,
+            "modes": []
+          },
+          "protocol": "plugin_gateway",
+          "channel": "plugin",
+          "channelId": "plugin-1",
+          "provider": "plugin_gateway",
+          "transport": "plugin",
+          "protocolDetail": {
+            "id": "plugin-1",
+            "name": "插件",
+            "version": "1.0"
+          }
+        }
+      ],
+      "events": [
+        "callback"
+      ],
+      "errors": []
+    },
+    "plugin_gateway/edit/0": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "id": "gateway-existing",
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "provider": "plugin_gateway",
+            "channel": "plugin",
+            "channelId": "plugin-1",
+            "protocol": "plugin_gateway",
+            "configuration": {
+              "enabled": false,
+              "retries": 0,
+              "modes": []
+            },
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "extension": {
+              "zero": 0,
+              "enabled": false,
+              "empty": []
+            },
+            "transport": "plugin"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "plugin_gateway/edit/1": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "id": "gateway-existing",
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "provider": "plugin_gateway",
+            "channel": "plugin",
+            "channelId": "plugin-1",
+            "protocol": "plugin_gateway",
+            "configuration": {
+              "enabled": false,
+              "retries": 0,
+              "modes": []
+            },
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "extension": {
+              "zero": 0,
+              "enabled": false,
+              "empty": []
+            },
+            "transport": "plugin"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "plugin_gateway/edit/2": {
+      "requests": [],
+      "callbacks": [
+        {
+          "id": "gateway-existing",
+          "name": "网关名称",
+          "description": "网关说明",
+          "provider": "plugin_gateway",
+          "channel": "plugin",
+          "channelId": "plugin-1",
+          "protocol": "plugin_gateway",
+          "configuration": {
+            "enabled": false,
+            "retries": 0,
+            "modes": []
+          },
+          "i18nMessages": {
+            "name": {
+              "en": "Gateway"
+            }
+          },
+          "extension": {
+            "zero": 0,
+            "enabled": false,
+            "empty": []
+          },
+          "transport": "plugin",
+          "protocolDetail": {
+            "id": "plugin-1",
+            "name": "插件",
+            "version": "1.0"
+          }
+        }
+      ],
+      "events": [
+        "callback"
+      ],
+      "errors": []
+    },
+    "media-plugin/add/0": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "configuration": {
+              "enabled": false,
+              "retries": 0,
+              "modes": []
+            },
+            "protocol": "media-plugin",
+            "channel": "plugin",
+            "channelId": "plugin-1",
+            "provider": "media-plugin",
+            "transport": "plugin"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "media-plugin/add/1": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "configuration": {
+              "enabled": false,
+              "retries": 0,
+              "modes": []
+            },
+            "protocol": "media-plugin",
+            "channel": "plugin",
+            "channelId": "plugin-1",
+            "provider": "media-plugin",
+            "transport": "plugin"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "media-plugin/add/2": {
+      "requests": [],
+      "callbacks": [
+        {
+          "name": "网关名称",
+          "description": "网关说明",
+          "i18nMessages": {
+            "name": {
+              "en": "Gateway"
+            }
+          },
+          "configuration": {
+            "enabled": false,
+            "retries": 0,
+            "modes": []
+          },
+          "protocol": "media-plugin",
+          "channel": "plugin",
+          "channelId": "plugin-1",
+          "provider": "media-plugin",
+          "transport": "plugin",
+          "protocolDetail": {
+            "id": "plugin-1",
+            "name": "插件",
+            "version": "1.0"
+          }
+        }
+      ],
+      "events": [
+        "callback"
+      ],
+      "errors": []
+    },
+    "media-plugin/edit/0": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "id": "gateway-existing",
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "provider": "media-plugin",
+            "channel": "plugin",
+            "channelId": "plugin-1",
+            "protocol": "media-plugin",
+            "configuration": {
+              "enabled": false,
+              "retries": 0,
+              "modes": []
+            },
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "extension": {
+              "zero": 0,
+              "enabled": false,
+              "empty": []
+            },
+            "transport": "plugin"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "media-plugin/edit/1": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "id": "gateway-existing",
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "provider": "media-plugin",
+            "channel": "plugin",
+            "channelId": "plugin-1",
+            "protocol": "media-plugin",
+            "configuration": {
+              "enabled": false,
+              "retries": 0,
+              "modes": []
+            },
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "extension": {
+              "zero": 0,
+              "enabled": false,
+              "empty": []
+            },
+            "transport": "plugin"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "media-plugin/edit/2": {
+      "requests": [],
+      "callbacks": [
+        {
+          "id": "gateway-existing",
+          "name": "网关名称",
+          "description": "网关说明",
+          "provider": "media-plugin",
+          "channel": "plugin",
+          "channelId": "plugin-1",
+          "protocol": "media-plugin",
+          "configuration": {
+            "enabled": false,
+            "retries": 0,
+            "modes": []
+          },
+          "i18nMessages": {
+            "name": {
+              "en": "Gateway"
+            }
+          },
+          "extension": {
+            "zero": 0,
+            "enabled": false,
+            "empty": []
+          },
+          "transport": "plugin",
+          "protocolDetail": {
+            "id": "plugin-1",
+            "name": "插件",
+            "version": "1.0"
+          }
+        }
+      ],
+      "events": [
+        "callback"
+      ],
+      "errors": []
+    },
+    "OneNet/add/0": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "bizKey": "",
+            "description": "网关说明",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "configuration": {
+              "apiAddress": "https://example.test/api",
+              "apiKey": "api-key",
+              "validateToken": "token",
+              "aesKey": "aes",
+              "description": "",
+              "appKey": "app-key",
+              "appSecret": "secret",
+              "enabled": false,
+              "retries": 0,
+              "modes": [],
+              "protocol": "protocol-1"
+            },
+            "protocol": "protocol-1",
+            "provider": "OneNet",
+            "transport": "HTTP"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "OneNet/add/1": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "bizKey": "",
+            "description": "网关说明",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "configuration": {
+              "apiAddress": "https://example.test/api",
+              "apiKey": "api-key",
+              "validateToken": "token",
+              "aesKey": "aes",
+              "description": "",
+              "appKey": "app-key",
+              "appSecret": "secret",
+              "enabled": false,
+              "retries": 0,
+              "modes": [],
+              "protocol": "protocol-1"
+            },
+            "protocol": "protocol-1",
+            "provider": "OneNet",
+            "transport": "HTTP"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "OneNet/edit/0": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "id": "gateway-existing",
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "provider": "OneNet",
+            "channel": "network",
+            "channelId": "network-1",
+            "protocol": "protocol-1",
+            "configuration": {
+              "apiAddress": "https://example.test/api",
+              "apiKey": "api-key",
+              "appKey": "app-key",
+              "appSecret": "secret",
+              "validateToken": "token",
+              "aesKey": "aes",
+              "enabled": false,
+              "retries": 0,
+              "modes": [],
+              "protocol": "protocol-1"
+            },
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "extension": {
+              "zero": 0,
+              "enabled": false,
+              "empty": []
+            },
+            "transport": "HTTP"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "OneNet/edit/1": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "id": "gateway-existing",
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "provider": "OneNet",
+            "channel": "network",
+            "channelId": "network-1",
+            "protocol": "protocol-1",
+            "configuration": {
+              "apiAddress": "https://example.test/api",
+              "apiKey": "api-key",
+              "appKey": "app-key",
+              "appSecret": "secret",
+              "validateToken": "token",
+              "aesKey": "aes",
+              "enabled": false,
+              "retries": 0,
+              "modes": [],
+              "protocol": "protocol-1"
+            },
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "extension": {
+              "zero": 0,
+              "enabled": false,
+              "empty": []
+            },
+            "transport": "HTTP"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "OneNet-platform/add/0": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "bizKey": "",
+            "description": "网关说明",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "configuration": {
+              "apiAddress": "https://example.test/api",
+              "apiKey": "api-key",
+              "validateToken": "token",
+              "aesKey": "aes",
+              "description": "",
+              "appKey": "app-key",
+              "appSecret": "secret",
+              "enabled": false,
+              "retries": 0,
+              "modes": [],
+              "protocol": "protocol-1"
+            },
+            "protocol": "protocol-1",
+            "provider": "OneNet-platform",
+            "transport": "HTTP"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "OneNet-platform/add/1": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "bizKey": "",
+            "description": "网关说明",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "configuration": {
+              "apiAddress": "https://example.test/api",
+              "apiKey": "api-key",
+              "validateToken": "token",
+              "aesKey": "aes",
+              "description": "",
+              "appKey": "app-key",
+              "appSecret": "secret",
+              "enabled": false,
+              "retries": 0,
+              "modes": [],
+              "protocol": "protocol-1"
+            },
+            "protocol": "protocol-1",
+            "provider": "OneNet-platform",
+            "transport": "HTTP"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "OneNet-platform/edit/0": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "id": "gateway-existing",
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "provider": "OneNet-platform",
+            "channel": "network",
+            "channelId": "network-1",
+            "protocol": "protocol-1",
+            "configuration": {
+              "apiAddress": "https://example.test/api",
+              "apiKey": "api-key",
+              "appKey": "app-key",
+              "appSecret": "secret",
+              "validateToken": "token",
+              "aesKey": "aes",
+              "enabled": false,
+              "retries": 0,
+              "modes": [],
+              "protocol": "protocol-1"
+            },
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "extension": {
+              "zero": 0,
+              "enabled": false,
+              "empty": []
+            },
+            "transport": "HTTP"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "OneNet-platform/edit/1": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "id": "gateway-existing",
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "provider": "OneNet-platform",
+            "channel": "network",
+            "channelId": "network-1",
+            "protocol": "protocol-1",
+            "configuration": {
+              "apiAddress": "https://example.test/api",
+              "apiKey": "api-key",
+              "appKey": "app-key",
+              "appSecret": "secret",
+              "validateToken": "token",
+              "aesKey": "aes",
+              "enabled": false,
+              "retries": 0,
+              "modes": [],
+              "protocol": "protocol-1"
+            },
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "extension": {
+              "zero": 0,
+              "enabled": false,
+              "empty": []
+            },
+            "transport": "HTTP"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "Ctwing/add/0": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "bizKey": "",
+            "description": "网关说明",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "configuration": {
+              "apiAddress": "https://example.test/api",
+              "appKey": "app-key",
+              "appSecret": "secret",
+              "description": "",
+              "apiKey": "api-key",
+              "validateToken": "token",
+              "aesKey": "aes",
+              "enabled": false,
+              "retries": 0,
+              "modes": [],
+              "protocol": "protocol-1"
+            },
+            "protocol": "protocol-1",
+            "provider": "Ctwing",
+            "transport": "HTTP"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "Ctwing/add/1": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "bizKey": "",
+            "description": "网关说明",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "configuration": {
+              "apiAddress": "https://example.test/api",
+              "appKey": "app-key",
+              "appSecret": "secret",
+              "description": "",
+              "apiKey": "api-key",
+              "validateToken": "token",
+              "aesKey": "aes",
+              "enabled": false,
+              "retries": 0,
+              "modes": [],
+              "protocol": "protocol-1"
+            },
+            "protocol": "protocol-1",
+            "provider": "Ctwing",
+            "transport": "HTTP"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "Ctwing/edit/0": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "id": "gateway-existing",
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "provider": "Ctwing",
+            "channel": "network",
+            "channelId": "network-1",
+            "protocol": "protocol-1",
+            "configuration": {
+              "apiAddress": "https://example.test/api",
+              "apiKey": "api-key",
+              "appKey": "app-key",
+              "appSecret": "secret",
+              "validateToken": "token",
+              "aesKey": "aes",
+              "enabled": false,
+              "retries": 0,
+              "modes": [],
+              "protocol": "protocol-1"
+            },
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "extension": {
+              "zero": 0,
+              "enabled": false,
+              "empty": []
+            },
+            "transport": "HTTP"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "Ctwing/edit/1": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "id": "gateway-existing",
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "provider": "Ctwing",
+            "channel": "network",
+            "channelId": "network-1",
+            "protocol": "protocol-1",
+            "configuration": {
+              "apiAddress": "https://example.test/api",
+              "apiKey": "api-key",
+              "appKey": "app-key",
+              "appSecret": "secret",
+              "validateToken": "token",
+              "aesKey": "aes",
+              "enabled": false,
+              "retries": 0,
+              "modes": [],
+              "protocol": "protocol-1"
+            },
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "extension": {
+              "zero": 0,
+              "enabled": false,
+              "empty": []
+            },
+            "transport": "HTTP"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "fixed-media/add/0": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "bizKey": "",
+            "description": "网关说明",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "provider": "fixed-media",
+            "transport": "URL",
+            "channel": "fixed-media"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request",
+        "back"
+      ],
+      "errors": []
+    },
+    "fixed-media/add/1": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "bizKey": "",
+            "description": "网关说明",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "provider": "fixed-media",
+            "transport": "URL",
+            "channel": "fixed-media"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "fixed-media/add/2": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "bizKey": "",
+            "description": "网关说明",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "provider": "fixed-media",
+            "transport": "URL",
+            "channel": "fixed-media"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "callback"
+      ],
+      "errors": []
+    },
+    "fixed-media/edit/0": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "bizKey": "",
+            "description": "网关说明",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "provider": "fixed-media",
+            "transport": "URL",
+            "channel": "fixed-media",
+            "id": "gateway-existing"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request",
+        "back"
+      ],
+      "errors": []
+    },
+    "fixed-media/edit/1": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "bizKey": "",
+            "description": "网关说明",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "provider": "fixed-media",
+            "transport": "URL",
+            "channel": "fixed-media",
+            "id": "gateway-existing"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "fixed-media/edit/2": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "bizKey": "",
+            "description": "网关说明",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "provider": "fixed-media",
+            "transport": "URL",
+            "channel": "fixed-media",
+            "id": "gateway-existing"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "callback"
+      ],
+      "errors": []
+    },
+    "onvif/add/0": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "bizKey": "",
+            "description": "网关说明",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "provider": "onvif",
+            "transport": "ONVIF",
+            "channel": "onvif"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request",
+        "back"
+      ],
+      "errors": []
+    },
+    "onvif/add/1": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "bizKey": "",
+            "description": "网关说明",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "provider": "onvif",
+            "transport": "ONVIF",
+            "channel": "onvif"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "onvif/add/2": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "bizKey": "",
+            "description": "网关说明",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "provider": "onvif",
+            "transport": "ONVIF",
+            "channel": "onvif"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "callback"
+      ],
+      "errors": []
+    },
+    "onvif/edit/0": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "bizKey": "",
+            "description": "网关说明",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "provider": "onvif",
+            "transport": "ONVIF",
+            "channel": "onvif",
+            "id": "gateway-existing"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request",
+        "back"
+      ],
+      "errors": []
+    },
+    "onvif/edit/1": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "bizKey": "",
+            "description": "网关说明",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "provider": "onvif",
+            "transport": "ONVIF",
+            "channel": "onvif",
+            "id": "gateway-existing"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "onvif/edit/2": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "bizKey": "",
+            "description": "网关说明",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "provider": "onvif",
+            "transport": "ONVIF",
+            "channel": "onvif",
+            "id": "gateway-existing"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "callback"
+      ],
+      "errors": []
+    },
+    "gb28181-2016/add/0": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "configuration": {
+              "domain": "3402000000",
+              "sipId": "34020000002000000001",
+              "shareCluster": true,
+              "hostPort": {
+                "host": "0.0.0.0",
+                "port": 5060,
+                "publicHost": "127.0.0.1",
+                "publicPort": 5061
+              },
+              "cluster": []
+            },
+            "name": "网关名称",
+            "description": "网关说明",
+            "provider": "gb28181-2016",
+            "transport": "SIP",
+            "channel": "gb28181"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request",
+        "back"
+      ],
+      "errors": []
+    },
+    "gb28181-2016/add/1": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "configuration": {
+              "domain": "3402000000",
+              "sipId": "34020000002000000001",
+              "shareCluster": true,
+              "hostPort": {
+                "host": "0.0.0.0",
+                "port": 5060,
+                "publicHost": "127.0.0.1",
+                "publicPort": 5061
+              },
+              "cluster": []
+            },
+            "name": "网关名称",
+            "description": "网关说明",
+            "provider": "gb28181-2016",
+            "transport": "SIP",
+            "channel": "gb28181"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "gb28181-2016/add/2": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "configuration": {
+              "domain": "3402000000",
+              "sipId": "34020000002000000001",
+              "shareCluster": false,
+              "hostPort": {
+                "host": "0.0.0.0",
+                "port": "{\"host\":\"0.0.0.0\",\"port\":5060}",
+                "publicHost": "127.0.0.1",
+                "publicPort": 5061
+              },
+              "cluster": [
+                {
+                  "clusterNodeId": "node-1",
+                  "host": "0.0.0.0",
+                  "port": 5060,
+                  "publicHost": "127.0.0.1",
+                  "publicPort": 5061,
+                  "enabled": true,
+                  "id": 7
+                }
+              ]
+            },
+            "name": "网关名称",
+            "description": "网关说明",
+            "provider": "gb28181-2016",
+            "transport": "SIP",
+            "channel": "gb28181"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request",
+        "back"
+      ],
+      "errors": []
+    },
+    "gb28181-2016/edit/0": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "configuration": {
+              "domain": "3402000000",
+              "sipId": "34020000002000000001",
+              "shareCluster": true,
+              "hostPort": {
+                "host": "0.0.0.0",
+                "port": 5060,
+                "publicHost": "127.0.0.1",
+                "publicPort": 5061
+              },
+              "cluster": []
+            },
+            "name": "网关名称",
+            "description": "网关说明",
+            "provider": "gb28181-2016",
+            "transport": "SIP",
+            "channel": "gb28181",
+            "id": "gateway-existing"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request",
+        "back"
+      ],
+      "errors": []
+    },
+    "gb28181-2016/edit/1": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "configuration": {
+              "domain": "3402000000",
+              "sipId": "34020000002000000001",
+              "shareCluster": true,
+              "hostPort": {
+                "host": "0.0.0.0",
+                "port": 5060,
+                "publicHost": "127.0.0.1",
+                "publicPort": 5061
+              },
+              "cluster": []
+            },
+            "name": "网关名称",
+            "description": "网关说明",
+            "provider": "gb28181-2016",
+            "transport": "SIP",
+            "channel": "gb28181",
+            "id": "gateway-existing"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "gb28181-2016/edit/2": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "configuration": {
+              "domain": "3402000000",
+              "sipId": "34020000002000000001",
+              "shareCluster": false,
+              "hostPort": {
+                "host": "0.0.0.0",
+                "port": "{\"host\":\"0.0.0.0\",\"port\":5060}",
+                "publicHost": "127.0.0.1",
+                "publicPort": 5061
+              },
+              "cluster": [
+                {
+                  "clusterNodeId": "node-1",
+                  "host": "0.0.0.0",
+                  "port": 5060,
+                  "publicHost": "127.0.0.1",
+                  "publicPort": 5061,
+                  "enabled": true,
+                  "id": 7
+                }
+              ]
+            },
+            "name": "网关名称",
+            "description": "网关说明",
+            "provider": "gb28181-2016",
+            "transport": "SIP",
+            "channel": "gb28181",
+            "id": "gateway-existing"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request",
+        "back"
+      ],
+      "errors": []
+    },
+    "modbus-tcp/add/0": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "description": "网关说明",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "bizKey": "",
+            "provider": "modbus-tcp",
+            "protocol": "modbus-tcp",
+            "transport": "MODBUS_TCP",
+            "channel": "modbus"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "modbus-tcp/add/1": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "description": "网关说明",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "bizKey": "",
+            "provider": "modbus-tcp",
+            "protocol": "modbus-tcp",
+            "transport": "MODBUS_TCP",
+            "channel": "modbus"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "modbus-tcp/edit/0": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "provider": "modbus-tcp",
+            "protocol": "modbus-tcp",
+            "transport": "MODBUS_TCP",
+            "channel": "modbus",
+            "id": "gateway-existing"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "modbus-tcp/edit/1": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "provider": "modbus-tcp",
+            "protocol": "modbus-tcp",
+            "transport": "MODBUS_TCP",
+            "channel": "modbus",
+            "id": "gateway-existing"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "opc-ua/add/0": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "description": "网关说明",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "bizKey": "",
+            "provider": "opc-ua",
+            "protocol": "opc-ua",
+            "transport": "OPC_UA",
+            "channel": "opc-ua"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "opc-ua/add/1": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "description": "网关说明",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "bizKey": "",
+            "provider": "opc-ua",
+            "protocol": "opc-ua",
+            "transport": "OPC_UA",
+            "channel": "opc-ua"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "opc-ua/edit/0": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "provider": "opc-ua",
+            "protocol": "opc-ua",
+            "transport": "OPC_UA",
+            "channel": "opc-ua",
+            "id": "gateway-existing"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "opc-ua/edit/1": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "provider": "opc-ua",
+            "protocol": "opc-ua",
+            "transport": "OPC_UA",
+            "channel": "opc-ua",
+            "id": "gateway-existing"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "collector-gateway/add/0": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "description": "网关说明",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "bizKey": "",
+            "provider": "collector-gateway",
+            "protocol": "collector-gateway",
+            "transport": "collector-gateway",
+            "channel": "collector"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "collector-gateway/add/1": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "description": "网关说明",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "bizKey": "",
+            "provider": "collector-gateway",
+            "protocol": "collector-gateway",
+            "transport": "collector-gateway",
+            "channel": "collector"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "collector-gateway/add/2": {
+      "requests": [],
+      "callbacks": [
+        {
+          "name": "网关名称",
+          "description": "网关说明",
+          "i18nMessages": {
+            "name": {
+              "en": "Gateway"
+            }
+          },
+          "provider": "collector-gateway",
+          "protocol": "collector-gateway",
+          "transport": "collector-gateway",
+          "channel": "collector"
+        }
+      ],
+      "events": [
+        "callback"
+      ],
+      "errors": []
+    },
+    "collector-gateway/edit/0": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "provider": "collector-gateway",
+            "protocol": "collector-gateway",
+            "transport": "collector-gateway",
+            "channel": "collector",
+            "id": "gateway-existing"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "collector-gateway/edit/1": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "description": "网关说明",
+            "bizKey": "",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "provider": "collector-gateway",
+            "protocol": "collector-gateway",
+            "transport": "collector-gateway",
+            "channel": "collector",
+            "id": "gateway-existing"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "collector-gateway/edit/2": {
+      "requests": [],
+      "callbacks": [
+        {
+          "name": "网关名称",
+          "description": "网关说明",
+          "i18nMessages": {
+            "name": {
+              "en": "Gateway"
+            }
+          },
+          "provider": "collector-gateway",
+          "protocol": "collector-gateway",
+          "transport": "collector-gateway",
+          "channel": "collector"
+        }
+      ],
+      "events": [
+        "callback"
+      ],
+      "errors": []
+    },
+    "official-edge-gateway/add/0": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "bizKey": "",
+            "description": "网关说明",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "protocol": "official-edge-protocol",
+            "provider": "official-edge-gateway",
+            "transport": "MQTT",
+            "channelId": "network-1"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "official-edge-gateway/add/1": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "bizKey": "",
+            "description": "网关说明",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "protocol": "official-edge-protocol",
+            "provider": "official-edge-gateway",
+            "transport": "MQTT",
+            "channelId": "network-1"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "official-edge-gateway/edit/0": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "bizKey": "",
+            "description": "网关说明",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "protocol": "official-edge-protocol",
+            "provider": "official-edge-gateway",
+            "transport": "MQTT",
+            "channelId": "network-1",
+            "id": "gateway-existing"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "official-edge-gateway/edit/1": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "bizKey": "",
+            "description": "网关说明",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "protocol": "official-edge-protocol",
+            "provider": "official-edge-gateway",
+            "transport": "MQTT",
+            "channelId": "network-1",
+            "id": "gateway-existing"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "edge-child-device/add/0": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "bizKey": "",
+            "description": "网关说明",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "protocol": "official-edge-protocol",
+            "provider": "edge-child-device",
+            "transport": "EdgeGateway"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "edge-child-device/add/1": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "bizKey": "",
+            "description": "网关说明",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "protocol": "official-edge-protocol",
+            "provider": "edge-child-device",
+            "transport": "EdgeGateway"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "edge-child-device/edit/0": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "bizKey": "",
+            "description": "网关说明",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "protocol": "official-edge-protocol",
+            "provider": "edge-child-device",
+            "transport": "EdgeGateway",
+            "channelId": "network-1",
+            "id": "gateway-existing"
+          }
+        }
+      ],
+      "callbacks": [
+        {
+          "status": 200,
+          "success": true,
+          "result": {
+            "id": "saved-gateway"
+          }
+        }
+      ],
+      "events": [
+        "request",
+        "back",
+        "callback"
+      ],
+      "errors": []
+    },
+    "edge-child-device/edit/1": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "name": "网关名称",
+            "bizKey": "",
+            "description": "网关说明",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "protocol": "official-edge-protocol",
+            "provider": "edge-child-device",
+            "transport": "EdgeGateway",
+            "channelId": "network-1",
+            "id": "gateway-existing"
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "composite-device-gateway/add/0": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "id": "xxxxxxxxxx",
+            "name": "网关名称",
+            "bizKey": "",
+            "description": "网关说明",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "provider": "composite-device-gateway",
+            "channel": "composite-device-gateway",
+            "channelId": "xxxxxxxxxx",
+            "protocol": "xxxxxxxxxx",
+            "transport": "composite",
+            "configuration": {
+              "gateways": [
+                {
+                  "id": "child-1",
+                  "name": "子网关",
+                  "provider": "tcp-server-gateway",
+                  "transport": "TCP",
+                  "channel": "network",
+                  "channelId": "network-1",
+                  "protocol": "protocol-1",
+                  "configuration": {
+                    "enabled": false,
+                    "retries": 0
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request",
+        "back"
+      ],
+      "errors": []
+    },
+    "composite-device-gateway/add/1": {
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/gateway/device",
+          "body": {
+            "id": "xxxxxxxxxx",
+            "name": "网关名称",
+            "bizKey": "",
+            "description": "网关说明",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "provider": "composite-device-gateway",
+            "channel": "composite-device-gateway",
+            "channelId": "xxxxxxxxxx",
+            "protocol": "xxxxxxxxxx",
+            "transport": "composite",
+            "configuration": {
+              "gateways": [
+                {
+                  "id": "child-1",
+                  "name": "子网关",
+                  "provider": "tcp-server-gateway",
+                  "transport": "TCP",
+                  "channel": "network",
+                  "channelId": "network-1",
+                  "protocol": "protocol-1",
+                  "configuration": {
+                    "enabled": false,
+                    "retries": 0
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "composite-device-gateway/edit/0": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "id": "gateway-existing",
+            "name": "网关名称",
+            "bizKey": "",
+            "description": "网关说明",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "provider": "composite-device-gateway",
+            "channel": "composite-device-gateway",
+            "channelId": "gateway-existing",
+            "protocol": "gateway-existing",
+            "transport": "composite",
+            "configuration": {
+              "gateways": [
+                {
+                  "id": "child-1",
+                  "name": "子网关",
+                  "provider": "tcp-server-gateway",
+                  "transport": "TCP",
+                  "channel": "network",
+                  "channelId": "network-1",
+                  "protocol": "protocol-1",
+                  "configuration": {
+                    "enabled": false,
+                    "retries": 0
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request",
+        "back"
+      ],
+      "errors": []
+    },
+    "composite-device-gateway/edit/1": {
+      "requests": [
+        {
+          "method": "PATCH",
+          "url": "/gateway/device",
+          "body": {
+            "id": "gateway-existing",
+            "name": "网关名称",
+            "bizKey": "",
+            "description": "网关说明",
+            "i18nMessages": {
+              "name": {
+                "en": "Gateway"
+              }
+            },
+            "provider": "composite-device-gateway",
+            "channel": "composite-device-gateway",
+            "channelId": "gateway-existing",
+            "protocol": "gateway-existing",
+            "transport": "composite",
+            "configuration": {
+              "gateways": [
+                {
+                  "id": "child-1",
+                  "name": "子网关",
+                  "provider": "tcp-server-gateway",
+                  "transport": "TCP",
+                  "channel": "network",
+                  "channelId": "network-1",
+                  "protocol": "protocol-1",
+                  "configuration": {
+                    "enabled": false,
+                    "retries": 0
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "callbacks": [],
+      "events": [
+        "request"
+      ],
+      "errors": []
+    },
+    "guards": {
+      "http-server-gateway": [
+        [
+          "Network.index.041705-26",
+          "error"
+        ]
+      ],
+      "plugin_gateway": [
+        [
+          "Plugin.index.626239-21",
+          "error"
+        ]
+      ],
+      "Ctwing": [
+        [
+          "Cloud.Ctwing.076179-45",
+          "error"
+        ]
+      ],
+      "OneNet": [
+        [
+          "Cloud.OneNet.808542-59",
+          "error"
+        ]
+      ],
+      "official-edge-gateway": [
+        [
+          "Edge.index.066653-21",
+          "error"
+        ]
+      ],
+      "composite-device-gateway": [
+        [
+          "Composite.index.636069-15",
+          "warning"
+        ],
+        [
+          "Composite.index.636069-16",
+          "warning"
+        ]
+      ],
+      "mqtt-server-gateway:validation": true,
+      "mqtt-client-gateway:validation": true,
+      "websocket-server:validation": true,
+      "coap-server-gateway:validation": true,
+      "tcp-server-gateway:validation": true,
+      "udp-device-gateway:validation": true,
+      "http-server-gateway:validation": true,
+      "child-device:validation": true,
+      "agent-device-gateway:validation": true,
+      "agent-media-device-gateway:validation": true
+    }
+  }
+}

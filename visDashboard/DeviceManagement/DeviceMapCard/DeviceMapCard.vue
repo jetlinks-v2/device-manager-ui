@@ -27,7 +27,9 @@
           v-if="configurationMessage"
           class="device-map-card__status error"
         >
-          <CloudEmpty :description="configurationMessage" />
+          <CloudEmpty :description="configurationMessage">
+            <MapConfigAction :can-configure="canConfigureMap" @configure="openMapConfig" />
+          </CloudEmpty>
         </div>
         <div v-else-if="error && !points.length" class="device-map-card__status error">
           <CloudEmpty :description="t('components.DeviceMap.loadError')">
@@ -40,6 +42,9 @@
           class="device-map-card__map"
           @init="onMapInit"
         >
+          <template #error-guide="{ error: mapError }">
+            <MapConfigAction :error="mapError" :can-configure="canConfigureMap" @configure="openMapConfig" />
+          </template>
           <el-amap-marker-cluster
             v-if="points.length"
             :points="points"
@@ -71,6 +76,7 @@
 
 <script setup lang="ts">
 import CloudEmpty from '@jetlinks-web-core/components/CloudEmpty/index.vue'
+import MapConfigAction from './MapConfigAction.vue'
 import { computed, toRef, type CSSProperties, type PropType } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElAmapMarkerCluster } from '@vuemap/vue-amap'
@@ -107,7 +113,7 @@ const isMapEnabled = computed(() => {
   const { apiKey, secretKey } = system.systemInfo.amap || {}
   return !!(apiKey?.trim() && secretKey?.trim())
 })
-const { config, distribution, points, loading, error, extraOptions, selection, refresh, onMapInit, onClusterClick, onPointSelect } = useDeviceMap(
+const { config, distribution, points, loading, error, extraOptions, selection, refresh, onMapInit, onClusterClick, onPointSelect, canConfigureMap, openMapConfig } = useDeviceMap(
   infoRef,
   isEditRef,
   isMapEnabled

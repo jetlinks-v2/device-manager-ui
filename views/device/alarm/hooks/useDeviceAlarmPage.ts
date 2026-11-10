@@ -1,6 +1,7 @@
 import { onBeforeUnmount, ref } from 'vue'
 import { message } from 'ant-design-vue'
 import { useDeviceAlarmRuleSearch } from './useDeviceAlarmRuleSearch'
+import { usePropertyUnits } from './usePropertyUnits'
 import {
   deviceAlarmApi,
   queryAlarmTargets,
@@ -38,6 +39,7 @@ import { defaultCondition, isAlarmProperty, validateAlarmConditions } from '../c
 import { loadRules, saveRule } from '../../components/PropertyRules/service'
 
 export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unknown>) => string) {
+  usePropertyUnits()
   const saving = ref(false)
   const loading = ref(false)
   const rows = ref<DeviceAlarmRow[]>([])
@@ -247,7 +249,7 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
     const property = propertyOptions.value.find((item) => propertyIdOf(item) === propertyId)
     form.value.property = propertyId
     form.value.propertyName = property ? propertyNameOf(property) : propertyId
-    form.value.propertyUnit = formatPropertyUnit(property?.valueType?.unit)
+    form.value.propertyUnit = formatPropertyUnit(property?.valueType)
     Object.assign(form.value, defaultCondition(property ?? {}), { value: undefined, values: undefined, relieveCondition: undefined })
   }
 

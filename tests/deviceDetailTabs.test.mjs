@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
+import vm from 'node:vm'
+import ts from 'typescript'
 import { computed, ref, shallowRef } from 'vue'
 import { transform } from 'esbuild'
 
@@ -8,6 +10,20 @@ import { transform } from 'esbuild'
 const source = await readFile(new URL('../views/device/list/hooks/deviceDetailTabs.ts', import.meta.url), 'utf8')
 const { code } = await transform(source, { loader: 'ts', format: 'esm' })
 const { normalizeDeviceDetailTab, selectDeviceDetailTabs } = await import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`)
+
+// 执行实际注册的映射页签配置，隔离其余模块初始化与 Vue 异步页面加载。
+const registerSource = await readFile(new URL('../register.ts', import.meta.url), 'utf8')
+const registerAst = ts.createSourceFile('register.ts', registerSource, ts.ScriptTarget.Latest, true)
+const registration = registerAst.statements.find(ts.isExportAssignment).expression
+const mappingConfig = registration.properties.find(property => property.name?.getText(registerAst) === 'deviceDetailTabs')
+const { code: mappingCode } = await transform(`module.exports = ${mappingConfig.initializer.getText(registerAst)}`, { loader: 'ts', format: 'cjs' })
+const mappingModule = { exports: {} }
+vm.runInNewContext(mappingCode, {
+  module: mappingModule,
+  i18n: { global: { t: key => key } },
+  defineAsyncComponent: loader => ({ loader }),
+})
+const mappingProviders = Object.values(mappingModule.exports)
 
 const deviceOf = accessProvider => ({ id: 'camera-1', accessProvider })
 const channels = {
@@ -63,4 +79,29 @@ test('registration order is stable and extensions cannot shadow built-in or dupl
   const selected = selectDeviceDetailTabs(deviceOf('fixed-media'), [late, early, duplicate, shadow])
   assert.deepEqual(selected.map(tab => tab.key), ['recording', 'channels'])
   assert.equal(selected[1], late)
+})
+
+test('metrics coexist with capability-based mapping and collector gateway tabs', () => {
+  const ordinary = { id: 'ordinary', protocol: 'mqtt' }
+  const supported = { ...ordinary, features: [{ id: 'diffMetadataSameProduct' }] }
+  const collector = { ...ordinary, protocol: 'collector-gateway' }
+  const keys = device => selectDeviceDetailTabs(device, mappingProviders).map(tab => tab.key)
+  assert.deepEqual(keys(null), [])
+  assert.deepEqual(keys(ordinary), ['metrics'])
+  assert.deepEqual(keys({ ...ordinary, features: [{ id: 'transparentCodec' }] }), ['metrics'])
+  assert.deepEqual(keys(supported), ['MetadataMap', 'metrics'])
+  assert.deepEqual(keys(collector), ['GateWay', 'metrics'])
+  assert.deepEqual(keys({ ...collector, features: supported.features }), ['MetadataMap', 'GateWay', 'metrics'])
+})
+
+test('mapping deep links restore on load and fall back after switching to an unsupported device', () => {
+  const device = ref(null)
+  const tabs = computed(() => selectDeviceDetailTabs(device.value, mappingProviders))
+  for (const key of ['MetadataMap', 'GateWay']) {
+    assert.equal(normalizeDeviceDetailTab(key, tabs.value), 'overview')
+    device.value = { id: 'supported', protocol: 'collector-gateway', features: [{ id: 'diffMetadataSameProduct' }] }
+    assert.equal(normalizeDeviceDetailTab(key, tabs.value), key)
+    device.value = { id: 'ordinary', protocol: 'mqtt', features: [] }
+    assert.equal(normalizeDeviceDetailTab(key, tabs.value), 'overview')
+  }
 })

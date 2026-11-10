@@ -1,89 +1,43 @@
 <template>
-    <a-drawer
-        open
-        :closable="false"
-        @close="$emit('closeDrawer')"
-        :width="700"
-    >
-        <template #title>
-            <div class="drawerTitle">
-                <j-ellipsis style="height: 22px; width: calc(100% - 50px)"
-                    ><div>{{ data?.name }}</div></j-ellipsis
-                >
-                <j-ellipsis style="height: 22px; max-width: 650px"
-                    ><div class="description">
-                        {{ data?.description }}
-                    </div></j-ellipsis
-                >
-            </div>
-        </template>
-        <FirstKind
-            v-if="
-                [
-                    'mqtt-server-gateway',
-                    'mqtt-client-gateway',
-                    'websocket-server',
-                    'http-server-gateway',
-                    'coap-server-gateway',
-                    'tcp-server-gateway',
-                    'udp-device-gateway',
-                    'agent-device-gateway',
-                    'agent-media-device-gateway',
-                ].includes(data.provider)
-            "
-            :data="data"
-        />
-        <SecondKind
-            v-if="['plugin_gateway', 'media-plugin'].includes(data.provider)"
-            :data="data"
-        />
-        <ThirdKind
-            v-if="['Ctwing', 'OneNet','OneNet-platform'].includes(data.provider)"
-            :data="data"
-        />
-        <FourthKind
-            v-if="
-                [
-                    'edge-child-device',
-                    'fixed-media',
-                    'opc-ua',
-                    'modbus-tcp',
-                    'collector-gateway',
-                    'onvif',
-                ].includes(data.channel)
-            "
-            :data="data"
-        />
-        <FifthKind
-            v-if="
-                ['official-edge-gateway', 'child-device'].includes(
-                    data.provider,
-                )
-            "
-            :data="data"
-        />
-        <SixthKind v-if="data.provider === 'gb28181-2016'" :data="data" />
-        <SeventhKind v-if="data.provider === 'composite-device-gateway'" :data="data" />
-    </a-drawer>
+  <a-modal open centered :width="880" :footer="null" :style="{ maxWidth: 'calc(100vw - 2rem)' }" class="gateway-outline-modal" @cancel="emit('closeDrawer')">
+    <template #title>
+      <div class="gateway-outline__title">
+        <strong>{{ name }}</strong>
+        <a-tag color="blue">{{ providerName }}</a-tag>
+        <a-badge v-if="state" :status="status" :text="state.text || t('GatewayEditor.unconfigured')" />
+      </div>
+    </template>
+    <div class="gateway-outline__body">
+      <a-spin :spinning="loading">
+        <a-alert v-if="hasError" type="warning" show-icon :message="t('GatewayOutline.partialError')" class="gateway-outline__error">
+          <template #action><a-button type="link" size="small" @click="reload">{{ t('GatewayOutline.retry') }}</a-button></template>
+        </a-alert>
+        <OutlineSection v-for="section in sections" :key="section.key" :section="section" />
+        <a-empty v-if="!loading && !sections.length && !hasError" :description="t('GatewayEditor.unconfigured')" />
+      </a-spin>
+    </div>
+  </a-modal>
 </template>
-
-<script setup>
-import FirstKind from './components/FirstKind.vue';
-import SecondKind from './components/SecondKind.vue';
-import ThirdKind from './components/ThirdKind.vue';
-import FourthKind from './components/FourthKind.vue';
-import FifthKind from './components/FifthKind.vue';
-import SixthKind from './components/SixthKind.vue';
-import SeventhKind from './components/SeventhKind.vue';
+<script setup lang="ts">
+import type { PropType } from 'vue'
+import OutlineSection from './components/OutlineSection.vue'
+import { useGatewayOutline } from './useGatewayOutline'
+import type { GatewayRecord } from './types'
 const props = defineProps({
-    data: {
-        type: Object,
-    },
-});
-const emit = defineEmits(['closeDrawer']);
+  data: { type: Object as PropType<GatewayRecord>, default: () => ({}) },
+  draft: { type: Boolean, default: false },
+})
+const emit = defineEmits<{ closeDrawer: [] }>()
+const { t, loading, name, providerName, state, status, sections, hasError, reload } = useGatewayOutline(props)
 </script>
-<style lang="less" scoped>
-.description {
-    font-size: 12px;
+<style scoped>
+.gateway-outline__title { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding-right: var(--space-6); }
+.gateway-outline__title strong { min-width: 0; max-width: 100%; overflow-wrap: anywhere; font-size: var(--fs-16); }
+.gateway-outline__title .ant-tag { margin: 0; white-space: normal; overflow-wrap: anywhere; }
+.gateway-outline__title .ant-badge { flex-shrink: 0; font-weight: 400; }
+.gateway-outline__body { min-height: 6rem; max-height: calc(100vh - 12rem); min-width: 0; overflow-y: auto; overflow-x: hidden; padding-right: var(--space-2); }
+.gateway-outline__error { margin-bottom: var(--space-4); }
+@media (max-width: 575px) {
+  .gateway-outline__body { max-height: calc(100vh - 14rem); padding-right: 0; }
 }
 </style>

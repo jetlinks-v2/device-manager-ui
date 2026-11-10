@@ -1,5 +1,15 @@
 # 物联告警规则与记录工作区
 
+## 物模型属性已配置告警提示
+
+- 目标与范围：运行时新增告警选择物模型属性时，清楚说明已配置属性不可选择的原因；仅修改 `components/editor/DeviceAlarmTargetForm.vue` 和本模块中、英、日文资源。
+- 实施：复用 `alarmConfigured` 禁用标记，在下拉选项后显示“已配置告警”，并在存在此类选项时通过 Form.Item 的辅助说明提示不可重复选择、可选择其他属性或编辑已有告警；保留原有选择、编辑和保存语义。
+- 验证：Node 22.18.0 下执行 `node scripts/test-alarm-workspace.mjs`，原工作区 151/151 通过，迁移至最新远端 `2.20` 后复跑 158/158 通过（临时运行器仅调整依赖定位）；迁移前在运行时根目录执行 `pnpm --config.verify-deps-before-run=false build:modules device-manager-ui` 成功，产物含新增文案，仍有资源路径与 chunk 体积等构建提示；`git diff --check` 通过。运行时无独立 lint / 样式门禁脚本。
+- 类型检查：迁移前在运行时根目录执行 `pnpm exec vue-tsc --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json`，报告 1841 条诊断，涉及模块与共享依赖；本次修改的 `DeviceAlarmTargetForm.vue` 无诊断，全模块类型检查不能视为通过。
+- 页面核验：本地临时样例装配真实 TargetForm 与 Ant Select，确认温度禁用并显示“已配置告警”、湿度可选择、全部可选时隐藏辅助说明、编辑只读时隐藏重复配置说明，中英日文切换正常；未连接真实后端，登录环境联调仍待验证。组件共 62 行，保留现有表单结构，无新增组件或公共抽象；不涉及后端接口、权限或运营端。
+- 作者 Review：PASS。提示复用现有禁用标记，未扩展公共模型、请求或保存行为。
+
+
 ## 运行时新增 / 编辑弹窗展示优化
 
 - 目标：设备管理员配置单条物联告警时，能清楚识别当前配置项、编辑其内容，并从预览直接返回修改；新增和编辑采用一致布局。采用已确认的 M 级方案，已在运行时实现。
@@ -43,6 +53,39 @@
 - 作者 Review：PASS。符合分区编辑与原逻辑复用的设计，范围仅运行时物联告警 feature；未修改公共模型、引入跨模块依赖或新增通用抽象，无后端 Reactive 改动；关键展示派生逻辑已覆盖测试。运营端本次修改已撤回。
 
 ## 设备详情规则展示与直接编辑
+
+### 未保存离开提示与主动退出
+
+- 属性规则卡片和独立编辑器通过 `views/device/components/PropertyRules/useRuleLeaveConfirmation.ts` 合并并发离开请求，一次待决导航只显示一个所属确认框。取消保留草稿；确认仅放行，不提前删除草稿；销毁时关闭所属弹窗，旧弹窗关闭动画不会干扰新确认。
+- 主动退出免提示仅在设备模块实现，无需修改 Core。`useRuleLogoutNavigation.ts` 使用 `@jetlinks-web/core` 公开的 `getInstance()` 在规则作用域存活期间共享一个可释放请求拦截器，只观察现有 GET `/user-token/reset`，在原 JSON 转换之后、Core 的响应处理及退出菜单回调之前，识别 HTTP 2xx 且 `success: true`，或未携带 success 且 `status: 200` 的成功响应。响应原样返回，不改变退出接口、token 清理、跳转目标或其他表单。
+- 成功退出后，卡片与独立编辑器关闭所属待决确认框、放行已有导航与后续退出导航，并跳过 beforeunload 提示，保存中也不阻断退出。退出接口失败、普通切页、刷新/关闭及会话失效继续保留原保护。
+- 成功抵达 Login 后清理本次标记并作废此前请求；失败导航及中间公开路由不提前清理。最后一个规则作用域销毁时释放请求拦截器与路由监听，迟到响应不影响后续规则作用域。完整页面跳转由新文档重建状态，不新增持久化存储或前端退出入口。
+- 验证：实际 Axios 请求/响应转换链与 Vue hooks 回归 188/188 通过，覆盖退出成功/失败/HTTP 错误/网络异常、普通接口、响应与原转换保留、已有弹窗释放、普通导航与卸载保护、共享监听及销毁、迟到响应、登录到达后恢复保护和保存中退出。当前四个生产 hook 按模块 tsconfig 定向语义检查通过；`pnpm --config.verify-deps-before-run=false build:modules device-manager-ui` 通过（2m51s，保留既有资源路径、循环 chunk、Rollup output 和大 chunk 提示），`git diff --check` 通过；本轮未执行完整宿主构建或全工作区 vue-tsc，模块无独立 lint 脚本。真实后端退出/重新登录联调尚未执行，未实际退出当前账号。
+- 交付范围：仅 `runtime-ui/modules/device-manager-ui`；不修改 Core、运营端、后端、权限、持久化或自动保存。退出端点与成功响应形态是本地观察契约，后续调整退出接口时需同步检查该 hook。
+
+### 单位、浮层可读性与通知状态优化（M 级，已实施）
+
+- 物模型单位来源统一（已实施，沿用已确认 Phase 1 单位字典方案）：设备运行页优先展示后端 `formatValue`，物模型只有 `unit: kWattsHour` 时不能直接将标识作为可读符号。规则页读取完整 `valueType`，优先使用返回的 `unitName/unitText/unitLabel`，缺失时复用现有 `api/instance.ts/getUnit` 的 `/protocol/units` 字典 `symbol`；字典未知项、失败及自定义单位保留原值，无单位不占位。字典由页面入口共享一次加载，并发卡片不重复请求，完成后响应式更新。移除页面内置符号替换。影响规则卡头、条件/解除、缺省补齐、摘要与编辑器的既有单位读取，不修改物模型、实时值、后端、权限或保存协议。验证字典加载合并与失败重试、显示名优先、扩展符号、未知单位、百分比差值语义及既有规则回归。
+- 单位修复验证：Node 22.18.0 下 `node modules/device-manager-ui/scripts/test-alarm-workspace.mjs` 166/166 通过，包含字典失败后重试、并发合并、异步到达后已渲染标签更新、后端扩展单位、物模型显示名优先与百分比差值语义。实际 9200 设备 `2095759470932828160` 的规则页添加 BLE 信号强度临时卡后，辅助功能树确认卡头显示 `int(整数型) · kW·h`；未保存设备规则。随后会话初始化抛出 `DefaultApplicationEntryError: Default application entry unavailable` 并转到 403，无法继续核验设备数据页或记录有效结果截图；已回到原设备详情 URL，未改动应用/会话配置。
+- 单位修复工程验证：终版模块构建通过（3m9s，既有资源路径、循环 chunk、Rollup output 与大 chunk 警告）；`git diff --check` 通过。全模块 `vue-tsc` 仍未通过，包含既有共享 API/测试环境类型诊断；检查发现新增 hook 两处隐式 any 后已补齐接口字段类型，并用当前 tsconfig 与实际 API/Vue 声明执行 TypeScript Compiler API 的定向语义复检，通过。最终类型注解不改变运行行为，复用上述构建；未重复全模块类型检查，模块无独立 lint 脚本。
+- 单位修复作者 Review：PASS。使用后端既有 ValueUnit 字典与现有 getUnit API，局部共享缓存没有改变持久化或公共模型；缓存仅保存不按设备/租户过滤的单位注册表，失败可重试且不阻断规则编辑。修改保持运行时 feature 范围，没有后端 Reactive、权限或菜单变更；关键回归已覆盖，环境 403 与真实保存联调限制如上。不提交/推送，不新增 knowledge。
+- 其他单位检查（S 级，已完成代码与回归检查）：通过模拟 `/protocol/units` 返回覆盖摄氏/华氏、百分比、功率/电能、电压/电流、电阻、长度、时间、压力、加速度和 kgce 等 14 个单位，与设备运行格式化值的展示拆分函数逐项比较，零值、负值、小数及物模型显示名优先均一致；无单位、自定义文字和未知单位保持预期。修复 `hooks/usePropertyUnits.ts` 过滤掉字典空符号、进而暴露内部 ID 的边界，已注册的 `symbol: ""` 现在正常不展示单位。没有新增前端符号映射或修改后端、物模型、实时值。Node 22.18.0 下现有回归及新增用例 181/181 通过（修复前仅空符号用例失败）；当前 tsconfig 与实际 Vue/API 声明的定向语义检查、`git diff --check` 通过。本轮仅调整字典过滤条件，复用前一轮模块构建，不重复全量 build/vue-tsc；模块无独立 lint 脚本。作者 Review：PASS，公共契约不变，空符号行为有回归。当前 9200 服务无法连接，检查基于模拟字典及当前生产展示函数，真实字典全量与逐单位页面验证仍待服务恢复；未提交或推送。
+
+
+- 目标：修正用户截图中单位与条件值挤靠、浮层文案过小、关闭通知图标错位和未配置误报已配置四项问题。
+- 源码事实与归属：本机 9200 服务工作目录为 `runtime-ui/jetlinks-web-core`，本次 owning module 为 `runtime-ui/modules/device-manager-ui`。入口为 `views/device/components/PropertyRules/PropertyRulesPanel.vue`，复用 `views/device/alarm/components/{PropertyAlarmCondition.vue,DeviceAlarmNotificationConfig.vue,DeviceAlarmTemplateStatus.vue}`。`RuleMenuOption.vue` 紧凑标题/描述、通知选择与状态浮层仍使用 12px；通知关闭斜线在 `DeviceAlarmNotificationConfig.less` 中固定 top 值，detail 外层却将铃铛高度改为 32px。模板汇总将 `unneeded` 合并为 `ready`，实际截图中绑定状态误判的完整来源仍待接口数据核验。
+- 作者简报 / 决策：保留设备详情原位规则卡与既有通知模型，在 feature 内修正显示和状态派生。已确认复用现有组件；实际模板配置以当前用户可访问、启用且完整的绑定为依据，未知、缺失、无需模板分别表达，不通过改文案掩盖错误判定。Router 选择 `jetlinks-web`，涉及状态文案时补 `jetlinks-conventions`；不需要页面壳层重新选型或后端设计。
+- 非目标：不修改运营端 `ui/`、页面壳层、后端接口、持久化协议、通知方式准入、默认选择、权限、菜单或实际模板配置；不提交或推送。
+- Phase 1（单位）：核对物模型单位与现有单位字典，优先使用返回的单位显示名，再按后端单位字典读取 symbol，未知单位保留原值；数值输入与单位留出固定间距，单值/区间成组显示并合理换行。有单位正常展示，无单位不显示空后缀或额外占位，阈值 0 正常回显；触发和解除条件保持一致。
+- Phase 2（文字与图标）：解除方式菜单、通知类型菜单及模板状态浮层的标题/说明统一为 14px，匹配行高与浮层宽度；检查该 feature 共用菜单的可读性。通知开关图标按真实控件尺寸居中，关闭斜线相对图标定位，保留启用/关闭/禁用状态和原有点击行为。
+- Phase 3（配置真值）：核验 `/notify/channel/all` 与 `/notify/channel/providers` 现有返回及通知中心绑定结构；修正 `views/device/alarm/api.ts` 和现有状态派生中必要的判定，分别覆盖触发/解除、启用/停用、完整/不完整绑定、站内信无需第三方模板、加载失败与历史不可用选择。仅有类型定义、未绑定或失效配置不能显示“已配置”；“无需模板”保持独立、中性表达。若发现必须改变通知准入或接口契约，先回写本节并再次确认。
+- 作者开发前检查：源码事实已获取，修改限定于同一前端 feature，无公共模型、权限、事件或 Reactive 变更。Review 重点为数值/单位不重叠、浮层文字可读、通知图标状态明确及模板状态符合真实绑定；共享调用方须一并回归，避免影响产品默认呈现和告警编辑弹窗。
+- 验证方式：在 `runtime-ui/` 执行 `node modules/device-manager-ui/scripts/test-alarm-workspace.mjs`、`pnpm --config.verify-deps-before-run=false build:modules device-manager-ui`、`pnpm exec vue-tsc --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json`，区分既有诊断与本次新增问题；执行变更 SFC/Less 编译、定向样式检查与 `git diff --check`。在 9200 实页验证有/无/长单位、单值/区间、0、触发/解除、通知开关及配置状态、宽窄布局，不为验证写入真实设备规则或修改消息模板。
+- 执行与实现：用户已确认计划，按 `jetlinks-web` 实施。`PropertyAlarmCondition.vue` 将条件值/区间和单位成组，间距 8px，长单位可换行，无单位不渲染占位；`utils.ts/formatPropertyUnit` 复用 `hooks/usePropertyUnits.ts`：使用物模型显示名或 `/protocol/units` 字典 symbol，保留自定义单位与未知原值，不维护前端符号映射。`RuleMenuOption.vue`、通知选择/状态/帮助浮层使用 14px；铃铛保持 18px 内部盒，关闭斜线按盒中心定位，开关高度跟随 detail 的 32px 控件。
+- 配置真值：`api.ts` 在原有类型准入规则之外，复用现有 `/notify/channel/{providerId}/_query-with-templates`，仅查询相关、启用且存在模板绑定的设备告警/解除配置；不新增后端接口或权限。`notificationTemplateStatus.ts` 核验真实通道、模板 ID、通知配置 ID 和启用状态，避免已删除/替换模板仅凭旧 ID 显示已配置；查询无权、失败或返回异常显示状态未知，通知方式不因该查询失败而消失。`useAlarmNotification.ts` 与 `DeviceAlarmTemplateStatus.vue` 共用状态汇总，未配置优先提示，站内信无需模板使用中性信息图标；保留历史解除使用触发主题的语义。未新增用户可见文案，沿用现有国际化键。
+- 自动验证结果：Node 22.18.0 下最终 `node modules/device-manager-ui/scripts/test-alarm-workspace.mjs` 161/161 通过，新增覆盖单位缺失/标准符号/自定义文本、真实模板缺失/错绑/停用/读取失败、状态汇总、触发/解除及历史主题。模块构建通过（5m5s），保留既有资源路径、循环 chunk、Rollup output 与大 chunk 警告；构建后最后的样式微调已由最终 7 个变更 SFC 的脚本/模板/样式编译和定向样式门禁覆盖。`git diff --check` 通过；模块无独立 lint 脚本。全模块 `vue-tsc` 未通过，1822 条工作区诊断（如共享 `api/account/center.ts` 及测试缺 Node 类型），本次修改的生产文件无诊断。
+- 页面验证与限制：9200 当前仅开放告警中心菜单，设备详情路径被重定向，因此使用临时本地页面挂载真实条件/解除/通知/模板状态组件，并加载 detail 样式检查。1920、1000、760、390 宽度下组件卡无横向溢出；有/无单位与阈值 0 正常，触发和解除的单位间距均实测 8px，长单位在 390 宽度换行，相关菜单与说明实测 14px，通知开关与居中的关闭斜线正常，未配置和无需模板分别显示。临时页面已关闭、视口已恢复；实际后端模板状态由现有接口契约和模拟传输回归覆盖，尚未对真实设备详情、保存和消息发送进行联调，未写入设备规则或消息模板。
+- 作者 Review 门禁：PASS。范围限定于运行时现有 feature；复用 Ant 控件、现有 API、资源缓存和保存模型，未改变公共契约、通知方式准入、默认选择、权限或后端 Reactive 链路。状态核验与汇总集中复用，行为回归和展示验证覆盖本次改动；无新增经验沉淀或提交/推送。
 
 - 卡片头部操作对齐（S 级）：设备 detail 卡片将右侧统计/图例/撤销/保存/更多与属性名称、类型、来源所在首行对齐，属性标识仍在第二行；首行统一 32px，宽度不足才自然换行。仅修改 `PropertyRulesPanel.vue` 的 detail 局部样式，不改变操作和保存语义。验证：最终 Panel SFC 脚本/模板/Less、定向样式门禁和 diff 检查通过；9200 实页测得标题、来源标签、操作区中心完全一致。宽屏及 1000×850 保持同行，760×850 操作区自然换行且无横向溢出；视口已恢复，预览页已关闭，未保存临时配置。最终模块构建通过（3m24s），复用 155/155 行为回归。
 

@@ -3,6 +3,7 @@ import { onBeforeRouteLeave, onBeforeRouteUpdate } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore, useSystemStore } from '@jetlinks-web-core/store'
+import { activeLogoutNavigation } from './useRuleLogoutNavigation'
 import type { ThingModelProperty, ThingPropertyPreprocess } from '../../alarm/types'
 import { createEmptyNotification, isNumberProperty, propertyIdOf, propertyNameOf, toDeviceAlarmRow,
   defaultAlarmLevelOptions, formatPropertyUnit, validateNotificationMessage, DEVICE_ALARM_NOTIFICATION_MESSAGE_MAX_LENGTH } from '../../alarm/utils'
@@ -12,6 +13,7 @@ import { defaultCondition } from '../../alarm/conditions'
 import { readValueRules } from './values/config'
 import { loadRules, restoreRule, saveRule, type RuleScope } from './service'
 import { useRuleResources } from './useRuleResources'
+import { useRuleLeaveConfirmation } from './useRuleLeaveConfirmation'
 import { formatRuleDifferenceUnit, summarizeDraft, type RuleSection } from './summary'
 
 export interface RuleEditorProps {
@@ -34,6 +36,7 @@ export function usePropertyRuleEditorContext(props: Pick<RuleEditorProps, 'scope
 
 export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void, changed: () => void | Promise<void>, context?: ReturnType<typeof usePropertyRuleEditorContext>) {
   const { t, permission, system, resources } = context ?? usePropertyRuleEditorContext(props)
+  const confirmDiscard = useRuleLeaveConfirmation(t)
   const loading = ref(false)
   const failed = ref(false)
   const saving = ref(false)
@@ -57,7 +60,7 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
   const type = computed(() => String(props.property.valueType?.type ?? props.property.type ?? props.property.dataType ?? ''))
   const boolean = computed(() => type.value === 'boolean')
   const scalar = computed(() => numeric.value || ['string', 'boolean', 'enum'].includes(type.value))
-  const unit = computed(() => formatPropertyUnit(props.property.valueType?.unit))
+  const unit = computed(() => formatPropertyUnit(props.property.valueType))
   const cleaningUnit = computed(() => draft.value?.scaleEnabled ? t('PropertyRules.rawValue') : unit.value)
   const differenceUnit = computed(() => formatRuleDifferenceUnit(props.property, t))
   const cleaningDifferenceUnit = computed(() => draft.value?.scaleEnabled ? t('PropertyRules.rawValue') : differenceUnit.value)
@@ -155,9 +158,7 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
 
   async function confirmLeave() {
     if (!dirty.value) return true
-    return new Promise<boolean>((resolve) => Modal.confirm({ title: t('PropertyRules.discard'),
-      okText: t('PropertyRules.discardAction'), cancelText: t('DeviceAlarm.action.cancel'),
-      onOk: () => { resolve(true) }, onCancel: () => { resolve(false) } }))
+    return confirmDiscard()
   }
   async function requestClose() { if (!saving.value && await confirmLeave()) close() }
   /** Keep the same draft when hidden by search/collapse; explicitly guard a different property. */
@@ -282,12 +283,12 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
       finally { saving.value = false }
     } })
   }
-  function beforeUnload(event: BeforeUnloadEvent) { if (props.open && dirty.value) event.preventDefault() }
+  function beforeUnload(event: BeforeUnloadEvent) { if (!activeLogoutNavigation.value && props.open && dirty.value) event.preventDefault() }
   // Managed cards outlive filtered DOM rows; their owner installs one navigation/unload guard.
   if (!context) {
     window.addEventListener('beforeunload', beforeUnload)
-    onBeforeRouteLeave(async () => !props.open || (!saving.value && await confirmLeave()))
-    onBeforeRouteUpdate(async (to, from) => !props.open
+    onBeforeRouteLeave(async () => activeLogoutNavigation.value || !props.open || (!saving.value && await confirmLeave()))
+    onBeforeRouteUpdate(async (to, from) => activeLogoutNavigation.value || !props.open
       // Identical query parameters can still refer to a different product/device in the path.
       || (to.path === from.path && to.query.ruleProperty === from.query.ruleProperty && to.query.tab === from.query.tab)
       || (!saving.value && await confirmLeave()))

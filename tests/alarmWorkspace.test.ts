@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { createRenderer, defineComponent, nextTick, reactive, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 import { useDeviceAlarmEditor } from '../views/device/alarm/components/editor/useDeviceAlarmEditor'
 import { setAlarmRequestHandler } from './alarmRequest.test-shim'
 import { queryRuleRecords, queryRecordHistory, queryActiveRuleCounts } from '../views/device/alarm/workspaceApi'
@@ -23,6 +24,8 @@ import { useDeviceAlarmRuleSearch } from '../views/device/alarm/hooks/useDeviceA
 import i18n from '@jetlinks-web-core/locales'
 import { localizeDeviceLibraryPreprocessors } from '../views/device/alarm/deviceLibraryI18n'
 import { queryDeviceAlarmNotifyMethods, toNotifyMethods } from '../views/device/alarm/api'
+import { aggregateTemplateState, hasTemplateBinding, verifiedTemplateState } from '../views/device/alarm/notificationTemplateStatus'
+import { useAlarmNotification } from '../views/device/alarm/hooks/useAlarmNotification'
 
 const response = (id: string, total = 1) => ({ result: { data: [{ id, sourceName: id }], total } })
 const flush = async () => { await nextTick(); await new Promise(resolve => setTimeout(resolve, 0)); await nextTick() }
@@ -107,7 +110,7 @@ test('notification options require accessible enabled trigger templates and keep
   assert.equal(email.label, 'Email')
   assert.equal('channelId' in email, false)
   assert.deepEqual(email.channelIds, ['email-a', 'email-b'])
-  assert.deepEqual(email.templates, { trigger: 'ready', relieve: 'missing' })
+  assert.deepEqual(email.templates, { trigger: 'unknown', relieve: 'missing' })
   assert.deepEqual(methods[0].templates, { trigger: 'unneeded', relieve: 'unneeded' })
   assert.deepEqual(toNotifyMethods(types), [])
   assert.deepEqual(toNotifyMethods(types, []), [])
@@ -148,6 +151,64 @@ test('template lookup failures reject instead of exposing unconfigured notificat
   assert.deepEqual(calls.sort(), ['/notify/channel/all', '/notify/channel/providers'])
   setAlarmRequestHandler(async () => ({ success: false, status: 403, result: [] }))
   await assert.rejects(queryDeviceAlarmNotifyMethods())
+})
+
+test('notification readiness verifies actual templates and keeps missing, unknown and template-free states distinct', async () => {
+  const channel = { id: 'email-a', channelProvider: 'notifier-email', state: 'enabled',
+    channelConfiguration: { templateId: 'template-a', notifierId: 'sender-a' } }
+  const detail = { provider: { id: 'trigger-a', state: 'enabled' },
+    channels: [{ channel, template: { id: 'template-a', configId: 'sender-a' } }] }
+  assert.equal(hasTemplateBinding({ channelConfiguration: { templateId: '  ', notifierId: 'sender' } }), false)
+  assert.equal(verifiedTemplateState(undefined, channel), 'unknown')
+  assert.equal(verifiedTemplateState({ channels: [] }, channel), 'missing')
+  assert.equal(verifiedTemplateState(detail, channel), 'ready')
+  for (const template of [null, { id: 'other', configId: 'sender-a' }, { id: 'template-a', configId: 'other' }]) {
+    assert.equal(verifiedTemplateState({ ...detail, channels: [{ channel, template }] }, channel), 'missing')
+  }
+  assert.equal(verifiedTemplateState({ ...detail, provider: { state: 'disabled' } }, channel), 'missing')
+  assert.equal(verifiedTemplateState({ channels: [{ channel: { ...channel, state: { value: 'disabled' } }, template: detail.channels[0].template }] }, channel), 'missing')
+  assert.equal(aggregateTemplateState(['unneeded']), 'unneeded')
+  assert.equal(aggregateTemplateState(['ready', 'unneeded']), 'ready')
+  assert.equal(aggregateTemplateState(['ready', 'unknown']), 'unknown')
+  assert.equal(aggregateTemplateState(['unknown', 'missing']), 'missing')
+  assert.equal(aggregateTemplateState([]), 'unknown')
+  let templateResponse: unknown = { result: detail }
+  const requests: string[] = []
+  setAlarmRequestHandler(async url => {
+    requests.push(url)
+    if (url === '/notify/channel/providers') return { result: [{ id: 'inside-mail' }, { id: 'notifier-email' }] }
+    if (url === '/notify/channel/all') return { result: [{ id: 'trigger-a', provider: 'alarm-device', state: 'enabled', channels: [channel] }] }
+    if (url === '/notify/channel/trigger-a/_query-with-templates') return templateResponse
+    throw new Error(`Unexpected request ${url}`)
+  })
+  assert.equal((await queryDeviceAlarmNotifyMethods())[1].templates?.trigger, 'ready')
+  assert.equal(requests.length, 3, 'one bounded template query for the relevant enabled provider')
+  templateResponse = { result: { channels: [{ channel, template: null }] } }
+  const missing = await queryDeviceAlarmNotifyMethods()
+  assert.equal(missing[1].templates?.trigger, 'missing')
+  assert.deepEqual(missing.map(item => item.id), ['inside-mail', 'notifier-email'], 'status verification does not change picker eligibility')
+  templateResponse = { success: false, status: 403, result: detail }
+  assert.equal((await queryDeviceAlarmNotifyMethods())[1].templates?.trigger, 'unknown')
+  templateResponse = { result: [] }
+  assert.equal((await queryDeviceAlarmNotifyMethods())[1].templates?.trigger, 'unknown')
+})
+
+test('selected notification status preserves template-free delivery, recovery events and legacy trigger topics', () => {
+  const model = reactive<DeviceAlarmFormModel>({ ...editorProps().model, id: 'saved', notification: { ...createEmptyNotification(), enabled: true, channelProviders: ['inside-mail'] } })
+  const props = reactive({ model, methods: [
+    { id: 'inside-mail', providerId: 'inside-mail', templates: { trigger: 'unneeded', relieve: 'unneeded' } },
+    { id: 'email', providerId: 'email', templates: { trigger: 'ready', relieve: 'missing' } },
+  ] as DeviceAlarmNotifyMethod[] })
+  const { state, unmount } = mount(() => useAlarmNotification(props, () => {}, () => {}))
+  try {
+    assert.deepEqual(state.selectedTemplateStatus.value, { trigger: 'unneeded', relieve: 'unneeded' })
+    model.notification.channelProviders = ['inside-mail', 'email']
+    assert.deepEqual(state.selectedTemplateStatus.value, { trigger: 'ready', relieve: 'missing' })
+    model.notification.relieveTopicProvider = 'alarm-device'
+    assert.equal(state.selectedTemplateStatus.value.relieve, 'ready')
+    model.notification.channelProviders = ['unavailable']
+    assert.equal(state.selectedTemplateStatus.value.trigger, 'unknown')
+  } finally { unmount() }
 })
 
 test('automatic relief uses complementary matchers and remains editable', () => {
@@ -312,6 +373,7 @@ function mount<T>(setup: () => T) {
     createText: () => ({}), createComment: () => ({}), setText() {}, setElementText() {}, parentNode: () => null, nextSibling: () => null })
   let state!: T
   const app = renderer.createApp(defineComponent({ setup() { state = setup(); return () => null } }))
+  app.use(createI18n({ legacy: false, locale: 'en', messages: { en: {} }, missingWarn: false, fallbackWarn: false }))
   app.mount({})
   return { state, unmount: () => app.unmount() }
 }

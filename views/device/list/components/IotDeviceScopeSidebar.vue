@@ -18,7 +18,7 @@
     </a-input>
     <div class="iot-device-scope__body">
       <div class="iot-device-scope__scroll">
-        <a-tree
+        <AutoTree
           v-if="filteredTreeData.length"
           :key="treeKey"
           block-node
@@ -66,7 +66,7 @@
               </template>
             </IotTreeNodeRow>
           </template>
-        </a-tree>
+        </AutoTree>
         <CloudEmpty v-else :description="$t('IotDeviceList.scope.noMatches')" />
       </div>
       <a-button v-if="scopeType === 'group' && showGroupActions !== false" class="iot-device-scope__create-group" block @click="$emit('create-group')">

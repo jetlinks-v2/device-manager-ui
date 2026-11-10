@@ -27,6 +27,7 @@
             :key="product.id"
             :template="product"
             :selected="product.id === selectedProductKey"
+            :compact-meta="compactMeta"
             @select="emit('select-product', $event)"
           />
         </div>
@@ -74,6 +75,8 @@ const props = defineProps({
   pageSize: { type: Number, default: 6 },
   loading: { type: Boolean, default: false },
   message: { type: String, default: '' },
+  // 产品选择统一把类型和接入方式放在名称下方，说明区不重复展示元数据。
+  compactMeta: { type: Boolean, default: true },
 })
 
 const emit = defineEmits<{

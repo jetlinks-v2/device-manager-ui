@@ -1,184 +1,76 @@
 <template>
-    <div v-for="items in dataSource" :key="items.type" class="card-items">
-        <div class="card-items-container">
-            <TitleComponent :data="items.title" style='font-size: 16px;'></TitleComponent>
-            <a-row :gutter="[24, 24]">
-                <a-col :span="12" v-for="item in items.list" :key="item.id">
-                    <div class="provider">
-                        <div
-                            class="card-content-bg1"
-                            :style="{
-                                background: getBackgroundColor(),
-                            }"
-                        ></div>
-                        <div
-                            class="card-content-bg2"
-                            :style="{
-                                background: getBackgroundColor(),
-                            }"
-                        ></div>
-                        <div class="box">
-                            <div class="left">
-                                <div class="images">
-                                    <img :src="BackMap.get(item.id)" />
-                                </div>
-                                <div class="context">
-                                    <div class="title">
-                                        {{ item.name }}
-                                    </div>
-                                    <div class="desc">
-                                        <j-ellipsis :lineClamp="2">
-                                          {{ item.description || '' }}
-                                        </j-ellipsis>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="right">
-                                <a-button type="primary" @click="click(item)">
-                                  {{$t('provider.index.8501947-0')}}
-                                </a-button>
-                            </div>
-                        </div>
-                    </div>
-                </a-col>
-            </a-row>
-        </div>
-    </div>
+  <a-config-provider :auto-insert-space-in-button="false">
+  <div class="gateway-provider">
+    <section
+      v-for="group in groups"
+      :key="group.title"
+      class="gateway-provider__group"
+    >
+      <h3 class="gateway-provider__heading">{{ group.title }}</h3>
+      <a-row :gutter="[16, 16]">
+        <a-col
+          v-for="item in group.list"
+          :key="item.id"
+          :xs="24"
+          :md="12"
+          :xl="12"
+        >
+          <a-card
+            hoverable
+            size="small"
+            class="gateway-provider__card"
+            @click="emit('onClick', item)"
+          >
+            <a-flex
+              align="center"
+              :gap="16"
+            >
+              <img class="gateway-provider__icon" :src="BackMap.get(item.id)" alt="" />
+              <div class="gateway-provider__text">
+                <strong>{{ item.name }}</strong>
+                <a-tooltip :title="item.description">
+                  <a-typography-paragraph
+                    type="secondary"
+                    :ellipsis="{ rows: 2 }"
+                    :content="item.description || '—'"
+                  />
+                </a-tooltip>
+              </div>
+              <a-button type="primary" size="small" @click.stop="emit('onClick', item)">{{ $t('GatewayEditor.access') }}</a-button>
+            </a-flex>
+          </a-card>
+        </a-col>
+      </a-row>
+    </section>
+    <CloudEmpty
+      v-if="!groups.length"
+      :search-name="$t('GatewayEditor.method')"
+    />
+  </div>
+  </a-config-provider>
 </template>
-
-<script lang="ts" setup name="AccessConfigProvider">
-import { BackMap } from '../../data';
-
-const props = defineProps({
-    dataSource: {
-        type: Object,
-        default: () => {},
-    },
-});
-
-const emit = defineEmits(['onClick']);
-
-const getBackgroundColor = () => {
-    return `linear-gradient(
-                188.4deg,
-                rgba(9, 46, 231, 0.03) 22.94%,
-                rgba(9, 46, 231, 0) 94.62%
-            )`;
-};
-
-const click = (value: object) => {
-    emit('onClick', value);
-};
+<script setup lang="ts" name="AccessConfigProvider">
+import { computed } from 'vue'
+import { BackMap } from '../../data'
+interface Provider { id: string; name: string; description?: string; type?: string }
+const props = withDefaults(defineProps<{ dataSource?: { title: string; list: Provider[] }[] }>(), { dataSource: () => [] })
+const emit = defineEmits<{ onClick: [provider: Provider] }>()
+const order = ['mqtt-server-gateway', 'composite-device-gateway', 'websocket-server', 'coap-server-gateway',
+  'plugin_gateway', 'tcp-server-gateway', 'child-device', 'http-server-gateway', 'udp-device-gateway', 'mqtt-client-gateway',
+  'media-plugin', 'fixed-media', 'onvif', 'gb28181-2016', 'OneNet-platform', 'Ctwing', 'OneNet']
+const rank = (id: string) => { const index = order.indexOf(id); return index < 0 ? order.length : index }
+const groups = computed(() => props.dataSource.map(group => ({ ...group,
+  list: [...group.list].sort((a, b) => rank(a.id) - rank(b.id)),
+})).filter(group => group.list.length))
 </script>
-
-<style lang="less" scoped>
-.card-items {
-    margin-bottom: 24px;
-    background-color: #fff;
-
-    .card-items-container {
-    }
-}
-.provider {
-    position: relative;
-    width: 100%;
-    padding: 24px;
-    // background: url('/public/images/access/background.png') no-repeat;
-    background-size: 100% 100%;
-    border: 1px solid #e6e6e6;
-    overflow: hidden;
-
-    &::before {
-        position: absolute;
-        top: 0;
-        left: 40px;
-        display: block;
-        width: 15%;
-        min-width: 64px;
-        height: 2px;
-        background-image: url('@jetlinks-web-core/assets/rectangle.png');
-        background-repeat: no-repeat;
-        background-size: 100% 100%;
-        content: ' ';
-    }
-
-    &:hover {
-        box-shadow: 0 0 24px rgba(#000, 0.1);
-    }
-}
-.card-content-bg1 {
-    position: absolute;
-    right: -5%;
-    height: 100%;
-    width: 44.65%;
-    top: 0;
-    background: linear-gradient(
-        188.4deg,
-        rgba(229, 0, 18, 0.03) 22.94%,
-        rgba(229, 0, 18, 0) 94.62%
-    );
-    transform: skewX(-15deg);
-}
-
-.card-content-bg2 {
-    position: absolute;
-    right: -5%;
-    height: 100%;
-    width: calc(44.65% + 34px);
-    top: 0;
-    background: linear-gradient(
-        188.4deg,
-        rgba(229, 0, 18, 0.03) 22.94%,
-        rgba(229, 0, 18, 0) 94.62%
-    );
-    transform: skewX(-15deg);
-}
-
-.box {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    .left {
-        display: flex;
-        width: calc(100% - 100px);
-        .images {
-            width: 80px;
-            height: 80px;
-
-            img {
-                width: 80px;
-                height: 80px;
-            }
-        }
-
-        .context {
-            width: calc(100% - 88px);
-            margin: 8px;
-            margin-left: 24px;
-
-            .title {
-                font-style: normal;
-                font-weight: 800;
-                font-size: 18px;
-                line-height: 22px;
-                color: rgba(0, 0, 0, 0.85);
-                opacity: 0.85;
-            }
-
-            .desc {
-                width: 100%;
-                margin-top: 24px;
-                font-style: normal;
-                font-weight: 400;
-                font-size: 12px;
-                color: #666666;
-                height: 40px;
-            }
-        }
-    }
-    .right {
-        width: 70px;
-    }
-}
+<style scoped>
+.gateway-provider { max-height: min(560px, calc(100vh - 160px)); overflow-y: auto; overflow-x: hidden; padding: 0 var(--space-2); }
+.gateway-provider__group { margin-bottom: var(--space-6); }
+.gateway-provider__heading { font-size: var(--fs-14); font-weight: 600; border-left: 3px solid var(--primary-color); padding-left: var(--space-2); margin-bottom: var(--space-3); }
+.gateway-provider__card { height: 100%; border-radius: var(--r-3); }
+.gateway-provider__card:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
+.gateway-provider__icon { display: block; flex: 0 0 5rem; width: 5rem; height: 5rem; object-fit: contain; }
+.gateway-provider__text { flex: 1; min-width: 0; }
+.gateway-provider__text strong { display: block; margin-bottom: var(--space-2); font-weight: var(--chrome-label-font-weight); }
+.gateway-provider__text .ant-typography { font-size: var(--fs-12); line-height: 1.5;  margin-bottom: 0; }
 </style>

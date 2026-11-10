@@ -31,6 +31,29 @@ function draft(): RuleDraft {
   }
 }
 
+test('property units preserve metadata display names and raw unit identifiers without symbol mappings', () => {
+  for (const unit of [undefined, null, '', '  ']) assert.equal(formatPropertyUnit(unit), undefined)
+  assert.equal(formatPropertyUnit('kWattsHour'), 'kWattsHour')
+  assert.equal(formatPropertyUnit({ id: 'kWattsHour' }), 'kWattsHour')
+  assert.equal(formatPropertyUnit({ type: 'double', unit: 'kWattsHour', unitName: 'kW·h' }), 'kW·h')
+  assert.equal(formatPropertyUnit({ type: 'double', unit: 'kWattsHour', unitText: 'kW·h' }), 'kW·h')
+  assert.equal(formatPropertyUnit({ type: 'double', unit: 'kWattsHour', unitLabel: '千瓦时' }), '千瓦时')
+  assert.equal(formatPropertyUnit({ type: 'double', unitName: '', unitText: ' ', unit: 'kW·h' }), 'kW·h')
+  assert.equal(formatPropertyUnit({ type: 'double', unit: { id: 'kWattsHour', symbol: 'kW·h' } }), 'kW·h')
+  assert.equal(formatPropertyUnit({ type: 'double' }), undefined)
+  assert.equal(formatPropertyUnit('percent'), 'percent')
+  assert.equal(formatPropertyUnit('celsius'), 'celsius')
+  assert.equal(formatPropertyUnit('custom-unit/长单位'), 'custom-unit/长单位')
+})
+
+test('rule summaries and alarm rows use the complete thing-model unit display metadata', () => {
+  const property = { id: 'temperature', valueType: { type: 'double', unit: 'kWattsHour', unitName: 'kW·h' } }
+  const raw = buildRule(parseRule(), draft())!
+  const rows = summarizeRuleRows(parseRule(raw), property, translate)
+  for (const key of ['range', 'alarm']) assert.ok(rows.find(row => row.key === key)!.sentence.endsWith('kW·h'))
+  assert.equal(toDeviceAlarmRow(raw, 'device', '', property)?.propertyUnit, 'kW·h')
+})
+
 test('metadata choices preserve scalar identity and expose removed values without changing selections', () => {
   const property = { valueType: { type: 'enum', elements: [
     { value: 0, text: '数字零' }, { value: '0', text: '字符串零' }, { value: false, text: '关闭' }, { value: '' },
@@ -419,16 +442,16 @@ test('percentage points distinguish absolute changes from relative changes and r
   for (const messages of [zh, en]) {
     const t: RuleTranslator = (key, values = {}) => (messages as Record<string, string>)[key]
       .replace(/\{(\w+)\}/g, (_match, name) => String(values[name]))
-    for (const unit of ['%', 'percent', formatPropertyUnit({ id: 'percent' })]) {
-      const property = { valueType: { type: 'double', unit } }
+    for (const valueType of [{ unit: '%' }, { unit: 'percent' }, { unit: 'percent', unitName: '占比' }]) {
+      const property = { valueType: { type: 'double', ...valueType } }
       const current = { ...draft(), stepEnabled: true, maxStep: 10, baselineTtl: 300000,
         samplingMode: 'change' as const, deadband: 10 }
       const rows = summarizeRuleRows(parseRule(buildRule(parseRule(), current)), property, t)
       const points = t('PropertyRules.percentagePoints')
       assert.ok(rows.find(row => row.key === 'step')!.sentence.includes(`10${points}`))
       assert.ok(rows.find(row => row.key === 'sampling')!.sentence.includes(`10${points}`))
-      assert.ok(rows.find(row => row.key === 'alarm')!.sentence.endsWith('%'))
-      assert.ok(rows.find(row => row.key === 'range')!.sentence.endsWith('%'))
+      assert.ok(rows.find(row => row.key === 'alarm')!.sentence.endsWith(formatPropertyUnit(valueType)!))
+      assert.ok(rows.find(row => row.key === 'range')!.sentence.endsWith(formatPropertyUnit(valueType)!))
       const relative = summarizeDraftRows({ ...current, deadbandType: 'percent', deadband: 50 }, property, t)
         .find(row => row.key === 'sampling')!
       assert.ok(relative.sentence.includes(t('PropertyRules.sentence.relativeChange')))
@@ -734,7 +757,7 @@ test('raw reads distinguish device absence from an explicit empty override and p
 
 test('saved and draft summaries describe actual bounds, alarm direction, units and keep ratio consistently', () => {
   const current = draft()
-  const property = { valueType: { type: 'double', unit: 'celsius' } }
+  const property = { valueType: { type: 'double', unit: 'celsius', unitName: '℃' } }
   const saved = summarizeRule(parseRule(buildRule(parseRule(), current)), property, translate)
   assert.deepEqual(saved, summarizeDraft(current, property, translate))
   assert.deepEqual(saved.map(step => step.text), ['忽略 -9999 · 有效范围 -40～120℃', '超出 0～80℃ 时告警', '约保留 10%'])
@@ -769,7 +792,7 @@ test('saved alarm summaries retain units, level, notification and localized reco
   current.alarm.relieveCondition = { trigger: 'gte', value: 1, limit: {} }
   current.alarm.notification = { ...createEmptyNotification(), enabled: true, includeRelieve: true,
     channelProviders: ['notifier-email'], userIds: ['u1'] }
-  const property = { valueType: { type: 'double', unit: 'percent' } }
+  const property = { valueType: { type: 'double', unit: 'percent', unitName: '%' } }
   const row = summarizeRuleRows(parseRule(buildRule(parseRule(), current)), property, translate)[0]
   assert.equal(row.sentence, '< 1%')
   assert.equal(row.details, '≥ 1% 时，解除告警')
@@ -795,7 +818,7 @@ test('saved alarm summaries retain units, level, notification and localized reco
 })
 
 test('state lifetimes and silence remain part of the same readable condition', () => {
-  const property = { valueType: { type: 'double', unit: 'celsius' } }
+  const property = { valueType: { type: 'double', unit: 'celsius', unitName: '℃' } }
   const current = { ...draft(), valuesEnabled: false, rangeEnabled: false, alarmEnabled: false,
     stepEnabled: true, maxStep: 5, baselineTtl: 300000, fallbackEnabled: true, fallbackMode: 'previous' as const,
     fallbackMaxAge: 60000, fallbackValue: 20, samplingMode: 'change' as const, deadband: 0, maxSilence: 10000 }
@@ -816,7 +839,7 @@ test('fallback sentences expose active conditions and preserve zero, false, empt
   const current = { ...draft(), valuesEnabled: false, rangeEnabled: false, alarmEnabled: false, samplingEnabled: false,
     fallbackEnabled: true, fallbackMode: 'fixed' as const, fallbackValue: 0, fallbackMissing: true }
   const row = (value: Parameters<typeof summarizeDraftRows>[0], property: Parameters<typeof summarizeDraftRows>[1]) => summarizeDraftRows(value, property, translate)[0]
-  assert.equal(row(current, { valueType: { type: 'double', unit: 'percent' } }).sentence, '空值 / 未上报 时取 指定值 0%')
+  assert.equal(row(current, { valueType: { type: 'double', unit: 'percent', unitName: '%' } }).sentence, '空值 / 未上报 时取 指定值 0%')
   assert.equal(row({ ...current, fallbackValue: false }, { valueType: { type: 'boolean' } }).sentence, '空值 / 未上报 时取 指定值 false')
   assert.equal(row({ ...current, fallbackValue: '', fallbackEmpty: true }, { valueType: { type: 'string' } }).sentence, '空值 / 空字符串 / 未上报 时取 指定值 ""')
   assert.equal(row({ ...current, fallbackValue: 1 }, { valueType: { type: 'enum', elements: [{ value: 1, text: '启动' }] } }).sentence, '空值 / 未上报 时取 指定值 启动')

@@ -7,6 +7,7 @@ import {
 import { replaceAlarm } from '../components/PropertyRules/codec'
 import { localizeDeviceLibraryPreprocessors, resolveI18nText } from './deviceLibraryI18n'
 import { normalizeNotification, toDeviceAlarmPageRow, toDeviceAlarmRow } from './utils'
+import { hasTemplateBinding, verifiedTemplateState, type TemplateState } from './notificationTemplateStatus'
 import type {
   AlarmLevelOption,
   DeviceAlarmNotifyMethod,
@@ -90,6 +91,8 @@ export const deviceAlarmApi = {
     request.get('/notify/channel/all'),
   queryNotifyTypes: () =>
     request.get('/notify/channel/providers'),
+  queryNotifyTemplates: (providerId: string) =>
+    request.get(`/notify/channel/${encodeURIComponent(providerId)}/_query-with-templates`),
   queryNotifyUsers: (data: {
     pageIndex?: number
     pageSize?: number
@@ -247,10 +250,28 @@ export async function queryDeviceAlarmPage(data: Record<string, any>): Promise<D
 }
 
 export async function queryDeviceAlarmNotifyMethods(): Promise<DeviceAlarmNotifyMethod[]> {
-  const [types, providers] = await Promise.all([
+  const [types, providers]: [unknown[], unknown[]] = await Promise.all([
     deviceAlarmApi.queryNotifyTypes().then(unwrapNotifyList), deviceAlarmApi.queryNotifyChannels().then(unwrapNotifyList),
   ])
-  return toNotifyMethods(types, providers)
+  // Keep picker eligibility unchanged. Template query permissions/failures only make the displayed status unknown.
+  const methodIds = new Set(toNotifyMethods(types, providers).map(method => method.providerId))
+  const candidates = providers.filter(isRecord).filter(provider =>
+    ['alarm-device', 'alarm-device-relieve'].includes(stringify(provider.provider)) && isEnabledState(provider.state)
+    && stringify(provider.id) && normalizeRecords(provider.channels).some(channel =>
+      channel.channelProvider !== 'inside-mail' && methodIds.has(stringify(channel.channelProvider))
+      && isEnabledState(channel.state) && hasTemplateBinding(channel)))
+  const details = new Map<string, unknown>()
+  await Promise.all(candidates.map(async provider => {
+    try {
+      const response = await deviceAlarmApi.queryNotifyTemplates(stringify(provider.id))
+      if (isRecord(response) && (response.success === false || Number(response.status) >= 400)) return
+      details.set(stringify(provider.id), unwrapResult(response))
+    } catch {
+      // An unavailable or forbidden template lookup is unknown, not configured or an empty picker.
+      details.set(stringify(provider.id), undefined)
+    }
+  }))
+  return toNotifyMethods(types, providers, details)
 }
 
 function unwrapNotifyList(response: unknown): unknown[] {
@@ -262,7 +283,7 @@ function unwrapNotifyList(response: unknown): unknown[] {
 }
 
 /** Only the current user's enabled device-alarm configuration grants selectable delivery types. */
-export function toNotifyMethods(types: unknown[], providers?: unknown[]): DeviceAlarmNotifyMethod[] {
+export function toNotifyMethods(types: unknown[], providers?: unknown[], details: ReadonlyMap<string, unknown> = new Map()): DeviceAlarmNotifyMethod[] {
   const available = (providers ?? []).filter(isRecord).filter(provider => isEnabledState(provider.state))
   if (!available.some(provider => provider.provider === DEVICE_ALARM_NOTIFY_PROVIDER)) return []
   return types.filter(isRecord).filter(type => stringify(type.receiverPolicy?.value ?? type.receiverPolicy) !== 'explicit').flatMap(type => {
@@ -274,13 +295,13 @@ export function toNotifyMethods(types: unknown[], providers?: unknown[]): Device
       .filter(channel => channel.channelProvider === id && isEnabledState(channel.state))
     const status = (topic: string): NonNullable<DeviceAlarmNotifyMethod['templates']>['trigger'] => {
       if (id === 'inside-mail') return 'unneeded'
-      return channels(topic).some(channel => {
-        const config = channel.channelConfiguration ?? channel.configuration ?? {}
-        return Boolean(config.templateId && config.notifierId)
-      }) ? 'ready' : 'missing'
+      const states: TemplateState[] = available.filter(provider => provider.provider === topic).flatMap(provider =>
+        normalizeRecords(provider.channels).filter(channel => channel.channelProvider === id && isEnabledState(channel.state))
+          .map(channel => !hasTemplateBinding(channel) ? 'missing' : verifiedTemplateState(details.get(stringify(provider.id)), channel)))
+      return states.includes('ready') ? 'ready' : states.includes('unknown') ? 'unknown' : 'missing'
     }
     const templates = { trigger: status(DEVICE_ALARM_NOTIFY_PROVIDER), relieve: status('alarm-device-relieve') }
-    if (templates.trigger !== 'ready' && id !== 'inside-mail') return []
+    if (id !== 'inside-mail' && !channels(DEVICE_ALARM_NOTIFY_PROVIDER).some(hasTemplateBinding)) return []
     return [{
       id, providerId: id, key, label: stringify(type.name) || id, desc: '', icon: notifyMethodIcon(key),
       channelIds: channels(DEVICE_ALARM_NOTIFY_PROVIDER).map(channel => stringify(channel.id)).filter(Boolean),

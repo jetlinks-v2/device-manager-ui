@@ -80,6 +80,7 @@ import type { ThingModelProperty } from '../../alarm/types'
 import { propertyIdOf } from '../../alarm/utils'
 import type { RuleScope } from './service'
 import { usePropertyRules } from './usePropertyRules'
+import { usePropertyUnits } from '../../alarm/hooks/usePropertyUnits'
 import { usePropertyRuleEditor } from './usePropertyRuleEditor'
 import { usePropertyRuleCards } from './cards/usePropertyRuleCards'
 import PropertyRuleFields from './PropertyRuleFields.vue'
@@ -95,6 +96,7 @@ import { availableRuleParts, type RuleAddPart } from './codec'
 const PropertyRulePicker = defineAsyncComponent(() => import('./PropertyRulePicker.vue'))
 const props = defineProps<{ scope: RuleScope; properties: ThingModelProperty[]; presentation?: 'inline' | 'detail' }>()
 const { t: $t } = useI18n()
+usePropertyUnits()
 const { loading, failed, keyword, configurationFilter, propertyRows, groups, expandedGroups, setExpandedGroup, showMore, canSave, sceneMenu, openScene, selected, selectedRow, editorOpen, load, open, close,
   addedIds, draftIds, addProperty, finishAdding, configuredCount, unconfiguredCount, unconfiguredRows } = usePropertyRules(props)
 const selectedId = computed(() => propertyIdOf(selected.value ?? {}))
@@ -257,7 +259,7 @@ async function previewProperty(property: ThingModelProperty) {
   :deep(.rule-actions .anticon) { font-size: var(--fs-14); }
   :deep(.rule-actions .rule-more-arrow) { font-size: var(--fs-12); }
   :deep(.rule-level-trigger .anticon) { font-size: var(--fs-12); }
-  :deep(.recovery-icon), :deep(.recovery-action), :deep(.notification-bell) { height: var(--rule-control-height); line-height: var(--rule-control-height); }
+  :deep(.recovery-icon), :deep(.recovery-action) { height: var(--rule-control-height); line-height: var(--rule-control-height); }
   :deep(.rule-line-alarm .condition-operator.ant-select-single) { min-width: 5.5rem; }
   :deep(.rule-line-alarm .condition-operator .ant-select-selection-item) { padding-inline-end: var(--space-5); }
   :deep(.rule-line-alarm .ant-select-single .ant-select-arrow) { inset-inline-end: var(--space-2); }

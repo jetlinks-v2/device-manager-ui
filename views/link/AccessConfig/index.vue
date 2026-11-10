@@ -274,6 +274,8 @@ const tableRef = ref<Record<string, any>>({});
 const params = ref<Record<string, any>>({});
 const visibleOutline = ref(false);
 const current = ref()
+// 仅供新增/编辑弹窗返回时刷新，列表的查询条件和页码仍由原表格持有。
+defineExpose({ reload: () => tableRef.value?.reload() });
 let providersList = ref<Record<string, any>>([]);
 
 const statusMap = new Map();
@@ -333,6 +335,7 @@ const columns = [
         search: {
             type: 'string',
         },
+	      ellipsis: true
     },
     {
         title: $t('AccessConfig.index.764793-8'),

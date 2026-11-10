@@ -4,6 +4,7 @@ import { deviceMetricsSupported, deviceMetricsAggregate, deviceOverviewSummary }
 import { defineAsyncComponent } from 'vue'
 import metricDimensions from './metricDimensions'
 import { useMetricSourceAdapter } from './views/device/metrics/useMetricSourceAdapter'
+import type { DeviceDetailTabProvider } from './deviceDetailProvider'
 import { queryNoPagingPost } from '@device-manager-ui/api/product'
 import { queryNoPagingPost as queryInstanceNoPage, query } from '@device-manager-ui/api/instance'
 import { usePluginPermissionContext } from '@device-manager-ui/hooks/usePermission'
@@ -68,6 +69,23 @@ export default {
     metrics: { key: 'metrics', label: () => i18n.global.t('DeviceMetrics.title'), icon: 'LineChartOutlined', order: 60,
       matches: () => true, component: defineAsyncComponent(() => import('./views/device/metrics/DeviceMetricsTab.vue')),
       props: (device: { id: string }) => ({ deviceId: device.id }) },
+    // 复用设备级映射页面，显示条件与 2.12 详情及产品的协议能力判断保持一致。
+    MetadataMap: {
+      key: 'MetadataMap',
+      label: () => i18n.global.t('Detail.index.957187-25'),
+      icon: 'SwapOutlined',
+      order: 20,
+      matches: device => Boolean(device.features?.some(feature => feature.id === 'diffMetadataSameProduct')),
+      component: defineAsyncComponent(() => import('./views/device/Instance/Detail/MetadataMap/index.vue')),
+    } satisfies DeviceDetailTabProvider,
+    GateWay: {
+      key: 'GateWay',
+      label: () => i18n.global.t('Detail.index.957187-22'),
+      icon: 'DeploymentUnitOutlined',
+      order: 30,
+      matches: device => device.protocol === 'collector-gateway',
+      component: defineAsyncComponent(() => import('./views/device/Instance/Detail/GateWay/index.vue')),
+    } satisfies DeviceDetailTabProvider,
   },
   apis: {
     deviceMetricsSupported,
