@@ -1,8 +1,9 @@
-import { getProviders, detail } from '@device-manager-ui/api/link/accessConfig';
+import { detail } from '@device-manager-ui/api/link/accessConfig';
+import { getAvailableGatewayProviders } from '@device-manager-ui/api/link/gatewayProviders';
 import { queryProductList } from '@device-manager-ui/api/product';
 import { accessConfigTypeFilter } from '@jetlinks-web-core/utils';
 import { useI18n } from 'vue-i18n';
-import { computed, defineAsyncComponent, onMounted, provide, ref, shallowRef, watch } from 'vue';
+import { computed, defineAsyncComponent, onScopeDispose, provide, ref, shallowRef, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import Provider from '../components/Provider/index.vue';
 import { gatewayEditorKey, gatewayFooterHostKey } from '../components/gatewayEditorContext';
@@ -28,6 +29,8 @@ export function useGatewayDetail() {
     const type = ref(false);
     const loading = ref(true);
     const providerLoadFailed = ref(false);
+    const providerUnavailable = ref(false);
+    let providerLoadVersion = 0;
     const provider = ref<{
         id?: string;
         name?: string;
@@ -41,6 +44,7 @@ export function useGatewayDetail() {
         ? components[provider.value.id as keyof typeof components] || components.network
         : components[showType.value as keyof typeof components]);
     const goProviders = (param: any) => {
+        if (!param || !dataSource.value.some((group: any) => group.list.some((item: any) => item.id === param.id))) return;
         showType.value = param.type;
         provider.value = param;
         type.value = false;
@@ -176,20 +180,7 @@ export function useGatewayDetail() {
         return list;
     };
     const queryProviders = async () => {
-        const resp: any = await getProviders();
-        if (resp.status === 200) {
-            const _data = resp.result || [];
-            dataSource.value = getTypeList(accessConfigTypeFilter(_data as any[]));
-            // 快速添加接入网关
-            if (route.query.save && route.query?.type) {
-                const type = route.query.type;
-                goProviders(dataSource.value
-                    .find((f: any) => f.title === DataMap.get(type).title)
-                    ?.list?.find((f: any) => f.id === type));
-            }
-        } else {
-            throw new Error('Gateway providers request failed');
-        }
+        return getProvidersData();
     };
     /**
      * 检查是否被产品使用
@@ -203,71 +194,52 @@ export function useGatewayDetail() {
                     value: _id
                 }]
         });
-        console.log(resp.success && resp.result?.total);
-        if (resp.success && resp.result?.total) {
-            bindProduct.value = true;
-        }
+        return Boolean(resp.success && resp.result?.total);
     };
     const getProvidersData = async () => {
-        if (id !== ':id' && !route.query.provider) {
-            checkBindProduct(id);
-            getProviders().then((response: any) => {
-                if (response.status === 200) {
-                    const _data = response.result || [];
-                    dataSource.value = getTypeList(accessConfigTypeFilter(_data as any[]));
-                    detail(id).then((resp: any) => {
-                        if (resp.status === 200) {
-                            const dt = response.result.find((item: any) => item?.id === resp.result.provider);
-                            response.result.forEach((item: any) => {
-                                if (item.id === resp.result.provider) {
-                                    resp.result.type = TypeMap.has(item.id)
-                                        ? TypeMap.get(item.id)
-                                        : TypeMap.get('network');
-                                    showType.value = resp.result.type;
-                                }
-                            });
-                            provider.value = dt;
-                            data.value = resp.result;
-                            type.value = false;
-                        }
-                    });
-                }
-                loading.value = false;
-            });
-        }
-        else {
-            type.value = route.query.provider ? false : true;
-            loading.value = true;
-            providerLoadFailed.value = false;
-            // 新增弹窗的 Spin 覆盖整个请求；等待期间不展示“暂无接入方式”。
-            try {
-                if (!route.query.data) await queryProviders();
-            } catch {
-                providerLoadFailed.value = true;
-            } finally {
-                loading.value = false;
+        const version = ++providerLoadVersion;
+        const current = () => version === providerLoadVersion;
+        loading.value = true;
+        providerLoadFailed.value = false;
+        providerUnavailable.value = false;
+        provider.value = {};
+        showType.value = '';
+        type.value = id === ':id' || Boolean(route.query.provider);
+        try {
+            const response = await getAvailableGatewayProviders();
+            if (!current()) return;
+            dataSource.value = getTypeList(accessConfigTypeFilter(response.result));
+            const candidates = dataSource.value.flatMap((group: any) => group.list);
+            data.value = route.query.data ? JSON.parse(String(route.query.data)) : {};
+            // 快捷新增和复合子配置也必须从已确认的候选中选取，URL 中的 Provider 不能绕过模块判断。
+            if (route.query.provider) {
+                const requested = JSON.parse(String(route.query.provider));
+                goProviders(candidates.find((item: any) => item.id === requested.id));
+            } else if (id === ':id') {
+                if (route.query.save && route.query.type) goProviders(candidates.find((item: any) => item.id === route.query.type));
+            } else {
+                const resp = await detail(id);
+                if (!current()) return;
+                if (!resp.success) throw new Error('Gateway detail request failed');
+                const selected = candidates.find((item: any) => item.id === resp.result.provider);
+                if (!selected) { providerUnavailable.value = true; return; }
+                const bound = await checkBindProduct(id).catch(() => false);
+                if (!current()) return;
+                bindProduct.value = bound;
+                data.value = { ...resp.result, type: TypeMap.get(selected.id) || 'network' };
+                // 历史数采网关仍使用原有编辑器，新增时的分类不改变编辑配置契约。
+                goProviders({ ...selected, type: TypeMap.get(selected.id) || 'network' });
             }
+        } catch {
+            if (current()) providerLoadFailed.value = true;
+        } finally {
+            if (current()) loading.value = false;
         }
     };
-    watch(() => route.query.provider, (val) => {
-        if (val) {
-            const _data = JSON.parse(val as string);
-            type.value = false;
-            showType.value = _data.type;
-            provider.value = _data;
-        }
-    }, { immediate: true });
-    watch(() => route.query.data, (val) => {
-        if (val) {
-            data.value = JSON.parse(val as string);
-        }
-    }, { immediate: true });
-    onMounted(() => {
-        loading.value = true;
-        getProvidersData();
-    });
+    watch(() => [route.query.provider, route.query.type, route.query.save, route.query.data], () => { void getProvidersData(); }, { immediate: true });
+    onScopeDispose(() => { providerLoadVersion++; });
     return {
-      $t, route, id, components, dataSource, type, loading, providerLoadFailed, provider, data, showType, bindProduct, footerHost,
+      $t, route, id, components, dataSource, type, loading, providerLoadFailed, providerUnavailable, provider, data, showType, bindProduct, footerHost,
       titleProvider, activeComponent, goProviders, goBack, cancelEditor, compositeProvider, TypeMap, DataMap, getTypeList,
       queryProviders, checkBindProduct, getProvidersData
     };

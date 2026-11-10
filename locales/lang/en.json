@@ -9070,6 +9070,7 @@
   "UnifiedDeviceList.iotScope": "IoT devices",
   "GatewayEditor.selectMethod": "Select access method",
   "GatewayEditor.loadFailed": "Failed to load access methods. Please retry.",
+  "GatewayEditor.methodUnavailable": "This access method is unavailable. Ensure its feature module is installed and accessible.",
   "GatewayEditor.retry": "Retry",
   "GatewayEditor.create": "Create {method}",
   "GatewayEditor.edit": "Edit {method}",

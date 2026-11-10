@@ -2,6 +2,12 @@
 
 目标范围是 `runtime-ui/modules/device-manager-ui`。测试使用真实业务组件，HTTP、菜单与跨标签页边界采用假数据，不会写入真实后端。完整逐类型结果及剩余风险见 `docs/plans/device-access-gateway-prototype-alignment.md`。
 
+## 可选模块接入方式
+
+在本模块目录执行 `node --test tests/gateway/provider-support.test.mjs`，覆盖视频／数采管理模块缺失、空目录、失败、快捷新增、URL Provider、编辑入口及迟到响应；保留普通 Agent 接入和历史只读元数据。
+
+浏览器夹具支持 `?withoutMedia=1&withoutCollector=1#/gateway/detail/:id`，用真实选择弹窗验证视频／数采入口及空分类被隐藏。去掉相应参数即可模拟已安装模块（元数据返回空数组）。这些参数只作用于测试边界，不请求真实后端。
+
 ## 保存请求契约
 
 在聚合工作区根目录执行：
