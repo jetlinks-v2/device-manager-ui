@@ -5,8 +5,9 @@ import { fileURLToPath } from 'node:url'
 import { loadMetricTestModule } from './metricTestModule.mjs'
 
 const structureExpressions = fileURLToPath(new URL('../../../jetlinks-web-core/src/components/Metric/template/structureExpressions.ts', import.meta.url))
+const templateText = fileURLToPath(new URL('../../../jetlinks-web-core/src/components/Metric/template/text.ts', import.meta.url))
 const { createMetricStarters, starterMessages } = await loadMetricTestModule('../views/metric/Template/starters.ts', {
-  '@jetlinks-web-core/components': `export { structureMetricTemplate } from ${JSON.stringify(structureExpressions)}`,
+  '@jetlinks-web-core/components': `export { structureMetricTemplate } from ${JSON.stringify(structureExpressions)}; export {metricTemplateTextEntries} from ${JSON.stringify(templateText)}`,
 })
 const translate = key => key.split('.').reduce((value, part) => value[part], starterMessages.zh)
 const { structureMetricTemplate } = await loadMetricTestModule('../../../jetlinks-web-core/src/components/Metric/template/structureExpressions.ts')
@@ -50,6 +51,33 @@ test('communication quality is one device template with platform session sources
   // 旧历史中的状态值仍有原解释，当前规则不再用历史掉线和覆盖率判断当前状态。
   assert.deepEqual(current.options.stateLabels.map(item=>item.value),[0,1,2,3,4,5])
   assert.equal(starter.template.parameterDefinitions.find(item=>item.id==='minCoveragePercent').expands.defaultValue,95)
+})
+
+test('参考声明保存完整中英文、枚举编码、日期、参数类型与状态颜色', async()=>{
+  const {localizedTemplate}=await loadMetricTestModule('../../../jetlinks-web-core/src/components/Metric/template/text.ts')
+  const starters=createMetricStarters(translate)
+  for (const starter of starters) {
+    const english=localizedTemplate(starter.template,'en')
+    const expected=createMetricStarters(key=>key.split('.').reduce((value,part)=>value?.[part],starterMessages.en)).find(item=>item.id===starter.id).template
+    assert.equal(english.name,expected.name)
+    assert.equal(english.options.notes,expected.options.notes)
+    for(const input of english.inputDefinitions) assert.deepEqual(input.valueType,expected.inputDefinitions.find(item=>item.id===input.id).valueType)
+  }
+  const communication=localizedTemplate(starters.find(item=>item.id==='communication').template,'en')
+  assert.deepEqual(communication.inputDefinitions[0].valueType.elements.map(item=>item.value),[0,1])
+  assert.equal(communication.inputDefinitions[0].valueType.elements[0].text,'Offline')
+  assert.equal(communication.inputDefinitions[1].valueType.type,'date')
+  assert.equal(communication.parameterDefinitions.find(item=>item.id==='activityAssessmentEnabled').valueType.type,'boolean')
+  assert.equal(communication.parameterDefinitions.find(item=>item.id==='disconnectLimit').valueType.type,'int')
+  const fire=localizedTemplate(starters.find(item=>item.id==='fireEvidence').template,'en')
+  const fields=fire.inputDefinitions.find(item=>item.id==='fireReview').valueType.properties
+  assert.equal(fields.find(item=>item.id==='reviewedAt').valueType.type,'date')
+  assert.deepEqual(fields.find(item=>item.id==='decision').valueType.elements.map(item=>item.value),[0,1,2,3,4])
+  const runtime=localizedTemplate(starters.find(item=>item.id==='runtime').template,'en')
+  assert.deepEqual(runtime.definitions[0].options.stateLabels.map(item=>item.icon),['color:#8c8c8c','color:#52c41a','color:#1677ff','color:#ff4d4f','color:#722ed1'])
+  assert.equal(runtime.definitions[0].options.stateLabels[3].name,'Fault')
+  assert.equal(starters.find(item=>item.id==='equipmentDay').template.parameterDefinitions[0].valueType.type,'int')
+  assert.equal(starters.find(item=>item.id==='fleetSummary').template.parameterDefinitions[0].valueType.type,'long')
 })
 
 test('explicit state and time inputs retain numeric values with enum and date metadata', () => {

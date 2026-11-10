@@ -22,9 +22,9 @@ export function createCommunicationStarter(t:(key:string)=>string):MetricTemplat
     inputDefinitions:[{ id:'connectionState', name:t('communicationConnection'), valueType:{ type:'enum',valueType:{ type:'int' },elements:[{ value:0,text:t('communicationOffline') },{ value:1,text:t('state_online') }] }, source:{ lookback:'PT2H', maxPoints:512 } },
       { id:'lastCommunicationTime', name:t('communicationReport'), valueType:{ type:'date' }, presence:'optional' }],
     parameterDefinitions:[param('activityAssessmentEnabled',false), param('communicationIdleSeconds',180,1,604800,'s'),
-      param('minCoveragePercent',95,0,100,'%'), param('disconnectLimit',3,1,1000), param('scoreBaseline',6,1,1000)], parameters:{},
+      param('minCoveragePercent',95,0,100,'%'), {...param('disconnectLimit',3,1,1000),valueType:{type:'int',min:1,max:1000}}, {...param('scoreBaseline',6,1,1000),valueType:{type:'int',min:1,max:1000}}], parameters:{},
     definitions:[
-      formula('currentConnection',['connectionState'],'connectionState', { window:{ ...schedule }, stateTracking:{ maxNoData:'PT2M' }, options:{ stateLabels:[{ value:0,name:t('communicationOffline'),nameI18n:{ zh:'离线',en:'Offline' },icon:'color:#ff4d4f' },{ value:1,name:'在线',nameI18n:{ zh:'在线',en:'Online' },icon:'color:#52c41a' }] } }),
+      formula('currentConnection',['connectionState'],'connectionState', { window:{ ...schedule }, stateTracking:{ maxNoData:'PT2M' }, options:{ stateLabels:[{ value:0,name:t('communicationOffline'),nameI18n:{ zh:'离线',en:'Offline' },icon:'color:#ff4d4f' },{ value:1,name:t('state_online'),nameI18n:{ zh:'在线',en:'Online' },icon:'color:#52c41a' }] } }),
       { id:stats, name:t('communicationStatistics'), type:'composite', inputs:[{ id:'state',metricId:'connectionState' }], window:schedule,
         calculator:{ provider:'state',providerVersion:'1',inputTypes:{ state:{ type:'array',elementType:{ type:'int' } } },
           outputType:{ type:'object',properties:['activeDuration','inactiveDuration','unknownDuration','activeCount','inactiveCount','coverage'].map(id => ({ id,name:t(`communicationField_${id}`),valueType:{...numeric,...(id.endsWith('Duration') ? {unit:'s'} : {})} })) },

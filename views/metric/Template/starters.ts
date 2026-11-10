@@ -1,8 +1,9 @@
 import type { MetricConfig, MetricTemplate, MetricTemplateInput, MetricTemplateStarter } from '@jetlinks-web-core/components'
-import { structureMetricTemplate } from '@jetlinks-web-core/components'
+import { metricTemplateTextEntries, structureMetricTemplate } from '@jetlinks-web-core/components'
 import { createCommunicationStarter } from './communicationStarter'
 import { createFireStarters } from './fireStarters'
 export { starterMessages } from './starterMessages'
+import { starterMessages } from './starterMessages'
 
 type Translate = (key: string) => string
 const number = { type: 'double', scale: 8 }
@@ -11,6 +12,23 @@ const start = Date.UTC(2026, 10, 1)
 
 /** 场景只提供普通配置与观测事实，不包含前端计算或专用运行分支。 */
 export function createMetricStarters(t: Translate): MetricTemplateStarter[] {
+  const starters = buildMetricStarters(t)
+  // 翻译随模板保存，后台引用和语言切换不依赖本页当前语言或示例 ID。
+  for (const [locale,messages] of Object.entries(starterMessages)) {
+    const translated = buildMetricStarters(key => key.split('.').reduce<unknown>((value,part) => value && typeof value === 'object' ? (value as Record<string,unknown>)[part] : undefined,messages) as string || key)
+    for (const starter of starters) {
+      const template = translated.find(item => item.id === starter.id)!.template
+      const entries = metricTemplateTextEntries(template)
+      const fields = (starter.template.options!.i18nMessages ||= {}) as Record<string,Record<string,string>>
+      for (const [field,value] of Object.entries(entries)) (fields[field] ||= {})[locale] = value
+    }
+  }
+  return starters
+}
+
+function buildMetricStarters(t: Translate): MetricTemplateStarter[] {
+  const stateColors:Record<string,string> = { stopped:'#8c8c8c',shutdown:'#8c8c8c',running:'#52c41a',standby:'#1677ff',fault:'#ff4d4f',maintenance:'#722ed1',repair:'#fa8c16',overhaul:'#722ed1',service:'#13c2c2' }
+  const stateLabels = (names:string[]) => names.map((name,value) => ({value,name:t(`state_${name}`),icon:`color:${stateColors[name]}`}))
   const states = (names: string[]) => ({ type:'enum', valueType:{ type:'int' }, elements:names.map((name,value) => ({ value,text:t(`state_${name}`) })) })
   const input = (id: string, unit?: string, extra = {}): MetricTemplateInput => ({ id, name: t(id), valueType: number, unit, ...extra })
   const output = (metricId: string, unit?: string) => ({ metricId, label: t(metricId), unit, persist: true, publish: true })
@@ -66,7 +84,7 @@ export function createMetricStarters(t: Translate): MetricTemplateStarter[] {
   const state = base('runtime', [input('operating', undefined, { valueType: states(['stopped', 'running', 'standby', 'fault', 'maintenance']), source: { lookback: 'PT2H', maxPoints: 256 }, maxAge: 'PT2H' })], [{
     id: 'running', dependsOn: ['operating'],
     inputs: [{ id:'operating', metricId:'operating' }], expression:'operating', stateTracking:{ maxNoData:'PT20M' },
-    options:{ stateLabels:['stopped', 'running', 'standby', 'fault', 'maintenance'].map((name,value) => ({ value, name:t(`state_${name}`) })) },
+    options:{ stateLabels:stateLabels(['stopped', 'running', 'standby', 'fault', 'maintenance']) },
     window: { mode: 'none', timeMode: 'processing', emitPolicy: 'onSchedule', emitInterval: 'PT1M' },
   }, ...['stopped', 'running', 'standby', 'fault', 'maintenance'].map((name,value) => formula(`${name}Seconds`, ['running'],
     `running == ${value} ? metricValues['running'].getState().getDuration() : 0`, {
@@ -134,7 +152,7 @@ export function createMetricStarters(t: Translate): MetricTemplateStarter[] {
   const equipmentStates = ['shutdown', 'running', 'standby', 'repair', 'overhaul', 'fault', 'service']
   const equipmentState = base('equipmentStates', [input('operating', undefined, { valueType: states(equipmentStates), maxAge: 'PT20M' })], [
     formula('equipmentState', ['operating'], 'operating', { stateTracking: { maxNoData: 'PT20M' }, window: schedule(),
-      options: { stateLabels: equipmentStates.map((name, value) => ({ value, name: t(`state_${name}`) })) } }),
+      options: { stateLabels:stateLabels(equipmentStates) } }),
     ...equipmentStates.map((name, value) => formula(`${name}Seconds`, ['equipmentState'],
       `equipmentState == ${value} ? metricValues['equipmentState'].getState().getDuration() : 0`, { window: schedule() })),
   ], [{ ...output('equipmentState'), valueType: 'int' }, ...equipmentStates.map(name => output(`${name}Seconds`, 's'))])
@@ -164,7 +182,7 @@ export function createMetricStarters(t: Translate): MetricTemplateStarter[] {
       }),
     ], [output('periodFrom', 'ms'), output('workingPeriodSeconds', 's'), output('energizedPeriodSeconds', 's'), output('equipmentCapacityPercent', '%'), output('equipmentUtilizationPercent', '%'),
       output('workingCoveragePercent', '%'), output('energizedCoveragePercent', '%'), output('workingUnknownSeconds', 's'), output('energizedUnknownSeconds', 's')])
-    template.parameterDefinitions = [parameter('utcOffsetSeconds', 28800, 's', false)]
+    template.parameterDefinitions = [{...parameter('utcOffsetSeconds', 28800, 's', false),valueType:{type:'int',unit:'s',min:-64800,max:64800}}]
     return template
   }
   const fleet = base('fleetSummary', ['equipmentCount', 'faultDeviceCount', 'startedDeviceCount', 'runningDeviceCount', 'workTotalSeconds', 'powerTotalSeconds'].map(id => input(id, id.endsWith('Seconds') ? 's' : undefined, { maxAge:'PT10M' })), [
@@ -175,7 +193,7 @@ export function createMetricStarters(t: Translate): MetricTemplateStarter[] {
     formula('fleetUtilizationPercent', ['equipmentCount', 'powerTotalSeconds'], 'powerTotalSeconds * 100.0 / (equipmentCount * 1.0 * params.periodSeconds)', { applicabilityExpression: 'equipmentCount > 0 && params.periodSeconds > 0', maxInputSkew: 'PT5S' }),
     formula('fleetWorkInPowerPercent', ['workTotalSeconds', 'powerTotalSeconds'], 'workTotalSeconds * 100.0 / powerTotalSeconds', { applicabilityExpression: 'powerTotalSeconds > 0', maxInputSkew: 'PT5S' }),
   ], ['equipmentSoundPercent', 'equipmentStartedPercent', 'equipmentLoadPercent', 'fleetCapacityPercent', 'fleetUtilizationPercent', 'fleetWorkInPowerPercent'].map(id => output(id, '%')))
-  fleet.parameterDefinitions = [parameter('periodSeconds', 86400, 's')]
+  fleet.parameterDefinitions = [{...parameter('periodSeconds', 86400, 's'),valueType:{type:'long',unit:'s',min:1}}]
   fleet.definitions = fleet.definitions.map(item => ({ ...item, window:schedule() }))
   // 5分钟快照允许一个周期的调度余量，避免两次正常刷新之间被标为过期。
   const connections = base('fleetConnections', ['deviceCount', 'onlineDeviceCount', 'offlineDeviceCount'].map(id => input(id, undefined, { maxAge:'PT10M' })), [
