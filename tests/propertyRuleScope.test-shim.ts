@@ -1,9 +1,13 @@
 import { onBeforeUnmount, reactive } from 'vue'
-import type { NavigationGuard } from 'vue-router'
+import type { NavigationGuard, NavigationHookAfter } from 'vue-router'
 
 export const ruleRoute = reactive<{ query: Record<string, unknown> }>({ query: {} })
 export const useRoute = () => ruleRoute
-export const useRouter = () => ({ replace: async ({ query }: { query: Record<string, unknown> }) => { ruleRoute.query = query } })
+export const ruleRouteAfterEach = new Set<NavigationHookAfter>()
+export const useRouter = () => ({
+  replace: async ({ query }: { query: Record<string, unknown> }) => { ruleRoute.query = query },
+  afterEach: (handler: NavigationHookAfter) => { ruleRouteAfterEach.add(handler); return () => ruleRouteAfterEach.delete(handler) },
+})
 export const useAuthStore = () => ({ hasPermission: () => true })
 export const ruleSystem = reactive({ showThreshold: true })
 export const useSystemStore = () => ruleSystem
@@ -18,9 +22,12 @@ function registerGuard(guards: NavigationGuard[], guard: NavigationGuard) {
 export const onBeforeRouteLeave = (guard: NavigationGuard) => registerGuard(routeGuards.leave, guard)
 export const onBeforeRouteUpdate = (guard: NavigationGuard) => registerGuard(routeGuards.update, guard)
 export const message = { warning() {}, success() {}, error() {} }
-export interface TestConfirmation { onOk?: () => unknown; onCancel?: () => unknown; [key: string]: unknown }
+export interface TestConfirmation { onOk?: () => unknown; onCancel?: () => unknown; afterClose?: () => unknown; destroyed?: boolean; [key: string]: unknown }
 const confirmImmediately = (options: TestConfirmation) => { void options.onOk?.() }
 let confirmHandler = confirmImmediately
 /** Tests can hold the dialog open, navigate, then explicitly confirm or cancel. */
 export const setConfirmHandler = (handler = confirmImmediately) => { confirmHandler = handler }
-export const Modal = { confirm: (options: TestConfirmation) => { confirmHandler(options) } }
+export const Modal = { confirm: (options: TestConfirmation) => {
+  confirmHandler(options)
+  return { destroy: () => { options.destroyed = true; options.afterClose?.() } }
+} }
