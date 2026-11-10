@@ -10,11 +10,14 @@ try {
   const entry = path.join(output, 'alarmWorkspace.test.mjs')
   await build({ entryPoints: [
     ...['alarmWorkspace', 'propertyRules', 'propertyRuleScope', 'propertyRuleStatistics'].map(name => path.join(root, `tests/${name}.test.ts`)),
+    path.join(root, 'tests/propertyUnits.test.mjs'),
     path.join(root, 'tests/notificationMessage.test.mjs'),
   ], outdir: output,
     bundle: true, platform: 'node', format: 'esm', outExtension: { '.js': '.mjs' }, target: 'node22', logLevel: 'warning',
     plugins: [{ name: 'mock-alarm-transport', setup(api) {
+      api.onResolve({ filter: /^axios$/ }, () => ({ path: fileURLToPath(import.meta.resolve('axios')), external: true }))
       api.onResolve({ filter: /^@device-manager-ui\/api\/device-library$/ }, () => ({ path: path.join(root, 'tests/alarmRequest.test-shim.ts') }))
+      api.onResolve({ filter: /^@device-manager-ui\/api\/instance$/ }, () => ({ path: path.join(root, 'tests/alarmRequest.test-shim.ts') }))
       api.onResolve({ filter: /^@jetlinks-web\/core$/ }, () => ({ path: path.join(root, 'tests/alarmRequest.test-shim.ts') }))
       api.onResolve({ filter: /^@jetlinks-web-core\/components\/ConditionFilter$/ }, () => ({ path: path.resolve(root, '../../jetlinks-web-core/src/components/ConditionFilter/utils.ts') }))
       api.onResolve({ filter: /^@jetlinks-web\/utils$/ }, () => ({ path: path.join(root, 'tests/alarmRequest.test-shim.ts') }))
@@ -28,6 +31,7 @@ try {
     path.join(output, 'propertyRules.test.mjs'),
     path.join(output, 'propertyRuleScope.test.mjs'),
     path.join(output, 'propertyRuleStatistics.test.mjs'),
+    path.join(output, 'propertyUnits.test.mjs'),
     path.join(output, 'notificationMessage.test.mjs'),
     path.join(root, 'tests/alarmWorkspaceView.test.mjs'),
   ], { stdio: 'inherit' }).status ?? 1

@@ -80,6 +80,9 @@ export interface DeviceAlarmRow extends DeviceAlarmFormModel {
 export interface ThingModelValueType {
   type?: string
   unit?: string
+  unitName?: string
+  unitText?: string
+  unitLabel?: string
   scale?: number
   maxLength?: number
   bodyType?: string

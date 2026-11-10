@@ -19,14 +19,14 @@ const shortLabel = computed(() => {
   const supported = ['string', 'boolean', 'enum', 'date', 'file', 'array', 'object', 'geoPoint', 'password'].includes(type.value)
   return $t(`PropertyRules.metadata.type.${supported ? type.value : 'unknown'}`)
 })
-const unit = computed(() => formatPropertyUnit(props.property.valueType?.unit))
+const unit = computed(() => formatPropertyUnit(props.property.valueType))
 const icon = computed(() => ({ int: 'NumberOutlined', long: 'NumberOutlined', double: 'NumberOutlined', float: 'NumberOutlined',
   string: 'FontSizeOutlined', boolean: 'CheckCircleOutlined', enum: 'UnorderedListOutlined', date: 'CalendarOutlined',
   file: 'FileOutlined', array: 'BarsOutlined', object: 'ProfileOutlined', geoPoint: 'EnvironmentOutlined', password: 'LockOutlined',
 }[type.value] ?? 'QuestionCircleOutlined'))
 const details = computed(() => {
   const value = props.property.valueType ?? {}
-  if (['int', 'long', 'double', 'float'].includes(type.value)) return [formatPropertyUnit(value.unit),
+  if (['int', 'long', 'double', 'float'].includes(type.value)) return [formatPropertyUnit(value),
     value.scale === undefined ? undefined : $t('PropertyRules.metadata.precision', { value: value.scale })].filter(Boolean)
   if (type.value === 'string') return value.maxLength === undefined ? [] : [$t('PropertyRules.metadata.length', { value: value.maxLength })]
   if (type.value === 'enum') return value.elements ? [$t('PropertyRules.metadata.elements', { count: value.elements.length })] : []

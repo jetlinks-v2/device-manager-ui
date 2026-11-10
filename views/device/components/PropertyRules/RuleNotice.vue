@@ -12,5 +12,5 @@ defineProps<{ message: string; label?: string; kind?: 'info' | 'warning' }>()
 .rule-notice.is-info { --rule-notice-color: var(--jet-theme-text-secondary); width: 24px; height: 24px; font-size: 14px; }
 .rule-notice:not(:disabled):hover, .rule-notice:focus-visible { background: var(--bg-sunken); color: var(--rule-notice-color); }
 .rule-notice:focus-visible { outline: 1px solid var(--jet-theme-primary); outline-offset: 1px; }
-.rule-notice-content { max-width: min(320px, calc(100vw - 48px)); color: var(--jet-theme-text); font-size: var(--fs-12); line-height: 1.7; }
+.rule-notice-content { max-width: min(320px, calc(100vw - 48px)); color: var(--jet-theme-text); font-size: var(--fs-14); line-height: 1.7; }
 </style>

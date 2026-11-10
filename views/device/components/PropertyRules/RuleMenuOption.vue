@@ -13,9 +13,9 @@ defineProps<{ icon: string; title: string; description: string; compact?: boolea
 .rule-menu-option-alarm .rule-menu-option-icon { color: var(--jet-theme-warning); }
 .rule-menu-option-copy { display: flex; flex-direction: column; min-width: 0; gap: 2px; }
 .rule-menu-option-title { line-height: 24px; font-size: var(--fs-14); font-weight: 500; }
-.rule-menu-option-description { color: var(--jet-theme-text-secondary); font-size: var(--fs-12); line-height: 18px; white-space: normal; }
-.rule-menu-option-compact .rule-menu-option-title { font-size: var(--fs-12); line-height: 22px; }
-.rule-menu-option-compact .rule-menu-option-icon { height: 22px; font-size: 14px; }
+.rule-menu-option-description { color: var(--jet-theme-text-secondary); font-size: var(--fs-14); line-height: 22px; white-space: normal; }
+.rule-menu-option-compact .rule-menu-option-title { font-size: var(--fs-14); line-height: 24px; }
+.rule-menu-option-compact .rule-menu-option-icon { height: 24px; font-size: 16px; }
 :global(.rule-select-menu) { max-width: calc(100vw - 48px); }
 :global(.rule-select-menu .ant-select-item-option) { padding: 6px 12px; }
 </style>

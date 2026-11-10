@@ -1,3 +1,9 @@
+import axios from 'axios'
+
+// Real Axios transformations/interceptor ordering; business requests retain their existing transport fixture.
+const ruleRequestInstance = axios.create()
+export const getInstance = () => ruleRequestInstance
+
 type Handler = (url: string, body: Record<string, unknown>, options?: Record<string, unknown>) => Promise<unknown>
 let handler: Handler = async () => { throw new Error('Unexpected request') }
 export const setAlarmRequestHandler = (next: Handler) => { handler = next }
@@ -11,3 +17,4 @@ export default { global: { t: (key: string) => key, locale: { value: 'zh' } } }
 
 export const randomString = () => 'test-id'
 export const restoreDeviceLibraryAlarms_api = async () => { throw new Error('Unexpected library restore') }
+export const getUnit = () => request.get('/protocol/units')
