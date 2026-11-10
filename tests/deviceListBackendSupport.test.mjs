@@ -78,6 +78,7 @@ test('unified list hides unsupported gateway, avoids its counts and falls back f
       'vue-router': { useRoute: () => route, useRouter: () => ({ replace() {} }) },
       'vue-i18n': { useI18n: () => ({ t: key => key }) },
       '@jetlinks-web-core/store': { useMenuStore: () => ({ hasMenu: () => true }) },
+      '@jetlinks-web-core/utils/deployment': { isPrivateDeployment: () => true },
       '@jetlinks-web-core/utils/module-registry': { moduleRegistry: {
         getAllModuleIds: () => ['edge', 'media'],
         getResource: id => id === 'edge' ? { gateway } : { video },

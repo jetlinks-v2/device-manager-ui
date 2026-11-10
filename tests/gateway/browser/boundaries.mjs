@@ -47,6 +47,10 @@ async function call(method, url, data) {
     return options.has('failure') ? { status: 400, success: false } : { status: 200, success: true, result: { ...copy(data), id: data.id || 'saved-gateway' } }
   }
   capture.reads.push(record)
+  if ((url === '/media/server/providers' && options.has('withoutMedia'))
+    || (url === '/data-collect/channel/providers' && options.has('withoutCollector'))) {
+    return { status: 404, success: false }
+  }
   let result = []
   if (url === '/gateway/device/providers') result = copy(providers)
   else if (url === '/gateway/device/detail/config') result = data

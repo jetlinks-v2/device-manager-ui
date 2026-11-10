@@ -9071,6 +9071,7 @@
   "UnifiedDeviceList.iotScope": "物联设备",
   "GatewayEditor.selectMethod": "选择接入方式",
   "GatewayEditor.loadFailed": "接入方式加载失败，请重试",
+  "GatewayEditor.methodUnavailable": "当前接入方式不可用，请确认对应的功能模块已安装并可访问。",
   "GatewayEditor.retry": "重试",
   "GatewayEditor.create": "新增{method}",
   "GatewayEditor.edit": "编辑{method}",
