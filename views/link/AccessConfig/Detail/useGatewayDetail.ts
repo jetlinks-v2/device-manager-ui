@@ -2,7 +2,9 @@ import { getProviders, detail } from '@device-manager-ui/api/link/accessConfig';
 import { queryProductList } from '@device-manager-ui/api/product';
 import { accessConfigTypeFilter } from '@jetlinks-web-core/utils';
 import { useI18n } from 'vue-i18n';
-import { computed, provide, shallowRef } from 'vue';
+import { computed, defineAsyncComponent, onMounted, provide, ref, shallowRef, watch } from 'vue';
+import { useRoute } from 'vue-router';
+import Provider from '../components/Provider/index.vue';
 import { gatewayEditorKey, gatewayFooterHostKey } from '../components/gatewayEditorContext';
 /** 保留原配置步骤、校验和保存链路；由界面在 setup 内调用，生命周期归属不变。 */
 export function useGatewayDetail() {
@@ -13,7 +15,7 @@ export function useGatewayDetail() {
     const id = route.params.id as string;
     const components = {
         network: defineAsyncComponent(() => import('../components/Network/index.vue')),
-        provider: defineAsyncComponent(() => import('../components/Provider/index.vue')),
+        provider: Provider,
         media: defineAsyncComponent(() => import('../components/Media/index.vue')),
         channel: defineAsyncComponent(() => import('../components/Channel/index.vue')),
         edge: defineAsyncComponent(() => import('../components/Edge/index.vue')),
@@ -25,6 +27,7 @@ export function useGatewayDetail() {
     const dataSource: any = ref([]);
     const type = ref(false);
     const loading = ref(true);
+    const providerLoadFailed = ref(false);
     const provider = ref<{
         id?: string;
         name?: string;
@@ -184,6 +187,8 @@ export function useGatewayDetail() {
                     .find((f: any) => f.title === DataMap.get(type).title)
                     ?.list?.find((f: any) => f.id === type));
             }
+        } else {
+            throw new Error('Gateway providers request failed');
         }
     };
     /**
@@ -232,8 +237,16 @@ export function useGatewayDetail() {
         }
         else {
             type.value = route.query.provider ? false : true;
-            !route.query.data && queryProviders();
-            loading.value = false;
+            loading.value = true;
+            providerLoadFailed.value = false;
+            // 新增弹窗的 Spin 覆盖整个请求；等待期间不展示“暂无接入方式”。
+            try {
+                if (!route.query.data) await queryProviders();
+            } catch {
+                providerLoadFailed.value = true;
+            } finally {
+                loading.value = false;
+            }
         }
     };
     watch(() => route.query.provider, (val) => {
@@ -254,7 +267,7 @@ export function useGatewayDetail() {
         getProvidersData();
     });
     return {
-      $t, route, id, components, dataSource, type, loading, provider, data, showType, bindProduct, footerHost,
+      $t, route, id, components, dataSource, type, loading, providerLoadFailed, provider, data, showType, bindProduct, footerHost,
       titleProvider, activeComponent, goProviders, goBack, cancelEditor, compositeProvider, TypeMap, DataMap, getTypeList,
       queryProviders, checkBindProduct, getProvidersData
     };

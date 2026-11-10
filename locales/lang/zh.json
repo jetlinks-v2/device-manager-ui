@@ -9070,6 +9070,8 @@
   "RuntimeMonitor.loadingLogDirectory": "正在加载目录",
   "UnifiedDeviceList.iotScope": "物联设备",
   "GatewayEditor.selectMethod": "选择接入方式",
+  "GatewayEditor.loadFailed": "接入方式加载失败，请重试",
+  "GatewayEditor.retry": "重试",
   "GatewayEditor.create": "新增{method}",
   "GatewayEditor.edit": "编辑{method}",
   "GatewayEditor.steps": "配置步骤",
