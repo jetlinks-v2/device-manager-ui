@@ -1,5 +1,32 @@
 # 集群仪表盘与独立运行诊断
 
+## 日志正文列表性能与阅读锚点
+
+- 目标：让日志正文的挂载规模随可视区域变化，避免已加载窗口增大后拖慢滚动、文件目录和工具栏操作；保留现有日志阅读行为。
+- 任务级别与归属：M；实现主要位于 `runtime-ui/jetlinks-web-core/src/components/RuntimeDiagnostics/LogViewer.vue` 及其 `logs/` 子目录；滚动保持的通用修复归属 `runtime-ui/jetlinks-web-core/src/hooks/useRetainedScroll.ts`。设备模块继续通过 `views/link/diagnostics/NodeLogPanel.vue` 提供数据和文件目录。
+- 范围边界：本阶段只处理日志正文列表和相应滚动保持，不调整文件目录弹层动画、页面壳层、运营端 `ui/`、后端接口、权限、窗口读取数量或日志保留上限。
+
+### 实现约定
+
+1. 在日志职责域实现按真实行高测量的可视窗口，只挂载可见行和少量缓冲行；保留原始记录 ID 和完整已加载数据。现有 `VirtualScroll` 要求固定摘要行高，不能直接承载自动换行、多行消息和堆栈，本次不改变其既有契约或其他使用者。
+2. 使用行 ID 与行内偏移保持阅读锚点，覆盖向前 / 向后合并日志、宽度变化、换行切换、消息 / 堆栈 / 原文展开。展开状态随记录保留，不能因行滚出视口后卸载而丢失；查找仍遍历全部已加载记录，并能够定位尚未挂载的命中行。
+3. 保留文件 / 控制台各自的阅读状态、恢复跟随、初次定位末尾、隐藏恢复、文件切换清零以及滚动边缘加载规则；程序定位不触发额外读取。
+4. 调整 `useRetainedScroll` 的位置保存时机，避免每次组件更新都同步读取布局尺寸。复用滚动事件与布局观察结果，保留隐藏零尺寸保护、双轴位置与过期恢复取消，并回归共享使用者。
+5. 实现完成后集中运行相关行为测试、类型检查、差异检查和模块构建，再用本地页面与独立大数据夹具进行浏览器验收。只在新失败或新改动需要时重跑相关检查。
+
+### 验证与边界
+
+- 主要风险是变高行重新测量引起阅读跳动，以及卸载可见行影响展开状态、查找定位和 KeepAlive 恢复；必须用行身份恢复，不依赖整个列表的 DOM 查询。
+- 使用少量日志及 2,500 条混合长度日志验证：相同视口的挂载行数保持有界，首尾记录均可到达；窄屏换行、堆栈展开、查找非可见记录、前后窗口合并、持续更新与来源往返均保持正确。
+- 验证入口：core 的 `tests/runtimeLogReadingPosition.test.mjs`、`tests/runtimeLogLayout.test.mjs`、`tests/runtimeLogRecordPresentation.test.mjs`、`tests/useRetainedScroll.test.mjs` 及新增的虚拟窗口行为检查；共享 MBean 阅读位置回归。类型使用诊断专属 tsconfig，并对已有错误做基线对照；构建使用 `pnpm build -- --module-name device-manager-ui`。
+- 实现落点：`LogViewer.vue` 使用 `logs/useLogVirtualWindow.ts` 维护按 ID 缓存的行高、可见区与阅读锚点；`logs/LogEntryLine.vue` 将消息 / 堆栈展开状态回传给父级保存；`useRetainedScroll.ts` 移除普通组件更新时的同步尺寸读取。浏览器因 DOM 提交或测量钳制滚动位置时，查找 / 跟随仍保持程序定位身份；真实阅读意图才取消目标。
+- 行为回归：core 中上述六个测试文件共 33 项通过，覆盖 2,500 条窗口有界挂载、混合行高、窗口前后合并与淘汰、离屏原文命中定位、展开状态保留、隐藏 / KeepAlive、文件切换、跟随期间布局钳制、程序定位不触发窗口读取，以及共享 MBean 阅读位置。
+- 静态与构建：`pnpm exec vue-tsc -p tests/tsconfig.runtime-logs.json --noEmit` 和本次文件 `git diff --check` 通过；core / runtime-ui 没有配置独立 lint 脚本。`pnpm build --outDir /private/tmp/jetlinks-log-list-build -- --module-name device-manager-ui` 成功，保留模块插件加载提示、资源解析、输出选项与 chunk 体积告警。
+- 浏览器验收：在本地页面挂载实际生产 `LogViewer` 与 2,500 条混合消息 / 堆栈，当前 777px 高视口常见挂载 11–27 行；消息 / 堆栈展开后离屏返回保持，查找到第 2,238 条原文证据并展开。前后追加、换行、宽度变化与隐藏恢复的同一记录偏移差小于 1px；持续追加至 2,502 条时末尾距离为 0，无误暂停或额外边缘读取。该夹具工具栏浮层的一次点击至双帧采样约 33ms，观察区间无超过 50ms 的长任务；此数字只代表本地夹具，不作为 UAT 或所有 Chrome 环境的延迟保证。
+- 实际页面：47 条日志在不同阅读位置仅挂载 16–27 行；往返 MBean 与文件 / 控制台后，文件首个可见记录与行内偏移保持一致，目录仍可正常打开。验收夹具与性能观察器已清理；UAT 尚未部署本次修改。文件目录弹层动画仍在本阶段范围之外。
+
+- 代码交付：`jetlinks-v2/jetlinks-web-core` 提交 `94b2bee5d3c9316f92cbae9541ebd15d119f83d6`；[PR #231](https://github.com/jetlinks-v2/jetlinks-web-core/pull/231)（目标分支 `2.20`）。
+
 ## 当前结论与目标
 
 ### 节点概览：分组紧凑面板
