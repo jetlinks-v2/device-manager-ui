@@ -1,272 +1,56 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { readFile } from 'node:fs/promises'
-import { fileURLToPath } from 'node:url'
 import { loadMetricTestModule } from './metricTestModule.mjs'
 
-const structureExpressions = fileURLToPath(new URL('../../../jetlinks-web-core/src/components/Metric/template/structureExpressions.ts', import.meta.url))
-const templateText = fileURLToPath(new URL('../../../jetlinks-web-core/src/components/Metric/template/text.ts', import.meta.url))
-const { createMetricStarters, starterMessages } = await loadMetricTestModule('../views/metric/Template/starters.ts', {
-  '@jetlinks-web-core/components': `export { structureMetricTemplate } from ${JSON.stringify(structureExpressions)}; export {metricTemplateTextEntries} from ${JSON.stringify(templateText)}`,
-})
-const translate = key => key.split('.').reduce((value, part) => value[part], starterMessages.zh)
-const { structureMetricTemplate } = await loadMetricTestModule('../../../jetlinks-web-core/src/components/Metric/template/structureExpressions.ts')
-const formulaTree = (template, rule, expression) => structureMetricTemplate({ ...template,
-  definitions: [{ ...rule, expressionTree: undefined, expression }],
-}).template.definitions[0].expressionTree
+const { iotMetricStarters: starters } = await loadMetricTestModule('../views/metric/Template/starters.ts')
+const { localizedTemplate, metricTemplateTextEntries } = await loadMetricTestModule('../../../jetlinks-web-core/src/components/Metric/template/text.ts')
+const { captureTemplateExample } = await loadMetricTestModule('../../../jetlinks-web-core/src/components/Metric/template/templateAuthoring.ts')
 
-test('fire templates preserve event identity and restrict unaligned bucket aggregation', () => {
-  const starters = createMetricStarters(translate)
-  for (const id of ['fireEvidence', 'fireGovernance']) {
-    const starter = starters.find(item => item.id === id)
-    assert.equal(starter.groupId, 'fire')
-    assert.ok(starter.template.options.i18nMessages.name.zh)
-    assert.ok(starter.template.options.i18nMessages.name.en)
-    assert.ok(Object.values(starter.simulation.configuration.inputMappings).every(mapping => !['alarmCount','alarmActive','longestAlarmDuration'].includes(mapping.id)))
+test('default references cover IoT capabilities without domain-specific decisions or invented scores',()=>{
+  assert.deepEqual(starters.map(item=>item.id),['communication-observation','connection-duration','state-duration','sample-mean','counter-usage','persistent-limit','measurement-difference','scope-connectivity'])
+  assert.deepEqual([...new Set(starters.map(item=>item.groupId))].sort(),['condition','connectivity','energy','scope','state','statistics'])
+  assert.ok(!JSON.stringify(starters).includes('linkQualityScore'))
+  assert.ok(!JSON.stringify(starters).includes('fireReview'))
+  for (const {template,simulation} of starters) {
+    assert.ok(template.definitions.length && template.outputs.length)
+    assert.ok(captureTemplateExample(template,simulation),'facts must remain editable and portable')
+    assert.deepEqual(Object.keys(simulation.configuration.inputMappings).sort(),template.inputDefinitions.map(item=>item.id).sort())
   }
-  const governance = starters.find(item => item.id === 'fireGovernance').template
-  assert.ok(governance.outputs.every(output => !output.options.readAggregation.operations.some(operation => ['sum','ratio','average'].includes(operation))))
-  const evidence = starters.find(item => item.id === 'fireEvidence').template
-  assert.match(JSON.stringify(evidence.definitions.find(rule => rule.id === 'fireReviewDecision').expressionTree), /eventId/)
-  for (const template of [evidence, governance]) {
-    assert.ok(template.definitions.filter(rule => rule.type === 'composite').every(rule => rule.expressionTree && !rule.expression))
-  }
-  assert.ok(!evidence.definitions.some(rule => rule.temporalCondition))
+  assert.ok(starters.every(item=>item.providerId==='device-iot'))
 })
 
-test('communication quality is one device template with platform session sources', () => {
-  const starter = createMetricStarters(translate).find(item=>item.id === 'communication')
-  assert.equal(starter.template.outputs.length,8)
-  assert.deepEqual(starter.template.definitions.find(item=>item.id === 'currentConnection').window,
-    {mode:'none',timeMode:'processing',emitPolicy:'onSchedule',emitInterval:'PT1M'})
-  assert.deepEqual(Object.values(starter.simulation.configuration.inputMappings).map(item=>item.id),['$online','$lastCommunicationTime'])
-  assert.ok(starter.template.outputs.every(item=>item.options.readAggregation))
-  assert.equal(starter.template.outputs.find(item=>item.metricId === 'observedOnlineRatio').options.readAggregation.operations.includes('sum'),false)
-  assert.deepEqual(starter.template.outputs.filter(item=>item.options.explain).map(item=>item.metricId),['communicationState','linkQualityScore'])
-  const fields=starter.template.definitions.find(item=>item.id==='connectionStatistics').calculator.outputType.properties
-  assert.ok(fields.every(item=>item.name && item.name !== item.id))
-  const current=starter.template.definitions.find(item=>item.id==='communicationState')
-  assert.deepEqual(current.dependsOn,['currentConnection','communicationAgeSeconds'])
-  assert.ok(!JSON.stringify(current.expressionTree).includes('connectionStatistics'))
-  // 旧历史中的状态值仍有原解释，当前规则不再用历史掉线和覆盖率判断当前状态。
-  assert.deepEqual(current.options.stateLabels.map(item=>item.value),[0,1,2,3,4,5])
-  assert.equal(starter.template.parameterDefinitions.find(item=>item.id==='minCoveragePercent').expands.defaultValue,95)
-})
-
-test('参考声明保存完整中英文、枚举编码、日期、参数类型与状态颜色', async()=>{
-  const {localizedTemplate}=await loadMetricTestModule('../../../jetlinks-web-core/src/components/Metric/template/text.ts')
-  const starters=createMetricStarters(translate)
-  for (const starter of starters) {
-    const english=localizedTemplate(starter.template,'en')
-    const expected=createMetricStarters(key=>key.split('.').reduce((value,part)=>value?.[part],starterMessages.en)).find(item=>item.id===starter.id).template
-    assert.equal(english.name,expected.name)
-    assert.equal(english.options.notes,expected.options.notes)
-    for(const input of english.inputDefinitions) assert.deepEqual(input.valueType,expected.inputDefinitions.find(item=>item.id===input.id).valueType)
-  }
-  const communication=localizedTemplate(starters.find(item=>item.id==='communication').template,'en')
-  assert.deepEqual(communication.inputDefinitions[0].valueType.elements.map(item=>item.value),[0,1])
-  assert.equal(communication.inputDefinitions[0].valueType.elements[0].text,'Offline')
-  assert.equal(communication.inputDefinitions[1].valueType.type,'date')
-  assert.equal(communication.parameterDefinitions.find(item=>item.id==='activityAssessmentEnabled').valueType.type,'boolean')
-  assert.equal(communication.parameterDefinitions.find(item=>item.id==='disconnectLimit').valueType.type,'int')
-  const fire=localizedTemplate(starters.find(item=>item.id==='fireEvidence').template,'en')
-  const fields=fire.inputDefinitions.find(item=>item.id==='fireReview').valueType.properties
-  assert.equal(fields.find(item=>item.id==='reviewedAt').valueType.type,'date')
-  assert.deepEqual(fields.find(item=>item.id==='decision').valueType.elements.map(item=>item.value),[0,1,2,3,4])
-  const runtime=localizedTemplate(starters.find(item=>item.id==='runtime').template,'en')
-  assert.deepEqual(runtime.definitions[0].options.stateLabels.map(item=>item.icon),['color:#8c8c8c','color:#52c41a','color:#1677ff','color:#ff4d4f','color:#722ed1'])
-  assert.equal(runtime.definitions[0].options.stateLabels[3].name,'Fault')
-  assert.equal(starters.find(item=>item.id==='equipmentDay').template.parameterDefinitions[0].valueType.type,'int')
-  assert.equal(starters.find(item=>item.id==='fleetSummary').template.parameterDefinitions[0].valueType.type,'long')
-})
-
-test('explicit state and time inputs retain numeric values with enum and date metadata', () => {
-  for (const language of ['zh', 'en']) {
-    const t = key => key.split('.').reduce((value, part) => value[part], starterMessages[language])
-    const starters = createMetricStarters(t)
-    for (const [id, inputId, ruleId] of [['communication','connectionState','currentConnection'], ['online','connectionState','connection'],
-      ['runtime','operating','running'], ['equipmentStates','operating','equipmentState']]) {
-      const {template, simulation} = starters.find(item => item.id === id)
-      const schema = template.inputDefinitions.find(input => input.id === inputId).valueType
-      const states = template.definitions.find(rule => rule.id === ruleId).options.stateLabels
-      assert.equal(schema.type, 'enum')
-      assert.deepEqual(schema.valueType, {type:'int'})
-      assert.deepEqual(schema.elements.map(item => item.value), states.map(item => item.value))
-      assert.ok(schema.elements.every(item => item.text && item.text !== 'state_online'))
-      assert.ok(simulation.samples.filter(sample => sample.metricId === (id === 'communication' ? '$online' : inputId))
-        .every(sample => typeof sample.value === 'number' && schema.elements.some(item => item.value === sample.value)))
+test('every reference preserves bilingual declarations and enum encodings without translating raw values',()=>{
+  for (const {template} of starters) {
+    const english=localizedTemplate(template,'en')
+    assert.notEqual(english.name,template.name)
+    const entries=metricTemplateTextEntries(template)
+    for(const key of Object.keys(entries)) {
+      assert.ok(template.options.i18nMessages[key]?.zh,key)
+      assert.ok(template.options.i18nMessages[key]?.en,key)
     }
-    const communication = starters.find(item => item.id === 'communication')
-    assert.deepEqual(communication.template.inputDefinitions.find(input => input.id === 'lastCommunicationTime').valueType, {type:'date'})
-    assert.equal(typeof communication.simulation.samples.find(sample => sample.metricId === '$lastCommunicationTime').value, 'number')
-    const fire = starters.find(item => item.id === 'fireEvidence').template
-    for (const [inputId, fieldId] of [['fireEvent','startedAt'], ['evidence','observedAt'], ['fireReview','reviewedAt']]) {
-      assert.equal(fire.inputDefinitions.find(input => input.id === inputId).valueType.properties.find(field => field.id === fieldId).valueType.type, 'date')
-    }
-    const review = fire.inputDefinitions.find(input => input.id === 'fireReview').valueType.properties.find(field => field.id === 'decision').valueType
-    assert.equal(review.type, 'enum')
-    assert.deepEqual(review.elements.map(item => item.value), [0,1,2,3,4])
-    const bucket = starters.find(item => item.id === 'fireGovernance').template.inputDefinitions[0].valueType.properties
-    assert.ok(bucket.filter(field => ['from','to'].includes(field.id)).every(field => field.valueType.type === 'date'))
-    assert.equal(bucket.find(field => field.id === 'total').valueType.type, 'long')
-  }
-})
-
-// 独立前端 checkout 不依赖聚合工作区的相对路径；联合验收显式传入正式引擎的场景目录。
-test('communication and fire starters match the real-engine scenarios', { skip: !process.env.METRIC_SCENARIO_FIXTURES }, async () => {
-  const { join } = await import('node:path')
-  const starters = createMetricStarters(translate)
-  for (const [id, fixture] of [['communication', 'communication-quality'], ['fireEvidence', 'fire-evidence'], ['fireGovernance', 'fire-governance']]) {
-    assert.deepEqual(JSON.parse(JSON.stringify(starters.find(item => item.id === id))),
-      JSON.parse(await readFile(join(process.env.METRIC_SCENARIO_FIXTURES, `${fixture}.json`), 'utf8')))
-  }
-})
-
-test('在线时长独立于生产运行，模拟事实只有状态变化且保留真实起点', () => {
-  for (const language of ['zh', 'en']) {
-    const t = key => key.split('.').reduce((value, part) => value[part], starterMessages[language])
-    const { template, simulation } = createMetricStarters(t).find(item => item.id === 'online')
-    assert.equal(template.outputs[0].metricId, 'connection')
-    assert.deepEqual(template.definitions[0].options.stateLabels.map(item => item.value), [0, 1])
-    for (const id of ['onlineSeconds', 'offlineSeconds', 'onlineWindowSeconds', 'offlineWindowSeconds']) {
-      assert.equal(template.outputs.find(item => item.metricId === id).unit, 's')
-    }
-    assert.equal(simulation.samples.length, 3)
-    assert.deepEqual(simulation.samples.map(item => item.value), [1, 0, 1])
-    assert.ok(simulation.samples.every(item => item.quality.attributes.stateSince === item.eventTime))
-    assert.equal(simulation.endAt - simulation.samples[0].eventTime, 4 * 3600_000)
-    assert.equal(simulation.endAt - simulation.samples.at(-1).eventTime, 3600_000)
-  }
-})
-
-test('在线场景与正式后端试算请求逐字段一致', { skip:!process.env.METRIC_CONNECTION_FIXTURE }, async () => {
-  const fixture = JSON.parse(await readFile(process.env.METRIC_CONNECTION_FIXTURE, 'utf8'))
-  const starter = createMetricStarters(translate).find(item => item.id === 'online')
-  assert.deepEqual(JSON.parse(JSON.stringify({ template:starter.template, ...starter.simulation })), fixture)
-})
-
-test('业务场景起点使用完整模板、独立来源和带质量单位的真实试算样本', () => {
-  const starters = createMetricStarters(translate)
-  assert.deepEqual(starters.map(item => item.id), ['window', 'meter', 'cooling', 'health', 'runtime', 'fire', 'intensity', 'comprehensive', 'water', 'bearing', 'filter', 'cold', 'ventilation', 'fireWater',
-    'equipmentStates', 'equipmentDay', 'equipmentWeek', 'fleetSummary', 'attendance', 'orderCompletion', 'productionMix', 'fleetConnections', 'online', 'communication', 'fireEvidence', 'fireGovernance'])
-  for (const starter of starters) {
-    assert.ok(starter.name && starter.description && starter.groupId)
-    assert.equal(starter.template.options.description, starter.description)
-    assert.ok(starter.template.options.notes)
-    const { template, simulation } = starter
-    assert.equal(simulation.configuration.templateId, template.id)
-    assert.ok(template.outputs.every(output => template.definitions.some(rule => rule.id === output.metricId)))
-    for (const input of template.inputDefinitions) {
-      const mapping = simulation.configuration.inputMappings[input.id]
-      const samples = simulation.samples.filter(sample => sample.thingId === mapping.thingId && sample.metricId === mapping.id)
-      assert.ok(samples.length)
-      assert.ok(samples.every(sample => sample.unit === input.unit && sample.quality.valid === true && sample.eventTime === sample.processTime))
+    for(const input of template.inputDefinitions) {
+      const translated=english.inputDefinitions.find(item=>item.id===input.id)
+      assert.equal(translated.valueType?.type,input.valueType?.type)
+      if(input.valueType?.elements)assert.deepEqual(translated.valueType.elements.map(item=>item.value),input.valueType.elements.map(item=>item.value))
     }
   }
+  const communication=starters[0].template
+  assert.equal(communication.inputDefinitions.find(item=>item.id==='lastCommunicationTime').valueType.type,'date')
+  assert.equal(communication.parameterDefinitions.find(item=>item.id==='activityAssessmentEnabled').expands.defaultValue,false)
+  const states=communication.definitions.find(item=>item.id==='communicationState').resultType
+  assert.equal(states.type,'enum')
+  assert.ok(states.elements.every(item=>typeof item.value==='number' && item.icon.startsWith('color:')))
+  assert.deepEqual(starters.find(item=>item.id==='state-duration').template.inputDefinitions[0].valueType.elements.map(item=>item.value),[0,1])
 })
 
-test('中英文场景文案完整，规则引用和单位沿用同一配置，不泄漏演示身份', () => {
-  const categoryIds = []
-  for (const language of ['zh', 'en']) {
-    const translate = key => key.split('.').reduce((value, part) => value?.[part], starterMessages[language])
-    categoryIds.push(createMetricStarters(translate).map(starter=>starter.groupId))
-    for (const { template } of createMetricStarters(translate)) {
-      const ids = new Set([...template.inputDefinitions, ...template.definitions].map(item => item.id))
-      for (const definition of template.definitions) {
-        for (const id of [...definition.dependsOn || [], ...(definition.inputs || []).map(item => item.metricId)]) assert.ok(ids.has(id), id)
-      }
-      assert.ok(template.inputDefinitions.every(input => input.name && !input.source?.thingId))
-      assert.ok(template.parameterDefinitions.every(parameter => parameter.name))
-      assert.ok(template.outputs.every(output => output.label))
-      assert.ok(template.definitions.every(rule => rule.name))
-      assert.ok(template.name && template.options.notes)
-    }
-  }
-  assert.deepEqual(categoryIds[0],categoryIds[1])
-  assert.equal(new Set(categoryIds[0]).size,5)
-})
-
-test('区间组合校验实际起止，不仅校验最后时间；存水使用有符号增量', () => {
-  const starters = createMetricStarters(translate)
-  for (const id of ['intensity', 'comprehensive', 'water']) {
-    const template = starters.find(item => item.id === id).template
-    const combined = template.definitions.find(rule => JSON.stringify(rule.applicabilityTree)?.includes('inputTimeStart'))
-    assert.ok(combined)
-    for (const input of combined.dependsOn) {
-      assert.ok(JSON.stringify(combined.applicabilityTree).includes(JSON.stringify([input, 'inputTimeStart'])))
-      if (input !== combined.dependsOn[0]) assert.ok(JSON.stringify(combined.applicabilityTree).includes(JSON.stringify([input, 'inputTimeEnd'])))
-    }
-  }
-  const storage = starters.find(item => item.id === 'water').template.definitions.find(rule => rule.id === 'storageDelta')
-  assert.equal(storage.calculator.parameters.negativeDelta, 'signed')
-})
-
-test('运行统计复用确认转换；食品持续条件和消防供水即时事实分开', () => {
-  const starters = createMetricStarters(translate)
-  const runtime = starters.find(item => item.id === 'runtime').template
-  assert.deepEqual(runtime.definitions[0].window, { mode: 'none', timeMode: 'processing', emitPolicy: 'onSchedule', emitInterval: 'PT1M' })
-  assert.ok(runtime.outputs.find(output => output.metricId === 'activeSeconds').label.includes('近1小时'))
-  assert.equal(runtime.outputs.find(output => output.metricId === 'activeSeconds').unit, 's')
-  assert.equal(runtime.outputs.find(output => output.metricId === 'unknownSeconds').unit, 's')
-  assert.deepEqual(runtime.definitions.find(rule => rule.id === 'activeSeconds').expressionTree.root,
-    { type: 'reference', id: 'statistics', path: ['activeDuration'] })
-  assert.deepEqual(runtime.definitions.find(rule => rule.id === 'unknownSeconds').expressionTree.root,
-    { type: 'reference', id: 'statistics', path: ['unknownDuration'] })
-  assert.ok(runtime.definitions.find(rule => rule.id === 'statistics').calculator.outputType.properties.every(field => field.name))
-  assert.equal(runtime.outputs[0].metricId, 'running')
-  assert.equal(runtime.definitions.find(rule => rule.id === 'running').stateTracking.maxNoData, 'PT20M')
-  assert.equal(runtime.definitions.find(rule => rule.id === 'running').options.stateLabels.length, 5)
-  for (const name of ['stopped', 'running', 'standby', 'fault', 'maintenance']) assert.ok(runtime.outputs.some(output => output.metricId === `${name}Seconds`))
-  assert.ok(runtime.outputs.some(output => output.metricId === 'startCount'))
-  assert.ok(runtime.outputs.some(output => output.metricId === 'stopCount'))
-  const cold = starters.find(item => item.id === 'cold').template
-  assert.equal(cold.definitions[0].temporalCondition.dwell, 'PT5M')
-  assert.equal(cold.definitions[0].temporalCondition.maxNoData, 'PT2M')
-  const fireWater = starters.find(item => item.id === 'fireWater').template
-  assert.ok(fireWater.definitions.every(rule => !rule.temporalCondition && rule.dependsOn.length === 1))
-  assert.ok(!fireWater.outputs.some(output => /ready|falseAlarm/i.test(output.metricId)))
-})
-
-test('重新创建场景不共享可变草稿；窗口、状态与告警保留真实时间语义', () => {
-  const first = createMetricStarters(translate)
-  first[0].template.inputDefinitions[0].name = 'Changed'
-  first[0].simulation.samples[0].value = 999
-  const next = createMetricStarters(translate)
-  assert.equal(next[0].template.inputDefinitions[0].name, '温度')
-  assert.equal(next[0].simulation.samples[0].value, 22)
-  assert.equal(next[0].template.definitions[0].window.size, 'PT15M')
-  assert.equal(next[4].template.definitions.find(rule => rule.id === 'statistics').calculator.parameters.maxHold, 'PT20M')
-  assert.equal(next[5].template.definitions[0].window.timeMode, 'processing')
-  assert.equal(next[5].simulation.endAt - next[5].simulation.samples[0].eventTime, 9 * 60_000)
-})
-
-test('制造业口径保留七种工况、独立通电来源、自然周期和范围汇总边界', () => {
-  const starters = createMetricStarters(translate)
-  const states = starters.find(item => item.id === 'equipmentStates').template
-  assert.deepEqual(states.definitions[0].options.stateLabels.map(item => item.name), ['关机', '运行', '待机', '维修', '大修', '故障', '保养'])
-  for (const id of ['equipmentDay', 'equipmentWeek']) {
-    const { template, simulation } = starters.find(item => item.id === id)
-    assert.deepEqual(template.inputDefinitions.map(input => input.id), ['workingFlag', 'energizedFlag'])
-    assert.ok(template.inputDefinitions.every(input => input.valueType.type === 'boolean' && input.source.maxPoints === 2048))
-    assert.equal(template.parameterDefinitions[0].expands.defaultValue, 28800)
-    assert.equal(template.definitions.find(rule => rule.id === 'workingStatistics').calculator.inputTypes.from.type, 'double')
-    assert.ok(template.outputs.filter(output => output.metricId.includes('Seconds')).every(output => output.unit === 's'))
-    assert.equal(template.outputs.find(output => output.metricId === 'periodFrom').unit, 'ms')
-    assert.equal(new Date(simulation.endAt).toISOString(), '2026-11-02T00:00:00.000Z')
-  }
-  const fleet = starters.find(item => item.id === 'fleetSummary').template
-  assert.ok(fleet.options.notes.includes('成员指标统计'))
-  assert.ok(fleet.definitions.every(rule => rule.window.emitPolicy === 'onSchedule' && rule.window.emitInterval === 'PT5M'))
-  assert.equal(fleet.parameterDefinitions[0].expands.defaultValue, 86400)
-  const utilization = fleet.definitions.find(rule => rule.id === 'fleetUtilizationPercent')
-  assert.deepEqual(utilization.expressionTree, formulaTree(fleet, utilization,
-    'powerTotalSeconds * 100.0 / (equipmentCount * 1.0 * params.periodSeconds)'))
-})
-
-// 独立前端仓库无需后端checkout；联合验收通过环境变量指定正式引擎使用的模板快照。
-test('联合验收使用的后端模板与前端场景逐字段一致', { skip: !process.env.METRIC_DASHBOARD_TEMPLATE_FIXTURE }, async () => {
-  const fixture = JSON.parse(await readFile(process.env.METRIC_DASHBOARD_TEMPLATE_FIXTURE, 'utf8'))
-  const templates = Object.fromEntries(createMetricStarters(translate).filter(item => Object.hasOwn(fixture, item.id)).map(item => [item.id, item.template]))
-  assert.equal(Object.keys(templates).length, 7)
-  assert.deepEqual(JSON.parse(JSON.stringify(templates)), fixture)
+test('references explain observation boundaries, parameter examples and a verifiable mean definition',()=>{
+  const mean=starters.find(item=>item.id==='sample-mean').template
+  assert.match(mean.options.authoring.references[0].url,/^https:\/\/www\.itl\.nist\.gov\//)
+  assert.match(mean.options.i18nMessages.notes.en,/not a time-weighted mean/)
+  const difference=starters.find(item=>item.id==='measurement-difference').template
+  assert.equal(difference.definitions[0].maxInputSkew,'PT5S')
+  assert.equal(difference.inputDefinitions[0].unit,difference.inputDefinitions[1].unit)
+  const usage=starters.find(item=>item.id==='counter-usage').template
+  assert.equal(usage.definitions[0].calculator.parameters.negativeDelta,'reject')
+  assert.match(localizedTemplate(starters.find(item=>item.id==='persistent-limit').template,'en').options.notes,/not general safety/)
 })

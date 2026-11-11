@@ -1,7 +1,5 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { readFile } from 'node:fs/promises'
-import { fileURLToPath } from 'node:url'
 import { effectScope, nextTick } from 'vue'
 import { loadMetricTestModule } from './metricTestModule.mjs'
 
@@ -19,17 +17,13 @@ const { useMetricSourcePicker } = await loadMetricTestModule('../views/device/me
   '@jetlinks-web-core/components': `export const metricSourceSchema=schema=>schema`,
 })
 const { addSimulationSample, sampleInputs } = await loadMetricTestModule('../../../jetlinks-web-core/src/components/Metric/template/simulation.ts')
-const { structureMetricTemplate } = await loadMetricTestModule('../../../jetlinks-web-core/src/components/Metric/template/structureExpressions.ts')
-const { createMetricStarters, starterMessages } = await loadMetricTestModule('../views/metric/Template/starters.ts', {
-  '@jetlinks-web-core/components': `export { structureMetricTemplate } from ${JSON.stringify(fileURLToPath(new URL('../../../jetlinks-web-core/src/components/Metric/template/structureExpressions.ts',import.meta.url)))}`,
-})
+const { iotMetricStarters } = await loadMetricTestModule('../views/metric/Template/starters.ts')
 
-test('object scope example preserves the backend real-engine fixture after structured conversion', async () => {
-  const translate = key => key.split('.').reduce((value, part) => value[part], starterMessages.zh)
-  const fixture = createMetricStarters(translate).find(item => item.id === 'fleetConnections')
-  const snapshot = JSON.parse(await readFile(new URL('../../../../modules/jetlinks-components/things-component/src/test/resources/metric-scenarios/object-builtin-counts.json', import.meta.url), 'utf8'))
-  snapshot.template = structureMetricTemplate(snapshot.template).template
-  assert.deepEqual(JSON.parse(JSON.stringify({ template:fixture.template, ...fixture.simulation })), snapshot)
+test('scope reference keeps generic built-in bindings and integer declarations', () => {
+  const fixture = iotMetricStarters.find(item => item.id === 'scope-connectivity')
+  assert.deepEqual(Object.values(fixture.simulation.configuration.inputMappings).map(item => item.kind), ['builtin','builtin','builtin'])
+  assert.ok(fixture.template.inputDefinitions.every(item => item.valueType.type === 'long'))
+  assert.equal(fixture.template.definitions.find(item => item.id === 'scopeOnlinePercent').applicabilityTree.root.operator, 'gt')
 })
 
 test('object builtin selection restores scope and commits without enumerating devices', async () => {
