@@ -45,6 +45,8 @@ const enumValue = (value: unknown) => {
 export default {
   device: {
     typeId: 'device',
+    members: [{ ref: { providerId: 'device-data', kind: 'query', id: 'snapshots' },
+      component: defineAsyncComponent(() => import('./components/ObjectPropertySnapshots.vue')) }],
     queries: {
       propertySnapshot: {
         nodeField: 'value',
