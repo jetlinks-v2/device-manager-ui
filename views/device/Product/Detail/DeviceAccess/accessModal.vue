@@ -145,230 +145,26 @@
   </a-modal>
 </template>
 
-<script setup lang='ts' name='accessModal'>
+<script setup lang="ts" name="accessModal">
 import { createReusableTemplate } from '@vueuse/core'
-
-import type {PropType} from 'vue'
-import {onlyMessage, randomString} from '@jetlinks-web/utils';
-import {queryList, getAccessConfig} from '../../../../../api/product'
-import {useMenuStore} from '@jetlinks-web-core/store';
-import {getProductByPluginId} from '../../../../../api/link/plugin'
-import {getProviders} from '../../../../../api/link/accessConfig'
-import {device} from '../../../../../assets'
-import {useI18n} from 'vue-i18n';
-import {useTabSaveSuccess} from '@jetlinks-web-core/hooks'
-
-const {t: $t} = useI18n();
-
-type Emit = {
-  (e: 'submit', data: any): void
-  (e: 'cancel'): void
-}
+import type { PropType } from 'vue'
+import { device } from '../../../../../assets'
+import type { AccessSelection } from './accessState'
+import { useProductAccessSelector } from './hooks/useProductAccessSelector'
 
 const props = defineProps({
-  productId: {
-    type: String,
-    default: undefined
-  },
-  accessId: {
-    type: String,
-    default: undefined
-  },
-  deviceType: {
-    type: String,
-    default: undefined
-  },
-  providersList: {
-    type: Array as PropType<any[]>,
-    default: () => []
-  }
+  productId: { type: String, default: undefined },
+  accessId: { type: String, default: undefined },
+  deviceType: { type: String, default: undefined },
+  providersList: { type: Array as PropType<{ id: string; description?: string }[]>, default: () => [] },
 })
-
-const emit = defineEmits<Emit>()
-const menuStore = useMenuStore();
-const checkData = ref()
-const tableRef = ref()
-const loading = ref(false)
-const params = ref<Record<string, any>>({
-  pageSize: 4,
-  terms: [],
-})
-
-const selectedRowKeys = ref<string[]>(props.accessId ? [props.accessId] : [])
-
-const {onOpen} = useTabSaveSuccess('link/AccessConfig/Detail', {
-  async onSuccess(value) {
-    tableRef.value.reload();
-    handleClick(value.result);
-  }
-})
-
-const getDescription = (slotProps: Record<string, any>) =>
-    slotProps.description
-        ? slotProps.description
-        : props.providersList?.find(
-            (item: Record<string, any>) => item.id === slotProps.provider,
-        )?.description;
-/**
- * 查询条件
- */
-const temp = {
-  ...params.value,
-  terms:
-      props.deviceType === 'childrenDevice'
-          ? [
-            ...params.value.terms,
-            {
-              terms: [
-                {
-                  column: 'provider',
-                  termType: 'in',
-                  value: 'child-device,edge-child-device',
-                },
-              ],
-            },
-          ]
-          : [...params.value?.terms],
-};
-
-const handleQuery = async (q: any) => {
-  const resp = await queryList(q)
-  const _data = (resp.result as any)?.data as any[]
-  if (_data?.length) {
-    const _checkItem = _data.find(item => item.id === selectedRowKeys.value[0])
-    if (_checkItem) {
-      checkData.value = _checkItem
-    }
-  }
-
-  return {
-    ...resp
-  }
-}
-
-const columns = [
-  {
-    title: $t('DeviceAccess.accessModal.132524-5'),
-    dataIndex: 'name',
-    key: 'name',
-    search: {
-      type: 'string',
-    },
-  },
-  {
-    title: $t('DeviceAccess.accessModal.132524-6'),
-    dataIndex: 'provider',
-    key: 'provider',
-    search: {
-      type: 'select',
-      options: () => {
-        return new Promise(resolve => {
-          getProviders().then(res => {
-            resolve(res.result?.map((item: any) => ({...item, label: item.name, value: item.id})) || [])
-          })
-        })
-      },
-    },
-  },
-  {
-    title: $t('DeviceAccess.accessModal.132524-7'),
-    dataIndex: 'state',
-    key: 'state',
-    search: {
-      type: 'select',
-      options: [
-        {
-          label: $t('DeviceAccess.accessModal.132524-8'),
-          value: 'enabled',
-        },
-        {
-          label: $t('DeviceAccess.accessModal.132524-9'),
-          value: 'disabled',
-        },
-      ],
-    },
-  },
-  {
-    title: $t('DeviceAccess.accessModal.132524-10'),
-    key: 'description',
-    dataIndex: 'description',
-    search: {
-      type: 'string',
-    },
-  },
-]
-
-const findProvidersByProvider = (provider: string) => {
-  if (!provider) return {}
-
-  return props.providersList.find(item => item.id === provider) || {}
-}
-/**
- * 提交设备数据
- */
-const submitData = async () => {
-  if (selectedRowKeys.value.length) {
-    if (checkData.value.channel === 'plugin') {
-      const resp = await getProductByPluginId(checkData.value.channelId).catch(() => ({success: false, result: []}))
-      const metadataResp = await getAccessConfig(props.productId!, checkData.value.id).catch(() => ({success: false, result: {}}))
-
-      emit('submit', {
-        access: {...checkData.value},
-        productTypes: resp.result,
-        metadata: metadataResp.result
-      })
-    } else {
-      loading.value = true
-      const resp = await getAccessConfig(props.productId!, checkData.value.id).catch(() => ({success: false, result: {}}))
-      // 返回外部组件需要的数据
-      loading.value = false
-      if (resp.success) {
-        // const providers = findProvidersByProvider((resp.result as any)[0]?.provider)
-        emit('submit', {
-          access: {...checkData.value},
-          metadata: resp.result
-        })
-      }
-    }
-  } else {
-    onlyMessage($t('DeviceAccess.accessModal.132524-11'), 'error');
-  }
-}
-
-/**
- * 关闭弹窗
- */
-const cancel = () => {
-  emit('cancel')
-};
-
-const handleSearch = (e: any) => {
-  params.value.terms = e.terms;
-};
-
-const handleClick = (data: any) => {
-  selectedRowKeys.value = [data.id]
-  checkData.value = {...data}
-}
-
-// const cancelSelect = () => {
-//   selectedRowKeys.value = []
-//   checkData.value = {}
-// }
-
-/**
- * 打开标签新增
- */
-const add = () => {
-  onOpen({
-    view: false,
-    save: true
-  })
-};
-
-
+const emit = defineEmits<{
+  (event: 'submit', data: AccessSelection): void
+  (event: 'cancel'): void
+}>()
+const {
+  tableRef, loading, params, selectedRowKeys, temp, columns, getDescription,
+  handleQuery, submitData, handleClick, cancel, handleSearch, add,
+} = useProductAccessSelector(props, emit)
 const [DefineEmptyCreate, EmptyCreateButton] = createReusableTemplate()
 </script>
-
-<style scoped>
-</style>

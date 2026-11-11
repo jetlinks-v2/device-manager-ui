@@ -81,6 +81,83 @@ test('the scope tree reads binding IDs from the device-binding endpoint instead 
 
 test('device area writes use the bind endpoint', () => {
   assert.match(spaceAreaApiSource, /bindDevicesSpaceArea_api/)
-  assert.match(spaceAreaApiSource, /space\/device-binding\/_bind/)
-  assert.doesNotMatch(spaceAreaApiSource, /space\/device-binding\/_set/)
+  assert.match(spaceAreaApiSource, /space\/bind\/_bind/)
+  assert.doesNotMatch(spaceAreaApiSource, /space\/bind\/_set/)
+})
+
+test('visible spaces at every depth default to selectable without capability metadata', () => {
+  const { buildAreaTreeData, isSelectableDeviceArea } = loadAreaTreeOptions()
+  const areas = Array.from({ length: 6 }, (_, index) => createArea(
+    `area-${index + 1}`,
+    index ? `area-${index}` : undefined,
+  ))
+  areas.push(createArea('orphan', 'unreadable-parent'))
+
+  for (const area of areas) assert.equal(isSelectableDeviceArea(areas, area.id), true, area.id)
+  const visit = (nodes) => nodes.forEach(node => {
+    assert.equal(node.disabled, false, node.value)
+    assert.equal(node.selectable, true, node.value)
+    visit(node.children || [])
+  })
+  visit(buildAreaTreeData(areas))
+})
+
+test('each space capability is independent and bound-only or unknown spaces remain unavailable', () => {
+  const { buildAreaTreeData, isSelectableDeviceArea, mergeDeviceBoundAreas } = loadAreaTreeOptions()
+  const areas = mergeDeviceBoundAreas([
+    createArea('allowed', undefined, true),
+    createArea('denied', 'allowed', false),
+    createArea('default-open', 'denied'),
+  ], [{ areaId: 'hidden', area: '不可见空间' }])
+  // 补齐节点的展示数据即使带有能力标记，也不能变成新的绑定目标。
+  areas.find(area => area.id === 'hidden').canBindAsset = true
+
+  for (const id of ['allowed', 'default-open']) assert.equal(isSelectableDeviceArea(areas, id), true)
+  for (const id of ['denied', 'hidden', 'missing']) assert.equal(isSelectableDeviceArea(areas, id), false)
+  const nodes = buildAreaTreeData(areas)
+  assert.equal(nodes.find(node => node.value === 'hidden').disabled, true)
+  const denied = nodes.find(node => node.value === 'allowed').children[0]
+  assert.equal(denied.disabled, true)
+  assert.equal(denied.children[0].selectable, true)
+})
+
+function loadSpaceAreaApi(request) {
+  const compiled = ts.transpileModule(spaceAreaApiSource, {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+  }).outputText
+  const module = { exports: {} }
+  new Function('require', 'module', 'exports', compiled)(id => {
+    assert.equal(id, '@jetlinks-web/core')
+    return { request }
+  }, module, module.exports)
+  return module.exports
+}
+
+test('space queries default open, preserve explicit flags and do not request deprecated type settings', async () => {
+  const calls = []
+  const api = loadSpaceAreaApi({
+    get: async () => ({ result: true }),
+    post: async (url) => {
+      calls.push(url)
+      if (url === '/space/type/_query/no-paging') {
+        return { result: [{ id: 'old-type', others: { canBindAsset: false } }] }
+      }
+      assert.equal(url, '/space/_query/tree')
+      return { result: [{ id: 'root', children: [
+        { id: 'historical', parentId: 'root', spaceTypeId: 'old-type' },
+        { id: 'allowed', parentId: 'root', canBindAsset: true },
+        { id: 'denied', parentId: 'root', canBindAsset: false },
+        { id: 'string-allowed', parentId: 'root', canBindAsset: 'true' },
+        { id: 'string-denied', parentId: 'root', canBindAsset: 'false' },
+      ] }] }
+    },
+  })
+  const settings = await api.queryProjectSpaceAreaSettings_api('project-1')
+  assert.deepEqual(settings.areas.map(area => [area.id, area.canBindAsset]), [
+    ['root', true], ['historical', true], ['allowed', true], ['denied', false],
+    ['string-allowed', true], ['string-denied', false],
+  ])
+  assert.ok(settings.areas.every(area => area.projectId === 'project-1'))
+  assert.equal(settings.areas.find(area => area.id === 'historical').parentId, 'root')
+  assert.deepEqual(calls, ['/space/_query/tree'])
 })
