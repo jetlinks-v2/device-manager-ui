@@ -1,4 +1,5 @@
 {
+    "PropertyRules.diagram.intent": "仅展示处理意图；实际动作取决于运行状态，不会在图例中执行",
   "PropertyRules.diagram.process": "计算过程",
   "PropertyRules.diagram.failed": "暂时无法计算示例，请重试",
   "PropertyRules.diagram.calculating": "正在计算示例…",

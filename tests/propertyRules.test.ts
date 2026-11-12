@@ -7,7 +7,9 @@ import { saveRule, restoreRule, loadRules } from '../views/device/components/Pro
 import { setAlarmRequestHandler } from './alarmRequest.test-shim'
 import { summarizeDraft, summarizeDraftRows, summarizeRule, summarizeRuleRows, type RuleTranslator } from '../views/device/components/PropertyRules/summary'
 import zh from '../locales/lang/zh.json'
-import { buildRuleExample as buildExample, createRuleExampleInputs, validateRuleExampleInputs } from '../views/device/components/PropertyRules/diagram'
+import { createRuleExampleInputs, validateRuleExampleInputs } from '../views/device/components/PropertyRules/diagram'
+import { presentRuleTrial,ruleTrialRequest } from '../views/device/components/PropertyRules/trial'
+import type { PropertyTrialStep,PropertyTrialPoint } from '../api/propertyPreprocessorTrial'
 import { MAX_INTERVAL_MILLIS, readSampling } from '../views/device/components/PropertyRules/sampling'
 import { buildCondition, conditionsOverlap, conditionOperators, matchesCondition, readCondition, switchConditionOperator, validateAlarmConditions } from '../views/device/alarm/conditions'
 import type { DeviceAlarmCondition } from '../views/device/alarm/types'
@@ -22,14 +24,11 @@ const translate: RuleTranslator = (key, values = {}) => {
   return text.replace(/\{(\w+)\}/g, (_match, name) => String(values[name]))
 }
 
-// Controlled transport result for the existing illustrative pipeline tests; numerical execution is covered on the server.
-function buildRuleExample(...args:Parameters<typeof buildExample>) {
-  const [draft,property,inputs,initial]=args
-  return buildExample(draft,property,inputs,initial,({value})=>{
-    const result=Number(value)*Number(draft.scale)+Number(draft.offset ?? 0)
-    return {value:['int','long'].includes(String(property.valueType?.type)) ? Math.trunc(result) : result}
-  })
-}
+// Explicit backend responses exercise presentation without a browser-side evaluator.
+const previous={value:null,time:-1000,outcome:'missing' as const}
+const step=(path:string,provider:string,status:PropertyTrialStep['status'],value?:unknown):PropertyTrialStep=>({path,provider,status,value})
+const result=(value:unknown,present:boolean,steps:PropertyTrialStep[]):PropertyTrialPoint=>({value,present,outputKnown:true,steps,intents:[]})
+
 
 function draft(): RuleDraft {
   return {
@@ -86,7 +85,7 @@ test('boolean labels are shared by choices, cleaning, alarms and example output'
   assert.equal(formatPropertyValue('false', property), '"false"')
   const current = { ...draft(), values: [false], rangeEnabled: false, alarmEnabled: false, samplingEnabled: false }
   assert.match(summarizeDraftRows(current, property, translate)[0].sentence, /关闭/)
-  assert.equal(buildRuleExample(current, property, [{ value: true, arrivalMillis: 0 }])[0].label, '打开')
+
 })
 
 test('free input parses only finite numeric tags and keeps string reports literal', () => {
@@ -164,14 +163,15 @@ test('recording applies only to rejecting cleaning stages and not corrections or
     .filter(row => row.recordInvalid).map(row => row.key), ['step'])
 })
 
-test('invalid recording preview marks only the stage that actually discards each value', () => {
-  const current = draft()
-  current.recordInvalid = true
-  const example = buildRuleExample(current, { valueType: { type: 'double' } }, [-9999, 121, 10]
-    .map(value => ({ value, arrivalMillis: 0 })))
-  assert.deepEqual(example.map(point => point.stages.filter(stage => stage.recordInvalid).map(stage => stage.key)), [['values'], ['range'], []])
-  current.recordInvalid = false
-  assert.ok(buildRuleExample(current, { valueType: { type: 'double' } }).every(point => point.stages.every(stage => !stage.recordInvalid)))
+test("invalid recording preview marks only the stage that actually discards each value", () => {
+
+  const current = draft(); current.recordInvalid = true
+  const inputs = [-9999,121,10].map(value=>({value,arrivalMillis:0}))
+  const points = presentRuleTrial(current,{valueType:{type:'double'}},inputs,[
+    result(null,false,[step('/0','simple','filtered'),{...step('/0/0','ignore','filtered'),recordInvalid:true}]),
+    result(null,false,[step('/0','simple','skipped'),step('/1','simple','filtered'),{...step('/1/0','ignore','filtered'),recordInvalid:true}]),
+    result('10',true,[])])
+  assert.deepEqual(points.map(point=>point.stages.filter(stage=>stage.recordInvalid).map(stage=>stage.key)),[['values'],['range'],[]])
 })
 
 test('unknown or nested recording settings remain read-only without losing saved content', () => {
@@ -291,10 +291,9 @@ test('custom recovery round trips and leaves the neutral band without an action'
   const loaded = toDeviceAlarmRow(saved, 'product', 'Product')!
   assert.deepEqual(loaded.relieveCondition, current.alarm.relieveCondition)
   assert.equal(parseRule(saved).editable, true)
-  assert.deepEqual(buildRuleExample(current, { valueType: { type: 'double' } }, [75, 76, 79, 80].map(value => ({ value, arrivalMillis: 0 })))
-    .map(point => point.stages[0].status), ['recovered', 'kept', 'kept', 'alarm'])
   current.alarm.relieveCondition!.value = 80
   assert.equal(validateAlarmConditions(current.alarm), 'DeviceAlarm.validation.overlap')
+
 })
 
 test('condition intersection respects open endpoints and inverse scalar sets', () => {
@@ -336,31 +335,28 @@ test('changing alarm matcher removes obsolete keys and preserves actions, extens
   assert.deepEqual(parseRule(changed).nodes.sampling, parseRule(saved).nodes.sampling)
 })
 
-test('integer diagrams retain raw replacement and clamp values until calibration', () => {
-  const property = { valueType: { type: 'int' } }
-  for (const mode of ['replace', 'clamp']) {
-    const current = draft()
-    current.valuesMode = 'replace'; current.values = [-999]; current.replacementValue = 2.5
-    current.valuesEnabled = mode === 'replace'; current.rangeEnabled = true
-    current.rangeAction = mode === 'clamp' ? 'clamp' : 'ignore'
-    current.min = mode === 'clamp' ? 2.5 : 2.4; current.max = 2.6
-    current.scaleEnabled = true; current.scale = '2'
-    current.alarmEnabled = current.samplingEnabled = false
-    const point = buildRuleExample(current, property, [{ value: -999, arrivalMillis: 0 }])[0]
-    assert.equal(point.filtered, false)
-    assert.equal(point.stages.find(stage => stage.key === 'range')?.value, '2.5')
-    assert.equal(point.stages.find(stage => stage.key === 'scale')?.value, '5')
+test('integer trial presentation uses backend stage values and preserves unmodified sample inputs', () => {
+
+  for (const mode of ['replace','clamp']) {
+    const current={...draft(),valuesEnabled:mode==='replace',valuesMode:'replace' as const,values:[-999],replacementValue:2.5,
+      rangeEnabled:true,rangeAction:mode==='clamp'?'clamp' as const:'ignore' as const,min:2.5,max:2.6,scaleEnabled:true,scale:'2',alarmEnabled:false,samplingEnabled:false}
+    const request=ruleTrialRequest(current,{valueType:{type:'int'}},[{value:-999,arrivalMillis:0}],previous,{})
+    const processors=request.configuration.processors as any[]
+    assert.equal(processors[0].configuration.processors[0].configuration[mode==='replace'?'value':'min'],2.5)
+    assert.equal(processors.at(-1).configuration.scale,'2')
+    assert.equal(request.samples[0].value,'-999')
   }
 })
 
-test('integer diagrams do not overflow a raw replacement before calibration', () => {
-  const current = draft()
-  current.valuesMode = 'replace'; current.values = [-999]; current.replacementValue = 2500000000
-  current.scaleEnabled = true; current.scale = '0.1'
-  current.rangeEnabled = current.alarmEnabled = current.samplingEnabled = false
-  const point = buildRuleExample(current, { valueType: { type: 'int' } }, [{ value: -999, arrivalMillis: 0 }])[0]
-  assert.equal(point.stages.find(stage => stage.key === 'values')?.value, '2500000000')
-  assert.equal(point.stages.find(stage => stage.key === 'scale')?.value, '250000000')
+test('integer trial transport preserves raw replacement values before backend conversion', () => {
+
+  const current={...draft(),valuesMode:'replace' as const,values:[-999],replacementValue:2500000000,rangeEnabled:false,
+    scaleEnabled:true,scale:'0.1',alarmEnabled:false,samplingEnabled:false}
+  const request=ruleTrialRequest(current,{valueType:{type:'int'}},[{value:-999,arrivalMillis:0}],previous,{})
+  assert.equal((request.configuration.processors as any[])[0].configuration.processors[0].configuration.value,2500000000)
+  const points=presentRuleTrial(current,{valueType:{type:'int'}},[{value:-999,arrivalMillis:0}],
+    [result('250000000',true,[step('/0','simple','processed','2500000000'),step('/1','scale','processed','250000000')])])
+  assert.equal(points[0].label,'250000000')
 })
 
 test('canonical automatic relief remains one editable alarm unit inside a property chain', () => {
@@ -478,22 +474,13 @@ test('percentage points distinguish absolute changes from relative changes and r
   }
 })
 
-test('raw replacement can be calibrated into the model range and diagram hides display tails', () => {
+test('raw replacement is validated before final model conversion', () => {
   const current = { ...draft(), valuesMode: 'replace' as const, replacementValue: 250, rangeEnabled: false,
     scaleEnabled: true, scale: '0.1', alarmEnabled: false, samplingEnabled: false }
-  const property = { valueType: { type: 'double', min: 0, max: 100 } }
   assert.equal(validateDraft(current, true), undefined)
   const raw = buildRule(parseRule(), current)
   assert.equal(parseRule(raw).nodes.values!.configuration.processors[0].configuration.value, 250)
-  assert.equal(buildRuleExample(current, property, [{ value: -9999, arrivalMillis: 0 }])[0].label, '25')
-  const points = buildRuleExample({ ...current, replacementValue: 19, samplingEnabled: true, samplingMode: 'change', deadband: 0 }, property,
-    [{ value: -9999, arrivalMillis: 0 }, { value: -9999, arrivalMillis: 1000 }])
-  assert.deepEqual(points.map(point => point.label), ['1.9', '1.9'])
-  assert.equal(points[1].stages.find(stage => stage.key === 'sampling')!.baseline, '1.9')
-  assert.equal(points[1].sampled, true)
-  const integer = 1234567890123456
-  assert.equal(buildRuleExample({ ...current, valuesEnabled: false, scaleEnabled: false }, property,
-    [{ value: integer, arrivalMillis: 0 }])[0].label, String(integer))
+
 })
 
 test('fallback round-trips opt-ins and removes optional fixed value without losing extensions', () => {
@@ -511,43 +498,33 @@ test('fallback round-trips opt-ins and removes optional fixed value without losi
   assert.equal(parseRule({ provider: 'fallback', configuration: { mode: 'previous' } }).editable, false)
 })
 
-test('fallback bypasses raw cleaning and calibration, retains age and skips alarms', () => {
-  const current = { ...draft(), scaleEnabled: true, scale: '0.1', fallbackEnabled: true, fallbackMode: 'previous' as const,
-    fallbackMaxAge: 300000, fallbackValue: 9, samplingEnabled: false }
-  const inputs = [null, null, null].map((value, index) => ({ value, arrivalMillis: index * 200000 }))
-  const points = buildRuleExample(current, { valueType: { type: 'double' } }, inputs, { value: 100, time: -1000, outcome: 'ready' })
-  assert.deepEqual(points.map(p => p.label), ['100', '100', '9'])
-  assert.ok(points.every(p => !p.alarm))
-  assert.equal(points[0].stages[2].status, 'skipped')
-  assert.equal(points[0].stages[2].skipReason, 'missing')
-  assert.equal(points[0].stages[4].skipReason, 'filled')
-  assert.equal(points[1].stages[3].elapsedMillis, 201000)
-  const failure = buildRuleExample(current, { valueType: { type: 'double' } }, inputs, { value: 100, time: -1000, outcome: 'error' })
-  assert.ok(failure.every(p => p.label === '9'))
-  const dropped = buildRuleExample(current, { valueType: { type: 'double' } }, [{ value: -9999, arrivalMillis: 0 }])
-  assert.equal(dropped[0].filtered, true)
-  assert.equal(dropped[0].stages[3].status, 'skipped')
-  assert.equal(dropped[0].stages[3].skipReason, undefined)
-  const absent = [{ value: null, missing: true, arrivalMillis: 0 }]
-  assert.equal(buildRuleExample(current, { valueType: { type: 'double' } }, absent)[0].filtered, true)
-  assert.equal(buildRuleExample({ ...current, fallbackMissing: true }, { valueType: { type: 'double' } }, absent)[0].label, '9')
+test('fallback trial sends the simulated baseline and never invents missing output', () => {
+
+  const current={...draft(),scaleEnabled:true,scale:'0.1',fallbackEnabled:true,fallbackMode:'previous' as const,
+    fallbackMaxAge:300000,fallbackValue:9,samplingEnabled:false}
+  const inputs=[{value:null,arrivalMillis:0},{value:null,missing:true,arrivalMillis:200000}]
+  const request=ruleTrialRequest(current,{valueType:{type:'double'}},inputs,{value:100,time:-1000,outcome:'ready'},{})
+  assert.deepEqual(request.previous,{value:100,timeMillis:-1000,outcome:'ready'})
+  assert.deepEqual(request.samples.map(sample=>sample.missing),[undefined,true])
+  const points=presentRuleTrial(current,{valueType:{type:'double'}},inputs,[result('100',true,[step('/3','fallback','processed','100')]),result(null,false,[])])
+  assert.equal(points[0].stages[2].status,'skipped')
+  assert.equal(points[0].label,'100')
+  assert.equal(points[1].filtered,true,'the browser never invents a fixed fallback')
 })
 
-test('replacement, clamp and offset are represented losslessly and simulated in order', () => {
+test('replacement, clamp and offset configurations round-trip with consistent summaries', () => {
   const current = { ...draft(), valuesMode: 'replace' as const, replacementValue: 19, min: 0, max: 20,
     rangeAction: 'clamp' as const, scaleEnabled: true, scale: '0.1', offset: '0.2', alarmEnabled: false, samplingEnabled: false }
   const raw = buildRule(parseRule(), current)
   assert.equal(parseRule(raw).editable, true)
   assert.equal(parseRule(raw).nodes.scale!.provider, 'calibration')
   assert.equal(parseRule(raw).nodes.range!.configuration.processors[0].provider, 'clamp')
-  const points = buildRuleExample(current, { valueType: { type: 'int' } }, [-9999, 120].map(value => ({ value, arrivalMillis: 0 })))
-  assert.deepEqual(points.map(p => p.label), ['2', '2'])
-  assert.deepEqual(points[0].stages.map(s => s.status), ['processed', 'kept', 'processed'])
   assert.equal(validateDraft({ ...current, replacementValue: null }, true), 'PropertyRules.validation.replacement')
   assert.ok(summarizeDraft(current, { valueType: { type: 'int' } }, translate)[0].text.includes('→ 19'))
+
 })
 
-test('maximum silence is change OR elapsed time and optional removal drops the saved field', () => {
+test('maximum silence round-trips and optional removal drops the saved field', () => {
   const current = { ...draft(), valuesEnabled: false, rangeEnabled: false, alarmEnabled: false,
     samplingMode: 'change' as const, deadband: 5, maxSilence: 10000 }
   const raw = buildRule(parseRule(), current)
@@ -555,27 +532,22 @@ test('maximum silence is change OR elapsed time and optional removal drops the s
   assert.equal(parsed.editable, true)
   assert.equal(parsed.nodes.sampling!.provider, 'change-sampling-timed')
   assert.equal(readSampling(parsed.nodes.sampling).maxSilence, 10000)
-  const input = [100, 104, 104, 109, 109].map((value, i) => ({ value, arrivalMillis: [0, 9000, 10000, 11000, 20000][i] }))
-  const points = buildRuleExample(current, { valueType: { type: 'double' } }, input)
-  assert.deepEqual(points.map(p => p.sampled), [false, true, false, false, true])
   const removed = parseRule(buildRule(parsed, { ...current, maxSilence: null })).nodes.sampling!
   assert.equal(removed.provider, 'change-sampling')
   assert.equal(removed.configuration.maxSilenceMillis, undefined)
   assert.equal(validateDraft({ ...current, maxSilence: 0 }, true), 'PropertyRules.validation.maxSilence')
+
 })
 
-test('maximum step uses pre-calibration baseline and rejected inputs do not refresh its age', () => {
+test('maximum step precedes calibration and requires a baseline lifetime', () => {
   const current = { ...draft(), valuesEnabled: false, rangeEnabled: false, alarmEnabled: false, samplingEnabled: false,
     stepEnabled: true, maxStep: 5, baselineTtl: 10000, scaleEnabled: true, scale: '0.1' }
   const raw = buildRule(parseRule(), current)
   assert.equal(parseRule(raw).editable, true)
   assert.deepEqual(raw.configuration!.processors.map((node: { provider: string }) => node.provider), ['max-step', 'scale'])
-  const inputs = [100, 200, 105, 200, 200].map((value, i) => ({ value, arrivalMillis: [0, 1000, 2000, 11000, 12000][i] }))
-  const points = buildRuleExample(current, { valueType: { type: 'double' } }, inputs)
-  assert.deepEqual(points.map(p => p.filtered), [false, true, false, true, false])
-  assert.deepEqual(points.filter(p => !p.filtered).map(p => Number(p.label)), [10, 10.5, 20])
   assert.equal(validateDraft({ ...current, baselineTtl: null }, true), 'PropertyRules.validation.step')
   assert.equal(summarizeRuleRows(parseRule(raw), { valueType: { type: 'double' } }, translate)[0].key, 'step')
+
 })
 
 test('fixed sequence serializes percentage and round-trips every section', () => {
@@ -597,7 +569,7 @@ test('direct add menus offer only applicable missing rules and respect alarm ava
   assert.ok(!availableRuleParts({ valueType: { type: 'file', bodyType: 'url' } }, {}, true).includes('file'))
 })
 
-test('multiplier preserves decimal text and extensions; later alarm and deadband see its output', () => {
+test('multiplier preserves decimal text and extensions before alarm and deadband stages', () => {
   const current = draft()
   Object.assign(current, { valuesEnabled: false, rangeEnabled: false, scaleEnabled: true, scale: '0.1000000000000000000001',
     samplingMode: 'change', deadband: 1 })
@@ -609,16 +581,10 @@ test('multiplier preserves decimal text and extensions; later alarm and deadband
   assert.equal(parsed.editable, true)
   assert.equal(buildRule(parsed, current).configuration!.processors[0].configuration.scale, '0.1000000000000000000001')
   assert.equal(buildRule(parsed, current).configuration!.processors[0].configuration.extension, 'keep')
-  const points = buildRuleExample(current, { valueType: { type: 'double' } }, [10, 14, 20].map(value => ({ value, arrivalMillis: 0 })))
-  assert.deepEqual(points.map(point => point.alarm), [false, false, true])
-  assert.deepEqual(points.map(point => point.sampled), [false, true, false])
-  assert.deepEqual(points.map(point => point.label), ['1', '1.4', '2'])
-  assert.equal(points[2].stages[2].baseline, '1')
   for (const scale of ['0', '-0.5', '1e-3']) assert.equal(validateDraft({ ...current, scale }, true), undefined)
   for (const scale of ['', 'Infinity', '0x10', '1e400', null]) assert.equal(validateDraft({ ...current, scale }, true), 'PropertyRules.validation.scale')
   assert.equal(validateDraft(current, false), 'PropertyRules.validation.scale')
-  const integer = buildRuleExample({ ...current, scale: '0.1' }, { valueType: { type: 'int' } }, [{ value: 19, arrivalMillis: 0 }])
-  assert.equal(integer[0].label, '1')
+
 })
 
 test('file chains sample before storage, preserve URL values and never reorder legacy upload-first chains', () => {
@@ -627,29 +593,23 @@ test('file chains sample before storage, preserve URL values and never reorder l
   assert.deepEqual(raw.configuration!.processors.map((node: { provider: string }) => node.provider), ['ratio-sampling', 'file-storage'])
   assert.equal(parseRule(raw).editable, true)
   const property = { valueType: { type: 'file', bodyType: 'base64' } }
-  const points = buildRuleExample(current, property)
-  assert.equal(points[0].stages[1].status, 'processed')
-  assert.equal(points[1].stages[1].status, 'skipped')
-  assert.equal(points[2].stages[1].status, 'kept')
-  assert.equal(points[2].label, 'https://example.invalid/file-3')
   assert.deepEqual(summarizeRuleRows(parseRule(raw), property, translate).map(row => row.key), ['sampling', 'file'])
   const uploadFirst = { provider: 'composite', configuration: { processors: [...raw.configuration!.processors].reverse() } }
   assert.equal(parseRule(uploadFirst).editable, false)
   assert.throws(() => buildRule(parseRule(uploadFirst), current), /PropertyRules.readonly/)
   assert.equal(parseRule({ provider: 'file-storage', configuration: {} }).editable, true)
   assert.equal(validateDraft({ ...current, scaleEnabled: true }, false), 'PropertyRules.validation.scale')
+
 })
 
-test('interval examples measure elapsed arrival time from the last admitted value after cleaning', () => {
-  const current = { ...draft(), valuesEnabled: false, min: 0, max: 100, scaleEnabled: true, scale: '0.1', samplingMode: 'interval' as const }
-  const values = [-1, 12, 65, 95, 50]
-  const times = [0, 4000, 11000, 12000, 14000]
-  const points = buildRuleExample(current, { valueType: { type: 'double' } }, values.map((value, i) => ({ value, arrivalMillis: times[i] })))
-  assert.equal(points[0].filtered, true)
-  assert.deepEqual(points.slice(1).map(point => point.sampled), [false, true, true, false])
-  assert.equal(points[2].stages[3].elapsedMillis, 7000)
-  assert.equal(points[3].stages[3].elapsedMillis, 8000)
-  assert.equal(points[4].stages[3].elapsedMillis, 10000)
+test('interval trial sends every arrival time and displays backend admission decisions', () => {
+
+  const current={...draft(),valuesEnabled:false,scaleEnabled:true,scale:'0.1',samplingMode:'interval' as const}
+  const inputs=[0,4000,11000,12000,14000].map((arrivalMillis,index)=>({value:index,arrivalMillis}))
+  const request=ruleTrialRequest(current,{valueType:{type:'double'}},inputs,previous,{})
+  assert.deepEqual(request.samples.map(sample=>sample.arrivalMillis),[0,4000,11000,12000,14000])
+  const response=inputs.map((input,index)=>result(index===4?'1.4':null,index===4,[step('/3','interval-sampling',index===4?'kept':'filtered')]))
+  assert.deepEqual(presentRuleTrial(current,{valueType:{type:'double'}},inputs,response).map(point=>point.sampled),[true,true,true,true,false])
 })
 
 test('non-scalar examples match property types without reading live values', () => {
@@ -881,39 +841,26 @@ test('value summaries use enum labels, preserve scalar identity and abbreviate l
   assert.equal(summary, '忽略 关闭、"false"、"" 等 4 个值')
 })
 
-test('diagram applies cleaning before alarm; alarm is independent of later sampling', () => {
-  const current = draft()
-  current.values = [-999]
-  current.min = 0
-  current.max = 100
-  current.alarm.limit = { lower: 10, upper: 90 }
-  current.percent = 0
-  const points = buildRuleExample(current, { valueType: { type: 'double' } })
-  assert.deepEqual(points.map(point => point.filtered), [true, false, false, false, true])
-  assert.deepEqual(points.map(point => point.alarm), [false, false, false, true, false])
-  assert.ok(points.filter(point => !point.filtered).every(point => point.sampled))
-  assert.deepEqual(points[0].stages, [
-    { key: 'values', status: 'filtered' }, { key: 'range', status: 'skipped' },
-    { key: 'alarm', status: 'skipped' }, { key: 'sampling', status: 'skipped' },
-  ])
-  assert.deepEqual(points[3].stages, [
-    { key: 'values', status: 'kept' }, { key: 'range', status: 'kept' },
-    { key: 'alarm', status: 'alarm' }, { key: 'sampling', status: 'filtered' },
-  ], 'an alarm side effect occurs even when sampling later discards the sample')
-  current.percent = 100
-  assert.ok(buildRuleExample(current, { valueType: { type: 'double' } }).every(point => !point.sampled))
-  current.alarm.trigger = 'inside'
-  current.alarm.limit = { lower: 12, upper: 65 }
-  assert.deepEqual(buildRuleExample(current, { valueType: { type: 'double' } }).map(point => point.alarm), [false, true, true, false, false])
+test('diagram projects alarm intents even when later sampling discards the result', () => {
+
+  const current={...draft(),percent:0}
+  const inputs=[{value:95,arrivalMillis:0}]
+  const request=ruleTrialRequest(current,{valueType:{type:'double'}},inputs,previous,{})
+  assert.deepEqual((request.configuration.processors as any[]).map(node=>node.provider),['simple','simple','simple','ratio-sampling'])
+  const points=presentRuleTrial(current,{valueType:{type:'double'}},inputs,[{...result(null,false,[step('/2','composite','kept'),step('/3','ratio-sampling','filtered')]),intents:[{path:'/2/0/0',action:'alarm',conditional:true}]}])
+  assert.equal(points[0].alarm,true);assert.equal(points[0].sampled,true)
+  assert.equal(points[0].stages[2].status,'alarm');assert.equal(points[0].stages[2].intent,true)
 })
 
-test('diagram preserves boolean identity and never converts non-numeric properties into alarm values', () => {
-  const current = draft()
-  current.rangeEnabled = current.samplingEnabled = false
-  current.values = [false]
-  const points = buildRuleExample(current, { valueType: { type: 'boolean' } })
-  assert.deepEqual(points.map(point => point.filtered), [false, true, false, true, false])
-  assert.ok(points.every(point => !point.alarm))
+test('diagram preserves boolean identity and uses backend alarm intents', () => {
+
+  const current={...draft(),rangeEnabled:false,samplingEnabled:false,values:[false]}
+  const property={valueType:{type:'boolean',trueText:'开启',falseText:'关闭'}}
+  const inputs=[{value:true,arrivalMillis:0},{value:false,arrivalMillis:1}]
+  const request=ruleTrialRequest(current,property,inputs,previous,{})
+  assert.deepEqual(request.samples.map(sample=>sample.value),[true,false])
+  const points=presentRuleTrial(current,property,inputs,[result(true,true,[]),result(null,false,[step('/0','simple','filtered')])])
+  assert.equal(points[0].label,'开启');assert.equal(points[1].filtered,true);assert.ok(points.every(point=>!point.alarm))
 })
 
 test('allowlists preserve typed values and matcher extensions without rebuilding alarm actions', () => {
@@ -1017,25 +964,15 @@ test('interval and deadband validation follows backend units and scalar restrict
   }
 })
 
-test('stateful diagrams use first admission time and the last retained value after cleaning', () => {
-  const current = draft()
-  current.valuesEnabled = current.rangeEnabled = current.alarmEnabled = false
-  current.samplingMode = 'interval'
-  const interval = buildRuleExample(current, { valueType: { type: 'double' } })
-  assert.deepEqual(interval.map(point => point.arrival), [0, 4, 11, 12, 22])
-  assert.deepEqual(interval.map(point => point.sampled), [false, true, false, true, false])
-  current.samplingMode = 'change'
-  current.deadband = 1
-  const changed = buildRuleExample(current, { valueType: { type: 'double' } })
-  assert.deepEqual(changed.map(point => point.sampled), [false, true, true, false, false])
-  assert.deepEqual(changed.map(point => point.baseline), [undefined, '10', '10', '10', '11'])
-  current.valuesEnabled = true
-  current.valuesMode = 'keep'
-  current.values = [false]
-  current.deadband = 0
-  const kept = buildRuleExample(current, { valueType: { type: 'boolean' } })
-  assert.deepEqual(kept.map(point => point.filtered), [true, false, true, false, true])
-  assert.deepEqual(kept.map(point => point.sampled), [false, false, false, true, false])
+test('stateful trial declares its strategy and displays backend retention decisions', () => {
+
+  const current={...draft(),valuesEnabled:false,rangeEnabled:false,alarmEnabled:false,samplingMode:'change' as const,deadband:1}
+  const inputs=[10,10.4,11].map((value,index)=>({value,arrivalMillis:index*1000}))
+  const request=ruleTrialRequest(current,{valueType:{type:'double'}},inputs,previous,{})
+  assert.equal((request.configuration.processors as any[])[0].configuration.deadband,1)
+  const points=presentRuleTrial(current,{valueType:{type:'double'}},inputs,[result('10',true,[step('/0','change-sampling','kept')]),
+    result(null,false,[step('/0','change-sampling','filtered')]),result('11',true,[step('/0','change-sampling','kept')])])
+  assert.deepEqual(points.map(point=>point.sampled),[false,true,false])
 })
 
 test('manual trial values and arrival times drive every node without reading device state', () => {
@@ -1045,18 +982,13 @@ test('manual trial values and arrival times drive every node without reading dev
   current.interval = 10
   current.intervalUnit = 1000
   const inputs = [0, 1000, 10000, 19000, 20000].map((arrivalMillis, value) => ({ value, arrivalMillis }))
-  const interval = buildRuleExample(current, { valueType: { type: 'double' } }, inputs)
-  assert.deepEqual(interval.map(point => point.sampled), [false, true, false, true, false])
   current.samplingMode = 'change'
   current.deadband = 1
-  const changed = buildRuleExample(current, { valueType: { type: 'double' } }, [10, 10.4, 10.8, 11, 11.3].map(value => ({ value, arrivalMillis: 0 })))
-  assert.deepEqual(changed.map(point => point.sampled), [false, true, true, false, true])
-  assert.equal(changed[2].stages[0].baseline, '10')
-  assert.equal(changed[4].stages[0].baseline, '11')
   assert.equal(validateRuleExampleInputs([{ value: null, arrivalMillis: 0 }], true, false), 'PropertyRules.diagram.invalidValue')
   assert.equal(validateRuleExampleInputs([{ value: 1, arrivalMillis: -1 }], true, true), 'PropertyRules.diagram.invalidArrival')
   assert.equal(validateRuleExampleInputs(inputs.map((input, index) => ({ ...input, arrivalMillis: index === 1 ? 30000 : input.arrivalMillis })), true, true), 'PropertyRules.diagram.invalidArrival')
   assert.deepEqual(createRuleExampleInputs(current, { valueType: { type: 'boolean' } }).map(input => input.value), [true, false, true, false, true])
+
 })
 
 test('generated examples reflect configured ranges and business allowlists', () => {
@@ -1069,13 +1001,12 @@ test('generated examples reflect configured ranges and business allowlists', () 
   assert.ok(ranged.some(input => Number(input.value) > 2000))
   current.valuesMode = 'keep'
   current.values = [1500, 1600]
-  const whitelisted = buildRuleExample(current, property)
-  assert.ok(whitelisted.some(point => !point.filtered), 'an allowlist example includes values that can reach later stages')
   current.rangeEnabled = false
   current.values = ['RUNNING', 'STOPPED']
   const strings = createRuleExampleInputs(current, { valueType: { type: 'string' } })
   assert.ok(strings.some(input => input.value === 'RUNNING'))
   assert.ok(strings.some(input => typeof input.value === 'string' && !current.values.includes(input.value)))
+
 })
 
 test('new saved strategy summaries match loaded drafts and display exact units', () => {

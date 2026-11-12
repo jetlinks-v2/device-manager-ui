@@ -1,16 +1,18 @@
 import { computed, onBeforeUnmount, reactive, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { evaluateExpression } from '@jetlinks-web-core/api/expression'
+import { trialPropertyRules } from '../../../../api/propertyPreprocessorTrial'
+import { ruleTrialRequest, presentRuleTrial } from './trial'
+import type { RuleScope } from './service'
 import { expressionReferences } from '@jetlinks-web-core/components/Expression'
 import { correctionReferences,correctionTree } from './correction'
 import type { ThingModelProperty } from '../../alarm/types'
 import { isNumberProperty } from '../../alarm/utils'
 import { validateDraft, type RuleDraft } from './codec'
-import { buildRuleExample, buildRuleExampleAsync, createRuleExampleInputs, validateRuleExampleInputs, type FallbackExampleState, type RuleExamplePoint } from './diagram'
+import { createRuleExampleInputs, validateRuleExampleInputs, type FallbackExampleState, type RuleExamplePoint } from './diagram'
 import { summarizeDraftRows } from './summary'
 
 /** Local trial inputs live only while the diagram is mounted; edits never mutate the rule draft. */
-export function useRuleExample(props: { draft: RuleDraft; property: ThingModelProperty }) {
+export function useRuleExample(props: { draft: RuleDraft; property: ThingModelProperty; scope: RuleScope }) {
   const { t } = useI18n()
   const inputs = ref(createRuleExampleInputs(props.draft, props.property))
   const initialFallback = (): FallbackExampleState => ({ value: isNumberProperty(props.property) ? 20
@@ -27,43 +29,35 @@ export function useRuleExample(props: { draft: RuleDraft; property: ThingModelPr
   const samples=reactive<Record<string,string|number|null>>({})
   const references=computed(()=> {
     const ids=new Set(expressionReferences(correctionTree(props.draft).root).map(item=>item.id))
-    return props.draft.scaleEnabled ? correctionReferences.filter(item=>item.id !== 'value' && ids.has(item.id)) : []
+    return props.draft.scaleEnabled ? correctionReferences.filter(item=>['sourceTime', 'propertyState'].includes(item.id) && ids.has(item.id)) : []
   })
   const needsSamples=computed(()=>references.value.some(item=>!(item.id in samples)))
   const remotePoints=shallowRef<RuleExamplePoint[]>([]),loading=ref(false),failure=ref('')
-  let revision=0,timer:ReturnType<typeof setTimeout>|undefined,disposed=false
-  const points=computed(()=>error.value || loading.value || failure.value || needsSamples.value ? [] : props.draft.scaleEnabled
-    ? remotePoints.value : buildRuleExample(props.draft,props.property,inputs.value,fallback.value))
+  let revision=0,timer:ReturnType<typeof setTimeout>|undefined
+  const points=computed(()=>error.value || loading.value || failure.value || needsSamples.value ? [] : remotePoints.value)
   // Keep one column per input while awaiting the backend; an empty slot is never a computed result.
   const columns=computed(()=>inputs.value.map((_,index)=>points.value[index] as RuleExamplePoint|undefined))
   async function run() {
     clearTimeout(timer)
     const current=++revision
     remotePoints.value=[];failure.value=''
-    if(error.value || !props.draft.scaleEnabled || needsSamples.value){loading.value=false;return}
+    if(error.value || needsSamples.value){loading.value=false;return}
     loading.value=true
     // Freeze one preview revision; an edit or disposal prevents later samples and stale publication.
-    const snapshot=JSON.parse(JSON.stringify({draft:props.draft,property:props.property,inputs:inputs.value,fallback:fallback.value,samples}))
-    const variableTypes=Object.fromEntries(correctionReferences.map(item=>[item.id,item.type]))
+    const snapshot=JSON.parse(JSON.stringify({draft:props.draft,property:props.property,inputs:inputs.value,fallback:fallback.value,samples,scope:props.scope}))
     try {
-      const result=await buildRuleExampleAsync(snapshot.draft,snapshot.property,snapshot.inputs,snapshot.fallback,async input=>{
-        if(disposed || current !== revision)throw new Error('Preview replaced')
-        const response=await evaluateExpression({expression:correctionTree(snapshot.draft),variables:{...snapshot.samples,value:String(input.value)},
-          variableTypes,numeric:true,resultType:{...snapshot.property.valueType,type:propertyType(snapshot.property)}})
-        if(response.error)throw new Error(response.error)
-        const value=Number(response.value)
-        if(response.value == null || !Number.isFinite(value))throw new Error('Invalid numeric result')
-        return {value,label:String(response.value),explanation:response.explanation}
-      })
+      const response = await trialPropertyRules(snapshot.scope, snapshot.property.id,
+        ruleTrialRequest(snapshot.draft, snapshot.property, snapshot.inputs, snapshot.fallback, snapshot.samples))
+      const result = presentRuleTrial(snapshot.draft, snapshot.property, snapshot.inputs, response)
       if(current === revision)remotePoints.value=result
     } catch(error) {if(current === revision)failure.value=error instanceof Error ? error.message : String(error)}
     finally {if(current === revision)loading.value=false}
   }
-  watch(()=>[props.draft,props.property,inputs.value,fallback.value,samples],()=>{
+  watch(()=>[props.draft,props.property,props.scope,inputs.value,fallback.value,samples],()=>{
     revision++;clearTimeout(timer);remotePoints.value=[];failure.value='';loading.value=false
-    if(props.draft.scaleEnabled && !error.value && !needsSamples.value){loading.value=true;timer=setTimeout(()=>void run(),350)}
+    if(!error.value && !needsSamples.value){loading.value=true;timer=setTimeout(()=>void run(),350)}
   },{deep:true,immediate:true,flush:'sync'})
-  onBeforeUnmount(()=>{disposed=true;revision++;clearTimeout(timer)})
+  onBeforeUnmount(()=>{revision++;clearTimeout(timer)})
   const rows = computed(() => summarizeDraftRows(props.draft, props.property, t))
   function reset() { Object.keys(samples).forEach(key=>delete samples[key]); inputs.value = createRuleExampleInputs(props.draft, props.property); fallback.value = initialFallback() }
   function setInputState(index: number, mode: 'null' | 'missing' | 'real') {
@@ -77,5 +71,3 @@ export function useRuleExample(props: { draft: RuleDraft; property: ThingModelPr
   const displayInput = (value: unknown) => typeof value === 'object' ? JSON.stringify(value) : String(value ?? '')
   return { inputs, fallback, numeric, type, scalar, textual, interval, timeUnit, error, references, samples, needsSamples, loading, failure, run, points, columns, rows, reset, setArrival, setInputState, displayInput }
 }
-
-function propertyType(property:ThingModelProperty){return property.valueType?.type ?? property.type ?? property.dataType}

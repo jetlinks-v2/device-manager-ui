@@ -12,7 +12,7 @@
     <div class="diagram-content" :aria-busy="example.loading">
       <div v-if="draft.fallbackEnabled && draft.fallbackMode === 'previous'" class="diagram-fallback-settings">
         <span>{{ $t('PropertyRules.fallback.reference') }}</span>
-        <ValueInput v-model:value="example.fallback.value" :property="property" :label="$t('PropertyRules.fallback.reference')" :get-popup-container="popupContainer" />
+        <ValueInput v-model:value="example.fallback.value" string-mode :property="property" :label="$t('PropertyRules.fallback.reference')" :get-popup-container="popupContainer" />
         <a-input-number :value="-example.fallback.time / 1000" :min="0" size="small" :controls="false" :aria-label="$t('PropertyRules.fallback.age')" @update:value="example.fallback.time = -Number($event) * 1000" /><span>{{ $t('PropertyRules.fallback.secondsAgo') }}</span>
         <a-select v-model:value="example.fallback.outcome" size="small" :options="fallbackOutcomes" :get-popup-container="popupContainer" :aria-label="$t('PropertyRules.fallback.lookup')" />
       </div>
@@ -20,7 +20,7 @@
         <span class="diagram-note">{{ $t('PropertyRules.diagram.context') }}</span>
         <label v-for="item in example.references" :key="item.id" :title="$t('PropertyRules.correction.'+item.id+'Hint')">
           <span>{{ $t('PropertyRules.correction.'+item.id) }}</span>
-          <a-input-number v-if="item.type === 'long'" :value="example.samples[item.id]" size="small" string-mode :controls="false" :placeholder="$t('PropertyRules.diagram.simulated')" @update:value="example.samples[item.id]=$event" />
+          <a-input-number v-if="item.type === 'long'" :value="example.samples[item.id] ?? undefined" size="small" string-mode :controls="false" :placeholder="$t('PropertyRules.diagram.simulated')" @update:value="example.samples[item.id]=$event" />
           <a-input v-else :value="example.samples[item.id] ?? undefined" size="small" :placeholder="$t('PropertyRules.diagram.simulated')" @update:value="example.samples[item.id]=$event" />
         </label>
       </div>
@@ -29,7 +29,7 @@
         <div v-for="(input, index) in example.inputs" :key="index" class="diagram-input" :class="{ 'diagram-input-missing': input.missing }">
           <a-dropdown v-if="draft.fallbackEnabled" :trigger="['click']" :get-popup-container="popupContainer"><a-button type="text" size="small" :aria-label="$t('PropertyRules.fallback.inputState')"><AIcon :type="input.missing ? 'MinusCircleOutlined' : input.value === null ? 'StopOutlined' : 'EditOutlined'" /></a-button><template #overlay><a-menu><a-menu-item @click="example.setInputState(index, 'null')">{{ $t('PropertyRules.fallback.null') }}</a-menu-item><a-menu-item @click="example.setInputState(index, 'missing')">{{ $t('PropertyRules.fallback.missing') }}</a-menu-item><a-menu-item @click="example.setInputState(index, 'real')">{{ $t('PropertyRules.fallback.real') }}</a-menu-item></a-menu></template></a-dropdown>
           <span v-if="input.missing" class="diagram-input-static">{{ $t('PropertyRules.fallback.absent') }}</span>
-          <ValueInput v-else-if="example.scalar" :value="scalarValue(input.value) ? input.value : undefined" :property="property" :get-popup-container="popupContainer" :placeholder="input.value === null ? $t('PropertyRules.fallback.null') : undefined" :label="$t('PropertyRules.diagram.valueLabel', { index: index + 1 })" @update:value="input.value = $event" />
+          <ValueInput v-else-if="example.scalar" string-mode :value="scalarValue(input.value) ? input.value : undefined" :property="property" :get-popup-container="popupContainer" :placeholder="input.value === null ? $t('PropertyRules.fallback.null') : undefined" :label="$t('PropertyRules.diagram.valueLabel', { index: index + 1 })" @update:value="input.value = $event" />
           <a-input v-else-if="example.textual" :value="String(input.value ?? '')" :placeholder="input.value === null ? $t('PropertyRules.fallback.null') : undefined" size="small" :aria-label="$t('PropertyRules.diagram.valueLabel', { index: index + 1 })" @update:value="input.value = $event" />
           <span v-else class="diagram-input-static" :title="example.displayInput(input.value)">{{ example.displayInput(input.value) }}</span>
         </div>
@@ -74,23 +74,25 @@ import { useI18n } from 'vue-i18n'
 import type { ThingModelProperty } from '../../alarm/types'
 import type { RuleDraft } from './codec'
 import type { RuleExampleStage } from './diagram'
+import type { RuleScope } from './service'
 import { useRuleExample } from './useRuleExample'
 import ValueInput from './values/ValueInput.vue'
 import { scalarValue } from './values/config'
 import { ExpressionProcess } from '@jetlinks-web-core/components/Expression'
 import { usePropertyExpression } from './usePropertyExpression'
-const props = defineProps<{ draft: RuleDraft; property: ThingModelProperty }>()
+const props = defineProps<{ draft: RuleDraft; property: ThingModelProperty; scope: RuleScope }>()
 defineEmits<{ (e: 'close'): void }>()
 const { t: $t } = useI18n()
 const example = reactive(useRuleExample(props))
 const {context}=usePropertyExpression(()=>props.property)
 const fallbackOutcomes = ['ready', 'missing', 'error'].map(value => ({ value, label: $t('PropertyRules.fallback.outcome.' + value) }))
-const statusIcons = { kept: 'CheckOutlined', filtered: 'CloseOutlined', alarm: 'WarningOutlined', skipped: 'MinusOutlined', processed: 'SwapOutlined', recovered: 'CheckCircleOutlined' }
+const statusIcons = { kept: 'CheckOutlined', filtered: 'CloseOutlined', alarm: 'WarningOutlined', skipped: 'MinusOutlined', processed: 'SwapOutlined', recovered: 'CheckCircleOutlined', error: 'ExclamationCircleOutlined' }
 const popupContainer = (trigger: HTMLElement) => trigger.parentElement!
 function stageTitle(stage: RuleExampleStage, value: string) {
+  if (stage.error) return stage.error
   const elapsed = stage.elapsedMillis === undefined ? '' : ` · ${$t(stage.key === 'fallback' ? 'PropertyRules.fallback.exampleAge' : 'PropertyRules.diagram.elapsed', { value: Number((stage.elapsedMillis / props.draft.intervalUnit).toPrecision(8)), unit: example.timeUnit })}`
   const status = stage.skipReason ? $t(`PropertyRules.fallback.skip.${stage.skipReason}`) : $t(`PropertyRules.diagram.status.${stage.status}`)
-  return `${stage.value ?? value} · ${status}${stage.baseline === undefined ? '' : ` · ${$t('PropertyRules.diagram.baseline', { value: stage.baseline })}`}${elapsed}`
+  return `${stage.value ?? value} · ${status}${stage.intent ? ` · ${$t('PropertyRules.diagram.intent')}` : ''}${stage.baseline === undefined ? '' : ` · ${$t('PropertyRules.diagram.baseline', { value: stage.baseline })}`}${elapsed}`
 }
 </script>
 <style scoped>

@@ -1,4 +1,5 @@
 {
+    "PropertyRules.diagram.intent": "Action intent only; execution depends on runtime state and is not performed in this example",
   "PropertyRules.diagram.process": "Calculation process",
   "PropertyRules.diagram.failed": "Examples are temporarily unavailable. Please retry",
   "PropertyRules.diagram.calculating": "Calculating examples…",

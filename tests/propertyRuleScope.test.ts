@@ -688,15 +688,22 @@ test('recipient failures are explicit and stale responses cannot cross close or 
 
 test('editing and resetting a preview never dirties the saved rule; config changes recompute with the trial inputs', async () => {
   Object.defineProperty(globalThis, 'window', { configurable: true, value: { addEventListener() {}, removeEventListener() {} } })
-  setAlarmRequestHandler(async () => { throw new Error('Preview must not request anything') })
+  const requests: any[] = []
+  setAlarmRequestHandler(async (_url, request) => {
+    requests.push(request)
+    return { result: request.samples.map((sample: any) => ({ value: sample.value, present: true, outputKnown: true,
+      steps: [{ path: '/0', provider: 'change-sampling', status: 'kept', value: sample.value }], intents: [] })) }
+  })
   const props = reactive<RuleEditorProps>({ open: true, inline: true, scope: { productId: 'p1' }, property: { id: 'temperature', valueType: { type: 'double' } }, snapshot: { hasOverride: false, raw: { provider: 'change-sampling', configuration: { deadband: 1, deadbandType: 'absolute' } } } })
   const { state: editor, unmount } = mountState(() => usePropertyRuleEditor(props, () => {}, () => {}))
   await settle()
-  const { state: example, unmount: unmountExample } = mountState(() => useRuleExample(reactive({ draft: editor.draft.value!, property: props.property })))
+  const { state: example, unmount: unmountExample } = mountState(() => useRuleExample(reactive({ draft: editor.draft.value!, property: props.property, scope: props.scope })))
   try {
     const saved = JSON.stringify(editor.draft.value)
     example.inputs.value[0].value = 20
-    assert.equal(example.points.value[1].stages[0].baseline, '20')
+    await example.run()
+    assert.equal(requests.at(-1).samples[0].value, '20')
+    assert.equal(example.points.value[0].label, '20')
     assert.equal(JSON.stringify(editor.draft.value), saved)
     assert.equal(editor.pendingSave.value, false)
     example.inputs.value[0].value = null
@@ -708,7 +715,8 @@ test('editing and resetting a preview never dirties the saved rule; config chang
     assert.equal(editor.pendingSave.value, false)
     editor.draft.value!.deadband = 2
     assert.equal(example.inputs.value[1].value, 10.4, 'configuration changes retain the manual sample sequence')
-    assert.equal(example.points.value[3].sampled, true)
+    await example.run()
+    assert.equal(requests.at(-1).configuration.processors[0].configuration.deadband, 2)
     example.reset()
     assert.equal(example.inputs.value[1].value, 10.8)
   } finally { unmountExample(); unmount(); Reflect.deleteProperty(globalThis, 'window') }

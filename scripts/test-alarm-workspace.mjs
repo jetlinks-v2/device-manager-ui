@@ -15,7 +15,7 @@ try {
   ], outdir: output,
     bundle: true, platform: 'node', format: 'esm', outExtension: { '.js': '.mjs' }, target: 'node22', logLevel: 'warning',
     plugins: [{ name: 'mock-alarm-transport', setup(api) {
-      api.onResolve({ filter: /^@jetlinks-web-core\/(components\/Expression|api\/expression)$/ }, () => ({ path: path.join(root, 'tests/propertyExpression.test-shim.ts') }))
+      api.onResolve({ filter: /^@jetlinks-web-core\/components\/Expression$/ }, () => ({ path: path.join(root, 'tests/propertyExpression.test-shim.ts') }))
       api.onResolve({ filter: /^axios$/ }, () => ({ path: fileURLToPath(import.meta.resolve('axios')), external: true }))
       api.onResolve({ filter: /^@jetlinks-web-core\/components\/Expression\/utils$/ }, () => ({ path: path.resolve(root, '../../jetlinks-web-core/src/components/Expression/utils.ts') }))
       api.onResolve({ filter: /^@device-manager-ui\/api\/device-library$/ }, () => ({ path: path.join(root, 'tests/alarmRequest.test-shim.ts') }))
