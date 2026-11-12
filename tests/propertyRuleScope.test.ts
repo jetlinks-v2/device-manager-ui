@@ -984,6 +984,36 @@ test('inline editor uses the list snapshot, keeps editing after save and refresh
   } finally { unmount(); Reflect.deleteProperty(globalThis, 'window') }
 })
 
+test('opening a formula editor is clean while changed or invalid pending content still guards navigation', async () => {
+  const view = mountEditor()
+  try {
+    await settle()
+    const { editor, dialogs } = view
+    editor.draft.value!.correctionInvalid = true
+    editor.draft.value!.correctionPending = false
+    assert.equal(editor.dirty.value, false, 'entering edit mode is not a configuration change')
+    assert.equal(view.beforeUnload(), false)
+    assert.equal(await editor.prepareLeave(), true)
+    assert.equal(dialogs.length, 0, 'the first edit must not ask to discard an untouched draft')
+    editor.draft.value!.correctionInvalid = true
+    editor.draft.value!.correctionPending = true
+    assert.equal(editor.dirty.value, true)
+    assert.equal(view.beforeUnload(), true)
+    const leave = editor.prepareLeave()
+    assert.equal(dialogs.length, 1, 'uncommitted formula content remains protected')
+    dialogs[0].onCancel?.()
+    assert.equal(await leave, false)
+    assert.equal(editor.draft.value!.correctionPending, true)
+    editor.draft.value!.correctionInvalid = false
+    editor.draft.value!.correctionPending = false
+    assert.equal(editor.dirty.value, false, 'cancelling formula edits restores a clean draft')
+    assert.equal(await editor.prepareLeave(), true)
+    assert.equal(dialogs.length, 1)
+    editor.draft.value!.percent = 75
+    assert.equal(editor.dirty.value, true, 'saved configuration fields still participate in change detection')
+  } finally { view.cleanup() }
+})
+
 test('inline device inheritance remains read-only until customized; undo restores inheritance', async () => {
   Object.defineProperty(globalThis, 'window', { configurable: true, value: { addEventListener() {}, removeEventListener() {} } })
   setAlarmRequestHandler(async () => { throw new Error('No request expected') })

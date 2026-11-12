@@ -7,7 +7,7 @@ import { saveRule, restoreRule, loadRules } from '../views/device/components/Pro
 import { setAlarmRequestHandler } from './alarmRequest.test-shim'
 import { summarizeDraft, summarizeDraftRows, summarizeRule, summarizeRuleRows, type RuleTranslator } from '../views/device/components/PropertyRules/summary'
 import zh from '../locales/lang/zh.json'
-import { buildRuleExample, createRuleExampleInputs, validateRuleExampleInputs } from '../views/device/components/PropertyRules/diagram'
+import { buildRuleExample as buildExample, createRuleExampleInputs, validateRuleExampleInputs } from '../views/device/components/PropertyRules/diagram'
 import { MAX_INTERVAL_MILLIS, readSampling } from '../views/device/components/PropertyRules/sampling'
 import { buildCondition, conditionsOverlap, conditionOperators, matchesCondition, readCondition, switchConditionOperator, validateAlarmConditions } from '../views/device/alarm/conditions'
 import type { DeviceAlarmCondition } from '../views/device/alarm/types'
@@ -20,6 +20,15 @@ const translate: RuleTranslator = (key, values = {}) => {
   const text = (zh as Record<string, string>)[key]
   assert.ok(text, `Missing translation: ${key}`)
   return text.replace(/\{(\w+)\}/g, (_match, name) => String(values[name]))
+}
+
+// Controlled transport result for the existing illustrative pipeline tests; numerical execution is covered on the server.
+function buildRuleExample(...args:Parameters<typeof buildExample>) {
+  const [draft,property,inputs,initial]=args
+  return buildExample(draft,property,inputs,initial,({value})=>{
+    const result=Number(value)*Number(draft.scale)+Number(draft.offset ?? 0)
+    return {value:['int','long'].includes(String(property.valueType?.type)) ? Math.trunc(result) : result}
+  })
 }
 
 function draft(): RuleDraft {
@@ -580,8 +589,8 @@ test('fixed sequence serializes percentage and round-trips every section', () =>
 })
 
 test('direct add menus offer only applicable missing rules and respect alarm availability', () => {
-  assert.deepEqual(availableRuleParts({ valueType: { type: 'double' } }, { sampling: true }, true), ['values', 'range', 'step', 'scale', 'fallback', 'alarm'])
-  assert.deepEqual(availableRuleParts({ valueType: { type: 'double' } }, {}, false), ['values', 'range', 'step', 'scale', 'fallback', 'sampling', 'interval', 'change'])
+  assert.deepEqual(availableRuleParts({ valueType: { type: 'double' } }, { sampling: true }, true), ['values', 'range', 'step', 'scale', 'formula', 'fallback', 'alarm'])
+  assert.deepEqual(availableRuleParts({ valueType: { type: 'double' } }, {}, false), ['values', 'range', 'step', 'scale', 'formula', 'fallback', 'sampling', 'interval', 'change'])
   assert.deepEqual(availableRuleParts({ valueType: { type: 'boolean' } }, {}, true), ['values', 'fallback', 'alarm', 'sampling', 'interval', 'change'])
   assert.deepEqual(availableRuleParts({ valueType: { type: 'object' } }, {}, true), ['sampling', 'interval'])
   assert.ok(availableRuleParts({ valueType: { type: 'file', bodyType: 'base64' } }, {}, true).includes('file'))

@@ -1,3 +1,4 @@
+import type { ExpressionExplanation } from '@jetlinks-web-core/components/Expression'
 import type { ThingModelProperty } from '../../alarm/types'
 import { formatPropertyValue, propertyValueType } from './values/metadata'
 import { isNumberProperty } from '../../alarm/utils'
@@ -26,6 +27,7 @@ export interface RuleExampleStage {
   baseline?: string
   value?: string
   elapsedMillis?: number
+  explanation?: ExpressionExplanation
 }
 
 /** Examples belong to the floating preview, independent of the saved rule and live device state. */
@@ -60,9 +62,34 @@ export function validateRuleExampleInputs(inputs: RuleExampleInput[], numeric: b
     || input.arrivalMillis < 0 || index > 0 && input.arrivalMillis < inputs[index - 1].arrivalMillis!)) return 'PropertyRules.diagram.invalidArrival'
 }
 
+export interface RuleExampleCalculation { value:number; label?:string; explanation?:ExpressionExplanation }
+export interface RuleExampleCalculationInput { value:RuleExampleValue; index:number; arrival:number }
+
+/** Synchronous callers must explicitly supply any calculation; there is no browser formula evaluator. */
+export function buildRuleExample(draft:RuleDraft,property:ThingModelProperty,inputs=createRuleExampleInputs(draft,property),
+  initial:FallbackExampleState={value:null,time:-1000,outcome:'missing'},
+  calculate?:(input:RuleExampleCalculationInput)=>RuleExampleCalculation):RuleExamplePoint[] {
+  const flow=ruleExampleFlow(draft,property,inputs,initial)
+  let step=flow.next()
+  while(!step.done) {
+    if(!calculate)throw new Error('A backend calculation is required')
+    step=flow.next(calculate(step.value))
+  }
+  return step.value
+}
+
+/** Resume the same illustrative pipeline with a backend result, preserving cross-sample state and node order. */
+export async function buildRuleExampleAsync(draft:RuleDraft,property:ThingModelProperty,inputs:RuleExampleInput[],
+  initial:FallbackExampleState,calculate:(input:RuleExampleCalculationInput)=>Promise<RuleExampleCalculation>):Promise<RuleExamplePoint[]> {
+  const flow=ruleExampleFlow(draft,property,inputs,initial)
+  let step=flow.next()
+  while(!step.done)step=flow.next(await calculate(step.value))
+  return step.value
+}
+
 /** Each sample traverses the configured nodes; a dropped value never reaches later nodes. */
-export function buildRuleExample(draft: RuleDraft, property: ThingModelProperty, inputs = createRuleExampleInputs(draft, property),
-  initial: FallbackExampleState = { value: null, time: -1000, outcome: 'missing' }): RuleExamplePoint[] {
+function* ruleExampleFlow(draft: RuleDraft, property: ThingModelProperty, inputs:RuleExampleInput[],
+  initial:FallbackExampleState):Generator<RuleExampleCalculationInput,RuleExamplePoint[],RuleExampleCalculation> {
   const numeric = isNumberProperty(property)
   const timed = draft.samplingEnabled && (draft.samplingMode === 'interval' || draft.samplingMode === 'change' && draft.maxSilence != null) || Boolean(draft.fallbackEnabled || draft.stepEnabled)
   if (validateRuleExampleInputs(inputs, numeric, timed, Boolean(draft.fallbackEnabled))) return []
@@ -76,8 +103,10 @@ export function buildRuleExample(draft: RuleDraft, property: ThingModelProperty,
   let latest = initial.value
   let latestTime = initial.time
   let latestReady = initial.outcome === 'ready'
-  return inputs.map((input, index) => {
+  const points:RuleExamplePoint[]=[]
+  for(const [index,input] of inputs.entries()) {
     let value = input.value
+    let calculation:RuleExampleCalculation|undefined
     const inputLabel = input.missing ? '∅' : labelOf(value)
     const arrival = input.arrivalMillis!
     const stages: RuleExampleStage[] = []
@@ -116,10 +145,13 @@ export function buildRuleExample(draft: RuleDraft, property: ThingModelProperty,
       if (previous !== undefined) stages[stages.length - 1].baseline = labelOf(previous)
     }
     if (draft.scaleEnabled) {
-      if (alive && !candidate) value = scaleExample(Number(value), Number(draft.scale), property, Number(draft.offset ?? 0))
+      if (alive && !candidate) {
+        calculation=yield {value:value!,index,arrival}
+        value=calculation.value
+      }
       stages.push({ key: 'scale', status: alive && !candidate ? 'processed' : 'skipped',
         ...(candidate ? { skipReason: 'missing' as const } : {}),
-        ...(alive && !candidate ? { value: labelOf(value) } : {}) })
+        ...(calculation ? { value:calculation.label ?? labelOf(value),explanation:calculation.explanation } : {}) })
     }
     if (draft.fallbackEnabled) {
       if (candidate) {
@@ -166,10 +198,12 @@ export function buildRuleExample(draft: RuleDraft, property: ThingModelProperty,
     }
     // 模拟快照只由实际发布的真实输入推进，连续补齐不能续期或成为新的上一值。
     if (alive && !filled && typeof value !== 'object' && value !== null) { latest = value; latestTime = arrival; latestReady = true }
-    return { label: labelOf(value), filtered, stages, inputLabel, alarm, sampled,
+    points.push({ label: calculation?.value === value ? calculation.label ?? labelOf(value) : labelOf(value), filtered, stages, inputLabel, alarm, sampled,
       ...(timed ? { arrival: Number((arrival / draft.intervalUnit).toPrecision(5)) } : {}),
-      ...(draft.samplingEnabled && draft.samplingMode === 'change' && previous !== undefined ? { baseline: labelOf(previous) } : {}) }
-  })
+      ...(draft.samplingEnabled && draft.samplingMode === 'change' && previous !== undefined ? { baseline: labelOf(previous) } : {})
+    })
+  }
+  return points
 }
 
 function numericExamples(draft: RuleDraft) {
@@ -203,14 +237,4 @@ function formatExampleValue(value: RuleExampleValue) {
   if (typeof value !== 'number' || !Number.isFinite(value) || Number.isInteger(value)) return value
   const rounded = Number(value.toPrecision(15))
   return Math.abs(rounded - value) <= Number.EPSILON * Math.abs(value) * 4 ? rounded : value
-}
-
-/** Browser arithmetic is illustrative; the server's NumberType remains authoritative. */
-function scaleExample(value: number, multiplier: number, property: ThingModelProperty, offset = 0) {
-  let result = value * multiplier + offset
-  const type = property.valueType?.type ?? property.type ?? property.dataType
-  if (type === 'int' || type === 'long') return Math.trunc(result)
-  const precision = property.valueType?.scale
-  if (Number.isInteger(precision) && precision! >= 0 && precision! <= 99) result = Number(result.toFixed(precision))
-  return type === 'float' ? Math.fround(result) : result
 }

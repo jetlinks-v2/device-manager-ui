@@ -18,6 +18,7 @@
           <span>{{ notificationText }}</span>
         </span>
       </span>
+      <PropertyFormulaView v-else-if="row.formula" :expression="row.formula.expression" :property="row.formula.property" />
       <template v-else>{{ row.sentence }}</template>
     </template>
     <template v-if="!row.alarm && row.details" #details>{{ row.details }}</template>
@@ -30,6 +31,7 @@ import type { AlarmLevelOption } from '../../alarm/types'
 import { defaultAlarmLevelOptions, levelTone } from '../../alarm/utils'
 import type { RuleRowSummary } from './summary'
 import PropertyRuleLine from './PropertyRuleLine.vue'
+import PropertyFormulaView from './PropertyFormulaView.vue'
 
 const props = defineProps<{ row: RuleRowSummary; levels?: AlarmLevelOption[] }>()
 const { t: $t } = useI18n()

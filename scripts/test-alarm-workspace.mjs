@@ -9,13 +9,15 @@ const output = await mkdtemp(path.join(tmpdir(), 'iot-alarm-tests-'))
 try {
   const entry = path.join(output, 'alarmWorkspace.test.mjs')
   await build({ entryPoints: [
-    ...['alarmWorkspace', 'propertyRules', 'propertyRuleScope', 'propertyRuleStatistics'].map(name => path.join(root, `tests/${name}.test.ts`)),
+    ...['alarmWorkspace', 'propertyRules', 'propertyRuleScope', 'propertyRuleStatistics', 'propertyCorrection', 'propertyExpression'].map(name => path.join(root, `tests/${name}.test.ts`)),
     path.join(root, 'tests/propertyUnits.test.mjs'),
     path.join(root, 'tests/notificationMessage.test.mjs'),
   ], outdir: output,
     bundle: true, platform: 'node', format: 'esm', outExtension: { '.js': '.mjs' }, target: 'node22', logLevel: 'warning',
     plugins: [{ name: 'mock-alarm-transport', setup(api) {
+      api.onResolve({ filter: /^@jetlinks-web-core\/(components\/Expression|api\/expression)$/ }, () => ({ path: path.join(root, 'tests/propertyExpression.test-shim.ts') }))
       api.onResolve({ filter: /^axios$/ }, () => ({ path: fileURLToPath(import.meta.resolve('axios')), external: true }))
+      api.onResolve({ filter: /^@jetlinks-web-core\/components\/Expression\/utils$/ }, () => ({ path: path.resolve(root, '../../jetlinks-web-core/src/components/Expression/utils.ts') }))
       api.onResolve({ filter: /^@device-manager-ui\/api\/device-library$/ }, () => ({ path: path.join(root, 'tests/alarmRequest.test-shim.ts') }))
       api.onResolve({ filter: /^@device-manager-ui\/api\/instance$/ }, () => ({ path: path.join(root, 'tests/alarmRequest.test-shim.ts') }))
       api.onResolve({ filter: /^@jetlinks-web\/core$/ }, () => ({ path: path.join(root, 'tests/alarmRequest.test-shim.ts') }))
@@ -29,6 +31,8 @@ try {
     '--test',
     entry,
     path.join(output, 'propertyRules.test.mjs'),
+    path.join(output, 'propertyCorrection.test.mjs'),
+    path.join(output, 'propertyExpression.test.mjs'),
     path.join(output, 'propertyRuleScope.test.mjs'),
     path.join(output, 'propertyRuleStatistics.test.mjs'),
     path.join(output, 'propertyUnits.test.mjs'),

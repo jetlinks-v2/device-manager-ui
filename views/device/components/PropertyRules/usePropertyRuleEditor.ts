@@ -7,8 +7,9 @@ import { activeLogoutNavigation } from './useRuleLogoutNavigation'
 import type { ThingModelProperty, ThingPropertyPreprocess } from '../../alarm/types'
 import { createEmptyNotification, isNumberProperty, propertyIdOf, propertyNameOf, toDeviceAlarmRow,
   defaultAlarmLevelOptions, formatPropertyUnit, validateNotificationMessage, DEVICE_ALARM_NOTIFICATION_MESSAGE_MAX_LENGTH } from '../../alarm/utils'
-import { availableRuleParts, buildRule, isEmptyRule, parseRule, validateDraft, type RuleDraft, type RuleAddPart } from './codec'
+import { availableRuleParts, buildRule, ruleDraftJson, isEmptyRule, parseRule, validateDraft, type RuleDraft, type RuleAddPart } from './codec'
 import { readSampling } from './sampling'
+import { readCorrection,setCorrectionMode } from './correction'
 import { defaultCondition } from '../../alarm/conditions'
 import { readValueRules } from './values/config'
 import { loadRules, restoreRule, saveRule, type RuleScope } from './service'
@@ -70,8 +71,8 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
   const canSave = computed(() => props.scope.canUpdate ?? permission.hasPermission(props.scope.deviceId ? 'device/Instance:update' : 'device/Product:update'))
   const blocked = computed(() => Boolean(props.blocked))
   const editable = computed(() => canSave.value && custom.value && parsed.value.editable && !loading.value && !failed.value && !saving.value && !blocked.value)
-  const draftJson = computed(() => JSON.stringify(draft.value))
-  const dirty = computed(() => Boolean(draft.value && draftJson.value !== initial.value))
+  const draftJson = computed(() => ruleDraftJson(draft.value))
+  const dirty = computed(() => Boolean(draft.value && (draftJson.value !== initial.value || draft.value.correctionPending)))
   const pendingSave = computed(() => dirty.value || Boolean(props.scope.deviceId && overrideRequested.value && !hasOverride.value))
   const saveState = computed(() => saving.value ? 'saving' : saveFeedback.value !== 'idle' ? saveFeedback.value : pendingSave.value ? 'dirty' : 'idle')
   function clearFeedback() {
@@ -103,7 +104,10 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
     if (!editable.value || !draft.value || !addableParts.value.includes(part)) return
     if (part === 'values') draft.value.valuesEnabled = true
     else if (part === 'range') draft.value.rangeEnabled = true
-    else if (part === 'scale') draft.value.scaleEnabled = true
+    else if (part === 'scale' || part === 'formula') {
+      draft.value.scaleEnabled = true
+      setCorrectionMode(draft.value,part === 'formula' ? 'formula' : 'simple')
+    }
     else if (part === 'fallback') draft.value.fallbackEnabled = true
     else if (part === 'step') draft.value.stepEnabled = true
     else if (part === 'file') draft.value.fileEnabled = true
@@ -147,8 +151,9 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
         samplingEnabled: Boolean(rule.nodes.sampling), ...readSampling(rule.nodes.sampling),
         scaleEnabled: Boolean(rule.nodes.scale), scale: rule.nodes.scale?.configuration.scale ?? '1', fileEnabled: Boolean(rule.nodes.file),
         ...readValueRules(rule.nodes),
+        ...readCorrection(rule.nodes.scale?.configuration.expression,rule.nodes.scale?.configuration.editorMode),
       }
-      initial.value = JSON.stringify(draft.value)
+      initial.value = ruleDraftJson(draft.value)
       activeSection.value = draft.value.valuesEnabled || draft.value.rangeEnabled ? 'cleaning'
         : draft.value.alarmEnabled ? 'alarm' : draft.value.samplingEnabled ? 'sampling' : 'cleaning'
       notificationOpen.value = false
@@ -237,7 +242,7 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
     try {
       await saveRule(props.scope, propertyIdOf(props.property), next)
       if (token !== generation) return
-      initial.value = JSON.stringify(current)
+      initial.value = ruleDraftJson(current)
       raw.value = !props.scope.deviceId && isEmptyRule(next) ? undefined : next
       hasOverride.value = Boolean(props.scope.deviceId)
       overrideRequested.value = false
@@ -273,7 +278,7 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
       try {
         await restoreRule(scope, property)
         if (!isCurrent()) return
-        initial.value = JSON.stringify(draft.value)
+        initial.value = ruleDraftJson(draft.value)
         // A successful deletion must not be reported as a retryable write failure when refresh fails.
         try {
           await changed()
