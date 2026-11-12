@@ -32,12 +32,20 @@
         <div class="event-history__row event-history__row--head" :style="tableGridStyle">
           <span>{{ $t('IotDeviceDetail.logs.column.time') }}</span>
           <span v-for="field in eventFields" :key="field.id">{{ field.name }}</span>
+          <span class="event-history__action">{{ $t('IotDeviceDetail.common.action') }}</span>
         </div>
         <div v-for="row in eventRows" :key="row.id" class="event-history__row" :style="tableGridStyle">
           <time>{{ row.time }}</time>
           <a-tooltip v-for="field in eventFields" :key="field.id" :title="eventValueText(row, field)">
             <span class="event-history__value">{{ eventValueText(row, field) }}</span>
           </a-tooltip>
+          <span class="event-history__action">
+            <a-tooltip :title="$t('IotDeviceDetail.eventGroups.viewDetail')">
+              <a-button type="text" size="small" :aria-label="$t('IotDeviceDetail.eventGroups.viewDetail')" @click="openEventDetail(row)">
+                <template #icon><AIcon type="SearchOutlined" /></template>
+              </a-button>
+            </a-tooltip>
+          </span>
         </div>
         <CloudEmpty
           v-if="!eventLoading && !eventRows.length"
@@ -57,6 +65,7 @@
         />
       </footer>
     </section>
+    <IotDeviceEventDetailDrawer :detail="eventDetail" :field-value="eventDetailValue" @close="closeEventDetail" />
   </section>
 </template>
 
@@ -64,6 +73,7 @@
 import { computed } from 'vue'
 import type { RealtimeEventRow } from './iotDeviceDetail.types'
 import { useIotDeviceEventHistory } from './useIotDeviceEventHistory'
+import IotDeviceEventDetailDrawer from './event-history/IotDeviceEventDetailDrawer.vue'
 
 const props = defineProps<{
   deviceId: string
@@ -76,6 +86,10 @@ const {
   eventId,
   eventLoading,
   eventRows,
+  eventDetail,
+  openEventDetail,
+  closeEventDetail,
+  eventDetailValue,
   eventFields,
   eventPagination,
   eventEmptyText,
@@ -89,7 +103,8 @@ const {
 })
 
 const tableGridStyle = computed(() => ({
-  gridTemplateColumns: `10rem repeat(${Math.max(eventFields.value.length, 1)}, minmax(10rem, 1fr))`,
+  gridTemplateColumns: `10rem repeat(${Math.max(eventFields.value.length, 1)}, minmax(10rem, 1fr)) 4.5rem`,
+  minWidth: `calc(${14.5 + Math.max(eventFields.value.length, 1) * 10}rem + ${Math.max(eventFields.value.length, 1) + 1} * var(--space-3) + 2 * var(--space-4))`,
 }))
 </script>
 

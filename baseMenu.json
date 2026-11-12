@@ -57,6 +57,10 @@
               "icon": "icon-yuandian",
               "sortIndex": 10,
               "assetType": "product",
+              "assetTypes": [
+                "product",
+                "deviceCategory"
+              ],
               "showPage": [
                 "device-product"
               ],
@@ -510,6 +514,7 @@
                 "aiScene",
                 "alarmConfig",
                 "device",
+                "deviceCategory",
                 "deviceGroup",
                 "product",
                 "space"
