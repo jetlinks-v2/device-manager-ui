@@ -1,0 +1,64 @@
+
+.steps-content {
+  margin-top: 0;
+  .steps-box {
+    .card-last {
+      padding-right: 5px;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+    .alert {
+      height: 40px;
+      padding-left: 10px;
+      color: rgba(0, 0, 0, 0.55);
+      line-height: 40px;
+      background-color: #f6f6f6;
+    }
+    .search {
+      display: flex;
+      margin: var(--space-4) 0;
+      justify-content: space-between;
+    }
+  }
+}
+
+.card-item-content {
+    height: 120px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+
+    .card-title {
+        font-size: 18px;
+        font-weight: 800;
+        line-height: 22px;
+    }
+
+    .card-item-content-box {
+        .card-item-content-text-title {
+            font-style: normal;
+            font-weight: 400;
+            font-size: 12px;
+            color: rgba(0, 0, 0, 0.75);
+            opacity: 0.75;
+        }
+    }
+    .card-item-content-description {
+        // font-style: normal;
+        font-size: 12px;
+        // line-height: 20px;
+        color: #666666;
+        // overflow: hidden; //超出的文本隐藏
+        // text-overflow: ellipsis; //溢出用省略号显示
+        // white-space: nowrap; //溢出不换行
+    }
+}
+
+.steps-action {
+  width: 100%;
+  margin-top: 24px;
+}
+
+:deep(.jtable-body-spin) {
+  padding: 0 !important;
+}

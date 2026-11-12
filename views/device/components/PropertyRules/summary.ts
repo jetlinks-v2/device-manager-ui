@@ -33,8 +33,14 @@ export function ruleStageOf(part: RulePart): RuleSection { return ['values', 'ra
 
 /** A difference between percentage values is measured in percentage points, not relative percent. */
 export function formatRuleDifferenceUnit(property: ThingModelProperty, t: RuleTranslator): string {
-  const unit = formatPropertyUnit(property.valueType?.unit) ?? ''
-  return unit === '%' ? t('PropertyRules.percentagePoints') : unit
+  const unit = formatPropertyUnit(property.valueType) ?? ''
+  return isPercentageProperty(property) ? t('PropertyRules.percentagePoints') : unit
+}
+
+// Percentage-point semantics use the metadata ID even when its display name is customized.
+function isPercentageProperty(property: ThingModelProperty): boolean {
+  const unit = property.valueType?.unit
+  return unit === '%' || unit?.toLowerCase() === 'percent' || formatPropertyUnit(property.valueType) === '%'
 }
 
 /** Read-only rows share the editor's sentence order without creating forms for every property. */
@@ -49,11 +55,11 @@ export function summarizeDraftRows(draft: RuleDraft, property: ThingModelPropert
 
 function summarizeEffectRows(effects: RuleEffects, property: ThingModelProperty, t: RuleTranslator): RuleRowSummary[] {
   const rows: RuleRowSummary[] = []
-  const unit = formatPropertyUnit(property.valueType?.unit) ?? ''
+  const unit = formatPropertyUnit(property.valueType) ?? ''
   const cleaningUnit = effects.scaleEnabled ? ` ${t('PropertyRules.rawValue')}` : unit
   const differenceUnit = formatRuleDifferenceUnit(property, t)
   const cleaningDifferenceUnit = effects.scaleEnabled ? cleaningUnit : differenceUnit
-  const differenceHint = unit === '%' ? t('PropertyRules.percentagePointsHint') : ''
+  const differenceHint = isPercentageProperty(property) ? t('PropertyRules.percentagePointsHint') : ''
   const cleaningHint = effects.scaleEnabled ? t('PropertyRules.rawValueHint') : ''
   const durationText = (millis?: number | null) => `${millis == null ? '—' : millis / 1000} ${t('PropertyRules.timeUnit.s')}`
   if (effects.valuesEnabled) {
@@ -144,7 +150,7 @@ export function summarizeDraft(draft: RuleDraft, property: ThingModelProperty, t
 }
 
 function summarizeEffects(effects: RuleEffects, property: ThingModelProperty, t: RuleTranslator): RuleStepSummary[] {
-  const unit = formatPropertyUnit(property.valueType?.unit) ?? ''
+  const unit = formatPropertyUnit(property.valueType) ?? ''
   const cleaning: string[] = []
   if (effects.valuesEnabled) {
     const labels = formatValues(effects.values.slice(0, 3), property, t)

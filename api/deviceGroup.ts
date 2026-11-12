@@ -125,7 +125,7 @@ type PagerResult<T> = {
   pageSize?: number
 }
 
-type DeviceGroupResponse = Partial<DeviceGroup>
+type DeviceGroupResponse = Partial<DeviceGroup> & { devices?: Array<{ id: string }> }
 
 type DeviceGroupSummaryResponse = Partial<DeviceGroupSummary>
 
@@ -347,6 +347,27 @@ export const queryDeviceBoundGroups_api = async (
 ): Promise<Record<string, DeviceGroup[]>> => {
   const ids = [...new Set(deviceIds.filter(Boolean))]
   if (!ids.length) return {}
+
+  // 详情已经按设备资产权限返回绑定设备；无额外范围时直接映射，避免按分组逐个补查运行态。
+  if (!baseTerms?.length) {
+    const response = await request.post('/device/group/_query/_detail', {
+      paging: false,
+      sorts: [{ name: 'sortIndex', order: 'asc' }],
+    }) as ApiResponse<PagerResult<DeviceGroupResponse>>
+    const result = unwrapResult<PagerResult<DeviceGroupResponse>>(response) ?? {}
+    const requestedIds = new Set(ids)
+    const groupByDeviceId: Record<string, DeviceGroup[]> = {}
+    for (const item of result.data ?? []) {
+      const group = toDeviceGroup(item)
+      if (!group.id) continue
+      for (const device of item.devices ?? []) {
+        if (!requestedIds.has(device.id)) continue
+        const current = groupByDeviceId[device.id] ?? []
+        if (!current.some(item => item.id === group.id)) groupByDeviceId[device.id] = [...current, group]
+      }
+    }
+    return groupByDeviceId
+  }
 
   const groups = await queryDeviceGroupDetailList_api()
   const groupByDeviceId: Record<string, DeviceGroup[]> = {}

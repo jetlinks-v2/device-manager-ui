@@ -37,6 +37,7 @@ const props = defineProps({
   selected: { type: Boolean, default: false },
   disabled: { type: Boolean, default: false },
   fixedHeight: { type: Boolean, default: false },
+  compactMeta: { type: Boolean, default: false },
 })
 
 const emit = defineEmits<{

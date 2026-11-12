@@ -1,8 +1,8 @@
-import { bufferHistoryPoints, bufferThroughputPoints, type BufferHistorySample } from '@jetlinks-web-core/components/RuntimeDiagnostics'
+import { bufferHistoryPoints, createBufferHistoryProjection, type BufferHistorySample } from '@jetlinks-web-core/components/RuntimeDiagnostics'
 import type { BufferQueue, ClusterBufferSnapshot } from './useClusterBuffers'
 
 interface BufferWindow { from: number; to: number; seconds: number }
-interface BufferObservation { pendingDelta?: number; writtenRate?: number; attemptedRate?: number; window?: BufferWindow }
+interface BufferObservation { pendingDelta?: number; writtenRate?: number; attemptedRate?: number; inRowsRate?: number; outRowsRate?: number; window?: BufferWindow }
 export type NodeBufferQueue = BufferQueue
 export interface NodeBufferOverview extends BufferObservation {
   pending?: number; dead?: number
@@ -12,18 +12,19 @@ export interface NodeBufferOverview extends BufferObservation {
 /** 用已展示证据的真实采样时间定位窗口，过期快照仍展示原窗口，不跨过失败点。 */
 function observation(history: readonly BufferHistorySample[], sampledAt: number | undefined, objectName?: string): BufferObservation {
   if (!sampledAt) return {}
-  const ordered = bufferHistoryPoints(history, objectName)
+  const projection = createBufferHistoryProjection(history), ordered = projection.overview(objectName)
+  const rates = projection.at(sampledAt, objectName)
+  const readings = { writtenRate: rates?.writtenRate, attemptedRate: rates?.attemptedRate, inRowsRate: rates?.inRowsRate, outRowsRate: rates?.outRowsRate }
   const index = ordered.findIndex(point => point.sampledAt === sampledAt), previousPoint = ordered[index - 1]
-  if (!previousPoint) return {}
+  if (!previousPoint) return rates?.rateWindow ? { ...readings, window: rates.rateWindow } : {}
   const previous = history.findLast(sample => sample.sampledAt === previousPoint.sampledAt)!
   const current = history.findLast(sample => sample.sampledAt === sampledAt)!
   const selected = (sample: BufferHistorySample) => sample.buffers.filter(queue => !objectName || queue.objectName === objectName)
   const previousQueues = selected(previous), before = new Map(previousQueues.map(queue => [queue.objectName, queue]))
   const queues = selected(current)
-  const rates = bufferThroughputPoints(history, objectName).find(rate => rate.sampledAt === sampledAt)
   const sameEpoch = queues.length > 0 && queues.length === before.size && previousQueues.length === before.size && queues.length === new Set(queues.map(queue => queue.objectName)).size && queues.every(queue => {
     const old = before.get(queue.objectName)
-    return old && (queue.counterEpoch === undefined || Number.isSafeInteger(queue.counterEpoch) && queue.counterEpoch >= 0) && queue.counterEpoch === old.counterEpoch
+    return old && (queue.counterEpoch === undefined || Number.isSafeInteger(queue.counterEpoch) && queue.counterEpoch >= 0) && queue.counterEpoch === old.counterEpoch && queue.observation?.generation === old.observation?.generation
   })
   // 有精确计数但共享速率算法拒绝窗口，表示倒退或无效计数；待处理增减也不能跨越该边界。
   const comparableCounter = (key: 'written' | 'attempted', rate: number | undefined) =>
@@ -32,8 +33,8 @@ function observation(history: readonly BufferHistorySample[], sampledAt: number 
   const [beforeCount, currentCount] = bufferHistoryPoints([previous, current], objectName)
   const pendingDelta = comparable && currentCount?.pending !== undefined && beforeCount?.pending !== undefined ? currentCount.pending - beforeCount.pending : undefined
   const hasRate = rates?.writtenRate !== undefined || rates?.attemptedRate !== undefined
-  return { pendingDelta, writtenRate: rates?.writtenRate, attemptedRate: rates?.attemptedRate,
-    window: hasRate || pendingDelta !== undefined ? { from: previousPoint.sampledAt, to: sampledAt, seconds: (sampledAt - previousPoint.sampledAt) / 1000 } : undefined }
+  return { pendingDelta, ...readings,
+    window: rates?.rateWindow ?? (hasRate || pendingDelta !== undefined ? { from: previousPoint.sampledAt, to: sampledAt, seconds: (sampledAt - previousPoint.sampledAt) / 1000 } : undefined) }
 }
 
 /** 默认仅列最多两个异常队列，保留最大堆积与失败代表；速率统一在节点汇总展示。 */

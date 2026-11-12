@@ -38,7 +38,7 @@ import RuleMenuOption from '../RuleMenuOption.vue'
 const props = defineProps<{ draft: RuleDraft; property: ThingModelProperty }>()
 const { t: $t } = useI18n()
 const type = computed(() => props.property.valueType?.type ?? props.property.type ?? props.property.dataType)
-const unit = computed(() => isNumberProperty(props.property) ? formatPropertyUnit(props.property.valueType?.unit) : '')
+const unit = computed(() => isNumberProperty(props.property) ? formatPropertyUnit(props.property.valueType) : '')
 const conditions = computed(() => [
   $t('PropertyRules.fallback.null'),
   props.draft.fallbackEmpty && type.value === 'string' ? $t('PropertyRules.fallback.emptyShort') : '',

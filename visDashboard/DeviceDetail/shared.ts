@@ -20,8 +20,9 @@ export interface OverviewSummary {
   traffic: SummarySeries & { upstreamBytes: number; downstreamBytes: number }
 }
 export interface RecentAlarmRecord {
-  id: string; title: string; time: string; duration: string; level: string; trigger: string; summary: string
+  id: string; title: string; time: string; duration: string; level: string; levelValue: number; trigger: string; summary: string
 }
+export const alarmLevelColors: Partial<Record<number, string>> = { 1: 'red', 2: 'orange', 3: 'gold', 4: 'blue', 5: 'cyan' }
 export const typeOf = (kind: DeviceDetailKind) => `deviceDetail${kind}`
 export const titleKeys: Record<DeviceDetailKind, string> = {
   ActiveDuration: 'IotDeviceDetail.overview.stat.activeDuration',

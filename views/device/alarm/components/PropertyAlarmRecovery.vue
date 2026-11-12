@@ -25,14 +25,14 @@ import { invertCondition } from '../conditions'
 import { formatTriggerText, formatPropertyUnit, isNumberProperty } from '../utils'
 import PropertyAlarmCondition from './PropertyAlarmCondition.vue'
 import RuleMenuOption from '../../components/PropertyRules/RuleMenuOption.vue'
-const props = defineProps<{ model: DeviceAlarmFormModel; property: ThingModelProperty; disabled?: boolean; layout?: 'inline' | 'form' }>()
+const props = defineProps<{ model: DeviceAlarmFormModel; property: ThingModelProperty; disabled?: boolean; layout?: 'inline' | 'form' | 'detail' }>()
 const { t: $t } = useI18n()
 const mode = computed(() => !props.model.autoRelieve ? 'off' : props.model.relieveCondition ? 'custom' : 'inverse')
 const options = computed(() => [{ value: 'off', icon: 'StopOutlined' }, { value: 'inverse', icon: 'SwapOutlined' }, { value: 'custom', icon: 'EditOutlined' }]
   .map(item => ({ ...item, label: $t(`DeviceAlarm.condition.recovery.${item.value}`) })))
 // 跟随模式只展示推导结果，不提供会误改主触发条件的输入框。
 const inferredText = computed(() => [formatTriggerText(invertCondition(props.model), props.property, $t),
-  isNumberProperty(props.property) ? formatPropertyUnit(props.property.valueType?.unit) : undefined].filter(Boolean).join(' '))
+  isNumberProperty(props.property) ? formatPropertyUnit(props.property.valueType) : undefined].filter(Boolean).join(' '))
 function changeMode(value: string) {
   if (props.disabled || value === mode.value) return
   props.model.autoRelieve = value !== 'off'

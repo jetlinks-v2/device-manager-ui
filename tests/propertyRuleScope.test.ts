@@ -1,14 +1,15 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { computed, createRenderer, defineComponent, nextTick, reactive } from 'vue'
+import { computed, createRenderer, defineComponent, nextTick, reactive, watch } from 'vue'
 import { createI18n } from 'vue-i18n'
-import type { RouteLocationNormalized } from 'vue-router'
+import type { NavigationFailure, RouteLocationNormalized } from 'vue-router'
+import { activeLogoutNavigation, useRuleLogoutNavigation } from '../views/device/components/PropertyRules/useRuleLogoutNavigation'
 import { usePropertyRuleCards } from '../views/device/components/PropertyRules/cards/usePropertyRuleCards'
 import { parseRule } from '../views/device/components/PropertyRules/codec'
 import type { RuleScope } from '../views/device/components/PropertyRules/service'
 import { usePropertyRules } from '../views/device/components/PropertyRules/usePropertyRules'
-import { setAlarmRequestHandler } from './alarmRequest.test-shim'
-import { routeGuards, ruleRoute, ruleMenus, ruleMenuVisits, setConfirmHandler, type TestConfirmation } from './propertyRuleScope.test-shim'
+import { getInstance, setAlarmRequestHandler } from './alarmRequest.test-shim'
+import { routeGuards, ruleRoute, ruleMenus, ruleMenuVisits, ruleRouteAfterEach, setConfirmHandler, type TestConfirmation } from './propertyRuleScope.test-shim'
 import { usePropertyRuleEditor, type RuleEditorProps } from '../views/device/components/PropertyRules/usePropertyRuleEditor'
 import { useRuleResources } from '../views/device/components/PropertyRules/useRuleResources'
 import { useRuleExample } from '../views/device/components/PropertyRules/useRuleExample'
@@ -36,8 +37,21 @@ const mountPanel = (props: Parameters<typeof usePropertyRules>[0]) => {
   return { panel: state, unmount }
 }
 
+function mountRuleWindow() {
+  const listeners = new Set<(event: BeforeUnloadEvent) => void>()
+  Object.defineProperty(globalThis, 'window', { configurable: true, value: {
+    addEventListener(type: string, listener: (event: BeforeUnloadEvent) => void) { if (type === 'beforeunload') listeners.add(listener) },
+    removeEventListener(type: string, listener: (event: BeforeUnloadEvent) => void) { if (type === 'beforeunload') listeners.delete(listener) },
+  } })
+  return () => {
+    const event = new Event('beforeunload', { cancelable: true }) as BeforeUnloadEvent
+    for (const listener of listeners) listener(event)
+    return event.defaultPrevented
+  }
+}
+
 function mountEditor(changed: (props: RuleEditorProps) => void | Promise<void> = () => {}) {
-  Object.defineProperty(globalThis, 'window', { configurable: true, value: { addEventListener() {}, removeEventListener() {} } })
+  const beforeUnload = mountRuleWindow()
   const props = reactive<RuleEditorProps>({ open: true, inline: true, scope: { productId: 'p1', deviceId: 'd1' },
     property: { id: 'temperature', valueType: { type: 'double' } },
     snapshot: { hasOverride: true, raw: { provider: 'ratio-sampling', configuration: { ratio: 0.5 } } } })
@@ -46,12 +60,38 @@ function mountEditor(changed: (props: RuleEditorProps) => void | Promise<void> =
   setConfirmHandler(options => { dialogs.push(options) })
   let active = true
   const unmount = () => { if (active) { mounted.unmount(); active = false } }
-  return { props, editor: mounted.state, dialogs, unmount,
+  return { props, editor: mounted.state, dialogs, unmount, beforeUnload,
     cleanup() { unmount(); setConfirmHandler(); Reflect.deleteProperty(globalThis, 'window') } }
 }
 
 const editorRoute = (id: string): RouteLocationNormalized => ({ path: `/products/${id}`, fullPath: `/products/${id}`,
   name: 'product-detail', params: { id }, query: { tab: 'AlarmConfig', ruleProperty: 'temperature' }, hash: '', matched: [], meta: {}, redirectedFrom: undefined })
+
+async function ruleRequest(data: unknown = { status: 200 }, status = 200, url = '/user-token/reset', method = 'get') {
+  return getInstance().request({ method, url, adapter: async config => ({
+    config, status, statusText: '', headers: {}, data: JSON.stringify(data),
+  }) })
+}
+const successfulRuleLogout = () => ruleRequest()
+function finishRuleLogoutNavigation(failure?: Parameters<import('vue-router').NavigationHookAfter>[2], name = 'Login') {
+  const to = { ...editorRoute('login'), name }
+  for (const handler of ruleRouteAfterEach) handler(to, editorRoute('p1'), failure)
+}
+
+test('rule editor reacts to thing-model unit names without substituting its own symbols', async () => {
+  const view = mountEditor()
+  try {
+    await settle()
+    view.props.property.valueType = { type: 'double', unit: 'kWattsHour', unitName: 'kW·h' }
+    assert.equal(view.editor.unit.value, 'kW·h')
+    assert.equal(view.editor.cleaningUnit.value, 'kW·h')
+    assert.equal(view.editor.differenceUnit.value, 'kW·h')
+    view.props.property.valueType = { type: 'double', unit: 'kWh' }
+    assert.equal(view.editor.unit.value, 'kWh', 'custom metadata text is unchanged')
+    view.props.property.valueType = { type: 'double' }
+    assert.equal(view.editor.unit.value, undefined, 'no metadata unit means no unit placeholder')
+  } finally { view.cleanup() }
+})
 
 function notificationProps() {
   const model: DeviceAlarmFormModel = { source: 'device', targetId: 'd1', productId: 'p1', property: 'temperature', name: 'Temperature',
@@ -1079,14 +1119,152 @@ function cardRows() {
       source: 'device' as 'device' | 'product' | 'disabled' | 'none', rule: parseRule(raw), effects: [] }
   })
 }
-function mountCards() {
+
+const savedParts = (property: string, count: number): ThingPropertyPreprocess => ({ property, provider: 'composite', configuration: {
+  processors: [...(count === 3 ? [{ provider: 'simple', configuration: {
+    matcher: { provider: 'number-range', configuration: { not: true, min: 0, max: 100 } }, processors: [{ provider: 'ignore', configuration: {} }],
+  } }] : []), { provider: 'scale', configuration: { scale: '1' } },
+    { provider: 'ratio-sampling', configuration: { ratio: 0.5 } }].slice(0, count),
+} })
+
+test('detail lists only effective saved rules, preserves disabled overrides and sorts each group stably', async () => {
+  ruleRoute.query = {}
+  setAlarmRequestHandler(async url => ({ result: url.includes('/p1/d1/')
+    ? [savedParts('disabled', 0)]
+    : [savedParts('one', 1), savedParts('three', 3), savedParts('tie', 1), savedParts('disabled', 2),
+      { property: 'legacy', provider: 'custom-handler', configuration: {} }] }))
+  const { panel, unmount } = mountPanel(reactive({ presentation: 'detail', scope: { productId: 'p1', deviceId: 'd1' },
+    properties: ['one', 'three', 'tie', 'disabled', 'legacy', 'none'].map(id => ({ id })) }))
+  try {
+    await settle()
+    assert.deepEqual(panel.groups.value[0].rows.map(row => row.id), ['three', 'one', 'tie', 'legacy'])
+    assert.equal(panel.configuredCount.value, 4)
+    assert.equal(panel.unconfiguredCount.value, 2)
+    assert.deepEqual(panel.unconfiguredRows.value.map(row => [row.id, row.source]), [['disabled', 'disabled'], ['none', 'none']])
+    assert.equal(panel.propertyRows.value.find(row => row.id === 'disabled')?.rule.nodes.sampling, undefined, 'empty override never falls back to product rules')
+    panel.draftIds.value = ['disabled']
+    assert.ok(panel.rows.value.some(row => row.id === 'disabled'), 'an external refresh cannot hide a dirty card')
+    assert.ok(!panel.unconfiguredRows.value.some(row => row.id === 'disabled'), 'a retained draft cannot be added twice')
+  } finally { unmount() }
+})
+
+test('detail additions reveal their group first, support cancellation and retain saved chunk boundaries', async () => {
+  ruleRoute.query = {}
+  setAlarmRequestHandler(async () => ({ result: Array.from({ length: 35 }, (_, index) => savedParts(`p${index}`, 1)) }))
+  const input = reactive({ presentation: 'detail' as const, scope: { productId: 'p1', canUpdate: true }, properties: [
+    ...Array.from({ length: 35 }, (_, index) => ({ id: `p${index}`, expands: { groupId: 'a' } })),
+    { id: 'blank', expands: { groupId: 'b' } }, { id: 'other', expands: { groupId: 'b' } },
+  ] })
+  const { panel, unmount } = mountPanel(input)
+  try {
+    await settle()
+    assert.equal(panel.groups.value[0].visibleRows.length, 30)
+    panel.showMore('id:a')
+    assert.equal(panel.groups.value[0].visibleRows.length, 35)
+    panel.keyword.value = 'p3'
+    await panel.addProperty('blank')
+    assert.equal(panel.keyword.value, '')
+    assert.deepEqual(panel.expandedGroups.value, ['id:b'])
+    assert.deepEqual(panel.groups.value[1].visibleRows.map(row => row.id), ['blank'])
+    await panel.addProperty('blank')
+    assert.deepEqual(panel.addedIds.value, ['blank'], 'duplicate selection is ignored')
+    await panel.addProperty('other')
+    assert.deepEqual(panel.groups.value[1].rows.map(row => row.id), ['other', 'blank'])
+    panel.finishAdding('other')
+    assert.ok(panel.unconfiguredRows.value.some(row => row.id === 'other'))
+    input.scope.canUpdate = false
+    await panel.addProperty('other')
+    assert.deepEqual(panel.addedIds.value, ['blank'], 'read-only users cannot add cards')
+    input.scope.productId = 'p2'
+    await settle()
+    assert.deepEqual(panel.addedIds.value, [], 'owner changes clear temporary additions')
+  } finally { unmount() }
+})
+
+test('detail empty deep links stay reachable without resurrecting cancelled cards on refresh', async () => {
+  ruleRoute.query = { ruleProperty: 'blank' }
+  setAlarmRequestHandler(async () => ({ result: [savedParts('saved', 1)] }))
+  const { panel, unmount } = mountPanel(reactive({ presentation: 'detail', scope: { productId: 'p1', canUpdate: false },
+    properties: [{ id: 'saved', expands: { groupId: 'a' } }, { id: 'blank', expands: { groupId: 'b' } }] }))
+  try {
+    await settle()
+    assert.deepEqual(panel.expandedGroups.value, ['id:b'])
+    assert.equal(panel.groups.value[1].visibleRows[0].id, 'blank')
+    panel.finishAdding('blank')
+    await panel.load()
+    await settle()
+    assert.ok(!panel.rows.value.some(row => row.id === 'blank'))
+    ruleRoute.query = {}
+    await settle()
+    ruleRoute.query = { ruleProperty: 'blank' }
+    await settle()
+    assert.deepEqual(panel.expandedGroups.value, ['id:b'], 'a later explicit link can reveal the same property again')
+  } finally { unmount(); ruleRoute.query = {} }
+})
+
+test('detail cards stay pinned while editing and after failure, then rank by saved parts and disappear after clearing', async () => {
   Object.defineProperty(globalThis, 'window', { configurable: true, value: { addEventListener() {}, removeEventListener() {} } })
+  ruleRoute.query = {}
+  const saved = new Map(['many', 'few', 'tie'].map((id, index) => [id, savedParts(id, index === 0 ? 3 : 1)]))
+  let failWrite = false
+  let writes = 0
+  setAlarmRequestHandler(async (url, body) => {
+    const property = decodeURIComponent(url.split('/').pop()!)
+    if (body.method === 'PUT') {
+      writes++
+      if (failWrite) throw new Error('Write failed')
+      const { method, ...raw } = body
+      saved.set(property, { ...raw, property } as unknown as ThingPropertyPreprocess)
+    }
+    if (body.method === 'DELETE') saved.delete(property)
+    return { result: url.includes('/p1/property/_list') ? [] : [...saved.values()] }
+  })
+  const mounted = mountState(() => {
+    const panel = usePropertyRules(reactive({ presentation: 'detail', scope: { productId: 'p1', deviceId: 'd1' },
+      properties: ['few', 'many', 'new', 'tie'].map(id => ({ id, valueType: { type: 'double' } })) }))
+    const cards = usePropertyRuleCards(reactive({ scope: { productId: 'p1', deviceId: 'd1' }, rows: panel.propertyRows,
+      visibleRows: computed(() => panel.groups.value[0]?.visibleRows ?? []), loading: panel.loading,
+    }), async id => { await panel.load(); if (!panel.failed.value) panel.finishAdding(id) })
+    watch(() => [...cards.editors].filter(([, entry]) => entry.editor.pendingSave || entry.editor.saving).map(([id]) => id), ids => { panel.draftIds.value = ids })
+    return { panel, cards }
+  })
+  const { panel, cards } = mounted.state
+  try {
+    await settle()
+    await panel.addProperty('new')
+    await settle()
+    const editor = cards.editors.get('new')!.editor
+    editor.addPart('scale')
+    editor.addPart('sampling')
+    assert.deepEqual(panel.groups.value[0].rows.map(row => row.id), ['new', 'many', 'few', 'tie'])
+    failWrite = true
+    await editor.save()
+    assert.equal(editor.saveState, 'error')
+    assert.deepEqual(panel.addedIds.value, ['new'])
+    failWrite = false
+    await editor.save()
+    await settle()
+    assert.equal(writes, 2)
+    assert.equal(editor.pendingSave, false)
+    assert.deepEqual(panel.addedIds.value, [])
+    assert.deepEqual(panel.groups.value[0].rows.map(row => row.id), ['many', 'new', 'few', 'tie'])
+    editor.clear()
+    assert.ok(panel.rows.value.some(row => row.id === 'new'), 'clearing a draft does not hide it before save')
+    await editor.save()
+    await settle()
+    assert.ok(!panel.rows.value.some(row => row.id === 'new'))
+    assert.ok(panel.unconfiguredRows.value.some(row => row.id === 'new'))
+    assert.equal(saved.get('new')?.provider, 'composite', 'device clear persists an empty override rather than deleting it')
+  } finally { mounted.unmount(); Reflect.deleteProperty(globalThis, 'window') }
+})
+function mountCards() {
+  const beforeUnload = mountRuleWindow()
   const input = reactive({ scope: { productId: 'p1', deviceId: 'd1' } as RuleScope, rows: cardRows(), visible: ['temperature', 'humidity'], loading: false })
   let refreshes = 0
   const mounted = mountState(() => usePropertyRuleCards(reactive({ scope: computed(() => input.scope),
     rows: computed(() => input.rows), visibleRows: computed(() => input.rows.filter(row => input.visible.includes(row.id))), loading: computed(() => input.loading),
   }), () => { refreshes++ }))
-  return { input, cards: mounted.state, refreshes: () => refreshes,
+  return { input, cards: mounted.state, beforeUnload, refreshes: () => refreshes,
     cleanup() { mounted.unmount(); setConfirmHandler(); Reflect.deleteProperty(globalThis, 'window') } }
 }
 
@@ -1176,6 +1354,233 @@ test('one leave confirmation covers hidden card drafts and cancellation preserve
   } finally { view.cleanup() }
   assert.equal(routeGuards.leave.length, leaveGuards)
   assert.equal(routeGuards.update.length, updateGuards)
+})
+
+test('concurrent card navigations share one dialog and cancellation allows a fresh attempt', async () => {
+  const view = mountCards()
+  try {
+    await settle()
+    const editor = view.cards.editors.get('temperature')!.editor
+    editor.draft!.percent = 25
+    const dialogs: TestConfirmation[] = []
+    setConfirmHandler(options => dialogs.push(options))
+    const from = editorRoute('p1')
+    const to = editorRoute('p2')
+    const leave = routeGuards.leave.at(-1)!
+    const update = routeGuards.update.at(-1)!
+    const first = [leave(to, from, () => {}), update(to, from, () => {}), view.cards.confirmLeave()]
+    assert.equal(dialogs.length, 1, 'logout/repeated route requests must not stack discard dialogs')
+    dialogs[0].onCancel?.()
+    assert.deepEqual(await Promise.all(first), [false, false, false])
+    assert.equal(editor.draft!.percent, 25)
+    const second = [view.cards.confirmLeave(), leave(to, from, () => {})]
+    assert.equal(dialogs.length, 2, 'cancelling permits a new navigation attempt')
+    dialogs[0].afterClose?.()
+    dialogs[1].onOk?.()
+    assert.deepEqual(await Promise.all(second), [true, true])
+    assert.equal(editor.pendingSave, true, 'confirmation cannot discard drafts before navigation succeeds')
+    const third = view.cards.confirmLeave()
+    assert.equal(dialogs.length, 3, 'another guard may have cancelled the accepted navigation')
+    dialogs[2].onCancel?.()
+    assert.equal(await third, false)
+  } finally { view.cleanup() }
+})
+
+test('standalone editor coalesces route and close confirmations and settles them on disposal', async () => {
+  const view = mountEditor()
+  try {
+    await settle()
+    view.editor.draft.value!.percent = 25
+    const from = editorRoute('p1')
+    const to = editorRoute('p2')
+    const leave = routeGuards.leave.at(-1)!
+    const update = routeGuards.update.at(-1)!
+    const pending = [leave(to, from, () => {}), update(to, from, () => {}), view.editor.prepareLeave()]
+    assert.equal(view.dialogs.length, 1)
+    view.dialogs[0].onCancel?.()
+    assert.deepEqual(await Promise.all(pending), [false, false, false])
+    assert.equal(view.editor.draft.value!.percent, 25)
+    const retry = [leave(to, from, () => {}), view.editor.prepareLeave()]
+    assert.equal(view.dialogs.length, 2)
+    view.unmount()
+    assert.equal(view.dialogs[1].destroyed, true, 'unmount closes the editor-owned dialog')
+    assert.deepEqual(await Promise.all(retry), [false, false])
+    assert.equal(view.editor.draft.value!.percent, 25)
+  } finally { view.cleanup() }
+})
+
+test('explicit logout releases card navigation and unload guards without retaining a discard dialog', async () => {
+  const view = mountCards()
+  try {
+    await settle()
+    const editor = view.cards.editors.get('temperature')!.editor
+    editor.draft!.percent = 25
+    assert.equal(view.beforeUnload(), true, 'ordinary reload/close keeps unsaved protection')
+    const dialogs: TestConfirmation[] = []
+    setConfirmHandler(options => dialogs.push(options))
+    const pending = view.cards.confirmLeave()
+    assert.equal(dialogs.length, 1)
+    await successfulRuleLogout()
+    assert.equal(dialogs[0].destroyed, true, 'only the editor-owned dialog is closed')
+    assert.equal(await pending, true, 'logout releases any already-pending navigation')
+    assert.equal(await view.cards.confirmLeave(), true)
+    assert.equal(view.beforeUnload(), false, 'full-document logout must not trigger a native prompt')
+    const from = editorRoute('p1'), to = editorRoute('p2')
+    assert.equal(await routeGuards.update.at(-1)!(to, from, () => {}), true)
+    assert.equal(dialogs.length, 1, 'logout creates no additional discard confirmation')
+    assert.equal(editor.pendingSave, true, 'the bypass does not write or mutate drafts')
+    finishRuleLogoutNavigation({ type: 4 } as NavigationFailure)
+    assert.equal(view.beforeUnload(), false, 'failed login navigation cannot restore prompts during logout')
+    finishRuleLogoutNavigation(undefined, 'PublicHelp')
+    assert.equal(view.beforeUnload(), false, 'an intermediate public route does not end logout')
+    finishRuleLogoutNavigation()
+    assert.equal(view.beforeUnload(), true, 'normal protection returns after logout navigation finishes')
+    const normal = view.cards.confirmLeave()
+    assert.equal(dialogs.length, 2)
+    dialogs[1].onCancel?.()
+    assert.equal(await normal, false)
+  } finally { finishRuleLogoutNavigation(); view.cleanup() }
+})
+
+test('only the successful explicit logout endpoint bypasses protection and response data is preserved', async () => {
+  const view = mountEditor()
+  try {
+    await settle()
+    view.editor.draft.value!.percent = 25
+    for (const scenario of [
+      { data: { success: false, status: 200 }, status: 200 },
+      { data: { success: true }, status: 500 },
+      { data: { status: 401 }, status: 401 },
+      { data: { status: 200 }, status: 200, url: '/user/detail' },
+      { data: { success: true }, status: 200, method: 'post' },
+      { data: { result: true }, status: 200 },
+      { data: 'invalid response', status: 200 },
+    ]) {
+      const response = await ruleRequest(scenario.data, scenario.status, scenario.url, scenario.method)
+      assert.deepEqual(response.data, scenario.data)
+      assert.equal(activeLogoutNavigation.value, false)
+      assert.equal(view.beforeUnload(), true)
+    }
+    const failure = new Error('logout transport failed')
+    await assert.rejects(getInstance().get('/user-token/reset', { adapter: async () => { throw failure } }), error => error === failure)
+    assert.equal(view.beforeUnload(), true)
+    for (const data of [{ success: true }, { status: 200 }]) {
+      const response = await ruleRequest(data)
+      assert.deepEqual(response.data, data)
+      assert.equal(activeLogoutNavigation.value, true, 'intent is visible before the logout caller receives its response')
+      assert.equal(view.beforeUnload(), false)
+      finishRuleLogoutNavigation()
+    }
+    assert.equal(view.dialogs.length, 0)
+  } finally { view.cleanup() }
+})
+
+test('rule scopes share one observer and remove it only when the last scope is disposed', async () => {
+  const baseline = ruleRouteAfterEach.size
+  const first = mountState(() => useRuleLogoutNavigation())
+  const second = mountState(() => useRuleLogoutNavigation())
+  try {
+    assert.equal(ruleRouteAfterEach.size, baseline + 1)
+    const response = await getInstance().get('/user-token/reset', {
+      transformResponse: data => ({ ...JSON.parse(data), retained: true }),
+      adapter: async config => {
+        assert.equal((config.transformResponse as unknown[]).length, 2, 'one observation despite multiple scopes')
+        return { config, status: 200, statusText: '', headers: {}, data: '{"success":true}' }
+      },
+    })
+    assert.deepEqual(response.data, { success: true, retained: true })
+    first.unmount()
+    assert.equal(ruleRouteAfterEach.size, baseline + 1)
+    finishRuleLogoutNavigation()
+    await successfulRuleLogout()
+    assert.equal(activeLogoutNavigation.value, true, 'remaining rules still observe logout')
+  } finally { second.unmount() }
+  assert.equal(ruleRouteAfterEach.size, baseline)
+  assert.equal(activeLogoutNavigation.value, false)
+  await successfulRuleLogout()
+  assert.equal(activeLogoutNavigation.value, false, 'unmounted rules no longer observe global requests')
+})
+
+test('a late logout response cannot bypass a new rule scope after the old owner is destroyed', async () => {
+  const first = mountState(() => useRuleLogoutNavigation())
+  let respond!: () => void
+  const request = getInstance().get('/user-token/reset', { adapter: config => new Promise(resolve => {
+    respond = () => resolve({ config, status: 200, statusText: '', headers: {}, data: '{"success":true}' })
+  }) })
+  await settle()
+  first.unmount()
+  const second = mountState(() => useRuleLogoutNavigation())
+  try {
+    respond()
+    await request
+    assert.equal(activeLogoutNavigation.value, false)
+    await successfulRuleLogout()
+    assert.equal(activeLogoutNavigation.value, true)
+  } finally { second.unmount() }
+})
+
+test('login arrival invalidates responses from logout requests issued in the previous session', async () => {
+  const view = mountState(() => useRuleLogoutNavigation())
+  let respond!: () => void
+  const request = getInstance().get('/user-token/reset', { adapter: config => new Promise(resolve => {
+    respond = () => resolve({ config, status: 200, statusText: '', headers: {}, data: '{"success":true}' })
+  }) })
+  try {
+    await settle()
+    finishRuleLogoutNavigation()
+    respond()
+    await request
+    assert.equal(activeLogoutNavigation.value, false)
+    await successfulRuleLogout()
+    assert.equal(activeLogoutNavigation.value, true)
+  } finally { view.unmount() }
+})
+
+test('explicit logout skips standalone rule-editor prompts and leaves later navigation protected', async () => {
+  const view = mountEditor()
+  try {
+    await settle()
+    view.editor.draft.value!.percent = 25
+    assert.equal(view.beforeUnload(), true)
+    const leave = routeGuards.leave.at(-1)!, update = routeGuards.update.at(-1)!
+    const from = editorRoute('p1'), to = editorRoute('p2')
+    const pending = leave(to, from, () => {})
+    assert.equal(view.dialogs.length, 1)
+    await successfulRuleLogout()
+    assert.equal(view.dialogs[0].destroyed, true)
+    assert.equal(await pending, true)
+    assert.equal(await leave(to, from, () => {}), true)
+    assert.equal(await update(to, from, () => {}), true)
+    assert.equal(view.beforeUnload(), false)
+    assert.equal(view.dialogs.length, 1)
+    finishRuleLogoutNavigation()
+    assert.equal(view.beforeUnload(), true)
+    const ordinary = leave(to, from, () => {})
+    assert.equal(view.dialogs.length, 2)
+    view.dialogs[1].onCancel?.()
+    assert.equal(await ordinary, false)
+    assert.equal(view.editor.draft.value!.percent, 25)
+  } finally { finishRuleLogoutNavigation(); view.cleanup() }
+})
+
+test('a successful explicit logout cannot be held open by a rule write still in flight', async () => {
+  let finish!: (value: { result: [] }) => void
+  setAlarmRequestHandler(async () => new Promise(resolve => { finish = resolve }))
+  const view = mountCards()
+  try {
+    await settle()
+    const editor = view.cards.editors.get('temperature')!.editor
+    editor.draft!.percent = 25
+    const write = editor.save()
+    await settle()
+    assert.equal(view.cards.saving.value, true)
+    assert.equal(await view.cards.confirmLeave(), false)
+    await successfulRuleLogout()
+    assert.equal(await view.cards.confirmLeave(), true)
+    assert.equal(view.beforeUnload(), false)
+    finish({ result: [] })
+    await write
+  } finally { finishRuleLogoutNavigation(); view.cleanup() }
 })
 
 test('cards serialize writes, share lazy notification resources and reject late saves after owner change', async () => {

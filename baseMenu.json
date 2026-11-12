@@ -303,31 +303,49 @@
                     {
                       "permission": "protocol-supports",
                       "actions": [
-                        "query"
+                        "query",
+                        "save"
                       ]
                     },
                     {
                       "permission": "plugin-driver",
                       "actions": [
-                        "query"
+                        "query",
+                        "save"
                       ]
                     },
                     {
                       "permission": "certificate",
                       "actions": [
-                        "query"
+                        "query",
+                        "save"
                       ]
                     },
                     {
                       "permission": "device-gateway",
                       "actions": [
-                        "query"
+                        "query",
+                        "save"
+                      ]
+                    },
+                    {
+                      "permission": "network-config",
+                      "actions": [
+                        "query",
+                        "save"
+                      ]
+                    },
+                    {
+                      "permission": "device-category",
+                      "actions": [
+                        "save"
                       ]
                     },
                     {
                       "permission": "device-product",
                       "actions": [
-                        "resource-package-import"
+                        "resource-package-import",
+                        "save"
                       ]
                     }
                   ]

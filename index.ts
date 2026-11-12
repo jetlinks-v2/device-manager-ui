@@ -22,6 +22,10 @@ const getAsyncRoutesMap = () => {
   modules['device/list'] = () => import('./views/device/list/unified/Page.vue')
   modules['link/RuntimeMonitor'] = () => import('./views/link/RuntimeWorkspace.vue')
   modules['link/Tracing'] = () => import('./views/link/RuntimeWorkspace.vue')
+  // 列表和详情使用同一宿主，在原详情 URL 上承载新增/编辑弹窗。
+  modules['link/AccessConfig'] = () => import('./views/link/AccessConfig/GatewayWorkspace.vue')
+  modules['iot-user/link/AccessConfig'] = modules['link/AccessConfig']
+  modules['link/AccessConfig/Detail'] = modules['link/AccessConfig']
   return modules
 }
 
@@ -81,7 +85,7 @@ const getExtraRoutesMap = () => ({
         code: 'Detail',
         url: '/detail/:id',
         name: i18n.global.t('device-manager-ui.index.106686-0'),
-        component: () => import('./views/link/AccessConfig/Detail/index.vue'),
+        component: () => import('./views/link/AccessConfig/GatewayWorkspace.vue'),
       },
     ],
   },

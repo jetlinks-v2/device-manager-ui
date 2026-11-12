@@ -1437,6 +1437,10 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
       productId: current.productId || current.productKey || '',
       productName: current.productName,
       features: current.features ?? [],
+      // 映射页从实例 store 查询协议物模型，必须同步协议与传输类型才能加载目标属性。
+      protocol: current.protocol,
+      transport: current.transport,
+      accessProvider: current.accessProvider,
       metadata,
       productMetadata,
       independentMetadata: Boolean(current.independentMetadata),

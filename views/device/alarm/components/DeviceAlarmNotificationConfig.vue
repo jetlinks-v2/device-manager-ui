@@ -42,7 +42,7 @@
               <AIcon type="DownOutlined" class="notification-chip__arrow" />
             </a-button>
           </a-popover>
-          <DeviceAlarmTemplateStatus v-if="notification.channelCount" :templates="selectedTemplateStatus" :include-relieve="Boolean(model.autoRelieve && model.notification.includeRelieve)" @open="$emit('request-methods')" />
+          <DeviceAlarmTemplateStatus v-if="notification.channelCount" :templates="notification.selectedTemplateStatus" :include-relieve="Boolean(model.autoRelieve && model.notification.includeRelieve)" @open="$emit('request-methods')" />
         </span>
         <span v-if="notification.channelCount" class="notification-clause">
           <span>{{ $t(layout === 'form' ? 'DeviceAlarm.notification.user' : 'DeviceAlarm.notification.sendTo') }}</span>
@@ -59,7 +59,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, type PropType } from 'vue'
+import { reactive, ref, type PropType } from 'vue'
 import { useI18n } from 'vue-i18n'
 import DeviceAlarmMessageTemplateConfig from './DeviceAlarmMessageTemplateConfig.vue'
 import DeviceAlarmRecipients from './DeviceAlarmRecipients.vue'
@@ -84,18 +84,6 @@ const emit = defineEmits<{ (e: 'request-methods'): void; (e: 'retry-methods'): v
 const { t: $t } = useI18n()
 const notification = reactive(useAlarmNotification(props, () => emit('request-methods'), value => emit('open-change', value)))
 const channelTrigger = ref<{ focus: () => void }>()
-// Selected types share an overall status; legacy recovery rules still use their saved trigger template.
-const selectedTemplateStatus = computed(() => {
-  const legacy = props.model.notification.relieveTopicProvider === 'alarm-device'
-  const statuses = notification.channelIds.map(id => props.methods.find(method => method.providerId === id)?.templates)
-  const aggregate = (event: 'trigger' | 'relieve'): NonNullable<DeviceAlarmNotifyMethod['templates']>['trigger'] => {
-    if (!statuses.length) return 'unknown'
-    const values = statuses.map(status => status?.[legacy && event === 'relieve' ? 'trigger' : event] ?? 'unknown')
-    return values.includes('unknown') ? 'unknown' : values.includes('missing') ? 'missing'
-      : values.every(value => value === 'unneeded') ? 'unneeded' : 'ready'
-  }
-  return { trigger: aggregate('trigger'), relieve: aggregate('relieve') }
-})
 function closeChannels() {
   notification.setPanel('channels', false)
   channelTrigger.value?.focus()

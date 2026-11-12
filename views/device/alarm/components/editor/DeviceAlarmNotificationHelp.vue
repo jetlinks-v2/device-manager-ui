@@ -25,9 +25,9 @@ defineProps<{ model: DeviceAlarmFormModel; showLabel?: boolean }>()
 const { t: $t } = useI18n()
 </script>
 <style scoped>
-.notification-guidance { display: inline-flex; align-items: center; gap: var(--space-1); color: var(--jet-theme-text-secondary); font-size: var(--fs-12); font-weight: 400; }
+.notification-guidance { display: inline-flex; align-items: center; gap: var(--space-1); color: var(--jet-theme-text-secondary); font-size: var(--fs-14); font-weight: 400; }
 .notification-help { display: flex; flex-direction: column; gap: var(--space-3); width: min(320px, calc(100vw - 72px)); }
-.notification-help strong { display: block; margin-bottom: var(--space-1); font-size: var(--fs-12); font-weight: 500; }
+.notification-help strong { display: block; margin-bottom: var(--space-1); font-size: var(--fs-14); font-weight: 500; }
 .notification-help p { margin: 0; }
 .notification-help-secondary { color: var(--jet-theme-text-secondary); }
 .notification-help p + p { margin-top: var(--space-1); }

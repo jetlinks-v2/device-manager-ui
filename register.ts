@@ -3,6 +3,8 @@ import { deviceMetricsSupported, deviceMetricsAggregate, deviceOverviewSummary }
 import { defineAsyncComponent } from 'vue'
 import objectPresentations from './objectPresentations'
 import { deviceAssetRelationBindings } from './assetRelationBindings'
+import i18n from '@jetlinks-web-core/locales'
+import type { DeviceDetailTabProvider } from './deviceDetailProvider'
 import { queryNoPagingPost } from '@device-manager-ui/api/product'
 import { queryNoPagingPost as queryInstanceNoPage, query } from '@device-manager-ui/api/instance'
 import { usePluginPermissionContext } from '@device-manager-ui/hooks/usePermission'
@@ -64,6 +66,25 @@ export default {
   moduleId: 'device-manager-ui',
   objectPresentations,
   dataCapabilityProviders,
+  // 复用设备级映射页面，显示条件与 2.12 详情及产品的协议能力判断保持一致。
+  deviceDetailTabs: {
+    MetadataMap: {
+      key: 'MetadataMap',
+      label: () => i18n.global.t('Detail.index.957187-25'),
+      icon: 'SwapOutlined',
+      order: 20,
+      matches: device => Boolean(device.features?.some(feature => feature.id === 'diffMetadataSameProduct')),
+      component: defineAsyncComponent(() => import('./views/device/Instance/Detail/MetadataMap/index.vue')),
+    } satisfies DeviceDetailTabProvider,
+    GateWay: {
+      key: 'GateWay',
+      label: () => i18n.global.t('Detail.index.957187-22'),
+      icon: 'DeploymentUnitOutlined',
+      order: 30,
+      matches: device => device.protocol === 'collector-gateway',
+      component: defineAsyncComponent(() => import('./views/device/Instance/Detail/GateWay/index.vue')),
+    } satisfies DeviceDetailTabProvider,
+  },
   apis: {
     deviceMetricsSupported,
     deviceMetricsAggregate,

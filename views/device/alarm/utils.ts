@@ -16,6 +16,8 @@ import { buildCondition, invertCondition, readCondition, recoveryCondition, cond
 import type { DeviceAlarmCondition } from './types'
 import { notificationDateVariables, notificationDateFormat } from './notificationMessageVariables'
 import { formatPropertyValue } from '../components/PropertyRules/values/metadata'
+import { formatPropertyUnit } from './hooks/usePropertyUnits'
+export { formatPropertyUnit } from './hooks/usePropertyUnits'
 
 const DEVICE_ALARM_PROCESSOR = 'device-alarm'
 const DEVICE_ALARM_RELIEVE_PROCESSOR = 'device-alarm-relieve'
@@ -176,7 +178,7 @@ export function toDeviceAlarmRow(
     deviceId,
     property: propertyId,
     propertyName,
-    propertyUnit: formatPropertyUnit(property?.valueType?.unit),
+    propertyUnit: formatPropertyUnit(property?.valueType),
     level: normalizeLevel(processorConfig.alarmLevel),
     ...readCondition(alarmConfiguration.matcher)!,
     autoRelieve: Boolean(alarmConfiguration.relieveProcessor),
@@ -378,17 +380,6 @@ export function formatTriggerText(row: DeviceAlarmCondition & { propertyName?: s
   return row.trigger === 'inside'
     ? t('DeviceAlarm.triggerText.inside', { propertyName, lower, upper })
     : t('DeviceAlarm.triggerText.outside', { propertyName, lower, upper })
-}
-
-export function formatPropertyUnit(value: unknown): string | undefined {
-  if (!value) return undefined
-  if (typeof value === 'object' && !Array.isArray(value)) {
-    const unit = value as Record<string, unknown>
-    return formatPropertyUnit(unit.unitName ?? unit.unitText ?? unit.unitLabel ?? unit.unit ?? unit.name ?? unit.text ?? unit.label ?? unit.symbol ?? unit.id)
-  }
-  const unit = String(value).trim()
-  if (!unit) return undefined
-  return { percent: '%', celsius: '℃', fahrenheit: '℉' }[unit.toLowerCase()] ?? unit
 }
 
 export function levelTone(level: DeviceAlarmLevel): 'error' | 'warning' | 'processing' | 'default' {
