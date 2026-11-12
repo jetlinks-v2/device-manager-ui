@@ -128,6 +128,8 @@ export interface DeviceMapConfig {
   scope?: string
   /** 组合卡片由宿主提供标题与外框，地图仍保留自身加载、错误及交互状态。 */
   embedded?: boolean
+  /** 嵌入宿主可提供图例挂载选择器，未指定时继续显示在地图右上角。 */
+  legendTarget?: string
   /** 未设置时保留全部位置；显式传入（含空数组）时，先按设备查询校验可见 ID，再展示位置。 */
   deviceTerms?: DeviceQueryTerm[]
   /** 地图点位显示设备实时状态；未设置时保留原地图样式。 */

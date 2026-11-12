@@ -38,10 +38,16 @@ function hook(filter, loadStates = async points => ({ points, failed: false })) 
     '../shared': load('shared.ts'),
     '../services/deviceMap': { createDeviceMapStream(handlers) { const stream = { ...handlers, close() {} }; streams.push(stream); return stream }, filterDeviceMapPoints: filter, loadDeviceMapStates: loadStates },
     '../DeviceMapCard/markers': { createDeviceMapMarkerOptions: () => ({}) },
-    '../DeviceMapCard/cluster': {}, './useDeviceMapSelection': { useDeviceMapSelection: () => ({ close() {} }) }, '../../../utils/map': {},
+    '../DeviceMapCard/cluster': {}, './useDeviceMapSelection': { useDeviceMapSelection: () => ({ view: {}, close() {} }) }, '../../../utils/map': {},
+    './useDeviceMapViewport': load('hooks/useDeviceMapViewport.ts', {
+      '@vueuse/core': { useElementSize: () => ({ width: vue.ref(600), height: vue.ref(400) }) },
+      'vue-router': { useRoute: () => ({ fullPath: '/dashboard' }) },
+      '@jetlinks-web-core/store/user': { useUserStore: () => ({ userInfo: { id: 'test' } }) },
+      '@jetlinks-web-core/utils': { getBaseApi: () => '/api' },
+    }),
   })
   const info = vue.ref({ componentProps: { deviceMapCard: { deviceTerms: [] } } })
-  return { streams, info, ...mount(() => useDeviceMap(info, vue.ref(false), vue.ref(true))) }
+  return { streams, info, ...mount(() => useDeviceMap(info, vue.ref(false), vue.ref(true), vue.ref())) }
 }
 
 test('scope query batches IDs, combines terms with AND and snapshots them', async () => {
