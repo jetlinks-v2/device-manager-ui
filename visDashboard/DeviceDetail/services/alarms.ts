@@ -18,7 +18,7 @@ function durationOf(row: Record<string, unknown>) {
   return seconds < 60 ? `${seconds.toFixed(1)} s` : seconds < 3600 ? `${(seconds / 60).toFixed(1)} min` : `${(seconds / 3600).toFixed(1)} h`
 }
 
-/** 告警查询一次、等级字典一次；字典失败沿用接口枚举文案，告警失败交给重试。 */
+/** 告警与等级各查询一次；保留等级数值用于配色，字典失败沿用接口文案。 */
 export async function loadAlarms(deviceId: string, limit: number): Promise<RecentAlarmRecord[]> {
   const [response, levels] = await Promise.all([
     iotDeviceDetailRealApi.queryAlarmByDevice(buildAlarmQuery(deviceId, limit)),
@@ -28,9 +28,11 @@ export async function loadAlarms(deviceId: string, limit: number): Promise<Recen
   if (!Array.isArray(rows)) throw new Error('Invalid alarm response')
   return rows.map(recordOf).filter(row => row.id || row.alarmRecordId || row.alarmTime).map(row => {
     const rawLevel = row.level ?? row.alarmLevel, level = recordOf(rawLevel)
+    const levelValue = Number(level.value ?? rawLevel)
     return { id: textOf(row.id || row.alarmRecordId || row.alarmTime), title: textOf(row.alarmName),
       time: formatApiTime(row.alarmTime), duration: durationOf(row),
-      level: levels.find(item => item.value === Number(level.value ?? rawLevel))?.label || textOf(level.text ?? level.value ?? rawLevel),
+      levelValue,
+      level: levels.find(item => item.value === levelValue)?.label || textOf(level.text ?? level.value ?? rawLevel),
       trigger: textOf(row.triggerDesc), summary: textOf(row.actualDesc || row.triggerDesc) }
   })
 }

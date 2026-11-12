@@ -15,7 +15,6 @@ type SpaceAreaResponse = {
   id?: string
   parentId?: string
   children?: SpaceAreaResponse[]
-  spaceTypeId?: string
   levelNo?: number
   level?: number
   path?: string
@@ -28,12 +27,6 @@ type SpaceAreaResponse = {
   planMode?: string
   description?: string
   canBindAsset?: boolean | string
-}
-
-type SpaceTypeResponse = {
-  id?: string
-  children?: SpaceTypeResponse[]
-  others?: Record<string, unknown>
 }
 
 type SpaceDataBindResponse = {
@@ -121,9 +114,6 @@ export const existsDeviceSpaceAreaSupport_api = (): Promise<DeviceSpaceAreaSuppo
 const flattenAreas = (areas: SpaceAreaResponse[]): SpaceAreaResponse[] =>
   areas.flatMap((item) => [item, ...flattenAreas(item.children || [])])
 
-const flattenSpaceTypes = (types: SpaceTypeResponse[]): SpaceTypeResponse[] =>
-  types.flatMap((item) => [item, ...flattenSpaceTypes(item.children || [])])
-
 const readCapability = (value: unknown): boolean | undefined => {
   if (value === true || value === 'true') return true
   if (value === false || value === 'false') return false
@@ -162,11 +152,8 @@ const toAreaType = (level: number): ProjectAreaType => {
 
 const toPlanMode = (value?: string): ProjectAreaPlanMode => (value === 'own' ? 'own' : 'inherit')
 
-const toProjectArea = (
-  projectId: string,
-  item: SpaceAreaResponse,
-  canBindAsset?: boolean,
-): ProjectArea => {
+/** 将空间节点转换为设备管理选项，绑定能力与空间模块保持一致，缺省时开放。 */
+const toProjectArea = (projectId: string, item: SpaceAreaResponse): ProjectArea => {
   const level = resolveAreaLevel(item)
 
   return {
@@ -175,7 +162,7 @@ const toProjectArea = (
     parentId: item.parentId || undefined,
     name: item.name || item.code || item.id || '--',
     type: toAreaType(level),
-    canBindAsset,
+    canBindAsset: readCapability(item.canBindAsset) ?? true,
     code: item.code || item.id || '',
     aliases: readAliases(item),
     sortOrder: Number(item.sortOrder ?? item.sortIndex ?? 0),
@@ -194,28 +181,15 @@ const toProjectAreaSettings = (projectId: string, areas: ProjectArea[]): Project
   whiteModelCandidates: [],
 })
 
+/** 查询当前可见空间；空间 3.0 不再从已废弃的空间类型配置推导绑定能力。 */
 export const queryProjectSpaceAreaSettings_api = async (projectId: string): Promise<ProjectAreaSettings> => {
   if (await existsDeviceSpaceAreaSupport_api() !== true) return toProjectAreaSettings(projectId, [])
-  const [areaResponse, spaceTypeResponse] = await Promise.all([
-    request.post('/space/_query/tree', {
-      paging: false,
-      sorts: [{ name: 'sortIndex', order: 'asc' }],
-    }, { hiddenError: true }) as Promise<ApiResponse<SpaceAreaResponse[]>>,
-    (request.post('/space/type/_query/no-paging', {
-      paging: false,
-    }, { hiddenError: true }) as Promise<ApiResponse<SpaceTypeResponse[]>>).catch(() => undefined),
-  ])
-  const capabilityBySpaceTypeId = new Map(
-    flattenSpaceTypes(unwrapList(spaceTypeResponse))
-      .filter((item) => Boolean(item.id))
-      .map((item) => [String(item.id), readCapability(item.others?.canBindAsset)]),
-  )
+  const areaResponse = await request.post('/space/_query/tree', {
+    paging: false,
+    sorts: [{ name: 'sortIndex', order: 'asc' }],
+  }, { hiddenError: true }) as ApiResponse<SpaceAreaResponse[]>
   const areas = flattenAreas(unwrapList(areaResponse))
-    .map((item) => toProjectArea(
-      projectId,
-      item,
-      readCapability(item.canBindAsset) ?? capabilityBySpaceTypeId.get(String(item.spaceTypeId || '')),
-    ))
+    .map((item) => toProjectArea(projectId, item))
     .filter((item) => Boolean(item.id))
 
   return toProjectAreaSettings(projectId, areas)
