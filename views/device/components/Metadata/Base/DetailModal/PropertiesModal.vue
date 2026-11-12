@@ -98,7 +98,7 @@
   />
 </template>
 
-<script setup lang="ts" name="PropertiesModal">
+<script setup lang="ts">
 import {omit} from "lodash-es";
 import {watch} from "vue";
 import JsonView from './JsonView.vue'
@@ -112,6 +112,8 @@ import { queryProductVirtualProperty } from '../../../../../../api/product';
 import {useInstanceStore} from "../../../../../../store/instance";
 import {useProductStore} from "../../../../../../store/product";
 import { useI18n } from 'vue-i18n';
+
+defineOptions({ name: 'PropertiesModal' })
 
 const { t: $t } = useI18n();
 const props = defineProps({

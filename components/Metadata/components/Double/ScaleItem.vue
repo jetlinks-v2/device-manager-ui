@@ -15,7 +15,10 @@
   </a-form-item>
 </template>
 
-<script setup name="MetadataScaleItem">
+<script setup>
+
+defineOptions({ name: 'MetadataScaleItem' })
+
 const emit = defineEmits(['update:value']);
 
 const props = defineProps({

@@ -90,13 +90,15 @@
         />
     </j-page-container>
 </template>
-<script lang="ts" name="Category" setup>
+<script lang="ts" setup>
 import { createReusableTemplate } from '@vueuse/core'
 
 import { queryTree, deleteTree } from '../../../api/category';
 import ModifyModal from './components/modifyModal/index.vue';
 import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import { useI18n } from 'vue-i18n';
+
+defineOptions({ name: 'Category' })
 
 const { t: $t } = useI18n();
 const expandedRowKeys = ref<any>([]);

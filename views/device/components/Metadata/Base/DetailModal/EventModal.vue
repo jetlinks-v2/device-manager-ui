@@ -34,10 +34,12 @@
   </a-modal>
 </template>
 
-<script setup lang="ts" name="EventModal">
+<script setup lang="ts">
 import JsonView from "./JsonView.vue";
 import {useStoreType} from "../utils";
 import { useI18n } from 'vue-i18n';
+
+defineOptions({ name: 'EventModal' })
 
 const { t: $t } = useI18n();
 

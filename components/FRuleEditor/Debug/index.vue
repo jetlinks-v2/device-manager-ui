@@ -209,7 +209,7 @@
         </div>
     </div>
 </template>
-<script setup lang="ts" name="Debug">
+<script setup lang="ts">
 import { createReusableTemplate } from '@vueuse/core'
 
 import { PropType, Ref } from 'vue';
@@ -220,6 +220,8 @@ import {useTableWrapper, useTableFullScreen} from "../../../components/Metadata/
 import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import {message} from "ant-design-vue";
 import { useI18n } from 'vue-i18n';
+
+defineOptions({ name: 'Debug' })
 
 const { t: $t } = useI18n();
 

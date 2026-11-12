@@ -13,8 +13,10 @@
   />
 </template>
 
-<script name="BooleanSelect" setup>
+<script setup>
 import {useTableWrapper} from "../../../../../../../../components/Metadata/context";
+
+defineOptions({ name: 'BooleanSelect' })
 
 const props = defineProps({
   value: {

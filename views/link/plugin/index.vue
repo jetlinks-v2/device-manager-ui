@@ -4,8 +4,10 @@
   </j-page-container>
 </template>
 
-<script setup lang="ts" name="PluginIndex">
+<script setup lang="ts">
 import Content from './Content.vue'
+
+defineOptions({ name: 'PluginIndex' })
 </script>
 
 <style scoped lang="less">

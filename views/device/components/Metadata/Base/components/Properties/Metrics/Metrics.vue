@@ -46,13 +46,15 @@
   </div>
 </template>
 
-<script setup name="Metrics" lang="ts">
+<script setup lang="ts">
 import { defineExpose, provide } from 'vue'
 import MetricValueItem from './ValueItem.vue'
 import BooleanSelect from "./BooleanSelect.vue";
 import { EditTable, EditTableFormItem } from '../../../../../../../../components/Metadata'
 import { isNil } from "lodash-es";
 import { useI18n } from 'vue-i18n';
+
+defineOptions({ name: 'Metrics' })
 
 const { t: $t } = useI18n();
 

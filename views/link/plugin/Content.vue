@@ -170,7 +170,7 @@
   <SaveModal v-if="visible" :data="editData" @cancel="cancel" @ok="save"/>
   <Detail v-if="visibleDetail" :data="editData" @close="visibleDetail = false"/>
 </template>
-<script setup lang="ts" name="PluginContent">
+<script setup lang="ts">
 import { createReusableTemplate } from '@vueuse/core'
 
 import SaveModal from './Save.vue';
@@ -184,6 +184,8 @@ import { usePluginPermission } from '@device-manager-ui/hooks/usePermission'
 import { mergeObjectArrays } from '@jetlinks-web-core/utils'
 import ConditionFilter from '@jetlinks-web-core/components/ConditionFilter'
 import { getI18nText } from '../../../utils/i18n'
+
+defineOptions({ name: 'PluginContent' })
 
 const {t: $t} = useI18n();
 const route = useRoute();

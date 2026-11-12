@@ -41,7 +41,7 @@
   <a-button @click="validate">校验</a-button>
 </template>
 
-<script setup name="demo">
+<script setup>
 import Table from "./Table.vue";
 import {
   ArrayParams,
@@ -54,6 +54,8 @@ import {
   DoubleParams,
   StringParams,
 } from "./components";
+
+defineOptions({ name: 'demo' })
 
 const tableRef = ref();
 const dataSource = ref(

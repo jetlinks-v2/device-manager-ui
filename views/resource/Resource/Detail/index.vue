@@ -209,7 +209,7 @@
   </j-page-container>
 </template>
 
-<script setup name="Detail">
+<script setup>
 import Update from './Update/index.vue';
 import Apply from './Apply/index.vue';
 import ApplyCollector from './ApplyCollector/index.vue';
@@ -221,6 +221,8 @@ import DetailHeaderTitle from './components/title.vue'
 import {omit, cloneDeep} from "lodash-es";
 import ModelItem from "./ModelItem.vue";
 import { useMenuStore } from '@jetlinks-web-core/store/menu';
+
+defineOptions({ name: 'Detail' })
 
 const imageMap = new Map([
   ['device', resource.deviceDefaultImage],

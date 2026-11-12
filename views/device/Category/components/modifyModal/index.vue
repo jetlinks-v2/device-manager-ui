@@ -50,13 +50,15 @@
     </a-form>
   </a-modal>
 </template>
-<script setup lang="ts" name="modifyModal">
+<script setup lang="ts">
 import { PropType } from "vue";
 import { Form } from "ant-design-vue";
 import { queryTree, saveTree, updateTree } from "../../../../../api/category";
 import { onlyMessage } from "@jetlinks-web-core/utils/comm";
 import { useI18n } from "vue-i18n";
 import { I18nTextField } from '@jetlinks-web-core/components';
+
+defineOptions({ name: 'modifyModal' })
 
 const { t: $t } = useI18n();
 

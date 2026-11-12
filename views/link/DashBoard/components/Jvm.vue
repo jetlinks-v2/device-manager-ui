@@ -53,7 +53,7 @@
     </a-spin>
 </template>
 
-<script lang="ts" setup name="Jvm">
+<script lang="ts" setup>
 import { dashboard } from '../../../../api/link/dashboard';
 import dayjs from 'dayjs';
 import {
@@ -67,6 +67,8 @@ import { DataType } from '../typings';
 import ServerList from './ServerList.vue'
 import Echarts from './echarts.vue'
 import {useI18n} from "vue-i18n";
+
+defineOptions({ name: 'Jvm' })
 
 const props = defineProps({
   serviceId: {

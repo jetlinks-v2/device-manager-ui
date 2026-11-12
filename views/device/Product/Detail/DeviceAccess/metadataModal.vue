@@ -36,10 +36,12 @@
   </a-modal>
 </template>
 
-<script lang="ts" setup name="MetadataModal">
+<script lang="ts" setup>
 import type { PropType } from 'vue'
 import type { AccessSaveData } from './accessState'
 import { useProductAccessMetadata } from './hooks/useProductAccessMetadata'
+
+defineOptions({ name: 'MetadataModal' })
 const props = defineProps({ data: { type: Object as PropType<AccessSaveData>, required: true } })
 const emit = defineEmits<{ (event: 'submit'): void; (event: 'cancel'): void }>()
 const { formRef, handleData, loading, options, submitData, cancel } = useProductAccessMetadata(props, emit)

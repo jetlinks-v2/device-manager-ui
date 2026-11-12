@@ -29,10 +29,12 @@
     </PopoverModal>
 </template>
 
-<script setup name="MetadataObject">
+<script setup>
 import { PopoverModal } from '../index';
 import { Form } from 'ant-design-vue';
 import Item from './Item.vue'
+
+defineOptions({ name: 'MetadataObject' })
 
 const props = defineProps({
     value: {

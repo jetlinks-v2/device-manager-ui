@@ -102,7 +102,7 @@
   </div>
 </template>
 
-<script setup lang="ts" name="MetadataSource">
+<script setup lang="ts">
 import {isNoCommunity} from '@jetlinks-web-core/utils/utils';
 import VirtualRule from './VirtualRule/index.vue';
 import {Form} from 'ant-design-vue';
@@ -116,6 +116,8 @@ import {PopoverModal} from '../../../../../../components/Metadata'
 import {useTableWrapper} from "../../../../../../components/Metadata/context";
 import {sourceType} from "../utils";
 import { useI18n } from 'vue-i18n';
+
+defineOptions({ name: 'MetadataSource' })
 
 const { t: $t } = useI18n();
 

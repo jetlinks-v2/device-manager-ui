@@ -9,9 +9,11 @@
   </div>
 </template>
 
-<script setup lang="ts" name="JsonView">
+<script setup lang="ts">
 import 'vue3-json-viewer/dist/index.css';
 import { JsonViewer } from 'vue3-json-viewer';
+
+defineOptions({ name: 'JsonView' })
 
 const props = defineProps({
   value: {

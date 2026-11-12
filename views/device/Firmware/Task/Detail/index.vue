@@ -244,7 +244,7 @@
   </a-modal>
 </template>
 
-<script setup name="TaskDetail">
+<script setup>
 import {
   historyPaginateNot,
   stopTask,
@@ -257,6 +257,8 @@ import dayjs from 'dayjs'
 import { onlyMessage } from '@jetlinks-web/utils'
 import { useI18n } from 'vue-i18n'
 import { theme } from 'ant-design-vue'
+
+defineOptions({ name: 'TaskDetail' })
 
 const { t: $t } = useI18n()
 const { token } = theme.useToken()

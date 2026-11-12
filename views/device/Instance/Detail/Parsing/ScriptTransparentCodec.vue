@@ -115,7 +115,7 @@
   </div>
 </template>
 
-<script setup lang="ts" name="ScriptTransparentCodec">
+<script setup lang="ts">
 import { useFullscreen } from '@vueuse/core';
 import { useInstanceStore } from '../../../../../store/instance';
 import {
@@ -129,6 +129,8 @@ import { message } from 'ant-design-vue';
 import { isBoolean } from 'lodash-es';
 import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import { useI18n } from 'vue-i18n';
+
+defineOptions({ name: 'ScriptTransparentCodec' })
 
 const { t: $t } = useI18n();
 
