@@ -3,7 +3,7 @@
     :value="selected"
     :options="options"
     :loading="loading"
-    :disabled="disabled || !subject"
+    :disabled="disabled || loading || !modelId"
     :placeholder="t('ObjectPresentation.chooseProperties')"
     mode="multiple"
     option-filter-prop="label"
@@ -19,7 +19,8 @@
 </template>
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
-import { request } from '@jetlinks-web/core'
+import { objectCapabilitiesApi } from '@jetlinks-web-core/object-capability/api'
+import { useDataCapabilityRequest } from '@jetlinks-web-core/data-capability/request'
 import { useI18n } from 'vue-i18n'
 const props = defineProps<{
   subject?: { typeId: string; id: string }
@@ -28,29 +29,40 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{ change: [parameters: Record<string, unknown>] }>()
 const { t } = useI18n()
+const api = objectCapabilitiesApi({ request: useDataCapabilityRequest() })
 const options = ref<Array<{ value: string; label: string }>>([]),
   loading = ref(false),
   error = ref('')
 const modelId = ref('')
 const selected = computed(() => (Array.isArray(props.parameters.properties) ? props.parameters.properties : []))
 let generation = 0
-onBeforeUnmount(() => generation++)
+let controller: AbortController | undefined
+onBeforeUnmount(() => { generation++; controller?.abort() })
 watch(
-  () => props.subject?.id,
-  async (id) => {
+  () => [props.subject?.typeId, props.subject?.id],
+  async () => {
     const current = ++generation
+    controller?.abort()
+    controller = new AbortController()
+    const subject = props.subject
     options.value = []
     error.value = ''
     modelId.value = ''
-    loading.value = !!id
-    if (!id) return
+    loading.value = !!subject
+    if (!subject) return
     try {
-      const response = await request.get(`/device-instance/${encodeURIComponent(id)}/property-metadata`)
+      // 实例模型保留派生属性和可读范围；产品身份沿用原对象属性，避免放宽快照查询范围。
+      const [models, properties] = await Promise.all([
+        api.models(subject.typeId, subject.id, controller.signal),
+        api.properties({ type: subject.typeId, id: subject.id }, subject.typeId, ['productId'], controller.signal),
+      ])
       if (current !== generation) return
-      if (!response.success) throw new Error(response.message || t('ObjectPresentation.propertiesUnavailable'))
-      const metadata = response.result as { modelId: string; properties: Array<{ id: string; name?: string }> }
-      modelId.value = metadata.modelId
-      options.value = (metadata.properties || []).map((field) => ({ value: field.id, label: field.name || field.id }))
+      const model = models.find((source) => source.providerId === 'device-data')
+      const productId = properties.find((property) => property.property === 'productId')?.value
+      if (!model || typeof productId !== 'string' || !productId)
+        throw new Error(t('ObjectPresentation.propertiesUnavailable'))
+      modelId.value = productId
+      options.value = (model.metadata.properties || []).map((field) => ({ value: field.id, label: field.name || field.id }))
     } catch (cause) {
       if (current === generation) error.value = cause instanceof Error ? cause.message : String(cause)
     } finally {
@@ -60,7 +72,7 @@ watch(
   { immediate: true }
 )
 function change(value: unknown) {
-  if (Array.isArray(value) && modelId.value)
+  if (!props.disabled && !loading.value && Array.isArray(value) && modelId.value)
     emit('change', { ...props.parameters, properties: value.slice(0, 8), productIds: [modelId.value] })
 }
 </script>
