@@ -20,7 +20,7 @@ function load(relative, dependencies = {}, globals = {}) {
   const exports = {}
   new Function('exports', 'require', ...Object.keys(globals), output)(
     exports,
-    (id) => dependencies[id] ?? (id === './deviceMapStatus' ? load('DeviceMapCard/deviceMapStatus.ts') : require(id)),
+    (id) => dependencies[id] ?? (id === './deviceMapStatus' || id === '../DeviceMapCard/deviceMapStatus' ? load('DeviceMapCard/deviceMapStatus.ts') : require(id)),
     ...Object.values(globals)
   )
   return exports
@@ -71,6 +71,7 @@ function selectionFactory(service = {}) {
   const i18n = { useI18n: () => ({ locale, t: (key) => locale.value + ':' + key }) }
   const { useDeviceMapSelection } = load('hooks/useDeviceMapSelection.ts', {
     'vue-i18n': i18n,
+    '@jetlinks-web-core/store/menu': { useMenuStore: () => service.menu ?? { hasMenu: () => false, jumpPage() {} } },
     '../../../dataCapabilities/deviceInstanceMonitoring.service': {
       async loadDeviceStates(query, signal) {
         calls.push({ ...query, signal })
@@ -85,6 +86,15 @@ function selectionFactory(service = {}) {
     }
   })
   return { useDeviceMapSelection, calls, details, locale }
+}
+
+function viewportModule() {
+  return load('hooks/useDeviceMapViewport.ts', {
+    '@vueuse/core': { useElementSize: () => ({ width: vue.ref(600), height: vue.ref(400) }) },
+    'vue-router': { useRoute: () => ({ fullPath: '/resources/dashboard' }) },
+    '@jetlinks-web-core/store/user': { useUserStore: () => ({ userInfo: { id: 'test-user' } }) },
+    '@jetlinks-web-core/utils': { getBaseApi: () => '/api' },
+  })
 }
 
 test('GeoJSON retains real device IDs even when names and coordinates coincide', () => {
@@ -275,6 +285,7 @@ test('actual map hook deduplicates by device ID, expands normal clusters, opens 
       '../DeviceMapCard/markers': { createDeviceMapMarkerOptions: () => ({}) },
       '../DeviceMapCard/cluster': cluster,
       './useDeviceMapSelection': factory,
+      './useDeviceMapViewport': viewportModule(),
       '../../../utils/map': load('../../utils/map.ts')
     },
     {
@@ -299,7 +310,7 @@ test('actual map hook deduplicates by device ID, expands normal clusters, opens 
   const edit = vue.ref(false),
     enabled = vue.ref(true),
     moves = []
-  const { value, unmount } = mount(() => mapHook.useDeviceMap(vue.ref({}), edit, enabled))
+  const { value, unmount } = mount(() => mapHook.useDeviceMap(vue.ref({}), edit, enabled, vue.ref()))
   assert.equal(value.canConfigureMap.value, true)
   value.openMapConfig()
   granted.value = false
@@ -309,7 +320,7 @@ test('actual map hook deduplicates by device ID, expands normal clusters, opens 
   value.openMapConfig()
   assert.deepEqual(navigation, ['system/Basis'])
   edit.value = false
-  streams[0].onMessage([point('d1'), point('d2'), point('d3')])
+  streams[0].onMessage([point('d1'), point('d2', 116.40001), point('d3')])
   streams[0].onMessage([{ ...point('d1'), label: 'Updated name' }])
   assert.equal(value.points.value.length, 3)
   assert.equal(value.points.value[0].label, 'Updated name')
@@ -325,6 +336,7 @@ test('actual map hook deduplicates by device ID, expands normal clusters, opens 
   zoom = 20
   value.onClusterClick({ clusterData: [point('d1'), point('d2', 116.40001)] })
   assert.equal(value.selection.view.count, 2)
+  streams[0].onMessage([point('d2')])
   value.onClusterClick({ clusterData: [point('d1'), point('d2'), point('d3')] })
   assert.equal(value.selection.view.count, 3)
   await settle()
@@ -458,10 +470,10 @@ test('distribution hook rejects stale state responses on scope change and select
       loadDeviceMapStates(points,signal){const d=deferred();pending.push({...d,points,signal});return d.promise},
     },
     '../DeviceMapCard/markers':{createDeviceMapMarkerOptions:()=>({})},
-    '../DeviceMapCard/cluster':cluster,'./useDeviceMapSelection':factory,'../../../utils/map':load('../../utils/map.ts'),
+    '../DeviceMapCard/cluster':cluster,'./useDeviceMapSelection':factory,'./useDeviceMapViewport':viewportModule(),'../../../utils/map':load('../../utils/map.ts'),
   })
   const info=vue.ref({componentProps:{deviceMapCard:{presentation:'distribution',scope:'a',isAutoRefresh:false}}})
-  const {value,unmount}=mount(()=>useDeviceMap(info,vue.ref(false),vue.ref(false)))
+  const {value,unmount}=mount(()=>useDeviceMap(info,vue.ref(false),vue.ref(false),vue.ref()))
   streams[0].onMessage([point('a'),point('b')]);streams[0].onComplete();await settle()
   assert.equal(pending.length,1)
   info.value={componentProps:{deviceMapCard:{presentation:'distribution',scope:'b',isAutoRefresh:false}}};await settle()
@@ -472,4 +484,46 @@ test('distribution hook rejects stale state responses on scope change and select
   assert.deepEqual(value.points.value.map(p=>p.deviceId),['new','other'])
   value.onPointSelect('new');assert.equal(value.selection.view.count,2)
   unmount()
+})
+
+test('summary navigation uses authorized route, correct id and prevents duplicate navigation', async () => {
+  const pending = deferred(), calls = [], remembered = []
+  const factory = selectionFactory({
+    detail: async () => ({ deviceName: '设备', productName: '产品', state: 'online', stateText: '在线', lastActiveTime: new Date(2026, 10, 12, 14, 32).getTime() }),
+    menu: { hasMenu: code => code === 'iot-user-device-list/Detail', jumpPage: (code, options) => { calls.push({ code, options }); return pending.promise } },
+  })
+  const {value,unmount}=mount(()=>factory.useDeviceMapSelection(id=>remembered.push(id)))
+  value.open([point('selected')]); await settle()
+  assert.equal(value.view.canOpenDetail,true)
+  assert.equal(value.view.detailStatus.text,'在线')
+  assert.deepEqual(value.view.detailFields.map(x=>x.value),['selected','产品','11-12 14:32'])
+  assert.equal(value.view.detailFields[0].copyable,true)
+  const first=value.openDetailPage(); await value.openDetailPage()
+  assert.equal(calls.length,1); assert.equal(calls[0].options.params.id,'selected'); assert.deepEqual(remembered,['selected'])
+  pending.resolve(); await first; assert.equal(value.view.openingDetail,false); unmount()
+})
+
+test('viewport restores camera and selected visible device only within the same identity', () => {
+  const sizes={width:vue.ref(280),height:vue.ref(240)}, route=vue.reactive({fullPath:'/dashboard'}), user=vue.reactive({userInfo:{id:'a'}})
+  const viewport=load('hooks/useDeviceMapViewport.ts',{
+    '@vueuse/core':{useElementSize:()=>sizes},'vue-router':{useRoute:()=>route},
+    '@jetlinks-web-core/store/user':{useUserStore:()=>user},'@jetlinks-web-core/utils':{getBaseApi:()=>'/api'},
+  })
+  const pos=vue.ref([116,39]), identity=vue.ref('scope-a'), moves=[]
+  const instance={getCenter:()=>({lng:116,lat:39}),getZoom:()=>12,setZoomAndCenter:(...args)=>moves.push(args),lngLatToContainer:()=>({x:10,y:10})}
+  const a=viewport.useDeviceMapViewport(identity,vue.ref(),pos); a.onMapInit(instance)
+  assert.equal(a.popup.value.placement,'below'); assert.equal(a.popup.value.style.width,'256px'); assert.equal(a.popup.value.style.maxHeight,'200px')
+  a.remember('d2'); const b=viewport.useDeviceMapViewport(identity,vue.ref(),pos); b.onMapInit(instance)
+  assert.deepEqual(moves,[[12,[116,39]]]); const restored=b.takeRestoredSelection([point('d1'),point('d2')]); assert.equal(restored.device.deviceId,'d2'); assert.equal(restored.points.length,2)
+  b.remember('d2'); user.userInfo.id='b'; const c=viewport.useDeviceMapViewport(identity,vue.ref(),pos); assert.equal(c.takeRestoredSelection([point('d2')]),undefined)
+  user.userInfo.id='a'; const d=viewport.useDeviceMapViewport(identity,vue.ref(),pos); assert.equal(d.takeRestoredSelection([point('other')]),undefined)
+})
+
+test('missing authorized detail menu disables navigation', async () => {
+  let calls=0
+  const factory=selectionFactory({menu:{hasMenu:()=>false,jumpPage:()=>{calls++}}})
+  const {value,unmount}=mount(factory.useDeviceMapSelection)
+  value.open([point('d1')]); await settle()
+  assert.equal(value.view.hasDetailRoute,false); assert.equal(value.view.canOpenDetail,false)
+  await value.openDetailPage(); assert.equal(calls,0); unmount()
 })

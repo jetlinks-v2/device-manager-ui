@@ -1,4 +1,18 @@
 <template>
+  <DefineSelectionCard v-slot="{ layout }">
+    <DeviceMapSelectionCard
+      :view="selection.view"
+      :layout="layout"
+      @close="selection.close"
+      @back="selection.closeDetail"
+      @search="selection.search"
+      @page="selection.changePage"
+      @select="selection.selectDevice"
+      @retry-states="selection.refreshStates"
+      @retry-detail="selection.refreshDetail"
+      @open-detail="selection.openDetailPage"
+    />
+  </DefineSelectionCard>
   <div
     class="device-map-card"
     :class="{ 'device-map-card--embedded': config.embedded }"
@@ -14,10 +28,14 @@
         </div>
       </template>
     </SectionHeader>
-    <div class="device-map-card__body">
-      <div v-if="config.embedded && (distribution || config.showStatus)" class="device-map-legend device-map-legend--embedded">
-        <span v-for="state in legendStates" :key="state"><i :style="{ background: distributionColors[state] }" />{{ t(`components.DeviceMap.${state === 'unknown' ? 'unknownState' : state}`) }}</span>
-      </div>
+    <div ref="container" class="device-map-card__body">
+      <!-- 宿主提供标题栏时复用同一份实时图例，避免复制状态与颜色规则。 -->
+      <Teleport v-if="config.embedded && (distribution || config.showStatus)"
+        :to="config.legendTarget || 'body'" :disabled="!config.legendTarget">
+        <div class="device-map-legend" :class="{ 'device-map-legend--embedded': !config.legendTarget }">
+          <span v-for="state in legendStates" :key="state"><i :style="{ background: distributionColors[state] }" />{{ t(`components.DeviceMap.${state === 'unknown' ? 'unknownState' : state}`) }}</span>
+        </div>
+      </Teleport>
       <a-spin
         :spinning="loading"
         :tip="t('components.DeviceMap.loading')"
@@ -51,6 +69,16 @@
             :extraOptions="extraOptions"
             @click="onClusterClick"
           />
+          <ElAmapMarker v-if="selection.view.detailDevice" :position="selection.view.detailDevice.lnglat"
+            anchor="center" :clickable="false" :z-index="300">
+            <span class="device-map-card__selected-ring" />
+          </ElAmapMarker>
+          <ElAmapInfoWindow v-if="selection.view.visible" :position="selection.view.position"
+            :visible="true" :is-custom="true" :auto-move="true" :avoid="[12, 12, 12, 12]"
+            :anchor="popup.anchor" :offset="popup.offset" :close-when-click-map="true"
+            @update:visible="!$event && selection.close()">
+            <ReuseSelectionCard :layout="popup" />
+          </ElAmapInfoWindow>
         </a-map-component>
         <a-alert
           v-if="isEdit && !configurationMessage && !loading && !error && !points.length"
@@ -59,16 +87,7 @@
           show-icon
           :message="t('components.DeviceMap.editPlaceholder')"
         />
-        <DeviceMapSelectionCard
-          :view="selection.view"
-          @close="selection.close"
-          @back="selection.closeDetail"
-          @search="selection.search"
-          @page="selection.changePage"
-          @select="selection.selectDevice"
-          @retry-states="selection.refreshStates"
-          @retry-detail="selection.refreshDetail"
-        />
+        <ReuseSelectionCard v-if="distribution" />
       </a-spin>
     </div>
   </div>
@@ -77,9 +96,10 @@
 <script setup lang="ts">
 import CloudEmpty from '@jetlinks-web-core/components/CloudEmpty/index.vue'
 import MapConfigAction from './MapConfigAction.vue'
-import { computed, toRef, type CSSProperties, type PropType } from 'vue'
+import { computed, ref, toRef, type CSSProperties, type PropType } from 'vue'
+import { createReusableTemplate } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
-import { ElAmapMarkerCluster } from '@vuemap/vue-amap'
+import { ElAmapInfoWindow, ElAmapMarker, ElAmapMarkerCluster } from '@vuemap/vue-amap'
 import { useSystemStore } from '@jetlinks-web-core/store/system'
 import SectionHeader from '../components/SectionHeader.vue'
 import { useDeviceMap } from '../hooks/useDeviceMap'
@@ -87,6 +107,7 @@ import DeviceMapSelectionCard from './DeviceMapSelectionCard.vue'
 import DeviceDistributionMap from './DeviceDistributionMap.vue'
 import { distributionColors, distributionState, type DistributionState } from './distribution'
 import type { DashboardCardInfo } from '../shared'
+import type { DeviceMapPopupLayout } from '../hooks/useDeviceMapViewport'
 
 defineOptions({
   name: 'DeviceMapCard'
@@ -108,15 +129,19 @@ const infoRef = toRef(props, 'info')
 const isEditRef = toRef(props, 'isEdit')
 const system = useSystemStore()
 const { t } = useI18n()
+const container = ref<HTMLElement>()
+// 两种底图共用同一摘要卡事件契约，高德模式交给原生信息窗定位和避让。
+const [DefineSelectionCard, ReuseSelectionCard] = createReusableTemplate<{ layout?: DeviceMapPopupLayout }>()
 
 const isMapEnabled = computed(() => {
   const { apiKey, secretKey } = system.systemInfo.amap || {}
   return !!(apiKey?.trim() && secretKey?.trim())
 })
-const { config, distribution, points, loading, error, extraOptions, selection, refresh, onMapInit, onClusterClick, onPointSelect, canConfigureMap, openMapConfig } = useDeviceMap(
+const { config, distribution, points, loading, error, extraOptions, selection, popup, refresh, onMapInit, onClusterClick, onPointSelect, canConfigureMap, openMapConfig } = useDeviceMap(
   infoRef,
   isEditRef,
-  isMapEnabled
+  isMapEnabled,
+  container,
 )
 const configurationMessage = computed(() => distribution.value || isMapEnabled.value ? '' : t('components.DeviceMap.missingKey'))
 const legendStates = computed<DistributionState[]>(() => ['online', 'offline',
@@ -183,6 +208,16 @@ const title = computed(() =>
   right: var(--space-3, 12px);
   left: var(--space-3, 12px);
   z-index: 200;
+}
+
+.device-map-card__selected-ring {
+  display: block;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 2px solid var(--ant-primary-color, var(--accent));
+  border-radius: 50%;
+  box-sizing: border-box;
+  pointer-events: none;
 }
 </style>
 
