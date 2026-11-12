@@ -3,7 +3,7 @@ import { test } from 'node:test'
 import { computed } from 'vue'
 import { setAlarmRequestHandler } from './alarmRequest.test-shim'
 import { formatPropertyUnit, loadPropertyUnits } from '../views/device/alarm/hooks/usePropertyUnits'
-import { splitPropertyValueAndUnit } from '../views/device/list/components/device-detail/iotDevicePropertyDisplay'
+import { formatPropertyValueWithUnit, splitPropertyValueAndUnit } from '../views/device/list/components/device-detail/iotDevicePropertyDisplay'
 
 const commonUnits = [
   { id: 'celsius', symbol: '℃' }, { id: 'fahrenheit', symbol: '℉' },
@@ -13,6 +13,14 @@ const commonUnits = [
   { id: 'kilopascals', symbol: 'kPa' }, { id: 'metersPerSecondSquared', symbol: 'm/s²' },
   { id: 'kgce', symbol: 'kgce' },
 ]
+
+test('raw decimals and scientific notation keep the configured unit without rounding', () => {
+  for (const value of [0, -16, 3.14, '-0.25', '.5', '1e-7', '9223372036854775807', '0.12345678901234567890']) {
+    assert.deepEqual(splitPropertyValueAndUnit(value, '%'), { value: String(value), unit: '%' })
+    assert.equal(formatPropertyValueWithUnit(value, '%'), `${value}%`)
+  }
+  assert.equal(formatPropertyValueWithUnit('40.53%', 'percent'), '40.53%')
+})
 
 test('property unit IDs resolve from the backend dictionary, share loads and react after a failed attempt', async () => {
   let requests = 0

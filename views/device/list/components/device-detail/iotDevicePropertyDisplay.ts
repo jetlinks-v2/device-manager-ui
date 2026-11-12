@@ -17,6 +17,11 @@ export function splitPropertyValueAndUnit(value: unknown, unit?: string): Displa
   const normalizedUnit = String(unit ?? '').trim()
   if (!normalizedUnit) return { value: text, unit: '' }
 
+  // 完整数值直接使用配置单位，避免后缀匹配回溯时把小数部分误判成单位。
+  if (/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/u.test(text)) {
+    return { value: text, unit: normalizedUnit }
+  }
+
   // 设备值可能已来自 formatValue，部分协议会把已配置单位拼进值里；先拆开再展示，避免重复单位。
   const inlineUnit = text.match(/^([+-]?\d+(?:\.\d+)?)(?:\s*)([^\d\s].*)$/u)
   if (inlineUnit) {
