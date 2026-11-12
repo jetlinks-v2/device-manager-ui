@@ -5,6 +5,7 @@ import { useAuthStore, useMenuStore, useSystemStore } from '@jetlinks-web-core/s
 import { isNoCommunity } from '@jetlinks-web-core/utils/utils'
 import { EventEmitter, onlyMessage } from '@jetlinks-web/utils'
 import useClipboard from 'vue-clipboard3'
+import { findStoredTag, type DeviceTag } from '../components/device-detail/tags/tagEditor'
 import {
   deleteDevice_api,
   deployDevice_api,
@@ -525,14 +526,15 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
     return value === undefined || value === null || (typeof value === 'string' && value.trim() === '')
   }
 
-  async function saveTags(tags: Record<string, any>[]) {
-    if (!device.value?.id || savingTags.value || !canDeviceAction('update')) return
+  async function saveTags(tags: Record<string, any>[]): Promise<boolean> {
+    if (!device.value?.id || savingTags.value || !canDeviceAction('update')) return false
     const savedDeviceId = device.value.id
     const savedProjectId = projectId.value
     savingTags.value = true
     try {
       const tagsToSave = tags.filter((tag) => getTagKey(tag) && !isEmptyTagValue(tag.value))
-      const tagsToDelete = tags.filter((tag) => getTagKey(tag) && isEmptyTagValue(tag.value) && tag.id)
+      const tagsToDelete = tags.filter((tag) => getTagKey(tag) && isEmptyTagValue(tag.value))
+        .map(tag => findStoredTag(device.value?.thingModelTags || [], tag)).filter((tag): tag is DeviceTag => !!tag)
       if (tagsToSave.length) {
         await iotDeviceDetailRealApi.saveTags(savedDeviceId, tagsToSave)
       }
@@ -540,16 +542,28 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
         await Promise.all(tagsToDelete.map((tag) => iotDeviceDetailRealApi.deleteTag(savedDeviceId, String(tag.id))))
       }
       if (tagsToSave.length || tagsToDelete.length) {
-        if (disposed || savedDeviceId !== deviceId.value || savedProjectId !== projectId.value) return
+        if (disposed || savedDeviceId !== deviceId.value || savedProjectId !== projectId.value) return false
         onlyMessage($t('IotDeviceDetail.detail.saveSuccess'))
         const context = beginLoad()
         await loadDevice(context)
         if (isCurrentLoad(context) && detailContent.value) await detailContentRef.value?.refresh?.()
       }
+      if (disposed || savedDeviceId !== deviceId.value || savedProjectId !== projectId.value) return false
       tagEditorOpen.value = false
+      return true
     } finally {
       savingTags.value = false
     }
+  }
+
+  function canRemoveTag(tag: DeviceTag) {
+    return canDeviceAction('update') && !!findStoredTag(device.value?.thingModelTags || [], tag)
+  }
+
+  /** 仅清除设备已保存的值，产品标签定义保留供再次填写。 */
+  function removeTag(tag: DeviceTag): Promise<boolean> {
+    const stored = findStoredTag(device.value?.thingModelTags || [], tag)
+    return stored ? saveTags([{ ...stored, value: '' }]) : Promise.resolve(false)
   }
 
   const thingModelDefinition = computed(() => {
@@ -1675,6 +1689,8 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
     formatTagTooltipValueOnly,
     toggleTagsExpanded,
     saveTags,
+    canRemoveTag,
+    removeTag,
     thingModelDefinition,
     overviewAccessSummary,
     categoryKey,
