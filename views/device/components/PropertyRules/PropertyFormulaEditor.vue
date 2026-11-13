@@ -1,13 +1,12 @@
 <template>
   <div class="property-formula">
-    <MathExpressionEditor v-if="editing" :model-value="pending" :context="context" :disabled="disabled" autofocus @update:model-value="update" @invalid="check">
+    <MathExpressionEditor v-if="editing" :model-value="pending" :context="context" :functions-error="error" :disabled="disabled" autofocus @retry-functions="refresh" @update:model-value="update" @invalid="check">
       <template #view-tools="{finish}"><a-button type="text" size="small" :title="$t('DeviceAlarm.action.cancel')" :aria-label="$t('DeviceAlarm.action.cancel')" @click="cancel"><AIcon type="CloseOutlined" /></a-button><a-button type="text" size="small" :disabled="invalid" :title="$t('PropertyRules.correction.done')" :aria-label="$t('PropertyRules.correction.done')" @click="done(finish)"><AIcon type="CheckOutlined" /></a-button></template>
     </MathExpressionEditor>
     <button v-else type="button" class="property-formula__preview" :disabled="disabled" :aria-label="$t('PropertyRules.correction.edit')" @click="start">
       <PropertyFormulaView :expression="modelValue" :property="property" :context="context" />
       <AIcon type="EditOutlined" class="property-formula__edit" />
     </button>
-    <a-button v-if="error && editing" type="text" size="small" @click="refresh">{{ $t('PropertyRules.correction.functionsRetry') }}</a-button>
   </div>
 </template>
 <script setup lang="ts">
