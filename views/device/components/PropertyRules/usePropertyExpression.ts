@@ -11,7 +11,7 @@ export function usePropertyExpression(property:()=>ThingModelProperty,disabled:(
   const {functions,error,refresh}=useExpressionFunctions(propertyExpressionFunctions)
   const context=computed<ExpressionEditorContext>(()=>({
     references:correctionReferences.map(item=>({...item,path:[],label:t('PropertyRules.correction.'+item.id),description:t('PropertyRules.correction.'+item.id+'Hint'),schema:item.id === 'value' ? {...property().valueType} : {type:item.type}})),
-    functions:functions.value.filter(fn=>fn.returnType === 'number'),disabled:disabled(),
+    functions:functions.value,resultTypes:['number','null'],disabled:disabled(),
   }))
   return {context,error,refresh}
 }
