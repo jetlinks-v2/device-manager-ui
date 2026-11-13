@@ -1,5 +1,5 @@
 <template>
-  <div class="rule-editor">
+  <div ref="element" class="rule-editor">
     <a-spin :spinning="editor.loading">
       <a-alert v-if="editor.failed" type="error" :message="$t('PropertyRules.loadFailed')"><template #action><a-button size="small" @click="editor.load">{{ $t('PropertyRules.retry') }}</a-button></template></a-alert>
       <template v-else-if="editor.draft">
@@ -13,9 +13,9 @@
         <template v-else>
           <PropertyRuleSummary v-if="!card && (!editor.custom || !editor.canSave)" :rows="summaryRows" :levels="editor.levelOptions" />
           <a-form v-else class="rule-sentences" :class="{ 'rule-set-has-alarm': editor.draft.alarmEnabled }" layout="inline" :disabled="!editor.editable">
-            <PropertyRuleStage v-if="editor.draft.valuesEnabled || editor.draft.rangeEnabled || editor.draft.stepEnabled" section="cleaning" :caption="card || multipleStages">
+            <PropertyRuleStage v-if="editor.draft.valuesEnabled || editor.draft.rangeEnabled || editor.draft.stepEnabled" section="cleaning" caption>
               <template v-if="hasDiscardingCleaning(editor.draft)" #extra><RuleInvalidRecord v-model="editor.draft.recordInvalid" :disabled="!editor.editable" /></template>
-            <PropertyRuleLine v-if="editor.draft.valuesEnabled" icon="StopOutlined" :title="$t('PropertyRules.part.values')" color="blue" :notice="editor.cleaningHint">
+            <PropertyRuleLine data-rule-part="values" v-if="editor.draft.valuesEnabled" icon="StopOutlined" :title="$t('PropertyRules.part.values')" color="blue" :notice="editor.cleaningHint">
               <I18nT keypath="PropertyRules.sentence.valueRule" scope="global" tag="span" class="rule-clause">
                 <template #values>
                   <ValueSetInput v-model:value="editor.draft.values" :property="property" :label="$t('PropertyRules.valueFilter')" :placeholder="$t('PropertyRules.valuesPlaceholder')" allow-unknown />
@@ -23,31 +23,40 @@
                 <template #action><a-select v-model:value="editor.draft.valuesMode" size="small" :bordered="false" :dropdown-match-select-width="288" :virtual="false" dropdown-class-name="rule-select-menu" :aria-label="$t('PropertyRules.valuesMode')" :options="valueModes"><template #option="option"><RuleMenuOption compact :icon="option.icon" :title="option.label" :description="$t(option.description)" /></template></a-select></template>
                 <template #replacement><span v-if="editor.draft.valuesMode === 'replace'" class="rule-phrase">{{ $t('PropertyRules.sentence.withValue') }}<ValueInput v-model:value="editor.draft.replacementValue" :property="property" :label="$t('PropertyRules.replacement')" class="rule-value-entry" /></span></template>
               </I18nT>
-              <template #action><a-button type="text" size="small" :aria-label="$t('PropertyRules.removePart', { name: $t('PropertyRules.valueFilter') })" @click="editor.draft.valuesEnabled = false"><AIcon type="CloseOutlined" /></a-button></template>
+              <template #action><a-button type="text" size="small" :aria-label="$t('PropertyRules.removePart', { name: $t('PropertyRules.valueFilter') })" @click="editor.draft.valuesEnabled = false"><AIcon type="DeleteOutlined" /></a-button></template>
             </PropertyRuleLine>
-            <PropertyRuleLine v-if="editor.draft.rangeEnabled" icon="SafetyOutlined" :title="$t('PropertyRules.part.range')" color="blue" :notice="[editor.cleaningHint, editor.draft.rangeAction === 'clamp' ? $t('PropertyRules.clampHint') : ''].filter(Boolean).join(' ')">
+            <PropertyRuleLine data-rule-part="range" v-if="editor.draft.rangeEnabled" icon="SafetyOutlined" :title="$t('PropertyRules.part.range')" color="blue" :notice="[editor.cleaningHint, editor.draft.rangeAction === 'clamp' ? $t('PropertyRules.clampHint') : ''].filter(Boolean).join(' ')">
               <a-select v-model:value="editor.draft.rangeAction" size="small" :bordered="false" :dropdown-match-select-width="288" :virtual="false" dropdown-class-name="rule-select-menu" :aria-label="$t('PropertyRules.rangeAction')" :options="rangeActions"><template #option="option"><RuleMenuOption compact :icon="option.icon" :title="option.title" :description="$t(option.description)" /></template></a-select>
               <span class="rule-phrase"><a-input-number v-model:value="editor.draft.min" size="small" :controls="false" :placeholder="$t('PropertyRules.lowerPlaceholder')" :aria-label="$t('PropertyRules.minValue')" /><span>～</span><a-input-number v-model:value="editor.draft.max" size="small" :controls="false" :placeholder="$t('PropertyRules.upperPlaceholder')" :aria-label="$t('PropertyRules.maxValue')" /><span v-if="editor.cleaningUnit">{{ editor.cleaningUnit }}</span></span>
-              <template #action><a-button type="text" size="small" :aria-label="$t('PropertyRules.removePart', { name: $t('PropertyRules.validRange') })" @click="editor.draft.rangeEnabled = false"><AIcon type="CloseOutlined" /></a-button></template>
+              <template #action><a-button type="text" size="small" :aria-label="$t('PropertyRules.removePart', { name: $t('PropertyRules.validRange') })" @click="editor.draft.rangeEnabled = false"><AIcon type="DeleteOutlined" /></a-button></template>
             </PropertyRuleLine>
-            <PropertyRuleLine v-if="editor.draft.stepEnabled" icon="LineChartOutlined" :title="$t('PropertyRules.part.step')" color="blue" :notice="[editor.cleaningHint, $t('PropertyRules.stepHint'), !editor.draft.scaleEnabled && editor.unit === '%' ? $t('PropertyRules.percentagePointsHint') : '', $t('PropertyRules.statefulHint')].filter(Boolean).join(' ')">
+            <PropertyRuleLine data-rule-part="step" v-if="editor.draft.stepEnabled" icon="LineChartOutlined" :title="$t('PropertyRules.part.step')" color="blue" :notice="[editor.cleaningHint, $t('PropertyRules.stepHint'), !editor.draft.scaleEnabled && editor.unit === '%' ? $t('PropertyRules.percentagePointsHint') : '', $t('PropertyRules.statefulHint')].filter(Boolean).join(' ')">
               <I18nT keypath="PropertyRules.sentence.maxStep" scope="global" tag="span" class="rule-clause">
                 <template #age><span class="rule-phrase"><a-input-number :value="editor.draft.baselineTtl == null ? undefined : editor.draft.baselineTtl / 1000" :min="0.001" size="small" :controls="false" :aria-label="$t('PropertyRules.step.lifetime')" @update:value="editor.draft.baselineTtl = $event == null ? null : Number($event) * 1000" />{{ $t('PropertyRules.timeUnit.s') }}</span></template>
                 <template #threshold><span class="rule-phrase"><a-input-number :value="editor.draft.maxStep ?? undefined" @update:value="editor.draft.maxStep = $event == null ? null : Number($event)" :min="0" size="small" :controls="false" :aria-label="$t('PropertyRules.part.step')" /><span v-if="editor.cleaningDifferenceUnit">{{ editor.cleaningDifferenceUnit }}</span></span></template>
               </I18nT>
-              <template #action><a-button type="text" size="small" :aria-label="$t('PropertyRules.removePart', { name: $t('PropertyRules.part.step') })" @click="editor.draft.stepEnabled = false"><AIcon type="CloseOutlined" /></a-button></template>
+              <template #action><a-button type="text" size="small" :aria-label="$t('PropertyRules.removePart', { name: $t('PropertyRules.part.step') })" @click="editor.draft.stepEnabled = false"><AIcon type="DeleteOutlined" /></a-button></template>
             </PropertyRuleLine>
             </PropertyRuleStage>
-            <PropertyRuleStage v-if="editor.draft.scaleEnabled || editor.draft.fallbackEnabled" section="processing" :caption="card || multipleStages">
+            <PropertyRuleStage v-if="editor.draft.scaleEnabled || editor.draft.fallbackEnabled" section="processing" caption>
               <template v-if="editor.draft.scaleEnabled">
-              <PropertyRuleLine icon="CalculatorOutlined" :title="$t('PropertyRules.part.scale')" color="purple">
-                <span>{{ $t('PropertyRules.sentence.multiply') }}</span><span class="rule-phrase"><a-input-number :value="editor.draft.scale ?? undefined" @update:value="editor.draft.scale = $event == null ? null : String($event)" string-mode size="small" :controls="false" :aria-label="$t('PropertyRules.part.scale')" /><span>+</span><a-input-number :value="editor.draft.offset ?? undefined" @update:value="editor.draft.offset = $event == null ? null : String($event)" string-mode size="small" :controls="false" :aria-label="$t('PropertyRules.offset')" /></span>
-                <template #action><a-button type="text" size="small" :aria-label="$t('PropertyRules.removePart', { name: $t('PropertyRules.part.scale') })" @click="editor.draft.scaleEnabled = false"><AIcon type="CloseOutlined" /></a-button></template>
+              <PropertyRuleLine data-rule-part="scale" :icon="correctionIsFormula(editor.draft) ? 'FunctionOutlined' : 'CalculatorOutlined'" :title="$t(correctionIsFormula(editor.draft) ? 'PropertyRules.correction.formula' : 'PropertyRules.part.scale')" color="purple">
+                <template #label>
+                  <a-dropdown :trigger="['click']" :disabled="!editor.editable || correctionEditing">
+                    <a-button type="text" size="small" :disabled="!editor.editable || correctionEditing"><a-tag color="purple"><AIcon :type="correctionIsFormula(editor.draft) ? 'FunctionOutlined' : 'CalculatorOutlined'" />{{ $t(correctionIsFormula(editor.draft) ? 'PropertyRules.correction.formula' : 'PropertyRules.correction.simple') }}<AIcon type="DownOutlined" /></a-tag></a-button>
+                    <template #overlay><a-menu @click="changeCorrectionMode($event.key === 'formula' ? 'formula' : 'simple')">
+                      <a-menu-item key="simple"><RuleMenuOption compact icon="CalculatorOutlined" :title="$t('PropertyRules.correction.simple')" :description="$t('PropertyRules.correction.simpleHint')" /></a-menu-item>
+                      <a-menu-item key="formula"><RuleMenuOption compact icon="FunctionOutlined" :title="$t('PropertyRules.correction.formula')" :description="$t('PropertyRules.correction.formulaHint')" /></a-menu-item>
+                    </a-menu></template>
+                  </a-dropdown>
+                </template>
+                <CorrectionFields :autofocus="focusPart === 'scale'" :draft="editor.draft" :property="property" :disabled="!editor.editable" @editing="correctionEditing=$event" />
+                <template #action><a-button v-if="!correctionEditing" type="text" size="small" :title="$t('PropertyRules.removePart', { name: $t(correctionIsFormula(editor.draft) ? 'PropertyRules.correction.formula' : 'PropertyRules.part.scale') })" :aria-label="$t('PropertyRules.removePart', { name: $t(correctionIsFormula(editor.draft) ? 'PropertyRules.correction.formula' : 'PropertyRules.part.scale') })" @click="editor.draft.scaleEnabled = false"><AIcon type="DeleteOutlined" /></a-button></template>
               </PropertyRuleLine>
               </template>
-              <FallbackFields v-if="editor.draft.fallbackEnabled" :draft="editor.draft" :property="property" />
+              <FallbackFields data-rule-part="fallback" v-if="editor.draft.fallbackEnabled" :draft="editor.draft" :property="property" />
             </PropertyRuleStage>
-            <PropertyRuleStage v-if="editor.draft.alarmEnabled" section="alarm" :caption="card || multipleStages">
+            <PropertyRuleStage data-rule-part="alarm" v-if="editor.draft.alarmEnabled" section="alarm" caption>
             <PropertyRuleLine icon="AlertOutlined" :title="$t('PropertyRules.sentence.alarm')" color="orange" class="rule-line-alarm">
               <template #label>
                 <span class="rule-alarm-name-anchor" :class="{ 'is-editing': editor.alarmNameEditing }">
@@ -71,16 +80,16 @@
                   <DeviceAlarmNotificationConfig :model="editor.draft.alarm" :methods="editor.resources.methods" :loading="editor.resources.loading" :failed="editor.resources.failed" :disabled="!editor.editable" :reveal="editor.notificationOpen" @request-methods="editor.resources.load" @retry-methods="editor.resources.retry" @open-change="editor.setNotificationsOpen" />
                 </RegistryComponent>
               </span>
-              <template #action><a-button type="text" size="small" :aria-label="$t('PropertyRules.removePart', { name: $t('PropertyRules.alarm') })" @click="editor.draft.alarmEnabled = false"><AIcon type="CloseOutlined" /></a-button></template>
+              <template #action><a-button type="text" size="small" :aria-label="$t('PropertyRules.removePart', { name: $t('PropertyRules.alarm') })" @click="editor.draft.alarmEnabled = false"><AIcon type="DeleteOutlined" /></a-button></template>
             </PropertyRuleLine>
             </PropertyRuleStage>
-            <PropertyRuleStage v-if="editor.draft.samplingEnabled" section="sampling" :caption="card || multipleStages">
-              <PropertySamplingFields :editor="editor" />
+            <PropertyRuleStage v-if="editor.draft.samplingEnabled" section="sampling" caption>
+              <PropertySamplingFields data-rule-part="sampling" :editor="editor" />
             </PropertyRuleStage>
-            <PropertyRuleStage v-if="editor.draft.fileEnabled" section="processing" :caption="card || multipleStages">
+            <PropertyRuleStage v-if="editor.draft.fileEnabled" section="processing" caption>
               <PropertyRuleLine icon="FileOutlined" :title="$t('PropertyRules.part.file')" color="purple" :notice="$t('PropertyRules.fileHint')">
                 <span :title="$t('PropertyRules.fileHint')">Base64 → {{ $t('PropertyRules.sentence.fileUrl') }}</span>
-                <template #action><a-button type="text" size="small" :aria-label="$t('PropertyRules.removePart', { name: $t('PropertyRules.part.file') })" @click="editor.draft.fileEnabled = false"><AIcon type="CloseOutlined" /></a-button></template>
+                <template #action><a-button type="text" size="small" :aria-label="$t('PropertyRules.removePart', { name: $t('PropertyRules.part.file') })" @click="editor.draft.fileEnabled = false"><AIcon type="DeleteOutlined" /></a-button></template>
               </PropertyRuleLine>
             </PropertyRuleStage>
             <div v-if="editor.addableParts.length" class="rule-add"><RuleAddMenu :parts="editor.addableParts" :disabled="!editor.editable" @add="editor.addPart" /></div>
@@ -92,8 +101,10 @@
   </div>
 </template>
 <script setup lang="ts">
-import { computed, nextTick, ref, type UnwrapNestedRefs } from 'vue'
+import { computed, nextTick, ref, watch, type UnwrapNestedRefs } from 'vue'
+import type { RulePart } from './codec'
 import { I18nT, useI18n } from 'vue-i18n'
+import { Modal } from 'ant-design-vue'
 import type { ThingModelProperty } from '../../alarm/types'
 import type { RuleScope } from './service'
 import type { usePropertyRuleEditor } from './usePropertyRuleEditor'
@@ -102,6 +113,8 @@ import { hasDiscardingCleaning } from './codec'
 import RuleInvalidRecord from './RuleInvalidRecord.vue'
 import PropertyRuleActions from './PropertyRuleActions.vue'
 import PropertyRuleLine from './PropertyRuleLine.vue'
+import CorrectionFields from './CorrectionFields.vue'
+import { correctionIsFormula,correctionTree,readCorrectionSteps,setCorrectionMode } from './correction'
 import PropertyRuleSummary from './PropertyRuleSummary.vue'
 import PropertyRuleStage from './PropertyRuleStage.vue'
 import PropertySamplingFields from './PropertySamplingFields.vue'
@@ -114,8 +127,26 @@ import ValueSetInput from './values/ValueSetInput.vue'
 import PropertyAlarmCondition from '../../alarm/components/PropertyAlarmCondition.vue'
 import PropertyAlarmRecovery from '../../alarm/components/PropertyAlarmRecovery.vue'
 import DeviceAlarmNotificationConfig from '../../alarm/components/DeviceAlarmNotificationConfig.vue'
-const props = defineProps<{ editor: UnwrapNestedRefs<ReturnType<typeof usePropertyRuleEditor>>; scope: RuleScope; property: ThingModelProperty; withActions?: boolean; withSource?: boolean; card?: boolean }>()
+const props = defineProps<{ focusPart?:RulePart; editor: UnwrapNestedRefs<ReturnType<typeof usePropertyRuleEditor>>; scope: RuleScope; property: ThingModelProperty; withActions?: boolean; withSource?: boolean; card?: boolean }>()
 const { t: $t } = useI18n()
+const correctionEditing=ref(false)
+const element=ref<HTMLElement>()
+watch([()=>props.focusPart,()=>props.editor.loading,()=>props.editor.editable,element],async()=>{
+  if(!props.focusPart || props.editor.loading || !props.editor.editable)return
+  await nextTick()
+  if(props.focusPart === 'scale' && props.editor.draft && correctionIsFormula(props.editor.draft))return
+  const control=element.value?.querySelector<HTMLInputElement>('[data-rule-part="'+props.focusPart+'"] .rule-sentence input:not(:disabled),[data-rule-part="'+props.focusPart+'"] .rule-sentence textarea:not(:disabled)')
+  control?.focus();control?.select()
+},{immediate:true,flush:'post'})
+function changeCorrectionMode(mode:'simple'|'formula') {
+  const draft=props.editor.draft
+  if(!draft)return
+  if(mode === 'simple' && (draft.correctionInvalid || !readCorrectionSteps(correctionTree(draft)))) {
+    Modal.confirm({title:$t('PropertyRules.correction.resetTitle'),content:$t('PropertyRules.correction.resetHint'),
+      okText:$t('PropertyRules.correction.reset'),cancelText:$t('DeviceAlarm.action.cancel'),
+      onOk:()=>setCorrectionMode(draft,'simple',true)})
+  } else setCorrectionMode(draft,mode)
+}
 const nameTrigger = ref<{ focus: () => void }>()
 async function closeName(cancel: boolean) {
   props.editor.stopAlarmName(cancel)

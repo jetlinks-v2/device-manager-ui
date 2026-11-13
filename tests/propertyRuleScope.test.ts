@@ -688,15 +688,22 @@ test('recipient failures are explicit and stale responses cannot cross close or 
 
 test('editing and resetting a preview never dirties the saved rule; config changes recompute with the trial inputs', async () => {
   Object.defineProperty(globalThis, 'window', { configurable: true, value: { addEventListener() {}, removeEventListener() {} } })
-  setAlarmRequestHandler(async () => { throw new Error('Preview must not request anything') })
+  const requests: any[] = []
+  setAlarmRequestHandler(async (_url, request) => {
+    requests.push(request)
+    return { result: request.samples.map((sample: any) => ({ value: sample.value, present: true, outputKnown: true,
+      steps: [{ path: '/0', provider: 'change-sampling', status: 'kept', value: sample.value }], intents: [] })) }
+  })
   const props = reactive<RuleEditorProps>({ open: true, inline: true, scope: { productId: 'p1' }, property: { id: 'temperature', valueType: { type: 'double' } }, snapshot: { hasOverride: false, raw: { provider: 'change-sampling', configuration: { deadband: 1, deadbandType: 'absolute' } } } })
   const { state: editor, unmount } = mountState(() => usePropertyRuleEditor(props, () => {}, () => {}))
   await settle()
-  const { state: example, unmount: unmountExample } = mountState(() => useRuleExample(reactive({ draft: editor.draft.value!, property: props.property })))
+  const { state: example, unmount: unmountExample } = mountState(() => useRuleExample(reactive({ draft: editor.draft.value!, property: props.property, scope: props.scope })))
   try {
     const saved = JSON.stringify(editor.draft.value)
     example.inputs.value[0].value = 20
-    assert.equal(example.points.value[1].stages[0].baseline, '20')
+    await example.run()
+    assert.equal(requests.at(-1).samples[0].value, '20')
+    assert.equal(example.points.value[0].label, '20')
     assert.equal(JSON.stringify(editor.draft.value), saved)
     assert.equal(editor.pendingSave.value, false)
     example.inputs.value[0].value = null
@@ -708,7 +715,8 @@ test('editing and resetting a preview never dirties the saved rule; config chang
     assert.equal(editor.pendingSave.value, false)
     editor.draft.value!.deadband = 2
     assert.equal(example.inputs.value[1].value, 10.4, 'configuration changes retain the manual sample sequence')
-    assert.equal(example.points.value[3].sampled, true)
+    await example.run()
+    assert.equal(requests.at(-1).configuration.processors[0].configuration.deadband, 2)
     example.reset()
     assert.equal(example.inputs.value[1].value, 10.8)
   } finally { unmountExample(); unmount(); Reflect.deleteProperty(globalThis, 'window') }
@@ -982,6 +990,36 @@ test('inline editor uses the list snapshot, keeps editing after save and refresh
     assert.equal(editor.draft.value?.percent, 25)
     assert.equal(writes.length, 1, 'discarding a draft never saves')
   } finally { unmount(); Reflect.deleteProperty(globalThis, 'window') }
+})
+
+test('opening a formula editor is clean while changed or invalid pending content still guards navigation', async () => {
+  const view = mountEditor()
+  try {
+    await settle()
+    const { editor, dialogs } = view
+    editor.draft.value!.correctionInvalid = true
+    editor.draft.value!.correctionPending = false
+    assert.equal(editor.dirty.value, false, 'entering edit mode is not a configuration change')
+    assert.equal(view.beforeUnload(), false)
+    assert.equal(await editor.prepareLeave(), true)
+    assert.equal(dialogs.length, 0, 'the first edit must not ask to discard an untouched draft')
+    editor.draft.value!.correctionInvalid = true
+    editor.draft.value!.correctionPending = true
+    assert.equal(editor.dirty.value, true)
+    assert.equal(view.beforeUnload(), true)
+    const leave = editor.prepareLeave()
+    assert.equal(dialogs.length, 1, 'uncommitted formula content remains protected')
+    dialogs[0].onCancel?.()
+    assert.equal(await leave, false)
+    assert.equal(editor.draft.value!.correctionPending, true)
+    editor.draft.value!.correctionInvalid = false
+    editor.draft.value!.correctionPending = false
+    assert.equal(editor.dirty.value, false, 'cancelling formula edits restores a clean draft')
+    assert.equal(await editor.prepareLeave(), true)
+    assert.equal(dialogs.length, 1)
+    editor.draft.value!.percent = 75
+    assert.equal(editor.dirty.value, true, 'saved configuration fields still participate in change detection')
+  } finally { view.cleanup() }
 })
 
 test('inline device inheritance remains read-only until customized; undo restores inheritance', async () => {
