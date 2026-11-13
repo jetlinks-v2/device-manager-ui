@@ -20,17 +20,20 @@
       <div ref="footerHost" class="gateway-editor-footer" />
     </template>
     <a-spin :spinning="loading">
-      <div v-if="type && id === ':id'" class="gateway-editor-body" :aria-busy="loading">
-        <a-alert v-if="providerLoadFailed" type="error" show-icon :message="$t('GatewayEditor.loadFailed')">
+      <div v-if="providerUnavailable || providerLoadFailed" class="gateway-editor-body">
+        <a-alert v-if="providerUnavailable" type="warning" show-icon :message="$t('GatewayEditor.methodUnavailable')" />
+        <a-alert v-else type="error" show-icon :message="$t('GatewayEditor.loadFailed')">
           <template #action>
             <a-button size="small" @click="getProvidersData">{{ $t('GatewayEditor.retry') }}</a-button>
           </template>
         </a-alert>
-        <component v-else-if="!loading" :is="components.provider" :dataSource="dataSource" @onClick="goProviders" />
+      </div>
+      <div v-else-if="type" class="gateway-editor-body" :aria-busy="loading">
+        <component v-if="!loading" :is="components.provider" :dataSource="dataSource" @onClick="goProviders" />
       </div>
       <div v-else class="gateway-editor-body">
         <component
-          v-if="showType && provider?.id"
+          v-if="!loading && showType && provider?.id"
           :is="activeComponent"
           :data="data"
           :provider="provider"
@@ -46,7 +49,7 @@
 import { useGatewayDetail } from './useGatewayDetail';
 const editor = useGatewayDetail();
 const {
-  $t, id, components, dataSource, type, loading, providerLoadFailed, provider, data, showType, bindProduct, footerHost, titleProvider, activeComponent,
+  $t, id, components, dataSource, type, loading, providerLoadFailed, providerUnavailable, provider, data, showType, bindProduct, footerHost, titleProvider, activeComponent,
   goProviders, cancelEditor, compositeProvider, getProvidersData
 } = editor;
 </script>

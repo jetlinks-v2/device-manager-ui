@@ -19,9 +19,7 @@ export type AreaTreeNode = {
   children?: AreaTreeNode[]
 }
 
-const LEGACY_SELECTABLE_AREA_DEPTH = 4
-
-const isBoundOnlyArea = (area: ProjectArea): area is DeviceBoundArea => (
+const isBoundOnlyArea = (area: ProjectArea): boolean => (
   (area as DeviceBoundArea).boundOnly === true
 )
 
@@ -62,26 +60,11 @@ export function mergeDeviceBoundAreas(
 const sortAreas = (items: ProjectArea[]) =>
   [...items].sort((a, b) => (a.sortOrder - b.sortOrder) || a.name.localeCompare(b.name, 'zh-CN'))
 
-function getAreaDepth(areas: ProjectArea[], areaId: string): number {
-  const areaById = new Map(areas.map((area) => [area.id, area]))
-  let depth = 0
-  let current = areaById.get(areaId)
-  while (current) {
-    depth += 1
-    current = current.parentId ? areaById.get(current.parentId) : undefined
-  }
-  return depth
-}
-
+/** 任意层级的可见空间默认可绑定；明确关闭能力或仅补齐已有绑定的节点不可选。 */
 export function isSelectableDeviceArea(areas: ProjectArea[], areaId: string): boolean {
   const area = areas.find((item) => item.id === areaId)
   if (!area || isBoundOnlyArea(area)) return false
-  const hasAssetBindingCapability = areas.some((item) => !isBoundOnlyArea(item) && typeof item.canBindAsset === 'boolean')
-
-  // 老空间服务未返回能力元数据时，保留既有四级节点选择规则。
-  return hasAssetBindingCapability
-    ? area.canBindAsset === true
-    : getAreaDepth(areas, areaId) === LEGACY_SELECTABLE_AREA_DEPTH
+  return area.canBindAsset !== false
 }
 
 export function buildAreaTreeData(areas: ProjectArea[]): AreaTreeNode[] {

@@ -247,6 +247,7 @@ import { useIotDeviceGroupManagement } from '../hooks/useIotDeviceGroupManagemen
 import { getIotDeviceListMenuCode, resolveIotProjectId } from '../hooks/useIotDeviceRouting'
 import type { DeviceGroup } from '../../../../api/deviceGroup'
 import { useUnifiedDeviceList } from './useUnifiedDeviceList'
+import { useDeviceListChannelSupport } from './useDeviceListChannelSupport'
 import { useUnifiedDeviceActions } from './useUnifiedDeviceActions'
 import { useUnifiedDeviceBatchNavigation } from './useUnifiedDeviceBatchNavigation'
 import Process from '../../Instance/Process/index.vue'
@@ -278,6 +279,7 @@ function canDeviceBatchAction(action: 'delete' | 'enable' | 'export' | 'import')
   return menu.hasMenu(deviceMenuCode.value)
 }
 const { providers, isIotEntry, tabs, activeType, activeProvider, scope, baseTerms, filterTerms, filterFields, commonFilterFields, searchTerms, hasSearch, status, rows, total, pageIndex, pageSize, loading, error, counts, statusCounts, selectedIds, batchMode, providerOf, changeType, search, changeStatus, refresh, changePage, clearBatchSelection } = useUnifiedDeviceList()
+const channelSupported = useDeviceListChannelSupport(activeProvider)
 const gatewayMonitorCell = moduleRegistry.getResourceItem<Component>('edge-master-ui', 'components', 'GatewayDeviceMonitorCell')
 const useGatewayMetrics = moduleRegistry.getResourceItem<typeof UseGatewayRuntimeMetricsLoader>('edge-master-ui', 'hooks', 'useGatewayRuntimeMetricsLoader')
 // 只监控边缘节点分类的当前页，切换分类或重新加载列表时撤掉旧查询目标。
@@ -454,7 +456,7 @@ const columns = computed(() => [
   ...(activeType.value === 'all' ? [{ title: t('IotDeviceDetail.detail.lastReport'), key: 'lastReportTime', width: 180 }] : []),
   ...(activeType.value === 'all' ? [{ title: t('Instance.index.133466-5'), key: 'createdAt', width: 180 }] : []),
   ...(activeType.value === 'gateway' ? [{ title: t('GatewayDeviceCard.monitor'), key: 'monitor', width: 220 }] : []),
-  ...(['gateway', 'video'].includes(activeType.value) ? [{ title: t('UnifiedDeviceList.channel'), key: 'channel', width: 100 }] : []),
+  ...(['gateway', 'video'].includes(activeType.value) && channelSupported.value ? [{ title: t('UnifiedDeviceList.channel'), key: 'channel', width: 100 }] : []),
   { title: t('UnifiedDeviceList.action'), key: 'action', width: 90, fixed: 'right', align: 'center' },
 ])
 

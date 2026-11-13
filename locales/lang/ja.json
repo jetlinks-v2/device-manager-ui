@@ -9045,5 +9045,6 @@
   "Tracing.edgeLimit": "さらに、{count} 件のエッジが今回のクエリ上限を超えています。",
   "RuntimeMonitor.currentLogFile": "現在",
   "RuntimeMonitor.loadingLogDirectory": "ディレクトリを読み込んでいます",
-  "UnifiedDeviceList.iotScope": "IoTデバイス"
+  "UnifiedDeviceList.iotScope": "IoTデバイス",
+  "GatewayEditor.methodUnavailable": "この接続方式は利用できません。対応する機能モジュールがインストールされ、アクセス可能であることを確認してください。"
 }

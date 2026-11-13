@@ -6,7 +6,7 @@ export const metricMenuCatalog = (menus: MenuItem[]): MenuItem[] => {
   const walk = (items: MenuItem[]): MenuItem[] => items.map(item => ({
     ...item,
     ...(item.children ? { children: walk(item.children) } : {}),
-    ...(['device/Metric', 'device/MetricTemplate'].includes(item.code) ? { options: { ...item.options, routeTarget: 'rule-engine' } } : {}),
+    ...(['device/Metric', 'device/MetricTemplate'].includes(item.code) ? { icon: item.code === 'device/Metric' ? 'DashboardOutlined' : 'SnippetsOutlined', options: { ...item.options, routeTarget: 'rule-engine', previousIcons: ['LineChartOutlined'] } } : {}),
     buttons: ['device/Product', 'device/Instance', 'iot-user/device/list', 'iot-user-device-list'].includes(item.code)
       ? item.buttons?.map(button => {
         const actions = button.id === 'view' ? ['query'] : button.id === 'update' ? ['save', 'delete'] : []
@@ -24,7 +24,7 @@ export const metricMenuCatalog = (menus: MenuItem[]): MenuItem[] => {
   if (!hasCode(result, 'device/Metric')) children.push({
     code: 'device/Metric', id: 'device-metric', name: i18n.global.t('DeviceMetrics.businessMetrics'),
     i18nMessages: { name: { zh_CN: '业务指标', en_US: 'Business metrics', en: 'Business metrics' } },
-    url: '/rule-engine/metrics', icon: 'LineChartOutlined', sortIndex: 30, showPage: ['metric-config'], options: { routeTarget: 'rule-engine' },
+    url: '/rule-engine/metrics', icon: 'DashboardOutlined', sortIndex: 30, showPage: ['metric-config'], options: { routeTarget: 'rule-engine', previousIcons: ['LineChartOutlined'] },
     buttons: [
       { id: 'view', name: i18n.global.t('DeviceMetrics.title'), permissions: [{ permission: 'metric-config', actions: ['query'] }, { permission: 'metric-template', actions: ['query'] }] },
       { id: 'save', name: i18n.global.t('DeviceMetrics.save'), permissions: [{ permission: 'metric-config', actions: ['query', 'save', 'delete'] }, { permission: 'metric-template', actions: ['query'] }] },
@@ -33,7 +33,7 @@ export const metricMenuCatalog = (menus: MenuItem[]): MenuItem[] => {
   if (!hasCode(result, 'device/MetricTemplate')) children.push({
     code: 'device/MetricTemplate', id: 'device-metric-template', name: i18n.global.t('DeviceMetrics.templates'),
     i18nMessages: { name: { zh_CN: '指标模板', en_US: 'Metric templates', en: 'Metric templates' } },
-    url: '/resources/devices/metric-templates', icon: 'LineChartOutlined', sortIndex: 40, showPage: ['metric-template'], options: { routeTarget: 'rule-engine' },
+    url: '/resources/devices/metric-templates', icon: 'SnippetsOutlined', sortIndex: 40, showPage: ['metric-template'], options: { routeTarget: 'rule-engine', previousIcons: ['LineChartOutlined'] },
     buttons: [
       { id: 'view', name: i18n.global.t('DeviceMetrics.templates'), permissions: [{ permission: 'metric-template', actions: ['query'] }] },
       { id: 'save', name: i18n.global.t('DeviceMetrics.save'), permissions: [{ permission: 'metric-template', actions: ['query', 'save', 'delete'] }] },

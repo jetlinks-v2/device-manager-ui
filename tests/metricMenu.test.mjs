@@ -19,9 +19,11 @@ test('menu migration preserves template identity, old URL and independent permis
   assert.equal(template.id,'device-metric-template')
   assert.equal(template.url,'/resources/devices/metric-templates')
   assert.equal(template.options.routeTarget,'rule-engine')
+  assert.equal(template.icon,'SnippetsOutlined')
   assert.deepEqual(template.buttons.find(button=>button.id==='save').permissions,[{permission:'metric-template',actions:['query','save','delete']}])
   const workspace=flatten(once).find(item=>item.code==='device/Metric')
   assert.ok(workspace)
+  assert.equal(workspace.icon,'DashboardOutlined')
   assert.equal(workspace.options.routeTarget,'rule-engine')
   assert.ok(workspace.buttons.every(button=>button.permissions.every(permission=>!permission.permission.startsWith('rule-'))))
   assert.equal(original.length,1)
@@ -31,10 +33,14 @@ test('menu migration preserves template identity, old URL and independent permis
 test('actual catalogs merge one rules group and reconcile only authorized leaves without granting new ones',()=>{
   const catalog=mergeModuleMenuCatalog([...ruleMenu(),...deviceMenu()])
   assert.equal(catalog.filter(item=>item.code==='rule-engine').length,1)
-  const legacy={code:'resources-devices',name:'设备',url:'/resources/devices',owner:'iot',children:[{code:'device/MetricTemplate',id:'device-metric-template',name:'模板',url:'/resources/devices/metric-templates',buttons:[{id:'view',permissions:[{permission:'metric-template',actions:['query']}]}]}]}
+  const legacy={code:'resources-devices',name:'设备',url:'/resources/devices',owner:'iot',children:[{code:'device/MetricTemplate',id:'device-metric-template',name:'模板',icon:'LineChartOutlined',url:'/resources/devices/metric-templates',buttons:[{id:'view',permissions:[{permission:'metric-template',actions:['query']}]}]}]}
   const result=reconcileAuthorizedMenuLayout([legacy],catalog)
   assert.deepEqual(result.issues,[])
   assert.equal(result.menus.find(item=>item.code==='rule-engine').children[0].code,'device/MetricTemplate')
+  assert.equal(result.menus.find(item=>item.code==='rule-engine').children[0].icon,'SnippetsOutlined')
+  assert.equal(legacy.children[0].icon,'LineChartOutlined')
+  const custom={...legacy,children:[{...legacy.children[0],icon:'StarOutlined'}]}
+  assert.equal(reconcileAuthorizedMenuLayout([custom],catalog).menus.find(item=>item.code==='rule-engine').children[0].icon,'StarOutlined')
   assert.equal(flatten(result.menus).filter(item=>item.code==='device/Metric').length,0)
   const old={...legacy,code:'rule-engine',id:'91aa7c753b1c030dfad612aa0a45d453',name:'规则引擎'}
   assert.equal(reconcileAuthorizedMenuLayout([old],catalog).menus.find(item=>item.code==='rule-engine').name,'IotSceneLinkage.metric.ruleAndCalculation')
