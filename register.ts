@@ -1,6 +1,8 @@
 import dataCapabilityProviders from './dataCapabilities'
 import { deviceMetricsSupported, deviceMetricsAggregate, deviceOverviewSummary } from './runtimeMetrics'
 import { defineAsyncComponent } from 'vue'
+import objectPresentations from './objectPresentations'
+import { deviceAssetRelationBindings } from './assetRelationBindings'
 import i18n from '@jetlinks-web-core/locales'
 import type { DeviceDetailTabProvider } from './deviceDetailProvider'
 import { queryNoPagingPost } from '@device-manager-ui/api/product'
@@ -60,7 +62,9 @@ const homeAgentProviders = Object.fromEntries(
 )
 
 export default {
+  assetRelationBindings: deviceAssetRelationBindings,
   moduleId: 'device-manager-ui',
+  objectPresentations,
   dataCapabilityProviders,
   // 复用设备级映射页面，显示条件与 2.12 详情及产品的协议能力判断保持一致。
   deviceDetailTabs: {
