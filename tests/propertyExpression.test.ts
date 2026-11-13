@@ -35,6 +35,19 @@ const scope={productId:'product'}
 const property={id:'temperature',valueType:{type:'double'}}
 const previous={value:null,time:0,outcome:'missing' as const}
 const point=(value='10'):PropertyTrialPoint=>({value,present:true,outputKnown:true,steps:[{path:'/0',provider:'expression',status:'processed',value}],intents:[]})
+test('unknown external outputs and evaluation errors are not reported as filtering',()=>{
+  const file={...draft(),scaleEnabled:false,fileEnabled:true}
+  const inputs=[{value:'SGVsbG8=',arrivalMillis:0}]
+  const unknown=presentRuleTrial(file,{id:'file',valueType:{type:'file'}},inputs,[{
+    value:null,present:true,outputKnown:false,steps:[{path:'/0',provider:'file-storage',status:'processed'}],
+    intents:[{path:'/0',action:'file',conditional:false}],
+  }])[0]
+  assert.equal(unknown.outputKnown,false);assert.equal(unknown.filtered,false);assert.equal(unknown.label,'—')
+  const failed=presentRuleTrial(draft(),property,inputs,[{...point(),value:null,present:false,error:'divide by zero'}])[0]
+  assert.equal(failed.filtered,false);assert.equal(failed.error,'divide by zero')
+  const ignored=presentRuleTrial(draft(),property,inputs,[{...point(),value:null,present:false}])[0]
+  assert.equal(ignored.outputKnown,true);assert.equal(ignored.filtered,true)
+})
 test('one request sends the whole chain and untouched samples; every displayed result comes from the backend',async()=>{
   const current={...draft(),valuesEnabled:true,valuesMode:'replace' as const,values:[-1],replacementValue:7,
     alarmEnabled:true,alarm:{trigger:'gt',value:10,limit:{}} as RuleDraft['alarm'],samplingEnabled:true,samplingMode:'change' as const,deadband:1}

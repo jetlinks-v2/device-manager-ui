@@ -6,6 +6,7 @@ import { intervalMillis } from './sampling'
 
 export interface RuleExamplePoint {
   label: string
+  outputKnown: boolean
   filtered: boolean
   alarm: boolean
   sampled: boolean

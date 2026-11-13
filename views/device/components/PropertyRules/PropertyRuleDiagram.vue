@@ -57,7 +57,11 @@
         </div>
         <div class="diagram-row diagram-output-row">
           <span class="diagram-label diagram-label-caption"><AIcon type="ExportOutlined" />{{ $t('PropertyRules.diagram.output') }}</span>
-          <span v-for="(point, index) in example.columns" :key="index" class="diagram-cell" :class="point ? point.filtered || point.sampled ? 'diagram-skipped' : 'diagram-kept' : 'diagram-pending'" :title="point ? point.filtered || point.sampled ? $t('PropertyRules.diagram.status.filtered') : point.label : undefined"><span v-if="point" class="diagram-result">{{ point.filtered || point.sampled ? '—' : point.label }}</span><a-skeleton-button v-else-if="example.loading" class="diagram-result-skeleton" size="small" :active="false" aria-hidden="true" /><span v-else class="diagram-result">—</span></span>
+          <span v-for="(point, index) in example.columns" :key="index" class="diagram-cell" :class="outputClass(point)" :title="outputTitle(point)">
+            <span v-if="point" class="diagram-result">{{ point.label }}</span>
+            <a-skeleton-button v-else-if="example.loading" class="diagram-result-skeleton" size="small" :active="false" aria-hidden="true" />
+            <span v-else class="diagram-result">—</span>
+          </span>
         </div>
       </div>
     </div>
@@ -73,7 +77,7 @@ import { reactive } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ThingModelProperty } from '../../alarm/types'
 import type { RuleDraft } from './codec'
-import type { RuleExampleStage } from './diagram'
+import type { RuleExamplePoint, RuleExampleStage } from './diagram'
 import type { RuleScope } from './service'
 import { useRuleExample } from './useRuleExample'
 import ValueInput from './values/ValueInput.vue'
@@ -88,6 +92,17 @@ const {context}=usePropertyExpression(()=>props.property)
 const fallbackOutcomes = ['ready', 'missing', 'error'].map(value => ({ value, label: $t('PropertyRules.fallback.outcome.' + value) }))
 const statusIcons = { kept: 'CheckOutlined', filtered: 'CloseOutlined', alarm: 'WarningOutlined', skipped: 'MinusOutlined', processed: 'SwapOutlined', recovered: 'CheckCircleOutlined', error: 'ExclamationCircleOutlined' }
 const popupContainer = (trigger: HTMLElement) => trigger.parentElement!
+function outputClass(point?: RuleExamplePoint) {
+  if (!point) return 'diagram-pending'
+  if (point.error) return 'diagram-error'
+  return !point.outputKnown || point.filtered || point.sampled ? 'diagram-skipped' : 'diagram-kept'
+}
+function outputTitle(point?: RuleExamplePoint) {
+  if (!point) return undefined
+  if (point.error) return point.error
+  if (!point.outputKnown) return $t('PropertyRules.diagram.outputUnknown')
+  return point.filtered || point.sampled ? $t('PropertyRules.diagram.status.filtered') : point.label
+}
 function stageTitle(stage: RuleExampleStage, value: string) {
   if (stage.error) return stage.error
   const elapsed = stage.elapsedMillis === undefined ? '' : ` · ${$t(stage.key === 'fallback' ? 'PropertyRules.fallback.exampleAge' : 'PropertyRules.diagram.elapsed', { value: Number((stage.elapsedMillis / props.draft.intervalUnit).toPrecision(8)), unit: example.timeUnit })}`

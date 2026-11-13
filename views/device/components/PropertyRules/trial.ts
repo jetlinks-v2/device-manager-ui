@@ -49,9 +49,9 @@ export function presentRuleTrial(draft: RuleDraft, property: ThingModelProperty,
         ...(error ? { error: point.error } : {}), intent: intents.length > 0,
       }
     })
-    return { label: point.outputKnown && point.present ? label(point.value) : '—',
+    return { label: point.outputKnown && point.present ? label(point.value) : '—', outputKnown: point.outputKnown,
       inputLabel: inputs[index]?.missing ? '—' : label(inputs[index]?.value), stages,
-      filtered: !point.present || !point.outputKnown, sampled: stages.some(stage => stage.key === 'sampling' && stage.status === 'filtered'),
+      filtered: !point.error && point.outputKnown && !point.present, sampled: stages.some(stage => stage.key === 'sampling' && stage.status === 'filtered'),
       alarm: stages.some(stage => stage.status === 'alarm'), error: point.error,
     }
   })
