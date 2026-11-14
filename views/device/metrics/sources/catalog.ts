@@ -1,4 +1,4 @@
-import type { BusinessCommand, BusinessEvent } from '../../../../api/metricBusinessSources'
+import type { BusinessCommand, BusinessEvent, ObjectSourceCapability } from '../../../../api/metricBusinessSources'
 import type { MetricPropertyOption } from '../metricSources'
 import type { MetricInputMapping } from '@jetlinks-web-core/components'
 
@@ -20,6 +20,8 @@ export interface SourceMethod {
   service?:string
   event?:BusinessEvent
   command?:BusinessCommand
+  capability?:ObjectSourceCapability
+  valuePath?:string
 }
 export interface SourceItem { key:string; name:string; group?:string; methods:SourceMethod[] }
 
@@ -27,6 +29,7 @@ export interface SourceItem { key:string; name:string; group?:string; methods:So
 export function mappingSourceKind(mapping?:MetricInputMapping):SourceKind|'unsupported' {
   const source = mapping?.providerSource
   if (source) {
+    if (source.provider === 'ontology') return mapping.kind === 'provider' ? 'businessQuery' : 'unsupported'
     if ((source.provider === 'things' || source.provider === 'device-events') && source.sourceType === 'event') return 'event'
     if (source.provider === 'events') return 'businessEvent'
     if (source.provider === 'objects' && source.sourceType === 'query') return 'businessQuery'
@@ -38,7 +41,8 @@ export function mappingSourceKind(mapping?:MetricInputMapping):SourceKind|'unsup
 /** 属性、事件和平台数据共享一种目录投影，读取能力仍来自各自的真实契约。 */
 export function propertyMethod(item:MetricPropertyOption, event=false):SourceMethod {
   const kind = event ? 'event' : item.platform ? 'builtin' : 'property'
-  return {...item,key:`${kind}:${item.id}`,kind,capabilities:event ? ['subscribe','history'] : item.platform ? ['current',...(item.history ? ['history' as const] : [])] : ['current','subscribe','history']}
+  const declaration = item.expands?.metricSource as {capabilities?:SourceMethod['capabilities']} | undefined
+  return {...item,key:`${kind}:${item.id}`,kind,capabilities:declaration?.capabilities || (event ? ['subscribe','history'] : item.platform ? ['current',...(item.history ? ['history' as const] : [])] : ['current','subscribe','history'])}
 }
 
 /** 只有查询显式声明 metricSource.eventType 时才与对应事件合并；同名数据绝不自动合并。 */

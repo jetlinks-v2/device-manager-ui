@@ -1,136 +1,99 @@
 import { computed, onScopeDispose, ref, watch, type Ref } from 'vue'
-import type { MetricInputMapping, MetricSourceRequest, MetricSourceSelection } from '@jetlinks-web-core/components'
-import { metricSourceField, metricSourceSchema } from '@jetlinks-web-core/components/Metric/sourceSchema'
-import { loadMetricEvents, loadMetricCommandServices, loadMetricCommands, type BusinessCommand, type BusinessEvent } from '../../../../api/metricBusinessSources'
+import type { MetricSourceRequest, MetricSourceSelection } from '@jetlinks-web-core/components'
+import { metricSourceSchema, metricSourceSemantics } from '@jetlinks-web-core/components/Metric/sourceSchema'
+import { loadObjectSourceCapabilities, loadObjectSourceMetadata, type BusinessCommand, type ObjectSourceCapability } from '../../../../api/metricBusinessSources'
+import { describeMetricProvider } from '../../../../api/metricSources'
 import type { SourceMethod } from './catalog'
 
-/** 只发现显式声明的业务数据；内部服务身份仅用于读取元数据和恢复旧绑定。 */
+/** 来源只消费当前对象的本体声明；元数据发现不执行查询，不扫描原服务或全局事件。 */
 export function useBusinessSources(request:Ref<MetricSourceRequest | undefined>, object:Ref<{type:string;id:string;name:string}>, visible:Ref<boolean>) {
-  const events = ref<BusinessEvent[]>([])
-  const commands = ref<Record<string,BusinessCommand[]>>({})
-  const eventLoading = ref(false), queryLoading = ref(false), failed = ref(false)
-  const loading = computed(()=>eventLoading.value || queryLoading.value)
-  const selected = ref<SourceMethod>(), valuePath = ref('$'), updateEvent = ref<string>()
-  const parameters = ref<Record<string,unknown>>({}), parameterModes = ref<Record<string,string>>({})
+  const methods = ref<SourceMethod[]>([]), loading = ref(false), failed = ref(false)
+  const selected = ref<SourceMethod>(), parameters = ref<Record<string,unknown>>({})
   let generation = 0
-  let discovery:Promise<void> | undefined
-  const pendingServices = new Map<string,Promise<void>>()
-  const discoverableServices = ref<string[]>([])
-  function matchesObject(mapping:MetricInputMapping) {
-    const context = request.value!.context
-    return (mapping.thingType || context.targetType || (context.scope === 'children' ? 'device' : context.ownerType)) === object.value.type
-      && (mapping.thingId || mapping.providerSource?.configuration.thingId || (context.scope === 'children' ? '' : context.targetId || context.ownerId)) === object.value.id
+  const canConfirm = computed(()=>!!selected.value && !loading.value
+    && (request.value?.purpose === 'declaration' || !!object.value.id))
+  function hasTimeWindow(capability:ObjectSourceCapability) {
+    const sources = Object.values(capability.bindings || {}).map(binding=>binding.source)
+    return sources.includes('timeWindowTerms') || sources.includes('from') && sources.includes('to')
   }
-  const legacyQuery = computed(()=>{
-    const mapping = request.value?.mapping, source = mapping?.providerSource
-    return mapping && matchesObject(mapping) && source?.provider === 'objects' && source.sourceType === 'query'
-      ? {service:String(source.configuration.commandService || ''),id:mapping.id} : undefined
-  })
-  const methods = computed<SourceMethod[]>(()=>[
-    ...events.value.map(event=>({key:`businessEvent:${event.id}`,kind:'businessEvent' as const,id:event.id,name:event.name || event.id,description:event.description,group:event.group,event,valueType:metricSourceSchema(event.schema || {}),capabilities:['subscribe' as const]})),
-    ...Object.entries(commands.value).flatMap(([service,items])=>items.filter(command=>discoverableServices.value.includes(service) && command.expands?.metricSource && typeof command.expands.metricSource === 'object'
-      || legacyQuery.value?.service === service && legacyQuery.value.id === command.id).map(command=>({key:`businessQuery:${service}:${command.id}`,kind:'businessQuery' as const,id:command.id,name:command.name || command.id,description:command.description,
-      group:(command.expands?.metricSource as {group?:string} | undefined)?.group,
-      service,command,valueType:command.output,capabilities:['current' as const]}))),
-  ])
-  const fields = computed(()=>{
-    const result = [{value:'$',label:''}]
-    const visit = (schema:Record<string,unknown>,prefix='')=>{
-      if (!Array.isArray(schema.properties)) return
-      for (const field of schema.properties) {
-        const path = prefix ? `${prefix}.${field.id}` : String(field.id)
-        result.push({value:path,label:`${field.name || field.id} · ${path}`})
-        visit(field.valueType || {},path)
-      }
+  function history(capability:ObjectSourceCapability) {
+    return !!capability.evidenceMapping?.observedAt && hasTimeWindow(capability)
+  }
+  function reference(capability:ObjectSourceCapability, path:string, values:Record<string,unknown> = {}) {
+    return {provider:'ontology',sourceType:capability.id,configuration:{valuePath:path,parameters:values,
+      ...(history(capability) ? {historyCapability:capability.id} : {})}}
+  }
+  /** 保留原字段语义、类型和层级；一个查询可以提供多个可选输出，不按名称猜来源。 */
+  function outputs(schema:Record<string,unknown>, name:string, path='$', expands?:Record<string,unknown>):{path:string;name:string;schema:Record<string,unknown>;expands?:Record<string,unknown>}[] {
+    const result: {path:string;name:string;schema:Record<string,unknown>;expands?:Record<string,unknown>}[] = [{path,name,schema,expands}]
+    if (Array.isArray(schema.properties)) for (const field of schema.properties) {
+      result.push(...outputs(field.valueType || {},field.name || field.id,path === '$' ? field.id : `${path}.${field.id}`,field.expands))
     }
-    if (selected.value?.event) visit(metricSourceSchema(selected.value.event.schema || {}))
     return result
-  })
-  const canConfirm = computed(()=>!!selected.value
-    && (request.value?.purpose === 'declaration' || request.value?.context.scope === 'children' || !!object.value.id)
-    && (request.value?.purpose === 'declaration' || !request.value?.input.source?.lookback)
-    && (selected.value.kind === 'businessEvent' ? fields.value.some(item=>item.value === valuePath.value)
-      : request.value?.purpose === 'declaration' || request.value?.scheduled !== false || !!updateEvent.value))
-
-  /** 请求换代清空目录和参数，旧服务响应不能回填另一次选择。 */
+  }
+  async function describe(capability:ObjectSourceCapability, target:{type:string;id:string}):Promise<SourceMethod[]> {
+    // 原生物消息已按实例物模型投影为属性/事件，不重复展示同一个订阅入口。
+    if (capability.kind === 'action' || capability.event?.transport === 'thingMessage' || request.value?.context.scope === 'children') return []
+    const event = capability.kind === 'event'
+    let command:BusinessCommand | undefined, schema:Record<string,unknown>
+    if (event) {
+      const source = reference(capability,'$')
+      const description = await describeMetricProvider({id:capability.id,thingType:target.type,...source,configuration:{...source.configuration,thingId:target.id}})
+      schema = metricSourceSchema(description.schema)
+    } else {
+      command = await loadObjectSourceMetadata(target.type,target.id,capability.id)
+      schema = metricSourceSchema(command.output || {})
+      command = {...command,inputs:(command.inputs || []).filter(input=>(capability.configurableParameters || []).includes(input.id))}
+    }
+    const kind = event ? 'businessEvent' as const : 'businessQuery' as const
+    return outputs(schema,capability.name,'$',{...schema.expands as Record<string,unknown>,...command?.expands}).map(field=>({
+      key:`${kind}:${capability.id}:${field.path}`,kind,id:capability.id,name:field.name,group:capability.name,
+      description:command?.description,capability,command,valuePath:field.path,valueType:field.schema,unit:typeof field.schema.unit === 'string' ? field.schema.unit : undefined,expands:field.expands,
+      capabilities:event ? ['subscribe'] : history(capability) ? ['history'] : hasTimeWindow(capability) ? [] : ['current'],
+    }))
+  }
+  /** 换对象/关闭立即清空并使旧请求失效；最多四路元数据发现，不跨用户缓存。 */
   async function load() {
-    const token = ++generation; pendingServices.clear(); discovery = undefined
-    events.value = []; commands.value = {}; discoverableServices.value = []; failed.value = false; queryLoading.value = false; eventLoading.value = !!request.value
-    if (!request.value) return
-    if (visible.value) void loadQueries()
+    const token = ++generation, target = {...object.value}
+    methods.value = []; selected.value = undefined; parameters.value = {}; failed.value = false
+    loading.value = !!request.value && !!target.id && visible.value
+    if (!loading.value) return
     try {
-      const result = await loadMetricEvents()
-      if (token !== generation) return
-      events.value = result
-    } catch { if (token === generation) failed.value = true }
-    finally { if (token === generation) eventLoading.value = false }
-  }
-  /** 仅加载已声明的服务，最多四个并发；旧映射额外定点恢复，不扫描其余内部服务。 */
-  function loadQueries():Promise<void> | undefined {
-    if (!request.value || discovery) return discovery
-    const token = generation; queryLoading.value = true
-    const legacy = legacyQuery.value?.service
-    const restore = legacy ? loadService(legacy) : Promise.resolve()
-    discovery = (async()=>{
-      try {
-        const services = await loadMetricCommandServices(object.value.type)
+      const capabilities = await loadObjectSourceCapabilities(target.type,target.id)
+      const found:SourceMethod[] = []
+      for (let index=0; index<capabilities.length && token === generation; index+=4) {
+        const batch = await Promise.allSettled(capabilities.slice(index,index+4).map(capability=>describe(capability,target)))
         if (token !== generation) return
-        discoverableServices.value = services.map(service=>service.id)
-        for (let index=0; index<services.length && token === generation; index+=4) {
-          await Promise.all(services.slice(index,index+4).map(service=>loadService(service.id)))
+        for (const result of batch) {
+          if (result.status === 'fulfilled') found.push(...result.value)
+          else failed.value = true
         }
-      } catch { if (token === generation) failed.value = true }
-      finally { await restore; if (token === generation) queryLoading.value = false }
-    })()
-    return discovery
+      }
+      if (token === generation) methods.value = found
+    } catch { if (token === generation) failed.value = true }
+    finally { if (token === generation) loading.value = false }
   }
-  function loadService(service:string):Promise<void> {
-    if (commands.value[service]) return Promise.resolve()
-    const pending = pendingServices.get(service)
-    if (pending) return pending
-    const token = generation
-    const result = loadMetricCommands(service).then(items=>{
-      if (token === generation) commands.value = {...commands.value,[service]:items}
-    }).catch(()=>{ if (token === generation) failed.value = true })
-      .finally(()=>{ if (token === generation) pendingServices.delete(service) })
-    pendingServices.set(service,result)
-    return result
-  }
-  /** 仅恢复同一来源的参数；切换查询或对象不会沿用上一查询的隐藏绑定。 */
   function select(method:SourceMethod,restore=false) {
-    selected.value = method; valuePath.value = '$'; parameters.value = {}; parameterModes.value = {}; updateEvent.value = undefined
-    if (!restore) return
-    const config = request.value?.mapping?.providerSource?.configuration || {}
-    valuePath.value = String(config.valuePath || request.value?.mapping?.id || '$')
-    parameters.value = {...config.parameters as Record<string,unknown>}
-    for (const mode of ['objectIdParameter','cutoffParameter','occurrenceParameter']) if (typeof config[mode] === 'string') parameterModes.value[String(config[mode])] = mode
-    updateEvent.value = (config.updates as {eventType?:string} | undefined)?.eventType
+    selected.value = method
+    parameters.value = restore ? {...request.value?.mapping?.providerSource?.configuration.parameters as Record<string,unknown>} : {}
   }
   function selection():MetricSourceSelection | undefined {
     const method = selected.value
-    if (!method || !canConfirm.value) return
-    // 原映射的扩展字段在未更换来源时保留；只覆盖本编辑器明确负责的参数。
-    const original = request.value?.mapping
-    const sameObject = original && matchesObject(original)
-    const same = sameObject && (method.kind === 'businessEvent' ? original?.providerSource?.provider === 'events' && original.providerSource.sourceType === method.id
-      : original?.providerSource?.provider === 'objects' && original.id === method.id && original.providerSource.configuration.commandService === method.service)
-    const configuration:Record<string,unknown> = {...(same ? original?.providerSource?.configuration : {}),...(object.value.id ? {thingId:object.value.id} : {})}
-    if (method.kind === 'businessEvent') configuration.valuePath = valuePath.value
-    else {
-      for (const key of ['objectIdParameter','cutoffParameter','occurrenceParameter','updates']) delete configuration[key]
-      configuration.commandService = method.service
-      configuration.parameters = Object.fromEntries(Object.entries(parameters.value).filter(([id,value])=>(!parameterModes.value[id] || parameterModes.value[id] === 'constant') && value !== undefined))
-      for (const [id,mode] of Object.entries(parameterModes.value)) if (mode !== 'constant') configuration[mode] = id
-      const updates = original?.providerSource?.configuration.updates as Record<string,unknown> | undefined
-      if (updateEvent.value) configuration.updates = {...(same && updates?.eventType === updateEvent.value ? updates : {}),eventType:updateEvent.value,...(object.value.id ? {thingId:object.value.id} : {}),updateOnly:true}
-    }
-    return {mapping:{...(same ? original : {}),kind:'provider',thingType:object.value.type,...(object.value.id ? {thingId:object.value.id} : {}),id:method.kind === 'businessEvent' ? valuePath.value : method.id,
-      providerSource:{...(same ? original?.providerSource : {}),provider:method.kind === 'businessEvent' ? 'events' : 'objects',sourceType:method.kind === 'businessEvent' ? method.id : 'query',configuration}},
-      label:`${object.value.name} / ${method.name}`,declaration:{id:method.id,name:method.name,valueType:method.event ? metricSourceField(metricSourceSchema(method.event.schema || {}),valuePath.value) : method.command?.output}}
+    if (!method?.capability || !canConfirm.value) return
+    const values = Object.fromEntries(Object.entries(parameters.value).filter(([id])=>(method.capability!.configurableParameters || []).includes(id)))
+    const config = reference(method.capability,method.valuePath || '$',values)
+    const original = request.value?.mapping?.providerSource
+    if (original?.provider === config.provider && original.sourceType === config.sourceType
+      && original.configuration.valuePath === config.configuration.valuePath) config.configuration = {...original.configuration,...config.configuration}
+    const member = request.value?.context.scope === 'children'
+    const subject = request.value?.mapping?.providerSource?.subject
+    return {mapping:{kind:'provider',thingType:subject ? request.value?.mapping?.thingType || request.value?.context.targetType : member ? request.value!.context.targetType : object.value.type,
+      ...(!member ? {thingId:subject ? request.value?.mapping?.thingId : object.value.id} : {}),id:method.valuePath || '$',
+      providerSource:{...config,...(subject ? {subject} : member ? {subject:{type:object.value.type,id:object.value.id}} : {})}},
+      label:`${object.value.name} / ${method.name}`,declaration:{id:method.id,name:method.name,unit:method.unit,valueType:method.valueType,semantics:metricSourceSemantics(method.expands)}}
   }
-  watch([()=>request.value,()=>object.value.type,()=>object.value.id],()=>{selected.value=undefined;parameters.value={};parameterModes.value={};void load()},{immediate:true})
-  watch(visible,value=>{if (value) void loadQueries()})
+  watch([()=>request.value,()=>object.value.type,()=>object.value.id,visible],()=>{void load()},{immediate:true})
   onScopeDispose(()=>{generation++})
-  return {events,commands,methods,loading,failed,selected,valuePath,fields,parameters,parameterModes,updateEvent,canConfirm,load,loadService,select,selection}
+  return {methods,loading,failed,selected,parameters,canConfirm,load,select,selection}
 }
 export type BusinessSourcesState = ReturnType<typeof useBusinessSources>

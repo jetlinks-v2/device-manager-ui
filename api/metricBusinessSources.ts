@@ -3,7 +3,14 @@ import { collectMetricResources } from '@jetlinks-web-core/components/Metric/ext
 
 export interface BusinessEvent { id:string; name:string; description?:string; group?:string; schema:Record<string,unknown> }
 export interface BusinessCommand { id:string; name:string; description?:string; inputs?:{id:string;name?:string;valueType?:Record<string,unknown>}[]; output?:Record<string,unknown>; expands?:Record<string,unknown> }
-interface SourceCommandService { id:string; metadata?:{metricSource?:{objectTypes?:string[]}} }
+/** 原本体声明的只读能力；保留绑定来源，前端不配置对象身份与时间参数。 */
+export interface ObjectSourceCapability {
+  id:string; name:string; kind:'query'|'event'|'action'
+  event?:{transport?:'thingMessage'|'structuredEvent';definitionId:string}
+  configurableParameters?:string[]
+  bindings?:Record<string,{source:string;value?:unknown}>
+  evidenceMapping?:{observedAt?:string}
+}
 export interface SourceObjectType { id:string; name:string; description?:string; icon?:string; metricSource?:{root:boolean;icon?:string}; i18nName?:string }
 const options = { hiddenError:true }
 async function read<T>(url:string):Promise<T> {
@@ -11,12 +18,9 @@ async function read<T>(url:string):Promise<T> {
   if (response.status && response.status >= 400) throw new Error(response.message || String(response.status))
   return response.result
 }
-export const loadMetricEvents = () => read<BusinessEvent[]>('/metric/configs/sources/events')
-/** 内部服务不是业务选项；只有显式声明当前对象类型的服务才发现其查询元数据。 */
-export async function loadMetricCommandServices(objectType:string) {
-  return (await read<SourceCommandService[]>('/command-supports/services'))
-    .filter(service=>Array.isArray(service.metadata?.metricSource?.objectTypes) && service.metadata.metricSource.objectTypes.includes(objectType))
-}
+const objectPath=(type:string,id:string)=>`/ontology/catalog/${encodeURIComponent(type)}/${encodeURIComponent(id)}`
+export const loadObjectSourceCapabilities=(type:string,id:string)=>read<ObjectSourceCapability[]>(`${objectPath(type,id)}/capabilities`)
+export const loadObjectSourceMetadata=(type:string,id:string,capability:string)=>read<BusinessCommand>(`${objectPath(type,id)}/capabilities/${encodeURIComponent(capability)}/metadata`)
 /** 关系类型全集不是来源根目录；业务维度及显式root声明负责UI发现，后端绑定仍按原权限执行。 */
 export async function loadMetricObjectTypes():Promise<SourceObjectType[]> {
   const types = await read<SourceObjectType[]>('/relation/types')
@@ -33,9 +37,4 @@ export async function queryMetricBusinessObjects(type:string,keyword:string,page
   const response:{status?:number;message?:string;result?:{data:{id:string;name?:string}[];total:number}} = await request.post('/relation/objects/_query',{type,query:{pageIndex,pageSize:20,terms:keyword ? [{column:'name',termType:'like',value:`%${keyword}%`}] : []}},options)
   if (response.status && response.status >= 400) throw new Error(response.message || String(response.status))
   return {data:response.result?.data || [],total:response.result?.total || 0}
-}
-/** 命令元数据沿用服务目录与远端路由，只展示显式声明为只读查询的命令。 */
-export async function loadMetricCommands(service:string) {
-  return (await read<BusinessCommand[]>(`/command-supports/service/${encodeURIComponent(service)}/commands`))
-    .filter(command=>command.expands?.functionKind === 'query')
 }

@@ -3,9 +3,9 @@
     <header v-if="inline && !state.statistics.active.value"><b>{{ t(state.request.value?.purpose === 'declaration' ? 'referenceTitle' : 'sourceTitle') }}</b><a-button type="text" size="small" @click="state.cancel"><AIcon type="ArrowLeftOutlined" />{{ t('back') }}</a-button></header>
     <p v-if="state.request.value?.purpose === 'declaration'" class="source-note">{{ t('referenceHelp') }}</p>
     <template v-if="state.request.value">
-      <button v-if="!state.statistics.active.value && !state.choosingObject.value" class="source-object" type="button" @click="state.changeObject">
-        <AIcon :type="objectIcon" /><span class="source-object__copy"><b>{{ state.object.value.name || t('chooseObject') }}</b><small>{{ state.currentMember.value ? t('currentDeviceHint') : `${objectTypeLabel} · ${t('changeObject')}` }}</small></span><AIcon type="SwapOutlined" />
-      </button>
+      <component :is="state.canChangeObject.value ? 'button' : 'div'" v-if="!state.statistics.active.value && !state.choosingObject.value" class="source-object" :type="state.canChangeObject.value ? 'button' : undefined" @click="state.changeObject">
+        <AIcon :type="objectIcon" /><span class="source-object__copy"><b>{{ state.object.value.name || t('chooseObject') }}</b><small>{{ state.currentMember.value ? t('currentDeviceHint') : state.canChangeObject.value ? `${objectTypeLabel} · ${t('changeObject')}` : t('boundObjectHint',{type:objectTypeLabel}) }}</small></span><AIcon v-if="state.canChangeObject.value" type="SwapOutlined" />
+      </component>
       <template v-if="state.choosingObject.value">
         <div class="source-object-query">
           <a-select :value="state.objectType.value" :aria-label="t('businessSubject')" option-label-prop="children" :dropdown-match-select-width="false" @change="state.changeObjectType(String($event))">
@@ -38,7 +38,7 @@
               <h4><AIcon type="FolderOutlined" />{{ group.name || t('ungrouped') }}<small>{{ group.items.length }}</small></h4>
               <SourceItemRow v-for="item in group.items" :key="item.key" :item="item" :declaration="state.request.value.purpose === 'declaration'" :selected="state.selectedKey.value === item.key" @select="selectItem(item)" />
             </section>
-            <a-empty v-if="!state.groups.value.length && !state.business.loading.value" :description="t('noData')" :image-style="{height:'36px'}" />
+            <a-empty v-if="!state.groups.value.length && !state.business.loading.value" :description="t(state.inputUndeclared.value ? 'inputUndeclared' : 'noData')" :image-style="{height:'36px'}" />
             <details v-if="!state.inherited.value && state.request.value.purpose !== 'declaration' && showKind('metric')" :open="state.metricsExpanded.value" class="source-service" @toggle="state.metricsExpanded.value = ($event.target as HTMLDetailsElement).open">
               <summary><AIcon type="NodeIndexOutlined" />{{ t('metrics') }}</summary>
               <a-spin v-if="state.metricSources.loading.value" size="small" />
@@ -100,6 +100,7 @@ onScopeDispose(()=>clearTimeout(timer))
 .source-object>.anticon,.source-objects button>.anticon { flex:none; width:16px }
 .source-object b,.source-object small,.source-objects small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
 .source-object:disabled { cursor:default }
+.source-object:not(button) { cursor:default }
 .source-object b { font-size:13px; font-weight:500 }
 .source-object small,.source-objects small,.source-note { font-size:12px; color:var(--ink-3); line-height:1.5 }
 .source-note { margin:0 }

@@ -19,6 +19,7 @@ test('source descriptions merge into an existing host composer and follow its lo
   const load = createMetricLoader({
     'vue-i18n':i18nRuntime,
     '../../../api/metricSources':api,
+    [fileURLToPath(new URL('../api/metricSources.ts',import.meta.url))]:api,
     [fileURLToPath(new URL('../api/metricBusinessSources.ts',import.meta.url))]:{
       loadMetricEvents:async()=>[],loadMetricCommandServices:async()=>[],loadMetricCommands:async()=>[],loadMetricObjectTypes:async()=>[],queryMetricBusinessObjects:async()=>({data:[],total:0}),
     },

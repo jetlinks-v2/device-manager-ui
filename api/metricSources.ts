@@ -35,7 +35,7 @@ function metadataGroup(item:object):string | undefined {
 /** 事件沿用物模型 valueType；完整事件是一个对象输入，字段由公式引用。 */
 function metricEvents(raw:unknown):MetricPropertyOption[] {
   const metadata = typeof raw === 'string' ? JSON.parse(raw) : raw
-  return metadata && typeof metadata === 'object' && Array.isArray(metadata.events) ? metadata.events.map((event: {id:string;name?:string;valueType?:Record<string,unknown>}) => ({ id:event.id,name:event.name || event.id,valueType:event.valueType,group:metadataGroup(event) })) : []
+  return metadata && typeof metadata === 'object' && Array.isArray(metadata.events) ? metadata.events.map((event: {id:string;name?:string;valueType?:Record<string,unknown>;expands?:Record<string,unknown>}) => ({ id:event.id,name:event.name || event.id,valueType:event.valueType,expands:event.expands,group:metadataGroup(event) })) : []
 }
 
 /** 查询沿用设备资产授权，无在线状态限定，分页避免全量加载设备。 */
@@ -59,6 +59,11 @@ function sourceProperties(metadata:unknown):MetricPropertyOption[] {
     const source = property.expands?.metricSource as {platform?:boolean;history?:boolean;icon?:string;group?:string} | undefined
     return source ? {...property,...source} : property
   })
+}
+/** 目录发现使用当前对象实例，不额外查询样例设备或另一业务服务的列表。 */
+export async function loadMetricObjectSources(type:string,id:string) {
+  const metadata = await objectMetadata(type,id)
+  return {properties:sourceProperties(metadata),events:metricEvents(metadata)}
 }
 export async function loadMetricDevice(id:string) {
   const [response, metadata] = await Promise.all([detail(id).then(requireSourceSuccess), objectMetadata('device', id)])

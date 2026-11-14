@@ -90,11 +90,13 @@ test('cross-entry navigation keeps exact IDs and requires its authorized menu',(
 
 const {useMetricSourceAdapter}=await loadMetricTestModule('../views/device/metrics/useMetricSourceAdapter.ts',{
   '../../../api/metricBusinessSources': 'export const loadMetricObjectTypes=async()=>[];export const queryMetricBusinessObjects=async()=>({data:[],total:0});',
-  '../../../../api/metricBusinessSources': 'export const loadMetricEvents=async()=>[];export const loadMetricCommandServices=async()=>[];export const loadMetricCommands=async()=>[];',
+  '../../../../api/metricBusinessSources': 'export const loadObjectSourceCapabilities=async()=>[];export const loadObjectSourceMetadata=async()=>({});',
+  '../../../../api/metricSources': 'export const describeMetricProvider=async()=>({schema:{},capabilities:[]});',
   'vue-i18n':'import {ref} from "vue";export const useI18n=()=>({t:key=>key.replace(/^metricSources\\./,""),mergeLocaleMessage:()=>{},locale:ref("zh")})',
-  '../../../api/metricSources':`export const queryMetricDevices=async()=>({data:[],total:0});export const loadMetricDevice=async id=>({device:{id,name:id},properties:[{id:"$online",name:"在线状态",platform:true,history:true}]});export const loadMetricProduct=async()=>[{id:"power",name:"Power"},{id:"$online",name:"在线状态",platform:true,history:true}];export const loadMetricBuiltins=async()=>[];
+  '../../../api/metricSources':`export const queryMetricDevices=async()=>({data:[],total:0});export const loadMetricDevice=async id=>({device:{id,name:id},properties:[{id:"$online",name:"在线状态",platform:true,history:true,valueType:{type:"int"}}]});export const loadMetricProduct=async()=>[{id:"power",name:"Power",valueType:{type:"double"}},{id:"$online",name:"在线状态",platform:true,history:true,valueType:{type:"int"}}];export const loadMetricBuiltins=async()=>[];
     const item={config:{id:"source",name:"Temperature",state:"enabled",scope:"single",targetType:"device",targetId:"d1"},template:{id:"t",version:"1",name:"Temperature",options:{},inputDefinitions:[],parameterDefinitions:[],definitions:[],outputs:[{metricId:"average",label:"Average",persist:true,unit:"℃"}]},output:{metricId:"average",label:"Average",persist:true,unit:"℃"}};
     export const loadMetricOutputs=async()=>[item];export const loadMetricOutput=async()=>item;export const loadMetricProductSources=async id=>({properties:await loadMetricProduct(id),events:[]});export const describeMetricProvider=async()=>({});export const readMetricProvider=async()=>undefined;
+    export const loadMetricObjectSources=(type,id)=>type==='device'?loadMetricDevice(id):loadMetricProductSources(id);
     export const loadMetricInheritedOutputs=async()=>[];export const loadMetricProductName=async id=>id;export const queryMetricProducts=async()=>({data:[],total:0});`,
 })
 test('inline source selection reuses the device model and does not open a second modal',async()=>{
@@ -102,7 +104,7 @@ test('inline source selection reuses the device model and does not open a second
   const adapter=scope.run(()=>useMetricSourceAdapter(context))
   const state=adapter.pickSource.editor.setup()().props.state
   try {
-    const pending=adapter.pickSource({context:context.value,input:{id:'running'},inline:true})
+    const pending=adapter.pickSource({context:context.value,input:{id:'running',valueType:{type:'int'}},inline:true})
     await new Promise(resolve=>setImmediate(resolve));await nextTick()
     assert.equal(adapter.host.setup()(),null)
     assert.equal(state.deviceId.value,'d1')
@@ -130,7 +132,7 @@ test('same-object context refresh keeps inline source selection while changing o
   const adapter=scope.run(()=>useMetricSourceAdapter(context))
   const state=adapter.pickSource.editor.setup()().props.state
   try {
-    const pending=adapter.pickSource({context:context.value,input:{id:'power'},inline:true})
+    const pending=adapter.pickSource({context:context.value,input:{id:'power',valueType:{type:'double'}},inline:true})
     await flushSource()
     context.value={...context.value,label:'Renamed device'}
     await nextTick()
@@ -153,7 +155,7 @@ test('existing metrics bind public outputs, exclude self and recover authorized 
   const adapter=scope.run(()=>useMetricSourceAdapter(context))
   const state=adapter.pickSource.editor.setup()().props.state
   try {
-    const pending=adapter.pickSource({context:context.value,configId:'dependent',input:{id:'value'},inline:true})
+    const pending=adapter.pickSource({context:context.value,configId:'dependent',input:{id:'value',valueType:{type:'double'}},inline:true})
     await flushSource()
     assert.equal(state.choosingObject.value,false)
     state.metricsExpanded.value=true;await flushSource()
@@ -164,7 +166,7 @@ test('existing metrics bind public outputs, exclude self and recover authorized 
     assert.deepEqual((await pending).mapping,{kind:'metric',configId:'source',thingType:'device',thingId:'d1',id:'average'})
     const descriptions=await adapter.pickSource.describe(context.value,{value:{kind:'metric',configId:'source',thingType:'device',thingId:'d1',id:'average'}})
     assert.equal(descriptions.value.label,'Temperature / Average')
-    const self=adapter.pickSource({context:context.value,configId:'source',input:{id:'value',source:{kind:'metric'}},inline:true})
+    const self=adapter.pickSource({context:context.value,configId:'source',input:{id:'value',valueType:{type:'double'},source:{kind:'metric'}},inline:true})
     await flushSource()
     assert.equal(state.metricSources.items.value.length,0)
     state.cancel();await self
@@ -176,7 +178,7 @@ test('product inheritance picks the current member property without fixing a dev
   const adapter=scope.run(()=>useMetricSourceAdapter(context))
   const state=adapter.host.setup()().props.state
   try {
-    const pending=adapter.pickSource({context:{...context.value,scope:'children'},input:{id:'reading'}})
+    const pending=adapter.pickSource({context:{...context.value,scope:'children'},input:{id:'reading',valueType:{type:'double'}}})
     await new Promise(resolve=>setImmediate(resolve));await nextTick()
     assert.equal(state.inherited.value,true)
     assert.deepEqual(state.devices.value,[])
@@ -191,12 +193,12 @@ test('public source adapter owns its modal and cancels pending selection when ow
   const scope=effectScope(),context=ref({ownerType:'space',ownerId:'s1'})
   const adapter=scope.run(()=>useMetricSourceAdapter(context))
   const state=adapter.host.setup()().props.state
-  const first=adapter.pickSource({context:context.value,input:{id:'power'}})
+  const first=adapter.pickSource({context:context.value,input:{id:'power',valueType:{type:'double'}}})
   assert.equal(state.open.value,true)
   context.value={ownerType:'space',ownerId:'s2'};await nextTick()
   assert.equal(await first,undefined)
   assert.equal(state.open.value,false)
-  const second=adapter.pickSource({context:context.value,input:{id:'power'}})
+  const second=adapter.pickSource({context:context.value,input:{id:'power',valueType:{type:'double'}}})
   scope.stop()
   assert.equal(await second,undefined)
 })
@@ -206,7 +208,7 @@ test('source confirmation keeps the visible built-in name and stable mapping ID'
   const adapter=scope.run(()=>useMetricSourceAdapter(context))
   const state=adapter.host.setup()().props.state
   try {
-    const pending=adapter.pickSource({context:context.value,input:{id:'running'}})
+    const pending=adapter.pickSource({context:context.value,input:{id:'running',valueType:{type:'int'}}})
     await state.selectDevice('d1')
     state.selectMethod(state.items.value.flatMap(item=>item.methods).find(item=>item.id === '$online'))
     state.confirm()

@@ -10,7 +10,7 @@ const declarations: MetricTemplateStarter[] = [
     "icon": "WifiOutlined",
     "template": {
       "id": "iot-communication-observation",
-      "version": "3",
+      "version": "5",
       "name": "通信状态与观测质量",
       "thingType": "device",
       "enabled": true,
@@ -18,6 +18,7 @@ const declarations: MetricTemplateStarter[] = [
         {
           "id": "connectionState",
           "name": "平台连接状态",
+          "semantics": {"semanticId": "urn:jetlinks:device:platform:online", "semanticTypes": ["observation"]},
           "valueType": {
             "type": "enum",
             "valueType": {
@@ -43,6 +44,7 @@ const declarations: MetricTemplateStarter[] = [
         {
           "id": "lastCommunicationTime",
           "name": "最近会话通信时间",
+          "semantics": {"semanticId": "urn:jetlinks:device:platform:lastCommunicationTime", "semanticTypes": ["observation"]},
           "valueType": {
             "type": "date"
           },
@@ -618,6 +620,9 @@ const declarations: MetricTemplateStarter[] = [
               "presence": "optional"
             }
           ],
+          "stateTracking": {
+            "maxNoData": "PT2M"
+          },
           "options": {},
           "expressionTree": {
             "version": 1,
@@ -1150,7 +1155,7 @@ const declarations: MetricTemplateStarter[] = [
         "targetId": "example",
         "slot": "example",
         "templateId": "iot-communication-observation",
-        "templateVersion": "3",
+        "templateVersion": "5",
         "state": "disabled",
         "revision": 0,
         "inputMappings": {
@@ -1309,13 +1314,14 @@ const declarations: MetricTemplateStarter[] = [
     "icon": "WifiOutlined",
     "template": {
       "id": "iot-connection-duration",
-      "version": "3",
+      "version": "4",
       "name": "在线与离线时长",
       "enabled": true,
       "inputDefinitions": [
         {
           "id": "connectionState",
           "name": "在线状态",
+          "semantics": {"semanticId": "urn:jetlinks:device:platform:online", "semanticTypes": ["observation"]},
           "valueType": {
             "type": "enum",
             "valueType": {
@@ -1842,7 +1848,7 @@ const declarations: MetricTemplateStarter[] = [
         "targetType": "simulation",
         "targetId": "example",
         "templateId": "iot-connection-duration",
-        "templateVersion": "3",
+        "templateVersion": "4",
         "state": "disabled",
         "revision": 0,
         "parameters": {},

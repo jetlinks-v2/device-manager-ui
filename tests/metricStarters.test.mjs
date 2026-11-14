@@ -62,11 +62,29 @@ test('references explain observation boundaries, parameter examples and a verifi
 test('connection references explicitly version event-maintained history without upgrading saved bindings',()=>{
   for (const id of ['communication-observation','connection-duration']) {
     const {template,simulation}=starters.find(item=>item.id===id)
-    assert.equal(template.version,'3')
+    assert.equal(template.version,id === 'communication-observation' ? '5' : '4')
     assert.equal(simulation.configuration.templateVersion,template.version)
     assert.equal(template.inputDefinitions.find(item=>item.id==='connectionState').historyReconciliation,'PT5M')
   }
   assert.ok(!starters.find(item=>item.id==='sample-mean').template.inputDefinitions[0].historyReconciliation)
+})
+
+test('专用通信参考声明原来源语义，通用状态和数值参考不锁定设备领域',()=>{
+  const input=(id,key)=>starters.find(item=>item.id===id).template.inputDefinitions.find(item=>item.id===key)
+  for(const id of ['communication-observation','connection-duration']) assert.equal(input(id,'connectionState').semantics.semanticId,'urn:jetlinks:device:platform:online')
+  assert.equal(input('communication-observation','lastCommunicationTime').semantics.semanticId,'urn:jetlinks:device:platform:lastCommunicationTime')
+  for(const id of ['state-duration','sample-mean','counter-usage','persistent-limit','measurement-difference']) {
+    assert.ok(starters.find(item=>item.id===id).template.inputDefinitions.every(item=>!item.semantics?.semanticId))
+  }
+})
+
+test('communication state declares server intervals instead of drawing calculation ticks as durations',()=>{
+  const {template}=starters.find(item=>item.id==='communication-observation')
+  const connection=template.definitions.find(item=>item.id==='currentConnection')
+  const communication=template.definitions.find(item=>item.id==='communicationState')
+  assert.equal(communication.stateTracking.maxNoData,connection.stateTracking.maxNoData)
+  assert.equal(communication.stateTracking.maxNoData,'PT2M')
+  assert.equal(template.outputs.find(item=>item.metricId==='communicationState').persist,true)
 })
 
 test('connection examples use platform state facts and scope summaries do not require a device target',()=>{
