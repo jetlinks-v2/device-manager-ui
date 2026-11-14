@@ -9155,7 +9155,7 @@
   "DeviceMetrics.devices": "Devices",
   "DeviceMetrics.templates": "Metric templates",
   "DeviceMetrics.save": "Configure metrics",
-  "DeviceMetrics.businessMetrics": "Business metrics",
+  "DeviceMetrics.businessMetrics": "Metric management",
   "DeviceMetrics.ruleAndCalculation": "Rules and calculations",
   "DeviceMetrics.products": "Products",
   "DeviceMetrics.groups": "Groups",

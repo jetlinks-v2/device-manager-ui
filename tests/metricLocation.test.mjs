@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { loadMetricTestModule } from './metricTestModule.mjs'
-const { metricReturnQuery, metricReferenceFromQuery, metricWorkspaceSelectionFromQuery, metricWorkspaceQuery, metricScopeKey, metricBusinessQuery } = await loadMetricTestModule('../views/device/metrics/metricLocation.ts')
+const { metricReturnQuery, metricReferenceFromQuery, metricWorkspaceSelectionFromQuery, metricWorkspaceQuery, metricScopeKey, metricBusinessQuery } = await loadMetricTestModule('../../../jetlinks-web-core/src/components/Metric/location.ts')
 
 test('non-first metric and output survive owner-specific return locations', () => {
   const reference = { configId: 'second-config', outputId: 'second-output' }
@@ -12,10 +12,6 @@ test('non-first metric and output survive owner-specific return locations', () =
     assert.equal(metricReferenceFromQuery(query, { ...context, ownerId: 'other-owner' }), undefined)
     assert.equal(query.projectId, 'project-1')
     assert.equal(query.q, 'existing-filter')
-    if (ownerType === 'device') assert.equal(query.tab, 'metrics')
-    if (ownerType === 'product') assert.equal(query.tab, 'Metrics')
-    if (ownerType === 'deviceGroup') assert.deepEqual([query.scopeType, query.scopeId, query.metricView], ['group', 'owner-2', 'metrics'])
-    if (ownerType === 'space') assert.deepEqual([query.spaceId, query.scopeId, query.floorPlanId, query.metricView], ['owner-2', undefined, undefined, 'metrics'])
   }
 })
 

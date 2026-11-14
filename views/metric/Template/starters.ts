@@ -10,7 +10,7 @@ const declarations: MetricTemplateStarter[] = [
     "icon": "WifiOutlined",
     "template": {
       "id": "iot-communication-observation",
-      "version": "1",
+      "version": "3",
       "name": "通信状态与观测质量",
       "thingType": "device",
       "enabled": true,
@@ -37,7 +37,8 @@ const declarations: MetricTemplateStarter[] = [
           "source": {
             "lookback": "PT2H",
             "maxPoints": 512
-          }
+          },
+          "historyReconciliation": "PT5M"
         },
         {
           "id": "lastCommunicationTime",
@@ -831,7 +832,8 @@ const declarations: MetricTemplateStarter[] = [
               "defaultOperation": "distribution",
               "defaultView": "list"
             }
-          }
+          },
+          "valueType": "enum"
         },
         {
           "metricId": "observedOnlineRatio",
@@ -850,7 +852,8 @@ const declarations: MetricTemplateStarter[] = [
               "defaultOperation": "collection",
               "defaultView": "list"
             }
-          }
+          },
+          "valueType": "double"
         },
         {
           "metricId": "windowOfflineSeconds",
@@ -872,7 +875,8 @@ const declarations: MetricTemplateStarter[] = [
               "defaultOperation": "max",
               "defaultView": "list"
             }
-          }
+          },
+          "valueType": "double"
         },
         {
           "metricId": "windowDisconnectCount",
@@ -893,7 +897,8 @@ const declarations: MetricTemplateStarter[] = [
               "defaultOperation": "average",
               "defaultView": "list"
             }
-          }
+          },
+          "valueType": "int"
         },
         {
           "metricId": "currentConnection",
@@ -912,7 +917,8 @@ const declarations: MetricTemplateStarter[] = [
               "defaultOperation": "distribution",
               "defaultView": "list"
             }
-          }
+          },
+          "valueType": "enum"
         },
         {
           "metricId": "windowUnknownSeconds",
@@ -934,7 +940,8 @@ const declarations: MetricTemplateStarter[] = [
               "defaultOperation": "max",
               "defaultView": "list"
             }
-          }
+          },
+          "valueType": "double"
         },
         {
           "metricId": "communicationAgeSeconds",
@@ -956,7 +963,8 @@ const declarations: MetricTemplateStarter[] = [
               "defaultOperation": "max",
               "defaultView": "list"
             }
-          }
+          },
+          "valueType": "double"
         }
       ],
       "options": {
@@ -1142,7 +1150,7 @@ const declarations: MetricTemplateStarter[] = [
         "targetId": "example",
         "slot": "example",
         "templateId": "iot-communication-observation",
-        "templateVersion": "1",
+        "templateVersion": "3",
         "state": "disabled",
         "revision": 0,
         "inputMappings": {
@@ -1301,7 +1309,7 @@ const declarations: MetricTemplateStarter[] = [
     "icon": "WifiOutlined",
     "template": {
       "id": "iot-connection-duration",
-      "version": "1",
+      "version": "3",
       "name": "在线与离线时长",
       "enabled": true,
       "inputDefinitions": [
@@ -1327,7 +1335,8 @@ const declarations: MetricTemplateStarter[] = [
           "source": {
             "lookback": "PT2H",
             "maxPoints": 256
-          }
+          },
+          "historyReconciliation": "PT5M"
         }
       ],
       "definitions": [
@@ -1692,7 +1701,7 @@ const declarations: MetricTemplateStarter[] = [
       "parameters": {},
       "options": {
         "description": "查看当前连接持续时间与一小时内的观测时长。",
-        "notes": "连接变化记录有效到下一次变化，显式过期约束仍生效。未知边界显示至少持续，缺失历史不补为离线。连接状态不代表设备运行或通电。",
+        "notes": "连接变化记录有效到下一次变化，显式过期约束仍生效。起点未知时不推算完整持续时长，缺失历史不补为离线。连接状态不代表设备运行或通电。",
         "presentation": {
           "settings": {
             "summaryOutputs": [
@@ -1711,8 +1720,8 @@ const declarations: MetricTemplateStarter[] = [
             "en": "View current connection duration and observed totals over one hour."
           },
           "notes": {
-            "zh": "连接变化记录有效到下一次变化，显式过期约束仍生效。未知边界显示至少持续，缺失历史不补为离线。连接状态不代表设备运行或通电。",
-            "en": "Connection changes remain effective until the next change, subject to explicit expiry. Unknown start boundaries show at least this duration; missing history is not offline time. Connectivity does not prove machine operation or electrical power."
+            "zh": "连接变化记录有效到下一次变化，显式过期约束仍生效。起点未知时不推算完整持续时长，缺失历史不补为离线。连接状态不代表设备运行或通电。",
+            "en": "Connection changes remain effective until the next change, subject to explicit expiry. Unknown start boundaries do not yield a full duration; missing history is not offline time. Connectivity does not prove machine operation or electrical power."
           },
           "input.connectionState.name": {
             "zh": "在线状态",
@@ -1833,7 +1842,7 @@ const declarations: MetricTemplateStarter[] = [
         "targetType": "simulation",
         "targetId": "example",
         "templateId": "iot-connection-duration",
-        "templateVersion": "1",
+        "templateVersion": "3",
         "state": "disabled",
         "revision": 0,
         "parameters": {},
@@ -1842,7 +1851,7 @@ const declarations: MetricTemplateStarter[] = [
             "kind": "property",
             "thingType": "device",
             "thingId": "example-connectionState",
-            "id": "connectionState"
+            "id": "$online"
           }
         }
       },
@@ -1850,7 +1859,7 @@ const declarations: MetricTemplateStarter[] = [
         {
           "thingType": "device",
           "thingId": "example-connectionState",
-          "metricId": "connectionState",
+          "metricId": "$online",
           "value": 1,
           "eventTime": 1793491200000,
           "ingestTime": 1793491200000,
@@ -1865,7 +1874,7 @@ const declarations: MetricTemplateStarter[] = [
         {
           "thingType": "device",
           "thingId": "example-connectionState",
-          "metricId": "connectionState",
+          "metricId": "$online",
           "value": 0,
           "eventTime": 1793500200000,
           "ingestTime": 1793500200000,
@@ -1880,7 +1889,7 @@ const declarations: MetricTemplateStarter[] = [
         {
           "thingType": "device",
           "thingId": "example-connectionState",
-          "metricId": "connectionState",
+          "metricId": "$online",
           "value": 1,
           "eventTime": 1793502000000,
           "ingestTime": 1793502000000,
@@ -1914,7 +1923,7 @@ const declarations: MetricTemplateStarter[] = [
     "icon": "ClockCircleOutlined",
     "template": {
       "id": "iot-state-duration",
-      "version": "1",
+      "version": "2",
       "name": "状态持续时间",
       "enabled": true,
       "inputDefinitions": [
@@ -2357,7 +2366,7 @@ const declarations: MetricTemplateStarter[] = [
       "parameters": {},
       "options": {
         "description": "跟踪可配置状态的本次持续时间和有效观测统计。",
-        "notes": "运行1、非运行0只是可编辑编码示例，不代表某行业标准七态。每分钟评估，观测最多保持20分钟。缺数为未知，首次起点不明显示至少持续；近一小时统计只按明确编码累计。",
+        "notes": "运行1、非运行0只是可编辑编码示例，不代表某行业标准七态。每分钟评估，观测最多保持20分钟。缺数为未知，首次起点不明时不推算完整持续时长；近一小时统计只按明确编码累计。",
         "i18nMessages": {
           "name": {
             "zh": "状态持续时间",
@@ -2368,8 +2377,8 @@ const declarations: MetricTemplateStarter[] = [
             "en": "Track configurable states and their current and observed durations."
           },
           "notes": {
-            "zh": "运行1、非运行0只是可编辑编码示例，不代表某行业标准七态。每分钟评估，观测最多保持20分钟。缺数为未知，首次起点不明显示至少持续；近一小时统计只按明确编码累计。",
-            "en": "Running 1 and not-running 0 are editable example codes, not a seven-state industry standard. Evaluate every minute; hold observations for at most 20 minutes. Missing periods are unknown and unknown initial boundaries show at least. One-hour totals use explicit codes only."
+            "zh": "运行1、非运行0只是可编辑编码示例，不代表某行业标准七态。每分钟评估，观测最多保持20分钟。缺数为未知，首次起点不明时不推算完整持续时长；近一小时统计只按明确编码累计。",
+            "en": "Running 1 and not-running 0 are editable example codes, not a seven-state industry standard. Evaluate every minute; hold observations for at most 20 minutes. Missing periods are unknown and unknown initial boundaries do not yield a full duration. One-hour totals use explicit codes only."
           },
           "input.operating.name": {
             "zh": "运行状态",
@@ -2506,7 +2515,7 @@ const declarations: MetricTemplateStarter[] = [
         "targetType": "simulation",
         "targetId": "example",
         "templateId": "iot-state-duration",
-        "templateVersion": "1",
+        "templateVersion": "2",
         "state": "disabled",
         "revision": 0,
         "parameters": {},
@@ -3554,7 +3563,7 @@ const declarations: MetricTemplateStarter[] = [
     "icon": "ClusterOutlined",
     "template": {
       "id": "iot-scope-connectivity",
-      "version": "1",
+      "version": "2",
       "name": "范围设备在线统计",
       "enabled": true,
       "inputDefinitions": [
@@ -3817,8 +3826,7 @@ const declarations: MetricTemplateStarter[] = [
             }
           ]
         }
-      },
-      "thingType": "device"
+      }
     },
     "simulation": {
       "configuration": {
@@ -3828,7 +3836,7 @@ const declarations: MetricTemplateStarter[] = [
         "targetType": "simulation",
         "targetId": "example",
         "templateId": "iot-scope-connectivity",
-        "templateVersion": "1",
+        "templateVersion": "2",
         "state": "disabled",
         "revision": 0,
         "parameters": {},

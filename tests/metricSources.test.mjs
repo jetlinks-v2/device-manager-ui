@@ -11,42 +11,31 @@ const bundled = await build({
   entryPoints: [fileURLToPath(new URL('../api/metricSources.ts', import.meta.url))], bundle: true, write: false, format: 'esm', platform: 'node',
   plugins: [{ name: 'source-api-boundary', setup(builder) {
     builder.onResolve({ filter:/^@jetlinks-web\/core$/ }, () => ({ path:'platform',namespace:'source-mock' }))
+    builder.onResolve({ filter:/hooks\/usePropertyUnits$/ }, () => ({ path:'units',namespace:'source-mock' }))
     builder.onResolve({ filter: /^\.\/(instance|product)$/ }, args => ({ path: args.path, namespace: 'source-mock' }))
     builder.onResolve({ filter: /^@jetlinks-web-core\/locales$/ }, () => ({ path: 'locale', namespace: 'source-mock' }))
     builder.onResolve({ filter: /^@jetlinks-web-core\/components$/ }, () => ({ path: 'metric', namespace: 'source-mock' }))
-    builder.onLoad({ filter: /.*/, namespace: 'source-mock' }, args => ({ contents: args.path === 'platform' ? 'export const request={get:async()=>globalThis.__metricPlatformRequest ? globalThis.__metricPlatformRequest() : ({result:[{id:"$online",name:"平台连接状态",valueType:"int",history:true,icon:"PoweroffOutlined"},{id:"$lastCommunicationTime",name:"最近会话通信时间",valueType:"long",history:false,icon:"MessageOutlined"}]})}' : args.path === 'locale'
+    builder.onLoad({ filter: /.*/, namespace: 'source-mock' }, args => ({ contents: args.path === 'platform' ? 'export const request={get:async(path)=>globalThis.__metricPlatformRequest ? globalThis.__metricPlatformRequest(path) : ({result:[{id:"$online",name:"平台连接状态",valueType:"int",history:true,icon:"PoweroffOutlined"},{id:"$lastCommunicationTime",name:"最近会话通信时间",valueType:"long",history:false,icon:"MessageOutlined"}]})}' : args.path === 'locale'
       ? 'export default {global:{t:(key)=>key,locale:{value:"zh"}}}'
+      : args.path === 'units' ? 'export const formatPropertyUnit=value=>value'
       : args.path === 'metric' ? 'export const metricApi={byOwner:(...args)=>globalThis.__metricSourceApi.byOwner(...args),getConfig:(...args)=>globalThis.__metricSourceApi.getConfig(...args),configTemplate:(...args)=>globalThis.__metricSourceApi.configTemplate(...args)}'
       : args.path === './product' ? 'export const detail=(...args)=>globalThis.__metricSourceApi.productDetail(...args); export const queryProductList=(...args)=>globalThis.__metricSourceApi.queryProducts(...args)'
       : 'export const query=(...args)=>globalThis.__metricSourceApi.query(...args);export const detail=(...args)=>globalThis.__metricSourceApi.detail(...args)' }))
   } }],
 })
 const { queryMetricDevices, loadMetricDevice, loadMetricProduct, loadMetricProductSources, loadMetricOutputs, loadMetricOutput } = await import(`data:text/javascript;base64,${Buffer.from(bundled.outputFiles[0].text).toString('base64')}`)
+globalThis.__metricSourceApi={detail:async id=>({result:{id,name:'设备名称'}}),productDetail:async id=>({result:{id,name:'产品名称'}})}
 
-test('platform directory failures remain visible, share an in-flight request and can retry immediately', async () => {
-  const isolated = await import(`data:text/javascript;base64,${Buffer.from(`${bundled.outputFiles[0].text}\n// directory-retry`).toString('base64')}`)
-  let finish
-  let calls = 0
-  globalThis.__metricPlatformRequest = () => { calls++; return new Promise(resolve => { finish = resolve }) }
-  try {
-    const first = isolated.loadMetricPlatformProperties()
-    const second = isolated.loadMetricPlatformProperties()
-    assert.equal(first, second)
-    const rejected = Promise.all([assert.rejects(first, /directory unavailable/), assert.rejects(second, /directory unavailable/)])
-    finish({ status:500, message:'directory unavailable' })
-    await rejected
-    const retried = isolated.loadMetricPlatformProperties()
-    assert.equal(calls, 2)
-    finish({ status:200, result:[{ id:'$lastCommunicationTime', name:'Last communication', valueType:'long', history:false, icon:'MessageOutlined' }] })
-    const items = await retried
-    assert.equal(items.length, 1)
-    assert.equal(items[0].id, '$lastCommunicationTime')
-    assert.equal(items[0].platform, true)
-    assert.equal(items[0].history, false)
-    assert.deepEqual(items[0].valueType, { type:'long' })
-    assert.equal(await isolated.loadMetricPlatformProperties(), items)
-    assert.equal(calls, 2)
-  } finally { delete globalThis.__metricPlatformRequest }
+test('instance metadata errors stay visible and retry without a global platform directory cache', async () => {
+  const calls=[]
+  globalThis.__metricPlatformRequest=(path)=>{calls.push(path);return {status:403,message:'metadata denied'}}
+  await assert.rejects(loadMetricDevice('offline'),/metadata denied/)
+  globalThis.__metricPlatformRequest=(path)=>{calls.push(path);return {status:200,result:{properties:[{id:'$online',name:'连接状态',valueType:{type:'int'},expands:{metricSource:{platform:true,history:true}}}]}}}
+  const data=await loadMetricDevice('offline')
+  assert.equal(data.properties[0].platform,true)
+  assert.equal(data.properties[0].history,true)
+  assert.deepEqual(calls,Array(2).fill('/ontology/catalog/device/offline/metadata'))
+  delete globalThis.__metricPlatformRequest
 })
 
 test('four hosts set the initial candidate scope without restricting offline devices', () => {
@@ -59,37 +48,17 @@ test('four hosts set the initial candidate scope without restricting offline dev
   }
 })
 
-test('source failures remain errors and offline properties restore from product metadata', async () => {
-  globalThis.__metricSourceApi = {
-    query: async () => ({ status: 500, message: 'query unavailable' }),
-    detail: async () => ({ status: 403, message: 'device denied' }),
-  }
-  await assert.rejects(queryMetricDevices({ ownerType: 'device', ownerId: 'offline' }, '', 0, true), /query unavailable/)
-  await assert.rejects(loadMetricDevice('offline'), /device denied/)
-  globalThis.__metricSourceApi.detail = async () => ({ status: 200, result: { id: 'offline', name: '离线电表', productId: 'meter', metadata: '{}' } })
-  globalThis.__metricSourceApi.productDetail = async () => ({ status: 500, message: 'product unavailable' })
-  await assert.rejects(loadMetricDevice('offline'), /product unavailable/)
-  globalThis.__metricSourceApi.productDetail = async () => ({ status: 200, result: { metadata: JSON.stringify({ properties: [{ id: 'energy', name: '累计电量', valueType: { type: 'double', unit: 'kWh' } }] }) } })
-  const device = await loadMetricDevice('offline')
-  assert.equal(device.device.id, 'offline')
-  assert.equal(device.properties.find(property => !property.platform).id, 'energy')
-  assert.ok(device.properties.some(property => property.id === '$lastCommunicationTime' && property.platform && property.history === false))
-})
-
-test('product inheritance selects properties from the product model without loading device members', async () => {
-  const calls = []
-  globalThis.__metricSourceApi = {
-    query: async () => { throw new Error('must not enumerate devices') },
-    detail: async () => { throw new Error('must not bind a device') },
-    productDetail: async id => {
-      calls.push(id)
-      return { status:200, result:{ metadata:JSON.stringify({ properties:[{ id:'state', name:'工作状态', valueType:{ type:'int' } }] }) } }
-    },
-  }
-  assert.deepEqual((await loadMetricProduct('pumps')).filter(property => !property.platform).map(property => [property.id,property.name]), [['state','工作状态']])
-  assert.deepEqual(calls, ['pumps'])
-  globalThis.__metricSourceApi.productDetail = async () => ({ status:403, message:'product denied' })
-  await assert.rejects(loadMetricProduct('pumps'), /product denied/)
+test('device and product inputs use authorized ontology metadata and retain source names', async () => {
+  globalThis.__metricSourceApi={query:async()=>({status:500,message:'query unavailable'}), detail:async id=>({result:{id,name:'设备名称'}}),productDetail:async id=>({result:{id,name:'产品名称'}})}
+  await assert.rejects(queryMetricDevices({ownerType:'device',ownerId:'offline'},'',0,true),/query unavailable/)
+  const paths=[]
+  globalThis.__metricPlatformRequest=async path=>{paths.push(path);return {status:200,result:{properties:[{id:'energy',name:'累计电量',valueType:{type:'double',unit:'kWh'}}]}}}
+  const device=await loadMetricDevice('offline')
+  assert.equal(device.properties[0].id,'energy')
+  assert.equal(device.device.name,'设备名称')
+  assert.equal((await loadMetricProduct('pumps'))[0].unit,'kWh')
+  assert.deepEqual(paths,['/ontology/catalog/device/offline/metadata','/ontology/catalog/product/pumps/metadata'])
+  delete globalThis.__metricPlatformRequest
 })
 
 test('metric sources expose only active single-target public outputs and propagate access failures', async () => {
@@ -110,13 +79,14 @@ test('metric sources expose only active single-target public outputs and propaga
 })
 
 test('产品属性与事件保留声明分组，未声明时不按名称推测分组',async()=>{
-  globalThis.__metricSourceApi={productDetail:async()=>({status:200,result:{id:'gateway',name:'网关',metadata:JSON.stringify({
+  globalThis.__metricSourceApi.productDetail=async id=>({result:{id,name:'网关产品'}})
+  globalThis.__metricPlatformRequest=async()=>({status:200,result:{
     properties:[{id:'temperature',name:'环境温度',expands:{groupName:'环境'},valueType:{type:'double',unit:'℃'}},{id:'smoke',name:'环境烟雾',valueType:{type:'boolean'}}],
     events:[{id:'alarm',name:'火警',group:'消防',valueType:{type:'object',properties:[]}}],
-  })}})}
+  }})
   const result=await loadMetricProductSources('gateway')
   assert.equal(result.properties.find(item=>item.id==='temperature').group,'环境')
   assert.equal(result.properties.find(item=>item.id==='smoke').group,undefined)
   assert.equal(result.events[0].group,'消防')
-  assert.equal(result.product.name,'网关')
+  delete globalThis.__metricPlatformRequest
 })

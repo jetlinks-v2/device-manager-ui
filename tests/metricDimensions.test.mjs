@@ -82,9 +82,9 @@ test('cross-entry navigation keeps exact IDs and requires its authorized menu',(
   const links=useMetricLinks(), reference={ownerType:'deviceGroup',ownerId:'g',configId:'config-2',outputId:'output-2'}
   links.openWorkspace(reference)
   assert.equal(calls.length,0)
-  menus.add('device/Metric');allowed.add('device/Metric:view')
+  menus.add('rule-engine/Metric');allowed.add('rule-engine/Metric:view')
   useMetricLinks().openWorkspace(reference)
-  assert.deepEqual(calls[0],['device/Metric',{query:{projectId:'p',metricOwnerType:'deviceGroup',metricOwnerId:'g',metricConfigId:'config-2',metricOutputId:'output-2'}}])
+  assert.deepEqual(calls[0],['rule-engine/Metric',{query:{projectId:'p',metricOwnerType:'deviceGroup',metricOwnerId:'g',metricConfigId:'config-2',metricOutputId:'output-2'}}])
   allowed.clear();menus.clear()
 })
 

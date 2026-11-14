@@ -5,46 +5,26 @@ const mocks={'@jetlinks-web-core/locales':'export default {global:{t:key=>key}}'
 const { metricMenuCatalog }=await loadMetricTestModule('../metricMenu.ts',mocks)
 const {default:deviceMenu}=await loadMetricTestModule('../baseMenu.ts',mocks)
 const {default:ruleMenu}=await loadMetricTestModule('../../rule-engine-manager-ui/baseMenu.ts',mocks)
-const {mergeModuleMenuCatalog,reconcileAuthorizedMenuLayout}=await loadMetricTestModule('../../../jetlinks-web-core/src/utils/module-menu-layout.ts')
 const flatten=menus=>menus.flatMap(item=>[item,...flatten(item.children||[])])
-test('menu migration preserves template identity, old URL and independent permissions; rule module is optional',()=>{
-  const original=[{code:'resources-devices',children:[{code:'device/Instance',buttons:[{id:'view',permissions:[{permission:'device-instance',actions:['query']}]}]}]}]
-  const once=metricMenuCatalog(original),twice=metricMenuCatalog(once)
-  assert.deepEqual(twice,once)
-  assert.equal(flatten(once).filter(item=>item.code==='device/MetricTemplate').length,1)
-  const parent=once.find(item=>item.code==='rule-engine')
-  assert.equal(parent.id,'91aa7c753b1c030dfad612aa0a45d453')
-  assert.equal(parent.name,'DeviceMetrics.ruleAndCalculation')
-  const template=flatten(once).find(item=>item.code==='device/MetricTemplate')
-  assert.equal(template.id,'device-metric-template')
-  assert.equal(template.url,'/resources/devices/metric-templates')
-  assert.equal(template.options.routeTarget,'rule-engine')
-  assert.equal(template.icon,'SnippetsOutlined')
-  assert.deepEqual(template.buttons.find(button=>button.id==='save').permissions,[{permission:'metric-template',actions:['query','save','delete']}])
-  const workspace=flatten(once).find(item=>item.code==='device/Metric')
-  assert.ok(workspace)
-  assert.equal(workspace.icon,'DashboardOutlined')
-  assert.equal(workspace.options.routeTarget,'rule-engine')
-  assert.ok(workspace.buttons.every(button=>button.permissions.every(permission=>!permission.permission.startsWith('rule-'))))
-  assert.equal(original.length,1)
-  assert.equal(original[0].children[0].buttons[0].permissions.length,1)
+
+test('device menus only declare permissions for their own detail entry points',()=>{
+  const original=[{code:'device/Instance',buttons:[{id:'view',permissions:[{permission:'device-instance',actions:['query']}]}]}]
+  const once=metricMenuCatalog(original)
+  assert.deepEqual(metricMenuCatalog(once),once)
+  assert.equal(original[0].buttons[0].permissions.length,1)
+  assert.ok(once[0].buttons[0].permissions.some(item=>item.permission==='metric-config'))
+  assert.ok(!flatten(deviceMenu()).some(item=>['rule-engine/Metric','rule-engine/MetricTemplate'].includes(item.code)))
 })
 
-test('actual catalogs merge one rules group and reconcile only authorized leaves without granting new ones',()=>{
-  const catalog=mergeModuleMenuCatalog([...ruleMenu(),...deviceMenu()])
-  assert.equal(catalog.filter(item=>item.code==='rule-engine').length,1)
-  const legacy={code:'resources-devices',name:'设备',url:'/resources/devices',owner:'iot',children:[{code:'device/MetricTemplate',id:'device-metric-template',name:'模板',icon:'LineChartOutlined',url:'/resources/devices/metric-templates',buttons:[{id:'view',permissions:[{permission:'metric-template',actions:['query']}]}]}]}
-  const result=reconcileAuthorizedMenuLayout([legacy],catalog)
-  assert.deepEqual(result.issues,[])
-  assert.equal(result.menus.find(item=>item.code==='rule-engine').children[0].code,'device/MetricTemplate')
-  assert.equal(result.menus.find(item=>item.code==='rule-engine').children[0].icon,'SnippetsOutlined')
-  assert.equal(legacy.children[0].icon,'LineChartOutlined')
-  const custom={...legacy,children:[{...legacy.children[0],icon:'StarOutlined'}]}
-  assert.equal(reconcileAuthorizedMenuLayout([custom],catalog).menus.find(item=>item.code==='rule-engine').children[0].icon,'StarOutlined')
-  assert.equal(flatten(result.menus).filter(item=>item.code==='device/Metric').length,0)
-  const old={...legacy,code:'rule-engine',id:'91aa7c753b1c030dfad612aa0a45d453',name:'规则引擎'}
-  assert.equal(reconcileAuthorizedMenuLayout([old],catalog).menus.find(item=>item.code==='rule-engine').name,'IotSceneLinkage.metric.ruleAndCalculation')
-  assert.equal(reconcileAuthorizedMenuLayout([{...old,name:'自定义规则'}],catalog).menus.find(item=>item.code==='rule-engine').name,'自定义规则')
-  const withoutRule=mergeModuleMenuCatalog(deviceMenu())
-  assert.equal(reconcileAuthorizedMenuLayout([legacy],withoutRule).menus.find(item=>item.code==='rule-engine').children[0].code,'device/MetricTemplate')
+test('rule module owns metric management and template routes with separate permissions',()=>{
+  const catalog=flatten(ruleMenu())
+  for(const [code,url,resource] of [
+    ['rule-engine/Metric','/rule-engine/metrics','metric-config'],
+    ['rule-engine/MetricTemplate','/rule-engine/metric-templates','metric-template'],
+  ]) {
+    const rows=catalog.filter(item=>item.code===code)
+    assert.equal(rows.length,1)
+    assert.equal(rows[0].url,url)
+    assert.ok(rows[0].buttons.find(item=>item.id==='save').permissions.some(item=>item.permission===resource&&item.actions.includes('save')))
+  }
 })

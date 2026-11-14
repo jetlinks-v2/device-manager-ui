@@ -5,6 +5,7 @@ import { loadMetricTestModule } from './metricTestModule.mjs'
 const { iotMetricStarters: starters } = await loadMetricTestModule('../views/metric/Template/starters.ts')
 const { localizedTemplate, metricTemplateTextEntries } = await loadMetricTestModule('../../../jetlinks-web-core/src/components/Metric/template/text.ts')
 const { captureTemplateExample } = await loadMetricTestModule('../../../jetlinks-web-core/src/components/Metric/template/templateAuthoring.ts')
+const { structureMetricTemplate } = await loadMetricTestModule('../../../jetlinks-web-core/src/components/Metric/template/structureExpressions.ts')
 
 test('default references cover IoT capabilities without domain-specific decisions or invented scores',()=>{
   assert.deepEqual(starters.map(item=>item.id),['communication-observation','connection-duration','state-duration','sample-mean','counter-usage','persistent-limit','measurement-difference','scope-connectivity'])
@@ -13,6 +14,9 @@ test('default references cover IoT capabilities without domain-specific decision
   assert.ok(!JSON.stringify(starters).includes('fireReview'))
   for (const {template,simulation} of starters) {
     assert.ok(template.definitions.length && template.outputs.length)
+    const structured=structureMetricTemplate(template)
+    assert.equal(structured.converted,0,'default references must already use the structured contract')
+    assert.deepEqual(structured.unsupported,[])
     assert.ok(captureTemplateExample(template,simulation),'facts must remain editable and portable')
     assert.deepEqual(Object.keys(simulation.configuration.inputMappings).sort(),template.inputDefinitions.map(item=>item.id).sort())
   }
@@ -53,4 +57,26 @@ test('references explain observation boundaries, parameter examples and a verifi
   const usage=starters.find(item=>item.id==='counter-usage').template
   assert.equal(usage.definitions[0].calculator.parameters.negativeDelta,'reject')
   assert.match(localizedTemplate(starters.find(item=>item.id==='persistent-limit').template,'en').options.notes,/not general safety/)
+})
+
+test('connection references explicitly version event-maintained history without upgrading saved bindings',()=>{
+  for (const id of ['communication-observation','connection-duration']) {
+    const {template,simulation}=starters.find(item=>item.id===id)
+    assert.equal(template.version,'3')
+    assert.equal(simulation.configuration.templateVersion,template.version)
+    assert.equal(template.inputDefinitions.find(item=>item.id==='connectionState').historyReconciliation,'PT5M')
+  }
+  assert.ok(!starters.find(item=>item.id==='sample-mean').template.inputDefinitions[0].historyReconciliation)
+})
+
+test('connection examples use platform state facts and scope summaries do not require a device target',()=>{
+  const connection=starters.find(item=>item.id==='connection-duration')
+  assert.equal(connection.simulation.configuration.inputMappings.connectionState.id,'$online')
+  assert.ok(connection.simulation.samples.every(item=>item.metricId==='$online' && item.quality.attributes.stateSince===item.eventTime))
+  const scope=starters.find(item=>item.id==='scope-connectivity')
+  assert.equal(scope.template.thingType,undefined)
+  assert.equal(scope.template.version,'2')
+  assert.ok(!connection.template.options.notes.includes('显示至少持续'))
+  const communication=starters.find(item=>item.id==='communication-observation').template
+  assert.ok(communication.outputs.every(output=>!!output.valueType),'declared read aggregation must include its scalar type')
 })

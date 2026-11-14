@@ -16,8 +16,8 @@ export interface DeviceMetricQuery {
   thingIds: string[]
   pointType: string
   metrics: { pointId: string; aggregation: MetricAggregation; alias: string }[]
-  from: string
-  to: string
+  from: number
+  to: number
   interval?: string
   groupBy?: string[]
   labelFilters?: { key: string; operator: 'EQ' | 'NOT_EQ' | 'IN' | 'NOT_IN' | 'EXISTS'; values: unknown[] }[]
@@ -50,8 +50,10 @@ function unwrap<T>(response: unknown): T {
   return ('result' in row ? row.result : row) as T
 }
 
-export async function deviceMetricsSupported(): Promise<SupportedDeviceMetric[]> {
-  const result = unwrap<SupportedDeviceMetric[]>(await request.get('/device/metrics/_supported', {}, config))
+export async function deviceMetricsSupported(deviceId: string): Promise<SupportedDeviceMetric[]> {
+  const result = unwrap<SupportedDeviceMetric[]>(await request.post('/ontology/catalog/device/capabilities/metricCatalog/_query', {
+    subjects: [{ typeId: 'device', id: deviceId }], parameters: {},
+  }, config))
   if (!Array.isArray(result) || result.some(row => !row || !row.pointId || !row.pointType || !row.metricType)) {
     throw new Error('Invalid metric catalog')
   }
@@ -61,7 +63,10 @@ export async function deviceMetricsSupported(): Promise<SupportedDeviceMetric[]>
 export async function deviceMetricsAggregate(query: DeviceMetricQuery): Promise<DeviceMetricRow[]> {
   // 单设备页面不允许设备身份缺失后退化为全域查询。
   if (!query.thingIds.length || query.thingIds.some(id => !id.trim())) throw new Error('Missing runtime device')
-  const result = unwrap<DeviceMetricRow[]>(await request.post('/device/metrics/_agg', query, config))
+  const { thingIds, from, to, ...parameters } = query
+  const result = unwrap<DeviceMetricRow[]>(await request.post('/ontology/catalog/device/capabilities/metrics/_query', {
+    subjects: thingIds.map(id => ({ typeId: 'device', id })), parameters, from, to,
+  }, config))
   if (!Array.isArray(result) || result.some(row => !row || typeof row !== 'object' || Array.isArray(row))) {
     throw new Error('Invalid metric response')
   }

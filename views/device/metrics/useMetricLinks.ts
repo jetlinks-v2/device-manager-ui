@@ -8,10 +8,10 @@ export function useMetricLinks() {
   const route = useRoute()
   const auth = useAuthStore()
   const menu = useMenuStore()
-  const workspaceEnabled = computed(() => menu.hasMenu('device/Metric') && auth.hasPermission('device/Metric:view'))
+  const workspaceEnabled = computed(() => menu.hasMenu('rule-engine/Metric') && auth.hasPermission('rule-engine/Metric:view'))
   function openWorkspace(reference: MetricAlarmReference) {
     if (!workspaceEnabled.value) return
-    menu.jumpPage('device/Metric', { query: { projectId: route.query.projectId,
+    menu.jumpPage('rule-engine/Metric', { query: { projectId: route.query.projectId,
       metricOwnerType: reference.ownerType, metricOwnerId: reference.ownerId,
       metricConfigId: reference.configId, metricOutputId: reference.outputId } })
   }

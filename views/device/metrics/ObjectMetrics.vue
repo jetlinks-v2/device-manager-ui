@@ -9,7 +9,7 @@ import { useI18n } from 'vue-i18n'
 import { MetricScopePanel, type MetricContext } from '@jetlinks-web-core/components'
 import { useMetricSourceAdapter } from './useMetricSourceAdapter'
 import { useMetricLinks } from './useMetricLinks'
-import { metricReferenceFromQuery } from './metricLocation'
+import { metricReferenceFromQuery } from '@jetlinks-web-core/components/Metric/location'
 import metricDimensions from '../../../metricDimensions'
 const props = defineProps<{ context: MetricContext }>()
 const { t } = useI18n()

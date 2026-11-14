@@ -15,6 +15,7 @@ export interface SourceMethod {
   unit?:string
   icon?:string
   valueType?:Record<string,unknown>
+  expands?:Record<string,unknown>
   capabilities:('current'|'history'|'subscribe')[]
   service?:string
   event?:BusinessEvent

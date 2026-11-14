@@ -1,6 +1,7 @@
 import { computed, onScopeDispose, ref, shallowRef, watch, type Ref } from 'vue'
 import { localizedTemplate } from '@jetlinks-web-core/components/Metric/template/text'
 import { metricOutputName } from '@jetlinks-web-core/components/Metric/presentation'
+import { metricSourceMatchesSemantics } from '@jetlinks-web-core/components/Metric/sourceSchema'
 import { queryMetricDevices, queryMetricProducts, loadMetricDevice, loadMetricProductSources, loadMetricBuiltins, type MetricOutputSource } from '../../../api/metricSources'
 import { loadMetricObjectTypes, queryMetricBusinessObjects, type SourceObjectType } from '../../../api/metricBusinessSources'
 import type { MetricInputMapping, MetricSourcePicker, MetricSourceSelection } from '@jetlinks-web-core/components'
@@ -42,13 +43,13 @@ export function useMetricSourcePicker(locale:Ref<string> = ref('zh')) {
   const business = useBusinessSources(request,businessObject,queriesVisible)
   const metricSources = useMetricOutputSources(request,deviceId,computed(()=>open.value && !choosingObject.value && metricsExpanded.value),object)
   const statistics = useMetricMemberStatistics(request,builtinScope,includeChildren,finish)
-  const methods = computed<SourceMethod[]>(()=>[
+  const methods = computed<SourceMethod[]>(()=>([
     ...properties.value.map(item=>propertyMethod(item)), ...events.value.map(item=>propertyMethod(item,true)),
     ...builtins.value.map(item=>({...item,key:`builtin:${item.id}`,kind:'builtin' as const,valueType:{type:item.valueType || 'long'},capabilities:['current' as const]})),
     ...metricSources.items.value.map(item=>({key:`metric:${item.config.id}:${item.output.metricId}`,kind:'metric' as const,id:item.output.metricId,name:metricOutputName(item.output,localizedTemplate(item.template,locale.value)) || item.output.metricId,
       group:item.config.name || item.template.name,unit:item.output.unit,icon:'NodeIndexOutlined',valueType:{type:item.output.valueType || 'double'},capabilities:['current' as const,'subscribe' as const,...(item.output.persist && !item.output.latestOnly ? ['history' as const] : [])]})),
     ...business.methods.value,
-  ])
+  ] as SourceMethod[]).filter(item=>metricSourceMatchesSemantics(request.value?.input.semantics,item.expands)))
   const items = computed(()=>sourceItems(methods.value))
   const groups = computed(()=>sourceGroups(items.value,dataKeyword.value,suggestedSources.value,showAllSources.value,selectedKey.value))
   const selected = computed(()=>items.value.find(item=>item.key === selectedKey.value))
@@ -57,6 +58,7 @@ export function useMetricSourcePicker(locale:Ref<string> = ref('zh')) {
   const propertyAllowed = computed(()=>objectType.value === 'device' || currentMember.value || objectType.value === 'product' && request.value?.purpose === 'declaration')
   const canConfirm = computed(()=>{
     if (!request.value || choosingObject.value || statistics.active.value || category.value === 'unsupported') return false
+    if (request.value.input.semantics && !method.value) return false
     if (method.value && issue(method.value)) return false
     if (category.value === 'businessEvent' || category.value === 'businessQuery') return business.canConfirm.value
     if (category.value === 'metric') return !!method.value && !metricSources.loading.value && !metricSources.error.value

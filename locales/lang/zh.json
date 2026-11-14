@@ -9156,7 +9156,7 @@
   "DeviceMetrics.devices": "设备",
   "DeviceMetrics.templates": "指标模板",
   "DeviceMetrics.save": "配置指标",
-  "DeviceMetrics.businessMetrics": "业务指标",
+  "DeviceMetrics.businessMetrics": "指标管理",
   "DeviceMetrics.ruleAndCalculation": "规则与计算",
   "DeviceMetrics.products": "产品",
   "DeviceMetrics.groups": "分组",

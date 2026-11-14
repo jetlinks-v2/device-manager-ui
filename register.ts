@@ -3,6 +3,7 @@ import dataCapabilityProviders from './dataCapabilities'
 import { deviceMetricsSupported, deviceMetricsAggregate, deviceOverviewSummary } from './runtimeMetrics'
 import { defineAsyncComponent } from 'vue'
 import metricDimensions from './metricDimensions'
+import { iotMetricStarters } from './views/metric/Template/starters'
 import { useMetricSourceAdapter } from './views/device/metrics/useMetricSourceAdapter'
 import type { DeviceDetailTabProvider } from './deviceDetailProvider'
 import { queryNoPagingPost } from '@device-manager-ui/api/product'
@@ -64,6 +65,7 @@ const homeAgentProviders = Object.fromEntries(
 export default {
   moduleId: 'device-manager-ui',
   metricDimensions,
+  metricTemplateStarters: { iot: () => iotMetricStarters },
   dataCapabilityProviders,
   deviceDetailTabs: {
     metrics: { key: 'metrics', label: () => i18n.global.t('DeviceMetrics.title'), icon: 'LineChartOutlined', order: 60,

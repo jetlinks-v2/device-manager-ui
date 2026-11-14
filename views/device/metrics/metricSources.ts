@@ -1,7 +1,7 @@
 import type { MetricContext } from '@jetlinks-web-core/components'
 
 export interface MetricDeviceOption { id: string; name: string; productId?: string }
-export interface MetricPropertyOption { id: string; name: string; unit?: string; description?: string; valueType?: Record<string, unknown>; platform?:boolean; history?:boolean; icon?:string; group?:string }
+export interface MetricPropertyOption { id: string; name: string; unit?: string; description?: string; valueType?: Record<string, unknown>; platform?:boolean; history?:boolean; icon?:string; group?:string; expands?:Record<string,unknown> }
 export interface MetricSourceTerm { column: string; termType: string; value: string }
 
 /** 范围仅决定候选列表；保存的每个输入始终是明确设备与属性。 */
