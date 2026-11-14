@@ -156,7 +156,7 @@
     />
 </template>
 
-<script setup lang="ts" name="PluginSave">
+<script setup lang="ts">
 import { computed, watch } from 'vue';
 import { I18nTextField, type I18nMessages } from '@jetlinks-web-core/components';
 import {
@@ -176,6 +176,8 @@ import { useTabSaveSuccessBack } from '@jetlinks-web-core/hooks';
 import { usePluginProviderTypes } from './usePluginProviderTypes';
 import { pluginProviderFontIcon } from './pluginProviderAssets';
 import { PLUGIN_PROVIDER_ORDER } from './pluginProviders';
+
+defineOptions({ name: 'PluginSave' })
 
 const { t: $t } = useI18n();
 const props = defineProps({

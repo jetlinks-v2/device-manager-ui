@@ -14,8 +14,10 @@
   </div>
 </template>
 
-<script lang="ts" setup name="RealtimeMetricGroup">
+<script lang="ts" setup>
 import type { PropType } from 'vue'
+
+defineOptions({ name: 'RealtimeMetricGroup' })
 
 interface RealtimeMetricItem {
   label: string

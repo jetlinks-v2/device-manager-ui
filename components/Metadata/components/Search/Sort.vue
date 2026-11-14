@@ -39,9 +39,11 @@
   </a-popover>
 </template>
 
-<script setup name="MetadataTableSort">
+<script setup>
 import {useTableTool, useTableWrapper} from "../../context";
 import { useI18n } from 'vue-i18n';
+
+defineOptions({ name: 'MetadataTableSort' })
 
 const { t: $t } = useI18n();
 

@@ -177,7 +177,7 @@
     </a-form>
 </template>
 
-<script setup lang="ts" name="VirtualRule">
+<script setup lang="ts">
 import Rule from './Rule.vue';
 import {PropType, Ref} from 'vue';
 import { queryProductVirtualProperty, getStreamingAggType } from '../../../../../../../api/product';
@@ -187,6 +187,8 @@ import { useProductStore } from '../../../../../../../store/product';
 import { ReadType } from '../../../../../../../components/Metadata/components';
 import {useTableWrapper} from "../../../../../../../components/Metadata/context";
 import { useI18n } from 'vue-i18n';
+
+defineOptions({ name: 'VirtualRule' })
 
 const { t: $t } = useI18n();
 

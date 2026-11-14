@@ -315,7 +315,7 @@
   />
 </template>
 
-<script setup lang="ts" name="CardDetail">
+<script setup lang="ts">
 import dayjs from 'dayjs';
 import type { CardManagement } from './typing';
 import {
@@ -335,6 +335,8 @@ import {getPositionById, queryLocationById} from "@device-manager-ui/api/iot-car
 import SyncRecord from "./SyncRecord/index.vue";
 import {useMenuStore} from "@jetlinks-web-core/store";
 import {onlyMessage} from "@jetlinks-web/utils";
+
+defineOptions({ name: 'CardDetail' })
 
 const { t: $t } = useI18n();
 

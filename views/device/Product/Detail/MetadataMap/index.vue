@@ -136,7 +136,7 @@
     </div>
 </template>
 
-<script setup lang='ts' name='MetadataMap'>
+<script setup lang='ts'>
 import { storeToRefs } from 'pinia';
 import { device } from '../../../../../assets';
 import { useProductStore } from '../../../../../store/product';
@@ -146,6 +146,8 @@ import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import { getMetadataMapById, metadataMapById, getProtocolMetadata } from '../../../../../api/instance';
 import { cloneDeep } from 'lodash-es';
 import { useI18n } from 'vue-i18n';
+
+defineOptions({ name: 'MetadataMap' })
 
 const { t: $t } = useI18n();
 

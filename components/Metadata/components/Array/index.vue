@@ -80,7 +80,7 @@
     </PopoverModal>
 </template>
 
-<script setup name="MetadataArray">
+<script setup>
 import { PopoverModal, TypeSelect } from '../index';
 import ArrayTypeSelect from './ArrayTypeSelect.vue';
 import ScaleItem from '../Double/ScaleItem.vue';
@@ -92,6 +92,8 @@ import ObjectItem from '../Object/Item.vue';
 import { cloneDeep, pick } from 'lodash-es';
 import { Form } from 'ant-design-vue';
 import { useI18n } from 'vue-i18n';
+
+defineOptions({ name: 'MetadataArray' })
 
 const { t: $t } = useI18n();
 

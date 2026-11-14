@@ -1,45 +1,33 @@
 <template>
   <j-page-container class="product-detail-page" :showBack="true">
 		<PageChrome>
-			<a-button class="product-summary__back" type="text" @click="backToProductList">
-				<template #icon><AIcon type="LeftOutlined" /></template>
-				{{ $t('Product.detail.backToList') }}
-			</a-button>
+			<PageBack :label="$t('Product.detail.backToList')" @back="backToProductList" />
 		</PageChrome>
-    <ProductDetailSummary
-      :product="productStore.current"
-      :can-update="permissionStore.hasPermission('device/Product:update')"
-      :can-action="permissionStore.hasPermission('device/Product:action')"
-      :can-delete="permissionStore.hasPermission('device/Product:delete')"
-      :can-view-devices="canViewDevices"
-      @back="backToProductList"
-      @edit="openEdit"
-      @toggle-state="toggleState"
-      @delete="deleteCurrent"
-      @view-devices="jumpDevice"
-    />
+    <PageChrome flush>
+      <ProductDetailSummary
+        :product="productStore.current"
+        :can-update="permissionStore.hasPermission('device/Product:update')"
+        :can-action="permissionStore.hasPermission('device/Product:action')"
+        :can-delete="permissionStore.hasPermission('device/Product:delete')"
+        :can-view-devices="canViewDevices"
+        @back="backToProductList"
+        @edit="openEdit"
+        @toggle-state="toggleState"
+        @delete="deleteCurrent"
+        @view-devices="jumpDevice"
+      />
 
-    <section class="product-detail-page__tabs">
-      <a-tabs :activeKey="activeTab" class="product-detail-tabs" @change="handleTabChange">
-        <a-tab-pane v-for="tab in visibleTabs" :key="tab.key">
-          <template #tab>
-            <span class="product-detail-tabs__item">
-              <AIcon :type="tab.icon" aria-hidden="true" />
-              {{ $t(tab.labelKey) }}
-            </span>
-          </template>
-        </a-tab-pane>
-      </a-tabs>
-      <div class="product-detail-page__content">
-        <component
-          ref="activeTabView"
-          :is="tabs[activeTab]"
-          v-if="tabs[activeTab] && productStore.current?.id"
-          type="product"
-          :update-permission="permissionStore.hasPermission('device/Product:update')"
-        />
-      </div>
-    </section>
+      <SlantedTabs :active-key="activeTab" :options="tabOptions" @change="handleTabChange(String($event))" />
+    </PageChrome>
+    <div class="product-detail-page__content">
+      <component
+        ref="activeTabView"
+        :is="tabs[activeTab]"
+        v-if="tabs[activeTab] && productStore.current?.id"
+        type="product"
+        :update-permission="permissionStore.hasPermission('device/Product:update')"
+      />
+    </div>
     <Save ref="saveRef" :isAdd="2" :title="$t('Product.index.660348-13')" @success="refreshCurrent" />
   </j-page-container>
 </template>
@@ -60,6 +48,8 @@ import { isApplyDashboard } from '@device-manager-ui/utils/dashboardProject'
 import { getDeviceListFilterFields } from '../../../../deviceListFilter'
 import Save from '../Save/index.vue'
 import ProductDetailSummary from './components/ProductDetailSummary.vue'
+import PageBack from '@jetlinks-web-core/components/PageBack/index.vue'
+import SlantedTabs, { type SlantedTabOption } from '@jetlinks-web-core/components/SlantedTabs'
 import { tabs } from './asyncComponent'
 import { buildProductDetailTabs, resolveProductDetailTab, type ProductDetailTabKey } from './detailTabs'
 import { hasProductCreatedGuide, updateProductCreatedGuide } from '../hooks/useProductCreatedGuide'
@@ -89,6 +79,8 @@ const visibleTabs = computed(() => buildProductDetailTabs(productStore.current, 
   showDashboard: isApplyDashboard(),
   isNoCommunity,
 }))
+
+const tabOptions = computed<SlantedTabOption[]>(() => visibleTabs.value.map(tab => ({ key: tab.key, label: $t(tab.labelKey) })))
 
 function syncActiveTab(tab?: unknown) {
   // 兼容旧详情链接的 Tab 参数，并在权限或功能开关变化时回退到首个可见入口。
@@ -265,40 +257,6 @@ onBeforeUnmount(() => {
 .product-detail-page {
   display: grid;
   gap: var(--space-3);
-}
-
-.product-summary__back {
-	padding: 0;
-}
-.product-detail-page__tabs {
-  min-width: 0;
-  overflow: hidden;
-}
-
-.product-detail-tabs :deep(.ant-tabs-tab) {
-  padding: 0;
-}
-
-.product-detail-tabs :deep(.ant-tabs-tab + .ant-tabs-tab) {
-  margin-left: var(--space-5);
-}
-
-.product-detail-tabs :deep(.ant-tabs-nav) {
-  margin: 0;
-}
-
-.product-detail-tabs :deep(.ant-tabs-content-holder) {
-  display: none;
-}
-
-.product-detail-tabs__item {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 2.625rem;
-  font-size: var(--fs-14);
-  font-weight: 600;
-  white-space: nowrap;
 }
 
 .product-detail-page__content {

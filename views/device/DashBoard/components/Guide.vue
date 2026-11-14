@@ -11,7 +11,10 @@
     </div>
 </template>
 
-<script setup name="Guide">
+<script setup>
+
+defineOptions({ name: 'Guide' })
+
 
 const props = defineProps({
   title: String,

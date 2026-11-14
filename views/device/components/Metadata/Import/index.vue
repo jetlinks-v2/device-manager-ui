@@ -186,7 +186,7 @@
         </a-form>
     </a-modal>
 </template>
-<script setup lang="ts" name="Import">
+<script setup lang="ts">
 import { saveMetadata } from '../../../../../api/instance';
 import {
     queryNoPagingPost,
@@ -211,6 +211,8 @@ import { Modal } from 'ant-design-vue';
 import { testObject, testType, testAliType, testAliObject } from './valideta';
 import { useI18n } from 'vue-i18n';
 import { getUploadHeaders } from '@jetlinks-web-core/utils'
+
+defineOptions({ name: 'Import' })
 
 const { t: $t } = useI18n();
 

@@ -8,9 +8,11 @@
   </a-form-item>
 </template>
 
-<script setup name="MetadataEnumItem">
+<script setup>
 import Content from './ItemContent.vue'
 import { useI18n } from 'vue-i18n';
+
+defineOptions({ name: 'MetadataEnumItem' })
 
 const { t: $t } = useI18n();
 

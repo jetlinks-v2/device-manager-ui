@@ -103,7 +103,7 @@
         </div>
     </j-page-container>
 </template>
-<script lang="ts" setup name="CertificatePage">
+<script lang="ts" setup>
 import { createReusableTemplate } from '@vueuse/core'
 
 import { query, remove } from '../../../api/link/certificate';
@@ -112,6 +112,8 @@ import { useMenuStore } from '@jetlinks-web-core/store';
 import { useI18n } from 'vue-i18n';
 import ConditionFilter from '@jetlinks-web-core/components/ConditionFilter';
 import { link } from '../../../assets';
+
+defineOptions({ name: 'CertificatePage' })
 
 const { t: $t } = useI18n();
 const menuStory = useMenuStore();

@@ -51,11 +51,13 @@
   </template>
 </template>
 
-<script setup name="MetadataBaseTableBody">
+<script setup>
 import ContextMenu from './components/ContextMenu'
 import {useRightMenuContext} from "./context";
 import {randomString} from "@jetlinks-web/utils";
 import {bodyProps} from "./props";
+
+defineOptions({ name: 'MetadataBaseTableBody' })
 
 const props = defineProps({
   ...bodyProps(),

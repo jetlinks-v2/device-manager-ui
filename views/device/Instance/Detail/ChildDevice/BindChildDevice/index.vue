@@ -90,7 +90,7 @@
     </a-modal>
 </template>
 
-<script setup lang="ts" name="BindChildDevice">
+<script setup lang="ts">
 import {
     query,
     bindDevice,
@@ -105,6 +105,8 @@ import { useChildDeviceContext } from '../../Child/useChildDeviceContext';
 import { onlyMessage } from '@jetlinks-web/utils';
 import i18n from '@jetlinks-web-core/locales';
 import { useI18n } from 'vue-i18n';
+
+defineOptions({ name: 'BindChildDevice' })
 
 const { t: $t } = useI18n();
 const props = defineProps({

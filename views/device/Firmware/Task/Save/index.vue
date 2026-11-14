@@ -126,7 +126,7 @@
     </a-form>
   </a-modal>
 </template>
-<script lang="ts" setup name="TaskPage">
+<script lang="ts" setup>
 import {queryProduct, saveTask} from '@device-manager-ui/api/firmware';
 import { getDeviceNumber } from '@device-manager-ui/api/instance';
 import type {FormInstance} from 'ant-design-vue';
@@ -134,6 +134,8 @@ import SelectDevices from './SelectDevices/index.vue';
 import {useI18n} from 'vue-i18n';
 import { useRequest } from '@jetlinks-web/hooks';
 import { onlyMessage } from '@jetlinks-web/utils';
+
+defineOptions({ name: 'TaskPage' })
 
 const {t: $t} = useI18n();
 

@@ -13,9 +13,11 @@
   </a-form-item>
 </template>
 
-<script setup name="MetadataBooleanItem">
+<script setup>
 import Content from './ItemContext.vue'
 import { useI18n } from 'vue-i18n';
+
+defineOptions({ name: 'MetadataBooleanItem' })
 
 const { t: $t } = useI18n();
 

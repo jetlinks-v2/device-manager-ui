@@ -1,5 +1,11 @@
 # 产品管理
 
+## 统一详情摘要与主导航
+
+当前实现：`Detail/components/ProductDetailSummary.vue` 复用 core `DetailHeader` 摘要模式、`DetailMetaItem` 与 `StatusTag`，统一大图标、名称、状态、设备类型及其余产品字段。`Detail/index.vue` 使用 `PageChrome flush` 和 `SlantedTabs`，保留原页签 key、权限、路由回显、物模型未保存确认、动态内容卸载及产品创建引导；复制、设备数量跳转、编辑、启停与删除逻辑保持不变。
+
+验证：`tests/productDetailNavigation.test.mjs` 验证物模型确认前不改路由、接受后保留其他查询参数；零设备跳转限制与设备回归共 20 项通过。设备模块及三个相关模块联合构建通过，真实摘要组件在宽屏、1280px、窄屏下无溢出，完整产品 ID 复制通过。样式门禁通过；全模块类型检查被依赖文件诊断阻断，本次修改文件无诊断。真实产品 ID 的物模型编辑/确认仍待登录环境联调；命令与公共契约见 core `src/components/DetailHeader/README.md`。
+
 ## 产品资源包导入导出
 
 产品列表支持将单个产品导出为可移植的 ZIP 资源包，并从工具栏导入同一格式的资源包。产品 JSON 的既有导入导出入口保持不变。

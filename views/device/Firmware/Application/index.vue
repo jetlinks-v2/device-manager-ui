@@ -117,7 +117,7 @@
     </a-modal>
 </template>
 
-<script setup lang="ts" name="ApplicationFirmwareSave">
+<script setup lang="ts">
 import { Form } from 'ant-design-vue';
 import type { SelectProps } from 'ant-design-vue';
 import type { PropType } from 'vue';
@@ -135,6 +135,8 @@ import type {
     FirmwareProductOption,
     FormDataType,
 } from '../type';
+
+defineOptions({ name: 'ApplicationFirmwareSave' })
 
 const props = defineProps({
     productOptions: {

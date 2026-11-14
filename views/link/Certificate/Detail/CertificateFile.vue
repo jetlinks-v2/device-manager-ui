@@ -26,11 +26,13 @@
     </a-spin>
 </template>
 
-<script setup lang="ts" name="CertificateFile">
+<script setup lang="ts">
 import {getUploadHeaders, onlyMessage} from '@jetlinks-web-core/utils/comm';
 import type { UploadChangeParam } from 'ant-design-vue';
 import { NETWORK_CERTIFICATE_UPLOAD } from '../../../../api/link/certificate';
 import { useI18n } from 'vue-i18n';
+
+defineOptions({ name: 'CertificateFile' })
 
 const { t: $t } = useI18n();
 const emit = defineEmits(['update:modelValue', 'change']);

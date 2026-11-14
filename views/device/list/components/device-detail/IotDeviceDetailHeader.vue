@@ -1,135 +1,59 @@
 <template>
-  <template v-if="device">
-    <section class="dd-hero">
-      <div class="dd-hero__icon" :data-category="categoryKey ?? 'sensor'">
-        <IconValueView v-if="device.imageUrl" :value="device.imageUrl" :fallback-text="device.name" :size="52" />
-        <AIcon v-else :type="categoryIcon" aria-hidden="true" />
-      </div>
-      <div class="dd-hero__main">
-        <div class="dd-hero__headline">
-          <a-tooltip :title="deviceNameText">
-            <h1>{{ deviceNameText }}</h1>
-          </a-tooltip>
-          <IotDeviceStatusPill :status="device.status" />
-        </div>
-        <div class="dd-hero__summary">
-          <div class="dd-summary-line">
-            <div class="dd-summary-row dd-summary-row--id">
-              <span class="dd-summary-label">{{ $t('IotDeviceDetail.detail.deviceId') }}</span>
-              <a-tooltip :title="$t('IotDeviceDetail.detail.copyDeviceId')">
-                <button class="dd-summary-value dd-summary-value--action" type="button" @click="copyDeviceId">
-                  {{ deviceSnText }}
-                </button>
-              </a-tooltip>
-            </div>
-            <div class="dd-summary-row">
-              <span class="dd-summary-label">{{ $t('IotDeviceDetail.detail.product') }}</span>
-              <a-tooltip :title="productNameText">
-                <button
-                  class="dd-summary-value dd-summary-value--action"
-                  type="button"
-                  :disabled="!canOpenProductDetail"
-                  @click="openProductDetail"
-                >{{ productNameText }}</button>
-              </a-tooltip>
-            </div>
-            <div class="dd-summary-row">
-              <span class="dd-summary-label">{{ $t('IotDeviceDetail.detail.deviceType') }}</span>
-              <a-tooltip :title="deviceTypeText">
-                <span class="dd-summary-value">{{ deviceTypeText }}</span>
-              </a-tooltip>
-            </div>
-          </div>
-          <div class="dd-summary-line">
-            <div class="dd-summary-row">
-              <span class="dd-summary-label">{{ $t('IotDeviceDetail.detail.area') }}</span>
-              <a-tooltip :title="regionFullText">
-                <span class="dd-summary-value">{{ regionText }}</span>
-              </a-tooltip>
-            </div>
-            <div class="dd-summary-row">
-              <span class="dd-summary-label">{{ $t('IotDeviceDetail.detail.businessGroup') }}</span>
-              <a-tooltip :title="businessGroupFullText">
-                <span class="dd-summary-value">{{ businessGroupText }}</span>
-              </a-tooltip>
-            </div>
-            <div class="dd-summary-row">
-              <span class="dd-summary-label">{{ $t('IotDeviceDetail.detail.lastReport') }}</span>
-              <a-tooltip :title="lastSeenText">
-                <span class="dd-summary-value">{{ lastSeenText }}</span>
-              </a-tooltip>
-            </div>
-          </div>
-          <div v-if="thingModelTags.length" class="dd-summary-line">
-            <div class="dd-summary-row dd-summary-row--tags">
-              <div class="dd-tags-title">
-                <span class="dd-summary-label">{{ $t('IotDeviceDetail.detail.tags') }}</span>
-                <a-tooltip v-if="canDeviceAction('update')" :title="$t('IotDeviceDetail.detail.editThingModelTags')">
-                  <a-button
-                    type="text"
-                    size="small"
-                    class="dd-tags-edit-action"
-                    :aria-label="$t('IotDeviceDetail.detail.editThingModelTags')"
-                    @click="tagEditorOpen = true"
-                  >
-                    <template #icon><AIcon type="EditOutlined" /></template>
-                  </a-button>
-                </a-tooltip>
-              </div>
-              <div
-                ref="tagsListRef"
-                class="dd-tags-list"
-                :class="{ 'is-expanded': tagsExpanded }"
-              >
-                <a-tooltip v-for="tag in thingModelTags" :key="getTagKey(tag)" :title="formatTagTooltipValueOnly(tag)">
-                  <span class="dd-tag-text">{{ formatTagLine(tag) }}</span>
-                </a-tooltip>
-              </div>
-              <a-button
-                v-if="tagsOverflow"
-                type="text"
-                size="small"
-                class="dd-tags-action"
-                @click="toggleTagsExpanded"
-              >
-                {{ tagsExpanded ? $t('IotDeviceDetail.detail.collapseTags') : $t('IotDeviceDetail.detail.expandTags') }}
-              </a-button>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="dd-hero__actions">
-        <DeviceDetailActions
-          :name="device.name"
-          :disabled="isDeviceDisabled"
-          :permissions="{
-            update: canDeviceAction('update'),
-            action: canDeviceAction(isDeviceDisabled ? 'enable' : 'disable'),
-            delete: canDeviceAction('delete'),
-          }"
-          :busy-action="actionBusyId ? actionKind : ''"
-          @edit="openEditDrawer"
-          @toggle="toggleDeviceEnabled"
-          @delete="confirmDeleteDevice"
-        />
-      </div>
-    </section>
-  </template>
+  <DetailHeader v-if="device" variant="summary" :title="deviceNameText">
+    <template #icon>
+      <IconValueView v-if="device.imageUrl" :value="device.imageUrl" :fallback-text="device.name" :size="56" />
+      <AIcon v-else :type="categoryIcon" aria-hidden="true" />
+    </template>
+    <template #titleExtra>
+      <StatusTag :status="deviceStatus ? statusTones[deviceStatus.tone] : 'default'" :text="deviceStatus?.label" />
+      <AppTag :title="deviceTypeText">{{ deviceTypeText }}</AppTag>
+    </template>
+    <template #meta>
+      <DetailMetaItem kind="id" :label="$t('IotDeviceDetail.detail.deviceId')" :tooltip="$t('DetailMetaItem.copyTooltip', { id: deviceSnText })">
+        <a-button type="text" class="dd-summary-action" @click="copyDeviceId">{{ deviceSnText }}<AIcon type="CopyOutlined" /></a-button>
+      </DetailMetaItem>
+      <DetailMetaItem kind="product" :label="$t('IotDeviceDetail.detail.product')" :tooltip="productNameText">
+        <a-button type="link" class="dd-summary-action" :disabled="!canOpenProductDetail" @click="openProductDetail">{{ productNameText }}</a-button>
+      </DetailMetaItem>
+      <DetailMetaItem kind="space" :label="$t('IotDeviceDetail.detail.area')" :value="regionText" :tooltip="regionFullText" />
+      <DetailMetaItem kind="group" :label="$t('IotDeviceDetail.detail.businessGroup')" :value="businessGroupText" :tooltip="businessGroupFullText" />
+      <DetailMetaItem kind="time" :label="$t('IotDeviceDetail.detail.lastReport')" :value="lastSeenText" :tooltip="lastSeenText" />
+    </template>
+    <template v-if="thingModelTags.length" #extra>
+      <DeviceDetailTags :key="device.id" :state="state" />
+    </template>
+    <template #actions>
+      <DeviceDetailActions
+        :name="device.name"
+        :disabled="isDeviceDisabled"
+        :permissions="{ update: canDeviceAction('update'), action: canDeviceAction(isDeviceDisabled ? 'enable' : 'disable'), delete: canDeviceAction('delete') }"
+        :busy-action="actionBusyId ? actionKind : ''"
+        @edit="openEditDrawer" @toggle="toggleDeviceEnabled" @delete="confirmDeleteDevice"
+      />
+    </template>
+  </DetailHeader>
 </template>
 
 <script setup lang="ts">
-import { toRefs, type PropType } from 'vue'
+import { computed, toRefs, type PropType } from 'vue'
 import { IconValueView } from '@jetlinks-web-core/components/IconValue'
-import IotDeviceStatusPill from '../IotDeviceStatusPill.vue'
+import DetailHeader from '@jetlinks-web-core/components/DetailHeader/index.vue'
+import DetailMetaItem from '@jetlinks-web-core/components/DetailMetaItem'
+import StatusTag from '@jetlinks-web-core/components/StatusTag/index.vue'
+import { useIotDeviceMeta } from '../../hooks/useIotDeviceMeta'
 import DeviceDetailActions from './DeviceDetailActions.vue'
+import DeviceDetailTags from './tags/DeviceDetailTags.vue'
 import type { IotDeviceDetailViewState } from '../../hooks/useIotDeviceDetailView'
 
 /** 设备标识、范围、标签与快捷操作摘要。 */
 type ViewState = Pick<IotDeviceDetailViewState,
   'canDeviceAction' |
   '$t' |
-  'deviceId' |
   'device' |
+  'savingTags' |
+  'saveTags' |
+  'removeTag' |
+  'canRemoveTag' |
   'tagEditorOpen' |
   'tagsListRef' |
   'tagsExpanded' |
@@ -153,22 +77,14 @@ type ViewState = Pick<IotDeviceDetailViewState,
   'lastSeenText' |
   'isDeviceDisabled' |
   'thingModelTags' |
-  'getTagKey' |
-  'formatTagLine' |
   'formatTagTooltipValueOnly' |
   'toggleTagsExpanded' |
-  'categoryKey' |
   'categoryIcon'
 >
 const props = defineProps({ state: { type: Object as PropType<ViewState>, required: true } })
 const {
   $t,
-  deviceId,
   device,
-  tagEditorOpen,
-  tagsListRef,
-  tagsExpanded,
-  tagsOverflow,
   actionBusyId,
   actionKind,
   canOpenProductDetail,
@@ -188,14 +104,12 @@ const {
   lastSeenText,
   isDeviceDisabled,
   thingModelTags,
-  getTagKey,
-  formatTagLine,
-  formatTagTooltipValueOnly,
-  toggleTagsExpanded,
-  categoryKey,
   categoryIcon,
   canDeviceAction,
 } = toRefs(props.state)
+const { statusMeta } = useIotDeviceMeta()
+const deviceStatus = computed(() => device.value ? statusMeta(device.value.status) : undefined)
+const statusTones = { ok: 'success', warn: 'warning', err: 'error', info: 'info', muted: 'disabled' } as const
 </script>
 
 <style scoped src="../../styles/IotDeviceDetailHeader.css"></style>

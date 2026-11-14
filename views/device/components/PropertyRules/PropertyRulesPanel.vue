@@ -52,10 +52,10 @@
                 </span>
                 </div>
                 <div class="property-rule-content">
-                  <PropertyRuleFields v-if="rowEditor" :editor="rowEditor" :scope="scope" :property="item.property" :with-actions="false" :with-source="presentation !== 'detail'" :card="presentation === 'detail'" />
+                  <PropertyRuleFields :focus-part="focusTarget?.id === item.id ? focusTarget?.part : undefined" v-if="rowEditor" :editor="rowEditor" :scope="scope" :property="item.property" :with-actions="false" :with-source="presentation !== 'detail'" :card="presentation === 'detail'" />
                   <div v-else class="property-rule-effects">
                     <a-button v-if="!item.rule.editable" type="text" size="small" @click="selectProperty(item.property)"><AIcon type="LockOutlined" /> {{ $t('PropertyRules.legacy') }}</a-button>
-                    <PropertyRuleSummary v-else-if="item.effects.length" :rows="item.effects" interactive @edit="selectProperty(item.property)" />
+                    <PropertyRuleSummary v-else-if="item.effects.length" :rows="item.effects" interactive @edit="selectProperty(item.property,undefined,$event)" />
                     <RuleAddMenu v-if="canSave && item.rule.editable && availableRuleParts(item.property, item.rule.nodes, alarmAvailable).length" :parts="availableRuleParts(item.property, item.rule.nodes, alarmAvailable)" :disabled="loading || busy" @add="selectProperty(item.property, $event)" />
                     <a-button v-else-if="item.rule.editable && !item.effects.length" type="text" size="small" @click="selectProperty(item.property)"><AIcon :type="canSave ? 'EditOutlined' : 'EyeOutlined'" />{{ $t(canSave ? 'PropertyRules.configure' : 'PropertyRules.view') }}</a-button>
                   </div>
@@ -92,7 +92,7 @@ import RuleNotice from './RuleNotice.vue'
 import PropertyRuleStatistics from './statistics/PropertyRuleStatistics.vue'
 import { useRuleStatistics } from './statistics/useRuleStatistics'
 import { canReadStatistics, type StatisticsTarget } from './statistics/model'
-import { availableRuleParts, type RuleAddPart } from './codec'
+import { availableRuleParts, type RuleAddPart, type RulePart } from './codec'
 const PropertyRulePicker = defineAsyncComponent(() => import('./PropertyRulePicker.vue'))
 const props = defineProps<{ scope: RuleScope; properties: ThingModelProperty[]; presentation?: 'inline' | 'detail' }>()
 const { t: $t } = useI18n()
@@ -133,13 +133,16 @@ function editorFor(id: string) {
   return cards ? cards.editors.get(id)?.editor : editorOpen.value && selectedId.value === id ? editor : undefined
 }
 function cancelAdding(id: string) { editorFor(id)?.discard(); finishAdding(id) }
-async function selectProperty(property: ThingModelProperty, part?: RuleAddPart) {
+const focusTarget=ref<{id:string;part:RulePart}>()
+async function selectProperty(property: ThingModelProperty, part?: RuleAddPart,focusPart?:RulePart) {
+  focusTarget.value=undefined
   if (!editorOpen.value || selectedId.value !== propertyIdOf(property)) {
     if (!editor || !await editor.prepareLeave()) return false
     // Finish URL guards before creating the new draft; otherwise they see the new edits as an old draft.
     await open(property)
     await nextTick()
   }
+  focusTarget.value=focusPart ? {id:propertyIdOf(property),part:focusPart} : undefined
   if (part) {
     // Choosing a rule on an inherited device row explicitly starts its local override.
     if (!editor?.custom) editor?.customize()

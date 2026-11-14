@@ -64,7 +64,7 @@
   </div>
 </template>
 
-<script setup lang="ts" name="apiPage">
+<script setup lang="ts">
 import HomePage from './components/HomePage.vue';
 import {getApiGranted_api, apiOperations_api} from '../../../../api/apiPage';
 import type {
@@ -78,6 +78,8 @@ import ChooseApi from './components/ChooseApi.vue';
 import ApiDoes from './components/ApiDoes.vue';
 import ApiTest from './components/ApiTest.vue';
 import {useDepartmentStore} from '@jetlinks-web-core/store/department';
+
+defineOptions({ name: 'apiPage' })
 
 const department = useDepartmentStore();
 

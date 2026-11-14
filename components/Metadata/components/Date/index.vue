@@ -22,10 +22,12 @@
   </PopoverModal>
 </template>
 
-<script setup name="MetadataDate">
+<script setup>
 import { PopoverModal } from '../index'
 import Item from './Item.vue'
 import { Form } from 'ant-design-vue'
+
+defineOptions({ name: 'MetadataDate' })
 
 const emit = defineEmits(['update:value', 'confirm', 'cancel']);
 

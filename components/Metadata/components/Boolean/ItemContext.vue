@@ -21,8 +21,10 @@
   </div>
 </template>
 
-<script setup name="BooleanItemContext">
+<script setup>
 import { useI18n } from 'vue-i18n';
+
+defineOptions({ name: 'BooleanItemContext' })
 
 const { t: $t } = useI18n();
 const emits = defineEmits([

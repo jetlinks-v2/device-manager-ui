@@ -22,8 +22,10 @@
   </a-form-item>
 </template>
 
-<script setup name="MetadataDateItem">
+<script setup>
 import { useTableWrapper } from "../../context";
+
+defineOptions({ name: 'MetadataDateItem' })
 
 const props = defineProps({
   value: {

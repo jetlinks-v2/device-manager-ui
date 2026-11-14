@@ -40,11 +40,13 @@
   </div>
 </template>
 
-<script setup name="MetadataContextMenu">
+<script setup>
 import { onMounted, ref, nextTick } from "vue";
 import i18n from "@jetlinks-web-core/locales";
 import { Menu, MenuItem} from 'ant-design-vue'
 import {AIcon } from '@jetlinks-web/components'
+
+defineOptions({ name: 'MetadataContextMenu' })
 
 const props = defineProps({
   data: {type: Object, default: () => ({})},

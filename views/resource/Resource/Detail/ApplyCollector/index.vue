@@ -45,10 +45,12 @@
     </a-modal>
 </template>
 
-<script setup name="ApplyCollector">
+<script setup>
 import Collector from './Collector.vue';
 import { device } from '@device-manager-ui/assets/device/index.ts'
 import { _queryCollector } from '@device-manager-ui/api/resource/resource';
+
+defineOptions({ name: 'ApplyCollector' })
 
 const emits = defineEmits(['close']);
 

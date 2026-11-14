@@ -17,11 +17,13 @@
     </a-form-item-rest>
 </template>
 
-<script setup lang="ts" name="FileUpload">
+<script setup lang="ts">
 import { toRef } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { FileUpload as CoreFileUpload } from '@jetlinks-web-core/components';
 import { useProtocolFileUpload } from './useProtocolFileUpload';
+
+defineOptions({ name: 'FileUpload' })
 
 const { t: $t } = useI18n();
 const props = defineProps({
