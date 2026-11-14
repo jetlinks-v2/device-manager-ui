@@ -26,6 +26,14 @@
 		    </template>
 		    <template #right>
 			    <div class="unified-device-list__panel">
+            <a-tabs v-if="metricGroup" v-model:active-key="groupView">
+              <a-tab-pane key="devices" :tab="t('DeviceMetrics.devices')" />
+              <a-tab-pane key="metrics" :tab="t('DeviceMetrics.title')" />
+            </a-tabs>
+            <div v-if="metricGroup && groupView === 'metrics'" class="unified-device-list__metrics">
+              <ObjectMetrics :context="groupMetricContext" />
+            </div>
+            <template v-else>
 				    <a-flex align="center" justify="space-between" wrap="wrap" :gap="12" class="unified-device-list__filters">
 					    <IotDeviceAssetSearchBar v-model:filter-terms="searchTerms" :filter-fields="filterFields" :common-filter-fields="commonFilterFields" @search="search" />
 					    <RegistryComponent page-code="unified-device-list" code="toolbar-actions" :active-type="activeType" @saved="refresh" is="a-space" :size="12" class="unified-device-list__toolbar-actions">
@@ -192,6 +200,7 @@
 					    </a-table>
 				    </div>
 				    <a-pagination class="unified-device-list__pagination" :current="pageIndex + 1" :page-size="pageSize" :total="total" :page-size-options="['12', '24', '48', '96']" show-size-changer :show-total="value => t('UnifiedDeviceList.total', { count: value })" @change="changePage" />
+            </template>
 			    </div>
 		    </template>
 	    </EqualHeightColumns>
@@ -213,7 +222,7 @@
 <script setup lang="ts">
 import { createReusableTemplate } from '@vueuse/core'
 
-import { computed, type Component } from 'vue'
+import { computed, watch, type Component } from 'vue'
 import { ref } from 'vue'
 import dayjs from 'dayjs'
 import { Modal } from 'ant-design-vue'
@@ -227,6 +236,7 @@ import { useRoute } from 'vue-router'
 import { useAuthStore, useMenuStore } from '@jetlinks-web-core/store'
 import { moduleRegistry } from '@jetlinks-web-core/utils/module-registry'
 import type { useGatewayRuntimeMetricsLoader as UseGatewayRuntimeMetricsLoader } from '@edge-master-ui/views/workbench/gateway/hooks/useGatewayRuntimeMetricsLoader'
+import ObjectMetrics from '../../metrics/ObjectMetrics.vue'
 import IotDeviceScopeSidebar from '../components/IotDeviceScopeSidebar.vue'
 import IotDeviceAssetSearchBar from '../components/IotDeviceAssetSearchBar.vue'
 import IotAddDeviceDrawer from '../components/IotAddDeviceDrawer.vue'
@@ -279,6 +289,21 @@ const gatewayMetricTargets = computed(() => activeType.value === 'gateway' && !l
 const gatewayMetrics = useGatewayMetrics?.(gatewayMetricTargets)
 const { sidebarProps, spaceAreaSupported, loading: scopeLoading, loadError: scopeLoadError, handleScopeChange } = scope
 const scopeCollapsed = ref(false)
+const metricAuth = useAuthStore()
+const groupView = ref('devices')
+const metricGroup = computed(() => scope.scopeType.value === 'group'
+  ? sidebarProps.value.groups.find(group => group.id === scope.scopeId.value) : undefined)
+const groupMetricContext = computed(() => ({ ownerType: 'deviceGroup', ownerId: metricGroup.value?.id || '', label: metricGroup.value?.name, editable: metricAuth.hasPermission(`${deviceMenuCode.value}:update`) }))
+let restoredMetricView = ''
+// 返回引用仅恢复一次；用户查看指标时切换有效分组，沿用当前页签而不退回设备列表。
+watch(() => [metricGroup.value?.id, route.query.metricOwnerType, route.query.metricOwnerId, route.query.metricView, route.query.metricConfigId, route.query.metricOutputId], () => {
+  const query = route.query
+  if (query.metricOwnerType !== 'deviceGroup' || query.metricOwnerId !== metricGroup.value?.id || query.metricView !== 'metrics') return
+  const reference = JSON.stringify([query.metricOwnerId, query.metricConfigId, query.metricOutputId])
+  if (reference === restoredMetricView) return
+  groupView.value = 'metrics'
+  restoredMetricView = reference
+}, { immediate: true })
 function formatTableTime(value?: string | number | null) {
   if (!value || value === '--') return t('IotDeviceList.scope.noReport')
   return dayjs(value).format('YYYY-MM-DD HH:mm:ss')
@@ -463,6 +488,7 @@ const [DefineEmptyCreateAction2, EmptyCreateButtonAction2] = createReusableTempl
 .unified-device-list__layout > .equal-height-columns__pane:first-child:has(.unified-device-list__scope-toggle) { background: transparent; border-radius: var(--r-6); }
 
 .unified-device-list__panel { height: 100%; min-height: 0; display: flex; flex-direction: column; gap: var(--space-3); overflow: hidden; }
+.unified-device-list__metrics { flex: 1; min-height: 0; overflow: auto; }
 .unified-device-list__panel.content-panel {
   --device-table-fixed-bg: color-mix(in srgb, var(--info-bg) 28%, var(--bg));
   --device-table-header-bg: color-mix(in srgb, var(--info-bg) 55%, var(--bg));

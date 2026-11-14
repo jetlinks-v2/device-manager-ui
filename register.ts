@@ -1,7 +1,10 @@
+import i18n from '@jetlinks-web-core/locales'
 import dataCapabilityProviders from './dataCapabilities'
 import { deviceMetricsSupported, deviceMetricsAggregate, deviceOverviewSummary } from './runtimeMetrics'
 import { defineAsyncComponent } from 'vue'
-import i18n from '@jetlinks-web-core/locales'
+import metricDimensions from './metricDimensions'
+import { iotMetricStarters } from './views/metric/Template/starters'
+import { useMetricSourceAdapter } from './views/device/metrics/useMetricSourceAdapter'
 import type { DeviceDetailTabProvider } from './deviceDetailProvider'
 import { queryNoPagingPost } from '@device-manager-ui/api/product'
 import { queryNoPagingPost as queryInstanceNoPage, query } from '@device-manager-ui/api/instance'
@@ -61,9 +64,14 @@ const homeAgentProviders = Object.fromEntries(
 
 export default {
   moduleId: 'device-manager-ui',
+  metricDimensions,
+  metricTemplateStarters: { iot: () => iotMetricStarters },
   dataCapabilityProviders,
-  // 复用设备级映射页面，显示条件与 2.12 详情及产品的协议能力判断保持一致。
   deviceDetailTabs: {
+    metrics: { key: 'metrics', label: () => i18n.global.t('DeviceMetrics.title'), icon: 'LineChartOutlined', order: 60,
+      matches: () => true, component: defineAsyncComponent(() => import('./views/device/metrics/DeviceMetricsTab.vue')),
+      props: (device: { id: string }) => ({ deviceId: device.id }) },
+    // 复用设备级映射页面，显示条件与 2.12 详情及产品的协议能力判断保持一致。
     MetadataMap: {
       key: 'MetadataMap',
       label: () => i18n.global.t('Detail.index.957187-25'),
@@ -95,6 +103,8 @@ export default {
   },
   components: {
     DeviceDetailActions: defineAsyncComponent(() => import('./views/device/list/components/device-detail/DeviceDetailActions.vue')),
+    MetricObjectNavigator: defineAsyncComponent(() => import('./views/device/metrics/navigation/MetricObjectNavigator.vue')),
+    ObjectMetrics: defineAsyncComponent(() => import('./views/device/metrics/ObjectMetrics.vue')),
     IotDeviceDetailView: defineAsyncComponent(() => import('./views/device/list/components/IotDeviceDetailView.vue')),
     IotCardDetail: defineAsyncComponent(() => import('./views/device/Instance/components/IotCard/index.vue')),
     DeviceDetailAgentHost: defineAsyncComponent(() => import('./views/device/list/agent/DeviceDetailAgentHost.vue')),
@@ -114,6 +124,7 @@ export default {
   },
   hooks: {
     useSystemMonitorOverview,
+    useMetricSourcePicker: useMetricSourceAdapter,
     useDeviceScope,
     usePluginPermissionContext
   },

@@ -81,17 +81,17 @@ test('registration order is stable and extensions cannot shadow built-in or dupl
   assert.equal(selected[1], late)
 })
 
-test('mapping tabs follow protocol capability and collector gateway protocol independently', () => {
+test('metrics coexist with capability-based mapping and collector gateway tabs', () => {
   const ordinary = { id: 'ordinary', protocol: 'mqtt' }
   const supported = { ...ordinary, features: [{ id: 'diffMetadataSameProduct' }] }
   const collector = { ...ordinary, protocol: 'collector-gateway' }
   const keys = device => selectDeviceDetailTabs(device, mappingProviders).map(tab => tab.key)
   assert.deepEqual(keys(null), [])
-  assert.deepEqual(keys(ordinary), [])
-  assert.deepEqual(keys({ ...ordinary, features: [{ id: 'transparentCodec' }] }), [])
-  assert.deepEqual(keys(supported), ['MetadataMap'])
-  assert.deepEqual(keys(collector), ['GateWay'])
-  assert.deepEqual(keys({ ...collector, features: supported.features }), ['MetadataMap', 'GateWay'])
+  assert.deepEqual(keys(ordinary), ['metrics'])
+  assert.deepEqual(keys({ ...ordinary, features: [{ id: 'transparentCodec' }] }), ['metrics'])
+  assert.deepEqual(keys(supported), ['MetadataMap', 'metrics'])
+  assert.deepEqual(keys(collector), ['GateWay', 'metrics'])
+  assert.deepEqual(keys({ ...collector, features: supported.features }), ['MetadataMap', 'GateWay', 'metrics'])
 })
 
 test('mapping deep links restore on load and fall back after switching to an unsupported device', () => {
