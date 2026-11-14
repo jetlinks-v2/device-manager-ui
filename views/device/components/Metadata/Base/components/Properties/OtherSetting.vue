@@ -167,12 +167,14 @@
   </j-permission-button>
 </template>
 
-<script setup lang='ts' name='OtherSetting'>
+<script setup lang='ts'>
 import Metrics from './Metrics/Metrics.vue'
 import { useI18n } from 'vue-i18n'
 import { PopoverModal } from '../../../../../../../components/Metadata'
 import CardItem from './components/CardItem.vue'
 import { usePropertyOtherSettings } from './usePropertyOtherSettings'
+
+defineOptions({ name: 'OtherSetting' })
 const { t: $t } = useI18n()
 const emit = defineEmits(['update:value', 'save'])
 

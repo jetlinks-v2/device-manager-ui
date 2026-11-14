@@ -1,14 +1,7 @@
 <template>
   <!-- 返回入口属于「面板外页面头部」，由布局壳层预留的插槽位承载。 -->
   <PageChrome v-if="!embedded && device">
-    <a-button
-      class="iot-device-detail__back"
-      type="text"
-      @click="state.backToDeviceList"
-    >
-      <template #icon><AIcon type="LeftOutlined" /></template>
-      {{ state.$t('IotDeviceDetail.common.backToDeviceList') }}
-    </a-button>
+    <PageBack :label="state.$t('IotDeviceDetail.common.backToDeviceList')" @back="state.backToDeviceList" />
   </PageChrome>
 
   <!-- 嵌入网关的物模型、规则与数据面板由外层详情承载导航。 -->
@@ -49,6 +42,7 @@
 <script setup lang="ts">
 import { reactive, toRefs, type PropType } from 'vue'
 import SlantedTabs from '@jetlinks-web-core/components/SlantedTabs'
+import PageBack from '@jetlinks-web-core/components/PageBack/index.vue'
 import IotDeviceDetailHeader from './device-detail/IotDeviceDetailHeader.vue'
 import IotDeviceDetailOverlays from './device-detail/IotDeviceDetailOverlays.vue'
 import IotDeviceDefaultDetailContent from './IotDeviceDefaultDetailContent.vue'

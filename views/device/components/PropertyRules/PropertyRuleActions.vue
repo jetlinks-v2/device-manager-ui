@@ -3,7 +3,7 @@
     <a-popover v-if="hasRules" :open="diagram.open" :trigger="[]" placement="bottomRight" :destroy-tooltip-on-hide="true">
       <template #content>
         <div ref="panel" role="dialog" :aria-label="$t('PropertyRules.diagram.title')" @keydown.esc.stop.prevent="escape" @mouseenter="enterPanel" @mouseleave="leavePanel" @focusin="focusPanel" @focusout="blurPanel">
-          <PropertyRuleDiagram v-if="diagram.open && editor.draft" :draft="editor.draft" :property="property" @close="escape" />
+          <PropertyRuleDiagram v-if="editor.draft" :draft="editor.draft" :property="property" :scope="scope" @close="escape" />
         </div>
       </template>
       <a-button ref="trigger" type="text" size="small" :aria-label="`${property.name || property.id} · ${$t('PropertyRules.diagram.show')}`" :aria-expanded="diagram.open" aria-haspopup="dialog" @click="toggleDiagram" @keydown.down.stop.prevent="focusDiagram" @keydown.esc.stop.prevent="escape"><AIcon type="PartitionOutlined" />{{ $t('PropertyRules.diagram.show') }}</a-button>

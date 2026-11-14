@@ -34,7 +34,7 @@
     </div>
 </template>
 
-<script setup lang="ts" name="deviceHome">
+<script setup lang="ts">
 import ProductChooseDialog from '../dialogs/ProductChooseDialog.vue';
 import DeviceChooseDialog from '../dialogs/DeviceChooseDialog.vue';
 import BootCard from '../BootCard.vue';
@@ -47,6 +47,8 @@ import { useAuthStore } from '@jetlinks-web-core/store';
 import { bootConfig, recommendList } from '../../typing';
 import { useMenuStore } from '@jetlinks-web-core/store/menu';
 import { useI18n } from 'vue-i18n'
+
+defineOptions({ name: 'deviceHome' })
 
 const { t: $t } = useI18n()
 // 按钮权限控制

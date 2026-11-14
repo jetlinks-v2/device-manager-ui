@@ -97,7 +97,7 @@
     </j-page-container>
 </template>
 
-<script lang="ts" setup name="CertificateDetail">
+<script lang="ts" setup>
 import { link } from '../../../../assets'
 import CertificateFile from './CertificateFile.vue';
 import type { UploadChangeParam } from 'ant-design-vue';
@@ -106,6 +106,8 @@ import { FormDataType, TypeObjType } from '../type';
 import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import { useMenuStore } from '@jetlinks-web-core/store/menu'
 import { useI18n } from 'vue-i18n';
+
+defineOptions({ name: 'CertificateDetail' })
 
 const { t: $t } = useI18n();
 const router = useRouter();

@@ -9,7 +9,10 @@
     </j-permission-button>
 </template>
 
-<script setup lang="ts" name="FirmwareCreateActions">
+<script setup lang="ts">
+
+defineOptions({ name: 'FirmwareCreateActions' })
+
 const emit = defineEmits<{
     (event: 'add'): void;
 }>();

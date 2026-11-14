@@ -73,13 +73,15 @@
         </j-pro-table>
     </a-modal>
 </template>
-<script lang="ts" setup name="SelectDevicesPage">
+<script lang="ts" setup>
 import {
     queryDetailListNoPaging,
     queryDetailList,
 } from '../../../../../api/firmware';
 import dayjs from 'dayjs';
 import { useI18n } from 'vue-i18n';
+
+defineOptions({ name: 'SelectDevicesPage' })
 
 const { t: $t } = useI18n();
 type T = any;

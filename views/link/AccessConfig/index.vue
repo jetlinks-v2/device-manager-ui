@@ -248,7 +248,7 @@
         <Outline v-if="visibleOutline" :data="current" @closeDrawer="visibleOutline = false"></Outline>
     </j-page-container>
 </template>
-<script lang="ts" setup name="AccessConfigPage">
+<script lang="ts" setup>
 import { createReusableTemplate } from '@vueuse/core'
 
 import {
@@ -267,6 +267,8 @@ import { device } from '../../../assets'
 import { useI18n } from 'vue-i18n';
 import { getI18nText } from '../../../utils/i18n';
 import ConditionFilter from '@jetlinks-web-core/components/ConditionFilter';
+
+defineOptions({ name: 'AccessConfigPage' })
 
 const { t: $t } = useI18n();
 const menuStory = useMenuStore();

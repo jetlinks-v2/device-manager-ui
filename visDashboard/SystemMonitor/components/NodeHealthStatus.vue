@@ -13,10 +13,12 @@
   </a-tooltip>
 </template>
 
-<script lang="ts" setup name="NodeHealthStatus">
+<script lang="ts" setup>
 import type { PropType } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { NodeHealthEvidence, NodeHealthSummary } from '../utils/nodeHealthData'
+
+defineOptions({ name: 'NodeHealthStatus' })
 
 const props = defineProps({
   health: { type: Object as PropType<NodeHealthSummary>, required: true },

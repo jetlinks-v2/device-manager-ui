@@ -5,7 +5,10 @@
   </a-button>
 </template>
 
-<script setup name="ModelButton">
+<script setup>
+
+defineOptions({ name: 'ModelButton' })
+
 
 const props = defineProps({
   disabled: {

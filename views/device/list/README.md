@@ -1,5 +1,21 @@
 # 设备列表范围侧栏
 
+## 统一详情摘要
+
+当前实现：设备头部复用 core `DetailHeader` 摘要模式与 `DetailMetaItem`，保留对象图片和缺省图标，设备类型移至名称/状态同行；ID、产品、空间、业务分组、最后上报使用统一语义图标。物模型标签保留展开与编辑入口，动作继续由 `DeviceDetailActions` 管理。实现入口为 `components/device-detail/IotDeviceDetailHeader.vue`；已有 `PageChrome flush` / `SlantedTabs`、Provider、权限、复制和跳转行为保持不变。
+
+标签交互调整：已填值以“名称＋值”标签展示，点击后就近弹出单项编辑；地理位置继续使用 `SelectAMap` 地图选点。删除叉号使用 `--jet-theme-error`，绝对定位叠加在标签右侧的值文本上方，不为删除按钮预留空间；标签最小宽度为 `1rem`，仅鼠标移入标签时显示删除，移出即隐藏；标签与删除按钮在悬浮时均不改变背景色，删除按钮下方使用 `4px` 局部背景高斯模糊，覆盖的值文本变模糊，叉号本身保持清晰。名称使用较淡的 `--jet-theme-text-secondary`，值使用较深的 `--jet-theme-text`。保存/删除沿用设备标签接口、更新权限与加载反馈，失败保留原值和编辑草稿。删除仅清除已保存的设备标签值，物模型定义仍可从“＋标签”入口重新填写。新增实现收敛在 `components/device-detail/tags/`，单项与原批量编辑复用同一类型控件及值转换，验证类型往返、删除目标、失败重试、权限与地图弹层。
+
+新增标签当前行为：“＋标签”使用下拉选择，选项仅包含当前物模型标签中尚未填写的项，`0` 和 `false` 视为已填写；选择后复用单项编辑，保存成功后从候选中移除，删除后恢复候选，全部填写时禁用新增。下拉宽度固定为 `10rem`，标签名称超出时单行省略，悬浮显示完整名称；新增与编辑弹层的标题均限制在表单宽度内，超长单行省略并保留完整名称悬浮提示。`components/device-detail/tags/DeviceDetailTags.vue` 负责下拉与弹层组合，`useTagEditor.ts` 维护候选和草稿，`TagEditorForm.vue` 复用新增/编辑表单，两个 Vue 文件均少于 300 行；仅修改运行时设备模块，不调整接口、权限、路由及运营端。
+
+新增下拉验证：模块内执行 `node --test tests/deviceTagEditorTime.test.mjs tests/deviceDetailHeaderActions.test.mjs`，10 项通过；两个 Vue 文件通过现有样式门禁，模块差异空白检查通过。实际组件配合模拟接口的浏览器检查覆盖仅显示未填写项、排除零值/布尔值、单项保存、取消、失败重试、保存后移除候选、删除后重新添加、全部填写时禁用、只读及 390/320px 弹层边界；复用表单的地图弹窗经模拟地图引擎验证，显式保存前不提交标签。`runtime-ui` 中执行 `pnpm -F jetlinks-web-core build --outDir /tmp/jetlinks-tag-dropdown/build -- --module-name device-manager-ui`，首次资源复制遇到 `ENOTEMPTY`，重试成功（30.66 秒），保留已有资源路径与大包告警。定向 `vue-tsc` 仍有 205 项依赖文件诊断，本次三个改动源码文件无诊断；工作区无独立 lint 脚本。真实账号下的保存/删除及在线地图仍待验收，完整类型检查命令为 `pnpm exec vue-tsc --noEmit -p modules/device-manager-ui/tsconfig.json`。 本轮宽度与省略调整通过样式门禁、差异检查及实际组件浏览器验证：1280/320px 视口下菜单均为 `10rem`（当前根字号对应 160px），长名称单行省略、原生悬浮提示保留全文且无横向溢出。弹层标题补充验证覆盖新增/编辑、中英文长文本及 1280/320px 视口共 8 种组合：标题与表单宽度一致（272/256px），单行省略、完整悬浮提示及输入/取消正常，弹层无横向溢出，样式门禁与差异检查通过；纯样式调整未重跑完整构建和类型检查。
+
+标签验证：模块内执行 `node --test tests/deviceTagEditorTime.test.mjs tests/deviceDetailHeaderActions.test.mjs`，10 项通过，覆盖日期/时间/JSON 往返、零值、保存草稿、实际设备标签 ID 删除、权限与设备切换保护。真实组件配合模拟接口的浏览器检查通过：鼠标悬浮红色叉号、单项取消/保存/失败重试、删除失败后重试、删除后从原批量入口重新添加、只读权限及 1280/390/320px 无横向溢出；真实 `SelectAMap` 弹窗使用模拟地图引擎点选，确认坐标后外层编辑保留，点击保存才提交。短名称配合短值完整显示，长标签允许省略。 右侧删除样式复验通过：仅鼠标移入显示，移出及单独聚焦均隐藏；删除绝对定位覆盖值的右侧，未预留删除占位，移除删除按钮前后标签宽度一致，最小宽度 `1rem`（当前根字号为 16px），标签及删除按钮悬浮前后背景一致，名称与值分别使用有效的浅/深主题色。局部背景模糊经实际组件确认计算值为 `blur(4px)`，删除图标自身无模糊，仍透明覆盖且不占位。模拟接口删除点击和 390/320px 无横向溢出检查通过，样式门禁与差异检查通过；本轮仅局部样式调整，未重跑完整构建/类型检查。
+
+标签交付检查：5 个变更样式文件通过现有样式门禁，三种语言 JSON 解析与差异空白检查通过；在 `runtime-ui` 执行 `pnpm -F jetlinks-web-core build --outDir /tmp/jetlinks-detail-summary/build-tags -- --module-name device-manager-ui`，生产构建通过（27.55 秒，保留已有资源路径与大包告警）。包含单项与批量编辑器的定向 `vue-tsc` 检查仍被依赖文件既有诊断阻断，本次标签组件、模型、hook 与宿主无诊断；工作区无独立 lint 脚本。尚未在真实账号下提交标签请求或加载在线地图，部署前需复验真实保存/删除与地图选点；完整模块类型检查可在 `runtime-ui` 执行 `pnpm exec vue-tsc --noEmit -p modules/device-manager-ui/tsconfig.json`。
+
+验证：头部动作、数量跳转、设备页签、权限及产品切卡确认合计 20 项测试通过；设备模块生产构建和三个相关模块联合构建通过。真实组件浏览器检查覆盖宽屏、1280px、窄屏及长中英文，ID 复制保留完整字符串，操作区允许窄屏换行。样式门禁通过；全模块类型检查仍有依赖文件错误，本次修改文件无诊断。真实账号下的设备入口和权限组合尚待验收；命令及公共契约见 core `src/components/DetailHeader/README.md`。
+
 ## 通信链路列表滚动
 
 当前行为（S 级局部样式修复）：`views/device/list/components/device-detail/IotDeviceTraceTab.css` 为 `.trace-list-panel` 增加随视口变化的高度上限与 `min-height: 0`，标题栏保留在滚动区外；`.trace-list` 继续承担内部滚动，并以 `overscroll-behavior-y: contain` 阻止列表到达边缘后带动整页。仅调整列表面板样式，沿用已有双栏与窄屏单栏布局，不改变数据订阅、排序、清空或设备指令。

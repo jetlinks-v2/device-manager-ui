@@ -17,8 +17,10 @@
   </a-form-item>
 </template>
 
-<script setup name="MetadataFileType">
+<script setup>
 import { ref, watch } from "vue";
+
+defineOptions({ name: 'MetadataFileType' })
 
 const props = defineProps({
   name: {

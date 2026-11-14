@@ -38,9 +38,11 @@
   </a-modal>
 </template>
 
-<script setup lang="ts" name="FunctionModal">
+<script setup lang="ts">
 import JsonView from './JsonView.vue'
 import {useStoreType} from "../utils";
+
+defineOptions({ name: 'FunctionModal' })
 
 const props = defineProps({
   data: {

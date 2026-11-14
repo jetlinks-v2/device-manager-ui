@@ -21,7 +21,7 @@
     </div>
 </template>
 
-<script setup lang="ts" name="devOpsHome">
+<script setup lang="ts">
 import BootCard from '../BootCard.vue';
 import BasicCountCard from '../BasicCountCard.vue';
 import PlatformPicCard from '../PlatformPicCard.vue';
@@ -30,6 +30,8 @@ import { home } from '../../../../assets'
 
 import type { bootConfig, recommendList } from '../../typing';
 import { useI18n } from 'vue-i18n'
+
+defineOptions({ name: 'devOpsHome' })
 
 const { t: $t } = useI18n()
 const opsBootConfig: bootConfig[] = [

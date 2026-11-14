@@ -28,10 +28,12 @@
   </a-drawer>
 </template>
 
-<script setup lang="ts" name="Detail">
+<script setup lang="ts">
 import { getPluginTypeLabel } from './util';
 import dayjs from 'dayjs';
 import {useI18n} from "vue-i18n";
+
+defineOptions({ name: 'Detail' })
 const props = defineProps({
   data: {
     type: Object,

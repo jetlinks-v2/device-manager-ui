@@ -34,9 +34,11 @@
   </a-card>
 </template>
 
-<script lang="ts" setup name="AccessCard">
+<script lang="ts" setup>
 
 import {link} from "@device-manager-ui/assets";
+
+defineOptions({ name: 'AccessCard' })
 
 const emit = defineEmits(['checkedChange']);
 

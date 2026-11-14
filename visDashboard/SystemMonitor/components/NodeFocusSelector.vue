@@ -47,11 +47,13 @@
     </a-popover>
   </div>
 </template>
-<script lang="ts" setup name="NodeFocusSelector">
+<script lang="ts" setup>
 import { ref, type PropType } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { NodeOption } from '../types'
 import { useNodeFocusSelector } from '../hooks/useNodeFocusSelector'
+
+defineOptions({ name: 'NodeFocusSelector' })
 const props = defineProps({
   value: { type: Array as PropType<string[]>, default: () => [] },
   options: { type: Array as PropType<NodeOption[]>, default: () => [] },

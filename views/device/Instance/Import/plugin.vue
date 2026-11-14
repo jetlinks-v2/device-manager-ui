@@ -8,8 +8,10 @@
   </div>
 </template>
 
-<script setup lang='ts' name='DeviceImportPlugin'>
+<script setup lang='ts'>
 import InklingDevice from '../../components/InklingDevice'
+
+defineOptions({ name: 'DeviceImportPlugin' })
 
 type Emit = {
   (e: 'change', data: any[]): void

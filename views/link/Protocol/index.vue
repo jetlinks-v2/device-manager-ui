@@ -177,7 +177,7 @@
         <Save v-if="visible" :data="current" @change="saveChange" />
     </j-page-container>
 </template>
-<script lang="ts" setup name="AccessConfigPage">
+<script lang="ts" setup>
 import { createReusableTemplate } from '@vueuse/core'
 
 import { list, remove } from '../../../api/link/protocol';
@@ -191,6 +191,8 @@ import { useProtocolTypeProviders } from './useProtocolTypeProviders';
 import { protocolTypeFontIcon } from './protocolTypeAssets';
 import { getI18nText } from '../../../utils/i18n';
 import ConditionFilter from '@jetlinks-web-core/components/ConditionFilter';
+
+defineOptions({ name: 'AccessConfigPage' })
 
 const { t: $t } = useI18n();
 const { typeFilterOptions, typeLabel } = useProtocolTypeProviders();

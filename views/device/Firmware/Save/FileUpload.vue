@@ -14,13 +14,13 @@
     </a-form-item-rest>
 </template>
 
-<script setup lang="ts" name="FirmwareFileUpload">
+<script setup lang="ts">
 import { toRef } from 'vue';
 import { FileUpload as CoreFileUpload } from '@jetlinks-web-core/components';
 import { uploadByRequest } from '@jetlinks-web-core/components/Upload/utils';
 import { useFirmwareFileUpload } from './useFirmwareFileUpload';
 
-defineOptions({ inheritAttrs: false });
+defineOptions({ name: 'FirmwareFileUpload', inheritAttrs: false });
 
 const props = defineProps({
     modelValue: {

@@ -54,7 +54,8 @@ const { t: $t } = useI18n()
 .device-detail-actions {
   display: inline-flex;
   flex: 0 0 auto;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
+  max-width: 100%;
   align-items: center;
   gap: var(--space-2);
 }

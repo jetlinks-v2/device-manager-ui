@@ -60,6 +60,15 @@
   font-weight: 600;
 }
 
+.log-chip {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
 .log-direction {
   background: var(--jet-theme-primary-soft);
   color: var(--jet-theme-primary);

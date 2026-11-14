@@ -8,10 +8,12 @@
       :editable="false" :layout-editable="true" :preview-mode="false" :storage-key="infrastructureLayoutStorageKey" />
   </main>
 </template>
-<script setup lang="ts" name="DashBoardPage">
+<script setup lang="ts">
 import { DashBoardCanvas } from '@jetlinks-web-core/components/DashBoardCanvas'
 import { useInfrastructureDashboard } from './useInfrastructureDashboard'
 import { infrastructureLayoutStorageKey } from './infrastructureDashboardLayout'
+
+defineOptions({ name: 'DashBoardPage' })
 const { catalog, loading, errors, reload, dashboard } = useInfrastructureDashboard()
 </script>
 <style scoped>

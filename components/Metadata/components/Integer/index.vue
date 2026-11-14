@@ -24,8 +24,10 @@
   </PopoverModal>
 </template>
 
-<script setup name="MetadataInteger">
+<script setup>
 import { UnitSelect, PopoverModal } from '../index'
+
+defineOptions({ name: 'MetadataInteger' })
 
 const emit = defineEmits(['update:value', 'cancel', 'confirm']);
 

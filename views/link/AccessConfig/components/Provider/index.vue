@@ -49,9 +49,11 @@
   </div>
   </a-config-provider>
 </template>
-<script setup lang="ts" name="AccessConfigProvider">
+<script setup lang="ts">
 import { computed } from 'vue'
 import { BackMap } from '../../data'
+
+defineOptions({ name: 'AccessConfigProvider' })
 interface Provider { id: string; name: string; description?: string; type?: string }
 const props = withDefaults(defineProps<{ dataSource?: { title: string; list: Provider[] }[] }>(), { dataSource: () => [] })
 const emit = defineEmits<{ onClick: [provider: Provider] }>()

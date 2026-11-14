@@ -3,6 +3,14 @@ import i18n from '@jetlinks-web-core/locales'
 import { onlyMessage } from '@jetlinks-web/utils'
 import { formatApiTime, iotDeviceDetailRealApi } from '../../services/iotDeviceDetailReal.service'
 import type { RealtimeEventRow } from './iotDeviceDetail.types'
+import { formatPropertyValueWithUnit } from './iotDevicePropertyDisplay'
+import { formatPropertyUnit, usePropertyUnits } from '../../../alarm/hooks/usePropertyUnits'
+import {
+  eventHistoryValueText, formatEventHistoryValue, getEventFieldValue, getEventHistoryValues,
+  type EventHistoryDetail, type EventHistoryField, type EventHistoryRecord,
+} from './event-history/eventHistoryValue'
+
+export type { EventHistoryField, EventHistoryRecord } from './event-history/eventHistoryValue'
 
 type UseIotDeviceEventHistoryInput = {
   deviceId: Readonly<Ref<string>>
@@ -12,22 +20,13 @@ type UseIotDeviceEventHistoryInput = {
 
 const $t = i18n.global.t
 
-export type EventHistoryField = {
-  id: string
-  name: string
-  valueType?: Record<string, any>
-}
-
-export type EventHistoryRecord = {
-  id: string
-  time: string
-  values: Record<string, unknown>
-}
-
+/** 查询事件历史并维护详情快照，列表刷新不修改已经打开的上报记录。 */
 export function useIotDeviceEventHistory(input: UseIotDeviceEventHistoryInput) {
+  usePropertyUnits()
   const eventId = ref('')
   const eventLoading = ref(false)
   const eventRows = ref<EventHistoryRecord[]>([])
+  const eventDetail = ref<EventHistoryDetail | null>(null)
   let latestRequest = 0
   const eventPagination = reactive({
     current: 1,
@@ -102,6 +101,7 @@ export function useIotDeviceEventHistory(input: UseIotDeviceEventHistoryInput) {
     if (!input.deviceId.value || !eventId.value) {
       eventRows.value = []
       eventPagination.total = 0
+      eventLoading.value = false
       return
     }
 
@@ -126,64 +126,49 @@ export function useIotDeviceEventHistory(input: UseIotDeviceEventHistoryInput) {
     }
   }
 
-  function normalizeEventRecord(item: Record<string, any>, index: number): EventHistoryRecord {
+  /** 原始记录独立保留；格式化字段只影响 values，不能覆盖原始数据。 */
+  function normalizeEventRecord(item: Record<string, unknown>, index: number): EventHistoryRecord {
     const timestamp = item.timestamp ?? item.time ?? item.createTime ?? item.reportTime
     return {
       id: String(item.id ?? item.messageId ?? `${eventId.value}-${timestamp ?? index}`),
       time: formatApiTime(timestamp, '--'),
-      values: getEventValues(item),
+      values: getEventHistoryValues(item),
+      raw: item,
     }
   }
 
-  function getEventValues(item: Record<string, any>) {
-    const value = item.value ?? item.data?.value ?? item.payload ?? item.data
-    const parsedValue = parseJsonLike(value)
-    const valueFields = parsedValue && typeof parsedValue === 'object' && !Array.isArray(parsedValue)
-      ? parsedValue as Record<string, unknown>
-      : value !== undefined
-        ? { value: parsedValue }
-        : {}
-    return {
-      ...item,
-      ...valueFields,
+  /** 点击时固定事件定义和记录，避免后续元数据刷新改变详情的字段含义。 */
+  function openEventDetail(row: EventHistoryRecord) {
+    eventDetail.value = {
+      eventId: eventId.value,
+      eventName: currentEvent.value?.name || eventId.value,
+      fields: eventFields.value.map(field => ({ ...field })),
+      row,
     }
   }
 
+  /** 关闭时释放长文本引用；切换设备或事件也走同一清理路径。 */
+  function closeEventDetail() {
+    eventDetail.value = null
+  }
+
+  /** 展示值与原始值分离，保留 false、0 和不同空值的含义。 */
+  function eventDetailValue(row: EventHistoryRecord, field: EventHistoryField) {
+    const value = getEventFieldValue(row, field)
+    const display = formatEventHistoryValue(value, field.valueType, {
+      missing: $t('IotDeviceDetail.eventDetail.notReported'),
+      emptyString: $t('IotDeviceDetail.eventDetail.emptyString'),
+      yes: $t('IotDeviceDetail.common.yes'),
+      no: $t('IotDeviceDetail.common.no'),
+    }, value => formatApiTime(value, '--'))
+    return value !== undefined && value !== null && value !== '' && ['int', 'long', 'float', 'double'].includes(String(field.valueType?.type))
+      ? formatPropertyValueWithUnit(display, formatPropertyUnit(field.valueType))
+      : display
+  }
+
+  /** 悬浮提示和单元格只显示摘要，长数据通过详情完整读取。 */
   function eventValueText(row: EventHistoryRecord, field: EventHistoryField) {
-    const formatted = row.values[`${field.id}_format`]
-    const value = formatted === undefined || formatted === null || formatted === ''
-      ? row.values[field.id]
-      : formatted
-    return formatEventValue(value, field.valueType)
-  }
-
-  function formatEventValue(value: unknown, valueType?: Record<string, any>) {
-    if (value === undefined || value === null || value === '') return '--'
-    const parsedValue = parseJsonLike(value)
-    if (valueType?.type === 'boolean') {
-      const options = [
-        { text: valueType.falseText ?? $t('IotDeviceDetail.common.no'), value: valueType.falseValue ?? false },
-        { text: valueType.trueText ?? $t('IotDeviceDetail.common.yes'), value: valueType.trueValue ?? true },
-      ]
-      return String(options.find((item) => `${item.value}` === `${parsedValue}`)?.text ?? parsedValue)
-    }
-    if (valueType?.type === 'enum') {
-      return String((valueType.elements || []).find((item: any) => `${item.value}` === `${parsedValue}`)?.text ?? parsedValue)
-    }
-    if (valueType?.type === 'date') return formatApiTime(parsedValue, '--')
-    if (parsedValue !== null && typeof parsedValue === 'object') return JSON.stringify(parsedValue)
-    return String(parsedValue)
-  }
-
-  function parseJsonLike(value: unknown) {
-    if (typeof value !== 'string') return value
-    const text = value.trim()
-    if (!text || !((text.startsWith('{') && text.endsWith('}')) || (text.startsWith('[') && text.endsWith(']')))) return value
-    try {
-      return JSON.parse(text)
-    } catch {
-      return value
-    }
+    return eventHistoryValueText(eventDetailValue(row, field), 200)
   }
 
   watch(
@@ -195,8 +180,10 @@ export function useIotDeviceEventHistory(input: UseIotDeviceEventHistoryInput) {
   )
 
   watch(
-    [eventId, input.timeRange],
+    [eventId, input.timeRange, input.deviceId],
     () => {
+      closeEventDetail()
+      eventRows.value = []
       eventPagination.current = 1
       void loadEventRows(1)
     },
@@ -207,6 +194,10 @@ export function useIotDeviceEventHistory(input: UseIotDeviceEventHistoryInput) {
     eventId,
     eventLoading,
     eventRows,
+    eventDetail,
+    openEventDetail,
+    closeEventDetail,
+    eventDetailValue,
     eventFields,
     eventPagination,
     eventEmptyText,
