@@ -5,6 +5,7 @@ import { effectScope, ref } from 'vue'
 import { createMetricLoader, flush } from './metricCoreRuntime.mjs'
 
 const reads=[], metadataReads=[]
+let objectCandidates=async()=>({data:[],total:0}),deviceCandidates=async()=>{throw Error('must not enumerate devices')}
 const metricOutputs=ref([])
 const temperature={id:'temperature',name:'温度',valueType:{type:'double'},expands:{semanticId:'urn:temperature'}}
 const query={id:'summary',name:'统计',kind:'query',configurableParameters:['limit'],bindings:{id:{source:'subjectId'}}}
@@ -12,13 +13,13 @@ let capabilities=[query], denied=false, metadata=async()=>({id:'read',name:'读�
 const api={
   loadMetricObjectSources:async(type,id)=>{reads.push([type,id]);if(denied)throw Error('denied');return {properties:[temperature],events:[]}},
   loadMetricBuiltins:async()=>[],loadMetricInheritedOutputs:async()=>[],loadMetricProductName:async id=>id,
-  queryMetricDevices:async()=>{throw Error('must not enumerate devices')},queryMetricProducts:async()=>({data:[],total:0}),
+  queryMetricDevices:(...args)=>deviceCandidates(...args),queryMetricProducts:async()=>({data:[],total:0}),
   describeMetricProvider:async()=>({schema:{type:'object',properties:{active:{type:'boolean',expands:{semanticId:'urn:active'}}}},capabilities:['subscribe']}),
 }
 const business={
   loadObjectSourceCapabilities:async(type,id)=>{reads.push(['capabilities',type,id]);if(denied)throw Error('denied');return capabilities},
   loadObjectSourceMetadata:async(type,id,capability)=>{metadataReads.push([type,id,capability]);return metadata(capability)},
-  loadMetricObjectTypes:async()=>[],queryMetricBusinessObjects:async()=>({data:[],total:0}),
+  loadMetricObjectTypes:async()=>[],queryMetricBusinessObjects:(...args)=>objectCandidates(...args),
 }
 const load=createMetricLoader({
   [fileURLToPath(new URL('../api/metricSources.ts',import.meta.url))]:api,
@@ -28,6 +29,25 @@ const load=createMetricLoader({
 const {useMetricSourcePicker}=load(fileURLToPath(new URL('../views/device/metrics/useMetricSourcePicker.ts',import.meta.url)))
 const context={ownerType:'device',ownerId:'D1',targetType:'device',targetId:'D1',label:'当前设备'}
 function fixture(){const scope=effectScope();return {scope,state:scope.run(useMetricSourcePicker)}}
+
+test('切换对象类型立即清除旧候选，来源失败不能残留另一类型的对象',async()=>{
+  const {scope,state}=fixture()
+  objectCandidates=async()=>({data:[{id:'G1',name:'分组'}],total:1})
+  try{
+    const pending=state.pickSource({context:{ownerType:'deviceGroup',ownerId:'G1'},input:{id:'metric'},purpose:'reference'})
+    await flush();state.changeObject();await flush()
+    assert.equal(state.devices.value[0].id,'G1')
+    let reject
+    deviceCandidates=()=>new Promise((_resolve,fail)=>{reject=fail})
+    state.changeObjectType('device')
+    assert.deepEqual(state.devices.value,[]);assert.equal(state.total.value,0)
+    reject(Error('source unavailable'));await flush()
+    assert.equal(state.error.value,true);assert.deepEqual(state.devices.value,[])
+    state.cancel();await pending
+  }finally{
+    objectCandidates=async()=>({data:[],total:0});deviceCandidates=async()=>{throw Error('must not enumerate devices')};scope.stop()
+  }
+})
 test('关联输出只列指标且允许其公开类型，不读取对象物模型',async()=>{
   const {scope,state}=fixture()
   const before=reads.length
@@ -36,7 +56,10 @@ test('关联输出只列指标且允许其公开类型，不读取对象物模�
     const pending=state.pickSource({context,input:{id:'metric',source:{kind:'metric'}},purpose:'reference',hint:{sources:['metric']}})
     await flush();assert.equal(state.canChangeObject.value,true);assert.equal(state.metricsExpanded.value,true)
     assert.equal(reads.length,before);assert.equal(state.items.value.length,1)
-    state.chooseMethod(method(state,'online'));state.confirm()
+    state.chooseMethod(method(state,'online'))
+    assert.equal(state.open.value,true,'selection remains a draft until explicit confirmation')
+    assert.equal(state.requiresConfirmation.value,true);assert.equal(state.canConfirm.value,true)
+    state.confirm()
     const value=await pending;assert.equal(value.mapping.thingId,'D1');assert.equal(value.mapping.configId,'C1')
   }finally{metricOutputs.value=[];scope.stop()}
 })

@@ -55,6 +55,7 @@ export function useMetricSourcePicker(locale:Ref<string> = ref('zh')) {
         || (item.output.valueType ? {type:item.output.valueType} : undefined)
       return {key:`metric:${item.config.id}:${item.output.metricId}`,kind:'metric' as const,id:item.output.metricId,name:metricOutputName(item.output,localizedTemplate(item.template,locale.value)) || item.output.metricId,
         group:item.config.name || item.template.name,unit:item.output.unit || (typeof schema?.unit === 'string' ? schema.unit : undefined),icon:'NodeIndexOutlined',valueType:schema,expands:schema?.expands as Record<string,unknown> | undefined,
+        preview:{template:item.template,output:item.output,value:item.latest},
         capabilities:['current' as const,'subscribe' as const,...(item.output.persist && !item.output.latestOnly ? ['history' as const] : [])]}
     }),
     ...business.methods.value,
@@ -75,7 +76,7 @@ export function useMetricSourcePicker(locale:Ref<string> = ref('zh')) {
     if (category.value === 'property' || selectedProperty.value?.platform) return !propertyLoading.value && !propertyError.value && !!selectedProperty.value && propertyAllowed.value && (!historyInput.value || !selectedProperty.value.platform || selectedProperty.value.history)
     return !builtinLoading.value && !builtinError.value && !historyInput.value && (request.value.purpose === 'declaration' || request.value.scheduled !== false) && builtins.value.some(item=>item.id === propertyId.value && (request.value?.purpose === 'declaration' || !item.configurationRequired))
   })
-  const requiresConfirmation = computed(()=>request.value?.purpose !== 'declaration' && !!method.value && (selected.value!.methods.length > 1 || category.value === 'businessQuery'
+  const requiresConfirmation = computed(()=>request.value?.purpose === 'reference' || request.value?.purpose !== 'declaration' && !!method.value && (selected.value!.methods.length > 1 || category.value === 'businessQuery'
     || category.value === 'businessEvent'
     || category.value === 'builtin' && !!builtins.value.find(item=>item.id === propertyId.value)?.supportsChildren))
 
@@ -178,7 +179,11 @@ export function useMetricSourcePicker(locale:Ref<string> = ref('zh')) {
     choosingObject.value = false; selectedKey.value = ''; methodKey.value = ''; propertyId.value = ''; restore = false; business.selected.value = undefined
     statistics.close(); await loadObject()
   }
-  function changeObjectType(type:string) { if (!canChangeObject.value) return; objectType.value = type; page.value = 1; keyword.value = ''; queryVersion++; void search() }
+  function changeObjectType(type:string) {
+    if (!canChangeObject.value) return
+    objectType.value = type; page.value = 1; keyword.value = ''; devices.value = []; total.value = 0
+    queryVersion++; void search()
+  }
   function changeObject() {
     if (!canChangeObject.value) return
     statistics.close(); choosingObject.value = true

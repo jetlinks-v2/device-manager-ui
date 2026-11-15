@@ -1,5 +1,6 @@
-import { query, detail } from './instance'
-import { detail as productDetail, queryProductList } from './product'
+import { detail } from './instance'
+import { detail as productDetail } from './product'
+import { queryMetricBusinessObjects } from './metricBusinessSources'
 import { parseMetadata, propertyIdOf, propertyNameOf, formatPropertyUnit } from '../views/device/alarm/utils'
 import { metricSourceTerms, type MetricDeviceOption, type MetricPropertyOption } from '../views/device/metrics/metricSources'
 import type { MetricContext } from '@jetlinks-web-core/components'
@@ -7,6 +8,7 @@ import { metricApi } from '@jetlinks-web-core/components'
 import { request } from '@jetlinks-web/core'
 
 export const readMetricProvider = (source:Parameters<NonNullable<typeof metricApi.readSource>>[0]) => metricApi.readSource!(source)
+export const readMetricLatest = (ids:string[],target:{targetType:string;targetId:string}) => metricApi.latest(ids,target)
 
 /** 内置项目由来源业务模块描述，不在前端维护产品／空间／分组统计清单。 */
 export const loadMetricBuiltins = (type:string, id:string) => metricApi.builtinSources(type, id)
@@ -40,13 +42,7 @@ function metricEvents(raw:unknown):MetricPropertyOption[] {
 
 /** 查询沿用设备资产授权，无在线状态限定，分页避免全量加载设备。 */
 export async function queryMetricDevices(context: MetricContext, keyword: string, pageIndex: number, scoped: boolean) {
-  const response = await query({ pageIndex, pageSize: 20, sorts: [{ name: 'name', order: 'asc' }], terms: [
-    ...(scoped ? metricSourceTerms(context) : []),
-    ...(keyword.trim() ? [{ column: 'name', termType: 'like', value: `%${keyword.trim()}%` }] : []),
-  ] })
-  requireSourceSuccess(response)
-  const page = response.result as { data?: MetricDeviceOption[]; total?: number } | undefined
-  return { data: page?.data || [], total: page?.total || 0 }
+  return queryMetricBusinessObjects('device', keyword, pageIndex, scoped ? metricSourceTerms(context) : [])
 }
 
 /** 输入目录只读取本体实例模型，平台观测和业务物模型由来源合并并授权。 */
@@ -87,11 +83,18 @@ export async function loadMetricProductName(id:string) {
 /** 只读取当前对象有权访问的配置及其固定发布快照，不暴露内部定义作为可绑定输出。 */
 export async function loadMetricOutputs(type:string, id:string) {
   const configs = await metricApi.byOwner(type, id)
-  return (await Promise.all(configs.filter(config => config.id && config.state === 'enabled'
-    && (config.scope !== 'children' || config.targetType === type && (config.ownerType !== type || config.ownerId !== id))).map(async config => ({
-    config:config.scope === 'children' ? {...config,targetType:type,targetId:id} : config,
-    template:await metricApi.configTemplate(config.id!,config.scope === 'children' ? {targetType:type,targetId:id} : undefined),
-  })))).flatMap(({ config, template }) => template.outputs.map(output => ({ config, template, output })))
+  const eligible=configs.filter(config=>config.id && config.state==='enabled'
+    && (config.scope!=='children' || config.targetType===type && (config.ownerType!==type || config.ownerId!==id)))
+  const snapshots:Array<{config:typeof eligible[number];template:Awaited<ReturnType<typeof metricApi.configTemplate>>}>=[]
+  let index=0
+  // 固定快照按候选顺序展示；大量配置也只保留四个并发读取。
+  await Promise.all(Array.from({length:Math.min(4,eligible.length)},async()=>{
+    while(index<eligible.length){const position=index++,config=eligible[position]
+      snapshots[position]={config:config.scope==='children' ? {...config,targetType:type,targetId:id} : config,
+        template:await metricApi.configTemplate(config.id!,config.scope==='children' ? {targetType:type,targetId:id} : undefined)}
+    }
+  }))
+  return snapshots.flatMap(({config,template})=>template.outputs.map(output=>({config,template,output})))
 }
 
 /** 成员统计只引用产品下逐设备执行的已启用配置及其持久化公开输出。 */
@@ -103,10 +106,7 @@ export async function loadMetricInheritedOutputs(productId:string) {
 }
 
 export async function queryMetricProducts(keyword:string, pageIndex:number) {
-  const response = requireSourceSuccess(await queryProductList({ pageIndex, pageSize:20, sorts:[{ name:'name', order:'asc' }],
-    terms:keyword.trim() ? [{ column:'name', termType:'like', value:`%${keyword.trim()}%` }] : [] }))
-  const page = response.result as { data?: { id:string; name:string }[]; total?:number } | undefined
-  return { data:page?.data || [], total:page?.total || 0 }
+  return queryMetricBusinessObjects('product', keyword, pageIndex)
 }
 
 export async function loadMetricOutput(configId:string) {

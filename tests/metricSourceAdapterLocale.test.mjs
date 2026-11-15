@@ -3,7 +3,7 @@ import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import * as i18nRuntime from 'vue-i18n'
-import { createMetricLoader, createMetricRenderer } from '../../../jetlinks-web-core/tests/helpers/metricRuntime.mjs'
+import { createMetricLoader, createMetricRenderer } from './metricCoreRuntime.mjs'
 
 test('source descriptions merge into an existing host composer and follow its locale', async () => {
   const calls = []

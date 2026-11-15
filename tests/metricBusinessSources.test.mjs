@@ -31,7 +31,12 @@ test('声明导入按原对象授权查询，来源目录不执行业务查询',
   calls=[]
   assert.equal((await queryMetricBusinessObjects('notificationAttempt','历史')).total,1)
   assert.equal(calls[0].body.type,'notificationAttempt')
+  assert.equal(calls[0].url,'/relation/objects/_query')
   assert.equal(calls[0].body.query.terms[0].value,'%历史%')
+  calls=[];await queryMetricBusinessObjects('device',' 泵 ',2,[{column:'id',termType:'dev-group',value:'G1'}])
+  assert.deepEqual(calls[0].body.query,{pageIndex:2,pageSize:20,sorts:[{name:'name',order:'asc'}],terms:[
+    {column:'id',termType:'dev-group',value:'G1'},{column:'name',termType:'like',value:'%泵%'},
+  ]})
   calls=[];await loadObjectSourceCapabilities('machine','M/1');await loadObjectSourceMetadata('machine','M/1','summary')
   assert.deepEqual(calls,[{url:'/ontology/catalog/machine/M%2F1/capabilities'},{url:'/ontology/catalog/machine/M%2F1/capabilities/summary/metadata'}])
 })

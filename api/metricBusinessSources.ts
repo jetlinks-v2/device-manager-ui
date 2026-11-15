@@ -33,8 +33,12 @@ export async function loadMetricObjectTypes():Promise<SourceObjectType[]> {
   }
   return [...roots.values()]
 }
-export async function queryMetricBusinessObjects(type:string,keyword:string,pageIndex=0) {
-  const response:{status?:number;message?:string;result?:{data:{id:string;name?:string}[];total:number}} = await request.post('/relation/objects/_query',{type,query:{pageIndex,pageSize:20,terms:keyword ? [{column:'name',termType:'like',value:`%${keyword}%`}] : []}},options)
+export async function queryMetricBusinessObjects(type:string,keyword:string,pageIndex=0,
+  scopeTerms:{column:string;termType:string;value:unknown}[] = []) {
+  const response:{status?:number;message?:string;result?:{data:{id:string;name?:string}[];total:number}} = await request.post('/relation/objects/_query',{
+    type,query:{pageIndex,pageSize:20,sorts:[{name:'name',order:'asc'}],terms:[...scopeTerms,
+      ...(keyword.trim() ? [{column:'name',termType:'like',value:`%${keyword.trim()}%`}] : [])]},
+  },options)
   if (response.status && response.status >= 400) throw new Error(response.message || String(response.status))
   return {data:response.result?.data || [],total:response.result?.total || 0}
 }

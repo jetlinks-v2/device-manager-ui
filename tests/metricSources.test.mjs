@@ -15,15 +15,17 @@ const bundled = await build({
     builder.onResolve({ filter: /^\.\/(instance|product)$/ }, args => ({ path: args.path, namespace: 'source-mock' }))
     builder.onResolve({ filter: /^@jetlinks-web-core\/locales$/ }, () => ({ path: 'locale', namespace: 'source-mock' }))
     builder.onResolve({ filter: /^@jetlinks-web-core\/components$/ }, () => ({ path: 'metric', namespace: 'source-mock' }))
+    builder.onResolve({ filter: /^\.\/metricBusinessSources$/ }, () => ({ path: 'business', namespace: 'source-mock' }))
     builder.onLoad({ filter: /.*/, namespace: 'source-mock' }, args => ({ contents: args.path === 'platform' ? 'export const request={get:async(path)=>globalThis.__metricPlatformRequest ? globalThis.__metricPlatformRequest(path) : ({result:[{id:"$online",name:"平台连接状态",valueType:"int",history:true,icon:"PoweroffOutlined"},{id:"$lastCommunicationTime",name:"最近会话通信时间",valueType:"long",history:false,icon:"MessageOutlined"}]})}' : args.path === 'locale'
       ? 'export default {global:{t:(key)=>key,locale:{value:"zh"}}}'
+      : args.path === 'business' ? 'export const queryMetricBusinessObjects=(...args)=>globalThis.__metricObjectQuery(...args)'
       : args.path === 'units' ? 'export const formatPropertyUnit=value=>value'
       : args.path === 'metric' ? 'export const metricApi={byOwner:(...args)=>globalThis.__metricSourceApi.byOwner(...args),getConfig:(...args)=>globalThis.__metricSourceApi.getConfig(...args),configTemplate:(...args)=>globalThis.__metricSourceApi.configTemplate(...args)}'
       : args.path === './product' ? 'export const detail=(...args)=>globalThis.__metricSourceApi.productDetail(...args); export const queryProductList=(...args)=>globalThis.__metricSourceApi.queryProducts(...args)'
       : 'export const query=(...args)=>globalThis.__metricSourceApi.query(...args);export const detail=(...args)=>globalThis.__metricSourceApi.detail(...args)' }))
   } }],
 })
-const { queryMetricDevices, loadMetricDevice, loadMetricProduct, loadMetricProductSources, loadMetricOutputs, loadMetricOutput } = await import(`data:text/javascript;base64,${Buffer.from(bundled.outputFiles[0].text).toString('base64')}`)
+const { queryMetricDevices, queryMetricProducts, loadMetricDevice, loadMetricProduct, loadMetricProductSources, loadMetricOutputs, loadMetricOutput } = await import(`data:text/javascript;base64,${Buffer.from(bundled.outputFiles[0].text).toString('base64')}`)
 globalThis.__metricSourceApi={detail:async id=>({result:{id,name:'设备名称'}}),productDetail:async id=>({result:{id,name:'产品名称'}})}
 
 test('instance metadata errors stay visible and retry without a global platform directory cache', async () => {
@@ -50,6 +52,7 @@ test('four hosts set the initial candidate scope without restricting offline dev
 
 test('device and product inputs use authorized ontology metadata and retain source names', async () => {
   globalThis.__metricSourceApi={query:async()=>({status:500,message:'query unavailable'}), detail:async id=>({result:{id,name:'设备名称'}}),productDetail:async id=>({result:{id,name:'产品名称'}})}
+  globalThis.__metricObjectQuery=async()=>{throw new Error('query unavailable')}
   await assert.rejects(queryMetricDevices({ownerType:'device',ownerId:'offline'},'',0,true),/query unavailable/)
   const paths=[]
   globalThis.__metricPlatformRequest=async path=>{paths.push(path);return {status:200,result:{properties:[{id:'energy',name:'累计电量',valueType:{type:'double',unit:'kWh'}}]}}}
@@ -76,6 +79,16 @@ test('metric sources expose active concrete public outputs and propagate access 
   globalThis.__metricSourceApi.configTemplate = async () => { throw new Error('source denied') }
   await assert.rejects(loadMetricOutputs('device', 'meter'), /source denied/)
   await assert.rejects(loadMetricOutput('active'), /source denied/)
+})
+
+test('设备与产品候选复用本体对象查询并保留宿主范围及分页',async()=>{
+  const calls=[]
+  globalThis.__metricObjectQuery=async(...args)=>{calls.push(args);return {data:[{id:'D1',name:'设备'}],total:1}}
+  assert.equal((await queryMetricDevices({ownerType:'deviceGroup',ownerId:'G1'},'泵',2,true)).total,1)
+  await queryMetricDevices({ownerType:'deviceGroup',ownerId:'G1'},'',0,false)
+  await queryMetricProducts('产品',1)
+  assert.deepEqual(calls,[['device','泵',2,[{column:'id',termType:'dev-group',value:'G1'}]],['device','',0,[]],['product','产品',1]])
+  delete globalThis.__metricObjectQuery
 })
 
 test('inherited outputs are selected for the concrete object and use its authorized template',async()=>{

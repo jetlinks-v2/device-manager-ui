@@ -25,6 +25,14 @@
       </template>
       <MetricMemberStatistics v-else-if="state.statistics.active.value" :state="state.statistics" :scope-label="state.object.value.name" :include-children="state.includeChildren.value" />
       <template v-else>
+        <template v-if="state.request.value.purpose==='reference'">
+          <p class="source-note">{{ t('existingMetricHelp') }}</p>
+          <a-input v-model:value="state.dataKeyword.value" allow-clear :placeholder="t('searchMetric')" :aria-label="t('searchMetric')"><template #prefix><AIcon type="SearchOutlined" /></template></a-input>
+          <a-alert v-if="state.metricSources.error.value" type="error" show-icon :message="t('metricsFailed')"><template #action><a-button type="link" size="small" @click="state.metricSources.load">{{ t('retry') }}</a-button></template></a-alert>
+          <a-skeleton v-else-if="state.metricSources.loading.value" active :paragraph="{rows:4}" />
+          <div v-else class="source-catalog"><SourceItemRow v-for="item in metricItems" :key="item.key" :item="item" :selected="state.selectedKey.value===item.key" reference @select="selectItem(item)" /><a-empty v-if="!metricItems.length" :description="t(state.dataKeyword.value ? 'noMatchingMetrics' : 'noExistingMetrics')" :image-style="{height:'48px'}" /></div>
+        </template>
+        <template v-else>
         <div class="source-search"><a-input v-model:value="state.dataKeyword.value" allow-clear :placeholder="t('searchData')" :aria-label="t('searchData')"><template #prefix><AIcon type="SearchOutlined" /></template></a-input><a-button v-if="state.suggestedSources.value.length" type="link" size="small" @click="state.showAllSources.value = !state.showAllSources.value">{{ t(state.showAllSources.value ? 'suggestedSources' : 'allSources') }}</a-button></div>
         <p v-if="state.request.value.purpose !== 'declaration'" class="source-note">{{ t(state.historyInput.value ? 'readingHistory' : 'readingCurrent') }}</p>
         <a-alert v-if="state.propertyError.value" type="error" show-icon :message="t('failed')"><template #action><a-button type="link" size="small" @click="state.loadObject">{{ t('retry') }}</a-button></template></a-alert>
@@ -58,6 +66,7 @@
           <p v-if="state.request.value.input.unit && state.method.value.unit && state.request.value.input.unit !== state.method.value.unit" class="source-note">{{ t('unitHint') }}</p>
         </div>
         <footer v-if="inline && state.requiresConfirmation.value"><a-button type="primary" :disabled="!state.canConfirm.value" @click="state.confirm">{{ t('confirm') }}</a-button></footer>
+        </template>
       </template>
     </template>
   </section>

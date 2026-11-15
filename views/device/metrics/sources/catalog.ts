@@ -1,6 +1,6 @@
 import type { BusinessCommand, BusinessEvent, ObjectSourceCapability } from '../../../../api/metricBusinessSources'
 import type { MetricPropertyOption } from '../metricSources'
-import type { MetricInputMapping } from '@jetlinks-web-core/components'
+import type { MetricInputMapping,MetricTemplate,MetricTemplateOutput,MetricValue } from '@jetlinks-web-core/components'
 
 export type SourceKind = 'property'|'event'|'builtin'|'metric'|'businessEvent'|'businessQuery'
 /** 来源目录与建议来源使用同一套图标，只影响展示。 */
@@ -13,6 +13,7 @@ export interface SourceMethod {
   group?:string
   description?:string
   unit?:string
+  preview?:{template:MetricTemplate;output:MetricTemplateOutput;value?:MetricValue}
   icon?:string
   valueType?:Record<string,unknown>
   expands?:Record<string,unknown>
