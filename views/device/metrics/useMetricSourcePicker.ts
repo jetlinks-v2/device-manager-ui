@@ -33,7 +33,7 @@ export function useMetricSourcePicker(locale:Ref<string> = ref('zh')) {
   let lastDeclaration:{session:string;type:string;id:string;name:string} | undefined
   const open = computed(()=>!!request.value), inherited = computed(()=>request.value?.context.scope === 'children')
   const currentMember = computed(()=>objectType.value === 'member')
-  const canChangeObject = computed(()=>request.value?.purpose === 'declaration')
+  const canChangeObject = computed(()=>['declaration','reference'].includes(request.value?.purpose || ''))
   const targetType = computed(()=>request.value?.context.targetType || request.value?.context.ownerType || objectType.value)
   const historyInput = computed(()=>request.value?.purpose !== 'declaration' && !!request.value?.input.source?.lookback)
   const deviceId = computed(()=>objectType.value === 'device' ? objectId.value : '')
@@ -42,11 +42,11 @@ export function useMetricSourcePicker(locale:Ref<string> = ref('zh')) {
   const suggestedSources = computed(()=>request.value?.hint?.sources || [])
   const error = computed(()=>queryError.value || propertyError.value)
   const businessObject = computed(()=>currentMember.value && request.value ? {type:request.value.context.ownerType,id:request.value.context.ownerId,name:object.value.name} : object.value)
-  const queriesVisible = computed(()=>showAllSources.value || !suggestedSources.value.length || suggestedSources.value.some(kind=>['businessQuery','businessEvent'].includes(kind)) || ['businessQuery','businessEvent'].includes(category.value))
+  const queriesVisible = computed(()=>request.value?.purpose !== 'reference' && (showAllSources.value || !suggestedSources.value.length || suggestedSources.value.some(kind=>['businessQuery','businessEvent'].includes(kind)) || ['businessQuery','businessEvent'].includes(category.value)))
   const business = useBusinessSources(request,businessObject,queriesVisible)
   const metricSources = useMetricOutputSources(request,deviceId,computed(()=>open.value && !choosingObject.value && metricsExpanded.value),object)
   const statistics = useMetricMemberStatistics(request,builtinScope,includeChildren,finish)
-  const inputUndeclared = computed(()=>!!request.value && request.value.purpose !== 'declaration' && !metricSourceHasInputConstraint(request.value.input))
+  const inputUndeclared = computed(()=>!!request.value && !['declaration','reference'].includes(request.value.purpose || '') && !metricSourceHasInputConstraint(request.value.input))
   const methods = computed<SourceMethod[]>(()=>([
     ...properties.value.map(item=>propertyMethod(item)), ...events.value.map(item=>propertyMethod(item,true)),
     ...builtins.value.map(item=>({...item,key:`builtin:${item.id}`,kind:'builtin' as const,valueType:{type:item.valueType || 'long'},capabilities:['current' as const]})),
@@ -58,8 +58,8 @@ export function useMetricSourcePicker(locale:Ref<string> = ref('zh')) {
         capabilities:['current' as const,'subscribe' as const,...(item.output.persist && !item.output.latestOnly ? ['history' as const] : [])]}
     }),
     ...business.methods.value,
-  ] as SourceMethod[]).filter(item=>!!request.value && (request.value.purpose === 'declaration'
-    || metricSourceMatchesInput(request.value.input,item) && !issue(item))))
+  ] as SourceMethod[]).filter(item=>!!request.value && (request.value.purpose === 'reference' ? item.kind === 'metric'
+    : request.value.purpose === 'declaration' || metricSourceMatchesInput(request.value.input,item) && !issue(item))))
   const items = computed(()=>sourceItems(methods.value))
   const groups = computed(()=>sourceGroups(items.value,dataKeyword.value,suggestedSources.value,showAllSources.value,selectedKey.value))
   const selected = computed(()=>items.value.find(item=>item.key === selectedKey.value))
@@ -118,7 +118,7 @@ export function useMetricSourcePicker(locale:Ref<string> = ref('zh')) {
     cancel(); restore = true; request.value = next
     selectedKey.value = ''; methodKey.value = ''; properties.value = []; events.value = []; builtins.value = []; devices.value = []
     showAllSources.value = false; keyword.value = ''; dataKeyword.value = ''; scoped.value = true; page.value = 1
-    objectTypes.value = []; objectTypesError.value = false; metricsExpanded.value = next.mapping?.kind === 'metric' || next.input.source?.kind === 'metric'
+    objectTypes.value = []; objectTypesError.value = false; metricsExpanded.value = next.purpose === 'reference' || next.mapping?.kind === 'metric' || next.input.source?.kind === 'metric'
     queryError.value = false; propertyError.value = false; builtinError.value = false
     const mapping = next.mapping, context = next.context
     const remembered = !mapping && next.purpose === 'declaration' && next.session === lastDeclaration?.session ? lastDeclaration : undefined
@@ -136,7 +136,7 @@ export function useMetricSourcePicker(locale:Ref<string> = ref('zh')) {
     choosingObject.value = !objectId.value
     const pending = new Promise<MetricSourceSelection | undefined>(resolve=>{resolveSelection=resolve})
     if (objectId.value) void loadObject(); else changeObject()
-    if (objectId.value && next.purpose === 'declaration') void loadObjectTypes()
+    if (objectId.value && canChangeObject.value) void loadObjectTypes()
     if (mapping?.statistics) statistics.open(mapping)
     return pending
   }
@@ -149,6 +149,7 @@ export function useMetricSourcePicker(locale:Ref<string> = ref('zh')) {
   }
   async function loadObject() {
     const token = ++propertyVersion; properties.value = []; events.value = []; propertyError.value = false
+    if (request.value?.purpose === 'reference') { propertyLoading.value = false; return }
     propertyLoading.value = !!objectId.value
     void loadBuiltins()
     if (!propertyLoading.value) return

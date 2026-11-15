@@ -28,6 +28,18 @@ const load=createMetricLoader({
 const {useMetricSourcePicker}=load(fileURLToPath(new URL('../views/device/metrics/useMetricSourcePicker.ts',import.meta.url)))
 const context={ownerType:'device',ownerId:'D1',targetType:'device',targetId:'D1',label:'当前设备'}
 function fixture(){const scope=effectScope();return {scope,state:scope.run(useMetricSourcePicker)}}
+test('关联输出只列指标且允许其公开类型，不读取对象物模型',async()=>{
+  const {scope,state}=fixture()
+  const before=reads.length
+  metricOutputs.value=[{config:{id:'C1',targetType:'device',targetId:'D1'},template:{id:'T1',inputDefinitions:[],parameterDefinitions:[],outputs:[],definitions:[{id:'online',resultType:{type:'boolean'}}]},output:{metricId:'online'}}]
+  try{
+    const pending=state.pickSource({context,input:{id:'metric',source:{kind:'metric'}},purpose:'reference',hint:{sources:['metric']}})
+    await flush();assert.equal(state.canChangeObject.value,true);assert.equal(state.metricsExpanded.value,true)
+    assert.equal(reads.length,before);assert.equal(state.items.value.length,1)
+    state.chooseMethod(method(state,'online'));state.confirm()
+    const value=await pending;assert.equal(value.mapping.thingId,'D1');assert.equal(value.mapping.configId,'C1')
+  }finally{metricOutputs.value=[];scope.stop()}
+})
 const method=(state,id,path)=>state.items.value.flatMap(item=>item.methods).find(item=>item.id===id && (path===undefined || item.valuePath===path))
 
 test('已有指标来源保留显式枚举和对象声明，不退化为顶层type或默认double',async()=>{

@@ -61,7 +61,7 @@ test('device and product inputs use authorized ontology metadata and retain sour
   delete globalThis.__metricPlatformRequest
 })
 
-test('metric sources expose only active single-target public outputs and propagate access failures', async () => {
+test('metric sources expose active concrete public outputs and propagate access failures', async () => {
   const calls = []
   const active = { id: 'active', state: 'enabled', scope: 'single' }
   const template = { outputs: [{ metricId: 'usage', persist: true }, { metricId: 'threshold', persist: false }] }
@@ -76,6 +76,17 @@ test('metric sources expose only active single-target public outputs and propaga
   globalThis.__metricSourceApi.configTemplate = async () => { throw new Error('source denied') }
   await assert.rejects(loadMetricOutputs('device', 'meter'), /source denied/)
   await assert.rejects(loadMetricOutput('active'), /source denied/)
+})
+
+test('inherited outputs are selected for the concrete object and use its authorized template',async()=>{
+  const calls=[]
+  globalThis.__metricSourceApi={
+    byOwner:async()=>[{id:'inherited',state:'enabled',scope:'children',ownerType:'product',ownerId:'p',targetType:'device',targetId:'*'}],
+    configTemplate:async(id,target)=>{calls.push([id,target]);return {outputs:[{metricId:'online'}]}},
+  }
+  const values=await loadMetricOutputs('device','d')
+  assert.equal(values[0].config.targetId,'d')
+  assert.deepEqual(calls,[['inherited',{targetType:'device',targetId:'d'}]])
 })
 
 test('产品属性与事件保留声明分组，未声明时不按名称推测分组',async()=>{

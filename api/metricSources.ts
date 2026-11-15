@@ -87,8 +87,10 @@ export async function loadMetricProductName(id:string) {
 /** 只读取当前对象有权访问的配置及其固定发布快照，不暴露内部定义作为可绑定输出。 */
 export async function loadMetricOutputs(type:string, id:string) {
   const configs = await metricApi.byOwner(type, id)
-  return (await Promise.all(configs.filter(config => config.id && config.state === 'enabled' && config.scope !== 'children').map(async config => ({
-    config, template:await metricApi.configTemplate(config.id!),
+  return (await Promise.all(configs.filter(config => config.id && config.state === 'enabled'
+    && (config.scope !== 'children' || config.targetType === type && (config.ownerType !== type || config.ownerId !== id))).map(async config => ({
+    config:config.scope === 'children' ? {...config,targetType:type,targetId:id} : config,
+    template:await metricApi.configTemplate(config.id!,config.scope === 'children' ? {targetType:type,targetId:id} : undefined),
   })))).flatMap(({ config, template }) => template.outputs.map(output => ({ config, template, output })))
 }
 
