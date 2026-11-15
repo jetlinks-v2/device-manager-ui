@@ -9169,7 +9169,7 @@
   "DeviceMetrics.online": "Online",
   "DeviceMetrics.offline": "Offline",
   "DeviceMetrics.notActive": "Inactive",
-  "DeviceMetrics.descendantMetrics": "Descendant group metrics",
+  "DeviceMetrics.descendantGroups": "Descendant groups",
   "DeviceMetrics.memberMetrics": "Member device metrics",
   "DeviceMetrics.platformOnline": "Platform connection state"
 }

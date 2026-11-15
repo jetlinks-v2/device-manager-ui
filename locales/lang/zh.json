@@ -9170,7 +9170,7 @@
   "DeviceMetrics.online": "在线",
   "DeviceMetrics.offline": "离线",
   "DeviceMetrics.notActive": "未激活",
-  "DeviceMetrics.descendantMetrics": "下级分组指标",
+  "DeviceMetrics.descendantGroups": "下级分组",
   "DeviceMetrics.memberMetrics": "成员设备指标",
   "DeviceMetrics.platformOnline": "平台连接状态"
 }

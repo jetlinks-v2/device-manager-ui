@@ -21,8 +21,8 @@ const navigator = (type: 'device' | 'product' | 'deviceGroup') => defineComponen
 export default {
   deviceGroup: { ownerType: 'deviceGroup', label: () => i18n.global.t('DeviceMetrics.groups'), icon: 'FolderOutlined', order: 20,
     resolveObjects: ids => resolveMetricObjects('deviceGroup', ids),
-    readScopes: () => [{ memberType:'deviceGroup', label:i18n.global.t('DeviceMetrics.descendantMetrics'), icon:'FolderOutlined', tree:true },
-      ...(deviceMenu() ? [{ memberType:'device', label:i18n.global.t('DeviceMetrics.memberMetrics'), icon:'DesktopOutlined', tree:true }] : [])],
+    readScopes: () => [...(deviceMenu() ? [{ memberType:'device', label:i18n.global.t('DeviceMetrics.devices'), icon:'DesktopOutlined', tree:true }] : []),
+      { memberType:'deviceGroup', label:i18n.global.t('DeviceMetrics.descendantGroups'), icon:'FolderOutlined', tree:true }],
     available: () => Boolean(deviceMenu()), canEdit: () => has(deviceCodes, 'update'), navigator: navigator('deviceGroup'), useSourcePicker: useMetricSourceAdapter,
     toBusiness: selection => {
       const code = deviceMenu()
@@ -32,7 +32,7 @@ export default {
   },
   product: { ownerType: 'product', label: () => i18n.global.t('DeviceMetrics.products'), icon: 'AppstoreOutlined', order: 30,
     resolveObjects: ids => resolveMetricObjects('product', ids),
-    readScopes: () => deviceMenu() ? [{ memberType:'device', label:i18n.global.t('DeviceMetrics.memberMetrics'), icon:'DesktopOutlined' }] : [],
+    readScopes: () => deviceMenu() ? [{ memberType:'device', label:i18n.global.t('DeviceMetrics.devices'), icon:'DesktopOutlined' }] : [],
     inheritance: () => ({ targetType: 'device', label: i18n.global.t('DeviceMetrics.deviceInheritance') }),
     available: () => useMenuStore().hasMenu('device/Product') && has(['device/Product'], 'view'), canEdit: () => has(['device/Product'], 'update'), navigator: navigator('product'), useSourcePicker: useMetricSourceAdapter,
     toBusiness: selection => {

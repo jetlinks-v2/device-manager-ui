@@ -34,6 +34,10 @@ test('four dimensions reuse business maintenance rights independently of rule pe
     assert.equal(provider.canEdit({ownerId:'id',label:'label'}),false)
     assert.ok(typeof provider.label()==='string')
   }
+  assert.deepEqual(device.deviceGroup.readScopes().map(scope=>scope.memberType),['device','deviceGroup'])
+  assert.equal(device.deviceGroup.readScopes()[0].label,'DeviceMetrics.devices')
+  assert.equal(device.deviceGroup.readScopes()[1].label,'DeviceMetrics.descendantGroups')
+  assert.equal(device.product.readScopes()[0].tree,undefined,'product membership does not declare a tree')
   allowed.add('iot-user-device-list:update');allowed.add('device/Product:update');allowed.add('space/Situation:metricSave')
   for(const provider of [...Object.values(device),space.space]) assert.equal(provider.canEdit({ownerId:'id',label:'label'}),true)
   assert.equal(device.device.toBusiness({ownerId:'d',label:'D'}).name,'project/iot-user-device-list/Detail')
@@ -94,8 +98,8 @@ const {useMetricSourceAdapter}=await loadMetricTestModule('../views/device/metri
   '../../../../api/metricSources': 'export const describeMetricProvider=async()=>({schema:{},capabilities:[]});',
   'vue-i18n':'import {ref} from "vue";export const useI18n=()=>({t:key=>key.replace(/^metricSources\\./,""),mergeLocaleMessage:()=>{},locale:ref("zh")})',
   '../../../api/metricSources':`export const queryMetricDevices=async()=>({data:[],total:0});export const loadMetricDevice=async id=>({device:{id,name:id},properties:[{id:"$online",name:"在线状态",platform:true,history:true,valueType:{type:"int"}}]});export const loadMetricProduct=async()=>[{id:"power",name:"Power",valueType:{type:"double"}},{id:"$online",name:"在线状态",platform:true,history:true,valueType:{type:"int"}}];export const loadMetricBuiltins=async()=>[];
-    const item={config:{id:"source",name:"Temperature",state:"enabled",scope:"single",targetType:"device",targetId:"d1"},template:{id:"t",version:"1",name:"Temperature",options:{},inputDefinitions:[],parameterDefinitions:[],definitions:[],outputs:[{metricId:"average",label:"Average",persist:true,unit:"℃"}]},output:{metricId:"average",label:"Average",persist:true,unit:"℃"}};
-    export const loadMetricOutputs=async()=>[item];export const loadMetricOutput=async()=>item;export const loadMetricProductSources=async id=>({properties:await loadMetricProduct(id),events:[]});export const describeMetricProvider=async()=>({});export const readMetricProvider=async()=>undefined;
+    const item={config:{id:"source",name:"Temperature",state:"enabled",scope:"single",targetType:"device",targetId:"d1"},template:{id:"t",version:"1",name:"Temperature",options:{},inputDefinitions:[],parameterDefinitions:[],definitions:[],outputs:[{metricId:"average",label:"Average",valueType:"double",persist:true,unit:"℃"}]},output:{metricId:"average",label:"Average",valueType:"double",persist:true,unit:"℃"}};
+    export const loadMetricOutputs=async()=>[item];export const loadMetricOutput=async()=>item;export const readMetricLatest=async()=>[];export const loadMetricProductSources=async id=>({properties:await loadMetricProduct(id),events:[]});export const describeMetricProvider=async()=>({});export const readMetricProvider=async()=>undefined;
     export const loadMetricObjectSources=(type,id)=>type==='device'?loadMetricDevice(id):loadMetricProductSources(id);
     export const loadMetricInheritedOutputs=async()=>[];export const loadMetricProductName=async id=>id;export const queryMetricProducts=async()=>({data:[],total:0});`,
 })
