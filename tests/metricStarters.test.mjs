@@ -8,7 +8,7 @@ const { captureTemplateExample } = await loadMetricTestModule('../../../jetlinks
 const { structureMetricTemplate } = await loadMetricTestModule('../../../jetlinks-web-core/src/components/Metric/template/structureExpressions.ts')
 
 test('default references cover IoT capabilities without domain-specific decisions or invented scores',()=>{
-  assert.deepEqual(starters.map(item=>item.id),['communication-observation','connection-duration','state-duration','sample-mean','counter-usage','persistent-limit','measurement-difference','scope-connectivity'])
+  assert.deepEqual(starters.map(item=>item.id),['communication-observation','connection-duration','state-duration','sample-mean','counter-usage','persistent-limit','measurement-difference','scope-connectivity','counter-cycle-usage','condition-deviation-observation','trend-threshold-observation'])
   assert.deepEqual([...new Set(starters.map(item=>item.groupId))].sort(),['condition','connectivity','energy','scope','state','statistics'])
   assert.ok(!JSON.stringify(starters).includes('linkQualityScore'))
   assert.ok(!JSON.stringify(starters).includes('fireReview'))
@@ -97,4 +97,18 @@ test('connection examples use platform state facts and scope summaries do not re
   assert.ok(!connection.template.options.notes.includes('显示至少持续'))
   const communication=starters.find(item=>item.id==='communication-observation').template
   assert.ok(communication.outputs.every(output=>!!output.valueType),'declared read aggregation must include its scalar type')
+})
+
+test('meter replacement reference declares ordinary sources and backend calculation instead of guessing a reset',()=>{
+  const {template,simulation}=starters.find(item=>item.id==='counter-cycle-usage')
+  assert.equal(template.thingType,undefined)
+  assert.deepEqual(template.inputDefinitions.map(input=>input.valueType.type),['double','string'])
+  assert.ok(template.inputDefinitions.every(input=>!input.semantics?.semanticId && input.presence!=='optional'))
+  const {parameters}=template.definitions[0].calculator
+  assert.equal(parameters.contextInput,'cycle')
+  assert.equal(parameters.identityChange,'rebase')
+  assert.equal(parameters.negativeDelta,'reject')
+  assert.equal(parameters.negativeTolerance,0.05)
+  assert.ok(simulation.samples.some(sample=>sample.metricId==='cycle' && sample.value==='meter-B'))
+  assert.ok(template.options.authoring.references.every(reference=>reference.url?.startsWith('https://')))
 })

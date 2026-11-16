@@ -10,6 +10,7 @@ const load=createMetricLoader({
     post:async(url,body)=>{calls.push({url,body});return {result:{data:[{id:'old',name:'旧对象'}],total:1}}},
   }},
   '@jetlinks-web-core/components/Metric/extensions/registry':{collectMetricResources:()=>({dimensions})},
+  '@jetlinks-web-core/components/Metric/api':{loadMetricObjectTypes:async()=>{calls.push({url:'/relation/types'});return types}},
 })
 const {loadMetricObjectTypes,queryMetricBusinessObjects,loadObjectSourceCapabilities,loadObjectSourceMetadata}=load(fileURLToPath(new URL('../api/metricBusinessSources.ts',import.meta.url)))
 
@@ -24,7 +25,9 @@ test('根对象来自可用指标维度及显式来源声明，保留名称、�
   assert.equal(roots[0].name,'设备');assert.equal(roots[0].description,'物联网设备')
   assert.equal(roots[1].icon,'HomeOutlined');assert.equal(roots[2].name,'告警中心')
   assert.equal(roots[2].icon,'BellOutlined')
-  types=[];assert.deepEqual((await loadMetricObjectTypes()).map(item=>item.id),['device','space'])
+  types.reverse();assert.deepEqual((await loadMetricObjectTypes()).map(item=>item.id),['device','space','alarm'],'关系目录顺序不改变前端业务维度顺序')
+  types=[{id:'device',name:'Device'}];assert.deepEqual((await loadMetricObjectTypes()).map(item=>item.id),['device'],'未声明的空间不因安装前端模块而出现')
+  types=[];assert.deepEqual(await loadMetricObjectTypes(),[])
 })
 
 test('声明导入按原对象授权查询，来源目录不执行业务查询',async()=>{

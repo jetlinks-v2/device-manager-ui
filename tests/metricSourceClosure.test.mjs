@@ -55,6 +55,8 @@ test('关联输出只列指标且允许其公开类型，不读取对象物模�
   try{
     const pending=state.pickSource({context,input:{id:'metric',source:{kind:'metric'}},purpose:'reference',hint:{sources:['metric']}})
     await flush();assert.equal(state.canChangeObject.value,true);assert.equal(state.metricsExpanded.value,true)
+    assert.equal(state.objectId.value,'');assert.equal(state.choosingObject.value,true);assert.equal(state.canConfirm.value,false)
+    await state.selectObject('D1');await flush()
     assert.equal(reads.length,before);assert.equal(state.items.value.length,1)
     state.chooseMethod(method(state,'online'))
     assert.equal(state.open.value,true,'selection remains a draft until explicit confirmation')
@@ -62,6 +64,17 @@ test('关联输出只列指标且允许其公开类型，不读取对象物模�
     state.confirm()
     const value=await pending;assert.equal(value.mapping.thingId,'D1');assert.equal(value.mapping.configId,'C1')
   }finally{metricOutputs.value=[];scope.stop()}
+})
+
+test('每次添加已有指标先选来源，取消和上次选择不绑定承接对象',async()=>{
+  const {scope,state}=fixture()
+  try{
+    for(const owner of [context,{ownerType:'space',ownerId:'S1'}, {ownerType:'product',ownerId:'P1',targetType:'device',targetId:'*',scope:'children'}]){
+      const pending=state.pickSource({context:owner,input:{id:'metric',source:{kind:'metric'}},purpose:'reference'})
+      await flush();assert.equal(state.objectId.value,'');assert.equal(state.choosingObject.value,true);assert.equal(state.canConfirm.value,false)
+      await state.selectObject('chosen');state.cancel();assert.equal(await pending,undefined)
+    }
+  }finally{scope.stop()}
 })
 const method=(state,id,path)=>state.items.value.flatMap(item=>item.methods).find(item=>item.id===id && (path===undefined || item.valuePath===path))
 
