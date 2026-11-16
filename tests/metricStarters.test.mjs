@@ -8,7 +8,7 @@ const { captureTemplateExample } = await loadMetricTestModule('../../../jetlinks
 const { structureMetricTemplate } = await loadMetricTestModule('../../../jetlinks-web-core/src/components/Metric/template/structureExpressions.ts')
 
 test('default references cover IoT capabilities without domain-specific decisions or invented scores',()=>{
-  assert.deepEqual(starters.map(item=>item.id),['communication-observation','connection-duration','state-duration','sample-mean','counter-usage','persistent-limit','measurement-difference','scope-connectivity','counter-cycle-usage','condition-deviation-observation','trend-threshold-observation'])
+  assert.deepEqual(starters.map(item=>item.id),['communication-observation','connection-duration','state-duration','sample-mean','counter-usage','persistent-limit','measurement-difference','scope-connectivity','counter-cycle-usage','condition-deviation-observation','trend-threshold-observation','operation-failures'])
   assert.deepEqual([...new Set(starters.map(item=>item.groupId))].sort(),['condition','connectivity','energy','scope','state','statistics'])
   assert.ok(!JSON.stringify(starters).includes('linkQualityScore'))
   assert.ok(!JSON.stringify(starters).includes('fireReview'))
