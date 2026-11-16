@@ -46,14 +46,14 @@ export function propertyMethod(item:MetricPropertyOption, event=false):SourceMet
   return {...item,key:`${kind}:${item.id}`,kind,capabilities:declaration?.capabilities || (event ? ['subscribe','history'] : item.platform ? ['current',...(item.history ? ['history' as const] : [])] : ['current','subscribe','history'])}
 }
 
-/** 只有查询显式声明 metricSource.eventType 时才与对应事件合并；同名数据绝不自动合并。 */
+/** 查询须显式声明对应事件且取值路径相同才合并；不同字段不能成为同一数据的读取方式。 */
 export function sourceItems(methods:SourceMethod[]):SourceItem[] {
   const groups = new Map<string,SourceItem>()
   const eventIds = new Set(methods.filter(item=>item.kind === 'businessEvent').map(item=>item.id))
   for (const method of methods) {
     const declaration = method.command?.expands?.metricSource as {eventType?:string;group?:string} | undefined
     const eventId = method.kind === 'businessEvent' ? method.id : declaration?.eventType
-    const key = eventId && eventIds.has(eventId) ? `businessEvent:${eventId}` : method.key
+    const key = eventId && eventIds.has(eventId) ? `businessEvent:${eventId}:${method.valuePath || '$'}` : method.key
     let item = groups.get(key)
     if (!item) { item = {key,name:method.name,group:method.group || declaration?.group,methods:[]}; groups.set(key,item) }
     item.methods.push(method)

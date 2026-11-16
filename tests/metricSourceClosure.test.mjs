@@ -27,6 +27,7 @@ const load=createMetricLoader({
   './useMetricOutputSources':{useMetricOutputSources:()=>({loading:ref(false),error:ref(false),items:metricOutputs})},
 })
 const {useMetricSourcePicker}=load(fileURLToPath(new URL('../views/device/metrics/useMetricSourcePicker.ts',import.meta.url)))
+const {sourceItems}=load(fileURLToPath(new URL('../views/device/metrics/sources/catalog.ts',import.meta.url)))
 const context={ownerType:'device',ownerId:'D1',targetType:'device',targetId:'D1',label:'当前设备'}
 function fixture(){const scope=effectScope();return {scope,state:scope.run(useMetricSourcePicker)}}
 
@@ -159,6 +160,18 @@ test('实时和历史读取需求按声明准入，不把当前摘要当历史�
     state.chooseMethod(method(state,'history','count'));state.confirm()
     assert.equal((await pending).mapping.providerSource.configuration.historyCapability,'history')
   }finally{capabilities=[query];scope.stop()}
+})
+
+test('同一事件的不同字段分开选择，仅相同路径的显式关联查询提供读取方式',()=>{
+  const count={key:'event:changed:count',kind:'businessEvent',id:'changed',name:'次数',valuePath:'count',capabilities:['subscribe']}
+  const timestamp={...count,key:'event:changed:timestamp',name:'时间',valuePath:'timestamp'}
+  const queryCount={...count,key:'query:summary:count',kind:'businessQuery',id:'summary',capabilities:['current'],command:{expands:{metricSource:{eventType:'changed'}}}}
+  const unrelated={...queryCount,key:'query:other:count',id:'other',command:{}}
+  const items=sourceItems([count,timestamp,queryCount,unrelated])
+  assert.equal(items.length,3)
+  assert.deepEqual(items.find(item=>item.name==='次数').methods,[count,queryCount])
+  assert.deepEqual(items.find(item=>item.name==='时间').methods,[timestamp])
+  assert.deepEqual(items.find(item=>item.key===unrelated.key).methods,[unrelated])
 })
 
 test('结构化事件字段保留语义声明，可绑定事件字段',async()=>{
