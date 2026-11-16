@@ -1,5 +1,11 @@
 # 设备列表范围侧栏
 
+## 接入设备帮助点位
+
+接入弹窗的“设备库模板”标签通过 `DocumentHelp` 展示可配置说明，标识为 `iot-user-device-list` + `onboarding.libraryTemplate`。模块启动注册，文档管理可直接扫描；未配置或禁用隐藏，帮助点击不改变接入来源。沿用现有模板查询和接入步骤，实施后检查组件编译及接入步骤回归。
+
+验证：接入弹窗 SFC 编译、模块注册与中英日标签检查通过；接入步骤及产品相关回归合计 12 项通过。来源选项使用标准 segmented `label` 插槽，保留库模板/产品标签；帮助容器阻止 label 的默认切换行为。真实配置后悬停和来源不变待整体验收，未单独运行完整构建或类型检查。
+
 ## 统一详情摘要
 
 当前实现：设备头部复用 core `DetailHeader` 摘要模式与 `DetailMetaItem`，保留对象图片和缺省图标，设备类型移至名称/状态同行；ID、产品、空间、业务分组、最后上报使用统一语义图标。物模型标签保留展开与编辑入口，动作继续由 `DeviceDetailActions` 管理。实现入口为 `components/device-detail/IotDeviceDetailHeader.vue`；已有 `PageChrome flush` / `SlantedTabs`、Provider、权限、复制和跳转行为保持不变。

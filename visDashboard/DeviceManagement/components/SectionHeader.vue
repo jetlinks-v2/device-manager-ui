@@ -1,6 +1,6 @@
 <template>
   <div class="section-header">
-    <div class="title">{{ title }}</div>
+    <div class="title"><slot name="title">{{ title }}</slot></div>
     <div class="extra">
       <slot name="extra" />
     </div>
