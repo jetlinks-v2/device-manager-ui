@@ -29,8 +29,8 @@
       </template>
     </SectionHeader>
     <div ref="container" class="device-map-card__body">
-      <!-- 宿主提供标题栏时复用同一份实时图例，避免复制状态与颜色规则。 -->
-      <Teleport v-if="config.embedded && (distribution || config.showStatus)"
+      <!-- 缓存组件同步挂载时，等本轮宿主标题栏挂载后再解析图例目标。 -->
+      <Teleport v-if="config.embedded && (distribution || config.showStatus)" defer
         :to="config.legendTarget || 'body'" :disabled="!config.legendTarget">
         <div class="device-map-legend" :class="{ 'device-map-legend--embedded': !config.legendTarget }">
           <span v-for="state in legendStates" :key="state"><i :style="{ background: distributionColors[state] }" />{{ t(`components.DeviceMap.${state === 'unknown' ? 'unknownState' : state}`) }}</span>
@@ -65,18 +65,22 @@
           </template>
           <el-amap-marker-cluster
             v-if="points.length"
-            :points="points"
+            :points="clusterPoints"
             :extraOptions="extraOptions"
             @click="onClusterClick"
           />
           <ElAmapMarker v-if="selection.view.detailDevice" :position="selection.view.detailDevice.lnglat"
             anchor="center" :clickable="false" :z-index="300">
-            <span class="device-map-card__selected-ring" />
+            <span class="device-map-card__selected-ring"
+              :style="{ color: selection.view.detailStatus?.color || 'var(--ant-primary-color, var(--accent))' }" />
           </ElAmapMarker>
-          <ElAmapInfoWindow v-if="selection.view.visible" :position="selection.view.position"
+          <ElAmapInfoWindow
+            v-for="winKey in (selection.view.visible && popupMounted ? [popupKey] : [])"
+            :key="winKey"
+            :position="selection.view.position"
             :visible="true" :is-custom="true" :auto-move="true" :avoid="[12, 12, 12, 12]"
             :anchor="popup.anchor" :offset="popup.offset" :close-when-click-map="true"
-            @update:visible="!$event && selection.close()">
+            @update:visible="!$event && onPopupClose(winKey)">
             <ReuseSelectionCard :layout="popup" />
           </ElAmapInfoWindow>
         </a-map-component>
@@ -137,7 +141,7 @@ const isMapEnabled = computed(() => {
   const { apiKey, secretKey } = system.systemInfo.amap || {}
   return !!(apiKey?.trim() && secretKey?.trim())
 })
-const { config, distribution, points, loading, error, extraOptions, selection, popup, refresh, onMapInit, onClusterClick, onPointSelect, canConfigureMap, openMapConfig } = useDeviceMap(
+const { config, distribution, points, clusterPoints, loading, error, extraOptions, selection, popup, popupKey, popupMounted, onPopupClose, refresh, onMapInit, onClusterClick, onPointSelect, canConfigureMap, openMapConfig } = useDeviceMap(
   infoRef,
   isEditRef,
   isMapEnabled,
@@ -212,11 +216,12 @@ const title = computed(() =>
 
 .device-map-card__selected-ring {
   display: block;
-  width: 1.5rem;
-  height: 1.5rem;
-  border: 2px solid var(--ant-primary-color, var(--accent));
+  width: 24px;
+  height: 24px;
+  border: 5px solid currentColor;
   border-radius: 50%;
   box-sizing: border-box;
+  opacity: 0.24;
   pointer-events: none;
 }
 </style>

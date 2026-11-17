@@ -11,18 +11,18 @@
     @wheel.stop
   >
     <header class="device-map-selection__header">
-      <a-button v-if="view.detailDevice && view.count > 1" type="text" size="small"
+      <a-button v-if="view.detailDevice && view.count > 1" class="device-map-selection__back" type="text" size="small"
         :aria-label="t('components.DeviceMap.back')" @click="emit('back')">
         <ArrowLeftOutlined />
       </a-button>
       <div class="device-map-selection__heading">
         <div class="device-map-selection__name">
           <DeploymentUnitOutlined v-if="view.detailDevice" class="device-map-selection__icon" />
-          <strong>{{ view.detailDevice
-            ? view.detail?.deviceName || view.detailDevice.label || view.detailDevice.deviceId
-            : t('components.DeviceMap.nearbyCount', { count: view.count }) }}</strong>
+          <strong :title="headingTitle">{{ headingTitle }}</strong>
         </div>
-        <a-badge v-if="view.detailDevice" :color="view.detailStatus.color" :text="view.detailStatus.text" />
+        <span v-if="view.detailDevice" class="device-map-selection__status">
+          <a-badge :color="view.detailStatus.color" :text="view.detailStatus.text" />
+        </span>
       </div>
       <a-button class="device-map-selection__close" type="text" size="small"
         :aria-label="t('components.DeviceMap.close')" @click="emit('close')">
@@ -39,25 +39,43 @@
 
     <a-spin v-if="view.detailDevice" :spinning="view.detailLoading">
       <div class="device-map-selection__body">
-        <a-descriptions v-if="!view.detailError" :column="1" size="small" class="device-map-selection__details">
-          <a-descriptions-item v-for="field in view.detailFields" :key="field.label" :label="field.label">
-            <a-typography-text v-if="field.copyable" :copyable="{ text: field.value }">
-              {{ field.value }}
-              <template #copyableTooltip="{ copied }">
-                {{ t(copied ? 'components.DeviceMap.copied' : 'components.DeviceMap.copyId') }}
-              </template>
-            </a-typography-text>
-            <j-ellipsis v-else :title="field.value">{{ field.value }}</j-ellipsis>
-          </a-descriptions-item>
-        </a-descriptions>
-        <div class="device-map-selection__coordinate">
-          <EnvironmentOutlined />{{ view.detailDevice.lnglat.join(', ') }}
-        </div>
+        <dl class="device-map-selection__details">
+          <template v-if="!view.detailError">
+            <div v-for="field in view.detailFields" :key="field.label" class="device-map-selection__row">
+              <dt class="device-map-selection__label">{{ field.label }}</dt>
+              <dd class="device-map-selection__value">
+                <a-typography-text v-if="field.copyable" :copyable="{ text: field.value }">
+                  <button
+                    v-if="field.key === 'deviceId' && view.hasDetailRoute"
+                    type="button"
+                    class="device-map-selection__link"
+                    :disabled="!view.canOpenDetail"
+                    :title="t('components.DeviceMap.openDetail')"
+                    @click="emit('openDetail')"
+                  >
+                    {{ field.value }}
+                  </button>
+                  <template v-else>{{ field.value }}</template>
+                  <template #copyableTooltip="{ copied }">
+                    {{ t(copied ? 'components.DeviceMap.copied' : 'components.DeviceMap.copyId') }}
+                  </template>
+                </a-typography-text>
+                <j-ellipsis v-else :title="field.value">{{ field.value }}</j-ellipsis>
+              </dd>
+            </div>
+          </template>
+          <div class="device-map-selection__row">
+            <dt class="device-map-selection__label">{{ t('components.DeviceMap.location') }}</dt>
+            <dd class="device-map-selection__value device-map-selection__coordinate" :title="rawCoordinate">
+              {{ formattedCoordinate }}
+            </dd>
+          </div>
+        </dl>
       </div>
     </a-spin>
 
     <template v-else>
-      <a-input-search :value="view.keyword" allow-clear :placeholder="t('components.DeviceMap.search')"
+      <a-input-search :value="view.keyword" size="small" allow-clear :placeholder="t('components.DeviceMap.search')"
         class="device-map-selection__search" @update:value="emit('search', $event)" />
       <a-spin :spinning="view.loading">
         <CloudEmpty v-if="!view.rows.length" :description="t('components.DeviceMap.noMatches')" />
@@ -79,12 +97,7 @@
         class="device-map-selection__pagination" @change="emit('page', $event)" />
     </template>
 
-    <footer v-if="view.detailDevice && view.hasDetailRoute" class="device-map-selection__actions">
-      <a-button type="primary" block :disabled="!view.canOpenDetail" :loading="view.openingDetail" @click="emit('openDetail')">
-        {{ t('components.DeviceMap.openDetail') }}<ArrowRightOutlined />
-      </a-button>
-    </footer>
-    <footer v-else-if="view.count > 1" class="device-map-selection__footer">
+    <footer v-if="!view.detailDevice && view.count > 1" class="device-map-selection__footer">
       <InfoCircleOutlined /><span>{{ t('components.DeviceMap.tooClose', { count: view.count }) }}</span>
     </footer>
   </section>
@@ -92,15 +105,15 @@
 
 <script setup lang="ts">
 import CloudEmpty from '@jetlinks-web-core/components/CloudEmpty/index.vue'
-import type { PropType } from 'vue'
+import { computed, type PropType } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ArrowLeftOutlined, ArrowRightOutlined, CloseOutlined, DeploymentUnitOutlined, EnvironmentOutlined, InfoCircleOutlined, RightOutlined } from '@ant-design/icons-vue'
+import { ArrowLeftOutlined, CloseOutlined, DeploymentUnitOutlined, InfoCircleOutlined, RightOutlined } from '@ant-design/icons-vue'
 import type { DeviceMapSelectionView } from '../hooks/useDeviceMapSelection'
 import type { DeviceMapPopupLayout } from '../hooks/useDeviceMapViewport'
 import type { DeviceMapPoint } from '../shared'
 
 // 摘要与同坐标选择共用一个纯展示组件；地图 SDK 的定位样式由宿主传入。
-defineProps({
+const props = defineProps({
   view: { type: Object as PropType<DeviceMapSelectionView>, required: true },
   layout: { type: Object as PropType<DeviceMapPopupLayout>, default: undefined },
 })
@@ -115,6 +128,18 @@ const emit = defineEmits<{
   openDetail: []
 }>()
 const { t } = useI18n()
+
+const headingTitle = computed(() =>
+  props.view.detailDevice
+    ? props.view.detail?.deviceName || props.view.detailDevice.label || props.view.detailDevice.deviceId
+    : t('components.DeviceMap.nearbyCount', { count: props.view.count })
+)
+const rawCoordinate = computed(() => props.view.detailDevice?.lnglat.join(', ') ?? '')
+const formattedCoordinate = computed(() =>
+  props.view.detailDevice?.lnglat
+    .map(value => (Number.isFinite(value) ? Number(value.toFixed(6)) : value))
+    .join(', ') ?? ''
+)
 </script>
 
 <style scoped lang="less" src="./DeviceMapSelectionCard.less"></style>

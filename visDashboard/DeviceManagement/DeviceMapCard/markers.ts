@@ -42,6 +42,8 @@ export function createDeviceMapMarkerOptions(showStatus = false) {
         content.append(dot)
         context.marker.setContent(content)
         context.marker.setAnchor('center')
+        // 圆点中心即设备坐标，清除高德默认图标偏移以与选中圈对齐。
+        context.marker.setOffset(getPixel(0, 0))
         return
       }
       const label = document.createElement('span')

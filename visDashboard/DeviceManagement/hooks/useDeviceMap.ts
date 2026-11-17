@@ -1,4 +1,4 @@
-import { computed, onActivated, onDeactivated, onUnmounted, ref, shallowRef, watch, type Ref } from 'vue'
+import { computed, nextTick, onActivated, onDeactivated, onUnmounted, ref, shallowRef, watch, type Ref } from 'vue'
 import { debounce } from 'lodash-es'
 import { useMenuStore } from '@jetlinks-web-core/store/menu'
 import { getCenterPoint } from '../../../utils/map'
@@ -35,6 +35,10 @@ export const useDeviceMap = (info: Ref<DashboardCardInfo | undefined>, isEdit: R
     deviceMapCardConfig.componentProps.deviceMapCard
   )
   const points = shallowRef<DeviceMapPoint[]>([])
+  // 高德聚合会原地改写坐标，传入独立副本以保留摘要和状态查询使用的业务点位。
+  const clusterPoints = computed<DeviceMapPoint[]>(() => points.value.map(point => ({
+    ...point, lnglat: [...point.lnglat],
+  })))
   const loading = ref(false)
   const error = ref(false)
   const stateError = ref(false)
@@ -46,8 +50,33 @@ export const useDeviceMap = (info: Ref<DashboardCardInfo | undefined>, isEdit: R
     computed(() => JSON.stringify([info.value?.id, config.value.scope])),
     container,
     computed(() => selection.view.position),
+    points,
+    computed(() => selection.view.revision),
   )
   const { map, popup, onMapInit } = viewport
+  // 切换点位或上下方向时重建信息窗以重新应用偏移，旧实例销毁的 close 事件不能关闭新摘要。
+  const popupKey = computed(() => (
+    selection.view.visible
+      ? `${selection.view.revision}:${selection.view.detailDevice?.deviceId ?? 'list'}:${popup.value.placement}`
+      : ''
+  ))
+  const popupMounted = ref(true)
+  let popupSwitchToken = 0
+  watch(popupKey, async (next, prev) => {
+    popupSwitchToken += 1
+    if (!next || !prev || next === prev) {
+      popupMounted.value = true
+      return
+    }
+    const token = popupSwitchToken
+    popupMounted.value = false
+    await nextTick()
+    if (token === popupSwitchToken) popupMounted.value = true
+  })
+  function onPopupClose(key: string) {
+    if (popupMounted.value && key === popupKey.value) selection.close()
+  }
+
   const extraOptions = computed(() => createDeviceMapMarkerOptions(!!config.value.showStatus))
   let stream: { close: () => void } | undefined
   let refreshTimer: ReturnType<typeof setInterval> | undefined
@@ -217,5 +246,5 @@ export const useDeviceMap = (info: Ref<DashboardCardInfo | undefined>, isEdit: R
     stopRefreshTimer()
     stopStream()
   })
-  return { config, distribution, points, loading, error, stateError, extraOptions, selection, popup, refresh, onMapInit, onClusterClick, onPointSelect, canConfigureMap, openMapConfig }
+  return { config, distribution, points, clusterPoints, loading, error, stateError, extraOptions, selection, popup, popupKey, popupMounted, onPopupClose, refresh, onMapInit, onClusterClick, onPointSelect, canConfigureMap, openMapConfig }
 }

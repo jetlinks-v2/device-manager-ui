@@ -9,6 +9,7 @@ import { distributionColors, distributionState } from '../DeviceMapCard/deviceMa
 
 export interface DeviceMapSelectionView {
   visible: boolean
+  revision: number
   count: number
   keyword: string
   page: number
@@ -26,7 +27,7 @@ export interface DeviceMapSelectionView {
   canOpenDetail: boolean
   hasDetailRoute: boolean
   openingDetail: boolean
-  detailFields: Array<{ label: string; value: string; copyable?: boolean }>
+  detailFields: Array<{ key?: string; label: string; value: string; copyable?: boolean }>
 }
 
 /** Selection is local to one map instance; only the visible page requests live states. */
@@ -45,6 +46,7 @@ export function useDeviceMapSelection(beforeNavigate?: (deviceId: string) => voi
   const detailLoading = ref(false)
   const detailError = ref(false)
   const openingDetail = ref(false)
+  const revision = ref(0)
   let statesController: AbortController | undefined
   let detailController: AbortController | undefined
 
@@ -138,6 +140,7 @@ export function useDeviceMapSelection(beforeNavigate?: (deviceId: string) => voi
   }
   const open = (points: DeviceMapPoint[]) => {
     close()
+    revision.value += 1
     selected.value = points
     if (points.length === 1) detailDevice.value = points[0]
   }
@@ -166,6 +169,7 @@ export function useDeviceMapSelection(beforeNavigate?: (deviceId: string) => voi
 
   const view: DeviceMapSelectionView = reactive({
     visible: computed(() => selected.value.length > 0),
+    revision,
     count: computed(() => selected.value.length),
     keyword,
     page,
@@ -205,12 +209,13 @@ export function useDeviceMapSelection(beforeNavigate?: (deviceId: string) => voi
     }),
     detailFields: computed(() => {
       return [
-        { label: t('components.DeviceMap.deviceId'), value: detailDevice.value?.deviceId || '—', copyable: true },
-        { label: t('components.DeviceMap.product'), value: detail.value?.productName || '—' },
+        { key: 'deviceId', label: t('components.DeviceMap.deviceId'), value: detailDevice.value?.deviceId || '—', copyable: true },
+        { key: 'product', label: t('components.DeviceMap.product'), value: detail.value?.productName || '—' },
         {
+          key: 'lastActive',
           label: t('components.DeviceMap.lastActive'),
           value:
-            detail.value?.lastActiveTime == null ? '—' : dayjs(detail.value.lastActiveTime).format('MM-DD HH:mm')
+            detail.value?.lastActiveTime == null ? '—' : dayjs(detail.value.lastActiveTime).format('YYYY-MM-DD HH:mm:ss')
         }
       ]
     })

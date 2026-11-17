@@ -2,8 +2,11 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import test from 'node:test'
+import { transformSync } from 'esbuild'
 import ts from 'typescript'
 import * as vue from 'vue'
+import { compileScript, parse } from 'vue/compiler-sfc'
+import { renderToString } from 'vue/server-renderer'
 import { createI18n } from 'vue-i18n'
 
 const require = createRequire(import.meta.url)
@@ -90,12 +93,46 @@ function selectionFactory(service = {}) {
 
 function viewportModule() {
   return load('hooks/useDeviceMapViewport.ts', {
+    '../../../utils/map': load('../../utils/map.ts'),
     '@vueuse/core': { useElementSize: () => ({ width: vue.ref(600), height: vue.ref(400) }) },
     'vue-router': { useRoute: () => ({ fullPath: '/resources/dashboard' }) },
     '@jetlinks-web-core/store/user': { useUserStore: () => ({ userInfo: { id: 'test-user' } }) },
     '@jetlinks-web-core/utils': { getBaseApi: () => '/api' },
-  })
+  }, { window: { AMap: { Bounds: class {
+    constructor(southWest, northEast) { this.southWest = southWest; this.northEast = northEast }
+  } } } })
 }
+
+test('viewport fits the first authorized points after map or data readiness and preserves subsequent camera moves', async () => {
+  for (const dataFirst of [true, false]) {
+    const points = vue.shallowRef([]), moves = [], bounds = []
+    const { value, unmount } = mount(() => viewportModule().useDeviceMapViewport(
+      vue.ref('initial-fit'), vue.ref(), vue.ref(), points,
+    ))
+    const devices = [point('chongqing', 106.577, 29.5579), point('second', 106.6, 29.6)]
+    const instance = {
+      getFitZoomAndCenterByBounds: (value, padding, maxZoom) => {
+        bounds.push({ value, padding, maxZoom })
+        return [12, [106.5885, 29.57895]]
+      },
+      setZoomAndCenter: (...args) => moves.push(args),
+    }
+    if (dataFirst) points.value = devices
+    else value.onMapInit(instance)
+    await settle()
+    assert.equal(moves.length, 0)
+    if (dataFirst) value.onMapInit(instance)
+    else points.value = devices
+    await settle()
+    assert.deepEqual(moves, [[12, [106.5885, 29.57895]]])
+    assert.deepEqual(bounds[0].value.southWest, [106.577, 29.5579])
+    assert.deepEqual(bounds[0].value.northEast, [106.6, 29.6])
+    points.value = []; await settle()
+    points.value = [point('refreshed', 107, 30)]; await settle()
+    assert.equal(moves.length, 1)
+    unmount()
+  }
+})
 
 test('GeoJSON retains real device IDs even when names and coordinates coincide', () => {
   const { parseDeviceGeoJson } = load('services/deviceMap.ts', {
@@ -489,34 +526,45 @@ test('distribution hook rejects stale state responses on scope change and select
 test('summary navigation uses authorized route, correct id and prevents duplicate navigation', async () => {
   const pending = deferred(), calls = [], remembered = []
   const factory = selectionFactory({
-    detail: async () => ({ deviceName: '设备', productName: '产品', state: 'online', stateText: '在线', lastActiveTime: new Date(2026, 10, 12, 14, 32).getTime() }),
+    detail: async () => ({ deviceName: '设备', productName: '产品', state: 'online', stateText: '在线', lastActiveTime: new Date(2026, 10, 12, 14, 32, 13).getTime() }),
     menu: { hasMenu: code => code === 'iot-user-device-list/Detail', jumpPage: (code, options) => { calls.push({ code, options }); return pending.promise } },
   })
   const {value,unmount}=mount(()=>factory.useDeviceMapSelection(id=>remembered.push(id)))
   value.open([point('selected')]); await settle()
   assert.equal(value.view.canOpenDetail,true)
   assert.equal(value.view.detailStatus.text,'在线')
-  assert.deepEqual(value.view.detailFields.map(x=>x.value),['selected','产品','11-12 14:32'])
+  assert.deepEqual(value.view.detailFields.map(x=>x.value),['selected','产品','2026-11-12 14:32:13'])
   assert.equal(value.view.detailFields[0].copyable,true)
   const first=value.openDetailPage(); await value.openDetailPage()
   assert.equal(calls.length,1); assert.equal(calls[0].options.params.id,'selected'); assert.deepEqual(remembered,['selected'])
   pending.resolve(); await first; assert.equal(value.view.openingDetail,false); unmount()
 })
 
-test('viewport restores camera and selected visible device only within the same identity', () => {
+test('viewport restores camera and selected visible device only within the same identity', async () => {
   const sizes={width:vue.ref(280),height:vue.ref(240)}, route=vue.reactive({fullPath:'/dashboard'}), user=vue.reactive({userInfo:{id:'a'}})
   const viewport=load('hooks/useDeviceMapViewport.ts',{
+    '../../../utils/map': load('../../utils/map.ts'),
     '@vueuse/core':{useElementSize:()=>sizes},'vue-router':{useRoute:()=>route},
     '@jetlinks-web-core/store/user':{useUserStore:()=>user},'@jetlinks-web-core/utils':{getBaseApi:()=>'/api'},
   })
-  const pos=vue.ref([116,39]), identity=vue.ref('scope-a'), moves=[]
-  const instance={getCenter:()=>({lng:116,lat:39}),getZoom:()=>12,setZoomAndCenter:(...args)=>moves.push(args),lngLatToContainer:()=>({x:10,y:10})}
-  const a=viewport.useDeviceMapViewport(identity,vue.ref(),pos); a.onMapInit(instance)
+  const pos=vue.ref([116,39]), identity=vue.ref('scope-a'), revision=vue.ref(1), moves=[]
+  let containerY=10
+  const instance={getCenter:()=>({lng:116,lat:39}),getZoom:()=>12,setZoomAndCenter:(...args)=>moves.push(args),lngLatToContainer:()=>({x:10,y:containerY})}
+  const a=viewport.useDeviceMapViewport(identity,vue.ref(),pos,vue.ref([]),revision); a.onMapInit(instance)
   assert.equal(a.popup.value.placement,'below'); assert.equal(a.popup.value.style.width,'256px'); assert.equal(a.popup.value.style.maxHeight,'200px')
-  a.remember('d2'); const b=viewport.useDeviceMapViewport(identity,vue.ref(),pos); b.onMapInit(instance)
-  assert.deepEqual(moves,[[12,[116,39]]]); const restored=b.takeRestoredSelection([point('d1'),point('d2')]); assert.equal(restored.device.deviceId,'d2'); assert.equal(restored.points.length,2)
-  b.remember('d2'); user.userInfo.id='b'; const c=viewport.useDeviceMapViewport(identity,vue.ref(),pos); assert.equal(c.takeRestoredSelection([point('d2')]),undefined)
-  user.userInfo.id='a'; const d=viewport.useDeviceMapViewport(identity,vue.ref(),pos); assert.equal(d.takeRestoredSelection([point('other')]),undefined)
+  assert.deepEqual(a.popup.value.offset,[0,14])
+  containerY=200; revision.value=2
+  assert.equal(a.popup.value.placement,'above'); assert.equal(a.popup.value.anchor,'bottom-center'); assert.deepEqual(a.popup.value.offset,[0,-14])
+  containerY=10; revision.value=3
+  sizes.width.value=600; sizes.height.value=400
+  assert.equal(a.popup.value.style.width,'256px'); assert.equal(a.popup.value.style.maxHeight,'360px')
+  sizes.width.value=280; sizes.height.value=240
+  const restoredPoints=vue.shallowRef([])
+  a.remember('d2'); const b=viewport.useDeviceMapViewport(identity,vue.ref(),pos,restoredPoints); b.onMapInit(instance)
+  restoredPoints.value=[point('d2')]; await settle()
+  assert.deepEqual(moves,[[12,[116,39],true]]); const restored=b.takeRestoredSelection([point('d1'),point('d2')]); assert.equal(restored.device.deviceId,'d2'); assert.equal(restored.points.length,2)
+  b.remember('d2'); user.userInfo.id='b'; const c=viewport.useDeviceMapViewport(identity,vue.ref(),pos,vue.ref([])); assert.equal(c.takeRestoredSelection([point('d2')]),undefined)
+  user.userInfo.id='a'; const d=viewport.useDeviceMapViewport(identity,vue.ref(),pos,vue.ref([])); assert.equal(d.takeRestoredSelection([point('other')]),undefined)
 })
 
 test('missing authorized detail menu disables navigation', async () => {
@@ -526,4 +574,184 @@ test('missing authorized detail menu disables navigation', async () => {
   value.open([point('d1')]); await settle()
   assert.equal(value.view.hasDetailRoute,false); assert.equal(value.view.canOpenDetail,false)
   await value.openDetailPage(); assert.equal(calls,0); unmount()
+})
+
+test('selection card renders compact detail rows, formatted coordinates and link action', async () => {
+  const file = new URL(base + 'DeviceMapCard/DeviceMapSelectionCard.vue', import.meta.url)
+  const parsed = parse(readFileSync(file, 'utf8'), { filename: file.pathname })
+  assert.deepEqual(parsed.errors, [])
+  const code = transformSync(
+    compileScript(parsed.descriptor, { id: 'DeviceMapSelectionCard.vue', inlineTemplate: true }).content,
+    { loader: 'ts', format: 'cjs' },
+  ).code
+  const mod = { exports: {} }
+  const stub = (tag) => ({ setup: (p, { slots, attrs }) => () => vue.h(tag, attrs, slots.default?.()) })
+  const deps = {
+    '@jetlinks-web-core/components/CloudEmpty/index.vue': { __esModule: true, default: stub('div') },
+    '@ant-design/icons-vue': new Proxy({}, { get: () => stub('i') }),
+  }
+  new Function('require', 'module', 'exports', code)(id => deps[id] ?? require(id), mod, mod.exports)
+  const view = {
+    visible: true,
+    count: 1,
+    keyword: '',
+    page: 1,
+    pageSize: 10,
+    total: 1,
+    rows: [],
+    loading: false,
+    error: false,
+    detailDevice: { deviceId: 'geo-cq-002', label: '重庆江北测试设备', lnglat: [106.53600311279297, 29.575000762939453] },
+    detail: { deviceName: '重庆江北测试设备' },
+    detailLoading: false,
+    detailError: false,
+    position: [106.53600311279297, 29.575000762939453],
+    detailStatus: { color: '#ef4444', text: '离线' },
+    canOpenDetail: true,
+    hasDetailRoute: true,
+    openingDetail: false,
+    detailFields: [
+      { key: 'deviceId', label: '设备 ID', value: 'geo-cq-002', copyable: true },
+      { key: 'product', label: '所属产品', value: '重庆点位回填测试产品' },
+      { key: 'lastActive', label: '最近活动时间', value: '2026-11-17 13:55:13' },
+    ],
+  }
+  const i18nMessages = {
+    'components.DeviceMap.openDetail': '查看设备详情',
+    'components.DeviceMap.location': '地理位置',
+  }
+  const renderCard = async (currentView) => {
+    const app = vue.createSSRApp(mod.exports.default, { view: currentView })
+    app.use(createI18n({ legacy: false, locale: 'zh', messages: { zh: i18nMessages }, flatJson: true }))
+    for (const name of ['AButton', 'ABadge', 'ASpin', 'ATypographyText', 'JEllipsis', 'AInputSearch', 'APagination']) {
+      app.component(name, stub('span'))
+    }
+    return renderToString(app)
+  }
+  const html = await renderCard(view)
+  assert.match(html, /device-map-selection__status/)
+  assert.match(html, /<dl class="device-map-selection__details">/)
+  assert.match(html, /<button[^>]*class="device-map-selection__link"[^>]*title="查看设备详情"[^>]*>geo-cq-002<\/button>/)
+  assert.match(html, /<dt class="device-map-selection__label">地理位置<\/dt>/)
+  assert.match(html, /106\.536003, 29\.575001/)
+  assert.match(html, /title="106\.53600311279297, 29\.575000762939453"/)
+  assert.doesNotMatch(html, /device-map-selection__actions/)
+  const noRouteHtml = await renderCard({ ...view, hasDetailRoute: false, canOpenDetail: false })
+  assert.doesNotMatch(noRouteHtml, /device-map-selection__link/)
+})
+
+test('switching points while open remounts ElAmapInfoWindow with fresh offset and ignores stale unmount close', async () => {
+  const file = new URL(base + 'DeviceMapCard/DeviceMapCard.vue', import.meta.url)
+  const parsed = parse(readFileSync(file, 'utf8'), { filename: file.pathname })
+  assert.deepEqual(parsed.errors, [])
+  const code = transformSync(
+    compileScript(parsed.descriptor, { id: 'DeviceMapCard.vue', inlineTemplate: true }).content,
+    { loader: 'ts', format: 'cjs' },
+  ).code
+  const mountedWindows = []
+  let closedCount = 0
+  const selectionView = vue.reactive({
+    visible: false,
+    revision: 0,
+    position: undefined,
+    detailDevice: undefined,
+    detailStatus: { color: '#ef4444', text: '离线' },
+  })
+  const popup = vue.ref({ placement: 'above', anchor: 'bottom-center', offset: [0, -14], style: { width: '256px' } })
+  const stub = tag => ({ setup: (_, { slots }) => () => vue.h(tag, slots.default?.()) })
+  const ElAmapInfoWindow = {
+    props: ['position', 'anchor', 'offset', 'visible'],
+    emits: ['update:visible'],
+    setup(props, { emit, slots }) {
+      const record = { position: props.position, anchor: props.anchor, offset: props.offset, unmounted: false }
+      mountedWindows.push(record)
+      vue.onBeforeUnmount(() => {
+        record.unmounted = true
+        emit('update:visible', false)
+      })
+      return () => vue.h('div', slots.default?.())
+    },
+  }
+  const deps = {
+    '@jetlinks-web-core/components/CloudEmpty/index.vue': { __esModule: true, default: stub('div') },
+    './MapConfigAction.vue': { __esModule: true, default: stub('div') },
+    '@jetlinks-web-core/store/system': { useSystemStore: () => ({ systemInfo: { amap: { apiKey: 'k', secretKey: 's' } } }) },
+    '../components/SectionHeader.vue': { __esModule: true, default: stub('div') },
+    './DeviceMapSelectionCard.vue': { __esModule: true, default: stub('div') },
+    './DeviceDistributionMap.vue': { __esModule: true, default: stub('div') },
+    './distribution': { distributionColors: { online: '#22c55e', offline: '#ef4444' }, distributionState: () => 'online' },
+    '@vuemap/vue-amap': {
+      ElAmapInfoWindow,
+      ElAmapMarker: stub('div'),
+      ElAmapMarkerCluster: stub('div'),
+    },
+    '../hooks/useDeviceMap': load('hooks/useDeviceMap.ts', {
+      'lodash-es': { debounce: fn => Object.assign(fn, { cancel() {} }) },
+      '@jetlinks-web-core/store/menu': { useMenuStore: () => ({ hasMenu: () => false }) },
+      '../../../utils/map': {},
+      '../shared': { getComponentConfig: () => vue.ref({ embedded: true }) },
+      '../DeviceMapCard/config': { deviceMapCardConfig: { componentProps: { deviceMapCard: {} } } },
+      '../services/deviceMap': { createDeviceMapStream: () => ({ close() {} }) },
+      '../DeviceMapCard/markers': { createDeviceMapMarkerOptions: () => ({}) },
+      '../DeviceMapCard/cluster': {},
+      './useDeviceMapViewport': { useDeviceMapViewport: () => ({ map: vue.ref(), popup, onMapInit() {} }) },
+      './useDeviceMapSelection': {
+        useDeviceMapSelection: () => ({
+          view: selectionView,
+          close() {
+            closedCount += 1
+            selectionView.visible = false
+          },
+          closeDetail() {}, search() {}, changePage() {}, selectDevice() {}, refreshStates() {}, refreshDetail() {}, openDetailPage() {},
+        }),
+      },
+    }),
+  }
+  const mod = { exports: {} }
+  new Function('require', 'module', 'exports', code)(id => deps[id] ?? require(id), mod, mod.exports)
+  const make = type => ({ type, children: [], props: {} })
+  const renderer = vue.createRenderer({
+    createElement: make,
+    createText: text => ({ text }),
+    createComment: text => ({ text }),
+    setText(n, t) { n.text = t },
+    setElementText(n, t) { n.text = t },
+    patchProp(n, k, _o, v) { n.props[k] = v },
+    insert(n, p, a) {
+      if (n.parent) n.parent.children.splice(n.parent.children.indexOf(n), 1)
+      n.parent = p
+      const i = p.children.indexOf(a)
+      p.children.splice(i < 0 ? p.children.length : i, 0, n)
+    },
+    remove(n) { if (n.parent) n.parent.children.splice(n.parent.children.indexOf(n), 1) },
+    parentNode: n => n.parent,
+    nextSibling: n => n.parent?.children[n.parent.children.indexOf(n) + 1],
+  })
+  const app = renderer.createApp(mod.exports.default)
+  app.use(createI18n({ legacy: false, locale: 'zh', messages: { zh: {} }, flatJson: true, missingWarn: false }))
+  for (const name of ['ASpin', 'AAlert', 'AMapComponent']) app.component(name, stub('div'))
+  app.mount(make('root'))
+  await settle()
+  closedCount = 0
+
+  selectionView.visible = true
+  selectionView.revision = 1
+  selectionView.position = [106.577, 29.5579]
+  selectionView.detailDevice = point('d1', 106.577, 29.5579)
+  await settle()
+  assert.equal(mountedWindows.length, 1)
+  assert.deepEqual(mountedWindows[0].offset, [0, -14])
+
+  selectionView.revision = 2
+  selectionView.position = [106.536, 29.575]
+  selectionView.detailDevice = point('d2', 106.536, 29.575)
+  popup.value = { placement: 'below', anchor: 'top-center', offset: [0, 14], style: { width: '256px' } }
+  await settle()
+  assert.equal(mountedWindows[0].unmounted, true)
+  assert.equal(mountedWindows.length, 2)
+  assert.equal(mountedWindows[1].anchor, 'top-center')
+  assert.deepEqual(mountedWindows[1].offset, [0, 14])
+  assert.equal(closedCount, 0)
+  assert.equal(selectionView.visible, true)
+  app.unmount()
 })
