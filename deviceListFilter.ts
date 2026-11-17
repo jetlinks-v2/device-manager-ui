@@ -205,7 +205,7 @@ export function getDeviceListFilterFields(
 }
 
 /** 组织通过设备资产关联查询，分类和接入属于产品字段；标签保留 AND / OR 条件组。 */
-function normalizeDeviceListSearchTerm(term: DeviceQueryTerm): DeviceQueryTerm {
+export function normalizeDeviceListSearchTerm(term: DeviceQueryTerm): DeviceQueryTerm {
   if (Array.isArray(term.terms)) {
     return { ...term, terms: term.terms.map(normalizeDeviceListSearchTerm) }
   }
