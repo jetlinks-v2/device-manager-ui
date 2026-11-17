@@ -2,6 +2,8 @@ import type { MetricTemplateStarter } from '@jetlinks-web-core/components'
 import { counterCycleUsage } from './counterCycleUsage'
 import { healthObservationStarters } from './healthObservation'
 import { operationFailureStarter } from './operationFailures'
+import { monitoringStarters } from './monitoringStarters'
+import { processStarters } from './processStarters'
 
 /** 创建参考随业务前端部署；校验和计算仍由后端完成。 */
 const declarations: MetricTemplateStarter[] = [
@@ -4004,7 +4006,7 @@ const declarations: MetricTemplateStarter[] = [
   }
 ]
 
-export const iotMetricStarters: MetricTemplateStarter[] = [...declarations, counterCycleUsage, ...healthObservationStarters, operationFailureStarter].map(item => ({
+export const iotMetricStarters: MetricTemplateStarter[] = [...declarations, counterCycleUsage, ...healthObservationStarters, ...monitoringStarters, operationFailureStarter, ...processStarters].map(item => ({
   ...item,
   providerId: 'device-iot',
 }))

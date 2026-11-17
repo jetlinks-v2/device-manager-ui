@@ -95,15 +95,15 @@ test('已有指标来源保留显式枚举和对象声明，不退化为顶层ty
   }finally{metricOutputs.value=[];scope.stop()}
 })
 
-test('绑定锁定实际目标，不查询或更换任意对象；声明导入仍可选对象',async()=>{
+test('绑定默认实际目标，但可切换独立来源并保留完整对象身份；声明导入仍可选对象',async()=>{
   const {scope,state}=fixture();reads.length=0
   try{
     const pending=state.pickSource({context:{...context,ownerType:'space',ownerId:'S1'},input:{id:'value',valueType:{type:'double'}}});await flush()
-    assert.equal(state.objectId.value,'D1');assert.equal(state.objectType.value,'device');assert.equal(state.canChangeObject.value,false)
-    state.changeObject();state.changeObjectType('product');await state.selectObject('other')
-    assert.equal(state.objectId.value,'D1');assert.equal(state.choosingObject.value,false)
+    assert.equal(state.objectId.value,'D1');assert.equal(state.objectType.value,'device');assert.equal(state.canChangeObject.value,true)
+    state.changeObject();state.changeObjectType('device');await state.selectObject('other');await flush()
+    assert.equal(state.objectId.value,'other');assert.equal(state.choosingObject.value,false)
     assert.deepEqual(reads[0],['device','D1'])
-    state.chooseMethod(method(state,'temperature'));assert.equal((await pending).mapping.thingId,'D1')
+    state.chooseMethod(method(state,'temperature'));assert.equal((await pending).mapping.thingId,'other')
     const declaration=state.pickSource({context,input:{id:'value'},purpose:'declaration'});await state.selectObject('example');await flush()
     assert.equal(state.canChangeObject.value,true);state.chooseMethod(method(state,'temperature'));await declaration
   }finally{scope.stop()}

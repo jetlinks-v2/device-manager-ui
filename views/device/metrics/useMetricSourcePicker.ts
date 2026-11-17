@@ -33,7 +33,7 @@ export function useMetricSourcePicker(locale:Ref<string> = ref('zh')) {
   let lastDeclaration:{session:string;type:string;id:string;name:string} | undefined
   const open = computed(()=>!!request.value), inherited = computed(()=>request.value?.purpose !== 'reference' && request.value?.context.scope === 'children')
   const currentMember = computed(()=>objectType.value === 'member')
-  const canChangeObject = computed(()=>['declaration','reference'].includes(request.value?.purpose || ''))
+  const canChangeObject = computed(()=>!!request.value)
   const targetType = computed(()=>request.value?.context.targetType || request.value?.context.ownerType || objectType.value)
   const historyInput = computed(()=>request.value?.purpose !== 'declaration' && !!request.value?.input.source?.lookback)
   const deviceId = computed(()=>objectType.value === 'device' ? objectId.value : '')
@@ -126,7 +126,7 @@ export function useMetricSourcePicker(locale:Ref<string> = ref('zh')) {
     const mappedId = mapping?.thingId || String(mapping?.providerSource?.configuration.thingId || '')
     objectType.value = inherited.value && !mappedId && (!mapping?.thingType || mapping.thingType === targetType.value) ? 'member' : mapping?.thingType || remembered?.type || (next.purpose === 'declaration' ? 'device' : targetType.value)
     // 引用已有结果时宿主是承接对象；只有明确选中的来源或原映射才能确定读取对象。
-    objectId.value = currentMember.value ? context.ownerId : mappedId || remembered?.id || (canChangeObject.value ? '' : context.targetId || context.ownerId)
+    objectId.value = currentMember.value ? context.ownerId : mappedId || remembered?.id || (['declaration','reference'].includes(next.purpose || '') ? '' : context.targetId || context.ownerId)
     if (mapping?.providerSource?.subject && !currentMember.value) {
       objectType.value = mapping.providerSource.subject.type; objectId.value = mapping.providerSource.subject.id
     }

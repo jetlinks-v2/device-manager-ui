@@ -10,9 +10,13 @@ const coreRoot = process.env.METRIC_TEST_CORE_ROOT || fileURLToPath(new URL('../
 const { createMetricLoader } = await import(pathToFileURL(resolve(coreRoot,'tests/helpers/metricRuntime.mjs')))
 const load = createMetricLoader({ '@jetlinks-web/core':{request:{}} })
 const { findCalculator, interactiveCalculator, bindAlgorithmInput } = load('components/Metric/template/algorithm.ts')
+const { ruleExpression } = load('components/Metric/template/designer.ts')
 const descriptors = JSON.parse(readFileSync(resolve(coreRoot,'tests/fixtures/metricCalculatorDocumentation.json'),'utf8'))
 
 test('所有内置算法配置均能通过统一描述交互编辑，无需自定义声明',()=>{
+  for (const starter of iotMetricStarters) for (const rule of starter.template.definitions) {
+    assert.doesNotThrow(() => ruleExpression(rule), `${starter.id}/${rule.id}: overview must render the formula`)
+  }
   for (const starter of iotMetricStarters) for (const rule of starter.template.definitions) {
     if (!rule.calculator) continue
     const descriptor = findCalculator(rule.calculator,descriptors)
@@ -27,6 +31,25 @@ test('所有内置算法配置均能通过统一描述交互编辑，无需自�
       assert.ok(interactiveCalculator(patch.calculator,descriptor))
       assert.deepEqual(rule,before,'editing helpers must not mutate builtin declarations')
       assert.equal(patch.inputs.find(input=>input.id === binding.id).metricId,binding.metricId)
+    }
+  }
+})
+
+test('工况使用业务枚举示例，通用算法角色允许绑定不同业务编码',()=>{
+  for (const starter of iotMetricStarters) {
+    const mode = starter.template.inputDefinitions.find(input => input.id === 'mode')
+    if (!mode) continue
+    assert.equal(mode.valueType.type, 'enum')
+    assert.deepEqual(mode.valueType.elements.map(item => item.value), [0, 1])
+    assert.match(starter.template.options.notes, /真实业务状态/)
+    for (const rule of starter.template.definitions.filter(rule => rule.calculator?.parameters.contextInput)) {
+      const descriptor = findCalculator(rule.calculator,descriptors)
+      const alias = rule.calculator.parameters.contextInput
+      for (const valueType of [{type:'boolean'}, {type:'int'}, {type:'string'}, mode.valueType]) {
+        const patch = bindAlgorithmInput(rule,alias,'mode',valueType,descriptor)
+        assert.ok(interactiveCalculator(patch.calculator,descriptor))
+        assert.deepEqual(patch.calculator.inputTypes[alias].elementType,valueType)
+      }
     }
   }
 })
