@@ -22,6 +22,7 @@
             <div class="table-group-error-warp">
               <div class="table-group-error-warp-label">
                 <j-ellipsis>{{ item.label }}</j-ellipsis> ({{ item.effective}})
+                <DocumentHelp code="device/Product" help-key="metadata.groups" />
               </div>
 <!--              <div class="table-group-error-warp-value">-->
 <!--                <j-ellipsis>{{item.value}}</j-ellipsis>-->
@@ -42,6 +43,7 @@
           <div v-else class="table-group-error-warp">
             <div class="table-group-error-warp-label">
               <j-ellipsis>{{ item.label }}</j-ellipsis> ({{ item.effective}})
+                <DocumentHelp code="device/Product" help-key="metadata.groups" />
             </div>
 <!--            <div class="table-group-error-warp-value">-->
 <!--              <j-ellipsis>{{item.value}}</j-ellipsis>-->
@@ -94,6 +96,7 @@
 </template>
 
 <script setup>
+import DocumentHelp from '@jetlinks-web-core/components/DocumentHelp'
 import {Modal} from "ant-design-vue";
 import {randomNumber} from "@jetlinks-web/utils";
 import {isFullScreen} from "@jetlinks-web-core/utils";

@@ -39,13 +39,7 @@
       <div class="content">
         <div class="left">
           <div class="left-header">
-            <a-tooltip :title="$t('Child.index.135369-3')">
-              {{ $t('Child.index.135369-4') }}
-              <AIcon
-                  type="QuestionCircleOutlined"
-                  style="margin-left: 2px; margin-right: 15px"
-              />
-            </a-tooltip>
+            <span>{{ $t('Child.index.135369-4') }}<DocumentHelp code="iot-user-device-list" help-key="gateway.cloudDevices" /></span>
             <a-space>
               <EmptyCreateButtonAction1 />
               <EmptyCreateButtonAction2 />
@@ -391,6 +385,7 @@
 </template>
 
 <script setup>
+import DocumentHelp from '@jetlinks-web-core/components/DocumentHelp'
 import { createReusableTemplate } from '@vueuse/core'
 
 import { stateMap, columns, statusMap } from './data';

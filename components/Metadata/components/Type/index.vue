@@ -12,11 +12,20 @@
       :options="options"
       :getPopupContainer="(node) => tableWrapperRef || node"
       @change="change"
-    />
+    >
+      <template #option="{ label, value: typeId }">
+        {{ label }}
+        <span v-if="['product', 'device'].includes(metadataTarget)" @mousedown.prevent.stop>
+          <DocumentHelp code="device/Product" :help-key="`metadata.types.${typeId}`" />
+        </span>
+      </template>
+    </a-select>
   </div>
 </template>
 
 <script setup>
+import DocumentHelp from '@jetlinks-web-core/components/DocumentHelp'
+import { inject } from 'vue'
 import { selectProps } from 'ant-design-vue/lib/select';
 import defaultOptions from './data';
 import {useTableWrapper} from "../../context";
@@ -41,6 +50,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:value', 'valueChange']);
 
+const metadataTarget = inject('_metadataType', undefined)
 const myValue = ref(props.value.type)
 
 const options = computed(() => {

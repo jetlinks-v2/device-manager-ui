@@ -1,4 +1,13 @@
 {
+  "DocumentHelp.overview_keyProperties": "Key property snapshot",
+  "DocumentHelp.overview_recentAlarms": "Recent alarms",
+  "DocumentHelp.gateway_events_systemEvent": "System events",
+  "DocumentHelp.gateway_events_bufferEviction": "Discarded data",
+  "DocumentHelp.gateway_events_AiVisionData": "Vision raw data",
+  "DocumentHelp.gateway_events_AiVisionAlarm": "Vision alarm data",
+  "DocumentHelp.metadata_storage_direct": "Store directly",
+  "DocumentHelp.metadata_storage_ignore": "Do not store",
+  "DocumentHelp.metadata_inherited": "Inherited metadata",
   "DocumentHelp.productForm": "Create / Edit",
   "DocumentHelp.productList": "List",
     "PropertyRules.diagram.intent": "Action intent only; execution depends on runtime state and is not performed in this example",

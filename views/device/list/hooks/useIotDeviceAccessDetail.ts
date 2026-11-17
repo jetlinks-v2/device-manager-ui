@@ -122,6 +122,7 @@ export function useIotDeviceAccessDetail(props: Readonly<IotDeviceAccessDetailPr
       id: item.id || `${index}`,
       name: item.metadata?.name || $t('IotDeviceDetail.accessDetail.deviceAuth'),
       description: item.metadata?.description || '',
+      authenticationType: item.metadata?.type,
       type: item.credential?.type || item.identity?.type || $t('IotDeviceDetail.accessDetail.defaultAuth'),
       fields,
     }

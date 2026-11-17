@@ -153,9 +153,7 @@
           :data="$t('DeviceAccess.index.594346-14')"
         >
           <template #extra>
-            <a-tooltip :title="$t('DeviceAccess.index.594346-15')">
-              <AIcon type="QuestionCircleOutlined" style="margin-left: 2px" />
-            </a-tooltip>
+            <DocumentHelp code="device/Product" help-key="access.storagePolicy" />
           </template>
         </Title>
         <a-form layout="vertical">
@@ -207,6 +205,7 @@
 </template>
 
 <script lang="ts" setup>
+import DocumentHelp from '@jetlinks-web-core/components/DocumentHelp'
 import Title from "../Title/index.vue";
 import AccessModal from "./accessModal.vue";
 import MetaDataModal from "./metadataModal.vue";

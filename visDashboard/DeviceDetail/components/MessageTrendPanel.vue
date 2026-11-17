@@ -2,8 +2,8 @@
   <div class="detail-message">
     <div class="detail-message__summary">
       <div class="detail-message__totals">
-        <span>{{ t('IotDeviceDetail.overview.upstreamMessages') }} <strong>{{ formatCount(totals.up) }}</strong></span>
-        <span>{{ t('IotDeviceDetail.overview.downstreamMessages') }} <strong>{{ formatCount(totals.down) }}</strong></span>
+        <span>{{ t('IotDeviceDetail.overview.upstreamMessages') }} <strong>{{ formatCount(totals.up) }}</strong><DocumentHelp code="iot-user-device-list" help-key="overview.upstreamMessages" /></span>
+        <span>{{ t('IotDeviceDetail.overview.downstreamMessages') }} <strong>{{ formatCount(totals.down) }}</strong><DocumentHelp code="iot-user-device-list" help-key="overview.downstreamMessages" /></span>
       </div>
       <span class="detail-message__traffic">{{ t('IotDeviceDetail.overview.trafficLegend', { upstream: traffic.up, downstream: traffic.down }) }}</span>
     </div>
@@ -11,6 +11,7 @@
   </div>
 </template>
 <script setup lang="ts">
+import DocumentHelp from '@jetlinks-web-core/components/DocumentHelp'
 import type { PropType } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { formatCount } from '../../../views/device/list/components/device-detail/iotDeviceOverviewCharts'

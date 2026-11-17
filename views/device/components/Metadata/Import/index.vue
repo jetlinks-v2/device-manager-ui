@@ -168,12 +168,7 @@
                 <template #label>
                     <a-space>
                         {{ $t('Import.index.603910-18') }}
-                        <a-tooltip :title="$t('Import.index.603910-19')">
-                            <AIcon
-                                type="QuestionCircleOutlined"
-                                style="color: rgb(136, 136, 136)"
-                            />
-                        </a-tooltip>
+                        <DocumentHelp code="device/Product" help-key="metadata.importScript" />
                     </a-space>
                 </template>
                 <MonacoEditor
@@ -187,6 +182,7 @@
     </a-modal>
 </template>
 <script setup lang="ts">
+import DocumentHelp from '@jetlinks-web-core/components/DocumentHelp';
 import { saveMetadata } from '../../../../../api/instance';
 import {
     queryNoPagingPost,
