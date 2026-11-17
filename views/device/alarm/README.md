@@ -1,5 +1,11 @@
 # 物联告警规则与记录工作区
 
+## 告警日志与处理记录文档帮助
+
+`components/DeviceAlarmRecordCard.vue` 在“告警日志”“处理记录”操作旁接入现有 `DocumentHelp`，本模块 `documentHelpPoints.ts` 以 `iot-user/device/alarm` 登记 `history.logs`、`history.handles`。模块启动即可扫描，点位名称沿用中英日资源；帮助与操作按钮并列，未配置或禁用时隐藏，不预置正文，保留原日志/处理记录图标、历史事件和告警处理权限。
+
+验证：`node scripts/test-alarm-workspace.mjs` 200/200 通过；定向内存交互检查确认两类帮助的未配置/禁用隐藏、三语正文切换、帮助点击/键盘不触发历史事件，原 logs/handles 及处理按钮仍发送正确事件。改动 SFC 脚本/模板/样式编译与 `git diff --check` 通过。运行时三模块联合生产构建通过（36.99s）；完整 `vue-tsc --noEmit -p modules/device-manager-ui/tsconfig.json` 未通过，共 1741 条诊断，本次修改文件无命中。模块及宿主未配置独立 lint。尚未在真实浏览器验证窄屏布局、悬停与配置保存回读；保持 [Draft #404](https://github.com/jetlinks-v2/device-manager-ui/pull/404)，不提交聚合仓库指针。
+
 ## 添加规则帮助入口
 
 `components/PropertyRules/RuleAddMenu.vue` 的全部 11 种规则选项接入可配置文档帮助，使用 `device/Product` 下的 `propertyRule.*` 标识；产品与设备共用相同规则说明。问号放在选项标题旁，查看说明不添加规则，原有类型适配、权限、保存和清空行为保持不变。说明按集合过滤、有效范围、跳变量、校正、公式、补齐、文件存储、告警和三种采样的实际配置编写。

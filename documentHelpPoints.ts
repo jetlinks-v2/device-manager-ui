@@ -5,6 +5,14 @@ import { registerDocumentHelpPoints } from '@jetlinks-web-core/utils/documentHel
 export function registerDeviceHelpPoints() {
   registerDocumentHelpPoints([
     ...[
+      ['history.logs', 'DeviceAlarm.workspace.logs'],
+      ['history.handles', 'DeviceAlarm.workspace.handles'],
+    ].map(([key, title]) => ({
+      code: 'iot-user/device/alarm', key,
+      name: () => i18n.global.t(title),
+      page: () => i18n.global.t('DeviceAlarm.title.page'),
+    })),
+    ...[
       ['deviceType.device', 'Save.index.912481-11'],
       ['deviceType.childrenDevice', 'Save.index.912481-13'],
       ['deviceType.gateway', 'Save.index.912481-15'],

@@ -22,14 +22,20 @@
     <template #bottom-tool>
       <div class="alarm-record-actions">
         <div class="alarm-record-actions__links">
-          <a-button type="text" @click="emit('history', row, 'logs')">
-            <template #icon><AIcon type="FileTextOutlined" /></template>
-            {{ $t('DeviceAlarm.workspace.logs') }}
-          </a-button>
-          <a-button type="text" @click="emit('history', row, 'handles')">
-            <template #icon><AIcon type="HistoryOutlined" /></template>
-            {{ $t('DeviceAlarm.workspace.handles') }}
-          </a-button>
+          <span class="alarm-record-action">
+            <a-button type="text" @click="emit('history', row, 'logs')">
+              <template #icon><AIcon type="FileTextOutlined" /></template>
+              {{ $t('DeviceAlarm.workspace.logs') }}
+            </a-button>
+            <DocumentHelp code="iot-user/device/alarm" help-key="history.logs" />
+          </span>
+          <span class="alarm-record-action">
+            <a-button type="text" @click="emit('history', row, 'handles')">
+              <template #icon><AIcon type="HistoryOutlined" /></template>
+              {{ $t('DeviceAlarm.workspace.handles') }}
+            </a-button>
+            <DocumentHelp code="iot-user/device/alarm" help-key="history.handles" />
+          </span>
         </div>
         <a-button type="primary" :disabled="!canHandleRecord(row)" @click="emit('handle', row)">
           {{ $t('DeviceAlarm.workspace.handle') }}
@@ -44,6 +50,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import CardBox from '@jetlinks-web-core/components/CardBox/index.vue'
 import StatusTag from '@jetlinks-web-core/components/StatusTag/index.vue'
+import DocumentHelp from '@jetlinks-web-core/components/DocumentHelp'
 import { formatApiTime } from '../../list/services/iotDeviceDetailReal.service'
 import { enumText, enumValue } from '../utils'
 import { alarmDeviceId, alarmDuration, canHandleRecord } from '../workspaceUtils'
@@ -121,8 +128,10 @@ const fields = computed(() => [
   border-top: 1px solid var(--jet-theme-border-color-1);
 }
 .alarm-record-actions__links { display: flex; align-items: center; gap: var(--space-1); min-width: 0; }
-.alarm-record-actions :deep(.ant-btn) { height: 2.5rem; font-size: var(--fs-14); }
-.alarm-record-actions__links :deep(.ant-btn) { padding-inline: var(--space-2); color: var(--jet-theme-text-secondary); }
+.alarm-record-action { display: inline-flex; align-items: center; }
+.alarm-record-action > :deep(.ant-btn:not(.document-help__trigger)),
+.alarm-record-actions > :deep(.ant-btn) { height: 2.5rem; font-size: var(--fs-14); }
+.alarm-record-action > :deep(.ant-btn:not(.document-help__trigger)) { padding-inline: var(--space-2); color: var(--jet-theme-text-secondary); }
 .alarm-record-actions > :deep(.ant-btn-primary) { flex-shrink: 0; padding-inline: var(--space-5); }
 @media (max-width: 600px) {
   .alarm-record-actions { flex-wrap: wrap; }
