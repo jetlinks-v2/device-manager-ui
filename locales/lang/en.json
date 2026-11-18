@@ -5567,6 +5567,7 @@
     "DeviceAlarm.record.allLevel": "All Levels",
     "DeviceAlarm.record.alarmTime": "Alarm Time",
     "DeviceAlarm.record.alarmName": "Alarm Name",
+    "DeviceAlarm.record.id": "Record ID",
     "DeviceAlarm.record.level": "Level",
     "DeviceAlarm.record.duration": "Duration",
     "DeviceAlarm.record.condition": "Trigger Condition",
