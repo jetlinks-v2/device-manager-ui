@@ -55,7 +55,11 @@
 							      />
 							      <a-space class="product-page__actions">
 								      <EmptyCreateButton key="add" />
-								      <BatchDropdown key="batch" :actions="batchActions" />
+								      <BatchDropdown key="batch" :actions="batchActions">
+                        <template #item-extra="{ item }">
+                          <DocumentHelp v-if="item.key === 'syncCache'" code="device/Product" help-key="syncCache" />
+                        </template>
+                      </BatchDropdown>
 							      </a-space>
 						      </a-flex>
 					      </template>
@@ -203,6 +207,7 @@ import ConditionFilter, {
 } from '@jetlinks-web-core/components/ConditionFilter';
 import { useTermOptions } from '@jetlinks-web/components/es/Search/hooks/useTermOptions'
 import BatchDropdown from "@jetlinks-web-core/components/BatchDropdown/index.vue";
+import DocumentHelp from '@jetlinks-web-core/components/DocumentHelp'
 import { IconBadge } from '@jetlinks-web-core/components'
 import { getI18nText } from '../../../utils/i18n'
 import ResourcePackage from './ResourcePackage/index.vue'

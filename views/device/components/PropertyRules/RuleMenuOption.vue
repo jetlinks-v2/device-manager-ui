@@ -1,7 +1,7 @@
 <template>
   <span class="rule-menu-option" :class="{ 'rule-menu-option-compact': compact }">
     <span class="rule-menu-option-icon"><slot name="icon"><AIcon :type="icon" /></slot></span>
-    <span class="rule-menu-option-copy"><span class="rule-menu-option-title">{{ title }}</span><span class="rule-menu-option-description">{{ description }}</span></span>
+    <span class="rule-menu-option-copy"><span class="rule-menu-option-title">{{ title }}<slot name="title-extra" /></span><span class="rule-menu-option-description">{{ description }}</span></span>
   </span>
 </template>
 <script setup lang="ts">

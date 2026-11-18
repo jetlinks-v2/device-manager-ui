@@ -72,7 +72,24 @@
                                                 _disabled(record.property),
                                         }"
                   >
+                    <a-select
+                      v-if="record.property === 'storageType' && record.type?.type === 'enum'"
+                      v-model:value="configValue[record.property]"
+                      style="width: 100%"
+                      :options="getOptions(item, index).map(option => ({ ...option, value: String(option.value) }))"
+                      :disabled="_disabled(record.property)"
+                      :dropdownStyle="{ zIndex: 1071 }"
+                      :getPopupContainer="(node) => tableWrapperRef || node"
+                    >
+                      <template #option="{ label, value: storageType }">
+                        {{ label }}
+                        <span v-if="['direct', 'ignore'].includes(storageType)" @mousedown.prevent.stop>
+                          <DocumentHelp code="device/Product" :help-key="`metadata.storage.${storageType}`" />
+                        </span>
+                      </template>
+                    </a-select>
                     <j-value-item
+                      v-else
                       style='width: 100%'
                       v-model:modelValue='
                                                 configValue[record.property]
@@ -105,14 +122,7 @@
           >
             <template #header>
               {{ $t('Properties.OtherSetting.237457-1') }}
-              <a-tooltip
-                :title="$t('Properties.OtherSetting.237457-2')"
-              >
-                <AIcon
-                  type='ExclamationCircleOutlined'
-                  style='padding-left: 12px; padding-top: 4px'
-                />
-              </a-tooltip>
+              <DocumentHelp code="device/Product" help-key="metadata.metrics" />
             </template>
             <Metrics
               ref='metricsRef'
@@ -168,6 +178,7 @@
 </template>
 
 <script setup lang='ts'>
+import DocumentHelp from '@jetlinks-web-core/components/DocumentHelp'
 import Metrics from './Metrics/Metrics.vue'
 import { useI18n } from 'vue-i18n'
 import { PopoverModal } from '../../../../../../../components/Metadata'

@@ -20,6 +20,7 @@
       <header v-if="currentEvent" class="event-history__head">
         <div>
           <strong>{{ currentEvent?.name || currentEvent?.id }}</strong>
+          <DocumentHelp v-if="['systemEvent', 'bufferEviction', 'AiVisionData', 'AiVisionAlarm'].includes(currentEvent.id)" code="iot-user-device-list" :help-key="`gateway.events.${currentEvent.id}`" />
           <span v-if="currentEvent?.id">{{ currentEvent.id }}</span>
         </div>
         <a-button :loading="eventLoading" @click="loadEventRows(eventPagination.current)">
@@ -70,6 +71,7 @@
 </template>
 
 <script setup lang="ts">
+import DocumentHelp from '@jetlinks-web-core/components/DocumentHelp'
 import { computed } from 'vue'
 import type { RealtimeEventRow } from './iotDeviceDetail.types'
 import { useIotDeviceEventHistory } from './useIotDeviceEventHistory'

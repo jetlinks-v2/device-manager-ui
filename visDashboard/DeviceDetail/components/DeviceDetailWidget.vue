@@ -1,7 +1,7 @@
 <template>
   <section class="device-detail-widget" :data-device-detail-kind="kind" :class="{ 'is-metric': isMetric }" :aria-label="title">
     <header v-if="!isMetric || loading || error || (!deviceId && !isEdit)">
-      <h3>{{ title }}</h3>
+      <h3>{{ title }}<DocumentHelp v-if="kind === 'Properties' || kind === 'RecentAlarms'" code="iot-user-device-list" :help-key="kind === 'Properties' ? 'overview.keyProperties' : 'overview.recentAlarms'" /></h3>
       <span v-if="kind === 'Properties'">{{ t('IotDeviceDetail.overview.thingModelReadonly') }}</span>
       <span v-else-if="kind === 'RecentAlarms'">{{ t('IotDeviceDetail.overview.recentAlarmCount', { count: alarms.length }) }}</span>
     </header>
@@ -15,6 +15,7 @@
   </section>
 </template>
 <script setup lang="ts">
+import DocumentHelp from '@jetlinks-web-core/components/DocumentHelp'
 import { computed, toRef, type PropType } from 'vue'
 import { useI18n } from 'vue-i18n'
 import CloudEmpty from '@jetlinks-web-core/components/CloudEmpty/index.vue'

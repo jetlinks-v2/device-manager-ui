@@ -65,7 +65,11 @@
         block
         size="small"
         :options="modeOptions"
-      />
+      >
+        <template #label="{ value }">
+          <span>{{ modeOptions.find(option => option.value === value)?.label }}<span @click.stop.prevent @keydown.stop @keyup.stop><DocumentHelp code="iot-user-device-list" :help-key="`debug.${value}`" /></span></span>
+        </template>
+      </a-segmented>
 
       <div class="trace-debug__body">
         <div v-if="!isOnline" class="trace-debug__offline">
@@ -223,6 +227,7 @@
         <div>
           <AIcon type="BranchesOutlined" aria-hidden="true" />
           <span>{{ $t('IotDeviceDetail.trace.communicationTrace') }}</span>
+          <DocumentHelp code="iot-user-device-list" help-key="access.communicationTrace" />
           <em>{{ $t('IotDeviceDetail.trace.receivedCount', { count: displayedTraceTotal }) }}</em>
         </div>
         <a-space size="small">
@@ -388,6 +393,7 @@
 </template>
 
 <script setup lang="ts">
+import DocumentHelp from '@jetlinks-web-core/components/DocumentHelp'
 import { computed, onMounted, onUnmounted, type PropType, reactive, ref, toRaw, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'

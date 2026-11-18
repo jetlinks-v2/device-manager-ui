@@ -1,5 +1,11 @@
 # 产品管理
 
+## 可配置帮助点位
+
+产品表单的直连设备、网关子设备、网关设备说明替换为 `DocumentHelp`，产品批量操作的同步缓存旁增加同类入口。模块启动注册 `device/Product` 下的 `deviceType.device`、`deviceType.childrenDevice`、`deviceType.gateway`、`syncCache`，不依赖用户打开表单才能扫描。说明在文档管理中配置；未配置或禁用时隐藏问号。保留设备类型选择、缓存同步的权限与确认，帮助按钮不触发原操作。实施后检查组件编译、注册清单和原有产品回归。
+
+验证：产品新增、产品列表及接入弹窗三份 SFC 编译通过；五点唯一注册及中英日标签检查通过。产品创建引导、产品设备数量、接入步骤回归共 12 项通过。同步缓存帮助依赖 core `BatchDropdown` 的 `item-extra` 同行插槽，实际悬停及未触发原操作由整体验收覆盖；未在本子任务运行完整构建、类型检查或浏览器。
+
 ## 统一详情摘要与主导航
 
 当前实现：`Detail/components/ProductDetailSummary.vue` 复用 core `DetailHeader` 摘要模式、`DetailMetaItem` 与 `StatusTag`，统一大图标、名称、状态、设备类型及其余产品字段。`Detail/index.vue` 使用 `PageChrome flush` 和 `SlantedTabs`，保留原页签 key、权限、路由回显、物模型未保存确认、动态内容卸载及产品创建引导；复制、设备数量跳转、编辑、启停与删除逻辑保持不变。
@@ -123,3 +129,13 @@ Owning module：仅 `runtime-ui/modules/device-manager-ui`，复用 core 现有 
 - 链接交互验证：实际点击最终回复中的“接入设备”，成功进入 `http://localhost:9200/#/resources/devices/list?type=all`，并自动打开“请选择要接入的设备”产品选择弹窗；完成检查后取消。整个复验只创建问答会话并打开/关闭页面弹窗，没有保存产品、物模型或设备业务数据。
 - 按设备性能限制，未执行应用生产 build、完整 typecheck 或 lint。需要时待执行命令为 `pnpm --dir runtime-ui exec vue-tsc --noEmit -p modules/device-manager-ui/tsconfig.json` 和 `pnpm --dir runtime-ui --filter jetlinks-web-core build -- --module-name device-manager-ui`；完整 lint 命令当前未在工作区或模块脚本中提供。
 - 交付依赖：本地新前端连接现有 AI 服务和模型已完成上述复验；正式使用 `192.168.33.76:9000` 的页面仍需发布新的 runtime-ui 私有化前端资源并刷新。本次没有后端服务修改，不需要因本次改动重启后端。
+
+帮助位置细化：同一路由下的设备类型点位复用新增/编辑表单，登记 location 为“新增、编辑”；同步缓存登记为“列表”。注册表的 page 保留菜单分组名，location 仅供管理页补充展示，不改变 code/key 或存储配置。
+
+物模型帮助入口：四类定义页签、字段表头、分组、数据类型选项、指标配置与存储选项、脚本导入说明均关联可配置文档点位。按稳定字段和类型标识匹配，帮助交互不修改选项或触发页签切换；产品与设备物模型共用这组说明。
+
+本批验证：物模型 SFC 与列定义 TSX 编译通过；设备模块生产构建通过。浏览器已确认设备的页签、表头、分组及继承提示展示帮助，点击功能定义问号后仍停留在属性定义。完整类型检查仍有 1740 项工作区诊断，未配置独立 lint；存储下拉和导入弹窗尚未逐项真机验证。
+
+物模型帮助补齐：产品和设备共用同一组物模型说明，设备继承限制单独在只读提示旁说明；数据类型按固定类型标识、存储选项按接口枚举标识匹配。统一注册后通过文档管理配置，验证编译、配置读取及帮助点击不切换页签/选项。
+
+存储策略标题的旧 tooltip 改用 `device/Product` / `access.storagePolicy` 文档帮助，保留策略选项与保存行为；文案说明修改策略后的历史数据迁移与查询范围。组件脚本和模板编译、差异检查通过；真实页面帮助交互待整批验收。
