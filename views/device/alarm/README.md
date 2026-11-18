@@ -1,5 +1,13 @@
 # 物联告警规则与记录工作区
 
+## 单设备告警物模型来源
+
+- 目标与范围：仅修复 `runtime-ui/modules/device-manager-ui` 的告警属性来源；全部设备使用产品物模型，单设备使用 `/device-instance/{id}/detail` 返回的有效 `metadata`，沿用服务端的产品继承与设备独立物模型语义。
+- 实施入口：`api.ts` 复用 `api/instance.ts` 的设备详情请求，`hooks/useDeviceAlarmPage.ts` 在新增与编辑时按作用域加载属性；切换设备清空属性选择，忽略过期响应。保留原有弹窗、属性类型过滤、已配置告警禁用规则及保存接口，不修改运营端或后端。
+- 验证：Node 22.18.0 下执行 `node modules/device-manager-ui/scripts/test-alarm-workspace.mjs`，最新 `origin/2.20` 基线复验 205/205 通过，新增 5 项行为回归覆盖设备独立属性、产品继承、编辑回显、切回全部设备、设备详情与配置响应乱序、清空产品及请求失败/空物模型。`git diff --check` 通过。
+- 构建与类型：在 `runtime-ui/jetlinks-web-core` 使用本地 Vite 执行 `node ../node_modules/vite/bin/vite.js build --outDir /tmp/jetlinks-alarm-device-model-build -- --module-name device-manager-ui`，最新基线模块构建通过（2m 41s），保留资源路径与大 chunk 等警告。修复阶段执行 `node node_modules/vue-tsc/bin/vue-tsc.js --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json` 未通过，共 1741 条诊断（最新基线未重复全模块类型检查）；本次修改的 `api.ts`、`useDeviceAlarmPage.ts` 无诊断，测试文件仍报告原有 `node:assert/strict`、`node:test` 类型声明缺失。模块没有独立 lint 脚本；未进行真实后端登录页面联调，实际设备属性与保存仍待页面验证。
+- 作者 Review：PASS。直接消费设备详情已有的有效物模型，未在前端重做继承/合并规则；修改范围仅运行时告警 feature 与回归，不涉及后端接口、公共模型、权限、菜单或布局。
+
 ## 物模型属性已配置告警提示
 
 - 目标与范围：运行时新增告警选择物模型属性时，清楚说明已配置属性不可选择的原因；仅修改 `components/editor/DeviceAlarmTargetForm.vue` 和本模块中、英、日文资源。
