@@ -12,11 +12,9 @@
         :confirmLoading="btnLoading"
     >
         <div style="margin-top: 10px">
-            <pro-search
+            <ConditionFilter
                 :columns="columns"
-                target="child-device-bind"
                 @search="handleSearch"
-                type="simple"
             />
             <JProTable
                 ref="bindDeviceRef"
@@ -105,6 +103,7 @@ import { useChildDeviceContext } from '../../Child/useChildDeviceContext';
 import { onlyMessage } from '@jetlinks-web/utils';
 import i18n from '@jetlinks-web-core/locales';
 import { useI18n } from 'vue-i18n';
+import ConditionFilter from '@jetlinks-web-core/components/ConditionFilter'
 
 defineOptions({ name: 'BindChildDevice' })
 

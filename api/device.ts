@@ -794,7 +794,7 @@ export const queryDeviceProductPage_api = async (
   const pageSize = Math.max(1, Number(input.pageSize ?? 6))
   const terms: DeviceQueryTerm[] = [
     // 新增设备沿用原版产品选择逻辑：禁用产品不能用于创建设备。
-    { column: 'state', termType: 'eq', value: 1 },
+    ...(input.enabledOnly === false ? [] : [{ column: 'state', termType: 'eq', value: 1 }]),
     // 运行时产品查询同样遵循 QueryParamEntity 的 like 语义，手工调用时也不能漏掉两端通配符。
     ...(input.terms ?? []).map(normalizeLikeTermValue),
   ]

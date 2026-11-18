@@ -243,6 +243,8 @@ export type DeviceLibraryTemplatePageResult = {
 }
 
 export type DeviceProductPageQueryInput = {
+  /** 创建设备和导入默认仅启用产品；导出可浏览全部状态。 */
+  enabledOnly?: boolean
   pageIndex?: number
   pageSize?: number
   /** 由通用条件筛选组件生成，多个条件按标准 terms 逻辑组合。 */
@@ -445,6 +447,7 @@ export type TreeNodeResponse = {
   type?: string
   parentId?: string
   children?: TreeNodeResponse[]
+  _children?: TreeNodeResponse[]
 }
 
 export type RoleResponse = {
