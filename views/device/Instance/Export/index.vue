@@ -1,136 +1,98 @@
 <template>
-    <a-modal
-        :maskClosable="false"
-        width="800px"
-        :open="true"
-        :title="$t('Export.index.225315-0')"
-        @ok="handleOk"
-        @cancel="handleCancel"
-    >
-        <div style="background-color: rgb(236, 237, 238)">
-            <p style="padding: 10px">
-                <AIcon type="ExclamationCircleOutlined" />
-                {{ $t('Export.index.225315-1') }}
-            </p>
+  <a-modal
+    :mask-closable="false"
+    :width="960"
+    centered
+    :open="true"
+    :body-style="{ maxHeight: 'calc(100dvh - 11rem)', overflowY: 'auto' }"
+    @ok="handleOk"
+    @cancel="emit('close')"
+  >
+    <template #title>
+      <IotAddDeviceModalTitle :title-text="$t('Export.index.225315-0')" help-text="" icon="ExportOutlined" />
+    </template>
+    <a-alert type="info" show-icon :message="$t('Export.index.225315-1')" />
+    <div class="device-export-product">
+      <div v-if="productId" class="device-export-product__label">
+        <span>{{ selectedProductName }}</span>
+        <a-button v-if="productId" type="link" @click="productId = ''">
+          {{ $t('IotDeviceExport.clearProduct') }}
+        </a-button>
+      </div>
+      <Product v-model:row-key="productId" :enabled-only="false" :show-hint="false" @change="selectedProductName = $event.name" />
+    </div>
+    <template #footer>
+      <div class="device-export-footer">
+        <div class="device-export-footer__format">
+          <span id="device-export-format-label">{{ $t('Export.index.225315-4') }}</span>
+          <a-radio-group v-model:value="fileType" aria-labelledby="device-export-format-label" button-style="solid">
+            <a-radio-button value="xlsx">XLSX</a-radio-button>
+            <a-radio-button value="csv">CSV</a-radio-button>
+          </a-radio-group>
         </div>
-        <div style="margin-top: 20px">
-            <a-form :layout="'vertical'">
-                <a-form-item :label="$t('Export.index.225315-2')">
-                    <a-select
-                        show-search
-                        :filter-option="filterOption"
-                        v-model:value="modelRef.product"
-                        :placeholder="$t('Export.index.225315-3')"
-                        allowClear
-                    >
-                        <a-select-option
-                            :value="item.id"
-                            v-for="item in productList"
-                            :key="item.id"
-                            :label="item.name"
-                            >{{ item.name }}</a-select-option
-                        >
-                    </a-select>
-                </a-form-item>
-                <a-form-item :label="$t('Export.index.225315-4')">
-                    <a-radio-group
-                        button-style="solid"
-                        v-model:value="modelRef.fileType"
-                        :placeholder="$t('Export.index.225315-5')"
-                    >
-                        <a-radio-button value="xlsx">xlsx</a-radio-button>
-                        <a-radio-button value="csv">csv</a-radio-button>
-                    </a-radio-group>
-                </a-form-item>
-            </a-form>
-        </div>
-    </a-modal>
+        <a-space>
+          <a-button @click="emit('close')">{{ $t('Import.modal.422832-2') }}</a-button>
+          <a-button type="primary" @click="handleOk">{{ $t('Export.index.225315-0') }}</a-button>
+        </a-space>
+      </div>
+    </template>
+  </a-modal>
 </template>
 
 <script lang="ts" setup>
-import { queryNoPagingPost } from '../../../../api/product';
-import { paramsEncodeQuery } from '@jetlinks-web-core/utils/encodeQuery';
-import { LocalStore, getToken } from '@jetlinks-web/utils';
-import { TOKEN_KEY, TOKEN_KEY_URL } from '@jetlinks-web/constants';
-import { getBaseApi } from '@jetlinks-web-core/utils'
+import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import Product from '../Import/product.vue'
+import IotAddDeviceModalTitle from '../../list/components/IotAddDeviceModalTitle.vue'
+import { useDeviceExport } from './useDeviceExport'
 
-const emit = defineEmits(['close']);
-const props = defineProps({
-    data: {
-        type: Object,
-        default: undefined,
-    },
-});
-const modelRef = reactive({
-    product: undefined,
-    fileType: 'xlsx',
-});
+const emit = defineEmits<{ (e: 'close'): void }>()
+const props = defineProps<{ data?: Record<string, unknown> }>()
+const { t: $t } = useI18n()
+const productId = ref('')
+const selectedProductName = ref('')
+const fileType = ref<'xlsx' | 'csv'>('xlsx')
+const { exportDevices } = useDeviceExport()
 
-const filterOption = (input: string, option: any) => {
-    return option.label.toLowerCase().indexOf(input.toLowerCase()) >= 0;
-};
-
-const productList = ref<Record<string, any>[]>([]);
-
-watch(
-    () => props.data,
-    () => {
-        queryNoPagingPost({ paging: false, sorts: [{ name: 'createTime', order: 'desc' }] }).then((resp) => {
-            if (resp.success) {
-                productList.value = resp.result as Record<string, any>[];
-            }
-        });
-    },
-    { immediate: true, deep: true },
-
-
-);
-
-const productName = computed(() => {
-    console.log(modelRef.product);
-    return productList.value.find(item => item.id === modelRef.product)?.name || ''
-    // console.log(item.id);
-
-
-
-})
-
-const handleOk = async () => {
-    const _params = paramsEncodeQuery(props.data);
-    // downloadFile(
-    //     deviceExport(modelRef.product || '', modelRef.fileType),
-    //     params,
-    // );
-    // const res: any = await deviceExport(
-    //     modelRef.product || '',
-    //     modelRef.fileType,
-    //     params
-    //
-    //
-    // );
-    // if (res) {
-    //     // const blob = new Blob([res], { type: modelRef.fileType });
-    //     // const url = URL.createObjectURL(blob);
-    //     // downloadFileByUrl(url, `${productName.value ? (productName.value  + '下设备') : '设备实例'}`, modelRef.fileType);
-    //
-    // }
-    const urlParams = new URLSearchParams()
-
-    Object.keys(_params).forEach(key => {
-      if (_params[key]) {
-        urlParams.append(key, _params[key])
-      }
-    })
-    const base_url = `${origin}${getBaseApi()}/device-instance`
-    const product_url = modelRef.product ? `/${modelRef.product}` : ''
-
-    const url =  `${base_url}${product_url}/export.xlsx?${TOKEN_KEY_URL}=${getToken()}&${urlParams}`
-    window.open(url)
-    emit('close');
-
-};
-
-const handleCancel = () => {
-    emit('close');
-};
+function handleOk() {
+  exportDevices(productId.value, fileType.value, props.data)
+  emit('close')
+}
 </script>
+
+<style scoped>
+.device-export-product {
+  margin-block: var(--space-4);
+}
+
+.device-export-product__label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 2rem;
+  margin-bottom: var(--space-2);
+}
+
+.device-export-product__label > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.device-export-footer,
+.device-export-footer__format {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.device-export-footer {
+  justify-content: space-between;
+}
+
+.device-export-footer__format {
+  text-align: start;
+}
+</style>

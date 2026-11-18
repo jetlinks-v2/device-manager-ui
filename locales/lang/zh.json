@@ -5579,6 +5579,7 @@
     "DeviceAlarm.record.allLevel": "全部级别",
     "DeviceAlarm.record.alarmTime": "告警时间",
     "DeviceAlarm.record.alarmName": "告警名称",
+    "DeviceAlarm.record.id": "记录 ID",
     "DeviceAlarm.record.level": "告警级别",
     "DeviceAlarm.record.duration": "告警持续时长",
     "DeviceAlarm.record.condition": "触发条件",
@@ -9217,5 +9218,7 @@
   "GatewayOutline.children": "子接入配置",
   "GatewayOutline.emptyChildren": "尚未配置子接入",
   "GatewayOutline.partialError": "部分配置加载失败或引用的资源不可用，请重试。",
-  "GatewayOutline.retry": "重试"
+  "GatewayOutline.retry": "重试",
+  "IotDeviceDetail.detail.parentDevice": "所属父设备",
+  "IotDeviceExport.clearProduct": "清除产品选择"
 }

@@ -610,6 +610,13 @@
                   ]
                 },
                 {
+                  "permission": "device-gateway-manager",
+                  "actions": [
+                    "query",
+                    "save"
+                  ]
+                },
+                {
                   "permission": "space-data-bind",
                   "actions": [
                     "query",
@@ -747,6 +754,12 @@
                               ]
                           },
                           {
+                              "permission": "device-gateway-manager",
+                              "actions": [
+                                  "save"
+                              ]
+                          },
+                          {
                               "permission": "agent-job",
                               "actions": [
                                   "query",
@@ -806,6 +819,12 @@
                       "permissions": [
                           {
                               "permission": "device-instance",
+                              "actions": [
+                                  "query"
+                              ]
+                          },
+                          {
+                              "permission": "device-gateway-manager",
                               "actions": [
                                   "query"
                               ]

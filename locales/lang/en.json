@@ -5578,6 +5578,7 @@
     "DeviceAlarm.record.allLevel": "All Levels",
     "DeviceAlarm.record.alarmTime": "Alarm Time",
     "DeviceAlarm.record.alarmName": "Alarm Name",
+    "DeviceAlarm.record.id": "Record ID",
     "DeviceAlarm.record.level": "Level",
     "DeviceAlarm.record.duration": "Duration",
     "DeviceAlarm.record.condition": "Trigger Condition",
@@ -9216,5 +9217,7 @@
   "GatewayOutline.children": "Child access configuration",
   "GatewayOutline.emptyChildren": "No child access configured",
   "GatewayOutline.partialError": "Some configuration could not be loaded or a referenced resource is unavailable. Try again.",
-  "GatewayOutline.retry": "Retry"
+  "GatewayOutline.retry": "Retry",
+  "IotDeviceDetail.detail.parentDevice": "Parent device",
+  "IotDeviceExport.clearProduct": "Clear product selection"
 }

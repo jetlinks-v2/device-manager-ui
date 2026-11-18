@@ -115,6 +115,9 @@ export interface IotDevice {
   /** 设备实例能力特性，按旧版详情用于显示数据解析等功能页签。 */
   features?: Array<{ id?: string; name?: string; [key: string]: any }>
   gatewayName?: string
+  /** 网关子设备所属的父设备，来自实例绑定关系。 */
+  parentId?: string
+  parentName?: string
   identifier: string
   imageUrl?: string
   summary: string

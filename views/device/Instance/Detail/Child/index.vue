@@ -1,27 +1,5 @@
 <template>
 
-    <DefineEmptyCreateAction1>
-      <j-permission-button
-          :tooltip="{
-                        title: $t('Child.index.135369-5'),
-                    }"
-          type="link"
-          @click="onClick('add')"
-      >
-        <AIcon type="PlusOutlined"/>
-      </j-permission-button>
-    </DefineEmptyCreateAction1>
-    <DefineEmptyCreateAction2>
-      <j-permission-button
-          :tooltip="{
-                        title: $t('Child.index.135369-6'),
-                    }"
-          type="link"
-          @click="onClick('bind')"
-      >
-        <AIcon type="DisconnectOutlined"/>
-      </j-permission-button>
-    </DefineEmptyCreateAction2>
     <div class="container">
       <div class="header">
         <div>
@@ -41,15 +19,21 @@
           <div class="left-header">
             <span>{{ $t('Child.index.135369-4') }}<DocumentHelp code="iot-user-device-list" help-key="gateway.cloudDevices" /></span>
             <a-space>
-              <EmptyCreateButtonAction1 />
-              <EmptyCreateButtonAction2 />
+              <j-permission-button
+                  :tooltip="{
+                    title: $t('Child.index.135369-6'),
+                  }"
+                  type="link"
+                  @click="onClick"
+              >
+                <AIcon type="DisconnectOutlined"/>
+              </j-permission-button>
             </a-space>
           </div>
-          <pro-search
+          <ConditionFilter
               :columns="searchColumns"
-              type="simple"
               @search="onSearch"
-              style="margin-bottom: 0"
+              class="mapping-search"
           />
           <div class="left-list">
             <div style="height: calc(100% - 106px);overflow-y: auto">
@@ -106,9 +90,7 @@
                                 :height="430"
                 >
                   <template #emptyText>
-                    <CloudEmpty :search="emptyCreateSearch" :search-name="$t('Detail.index.957187-23')">
-                      <a-space><EmptyCreateButtonAction1 /><EmptyCreateButtonAction2 /></a-space>
-                    </CloudEmpty>
+                    <CloudEmpty :search="emptyCreateSearch" :search-name="$t('Detail.index.957187-23')" />
                   </template>
                   <template #registryTime="slotProps">
                     <j-ellipsis>
@@ -278,12 +260,8 @@
         <div v-if="!fold" class="right">
           <div class="right-title">
             <span>{{ $t('Child.index.135369-13') }}</span>
-            <a-input-search
-                v-model:value="_search"
-                style="width: 200px"
-                :placeholder="$t('Child.index.135369-14')"
-                enter-button
-                allow-clear
+            <ConditionFilter
+                :columns="rightSearchColumns"
                 @search="onRightSearch"
             />
           </div>
@@ -360,7 +338,6 @@
         <div v-else class="right-fold"></div>
       </div>
     </div>
-        <Save v-if="visible" @close="onClose" />
         <Bind
             v-if="bindVisible"
             :parentIds="parentIds"
@@ -386,8 +363,6 @@
 
 <script setup>
 import DocumentHelp from '@jetlinks-web-core/components/DocumentHelp'
-import { createReusableTemplate } from '@vueuse/core'
-
 import { stateMap, columns, statusMap } from './data';
 import {
     queryNoPagingPost,
@@ -400,7 +375,6 @@ import {
 import { queryProductList } from '../../../../../api/product';
 import { useChildDeviceContext } from './useChildDeviceContext';
 import dayjs from 'dayjs';
-import Save from './Save/index.vue';
 import Bind from '../ChildDevice/BindChildDevice/index.vue';
 import {randomString, onlyMessage, getToken} from '@jetlinks-web/utils';
 import { cloneDeep } from 'lodash-es';
@@ -409,6 +383,7 @@ import { Modal } from 'ant-design-vue';
 import { EventEmitter } from '@jetlinks-web/utils';
 import { useI18n } from 'vue-i18n';
 import { ref as emptyCreateSearchRef } from 'vue'
+import ConditionFilter from '@jetlinks-web-core/components/ConditionFilter'
 
 defineOptions({ name: 'Child' })
 const emptyCreateSearch = emptyCreateSearchRef(false)
@@ -432,10 +407,15 @@ const params = ref({});
 const menuVisible = ref(false);
 const _customRow = ref({});
 const fold = ref(false);
-const visible = ref(false);
 const bindVisible = ref(false);
 const parentIds = ref([detail.value.id]);
-const _search = ref('');
+const rightSearchTerms = ref([]);
+const rightSearchColumns = [
+  { title: 'ID', dataIndex: 'id', search: { type: 'string' } },
+  { title: $t('BindChildDevice.index.146415-1'), dataIndex: 'name', search: { type: 'string' } },
+  { title: $t('BindChildDevice.index.146415-2'), dataIndex: 'productName', search: { type: 'string', rename: '_product.name' } },
+  { title: $t('Child.index.135369-23'), dataIndex: 'describe', search: { type: 'string' } },
+];
 const edgeList = ref([]);
 const _edgeInitList = ref([]);
 const _drop = ref({});
@@ -614,6 +594,7 @@ const handleSearch = async (e) => {
 
 const onSearch = (e) => {
     TabsChange(() => {
+        params.value = e;
         handleSearch(e);
     });
 };
@@ -674,13 +655,9 @@ const onChange = (checked) => {
     }
 };
 
-const onClick = (type) => {
+const onClick = () => {
     TabsChange(() => {
-        if (type === 'add') {
-            visible.value = true;
-        } else {
-            bindVisible.value = true;
-        }
+        bindVisible.value = true;
     });
 };
 
@@ -915,7 +892,6 @@ const onFold = () => {
 };
 
 const onClose = () => {
-    visible.value = false;
     bindVisible.value = false;
     actionRef.visible = false;
     _selectedRowKeys.value = [];
@@ -940,16 +916,16 @@ const onDetailClose = async () => {
 };
 
 const onRightSearch = (e) => {
-    if (e) {
-        edgeList.value = _edgeInitList.value.filter(
-            (i) => i.name.indexOf(e) > -1,
-        );
-    } else {
-        edgeList.value = _edgeInitList.value;
-    }
+    // 与左侧查询一致，重新取数前先处理未保存的映射。
+    TabsChange(() => {
+        rightSearchTerms.value = e?.terms || [];
+        void getNoMapping();
+    });
 };
 //边端未映射
+let noMappingQueryVersion = 0;
 const getNoMapping = async () => {
+    const queryVersion = ++noMappingQueryVersion;
     const res = await _queryByEdge(detail.value.id, {
         sorts: [{ name: 'createTime', order: 'desc' }],
         terms: [
@@ -961,16 +937,19 @@ const getNoMapping = async () => {
                 type: 'and',
                 value: ['fixed-media', 'gb28181-2016', 'media-plugin', 'onvif', 'agent-media-device-gateway'],
             },
+            // 用户的 OR 条件必须整体 AND 在未映射范围之外，不能扩大设备范围。
+            ...(rightSearchTerms.value.length ? [{ type: 'and', terms: rightSearchTerms.value }] : []),
         ],
     });
-    if (res.success) {
+    // 条件自动查询可能连续触发，旧条件的迟到响应不能覆盖最新列表。
+    if (res.success && queryVersion === noMappingQueryVersion) {
         edgeList.value = [...res.result];
         _edgeInitList.value = [...res.result];
     }
 };
 const handleRefresh = () => {
     getNoMapping();
-    handleSearch(true);
+    handleSearch(params.value);
 };
 
 const onJump = (id) => {
@@ -1293,8 +1272,6 @@ defineExpose({
     beforeLeave: TabsChange,
 })
 
-const [DefineEmptyCreateAction1, EmptyCreateButtonAction1] = createReusableTemplate()
-const [DefineEmptyCreateAction2, EmptyCreateButtonAction2] = createReusableTemplate()
 </script>
 
 <style lang="less" scoped>

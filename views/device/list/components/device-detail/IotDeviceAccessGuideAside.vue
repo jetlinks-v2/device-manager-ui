@@ -63,24 +63,49 @@ const guideTab = ref<'guide' | 'protocol'>(props.showAccessGuide ? 'guide' : 'pr
 <style scoped>
 .access-guide-doc {
   min-width: 0;
+  min-height: 0;
+  height: 100%;
 }
 
 .access-guide-doc__sticky {
-  position: sticky;
-  top: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
   border: 0.0625rem solid var(--jet-theme-border-secondary);
   border-radius: var(--jet-theme-radius);
   background: var(--jet-theme-bg-container);
   padding: var(--space-3);
 }
 
+.access-guide-doc__tabs {
+  flex: 1;
+  min-height: 0;
+}
+
 .access-guide-doc__tabs :deep(.ant-tabs-nav) {
+  flex-shrink: 0;
   margin-bottom: var(--space-3);
+}
+
+.access-guide-doc__tabs :deep(.ant-tabs-content-holder) {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.access-guide-doc__tabs :deep(.ant-tabs-content),
+.access-guide-doc__tabs :deep(.ant-tabs-tabpane),
+.access-guide-doc__tabs :deep(.ant-spin-nested-loading),
+.access-guide-doc__tabs :deep(.ant-spin-container) {
+  height: 100%;
+  min-height: 0;
 }
 
 .access-guide-doc__body,
 .access-guide-doc__empty {
-  max-height: 32.5rem;
+  height: 100%;
+  min-height: 0;
   overflow: auto;
   font-size: var(--fs-14);
 }
@@ -89,6 +114,5 @@ const guideTab = ref<'guide' | 'protocol'>(props.showAccessGuide ? 'guide' : 'pr
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 16rem;
 }
 </style>

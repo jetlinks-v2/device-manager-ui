@@ -63,6 +63,7 @@ import {
 import { useDeviceDetailTabs } from './useDeviceDetailTabs'
 import { useDeviceDetailPermissions } from './useDeviceDetailPermissions'
 import { useDeviceListProvider } from './useDeviceListProvider'
+import { useIotDeviceParentLink } from './useIotDeviceParentLink'
 import type { OverviewAccessSummary } from './useIotDeviceOverview'
 import { normalizeDeviceDetailTab, type DeviceDetailTab } from './deviceDetailTabs'
 import type { UnwrapRef } from 'vue'
@@ -119,6 +120,7 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
   const beginLoad = () => { loadVersion += 1; return currentLoad() }
 
   const device = ref<IotDevice | null>(null)
+  const parentDeviceLink = useIotDeviceParentLink(device)
   const instanceStore = useInstanceStore()
   const provider = useDeviceListProvider(device)
   const detailContent = computed(() => props.embedded ? undefined : provider.value?.detailContent)
@@ -1449,6 +1451,7 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
       description: current.summary,
       productId: current.productId || current.productKey || '',
       productName: current.productName,
+      parentId: current.parentId,
       features: current.features ?? [],
       // 映射页从实例 store 查询协议物模型，必须同步协议与传输类型才能加载目标属性。
       protocol: current.protocol,
@@ -1666,6 +1669,7 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
     setInnerTab,
     openEditDrawer,
     openProductDetail,
+    ...parentDeviceLink,
     backToDeviceList,
     onDeviceSaved,
     toggleDeviceEnabled,
