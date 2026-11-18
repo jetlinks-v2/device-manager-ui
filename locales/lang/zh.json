@@ -9207,5 +9207,7 @@
   "GatewayOutline.children": "子接入配置",
   "GatewayOutline.emptyChildren": "尚未配置子接入",
   "GatewayOutline.partialError": "部分配置加载失败或引用的资源不可用，请重试。",
-  "GatewayOutline.retry": "重试"
+  "GatewayOutline.retry": "重试",
+  "IotDeviceDetail.detail.parentDevice": "所属父设备",
+  "IotDeviceExport.clearProduct": "清除产品选择"
 }

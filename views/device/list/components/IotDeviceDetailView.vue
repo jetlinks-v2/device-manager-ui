@@ -8,7 +8,7 @@
 	<IotDeviceDefaultDetailContent v-if="embedded && device" :state="state" embedded />
 	<a-alert v-else-if="embedded" type="error" show-icon :message="state.$t('UnifiedDeviceList.loadFailed')" />
 	<IotDeviceDetailOverlays v-if="!embedded" :state="state" />
-	<main v-if="!embedded && device" class="iot-device-detail">
+	<main v-if="!embedded && device" class="iot-device-detail" :class="{ 'iot-device-detail--access': state.activeTab === 'access' && !detailContent }">
 		<div class="iot-device-detail__content">
 			<PageChrome :flush="!detailContent">
 				<ContentPanel class="iot-device-detail__summary-card" fill>

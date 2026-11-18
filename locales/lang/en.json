@@ -9206,5 +9206,7 @@
   "GatewayOutline.children": "Child access configuration",
   "GatewayOutline.emptyChildren": "No child access configured",
   "GatewayOutline.partialError": "Some configuration could not be loaded or a referenced resource is unavailable. Try again.",
-  "GatewayOutline.retry": "Retry"
+  "GatewayOutline.retry": "Retry",
+  "IotDeviceDetail.detail.parentDevice": "Parent device",
+  "IotDeviceExport.clearProduct": "Clear product selection"
 }

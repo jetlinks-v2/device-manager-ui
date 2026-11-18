@@ -3,13 +3,11 @@
         <a-spin :spinning="spinning">
             <div class="search-box">
                 <div class="search-warp">
-                    <j-advanced-search
+                    <ConditionFilter
                         v-if="!spinning"
                         :columns="columns"
-                        type="simple"
                         @search="handleSearch"
                         class="device-inkling"
-                        target="device-inkling"
                     />
                 </div>
                 <div class="multiple" v-if="multiple">
@@ -118,6 +116,7 @@ import {
 } from '../../../../api/link/accessConfig';
 import { cloneDeep, isArray } from 'lodash-es';
 import { getInkingDevices } from '../../../../api/instance';
+import ConditionFilter from '@jetlinks-web-core/components/ConditionFilter'
 
 defineOptions({ name: 'InklingDevice' })
 
@@ -361,6 +360,7 @@ onMounted(() => {
 
     .search-warp {
         flex: 1 1 auto;
+        min-width: 0;
     }
 
     .multiple {

@@ -1,5 +1,5 @@
 <template>
-  <div class="instance-device-access">
+  <FullPage class="instance-device-access" :padding="0" flex>
     <a-tabs
       v-model:activeKey="innerTab"
       class="device-access-tabs"
@@ -65,7 +65,7 @@
         </div>
       </a-tab-pane>
     </a-tabs>
-  </div>
+  </FullPage>
 </template>
 
 <script lang="ts" setup>

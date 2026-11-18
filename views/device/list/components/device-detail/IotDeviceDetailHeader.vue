@@ -15,6 +15,9 @@
       <DetailMetaItem kind="product" :label="$t('IotDeviceDetail.detail.product')" :tooltip="productNameText">
         <a-button type="link" class="dd-summary-action" :disabled="!canOpenProductDetail" @click="openProductDetail">{{ productNameText }}</a-button>
       </DetailMetaItem>
+      <DetailMetaItem v-if="parentDeviceId" kind="category" :label="$t('IotDeviceDetail.detail.parentDevice')" :tooltip="parentDeviceName">
+        <a-button type="link" class="dd-summary-action" @click="openParentDevice">{{ parentDeviceName }}</a-button>
+      </DetailMetaItem>
       <DetailMetaItem kind="space" :label="$t('IotDeviceDetail.detail.area')" :value="regionText" :tooltip="regionFullText" />
       <DetailMetaItem kind="group" :label="$t('IotDeviceDetail.detail.businessGroup')" :value="businessGroupText" :tooltip="businessGroupFullText" />
       <DetailMetaItem kind="time" :label="$t('IotDeviceDetail.detail.lastReport')" :value="lastSeenText" :tooltip="lastSeenText" />
@@ -64,6 +67,9 @@ type ViewState = Pick<IotDeviceDetailViewState,
   'copyDeviceId' |
   'openEditDrawer' |
   'openProductDetail' |
+  'parentDeviceId' |
+  'parentDeviceName' |
+  'openParentDevice' |
   'toggleDeviceEnabled' |
   'confirmDeleteDevice' |
   'deviceNameText' |
@@ -91,6 +97,9 @@ const {
   copyDeviceId,
   openEditDrawer,
   openProductDetail,
+  parentDeviceId,
+  parentDeviceName,
+  openParentDevice,
   toggleDeviceEnabled,
   confirmDeleteDevice,
   deviceNameText,
