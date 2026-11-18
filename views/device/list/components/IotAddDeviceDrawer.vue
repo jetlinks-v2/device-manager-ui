@@ -154,7 +154,7 @@
     <template v-if="isEditMode || !isCreating || installProgressState.hasError" #footer>
       <IotAddDeviceModalFooter
         :show-close="isEditMode || isCreating || currentStep === 0"
-        :show-previous="!isEditMode && !isCreating"
+        :show-previous="!isEditMode && !isCreating && currentStep > 0"
         :busy="activePrimaryBusy"
         :submit-disabled="activeSubmitDisabled"
         :submit-text="activeSubmitText"
