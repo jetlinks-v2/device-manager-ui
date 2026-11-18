@@ -1,6 +1,6 @@
 import { computed, onBeforeUnmount, ref, shallowRef, watch, type Ref } from 'vue'
 import type { ConditionFilterChangePayload, ConditionFilterField, ConditionFilterTerm } from '@jetlinks-web-core/components/ConditionFilter'
-import { buildQueryFilter } from '@jetlinks-web-core/components/ConditionFilter'
+import { buildQueryFilter, isSameTerms } from '@jetlinks-web-core/components/ConditionFilter'
 import { queryRuleRecords, type AlarmQuery } from '../workspaceApi'
 import type { DeviceAlarmEvent } from '../workspaceTypes'
 
@@ -15,9 +15,10 @@ export function useDeviceAlarmRecords(ruleId: Ref<string | undefined>, t: (key: 
   const tableRef = shallowRef<{ reload: () => void }>()
   const error = ref(false)
   const terms = ref<ConditionFilterTerm[]>([])
-  const submitted = ref<Record<string, unknown>[]>([])
+  const submitted = ref<ConditionFilterTerm[]>([])
   const fields = computed<ConditionFilterField[]>(() => [
     { dataIndex: 'alarmName', title: t('DeviceAlarm.record.alarmName'), search: { type: 'string', defaultTermType: 'like' } },
+    { dataIndex: 'id', title: t('DeviceAlarm.record.id'), search: { type: 'string', defaultTermType: 'eq' } },
     { dataIndex: 'sourceName', title: t('DeviceAlarm.record.sourceDevice'), search: { type: 'string', defaultTermType: 'like' } },
     { dataIndex: 'actualDesc', title: t('DeviceAlarm.record.reason'), search: { type: 'string', defaultTermType: 'like' } },
     { dataIndex: 'lastAlarmTime', title: t('DeviceAlarm.workspace.lastAlarmTime'), search: { type: 'date' } },
@@ -94,7 +95,9 @@ export function useDeviceAlarmRecords(ruleId: Ref<string | undefined>, t: (key: 
   function search(payload?: ConditionFilterChangePayload) {
     // change.filter 已编码通配符；仅无事件载荷的主动搜索从编辑模型转换一次。
     const filter = payload?.filter ?? buildQueryFilter(terms.value, fields.value)
-    submitted.value = Array.isArray(filter.terms) ? filter.terms : []
+    const nextTerms = Array.isArray(filter.terms) ? filter.terms : []
+    // 路由回显也会触发组件 change，相同条件沿用当前表格，避免重复查询。
+    if (!isSameTerms(submitted.value, nextTerms)) submitted.value = nextTerms
   }
   /** 重试及处理后刷新共用当前表格的分页上下文。 */
   function reload() { return table.value.reload() }

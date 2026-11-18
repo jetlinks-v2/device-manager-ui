@@ -5568,6 +5568,7 @@
     "DeviceAlarm.record.allLevel": "全部级别",
     "DeviceAlarm.record.alarmTime": "告警时间",
     "DeviceAlarm.record.alarmName": "告警名称",
+    "DeviceAlarm.record.id": "记录 ID",
     "DeviceAlarm.record.level": "告警级别",
     "DeviceAlarm.record.duration": "告警持续时长",
     "DeviceAlarm.record.condition": "触发条件",

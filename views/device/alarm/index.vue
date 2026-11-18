@@ -60,7 +60,7 @@
           <template #right>
             <section class="alarm-record-list">
               <ConditionFilter :fields="recordFields" :modelValue="recordTerms" :placeholder="$t('DeviceAlarm.workspace.recordSearch')"
-                               @update:modelValue="value => recordTerms = value" @change="searchRecords" />
+                               @update:modelValue="updateRecordTerms" @change="searchRecords" />
               <a-alert v-if="recordsError" type="error" show-icon :message="$t('DeviceAlarm.workspace.summaryError')"><template #action><a-button @click="loadRecords()">{{ $t('DeviceAlarm.workspace.retry') }}</a-button></template></a-alert>
               <JProTable ref="recordTableRef" :key="recordTable.key" class="alarm-record-table" mode="CARD" row-key="id"
                          :request="recordTable.request" :grid-columns="[1, 2, 3, 3]" :alert-show="false" :body-style="{ padding: 0 }">
@@ -93,12 +93,12 @@
 </template>
 
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { reactive, watch } from 'vue'
 import { useNow } from '@vueuse/core'
 import { message, Modal } from 'ant-design-vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
-import ConditionFilter from '@jetlinks-web-core/components/ConditionFilter'
+import ConditionFilter, { type ConditionFilterTerm } from '@jetlinks-web-core/components/ConditionFilter'
 import DeviceAlarmEditorModal from './components/DeviceAlarmEditorModal.vue'
 import DeviceAlarmRuleCard from './components/DeviceAlarmRuleCard.vue'
 import DeviceAlarmRecordCard from './components/DeviceAlarmRecordCard.vue'
@@ -115,6 +115,7 @@ import type { DeviceAlarmEvent } from './workspaceTypes'
 const { t: $t } = useI18n()
 const route = useRoute()
 const router = useRouter()
+const alarmRouteName = route.name
 const { page, selected, ruleId, activeCounts, statusError, listError, loading, busy, creating,
   loadingMore, loadMoreError, hasMore, load, loadCounts, loadMore, select, showAllRecords, remove, run, create } = useDeviceAlarmWorkspace($t)
 const { rows, total, keyword, levelOptions, propertyOptions,
@@ -129,6 +130,40 @@ const handling = reactive(useDeviceAlarmHandling($t, async record => {
   await Promise.all([loadRecords(), loadCounts()])
 }))
 const now = useNow({ interval: 1000 })
+let routeRecordId = ''
+
+// 新记录定位清除旧范围；普通入口只移除先前由路由注入的 ID，保留用户其他筛选。
+watch([
+  () => route.name === alarmRouteName,
+  () => route.query.recordId,
+], ([active, recordId]) => {
+  if (!active) return
+  const nextRecordId = typeof recordId === 'string' ? recordId : ''
+  if (nextRecordId === routeRecordId) return
+  const previousRecordId = routeRecordId
+  routeRecordId = nextRecordId
+  if (nextRecordId) {
+    showAllRecords()
+    recordTerms.value = [{ column: 'id', termType: 'eq', value: nextRecordId }]
+  } else {
+    recordTerms.value = recordTerms.value.filter(term => !isRouteRecordTerm(term, previousRecordId))
+  }
+  searchRecords()
+}, { immediate: true })
+
+function isRouteRecordTerm(term: ConditionFilterTerm, recordId: string) {
+  return term.column === 'id' && term.termType === 'eq' && term.value === recordId
+}
+
+function updateRecordTerms(value: ConditionFilterTerm[]) {
+  recordTerms.value = value
+  if (route.name !== alarmRouteName || !routeRecordId || value.some(term => isRouteRecordTerm(term, routeRecordId))) return
+  // 删除或改写定位条件后同步移除 URL 参数，避免缓存页返回时再次注入。
+  routeRecordId = ''
+  const query = { ...route.query }
+  delete query.recordId
+  void router.replace({ query })
+}
 
 // 沿用当前设备列表入口的详情路由，并直接落到设备告警页签。
 function openDeviceAlarm(record: DeviceAlarmEvent) {

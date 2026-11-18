@@ -1,27 +1,5 @@
 <template>
 
-    <DefineEmptyCreateAction1>
-      <j-permission-button
-          :tooltip="{
-                        title: $t('Child.index.135369-5'),
-                    }"
-          type="link"
-          @click="onClick('add')"
-      >
-        <AIcon type="PlusOutlined"/>
-      </j-permission-button>
-    </DefineEmptyCreateAction1>
-    <DefineEmptyCreateAction2>
-      <j-permission-button
-          :tooltip="{
-                        title: $t('Child.index.135369-6'),
-                    }"
-          type="link"
-          @click="onClick('bind')"
-      >
-        <AIcon type="DisconnectOutlined"/>
-      </j-permission-button>
-    </DefineEmptyCreateAction2>
     <div class="container">
       <div class="header">
         <div>
@@ -47,8 +25,15 @@
               />
             </a-tooltip>
             <a-space>
-              <EmptyCreateButtonAction1 />
-              <EmptyCreateButtonAction2 />
+              <j-permission-button
+                  :tooltip="{
+                    title: $t('Child.index.135369-6'),
+                  }"
+                  type="link"
+                  @click="onClick"
+              >
+                <AIcon type="DisconnectOutlined"/>
+              </j-permission-button>
             </a-space>
           </div>
           <ConditionFilter
@@ -111,9 +96,7 @@
                                 :height="430"
                 >
                   <template #emptyText>
-                    <CloudEmpty :search="emptyCreateSearch" :search-name="$t('Detail.index.957187-23')">
-                      <a-space><EmptyCreateButtonAction1 /><EmptyCreateButtonAction2 /></a-space>
-                    </CloudEmpty>
+                    <CloudEmpty :search="emptyCreateSearch" :search-name="$t('Detail.index.957187-23')" />
                   </template>
                   <template #registryTime="slotProps">
                     <j-ellipsis>
@@ -361,7 +344,6 @@
         <div v-else class="right-fold"></div>
       </div>
     </div>
-        <Save v-if="visible" @close="onClose" />
         <Bind
             v-if="bindVisible"
             :parentIds="parentIds"
@@ -386,8 +368,6 @@
 </template>
 
 <script setup>
-import { createReusableTemplate } from '@vueuse/core'
-
 import { stateMap, columns, statusMap } from './data';
 import {
     queryNoPagingPost,
@@ -400,7 +380,6 @@ import {
 import { queryProductList } from '../../../../../api/product';
 import { useChildDeviceContext } from './useChildDeviceContext';
 import dayjs from 'dayjs';
-import Save from './Save/index.vue';
 import Bind from '../ChildDevice/BindChildDevice/index.vue';
 import {randomString, onlyMessage, getToken} from '@jetlinks-web/utils';
 import { cloneDeep } from 'lodash-es';
@@ -433,7 +412,6 @@ const params = ref({});
 const menuVisible = ref(false);
 const _customRow = ref({});
 const fold = ref(false);
-const visible = ref(false);
 const bindVisible = ref(false);
 const parentIds = ref([detail.value.id]);
 const rightSearchTerms = ref([]);
@@ -682,13 +660,9 @@ const onChange = (checked) => {
     }
 };
 
-const onClick = (type) => {
+const onClick = () => {
     TabsChange(() => {
-        if (type === 'add') {
-            visible.value = true;
-        } else {
-            bindVisible.value = true;
-        }
+        bindVisible.value = true;
     });
 };
 
@@ -923,7 +897,6 @@ const onFold = () => {
 };
 
 const onClose = () => {
-    visible.value = false;
     bindVisible.value = false;
     actionRef.visible = false;
     _selectedRowKeys.value = [];
@@ -1304,8 +1277,6 @@ defineExpose({
     beforeLeave: TabsChange,
 })
 
-const [DefineEmptyCreateAction1, EmptyCreateButtonAction1] = createReusableTemplate()
-const [DefineEmptyCreateAction2, EmptyCreateButtonAction2] = createReusableTemplate()
 </script>
 
 <style lang="less" scoped>
