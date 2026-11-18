@@ -221,6 +221,10 @@
 
 ## 接入设备回退并保留表单
 
+首步按钮修正：`IotAddDeviceDrawer.vue` 的“上一步”显示条件已增加 `currentStep > 0`，仅在非编辑、非创建中的配置步骤显示；选择设备的第一步保留“取消”和“下一步”。已同步调整已有步骤导航检查，表单保留和返回逻辑沿用现有实现。
+
+首步按钮修正验证：在 `runtime-ui/modules/device-manager-ui` 执行 `node --test tests/iotAddDeviceStepNavigation.test.mjs`，两个子检查通过；Vue 模板编译、显示条件执行检查（首步、配置、编辑、创建中，4/4）和 `git diff --check` 均通过。`pnpm --dir runtime-ui exec vue-tsc -p modules/device-manager-ui/tsconfig.json --noEmit` 未通过，报告大量类型错误，包括本次未修改的 `jetlinks-web-core/src/api/account/center.ts` 的 TS2347 和 `visDashboard` 下的类型错误。完整构建及本次浏览器交互未验证，仍需在实际页面确认首步按钮展示与回退体验。
+
 目标：在运行时前端“接入设备”弹窗的设备配置步骤，将取消操作替换为“上一步”；返回设备库模板或产品选择后，用户重新选择设备时继续回显本次打开弹窗期间已经填写的设备信息。
 
 影响范围与 owning module：
