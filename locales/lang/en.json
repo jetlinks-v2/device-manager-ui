@@ -10,6 +10,14 @@
   "DocumentHelp.metadata_inherited": "Inherited metadata",
   "DocumentHelp.productForm": "Create / Edit",
   "DocumentHelp.productList": "List",
+  "DeviceIdMapping.action": "Map ID",
+  "DeviceIdMapping.externalId": "Third-party device ID: {id}",
+  "DeviceIdMapping.accessibleLabel": "Device ID mapping: {status}",
+  "DeviceIdMapping.loadFailed": "Failed to load device ID mapping. Click to retry.",
+
+  "Product.codec.loadFailed": "Failed to load data parsing configuration",
+  "Product.codec.empty": "No data parsing configuration",
+
     "PropertyRules.diagram.intent": "Action intent only; execution depends on runtime state and is not performed in this example",
   "PropertyRules.diagram.process": "Calculation process",
   "PropertyRules.diagram.failed": "Examples are temporarily unavailable. Please retry",

@@ -32,13 +32,14 @@
               </slot>
             </div>
             <div v-else class="body-cell-box">
-              <slot :name="column.dataIndex" :record="item" :index="item.__dataIndex" :column="column" >
+              <slot v-if="readonly && $slots.readonly" name="readonly" :record="item" :column="column" />
+              <slot v-else :name="column.dataIndex" :record="item" :index="item.__dataIndex" :column="column" >
                 {{ item[column.dataIndex] }}
               </slot>
             </div>
           </div>
         </div>
-        <div class="readonly-mask" v-if="readonly"></div>
+        <div class="readonly-mask" v-if="readonly && !$slots.readonly"></div>
       </div>
     </div>
   </div>

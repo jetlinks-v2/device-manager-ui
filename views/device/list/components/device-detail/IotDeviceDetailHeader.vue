@@ -9,8 +9,13 @@
       <AppTag :title="deviceTypeText">{{ deviceTypeText }}</AppTag>
     </template>
     <template #meta>
-      <DetailMetaItem kind="id" :label="$t('IotDeviceDetail.detail.deviceId')" :tooltip="$t('DetailMetaItem.copyTooltip', { id: deviceSnText })">
-        <a-button type="text" class="dd-summary-action" @click="copyDeviceId">{{ deviceSnText }}<AIcon type="CopyOutlined" /></a-button>
+      <DetailMetaItem kind="id" :label="$t('IotDeviceDetail.detail.deviceId')">
+        <span class="dd-summary-device-id">
+          <a-tooltip :title="$t('DetailMetaItem.copyTooltip', { id: deviceSnText })">
+            <a-button type="text" class="dd-summary-action" @click="copyDeviceId">{{ deviceSnText }}<AIcon type="CopyOutlined" /></a-button>
+          </a-tooltip>
+          <DeviceIdMapping :device="device" :can-update="canDeviceAction('update')" @saved="onDetailContentChanged" />
+        </span>
       </DetailMetaItem>
       <DetailMetaItem kind="product" :label="$t('IotDeviceDetail.detail.product')" :tooltip="productNameText">
         <a-button type="link" class="dd-summary-action" :disabled="!canOpenProductDetail" @click="openProductDetail">{{ productNameText }}</a-button>
@@ -45,12 +50,14 @@ import DetailMetaItem from '@jetlinks-web-core/components/DetailMetaItem'
 import StatusTag from '@jetlinks-web-core/components/StatusTag/index.vue'
 import { useIotDeviceMeta } from '../../hooks/useIotDeviceMeta'
 import DeviceDetailActions from './DeviceDetailActions.vue'
+import DeviceIdMapping from '../../../Instance/Detail/components/DeviceIdMapping.vue'
 import DeviceDetailTags from './tags/DeviceDetailTags.vue'
 import type { IotDeviceDetailViewState } from '../../hooks/useIotDeviceDetailView'
 
 /** 设备标识、范围、标签与快捷操作摘要。 */
 type ViewState = Pick<IotDeviceDetailViewState,
   'canDeviceAction' |
+  'onDetailContentChanged' |
   '$t' |
   'device' |
   'savingTags' |
@@ -115,6 +122,7 @@ const {
   thingModelTags,
   categoryIcon,
   canDeviceAction,
+  onDetailContentChanged,
 } = toRefs(props.state)
 const { statusMeta } = useIotDeviceMeta()
 const deviceStatus = computed(() => device.value ? statusMeta(device.value.status) : undefined)

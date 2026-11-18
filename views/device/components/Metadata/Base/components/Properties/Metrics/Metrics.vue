@@ -5,7 +5,12 @@
         :dataSource="dataSource"
         :columns="newColumns"
         :height="200"
+        :readonly="readonly"
+        :disable-menu="!readonly"
     >
+      <template v-if="readonly" #readonly="{ record, column }">
+        {{ column.dataIndex === 'range' ? $t(record.range ? 'Properties.OtherSetting.237457-23' : 'Properties.OtherSetting.237457-22') : Array.isArray(record[column.dataIndex]) ? record[column.dataIndex].join(' ~ ') : String(record[column.dataIndex] ?? '-') }}
+      </template>
       <template #id="{ record, index }">
         <EditTableFormItem :name="[index, 'id']">
           <a-input v-model:value="record.id" :placeholder="$t('Object.index.371533-0')"/>
@@ -39,7 +44,7 @@
         </a-button>
       </template>
     </EditTable>
-    <a-button style="width: 100%;margin-top: 16px;" @click="addItem" >
+    <a-button v-if="!readonly" style="width: 100%;margin-top: 16px;" @click="addItem" >
       <template #icon><AIcon type="PlusOutlined" /></template>
       {{ $t('Metrics.Metrics.112798-0') }}
     </a-button>
@@ -59,6 +64,7 @@ defineOptions({ name: 'Metrics' })
 const { t: $t } = useI18n();
 
 const props = defineProps({
+  readonly: { type: Boolean, default: false },
   value: {
     type: Array,
     default: () => []
@@ -158,8 +164,9 @@ const columns: any = [
 
 
 const newColumns = computed(() => {
+  const visibleColumns = props.readonly ? columns.filter((column: { dataIndex: string }) => column.dataIndex !== 'action') : columns
   if (props.type && !['string', 'boolean', 'date'].includes(props.type)) {
-    const data = [...columns]
+    const data = [...visibleColumns]
     data.splice(2, 0, {
         title: $t('Metrics.Metrics.112798-11'),
         dataIndex: 'range',
@@ -167,7 +174,7 @@ const newColumns = computed(() => {
     })
     return data
   }
-  return columns
+  return visibleColumns
 })
 
 const addItem = () => {

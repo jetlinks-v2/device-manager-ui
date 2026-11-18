@@ -11,6 +11,14 @@
   "DocumentHelp.metadata_inherited": "継承した物モデル",
   "DocumentHelp.productForm": "新規作成・編集",
   "DocumentHelp.productList": "一覧",
+  "DeviceIdMapping.action": "IDマッピング",
+  "DeviceIdMapping.externalId": "外部デバイスID：{id}",
+  "DeviceIdMapping.accessibleLabel": "デバイスIDマッピング：{status}",
+  "DeviceIdMapping.loadFailed": "デバイスIDマッピングの読み込みに失敗しました。クリックして再試行してください。",
+
+  "Product.codec.loadFailed": "データ解析設定の読み込みに失敗しました",
+  "Product.codec.empty": "データ解析設定はありません",
+
   "UnifiedDeviceList.collapseScope": "エリア／グループを折りたたむ",
   "UnifiedDeviceList.expandScope": "エリア／グループを展開",
   "UnifiedDeviceList.batch": "一括操作",

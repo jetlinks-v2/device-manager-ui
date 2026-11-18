@@ -1457,6 +1457,7 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
       protocol: current.protocol,
       transport: current.transport,
       accessProvider: current.accessProvider,
+      accessId: current.accessId,
       metadata,
       productMetadata,
       independentMetadata: Boolean(current.independentMetadata),
