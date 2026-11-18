@@ -20,7 +20,7 @@
         </div>
         <div class="footer">
           <a-space>
-            <a-button v-if="showCancel" size="small" @click="cancel">{{ $t('Popover.index.047673-0') }}</a-button>
+            <a-button v-if="showCancel" size="small" @click="cancel">{{ cancelText || $t('Popover.index.047673-0') }}</a-button>
             <a-button v-if="showOk" type="primary" size="small" @click="submit" :loading="confirmLoading">{{ $t('Popover.index.047673-1') }}</a-button>
           </a-space>
         </div>
@@ -50,6 +50,10 @@ const props = defineProps({
   showCancel: {
     type: Boolean,
     default: true
+  },
+  cancelText: {
+    type: String,
+    default: undefined
   },
   showOk: {
     type: Boolean,

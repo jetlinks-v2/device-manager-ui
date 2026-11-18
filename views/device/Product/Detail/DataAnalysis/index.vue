@@ -5,10 +5,13 @@
             <div>
                 {{ $t('DataAnalysis.index.571961-0') }}
                 <a-select
-                    :defaultValue="'JavaScript'"
+                    :value="isSaaS && editorLanguage === 'json' ? codec?.provider || 'json' : 'JavaScript'"
                     style="width: 200px; margin-left: 5px"
                 >
-                    <a-select-option value="JavaScript"
+                    <a-select-option v-if="isSaaS && editorLanguage === 'json'" :value="codec?.provider || 'json'">
+                        {{ codec?.provider || 'JSON' }}
+                    </a-select-option>
+                    <a-select-option v-else value="JavaScript"
                         >JavaScript(ECMAScript 5)</a-select-option
                     >
                 </a-select>
@@ -19,17 +22,25 @@
                 />
             </div>
         </div>
-        <div class="edit" ref="el">
-            <monaco-editor
-                language="javascript"
-                style="height: 100%"
-                theme="vs"
-                v-model:modelValue="editorValue"
-                :registrationTypescript="typescriptTip"
-                :init="editorInit"
-            />
-        </div>
-        <div class="bottom">
+        <a-alert v-if="codecFailed" type="error" :message="$t('Product.codec.loadFailed')" show-icon>
+            <template #action><a-button @click="getProductCode">{{ $t('PropertyRules.retry') }}</a-button></template>
+        </a-alert>
+        <a-spin v-else :spinning="codecLoading">
+            <j-empty v-if="isSaaS && !codecLoading && !codec" :description="$t('Product.codec.empty')" />
+            <div v-else class="edit" ref="el">
+                <monaco-editor
+                    :key="editorLanguage"
+                    :language="editorLanguage"
+                    :read-only="isSaaS"
+                    style="height: 100%"
+                    theme="vs"
+                    v-model:modelValue="editorValue"
+                    :registrationTypescript="typescriptTip"
+                    :init="editorInit"
+                />
+            </div>
+        </a-spin>
+        <div v-if="!isSaaS" class="bottom">
             <div style="width: 49.5%">
                 <div class="bottom-title">
                     <div class="bottom-title-text">{{ $t('DataAnalysis.index.571961-1') }}</div>
@@ -112,7 +123,6 @@
 import { useFullscreen } from '@vueuse/core';
 import { useProductStore } from '../../../../../store/product';
 import {
-  productCode,
   getProtocal,
   testCode,
   saveProductCode, queryProductCodeTips,
@@ -121,12 +131,14 @@ import { isBoolean } from 'lodash-es';
 import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import { useAuthStore } from '@jetlinks-web-core/store';
 import { useI18n } from 'vue-i18n';
+import { isSaaS } from '@jetlinks-web-core/utils/consts';
+import { useProductCodec } from './useProductCodec';
 
 defineOptions({ name: 'DataAnalysis' })
 
 const { t: $t } = useI18n();
 const permissionStore = useAuthStore();
-const canUpdate = computed(() => permissionStore.hasPermission('device/Product:update'));
+const canUpdate = computed(() => !isSaaS && permissionStore.hasPermission('device/Product:update'));
 
 const defaultValue =
     `//注册设备下行数据监听器,当平台下发指令给设备时,回调将被调用,用于构造下发给设备的报文
@@ -151,7 +163,7 @@ const simulation = ref<string>('');
 const resultValue = ref<any>({});
 const loading = ref<boolean>(false);
 const isTest = ref<boolean>(false);
-const editorValue = ref<string>('');
+const { codec, editorValue, editorLanguage, codecLoading, codecFailed, getProductCode } = useProductCodec(() => productStore.current.id, defaultValue);
 const typescriptTip = reactive({
   typescript: ''
 })
@@ -176,6 +188,7 @@ const result = computed(() =>
 );
 
 const editorInit = (editor: any, monaco: any) => {
+  editor.updateOptions({ readOnly: isSaaS });
   monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
     noSemanticValidation: true,
     noSyntaxValidation: false,
@@ -222,17 +235,6 @@ const queryCodeTips = () => {
 }
 
 
-//获取产品解析规则
-const getProductCode = async () => {
-    const res: any = await productCode(productStore.current.id);
-    if (res.status === 200) {
-        if (res.result) {
-            editorValue.value = res.result?.configuration?.script;
-        } else {
-            editorValue.value = defaultValue;
-        }
-    }
-};
 //调试
 const test = async (dataTest: any) => {
     loading.value = true;
@@ -247,6 +249,7 @@ const test = async (dataTest: any) => {
 
 //保存产品解析规则
 const save = async () => {
+    if (!canUpdate.value) return;
     const item = {
         provider: 'jsr223',
         configuration: {
@@ -262,6 +265,7 @@ const save = async () => {
 };
 
 const debug = () => {
+    if (!canUpdate.value) return;
     if (productStore.current.transportProtocol === 'MQTT') {
         if (topic.value !== '') {
             test({
@@ -302,8 +306,10 @@ const debug = () => {
 onMounted(() => {
   if(productStore.current.id){
     getProductCode();
-    getTopic();
-    queryCodeTips()
+    if (!isSaaS) {
+      getTopic();
+      queryCodeTips()
+    }
   }
 });
 </script>

@@ -278,6 +278,7 @@ export function mapApiDevice(
     accessMode: instance.accessProvider || instance.protocolName || instance.transportProtocol || fallback?.accessMode || t('IotDeviceApiAdapter.accessUnset'),
     accessName: accessInfo.accessName || accessInfo.accessProviderName || fallback?.accessName,
     accessProvider: instance.accessProvider || fallback?.accessProvider,
+    accessId: instance.accessId,
     protocol: (instance as any).protocol || (instance as any).messageProtocol || fallback?.protocol,
     transport: (instance as any).transport || (instance as any).transportProtocol || fallback?.transport,
     // 数据解析等入口仅由详情接口返回的协议能力决定；缺失时不能沿用本地兜底设备的旧能力。
