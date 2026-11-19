@@ -99,7 +99,7 @@
                 </div>
               </div>
               <div class="body-progress">
-                <div class="progress--warp bg-color-200">
+                <div class="progress--warp">
                   <div v-for="item in options(item)" :class="`progress-item-${item.bgc}`"  :style="{ width: item.per + '%'}" :key="item.type"></div>
                 </div>
               </div>
@@ -260,11 +260,9 @@ const options = computed(() => {
         type: item.value,
         value: val[item.value],
         icon: iconMap[item.value],
-        per: Math.round(parseFloat(val[item.value] / val.total) * 100),
+        per: val.total > 0 ? val[item.value] / val.total * 100 : 0,
         bgc:  colorMap[item.value],
         color: colorMap[item.value],
-        // bgc: `var(--ant-${colorMap[item.value]}-color)`,
-        // color: `${colorMap[item.value] ? `var(--ant-${colorMap[item.value]}-color)` : '#646C73'}`
       }
     })
   }
@@ -497,16 +495,16 @@ const [DefineEmptyCreate, EmptyCreateButton] = createReusableTemplate()
         gap: 12px;
         align-items: center;
         .status-item-success {
-          color: var(--ant-success-color);
+          color: var(--jet-theme-success);
         }
         .status-item-error {
-          color: var(--ant-error-color);
+          color: var(--jet-theme-error);
         }
         .status-item-primary {
-          color: var(--ant-primary-color);
+          color: var(--jet-theme-primary);
         }
         .status-item-warning {
-          color: var(--ant-warning-color);
+          color: var(--jet-theme-warning);
         }
       }
 
@@ -521,18 +519,18 @@ const [DefineEmptyCreate, EmptyCreateButton] = createReusableTemplate()
       border-radius: 4px;
       overflow: hidden;
       display: flex;
-      // background-color: var(--ant-error-color);
+      background-color: var(--jet-theme-border-secondary);
       .progress-item-success {
-        background-color: var(--ant-success-color);
+        background-color: var(--jet-theme-success);
       }
       .progress-item-error {
-        background-color: var(--ant-error-color);
+        background-color: var(--jet-theme-error);
       }
       .progress-item-primary {
-        background-color: var(--ant-primary-color);
+        background-color: var(--jet-theme-primary);
       }
       .progress-item-warning {
-        background-color: var(--ant-warning-color);
+        background-color: var(--jet-theme-warning);
       }
 
     }
