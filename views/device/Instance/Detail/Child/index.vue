@@ -20,23 +20,32 @@
             <span>{{ $t('Child.index.135369-4') }}<DocumentHelp code="iot-user-device-list" help-key="gateway.cloudDevices" /></span>
             <a-space>
               <j-permission-button
+                  v-if="!isSaaS"
+                  :tooltip="{ title: $t('Child.index.135369-5') }"
+                  type="link"
+                  @click="onClick('add')"
+              >
+                <AIcon type="PlusOutlined" />
+              </j-permission-button>
+              <j-permission-button
                   :tooltip="{
                     title: $t('Child.index.135369-6'),
                   }"
                   type="link"
-                  @click="onClick"
+                  @click="onClick('bind')"
               >
                 <AIcon type="DisconnectOutlined"/>
               </j-permission-button>
             </a-space>
           </div>
-          <ConditionFilter
-              :columns="searchColumns"
-              @search="onSearch"
-              class="mapping-search"
-          />
+          <div class="mapping-search">
+            <ConditionFilter
+                :columns="searchColumns"
+                @search="onSearch"
+            />
+          </div>
           <div class="left-list">
-            <div style="height: calc(100% - 106px);overflow-y: auto">
+            <div ref="tableViewport" class="mapping-table">
               <a-dropdown
                   :trigger="['contextmenu']"
                   :open="menuVisible"
@@ -87,7 +96,7 @@
                                             handleRow(e, record),
                                     })
                                 "
-                                :height="430"
+                                :height="Math.max(160, tableHeight)"
                 >
                   <template #emptyText>
                     <CloudEmpty :search="emptyCreateSearch" :search-name="$t('Detail.index.957187-23')" />
@@ -338,6 +347,7 @@
         <div v-else class="right-fold"></div>
       </div>
     </div>
+        <Save v-if="!isSaaS && createVisible" @close="onClose" />
         <Bind
             v-if="bindVisible"
             :parentIds="parentIds"
@@ -376,6 +386,8 @@ import { queryProductList } from '../../../../../api/product';
 import { useChildDeviceContext } from './useChildDeviceContext';
 import dayjs from 'dayjs';
 import Bind from '../ChildDevice/BindChildDevice/index.vue';
+import Save from './Save/index.vue';
+import { isSaaS } from '@jetlinks-web-core/utils/consts';
 import {randomString, onlyMessage, getToken} from '@jetlinks-web/utils';
 import { cloneDeep } from 'lodash-es';
 import actionModal from './actionModal.vue';
@@ -384,6 +396,7 @@ import { EventEmitter } from '@jetlinks-web/utils';
 import { useI18n } from 'vue-i18n';
 import { ref as emptyCreateSearchRef } from 'vue'
 import ConditionFilter from '@jetlinks-web-core/components/ConditionFilter'
+import { useElementSize } from '@vueuse/core'
 
 defineOptions({ name: 'Child' })
 const emptyCreateSearch = emptyCreateSearchRef(false)
@@ -402,12 +415,15 @@ const childContext = useChildDeviceContext();
 const _checked = ref(true);
 const _selectedRowKeys = ref([]);
 const childDeviceRef = ref();
+const tableViewport = ref();
+const { height: tableHeight } = useElementSize(tableViewport);
 const { detail } = childContext;
 const params = ref({});
 const menuVisible = ref(false);
 const _customRow = ref({});
 const fold = ref(false);
 const bindVisible = ref(false);
+const createVisible = ref(false);
 const parentIds = ref([detail.value.id]);
 const rightSearchTerms = ref([]);
 const rightSearchColumns = [
@@ -655,9 +671,13 @@ const onChange = (checked) => {
     }
 };
 
-const onClick = () => {
+const onClick = (type) => {
     TabsChange(() => {
-        bindVisible.value = true;
+        if (type === 'add') {
+            if (!isSaaS) createVisible.value = true;
+        } else {
+            bindVisible.value = true;
+        }
     });
 };
 
@@ -892,6 +912,7 @@ const onFold = () => {
 };
 
 const onClose = () => {
+    createVisible.value = false;
     bindVisible.value = false;
     actionRef.visible = false;
     _selectedRowKeys.value = [];

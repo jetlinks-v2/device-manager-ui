@@ -113,7 +113,7 @@
               {{ $t('Product.resourcePackage.001-50') }}
             </a-button>
           </template>
-          <j-card-select v-model:value="product.deviceType" :options="deviceTypes" @change="changeDeviceType">
+          <j-card-select v-model:value="product.deviceType" :options="deviceTypes" :disabled="deviceTypeDisabled" @change="changeDeviceType">
             <template #itemRender="{ node }">
               <div class="device-type-option">
                 <span>{{ node.label }}</span>
@@ -220,7 +220,7 @@ const emit = defineEmits<{ success: [] }>()
 const { t: $t } = useI18n()
 const selectedImportType = ref<ProductTransferType>('basic')
 const {
-  visible, step, loading, importing, productFormRef, product, metadataVisible, accessPreflightErrors, storagePolicyError,
+  visible, step, loading, importing, productFormRef, product, deviceTypeDisabled, metadataVisible, accessPreflightErrors, storagePolicyError,
   showSelectionValidation, categoryTree, resourceSelections, localOptions, manifest,
   storagePolicyOptions, dependentResourceTypes, isLocalGateway, gatewayProviderName,
   metadataPreview, hasIncompleteLocalSelection, canContinue, imageTypes, productRules,

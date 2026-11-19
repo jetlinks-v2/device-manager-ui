@@ -5,10 +5,10 @@
             <div>
                 {{ $t('DataAnalysis.index.571961-0') }}
                 <a-select
-                    :value="isSaaS && editorLanguage === 'json' ? codec?.provider || 'json' : 'JavaScript'"
+                    :value="editorLanguage === 'json' ? codec?.provider || 'json' : 'JavaScript'"
                     style="width: 200px; margin-left: 5px"
                 >
-                    <a-select-option v-if="isSaaS && editorLanguage === 'json'" :value="codec?.provider || 'json'">
+                    <a-select-option v-if="editorLanguage === 'json'" :value="codec?.provider || 'json'">
                         {{ codec?.provider || 'JSON' }}
                     </a-select-option>
                     <a-select-option v-else value="JavaScript"
@@ -26,12 +26,11 @@
             <template #action><a-button @click="getProductCode">{{ $t('PropertyRules.retry') }}</a-button></template>
         </a-alert>
         <a-spin v-else :spinning="codecLoading">
-            <j-empty v-if="isSaaS && !codecLoading && !codec" :description="$t('Product.codec.empty')" />
-            <div v-else class="edit" ref="el">
+            <div class="edit" ref="el">
                 <monaco-editor
                     :key="editorLanguage"
                     :language="editorLanguage"
-                    :read-only="isSaaS"
+                    :read-only="!canUpdate"
                     style="height: 100%"
                     theme="vs"
                     v-model:modelValue="editorValue"
@@ -40,7 +39,7 @@
                 />
             </div>
         </a-spin>
-        <div v-if="!isSaaS" class="bottom">
+        <div class="bottom">
             <div style="width: 49.5%">
                 <div class="bottom-title">
                     <div class="bottom-title-text">{{ $t('DataAnalysis.index.571961-1') }}</div>
@@ -107,7 +106,7 @@
         <a-button
             v-if="canUpdate"
             :loading="loading"
-            :disabled="!isTest"
+            :disabled="!isTest || codecLoading || codecFailed"
             @click="save()"
             :style="{ marginLeft: '10px' }"
             :tooltip="{
@@ -131,14 +130,13 @@ import { isBoolean } from 'lodash-es';
 import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import { useAuthStore } from '@jetlinks-web-core/store';
 import { useI18n } from 'vue-i18n';
-import { isSaaS } from '@jetlinks-web-core/utils/consts';
 import { useProductCodec } from './useProductCodec';
 
 defineOptions({ name: 'DataAnalysis' })
 
 const { t: $t } = useI18n();
 const permissionStore = useAuthStore();
-const canUpdate = computed(() => !isSaaS && permissionStore.hasPermission('device/Product:update'));
+const canUpdate = computed(() => permissionStore.hasPermission('device/Product:update'));
 
 const defaultValue =
     `//注册设备下行数据监听器,当平台下发指令给设备时,回调将被调用,用于构造下发给设备的报文
@@ -163,7 +161,7 @@ const simulation = ref<string>('');
 const resultValue = ref<any>({});
 const loading = ref<boolean>(false);
 const isTest = ref<boolean>(false);
-const { codec, editorValue, editorLanguage, codecLoading, codecFailed, getProductCode } = useProductCodec(() => productStore.current.id, defaultValue);
+const { codec, editorValue, editorLanguage, codecLoading, codecFailed, getProductCode, buildProductCode } = useProductCodec(() => productStore.current.id, defaultValue);
 const typescriptTip = reactive({
   typescript: ''
 })
@@ -179,7 +177,7 @@ const resStyle = computed(() =>
           },
 );
 
-const isDisabled = computed(() => !simulation.value || !editorValue.value);
+const isDisabled = computed(() => codecLoading.value || codecFailed.value || !simulation.value || !editorValue.value);
 
 const result = computed(() =>
     resultValue.value.success
@@ -188,7 +186,7 @@ const result = computed(() =>
 );
 
 const editorInit = (editor: any, monaco: any) => {
-  editor.updateOptions({ readOnly: isSaaS });
+  editor.updateOptions({ readOnly: !canUpdate.value });
   monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
     noSemanticValidation: true,
     noSyntaxValidation: false,
@@ -250,13 +248,8 @@ const test = async (dataTest: any) => {
 //保存产品解析规则
 const save = async () => {
     if (!canUpdate.value) return;
-    const item = {
-        provider: 'jsr223',
-        configuration: {
-            script: editorValue.value,
-            lang: 'javascript',
-        },
-    };
+    const item = readCodecInput();
+    if (!item) return;
     const res = await saveProductCode(productStore.current.id, item);
     if (res.status === 200) {
         onlyMessage($t('DataAnalysis.index.571961-9'));
@@ -264,52 +257,31 @@ const save = async () => {
     }
 };
 
+/** 调试和保存共用原解析器的配置，避免 JSON 类型被误写为 JavaScript。 */
+const readCodecInput = () => {
+    if (codecLoading.value || codecFailed.value) return undefined;
+    try { return buildProductCode(); }
+    catch { onlyMessage($t('InstanceDeviceAccess.codecDebug.jsonInvalid'), 'error'); return undefined; }
+};
 const debug = () => {
     if (!canUpdate.value) return;
-    if (productStore.current.transportProtocol === 'MQTT') {
-        if (topic.value !== '') {
-            test({
-                headers: {
-                    topic: topic.value,
-                },
-                configuration: {
-                    script: editorValue.value,
-                    lang: 'javascript',
-                },
-                provider: 'jsr223',
-                payload: simulation.value,
-            });
-            isTest.value = true;
-        } else {
-            onlyMessage($t('DataAnalysis.index.571961-10'), 'error');
-        }
-    } else {
-        if (url.value !== '') {
-            test({
-                headers: {
-                    url: url.value,
-                },
-                provider: 'jsr223',
-                configuration: {
-                    script: editorValue.value,
-                    lang: 'javascript',
-                },
-                payload: simulation.value,
-            });
-            isTest.value = true;
-        } else {
-            onlyMessage($t('DataAnalysis.index.571961-11'), 'error');
-        }
+    const isMqtt = productStore.current.transportProtocol === 'MQTT';
+    const address = isMqtt ? topic.value : url.value;
+    if (!address) {
+        onlyMessage($t(isMqtt ? 'DataAnalysis.index.571961-10' : 'DataAnalysis.index.571961-11'), 'error');
+        return;
     }
+    const definition = readCodecInput();
+    if (!definition) return;
+    void test({ ...definition, headers: { [isMqtt ? 'topic' : 'url']: address }, payload: simulation.value });
+    isTest.value = true;
 };
 
 onMounted(() => {
   if(productStore.current.id){
     getProductCode();
-    if (!isSaaS) {
-      getTopic();
-      queryCodeTips()
-    }
+    getTopic();
+    queryCodeTips()
   }
 });
 </script>

@@ -91,10 +91,12 @@
 					      </template>
 						    <template #bodyCell="{ column, record }">
 							    <template v-if="column.key === 'name'">
-								    <a-flex align="center" :gap="8">
-									    <div>
-										    <a-flex align="center" :gap="8" wrap="wrap">
-											    <a-button type="link" class="unified-device-list__name" @click="openDetail(record)">{{ record.name }}</a-button>
+								    <a-flex align="center" :gap="8" class="unified-device-list__identity">
+									    <div class="unified-device-list__identity-body">
+										    <a-flex align="center" :gap="8" class="unified-device-list__name-row">
+                      <a-tooltip :title="record.name">
+											      <a-button type="link" class="unified-device-list__name" @click="openDetail(record)"><span class="unified-device-list__name-text">{{ record.name }}</span></a-button>
+                      </a-tooltip>
                       <RegistryComponent page-code="device/Instance" code="name-badges" :record="record" />
 											    <a-tag v-if="activeType === 'all'" :bordered="false" class="unified-device-list__category">{{ providerOf(record)?.label() }}</a-tag>
 										    </a-flex>
@@ -481,11 +483,17 @@ const [DefineEmptyCreateAction2, EmptyCreateButtonAction2] = createReusableTempl
 .unified-device-list__filters > .device-asset-search { flex: 1 1 auto; width: auto; min-width: 0; }
 .unified-device-list__toolbar-actions { flex-shrink: 0; margin-inline-start: auto; gap: 8px; }
 .unified-device-list__action-divider { margin: 0 2px; height: 24px; opacity: .45; }
-.unified-device-list__category { margin-inline-end: 0; color: var(--ink-3); }
+.unified-device-list__category { flex-shrink: 0; margin-inline-end: 0; color: var(--ink-3); white-space: nowrap; }
 .unified-device-list__table { flex: 1; min-height: 0; overflow: auto; }
 .unified-device-list__row-actions { width: 100%; justify-content: flex-end; }
 .unified-device-list__table small { display: block; color: var(--ink-3); font-weight: normal; }
-.unified-device-list__name { padding: 0; height: auto; font-weight: 600; }
+/* max-content 表格需限制内容宽度：280px 名称列扣除两侧 16px 单元格内边距。 */
+.unified-device-list__identity { width: 248px; min-width: 0; max-width: 100%; }
+.unified-device-list__identity-body { flex: 1; min-width: 0; }
+.unified-device-list__name-row { min-width: 0; flex-wrap: nowrap; }
+.unified-device-list__name { flex: 0 1 auto; min-width: 0; max-width: 100%; overflow: hidden; padding: 0; height: auto; font-weight: 600; }
+.unified-device-list__name-text { display: block; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.unified-device-list__identity-body > small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .unified-device-list__pagination { text-align: right; }
 .unified-device-list__batch { justify-content: flex-end; align-items: center; min-height: 48px; padding: 8px 12px; border-radius: 8px; }
 </style>

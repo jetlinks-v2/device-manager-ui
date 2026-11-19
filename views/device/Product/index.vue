@@ -1,6 +1,6 @@
 <template>
   <DefineEmptyCreate>
-    <j-permission-button v-if="!isSaaS" type="primary" hasPermission="device/Product:add" @click="add">
+    <j-permission-button v-if="!isProject" type="primary" hasPermission="device/Product:add" @click="add">
       <template #icon><AIcon type="PlusOutlined" /></template>
       {{ $t('Product.index.660348-0') }}
     </j-permission-button>
@@ -53,8 +53,8 @@
 								      @update:model-value="handleFilterTermsUpdate"
 								      @change="handleFilterSearch"
 							      />
-							      <a-space v-if="!isSaaS || batchActions.length" class="product-page__actions">
-								      <EmptyCreateButton v-if="!isSaaS" key="add" />
+							      <a-space v-if="!isProject || batchActions.length" class="product-page__actions">
+								      <EmptyCreateButton v-if="!isProject" key="add" />
 								      <BatchDropdown key="batch" :actions="batchActions">
                         <template #item-extra="{ item }">
                           <DocumentHelp v-if="item.key === 'syncCache'" code="device/Product" help-key="syncCache" />
@@ -67,7 +67,7 @@
 					        <CloudEmpty :description="hasSearch
                         ? $t('components.CloudEmpty.searchEmpty', { name: $t('Product.index.660348-15') })
                         : undefined">
-					          <EmptyCreateButton v-if="!isSaaS && showEmptyCreate" />
+					          <EmptyCreateButton v-if="!isProject && showEmptyCreate" />
 					        </CloudEmpty>
 					      </template>
 					      <template #deviceType="slotProps">
@@ -152,9 +152,8 @@
 	    </EqualHeightColumns>
 			      </div>
     </FullPage>
-    <Save v-if="!isSaaS" ref="saveRef" :isAdd="isAdd" :title="title" @success="refresh" />
+    <Save ref="saveRef" :isAdd="isAdd" :title="title" @success="refresh" />
     <ModifyModal
-      v-if="!isSaaS"
       ref="categoryModalRef"
       :title="categoryTitle"
       :isAdd="categoryModalMode"
@@ -163,14 +162,14 @@
     />
     <SyncCache v-if="syncCacheVisible" :params="tableParams" @success="refresh" @close="syncCacheVisible = false" />
     <ResourcePackage
-      v-if="!isSaaS"
+      v-if="!isProject"
       ref="resourcePackageRef"
       :can-import-basic="canImportBasic"
       :can-import-resource-package="canImportResourcePackage"
       @success="refresh"
     />
     <ProductExportModal
-      v-if="!isSaaS"
+      v-if="!isProject"
       v-model:open="exportVisible"
       :loading="exporting"
       @export="exportProduct"
@@ -219,7 +218,10 @@ import { useEmptyCreateState } from '@jetlinks-web-core/hooks'
 import ProductExportModal from './components/ProductExportModal.vue'
 import { useProductTransfer } from './hooks/useProductTransfer'
 import { getDeviceListFilterFields } from '../../../deviceListFilter'
-import { isSaaS } from '@jetlinks-web-core/utils/consts'
+import { isProjectRuntime } from '@jetlinks-web-core/utils/project-runtime'
+import { isPrivateDeployment } from '@jetlinks-web-core/utils/deployment'
+
+const isProject = isProjectRuntime() && !isPrivateDeployment()
 
 const { t: $t } = useI18n();
 const route = useRoute()
@@ -296,8 +298,6 @@ const columns = [
     scopedSlots: true,
   },
 ];
-// SaaS 操作均隐藏时不保留空白操作列。
-if (isSaaS) columns.splice(columns.findIndex(column => column.key === 'action'), 1);
 const hasDepartmentMenu = menuStory.hasMenu('system/Department');
 const currentForm = ref({});
 const syncCacheVisible = ref(false)
@@ -306,11 +306,11 @@ const categoryModalRef = ref();
 const categoryModalMode = ref(0);
 const categoryModalChildMode = ref(0);
 const categoryTitle = ref('');
-const canAddCategory = computed(() => !isSaaS && authStore.hasPermission('device/Product:category-add'));
-const canUpdateCategory = computed(() => !isSaaS && authStore.hasPermission('device/Product:category-update'));
-const canDeleteCategory = computed(() => !isSaaS && authStore.hasPermission('device/Product:category-delete'));
-const canImportBasic = computed(() => !isSaaS && authStore.hasPermission('device/Product:import'))
-const canImportResourcePackage = computed(() => !isSaaS && authStore.hasPermission('device/Product:resource-package-import'))
+const canAddCategory = computed(() => authStore.hasPermission('device/Product:category-add'));
+const canUpdateCategory = computed(() => authStore.hasPermission('device/Product:category-update'));
+const canDeleteCategory = computed(() => authStore.hasPermission('device/Product:category-delete'));
+const canImportBasic = computed(() => !isProject && authStore.hasPermission('device/Product:import'))
+const canImportResourcePackage = computed(() => !isProject && authStore.hasPermission('device/Product:resource-package-import'))
 const canImportProduct = computed(() => canImportBasic.value || canImportResourcePackage.value)
 const {
   exportVisible,
@@ -346,7 +346,7 @@ const tableParams = computed(() => {
 });
 const { hasSearch, showEmptyCreate } = useEmptyCreateState(() => tableParams.value.terms);
 
-// SaaS 产品由设备库安装，不提供产品导入入口；缓存同步沿用现有授权。
+// 项目产品由设备库安装，不提供产品导入入口；缓存同步沿用现有授权。
 const batchActions = computed(() => {
   return [
     ...(canImportProduct.value ? [{
@@ -476,8 +476,8 @@ const getActions = (data: Partial<Record<string, any>>): any[] => {
   if (parentActions && parentActions.length > 0) {
     actions = mergeObjectArrays(actions, parentActions)
   }
-  // 标准产品只提供查看，租户不能修改配置或启停状态。
-  return isSaaS ? actions.filter(action => !['update', 'export', 'delete', 'action'].includes(action.key)) : actions;
+  // 项目可维护现有产品，仅隐藏产品传入传出入口。
+  return isProject ? actions.filter(action => action.key !== 'export') : actions;
 };
 
 /**

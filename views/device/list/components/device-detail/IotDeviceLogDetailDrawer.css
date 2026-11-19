@@ -50,6 +50,7 @@
 }
 
 .log-detail-summary {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -92,10 +93,12 @@
 
 .log-message-card {
   position: relative;
+  flex-shrink: 0;
+  max-height: min(18rem, 40vh);
   border-radius: 0.5rem;
   padding: var(--space-4) var(--space-4) var(--space-4) calc(var(--space-4) + 0.1875rem);
   background: var(--jet-theme-bg-layout);
-  overflow: hidden;
+  overflow: auto;
 }
 
 .log-message-card::before {
@@ -135,13 +138,12 @@
 .log-message-card dd {
   min-width: 0;
   margin: 0;
-  overflow: hidden;
   color: var(--jet-theme-text);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .log-payload-block {
+  flex-shrink: 0;
   display: grid;
   gap: var(--space-2);
 }

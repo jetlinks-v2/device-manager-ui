@@ -33,17 +33,12 @@
                   </div>
                 </template>
                 <template #description>
-                  <div class="access-method-card">
-                    <div class="access-method-card__row">
-                      <a-tooltip :title="accessModeText">
-                        <span class="access-method-name">{{ accessModeText }}</span>
-                      </a-tooltip>
-                      <a-tooltip v-if="transportText !== '--'" :title="transportText">
-                        <a-tag class="access-method-tag access-method-tag--transport">{{ transportText }}</a-tag>
-                      </a-tooltip>
-                    </div>
-                    <div v-if="accessModeDescription !== '--'" class="access-method-card__desc">{{ accessModeDescription }}</div>
-                  </div>
+                  <AccessMethodSummary :summary="{
+                    name: accessModeText,
+                    transport: transportText,
+                    protocol: getI18nText(accessDetail?.protocolDetail, 'name'),
+                    description: accessModeDescription,
+                  }" />
                 </template>
               </a-list-item-meta>
             </a-list-item>
@@ -74,7 +69,7 @@
                       <AIcon type="CopyOutlined" />
                     </div>
                   </div>
-                  <CloudEmpty v-else :description="$t('IotDeviceDetail.accessGuide.noAddress')" />
+                  <div v-else class="access-address-empty">{{ $t('IotDeviceDetail.accessGuide.noAddress') }}</div>
                 </template>
               </a-list-item-meta>
             </a-list-item>
@@ -163,6 +158,8 @@ import { isPrivateDeployment } from '@jetlinks-web-core/utils/deployment'
 import type { DeviceTemplate } from '../../services/device-library/types'
 import { useIotDeviceAccessDetail } from '../../hooks/useIotDeviceAccessDetail'
 import type { IotDevice } from '../../types'
+import AccessMethodSummary from '../../../components/AccessMethodSummary.vue'
+import { getI18nText } from '../../../../../utils/i18n'
 import IotDeviceAccessConfigSection from './IotDeviceAccessConfigSection.vue'
 import IotDeviceAccessGuideAside from './IotDeviceAccessGuideAside.vue'
 import IotDeviceAccessPrincipalSection from './IotDeviceAccessPrincipalSection.vue'
@@ -208,10 +205,10 @@ const showAccessGuide = !isPrivateDeployment()
 const showRightGuide = computed(() => Boolean(accessDetail.value?.id) && (showAccessGuide || Boolean(protocolDocument.value)))
 const isDisabled = computed(() => props.device.status === 'disabled' || props.device.connectionStatus === 'disabled')
 const isOnline = computed(() => props.device.status === 'online' || props.device.status === 'alarm')
-const accessModeText = computed(() => displayText(accessDetail.value?.name || props.device.accessName || props.device.accessMode))
+const accessModeText = computed(() => displayText(getI18nText(accessDetail.value, 'name') || props.device.accessName || props.device.accessMode))
 const transportText = computed(() => displayText(accessDetail.value?.transport || props.device.transport))
 const accessModeDescription = computed(() => {
-  const text = displayText(accessDetail.value?.description || providerDescription.value || $t('IotDeviceDetail.accessGuide.accessModeDefaultDesc'))
+  const text = displayText(getI18nText(accessDetail.value, 'description') || providerDescription.value || $t('IotDeviceDetail.accessGuide.accessModeDefaultDesc'))
   const normalizedText = text.toLowerCase()
   if ([accessModeText.value, transportText.value].some((value) => value !== '--' && value.toLowerCase() === normalizedText)) {
     return '--'
@@ -333,62 +330,16 @@ watch(
   background: var(--jet-theme-primary);
 }
 
-.item-style,
-.address-list,
-.access-method-card {
+.address-list {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
 }
 
-.access-method-card {
-  align-items: flex-start;
-}
-
-.access-method-card__row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-  min-width: 0;
-}
-
-.access-method-name {
-  display: inline-block;
-  max-width: 24rem;
-  overflow: hidden;
+.access-address-empty {
   color: var(--jet-theme-text);
   font-size: var(--fs-14);
-  line-height: 1.5;
-  text-overflow: ellipsis;
-  vertical-align: bottom;
-  white-space: nowrap;
-}
-
-.access-method-tag {
-  display: inline-flex;
-  align-items: center;
-  max-width: 18rem;
-  min-height: 1.5rem;
-  margin-inline-end: 0;
-  font-weight: 500;
-}
-
-.access-method-tag :deep(.ant-tag) {
-  min-width: 0;
-}
-
-.access-method-tag--transport {
-  border-color: var(--jet-theme-border-secondary);
-  background: var(--jet-theme-bg-layout);
-  color: var(--jet-theme-text-secondary);
-}
-
-.access-method-card__desc {
-  max-width: 100%;
-  color: var(--jet-theme-text-secondary);
-  font-size: var(--fs-14);
-  line-height: 1.6;
+  text-align: left;
 }
 
 .address-item {
