@@ -7814,6 +7814,8 @@
   "DeviceAlarm.notification.unavailableChannel": "利用できないタイプ",
   "DeviceAlarm.notification.noTypes": "現在、利用可能な通知タイプはありません",
   "DeviceAlarm.notification.type": "通知の種類",
+  "DeviceAlarm.notification.configureTemplate": "テンプレートを設定",
+  "DeviceAlarm.notification.configureRelieveTemplate": "解除テンプレートを設定",
   "DeviceAlarm.notification.template.status": "通知テンプレートの状態",
   "DeviceAlarm.notification.template.trigger": "トリガーテンプレート",
   "DeviceAlarm.notification.template.relieve": "テンプレートの解除",
