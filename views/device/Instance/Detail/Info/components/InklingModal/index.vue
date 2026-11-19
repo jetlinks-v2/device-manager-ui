@@ -1,5 +1,6 @@
 <template>
   <a-modal
+    centered
     :width="800"
     :mask-closable="false"
     :open="true"
@@ -13,79 +14,22 @@
       type="device"
       :accessId='accessId'
       :pluginId="pluginId"
-      :internalId="route.params.id"
+      :internalId="internalId"
     />
   </a-modal>
 </template>
 
-<script setup lang='ts'>
+<script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import InklingDevice from '../../../../../components/InklingDevice'
-import { onlyMessage } from '@jetlinks-web/utils'
-import { savePluginData, getPluginData } from '../../../../../../../api/link/plugin'
-import { useI18n } from 'vue-i18n';
+import { useDeviceIdMappingModal } from './useDeviceIdMappingModal'
 
 defineOptions({ name: 'InklingModal' })
-
-const { t: $t } = useI18n();
-type Emit = {
-  (e: 'cancel'): void
-  (e: 'submit', data: string): void
-}
-
-const props = defineProps({
-  accessId: {
-    type: String,
-    default: undefined
-  },
-  id: {
-    type: String,
-    default: undefined
-  },
-  pluginId:{
-    type:String,
-    default: undefined
-  }
-})
-
-const emit = defineEmits<Emit>()
-const checkKey = ref(props.id)
-const loading = ref(false)
-const route = useRoute()
-
-const handleOk = async () => {
-  if (checkKey.value) {
-    loading.value = true
-    const res = await savePluginData(
-      'device',
-      props.accessId!,
-      route.params.id as string,
-      checkKey.value
-    ).catch(() => ({ success: false }))
-    loading.value = false
-    if (res.success) {
-      emit('submit', checkKey.value)
-    }
-  } else {
-    onlyMessage($t('InklingModal.index.380043-1'), 'error')
-  }
-}
-
-const handleCancel = () => {
-  emit('cancel')
-}
-
-const getCheckedKeys = () => {
-  getPluginData( 'device', props.accessId!, route.params.id as string,).then(res => {
-    if (res.success) {
-      checkKey.value = res.result?.externalId || ''
-    }
-  })
-}
-
-onMounted(() => {
-  getCheckedKeys()
-})
-
+const props = defineProps<{ accessId?: string; id?: string; pluginId?: string; internalId?: string }>()
+const emit = defineEmits<{ cancel: []; submit: [externalId: string] }>()
+const { t: $t } = useI18n()
+const { internalId, checkKey, loading, handleOk } = useDeviceIdMappingModal(props, id => emit('submit', id))
+const handleCancel = () => emit('cancel')
 </script>
 
 <style scoped>

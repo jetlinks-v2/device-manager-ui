@@ -85,25 +85,17 @@
                     :description="$t('InklingDevice.index.743184-2')"
                     style="padding-top: 24px"
                 />
-                <div class="device-list-pagination">
-                    <a-pagination
-                        v-if="showPage"
-                        :total="pageData.total"
-                        :current="pageData.pageIndex + 1"
-                        :pageSize="pageData.pageSize"
-                        :show-total="
-                            () => {
-                                const minSize =
-                                    pageData.pageIndex * pageData.pageSize + 1;
-                                const MaxSize =
-                                    (pageData.pageIndex + 1) *
-                                    pageData.pageSize;
-                                $t('InklingDevice.index.743184-3', [minSize,MaxSize > pageData.total? pageData.total : MaxSize ,pageData.total]);
-                            }
-                        "
-                        @change="pageChange"
-                    />
-                </div>
+            </div>
+            <div v-if="showPage" class="device-list-pagination">
+                <a-pagination
+                    :total="pageData.total"
+                    :current="pageData.pageIndex + 1"
+                    :pageSize="pageData.pageSize"
+                    :show-total="
+                        (total, range) => $t('InklingDevice.index.743184-3', [range[0], range[1], total])
+                    "
+                    @change="pageChange"
+                />
             </div>
         </a-spin>
     </div>
@@ -369,7 +361,8 @@ onMounted(() => {
 }
 
 .device-list-warp {
-  height: 400px;
+    height: min(400px, 45vh);
+    overflow: hidden;
     .device-list-items {
         .device-list-item {
             padding: 10px 16px;
@@ -426,9 +419,17 @@ onMounted(() => {
         }
     }
 
-    .device-list-pagination {
-        margin-top: 24px;
-        text-align: right;
+}
+
+// 分页参与弹窗内容排版，不能溢出列表的固定滚动高度覆盖底部操作。
+.device-list-pagination {
+    padding-block: var(--space-4) var(--space-2);
+    display: flex;
+    justify-content: flex-end;
+    :deep(.ant-pagination) {
+        display: flex;
+        flex-wrap: wrap;
+        row-gap: var(--space-2);
     }
 }
 </style>

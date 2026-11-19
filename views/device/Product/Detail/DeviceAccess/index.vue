@@ -10,7 +10,7 @@
   >
     <j-empty>
       <template #description>
-        <span v-if="permissionStore.hasPermission('device/Product:update')">
+        <span v-if="!isSaaS && permissionStore.hasPermission('device/Product:update')">
           {{ $t("DeviceAccess.index.594346-0")
           }}<a-button type="link" @click="showModal">{{
             $t("DeviceAccess.index.594346-1")
@@ -31,6 +31,7 @@
         >
           <template #extra>
             <j-permission-button
+              v-if="!isSaaS"
               class="product-device-access__change"
               type="primary"
               size="small"
@@ -91,7 +92,7 @@
                     <div v-else>{{ $t("DeviceAccess.index.594346-8") }}</div>
                   </div>
                   <ProductAccessFields ref="formRef" :groups="item?.transportDetail?.allConfig || []"
-                    v-model="formData.data" :disabled="submitLoading || accessLoading" />
+                    v-model="formData.data" :readonly="isSaaS" :disabled="submitLoading || accessLoading" />
                 </a-collapse-panel>
               </a-collapse>
           </div>
@@ -133,7 +134,8 @@
                 { required: true, message: $t('DeviceAccess.index.594346-10') },
               ]"
             >
-              <a-select
+              <span v-if="isSaaS">{{ productTypes.find(item => item.value === productData.id)?.label || productData.id || '-' }}</span>
+              <a-select v-else
                   v-model:value="productData.id"
                   :disabled="submitLoading || accessLoading"
                   :options="productTypes"
@@ -144,6 +146,7 @@
           </a-form>
           <!--        其它接入配置        -->
           <ProductAccessFields ref="formRef" :groups="metadata" v-model="formData.data"
+            :readonly="isSaaS"
             :disabled="submitLoading || accessLoading" />
         </template>
         </section>
@@ -158,7 +161,8 @@
         </Title>
         <a-form layout="vertical">
           <a-form-item>
-            <a-select ref="select" v-model:value="form.storePolicy" :disabled="submitLoading || accessLoading">
+            <span v-if="isSaaS">{{ storageList.find(item => item.id === form.storePolicy)?.name || form.storePolicy || '-' }}</span>
+            <a-select v-else ref="select" v-model:value="form.storePolicy" :disabled="submitLoading || accessLoading">
               <a-select-option
                 v-for="(item, index) in storageList"
                 :key="index"
@@ -169,6 +173,7 @@
           </a-form-item>
         </a-form>
         <j-permission-button
+          v-if="!isSaaS"
           class="product-device-access__save"
           type="primary"
           @click="submitDevice"
@@ -183,7 +188,7 @@
   </div>
   <!-- 选择设备 -->
   <AccessModal
-    v-if="visible"
+    v-if="!isSaaS && visible"
     :product-id="productStore.current.id"
     :deviceType="productStore.current.deviceType?.value"
     :accessId="accessId"
@@ -193,7 +198,7 @@
   />
   <!-- 物模型处理方式 -->
   <MetaDataModal
-    v-if="metadataVisible && metadataModalCacheData"
+    v-if="!isSaaS && metadataVisible && metadataModalCacheData"
     :data="metadataModalCacheData"
     @cancel="
       () => {
@@ -212,6 +217,7 @@ import MetaDataModal from "./metadataModal.vue";
 import ProductAccessFields from "./ProductAccessFields.vue";
 import { getI18nText } from '../../../../../utils/i18n';
 import { useProductDeviceAccess } from './hooks/useProductDeviceAccess';
+import { isSaaS } from '@jetlinks-web-core/utils/consts';
 
 defineOptions({ name: 'AccessConfig' })
 
@@ -221,6 +227,6 @@ const {
   metadataVisible, metadataModalCacheData, submitLoading, accessLoading, accessError, getData, showModal,
   showDevice, checkAccess, productTypeChange, submitDevice, MetaDataModalSubmit, tooltip, checkDisabled,
 } = useProductDeviceAccess();
-defineExpose({ openAccessSelector: showDevice });
+defineExpose({ openAccessSelector: () => { if (!isSaaS) showDevice() } });
 </script>
 <style lang="less" scoped src="./index.less"></style>

@@ -1,7 +1,11 @@
 .dd-summary-action.ant-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
   max-width: 100%;
   height: auto;
   padding: 0;
+  border: 0;
   font-size: inherit;
   line-height: inherit;
   text-align: left;
@@ -11,3 +15,13 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.dd-summary-device-id {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 100%;
+  min-width: 0;
+  vertical-align: top;
+}
+.dd-summary-device-id > .dd-summary-action { min-width: 0; }

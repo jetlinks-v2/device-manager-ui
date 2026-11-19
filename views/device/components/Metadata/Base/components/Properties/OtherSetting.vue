@@ -5,6 +5,8 @@
     body-style='padding-top:4px;width:600px;'
     placement='bottomRight'
     :disabled='disabled'
+    :show-ok='!readonly'
+    :cancel-text="readonly ? $t('IotDeviceDetail.common.close') : undefined"
     @ok='confirm'
     @cancel='cancel'
   >
@@ -42,6 +44,8 @@
                 <template
                   v-else-if="column.dataIndex === 'value'"
                 >
+                  <span v-if="readonly">{{ settingValue(item, index) }}</span>
+                  <template v-else>
                   <a-tooltip
                     v-if='_disabled(record.property)'
                     color='#ffffff'
@@ -112,6 +116,7 @@
                       :options='getOptions(item, index)'
                     />
                   </div>
+                  </template>
                 </template>
               </template>
             </a-table>
@@ -129,6 +134,7 @@
               :options='booleanOptions'
               :type='props.type'
               :value='metrics'
+              :readonly='readonly'
             />
           </a-collapse-panel>
           <a-collapse-panel
@@ -136,7 +142,9 @@
             v-if='showKeyProperty'
             :header="$t('Properties.OtherSetting.237457-35')"
           >
+            <span v-if="readonly">{{ $t('Properties.OtherSetting.237457-36') }}: {{ $t(configValue.isKeyMetric ? 'Properties.OtherSetting.237457-23' : 'Properties.OtherSetting.237457-22') }}</span>
             <CardItem
+              v-else
               v-model:value='configValue.isKeyMetric'
               :disabled='keyPropertyReadonly'
               :title="$t('Properties.OtherSetting.237457-36')"
@@ -202,6 +210,7 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
+  readonly: { type: Boolean, default: false },
   id: {
     type: String,
     default: undefined
@@ -232,7 +241,7 @@ const props = defineProps({
 })
 
 const { modalVisible, confirm, cancel, showContent, activeKey, visible, config, columns, _disabled, popContainer,
-  conflictData, configValue, tableWrapperRef, getOptions, showMetrics, metricsRef, booleanOptions, metrics, showKeyProperty } = usePropertyOtherSettings(props, emit)
+  conflictData, configValue, tableWrapperRef, getOptions, settingValue, showMetrics, metricsRef, booleanOptions, metrics, showKeyProperty } = usePropertyOtherSettings(props, emit)
 </script>
 
 <style scoped lang='less'>

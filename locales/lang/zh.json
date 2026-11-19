@@ -10,6 +10,14 @@
   "DocumentHelp.metadata_inherited": "继承的物模型",
   "DocumentHelp.productForm": "新增、编辑",
   "DocumentHelp.productList": "列表",
+  "DeviceIdMapping.action": "ID映射",
+  "DeviceIdMapping.externalId": "第三方设备 ID：{id}",
+  "DeviceIdMapping.accessibleLabel": "设备ID映射：{status}",
+  "DeviceIdMapping.loadFailed": "设备ID映射加载失败，点击重试",
+
+  "Product.codec.loadFailed": "数据解析配置加载失败",
+  "Product.codec.empty": "暂无数据解析配置",
+
     "PropertyRules.diagram.intent": "仅展示处理意图；实际动作取决于运行状态，不会在图例中执行",
   "PropertyRules.diagram.process": "计算过程",
   "PropertyRules.diagram.failed": "暂时无法计算示例，请重试",

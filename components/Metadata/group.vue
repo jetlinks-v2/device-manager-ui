@@ -1,13 +1,12 @@
 <template>
   <div class="table-group-warp">
-    <a-tabs type="editable-card" v-model:activeKey="myActiveKey" @edit="onAdd" :hideAdd="target === 'device' || readonly" @change="change">
+    <a-tabs :type="readonly ? 'card' : 'editable-card'" v-model:activeKey="myActiveKey" @edit="onAdd" :hideAdd="target === 'device' || readonly" @change="change">
       <a-tab-pane v-for="item in options" :key="item.value" :closable="false">
         <template #tab>
           <a-dropdown
-            v-if="myActiveKey === item.value"
+            v-if="!readonly && myActiveKey === item.value"
             :trigger="['click']"
             :getPopupContainer="(node) => tableWrapperRef || node"
-            :disabled="readonly"
           >
             <template #overlay>
               <a-menu @click="(e) => { menuClick(e, item)}">
