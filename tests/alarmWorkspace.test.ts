@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { createRenderer, defineComponent, nextTick, reactive, ref } from 'vue'
+import { componentsRegistry } from '@jetlinks-web-core/utils/components-registry'
 import { createI18n } from 'vue-i18n'
 import { useDeviceAlarmEditor } from '../views/device/alarm/components/editor/useDeviceAlarmEditor'
 import { setAlarmRequestHandler } from './alarmRequest.test-shim'
@@ -518,6 +519,27 @@ test('editor notifications distinguish off from incomplete and accept persisted 
   props.model.notification.enabled = false
   assert.equal(state.panelStates.value.notification, 'off')
   unmount()
+})
+
+test('hidden alarm panels disappear from navigation and preview without clearing saved notification settings', () => {
+  const getRegistry = componentsRegistry.getRegistry
+  componentsRegistry.getRegistry = code => code === 'device/alarm:alarm-editor'
+    ? [{ targetPage: 'device/alarm', targetModule: 'alarm-editor', target: 'notification', mode: 'hide', code: 'hide-device-alarm-notification', key: 'notification' }]
+    : []
+  const props = editorProps()
+  props.model.notification = { ...createEmptyNotification(), enabled: true, channelProviders: ['email'], userIds: ['user-a'] }
+  const savedNotification = JSON.stringify(props.model.notification)
+  const { state, unmount } = mount(() => useDeviceAlarmEditor(props, key => key))
+  try {
+    assert.deepEqual(state.panels.map(panel => panel.key), ['level', 'target', 'trigger'])
+    assert.equal(state.summaryItems.value.some(item => item.panel === 'notification'), false)
+    state.selectPanel('notification')
+    assert.equal(state.activePanel.value, 'level')
+    assert.equal(JSON.stringify(props.model.notification), savedNotification)
+  } finally {
+    unmount()
+    componentsRegistry.getRegistry = getRegistry
+  }
 })
 
 test('editor preview destinations preserve drafts, block navigation during save and reset on reopen', async () => {
