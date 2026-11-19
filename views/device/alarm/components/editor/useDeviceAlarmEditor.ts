@@ -1,4 +1,5 @@
 import { computed, ref, watch } from 'vue'
+import { componentsRegistry } from '@jetlinks-web-core/utils/components-registry'
 import { recoveryCondition, validCondition, validateAlarmConditions } from '../../conditions'
 import { formatRelieveText, formatTriggerText, propertyIdOf, validateNotificationMessage } from '../../utils'
 import type { AlarmLevelOption, DeviceAlarmFormModel, DeviceAlarmTargetOption, ThingModelProperty } from '../../types'
@@ -15,7 +16,7 @@ interface EditorProps {
   deviceOption?: DeviceAlarmTargetOption
 }
 
-const panels = [
+const editorPanels = [
   { key: 'level', icon: 'NotificationOutlined', labelKey: 'DeviceAlarm.form.level', descriptionKey: 'DeviceAlarm.editor.levelDescription' },
   { key: 'target', icon: 'AimOutlined', labelKey: 'DeviceAlarm.editor.target', descriptionKey: 'DeviceAlarm.editor.targetDescription' },
   { key: 'trigger', icon: 'ThunderboltOutlined', labelKey: 'DeviceAlarm.editor.trigger', descriptionKey: 'DeviceAlarm.editor.triggerDescription' },
@@ -24,11 +25,14 @@ const panels = [
 
 /** 弹窗内的导航、配置状态与预览共用同一草稿；只派生展示，不改变保存校验或请求资源。 */
 export function useDeviceAlarmEditor(props: EditorProps, t: (key: string) => string) {
+  // 导航与预览共用表单扩展的隐藏规则，避免仍能进入被隐藏的配置。
+  const actions = componentsRegistry.getRegistry('device/alarm:alarm-editor')
+  const panels = editorPanels.filter(panel => !actions.some(item => item.mode === 'hide' && item.target === panel.key))
   const activePanel = ref<EditorPanel>('level')
   watch(() => props.open, (open) => {
     if (open) activePanel.value = 'level'
   })
-  const activePanelMeta = computed(() => panels.find(panel => panel.key === activePanel.value) ?? panels[0])
+  const activePanelMeta = computed(() => panels.find(panel => panel.key === activePanel.value) ?? editorPanels[0])
   const selectedProperty = computed(() => props.propertyOptions.find(property => propertyIdOf(property) === props.model.property)
     ?? { valueType: { type: typeof props.model.value === 'string' ? 'string' : typeof props.model.value === 'boolean' ? 'boolean' : 'double' } })
   const empty = computed(() => t('DeviceAlarm.editor.notSelected'))
@@ -83,10 +87,10 @@ export function useDeviceAlarmEditor(props: EditorProps, t: (key: string) => str
       state: !props.model.autoRelieve ? 'off' : relieveReady.value ? 'complete' : 'pending' },
     { key: 'notification', panel: 'notification' as const, labelKey: 'DeviceAlarm.editor.notification',
       value: notificationSummary.value, state: panelStates.value.notification },
-  ])
+  ].filter(item => panels.some(panel => panel.key === item.panel)))
 
   function selectPanel(panel: EditorPanel) {
-    if (!props.saving) activePanel.value = panel
+    if (!props.saving && panels.some(item => item.key === panel)) activePanel.value = panel
   }
 
   return { panels, activePanel, activePanelMeta, panelStates, selectedProperty, previewText, relievePreviewText, summaryItems, selectPanel }
