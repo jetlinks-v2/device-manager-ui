@@ -6837,7 +6837,7 @@
     "IotDeviceDetail.properties.noHistory": "暂无历史数据",
     "IotDeviceDetail.properties.setProperty": "设置属性",
     "IotDeviceDetail.properties.searchPlaceholder": "搜索属性、标识符、分组",
-    "IotDeviceDetail.propertyDetail.okText": "确定",
+    "IotDeviceDetail.propertyDetail.okText": "确认",
     "IotDeviceDetail.propertyDetail.datePlaceholder": "请选择日期",
     "IotDeviceDetail.propertyDetail.propertyValue": "属性值",
     "IotDeviceDetail.propertyDetail.valuePlaceholder": "请输入属性值",

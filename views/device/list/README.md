@@ -183,6 +183,12 @@
 
 验证限制：模块与工作区未提供 lint 脚本；`pnpm exec vue-tsc -p modules/device-manager-ui/tsconfig.json --noEmit` 被未改动的 `views/link/Certificate/type.d.ts:2` TS1005 语法错误阻断，修复后需在 `runtime-ui` 重跑该命令。当前设备的数值属性尚未上报，浏览器已验证趋势区域保留，未覆盖有历史数值时的实际曲线。
 
+## 设备数据属性详情弹窗
+
+`device-manager-ui` 的 `components/device-detail/IotDevicePropertyDetailModal.vue` 底栏仅显示「确认」，点击直接关闭，不提交数据；保留右上角关闭入口。不改变属性历史查询、列表、图表或单条记录详情。
+
+验证：设备管理模块生产构建通过；属性历史请求回归 7 项通过。Chrome 组件测试使用模拟的 B11 历史数据，确认底栏无「取消」，点击「确认」可关闭，重新打开及右上角关闭正常；未连接真实设备联调。模块无独立 lint 命令；在 `runtime-ui` 执行 `pnpm exec vue-tsc -p modules/device-manager-ui/tsconfig.json --noEmit --pretty false` 未通过（既有核心 API 泛型与共享组件等类型错误），类型基线修复后需重跑。
+
 ## 范围树名称搜索
 
 目标与范围：在 `device-manager-ui` 的范围侧栏分段器与树之间增加 `a-input`，通过 `prefix` 插槽展示搜索图标，支持清空。`components/IotDeviceScopeSidebar.vue` 负责展示，`hooks/useIotDeviceScopeSidebar.ts` 复用公共树过滤能力按名称筛选，保留匹配节点的父级路径并展开结果；清空后恢复完整树，无匹配时展示空态。搜索文案同步补齐中英文资源。
