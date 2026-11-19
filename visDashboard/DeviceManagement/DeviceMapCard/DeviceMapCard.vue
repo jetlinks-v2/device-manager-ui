@@ -19,6 +19,10 @@
     :style="style"
   >
     <SectionHeader v-if="!config.embedded" :title="title">
+      <template #title>
+        {{ title }}
+        <DocumentHelp v-if="config.documentHelp" :code="config.documentHelp.code" :help-key="config.documentHelp.key" />
+      </template>
       <template #extra>
         <div v-if="distribution || config.showStatus" class="device-map-legend">
           <span v-for="state in legendStates" :key="state">
@@ -95,6 +99,7 @@
 
 <script setup lang="ts">
 import CloudEmpty from '@jetlinks-web-core/components/CloudEmpty/index.vue'
+import DocumentHelp from '@jetlinks-web-core/components/DocumentHelp'
 import MapConfigAction from './MapConfigAction.vue'
 import { computed, ref, toRef, type CSSProperties, type PropType } from 'vue'
 import { createReusableTemplate } from '@vueuse/core'

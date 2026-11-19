@@ -5,6 +5,8 @@
     body-style='padding-top:4px;width:600px;'
     placement='bottomRight'
     :disabled='disabled'
+    :show-ok='!readonly'
+    :cancel-text="readonly ? $t('IotDeviceDetail.common.close') : undefined"
     @ok='confirm'
     @cancel='cancel'
   >
@@ -42,6 +44,8 @@
                 <template
                   v-else-if="column.dataIndex === 'value'"
                 >
+                  <span v-if="readonly">{{ settingValue(item, index) }}</span>
+                  <template v-else>
                   <a-tooltip
                     v-if='_disabled(record.property)'
                     color='#ffffff'
@@ -72,7 +76,24 @@
                                                 _disabled(record.property),
                                         }"
                   >
+                    <a-select
+                      v-if="record.property === 'storageType' && record.type?.type === 'enum'"
+                      v-model:value="configValue[record.property]"
+                      style="width: 100%"
+                      :options="getOptions(item, index).map(option => ({ ...option, value: String(option.value) }))"
+                      :disabled="_disabled(record.property)"
+                      :dropdownStyle="{ zIndex: 1071 }"
+                      :getPopupContainer="(node) => tableWrapperRef || node"
+                    >
+                      <template #option="{ label, value: storageType }">
+                        {{ label }}
+                        <span v-if="['direct', 'ignore'].includes(storageType)" @mousedown.prevent.stop>
+                          <DocumentHelp code="device/Product" :help-key="`metadata.storage.${storageType}`" />
+                        </span>
+                      </template>
+                    </a-select>
                     <j-value-item
+                      v-else
                       style='width: 100%'
                       v-model:modelValue='
                                                 configValue[record.property]
@@ -95,6 +116,7 @@
                       :options='getOptions(item, index)'
                     />
                   </div>
+                  </template>
                 </template>
               </template>
             </a-table>
@@ -105,20 +127,14 @@
           >
             <template #header>
               {{ $t('Properties.OtherSetting.237457-1') }}
-              <a-tooltip
-                :title="$t('Properties.OtherSetting.237457-2')"
-              >
-                <AIcon
-                  type='ExclamationCircleOutlined'
-                  style='padding-left: 12px; padding-top: 4px'
-                />
-              </a-tooltip>
+              <DocumentHelp code="device/Product" help-key="metadata.metrics" />
             </template>
             <Metrics
               ref='metricsRef'
               :options='booleanOptions'
               :type='props.type'
               :value='metrics'
+              :readonly='readonly'
             />
           </a-collapse-panel>
           <a-collapse-panel
@@ -126,7 +142,9 @@
             v-if='showKeyProperty'
             :header="$t('Properties.OtherSetting.237457-35')"
           >
+            <span v-if="readonly">{{ $t('Properties.OtherSetting.237457-36') }}: {{ $t(configValue.isKeyMetric ? 'Properties.OtherSetting.237457-23' : 'Properties.OtherSetting.237457-22') }}</span>
             <CardItem
+              v-else
               v-model:value='configValue.isKeyMetric'
               :disabled='keyPropertyReadonly'
               :title="$t('Properties.OtherSetting.237457-36')"
@@ -168,6 +186,7 @@
 </template>
 
 <script setup lang='ts'>
+import DocumentHelp from '@jetlinks-web-core/components/DocumentHelp'
 import Metrics from './Metrics/Metrics.vue'
 import { useI18n } from 'vue-i18n'
 import { PopoverModal } from '../../../../../../../components/Metadata'
@@ -191,6 +210,7 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
+  readonly: { type: Boolean, default: false },
   id: {
     type: String,
     default: undefined
@@ -221,7 +241,7 @@ const props = defineProps({
 })
 
 const { modalVisible, confirm, cancel, showContent, activeKey, visible, config, columns, _disabled, popContainer,
-  conflictData, configValue, tableWrapperRef, getOptions, showMetrics, metricsRef, booleanOptions, metrics, showKeyProperty } = usePropertyOtherSettings(props, emit)
+  conflictData, configValue, tableWrapperRef, getOptions, settingValue, showMetrics, metricsRef, booleanOptions, metrics, showKeyProperty } = usePropertyOtherSettings(props, emit)
 </script>
 
 <style scoped lang='less'>

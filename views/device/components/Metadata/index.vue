@@ -21,7 +21,7 @@
             type="card"
             @change="tabsChange"
         >
-            <template #rightExtra>
+            <template v-if="!readonly" #rightExtra>
                 <a-space>
                     <j-permission-button
                         v-if="showReset"
@@ -50,32 +50,52 @@
                     >
                 </a-space>
             </template>
-            <a-tab-pane :tab="$t('Metadata.index.838029-6')" key="properties">
+            <a-tab-pane key="properties">
+                <template #tab>
+                    {{ $t('Metadata.index.838029-6') }}
+                    <DocumentHelp code="device/Product" help-key="metadata.tabs.properties" />
+                </template>
                 <BaseMetadata
                     :target="type"
                     type="properties"
                     :permission="updatePermission"
+                    :readonly="readonly"
                 />
             </a-tab-pane>
-            <a-tab-pane :tab="$t('Metadata.index.838029-7')" key="functions">
+            <a-tab-pane key="functions">
+                <template #tab>
+                    {{ $t('Metadata.index.838029-7') }}
+                    <DocumentHelp code="device/Product" help-key="metadata.tabs.functions" />
+                </template>
                 <BaseMetadata
                     :target="type"
                     type="functions"
                     :permission="updatePermission"
+                    :readonly="readonly"
                 />
             </a-tab-pane>
-            <a-tab-pane :tab="$t('Metadata.index.838029-8')" key="events">
+            <a-tab-pane key="events">
+                <template #tab>
+                    {{ $t('Metadata.index.838029-8') }}
+                    <DocumentHelp code="device/Product" help-key="metadata.tabs.events" />
+                </template>
                 <BaseMetadata
                     :target="type"
                     type="events"
                     :permission="updatePermission"
+                    :readonly="readonly"
                 />
             </a-tab-pane>
-            <a-tab-pane :tab="$t('Metadata.index.838029-9')" key="tags">
+            <a-tab-pane key="tags">
+                <template #tab>
+                    {{ $t('Metadata.index.838029-9') }}
+                    <DocumentHelp code="device/Product" help-key="metadata.tabs.tags" />
+                </template>
                 <BaseMetadata
                     :target="type"
                     type="tags"
                     :permission="updatePermission"
+                    :readonly="readonly"
                 />
             </a-tab-pane>
         </a-tabs>
@@ -86,6 +106,7 @@
           >
             <j-ellipsis class="desc">
                 {{ $t('Metadata.index.838029-5') }}
+                <DocumentHelp v-if="type === 'device'" code="iot-user-device-list" help-key="metadata.inherited" />
             </j-ellipsis>
           </div>
         </teleport>
@@ -99,6 +120,7 @@
     </div>
 </template>
 <script setup lang="ts">
+import DocumentHelp from '@jetlinks-web-core/components/DocumentHelp';
 import { deleteMetadata } from '../../../../api/instance.js';
 import { message } from 'ant-design-vue';
 import { useInstanceStore } from '../../../../store/instance';
@@ -111,6 +133,7 @@ import { useAuthStore } from '@jetlinks-web-core/store';
 import { isEqual } from 'lodash-es';
 import { useI18n } from 'vue-i18n';
 import { useElementSize } from '@vueuse/core';
+import { isSaaS } from '@jetlinks-web-core/utils/consts';
 
 defineOptions({ name: 'Metadata' })
 
@@ -128,6 +151,8 @@ interface Props {
     updatePermission?: string | string[] | boolean;
 }
 const props = defineProps<Props>();
+// 产品是设备物模型的恢复基准；SaaS 未提供恢复设备库标准定义的入口，设备编辑仍沿用原行为。
+const readonly = computed(() => isSaaS && props.type === 'product');
 
 const permission = computed(() =>
     props.type === 'device' ? 'device/Instance' : 'device/Product',
@@ -135,6 +160,7 @@ const permission = computed(() =>
 // j-permission-button 的共享 Hook 只监听权限码本身，不会在菜单异步加载后重新计算。
 // 这里将最终权限解析为响应式布尔值，既复用真实菜单授权，也能随权限仓库更新刷新按钮状态。
 const updatePermission = computed(() => {
+    if (readonly.value) return false;
     const code = props.updatePermission ?? `${permission.value}:update`;
     return typeof code === 'boolean' ? code : authStore.hasPermission(code);
 });

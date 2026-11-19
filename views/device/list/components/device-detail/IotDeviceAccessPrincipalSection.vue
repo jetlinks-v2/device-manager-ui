@@ -34,7 +34,8 @@
           >
             <div class="principal-card__type">
               <a-tag class="metadata-tag">{{ principal.name }}</a-tag>
-              <a-tooltip v-if="principal.description" :title="principal.description">
+              <DocumentHelp v-if="principal.authenticationType === 'MQTT'" code="iot-user-device-list" help-key="access.mqttPrincipal" />
+              <a-tooltip v-else-if="principal.description" :title="principal.description">
                 <AIcon type="QuestionCircleOutlined" class="metadata-help" />
               </a-tooltip>
             </div>
@@ -70,11 +71,13 @@
 <script setup lang="ts">
 import type { PropType } from 'vue'
 import { useI18n } from 'vue-i18n'
+import DocumentHelp from '@jetlinks-web-core/components/DocumentHelp'
 
 type PrincipalRow = {
   id: string
   name: string
   description?: string
+  authenticationType?: string
   fields: Array<{
     label: string
     value?: string

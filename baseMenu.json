@@ -52,6 +52,7 @@
                 }
               },
               "owner": "iot",
+              "runtime": true,
               "id": "8ddbb67de5f65514105d47b448bfd70e",
               "url": "/resources/devices/products",
               "icon": "icon-yuandian",

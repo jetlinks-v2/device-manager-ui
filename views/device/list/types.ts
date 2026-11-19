@@ -108,6 +108,8 @@ export interface IotDevice {
   accessName?: string
   /** 真实接入方式枚举值，与旧版 accessProvider 对齐。 */
   accessProvider?: string
+  /** 设备接入方式 ID，供插件设备 ID 映射查询和保存。 */
+  accessId?: string
   /** 真实设备实例协议 ID，透明编解码调试查询协议路由时使用。 */
   protocol?: string
   /** 真实设备实例传输协议，透明编解码调试区分 Topic / URL 时使用。 */

@@ -3,10 +3,13 @@
     :open="open"
     :title="title"
     :width="920"
-    :ok-text="$t('IotDeviceDetail.propertyDetail.okText')"
-    :cancel-text="$t('IotDeviceDetail.common.cancel')"
     @update:open="emit('update:open', $event)"
   >
+    <template #footer>
+      <a-button type="primary" @click="emit('update:open', false)">
+        {{ $t('IotDeviceDetail.propertyDetail.okText') }}
+      </a-button>
+    </template>
     <section v-if="property" class="property-detail-modal">
       <div class="detail-ranges">
         <a-segmented

@@ -143,6 +143,8 @@ export function usePropertyOtherSettings(props: Readonly<Record<string, any>>, e
   }
 
   const confirm = () => {
+    // 查看标准产品配置时不提交物模型，也不更新设备指标。
+    if (props.readonly) return Promise.resolve(false)
     return new Promise(async (resolve, reject) => {
       try {
         let metrics: any
@@ -195,6 +197,13 @@ export function usePropertyOtherSettings(props: Readonly<Record<string, any>>, e
     }
   }
 
+  // 只读配置沿用字段定义中的枚举文案。
+  const settingValue = (item: MetadataSettingGroup, index: number) => {
+    const value = configValue.value[item.properties[index].property]
+    const label = getOptions(item, index).find(option => option.value === value)?.label
+    return label ?? (value == null || value === '' ? '-' : typeof value === 'object' ? JSON.stringify(value) : String(value))
+  }
+
   //判断设备接入配置项是否跟物模型字段冲突
   const conflictData = computed(() => {
     let arr: any = []
@@ -215,7 +224,7 @@ export function usePropertyOtherSettings(props: Readonly<Record<string, any>>, e
     () => modalVisible.value,
     async () => {
       if (modalVisible.value) {
-        configValue.value = omit(props.value, [
+        configValue.value = omit(cloneDeep(props.value), [
           'source',
           'type',
           'metrics',
@@ -242,5 +251,5 @@ export function usePropertyOtherSettings(props: Readonly<Record<string, any>>, e
     { immediate: true }
   )
   return { modalVisible, confirm, cancel, showContent, activeKey, visible, config, columns, _disabled, popContainer,
-    conflictData, configValue, tableWrapperRef, getOptions, showMetrics, metricsRef, booleanOptions, metrics, showKeyProperty }
+    conflictData, configValue, tableWrapperRef, getOptions, settingValue, showMetrics, metricsRef, booleanOptions, metrics, showKeyProperty }
 }

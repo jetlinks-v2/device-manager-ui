@@ -1,13 +1,12 @@
 <template>
   <div class="table-group-warp">
-    <a-tabs type="editable-card" v-model:activeKey="myActiveKey" @edit="onAdd" :hideAdd="target === 'device' || readonly" @change="change">
+    <a-tabs :type="readonly ? 'card' : 'editable-card'" v-model:activeKey="myActiveKey" @edit="onAdd" :hideAdd="target === 'device' || readonly" @change="change">
       <a-tab-pane v-for="item in options" :key="item.value" :closable="false">
         <template #tab>
           <a-dropdown
-            v-if="myActiveKey === item.value"
+            v-if="!readonly && myActiveKey === item.value"
             :trigger="['click']"
             :getPopupContainer="(node) => tableWrapperRef || node"
-            :disabled="readonly"
           >
             <template #overlay>
               <a-menu @click="(e) => { menuClick(e, item)}">
@@ -22,6 +21,7 @@
             <div class="table-group-error-warp">
               <div class="table-group-error-warp-label">
                 <j-ellipsis>{{ item.label }}</j-ellipsis> ({{ item.effective}})
+                <DocumentHelp code="device/Product" help-key="metadata.groups" />
               </div>
 <!--              <div class="table-group-error-warp-value">-->
 <!--                <j-ellipsis>{{item.value}}</j-ellipsis>-->
@@ -42,6 +42,7 @@
           <div v-else class="table-group-error-warp">
             <div class="table-group-error-warp-label">
               <j-ellipsis>{{ item.label }}</j-ellipsis> ({{ item.effective}})
+                <DocumentHelp code="device/Product" help-key="metadata.groups" />
             </div>
 <!--            <div class="table-group-error-warp-value">-->
 <!--              <j-ellipsis>{{item.value}}</j-ellipsis>-->
@@ -94,6 +95,7 @@
 </template>
 
 <script setup>
+import DocumentHelp from '@jetlinks-web-core/components/DocumentHelp'
 import {Modal} from "ant-design-vue";
 import {randomNumber} from "@jetlinks-web/utils";
 import {isFullScreen} from "@jetlinks-web-core/utils";

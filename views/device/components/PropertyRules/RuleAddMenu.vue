@@ -4,7 +4,9 @@
     <template #overlay><a-menu class="rule-choice-menu">
       <a-menu-item-group v-for="group in groups" :key="`stage-${group.key}`" :title="$t(`PropertyRules.stage.${group.key}`)">
         <a-menu-item v-for="part in group.parts" :key="part" @click="$emit('add', part)">
-          <RuleMenuOption :class="`rule-menu-option-${group.key}`" :icon="labels[part].icon" :title="$t(labels[part].label)" :description="$t(`PropertyRules.partHint.${part}`)" />
+          <RuleMenuOption :class="`rule-menu-option-${group.key}`" :icon="labels[part].icon" :title="$t(labels[part].label)" :description="$t(`PropertyRules.partHint.${part}`)">
+            <template #title-extra><DocumentHelp code="device/Product" :help-key="`propertyRule.${part}`" /></template>
+          </RuleMenuOption>
         </a-menu-item>
       </a-menu-item-group>
       <a-menu-divider v-if="parts.length && clearLabel" />
@@ -17,6 +19,7 @@ import { useI18n } from 'vue-i18n'
 import { computed } from 'vue'
 import type { RuleAddPart } from './codec'
 import RuleMenuOption from './RuleMenuOption.vue'
+import DocumentHelp from '@jetlinks-web-core/components/DocumentHelp'
 const props = defineProps<{ parts: RuleAddPart[]; disabled?: boolean; clearLabel?: string }>()
 defineEmits<{ (e: 'add', part: RuleAddPart): void; (e: 'clear'): void }>()
 const { t: $t } = useI18n()

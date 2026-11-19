@@ -4,10 +4,22 @@
 
 - 目标与范围：仅修复 `runtime-ui/modules/device-manager-ui` 的告警属性来源；全部设备使用产品物模型，单设备使用 `/device-instance/{id}/detail` 返回的有效 `metadata`，沿用服务端的产品继承与设备独立物模型语义。
 - 实施入口：`api.ts` 复用 `api/instance.ts` 的设备详情请求，`hooks/useDeviceAlarmPage.ts` 在新增与编辑时按作用域加载属性；切换设备清空属性选择，忽略过期响应。保留原有弹窗、属性类型过滤、已配置告警禁用规则及保存接口，不修改运营端或后端。
-- 验证：Node 22.18.0 下执行 `node modules/device-manager-ui/scripts/test-alarm-workspace.mjs`，最新 `origin/2.20` 基线复验 205/205 通过，新增 5 项行为回归覆盖设备独立属性、产品继承、编辑回显、切回全部设备、设备详情与配置响应乱序、清空产品及请求失败/空物模型。`git diff --check` 通过。
-- 构建与类型：在 `runtime-ui/jetlinks-web-core` 使用本地 Vite 执行 `node ../node_modules/vite/bin/vite.js build --outDir /tmp/jetlinks-alarm-device-model-build -- --module-name device-manager-ui`，最新基线模块构建通过（2m 41s），保留资源路径与大 chunk 等警告。修复阶段执行 `node node_modules/vue-tsc/bin/vue-tsc.js --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json` 未通过，共 1741 条诊断（最新基线未重复全模块类型检查）；本次修改的 `api.ts`、`useDeviceAlarmPage.ts` 无诊断，测试文件仍报告原有 `node:assert/strict`、`node:test` 类型声明缺失。模块没有独立 lint 脚本；未进行真实后端登录页面联调，实际设备属性与保存仍待页面验证。
+- 验证：Node 22.18.0 下执行 `node modules/device-manager-ui/scripts/test-alarm-workspace.mjs`，合并 `2.20@1283276a` 并解决文档冲突后复验 206/206 通过，新增 5 项行为回归覆盖设备独立属性、产品继承、编辑回显、切回全部设备、设备详情与配置响应乱序、清空产品及请求失败/空物模型。`git diff --check` 通过。
+- 构建与类型：在 `runtime-ui/jetlinks-web-core` 使用本地 Vite 执行 `node ../node_modules/vite/bin/vite.js build --outDir /tmp/jetlinks-alarm-device-model-build -- --module-name device-manager-ui`，修复阶段模块构建通过（2m 41s；本次冲突合并未重复构建），保留资源路径与大 chunk 等警告。修复阶段执行 `node node_modules/vue-tsc/bin/vue-tsc.js --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json` 未通过，共 1741 条诊断（最新基线未重复全模块类型检查）；本次修改的 `api.ts`、`useDeviceAlarmPage.ts` 无诊断，测试文件仍报告原有 `node:assert/strict`、`node:test` 类型声明缺失。模块没有独立 lint 脚本；未进行真实后端登录页面联调，实际设备属性与保存仍待页面验证。
 - 作者 Review：PASS。直接消费设备详情已有的有效物模型，未在前端重做继承/合并规则；修改范围仅运行时告警 feature 与回归，不涉及后端接口、公共模型、权限、菜单或布局。
 - 修复提交：`5535776f`；评审入口：[PR #409](https://github.com/jetlinks-v2/device-manager-ui/pull/409)，目标分支 `2.20`。
+
+## 告警日志与处理记录文档帮助
+
+`components/DeviceAlarmRecordCard.vue` 在“告警日志”“处理记录”操作旁接入现有 `DocumentHelp`，本模块 `documentHelpPoints.ts` 以 `iot-user/device/alarm` 登记 `history.logs`、`history.handles`。模块启动即可扫描，点位名称沿用中英日资源；帮助与操作按钮并列，未配置或禁用时隐藏，不预置正文，保留原日志/处理记录图标、历史事件和告警处理权限。
+
+验证：`node scripts/test-alarm-workspace.mjs` 200/200 通过；定向内存交互检查确认两类帮助的未配置/禁用隐藏、三语正文切换、帮助点击/键盘不触发历史事件，原 logs/handles 及处理按钮仍发送正确事件。改动 SFC 脚本/模板/样式编译与 `git diff --check` 通过。运行时三模块联合生产构建通过（36.99s）；完整 `vue-tsc --noEmit -p modules/device-manager-ui/tsconfig.json` 未通过，共 1741 条诊断，本次修改文件无命中。模块及宿主未配置独立 lint。尚未在真实浏览器验证窄屏布局、悬停与配置保存回读；保持 [Draft #404](https://github.com/jetlinks-v2/device-manager-ui/pull/404)，不提交聚合仓库指针。
+
+## 添加规则帮助入口
+
+`components/PropertyRules/RuleAddMenu.vue` 的全部 11 种规则选项接入可配置文档帮助，使用 `device/Product` 下的 `propertyRule.*` 标识；产品与设备共用相同规则说明。问号放在选项标题旁，查看说明不添加规则，原有类型适配、权限、保存和清空行为保持不变。说明按集合过滤、有效范围、跳变量、校正、公式、补齐、文件存储、告警和三种采样的实际配置编写。
+
+验证：两个改动组件的脚本、模板和样式编译通过；`node scripts/test-alarm-workspace.mjs` 200 项回归通过。完整构建与类型检查本次未重复执行，模块无独立 lint 脚本；真实页面的问号位置、点击不添加规则及线上说明回读由主任务验收。
 
 ## 物模型属性已配置告警提示
 

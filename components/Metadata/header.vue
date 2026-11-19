@@ -4,6 +4,7 @@
       <div :class="{ 'metadata-edit-table-header-cell-box': true, 'header-cell-box-tool': !!(item.sort || item.filter) }">
           <div class="table-header-cell-title">
             <span>{{ item.title }}</span>
+            <DocumentHelp v-if="['product', 'device'].includes(metadataTarget) && (item.helpKey || helpFields.includes(item.dataIndex))" code="device/Product" :help-key="item.helpKey || `metadata.fields.${item.dataIndex}`" />
             <span v-if="item.form?.required" class="header-cell-required">*</span>
           </div>
           <div v-if="!!(item.sort || item.filter)" class="table-header-cell-trigger">
@@ -35,6 +36,8 @@
 </template>
 
 <script setup>
+import DocumentHelp from '@jetlinks-web-core/components/DocumentHelp'
+import { inject } from 'vue'
 import { SearchModal, Sort } from './components/Search'
 import {useTableTool} from "./context";
 
@@ -55,6 +58,8 @@ const props = defineProps({
   }
 })
 
+const metadataTarget = inject('_metadataType', undefined)
+const helpFields = ['id', 'valueType', 'inputs', 'async', 'other']
 const tableTool = useTableTool()
 
 const searchData = reactive({

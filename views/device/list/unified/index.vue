@@ -55,9 +55,12 @@
 					          <a-menu-item v-if="canDeviceBatchAction('export')" key="export">{{ t('Instance.index.133466-30') }}</a-menu-item>
 					          <a-menu-item v-if="!isSaaS && canDeviceBatchAction('import')" key="import">{{ t('Instance.index.133466-31') }}</a-menu-item>
 					          <a-menu-item v-if="canDeviceBatchAction('enable')" key="activateAll">{{ t('Instance.index.133466-32') }}</a-menu-item>
-						          <a-menu-item v-if="activeType === 'gateway' && menu.hasMenu('algorithm-center')" key="algorithms">{{ t('UnifiedDeviceList.batchAlgorithms') }}</a-menu-item>
-						          <a-menu-item v-if="activeType === 'gateway'" key="plugins">{{ t('UnifiedDeviceList.batchPlugins') }}</a-menu-item>
-						          <a-menu-item key="syncStatus">{{ t('IotDeviceList.action.syncStatus') }}</a-menu-item>
+						          <a-menu-item v-if="activeType === 'gateway' && menu.hasMenu('algorithm-center')" key="algorithms">{{ t('UnifiedDeviceList.batchAlgorithms') }}<DocumentHelp code="iot-user-device-list" help-key="batch.algorithms" /></a-menu-item>
+						          <a-menu-item v-if="activeType === 'gateway'" key="plugins">{{ t('UnifiedDeviceList.batchPlugins') }}<DocumentHelp code="iot-user-device-list" help-key="batch.plugins" /></a-menu-item>
+						          <a-menu-item key="syncStatus">
+                        {{ t('IotDeviceList.action.syncStatus') }}
+                        <DocumentHelp code="iot-user-device-list" help-key="batch.syncStatus" />
+                      </a-menu-item>
 						        </a-menu>
 						      </template>
 						    </a-dropdown>
@@ -77,6 +80,10 @@
 				    <a-alert v-if="error || scopeLoadError" type="error" show-icon :message="error || t('UnifiedDeviceList.loadFailed')"><template #action><a-button @click="refresh">{{ t('UnifiedDeviceList.refresh') }}</a-button></template></a-alert>
 				    <div class="unified-device-list__table">
 					    <a-table row-key="id" :columns="columns" :data-source="rows" :loading="loading" :pagination="false" :row-selection="rowSelection" :scroll="{ x: 'max-content' }">
+                      <template #headerCell="{ column }">
+                        {{ column.title }}
+                        <DocumentHelp v-if="column.key === 'status'" code="iot-user-device-list" help-key="list.status" />
+                      </template>
 					      <template #emptyText>
 					        <CloudEmpty :search="hasSearch" :search-name="$t('UnifiedDeviceList.device')">
 					          <template v-if="!error"><a-space><EmptyCreateButtonAction1 /><EmptyCreateButtonAction2 /></a-space></template>
@@ -241,6 +248,7 @@ import { useDeviceListChannelSupport } from './useDeviceListChannelSupport'
 import { useUnifiedDeviceActions } from './useUnifiedDeviceActions'
 import { useUnifiedDeviceBatchNavigation } from './useUnifiedDeviceBatchNavigation'
 import Process from '../../Instance/Process/index.vue'
+import DocumentHelp from '@jetlinks-web-core/components/DocumentHelp'
 import { useHomeAgentFeatureEntry } from '@jetlinks-web-core/layout/components/AiChat/useHomeAgentFeatureEntry'
 import { DEVICE_ONBOARDING_CAPABILITY_ID } from '@device-manager-ui/agentCapabilities/deviceGuidance/homeAgentProvider'
 import DeviceImport from '../../Instance/Import/modal.vue'

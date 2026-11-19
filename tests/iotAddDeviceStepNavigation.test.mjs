@@ -12,7 +12,7 @@ const hookSource = readFileSync(resolve(directory, 'views/device/list/hooks/useI
 test('device configuration returns to source selection without overwriting entered basic fields', () => {
   assert.match(footerSource, /v-if="showClose"/)
   assert.match(drawerSource, /:show-close="isEditMode \|\| isCreating \|\| currentStep === 0"/)
-  assert.match(drawerSource, /:show-previous="!isEditMode && !isCreating"/)
+  assert.match(drawerSource, /:show-previous="!isEditMode && !isCreating && currentStep > 0"/)
   assert.match(drawerSource, /@previous="backToSource"/)
   assert.match(drawerSource, /function backToSource\(\) \{[\s\S]*preserveFormOnSourceSelection\.value = true[\s\S]*pendingInitialGuideAdvance\.value = false/)
   assert.doesNotMatch(drawerSource, /function backToSource\(\) \{[\s\S]*clearSelectedSource\(\)/)

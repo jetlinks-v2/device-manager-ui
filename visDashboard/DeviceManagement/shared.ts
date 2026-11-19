@@ -122,6 +122,8 @@ export interface DeviceMessageConfig {
 
 export interface DeviceMapConfig {
   topTitle: string
+  /** 宿主页面注册的帮助点位，未提供时保留原标题。 */
+  documentHelp?: { code: string; key: string }
   isAutoRefresh: boolean
   interval: number
   presentation?: 'distribution'

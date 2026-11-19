@@ -80,7 +80,14 @@
             class="add-device__source-switch"
             :options="sourceOptions"
             @change="selectSource($event as DeviceCreationSource)"
-          />
+          >
+            <template #label="{ value, title }">
+              {{ title }}
+              <span v-if="value === 'library'" @click.capture.prevent @click.stop>
+                <DocumentHelp code="iot-user-device-list" help-key="onboarding.libraryTemplate" />
+              </span>
+            </template>
+          </a-segmented>
           <IotAddDeviceLibraryStep
             v-if="creationSource === 'library'"
             :templates="libraryProducts"
@@ -147,7 +154,7 @@
     <template v-if="isEditMode || !isCreating || installProgressState.hasError" #footer>
       <IotAddDeviceModalFooter
         :show-close="isEditMode || isCreating || currentStep === 0"
-        :show-previous="!isEditMode && !isCreating"
+        :show-previous="!isEditMode && !isCreating && currentStep > 0"
         :busy="activePrimaryBusy"
         :submit-disabled="activeSubmitDisabled"
         :submit-text="activeSubmitText"
@@ -162,6 +169,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, type ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
+import DocumentHelp from '@jetlinks-web-core/components/DocumentHelp'
 import type { DeviceCreationSource } from '@device-manager-ui/api/device'
 import IotAddDeviceProductStep from './IotAddDeviceProductStep.vue'
 import IotAddDeviceLibraryStep from './IotAddDeviceLibraryStep.vue'
@@ -239,8 +247,8 @@ const {
 })
 
 const sourceOptions = computed(() => [
-  { value: 'library', label: $t('IotDeviceList.add.librarySource') },
-  ...(productMenuAvailable.value ? [{ value: 'product', label: $t('IotDeviceList.add.productSource') }] : []),
+  { value: 'library', title: $t('IotDeviceList.add.librarySource') },
+  ...(productMenuAvailable.value ? [{ value: 'product', title: $t('IotDeviceList.add.productSource') }] : []),
 ])
 const activePrimaryBusy = computed(() => isEditMode.value ? editBusy.value : busy.value)
 const activeSubmitDisabled = computed(() => isEditMode.value
