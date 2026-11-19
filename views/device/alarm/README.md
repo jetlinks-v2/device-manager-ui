@@ -8,6 +8,7 @@
 - 页面验证：删除入口后，使用运行时真实组件、Ant Design Vue 与本模块语言包的临时浏览器隔离页重新检查，13 组通过，覆盖中英日 × 1440/375/320px，以及表单/行内模式下的权限隐藏和解除按钮条件；底部通用按钮均不再显示，类型内两个模板按钮参数正确，说明宽度至少 160px、列表与弹层无横向溢出、无脚本错误。数据与导航 hook 使用替身，图标使用占位；尚未在已登录完整页面验证后端加载、真实新标签跳转及返回刷新。
 - 类型检查限制：运行时根目录 `node node_modules/vue-tsc/bin/vue-tsc.js --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json` 未通过，项目及共享依赖共 1739 条诊断，本次 `DeviceAlarmNotificationConfig.vue` 无命中，不视为全模块类型检查通过。
 - 作者 Review：PASS；修复仅落在 `runtime-ui/modules/device-manager-ui`，未改变通知选择、权限或保存契约。
+- 交付：修复提交 `6e8a242c`；[PR #414](https://github.com/jetlinks-v2/device-manager-ui/pull/414)，目标分支 `2.20`。
 
 ## 单设备告警物模型来源
 
