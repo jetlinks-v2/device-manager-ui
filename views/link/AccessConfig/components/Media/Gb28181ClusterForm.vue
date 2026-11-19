@@ -24,8 +24,8 @@
               {{ $t('Media.GB28181.666483-17') }}
             </span>
           </template>
-          <a-row :gutter="[24, 24]">
-            <a-col :xs="24" :md="12">
+          <a-row>
+            <a-col :span="24">
               <a-form-item
                 :label="$t('Media.GB28181.666483-18')"
                 :name="['cluster', index, 'clusterNodeId']"
@@ -50,7 +50,9 @@
                 </a-select>
               </a-form-item>
             </a-col>
-            <a-col :xs="24" :md="12">
+          </a-row>
+          <a-row :gutter="24">
+            <a-col :span="12">
               <a-form-item
                 :name="['cluster', index, 'host']"
                 :rules="{
@@ -79,7 +81,7 @@
                 ></a-select>
               </a-form-item>
             </a-col>
-            <a-col :xs="24" :md="12">
+            <a-col :span="12">
               <a-form-item
                 :name="['cluster', index, 'port']"
                 :rules="{
@@ -107,7 +109,9 @@
                 </a-select>
               </a-form-item>
             </a-col>
-            <a-col :xs="24" :md="12">
+          </a-row>
+          <a-row :gutter="24">
+            <a-col :span="12">
               <a-form-item
                 :name="['cluster', index, 'publicHost']"
                 :validateFirst="true"
@@ -139,7 +143,7 @@
                 />
               </a-form-item>
             </a-col>
-            <a-col :xs="24" :md="12">
+            <a-col :span="12">
               <a-form-item
                 :name="['cluster', index, 'publicPort']"
                 :rules="[

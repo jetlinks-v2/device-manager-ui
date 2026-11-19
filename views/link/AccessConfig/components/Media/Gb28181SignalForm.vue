@@ -6,52 +6,48 @@
     autocomplete="off"
     layout="vertical"
   >
-    <a-row :gutter="[24, 24]">
-      <a-col :xs="24" :md="12">
-        <a-form-item
-          :label="$t('Media.GB28181.666483-1')"
-          name="domain"
-          :rules="[
-            {
-              required: true,
-              message: $t('Media.GB28181.666483-2')
-            },
-            {
-              max: 64,
-              message: $t('Media.GB28181.666483-3'),
-              trigger: 'blur'
-            }
-          ]"
-        >
-          <a-input
-            v-model:value="formState.domain"
-            :placeholder="$t('Media.GB28181.666483-2')"
-          />
-        </a-form-item>
-      </a-col>
-      <a-col :xs="24" :md="12">
-        <a-form-item
-          label="SIP ID"
-          name="sipId"
-          :rules="[
-            {
-              required: true,
-              message: $t('Media.GB28181.666483-4')
-            },
-            {
-              max: 64,
-              message: $t('Media.GB28181.666483-3'),
-              trigger: 'blur'
-            }
-          ]"
-        >
-          <a-input
-            v-model:value="formState.sipId"
-            :placeholder="$t('Media.GB28181.666483-4')"
-          />
-        </a-form-item>
-      </a-col>
-    </a-row>
+    <div class="sip-identity-fields">
+      <a-form-item
+        :label="$t('Media.GB28181.666483-1')"
+        name="domain"
+        :rules="[
+          {
+            required: true,
+            message: $t('Media.GB28181.666483-2')
+          },
+          {
+            max: 64,
+            message: $t('Media.GB28181.666483-3'),
+            trigger: 'blur'
+          }
+        ]"
+      >
+        <a-input
+          v-model:value="formState.domain"
+          :placeholder="$t('Media.GB28181.666483-2')"
+        />
+      </a-form-item>
+      <a-form-item
+        label="SIP ID"
+        name="sipId"
+        :rules="[
+          {
+            required: true,
+            message: $t('Media.GB28181.666483-4')
+          },
+          {
+            max: 64,
+            message: $t('Media.GB28181.666483-3'),
+            trigger: 'blur'
+          }
+        ]"
+      >
+        <a-input
+          v-model:value="formState.sipId"
+          :placeholder="$t('Media.GB28181.666483-4')"
+        />
+      </a-form-item>
+    </div>
 
     <a-form-item
       name="shareCluster"
@@ -80,8 +76,8 @@
       v-if="formState.shareCluster"
       class="form-item1"
     >
-      <a-row :gutter="[24, 24]">
-        <a-col :span="6">
+      <a-row :gutter="24">
+        <a-col :span="12">
           <a-form-item
             :label="$t('Media.GB28181.666483-10')"
             :name="['hostPort', 'host']"
@@ -94,7 +90,6 @@
           >
             <a-select
               v-model:value="formState.hostPort.host"
-              style="width: 105%"
               :disabled="true"
               show-search
               :filter-option="filterOption"
@@ -103,7 +98,7 @@
             </a-select>
           </a-form-item>
         </a-col>
-        <a-col :span="6">
+        <a-col :span="12">
           <a-form-item
             :name="['hostPort', 'port']"
             :rules="[
@@ -124,7 +119,9 @@
             />
           </a-form-item>
         </a-col>
-        <a-col :span="6">
+      </a-row>
+      <a-row :gutter="24">
+        <a-col :span="12">
           <a-form-item
             :label="$t('Media.GB28181.666483-13')"
             :name="['hostPort', 'publicHost']"
@@ -141,7 +138,6 @@
             :validateFirst="true"
           >
             <a-input
-              style="width: 105%"
               v-model:value="formState.hostPort.publicHost"
               :max="65535"
               :min="1"
@@ -150,7 +146,7 @@
             />
           </a-form-item>
         </a-col>
-        <a-col :span="6">
+        <a-col :span="12">
           <a-form-item
             :name="['hostPort', 'publicPort']"
             :rules="rules.publicPort"
