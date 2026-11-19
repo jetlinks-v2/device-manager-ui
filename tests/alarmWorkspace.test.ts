@@ -27,6 +27,8 @@ import { localizeDeviceLibraryPreprocessors } from '../views/device/alarm/device
 import { queryDeviceAlarmNotifyMethods, toNotifyMethods } from '../views/device/alarm/api'
 import { aggregateTemplateState, hasTemplateBinding, verifiedTemplateState } from '../views/device/alarm/notificationTemplateStatus'
 import { useAlarmNotification } from '../views/device/alarm/hooks/useAlarmNotification'
+import { useDeviceAlarmPage } from '../views/device/alarm/hooks/useDeviceAlarmPage'
+import type { DeviceAlarmRow, DeviceAlarmTargetOption } from '../views/device/alarm/types'
 
 const response = (id: string, total = 1) => ({ result: { data: [{ id, sourceName: id }], total } })
 const flush = async () => { await nextTick(); await new Promise(resolve => setTimeout(resolve, 0)); await nextTick() }
@@ -378,6 +380,116 @@ function mount<T>(setup: () => T) {
   app.mount({})
   return { state, unmount: () => app.unmount() }
 }
+
+const alarmProperty = (id: string) => ({ id, name: id, valueType: { type: 'double', unit: '%' } })
+const alarmTarget = (id: string, source: 'product' | 'device' = 'device') => {
+  const data: DeviceAlarmTargetOption = { label: id, value: id, source, productId: 'product-a',
+    ...(source === 'device' ? { deviceId: id } : {}), metadata: { properties: [alarmProperty('product-property')] } }
+  return { label: id, value: id, data }
+}
+
+test('single-device alarms load effective detail metadata, clear old selections and return to product scope', async () => {
+  const requests: string[] = []
+  setAlarmRequestHandler(async url => {
+    requests.push(url)
+    if (url === '/device-instance/device-a/detail') return { result: { metadata: JSON.stringify({ properties: [alarmProperty('device-only')] }) } }
+    if (url === '/device-instance/device-inherited/detail') return { result: { independentMetadata: false,
+      metadata: { properties: [alarmProperty('inherited-property')] } } }
+    if (url.includes('/property/_list') || url === '/protocol/units') return { result: [] }
+    throw new Error(`Unexpected request: ${url}`)
+  })
+  const { state, unmount } = mount(() => useDeviceAlarmPage(key => key))
+  try {
+    await state.onProductChange(alarmTarget('product-a', 'product'))
+    state.onPropertyChange('product-property')
+    const selecting = state.onDeviceChange('device-a', alarmTarget('device-a'))
+    assert.equal(state.form.value.property, '')
+    assert.equal(state.form.value.propertyName, '')
+    assert.equal(state.form.value.propertyUnit, '')
+    assert.deepEqual(state.propertyOptions.value, [])
+    await selecting
+    assert.deepEqual(state.propertyOptions.value.map(item => item.id), ['device-only'])
+    state.onPropertyChange('device-only')
+    await state.onDeviceChange('device-inherited', alarmTarget('device-inherited'))
+    assert.deepEqual(state.propertyOptions.value.map(item => item.id), ['inherited-property'])
+    await state.onDeviceChange('__all__')
+    assert.equal(state.form.value.source, 'product')
+    assert.equal(state.form.value.property, '')
+    assert.deepEqual(state.propertyOptions.value.map(item => item.id), ['product-property'])
+    assert.equal(requests.some(url => url.startsWith('/device-product/')), false)
+  } finally { unmount() }
+})
+
+test('editing a device alarm reloads its effective model without losing the selected property', async () => {
+  setAlarmRequestHandler(async url => url === '/device-instance/device-a/detail'
+    ? { result: { metadata: { properties: [alarmProperty('device-only')] } } }
+    : { result: [] })
+  const { state, unmount } = mount(() => useDeviceAlarmPage(key => key))
+  try {
+    const row: DeviceAlarmRow = { ...state.form.value, key: 'alarm-a', id: 'alarm-a', name: 'Device alarm', source: 'device',
+      targetId: 'device-a', deviceId: 'device-a', productId: 'product-a', property: 'device-only' }
+    await state.openEdit(row)
+    assert.equal(state.editorOpen.value, true)
+    assert.equal(state.form.value.property, 'device-only')
+    assert.deepEqual(state.propertyOptions.value.map(item => item.id), ['device-only'])
+  } finally { unmount() }
+})
+
+test('late device metadata and configured-rule responses cannot replace the current device properties', async () => {
+  const pending = new Map<string, (value: unknown) => void>()
+  setAlarmRequestHandler(async url => url === '/protocol/units' ? { result: [] }
+    : new Promise(resolve => { pending.set(url, resolve) }))
+  const { state, unmount } = mount(() => useDeviceAlarmPage(key => key))
+  try {
+    const first = state.onDeviceChange('device-a', alarmTarget('device-a'))
+    pending.get('/device-instance/device-a/detail')!({ result: { metadata: { properties: [alarmProperty('old-a')] } } })
+    await flush()
+    const second = state.onDeviceChange('device-b', alarmTarget('device-b'))
+    const third = state.onDeviceChange('device-c', alarmTarget('device-c'))
+    pending.get('/device-instance/device-c/detail')!({ result: { metadata: { properties: [alarmProperty('current-c')] } } })
+    await flush()
+    pending.get('/message/preprocessor/product/product-a/device-c/property/_list')!({ result: [] })
+    await third
+    pending.get('/device-instance/device-b/detail')!({ result: { metadata: { properties: [alarmProperty('old-b')] } } })
+    await second
+    pending.get('/message/preprocessor/product/product-a/device-a/property/_list')!({ result: [] })
+    await first
+    assert.deepEqual(state.propertyOptions.value.map(item => item.id), ['current-c'])
+    assert.equal(pending.has('/message/preprocessor/product/product-a/device-b/property/_list'), false)
+  } finally { unmount() }
+})
+
+test('a failed or empty device model never falls back to stale product properties', async () => {
+  setAlarmRequestHandler(async url => {
+    if (url === '/device-instance/device-a/detail') throw new Error('Device unavailable')
+    return { result: [] }
+  })
+  const { state, unmount } = mount(() => useDeviceAlarmPage(key => key))
+  try {
+    await state.onProductChange(alarmTarget('product-a', 'product'))
+    await assert.rejects(state.onDeviceChange('device-a', alarmTarget('device-a')), /Device unavailable/)
+    assert.deepEqual(state.propertyOptions.value, [])
+    setAlarmRequestHandler(async url => url === '/device-instance/device-a/detail'
+      ? { result: { metadata: { properties: [] } } } : { result: [] })
+    await state.onDeviceChange('device-a', alarmTarget('device-a'))
+    assert.deepEqual(state.propertyOptions.value, [])
+  } finally { unmount() }
+})
+
+test('clearing a product invalidates a pending device metadata request', async () => {
+  let complete!: (value: unknown) => void
+  setAlarmRequestHandler(async url => url === '/protocol/units' ? { result: [] }
+    : new Promise(resolve => { complete = resolve }))
+  const { state, unmount } = mount(() => useDeviceAlarmPage(key => key))
+  try {
+    const selecting = state.onDeviceChange('device-a', alarmTarget('device-a'))
+    await state.onProductChange()
+    complete({ result: { metadata: { properties: [alarmProperty('old-device')] } } })
+    await selecting
+    assert.deepEqual(state.propertyOptions.value, [])
+    assert.equal(state.form.value.targetId, '')
+  } finally { unmount() }
+})
 
 test('record queries default to all; scope switches preserve search and discard late responses', async () => {
   const pending: { body: Record<string, unknown>; resolve: (value: unknown) => void }[] = []
