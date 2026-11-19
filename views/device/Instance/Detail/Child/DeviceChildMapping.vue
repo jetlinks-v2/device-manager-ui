@@ -1,17 +1,16 @@
 <template>
-  <section ref="root" class="device-child-mapping">
+  <section class="device-child-mapping">
     <a-spin :spinning="loading">
       <a-alert v-if="loadFailed" type="error" show-icon :message="$t('DeviceChildMapping.loadFailed')" />
-      <div v-if="ready" class="device-child-mapping__content" :style="{ height: `${availableHeight}px` }">
+      <FullPage v-if="ready" class="device-child-mapping__content" :padding="0" flex>
         <Child :key="deviceId" ref="mapping" />
-      </div>
+      </FullPage>
     </a-spin>
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, toRef } from 'vue'
-import { useElementBounding, useWindowSize } from '@vueuse/core'
+import { ref, toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Child from './index.vue'
 import { useEmbeddedChildDeviceContext, type ChildDeviceMappingHandle } from './useChildDeviceContext'
@@ -19,11 +18,6 @@ import { useEmbeddedChildDeviceContext, type ChildDeviceMappingHandle } from './
 // deviceId 必须是运行时设备实例 ID，而非运营资产 ID。
 const props = defineProps<{ deviceId: string }>()
 const { t: $t } = useI18n()
-const root = ref<HTMLElement>()
-const { top } = useElementBounding(root)
-const { height: viewportHeight } = useWindowSize()
-// 随宿主摘要、页签及窗口变化填充剩余空间，避免固定高度造成底部空白或页面溢出。
-const availableHeight = computed(() => Math.max(320, viewportHeight.value - Math.max(0, top.value) - 24))
 const mapping = ref<ChildDeviceMappingHandle>()
 const { loading, loadFailed, ready, refresh, beforeLeave } = useEmbeddedChildDeviceContext(
   toRef(props, 'deviceId'), mapping,
