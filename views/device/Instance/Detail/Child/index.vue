@@ -45,7 +45,7 @@
             />
           </div>
           <div class="left-list">
-            <div ref="tableViewport" class="mapping-table">
+            <div class="mapping-table">
               <a-dropdown
                   :trigger="['contextmenu']"
                   :open="menuVisible"
@@ -77,6 +77,7 @@
                     </a-menu-item>
                   </a-menu>
                 </template>
+                <!-- 设备为平铺数据，普通表格负责表体滚动并遵循 noPagination。 -->
                 <JProTable
                     ref="childDeviceRef"
                     :columns="columns"
@@ -84,7 +85,6 @@
                     :noPagination="true"
                     :params="params"
                     :mode="'TABLE'"
-                    type="TREE"
                     :scroll="{ x: 1500 }"
                     :rowSelection="{
                                     selectedRowKeys: _selectedRowKeys,
@@ -96,7 +96,6 @@
                                             handleRow(e, record),
                                     })
                                 "
-                                :height="Math.max(160, tableHeight)"
                 >
                   <template #emptyText>
                     <CloudEmpty :search="emptyCreateSearch" :search-name="$t('Detail.index.957187-23')" />
@@ -396,7 +395,6 @@ import { EventEmitter } from '@jetlinks-web/utils';
 import { useI18n } from 'vue-i18n';
 import { ref as emptyCreateSearchRef } from 'vue'
 import ConditionFilter from '@jetlinks-web-core/components/ConditionFilter'
-import { useElementSize } from '@vueuse/core'
 
 defineOptions({ name: 'Child' })
 const emptyCreateSearch = emptyCreateSearchRef(false)
@@ -415,8 +413,6 @@ const childContext = useChildDeviceContext();
 const _checked = ref(true);
 const _selectedRowKeys = ref([]);
 const childDeviceRef = ref();
-const tableViewport = ref();
-const { height: tableHeight } = useElementSize(tableViewport);
 const { detail } = childContext;
 const params = ref({});
 const menuVisible = ref(false);
