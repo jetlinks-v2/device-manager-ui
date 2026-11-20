@@ -8399,6 +8399,7 @@
   "components.DeviceMap.product": "所属製品",
   "components.DeviceMap.organization": "所属組織",
   "components.DeviceMap.lastActive": "最終アクティブ日時",
+  "components.DeviceMap.location": "位置情報",
   "components.DeviceMap.configTitle": "タイトル",
   "components.DeviceMap.titlePlaceholder": "タイトルを入力してください",
   "components.DeviceMap.autoRefresh": "自動更新",
