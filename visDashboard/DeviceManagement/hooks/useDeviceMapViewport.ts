@@ -1,15 +1,27 @@
-import { computed, shallowRef, type CSSProperties, type Ref } from 'vue'
-import { useElementSize } from '@vueuse/core'
+import { computed, shallowRef, watch, type CSSProperties, type Ref } from 'vue'
+import { useElementSize, useResizeObserver } from '@vueuse/core'
 import { useRoute } from 'vue-router'
 import { useUserStore } from '@jetlinks-web-core/store/user'
 import { getBaseApi } from '@jetlinks-web-core/utils'
+import { getCenterPoint } from '../../../utils/map'
+import { DEVICE_MAP_CLUSTER_MAX_ZOOM, DEVICE_MAP_MAX_ZOOM } from '../DeviceMapCard/cluster'
 import type { DeviceMapPoint } from '../shared'
 
+const POPUP_MARGIN = 12
+const POPUP_GAP = 16
+const POPUP_MAX_WIDTH = 256
+
+type MapCenter = [number, number] | { lng: number; lat: number }
+
 export interface DeviceMapInstance {
-  getFitZoomAndCenterByBounds: (bounds: unknown, padding: [number, number, number, number], maxZoom: number) => [number, [number, number]]
+  on: (event: 'zoomend' | 'resize', listener: () => void) => void
+  off: (event: 'zoomend' | 'resize', listener: () => void) => void
+  getFitZoomAndCenterByBounds: (bounds: number[], padding: [number, number, number, number], maxZoom: number) => [number, MapCenter]
+  getSize: () => { width: number; height: number }
+  panBy: (x: number, y: number, duration: number) => void
   getZoom: () => number
   getCenter: () => { lng: number; lat: number }
-  setZoomAndCenter: (zoom: number, center: [number, number]) => void
+  setZoomAndCenter: (zoom: number, center: MapCenter, immediately?: boolean) => void
   lngLatToContainer: (position: [number, number]) => { x: number; y: number }
 }
 
@@ -30,11 +42,13 @@ interface MapReturnView {
 // 只保留最近一次从地图进入详情的视角；不持久化设备详情或跨身份复用点位。
 let returnView: MapReturnView | undefined
 
-/** 原生信息窗负责跟随点位及自动避让；本 hook 限制浮卡尺寸并恢复详情返回视角。 */
+/** 原生信息窗跟随设备坐标，这里负责边缘避让和从详情返回时的视角。 */
 export function useDeviceMapViewport(
   identity: Readonly<Ref<string>>,
   container: Ref<HTMLElement | undefined>,
   position: Readonly<Ref<[number, number] | undefined>>,
+  completedLocations: Readonly<Ref<DeviceMapPoint[]>>,
+  revision?: Readonly<Ref<number>>,
 ) {
   const route = useRoute()
   const user = useUserStore()
@@ -44,25 +58,99 @@ export function useDeviceMapViewport(
   const restored = returnView?.key === key.value ? returnView : undefined
   if (restored) returnView = undefined
   let restoreDeviceId = restored?.deviceId
+  let positionedKey: string | undefined
+  const groupedByPosition = shallowRef(false)
+  const popupElement = shallowRef<HTMLElement>()
+  const below = shallowRef(false)
+  let frame: number | undefined
 
-  const popup = computed<DeviceMapPopupLayout>(() => {
-    const below = !!(position.value && map.value
-      && map.value.lngLatToContainer(position.value).y < height.value / 2)
-    return {
-      placement: below ? 'below' : 'above',
-      anchor: below ? 'top-center' : 'bottom-center',
-      offset: [0, below ? 16 : -16],
-      style: {
-        width: `${Math.min(320, Math.max(0, width.value - 24))}px`,
-        maxHeight: `${Math.max(0, height.value - 40)}px`,
-      },
+  // 地图缩放或变宽时，原生浮窗的 DOM 位置可能还停在上一帧。用当前投影计算避让。
+  function keepPopupVisible() {
+    const point = position.value
+    if (!map.value || !point) return
+    below.value = map.value.lngLatToContainer(point).y < height.value / 2
+    if (!popupElement.value || frame !== undefined) return
+    frame = requestAnimationFrame(() => {
+      frame = undefined
+      const instance = map.value
+      const panel = popupElement.value
+      if (!instance || !panel || !position.value) return
+      const { width, height } = instance.getSize()
+      if (!width || !height || !panel.offsetWidth || !panel.offsetHeight) return
+      const { x, y } = instance.lngLatToContainer(position.value)
+      below.value = y < height / 2
+      const side = POPUP_MARGIN + panel.offsetWidth / 2
+      const end = POPUP_MARGIN + POPUP_GAP + panel.offsetHeight
+      const minY = below.value ? POPUP_MARGIN : end
+      const maxY = height - (below.value ? end : POPUP_MARGIN)
+      const dx = Math.max(side, Math.min(x, width - side)) - x
+      const dy = Math.max(minY, Math.min(y, maxY)) - y
+      if (dx || dy) instance.panBy(dx, dy, 0)
+    })
+  }
+  watch(revision ? [map, position, width, height, revision] : [map, position, width, height], keepPopupVisible, { flush: 'sync' })
+  useResizeObserver(popupElement, keepPopupVisible)
+
+  watch(map, (instance, _, onCleanup) => {
+    if (!instance) return
+    const updateViewport = () => {
+      groupedByPosition.value = instance.getZoom() > DEVICE_MAP_CLUSTER_MAX_ZOOM
+      keepPopupVisible()
     }
+    updateViewport()
+    instance.on('zoomend', updateViewport)
+    instance.on('resize', updateViewport)
+    onCleanup(() => {
+      instance.off('zoomend', updateViewport)
+      instance.off('resize', updateViewport)
+      if (frame !== undefined) {
+        cancelAnimationFrame(frame)
+        frame = undefined
+      }
+    })
   })
+
+  function fitPoints(points: DeviceMapPoint[], expand = false) {
+    const instance = map.value
+    if (!instance || !points.length) return
+    const [northEast, southWest] = getCenterPoint(points.map(point => point.lnglat))
+    // 首次定位最多放到街区级，保留周边参照；点击重合设备时才放到地图上限。
+    const maxZoom = expand ? DEVICE_MAP_MAX_ZOOM : 16
+    if (northEast[0] === southWest[0] && northEast[1] === southWest[1]) {
+      instance.setZoomAndCenter(maxZoom, points[0].lnglat)
+      return
+    }
+    const bounds = [southWest[0], southWest[1], northEast[0], northEast[1]]
+    const [fitZoom, center] = instance.getFitZoomAndCenterByBounds(bounds, [40, 40, 40, 40], maxZoom)
+    const zoom = expand ? Math.min(maxZoom, Math.max(instance.getZoom() + 2, fitZoom)) : fitZoom
+    instance.setZoomAndCenter(zoom, center)
+  }
+
+  watch([map, completedLocations], ([instance, locations]) => {
+    if (!instance || !locations.length || positionedKey === key.value) return
+    fitPoints(locations)
+    positionedKey = key.value
+  })
+
+  const popup = computed<DeviceMapPopupLayout>(() => ({
+    placement: below.value ? 'below' : 'above',
+    anchor: below.value ? 'top-center' : 'bottom-center',
+    offset: [0, below.value ? POPUP_GAP : -POPUP_GAP],
+    style: {
+      width: `${Math.min(POPUP_MAX_WIDTH, Math.max(0, width.value - 2 * POPUP_MARGIN))}px`,
+      maxHeight: `${Math.max(0, height.value - 2 * POPUP_MARGIN - POPUP_GAP)}px`,
+    },
+  }))
 
   /** 页面重建后恢复原视角，点位选择仍等待本轮授权位置查询完成。 */
   function onMapInit(instance: DeviceMapInstance) {
     map.value = instance
-    if (restored?.key === key.value) instance.setZoomAndCenter(restored.zoom, restored.center)
+    positionedKey = undefined
+    if (restored?.key === key.value) {
+      // 恢复摘要前立即到达原视角，防止过渡动画与信息窗避让争用地图中心。
+      instance.setZoomAndCenter(restored.zoom, restored.center, true)
+      positionedKey = restored.key
+    }
   }
 
   /** 导航前只记录当前地图视角及身份，浏览器返回不重新定位到默认中心。 */
@@ -84,5 +172,5 @@ export function useDeviceMapViewport(
     } : undefined
   }
 
-  return { map, popup, onMapInit, remember, takeRestoredSelection }
+  return { map, popup, popupElement, groupedByPosition, fitPoints, onMapInit, remember, takeRestoredSelection }
 }

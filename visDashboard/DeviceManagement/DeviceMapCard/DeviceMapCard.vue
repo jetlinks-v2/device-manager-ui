@@ -69,19 +69,23 @@
           </template>
           <el-amap-marker-cluster
             v-if="points.length"
-            :points="points"
+            :points="clusterLocations"
             :extraOptions="extraOptions"
             @click="onClusterClick"
           />
           <ElAmapMarker v-if="selection.view.detailDevice" :position="selection.view.detailDevice.lnglat"
             anchor="center" :clickable="false" :z-index="300">
-            <span class="device-map-card__selected-ring" />
+            <span class="device-map-card__selected-ring"
+              :style="{ color: selection.view.detailStatus?.color || 'var(--ant-primary-color, var(--accent))' }" />
           </ElAmapMarker>
-          <ElAmapInfoWindow v-if="selection.view.visible" :position="selection.view.position"
-            :visible="true" :is-custom="true" :auto-move="true" :avoid="[12, 12, 12, 12]"
+          <ElAmapInfoWindow
+            v-for="winKey in (selection.view.visible && popupMounted ? [popupKey] : [])"
+            :key="winKey"
+            :position="selection.view.position"
+            :visible="true" :is-custom="true" :auto-move="false"
             :anchor="popup.anchor" :offset="popup.offset" :close-when-click-map="true"
-            @update:visible="!$event && selection.close()">
-            <ReuseSelectionCard :layout="popup" />
+            @update:visible="!$event && onPopupClose(winKey)">
+            <div :ref="setPopupElement"><ReuseSelectionCard :layout="popup" /></div>
           </ElAmapInfoWindow>
         </a-map-component>
         <a-alert
@@ -135,14 +139,14 @@ const isEditRef = toRef(props, 'isEdit')
 const system = useSystemStore()
 const { t } = useI18n()
 const container = ref<HTMLElement>()
-// 两种底图共用同一摘要卡事件契约，高德模式交给原生信息窗定位和避让。
+// 两种底图共用摘要卡，高德信息窗跟随设备坐标。
 const [DefineSelectionCard, ReuseSelectionCard] = createReusableTemplate<{ layout?: DeviceMapPopupLayout }>()
 
 const isMapEnabled = computed(() => {
   const { apiKey, secretKey } = system.systemInfo.amap || {}
   return !!(apiKey?.trim() && secretKey?.trim())
 })
-const { config, distribution, points, loading, error, extraOptions, selection, popup, refresh, onMapInit, onClusterClick, onPointSelect, canConfigureMap, openMapConfig } = useDeviceMap(
+const { config, distribution, points, clusterLocations, loading, error, extraOptions, selection, popup, popupKey, popupMounted, onPopupClose, setPopupElement, refresh, onMapInit, onClusterClick, onPointSelect, canConfigureMap, openMapConfig } = useDeviceMap(
   infoRef,
   isEditRef,
   isMapEnabled,
@@ -193,6 +197,11 @@ const title = computed(() =>
   height: 100%;
 }
 
+/* 自绘浮卡已有箭头，去掉 SDK 为默认箭头预留的上下间距。 */
+.device-map-card__map :deep(.amap-info-contentContainer) {
+  padding-block: 0;
+}
+
 .device-map-card__status {
   width: 100%;
   height: 100%;
@@ -217,11 +226,12 @@ const title = computed(() =>
 
 .device-map-card__selected-ring {
   display: block;
-  width: 1.5rem;
-  height: 1.5rem;
-  border: 2px solid var(--ant-primary-color, var(--accent));
+  width: 24px;
+  height: 24px;
+  border: 5px solid currentColor;
   border-radius: 50%;
   box-sizing: border-box;
+  opacity: 0.24;
   pointer-events: none;
 }
 </style>

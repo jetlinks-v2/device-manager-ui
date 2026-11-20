@@ -2,8 +2,11 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import test from 'node:test'
+import { transformSync } from 'esbuild'
 import ts from 'typescript'
 import * as vue from 'vue'
+import { compileScript, parse } from 'vue/compiler-sfc'
+import { renderToString } from 'vue/server-renderer'
 import { createI18n } from 'vue-i18n'
 
 const require = createRequire(import.meta.url)
@@ -88,13 +91,16 @@ function selectionFactory(service = {}) {
   return { useDeviceMapSelection, calls, details, locale }
 }
 
-function viewportModule() {
+function viewportModule(overrides = {}, globals = {}) {
   return load('hooks/useDeviceMapViewport.ts', {
-    '@vueuse/core': { useElementSize: () => ({ width: vue.ref(600), height: vue.ref(400) }) },
+    '@vueuse/core': { useResizeObserver() {}, useElementSize: () => ({ width: vue.ref(600), height: vue.ref(400) }) },
     'vue-router': { useRoute: () => ({ fullPath: '/resources/dashboard' }) },
     '@jetlinks-web-core/store/user': { useUserStore: () => ({ userInfo: { id: 'test-user' } }) },
     '@jetlinks-web-core/utils': { getBaseApi: () => '/api' },
-  })
+    '../DeviceMapCard/cluster': cluster,
+    '../../../utils/map': load('../../utils/map.ts'),
+    ...overrides,
+  }, globals)
 }
 
 test('GeoJSON retains real device IDs even when names and coordinates coincide', () => {
@@ -133,19 +139,19 @@ test('GeoJSON retains real device IDs even when names and coordinates coincide',
   assert.deepEqual(parseDeviceGeoJson('broken json'), [])
 })
 
-test('AMap callback coordinates preserve device identity and cluster only stops at the map limit', () => {
-  const points = cluster.resolveClusterDevices([
-    point('d1'),
-    { ...point('d2'), lnglat: { lng: 116.4, lat: 39.9 } },
-    point('d3'),
-    point('d1')
-  ])
-  assert.equal(points.length, 3)
-  assert.equal(cluster.shouldOpenDeviceCluster(points, 3), true)
-  const distinct = [point('d1'), point('d2', 116.40001)]
-  assert.equal(cluster.shouldOpenDeviceCluster(distinct, 19), false)
-  assert.equal(cluster.shouldOpenDeviceCluster(distinct, 20), true)
-  assert.equal(cluster.shouldOpenDeviceCluster([point('d1')], 3), true)
+test('SDK coordinates are isolated and only exact matches share a marker at maximum zoom', () => {
+  const devices = [point('d1'), point('d2', 116.40001), point('d3')]
+  const groups = cluster.groupDevicesByLocation(devices)
+  const markers = cluster.toDeviceMapMarkers(groups, false)
+  assert.equal(markers.length, 3)
+  markers[0].lnglat[0] = 99
+  markers[1].lnglat = { lng: 116.40001, lat: 39.9 }
+  assert.deepEqual(devices.map(p => p.lnglat[0]), [116.4, 116.40001, 116.4])
+  const locations = cluster.toDeviceMapMarkers(groups, true)
+  assert.deepEqual(locations.map(p => p.deviceCount), [2, 1])
+  assert.deepEqual(groups.get(locations[0].locationKey).map(p => p.deviceId), ['d1', 'd3'])
+  locations[0].lnglat = { lng: 116.4, lat: 39.9 }
+  assert.equal(devices[0].lnglat.join(', '), '116.4, 39.9')
 })
 
 test('card paginates state requests and searches by ID without loading the entire cluster', async () => {
@@ -286,25 +292,6 @@ test('actual map hook deduplicates by device ID, expands normal clusters, opens 
       '../DeviceMapCard/cluster': cluster,
       './useDeviceMapSelection': factory,
       './useDeviceMapViewport': viewportModule(),
-      '../../../utils/map': load('../../utils/map.ts')
-    },
-    {
-      window: {
-        AMap: {
-          Bounds: class {
-            constructor(southWest, northEast) {
-              assert.ok(southWest.lng <= northEast.lng)
-              assert.ok(southWest.lat <= northEast.lat)
-            }
-          },
-          LngLat: class {
-            constructor(lng, lat) {
-              this.lng = lng
-              this.lat = lat
-            }
-          }
-        }
-      }
     }
   )
   const edit = vue.ref(false),
@@ -320,34 +307,65 @@ test('actual map hook deduplicates by device ID, expands normal clusters, opens 
   value.openMapConfig()
   assert.deepEqual(navigation, ['system/Basis'])
   edit.value = false
-  streams[0].onMessage([point('d1'), point('d2', 116.40001), point('d3')])
-  streams[0].onMessage([{ ...point('d1'), label: 'Updated name' }])
+  await settle()
+  const stream = streams.at(-1)
+  stream.onMessage([point('d1'), point('d2', 116.40001), point('d3')])
+  stream.onMessage([{ ...point('d1'), label: 'Updated name' }])
   assert.equal(value.points.value.length, 3)
   assert.equal(value.points.value[0].label, 'Updated name')
   let zoom = 17
+  let zoomEnd
   value.onMapInit({
     getZoom: () => zoom,
-    getFitZoomAndCenterByBounds: () => [17, [116.4, 39.9]],
+    lngLatToContainer: () => ({ x: 0, y: 0 }),
+    on: (_, callback) => { zoomEnd = callback },
+    off: (_, callback) => assert.equal(callback, zoomEnd),
+    getFitZoomAndCenterByBounds: (bounds, padding, maxZoom) => {
+      assert.deepEqual(bounds, [116.4, 39.9, 116.40001, 39.9])
+      return [Math.min(17, maxZoom), [116.400005, 39.9]]
+    },
     setZoomAndCenter: (...args) => moves.push(args)
   })
-  value.onClusterClick({ clusterData: [point('d1'), point('d2', 116.40001)] })
-  assert.equal(moves[0][0], 19)
+  stream.onComplete()
+  await settle()
+  assert.deepEqual(moves, [[16, [116.400005, 39.9]]])
+  const markers = value.clusterLocations.value
+  markers.forEach(p => { p.lnglat = { lng: p.lnglat[0], lat: p.lnglat[1] } })
+  value.onClusterClick({ clusterData: markers })
+  assert.equal(moves.at(-1)[0], 19)
   assert.equal(value.selection.view.visible, false)
+  const d2 = markers.find(p => p.deviceId === 'd2')
+  value.onClusterClick({ clusterData: [d2] })
+  assert.equal(value.selection.view.detailDevice.deviceId, 'd2')
+  assert.equal(value.selection.view.detailDevice.lnglat.join(', '), '116.40001, 39.9')
+  value.onClusterClick({ clusterData: markers.filter(p => p.deviceId !== 'd2') })
+  assert.deepEqual(moves.at(-1), [20, [116.4, 39.9]])
+  assert.equal(value.selection.view.visible, false)
+  zoom = 19.5
+  zoomEnd()
+  const grouped = value.clusterLocations.value
+  assert.equal(grouped.length, 2)
+  const overlapMarker = { getExtData: () => ({ locationKey: grouped[0].locationKey }) }
+  value.onClusterClick({ clusterData: [], marker: overlapMarker })
+  assert.equal(value.selection.view.visible, false)
+  assert.deepEqual(moves.at(-1), [20, [116.4, 39.9]])
   zoom = 20
-  value.onClusterClick({ clusterData: [point('d1'), point('d2', 116.40001)] })
-  assert.equal(value.selection.view.count, 2)
-  streams[0].onMessage([point('d2')])
-  value.onClusterClick({ clusterData: [point('d1'), point('d2'), point('d3')] })
-  assert.equal(value.selection.view.count, 3)
+  zoomEnd()
+  const [overlap, single] = value.clusterLocations.value
+  value.onClusterClick({ clusterData: [], marker: overlapMarker })
+  assert.deepEqual(value.selection.view.rows.map(p => p.deviceId), ['d1', 'd3'])
+  value.onClusterClick({ clusterData: [], marker: { getExtData: () => ({ locationKey: single.locationKey }) } })
+  assert.equal(value.selection.view.count, 1)
+  assert.equal(value.selection.view.detailDevice.deviceId, 'd2')
   await settle()
   edit.value = true
   await settle()
-  assert.equal(streams[0].closed, true)
+  assert.equal(stream.closed, true)
   assert.equal(value.selection.view.visible, false)
   assert.equal(value.points.value.length, 0)
-  streams[0].onMessage([point('late')])
+  stream.onMessage([point('late')])
   assert.equal(value.points.value.length, 0)
-  value.onClusterClick({ clusterData: [point('d1')] })
+  value.onClusterClick({ clusterData: [overlap] })
   assert.equal(value.selection.view.visible, false)
   unmount()
 })
@@ -367,7 +385,7 @@ test('Chinese and English footer interpolate the actual count', () => {
   }
 })
 
-test('marker renderer treats device names as text and retains aggregation at zoom 20', () => {
+test('marker renderer labels clusters and coincident devices with device counts', () => {
   const elements = []
   const { createDeviceMapMarkerOptions } = load(
     'DeviceMapCard/markers.ts',
@@ -376,7 +394,7 @@ test('marker renderer treats device names as text and retains aggregation at zoo
       '@device-manager-ui/assets/marker.png': 'marker.png'
     },
     {
-      window: { AMap: { Pixel: class {} } },
+      window: { AMap: { Pixel: class { constructor(x, y) { this.x = x; this.y = y } } } },
       document: {
         createElement(tag) {
           const node = {
@@ -399,20 +417,28 @@ test('marker renderer treats device names as text and retains aggregation at zoo
     }
   )
   const options = createDeviceMapMarkerOptions()
-  assert.ok(options.maxZoom > 20)
+  assert.equal(options.maxZoom, 19)
   assert.equal(options.zoomOnClick, false)
-  let content
+  let content, extData, offset, anchor
   const marker = {
-    setOffset() {},
-    setAnchor() {},
+    setExtData(value) { extData = value },
+    setOffset(value) { offset = value },
+    setAnchor(value) { anchor = value },
     setContent(value) {
       content = value
     }
   }
-  options.renderMarker({ marker, count: 1, data: [{ label: '<img src=x onerror=alert(1)>' }] })
+  options.renderMarker({ marker, count: 1, data: [{ label: '<img src=x onerror=alert(1)>', deviceCount: 1 }] })
   assert.equal(content.children[0].textContent, '<img src=x onerror=alert(1)>')
-  options.renderClusterMarker({ marker, count: 3, data: [] })
+  options.renderMarker({ marker, data: [{ deviceCount: 2, locationKey: '1,2' }] })
+  assert.deepEqual(extData, { locationKey: '1,2' })
+  assert.equal(content.textContent, '2')
+  options.renderClusterMarker({ marker, count: 3 })
   assert.equal(content.textContent, '3')
+  offset = { x: -9, y: -32 }
+  createDeviceMapMarkerOptions(true).renderMarker({ marker, data: [{ state: 'online', deviceCount: 1 }] })
+  assert.equal(anchor, 'center')
+  assert.deepEqual([offset.x, offset.y], [0, 0])
 })
 
 test('distribution preserves states, geometry proportions and independent point identity', () => {
@@ -496,27 +522,118 @@ test('summary navigation uses authorized route, correct id and prevents duplicat
   value.open([point('selected')]); await settle()
   assert.equal(value.view.canOpenDetail,true)
   assert.equal(value.view.detailStatus.text,'在线')
-  assert.deepEqual(value.view.detailFields.map(x=>x.value),['selected','产品','11-12 14:32'])
+  assert.deepEqual(value.view.detailFields.map(x=>x.value),['selected','产品','2026-11-12 14:32:00'])
   assert.equal(value.view.detailFields[0].copyable,true)
   const first=value.openDetailPage(); await value.openDetailPage()
   assert.equal(calls.length,1); assert.equal(calls[0].options.params.id,'selected'); assert.deepEqual(remembered,['selected'])
   pending.resolve(); await first; assert.equal(value.view.openingDetail,false); unmount()
 })
 
+test('initial camera waits for visible locations, keeps manual changes on refresh and refits a new scope', async () => {
+  const camera = viewportModule()
+  const locations = vue.shallowRef([point('only', 103, 26)])
+  const scope = vue.ref('project-a')
+  const { value, unmount } = mount(() => camera.useDeviceMapViewport(scope, vue.ref(), vue.ref(), locations))
+  const moves = []
+  const listeners = new Map()
+  value.onMapInit({
+    getZoom: () => 13,
+    on: (event, cb) => listeners.set(event, cb),
+    off: (event, cb) => { assert.equal(cb, listeners.get(event)); listeners.delete(event) },
+    setZoomAndCenter: (...args) => moves.push(args),
+    getFitZoomAndCenterByBounds(bounds, padding, maxZoom) {
+      assert.deepEqual(bounds, [90, 26, 122, 26])
+      assert.deepEqual(padding, [40, 40, 40, 40])
+      assert.equal(maxZoom, 16)
+      return [5, { lng: 106, lat: 26 }]
+    },
+  })
+  await settle()
+  assert.deepEqual(moves, [[16, [103, 26]]])
+  locations.value = []
+  await settle()
+  locations.value = [point('refresh', 102, 26)]
+  await settle()
+  assert.equal(moves.length, 1)
+  scope.value = 'project-b'
+  locations.value = []
+  await settle()
+  assert.equal(moves.length, 1)
+  locations.value = [point('west', 90, 26), point('east', 122, 26)]
+  await settle()
+  assert.deepEqual(moves[1], [5, { lng: 106, lat: 26 }])
+  unmount()
+  assert.equal(listeners.size, 0)
+})
+
+test('an open popup fits after zoom, map resize and async content layout without panning an in-bounds map', async () => {
+  let onContentResize, frame
+  const camera = viewportModule({
+    '@vueuse/core': {
+      useElementSize: () => ({ width: vue.ref(400), height: vue.ref(300) }),
+      useResizeObserver: (_, callback) => { onContentResize = callback },
+    },
+  }, {
+    requestAnimationFrame: cb => { assert.equal(frame, undefined); frame = cb; return 1 },
+    cancelAnimationFrame: () => { frame = undefined },
+  })
+  const runFrame = () => { const callback = frame; frame = undefined; callback() }
+  const position = vue.ref([116, 39])
+  const { value, unmount } = mount(() => camera.useDeviceMapViewport(vue.ref('a'), vue.ref(), position, vue.ref([])))
+  const pans = [], listeners = new Map()
+  let pixel = { x: 80, y: 0 }, size = { width: 400, height: 300 }
+  value.onMapInit({
+    lngLatToContainer: () => pixel, getZoom: () => 13, getSize: () => size,
+    on: (event, cb) => listeners.set(event, cb), off: event => listeners.delete(event),
+    panBy: (...args) => pans.push(args),
+  })
+  const panel = { offsetWidth: 320, offsetHeight: 220 }
+  value.popupElement.value = panel
+  await settle()
+  onContentResize()
+  listeners.get('zoomend')()
+  runFrame()
+  assert.deepEqual(pans, [[92, 12, 0]])
+  // The SDK changes its projection during resize before the previous overlay paints.
+  size = { width: 246, height: 219 }
+  Object.assign(panel, { offsetWidth: 222, offsetHeight: 179 })
+  pixel = { x: 134, y: -42 }
+  listeners.get('resize')()
+  runFrame()
+  assert.deepEqual(pans.at(-1), [-11, 54, 0])
+  pixel = { x: 123, y: 207 }
+  onContentResize()
+  runFrame()
+  assert.equal(value.popup.value.placement, 'above')
+  assert.equal(pans.length, 2)
+  listeners.get('zoomend')()
+  unmount()
+  assert.equal(frame, undefined)
+  assert.equal(listeners.size, 0)
+})
+
 test('viewport restores camera and selected visible device only within the same identity', () => {
   const sizes={width:vue.ref(280),height:vue.ref(240)}, route=vue.reactive({fullPath:'/dashboard'}), user=vue.reactive({userInfo:{id:'a'}})
-  const viewport=load('hooks/useDeviceMapViewport.ts',{
-    '@vueuse/core':{useElementSize:()=>sizes},'vue-router':{useRoute:()=>route},
+  const viewport=viewportModule({
+    '@vueuse/core':{useResizeObserver(){},useElementSize:()=>sizes},'vue-router':{useRoute:()=>route},
     '@jetlinks-web-core/store/user':{useUserStore:()=>user},'@jetlinks-web-core/utils':{getBaseApi:()=>'/api'},
   })
-  const pos=vue.ref([116,39]), identity=vue.ref('scope-a'), moves=[]
-  const instance={getCenter:()=>({lng:116,lat:39}),getZoom:()=>12,setZoomAndCenter:(...args)=>moves.push(args),lngLatToContainer:()=>({x:10,y:10})}
-  const a=viewport.useDeviceMapViewport(identity,vue.ref(),pos); a.onMapInit(instance)
+  const pos=vue.ref([116,39]), identity=vue.ref('scope-a'), revision=vue.ref(1), moves=[]
+  let containerY=10
+  const instance={on(){},off(){},getCenter:()=>({lng:116,lat:39}),getZoom:()=>12,setZoomAndCenter:(...args)=>moves.push(args),lngLatToContainer:()=>({x:10,y:containerY})}
+  const a=viewport.useDeviceMapViewport(identity,vue.ref(),pos,vue.ref([]),revision); a.onMapInit(instance)
   assert.equal(a.popup.value.placement,'below'); assert.equal(a.popup.value.style.width,'256px'); assert.equal(a.popup.value.style.maxHeight,'200px')
-  a.remember('d2'); const b=viewport.useDeviceMapViewport(identity,vue.ref(),pos); b.onMapInit(instance)
-  assert.deepEqual(moves,[[12,[116,39]]]); const restored=b.takeRestoredSelection([point('d1'),point('d2')]); assert.equal(restored.device.deviceId,'d2'); assert.equal(restored.points.length,2)
-  b.remember('d2'); user.userInfo.id='b'; const c=viewport.useDeviceMapViewport(identity,vue.ref(),pos); assert.equal(c.takeRestoredSelection([point('d2')]),undefined)
-  user.userInfo.id='a'; const d=viewport.useDeviceMapViewport(identity,vue.ref(),pos); assert.equal(d.takeRestoredSelection([point('other')]),undefined)
+  assert.deepEqual(a.popup.value.offset,[0,16])
+  containerY=200; revision.value=2
+  assert.equal(a.popup.value.placement,'above'); assert.equal(a.popup.value.anchor,'bottom-center'); assert.deepEqual(a.popup.value.offset,[0,-16])
+  containerY=10; revision.value=3
+  sizes.width.value=600; sizes.height.value=400
+  assert.equal(a.popup.value.style.width,'256px'); assert.equal(a.popup.value.style.maxHeight,'360px')
+  sizes.width.value=280; sizes.height.value=240
+  a.remember('d2'); const b=viewport.useDeviceMapViewport(identity,vue.ref(),pos,vue.ref([])); b.onMapInit(instance)
+  assert.deepEqual(moves,[[12,[116,39],true]]); const restored=b.takeRestoredSelection([point('d1'),point('d2')]); assert.equal(restored.device.deviceId,'d2'); assert.equal(restored.points.length,2)
+  b.remember('d2'); user.userInfo.id='b'; const c=viewport.useDeviceMapViewport(identity,vue.ref(),pos,vue.ref([])); assert.equal(c.takeRestoredSelection([point('d2')]),undefined)
+  user.userInfo.id='a'; const d=viewport.useDeviceMapViewport(identity,vue.ref(),pos,vue.ref([])); assert.equal(d.takeRestoredSelection([point('other')]),undefined)
 })
 
 test('missing authorized detail menu disables navigation', async () => {
@@ -526,4 +643,212 @@ test('missing authorized detail menu disables navigation', async () => {
   value.open([point('d1')]); await settle()
   assert.equal(value.view.hasDetailRoute,false); assert.equal(value.view.canOpenDetail,false)
   await value.openDetailPage(); assert.equal(calls,0); unmount()
+})
+
+test('selection card renders compact detail rows, formatted coordinates and link action', async () => {
+  const file = new URL(base + 'DeviceMapCard/DeviceMapSelectionCard.vue', import.meta.url)
+  const parsed = parse(readFileSync(file, 'utf8'), { filename: file.pathname })
+  assert.deepEqual(parsed.errors, [])
+  const code = transformSync(
+    compileScript(parsed.descriptor, { id: 'DeviceMapSelectionCard.vue', inlineTemplate: true }).content,
+    { loader: 'ts', format: 'cjs' },
+  ).code
+  const mod = { exports: {} }
+  const stub = (tag) => ({ setup: (p, { slots, attrs }) => () => vue.h(tag, attrs, slots.default?.()) })
+  const deps = {
+    '@jetlinks-web-core/components/CloudEmpty/index.vue': { __esModule: true, default: stub('div') },
+    '@ant-design/icons-vue': new Proxy({}, { get: () => stub('i') }),
+  }
+  new Function('require', 'module', 'exports', code)(id => deps[id] ?? require(id), mod, mod.exports)
+  const view = {
+    visible: true,
+    revision: 1,
+    count: 1,
+    keyword: '',
+    page: 1,
+    pageSize: 10,
+    total: 1,
+    rows: [],
+    loading: false,
+    error: false,
+    detailDevice: { deviceId: 'geo-cq-002', label: '重庆江北测试设备', lnglat: [106.53600311279297, 29.575000762939453] },
+    detail: { deviceName: '重庆江北测试设备' },
+    detailLoading: false,
+    detailError: false,
+    position: [106.53600311279297, 29.575000762939453],
+    detailStatus: { color: '#ef4444', text: '离线' },
+    canOpenDetail: true,
+    hasDetailRoute: true,
+    openingDetail: false,
+    detailFields: [
+      { key: 'deviceId', label: '设备 ID', value: 'geo-cq-002', copyable: true },
+      { key: 'product', label: '所属产品', value: '重庆点位回填测试产品' },
+      { key: 'lastActive', label: '最近活动时间', value: '2026-11-17 13:55:13' },
+    ],
+  }
+  const i18nMessages = {
+    'components.DeviceMap.openDetail': '查看设备详情',
+    'components.DeviceMap.location': '地理位置',
+  }
+  const renderCard = async (currentView) => {
+    const app = vue.createSSRApp(mod.exports.default, { view: currentView })
+    app.use(createI18n({ legacy: false, locale: 'zh', messages: { zh: i18nMessages }, flatJson: true }))
+    for (const name of ['AButton', 'ABadge', 'ASpin', 'ATypographyText', 'JEllipsis', 'AInputSearch', 'APagination']) {
+      app.component(name, stub('span'))
+    }
+    return renderToString(app)
+  }
+  const html = await renderCard(view)
+  assert.match(html, /device-map-selection__status/)
+  assert.match(html, /<dl class="device-map-selection__details">/)
+  assert.match(html, /<button[^>]*class="device-map-selection__link"[^>]*aria-label="查看设备详情"[^>]*title="geo-cq-002 · 查看设备详情"[^>]*>geo-cq-002<\/button>/)
+  assert.match(html, /<dt class="device-map-selection__label">地理位置<\/dt>/)
+  assert.match(html, /106\.536003, 29\.575001/)
+  assert.match(html, /title="106\.53600311279297, 29\.575000762939453"/)
+  assert.doesNotMatch(html, /device-map-selection__actions/)
+  const noRouteHtml = await renderCard({ ...view, hasDetailRoute: false, canOpenDetail: false })
+  assert.doesNotMatch(noRouteHtml, /device-map-selection__link/)
+  assert.match(noRouteHtml, /<span class="device-map-selection__id-text" title="geo-cq-002">geo-cq-002<\/span>/)
+})
+
+test('switching points while open remounts ElAmapInfoWindow with fresh offset, single popupElement ref and ignores stale unmount close', async () => {
+  const file = new URL(base + 'DeviceMapCard/DeviceMapCard.vue', import.meta.url)
+  const parsed = parse(readFileSync(file, 'utf8'), { filename: file.pathname })
+  assert.deepEqual(parsed.errors, [])
+  const code = transformSync(
+    compileScript(parsed.descriptor, { id: 'DeviceMapCard.vue', inlineTemplate: true }).content,
+    { loader: 'ts', format: 'cjs' },
+  ).code
+  const mountedWindows = []
+  let closedCount = 0
+  const selectionView = vue.reactive({
+    visible: false,
+    revision: 0,
+    position: undefined,
+    detailDevice: undefined,
+    detailStatus: { color: '#ef4444', text: '离线' },
+  })
+  const popup = vue.ref({ placement: 'above', anchor: 'bottom-center', offset: [0, -16], style: { width: '256px' } })
+  const popupElement = vue.shallowRef()
+  const popupKey = vue.computed(() => (
+    selectionView.visible
+      ? `${selectionView.revision}:${selectionView.detailDevice?.deviceId ?? 'list'}:${popup.value.placement}`
+      : ''
+  ))
+  const popupMounted = vue.ref(true)
+  let token = 0
+  vue.watch(popupKey, async (next, prev) => {
+    token += 1
+    if (!next || !prev || next === prev) { popupMounted.value = true; return }
+    const current = token
+    popupMounted.value = false
+    await vue.nextTick()
+    if (current === token) popupMounted.value = true
+  })
+  const stub = tag => ({ setup: (_, { slots }) => () => vue.h(tag, slots.default?.()) })
+  const ElAmapInfoWindow = {
+    props: ['position', 'anchor', 'offset', 'visible'],
+    emits: ['update:visible'],
+    setup(props, { emit, slots }) {
+      const record = { position: props.position, anchor: props.anchor, offset: props.offset, unmounted: false }
+      mountedWindows.push(record)
+      vue.onBeforeUnmount(() => {
+        record.unmounted = true
+        emit('update:visible', false)
+      })
+      return () => vue.h('div', slots.default?.())
+    },
+  }
+  const deps = {
+    '@jetlinks-web-core/components/CloudEmpty/index.vue': { __esModule: true, default: stub('div') },
+    '@jetlinks-web-core/components/DocumentHelp': { __esModule: true, default: stub('div') },
+    './MapConfigAction.vue': { __esModule: true, default: stub('div') },
+    '@jetlinks-web-core/store/system': { useSystemStore: () => ({ systemInfo: { amap: { apiKey: 'k', secretKey: 's' } } }) },
+    '../components/SectionHeader.vue': { __esModule: true, default: stub('div') },
+    './DeviceMapSelectionCard.vue': { __esModule: true, default: stub('div') },
+    './DeviceDistributionMap.vue': { __esModule: true, default: stub('div') },
+    './distribution': { distributionColors: { online: '#22c55e', offline: '#ef4444' }, distributionState: () => 'online' },
+    '@vuemap/vue-amap': {
+      ElAmapInfoWindow,
+      ElAmapMarker: stub('div'),
+      ElAmapMarkerCluster: stub('div'),
+    },
+    '../hooks/useDeviceMap': {
+      useDeviceMap: () => ({
+        config: vue.ref({ embedded: true }),
+        distribution: vue.ref(false),
+        points: vue.ref([]),
+        clusterLocations: vue.ref([]),
+        loading: vue.ref(false),
+        error: vue.ref(false),
+        extraOptions: vue.ref({}),
+        selection: {
+          view: selectionView,
+          close() {
+            closedCount += 1
+            selectionView.visible = false
+          },
+          closeDetail() {}, search() {}, changePage() {}, selectDevice() {}, refreshStates() {}, refreshDetail() {}, openDetailPage() {},
+        },
+        popup,
+        popupElement,
+        popupKey,
+        popupMounted,
+        onPopupClose(key) { if (popupMounted.value && key === popupKey.value) { closedCount += 1; selectionView.visible = false } },
+        setPopupElement(el) { popupElement.value = el ?? undefined },
+        refresh() {}, onMapInit() {}, onClusterClick() {}, onPointSelect() {},
+        canConfigureMap: vue.ref(false), openMapConfig() {},
+      }),
+    },
+  }
+  const mod = { exports: {} }
+  new Function('require', 'module', 'exports', code)(id => deps[id] ?? require(id), mod, mod.exports)
+  const make = type => ({ type, children: [], props: {} })
+  const renderer = vue.createRenderer({
+    createElement: make,
+    createText: text => ({ text }),
+    createComment: text => ({ text }),
+    setText(n, t) { n.text = t },
+    setElementText(n, t) { n.text = t },
+    patchProp(n, k, _o, v) { n.props[k] = v },
+    insert(n, p, a) {
+      if (n.parent) n.parent.children.splice(n.parent.children.indexOf(n), 1)
+      n.parent = p
+      const i = p.children.indexOf(a)
+      p.children.splice(i < 0 ? p.children.length : i, 0, n)
+    },
+    remove(n) { if (n.parent) n.parent.children.splice(n.parent.children.indexOf(n), 1) },
+    parentNode: n => n.parent,
+    nextSibling: n => n.parent?.children[n.parent.children.indexOf(n) + 1],
+  })
+  const app = renderer.createApp(mod.exports.default)
+  app.use(createI18n({ legacy: false, locale: 'zh', messages: { zh: {} }, flatJson: true, missingWarn: false }))
+  for (const name of ['ASpin', 'AAlert', 'AMapComponent']) app.component(name, stub('div'))
+  app.mount(make('root'))
+  await settle()
+
+  selectionView.visible = true
+  selectionView.revision = 1
+  selectionView.position = [106.577, 29.5579]
+  selectionView.detailDevice = point('d1', 106.577, 29.5579)
+  await settle()
+  assert.equal(mountedWindows.length, 1)
+  assert.deepEqual(mountedWindows[0].offset, [0, -16])
+  assert.equal(Array.isArray(popupElement.value), false)
+  assert.equal(popupElement.value?.type, 'div')
+
+  selectionView.revision = 2
+  selectionView.position = [106.536, 29.575]
+  selectionView.detailDevice = point('d2', 106.536, 29.575)
+  popup.value = { placement: 'below', anchor: 'top-center', offset: [0, 16], style: { width: '256px' } }
+  await settle()
+  assert.equal(mountedWindows[0].unmounted, true)
+  assert.equal(mountedWindows.length, 2)
+  assert.equal(mountedWindows[1].anchor, 'top-center')
+  assert.deepEqual(mountedWindows[1].offset, [0, 16])
+  assert.equal(closedCount, 0)
+  assert.equal(selectionView.visible, true)
+  assert.equal(Array.isArray(popupElement.value), false)
+  assert.equal(popupElement.value?.type, 'div')
+  app.unmount()
 })

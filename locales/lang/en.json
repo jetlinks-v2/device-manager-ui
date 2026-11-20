@@ -806,6 +806,7 @@
   "components.DeviceMap.product": "Product",
   "components.DeviceMap.organization": "Organization",
   "components.DeviceMap.lastActive": "Last activity",
+  "components.DeviceMap.location": "Location",
   "components.DeviceMap.configTitle": "Title",
   "components.DeviceMap.titlePlaceholder": "Enter a title",
   "components.DeviceMap.autoRefresh": "Auto refresh",

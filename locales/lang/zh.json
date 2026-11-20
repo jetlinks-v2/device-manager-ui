@@ -806,6 +806,7 @@
   "components.DeviceMap.product": "所属产品",
   "components.DeviceMap.organization": "所属组织",
   "components.DeviceMap.lastActive": "最近活动时间",
+  "components.DeviceMap.location": "地理位置",
   "components.DeviceMap.configTitle": "标题",
   "components.DeviceMap.titlePlaceholder": "请输入标题",
   "components.DeviceMap.autoRefresh": "自动刷新",
