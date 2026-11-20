@@ -6,6 +6,8 @@ import { createI18n } from 'vue-i18n'
 import { useDeviceAlarmEditor } from '../views/device/alarm/components/editor/useDeviceAlarmEditor'
 import { setAlarmRequestHandler } from './alarmRequest.test-shim'
 import { queryRuleRecords, queryRecordHistory, queryActiveRuleCounts } from '../views/device/alarm/workspaceApi'
+import { useDeviceAlarmDetail } from '../views/device/list/components/device-detail/useDeviceAlarmDetail'
+import type { IotDevice } from '../views/device/list/types'
 import { useDeviceAlarmRecords } from '../views/device/alarm/hooks/useDeviceAlarmRecords'
 import { handleDeviceAlarm } from '../views/device/alarm/workspaceApi'
 import { alarmDeviceId, alarmDuration, canHandleRecord } from '../views/device/alarm/workspaceUtils'
@@ -677,5 +679,69 @@ test('editor preview destinations preserve drafts, block navigation during save 
   assert.equal(state.activePanel.value, 'level')
   assert.equal(props.model.name, 'Unsaved alarm')
   assert.equal(props.model.level, 1)
+  unmount()
+})
+
+
+test('device alarm records and rule counts always constrain the requested device', async () => {
+  const calls: { url: string; body: Record<string, any> }[] = []
+  setAlarmRequestHandler(async (url, body) => {
+    calls.push({ url, body })
+    return url.endsWith('_aggregation') ? { result: [{ alarmConfigId: 'inherited-rule', count: 1 }] } : response('device-record')
+  })
+  await queryRuleRecords(undefined, { pageIndex: 0, pageSize: 10, terms: [{ column: 'sourceId', termType: 'eq', value: 'other-device' }] }, 'device-a')
+  assert.deepEqual(calls[0].body.terms.slice(0, 2), [
+    { column: 'sourceId', termType: 'eq', value: 'device-a' },
+    { column: 'targetType', termType: 'eq', value: 'device' },
+  ])
+  assert.deepEqual(calls[0].body.terms[2], { terms: [{ column: 'sourceId', termType: 'eq', value: 'other-device' }] })
+  await queryRuleRecords('inherited-rule', { pageIndex: 1, pageSize: 10 }, 'device-a')
+  assert.deepEqual(calls[1].body.terms[0], { column: 'alarmConfigId', termType: 'eq', value: 'inherited-rule' })
+  assert.ok(calls[1].body.terms.some((term: any) => term.column === 'sourceId' && term.value === 'device-a'))
+  await queryActiveRuleCounts(['inherited-rule'], 'device-a')
+  assert.ok(calls[2].body.filter.terms.some((term: any) => term.column === 'sourceId' && term.value === 'device-a'))
+})
+
+test('changing the device rebuilds record pagination and discards an old device response', async () => {
+  const pending: { body: Record<string, any>; resolve: (value: unknown) => void }[] = []
+  setAlarmRequestHandler((_url, body) => new Promise(resolve => pending.push({ body, resolve })))
+  const device = ref('device-a'), rule = ref<string>()
+  const { state, unmount } = mount(() => useDeviceAlarmRecords(rule, key => key, device))
+  const old = state.table.value.request({ pageIndex: 2, pageSize: 10 })
+  const key = state.table.value.key
+  device.value = 'device-b'
+  await flush()
+  assert.notEqual(state.table.value.key, key)
+  const current = state.table.value.request({ pageIndex: 0, pageSize: 10 })
+  assert.ok(pending[1].body.terms.some((term: any) => term.column === 'sourceId' && term.value === 'device-b'))
+  pending[1].resolve(response('device-b-record'))
+  assert.equal((await current).result?.data[0].id, 'device-b-record')
+  pending[0].resolve(response('device-a-record'))
+  assert.equal((await old).success, false)
+  unmount()
+})
+
+
+test('device alarm sidebar includes inherited rules while explicit and empty device overrides suppress product rules', async () => {
+  const make = (id: string, property: string, thingId = '@all') => ({
+    ...buildPreprocessPayload({ name: id, source: 'product', targetId: 'product-a', productId: 'product-a',
+      property, propertyName: property, level: 2, trigger: 'outside', limit: { lower: 10, upper: 20 },
+      autoRelieve: true, notification: createEmptyNotification() }),
+    id, property, templateId: 'product-a', thingId,
+  })
+  setAlarmRequestHandler(async url => {
+    if (url === '/alarm/config/default/level') return { result: { levels: [] } }
+    if (url.endsWith('/product-a/property/_list')) return { result: [make('inherited-1', 'p1'), make('inherited-2', 'p2'), make('inherited-3', 'p3')] }
+    if (url.endsWith('/product-a/device-a/property/_list')) return { result: [make('override-1', 'p1', 'device-a'),
+      { id: 'disabled-2', property: 'p2', templateId: 'product-a', thingId: 'device-a', provider: 'composite', configuration: { processors: [] } }] }
+    if (url.endsWith('_aggregation')) return { result: [] }
+    throw new Error(url)
+  })
+  const device = ref({ id: 'device-a', productKey: 'product-a', name: 'Device', productName: 'Product', thingModelMetadata: { properties: [] } } as unknown as IotDevice)
+  const { state, unmount } = mount(() => useDeviceAlarmDetail(device))
+  await flush()
+  assert.equal(state.error.value, false)
+  assert.deepEqual(state.rows.value.map(row => row.id), ['inherited-3', 'override-1'])
+  assert.deepEqual(state.rows.value.map(row => row.source), ['product', 'device'])
   unmount()
 })

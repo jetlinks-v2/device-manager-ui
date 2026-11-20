@@ -24,14 +24,8 @@
       <div class="command-center__main">
         <section class="command-panel">
           <header class="command-panel__tabs">
-            <a-tabs v-model:active-key="activePane" class="command-panel__tabbar">
-              <template #rightExtra>
-                <a-input-search
-                  class="command-panel__search"
-                  :placeholder="$t('IotDeviceDetail.commandCenter.searchPlaceholder')"
-                  @search="handleKeywordSearch"
-                />
-              </template>
+            <DeviceDetailTabs v-model:active-key="activePane" class="command-panel__tabbar">
+
               <a-tab-pane key="property">
                 <template #tab>
                   {{ $t('IotDeviceDetail.commandCenter.tab.property') }} <span class="command-panel__tab-count">{{ properties.length }}</span>
@@ -42,7 +36,14 @@
                   {{ $t('IotDeviceDetail.commandCenter.tab.function') }} <span class="command-panel__tab-count">{{ commands.length }}</span>
                 </template>
               </a-tab-pane>
-            </a-tabs>
+            </DeviceDetailTabs>
+            <a-input-search
+              class="command-panel__search"
+              allow-clear
+              :placeholder="$t('IotDeviceDetail.commandCenter.searchPlaceholder')"
+              @search="handleKeywordSearch"
+            />
+
           </header>
 
           <div v-if="activePane === 'property'" class="runtime-list">
@@ -51,12 +52,12 @@
               {{ propertyAccessText(item) }}
             </span>
               <div class="runtime-row__body">
-                <strong>{{ item.name }}</strong>
-                <small>{{ item.identifier }}</small>
+                <a-tooltip :title="item.name"><strong class="runtime-row__name">{{ item.name }}</strong></a-tooltip>
+                <a-tooltip :title="item.identifier"><small class="runtime-row__identifier">{{ item.identifier }}</small></a-tooltip>
               </div>
-              <code>{{ item.valueType?.type }}</code>
+              <a-tooltip :title="propertyTypeLabel(item)"><span class="runtime-row__type">{{ propertyTypeLabel(item) }}</span></a-tooltip>
               <div class="runtime-row__value">
-                <strong>{{ item.value }}</strong>
+                <a-tooltip :title="item.value"><strong>{{ item.value }}</strong></a-tooltip>
               </div>
               <div class="runtime-row__actions">
                 <a-tooltip :title="propertyActionHint(item, 'read')">
@@ -80,40 +81,26 @@
 
           <div v-else class="runtime-list">
             <article v-for="command in filteredCommands" :key="command.id" class="runtime-row runtime-row--function">
+              <span class="runtime-row__badge" :data-mode="command.callMode">{{ commandCallModeText(command) }}</span>
               <div class="runtime-row__body">
-                <a-space>
-                  <strong>{{ command.name }}</strong><small>{{ command.identifier }}</small>
-                </a-space>
-                <div class="runtime-row__description">
-                  <a-tag color="processing" class="runtime-row__call-mode">
-                    {{ commandCallModeText(command) }}
-                  </a-tag>
-                  <j-ellipsis v-if="command.description" class="runtime-row__description-text">
-                    {{ command.description }}
-                  </j-ellipsis>
-                </div>
-                <div
-                  class="runtime-row__params"
-                  :class="{ 'is-single': !hasCommandOutput(command) }"
-                >
-                  <a-tooltip :title="commandParameterTooltip(command.inputParams)">
-                    <span class="runtime-row__param">
-                      <span class="runtime-row__param-label">{{ $t('IotDeviceDetail.commandCenter.inputParameters') }}</span>
-                      <span class="runtime-row__param-value">{{ commandInputSummary(command) }}</span>
-                    </span>
-                  </a-tooltip>
-                  <a-tooltip v-if="hasCommandOutput(command)" :title="commandParameterTooltip(command.outputParams)">
-                    <span class="runtime-row__param">
-                      <span class="runtime-row__param-label">{{ $t('IotDeviceDetail.commandCenter.outputParameters') }}</span>
-                      <span class="runtime-row__param-value">{{ commandParameterNames(command.outputParams) }}</span>
-                    </span>
-                  </a-tooltip>
-                </div>
+                <a-tooltip :title="command.description ? command.name + '：' + command.description : command.name"><strong class="runtime-row__name">{{ command.name }}</strong></a-tooltip>
+                <a-tooltip :title="command.identifier"><small class="runtime-row__identifier">{{ command.identifier }}</small></a-tooltip>
               </div>
-              <a-button class="runtime-row__invoke" type="primary" size="small" :disabled="!command.enabled" @click="openInvoke(command)">
-                <template #icon><AIcon type="CodeOutlined" /></template>
-                {{ $t('IotDeviceDetail.commandCenter.invoke') }}
-              </a-button>
+              <div class="runtime-row__param runtime-row__param--input">
+                <span class="runtime-row__param-label">{{ $t('IotDeviceDetail.commandCenter.inputParameters') }}</span>
+                <a-tooltip :title="commandParameterTooltip(command.inputParams)"><span class="runtime-row__param-value">{{ commandInputSummary(command) }}</span></a-tooltip>
+              </div>
+              <div class="runtime-row__param runtime-row__param--output">
+                <span class="runtime-row__param-label">{{ $t('IotDeviceDetail.commandCenter.outputParameters') }}</span>
+                <a-tooltip v-if="hasCommandOutput(command)" :title="commandParameterTooltip(command.outputParams)"><span class="runtime-row__param-value">{{ commandParameterNames(command.outputParams) }}</span></a-tooltip>
+                <span v-else class="runtime-row__param-value">--</span>
+              </div>
+              <div class="runtime-row__actions">
+                <a-button class="runtime-row__invoke" type="primary" size="small" :disabled="!command.enabled" @click="openInvoke(command)">
+                  <template #icon><AIcon type="CodeOutlined" /></template>
+                  {{ $t('IotDeviceDetail.commandCenter.invoke') }}
+                </a-button>
+              </div>
             </article>
             <CloudEmpty v-if="!filteredCommands.length" :description="$t('IotDeviceDetail.commandCenter.noFunctions')" />
           </div>
@@ -126,12 +113,12 @@
           </header>
           <article v-for="row in historyRows" :key="row.id" class="history-row">
             <div class="history-row__head">
-              <a-space :size="6">
+              <div class="history-row__identity">
                 <span :data-action="row.action">{{ row.actionText }}</span>
-                <strong>{{ row.name }}</strong>
-                <code>{{ row.identifier }}</code>
-              </a-space>
-              <time>{{ row.time }}</time>
+                <a-tooltip :title="row.name"><strong class="history-row__name">{{ row.name }}</strong></a-tooltip>
+                <a-tooltip :title="row.identifier"><code class="history-row__identifier">{{ row.identifier }}</code></a-tooltip>
+              </div>
+              <a-tooltip :title="row.time"><time>{{ row.time }}</time></a-tooltip>
             </div>
             <div v-if="row.replyPayload" class="history-row__payloads">
               <section class="history-row__payload-block">
@@ -153,158 +140,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
-import type { IotDeviceCommandDefinition, IotDeviceCommandExecution, IotDeviceLog } from '../../types'
-import type { DevicePropertyValue } from '../../services/iotDeviceDetailReal.service'
-import type { RealtimePropertyRow } from './iotDeviceDetail.types'
+import DeviceDetailTabs from '@device-manager-ui/views/device/components/DeviceDetailTabs.vue'
 import IotDeviceCommandInvokeModal from './IotDeviceCommandInvokeModal.vue'
 import IotDevicePropertyReadModal from './IotDevicePropertyReadModal.vue'
 import IotDevicePropertyWriteModal from './IotDevicePropertyWriteModal.vue'
-import { useIotDeviceCommandHistory } from './useIotDeviceCommandHistory'
-import { useIotDevicePropertyOperation } from './useIotDevicePropertyOperation'
-
-type Pane = 'property' | 'function'
-
-const props = defineProps<{
-  deviceId: string
-  properties: RealtimePropertyRow[]
-  commands: IotDeviceCommandDefinition[]
-  logs: IotDeviceLog[]
-  result: IotDeviceCommandExecution | null
-  busy: boolean
-}>()
-
-const emit = defineEmits<{
-  execute: [commandId: string, params: Record<string, any>]
-  'property-value': [value: DevicePropertyValue]
-}>()
-
+import { useI18n } from 'vue-i18n'
+import { useCommandCenter, type CommandCenterProps, type CommandCenterEmits } from './useCommandCenter'
+const props = defineProps<CommandCenterProps>()
+const emit = defineEmits<CommandCenterEmits>()
 const { t: $t } = useI18n()
-const activePane = ref<Pane>('property')
-const keyword = ref('')
-const invokeOpen = ref(false)
-const activeCommand = ref<IotDeviceCommandDefinition | null>(null)
-const {
-  selectedProperty,
-  selectedTone,
-  readOpen,
-  writeOpen,
-  reading,
-  writing,
-  openRead,
-  openWrite,
-  readSelectedProperty,
-  writeSelectedProperty,
-} = useIotDevicePropertyOperation({
-  deviceId: () => props.deviceId,
-  onValue: (value) => {
-    emit('property-value', value)
-    void loadHistory()
-  },
-})
-const { historyRows, loadHistory } = useIotDeviceCommandHistory(
-  () => props.deviceId,
-  () => props.logs,
-  () => props.properties,
-  () => props.commands,
-)
-
-watch(() => props.result?.id, () => {
-  if (props.result?.id) void loadHistory()
-})
-
-const filteredProperties = computed(() => {
-  const value = keyword.value.trim().toLowerCase()
-  return props.properties.filter((item) => !value || [item.name, item.identifier, item.dataType].join(' ').toLowerCase().includes(value))
-})
-
-const filteredCommands = computed(() => {
-  const value = keyword.value.trim().toLowerCase()
-  return props.commands.filter((item) => !value || [item.name, item.identifier, item.description].join(' ').toLowerCase().includes(value))
-})
-
-function propertyActionTypes(item: RealtimePropertyRow) {
-  const type = item.expands?.type
-  // 兼容历史物模型将访问方式保存为逗号分隔字符串的情况。
-  return Array.isArray(type) ? type : typeof type === 'string' ? type.split(',').map((item) => item.trim()) : []
-}
-
-function canReadProperty(item: RealtimePropertyRow) {
-  return propertyActionTypes(item).includes('read')
-}
-
-function canWriteProperty(item: RealtimePropertyRow) {
-  return propertyActionTypes(item).includes('write')
-}
-
-function propertyActionHint(item: RealtimePropertyRow, action: 'read' | 'write') {
-  if ((action === 'read' && canReadProperty(item)) || (action === 'write' && canWriteProperty(item))) {
-    return undefined
-  }
-  return $t(`IotDeviceDetail.commandCenter.${action}Unsupported`)
-}
-
-function propertyAccessMode(item: RealtimePropertyRow) {
-  const readable = canReadProperty(item)
-  const writable = canWriteProperty(item)
-  if (readable && writable) return 'rw'
-  if (writable) return 'write'
-  if (readable) return 'read'
-  return 'report'
-}
-
-function propertyAccessText(item: RealtimePropertyRow) {
-  const mode = propertyAccessMode(item)
-  if (mode === 'rw') return $t('IotDeviceDetail.commandCenter.access.rw')
-  if (mode === 'write') return $t('IotDeviceDetail.commandCenter.access.write')
-  if (mode === 'read') return $t('IotDeviceDetail.commandCenter.access.read')
-  return $t('IotDeviceDetail.commandCenter.access.report')
-}
-
-function commandCallModeText(command: IotDeviceCommandDefinition) {
-  return command.callMode === 'async'
-    ? $t('IotDeviceDetail.commands.callMode.async')
-    : $t('IotDeviceDetail.commands.callMode.sync')
-}
-
-function commandInputSummary(command: IotDeviceCommandDefinition) {
-  return command.inputParams.length
-    ? commandParameterNames(command.inputParams)
-    : $t('IotDeviceDetail.commands.noInputParams')
-}
-
-function commandParameterNames(params: IotDeviceCommandDefinition['inputParams']) {
-  return params.map((param) => param.name || param.key).join('、')
-}
-
-function commandParameterTooltip(params: IotDeviceCommandDefinition['inputParams']) {
-  return params
-    .map((param) => `${param.name || param.key}(${param.key})-${commandParamTypeLabel(param.type)}`)
-    .join('；')
-}
-
-function commandParamTypeLabel(type: IotDeviceCommandDefinition['inputParams'][number]['type']) {
-  return $t(`IotDeviceDetail.commands.paramTypeText.${type}`)
-}
-
-function hasCommandOutput(command: IotDeviceCommandDefinition) {
-  return command.callMode === 'sync' && command.outputParams.length > 0
-}
-
-function openInvoke(command: IotDeviceCommandDefinition) {
-  activeCommand.value = command
-  invokeOpen.value = true
-}
-
-function onExecuteCommand(commandId: string, params: Record<string, any>) {
-  emit('execute', commandId, params)
-}
-
-function handleKeywordSearch(value: string, event?: MouseEvent | KeyboardEvent) {
-  keyword.value = String(value || '')
-}
-
+const { propertyTypeLabel, activePane, filteredProperties, filteredCommands, selectedProperty, selectedTone, readOpen, writeOpen, reading, writing, openRead, openWrite, readSelectedProperty, writeSelectedProperty, invokeOpen, activeCommand, historyRows, propertyAccessMode, propertyAccessText, propertyActionHint, canReadProperty, canWriteProperty, commandCallModeText, commandInputSummary, commandParameterNames, commandParameterTooltip, hasCommandOutput, openInvoke, onExecuteCommand, handleKeywordSearch } = useCommandCenter(props, emit)
 </script>
 
 <style scoped src="./IotDeviceCommandCenterTab.css"></style>

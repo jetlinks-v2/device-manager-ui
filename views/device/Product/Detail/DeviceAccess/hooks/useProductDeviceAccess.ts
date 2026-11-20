@@ -3,6 +3,7 @@ import type { SelectProps } from 'ant-design-vue'
 import { cloneDeep, pick } from 'lodash-es'
 import Driver from 'driver.js'
 import 'driver.js/dist/driver.min.css'
+import { marked } from 'marked'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@jetlinks-web-core/store'
 import { useTabSaveSuccessBack } from '@jetlinks-web-core/hooks'
@@ -30,6 +31,10 @@ export function useProductDeviceAccess() {
   const visible = ref(false)
   const access = ref<Record<string, any>>({})
   const accessId = ref('')
+  const protocolDocument = computed(() => {
+    const document = access.value.transportDetail?.document
+    return document ? marked.parse(String(document)) as string : ''
+  })
   const metadata = ref<ConfigMetadata[]>([])
   const dataSource = ref<{ id: string; description?: string }[]>([])
   const storageList = ref<{ id: string; name: string }[]>([])
@@ -249,7 +254,7 @@ export function useProductDeviceAccess() {
   watch(() => productStore.current.id, () => { void getData() }, { immediate: true })
   onScopeDispose(() => { disposed = true; accessLoadVersion += 1 })
   return {
-    productStore, permissionStore, formRef, visible, access, accessId, metadata, dataSource,
+    productStore, permissionStore, formRef, visible, access, accessId, metadata, dataSource, protocolDocument,
     storageList, activeKey, form, formData, productTypes, productData, pluginFormRef,
     metadataVisible, metadataModalCacheData, submitLoading, accessLoading, accessError, getData,
     showModal, showDevice, checkAccess, productTypeChange, submitDevice, MetaDataModalSubmit, tooltip, checkDisabled,

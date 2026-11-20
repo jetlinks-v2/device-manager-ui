@@ -441,6 +441,7 @@ import type { PropType } from "vue";
 import type { DeviceInstance } from "../../../Instance/typings";
 import { useRouter, onBeforeRouteUpdate } from "vue-router";
 import { useMetadata, useOperateLimits, useGroup } from "./hooks";
+import { isInheritedMetadataGroup, renameMetadataGroup, removeMetadataGroup } from '@device-manager-ui/components/Metadata/groupPolicy';
 import { useReadonlyMetadata } from './hooks/useReadonlyMetadata';
 import { useColumns, useSaveUnit } from "./columns";
 import { getMetadataItemByType, limitsMap } from "./utils";
@@ -852,18 +853,17 @@ const fullToggle = (type: boolean, cb: Function) => {
 };
 
 const groupEdit = (record: { value: string; label: string, oldValue: string }) => {
-  dataSource.value.forEach((item) => {
-    if (item.expands?.groupId === record.oldValue) {
-      item.expands.groupName = record.label;
-      item.expands.groupId = record.value;
-    }
-  });
+  if (props.readonly || !hasMetadataUpdatePermission()) return;
+  if (renameMetadataGroup(dataSource.value, record, _target)) editStatus.value = true;
 };
 
 const groupDelete = (id: string) => {
-  dataSource.value = dataSource.value.filter(
-    (item) => item.expands?.groupId !== id || item.expands?.isProduct,
-  );
+  if (props.readonly || !hasMetadataUpdatePermission() || isInheritedMetadataGroup(dataSource.value, id, _target)) return;
+  const remaining = removeMetadataGroup(dataSource.value, id, _target);
+  if (remaining.length !== dataSource.value.length) {
+    dataSource.value = remaining;
+    editStatus.value = true;
+  }
 };
 
 const importMetadata = (_metadata: any[]) => {

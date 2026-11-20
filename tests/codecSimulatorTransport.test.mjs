@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 import vm from 'node:vm'
+import { ref, watch, effectScope, nextTick } from 'vue'
 import { transform } from 'esbuild'
 
 const itemPath = new URL('../views/device/Instance/Detail/DeviceAccess/CodecSimulatorItem.vue', import.meta.url)
@@ -74,8 +75,7 @@ test('only exposes packet simulation for transports supported end-to-end', () =>
 })
 
 test('hides packet simulation in both device-detail entries when transport is unsupported', () => {
-  assert.match(currentDetailSource, /v-if="canShowCodecSimulator"/)
-  assert.match(currentDetailSource, /codecSimulateSupport\.value && isCodecSimulatorTransportSupported\(props\.device\.transport\)/)
+  assert.doesNotMatch(currentDetailSource, /<CodecSimulatorPanel/)
   assert.match(legacyDetailSource, /v-if="canShowCodecSimulator"/)
   assert.match(legacyDetailSource, /codecSimulateSupport\.value && isCodecSimulatorTransportSupported\(instanceStore\.current\?\.transport\)/)
 })
@@ -83,4 +83,43 @@ test('hides packet simulation in both device-detail entries when transport is un
 test('passes the device transport through the shared simulator panel', () => {
   assert.match(panelSource, /:transport="transport"/)
   assert.match(panelSource, /transport: props\.transport/)
+})
+
+
+test('simulator support ignores stale device responses, stops on unsupported transport and skips hidden preload', async () => {
+  const source = await readFile(new URL('../views/device/list/components/device-detail/useDeviceSimulatorSupport.ts', import.meta.url), 'utf8')
+  const compiled = await transform(source, { loader: 'ts', format: 'cjs' })
+  const pending = []
+  const module = { exports: {} }
+  vm.runInNewContext(compiled.code, { module, exports: module.exports, require: id => {
+    if (id === 'vue') return { ref, watch }
+    if (id.includes('iotDeviceDetailReal.service')) return { iotDeviceDetailRealApi: {
+      existsDeviceCodecSimulateSupport: () => new Promise(resolve => pending.push(resolve)),
+    } }
+    if (id.includes('useCodecSimulator')) return { isCodecSimulatorTransportSupported }
+    throw new Error(id)
+  } })
+  const id = ref('device-a'), transport = ref('MQTT'), enabled = ref(false), scope = effectScope()
+  const supported = scope.run(() => module.exports.useDeviceSimulatorSupport(id, transport, enabled))
+  assert.equal(pending.length, 0)
+  enabled.value = true
+  await nextTick()
+  id.value = 'device-b'
+  await nextTick()
+  pending[0]({ status: 200, result: true })
+  await new Promise(setImmediate)
+  assert.equal(supported.value, false)
+  pending[1]({ status: 200, result: true })
+  await new Promise(setImmediate)
+  assert.equal(supported.value, true)
+  transport.value = 'HTTP'
+  await nextTick()
+  assert.equal(supported.value, false)
+  assert.equal(pending.length, 2)
+  transport.value = 'MQTT'
+  await nextTick()
+  scope.stop()
+  pending[2]({ status: 200, result: true })
+  await new Promise(setImmediate)
+  assert.equal(supported.value, false)
 })

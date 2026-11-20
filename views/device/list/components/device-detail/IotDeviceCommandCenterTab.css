@@ -9,7 +9,7 @@
 
 .command-center__main {
   display: grid;
-  grid-template-columns: minmax(30rem, 1fr) minmax(22rem, 32rem);
+  grid-template-columns: minmax(0, 1.85fr) minmax(20rem, 1fr);
   height: 100%;
   border-radius: 0.5rem;
   background: var(--jet-theme-bg-container);
@@ -37,13 +37,15 @@
 
 .command-panel__tab-count {
   margin-left: 0.25rem;
-  color: var(--jet-theme-text-disabled);
+  color: var(--jet-theme-text-secondary);
   font-size: var(--fs-14);
 }
 
 .command-panel__search {
   justify-self: end;
-  max-width: 10rem;
+  width: 100%;
+  max-width: none;
+  margin-bottom: var(--space-3);
 }
 
 .runtime-list {
@@ -57,7 +59,7 @@
 
 .runtime-row {
   display: grid;
-  grid-template-columns: max-content minmax(12rem, 1fr) 7rem minmax(8rem, 10rem) 6.75rem;
+  grid-template-columns: max-content minmax(10rem, 1.65fr) minmax(5.5rem, 7rem) minmax(8rem, 1fr) auto;
   gap: var(--space-3);
   align-items: center;
   min-height: 3.5rem;
@@ -65,8 +67,7 @@
 }
 
 .runtime-row--function {
-  grid-template-columns: minmax(0, 1fr) 4.5rem;
-  min-height: 6rem;
+  grid-template-columns: max-content minmax(10rem, 1.65fr) minmax(8rem, 1fr) minmax(7rem, 0.85fr) auto;
 }
 
 .runtime-row__invoke.ant-btn {
@@ -96,6 +97,8 @@
 }
 
 .runtime-row__badge[data-mode='rw'],
+.runtime-row__badge[data-mode='sync'],
+.runtime-row__badge[data-mode='async'],
 .runtime-row__icon {
   background: color-mix(in srgb, var(--jet-theme-primary) 10%, var(--jet-theme-bg-container));
   color: var(--jet-theme-primary);
@@ -118,32 +121,12 @@
 .runtime-row__body small,
 .runtime-row__body p,
 .runtime-row__value span {
-  color: var(--jet-theme-text-disabled);
+  color: var(--jet-theme-text-secondary);
   font-size: var(--fs-14);
 }
 
 .runtime-row__body p {
   margin: 0.25rem 0;
-}
-
-.runtime-row__description {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-width: 0;
-  margin: 0.25rem 0;
-  color: var(--jet-theme-text-disabled);
-  font-size: var(--fs-14);
-}
-
-.runtime-row__description-text {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.runtime-row__call-mode {
-  flex: 0 0 auto;
-  margin-inline-end: 0;
 }
 
 .runtime-row code {
@@ -156,39 +139,27 @@
   font-size: var(--fs-14);
 }
 
-.runtime-row__params {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-2);
-  margin-top: var(--space-1);
-}
-
-.runtime-row__params.is-single {
-  grid-template-columns: minmax(0, 1fr);
-}
-
 .runtime-row__param {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   min-width: 0;
-  border-radius: 0.25rem;
-  padding: 0.125rem 0.375rem;
-  background: var(--jet-theme-bg-layout);
-  color: var(--jet-theme-primary);
+  gap: 0.125rem;
   font-size: var(--fs-14);
 }
 
 .runtime-row__param-label {
   flex: 0 0 auto;
-  color: var(--jet-theme-text-disabled);
+  color: var(--jet-theme-text-secondary);
+  font-size: var(--fs-12);
 }
 
 .runtime-row__param-value {
   display: block;
   overflow: hidden;
   min-width: 0;
-  color: var(--jet-theme-primary);
+  max-width: 100%;
+  color: var(--jet-theme-text);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -243,7 +214,7 @@
 .command-history header span,
 .history-row time,
 .history-row code {
-  color: var(--jet-theme-text-disabled);
+  color: var(--jet-theme-text-secondary);
   font-size: var(--fs-14);
 }
 
@@ -256,7 +227,7 @@
   min-width: 0;
 }
 
-.history-row__head span {
+.history-row__head span[data-action] {
   border-radius: var(--r-1);
   padding: 0.0625rem 0.3125rem;
   background: color-mix(in srgb, var(--jet-theme-primary) 9%, var(--jet-theme-bg-container));
@@ -284,16 +255,16 @@
 .history-row pre,
 .history-row__payload-block pre {
   margin: var(--space-2) 0 0;
-  border-left: 0.1875rem solid color-mix(in srgb, var(--jet-theme-primary) 35%, var(--jet-theme-border));
   border-radius: 0.25rem;
   padding: var(--space-2) var(--space-3);
   background: var(--jet-theme-bg-layout);
   color: var(--jet-theme-primary);
   font-size: var(--fs-14);
   line-height: 1.45;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: pre-wrap;
+  overflow: auto;
+  max-height: 12rem;
+  overflow-wrap: anywhere;
 }
 
 .history-row__payloads {
@@ -303,7 +274,7 @@
 }
 
 .history-row__payload-block span {
-  color: var(--jet-theme-text-disabled);
+  color: var(--jet-theme-text-secondary);
   font-size: var(--fs-14);
 }
 
@@ -332,7 +303,7 @@
 
 .command-modal-title__identifier,
 .invoke-form-label__identifier {
-  color: var(--jet-theme-text-disabled);
+  color: var(--jet-theme-text-secondary);
   font-size: var(--fs-14);
   font-weight: 400;
 }
@@ -364,19 +335,24 @@
     border-left: 0;
   }
 
-  .runtime-row {
-    grid-template-columns: auto minmax(0, 1fr);
-    padding: var(--space-3) 0;
-  }
-
-  .runtime-row--function {
-    grid-template-columns: minmax(0, 1fr) 4.5rem;
-  }
-
-  .runtime-row__actions {
-    grid-column: 2;
-    justify-content: flex-start;
-    border-left: 0;
-    padding-left: 0;
-  }
 }
+
+@media (max-width: 48rem) {
+  .runtime-row, .runtime-row--function { grid-template-columns: max-content minmax(0, 1fr) auto; gap: var(--space-2); padding: var(--space-3) 0; }
+  .runtime-row__badge { grid-column: 1; grid-row: 1; }
+  .runtime-row__body { grid-column: 2; grid-row: 1; }
+  .runtime-row__type, .runtime-row__param--input { grid-column: 2; grid-row: 2; }
+  .runtime-row__value, .runtime-row__param--output { grid-column: 2; grid-row: 3; justify-content: flex-start; text-align: left; }
+  .runtime-row__actions { grid-column: 3; grid-row: 1 / span 3; flex-direction: column; padding-left: 0; }
+}
+
+.runtime-row__actions { display: flex; gap: var(--space-2); }
+.runtime-row code, .runtime-row__value { overflow-wrap: anywhere; min-width: 0; }
+
+.runtime-row__name, .runtime-row__identifier, .runtime-row__type, .runtime-row__value > strong { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.runtime-row__type { font-size: var(--fs-12); color: var(--jet-theme-text-secondary); }
+
+.history-row__head { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
+.history-row__identity { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); min-width: 0; }
+.history-row__name, .history-row__identifier { display: block; max-width: 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.history-row__head time { white-space: nowrap; }

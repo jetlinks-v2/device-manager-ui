@@ -21,10 +21,13 @@ function pageOf(response: unknown): { data: DeviceAlarmEvent[]; total: number } 
 }
 
 /** 预处理 id 由产品、设备范围和属性生成；缺失时不能降级为按名称或设备匹配。 */
-export async function queryRuleRecords(ruleId: string | undefined, query: AlarmQuery) {
+export async function queryRuleRecords(ruleId: string | undefined, query: AlarmQuery, deviceId?: string) {
   return pageOf(await queryByDevice({ ...query, terms: [
     ...(ruleId ? [{ column: 'alarmConfigId', termType: 'eq', value: ruleId }] : []),
-    { column: 'alarmConfigSource', termType: 'eq', value: 'device-property-preprocessor' },
+    ...(deviceId ? [
+      { column: 'sourceId', termType: 'eq', value: deviceId },
+      { column: 'targetType', termType: 'eq', value: 'device' },
+    ] : [{ column: 'alarmConfigSource', termType: 'eq', value: 'device-property-preprocessor' }]),
     { terms: query.terms || [] },
   ] }))
 }
@@ -36,7 +39,7 @@ export async function queryRecordHistory(recordId: string, tab: HistoryTab, quer
 }
 
 /** 只聚合当前页规则，COUNT 为各规则仍在告警的设备记录数，不受右侧搜索影响。 */
-export async function queryActiveRuleCounts(ruleIds: string[]): Promise<Record<string, number>> {
+export async function queryActiveRuleCounts(ruleIds: string[], deviceId?: string): Promise<Record<string, number>> {
   if (!ruleIds.length) return {}
   const value = unwrap(await request.post('/alarm/record/device/_aggregation', {
     columns: [{ column: 'id', alias: 'count', aggregation: 'COUNT' }],
@@ -44,6 +47,7 @@ export async function queryActiveRuleCounts(ruleIds: string[]): Promise<Record<s
     limit: ruleIds.length,
     filter: { terms: [
       { column: 'state', termType: 'eq', value: 'warning' },
+      ...(deviceId ? [{ column: 'sourceId', termType: 'eq', value: deviceId }, { column: 'targetType', termType: 'eq', value: 'device' }] : []),
       { column: 'alarmConfigSource', termType: 'eq', value: 'device-property-preprocessor' },
       { column: 'alarmConfigId', termType: 'in', value: ruleIds },
     ] },

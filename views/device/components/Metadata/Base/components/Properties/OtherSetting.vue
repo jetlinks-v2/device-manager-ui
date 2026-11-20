@@ -1,17 +1,22 @@
 <template>
-  <PopoverModal
-    v-if='!disabled'
-    v-model:visible='modalVisible'
-    body-style='padding-top:4px;width:600px;'
-    placement='bottomRight'
-    :disabled='disabled'
-    :show-ok='!readonly'
-    :cancel-text="readonly ? $t('IotDeviceDetail.common.close') : undefined"
-    @ok='confirm'
-    @cancel='cancel'
-  >
-    <template #content>
-      <div style='height: 350px; overflow-y: auto' v-if='showContent'>
+    <j-permission-button
+      key='setting'
+      :disabled='disabled'
+      :has-permission='hasPermission'
+      :tooltip='tooltip'
+      type='text'
+      size='small'
+      class='metadata-setting-action'
+      @click='modalVisible = true'
+    >
+      <AIcon type='EditOutlined' />
+      {{ $t('Properties.OtherSetting.237457-18') }}
+    </j-permission-button>
+  <a-modal v-if="!disabled" v-model:open="modalVisible" :width="760" :mask-closable="false"
+    :title="$t('deviceDetailOptimization.configureProperty', { name: name || id })"
+    :get-container="modalContainer" @ok="confirm" @cancel="cancel">
+
+      <div class='metadata-settings-content' v-if='showContent'>
         <a-collapse v-model:activeKey='activeKey' v-if='visible'>
           <a-collapse-panel
             v-if="!(props.isProduct && target === 'device')"
@@ -156,40 +161,15 @@
       <div v-else style='padding-top: 24px'>
         <j-empty :description="$t('Properties.OtherSetting.237457-17')" />
       </div>
-    </template>
-    <j-permission-button
-      key='setting'
-      :disabled='disabled'
-      :has-permission='hasPermission'
-      :tooltip='tooltip'
-      type='text'
-      size='small'
-      class='metadata-setting-action'
-    >
-      <AIcon type='EditOutlined' />
-      {{ $t('Properties.OtherSetting.237457-18') }}
-    </j-permission-button>
-  </PopoverModal>
-  <j-permission-button
-    v-else
-    key='setting'
-    :disabled='disabled'
-    :has-permission='hasPermission'
-    :tooltip='tooltip'
-    type='text'
-    size='small'
-    class='metadata-setting-action'
-  >
-    <AIcon type='EditOutlined' />
-    {{ $t('Properties.OtherSetting.237457-18') }}
-  </j-permission-button>
+
+    <template v-if="readonly" #footer><a-button @click="cancel">{{ $t('IotDeviceDetail.common.close') }}</a-button></template>
+  </a-modal>
 </template>
 
 <script setup lang='ts'>
 import DocumentHelp from '@jetlinks-web-core/components/DocumentHelp'
 import Metrics from './Metrics/Metrics.vue'
 import { useI18n } from 'vue-i18n'
-import { PopoverModal } from '../../../../../../../components/Metadata'
 import CardItem from './components/CardItem.vue'
 import { usePropertyOtherSettings } from './usePropertyOtherSettings'
 
@@ -240,11 +220,12 @@ const props = defineProps({
   }
 })
 
-const { modalVisible, confirm, cancel, showContent, activeKey, visible, config, columns, _disabled, popContainer,
+const { modalContainer, modalVisible, confirm, cancel, showContent, activeKey, visible, config, columns, _disabled, popContainer,
   conflictData, configValue, tableWrapperRef, getOptions, settingValue, showMetrics, metricsRef, booleanOptions, metrics, showKeyProperty } = usePropertyOtherSettings(props, emit)
 </script>
 
 <style scoped lang='less'>
+.metadata-settings-content { max-height: 65vh; overflow-y: auto; }
 .extra-tip {
   padding: 8px;
   background-color: rgba(#000, 0.05);

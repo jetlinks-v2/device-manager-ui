@@ -1,67 +1,40 @@
 <template>
   <div class="table-group-warp">
-    <a-tabs :type="readonly ? 'card' : 'editable-card'" v-model:activeKey="myActiveKey" @edit="onAdd" :hideAdd="target === 'device' || readonly" @change="change">
+    <h4 class="table-group-heading">{{ $t('deviceDetailOptimization.propertyGroups') }}<DocumentHelp code="device/Product" help-key="metadata.groups" /></h4>
+    <a-tabs tab-position="left" type="line" v-model:activeKey="myActiveKey" @change="change">
       <a-tab-pane v-for="item in options" :key="item.value" :closable="false">
         <template #tab>
-          <a-dropdown
-            v-if="!readonly && myActiveKey === item.value"
-            :trigger="['click']"
-            :getPopupContainer="(node) => tableWrapperRef || node"
-          >
-            <template #overlay>
-              <a-menu @click="(e) => { menuClick(e, item)}">
-                <a-menu-item key="edit">
-                  {{ $t('Metadata.group.497268-0') }}
-                </a-menu-item>
-                <a-menu-item key="delete">
-                  {{ $t('Metadata.group.497268-1') }}
-                </a-menu-item>
-              </a-menu>
-            </template>
-            <div class="table-group-error-warp">
-              <div class="table-group-error-warp-label">
-                <j-ellipsis>{{ item.label }}</j-ellipsis> ({{ item.effective}})
-                <DocumentHelp code="device/Product" help-key="metadata.groups" />
-              </div>
-<!--              <div class="table-group-error-warp-value">-->
-<!--                <j-ellipsis>{{item.value}}</j-ellipsis>-->
-<!--              </div>-->
-              <a-tooltip
-                v-if="errorMap[item.value]"
-                color="#ffffff"
-                :arrowPointAtCenter="true"
-                :get-popup-container="popContainer"
-              >
-                <template #title>
-                  <span style="color: #1d2129">{{ $t('Metadata.group.497268-2') }}</span>
-                </template>
-                <div class="table-group-error-target"></div>
+          <div class="table-group-error-warp">
+            <div class="table-group-error-warp-label">
+              <j-ellipsis class="table-group-name">{{ item.label }}</j-ellipsis>
+              <span class="table-group-count">({{ item.effective || 0 }})</span>
+              <a-tooltip v-if="target === 'device' && item.inherited" :title="$t('deviceDetailOptimization.inheritedGroupHint')">
+                <span class="table-group-inherited">{{ $t('deviceDetailOptimization.inheritedGroup') }}</span>
               </a-tooltip>
             </div>
-          </a-dropdown>
-          <div v-else class="table-group-error-warp">
-            <div class="table-group-error-warp-label">
-              <j-ellipsis>{{ item.label }}</j-ellipsis> ({{ item.effective}})
-                <DocumentHelp code="device/Product" help-key="metadata.groups" />
-            </div>
-<!--            <div class="table-group-error-warp-value">-->
-<!--              <j-ellipsis>{{item.value}}</j-ellipsis>-->
-<!--            </div>-->
-            <a-tooltip
-              v-if="errorMap[item.value]"
-              color="#ffffff"
-              :arrowPointAtCenter="true"
-              :getContainer="popContainer"
-            >
-              <template #title>
-                <span style="color: #1d2129">{{ $t('Metadata.group.497268-2') }}</span>
+            <a-dropdown v-if="canManageMetadataGroup(item, target, readonly)" :trigger="['click']" placement="bottomRight" :get-popup-container="node => tableWrapperRef || node">
+              <template #overlay>
+                <a-menu @click="e => menuClick(e, item)">
+                  <a-menu-item key="edit">{{ $t('Metadata.group.497268-0') }}</a-menu-item>
+                  <a-menu-item key="delete" danger>{{ $t('Metadata.group.497268-1') }}</a-menu-item>
+                </a-menu>
               </template>
-              <div class="table-group-error-target"></div>
+              <a-button class="table-group-actions" type="text" size="small" :aria-label="$t('deviceDetailOptimization.groupActions', { name: item.label })" @click.stop @keydown.stop>
+                <template #icon><AIcon type="EllipsisOutlined" /></template>
+              </a-button>
+            </a-dropdown>
+            <a-tooltip v-if="errorMap[item.value]" color="#ffffff" :get-popup-container="popContainer">
+              <template #title><span class="table-group-error-text">{{ $t('Metadata.group.497268-2') }}</span></template>
+              <div class="table-group-error-target" />
             </a-tooltip>
           </div>
         </template>
       </a-tab-pane>
     </a-tabs>
+    <a-button v-if="!readonly" class="table-group-add" type="dashed" block @click="onAdd(undefined, 'add')">
+      <template #icon><AIcon type="PlusOutlined" /></template>
+      {{ $t('deviceDetailOptimization.addGroup') }}
+    </a-button>
     <a-modal
       :open="visible"
       :title="$t('Metadata.group.497268-3')"
@@ -102,6 +75,7 @@ import {isFullScreen} from "@jetlinks-web-core/utils";
 import {useTableGroupError, useTableWrapper} from './context'
 import { useI18n } from 'vue-i18n';
 import {cloneDeep} from "lodash-es";
+import { canManageMetadataGroup } from './groupPolicy'
 
 defineOptions({ name: 'MetadataBaseTableGroup' })
 
@@ -154,7 +128,7 @@ const vailId = async (_, value) => {
 };
 
 const onAdd = (targetKey, action) => {
-  // if(props.readonly) return
+  if (props.readonly) return
   if (action === 'add') {
     type.value = 'add'
     // 获取上一个包含 “分组_” 的信息
@@ -181,6 +155,7 @@ const onAdd = (targetKey, action) => {
 }
 
 const onEdit = (record) => {
+  if (!canManageMetadataGroup(record, props.target, props.readonly)) return
   visible.value = true
   type.value = 'edit'
   formData.label = record.label
@@ -213,35 +188,25 @@ const onOk = () => {
 
 const change = () => {
   const item = props.options.find(item => item.value === myActiveKey.value)
-  emit('change', myActiveKey.value, item.label)
+  emit('change', myActiveKey.value, item?.label)
   emit('update:activeKey', myActiveKey.value)
 }
 
 const menuClick = (e, record) => {
-  if(props.readonly) return
+  if (!canManageMetadataGroup(record, props.target, props.readonly)) return
   if (e.key === 'edit') {
     onEdit(record)
   } else {
     Modal.confirm({
-      title: $t('Metadata.group.497268-8'),
+      title: $t(props.target === 'device' ? 'deviceDetailOptimization.deleteDeviceGroup' : 'Metadata.group.497268-8'),
       onOk: () => {
-        // activeKey 根据数据长度进行左右移动
+        if (!canManageMetadataGroup(record, props.target, props.readonly)) return
         const index = props.options.findIndex(item => item.value === record.value)
-        let label = ''
-
-        if (index !== 0 && index === props.options.length - 1) {
-          myActiveKey.value = props.options[index - 1].value
-          label = props.options[index - 1].label
-        } else if (index === 0 && props.options.length === 1) {
-          myActiveKey.value = props.options[0].value
-          label = props.options[0].label
-        } else {
-          myActiveKey.value = props.options[index + 1].value
-          label = props.options[index + 1].label
-        }
-
+        const next = props.options[index - 1] || props.options[index + 1]
         emit('delete', record.value, index)
-        emit('change', myActiveKey.value, label)
+        myActiveKey.value = next?.value
+        emit('change', next?.value, next?.label)
+        emit('update:activeKey', next?.value)
       },
     })
   }
@@ -270,48 +235,4 @@ watch(() => props.activeKey, (val) => {
 
 </script>
 
-<style scoped lang="less">
-.table-group-warp {
-  :deep(.ant-tabs-nav) {
-    margin-bottom: 0;
-    .ant-tabs-tab {
-      overflow: hidden;
-      position: relative;
-    }
-    .ant-tabs-tab-active {
-      background-color: #BAE0FF !important;
-      border-color: #91CAFF !important;
-
-    }
-
-    .ant-tabs-nav-add {
-      border: none;
-    }
-  }
-}
-
-.table-group-error-warp {
-  color: #1a1a1a !important;
-
-  .table-group-error-target {
-    position: absolute;
-    right: 0;
-    top: 0;
-    border: 16px solid transparent;
-    border-top-color: @error-color;
-    border-right-width: 0;
-    border-bottom-width: 0;
-  }
-  &-label {
-    max-width: 220px;
-    white-space: normal;
-    display: flex;
-  }
-
-  &-value {
-    font-size: 12px;
-    max-width: 200px;
-    white-space: normal;
-  }
-}
-</style>
+<style scoped lang="less" src="./group.less" />

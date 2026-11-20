@@ -6,36 +6,28 @@
     <template v-else>
       <div class="parsing-type-bar">
         <div class="parsing-type-bar__left">
-          <a-dropdown v-if="codecMenuItems.length > 1" trigger="click" placement="bottomLeft">
-            <a-button class="parsing-type-trigger">
-              <span class="parsing-type-trigger__text">{{ currentTypeLabel }}</span>
-              <DownOutlined class="parsing-type-trigger__caret" />
-            </a-button>
-            <template #overlay>
-              <a-menu :selected-keys="[ruleType]" class="parsing-type-menu" @click="onRuleTypeMenuClick">
-                <a-menu-item v-for="option in codecMenuItems" :key="option.ruleKey">
-                  {{ option.label }}
-                </a-menu-item>
-              </a-menu>
-            </template>
-          </a-dropdown>
-          <div v-else class="parsing-type-trigger parsing-type-trigger--static">
-            <span class="parsing-type-trigger__text">{{ currentTypeLabel }}</span>
-          </div>
+          <a-radio-group :value="ruleType" :disabled="reloading || saving" button-style="solid" @update:value="value => onRuleTypeMenuClick({ key: value })">
+            <a-radio-button v-for="option in codecMenuItems" :key="option.ruleKey" :value="option.ruleKey">{{ option.label }}</a-radio-button>
+          </a-radio-group>
           <span class="parsing-type-desc">{{ currentTypeDesc }}</span>
         </div>
         <div class="parsing-type-bar__actions">
           <a-space :size="8">
-            <a-button size="small" :loading="reloading" @click="reload">
+            <span v-if="ruleType === 'javascript' && scriptCodecRef?.isDirty" class="parsing-unsaved">{{ $t('deviceDetailOptimization.unsaved') }}</span>
+            <a-button size="small" :loading="reloading" :disabled="saving || scriptCodecRef?.resettingConfig" @click="reload">
               <template #icon>
                 <ReloadOutlined />
               </template>
               {{ $t('IotDeviceDetail.parsing.reload') }}
             </a-button>
+            <a-button v-if="ruleType === 'javascript' && scriptCodecRef?.readOnly" size="small" type="primary" :disabled="reloading" @click="scriptCodecRef?.beginEdit()">{{ $t('IotDeviceDetail.common.edit') }}</a-button>
+            <a-button v-if="ruleType === 'javascript' && scriptCodecRef && !scriptCodecRef.readOnly" size="small" :loading="scriptCodecRef.resettingConfig" :disabled="saving || reloading" @click="scriptCodecRef.resetDeviceCodec()">{{ $t('deviceDetailOptimization.restore') }}</a-button>
             <a-button
+              v-if="ruleType === 'modbus' || (scriptCodecRef && !scriptCodecRef.readOnly)"
               size="small"
               type="primary"
               :loading="saving"
+              :disabled="reloading || (ruleType === 'javascript' && scriptCodecRef?.saveDisabled)"
               @click="save"
             >
               <template #icon>
@@ -69,8 +61,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, type PropType, ref, watch } from 'vue'
-import { DownOutlined, ReloadOutlined, SaveOutlined } from '@ant-design/icons-vue'
+import { computed, nextTick, type PropType, ref, watch } from 'vue'
+import { message } from 'ant-design-vue'
+import { ReloadOutlined, SaveOutlined } from '@ant-design/icons-vue'
 import { useI18n } from 'vue-i18n'
 
 import ModbusMapping from '@device-manager-ui/views/device/list/components/common/ModbusMapping.vue'
@@ -115,7 +108,6 @@ const codecMenuItems = computed(() =>
   }).filter((item) => item.ruleKey),
 )
 
-const currentTypeLabel = computed(() => typeLabel(ruleType.value))
 const currentTypeDesc = computed(() => typeDesc(ruleType.value))
 
 function typeLabel(type: RuleType) {
@@ -165,7 +157,9 @@ async function loadDeviceCodec() {
   if (res.status === 200) {
     codecState.value = res.result ?? null
     ruleType.value = pickRuleTypeFromProvider(res.result?.provider, codecSupports.value)
+    return true
   }
+  return false
 }
 
 async function loadParsingConfig() {
@@ -186,19 +180,22 @@ async function loadParsingConfig() {
 }
 
 async function reload() {
+  if (reloading.value || saving.value || scriptCodecRef.value?.resettingConfig) return
   reloading.value = true
   try {
-    if (ruleType.value === 'modbus') {
-      await modbusMappingRef.value?.loadConfig?.()
-    } else {
-      await loadDeviceCodec()
-    }
+    const previousType = ruleType.value
+    if (!await loadDeviceCodec()) return
+    await nextTick()
+    if (ruleType.value === 'javascript') scriptCodecRef.value?.reloadCodec()
+    else if (previousType === 'modbus') await modbusMappingRef.value?.loadConfig?.()
+    message.success($t('deviceDetailOptimization.reloaded'))
   } finally {
     reloading.value = false
   }
 }
 
 function save() {
+  if (reloading.value || saving.value) return
   if (ruleType.value === 'modbus') {
     modbusMappingRef.value?.saveConfig?.()
     return
@@ -206,9 +203,15 @@ function save() {
   scriptCodecRef.value?.saveCodec?.()
 }
 
-function onRuleTypeMenuClick(info: { key: string | number }) {
+async function confirmLeave() {
+  if (ruleType.value === 'javascript') return await scriptCodecRef.value?.confirmLeave() ?? true
+  return await modbusMappingRef.value?.confirmLeave() ?? true
+}
+
+async function onRuleTypeMenuClick(info: { key: string | number }) {
+  if (reloading.value || saving.value) return
   const next = String(info.key)
-  if (next === 'javascript' || next === 'modbus') {
+  if (next !== ruleType.value && (next === 'javascript' || next === 'modbus') && await confirmLeave()) {
     ruleType.value = next
   }
 }
@@ -218,6 +221,7 @@ watch(
   loadParsingConfig,
   { immediate: true },
 )
+defineExpose({ confirmLeave })
 </script>
 
 <style scoped lang="less" src="./IotDeviceParsingTab.less"></style>

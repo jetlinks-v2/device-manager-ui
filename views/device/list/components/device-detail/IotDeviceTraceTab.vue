@@ -257,10 +257,6 @@
               </a-space>
             </a-tooltip>
           </a-popconfirm>
-          <a-button v-if="canShowCodecSimulator" size="small" @click="codecSimulatorOpen = true">
-            <AIcon type="ExperimentOutlined" aria-hidden="true" />
-            {{ $t('InstanceDeviceAccess.codecDebug.title') }}
-          </a-button>
           <a-popconfirm :title="$t('IotDeviceDetail.trace.clearConfirm')" @confirm="clearTraces">
             <a-button size="small" :disabled="!activeTraceGroups.length">
               {{ $t('IotDeviceDetail.trace.clear') }}
@@ -372,23 +368,6 @@
       </section>
     </JlDrawerShell>
 
-    <a-drawer
-      v-if="canShowCodecSimulator"
-      v-model:open="codecSimulatorOpen"
-      :width="1180"
-      :title="$t('InstanceDeviceAccess.codecDebug.title')"
-      destroy-on-close
-      placement="right"
-      :body-style="{ padding: 0, height: '100%' }"
-    >
-      <CodecSimulatorPanel
-        v-if="codecSimulatorOpen"
-        :device-id="props.device.id"
-        :metadata="props.device.deviceThingModelMetadata"
-        :product-metadata="props.device.productThingModelMetadata ?? props.device.thingModelMetadata"
-        :transport="props.device.transport"
-      />
-    </a-drawer>
   </section>
 </template>
 
@@ -411,8 +390,6 @@ import {
   type IotTraceGroup,
   useIotDeviceTraceLog,
 } from './useIotDeviceTraceLog'
-import CodecSimulatorPanel from '../../../Instance/Detail/DeviceAccess/CodecSimulatorPanel.vue'
-import { isCodecSimulatorTransportSupported } from '../../../Instance/Detail/DeviceAccess/composables/useCodecSimulator'
 
 type Mode = 'read' | 'write' | 'invoke'
 type TraceGroupView = {
@@ -488,14 +465,8 @@ const loading = ref(false)
 const subscribed = ref(true)
 const traceMode = ref<'realtime' | 'history'>('realtime')
 const debugLogSupport = ref(false)
-const codecSimulateSupport = ref(false)
 const debugLogLoading = ref(false)
 const debugHistoryLoading = ref(false)
-const codecSimulatorOpen = ref(false)
-// The generic debug backend has native wrappers only for its built-in transport set.
-const canShowCodecSimulator = computed(() =>
-  codecSimulateSupport.value && isCodecSimulatorTransportSupported(props.device.transport),
-)
 const debugLogConfig = reactive({ enabled: false, deviceEnabled: false })
 const historyPageIndex = ref(0)
 const historyHasMore = ref(true)
@@ -687,18 +658,13 @@ function clearTraces() {
 
 /** Queries backend capability registrations before exposing optional trace persistence and packet simulation. */
 async function loadDeviceDebugSupport() {
-  const [debugLogResp, codecSimulateResp]: any[] = await Promise.all([
-    iotDeviceDetailRealApi.existsDeviceDebugLogSupport(),
-    iotDeviceDetailRealApi.existsDeviceCodecSimulateSupport(),
-  ])
+  const debugLogResp = await iotDeviceDetailRealApi.existsDeviceDebugLogSupport()
   debugLogSupport.value = debugLogResp?.status === 200 && !!debugLogResp.result
-  codecSimulateSupport.value = codecSimulateResp?.status === 200 && !!codecSimulateResp.result
   if (!debugLogSupport.value) {
     traceMode.value = 'realtime'
     debugLogConfig.enabled = false
     debugLogConfig.deviceEnabled = false
   }
-  if (!codecSimulateSupport.value) codecSimulatorOpen.value = false
 }
 
 /** Reads the per-device persistence switch after the debug-log capability is confirmed. */

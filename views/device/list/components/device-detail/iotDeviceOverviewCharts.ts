@@ -17,15 +17,15 @@ export interface OverviewTrendSeries {
   down: number[]
 }
 
-/** 使用原生图例独立切换消息曲线，绘图区为右上方图例预留空间。 */
+/** 使用原生图例独立切换消息柱形，绘图区为右上方图例预留空间。 */
 export function createMessageTrendOption(labels: string[], series: OverviewTrendSeries, maxValue: number) {
   return {
     animation: false,
     color: ['#8b5cf6', '#f59e0b'],
     legend: {
       top: 0,
-      right: 0,
-      padding: 0,
+      right: 12,
+      padding: [2, 8, 2, 0],
       itemWidth: 24,
       itemHeight: 8,
       itemGap: 16,
@@ -35,11 +35,12 @@ export function createMessageTrendOption(labels: string[], series: OverviewTrend
     tooltip: {
       trigger: 'axis',
       confine: true,
+      axisPointer: { type: 'shadow' },
       valueFormatter: (value: number) => $t('IotDeviceDetail.overview.chart.messageCount', { count: formatCount(Number(value || 0)) }),
     },
     xAxis: {
       type: 'category',
-      boundaryGap: false,
+      boundaryGap: true,
       data: labels,
       axisTick: { show: false },
       axisLine: { show: false },
@@ -51,7 +52,8 @@ export function createMessageTrendOption(labels: string[], series: OverviewTrend
     yAxis: {
       type: 'value',
       min: 0,
-      max: Math.ceil(maxValue * 1.12),
+      max: Math.max(1, Math.ceil(maxValue * 1.12)),
+      minInterval: 1,
       splitNumber: 4,
       axisTick: { show: false },
       axisLine: { show: false },
@@ -59,8 +61,8 @@ export function createMessageTrendOption(labels: string[], series: OverviewTrend
       splitLine: { lineStyle: { color: '#e8edf4', type: 'dashed' } },
     },
     series: [
-      createTrendLine($t('IotDeviceDetail.overview.upstreamMessages'), series.up, '#8b5cf6', true),
-      createTrendLine($t('IotDeviceDetail.overview.downstreamMessages'), series.down, '#f59e0b', false),
+      createMessageBar($t('IotDeviceDetail.overview.upstreamMessages'), series.up, '#8b5cf6'),
+      createMessageBar($t('IotDeviceDetail.overview.downstreamMessages'), series.down, '#f59e0b'),
     ],
   }
 }
@@ -87,32 +89,8 @@ export function formatDuration(value: number) {
   return $t('IotDeviceDetail.common.duration.daysHoursMinutes', { days, hours, minutes: minutes % 60 })
 }
 
-function createTrendLine(name: string, data: number[], color: string, withArea: boolean) {
-  return {
-    name,
-    type: 'line',
-    smooth: true,
-    symbol: 'circle',
-    symbolSize: withArea ? 6 : 4,
-    data,
-    lineStyle: { width: 2, color },
-    itemStyle: { color },
-    areaStyle: withArea
-      ? {
-          color: {
-            type: 'linear',
-            x: 0,
-            y: 0,
-            x2: 0,
-            y2: 1,
-            colorStops: [
-              { offset: 0, color: 'rgba(139, 92, 246, .18)' },
-              { offset: 1, color: 'rgba(139, 92, 246, 0)' },
-            ],
-          },
-        }
-      : undefined,
-  }
+function createMessageBar(name: string, data: number[], color: string) {
+  return { name, type: 'bar', data, barMaxWidth: 18, barGap: '20%', itemStyle: { color, borderRadius: [3, 3, 0, 0] } }
 }
 
 function createStatSparkOption(values: number[], tone: string, key: string, labels: string[]) {

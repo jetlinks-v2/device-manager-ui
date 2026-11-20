@@ -11,7 +11,7 @@ interface RecordResponse {
 }
 
 /** 为 ProTable 提供记录查询、范围隔离与重试；分页和加载状态由表格维护。 */
-export function useDeviceAlarmRecords(ruleId: Ref<string | undefined>, t: (key: string) => string) {
+export function useDeviceAlarmRecords(ruleId: Ref<string | undefined>, t: (key: string) => string, deviceId?: Readonly<Ref<string>>) {
   const tableRef = shallowRef<{ reload: () => void }>()
   const error = ref(false)
   const terms = ref<ConditionFilterTerm[]>([])
@@ -30,10 +30,11 @@ export function useDeviceAlarmRecords(ruleId: Ref<string | undefined>, t: (key: 
   const revision = ref(0)
   let disposed = false
   // 换范围时重建表格，清空旧记录并回到首页；旧表格的延迟请求不能污染新范围。
-  watch([ruleId, submitted], () => { revision.value += 1; error.value = false }, { flush: 'sync' })
+  watch([ruleId, submitted, ...(deviceId ? [deviceId] : [])], () => { revision.value += 1; error.value = false }, { flush: 'sync' })
   const table = computed(() => {
     const key = revision.value
     const scope = ruleId.value
+    const targetDevice = deviceId?.value
     const filters = submitted.value
     let sequence = 0
     let latest: Promise<RecordResponse> | undefined
@@ -49,7 +50,7 @@ export function useDeviceAlarmRecords(ruleId: Ref<string | undefined>, t: (key: 
         while (active()) {
           const page = await queryRuleRecords(scope, { pageIndex: index, pageSize: size,
             terms: filters,
-            sorts: [{ name: 'lastAlarmTime', order: 'desc' }, { name: 'id', order: 'desc' }] })
+            sorts: [{ name: 'lastAlarmTime', order: 'desc' }, { name: 'id', order: 'desc' }] }, targetDevice)
           if (!active()) return { success: false }
           if (sequence !== current) return latest!
           // 处理后当前页可能消失，直接回到有效末页，并把实际页码交还 ProTable。
@@ -73,7 +74,7 @@ export function useDeviceAlarmRecords(ruleId: Ref<string | undefined>, t: (key: 
 
     /** 请求仅由 ProTable 发起，重试沿用失败页而非表格最后一次成功的页码。 */
     function request(params: RecordPagination): Promise<RecordResponse> {
-      if (!active()) return Promise.resolve({ success: false })
+      if (!active() || (deviceId && !targetDevice)) return Promise.resolve({ success: false })
       const pagination = retryQuery ?? params
       retryQuery = undefined
       lastQuery = { pageIndex: pagination.pageIndex, pageSize: Number(pagination.pageSize) }

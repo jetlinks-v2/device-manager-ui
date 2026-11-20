@@ -15,7 +15,7 @@
       <!-- ===== 右侧：调试（sticky，不随页面滚动离开视区） ===== -->
       <aside class="mm-main-right">
     <div class="mm-debug">
-      <a-tabs size="small" type="card">
+      <DeviceDetailTabs size="small">
         <a-tab-pane key="decode" :tab="t('ModbusMapping.ui.decodeTab')">
           <DecodePanel :model="decodeView" />
         </a-tab-pane>
@@ -23,7 +23,7 @@
         <a-tab-pane key="encode" :tab="t('ModbusMapping.ui.encodeTab')">
           <EncodePanel :model="encodeView" />
         </a-tab-pane>
-      </a-tabs>
+      </DeviceDetailTabs>
     </div>
       </aside>
     </div>
@@ -35,6 +35,7 @@
   </div>
 </template>
 <script setup lang="ts">
+import DeviceDetailTabs from '@device-manager-ui/views/device/components/DeviceDetailTabs.vue'
 import { useI18n } from 'vue-i18n'
 import { useModbusMapping } from './modbus/useModbusMapping'
 import MappingTable from './modbus/mapping/MappingTable.vue'
@@ -46,12 +47,12 @@ import FillMappingModal from './modbus/debug/FillMappingModal.vue'
 defineOptions({ name: 'ModbusMapping' })
 const props = defineProps<{ thingId?: string; productId?: string }>()
 const { t, locale } = useI18n()
-const { mappingView, decodeView, encodeView, fillView, splitLayout, mappingConfiguration, mappingEditor } =
+const { mappingView, decodeView, encodeView, fillView, splitLayout, mappingConfiguration, mappingEditor, reloadConfig } =
   useModbusMapping(props)
 const { mmMainResizeRef, leftMainPercent, onMmMainSplitterMouseDown } = splitLayout
-const { loadConfig, saveConfig, loading, saving } = mappingConfiguration
+const { saveConfig, loading, saving, confirmLeave } = mappingConfiguration
 const { addMapping } = mappingEditor
-defineExpose({ loadConfig, saveConfig, addMapping, loading, saving })
+defineExpose({ loadConfig: reloadConfig, saveConfig, addMapping, loading, saving, confirmLeave })
 </script>
 <style scoped lang="less" src="./modbus/layout.less" />
 <style lang="less" src="./modbus/mapping/dropdown.less" />
