@@ -48,7 +48,7 @@
           </template>
         </Title>
         <div class="product-device-access__access-method">
-          <AccessMethodSummary :summary="{
+          <AccessMethodSummary with-icon :summary="{
             name: getI18nText(access, 'name'),
             transport: access.transport,
             protocol: getI18nText(access.protocolDetail, 'name'),
@@ -175,6 +175,9 @@
         </j-permission-button>
         </section>
       </a-col>
+      <a-col :span="12" class="product-device-access__documentation">
+        <IotDeviceAccessGuideAside :show-access-guide="false" :protocol-document="protocolDocument" />
+      </a-col>
     </a-row>
   </div>
   <!-- 选择设备 -->
@@ -208,6 +211,7 @@ import MetaDataModal from "./metadataModal.vue";
 import ProductAccessFields from "./ProductAccessFields.vue";
 import AccessMethodSummary from '../../../components/AccessMethodSummary.vue';
 import { getI18nText } from '../../../../../utils/i18n';
+import IotDeviceAccessGuideAside from '@device-manager-ui/views/device/list/components/device-detail/IotDeviceAccessGuideAside.vue'
 import { useProductDeviceAccess } from './hooks/useProductDeviceAccess';
 import { isProjectRuntime } from '@jetlinks-web-core/utils/project-runtime';
 import { isPrivateDeployment } from '@jetlinks-web-core/utils/deployment';
@@ -216,7 +220,7 @@ const isProject = isProjectRuntime() && !isPrivateDeployment();
 defineOptions({ name: 'AccessConfig' })
 
 const {
-  productStore, permissionStore, formRef, visible, access, accessId, metadata, dataSource,
+  productStore, permissionStore, formRef, visible, access, accessId, metadata, dataSource, protocolDocument,
   storageList, activeKey, form, formData, productTypes, productData, pluginFormRef,
   metadataVisible, metadataModalCacheData, submitLoading, accessLoading, accessError, getData, showModal,
   showDevice, checkAccess, productTypeChange, submitDevice, MetaDataModalSubmit, tooltip, checkDisabled,

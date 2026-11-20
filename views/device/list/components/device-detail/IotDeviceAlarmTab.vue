@@ -1,8 +1,8 @@
 <template>
-  <IotDeviceAlarmsTab :device="device" />
+  <IotDeviceAlarmWorkspace :key="device.id" :device="device" />
 </template>
 <script setup lang="ts">
-import IotDeviceAlarmsTab from './IotDeviceAlarmsTab.vue'
+import IotDeviceAlarmWorkspace from './IotDeviceAlarmWorkspace.vue'
 import type { IotDevice } from '../../types'
 defineProps<{ device: IotDevice }>()
 </script>

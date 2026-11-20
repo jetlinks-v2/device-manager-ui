@@ -1,9 +1,11 @@
 import { ref, reactive } from 'vue'
 
 type GroupActiveType = {
-    value?: number
+    value?: string | number
     label?: string
     len?: number
+    effective?: number
+    inherited?: boolean
 }
 
 
@@ -20,7 +22,7 @@ export const useGroup = (openGroup: boolean = false) => {
      * @param key
      * @param name
      */
-    const updateGroupActive = (key: number, name: string) => {
+    const updateGroupActive = (key: string | number, name: string) => {
         if (openGroup) {
             groupActive.value = key
             groupActive.label = name
@@ -30,7 +32,7 @@ export const useGroup = (openGroup: boolean = false) => {
 
     const addGroup = (val: GroupActiveType) => {
         if (openGroup) {
-            groupOptions.value.push(val)
+            groupOptions.value.push({ effective: 0, len: 0, inherited: false, ...val })
         }
     }
 

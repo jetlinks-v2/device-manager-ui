@@ -10,7 +10,7 @@
         <div v-for="field in fields" :key="field.label">
           <dt>{{ field.label }}</dt>
           <dd>
-            <a-button v-if="field.deviceId" type="link" class="alarm-record-device-link"
+            <a-button v-if="field.deviceId && deviceLink !== false" type="link" class="alarm-record-device-link"
                       @click="emit('device-alarm', row)">
               <j-ellipsis>{{ field.value }}</j-ellipsis>
             </a-button>
@@ -57,7 +57,7 @@ import { alarmDeviceId, alarmDuration, canHandleRecord } from '../workspaceUtils
 import type { AlarmLevelOption } from '../types'
 import type { DeviceAlarmEvent, HistoryTab } from '../workspaceTypes'
 
-const props = defineProps<{ row: DeviceAlarmEvent; levels: AlarmLevelOption[]; now: number }>()
+const props = defineProps<{ row: DeviceAlarmEvent; levels: AlarmLevelOption[]; now: number; deviceLink?: boolean }>()
 const emit = defineEmits<{
   (event: 'handle', record: DeviceAlarmEvent): void
   (event: 'history', record: DeviceAlarmEvent, tab: HistoryTab): void

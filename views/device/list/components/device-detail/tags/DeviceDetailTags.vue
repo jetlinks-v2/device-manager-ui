@@ -61,15 +61,11 @@
 <script setup lang="ts">
 import { computed, toRefs } from 'vue'
 import DetailMetaItem from '@jetlinks-web-core/components/DetailMetaItem'
-import type { IotDeviceDetailViewState } from '../../../hooks/useIotDeviceDetailView'
 import TagEditorForm from './TagEditorForm.vue'
 import { getTagKey, getTagLabel } from './tagEditor'
-import { useTagEditor } from './useTagEditor'
+import { useTagEditor, type DeviceDetailTagsState } from './useTagEditor'
 
-type TagState = Pick<IotDeviceDetailViewState, '$t' | 'thingModelTags' | 'tagsListRef' | 'tagsExpanded' | 'tagsOverflow' |
-  'savingTags' | 'canDeviceAction' | 'canRemoveTag' | 'removeTag' | 'saveTags' |
-  'formatTagTooltipValueOnly' | 'toggleTagsExpanded'>
-const props = defineProps<{ state: TagState }>()
+const props = defineProps<{ state: DeviceDetailTagsState }>()
 const { $t, tagsListRef, tagsExpanded, tagsOverflow, savingTags } = toRefs(props.state)
 const editable = computed(() => props.state.canDeviceAction('update'))
 // 显式保存/取消控制弹层，地图、日期等传送到 body 的浮层不会误关编辑器。

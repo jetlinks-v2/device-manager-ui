@@ -14,11 +14,11 @@
         <!--          </div>-->
         <!--        </a-tooltip> -->
         <!-- </div> -->
-        <a-tabs
+        <DeviceDetailTabs
             class="metadataNav"
             :activeKey="tabActiveKey"
             destroyInactiveTabPane
-            type="card"
+
             @change="tabsChange"
         >
             <template v-if="!readonly" #rightExtra>
@@ -98,7 +98,7 @@
                     :readonly="readonly"
                 />
             </a-tab-pane>
-        </a-tabs>
+        </DeviceDetailTabs>
         <teleport v-if="content" :to="content">
           <div
             class="center-extra-content"
@@ -120,6 +120,7 @@
     </div>
 </template>
 <script setup lang="ts">
+import DeviceDetailTabs from '@device-manager-ui/views/device/components/DeviceDetailTabs.vue'
 import DocumentHelp from '@jetlinks-web-core/components/DocumentHelp';
 import { deleteMetadata } from '../../../../api/instance.js';
 import { message } from 'ant-design-vue';

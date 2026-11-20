@@ -5,7 +5,7 @@ import { useAuthStore, useMenuStore, useSystemStore } from '@jetlinks-web-core/s
 import { isNoCommunity } from '@jetlinks-web-core/utils/utils'
 import { EventEmitter, onlyMessage } from '@jetlinks-web/utils'
 import useClipboard from 'vue-clipboard3'
-import { findStoredTag, type DeviceTag } from '../components/device-detail/tags/tagEditor'
+import { findStoredTag, mergeTagDefinitions, formatTagValue as getFormattedTagValue, type DeviceTag } from '../components/device-detail/tags/tagEditor'
 import {
   deleteDevice_api,
   deployDevice_api,
@@ -453,16 +453,7 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
   const thingModelTags = computed<Record<string, any>[]>(() => {
     const definitions = device.value?.thingModelMetadata?.tags || []
     const values = device.value?.thingModelTags || []
-    if (!definitions.length) return values
-
-    const valuesByKey = new Map(values.map((tag: any) => [getTagKey(tag), tag]))
-    // 产品物模型定义决定哪些标签应展示；设备标签仅覆盖当前实例已填写的值。
-    return definitions.map((definition: any) => ({
-      ...definition,
-      ...valuesByKey.get(getTagKey(definition)),
-      value: valuesByKey.get(getTagKey(definition))?.value ?? definition.value,
-      formatValue: valuesByKey.get(getTagKey(definition))?.formatValue ?? definition.formatValue,
-    }))
+    return mergeTagDefinitions(definitions, values)
   })
 
   function getTagKey(item: Record<string, any>) {
@@ -474,18 +465,7 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
   }
 
   function formatTagValue(item: Record<string, any>) {
-    let name: string | undefined
-    if (item.dataType) {
-      let arr = item.dataType?.elements || []
-      if (item.dataType?.type === 'boolean') {
-        arr = [
-          { text: item.dataType.trueText, value: item.dataType.trueValue },
-          { text: item.dataType.falseText, value: item.dataType.falseValue },
-        ]
-      }
-      name = arr.find((i: any) => `${i.value}` === `${item.value}`)?.text
-    }
-    return name ?? item.formatValue ?? item.value
+    return getFormattedTagValue(item)
   }
 
   function isTagValueEmpty(item: Record<string, any>) {

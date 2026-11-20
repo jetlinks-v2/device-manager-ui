@@ -8,6 +8,7 @@ import { parse, compileScript, compileTemplate } from 'vue/compiler-sfc'
 import { renderToString } from 'vue/server-renderer'
 import { createReusableTemplate } from '@vueuse/core'
 import { cloneDeep, omit } from 'lodash-es'
+import { canManageMetadataGroup, isInheritedMetadataGroup, renameMetadataGroup, removeMetadataGroup } from '../components/Metadata/groupPolicy.ts'
 
 const require = createRequire(import.meta.url)
 const root = new URL('../', import.meta.url)
@@ -153,7 +154,7 @@ test('restored product editing still respects existing permissions', () => {
     const updatePermission = binding(metadataFile, 'updatePermission', { props: { type: 'product' }, permission: vue.ref('device/Product'), ...scope })
     assert.equal(updatePermission.value, false)
     assert.equal(binding(metadataFile, 'readonly', { updatePermission, computed: vue.computed }).value, true)
-    assert.equal(binding('views/device/Product/Detail/DataAnalysis/index.vue', 'canUpdate', {
+    assert.equal(binding('views/device/Product/Detail/DataAnalysis/useProductDataAnalysis.ts', 'canUpdate', {
       computed: vue.computed, permissionStore: { hasPermission: () => false },
     }).value, false)
   }
@@ -166,7 +167,7 @@ test('metadata editing follows permission for products and devices in both proje
     const html = await render(metadataFile, { type, readonly, tabActiveKey: 'properties', updatePermission: true, showReset: type === 'device',
       visible: false, cat: false, content: null,
     }, {
-      'a-tabs': { setup: (_, { slots }) => () => vue.h('div', [slots.rightExtra?.(), slots.default?.()]) },
+      DeviceDetailTabs: { setup: (_, { slots }) => () => vue.h('div', [slots.rightExtra?.(), slots.default?.()]) },
       BaseMetadata: { props: ['readonly'], setup: props => () => vue.h('span', { 'data-readonly': String(props.readonly) }) },
     })
     assert.equal(html.includes('Metadata.index.838029-3'), !readonly && type === 'product')
@@ -211,6 +212,7 @@ test('readonly body slots replace input cells and readonly groups hide action dr
   assert.match(text, /Temperature/)
   assert.doesNotMatch(text, /readonly-mask|<input/)
   const groups = await render('components/Metadata/group.vue', {
+    canManageMetadataGroup,
     readonly: true, target: 'product', myActiveKey: 'default', options: [{ value: 'default', label: 'Default', effective: 1 }],
     errorMap: {}, visible: false,
   }, {
@@ -219,6 +221,31 @@ test('readonly body slots replace input cells and readonly groups hide action dr
   })
   assert.match(groups, /Default/)
   assert.doesNotMatch(groups, /data-component="group-actions"/)
+})
+
+test('device metadata group commands preserve inherited definitions and mark local group changes unsaved', () => {
+  const dataSource = vue.ref([
+    { id: 'product', expands: { groupId: 'product-group', groupName: 'Product', isProduct: true } },
+    { id: 'device', expands: { groupId: 'device-group', groupName: 'Device' } },
+  ])
+  const editStatus = vue.ref(false)
+  const context = { props: { readonly: false }, hasMetadataUpdatePermission: () => true, dataSource, editStatus,
+    _target: 'device', $t: t, isInheritedMetadataGroup, renameMetadataGroup, removeMetadataGroup }
+  const rename = binding(baseFile, 'groupEdit', context)
+  const remove = binding(baseFile, 'groupDelete', context)
+  const inherited = structuredClone(vue.toRaw(dataSource.value[0]))
+  rename({ oldValue: 'product-group', value: 'product-group', label: 'Changed' })
+  remove('product-group')
+  assert.deepEqual(vue.toRaw(dataSource.value[0]), inherited)
+  assert.equal(editStatus.value, false)
+  rename({ oldValue: 'device-group', value: 'device-group', label: 'Custom' })
+  assert.equal(dataSource.value[1].expands.groupName, 'Custom')
+  assert.equal(editStatus.value, true)
+  editStatus.value = false
+  remove('device-group')
+  assert.equal(dataSource.value.length, 1)
+  assert.equal(dataSource.value[0].id, 'product')
+  assert.equal(editStatus.value, true)
 })
 
 test('project and admin detail keep basic editing, deletion and lifecycle controls', async () => {
@@ -318,15 +345,14 @@ test('metadata configuration popup keeps the existing button and hides confirmat
       columns: [], configValue: { precision: 2, isKeyMetric: true }, showMetrics: true, metrics: [], booleanOptions: [], showKeyProperty: true,
       _disabled: () => false, getOptions: () => [], settingValue: () => '2',
     }, {
-      PopoverModal: { props: { showOk: Boolean, showCancel: { type: Boolean, default: true }, cancelText: String }, setup: (props, { slots }) => () => vue.h('div', [slots.default?.(), slots.content?.(),
-        props.showOk ? vue.h('button', { 'data-confirm': true }) : null, props.showCancel ? vue.h('button', { 'data-cancel': true }, props.cancelText || 'Popover.index.047673-0') : null]) },
+      'a-modal': { setup: (_, { slots }) => () => vue.h('div', [slots.default?.(), slots.footer ? slots.footer() : [vue.h('button', { 'data-confirm': true }), vue.h('button', { 'data-cancel': true }, 'Popover.index.047673-0')]]) },
       'a-table': { setup: (_, { slots }) => () => slots.bodyCell?.({ column: { dataIndex: 'value' }, record: { property: 'precision' }, index: 0 }) },
       'j-value-item': marker('editable-value'), CardItem: marker('editable-key-property'),
       Metrics: { props: ['readonly'], setup: props => () => vue.h('span', { 'data-readonly-metrics': String(props.readonly) }) },
     })
     assert.match(html, /Properties.OtherSetting.237457-18/)
     assert.equal(html.includes('data-confirm'), !readonly)
-    assert.match(html, /data-cancel/)
+    assert.equal(html.includes('data-cancel'), !readonly)
     assert.match(html, readonly ? /IotDeviceDetail.common.close/ : /Popover.index.047673-0/)
     assert.equal(html.includes('editable-value'), !readonly)
     assert.equal(html.includes('editable-key-property'), !readonly)
@@ -366,18 +392,22 @@ test('product parsing preserves scripts and JSON providers and supplies a templa
 
 test('product parsing editor and test/save actions are available in project and admin', async () => {
   const file = 'views/device/Product/Detail/DataAnalysis/index.vue'
+  const debugPanel = vue.defineComponent({
+    props: ['state', 'topic', 'url', 'payload'],
+    setup: props => () => vue.h(templateComponent('views/device/components/CodecDebugPanel.vue', props)),
+  })
   for (const isProject of [true, false]) {
-    const canUpdate = binding(file, 'canUpdate', { isProject, computed: vue.computed, permissionStore: { hasPermission: () => true } }).value
+    const canUpdate = binding('views/device/Product/Detail/DataAnalysis/useProductDataAnalysis.ts', 'canUpdate', { isProject, computed: vue.computed, permissionStore: { hasPermission: () => true } }).value
     const html = await render(file, { isProject, canUpdate, codec: { provider: 'jsr223' }, codecFailed: false, codecLoading: false,
-      editorLanguage: 'javascript', editorValue: 'library-script', typescriptTip: {}, loading: false, isDisabled: false, isTest: true,
+      codecMenuItems: [{ value: 'jsr223', label: 'IotDeviceDetail.parsing.javascriptLabel' }], typeDescription: '', editorLanguage: 'javascript', editorValue: 'library-script', typescriptTip: {}, loading: false, saving: false, isDisabled: false, saveDisabled: false, isDirty: false,
       productStore: { current: { transportProtocol: 'MQTT' } }, topicList: [], resStyle: {}, result: '', simulation: '', topic: '',
-    }, { 'a-select': { props: ['value'], setup: (props, { slots }) => () => vue.h('select', { 'data-codec-type': props.value }, slots.default?.()) }, 'monaco-editor': { props: ['readOnly', 'modelValue'], setup: props => () => vue.h('pre', { 'data-readonly-editor': String(props.readOnly) }, props.modelValue) } })
+    }, { CodecDebugPanel: debugPanel, 'a-select': { props: ['value'], setup: (props, { slots }) => () => vue.h('select', { 'data-codec-type': props.value }, slots.default?.()) }, 'monaco-editor': { props: ['readOnly', 'modelValue'], setup: props => () => vue.h('pre', { 'data-readonly-editor': String(props.readOnly) }, props.modelValue) } })
     assert.match(html, /library-script/)
-    assert.match(html, /<select data-codec-type="JavaScript"/)
+    assert.match(html, /JavaScript \(ECMAScript 5\)/)
     assert.match(html, /data-readonly-editor="false"/)
-    assert.equal(html.includes('DataAnalysis.index.571961-6'), true)
-    assert.equal(html.includes('DataAnalysis.index.571961-8'), true)
-    assert.equal(html.includes('class="bottom"'), true)
+    assert.equal(html.includes('IotDeviceDetail.scriptCodec.debug'), true)
+    assert.equal(html.includes('IotDeviceDetail.parsing.saveConfig'), true)
+    assert.equal(html.includes('class="codec-debug"'), true)
   }
 })
 

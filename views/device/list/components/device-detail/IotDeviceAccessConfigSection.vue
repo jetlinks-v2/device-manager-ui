@@ -4,7 +4,7 @@
       <template #title>
         <div class="plain-item-head">
           <div class="plain-item-head__left">
-            <div class="title-before" aria-hidden="true" />
+
             <span class="plain-item-title">{{ $t('IotDeviceDetail.accessConfig.config') }}</span>
           </div>
           <a-button
@@ -22,7 +22,7 @@
           v-for="group in configGroups"
           :key="group.name"
           class="compact-descriptions"
-          bordered
+          :column="1"
           size="small"
           :label-style="descriptionLabelStyle"
         >

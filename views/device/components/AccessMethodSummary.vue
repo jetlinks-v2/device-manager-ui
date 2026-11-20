@@ -1,5 +1,7 @@
 <template>
-  <div class="access-method-summary">
+  <div class="access-method-summary" :class="{ 'access-method-summary--with-icon': withIcon }">
+    <span v-if="withIcon" class="access-method-summary__icon" aria-hidden="true"><AIcon type="ApiOutlined" /></span>
+    <div class="access-method-summary__content">
     <div class="access-method-summary__row">
       <a-tooltip :title="summary.name || '--'">
         <span class="access-method-summary__name">{{ summary.name || '--' }}</span>
@@ -12,6 +14,7 @@
     </div>
     <div v-if="summary.description && summary.description !== '--'" class="access-method-summary__description">
       {{ summary.description }}
+    </div>
     </div>
   </div>
 </template>
@@ -29,6 +32,7 @@ interface AccessMethodSummary {
 
 // 产品和设备共用接入摘要；调用方负责提供已本地化的展示名称。
 const props = defineProps({
+  withIcon: Boolean,
   summary: { type: Object as PropType<AccessMethodSummary>, required: true },
 })
 const { t: $t } = useI18n()
@@ -87,4 +91,7 @@ const tags = computed(() => [
   line-height: 1.6;
   overflow-wrap: anywhere;
 }
+.access-method-summary__content { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.access-method-summary--with-icon { display: grid; grid-template-columns: 2.75rem minmax(0, 1fr); gap: var(--space-3); align-items: start; }
+.access-method-summary__icon { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border-radius: var(--r-2); background: var(--jet-theme-primary-soft); color: var(--jet-theme-primary); font-size: var(--fs-20); }
 </style>

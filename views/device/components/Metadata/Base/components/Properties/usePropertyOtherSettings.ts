@@ -239,7 +239,10 @@ export function usePropertyOtherSettings(props: Readonly<Record<string, any>>, e
     { immediate: true }
   )
 
+  const modalContainer = () => document.fullscreenElement instanceof HTMLElement ? document.fullscreenElement : document.body
+
   const cancel = () => {
+    modalVisible.value = false
     myValue.value = cloneDeep(props.value)
   }
 
@@ -250,6 +253,6 @@ export function usePropertyOtherSettings(props: Readonly<Record<string, any>>, e
     },
     { immediate: true }
   )
-  return { modalVisible, confirm, cancel, showContent, activeKey, visible, config, columns, _disabled, popContainer,
+  return { modalContainer, modalVisible, confirm, cancel, showContent, activeKey, visible, config, columns, _disabled, popContainer,
     conflictData, configValue, tableWrapperRef, getOptions, settingValue, showMetrics, metricsRef, booleanOptions, metrics, showKeyProperty }
 }

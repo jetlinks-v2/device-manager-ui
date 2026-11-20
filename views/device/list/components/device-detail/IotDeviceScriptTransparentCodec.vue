@@ -1,31 +1,14 @@
 <template>
   <div class="parsing-script">
+    <section class="script-config-section">
+    <h4>{{ $t('deviceDetailOptimization.script') }}</h4>
     <div class="script-toolbar">
       <div class="script-toolbar__hint">
         <ExclamationCircleOutlined />
-        <template v-if="topTitle === 'rest'">
-          {{ $t('IotDeviceDetail.scriptCodec.deviceConfigPrefix') }}
-          <a-button type="link" size="small" class="script-link" @click="resetDeviceCodec">
-            {{ $t('IotDeviceDetail.common.reset') }}
-          </a-button>
-          {{ $t('IotDeviceDetail.scriptCodec.deviceConfigSuffix') }}
-        </template>
-        <template v-else>
-          {{ $t('IotDeviceDetail.scriptCodec.productConfigPrefix') }}
-          <a-button
-            type="link"
-            size="small"
-            class="script-link"
-            :style="editLinkStyle"
-            @click="readOnly = false"
-          >
-            {{ $t('IotDeviceDetail.common.edit') }}
-          </a-button>
-          {{ $t('IotDeviceDetail.scriptCodec.productConfigSuffix') }}
-        </template>
+        {{ $t(hasIndependentCodec ? 'deviceDetailOptimization.deviceCodec' : readOnly ? 'deviceDetailOptimization.inheritedCodec' : 'deviceDetailOptimization.editingCodec') }}
       </div>
       <a-tooltip :title="$t('IotDeviceDetail.scriptCodec.fullscreen')">
-        <ExpandOutlined class="script-toolbar__expand" @click="toggle" />
+        <a-button type="text" class="script-toolbar__expand" :aria-label="$t('IotDeviceDetail.scriptCodec.fullscreen')" @click="toggle"><ExpandOutlined /></a-button>
       </a-tooltip>
     </div>
 
@@ -37,6 +20,8 @@
       />
       <monaco-editor
         v-model:modelValue="editorValue"
+        :read-only="readOnly || savingConfig || resettingConfig"
+        :auto-format="false"
         language="javascript"
         style="height: 100%"
         theme="vs"
@@ -45,66 +30,18 @@
       />
     </div>
 
-    <div class="script-debug">
-      <div class="script-debug__panel">
-        <div class="script-debug__title">
-          <strong>{{ $t('IotDeviceDetail.scriptCodec.mockInput') }}</strong>
-          <div class="script-debug__route">
-            <template v-if="isMqttTransport">
-              <span>Topic:</span>
-              <a-auto-complete
-                v-model:value="topic"
-                :options="topicOptions"
-                :allow-clear="true"
-                :filter-option="filterOption"
-                :placeholder="$t('IotDeviceDetail.scriptCodec.topicPlaceholder')"
-                style="width: 18.75rem"
-              />
-            </template>
-            <template v-else>
-              <span>URL:</span>
-              <a-input
-                v-model:value="url"
-                :placeholder="$t('IotDeviceDetail.scriptCodec.urlPlaceholder')"
-                style="width: 18.75rem"
-              />
-            </template>
-          </div>
-        </div>
-        <a-textarea
-          v-model:value="simulation"
-          :rows="5"
-          :placeholder="$t('IotDeviceDetail.scriptCodec.dataPlaceholder')"
-        />
-      </div>
-      <div class="script-debug__panel">
-        <div class="script-debug__title">
-          <strong>{{ $t('IotDeviceDetail.scriptCodec.parseResult') }}</strong>
-        </div>
-        <a-textarea
-          :value="resultDisplay"
-          :readonly="true"
-          :auto-size="{ minRows: 5 }"
-          :style="resultStyle"
-        />
-      </div>
-    </div>
+    </section>
+    <CodecDebugPanel v-model:topic="topic" v-model:url="url" v-model:payload="simulation"
+      :state="{ mqtt: isMqttTransport, options: topicOptions, loading, disabled: debugDisabled, result: resultDisplay, success: resultSuccess, finishedAt: resultTime }"
+      @debug="debug" />
 
-    <div class="script-actions">
-      <a-button
-        type="primary"
-        :loading="loading"
-        :disabled="debugDisabled"
-        @click="debug"
-      >
-        {{ $t('IotDeviceDetail.scriptCodec.debug') }}
-      </a-button>
-    </div>
+
   </div>
 </template>
 
 <script setup lang="ts">
 import type { PropType } from 'vue'
+import CodecDebugPanel from '../../../components/CodecDebugPanel.vue'
 import { ExpandOutlined, ExclamationCircleOutlined } from '@ant-design/icons-vue'
 import { useI18n } from 'vue-i18n'
 
@@ -124,22 +61,27 @@ const emit = defineEmits<{
 const { t: $t } = useI18n()
 const {
   debugDisabled,
-  editLinkStyle,
+  beginEdit,
+  confirmLeave,
   editorEl,
   editorInit,
   editorValue,
-  filterOption,
   isMqttTransport,
   loading,
+  isDirty,
+  hasIndependentCodec,
   readOnly,
+  reloadCodec,
   resetDeviceCodec,
   resultDisplay,
-  resultStyle,
+  resultSuccess,
+  resultTime,
   saveCodec,
+  saveDisabled,
   savingConfig,
+  resettingConfig,
   simulation,
   toggle,
-  topTitle,
   topic,
   topicOptions,
   typescriptTip,
@@ -149,7 +91,15 @@ const {
 } = useIotDeviceScriptTransparentCodec(props, () => emit('updated'))
 
 defineExpose({
+  beginEdit,
+  confirmLeave,
+  isDirty,
+  readOnly,
+  reloadCodec,
+  resetDeviceCodec,
+  resettingConfig,
   saveCodec,
+  saveDisabled,
   savingConfig,
 })
 </script>

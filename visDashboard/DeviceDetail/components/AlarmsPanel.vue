@@ -17,7 +17,7 @@
       </a-tooltip>
     </li>
   </ol>
-  <CloudEmpty v-else :description="t('IotDeviceDetail.overview.emptyAlarmsHint')" />
+  <CloudEmpty v-else :description="t('IotDeviceDetail.overview.emptyAlarmsHint')"><slot name="empty-action" /></CloudEmpty>
 </template>
 <script setup lang="ts">
 import type { PropType } from 'vue'
