@@ -109,6 +109,8 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
     const isDeviceDetailRoute = route.matched.some(record => IOT_DEVICE_DETAIL_ROUTE_NAMES.has(String(record.name || '')))
     return isDeviceDetailRoute ? String(route.params.deviceId ?? route.params.id ?? '') : ''
   })
+  // 独立详情按设备 ID 重建；Suspense 保留的旧实例不能跟随新路由继续加载。
+  const standaloneDeviceId = props.embedded ? undefined : deviceId.value
   const healthPath = computed(() => buildIotDeviceHealthPath(projectId.value, deviceId.value, undefined, route))
   let disposed = false
   let loadVersion = 0
@@ -117,11 +119,13 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
   type DetailLoad = ReturnType<typeof currentLoad>
   const isCurrentLoad = (context: DetailLoad) => !disposed && context.version === loadVersion
     && context.projectId === projectId.value && context.deviceId === deviceId.value
+    && (Boolean(props.embedded) || context.deviceId === standaloneDeviceId)
   const beginLoad = () => { loadVersion += 1; return currentLoad() }
 
   const device = ref<IotDevice | null>(null)
   const parentDeviceLink = useIotDeviceParentLink(device)
   const instanceStore = useInstanceStore()
+  let syncedMetadataCurrent: typeof instanceStore.current | undefined
   const provider = useDeviceListProvider(device)
   const detailContent = computed(() => props.embedded ? undefined : provider.value?.detailContent)
   const detailContentRef = ref<{ refresh?: () => Promise<void> }>()
@@ -708,6 +712,8 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
         accessMode,
         writable,
         updatedAt: point.updatedAt,
+        // 趋势去重使用原始毫秒时间，避免同一秒内的多次上报互相覆盖。
+        timestamp: realtimePropertyValues.value[point.key]?.timestamp,
         groupId: template?.expands?.groupId || '__default__',
         groupName: template?.expands?.groupName || $t('IotDeviceDetail.detail.defaultGroup'),
         description: template?.description ?? template?.desc ?? point.hint,
@@ -1429,7 +1435,11 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
    */
   function syncLegacyMetadataDevice(current: IotDevice | null) {
     if (!current) {
-      instanceStore.setCurrent({} as DeviceInstance)
+      // Suspense 会先加载新详情再卸载旧详情；旧页面只能释放自己最后写入的状态。
+      if (syncedMetadataCurrent && instanceStore.current === syncedMetadataCurrent) {
+        instanceStore.setCurrent({} as DeviceInstance)
+      }
+      syncedMetadataCurrent = undefined
       return
     }
     const metadata = JSON.stringify(current.thingModelMetadata ?? {
@@ -1466,6 +1476,8 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
       configuration: current.configuration || {},
       tags: current.tags,
     } as DeviceInstance)
+    // 保存 store 中实际的响应式对象，同一设备的两个面板也必须区分归属。
+    syncedMetadataCurrent = instanceStore.current
   }
 
   async function loadCommands(context = currentLoad()) {

@@ -133,7 +133,6 @@ import { useAuthStore } from '@jetlinks-web-core/store';
 import { isEqual } from 'lodash-es';
 import { useI18n } from 'vue-i18n';
 import { useElementSize } from '@vueuse/core';
-import { isSaaS } from '@jetlinks-web-core/utils/consts';
 
 defineOptions({ name: 'Metadata' })
 
@@ -151,8 +150,6 @@ interface Props {
     updatePermission?: string | string[] | boolean;
 }
 const props = defineProps<Props>();
-// 产品是设备物模型的恢复基准；SaaS 未提供恢复设备库标准定义的入口，设备编辑仍沿用原行为。
-const readonly = computed(() => isSaaS && props.type === 'product');
 
 const permission = computed(() =>
     props.type === 'device' ? 'device/Instance' : 'device/Product',
@@ -160,10 +157,11 @@ const permission = computed(() =>
 // j-permission-button 的共享 Hook 只监听权限码本身，不会在菜单异步加载后重新计算。
 // 这里将最终权限解析为响应式布尔值，既复用真实菜单授权，也能随权限仓库更新刷新按钮状态。
 const updatePermission = computed(() => {
-    if (readonly.value) return false;
     const code = props.updatePermission ?? `${permission.value}:update`;
     return typeof code === 'boolean' ? code : authStore.hasPermission(code);
 });
+// 产品和设备均按编辑权限开放物模型，环境不再强制只读。
+const readonly = computed(() => !updatePermission.value);
 const visible = ref(false);
 const cat = ref(false);
 const tabActiveKey = ref('properties');

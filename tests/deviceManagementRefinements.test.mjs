@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 import vm from 'node:vm'
 import ts from 'typescript'
-import { computed, effectScope, nextTick, ref, watch } from 'vue'
+import { computed, effectScope, nextTick, onScopeDispose, ref, watch } from 'vue'
 
 async function loadProductionModule(file, bindings) {
   const source = await readFile(new URL(`../${file}`, import.meta.url), 'utf8')
@@ -22,10 +22,22 @@ const deferred = () => {
   return { promise, resolve }
 }
 
+async function loadParentLink(bindings, providers = []) {
+  const { useDeviceListProvider } = await loadProductionModule('views/device/list/hooks/useDeviceListProvider.ts', {
+    computed, ref, onScopeDispose,
+    moduleRegistry: { getAllModuleIds: () => ['extensions'], getResource: () => Object.fromEntries(providers.map(item => [item.id, item])), onChange: () => () => {} },
+  })
+  return loadProductionModule('views/device/list/hooks/useIotDeviceParentLink.ts', {
+    computed, ref, watch, useDeviceListProvider,
+    useMenuStore: () => ({ jumpPage() {} }), mapApiDevice: value => value,
+    ...routing, ...bindings,
+  })
+}
+
 test('parent name resolves without delaying child detail and a late response cannot replace the new parent', async () => {
   const requests = new Map()
   const destinations = []
-  const { useIotDeviceParentLink } = await loadProductionModule('views/device/list/hooks/useIotDeviceParentLink.ts', {
+  const { useIotDeviceParentLink } = await loadParentLink({
     computed, ref, watch,
     useRoute: () => ({ path: '/resources/devices/list/Detail/child', query: {}, params: {} }),
     useRouter: () => ({ push: value => destinations.push(value) }),
@@ -43,20 +55,20 @@ test('parent name resolves without delaying child detail and a late response can
   requests.get('gateway-a').resolve({ result: { id: 'gateway-a', name: 'Gateway A' } })
   await nextTick()
   assert.equal(link.parentDeviceName.value, 'Gateway B')
-  link.openParentDevice()
+  await link.openParentDevice()
   assert.equal(destinations[0], '/resources/devices/list/Detail/gateway-b?tab=overview')
   device.value = { id: 'unbound', deviceTypeValue: 'childrenDevice' }
   await nextTick()
   assert.equal(link.parentDeviceId.value, undefined)
   assert.equal(link.parentDeviceName.value, '')
-  link.openParentDevice()
+  await link.openParentDevice()
   assert.equal(destinations.length, 1)
   scope.stop()
 })
 
-test('known parent names need no extra request and ordinary devices have no parent link', async () => {
+test('known parent names display immediately while parent capabilities load; ordinary devices have no parent link', async () => {
   let requestCount = 0
-  const { useIotDeviceParentLink } = await loadProductionModule('views/device/list/hooks/useIotDeviceParentLink.ts', {
+  const { useIotDeviceParentLink } = await loadParentLink({
     computed, ref, watch,
     useRoute: () => ({ path: '/iot-center/device/list/Detail/child', query: {}, params: {} }),
     useRouter: () => ({ push() {} }),
@@ -67,10 +79,79 @@ test('known parent names need no extra request and ordinary devices have no pare
   const scope = effectScope()
   const link = scope.run(() => useIotDeviceParentLink(device))
   assert.equal(link.parentDeviceName.value, 'Known gateway')
-  assert.equal(requestCount, 0)
+  assert.equal(requestCount, 1, 'parent access type is required even when its name is known')
   device.value = { id: 'ordinary', deviceTypeValue: 'device', parentId: 'ignored' }
   await nextTick()
   assert.equal(link.parentDeviceId.value, undefined)
+  scope.stop()
+})
+
+test('parent links use the edge gateway provider route, including when clicked before the detail arrives', async () => {
+  const gatewaySource = await readFile(new URL('../../edge-master-ui/api/gatewayDevice.ts', import.meta.url), 'utf8')
+  const gatewayAst = ts.createSourceFile('gateway.ts', gatewaySource, ts.ScriptTarget.Latest, true)
+  const accessProviders = gatewayAst.statements.flatMap(node => ts.isVariableStatement(node) ? [...node.declarationList.declarations] : [])
+    .find(node => node.name.getText(gatewayAst) === 'GATEWAY_ACCESS_PROVIDERS')
+  const { outputText } = ts.transpileModule(`const ${accessProviders.getText(gatewayAst)}; globalThis.providers=GATEWAY_ACCESS_PROVIDERS`, { compilerOptions: { target: ts.ScriptTarget.ES2022 } })
+  const context = {}
+  vm.runInNewContext(outputText, context)
+  const { gatewayDeviceListProvider } = await loadProductionModule('../edge-master-ui/deviceListProvider.ts', {
+    defineAsyncComponent: () => ({}), i18n: { global: { t: key => key } }, isPrivateDeployment: () => true,
+    GATEWAY_ACCESS_PROVIDERS: context.providers, buildGatewayBaseTerms: () => [],
+  })
+  for (const accessProvider of context.providers) {
+    const response = deferred(), jumps = [], paths = []
+    const { useIotDeviceParentLink } = await loadParentLink({
+      useRoute: () => ({ path: '/resources/devices/list/Detail/child', query: { type: 'device', tab: 'thing-model' }, params: {} }),
+      useRouter: () => ({ push: value => paths.push(value) }),
+      useMenuStore: () => ({ jumpPage: (...args) => jumps.push(args) }),
+      detail: () => response.promise,
+    }, [gatewayDeviceListProvider])
+    const device = ref({ id: 'child', deviceTypeValue: 'childrenDevice', parentId: 'edge', parentName: 'Edge gateway' })
+    const scope = effectScope()
+    const link = scope.run(() => useIotDeviceParentLink(device))
+    const pending = link.openParentDevice()
+    assert.equal(jumps.length, 0)
+    response.resolve({ result: { id: 'edge', name: 'Edge gateway', accessProvider } })
+    await pending
+    assert.equal(jumps[0][0], gatewayDeviceListProvider.detailRoute)
+    assert.equal(jumps[0][1].params.gatewayId, 'edge')
+    assert.equal(jumps[0][1].query.type, 'gateway')
+    assert.equal(paths.length, 0, 'edge gateways cannot fall through to ordinary detail')
+    scope.stop()
+  }
+})
+
+test('a pending parent click is cancelled when the child is rebound or its detail is disposed', async () => {
+  for (const dispose of [false, true]) {
+    const response = deferred(), paths = []
+    const { useIotDeviceParentLink } = await loadParentLink({
+      useRoute: () => ({ path: '/resources/devices/list/Detail/child', query: {}, params: {} }),
+      useRouter: () => ({ push: value => paths.push(value) }), detail: () => response.promise,
+    })
+    const device = ref({ id: 'child', deviceTypeValue: 'childrenDevice', parentId: 'old' })
+    const scope = effectScope(), link = scope.run(() => useIotDeviceParentLink(device))
+    const pending = link.openParentDevice()
+    if (dispose) scope.stop()
+    else { device.value = { ...device.value, parentId: 'new' }; await nextTick() }
+    response.resolve({ result: { id: 'old', name: 'Old parent' } })
+    await pending
+    assert.equal(paths.length, 0)
+    scope.stop()
+  }
+})
+
+test('an unreadable parent retries on click without incorrectly opening ordinary detail', async () => {
+  const hiddenErrors = [], paths = []
+  const { useIotDeviceParentLink } = await loadParentLink({
+    useRoute: () => ({ path: '/resources/devices/list/Detail/child', query: {}, params: {} }),
+    useRouter: () => ({ push: value => paths.push(value) }),
+    detail: async (_id, hiddenError) => { hiddenErrors.push(hiddenError); throw Error('unavailable') },
+  })
+  const device = ref({ id: 'child', deviceTypeValue: 'childrenDevice', parentId: 'parent' })
+  const scope = effectScope(), link = scope.run(() => useIotDeviceParentLink(device))
+  await link.openParentDevice()
+  assert.deepEqual(hiddenErrors, [true, undefined])
+  assert.equal(paths.length, 0)
   scope.stop()
 })
 
@@ -149,4 +230,24 @@ test('edge search waits for pending mapping edits and ignores stale query respon
   requests[0].resolve({ success: true, result: [{ id: 'old' }] })
   await nextTick()
   assert.equal(edgeList.value[0].id, 'latest')
+})
+
+test('gateway child links preserve the authorized entry instead of requiring a different menu code', async () => {
+  for (const base of ['/resources/devices/list', '/resources/devices/list/device', '/iot-center/device/list']) {
+    const paths = []
+    let context
+    const { useEmbeddedChildDeviceContext } = await loadProductionModule('views/device/Instance/Detail/Child/useChildDeviceContext.ts', {
+      computed, ref, watch, onScopeDispose,
+      provide: (_key, value) => { context = value },
+      useRoute: () => ({ path: `${base}/gateway`, query: { tab: 'subDevices' }, params: {} }),
+      useRouter: () => ({ push: value => paths.push(value) }),
+      useMenuStore: () => { throw Error('The existing entry must not require another menu') },
+      queryDeviceDetail: async () => ({ status: 200, result: { id: 'gateway' } }), ...routing,
+    })
+    const scope = effectScope()
+    scope.run(() => useEmbeddedChildDeviceContext(ref('gateway'), ref()))
+    context.openDevice('child/1')
+    assert.equal(paths[0], `${base}/Detail/child%2F1?tab=overview`)
+    scope.stop()
+  }
 })

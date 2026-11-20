@@ -20,10 +20,14 @@ const t = key => key
 
 // 从真实页面读取环境判断和操作集合；渲染模板时只替换网络、路由和外围组件。
 function binding(file, name, scope) {
-  const source = descriptor(file).scriptSetup.content
+  const source = file.endsWith('.ts') ? read(file) : descriptor(file).scriptSetup.content
   const ast = ts.createSourceFile(file + '.ts', source, ts.ScriptTarget.Latest, true)
-  const declaration = ast.statements.flatMap(node => ts.isVariableStatement(node) ? [...node.declarationList.declarations] : [])
-    .find(node => node.name.getText(ast) === name)
+  let declaration
+  const visit = node => {
+    if (ts.isVariableDeclaration(node) && node.name.getText(ast) === name) declaration ??= node
+    ts.forEachChild(node, visit)
+  }
+  visit(ast)
   assert.ok(declaration, name)
   const code = ts.transpileModule(declaration.getText(ast), { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText
   return new Function(...Object.keys(scope), `const ${code}; return ${name}`)(...Object.values(scope))
@@ -60,10 +64,10 @@ async function render(file, context, components = {}, slots) {
   return renderToString(app)
 }
 
-function productState(isSaaS) {
-  const scope = { isSaaS, computed: vue.computed, authStore: { hasPermission: () => true } }
-  const getActions = binding(productFile, 'getActions', { isSaaS, inject: () => ({}), $t: t })
-  const state = { isSaaS, getActions, showEmptyCreate: true, hasSearch: false, batchActions: [],
+function productState(isProject) {
+  const scope = { isProject, computed: vue.computed, authStore: { hasPermission: () => true } }
+  const getActions = binding(productFile, 'getActions', { isProject, inject: () => ({}), $t: t })
+  const state = { isProject, getActions, showEmptyCreate: true, hasSearch: false, batchActions: [],
     columns: [], tableParams: {}, categoryTree: [], categoryLoading: false, totalProductCount: 1,
     unclassifiedProductCount: 1, selectedCategoryId: undefined, filterFields: [], commonFilterFields: [], filterTerms: [],
     syncCacheVisible: false, isAdd: 0, title: '', categoryTitle: '', categoryModalMode: 0, categoryModalChildMode: 0,
@@ -106,18 +110,20 @@ test('legacy SaaS product aliases resolve to the shared pages and no longer regi
   assert.equal(resolve('getExtraRoutesMap')['device/Product'], undefined)
 })
 
-test('SaaS product list hides creation, transfer, editing, deletion and classification operations for an administrator', async () => {
+test('project product list hides creation and transfer while keeping editing, lifecycle and classification', async () => {
   const state = productState(true)
-  assert.deepEqual(state.getActions(row).map(action => action.key), [])
-  for (const name of ['canAddCategory', 'canUpdateCategory', 'canDeleteCategory']) assert.equal(state[name], false)
+  assert.deepEqual(state.getActions(row).map(action => action.key), ['update', 'action', 'delete'])
+  for (const name of ['canAddCategory', 'canUpdateCategory', 'canDeleteCategory']) assert.equal(state[name], true)
   const html = await render(productFile, state, {
     DefineEmptyCreate: { render: () => null }, EmptyCreateButton: marker('create'), JProTable: productTable,
     EqualHeightColumns: { setup: (_, { slots }) => () => vue.h('main', [slots.left?.(), slots.right?.()]) },
     BatchDropdown: marker('batch'), Save: marker('edit'), ResourcePackage: marker('import'),
     ProductExportModal: marker('export'), ModifyModal: marker('classification'),
   })
-  assert.doesNotMatch(html, /data-component="(?:create|edit|import|export|classification|batch)"/)
+  assert.doesNotMatch(html, /data-component="(?:create|import|export|batch)"/)
   assert.doesNotMatch(html, /product-page__actions/)
+  assert.match(html, /data-component="edit"/)
+  assert.match(html, /data-component="classification"/)
   assert.match(html, /Temperature/)
 })
 
@@ -129,9 +135,33 @@ test('private product list retains its editing, transfer, lifecycle and category
   }
 })
 
-test('only SaaS products enter readonly metadata; devices and private products retain editing tools', async () => {
-  for (const [isSaaS, type, expected] of [[true, 'product', true], [true, 'device', false], [false, 'product', false]]) {
-    const readonly = binding(metadataFile, 'readonly', { isSaaS, props: { type }, computed: vue.computed }).value
+test('product entry policy distinguishes admin, project and private deployment', () => {
+  for (const [projectRuntime, privateDeployment, expected] of [[false, false, false], [true, false, true], [true, true, false]]) {
+    for (const file of [productFile, 'views/device/Product/Save/index.vue', 'views/device/Product/Detail/DeviceAccess/index.vue', 'views/device/Product/Detail/MetadataMap/index.vue']) {
+      const isProject = binding(file, 'isProject', { isProjectRuntime: () => projectRuntime, isPrivateDeployment: () => privateDeployment })
+      assert.equal(isProject, expected, file)
+    }
+  }
+})
+
+test('restored product editing still respects existing permissions', () => {
+  for (const isProject of [true, false]) {
+    const scope = { isProject, computed: vue.computed, authStore: { hasPermission: () => false } }
+    for (const name of ['canAddCategory', 'canUpdateCategory', 'canDeleteCategory', 'canImportBasic', 'canImportResourcePackage']) {
+      assert.equal(binding(productFile, name, scope).value, false)
+    }
+    const updatePermission = binding(metadataFile, 'updatePermission', { props: { type: 'product' }, permission: vue.ref('device/Product'), ...scope })
+    assert.equal(updatePermission.value, false)
+    assert.equal(binding(metadataFile, 'readonly', { updatePermission, computed: vue.computed }).value, true)
+    assert.equal(binding('views/device/Product/Detail/DataAnalysis/index.vue', 'canUpdate', {
+      computed: vue.computed, permissionStore: { hasPermission: () => false },
+    }).value, false)
+  }
+})
+
+test('metadata editing follows permission for products and devices in both project and admin', async () => {
+  for (const [isProject, type, expected] of [[true, 'product', false], [true, 'device', false], [false, 'product', false]]) {
+    const readonly = binding(metadataFile, 'readonly', { updatePermission: vue.ref(true), computed: vue.computed }).value
     assert.equal(readonly, expected)
     const html = await render(metadataFile, { type, readonly, tabActiveKey: 'properties', updatePermission: true, showReset: type === 'device',
       visible: false, cat: false, content: null,
@@ -191,39 +221,39 @@ test('readonly body slots replace input cells and readonly groups hide action dr
   assert.doesNotMatch(groups, /data-component="group-actions"/)
 })
 
-test('SaaS detail hides basic editing, deletion and lifecycle controls', async () => {
-  for (const isSaaS of [true, false]) {
+test('project and admin detail keep basic editing, deletion and lifecycle controls', async () => {
+  for (const isProject of [true, false]) {
     const html = await render('views/device/Product/Detail/index.vue', {
-      isSaaS, productStore: { current: row }, permissionStore: { hasPermission: () => true },
+      isProject, productStore: { current: row }, permissionStore: { hasPermission: () => true },
       canViewDevices: true, activeTab: 'Device', tabOptions: [], tabs: {},
     }, {
       Save: marker('edit'),
       ProductDetailSummary: {
         props: ['canUpdate', 'canDelete', 'canAction', 'showLifecycle'],
         setup: props => () => vue.h('div', {
-          'data-edit': String(props.canUpdate), 'data-delete': String(props.canDelete), 'data-lifecycle': String(props.showLifecycle),
+          'data-edit': String(props.canUpdate), 'data-delete': String(props.canDelete), 'data-lifecycle': String(props.showLifecycle !== false),
         }),
       },
     })
-    assert.match(html, new RegExp(`data-edit="${!isSaaS}"`))
-    assert.match(html, new RegExp(`data-delete="${!isSaaS}"`))
-    assert.match(html, new RegExp(`data-lifecycle="${!isSaaS}"`))
-    assert.equal(html.includes('data-component="edit"'), !isSaaS)
+    assert.match(html, /data-edit="true"/)
+    assert.match(html, /data-delete="true"/)
+    assert.match(html, /data-lifecycle="true"/)
+    assert.equal(html.includes('data-component="edit"'), true)
   }
 })
 
 test('SaaS device access hides the save button while private deployment retains it', async () => {
-  for (const isSaaS of [true, false]) {
+  for (const isProject of [true, false]) {
     const html = await render('views/device/Product/Detail/DeviceAccess/index.vue', {
-      isSaaS, accessError: false, accessLoading: false, access: { id: 'gateway-1' },
+      isProject, accessError: false, accessLoading: false, access: { id: 'gateway-1' },
       permissionStore: { hasPermission: () => true }, productStore: { current: row },
       form: { storePolicy: 'default' }, formData: { data: {} }, productData: {}, productTypes: [],
       metadata: [], dataSource: [], storageList: [{ id: 'default', name: 'Default' }],
       submitLoading: false, metadataVisible: false, visible: false,
       getI18nText: () => 'Gateway',
     }, { Title: { setup: (_, { slots }) => () => vue.h('header', slots.extra?.()) } })
-    assert.equal(html.includes('product-device-access__save'), !isSaaS)
-    assert.equal(html.includes('product-device-access__change'), !isSaaS)
+    assert.equal(html.includes('product-device-access__save'), !isProject)
+    assert.equal(html.includes('product-device-access__change'), !isProject)
   }
 })
 
@@ -304,12 +334,12 @@ test('metadata configuration popup keeps the existing button and hides confirmat
   }
 })
 
-test('SaaS parsing displays stored scripts and other providers without using a default editable template', async () => {
-  for (const isSaaS of [true, false]) {
+test('product parsing preserves scripts and JSON providers and supplies a template when absent', async () => {
+  for (const isProject of [true, false]) {
     let response
     const { useProductCodec } = loadHook('views/device/Product/Detail/DataAnalysis/useProductCodec.ts', {
       vue, '../../../../../api/instance': { productCode: async () => response },
-      '@jetlinks-web-core/utils/consts': { isSaaS },
+      '@jetlinks-web-core/utils/consts': { isProject },
     })
     const state = useProductCodec(() => 'product', 'default-template')
     response = { status: 200, result: { provider: 'jsr223', configuration: { script: 'codec.onUpstream(handler)' } } }
@@ -317,13 +347,15 @@ test('SaaS parsing displays stored scripts and other providers without using a d
     assert.equal(state.editorValue.value, 'codec.onUpstream(handler)')
     response = { status: 200, result: { provider: 'modbus', configuration: { mapping: { address: 12 } } } }
     await state.getProductCode()
-    if (isSaaS) {
-      assert.deepEqual(JSON.parse(state.editorValue.value), response.result.configuration)
-      assert.equal(state.editorLanguage.value, 'json')
-    }
+    assert.deepEqual(JSON.parse(state.editorValue.value), response.result.configuration)
+    assert.equal(state.editorLanguage.value, 'json')
+    state.editorValue.value = JSON.stringify({ mapping: { address: 13 } })
+    assert.deepEqual(state.buildProductCode(), { provider: 'modbus', configuration: { mapping: { address: 13 } } })
+    state.editorValue.value = '[]'
+    assert.throws(() => state.buildProductCode())
     response = { status: 200, result: null }
     await state.getProductCode()
-    assert.equal(state.editorValue.value, isSaaS ? '' : 'default-template')
+    assert.equal(state.editorValue.value, 'default-template')
     response = { status: 500 }
     await state.getProductCode()
     assert.equal(state.codecFailed.value, true)
@@ -332,30 +364,38 @@ test('SaaS parsing displays stored scripts and other providers without using a d
   }
 })
 
-test('SaaS parsing editor is readonly and has no test or save controls', async () => {
+test('product parsing editor and test/save actions are available in project and admin', async () => {
   const file = 'views/device/Product/Detail/DataAnalysis/index.vue'
-  for (const isSaaS of [true, false]) {
-    const canUpdate = binding(file, 'canUpdate', { isSaaS, computed: vue.computed, permissionStore: { hasPermission: () => true } }).value
-    const html = await render(file, { isSaaS, canUpdate, codec: { provider: 'jsr223' }, codecFailed: false, codecLoading: false,
+  for (const isProject of [true, false]) {
+    const canUpdate = binding(file, 'canUpdate', { isProject, computed: vue.computed, permissionStore: { hasPermission: () => true } }).value
+    const html = await render(file, { isProject, canUpdate, codec: { provider: 'jsr223' }, codecFailed: false, codecLoading: false,
       editorLanguage: 'javascript', editorValue: 'library-script', typescriptTip: {}, loading: false, isDisabled: false, isTest: true,
       productStore: { current: { transportProtocol: 'MQTT' } }, topicList: [], resStyle: {}, result: '', simulation: '', topic: '',
     }, { 'a-select': { props: ['value'], setup: (props, { slots }) => () => vue.h('select', { 'data-codec-type': props.value }, slots.default?.()) }, 'monaco-editor': { props: ['readOnly', 'modelValue'], setup: props => () => vue.h('pre', { 'data-readonly-editor': String(props.readOnly) }, props.modelValue) } })
     assert.match(html, /library-script/)
     assert.match(html, /<select data-codec-type="JavaScript"/)
-    assert.match(html, new RegExp(`data-readonly-editor="${isSaaS}"`))
-    assert.equal(html.includes('DataAnalysis.index.571961-6'), !isSaaS)
-    assert.equal(html.includes('DataAnalysis.index.571961-8'), !isSaaS)
-    assert.equal(html.includes('class="bottom"'), !isSaaS)
+    assert.match(html, /data-readonly-editor="false"/)
+    assert.equal(html.includes('DataAnalysis.index.571961-6'), true)
+    assert.equal(html.includes('DataAnalysis.index.571961-8'), true)
+    assert.equal(html.includes('class="bottom"'), true)
   }
 })
 
-test('product rules keep their display scope and explicitly forbid SaaS updates', () => {
-  for (const isSaaS of [true, false]) {
+test('SaaS and private product rules use product edit permission and retain product-wide scope', () => {
+  for (const isProject of [true, false]) {
     const scope = binding('views/device/Product/Detail/components/ProductAlarmConfigTab.vue', 'scope', {
-      isSaaS, computed: vue.computed, store: { current: { id: 'product', name: 'Product' } },
+      isProject, computed: vue.computed, store: { current: { id: 'product', name: 'Product' } },
     }).value
     assert.equal(scope.productId, 'product')
-    assert.equal(scope.canUpdate, isSaaS ? false : undefined)
+    assert.equal(scope.canUpdate, undefined)
+    assert.equal(scope.deviceId, undefined)
+    for (const allowed of [true, false]) {
+      const permission = { hasPermission: code => allowed && code === 'device/Product:update' }
+      for (const file of ['views/device/components/PropertyRules/usePropertyRules.ts', 'views/device/components/PropertyRules/usePropertyRuleEditor.ts']) {
+        const canSave = binding(file, 'canSave', { props: { scope }, permission, computed: vue.computed })
+        assert.equal(canSave.value, allowed, `${file} preserves product permission checks`)
+      }
+    }
   }
 })
 
@@ -366,18 +406,18 @@ test('SaaS mapping inspection neither saves changes nor auto-saves defaults when
   const ast = ts.createSourceFile('map.ts', source, ts.ScriptTarget.Latest, true)
   const unmount = ast.statements.find(node => ts.isExpressionStatement(node) && ts.isCallExpression(node.expression) && node.expression.expression.getText(ast) === 'onUnmounted')
   const code = ts.transpileModule(unmount.getText(ast), { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText
-  for (const isSaaS of [true, false]) {
+  for (const isProject of [true, false]) {
     const writes = []
-    const onMapData = binding(file, 'onMapData', { isSaaS, productDetail: { value: { id: 'product' } },
+    const onMapData = binding(file, 'onMapData', { isProject, productDetail: { value: { id: 'product' } },
       metadataMapById: async (...args) => { writes.push(args); return { success: true } },
     })
     await onMapData([{ metadataId: 'temperature' }])
-    assert.equal(writes.length, isSaaS ? 0 : 1)
+    assert.equal(writes.length, isProject ? 0 : 1)
     let leave
-    new Function('isSaaS', 'onUnmounted', '_delTag', 'dataSourceCache', 'onMapData', code)(isSaaS, fn => { leave = fn },
+    new Function('isProject', 'onUnmounted', '_delTag', 'dataSourceCache', 'onMapData', code)(isProject, fn => { leave = fn },
       { value: true }, { value: [{ id: 'temperature', plugin: 'original-temperature' }] }, onMapData)
     await leave()
-    assert.equal(writes.length, isSaaS ? 0 : 2)
+    assert.equal(writes.length, isProject ? 0 : 2)
   }
 })
 

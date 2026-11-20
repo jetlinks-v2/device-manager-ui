@@ -5,9 +5,6 @@
 		  {{ previousText || $t('IotDeviceList.add.prev') }}
 	  </a-button>
 	  <a-button type="primary" :loading="busy" :disabled="submitDisabled" @click="$emit('submit')">
-		  <template #icon>
-			  <AIcon type="CheckOutlined" aria-hidden="true" />
-		  </template>
 		  {{ submitText }}
 	  </a-button>
   </a-space>

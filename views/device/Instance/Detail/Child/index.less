@@ -1,8 +1,12 @@
 .container {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
     width: 100%;
     height: 100%;
 
     .header {
+        flex-shrink: 0;
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -20,7 +24,8 @@
 
     .content {
         display: flex;
-        height: calc(100% - 30px);
+        flex: 1;
+        min-height: 0;
         :deep(.virtual-table-row-expand-icon) {
             display: none !important;
         }
@@ -34,6 +39,7 @@
             border-radius: 4px;
 
             .left-header {
+                flex-shrink: 0;
                 height: 56px;
                 line-height: 56px;
                 border-radius: 4px;
@@ -47,9 +53,11 @@
                 justify-content: space-between;
             }
             .left-list {
+                display: flex;
+                flex-direction: column;
                 flex: 1;
                 min-height: 0;
-                overflow-y: auto;
+                overflow: hidden;
 
                 .renderId {
                     display: inline-flex;
@@ -83,11 +91,16 @@
 
             }
             .left-state{
+                flex-shrink: 0;
+                padding-block: var(--space-2);
                 margin-left: 30px
             }
             .left-bottom {
+                flex-shrink: 0;
+                display: flex;
+                align-items: center;
                 height: 48px;
-                line-height: 48px;
+                line-height: 20px;
                 padding-left: 12px;
                 box-sizing: border-box;
                 /* Gray400 */
@@ -189,5 +202,25 @@
 }
 
 .mapping-search {
+    flex-shrink: 0;
+    min-width: 0;
     margin: var(--space-3);
+}
+
+.mapping-table {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+}
+
+.mapping-search :deep(.condition-filter),
+.container .right-title :deep(.condition-filter) {
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.mapping-search :deep(.condition-filter__shell),
+.container .right-title :deep(.condition-filter__shell) {
+    box-sizing: border-box;
 }

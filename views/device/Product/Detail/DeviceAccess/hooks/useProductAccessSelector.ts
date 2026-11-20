@@ -37,9 +37,6 @@ export function useProductAccessSelector(props: SelectorProps, emit: {
   })
   const temp = {
     ...params.value,
-    terms: props.deviceType === 'childrenDevice'
-      ? [{ terms: [{ column: 'provider', termType: 'in', value: 'child-device,edge-child-device' }] }]
-      : [],
   }
 
   /** 列表只补全查询开始时的默认选中项，避免覆盖用户后续选择。 */

@@ -2,9 +2,9 @@
   <section class="device-child-mapping">
     <a-spin :spinning="loading">
       <a-alert v-if="loadFailed" type="error" show-icon :message="$t('DeviceChildMapping.loadFailed')" />
-      <div v-if="ready" class="device-child-mapping__content">
+      <FullPage v-if="ready" class="device-child-mapping__content" :padding="0" flex>
         <Child :key="deviceId" ref="mapping" />
-      </div>
+      </FullPage>
     </a-spin>
   </section>
 </template>
@@ -28,5 +28,5 @@ defineExpose({ beforeLeave, refresh, loading })
 
 <style scoped lang="less">
 .device-child-mapping { min-width: 0; }
-.device-child-mapping__content { height: 600px; }
+.device-child-mapping__content { min-height: 0; }
 </style>

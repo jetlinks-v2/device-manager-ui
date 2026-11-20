@@ -11,7 +11,7 @@
         @cancel="handleCancel"
         :confirmLoading="btnLoading"
     >
-        <div style="margin-top: 10px">
+        <div class="bind-child-content">
             <ConditionFilter
                 :columns="columns"
                 @search="handleSearch"
@@ -324,4 +324,15 @@ const handleCancel = () => {
 };
 </script>
 
-<style scoped lang="less"></style>
+<style scoped lang="less">
+.bind-child-content {
+    min-width: 0;
+    margin-top: 10px;
+}
+.bind-child-content :deep(.condition-filter),
+.bind-child-content :deep(.condition-filter__shell) {
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+</style>

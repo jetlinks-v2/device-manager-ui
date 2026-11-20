@@ -25,18 +25,8 @@ const props = defineProps({
 })
 
 const { t: $t } = useI18n()
-const displayRows = computed(() => {
-  if (!isNumericProperty(props.property)) return []
-  const rows = [...props.rows]
-  const current = Number(splitPropertyValueAndUnit(props.property.value, props.property.unit).value)
-  if (Number.isFinite(current)) {
-    rows.push({
-      time: props.property.updatedAt && props.property.updatedAt !== '--' ? props.property.updatedAt : Date.now(),
-      value: current,
-    })
-  }
-  return rows.slice(-12)
-})
+// 趋势点由数据 hook 统一累积，展示组件不再额外拼入一个会被后续上报替换的最新点。
+const displayRows = computed(() => isNumericProperty(props.property) ? props.rows : [])
 
 const chartOption = computed(() => {
   const unit = splitPropertyValueAndUnit(props.property.value, props.property.unit).unit

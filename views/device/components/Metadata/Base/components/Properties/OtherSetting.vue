@@ -256,7 +256,7 @@ const { modalVisible, confirm, cancel, showContent, activeKey, visible, config, 
   gap: var(--space-1);
   padding-inline: var(--space-1);
   color: var(--jet-theme-primary);
-  font-size: var(--fs-12);
+  font-size: var(--fs-14);
   :deep(.anticon + span) { margin-inline-start: 0; }
 }
 

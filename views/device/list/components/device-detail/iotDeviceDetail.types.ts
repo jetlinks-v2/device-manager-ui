@@ -14,6 +14,7 @@ export interface RealtimePropertyRow {
   accessMode: RealtimeAccessMode
   writable: boolean
   updatedAt: string
+  timestamp?: number
   groupId: string
   groupName: string
   description: string

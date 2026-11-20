@@ -325,19 +325,15 @@
 }
 
 .detail-table-filter {
-  display: grid;
-  grid-template-columns: 8.125rem 6.875rem minmax(13.75rem, 1fr) auto auto;
-  gap: var(--space-3);
-  align-items: center;
+  min-width: 0;
   margin-bottom: var(--space-4);
 }
 
-.detail-filter-time {
-  width: 100%;
-}
-
-.detail-filter-reset {
-  justify-self: end;
+.detail-table-filter :deep(.condition-filter),
+.detail-table-filter :deep(.condition-filter__shell) {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .detail-list__row {
@@ -426,12 +422,7 @@
     width: 100%;
   }
 
-  .detail-table-filter,
   .detail-list__row {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .detail-filter-reset {
-    justify-self: stretch;
   }
 }

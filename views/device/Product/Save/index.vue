@@ -150,7 +150,7 @@
         :metadata-saved="createdGuideState?.metadataSaved"
         :product-enabled="createdGuideState?.enabled"
         :enabling-product="enablingCreatedProduct"
-        :show-batch-import="!isSaaS"
+        :show-batch-import="!isProject"
         @configure-access="configureCreatedProductAccess"
         @configure-metadata="configureCreatedProductMetadata"
         @enable-product="handleEnableCreatedProduct"
@@ -176,7 +176,9 @@ import { ensureVisualizationDashboardProject } from '@device-manager-ui/utils/da
 import { I18nTextField } from '@jetlinks-web-core/components';
 import DocumentHelp from '@jetlinks-web-core/components/DocumentHelp';
 import { getI18nText } from '@device-manager-ui/utils/i18n';
-import { isSaaS } from '@jetlinks-web-core/utils/consts'
+import { isProjectRuntime } from '@jetlinks-web-core/utils/project-runtime'
+import { isPrivateDeployment } from '@jetlinks-web-core/utils/deployment'
+const isProject = isProjectRuntime() && !isPrivateDeployment()
 import { useProductCreatedGuide } from '../hooks/useProductCreatedGuide'
 
 const { t: $t } = useI18n();

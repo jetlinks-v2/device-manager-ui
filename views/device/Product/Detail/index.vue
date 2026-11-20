@@ -6,10 +6,9 @@
     <PageChrome flush>
       <ProductDetailSummary
         :product="productStore.current"
-        :can-update="!isSaaS && permissionStore.hasPermission('device/Product:update')"
-        :show-lifecycle="!isSaaS"
+        :can-update="permissionStore.hasPermission('device/Product:update')"
         :can-action="permissionStore.hasPermission('device/Product:action')"
-        :can-delete="!isSaaS && permissionStore.hasPermission('device/Product:delete')"
+        :can-delete="permissionStore.hasPermission('device/Product:delete')"
         :can-view-devices="canViewDevices"
         @back="backToProductList"
         @edit="openEdit"
@@ -29,7 +28,7 @@
         :update-permission="permissionStore.hasPermission('device/Product:update')"
       />
     </div>
-    <Save v-if="!isSaaS" ref="saveRef" :isAdd="2" :title="$t('Product.index.660348-13')" @success="refreshCurrent" />
+    <Save ref="saveRef" :isAdd="2" :title="$t('Product.index.660348-13')" @success="refreshCurrent" />
   </j-page-container>
 </template>
 
@@ -55,7 +54,8 @@ import { tabs } from './asyncComponent'
 import { buildProductDetailTabs, resolveProductDetailTab, type ProductDetailTabKey } from './detailTabs'
 import { hasProductCreatedGuide, updateProductCreatedGuide } from '../hooks/useProductCreatedGuide'
 import { Modal } from 'ant-design-vue'
-import { isSaaS } from '@jetlinks-web-core/utils/consts'
+import { isProjectRuntime } from '@jetlinks-web-core/utils/project-runtime'
+import { isPrivateDeployment } from '@jetlinks-web-core/utils/deployment'
 
 const { t: $t } = useI18n()
 const route = useRoute()
@@ -71,7 +71,7 @@ const activeTab = ref<ProductDetailTabKey>(route.query.tab === 'Metadata' ? 'Met
 const activeTabView = ref<{ openAccessSelector?: () => void }>()
 let openingAccessGuide = false
 const canViewDevices = computed(() => menuStore.hasMenu('iot-user-device-list'))
-const isCreatedProductOnboarding = computed(() => !isSaaS && route.query.onboarding === 'product-created'
+const isCreatedProductOnboarding = computed(() => (!isProjectRuntime() || isPrivateDeployment()) && route.query.onboarding === 'product-created'
   && hasProductCreatedGuide(typeof route.params.id === 'string' ? route.params.id : undefined))
 
 const visibleTabs = computed(() => buildProductDetailTabs(productStore.current, {

@@ -57,46 +57,11 @@
       />
       <a-spin v-else :spinning="loading">
         <div class="detail-table-filter">
-          <a-select
-            v-model:value="listFilterField"
-            class="detail-filter-field"
-            :options="listFilterFieldOptions"
-            @change="onListFilterFieldChange"
+          <ConditionFilter
+            v-model="filterTerms"
+            :fields="filterFields"
+            @change="searchListRows"
           />
-          <a-select
-            v-model:value="listFilterOperator"
-            class="detail-filter-operator"
-            :options="listFilterOperatorOptions"
-          />
-          <a-date-picker
-            v-if="listFilterField === 'timestamp'"
-            v-model:value="listFilterValue"
-            class="detail-filter-time"
-            show-time
-            format="YYYY-MM-DD HH:mm:ss"
-            :placeholder="$t('IotDeviceDetail.propertyDetail.datePlaceholder')"
-          />
-          <a-select
-            v-else-if="propertyValueOptions.length"
-            v-model:value="listFilterValue"
-            class="detail-filter-time"
-            :options="propertyValueOptions"
-            allow-clear
-          />
-          <a-input-number
-            v-else-if="isNumericPropertyValue"
-            v-model:value="listFilterValue"
-            class="detail-filter-time"
-            :placeholder="$t('IotDeviceDetail.propertyDetail.valuePlaceholder')"
-          />
-          <a-input
-            v-else
-            v-model:value="listFilterValue"
-            class="detail-filter-time"
-            :placeholder="$t('IotDeviceDetail.propertyDetail.valuePlaceholder')"
-          />
-          <a-button class="detail-filter-reset" @click="resetListFilter">{{ $t('IotDeviceDetail.common.reset') }}</a-button>
-          <a-button type="primary" @click="searchListRows">{{ $t('IotDeviceDetail.common.search') }}</a-button>
         </div>
         <div class="detail-list">
           <div class="detail-list__row detail-list__row--head">
@@ -157,6 +122,7 @@
 import dayjs, { type Dayjs } from 'dayjs'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import ConditionFilter, { type ConditionFilterChangePayload } from '@jetlinks-web-core/components/ConditionFilter'
 
 import { extractRows, formatApiTime, iotDeviceDetailRealApi } from '../../services/iotDeviceDetailReal.service'
 import type { RealtimePropertyRow } from './iotDeviceDetail.types'
@@ -211,15 +177,10 @@ const detailRangeOptions = computed(() => [
   { label: $t('IotDeviceDetail.timeFilter.month'), value: 'month' },
 ])
 const {
-  listFilterField,
-  listFilterOperator,
-  listFilterValue,
-  listFilterFieldOptions,
-  listFilterOperatorOptions,
-  isNumericPropertyValue,
-  propertyValueOptions,
+  filterTerms,
+  filterFields,
   buildListTerms,
-  onListFilterFieldChange,
+  submitListFilter,
   resetListFilter: resetHistoryFilter,
 } = useIotDevicePropertyHistoryFilter(computed(() => props.property), detailTimeRange)
 
@@ -308,13 +269,8 @@ function getDetailValue(row: Record<string, unknown>, valueSource: Record<string
   }) ?? '--'
 }
 
-function resetListFilter() {
-  resetHistoryFilter()
-  pageCurrent.value = 1
-  void loadRows()
-}
-
-function searchListRows() {
+function searchListRows(payload: ConditionFilterChangePayload) {
+  submitListFilter(payload.filter.terms)
   pageCurrent.value = 1
   void loadRows()
 }
