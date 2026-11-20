@@ -1,9 +1,11 @@
 import { computed, inject, onScopeDispose, provide, ref, watch, type InjectionKey, type Ref } from 'vue'
 import { storeToRefs } from 'pinia'
+import { useRoute, useRouter } from 'vue-router'
 import { useMenuStore } from '@jetlinks-web-core/store/menu'
 import { detail as queryDeviceDetail } from '../../../../../api/instance'
 import { useInstanceStore } from '../../../../../store/instance'
 import type { DeviceInstance } from '../../typings'
+import { buildIotDeviceDetailPath, resolveIotProjectId } from '../../../list/hooks/useIotDeviceRouting'
 
 interface ChildDeviceContext {
   detail: Ref<DeviceInstance>
@@ -38,7 +40,8 @@ export function useEmbeddedChildDeviceContext(
   deviceId: Readonly<Ref<string>>,
   mapping: Ref<ChildDeviceMappingHandle | undefined>,
 ) {
-  const menu = useMenuStore()
+  const route = useRoute()
+  const router = useRouter()
   const detail = ref<DeviceInstance>({} as DeviceInstance)
   const loading = ref(false)
   const loadFailed = ref(false)
@@ -68,8 +71,8 @@ export function useEmbeddedChildDeviceContext(
   }
 
   function openDevice(id: string) {
-    // 通过菜单 code 解析实际资源路由，不能沿用网关 URL 或旧设备列表路径。
-    menu.jumpPage('iot-user/device/list/Detail', { params: { id }, query: { tab: 'overview' } })
+    // 根列表与物联子菜单的 code 不同，复用列表路径生成器，保留当前已授权入口。
+    void router.push(buildIotDeviceDetailPath(resolveIotProjectId(route), id, { tab: 'overview' }, route))
   }
 
   function beforeLeave(next: () => void) {

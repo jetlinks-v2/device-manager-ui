@@ -77,7 +77,7 @@
                                 </span>
                             </template>
                             <template v-if="column.dataIndex === 'plugin'">
-                                <span v-if="isSaaS">{{ pluginOptions.find(item => item.value === record.plugin)?.label || record.plugin || '-' }}</span>
+                                <span v-if="isProject">{{ pluginOptions.find(item => item.value === record.plugin)?.label || record.plugin || '-' }}</span>
                                 <a-select v-else
                                     v-model:value="record.plugin"
                                     style="width: 100%"
@@ -147,7 +147,9 @@ import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import { getMetadataMapById, metadataMapById, getProtocolMetadata } from '../../../../../api/instance';
 import { cloneDeep } from 'lodash-es';
 import { useI18n } from 'vue-i18n';
-import { isSaaS } from '@jetlinks-web-core/utils/consts';
+import { isProjectRuntime } from '@jetlinks-web-core/utils/project-runtime';
+import { isPrivateDeployment } from '@jetlinks-web-core/utils/deployment';
+const isProject = isProjectRuntime() && !isPrivateDeployment();
 
 defineOptions({ name: 'MetadataMap' })
 
@@ -339,7 +341,7 @@ const getMetadata = (): Promise<{ properties: any[] }> => {
 
 const onMapData = async (arr: any[], flag?: boolean) => {
     // 只读产品不能因切换映射或离开页面而自动写入默认映射。
-    if (isSaaS) return;
+    if (isProject) return;
     const res = await metadataMapById('product', productDetail.value?.id, arr);
     if (res.success && flag) {
         onlyMessage($t('MetadataMap.index.130045-27'));
@@ -384,7 +386,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-    if (!isSaaS && _delTag.value && dataSourceCache.value.length) {
+    if (!isProject && _delTag.value && dataSourceCache.value.length) {
         // 保存数据.filter((i: any) => i?.plugin)
         const arr = dataSourceCache.value.map((item: any) => {
             return {

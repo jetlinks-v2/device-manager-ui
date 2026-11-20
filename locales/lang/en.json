@@ -216,6 +216,8 @@
   "DeviceAlarm.notification.unavailableChannel": "Unavailable type",
   "DeviceAlarm.notification.noTypes": "No notification types available",
   "DeviceAlarm.notification.type": "Notification types",
+  "DeviceAlarm.notification.configureTemplate": "Configure template",
+  "DeviceAlarm.notification.configureRelieveTemplate": "Configure recovery template",
   "DeviceAlarm.notification.template.status": "Notification template status",
   "DeviceAlarm.notification.template.trigger": "Trigger template",
   "DeviceAlarm.notification.template.relieve": "Recovery template",

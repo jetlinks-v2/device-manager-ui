@@ -1,6 +1,7 @@
 import { request } from '@jetlinks-web/core'
 import i18n from '@jetlinks-web-core/locales'
 import { restoreDeviceLibraryAlarms_api } from '@device-manager-ui/api/device-library'
+import { detail as getDeviceDetail } from '@device-manager-ui/api/instance'
 import {
   withIotDeviceListDefaultTerms,
 } from '@device-manager-ui/api/deviceListDefaultTerms'
@@ -150,6 +151,12 @@ export async function queryProductMetadata(productId?: string): Promise<unknown>
   if (!id) return undefined
   const detail = unwrapResult<any>(await deviceAlarmApi.getProductDetail(id))
   return detail?.metadata ?? detail?.deriveMetadata ?? detail?.thingModel
+}
+
+/** 设备详情已处理产品继承和独立物模型，不能用列表字段或产品回退代替。 */
+export async function queryDeviceMetadata(deviceId: string): Promise<unknown> {
+  const detail = unwrapResult<{ metadata?: unknown }>(await getDeviceDetail(deviceId))
+  return detail?.metadata
 }
 
 export async function queryAlarmTargets(source: DeviceAlarmSource, keyword = ''): Promise<DeviceAlarmTargetOption[]> {

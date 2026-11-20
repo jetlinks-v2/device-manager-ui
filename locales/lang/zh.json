@@ -216,6 +216,8 @@
   "DeviceAlarm.notification.unavailableChannel": "不可用类型",
   "DeviceAlarm.notification.noTypes": "暂无可用通知类型",
   "DeviceAlarm.notification.type": "通知类型",
+  "DeviceAlarm.notification.configureTemplate": "配置模板",
+  "DeviceAlarm.notification.configureRelieveTemplate": "配置解除模板",
   "DeviceAlarm.notification.template.status": "通知模板状态",
   "DeviceAlarm.notification.template.trigger": "触发模板",
   "DeviceAlarm.notification.template.relieve": "解除模板",

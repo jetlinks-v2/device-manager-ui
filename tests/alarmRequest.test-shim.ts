@@ -18,3 +18,4 @@ export default { global: { t: (key: string) => key, locale: { value: 'zh' } } }
 export const randomString = () => 'test-id'
 export const restoreDeviceLibraryAlarms_api = async () => { throw new Error('Unexpected library restore') }
 export const getUnit = () => request.get('/protocol/units')
+export const detail = (id: string) => request.get(`/device-instance/${id}/detail`)

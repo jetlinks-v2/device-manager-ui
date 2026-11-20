@@ -10,6 +10,7 @@ import {
   queryPluginDriverList,
   queryProtocolList,
   queryGatewayList,
+  queryNoPagingPost,
   type ProductResourcePackageImportProgress,
   type ProductResourcePackageManifest,
   type ProductResourcePackageParseResult,
@@ -18,6 +19,7 @@ import {
 import { certificates, queryNetworkConfigList } from '../../../../api/link/type'
 import { useResourcePackagePreflight } from './useResourcePackagePreflight'
 import type { ProductTransferType } from '../hooks/useProductTransfer'
+import type { ProductItem } from '../typings'
 
 export const useResourcePackageWorkflow = (
   emit: (event: 'success') => void,
@@ -35,6 +37,8 @@ const packageFile = ref<File>()
 const progress = ref<ProductResourcePackageImportProgress[]>([])
 const productFormRef = ref()
 const product = reactive<Record<string, any>>({})
+const existingProduct = ref<ProductItem>()
+const deviceTypeDisabled = computed(() => !!existingProduct.value)
 const metadataVisible = ref(false)
 const showSelectionValidation = ref(false)
 const categoryTree = ref<Record<string, any>[]>([])
@@ -151,6 +155,7 @@ const reset = () => {
   loading.value = false
   importing.value = false
   parsed.value = undefined
+  existingProduct.value = undefined
   packageFile.value = undefined
   progress.value = []
   metadataVisible.value = false
@@ -190,7 +195,7 @@ const beforeUpload = async (file: File) => {
     Object.assign(product, JSON.parse(JSON.stringify(parsed.value.manifest.product)))
     product.deviceType = getEnumValue(product.deviceType)
     product.photoUrl = product.photoUrl || device.deviceProduct
-    const loadTasks = [preflight.load(), loadCategoryTree()]
+    const loadTasks = [preflight.load(), loadCategoryTree(), loadExistingProduct()]
     if (hasAccessResources.value) {
       loadTasks.push(loadLocalOptions(), loadCompatibleGateways())
     }
@@ -239,12 +244,12 @@ const prepareBasicProduct = async (file: File) => {
     delete product.state
     if (!product.name) product.name = `${$t('Product.index.660348-15')}${Date.now()}`
     product.deviceType = getEnumValue(product.deviceType)
+    await Promise.all([preflight.load(), loadCategoryTree(), loadExistingProduct()])
     if (!product.deviceType) {
       onlyMessage($t('Product.index.660348-26'), 'error')
       return false
     }
 
-    await Promise.all([preflight.load(), loadCategoryTree()])
     validate()
     step.value = 1
     maxReachableStep.value = 1
@@ -323,6 +328,16 @@ const mergePackageCategories = (tree: Record<string, any>[], categories: Record<
 
 const getEnumValue = (value: any) => value && typeof value === 'object' ? value.value : value
 
+/** 同 ID 导入属于更新：以本地产品类型回显并锁定，不能被文件中的类型覆盖。 */
+const loadExistingProduct = async () => {
+  if (!product.id) return
+  const response = await queryNoPagingPost({
+    terms: [{ column: 'id', termType: 'eq', value: product.id }],
+  })
+  existingProduct.value = (response.result || []).find((item: ProductItem) => item.id === product.id)
+  if (existingProduct.value) product.deviceType = getEnumValue(existingProduct.value.deviceType)
+}
+
 /** JSON 导出包含来源环境的审计信息，导入前必须移除，避免覆盖本地的创建与修改记录。 */
 const clearProductAuditFields = (data: Record<string, any>) => {
   [
@@ -340,7 +355,9 @@ const changeCategory = (_value: string, label: string | string[]) => {
 }
 
 const changeDeviceType = (value: string | string[]) => {
-  product.deviceType = Array.isArray(value) ? value[0] : value
+  product.deviceType = existingProduct.value
+    ? getEnumValue(existingProduct.value.deviceType)
+    : Array.isArray(value) ? value[0] : value
 }
 
 const validate = () => {
@@ -526,6 +543,7 @@ const startImport = () => {
     importing,
     productFormRef,
     product,
+    deviceTypeDisabled,
     metadataVisible,
     preflightErrors,
     accessPreflightErrors,
