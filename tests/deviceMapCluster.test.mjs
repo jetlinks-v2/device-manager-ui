@@ -759,6 +759,8 @@ test('switching points while open remounts ElAmapInfoWindow with fresh offset, s
       return () => vue.h('div', slots.default?.())
     },
   }
+  assert.match(parsed.descriptor.styles[0].content, /\.device-map-card__body--loading\s+:deep\(\.amap-loading\s*>\s*\*\)/)
+  const loading = vue.ref(true)
   const deps = {
     '@jetlinks-web-core/components/CloudEmpty/index.vue': { __esModule: true, default: stub('div') },
     '@jetlinks-web-core/components/DocumentHelp': { __esModule: true, default: stub('div') },
@@ -779,7 +781,7 @@ test('switching points while open remounts ElAmapInfoWindow with fresh offset, s
         distribution: vue.ref(false),
         points: vue.ref([]),
         clusterLocations: vue.ref([]),
-        loading: vue.ref(false),
+        loading,
         error: vue.ref(false),
         extraOptions: vue.ref({}),
         selection: {
@@ -824,8 +826,18 @@ test('switching points while open remounts ElAmapInfoWindow with fresh offset, s
   const app = renderer.createApp(mod.exports.default)
   app.use(createI18n({ legacy: false, locale: 'zh', messages: { zh: {} }, flatJson: true, missingWarn: false }))
   for (const name of ['ASpin', 'AAlert', 'AMapComponent']) app.component(name, stub('div'))
-  app.mount(make('root'))
+  const root = make('root')
+  app.mount(root)
   await settle()
+  const findBody = node => String(node.props?.class || '').includes('device-map-card__body')
+    ? node
+    : (node.children || []).map(findBody).find(Boolean)
+  const body = findBody(root)
+  assert.ok(body)
+  assert.match(body.props.class, /device-map-card__body--loading/)
+  loading.value = false
+  await settle()
+  assert.doesNotMatch(body.props.class, /device-map-card__body--loading/)
 
   selectionView.visible = true
   selectionView.revision = 1

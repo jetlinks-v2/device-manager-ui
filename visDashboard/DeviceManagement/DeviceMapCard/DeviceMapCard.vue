@@ -32,7 +32,7 @@
         </div>
       </template>
     </SectionHeader>
-    <div ref="container" class="device-map-card__body">
+    <div ref="container" class="device-map-card__body" :class="{ 'device-map-card__body--loading': loading }">
       <!-- 宿主提供标题栏时复用同一份实时图例，避免复制状态与颜色规则。 -->
       <Teleport v-if="config.embedded && (distribution || config.showStatus)"
         :to="config.legendTarget || 'body'" :disabled="!config.legendTarget">
@@ -178,6 +178,11 @@ const title = computed(() =>
   position: relative;
   flex: 1;
   min-height: 320px;
+}
+
+/* 外层位置加载态开启时隐藏底图内部转圈与文案，避免两个 Spin 重叠。 */
+.device-map-card__body--loading :deep(.amap-loading > *) {
+  visibility: hidden;
 }
 
 /* 嵌入宿主卡片时只提供地图内容，保持其他独立消费者的默认外观。 */
