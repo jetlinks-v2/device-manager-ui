@@ -10,6 +10,16 @@
 
 `views/link/AccessConfig/index.vue` 为描述列启用 `ellipsis`，长描述省略显示。
 
+## 表单失焦校验
+
+`hooks/useValidateInfosBlur.ts` 在 Network 的 `useNetworkEditor.ts`、GB28181 的 `useGb28181Editor.ts` 和固件 `views/device/Firmware/Save/index.vue` 创建表单后，直接为已有 `validateInfos` 附加 `onBlurCapture`。通过 `@device-manager-ui/hooks/useValidateInfosBlur` 引入，并调用 `useValidateInfosBlur({ validateInfos, validate, rulesRef })`。保留 `Form.useForm`、模板绑定、规则与保存调用；实现与测试均归属 `device-manager-ui`，不使用依赖补丁。
+
+仅处理显式 `trigger: 'blur'` 或触发数组包含 `blur` 的规则，覆盖 `resetFields()` 重建字段信息与动态规则变化。适用于产生原生失焦事件的普通单字段表单项；`noStyle`、嵌套表单项、`mergeValidateInfo` 及依赖 `a-form-item-rest` 上下文隔离的场景不直接适用。
+
+在本模块执行 `node --test tests/validateInfosBlur.test.mjs`，8 项检查通过，覆盖真实 Vue / Ant Design Vue 的必填及长度边界、触发方式过滤、重置、动态规则、字段及实例隔离、Scope 清理和 FormItem 事件传递。`pnpm exec tsc --noEmit --strict --skipLibCheck --target ES2022 --module ESNext --moduleResolution Bundler --lib ES2022,DOM --types vue hooks/useValidateInfosBlur.ts` 通过；三个调用文件的编译和模块内导入解析、差异空白检查通过。未配置独立 lint 脚本。
+
+该辅助函数与此前通过 Network / GB28181 浏览器失焦验证的实现一致，本次仅改为模块内落点并重新执行上述定向检查；未重新进行浏览器验收、全量类型检查及生产构建。需要完整验证时，在 `runtime-ui/` 执行 `pnpm exec vue-tsc --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json`，在 `runtime-ui/jetlinks-web-core/` 执行 `pnpm exec vite build --outDir /private/tmp/jetlinks-device-blur-build -- --module-name device-manager-ui`；既有全量类型诊断仍需单独处理。
+
 ## 网络组件本地端口
 
 `views/link/Type/Detail/index.vue` 的共享端口选项同时监听网络类型和 `configRef` 资源数据，详情、支持类型与资源请求可以并行回填，消除资源先返回时类型尚未就绪造成的偶发空列表。沿用 TCP／UDP 映射、集群端口交集及独立配置的主机端口规则，选项重算保留已配置端口。

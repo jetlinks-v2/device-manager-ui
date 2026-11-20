@@ -225,6 +225,7 @@
 import { Form } from 'ant-design-vue';
 import { cloneDeep } from 'lodash-es';
 import { I18nTextField, type I18nMessages } from '@jetlinks-web-core/components';
+import { useValidateInfosBlur } from '@device-manager-ui/hooks/useValidateInfosBlur';
 import FileUpload from './FileUpload.vue';
 import {
     save,
@@ -347,7 +348,7 @@ const validatorVersionValue = async (_rule: any, value: any) => {
         }
     });
 };
-const { resetFields, validate, validateInfos } = useForm(
+const { resetFields, validate, validateInfos, rulesRef } = useForm(
     formData,
     reactive({
         name: [
@@ -381,6 +382,7 @@ const { resetFields, validate, validateInfos } = useForm(
         description: [{ max: 200, message: $t('Save.index.978508-32') }],
     }),
 );
+useValidateInfosBlur({ validateInfos, validate, rulesRef });
 
 const filterOption = (input: string, option: any) => {
     return option.label.toLowerCase().indexOf(input.toLowerCase()) >= 0;
