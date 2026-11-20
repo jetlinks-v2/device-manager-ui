@@ -236,6 +236,22 @@
                             </j-permission-button>
                         </a-space>
                     </template>
+                    <template #provider="slotProps">
+                        <j-ellipsis>
+                            {{ getProviderText(slotProps.provider, 'name') || $t('AccessConfig.list.unknownProvider') }}
+                        </j-ellipsis>
+                    </template>
+                    <template #protocol="slotProps">
+                        <j-ellipsis>
+                            {{ getProtocolName(slotProps) }}
+                        </j-ellipsis>
+                    </template>
+                    <template #channelInfo="slotProps">
+                        <j-ellipsis>{{ getConnectionInfo(slotProps) }}</j-ellipsis>
+                    </template>
+                    <template #description="slotProps">
+                        <j-ellipsis>{{ getDescription(slotProps) || $t('AccessConfig.list.noDescription') }}</j-ellipsis>
+                    </template>
                     <template #state="slotProps">
                         <a-badge
                             :text="slotProps.state.text"
@@ -267,6 +283,8 @@ import { device } from '../../../assets'
 import { useI18n } from 'vue-i18n';
 import { getI18nText } from '../../../utils/i18n';
 import ConditionFilter from '@jetlinks-web-core/components/ConditionFilter';
+import { NetworkTypeMapping } from './data';
+import type { GatewayRecord, NamedResource } from './Outline/types';
 
 defineOptions({ name: 'AccessConfigPage' })
 
@@ -278,7 +296,7 @@ const visibleOutline = ref(false);
 const current = ref()
 // 仅供新增/编辑弹窗返回时刷新，列表的查询条件和页码仍由原表格持有。
 defineExpose({ reload: () => tableRef.value?.reload() });
-let providersList = ref<Record<string, any>>([]);
+const providersList = ref<NamedResource[]>([]);
 
 const statusMap = new Map();
 statusMap.set('enabled', 'success');
@@ -298,6 +316,7 @@ const columns = [
         title: $t('AccessConfig.index.764793-3'),
         dataIndex: 'provider',
         key: 'provider',
+        scopedSlots: true,
         search: {
             type: 'select',
             options: async () => {
@@ -312,9 +331,22 @@ const columns = [
         },
     },
     {
+        title: $t('AccessConfig.index.764793-1'),
+        dataIndex: 'protocol',
+        key: 'protocol',
+        scopedSlots: true,
+    },
+    {
+        title: $t('AccessConfig.list.connectionInfo'),
+        dataIndex: 'channelInfo',
+        key: 'channelInfo',
+        scopedSlots: true,
+    },
+    {
         title: $t('AccessConfig.index.764793-4'),
         dataIndex: 'state',
         key: 'state',
+        width: 100,
         search: {
             type: 'select',
             options: [
@@ -337,7 +369,7 @@ const columns = [
         search: {
             type: 'string',
         },
-	      ellipsis: true
+        scopedSlots: true,
     },
     {
         title: $t('AccessConfig.index.764793-8'),
@@ -416,8 +448,8 @@ const getActions = (data: Partial<Record<string, any>>): any[] => {
 };
 
 const getProvidersList = async () => {
-    const res: any = await getProviders();
-    providersList.value = res.result;
+    const res = await getProviders();
+    providersList.value = res.result || [];
 };
 getProvidersList();
 
@@ -442,12 +474,38 @@ const handleEye = (data: any) => {
     // menuStory.jumpPage(`link/AccessConfig/Detail`, { id }, { view: true });
 };
 
-const getDescription = (slotProps: Record<string, any>) =>
-    getI18nText(slotProps, 'description')
-        ? getI18nText(slotProps, 'description')
-        : providersList.value?.find(
-              (item: Record<string, any>) => item.id === slotProps.provider,
-          )?.description;
+// 可选接入能力未加载时，已有网关仍可使用本地化的接入方式文案。
+const getProviderText = (id: string | undefined, field: 'name' | 'description') => {
+    if (!id) return '';
+    const provider = providersList.value.find((item) => item.id === id);
+    const text = getI18nText(provider, field).trim();
+    if (text) return text;
+    const key = `AccessConfig.provider.${id}.${field}`;
+    const fallback = $t(key, {}, { missingWarn: false, fallbackWarn: false });
+    return fallback === key ? '' : fallback;
+};
+
+// 内置协议与接入方式共用标识时，可用对应的接入方式名称补足缺失的协议详情。
+const getProtocolName = (record: GatewayRecord) => {
+    const name = getI18nText(record.protocolDetail, 'name').trim();
+    const builtinName = record.protocol === record.provider ? getProviderText(record.provider, 'name') : '';
+    return name || builtinName || record.protocol;
+};
+
+// 列表和卡片均优先展示网关自身的说明，未填写时沿用该接入方式的默认说明。
+const getDescription = (record: GatewayRecord) =>
+    getI18nText(record, 'description').trim() || getProviderText(record.provider, 'description');
+
+// 连接信息缺失时区分无需网络组件和需要网络组件的接入方式。
+const getConnectionInfo = (record: GatewayRecord) => {
+    const channel = record.channelInfo;
+    const addresses = channel?.addresses?.map((item) => item.address?.trim()).filter(Boolean).join(', ');
+    const connection = [getI18nText(channel, 'name').trim(), addresses].filter(Boolean).join(' · ');
+    if (connection) return connection;
+
+    const needsNetwork = record.channel === 'network' || NetworkTypeMapping.has(record.provider);
+    return $t(needsNetwork ? 'AccessConfig.list.noConnectionInfo' : 'AccessConfig.list.connectionNotRequired');
+};
 
 const getStatus = (slotProps: Record<string, any>) =>
     slotProps.channelInfo.addresses[0]?.health === -1 ? 'error' : 'processing';

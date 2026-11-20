@@ -8,7 +8,9 @@
 
 `views/device/list/components/IotDeviceScopeSidebar.vue` 使用 core 的 `AutoTree` 自动适配侧栏高度并启用虚拟滚动，保留原有树属性、插槽和选择事件。该入口依赖 [core PR #224](https://github.com/jetlinks-v2/jetlinks-web-core/pull/224)；异步页面首次挂载的滚轮绑定还依赖运行时工作区的 `patches/ant-design-vue@4.2.6.patch`，发布时需同步交付。
 
-`views/link/AccessConfig/index.vue` 为描述列启用 `ellipsis`，长描述省略显示。
+设备接入网关列表由 `views/link/AccessConfig/index.vue` 渲染。协议和连接信息列使用列表接口返回的协议名称、通道名称和地址。没有连接信息时，按网关的通道类型和 `NetworkTypeMapping` 判断，数采和固定地址等无需网络组件的接入方式显示「无需配置」，需要网络组件的接入方式显示「暂无连接信息」。网关类型和默认说明优先使用当前语言的接入方式目录，目录缺少数采网关时使用模块的中、英、日文文案。说明优先展示网关自身的文案，长文本沿用 `j-ellipsis`。
+
+验证结果：本地 `/infrastructure/access/gateway` 已复核七条记录，数采和固定地址显示「无需配置」，MQTT 与 Agent 显示实际连接信息。中英日文各七个连接信息场景、Vue 编译、样式门禁及模块构建通过。工作区和模块未配置独立 lint 脚本。在 `runtime-ui/` 执行 `pnpm exec vue-tsc --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json` 仍有 1,737 条既有诊断，按文件、错误码和末级原因对比无新增。
 
 ## 表单失焦校验
 
