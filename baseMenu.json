@@ -573,7 +573,8 @@
                 {
                   "permission": "ai_model",
                   "actions": [
-                    "query"
+                    "query",
+                    "save"
                   ]
                 },
                 {
@@ -666,7 +667,41 @@
                 {
                   "permission": "edge-manager",
                   "actions": [
-                    "proxy"
+                    "proxy",
+                    "proxy_request"
+                  ]
+                },
+                {
+                  "permission": "edge-action-sync",
+                  "actions": [
+                    "save",
+                    "delete"
+                  ]
+                },
+                {
+                  "permission": "media-device",
+                  "actions": [
+                    "query",
+                    "save"
+                  ]
+                },
+                {
+                  "permission": "ai-edge-task",
+                  "actions": [
+                    "query",
+                    "save"
+                  ]
+                },
+                {
+                  "permission": "ai_device_event_mapping",
+                  "actions": [
+                    "query"
+                  ]
+                },
+                {
+                  "permission": "firmware-upgrade-task-manager",
+                  "actions": [
+                    "deploy"
                   ]
                 }
               ],
