@@ -71,6 +71,8 @@
   line-height: var(--lh-normal);
 }
 
+.device-alarm-editor__heading h2 { font-size: var(--fs-18); }
+
 .device-alarm-editor {
   // 保持原有物联告警等级色语义，选择项与预览使用同一组 feature token。
   --device-alarm-level-emergency: #ff4d4f;
@@ -119,15 +121,14 @@
   width: 100%;
   height: auto;
   min-height: 3.25rem;
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-columns: 20px minmax(0, 1fr) 8px 16px;
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-3) var(--space-4);
   border-color: var(--line);
-  border-radius: var(--r-4);
+  border-radius: var(--r-5);
   color: var(--ink-1);
   background: var(--bg);
-  box-shadow:var(--shadow-1);
   text-align: left;
 }
 .device-alarm-editor__setting.ant-btn:not(:disabled):hover,
@@ -138,10 +139,14 @@
 }
 .device-alarm-editor__setting-label {
   min-width: 0;
-  white-space: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: var(--fs-14);
+  font-weight: 500;
 }
-.device-alarm-editor__setting-icon { color: var(--accent); font-size: var(--fs-16); }
+.device-alarm-editor__setting-icon { color: var(--accent); font-size: var(--fs-18); }
+.device-alarm-editor__setting :deep(.ant-badge-status-dot) { width: 8px; height: 8px; }
 .device-alarm-editor__setting > :deep(.anticon:last-child) { color: var(--ink-3); }
 .device-alarm-editor__section-title {
   display: flex;
@@ -268,7 +273,7 @@
   .device-alarm-editor__workspace { display: flex; height: auto; min-height: 100%; flex-direction: column; align-items: stretch; padding: var(--space-3); overflow: visible; }
   .device-alarm-editor__settings { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .device-alarm-editor__setting.ant-btn { padding: var(--space-2); }
-  .device-alarm-editor__setting-label { font-size: var(--fs-12); }
+  .device-alarm-editor__setting-label { overflow: visible; white-space: normal; font-size: var(--fs-12); line-height: var(--lh-normal); }
   .device-alarm-editor__setting > :deep(.anticon:last-child) { display: none; }
   .device-alarm-editor__setting.ant-btn { grid-template-columns: auto minmax(0, 1fr) auto; }
   .device-alarm-editor__summary-list { grid-template-columns: 1fr; }

@@ -10,7 +10,8 @@
     </template>
     <a-button ref="trigger" type="text" size="small" class="notification-chip" :disabled="disabled" :aria-label="$t('DeviceAlarm.notification.user')" :aria-expanded="directory.open" :title="directory.selectionTitle">
       <AIcon :type="directory.selectedLoading ? 'LoadingOutlined' : directory.selectedFailed ? 'ExclamationCircleOutlined' : 'TeamOutlined'" :spin="directory.selectedLoading" />
-      <DeviceAlarmSelectionSummary :labels="directory.selectionLabels" :placeholder="directory.selectionLabel" />
+      <SelectionSummary v-if="layout === 'form'" :names="directory.selectionLabels" :placeholder="directory.selectionLabel" />
+      <DeviceAlarmSelectionSummary v-else :labels="directory.selectionLabels" :placeholder="directory.selectionLabel" />
       <AIcon type="DownOutlined" class="notification-chip__arrow" />
     </a-button>
   </a-popover>
@@ -19,9 +20,10 @@
 import { reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ConditionOptionPanel } from '@jetlinks-web-core/components/ConditionFilter'
+import SelectionSummary from '@jetlinks-web-core/components/SelectionSummary'
 import { useAlarmRecipients } from '../hooks/useAlarmRecipients'
 import DeviceAlarmSelectionSummary from './DeviceAlarmSelectionSummary.vue'
-const props = defineProps<{ value: string[]; scopeKey: string; open: boolean; disabled?: boolean }>()
+const props = withDefaults(defineProps<{ value: string[]; scopeKey: string; open: boolean; disabled?: boolean; layout?: 'inline' | 'form' }>(), { layout: 'inline' })
 const emit = defineEmits<{ (e: 'update:value', value: string[]): void; (e: 'update:open', value: boolean): void }>()
 const { t: $t } = useI18n()
 const directory = reactive(useAlarmRecipients(props))

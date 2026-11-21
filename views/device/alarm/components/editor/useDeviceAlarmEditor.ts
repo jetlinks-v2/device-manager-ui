@@ -17,10 +17,10 @@ interface EditorProps {
 }
 
 const editorPanels = [
-  { key: 'level', icon: 'NotificationOutlined', labelKey: 'DeviceAlarm.form.level', descriptionKey: 'DeviceAlarm.editor.levelDescription' },
-  { key: 'target', icon: 'AimOutlined', labelKey: 'DeviceAlarm.editor.target', descriptionKey: 'DeviceAlarm.editor.targetDescription' },
-  { key: 'trigger', icon: 'ThunderboltOutlined', labelKey: 'DeviceAlarm.editor.trigger', descriptionKey: 'DeviceAlarm.editor.triggerDescription' },
-  { key: 'notification', icon: 'BellOutlined', labelKey: 'DeviceAlarm.editor.notification', descriptionKey: 'DeviceAlarm.editor.notificationDescription' },
+  { key: 'level', icon: 'NotificationOutlined', labelKey: 'DeviceAlarm.editor.level', titleKey: 'DeviceAlarm.editor.levelTitle', descriptionKey: 'DeviceAlarm.editor.levelDescription' },
+  { key: 'target', icon: 'AppstoreOutlined', labelKey: 'DeviceAlarm.editor.target', titleKey: 'DeviceAlarm.editor.targetTitle', descriptionKey: 'DeviceAlarm.editor.targetDescription' },
+  { key: 'trigger', icon: 'ThunderboltOutlined', labelKey: 'DeviceAlarm.editor.trigger', titleKey: 'DeviceAlarm.editor.trigger', descriptionKey: 'DeviceAlarm.editor.triggerDescription' },
+  { key: 'notification', icon: 'BellOutlined', labelKey: 'DeviceAlarm.editor.notification', titleKey: 'DeviceAlarm.editor.notificationTitle', descriptionKey: 'DeviceAlarm.editor.notificationDescription' },
 ] as const
 
 /** 弹窗内的导航、配置状态与预览共用同一草稿；只派生展示，不改变保存校验或请求资源。 */
@@ -75,7 +75,7 @@ export function useDeviceAlarmEditor(props: EditorProps, t: (key: string) => str
     : notificationReady.value ? 'DeviceAlarm.notification.configured' : 'DeviceAlarm.editor.pending'))
 
   const summaryItems = computed(() => [
-    { key: 'level', panel: 'level' as const, labelKey: 'DeviceAlarm.form.level', value: level.value?.label || empty.value, state: panelStates.value.level },
+    { key: 'level', panel: 'level' as const, labelKey: 'DeviceAlarm.editor.level', value: level.value?.label || empty.value, state: panelStates.value.level },
     { key: 'target', panel: 'target' as const, labelKey: 'DeviceAlarm.editor.target', value: targetSummary.value,
       state: props.model.targetId ? 'complete' : 'pending' },
     { key: 'property', panel: 'target' as const, labelKey: 'DeviceAlarm.form.property', value: propertySummary.value,

@@ -14,7 +14,7 @@
     <span class="device-alarm-notify__sentence">
       <template v-if="model.notification.enabled">
         <span class="notification-clause">
-          <span>{{ $t(layout === 'form' ? 'DeviceAlarm.notification.type' : 'DeviceAlarm.notification.using') }}</span>
+          <span>{{ $t(layout === 'form' ? 'DeviceAlarm.editor.notificationChannel' : 'DeviceAlarm.notification.using') }}</span>
           <a-popover :open="notification.activePanel === 'channels'" :trigger="['click']" placement="bottomLeft" :destroy-tooltip-on-hide="true" @open-change="notification.setPanel('channels', $event)">
             <template #content>
               <div class="notification-option-panel" @keydown.esc.stop.prevent="closeChannels">
@@ -40,7 +40,7 @@
                 </div>
               </div>
             </template>
-            <a-button ref="channelTrigger" type="text" :size="layout === 'form' ? 'middle' : 'small'" class="notification-chip" :disabled="disabled" :aria-label="$t('DeviceAlarm.notification.type')" :aria-expanded="notification.activePanel === 'channels'" :title="notification.channelTitle">
+            <a-button ref="channelTrigger" type="text" :size="layout === 'form' ? 'middle' : 'small'" class="notification-chip" :disabled="disabled" :aria-label="$t(layout === 'form' ? 'DeviceAlarm.editor.notificationChannel' : 'DeviceAlarm.notification.type')" :aria-expanded="notification.activePanel === 'channels'" :title="notification.channelTitle">
               <AIcon :type="loading ? 'LoadingOutlined' : notification.selectedMethods[0]?.icon || 'SendOutlined'" :spin="loading" />
               <DeviceAlarmSelectionSummary :labels="notification.channelLabels" :placeholder="notification.channelLabel" />
               <AIcon type="DownOutlined" class="notification-chip__arrow" />
@@ -50,7 +50,7 @@
         </span>
         <span v-if="notification.channelCount" class="notification-clause">
           <span>{{ $t(layout === 'form' ? 'DeviceAlarm.notification.user' : 'DeviceAlarm.notification.sendTo') }}</span>
-          <DeviceAlarmRecipients v-model:value="model.notification.userIds" :scope-key="notification.scopeKey" :open="notification.activePanel === 'recipients'" :disabled="disabled" @update:open="notification.setPanel('recipients', $event)" />
+          <DeviceAlarmRecipients v-model:value="model.notification.userIds" :scope-key="notification.scopeKey" :open="notification.activePanel === 'recipients'" :layout="layout" :disabled="disabled" @update:open="notification.setPanel('recipients', $event)" />
         </span>
         <a-tooltip :title="$t(model.autoRelieve ? 'DeviceAlarm.notification.includeRelieveHint' : 'DeviceAlarm.notification.requireRelieve')">
           <a-checkbox class="notification-include-relieve" :checked="Boolean(model.autoRelieve && model.notification.includeRelieve)" :disabled="disabled || !model.autoRelieve" @update:checked="notification.setIncludeRelieve">{{ $t('DeviceAlarm.notification.includeRelieve') }}</a-checkbox>
