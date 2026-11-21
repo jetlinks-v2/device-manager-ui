@@ -53,17 +53,17 @@
           <header class="device-alarm-editor__section-heading">
             <div>
               <div class="device-alarm-editor__section-title">
-                <h3>{{ $t(activePanelMeta.labelKey) }}</h3>
-                <DeviceAlarmNotificationHelp v-if="activePanel === 'notification'" :model="model" show-label />
+                <h3>{{ $t(activePanelMeta.titleKey) }}</h3>
+                <DeviceAlarmNotificationHelp v-if="activePanel === 'notification'" :model="model" />
               </div>
-              <p>{{ $t(activePanelMeta.descriptionKey) }}</p>
+              <p v-if="activePanel === 'target' || activePanel === 'trigger'">{{ $t(activePanelMeta.descriptionKey) }}</p>
             </div>
           </header>
 
           <div v-show="activePanel === 'level'" class="device-alarm-editor__section">
             <a-form-item class="device-alarm-editor__level-field">
               <j-card-select v-model:value="model.level" :column="1" :options="levelOptions" :disabled="saving"
-                role="group" :aria-label="$t('DeviceAlarm.form.level')">
+                role="group" :aria-label="$t('DeviceAlarm.editor.level')">
                 <template #itemRender="{ node }">
                   <a-button block type="text" class="device-alarm-editor__level-option" :class="`alarm-level--${node.value}`"
                     :disabled="saving" :aria-pressed="model.level === node.value">
@@ -199,7 +199,7 @@ const { panels, activePanel, activePanelMeta, panelStates, selectedProperty,
   previewText, relievePreviewText, summaryItems, selectPanel } = useDeviceAlarmEditor(props, $t)
 
 const title = computed(() =>
-  props.readonlyScope ? $t('DeviceAlarm.title.edit') : $t('DeviceAlarm.title.create'),
+  props.readonlyScope ? $t('DeviceAlarm.title.edit') : $t('DeviceAlarm.editor.title'),
 )
 
 function close() {
