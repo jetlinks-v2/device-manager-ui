@@ -91,6 +91,23 @@
 
 验证限制：工作区与模块均无 lint 脚本。完整类型检查在 `runtime-ui` 执行 `node node_modules/vue-tsc/bin/vue-tsc.js -p modules/device-manager-ui/tsconfig.json --noEmit --pretty false`，被未改动的 `views/device/Product/ResourcePackage/index.vue:187:23` 与 `views/link/Certificate/type.d.ts:2:30` 的 TS1005 语法错误阻断；修复这些基线错误后需重跑。尚未执行真实设备启用/禁用请求联调。
 
+## 网关设备详情初始化权限
+
+资源中心「设备列表」的网关详情（`iot-user-device-list/GatewayDetail`）由 `edge-master-ui/views/workbench/gateway/GatewayDetailPage.vue` 承载。下列权限统一配置在 `device-manager-ui/baseMenu.json` 的 `iot-user-device-list.permissions`，已有菜单授权的角色无需另勾选操作项。原有按钮、后端鉴权与设备资产范围配置不变。
+
+| 网关详情调用 | 补齐的菜单权限 |
+| --- | --- |
+| 解绑和同步启停子设备（含批量） | `edge-action-sync:save` |
+| 删除网关子设备 | `edge-action-sync:delete` |
+| 视频设备详情、视频通道同步（含扫描接入后的同步） | `media-device:query/save` |
+| 视觉任务目标、通道绑定、模型部署、设备事件算法配置 | `ai-edge-task:query/save`、`ai_model:save`、`ai_device_event_mapping:query` |
+| 绝对地址的算法事件媒体 | `edge-manager:proxy_request`，相对地址仍走原有 API 代理 |
+| 固件升级失败重试 | `firmware-upgrade-task-manager:deploy`，由 `/firmware/upgrade/task/_start` 校验 |
+
+原有的网关启停、边端 API 代理、媒体通道列表、大模型仓库和固件任务查询权限保持不变。网关直播、录像、云台及扫描继续复用原边端代理，不引入独立视频菜单的权限。
+
+已有部署需使用包含该配置的运行时前端重新初始化菜单；已登录的账号需重新登录后验证对应操作。
+
 ## 网关列表引导扩展
 
 当前方案：Provider 提供可选列表引导组件，统一列表传递激活状态与手动接入意图，接收列表刷新事件；弹窗、待办、偏好和轮询由 edge-master-ui 持有。每次进入或切回网关分类均检查待办，仅存在待完善项时显示“网关待完善配置”，无待办时不弹窗，保留“不再提示”偏好；点击“接入网关”或 `action=create` 时优先显示扫码说明，确认、关闭或 Esc 后等待关闭动画完成，再按待办结果决定是否显示配置弹窗。创建后检查、页面恢复和轮询遵循相同规则，已打开弹窗重新查询为空时关闭。普通进入不自动弹扫码说明，筛选／翻页不重开；其他分类沿用原有新增入口。跨模块复用走注册表，不修改菜单权限、后端和运营端。关键入口为 deviceListProvider.ts 与 views/device/list/unified/，弹窗触发及优先级由 edge-master-ui 的 `views/workbench/gateway/guide/useGatewayListGuide.ts` 负责。
