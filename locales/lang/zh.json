@@ -6570,6 +6570,7 @@
     "IotDeviceDetail.detail.address": "设备地址",
     "IotDeviceDetail.detail.businessGroup": "所属分组",
     "IotDeviceDetail.detail.lastReport": "最后上报",
+    "IotDeviceDetail.detail.notReported": "未上报",
     "IotDeviceDetail.detail.edit": "编辑",
     "IotDeviceDetail.detail.enable": "启用",
     "IotDeviceDetail.detail.disable": "禁用",

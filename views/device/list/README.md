@@ -32,6 +32,10 @@
 
 当前实现：设备头部复用 core `DetailHeader` 摘要模式与 `DetailMetaItem`，保留对象图片和缺省图标，设备类型移至名称/状态同行；ID、产品、空间、业务分组、最后上报使用统一语义图标。物模型标签保留展开与编辑入口，动作继续由 `DeviceDetailActions` 管理。实现入口为 `components/device-detail/IotDeviceDetailHeader.vue`；已有 `PageChrome flush` / `SlantedTabs`、Provider、权限、复制和跳转行为保持不变。
 
+所属产品、所属父设备、所属空间、所属分组和最后上报在 `components/device-detail/IotDeviceDetailHeader.vue` 启用 `DetailMetaItem` 的 `mergedTooltip` 模式。悬停图标、间距或文字都显示同一条“字段名：完整值”提示，空间与分组的提示不随可见文字省略；没有配置时，文字和提示统一使用“未配置”，最后上报缺失时统一使用“未上报”。链接跳转及禁用状态、ID 复制和标签编辑保持不变。
+
+合并提示验证：Chrome 中用真实 `DetailMetaItem` 和 Ant Design Vue 组件验证图标→间距→文字持续显示同一条提示、完整空间与分组值、可点击链接与禁用按钮。摘要与复制回归共 22 项通过；工作区执行 `pnpm -F jetlinks-web-core build --outDir /tmp/jetlinks-merged-tooltip-build -- --module-name device-manager-ui` 成功。没有独立 lint 脚本；`pnpm exec vue-tsc --noEmit -p modules/device-manager-ui/tsconfig.json` 有其他文件的类型诊断，本次两个修改的 Vue 文件无诊断。指定设备的登录态页面尚未复验（新浏览器会话重定向至登录页）。 空值文案回归覆盖空绑定、`--` 上报占位和多个已配置值；相关测试 36 项与设备模块构建均通过。完整类型检查仍有原有诊断，修改行无诊断。
+
 标签交互调整：已填值以“名称＋值”标签展示，点击后就近弹出单项编辑；地理位置继续使用 `SelectAMap` 地图选点。删除叉号使用 `--jet-theme-error`，绝对定位叠加在标签右侧的值文本上方，不为删除按钮预留空间；标签最小宽度为 `1rem`，仅鼠标移入标签时显示删除，移出即隐藏；标签与删除按钮在悬浮时均不改变背景色，删除按钮下方使用 `4px` 局部背景高斯模糊，覆盖的值文本变模糊，叉号本身保持清晰。名称使用较淡的 `--jet-theme-text-secondary`，值使用较深的 `--jet-theme-text`。保存/删除沿用设备标签接口、更新权限与加载反馈，失败保留原值和编辑草稿。删除仅清除已保存的设备标签值，物模型定义仍可从“＋标签”入口重新填写。新增实现收敛在 `components/device-detail/tags/`，单项与原批量编辑复用同一类型控件及值转换，验证类型往返、删除目标、失败重试、权限与地图弹层。
 
 新增标签当前行为：“＋标签”使用下拉选择，选项仅包含当前物模型标签中尚未填写的项，`0` 和 `false` 视为已填写；选择后复用单项编辑，保存成功后从候选中移除，删除后恢复候选，全部填写时禁用新增。下拉宽度固定为 `10rem`，标签名称超出时单行省略，悬浮显示完整名称；新增与编辑弹层的标题均限制在表单宽度内，超长单行省略并保留完整名称悬浮提示。`components/device-detail/tags/DeviceDetailTags.vue` 负责下拉与弹层组合，`useTagEditor.ts` 维护候选和草稿，`TagEditorForm.vue` 复用新增/编辑表单，两个 Vue 文件均少于 300 行；仅修改运行时设备模块，不调整接口、权限、路由及运营端。

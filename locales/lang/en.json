@@ -6569,6 +6569,7 @@
     "IotDeviceDetail.detail.address": "Device Address",
     "IotDeviceDetail.detail.businessGroup": "Groups",
     "IotDeviceDetail.detail.lastReport": "Updated",
+    "IotDeviceDetail.detail.notReported": "Not reported",
     "IotDeviceDetail.detail.edit": "Edit",
     "IotDeviceDetail.detail.enable": "Enable",
     "IotDeviceDetail.detail.disable": "Disable",

@@ -427,15 +427,18 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
     device.value?.area,
   ]))
   const regionText = computed(() => limitedDisplayText(regionItems.value))
-  const regionFullText = computed(() => displayText(regionItems.value.join($t('IotDeviceList.presentation.separator'))))
+  const regionFullText = computed(() => regionItems.value.join($t('IotDeviceList.presentation.separator')) || regionText.value)
   const deviceAddressText = computed(() => displayRealText((device.value as any)?.address || device.value?.location, ['未设置位置']))
   const businessGroupItems = computed(() => uniqueDisplayTexts([
     ...(device.value?.groupBindings ?? []).map((item) => item.name),
     device.value?.groupName,
   ]))
   const businessGroupText = computed(() => limitedDisplayText(businessGroupItems.value))
-  const businessGroupFullText = computed(() => displayText(businessGroupItems.value.join($t('IotDeviceList.presentation.separator'))))
-  const lastSeenText = computed(() => displayText(device.value?.lastSeen))
+  const businessGroupFullText = computed(() => businessGroupItems.value.join($t('IotDeviceList.presentation.separator')) || businessGroupText.value)
+  const lastSeenText = computed(() => {
+    const text = device.value?.lastSeen?.trim()
+    return text && text !== '--' ? text : $t('IotDeviceDetail.detail.notReported')
+  })
   const isDeviceDisabled = computed(() => device.value ? getIotDeviceConnectionStatus(device.value) === 'disabled' : false)
   // 启用状态或其他操作执行中时，删除入口和确认弹层必须同时禁用。
   const deleteActionDisabled = computed(() => Boolean(actionBusyId.value && actionKind.value !== 'delete') || !isDeviceDisabled.value)

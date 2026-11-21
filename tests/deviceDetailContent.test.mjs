@@ -406,3 +406,33 @@ test('the actual provider hook follows loaded accessProvider, ignores list query
   } finally { scope.stop() }
   assert.equal(listeners.size, 0, 'provider registry subscription is disposed with its scope')
 })
+
+test('device summary tooltips share the visible empty text without truncating configured values', async () => {
+  const fields = ['regionText', 'regionFullText', 'businessGroupText', 'businessGroupFullText', 'lastSeenText']
+  const bindings = new Set([...fields, 'regionItems', 'businessGroupItems'])
+  const helpers = new Set(['uniqueDisplayTexts', 'limitedDisplayText'])
+  const statements = detailHook.body.statements.filter(node =>
+    (ts.isFunctionDeclaration(node) && helpers.has(node.name?.text))
+    || (ts.isVariableStatement(node) && node.declarationList.declarations.some(item => bindings.has(item.name.getText(detailSource)))),
+  )
+  const { code } = await transform(statements.map(node => node.getText(detailSource)).join('\n'), { loader: 'ts' })
+  const zh = JSON.parse(await readFile(new URL('../locales/lang/zh.json', import.meta.url), 'utf8'))
+  const coreZh = JSON.parse(await readFile(new URL('../../../jetlinks-web-core/src/locales/lang/zh.json', import.meta.url), 'utf8'))
+  const device = ref({ area: '--', groupName: '未分组', lastSeen: '--' })
+  const summary = new vm.Script(`(() => { ${code}; return [${fields.join(',')}] })()`).runInNewContext({
+    computed, device, $t: (key, values) => (zh[key] ?? coreZh[key]).replace(/\{(\w+)\}/g, (_, name) => values[name]),
+  })
+  const values = () => Array.from(summary, field => field.value)
+  assert.deepEqual(values(), ['未配置', '未配置', '未配置', '未配置', '未上报'])
+  device.value = {}
+  assert.equal(values()[4], '未上报')
+  device.value = {
+    areaBindings: [{ area: 'A' }, { area: 'B' }, { area: 'C' }],
+    groupBindings: [{ name: 'X' }, { name: 'Y' }, { name: 'Z' }],
+    lastSeen: '2026-11-20 15:30',
+  }
+  const [area, areaFull, group, groupFull, lastSeen] = values()
+  assert.notEqual(area, areaFull)
+  assert.notEqual(group, groupFull)
+  assert.deepEqual([areaFull, groupFull, lastSeen], ['A、B、C', 'X、Y、Z', '2026-11-20 15:30'])
+})

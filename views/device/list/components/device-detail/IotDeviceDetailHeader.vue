@@ -17,15 +17,15 @@
           <DeviceIdMapping :device="device" :can-update="canDeviceAction('update')" @saved="onDetailContentChanged" />
         </span>
       </DetailMetaItem>
-      <DetailMetaItem kind="product" :label="$t('IotDeviceDetail.detail.product')" :tooltip="productNameText">
+      <DetailMetaItem kind="product" merged-tooltip :label="$t('IotDeviceDetail.detail.product')" :tooltip="productNameText">
         <a-button type="link" class="dd-summary-action" :disabled="!canOpenProductDetail" @click="openProductDetail">{{ productNameText }}</a-button>
       </DetailMetaItem>
-      <DetailMetaItem v-if="parentDeviceId" kind="category" :label="$t('IotDeviceDetail.detail.parentDevice')" :tooltip="parentDeviceName">
+      <DetailMetaItem v-if="parentDeviceId" kind="category" merged-tooltip :label="$t('IotDeviceDetail.detail.parentDevice')" :tooltip="parentDeviceName">
         <a-button type="link" class="dd-summary-action" @click="openParentDevice">{{ parentDeviceName }}</a-button>
       </DetailMetaItem>
-      <DetailMetaItem kind="space" :label="$t('IotDeviceDetail.detail.area')" :value="regionText" :tooltip="regionFullText" />
-      <DetailMetaItem kind="group" :label="$t('IotDeviceDetail.detail.businessGroup')" :value="businessGroupText" :tooltip="businessGroupFullText" />
-      <DetailMetaItem kind="time" :label="$t('IotDeviceDetail.detail.lastReport')" :value="lastSeenText" :tooltip="lastSeenText" />
+      <DetailMetaItem kind="space" merged-tooltip :label="$t('IotDeviceDetail.detail.area')" :value="regionText" :tooltip="regionFullText" />
+      <DetailMetaItem kind="group" merged-tooltip :label="$t('IotDeviceDetail.detail.businessGroup')" :value="businessGroupText" :tooltip="businessGroupFullText" />
+      <DetailMetaItem kind="time" merged-tooltip :label="$t('IotDeviceDetail.detail.lastReport')" :value="lastSeenText" :tooltip="lastSeenText" />
     </template>
     <template v-if="thingModelTags.length" #extra>
       <DeviceDetailTags :key="device.id" :state="state" />

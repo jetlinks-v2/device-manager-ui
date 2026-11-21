@@ -5636,6 +5636,7 @@
   "IotDeviceDetail.detail.address": "デバイスアドレス",
   "IotDeviceDetail.detail.businessGroup": "業務グループ",
   "IotDeviceDetail.detail.lastReport": "最終報告",
+  "IotDeviceDetail.detail.notReported": "未報告",
   "IotDeviceDetail.detail.edit": "編集",
   "IotDeviceDetail.detail.enable": "有効化",
   "IotDeviceDetail.detail.disable": "無効化",
