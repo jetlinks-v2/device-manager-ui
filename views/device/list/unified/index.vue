@@ -200,7 +200,7 @@
 						    </template>
 					    </a-table>
 				    </div>
-				    <a-pagination class="unified-device-list__pagination" :current="pageIndex + 1" :page-size="pageSize" :total="total" :page-size-options="['12', '24', '48', '96']" show-size-changer :show-total="value => t('UnifiedDeviceList.total', { count: value })" @change="changePage" />
+				    <JPagination class="unified-device-list__pagination" :page-index="pageIndex" :page-size="pageSize" :total="total" :page-size-options="['12', '24', '48', '96']" show-size-changer is-show-content @change="changePage" />
 			    </div>
 		    </template>
 	    </EqualHeightColumns>
@@ -227,6 +227,7 @@ import { ref } from 'vue'
 import dayjs from 'dayjs'
 import { Modal } from 'ant-design-vue'
 import { useI18n } from 'vue-i18n'
+import JPagination from '@jetlinks-web/components/es/ProTable/Pagination'
 import { getToken, onlyMessage } from '@jetlinks-web/utils'
 import { TOKEN_KEY_URL } from '@jetlinks-web/constants'
 import { getBaseApi } from '@jetlinks-web-core/utils'
