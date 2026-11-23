@@ -1,7 +1,7 @@
 <template>
   <a-drawer
     :open="open"
-    :width="920"
+    width="min(920px, 100vw)"
     destroy-on-close
     placement="right"
     @close="$emit('close')"
@@ -33,7 +33,8 @@
         <a-table
           :columns="columns"
           :data-source="rows"
-          :pagination="{ pageSize: 20, size: 'small', showSizeChanger: false }"
+          :pagination="{ pageSize: 20, size: 'default', showSizeChanger: false }"
+          :scroll="{ x: 600 }"
           :row-key="rowKey"
           size="small"
         >
@@ -196,6 +197,7 @@ function shortMd5(value: string) {
 <style scoped lang="less">
 .cv-upgrade-diff,
 .cv-upgrade-diff__title {
+  grid-template-columns: minmax(0, 1fr);
   display: grid;
   gap: var(--space-3);
 }

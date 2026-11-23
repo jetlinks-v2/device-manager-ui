@@ -9,7 +9,7 @@
           <template #footer><small>{{ metric.updatedAt || '--' }}</small></template>
         </CardSummary>
       </div>
-      <a-pagination v-if="rows.length > pageSize" v-model:current="page" size="small" :page-size="pageSize" :total="rows.length" :show-size-changer="false" show-less-items />
+      <a-pagination v-if="rows.length > pageSize" v-model:current="page" size="default" :page-size="pageSize" :total="rows.length" :show-size-changer="false" show-less-items />
     </template>
     <PropertyDetail v-if="detailOpen && selected" v-model:open="detailOpen" :device-id="deviceId" :property="selected" :tone="selectedTone" />
   </div>

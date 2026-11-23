@@ -88,6 +88,7 @@
             </div>
             <div v-if="showPage" class="device-list-pagination">
                 <a-pagination
+                    size="default"
                     :total="pageData.total"
                     :current="pageData.pageIndex + 1"
                     :pageSize="pageData.pageSize"

@@ -16,31 +16,16 @@
       :request="tableRequest"
       :params="tableParams"
       :alertShow="false"
-      :pagination="tablePagination"
       :rowSelection="rowSelection"
       :bodyStyle="{ padding: 0 }"
       :scroll="false"
     >
       <template #paginationRender="{ total, pageSize, current, onChange }">
         <footer class="iot-device-list__table-footer">
-          <span class="iot-device-list__toolbar-info">
-            <span>{{ resultSummaryText }}</span>
-            <span
-              class="iot-device-list__toolbar-selected"
-              :data-selected="selectedCount > 0"
-            >
-              {{ $t('IotDeviceList.toolbar.selected', { selected: selectedCount }) }}
-            </span>
+          <span class="iot-device-list__toolbar-selected" :data-selected="selectedCount > 0">
+            {{ $t('IotDeviceList.toolbar.selected', { selected: selectedCount }) }}
           </span>
-          <a-pagination
-            v-bind="tablePagination"
-            size="small"
-            :total="total"
-            :page-size="pageSize"
-            :current="current"
-            :show-total="undefined"
-            @change="onChange"
-          />
+          <CorePagination :total="total" :page-size="pageSize" :current="current" @change="onChange" />
         </footer>
       </template>
 
@@ -144,7 +129,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import CorePagination from '@jetlinks-web-core/components/CorePagination'
 import { useI18n } from 'vue-i18n'
 import { parseIconValue } from '@jetlinks-web-core/components/IconValue'
 import IconBadge from '@jetlinks-web-core/components/IconBadge/index.vue'
@@ -154,13 +139,10 @@ import { useIotDeviceAssetTableColumns } from './useIotDeviceAssetTableColumns'
 import type { IotDevice } from '../types'
 const { t: $t } = useI18n()
 const props = defineProps<{
-  totalDevices: number
   selectedCount: number
-  hasActiveFilters: boolean
   hasSearch?: boolean
   loadError: string
   tableParams: Record<string, unknown>
-  tablePagination: Record<string, unknown>
   tableRequest: (params: { pageIndex?: number; pageSize?: number }) => Promise<unknown>
   rowSelection: Record<string, unknown>
   connectionStatusOf: (device: IotDevice) => { label: string; tone: string }
@@ -178,11 +160,6 @@ const props = defineProps<{
   onDelete: (device: IotDevice) => void | Promise<void>
 }>()
 const columns = useIotDeviceAssetTableColumns($t, () => props.showArea)
-const resultSummaryText = computed(() =>
-  props.hasActiveFilters
-    ? $t('IotDeviceList.toolbar.filteredSummary', { total: props.totalDevices })
-    : $t('IotDeviceList.toolbar.totalSummary', { total: props.totalDevices }),
-)
 
 async function runToggleDevice(device: IotDevice) {
   await props.onToggle(device)

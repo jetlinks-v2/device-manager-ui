@@ -1790,8 +1790,7 @@
 .dashboard-card__pager .ant-btn {
   display: inline-grid;
   place-items: center;
-  width: 1.75rem;
-  height: 1.75rem;
+  aspect-ratio: 1;
   padding: 0;
 }
 

@@ -47,7 +47,7 @@
             :page-size-options="antHistoryPageSizeOptions"
             :show-total="showHistoryTotal"
             show-size-changer
-            size="small"
+            size="default"
           />
         </footer>
       </section>

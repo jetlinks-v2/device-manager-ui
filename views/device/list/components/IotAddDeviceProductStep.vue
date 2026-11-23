@@ -35,7 +35,7 @@
         <div v-if="total > pageSize" class="add-device-library__pager">
           <a-pagination
             :current="pageIndex + 1"
-            size="small"
+            size="default"
             :total="total"
             :page-size="pageSize"
             :disabled="loading"

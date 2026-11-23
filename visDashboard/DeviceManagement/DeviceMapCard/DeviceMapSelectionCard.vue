@@ -93,7 +93,7 @@
           </li>
         </ul>
       </a-spin>
-      <a-pagination v-if="view.total > view.pageSize" size="small" simple :current="view.page"
+      <a-pagination v-if="view.total > view.pageSize" size="default" simple :current="view.page"
         :page-size="view.pageSize" :total="view.total" :show-size-changer="false"
         class="device-map-selection__pagination" @change="emit('page', $event)" />
     </template>

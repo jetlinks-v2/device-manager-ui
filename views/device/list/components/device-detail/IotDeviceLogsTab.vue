@@ -66,13 +66,13 @@
 
     <footer v-if="filteredRows.length" class="logs-pagination" :aria-label="$t('IotDeviceDetail.logs.pagination')">
       <a-pagination
+        size="default"
         v-model:current="currentPage"
         v-model:page-size="pageSize"
         :total="filteredRows.length"
         :page-size-options="antPageSizeOptions"
         :show-total="showPaginationTotal"
         show-size-changer
-        show-quick-jumper
       />
     </footer>
   </section>

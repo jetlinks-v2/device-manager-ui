@@ -108,7 +108,7 @@
             :page-size-options="pageSizeOptions"
             show-size-changer
             show-less-items
-            size="small"
+            size="default"
             @change="onPageChange"
             @show-size-change="onPageChange"
           />

@@ -73,7 +73,7 @@
             </template>
             <template #paginationRender>
               <a-pagination
-                size="small"
+                size="default"
                 :current="pageIndex + 1"
                 :page-size="pageSize"
                 :total="total"

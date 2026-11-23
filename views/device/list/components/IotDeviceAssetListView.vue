@@ -46,13 +46,10 @@
               </a-flex>
             </a-flex>
             <IotDeviceAssetTable
-              :total-devices="totalDevices"
               :selected-count="selectedRowKeys.length"
-              :has-active-filters="hasActiveFilters"
               :has-search="submittedTerms.some(hasFilterValue)"
               :load-error="loadError"
               :table-params="tableParams"
-              :table-pagination="tablePagination"
               :table-request="tableRequest"
               :row-selection="rowSelection"
               :connection-status-of="connectionStatusOf"
@@ -172,10 +169,8 @@ const {
 } = useIotDeviceAssetFilters(projectId, devices, connectionStatusMeta, route, router, () => refreshTable(true))
 
 const {
-  totalDevices,
   loadError,
   tableParams,
-  tablePagination,
   refreshTable,
   refreshKey,
   tableRequest,
@@ -293,7 +288,6 @@ const {
   groupFullText,
 } = presentation
 
-const hasActiveFilters = computed(() => Boolean(scopeId.value) || submittedTerms.value.some(hasFilterValue))
 
 function hasFilterValue(term: { value?: unknown; terms?: unknown }): boolean {
   if (Array.isArray(term.terms) && term.terms.some((item) => hasFilterValue(item as { value?: unknown; terms?: unknown }))) {

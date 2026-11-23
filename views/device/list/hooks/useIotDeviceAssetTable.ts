@@ -5,9 +5,6 @@ import { getDeviceSummary_api, type DeviceGroupSummary } from '@device-manager-u
 import type { ConditionFilterTerm } from '@jetlinks-web-core/components/ConditionFilter'
 import type { IotDevice } from '../types'
 
-const pageSizeOptions = [10, 20, 50] as const
-const antPageSizeOptions = pageSizeOptions.map(String)
-
 export function useIotDeviceAssetTable(
   projectId: Ref<string>,
   submittedTerms: Ref<ConditionFilterTerm[]>,
@@ -15,11 +12,10 @@ export function useIotDeviceAssetTable(
   devices: Ref<IotDevice[]>,
 ) {
   const { t: $t } = useI18n()
-  const totalDevices = ref(0)
   const deviceSummary = ref<DeviceGroupSummary>()
   const loadError = ref('')
   const currentPage = ref(1)
-  const pageSize = ref(10)
+  const pageSize = ref(12)
   const refreshKey = ref(0)
   let summaryRequestVersion = 0
 
@@ -27,15 +23,6 @@ export function useIotDeviceAssetTable(
     projectId: projectId.value,
     refreshKey: refreshKey.value,
     filterKey: JSON.stringify(submittedTerms.value),
-  }))
-
-  const tablePagination = computed(() => ({
-    current: currentPage.value,
-    pageSize: pageSize.value,
-    pageSizeOptions: antPageSizeOptions,
-    showSizeChanger: true,
-    showQuickJumper: true,
-    showTotal: (total: number) => $t('IotDeviceList.table.total', { total }),
   }))
 
   function refreshTable(resetPage = false) {
@@ -73,7 +60,6 @@ export function useIotDeviceAssetTable(
       })
 
       devices.value = result.data
-      totalDevices.value = result.total
 
       return {
         success: true,
@@ -86,7 +72,6 @@ export function useIotDeviceAssetTable(
       }
     } catch (error) {
       devices.value = []
-      totalDevices.value = 0
       loadError.value = error instanceof Error ? error.message : $t('IotDeviceList.table.loadFailed')
 
       return {
@@ -103,14 +88,12 @@ export function useIotDeviceAssetTable(
 
   return {
     devices,
-    totalDevices,
     deviceSummary,
     loadError,
     currentPage,
     pageSize,
     refreshKey,
     tableParams,
-    tablePagination,
     refreshTable,
     tableRequest,
   }

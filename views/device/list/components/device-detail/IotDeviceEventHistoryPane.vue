@@ -58,6 +58,7 @@
       <footer class="event-history__footer">
         <span>{{ eventRangeText }}</span>
         <a-pagination
+          size="default"
           v-model:current="eventPagination.current"
           :page-size="eventPagination.pageSize"
           :total="eventPagination.total"

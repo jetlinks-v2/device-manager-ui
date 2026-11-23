@@ -8,6 +8,7 @@
         :dataSource='dataSource?.data'
         @change='onChange'
         :pagination="{
+                size: 'default',
                 current: (dataSource?.pageIndex || 0) + 1,
                 pageSize: dataSource?.pageSize || 12,
                 showSizeChanger: true,

@@ -25,11 +25,11 @@
       </ul>
       <CloudEmpty v-else class="dashboard-widget-empty" :description="$t('IotWorkbench.card.empty')" />
       <footer v-if="latestAlarmPageTotal > 1" class="dashboard-card__pager">
-        <a-button type="text" size="small" :aria-label="$t('IotWorkbench.pager.prev')" @click="emit('change-latest-alarm-page', -1)">
+        <a-button type="text" :aria-label="$t('IotWorkbench.pager.prev')" @click="emit('change-latest-alarm-page', -1)">
           <AIcon :type="'LeftOutlined'" aria-hidden="true" />
         </a-button>
         <span>{{ latestAlarmPageIndex + 1 }} / {{ latestAlarmPageTotal }}</span>
-        <a-button type="text" size="small" :aria-label="$t('IotWorkbench.pager.next')" @click="emit('change-latest-alarm-page', 1)">
+        <a-button type="text" :aria-label="$t('IotWorkbench.pager.next')" @click="emit('change-latest-alarm-page', 1)">
           <AIcon :type="'RightOutlined'" aria-hidden="true" />
         </a-button>
       </footer>
@@ -50,11 +50,11 @@
       </ol>
       <CloudEmpty v-else class="dashboard-widget-empty" :description="$t('IotWorkbench.card.empty')" />
       <footer v-if="alarmRankPageTotal > 1" class="dashboard-card__pager">
-        <a-button type="text" size="small" :aria-label="$t('IotWorkbench.pager.prev')" @click="emit('change-alarm-rank-page', -1)">
+        <a-button type="text" :aria-label="$t('IotWorkbench.pager.prev')" @click="emit('change-alarm-rank-page', -1)">
           <AIcon :type="'LeftOutlined'" aria-hidden="true" />
         </a-button>
         <span>{{ alarmRankPageIndex + 1 }} / {{ alarmRankPageTotal }}</span>
-        <a-button type="text" size="small" :aria-label="$t('IotWorkbench.pager.next')" @click="emit('change-alarm-rank-page', 1)">
+        <a-button type="text" :aria-label="$t('IotWorkbench.pager.next')" @click="emit('change-alarm-rank-page', 1)">
           <AIcon :type="'RightOutlined'" aria-hidden="true" />
         </a-button>
       </footer>

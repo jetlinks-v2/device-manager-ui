@@ -103,7 +103,6 @@ const pagination = computed(() => ({
   pageSize: pageSize.value,
   total: total.value,
   showSizeChanger: true,
-  showQuickJumper: true,
   showTotal: (value: number) => $t('IotDeviceDetail.common.count.item', { count: value }),
 }))
 

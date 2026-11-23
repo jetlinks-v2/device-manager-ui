@@ -156,6 +156,7 @@
                 </a-table>
                 <div class="pagination">
                     <a-pagination
+                        size="default"
                         v-model:pageSize="pageSize"
                         v-model:current="current"
                         :total="metadata?.properties?.length || 0"

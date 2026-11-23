@@ -79,7 +79,7 @@ const columns = computed(() => props.state.tab === 'logs' ? [
   { title: $t('DeviceAlarm.column.action'), key: 'action', width: 60 },
 ])
 const pagination = computed(() => ({ current: props.state.pageIndex + 1, pageSize: props.state.pageSize,
-  total: props.state.total, showSizeChanger: true, size: 'small' as const }))
+  total: props.state.total, showSizeChanger: true, size: 'default' as const }))
 </script>
 
 <style scoped>

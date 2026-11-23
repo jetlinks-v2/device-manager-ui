@@ -26,7 +26,7 @@
       <a-table
         :columns="columns"
         :data-source="rows"
-        :pagination="{ pageSize: 20, size: 'small', showSizeChanger: false }"
+        :pagination="{ pageSize: 20, size: 'default', showSizeChanger: false }"
         :row-key="row => row.rowId"
         size="small"
       >
