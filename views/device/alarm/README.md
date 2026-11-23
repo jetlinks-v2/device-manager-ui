@@ -14,10 +14,12 @@
 
 ## 告警通知选择 WebHook
 
-- 目标与范围：运行时 `runtime-ui/modules/device-manager-ui` 的告警通知允许选择已启用并绑定模板的 WebHook；固定接收地址沿用通知中心配置。
-- 实现：`api.ts` 不再按 `receiverPolicy=explicit` 排除通知类型，仍校验当前可见的 `alarm-device` 配置、渠道状态和模板绑定；复用既有通知选项、模板状态及保存参数，不修改后端或接口。
-- 验证：从远端 `2.20` 提取本次三文件修复后，Node 22.18.0 下告警回归 210/210 通过。临时运行器仅将依赖和共享组件定位到运行时工作区，业务和测试来自独立分支；覆盖 WebHook 模板状态、选择和保存参数回显、禁用和无模板渠道。`git diff --check` 通过。
-- 验证限制：此前在含其他未提交改动的运行时工作区执行告警回归 214/214 通过，模块构建通过（2m35s），类型检查未通过（1738 条诊断，修改的 API 文件无命中，测试文件仅命中原有两处 Node 测试模块导入）；这些不代表独立分支完成了完整构建或类型检查。独立分支未重复完整构建和类型检查，标准工作区可在 `runtime-ui/` 执行 `node modules/device-manager-ui/scripts/test-alarm-workspace.mjs` 和 `node node_modules/vue-tsc/bin/vue-tsc.js --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json`，在 `runtime-ui/jetlinks-web-core/` 执行 `node ../node_modules/vite/bin/vite.js build -- --module-name device-manager-ui`。已登录页面及真实 WebHook 投递待联调环境验证；未修改 Vue 或样式，运行时无独立 lint 脚本。
+- 范围：运行时设备告警模块；复用已合入的固定接收方模型，不修改运营端或后端。
+- `notificationFixedChannels.ts` 将已启用且绑定告警模板的 WebHook 按通道实例列出，每个实例独立保存触发／解除模板。`api.ts` 从人员通知选项中排除固定实例，避免要求 WebHook 选择通知对象；混选邮件等人员渠道仍校验接收人。
+- 两个 WebHook 分别绑定设备告警模板时展示两个选项；只有通知凭证、未绑定告警模板的配置不作为告警通知选项。
+- `hooks/useAlarmNotification.ts` 区分 WebHook 接收地址与群机器人固定群的说明，中英日文案保持一致；底部共用提示使用“渠道配置的固定接收地址”。
+- 历史按 `channelProviders: ["notifier-webhook"]` 保存的配置不自动迁移；重新选择具体 WebHook 实例并保存后使用固定接收方语义。运行环境需包含设备后端固定模板通知能力（device-manager PR #483）。
+- 验证：告警回归 215/215 通过，覆盖纯 WebHook、多个实例、群机器人组合、混选人员渠道、触发／解除模板保存回显和对象显隐；模块构建通过，随后仅调整说明文案，三语资源校验与告警回归再次通过。`git diff --check` 通过。全模块类型检查仍有 1738 条诊断，修改的生产文件无命中；未验证登录环境中的真实保存与 WebHook 投递。
 
 ## “含解除”说明展示
 

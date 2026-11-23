@@ -1,6 +1,8 @@
 {
   "DeviceAlarm.notification.dingTalkWork": "DingTalk · 業務通知",
-  "DeviceAlarm.notification.fixedRecipientHint": "ロボットに設定されたグループに送信します。受信者の選択は不要です",
+  "DeviceAlarm.notification.fixedRecipientHint": "チャネルに設定された固定の送信先に送信します。受信者の選択は不要です",
+  "DeviceAlarm.notification.webhookRecipientHint": "WebHook に設定された送信先アドレスに送信します。受信者の選択は不要です",
+  "DeviceAlarm.notification.robotRecipientHint": "ロボットに設定されたグループに送信します。受信者の選択は不要です",
   "PropertyRules.correction.formula": "計算式",
   "DocumentHelp.overview_keyProperties": "主要プロパティ",
   "DocumentHelp.overview_recentAlarms": "最近のアラーム",
