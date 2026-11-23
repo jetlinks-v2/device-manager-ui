@@ -1,54 +1,61 @@
 <template>
   <div class="codec-simulator-panel">
-    <div ref="simulatorContainerRef" class="codec-simulator-panel__main">
-      <div v-if="list.length === 0" class="codec-simulator-panel__empty">
-        <div class="codec-simulator-panel__empty-actions">
-          <div class="codec-simulator-panel__add-card uplink" @click="handleAdd('uplink')">
-            <AIcon type="PlusCircleOutlined" />
-            <span>{{ $t('InstanceDeviceAccess.codecDebug.addUplink') }}</span>
-          </div>
-          <div class="codec-simulator-panel__add-card downlink" @click="handleAdd('downlink')">
-            <AIcon type="PlusCircleOutlined" />
-            <span>{{ $t('InstanceDeviceAccess.codecDebug.addDownlink') }}</span>
-          </div>
+    <section class="codec-simulator-panel__workspace">
+      <header class="codec-simulator-panel__header">
+        <div class="codec-simulator-panel__heading">
+          <h3>{{ $t('InstanceDeviceAccess.codecDebug.items') }}</h3>
+          <span>{{ $t('InstanceDeviceAccess.codecDebug.itemCount', { count: list.length }) }}</span>
         </div>
+        <a-popover v-model:open="addOpen" trigger="click" placement="bottomRight">
+          <template #content>
+            <div class="codec-simulator-panel__choices" @keydown.esc="addOpen = false">
+              <button v-for="type in simulatorTypes" :key="type" type="button" class="codec-simulator-panel__choice" @click="handleAdd(type); addOpen = false">
+                <AIcon :type="type === 'uplink' ? 'ArrowUpOutlined' : 'ArrowDownOutlined'" />
+                <span>
+                  <strong>{{ $t(`InstanceDeviceAccess.codecDebug.${type}Tag`) }}</strong>
+                  <span>{{ $t(`InstanceDeviceAccess.codecDebug.${type}Description`) }}</span>
+                </span>
+              </button>
+            </div>
+          </template>
+          <a-button type="primary" size="small" :aria-expanded="addOpen" @keydown.esc="addOpen = false">
+            <template #icon><AIcon type="PlusOutlined" /></template>
+            {{ $t('InstanceDeviceAccess.codecDebug.simulate') }}
+          </a-button>
+        </a-popover>
+      </header>
+      <div ref="simulatorContainerRef" class="codec-simulator-panel__main">
+        <div v-if="list.length === 0" class="codec-simulator-panel__empty">
+          <AIcon type="ExperimentOutlined" />
+          <p>{{ $t('InstanceDeviceAccess.codecDebug.emptyItems') }}</p>
+        </div>
+        <template v-else>
+          <CodecSimulatorItem
+            v-for="(item, index) in list"
+            :key="item.id"
+            v-model="list[index]"
+            :type="item.type"
+            :metadata="metadata"
+            :product-metadata="productMetadata"
+            :transport="transport"
+            @delete="handleDelete(index)"
+            @send="handleSend"
+            @move-up="handleMove(index, -1)"
+            @move-down="handleMove(index, 1)"
+          />
+        </template>
       </div>
-
-      <template v-else>
-        <CodecSimulatorItem
-          v-for="(item, index) in list"
-          :key="item.id"
-          v-model="list[index]"
-          :type="item.type"
-          :metadata="metadata"
-          :product-metadata="productMetadata"
-          :transport="transport"
-          @delete="handleDelete(index)"
-          @send="handleSend"
-          @move-up="handleMove(index, -1)"
-          @move-down="handleMove(index, 1)"
-        />
-        <div class="codec-simulator-panel__footer">
-          <div class="codec-simulator-panel__footer-btn uplink" @click="handleAdd('uplink')">
-            <AIcon type="PlusOutlined" />
-            {{ $t('InstanceDeviceAccess.codecDebug.addUplinkShort') }}
-          </div>
-          <div class="codec-simulator-panel__footer-btn downlink" @click="handleAdd('downlink')">
-            <AIcon type="PlusOutlined" />
-            {{ $t('InstanceDeviceAccess.codecDebug.addDownlinkShort') }}
-          </div>
-        </div>
-      </template>
-    </div>
+    </section>
 
     <aside class="codec-simulator-panel__log">
-      <div class="codec-simulator-panel__log-header">
-        <AIcon type="RightOutlined" />
-        {{ $t('InstanceDeviceAccess.codecDebug.executionLog') }}
-      </div>
-      <div class="codec-simulator-panel__log-body">
+      <header class="codec-simulator-panel__header">
+        <div class="codec-simulator-panel__heading">
+          <h3>{{ $t('InstanceDeviceAccess.codecDebug.executionLog') }}</h3>
+          <span>{{ $t('InstanceDeviceAccess.codecDebug.logCount', { count: logs.length }) }}</span>
+        </div>
+      </header>
+      <div class="codec-simulator-panel__log-body" aria-live="polite">
         <div v-if="logs.length === 0" class="codec-simulator-panel__log-empty">
-          <AIcon type="MessageOutlined" />
           <p>{{ $t('InstanceDeviceAccess.codecDebug.noLogs') }}</p>
         </div>
         <div v-else>
@@ -63,12 +70,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import CodecSimulatorItem from './CodecSimulatorItem.vue'
 import { useCodecSimulator } from './composables/useCodecSimulator'
 
 const { t: $t } = useI18n()
+const addOpen = ref(false)
+const simulatorTypes = ['uplink', 'downlink'] as const
 const props = defineProps<{
   deviceId: string
   metadata?: unknown
@@ -105,150 +114,125 @@ defineExpose({ reset, fillData })
   height: 100%;
   min-height: 0;
   overflow: hidden;
-  border-radius: 4px;
-  background: #f0f2f5;
-}
-
-.codec-simulator-panel__main {
-  flex: 1;
-  min-width: 0;
-  overflow-y: auto;
-  padding: 24px;
-}
-
-.codec-simulator-panel__empty {
-  display: flex;
-  height: 100%;
-  align-items: center;
-  justify-content: center;
-}
-
-.codec-simulator-panel__empty-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.codec-simulator-panel__add-card {
-  display: flex;
-  width: 380px;
-  height: 80px;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  border: 1px dashed #d9d9d9;
+  border: 1px solid var(--jet-theme-border-secondary, #f0f0f0);
   border-radius: 8px;
-  background: #fff;
-  cursor: pointer;
-  font-size: 16px;
-  font-weight: 500;
-  transition: all 0.2s;
+  background: var(--jet-theme-bg-container, #fff);
+  color: var(--jet-theme-text);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  line-height: var(--lh-normal);
+  container: codec-simulator / inline-size;
 }
-
-.codec-simulator-panel__add-card.uplink,
-.codec-simulator-panel__footer-btn.uplink {
-  color: #1890ff;
-  border-color: #91d5ff;
-}
-
-.codec-simulator-panel__add-card.downlink,
-.codec-simulator-panel__footer-btn.downlink {
-  color: #722ed1;
-  border-color: #d3adf7;
-}
-
-.codec-simulator-panel__add-card:hover,
-.codec-simulator-panel__footer-btn:hover {
-  border-style: solid;
-  background: #fff;
-}
-
-.codec-simulator-panel__footer {
-  display: flex;
-  gap: 16px;
-  margin-top: 16px;
-}
-
-.codec-simulator-panel__footer-btn {
-  display: flex;
-  flex: 1;
-  height: 48px;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border: 1px dashed #d9d9d9;
-  border-radius: 4px;
-  background: #fff;
-  cursor: pointer;
-}
-
+.codec-simulator-panel__workspace,
 .codec-simulator-panel__log {
   display: flex;
-  width: 320px;
+  min-width: 0;
+  min-height: 0;
   flex-direction: column;
-  border-left: 1px solid #f0f0f0;
-  background: #fff;
 }
-
-.codec-simulator-panel__log-header {
+.codec-simulator-panel__workspace { flex: 1; }
+.codec-simulator-panel__log {
+  flex: 0 0 300px;
+  border-left: 1px solid var(--jet-theme-border-secondary, #f0f0f0);
+}
+.codec-simulator-panel__header {
   display: flex;
+  min-height: 48px;
+  flex-shrink: 0;
   align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
-  border-bottom: 1px solid #f0f0f0;
-  font-weight: 500;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
 }
-
+.codec-simulator-panel__log > .codec-simulator-panel__header {
+  border-bottom: 1px solid var(--jet-theme-border-secondary, #f0f0f0);
+}
+.codec-simulator-panel__heading {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  h3 {
+    margin: 0;
+    color: var(--jet-theme-text-title);
+    font-size: var(--fs-14);
+    font-weight: 600;
+    line-height: var(--lh-normal);
+  }
+  span { color: var(--jet-theme-text-secondary, #767e8c); font-size: var(--fs-meta); }
+}
+.codec-simulator-panel__main,
 .codec-simulator-panel__log-body {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  padding: 16px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--jet-theme-border, #d9d9d9) transparent;
 }
-
+.codec-simulator-panel__main { padding: 0 12px 12px; }
+.codec-simulator-panel__log-body { padding: 10px 12px; }
+.codec-simulator-panel__empty,
 .codec-simulator-panel__log-empty {
   display: flex;
-  height: 100%;
+  min-height: 100%;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: rgba(0, 0, 0, 0.25);
+  color: var(--jet-theme-text-secondary, #767e8c);
+  font-size: var(--fs-caption);
+  text-align: center;
 }
-
-.codec-simulator-panel__log-empty :deep(.anticon) {
-  margin-bottom: 12px;
-  font-size: 32px;
+.codec-simulator-panel__empty {
+  gap: 10px;
+  padding: 24px;
+  p { margin: 0; }
+  :deep(.anticon) { color: var(--jet-theme-primary, #1677ff); opacity: 0.55; font-size: var(--fs-28); }
 }
-
+.codec-simulator-panel__choices {
+  display: flex;
+  width: 14rem;
+  flex-direction: column;
+  gap: 0.375rem;
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  line-height: var(--lh-normal);
+}
+.codec-simulator-panel__choice {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--jet-theme-border-secondary, #edf0f5);
+  border-radius: 6px;
+  background: var(--jet-theme-bg-container, #fff);
+  color: var(--jet-theme-text, #1f2329);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  > .anticon { color: var(--jet-theme-primary, #1677ff); }
+  > span:last-child { display: flex; flex-direction: column; gap: 2px; }
+  strong { font-size: var(--fs-body); font-weight: 500; }
+  span span { color: var(--jet-theme-text-secondary, #767e8c); font-size: var(--fs-caption); }
+  &:hover { border-color: var(--jet-theme-primary, #1677ff); background: var(--jet-theme-bg-layout, #f8fafc); }
+  &:focus-visible { outline: 2px solid var(--jet-theme-primary, #1677ff); outline-offset: 2px; }
+}
 .codec-simulator-panel__log-item {
   display: flex;
   gap: 8px;
-  margin-bottom: 12px;
-  font-size: 13px;
+  margin-bottom: 10px;
+  font-size: var(--fs-meta);
+  line-height: var(--lh-relaxed);
+  span:first-child { flex-shrink: 0; color: var(--jet-theme-text-secondary, #767e8c); font-variant-numeric: tabular-nums; }
+  span:last-child { min-width: 0; overflow-wrap: anywhere; }
+  &.success span:last-child { color: color-mix(in srgb, var(--jet-theme-success) 60%, var(--jet-theme-text)); }
+  &.warn span:last-child { color: color-mix(in srgb, var(--jet-theme-warning) 60%, var(--jet-theme-text)); }
+  &.process span:last-child,
+  &.operation span:last-child { color: var(--jet-theme-primary-active); }
 }
-
-.codec-simulator-panel__log-item span:first-child {
-  min-width: 60px;
-  color: rgba(0, 0, 0, 0.45);
+@container codec-simulator (max-width: 1000px) {
+  .codec-simulator-panel__log { flex-basis: 240px; }
 }
-
-.codec-simulator-panel__log-item span:last-child {
-  color: rgba(0, 0, 0, 0.65);
-  word-break: break-all;
-}
-
-.codec-simulator-panel__log-item.success span:last-child {
-  color: #52c41a;
-}
-
-.codec-simulator-panel__log-item.warn span:last-child {
-  color: #faad14;
-}
-
-.codec-simulator-panel__log-item.process span:last-child {
-  color: #1890ff;
-}
-
-.codec-simulator-panel__log-item.operation span:last-child {
-  color: #4f84ff;
+@container codec-simulator (max-width: 640px) {
+  .codec-simulator-panel__log { flex-basis: 180px; }
 }
 </style>

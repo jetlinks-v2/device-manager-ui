@@ -16,11 +16,12 @@ function evaluate(source, mocks = {}) {
   return exports
 }
 const { useDeviceListChannelSupport } = evaluate(readFileSync(new URL('../views/device/list/unified/useDeviceListChannelSupport.ts', import.meta.url), 'utf8'))
+const { getDeviceListColumnLayout } = evaluate(readFileSync(new URL('../views/device/list/unified/useDeviceListColumnLayout.ts', import.meta.url), 'utf8'), { '../../components/useTableBodyWidth': {} })
 const source = parse(readFileSync(new URL('../views/device/list/unified/index.vue', import.meta.url), 'utf8')).descriptor.scriptSetup.content
 const ast = ts.createSourceFile('list.ts', source, ts.ScriptTarget.Latest, true)
 const columnDeclaration = ast.statements.filter(ts.isVariableStatement).flatMap(statement => statement.declarationList.declarations).find(declaration => declaration.name.getText(ast) === 'columns')
 assert(columnDeclaration, 'the real list must declare its table columns')
-const buildColumns = new Function('computed', 't', 'activeType', 'channelSupported', 'scopeColumn', `return ${columnDeclaration.initializer.getText(ast)}`)
+const buildColumns = new Function('computed', 't', 'activeType', 'channelSupported', 'scopeColumn', 'columnLayout', `return ${columnDeclaration.initializer.getText(ast)}`)
 const deferred = () => { let resolve; const promise = new Promise(done => { resolve = done }); return { promise, resolve } }
 const settle = async () => { await new Promise(resolve => setImmediate(resolve)); await vue.nextTick() }
 const gateway = isChannelSupported => ({ id: 'gateway', isChannelSupported })
@@ -29,8 +30,9 @@ function setup(t, initial) {
   const provider = vue.shallowRef(initial), scope = vue.effectScope()
   const supported = scope.run(() => useDeviceListChannelSupport(provider))
   const activeType = vue.computed(() => provider.value?.id || 'all')
+  const layout = vue.computed(() => getDeviceListColumnLayout(1340, activeType.value, true, supported.value))
   const columns = buildColumns(vue.computed, key => key === 'UnifiedDeviceList.channel' ? '接入通道' : key,
-    activeType, supported, vue.ref({ title: '空间', key: 'scope' }))
+    activeType, supported, vue.ref({ title: '空间', key: 'scope' }), layout)
   const render = () => renderToString(vue.createSSRApp({ render: () => vue.h(Table, { columns: columns.value, dataSource: [], pagination: false }) }))
   t.after(() => scope.stop())
   return { provider, scope, supported, columns, render }

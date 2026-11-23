@@ -110,6 +110,7 @@ async function mountList(environment) {
   let list
   const app = renderer.createApp({setup:()=>{
     list=api.useUnifiedDeviceList()
+    vue.watch(list.tableParams, () => { void list.tableRequest({pageIndex:0,pageSize:12}) }, {deep:true,immediate:true})
     return ()=>vue.h(Filter,{fields:list.filterFields.value,modelValue:list.searchTerms.value})
   }})
   app.mount({children:[]})
