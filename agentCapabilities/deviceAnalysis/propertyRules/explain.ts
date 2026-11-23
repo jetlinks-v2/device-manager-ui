@@ -3,7 +3,7 @@ import type {
   DeviceAlarmNotifyUser, ThingModelProperty, ThingPropertyPreprocess,
 } from '../../../views/device/alarm/types'
 import { recoveryCondition } from '../../../views/device/alarm/conditions'
-import { formatPropertyUnit, formatTriggerText, getAlarmProcessor, getNotifyProcessor, propertyIdOf, propertyNameOf, toDeviceAlarmRow } from '../../../views/device/alarm/utils'
+import { formatPropertyUnit, formatTriggerText, getAlarmProcessor, getNotifyProcessor, hasNotificationRecipients, hasFixedNotification, matchesAlarmNotifyMethod, propertyIdOf, propertyNameOf, toDeviceAlarmRow } from '../../../views/device/alarm/utils'
 import { isEmptyRule, parseRule, type RuleNode, type RulePart } from '../../../views/device/components/PropertyRules/codec'
 import { summarizeRuleRows, type RuleTranslator } from '../../../views/device/components/PropertyRules/summary'
 
@@ -86,10 +86,9 @@ function stepParameters(kind: RulePart, node: RuleNode): Record<string, unknown>
 export function explainNotification(config: DeviceAlarmNotificationConfig, resources: RuleResources, autoRelieve: boolean, t: RuleTranslator) {
   const text = (key: string, params?: Record<string, string | number>) => t(`PropertyRuleAgent.${key}`, params)
   const legacyIds = [...new Set(config.notifyChannelIds ?? [])]
-  const matched = (resources.methods ?? []).filter(method => config.channelProviders.includes(method.providerId)
-    || legacyIds.some(id => method.channelIds?.includes(id)))
-  const types = [...new Set([...config.channelProviders, ...matched.map(method => method.providerId)])].map(id => {
-    const method = matched.find(item => item.providerId === id)
+  const matched = (resources.methods ?? []).filter(method => matchesAlarmNotifyMethod(config, method))
+  const types = [...new Set([...config.channelProviders, ...(config.fixedReceiverChannels ?? []).map(channel => channel.channelId), ...matched.map(method => method.id)])].map(id => {
+    const method = matched.find(item => item.id === id)
     // Persisted recovery notifications can still use the original trigger topic.
     const recoveryEvent = config.relieveTopicProvider === 'alarm-device' ? 'trigger' : 'relieve'
     return { id, name: method?.label ?? id,
@@ -98,7 +97,7 @@ export function explainNotification(config: DeviceAlarmNotificationConfig, resou
   const users = new Map(resources.users?.map(user => [user.id, user.name]))
   const recipients = [...new Set(config.userIds)].map(id => ({ id, name: users.get(id), resolved: users.has(id) }))
   const dimensions = config.dimensions?.length ?? 0
-  const complete = Boolean((recipients.length || dimensions) && (types.length || legacyIds.length))
+  const complete = Boolean(hasNotificationRecipients(config) && (types.length || legacyIds.length || hasFixedNotification(config)))
   const enabled = config.enabled && complete
   const includeRelieve = Boolean(enabled && autoRelieve && config.includeRelieve)
   const unknownRecipients = recipients.some(user => !user.resolved)

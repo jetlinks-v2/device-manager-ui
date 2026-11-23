@@ -27,8 +27,8 @@
                       <a-checkbox :value="option.value"><RuleMenuOption compact :icon="option.icon" :title="option.label" :description="option.description" /></a-checkbox>
                       <DeviceAlarmTemplateStatus :templates="option.templates" :include-relieve="Boolean(model.autoRelieve && model.notification.includeRelieve)" />
                       <div v-if="canConfigure && option.value !== 'inside-mail'" class="notification-type-actions">
-                        <a-button size="small" type="link" @click="openConfiguration('alarm-device', option.value)">{{ $t('DeviceAlarm.notification.configureTemplate') }}</a-button>
-                        <a-button v-if="model.autoRelieve && model.notification.includeRelieve && model.notification.relieveTopicProvider !== 'alarm-device'" size="small" type="link" @click="openConfiguration('alarm-device-relieve', option.value)">{{ $t('DeviceAlarm.notification.configureRelieveTemplate') }}</a-button>
+                        <a-button size="small" type="link" @click="configureTemplate('alarm-device', option.value)">{{ $t('DeviceAlarm.notification.configureTemplate') }}</a-button>
+                        <a-button v-if="model.autoRelieve && model.notification.includeRelieve && model.notification.relieveTopicProvider !== 'alarm-device'" size="small" type="link" @click="configureTemplate('alarm-device-relieve', option.value)">{{ $t('DeviceAlarm.notification.configureRelieveTemplate') }}</a-button>
                       </div>
                     </div>
                   </a-checkbox-group>
@@ -48,10 +48,11 @@
           </a-popover>
           <DeviceAlarmTemplateStatus v-if="notification.channelCount" :templates="notification.selectedTemplateStatus" :include-relieve="Boolean(model.autoRelieve && model.notification.includeRelieve)" @open="$emit('request-methods')" />
         </span>
-        <span v-if="notification.channelCount" class="notification-clause">
+        <span v-if="notification.requiresRecipients" class="notification-clause">
           <span>{{ $t(layout === 'form' ? 'DeviceAlarm.notification.user' : 'DeviceAlarm.notification.sendTo') }}</span>
           <DeviceAlarmRecipients v-model:value="model.notification.userIds" :scope-key="notification.scopeKey" :open="notification.activePanel === 'recipients'" :layout="layout" :disabled="disabled" @update:open="notification.setPanel('recipients', $event)" />
         </span>
+        <span v-if="notification.channelCount && !notification.requiresRecipients" class="notification-fixed-hint">{{ $t('DeviceAlarm.notification.fixedRecipientHint') }}</span>
         <span class="notification-relieve">
           <a-tooltip :title="layout === 'form' ? undefined : $t(model.autoRelieve ? 'DeviceAlarm.notification.includeRelieveHint' : 'DeviceAlarm.notification.requireRelieve')" :trigger="['hover', 'focus']" placement="topLeft">
             <a-checkbox class="notification-include-relieve" :checked="Boolean(model.autoRelieve && model.notification.includeRelieve)" :disabled="disabled || !model.autoRelieve" @update:checked="notification.setIncludeRelieve">{{ $t('DeviceAlarm.notification.includeRelieve') }}</a-checkbox>
@@ -92,6 +93,12 @@ const emit = defineEmits<{ (e: 'request-methods'): void; (e: 'retry-methods'): v
 const { t: $t } = useI18n()
 const notification = reactive(useAlarmNotification(props, () => emit('request-methods'), value => emit('open-change', value)))
 const { available: canConfigure, open: openConfiguration } = useNotificationConfigNavigation(() => emit('retry-methods'))
+function configureTemplate(topic: 'alarm-device' | 'alarm-device-relieve', id: string) {
+  const method = props.methods.find(method => method.id === id)
+  const fixed = method?.fixedReceiver
+  const templateId = topic === 'alarm-device-relieve' ? fixed?.relieveTemplateId : fixed?.templateId
+  openConfiguration(topic, method?.providerId ?? id, templateId ? { templateId } : {})
+}
 const channelTrigger = ref<{ focus: () => void }>()
 function closeChannels() {
   notification.setPanel('channels', false)

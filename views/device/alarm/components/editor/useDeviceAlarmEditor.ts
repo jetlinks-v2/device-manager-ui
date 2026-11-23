@@ -1,7 +1,7 @@
 import { computed, ref, watch } from 'vue'
 import { componentsRegistry } from '@jetlinks-web-core/utils/components-registry'
 import { recoveryCondition, validCondition, validateAlarmConditions } from '../../conditions'
-import { formatRelieveText, formatTriggerText, propertyIdOf, validateNotificationMessage } from '../../utils'
+import { formatRelieveText, formatTriggerText, propertyIdOf, validateNotificationMessage, hasFixedNotification, hasNotificationRecipients } from '../../utils'
 import type { AlarmLevelOption, DeviceAlarmFormModel, DeviceAlarmTargetOption, ThingModelProperty } from '../../types'
 
 export type EditorPanel = 'level' | 'target' | 'trigger' | 'notification'
@@ -47,8 +47,8 @@ export function useDeviceAlarmEditor(props: EditorProps, t: (key: string) => str
   // 与保存入口保持相同的通道、接收人与自定义消息完整性口径；关闭通知不算缺少必填项。
   const notificationReady = computed(() => {
     const notification = props.model.notification
-    return Boolean((notification.channelProviders.length || notification.notifyChannelIds?.length)
-      && (notification.userIds.length || notification.dimensions?.length)
+    return Boolean((notification.channelProviders.length || notification.notifyChannelIds?.length || hasFixedNotification(notification))
+      && hasNotificationRecipients(notification)
       && (props.model.source !== 'device' || !validateNotificationMessage(notification)))
   })
   const panelStates = computed<Record<EditorPanel, ConfigState>>(() => ({

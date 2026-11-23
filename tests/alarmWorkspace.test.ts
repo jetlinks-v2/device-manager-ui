@@ -19,6 +19,7 @@ import {
   getNotificationMessageMode,
   isDeviceAlarmPreprocess,
   matchesAlarmNotifyMethod,
+  hasFixedNotification, hasNotificationRecipients,
   selectAlarmNotificationTypes,
   toDeviceAlarmRow,
 } from '../views/device/alarm/utils'
@@ -787,4 +788,94 @@ test('device alarm sidebar includes inherited rules while explicit and empty dev
   assert.deepEqual(state.rows.value.map(row => row.id), ['inherited-3', 'override-1'])
   assert.deepEqual(state.rows.value.map(row => row.source), ['product', 'device'])
   unmount()
+})
+
+
+test('DingTalk robots remain separate instances alongside work notifications with their own recovery templates', () => {
+  const channel = (id: string, notifierId: string, templateId = `${id}-template`) => ({ id, name: id,
+    channelProvider: 'notifier-dingTalk', channelConfiguration: { notifierId, templateId } })
+  const trigger = [channel('robot-a', 'robot-a-config'), channel('robot-b', 'robot-b-config'), channel('work', 'work-config')]
+  const recovery = [channel('robot-a-relieve', 'robot-a-config'), channel('work-relieve', 'work-config')]
+  const providers = [{ id: 'trigger', provider: 'alarm-device', channels: trigger }, { id: 'relieve', provider: 'alarm-device-relieve', channels: recovery }]
+  const detail = (channels: ReturnType<typeof channel>[]) => ({ channels: channels.map(channel => ({ channel,
+    template: { id: channel.channelConfiguration.templateId, configId: channel.channelConfiguration.notifierId } })) })
+  const notifiers = new Map(['robot-a-config', 'robot-b-config', 'work-config'].map(id => [id, { type: 'dingTalk', provider: id === 'work-config' ? 'dingTalkMessage' : 'dingTalkRobotWebHook' }]))
+  const methods = toNotifyMethods([{ id: 'notifier-dingTalk', name: 'DingTalk' }], providers, new Map([
+    ['trigger', detail(trigger)], ['relieve', detail(recovery)],
+  ]), notifiers)
+  assert.deepEqual(methods.map(method => method.id), ['notifier-dingTalk', 'robot-a', 'robot-b'])
+  assert.equal(methods[1].fixedReceiver?.relieveTemplateId, 'robot-a-relieve-template')
+  assert.equal(methods[2].templates?.relieve, 'missing')
+  assert.deepEqual(methods[0].channelIds, ['work'])
+  const fixed = selectAlarmNotificationTypes({ ...createEmptyNotification(), enabled: true }, ['robot-a', 'robot-b'], methods)
+  assert.deepEqual(fixed.channelProviders, [])
+  assert.equal(fixed.fixedReceiverChannels.length, 2)
+  assert.equal(hasNotificationRecipients(fixed), true)
+  assert.equal(matchesAlarmNotifyMethod(fixed, methods[1]), true)
+  assert.equal(matchesAlarmNotifyMethod(fixed, methods[0]), false)
+  const mixed = selectAlarmNotificationTypes(fixed, ['robot-a', 'notifier-dingTalk'], methods)
+  assert.equal(hasNotificationRecipients(mixed), false)
+  assert.equal(hasNotificationRecipients({ ...mixed, userIds: ['u1'] }), true)
+  assert.equal(selectAlarmNotificationTypes(mixed, [], methods).fixedReceiverChannels.length, 0)
+})
+
+test('fixed-only alarms retain selection and templates through trigger/recovery payload and readback', () => {
+  const model = editorProps().model
+  model.property = 'temperature'
+  model.trigger = 'gt'
+  model.value = 50
+  model.autoRelieve = true
+  model.notification = { ...createEmptyNotification(), enabled: true, includeRelieve: true,
+    fixedReceiverChannels: [{ channelId: 'robot-a', templateId: 'trigger-template', relieveTemplateId: 'recovery-template' }] }
+  const payload = buildPreprocessPayload(model)
+  const restored = toDeviceAlarmRow({ ...payload, property: model.property }, model.source, model.targetId)
+  if (!restored) throw new Error('Fixed notification payload must remain editable after readback')
+  assert.equal(restored.notification.enabled, true)
+  assert.equal(hasFixedNotification(restored.notification), true)
+  assert.deepEqual(restored.notification.fixedReceiverChannels, model.notification.fixedReceiverChannels)
+  const editor = useDeviceAlarmEditor({ ...editorProps(), model }, key => key)
+  assert.equal(editor.panelStates.value.notification, 'complete')
+  const selected = reactive({ model, methods: [{ id: 'robot-a', providerId: 'notifier-dingTalk', key: 'dingtalk', label: 'Robot A', desc: '', icon: '',
+    fixedReceiver: model.notification.fixedReceiverChannels![0] }] as DeviceAlarmNotifyMethod[] })
+  const { state: notification, unmount } = mount(() => useAlarmNotification(selected, () => {}, () => {}))
+  assert.deepEqual(notification.channelIds.value, ['robot-a'])
+  assert.equal(notification.requiresRecipients.value, false)
+  notification.channelIds.value = []
+  assert.equal(hasFixedNotification(model.notification), false)
+  unmount()
+})
+
+
+test('notify resources load robot identities once per config and retain work-only recovery status', async () => {
+  const calls: string[] = []
+  const channel = (id: string, notifierId: string) => ({ id, name: id, channelProvider: 'notifier-dingTalk',
+    channelConfiguration: { notifierId, templateId: `${id}-template` } })
+  const trigger = [channel('robot-a', 'robot'), channel('robot-b', 'robot'), channel('work', 'work')]
+  setAlarmRequestHandler(async url => {
+    calls.push(url)
+    if (url === '/notify/channel/providers') return { result: [{ id: 'notifier-dingTalk', name: 'DingTalk' }] }
+    if (url === '/notify/channel/all') return { result: [{ id: 'trigger', provider: 'alarm-device', channels: trigger }] }
+    if (url === '/notify/channel/trigger/_query-with-templates') return { result: { channels: trigger.map(channel => ({ channel,
+      template: { id: channel.channelConfiguration.templateId, configId: channel.channelConfiguration.notifierId } })) } }
+    if (url.startsWith('/notifier/config/')) return { result: { type: 'dingTalk', provider: url.endsWith('/robot') ? 'dingTalkRobotWebHook' : 'dingTalkMessage' } }
+    throw new Error(`Unexpected request ${url}`)
+  })
+  const methods = await queryDeviceAlarmNotifyMethods()
+  assert.deepEqual(methods.map(method => method.id), ['notifier-dingTalk', 'robot-a', 'robot-b'])
+  assert.equal(calls.filter(url => url === '/notifier/config/robot').length, 1)
+  assert.deepEqual(methods[0].personnelChannels, { providerId: 'notifier-dingTalk', trigger: ['work'], relieve: [] })
+  assert.equal(methods[0].templates?.relieve, 'missing')
+})
+
+test('missing robot resources keep a saved fixed selection removable without requiring personnel', () => {
+  const model = reactive({ ...editorProps().model, id: 'saved', notification: { ...createEmptyNotification(), enabled: true,
+    fixedReceiverChannels: [{ channelId: 'missing-robot', templateId: 'saved-template' }] } })
+  const props = reactive({ model, methods: [] as DeviceAlarmNotifyMethod[] })
+  const { state, unmount } = mount(() => useAlarmNotification(props, () => {}, () => {}))
+  try {
+    assert.deepEqual(state.channelIds.value, ['missing-robot'])
+    assert.equal(state.requiresRecipients.value, false)
+    state.channelIds.value = []
+    assert.deepEqual(model.notification.fixedReceiverChannels, [])
+  } finally { unmount() }
 })

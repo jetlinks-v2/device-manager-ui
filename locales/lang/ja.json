@@ -1,4 +1,6 @@
 {
+  "DeviceAlarm.notification.dingTalkWork": "DingTalk · 業務通知",
+  "DeviceAlarm.notification.fixedRecipientHint": "ロボットに設定されたグループに送信します。受信者の選択は不要です",
   "PropertyRules.correction.formula": "計算式",
   "DocumentHelp.overview_keyProperties": "主要プロパティ",
   "DocumentHelp.overview_recentAlarms": "最近のアラーム",
@@ -7805,7 +7807,7 @@
   "DeviceAlarm.delivery.address.email": "プロフィールのメールアドレスを優先的に使用してください；未入力の場合は、既に紐付けられたメールアドレスを使用してください。",
   "DeviceAlarm.delivery.address.sms": "個人情報に記載された電話番号を優先的に使用してください；未入力の場合は、既に紐付けられた電話番号を使用してください。",
   "DeviceAlarm.delivery.address.phone": "プロフィールに登録されている携帯電話番号に電話してください；未入力の場合は、既に紐付けられた電話番号を使用してください。",
-  "DeviceAlarm.delivery.address.dingtalk": "受信者が対応するアプリに紐付けたDingTalkアカウントを使用してください。",
+  "DeviceAlarm.delivery.address.dingtalk": "DingTalkの企業アプリで業務通知を送信します。送信先はテンプレートの設定に従います。",
   "DeviceAlarm.delivery.address.wechat": "受信者が対応するアプリに紐付けたWeChatアカウントを使用してください。",
   "DeviceAlarm.delivery.address.webhook": "通知センターで設定されたプッシュアドレスを使用してください。",
   "DeviceAlarm.delivery.contactSettings": "受信者は「個人センター → アカウント情報」でメールアドレスと電話番号を管理できます；管理者は「システム設定 → ユーザー管理」で個人情報を管理できます。",

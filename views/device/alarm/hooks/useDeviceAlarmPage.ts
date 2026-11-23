@@ -33,6 +33,7 @@ import {
   propertyNameOf,
   toDeviceAlarmPageRow,
   validateNotificationMessage,
+  hasFixedNotification, hasNotificationRecipients,
 } from '../utils'
 import type { IotAlarmTargetSelectOption, IotAlarmTargetSelectQuery } from '../components/IotAlarmTargetSelect.vue'
 import { parseRule, replaceAlarm } from '../../components/PropertyRules/codec'
@@ -351,8 +352,8 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
     if (!current.property) return t('DeviceAlarm.validation.property')
     const conditionError = validateAlarmConditions(current, propertyOptions.value.find(item => propertyIdOf(item) === current.property))
     if (conditionError) return t(conditionError)
-    const hasChannel = Boolean(current.notification.channelProviders.length || current.notification.notifyChannelIds?.length)
-    const hasRecipient = Boolean(current.notification.userIds.length || current.notification.dimensions?.length)
+    const hasChannel = Boolean(current.notification.channelProviders.length || current.notification.notifyChannelIds?.length || hasFixedNotification(current.notification))
+    const hasRecipient = hasNotificationRecipients(current.notification)
     if (current.notification.enabled && !hasChannel) {
       return t('DeviceAlarm.validation.notifyChannel')
     }

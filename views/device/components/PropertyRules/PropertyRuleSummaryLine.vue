@@ -41,7 +41,8 @@ const levelLabel = computed(() => (props.levels?.length ? props.levels : default
 const notificationText = computed(() => {
   const notification = props.row.alarm?.notification
   if (!notification?.enabled) return $t('DeviceAlarm.notification.off')
-  const count = new Set(notification.channelProviders).size || new Set(notification.notifyChannelIds).size
+  const count = (new Set(notification.channelProviders).size || new Set(notification.notifyChannelIds).size)
+    + new Set(notification.fixedReceiverChannels?.map(channel => channel.channelId)).size
   return [count ? $t('DeviceAlarm.notification.channelCount', { count }) : $t('DeviceAlarm.notification.enabled'),
     notification.userIds.length ? $t('DeviceAlarm.notification.recipientCount', { count: new Set(notification.userIds).size }) : '',
     props.row.alarm?.autoRelieve && notification.includeRelieve ? $t('DeviceAlarm.notification.includeRelieve') : ''].filter(Boolean).join(' · ')

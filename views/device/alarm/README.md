@@ -1,5 +1,17 @@
 # 物联告警规则与记录工作区
 
+## 钉钉多实例与固定接收方通知
+
+- 渠道文案：普通钉钉显示为“钉钉 · 工作通知”，与“钉钉 · 群机器人”统一命名格式，说明企业应用发送和模板接收范围；群机器人继续使用各实例名称及固定群说明。该调整仅涉及展示和中英日文案，不改变选择、模板或投递逻辑。
+
+- 运行时 `runtime-ui/modules/device-manager-ui` 支持同时勾选多个具名钉钉机器人，并与钉钉工作通知、其他人员通知组合使用。机器人按配置实例保存，无需选择项目用户；混选人员渠道时继续校验接收人员。`text`、`markdown`、`link` 仍由通知中心的机器人消息模板控制。
+- 通知复选入口、草稿和预览沿用当前页面；告警中心、产品及设备属性规则共用同一实现。`api.ts#queryDeviceAlarmNotifyMethods` 读取当前可访问的告警配置、模板和钉钉凭据类型；`notificationFixedChannels.ts` 保留机器人实例，按同一通知配置关联触发与解除模板，多个解除候选时使用 `channelKey` 区分。模板失效或查询失败仍显示缺失／未知，已保存但不可用的选择保留并允许移除。
+- `types.ts` 与 `utils.ts` 中的 `fixedReceiverChannels` 保存 `{channelId, templateId, relieveChannelId?, relieveTemplateId?}`；普通通知仍保存 `channelProviders` 与共享 `userIds`／`dimensions`。钉钉人员渠道另以 `personnelChannels[{providerId,trigger,relieve}]` 保存具体通道 ID，后端据此排除同类型的机器人，避免混选时按人员重复投递到群。已有持久化规则的字段继续回显，打开页面不会自动迁移；只有显式修改选择时才更新绑定。
+- 后端归属 `modules/device-manager`：`DeviceNotificationIdentityHandler` 在保存入口和设备预处理持久化事件中覆盖固定通知的 `operatorId`；`MessageNotifyPreprocessor` 恢复保存者身份后，通过通知服务 `SendNotifyCommand` 的资产权限边界发送固定模板，普通通知继续使用 `SendUserNotificationCommand`。各目标失败互不阻断，错误沿用现有日志；首次告警、实际解除的发送时机保持不变。解除模板缺失时不回退发送触发模板。
+- 范围：仅上述运行时模块和设备后端；不修改 `ui/`、消息模板编辑器、告警状态机、菜单或路由。新字段位于现有预处理 JSON 配置中，无新增表或数据库列。部署需同时更新运行时设备模块和后端 `device-manager`；前端新增配置依赖该后端版本。
+- 验证：在运行时模块以 Node 22.18.0 执行 `node scripts/test-alarm-workspace.mjs`，213 项通过。两个变更 Vue 文件借用运营端通用样式脚本检查通过（运行时未配置独立 lint／样式脚本），`git diff --check` 通过；15 个业务实现／测试／语言文件与迁移前逐字一致，既有隔离组件交互证据可复用，运行时真实登录页面尚未验证。在 `runtime-ui/jetlinks-web-core` 执行 `node ../node_modules/vite/bin/vite.js build --outDir /tmp/iot-alarm-runtime-build -- --module-name device-manager-ui` 通过（4m12s，保留资源路径和大 chunk 等现有告警）。运行时全模块 `node node_modules/vue-tsc/bin/vue-tsc.js --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json` 未通过，1738 项诊断；本次变更生产文件无诊断，变更测试文件仅命中原有的两个 Node 模块类型声明缺失。设备后端未改实现，复用源码编译及定向回归 22 项通过的证据；标准后端测试入口仍受地理组件测试依赖缺失影响，命令见后端 README。
+- 作者 Review：PASS；前端范围为运行时设备模块，运营端本次改动已撤回。后端复用通知服务公开命令和 AssetsHolder 权限，无公共模型、页面壳层或告警状态机扩展。运行时真实登录页面的资源权限、模板跳转、规则保存与钉钉实际投递仍待联调。
+
 ## 告警通知选择 WebHook
 
 - 目标与范围：运行时 `runtime-ui/modules/device-manager-ui` 的告警通知允许选择已启用并绑定模板的 WebHook；固定接收地址沿用通知中心配置。
