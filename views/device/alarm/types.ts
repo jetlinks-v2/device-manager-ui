@@ -31,6 +31,16 @@ export interface DeviceAlarmNotifyMethod {
   /** Accessible channel IDs are read only for persisted legacy selections. */
   channelIds?: string[]
   templates?: Record<'trigger' | 'relieve', 'ready' | 'missing' | 'unknown' | 'unneeded'>
+  personnelChannels?: { providerId: string; trigger: string[]; relieve: string[] }
+  fixedReceiver?: DeviceAlarmFixedReceiver
+}
+
+/** 固定接收方按通道实例保存，触发和解除各自绑定消息模板。 */
+export interface DeviceAlarmFixedReceiver {
+  channelId: string
+  templateId: string
+  relieveChannelId?: string
+  relieveTemplateId?: string
 }
 
 export interface DeviceAlarmNotifyUser {
@@ -49,6 +59,8 @@ export interface DeviceAlarmNotificationConfig {
   dimensions?: Array<Record<string, unknown>>
   channelProviders: string[]
   notifyChannelIds?: string[]
+  fixedReceiverChannels?: DeviceAlarmFixedReceiver[]
+  personnelChannels?: Array<{ providerId: string; trigger: string[]; relieve: string[] }>
   parameters: Record<string, unknown>
 }
 

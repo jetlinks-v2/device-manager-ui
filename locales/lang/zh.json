@@ -1,4 +1,6 @@
 {
+  "DeviceAlarm.notification.dingTalkWork": "钉钉 · 工作通知",
+  "DeviceAlarm.notification.fixedRecipientHint": "发送到机器人配置的群，无需选择接收人",
   "DocumentHelp.overview_keyProperties": "关键属性快照",
   "DocumentHelp.overview_recentAlarms": "近期告警",
   "DocumentHelp.gateway_events_systemEvent": "系统运行事件",
@@ -183,7 +185,7 @@
   "DeviceAlarm.delivery.address.email": "优先使用个人资料中的邮箱；未填写时，使用已绑定的邮箱。",
   "DeviceAlarm.delivery.address.sms": "优先使用个人资料中的手机号码；未填写时，使用已绑定的手机号。",
   "DeviceAlarm.delivery.address.phone": "拨打个人资料中的手机号码；未填写时，使用已绑定的手机号。",
-  "DeviceAlarm.delivery.address.dingtalk": "使用接收人在对应应用中绑定的钉钉账号。",
+  "DeviceAlarm.delivery.address.dingtalk": "通过钉钉企业应用发送工作通知，接收范围以模板配置为准。",
   "DeviceAlarm.delivery.address.wechat": "使用接收人在对应应用中绑定的微信账号。",
   "DeviceAlarm.delivery.address.webhook": "使用通知中心中配置的推送地址。",
   "DeviceAlarm.delivery.contactSettings": "接收人可在“个人中心 → 账号信息”维护邮箱、手机号；管理员可在“系统设置 → 用户管理”维护个人资料。",

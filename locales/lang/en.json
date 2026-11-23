@@ -1,4 +1,6 @@
 {
+  "DeviceAlarm.notification.dingTalkWork": "DingTalk · Work notification",
+  "DeviceAlarm.notification.fixedRecipientHint": "Send to the robot’s configured group; no recipients required",
   "DocumentHelp.overview_keyProperties": "Key property snapshot",
   "DocumentHelp.overview_recentAlarms": "Recent alarms",
   "DocumentHelp.gateway_events_systemEvent": "System events",
@@ -183,7 +185,7 @@
   "DeviceAlarm.delivery.address.email": "Use the email in the recipient's profile first, or the linked email if the profile field is empty.",
   "DeviceAlarm.delivery.address.sms": "Use the mobile number in the recipient's profile first, or the linked mobile if the profile field is empty.",
   "DeviceAlarm.delivery.address.phone": "Call the mobile number in the recipient's profile, or the linked mobile if the profile field is empty.",
-  "DeviceAlarm.delivery.address.dingtalk": "Use the recipient's DingTalk account linked to the corresponding application.",
+  "DeviceAlarm.delivery.address.dingtalk": "Send work notifications through a DingTalk enterprise app. Recipients follow the template configuration.",
   "DeviceAlarm.delivery.address.wechat": "Use the recipient's WeChat account linked to the corresponding application.",
   "DeviceAlarm.delivery.address.webhook": "Use the push address configured in the notification center.",
   "DeviceAlarm.delivery.contactSettings": "Recipients can maintain their email and mobile in Personal center → Account information. Administrators can edit profile contacts in System settings → User management.",
