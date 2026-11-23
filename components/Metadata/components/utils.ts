@@ -1,15 +1,16 @@
 import {randomString} from "@jetlinks-web/utils";
-import {Ref} from "vue";
+import {onBeforeUnmount, onMounted, ref, Ref} from "vue";
 import i18n from "@jetlinks-web-core/locales";
 
-let maskIds: string[] = []
+const maskIds: string[] = []
+let bodyStyle: { overflow: string, width: string } | undefined
 export const maskNodeClassName = 'popover-mask'
 
 const bodyHasScrollbar = () => {
     return document.body.scrollHeight > document.body.clientHeight;
 };
 
-const updateStyle = (dom: HTMLElement | undefined, style: Record<string, any>) => {
+const updateStyle = (dom: HTMLElement | null | undefined, style: Record<string, any>) => {
     if (!dom) return
 
     Object.keys(style).forEach(key => {
@@ -23,6 +24,7 @@ const bodyHidden = () => {
     if (hasScrollbar) {
         const scrollBarWidth = window.innerWidth - document.documentElement.clientWidth;
         if(scrollBarWidth > 0){
+            bodyStyle ??= { overflow: document.body.style.overflow, width: document.body.style.width }
             updateStyle(document.body as HTMLElement, {
                 overflow: 'hidden',
                 width: `calc(100% - ${scrollBarWidth}px)`,
@@ -70,6 +72,7 @@ export const useMask = (propVisible: boolean, options: { visibleChange: (visible
     const key = randomString(6)
     const visible = ref(propVisible)
     const maskDomId = `${maskNodeClassName}-${key}`
+    let showTimer: ReturnType<typeof setTimeout> | undefined
 
     const warpClassNames = `${maskNodeClassName}-warp-${key}`
     const createMask = () => {
@@ -80,66 +83,42 @@ export const useMask = (propVisible: boolean, options: { visibleChange: (visible
         return getMaskNode(maskDomId, warpClassNames)
     }
 
-    const getLastMask = (): HTMLElement | undefined => {
-        const index = maskIds.findIndex(key => key === maskDomId) // 当前遮罩层下标
-        let dom = undefined
-        let lastIndex = 0
-
-        if (maskIds.length > 0) {
-
-            lastIndex = index <= 0 ? 0 : index - 1
-
-            const lastMaskId = maskIds[lastIndex]
-
-            dom = document.querySelector(`#${lastMaskId}`) as HTMLElement
-        }
-
-        return dom
-    }
-
-    const hideLastMask = () => {
-        const lastMaskNode = getLastMask()
-        updateStyle(lastMaskNode, {
-            display: 'none'
-        })
-    }
-
-    const showLastMask = () => {
-        const lastMaskNode = getLastMask()
-        updateStyle(lastMaskNode, {
-            display: 'block'
+    // 嵌套编辑只显示最上层遮罩，关闭后恢复仍在编辑的上一层。
+    const updateMasks = () => {
+        maskIds.forEach((id, index) => {
+            updateStyle(document.getElementById(id), {
+                display: index === maskIds.length - 1 ? 'block' : 'none'
+            })
         })
     }
 
     const showMask = () => {
-        bodyHidden()
-        setTimeout(() => {
-            hideLastMask()
-            const maskNode = createMask()
-            updateStyle(maskNode, {
-                display: 'block'
-            })
+        clearTimeout(showTimer)
+        showTimer = setTimeout(() => {
+            bodyHidden()
+            createMask()
+            updateMasks()
         }, 150)
     }
 
     const hideMask = () => {
-        const maskNode = createMask()
-        showLastMask()
-
+        // 取消延迟创建，避免快速关闭或卸载后留下覆盖全页的遮罩。
+        clearTimeout(showTimer)
         const index = maskIds.findIndex(key => key === maskDomId) // 当前遮罩层下标
-
+        if (index < 0) return
+        const maskNode = document.getElementById(maskDomId)
         maskIds.splice(index, 1)
-        if (index === 0) {
-            document.body.style = ''
-            maskIds = []
+        updateMasks()
+        if (maskIds.length === 0 && bodyStyle) {
+            updateStyle(document.body, bodyStyle)
+            bodyStyle = undefined
         }
 
-        updateStyle(maskNode, {
-            display: 'none'
-        })
+        maskNode?.remove()
     }
 
     const visibleChange = (v: boolean) => {
+        if (visible.value === v) return
         visible.value = v
         options?.visibleChange(v)
         if (v) {
@@ -148,6 +127,11 @@ export const useMask = (propVisible: boolean, options: { visibleChange: (visible
             hideMask()
         }
     }
+
+    onMounted(() => {
+        if (visible.value) showMask()
+    })
+    onBeforeUnmount(hideMask)
 
     return {
         warpClassNames,
