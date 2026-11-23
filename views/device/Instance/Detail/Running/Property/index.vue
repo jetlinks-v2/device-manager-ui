@@ -107,8 +107,7 @@ import Indicators from './Indicators.vue'
 import { getProperty, queryPropertyMetric } from '../../../../../../api/instance'
 import { dashboard } from '../../../../../../api/dashboard'
 import { useInstanceStore } from '../../../../../../store/instance'
-import { wsClient } from '@jetlinks-web/core'
-import { map } from 'rxjs/operators'
+import { subscribeDeviceProperties } from '../../../../list/services/iotDeviceDetailReal.service'
 import { onlyMessage } from '@jetlinks-web/utils'
 import { useI18n } from 'vue-i18n'
 
@@ -162,6 +161,8 @@ const _params = reactive({
 })
 const tableRef = ref()
 const subRef = ref()
+let disposed = false
+let dashboardRequest = 0
 const metric = ref([])
 const ALL_GROUP_KEY = '__all__'
 const DEFAULT_GROUP_KEY = '__default__'
@@ -305,81 +306,57 @@ const throttleFn = throttle(() => {
   valueChange(_list)
 }, 500)
 
-const subscribeProperty = () => {
-  const id = `instance-info-property-${instanceStore.current.id}-${
-    instanceStore.current.productId
-  }-${dataSource.value.map((i: Record<string, any>) => i.id).join('-')}`
-  const topic = `/dashboard/device/${instanceStore.current.productId}/properties/realTime`
-  subRef.value = wsClient.getWebSocket(id, topic, {
-    deviceId: instanceStore.current.id,
-    properties: dataSource.value.map((i: Record<string, any>) => i.id),
-    history: 1
-  })
-    ?.pipe(map((res: any) => res.payload))
-    .subscribe((payload) => {
-      if (payload.value?.property) {
-        messageCache.set(payload.value?.property, payload)
-        throttleFn()
-      }
-      // unref(list)
-      //     .sort((a: any, b: any) => a.timestamp - b.timestamp)
-      //     .forEach((item: any) => {
-      //         const { value } = item;
-      //         propertyValue.value[value?.property] = {
-      //             ...item,
-      //             ...value,
-      //         };
-      //     });
-      // list.value = [...list.value, payload];
-      // throttle(valueChange(list.value), 500);
-    })
-}
-
+/** 固定查询时的设备和属性，切页、切设备及翻页后均丢弃迟到响应，避免重建失效订阅。 */
 const getDashboard = async () => {
-  if (!dataSource.value?.length) {
-    subRef.value && subRef.value?.unsubscribe()
+  const request = ++dashboardRequest
+  subRef.value?.unsubscribe()
+  subRef.value = undefined
+  throttleFn.cancel()
+  messageCache.clear()
+  const { id: deviceId, productId } = instanceStore.current
+  const properties = dataSource.value.map((item) => item.id)
+  const isCurrent = () => !disposed && request === dashboardRequest
+    && deviceId === instanceStore.current.id && productId === instanceStore.current.productId
+  if (!isCurrent() || !deviceId || !productId || !properties.length) {
     loading.value = false
     return
   }
   const param = [
     {
       dashboard: 'device',
-      object: instanceStore.current.productId,
+      object: productId,
       measurement: 'properties',
       dimension: 'history',
       params: {
-        deviceId: instanceStore.current.id,
+        deviceId,
         history: 1,
-        properties: dataSource.value.map((i: any) => i.id)
+        properties
       }
     }
   ]
   loading.value = true
-  const resp: Record<string, any> = await dashboard(param)
-  if (resp.status === 200) {
-    const t1 = (resp.result || []).map((item: any) => {
-      return {
-        timeString: item.data?.timeString,
-        timestamp: item.data?.timestamp,
-        ...item?.data?.value
-      }
+  try {
+    const resp: Record<string, any> = await dashboard(param)
+    if (!isCurrent() || resp.status !== 200) return
+    const t1 = (resp.result || []).map((item: any) => ({
+      timeString: item.data?.timeString,
+      timestamp: item.data?.timestamp,
+      ...item?.data?.value
+    }))
+    const obj: Record<string, Record<string, any>> = {}
+    toArray(groupBy(t1, 'property')).forEach((item) => {
+      const latest = item.sort((a, b) => b.timestamp - a.timestamp)[0]
+      obj[latest.property] = latest
     })
-    const obj = {}
-    toArray(groupBy(t1, 'property'))
-      .map((item) => {
-        return {
-          list: item.sort((a, b) => b.timestamp - a.timestamp),
-          property: item[0].property
-        }
-      })
-      .forEach((i) => {
-        obj[i.property] = i.list[0]
-      })
     propertyValue.value = { ...unref(propertyValue), ...obj }
+    subRef.value = subscribeDeviceProperties(deviceId, productId, properties, (value) => {
+      if (!isCurrent()) return
+      messageCache.set(value.property, { ...value, value })
+      throttleFn()
+    })
+  } finally {
+    if (isCurrent()) loading.value = false
   }
-  subRef.value && subRef.value?.unsubscribe()
-  subscribeProperty()
-  loading.value = false
 }
 
 const query = (params: Record<string, any>) =>
@@ -410,7 +387,7 @@ const query = (params: Record<string, any>) =>
       success: true,
       status: 200
     })
-    getDashboard()
+    void getDashboard().catch(() => { /* 请求层统一展示错误；失败时不创建订阅。 */ })
   })
 
 const getMetric = async (arr = []) => {
@@ -452,8 +429,27 @@ const onSearch = () => {
   _params.name = value.value
 }
 
+// 共享 store 可先于组件卸载切换设备，此时立即释放旧订阅和待刷新的值。
+watch(
+  [() => instanceStore.current.id, () => instanceStore.current.productId],
+  () => {
+    dashboardRequest += 1
+    subRef.value?.unsubscribe()
+    subRef.value = undefined
+    throttleFn.cancel()
+    messageCache.clear()
+    propertyValue.value = {}
+    loading.value = false
+  },
+  { flush: 'sync' }
+)
+
 onUnmounted(() => {
-  subRef.value && subRef.value?.unsubscribe()
+  disposed = true
+  dashboardRequest += 1
+  subRef.value?.unsubscribe()
+  throttleFn.cancel()
+  messageCache.clear()
 })
 </script>
 

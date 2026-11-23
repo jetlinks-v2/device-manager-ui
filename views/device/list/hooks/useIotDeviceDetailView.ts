@@ -745,12 +745,13 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
     return collectOverviewPropertyKeys(device.value?.thingModelMetadata)
   })
 
+  // 只有概览和属性页消费实时属性，接入、日志等页签不应建立属性订阅。
   const activeRealtimePropertyKeys = computed(() => (
     activeTab.value === 'overview'
       ? overviewRealtimePropertyKeys.value
       : activeTab.value === 'data' && dataInnerTab.value === 'property'
         ? propertyPageRealtimeKeys.value
-      : realtimePropertyKeys.value
+      : []
   ))
 
   const activeRealtimePropertyKeySignature = computed(() => activeRealtimePropertyKeys.value.join(','))
