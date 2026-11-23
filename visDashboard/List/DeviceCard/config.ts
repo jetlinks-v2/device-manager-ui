@@ -21,7 +21,7 @@ export const deviceCardConfig = {
       showBorder: false,
       borderWidth: 1,
       borderColor: '#e8e8e8',
-      showShadow: true,
+      showShadow: false,
       shadowSize: 8,
       borderRadius: 8,
       selectFirstByDefault: false
