@@ -53,9 +53,12 @@
           <DeviceAlarmRecipients v-model:value="model.notification.userIds" :scope-key="notification.scopeKey" :open="notification.activePanel === 'recipients'" :layout="layout" :disabled="disabled" @update:open="notification.setPanel('recipients', $event)" />
         </span>
         <span v-if="notification.channelCount && !notification.requiresRecipients" class="notification-fixed-hint">{{ $t('DeviceAlarm.notification.fixedRecipientHint') }}</span>
-        <a-tooltip :title="$t(model.autoRelieve ? 'DeviceAlarm.notification.includeRelieveHint' : 'DeviceAlarm.notification.requireRelieve')">
-          <a-checkbox class="notification-include-relieve" :checked="Boolean(model.autoRelieve && model.notification.includeRelieve)" :disabled="disabled || !model.autoRelieve" @update:checked="notification.setIncludeRelieve">{{ $t('DeviceAlarm.notification.includeRelieve') }}</a-checkbox>
-        </a-tooltip>
+        <span class="notification-relieve">
+          <a-tooltip :title="layout === 'form' ? undefined : $t(model.autoRelieve ? 'DeviceAlarm.notification.includeRelieveHint' : 'DeviceAlarm.notification.requireRelieve')" :trigger="['hover', 'focus']" placement="topLeft">
+            <a-checkbox class="notification-include-relieve" :checked="Boolean(model.autoRelieve && model.notification.includeRelieve)" :disabled="disabled || !model.autoRelieve" @update:checked="notification.setIncludeRelieve">{{ $t('DeviceAlarm.notification.includeRelieve') }}</a-checkbox>
+          </a-tooltip>
+          <span v-if="layout === 'form'" class="notification-relieve__hint">{{ $t(model.autoRelieve ? 'DeviceAlarm.notification.includeRelieveHint' : 'DeviceAlarm.notification.requireRelieve') }}</span>
+        </span>
       </template>
       <DeviceAlarmNotificationHelp v-if="layout !== 'form'" :model="model" />
     </span>

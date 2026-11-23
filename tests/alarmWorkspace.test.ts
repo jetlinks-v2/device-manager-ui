@@ -130,6 +130,49 @@ test('notification options require accessible enabled trigger templates and keep
   assert.equal(matchesAlarmNotifyMethod({ ...createEmptyNotification(), notifyChannelIds: ['email-b'] }, email), true)
 })
 
+test('enabled WebHook templates remain selectable with fixed receivers and preserve the type selection', async () => {
+  const channel = { id: 'webhook-a', channelProvider: 'notifier-webhook', state: 'enabled',
+    channelConfiguration: { templateId: 'webhook-template', notifierId: 'webhook-config' } }
+  for (const receiverPolicy of ['explicit', { value: 'explicit', text: 'Fixed receiver' }]) {
+    const requests: string[] = []
+    setAlarmRequestHandler(async url => {
+      requests.push(url)
+      if (url === '/notify/channel/providers') return { result: [{ id: 'notifier-webhook', name: 'WebHook', receiverPolicy }] }
+      if (url === '/notify/channel/all') return { result: [{ id: 'trigger-webhook', provider: 'alarm-device', state: 'enabled', channels: [channel] }] }
+      if (url === '/notify/channel/trigger-webhook/_query-with-templates') return { result: {
+        provider: { state: 'enabled' }, channels: [{ channel, template: { id: 'webhook-template', configId: 'webhook-config' } }],
+      } }
+      throw new Error(`Unexpected request ${url}`)
+    })
+    const methods = await queryDeviceAlarmNotifyMethods()
+    assert.equal(methods.length, 1)
+    assert.equal(methods[0].key, 'webhook')
+    assert.equal(methods[0].label, 'WebHook')
+    assert.deepEqual(methods[0].templates, { trigger: 'ready', relieve: 'missing' })
+    assert.equal(requests.length, 3, 'fixed-receiver channels also verify the bound template')
+    const selected = selectAlarmNotificationTypes({ ...createEmptyNotification(), enabled: true, userIds: ['user-a'] }, [methods[0].providerId])
+    assert.deepEqual(selected.channelProviders, ['notifier-webhook'])
+    assert.deepEqual(selected.userIds, ['user-a'])
+    assert.deepEqual(selected.notifyChannelIds, [])
+    assert.equal(matchesAlarmNotifyMethod(selected, methods[0]), true)
+    const payload = buildPreprocessPayload({ ...editorProps().model, name: 'Temperature alarm', targetId: 'product-a',
+      property: 'temperature', limit: { lower: 10, upper: 20 }, notification: selected })
+    const saved = toDeviceAlarmRow({ id: 'alarm-a', templateId: 'product-a', thingId: '@all', property: 'temperature',
+      provider: payload.provider, configuration: payload.configuration }, 'product', 'Product A')
+    assert.deepEqual(saved?.notification.channelProviders, ['notifier-webhook'])
+    assert.deepEqual(saved?.notification.userIds, ['user-a'])
+    const types = [{ id: 'notifier-webhook', receiverPolicy }]
+    for (const unavailable of [
+      { ...channel, state: 'disabled' },
+      { ...channel, channelConfiguration: { templateId: '', notifierId: 'webhook-config' } },
+      { ...channel, channelConfiguration: { templateId: 'webhook-template', notifierId: '' } },
+    ]) {
+      assert.deepEqual(toNotifyMethods(types, [{ provider: 'alarm-device', channels: [unavailable] }]), [])
+    }
+    assert.deepEqual(toNotifyMethods(types, [{ provider: 'alarm-device', state: 'disabled', channels: [channel] }]), [])
+  }
+})
+
 test('explicit type selection drops channel bindings but preserves recipients and custom message formats', () => {
   const original = { ...createEmptyNotification(), includeRelieve: true, relieveTopicProvider: 'alarm-device' as const,
     userIds: ['u1'], notifyChannelIds: ['private-channel'], channelProviders: ['notifier-email'], parameters: {

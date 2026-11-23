@@ -20,7 +20,8 @@ defineProps({ title: { type: String, required: true }, state: { type: Object as 
 defineEmits<{ retry: [] }>()
 </script>
 <style scoped lang="less">
-.monitor-card { height: 100%; min-width: 0; overflow: hidden; border-radius: var(--r-3, 8px); background: var(--bg, #fff); box-shadow: 0 1px 3px rgb(31 35 41 / 4%); }
+.monitor-card { height: 100%; min-width: 0; overflow: hidden; border-radius: var(--r-3, 8px); background: var(--bg, #fff); }
+.monitor-card.ant-card { box-shadow: none; }
 .monitor-card :deep(.ant-card-body) { display: flex; flex-direction: column; gap: var(--space-4, 16px); height: 100%; min-height: 0; overflow: auto; }
 .monitor-card :deep(.ant-card-body::before), .monitor-card :deep(.ant-card-body::after) { display: none; }
 .monitor-card__header { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-3, 12px); flex: none; min-width: 0; }

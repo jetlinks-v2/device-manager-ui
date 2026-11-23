@@ -12,6 +12,20 @@
 - 验证：在运行时模块以 Node 22.18.0 执行 `node scripts/test-alarm-workspace.mjs`，213 项通过。两个变更 Vue 文件借用运营端通用样式脚本检查通过（运行时未配置独立 lint／样式脚本），`git diff --check` 通过；15 个业务实现／测试／语言文件与迁移前逐字一致，既有隔离组件交互证据可复用，运行时真实登录页面尚未验证。在 `runtime-ui/jetlinks-web-core` 执行 `node ../node_modules/vite/bin/vite.js build --outDir /tmp/iot-alarm-runtime-build -- --module-name device-manager-ui` 通过（4m12s，保留资源路径和大 chunk 等现有告警）。运行时全模块 `node node_modules/vue-tsc/bin/vue-tsc.js --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json` 未通过，1738 项诊断；本次变更生产文件无诊断，变更测试文件仅命中原有的两个 Node 模块类型声明缺失。设备后端未改实现，复用源码编译及定向回归 22 项通过的证据；标准后端测试入口仍受地理组件测试依赖缺失影响，命令见后端 README。
 - 作者 Review：PASS；前端范围为运行时设备模块，运营端本次改动已撤回。后端复用通知服务公开命令和 AssetsHolder 权限，无公共模型、页面壳层或告警状态机扩展。运行时真实登录页面的资源权限、模板跳转、规则保存与钉钉实际投递仍待联调。
 
+## 告警通知选择 WebHook
+
+- 目标与范围：运行时 `runtime-ui/modules/device-manager-ui` 的告警通知允许选择已启用并绑定模板的 WebHook；固定接收地址沿用通知中心配置。
+- 实现：`api.ts` 不再按 `receiverPolicy=explicit` 排除通知类型，仍校验当前可见的 `alarm-device` 配置、渠道状态和模板绑定；复用既有通知选项、模板状态及保存参数，不修改后端或接口。
+- 验证：从远端 `2.20` 提取本次三文件修复后，Node 22.18.0 下告警回归 210/210 通过。临时运行器仅将依赖和共享组件定位到运行时工作区，业务和测试来自独立分支；覆盖 WebHook 模板状态、选择和保存参数回显、禁用和无模板渠道。`git diff --check` 通过。
+- 验证限制：此前在含其他未提交改动的运行时工作区执行告警回归 214/214 通过，模块构建通过（2m35s），类型检查未通过（1738 条诊断，修改的 API 文件无命中，测试文件仅命中原有两处 Node 测试模块导入）；这些不代表独立分支完成了完整构建或类型检查。独立分支未重复完整构建和类型检查，标准工作区可在 `runtime-ui/` 执行 `node modules/device-manager-ui/scripts/test-alarm-workspace.mjs` 和 `node node_modules/vue-tsc/bin/vue-tsc.js --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json`，在 `runtime-ui/jetlinks-web-core/` 执行 `node ../node_modules/vite/bin/vite.js build -- --module-name device-manager-ui`。已登录页面及真实 WebHook 投递待联调环境验证；未修改 Vue 或样式，运行时无独立 lint 脚本。
+
+## “含解除”说明展示
+
+- 目标与范围：仅优化运行时 `components/DeviceAlarmNotificationConfig.vue` 与对应 LESS 的说明展示；复用现有国际化文案和解除条件，不改变通知配置、接口或保存逻辑。
+- 展示方式：表单模式将说明放在“含解除”复选框下方常驻展示，允许长文案自然换行；行内模式保留紧贴复选框的悬浮提示，支持键盘聚焦。未开启自动解除时沿用禁用状态及其原因说明。
+- 验证：Vue 脚本、模板、scoped Less 编译和 `node --test modules/device-manager-ui/tests/alarmWorkspaceView.test.mjs` 的 5 项子检查通过，差异空白检查通过。以 Node 22.18.0 在 `runtime-ui/jetlinks-web-core` 执行 `node ../node_modules/vite/bin/vite.js build --outDir /tmp/jetlinks-alarm-relieve-hint-build -- --module-name device-manager-ui` 通过（3m28s），保留资源路径和大 chunk 提示；运行时没有独立 lint 脚本。
+- 剩余验证：在 `runtime-ui` 执行 `node node_modules/vue-tsc/bin/vue-tsc.js --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json`，全量仍有 1,738 条诊断，修改组件无命中，不视为全量通过。本地 9200 页面停在登录页，登录后仍需目视复验表单/行内布局、自动解除禁用说明和中英日长文案窄屏换行；尚未验证真实保存。
+
 ## 通知类型弹层布局
 
 - 目标与范围：修复运行时 `components/DeviceAlarmNotificationConfig.vue` 中模板按钮显示国际化 key、挤压通知说明的问题；仅调整本模块组件、局部 LESS 与中英日语言资源。

@@ -311,7 +311,8 @@ export function toNotifyMethods(types: unknown[], providers?: unknown[], details
     const config = notifiers.get(stringify(channel.channelConfiguration?.notifierId))
     return config?.type === 'dingTalk' && config.provider === 'dingTalkRobotWebHook'
   }).map(channel => stringify(channel.id)))
-  const ordinary = types.filter(isRecord).filter(type => stringify(type.receiverPolicy?.value ?? type.receiverPolicy) !== 'explicit').flatMap(type => {
+  // Fixed-address channels such as WebHook are selectable; receiverPolicy only controls backend delivery.
+  const ordinary = types.filter(isRecord).flatMap(type => {
     const id = stringify(type.id)
     if (!id) return []
     const key = notifyMethodKey(id)
