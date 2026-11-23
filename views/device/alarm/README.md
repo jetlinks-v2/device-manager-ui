@@ -1,5 +1,12 @@
 # 物联告警规则与记录工作区
 
+## 告警通知选择 WebHook
+
+- 目标与范围：运行时 `runtime-ui/modules/device-manager-ui` 的告警通知允许选择已启用并绑定模板的 WebHook；固定接收地址沿用通知中心配置。
+- 实现：`api.ts` 不再按 `receiverPolicy=explicit` 排除通知类型，仍校验当前可见的 `alarm-device` 配置、渠道状态和模板绑定；复用既有通知选项、模板状态及保存参数，不修改后端或接口。
+- 验证：从远端 `2.20` 提取本次三文件修复后，Node 22.18.0 下告警回归 210/210 通过。临时运行器仅将依赖和共享组件定位到运行时工作区，业务和测试来自独立分支；覆盖 WebHook 模板状态、选择和保存参数回显、禁用和无模板渠道。`git diff --check` 通过。
+- 验证限制：此前在含其他未提交改动的运行时工作区执行告警回归 214/214 通过，模块构建通过（2m35s），类型检查未通过（1738 条诊断，修改的 API 文件无命中，测试文件仅命中原有两处 Node 测试模块导入）；这些不代表独立分支完成了完整构建或类型检查。独立分支未重复完整构建和类型检查，标准工作区可在 `runtime-ui/` 执行 `node modules/device-manager-ui/scripts/test-alarm-workspace.mjs` 和 `node node_modules/vue-tsc/bin/vue-tsc.js --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json`，在 `runtime-ui/jetlinks-web-core/` 执行 `node ../node_modules/vite/bin/vite.js build -- --module-name device-manager-ui`。已登录页面及真实 WebHook 投递待联调环境验证；未修改 Vue 或样式，运行时无独立 lint 脚本。
+
 ## “含解除”说明展示
 
 - 目标与范围：仅优化运行时 `components/DeviceAlarmNotificationConfig.vue` 与对应 LESS 的说明展示；复用现有国际化文案和解除条件，不改变通知配置、接口或保存逻辑。

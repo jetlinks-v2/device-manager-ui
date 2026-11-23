@@ -293,7 +293,8 @@ function unwrapNotifyList(response: unknown): unknown[] {
 export function toNotifyMethods(types: unknown[], providers?: unknown[], details: ReadonlyMap<string, unknown> = new Map()): DeviceAlarmNotifyMethod[] {
   const available = (providers ?? []).filter(isRecord).filter(provider => isEnabledState(provider.state))
   if (!available.some(provider => provider.provider === DEVICE_ALARM_NOTIFY_PROVIDER)) return []
-  return types.filter(isRecord).filter(type => stringify(type.receiverPolicy?.value ?? type.receiverPolicy) !== 'explicit').flatMap(type => {
+  // Fixed-address channels such as WebHook are selectable; receiverPolicy only controls backend delivery.
+  return types.filter(isRecord).flatMap(type => {
     const id = stringify(type.id)
     if (!id) return []
     const key = notifyMethodKey(id)
