@@ -1,5 +1,12 @@
 # 物联告警规则与记录工作区
 
+## “含解除”说明展示
+
+- 目标与范围：仅优化运行时 `components/DeviceAlarmNotificationConfig.vue` 与对应 LESS 的说明展示；复用现有国际化文案和解除条件，不改变通知配置、接口或保存逻辑。
+- 展示方式：表单模式将说明放在“含解除”复选框下方常驻展示，允许长文案自然换行；行内模式保留紧贴复选框的悬浮提示，支持键盘聚焦。未开启自动解除时沿用禁用状态及其原因说明。
+- 验证：Vue 脚本、模板、scoped Less 编译和 `node --test modules/device-manager-ui/tests/alarmWorkspaceView.test.mjs` 的 5 项子检查通过，差异空白检查通过。以 Node 22.18.0 在 `runtime-ui/jetlinks-web-core` 执行 `node ../node_modules/vite/bin/vite.js build --outDir /tmp/jetlinks-alarm-relieve-hint-build -- --module-name device-manager-ui` 通过（3m28s），保留资源路径和大 chunk 提示；运行时没有独立 lint 脚本。
+- 剩余验证：在 `runtime-ui` 执行 `node node_modules/vue-tsc/bin/vue-tsc.js --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json`，全量仍有 1,738 条诊断，修改组件无命中，不视为全量通过。本地 9200 页面停在登录页，登录后仍需目视复验表单/行内布局、自动解除禁用说明和中英日长文案窄屏换行；尚未验证真实保存。
+
 ## 通知类型弹层布局
 
 - 目标与范围：修复运行时 `components/DeviceAlarmNotificationConfig.vue` 中模板按钮显示国际化 key、挤压通知说明的问题；仅调整本模块组件、局部 LESS 与中英日语言资源。
