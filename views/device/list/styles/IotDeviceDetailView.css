@@ -10,7 +10,8 @@
   display: grid;
   align-content: start;
   min-width: 0;
-  min-height: calc(100vh - 5rem);
+  /* 摘要与页签已由 PageChrome 移到外层，正文仅按实际内容和 FullPage 高度布局。 */
+  min-height: 0;
   gap: var(--space-3);
 }
 
@@ -32,7 +33,7 @@
 
 .iot-device-detail__legacy-content {
   min-width: 0;
-  min-height: 32rem;
+  min-height: 0;
 }
 
 /* ContentPanel renders an empty title row when no title is supplied. */

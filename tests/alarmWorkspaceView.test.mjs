@@ -39,7 +39,7 @@ test('alarm device name drills into the selected device alarm tab with source or
   assert.match(workspaceUtils, /sourceId && \(!record\.sourceType \|\| record\.sourceType === 'device'\)/)
   assert.match(workspaceUtils, /targetId && record\.targetType === 'device'/)
   assert.match(recordCard, /deviceId: alarmDeviceId\(props\.row\)/)
-  assert.match(recordCard, /v-if="field\.deviceId"[\s\S]*?@click="emit\('device-alarm', row\)"/)
+  assert.match(recordCard, /v-if="field\.deviceId && deviceLink !== false"[\s\S]*?@click="emit\('device-alarm', row\)"/)
   assert.match(recordCard, /<j-ellipsis v-else>\{\{ field\.value \}\}<\/j-ellipsis>/)
   assert.match(page, /@device-alarm="openDeviceAlarm"/)
   assert.match(page, /buildIotDeviceDetailPath\(resolveIotProjectId\(route\), deviceId, \{ tab: 'alarm' \}, route\)/)

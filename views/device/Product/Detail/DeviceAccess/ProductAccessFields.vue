@@ -16,7 +16,8 @@
             <AIcon type="QuestionCircleOutlined" />
           </a-tooltip>
         </template>
-        <j-value-item :itemType="item.type.type" :model-value="modelValue[item.property]"
+        <span v-if="readonly">{{ readonlyValue(item) }}</span>
+        <j-value-item v-else :itemType="item.type.type" :model-value="modelValue[item.property]"
           :disabled="disabled" :options="getOptions(item)"
           @update:modelValue="$emit('update:modelValue', { ...modelValue, [item.property]: $event })" />
       </a-form-item>
@@ -31,10 +32,11 @@ import { useI18n } from 'vue-i18n'
 import type { ConfigMetadata, ConfigProperty } from '../../typings'
 import Title from '../Title/index.vue'
 
-defineProps({
+const props = defineProps({
   groups: { type: Array as PropType<ConfigMetadata[]>, default: () => [] },
   modelValue: { type: Object as PropType<Record<string, unknown>>, default: () => ({}) },
   disabled: Boolean,
+  readonly: Boolean,
 })
 defineEmits<{ (event: 'update:modelValue', value: Record<string, unknown>): void }>()
 const { t } = useI18n()
@@ -47,6 +49,13 @@ function getOptions(item: ConfigProperty) {
     const type = item.type as ConfigProperty['type'] & { falseText?: string; falseValue?: boolean; trueText?: string; trueValue?: boolean }
     return [{ label: type.falseText, value: type.falseValue }, { label: type.trueText, value: type.trueValue }]
   }
+}
+
+/** 只读接入参数显示枚举文案，保持布尔值和零值可见。 */
+function readonlyValue(item: ConfigProperty) {
+  const value = props.modelValue[item.property]
+  return getOptions(item)?.find(option => option.value === value)?.label
+    ?? (value == null || value === '' ? '-' : typeof value === 'object' ? JSON.stringify(value) : String(value))
 }
 
 /** 普通网关和复合网关统一按协议定义校验必填项与长度。 */

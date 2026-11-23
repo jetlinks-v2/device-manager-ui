@@ -1,8 +1,40 @@
 # 设备列表范围侧栏
 
+## 接入设备帮助点位
+
+本轮补充：概览上/下行消息、关键属性快照、近期告警、通信链路与读写/功能调试、设备告警和无效数据页签，以及网关批量配置、系统/数据/视觉事件和云端设备列表。复用 `DocumentHelp`，按稳定事件标识匹配，说明由文档管理配置。核对真实数据口径后编译组件并执行详情、批量操作回归；点击帮助不得切换页签或执行业务动作。
+
+本轮验证：7 个新增帮助组件 SFC 脚本和模板编译、`git diff --check` 通过；`deviceDetailDashboard`、`unifiedDeviceBatchActions`、`eventHistoryDetail`、`deviceDetailTabs` 和 `iotDeviceTraceMessageLink` 共 31 项回归通过。真实页面帮助弹层和点击隔离由整批验收验证。主页签帮助依赖本批 core 的 SlantedTabs tab-extra 插槽，帮助与页签按钮保持兄弟关系；必须配套发布。最终构建与类型检查边界见下文整批验证。
+
+设备接入认证卡片的 MQTT 提示改为 `access.mqttPrincipal` 可配置帮助，按后端认证元数据类型匹配；保留其它认证类型提示及凭据展示、复制、重置行为。
+
+“批量操作 → 同步状态”在菜单文字后增加可配置帮助，标识为 `iot-user-device-list` + `batch.syncStatus`，复用 `DocumentHelp` 的独立点击、键盘事件隔离。说明当前分类与筛选范围内设备的状态校准，不把范围描述成勾选项；原同步接口、进度弹窗与列表刷新保持不变。实施后验证页面编译、点位注册及批量操作回归。
+
+同步状态点位验证：统一设备列表 SFC、注册文件 TypeScript 编译和现有中英日标签校验通过；`node --test tests/unifiedDeviceBatchActions.test.mjs` 4 项通过，`git diff --check` 通过。完整 build/typecheck/lint 本次未执行；浏览器需验证已配置时显示问号，点击帮助不启动同步，原菜单动作仍打开进度窗口。
+
+接入弹窗的“设备库模板”标签通过 `DocumentHelp` 展示可配置说明，标识为 `iot-user-device-list` + `onboarding.libraryTemplate`。模块启动注册，文档管理可直接扫描；未配置或禁用隐藏，帮助点击不改变接入来源。沿用现有模板查询和接入步骤，实施后检查组件编译及接入步骤回归。
+
+验证：接入弹窗 SFC 编译、模块注册与中英日标签检查通过；接入步骤及产品相关回归合计 12 项通过。来源选项使用标准 segmented `label` 插槽，保留库模板/产品标签；帮助容器阻止 label 的默认切换行为。真实配置后悬停和来源不变待整体验收，未单独运行完整构建或类型检查。
+
+## 详情页交互
+
+消息趋势按时间区间使用柱状图。关键属性与近期告警为空时，分别提供物模型与物联告警规则的配置入口；设备告警复用物联告警的卡片和操作。
+
+设备接入、物模型和设备指令共用 `DeviceDetailTabs`。连接凭据保持掩码并支持复制；接入参数随页面滚动，右侧文档单独滚动。指令名称列宽于值列，数据类型使用紧凑列；功能与属性沿用统一行布局，长内容保留悬浮查看。
+
+设备物模型可管理自建分组，继承产品的分组只读。分组右侧菜单提供编辑和删除；删除自建分组会连同组内属性从草稿移除，保存物模型后生效。
+
+设备 JavaScript 解析默认继承产品配置并只读，点击编辑后可保存独立配置；还原需确认，并恢复产品配置。保存不要求先调试。未执行调试时不显示结果，重新加载恢复服务端配置、清空结果并保留模拟输入。未保存提示仅拦截应用内导航，不拦截浏览器刷新和主动重新加载；解析编辑器关闭自动格式化以避免首次加载或失焦造成误判。报文模拟为独立页签，仍按支持的传输方式控制入口。
+
 ## 统一详情摘要
 
+边缘节点详情通过组件注册资源 `DeviceDetailTagsHost` 复用标签展示与单项编辑。宿主传入当前设备 ID、已加载的原始详情及更新权限；保存成功回传设备 ID 和新详情，宿主仅更新匹配设备的摘要。初始化不重复查询，清除使用实例标签记录 ID，产品定义保留供再次填写；无更新权限时只展示。
+
 当前实现：设备头部复用 core `DetailHeader` 摘要模式与 `DetailMetaItem`，保留对象图片和缺省图标，设备类型移至名称/状态同行；ID、产品、空间、业务分组、最后上报使用统一语义图标。物模型标签保留展开与编辑入口，动作继续由 `DeviceDetailActions` 管理。实现入口为 `components/device-detail/IotDeviceDetailHeader.vue`；已有 `PageChrome flush` / `SlantedTabs`、Provider、权限、复制和跳转行为保持不变。
+
+所属产品、所属父设备、所属空间、所属分组和最后上报在 `components/device-detail/IotDeviceDetailHeader.vue` 启用 `DetailMetaItem` 的 `mergedTooltip` 模式。悬停图标、间距或文字都显示同一条“字段名：完整值”提示，空间与分组的提示不随可见文字省略；没有配置时，文字和提示统一使用“未配置”，最后上报缺失时统一使用“未上报”。链接跳转及禁用状态、ID 复制和标签编辑保持不变。
+
+合并提示验证：Chrome 中用真实 `DetailMetaItem` 和 Ant Design Vue 组件验证图标→间距→文字持续显示同一条提示、完整空间与分组值、可点击链接与禁用按钮。摘要与复制回归共 22 项通过；工作区执行 `pnpm -F jetlinks-web-core build --outDir /tmp/jetlinks-merged-tooltip-build -- --module-name device-manager-ui` 成功。没有独立 lint 脚本；`pnpm exec vue-tsc --noEmit -p modules/device-manager-ui/tsconfig.json` 有其他文件的类型诊断，本次两个修改的 Vue 文件无诊断。指定设备的登录态页面尚未复验（新浏览器会话重定向至登录页）。 空值文案回归覆盖空绑定、`--` 上报占位和多个已配置值；相关测试 36 项与设备模块构建均通过。完整类型检查仍有原有诊断，修改行无诊断。
 
 标签交互调整：已填值以“名称＋值”标签展示，点击后就近弹出单项编辑；地理位置继续使用 `SelectAMap` 地图选点。删除叉号使用 `--jet-theme-error`，绝对定位叠加在标签右侧的值文本上方，不为删除按钮预留空间；标签最小宽度为 `1rem`，仅鼠标移入标签时显示删除，移出即隐藏；标签与删除按钮在悬浮时均不改变背景色，删除按钮下方使用 `4px` 局部背景高斯模糊，覆盖的值文本变模糊，叉号本身保持清晰。名称使用较淡的 `--jet-theme-text-secondary`，值使用较深的 `--jet-theme-text`。保存/删除沿用设备标签接口、更新权限与加载反馈，失败保留原值和编辑草稿。删除仅清除已保存的设备标签值，物模型定义仍可从“＋标签”入口重新填写。新增实现收敛在 `components/device-detail/tags/`，单项与原批量编辑复用同一类型控件及值转换，验证类型往返、删除目标、失败重试、权限与地图弹层。
 
@@ -58,6 +90,23 @@
 验证：模块根执行 `node --test tests/deviceDetailPermissions.test.mjs`，10/10 通过；新增的两个视频授权用例在修复前失败、修复后通过，媒体权限或编辑权限不能代替设备实例启停授权，网关与原物联入口行为保持兼容。`git diff --check` 通过。在 `runtime-ui/jetlinks-web-core` 通过现有 Vite CLI 执行 `node --max_old_space_size=8192 --max-semi-space-size=64 ../node_modules/vite/bin/vite.js build -- --module-name device-manager-ui`，模块生产构建通过（44.12 秒，保留资源路径和大包告警）。本地 `http://localhost:9200/#/resources/devices/list/Detail/34020000002000000159?type=video&tab=overview` 已显示“启用”，点击后确认弹层正常，未提交真实设备状态变更。
 
 验证限制：工作区与模块均无 lint 脚本。完整类型检查在 `runtime-ui` 执行 `node node_modules/vue-tsc/bin/vue-tsc.js -p modules/device-manager-ui/tsconfig.json --noEmit --pretty false`，被未改动的 `views/device/Product/ResourcePackage/index.vue:187:23` 与 `views/link/Certificate/type.d.ts:2:30` 的 TS1005 语法错误阻断；修复这些基线错误后需重跑。尚未执行真实设备启用/禁用请求联调。
+
+## 网关设备详情初始化权限
+
+资源中心「设备列表」的网关详情（`iot-user-device-list/GatewayDetail`）由 `edge-master-ui/views/workbench/gateway/GatewayDetailPage.vue` 承载。下列权限统一配置在 `device-manager-ui/baseMenu.json` 的 `iot-user-device-list.permissions`，已有菜单授权的角色无需另勾选操作项。原有按钮、后端鉴权与设备资产范围配置不变。
+
+| 网关详情调用 | 补齐的菜单权限 |
+| --- | --- |
+| 解绑和同步启停子设备（含批量） | `edge-action-sync:save` |
+| 删除网关子设备 | `edge-action-sync:delete` |
+| 视频设备详情、视频通道同步（含扫描接入后的同步） | `media-device:query/save` |
+| 视觉任务目标、通道绑定、模型部署、设备事件算法配置 | `ai-edge-task:query/save`、`ai_model:save`、`ai_device_event_mapping:query` |
+| 绝对地址的算法事件媒体 | `edge-manager:proxy_request`，相对地址仍走原有 API 代理 |
+| 固件升级失败重试 | `firmware-upgrade-task-manager:deploy`，由 `/firmware/upgrade/task/_start` 校验 |
+
+原有的网关启停、边端 API 代理、媒体通道列表、大模型仓库和固件任务查询权限保持不变。网关直播、录像、云台及扫描继续复用原边端代理，不引入独立视频菜单的权限。
+
+已有部署需使用包含该配置的运行时前端重新初始化菜单；已登录的账号需重新登录后验证对应操作。
 
 ## 网关列表引导扩展
 
@@ -167,6 +216,12 @@
 
 验证限制：模块与工作区未提供 lint 脚本；`pnpm exec vue-tsc -p modules/device-manager-ui/tsconfig.json --noEmit` 被未改动的 `views/link/Certificate/type.d.ts:2` TS1005 语法错误阻断，修复后需在 `runtime-ui` 重跑该命令。当前设备的数值属性尚未上报，浏览器已验证趋势区域保留，未覆盖有历史数值时的实际曲线。
 
+## 设备数据属性详情弹窗
+
+`device-manager-ui` 的 `components/device-detail/IotDevicePropertyDetailModal.vue` 底栏仅显示「确认」，点击直接关闭，不提交数据；保留右上角关闭入口。不改变属性历史查询、列表、图表或单条记录详情。
+
+验证：设备管理模块生产构建通过；属性历史请求回归 7 项通过。Chrome 组件测试使用模拟的 B11 历史数据，确认底栏无「取消」，点击「确认」可关闭，重新打开及右上角关闭正常；未连接真实设备联调。模块无独立 lint 命令；在 `runtime-ui` 执行 `pnpm exec vue-tsc -p modules/device-manager-ui/tsconfig.json --noEmit --pretty false` 未通过（既有核心 API 泛型与共享组件等类型错误），类型基线修复后需重跑。
+
 ## 范围树名称搜索
 
 目标与范围：在 `device-manager-ui` 的范围侧栏分段器与树之间增加 `a-input`，通过 `prefix` 插槽展示搜索图标，支持清空。`components/IotDeviceScopeSidebar.vue` 负责展示，`hooks/useIotDeviceScopeSidebar.ts` 复用公共树过滤能力按名称筛选，保留匹配节点的父级路径并展开结果；清空后恢复完整树，无匹配时展示空态。搜索文案同步补齐中英文资源。
@@ -204,6 +259,12 @@
 风险与验证：部署类型由构建时的 `VITE_APP_ENVIRONMENT` 决定，私有化为空字符串，SaaS 为 `saas`；不能用 `!isSaaS` 代替，因为其他非 SaaS 环境也可能使用该构建。`node --test tests/unifiedDeviceTabs.test.mjs tests/deviceDetailContent.test.mjs` 共 11 项通过，覆盖私有化显示契约、SaaS 隐藏契约、隐藏 Provider 仍参与分类与直达，以及既有视频详情内容；`device-manager-ui` 与 `jetlinks-media-ui` 的 `git diff --check` 通过。未执行浏览器、完整 typecheck 或生产构建；生产环境需要重新发布对应部署类型的运行时前端资源。
 
 ## 接入设备回退并保留表单
+
+首步按钮修正：`IotAddDeviceDrawer.vue` 的“上一步”显示条件已增加 `currentStep > 0`，仅在非编辑、非创建中的配置步骤显示；选择设备的第一步保留“取消”和“下一步”。已同步调整已有步骤导航检查，表单保留和返回逻辑沿用现有实现。
+
+首步按钮修正交付：修复提交 `db9f67d8`，PR：https://github.com/jetlinks-v2/device-manager-ui/pull/410 ，目标分支 `2.20`。
+
+首步按钮修正验证：在 `runtime-ui/modules/device-manager-ui` 执行 `node --test tests/iotAddDeviceStepNavigation.test.mjs`，两个子检查通过；Vue 模板编译、显示条件执行检查（首步、配置、编辑、创建中，4/4）和 `git diff --check` 均通过。`pnpm --dir runtime-ui exec vue-tsc -p modules/device-manager-ui/tsconfig.json --noEmit` 未通过，报告大量类型错误，包括本次未修改的 `jetlinks-web-core/src/api/account/center.ts` 的 TS2347 和 `visDashboard` 下的类型错误。完整构建及本次浏览器交互未验证，仍需在实际页面确认首步按钮展示与回退体验。
 
 目标：在运行时前端“接入设备”弹窗的设备配置步骤，将取消操作替换为“上一步”；返回设备库模板或产品选择后，用户重新选择设备时继续回显本次打开弹窗期间已经填写的设备信息。
 
@@ -309,3 +370,7 @@
 ## 概览的设备列表入口
 
 SaaS 与私有化概览、资源中心的普通设备入口直接进入“全部”。`unified/useUnifiedDeviceList.ts` 不再根据 `type=device` 临时添加“物联设备”Tab 或附加物联范围；旧链接与详情返回中的该参数同样按“全部”处理，状态和搜索条件继续生效。边缘节点、视频等已有 Provider 的分类入口保持不变；新增设备继续使用统一列表原有抽屉，概览物联指标仍使用 `getIotDeviceScopeTerms()` 的统计口径。物联应用 `/iot-center/` 的独立入口规则保持原有行为。
+
+状态列标题使用 `list.status` 说明在线、离线和禁用状态，与批量同步状态入口分别配置。
+
+文档帮助整批验证：状态列、概览消息、关键属性、近期告警、通信调试、设备告警/无效数据、网关事件和批量操作点位已启动注册。浏览器确认同步状态帮助显示在菜单上方，点击设备告警问号不切换页面。设备模块生产构建通过；本批 31 份 SFC 和修改的 TS/JSON/差异检查通过，core 帮助与页签溢出回归 30/30。此前完整 vue-tsc 有 1740 项工作区诊断，新增存储选项与 segmented 插槽的两项诊断已修正；本模块完整类型检查尚未重跑，可在运行时根目录执行 `pnpm exec vue-tsc --noEmit -p modules/device-manager-ui/tsconfig.json`；无独立 lint。本次六模块联合构建通过（1 分 14 秒），设备接入/地图 26 项、详情/批量操作 31 项、告警 200 项回归均通过；66 个注册点位三语标签键检查通过，公式点位补齐日文标签。联合构建使用当前本地工作区，仍需干净检出的 CI 与未覆盖入口的实机验收。

@@ -1,5 +1,62 @@
 # 物联告警规则与记录工作区
 
+## 钉钉多实例与固定接收方通知
+
+- 渠道文案：普通钉钉显示为“钉钉 · 工作通知”，与“钉钉 · 群机器人”统一命名格式，说明企业应用发送和模板接收范围；群机器人继续使用各实例名称及固定群说明。该调整仅涉及展示和中英日文案，不改变选择、模板或投递逻辑。
+
+- 运行时 `runtime-ui/modules/device-manager-ui` 支持同时勾选多个具名钉钉机器人，并与钉钉工作通知、其他人员通知组合使用。机器人按配置实例保存，无需选择项目用户；混选人员渠道时继续校验接收人员。`text`、`markdown`、`link` 仍由通知中心的机器人消息模板控制。
+- 通知复选入口、草稿和预览沿用当前页面；告警中心、产品及设备属性规则共用同一实现。`api.ts#queryDeviceAlarmNotifyMethods` 读取当前可访问的告警配置、模板和钉钉凭据类型；`notificationFixedChannels.ts` 保留机器人实例，按同一通知配置关联触发与解除模板，多个解除候选时使用 `channelKey` 区分。模板失效或查询失败仍显示缺失／未知，已保存但不可用的选择保留并允许移除。
+- `types.ts` 与 `utils.ts` 中的 `fixedReceiverChannels` 保存 `{channelId, templateId, relieveChannelId?, relieveTemplateId?}`；普通通知仍保存 `channelProviders` 与共享 `userIds`／`dimensions`。钉钉人员渠道另以 `personnelChannels[{providerId,trigger,relieve}]` 保存具体通道 ID，后端据此排除同类型的机器人，避免混选时按人员重复投递到群。已有持久化规则的字段继续回显，打开页面不会自动迁移；只有显式修改选择时才更新绑定。
+- 后端归属 `modules/device-manager`：`DeviceNotificationIdentityHandler` 在保存入口和设备预处理持久化事件中覆盖固定通知的 `operatorId`；`MessageNotifyPreprocessor` 恢复保存者身份后，通过通知服务 `SendNotifyCommand` 的资产权限边界发送固定模板，普通通知继续使用 `SendUserNotificationCommand`。各目标失败互不阻断，错误沿用现有日志；首次告警、实际解除的发送时机保持不变。解除模板缺失时不回退发送触发模板。
+- 范围：仅上述运行时模块和设备后端；不修改 `ui/`、消息模板编辑器、告警状态机、菜单或路由。新字段位于现有预处理 JSON 配置中，无新增表或数据库列。部署需同时更新运行时设备模块和后端 `device-manager`；前端新增配置依赖该后端版本。
+- 验证：在运行时模块以 Node 22.18.0 执行 `node scripts/test-alarm-workspace.mjs`，213 项通过。两个变更 Vue 文件借用运营端通用样式脚本检查通过（运行时未配置独立 lint／样式脚本），`git diff --check` 通过；15 个业务实现／测试／语言文件与迁移前逐字一致，既有隔离组件交互证据可复用，运行时真实登录页面尚未验证。在 `runtime-ui/jetlinks-web-core` 执行 `node ../node_modules/vite/bin/vite.js build --outDir /tmp/iot-alarm-runtime-build -- --module-name device-manager-ui` 通过（4m12s，保留资源路径和大 chunk 等现有告警）。运行时全模块 `node node_modules/vue-tsc/bin/vue-tsc.js --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json` 未通过，1738 项诊断；本次变更生产文件无诊断，变更测试文件仅命中原有的两个 Node 模块类型声明缺失。设备后端未改实现，复用源码编译及定向回归 22 项通过的证据；标准后端测试入口仍受地理组件测试依赖缺失影响，命令见后端 README。
+- 作者 Review：PASS；前端范围为运行时设备模块，运营端本次改动已撤回。后端复用通知服务公开命令和 AssetsHolder 权限，无公共模型、页面壳层或告警状态机扩展。运行时真实登录页面的资源权限、模板跳转、规则保存与钉钉实际投递仍待联调。
+
+## 告警通知选择 WebHook
+
+- 目标与范围：运行时 `runtime-ui/modules/device-manager-ui` 的告警通知允许选择已启用并绑定模板的 WebHook；固定接收地址沿用通知中心配置。
+- 实现：`api.ts` 不再按 `receiverPolicy=explicit` 排除通知类型，仍校验当前可见的 `alarm-device` 配置、渠道状态和模板绑定；复用既有通知选项、模板状态及保存参数，不修改后端或接口。
+- 验证：从远端 `2.20` 提取本次三文件修复后，Node 22.18.0 下告警回归 210/210 通过。临时运行器仅将依赖和共享组件定位到运行时工作区，业务和测试来自独立分支；覆盖 WebHook 模板状态、选择和保存参数回显、禁用和无模板渠道。`git diff --check` 通过。
+- 验证限制：此前在含其他未提交改动的运行时工作区执行告警回归 214/214 通过，模块构建通过（2m35s），类型检查未通过（1738 条诊断，修改的 API 文件无命中，测试文件仅命中原有两处 Node 测试模块导入）；这些不代表独立分支完成了完整构建或类型检查。独立分支未重复完整构建和类型检查，标准工作区可在 `runtime-ui/` 执行 `node modules/device-manager-ui/scripts/test-alarm-workspace.mjs` 和 `node node_modules/vue-tsc/bin/vue-tsc.js --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json`，在 `runtime-ui/jetlinks-web-core/` 执行 `node ../node_modules/vite/bin/vite.js build -- --module-name device-manager-ui`。已登录页面及真实 WebHook 投递待联调环境验证；未修改 Vue 或样式，运行时无独立 lint 脚本。
+
+## “含解除”说明展示
+
+- 目标与范围：仅优化运行时 `components/DeviceAlarmNotificationConfig.vue` 与对应 LESS 的说明展示；复用现有国际化文案和解除条件，不改变通知配置、接口或保存逻辑。
+- 展示方式：表单模式将说明放在“含解除”复选框下方常驻展示，允许长文案自然换行；行内模式保留紧贴复选框的悬浮提示，支持键盘聚焦。未开启自动解除时沿用禁用状态及其原因说明。
+- 验证：Vue 脚本、模板、scoped Less 编译和 `node --test modules/device-manager-ui/tests/alarmWorkspaceView.test.mjs` 的 5 项子检查通过，差异空白检查通过。以 Node 22.18.0 在 `runtime-ui/jetlinks-web-core` 执行 `node ../node_modules/vite/bin/vite.js build --outDir /tmp/jetlinks-alarm-relieve-hint-build -- --module-name device-manager-ui` 通过（3m28s），保留资源路径和大 chunk 提示；运行时没有独立 lint 脚本。
+- 剩余验证：在 `runtime-ui` 执行 `node node_modules/vue-tsc/bin/vue-tsc.js --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json`，全量仍有 1,738 条诊断，修改组件无命中，不视为全量通过。本地 9200 页面停在登录页，登录后仍需目视复验表单/行内布局、自动解除禁用说明和中英日长文案窄屏换行；尚未验证真实保存。
+
+## 通知类型弹层布局
+
+- 目标与范围：修复运行时 `components/DeviceAlarmNotificationConfig.vue` 中模板按钮显示国际化 key、挤压通知说明的问题；仅调整本模块组件、局部 LESS 与中英日语言资源。
+- 实施：补齐“配置模板 / 配置解除模板”文案，通知选项采用两列布局，选择项与状态同排，模板操作独立成行并允许换行；删除列表底部未指定通知类型的通用“配置模板”入口，避免与类型内入口同名重复，仅保留各类型指定通道的配置按钮。保留原选择、权限、解除模板条件和类型内跳转行为。
+- 验证：Node 22.18.0 下，运行时根目录 `node modules/device-manager-ui/scripts/test-alarm-workspace.mjs` 206/206 通过；在 `runtime-ui/jetlinks-web-core` 执行 `node ../node_modules/vite/bin/vite.js build --outDir /tmp/jetlinks-runtime-alarm-notification-build -- --module-name device-manager-ui` 通过（3m03s，产物包含新布局和三语文案，执行于删除底部通用入口之前）；保留已有资源路径、Rollup output、循环 chunk 与体积警告。删除入口后重新执行告警回归，206/206 通过，并通过真实组件 Vite 编译及下述浏览器检查，未重复完整模块构建和类型检查。`git diff --check` 通过；运行时未配置独立 lint 或样式门禁脚本。组件 99 行，未新增组件或公共抽象。
+- 页面验证：删除入口后，使用运行时真实组件、Ant Design Vue 与本模块语言包的临时浏览器隔离页重新检查，13 组通过，覆盖中英日 × 1440/375/320px，以及表单/行内模式下的权限隐藏和解除按钮条件；底部通用按钮均不再显示，类型内两个模板按钮参数正确，说明宽度至少 160px、列表与弹层无横向溢出、无脚本错误。数据与导航 hook 使用替身，图标使用占位；尚未在已登录完整页面验证后端加载、真实新标签跳转及返回刷新。
+- 类型检查限制：运行时根目录 `node node_modules/vue-tsc/bin/vue-tsc.js --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json` 未通过，项目及共享依赖共 1739 条诊断，本次 `DeviceAlarmNotificationConfig.vue` 无命中，不视为全模块类型检查通过。
+- 作者 Review：PASS；修复仅落在 `runtime-ui/modules/device-manager-ui`，未改变通知选择、权限或保存契约。
+- 交付：修复提交 `6e8a242c`；[PR #414](https://github.com/jetlinks-v2/device-manager-ui/pull/414)，目标分支 `2.20`。
+
+## 单设备告警物模型来源
+
+- 目标与范围：仅修复 `runtime-ui/modules/device-manager-ui` 的告警属性来源；全部设备使用产品物模型，单设备使用 `/device-instance/{id}/detail` 返回的有效 `metadata`，沿用服务端的产品继承与设备独立物模型语义。
+- 实施入口：`api.ts` 复用 `api/instance.ts` 的设备详情请求，`hooks/useDeviceAlarmPage.ts` 在新增与编辑时按作用域加载属性；切换设备清空属性选择，忽略过期响应。保留原有弹窗、属性类型过滤、已配置告警禁用规则及保存接口，不修改运营端或后端。
+- 验证：Node 22.18.0 下执行 `node modules/device-manager-ui/scripts/test-alarm-workspace.mjs`，合并 `2.20@1283276a` 并解决文档冲突后复验 206/206 通过，新增 5 项行为回归覆盖设备独立属性、产品继承、编辑回显、切回全部设备、设备详情与配置响应乱序、清空产品及请求失败/空物模型。`git diff --check` 通过。
+- 构建与类型：在 `runtime-ui/jetlinks-web-core` 使用本地 Vite 执行 `node ../node_modules/vite/bin/vite.js build --outDir /tmp/jetlinks-alarm-device-model-build -- --module-name device-manager-ui`，修复阶段模块构建通过（2m 41s；本次冲突合并未重复构建），保留资源路径与大 chunk 等警告。修复阶段执行 `node node_modules/vue-tsc/bin/vue-tsc.js --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json` 未通过，共 1741 条诊断（最新基线未重复全模块类型检查）；本次修改的 `api.ts`、`useDeviceAlarmPage.ts` 无诊断，测试文件仍报告原有 `node:assert/strict`、`node:test` 类型声明缺失。模块没有独立 lint 脚本；未进行真实后端登录页面联调，实际设备属性与保存仍待页面验证。
+- 作者 Review：PASS。直接消费设备详情已有的有效物模型，未在前端重做继承/合并规则；修改范围仅运行时告警 feature 与回归，不涉及后端接口、公共模型、权限、菜单或布局。
+- 修复提交：`5535776f`；评审入口：[PR #409](https://github.com/jetlinks-v2/device-manager-ui/pull/409)，目标分支 `2.20`。
+
+## 告警日志与处理记录文档帮助
+
+`components/DeviceAlarmRecordCard.vue` 在“告警日志”“处理记录”操作旁接入现有 `DocumentHelp`，本模块 `documentHelpPoints.ts` 以 `iot-user/device/alarm` 登记 `history.logs`、`history.handles`。模块启动即可扫描，点位名称沿用中英日资源；帮助与操作按钮并列，未配置或禁用时隐藏，不预置正文，保留原日志/处理记录图标、历史事件和告警处理权限。
+
+验证：`node scripts/test-alarm-workspace.mjs` 200/200 通过；定向内存交互检查确认两类帮助的未配置/禁用隐藏、三语正文切换、帮助点击/键盘不触发历史事件，原 logs/handles 及处理按钮仍发送正确事件。改动 SFC 脚本/模板/样式编译与 `git diff --check` 通过。运行时三模块联合生产构建通过（36.99s）；完整 `vue-tsc --noEmit -p modules/device-manager-ui/tsconfig.json` 未通过，共 1741 条诊断，本次修改文件无命中。模块及宿主未配置独立 lint。尚未在真实浏览器验证窄屏布局、悬停与配置保存回读；保持 [Draft #404](https://github.com/jetlinks-v2/device-manager-ui/pull/404)，不提交聚合仓库指针。
+
+## 添加规则帮助入口
+
+`components/PropertyRules/RuleAddMenu.vue` 的全部 11 种规则选项接入可配置文档帮助，使用 `device/Product` 下的 `propertyRule.*` 标识；产品与设备共用相同规则说明。问号放在选项标题旁，查看说明不添加规则，原有类型适配、权限、保存和清空行为保持不变。说明按集合过滤、有效范围、跳变量、校正、公式、补齐、文件存储、告警和三种采样的实际配置编写。
+
+验证：两个改动组件的脚本、模板和样式编译通过；`node scripts/test-alarm-workspace.mjs` 200 项回归通过。完整构建与类型检查本次未重复执行，模块无独立 lint 脚本；真实页面的问号位置、点击不添加规则及线上说明回读由主任务验收。
+
 ## 物模型属性已配置告警提示
 
 - 目标与范围：运行时新增告警选择物模型属性时，清楚说明已配置属性不可选择的原因；仅修改 `components/editor/DeviceAlarmTargetForm.vue` 和本模块中、英、日文资源。

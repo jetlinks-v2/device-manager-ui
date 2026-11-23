@@ -1,6 +1,6 @@
 <template>
   <DefineEmptyCreate>
-    <j-permission-button type="primary" hasPermission="device/Product:add" @click="add">
+    <j-permission-button v-if="!isProject" type="primary" hasPermission="device/Product:add" @click="add">
       <template #icon><AIcon type="PlusOutlined" /></template>
       {{ $t('Product.index.660348-0') }}
     </j-permission-button>
@@ -53,9 +53,13 @@
 								      @update:model-value="handleFilterTermsUpdate"
 								      @change="handleFilterSearch"
 							      />
-							      <a-space class="product-page__actions">
-								      <EmptyCreateButton key="add" />
-								      <BatchDropdown key="batch" :actions="batchActions" />
+							      <a-space v-if="!isProject || batchActions.length" class="product-page__actions">
+								      <EmptyCreateButton v-if="!isProject" key="add" />
+								      <BatchDropdown key="batch" :actions="batchActions">
+                        <template #item-extra="{ item }">
+                          <DocumentHelp v-if="item.key === 'syncCache'" code="device/Product" help-key="syncCache" />
+                        </template>
+                      </BatchDropdown>
 							      </a-space>
 						      </a-flex>
 					      </template>
@@ -63,7 +67,7 @@
 					        <CloudEmpty :description="hasSearch
                         ? $t('components.CloudEmpty.searchEmpty', { name: $t('Product.index.660348-15') })
                         : undefined">
-					          <EmptyCreateButton v-if="showEmptyCreate" />
+					          <EmptyCreateButton v-if="!isProject && showEmptyCreate" />
 					        </CloudEmpty>
 					      </template>
 					      <template #deviceType="slotProps">
@@ -158,12 +162,14 @@
     />
     <SyncCache v-if="syncCacheVisible" :params="tableParams" @success="refresh" @close="syncCacheVisible = false" />
     <ResourcePackage
+      v-if="!isProject"
       ref="resourcePackageRef"
       :can-import-basic="canImportBasic"
       :can-import-resource-package="canImportResourcePackage"
       @success="refresh"
     />
     <ProductExportModal
+      v-if="!isProject"
       v-model:open="exportVisible"
       :loading="exporting"
       @export="exportProduct"
@@ -203,6 +209,7 @@ import ConditionFilter, {
 } from '@jetlinks-web-core/components/ConditionFilter';
 import { useTermOptions } from '@jetlinks-web/components/es/Search/hooks/useTermOptions'
 import BatchDropdown from "@jetlinks-web-core/components/BatchDropdown/index.vue";
+import DocumentHelp from '@jetlinks-web-core/components/DocumentHelp'
 import { IconBadge } from '@jetlinks-web-core/components'
 import { getI18nText } from '../../../utils/i18n'
 import ResourcePackage from './ResourcePackage/index.vue'
@@ -211,6 +218,10 @@ import { useEmptyCreateState } from '@jetlinks-web-core/hooks'
 import ProductExportModal from './components/ProductExportModal.vue'
 import { useProductTransfer } from './hooks/useProductTransfer'
 import { getDeviceListFilterFields } from '../../../deviceListFilter'
+import { isProjectRuntime } from '@jetlinks-web-core/utils/project-runtime'
+import { isPrivateDeployment } from '@jetlinks-web-core/utils/deployment'
+
+const isProject = isProjectRuntime() && !isPrivateDeployment()
 
 const { t: $t } = useI18n();
 const route = useRoute()
@@ -298,8 +309,8 @@ const categoryTitle = ref('');
 const canAddCategory = computed(() => authStore.hasPermission('device/Product:category-add'));
 const canUpdateCategory = computed(() => authStore.hasPermission('device/Product:category-update'));
 const canDeleteCategory = computed(() => authStore.hasPermission('device/Product:category-delete'));
-const canImportBasic = computed(() => authStore.hasPermission('device/Product:import'))
-const canImportResourcePackage = computed(() => authStore.hasPermission('device/Product:resource-package-import'))
+const canImportBasic = computed(() => !isProject && authStore.hasPermission('device/Product:import'))
+const canImportResourcePackage = computed(() => !isProject && authStore.hasPermission('device/Product:resource-package-import'))
 const canImportProduct = computed(() => canImportBasic.value || canImportResourcePackage.value)
 const {
   exportVisible,
@@ -335,7 +346,7 @@ const tableParams = computed(() => {
 });
 const { hasSearch, showEmptyCreate } = useEmptyCreateState(() => tableParams.value.terms);
 
-// 产品管理入口同时服务私有化与运行时，不能按 SaaS 编译标识隐藏导入和缓存同步能力。
+// 项目产品由设备库安装，不提供产品导入入口；缓存同步沿用现有授权。
 const batchActions = computed(() => {
   return [
     ...(canImportProduct.value ? [{
@@ -465,7 +476,8 @@ const getActions = (data: Partial<Record<string, any>>): any[] => {
   if (parentActions && parentActions.length > 0) {
     actions = mergeObjectArrays(actions, parentActions)
   }
-  return actions;
+  // 项目可维护现有产品，仅隐藏产品传入传出入口。
+  return isProject ? actions.filter(action => action.key !== 'export') : actions;
 };
 
 /**

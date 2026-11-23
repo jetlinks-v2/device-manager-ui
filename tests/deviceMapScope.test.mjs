@@ -32,15 +32,17 @@ function mount(setup) {
 }
 function hook(filter, loadStates = async points => ({ points, failed: false })) {
   const streams = []
+  const cluster = load('DeviceMapCard/cluster.ts')
   const { useDeviceMap } = load('hooks/useDeviceMap.ts', {
     '@jetlinks-web-core/store/menu': { useMenuStore: () => ({ hasMenu: () => false, jumpPage() {} }) },
     '../DeviceMapCard/config': { deviceMapCardConfig: { componentProps: { deviceMapCard: { isAutoRefresh: false } } } },
     '../shared': load('shared.ts'),
     '../services/deviceMap': { createDeviceMapStream(handlers) { const stream = { ...handlers, close() {} }; streams.push(stream); return stream }, filterDeviceMapPoints: filter, loadDeviceMapStates: loadStates },
     '../DeviceMapCard/markers': { createDeviceMapMarkerOptions: () => ({}) },
-    '../DeviceMapCard/cluster': {}, './useDeviceMapSelection': { useDeviceMapSelection: () => ({ view: {}, close() {} }) }, '../../../utils/map': {},
+    '../DeviceMapCard/cluster': cluster, './useDeviceMapSelection': { useDeviceMapSelection: () => ({ view: {}, close() {} }) }, '../../../utils/map': {},
     './useDeviceMapViewport': load('hooks/useDeviceMapViewport.ts', {
-      '@vueuse/core': { useElementSize: () => ({ width: vue.ref(600), height: vue.ref(400) }) },
+      '../../../utils/map': {}, '../DeviceMapCard/cluster': cluster,
+      '@vueuse/core': { useResizeObserver() {}, useElementSize: () => ({ width: vue.ref(600), height: vue.ref(400) }) },
       'vue-router': { useRoute: () => ({ fullPath: '/dashboard' }) },
       '@jetlinks-web-core/store/user': { useUserStore: () => ({ userInfo: { id: 'test' } }) },
       '@jetlinks-web-core/utils': { getBaseApi: () => '/api' },
@@ -109,6 +111,20 @@ test('undefined terms retains immediate publication and unmount aborts pending s
   h.unmount(); assert.equal(requests[0].signal.aborted, true)
   requests[0].resolve([point('late')]); await settle()
   assert.deepEqual(h.value.points.value, [])
+})
+
+test('AMap coordinate conversion cannot mutate the authorized points used by the summary', async () => {
+  const h = hook(async points => points)
+  h.streams[0].onMessage([point('visible')]); h.streams[0].onComplete(); await settle()
+  // Follow the actual component binding: AMap replaces each point's tuple with a LngLat object.
+  const card = readFileSync(new URL('../visDashboard/DeviceManagement/DeviceMapCard/DeviceMapCard.vue', import.meta.url), 'utf8')
+  const binding = card.match(/<el-amap-marker-cluster[\s\S]*?:points="(\w+)"/)[1]
+  const sdkPoints = h.value[binding].value
+  sdkPoints[0].lnglat = { lng: 116, lat: 39 }
+  assert.deepEqual(h.value.points.value[0].lnglat, [116, 39])
+  assert.equal(h.value.points.value[0].lnglat.join(', '), '116, 39')
+  assert.equal(sdkPoints[0].deviceId, 'visible')
+  h.unmount()
 })
 
 test('a later batch failure rejects the whole scope, never returns an earlier batch', async () => {

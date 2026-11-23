@@ -1,7 +1,6 @@
-import { computed, onActivated, onDeactivated, onUnmounted, ref, shallowRef, watch, type Ref } from 'vue'
+import { computed, nextTick, onActivated, onDeactivated, onUnmounted, ref, shallowRef, watch, type Ref } from 'vue'
 import { debounce } from 'lodash-es'
 import { useMenuStore } from '@jetlinks-web-core/store/menu'
-import { getCenterPoint } from '../../../utils/map'
 import { deviceMapCardConfig } from '../DeviceMapCard/config'
 import type { DashboardCardInfo, DeviceMapConfig, DeviceMapPoint } from '../shared'
 import { getComponentConfig } from '../shared'
@@ -9,17 +8,12 @@ import { createDeviceMapStream, filterDeviceMapPoints, loadDeviceMapStates } fro
 import { createDeviceMapMarkerOptions } from '../DeviceMapCard/markers'
 import {
   DEVICE_MAP_MAX_ZOOM,
-  resolveClusterDevices,
-  shouldOpenDeviceCluster,
-  type DeviceClusterPoint
+  groupDevicesByLocation,
+  toDeviceMapMarkers,
+  type DeviceMapMarker
 } from '../DeviceMapCard/cluster'
 import { useDeviceMapSelection } from './useDeviceMapSelection'
 import { useDeviceMapViewport } from './useDeviceMapViewport'
-
-interface AMapApiLike {
-  Bounds: new (southWest: unknown, northEast: unknown) => unknown
-  LngLat: new (lng: number, lat: number) => unknown
-}
 
 /** Owns the location stream, cluster navigation and the selected device card. */
 export const useDeviceMap = (info: Ref<DashboardCardInfo | undefined>, isEdit: Ref<boolean>, enabled: Ref<boolean>, container: Ref<HTMLElement | undefined>) => {
@@ -35,6 +29,7 @@ export const useDeviceMap = (info: Ref<DashboardCardInfo | undefined>, isEdit: R
     deviceMapCardConfig.componentProps.deviceMapCard
   )
   const points = shallowRef<DeviceMapPoint[]>([])
+  const completedLocations = shallowRef<DeviceMapPoint[]>([])
   const loading = ref(false)
   const error = ref(false)
   const stateError = ref(false)
@@ -43,11 +38,40 @@ export const useDeviceMap = (info: Ref<DashboardCardInfo | undefined>, isEdit: R
   const available = computed(() => active.value && (distribution.value || enabled.value))
   const selection = useDeviceMapSelection(deviceId => viewport.remember(deviceId))
   const viewport = useDeviceMapViewport(
-    computed(() => JSON.stringify([info.value?.id, config.value.scope])),
+    computed(() => JSON.stringify([info.value?.id, config.value.scope, config.value.deviceTerms])),
     container,
     computed(() => selection.view.position),
+    completedLocations,
+    computed(() => selection.view.revision),
   )
-  const { map, popup, onMapInit } = viewport
+  const { map, popup, popupElement, onMapInit } = viewport
+  // AMap InfoWindow 不支持动态 setOffset；切换点位、列表/详情或上下方向时重建信息窗，并屏蔽旧实例销毁时的 close 回调。
+  const popupKey = computed(() => (
+    selection.view.visible
+      ? `${selection.view.revision}:${selection.view.detailDevice?.deviceId ?? 'list'}:${popup.value.placement}`
+      : ''
+  ))
+  const popupMounted = ref(true)
+  let popupSwitchToken = 0
+  watch(popupKey, async (next, prev) => {
+    popupSwitchToken += 1
+    if (!next || !prev || next === prev) {
+      popupMounted.value = true
+      return
+    }
+    const token = popupSwitchToken
+    popupMounted.value = false
+    await nextTick()
+    if (token === popupSwitchToken) popupMounted.value = true
+  })
+  function onPopupClose(key: string) {
+    if (popupMounted.value && key === popupKey.value) selection.close()
+  }
+  function setPopupElement(el: unknown) {
+    popupElement.value = (el as HTMLElement | null) ?? undefined
+  }
+  const devicesByLocation = computed(() => groupDevicesByLocation(points.value))
+  const clusterLocations = computed(() => toDeviceMapMarkers(devicesByLocation.value, viewport.groupedByPosition.value))
   const extraOptions = computed(() => createDeviceMapMarkerOptions(!!config.value.showStatus))
   let stream: { close: () => void } | undefined
   let refreshTimer: ReturnType<typeof setInterval> | undefined
@@ -73,7 +97,8 @@ export const useDeviceMap = (info: Ref<DashboardCardInfo | undefined>, isEdit: R
   }
 
   /** 重新校验位置后恢复原设备摘要，同时保留同坐标设备的列表入口。 */
-  function restoreSelection() {
+  function onLocationsReady() {
+    completedLocations.value = points.value
     const restored = viewport.takeRestoredSelection(points.value)
     if (!restored) return
     selection.open(restored.points)
@@ -87,7 +112,7 @@ export const useDeviceMap = (info: Ref<DashboardCardInfo | undefined>, isEdit: R
     const locations = pendingPoints
     const deviceTerms = config.value.deviceTerms
     if (!locations.length || (deviceTerms === undefined && !distribution.value && !config.value.showStatus)) {
-      restoreSelection()
+      onLocationsReady()
       loading.value = false
       return
     }
@@ -108,7 +133,7 @@ export const useDeviceMap = (info: Ref<DashboardCardInfo | undefined>, isEdit: R
       }
       return
     }
-    restoreSelection()
+    onLocationsReady()
     try {
       if ((!distribution.value && !config.value.showStatus) || !points.value.length) return
       const result = await loadDeviceMapStates(points.value, controller.signal)
@@ -126,6 +151,7 @@ export const useDeviceMap = (info: Ref<DashboardCardInfo | undefined>, isEdit: R
     stopStream()
     selection.close()
     pendingPoints = []
+    completedLocations.value = []
     if (isEdit.value || !available.value) {
       points.value = []
       loading.value = false
@@ -166,28 +192,20 @@ export const useDeviceMap = (info: Ref<DashboardCardInfo | undefined>, isEdit: R
     const point = points.value.find(item => item.deviceId === deviceId)
     if (point) selection.open(points.value.filter(item => item.lnglat[0] === point.lnglat[0] && item.lnglat[1] === point.lnglat[1]))
   }
-  const onClusterClick = ({ clusterData }: { clusterData: DeviceClusterPoint[] }) => {
-    if (isEdit.value || !enabled.value || !map.value) return
-    // 聚合回调可能只保留坐标和身份，摘要仍使用本轮完整点位中的设备状态。
-    const byId = new Map(points.value.map(point => [point.deviceId, point]))
-    const devices = resolveClusterDevices(clusterData).map(point => byId.get(point.deviceId) || point)
+  const onClusterClick = ({ clusterData, marker }: {
+    clusterData: Pick<DeviceMapMarker, 'locationKey'>[]
+    marker: { getExtData: () => { locationKey: string } }
+  }) => {
+    if (isEdit.value || !available.value || !map.value) return
+    const keys = new Set(clusterData.length ? clusterData.map(point => point.locationKey) : [marker.getExtData().locationKey])
+    const devices = [...keys].flatMap(key => devicesByLocation.value.get(key) || [])
     if (!devices.length) return
-    if (shouldOpenDeviceCluster(devices, map.value.getZoom())) {
+    if (devices.length === 1 || (keys.size === 1 && map.value.getZoom() >= DEVICE_MAP_MAX_ZOOM)) {
       selection.open(devices)
       return
     }
     selection.close()
-    const api = (window as Window & { AMap?: AMapApiLike }).AMap
-    if (!api) return
-    const [northEast, southWest] = getCenterPoint(devices.map((point) => point.lnglat))
-    const bounds = new api.Bounds(
-      new api.LngLat(southWest[0], southWest[1]),
-      new api.LngLat(northEast[0], northEast[1])
-    )
-    const [fitZoom, center] = map.value.getFitZoomAndCenterByBounds(bounds, [40, 40, 40, 40], DEVICE_MAP_MAX_ZOOM)
-    // Always make progress when bounds fitting returns the current zoom for a dense cluster.
-    const zoom = Math.min(DEVICE_MAP_MAX_ZOOM, Math.max(map.value.getZoom() + 2, fitZoom))
-    map.value.setZoomAndCenter(zoom, center)
+    viewport.fitPoints(devices, true)
   }
 
   watch(
@@ -198,6 +216,7 @@ export const useDeviceMap = (info: Ref<DashboardCardInfo | undefined>, isEdit: R
         stopStream()
         selection.close()
         points.value = []
+        completedLocations.value = []
         loading.value = false
         error.value = false
         stateError.value = false
@@ -217,5 +236,5 @@ export const useDeviceMap = (info: Ref<DashboardCardInfo | undefined>, isEdit: R
     stopRefreshTimer()
     stopStream()
   })
-  return { config, distribution, points, loading, error, stateError, extraOptions, selection, popup, refresh, onMapInit, onClusterClick, onPointSelect, canConfigureMap, openMapConfig }
+  return { config, distribution, points, clusterLocations, loading, error, stateError, extraOptions, selection, popup, popupElement, popupKey, popupMounted, onPopupClose, setPopupElement, refresh, onMapInit, onClusterClick, onPointSelect, canConfigureMap, openMapConfig }
 }

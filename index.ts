@@ -4,6 +4,7 @@ import registerSetting from './register'
 import { name } from './package.json'
 import './assets/iot-design-bridge.css'
 import { getUnifiedDeviceMenuFilters } from './unifiedDeviceMenu'
+import { registerDeviceHelpPoints } from './documentHelpPoints'
 
 const routerModules = import.meta.glob('./views/**/index.vue')
 
@@ -139,6 +140,7 @@ const getContentPanelOverrides = () => ({
 })
 
 const register = () => {
+  registerDeviceHelpPoints()
   moduleRegistry.register(name, registerSetting)
 }
 

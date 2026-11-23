@@ -19,6 +19,10 @@
     :style="style"
   >
     <SectionHeader v-if="!config.embedded" :title="title">
+      <template #title>
+        {{ title }}
+        <DocumentHelp v-if="config.documentHelp" :code="config.documentHelp.code" :help-key="config.documentHelp.key" />
+      </template>
       <template #extra>
         <div v-if="distribution || config.showStatus" class="device-map-legend">
           <span v-for="state in legendStates" :key="state">
@@ -28,7 +32,7 @@
         </div>
       </template>
     </SectionHeader>
-    <div ref="container" class="device-map-card__body">
+    <div ref="container" class="device-map-card__body" :class="{ 'device-map-card__body--loading': loading }">
       <!-- 宿主提供标题栏时复用同一份实时图例，避免复制状态与颜色规则。 -->
       <Teleport v-if="config.embedded && (distribution || config.showStatus)"
         :to="config.legendTarget || 'body'" :disabled="!config.legendTarget">
@@ -65,19 +69,23 @@
           </template>
           <el-amap-marker-cluster
             v-if="points.length"
-            :points="points"
+            :points="clusterLocations"
             :extraOptions="extraOptions"
             @click="onClusterClick"
           />
           <ElAmapMarker v-if="selection.view.detailDevice" :position="selection.view.detailDevice.lnglat"
             anchor="center" :clickable="false" :z-index="300">
-            <span class="device-map-card__selected-ring" />
+            <span class="device-map-card__selected-ring"
+              :style="{ color: selection.view.detailStatus?.color || 'var(--ant-primary-color, var(--accent))' }" />
           </ElAmapMarker>
-          <ElAmapInfoWindow v-if="selection.view.visible" :position="selection.view.position"
-            :visible="true" :is-custom="true" :auto-move="true" :avoid="[12, 12, 12, 12]"
+          <ElAmapInfoWindow
+            v-for="winKey in (selection.view.visible && popupMounted ? [popupKey] : [])"
+            :key="winKey"
+            :position="selection.view.position"
+            :visible="true" :is-custom="true" :auto-move="false"
             :anchor="popup.anchor" :offset="popup.offset" :close-when-click-map="true"
-            @update:visible="!$event && selection.close()">
-            <ReuseSelectionCard :layout="popup" />
+            @update:visible="!$event && onPopupClose(winKey)">
+            <div :ref="setPopupElement"><ReuseSelectionCard :layout="popup" /></div>
           </ElAmapInfoWindow>
         </a-map-component>
         <a-alert
@@ -95,6 +103,7 @@
 
 <script setup lang="ts">
 import CloudEmpty from '@jetlinks-web-core/components/CloudEmpty/index.vue'
+import DocumentHelp from '@jetlinks-web-core/components/DocumentHelp'
 import MapConfigAction from './MapConfigAction.vue'
 import { computed, ref, toRef, type CSSProperties, type PropType } from 'vue'
 import { createReusableTemplate } from '@vueuse/core'
@@ -130,14 +139,14 @@ const isEditRef = toRef(props, 'isEdit')
 const system = useSystemStore()
 const { t } = useI18n()
 const container = ref<HTMLElement>()
-// 两种底图共用同一摘要卡事件契约，高德模式交给原生信息窗定位和避让。
+// 两种底图共用摘要卡，高德信息窗跟随设备坐标。
 const [DefineSelectionCard, ReuseSelectionCard] = createReusableTemplate<{ layout?: DeviceMapPopupLayout }>()
 
 const isMapEnabled = computed(() => {
   const { apiKey, secretKey } = system.systemInfo.amap || {}
   return !!(apiKey?.trim() && secretKey?.trim())
 })
-const { config, distribution, points, loading, error, extraOptions, selection, popup, refresh, onMapInit, onClusterClick, onPointSelect, canConfigureMap, openMapConfig } = useDeviceMap(
+const { config, distribution, points, clusterLocations, loading, error, extraOptions, selection, popup, popupKey, popupMounted, onPopupClose, setPopupElement, refresh, onMapInit, onClusterClick, onPointSelect, canConfigureMap, openMapConfig } = useDeviceMap(
   infoRef,
   isEditRef,
   isMapEnabled,
@@ -171,6 +180,11 @@ const title = computed(() =>
   min-height: 320px;
 }
 
+/* 外层位置加载态开启时隐藏底图内部转圈与文案，避免两个 Spin 重叠。 */
+.device-map-card__body--loading :deep(.amap-loading > *) {
+  visibility: hidden;
+}
+
 /* 嵌入宿主卡片时只提供地图内容，保持其他独立消费者的默认外观。 */
 .device-map-card--embedded { padding: 0; background: transparent; }
 .device-map-card--embedded .device-map-card__body { min-height: 0; }
@@ -186,6 +200,11 @@ const title = computed(() =>
 .device-map-card__map {
   width: 100%;
   height: 100%;
+}
+
+/* 自绘浮卡已有箭头，去掉 SDK 为默认箭头预留的上下间距。 */
+.device-map-card__map :deep(.amap-info-contentContainer) {
+  padding-block: 0;
 }
 
 .device-map-card__status {
@@ -212,11 +231,12 @@ const title = computed(() =>
 
 .device-map-card__selected-ring {
   display: block;
-  width: 1.5rem;
-  height: 1.5rem;
-  border: 2px solid var(--ant-primary-color, var(--accent));
+  width: 24px;
+  height: 24px;
+  border: 5px solid currentColor;
   border-radius: 50%;
   box-sizing: border-box;
+  opacity: 0.24;
   pointer-events: none;
 }
 </style>

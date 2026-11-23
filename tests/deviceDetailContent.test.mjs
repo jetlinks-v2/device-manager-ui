@@ -4,7 +4,7 @@ import test from 'node:test'
 import vm from 'node:vm'
 import ts from 'typescript'
 import { transform } from 'esbuild'
-import { computed, effectScope, onScopeDispose, ref, shallowRef } from 'vue'
+import { computed, createRenderer, effectScope, h, nextTick, onScopeDispose, reactive, ref, shallowRef, Suspense, watch } from 'vue'
 
 async function parseSource(path) {
   const source = await readFile(new URL(path, import.meta.url), 'utf8')
@@ -19,7 +19,7 @@ const functionNames = [
   'mapStatePayloadToStatus', 'clearRealtimeStatusSubscription', 'clearRealtimePropertySubscription',
   'clearRealtimeSubscriptions', 'saveTags', 'syncLegacyMetadataDevice', 'onMetadataChanged',
 ]
-const variableNames = new Set(['disposed', 'loadVersion', 'snapshotVersion', 'currentLoad', 'isCurrentLoad', 'beginLoad'])
+const variableNames = new Set(['disposed', 'loadVersion', 'snapshotVersion', 'currentLoad', 'isCurrentLoad', 'beginLoad', 'syncedMetadataCurrent', 'standaloneDeviceId'])
 const selected = detailHook.body.statements.filter(node =>
   (ts.isFunctionDeclaration(node) && functionNames.includes(node.name.text))
   || (ts.isVariableStatement(node) && node.declarationList.declarations.some(item => variableNames.has(item.name.getText(detailSource))))
@@ -29,7 +29,12 @@ for (const name of functionNames) assert.ok(selected.some(node => ts.isFunctionD
 
 // 执行生产函数及真实销毁回调，隔离详情大 hook 中与这些生命周期无关的 UI/诊断依赖。
 const { code: lifecycleCode } = await transform(selected.map(node => node.getText(detailSource)).join('\n'), { loader: 'ts', target: 'es2022' })
-const lifecycleScript = new vm.Script(`(() => { ${lifecycleCode}; return { loadAll, loadDevice, loadRealtimePropertySnapshot, onDetailContentChanged, saveTags, syncLegacyMetadataDevice } })()`)
+const routeWatcher = detailHook.body.statements.find(node => ts.isExpressionStatement(node)
+  && ts.isCallExpression(node.expression) && node.expression.expression.getText(detailSource) === 'watch'
+  && node.expression.arguments[0].getText(detailSource) === '[projectId, deviceId]')
+assert.ok(routeWatcher, 'production route watcher exists')
+const { code: routeWatcherCode } = await transform(routeWatcher.getText(detailSource), { loader: 'ts' })
+const lifecycleScript = new vm.Script(`(() => { ${lifecycleCode}; return { loadAll, loadDevice, loadRealtimePropertySnapshot, onDetailContentChanged, saveTags, syncLegacyMetadataDevice, watchRoute() { ${routeWatcherCode} } } })()`)
 
 function deferred() {
   let resolve
@@ -37,15 +42,16 @@ function deferred() {
   return { promise, resolve }
 }
 
-function fixture(t, { custom = true, properties = [] } = {}) {
+function fixture(t, { custom = true, properties = [], routeDeviceId = ref('A'), props = {} } = {}) {
   let dispose
   let activeSubscriptions = 0
   let statusCallback
   const calls = []
   const context = {
     // 生产 hook 默认以非嵌入式详情运行；隔离执行时也需提供同一参数闭包。
-    props: {},
-    deviceId: ref('A'), projectId: ref('P'), device: shallowRef(null),
+    props,
+    watch, nextTick,
+    deviceId: routeDeviceId, projectId: ref('P'), device: shallowRef(null),
     detailContent: shallowRef(custom ? {} : undefined),
     detailContentRef: shallowRef({ refresh: async () => { calls.push('content') } }),
     activeRealtimePropertyKeys: ref(properties), realtimePropertyValues: ref({}),
@@ -85,7 +91,9 @@ function fixture(t, { custom = true, properties = [] } = {}) {
   }
   const api = lifecycleScript.runInNewContext(context)
   t.after(() => dispose())
-  return { context, api, calls, dispose: () => dispose(), activeSubscriptions: () => activeSubscriptions, status: payload => statusCallback(payload) }
+  return { context, api, calls, dispose: () => dispose(), activeSubscriptions: () => activeSubscriptions, status: payload => statusCallback(payload),
+    watchRoute: api.watchRoute,
+  }
 }
 
 test('a detail response arriving after disposal cannot rebuild subscriptions or continue loading', async t => {
@@ -126,6 +134,100 @@ test('embedded configuration panels reuse the host definition without snapshots 
   assert.equal(snapshots, 1, 'the data panel still loads its requested property snapshot')
   assert.equal(f.activeSubscriptions(), 1)
   assert.deepEqual(f.calls, [], 'embedded data must not load independent detail diagnostics')
+})
+
+test('disposing the gateway detail after the child is loaded cannot clear the child metadata', async t => {
+  const gateway = fixture(t, { routeDeviceId: ref('gateway') }), child = fixture(t, { routeDeviceId: ref('child') })
+  const store = reactive({ current: {}, setCurrent(value) { this.current = value } })
+  gateway.context.instanceStore = child.context.instanceStore = store
+  gateway.context.iotDeviceService.getDevice = async () => ({ ok: true, data: {
+    id: 'gateway', thingModelMetadata: { properties: [{ id: 'gateway-status' }] },
+  } })
+  child.context.iotDeviceService.getDevice = async () => ({ ok: true, data: {
+    id: 'child', thingModelMetadata: { properties: [{ id: 'temperature' }] },
+  } })
+
+  await gateway.api.loadAll()
+  await child.api.loadAll()
+  const childCurrent = store.current
+  // Suspense 在新详情的异步 setup 完成后才卸载旧详情。
+  gateway.dispose()
+  assert.equal(store.current, childCurrent)
+  assert.equal(store.current.id, 'child')
+  assert.deepEqual(JSON.parse(store.current.metadata).properties.map(item => item.id), ['temperature'])
+  child.dispose()
+  assert.deepEqual(Object.keys(store.current), [], 'the current owner still clears its own state')
+})
+
+test('disposing an older embedded panel of the same device preserves the newer panel metadata', async t => {
+  const previous = fixture(t), current = fixture(t)
+  const store = reactive({ current: {}, setCurrent(value) { this.current = value } })
+  previous.context.instanceStore = current.context.instanceStore = store
+  await previous.api.loadAll()
+  await current.api.loadAll()
+  const latest = store.current
+  previous.dispose()
+  assert.equal(store.current, latest, 'device ID alone cannot distinguish two owners of the same device')
+})
+
+test('keyed Suspense navigation preserves child metadata and prevents the retiring detail from loading it', async t => {
+  const node = () => ({ children: [], parent: null })
+  const renderer = createRenderer({
+    createElement: node, createText: node, createComment: node,
+    setText() {}, setElementText() {}, patchProp() {},
+    parentNode: item => item.parent, nextSibling: () => null,
+    insert(item, parent) { item.parent = parent; parent.children.push(item) },
+    remove(item) { if (item.parent) item.parent.children = item.parent.children.filter(child => child !== item) },
+  })
+  const routeDeviceId = ref('gateway')
+  const store = reactive({ current: {}, setCurrent(value) { this.current = value } })
+  const requested = [], disposed = []
+  const childReady = deferred()
+  const flush = async () => { for (let i = 0; i < 12; i++) { await Promise.resolve(); await nextTick() } }
+  const Detail = { async setup() {
+    const mountedId = routeDeviceId.value
+    const f = fixture(t, { routeDeviceId })
+    f.context.instanceStore = store
+    f.context.iotDeviceService.getDevice = async (_project, id) => {
+      requested.push(`${mountedId}:${id}`)
+      return { ok: true, data: { id, thingModelMetadata: { properties: [{ id: `${id}-property` }] } } }
+    }
+    if (mountedId === 'child') f.context.detailContentRef.value.refresh = () => childReady.promise
+    f.watchRoute()
+    onScopeDispose(() => { f.dispose(); disposed.push(mountedId) })
+    await f.api.loadAll()
+    return () => h('div')
+  } }
+  const app = renderer.createApp({ setup: () => () => h(Suspense, null, {
+    default: () => h(Detail, { key: routeDeviceId.value }),
+  }) })
+  app.mount(node())
+  t.after(() => app.unmount())
+  await flush()
+  assert.equal(store.current.id, 'gateway')
+
+  routeDeviceId.value = 'child'
+  await flush()
+  assert.equal(store.current.id, 'child')
+  assert.deepEqual(disposed, [], 'the old detail remains mounted while the new async setup is pending')
+  assert.deepEqual(requested, ['gateway:gateway', 'child:child'], 'the old route watcher cannot load the new device')
+  childReady.resolve()
+  await flush()
+  assert.deepEqual(disposed, ['gateway'])
+  assert.equal(store.current.id, 'child')
+  assert.deepEqual(JSON.parse(store.current.metadata).properties.map(item => item.id), ['child-property'])
+})
+
+test('embedded detail can still change device without a keyed remount', async t => {
+  const props = { embedded: { deviceId: 'A', deviceDetail: { id: 'A' }, panel: 'thing-model' } }
+  const f = fixture(t, { props })
+  f.context.mapApiDevice = value => value
+  await f.api.loadAll()
+  props.embedded.deviceId = f.context.deviceId.value = 'B'
+  props.embedded.deviceDetail = { id: 'B', thingModelMetadata: { properties: [{ id: 'updated' }] } }
+  await f.api.loadAll()
+  assert.equal(f.context.instanceStore.current.id, 'B')
+  assert.equal(JSON.parse(f.context.instanceStore.current.metadata).properties[0].id, 'updated')
 })
 
 test('a snapshot for the previous route cannot write values or start subscriptions', async t => {
@@ -303,4 +405,34 @@ test('the actual provider hook follows loaded accessProvider, ignores list query
     assert.equal(provider.value, undefined)
   } finally { scope.stop() }
   assert.equal(listeners.size, 0, 'provider registry subscription is disposed with its scope')
+})
+
+test('device summary tooltips share the visible empty text without truncating configured values', async () => {
+  const fields = ['regionText', 'regionFullText', 'businessGroupText', 'businessGroupFullText', 'lastSeenText']
+  const bindings = new Set([...fields, 'regionItems', 'businessGroupItems'])
+  const helpers = new Set(['uniqueDisplayTexts', 'limitedDisplayText'])
+  const statements = detailHook.body.statements.filter(node =>
+    (ts.isFunctionDeclaration(node) && helpers.has(node.name?.text))
+    || (ts.isVariableStatement(node) && node.declarationList.declarations.some(item => bindings.has(item.name.getText(detailSource)))),
+  )
+  const { code } = await transform(statements.map(node => node.getText(detailSource)).join('\n'), { loader: 'ts' })
+  const zh = JSON.parse(await readFile(new URL('../locales/lang/zh.json', import.meta.url), 'utf8'))
+  const coreZh = JSON.parse(await readFile(new URL('../../../jetlinks-web-core/src/locales/lang/zh.json', import.meta.url), 'utf8'))
+  const device = ref({ area: '--', groupName: '未分组', lastSeen: '--' })
+  const summary = new vm.Script(`(() => { ${code}; return [${fields.join(',')}] })()`).runInNewContext({
+    computed, device, $t: (key, values) => (zh[key] ?? coreZh[key]).replace(/\{(\w+)\}/g, (_, name) => values[name]),
+  })
+  const values = () => Array.from(summary, field => field.value)
+  assert.deepEqual(values(), ['未配置', '未配置', '未配置', '未配置', '未上报'])
+  device.value = {}
+  assert.equal(values()[4], '未上报')
+  device.value = {
+    areaBindings: [{ area: 'A' }, { area: 'B' }, { area: 'C' }],
+    groupBindings: [{ name: 'X' }, { name: 'Y' }, { name: 'Z' }],
+    lastSeen: '2026-11-20 15:30',
+  }
+  const [area, areaFull, group, groupFull, lastSeen] = values()
+  assert.notEqual(area, areaFull)
+  assert.notEqual(group, groupFull)
+  assert.deepEqual([areaFull, groupFull, lastSeen], ['A、B、C', 'X、Y、Z', '2026-11-20 15:30'])
 })

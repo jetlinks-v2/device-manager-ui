@@ -1,114 +1,64 @@
 <template>
-  <a-spin :spinning="accessLoading">
-    <CloudEmpty
-      v-if="!accessDetail?.id && !accessLoading"
-      class="access-empty"
-      :description="$t('IotDeviceDetail.accessGuide.noConfig')"
-    />
-    <div
-      v-else
-      class="access-guide-layout"
-      :class="{ 'access-guide-layout--with-doc': showRightGuide }"
-    >
-      <div class="access-guide-main">
-        <a-alert
-          class="access-guide-tip"
-          :type="accessGuideTip.type"
-          show-icon
-          :message="accessGuideTip.message"
-        />
-        <a-list
-          class="access-item-list"
-          item-layout="vertical"
-          :split="true"
-          size="small"
-        >
-          <a-list-item class="access-list-item">
-            <a-list-item-meta>
-              <template #title>
-                <div class="access-meta-title">
-                        <div class="title-before" aria-hidden="true" />
-                  <span>{{ $t('IotDeviceDetail.accessGuide.accessMode') }}</span>
-                </div>
-              </template>
-              <template #description>
-                <div class="access-method-card">
-                  <div class="access-method-card__row">
-                    <a-tooltip :title="accessModeText">
-                      <span class="access-method-name">{{ accessModeText }}</span>
-                    </a-tooltip>
-                    <a-tooltip v-if="transportText !== '--'" :title="transportText">
-                      <a-tag class="access-method-tag access-method-tag--transport">{{ transportText }}</a-tag>
-                    </a-tooltip>
-                  </div>
-                  <div v-if="accessModeDescription !== '--'" class="access-method-card__desc">{{ accessModeDescription }}</div>
-                </div>
-              </template>
-            </a-list-item-meta>
-          </a-list-item>
-
-          <a-list-item class="access-list-item">
-            <a-list-item-meta>
-              <template #title>
-                <div class="access-meta-title">
-                  <div class="title-before" aria-hidden="true" />
-                  <span>{{ $t('IotDeviceDetail.accessGuide.accessAddress') }}</span>
-                </div>
-              </template>
-              <template #description>
-                <div
-                  v-if="addressRows.length"
-                  class="address-list"
-                >
-                  <div
-                    v-for="addr in addressRows"
-                    :key="addr.address"
-                    class="address-item"
-                    @click="copyText(addr.address)"
-                  >
-                    <a-badge
-                      :color="addr.health === -1 ? 'red' : 'green'"
-                      :text="addr.address"
-                    />
-                    <AIcon type="CopyOutlined" />
-                  </div>
-                </div>
-                <CloudEmpty v-else :description="$t('IotDeviceDetail.accessGuide.noAddress')" />
-              </template>
-            </a-list-item-meta>
-          </a-list-item>
-
-          <IotDeviceAccessConfigSection
-            v-if="configGroups.length"
-            :config-groups="configGroups"
-            :get-config-value="getConfigValue"
-            :render-config-value="renderConfigValue"
-            @copy="copyText"
-            @edit="openConfigEditor"
-          />
-
-          <IotDeviceAccessPrincipalSection
-            v-if="principalRows.length"
-            :principal-rows="principalRows"
-            :resetting="resettingPrincipal"
-            @copy="copyText"
-            @reset="resetPrincipal"
-          />
-        </a-list>
-      </div>
-
-      <IotDeviceAccessGuideAside
-        v-if="showRightGuide"
-        :show-access-guide="showAccessGuide"
-        :access-guide-document="accessGuideDocument"
-        :access-guide-loading="accessGuideLoading"
-        :access-guide-load-failed="accessGuideLoadFailed"
-        :protocol-document="protocolDocument"
-        @guide-click="onProtocolDocClick"
-        @protocol-click="onProtocolDocClick"
+  <div class="access-guide-loading">
+    <a-spin :spinning="accessLoading">
+      <CloudEmpty
+        v-if="!accessDetail?.id && !accessLoading"
+        class="access-empty"
+        :description="$t('IotDeviceDetail.accessGuide.noConfig')"
       />
-    </div>
-  </a-spin>
+      <div v-else class="access-guide-content">
+        <a-alert class="access-guide-tip" :type="accessGuideTip.type" show-icon :message="accessGuideTip.message" />
+        <div class="access-guide-layout" :class="{ 'access-guide-layout--with-doc': showRightGuide }">
+          <div class="access-guide-main">
+            <a-list class="access-item-list" item-layout="vertical" :split="false" size="small">
+              <a-list-item class="access-list-item">
+                <a-list-item-meta>
+                  <template #title><span>{{ $t('IotDeviceDetail.accessGuide.accessMode') }}</span></template>
+                  <template #description>
+                    <AccessMethodSummary with-icon :summary="{
+                      name: accessModeText,
+                      transport: transportText,
+                      protocol: getI18nText(accessDetail?.protocolDetail, 'name'),
+                      description: accessModeDescription,
+                    }" />
+                  </template>
+                </a-list-item-meta>
+              </a-list-item>
+              <a-list-item class="access-list-item">
+                <a-list-item-meta>
+                  <template #title>
+                    <div class="access-section-head">
+                      <span>{{ $t('IotDeviceDetail.accessGuide.accessAddress') }}</span>
+                      <a-button size="small" :disabled="!addressRows.length" @click="copyText(addressRows.map(row => row.address).join('\n'))">
+                        <AIcon type="CopyOutlined" />{{ $t('IotDeviceDetail.accessConfig.copy') }}
+                      </a-button>
+                    </div>
+                  </template>
+                  <template #description>
+                    <div v-if="addressRows.length" class="address-list">
+                      <button v-for="addr in addressRows" :key="addr.address" type="button" class="address-item" @click="copyText(addr.address)">
+                        <a-badge :color="addr.health === -1 ? 'red' : 'green'" />
+                        <code>{{ addr.address }}</code>
+                      </button>
+                    </div>
+                    <div v-else class="access-address-empty">{{ $t('IotDeviceDetail.accessGuide.noAddress') }}</div>
+                  </template>
+                </a-list-item-meta>
+              </a-list-item>
+              <IotDeviceAccessConfigSection v-if="configGroups.length" :config-groups="configGroups"
+                :get-config-value="getConfigValue" :render-config-value="renderConfigValue" @copy="copyText" @edit="openConfigEditor" />
+              <IotDeviceAccessPrincipalSection v-if="principalRows.length" :principal-rows="principalRows"
+                :resetting="resettingPrincipal" @copy="copyText" @reset="resetPrincipal" />
+            </a-list>
+          </div>
+          <IotDeviceAccessGuideAside v-if="showRightGuide" :show-access-guide="showAccessGuide"
+            :access-guide-document="accessGuideDocument" :access-guide-loading="accessGuideLoading"
+            :access-guide-load-failed="accessGuideLoadFailed" :protocol-document="protocolDocument"
+            @guide-click="onProtocolDocClick" @protocol-click="onProtocolDocClick" />
+        </div>
+      </div>
+    </a-spin>
+  </div>
 
   <a-modal
     v-model:open="configEditorOpen"
@@ -161,6 +111,8 @@ import { isPrivateDeployment } from '@jetlinks-web-core/utils/deployment'
 import type { DeviceTemplate } from '../../services/device-library/types'
 import { useIotDeviceAccessDetail } from '../../hooks/useIotDeviceAccessDetail'
 import type { IotDevice } from '../../types'
+import AccessMethodSummary from '../../../components/AccessMethodSummary.vue'
+import { getI18nText } from '../../../../../utils/i18n'
 import IotDeviceAccessConfigSection from './IotDeviceAccessConfigSection.vue'
 import IotDeviceAccessGuideAside from './IotDeviceAccessGuideAside.vue'
 import IotDeviceAccessPrincipalSection from './IotDeviceAccessPrincipalSection.vue'
@@ -203,13 +155,13 @@ const {
 } = useIotDeviceAccessDetail(props, deviceId => emit('configSaved', deviceId))
 
 const showAccessGuide = !isPrivateDeployment()
-const showRightGuide = computed(() => Boolean(accessDetail.value?.id) && (showAccessGuide || Boolean(protocolDocument.value)))
+const showRightGuide = computed(() => Boolean(accessDetail.value?.id))
 const isDisabled = computed(() => props.device.status === 'disabled' || props.device.connectionStatus === 'disabled')
 const isOnline = computed(() => props.device.status === 'online' || props.device.status === 'alarm')
-const accessModeText = computed(() => displayText(accessDetail.value?.name || props.device.accessName || props.device.accessMode))
+const accessModeText = computed(() => displayText(getI18nText(accessDetail.value, 'name') || props.device.accessName || props.device.accessMode))
 const transportText = computed(() => displayText(accessDetail.value?.transport || props.device.transport))
 const accessModeDescription = computed(() => {
-  const text = displayText(accessDetail.value?.description || providerDescription.value || $t('IotDeviceDetail.accessGuide.accessModeDefaultDesc'))
+  const text = displayText(getI18nText(accessDetail.value, 'description') || providerDescription.value || $t('IotDeviceDetail.accessGuide.accessModeDefaultDesc'))
   const normalizedText = text.toLowerCase()
   if ([accessModeText.value, transportText.value].some((value) => value !== '--' && value.toLowerCase() === normalizedText)) {
     return '--'
@@ -266,134 +218,4 @@ watch(
 )
 </script>
 
-<style lang="less" scoped>
-.access-empty {
-  padding: var(--space-8) 0;
-  color: var(--jet-theme-text-disabled);
-  text-align: center;
-}
-
-.access-guide-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-4);
-
-  &--with-doc {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-}
-
-.access-guide-main,
-.access-guide-doc {
-  min-width: 0;
-}
-
-.access-list-item {
-  padding: var(--space-3) 0 !important;
-}
-
-.access-guide-tip {
-  margin-bottom: var(--space-3);
-  font-size: var(--fs-12);
-  line-height: 1.45;
-}
-
-.access-guide-tip :deep(.ant-alert-message) {
-  font-size: var(--fs-12);
-  line-height: 1.45;
-}
-
-.access-meta-title {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.title-before {
-  width: 0.1875rem;
-  height: var(--space-3);
-  border-radius: var(--r-1);
-  background: var(--jet-theme-primary);
-}
-
-.item-style,
-.address-list,
-.access-method-card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.access-method-card {
-  align-items: flex-start;
-}
-
-.access-method-card__row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-  min-width: 0;
-}
-
-.access-method-name {
-  display: inline-block;
-  max-width: 24rem;
-  overflow: hidden;
-  color: var(--jet-theme-text);
-  font-size: var(--fs-14);
-  line-height: 1.5;
-  text-overflow: ellipsis;
-  vertical-align: bottom;
-  white-space: nowrap;
-}
-
-.access-method-tag {
-  display: inline-flex;
-  align-items: center;
-  max-width: 18rem;
-  min-height: 1.5rem;
-  margin-inline-end: 0;
-  font-weight: 500;
-}
-
-.access-method-tag :deep(.ant-tag) {
-  min-width: 0;
-}
-
-.access-method-tag--transport {
-  border-color: var(--jet-theme-border-secondary);
-  background: var(--jet-theme-bg-layout);
-  color: var(--jet-theme-text-secondary);
-}
-
-.access-method-card__desc {
-  max-width: 100%;
-  color: var(--jet-theme-text-secondary);
-  font-size: var(--fs-14);
-  line-height: 1.6;
-}
-
-.address-item {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  width: fit-content;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-}
-
-@media (max-width: 75rem) {
-  .access-guide-layout--with-doc {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-@media (max-width: 75rem) {
-  .access-guide-layout--with-doc {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-</style>
+<style scoped lang="less" src="./IotDeviceAccessGuidePane.less" />

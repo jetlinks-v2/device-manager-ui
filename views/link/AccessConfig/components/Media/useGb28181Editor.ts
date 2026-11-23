@@ -9,6 +9,7 @@ import type { Rule } from 'ant-design-vue/es/form';
 import { testIpv4_6 } from '@jetlinks-web-core/utils/validate';
 import { useI18n } from 'vue-i18n';
 import { useTabSaveSuccessBack } from '@jetlinks-web-core/hooks';
+import { useValidateInfosBlur } from '@device-manager-ui/hooks/useValidateInfosBlur';
 export const editorProps = {
     provider: {
         type: Object,
@@ -141,7 +142,7 @@ export function useGb28181Editor(props: Readonly<ExtractPropTypes<typeof editorP
             };
         });
     };
-    const { resetFields, validate, validateInfos } = useForm(formData, reactive({
+    const { resetFields, validate, validateInfos, rulesRef } = useForm(formData, reactive({
         name: [
             { required: true, message: $t('Media.GB28181.666483-28'), trigger: 'blur' },
             {
@@ -152,6 +153,7 @@ export function useGb28181Editor(props: Readonly<ExtractPropTypes<typeof editorP
         ],
         description: [{ max: 200, message: $t('Media.GB28181.666483-40') }]
     }));
+    useValidateInfosBlur({ validateInfos, validate, rulesRef });
     const saveData = () => {
         validate().then(async (values) => {
             params = {

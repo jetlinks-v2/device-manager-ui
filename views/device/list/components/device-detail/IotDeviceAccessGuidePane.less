@@ -1,0 +1,23 @@
+.access-guide-loading, .access-guide-loading :deep(> .ant-spin-nested-loading), .access-guide-loading :deep(> .ant-spin-nested-loading > .ant-spin-container) { min-height: 0; }
+.access-guide-content { display: flex; flex-direction: column; min-height: 0; gap: var(--space-3); }
+.access-guide-tip { flex-shrink: 0; font-size: var(--fs-14); }
+.access-guide-layout { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: var(--space-3); min-height: 0; }
+.access-guide-layout--with-doc { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.access-guide-main { min-width: 0; min-height: 0; }
+.access-guide-layout :deep(.access-guide-doc) { position: sticky; top: var(--space-4); height: clamp(26rem, calc(100vh - 31rem), 40rem); }
+.access-guide-main :deep(.ant-list-item) { margin-bottom: var(--space-3); padding: var(--space-4) !important; border: 1px solid var(--jet-theme-border-secondary); border-radius: var(--r-2); background: var(--jet-theme-bg-container); }
+.access-guide-main :deep(.ant-list-item:last-child) { margin-bottom: 0; }
+.access-guide-main :deep(.ant-list-item-meta-title) { margin-bottom: var(--space-3); color: var(--jet-theme-text); font-size: var(--fs-14); font-weight: 600; }
+.access-section-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.address-list { display: grid; gap: var(--space-2); }
+.address-item { display: flex; align-items: center; gap: var(--space-2); width: 100%; padding: var(--space-2) var(--space-3); border: 0; border-radius: var(--r-1); background: var(--jet-theme-bg-layout); color: var(--jet-theme-text); text-align: left; cursor: pointer; }
+.address-item code { min-width: 0; overflow-wrap: anywhere; }
+.address-item:focus-visible { outline: 2px solid var(--jet-theme-primary); outline-offset: 2px; }
+.access-address-empty { color: var(--jet-theme-text-secondary); }
+.access-empty { padding: var(--space-8) 0; text-align: center; }
+@media (max-width: 60rem) {
+  .access-guide-content { height: auto; }
+  .access-guide-layout--with-doc { grid-template-columns: 1fr; }
+  .access-guide-main { overflow: visible; }
+  .access-guide-layout :deep(.access-guide-doc) { position: static; height: 28rem; }
+}

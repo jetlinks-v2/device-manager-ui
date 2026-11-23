@@ -1,12 +1,14 @@
 import { request } from '@jetlinks-web/core'
 import i18n from '@jetlinks-web-core/locales'
 import { restoreDeviceLibraryAlarms_api } from '@device-manager-ui/api/device-library'
+import { detail as getDeviceDetail } from '@device-manager-ui/api/instance'
 import {
   withIotDeviceListDefaultTerms,
 } from '@device-manager-ui/api/deviceListDefaultTerms'
 import { replaceAlarm } from '../components/PropertyRules/codec'
 import { localizeDeviceLibraryPreprocessors, resolveI18nText } from './deviceLibraryI18n'
 import { normalizeNotification, toDeviceAlarmPageRow, toDeviceAlarmRow } from './utils'
+import { fixedNotificationMethods } from './notificationFixedChannels'
 import { hasTemplateBinding, verifiedTemplateState, type TemplateState } from './notificationTemplateStatus'
 import type {
   AlarmLevelOption,
@@ -91,6 +93,7 @@ export const deviceAlarmApi = {
     request.get('/notify/channel/all'),
   queryNotifyTypes: () =>
     request.get('/notify/channel/providers'),
+  queryNotifier: (id: string) => request.get(`/notifier/config/${encodeURIComponent(id)}`),
   queryNotifyTemplates: (providerId: string) =>
     request.get(`/notify/channel/${encodeURIComponent(providerId)}/_query-with-templates`),
   queryNotifyUsers: (data: {
@@ -150,6 +153,12 @@ export async function queryProductMetadata(productId?: string): Promise<unknown>
   if (!id) return undefined
   const detail = unwrapResult<any>(await deviceAlarmApi.getProductDetail(id))
   return detail?.metadata ?? detail?.deriveMetadata ?? detail?.thingModel
+}
+
+/** 设备详情已处理产品继承和独立物模型，不能用列表字段或产品回退代替。 */
+export async function queryDeviceMetadata(deviceId: string): Promise<unknown> {
+  const detail = unwrapResult<{ metadata?: unknown }>(await getDeviceDetail(deviceId))
+  return detail?.metadata
 }
 
 export async function queryAlarmTargets(source: DeviceAlarmSource, keyword = ''): Promise<DeviceAlarmTargetOption[]> {
@@ -254,7 +263,7 @@ export async function queryDeviceAlarmNotifyMethods(): Promise<DeviceAlarmNotify
     deviceAlarmApi.queryNotifyTypes().then(unwrapNotifyList), deviceAlarmApi.queryNotifyChannels().then(unwrapNotifyList),
   ])
   // Keep picker eligibility unchanged. Template query permissions/failures only make the displayed status unknown.
-  const methodIds = new Set(toNotifyMethods(types, providers).map(method => method.providerId))
+  const methodIds = new Set(types.filter(isRecord).map(type => stringify(type.id)))
   const candidates = providers.filter(isRecord).filter(provider =>
     ['alarm-device', 'alarm-device-relieve'].includes(stringify(provider.provider)) && isEnabledState(provider.state)
     && stringify(provider.id) && normalizeRecords(provider.channels).some(channel =>
@@ -271,7 +280,18 @@ export async function queryDeviceAlarmNotifyMethods(): Promise<DeviceAlarmNotify
       details.set(stringify(provider.id), undefined)
     }
   }))
-  return toNotifyMethods(types, providers, details)
+  const notifierIds = [...new Set(candidates.flatMap(provider => normalizeRecords(provider.channels))
+    .filter(channel => stringify(channel.channelProvider).toLowerCase().includes('dingtalk') && hasTemplateBinding(channel))
+    .map(channel => stringify(channel.channelConfiguration?.notifierId)))]
+  const notifiers = new Map<string, Record<string, any>>()
+  await Promise.all(notifierIds.map(async id => {
+    const response = await deviceAlarmApi.queryNotifier(id)
+    if (isRecord(response) && (response.success === false || Number(response.status) >= 400)) throw new Error('Unable to load DingTalk configuration')
+    const config = unwrapResult(response)
+    if (!isRecord(config) || !config.provider) throw new Error('Invalid DingTalk configuration')
+    notifiers.set(id, config)
+  }))
+  return toNotifyMethods(types, providers, details, notifiers)
 }
 
 function unwrapNotifyList(response: unknown): unknown[] {
@@ -283,31 +303,43 @@ function unwrapNotifyList(response: unknown): unknown[] {
 }
 
 /** Only the current user's enabled device-alarm configuration grants selectable delivery types. */
-export function toNotifyMethods(types: unknown[], providers?: unknown[], details: ReadonlyMap<string, unknown> = new Map()): DeviceAlarmNotifyMethod[] {
+export function toNotifyMethods(types: unknown[], providers?: unknown[], details: ReadonlyMap<string, unknown> = new Map(), notifiers: ReadonlyMap<string, Record<string, any>> = new Map()): DeviceAlarmNotifyMethod[] {
   const available = (providers ?? []).filter(isRecord).filter(provider => isEnabledState(provider.state))
   if (!available.some(provider => provider.provider === DEVICE_ALARM_NOTIFY_PROVIDER)) return []
-  return types.filter(isRecord).filter(type => stringify(type.receiverPolicy?.value ?? type.receiverPolicy) !== 'explicit').flatMap(type => {
+  const fixed = fixedNotificationMethods(available, details, notifiers)
+  const fixedIds = new Set(available.flatMap(provider => normalizeRecords(provider.channels)).filter(channel => {
+    const config = notifiers.get(stringify(channel.channelConfiguration?.notifierId))
+    return config?.type === 'dingTalk' && config.provider === 'dingTalkRobotWebHook'
+  }).map(channel => stringify(channel.id)))
+  // Fixed-address channels such as WebHook are selectable; receiverPolicy only controls backend delivery.
+  const ordinary = types.filter(isRecord).flatMap(type => {
     const id = stringify(type.id)
     if (!id) return []
     const key = notifyMethodKey(id)
     const channels = (topic: string) => available.filter(provider => provider.provider === topic)
       .flatMap(provider => normalizeRecords(provider.channels))
-      .filter(channel => channel.channelProvider === id && isEnabledState(channel.state))
+      .filter(channel => channel.channelProvider === id && isEnabledState(channel.state) && !fixedIds.has(stringify(channel.id)))
     const status = (topic: string): NonNullable<DeviceAlarmNotifyMethod['templates']>['trigger'] => {
       if (id === 'inside-mail') return 'unneeded'
       const states: TemplateState[] = available.filter(provider => provider.provider === topic).flatMap(provider =>
-        normalizeRecords(provider.channels).filter(channel => channel.channelProvider === id && isEnabledState(channel.state))
+        normalizeRecords(provider.channels).filter(channel => channel.channelProvider === id && isEnabledState(channel.state) && !fixedIds.has(stringify(channel.id)))
           .map(channel => !hasTemplateBinding(channel) ? 'missing' : verifiedTemplateState(details.get(stringify(provider.id)), channel)))
       return states.includes('ready') ? 'ready' : states.includes('unknown') ? 'unknown' : 'missing'
     }
     const templates = { trigger: status(DEVICE_ALARM_NOTIFY_PROVIDER), relieve: status('alarm-device-relieve') }
     if (id !== 'inside-mail' && !channels(DEVICE_ALARM_NOTIFY_PROVIDER).some(hasTemplateBinding)) return []
     return [{
-      id, providerId: id, key, label: stringify(type.name) || id, desc: '', icon: notifyMethodIcon(key),
+      id, providerId: id, key, label: key === 'dingtalk' ? i18n.global.t('DeviceAlarm.notification.dingTalkWork') : stringify(type.name) || id,
+      desc: '', icon: notifyMethodIcon(key),
       channelIds: channels(DEVICE_ALARM_NOTIFY_PROVIDER).map(channel => stringify(channel.id)).filter(Boolean),
+      ...(key === 'dingtalk' && notifiers.size ? { personnelChannels: { providerId: id,
+        trigger: channels(DEVICE_ALARM_NOTIFY_PROVIDER).map(channel => stringify(channel.id)).filter(Boolean),
+        relieve: channels('alarm-device-relieve').map(channel => stringify(channel.id)).filter(Boolean),
+      } } : {}),
       templates,
     }]
   })
+  return [...ordinary, ...fixed]
 }
 
 export async function queryDeviceAlarmNotifyUsers(
@@ -590,8 +622,9 @@ function resolvePreprocessorResource(templateResource: Record<string, any> | und
 
 function isNotificationConfigured(config: unknown) {
   if (!isRecord(config)) return false
-  return (hasValues(config.channelProviders) || hasValues(config.notifyChannelIds))
-    && (hasValues(config.userIds) || hasValues(config.dimensions))
+  return ((hasValues(config.channelProviders) || hasValues(config.notifyChannelIds))
+    && (hasValues(config.userIds) || hasValues(config.dimensions)))
+    || Array.isArray(config.fixedReceiverChannels) && config.fixedReceiverChannels.some(channel => channel?.channelId && channel?.templateId)
 }
 
 function isNotificationEnabled(config: unknown) {

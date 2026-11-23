@@ -108,6 +108,8 @@ export interface IotDevice {
   accessName?: string
   /** 真实接入方式枚举值，与旧版 accessProvider 对齐。 */
   accessProvider?: string
+  /** 设备接入方式 ID，供插件设备 ID 映射查询和保存。 */
+  accessId?: string
   /** 真实设备实例协议 ID，透明编解码调试查询协议路由时使用。 */
   protocol?: string
   /** 真实设备实例传输协议，透明编解码调试区分 Topic / URL 时使用。 */
@@ -115,6 +117,9 @@ export interface IotDevice {
   /** 设备实例能力特性，按旧版详情用于显示数据解析等功能页签。 */
   features?: Array<{ id?: string; name?: string; [key: string]: any }>
   gatewayName?: string
+  /** 网关子设备所属的父设备，来自实例绑定关系。 */
+  parentId?: string
+  parentName?: string
   identifier: string
   imageUrl?: string
   summary: string

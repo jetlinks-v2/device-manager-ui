@@ -14,14 +14,14 @@
         <!--          </div>-->
         <!--        </a-tooltip> -->
         <!-- </div> -->
-        <a-tabs
+        <DeviceDetailTabs
             class="metadataNav"
             :activeKey="tabActiveKey"
             destroyInactiveTabPane
-            type="card"
+
             @change="tabsChange"
         >
-            <template #rightExtra>
+            <template v-if="!readonly" #rightExtra>
                 <a-space>
                     <j-permission-button
                         v-if="showReset"
@@ -50,35 +50,55 @@
                     >
                 </a-space>
             </template>
-            <a-tab-pane :tab="$t('Metadata.index.838029-6')" key="properties">
+            <a-tab-pane key="properties">
+                <template #tab>
+                    {{ $t('Metadata.index.838029-6') }}
+                    <DocumentHelp code="device/Product" help-key="metadata.tabs.properties" />
+                </template>
                 <BaseMetadata
                     :target="type"
                     type="properties"
                     :permission="updatePermission"
+                    :readonly="readonly"
                 />
             </a-tab-pane>
-            <a-tab-pane :tab="$t('Metadata.index.838029-7')" key="functions">
+            <a-tab-pane key="functions">
+                <template #tab>
+                    {{ $t('Metadata.index.838029-7') }}
+                    <DocumentHelp code="device/Product" help-key="metadata.tabs.functions" />
+                </template>
                 <BaseMetadata
                     :target="type"
                     type="functions"
                     :permission="updatePermission"
+                    :readonly="readonly"
                 />
             </a-tab-pane>
-            <a-tab-pane :tab="$t('Metadata.index.838029-8')" key="events">
+            <a-tab-pane key="events">
+                <template #tab>
+                    {{ $t('Metadata.index.838029-8') }}
+                    <DocumentHelp code="device/Product" help-key="metadata.tabs.events" />
+                </template>
                 <BaseMetadata
                     :target="type"
                     type="events"
                     :permission="updatePermission"
+                    :readonly="readonly"
                 />
             </a-tab-pane>
-            <a-tab-pane :tab="$t('Metadata.index.838029-9')" key="tags">
+            <a-tab-pane key="tags">
+                <template #tab>
+                    {{ $t('Metadata.index.838029-9') }}
+                    <DocumentHelp code="device/Product" help-key="metadata.tabs.tags" />
+                </template>
                 <BaseMetadata
                     :target="type"
                     type="tags"
                     :permission="updatePermission"
+                    :readonly="readonly"
                 />
             </a-tab-pane>
-        </a-tabs>
+        </DeviceDetailTabs>
         <teleport v-if="content" :to="content">
           <div
             class="center-extra-content"
@@ -86,6 +106,7 @@
           >
             <j-ellipsis class="desc">
                 {{ $t('Metadata.index.838029-5') }}
+                <DocumentHelp v-if="type === 'device'" code="iot-user-device-list" help-key="metadata.inherited" />
             </j-ellipsis>
           </div>
         </teleport>
@@ -99,6 +120,8 @@
     </div>
 </template>
 <script setup lang="ts">
+import DeviceDetailTabs from '@device-manager-ui/views/device/components/DeviceDetailTabs.vue'
+import DocumentHelp from '@jetlinks-web-core/components/DocumentHelp';
 import { deleteMetadata } from '../../../../api/instance.js';
 import { message } from 'ant-design-vue';
 import { useInstanceStore } from '../../../../store/instance';
@@ -138,6 +161,8 @@ const updatePermission = computed(() => {
     const code = props.updatePermission ?? `${permission.value}:update`;
     return typeof code === 'boolean' ? code : authStore.hasPermission(code);
 });
+// 产品和设备均按编辑权限开放物模型，环境不再强制只读。
+const readonly = computed(() => !updatePermission.value);
 const visible = ref(false);
 const cat = ref(false);
 const tabActiveKey = ref('properties');

@@ -9,6 +9,7 @@ import {
   queryDefaultAlarmLevels,
   queryDeviceAlarmPage,
   queryDeviceAlarmNotifyMethods,
+  queryDeviceMetadata,
   queryProductMetadata,
 } from '../api'
 import type {
@@ -32,6 +33,7 @@ import {
   propertyNameOf,
   toDeviceAlarmPageRow,
   validateNotificationMessage,
+  hasFixedNotification, hasNotificationRecipients,
 } from '../utils'
 import type { IotAlarmTargetSelectOption, IotAlarmTargetSelectQuery } from '../components/IotAlarmTargetSelect.vue'
 import { parseRule, replaceAlarm } from '../../components/PropertyRules/codec'
@@ -75,16 +77,20 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
     targetOptions.value = result.flat()
   }
 
+  let propertyRequestSequence = 0
   async function loadProperties(target?: DeviceAlarmTargetOption, excludeConfigured = false) {
-    const metadata = parseMetadata(target?.metadata).properties.length
-      ? target?.metadata
-      : await queryProductMetadata(target?.productId)
+    const sequence = ++propertyRequestSequence
+    propertyOptions.value = []
+    const metadata = target?.source === 'device'
+      ? await queryDeviceMetadata(String(target.deviceId || target.value))
+      : parseMetadata(target?.metadata).properties.length
+        ? target?.metadata
+        : await queryProductMetadata(target?.productId)
     const properties = parseMetadata(metadata).properties.filter(isAlarmProperty)
-    if (!excludeConfigured || !target) {
-      propertyOptions.value = properties
-      return
-    }
-    const configuredPropertyIds = await queryConfiguredPropertyIds(target)
+    if (sequence !== propertyRequestSequence) return
+    const configuredPropertyIds = excludeConfigured && target ? await queryConfiguredPropertyIds(target) : new Set<string>()
+    // 设备详情和已配置规则都可能迟到，只允许当前选择写回属性列表。
+    if (sequence !== propertyRequestSequence) return
     propertyOptions.value = properties.map((property) => ({
       ...property,
       alarmConfigured: configuredPropertyIds.has(propertyIdOf(property)),
@@ -103,7 +109,7 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
   }
 
   let requestSequence = 0
-  onBeforeUnmount(() => { requestSequence += 1 })
+  onBeforeUnmount(() => { requestSequence += 1; propertyRequestSequence += 1 })
 
   /** 只读请求单页规则，是否替换或追加列表由调用方决定。 */
   async function fetchRulePage(index: number, size: number) {
@@ -187,6 +193,7 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
   }
 
   async function openCreate() {
+    propertyRequestSequence += 1
     editingRow.value = null
     form.value = createEmptyForm()
     await Promise.all([loadAlarmLevels(), loadNotifyResources()])
@@ -222,6 +229,7 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
   }
 
   async function onSourceChange(source: DeviceAlarmSource) {
+    propertyRequestSequence += 1
     form.value.source = source
     form.value.targetId = ''
     form.value.productId = ''
@@ -344,8 +352,8 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
     if (!current.property) return t('DeviceAlarm.validation.property')
     const conditionError = validateAlarmConditions(current, propertyOptions.value.find(item => propertyIdOf(item) === current.property))
     if (conditionError) return t(conditionError)
-    const hasChannel = Boolean(current.notification.channelProviders.length || current.notification.notifyChannelIds?.length)
-    const hasRecipient = Boolean(current.notification.userIds.length || current.notification.dimensions?.length)
+    const hasChannel = Boolean(current.notification.channelProviders.length || current.notification.notifyChannelIds?.length || hasFixedNotification(current.notification))
+    const hasRecipient = hasNotificationRecipients(current.notification)
     if (current.notification.enabled && !hasChannel) {
       return t('DeviceAlarm.validation.notifyChannel')
     }
@@ -376,6 +384,7 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
   async function onProductChange(option?: IotAlarmTargetSelectOption) {
     const target = option?.data as DeviceAlarmTargetOption | undefined
     if (!target) {
+      propertyRequestSequence += 1
       selectedProductOption.value = undefined
       selectedDeviceOption.value = undefined
       form.value.targetId = ''
@@ -404,6 +413,9 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
   }
 
   async function onDeviceChange(value?: string, option?: IotAlarmTargetSelectOption) {
+    form.value.property = ''
+    form.value.propertyName = ''
+    form.value.propertyUnit = ''
     if (!value || value === '__all__') {
       const target = selectedProductOption.value
       if (!target) return

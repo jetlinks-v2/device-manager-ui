@@ -8,7 +8,19 @@
 
 `views/device/list/components/IotDeviceScopeSidebar.vue` 使用 core 的 `AutoTree` 自动适配侧栏高度并启用虚拟滚动，保留原有树属性、插槽和选择事件。该入口依赖 [core PR #224](https://github.com/jetlinks-v2/jetlinks-web-core/pull/224)；异步页面首次挂载的滚轮绑定还依赖运行时工作区的 `patches/ant-design-vue@4.2.6.patch`，发布时需同步交付。
 
-`views/link/AccessConfig/index.vue` 为描述列启用 `ellipsis`，长描述省略显示。
+设备接入网关列表由 `views/link/AccessConfig/index.vue` 渲染。协议和连接信息列使用列表接口返回的协议名称、通道名称和地址。没有连接信息时，按网关的通道类型和 `NetworkTypeMapping` 判断，数采和固定地址等无需网络组件的接入方式显示「无需配置」，需要网络组件的接入方式显示「暂无连接信息」。网关类型和默认说明优先使用当前语言的接入方式目录，目录缺少数采网关时使用模块的中、英、日文文案。说明优先展示网关自身的文案，长文本沿用 `j-ellipsis`。
+
+验证结果：本地 `/infrastructure/access/gateway` 已复核七条记录，数采和固定地址显示「无需配置」，MQTT 与 Agent 显示实际连接信息。中英日文各七个连接信息场景、Vue 编译、样式门禁及模块构建通过。工作区和模块未配置独立 lint 脚本。在 `runtime-ui/` 执行 `pnpm exec vue-tsc --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json` 仍有 1,737 条既有诊断，按文件、错误码和末级原因对比无新增。
+
+## 表单失焦校验
+
+`hooks/useValidateInfosBlur.ts` 在 Network 的 `useNetworkEditor.ts`、GB28181 的 `useGb28181Editor.ts` 和固件 `views/device/Firmware/Save/index.vue` 创建表单后，直接为已有 `validateInfos` 附加 `onBlurCapture`。通过 `@device-manager-ui/hooks/useValidateInfosBlur` 引入，并调用 `useValidateInfosBlur({ validateInfos, validate, rulesRef })`。保留 `Form.useForm`、模板绑定、规则与保存调用；实现与测试均归属 `device-manager-ui`，不使用依赖补丁。
+
+仅处理显式 `trigger: 'blur'` 或触发数组包含 `blur` 的规则，覆盖 `resetFields()` 重建字段信息与动态规则变化。适用于产生原生失焦事件的普通单字段表单项；`noStyle`、嵌套表单项、`mergeValidateInfo` 及依赖 `a-form-item-rest` 上下文隔离的场景不直接适用。
+
+在本模块执行 `node --test tests/validateInfosBlur.test.mjs`，8 项检查通过，覆盖真实 Vue / Ant Design Vue 的必填及长度边界、触发方式过滤、重置、动态规则、字段及实例隔离、Scope 清理和 FormItem 事件传递。`pnpm exec tsc --noEmit --strict --skipLibCheck --target ES2022 --module ESNext --moduleResolution Bundler --lib ES2022,DOM --types vue hooks/useValidateInfosBlur.ts` 通过；三个调用文件的编译和模块内导入解析、差异空白检查通过。未配置独立 lint 脚本。
+
+该辅助函数与此前通过 Network / GB28181 浏览器失焦验证的实现一致，本次仅改为模块内落点并重新执行上述定向检查；未重新进行浏览器验收、全量类型检查及生产构建。需要完整验证时，在 `runtime-ui/` 执行 `pnpm exec vue-tsc --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json`，在 `runtime-ui/jetlinks-web-core/` 执行 `pnpm exec vite build --outDir /private/tmp/jetlinks-device-blur-build -- --module-name device-manager-ui`；既有全量类型诊断仍需单独处理。
 
 ## 网络组件本地端口
 

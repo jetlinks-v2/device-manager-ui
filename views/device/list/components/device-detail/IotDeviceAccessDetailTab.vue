@@ -1,7 +1,8 @@
 <template>
-  <div class="instance-device-access">
-    <a-tabs
-      v-model:activeKey="innerTab"
+  <FullPage class="instance-device-access" :class="{ 'instance-device-access--config': innerTab === 'access' }" :padding="0" flex>
+    <DeviceDetailTabs
+      :active-key="innerTab"
+      @change="changeInnerTab"
       class="device-access-tabs"
       :destroy-inactive-tab-pane="destroyInactiveTabPane"
     >
@@ -40,6 +41,13 @@
         </div>
       </a-tab-pane>
 
+      <a-tab-pane v-if="simulatorSupported" key="simulator" class="device-access-tab-pane" :tab="$t('InstanceDeviceAccess.codecDebug.title')">
+        <div class="tab-pane-inner tab-pane-inner--simulator">
+          <CodecSimulatorPanel v-if="innerTab === 'simulator'" :key="device.id" :device-id="device.id"
+            :metadata="device.deviceThingModelMetadata" :product-metadata="device.productThingModelMetadata ?? device.thingModelMetadata" :transport="device.transport" />
+        </div>
+      </a-tab-pane>
+
       <a-tab-pane
         v-if="hasTransparentCodec"
         key="parsing"
@@ -48,6 +56,7 @@
       >
         <div class="tab-pane-inner tab-pane-inner--parsing">
           <IotDeviceParsingTab
+            ref="parsingRef"
             :device="device"
             :product-id="device.productKey"
           />
@@ -64,11 +73,12 @@
           <IotDeviceChildrenTab :device="device" />
         </div>
       </a-tab-pane>
-    </a-tabs>
-  </div>
+    </DeviceDetailTabs>
+  </FullPage>
 </template>
 
 <script lang="ts" setup>
+import DeviceDetailTabs from '@device-manager-ui/views/device/components/DeviceDetailTabs.vue'
 import type { PropType } from 'vue'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -80,9 +90,11 @@ import IotDeviceAccessGuidePane from './IotDeviceAccessGuidePane.vue'
 import IotDeviceChildrenTab from './IotDeviceChildrenTab.vue'
 import IotDeviceParsingTab from './IotDeviceParsingTab.vue'
 import IotDeviceTraceTab from './IotDeviceTraceTab.vue'
+import CodecSimulatorPanel from '../../../Instance/Detail/DeviceAccess/CodecSimulatorPanel.vue'
+import { useDeviceSimulatorSupport } from './useDeviceSimulatorSupport'
 import { useIotDeviceAccessSessions } from './useIotDeviceAccessSessions'
 
-type DeviceAccessInnerTab = 'access' | 'trace' | 'parsing' | 'children'
+type DeviceAccessInnerTab = 'access' | 'trace' | 'parsing' | 'children' | 'simulator'
 
 const props = defineProps({
   device: { type: Object as PropType<IotDevice>, required: true },
@@ -101,6 +113,7 @@ const emit = defineEmits<{ configSaved: [deviceId: string] }>()
 const route = useRoute()
 const accessDetail = ref<Record<string, any>>({})
 const deviceId = computed(() => props.device.id || undefined)
+const simulatorSupported = useDeviceSimulatorSupport(deviceId, computed(() => props.device.transport), computed(() => props.traceEnabled))
 const isOnline = computed(() => props.device.status === 'online')
 // 跨模块可关闭重复的子设备入口；默认值保持设备详情现有行为。
 const canShowChildren = computed(() => props.showChildren && props.device.deviceTypeValue === 'gateway')
@@ -123,6 +136,7 @@ const accessConfigRequested = computed(() =>
 
 function getDefaultInnerTab(): DeviceAccessInnerTab {
   if (accessConfigRequested.value) return 'access'
+  if (route.query.sub === 'simulator' && simulatorSupported.value) return 'simulator'
   if (legacyChildrenRequested.value && canShowChildren.value) return 'children'
   if (legacyParsingRequested.value && hasTransparentCodec.value) return 'parsing'
   if (props.defaultTab === 'children' && canShowChildren.value) return 'children'
@@ -133,6 +147,15 @@ function getDefaultInnerTab(): DeviceAccessInnerTab {
 }
 
 const innerTab = ref<DeviceAccessInnerTab>(getDefaultInnerTab())
+const parsingRef = ref<InstanceType<typeof IotDeviceParsingTab> | null>(null)
+async function changeInnerTab(key: string | number) {
+  if (innerTab.value === 'parsing' && !await parsingRef.value?.confirmLeave()) return
+  innerTab.value = String(key) as DeviceAccessInnerTab
+}
+watch(simulatorSupported, supported => {
+  if (supported && (route.query.sub === 'simulator' || props.defaultTab === 'simulator')) innerTab.value = 'simulator'
+  else if (!supported && innerTab.value === 'simulator') innerTab.value = 'access'
+})
 
 const {
   loadSessions,
@@ -141,7 +164,7 @@ const {
 } = useIotDeviceAccessSessions(deviceId, isOnline)
 
 onMounted(() => {
-  if (props.traceEnabled && isOnline.value && !accessConfigRequested.value && innerTab.value !== 'parsing' && innerTab.value !== 'children') {
+  if (props.traceEnabled && isOnline.value && !accessConfigRequested.value && innerTab.value !== 'parsing' && innerTab.value !== 'children' && innerTab.value !== 'simulator') {
     innerTab.value = 'trace'
     if (props.sessionEnabled) void loadSessions()
   }
@@ -163,7 +186,7 @@ watch(
   (val, oldVal) => {
     if (val === oldVal) return
     if (val === 'online') {
-      if (props.traceEnabled && !accessConfigRequested.value && innerTab.value !== 'parsing' && innerTab.value !== 'children') {
+      if (props.traceEnabled && !accessConfigRequested.value && innerTab.value !== 'parsing' && innerTab.value !== 'children' && innerTab.value !== 'simulator') {
         innerTab.value = 'trace'
       }
       if (props.sessionEnabled) void loadSessions()

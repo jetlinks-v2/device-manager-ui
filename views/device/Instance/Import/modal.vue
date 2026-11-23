@@ -2,10 +2,14 @@
   <a-modal
     :maskClosable="false"
     :open="visible"
-    width="800px"
-    :title="$t('Import.modal.422832-0')"
+    width="960px"
+    centered
+    :body-style="{ maxHeight: 'calc(100dvh - 11rem)', overflowY: 'auto' }"
     @cancel='cancel'
   >
+    <template #title>
+      <IotAddDeviceModalTitle :title-text="$t('Import.modal.422832-0')" help-text="" icon="ImportOutlined" />
+    </template>
     <div>
       <!--   选择产品   -->
       <div v-if='steps === 0'>
@@ -38,7 +42,7 @@
     <template #footer>
       <a-button v-if='steps === 0' @click='cancel' >{{ $t('Import.modal.422832-2') }}</a-button>
       <a-button v-if='steps !== 0' @click='prev' >{{ $t('Import.modal.422832-3') }}</a-button>
-      <a-button v-if='steps !== 2' @click='next' type='primary'>{{ $t('Import.modal.422832-4') }}</a-button>
+      <a-button v-if='steps !== 2' @click='next' type='primary' :disabled="steps === 0 ? !importData.productId : !importData.type">{{ $t('Import.modal.422832-4') }}</a-button>
       <a-button v-if='steps === 2' @click='save' type='primary' :disabled="flag">{{ $t('Import.modal.422832-5') }}</a-button>
     </template>
   </a-modal>
@@ -57,6 +61,7 @@
 <script lang='ts' setup>
 import {provide} from 'vue'
 import Product from './product.vue'
+import IotAddDeviceModalTitle from '../../list/components/IotAddDeviceModalTitle.vue'
 import { onlyMessage } from '@jetlinks-web/utils'
 import File from './file.vue'
 import Plugin from './plugin.vue'

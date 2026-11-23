@@ -73,7 +73,7 @@
 import {inject,Ref} from 'vue'
 import { FileStaticPath } from '@jetlinks-web-core/api/comm';
 import { onlyMessage, downloadFileByUrl } from '@jetlinks-web/utils';
-import { deviceImport, pluginDeviceImport, templateDownload } from '../../../../api/instance';
+import { deviceImport, pluginDeviceImport, templateDownload, pluginTemplateDownload } from '../../../../api/instance';
 import { EventSourcePolyfill } from 'event-source-polyfill';
 import { useI18n } from 'vue-i18n';
 import {getUploadHeaders} from "@jetlinks-web-core/utils";
@@ -108,9 +108,11 @@ const count = ref<number>(0);
 const errCount = ref<number>(0);
 const errMessage = ref<string>('');
 const disabled = ref(false);
+const isPluginImport = computed(() => props.accessProvider === 'plugin_gateway');
 
 const downFile = async (type: string) => {
-    const res: any = await templateDownload(props.product!, type);
+    const downloadTemplate = isPluginImport.value ? pluginTemplateDownload : templateDownload;
+    const res: any = await downloadTemplate(props.product!, type);
     if (res) {
         const blob = new Blob([res], { type: type });
         const url = URL.createObjectURL(blob);
@@ -150,7 +152,7 @@ const submitData = async (fileUrl: string) => {
         let dt = 0;
         let et = 0;
         const source = new EventSourcePolyfill(
-            props.accessProvider === 'plugin_gateway'
+            isPluginImport.value
             ? pluginDeviceImport(props.product!, fileUrl, autoDeploy)
             : deviceImport(props.product!, fileUrl, autoDeploy),
         );

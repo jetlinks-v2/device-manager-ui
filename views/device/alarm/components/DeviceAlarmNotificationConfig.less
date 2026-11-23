@@ -41,6 +41,7 @@
   color: var(--jet-theme-text);
 }
 .notification-chip__arrow { font-size: 10px; color: var(--jet-theme-text-secondary); }
+.notification-relieve { display: inline-flex; align-items: center; min-width: 0; }
 .notification-include-relieve { display: inline-flex; align-items: center; margin: 0; color: var(--jet-theme-text-secondary); font-size: inherit; line-height: 24px; }
 .notification-include-relieve :deep(.ant-checkbox) { top: 0; }
 .device-alarm-notify__sentence .notification-chip:not(:disabled):hover, .device-alarm-notify__sentence .notification-chip[aria-expanded='true'] { border-color: var(--jet-theme-primary); background: var(--jet-theme-primary-soft); }
@@ -48,13 +49,15 @@
 .notification-option-panel { width: min(360px, calc(100vw - 48px)); font-size: var(--fs-14); }
 .notification-option-panel :deep(.ant-alert) { margin-bottom: var(--space-2); }
 .notification-types { display: flex; flex-direction: column; flex-wrap: nowrap; width: 100%; max-height: min(288px, 40vh); overflow-y: auto; padding: var(--space-1) 0; }
-.notification-type { display: flex; flex-shrink: 0; align-items: center; gap: var(--space-2); min-height: 32px; border-radius: var(--radius-sm, 4px); }
+.notification-type { display: grid; grid-template-columns: minmax(0, 1fr) 24px; flex-shrink: 0; align-items: start; column-gap: var(--space-2); min-height: 32px; border-radius: var(--r-1); }
 .notification-type:hover { background: var(--bg-sunken); }
 .notification-type :deep(.ant-checkbox-wrapper) { display: flex; flex: 1; align-items: flex-start; min-width: 0; margin: 0; padding: calc(var(--space-3) / 2) var(--space-2); color: var(--jet-theme-text); font-size: var(--fs-14); line-height: 24px; }
 .notification-type :deep(.ant-checkbox + span) { flex: 1; min-width: 0; }
 // Move the whole control so its checked outline and inner box keep the same bounds.
 .notification-type :deep(.ant-checkbox) { top: 0; align-self: flex-start; margin-top: 3px; }
 .notification-type > :deep(.notification-template-status) { align-self: flex-start; margin-top: 6px; }
+.notification-type-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: var(--space-1); min-width: 0; padding: 0 var(--space-2) var(--space-2); }
+.notification-type-actions :deep(.ant-btn) { max-width: 100%; height: auto; white-space: normal; text-align: left; }
 .notification-types-empty { display: block; padding: var(--space-2); color: var(--jet-theme-text-secondary); }
 .notification-option-help { padding: var(--space-2); border-top: 1px solid var(--line); color: var(--jet-theme-text-secondary); line-height: 22px; }
 .notification-option-help p { margin: 0; }
@@ -64,7 +67,7 @@
 .device-alarm-notify--form {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-5);
+  gap: var(--space-4);
   color: var(--jet-theme-text);
   font-size: var(--fs-14);
   line-height: 1.6;
@@ -80,7 +83,7 @@
 .device-alarm-notify--form .device-alarm-notify__sentence {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-5);
+  gap: var(--space-4);
 }
 .device-alarm-notify--form .notification-clause {
   display: flex;
@@ -88,16 +91,16 @@
   gap: var(--space-2);
   white-space: normal;
 }
-.device-alarm-notify--form .notification-clause > span:first-child { width: 100%; }
+.device-alarm-notify--form .notification-clause > span:first-child { width: 100%; color: var(--ink-3); font-size: var(--fs-12); }
 .device-alarm-notify--form :deep(.notification-chip) {
   display: flex;
   flex: 1;
   min-width: 0;
   max-width: 100%;
   height: auto;
-  min-height: 32px;
+  min-height: 40px;
   padding: var(--space-1) var(--space-3);
-  border: 1px solid var(--line);
+  border: 1px solid var(--ant-color-border, #d9d9d9);
   border-radius: var(--r-2);
   background: var(--bg);
   color: var(--jet-theme-text);
@@ -106,5 +109,8 @@
   text-align: left;
 }
 .device-alarm-notify--form :deep(.notification-chip__arrow) { margin-left: auto; }
+.device-alarm-notify--form :deep(.selection-summary) { flex: 1; }
 .device-alarm-notify--form .notification-include-relieve { font-size: var(--fs-14); }
+.device-alarm-notify--form .notification-relieve { flex-direction: column; align-items: flex-start; gap: var(--space-1); }
+.notification-relieve__hint { margin-inline-start: 24px; color: var(--jet-theme-text-secondary); font-size: var(--fs-12); line-height: 1.6; overflow-wrap: anywhere; }
 .device-alarm-notify--form > :deep(.device-alarm-message) { grid-column: 1; }

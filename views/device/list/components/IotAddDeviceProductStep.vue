@@ -53,7 +53,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, type PropType } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { DeviceQueryTerm, IotDeviceProductTemplate } from '@device-manager-ui/api/device'
+import type { IotDeviceProductTemplate } from '@device-manager-ui/api/device'
 import { getProviders } from '@device-manager-ui/api/product'
 import { accessConfigTypeFilter } from '@jetlinks-web-core/utils'
 import ProductCategoryTree, { type ProductCategoryTreeNode } from '@device-manager-ui/views/device/Product/components/ProductCategoryTree.vue'
@@ -83,7 +83,7 @@ const emit = defineEmits<{
   (event: 'select-product', id: string): void
   (event: 'select-category', id?: string): void
   (event: 'select-unclassified'): void
-  (event: 'query-change', query: { terms?: DeviceQueryTerm[]; pageIndex?: number }): void
+  (event: 'query-change', query: { terms?: ConditionFilterTerm[]; pageIndex?: number }): void
 }>()
 
 const { t: $t } = useI18n()
@@ -131,7 +131,7 @@ function handleFilterTermsUpdate(terms: ConditionFilterTerm[] = []) {
 function handleFilterSearch(payload: { terms?: ConditionFilterTerm[] }) {
   emit('query-change', {
     // 查询输出会为 like 自动增加通配符；产品选择回显必须保留编辑态原始值。
-    terms: filterTerms.value as DeviceQueryTerm[],
+    terms: filterTerms.value,
     pageIndex: 0,
   })
 }

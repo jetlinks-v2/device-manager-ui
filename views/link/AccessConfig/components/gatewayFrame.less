@@ -8,12 +8,12 @@
 .gateway-frame__number { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 1.4rem; height: 1.4rem; border: 1px solid var(--line); border-radius: 50%; color: var(--text-color-secondary); }
 .is-active .gateway-frame__number { color: white; background: var(--primary-color); border-color: var(--primary-color); }
 .gateway-frame__number.is-complete { color: var(--success-color, #13b5ad); border-color: currentColor; }
-.gateway-frame__content { height: 100%; overflow: auto; padding: var(--space-2) var(--space-1); }
+.gateway-frame__content { height: 100%; overflow: auto; }
 .gateway-frame__hint { padding: var(--space-3); margin-bottom: var(--space-6); color: var(--primary-color); background: var(--primary-color-deprecated-bg, #e8f1ff); border-radius: var(--r-2); font-size: var(--fs-12); }
 .gateway-frame__actions { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
 .gateway-frame__buttons { margin-left: auto; }
 .gateway-frame__reselect { color: var(--text-color-secondary); font-size: var(--fs-12); padding-inline: 0; }
-.gateway-frame__content :deep(.steps-content) { margin-top: 0; }
+.gateway-frame__content :deep(.steps-content) { margin: 0; }
 .gateway-frame__content :deep(.steps-box) { min-height: 0; }
 .gateway-frame__content :deep(.card-last) { max-height: none !important; overflow: visible; }
 .gateway-frame__content :deep(.card-last > .title), .gateway-frame__content :deep(.card-last > .title-component) { display: none; }

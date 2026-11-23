@@ -1,12 +1,24 @@
 <template>
   <div :class="{
     'metadata-edit-table-wrapper': true,
-    'table-full-screen': isFullscreen
+    'table-full-screen': isFullscreen,
+    'has-groups': openGroup && dataSource.length
   }" ref="tableWrapper">
+      <Group
+        v-if="dataSource.length && openGroup"
+        v-model:activeKey="groupActive.value"
+        :options="groupOptions"
+        :readonly="readonly"
+        :target="target"
+        @add="addGroup"
+        @delete="groupDelete"
+        @edit="groupEdit"
+        @change="updateGroupActive"
+      />
     <div class="metadata-edit-table-extra">
       <slot name="extra" :isFullscreen="isFullscreen" :fullScreenToggle="toggle"/>
     </div>
-    <div class="metadata-edit-table">
+    <div ref="tableViewport" class="metadata-edit-table">
       <div class="metadata-edit-table-header" style="height: 50px" :style="{paddingRight: scrollWidth + 'px'}">
         <Header
           :columns="myColumns"
@@ -34,17 +46,7 @@
         </Body>
         <slot name="bodyExtra"></slot>
       </div>
-      <Group
-        v-if="dataSource.length && openGroup"
-        v-model:activeKey="groupActive.value"
-        :options="groupOptions"
-        :readonly="readonly"
-        :target="target"
-        @add="addGroup"
-        @delete="groupDelete"
-        @edit="groupEdit"
-        @change="updateGroupActive"
-      />
+
     </div>
   </div>
 </template>
@@ -75,6 +77,7 @@ import {bodyProps} from "./props";
 import {findIndex, get, sortBy} from 'lodash-es'
 import i18n from '@jetlinks-web-core/locales'
 import { useI18n } from 'vue-i18n';
+import { canManageMetadataGroup } from './groupPolicy'
 
 defineOptions({ name: 'MetadataBaseTable' })
 
@@ -111,6 +114,7 @@ const attrs = useAttrs()
 
 const myColumns = ref([])
 const tableWrapper = ref()
+const tableViewport = ref()
 const tableBody = ref()
 const tableStyle = reactive({
   width: '100%',
@@ -165,6 +169,7 @@ const _dataSource = computed(() => {
         _options.set(item.expands.groupId, {
           value: item.expands?.groupId,
           label: item.expands?.groupName,
+          inherited: props.target === 'device' && Boolean(item.expands?.isProduct),
           effective: item.id ? 1 : 0, // 有效数据长度
           len: 1 // 分组数据总长度
         })
@@ -173,6 +178,8 @@ const _dataSource = computed(() => {
           _optionsItem.effective += 1
         }
         _optionsItem.len += 1
+        _optionsItem.inherited ||= props.target === 'device' && Boolean(item.expands?.isProduct)
+        if (_optionsItem.inherited && item.expands?.isProduct) _optionsItem.label = item.expands.groupName
         _options.set(item.expands.groupId, _optionsItem)
       }
 
@@ -198,7 +205,7 @@ const bodyDataSource = computed(() => {
   return _dataSource.value
 })
 
-useResizeObserver(tableWrapper, onResize)
+useResizeObserver(tableViewport, onResize)
 
 const {isFullscreen, toggle} = useFullscreen(tableWrapper);
 
@@ -366,11 +373,13 @@ const getTableWrapperRef = () => {
 }
 
 const groupDelete = (id, index) => {
+  const group = groupOptions.value.find(item => item.value === id)
+  if (!group || !canManageMetadataGroup(group, props.target, props.readonly)) return
   removeGroup(index)
   Object.keys(fieldsErrMap.value).forEach(errorKey => {
     const [index] = errorKey.split('-')
     const dataSourceItem = _dataSource.value[index]
-    const groupId = dataSourceItem.expands?.groupId
+    const groupId = dataSourceItem?.expands?.groupId
     if (groupId === id) {
       removeFieldError(errorKey)
       removeField(errorKey)
@@ -380,6 +389,8 @@ const groupDelete = (id, index) => {
 }
 
 const groupEdit = (record) => {
+  const group = groupOptions.value.find(item => item.value === record.oldValue)
+  if (!group || !canManageMetadataGroup(group, props.target, props.readonly)) return
   emit('groupEdit', record)
 }
 
@@ -450,9 +461,19 @@ defineExpose({
 
 <style scoped lang="less">
 .metadata-edit-table-wrapper {
-  background: #fff;
+  background: var(--jet-theme-bg-container);
   height: 100%;
   position: relative;
+
+  &.has-groups {
+    display: grid;
+    grid-template-columns: 12rem minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 0 var(--space-4);
+    > .table-group-warp { grid-column: 1; grid-row: 1 / 3; min-width: 0; }
+    > .metadata-edit-table-extra { grid-column: 2; min-width: 0; }
+    > .metadata-edit-table { grid-column: 2; min-width: 0; }
+  }
 
   &.table-full-screen {
     padding: 24px;

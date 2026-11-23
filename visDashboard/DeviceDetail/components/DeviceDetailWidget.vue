@@ -1,7 +1,7 @@
 <template>
   <section class="device-detail-widget" :data-device-detail-kind="kind" :class="{ 'is-metric': isMetric }" :aria-label="title">
     <header v-if="!isMetric || loading || error || (!deviceId && !isEdit)">
-      <h3>{{ title }}</h3>
+      <h3>{{ title }}<DocumentHelp v-if="kind === 'Properties' || kind === 'RecentAlarms'" code="iot-user-device-list" :help-key="kind === 'Properties' ? 'overview.keyProperties' : 'overview.recentAlarms'" /></h3>
       <span v-if="kind === 'Properties'">{{ t('IotDeviceDetail.overview.thingModelReadonly') }}</span>
       <span v-else-if="kind === 'RecentAlarms'">{{ t('IotDeviceDetail.overview.recentAlarmCount', { count: alarms.length }) }}</span>
     </header>
@@ -10,17 +10,23 @@
     <div v-else-if="error" class="widget-state"><CloudEmpty :image-style="isMetric ? { height: '2rem' } : undefined" :description="t('deviceDetailDashboard.loadError')"><a-button size="small" @click="retry">{{ t('deviceDetailDashboard.retry') }}</a-button></CloudEmpty></div>
     <StatPanel v-else-if="isMetric" :card="statCard" :title="config.title" />
     <MessageTrendPanel v-else-if="kind === 'MessageTrend'" :option="option" :totals="totals" :traffic="traffic" />
-    <PropertiesPanel v-else-if="kind === 'Properties'" :key="identity" :rows="properties" :device-id="deviceId" :page-size="config.pageSize" :is-edit="isEdit" />
-    <AlarmsPanel v-else :rows="alarms" />
+    <PropertiesPanel v-else-if="kind === 'Properties'" :key="identity" :rows="properties" :device-id="deviceId" :page-size="config.pageSize" :is-edit="isEdit">
+      <template #empty-action><a-button v-if="canConfigure" @click="configureProperties">{{ t('deviceDetailOptimization.configureProperties') }}</a-button></template>
+    </PropertiesPanel>
+    <AlarmsPanel v-else :rows="alarms">
+      <template #empty-action><a-button v-if="canConfigureAlarms" @click="configureAlarms">{{ t('deviceDetailOptimization.configureAlarms') }}</a-button></template>
+    </AlarmsPanel>
   </section>
 </template>
 <script setup lang="ts">
+import DocumentHelp from '@jetlinks-web-core/components/DocumentHelp'
 import { computed, toRef, type PropType } from 'vue'
 import { useI18n } from 'vue-i18n'
 import CloudEmpty from '@jetlinks-web-core/components/CloudEmpty/index.vue'
 import { titleKeys, type DeviceDetailKind, type DeviceDetailInfo } from '../shared'
 import { useDeviceDetailWidget } from '../hooks/useDeviceDetailWidget'
 import { useSummaryPresentation } from '../hooks/useSummaryPresentation'
+import { useOverviewConfiguration } from '../hooks/useOverviewConfiguration'
 import StatPanel from './StatPanel.vue'
 import MessageTrendPanel from './MessageTrendPanel.vue'
 import PropertiesPanel from './PropertiesPanel.vue'
@@ -29,6 +35,7 @@ const props = defineProps({ kind: { type: String as PropType<DeviceDetailKind>, 
 const { t } = useI18n()
 const { config, deviceId, identity, summary, alarms, properties, loading, error, retry } = useDeviceDetailWidget(props.kind, toRef(props, 'info'), toRef(props, 'isEdit'))
 const { cards, totals, traffic, option } = useSummaryPresentation(summary)
+const { canConfigure, canConfigureAlarms, configureProperties, configureAlarms } = useOverviewConfiguration(deviceId, toRef(props, 'isEdit'))
 const isMetric = computed(() => ['ActiveDuration', 'Upstream', 'Downstream', 'Traffic'].includes(props.kind))
 const statCard = computed(() => cards.value[props.kind as keyof typeof cards.value])
 const title = computed(() => config.value.title || t(titleKeys[props.kind]))

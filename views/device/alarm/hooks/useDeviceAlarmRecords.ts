@@ -1,6 +1,6 @@
 import { computed, onBeforeUnmount, ref, shallowRef, watch, type Ref } from 'vue'
 import type { ConditionFilterChangePayload, ConditionFilterField, ConditionFilterTerm } from '@jetlinks-web-core/components/ConditionFilter'
-import { buildQueryFilter } from '@jetlinks-web-core/components/ConditionFilter'
+import { buildQueryFilter, isSameTerms } from '@jetlinks-web-core/components/ConditionFilter'
 import { queryRuleRecords, type AlarmQuery } from '../workspaceApi'
 import type { DeviceAlarmEvent } from '../workspaceTypes'
 
@@ -11,13 +11,14 @@ interface RecordResponse {
 }
 
 /** 为 ProTable 提供记录查询、范围隔离与重试；分页和加载状态由表格维护。 */
-export function useDeviceAlarmRecords(ruleId: Ref<string | undefined>, t: (key: string) => string) {
+export function useDeviceAlarmRecords(ruleId: Ref<string | undefined>, t: (key: string) => string, deviceId?: Readonly<Ref<string>>) {
   const tableRef = shallowRef<{ reload: () => void }>()
   const error = ref(false)
   const terms = ref<ConditionFilterTerm[]>([])
-  const submitted = ref<Record<string, unknown>[]>([])
+  const submitted = ref<ConditionFilterTerm[]>([])
   const fields = computed<ConditionFilterField[]>(() => [
     { dataIndex: 'alarmName', title: t('DeviceAlarm.record.alarmName'), search: { type: 'string', defaultTermType: 'like' } },
+    { dataIndex: 'id', title: t('DeviceAlarm.record.id'), search: { type: 'string', defaultTermType: 'eq' } },
     { dataIndex: 'sourceName', title: t('DeviceAlarm.record.sourceDevice'), search: { type: 'string', defaultTermType: 'like' } },
     { dataIndex: 'actualDesc', title: t('DeviceAlarm.record.reason'), search: { type: 'string', defaultTermType: 'like' } },
     { dataIndex: 'lastAlarmTime', title: t('DeviceAlarm.workspace.lastAlarmTime'), search: { type: 'date' } },
@@ -29,10 +30,11 @@ export function useDeviceAlarmRecords(ruleId: Ref<string | undefined>, t: (key: 
   const revision = ref(0)
   let disposed = false
   // 换范围时重建表格，清空旧记录并回到首页；旧表格的延迟请求不能污染新范围。
-  watch([ruleId, submitted], () => { revision.value += 1; error.value = false }, { flush: 'sync' })
+  watch([ruleId, submitted, ...(deviceId ? [deviceId] : [])], () => { revision.value += 1; error.value = false }, { flush: 'sync' })
   const table = computed(() => {
     const key = revision.value
     const scope = ruleId.value
+    const targetDevice = deviceId?.value
     const filters = submitted.value
     let sequence = 0
     let latest: Promise<RecordResponse> | undefined
@@ -48,7 +50,7 @@ export function useDeviceAlarmRecords(ruleId: Ref<string | undefined>, t: (key: 
         while (active()) {
           const page = await queryRuleRecords(scope, { pageIndex: index, pageSize: size,
             terms: filters,
-            sorts: [{ name: 'lastAlarmTime', order: 'desc' }, { name: 'id', order: 'desc' }] })
+            sorts: [{ name: 'lastAlarmTime', order: 'desc' }, { name: 'id', order: 'desc' }] }, targetDevice)
           if (!active()) return { success: false }
           if (sequence !== current) return latest!
           // 处理后当前页可能消失，直接回到有效末页，并把实际页码交还 ProTable。
@@ -72,7 +74,7 @@ export function useDeviceAlarmRecords(ruleId: Ref<string | undefined>, t: (key: 
 
     /** 请求仅由 ProTable 发起，重试沿用失败页而非表格最后一次成功的页码。 */
     function request(params: RecordPagination): Promise<RecordResponse> {
-      if (!active()) return Promise.resolve({ success: false })
+      if (!active() || (deviceId && !targetDevice)) return Promise.resolve({ success: false })
       const pagination = retryQuery ?? params
       retryQuery = undefined
       lastQuery = { pageIndex: pagination.pageIndex, pageSize: Number(pagination.pageSize) }
@@ -94,7 +96,9 @@ export function useDeviceAlarmRecords(ruleId: Ref<string | undefined>, t: (key: 
   function search(payload?: ConditionFilterChangePayload) {
     // change.filter 已编码通配符；仅无事件载荷的主动搜索从编辑模型转换一次。
     const filter = payload?.filter ?? buildQueryFilter(terms.value, fields.value)
-    submitted.value = Array.isArray(filter.terms) ? filter.terms : []
+    const nextTerms = Array.isArray(filter.terms) ? filter.terms : []
+    // 路由回显也会触发组件 change，相同条件沿用当前表格，避免重复查询。
+    if (!isSameTerms(submitted.value, nextTerms)) submitted.value = nextTerms
   }
   /** 重试及处理后刷新共用当前表格的分页上下文。 */
   function reload() { return table.value.reload() }

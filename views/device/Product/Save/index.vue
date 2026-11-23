@@ -98,12 +98,7 @@
                                 <div class="select-item">
                                     <div>
                                         <span>{{ node.label }}</span>
-                                        <a-tooltip :title="node.tooltip"
-                                            ><AIcon
-                                                type="QuestionCircleOutlined"
-                                                style="margin-left: 2px"
-                                            />
-                                        </a-tooltip>
+                                        <DocumentHelp code="device/Product" :help-key="`deviceType.${node.value}`" />
                                     </div>
                                     <img :src="node.iconUrl" alt="">
                                 </div>
@@ -155,7 +150,7 @@
         :metadata-saved="createdGuideState?.metadataSaved"
         :product-enabled="createdGuideState?.enabled"
         :enabling-product="enablingCreatedProduct"
-        :show-batch-import="!isSaaS"
+        :show-batch-import="!isProject"
         @configure-access="configureCreatedProductAccess"
         @configure-metadata="configureCreatedProductMetadata"
         @enable-product="handleEnableCreatedProduct"
@@ -179,8 +174,11 @@ import { useI18n } from 'vue-i18n';
 import { omit } from 'lodash-es';
 import { ensureVisualizationDashboardProject } from '@device-manager-ui/utils/dashboardProject';
 import { I18nTextField } from '@jetlinks-web-core/components';
+import DocumentHelp from '@jetlinks-web-core/components/DocumentHelp';
 import { getI18nText } from '@device-manager-ui/utils/i18n';
-import { isSaaS } from '@jetlinks-web-core/utils/consts'
+import { isProjectRuntime } from '@jetlinks-web-core/utils/project-runtime'
+import { isPrivateDeployment } from '@jetlinks-web-core/utils/deployment'
+const isProject = isProjectRuntime() && !isPrivateDeployment()
 import { useProductCreatedGuide } from '../hooks/useProductCreatedGuide'
 
 const { t: $t } = useI18n();
@@ -246,19 +244,16 @@ const deviceList = ref([
         label: $t('Save.index.912481-11'),
         value: 'device',
         iconUrl: device.deviceType1,
-        tooltip: $t('Save.index.912481-12'),
     },
     {
         label: $t('Save.index.912481-13'),
         value: 'childrenDevice',
         iconUrl: device.deviceType2,
-        tooltip: $t('Save.index.912481-14'),
     },
     {
         label: $t('Save.index.912481-15'),
         value: 'gateway',
         iconUrl: device.deviceType3,
-        tooltip: $t('Save.index.912481-16'),
     },
 ]);
 

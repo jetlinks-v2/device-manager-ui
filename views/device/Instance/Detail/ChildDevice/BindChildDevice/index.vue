@@ -11,12 +11,10 @@
         @cancel="handleCancel"
         :confirmLoading="btnLoading"
     >
-        <div style="margin-top: 10px">
-            <pro-search
+        <div class="bind-child-content">
+            <ConditionFilter
                 :columns="columns"
-                target="child-device-bind"
                 @search="handleSearch"
-                type="simple"
             />
             <JProTable
                 ref="bindDeviceRef"
@@ -105,6 +103,7 @@ import { useChildDeviceContext } from '../../Child/useChildDeviceContext';
 import { onlyMessage } from '@jetlinks-web/utils';
 import i18n from '@jetlinks-web-core/locales';
 import { useI18n } from 'vue-i18n';
+import ConditionFilter from '@jetlinks-web-core/components/ConditionFilter'
 
 defineOptions({ name: 'BindChildDevice' })
 
@@ -325,4 +324,15 @@ const handleCancel = () => {
 };
 </script>
 
-<style scoped lang="less"></style>
+<style scoped lang="less">
+.bind-child-content {
+    min-width: 0;
+    margin-top: 10px;
+}
+.bind-child-content :deep(.condition-filter),
+.bind-child-content :deep(.condition-filter__shell) {
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+</style>

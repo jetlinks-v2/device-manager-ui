@@ -5,7 +5,7 @@ import { useAuthStore, useMenuStore, useSystemStore } from '@jetlinks-web-core/s
 import { isNoCommunity } from '@jetlinks-web-core/utils/utils'
 import { EventEmitter, onlyMessage } from '@jetlinks-web/utils'
 import useClipboard from 'vue-clipboard3'
-import { findStoredTag, type DeviceTag } from '../components/device-detail/tags/tagEditor'
+import { findStoredTag, mergeTagDefinitions, formatTagValue as getFormattedTagValue, type DeviceTag } from '../components/device-detail/tags/tagEditor'
 import {
   deleteDevice_api,
   deployDevice_api,
@@ -63,6 +63,7 @@ import {
 import { useDeviceDetailTabs } from './useDeviceDetailTabs'
 import { useDeviceDetailPermissions } from './useDeviceDetailPermissions'
 import { useDeviceListProvider } from './useDeviceListProvider'
+import { useIotDeviceParentLink } from './useIotDeviceParentLink'
 import type { OverviewAccessSummary } from './useIotDeviceOverview'
 import { normalizeDeviceDetailTab, type DeviceDetailTab } from './deviceDetailTabs'
 import type { UnwrapRef } from 'vue'
@@ -108,6 +109,8 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
     const isDeviceDetailRoute = route.matched.some(record => IOT_DEVICE_DETAIL_ROUTE_NAMES.has(String(record.name || '')))
     return isDeviceDetailRoute ? String(route.params.deviceId ?? route.params.id ?? '') : ''
   })
+  // 独立详情按设备 ID 重建；Suspense 保留的旧实例不能跟随新路由继续加载。
+  const standaloneDeviceId = props.embedded ? undefined : deviceId.value
   const healthPath = computed(() => buildIotDeviceHealthPath(projectId.value, deviceId.value, undefined, route))
   let disposed = false
   let loadVersion = 0
@@ -116,10 +119,13 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
   type DetailLoad = ReturnType<typeof currentLoad>
   const isCurrentLoad = (context: DetailLoad) => !disposed && context.version === loadVersion
     && context.projectId === projectId.value && context.deviceId === deviceId.value
+    && (Boolean(props.embedded) || context.deviceId === standaloneDeviceId)
   const beginLoad = () => { loadVersion += 1; return currentLoad() }
 
   const device = ref<IotDevice | null>(null)
+  const parentDeviceLink = useIotDeviceParentLink(device)
   const instanceStore = useInstanceStore()
+  let syncedMetadataCurrent: typeof instanceStore.current | undefined
   const provider = useDeviceListProvider(device)
   const detailContent = computed(() => props.embedded ? undefined : provider.value?.detailContent)
   const detailContentRef = ref<{ refresh?: () => Promise<void> }>()
@@ -421,15 +427,18 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
     device.value?.area,
   ]))
   const regionText = computed(() => limitedDisplayText(regionItems.value))
-  const regionFullText = computed(() => displayText(regionItems.value.join($t('IotDeviceList.presentation.separator'))))
+  const regionFullText = computed(() => regionItems.value.join($t('IotDeviceList.presentation.separator')) || regionText.value)
   const deviceAddressText = computed(() => displayRealText((device.value as any)?.address || device.value?.location, ['未设置位置']))
   const businessGroupItems = computed(() => uniqueDisplayTexts([
     ...(device.value?.groupBindings ?? []).map((item) => item.name),
     device.value?.groupName,
   ]))
   const businessGroupText = computed(() => limitedDisplayText(businessGroupItems.value))
-  const businessGroupFullText = computed(() => displayText(businessGroupItems.value.join($t('IotDeviceList.presentation.separator'))))
-  const lastSeenText = computed(() => displayText(device.value?.lastSeen))
+  const businessGroupFullText = computed(() => businessGroupItems.value.join($t('IotDeviceList.presentation.separator')) || businessGroupText.value)
+  const lastSeenText = computed(() => {
+    const text = device.value?.lastSeen?.trim()
+    return text && text !== '--' ? text : $t('IotDeviceDetail.detail.notReported')
+  })
   const isDeviceDisabled = computed(() => device.value ? getIotDeviceConnectionStatus(device.value) === 'disabled' : false)
   // 启用状态或其他操作执行中时，删除入口和确认弹层必须同时禁用。
   const deleteActionDisabled = computed(() => Boolean(actionBusyId.value && actionKind.value !== 'delete') || !isDeviceDisabled.value)
@@ -447,16 +456,7 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
   const thingModelTags = computed<Record<string, any>[]>(() => {
     const definitions = device.value?.thingModelMetadata?.tags || []
     const values = device.value?.thingModelTags || []
-    if (!definitions.length) return values
-
-    const valuesByKey = new Map(values.map((tag: any) => [getTagKey(tag), tag]))
-    // 产品物模型定义决定哪些标签应展示；设备标签仅覆盖当前实例已填写的值。
-    return definitions.map((definition: any) => ({
-      ...definition,
-      ...valuesByKey.get(getTagKey(definition)),
-      value: valuesByKey.get(getTagKey(definition))?.value ?? definition.value,
-      formatValue: valuesByKey.get(getTagKey(definition))?.formatValue ?? definition.formatValue,
-    }))
+    return mergeTagDefinitions(definitions, values)
   })
 
   function getTagKey(item: Record<string, any>) {
@@ -468,18 +468,7 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
   }
 
   function formatTagValue(item: Record<string, any>) {
-    let name: string | undefined
-    if (item.dataType) {
-      let arr = item.dataType?.elements || []
-      if (item.dataType?.type === 'boolean') {
-        arr = [
-          { text: item.dataType.trueText, value: item.dataType.trueValue },
-          { text: item.dataType.falseText, value: item.dataType.falseValue },
-        ]
-      }
-      name = arr.find((i: any) => `${i.value}` === `${item.value}`)?.text
-    }
-    return name ?? item.formatValue ?? item.value
+    return getFormattedTagValue(item)
   }
 
   function isTagValueEmpty(item: Record<string, any>) {
@@ -706,6 +695,8 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
         accessMode,
         writable,
         updatedAt: point.updatedAt,
+        // 趋势去重使用原始毫秒时间，避免同一秒内的多次上报互相覆盖。
+        timestamp: realtimePropertyValues.value[point.key]?.timestamp,
         groupId: template?.expands?.groupId || '__default__',
         groupName: template?.expands?.groupName || $t('IotDeviceDetail.detail.defaultGroup'),
         description: template?.description ?? template?.desc ?? point.hint,
@@ -1427,7 +1418,11 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
    */
   function syncLegacyMetadataDevice(current: IotDevice | null) {
     if (!current) {
-      instanceStore.setCurrent({} as DeviceInstance)
+      // Suspense 会先加载新详情再卸载旧详情；旧页面只能释放自己最后写入的状态。
+      if (syncedMetadataCurrent && instanceStore.current === syncedMetadataCurrent) {
+        instanceStore.setCurrent({} as DeviceInstance)
+      }
+      syncedMetadataCurrent = undefined
       return
     }
     const metadata = JSON.stringify(current.thingModelMetadata ?? {
@@ -1449,11 +1444,13 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
       description: current.summary,
       productId: current.productId || current.productKey || '',
       productName: current.productName,
+      parentId: current.parentId,
       features: current.features ?? [],
       // 映射页从实例 store 查询协议物模型，必须同步协议与传输类型才能加载目标属性。
       protocol: current.protocol,
       transport: current.transport,
       accessProvider: current.accessProvider,
+      accessId: current.accessId,
       metadata,
       productMetadata,
       independentMetadata: Boolean(current.independentMetadata),
@@ -1462,6 +1459,8 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
       configuration: current.configuration || {},
       tags: current.tags,
     } as DeviceInstance)
+    // 保存 store 中实际的响应式对象，同一设备的两个面板也必须区分归属。
+    syncedMetadataCurrent = instanceStore.current
   }
 
   async function loadCommands(context = currentLoad()) {
@@ -1666,6 +1665,7 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
     setInnerTab,
     openEditDrawer,
     openProductDetail,
+    ...parentDeviceLink,
     backToDeviceList,
     onDeviceSaved,
     toggleDeviceEnabled,

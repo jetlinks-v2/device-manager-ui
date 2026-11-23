@@ -1,18 +1,45 @@
 <template>
   <div class="metadata-base">
+    <DefineOtherSetting v-slot="{ record }">
+      <div class="metadata-setting-actions">
+        <OtherSetting
+          v-model:value="record.expands"
+          :type="
+            ['functions', 'events'].includes(props.type)
+              ? 'object'
+              : record.valueType?.type
+          "
+          :id="record.id"
+          :name="record.name"
+          :metadataType="props.type"
+          :isProduct="record.expands?.isProduct"
+          :target="props.target"
+          :record="record"
+          :readonly="readonly"
+          :key-property-readonly="record.expands?.isProduct && props.target === 'device'"
+          :disabled="
+            !readonly && (!hasMetadataUpdatePermission() || record.expands?.isProduct &&
+            !['int', 'long', 'float', 'double'].includes(
+              record.valueType?.type,
+            ))
+          "
+          @save="saveOtherSetting"
+        />
+      </div>
+    </DefineOtherSetting>
     <EditTable
       v-if="!heavyLoad"
       ref="tableRef"
       :data-source="dataSource"
       :columns="columns"
       :height="560"
-      :disableMenu="!hasOperate('add', type)"
+      :disableMenu="!readonly && !hasOperate('add', type)"
       :openGroup="type === 'properties'"
       :scroll="{ x: 'max-content' }"
       :rowSelection="{
         selectedRowKeys: selectedRowKeys,
       }"
-      :readonly="hasOperate('add', type)"
+      :readonly="readonly || hasOperate('add', type)"
       :target="_target"
       @scrollDown="scrollDown"
       @rightMenuClick="rightMenuClick"
@@ -24,7 +51,7 @@
           <div class="extra-left">
             <a-space>
               <Import
-                v-if="type === 'properties'"
+                v-if="!readonly && type === 'properties'"
                 :target="target"
                 :metadata="dataSource"
                 @ok="importMetadata"
@@ -72,6 +99,7 @@
             </a-button>
 
             <j-permission-button
+              v-if="!readonly"
               type="primary"
               key="update"
               placement="topRight"
@@ -92,7 +120,11 @@
           </div>
         </div>
       </template>
-      <template #bodyExtra v-if="hasOperate('add', type)">
+      <template #readonly="{ record, column }" v-if="readonly">
+        <OtherSettingCell v-if="column.dataIndex === 'other'" :record="record" />
+        <j-ellipsis v-else>{{ readonlyValue(record, column.dataIndex) }}</j-ellipsis>
+      </template>
+      <template #bodyExtra v-if="!readonly && hasOperate('add', type)">
         <div class="noEdit-tip">
           <div>
             {{ $t("Base.Base.640395-7") }}
@@ -241,30 +273,7 @@
         </EditTableFormItem>
       </template>
       <template #other="{ record }">
-        <div class="metadata-setting-actions">
-          <OtherSetting
-            v-model:value="record.expands"
-            :type="
-              ['functions', 'events'].includes(props.type)
-                ? 'object'
-                : record.valueType?.type
-            "
-            :id="record.id"
-            :name="record.name"
-            :metadataType="props.type"
-            :isProduct="record.expands?.isProduct"
-            :target="props.target"
-            :record="record"
-            :key-property-readonly="record.expands?.isProduct && props.target === 'device'"
-            :disabled="
-              !hasMetadataUpdatePermission() || record.expands?.isProduct &&
-              !['int', 'long', 'float', 'double'].includes(
-                record.valueType?.type,
-              )
-            "
-            @save="saveOtherSetting"
-          />
-        </div>
+        <OtherSettingCell :record="record" />
       </template>
       <template #async="{ record }">
         <BooleanSelect
@@ -422,6 +431,7 @@
 </template>
 
 <script setup lang="ts">
+import { createReusableTemplate } from "@vueuse/core";
 import type {
   MetadataItem,
   MetadataType,
@@ -431,6 +441,8 @@ import type { PropType } from "vue";
 import type { DeviceInstance } from "../../../Instance/typings";
 import { useRouter, onBeforeRouteUpdate } from "vue-router";
 import { useMetadata, useOperateLimits, useGroup } from "./hooks";
+import { isInheritedMetadataGroup, renameMetadataGroup, removeMetadataGroup } from '@device-manager-ui/components/Metadata/groupPolicy';
+import { useReadonlyMetadata } from './hooks/useReadonlyMetadata';
 import { useColumns, useSaveUnit } from "./columns";
 import { getMetadataItemByType, limitsMap } from "./utils";
 import { Source, OtherSetting } from "./components";
@@ -489,6 +501,10 @@ const props = defineProps({
     type: [String, Array, Boolean] as PropType<string | string[] | boolean>,
     default: undefined,
   },
+  readonly: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const _target = inject<"device" | "product">("_metadataType", props.target);
@@ -498,6 +514,8 @@ const { layout: basicLayout } = storeToRefs(system);
 const router = useRouter();
 
 const { unitOptions } = useSaveUnit();
+const [DefineOtherSetting, OtherSettingCell] = createReusableTemplate();
+const { readonlyValue } = useReadonlyMetadata(() => props.type);
 
 const {
   data: metadata,
@@ -513,9 +531,9 @@ const productStore = useProductStore();
 
 // 资源中心已在路由层完成授权时，以 true 绕过旧菜单权限码；旧页面仍校验传入权限。
 const hasMetadataUpdatePermission = () =>
-  typeof props.permission === 'boolean'
+  !props.readonly && (typeof props.permission === 'boolean'
     ? props.permission
-    : !!props.permission && permissionStore.hasPermission(props.permission);
+    : !!props.permission && permissionStore.hasPermission(props.permission));
 
 const dataSource = ref<MetadataItem[]>(
   JSON.parse(JSON.stringify(metadata.value || "[]")) || [],
@@ -604,7 +622,7 @@ const operateLimits = (action: "add" | "updata", types: MetadataType) => {
 // };
 
 const scrollDown = (len: number = 5) => {
-  if (!hasOperate("add", props.type)) {
+  if (!props.readonly && !hasOperate("add", props.type)) {
     dataSource.value.push(
       ...new Array(len).fill(1).map(() => getMetadataItemByType(props.type!)),
     );
@@ -695,6 +713,7 @@ const rightMenuClick = (
 };
 
 const handleSaveClick = async (next?: Function) => {
+  if (props.readonly) return;
   let resp = await tableRef.value.validate();
 
   if (resp) {
@@ -834,18 +853,17 @@ const fullToggle = (type: boolean, cb: Function) => {
 };
 
 const groupEdit = (record: { value: string; label: string, oldValue: string }) => {
-  dataSource.value.forEach((item) => {
-    if (item.expands?.groupId === record.oldValue) {
-      item.expands.groupName = record.label;
-      item.expands.groupId = record.value;
-    }
-  });
+  if (props.readonly || !hasMetadataUpdatePermission()) return;
+  if (renameMetadataGroup(dataSource.value, record, _target)) editStatus.value = true;
 };
 
 const groupDelete = (id: string) => {
-  dataSource.value = dataSource.value.filter(
-    (item) => item.expands?.groupId !== id || item.expands?.isProduct,
-  );
+  if (props.readonly || !hasMetadataUpdatePermission() || isInheritedMetadataGroup(dataSource.value, id, _target)) return;
+  const remaining = removeMetadataGroup(dataSource.value, id, _target);
+  if (remaining.length !== dataSource.value.length) {
+    dataSource.value = remaining;
+    editStatus.value = true;
+  }
 };
 
 const importMetadata = (_metadata: any[]) => {

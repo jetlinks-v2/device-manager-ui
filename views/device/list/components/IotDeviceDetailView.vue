@@ -19,7 +19,11 @@
 					:active-key="state.activeTab"
 					:options="state.tabOptions"
 					@change="state.setActiveTab(String($event))"
-				/>
+				>
+                    <template #tab-extra="{ option }">
+                        <DocumentHelp v-if="['alarm', 'invalid'].includes(String(option.key))" code="iot-user-device-list" :help-key="`tabs.${option.key}`" />
+                    </template>
+                </SlantedTabs>
 			</PageChrome>
 			
 			<div class="iot-device-detail__content-card" :padding="0">
@@ -41,6 +45,7 @@
 
 <script setup lang="ts">
 import { reactive, toRefs, type PropType } from 'vue'
+import DocumentHelp from '@jetlinks-web-core/components/DocumentHelp'
 import SlantedTabs from '@jetlinks-web-core/components/SlantedTabs'
 import PageBack from '@jetlinks-web-core/components/PageBack/index.vue'
 import IotDeviceDetailHeader from './device-detail/IotDeviceDetailHeader.vue'

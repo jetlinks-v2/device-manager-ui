@@ -29,6 +29,26 @@ export const isTimeOnlyTag = (tag: DeviceTag) => getTagType(tag) === 'date' && g
 export const isDateOnlyTag = (tag: DeviceTag) => getTagType(tag) === 'date' && getTagDateFormat(tag).toUpperCase() === 'YYYY-MM-DD'
 export const hasTagValue = (value: unknown) => value !== undefined && value !== null && !(typeof value === 'string' && !value.trim())
 
+/** 产品定义提供类型和名称，实例记录提供当前值及用于清除的记录 ID。 */
+export function mergeTagDefinitions(definitions: DeviceTag[], values: DeviceTag[]): DeviceTag[] {
+  if (!definitions.length) return values
+  const stored = new Map(values.map(tag => [getTagKey(tag), tag]))
+  return definitions.map(definition => ({
+    ...definition,
+    ...stored.get(getTagKey(definition)),
+    value: stored.get(getTagKey(definition))?.value ?? definition.value,
+    formatValue: stored.get(getTagKey(definition))?.formatValue ?? definition.formatValue,
+  }))
+}
+
+export function formatTagValue(tag: DeviceTag): unknown {
+  const type = tag.dataType
+  const options = type?.type === 'boolean'
+    ? [{ text: type.trueText, value: type.trueValue }, { text: type.falseText, value: type.falseValue }]
+    : type?.elements || []
+  return options.find(option => String(option.value) === String(tag.value))?.text ?? tag.formatValue ?? tag.value
+}
+
 export function getTagOptions(tag: DeviceTag) {
   if (getTagType(tag) === 'enum') return tag.dataType?.elements?.map(item => ({ label: item.text, value: item.value }))
   if (getTagType(tag) === 'boolean') return [

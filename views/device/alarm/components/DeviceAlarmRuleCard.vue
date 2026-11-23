@@ -13,7 +13,7 @@
         </span>
       </span>
     </button>
-    <a-dropdown :trigger="['click']" placement="bottomRight" :disabled="busy">
+    <a-dropdown v-if="!readonly" :trigger="['click']" placement="bottomRight" :disabled="busy">
       <a-button class="alarm-rule__more" type="text" size="small" :disabled="busy"
                 :aria-label="$t('DeviceAlarm.action.more', { name: row.name })" @click.stop>
         <AIcon type="MoreOutlined" />
@@ -46,6 +46,7 @@ const props = defineProps<{
   selected: boolean
   levels: AlarmLevelOption[]
   activeCount?: number
+  readonly?: boolean
   busy?: boolean
 }>()
 const emit = defineEmits<{

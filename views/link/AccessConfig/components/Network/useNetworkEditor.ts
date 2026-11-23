@@ -9,6 +9,7 @@ import { useMenuStore } from "@jetlinks-web-core/store/menu";
 import { onlyMessage } from "@jetlinks-web/utils";
 import { useI18n } from "vue-i18n";
 import { useTabSaveSuccess, useTabSaveSuccessBack } from '@jetlinks-web-core/hooks';
+import { useValidateInfosBlur } from '@device-manager-ui/hooks/useValidateInfosBlur';
 import { ref as emptyCreateSearchRef } from 'vue';
 export const editorProps = {
     provider: {
@@ -84,7 +85,7 @@ export function useNetworkEditor(props: Readonly<ExtractPropTypes<typeof editorP
             }
         }
     });
-    const { resetFields, validate, validateInfos } = useForm(formData, reactive({
+    const { resetFields, validate, validateInfos, rulesRef } = useForm(formData, reactive({
         name: [
             {
                 required: true,
@@ -99,6 +100,7 @@ export function useNetworkEditor(props: Readonly<ExtractPropTypes<typeof editorP
         ],
         description: [{ max: 200, message: $t("Network.index.041705-21") }],
     }));
+    useValidateInfosBlur({ validateInfos, validate, rulesRef });
     const { onBack } = useGatewaySaveBack();
     const showAddBtn = computed(() => {
         return route.query.view === "false" && !props.bindProduct;

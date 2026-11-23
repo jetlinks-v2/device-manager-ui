@@ -26,6 +26,14 @@
         {{ $t('Product.index.660348-13') }}
       </j-permission-button>
       <j-permission-button
+        v-if="showLifecycle !== false"
+        type="primary"
+        :hasPermission="canAction"
+        :popConfirm="{ title: product.state === 1 ? $t('Detail.index.478940-0') : $t('Detail.index.478940-1'), onConfirm: () => emit('toggle-state') }"
+      >
+        {{ product.state === 1 ? $t('Detail.index.478940-3') : $t('Product.index.660348-16') }}
+      </j-permission-button>
+      <j-permission-button
         v-if="canDelete"
         type="default"
         danger
@@ -36,13 +44,6 @@
       >
         <template #icon><AIcon type="DeleteOutlined" /></template>
         {{ $t('Product.index.660348-20') }}
-      </j-permission-button>
-      <j-permission-button
-        type="primary"
-        :hasPermission="canAction"
-        :popConfirm="{ title: product.state === 1 ? $t('Detail.index.478940-0') : $t('Detail.index.478940-1'), onConfirm: () => emit('toggle-state') }"
-      >
-        {{ product.state === 1 ? $t('Detail.index.478940-3') : $t('Product.index.660348-16') }}
       </j-permission-button>
       </template>
     </DetailHeader>
@@ -60,7 +61,7 @@ import DetailHeader from '@jetlinks-web-core/components/DetailHeader/index.vue'
 import DetailMetaItem from '@jetlinks-web-core/components/DetailMetaItem'
 import StatusTag from '@jetlinks-web-core/components/StatusTag/index.vue'
 
-const props = defineProps<{ product: Partial<ProductItem>; canUpdate: boolean; canAction: boolean; canDelete: boolean; canViewDevices: boolean }>()
+const props = withDefaults(defineProps<{ product: Partial<ProductItem>; canUpdate: boolean; canAction: boolean; showLifecycle?: boolean; canDelete: boolean; canViewDevices: boolean }>(), { showLifecycle: true })
 const emit = defineEmits<{ (e: 'back'): void; (e: 'edit'): void; (e: 'toggle-state'): void; (e: 'delete'): void; (e: 'view-devices'): void }>()
 const { t: $t } = useI18n()
 const { toClipboard } = useClipboard()

@@ -107,6 +107,9 @@ export const batchDeleteDevice = (data: string[]) => request.put(`/device-instan
 export const deviceTemplateDownload = (productId: string, type: string) => `${getBaseApi()}/device-instance/${productId}/template.${type}`
 
 export const templateDownload = (productId: string, type: string) => request.get(`/device-instance/${productId}/template.${type}`, {}, { responseType: 'blob' })
+
+/** 下载插件文件导入模板，设备ID列明确表示第三方设备ID。 */
+export const pluginTemplateDownload = (productId: string, type: string) => request.get(`/device/instance/plugin/${productId}/template.${type}`, {}, { responseType: 'blob' })
 /**
  * 设备导入
  * @param productId 产品id

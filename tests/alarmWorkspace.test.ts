@@ -1,10 +1,13 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { createRenderer, defineComponent, nextTick, reactive, ref } from 'vue'
+import { componentsRegistry } from '@jetlinks-web-core/utils/components-registry'
 import { createI18n } from 'vue-i18n'
 import { useDeviceAlarmEditor } from '../views/device/alarm/components/editor/useDeviceAlarmEditor'
 import { setAlarmRequestHandler } from './alarmRequest.test-shim'
 import { queryRuleRecords, queryRecordHistory, queryActiveRuleCounts } from '../views/device/alarm/workspaceApi'
+import { useDeviceAlarmDetail } from '../views/device/list/components/device-detail/useDeviceAlarmDetail'
+import type { IotDevice } from '../views/device/list/types'
 import { useDeviceAlarmRecords } from '../views/device/alarm/hooks/useDeviceAlarmRecords'
 import { handleDeviceAlarm } from '../views/device/alarm/workspaceApi'
 import { alarmDeviceId, alarmDuration, canHandleRecord } from '../views/device/alarm/workspaceUtils'
@@ -16,6 +19,7 @@ import {
   getNotificationMessageMode,
   isDeviceAlarmPreprocess,
   matchesAlarmNotifyMethod,
+  hasFixedNotification, hasNotificationRecipients,
   selectAlarmNotificationTypes,
   toDeviceAlarmRow,
 } from '../views/device/alarm/utils'
@@ -26,6 +30,8 @@ import { localizeDeviceLibraryPreprocessors } from '../views/device/alarm/device
 import { queryDeviceAlarmNotifyMethods, toNotifyMethods } from '../views/device/alarm/api'
 import { aggregateTemplateState, hasTemplateBinding, verifiedTemplateState } from '../views/device/alarm/notificationTemplateStatus'
 import { useAlarmNotification } from '../views/device/alarm/hooks/useAlarmNotification'
+import { useDeviceAlarmPage } from '../views/device/alarm/hooks/useDeviceAlarmPage'
+import type { DeviceAlarmRow, DeviceAlarmTargetOption } from '../views/device/alarm/types'
 
 const response = (id: string, total = 1) => ({ result: { data: [{ id, sourceName: id }], total } })
 const flush = async () => { await nextTick(); await new Promise(resolve => setTimeout(resolve, 0)); await nextTick() }
@@ -122,6 +128,49 @@ test('notification options require accessible enabled trigger templates and keep
     channel('s', 'notifier-sms', { templateId: '', notifierId: 'sender' }),
   ] }]).map(method => method.id), ['inside-mail'])
   assert.equal(matchesAlarmNotifyMethod({ ...createEmptyNotification(), notifyChannelIds: ['email-b'] }, email), true)
+})
+
+test('enabled WebHook templates remain selectable with fixed receivers and preserve the type selection', async () => {
+  const channel = { id: 'webhook-a', channelProvider: 'notifier-webhook', state: 'enabled',
+    channelConfiguration: { templateId: 'webhook-template', notifierId: 'webhook-config' } }
+  for (const receiverPolicy of ['explicit', { value: 'explicit', text: 'Fixed receiver' }]) {
+    const requests: string[] = []
+    setAlarmRequestHandler(async url => {
+      requests.push(url)
+      if (url === '/notify/channel/providers') return { result: [{ id: 'notifier-webhook', name: 'WebHook', receiverPolicy }] }
+      if (url === '/notify/channel/all') return { result: [{ id: 'trigger-webhook', provider: 'alarm-device', state: 'enabled', channels: [channel] }] }
+      if (url === '/notify/channel/trigger-webhook/_query-with-templates') return { result: {
+        provider: { state: 'enabled' }, channels: [{ channel, template: { id: 'webhook-template', configId: 'webhook-config' } }],
+      } }
+      throw new Error(`Unexpected request ${url}`)
+    })
+    const methods = await queryDeviceAlarmNotifyMethods()
+    assert.equal(methods.length, 1)
+    assert.equal(methods[0].key, 'webhook')
+    assert.equal(methods[0].label, 'WebHook')
+    assert.deepEqual(methods[0].templates, { trigger: 'ready', relieve: 'missing' })
+    assert.equal(requests.length, 3, 'fixed-receiver channels also verify the bound template')
+    const selected = selectAlarmNotificationTypes({ ...createEmptyNotification(), enabled: true, userIds: ['user-a'] }, [methods[0].providerId])
+    assert.deepEqual(selected.channelProviders, ['notifier-webhook'])
+    assert.deepEqual(selected.userIds, ['user-a'])
+    assert.deepEqual(selected.notifyChannelIds, [])
+    assert.equal(matchesAlarmNotifyMethod(selected, methods[0]), true)
+    const payload = buildPreprocessPayload({ ...editorProps().model, name: 'Temperature alarm', targetId: 'product-a',
+      property: 'temperature', limit: { lower: 10, upper: 20 }, notification: selected })
+    const saved = toDeviceAlarmRow({ id: 'alarm-a', templateId: 'product-a', thingId: '@all', property: 'temperature',
+      provider: payload.provider, configuration: payload.configuration }, 'product', 'Product A')
+    assert.deepEqual(saved?.notification.channelProviders, ['notifier-webhook'])
+    assert.deepEqual(saved?.notification.userIds, ['user-a'])
+    const types = [{ id: 'notifier-webhook', receiverPolicy }]
+    for (const unavailable of [
+      { ...channel, state: 'disabled' },
+      { ...channel, channelConfiguration: { templateId: '', notifierId: 'webhook-config' } },
+      { ...channel, channelConfiguration: { templateId: 'webhook-template', notifierId: '' } },
+    ]) {
+      assert.deepEqual(toNotifyMethods(types, [{ provider: 'alarm-device', channels: [unavailable] }]), [])
+    }
+    assert.deepEqual(toNotifyMethods(types, [{ provider: 'alarm-device', state: 'disabled', channels: [channel] }]), [])
+  }
 })
 
 test('explicit type selection drops channel bindings but preserves recipients and custom message formats', () => {
@@ -378,6 +427,116 @@ function mount<T>(setup: () => T) {
   return { state, unmount: () => app.unmount() }
 }
 
+const alarmProperty = (id: string) => ({ id, name: id, valueType: { type: 'double', unit: '%' } })
+const alarmTarget = (id: string, source: 'product' | 'device' = 'device') => {
+  const data: DeviceAlarmTargetOption = { label: id, value: id, source, productId: 'product-a',
+    ...(source === 'device' ? { deviceId: id } : {}), metadata: { properties: [alarmProperty('product-property')] } }
+  return { label: id, value: id, data }
+}
+
+test('single-device alarms load effective detail metadata, clear old selections and return to product scope', async () => {
+  const requests: string[] = []
+  setAlarmRequestHandler(async url => {
+    requests.push(url)
+    if (url === '/device-instance/device-a/detail') return { result: { metadata: JSON.stringify({ properties: [alarmProperty('device-only')] }) } }
+    if (url === '/device-instance/device-inherited/detail') return { result: { independentMetadata: false,
+      metadata: { properties: [alarmProperty('inherited-property')] } } }
+    if (url.includes('/property/_list') || url === '/protocol/units') return { result: [] }
+    throw new Error(`Unexpected request: ${url}`)
+  })
+  const { state, unmount } = mount(() => useDeviceAlarmPage(key => key))
+  try {
+    await state.onProductChange(alarmTarget('product-a', 'product'))
+    state.onPropertyChange('product-property')
+    const selecting = state.onDeviceChange('device-a', alarmTarget('device-a'))
+    assert.equal(state.form.value.property, '')
+    assert.equal(state.form.value.propertyName, '')
+    assert.equal(state.form.value.propertyUnit, '')
+    assert.deepEqual(state.propertyOptions.value, [])
+    await selecting
+    assert.deepEqual(state.propertyOptions.value.map(item => item.id), ['device-only'])
+    state.onPropertyChange('device-only')
+    await state.onDeviceChange('device-inherited', alarmTarget('device-inherited'))
+    assert.deepEqual(state.propertyOptions.value.map(item => item.id), ['inherited-property'])
+    await state.onDeviceChange('__all__')
+    assert.equal(state.form.value.source, 'product')
+    assert.equal(state.form.value.property, '')
+    assert.deepEqual(state.propertyOptions.value.map(item => item.id), ['product-property'])
+    assert.equal(requests.some(url => url.startsWith('/device-product/')), false)
+  } finally { unmount() }
+})
+
+test('editing a device alarm reloads its effective model without losing the selected property', async () => {
+  setAlarmRequestHandler(async url => url === '/device-instance/device-a/detail'
+    ? { result: { metadata: { properties: [alarmProperty('device-only')] } } }
+    : { result: [] })
+  const { state, unmount } = mount(() => useDeviceAlarmPage(key => key))
+  try {
+    const row: DeviceAlarmRow = { ...state.form.value, key: 'alarm-a', id: 'alarm-a', name: 'Device alarm', source: 'device',
+      targetId: 'device-a', deviceId: 'device-a', productId: 'product-a', property: 'device-only' }
+    await state.openEdit(row)
+    assert.equal(state.editorOpen.value, true)
+    assert.equal(state.form.value.property, 'device-only')
+    assert.deepEqual(state.propertyOptions.value.map(item => item.id), ['device-only'])
+  } finally { unmount() }
+})
+
+test('late device metadata and configured-rule responses cannot replace the current device properties', async () => {
+  const pending = new Map<string, (value: unknown) => void>()
+  setAlarmRequestHandler(async url => url === '/protocol/units' ? { result: [] }
+    : new Promise(resolve => { pending.set(url, resolve) }))
+  const { state, unmount } = mount(() => useDeviceAlarmPage(key => key))
+  try {
+    const first = state.onDeviceChange('device-a', alarmTarget('device-a'))
+    pending.get('/device-instance/device-a/detail')!({ result: { metadata: { properties: [alarmProperty('old-a')] } } })
+    await flush()
+    const second = state.onDeviceChange('device-b', alarmTarget('device-b'))
+    const third = state.onDeviceChange('device-c', alarmTarget('device-c'))
+    pending.get('/device-instance/device-c/detail')!({ result: { metadata: { properties: [alarmProperty('current-c')] } } })
+    await flush()
+    pending.get('/message/preprocessor/product/product-a/device-c/property/_list')!({ result: [] })
+    await third
+    pending.get('/device-instance/device-b/detail')!({ result: { metadata: { properties: [alarmProperty('old-b')] } } })
+    await second
+    pending.get('/message/preprocessor/product/product-a/device-a/property/_list')!({ result: [] })
+    await first
+    assert.deepEqual(state.propertyOptions.value.map(item => item.id), ['current-c'])
+    assert.equal(pending.has('/message/preprocessor/product/product-a/device-b/property/_list'), false)
+  } finally { unmount() }
+})
+
+test('a failed or empty device model never falls back to stale product properties', async () => {
+  setAlarmRequestHandler(async url => {
+    if (url === '/device-instance/device-a/detail') throw new Error('Device unavailable')
+    return { result: [] }
+  })
+  const { state, unmount } = mount(() => useDeviceAlarmPage(key => key))
+  try {
+    await state.onProductChange(alarmTarget('product-a', 'product'))
+    await assert.rejects(state.onDeviceChange('device-a', alarmTarget('device-a')), /Device unavailable/)
+    assert.deepEqual(state.propertyOptions.value, [])
+    setAlarmRequestHandler(async url => url === '/device-instance/device-a/detail'
+      ? { result: { metadata: { properties: [] } } } : { result: [] })
+    await state.onDeviceChange('device-a', alarmTarget('device-a'))
+    assert.deepEqual(state.propertyOptions.value, [])
+  } finally { unmount() }
+})
+
+test('clearing a product invalidates a pending device metadata request', async () => {
+  let complete!: (value: unknown) => void
+  setAlarmRequestHandler(async url => url === '/protocol/units' ? { result: [] }
+    : new Promise(resolve => { complete = resolve }))
+  const { state, unmount } = mount(() => useDeviceAlarmPage(key => key))
+  try {
+    const selecting = state.onDeviceChange('device-a', alarmTarget('device-a'))
+    await state.onProductChange()
+    complete({ result: { metadata: { properties: [alarmProperty('old-device')] } } })
+    await selecting
+    assert.deepEqual(state.propertyOptions.value, [])
+    assert.equal(state.form.value.targetId, '')
+  } finally { unmount() }
+})
+
 test('record queries default to all; scope switches preserve search and discard late responses', async () => {
   const pending: { body: Record<string, unknown>; resolve: (value: unknown) => void }[] = []
   setAlarmRequestHandler((_url, body) => new Promise(resolve => pending.push({ body, resolve })))
@@ -520,6 +679,27 @@ test('editor notifications distinguish off from incomplete and accept persisted 
   unmount()
 })
 
+test('hidden alarm panels disappear from navigation and preview without clearing saved notification settings', () => {
+  const getRegistry = componentsRegistry.getRegistry
+  componentsRegistry.getRegistry = code => code === 'device/alarm:alarm-editor'
+    ? [{ targetPage: 'device/alarm', targetModule: 'alarm-editor', target: 'notification', mode: 'hide', code: 'hide-device-alarm-notification', key: 'notification' }]
+    : []
+  const props = editorProps()
+  props.model.notification = { ...createEmptyNotification(), enabled: true, channelProviders: ['email'], userIds: ['user-a'] }
+  const savedNotification = JSON.stringify(props.model.notification)
+  const { state, unmount } = mount(() => useDeviceAlarmEditor(props, key => key))
+  try {
+    assert.deepEqual(state.panels.map(panel => panel.key), ['level', 'target', 'trigger'])
+    assert.equal(state.summaryItems.value.some(item => item.panel === 'notification'), false)
+    state.selectPanel('notification')
+    assert.equal(state.activePanel.value, 'level')
+    assert.equal(JSON.stringify(props.model.notification), savedNotification)
+  } finally {
+    unmount()
+    componentsRegistry.getRegistry = getRegistry
+  }
+})
+
 test('editor preview destinations preserve drafts, block navigation during save and reset on reopen', async () => {
   const props = editorProps()
   const { state, unmount } = mount(() => useDeviceAlarmEditor(props, key => key))
@@ -544,4 +724,158 @@ test('editor preview destinations preserve drafts, block navigation during save 
   assert.equal(props.model.name, 'Unsaved alarm')
   assert.equal(props.model.level, 1)
   unmount()
+})
+
+
+test('device alarm records and rule counts always constrain the requested device', async () => {
+  const calls: { url: string; body: Record<string, any> }[] = []
+  setAlarmRequestHandler(async (url, body) => {
+    calls.push({ url, body })
+    return url.endsWith('_aggregation') ? { result: [{ alarmConfigId: 'inherited-rule', count: 1 }] } : response('device-record')
+  })
+  await queryRuleRecords(undefined, { pageIndex: 0, pageSize: 10, terms: [{ column: 'sourceId', termType: 'eq', value: 'other-device' }] }, 'device-a')
+  assert.deepEqual(calls[0].body.terms.slice(0, 2), [
+    { column: 'sourceId', termType: 'eq', value: 'device-a' },
+    { column: 'targetType', termType: 'eq', value: 'device' },
+  ])
+  assert.deepEqual(calls[0].body.terms[2], { terms: [{ column: 'sourceId', termType: 'eq', value: 'other-device' }] })
+  await queryRuleRecords('inherited-rule', { pageIndex: 1, pageSize: 10 }, 'device-a')
+  assert.deepEqual(calls[1].body.terms[0], { column: 'alarmConfigId', termType: 'eq', value: 'inherited-rule' })
+  assert.ok(calls[1].body.terms.some((term: any) => term.column === 'sourceId' && term.value === 'device-a'))
+  await queryActiveRuleCounts(['inherited-rule'], 'device-a')
+  assert.ok(calls[2].body.filter.terms.some((term: any) => term.column === 'sourceId' && term.value === 'device-a'))
+})
+
+test('changing the device rebuilds record pagination and discards an old device response', async () => {
+  const pending: { body: Record<string, any>; resolve: (value: unknown) => void }[] = []
+  setAlarmRequestHandler((_url, body) => new Promise(resolve => pending.push({ body, resolve })))
+  const device = ref('device-a'), rule = ref<string>()
+  const { state, unmount } = mount(() => useDeviceAlarmRecords(rule, key => key, device))
+  const old = state.table.value.request({ pageIndex: 2, pageSize: 10 })
+  const key = state.table.value.key
+  device.value = 'device-b'
+  await flush()
+  assert.notEqual(state.table.value.key, key)
+  const current = state.table.value.request({ pageIndex: 0, pageSize: 10 })
+  assert.ok(pending[1].body.terms.some((term: any) => term.column === 'sourceId' && term.value === 'device-b'))
+  pending[1].resolve(response('device-b-record'))
+  assert.equal((await current).result?.data[0].id, 'device-b-record')
+  pending[0].resolve(response('device-a-record'))
+  assert.equal((await old).success, false)
+  unmount()
+})
+
+
+test('device alarm sidebar includes inherited rules while explicit and empty device overrides suppress product rules', async () => {
+  const make = (id: string, property: string, thingId = '@all') => ({
+    ...buildPreprocessPayload({ name: id, source: 'product', targetId: 'product-a', productId: 'product-a',
+      property, propertyName: property, level: 2, trigger: 'outside', limit: { lower: 10, upper: 20 },
+      autoRelieve: true, notification: createEmptyNotification() }),
+    id, property, templateId: 'product-a', thingId,
+  })
+  setAlarmRequestHandler(async url => {
+    if (url === '/alarm/config/default/level') return { result: { levels: [] } }
+    if (url.endsWith('/product-a/property/_list')) return { result: [make('inherited-1', 'p1'), make('inherited-2', 'p2'), make('inherited-3', 'p3')] }
+    if (url.endsWith('/product-a/device-a/property/_list')) return { result: [make('override-1', 'p1', 'device-a'),
+      { id: 'disabled-2', property: 'p2', templateId: 'product-a', thingId: 'device-a', provider: 'composite', configuration: { processors: [] } }] }
+    if (url.endsWith('_aggregation')) return { result: [] }
+    throw new Error(url)
+  })
+  const device = ref({ id: 'device-a', productKey: 'product-a', name: 'Device', productName: 'Product', thingModelMetadata: { properties: [] } } as unknown as IotDevice)
+  const { state, unmount } = mount(() => useDeviceAlarmDetail(device))
+  await flush()
+  assert.equal(state.error.value, false)
+  assert.deepEqual(state.rows.value.map(row => row.id), ['inherited-3', 'override-1'])
+  assert.deepEqual(state.rows.value.map(row => row.source), ['product', 'device'])
+  unmount()
+})
+
+
+test('DingTalk robots remain separate instances alongside work notifications with their own recovery templates', () => {
+  const channel = (id: string, notifierId: string, templateId = `${id}-template`) => ({ id, name: id,
+    channelProvider: 'notifier-dingTalk', channelConfiguration: { notifierId, templateId } })
+  const trigger = [channel('robot-a', 'robot-a-config'), channel('robot-b', 'robot-b-config'), channel('work', 'work-config')]
+  const recovery = [channel('robot-a-relieve', 'robot-a-config'), channel('work-relieve', 'work-config')]
+  const providers = [{ id: 'trigger', provider: 'alarm-device', channels: trigger }, { id: 'relieve', provider: 'alarm-device-relieve', channels: recovery }]
+  const detail = (channels: ReturnType<typeof channel>[]) => ({ channels: channels.map(channel => ({ channel,
+    template: { id: channel.channelConfiguration.templateId, configId: channel.channelConfiguration.notifierId } })) })
+  const notifiers = new Map(['robot-a-config', 'robot-b-config', 'work-config'].map(id => [id, { type: 'dingTalk', provider: id === 'work-config' ? 'dingTalkMessage' : 'dingTalkRobotWebHook' }]))
+  const methods = toNotifyMethods([{ id: 'notifier-dingTalk', name: 'DingTalk' }], providers, new Map([
+    ['trigger', detail(trigger)], ['relieve', detail(recovery)],
+  ]), notifiers)
+  assert.deepEqual(methods.map(method => method.id), ['notifier-dingTalk', 'robot-a', 'robot-b'])
+  assert.equal(methods[1].fixedReceiver?.relieveTemplateId, 'robot-a-relieve-template')
+  assert.equal(methods[2].templates?.relieve, 'missing')
+  assert.deepEqual(methods[0].channelIds, ['work'])
+  const fixed = selectAlarmNotificationTypes({ ...createEmptyNotification(), enabled: true }, ['robot-a', 'robot-b'], methods)
+  assert.deepEqual(fixed.channelProviders, [])
+  assert.equal(fixed.fixedReceiverChannels.length, 2)
+  assert.equal(hasNotificationRecipients(fixed), true)
+  assert.equal(matchesAlarmNotifyMethod(fixed, methods[1]), true)
+  assert.equal(matchesAlarmNotifyMethod(fixed, methods[0]), false)
+  const mixed = selectAlarmNotificationTypes(fixed, ['robot-a', 'notifier-dingTalk'], methods)
+  assert.equal(hasNotificationRecipients(mixed), false)
+  assert.equal(hasNotificationRecipients({ ...mixed, userIds: ['u1'] }), true)
+  assert.equal(selectAlarmNotificationTypes(mixed, [], methods).fixedReceiverChannels.length, 0)
+})
+
+test('fixed-only alarms retain selection and templates through trigger/recovery payload and readback', () => {
+  const model = editorProps().model
+  model.property = 'temperature'
+  model.trigger = 'gt'
+  model.value = 50
+  model.autoRelieve = true
+  model.notification = { ...createEmptyNotification(), enabled: true, includeRelieve: true,
+    fixedReceiverChannels: [{ channelId: 'robot-a', templateId: 'trigger-template', relieveTemplateId: 'recovery-template' }] }
+  const payload = buildPreprocessPayload(model)
+  const restored = toDeviceAlarmRow({ ...payload, property: model.property }, model.source, model.targetId)
+  if (!restored) throw new Error('Fixed notification payload must remain editable after readback')
+  assert.equal(restored.notification.enabled, true)
+  assert.equal(hasFixedNotification(restored.notification), true)
+  assert.deepEqual(restored.notification.fixedReceiverChannels, model.notification.fixedReceiverChannels)
+  const editor = useDeviceAlarmEditor({ ...editorProps(), model }, key => key)
+  assert.equal(editor.panelStates.value.notification, 'complete')
+  const selected = reactive({ model, methods: [{ id: 'robot-a', providerId: 'notifier-dingTalk', key: 'dingtalk', label: 'Robot A', desc: '', icon: '',
+    fixedReceiver: model.notification.fixedReceiverChannels![0] }] as DeviceAlarmNotifyMethod[] })
+  const { state: notification, unmount } = mount(() => useAlarmNotification(selected, () => {}, () => {}))
+  assert.deepEqual(notification.channelIds.value, ['robot-a'])
+  assert.equal(notification.requiresRecipients.value, false)
+  notification.channelIds.value = []
+  assert.equal(hasFixedNotification(model.notification), false)
+  unmount()
+})
+
+
+test('notify resources load robot identities once per config and retain work-only recovery status', async () => {
+  const calls: string[] = []
+  const channel = (id: string, notifierId: string) => ({ id, name: id, channelProvider: 'notifier-dingTalk',
+    channelConfiguration: { notifierId, templateId: `${id}-template` } })
+  const trigger = [channel('robot-a', 'robot'), channel('robot-b', 'robot'), channel('work', 'work')]
+  setAlarmRequestHandler(async url => {
+    calls.push(url)
+    if (url === '/notify/channel/providers') return { result: [{ id: 'notifier-dingTalk', name: 'DingTalk' }] }
+    if (url === '/notify/channel/all') return { result: [{ id: 'trigger', provider: 'alarm-device', channels: trigger }] }
+    if (url === '/notify/channel/trigger/_query-with-templates') return { result: { channels: trigger.map(channel => ({ channel,
+      template: { id: channel.channelConfiguration.templateId, configId: channel.channelConfiguration.notifierId } })) } }
+    if (url.startsWith('/notifier/config/')) return { result: { type: 'dingTalk', provider: url.endsWith('/robot') ? 'dingTalkRobotWebHook' : 'dingTalkMessage' } }
+    throw new Error(`Unexpected request ${url}`)
+  })
+  const methods = await queryDeviceAlarmNotifyMethods()
+  assert.deepEqual(methods.map(method => method.id), ['notifier-dingTalk', 'robot-a', 'robot-b'])
+  assert.equal(calls.filter(url => url === '/notifier/config/robot').length, 1)
+  assert.deepEqual(methods[0].personnelChannels, { providerId: 'notifier-dingTalk', trigger: ['work'], relieve: [] })
+  assert.equal(methods[0].templates?.relieve, 'missing')
+})
+
+test('missing robot resources keep a saved fixed selection removable without requiring personnel', () => {
+  const model = reactive({ ...editorProps().model, id: 'saved', notification: { ...createEmptyNotification(), enabled: true,
+    fixedReceiverChannels: [{ channelId: 'missing-robot', templateId: 'saved-template' }] } })
+  const props = reactive({ model, methods: [] as DeviceAlarmNotifyMethod[] })
+  const { state, unmount } = mount(() => useAlarmNotification(props, () => {}, () => {}))
+  try {
+    assert.deepEqual(state.channelIds.value, ['missing-robot'])
+    assert.equal(state.requiresRecipients.value, false)
+    state.channelIds.value = []
+    assert.deepEqual(model.notification.fixedReceiverChannels, [])
+  } finally { unmount() }
 })

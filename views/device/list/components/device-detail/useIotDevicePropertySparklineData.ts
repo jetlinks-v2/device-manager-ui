@@ -2,6 +2,7 @@ import dayjs from 'dayjs'
 import { computed, onScopeDispose, ref, watch, type ComputedRef, type Ref } from 'vue'
 import { extractRows, iotDeviceDetailRealApi } from '../../services/iotDeviceDetailReal.service'
 import type { RealtimePropertyRow } from './iotDeviceDetail.types'
+import { splitPropertyValueAndUnit } from './iotDevicePropertyDisplay'
 
 export interface PropertySparklinePoint {
   time: number | string
@@ -9,6 +10,7 @@ export interface PropertySparklinePoint {
 }
 
 const AGG = 'AVG'
+const MAX_POINTS = 12
 export type PropertySparklineRange = '1h' | '24h' | '7d'
 
 interface SparklineQueryRange {
@@ -25,6 +27,7 @@ export function useIotDevicePropertySparklineData(
 ) {
   const loading = ref(false)
   const sparklineRows = ref<Record<string, PropertySparklinePoint[]>>({})
+  const realtimeRows = ref<Record<string, PropertySparklinePoint[]>>({})
   let requestTicket = 0
   let timer: ReturnType<typeof setTimeout> | undefined
 
@@ -33,16 +36,50 @@ export function useIotDevicePropertySparklineData(
   )
 
   function getSparklineRows(property: RealtimePropertyRow) {
-    return sparklineRows.value[property.identifier] || []
+    return mergeRows(
+      sparklineRows.value[property.identifier] || [],
+      realtimeRows.value[property.identifier] || [],
+    )
   }
 
+  // 历史聚合与实时上报独立保存，查询返回时不能覆盖等待期间收到的点。
   function scheduleLoad() {
     ++requestTicket
     if (timer) clearTimeout(timer)
+    sparklineRows.value = {}
+    realtimeRows.value = {}
+    appendRealtimeRows(numericVisibleProperties.value)
     timer = setTimeout(() => {
       timer = undefined
       void loadRows()
     }, 120)
+  }
+
+  // 按原始上报时间去重，保留连续上报；无上报时间或非数值不能伪造趋势点。
+  function appendRealtimeRows(properties: RealtimePropertyRow[]) {
+    properties.forEach((property) => {
+      const value = Number(splitPropertyValueAndUnit(property.value, property.unit).value)
+      const time = property.timestamp ?? dayjs(property.updatedAt).valueOf()
+      if (!Number.isFinite(value) || !Number.isFinite(time)) return
+      realtimeRows.value[property.identifier] = mergeRows(
+        realtimeRows.value[property.identifier] || [],
+        [{ time, value }],
+      )
+    })
+  }
+
+  // 实时点覆盖同一时间的历史点，按所选时间范围和卡片点数限制内存。
+  function mergeRows(...sources: PropertySparklinePoint[][]) {
+    const { from, to } = getTimeRange(timeRange.value)
+    const points = new Map<number, PropertySparklinePoint>()
+    sources.flat().forEach((point) => {
+      const time = dayjs(point.time).valueOf()
+      if (time >= from && time <= to) points.set(time, point)
+    })
+    return [...points.entries()]
+      .sort(([left], [right]) => left - right)
+      .slice(-MAX_POINTS)
+      .map(([, point]) => point)
   }
 
   async function loadRows() {
@@ -73,6 +110,9 @@ export function useIotDevicePropertySparklineData(
 
       if (currentTicket !== requestTicket) return
       sparklineRows.value = mapAggregationRows(extractRows(resp?.result), properties)
+    } catch {
+      // 历史查询失败仍保留已收到的实时趋势。
+      if (currentTicket === requestTicket) sparklineRows.value = {}
     } finally {
       if (currentTicket === requestTicket) loading.value = false
     }
@@ -88,6 +128,8 @@ export function useIotDevicePropertySparklineData(
     scheduleLoad,
     { immediate: true },
   )
+
+  watch(numericVisibleProperties, appendRealtimeRows, { deep: true })
 
   onScopeDispose(() => {
     if (timer) clearTimeout(timer)
@@ -145,7 +187,7 @@ function mapAggregationRows(rows: any[], properties: RealtimePropertyRow[]) {
       })
       .filter((row): row is PropertySparklinePoint => Boolean(row))
       .sort((left, right) => dayjs(left.time).valueOf() - dayjs(right.time).valueOf())
-      .slice(-12)
+      .slice(-MAX_POINTS)
   })
 
   return nextRows

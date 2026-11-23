@@ -21,6 +21,7 @@ import { useEncode } from './debug/useEncode'
 import { useFillMapping } from './debug/useFillMapping'
 import { useSplitLayout } from './useSplitLayout'
 import { useTableHeight } from './mapping/useTableHeight'
+import { useCodecLeaveGuard } from '../../../../components/useCodecLeaveGuard'
 
 /** 仅组合搬迁后的规则与状态，生命周期和 watch 均沿用原组件。 */
 export function useModbusMapping(props: ModbusMappingProps) {
@@ -33,7 +34,7 @@ export function useModbusMapping(props: ModbusMappingProps) {
   const frameHelpers = createFrameHelpers(t, payloadHelpers)
   const simulationHelpers = createSimulationHelpers(addressHelpers, frameHelpers, payloadHelpers)
   const visualizationHelpers = createVisualizationHelpers(t, addressHelpers)
-  const mappingConfiguration = useMappingConfiguration(
+  const configuration = useMappingConfiguration(
     t,
     props,
     addressHelpers,
@@ -41,6 +42,13 @@ export function useModbusMapping(props: ModbusMappingProps) {
     codecHelpers,
     mappingRules
   )
+  const { confirmLeave } = useCodecLeaveGuard({
+    dirty: () => configuration.isDirty.value,
+    busy: () => configuration.loading.value || configuration.saving.value,
+    save: configuration.saveConfig,
+    discard: configuration.discardChanges,
+  })
+  const mappingConfiguration = { ...configuration, confirmLeave }
   const mappingProperties = useMappingProperties(mappingConfiguration, addressHelpers)
   const mappingEditor = useMappingEditor(t, mappingConfiguration, mappingRules, addressHelpers, codecHelpers)
   const debugState = useDebugState()
@@ -140,7 +148,12 @@ export function useModbusMapping(props: ModbusMappingProps) {
   watch(mappingConfiguration.modbusLinkType, () => {
     decodeSimulation.regenerateDecodeSimFrame()
   })
-  return { mappingView, decodeView, encodeView, fillView, splitLayout, mappingConfiguration, mappingEditor }
+  async function reloadConfig() {
+    await mappingConfiguration.loadConfig()
+    debugState.decodeResult.value = null
+    debugState.encodeResult.value = null
+  }
+  return { mappingView, decodeView, encodeView, fillView, splitLayout, mappingConfiguration, mappingEditor, reloadConfig }
 }
 export type ModbusMappingView = ReturnType<typeof useModbusMapping>['mappingView']
 export type ModbusDecodeView = ReturnType<typeof useModbusMapping>['decodeView']

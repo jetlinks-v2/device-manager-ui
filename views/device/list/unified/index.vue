@@ -55,9 +55,12 @@
 					          <a-menu-item v-if="canDeviceBatchAction('export')" key="export">{{ t('Instance.index.133466-30') }}</a-menu-item>
 					          <a-menu-item v-if="!isSaaS && canDeviceBatchAction('import')" key="import">{{ t('Instance.index.133466-31') }}</a-menu-item>
 					          <a-menu-item v-if="canDeviceBatchAction('enable')" key="activateAll">{{ t('Instance.index.133466-32') }}</a-menu-item>
-						          <a-menu-item v-if="activeType === 'gateway' && menu.hasMenu('algorithm-center')" key="algorithms">{{ t('UnifiedDeviceList.batchAlgorithms') }}</a-menu-item>
-						          <a-menu-item v-if="activeType === 'gateway'" key="plugins">{{ t('UnifiedDeviceList.batchPlugins') }}</a-menu-item>
-						          <a-menu-item key="syncStatus">{{ t('IotDeviceList.action.syncStatus') }}</a-menu-item>
+						          <a-menu-item v-if="activeType === 'gateway' && menu.hasMenu('algorithm-center')" key="algorithms">{{ t('UnifiedDeviceList.batchAlgorithms') }}<DocumentHelp code="iot-user-device-list" help-key="batch.algorithms" /></a-menu-item>
+						          <a-menu-item v-if="activeType === 'gateway'" key="plugins">{{ t('UnifiedDeviceList.batchPlugins') }}<DocumentHelp code="iot-user-device-list" help-key="batch.plugins" /></a-menu-item>
+						          <a-menu-item key="syncStatus">
+                        {{ t('IotDeviceList.action.syncStatus') }}
+                        <DocumentHelp code="iot-user-device-list" help-key="batch.syncStatus" />
+                      </a-menu-item>
 						        </a-menu>
 						      </template>
 						    </a-dropdown>
@@ -77,6 +80,10 @@
 				    <a-alert v-if="error || scopeLoadError" type="error" show-icon :message="error || t('UnifiedDeviceList.loadFailed')"><template #action><a-button @click="refresh">{{ t('UnifiedDeviceList.refresh') }}</a-button></template></a-alert>
 				    <div class="unified-device-list__table">
 					    <a-table row-key="id" :columns="columns" :data-source="rows" :loading="loading" :pagination="false" :row-selection="rowSelection" :scroll="{ x: 'max-content' }">
+                      <template #headerCell="{ column }">
+                        {{ column.title }}
+                        <DocumentHelp v-if="column.key === 'status'" code="iot-user-device-list" help-key="list.status" />
+                      </template>
 					      <template #emptyText>
 					        <CloudEmpty :search="hasSearch" :search-name="$t('UnifiedDeviceList.device')">
 					          <template v-if="!error"><a-space><EmptyCreateButtonAction1 /><EmptyCreateButtonAction2 /></a-space></template>
@@ -84,10 +91,12 @@
 					      </template>
 						    <template #bodyCell="{ column, record }">
 							    <template v-if="column.key === 'name'">
-								    <a-flex align="center" :gap="8">
-									    <div>
-										    <a-flex align="center" :gap="8" wrap="wrap">
-											    <a-button type="link" class="unified-device-list__name" @click="openDetail(record)">{{ record.name }}</a-button>
+								    <a-flex align="center" :gap="8" class="unified-device-list__identity">
+									    <div class="unified-device-list__identity-body">
+										    <a-flex align="center" :gap="8" class="unified-device-list__name-row">
+                      <a-tooltip :title="record.name">
+											      <a-button type="link" class="unified-device-list__name" @click="openDetail(record)"><span class="unified-device-list__name-text">{{ record.name }}</span></a-button>
+                      </a-tooltip>
                       <RegistryComponent page-code="device/Instance" code="name-badges" :record="record" />
 											    <a-tag v-if="activeType === 'all'" :bordered="false" class="unified-device-list__category">{{ providerOf(record)?.label() }}</a-tag>
 										    </a-flex>
@@ -191,7 +200,7 @@
 						    </template>
 					    </a-table>
 				    </div>
-				    <a-pagination class="unified-device-list__pagination" :current="pageIndex + 1" :page-size="pageSize" :total="total" :page-size-options="['12', '24', '48', '96']" show-size-changer :show-total="value => t('UnifiedDeviceList.total', { count: value })" @change="changePage" />
+				    <JPagination class="unified-device-list__pagination" :page-index="pageIndex" :page-size="pageSize" :total="total" :page-size-options="['12', '24', '48', '96']" show-size-changer is-show-content @change="changePage" />
 			    </div>
 		    </template>
 	    </EqualHeightColumns>
@@ -218,6 +227,7 @@ import { ref } from 'vue'
 import dayjs from 'dayjs'
 import { Modal } from 'ant-design-vue'
 import { useI18n } from 'vue-i18n'
+import JPagination from '@jetlinks-web/components/es/ProTable/Pagination'
 import { getToken, onlyMessage } from '@jetlinks-web/utils'
 import { TOKEN_KEY_URL } from '@jetlinks-web/constants'
 import { getBaseApi } from '@jetlinks-web-core/utils'
@@ -241,6 +251,7 @@ import { useDeviceListChannelSupport } from './useDeviceListChannelSupport'
 import { useUnifiedDeviceActions } from './useUnifiedDeviceActions'
 import { useUnifiedDeviceBatchNavigation } from './useUnifiedDeviceBatchNavigation'
 import Process from '../../Instance/Process/index.vue'
+import DocumentHelp from '@jetlinks-web-core/components/DocumentHelp'
 import { useHomeAgentFeatureEntry } from '@jetlinks-web-core/layout/components/AiChat/useHomeAgentFeatureEntry'
 import { DEVICE_ONBOARDING_CAPABILITY_ID } from '@device-manager-ui/agentCapabilities/deviceGuidance/homeAgentProvider'
 import DeviceImport from '../../Instance/Import/modal.vue'
@@ -473,11 +484,17 @@ const [DefineEmptyCreateAction2, EmptyCreateButtonAction2] = createReusableTempl
 .unified-device-list__filters > .device-asset-search { flex: 1 1 auto; width: auto; min-width: 0; }
 .unified-device-list__toolbar-actions { flex-shrink: 0; margin-inline-start: auto; gap: 8px; }
 .unified-device-list__action-divider { margin: 0 2px; height: 24px; opacity: .45; }
-.unified-device-list__category { margin-inline-end: 0; color: var(--ink-3); }
+.unified-device-list__category { flex-shrink: 0; margin-inline-end: 0; color: var(--ink-3); white-space: nowrap; }
 .unified-device-list__table { flex: 1; min-height: 0; overflow: auto; }
 .unified-device-list__row-actions { width: 100%; justify-content: flex-end; }
 .unified-device-list__table small { display: block; color: var(--ink-3); font-weight: normal; }
-.unified-device-list__name { padding: 0; height: auto; font-weight: 600; }
+/* max-content 表格需限制内容宽度：280px 名称列扣除两侧 16px 单元格内边距。 */
+.unified-device-list__identity { width: 248px; min-width: 0; max-width: 100%; }
+.unified-device-list__identity-body { flex: 1; min-width: 0; }
+.unified-device-list__name-row { min-width: 0; flex-wrap: nowrap; }
+.unified-device-list__name { flex: 0 1 auto; min-width: 0; max-width: 100%; overflow: hidden; padding: 0; height: auto; font-weight: 600; }
+.unified-device-list__name-text { display: block; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.unified-device-list__identity-body > small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .unified-device-list__pagination { text-align: right; }
 .unified-device-list__batch { justify-content: flex-end; align-items: center; min-height: 48px; padding: 8px 12px; border-radius: 8px; }
 </style>

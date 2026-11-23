@@ -37,6 +37,14 @@ export function useMappingConfiguration(
   const loading = ref(false)
 
   const saving = ref(false)
+  const snapshot = () => JSON.stringify({ mappings: mappings.value, modbusLinkType: modbusLinkType.value })
+  const savedSnapshot = ref(snapshot())
+  const isDirty = computed(() => !loading.value && snapshot() !== savedSnapshot.value)
+  function discardChanges() {
+    const saved = JSON.parse(savedSnapshot.value)
+    mappings.value = saved.mappings
+    modbusLinkType.value = saved.modbusLinkType
+  }
 
   const metadataProperties = computed(() => {
     const meta = instanceStore.current?.metadata
@@ -172,6 +180,9 @@ export function useMappingConfiguration(
     loading.value = true
     try {
       const res: any = await deviceCode(pId, dId)
+      if (res.status !== 200) return
+      mappings.value = []
+      modbusLinkType.value = 'PDU'
       if (res.status === 200 && res.result?.provider === 'modbus') {
         const mMapping = res.result.configuration?.mapping
         if (mMapping) {
@@ -180,31 +191,39 @@ export function useMappingConfiguration(
           mappings.value.forEach((row) => autoFillLayout(row))
         }
       }
+      savedSnapshot.value = snapshot()
     } finally {
       loading.value = false
     }
   }
 
-  const saveConfig = async () => {
+  async function saveConfig(): Promise<boolean> {
+    if (saving.value || loading.value) return false
     const pId = props.productId || instanceStore.current?.productId
     const dId = props.thingId || instanceStore.current?.id
     if (!pId || !dId) {
       message.error(translate('ModbusMapping.feedback.deviceMissing'))
-      return
+      return false
     }
     if (!configObject.value) {
       message.warning(translate('ModbusMapping.feedback.mappingRequired'))
-      return
+      return false
     }
     saving.value = true
+    const submittedSnapshot = snapshot()
     try {
       const res: any = await saveDeviceCode(pId, dId, {
         provider: 'modbus',
         configuration: { mapping: configObject.value }
       })
       if (res.status === 200) {
+        savedSnapshot.value = submittedSnapshot
         message.success(translate('ModbusMapping.feedback.saved'))
+        return true
       }
+      return false
+    } catch {
+      return false
     } finally {
       saving.value = false
     }
@@ -220,7 +239,9 @@ export function useMappingConfiguration(
     normalizeModbusLinkType,
     reconstructMappings,
     loadConfig,
-    saveConfig
+    saveConfig,
+    isDirty,
+    discardChanges
   }
 }
 export type MappingConfiguration = ReturnType<typeof useMappingConfiguration>

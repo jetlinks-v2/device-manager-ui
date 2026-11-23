@@ -26,6 +26,7 @@ const messages = { ...coreMessages, ...deviceMessages }
 const simple = text => ({ setup: (_, { slots }) => () => h('div', [text, slots.default?.()]) })
 function card(amap, { allowed = true, edit = false, error, distribution = false, calls = [] } = {}) {
   const deps = {
+    '@jetlinks-web-core/components/DocumentHelp': { __esModule: true, default: simple('help') },
     './MapConfigAction.vue': { __esModule: true, default: action },
     '@jetlinks-web-core/components/CloudEmpty/index.vue': { __esModule: true, default: { props: ['description'], setup: (p, { slots }) => () => h('div', [p.description, slots.default?.()]) } },
     '@vuemap/vue-amap': { ElAmapMarkerCluster: simple('cluster') },

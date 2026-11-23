@@ -11,3 +11,16 @@ test('device detail header copies the device ID and opens the linked product det
   assert.match(state, /await toClipboard\(device\.value\.id\)/)
   assert.match(state, /deviceMenu\.jumpPage\('device\/Product\/Detail', \{ params: \{ id: productId \} \}\)/)
 })
+
+
+test('ordinary device summary fields opt into merged tooltips and keep the complete values', () => {
+  for (const [kind, value] of [
+    ['product', 'productNameText'], ['category', 'parentDeviceName'], ['space', 'regionFullText'],
+    ['group', 'businessGroupFullText'], ['time', 'lastSeenText'],
+  ]) {
+    assert.match(header, new RegExp(`<DetailMetaItem[^>]+kind="${kind}" merged-tooltip[^>]+:tooltip="${value}"`))
+  }
+  assert.doesNotMatch(header, /kind="id" merged-tooltip/)
+  assert.match(header, /@click="openParentDevice"/)
+  assert.match(header, /:disabled="!canOpenProductDetail"/)
+})

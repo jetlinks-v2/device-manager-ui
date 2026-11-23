@@ -54,6 +54,8 @@ import { tabs } from './asyncComponent'
 import { buildProductDetailTabs, resolveProductDetailTab, type ProductDetailTabKey } from './detailTabs'
 import { hasProductCreatedGuide, updateProductCreatedGuide } from '../hooks/useProductCreatedGuide'
 import { Modal } from 'ant-design-vue'
+import { isProjectRuntime } from '@jetlinks-web-core/utils/project-runtime'
+import { isPrivateDeployment } from '@jetlinks-web-core/utils/deployment'
 
 const { t: $t } = useI18n()
 const route = useRoute()
@@ -69,7 +71,7 @@ const activeTab = ref<ProductDetailTabKey>(route.query.tab === 'Metadata' ? 'Met
 const activeTabView = ref<{ openAccessSelector?: () => void }>()
 let openingAccessGuide = false
 const canViewDevices = computed(() => menuStore.hasMenu('iot-user-device-list'))
-const isCreatedProductOnboarding = computed(() => route.query.onboarding === 'product-created'
+const isCreatedProductOnboarding = computed(() => (!isProjectRuntime() || isPrivateDeployment()) && route.query.onboarding === 'product-created'
   && hasProductCreatedGuide(typeof route.params.id === 'string' ? route.params.id : undefined))
 
 const visibleTabs = computed(() => buildProductDetailTabs(productStore.current, {

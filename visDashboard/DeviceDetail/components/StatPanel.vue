@@ -1,7 +1,7 @@
 <template>
   <article class="detail-stat" :data-key="card.key" :data-tone="card.tone">
-    <div class="detail-stat__label"><span />{{ title || card.label }}</div>
-    <div class="detail-stat__main"><strong>{{ card.value }}</strong><em>{{ card.unit }}</em></div>
+    <div class="detail-stat__label" :title="title || card.label"><span />{{ title || card.label }}</div>
+    <div class="detail-stat__main"><strong :title="card.value">{{ card.value }}</strong><em>{{ card.unit }}</em></div>
     <div class="detail-stat__sub" :title="card.sub">{{ card.sub }}</div>
     <JEcharts class="detail-stat__spark" :option="card.chartOption" />
   </article>

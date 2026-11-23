@@ -1,8 +1,7 @@
 .instance-device-access {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  min-height: 30rem;
+  min-height: 0;
   gap: var(--space-3);
 }
 
@@ -29,6 +28,12 @@
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
+}
+
+.device-access-tabs :deep(.ant-tabs-content),
+.device-access-tabs :deep(.device-access-tab-pane--access.ant-tabs-tabpane) {
+  height: 100%;
+  min-height: 0;
 }
 
 .device-access-tabs :deep(.device-access-tab-pane--trace.ant-tabs-tabpane) {
@@ -95,7 +100,16 @@
 }
 
 .tab-pane-inner--access {
-  overflow-x: hidden;
-  overflow-y: visible;
-  height: auto;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
+
+.tab-pane-inner--simulator { height: 100%; min-height: 30rem; }
+
+/* 接入参数随详情正文滚动，独立滚动仅留给右侧文档。 */
+.instance-device-access--config .device-access-tabs { flex: 0 0 auto; overflow: visible; }
+.instance-device-access--config .device-access-tabs :deep(.ant-tabs-content-holder) { overflow: visible; }
+.instance-device-access--config .device-access-tabs :deep(.ant-tabs-content),
+.instance-device-access--config .device-access-tabs :deep(.device-access-tab-pane--access.ant-tabs-tabpane),
+.instance-device-access--config .tab-pane-inner--access { height: auto; overflow: visible; }

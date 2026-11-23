@@ -10,7 +10,7 @@
   >
     <j-empty>
       <template #description>
-        <span v-if="permissionStore.hasPermission('device/Product:update')">
+        <span v-if="!isProject && permissionStore.hasPermission('device/Product:update')">
           {{ $t("DeviceAccess.index.594346-0")
           }}<a-button type="link" @click="showModal">{{
             $t("DeviceAccess.index.594346-1")
@@ -31,6 +31,7 @@
         >
           <template #extra>
             <j-permission-button
+              v-if="!isProject"
               class="product-device-access__change"
               type="primary"
               size="small"
@@ -47,36 +48,33 @@
           </template>
         </Title>
         <div class="product-device-access__access-method">
-          <div class="product-device-access__access-name">
-            {{ getI18nText(access, 'name') }}
-          </div>
-          <div class="product-device-access__access-description">
-            {{
-              getI18nText(access, 'description') ||
-              dataSource.find((item) => item?.id === access?.provider)
-                ?.description
-            }}
-          </div>
+          <AccessMethodSummary with-icon :summary="{
+            name: getI18nText(access, 'name'),
+            transport: access.transport,
+            protocol: getI18nText(access.protocolDetail, 'name'),
+            description: getI18nText(access, 'description') || dataSource.find(item => item?.id === access?.provider)?.description,
+          }" />
         </div>
         <template v-if="access?.provider === 'composite-device-gateway'">
           <div class="product-device-access__composite">
               <a-collapse v-model:activeKey="activeKey">
                 <a-collapse-panel
                   v-for="item in access?.configuration?.gateways"
-                  :key="item.id" :header="getI18nText(item, 'name')"
+                  :key="item.id"
                 >
+                  <template #header>
+                    <AccessMethodSummary :summary="{
+                      name: getI18nText(item, 'name'),
+                      transport: item.transport,
+                      protocol: getI18nText(item.protocolDetail, 'name'),
+                    }" />
+                  </template>
                   <template #extra>
                     {{ dataSource.find((i) => i?.id === item?.provider)?.description }}
                   </template>
                   <div class="item-style">
-                    <Title :data="$t('DeviceAccess.index.594346-6')"></Title>
-                    <div>
-                      {{ getI18nText(item?.protocolDetail, 'name') }}
-                    </div>
-                  </div>
-                  <div class="item-style">
-                    <Title :data="$t('DeviceAccess.index.594346-7')"></Title>
-                    <div v-if="item?.channelInfo?.addresses.length > 0">
+                    <Title :data="$t('IotDeviceDetail.accessGuide.accessAddress')"></Title>
+                    <div v-if="item?.channelInfo?.addresses?.length > 0">
                       <div
                         v-for="channel in item?.channelInfo?.addresses"
                         :key="channel.address"
@@ -88,24 +86,18 @@
                         </a-badge>
                       </div>
                     </div>
-                    <div v-else>{{ $t("DeviceAccess.index.594346-8") }}</div>
+                    <div v-else>{{ $t('IotDeviceDetail.accessGuide.noAddress') }}</div>
                   </div>
                   <ProductAccessFields ref="formRef" :groups="item?.transportDetail?.allConfig || []"
-                    v-model="formData.data" :disabled="submitLoading || accessLoading" />
+                    v-model="formData.data" :readonly="isProject" :disabled="submitLoading || accessLoading" />
                 </a-collapse-panel>
               </a-collapse>
           </div>
         </template>
         <template v-else>
           <div class="item-style">
-            <Title :data="$t('DeviceAccess.index.594346-6')"></Title>
-            <div>
-              {{ getI18nText(access?.protocolDetail, 'name') }}
-            </div>
-          </div>
-          <div class="item-style">
-            <Title :data="$t('DeviceAccess.index.594346-7')"></Title>
-            <div v-if="access?.channelInfo?.addresses.length > 0">
+            <Title :data="$t('IotDeviceDetail.accessGuide.accessAddress')"></Title>
+            <div v-if="access?.channelInfo?.addresses?.length > 0">
               <div
                   v-for="item in access?.channelInfo?.addresses"
                   :key="item.address"
@@ -117,7 +109,7 @@
                 </a-badge>
               </div>
             </div>
-            <div v-else>{{ $t("DeviceAccess.index.594346-8") }}</div>
+            <div v-else>{{ $t('IotDeviceDetail.accessGuide.noAddress') }}</div>
           </div>
           <!--        {{ $t('DeviceAccess.index.594346-9') }}        -->
           <a-form
@@ -133,7 +125,8 @@
                 { required: true, message: $t('DeviceAccess.index.594346-10') },
               ]"
             >
-              <a-select
+              <span v-if="isProject">{{ productTypes.find(item => item.value === productData.id)?.label || productData.id || '-' }}</span>
+              <a-select v-else
                   v-model:value="productData.id"
                   :disabled="submitLoading || accessLoading"
                   :options="productTypes"
@@ -144,6 +137,7 @@
           </a-form>
           <!--        其它接入配置        -->
           <ProductAccessFields ref="formRef" :groups="metadata" v-model="formData.data"
+            :readonly="isProject"
             :disabled="submitLoading || accessLoading" />
         </template>
         </section>
@@ -153,14 +147,13 @@
           :data="$t('DeviceAccess.index.594346-14')"
         >
           <template #extra>
-            <a-tooltip :title="$t('DeviceAccess.index.594346-15')">
-              <AIcon type="QuestionCircleOutlined" style="margin-left: 2px" />
-            </a-tooltip>
+            <DocumentHelp code="device/Product" help-key="access.storagePolicy" />
           </template>
         </Title>
         <a-form layout="vertical">
           <a-form-item>
-            <a-select ref="select" v-model:value="form.storePolicy" :disabled="submitLoading || accessLoading">
+            <span v-if="isProject">{{ storageList.find(item => item.id === form.storePolicy)?.name || form.storePolicy || '-' }}</span>
+            <a-select v-else ref="select" v-model:value="form.storePolicy" :disabled="submitLoading || accessLoading">
               <a-select-option
                 v-for="(item, index) in storageList"
                 :key="index"
@@ -171,6 +164,7 @@
           </a-form-item>
         </a-form>
         <j-permission-button
+          v-if="!isProject"
           class="product-device-access__save"
           type="primary"
           @click="submitDevice"
@@ -181,11 +175,14 @@
         </j-permission-button>
         </section>
       </a-col>
+      <a-col :span="12" class="product-device-access__documentation">
+        <IotDeviceAccessGuideAside :show-access-guide="false" :protocol-document="protocolDocument" />
+      </a-col>
     </a-row>
   </div>
   <!-- 选择设备 -->
   <AccessModal
-    v-if="visible"
+    v-if="!isProject && visible"
     :product-id="productStore.current.id"
     :deviceType="productStore.current.deviceType?.value"
     :accessId="accessId"
@@ -195,7 +192,7 @@
   />
   <!-- 物模型处理方式 -->
   <MetaDataModal
-    v-if="metadataVisible && metadataModalCacheData"
+    v-if="!isProject && metadataVisible && metadataModalCacheData"
     :data="metadataModalCacheData"
     @cancel="
       () => {
@@ -207,21 +204,27 @@
 </template>
 
 <script lang="ts" setup>
+import DocumentHelp from '@jetlinks-web-core/components/DocumentHelp'
 import Title from "../Title/index.vue";
 import AccessModal from "./accessModal.vue";
 import MetaDataModal from "./metadataModal.vue";
 import ProductAccessFields from "./ProductAccessFields.vue";
+import AccessMethodSummary from '../../../components/AccessMethodSummary.vue';
 import { getI18nText } from '../../../../../utils/i18n';
+import IotDeviceAccessGuideAside from '@device-manager-ui/views/device/list/components/device-detail/IotDeviceAccessGuideAside.vue'
 import { useProductDeviceAccess } from './hooks/useProductDeviceAccess';
+import { isProjectRuntime } from '@jetlinks-web-core/utils/project-runtime';
+import { isPrivateDeployment } from '@jetlinks-web-core/utils/deployment';
+const isProject = isProjectRuntime() && !isPrivateDeployment();
 
 defineOptions({ name: 'AccessConfig' })
 
 const {
-  productStore, permissionStore, formRef, visible, access, accessId, metadata, dataSource,
+  productStore, permissionStore, formRef, visible, access, accessId, metadata, dataSource, protocolDocument,
   storageList, activeKey, form, formData, productTypes, productData, pluginFormRef,
   metadataVisible, metadataModalCacheData, submitLoading, accessLoading, accessError, getData, showModal,
   showDevice, checkAccess, productTypeChange, submitDevice, MetaDataModalSubmit, tooltip, checkDisabled,
 } = useProductDeviceAccess();
-defineExpose({ openAccessSelector: showDevice });
+defineExpose({ openAccessSelector: () => { if (!isProject) showDevice() } });
 </script>
 <style lang="less" scoped src="./index.less"></style>

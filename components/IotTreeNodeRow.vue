@@ -6,7 +6,7 @@
     <span class="iot-tree-node-row__content">
       <span class="iot-tree-node-row__icon"><slot name="icon" /></span>
       <span class="iot-tree-node-row__label">
-        <j-ellipsis class="iot-tree-node-row__ellipsis"><slot name="label" /></j-ellipsis>
+        <j-ellipsis :line-clamp="1" class="iot-tree-node-row__ellipsis"><slot name="label" /></j-ellipsis>
       </span>
     </span>
     <span class="iot-tree-node-row__count">
@@ -101,10 +101,14 @@ const props = withDefaults(defineProps<IotTreeNodeRowProps>(), {
   white-space: nowrap;
 }
 
-.iot-tree-node-row__ellipsis {
-  display: block;
+/* Ellipsis 的触发节点由 Tooltip 渲染，需穿透作用域解除继承的 nowrap。 */
+.iot-tree-node-row__label :deep(.iot-tree-node-row__ellipsis) {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
   width: 100%;
   min-width: 0;
+  white-space: normal;
 }
 
 .iot-tree-node-row__count {

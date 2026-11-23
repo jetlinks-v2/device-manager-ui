@@ -1,5 +1,8 @@
 import { onBeforeUnmount, reactive } from 'vue'
 import type { NavigationGuard, NavigationHookAfter } from 'vue-router'
+import type { RegistryAction } from '@jetlinks-web-core/types/module'
+
+export const componentsRegistry = { getRegistry: (_code: string): RegistryAction[] => [] }
 
 export const ruleRoute = reactive<{ query: Record<string, unknown> }>({ query: {} })
 export const useRoute = () => ruleRoute

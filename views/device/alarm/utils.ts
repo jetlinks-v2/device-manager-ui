@@ -36,21 +36,47 @@ interface DeviceAlarmConfiguration {
 
 /** Display notification types; saved channel IDs are mapped for legacy readback only. */
 export function matchesAlarmNotifyMethod(notification: DeviceAlarmNotificationConfig, method: DeviceAlarmNotifyMethod) {
+  if (method.fixedReceiver) return Boolean(notification.fixedReceiverChannels?.some(channel => channel.channelId === method.id))
   return notification.channelProviders.includes(method.providerId)
     || Boolean(notification.notifyChannelIds?.some(id => method.channelIds?.includes(id)))
 }
 
 /** Explicit user selection removes obsolete channel bindings; simply opening a rule never migrates it. */
-export function selectAlarmNotificationTypes(notification: DeviceAlarmNotificationConfig, providers: string[]) {
+export function selectAlarmNotificationTypes(notification: DeviceAlarmNotificationConfig, selections: string[], methods: DeviceAlarmNotifyMethod[] = []) {
+  const fixed = selections.flatMap(id => {
+    const method = methods.find(item => item.id === id)
+    const channel = method?.fixedReceiver ?? notification.fixedReceiverChannels?.find(item => item.channelId === id)
+    return channel ? [{ ...channel }] : []
+  })
+  const providers = selections.filter(id => !fixed.some(channel => channel.channelId === id))
   const bindings = new Set([...notification.channelProviders, ...providers])
   return {
     ...notification,
     channelProviders: [...new Set(providers)],
     userIds: providers.length ? notification.userIds : [],
     notifyChannelIds: [],
+    fixedReceiverChannels: fixed,
+    personnelChannels: providers.flatMap(id => {
+      const binding = methods.find(method => method.id === id)?.personnelChannels
+        ?? notification.personnelChannels?.find(binding => binding.providerId === id)
+      return binding ? [{ ...binding, trigger: [...binding.trigger], relieve: [...binding.relieve] }] : []
+    }),
     relieveTopicProvider: 'alarm-device-relieve' as const,
     parameters: Object.fromEntries(Object.entries(notification.parameters ?? {}).filter(([key]) => !bindings.has(key))),
   }
+}
+
+export function hasPersonnelNotification(notification: DeviceAlarmNotificationConfig) {
+  return Boolean(notification.channelProviders.length || notification.notifyChannelIds?.length)
+}
+
+export function hasFixedNotification(notification: DeviceAlarmNotificationConfig) {
+  return Boolean(notification.fixedReceiverChannels?.some(channel => channel.channelId && channel.templateId))
+}
+
+/** 人员名单只约束人员通道；纯机器人配置无需虚构接收人。 */
+export function hasNotificationRecipients(notification: DeviceAlarmNotificationConfig) {
+  return !hasPersonnelNotification(notification) || Boolean(notification.userIds.length || notification.dimensions?.length)
 }
 
 export const DEVICE_ALARM_NOTIFICATION_MESSAGE_MAX_LENGTH = 1024
@@ -465,7 +491,7 @@ export function validateNotificationMessage(
   return undefined
 }
 
-export function normalizeNotification(value: unknown) {
+export function normalizeNotification(value: unknown): DeviceAlarmNotificationConfig {
   const source = value && typeof value === 'object' && !Array.isArray(value)
     ? value as Record<string, any>
     : {}
@@ -480,6 +506,8 @@ export function normalizeNotification(value: unknown) {
     dimensions: Array.isArray(source.dimensions) ? source.dimensions : [],
     channelProviders: Array.isArray(source.channelProviders) ? source.channelProviders.map(String).filter(Boolean) : [],
     notifyChannelIds: Array.isArray(source.notifyChannelIds) ? source.notifyChannelIds.map(String).filter(Boolean) : [],
+    fixedReceiverChannels: Array.isArray(source.fixedReceiverChannels)
+      ? source.fixedReceiverChannels.filter((item: any) => item && typeof item.channelId === 'string' && typeof item.templateId === 'string').map((item: any) => ({ ...item })) : [],
     parameters: source.parameters && typeof source.parameters === 'object' && !Array.isArray(source.parameters)
       ? source.parameters
       : {},
@@ -508,6 +536,8 @@ function buildNotifyConfig(form: DeviceAlarmFormModel) {
     dimensions: [...(notification.dimensions ?? [])],
     channelProviders: [...notification.channelProviders],
     notifyChannelIds: [...(notification.notifyChannelIds ?? [])],
+    ...(notification.fixedReceiverChannels?.length ? { fixedReceiverChannels: notification.fixedReceiverChannels.map(channel => ({ ...channel })) } : {}),
+    ...(notification.personnelChannels?.length ? { personnelChannels: notification.personnelChannels.map(binding => ({ ...binding })) } : {}),
     parameters: { ...(notification.parameters ?? {}) },
   }
 }
@@ -517,6 +547,7 @@ function isNotificationConfigured(notification: {
   dimensions?: unknown
   channelProviders?: unknown
   notifyChannelIds?: unknown
+  fixedReceiverChannels?: unknown
 }) {
   const hasReceiver = Boolean(
     (Array.isArray(notification.userIds) && notification.userIds.length)
@@ -526,7 +557,8 @@ function isNotificationConfigured(notification: {
     (Array.isArray(notification.channelProviders) && notification.channelProviders.length)
     || (Array.isArray(notification.notifyChannelIds) && notification.notifyChannelIds.length),
   )
-  return hasReceiver && hasChannel
+  return hasReceiver && hasChannel || Array.isArray(notification.fixedReceiverChannels)
+    && notification.fixedReceiverChannels.some(channel => channel?.channelId && channel?.templateId)
 }
 
 function isNotificationEnabled(notification: ReturnType<typeof normalizeNotification>) {

@@ -1,6 +1,6 @@
 <template>
   <div class="detail-properties">
-    <CloudEmpty v-if="!rows.length" :description="t('IotDeviceDetail.overview.emptyPropertiesHint')" />
+    <CloudEmpty v-if="!rows.length" :description="t('IotDeviceDetail.overview.emptyPropertiesHint')"><slot name="empty-action" /></CloudEmpty>
     <template v-else>
       <div class="detail-properties__grid">
         <CardSummary v-for="metric in paged" :key="metric.id" class="detail-property" :data="{ title: metric.name }" @click="openHistory(metric)">

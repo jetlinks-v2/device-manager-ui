@@ -112,18 +112,6 @@
     padding-bottom: var(--space-3);
   }
 
-  &__access-name {
-    color: var(--jet-theme-text);
-    font-size: var(--fs-14);
-    line-height: 1.5;
-  }
-
-  &__access-description {
-    color: var(--jet-theme-text-secondary);
-    font-size: var(--fs-14);
-    line-height: 1.6;
-  }
-
   &__composite {
     padding-top: var(--space-3);
     border-top: 1px solid var(--jet-theme-border-secondary);
@@ -202,4 +190,18 @@
 
 .changeBtn {
   margin: 0 0 0 20px;
+}
+
+.product-device-access__section { max-width: none; padding: var(--space-4); border: 1px solid var(--jet-theme-border-secondary); border-radius: var(--r-2); background: var(--jet-theme-bg-container); }
+.product-device-access__section-title { padding-left: 0; margin-bottom: var(--space-3); }
+.product-device-access__section--storage { margin-top: var(--space-4); }
+.product-device-access__access-method { margin-bottom: var(--space-4); }
+.product-device-access .item-style { padding: var(--space-3); border-radius: var(--r-1); background: var(--jet-theme-bg-layout); overflow-wrap: anywhere; }
+@media (max-width: 60rem) { .product-device-access__content { max-width: 100%; flex: 0 0 100%; } }
+
+.product-device-access__documentation { min-width: 0; }
+.product-device-access__documentation :deep(.access-guide-doc) { min-height: 38rem; }
+@media (max-width: 60rem) {
+  .product-device-access__documentation { flex: 0 0 100%; max-width: 100%; margin-top: var(--space-4); }
+  .product-device-access__documentation :deep(.access-guide-doc) { min-height: 26rem; }
 }

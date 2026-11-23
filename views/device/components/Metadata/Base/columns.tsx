@@ -6,6 +6,7 @@ import {omit, isObject,} from "lodash-es";
 import { onlyMessage } from "@jetlinks-web-core/utils/comm";
 import i18n from "@jetlinks-web-core/locales";
 interface DataTableColumnProps extends ColumnProps {
+  helpKey?: string,
   type?: string,
   components?: {
     name?: any
@@ -273,6 +274,7 @@ export const useColumns = (dataSource: Ref<MetadataItem[]>, type?: MetadataType,
     {
       title: i18n.global.t('Base.columns.448718-22'),
       dataIndex: 'expands',
+      helpKey: 'metadata.fields.expands',
       form: {
         required: true,
         rules: [
