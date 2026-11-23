@@ -186,14 +186,15 @@ export const buildDevicePropertyNoPagingUrl = (deviceId: string, property: strin
   `/device/instance/${encodeURIComponent(deviceId)}/property/${encodeURIComponent(property)}/_query/no-paging`
 )
 
+/** Topic 的对象是产品；缺少产品信息时等待详情加载，不能用设备 ID 代替。 */
 export function subscribeDeviceProperties(
   deviceId: string,
   productId: string,
   properties: string[],
   onValue: (value: DevicePropertyValue) => void,
 ) {
-  if (!deviceId || !properties.length) return undefined
-  const dashboardObjectId = productId || deviceId
+  if (!deviceId || !productId || !properties.length) return undefined
+  const dashboardObjectId = productId
   const subscription = wsClient
     .getWebSocket(`iot-device-detail-property-${deviceId}-${dashboardObjectId}-${properties.join('-')}`, `/dashboard/device/${dashboardObjectId}/properties/realTime`, {
       deviceId,
