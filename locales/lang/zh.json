@@ -1,6 +1,8 @@
 {
   "DeviceAlarm.notification.dingTalkWork": "钉钉 · 工作通知",
-  "DeviceAlarm.notification.fixedRecipientHint": "发送到机器人配置的群，无需选择接收人",
+  "DeviceAlarm.notification.fixedRecipientHint": "发送到渠道配置的固定接收地址，无需选择通知对象",
+  "DeviceAlarm.notification.webhookRecipientHint": "发送到 WebHook 配置的接收地址，无需选择通知对象",
+  "DeviceAlarm.notification.robotRecipientHint": "发送到机器人配置的群，无需选择接收人",
   "DocumentHelp.overview_keyProperties": "关键属性快照",
   "DocumentHelp.overview_recentAlarms": "近期告警",
   "DocumentHelp.gateway_events_systemEvent": "系统运行事件",

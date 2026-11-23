@@ -130,8 +130,8 @@ test('notification options require accessible enabled trigger templates and keep
   assert.equal(matchesAlarmNotifyMethod({ ...createEmptyNotification(), notifyChannelIds: ['email-b'] }, email), true)
 })
 
-test('enabled WebHook templates remain selectable with fixed receivers and preserve the type selection', async () => {
-  const channel = { id: 'webhook-a', channelProvider: 'notifier-webhook', state: 'enabled',
+test('WebHook selection needs no users and retains fixed delivery through save and readback', async () => {
+  const channel = { id: 'webhook-a', name: 'WebHook', channelProvider: 'notifier-webhook', state: 'enabled',
     channelConfiguration: { templateId: 'webhook-template', notifierId: 'webhook-config' } }
   for (const receiverPolicy of ['explicit', { value: 'explicit', text: 'Fixed receiver' }]) {
     const requests: string[] = []
@@ -150,17 +150,23 @@ test('enabled WebHook templates remain selectable with fixed receivers and prese
     assert.equal(methods[0].label, 'WebHook')
     assert.deepEqual(methods[0].templates, { trigger: 'ready', relieve: 'missing' })
     assert.equal(requests.length, 3, 'fixed-receiver channels also verify the bound template')
-    const selected = selectAlarmNotificationTypes({ ...createEmptyNotification(), enabled: true, userIds: ['user-a'] }, [methods[0].providerId])
-    assert.deepEqual(selected.channelProviders, ['notifier-webhook'])
-    assert.deepEqual(selected.userIds, ['user-a'])
+    const selected = selectAlarmNotificationTypes({ ...createEmptyNotification(), enabled: true, userIds: ['user-a'] }, [methods[0].id], methods)
+    assert.deepEqual(selected.channelProviders, [])
+    assert.deepEqual(selected.userIds, [])
     assert.deepEqual(selected.notifyChannelIds, [])
+    assert.deepEqual(selected.fixedReceiverChannels, [{ channelId: 'webhook-a', templateId: 'webhook-template' }])
+    assert.equal(hasNotificationRecipients(selected), true)
     assert.equal(matchesAlarmNotifyMethod(selected, methods[0]), true)
     const payload = buildPreprocessPayload({ ...editorProps().model, name: 'Temperature alarm', targetId: 'product-a',
       property: 'temperature', limit: { lower: 10, upper: 20 }, notification: selected })
     const saved = toDeviceAlarmRow({ id: 'alarm-a', templateId: 'product-a', thingId: '@all', property: 'temperature',
       provider: payload.provider, configuration: payload.configuration }, 'product', 'Product A')
-    assert.deepEqual(saved?.notification.channelProviders, ['notifier-webhook'])
-    assert.deepEqual(saved?.notification.userIds, ['user-a'])
+    assert.deepEqual(saved?.notification.channelProviders, [])
+    assert.deepEqual(saved?.notification.userIds, [])
+    assert.deepEqual(saved?.notification.fixedReceiverChannels, selected.fixedReceiverChannels)
+    assert.equal(saved?.notificationConfigured, true)
+    assert.equal(saved?.notificationEnabled, true)
+    assert.equal(useDeviceAlarmEditor({ ...editorProps(), model: saved! }, key => key).panelStates.value.notification, 'complete')
     const types = [{ id: 'notifier-webhook', receiverPolicy }]
     for (const unavailable of [
       { ...channel, state: 'disabled' },
@@ -171,6 +177,58 @@ test('enabled WebHook templates remain selectable with fixed receivers and prese
     }
     assert.deepEqual(toNotifyMethods(types, [{ provider: 'alarm-device', state: 'disabled', channels: [channel] }]), [])
   }
+})
+
+test('WebHooks and robots share fixed recipients while mixed personnel channels still require users', () => {
+  const channel = (id: string, type: string, notifierId: string, channelKey = id) => ({ id, name: id, channelKey,
+    channelProvider: type, channelConfiguration: { notifierId, templateId: `${id}-template` } })
+  const trigger = [channel('hook-a', 'notifier-webhook', 'hook-config', 'a'), channel('hook-b', 'notifier-webhook', 'hook-config', 'b'),
+    channel('robot', 'notifier-dingTalk', 'robot-config'), channel('email', 'notifier-email', 'email-config')]
+  const recovery = [channel('hook-b-relieve', 'notifier-webhook', 'hook-config', 'b'), channel('hook-a-relieve', 'notifier-webhook', 'hook-config', 'a')]
+  const providers = [{ id: 'trigger', provider: 'alarm-device', channels: trigger }, { id: 'relieve', provider: 'alarm-device-relieve', channels: recovery }]
+  const detail = (channels: ReturnType<typeof channel>[]) => ({ channels: channels.map(channel => ({ channel,
+    template: { id: channel.channelConfiguration.templateId, configId: channel.channelConfiguration.notifierId } })) })
+  const methods = toNotifyMethods([{ id: 'notifier-webhook' }, { id: 'notifier-dingTalk' }, { id: 'notifier-email' }], providers,
+    new Map([['trigger', detail(trigger)], ['relieve', detail(recovery)]]),
+    new Map([['robot-config', { type: 'dingTalk', provider: 'dingTalkRobotWebHook' }]]))
+  assert.deepEqual(methods.map(method => method.id), ['notifier-email', 'hook-a', 'hook-b', 'robot'])
+  assert.equal(methods[1].fixedReceiver?.relieveTemplateId, 'hook-a-relieve-template')
+  assert.equal(methods[2].fixedReceiver?.relieveTemplateId, 'hook-b-relieve-template')
+  assert.deepEqual(methods[1].templates, { trigger: 'ready', relieve: 'ready' })
+  const model = reactive({ ...editorProps().model, id: 'saved', property: 'temperature', trigger: 'gt' as const, value: 50,
+    autoRelieve: true, notification: selectAlarmNotificationTypes({ ...createEmptyNotification(), enabled: true, includeRelieve: true }, ['hook-a', 'hook-b', 'robot'], methods) })
+  const editor = useDeviceAlarmEditor({ ...editorProps(), model }, key => key)
+  const { state, unmount } = mount(() => useAlarmNotification({ model, methods }, () => {}, () => {}))
+  try {
+    assert.equal(state.requiresRecipients.value, false)
+    assert.equal(editor.panelStates.value.notification, 'complete')
+    state.setPanel('recipients', true)
+    assert.equal(state.activePanel.value, undefined)
+    const payload = buildPreprocessPayload(model)
+    const [alarm, relieve] = payload.configuration.processors
+    for (const branch of [alarm, relieve]) {
+      const notify = branch.configuration.processors.find((item: { provider: string }) => item.provider === 'notify')
+      assert.deepEqual(notify.configuration.userIds, [])
+      assert.deepEqual(notify.configuration.channelProviders, [])
+      assert.equal(notify.configuration.fixedReceiverChannels.length, 3)
+      assert.equal(notify.configuration.fixedReceiverChannels[0].relieveTemplateId, 'hook-a-relieve-template')
+    }
+    state.channelIds.value = ['hook-a', 'notifier-email']
+    assert.equal(state.requiresRecipients.value, true)
+    assert.equal(hasNotificationRecipients(model.notification), false)
+    assert.equal(editor.panelStates.value.notification, 'pending')
+    model.notification.userIds = ['user-a']
+    assert.equal(editor.panelStates.value.notification, 'complete')
+    state.setPanel('recipients', true)
+    assert.equal(state.activePanel.value, 'recipients')
+    state.channelIds.value = ['hook-a']
+    assert.equal(state.requiresRecipients.value, false)
+    assert.equal(state.activePanel.value, undefined)
+    assert.deepEqual(model.notification.userIds, [])
+    assert.equal(editor.panelStates.value.notification, 'complete')
+    state.channelIds.value = []
+    assert.equal(editor.panelStates.value.notification, 'pending')
+  } finally { unmount() }
 })
 
 test('explicit type selection drops channel bindings but preserves recipients and custom message formats', () => {

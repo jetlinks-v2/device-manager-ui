@@ -36,8 +36,12 @@ export function useAlarmNotification(props: NotificationProps, requestMethods: (
       if (!hasPersonnelNotification(props.model.notification) && activePanel.value === 'recipients') activePanel.value = undefined
     },
   })
-  const channelOptions = computed(() => props.methods.map(method => ({ value: method.id, label: method.label,
-    icon: method.icon, fixed: Boolean(method.fixedReceiver), templates: method.templates, description: t(method.fixedReceiver ? 'DeviceAlarm.notification.fixedRecipientHint' : `DeviceAlarm.delivery.address.${method.key}`) })))
+  const channelOptions = computed(() => props.methods.map(method => {
+    // WebHook 的接收地址可以是任意 HTTP 接口，只有群机器人才使用“群”的说明。
+    const fixedHint = method.key === 'webhook' ? 'DeviceAlarm.notification.webhookRecipientHint' : 'DeviceAlarm.notification.robotRecipientHint'
+    return { value: method.id, label: method.label, icon: method.icon, fixed: Boolean(method.fixedReceiver),
+      templates: method.templates, description: t(method.fixedReceiver ? fixedHint : `DeviceAlarm.delivery.address.${method.key}`) }
+  }))
   const requiresRecipients = computed(() => hasPersonnelNotification(props.model.notification))
   const channelCount = computed(() => channelIds.value.length || props.model.notification.notifyChannelIds?.length || 0)
   // Legacy recovery uses the trigger topic; never turn a template-free selection into configured.
