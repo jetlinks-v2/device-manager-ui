@@ -8,7 +8,7 @@ import {
 import { replaceAlarm } from '../components/PropertyRules/codec'
 import { localizeDeviceLibraryPreprocessors, resolveI18nText } from './deviceLibraryI18n'
 import { normalizeNotification, toDeviceAlarmPageRow, toDeviceAlarmRow } from './utils'
-import { fixedNotificationMethods } from './notificationFixedChannels'
+import { fixedNotificationMethods, isFixedNotificationChannel } from './notificationFixedChannels'
 import { hasTemplateBinding, verifiedTemplateState, type TemplateState } from './notificationTemplateStatus'
 import type {
   AlarmLevelOption,
@@ -307,11 +307,9 @@ export function toNotifyMethods(types: unknown[], providers?: unknown[], details
   const available = (providers ?? []).filter(isRecord).filter(provider => isEnabledState(provider.state))
   if (!available.some(provider => provider.provider === DEVICE_ALARM_NOTIFY_PROVIDER)) return []
   const fixed = fixedNotificationMethods(available, details, notifiers)
-  const fixedIds = new Set(available.flatMap(provider => normalizeRecords(provider.channels)).filter(channel => {
-    const config = notifiers.get(stringify(channel.channelConfiguration?.notifierId))
-    return config?.type === 'dingTalk' && config.provider === 'dingTalkRobotWebHook'
-  }).map(channel => stringify(channel.id)))
-  // Fixed-address channels such as WebHook are selectable; receiverPolicy only controls backend delivery.
+  const fixedIds = new Set(available.flatMap(provider => normalizeRecords(provider.channels))
+    .filter(channel => isFixedNotificationChannel(channel, notifiers)).map(channel => stringify(channel.id)))
+  // 固定地址只保留具名实例，避免 WebHook 同时被当作人员类型选择并要求接收人。
   const ordinary = types.filter(isRecord).flatMap(type => {
     const id = stringify(type.id)
     if (!id) return []

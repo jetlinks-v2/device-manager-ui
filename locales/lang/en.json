@@ -1,6 +1,8 @@
 {
   "DeviceAlarm.notification.dingTalkWork": "DingTalk · Work notification",
-  "DeviceAlarm.notification.fixedRecipientHint": "Send to the robot’s configured group; no recipients required",
+  "DeviceAlarm.notification.fixedRecipientHint": "Send to the channel’s configured destination; no recipients required",
+  "DeviceAlarm.notification.webhookRecipientHint": "Send to the WebHook’s configured destination; no recipients required",
+  "DeviceAlarm.notification.robotRecipientHint": "Send to the robot’s configured group; no recipients required",
   "DocumentHelp.overview_keyProperties": "Key property snapshot",
   "DocumentHelp.overview_recentAlarms": "Recent alarms",
   "DocumentHelp.gateway_events_systemEvent": "System events",
