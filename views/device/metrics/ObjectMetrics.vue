@@ -1,12 +1,13 @@
 <template>
-  <MetricScopePanel :key="context.ownerType + ':' + context.ownerId" :context="panelContext" :initial-reference="initialReference" :pick-source="picker.pickSource" :detail-link-label="links.workspaceEnabled.value ? t('DeviceMetrics.openWorkspace') : undefined" @open-detail-link="links.openWorkspace" />
+  <RemoteComponent :key="context.ownerType + ':' + context.ownerId" remote-name="rule-engine-manager-ui" component-name="MetricScopePanel" :component-props="{ context:panelContext, initialReference, pickSource:picker.pickSource, detailLinkLabel:links.workspaceEnabled.value ? t('DeviceMetrics.openWorkspace') : undefined }" :component-events="{ openDetailLink:links.openWorkspace }" />
   <component :is="picker.host" />
 </template>
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { MetricScopePanel, type MetricContext } from '@jetlinks-web-core/components'
+import type { MetricContext } from '@jetlinks-web-core/components'
+import RemoteComponent from '@jetlinks-web-core/components/RemoteComponent/index.vue'
 import { useMetricSourceAdapter } from './useMetricSourceAdapter'
 import { useMetricLinks } from './useMetricLinks'
 import { metricReferenceFromQuery } from '@jetlinks-web-core/components/Metric/location'
