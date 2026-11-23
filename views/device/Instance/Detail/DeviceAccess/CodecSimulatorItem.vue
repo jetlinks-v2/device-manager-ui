@@ -7,7 +7,7 @@
         </a-tag>
         <template v-if="type === 'uplink'">
           <template v-if="isMqttTransport">
-            <a-input v-model:value="model.topic" class="codec-simulator-item__topic" :placeholder="$t('InstanceDeviceAccess.codecDebug.topicPlaceholder')" />
+            <a-input v-model:value="model.topic" size="small" :aria-label="$t('InstanceDeviceAccess.codecDebug.topic')" class="codec-simulator-item__topic" :placeholder="$t('InstanceDeviceAccess.codecDebug.topicPlaceholder')" />
             <a-select v-model:value="model.encoding" :options="encodingOptions" size="small" class="codec-simulator-item__select-sm" />
             <a-select v-model:value="model.qos" :options="qosOptions" size="small" class="codec-simulator-item__select-sm" />
           </template>
@@ -36,11 +36,13 @@
           />
         </template>
       </div>
-      <a-space class="codec-simulator-item__actions">
-        <AIcon type="ArrowUpOutlined" @click="emit('moveUp')" />
-        <AIcon type="ArrowDownOutlined" @click="emit('moveDown')" />
-        <AIcon type="DeleteOutlined" class="codec-simulator-item__delete" @click="emit('delete')" />
-      </a-space>
+      <div class="codec-simulator-item__actions">
+        <a-tooltip v-for="action in itemActions" :key="action.event" :title="$t(action.label)">
+          <a-button type="text" size="small" :class="{ 'codec-simulator-item__delete': action.event === 'delete' }" :aria-label="$t(action.label)" @click="action.run()">
+            <template #icon><AIcon :type="action.icon" /></template>
+          </a-button>
+        </a-tooltip>
+      </div>
     </div>
 
     <div class="codec-simulator-item__body">
@@ -51,7 +53,7 @@
         <a-textarea
           v-if="model.encoding === 'Hex' && type === 'uplink'"
           :value="model.payload"
-          :rows="5"
+          :rows="4"
           class="codec-simulator-item__textarea"
           :placeholder="$t('InstanceDeviceAccess.codecDebug.hexPlaceholder')"
           @input="onHexInput"
@@ -79,7 +81,7 @@
                 :itemType="record.itemType"
                 :options="record.options"
                 style="width: 100%"
-                @update:modelValue="(value) => onParamValueInput(index, value)"
+                @update:modelValue="(value: unknown) => onParamValueInput(index, value)"
               />
             </template>
           </template>
@@ -87,20 +89,20 @@
         <a-textarea
           v-else
           v-model:value="model.payload"
-          :rows="5"
+          :rows="4"
           class="codec-simulator-item__textarea"
           :placeholder="type === 'uplink' ? $t('InstanceDeviceAccess.codecDebug.payloadPlaceholder') : $t('InstanceDeviceAccess.codecDebug.paramsPlaceholder')"
         />
-        <div class="codec-simulator-item__footer">
-          <span>{{ byteCount }} Bytes</span>
-          <a-button type="primary" size="small" @click="handleSend">
-            <template #icon><AIcon type="SendOutlined" /></template>
-            {{ $t('InstanceDeviceAccess.codecDebug.sendShort') }}
-          </a-button>
-        </div>
+      </div>
+      <div class="codec-simulator-item__footer">
+        <span>{{ byteCount }} Bytes</span>
+        <a-button type="primary" size="small" @click="handleSend">
+          <template #icon><AIcon type="SendOutlined" /></template>
+          {{ $t('InstanceDeviceAccess.codecDebug.sendShort') }}
+        </a-button>
       </div>
 
-      <div class="codec-simulator-item__arrow">
+      <div v-if="model.isExecuted" class="codec-simulator-item__arrow">
         <AIcon type="DownOutlined" />
       </div>
 
@@ -138,6 +140,11 @@ const emit = defineEmits<{
 }>()
 
 const { t: $t } = useI18n()
+const itemActions = [
+  { event: 'moveUp', icon: 'ArrowUpOutlined', label: 'InstanceDeviceAccess.codecDebug.moveUp', run: () => emit('moveUp') },
+  { event: 'moveDown', icon: 'ArrowDownOutlined', label: 'InstanceDeviceAccess.codecDebug.moveDown', run: () => emit('moveDown') },
+  { event: 'delete', icon: 'DeleteOutlined', label: 'InstanceDeviceAccess.codecDebug.deleteItem', run: () => emit('delete') },
+] as const
 const model = reactive<SimulationItem>({ ...props.modelValue, isExecuted: !!props.modelValue.result })
 
 const encodingOptions = [

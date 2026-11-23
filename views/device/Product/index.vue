@@ -7,7 +7,7 @@
   </DefineEmptyCreate>
   <j-page-container v-bind="$attrs" class="product-page">
     <FullPage transparentBackground>
-    <div class="product-page__main">
+    <div ref="tableLayoutPanel" class="product-page__main">
 	    <EqualHeightColumns class="product-page__layout" left-width="15rem" right-width="1fr">
 		      <template #left>
 			      <ProductCategoryTree
@@ -32,15 +32,16 @@
 
 				      <JProTable
 					      :columns="columns"
-					      :request="queryDetailList"
+					      :request="queryProductList"
 					      class="product-page__table pro-table__no-padding"
 					      ref="tableRef"
 					      :defaultParams="{
                 sorts: [{ name: 'createTime', order: 'desc' }],
               }"
 					      mode="TABLE"
+					      table-layout="fixed"
+					      :scroll="{ x: columnLayout.tableWidth }"
 					      :params="tableParams"
-					      :pagination="{ isShowContent: true }"
 				      >
 					      <template #headerLeftRender>
 						      <a-flex class="product-page__toolbar" :gap="16" align="center" wrap="wrap">
@@ -104,15 +105,20 @@
                       </a>
                       <RegistryComponent page-code="device/Product" code="name-badges" :record="slotProps" />
                     </a-flex>
-                    <small>{{ slotProps.id }}</small>
+                    <small><j-ellipsis>{{ slotProps.id }}</j-ellipsis></small>
                   </span>
 						      </span>
 					      </template>
 					      <template #classifiedName="slotProps">
-						      {{ getI18nText(slotProps, 'classifiedName') || $t('comm.table.empty') }}
+						      <j-ellipsis>{{ getI18nText(slotProps, 'classifiedName') || $t('comm.table.empty') }}</j-ellipsis>
 					      </template>
 					      <template #brandModel="slotProps">
-						      {{ getBrandModel(slotProps) }}
+						      <div>
+						        <j-ellipsis>{{ getI18nText(slotProps, 'manufacturer') || $t('comm.table.empty') }}</j-ellipsis>
+						      </div>
+						      <small class="product-page__brand-model">
+						        <j-ellipsis>{{ getI18nText(slotProps, 'model') || $t('comm.table.empty') }}</j-ellipsis>
+						      </small>
 					      </template>
 					      <template #deviceCount="slotProps">
 						      <a-button
@@ -183,7 +189,6 @@ import {
   getProviders,
   queryOrgThree,
   queryGatewayList,
-  queryDetailList,
   _deploy,
   _undeploy,
   deleteProduct,
@@ -217,6 +222,8 @@ import { createReusableTemplate } from '@vueuse/core'
 import { useEmptyCreateState } from '@jetlinks-web-core/hooks'
 import ProductExportModal from './components/ProductExportModal.vue'
 import { useProductTransfer } from './hooks/useProductTransfer'
+import { useProductListColumnLayout } from './hooks/useProductListColumnLayout'
+import { queryProductList } from './services/productListRequest'
 import { getDeviceListFilterFields } from '../../../deviceListFilter'
 import { isProjectRuntime } from '@jetlinks-web-core/utils/project-runtime'
 import { isPrivateDeployment } from '@jetlinks-web-core/utils/deployment'
@@ -243,20 +250,31 @@ const unclassifiedProductCount = ref(0);
 const productUnclassifiedScopeId = '__product-unclassified__';
 const { termOptions: dimAssetsTermOptions } = useTermOptions({ pick: ['eq']})
 
-const columns = [
+const tableLayoutPanel = ref<HTMLElement>()
+const columnLayout = useProductListColumnLayout(tableLayoutPanel)
+const columns = computed(() => [
   {
     title: $t("Product.index.660348-7"),
     dataIndex: "name",
     key: "name",
+    width: columnLayout.value.name,
     scopedSlots: true,
     ellipsis: true,
+  },
+  {
+    title: $t("Product.index.660348-4"),
+    dataIndex: "deviceType",
+    key: "deviceType",
+    scopedSlots: true,
+    ellipsis: true,
+    width: columnLayout.value.deviceType,
   },
   {
     title: $t("Product.index.660348-36"),
     dataIndex: "classifiedName",
     key: "classifiedName",
     scopedSlots: true,
-    width: 180,
+    width: columnLayout.value.category,
     ellipsis: true,
   },
   {
@@ -265,14 +283,14 @@ const columns = [
     key: "brandModel",
     scopedSlots: true,
     ellipsis: true,
-    width: 240,
+    width: columnLayout.value.brand,
   },
   {
     title: $t("Product.index.660348-45"),
     dataIndex: "deviceCount",
     key: "deviceCount",
     scopedSlots: true,
-    width: 100,
+    width: columnLayout.value.deviceCount,
   },
   {
     title: $t("Product.index.660348-9"),
@@ -280,24 +298,16 @@ const columns = [
     key: "state",
     scopedSlots: true,
     ellipsis: true,
-    width: 90,
-  },
-  {
-    title: $t("Product.index.660348-4"),
-    dataIndex: "deviceType",
-    key: "deviceType",
-    scopedSlots: true,
-    ellipsis: true,
-    width: 120,
+    width: columnLayout.value.state,
   },
   {
     title: $t("Product.index.660348-11"),
     key: "action",
     fixed: "right",
-    width: 90,
+    width: columnLayout.value.action,
     scopedSlots: true,
   },
-];
+]);
 const hasDepartmentMenu = menuStory.hasMenu('system/Department');
 const currentForm = ref({});
 const syncCacheVisible = ref(false)
@@ -519,12 +529,6 @@ const jumpDevice = (productId: string) => {
 const refresh = () => {
   tableRef.value?.reload();
   void refreshCategoryTree();
-};
-
-const getBrandModel = (product: Record<string, any>) => {
-  const manufacturer = getI18nText(product, 'manufacturer');
-  const model = getI18nText(product, 'model');
-  return [manufacturer, model].filter(Boolean).join(' / ') || $t('comm.table.empty');
 };
 
 const normalizeCategoryTree = (nodes: Record<string, any>[] = []): ProductCategoryTreeNode[] => {
@@ -941,6 +945,10 @@ onActivated(() => {
     flex: 1 1 0;
     min-height: 0;
     overflow: hidden;
+
+    :deep(.j-ellipsis) {
+      white-space: normal;
+    }
   }
 
   &__search {
@@ -993,6 +1001,12 @@ onActivated(() => {
   &__name-body > small {
     color: var(--color-jet-text-secondary);
     font-size: var(--fs-12);
+  }
+
+  &__brand-model {
+    display: block;
+    color: var(--ink-3);
+    font-weight: normal;
   }
 }
 

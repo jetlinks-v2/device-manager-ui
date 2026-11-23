@@ -4,9 +4,11 @@ import test from 'node:test'
 
 const productListPath = new URL('../views/device/Product/index.vue', import.meta.url)
 const productListSource = await readFile(productListPath, 'utf8')
+const productListRequest = await readFile(new URL('../views/device/Product/services/productListRequest.ts', import.meta.url), 'utf8')
 
 test('product list loads device counts through the existing product detail query', () => {
-  assert.match(productListSource, /:request="queryDetailList"/)
+  assert.match(productListSource, /:request="queryProductList"/)
+  assert.match(productListRequest, /await queryDetailList\(params, config\)/)
   assert.match(productListSource, /dataIndex: "deviceCount"/)
 })
 

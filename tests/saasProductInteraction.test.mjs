@@ -69,11 +69,10 @@ function productState(isProject) {
   const scope = { isProject, computed: vue.computed, authStore: { hasPermission: () => true } }
   const getActions = binding(productFile, 'getActions', { isProject, inject: () => ({}), $t: t })
   const state = { isProject, getActions, showEmptyCreate: true, hasSearch: false, batchActions: [],
-    columns: [], tableParams: {}, categoryTree: [], categoryLoading: false, totalProductCount: 1,
+    columns: [], columnLayout: { tableWidth: 1340 }, queryProductList: async () => ({}), tableParams: {}, categoryTree: [], categoryLoading: false, totalProductCount: 1,
     unclassifiedProductCount: 1, selectedCategoryId: undefined, filterFields: [], commonFilterFields: [], filterTerms: [],
     syncCacheVisible: false, isAdd: 0, title: '', categoryTitle: '', categoryModalMode: 0, categoryModalChildMode: 0,
     exportVisible: false, exporting: false, canViewDevices: true, getI18nText: item => item.name,
-    getBrandModel: () => 'Brand / Model',
   }
   for (const name of ['canAddCategory', 'canUpdateCategory', 'canDeleteCategory', 'canImportBasic', 'canImportResourcePackage']) {
     state[name] = binding(productFile, name, scope).value

@@ -92,7 +92,9 @@ export const getCodecs = () => request.get<{id: string, name: string}>('/device/
  * @returns
  */
 export const detail = (id: string) => request.get<ProductItem>(`/device-product/${id}`)
-export const queryDetailList = (data) => request.post(`/device-product/detail/_query`, data)
+export const queryDetailList = (data, config?: Record<string, unknown>) => config
+  ? request.post(`/device-product/detail/_query`, data, config)
+  : request.post(`/device-product/detail/_query`, data)
 
 /**
  * 产品分类

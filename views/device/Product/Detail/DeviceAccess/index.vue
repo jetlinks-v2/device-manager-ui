@@ -21,8 +21,8 @@
       </template>
     </j-empty>
   </div>
-  <div v-else class="product-device-access">
-    <a-row :gutter="24">
+  <FullPage v-else flex :padding="0" class="product-device-access">
+    <a-row :gutter="24" class="product-device-access__layout">
       <a-col :span="12" class="product-device-access__content">
         <section class="product-device-access__section product-device-access__section--access">
         <Title
@@ -179,7 +179,7 @@
         <IotDeviceAccessGuideAside :show-access-guide="false" :protocol-document="protocolDocument" />
       </a-col>
     </a-row>
-  </div>
+  </FullPage>
   <!-- 选择设备 -->
   <AccessModal
     v-if="!isProject && visible"

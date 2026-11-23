@@ -25,7 +25,7 @@
 <!--			    <a-button :class="['unified-device-list__scope-toggle', { 'is-collapsed': scopeCollapsed }]" type="text" :aria-label="scopeCollapsed ? '展开设备范围' : '收起设备范围'" @click="scopeCollapsed = !scopeCollapsed"><AIcon :type="scopeCollapsed ? 'RightOutlined' : 'LeftOutlined'" /></a-button>-->
 		    </template>
 		    <template #right>
-			    <div class="unified-device-list__panel">
+			    <div ref="tablePanel" class="unified-device-list__panel">
 				    <a-flex align="center" justify="space-between" wrap="wrap" :gap="12" class="unified-device-list__filters">
 					    <IotDeviceAssetSearchBar v-model:filter-terms="searchTerms" :filter-fields="filterFields" :common-filter-fields="commonFilterFields" @search="search" />
 					    <RegistryComponent page-code="unified-device-list" code="toolbar-actions" :active-type="activeType" @saved="refresh" is="a-space" :size="12" class="unified-device-list__toolbar-actions">
@@ -78,8 +78,7 @@
 					    <a-button :disabled="!selectedIds.length || busy" @click="assignGroupOpen = true">{{ t('IotDeviceList.action.assignGroup') }}</a-button>
 				    </a-flex>
 				    <a-alert v-if="error || scopeLoadError" type="error" show-icon :message="error || t('UnifiedDeviceList.loadFailed')"><template #action><a-button @click="refresh">{{ t('UnifiedDeviceList.refresh') }}</a-button></template></a-alert>
-				    <div class="unified-device-list__table">
-					    <a-table row-key="id" :columns="columns" :data-source="rows" :loading="loading" :pagination="false" :row-selection="rowSelection" :scroll="{ x: 'max-content' }">
+					    <j-pro-table class="unified-device-list__table pro-table__no-padding" mode="TABLE" row-key="id" table-layout="fixed" :columns="columns" :request="tableRequest" :params="tableParams" :alert-show="false" :row-selection="rowSelection" :scroll="tableScroll">
                       <template #headerCell="{ column }">
                         {{ column.title }}
                         <DocumentHelp v-if="column.key === 'status'" code="iot-user-device-list" help-key="list.status" />
@@ -89,8 +88,8 @@
 					          <template v-if="!error"><a-space><EmptyCreateButtonAction1 /><EmptyCreateButtonAction2 /></a-space></template>
 					        </CloudEmpty>
 					      </template>
-						    <template #bodyCell="{ column, record }">
-							    <template v-if="column.key === 'name'">
+						    <template v-for="columnKey in cellSlotKeys" :key="columnKey" #[columnKey]="record">
+							    <template v-if="columnKey === 'name'">
 								    <a-flex align="center" :gap="8" class="unified-device-list__identity">
 									    <div class="unified-device-list__identity-body">
 										    <a-flex align="center" :gap="8" class="unified-device-list__name-row">
@@ -100,17 +99,17 @@
                       <RegistryComponent page-code="device/Instance" code="name-badges" :record="record" />
 											    <a-tag v-if="activeType === 'all'" :bordered="false" class="unified-device-list__category">{{ providerOf(record)?.label() }}</a-tag>
 										    </a-flex>
-										    <small>{{ record.networkAddress || record.identifier }}</small>
+											    <small><j-ellipsis>{{ record.networkAddress || record.identifier }}</j-ellipsis></small>
 									    </div>
 								    </a-flex>
 							    </template>
-                  <template v-else-if="column.key === 'status'">
+                  <template v-else-if="columnKey === 'status'">
                     <j-badge-status
                         :text="t(`UnifiedDeviceList.${record.connectionStatus}`)"
                         :status="record.connectionStatus === 'online' ? 'success' : record.connectionStatus === 'offline' ? 'error' : 'default'"
                     />
                   </template>
-							    <template v-else-if="column.key === 'product'">
+							    <template v-else-if="columnKey === 'product'">
 								    <div>
 									    <j-ellipsis>{{ record.productName || '—' }}</j-ellipsis>
 								    </div>
@@ -118,10 +117,10 @@
 									    <j-ellipsis>{{ [record.productManufacturer, record.productModel].filter(Boolean).join(' ') || '—' }}</j-ellipsis>
 								    </small>
 							    </template>
-						    <template v-else-if="column.key === 'productName'">
-								    <div>{{ record.productName || '—' }}</div>
+						    <template v-else-if="columnKey === 'productName'">
+								    <j-ellipsis>{{ record.productName || '—' }}</j-ellipsis>
 						    </template>
-						    <template v-else-if="column.key === 'brandModel'">
+						    <template v-else-if="columnKey === 'brandModel'">
 								    <div>
 									    <j-ellipsis>{{ formatBrandModel(record.productManufacturer) }}</j-ellipsis>
 								    </div>
@@ -129,7 +128,7 @@
 									    <j-ellipsis>{{ formatBrandModel(record.productModel) }}</j-ellipsis>
 								    </small>
 						    </template>
-						    <template v-else-if="column.key === 'area'">
+						    <template v-else-if="columnKey === 'area'">
 							    <template v-if="spaceAreaSupported !== false">
 								    <div>
 									    <j-ellipsis>{{ formatAreaName(record) }}</j-ellipsis>
@@ -140,17 +139,17 @@
 							    </template>
 							    <j-ellipsis v-else>{{ formatGroupName(record) }}</j-ellipsis>
 						    </template>
-							    <template v-else-if="column.key === 'createdAt'">{{ formatTableTime(record.createdAt) }}</template>
-							    <template v-else-if="column.key === 'lastReportTime'">{{ formatTableTime(record.lastReportTime) }}</template>
-						    <template v-else-if="column.key === 'scope'">
+							    <template v-else-if="columnKey === 'createdAt'"><span class="unified-device-list__time">{{ formatTableTime(record.createdAt) }}</span></template>
+							    <template v-else-if="columnKey === 'lastReportTime'"><span class="unified-device-list__time">{{ formatTableTime(record.lastReportTime) }}</span></template>
+						    <template v-else-if="columnKey === 'scope'">
 								    <div>{{ formatAreaName(record) }}</div>
 								    <small>{{ record.groupBindings?.map(group => group.name).join('、') || record.groupName || '—' }}</small>
 							    </template>
-							    <template v-else-if="column.key === 'channel'">{{ record.channelNumber ?? '—' }}</template>
-							    <template v-else-if="column.key === 'monitor'">
+							    <template v-else-if="columnKey === 'channel'">{{ record.channelNumber ?? '—' }}</template>
+							    <template v-else-if="columnKey === 'monitor'">
 								    <component :is="gatewayMonitorCell" :snapshot="gatewayMetrics?.metricsMap[record.id]" />
 							    </template>
-							    <template v-else-if="column.key === 'action'">
+							    <template v-else-if="columnKey === 'action'">
                     <j-permission-button
                         type="link"
                         size="small"
@@ -198,9 +197,7 @@
                     </table-actions>
 							    </template>
 						    </template>
-					    </a-table>
-				    </div>
-				    <JPagination class="unified-device-list__pagination" :page-index="pageIndex" :page-size="pageSize" :total="total" :page-size-options="['12', '24', '48', '96']" show-size-changer is-show-content @change="changePage" />
+					    </j-pro-table>
 			    </div>
 		    </template>
 	    </EqualHeightColumns>
@@ -227,7 +224,6 @@ import { ref } from 'vue'
 import dayjs from 'dayjs'
 import { Modal } from 'ant-design-vue'
 import { useI18n } from 'vue-i18n'
-import JPagination from '@jetlinks-web/components/es/ProTable/Pagination'
 import { getToken, onlyMessage } from '@jetlinks-web/utils'
 import { TOKEN_KEY_URL } from '@jetlinks-web/constants'
 import { getBaseApi } from '@jetlinks-web-core/utils'
@@ -248,6 +244,7 @@ import { getIotDeviceListMenuCode, resolveIotProjectId } from '../hooks/useIotDe
 import type { DeviceGroup } from '../../../../api/deviceGroup'
 import { useUnifiedDeviceList } from './useUnifiedDeviceList'
 import { useDeviceListChannelSupport } from './useDeviceListChannelSupport'
+import { useDeviceListColumnLayout } from './useDeviceListColumnLayout'
 import { useUnifiedDeviceActions } from './useUnifiedDeviceActions'
 import { useUnifiedDeviceBatchNavigation } from './useUnifiedDeviceBatchNavigation'
 import Process from '../../Instance/Process/index.vue'
@@ -279,7 +276,7 @@ function canDeviceBatchAction(action: 'delete' | 'enable' | 'export' | 'import')
   // 已部署的资源中心菜单可能还没有导入、导出和启用这三个按钮节点；列表菜单本身仍是该组批量操作的授权边界。
   return menu.hasMenu(deviceMenuCode.value)
 }
-const { providers, isIotEntry, tabs, activeType, activeProvider, scope, baseTerms, filterTerms, filterFields, commonFilterFields, searchTerms, hasSearch, status, rows, total, pageIndex, pageSize, loading, error, counts, statusCounts, selectedIds, batchMode, providerOf, changeType, search, changeStatus, refresh, changePage, clearBatchSelection } = useUnifiedDeviceList()
+const { providers, isIotEntry, tabs, activeType, activeProvider, scope, baseTerms, filterTerms, filterFields, commonFilterFields, searchTerms, hasSearch, status, rows, loading, error, counts, statusCounts, selectedIds, batchMode, providerOf, changeType, search, changeStatus, refresh, tableParams, tableRequest, clearBatchSelection } = useUnifiedDeviceList()
 const channelSupported = useDeviceListChannelSupport(activeProvider)
 const gatewayMonitorCell = moduleRegistry.getResourceItem<Component>('edge-master-ui', 'components', 'GatewayDeviceMonitorCell')
 const useGatewayMetrics = moduleRegistry.getResourceItem<typeof UseGatewayRuntimeMetricsLoader>('edge-master-ui', 'hooks', 'useGatewayRuntimeMetricsLoader')
@@ -289,6 +286,8 @@ const gatewayMetricTargets = computed(() => activeType.value === 'gateway' && !l
   : [])
 const gatewayMetrics = useGatewayMetrics?.(gatewayMetricTargets)
 const { sidebarProps, spaceAreaSupported, loading: scopeLoading, loadError: scopeLoadError, handleScopeChange } = scope
+const tablePanel = ref<HTMLElement>()
+const columnLayout = useDeviceListColumnLayout(tablePanel, activeType, computed(() => spaceAreaSupported.value !== false), channelSupported)
 const scopeCollapsed = ref(false)
 function formatTableTime(value?: string | number | null) {
   if (!value || value === '--') return t('IotDeviceList.scope.noReport')
@@ -426,25 +425,30 @@ const statusTones: Record<string, 'success' | 'error' | 'default'> = { online: '
 const statusOptions = computed(() => ['online', 'offline', 'disabled'].map(value => ({
   value, label: t(`UnifiedDeviceList.${value}`), count: statusCounts.value[value] ?? '—',
 })))
-const rowSelection = computed(() => ({ selectedRowKeys: selectedIds.value, onChange: (keys: Array<string | number>) => { selectedIds.value = keys.map(String); batchMode.value = keys.length > 0 } }))
+const rowSelection = computed(() => ({ columnWidth: columnLayout.value.selection, selectedRowKeys: selectedIds.value, onChange: (keys: Array<string | number>) => { selectedIds.value = keys.map(String); batchMode.value = keys.length > 0 } }))
 // 未启用空间模块时，列表不展示无意义的空间空态，仅保留设备分组。
 const scopeColumn = computed(() => ({
   title: t(spaceAreaSupported.value === false ? 'UnifiedDeviceList.group' : 'UnifiedDeviceList.areaAndGroup'),
   key: 'area',
-  width: spaceAreaSupported.value === false ? 180 : 220,
+  width: columnLayout.value.area,
 }))
 const columns = computed(() => [
-  { title: t('UnifiedDeviceList.name'), key: 'name', width: 280, fixed: 'left' },
-  { title: t('UnifiedDeviceList.product'), key: 'productName', width: 180, ellipsis: true },
-  { title: t('IotDeviceList.table.brandModel'), key: 'brandModel', width: 160 },
+  { title: t('UnifiedDeviceList.name'), key: 'name', width: columnLayout.value.name, fixed: 'left' },
+  { title: t('UnifiedDeviceList.product'), key: 'productName', width: columnLayout.value.product, ellipsis: true },
+  { title: t('IotDeviceList.table.brandModel'), key: 'brandModel', width: columnLayout.value.brand },
   scopeColumn.value,
-  { title: t('UnifiedDeviceList.status'), key: 'status', width: 100 },
-  ...(activeType.value === 'all' ? [{ title: t('IotDeviceDetail.detail.lastReport'), key: 'lastReportTime', width: 180 }] : []),
-  ...(activeType.value === 'all' ? [{ title: t('Instance.index.133466-5'), key: 'createdAt', width: 180 }] : []),
-  ...(activeType.value === 'gateway' ? [{ title: t('GatewayDeviceCard.monitor'), key: 'monitor', width: 220 }] : []),
-  ...(['gateway', 'video'].includes(activeType.value) && channelSupported.value ? [{ title: t('UnifiedDeviceList.channel'), key: 'channel', width: 100 }] : []),
-  { title: t('UnifiedDeviceList.action'), key: 'action', width: 90, fixed: 'right', align: 'center' },
-])
+  { title: t('UnifiedDeviceList.status'), key: 'status', width: columnLayout.value.status },
+  ...(activeType.value === 'all' ? [{ title: t('IotDeviceDetail.detail.lastReport'), key: 'lastReportTime', width: columnLayout.value.time }] : []),
+  ...(activeType.value === 'all' ? [{ title: t('Instance.index.133466-5'), key: 'createdAt', width: columnLayout.value.time }] : []),
+  ...(activeType.value === 'gateway' ? [{ title: t('GatewayDeviceCard.monitor'), key: 'monitor', width: columnLayout.value.monitor }] : []),
+  ...(['gateway', 'video'].includes(activeType.value) && channelSupported.value ? [{ title: t('UnifiedDeviceList.channel'), key: 'channel', width: columnLayout.value.channel }] : []),
+  { title: t('UnifiedDeviceList.action'), key: 'action', width: columnLayout.value.action, fixed: 'right', align: 'center' },
+].map(column => ({ ...column, scopedSlots: true })))
+
+// ProTable 会缓存转发的插槽名，分类切换前声明完整集合，避免新增监控或通道列后单元格为空。
+const cellSlotKeys = ['name', 'status', 'product', 'productName', 'brandModel', 'area', 'createdAt', 'lastReportTime', 'scope', 'channel', 'monitor', 'action']
+
+const tableScroll = computed(() => ({ x: columnLayout.value.tableWidth }))
 
 const [DefineEmptyCreateAction1, EmptyCreateButtonAction1] = createReusableTemplate()
 const [DefineEmptyCreateAction2, EmptyCreateButtonAction2] = createReusableTemplate()
@@ -479,22 +483,24 @@ const [DefineEmptyCreateAction2, EmptyCreateButtonAction2] = createReusableTempl
   --device-table-header-bg: color-mix(in srgb, var(--info-bg) 55%, var(--bg));
   background-color: color-mix(in srgb, var(--info-bg) 25%, var(--bg-trans-8));
 }
-.unified-device-list__filters, .unified-device-list__batch, .unified-device-list__pagination { flex-shrink: 0; }
+.unified-device-list__filters, .unified-device-list__batch { flex-shrink: 0; }
 .unified-device-list__filters { align-items: center; flex-wrap: nowrap; }
 .unified-device-list__filters > .device-asset-search { flex: 1 1 auto; width: auto; min-width: 0; }
 .unified-device-list__toolbar-actions { flex-shrink: 0; margin-inline-start: auto; gap: 8px; }
 .unified-device-list__action-divider { margin: 0 2px; height: 24px; opacity: .45; }
 .unified-device-list__category { flex-shrink: 0; margin-inline-end: 0; color: var(--ink-3); white-space: nowrap; }
-.unified-device-list__table { flex: 1; min-height: 0; overflow: auto; }
+.unified-device-list__table { flex: 1; min-height: 0; overflow: hidden; }
+.unified-device-list__table :deep(.jtable-body-header) { display: none; }
+/* j-ellipsis 通过行高判断截断；覆盖表格 nowrap，确保连续英文和标识也能触发完整内容提示。 */
+.unified-device-list__table :deep(.j-ellipsis) { white-space: normal; }
 .unified-device-list__row-actions { width: 100%; justify-content: flex-end; }
 .unified-device-list__table small { display: block; color: var(--ink-3); font-weight: normal; }
-/* max-content 表格需限制内容宽度：280px 名称列扣除两侧 16px 单元格内边距。 */
-.unified-device-list__identity { width: 248px; min-width: 0; max-width: 100%; }
+.unified-device-list__identity { width: 100%; min-width: 0; max-width: 100%; }
 .unified-device-list__identity-body { flex: 1; min-width: 0; }
 .unified-device-list__name-row { min-width: 0; flex-wrap: nowrap; }
 .unified-device-list__name { flex: 0 1 auto; min-width: 0; max-width: 100%; overflow: hidden; padding: 0; height: auto; font-weight: 600; }
 .unified-device-list__name-text { display: block; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .unified-device-list__identity-body > small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.unified-device-list__pagination { text-align: right; }
+.unified-device-list__time { white-space: nowrap; font-variant-numeric: tabular-nums; }
 .unified-device-list__batch { justify-content: flex-end; align-items: center; min-height: 48px; padding: 8px 12px; border-radius: 8px; }
 </style>
