@@ -42,8 +42,7 @@ export function useModbusMapping(props: ModbusMappingProps) {
     codecHelpers,
     mappingRules
   )
-  // 产品页沿用原来的直接离开行为；设备页保留已有的保存确认。
-  const { confirmLeave } = props.scope === 'product' ? { confirmLeave: async () => true } : useCodecLeaveGuard({
+  const { confirmLeave } = useCodecLeaveGuard({
     dirty: () => configuration.isDirty.value,
     busy: () => configuration.loading.value || configuration.saving.value,
     save: configuration.saveConfig,
@@ -136,7 +135,7 @@ export function useModbusMapping(props: ModbusMappingProps) {
     }
   )
   watch(
-    () => props.scope === 'product' ? props.productId : mappingConfiguration.instanceStore.current?.id,
+    () => mappingConfiguration.instanceStore.current?.id,
     (id) => {
       if (id) {
         debugDraft.restoreModbusDebugDraft()

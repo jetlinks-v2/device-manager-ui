@@ -49,8 +49,6 @@ const store = reactive({
 })
 let requests = []
 const api = {
-  productCode: async () => ({ status: 200, result: { provider: 'modbus', configuration: {} } }),
-  saveProductCode: async (...args) => { requests.push(args); return { status: 200 } },
   deviceCode: async () => ({
     status: 200,
     result: { provider: 'modbus', configuration: { mapping: { modbusLinkType: 'PDU', properties: [] } } }
@@ -81,7 +79,6 @@ const scopes = []
 afterEach(() => {
   scopes.splice(0).forEach((scope) => scope.stop())
   Object.assign(api, defaultApi)
-  requests = []
   storage.clear()
   listeners.clear()
 })
@@ -225,54 +222,6 @@ test('configuration serializes registers, scaling, access, array index and mask 
   assert.equal(bit.writable, false)
   assert.equal(bit.register.layout, 'AB')
   assert.ok(!JSON.stringify(result).includes('Measurement'))
-})
-
-test('product mappings load product metadata and save through product APIs without a previous device ID', async () => {
-  const { props, configuration: c } = setup()
-  props.scope = 'product'
-  props.productId = 'product-only'
-  delete props.thingId
-  props.metadata = JSON.stringify({ properties: [{ id: 'temperature', name: 'Product temperature', valueType: { type: 'int' } }] })
-  api.deviceCode = api.saveDeviceCode = async () => { throw Error('Product must not use device APIs') }
-  const loaded = []
-  api.productCode = async id => {
-    loaded.push(id)
-    return { status: 200, result: { provider: 'modbus', configuration: { mapping: {
-      thingId: 'historical-device', modbusLinkType: 'RTU', properties: [{ property: 'temperature',
-        register: { key: { slaveId: 1, type: 'HoldingRegisters', address: 0 }, registerCount: 1, codec: 'unsigned_int16', layout: 'AB' },
-      }],
-    } } } }
-  }
-  api.saveProductCode = async (...args) => { requests.push(args); return { status: 200 } }
-  await c.loadConfig()
-  assert.deepEqual(loaded, ['product-only'])
-  assert.equal(c.mappings.value[0].propertyName, 'Product temperature')
-  assert.equal(c.mappings.value[0].registerStr, '3_0')
-  assert.equal(c.modbusLinkType.value, 'RTU')
-  assert.equal(c.isDirty.value, false)
-  c.modbusLinkType.value = 'TCP'
-  assert.equal(await c.saveConfig(), true)
-  const [id, data] = requests.at(-1)
-  assert.equal(id, 'product-only')
-  assert.equal(data.provider, 'modbus')
-  assert.equal(data.configuration.mapping.modbusLinkType, 'TCP')
-  assert.equal(Object.hasOwn(data.configuration.mapping, 'thingId'), false)
-  assert.equal(c.isDirty.value, false)
-})
-
-test('empty product Modbus configuration stays empty and never falls back to the device store', async () => {
-  const { props, configuration: c } = setup()
-  props.scope = 'product'
-  props.productId = 'empty-product'
-  delete props.thingId
-  api.productCode = async () => ({ status: 200, result: { provider: 'modbus', configuration: {} } })
-  await c.loadConfig()
-  assert.deepEqual(c.mappings.value, [])
-  assert.deepEqual(c.metadataProperties.value, [])
-  assert.equal(c.isDirty.value, false)
-  props.productId = undefined
-  api.productCode = api.deviceCode = async () => { throw Error('Missing product must not read the previous device') }
-  await c.loadConfig()
 })
 
 test('configuration reconstructs historical codec/layout and retains bit length', () => {

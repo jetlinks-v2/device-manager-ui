@@ -38,7 +38,6 @@
 import DeviceDetailTabs from '@device-manager-ui/views/device/components/DeviceDetailTabs.vue'
 import { useI18n } from 'vue-i18n'
 import { useModbusMapping } from './modbus/useModbusMapping'
-import type { ModbusMappingProps } from './modbus/types'
 import MappingTable from './modbus/mapping/MappingTable.vue'
 import MappingDrawer from './modbus/mapping/MappingDrawer.vue'
 import DecodePanel from './modbus/debug/DecodePanel.vue'
@@ -46,7 +45,7 @@ import EncodePanel from './modbus/debug/EncodePanel.vue'
 import FillMappingModal from './modbus/debug/FillMappingModal.vue'
 
 defineOptions({ name: 'ModbusMapping' })
-const props = defineProps<ModbusMappingProps>()
+const props = defineProps<{ thingId?: string; productId?: string }>()
 const { t, locale } = useI18n()
 const { mappingView, decodeView, encodeView, fillView, splitLayout, mappingConfiguration, mappingEditor, reloadConfig } =
   useModbusMapping(props)

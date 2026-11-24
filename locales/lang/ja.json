@@ -21,6 +21,7 @@
   "DeviceIdMapping.loadFailed": "デバイスIDマッピングの読み込みに失敗しました。クリックして再試行してください。",
 
   "Product.codec.loadFailed": "データ解析設定の読み込みに失敗しました",
+  "Product.codec.scriptOnly": "製品では JavaScript スクリプトのみ対応しています。既存のスクリプト以外の設定は保持され、この画面では編集できません。管理者にお問い合わせください。",
   "Product.codec.empty": "データ解析設定はありません",
 
   "UnifiedDeviceList.collapseScope": "エリア／グループを折りたたむ",

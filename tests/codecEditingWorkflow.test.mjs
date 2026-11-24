@@ -234,31 +234,42 @@ test('leave confirmation distinguishes closing, discarding and saving, and stays
   scope.stop()
 })
 
-test('original product JS and JSON persistence retains the configured provider and fields', async () => {
-  for (const configuration of [{ script: 'product-script', lang: 'javascript', custom: 1 }, { mapping: { properties: [] } }]) {
-    const ui = dialogs(), guard = await guardModule(ui), requests = []
-    const api = { productCode: async () => ({ status: 200, result: { provider: configuration.script ? 'jsr223' : 'modbus', configuration } }),
-      saveProductCode: async (...args) => { requests.push(args); return { status: 200 } } }
+test('product saves only JavaScript without prior debugging and never overwrites a non-script configuration', async () => {
+  for (const stored of [
+    { provider: 'jsr223', configuration: { script: 'product-script', lang: 'javascript', custom: 1 } },
+    { provider: 'modbus', configuration: { mapping: { properties: [] } } },
+    { provider: 'unknown', configuration: { custom: 1 } },
+  ]) {
+    const ui = dialogs(), requests = []
+    const api = { productCode: async () => ({ status: 200, result: structuredClone(stored) }),
+      saveProductCode: async (...args) => { requests.push(['save', ...args]); return { status: 200 } },
+      testCode: async (...args) => { requests.push(['debug', ...args]); return { status: 200 } },
+    }
     const productCodec = await load('views/device/Product/Detail/DataAnalysis/useProductCodec.ts', { 'api/instance': api })
     const { useProductDataAnalysis } = await load('views/device/Product/Detail/DataAnalysis/useProductDataAnalysis.ts', {
-      useCodecLeaveGuard: guard, useProductCodec: productCodec, 'api/instance': api,
-      'store/product': { useProductStore: () => ({ current: { id: 'product' } }) },
+      useProductCodec: productCodec, 'api/instance': api,
+      'store/product': { useProductStore: () => ({ current: { id: 'product', transportProtocol: 'MQTT' } }) },
       '@jetlinks-web-core/store': { useAuthStore: () => ({ hasPermission: () => true }) }, 'utils/comm': { onlyMessage() {} },
     })
     const scope = vue.effectScope(), s = scope.run(() => useProductDataAnalysis())
     await s.getProductCode()
     assert.equal(s.topic.value, '')
     assert.equal(s.simulation.value, '')
+    assert.equal(requests.length, 0)
     await s.save()
     await tick()
-    assert.equal(requests.length, 1)
-    assert.equal(requests[0][1].provider, configuration.script ? 'jsr223' : 'modbus')
-    assert.deepEqual(JSON.parse(JSON.stringify(requests[0][1].configuration)), configuration)
-    if (!configuration.script) {
-      s.editorValue.value = 'invalid JSON'
-      await s.save()
+    if (stored.provider === 'jsr223') {
       assert.equal(requests.length, 1)
-      assert.equal(s.isDirty, undefined)
+      assert.equal(requests[0][0], 'save')
+      assert.equal(requests[0][1], 'product')
+      assert.deepEqual(JSON.parse(JSON.stringify(requests[0][2])), stored)
+    } else {
+      assert.equal(s.codecUnsupported.value, true)
+      s.editorValue.value = 'must not overwrite existing configuration'
+      s.topic.value = '/report'; s.simulation.value = 'raw'
+      await s.save(); s.debug(); await tick()
+      assert.equal(requests.length, 0)
+      assert.deepEqual(JSON.parse(JSON.stringify(s.codec.value)), stored)
     }
     scope.stop()
   }
