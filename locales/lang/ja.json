@@ -1,4 +1,5 @@
 {
+    "DeviceProcesses.title": "プロセス",
   "UnifiedDeviceList.collapseScope": "エリア／グループを折りたたむ",
   "UnifiedDeviceList.expandScope": "エリア／グループを展開",
   "UnifiedDeviceList.batch": "一括操作",

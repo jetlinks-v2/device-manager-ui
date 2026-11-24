@@ -1,4 +1,5 @@
 import i18n from '@jetlinks-web-core/locales'
+import { moduleRegistry } from '@jetlinks-web-core/utils/module-registry'
 import dataCapabilityProviders from './dataCapabilities'
 import { deviceMetricsSupported, deviceMetricsAggregate, deviceOverviewSummary } from './runtimeMetrics'
 import { defineAsyncComponent } from 'vue'
@@ -68,6 +69,10 @@ export default {
   metricTemplateStarters: { iot: () => iotMetricStarters },
   dataCapabilityProviders,
   deviceDetailTabs: {
+    processes: { key:'processes',label:() => i18n.global.t('DeviceProcesses.title'),icon:'ApartmentOutlined',order:65,
+      matches:() => Boolean(moduleRegistry.getResourceItem('rule-engine-manager-ui','components','ObjectProcesses')),
+      component:defineAsyncComponent(() => import('./views/device/process/DeviceProcessesTab.vue')),
+      props:(device:{id:string}) => ({deviceId:device.id}) },
     metrics: { key: 'metrics', label: () => i18n.global.t('DeviceMetrics.title'), icon: 'LineChartOutlined', order: 60,
       matches: () => true, component: defineAsyncComponent(() => import('./views/device/metrics/DeviceMetricsTab.vue')),
       props: (device: { id: string }) => ({ deviceId: device.id }) },
