@@ -99,39 +99,24 @@ test('a debug response arriving after reload cannot restore the old result', asy
   scope.stop()
 })
 
-test('product reload drops unsaved changes without prompting and clears debug results', async () => {
+test('product parsing supports optional debug, save and reload without a leave guard', async () => {
   const { state: s, scope, ui } = await productHarness()
   const original = s.editorValue.value
-  assert.equal(s.isDirty.value, false)
   s.editorValue.value += '\n// user edit'
   s.topic.value = '/report'; s.simulation.value = 'raw'
   s.debug(); await tick()
-  assert.ok(s.resultTime.value)
-  await s.reload()
+  assert.equal(s.result.value, '{"temperature":25}')
+  await s.getProductCode()
   assert.equal(ui.opened.length, 0)
   assert.equal(s.editorValue.value, original)
-  assert.equal(s.isDirty.value, false)
-  assert.equal(s.resultTime.value, '')
+  assert.equal(s.isDirty, undefined)
+  assert.equal(s.result.value, '{"temperature":25}')
   assert.equal(s.simulation.value, 'raw')
   s.editorValue.value += '\n// actual change'
-  assert.equal(await s.save(), true)
-  assert.equal(s.isDirty.value, false)
-  scope.stop()
-})
-
-test('product provider switching tracks dirty state and discards back to the saved provider', async () => {
-  const { state: s, scope, ui } = await productHarness()
-  const original = s.editorValue.value
-  await s.changeProvider('modbus')
-  assert.equal(s.editorLanguage.value, 'json')
-  assert.equal(s.isDirty.value, true)
-  const pending = s.changeProvider('jsr223')
-  assert.equal(ui.opened.length, 1)
-  ui.opened[0].config.onCancel()
-  await pending
-  assert.equal(s.codec.value.provider, 'jsr223')
-  assert.equal(s.editorValue.value, original)
-  assert.equal(s.isDirty.value, false)
+  await s.save()
+  await tick()
+  assert.equal(s.editorValue.value, original + '\n// actual change')
+  assert.equal(ui.opened.length, 0)
   scope.stop()
 })
 
@@ -249,31 +234,42 @@ test('leave confirmation distinguishes closing, discarding and saving, and stays
   scope.stop()
 })
 
-test('product JS and JSON save without prior debugging and preserve provider/configuration', async () => {
-  for (const configuration of [{ script: 'product-script', lang: 'javascript', custom: 1 }, { mapping: { properties: [] } }]) {
-    const ui = dialogs(), guard = await guardModule(ui), requests = []
-    const api = { productCode: async () => ({ status: 200, result: { provider: configuration.script ? 'jsr223' : 'modbus', configuration } }),
-      saveProductCode: async (...args) => { requests.push(args); return { status: 200 } } }
+test('product edits, saves and debugs JavaScript regardless of the previously configured provider', async () => {
+  for (const stored of [
+    { provider: 'jsr223', configuration: { script: 'product-script', lang: 'javascript', custom: 1 } },
+    { provider: 'modbus', configuration: { mapping: { properties: [] } } },
+    { provider: 'unknown', configuration: { custom: 1 } },
+  ]) {
+    const requests = []
+    let configured = structuredClone(stored)
+    const api = { productCode: async () => ({ status: 200, result: structuredClone(configured) }),
+      saveProductCode: async (...args) => { requests.push(['save', ...args]); configured = structuredClone(args[1]); return { status: 200 } },
+      testCode: async (...args) => { requests.push(['debug', ...args]); return { status: 200, result: { success: true } } },
+    }
     const productCodec = await load('views/device/Product/Detail/DataAnalysis/useProductCodec.ts', { 'api/instance': api })
     const { useProductDataAnalysis } = await load('views/device/Product/Detail/DataAnalysis/useProductDataAnalysis.ts', {
-      useCodecLeaveGuard: guard, useProductCodec: productCodec, 'api/instance': api,
-      'store/product': { useProductStore: () => ({ current: { id: 'product' } }) },
+      useProductCodec: productCodec, 'api/instance': api,
+      'store/product': { useProductStore: () => ({ current: { id: 'product', transportProtocol: 'MQTT' } }) },
       '@jetlinks-web-core/store': { useAuthStore: () => ({ hasPermission: () => true }) }, 'utils/comm': { onlyMessage() {} },
     })
     const scope = vue.effectScope(), s = scope.run(() => useProductDataAnalysis())
     await s.getProductCode()
-    assert.equal(s.isDirty.value, false)
-    assert.equal(s.saveDisabled.value, false)
-    assert.equal(await s.save(), true)
+    assert.ok(s.editorValue.value)
+    assert.equal(requests.length, 0)
+    assert.deepEqual(configured, stored)
+    s.editorValue.value = 'edited-script'
+    await s.save(); await tick()
     assert.equal(requests.length, 1)
-    assert.equal(requests[0][1].provider, configuration.script ? 'jsr223' : 'modbus')
-    assert.deepEqual(JSON.parse(JSON.stringify(requests[0][1].configuration)), configuration)
-    if (!configuration.script) {
-      s.editorValue.value = 'invalid JSON'
-      assert.equal(await s.save(), false)
-      assert.equal(requests.length, 1)
-      assert.equal(s.isDirty.value, true)
-    }
+    assert.equal(requests[0][0], 'save')
+    assert.equal(requests[0][1], 'product')
+    const expected = { provider: 'jsr223', configuration: { script: 'edited-script', lang: 'javascript' } }
+    assert.deepEqual(JSON.parse(JSON.stringify(requests[0][2])), expected)
+    assert.equal(s.editorValue.value, 'edited-script')
+    s.topic.value = '/report'; s.simulation.value = 'raw'
+    s.debug(); await tick()
+    assert.equal(requests[1][0], 'debug')
+    assert.equal(requests[1][1].provider, 'jsr223')
+    assert.deepEqual(JSON.parse(JSON.stringify(requests[1][1].configuration)), expected.configuration)
     scope.stop()
   }
 })

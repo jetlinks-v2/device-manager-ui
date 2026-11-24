@@ -8876,6 +8876,7 @@
     "ModbusMapping.ui.linkHint": "Decoding and encoding: TCP includes MBAP; RTU includes CRC; PDU is a bare PDU (the existing default).",
     "ModbusMapping.ui.actions": "Actions",
     "ModbusMapping.ui.addPoint": "Add Point",
+    "ModbusMapping.ui.pointMapping": "Point Mapping",
     "ModbusMapping.ui.propertyPlaceholder": "Enter or select a property ID",
     "ModbusMapping.ui.undefinedProperty": "Not defined in the thing model",
     "ModbusMapping.ui.readUnsupported": "This function code does not support read operations.",

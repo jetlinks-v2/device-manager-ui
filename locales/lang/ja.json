@@ -8801,6 +8801,7 @@
   "ModbusMapping.ui.linkHint": "解析とエンコード：TCP は MBAP を含み、RTU は CRC を含み、PDU は裸 PDU（履歴のデフォルトと一致）です。",
   "ModbusMapping.ui.actions": "操作",
   "ModbusMapping.ui.addPoint": "ポイント追加",
+  "ModbusMapping.ui.pointMapping": "ポイントマッピング",
   "ModbusMapping.ui.propertyPlaceholder": "属性識別子を入力または選択してください",
   "ModbusMapping.ui.undefinedProperty": "物モデルは未定義です",
   "ModbusMapping.ui.readUnsupported": "この機能コードは読み取り操作をサポートしていません。",

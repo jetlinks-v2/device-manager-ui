@@ -2,7 +2,7 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: auto;
 }
 
 .parsing-loading {
@@ -87,15 +87,23 @@
 
 .parsing-body {
   display: flex;
-  flex: 1;
+  flex: 0 0 auto;
   flex-direction: column;
   min-height: 0;
-  overflow: auto;
+  overflow: visible;
 }
 
 .parsing-modbus {
   display: flex;
-  flex: 1;
+  flex: 0 0 auto;
   flex-direction: column;
   min-height: 0;
+  overflow: visible;
+}
+
+.parsing-modbus :deep(.mm-wrap) { padding-bottom: 0; }
+
+@media (max-width: 1100px) {
+  .parsing-modbus :deep(.mm-main), .parsing-modbus :deep(.mm-main-right) { flex: 0 0 auto; }
+  .parsing-modbus :deep(.mm-main-right) { overflow: visible; }
 }
