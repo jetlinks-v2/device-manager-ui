@@ -9,9 +9,12 @@
               <img v-if="block.method?.key === 'wechat' || block.method?.key === 'dingtalk'" class="notification-block__icon" :src="block.method.key === 'wechat' ? WeixinCorp : DingTalk" alt="" />
               <AIcon v-else :type="block.method?.icon || 'SendOutlined'" />
               <a-select :value="block.channelId" :options="block.channelOptions" size="small" :bordered="false"
+                :dropdown-match-select-width="false"
                 class="notification-block__channel" :aria-label="$t('DeviceAlarm.editor.notificationChannel')"
                 :placeholder="$t('DeviceAlarm.notification.channelShort')" :loading="loading" :disabled="disabled || loading || failed"
-                @update:value="view.selectChannel(block.key, $event)" />
+                @update:value="view.selectChannel(block.key, $event)">
+                <template #option="{ label }"><span class="notification-block__channel-option">{{ label }}</span></template>
+              </a-select>
             </template>
             <label v-else :for="`iot-alarm-channel-${block.key}`">{{ $t('DeviceAlarm.editor.notificationChannel') }}</label>
             <DeviceAlarmTemplateStatus v-if="block.channelId && block.templates" :templates="block.templates"
@@ -73,7 +76,7 @@ onBeforeUnmount(() => emit('open-change', false))
 .notification-block__actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--space-1); margin-inline-start: auto; }
 .notification-block__template-action:not(:disabled) { color: var(--ink-3); }
 .notification-block__template-action:not(:disabled):hover, .notification-block__template-action:focus-visible { color: var(--accent); }
-.notification-block :deep(.notification-chip) { width: 100%; }
+.notification-blocks:not(.notification-blocks--compact) .notification-block :deep(.notification-chip) { width: 100%; }
 .notification-block__recipients, .notification-block__targets { display: grid; gap: var(--space-3); min-width: 0; }
 .notification-blocks__footer { display: grid; gap: var(--space-4); min-width: 0; }
 .notification-blocks--compact { gap: var(--space-2); width: 100%; font-size: var(--fs-14); }
@@ -85,6 +88,7 @@ onBeforeUnmount(() => emit('open-change', false))
 .notification-block__icon { width: 16px; height: 16px; object-fit: contain; flex: none; }
 .notification-block__channel { flex: 0 1 auto; min-width: calc(var(--space-4) * 6); max-width: 100%; }
 .notification-block__channel :deep(.ant-select-selector) { padding-inline: 0; }
+.notification-block__channel-option { display: block; width: min(calc(var(--space-4, 16px) * 20), calc(100vw - var(--space-4, 16px) * 4)); white-space: normal; overflow-wrap: anywhere; }
 .notification-blocks--compact .notification-block__recipients { grid-template-columns: auto minmax(0, 1fr); gap: var(--space-3); }
 .notification-blocks--compact .notification-block__label { padding-top: var(--space-1); font-size: inherit; }
 .notification-blocks--compact .notification-block__targets { justify-items: start; gap: var(--space-1); }

@@ -7,14 +7,15 @@
 ### 通知“发送给”局部 UX（已实施）
 
 - 目标与范围：用户确认“分渠道配置”后实施，M 级，仅 `runtime-ui/modules/device-manager-ui` 的产品／设备属性规则通知区；让成员、部门和标签的归属在每个渠道内直接可见。“发送给”继续独立一行，告警条件、页面壳层、权限、后端及持久化协议不变。
-- 当前布局：`通知开关／说明 → [渠道图标／渠道选择 | 模板状态／模板／删除] → [发送给 | 接收类型 + 对象选择] → [该渠道全部已选对象] → [下一渠道] → [添加渠道 | 含解除]`。标题使用普通文字与无边框渠道选择，模板为次要操作；通知区不设外框，各渠道使用浅分隔线；标题、状态与操作同排，固定接收方说明贴近渠道名称。类型切换与对象选择使用与规则条件相同的 32px 高度，按内容宽度相邻排列，窄屏空间不足时自然换行。未采用“渠道页签＋独立摘要”，避免编辑区与接收结果再次分离。
+- 当前布局：`通知开关／说明 → [渠道图标／渠道选择 | 模板状态／模板／删除] → [发送给 | 接收类型 + 对象选择] → [该渠道全部已选对象] → [下一渠道] → [添加渠道 | 含解除]`。标题使用普通文字与无边框渠道选择，模板为次要操作；通知区不设外框，各渠道使用浅分隔线；标题、状态与操作同排，固定接收方说明贴近渠道名称。类型切换与对象选择使用与规则条件相同的 32px 高度，以统一宽度上限的两列网格排列，宽屏同排、窄屏一致堆叠。未采用“渠道页签＋独立摘要”，避免编辑区与接收结果再次分离。
 - 实现入口：`views/device/alarm/components/DeviceAlarmNotificationConfig.vue` 的行内模式使用 `DeviceAlarmNotificationBlocks.vue` 的 `compact` 呈现，复用 `hooks/useAlarmNotificationBlocks.ts` 的分渠道草稿与 `notificationRecipients.ts` 的更新模型。`DeviceAlarmRecipientTargets.vue` 将成员／部门／标签切换和对象选择相邻对齐；`DeviceAlarmRecipients.vue` 的紧凑模式与维度选择框显示已选数量，名称在当前渠道内集中回显。`DeviceAlarmNotificationGroups.vue`／`hooks/useAlarmNotificationGroups.ts` 按 `channelId` 过滤引用和目录查询，使用纯摘要呈现，不再重复渠道标题与全局预览。中英日数量提示共用 `DeviceAlarm.notification.selectedCount`。
 - 兼容边界：`compact` 模式保留显式通知开关，打开历史关闭规则不启用通知，删除最后一个渠道不自动关闭开关，空配置仍由原保存校验约束；表单模式继续使用无通知开关的既有配置块。成员／部门／标签可以混选，切换类型不写配置，编辑或删除单类目标不影响其他类型及渠道。站内信仍无需模板，固定渠道仍无需选择人员；能力未知的历史配置不自动迁移。父级通知区定位、选择器展开／关闭和卸载状态沿用原交互契约。未新增公共组件或外部通讯录映射。
 - 验证：Node 22.18.0 下在模块执行 `node scripts/test-alarm-workspace.mjs`，最终 236/236 通过，覆盖原告警／属性规则回归及紧凑模式的开关保留、跨渠道隔离删除、禁用／加载／失败防写、初始定位、历史分组摘要和按渠道引用查询。6 个变更样式文件通过运行时调用运营端 `ui/scripts/check-ui-style.mjs --files ...` 的定向检查，5 个最终 SFC 的脚本／模板／样式编译及中英日 JSON 检查通过，模块暂存／未暂存差异检查通过。运行时无独立 lint 脚本。
 - 构建与类型：在运行时 `jetlinks-web-core` 执行 `node ../node_modules/vite/bin/vite.js build --outDir /tmp/jetlinks-notification-ux-build -- --module-name device-manager-ui`，生产构建通过（3m1s，保留资源路径、Rollup output、循环 chunk 与体积提示）；随后仅补充定位初值与卸载收口，最终 SFC 编译和 236 项回归已覆盖，未再次完整打包。在运行时根目录执行 `node node_modules/vue-tsc/bin/vue-tsc.js --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json`，报告 1,730 条诊断，与前次记录计数一致，当前修改的生产文件无命中；测试文件仍有原 Node 类型缺失和既有可空诊断，不视为全量类型检查通过。
 - 交互验证：隔离页装配真实 Vue／Ant／ConditionOptionPanel 和运行时通知组件，验证钉钉／企业微信两块独立编辑、成员增选、部门／标签切换、实际编解码回读后的名单保留、Escape 关闭、只读禁用、通知开关保留以及原表单入口可用。390px 视口无页面横向溢出，完成后已恢复视口。资源目录和导航为替身，保存回读仅验证本地编解码；登录后端保存与外部通知投递未联调。
 - 规则卡融合调整（S 级）：仅调整 `DeviceAlarmNotificationBlocks.vue` 与 `DeviceAlarmRecipientTargets.vue` 的 compact 样式，移除通知外框及内部卡片留白，收紧渠道内间距，控件使用内容宽度，固定接收方说明向渠道标题缩进。两个 SFC 的脚本／模板／样式编译、定向样式检查和差异检查通过。在规则卡场景样例中装配真实通知组件核对桌面布局，390px 无页面横向溢出，完成后恢复视口；周边条件为样例内容。行为代码未变，复用前述 236 项回归证据，未重复全模块构建与类型检查。
-- 作者 Review：PASS；实现符合已确认的局部方案，复用告警 feature 的配置与目录边界，没有扩展公共模型、后端或权限，也未引入新页面壳层。保留原工作区未提交修改；本次未提交、推送或创建 PR。
+- 选择器稳定性调整（S 级）：`DeviceAlarmNotificationBlocks.vue` 的渠道菜单不再跟随紧凑触发器宽度，选项独立限制宽度并允许长名称换行；成员选择器的全宽规则仅保留在表单模式，避免干扰 compact 布局。`DeviceAlarmRecipientTargets.vue` 统一成员／部门／标签的两列布局、选择框高度和位置，普通单类型渠道使用单列，目录错误仍独占一行；`DeviceAlarmNotificationGroups.vue` 的纯摘要模式在无已选对象、无目录错误时不渲染，避免重复的“选择对象”。三个变更 SFC 的脚本／模板／样式编译及定向样式检查、差异检查通过；在 Node 22.18.0 下运行 `node scripts/test-alarm-workspace.mjs`，当前 237/237 通过；交付时在 PR #432 工作区重跑同一套回归，237/237 通过，临时运行器仅调整独立工作区的依赖定位。三个组件与原工作区逐字一致。隔离组件页验证三种类型的控件尺寸及坐标一致、空名单仅一个选择入口、长钉钉／WebHook 菜单完整可读，390px 无横向溢出，随后恢复视口。当前 compact 使用统一宽度上限的两列网格，宽屏同排、窄屏一致堆叠。未改变配置协议与目标更新逻辑，未重复完整构建／类型检查；真实后端与外部投递仍未联调。
+- 作者 Review：PASS；实现符合已确认的局部方案，复用告警 feature 的配置与目录边界，没有扩展公共模型、后端或权限，也未引入新页面壳层。保留原工作区未提交修改；交付入口为 [PR #432](https://github.com/jetlinks-v2/device-manager-ui/pull/432)，基础提交 `c7cf7f437f006fe1d5e88a847d404a8dd6865578`，补充优化提交见该 PR 的提交列表。
 
 ### 属性规则行内接收类型（已实施）
 

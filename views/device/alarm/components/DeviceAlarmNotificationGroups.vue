@@ -1,5 +1,5 @@
 <template>
-  <div class="notification-groups">
+  <div v-if="visible" class="notification-groups">
     <div v-for="group in view.groups" :key="group.id" class="notification-group">
       <div v-if="!summaryOnly" class="notification-group__heading">
         <a-button type="link" size="small" :disabled="disabled" @click="$emit('edit', group.id)"><img v-if="group.key === 'wechat' || group.key === 'dingtalk'" class="notification-group__icon" :src="group.key === 'wechat' ? WeixinCorp : DingTalk" alt="" />{{ group.label }}</a-button>
@@ -23,13 +23,15 @@
   </div>
 </template>
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { computed, reactive } from 'vue'
 import { DingTalk, WeixinCorp } from '@jetlinks-web-core/assets/notice'
 import { useAlarmNotificationGroups } from '../hooks/useAlarmNotificationGroups'
 import type { DeviceAlarmNotificationConfig, DeviceAlarmNotifyMethod, DeviceAlarmRecipientSelection } from '../types'
 const props = withDefaults(defineProps<{ notification: DeviceAlarmNotificationConfig; methods: DeviceAlarmNotifyMethod[]; scopeKey: string; disabled?: boolean; channelId?: string; summaryOnly?: boolean }>(), { disabled: false, summaryOnly: false })
 defineEmits<{ (e: 'edit', channelId: string): void; (e: 'remove', selection: DeviceAlarmRecipientSelection): void }>()
 const view = reactive(useAlarmNotificationGroups(props))
+const visible = computed(() => !props.summaryOnly || view.groups.some(group => group.fixed || group.users.length || group.dimensions)
+  || view.directory.selectedFailed || view.targets.failedKinds.length > 0)
 </script>
 <style scoped>
 .notification-groups { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
