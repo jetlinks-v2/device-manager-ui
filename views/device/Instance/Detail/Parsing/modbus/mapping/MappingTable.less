@@ -1,22 +1,18 @@
 
 
-.mm-action-header {
-  display: inline-flex;
+.mm-mapping-header {
+  display: flex;
   align-items: center;
-  gap: 2px;
-  white-space: nowrap;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #f0f0f0;
 }
 
 
-.mm-action-header-title {
-  margin-right: 2px;
-}
-
-
-.mm-action-header-add {
-  padding: 0 4px;
-  height: auto;
-  font-size: 12px;
+.mm-mapping-header strong {
+  font-size: 14px;
+  font-weight: 600;
 }
 
 
@@ -87,10 +83,7 @@
   min-width: 0;
   flex: 1;
   min-height: 0;
-  border: 1px solid #f0f0f0;
-  border-radius: 6px;
-  overflow: hidden;
-  background: #fff;
+  overflow: visible;
 
   :deep(.ant-table-wrapper) {
     border-radius: 6px;
@@ -104,6 +97,14 @@
   :deep(.ant-table-body) {
     overflow-y: auto !important;
   }
+}
+
+/* 可用高度仍用于长列表滚动，卡片本身随空状态或点位内容收起。 */
+.mm-mapping-card {
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #fff;
 }
 
 

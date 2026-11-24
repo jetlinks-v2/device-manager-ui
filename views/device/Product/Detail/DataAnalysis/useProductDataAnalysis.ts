@@ -40,7 +40,7 @@ export function useProductDataAnalysis() {
   const simulation = ref<string>('');
   const resultValue = ref<any>({});
   const loading = ref<boolean>(false);
-  const { codec, editorValue, codecUnsupported, codecLoading, codecFailed, getProductCode, buildProductCode } = useProductCodec(() => productStore.current.id, defaultValue);
+  const { editorValue, codecLoading, codecFailed, getProductCode, buildProductCode } = useProductCodec(() => productStore.current.id, defaultValue);
   const typescriptTip = reactive({
     typescript: ''
   })
@@ -56,7 +56,7 @@ export function useProductDataAnalysis() {
             },
   );
 
-  const isDisabled = computed(() => codecLoading.value || codecFailed.value || codecUnsupported.value || !simulation.value || !editorValue.value);
+  const isDisabled = computed(() => codecLoading.value || codecFailed.value || !simulation.value || !editorValue.value);
 
   const result = computed(() =>
       resultValue.value.success
@@ -136,9 +136,9 @@ export function useProductDataAnalysis() {
       }
   };
 
-  /** 产品只提交脚本配置，不覆盖已有的非脚本配置。 */
+  /** 调试与保存统一提交 JavaScript 配置。 */
   const readCodecInput = () => {
-      if (codecLoading.value || codecFailed.value || codecUnsupported.value) return undefined;
+      if (codecLoading.value || codecFailed.value) return undefined;
       return buildProductCode();
   };
   const debug = () => {
@@ -162,5 +162,5 @@ export function useProductDataAnalysis() {
     }
   });
 
-  return { canUpdate, productStore, codec, editorValue, codecUnsupported, codecLoading, codecFailed, getProductCode, toggle, el, typescriptTip, editorInit, topicList, topic, url, simulation, result, resStyle, loading, isDisabled, debug, save }
+  return { canUpdate, productStore, editorValue, codecLoading, codecFailed, getProductCode, toggle, el, typescriptTip, editorInit, topicList, topic, url, simulation, result, resStyle, loading, isDisabled, debug, save }
 }

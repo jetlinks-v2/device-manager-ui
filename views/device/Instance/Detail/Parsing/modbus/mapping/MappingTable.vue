@@ -10,25 +10,23 @@
           <span class="mm-link-type-hint">{{ t('ModbusMapping.ui.linkHint') }}</span>
         </div>
         <div ref="tableScrollEl" class="mm-table-scroll">
+      <section class="mm-mapping-card">
+        <header class="mm-mapping-header">
+          <strong>{{ t('ModbusMapping.ui.pointMapping') }}</strong>
+          <a-button type="link" size="small" @click="addMapping">
+            <template #icon><PlusOutlined /></template>{{ t('ModbusMapping.ui.addPoint') }}
+          </a-button>
+        </header>
       <a-table
         :data-source="mappings"
         :columns="columns"
         :pagination="false"
         size="small"
         :loading="loading"
-        :scroll="{ x: 872, y: tableBodyScrollY }"
+        :scroll="{ x: 872, y: mappings.length ? tableBodyScrollY : undefined }"
         class="mm-table"
         :row-key="(_: unknown, index?: number) => index!"
       >
-      <template #headerCell="{ column }">
-        <template v-if="column.key === 'action'">
-          <div class="mm-action-header">
-            <span class="mm-action-header-title">{{ t('ModbusMapping.ui.actions') }}</span>
-            <a-button type="link" size="small" class="mm-action-header-add" @click.stop="addMapping">
-              <template #icon><PlusOutlined /></template>{{ " " + t('ModbusMapping.ui.addPoint') + " " }}</a-button>
-          </div>
-        </template>
-      </template>
       <template #bodyCell="{ column, record, index }">
         <!-- 属性：下方展示物模型说明 + 读写标签（与 Modbus 区功能码是否支持读/写校验） -->
         <template v-if="column.key === 'property'"><PropertyField :model="model" :record="record as ModbusSimpleMapping" :index="index" /></template>
@@ -67,11 +65,10 @@
       </template>
 
       <template #emptyText>
-        <CloudEmpty :description="t('ModbusMapping.ui.noMappings')">
-          <a-button size="small" type="primary" @click="addMapping">{{ t('ModbusMapping.ui.addPoint') }}</a-button>
-        </CloudEmpty>
+        <CloudEmpty :description="t('ModbusMapping.ui.noMappings')" />
       </template>
       </a-table>
+      </section>
         </div>
       </div>
 </template>

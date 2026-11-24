@@ -21,7 +21,6 @@
   "DeviceIdMapping.loadFailed": "デバイスIDマッピングの読み込みに失敗しました。クリックして再試行してください。",
 
   "Product.codec.loadFailed": "データ解析設定の読み込みに失敗しました",
-  "Product.codec.scriptOnly": "製品では JavaScript スクリプトのみ対応しています。既存のスクリプト以外の設定は保持され、この画面では編集できません。管理者にお問い合わせください。",
   "Product.codec.empty": "データ解析設定はありません",
 
   "UnifiedDeviceList.collapseScope": "エリア／グループを折りたたむ",
@@ -8802,6 +8801,7 @@
   "ModbusMapping.ui.linkHint": "解析とエンコード：TCP は MBAP を含み、RTU は CRC を含み、PDU は裸 PDU（履歴のデフォルトと一致）です。",
   "ModbusMapping.ui.actions": "操作",
   "ModbusMapping.ui.addPoint": "ポイント追加",
+  "ModbusMapping.ui.pointMapping": "ポイントマッピング",
   "ModbusMapping.ui.propertyPlaceholder": "属性識別子を入力または選択してください",
   "ModbusMapping.ui.undefinedProperty": "物モデルは未定義です",
   "ModbusMapping.ui.readUnsupported": "この機能コードは読み取り操作をサポートしていません。",

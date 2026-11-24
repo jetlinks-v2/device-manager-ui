@@ -234,16 +234,17 @@ test('leave confirmation distinguishes closing, discarding and saving, and stays
   scope.stop()
 })
 
-test('product saves only JavaScript without prior debugging and never overwrites a non-script configuration', async () => {
+test('product edits, saves and debugs JavaScript regardless of the previously configured provider', async () => {
   for (const stored of [
     { provider: 'jsr223', configuration: { script: 'product-script', lang: 'javascript', custom: 1 } },
     { provider: 'modbus', configuration: { mapping: { properties: [] } } },
     { provider: 'unknown', configuration: { custom: 1 } },
   ]) {
-    const ui = dialogs(), requests = []
-    const api = { productCode: async () => ({ status: 200, result: structuredClone(stored) }),
-      saveProductCode: async (...args) => { requests.push(['save', ...args]); return { status: 200 } },
-      testCode: async (...args) => { requests.push(['debug', ...args]); return { status: 200 } },
+    const requests = []
+    let configured = structuredClone(stored)
+    const api = { productCode: async () => ({ status: 200, result: structuredClone(configured) }),
+      saveProductCode: async (...args) => { requests.push(['save', ...args]); configured = structuredClone(args[1]); return { status: 200 } },
+      testCode: async (...args) => { requests.push(['debug', ...args]); return { status: 200, result: { success: true } } },
     }
     const productCodec = await load('views/device/Product/Detail/DataAnalysis/useProductCodec.ts', { 'api/instance': api })
     const { useProductDataAnalysis } = await load('views/device/Product/Detail/DataAnalysis/useProductDataAnalysis.ts', {
@@ -253,24 +254,22 @@ test('product saves only JavaScript without prior debugging and never overwrites
     })
     const scope = vue.effectScope(), s = scope.run(() => useProductDataAnalysis())
     await s.getProductCode()
-    assert.equal(s.topic.value, '')
-    assert.equal(s.simulation.value, '')
+    assert.ok(s.editorValue.value)
     assert.equal(requests.length, 0)
-    await s.save()
-    await tick()
-    if (stored.provider === 'jsr223') {
-      assert.equal(requests.length, 1)
-      assert.equal(requests[0][0], 'save')
-      assert.equal(requests[0][1], 'product')
-      assert.deepEqual(JSON.parse(JSON.stringify(requests[0][2])), stored)
-    } else {
-      assert.equal(s.codecUnsupported.value, true)
-      s.editorValue.value = 'must not overwrite existing configuration'
-      s.topic.value = '/report'; s.simulation.value = 'raw'
-      await s.save(); s.debug(); await tick()
-      assert.equal(requests.length, 0)
-      assert.deepEqual(JSON.parse(JSON.stringify(s.codec.value)), stored)
-    }
+    assert.deepEqual(configured, stored)
+    s.editorValue.value = 'edited-script'
+    await s.save(); await tick()
+    assert.equal(requests.length, 1)
+    assert.equal(requests[0][0], 'save')
+    assert.equal(requests[0][1], 'product')
+    const expected = { provider: 'jsr223', configuration: { script: 'edited-script', lang: 'javascript' } }
+    assert.deepEqual(JSON.parse(JSON.stringify(requests[0][2])), expected)
+    assert.equal(s.editorValue.value, 'edited-script')
+    s.topic.value = '/report'; s.simulation.value = 'raw'
+    s.debug(); await tick()
+    assert.equal(requests[1][0], 'debug')
+    assert.equal(requests[1][1].provider, 'jsr223')
+    assert.deepEqual(JSON.parse(JSON.stringify(requests[1][1].configuration)), expected.configuration)
     scope.stop()
   }
 })

@@ -48,7 +48,7 @@
           :codec="codecState"
           @updated="loadDeviceCodec"
         />
-        <FullPage v-else class="parsing-modbus" :padding="0" flex>
+        <FullPage v-else class="parsing-modbus" :padding="0">
           <ModbusMapping
             ref="modbusMappingRef"
             :thing-id="device.id"

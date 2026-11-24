@@ -20,7 +20,6 @@
   "DeviceIdMapping.loadFailed": "Failed to load device ID mapping. Click to retry.",
 
   "Product.codec.loadFailed": "Failed to load data parsing configuration",
-  "Product.codec.scriptOnly": "Products only support JavaScript scripts. The existing non-script configuration is preserved and cannot be edited here. Contact an administrator for assistance.",
   "Product.codec.empty": "No data parsing configuration",
 
     "PropertyRules.diagram.intent": "Action intent only; execution depends on runtime state and is not performed in this example",
@@ -8877,6 +8876,7 @@
     "ModbusMapping.ui.linkHint": "Decoding and encoding: TCP includes MBAP; RTU includes CRC; PDU is a bare PDU (the existing default).",
     "ModbusMapping.ui.actions": "Actions",
     "ModbusMapping.ui.addPoint": "Add Point",
+    "ModbusMapping.ui.pointMapping": "Point Mapping",
     "ModbusMapping.ui.propertyPlaceholder": "Enter or select a property ID",
     "ModbusMapping.ui.undefinedProperty": "Not defined in the thing model",
     "ModbusMapping.ui.readUnsupported": "This function code does not support read operations.",

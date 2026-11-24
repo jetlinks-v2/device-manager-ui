@@ -20,7 +20,6 @@
   "DeviceIdMapping.loadFailed": "设备ID映射加载失败，点击重试",
 
   "Product.codec.loadFailed": "数据解析配置加载失败",
-  "Product.codec.scriptOnly": "产品仅支持 JavaScript 脚本，当前非脚本配置暂不可编辑。原配置已保留，请联系管理员处理。",
   "Product.codec.empty": "暂无数据解析配置",
 
     "PropertyRules.diagram.intent": "仅展示处理意图；实际动作取决于运行状态，不会在图例中执行",
@@ -8878,6 +8877,7 @@
     "ModbusMapping.ui.linkHint": "解析与编码：TCP 含 MBAP；RTU 含 CRC；PDU 为裸 PDU（与历史默认一致）",
     "ModbusMapping.ui.actions": "操作",
     "ModbusMapping.ui.addPoint": "新增点位",
+    "ModbusMapping.ui.pointMapping": "点位映射",
     "ModbusMapping.ui.propertyPlaceholder": "输入或选择属性标识",
     "ModbusMapping.ui.undefinedProperty": "物模型未定义",
     "ModbusMapping.ui.readUnsupported": "该功能码不支持读操作",

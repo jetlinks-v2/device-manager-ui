@@ -10,14 +10,12 @@
       <div class="product-codec__actions">
         <a-button :loading="codecLoading" @click="getProductCode">{{ $t('IotDeviceDetail.parsing.reload') }}</a-button>
         <a-button v-if="canUpdate" type="primary" :loading="loading"
-          :disabled="codecLoading || codecFailed || codecUnsupported || !editorValue.trim()"
+          :disabled="codecLoading || codecFailed || !editorValue.trim()"
           @click="save()">
           {{ $t('IotDeviceDetail.parsing.saveConfig') }}
         </a-button>
       </div>
     </div>
-    <a-alert v-if="codecUnsupported" type="warning" :message="$t('Product.codec.scriptOnly')" show-icon />
-    <template v-else>
     <section class="product-codec__script">
       <div class="top">
         <strong>{{ $t('deviceDetailOptimization.script') }}</strong>
@@ -66,7 +64,6 @@
         </section>
       </div>
     </section>
-    </template>
   </div>
 </template>
 
@@ -76,7 +73,7 @@ import { useProductDataAnalysis } from './useProductDataAnalysis'
 
 defineOptions({ name: 'DataAnalysis' })
 const { t: $t } = useI18n()
-const { canUpdate, productStore, editorValue, codecUnsupported, codecLoading, codecFailed, getProductCode, toggle, el, typescriptTip, editorInit, topicList, topic, url, simulation, result, resStyle, loading, isDisabled, debug, save } = useProductDataAnalysis()
+const { canUpdate, productStore, editorValue, codecLoading, codecFailed, getProductCode, toggle, el, typescriptTip, editorInit, topicList, topic, url, simulation, result, resStyle, loading, isDisabled, debug, save } = useProductDataAnalysis()
 </script>
 
 <style scoped lang="less" src="./index.less" />
