@@ -99,39 +99,26 @@ test('a debug response arriving after reload cannot restore the old result', asy
   scope.stop()
 })
 
-test('product reload drops unsaved changes without prompting and clears debug results', async () => {
+test('product parsing retains the original debug, save and reload workflow without a leave guard', async () => {
   const { state: s, scope, ui } = await productHarness()
   const original = s.editorValue.value
-  assert.equal(s.isDirty.value, false)
+  assert.equal(s.isTest.value, false)
   s.editorValue.value += '\n// user edit'
   s.topic.value = '/report'; s.simulation.value = 'raw'
   s.debug(); await tick()
-  assert.ok(s.resultTime.value)
-  await s.reload()
+  assert.equal(s.isTest.value, true)
+  assert.equal(s.result.value, '{"temperature":25}')
+  await s.getProductCode()
   assert.equal(ui.opened.length, 0)
   assert.equal(s.editorValue.value, original)
-  assert.equal(s.isDirty.value, false)
-  assert.equal(s.resultTime.value, '')
+  assert.equal(s.isDirty, undefined)
+  assert.equal(s.result.value, '{"temperature":25}')
   assert.equal(s.simulation.value, 'raw')
   s.editorValue.value += '\n// actual change'
-  assert.equal(await s.save(), true)
-  assert.equal(s.isDirty.value, false)
-  scope.stop()
-})
-
-test('product provider switching tracks dirty state and discards back to the saved provider', async () => {
-  const { state: s, scope, ui } = await productHarness()
-  const original = s.editorValue.value
-  await s.changeProvider('modbus')
-  assert.equal(s.editorLanguage.value, 'json')
-  assert.equal(s.isDirty.value, true)
-  const pending = s.changeProvider('jsr223')
-  assert.equal(ui.opened.length, 1)
-  ui.opened[0].config.onCancel()
-  await pending
-  assert.equal(s.codec.value.provider, 'jsr223')
-  assert.equal(s.editorValue.value, original)
-  assert.equal(s.isDirty.value, false)
+  await s.save()
+  await tick()
+  assert.equal(s.editorValue.value, original + '\n// actual change')
+  assert.equal(ui.opened.length, 0)
   scope.stop()
 })
 
@@ -249,7 +236,7 @@ test('leave confirmation distinguishes closing, discarding and saving, and stays
   scope.stop()
 })
 
-test('product JS and JSON save without prior debugging and preserve provider/configuration', async () => {
+test('original product JS and JSON persistence retains the configured provider and fields', async () => {
   for (const configuration of [{ script: 'product-script', lang: 'javascript', custom: 1 }, { mapping: { properties: [] } }]) {
     const ui = dialogs(), guard = await guardModule(ui), requests = []
     const api = { productCode: async () => ({ status: 200, result: { provider: configuration.script ? 'jsr223' : 'modbus', configuration } }),
@@ -262,17 +249,17 @@ test('product JS and JSON save without prior debugging and preserve provider/con
     })
     const scope = vue.effectScope(), s = scope.run(() => useProductDataAnalysis())
     await s.getProductCode()
-    assert.equal(s.isDirty.value, false)
-    assert.equal(s.saveDisabled.value, false)
-    assert.equal(await s.save(), true)
+    assert.equal(s.isTest.value, false)
+    await s.save()
+    await tick()
     assert.equal(requests.length, 1)
     assert.equal(requests[0][1].provider, configuration.script ? 'jsr223' : 'modbus')
     assert.deepEqual(JSON.parse(JSON.stringify(requests[0][1].configuration)), configuration)
     if (!configuration.script) {
       s.editorValue.value = 'invalid JSON'
-      assert.equal(await s.save(), false)
+      await s.save()
       assert.equal(requests.length, 1)
-      assert.equal(s.isDirty.value, true)
+      assert.equal(s.isDirty, undefined)
     }
     scope.stop()
   }

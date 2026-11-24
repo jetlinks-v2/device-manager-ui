@@ -397,8 +397,8 @@ test('product parsing editor and test/save actions are available in project and 
   })
   for (const isProject of [true, false]) {
     const canUpdate = binding('views/device/Product/Detail/DataAnalysis/useProductDataAnalysis.ts', 'canUpdate', { isProject, computed: vue.computed, permissionStore: { hasPermission: () => true } }).value
-    const html = await render(file, { isProject, canUpdate, codec: { provider: 'jsr223' }, codecFailed: false, codecLoading: false,
-      codecMenuItems: [{ value: 'jsr223', label: 'IotDeviceDetail.parsing.javascriptLabel' }], typeDescription: '', editorLanguage: 'javascript', editorValue: 'library-script', typescriptTip: {}, loading: false, saving: false, isDisabled: false, saveDisabled: false, isDirty: false,
+    const html = await render(file, { isProject, canUpdate, isModbus: false, codec: { provider: 'jsr223' }, codecFailed: false, codecLoading: false,
+      editorLanguage: 'javascript', editorValue: 'library-script', typescriptTip: {}, loading: false, isDisabled: false, isTest: false,
       productStore: { current: { transportProtocol: 'MQTT' } }, topicList: [], resStyle: {}, result: '', simulation: '', topic: '',
     }, { CodecDebugPanel: debugPanel, 'a-select': { props: ['value'], setup: (props, { slots }) => () => vue.h('select', { 'data-codec-type': props.value }, slots.default?.()) }, 'monaco-editor': { props: ['readOnly', 'modelValue'], setup: props => () => vue.h('pre', { 'data-readonly-editor': String(props.readOnly) }, props.modelValue) } })
     assert.match(html, /library-script/)
@@ -406,7 +406,35 @@ test('product parsing editor and test/save actions are available in project and 
     assert.match(html, /data-readonly-editor="false"/)
     assert.equal(html.includes('IotDeviceDetail.scriptCodec.debug'), true)
     assert.equal(html.includes('IotDeviceDetail.parsing.saveConfig'), true)
-    assert.equal(html.includes('class="codec-debug"'), true)
+    assert.equal(html.includes('class="product-codec__debug"'), true)
+    assert.match(html, /<button[^>]*disabled[^>]*>[\s\S]*?IotDeviceDetail.parsing.saveConfig/)
+    assert.equal(html.includes('product-codec__provider'), true)
+    assert.equal(html.includes('Modbus'), false)
+  }
+})
+
+test('product Modbus uses the mapping body even with an empty configuration and keeps product permission', async () => {
+  const file = 'views/device/Product/Detail/DataAnalysis/index.vue'
+  for (const canUpdate of [true, false]) {
+    const html = await render(file, {
+      canUpdate, isModbus: true, modbusRef: { loading: false, saving: false },
+      codec: { provider: 'modbus', configuration: {} }, codecLoading: false, codecFailed: false,
+      productStore: { current: { id: 'product-only', metadata: 'product-metadata' } },
+    }, {
+      ModbusMapping: { props: ['scope', 'productId', 'metadata'], setup: props => () => vue.h('div', {
+        'data-mapping-scope': props.scope, 'data-product-id': props.productId, 'data-metadata': props.metadata,
+      }) },
+      'a-config-provider': { props: ['componentDisabled'], setup: (props, { slots }) => () => vue.h('section', {
+        'data-disabled': String(props.componentDisabled),
+      }, slots.default?.()) },
+    })
+    assert.match(html, /data-mapping-scope="product"/)
+    assert.match(html, /data-product-id="product-only"/)
+    assert.match(html, /data-metadata="product-metadata"/)
+    assert.match(html, new RegExp(`data-disabled="${!canUpdate}"`))
+    assert.equal(html.includes('product-codec__script'), false)
+    assert.equal(html.includes('product-codec__debug'), false)
+    assert.equal(html.includes('IotDeviceDetail.parsing.saveConfig'), canUpdate)
   }
 })
 

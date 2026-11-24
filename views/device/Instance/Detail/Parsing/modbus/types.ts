@@ -191,6 +191,9 @@ export type ModbusTranslate = (key: string, values?: Record<string, unknown>) =>
 export interface ModbusMappingProps {
   thingId?: string
   productId?: string
+  /** 产品复用映射界面时，配置和物模型均来自产品，不回退到设备 store。 */
+  scope?: 'device' | 'product'
+  metadata?: string | { properties?: ThingMetadataProperty[] }
 }
 
 export type ModbusMappedPayload = Extract<DecodeVisualPayload, {kind: 'grid'}>;

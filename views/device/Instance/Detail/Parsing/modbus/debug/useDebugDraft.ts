@@ -28,7 +28,9 @@ export function useDebugDraft(
   const DEBUG_PERSIST_VERSION = 3 as const
 
   function modbusDebugStorageKey(): string {
-    const id = props.thingId || instanceStore.current?.id || 'default'
+    const id = props.scope === 'product'
+      ? `product:${props.productId || 'default'}`
+      : props.thingId || instanceStore.current?.id || 'default'
     return `jetlinks-ui:modbus-mapping-debug:v${DEBUG_PERSIST_VERSION}:${id}`
   }
 

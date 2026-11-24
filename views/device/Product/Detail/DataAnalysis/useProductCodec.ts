@@ -12,15 +12,7 @@ export function useProductCodec(productId: () => string | undefined, defaultScri
   const codec = ref<ProductCodec>()
   const codecLoading = ref(false)
   const codecFailed = ref(false)
-  const editorLanguage = computed(() => codec.value && codec.value.provider !== 'jsr223' && typeof codec.value.configuration?.script !== 'string' ? 'json' : 'javascript')
-
-  function selectProvider(provider: string) {
-    if (provider === (codec.value?.provider || 'jsr223')) return
-    codec.value = provider === 'jsr223'
-      ? { provider, configuration: { script: defaultScript, lang: 'javascript' } }
-      : { provider, configuration: {} }
-    editorValue.value = provider === 'jsr223' ? defaultScript : '{}'
-  }
+  const editorLanguage = computed(() => codec.value && typeof codec.value.configuration?.script !== 'string' ? 'json' : 'javascript')
 
   function buildProductCode(): ProductCodec {
     if (editorLanguage.value === 'json') {
@@ -43,8 +35,8 @@ export function useProductCodec(productId: () => string | undefined, defaultScri
       const res = await productCode(id)
       if (!res.success && res.status !== 200) throw new Error('Failed to load product codec')
       codec.value = res.result as ProductCodec | undefined
-      editorValue.value = editorLanguage.value === 'javascript'
-        ? codec.value?.configuration?.script ?? defaultScript : JSON.stringify(codec.value?.configuration ?? {}, null, 2)
+      editorValue.value = codec.value ? typeof codec.value.configuration?.script === 'string'
+        ? codec.value.configuration.script : JSON.stringify(codec.value.configuration ?? {}, null, 2) : defaultScript
     } catch {
       codecFailed.value = true
       codec.value = undefined
@@ -54,5 +46,5 @@ export function useProductCodec(productId: () => string | undefined, defaultScri
     }
   }
 
-  return { codec, editorValue, editorLanguage, codecLoading, codecFailed, getProductCode, buildProductCode, selectProvider }
+  return { codec, editorValue, editorLanguage, codecLoading, codecFailed, getProductCode, buildProductCode }
 }

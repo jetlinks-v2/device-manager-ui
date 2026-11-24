@@ -1,7 +1,7 @@
 import type { ModbusSimpleMapping, ThingMetadataProperty, ModbusMappingProps, ModbusTranslate } from '../types'
 import { useInstanceStore } from '@device-manager-ui/store/instance'
 import { ref, computed } from 'vue'
-import { deviceCode, saveDeviceCode } from '@device-manager-ui/api/instance'
+import { deviceCode, saveDeviceCode, productCode, saveProductCode } from '@device-manager-ui/api/instance'
 import { message } from 'ant-design-vue'
 import type { AddressHelpers } from '../protocol/address'
 import type { LayoutHelpers } from '../protocol/layout'
@@ -47,7 +47,7 @@ export function useMappingConfiguration(
   }
 
   const metadataProperties = computed(() => {
-    const meta = instanceStore.current?.metadata
+    const meta = props.scope === 'product' ? props.metadata : instanceStore.current?.metadata
     if (!meta) return []
     try {
       const parsed = typeof meta === 'string' ? JSON.parse(meta) : meta
@@ -57,7 +57,7 @@ export function useMappingConfiguration(
     }
   })
 
-  // 与后端 ModbusThingsMapping 一致：仅 thingId + properties（寄存器定义内嵌在每条 property.register）
+  // 产品映射由设备消息提供 thingId；设备独立配置保留原来的 thingId。
   const configObject = computed(() => {
     if (!mappings.value.length) return null
     const regMap = new Map<string, any>()
@@ -119,7 +119,7 @@ export function useMappingConfiguration(
       }
     })
     return {
-      thingId: props.thingId || instanceStore.current?.id,
+      ...(props.scope === 'product' ? {} : { thingId: props.thingId || instanceStore.current?.id }),
       modbusLinkType: modbusLinkType.value,
       properties: propList
     }
@@ -174,12 +174,13 @@ export function useMappingConfiguration(
   }
 
   const loadConfig = async () => {
-    const pId = props.productId || instanceStore.current?.productId
+    const isProduct = props.scope === 'product'
+    const pId = isProduct ? props.productId : props.productId || instanceStore.current?.productId
     const dId = props.thingId || instanceStore.current?.id
-    if (!pId || !dId) return
+    if (!pId || (!isProduct && !dId)) return
     loading.value = true
     try {
-      const res: any = await deviceCode(pId, dId)
+      const res: any = await (isProduct ? productCode(pId) : deviceCode(pId, dId))
       if (res.status !== 200) return
       mappings.value = []
       modbusLinkType.value = 'PDU'
@@ -199,9 +200,10 @@ export function useMappingConfiguration(
 
   async function saveConfig(): Promise<boolean> {
     if (saving.value || loading.value) return false
-    const pId = props.productId || instanceStore.current?.productId
+    const isProduct = props.scope === 'product'
+    const pId = isProduct ? props.productId : props.productId || instanceStore.current?.productId
     const dId = props.thingId || instanceStore.current?.id
-    if (!pId || !dId) {
+    if (!pId || (!isProduct && !dId)) {
       message.error(translate('ModbusMapping.feedback.deviceMissing'))
       return false
     }
@@ -212,10 +214,11 @@ export function useMappingConfiguration(
     saving.value = true
     const submittedSnapshot = snapshot()
     try {
-      const res: any = await saveDeviceCode(pId, dId, {
+      const data = {
         provider: 'modbus',
         configuration: { mapping: configObject.value }
-      })
+      }
+      const res: any = await (isProduct ? saveProductCode(pId, data) : saveDeviceCode(pId, dId, data))
       if (res.status === 200) {
         savedSnapshot.value = submittedSnapshot
         message.success(translate('ModbusMapping.feedback.saved'))
