@@ -4,7 +4,7 @@ import { deviceMetricsSupported, deviceMetricsAggregate, deviceOverviewSummary }
 import { defineAsyncComponent } from 'vue'
 import metricDimensions from './metricDimensions'
 import { iotMetricStarters } from './views/metric/Template/starters'
-import { useMetricSourceAdapter } from './views/device/metrics/useMetricSourceAdapter'
+import { useMetricSourceAdapter } from '@rule-engine-manager-ui/metric'
 import type { DeviceDetailTabProvider } from './deviceDetailProvider'
 import { queryNoPagingPost } from '@device-manager-ui/api/product'
 import { queryNoPagingPost as queryInstanceNoPage, query } from '@device-manager-ui/api/instance'

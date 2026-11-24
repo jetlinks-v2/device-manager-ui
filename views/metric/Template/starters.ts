@@ -1,4 +1,4 @@
-import type { MetricTemplateStarter } from '@jetlinks-web-core/components'
+import type { MetricTemplateStarter } from '@rule-engine-manager-ui/metric'
 import { counterCycleUsage } from './counterCycleUsage'
 import { healthObservationStarters } from './healthObservation'
 import { operationFailureStarter } from './operationFailures'

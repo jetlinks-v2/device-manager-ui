@@ -1,4 +1,4 @@
-import type { MetricTemplate, MetricTemplateStarter } from '@jetlinks-web-core/components'
+import type { MetricTemplate, MetricTemplateStarter } from '@rule-engine-manager-ui/metric'
 import { operatingModeType, operatingModeMessages, operatingModeNotes } from './operatingMode'
 
 const reference = (id: string, path: string[] = []) => ({ type: 'reference', id, path })

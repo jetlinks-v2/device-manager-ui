@@ -1,4 +1,4 @@
-import type { MetricTemplateStarter } from '@jetlinks-web-core/components'
+import type { MetricTemplateStarter } from '@rule-engine-manager-ui/metric'
 
 /** 周期是普通本体来源；序列处理和试算均由 measurement 计算器完成。 */
 export const counterCycleUsage: MetricTemplateStarter = {

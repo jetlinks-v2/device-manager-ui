@@ -1,4 +1,4 @@
-import type { MetricTemplateStarter } from '@jetlinks-web-core/components'
+import type { MetricTemplateStarter } from '@rule-engine-manager-ui/metric'
 import { scenario } from './starterScenario'
 type Sample = { metricId: string; value: number; offsetSeconds: number }
 const array = { type: 'array', elementType: { type: 'double' } }

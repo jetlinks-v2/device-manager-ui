@@ -1,4 +1,4 @@
-import type { MetricTemplateStarter } from '@jetlinks-web-core/components'
+import type { MetricTemplateStarter } from '@rule-engine-manager-ui/metric'
 
 /** 求和批次数值，不能用事件条数计故障，也不能把不同阶段相加为总失败率。 */
 const phases = [

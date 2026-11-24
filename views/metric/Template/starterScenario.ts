@@ -1,4 +1,4 @@
-import type { MetricParameter, MetricTemplate, MetricTemplateInput, MetricTemplateOutput, MetricTemplateStarter } from '@jetlinks-web-core/components'
+import type { MetricParameter, MetricTemplate, MetricTemplateInput, MetricTemplateOutput, MetricTemplateStarter } from '@rule-engine-manager-ui/metric'
 
 type Text = [zh: string, en: string]
 type Named<T> = T & { name: Text }

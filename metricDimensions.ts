@@ -1,10 +1,10 @@
 import { defineComponent, h } from 'vue'
 import i18n from '@jetlinks-web-core/locales'
 import { useAuthStore, useMenuStore } from '@jetlinks-web-core/store'
-import type { MetricDimensionProvider } from '@jetlinks-web-core/components'
+import type { MetricDimensionProvider } from '@rule-engine-manager-ui/metric'
 import MetricObjectNavigator from './views/device/metrics/navigation/MetricObjectNavigator.vue'
 import { queryMetricGroupTree, queryMetricOwnerPage, resolveMetricObjects } from './api/metricNavigation'
-import { useMetricSourceAdapter } from './views/device/metrics/useMetricSourceAdapter'
+import { useMetricSourceAdapter } from '@rule-engine-manager-ui/metric'
 
 const deviceCodes = ['iot-user-device-list', 'iot-user/device/list', 'device/Instance']
 const has = (codes: string[], action: string) => useAuthStore().hasPermission(codes.map(code => `${code}:${action}`))

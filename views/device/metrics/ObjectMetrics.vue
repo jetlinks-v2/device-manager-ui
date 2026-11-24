@@ -6,11 +6,11 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import type { MetricContext } from '@jetlinks-web-core/components'
+import type { MetricContext } from '@rule-engine-manager-ui/metric'
 import RemoteComponent from '@jetlinks-web-core/components/RemoteComponent/index.vue'
-import { useMetricSourceAdapter } from './useMetricSourceAdapter'
+import { useMetricSourceAdapter } from '@rule-engine-manager-ui/metric'
 import { useMetricLinks } from './useMetricLinks'
-import { metricReferenceFromQuery } from '@jetlinks-web-core/components/Metric/location'
+import { metricReferenceFromQuery } from '@rule-engine-manager-ui/metric'
 import metricDimensions from '../../../metricDimensions'
 const props = defineProps<{ context: MetricContext }>()
 const { t } = useI18n()

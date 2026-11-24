@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore, useMenuStore } from '@jetlinks-web-core/store'
-import type { MetricAlarmReference } from '@jetlinks-web-core/components'
+import type { MetricAlarmReference } from '@rule-engine-manager-ui/metric'
 
 /** 按菜单权限从业务对象进入指标工作区。 */
 export function useMetricLinks() {

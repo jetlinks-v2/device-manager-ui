@@ -1,5 +1,5 @@
 import { computed, onScopeDispose, ref, watch, type Ref } from 'vue'
-import type { MetricObjectSelection, MetricSelectionOrigin } from '@jetlinks-web-core/components'
+import type { MetricObjectSelection, MetricSelectionOrigin } from '@rule-engine-manager-ui/metric'
 
 export type MetricNavigationNode = MetricObjectSelection & {
   children?: MetricNavigationNode[]
@@ -42,6 +42,9 @@ export function useMetricNavigator(query: MetricNavigationQuery, selectedId: Ref
   let retryId: string | undefined
   let pendingList: Promise<MetricNavigationPage> | undefined
   const visibleNodes = computed(() => tree ? filterMetricTree(nodes.value, keyword.value) : nodes.value)
+  type TreeNode = MetricNavigationNode & { key:string; children?:TreeNode[] }
+  const treeNode = (node:MetricNavigationNode):TreeNode => ({...node,key:node.ownerId,children:node.children?.map(treeNode)})
+  const treeNodes = computed(() => visibleNodes.value.map(treeNode))
   const error = computed(() => listError.value || selectionError.value)
 
   async function search() {
@@ -87,5 +90,5 @@ export function useMetricNavigator(query: MetricNavigationQuery, selectedId: Ref
   void search()
   watch(selectedId, id => { if (id || !selectionError.value) void validate(id) }, { immediate: true })
   onScopeDispose(() => { listVersion += 1; selectionVersion += 1 })
-  return { nodes, visibleNodes, keyword, page, total, loading, error, search: submitSearch, changePage, select, retry }
+  return { nodes, visibleNodes, treeNodes, keyword, page, total, loading, error, search: submitSearch, changePage, select, retry }
 }

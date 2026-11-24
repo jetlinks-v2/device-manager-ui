@@ -5,7 +5,7 @@
       <template #action><a-button size="small" @click="state.retry">{{ t('DeviceMetrics.retry') }}</a-button></template>
     </a-alert>
     <a-spin :spinning="state.loading.value">
-      <a-tree v-if="tree && state.visibleNodes.value.length" :tree-data="state.visibleNodes.value" :field-names="{ key: 'ownerId', title: 'label' }" :selected-keys="selectedId ? [selectedId] : []" block-node :show-line="{ showLeafIcon:false }" default-expand-all @select="selectTree">
+      <a-tree v-if="tree && state.treeNodes.value.length" :tree-data="state.treeNodes.value" :field-names="{ key: 'ownerId', title: 'label' }" :selected-keys="selectedId ? [selectedId] : []" block-node :show-line="{ showLeafIcon:false }" default-expand-all @select="selectTree">
         <template #title="node"><IotTreeNodeRow><template #icon><AIcon type="FolderOutlined" /></template><template #label>{{ node.label }}</template></IotTreeNodeRow></template>
       </a-tree>
       <ul v-else-if="!tree && state.nodes.value.length" class="metric-object-navigation__list">
@@ -26,7 +26,7 @@
 import { computed, toRef } from 'vue'
 import { Empty } from 'ant-design-vue'
 import { useI18n } from 'vue-i18n'
-import type { MetricObjectSelection, MetricSelectionOrigin } from '@jetlinks-web-core/components'
+import type { MetricObjectSelection, MetricSelectionOrigin } from '@rule-engine-manager-ui/metric'
 import { useMetricNavigator, type MetricNavigationNode, type MetricNavigationQuery } from './useMetricNavigator'
 import IotTreeNodeRow from '../../../../components/IotTreeNodeRow.vue'
 const props = defineProps<{ selectedId?: string; tree?: boolean; query: MetricNavigationQuery }>()
