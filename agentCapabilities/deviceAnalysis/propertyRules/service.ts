@@ -1,3 +1,4 @@
+import { notificationUserIds } from '../../../views/device/alarm/notificationRecipients'
 import i18n from '@jetlinks-web-core/locales'
 import { createDomainAgentRecordSetCardinality, createDomainAgentToolResult, resolveDomainAgentInteger } from '@jetlinks-web-core/layout/components/AiChat/domainAgentTools'
 import { queryDefaultAlarmLevels, queryDeviceAlarmNotifyMethods, queryDeviceAlarmNotifyUsers } from '../../../views/device/alarm/api'
@@ -33,7 +34,7 @@ export async function queryDevicePropertyRules(subject: PropertyRuleSubject, arg
       product: products.get(propertyIdOf(property)), device: devices.get(propertyIdOf(property)) }))
     const alarms = effective.map(readRuleAlarm).filter(row => row !== null)
     const notifications = alarms.filter(row => row.notification.enabled).map(row => row.notification)
-    const userIds = [...new Set(notifications.flatMap(config => config.userIds))]
+    const userIds = [...new Set(notifications.flatMap(notificationUserIds))]
     const resources: RuleResources = {}
     // These are display-only lookups, once per page. Failure cannot change the configured conditions.
     const auxiliary = await Promise.allSettled([

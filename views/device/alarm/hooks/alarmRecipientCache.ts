@@ -16,8 +16,8 @@ export function createAlarmRecipientCache() {
   const pending = new Map<string, Promise<void>>()
 
   function remember(values: AlarmRecipientOption[]) {
-    options.value = new Map([...options.value, ...values.map(({ value, label, icon, unavailable }) =>
-      [value, { value, label, icon, unavailable }] as const)])
+    options.value = new Map([...options.value, ...values.map(({ value, label, description, icon, unavailable }) =>
+      [value, { value, label, description, icon, unavailable }] as const)])
     return values
   }
 
@@ -31,7 +31,7 @@ export function createAlarmRecipientCache() {
         const found = new Map(result.data.map(user => [user.id, user]))
         remember(missing.map(id => {
           const user = found.get(id)
-          return user ? { value: id, label: user.name, icon: 'UserOutlined' }
+          return user ? { value: id, label: user.name, description: user.username, icon: 'UserOutlined' }
             : { value: id, label: id, unavailable: true }
         }))
       }).finally(() => {

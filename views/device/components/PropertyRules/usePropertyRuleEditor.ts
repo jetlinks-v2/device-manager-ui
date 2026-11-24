@@ -6,7 +6,7 @@ import { useAuthStore, useSystemStore } from '@jetlinks-web-core/store'
 import { activeLogoutNavigation } from './useRuleLogoutNavigation'
 import type { ThingModelProperty, ThingPropertyPreprocess } from '../../alarm/types'
 import { createEmptyNotification, isNumberProperty, propertyIdOf, propertyNameOf, toDeviceAlarmRow,
-  defaultAlarmLevelOptions, formatPropertyUnit, hasFixedNotification, hasNotificationRecipients, validateNotificationMessage, DEVICE_ALARM_NOTIFICATION_MESSAGE_MAX_LENGTH } from '../../alarm/utils'
+  defaultAlarmLevelOptions, formatPropertyUnit, hasFixedNotification, hasPersonnelNotification, hasNotificationRecipients, validateNotificationMessage, DEVICE_ALARM_NOTIFICATION_MESSAGE_MAX_LENGTH } from '../../alarm/utils'
 import { availableRuleParts, buildRule, ruleDraftJson, isEmptyRule, parseRule, validateDraft, type RuleDraft, type RuleAddPart } from './codec'
 import { readSampling } from './sampling'
 import { readCorrection,setCorrectionMode } from './correction'
@@ -228,7 +228,7 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
         activeSection.value = 'alarm'
         setNotificationsOpen(true)
       }
-      if (!notify.channelProviders.length && !notify.notifyChannelIds?.length && !hasFixedNotification(notify)) { showNotificationError(); message.warning(t('DeviceAlarm.validation.notifyChannel')); return }
+      if (!hasPersonnelNotification(notify) && !hasFixedNotification(notify)) { showNotificationError(); message.warning(t('DeviceAlarm.validation.notifyChannel')); return }
       if (!hasNotificationRecipients(notify)) { showNotificationError(); message.warning(t('DeviceAlarm.validation.notifyUser')); return }
       const error = validateNotificationMessage(notify)
       if (error) { showNotificationError(); message.warning(t(error === 'required' ? 'DeviceAlarm.validation.notifyMessage' : 'DeviceAlarm.validation.notifyMessageMaxLength', { max: DEVICE_ALARM_NOTIFICATION_MESSAGE_MAX_LENGTH })); return }

@@ -54,7 +54,6 @@
             <div>
               <div class="device-alarm-editor__section-title">
                 <h3>{{ $t(activePanelMeta.titleKey) }}</h3>
-                <DeviceAlarmNotificationHelp v-if="activePanel === 'notification'" :model="model" />
               </div>
               <p v-if="activePanel === 'target' || activePanel === 'trigger'">{{ $t(activePanelMeta.descriptionKey) }}</p>
             </div>
@@ -101,6 +100,8 @@
                 :loading="notifyLoading"
                 :failed="notifyFailed"
                 :disabled="saving"
+                :reveal-channel="notificationChannel"
+                @update:selected-channel="notificationChannel = $event"
                 @retry-methods="emit('retry-methods')"
               />
             </RegistryComponent>
@@ -114,7 +115,7 @@
               <p>{{ $t('DeviceAlarm.editor.summaryDescription') }}</p>
             </div>
           </header>
-          <div class="device-alarm-editor__summary-list">
+          <div class="device-alarm-editor__summary-list" tabindex="0" role="region" :aria-label="$t('DeviceAlarm.editor.summaryTitle')">
             <a-card v-for="item in summaryItems" :key="item.key" size="small"
               class="device-alarm-editor__summary-card" :class="{ 'is-pending': item.state === 'pending' }">
               <template #title><span>{{ $t(item.labelKey) }}</span></template>
@@ -128,6 +129,9 @@
               <a-tag v-if="item.key === 'level' && item.state === 'complete'" class="device-alarm-editor__level-tag" :class="`alarm-level--${model.level}`">
                 <span class="device-alarm-editor__level-dot" aria-hidden="true" />{{ item.value }}
               </a-tag>
+              <DeviceAlarmNotificationGroups v-else-if="item.key === 'notification' && model.notification.enabled && (model.notification.channelProviders.length || model.notification.notifyChannelIds?.length || model.notification.fixedReceiverChannels?.length)"
+                :notification="model.notification" :methods="notifyMethods" :scope-key="`${model.source}:${model.targetId}:${model.property}`" :disabled="saving"
+                @edit="editNotificationChannel" @remove="removeNotificationSelection" />
               <span v-else class="device-alarm-editor__summary-value" :class="{ 'is-muted': item.state !== 'complete' }" :title="item.value">{{ item.value }}</span>
             </a-card>
           </div>
@@ -147,8 +151,8 @@
 <script setup lang="ts">
 import { computed, type PropType } from 'vue'
 import { useI18n } from 'vue-i18n'
+import DeviceAlarmNotificationGroups from './DeviceAlarmNotificationGroups.vue'
 import DeviceAlarmNotificationConfig from './DeviceAlarmNotificationConfig.vue'
-import DeviceAlarmNotificationHelp from './editor/DeviceAlarmNotificationHelp.vue'
 import DeviceAlarmTargetForm from './editor/DeviceAlarmTargetForm.vue'
 import DeviceAlarmTriggerForm from './editor/DeviceAlarmTriggerForm.vue'
 import type {
@@ -196,7 +200,7 @@ const emit = defineEmits<{
 
 const { t: $t } = useI18n()
 const { panels, activePanel, activePanelMeta, panelStates, selectedProperty,
-  previewText, relievePreviewText, summaryItems, selectPanel } = useDeviceAlarmEditor(props, $t)
+  previewText, relievePreviewText, summaryItems, selectPanel, notificationChannel, editNotificationChannel, removeNotificationSelection } = useDeviceAlarmEditor(props, $t)
 
 const title = computed(() =>
   props.readonlyScope ? $t('DeviceAlarm.title.edit') : $t('DeviceAlarm.editor.title'),

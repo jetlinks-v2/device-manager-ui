@@ -1,3 +1,4 @@
+import { notificationIsConfigured } from './notificationRecipients'
 import { request } from '@jetlinks-web/core'
 import i18n from '@jetlinks-web-core/locales'
 import { restoreDeviceLibraryAlarms_api } from '@device-manager-ui/api/device-library'
@@ -10,6 +11,7 @@ import { localizeDeviceLibraryPreprocessors, resolveI18nText } from './deviceLib
 import { normalizeNotification, toDeviceAlarmPageRow, toDeviceAlarmRow } from './utils'
 import { fixedNotificationMethods, isFixedNotificationChannel } from './notificationFixedChannels'
 import { hasTemplateBinding, verifiedTemplateState, type TemplateState } from './notificationTemplateStatus'
+import { alarmRecipientKinds } from './notificationTargets'
 import type {
   AlarmLevelOption,
   DeviceAlarmNotifyMethod,
@@ -281,15 +283,21 @@ export async function queryDeviceAlarmNotifyMethods(): Promise<DeviceAlarmNotify
     }
   }))
   const notifierIds = [...new Set(candidates.flatMap(provider => normalizeRecords(provider.channels))
-    .filter(channel => stringify(channel.channelProvider).toLowerCase().includes('dingtalk') && hasTemplateBinding(channel))
-    .map(channel => stringify(channel.channelConfiguration?.notifierId)))]
+    .filter(channel => /dingtalk|weixin/i.test(stringify(channel.channelProvider)) && hasTemplateBinding(channel))
+    .map(channel => stringify(channel.channelConfiguration?.notifierId)).filter(Boolean))]
   const notifiers = new Map<string, Record<string, any>>()
   await Promise.all(notifierIds.map(async id => {
-    const response = await deviceAlarmApi.queryNotifier(id)
-    if (isRecord(response) && (response.success === false || Number(response.status) >= 400)) throw new Error('Unable to load DingTalk configuration')
-    const config = unwrapResult(response)
-    if (!isRecord(config) || !config.provider) throw new Error('Invalid DingTalk configuration')
-    notifiers.set(id, config)
+    try {
+      const response = await deviceAlarmApi.queryNotifier(id)
+      if (isRecord(response) && (response.success === false || Number(response.status) >= 400)) throw new Error('Unable to load notifier configuration')
+      const config = unwrapResult(response)
+      if (!isRecord(config) || !config.provider) throw new Error('Invalid notifier configuration')
+      notifiers.set(id, config)
+    } catch (error) {
+      // 钉钉分类失败仍阻止误将机器人当作人员渠道；企微未知配置保留普通人员入口。
+      if (candidates.some(provider => normalizeRecords(provider.channels).some(channel =>
+        /dingtalk/i.test(stringify(channel.channelProvider)) && stringify(channel.channelConfiguration?.notifierId) === id))) throw error
+    }
   }))
   return toNotifyMethods(types, providers, details, notifiers)
 }
@@ -329,6 +337,7 @@ export function toNotifyMethods(types: unknown[], providers?: unknown[], details
     return [{
       id, providerId: id, key, label: key === 'dingtalk' ? i18n.global.t('DeviceAlarm.notification.dingTalkWork') : stringify(type.name) || id,
       desc: '', icon: notifyMethodIcon(key),
+      recipientKinds: alarmRecipientKinds(channels(DEVICE_ALARM_NOTIFY_PROVIDER), notifiers),
       channelIds: channels(DEVICE_ALARM_NOTIFY_PROVIDER).map(channel => stringify(channel.id)).filter(Boolean),
       ...(key === 'dingtalk' && notifiers.size ? { personnelChannels: { providerId: id,
         trigger: channels(DEVICE_ALARM_NOTIFY_PROVIDER).map(channel => stringify(channel.id)).filter(Boolean),
@@ -361,6 +370,7 @@ export async function queryDeviceAlarmNotifyUsers(
       return {
         id,
         name,
+        username: stringify(user.username),
         desc: [orgName, contact].filter(Boolean).join(' · '),
         tag: firstText(user.positionName, user.position, user.title),
       }
@@ -619,19 +629,12 @@ function resolvePreprocessorResource(templateResource: Record<string, any> | und
 }
 
 function isNotificationConfigured(config: unknown) {
-  if (!isRecord(config)) return false
-  return ((hasValues(config.channelProviders) || hasValues(config.notifyChannelIds))
-    && (hasValues(config.userIds) || hasValues(config.dimensions)))
-    || Array.isArray(config.fixedReceiverChannels) && config.fixedReceiverChannels.some(channel => channel?.channelId && channel?.templateId)
+  return notificationIsConfigured(config)
 }
 
 function isNotificationEnabled(config: unknown) {
   if (!isRecord(config) || !isNotificationConfigured(config)) return false
   return config.enabled === undefined ? true : Boolean(config.enabled)
-}
-
-function hasValues(value: unknown) {
-  return Array.isArray(value) && value.length > 0
 }
 
 function notifyMethodKey(providerId: string): DeviceAlarmNotifyMethod['key'] {

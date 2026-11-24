@@ -1022,3 +1022,22 @@ test('new saved strategy summaries match loaded drafts and display exact units',
   current.deadbandType = 'percent'
   assert.equal(summarizeDraft(current, { valueType: { type: 'double' } }, translate)[2].text, '与上次保留值的变化达到 150% 才保留')
 })
+
+
+test('property rule chains preserve independent channel recipients for trigger and recovery', () => {
+  const current = draft()
+  current.alarm.autoRelieve = true
+  current.alarm.notification = { ...createEmptyNotification(), enabled: true, includeRelieve: true,
+    channelProviders: ['email', 'sms'], channelRecipients: [
+      { providerId: 'email', userIds: ['zhang'] }, { providerId: 'sms', userIds: ['li'] },
+    ] }
+  const saved = buildRule(parseRule(), current)
+  assert.equal(parseRule(saved).editable, true)
+  const loaded = toDeviceAlarmRow(saved, 'product', 'Product')!
+  assert.deepEqual(loaded.notification.channelRecipients, [
+    { providerId: 'email', userIds: ['zhang'], dimensions: [] }, { providerId: 'sms', userIds: ['li'], dimensions: [] },
+  ])
+  assert.deepEqual(buildRule(parseRule(saved), { ...current, alarm: loaded }), saved)
+  const [trigger, recovery] = parseRule(saved).nodes.alarm!.configuration.processors
+  assert.deepEqual(trigger.configuration.processors[1].configuration.channelRecipients, recovery.configuration.processors[1].configuration.channelRecipients)
+})

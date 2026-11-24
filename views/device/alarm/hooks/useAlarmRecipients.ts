@@ -60,7 +60,7 @@ export function useAlarmRecipients(props: RecipientProps) {
           const result = await queryDeviceAlarmNotifyUsers({ keyword, pageIndex: page?.pageIndex, pageSize: 20 })
           if (scope !== generation || cacheScope !== cache.revision.value || token !== revision.value || request !== candidateVersion || !open.value) return []
           candidateFailed.value = false
-          return cache.remember(result.data.map(user => ({ value: user.id, label: user.name, description: user.desc, icon: 'UserOutlined' })))
+          return cache.remember(result.data.map(user => ({ value: user.id, label: user.name, description: user.username, icon: 'UserOutlined' })))
         } catch (error) {
           if (scope === generation && cacheScope === cache.revision.value && token === revision.value && request === candidateVersion && open.value) candidateFailed.value = true
           throw error

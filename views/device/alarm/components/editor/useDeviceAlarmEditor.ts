@@ -1,8 +1,9 @@
 import { computed, ref, watch } from 'vue'
 import { componentsRegistry } from '@jetlinks-web-core/utils/components-registry'
 import { recoveryCondition, validCondition, validateAlarmConditions } from '../../conditions'
-import { formatRelieveText, formatTriggerText, propertyIdOf, validateNotificationMessage, hasFixedNotification, hasNotificationRecipients } from '../../utils'
-import type { AlarmLevelOption, DeviceAlarmFormModel, DeviceAlarmTargetOption, ThingModelProperty } from '../../types'
+import { formatRelieveText, formatTriggerText, propertyIdOf, validateNotificationMessage, hasNotificationRecipients } from '../../utils'
+import { removeNotificationRecipient, notificationRecipientGroups, recipientGroupKey, notificationIsConfigured, withNotificationRecipientGroups, groupHasRecipients } from '../../notificationRecipients'
+import type { AlarmLevelOption, DeviceAlarmFormModel, DeviceAlarmNotifyMethod, DeviceAlarmTargetOption, ThingModelProperty, DeviceAlarmRecipientSelection } from '../../types'
 
 export type EditorPanel = 'level' | 'target' | 'trigger' | 'notification'
 type ConfigState = 'complete' | 'pending' | 'off'
@@ -12,6 +13,7 @@ interface EditorProps {
   model: DeviceAlarmFormModel
   levelOptions: AlarmLevelOption[]
   propertyOptions: ThingModelProperty[]
+  notifyMethods?: DeviceAlarmNotifyMethod[]
   productOption?: DeviceAlarmTargetOption
   deviceOption?: DeviceAlarmTargetOption
 }
@@ -29,8 +31,9 @@ export function useDeviceAlarmEditor(props: EditorProps, t: (key: string) => str
   const actions = componentsRegistry.getRegistry('device/alarm:alarm-editor')
   const panels = editorPanels.filter(panel => !actions.some(item => item.mode === 'hide' && item.target === panel.key))
   const activePanel = ref<EditorPanel>('level')
+  const notificationChannel = ref<string>()
   watch(() => props.open, (open) => {
-    if (open) activePanel.value = 'level'
+    if (open) { activePanel.value = 'level'; notificationChannel.value = undefined }
   })
   const activePanelMeta = computed(() => panels.find(panel => panel.key === activePanel.value) ?? editorPanels[0])
   const selectedProperty = computed(() => props.propertyOptions.find(property => propertyIdOf(property) === props.model.property)
@@ -47,7 +50,7 @@ export function useDeviceAlarmEditor(props: EditorProps, t: (key: string) => str
   // 与保存入口保持相同的通道、接收人与自定义消息完整性口径；关闭通知不算缺少必填项。
   const notificationReady = computed(() => {
     const notification = props.model.notification
-    return Boolean((notification.channelProviders.length || notification.notifyChannelIds?.length || hasFixedNotification(notification))
+    return Boolean(notificationIsConfigured(notification)
       && hasNotificationRecipients(notification)
       && (props.model.source !== 'device' || !validateNotificationMessage(notification)))
   })
@@ -93,5 +96,20 @@ export function useDeviceAlarmEditor(props: EditorProps, t: (key: string) => str
     if (!props.saving && panels.some(item => item.key === panel)) activePanel.value = panel
   }
 
-  return { panels, activePanel, activePanelMeta, panelStates, selectedProperty, previewText, relievePreviewText, summaryItems, selectPanel }
+  function editNotificationChannel(id: string) {
+    if (props.saving) return
+    notificationChannel.value = id
+    selectPanel('notification')
+  }
+  function removeNotificationSelection(selection: DeviceAlarmRecipientSelection) {
+    if (props.saving) return
+    const removed = removeNotificationRecipient(props.model.notification, selection, props.notifyMethods)
+    const next = withNotificationRecipientGroups(removed, notificationRecipientGroups(removed, props.notifyMethods)
+      .filter(group => recipientGroupKey(group) !== selection.channelId || groupHasRecipients(group)))
+    next.enabled = Boolean(next.channelRecipients?.length || next.fixedReceiverChannels?.length)
+    props.model.notification = next
+    if (!notificationRecipientGroups(props.model.notification).some(group => recipientGroupKey(group) === notificationChannel.value)
+      && !props.model.notification.fixedReceiverChannels?.some(channel => channel.channelId === notificationChannel.value)) notificationChannel.value = undefined
+  }
+  return { notificationChannel, editNotificationChannel, removeNotificationSelection, panels, activePanel, activePanelMeta, panelStates, selectedProperty, previewText, relievePreviewText, summaryItems, selectPanel }
 }

@@ -204,7 +204,7 @@ test('opening unavailable legacy selections preserves bindings; explicit type ed
   const { state: notification, unmount } = mountState(() => useAlarmNotification(props, () => {}, () => {}))
   try {
     assert.deepEqual(notification.channelIds.value, ['old-provider'])
-    assert.equal(notification.channelOptions.value.some(option => option.value === 'old-provider'), false)
+    assert.equal(notification.channelOptions.value.some(option => option.value === 'old-provider'), true, 'saved unavailable channels remain visible and removable')
     assert.deepEqual(props.model.notification.notifyChannelIds, ['gone'])
     assert.deepEqual(props.model.notification.parameters['old-provider'], { notifierId: 'old-notifier' })
     notification.channelIds.value = ['email']

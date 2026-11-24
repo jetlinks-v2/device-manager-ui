@@ -6,7 +6,7 @@
           <span>{{ $t(`DeviceAlarm.notification.template.${item.event}`) }}</span>
           <span :class="`is-${item.state}`"><AIcon :type="icons[item.state]" />{{ $t(`DeviceAlarm.notification.template.${item.state}`) }}</span>
         </div>
-        <div class="template-status-hint">{{ $t('DeviceAlarm.notification.template.hint') }}</div>
+        <div class="template-status-hint">{{ $t(state === 'unneeded' ? 'DeviceAlarm.notification.template.unneededHint' : 'DeviceAlarm.notification.template.hint') }}</div>
       </div>
     </template>
     <a-button type="text" size="small" class="notification-template-status" :class="`is-${state}`" :aria-label="$t('DeviceAlarm.notification.template.status')" @click.stop.prevent @keydown.stop>

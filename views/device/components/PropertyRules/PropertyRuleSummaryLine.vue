@@ -29,6 +29,7 @@ import { computed } from 'vue'
 import { I18nT, useI18n } from 'vue-i18n'
 import type { AlarmLevelOption } from '../../alarm/types'
 import { defaultAlarmLevelOptions, levelTone } from '../../alarm/utils'
+import { notificationUserIds } from '../../alarm/notificationRecipients'
 import type { RuleRowSummary } from './summary'
 import PropertyRuleLine from './PropertyRuleLine.vue'
 import PropertyFormulaView from './PropertyFormulaView.vue'
@@ -44,7 +45,7 @@ const notificationText = computed(() => {
   const count = (new Set(notification.channelProviders).size || new Set(notification.notifyChannelIds).size)
     + new Set(notification.fixedReceiverChannels?.map(channel => channel.channelId)).size
   return [count ? $t('DeviceAlarm.notification.channelCount', { count }) : $t('DeviceAlarm.notification.enabled'),
-    notification.userIds.length ? $t('DeviceAlarm.notification.recipientCount', { count: new Set(notification.userIds).size }) : '',
+    notificationUserIds(notification).length ? $t('DeviceAlarm.notification.recipientCount', { count: notificationUserIds(notification).length }) : '',
     props.row.alarm?.autoRelieve && notification.includeRelieve ? $t('DeviceAlarm.notification.includeRelieve') : ''].filter(Boolean).join(' · ')
 })
 </script>

@@ -1,3 +1,10 @@
+import { useAlarmRecipients } from '../views/device/alarm/hooks/useAlarmRecipients'
+import { createAlarmRecipientCache } from '../views/device/alarm/hooks/alarmRecipientCache'
+import { useAlarmNotificationBlocks } from '../views/device/alarm/hooks/useAlarmNotificationBlocks'
+import { useAlarmDimensionOptions } from '../views/device/alarm/hooks/useAlarmDimensionOptions'
+import { useAlarmNotificationGroups } from '../views/device/alarm/hooks/useAlarmNotificationGroups'
+import { alarmRecipientKinds, queryAlarmRecipientDimensions } from '../views/device/alarm/notificationTargets'
+import { notificationRecipientGroups, notificationIsConfigured, notificationUserIds, removeNotificationRecipient } from '../views/device/alarm/notificationRecipients'
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { createRenderer, defineComponent, nextTick, reactive, ref } from 'vue'
@@ -935,5 +942,608 @@ test('missing robot resources keep a saved fixed selection removable without req
     assert.equal(state.requiresRecipients.value, false)
     state.channelIds.value = []
     assert.deepEqual(model.notification.fixedReceiverChannels, [])
+  } finally { unmount() }
+})
+
+
+test('channel editor preserves independent recipients across switches and serializes both alarm events', () => {
+  const model = reactive<DeviceAlarmFormModel>({ ...editorProps().model, name: 'alarm', targetId: 'product', property: 'temperature',
+    trigger: 'gt', value: 80, autoRelieve: true, notification: { ...createEmptyNotification(), enabled: true, includeRelieve: true } })
+  const methods = [
+    { id: 'email', providerId: 'email', key: 'email', label: 'Email' },
+    { id: 'sms', providerId: 'sms', key: 'sms', label: 'SMS' },
+    { id: 'hook', providerId: 'webhook', key: 'webhook', label: 'Hook', fixedReceiver: { channelId: 'hook', templateId: 'hook-template' } },
+  ] as DeviceAlarmNotifyMethod[]
+  const { state, unmount } = mount(() => useAlarmNotification({ model, methods }, () => {}, () => {}))
+  try {
+    state.selectChannel('email')
+    state.currentUserIds.value = ['zhang']
+    state.selectChannel('sms')
+    assert.deepEqual(state.currentUserIds.value, [])
+    assert.equal(hasNotificationRecipients(model.notification), false)
+    state.currentUserIds.value = ['li']
+    state.selectChannel('email')
+    assert.deepEqual(state.currentUserIds.value, ['zhang'])
+    assert.deepEqual(model.notification.userIds, [])
+    state.selectChannel('hook')
+    assert.equal(state.currentFixed.value, true)
+    assert.equal(hasNotificationRecipients(model.notification), true)
+    const payload = buildPreprocessPayload(model)
+    const restored = toDeviceAlarmRow(payload, 'product', 'Product')!
+    assert.deepEqual(restored.notification.channelRecipients, model.notification.channelRecipients)
+    assert.equal(restored.notification.includeRelieve, true)
+    assert.equal(restored.notificationEnabled, true)
+    const notify = JSON.stringify(payload.configuration)
+    assert.match(notify, /alarm-device-relieve/)
+    assert.deepEqual(notificationUserIds(restored.notification), ['zhang', 'li'])
+    state.removeSelection({ channelId: 'email', userId: 'zhang' })
+    state.selectChannel('sms')
+    assert.deepEqual(state.currentUserIds.value, ['li'])
+    state.selectChannel('email')
+    state.removeSelection({ channelId: 'email' })
+    assert.equal(state.selectedChannelId.value, 'sms')
+    assert.deepEqual(model.notification.channelProviders, ['sms'])
+    assert.equal(model.notification.fixedReceiverChannels?.length, 1)
+  } finally { unmount() }
+})
+
+test('legacy shared recipients and explicit unknown channels survive an edit without guessing providers', () => {
+  const model = reactive<DeviceAlarmFormModel>({ ...editorProps().model, id: 'saved', notification: { ...createEmptyNotification(), enabled: true,
+    channelProviders: ['email', 'sms'], userIds: ['shared'], dimensions: [{ type: 'org', id: 'org-a' }], notifyChannelIds: ['unmapped'] } })
+  const before = JSON.stringify(model.notification)
+  const props = reactive({ model, methods: [{ id: 'email', providerId: 'email', key: 'email', label: 'Email' }] as DeviceAlarmNotifyMethod[] })
+  const { state, unmount } = mount(() => useAlarmNotification(props, () => {}, () => {}))
+  try {
+    assert.equal(JSON.stringify(model.notification), before)
+    state.selectChannel('email')
+    assert.equal(JSON.stringify(model.notification), before, 'switching a saved group does not migrate persistence')
+    state.currentUserIds.value = ['zhang']
+    const groups = notificationRecipientGroups(model.notification)
+    assert.deepEqual(groups.find(group => group.providerId === 'sms')?.userIds, ['shared'])
+    assert.deepEqual(groups.find(group => group.providerId === '')?.notifyChannelIds, ['unmapped'])
+    assert.deepEqual(groups[0].dimensions, [{ type: 'org', id: 'org-a' }])
+    props.methods = []
+    assert.equal(state.channelOptions.value.some(option => option.value === 'sms'), true)
+    state.removeSelection({ channelId: 'sms' })
+    assert.deepEqual(notificationRecipientGroups(model.notification).find(group => group.providerId === '')?.userIds, ['shared'])
+  } finally { unmount() }
+})
+
+test('explicit empty or invalid groups never revive legacy recipients and fixed templates remain independent', () => {
+  const legacy = { ...createEmptyNotification(), channelProviders: ['email'], userIds: ['shared'] }
+  assert.equal(notificationIsConfigured(legacy), true)
+  for (const channelRecipients of [[], [{ providerId: 'email', userIds: [] }], [{ providerId: '', userIds: ['u'] }]]) {
+    assert.equal(notificationIsConfigured({ ...legacy, channelRecipients }), false)
+  }
+  assert.equal(notificationIsConfigured({ ...legacy, channelRecipients: null }), false)
+  const mixed = { ...legacy, channelRecipients: [{ providerId: 'email', userIds: ['zhang'] }, { providerId: 'sms', userIds: ['li'] }] }
+  const removed = removeNotificationRecipient(mixed, { channelId: 'email' })
+  assert.deepEqual(notificationUserIds(removed), ['li'])
+  assert.equal(notificationIsConfigured({ ...legacy, channelRecipients: [], fixedReceiverChannels: [{ channelId: 'hook', templateId: 'template' }] }), true)
+})
+
+
+test('editing known legacy provider and channel IDs retains one recipient group', () => {
+  const model = reactive<DeviceAlarmFormModel>({ ...editorProps().model, id: 'saved', notification: { ...createEmptyNotification(), enabled: true,
+    channelProviders: ['email'], notifyChannelIds: ['email-channel'], userIds: ['shared'] } })
+  const props = { model, methods: [{ id: 'email', providerId: 'email', key: 'email', label: 'Email', channelIds: ['email-channel'] }] as DeviceAlarmNotifyMethod[] }
+  const { state, unmount } = mount(() => useAlarmNotification(props, () => {}, () => {}))
+  try {
+    assert.deepEqual(state.configuredChannelIds.value, ['email'])
+    state.currentUserIds.value = ['zhang']
+    assert.equal(model.notification.channelRecipients?.length, 1)
+    assert.deepEqual(model.notification.channelRecipients?.[0].notifyChannelIds, ['email-channel'])
+    state.removeSelection({ channelId: 'email' })
+    assert.deepEqual(model.notification.notifyChannelIds, [])
+    assert.deepEqual(model.notification.channelProviders, [])
+  } finally { unmount() }
+})
+
+
+test('optional form notification needs no switch and selecting a channel alone sends nothing', () => {
+  const model = reactive<DeviceAlarmFormModel>({ ...editorProps().model, notification: createEmptyNotification() })
+  const methods = [{ id: 'email', providerId: 'email', key: 'email', label: 'Email' },
+    { id: 'sms', providerId: 'sms', key: 'sms', label: 'SMS' },
+    { id: 'inside-mail', providerId: 'inside-mail', key: 'inbox', label: 'Inbox' }] as DeviceAlarmNotifyMethod[]
+  let requests = 0
+  const props = reactive({ model, methods, layout: 'form' as const })
+  const before = JSON.stringify(model.notification)
+  const { state, unmount } = mount(() => useAlarmNotification(props, () => requests++, () => {}))
+  try {
+    assert.equal(requests, 1, 'channels load while the optional notification is empty')
+    assert.deepEqual(state.configuredChannelIds.value, [], 'do not auto-select inbox')
+    state.selectChannel('email')
+    assert.equal(JSON.stringify(model.notification), before, 'viewing a channel does not create an empty delivery group')
+    state.setPanel('recipients', true)
+    assert.equal(state.activePanel.value, 'recipients')
+    state.currentUserIds.value = ['zhang']
+    assert.equal(model.notification.enabled, true)
+    state.selectChannel('sms')
+    assert.deepEqual(state.currentUserIds.value, [])
+    assert.deepEqual(model.notification.channelProviders, ['email'])
+    state.currentUserIds.value = ['li']
+    state.selectChannel('email')
+    assert.deepEqual(state.currentUserIds.value, ['zhang'])
+    state.currentUserIds.value = []
+    assert.deepEqual(model.notification.channelProviders, ['sms'])
+    state.removeSelection({ channelId: 'sms' })
+    assert.equal(model.notification.enabled, false)
+    assert.equal(notificationIsConfigured(model.notification), false)
+  } finally { unmount() }
+})
+
+test('optional form retains disabled legacy data until explicit configuration without reactivating old channels', () => {
+  const model = reactive<DeviceAlarmFormModel>({ ...editorProps().model, id: 'saved', notification: { ...createEmptyNotification(),
+    channelProviders: ['email', 'sms'], userIds: ['old-user'], fixedReceiverChannels: [{ channelId: 'old-hook', templateId: 'old-template' }] } })
+  const props = { model, layout: 'form' as const, methods: [{ id: 'email', providerId: 'email', key: 'email', label: 'Email' }] as DeviceAlarmNotifyMethod[] }
+  const before = JSON.stringify(model.notification)
+  const { state, unmount } = mount(() => useAlarmNotification(props, () => {}, () => {}))
+  try {
+    assert.deepEqual(state.configuredChannelIds.value, [])
+    assert.equal(JSON.stringify(model.notification), before)
+    state.selectChannel('email')
+    assert.deepEqual(state.currentUserIds.value, [])
+    assert.equal(model.notification.enabled, false)
+    state.currentUserIds.value = ['new-user']
+    assert.equal(model.notification.enabled, true)
+    assert.deepEqual(model.notification.channelProviders, ['email'])
+    assert.deepEqual(model.notification.fixedReceiverChannels, [])
+    assert.deepEqual(notificationUserIds(model.notification), ['new-user'])
+  } finally { unmount() }
+})
+
+test('optional form fixed destinations enable delivery without users and last removal disables it', () => {
+  const model = reactive<DeviceAlarmFormModel>({ ...editorProps().model, notification: createEmptyNotification() })
+  const methods = [{ id: 'hook', providerId: 'webhook', key: 'webhook', label: 'Hook', fixedReceiver: { channelId: 'hook', templateId: 'template' } }] as DeviceAlarmNotifyMethod[]
+  const { state, unmount } = mount(() => useAlarmNotification({ model, methods, layout: 'form' }, () => {}, () => {}))
+  try {
+    state.selectChannel('hook')
+    assert.equal(model.notification.enabled, true)
+    assert.equal(state.currentFixed.value, true)
+    assert.deepEqual(model.notification.userIds, [])
+    state.removeSelection({ channelId: 'hook' })
+    assert.equal(model.notification.enabled, false)
+  } finally { unmount() }
+})
+
+test('editor preview removes empty personnel groups and disables notification after the final destination', () => {
+  const props = reactive(editorProps())
+  props.model.notification = { ...createEmptyNotification(), enabled: true, channelProviders: ['email'],
+    channelRecipients: [{ providerId: 'email', userIds: ['zhang'] }],
+    fixedReceiverChannels: [{ channelId: 'hook', templateId: 'template' }] }
+  const { state, unmount } = mount(() => useDeviceAlarmEditor(props, key => key))
+  try {
+    state.removeNotificationSelection({ channelId: 'email', userId: 'zhang' })
+    assert.deepEqual(props.model.notification.channelRecipients, [])
+    assert.equal(props.model.notification.enabled, true)
+    assert.equal(hasNotificationRecipients(props.model.notification), true)
+    state.removeNotificationSelection({ channelId: 'hook' })
+    assert.equal(props.model.notification.enabled, false)
+    assert.equal(state.panelStates.value.notification, 'off')
+  } finally { unmount() }
+})
+
+
+test('compact channel blocks preserve the explicit notification switch and isolate recipient removal', async () => {
+  setAlarmRequestHandler(async () => ({ result: [] }))
+  const model = editorProps().model
+  model.notification = { ...createEmptyNotification(), enabled: false, channelProviders: ['wechat', 'ding'], channelRecipients: [
+    { providerId: 'wechat', userIds: ['zhang'], dimensions: [{ type: 'org', id: 'dept' }, { type: 'role', id: 'tag' }] },
+    { providerId: 'ding', userIds: ['li'], dimensions: [] },
+  ] }
+  const props = reactive({ model, compact: true, disabled: false, loading: false, failed: false, reveal: false, methods: [
+    { id: 'wechat', providerId: 'wechat', key: 'wechat', recipientKinds: ['org', 'role'] },
+    { id: 'ding', providerId: 'ding', key: 'dingtalk', recipientKinds: ['org'] },
+  ] as DeviceAlarmNotifyMethod[] })
+  const before = JSON.stringify(model.notification)
+  const { state, unmount } = mount(() => useAlarmNotificationBlocks(props))
+  try {
+    assert.equal(state.items.value.length, 2)
+    assert.equal(JSON.stringify(model.notification), before, 'mounting never enables a disabled saved rule')
+    model.notification.enabled = true
+    const first = state.items.value[0].key
+    state.setKind(first, 'role')
+    state.removeRecipient({ channelId: 'wechat', dimension: { type: 'org', id: 'dept' } })
+    assert.deepEqual(model.notification.channelRecipients?.[0].dimensions, [{ type: 'role', id: 'tag' }])
+    assert.deepEqual(model.notification.channelRecipients?.[1].userIds, ['li'])
+    props.reveal = true
+    await flush()
+    assert.equal(state.recipientKey.value, first)
+    props.reveal = false
+    await flush()
+    assert.equal(state.recipientKey.value, undefined)
+    for (const flag of ['disabled', 'loading', 'failed'] as const) {
+      props[flag] = true
+      const snapshot = JSON.stringify(model.notification)
+      state.add(); state.remove(first); state.setTargets(first, 'role', []); state.removeRecipient({ channelId: 'ding', userId: 'li' })
+      assert.equal(state.items.value.length, 2)
+      assert.equal(JSON.stringify(model.notification), snapshot)
+      props[flag] = false
+    }
+    state.remove(first)
+    state.remove(state.items.value[0].key)
+    assert.equal(model.notification.enabled, true, 'removing the last channel leaves the explicit switch on and save validation active')
+    assert.equal(notificationIsConfigured(model.notification), false)
+    assert.equal(state.items.value.length, 1)
+    assert.equal(state.items.value[0].channelId, undefined)
+  } finally { unmount() }
+})
+
+test('compact blocks honor initial summary navigation and close the picker when editing is disabled', async () => {
+  const model = editorProps().model
+  model.notification = { ...createEmptyNotification(), enabled: true, channelProviders: ['ding'], userIds: ['zhang'] }
+  const props = reactive({ model, compact: true, reveal: true, disabled: false,
+    methods: [{ id: 'ding', providerId: 'ding', key: 'dingtalk', recipientKinds: ['org'] }] as DeviceAlarmNotifyMethod[] })
+  const { state, unmount } = mount(() => useAlarmNotificationBlocks(props))
+  try {
+    assert.equal(state.recipientKey.value, state.items.value[0].key)
+    props.disabled = true
+    await flush()
+    assert.equal(state.recipientKey.value, undefined)
+    assert.deepEqual(model.notification.userIds, ['zhang'])
+  } finally { unmount() }
+})
+
+test('channel-local summaries hydrate only their own recipients and preserve legacy dimensions', async () => {
+  const users: string[][] = []
+  setAlarmRequestHandler(async (url, body) => {
+    if (url.startsWith('/user/')) {
+      const ids = (body.terms as Array<{ value: string[] }>)[0].value
+      users.push(ids)
+      return { result: { data: ids.map(id => ({ id, name: id === 'zhang' ? 'Zhang' : 'Li' })), total: ids.length } }
+    }
+    return { result: [{ id: 'dept', name: 'Operations' }] }
+  })
+  const props = reactive({ notification: { ...createEmptyNotification(), channelProviders: ['wechat', 'ding'],
+    userIds: ['zhang'], dimensions: [{ type: 'org', id: 'dept' }] }, methods: [] as DeviceAlarmNotifyMethod[], scopeKey: 'device-a', channelId: 'wechat' })
+  const { state, unmount } = mount(() => useAlarmNotificationGroups(props))
+  try {
+    await flush()
+    assert.deepEqual(state.groups.value.map(group => group.id), ['wechat'])
+    assert.equal(state.groups.value[0].users[0].name, 'Zhang')
+    assert.equal(state.groups.value[0].targets[0].label, 'DeviceAlarm.notification.workTarget.org · Operations')
+    assert.deepEqual(users, [['zhang']])
+    props.notification = { ...createEmptyNotification(), channelProviders: ['wechat', 'ding'], userIds: [], dimensions: [],
+      channelRecipients: [{ providerId: 'wechat', userIds: ['zhang'] }, { providerId: 'ding', userIds: ['li'] }] } as typeof props.notification
+    props.channelId = 'ding'
+    await flush()
+    assert.deepEqual(state.groups.value.map(group => group.id), ['ding'])
+    assert.equal(state.groups.value[0].users[0].name, 'Li')
+    assert.deepEqual(users.at(-1), ['li'])
+  } finally { unmount() }
+})
+
+test('notification blocks keep empty placeholders local, reject duplicates and isolate per-channel targets', () => {
+  const props = reactive({ model: editorProps().model, methods: [
+    { id: 'email', providerId: 'email', key: 'email' }, { id: 'sms', providerId: 'sms', key: 'sms' },
+    { id: 'hook', providerId: 'webhook', key: 'webhook', fixedReceiver: { channelId: 'hook', templateId: 'tpl' } },
+  ] as DeviceAlarmNotifyMethod[], disabled: false })
+  const before = JSON.stringify(props.model.notification)
+  const { state, unmount } = mount(() => useAlarmNotificationBlocks(props))
+  try {
+    assert.equal(state.items.value.length, 1)
+    state.add()
+    assert.equal(JSON.stringify(props.model.notification), before)
+    const [first, second] = state.items.value
+    state.selectChannel(first.key, 'email')
+    assert.equal(props.model.notification.enabled, true)
+    assert.equal(hasNotificationRecipients(props.model.notification), false, 'selected channel needs a target before saving')
+    state.setTargets(first.key, 'people', ['zhang'])
+    state.selectChannel(second.key, 'email')
+    assert.equal(state.items.value[1].channelId, undefined)
+    assert.equal(state.items.value[1].channelOptions.find(item => item.value === 'email')?.disabled, true)
+    state.selectChannel(second.key, 'sms')
+    state.setTargets(second.key, 'people', ['li'])
+    assert.deepEqual(props.model.notification.channelRecipients?.map(group => group.userIds), [['zhang'], ['li']])
+    state.setRecipientOpen(first.key, true)
+    state.setRecipientOpen(second.key, true)
+    state.setRecipientOpen(first.key, false)
+    assert.equal(state.recipientKey.value, second.key, 'late close from another block does not close the current picker')
+    state.selectChannel(first.key, 'hook')
+    assert.deepEqual(props.model.notification.channelProviders, ['sms'])
+    assert.deepEqual(props.model.notification.channelRecipients?.[0].userIds, ['li'])
+    assert.equal(state.items.value[0].fixed, true)
+    state.remove(first.key)
+    state.setTargets(second.key, 'people', [])
+    assert.equal(hasNotificationRecipients(props.model.notification), false)
+    assert.equal(props.model.notification.enabled, true, 'empty selected block must not bypass validation')
+    state.remove(second.key)
+    assert.equal(props.model.notification.enabled, false)
+    assert.equal(state.items.value.length, 1)
+    assert.equal(state.items.value[0].channelId, undefined)
+    props.disabled = true
+    state.add()
+    state.selectChannel(state.items.value[0].key, 'hook')
+    assert.equal(state.items.value.length, 1)
+    assert.equal(props.model.notification.enabled, false)
+  } finally { unmount() }
+})
+
+test('dimension targets round-trip by channel and explicit kind changes leave other channels intact', async () => {
+  setAlarmRequestHandler(async url => url.startsWith('/role/') ? { result: [{ id: 'r1', name: 'Operators' }] }
+    : { result: [{ id: 'o1', name: 'Operations' }] })
+  const props = reactive({ model: editorProps().model, methods: [
+    { id: 'wechat', providerId: 'wechat', key: 'wechat', recipientKinds: ['org', 'role'] },
+    { id: 'email', providerId: 'email', key: 'email' },
+  ] as DeviceAlarmNotifyMethod[] })
+  const { state, unmount } = mount(() => useAlarmNotificationBlocks(props))
+  try {
+    const key = state.items.value[0].key
+    state.selectChannel(key, 'wechat')
+    state.setTargets(key, 'org', ['o1', 'o1'])
+    state.add()
+    const second = state.items.value[1].key
+    state.selectChannel(second, 'email')
+    state.setTargets(second, 'people', ['zhang'])
+    await flush()
+    assert.equal(state.items.value[0].options[0].label, 'Operations')
+    assert.deepEqual(props.model.notification.channelRecipients?.[0].dimensions, [{ type: 'org', id: 'o1' }])
+    const payload = buildPreprocessPayload({ ...props.model, targetId: 'product-a', property: 'temperature', limit: { lower: 10, upper: 20 } })
+    const saved = toDeviceAlarmRow({ id: 'alarm-a', templateId: 'product-a', thingId: '@all', property: 'temperature', provider: payload.provider, configuration: payload.configuration }, 'product', 'Product A')
+    assert.deepEqual(saved?.notification.channelRecipients, props.model.notification.channelRecipients)
+    state.setKind(key, 'role')
+    assert.equal(hasNotificationRecipients(props.model.notification), true, 'switching types retains the selected department')
+    assert.deepEqual(props.model.notification.channelRecipients?.[0].dimensions, [{ type: 'org', id: 'o1' }])
+    state.setTargets(key, 'role', ['r1'])
+    assert.deepEqual(props.model.notification.channelRecipients?.[0].dimensions, [{ type: 'org', id: 'o1' }, { type: 'role', id: 'r1' }])
+    assert.deepEqual(props.model.notification.channelRecipients?.[1].userIds, ['zhang'])
+    const editor = useDeviceAlarmEditor({ ...editorProps(), model: props.model }, key => key)
+    editor.removeNotificationSelection({ channelId: 'wechat', dimension: { type: 'role', id: 'r1' } })
+    assert.deepEqual(props.model.notification.channelRecipients?.[0].dimensions, [{ type: 'org', id: 'o1' }])
+    editor.removeNotificationSelection({ channelId: 'wechat', dimension: { type: 'org', id: 'o1' } })
+    assert.deepEqual(props.model.notification.channelProviders, ['email'])
+  } finally { unmount() }
+})
+
+test('blocks preserve disabled legacy drafts until a real edit and sync external preview removal', () => {
+  const model = editorProps().model
+  model.notification = { ...createEmptyNotification(), channelProviders: ['old'], userIds: ['old-user'] }
+  const props = reactive({ model, methods: [{ id: 'email', providerId: 'email', key: 'email' }] as DeviceAlarmNotifyMethod[] })
+  const before = JSON.stringify(model.notification)
+  const { state, unmount } = mount(() => useAlarmNotificationBlocks(props))
+  try {
+    assert.equal(JSON.stringify(model.notification), before)
+    state.selectChannel(state.items.value[0].key, 'email')
+    state.setTargets(state.items.value[0].key, 'people', ['new-user'])
+    assert.deepEqual(model.notification.channelProviders, ['email'])
+    assert.deepEqual(notificationUserIds(model.notification), ['new-user'])
+    model.notification = { ...createEmptyNotification() }
+    assert.equal(state.items.value.length, 1)
+    assert.equal(state.items.value[0].channelId, undefined)
+    props.model = { ...editorProps().model, targetId: 'another' }
+    assert.equal(state.items.value[0].channelId, undefined)
+  } finally { unmount() }
+})
+
+test('recipient capabilities require confirmed compatible notifier details', () => {
+  const channel = (id: string) => ({ channelConfiguration: { notifierId: id } })
+  const configs = new Map([['wechat', { type: 'weixin', provider: 'corpMessage' }], ['ding', { type: 'dingTalk', provider: 'dingTalkMessage' }]])
+  assert.deepEqual(alarmRecipientKinds([channel('wechat')], configs), ['org', 'role'])
+  assert.deepEqual(alarmRecipientKinds([channel('ding')], configs), ['org'])
+  assert.equal(alarmRecipientKinds([channel('unknown')], configs), undefined)
+  assert.equal(alarmRecipientKinds([channel('wechat'), channel('unknown')], configs), undefined)
+  assert.equal(alarmRecipientKinds([channel('wechat'), channel('ding')], configs), undefined)
+})
+
+test('dimension directories flatten accessible paths, reject invalid responses and ignore stale scopes', async () => {
+  setAlarmRequestHandler(async url => url.startsWith('/organization/')
+    ? { result: [{ id: 'o1', name: 'Root', children: [{ id: 'o2', name: 'Child' }] }] }
+    : { result: [{ id: 'r1', name: 'Operator' }] })
+  assert.deepEqual(await queryAlarmRecipientDimensions('org'), [{ value: 'o1', label: 'Root' }, { value: 'o2', label: 'Root / Child' }])
+  assert.deepEqual(await queryAlarmRecipientDimensions('role'), [{ value: 'r1', label: 'Operator' }])
+  setAlarmRequestHandler(async () => ({ success: false, result: [] }))
+  await assert.rejects(() => queryAlarmRecipientDimensions('org'))
+  let resolveOld!: (value: unknown) => void
+  let count = 0
+  setAlarmRequestHandler(async () => ++count === 1 ? new Promise(resolve => { resolveOld = resolve }) : { result: [{ id: 'new', name: 'New scope' }] })
+  const props = reactive({ scopeKey: 'old', kinds: ['org' as const] })
+  const { state, unmount } = mount(() => useAlarmDimensionOptions(props))
+  try {
+    props.scopeKey = 'new'
+    await flush()
+    resolveOld({ result: [{ id: 'old', name: 'Old scope' }] })
+    await flush()
+    assert.deepEqual(state.entries.org.options, [{ value: 'new', label: 'New scope' }])
+    setAlarmRequestHandler(async () => { throw new Error('forbidden') })
+    await state.retry('org')
+    assert.equal(state.entries.org.failed, true)
+    setAlarmRequestHandler(async () => ({ result: [] }))
+    await state.retry('org')
+    assert.equal(state.entries.org.failed, false)
+    assert.deepEqual(state.entries.org.options, [])
+  } finally { unmount() }
+})
+
+
+test('device notification directory identifies enterprise targets from real notifier details and safely falls back when unavailable', async () => {
+  let denied = false
+  setAlarmRequestHandler(async url => {
+    if (url === '/notify/channel/providers') return { result: [{ id: 'notifier-weixin', name: 'WeCom' }] }
+    if (url === '/notify/channel/all') return { result: [{ id: 'alarm-config', provider: 'alarm-device', channels: [
+      { id: 'wecom-channel', channelProvider: 'notifier-weixin', channelConfiguration: { notifierId: 'wecom-app', templateId: 'tpl' } },
+    ] }] }
+    if (url === '/notifier/config/wecom-app') {
+      if (denied) throw new Error('forbidden')
+      return { result: { type: 'weixin', provider: 'corpMessage' } }
+    }
+    if (url.includes('_query-with-templates')) return { result: {} }
+    throw new Error('Unexpected request: ' + url)
+  })
+  assert.deepEqual((await queryDeviceAlarmNotifyMethods())[0].recipientKinds, ['org', 'role'])
+  denied = true
+  assert.equal((await queryDeviceAlarmNotifyMethods())[0].recipientKinds, undefined)
+})
+
+
+test('inline rules edit enterprise recipients without losing other kinds or channel assignments', async () => {
+  const requests: string[] = []
+  setAlarmRequestHandler(async url => {
+    requests.push(url)
+    return { result: url.startsWith('/role/') ? [{ id: 'tag', name: 'Operators' }] : [{ id: 'dept', name: 'Operations' }] }
+  })
+  const props = reactive({ model: editorProps().model, methods: [
+    { id: 'wechat', providerId: 'wechat', key: 'wechat', recipientKinds: ['org', 'role'] },
+    { id: 'ding', providerId: 'ding', key: 'dingtalk', recipientKinds: ['org'] },
+    { id: 'email', providerId: 'email', key: 'email' },
+    { id: 'robot', providerId: 'ding', key: 'dingtalk', fixedReceiver: { channelId: 'robot', templateId: 'tpl' } },
+  ] as DeviceAlarmNotifyMethod[], layout: 'inline' as const, disabled: false, loading: false, failed: false })
+  props.model.notification.enabled = true
+  const { state, unmount } = mount(() => useAlarmNotification(props, () => {}, () => {}))
+  try {
+    state.selectChannel('wechat')
+    assert.deepEqual(state.currentTargets.value.kinds, ['people', 'org', 'role'])
+    state.setTargets('people', ['zhang'])
+    const before = JSON.stringify(props.model.notification)
+    state.setTargetKind('org')
+    assert.equal(JSON.stringify(props.model.notification), before)
+    state.setTargets('org', ['dept', 'dept'])
+    await flush()
+    assert.equal(state.currentTargets.value.options[0].label, 'Operations')
+    state.setTargetKind('role')
+    state.setTargets('role', ['tag'])
+    await flush()
+    assert.equal(state.currentTargets.value.options[0].label, 'Operators')
+    state.setTargetKind('people')
+    assert.deepEqual(state.currentTargets.value.ids, ['zhang'])
+    state.setTargets('people', [])
+    assert.deepEqual(state.currentGroup.value?.dimensions, [{ type: 'org', id: 'dept' }, { type: 'role', id: 'tag' }])
+    state.selectChannel('ding')
+    assert.deepEqual(state.currentTargets.value.kinds, ['people', 'org'])
+    state.setTargetKind('role')
+    state.setTargets('role', ['unsupported'])
+    assert.equal(state.currentTargets.value.kind, 'people')
+    assert.deepEqual(state.currentGroup.value?.dimensions, [])
+    state.setTargets('people', ['li'])
+    state.setTargets('org', ['dept'])
+    state.selectChannel('wechat')
+    assert.equal(state.currentTargets.value.kind, 'org', 'reopening a dimension-only channel selects its saved kind')
+    state.setTargets('org', [])
+    assert.deepEqual(state.currentGroup.value?.dimensions, [{ type: 'role', id: 'tag' }])
+    state.selectChannel('email')
+    assert.deepEqual(state.currentTargets.value.kinds, ['people'])
+    state.setTargets('people', ['mail-user'])
+    const payload = buildPreprocessPayload({ ...props.model, targetId: 'product-a', property: 'temperature', limit: { lower: 10, upper: 20 } })
+    const saved = toDeviceAlarmRow({ id: 'alarm-a', templateId: 'product-a', thingId: '@all', property: 'temperature', provider: payload.provider, configuration: payload.configuration }, 'product', 'Product A')
+    assert.deepEqual(saved?.notification.channelRecipients, props.model.notification.channelRecipients)
+    props.model = saved!
+    state.selectChannel('wechat')
+    assert.equal(state.currentTargets.value.kind, 'role')
+    assert.deepEqual(state.currentTargets.value.ids, ['tag'])
+    for (const flag of ['disabled', 'loading', 'failed'] as const) {
+      props[flag] = true
+      const snapshot = JSON.stringify(props.model.notification)
+      state.setTargetKind('people')
+      state.setTargets('role', [])
+      assert.equal(state.currentTargets.value.kind, 'role')
+      assert.equal(JSON.stringify(props.model.notification), snapshot)
+      props[flag] = false
+    }
+    state.selectChannel('robot')
+    const snapshot = JSON.stringify(props.model.notification)
+    state.setTargets('people', ['ignored'])
+    assert.equal(state.currentFixed.value, true)
+    assert.equal(JSON.stringify(props.model.notification), snapshot)
+    assert.equal(requests.filter(url => url.startsWith('/organization/')).length, 1)
+    assert.equal(requests.filter(url => url.startsWith('/role/')).length, 1)
+  } finally { unmount() }
+})
+
+test('inline dimension selection recovers directory errors and preserves unavailable saved IDs', async () => {
+  let denied = true
+  setAlarmRequestHandler(async () => { if (denied) throw new Error('forbidden'); return { result: [] } })
+  const model = editorProps().model
+  model.notification = { ...createEmptyNotification(), enabled: true, channelProviders: ['ding'], channelRecipients: [
+    { providerId: 'ding', userIds: [], dimensions: [{ type: 'org', id: 'old-dept' }] },
+  ] }
+  const props = reactive({ model, methods: [{ id: 'ding', providerId: 'ding', key: 'dingtalk', recipientKinds: ['org'] }] as DeviceAlarmNotifyMethod[], layout: 'inline' as const })
+  const before = JSON.stringify(model.notification)
+  const { state, unmount } = mount(() => useAlarmNotification(props, () => {}, () => {}))
+  try {
+    await flush()
+    assert.equal(state.currentTargets.value.kind, 'org')
+    assert.equal(state.currentTargets.value.directory?.failed, true)
+    assert.deepEqual(state.currentTargets.value.options, [{ value: 'old-dept', label: 'old-dept' }])
+    denied = false
+    await state.retryTargets('org')
+    assert.equal(state.currentTargets.value.directory?.failed, false)
+    assert.equal(JSON.stringify(model.notification), before)
+    props.methods = []
+    assert.deepEqual(state.currentTargets.value.kinds, ['org', 'people'])
+    state.setTargets('people', ['user'])
+    assert.deepEqual(state.currentGroup.value?.dimensions, [{ type: 'org', id: 'old-dept' }])
+  } finally { unmount() }
+})
+
+test('enterprise channels retain members departments and tags across type switches, clearing and saved reopening', async () => {
+  setAlarmRequestHandler(async () => ({ result: [] }))
+  const props = reactive({ model: editorProps().model, methods: [
+    { id: 'wechat', providerId: 'wechat', key: 'wechat', recipientKinds: ['org', 'role'] },
+    { id: 'ding', providerId: 'ding', key: 'dingtalk', recipientKinds: ['org'] },
+  ] as DeviceAlarmNotifyMethod[] })
+  const { state, unmount } = mount(() => useAlarmNotificationBlocks(props))
+  try {
+    const key = state.items.value[0].key
+    state.selectChannel(key, 'wechat')
+    assert.deepEqual(state.items.value[0].kinds, ['people', 'org', 'role'])
+    assert.equal(state.items.value[0].kind, 'people', 'new enterprise channels default to members like visual alarms')
+    state.setKind(key, 'people')
+    state.setTargets(key, 'people', ['zhang'])
+    state.setKind(key, 'org')
+    state.setTargets(key, 'org', ['dept'])
+    state.setKind(key, 'role')
+    state.setTargets(key, 'role', ['tag'])
+    state.setKind(key, 'people')
+    assert.deepEqual(state.items.value[0].ids, ['zhang'])
+    const before = JSON.stringify(props.model.notification)
+    state.setKind(key, 'org')
+    assert.equal(JSON.stringify(props.model.notification), before, 'tab selection alone does not mutate saved targets')
+    assert.deepEqual(state.items.value[0].ids, ['dept'])
+    state.setTargets(key, 'org', [])
+    assert.deepEqual(props.model.notification.channelRecipients?.[0].userIds, ['zhang'])
+    assert.deepEqual(props.model.notification.channelRecipients?.[0].dimensions, [{ type: 'role', id: 'tag' }])
+    state.setTargets(key, 'org', ['dept'])
+    state.setTargets(key, 'people', [])
+    assert.equal(props.model.notification.channelRecipients?.[0].dimensions?.length, 2)
+    state.setTargets(key, 'people', ['zhang'])
+    const payload = buildPreprocessPayload({ ...props.model, targetId: 'product-a', property: 'temperature', limit: { lower: 10, upper: 20 } })
+    const saved = toDeviceAlarmRow({ id: 'alarm-a', templateId: 'product-a', thingId: '@all', property: 'temperature', provider: payload.provider, configuration: payload.configuration }, 'product', 'Product A')
+    assert.deepEqual(saved?.notification.channelRecipients, props.model.notification.channelRecipients)
+    props.model = saved!
+    const restoredKey = state.items.value[0].key
+    state.setKind(restoredKey, 'role')
+    assert.deepEqual(state.items.value[0].ids, ['tag'])
+    state.add()
+    const dingKey = state.items.value[1].key
+    state.selectChannel(dingKey, 'ding')
+    assert.deepEqual(state.items.value[1].kinds, ['people', 'org'])
+    state.setKind(dingKey, 'role')
+    assert.notEqual(state.items.value[1].kind, 'role')
+    await flush()
+  } finally { unmount() }
+})
+
+
+test('recipient rows keep names and usernames distinct for duplicate names, missing accounts and cached selections', async () => {
+  setAlarmRequestHandler(async () => ({ result: { data: [
+    { id: 'u1', name: '陈小雨', username: 'chen.xiaoyu', telephone: '13812345678', orgName: '研发' },
+    { id: 'u2', name: '陈小雨', username: 'chen.xiaoyu02' },
+    { id: 'u3', name: '李四' },
+  ], total: 3 } }))
+  const props = reactive({ value: ['u1'], scopeKey: 'username-test', open: true })
+  const { state, unmount } = mount(() => useAlarmRecipients(props))
+  try {
+    await flush()
+    const rows = await state.config.value.loadOptions!('', { pageIndex: 0, pageSize: 20 })
+    assert.deepEqual(rows.map(row => [row.label, row.description]), [
+      ['陈小雨', 'chen.xiaoyu'], ['陈小雨', 'chen.xiaoyu02'], ['李四', ''],
+    ])
+    assert.equal(rows[0].description.includes('138'), false)
+    assert.equal(state.selected.value[0].description, 'chen.xiaoyu')
+    const selected = await state.config.value.loadSelectedOptions!(['u1'])
+    assert.equal(selected[0].description, 'chen.xiaoyu')
+    assert.deepEqual(state.selectionLabels.value, ['陈小雨'], 'selected tags still display names')
+    const cache = createAlarmRecipientCache()
+    await cache.load(['u1'])
+    assert.equal(cache.options.value.get('u1')?.description, 'chen.xiaoyu')
   } finally { unmount() }
 })
