@@ -3,6 +3,7 @@ import type { ProductItem } from '../typings'
 export type ProductDetailTabKey =
   | 'Metadata'
   | 'Device'
+  | 'Metrics'
   | 'AlarmRecord'
   | 'AlarmConfig'
   | 'DataAnalysis'
@@ -40,6 +41,7 @@ export function buildProductDetailTabs(product: Partial<ProductItem>, options: {
 }): ProductDetailTab[] {
   const tabs: ProductDetailTab[] = [
     { key: 'Device', labelKey: 'Detail.index.478940-11', icon: 'WifiOutlined' },
+    { key: 'Metrics', labelKey: 'DeviceMetrics.title', icon: 'LineChartOutlined' },
     { key: 'Metadata', labelKey: 'Detail.index.478940-10', icon: 'ApartmentOutlined' },
   ]
   if (options.showRules !== false) tabs.push({ key: 'AlarmConfig', labelKey: 'PropertyRules.title', icon: 'ControlOutlined' })

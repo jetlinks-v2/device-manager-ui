@@ -1,5 +1,6 @@
 
 export const tabs = {
+  Metrics: defineAsyncComponent(() => import('./components/ProductMetricsTab.vue')),
   Metadata: defineAsyncComponent(() => import('../../components/Metadata/index.vue')),
   Device: defineAsyncComponent(() => import('./DeviceAccess/index.vue')),
   DataAnalysis: defineAsyncComponent(() => import('./DataAnalysis/index.vue')),
