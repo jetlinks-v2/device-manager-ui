@@ -11,8 +11,8 @@
       <div class="product-codec__actions">
         <a-button :loading="codecLoading || modbusRef?.loading" @click="getProductCode().then(() => modbusRef?.loadConfig())">{{ $t('IotDeviceDetail.parsing.reload') }}</a-button>
         <a-button v-if="canUpdate" type="primary" :loading="isModbus ? modbusRef?.saving : loading"
-          :disabled="codecLoading || codecFailed || (isModbus ? !modbusRef || modbusRef.loading : !isTest)"
-          :tooltip="{ title: isModbus || isTest ? '' : $t('DataAnalysis.index.571961-7') }" @click="isModbus ? modbusRef?.saveConfig() : save()">
+          :disabled="codecLoading || codecFailed || (isModbus ? !modbusRef || modbusRef.loading : !editorValue.trim())"
+          @click="isModbus ? modbusRef?.saveConfig() : save()">
           {{ $t('IotDeviceDetail.parsing.saveConfig') }}
         </a-button>
       </div>
@@ -85,7 +85,7 @@ import { useProductDataAnalysis } from './useProductDataAnalysis'
 
 defineOptions({ name: 'DataAnalysis' })
 const { t: $t } = useI18n()
-const { canUpdate, productStore, codec, editorValue, editorLanguage, codecLoading, codecFailed, getProductCode, toggle, el, typescriptTip, editorInit, topicList, topic, url, simulation, result, resStyle, loading, isDisabled, isTest, debug, save } = useProductDataAnalysis()
+const { canUpdate, productStore, codec, editorValue, editorLanguage, codecLoading, codecFailed, getProductCode, toggle, el, typescriptTip, editorInit, topicList, topic, url, simulation, result, resStyle, loading, isDisabled, debug, save } = useProductDataAnalysis()
 const isModbus = computed(() => codec.value?.provider === 'modbus')
 const modbusRef = ref<InstanceType<typeof ModbusMapping>>()
 </script>

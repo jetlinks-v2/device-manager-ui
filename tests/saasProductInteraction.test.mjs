@@ -398,7 +398,7 @@ test('product parsing editor and test/save actions are available in project and 
   for (const isProject of [true, false]) {
     const canUpdate = binding('views/device/Product/Detail/DataAnalysis/useProductDataAnalysis.ts', 'canUpdate', { isProject, computed: vue.computed, permissionStore: { hasPermission: () => true } }).value
     const html = await render(file, { isProject, canUpdate, isModbus: false, codec: { provider: 'jsr223' }, codecFailed: false, codecLoading: false,
-      editorLanguage: 'javascript', editorValue: 'library-script', typescriptTip: {}, loading: false, isDisabled: false, isTest: false,
+      editorLanguage: 'javascript', editorValue: 'library-script', typescriptTip: {}, loading: false, isDisabled: false,
       productStore: { current: { transportProtocol: 'MQTT' } }, topicList: [], resStyle: {}, result: '', simulation: '', topic: '',
     }, { CodecDebugPanel: debugPanel, 'a-select': { props: ['value'], setup: (props, { slots }) => () => vue.h('select', { 'data-codec-type': props.value }, slots.default?.()) }, 'monaco-editor': { props: ['readOnly', 'modelValue'], setup: props => () => vue.h('pre', { 'data-readonly-editor': String(props.readOnly) }, props.modelValue) } })
     assert.match(html, /library-script/)
@@ -407,7 +407,9 @@ test('product parsing editor and test/save actions are available in project and 
     assert.equal(html.includes('IotDeviceDetail.scriptCodec.debug'), true)
     assert.equal(html.includes('IotDeviceDetail.parsing.saveConfig'), true)
     assert.equal(html.includes('class="product-codec__debug"'), true)
-    assert.match(html, /<button[^>]*disabled[^>]*>[\s\S]*?IotDeviceDetail.parsing.saveConfig/)
+    const saveButton = html.match(/<button\b([^>]*)>\s*IotDeviceDetail.parsing.saveConfig\s*<\/button>/)
+    assert.ok(saveButton)
+    assert.doesNotMatch(saveButton[1], /\bdisabled\b/)
     assert.equal(html.includes('product-codec__provider'), true)
     assert.equal(html.includes('Modbus'), false)
   }

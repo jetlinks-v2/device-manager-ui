@@ -99,14 +99,12 @@ test('a debug response arriving after reload cannot restore the old result', asy
   scope.stop()
 })
 
-test('product parsing retains the original debug, save and reload workflow without a leave guard', async () => {
+test('product parsing supports optional debug, save and reload without a leave guard', async () => {
   const { state: s, scope, ui } = await productHarness()
   const original = s.editorValue.value
-  assert.equal(s.isTest.value, false)
   s.editorValue.value += '\n// user edit'
   s.topic.value = '/report'; s.simulation.value = 'raw'
   s.debug(); await tick()
-  assert.equal(s.isTest.value, true)
   assert.equal(s.result.value, '{"temperature":25}')
   await s.getProductCode()
   assert.equal(ui.opened.length, 0)
@@ -249,7 +247,8 @@ test('original product JS and JSON persistence retains the configured provider a
     })
     const scope = vue.effectScope(), s = scope.run(() => useProductDataAnalysis())
     await s.getProductCode()
-    assert.equal(s.isTest.value, false)
+    assert.equal(s.topic.value, '')
+    assert.equal(s.simulation.value, '')
     await s.save()
     await tick()
     assert.equal(requests.length, 1)

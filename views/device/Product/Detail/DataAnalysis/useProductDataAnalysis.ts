@@ -12,7 +12,7 @@ import { useAuthStore } from '@jetlinks-web-core/store';
 import { useI18n } from 'vue-i18n';
 import { useProductCodec } from './useProductCodec';
 
-/** 保留布局重构前的产品解析流程；此处仅承载从页面搬出的原逻辑。 */
+/** 产品解析配置的读取、保存与独立调试。 */
 export function useProductDataAnalysis() {
   const { t: $t } = useI18n();
   const permissionStore = useAuthStore();
@@ -40,7 +40,6 @@ export function useProductDataAnalysis() {
   const simulation = ref<string>('');
   const resultValue = ref<any>({});
   const loading = ref<boolean>(false);
-  const isTest = ref<boolean>(false);
   const { codec, editorValue, editorLanguage, codecLoading, codecFailed, getProductCode, buildProductCode } = useProductCodec(() => productStore.current.id, defaultValue);
   const typescriptTip = reactive({
     typescript: ''
@@ -127,7 +126,7 @@ export function useProductDataAnalysis() {
 
   //保存产品解析规则
   const save = async () => {
-      if (!canUpdate.value) return;
+      if (!canUpdate.value || !editorValue.value.trim()) return;
       const item = readCodecInput();
       if (!item) return;
       const res = await saveProductCode(productStore.current.id, item);
@@ -154,7 +153,6 @@ export function useProductDataAnalysis() {
       const definition = readCodecInput();
       if (!definition) return;
       void test({ ...definition, headers: { [isMqtt ? 'topic' : 'url']: address }, payload: simulation.value });
-      isTest.value = true;
   };
 
   onMounted(() => {
@@ -165,5 +163,5 @@ export function useProductDataAnalysis() {
     }
   });
 
-  return { canUpdate, productStore, codec, editorValue, editorLanguage, codecLoading, codecFailed, getProductCode, toggle, el, typescriptTip, editorInit, topicList, topic, url, simulation, result, resStyle, loading, isDisabled, isTest, debug, save }
+  return { canUpdate, productStore, codec, editorValue, editorLanguage, codecLoading, codecFailed, getProductCode, toggle, el, typescriptTip, editorInit, topicList, topic, url, simulation, result, resStyle, loading, isDisabled, debug, save }
 }

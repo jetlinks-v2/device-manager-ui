@@ -113,3 +113,11 @@
 .instance-device-access--config .device-access-tabs :deep(.ant-tabs-content),
 .instance-device-access--config .device-access-tabs :deep(.device-access-tab-pane--access.ant-tabs-tabpane),
 .instance-device-access--config .tab-pane-inner--access { height: auto; overflow: visible; }
+
+/* 数据解析自然撑高页面，由外层页面滚动，避免页签内容和解析正文重复承接滚动。 */
+.instance-device-access--parsing { overflow: visible; }
+.instance-device-access--parsing .device-access-tabs { flex: 0 0 auto; overflow: visible; }
+.instance-device-access--parsing .device-access-tabs :deep(.ant-tabs-content-holder) { overflow: visible; }
+.instance-device-access--parsing .device-access-tabs :deep(.ant-tabs-content),
+.instance-device-access--parsing .device-access-tabs :deep(.device-access-tab-pane--parsing.ant-tabs-tabpane),
+.instance-device-access--parsing .tab-pane-inner--parsing { height: auto; min-height: 0; overflow: visible; }
