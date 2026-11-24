@@ -1,5 +1,6 @@
 <template>
-  <FullPage class="instance-device-access" :class="{ 'instance-device-access--config': innerTab === 'access' }" :padding="0" flex>
+  <FullPage class="instance-device-access" :class="{ 'instance-device-access--config': innerTab === 'access', 'instance-device-access--parsing': innerTab === 'parsing' }"
+    :fixed="innerTab !== 'parsing'" :margin="innerTab === 'parsing' ? '0' : undefined" :padding="0" flex>
     <DeviceDetailTabs
       :active-key="innerTab"
       @change="changeInnerTab"

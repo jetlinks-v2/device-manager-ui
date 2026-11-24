@@ -48,13 +48,13 @@
           :codec="codecState"
           @updated="loadDeviceCodec"
         />
-        <div v-else class="parsing-modbus">
+        <FullPage v-else class="parsing-modbus" :padding="0">
           <ModbusMapping
             ref="modbusMappingRef"
             :thing-id="device.id"
             :product-id="productId"
           />
-        </div>
+        </FullPage>
       </div>
     </template>
   </div>
@@ -65,6 +65,7 @@ import { computed, nextTick, type PropType, ref, watch } from 'vue'
 import { message } from 'ant-design-vue'
 import { ReloadOutlined, SaveOutlined } from '@ant-design/icons-vue'
 import { useI18n } from 'vue-i18n'
+import { FullPage } from '@jetlinks-web-core/layout'
 
 import ModbusMapping from '@device-manager-ui/views/device/list/components/common/ModbusMapping.vue'
 import { iotDeviceDetailRealApi } from '../../services/iotDeviceDetailReal.service'

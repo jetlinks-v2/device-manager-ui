@@ -97,11 +97,15 @@
   border-radius: 4px;
   overflow: hidden;
 
-  :deep(.ant-tabs-nav) {
+  :deep(.device-detail-tabs > .ant-tabs-nav) {
     margin-bottom: 0;
-    padding: 0 8px;
+    padding: 0;
     background: #fafafa;
   }
+
+  :deep(.ant-tabs-nav-list) { width: 100%; }
+  :deep(.ant-tabs-tab) { flex: 1; min-width: 0; justify-content: center; }
+  :deep(.ant-tabs-tab-btn) { white-space: normal; text-align: center; }
 }
 
 

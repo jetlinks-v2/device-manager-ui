@@ -6,7 +6,7 @@
 
 
 .decode-debug-wrap {
-  padding: 0;
+  padding: 12px;
 }
 
 
@@ -118,7 +118,7 @@
 
 .decode-debug-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
   align-items: start;
 
@@ -139,9 +139,9 @@
 }
 
 
-/* 左侧原始数据区略窄，避免占满整列 */
 .decode-debug-input {
-  max-width: min(100%, 360px);
+  width: 100%;
+  max-width: 100%;
 }
 
 

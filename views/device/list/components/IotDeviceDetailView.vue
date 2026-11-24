@@ -18,6 +18,7 @@
 					v-if="!detailContent"
 					:active-key="state.activeTab"
 					:options="state.tabOptions"
+					:keyboard="false"
 					@change="state.setActiveTab(String($event))"
 				>
                     <template #tab-extra="{ option }">

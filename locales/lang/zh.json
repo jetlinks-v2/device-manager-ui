@@ -8877,6 +8877,7 @@
     "ModbusMapping.ui.linkHint": "解析与编码：TCP 含 MBAP；RTU 含 CRC；PDU 为裸 PDU（与历史默认一致）",
     "ModbusMapping.ui.actions": "操作",
     "ModbusMapping.ui.addPoint": "新增点位",
+    "ModbusMapping.ui.pointMapping": "点位映射",
     "ModbusMapping.ui.propertyPlaceholder": "输入或选择属性标识",
     "ModbusMapping.ui.undefinedProperty": "物模型未定义",
     "ModbusMapping.ui.readUnsupported": "该功能码不支持读操作",

@@ -6,7 +6,7 @@
   align-items: center;
   gap: 3px 6px;
   margin-bottom: 6px;
-  padding: 3px 4px;
+  padding: 0;
   background: transparent;
   border: none;
   border-radius: 2px;
@@ -22,9 +22,9 @@
 
 
 .decode-sim-addr-input {
-  flex: 0 1 140px;
+  flex: 1 1 140px;
   min-width: 0;
-  max-width: 160px;
+  max-width: none;
 }
 
 
@@ -111,19 +111,21 @@
 }
 
 
-/* 左侧原始数据区略窄，避免占满整列 */
 .decode-debug-input {
-  max-width: min(100%, 360px);
+  width: 100%;
+  max-width: 100%;
 }
 
 
 .decode-textarea {
+  display: block;
+  width: 100%;
   font-size: 12px;
 }
 
 
-.decode-textarea--compact :deep(textarea.ant-input) {
-  min-height: 52px;
+.decode-textarea--compact {
+  min-height: 76px;
   max-height: 140px;
   resize: vertical;
   line-height: 1.45;
@@ -144,9 +146,7 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 6px 8px;
-  margin-top: 8px;
-  padding-top: 6px;
-  border-top: 1px dashed #f0f0f0;
+  margin-top: 12px;
 }
 
 

@@ -359,7 +359,7 @@ test('metadata configuration popup keeps the existing button and hides confirmat
   }
 })
 
-test('product parsing preserves scripts and JSON providers and supplies a template when absent', async () => {
+test('product parsing always edits JavaScript and uses its template when the response has no script', async () => {
   for (const isProject of [true, false]) {
     let response
     const { useProductCodec } = loadHook('views/device/Product/Detail/DataAnalysis/useProductCodec.ts', {
@@ -367,20 +367,17 @@ test('product parsing preserves scripts and JSON providers and supplies a templa
       '@jetlinks-web-core/utils/consts': { isProject },
     })
     const state = useProductCodec(() => 'product', 'default-template')
-    response = { status: 200, result: { provider: 'jsr223', configuration: { script: 'codec.onUpstream(handler)' } } }
+    response = { status: 200, result: { provider: 'jsr223', configuration: { script: 'codec.onUpstream(handler)', custom: 1 } } }
     await state.getProductCode()
     assert.equal(state.editorValue.value, 'codec.onUpstream(handler)')
-    response = { status: 200, result: { provider: 'modbus', configuration: { mapping: { address: 12 } } } }
-    await state.getProductCode()
-    assert.deepEqual(JSON.parse(state.editorValue.value), response.result.configuration)
-    assert.equal(state.editorLanguage.value, 'json')
-    state.editorValue.value = JSON.stringify({ mapping: { address: 13 } })
-    assert.deepEqual(state.buildProductCode(), { provider: 'modbus', configuration: { mapping: { address: 13 } } })
-    state.editorValue.value = '[]'
-    assert.throws(() => state.buildProductCode())
-    response = { status: 200, result: null }
-    await state.getProductCode()
-    assert.equal(state.editorValue.value, 'default-template')
+    assert.deepEqual(state.buildProductCode(), { provider: 'jsr223', configuration: { script: 'codec.onUpstream(handler)', lang: 'javascript' } })
+    for (const result of [null, { provider: 'modbus', configuration: { mapping: { address: 12 } } }, { provider: 'unknown', configuration: {} }]) {
+      response = { status: 200, result }
+      await state.getProductCode()
+      assert.equal(state.editorValue.value, 'default-template')
+      state.editorValue.value = 'edited-script'
+      assert.deepEqual(state.buildProductCode(), { provider: 'jsr223', configuration: { script: 'edited-script', lang: 'javascript' } })
+    }
     response = { status: 500 }
     await state.getProductCode()
     assert.equal(state.codecFailed.value, true)
@@ -397,8 +394,8 @@ test('product parsing editor and test/save actions are available in project and 
   })
   for (const isProject of [true, false]) {
     const canUpdate = binding('views/device/Product/Detail/DataAnalysis/useProductDataAnalysis.ts', 'canUpdate', { isProject, computed: vue.computed, permissionStore: { hasPermission: () => true } }).value
-    const html = await render(file, { isProject, canUpdate, codec: { provider: 'jsr223' }, codecFailed: false, codecLoading: false,
-      codecMenuItems: [{ value: 'jsr223', label: 'IotDeviceDetail.parsing.javascriptLabel' }], typeDescription: '', editorLanguage: 'javascript', editorValue: 'library-script', typescriptTip: {}, loading: false, saving: false, isDisabled: false, saveDisabled: false, isDirty: false,
+    const html = await render(file, { isProject, canUpdate, codecFailed: false, codecLoading: false,
+      editorValue: 'library-script', typescriptTip: {}, loading: false, isDisabled: false,
       productStore: { current: { transportProtocol: 'MQTT' } }, topicList: [], resStyle: {}, result: '', simulation: '', topic: '',
     }, { CodecDebugPanel: debugPanel, 'a-select': { props: ['value'], setup: (props, { slots }) => () => vue.h('select', { 'data-codec-type': props.value }, slots.default?.()) }, 'monaco-editor': { props: ['readOnly', 'modelValue'], setup: props => () => vue.h('pre', { 'data-readonly-editor': String(props.readOnly) }, props.modelValue) } })
     assert.match(html, /library-script/)
@@ -406,7 +403,31 @@ test('product parsing editor and test/save actions are available in project and 
     assert.match(html, /data-readonly-editor="false"/)
     assert.equal(html.includes('IotDeviceDetail.scriptCodec.debug'), true)
     assert.equal(html.includes('IotDeviceDetail.parsing.saveConfig'), true)
-    assert.equal(html.includes('class="codec-debug"'), true)
+    assert.equal(html.includes('class="product-codec__debug"'), true)
+    const saveButton = html.match(/<button\b([^>]*)>\s*IotDeviceDetail.parsing.saveConfig\s*<\/button>/)
+    assert.ok(saveButton)
+    assert.doesNotMatch(saveButton[1], /\bdisabled\b/)
+    assert.equal(html.includes('product-codec__provider'), true)
+    assert.equal(html.includes('Modbus'), false)
+  }
+})
+
+test('product script editing respects permission without a blocking provider warning', async () => {
+  const file = 'views/device/Product/Detail/DataAnalysis/index.vue'
+  for (const canUpdate of [true, false]) {
+    const html = await render(file, {
+      canUpdate, editorValue: 'default-script', codecLoading: false, codecFailed: false, loading: false,
+      isDisabled: true, typescriptTip: {}, topicList: [], resStyle: {},
+      productStore: { current: { transportProtocol: 'MQTT' } },
+    }, { 'monaco-editor': { props: ['readOnly', 'language'], setup: props => () => vue.h('pre', {
+      'data-readonly': String(props.readOnly), 'data-language': props.language,
+    }) } })
+    assert.match(html, new RegExp(`data-readonly="${!canUpdate}"`))
+    assert.match(html, /data-language="javascript"/)
+    assert.equal(html.includes('product-codec__script'), true)
+    assert.equal(html.includes('product-codec__debug'), true)
+    assert.equal(html.includes('Product.codec.scriptOnly'), false)
+    assert.equal(html.includes('IotDeviceDetail.parsing.saveConfig'), canUpdate)
   }
 })
 

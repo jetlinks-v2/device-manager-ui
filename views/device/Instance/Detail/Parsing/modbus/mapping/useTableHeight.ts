@@ -17,8 +17,10 @@ export function useTableHeight(mappingConfiguration: Pick<MappingConfiguration, 
     if (!el || el.clientHeight < 48) return
     const thead = el.querySelector('.ant-table-thead') as HTMLElement | null
     const headH = thead ? Math.ceil(thead.getBoundingClientRect().height) : 39
+    const toolbar = el.querySelector('.mm-mapping-header') as HTMLElement | null
+    const toolbarH = toolbar ? Math.ceil(toolbar.getBoundingClientRect().height) : 0
     const borderPad = 2
-    const h = Math.floor(el.clientHeight - headH - borderPad)
+    const h = Math.floor(el.clientHeight - toolbarH - headH - borderPad)
     tableBodyScrollY.value = Math.max(160, h)
   }
 
