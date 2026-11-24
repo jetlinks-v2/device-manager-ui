@@ -1,9 +1,10 @@
+import { notificationUserIds, notificationRecipientGroups, notificationIsConfigured } from '../../../views/device/alarm/notificationRecipients'
 import type {
   AlarmLevelOption, DeviceAlarmCondition, DeviceAlarmNotificationConfig, DeviceAlarmNotifyMethod,
   DeviceAlarmNotifyUser, ThingModelProperty, ThingPropertyPreprocess,
 } from '../../../views/device/alarm/types'
 import { recoveryCondition } from '../../../views/device/alarm/conditions'
-import { formatPropertyUnit, formatTriggerText, getAlarmProcessor, getNotifyProcessor, hasNotificationRecipients, hasFixedNotification, matchesAlarmNotifyMethod, propertyIdOf, propertyNameOf, toDeviceAlarmRow } from '../../../views/device/alarm/utils'
+import { formatPropertyUnit, formatTriggerText, getAlarmProcessor, getNotifyProcessor, hasNotificationRecipients, matchesAlarmNotifyMethod, propertyIdOf, propertyNameOf, toDeviceAlarmRow } from '../../../views/device/alarm/utils'
 import { isEmptyRule, parseRule, type RuleNode, type RulePart } from '../../../views/device/components/PropertyRules/codec'
 import { summarizeRuleRows, type RuleTranslator } from '../../../views/device/components/PropertyRules/summary'
 
@@ -95,9 +96,9 @@ export function explainNotification(config: DeviceAlarmNotificationConfig, resou
       templates: { trigger: method?.templates?.trigger ?? 'unknown', relieve: method?.templates?.[recoveryEvent] ?? 'unknown' } }
   })
   const users = new Map(resources.users?.map(user => [user.id, user.name]))
-  const recipients = [...new Set(config.userIds)].map(id => ({ id, name: users.get(id), resolved: users.has(id) }))
-  const dimensions = config.dimensions?.length ?? 0
-  const complete = Boolean(hasNotificationRecipients(config) && (types.length || legacyIds.length || hasFixedNotification(config)))
+  const recipients = notificationUserIds(config).map(id => ({ id, name: users.get(id), resolved: users.has(id) }))
+  const dimensions = notificationRecipientGroups(config).reduce((sum, group) => sum + (group.dimensions?.length ?? 0), 0)
+  const complete = Boolean(hasNotificationRecipients(config) && notificationIsConfigured(config))
   const enabled = config.enabled && complete
   const includeRelieve = Boolean(enabled && autoRelieve && config.includeRelieve)
   const unknownRecipients = recipients.some(user => !user.resolved)
@@ -121,7 +122,7 @@ export function explainNotification(config: DeviceAlarmNotificationConfig, resou
     notices: enabled ? [text('deliveryHint'), ...(dimensions ? [text('dynamicRecipients')] : [])] : [],
     description: enabled ? text('notification', {
       types: types.map(type => type.name).join(' / ') || text('legacySelection'),
-      users: [...recipients.map(user => user.name ?? user.id), ...(dimensions ? [text('dimensionSelection')] : [])].join(' / '),
+      users: config.channelRecipients !== undefined ? notificationRecipientGroups(config).map(group => `${types.find(type => type.id === group.providerId)?.name ?? group.providerId}: ${[...group.userIds.map(id => users.get(id) ?? id), ...(group.dimensions?.length ? [text('dimensionSelection')] : [])].join(' / ')}`).join('; ') : [...recipients.map(user => user.name ?? user.id), ...(dimensions ? [text('dimensionSelection')] : [])].join(' / '),
       recovery: includeRelieve ? text('includeRelieve') : text('excludeRelieve'),
     }) : text(config.enabled ? 'notificationIncomplete' : 'notificationOff'),
     warnings,

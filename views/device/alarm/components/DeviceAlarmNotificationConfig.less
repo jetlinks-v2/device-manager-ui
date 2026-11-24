@@ -1,8 +1,8 @@
 .device-alarm-notify {
   display: grid;
-  grid-template-columns: 18px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
-  column-gap: 6px;
+  gap: var(--space-2);
   min-width: 0;
   color: var(--jet-theme-text-secondary);
   font-size: var(--fs-12);
@@ -14,8 +14,9 @@
   gap: var(--space-1);
   min-width: 0;
 }
-.device-alarm-notify__sentence { flex-wrap: wrap; }
-.device-alarm-notify > :deep(.device-alarm-message) { grid-column: 2; min-width: 0; }
+.device-alarm-notify__sentence { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2); }
+.notification-heading { display: flex; align-items: center; gap: var(--space-1); font-size: var(--fs-14); }
+.device-alarm-notify > :deep(.device-alarm-message) { grid-column: 1; min-width: 0; }
 .notification-clause { white-space: nowrap; }
 .notification-toggle, .notification-chip {
   display: inline-flex;
@@ -48,20 +49,6 @@
 .notification-toggle:focus-visible, .notification-chip:focus-visible { outline: 1px solid var(--jet-theme-primary); outline-offset: 2px; }
 .notification-option-panel { width: min(360px, calc(100vw - 48px)); font-size: var(--fs-14); }
 .notification-option-panel :deep(.ant-alert) { margin-bottom: var(--space-2); }
-.notification-types { display: flex; flex-direction: column; flex-wrap: nowrap; width: 100%; max-height: min(288px, 40vh); overflow-y: auto; padding: var(--space-1) 0; }
-.notification-type { display: grid; grid-template-columns: minmax(0, 1fr) 24px; flex-shrink: 0; align-items: start; column-gap: var(--space-2); min-height: 32px; border-radius: var(--r-1); }
-.notification-type:hover { background: var(--bg-sunken); }
-.notification-type :deep(.ant-checkbox-wrapper) { display: flex; flex: 1; align-items: flex-start; min-width: 0; margin: 0; padding: calc(var(--space-3) / 2) var(--space-2); color: var(--jet-theme-text); font-size: var(--fs-14); line-height: 24px; }
-.notification-type :deep(.ant-checkbox + span) { flex: 1; min-width: 0; }
-// Move the whole control so its checked outline and inner box keep the same bounds.
-.notification-type :deep(.ant-checkbox) { top: 0; align-self: flex-start; margin-top: 3px; }
-.notification-type > :deep(.notification-template-status) { align-self: flex-start; margin-top: 6px; }
-.notification-type-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: var(--space-1); min-width: 0; padding: 0 var(--space-2) var(--space-2); }
-.notification-type-actions :deep(.ant-btn) { max-width: 100%; height: auto; white-space: normal; text-align: left; }
-.notification-types-empty { display: block; padding: var(--space-2); color: var(--jet-theme-text-secondary); }
-.notification-option-help { padding: var(--space-2); border-top: 1px solid var(--line); color: var(--jet-theme-text-secondary); line-height: 22px; }
-.notification-option-help p { margin: 0; }
-.notification-option-help p + p { margin-top: var(--space-1); }
 @media (pointer: coarse) { .notification-toggle, .notification-chip { min-height: 36px; } }
 
 .device-alarm-notify--form {
@@ -71,14 +58,6 @@
   color: var(--jet-theme-text);
   font-size: var(--fs-14);
   line-height: 1.6;
-}
-.device-alarm-notify--form .notification-enable {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
-  padding-bottom: var(--space-4);
-  border-bottom: 1px solid var(--line);
 }
 .device-alarm-notify--form .device-alarm-notify__sentence {
   display: grid;
@@ -114,3 +93,8 @@
 .device-alarm-notify--form .notification-relieve { flex-direction: column; align-items: flex-start; gap: var(--space-1); }
 .notification-relieve__hint { margin-inline-start: 24px; color: var(--jet-theme-text-secondary); font-size: var(--fs-12); line-height: 1.6; overflow-wrap: anywhere; }
 .device-alarm-notify--form > :deep(.device-alarm-message) { grid-column: 1; }
+
+.notification-channel-select { min-width: calc(var(--space-4) * 8); max-width: 100%; }
+.device-alarm-notify--form .notification-channel-select { width: 100%; }
+.notification-configuration-actions { display: inline-flex; flex-wrap: wrap; gap: var(--space-2); }
+.notification-configuration-actions :deep(.ant-btn) { height: auto; padding-inline: 0; white-space: normal; text-align: start; }

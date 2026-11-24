@@ -1,4 +1,7 @@
 {
+  "DeviceAlarm.notification.selectedCount": "{count} 件選択済み",
+  "DeviceAlarm.notification.removeChannel": "{channel}の通知を削除",
+  "DeviceAlarm.notification.dimensionRecipients": "保存済みの組織またはロールの通知範囲を保持",
   "DeviceAlarm.notification.dingTalkWork": "DingTalk · 業務通知",
   "DeviceAlarm.notification.fixedRecipientHint": "チャネルに設定された固定の送信先に送信します。受信者の選択は不要です",
   "DeviceAlarm.notification.webhookRecipientHint": "WebHook に設定された送信先アドレスに送信します。受信者の選択は不要です",
@@ -7862,6 +7865,7 @@
   "DeviceAlarm.notification.template.unknown": "ステータス不明",
   "DeviceAlarm.notification.template.unneeded": "テンプレートは不要です",
   "DeviceAlarm.notification.template.hint": "ステータスは、現在アクセス可能で有効になっている設定を基準とします。 通知センターでテンプレートを設定できます。実際の配達は送信記録を基準とします。",
+  "DeviceAlarm.notification.template.unneededHint": "アプリ内通知にテンプレートの設定は不要です。",
   "DeviceAlarm.notification.turnOn": "通知を有効にする",
   "DeviceAlarm.condition.label.gt": "より大きい",
   "DeviceAlarm.condition.label.gte": "より大きい、または等しい",
@@ -9133,5 +9137,20 @@
     "input": "シミュレーション入力",
     "result": "デバッグ結果",
     "historyHint": "プロパティの読取や機能の呼出後に、操作履歴がここに表示されます。"
-}
+},
+  "DeviceAlarm.notification.addChannel": "通知チャネルを追加",
+  "DeviceAlarm.notification.channelBlock": "通知チャネル {index}",
+  "DeviceAlarm.notification.removeChannelBlock": "通知チャネル {index} を削除",
+  "DeviceAlarm.notification.targetKind": "通知先の種類",
+  "DeviceAlarm.notification.target.people": "ユーザー",
+  "DeviceAlarm.notification.target.org": "組織",
+  "DeviceAlarm.notification.target.role": "ロール",
+  "DeviceAlarm.notification.targetSearch.org": "組織を検索して選択",
+  "DeviceAlarm.notification.targetSearch.role": "ロールを検索して選択",
+  "DeviceAlarm.notification.targetsFailed": "通知先の読み込みに失敗しました。保存済みの参照は保持されます。",
+  "DeviceAlarm.notification.workTarget.people": "メンバー",
+  "DeviceAlarm.notification.workTarget.org": "部門",
+  "DeviceAlarm.notification.workTarget.role": "タグ",
+  "DeviceAlarm.notification.workTargetSearch.org": "部門を検索して選択",
+  "DeviceAlarm.notification.workTargetSearch.role": "タグを検索して選択"
 }

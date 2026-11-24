@@ -1,4 +1,7 @@
 {
+  "DeviceAlarm.notification.selectedCount": "{count} selected",
+  "DeviceAlarm.notification.removeChannel": "Remove {channel} notifications",
+  "DeviceAlarm.notification.dimensionRecipients": "Saved organization or role recipients retained",
   "DeviceAlarm.notification.dingTalkWork": "DingTalk · Work notification",
   "DeviceAlarm.notification.fixedRecipientHint": "Send to the channel’s configured destination; no recipients required",
   "DeviceAlarm.notification.webhookRecipientHint": "Send to the WebHook’s configured destination; no recipients required",
@@ -230,6 +233,7 @@
   "DeviceAlarm.notification.template.unknown": "Status unknown",
   "DeviceAlarm.notification.template.unneeded": "No template needed",
   "DeviceAlarm.notification.template.hint": "Status reflects accessible, enabled configuration. Configure templates in the notification center; check delivery records for actual results.",
+  "DeviceAlarm.notification.template.unneededHint": "In-app notifications do not require a template.",
   "DeviceAlarm.notification.turnOn": "Enable notifications",
   "DeviceAlarm.condition.label.gt": "Greater than",
   "DeviceAlarm.condition.label.gte": "Greater than or equal to",
@@ -9288,5 +9292,20 @@
     "input": "Simulation input",
     "result": "Debug result",
     "historyHint": "Read a property or invoke a function to view its history here."
-}
+},
+  "DeviceAlarm.notification.addChannel": "Add notification channel",
+  "DeviceAlarm.notification.channelBlock": "Notification channel {index}",
+  "DeviceAlarm.notification.removeChannelBlock": "Remove notification channel {index}",
+  "DeviceAlarm.notification.targetKind": "Recipient type",
+  "DeviceAlarm.notification.target.people": "People",
+  "DeviceAlarm.notification.target.org": "Organizations",
+  "DeviceAlarm.notification.target.role": "Roles",
+  "DeviceAlarm.notification.targetSearch.org": "Search and select organizations",
+  "DeviceAlarm.notification.targetSearch.role": "Search and select roles",
+  "DeviceAlarm.notification.targetsFailed": "Unable to load recipients. Saved references are retained.",
+  "DeviceAlarm.notification.workTarget.people": "Members",
+  "DeviceAlarm.notification.workTarget.org": "Departments",
+  "DeviceAlarm.notification.workTarget.role": "Tags",
+  "DeviceAlarm.notification.workTargetSearch.org": "Search and select departments",
+  "DeviceAlarm.notification.workTargetSearch.role": "Search and select tags"
 }

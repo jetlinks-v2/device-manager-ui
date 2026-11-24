@@ -32,7 +32,16 @@ export interface DeviceAlarmNotifyMethod {
   channelIds?: string[]
   templates?: Record<'trigger' | 'relieve', 'ready' | 'missing' | 'unknown' | 'unneeded'>
   personnelChannels?: { providerId: string; trigger: string[]; relieve: string[] }
+  /** Only confirmed notifier configurations narrow the selectable target kinds. */
+  recipientKinds?: DeviceAlarmDimensionKind[]
   fixedReceiver?: DeviceAlarmFixedReceiver
+}
+
+export type DeviceAlarmDimensionKind = 'org' | 'role'
+export interface DeviceAlarmRecipientSelection {
+  channelId: string
+  userId?: string
+  dimension?: { type: string; id: string }
 }
 
 /** 固定接收方按通道实例保存，触发和解除各自绑定消息模板。 */
@@ -46,8 +55,17 @@ export interface DeviceAlarmFixedReceiver {
 export interface DeviceAlarmNotifyUser {
   id: string
   name: string
+  username: string
   desc: string
   tag: string
+}
+
+/** Each personnel channel owns its recipient set; explicit IDs retain unmapped legacy selections. */
+export interface DeviceAlarmChannelRecipients {
+  providerId: string
+  userIds: string[]
+  dimensions?: Array<Record<string, unknown>>
+  notifyChannelIds?: string[]
 }
 
 export interface DeviceAlarmNotificationConfig {
@@ -56,6 +74,7 @@ export interface DeviceAlarmNotificationConfig {
   /** Persisted legacy rules may still use the trigger provider for recovery. */
   relieveTopicProvider?: 'alarm-device' | 'alarm-device-relieve'
   userIds: string[]
+  channelRecipients?: DeviceAlarmChannelRecipients[]
   dimensions?: Array<Record<string, unknown>>
   channelProviders: string[]
   notifyChannelIds?: string[]

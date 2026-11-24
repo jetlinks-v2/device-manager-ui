@@ -17,6 +17,7 @@ import type { DeviceAlarmCondition } from './types'
 import { notificationDateVariables, notificationDateFormat } from './notificationMessageVariables'
 import { formatPropertyValue } from '../components/PropertyRules/values/metadata'
 import { formatPropertyUnit } from './hooks/usePropertyUnits'
+import { normalizeChannelRecipients, notificationRecipientGroups, groupHasChannel, groupHasRecipients, notificationIsConfigured, withNotificationRecipientGroups } from './notificationRecipients'
 export { formatPropertyUnit } from './hooks/usePropertyUnits'
 
 const DEVICE_ALARM_PROCESSOR = 'device-alarm'
@@ -37,6 +38,8 @@ interface DeviceAlarmConfiguration {
 /** Display notification types; saved channel IDs are mapped for legacy readback only. */
 export function matchesAlarmNotifyMethod(notification: DeviceAlarmNotificationConfig, method: DeviceAlarmNotifyMethod) {
   if (method.fixedReceiver) return Boolean(notification.fixedReceiverChannels?.some(channel => channel.channelId === method.id))
+  if (notification.channelRecipients !== undefined) return notificationRecipientGroups(notification).some(group => group.providerId === method.providerId
+    || group.notifyChannelIds?.some(id => method.channelIds?.includes(id)))
   return notification.channelProviders.includes(method.providerId)
     || Boolean(notification.notifyChannelIds?.some(id => method.channelIds?.includes(id)))
 }
@@ -50,7 +53,7 @@ export function selectAlarmNotificationTypes(notification: DeviceAlarmNotificati
   })
   const providers = selections.filter(id => !fixed.some(channel => channel.channelId === id))
   const bindings = new Set([...notification.channelProviders, ...providers])
-  return {
+  const next = {
     ...notification,
     channelProviders: [...new Set(providers)],
     userIds: providers.length ? notification.userIds : [],
@@ -64,10 +67,13 @@ export function selectAlarmNotificationTypes(notification: DeviceAlarmNotificati
     relieveTopicProvider: 'alarm-device-relieve' as const,
     parameters: Object.fromEntries(Object.entries(notification.parameters ?? {}).filter(([key]) => !bindings.has(key))),
   }
+  return notification.channelRecipients === undefined ? next : withNotificationRecipientGroups(next,
+    providers.map(id => notificationRecipientGroups(notification).find(group => group.providerId === id)
+      ?? { providerId: id, userIds: [] }))
 }
 
 export function hasPersonnelNotification(notification: DeviceAlarmNotificationConfig) {
-  return Boolean(notification.channelProviders.length || notification.notifyChannelIds?.length)
+  return notificationRecipientGroups(notification).some(groupHasChannel)
 }
 
 export function hasFixedNotification(notification: DeviceAlarmNotificationConfig) {
@@ -76,7 +82,7 @@ export function hasFixedNotification(notification: DeviceAlarmNotificationConfig
 
 /** 人员名单只约束人员通道；纯机器人配置无需虚构接收人。 */
 export function hasNotificationRecipients(notification: DeviceAlarmNotificationConfig) {
-  return !hasPersonnelNotification(notification) || Boolean(notification.userIds.length || notification.dimensions?.length)
+  return notificationRecipientGroups(notification).filter(groupHasChannel).every(groupHasRecipients)
 }
 
 export const DEVICE_ALARM_NOTIFICATION_MESSAGE_MAX_LENGTH = 1024
@@ -500,6 +506,7 @@ export function normalizeNotification(value: unknown): DeviceAlarmNotificationCo
     ...source,
     // 空通知配置不能被视为已启用；已有通知沿用后端省略 enabled 时的启用语义。
     enabled: source.enabled === undefined ? isNotificationConfigured(source) : Boolean(source.enabled),
+    ...(Object.prototype.hasOwnProperty.call(source, 'channelRecipients') ? { channelRecipients: normalizeChannelRecipients(source.channelRecipients) } : {}),
     includeRelieve: source.includeRelieve === true,
     relieveTopicProvider: source.relieveTopicProvider === 'alarm-device' ? 'alarm-device' as const : 'alarm-device-relieve' as const,
     userIds: Array.isArray(source.userIds) ? source.userIds.map(String).filter(Boolean) : [],
@@ -532,7 +539,8 @@ function buildNotifyConfig(form: DeviceAlarmFormModel) {
   return {
     enabled: notification.enabled,
     includeRelieve: Boolean(form.autoRelieve && notification.includeRelieve),
-    userIds: [...notification.userIds],
+    ...(notification.channelRecipients !== undefined ? { channelRecipients: normalizeChannelRecipients(notification.channelRecipients) } : {}),
+    userIds: notification.channelRecipients !== undefined ? [] : [...notification.userIds],
     dimensions: [...(notification.dimensions ?? [])],
     channelProviders: [...notification.channelProviders],
     notifyChannelIds: [...(notification.notifyChannelIds ?? [])],
@@ -542,23 +550,8 @@ function buildNotifyConfig(form: DeviceAlarmFormModel) {
   }
 }
 
-function isNotificationConfigured(notification: {
-  userIds?: unknown
-  dimensions?: unknown
-  channelProviders?: unknown
-  notifyChannelIds?: unknown
-  fixedReceiverChannels?: unknown
-}) {
-  const hasReceiver = Boolean(
-    (Array.isArray(notification.userIds) && notification.userIds.length)
-    || (Array.isArray(notification.dimensions) && notification.dimensions.length),
-  )
-  const hasChannel = Boolean(
-    (Array.isArray(notification.channelProviders) && notification.channelProviders.length)
-    || (Array.isArray(notification.notifyChannelIds) && notification.notifyChannelIds.length),
-  )
-  return hasReceiver && hasChannel || Array.isArray(notification.fixedReceiverChannels)
-    && notification.fixedReceiverChannels.some(channel => channel?.channelId && channel?.templateId)
+function isNotificationConfigured(notification: unknown) {
+  return notificationIsConfigured(notification)
 }
 
 function isNotificationEnabled(notification: ReturnType<typeof normalizeNotification>) {

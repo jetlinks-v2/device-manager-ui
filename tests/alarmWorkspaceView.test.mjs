@@ -14,6 +14,8 @@ const productAlarmTab = await readFile(new URL('../views/device/Product/Detail/c
 const deviceAlarmTab = await readFile(new URL('../views/device/list/components/device-detail/IotDeviceAlarmConfigTab.vue', import.meta.url), 'utf8')
 const notificationConfig = await readFile(new URL('../views/device/alarm/components/DeviceAlarmNotificationConfig.vue', import.meta.url), 'utf8')
 const recipientSelector = await readFile(new URL('../views/device/alarm/components/DeviceAlarmRecipients.vue', import.meta.url), 'utf8')
+const recipientTargets = await readFile(new URL('../views/device/alarm/components/DeviceAlarmRecipientTargets.vue', import.meta.url), 'utf8')
+const notificationBlocks = await readFile(new URL('../views/device/alarm/components/DeviceAlarmNotificationBlocks.vue', import.meta.url), 'utf8')
 const recipientHook = await readFile(new URL('../views/device/alarm/hooks/useAlarmRecipients.ts', import.meta.url), 'utf8')
 
 test('alarm sidebar top rows use the visual alarm dimensions and spacing', () => {
@@ -73,7 +75,9 @@ test('global alarms retain the shared editor while product and device configurat
 
 test('alarm notification entry points share selected-name hydration and lazy candidate search', () => {
   assert.match(editor, /<DeviceAlarmNotificationConfig/)
-  assert.match(notificationConfig, /<DeviceAlarmRecipients/)
+  assert.match(notificationConfig, /<DeviceAlarmNotificationBlocks/)
+  assert.match(notificationBlocks, /<DeviceAlarmRecipientTargets/)
+  assert.match(recipientTargets, /<DeviceAlarmRecipients/)
   assert.match(recipientSelector, /useAlarmRecipients/)
   assert.match(recipientHook, /await cache\.load\(values\)/)
   assert.match(recipientHook, /queryDeviceAlarmNotifyUsers\(\{ keyword, pageIndex: page\?\.pageIndex, pageSize: 20 \}\)/)

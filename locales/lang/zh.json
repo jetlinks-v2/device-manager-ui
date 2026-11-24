@@ -1,4 +1,7 @@
 {
+  "DeviceAlarm.notification.selectedCount": "已选 {count} 项",
+  "DeviceAlarm.notification.removeChannel": "移除{channel}通知",
+  "DeviceAlarm.notification.dimensionRecipients": "已保留原组织或角色接收范围",
   "DeviceAlarm.notification.dingTalkWork": "钉钉 · 工作通知",
   "DeviceAlarm.notification.fixedRecipientHint": "发送到渠道配置的固定接收地址，无需选择通知对象",
   "DeviceAlarm.notification.webhookRecipientHint": "发送到 WebHook 配置的接收地址，无需选择通知对象",
@@ -230,6 +233,7 @@
   "DeviceAlarm.notification.template.unknown": "状态未知",
   "DeviceAlarm.notification.template.unneeded": "无需模板",
   "DeviceAlarm.notification.template.hint": "状态以当前可访问且启用的配置为准。可在通知中心配置模板，实际投递以发送记录为准。",
+  "DeviceAlarm.notification.template.unneededHint": "站内信无需配置模板。",
   "DeviceAlarm.notification.turnOn": "开启通知",
   "DeviceAlarm.condition.label.gt": "大于",
   "DeviceAlarm.condition.label.gte": "大于或等于",
@@ -9289,5 +9293,20 @@
     "input": "模拟输入",
     "result": "调试结果",
     "historyHint": "读取属性或调用功能后，操作记录会显示在这里。"
-}
+},
+  "DeviceAlarm.notification.addChannel": "添加通知渠道",
+  "DeviceAlarm.notification.channelBlock": "通知渠道 {index}",
+  "DeviceAlarm.notification.removeChannelBlock": "移除第 {index} 个通知渠道",
+  "DeviceAlarm.notification.targetKind": "通知对象类型",
+  "DeviceAlarm.notification.target.people": "人员",
+  "DeviceAlarm.notification.target.org": "组织",
+  "DeviceAlarm.notification.target.role": "角色",
+  "DeviceAlarm.notification.targetSearch.org": "搜索并选择组织",
+  "DeviceAlarm.notification.targetSearch.role": "搜索并选择角色",
+  "DeviceAlarm.notification.targetsFailed": "通知对象加载失败，已保存的引用仍保留",
+  "DeviceAlarm.notification.workTarget.people": "成员",
+  "DeviceAlarm.notification.workTarget.org": "部门",
+  "DeviceAlarm.notification.workTarget.role": "标签",
+  "DeviceAlarm.notification.workTargetSearch.org": "搜索并选择部门",
+  "DeviceAlarm.notification.workTargetSearch.role": "搜索并选择标签"
 }
