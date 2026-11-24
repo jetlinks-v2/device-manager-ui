@@ -43,6 +43,7 @@
   "PropertyRules.correction.propertyIdHint": "当前处理的属性标识",
   "PropertyRules.correction.thingId": "物标识",
   "PropertyRules.correction.thingIdHint": "本次消息所属的物或设备标识",
+    "DeviceProcesses.title": "过程",
   "RuntimeMonitor.deviceCommunication": "设备通信",
   "RuntimeMonitor.deviceObservationDetails": "详细观测",
   "RuntimeMonitor.runtimeSummary.heap": "JVM 堆内存",

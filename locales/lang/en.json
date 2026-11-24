@@ -43,6 +43,7 @@
   "PropertyRules.correction.propertyIdHint": "Identifier of the property being processed",
   "PropertyRules.correction.thingId": "Thing ID",
   "PropertyRules.correction.thingIdHint": "Identifier of the thing or device sending this message",
+    "DeviceProcesses.title": "Processes",
   "RuntimeMonitor.deviceCommunication": "Device communication",
   "RuntimeMonitor.deviceObservationDetails": "Detailed observation",
   "RuntimeMonitor.runtimeSummary.heap": "JVM heap",
