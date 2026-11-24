@@ -24,7 +24,7 @@
                       v-model:value="item.property"
                       :placeholder="t('ModbusMapping.ui.selectProperty')"
                       size="small"
-                      style="width: 200px"
+                      class="encode-property"
                       show-search
                       allow-clear
                       :options="encodePropertyOptions"
@@ -34,7 +34,7 @@
                       v-model:value="item.value"
                       :placeholder="t('ModbusMapping.ui.simulatedValue')"
                       size="small"
-                      style="width: 140px; "
+                      class="encode-value"
                     />
                     <a-button type="link" size="small" danger @click="removeEncodeInput(idx)">
                       <template #icon><CloseOutlined /></template>
