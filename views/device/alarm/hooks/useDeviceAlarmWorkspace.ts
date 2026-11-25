@@ -1,5 +1,4 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
-import { message } from 'ant-design-vue'
 import { useDeviceAlarmPage } from './useDeviceAlarmPage'
 import { queryActiveRuleCounts } from '../workspaceApi'
 import type { DeviceAlarmRow } from '../types'
@@ -127,7 +126,13 @@ export function useDeviceAlarmWorkspace(t: (key: string, params?: Record<string,
   async function run(action: () => Promise<unknown>) {
     if (busy.value) return
     busy.value = true
-    try { await action() } catch { message.error(t('DeviceAlarm.workspace.actionError')) } finally { busy.value = false }
+    try {
+      await action()
+    } catch {
+      // 接口错误由全局请求层统一通知，避免重复弹出居中提示。
+    } finally {
+      busy.value = false
+    }
   }
   function create() {
     return run(async () => {
